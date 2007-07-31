@@ -1,0 +1,48 @@
+# Process this file with autoconf to produce a configure
+
+AC_PREREQ(2.59)
+
+AC_INIT([libEasyLocalpp], [0.9], [l.digaspero@uniud.it])
+AC_CONFIG_AUX_DIR(config)
+
+AC_CANONICAL_TARGET
+case "${target_os}" in
+  *darwin* ) EOFWARNING=-Wnewline-eof
+  ;;
+  *) EOFWARNING=
+  ;;
+esac
+
+AC_PREFIX_DEFAULT([`pwd`])
+AC_ARG_ENABLE([DEBUG], 
+  [AS_HELP_STRING([--enable-debug], [enable debugging (default: no)])], 
+  [], [])
+AC_ARG_ENABLE([TESTS], 
+  [AS_HELP_STRING([--enable-compile-tests], [enable compilation of tests (default: no)])], 
+  [], [])
+AM_CONDITIONAL(DEBUG, test "$enable_debug" = yes)
+AM_INIT_AUTOMAKE([1.9 foreign])
+
+AC_DISABLE_SHARED
+AC_PROG_LIBTOOL
+AC_LANG_CPLUSPLUS
+CXXFLAGS=""
+AC_PROG_CXX
+
+AC_CONFIG_FILES([Makefile src/Makefile test/Makefile test/nQueens/Makefile])
+if test "$enable_compile_tests" == yes; then
+  COMPILESUBDIRS="src test"
+else
+  COMPILESUBDIRS="src"
+fi
+AC_SUBST(COMPILESUBDIRS)
+
+if test "$CXX" = icc; then
+   ICCFLAGS=-cxxlib-gcc
+fi
+AC_SUBST(ICCFLAGS)
+AC_DEFUN([AC_DATAROOTDIR_CHECKED])
+
+AC_SUBST(EOFWARNING)
+
+AC_OUTPUT

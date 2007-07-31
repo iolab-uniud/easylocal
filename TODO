@@ -1,0 +1,23 @@
+Classi astratte per Input, State, Output, Move
+
+Per Input la classe astratta deve avere Load e bool loaded
+
+SetInput sparisce, al contrario il puntatore p_in punta ad un oggetto const, che deve essere giˆ loaded.
+
+Gestione di fvalue: float/double
+
+Decorators da mantenere (rivedere) per NHE, togliere per costcomponent
+
+Versione base ed estensioni di EL++
+
+Nella versione base (tipo mini):
+   CostComponent e DeltaCostComponent SI
+   Bimodal NO
+   Kickers NO
+   Shifting Penalty ? 
+
+
+Molti oggetti sono singleton. Come li gestiamo (come singleton?)
+
+Linguaggio degli esperimenti (rivedere)
+
