@@ -817,5 +817,5 @@ std::istream& operator>>(std::istream& is, Matrix<T>& m)
 }
 
 
-#endif _MATRIX_H
+#endif // _MATRIX_H
 
