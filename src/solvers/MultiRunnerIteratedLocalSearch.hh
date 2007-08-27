@@ -19,7 +19,7 @@ public:
   void Print(std::ostream& os = std::cout) const;
   void SetKicker(Kicker<Input,State,CFtype>& k);
   void SetRounds(unsigned int r);
-  void Check() const throw(EasyLocalException);
+  void RunCheck() const throw(EasyLocalException);
   void ClearMovers();
   void RaiseTimeout();
   void ResetTimeout();
@@ -171,7 +171,7 @@ void MultiRunnerIteratedLocalSearch<Input,Output,State,CFtype>::Run()
 
   do
     {
-      if (idle_rounds % 2 == 0)
+      if (idle_rounds % 2 == 0 && p_kicker != NULL)
 	{
 #if VERBOSE >= 2
 		  std::cerr << "Start kicking" << std::endl;
@@ -225,18 +225,18 @@ void MultiRunnerIteratedLocalSearch<Input,Output,State,CFtype>::Run()
       std::cerr << "Runner: " << i << ", cost: " << this->runners[i]->GetStateCost() 
 		<< ", distance " << this->sm.StateDistance( this->internal_state, this->runners[i]->GetState())
 		<< " (" << this->runners[i]->GetIterationsPerformed() << " iterations, time " << chrono.TotalTime() 
-		<< ")" << std::endl;
+		<< "), Idle rounds " << idle_rounds << std::endl;
 #endif
-	  if (this->runners[i]->GetStateCost() <= current_state_cost)
+      if (LessOrEqualThan(this->runners[i]->GetStateCost(),current_state_cost))
 	    {
 	      current_state = this->runners[i]->GetState();
 	      current_state_cost = this->runners[i]->GetStateCost();
 	    }
-	  j = i;
 	  if (this->runners[i]->LowerBoundReached())
 	    break;
 	  if (this->runners.size() > 1)
 	    {
+	      j = i;
 	      i = (i + 1) % this->runners.size();	  
 	      this->runners[i]->SetState(this->runners[j]->GetState());
 	    }
@@ -256,13 +256,12 @@ void MultiRunnerIteratedLocalSearch<Input,Output,State,CFtype>::Run()
 }
 
 template <class Input, class Output, class State, typename CFtype>
-void MultiRunnerIteratedLocalSearch<Input,Output,State,CFtype>::Check() const
+void MultiRunnerIteratedLocalSearch<Input,Output,State,CFtype>::RunCheck() const
   throw(EasyLocalException)
 {
-  MultiRunnerSolver<Input,Output,State,CFtype>::Check();
-  if (p_kicker == NULL)
-    throw EasyLocalException("RunCheck(): kicker not set in object " + this->GetName());
-  //  p_kicker->Check();
+  MultiRunnerSolver<Input,Output,State,CFtype>::RunCheck();
+  if (p_kicker != NULL)
+    p_kicker->Check();
 }
 
 
