@@ -25,6 +25,7 @@ public:
   CFtype GetCost() const;
   const Output& GetOutput();
   const State& GetState() const;
+  void SetState(const State& st, CFtype cost);
   void SetState(const State& st);
   void SetState(const Output& out);
   virtual void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout) = 0;
@@ -87,6 +88,13 @@ void LocalSearchSolver<Input,Output,State,CFtype>::SetState(const State& st)
 {
 	internal_state = st;
 	internal_state_cost = sm.CostFunction(internal_state); 
+}
+
+template <class Input, class Output, class State, typename CFtype>
+void LocalSearchSolver<Input,Output,State,CFtype>::SetState(const State& st, CFtype cost)
+{
+	internal_state = st;
+	internal_state_cost = cost; 
 }
 
 template <class Input, class Output, class State, typename CFtype>

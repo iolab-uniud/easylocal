@@ -20,7 +20,8 @@ class Runner
 {
 public:
     // Runner interface
-    void SetState(const State& st);
+  void SetState(const State& st, CFtype cost);
+  void SetState(const State& st);
     const State& GetState() const;
     CFtype GetStateCost() const;
     void Go() throw(EasyLocalException);
@@ -152,6 +153,21 @@ void Runner<Input,State,CFtype>::SetState(const State& s)
 {
     current_state = s;
     current_state_cost = sm.CostFunction(current_state);
+    current_state_set = true;
+    best_state = current_state;
+    best_state_cost = current_state_cost;
+}
+
+/**
+   Sets the internal state of the runner to the value passed as parameter.
+
+   @param s the state to become the current state of the runner
+*/
+template <class Input, class State, typename CFtype>
+void Runner<Input,State,CFtype>::SetState(const State& s, CFtype cost)
+{
+    current_state = s;
+    current_state_cost = cost;
     current_state_set = true;
     best_state = current_state;
     best_state_cost = current_state_cost;

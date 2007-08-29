@@ -192,78 +192,78 @@ CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::DeltaCostFunction(const St
   {
     State st1 = st;
     MakeMove(st1, mv);
-		for (unsigned int i = 0; i < delta_cost_component.size(); i++)
-			if (delta_cost_component[i]->IsHard())
-				if (delta_cost_component[i]->IsDeltaImplemented())
-				{
-					FilledDeltaCostComponent<Input,State,Move,CFtype>& dcc = static_cast<FilledDeltaCostComponent<Input,State,Move,CFtype>& >(*this->delta_cost_component[i]);
-					delta_hard_cost += dcc.DeltaCost(st, mv);
-				}
-		    else
-				{
-					EmptyDeltaCostComponent<Input,State,Move,CFtype>& dcc = static_cast<EmptyDeltaCostComponent<Input,State,Move,CFtype>& >(*this->delta_cost_component[i]);
-					delta_hard_cost += dcc.DeltaCost(st, st1);
-				}
-			else
-				if (delta_cost_component[i]->IsDeltaImplemented())
-				{
-					FilledDeltaCostComponent<Input,State,Move,CFtype>& dcc = static_cast<FilledDeltaCostComponent<Input,State,Move,CFtype>& >(*this->delta_cost_component[i]);
-					delta_soft_cost += dcc.DeltaCost(st, mv);
-				}
-				else
-				{
-					EmptyDeltaCostComponent<Input,State,Move,CFtype>& dcc = static_cast<EmptyDeltaCostComponent<Input,State,Move,CFtype>& >(*this->delta_cost_component[i]);
-					delta_soft_cost += dcc.DeltaCost(st, st1);
-				}					
-	}
-	return HARD_WEIGHT * delta_hard_cost + delta_soft_cost;
+    for (unsigned int i = 0; i < delta_cost_component.size(); i++)
+      if (delta_cost_component[i]->IsHard())
+	if (delta_cost_component[i]->IsDeltaImplemented())
+	  {
+	    FilledDeltaCostComponent<Input,State,Move,CFtype>& dcc = static_cast<FilledDeltaCostComponent<Input,State,Move,CFtype>& >(*this->delta_cost_component[i]);
+	    delta_hard_cost += dcc.DeltaCost(st, mv);
+	  }
+	else
+	  {
+	    EmptyDeltaCostComponent<Input,State,Move,CFtype>& dcc = static_cast<EmptyDeltaCostComponent<Input,State,Move,CFtype>& >(*this->delta_cost_component[i]);
+	    delta_hard_cost += dcc.DeltaCost(st, st1);
+	  }
+      else
+	if (delta_cost_component[i]->IsDeltaImplemented())
+	  {
+	    FilledDeltaCostComponent<Input,State,Move,CFtype>& dcc = static_cast<FilledDeltaCostComponent<Input,State,Move,CFtype>& >(*this->delta_cost_component[i]);
+	    delta_soft_cost += dcc.DeltaCost(st, mv);
+	  }
+	else
+	  {
+	    EmptyDeltaCostComponent<Input,State,Move,CFtype>& dcc = static_cast<EmptyDeltaCostComponent<Input,State,Move,CFtype>& >(*this->delta_cost_component[i]);
+	    delta_soft_cost += dcc.DeltaCost(st, st1);
+	  }					
+  }
+  return HARD_WEIGHT * delta_hard_cost + delta_soft_cost;
 }
 
 template <class Input, class State, class Move, typename CFtype>
 ShiftedResult<CFtype> NeighborhoodExplorer<Input,State,Move,CFtype>::DeltaShiftedCostFunction(const State& st, const Move & mv)
 {
-	ShiftedResult<CFtype> delta_hard_cost, delta_soft_cost;
+  ShiftedResult<CFtype> delta_hard_cost, delta_soft_cost;
   
   if (number_of_delta_not_implemented == 0)
-  {
-		for (unsigned int i = 0; i < delta_cost_component.size(); i++)
-		{
-			FilledDeltaCostComponent<Input,State,Move,CFtype>& dcc = static_cast<FilledDeltaCostComponent<Input,State,Move,CFtype>& >(*this->delta_cost_component[i]);
-			if (dcc.IsHard())
-				delta_hard_cost = delta_hard_cost + dcc.DeltaShiftedCost(st, mv);
-			else
-				delta_soft_cost = delta_soft_cost + dcc.DeltaShiftedCost(st, mv);			
-		}
-  }
-  else
-  {
-    State st1 = st;
-    MakeMove(st1, mv);
-		for (unsigned int i = 0; i < delta_cost_component.size(); i++)
-			if (delta_cost_component[i]->IsHard())
-				if (delta_cost_component[i]->IsDeltaImplemented())
-				{
-					FilledDeltaCostComponent<Input,State,Move,CFtype>& dcc = static_cast<FilledDeltaCostComponent<Input,State,Move,CFtype>& >(*this->delta_cost_component[i]);
-					delta_hard_cost = delta_hard_cost + dcc.DeltaShiftedCost(st, mv);
-				}
-				else
-				{
-					EmptyDeltaCostComponent<Input,State,Move,CFtype>& dcc = static_cast<EmptyDeltaCostComponent<Input,State,Move,CFtype>& >(*this->delta_cost_component[i]);
-					delta_hard_cost = delta_hard_cost + dcc.DeltaShiftedCost(st, st1);
-				}
-			else
-				if (delta_cost_component[i]->IsDeltaImplemented())
-				{
-					FilledDeltaCostComponent<Input,State,Move,CFtype>& dcc = static_cast<FilledDeltaCostComponent<Input,State,Move,CFtype>& >(*this->delta_cost_component[i]);
-					delta_soft_cost = delta_soft_cost + dcc.DeltaShiftedCost(st, mv);
-				}
-				else
-				{
-					EmptyDeltaCostComponent<Input,State,Move,CFtype>& dcc = static_cast<EmptyDeltaCostComponent<Input,State,Move,CFtype>& >(*this->delta_cost_component[i]);
-					delta_soft_cost = delta_soft_cost + dcc.DeltaShiftedCost(st, st1);
-				}					
+    {
+      for (unsigned int i = 0; i < delta_cost_component.size(); i++)
+	{
+	  FilledDeltaCostComponent<Input,State,Move,CFtype>& dcc = static_cast<FilledDeltaCostComponent<Input,State,Move,CFtype>& >(*this->delta_cost_component[i]);
+	  if (dcc.IsHard())
+	    delta_hard_cost = delta_hard_cost + dcc.DeltaShiftedCost(st, mv);
+	  else
+	    delta_soft_cost = delta_soft_cost + dcc.DeltaShiftedCost(st, mv);			
 	}
-		return HARD_WEIGHT * delta_hard_cost + delta_soft_cost;
+    }
+  else
+    {
+      State st1 = st;
+      MakeMove(st1, mv);
+      for (unsigned int i = 0; i < delta_cost_component.size(); i++)
+	if (delta_cost_component[i]->IsHard())
+	  if (delta_cost_component[i]->IsDeltaImplemented())
+	    {
+	      FilledDeltaCostComponent<Input,State,Move,CFtype>& dcc = static_cast<FilledDeltaCostComponent<Input,State,Move,CFtype>& >(*this->delta_cost_component[i]);
+	      delta_hard_cost = delta_hard_cost + dcc.DeltaShiftedCost(st, mv);
+	    }
+	  else
+	    {
+	      EmptyDeltaCostComponent<Input,State,Move,CFtype>& dcc = static_cast<EmptyDeltaCostComponent<Input,State,Move,CFtype>& >(*this->delta_cost_component[i]);
+	      delta_hard_cost = delta_hard_cost + dcc.DeltaShiftedCost(st, st1);
+	    }
+	else
+	  if (delta_cost_component[i]->IsDeltaImplemented())
+	    {
+	      FilledDeltaCostComponent<Input,State,Move,CFtype>& dcc = static_cast<FilledDeltaCostComponent<Input,State,Move,CFtype>& >(*this->delta_cost_component[i]);
+	      delta_soft_cost = delta_soft_cost + dcc.DeltaShiftedCost(st, mv);
+	    }
+	  else
+	    {
+	      EmptyDeltaCostComponent<Input,State,Move,CFtype>& dcc = static_cast<EmptyDeltaCostComponent<Input,State,Move,CFtype>& >(*this->delta_cost_component[i]);
+	      delta_soft_cost = delta_soft_cost + dcc.DeltaShiftedCost(st, st1);
+	    }					
+    }
+  return HARD_WEIGHT * delta_hard_cost + delta_soft_cost;
 }
 
 template <class Input, class State, class Move, typename CFtype>

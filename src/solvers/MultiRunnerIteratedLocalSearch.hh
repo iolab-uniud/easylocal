@@ -18,6 +18,7 @@ public:
 
   void Print(std::ostream& os = std::cout) const;
   void SetKicker(Kicker<Input,State,CFtype>& k);
+  void SetIdleRounds(unsigned int r);
   void SetRounds(unsigned int r);
   void RunCheck() const throw(EasyLocalException);
   void ClearMovers();
@@ -26,8 +27,9 @@ public:
   void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout);
 protected:
   void Run();
+  bool PerformKickStep();
   Kicker<Input,State,CFtype>* p_kicker; /** A pointer to the managed kicker. */
-  unsigned int max_idle_rounds; /**< Maximum number of runs without improvement
+  unsigned int max_idle_rounds, max_rounds; /**< Maximum number of runs without improvement
 				   allowed. */
   Chronometer chrono; /** A chronometer */
 };
@@ -53,7 +55,7 @@ MultiRunnerIteratedLocalSearch<Input,Output,State,CFtype>::MultiRunnerIteratedLo
 										   StateManager<Input,State,CFtype>& sm,
 										   OutputManager<Input,Output,State,CFtype>& om,
 										   std::string name)
-  : MultiRunnerSolver<Input,Output,State,CFtype>(i, sm, om, name), max_idle_rounds(1)
+  : MultiRunnerSolver<Input,Output,State,CFtype>(i, sm, om, name), max_idle_rounds(1), max_rounds(100)
 {
   p_kicker = NULL;
 }
@@ -87,8 +89,12 @@ void MultiRunnerIteratedLocalSearch<Input,Output,State,CFtype>::RaiseTimeout()
 }
 
 template <class Input, class Output, class State, typename CFtype>
-void MultiRunnerIteratedLocalSearch<Input,Output,State,CFtype>::SetRounds(unsigned int r)
+void MultiRunnerIteratedLocalSearch<Input,Output,State,CFtype>::SetIdleRounds(unsigned int r)
 { max_idle_rounds = r; }
+
+template <class Input, class Output, class State, typename CFtype>
+void MultiRunnerIteratedLocalSearch<Input,Output,State,CFtype>::SetRounds(unsigned int r)
+{ max_rounds = r; }
 
 
 template <class Input, class Output, class State, typename CFtype>
@@ -124,97 +130,19 @@ void MultiRunnerIteratedLocalSearch<Input,Output,State,CFtype>::SetKicker(Kicker
 template <class Input, class Output, class State, typename CFtype>
 void MultiRunnerIteratedLocalSearch<Input,Output,State,CFtype>::Run()
 {
-  // TODO: try to minimize the state copying operations
-  State current_state(this->in);
-  CFtype current_state_cost;
+//   // TODO: try to minimize the state copying operations
     
-  unsigned int idle_rounds = 0;
-  unsigned int i, j;
-
-  this->start_runner = i = 0; 
-  j = this->runners.size() - 1;
-
-  this->runners[i]->SetState(this->internal_state);
-  do
-    {        
-      this->chrono.Reset();
-      this->chrono.Start();
-      this->runners[i]->Go();
-      this->chrono.Stop();
-#if VERBOSE >= 2
-      std::cerr << "Runner: " << i << ", cost: " << this->runners[i]->GetStateCost() 
-		<< ", distance " << this->sm.StateDistance( this->internal_state, this->runners[i]->GetState())
-		<< " (" << this->runners[i]->GetIterationsPerformed() << " iterations, time " << chrono.TotalTime() 
-		<< ")" << std::endl;
-#endif
-      if (this->runners[i]->GetStateCost() < this->internal_state_cost)
-        {
-	  this->internal_state = this->runners[i]->GetState();
-	  this->internal_state_cost = this->runners[i]->GetStateCost();
-        }
-      j = i;
-      if (this->runners[i]->LowerBoundReached())
-	break;
-      if (this->runners.size() > 1)
-	{
-	  i = (i + 1) % this->runners.size();	  
-	  this->runners[i]->SetState(this->runners[j]->GetState());
-	}
-    }
-  while (i != this->start_runner && !this->Timeout());
-
-  current_state = this->runners[j]->GetState();
-  current_state_cost = this->runners[j]->GetStateCost();    
-
-  if (this->Timeout())
-    return;
-
+  unsigned idle_rounds = 0, rounds = 0, i;
+  bool improve_state;
   do
     {
-      if (idle_rounds % 2 == 0 && p_kicker != NULL)
-	{
-#if VERBOSE >= 2
-		  std::cerr << "Start kicking" << std::endl;
-#endif
-	  bool improved;
-	  do
-	    {
-	      // perturb the current solution	     
-	      this->chrono.Reset();
-	      this->chrono.Start();
-	      CFtype kick_cost =  p_kicker->SelectKick(current_state);
-	      this->chrono.Stop();
-	      improved = false;
-	      if (LessThan(kick_cost,0))
-		{
-		  p_kicker->MakeKick(current_state);	   
-		  current_state_cost +=  kick_cost;  
-#if VERBOSE >= 2
-		  std::cerr << "   Kick move, cost: " <<  current_state_cost
-			    << ", distance " << this->sm.StateDistance(this->internal_state, current_state) 
-			    << ", time " << this->chrono.TotalTime() << std::endl;
-#endif
-		  this->internal_state = current_state;
-		  if (current_state_cost < this->internal_state_cost)
-		    {
-		      this->internal_state_cost = current_state_cost;
-		      idle_rounds = 0;
-		      improved = true;
-		    }
-		}
-	      if (this->Timeout())
-		return;
-	    }
-	  while (improved);
-#if VERBOSE >= 2
-		  std::cerr << "Quit kicking" << std::endl;
-#endif
+      improve_state = false;
+      i = 0;
+      if (idle_rounds > 0 && idle_rounds % 2 == 0 && p_kicker != NULL)
+	{ //it changes only if improves (in this version)
+	  improve_state = PerformKickStep();
 	}
-      // and make another round
-      this->start_runner = i = 0; 
-      j = this->runners.size() - 1;
-      this->runners[i]->SetState(this->internal_state);
-      
+      this->runners[i]->SetState(this->internal_state, this->internal_state_cost);
       do
 	{
 	  this->chrono.Reset();
@@ -222,38 +150,209 @@ void MultiRunnerIteratedLocalSearch<Input,Output,State,CFtype>::Run()
 	  this->runners[i]->Go();
 	  this->chrono.Stop();
 #if VERBOSE >= 2
-      std::cerr << "Runner: " << i << ", cost: " << this->runners[i]->GetStateCost() 
-		<< ", distance " << this->sm.StateDistance( this->internal_state, this->runners[i]->GetState())
-		<< " (" << this->runners[i]->GetIterationsPerformed() << " iterations, time " << chrono.TotalTime() 
-		<< "), Idle rounds " << idle_rounds << std::endl;
+	  std::cerr << "Runner: " << i << ", cost: " << this->runners[i]->GetStateCost() 
+		    << ", distance " << this->sm.StateDistance( this->internal_state, this->runners[i]->GetState())
+		    << " (" << this->runners[i]->GetIterationsPerformed() << " iterations, time " << chrono.TotalTime() 
+		    << "), Rounds " << rounds << "/" << max_rounds << ", Idle rounds " << idle_rounds << "/" << max_idle_rounds << std::endl;
 #endif
-      if (LessOrEqualThan(this->runners[i]->GetStateCost(),current_state_cost))
+	  if (LessOrEqualThan(this->runners[i]->GetStateCost(),this->internal_state_cost))
 	    {
-	      current_state = this->runners[i]->GetState();
-	      current_state_cost = this->runners[i]->GetStateCost();
+	      if (LessThan(this->runners[i]->GetStateCost(),this->internal_state_cost))
+		improve_state = true;
+	      this->internal_state = this->runners[i]->GetState();
+	      this->internal_state_cost = this->runners[i]->GetStateCost();
 	    }
-	  if (this->runners[i]->LowerBoundReached())
-	    break;
+	  if (this->runners[i]->LowerBoundReached()) break;
 	  if (this->runners.size() > 1)
-	    {
-	      j = i;
-	      i = (i + 1) % this->runners.size();	  
-	      this->runners[i]->SetState(this->runners[j]->GetState());
-	    }
+	    this->runners[(i+1)%this->runners.size()]->SetState(this->runners[i]->GetState());
+	  i++;	  
 	}
-      while (i != this->start_runner && !this->Timeout());
-        
-      if (LessThan(current_state_cost,this->internal_state_cost))
-        {
-	  idle_rounds = 0;
-	  this->internal_state = current_state;
-	  this->internal_state_cost = current_state_cost;
-         }
+      while (i < this->runners.size() && !this->Timeout());
+      if (improve_state)
+	idle_rounds = 0;
       else
 	idle_rounds++;
+      rounds++;
     }
-  while (idle_rounds < max_idle_rounds && !this->Timeout());
+  while (idle_rounds < max_idle_rounds && rounds < max_rounds && !this->Timeout());
 }
+template <class Input, class Output, class State, typename CFtype>
+bool MultiRunnerIteratedLocalSearch<Input,Output,State,CFtype>::PerformKickStep()
+{
+  State current_state = this->internal_state;
+  CFtype kick_cost, current_state_cost = this->internal_state_cost;
+  bool improve = false;
+#if VERBOSE >= 2
+  std::cerr << "Start kicking" << std::endl;
+#endif
+  do
+    {
+      // perturb the current solution	     
+      this->chrono.Reset();
+      this->chrono.Start();
+      kick_cost =  p_kicker->SelectKick(current_state);
+      this->chrono.Stop();
+      if (LessThan(kick_cost,0))
+	{
+	  p_kicker->MakeKick(current_state);	   
+	  current_state_cost += kick_cost; 
+#if VERBOSE >= 2
+	  std::cerr << "   Kick move, cost: " <<  current_state_cost
+			    << ", distance (from start-kicking solution): " << this->sm.StateDistance(this->internal_state, current_state) 
+		    << ", time " << this->chrono.TotalTime() << std::endl;
+#endif
+	  improve = true;
+	}
+      if (this->Timeout())
+	return improve;
+    }
+  while (LessThan(kick_cost,0));
+
+  this->internal_state = current_state;
+  this->internal_state_cost = current_state_cost;
+#if VERBOSE >= 2
+  std::cerr << "Quit kicking" << std::endl;
+#endif
+  return improve;
+}
+
+
+// /**
+//    Lets the runner Go, and then collects the best state found.
+// */
+// template <class Input, class Output, class State, typename CFtype>
+// void MultiRunnerIteratedLocalSearch<Input,Output,State,CFtype>::Run()
+// {
+//   // TODO: try to minimize the state copying operations
+//   State current_state(this->in);
+//   CFtype current_state_cost;
+    
+//   unsigned int idle_rounds = 0;
+//   unsigned int i, j;
+
+//   this->start_runner = i = 0; 
+//   j = this->runners.size() - 1;
+
+//   this->runners[i]->SetState(this->internal_state, this->internal_state_cost);
+//   do
+//     {        
+//       this->chrono.Reset();
+//       this->chrono.Start();
+//       this->runners[i]->Go();
+//       this->chrono.Stop();
+// #if VERBOSE >= 2
+//       std::cerr << "Runner: " << i << ", cost: " << this->runners[i]->GetStateCost() 
+// 		<< ", distance " << this->sm.StateDistance( this->internal_state, this->runners[i]->GetState())
+// 		<< " (" << this->runners[i]->GetIterationsPerformed() << " iterations, time " << chrono.TotalTime() 
+// 		<< ")" << std::endl;
+// #endif
+//       if (this->runners[i]->GetStateCost() < this->internal_state_cost)
+//         {
+// 	  this->internal_state = this->runners[i]->GetState();
+// 	  this->internal_state_cost = this->runners[i]->GetStateCost();
+//         }
+//       j = i;
+//       if (this->runners[i]->LowerBoundReached())
+// 	break;
+//       if (this->runners.size() > 1)
+// 	{
+// 	  i = (i + 1) % this->runners.size();	  
+// 	  this->runners[i]->SetState(this->runners[j]->GetState());
+// 	}
+//     }
+//   while (i != this->start_runner && !this->Timeout());
+
+//   current_state = this->runners[j]->GetState();
+//   current_state_cost = this->runners[j]->GetStateCost();    
+
+//   if (this->Timeout())
+//     return;
+
+//   do
+//     {
+//       if (idle_rounds % 2 == 0 && p_kicker != NULL)
+// 	{
+// #if VERBOSE >= 2
+// 		  std::cerr << "Start kicking" << std::endl;
+// #endif
+// 	  bool improved;
+// 	  do
+// 	    {
+// 	      // perturb the current solution	     
+// 	      this->chrono.Reset();
+// 	      this->chrono.Start();
+// 	      CFtype kick_cost =  p_kicker->SelectKick(current_state);
+// 	      this->chrono.Stop();
+// 	      improved = false;
+// 	      if (LessThan(kick_cost,0))
+// 		{
+// 		  p_kicker->MakeKick(current_state);	   
+// 		  current_state_cost +=  kick_cost;  
+// #if VERBOSE >= 2
+// 		  std::cerr << "   Kick move, cost: " <<  current_state_cost
+// 			    << ", distance " << this->sm.StateDistance(this->internal_state, current_state) 
+// 			    << ", time " << this->chrono.TotalTime() << std::endl;
+// #endif
+// 		  this->internal_state = current_state;
+// 		  if (current_state_cost < this->internal_state_cost)
+// 		    {
+// 		      this->internal_state_cost = current_state_cost;
+// 		      idle_rounds = 0;
+// 		      improved = true;
+// 		    }
+// 		}
+// 	      if (this->Timeout())
+// 		return;
+// 	    }
+// 	  while (improved);
+// #if VERBOSE >= 2
+// 		  std::cerr << "Quit kicking" << std::endl;
+// #endif
+// 	}
+//       // and make another round
+//       this->start_runner = i = 0; 
+//       j = this->runners.size() - 1;
+//       this->runners[i]->SetState(this->internal_state);
+      
+//       do
+// 	{
+// 	  this->chrono.Reset();
+// 	  this->chrono.Start();
+// 	  this->runners[i]->Go();
+// 	  this->chrono.Stop();
+// #if VERBOSE >= 2
+//       std::cerr << "Runner: " << i << ", cost: " << this->runners[i]->GetStateCost() 
+// 		<< ", distance " << this->sm.StateDistance( this->internal_state, this->runners[i]->GetState())
+// 		<< " (" << this->runners[i]->GetIterationsPerformed() << " iterations, time " << chrono.TotalTime() 
+// 		<< "), Idle rounds " << idle_rounds << std::endl;
+// #endif
+//       if (LessOrEqualThan(this->runners[i]->GetStateCost(),current_state_cost))
+// 	    {
+// 	      current_state = this->runners[i]->GetState();
+// 	      current_state_cost = this->runners[i]->GetStateCost();
+// 	    }
+// 	  if (this->runners[i]->LowerBoundReached())
+// 	    break;
+// 	  if (this->runners.size() > 1)
+// 	    {
+// 	      j = i;
+// 	      i = (i + 1) % this->runners.size();	  
+// 	      this->runners[i]->SetState(this->runners[j]->GetState());
+// 	    }
+// 	}
+//       while (i != this->start_runner && !this->Timeout());
+        
+//       if (LessThan(current_state_cost,this->internal_state_cost))
+//         {
+// 	  idle_rounds = 0;
+// 	  this->internal_state = current_state;
+// 	  this->internal_state_cost = current_state_cost;
+//          }
+//       else
+// 	idle_rounds++;
+//     }
+//   while (idle_rounds < max_idle_rounds && !this->Timeout());
+// }
 
 template <class Input, class Output, class State, typename CFtype>
 void MultiRunnerIteratedLocalSearch<Input,Output,State,CFtype>::RunCheck() const
