@@ -200,7 +200,7 @@ bool SimpleShiftingPenaltyManager<CFtype>::Update(CFtype cost)
   if (cost <= this->cost_threshold)
     {
 #if VERBOSE >= 4
-      cerr << '-' << this->shift << ' ';
+      cerr << cost << '-' << this->shift << ' ';
 #endif
       if (this->shift > this->min_shift)
 	{
@@ -218,7 +218,7 @@ bool SimpleShiftingPenaltyManager<CFtype>::Update(CFtype cost)
   else
     {
 #if VERBOSE >= 4
-      cerr << '+' << this->shift << ' ';
+      cerr << cost << '+' << this->shift << ' ';
 #endif
       if (this->shift < this->max_shift)
 	{
