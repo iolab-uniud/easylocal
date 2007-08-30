@@ -217,7 +217,7 @@ template <class State, class Move, typename CFtype>
 void TabuListManager<State, Move,CFtype>::InsertIntoList(const State& st, const Move& mv)
 {
     unsigned int tenure = (unsigned int)Random::Int(min_tenure, max_tenure);
-    TabuListItem<State,Move,CFtype> li(mv, iter+tenure);
+    TabuListItem<State,Move,CFtype> li(mv, iter + tenure);
     tlist.push_front(li);
 
     UpdateIteration();
