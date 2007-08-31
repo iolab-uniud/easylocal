@@ -97,31 +97,38 @@ void TabuSearchWithShiftingPenalty<Input,State,Move,CFtype>::SelectMove()
   if (!shifted)
     mv_cost.shifted_value = (double)mv_cost.actual_value;
 
-  Move best_move = mv;
-  ShiftedResult<CFtype> best_delta = mv_cost;
+  Move best_shifted_move = mv, best_actual_move = mv;
+  ShiftedResult<CFtype> best_shifted_delta = mv_cost;
+  CFtype best_actual_delta = mv_cost.actual_value;
   do  // look for the best non prohibited move
     {   // (if all moves are prohibited, then get the best)
       // For efficency, ProhibitedMove is invoked only when strictly necessary
-      if (LessThan(mv_cost.shifted_value,best_delta.shifted_value))
+      if (LessThan(mv_cost.shifted_value, best_shifted_delta.shifted_value))
 	{
 	  if (!this->pm.ProhibitedMove(this->current_state, mv, mv_cost.actual_value))
 	    {
-	      best_move = mv;
-	      best_delta = mv_cost;
+	      best_shifted_move = mv;
+	      best_shifted_delta = mv_cost;
 	      all_moves_tabu = false;
 	    }
 	  if (all_moves_tabu)
 	    {
-	      best_move = mv;
-	      best_delta = mv_cost;
+	      best_shifted_move = mv;
+	      best_shifted_delta = mv_cost;
 	    }
 	}
       else if (all_moves_tabu && !this->pm.ProhibitedMove(this->current_state, mv, mv_cost.actual_value))
 	{ // even though it is not an improving move,
 	  // this move is the actual best since it's the first non-tabu
-	  best_move = mv;
-	  best_delta = mv_cost;
+	  best_shifted_move = mv;
+	  best_shifted_delta = mv_cost;
 	  all_moves_tabu = false;
+	}
+      /* Search for the best actual move as a sort of "Aspiration" for the case it improves over the current best */
+      if (LessThan(mv_cost.actual_value, best_actual_delta))
+	{
+	  best_actual_move = mv;
+	  best_actual_delta = mv_cost.actual_value;
 	}
       this->ne.NextMove(this->current_state, mv);
       mv_cost = this->ne.DeltaShiftedCostFunction(this->current_state, mv);
@@ -129,10 +136,25 @@ void TabuSearchWithShiftingPenalty<Input,State,Move,CFtype>::SelectMove()
 	mv_cost.shifted_value = (double)mv_cost.actual_value;
     }
   while (!this->ne.LastMoveDone(this->current_state, mv));
-	
-  this->current_move = best_move;
-  // in all cases the cost should not be the shifted one
-  this->current_move_cost = best_delta.actual_value;
+
+  if (LessThan(this->current_state_cost + best_actual_delta, this->best_state_cost))
+    {
+      this->current_move = best_actual_move;
+      this->current_move_cost = best_actual_delta;
+#if VERBOSE >= 4
+      if (best_actual_delta < best_shifted_delta.actual_value)
+	{
+	  std::cerr << "ShiftingPenalty found a new different current best " << (this->current_state_cost + best_actual_delta) << " old was " << this->best_state_cost << std::endl;
+	  std::cerr << best_actual_move << ":" << best_actual_delta << ", " << best_shifted_move <<  ":" << best_shifted_delta.actual_value << std::endl;
+	}
+#endif
+    }
+  else
+    {
+      this->current_move = best_shifted_move;
+      // in all cases the cost should not be the shifted one
+      this->current_move_cost = best_shifted_delta.actual_value;
+    }
 }
 
 template <class Input, class State, class Move, typename CFtype>
