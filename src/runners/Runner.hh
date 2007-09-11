@@ -22,17 +22,17 @@ public:
     // Runner interface
   void SetState(const State& st, CFtype cost);
   void SetState(const State& st);
-    const State& GetState() const;
-    CFtype GetStateCost() const;
-    void Go() throw(EasyLocalException);
-    void Step(unsigned int n) throw(EasyLocalException);
-    void ComputeCost();
-    unsigned long GetIterationsPerformed() const;
-    unsigned long GetMaxIteration() const;
-    void SetMaxIteration(unsigned long max);
-    virtual void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout) = 0;
-    virtual void Check() const throw(EasyLocalException);
-  virtual bool LowerBoundReached() const;
+  const State& GetState() const;
+  CFtype GetStateCost() const;
+  void Go() throw(EasyLocalException);
+  void Step(unsigned int n) throw(EasyLocalException);
+  void ComputeCost();
+  unsigned long GetIterationsPerformed() const;
+  unsigned long GetMaxIteration() const;
+  void SetMaxIteration(unsigned long max);
+  virtual void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout) = 0;
+  virtual void Check() const throw(EasyLocalException);
+  bool LowerBoundReached() const;
 protected:
     Runner(const Input& i, StateManager<Input,State,CFtype>& sm);
     /* state manipulations */

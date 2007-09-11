@@ -133,7 +133,7 @@ void MultiRunnerIteratedLocalSearch<Input,Output,State,CFtype>::Run()
 //   // TODO: try to minimize the state copying operations
     
   unsigned idle_rounds = 0, rounds = 0, i;
-  bool improve_state;
+  bool improve_state, lower_bound_reached = false;
   do
     {
       improve_state = false;
@@ -162,7 +162,8 @@ void MultiRunnerIteratedLocalSearch<Input,Output,State,CFtype>::Run()
 	      this->internal_state = this->runners[i]->GetState();
 	      this->internal_state_cost = this->runners[i]->GetStateCost();
 	    }
-	  if (this->runners[i]->LowerBoundReached()) break;
+	  lower_bound_reached = this->runners[i]->LowerBoundReached();
+	  if (lower_bound_reached) break;
 	  if (this->runners.size() > 1)
 	    this->runners[(i+1)%this->runners.size()]->SetState(this->runners[i]->GetState());
 	  i++;	  
@@ -174,7 +175,7 @@ void MultiRunnerIteratedLocalSearch<Input,Output,State,CFtype>::Run()
 	idle_rounds++;
       rounds++;
     }
-  while (idle_rounds < max_idle_rounds && rounds < max_rounds && !this->Timeout());
+  while (idle_rounds < max_idle_rounds && rounds < max_rounds && !this->Timeout() && !lower_bound_reached);
 }
 template <class Input, class Output, class State, typename CFtype>
 bool MultiRunnerIteratedLocalSearch<Input,Output,State,CFtype>::PerformKickStep()

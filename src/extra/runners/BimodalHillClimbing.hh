@@ -74,7 +74,7 @@ void BimodalHillClimbing<Input,State,Move1,Move2,CFtype>::SelectMove()
     this->current_move_cost1 = this->ne1.DeltaCostFunction(this->current_state, this->current_move1);
     this->ne2.RandomMove(this->current_state, this->current_move2);
     this->current_move_cost2 = this->ne2.DeltaCostFunction(this->current_state, this->current_move2);
-    if (this->current_move_cost1 < this->current_move_cost2)
+    if (LessThan(this->current_move_cost1, this->current_move_cost2))
         this->current_move_type = MOVE_1;
     else if (this->current_move_cost1 > this->current_move_cost2)
         this->current_move_type = MOVE_2;

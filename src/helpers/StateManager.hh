@@ -169,7 +169,9 @@ Checks whether the lower bound of the cost function has been reached.
  */
 template <class Input, class State, typename CFtype>
 bool StateManager<Input,State,CFtype>::LowerBoundReached(const CFtype& fvalue) const
-{ return IsZero(fvalue); }
+{ 
+  return IsZero(fvalue); 
+}
 
 /**
 Checks whether the lower bound of the cost function has been reached.
