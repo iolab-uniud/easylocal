@@ -19,6 +19,8 @@ public:
     virtual void PrintCost(const State& st, std::ostream& os = std::cout) const;
     CFtype Weight() const { return weight; }
     void SetWeight(const CFtype& w) { weight = w; }
+    void SetHard() { is_hard = true; }
+    void SetSoft() { is_hard = false; }
     bool IsHard() const { return is_hard; }
     bool IsSoft() const { return !is_hard; }
 protected:

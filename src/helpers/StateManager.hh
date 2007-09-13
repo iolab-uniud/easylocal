@@ -74,7 +74,7 @@ public:
   
   virtual void Check() const throw(EasyLocalException);
   
-  CostComponent<Input, State,CFtype>& GetCostComponent(unsigned i) const { return cost_component[i]; }
+  CostComponent<Input, State,CFtype>& GetCostComponent(unsigned i) const { return *(cost_component[i]); }
   unsigned CostComponents() const { return cost_component.size(); }
 
 protected:
