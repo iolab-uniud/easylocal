@@ -25,9 +25,9 @@ public:
   CFtype GetCost() const;
   const Output& GetOutput();
   const State& GetState() const;
-  void SetState(const State& st, CFtype cost);
-  void SetState(const State& st);
-  void SetState(const Output& out);
+  virtual void SetState(const State& st, CFtype cost);
+  virtual void SetState(const State& st);
+  virtual void SetStateFromOutput(const Output& out);
   virtual void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout) = 0;
 protected:
     LocalSearchSolver(const Input& in,
@@ -98,7 +98,7 @@ void LocalSearchSolver<Input,Output,State,CFtype>::SetState(const State& st, CFt
 }
 
 template <class Input, class Output, class State, typename CFtype>
-void LocalSearchSolver<Input,Output,State,CFtype>::SetState(const Output& out)
+void LocalSearchSolver<Input,Output,State,CFtype>::SetStateFromOutput(const Output& out)
 {
   om.InputState(internal_state,out);
   internal_state_cost = sm.CostFunction(internal_state); 
