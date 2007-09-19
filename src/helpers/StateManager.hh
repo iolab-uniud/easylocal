@@ -66,6 +66,8 @@ public:
                               ostream& os = cout) const;
   virtual void PrintStateDetailedCost(const State& st,
                                       ostream& os = cout) const;
+  virtual void PrintStateReducedCost(const State& st,
+                                      ostream& os = cout) const;
   // info functions
   virtual void GetDetailedCost(const State& st, CFtype& violations,
                                vector<CFtype>& single_violations_cost,
@@ -228,6 +230,20 @@ void StateManager<Input,State,CFtype>::PrintStateDetailedCost(const State& st,
   for (unsigned int i = 0; i < cost_component.size(); i++)
       cost_component[i]->PrintCost(st, os);
   PrintStateCost(st, os);
+}
+
+template <class Input, class State, typename CFtype>
+void StateManager<Input,State,CFtype>::PrintStateReducedCost(const State& st,
+                                                              std::ostream& os) const
+{
+  os << '(' ;
+  for (unsigned int i = 0; i < cost_component.size(); i++)
+    {
+      os << cost_component[i]->Cost(st);
+      if (i < cost_component.size() - 1) 
+	os << ',';
+    }
+  os << ')';
 }
 
 template <class Input, class State, typename CFtype>

@@ -131,7 +131,7 @@ bool ComplexShiftingPenaltyManager<CFtype>::Update(CFtype cost)
   if (cost <= this->cost_threshold)
     {
       feasible_iter++;
-#if VERBOSE >= 4
+#if VERBOSE >= 5
       std::cerr << '+';
 #endif
       infeasible_iter = 0;
@@ -157,7 +157,7 @@ bool ComplexShiftingPenaltyManager<CFtype>::Update(CFtype cost)
   else
     {
       infeasible_iter++;
-#if VERBOSE >= 4
+#if VERBOSE >= 5
       std::cerr << '-';
 #endif
       feasible_iter = 0;
@@ -199,7 +199,7 @@ bool SimpleShiftingPenaltyManager<CFtype>::Update(CFtype cost)
   float perturb = Random::Double(min_perturb, max_perturb);
   if (cost <= this->cost_threshold)
     {
-#if VERBOSE >= 4
+#if VERBOSE >= 5
       cerr << cost << '-' << this->shift << ' ';
 #endif
       if (this->shift > this->min_shift)
@@ -217,7 +217,7 @@ bool SimpleShiftingPenaltyManager<CFtype>::Update(CFtype cost)
     }
   else
     {
-#if VERBOSE >= 4
+#if VERBOSE >= 5
       cerr << cost << '+' << this->shift << ' ';
 #endif
       if (this->shift < this->max_shift)

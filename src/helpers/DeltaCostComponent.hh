@@ -203,7 +203,7 @@ void DeltaCostComponent<Input,State,Move,is_delta_implemented,CFtype>::ResetShif
     {
       bool reset;
       reset = spm->Reset();
-#if VERBOSE >= 4
+#if VERBOSE >= 5
       if (reset)
 	{
 	  std::cerr << "Reset " << "[" << this->GetName() << "] to ";
@@ -220,7 +220,7 @@ void DeltaCostComponent<Input,State,Move,is_delta_implemented,CFtype>::UpdateShi
     {
       bool update;
       update = spm->Update(cc.Cost(st));
-#if VERBOSE >= 4
+#if VERBOSE >= 5
       if (update)
 	{
 	  std::cerr << "Update " << "[" << this->GetName() << "] to ";

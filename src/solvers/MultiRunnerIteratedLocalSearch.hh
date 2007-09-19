@@ -177,6 +177,7 @@ void MultiRunnerIteratedLocalSearch<Input,Output,State,CFtype>::Run()
     }
   while (idle_rounds < max_idle_rounds && rounds < max_rounds && !this->Timeout() && !lower_bound_reached);
 }
+
 template <class Input, class Output, class State, typename CFtype>
 bool MultiRunnerIteratedLocalSearch<Input,Output,State,CFtype>::PerformKickStep()
 {

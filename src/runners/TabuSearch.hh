@@ -189,7 +189,9 @@ void TabuSearch<Input,State,Move,CFtype>::StoreMove()
 	    << this->current_state_cost << ", best: " 
 	    << this->best_state_cost <<  ") it: " << this->number_of_iterations
 	    << " (idle: " << this->number_of_iterations - this->iteration_of_best << ")" 
-	    << std::endl; 
+	    << "Costs: ";
+  this->sm.PrintStateReducedCost(this->current_state, std::cerr);
+  std::cerr << std::endl; 
 #endif
   pm.InsertMove(this->current_state, this->current_move, this->current_move_cost,
 		this->current_state_cost, this->best_state_cost);
@@ -197,11 +199,13 @@ void TabuSearch<Input,State,Move,CFtype>::StoreMove()
     { // same cost states are accepted as best for diversification
       if (LessThan(this->current_state_cost,this->best_state_cost))
 	{
-#if VERBOSE >= 3
+#if VERBOSE == 3
 	  std::cerr << "  New best: " << this->current_state_cost 
 		    << " (it: " << this->number_of_iterations
-	    << ", idle: " << this->number_of_iterations - this->iteration_of_best << ")" 
-	    << std::endl; 
+		    << ", idle: " << this->number_of_iterations - this->iteration_of_best << "), " 
+		    << "Costs: ";
+	  this->sm.PrintStateReducedCost(this->current_state, std::cerr);
+	  std::cerr << std::endl; 
 #endif
 	  this->iteration_of_best = this->number_of_iterations;
 	  this->best_state_cost = this->current_state_cost;
