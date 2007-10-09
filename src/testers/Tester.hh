@@ -61,14 +61,14 @@ protected:
     const Input& in;
     StateManager<Input,State,CFtype>& sm;  /**< A pointer to a state manager. */
     OutputManager<Input,Output,State,CFtype>& om; /**< A pointer to an output producer. */
-    State test_state; /**< The current state managed by the tester. */
-    Output out; /**< The output object. */
-    // A bunch of solvers
-    SimpleLocalSearch<Input,Output,State,CFtype> ss;
-    TokenRingSolver<Input,Output,State,CFtype> trs;
-    unsigned int choice, /**< The option currently chosen from the menu. */
-    sub_choice; /** The suboption currently chosen from the menu. */
-    Chronometer chrono; /** A chronometer */
+  State test_state; /**< The current state managed by the tester. */
+  Output out; /**< The output object. */
+  // A bunch of solvers
+  SimpleLocalSearch<Input,Output,State,CFtype> ss;
+  TokenRingSolver<Input,Output,State,CFtype> trs;
+  unsigned int choice; /**< The option currently chosen from the menu. */
+  int sub_choice; /** The suboption currently chosen from the menu. */
+  Chronometer chrono; /** A chronometer */
 };
 
 /*************************************************************************
@@ -410,7 +410,7 @@ void Tester<Input,Output, State,CFtype>::ShowRunMenu()
 template <class Input, class Output, class State, typename CFtype>
 void Tester<Input,Output, State,CFtype>::ExecuteMovesChoice()
 {
-    if (sub_choice > 0 && sub_choice <= move_testers.size())
+  if (sub_choice > 0 && sub_choice <= (int)move_testers.size())
         move_testers[sub_choice-1]->RunTestMenu(test_state);
 }
 

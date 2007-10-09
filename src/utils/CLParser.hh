@@ -9,6 +9,8 @@
 #include <stdexcept>
 #include "Argument.hh"
 #include "ArgumentGroup.hh"
+#include "ValArgument.hh"
+#include "FlagArgument.hh"
 
 class CLParser 
 {

@@ -374,11 +374,11 @@ void NeighborhoodExplorer<Input,State,Move,CFtype>::PrintNeighborhoodStatistics(
   while (!LastMoveDone(st,mv));
   os << "Neighborhood size: " <<  neighbors << std::endl
      << "   improving moves: " << improving_neighbors << " ("
-     << (100.0*improving_neighbors)/neighbors << "\%)" << std::endl
+     << (100.0*improving_neighbors)/neighbors << "%)" << std::endl
      << "   worsening moves: " << worsening_neighbors << " ("
-     << (100.0*worsening_neighbors)/neighbors << "\%)" << std::endl
+     << (100.0*worsening_neighbors)/neighbors << "%)" << std::endl
      << "   sideways moves: " << non_improving_neighbors << " ("
-     << (100.0*non_improving_neighbors)/neighbors << "\%)" << std::endl;
+     << (100.0*non_improving_neighbors)/neighbors << "%)" << std::endl;
 }
 
 
