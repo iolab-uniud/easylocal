@@ -138,10 +138,6 @@ void MultiRunnerIteratedLocalSearch<Input,Output,State,CFtype>::Run()
     {
       improve_state = false;
       i = 0;
-      if (idle_rounds > 0 && idle_rounds % 2 == 0 && p_kicker != NULL)
-	{ //it changes only if improves (in this version)
-	  improve_state = PerformKickStep();
-	}
       this->runners[i]->SetState(this->internal_state, this->internal_state_cost);
       do
 	{
@@ -172,7 +168,12 @@ void MultiRunnerIteratedLocalSearch<Input,Output,State,CFtype>::Run()
       if (improve_state)
 	idle_rounds = 0;
       else
-	idle_rounds++;
+	{
+	  idle_rounds++;
+	  if (idle_rounds % 2 == 0 && p_kicker != NULL)
+	    if(PerformKickStep()) //if improves
+	      idle_rounds = 0;
+	}
       rounds++;
     }
   while (idle_rounds < max_idle_rounds && rounds < max_rounds && !this->Timeout() && !lower_bound_reached);
