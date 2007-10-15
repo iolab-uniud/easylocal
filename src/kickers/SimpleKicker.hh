@@ -280,9 +280,7 @@ bool SimpleKicker<Input,State,Move,CFtype>::NextKick()
       if (backtrack)
 	do
 	  if (NextKickComponent(i))
-	    {
-	      backtrack = false;
-	    }
+	    backtrack = false;
 	  else
 	    i--;
 	while (backtrack && i >= 0);
