@@ -39,7 +39,7 @@ protected:
   CFtype current_kick_cost, best_kick_cost;
   void FirstKickComponent(unsigned int i);  // used by the backtracking algorithm of bestkick
   bool NextKickComponent(unsigned int i);   // (idem)
-  bool UnrelatedMoves(unsigned int i) const;      // (idem)
+  bool UnrelatedMoves(int i) const;      // (idem)
 };
 
 /*************************************************************************
@@ -130,9 +130,9 @@ bool SimpleKicker<Input,State,Move,CFtype>::NextKickComponent(unsigned int i)
 }
 
 template <class Input, class State, class Move, typename CFtype>
-bool SimpleKicker<Input,State,Move,CFtype>::UnrelatedMoves(unsigned int i) const
+bool SimpleKicker<Input,State,Move,CFtype>::UnrelatedMoves(int i) const
 {
-  if (i == 0)
+  if (i <= 0)
     return false;
   else
     return !RelatedMoves(current_moves[i-1], current_moves[i]);
@@ -268,7 +268,7 @@ void SimpleKicker<Input,State,Move,CFtype>::FirstKick(const State &st) throw(Kic
 template <class Input, class State, class Move, typename CFtype>
 bool SimpleKicker<Input,State,Move,CFtype>::NextKick()
 {
-  int i(this->step - 1);
+  int i = this->step - 1;
   bool backtrack = true;
   do
     {
