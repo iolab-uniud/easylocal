@@ -124,7 +124,7 @@ template <class Input, class State, class Move, typename CFtype>
 bool SimpleKicker<Input,State,Move,CFtype>::NextKickComponent(unsigned int i)
 {
   ne.NextMove(this->states[i], current_moves[i]);
-  return !(current_moves[i] == start_moves[i]);
+  return current_moves[i] != start_moves[i];
   // Andrea 8-2-2002
   //return !ne.LastMoveDone(current_moves[i]);
 }
