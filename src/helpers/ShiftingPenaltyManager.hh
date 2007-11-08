@@ -22,7 +22,7 @@ public:
   virtual bool Update(CFtype cost) = 0;
   double Shift() const { return shift; }
   void SetShiftRange(double s1, double s2) { min_shift = s1; max_shift = s2; }
-  void SetStartShift(double s) { start_shift = s; }
+  void SetStartShift(double s) { start_shift = s; shift = s; }
   void SetCostThreshold(CFtype t) { cost_threshold = t; }
   double Threshold() const { return cost_threshold; }
 protected:
@@ -59,7 +59,7 @@ template <typename CFtype = int>
 class SimpleShiftingPenaltyManager : public ShiftingPenaltyManager<CFtype>
 {
 public:
-  SimpleShiftingPenaltyManager(double min_perturb, double max_perturb, CFtype threshold = 0, double s = 1.0);
+  SimpleShiftingPenaltyManager(double min_perturb, double max_perturb, CFtype threshold, double s);
   SimpleShiftingPenaltyManager(CFtype threshold = 0, double s = 1.0);
   void ReadParameters(std::istream& is = std::cin,
 		      std::ostream& os = std::cerr)
