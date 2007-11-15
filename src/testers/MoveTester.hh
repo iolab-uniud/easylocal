@@ -20,6 +20,7 @@ public:
                NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
 	       std::string name);
 protected:
+  int Member(const PState& s, const vector<State> v);
     void ShowMenu();
     bool ExecuteChoice(State& st);
     NeighborhoodExplorer<Input,State,Move,CFtype>& ne; /**< A reference to the
@@ -64,6 +65,7 @@ void MoveTester<Input,Output,State,Move,CFtype>::ShowMenu()
     << "     (3)  Input" << std::endl
     << "     (4)  Print Neighborhood statistics" << std::endl
     << "     (5)  Check Move Info" << std::endl 
+    << "     (6)  Check Move Indenpendence" << std::endl 
     << "     (0)  Return to Main Menu" << std::endl
     << " Your choice: ";
     std::cin >> this->choice;
@@ -132,6 +134,53 @@ bool MoveTester<Input,Output,State,Move,CFtype>::ExecuteChoice(State& st)
 	      }
             break;
         }
+    case 6:
+      {
+	vector<State> states;
+	vector<Move> moves;
+	unsigned repeat_states = 0, null_moves = 0, all_moves = 1;
+	int index;
+	State st1 = st;
+	ne.FirstMove(st1,mv);
+	states.push_back(st1);
+	moves.push_back(mv);
+
+	do
+	  {
+	    ne.NextMove(st,mv);
+	    st1 = st;
+	    ne.MakeMove(st1, mv);
+	    if (st1 == st)
+	      {
+		std::cout << "Null move " << mv << std::endl;
+		null_moves++;
+	      }	      	      
+	    else if ((index = Member(st1,states)) != -1)
+	      {
+		std::cout << "Repeated state for moves " << moves[index] << " and " << mv << std::endl;
+		repeat_states++;
+	      }
+	    else
+	      {
+		states.push_back(st1);
+		moves.push_back(mv);
+	      }
+	    if (all_moves % 100 == 0) std::cerr << '.'; // show that it is alive
+	    all_moves++;
+	  }
+	while (!ne.LastMoveDone(st, mv));
+
+	std::cout << "Number of moves: " << all_moves << std::endl;
+	if (repeat_states == 0)
+	  std::cout << "No repeated states" << std::endl;
+	else
+	  std::cout << "There are " << repeat_states << " repeated states" << std::endl;
+	if (null_moves == 0)
+	  std::cout << "No null moves" << std::endl;
+	else
+	  std::cout << "There are " << null_moves << " null moves" << std::endl;
+	break;
+      }
     default:
         std::cout << "Invalid choice" << std::endl;
     }
@@ -150,5 +199,13 @@ bool MoveTester<Input,Output,State,Move,CFtype>::ExecuteChoice(State& st)
     return false;
 }
  
+template <class Input, class Output, class State, class Move, typename CFtype>
+int MoveTester<Input,Output,State,Move,CFtype>::Member(const PState& s, const vector<State> v)
+{
+  for (unsigned i = 0; i < v.size(); i++)
+    if (s == v[i])
+      return i;
+  return -1;
+}
 
 #endif /*MOVETESTER_HH_*/

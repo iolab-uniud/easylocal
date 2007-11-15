@@ -293,7 +293,7 @@ CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::BestMove(const State &st, 
   do // look for the best move
     {
       mv_cost = DeltaCostFunction(st,mv);
-#if VERBOSE >= 3
+#if VERBOSE >= 4
       std::cerr << mv << " " << mv_cost << std::endl;
 #endif
       if (mv_cost < best_delta)

@@ -104,8 +104,15 @@ void FirstDescent<Input,State,Move,CFtype>::StoreMove()
 {
   if (LessThan<CFtype>(this->current_state_cost, this->best_state_cost))
 	{
-		this->iteration_of_best = this->number_of_iterations;
-		this->best_state_cost = this->current_state_cost;
+	  this->iteration_of_best = this->number_of_iterations;
+	  this->best_state_cost = this->current_state_cost;
+#if VERBOSE >= 2
+	  std::cerr << "  New best: " << this->current_state_cost 
+		    << " (it: " << this->number_of_iterations << "), " 
+		    << "Costs: ";
+	  this->sm.PrintStateReducedCost(this->current_state, std::cerr);
+	  std::cerr << ", Move: " << this->current_move << std::endl; 	  
+#endif
 	}
 }
 
