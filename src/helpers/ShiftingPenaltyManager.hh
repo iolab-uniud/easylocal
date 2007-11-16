@@ -67,6 +67,7 @@ public:
   bool Reset();
   bool Update(CFtype cost);
   void SetPerturbRange(double min_p, double max_p) { min_perturb = min_p; max_perturb = max_p; }
+  void SetPerturbValue(double p) { min_perturb = p - (p-1)/10; max_perturb = p + (p-1)/10; }
 protected:
   double min_perturb, max_perturb;
 };
