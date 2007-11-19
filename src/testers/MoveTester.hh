@@ -20,7 +20,7 @@ public:
                NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
 	       std::string name);
 protected:
-  int Member(const PState& s, const vector<State> v);
+  int Member(const State& s, const vector<State>& v);
     void ShowMenu();
     bool ExecuteChoice(State& st);
     NeighborhoodExplorer<Input,State,Move,CFtype>& ne; /**< A reference to the
@@ -200,7 +200,7 @@ bool MoveTester<Input,Output,State,Move,CFtype>::ExecuteChoice(State& st)
 }
  
 template <class Input, class Output, class State, class Move, typename CFtype>
-int MoveTester<Input,Output,State,Move,CFtype>::Member(const PState& s, const vector<State> v)
+int MoveTester<Input,Output,State,Move,CFtype>::Member(const State& s, const vector<State>& v)
 {
   for (unsigned i = 0; i < v.size(); i++)
     if (s == v[i])
