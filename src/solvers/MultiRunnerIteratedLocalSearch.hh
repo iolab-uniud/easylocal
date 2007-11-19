@@ -1,6 +1,7 @@
 #ifndef MULTIRUNNERITERATEDLOCALSEARCH_HH_
 #define MULTIRUNNERITERATEDLOCALSEARCH_HH_
 
+#include "../kickers/Kicker.hh"
 #include "MultiRunnerSolver.hh"
 
 /** An Iterated Local Search solver handles both a runner encapsulating a local

@@ -138,7 +138,7 @@ bool MoveTester<Input,Output,State,Move,CFtype>::ExecuteChoice(State& st)
       {
 	vector<State> states;
 	vector<Move> moves;
-	unsigned repeat_states = 0, null_moves = 0, all_moves = 1;
+	unsigned repeat_states = 0, null_moves = 0, all_moves = 0;
 	int index;
 	State st1 = st;
 	ne.FirstMove(st1,mv);
