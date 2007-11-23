@@ -21,6 +21,7 @@ public:
   void Print(std::ostream& os = std::cout) const;
   void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout)
     throw(EasyLocalException);
+  void SetWeightRegion(double w) { shift_region = w; }
 protected:
   void InitializeRun();
   void SelectMove();

@@ -31,7 +31,11 @@ protected:
   double max_shift;
   double cost_threshold;
   double start_shift, shift;
+  static unsigned i;
 };
+
+template <typename CFtype>
+unsigned ShiftingPenaltyManager<CFtype>::i = 0;
 
 template <typename CFtype = int>
 class ComplexShiftingPenaltyManager : public ShiftingPenaltyManager<CFtype>
@@ -183,6 +187,8 @@ bool ComplexShiftingPenaltyManager<CFtype>::Update(CFtype cost)
 template <typename CFtype>
 bool SimpleShiftingPenaltyManager<CFtype>::Reset()
 {
+  //    cerr <<  this->i << ' ' << this->shift << endl;
+  this->i = ( this->i + 1) % 2;
   if (this->shift != this->start_shift)
     {
       this->shift = this->start_shift;
@@ -196,6 +202,8 @@ bool SimpleShiftingPenaltyManager<CFtype>::Reset()
 template <typename CFtype>
 bool SimpleShiftingPenaltyManager<CFtype>::Update(CFtype cost)
 {
+  //  cerr <<  this->i << ' ' << this->shift << endl;
+  this->i = ( this->i + 1) % 2;
   bool update = false;
   float perturb = Random::Double(min_perturb, max_perturb);
   if (cost <= this->cost_threshold)
