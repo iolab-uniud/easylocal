@@ -3,3 +3,11 @@
 2. Ripulire i solver
 
 3. Costi di nQueens
+
+4. Scrivere informazioni di configurazione (header, ad es. per gettime)
+
+5. Rivedere gli include
+
+6. Rivedere il kicker tester (stile movetester)
+
+7. NextRelatedMove

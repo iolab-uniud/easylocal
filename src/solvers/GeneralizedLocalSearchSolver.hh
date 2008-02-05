@@ -2,6 +2,7 @@
 #define _GENERALIZED_LOCAL_SEARCH_SOLVER_HH_
 
 #include "AbstractLocalSearchSolver.hh"
+#include "../kickers/Kicker.hh"
 #include <vector>
 #include "../utils/clparser/CLParser.hh"
 #include "../utils/clparser/ArgumentGroup.hh"
@@ -304,12 +305,14 @@ void GeneralizedLocalSearchSolver<Input,Output,State,CFtype>::GeneralSolve(KickS
 	      if (observer != NULL)
 		observer->NotifyKickerStop(*this);
 	    }
+#ifdef HAVE_PTHREAD
 	  this->current_timeout -= (chrono.TotalTime() - time);
 	  if (this->current_timeout <= 0.0)
 	    {
 	      timeout_expired = true;
 	      this->current_timeout = 0.0;
 	    }
+#endif
 	}
     }
   while (idle_rounds < max_idle_rounds && rounds < max_rounds && !timeout_expired && !lower_bound_reached);

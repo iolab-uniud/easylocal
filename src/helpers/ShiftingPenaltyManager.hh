@@ -204,8 +204,6 @@ bool SimpleShiftingPenaltyManager<CFtype>::Reset()
 template <typename CFtype>
 bool SimpleShiftingPenaltyManager<CFtype>::Update(CFtype cost)
 {
-  //  cerr <<  this->i << ' ' << this->shift << endl;
-  this->i = ( this->i + 1) % 2;
   bool update = false;
   float perturb = Random::Double(min_perturb, max_perturb);
   if (cost <= this->cost_threshold)
