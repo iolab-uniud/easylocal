@@ -2,6 +2,7 @@
 #define TRIMODALHILLCLIMBING_HH_
 
 #include "TrimodalMoveRunner.hh"
+#include <stdexcept>
 
 /** The Hill Climbing runner considers random move selection. A move
    is then performed only if it does improve or it leaves unchanged
@@ -15,8 +16,7 @@ class TrimodalHillClimbing
 public:
     void Print(std::ostream& os = std::cout) const;
     void ReadParameters(std::istream& is = std::cin,
-                        std::ostream& os = std::cout)
-    throw(EasyLocalException);
+                        std::ostream& os = std::cout);
   TrimodalHillClimbing(const Input& in,
 		       StateManager<Input,State,CFtype>& s,
 		       NeighborhoodExplorer<Input,State,Move1,CFtype>& ne1,
@@ -25,7 +25,7 @@ public:
                        std::string name);
     virtual void SetMaxIdleIteration(unsigned long m) { max_idle_iteration = m; }
 protected:
-    void GoCheck() const throw(EasyLocalException);
+    void GoCheck() const;
     void InitializeRun();
     void TerminateRun();
     bool StopCriterion();
@@ -110,10 +110,9 @@ void TrimodalHillClimbing<Input,State,Move1,Move2,Move3,CFtype>::InitializeRun()
 
 template <class Input, class State, class Move1, class Move2, class Move3, typename CFtype>
 void TrimodalHillClimbing<Input,State,Move1,Move2,Move3,CFtype>::GoCheck() const
-throw(EasyLocalException)
 {
     if (this->max_idle_iteration == 0)
-        throw EasyLocalException("max_idle_iteration is zero for object " + this->GetName());
+			throw std::logic_error("max_idle_iteration is zero for object " + this->GetName());
 }
 
 /**
@@ -214,7 +213,6 @@ void TrimodalHillClimbing<Input,State,Move1,Move2,Move3,CFtype>::StoreMove()
 
 template <class Input, class State, class Move1, class Move2, class Move3, typename CFtype>
 void TrimodalHillClimbing<Input,State,Move1,Move2,Move3,CFtype>::ReadParameters(std::istream& is, std::ostream& os)
-throw(EasyLocalException)
 {
     os << "TRIMODAL HILL CLIMBING -- INPUT PARAMETERS" << std::endl;
     os << "  Number of idle iterations: ";

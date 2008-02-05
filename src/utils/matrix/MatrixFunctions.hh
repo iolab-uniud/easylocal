@@ -307,7 +307,7 @@ template <typename T>
 Matrix<T> dot_prod(const Matrix<T>& a, const Matrix<T>& b)
 {
 	if (a.ncols() != b.nrows())
-		throw std::runtime_error("Error matrix dot product: dimensions of the matrices are not compatible");
+		throw std::logic_error("Error matrix dot product: dimensions of the matrices are not compatible");
 	Matrix<T> tmp(a.nrows(), b.ncols());
 	for (unsigned int i = 0; i < tmp.nrows(); i++)
 		for (unsigned int j = 0; j < tmp.ncols(); j++)
@@ -324,7 +324,7 @@ template <typename T>
 Matrix<T> dot_prod(const Matrix<T>& a, const Vector<T>& b)
 {
 	if (a.ncols() != b.size())
-		throw std::runtime_error("Error matrix dot product: dimensions of the matrix and the vector are not compatible");
+		throw std::logic_error("Error matrix dot product: dimensions of the matrix and the vector are not compatible");
 	Matrix<T> tmp(a.nrows(), 1);
 	for (unsigned int i = 0; i < tmp.nrows(); i++)
 	{
@@ -340,7 +340,7 @@ template <typename T>
 Matrix<T> dot_prod(const Vector<T>& a, const Matrix<T>& b)
 {
 	if (a.size() != b.ncols())
-		throw std::runtime_error("Error matrix dot product: dimensions of the vector and matrix are not compatible");
+		throw std::logic_error("Error matrix dot product: dimensions of the vector and matrix are not compatible");
 	Matrix<T> tmp(1, b.ncols());
 	for (unsigned int j = 0; j < tmp.ncols(); j++)
 	{

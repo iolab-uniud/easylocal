@@ -4,7 +4,6 @@
 #include "MoveRunner.hh"
 #include "../helpers/StateManager.hh"
 #include "../helpers/NeighborhoodExplorer.hh"
-#include "../basics/EasyLocalException.hh"
 
 /** The First Descent runner performs a simple local search.
 At each step of the search, the first improving move in the neighborhood of current
@@ -19,12 +18,11 @@ public:
 	FirstDescent(const Input& in,
 							 StateManager<Input,State,CFtype>& e_sm,
 							 NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
-							 const std::string& name = "Anonymous First Descent runner");
-	void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout)
-    throw(EasyLocalException);
+							 std::string name = "Anonymous First Descent runner");
+	void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout);
 	void Print(std::ostream& os = std::cout) const;
 protected:
-    void GoCheck() const throw(EasyLocalException);
+    void GoCheck() const;
 	void InitializeRun();
 	void TerminateRun();
 	void StoreMove();
@@ -48,7 +46,7 @@ Constructs a first descent runner by linking it to a state manager,
 template <class Input, class State, class Move, typename CFtype>
 FirstDescent<Input,State,Move,CFtype>::FirstDescent(const Input& in,
 					     StateManager<Input,State,CFtype>& e_sm, NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
-																						 const std::string& name)
+																						 std::string name)
 : MoveRunner<Input,State,Move,CFtype>(in, e_sm, e_ne, name)
 {}
 
@@ -82,7 +80,7 @@ void FirstDescent<Input,State,Move,CFtype>::InitializeRun()
 
 template <class Input, class State, class Move, typename CFtype>
 void FirstDescent<Input,State,Move,CFtype>::GoCheck() const
-throw(EasyLocalException)
+
 {}
 
 /**
@@ -103,17 +101,12 @@ template <class Input, class State, class Move, typename CFtype>
 void FirstDescent<Input,State,Move,CFtype>::StoreMove()
 {
   if (LessThan<CFtype>(this->current_state_cost, this->best_state_cost))
-	{
-	  this->iteration_of_best = this->number_of_iterations;
-	  this->best_state_cost = this->current_state_cost;
-#if VERBOSE >= 2
-	  std::cerr << "  New best: " << this->current_state_cost 
-		    << " (it: " << this->number_of_iterations << "), " 
-		    << "Costs: ";
-	  this->sm.PrintStateReducedCost(this->current_state, std::cerr);
-	  std::cerr << ", Move: " << this->current_move << std::endl; 	  
-#endif
-	}
+    {
+      if (this->observer != NULL)
+	this->observer->NotifyNewBest(*this);
+      this->iteration_of_best = this->number_of_iterations;
+      this->best_state_cost = this->current_state_cost;
+    }
 }
 
 /**
@@ -130,6 +123,6 @@ void FirstDescent<Input,State,Move,CFtype>::TerminateRun()
 
 template <class Input, class State, class Move, typename CFtype>
 void FirstDescent<Input,State,Move,CFtype>::ReadParameters(std::istream& is, std::ostream& os)
-throw(EasyLocalException)
+
 {}
 #endif /*FIRSTDESCENT_HH_*/

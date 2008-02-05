@@ -12,15 +12,14 @@ class BimodalSteepestDescent
 {
 public:
     void Print(std::ostream& os = std::cout) const;
-    void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout)
-    throw(EasyLocalException);
+	void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout);
     BimodalSteepestDescent(const Input& in,
 			   StateManager<Input,State,CFtype>& sm,
                         NeighborhoodExplorer<Input,State,Move1,CFtype>& ne1,
                         NeighborhoodExplorer<Input,State,Move2,CFtype>& ne2,
                         std::string name = "Anonymous Bimodal Steepest Descent runner");
 protected:
-    void GoCheck() const throw(EasyLocalException);
+    void GoCheck() const;
     void InitializeRun();
     void TerminateRun();
     bool StopCriterion();
@@ -77,7 +76,7 @@ void BimodalSteepestDescent<Input,State,Move1,Move2,CFtype>::SelectMove()
 
 #ifdef VERBOSE
     std::cerr << "Move 1: " << this->current_move1 << " (" << this->current_move_cost1 << ")   " 
-	      << "Move 2: " << this->current_move2 << " (" << this->current_move_cost2 << ")" <<   std::endl; 
+      << "Move 2: " << this->current_move2 << " (" << this->current_move_cost2 << ")" <<   std::endl; 
 #endif
 }
 
@@ -96,7 +95,6 @@ void BimodalSteepestDescent<Input,State,Move1,Move2,CFtype>::InitializeRun()
 
 template <class Input, class State, class Move1, class Move2, typename CFtype>
 void BimodalSteepestDescent<Input,State,Move1,Move2,CFtype>::GoCheck() const
-throw(EasyLocalException)
 {
 }
 
@@ -162,7 +160,6 @@ void BimodalSteepestDescent<Input,State,Move1,Move2,CFtype>::StoreMove()
 
 template <class Input, class State, class Move1, class Move2, typename CFtype>
 void BimodalSteepestDescent<Input,State,Move1,Move2,CFtype>::ReadParameters(std::istream& is, std::ostream& os)
-throw(EasyLocalException)
 {
     os << "STEEPEST DESCENT -- INPUT PARAMETERS" << std::endl;
     os << "  Timeout: ";

@@ -4,7 +4,8 @@
 #include "MultiRunnerSolver.hh"
 #include "../helpers/StateManager.hh"
 #include "../helpers/OutputManager.hh"
-#ifdef EASYLOCAL_PTHREADS
+#include <stdexcept>
+#ifdef HAVE_PTHREAD
 #include <pthread.h>
 #endif
 
@@ -23,7 +24,7 @@ public:
     void Print(std::ostream& os = std::cout) const;
     void SetRounds(unsigned int r);
     void SetStartRunner(unsigned int sr);
-    void Check() const throw(EasyLocalException);
+    void Check() const;
     void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout);
 protected:
     // Run all runners circularly on the same thread
@@ -56,7 +57,7 @@ TokenRingSolver<Input,Output,State,CFtype>::TokenRingSolver(const Input& in,
 template <class Input, class Output, class State, typename CFtype>
 void TokenRingSolver<Input,Output,State,CFtype>::ReadParameters(std::istream& is, std::ostream& os)
 {
-	os << "Token Ring Solver: " << this->GetName() << " parameters" << std::endl;
+	os << "Token Ring Solver: " << this->name << " parameters" << std::endl;
 	os << "Runners: " << std::endl; 
 	
 	 for (unsigned int i = 0; i < this->runners.size(); i++)
@@ -66,8 +67,11 @@ void TokenRingSolver<Input,Output,State,CFtype>::ReadParameters(std::istream& is
     }
     os << "Max idle rounds: ";
     is >> max_idle_rounds;
-    os << "Timeout: ";
-    is >> this->timeout;
+#ifdef HAVE_PTHREAD
+		os << "Timeout: ";
+		is >> this->timeout;
+		this->current_timeout = this->timeout;
+#endif 		
 }
 
 template <class Input, class Output, class State, typename CFtype>
@@ -107,30 +111,14 @@ void TokenRingSolver<Input,Output,State,CFtype>::SetStartRunner(unsigned int i)
 */
 template <class Input, class Output, class State, typename CFtype>
 void TokenRingSolver<Input,Output,State,CFtype>::Check() const
-throw(EasyLocalException)
+
 {
-    LocalSearchSolver<Input,Output,State,CFtype>::Check();
+    AbstractLocalSearchSolver<Input,Output,State,CFtype>::Check();
     if (this->runners.size() == 0)
-      throw EasyLocalException("Check(): runners not set in object " + this->GetName());
+      throw std::logic_error("Check(): runners not set in object " + this->name);
     for (unsigned int i = 0; i < this->runners.size(); i++)
       this->runners[i]->Check();
 }
-
-/**
-   Outputs the solver state on a given output stream.
-
-   @param os the output stream
-*/
-//  template <class Input, class Output, class State, typename CFtype>
-//   void TokenRingSolver<Input,Output,State,CFtype>::Print(std::ostream& os) const
-//   {
-//     os << "Solver State" << std::endl;
-//     for (unsigned int i = 0; i < this->runners.size(); i++)
-//       {
-//  os << "Runner " << i << std::endl;
-//  this->runners[i]->Print(os);
-//       }
-//   }
 
 /**
    Runs all the managed runners one after another till no improvement
@@ -146,71 +134,46 @@ void TokenRingSolver<Input,Output,State,CFtype>::Run()
     unsigned int idle_rounds = 0;
     bool interrupt_search = false;
     bool improvement_found = false;
-#ifdef EASYLOCAL_PTHREADS
-    pthread_t runner_thd_id;
-#endif
 
     this->internal_state_cost = this->sm.CostFunction(this->internal_state);
     // this->internal_state_cost is used to check
     // whether a full round has produces improvements or not
     this->runners[i]->SetState(this->internal_state);
 
-#ifdef EASYLOCAL_PTHREADS
-	if (this->timeout > 0)
-    	this->SetTimer();
-#endif
-
-    while (idle_rounds < max_idle_rounds && !interrupt_search && !this->Timeout())
+    while (idle_rounds < max_idle_rounds && !interrupt_search)
     {
         do
         {
-#ifndef EASYLOCAL_PTHREADS
-            this->runners[i]->Go();
-#else
-            runner_thd_id = this->runners[i]->GoThread();
-#ifdef DEBUG_PTHREADS
-            std::cerr << "CREATED " << runner_thd_id << std::endl;
-#endif
-            double time_left = this->timeout / 10;
-            while (!this->runners[i]->WaitTermination(time_left) && !this->Timeout())
-#ifdef DEBUG_PTHREADS
-                std::cerr << "CHECKING TERMINATION" << std::endl;
-#else
-				;
-#endif
-
-            pthread_join(runner_thd_id, NULL);
-#endif
-	    
-	    if (LessThan(this->runners[i]->GetStateCost(),this->internal_state_cost))
-            {
-                this->internal_state = this->runners[i]->GetState();
-                this->internal_state_cost = this->runners[i]->GetStateCost();
-                improvement_found = true;
-            }
+          LetGo(*this->runners[i]);	    
+          if (LessThan(this->runners[i]->GetStateCost(),this->internal_state_cost))
+          {
+            this->internal_state = this->runners[i]->GetState();
+            this->internal_state_cost = this->runners[i]->GetStateCost();
+            improvement_found = true;
+          }
 #if VERBOSE >= 2
-	    std::cerr << "Runner: " << i << ", Current cost: " << this->runners[i]->GetStateCost() << 
-	      ", Best cost " << this->internal_state_cost << ", Idle rounds : " << idle_rounds << std::endl;
+          std::cerr << "Runner: " << i << ", Current cost: " << this->runners[i]->GetStateCost() << 
+            ", Best cost " << this->internal_state_cost << ", Idle rounds : " << idle_rounds << std::endl;
 #endif
-            if (this->runners[i]->LowerBoundReached() || this->runners.size() == 1)
-            {
-                interrupt_search = true;
-                break;
-            }
-            j = i;
-            i = (i + 1) % this->runners.size();
-            this->runners[i]->SetState(this->runners[j]->GetState());
+          if (this->runners[i]->LowerBoundReached() || this->runners.size() == 1)
+          {
+            interrupt_search = true;
+            break;
+          }
+          j = i;
+          i = (i + 1) % this->runners.size();
+          this->runners[i]->SetState(this->runners[j]->GetState());
         }
-        while (i != this->start_runner && !this->Timeout());
-
-        if (!interrupt_search)
-        {
-            if (improvement_found)
-                idle_rounds = 0;
-            else
-                idle_rounds++;
-            improvement_found = false;
-        }
+      while (i != this->start_runner);
+      
+      if (!interrupt_search)
+      {
+        if (improvement_found)
+          idle_rounds = 0;
+        else
+          idle_rounds++;
+        improvement_found = false;
+      }
     }
 }
 

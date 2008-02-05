@@ -4,8 +4,11 @@
 #include "MoveRunner.hh"
 #include "../helpers/StateManager.hh"
 #include "../helpers/NeighborhoodExplorer.hh"
-#include "../basics/EasyLocalException.hh"
 #include <cmath>
+#include <stdexcept>
+#include "../utils/clparser/CLParser.hh"
+#include "../utils/clparser/ArgumentGroup.hh"
+#include "../utils/clparser/ValArgument.hh"
 
 /** The Simulated annealing runner relies on a probabilistic local
     search technique whose name comes from the fact that it
@@ -20,32 +23,38 @@
  */
 template <class Input, class State, class Move, typename CFtype = int>
 class SimulatedAnnealing
-            : public MoveRunner<Input,State,Move,CFtype>
+: public MoveRunner<Input,State,Move,CFtype>
 {
 public:
-    SimulatedAnnealing(const Input& in,
-                       StateManager<Input,State,CFtype>& e_sm,
-                       NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
-                       const std::string& name = "Anonymous Simulated Annealing runner");
-
-    void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout)
-    throw(EasyLocalException);
-    void Print(std::ostream& os = std::cout) const;
+	SimulatedAnnealing(const Input& in,
+										 StateManager<Input,State,CFtype>& e_sm,
+										 NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
+										 std::string name);
+	SimulatedAnnealing(const Input& in,
+										 StateManager<Input,State,CFtype>& e_sm,
+										 NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
+										 std::string name,
+										 CLParser& cl);	
+	void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout);
+	void Print(std::ostream& os = std::cout) const;
 protected:
-    void GoCheck() const throw(EasyLocalException);
-    void InitializeRun();
-    void TerminateRun();
-    bool StopCriterion();
-    void UpdateIterationCounter();
-    void SelectMove();
-    bool AcceptableMove();
-    void StoreMove();
-    // parameters
-    double temperature; /**< The current temperature. */
-    double start_temperature;
-    double min_temperature;
-    double cooling_rate;
-    unsigned int neighbors_sampled;
+	void GoCheck() const;
+	void InitializeRun();
+	void TerminateRun();
+	bool StopCriterion();
+	void UpdateIterationCounter();
+	void SelectMove();
+	bool AcceptableMove();
+	void StoreMove();
+	// parameters
+	double temperature; /**< The current temperature. */
+	double start_temperature;
+	double min_temperature;
+	double cooling_rate;
+	unsigned int neighbors_sampled;
+	ArgumentGroup simulated_annealing_arguments;
+	ValArgument<double> arg_start_temperature, arg_min_temperature, arg_cooling_rate;
+	ValArgument<unsigned int> arg_neighbors_sampled;
 };
 
 /*************************************************************************
@@ -62,13 +71,51 @@ protected:
 */
 template <class Input, class State, class Move, typename CFtype>
 SimulatedAnnealing<Input,State,Move,CFtype>::SimulatedAnnealing(const Input& in,
-        StateManager<Input,State,CFtype>& e_sm,
-        NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
-        const std::string& name)
-        : MoveRunner<Input,State,Move,CFtype>(in, e_sm, e_ne, name),
-        start_temperature(2.0), min_temperature(0.0001),
-        cooling_rate(0.75), neighbors_sampled(1)
-{}
+																																StateManager<Input,State,CFtype>& e_sm,
+																																NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
+																																std::string name)
+: MoveRunner<Input,State,Move,CFtype>(in, e_sm, e_ne, name),
+start_temperature(0.0), min_temperature(0.0001), cooling_rate(0.75), neighbors_sampled(10), 
+simulated_annealing_arguments("sa_" + name, "sa_" + name, false), arg_start_temperature("start_temperature", "st", false),
+arg_min_temperature("min_temperature", "mt", false), arg_cooling_rate("cooling_rate", "cr", true),
+arg_neighbors_sampled("neighbors_sampled", "ns", true)
+{
+	simulated_annealing_arguments.AddArgument(arg_start_temperature);
+	simulated_annealing_arguments.AddArgument(arg_min_temperature);
+	simulated_annealing_arguments.AddArgument(arg_cooling_rate);
+	simulated_annealing_arguments.AddArgument(arg_neighbors_sampled);
+}
+
+template <class Input, class State, class Move, typename CFtype>
+SimulatedAnnealing<Input,State,Move,CFtype>::SimulatedAnnealing(const Input& in,
+																																StateManager<Input,State,CFtype>& e_sm,
+																																NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
+																																std::string name,
+																																CLParser& cl)
+: MoveRunner<Input,State,Move,CFtype>(in, e_sm, e_ne, name),
+start_temperature(0.0), min_temperature(0.0001), cooling_rate(0.75), neighbors_sampled(10), 
+simulated_annealing_arguments("sa_" + name, "sa_" + name, false), arg_start_temperature("start_temperature", "st", false),
+arg_min_temperature("min_temperature", "mt", false), arg_cooling_rate("cooling_rate", "cr", true),
+arg_neighbors_sampled("neighbors_sampled", "ns", true)
+{
+	simulated_annealing_arguments.AddArgument(arg_start_temperature);
+	simulated_annealing_arguments.AddArgument(arg_min_temperature);
+	simulated_annealing_arguments.AddArgument(arg_cooling_rate);
+	simulated_annealing_arguments.AddArgument(arg_neighbors_sampled);	
+	cl.AddArgument(simulated_annealing_arguments);
+	cl.MatchArgument(simulated_annealing_arguments);
+	if (simulated_annealing_arguments.IsSet())
+	{
+		if (arg_start_temperature.IsSet())
+			start_temperature = arg_start_temperature.GetValue();
+		if (arg_min_temperature.IsSet())
+			min_temperature = arg_min_temperature.GetValue();
+		cooling_rate = arg_cooling_rate.GetValue();
+		neighbors_sampled = arg_neighbors_sampled.GetValue();
+	}
+}
+
+
 
 template <class Input, class State, class Move, typename CFtype>
 void SimulatedAnnealing<Input,State,Move,CFtype>::Print(std::ostream& os) const
@@ -81,6 +128,20 @@ void SimulatedAnnealing<Input,State,Move,CFtype>::Print(std::ostream& os) const
     os  << "  Neighbors sampled: " << neighbors_sampled << std::endl;
 }
 
+template <class Input, class State, class Move, typename CFtype>
+void SimulatedAnnealing<Input,State,Move,CFtype>::GoCheck() const
+
+{
+	if (start_temperature < 0)
+		throw std::logic_error("negative start_temparature for object " + this->name);
+	if (cooling_rate <= 0)
+		throw std::logic_error("negative cooling_rate for object " + this->name)
+		;
+	if (neighbors_sampled == 0)
+		throw std::logic_error("neighbors_sampled is zero for object " + this->name);
+}
+
+
 
 /**
    Initializes the run by invoking the companion superclass method, and
@@ -89,20 +150,27 @@ void SimulatedAnnealing<Input,State,Move,CFtype>::Print(std::ostream& os) const
 template <class Input, class State, class Move, typename CFtype>
 void SimulatedAnnealing<Input,State,Move,CFtype>::InitializeRun()
 {
-    MoveRunner<Input,State,Move,CFtype>::InitializeRun();
-    temperature = start_temperature;
-}
-
-template <class Input, class State, class Move, typename CFtype>
-void SimulatedAnnealing<Input,State,Move,CFtype>::GoCheck() const
-throw(EasyLocalException)
-{
-    if (start_temperature <= 0)
-        throw EasyLocalException("negative start_temparature for object " + this->GetName());
-    if (cooling_rate <= 0)
-        throw EasyLocalException("negative cooling_rate for object " + this->GetName());
-    if (neighbors_sampled == 0)
-        throw EasyLocalException("neighbors_sampled is zero for object " + this->GetName());
+	MoveRunner<Input,State,Move,CFtype>::InitializeRun();
+	if (start_temperature > 0.0)
+		temperature = start_temperature;
+	else
+	{
+		// Compute a start temperature by sampling the neighborhood and computing the variance
+		// according to [van Laarhoven and Aarts, 1987] (allow an acceptance ratio of approximately 80%)
+		Move mv;
+		std::vector<CFtype> cost_values(neighbors_sampled);
+		double mean = 0.0, variance = 0.0;
+		for (unsigned int i = 0; i < neighbors_sampled; i++)
+		{
+			this->ne.RandomMove(this->current_state, mv);
+			cost_values[i] = this->ne.DeltaCostFunction(this->current_state, mv);
+			mean += cost_values[i];
+		}
+		mean /= neighbors_sampled;
+		for (unsigned int i = 0; i < neighbors_sampled; i++)
+			variance += (cost_values[i] - mean) * (cost_values[i] - mean) / neighbors_sampled;
+		temperature = variance;
+	}
 }
 
 /**
@@ -132,15 +200,17 @@ void SimulatedAnnealing<Input,State,Move,CFtype>::SelectMove()
 template <class Input, class State, class Move, typename CFtype>
 void SimulatedAnnealing<Input,State,Move,CFtype>::StoreMove()
 {
-  if (LessThan(this->current_move_cost,0))
+  if (LessThan(this->current_move_cost, (CFtype)0))
     {
-        this->best_state_cost = this->current_state_cost;
+      if (this->observer != NULL)
+				this->observer->NotifyNewBest(*this);
+      this->best_state_cost = this->current_state_cost;
     }
 }
 
 template <class Input, class State, class Move, typename CFtype>
 void SimulatedAnnealing<Input,State,Move,CFtype>::ReadParameters(std::istream& is, std::ostream& os)
-throw(EasyLocalException)
+
 {
     os << "SIMULATED ANNEALING -- INPUT PARAMETERS" << std::endl;
     os << "  Start temperature: ";
@@ -165,9 +235,9 @@ bool SimulatedAnnealing<Input,State,Move,CFtype>::StopCriterion()
 template <class Input, class State, class Move, typename CFtype>
 void SimulatedAnnealing<Input,State,Move,CFtype>::UpdateIterationCounter()
 {
-    MoveRunner<Input,State,Move,CFtype>::UpdateIterationCounter();
-    if (this->number_of_iterations % neighbors_sampled == 0)
-        temperature *= cooling_rate;
+	MoveRunner<Input,State,Move,CFtype>::UpdateIterationCounter();
+	if (this->number_of_iterations % neighbors_sampled == 0)
+		temperature *= cooling_rate;
 }
 
 /** A move is surely accepted if it improves the cost function
@@ -176,7 +246,9 @@ void SimulatedAnnealing<Input,State,Move,CFtype>::UpdateIterationCounter()
 */
 template <class Input, class State, class Move, typename CFtype>
 bool SimulatedAnnealing<Input,State,Move,CFtype>::AcceptableMove()
-{ return (this->current_move_cost <= 0)
-  || (Random::Double_Unit_Uniform() < exp(-this->current_move_cost/temperature)); }
+{ 
+	return (this->current_move_cost <= 0)
+	|| (Random::Double_Unit_Uniform() < exp(-this->current_move_cost/temperature)); 
+}
 
 #endif /*SIMULATEDANNEALING_HH_*/

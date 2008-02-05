@@ -24,5 +24,11 @@
 #include "helpers/OutputManager.hh"
 #include "helpers/NeighborhoodExplorer.hh"
 #include "helpers/TabuListManager.hh"
+#include "helpers/ShiftingPenaltyManager.hh"
+#include "helpers/CostComponent.hh"
+#include "helpers/DeltaCostComponent.hh"
+#include "helpers/GeneralizedLocalSearchObserver.hh"
+#include "helpers/RunnerObserver.hh"
+//#include "helpers/KickerObserver.hh"
 
 #endif /*HELPERS_HH_*/

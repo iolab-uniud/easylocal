@@ -6,7 +6,6 @@
 #include <cassert>
 #include <cmath>
 #include "CostComponent.hh"
-#include "../basics/EasyLocalException.hh"
 #include "../utils/Types.hh"
 
 /** This constant multiplies the value of the Violations function in the
@@ -28,10 +27,9 @@ No @c Move template is supplied to it.
 */
 template <class Input, class State, typename CFtype = int>
 class StateManager
-: virtual public EasyLocalObject
 {
 public:
-  void Print(ostream& os = cout) const;
+  void Print(std::ostream& os = std::cout) const;
   /** Generates a random state.
   @note @bf To be implemented in the application.
   @param st the state generated */
@@ -54,35 +52,39 @@ public:
     @return true if the lower bound of the cost function has reached,
     false otherwise */
   virtual bool OptimalStateReached(const State& st) const;
-  virtual unsigned StateDistance(const State& st1, const State& st2) const = 0;
-  virtual void PrintStateDistance(const State& st1, const State& st2, ostream& os = cout) const = 0;
+  virtual unsigned StateDistance(const State& st1, const State& st2) const;
+  virtual void PrintStateDistance(const State& st1, const State& st2, std::ostream& os = std::cout) const;
+
+  int IsMember(const State& s, const std::vector<State>& v);
 
   void AddCostComponent(CostComponent<Input,State,CFtype>& cc);
   
   // debug functions
   virtual void PrintState(const State& st,
-                          ostream& os = cout) const;
+                          std::ostream& os = std::cout) const;
   virtual void PrintStateCost(const State& st,
-                              ostream& os = cout) const;
+                              std::ostream& os = std::cout) const;
   virtual void PrintStateDetailedCost(const State& st,
-                                      ostream& os = cout) const;
+                                      std::ostream& os = std::cout) const;
   virtual void PrintStateReducedCost(const State& st,
-                                      ostream& os = cout) const;
+                                      std::ostream& os = std::cout) const;
   // info functions
   virtual void GetDetailedCost(const State& st, CFtype& violations,
-                               vector<CFtype>& single_violations_cost,
+                               std::vector<CFtype>& single_violations_cost,
                                CFtype& objective,
-                               vector<CFtype>& single_objective_cost) const;
+                               std::vector<CFtype>& single_objective_cost) const;
   
-  virtual void Check() const throw(EasyLocalException);
+  virtual void Check() const ;
   
   CostComponent<Input, State,CFtype>& GetCostComponent(unsigned i) const { return *(cost_component[i]); }
   unsigned CostComponents() const { return cost_component.size(); }
 
 protected:
-  StateManager(const Input& in);
-  vector<CostComponent<Input,State,CFtype>* > cost_component;
+  StateManager(const Input& in, std::string name);
+  virtual ~StateManager() {}
+  std::vector<CostComponent<Input,State,CFtype>* > cost_component;
   const Input& in;
+  std::string name;
 };
 
 /*************************************************************************
@@ -95,14 +97,14 @@ Builds a state manager object linked to the provided input.
  @param in a reference to an input object
  */
 template <class Input, class State, typename CFtype>
-StateManager<Input,State,CFtype>::StateManager(const Input& i)
-: in(i)
+StateManager<Input,State,CFtype>::StateManager(const Input& i, std::string e_name)
+: in(i), name(e_name)
 {}
 
 template <class Input, class State, typename CFtype>
 void StateManager<Input,State,CFtype>::Print(std::ostream& os) const
 {
-  os  << "State Manager: " + GetName() << std::endl;
+  os  << "State Manager: " + name << std::endl;
   os  << "Violations:" << std::endl;
   for (unsigned int i = 0; i < cost_component.size(); i++)
     if (cost_component[i]->IsHard())
@@ -127,7 +129,8 @@ CFtype StateManager<Input,State,CFtype>::SampleState(State &st,
   unsigned int s = 1;
   RandomState(st);
   CFtype cost = CostFunction(st);
-  State best_state = st;
+  State best_state(in);
+  best_state = st;
   CFtype best_cost = cost;
   while (s < samples)
   {
@@ -211,7 +214,7 @@ void StateManager<Input,State,CFtype>::PrintStateCost(const State& st,
   CFtype violations = Violations(st), objective = Objective(st), 
   cost_function = CostFunction(st);
   for (unsigned int i = 0; i < cost_component.size(); i++)
-    os  << i << ". " << cost_component[i]->GetName() << " : " 
+    os  << i << ". " << cost_component[i]->name << " : " 
       << cost_component[i]->Cost(st) << (cost_component[i]->IsHard() ? '*' : ' ') << std::endl;
   os  << "Total Violations:\t" << violations << std::endl;
   os  << "Total Objective:\t" << objective << std::endl;
@@ -333,7 +336,26 @@ Checks wether the object state is consistent with all the related
  */
 template <class Input, class State, typename CFtype>
 void StateManager<Input,State,CFtype>::Check() const
-throw(EasyLocalException)
 {}
+
+template <class Input, class State, typename CFtype>
+unsigned StateManager<Input,State,CFtype>::StateDistance(const State& st1, const State& st2) const
+{ 
+  return 0;
+}
+
+template <class Input, class State, typename CFtype>
+void StateManager<Input,State,CFtype>::PrintStateDistance(const State& st1, const State& st2, std::ostream& os) const
+{}
+
+template <class Input, class State, typename CFtype>
+int StateManager<Input,State,CFtype>::IsMember(const State& s, const std::vector<State>& v)
+{
+  for (unsigned i = 0; i < v.size(); i++)
+    if (s == v[i])
+      return i;
+  return -1;
+}
+
 
 #endif /*STATEMANAGER_HH_*/

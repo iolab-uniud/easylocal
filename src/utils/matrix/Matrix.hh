@@ -1,6 +1,5 @@
 /*
  *  Matrix.h
- *  CWM
  *
  *  Created by Luca Di Gaspero on 10/11/06.
  *  Copyright 2006 Luca Di Gaspero. All rights reserved.
@@ -9,6 +8,10 @@
 
 #ifndef _MATRIX_HH
 #define _MATRIX_HH
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
 #include "Vector.hh"
 #include <set>
@@ -141,7 +144,7 @@ Matrix<T>::Matrix(MType t, const T& a, const T& o, unsigned int n, unsigned int 
 							v[i][j] = a;
 			break;
 		default:
-			throw std::runtime_error("Matrix type not supported");
+			throw std::logic_error("Matrix type not supported");
 	}
 } 
 
@@ -165,7 +168,7 @@ Matrix<T>::Matrix(MType t, const Vector<T>& a, const T& o, unsigned int n, unsig
 						v[i][j] = a[i];
 			break;
 		default:
-			throw std::runtime_error("Matrix type not supported");
+			throw std::logic_error("Matrix type not supported");
 	}
 } 
 
@@ -254,7 +257,7 @@ template <typename T>
 inline Vector<T> Matrix<T>::extractRow(const unsigned int i) const
 {
 	if (i >= n)
-		throw std::runtime_error("Error in extractRow: trying to extract a row out of matrix bounds");
+		throw std::logic_error("Error in extractRow: trying to extract a row out of matrix bounds");
 	Vector<T> tmp(v[i], m);
 	
 	return tmp;
@@ -265,7 +268,7 @@ inline Vector<T> Matrix<T>::extractColumn(const unsigned int j) const
 {
   register unsigned int i;
 	if (j >= m)
-		throw std::runtime_error("Error in extractRow: trying to extract a row out of matrix bounds");
+		throw std::logic_error("Error in extractRow: trying to extract a row out of matrix bounds");
 	Vector<T> tmp(n);
 	
 	for (i = 0; i < n; i++)
@@ -299,7 +302,7 @@ inline Matrix<T> Matrix<T>::extractRows(const std::set<unsigned int>& indexes) c
 		for (j = 0; j < m; j++)
 		{
 			if (*el >= n)
-				throw std::runtime_error("Error extracting rows: the indexes are out of matrix bounds");
+				throw std::logic_error("Error extracting rows: the indexes are out of matrix bounds");
 			tmp[i][j] = v[*el][j];
 		}
 		i++;
@@ -319,7 +322,7 @@ inline Matrix<T> Matrix<T>::extractColumns(const std::set<unsigned int>& indexes
 		for (i = 0; i < n; i++)
 		{
 			if (*el >= m)
-				throw std::runtime_error("Error extracting columns: the indexes are out of matrix bounds");
+				throw std::logic_error("Error extracting columns: the indexes are out of matrix bounds");
 			tmp[i][j] = v[i][*el];
 		}
 		j++;
@@ -337,12 +340,12 @@ inline Matrix<T> Matrix<T>::extract(const std::set<unsigned int>& r_indexes, con
 	for (std::set<unsigned int>::const_iterator r_el = r_indexes.begin(); r_el != r_indexes.end(); r_el++)
 	{
 		if (*r_el >= n)
-			throw std::runtime_error("Error extracting submatrix: the indexes are out of matrix bounds");
+			throw std::logic_error("Error extracting submatrix: the indexes are out of matrix bounds");
 		j = 0;
 		for (std::set<unsigned int>::const_iterator c_el = c_indexes.begin(); c_el != c_indexes.end(); c_el++)
 		{
 			if (*c_el >= m)
-				throw std::runtime_error("Error extracting rows: the indexes are out of matrix bounds");
+				throw std::logic_error("Error extracting rows: the indexes are out of matrix bounds");
 			tmp[i][j] = v[*r_el][*c_el];
 			j++;
 		}
@@ -356,9 +359,9 @@ template <typename T>
 inline void Matrix<T>::setRow(unsigned int i, const Vector<T>& a)
 {	
 	if (i >= n)
-		throw std::runtime_error("Error in setRow: trying to set a row out of matrix bounds");
+		throw std::logic_error("Error in setRow: trying to set a row out of matrix bounds");
 	if (this->m != a.size())
-		throw std::runtime_error("Error setting matrix row: ranges are not compatible");
+		throw std::logic_error("Error setting matrix row: ranges are not compatible");
 	for (unsigned int j = 0; j < ncols(); j++)
 		v[i][j] = a[j];
 }
@@ -367,11 +370,11 @@ template <typename T>
 inline void Matrix<T>::setRow(unsigned int i, const Matrix<T>& a)
 {	
 	if (i >= n)
-		throw std::runtime_error("Error in setRow: trying to set a row out of matrix bounds");
+		throw std::logic_error("Error in setRow: trying to set a row out of matrix bounds");
 	if (this->m != a.ncols())
-		throw std::runtime_error("Error setting matrix column: ranges are not compatible");
+		throw std::logic_error("Error setting matrix column: ranges are not compatible");
 	if (a.nrows() != 1)
-		throw std::runtime_error("Error setting matrix column with a non-row matrix");
+		throw std::logic_error("Error setting matrix column with a non-row matrix");
 	for (unsigned int j = 0; j < ncols(); j++)
 		v[i][j] = a[0][j];
 }
@@ -382,13 +385,13 @@ inline void Matrix<T>::setRows(const std::set<unsigned int>& indexes, const Matr
 	unsigned int i = 0;
 	
 	if (indexes.size() != m.nrows() || this->m != m.ncols())
-		throw std::runtime_error("Error setting matrix rows: ranges are not compatible");
+		throw std::logic_error("Error setting matrix rows: ranges are not compatible");
 	for (std::set<unsigned int>::const_iterator el = indexes.begin(); el != indexes.end(); el++)
 	{
 		for (unsigned int j = 0; j < ncols(); j++)
 		{
 			if (*el >= n)
-				throw std::runtime_error("Error in setRows: trying to set a row out of matrix bounds");
+				throw std::logic_error("Error in setRows: trying to set a row out of matrix bounds");
 			v[*el][j] = m[i][j];
 		}
 		i++;
@@ -399,9 +402,9 @@ template <typename T>
 inline void Matrix<T>::setColumn(unsigned int j, const Vector<T>& a)
 {	
 	if (j >= m)
-		throw std::runtime_error("Error in setColumn: trying to set a column out of matrix bounds");
+		throw std::logic_error("Error in setColumn: trying to set a column out of matrix bounds");
 	if (this->n != a.size())
-		throw std::runtime_error("Error setting matrix column: ranges are not compatible");
+		throw std::logic_error("Error setting matrix column: ranges are not compatible");
 	for (unsigned int i = 0; i < nrows(); i++)
 		v[i][j] = a[i];
 }
@@ -410,11 +413,11 @@ template <typename T>
 inline void Matrix<T>::setColumn(unsigned int j, const Matrix<T>& a)
 {	
 	if (j >= m)
-		throw std::runtime_error("Error in setColumn: trying to set a column out of matrix bounds");
+		throw std::logic_error("Error in setColumn: trying to set a column out of matrix bounds");
 	if (this->n != a.nrows())
-		throw std::runtime_error("Error setting matrix column: ranges are not compatible");
+		throw std::logic_error("Error setting matrix column: ranges are not compatible");
 	if (a.ncols() != 1)
-		throw std::runtime_error("Error setting matrix column with a non-column matrix");
+		throw std::logic_error("Error setting matrix column with a non-column matrix");
 	for (unsigned int i = 0; i < nrows(); i++)
 		v[i][j] = a[i][0];
 }
@@ -426,13 +429,13 @@ inline void Matrix<T>::setColumns(const std::set<unsigned int>& indexes, const M
 	unsigned int j = 0;
 	
 	if (indexes.size() != a.ncols() || this->n != a.nrows())
-		throw std::runtime_error("Error setting matrix columns: ranges are not compatible");
+		throw std::logic_error("Error setting matrix columns: ranges are not compatible");
 	for (std::set<unsigned int>::const_iterator el = indexes.begin(); el != indexes.end(); el++)
 	{
 		for (unsigned int i = 0; i < nrows(); i++)
 		{
 			if (*el >= m)
-				throw std::runtime_error("Error in setColumns: trying to set a column out of matrix bounds");
+				throw std::logic_error("Error in setColumns: trying to set a column out of matrix bounds");
 			v[i][*el] = a[i][j];
 		}
 		j++;
@@ -444,17 +447,17 @@ inline void Matrix<T>::set(const std::set<unsigned int>& r_indexes, const std::s
 {
 	unsigned int i = 0, j;
 	if (c_indexes.size() != a.ncols() || r_indexes.size() != a.nrows())
-		throw std::runtime_error("Error setting matrix elements: ranges are not compatible");
+		throw std::logic_error("Error setting matrix elements: ranges are not compatible");
 	
 	for (std::set<unsigned int>::const_iterator r_el = r_indexes.begin(); r_el != r_indexes.end(); r_el++)
 	{
 		if (*r_el >= n)
-			throw std::runtime_error("Error in set: trying to set a row out of matrix bounds");
+			throw std::logic_error("Error in set: trying to set a row out of matrix bounds");
 		j = 0;
 		for (std::set<unsigned int>::const_iterator c_el = c_indexes.begin(); c_el != c_indexes.end(); c_el++)
 		{
 			if (*c_el >= m)
-				throw std::runtime_error("Error in set: trying to set a column out of matrix bounds");
+				throw std::logic_error("Error in set: trying to set a column out of matrix bounds");
 			v[*r_el][*c_el] = a[i][j];
 			j++;
 		}
@@ -484,7 +487,7 @@ template <typename T>
 Matrix<T> operator+(const Matrix<T>& lhs, const Matrix<T>& rhs)
 {
 	if (lhs.ncols() != rhs.ncols() || lhs.nrows() != rhs.nrows())
-		throw std::runtime_error("Operator+: matrices have different sizes");
+		throw std::logic_error("Operator+: matrices have different sizes");
 	Matrix<T> tmp(lhs.nrows(), lhs.ncols());
 	for (unsigned int i = 0; i < lhs.nrows(); i++)
 		for (unsigned int j = 0; j < lhs.ncols(); j++)
@@ -519,7 +522,7 @@ template <typename T>
 inline Matrix<T>& Matrix<T>::operator+=(const Matrix<T>& rhs)
 {
 	if (m != rhs.ncols() || n != rhs.nrows())
-		throw std::runtime_error("Operator+=: matrices have different sizes");
+		throw std::logic_error("Operator+=: matrices have different sizes");
 	for (unsigned int i = 0; i < n; i++)
 		for (unsigned int j = 0; j < m; j++)
 			v[i][j] += rhs[i][j];
@@ -547,7 +550,7 @@ template <typename T>
 Matrix<T> operator-(const Matrix<T>& lhs, const Matrix<T>& rhs)
 {
 	if (lhs.ncols() != rhs.ncols() || lhs.nrows() != rhs.nrows())
-		throw std::runtime_error("Operator-: matrices have different sizes");
+		throw std::logic_error("Operator-: matrices have different sizes");
 	Matrix<T> tmp(lhs.nrows(), lhs.ncols());
 	for (unsigned int i = 0; i < lhs.nrows(); i++)
 		for (unsigned int j = 0; j < lhs.ncols(); j++)
@@ -582,7 +585,7 @@ template <typename T>
 inline Matrix<T>& Matrix<T>::operator-=(const Matrix<T>& rhs)
 {
 	if (m != rhs.ncols() || n != rhs.nrows())
-		throw std::runtime_error("Operator-=: matrices have different sizes");
+		throw std::logic_error("Operator-=: matrices have different sizes");
 	for (unsigned int i = 0; i < n; i++)
 		for (unsigned int j = 0; j < m; j++)
 			v[i][j] -= rhs[i][j];
@@ -604,7 +607,7 @@ template <typename T>
 Matrix<T> operator*(const Matrix<T>& lhs, const Matrix<T>& rhs)
 {
 	if (lhs.ncols() != rhs.ncols() || lhs.nrows() != rhs.nrows())
-		throw std::runtime_error("Operator*: matrices have different sizes");
+		throw std::logic_error("Operator*: matrices have different sizes");
 	Matrix<T> tmp(lhs.nrows(), lhs.ncols());
 	for (unsigned int i = 0; i < lhs.nrows(); i++)
 		for (unsigned int j = 0; j < lhs.ncols(); j++)
@@ -639,7 +642,7 @@ template <typename T>
 inline Matrix<T>& Matrix<T>::operator*=(const Matrix<T>& rhs)
 {
 	if (m != rhs.ncols() || n != rhs.nrows())
-		throw std::runtime_error("Operator*=: matrices have different sizes");
+		throw std::logic_error("Operator*=: matrices have different sizes");
 	for (unsigned int i = 0; i < n; i++)
 		for (unsigned int j = 0; j < m; j++)
 			v[i][j] *= rhs[i][j];
@@ -661,7 +664,7 @@ template <typename T>
 Matrix<T> operator/(const Matrix<T>& lhs, const Matrix<T>& rhs)
 {
 	if (lhs.ncols() != rhs.ncols() || lhs.nrows() != rhs.nrows())
-		throw std::runtime_error("Operator+: matrices have different sizes");
+		throw std::logic_error("Operator+: matrices have different sizes");
 	Matrix<T> tmp(lhs.nrows(), lhs.ncols());
 	for (unsigned int i = 0; i < lhs.nrows(); i++)
 		for (unsigned int j = 0; j < lhs.ncols(); j++)
@@ -696,7 +699,7 @@ template <typename T>
 inline Matrix<T>& Matrix<T>::operator/=(const Matrix<T>& rhs)
 {
 	if (m != rhs.ncols() || n != rhs.nrows())
-		throw std::runtime_error("Operator+=: matrices have different sizes");
+		throw std::logic_error("Operator+=: matrices have different sizes");
 	for (unsigned int i = 0; i < n; i++)
 		for (unsigned int j = 0; j < m; j++)
 			v[i][j] /= rhs[i][j];
@@ -729,7 +732,7 @@ template <typename T>
 inline Matrix<T>& Matrix<T>::operator^=(const Matrix<T>& rhs)
 {
 	if (m != rhs.ncols() || n != rhs.nrows())
-		throw std::runtime_error("Operator^=: matrices have different sizes");
+		throw std::logic_error("Operator^=: matrices have different sizes");
 	for (unsigned int i = 0; i < n; i++)
 		for (unsigned int j = 0; j < m; j++)
 			v[i][j] = pow(v[i][j], rhs[i][j]);
@@ -752,7 +755,7 @@ template <typename T>
 inline Matrix<T>::operator Vector<T>()
 {
 	if (n > 1 && m > 1)
-		throw std::runtime_error("Error matrix cast to vector: trying to cast a multi-dimensional matrix");
+		throw std::logic_error("Error matrix cast to vector: trying to cast a multi-dimensional matrix");
 	if (n == 1)
 		return extractRow(0);
 	else
@@ -763,7 +766,7 @@ template <typename T>
 inline bool operator==(const Matrix<T>& a, const Matrix<T>& b)
 {
 	if (a.nrows() != b.nrows() || a.ncols() != b.ncols())
-		throw std::runtime_error("Matrices of different size are not confrontable");
+		throw std::logic_error("Matrices of different size are not confrontable");
 	for (unsigned i = 0; i < a.nrows(); i++)
 		for (unsigned j = 0; j < a.ncols(); j++)
 			if (a[i][j] != b[i][j])
@@ -775,7 +778,7 @@ template <typename T>
 inline bool operator!=(const Matrix<T>& a, const Matrix<T>& b)
 {
 	if (a.nrows() != b.nrows() || a.ncols() != b.ncols())
-		throw std::runtime_error("Matrices of different size are not confrontable");
+		throw std::logic_error("Matrices of different size are not confrontable");
 	for (unsigned i = 0; i < a.nrows(); i++)
 		for (unsigned j = 0; j < a.ncols(); j++)
 			if (a[i][j] != b[i][j])

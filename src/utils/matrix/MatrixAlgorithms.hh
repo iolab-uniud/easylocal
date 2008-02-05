@@ -218,7 +218,7 @@ void svd(const Matrix<T>& A, Matrix<T>& U, Vector<T>& W, Matrix<T>& V)
 				break;
 			}
 			if (its == max_its)
-				throw std::runtime_error("Error svd: no convergence in the maximum number of iterations");
+				throw std::logic_error("Error svd: no convergence in the maximum number of iterations");
 			x = W[l];
 			nm = k - 1;
 			y = W[nm];
@@ -295,7 +295,7 @@ template <typename T>
 int lu(const Matrix<T>& A, Matrix<T>& LU, Vector<unsigned int>& index)
 {
 	if (A.ncols() != A.nrows())
-		throw std::runtime_error("Error in LU decomposition: matrix must be squared");
+		throw std::logic_error("Error in LU decomposition: matrix must be squared");
 	int i, p, j, k, n = A.ncols(), ex;
 	T val, tmp;
 	Vector<T> d(n);
@@ -310,7 +310,7 @@ int lu(const Matrix<T>& A, Matrix<T>& LU, Vector<unsigned int>& index)
 		for (j = 0; j < n; j++)
 			val = std::max(val, (T)fabs(LU[i][j]));
 		if (val == (T)0.0)
-			std::runtime_error("Error in LU decomposition: matrix was singular");
+			std::logic_error("Error in LU decomposition: matrix was singular");
 		d[i] = val;
 	}
 
@@ -328,7 +328,7 @@ int lu(const Matrix<T>& A, Matrix<T>& LU, Vector<unsigned int>& index)
 			}
 		}
 		if (val == (T)0.0)
-			std::runtime_error("Error in LU decomposition: matrix was singular");
+			std::logic_error("Error in LU decomposition: matrix was singular");
 		if (p > k)
 		{
 			ex = -ex;
@@ -346,7 +346,7 @@ int lu(const Matrix<T>& A, Matrix<T>& LU, Vector<unsigned int>& index)
 		}
 	}
 	if (LU[n - 1][n - 1] == (T)0.0)
-		std::runtime_error("Error in LU decomposition: matrix was singular");
+		std::logic_error("Error in LU decomposition: matrix was singular");
 		
 	return ex;
 }
@@ -355,10 +355,10 @@ template <typename T>
 Vector<T> lu_solve(const Matrix<T>& LU, const Vector<T>& b, Vector<unsigned int>& index)
 {
 	if (LU.ncols() != LU.nrows())
-		throw std::runtime_error("Error in LU solve: LU matrix should be squared");
+		throw std::logic_error("Error in LU solve: LU matrix should be squared");
 	unsigned int n = LU.ncols();
 	if (b.size() != n)
-		throw std::runtime_error("Error in LU solve: b vector must be of the same dimensions of LU matrix");
+		throw std::logic_error("Error in LU solve: b vector must be of the same dimensions of LU matrix");
 	Vector<T> x((T)0.0, n);
 	int i, j, p;
 	T sum;
@@ -395,7 +395,7 @@ template <typename T>
 Matrix<T> lu_inverse(const Matrix<T>& A)
 {
 	if (A.ncols() != A.nrows())
-		throw std::runtime_error("Error in LU invert: matrix must be squared");	
+		throw std::logic_error("Error in LU invert: matrix must be squared");	
 	unsigned int n = A.ncols();
 	Matrix<T> A1(n, n), LU;
 	Vector<unsigned int> index;
@@ -415,7 +415,7 @@ template <typename T>
 T lu_det(const Matrix<T>& A)
 {
 	if (A.ncols() != A.nrows())
-		throw std::runtime_error("Error in LU determinant: matrix must be squared");	
+		throw std::logic_error("Error in LU determinant: matrix must be squared");	
 	unsigned int d;
 	Matrix<T> LU;
 	Vector<unsigned int> index;
@@ -429,7 +429,7 @@ template <typename T>
 void cholesky(const Matrix<T> A, Matrix<T>& LL) 
 {
 	if (A.ncols() != A.nrows())
-		throw std::runtime_error("Error in Cholesky decomposition: matrix must be squared");
+		throw std::logic_error("Error in Cholesky decomposition: matrix must be squared");
   register int i, j, k, n = A.ncols();
   register double sum;
 	LL = A;
@@ -444,7 +444,7 @@ void cholesky(const Matrix<T> A, Matrix<T>& LL)
       if (i == j) 
       {
         if (sum <= 0.0)
-          throw std::runtime_error("Error in Cholesky decomposition: matrix is not postive definite");
+          throw std::logic_error("Error in Cholesky decomposition: matrix is not postive definite");
         LL[i][i] = sqrt(sum);
       }
       else
@@ -468,10 +468,10 @@ template <typename T>
 Vector<T> cholesky_solve(const Matrix<T>& LL, const Vector<T>& b)
 {
 	if (LL.ncols() != LL.nrows())
-		throw std::runtime_error("Error in Cholesky solve: matrix must be squared");
+		throw std::logic_error("Error in Cholesky solve: matrix must be squared");
 	unsigned int n = LL.ncols();
 	if (b.size() != n)
-		throw std::runtime_error("Error in Cholesky decomposition: b vector must be of the same dimensions of LU matrix");
+		throw std::logic_error("Error in Cholesky decomposition: b vector must be of the same dimensions of LU matrix");
   Vector<T> x, y;
 	
 	/* Solve L * y = b */
@@ -492,9 +492,9 @@ template <typename T>
 void forward_elimination(const Matrix<T>& L, Vector<T>& y, const Vector<T> b)
 {
 	if (L.ncols() != L.nrows())
-		throw std::runtime_error("Error in Forward elimination: matrix must be squared (lower triangular)");
+		throw std::logic_error("Error in Forward elimination: matrix must be squared (lower triangular)");
 	if (b.size() != L.nrows())
-		throw std::runtime_error("Error in Forward elimination: b vector must be of the same dimensions of L matrix");
+		throw std::logic_error("Error in Forward elimination: b vector must be of the same dimensions of L matrix");
 	register int i, j, n = b.size();
 	y.resize(n);
 	
@@ -521,9 +521,9 @@ template <typename T>
 void backward_elimination(const Matrix<T>& U, Vector<T>& x, const Vector<T>& y)
 {
 	if (U.ncols() != U.nrows())
-		throw std::runtime_error("Error in Backward elimination: matrix must be squared (upper triangular)");
+		throw std::logic_error("Error in Backward elimination: matrix must be squared (upper triangular)");
 	if (y.size() != U.nrows())
-		throw std::runtime_error("Error in Backward elimination: b vector must be of the same dimensions of U matrix");
+		throw std::logic_error("Error in Backward elimination: b vector must be of the same dimensions of U matrix");
 	register int i, j, n = y.size();
 	x.resize(n);
 	

@@ -4,8 +4,8 @@
 #include "MoveRunner.hh"
 #include "../helpers/StateManager.hh"
 #include "../helpers/NeighborhoodExplorer.hh"
-#include "../basics/EasyLocalException.hh"
 #include "../utils/Types.hh"
+#include "../utils/clparser/CLParser.hh"
 
 /** The Steepest Descent runner performs a simple local search.
    At each step of the search, the best move in the neighborhood of current
@@ -16,24 +16,28 @@
 */  
 template <class Input, class State, class Move, typename CFtype = int>
 class SteepestDescent
-            : public MoveRunner<Input,State,Move,CFtype>
+: public MoveRunner<Input,State,Move,CFtype>
 {
 public:
-    SteepestDescent(const Input& in,
-                    StateManager<Input,State,CFtype>& e_sm,
-                    NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
-                    const std::string& name = "Anonymous Steepest Descent runner");
-    void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout)
-    throw(EasyLocalException);
-    void Print(std::ostream& os = std::cout) const;
+	SteepestDescent(const Input& in,
+									StateManager<Input,State,CFtype>& e_sm,
+									NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
+									std::string name);	
+	SteepestDescent(const Input& in,
+									StateManager<Input,State,CFtype>& e_sm,
+									NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
+									std::string name,
+									CLParser& cl);		
+	void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout);
+	void Print(std::ostream& os = std::cout) const;
 protected:
-    void GoCheck() const throw(EasyLocalException);
-    void InitializeRun();
-    void TerminateRun();
-    void StoreMove();
-    bool StopCriterion();
-    bool AcceptableMove();
-    void SelectMove();
+	void GoCheck() const;
+	void InitializeRun();
+	void TerminateRun();
+	void StoreMove();
+	bool StopCriterion();
+	bool AcceptableMove();
+	void SelectMove();
 };
 
 /*************************************************************************
@@ -46,13 +50,21 @@ protected:
 
    @param s a pointer to a compatible state manager
    @param ne a pointer to a compatible neighborhood explorer
-   @param in a poiter to an input object
+   @param in a pointer to an input object
 */
 template <class Input, class State, class Move, typename CFtype>
 SteepestDescent<Input,State,Move,CFtype>::SteepestDescent(const Input& in,
         StateManager<Input,State,CFtype>& e_sm, NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
-        const std::string& name)
-        : MoveRunner<Input,State,Move,CFtype>(in, e_sm, e_ne, name)
+        std::string name)
+: MoveRunner<Input,State,Move,CFtype>(in, e_sm, e_ne, name)
+{}
+
+template <class Input, class State, class Move, typename CFtype>
+SteepestDescent<Input,State,Move,CFtype>::SteepestDescent(const Input& in,
+																													StateManager<Input,State,CFtype>& e_sm, NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
+																													std::string name,
+																													CLParser& cl)
+: MoveRunner<Input,State,Move,CFtype>(in, e_sm, e_ne, name)
 {}
 
 template <class Input, class State, class Move, typename CFtype>
@@ -85,7 +97,7 @@ void SteepestDescent<Input,State,Move,CFtype>::InitializeRun()
 
 template <class Input, class State, class Move, typename CFtype>
 void SteepestDescent<Input,State,Move,CFtype>::GoCheck() const
-throw(EasyLocalException)
+
 {}
 
 /**
@@ -100,23 +112,20 @@ bool SteepestDescent<Input,State,Move,CFtype>::StopCriterion()
 */
 template <class Input, class State, class Move, typename CFtype>
 bool SteepestDescent<Input,State,Move,CFtype>::AcceptableMove()
-{ return LessThan<CFtype>(this->current_move_cost,0); }
+{ return LessThan<CFtype>(this->current_move_cost, (CFtype)0); }
 
 template <class Input, class State, class Move, typename CFtype>
 void SteepestDescent<Input,State,Move,CFtype>::StoreMove()
 {
-  if (LessThan(this->current_state_cost,this->best_state_cost))
-    {
-        this->iteration_of_best = this->number_of_iterations;
-        this->best_state_cost = this->current_state_cost;
-#if VERBOSE >= 2
-	  std::cerr << "  New best: " << this->current_state_cost 
-		    << " (it: " << this->number_of_iterations << "), " 
-		    << "Costs: ";
-	  this->sm.PrintStateReducedCost(this->current_state, std::cerr);
-	  std::cerr << ", Move: " << this->current_move << std::endl; 	  
-#endif
-    }
+	if (this->observer != NULL)
+		this->observer->NotifyStoreMove(*this);
+  if (LessThan(this->current_state_cost, this->best_state_cost))
+	{
+		if (this->observer != NULL)
+			this->observer->NotifyNewBest(*this);
+		this->iteration_of_best = this->number_of_iterations;
+		this->best_state_cost = this->current_state_cost;
+	}
 }
 
 /**
@@ -133,6 +142,6 @@ void SteepestDescent<Input,State,Move,CFtype>::TerminateRun()
 
 template <class Input, class State, class Move, typename CFtype>
 void SteepestDescent<Input,State,Move,CFtype>::ReadParameters(std::istream& is, std::ostream& os)
-throw(EasyLocalException)
+
 {}
 #endif /*STEEPESTDESCENT_HH_*/

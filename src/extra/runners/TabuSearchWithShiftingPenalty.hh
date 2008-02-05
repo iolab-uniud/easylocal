@@ -3,7 +3,6 @@
 
 #include "../../runners/MoveRunner.hh"
 #include "../../runners/TabuSearch.hh"
-#include "../../basics/EasyLocalException.hh"
 #include "../../helpers/StateManager.hh"
 #include "../../helpers/NeighborhoodExplorer.hh"
 #include "../../helpers/TabuListManager.hh"
@@ -19,8 +18,9 @@ public:
 				TabuListManager<State,Move,CFtype>& tlm,
 				std::string name = "Anonymous Tabu Search With Shifting Penalty runner");
   void Print(std::ostream& os = std::cout) const;
-  void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout)
-    throw(EasyLocalException);
+  void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout);
+	void SetShiftRegion(double sr)
+	{ shift_region = sr; }
   void SetWeightRegion(double w) { shift_region = w; }
 protected:
   void InitializeRun();
@@ -178,7 +178,6 @@ void TabuSearchWithShiftingPenalty<Input,State,Move,CFtype>::StoreMove()
 
 template <class Input, class State, class Move, typename CFtype>
 void TabuSearchWithShiftingPenalty<Input,State,Move,CFtype>::ReadParameters(std::istream& is, std::ostream& os)
-  throw(EasyLocalException)
 {
   os << "TABU SEARCH WITH SHIFTING PENALTY -- INPUT PARAMETERS" << std::endl;
   TabuSearch<Input,State,Move,CFtype>::ReadParameters(is,os);

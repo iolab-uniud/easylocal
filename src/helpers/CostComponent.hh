@@ -1,7 +1,8 @@
 #ifndef COSTCOMPONENT_HH_
 #define COSTCOMPONENT_HH_
 
-#include "basics/EasyLocalObject.hh"
+#include <iostream>
+
 
 /** The class CostComponent manages one single component of the
       cost, either hard or soft 
@@ -10,7 +11,6 @@
 
 template <class Input, class State, typename CFtype = int>
 class CostComponent
-            : public EasyLocalObject
 {
 public:
     void Print(std::ostream& os = std::cout) const;
@@ -23,8 +23,10 @@ public:
     void SetSoft() { is_hard = false; }
     bool IsHard() const { return is_hard; }
     bool IsSoft() const { return !is_hard; }
+    const std::string name;
 protected:
-    CostComponent(const Input& in, const CFtype& weight, bool hard, std::string name = "");
+    CostComponent(const Input& in, const CFtype& weight, bool hard, std::string name);
+    virtual ~CostComponent() {}
     const Input& in;
     CFtype weight;
     bool is_hard;
@@ -35,19 +37,19 @@ protected:
  *************************************************************************/
  
 template <class Input, class State, typename CFtype>
-CostComponent<Input,State,CFtype>::CostComponent(const Input& i, const CFtype& w, bool hard, std::string name)
-        : EasyLocalObject(name), in(i), weight(w), is_hard(hard)
+CostComponent<Input,State,CFtype>::CostComponent(const Input& i, const CFtype& w, bool hard, std::string e_name)
+        : name(e_name), in(i), weight(w), is_hard(hard)
 {}
 
 
 template <class Input, class State, typename CFtype>
 void CostComponent<Input,State,CFtype>::Print(std::ostream& os) const
-    { os  << "Cost Component: " << GetName() << std::endl; }
+    { os  << "Cost Component: " << name << std::endl; }
 
 template <class Input, class State, typename CFtype>
 void CostComponent<Input,State,CFtype>::PrintCost(const State& st,
         std::ostream& os) const
-    { os  << "Cost Component " << GetName() << ": " << Cost(st) << std::endl; }
+    { os  << "Cost Component: " << name << ": " << Cost(st) << std::endl; }
 
 
 #endif

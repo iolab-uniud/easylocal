@@ -1,6 +1,10 @@
 #ifndef TYPES_HH_
 #define TYPES_HH_
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 template <typename CFtype>
 bool IsZero(CFtype value);
 

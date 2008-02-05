@@ -1,9 +1,6 @@
 #ifndef PROHIBITIONMANAGER_HH_
 #define PROHIBITIONMANAGER_HH_
 
-#include "basics/EasyLocalObject.hh"
-#include "basics/EasyLocalException.hh"
-
 /** The Prohibition Manager deals with move prohibition mechanisms
      that prevents cycling and allows for diversification.  
      
@@ -14,7 +11,6 @@
   */
 template <class State, class Move, typename CFtype = int>
 class ProhibitionManager
-            : virtual public EasyLocalObject
 {
 public:
     /** Marks a given move as prohibited, according to the prohibition
@@ -38,10 +34,16 @@ public:
     virtual void Clean() = 0;
     /** Checks whether the state of the prohibition manager is consistent
     with the attached objects. */
-    virtual void Check() const throw(EasyLocalException)
+    virtual void Check() const
     {}
     virtual void UpdateIteration() = 0;
 protected:
+      ProhibitionManager();
+    virtual ~ProhibitionManager() {}
 };
+
+template <class State, class Move, typename CFtype>
+ProhibitionManager<State,Move,CFtype>::ProhibitionManager() 
+{}
 
 #endif /*PROHIBITIONMANAGER_HH_*/

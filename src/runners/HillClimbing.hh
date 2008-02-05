@@ -1,10 +1,13 @@
 #ifndef HILLCLIMBING_HH_
 #define HILLCLIMBING_HH_
 
-#include "../basics/EasyLocalException.hh"
 #include "../helpers/StateManager.hh"
 #include "../helpers/NeighborhoodExplorer.hh"
 #include "MoveRunner.hh"
+#include "../utils/clparser/CLParser.hh"
+#include "../utils/clparser/ArgumentGroup.hh"
+#include "../utils/clparser/ValArgument.hh"
+#include <stdexcept>
 
 /** The Hill Climbing runner considers random move selection. A move
     is then performed only if it does improve or it leaves unchanged
@@ -13,26 +16,29 @@
 */
 template <class Input, class State, class Move, typename CFtype = int>
 class HillClimbing
-            : public MoveRunner<Input,State,Move,CFtype>
+: public MoveRunner<Input,State,Move,CFtype>
 {
 public:
-    HillClimbing(const Input& in, StateManager<Input,State,CFtype>& e_sm,
-                 NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne, const std::string& name = "Anonymous Hill Climbing runner");
-    void Print(std::ostream& os = std::cout) const;
-    void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout)
-    throw(EasyLocalException);
-    virtual void SetMaxIdleIteration(unsigned long m) { max_idle_iteration = m; }
+	HillClimbing(const Input& in, StateManager<Input,State,CFtype>& e_sm,
+							 NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne, std::string name);
+	HillClimbing(const Input& in, StateManager<Input,State,CFtype>& e_sm,
+							 NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne, std::string name, CLParser& cl);
+	void Print(std::ostream& os = std::cout) const;
+	void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout);
+	virtual void SetMaxIdleIteration(unsigned long m) { max_idle_iteration = m; }
   bool MaxIdleIterationExpired() const;
 protected:
-    void GoCheck() const throw(EasyLocalException);
-    void InitializeRun();
-    void TerminateRun();
-    bool StopCriterion();
-    bool AcceptableMove();
-    void StoreMove();
-    void SelectMove();
-    // parameters
-    unsigned long max_idle_iteration;
+	void GoCheck() const;
+	void InitializeRun();
+	void TerminateRun();
+	bool StopCriterion();
+	bool AcceptableMove();
+	void StoreMove();
+	void SelectMove();
+	// parameters
+	unsigned long max_idle_iteration;
+	ArgumentGroup hill_climbing_arguments;
+	ValArgument<unsigned long> arg_max_idle_iteration;
 };
 
 /*************************************************************************
@@ -49,10 +55,30 @@ protected:
 */
 template <class Input, class State, class Move, typename CFtype>
 HillClimbing<Input,State,Move,CFtype>::HillClimbing(const Input& in,
-        StateManager<Input,State,CFtype>& e_sm,
-        NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne, const std::string& name)
-        : MoveRunner<Input,State,Move,CFtype>(in, e_sm, e_ne, name), max_idle_iteration(0)
-{}
+                                                    StateManager<Input,State,CFtype>& e_sm,
+                                                    NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
+                                                    std::string name)
+: MoveRunner<Input,State,Move,CFtype>(in, e_sm, e_ne, name), max_idle_iteration(0),
+hill_climbing_arguments("hc_" + name, "hc_" + name, false), arg_max_idle_iteration("max_idle_iteration", "mii", true)
+{
+	hill_climbing_arguments.AddArgument(arg_max_idle_iteration);
+}
+
+template <class Input, class State, class Move, typename CFtype>
+HillClimbing<Input,State,Move,CFtype>::HillClimbing(const Input& in,
+                                                    StateManager<Input,State,CFtype>& e_sm,
+                                                    NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
+                                                    std::string name,
+																										CLParser& cl)
+: MoveRunner<Input,State,Move,CFtype>(in, e_sm, e_ne, name), max_idle_iteration(0),
+hill_climbing_arguments("hc_" + name, "hc_" + name, false), arg_max_idle_iteration("max_idle_iteration", "mii", true)
+{
+	hill_climbing_arguments.AddArgument(arg_max_idle_iteration);
+	cl.AddArgument(hill_climbing_arguments);
+	cl.MatchArgument(hill_climbing_arguments);
+	if (hill_climbing_arguments.IsSet())
+		max_idle_iteration = arg_max_idle_iteration.GetValue();
+}
 
 template <class Input, class State, class Move, typename CFtype>
 void HillClimbing<Input,State,Move,CFtype>::Print(std::ostream& os) const
@@ -85,10 +111,10 @@ void HillClimbing<Input,State,Move,CFtype>::InitializeRun()
 
 template <class Input, class State, class Move, typename CFtype>
 void HillClimbing<Input,State,Move,CFtype>::GoCheck() const
-throw(EasyLocalException)
+
 {
     if (this->max_idle_iteration == 0)
-        throw EasyLocalException("max_idle_iteration is zero for object " + this->GetName());
+        throw std::logic_error("max_idle_iteration is zero for object " + this->name);
 }
 
 /**
@@ -134,23 +160,20 @@ bool HillClimbing<Input,State,Move,CFtype>::AcceptableMove()
 template <class Input, class State, class Move, typename CFtype>
 void HillClimbing<Input,State,Move,CFtype>::StoreMove()
 {
-  if (LessThan(this->current_move_cost,0))
-    {
-        this->iteration_of_best = this->number_of_iterations;
-        this->best_state_cost = this->current_state_cost;
-#if VERBOSE >= 2
-	  std::cerr << "  New best: " << this->current_state_cost 
-		    << " (it: " << this->number_of_iterations << "), " 
-		    << "Costs: ";
-	  this->sm.PrintStateReducedCost(this->current_state, std::cerr);
-	  std::cerr << ", Move: " << this->current_move << std::endl; 	  
-#endif
-    }
+  if (this->observer != NULL)
+    this->observer->NotifyStoreMove(*this);
+  if (LessThan(this->current_move_cost, (CFtype)0))
+	{
+		if (this->observer != NULL)
+			this->observer->NotifyNewBest(*this);
+		this->iteration_of_best = this->number_of_iterations;
+		this->best_state_cost = this->current_state_cost;
+	}
 }
 
 template <class Input, class State, class Move, typename CFtype>
 void HillClimbing<Input,State,Move,CFtype>::ReadParameters(std::istream& is, std::ostream& os)
-throw(EasyLocalException)
+
 {
     os << "HILL CLIMBING -- INPUT PARAMETERS" << std::endl;
     os << "  Number of idle iterations: ";

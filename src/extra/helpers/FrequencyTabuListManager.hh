@@ -14,8 +14,7 @@ public:
     bool ProhibitedMove(const State& st, const Move& mv, double mv_cost) const;
     void Clean();
 protected:
-    FrequencyTabuListManager(unsigned int min = 0, unsigned int max = 0,
-                             double thr = 0.04, unsigned int min_it = 100);
+    FrequencyTabuListManager(double thr = 0.04, unsigned int min_it = 100);
     typedef std::map<Move,unsigned long> MapType;
     MapType frequency_map;
     double threshold;
@@ -49,11 +48,9 @@ void FrequencyTabuListManager<State,Move,CFtype>::InsertMove(const State& st, co
 }
 
 template <class State, class Move, typename CFtype>
-FrequencyTabuListManager<State,Move,CFtype>::FrequencyTabuListManager(unsigned int min,
-        unsigned int max,
-        double thr,
+FrequencyTabuListManager<State,Move,CFtype>::FrequencyTabuListManager(double thr,
         unsigned int min_it)
-        : TabuListManager<State,Move,CFtype>(min,max), threshold(thr), min_iter(min_it)
+        : TabuListManager<State,Move,CFtype>(), threshold(thr), min_iter(min_it)
 {}
 
 template <class State, class Move, typename CFtype>

@@ -1,6 +1,5 @@
 /*
- *  Vector.h
- *  CWM
+ *  Vector.hh
  *
  *  Created by Luca Di Gaspero on 10/11/06.
  *  Copyright 2006 Luca Di Gaspero. All rights reserved.
@@ -9,6 +8,10 @@
 
 #ifndef _VECTOR_HH
 #define _VECTOR_HH
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
 #include <stdexcept>
 #include <set>
@@ -177,7 +180,7 @@ inline Vector<T> Vector<T>::extract(const std::set<unsigned int>& indexes) const
 	for (std::set<unsigned int>::const_iterator el = indexes.begin(); el != indexes.end(); el++)
 	{
 		if (*el >= n)
-			throw std::runtime_error("Error extracting subvector: the indexes are out of vector bounds");
+			throw std::logic_error("Error extracting subvector: the indexes are out of vector bounds");
 		tmp[i++] = v[*el];
 	}
 	
@@ -188,7 +191,7 @@ template <typename T>
 inline Vector<T>& Vector<T>::operator+=(const Vector<T>& rhs)
 {
 	if (this->size() != rhs.size())
-		throw std::runtime_error("Operator+=: vectors have different sizes");
+		throw std::logic_error("Operator+=: vectors have different sizes");
 	for (unsigned int i = 0; i < n; i++)
 		v[i] += rhs[i];
 	
@@ -215,7 +218,7 @@ template <typename T>
 inline Vector<T> operator+(const Vector<T>& lhs, const Vector<T>& rhs)
 {
 	if (lhs.size() != rhs.size())
-		throw std::runtime_error("Operator+: vectors have different sizes");
+		throw std::logic_error("Operator+: vectors have different sizes");
 	Vector<T> tmp(lhs.size());
 	for (unsigned int i = 0; i < lhs.size(); i++)
 		tmp[i] = lhs[i] + rhs[i];
@@ -247,7 +250,7 @@ template <typename T>
 inline Vector<T>& Vector<T>::operator-=(const Vector<T>& rhs)
 {
 	if (this->size() != rhs.size())
-		throw std::runtime_error("Operator-=: vectors have different sizes");
+		throw std::logic_error("Operator-=: vectors have different sizes");
 	for (unsigned int i = 0; i < n; i++)
 		v[i] -= rhs[i];
 	
@@ -274,7 +277,7 @@ template <typename T>
 inline Vector<T> operator-(const Vector<T>& lhs, const Vector<T>& rhs)
 {
 	if (lhs.size() != rhs.size())
-		throw std::runtime_error("Operator-: vectors have different sizes");
+		throw std::logic_error("Operator-: vectors have different sizes");
 	Vector<T> tmp(lhs.size());
 	for (unsigned int i = 0; i < lhs.size(); i++)
 		tmp[i] = lhs[i] - rhs[i];
@@ -306,7 +309,7 @@ template <typename T>
 inline Vector<T>& Vector<T>::operator*=(const Vector<T>& rhs)
 {
 	if (this->size() != rhs.size())
-		throw std::runtime_error("Operator*=: vectors have different sizes");
+		throw std::logic_error("Operator*=: vectors have different sizes");
 	for (unsigned int i = 0; i < n; i++)
 		v[i] *= rhs[i];
 	
@@ -327,7 +330,7 @@ template <typename T>
 inline Vector<T> operator*(const Vector<T>& lhs, const Vector<T>& rhs)
 {
 	if (lhs.size() != rhs.size())
-		throw std::runtime_error("Operator*: vectors have different sizes");
+		throw std::logic_error("Operator*: vectors have different sizes");
 	Vector<T> tmp(lhs.size());
 	for (unsigned int i = 0; i < lhs.size(); i++)
 		tmp[i] = lhs[i] * rhs[i];
@@ -359,7 +362,7 @@ template <typename T>
 inline Vector<T>& Vector<T>::operator/=(const Vector<T>& rhs)
 {
 	if (this->size() != rhs.size())
-		throw std::runtime_error("Operator/=: vectors have different sizes");
+		throw std::logic_error("Operator/=: vectors have different sizes");
 	for (unsigned int i = 0; i < n; i++)
 		v[i] /= rhs[i];
 	
@@ -380,7 +383,7 @@ template <typename T>
 inline Vector<T> operator/(const Vector<T>& lhs, const Vector<T>& rhs)
 {
 	if (lhs.size() != rhs.size())
-		throw std::runtime_error("Operator/: vectors have different sizes");
+		throw std::logic_error("Operator/: vectors have different sizes");
 	Vector<T> tmp(lhs.size());
 	for (unsigned int i = 0; i < lhs.size(); i++)
 		tmp[i] = lhs[i] / rhs[i];
@@ -412,7 +415,7 @@ template <typename T>
 inline Vector<T> operator^(const Vector<T>& lhs, const Vector<T>& rhs)
 {
 	if (lhs.size() != rhs.size())
-		throw std::runtime_error("Operator^: vectors have different sizes");
+		throw std::logic_error("Operator^: vectors have different sizes");
 	Vector<T> tmp(lhs.size());
 	for (unsigned int i = 0; i < lhs.size(); i++)
 		tmp[i] = pow(lhs[i], rhs[i]);
@@ -444,7 +447,7 @@ template <typename T>
 inline Vector<T>& Vector<T>::operator^=(const Vector<T>& rhs)
 {
 	if (this->size() != rhs.size())
-		throw std::runtime_error("Operator^=: vectors have different sizes");
+		throw std::logic_error("Operator^=: vectors have different sizes");
 	for (unsigned int i = 0; i < n; i++)
 		v[i] = pow(v[i], rhs[i]);
 		
@@ -464,7 +467,7 @@ template <typename T>
 inline bool operator==(const Vector<T>& v, const Vector<T>& w)
 {
 	if (v.size() != w.size())
-		throw std::runtime_error("Vectors of different size are not confrontable");
+		throw std::logic_error("Vectors of different size are not confrontable");
 	for (unsigned i = 0; i < v.size(); i++)
 		if (v[i] != w[i])
 			return false;
@@ -475,7 +478,7 @@ template <typename T>
 inline bool operator!=(const Vector<T>& v, const Vector<T>& w)
 {
 	if (v.size() != w.size())
-		throw std::runtime_error("Vectors of different size are not confrontable");
+		throw std::logic_error("Vectors of different size are not confrontable");
 	for (unsigned i = 0; i < v.size(); i++)
 		if (v[i] != w[i])
 			return true;
@@ -486,7 +489,7 @@ template <typename T>
 inline bool operator<(const Vector<T>& v, const Vector<T>& w)
 {
 	if (v.size() != w.size())
-		throw std::runtime_error("Vectors of different size are not confrontable");
+		throw std::logic_error("Vectors of different size are not confrontable");
 	for (unsigned i = 0; i < v.size(); i++)
 		if (v[i] >= w[i])
 			return false;
@@ -497,7 +500,7 @@ template <typename T>
 inline bool operator<=(const Vector<T>& v, const Vector<T>& w)
 {
 	if (v.size() != w.size())
-		throw std::runtime_error("Vectors of different size are not confrontable");
+		throw std::logic_error("Vectors of different size are not confrontable");
 	for (unsigned i = 0; i < v.size(); i++)
 		if (v[i] > w[i])
 			return false;
@@ -508,7 +511,7 @@ template <typename T>
 inline bool operator>(const Vector<T>& v, const Vector<T>& w)
 {
 	if (v.size() != w.size())
-		throw std::runtime_error("Vectors of different size are not confrontable");
+		throw std::logic_error("Vectors of different size are not confrontable");
 	for (unsigned i = 0; i < v.size(); i++)
 		if (v[i] <= w[i])
 			return false;
@@ -519,7 +522,7 @@ template <typename T>
 inline bool operator>=(const Vector<T>& v, const Vector<T>& w)
 {
 	if (v.size() != w.size())
-		throw std::runtime_error("Vectors of different size are not confrontable");
+		throw std::logic_error("Vectors of different size are not confrontable");
 	for (unsigned i = 0; i < v.size(); i++)
 		if (v[i] < w[i])
 			return false;

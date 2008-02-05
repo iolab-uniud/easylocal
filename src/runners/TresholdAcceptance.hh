@@ -4,7 +4,7 @@
 #include "MoveRunner.hh"
 #include "../helpers/StateManager.hh"
 #include "../helpers/NeighborhoodExplorer.hh"
-#include "../basics/EasyLocalException.hh"
+#include "../basics/std::logic_exception.hh"
 #include <cmath>
 
 /** @ingroup Runners
@@ -17,13 +17,13 @@ public:
     ThresholdAcceptance(const Input& in,
                        StateManager<Input,State,CFtype>& e_sm,
                        NeighborhoodExplorer<Input,State,Move>& e_ne,
-                       const std::string& name = "Anonymous Threshold Acceptance runner");
+                        std::string name = "Anonymous Threshold Acceptance runner");
 
     void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout)
-    throw(EasyLocalException);
+   ;
     void Print(std::ostream& os = std::cout) const;
 protected:
-    void GoCheck() const throw(EasyLocalException);
+    void GoCheck() const;
     void InitializeRun();
     void TerminateRun();
     bool StopCriterion();
@@ -55,7 +55,7 @@ template <class Input, class State, class Move, typename CFtype = int>
 ThresholdAcceptance<Input,State,Move>::ThresholdAcceptance(const Input& in,
         StateManager<Input,State,CFtype>& e_sm,
         NeighborhoodExplorer<Input,State,Move>& e_ne,
-        const std::string& name)
+        std::string name)
         : MoveRunner<Input,State,Move>(in, e_sm, e_ne, name),
         start_threshold(2.0), min_threshold(0.0001),
         threshold_rate(0.75), neighbors_sampled(1)
@@ -86,14 +86,14 @@ void ThresholdAcceptance<Input,State,Move>::InitializeRun()
 
 template <class Input, class State, class Move, typename CFtype = int>
 void ThresholdAcceptance<Input,State,Move>::GoCheck() const
-throw(EasyLocalException)
+
 {
     if (start_threshold <= 0)
-        throw EasyLocalException("negative start_temparature for object " + this->GetName());
+        throw std::logic_exception("negative start_temparature for object " + this->GetName());
     if (threshold_rate <= 0)
-        throw EasyLocalException("negative threshold_rate for object " + this->GetName());
+        throw std::logic_exception("negative threshold_rate for object " + this->GetName());
     if (neighbors_sampled == 0)
-        throw EasyLocalException("neighbors_sampled is zero for object " + this->GetName());
+        throw std::logic_exception("neighbors_sampled is zero for object " + this->GetName());
 }
 
 /**
@@ -131,7 +131,7 @@ void ThresholdAcceptance<Input,State,Move>::StoreMove()
 
 template <class Input, class State, class Move, typename CFtype = int>
 void ThresholdAcceptance<Input,State,Move>::ReadParameters(std::istream& is, std::ostream& os)
-throw(EasyLocalException)
+
 {
     os << "THRESHOLD ACCEPTANCE -- INPUT PARAMETERS" << std::endl;
     os << "  Start threshold: ";

@@ -11,8 +11,8 @@ class QueensOutputManager
             : public OutputManager<unsigned, ChessBoard, std::vector<unsigned> >
 {
 public:
-    QueensOutputManager(const unsigned& bs, QueensStateManager& qsm)
-            : OutputManager<unsigned,ChessBoard,std::vector<unsigned> >(bs, qsm) {}
+  QueensOutputManager(const unsigned& bs, QueensStateManager& qsm)
+  : OutputManager<unsigned,ChessBoard,std::vector<unsigned> >(bs, qsm, "QueensOutputManager") {}
     void OutputState(const std::vector<unsigned> &a, ChessBoard& cb) const;
     void InputState(std::vector<unsigned> &a, const ChessBoard& cb) const;
 };

@@ -1,7 +1,6 @@
 #ifndef RUNNERS_HH_
 #define RUNNERS_HH_
 
-#include "runners/AbstractRunner.hh"
 #include "runners/Runner.hh"
 #include "runners/MoveRunner.hh"
 #include "runners/SteepestDescent.hh"

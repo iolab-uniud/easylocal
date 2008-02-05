@@ -11,17 +11,16 @@ class TrimodalSteepestDescent
             : public TrimodalMoveRunner<Input,State,Move1,Move2,Move3,CFtype>
 {
 public:
-    void Print(std::ostream& os = std::cout) const;
-    void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout)
-    throw(EasyLocalException);
-    TrimodalSteepestDescent(const Input& in,
-			   StateManager<Input,State,CFtype>& sm,
-                        NeighborhoodExplorer<Input,State,Move1,CFtype>& ne1,
-                        NeighborhoodExplorer<Input,State,Move2,CFtype>& ne2,
-                        NeighborhoodExplorer<Input,State,Move3,CFtype>& ne3,
-                        std::string name = "Anonymous Trimodal Steepest Descent runner");
+	void Print(std::ostream& os = std::cout) const;
+	void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout);
+	TrimodalSteepestDescent(const Input& in,
+													StateManager<Input,State,CFtype>& sm,
+													NeighborhoodExplorer<Input,State,Move1,CFtype>& ne1,
+													NeighborhoodExplorer<Input,State,Move2,CFtype>& ne2,
+													NeighborhoodExplorer<Input,State,Move3,CFtype>& ne3,
+													std::string name);
 protected:
-    void GoCheck() const throw(EasyLocalException);
+    void GoCheck() const;
     void InitializeRun();
     void TerminateRun();
     bool StopCriterion();
@@ -110,7 +109,6 @@ void TrimodalSteepestDescent<Input,State,Move1,Move2,Move3,CFtype>::InitializeRu
 
 template <class Input, class State, class Move1, class Move2, class Move3, typename CFtype>
 void TrimodalSteepestDescent<Input,State,Move1,Move2,Move3,CFtype>::GoCheck() const
-throw(EasyLocalException)
 {
 }
 
@@ -188,7 +186,6 @@ void TrimodalSteepestDescent<Input,State,Move1,Move2,Move3,CFtype>::StoreMove()
 
 template <class Input, class State, class Move1, class Move2, class Move3, typename CFtype>
 void TrimodalSteepestDescent<Input,State,Move1,Move2,Move3,CFtype>::ReadParameters(std::istream& is, std::ostream& os)
-throw(EasyLocalException)
 {
     os << "STEEPEST DESCENT -- INPUT PARAMETERS" << std::endl;
     os << "  Timeout: ";

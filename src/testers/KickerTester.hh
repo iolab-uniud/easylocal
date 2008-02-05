@@ -18,11 +18,8 @@ public:
                  Kicker<Input,State,CFtype>& k,
 		 std::string name
 		 );
-    //    void RunTestMenu(State& s);
-    void RunInputMenu(State& s);
 protected:
     void ShowMenu();
-    void ShowReducedMenu();
     bool ExecuteChoice(State& st);
     Kicker<Input,State,CFtype>& kicker;
 };
@@ -54,7 +51,7 @@ KickerTester<Input,Output,State,CFtype>::KickerTester(
 template <class Input, class Output, class State, typename CFtype>
 void KickerTester<Input,Output,State,CFtype>::ShowMenu()
 {
-    std::cout << "Kicker " << this->GetName() << " Menu: " << std::endl
+    std::cout << "Kicker " << this->name << " Menu: " << std::endl
     << "    (1) Random kick" << std::endl
     << "    (2) Best kick" << std::endl
     << "    (3) First improving kick" << std::endl

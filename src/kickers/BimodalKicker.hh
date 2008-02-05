@@ -53,8 +53,7 @@ public:
   virtual bool RelatedMoves(const Move1 &mv1, const Move2 &mv2) const = 0;
   virtual bool RelatedMoves(const Move2 &mv1, const Move1 &mv2) const = 0;
   virtual bool RelatedMoves(const Move2 &mv1, const Move2 &mv2) const = 0;
-  void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout)
-    throw(EasyLocalException);
+  void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout);
 protected:
   NeighborhoodExplorer<Input,State,Move1,CFtype>& nhe1;
   NeighborhoodExplorer<Input,State,Move2,CFtype>& nhe2;
@@ -112,7 +111,7 @@ CFtype BimodalKicker<Input,State,Move1,Move2,CFtype>::SelectKick(const State& st
     case TOTAL_FIRST_IMPROVING_KICK:
       return TotalFirstImprovingKick(st);
     default:
-      throw std::runtime_error("Unknown Kick Type for Bimodal Kickers");    
+      throw std::logic_error("Unknown Kick Type for Bimodal Kickers");    
     }
   return 0;  // Only to prevent warnings (never reached)
 }
@@ -544,7 +543,6 @@ bool BimodalKicker<Input,State,Move1,Move2,CFtype>::NextPattern()
 
 template <class Input, class State, class Move1, class Move2, typename CFtype>
 void BimodalKicker<Input,State,Move1,Move2,CFtype>::ReadParameters(std::istream& is , std::ostream& os)
-throw(EasyLocalException)
 {
 	unsigned s;
 	os << "BIMODAL KICKER -- INPUT PARAMETERS" << std::endl;

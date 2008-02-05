@@ -1,7 +1,10 @@
 #ifndef COMPONENTTESTER_HH_
 #define COMPONENTTESTER_HH_
 
-#include "../basics/EasyLocalObject.hh"
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include "../helpers/StateManager.hh"
 #include "../helpers/OutputManager.hh"
 #include "../utils/Chronometer.hh"
@@ -12,7 +15,6 @@
 */  
 template <class Input, class Output, class State, typename CFtype = int>
 class ComponentTester
-            : public EasyLocalObject
 {
 public:
     /** The method executes the interactions with the test menu on a given state.
@@ -24,6 +26,7 @@ public:
     @return true if state has been changed
     @param st the state */    
     virtual bool ExecuteChoice(State& st) = 0;
+    const std::string name;
 protected:
     ComponentTester( 
     	const Input& in, StateManager<Input,State,CFtype>& e_sm, 
@@ -36,9 +39,8 @@ protected:
         state manager. */
     OutputManager<Input,Output,State,CFtype>& om; /**< A pointer to the attached
                 output manager. */
-    Output out;   /**< The output object. */
+  Output out;   /**< The output object. */
     unsigned int choice;   /**< The option currently chosen from the menu. */
-    Chronometer chrono; /**< a chronometer */
 };
 
 /*************************************************************************
@@ -56,9 +58,9 @@ protected:
 template <class Input, class Output, class State, typename CFtype>
 ComponentTester<Input,Output,State,CFtype>::ComponentTester(const Input& i,
         StateManager<Input,State,CFtype>& e_sm,
-	OutputManager<Input,Output,State,CFtype>& e_om, std::string name)
-  : EasyLocalObject(name), in(i), sm(e_sm), om(e_om), out(in)
-{ }
+	OutputManager<Input,Output,State,CFtype>& e_om, std::string e_name)
+  : name(e_name), in(i), sm(e_sm), om(e_om), out(i)
+{}
 
 /**
    Manages the component tester menu for the given state.     
@@ -73,21 +75,21 @@ void ComponentTester<Input,Output,State,CFtype>::RunTestMenu(State& st)
         ShowMenu();
         if (choice != 0)
         {
-            this->chrono.Reset();
-            this->chrono.Start();
-            show_state = ExecuteChoice(st);
-            this->chrono.Stop();
-            if (show_state)
-            {
-                om.OutputState(st,out);
-                std::cout << "CURRENT SOLUTION " << std::endl << out << std::endl;
-                std::cout << "CURRENT COST : " << sm.CostFunction(st) << std::endl;
-            }
-            std::cout << "ELAPSED TIME : " << this->chrono.TotalTime() << 's' << std::endl;
+          Chronometer chrono;
+          chrono.Start();
+          show_state = ExecuteChoice(st);
+          chrono.Stop();
+          if (show_state)
+          {
+            om.OutputState(st,out);
+            std::cout << "CURRENT SOLUTION " << std::endl << out << std::endl;
+            std::cout << "CURRENT COST : " << sm.CostFunction(st) << std::endl;
+          }
+          std::cout << "ELAPSED TIME : " << chrono.TotalTime() << 's' << std::endl;
         }
     }
     while (choice != 0);
-    std::cout << "Leaving " << GetName() << " menu" << std::endl;
+    std::cout << "Leaving " << name << " menu" << std::endl;
 }
  
 #endif /*COMPONENTTESTER_HH_*/

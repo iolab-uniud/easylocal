@@ -20,7 +20,10 @@
 #include "../helpers/StateManager.hh"
 #include "../helpers/NeighborhoodExplorer.hh"
 #include "../helpers/TabuListManager.hh"
-#include "../basics/EasyLocalException.hh"
+#include "../utils/clparser/CLParser.hh"
+#include "../utils/clparser/ValArgument.hh"
+#include "../utils/clparser/ArgumentGroup.hh"
+#include <stdexcept>
 
 template <class Input, class State, class Move, typename CFtype = int>
 class TabuSearch
@@ -28,18 +31,20 @@ class TabuSearch
 {
 public:
   TabuSearch(const Input& in, StateManager<Input,State,CFtype>& e_sm,
-	     NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
-	     TabuListManager<State,Move,CFtype>& e_tlm,
-	     const std::string& name = "Anonymous Tabu Search runner");
-
+             NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
+             TabuListManager<State,Move,CFtype>& e_tlm,
+             std::string name);
+  TabuSearch(const Input& in, StateManager<Input,State,CFtype>& e_sm,
+             NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
+             TabuListManager<State,Move,CFtype>& e_tlm,
+             std::string name, CLParser& cl);	
   void Print(std::ostream& os = std::cout) const;
-  void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout)
-    throw(EasyLocalException);
+  void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout);
   virtual void SetMaxIdleIteration(unsigned long m) { max_idle_iteration = m; }
   TabuListManager<State,Move,CFtype>& GetTabuListManager() { return pm; }
   bool MaxIdleIterationExpired() const;
-    protected:
-  void GoCheck() const throw(EasyLocalException);
+protected:
+  void GoCheck() const;
   void InitializeRun();
   bool StopCriterion();
   void SelectMove();
@@ -48,6 +53,9 @@ public:
   TabuListManager<State,Move,CFtype>& pm; /**< A reference to a tabu list manger. */
   // parameters
   unsigned long max_idle_iteration;
+  ArgumentGroup tabu_search_arguments;
+  ValArgument<unsigned long> arg_max_idle_iteration;
+  ValArgument<unsigned int, 2> arg_tabu_tenure;
 };
 
 /*************************************************************************
@@ -65,19 +73,44 @@ public:
 */
 template <class Input, class State, class Move, typename CFtype>
 TabuSearch<Input,State,Move,CFtype>::TabuSearch(const Input& in,
-						StateManager<Input,State,CFtype>& e_sm,
-						NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
-						TabuListManager<State,Move,CFtype>& tlm,
-						const std::string& name)
-  : MoveRunner<Input,State,Move,CFtype>(in, e_sm, e_ne, name), pm(tlm), max_idle_iteration(0)
-{}
+                                                StateManager<Input,State,CFtype>& e_sm,
+                                                NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
+                                                TabuListManager<State,Move,CFtype>& tlm,
+                                                std::string name)
+  : MoveRunner<Input,State,Move,CFtype>(in, e_sm, e_ne, name), pm(tlm), max_idle_iteration(0), 
+    tabu_search_arguments("ts_" + name, "ts_" + name, false), arg_max_idle_iteration("max_idle_iteration", "mii", true), arg_tabu_tenure("tabu_tenure", "tt", true)
+{
+  tabu_search_arguments.AddArgument(arg_max_idle_iteration);
+  tabu_search_arguments.AddArgument(arg_tabu_tenure);
+}
+
+template <class Input, class State, class Move, typename CFtype>
+TabuSearch<Input,State,Move,CFtype>::TabuSearch(const Input& in,
+                                                StateManager<Input,State,CFtype>& e_sm,
+                                                NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
+                                                TabuListManager<State,Move,CFtype>& tlm,
+                                                std::string name, 
+						CLParser& cl)
+  : MoveRunner<Input,State,Move,CFtype>(in, e_sm, e_ne, name), pm(tlm), max_idle_iteration(0), 
+    tabu_search_arguments("ts_" + name, "ts_" + name, false), arg_max_idle_iteration("max_idle_iteration", "mii", true), arg_tabu_tenure("tabu_tenure", "tt", true)
+{
+  tabu_search_arguments.AddArgument(arg_max_idle_iteration);
+  tabu_search_arguments.AddArgument(arg_tabu_tenure);
+  cl.AddArgument(tabu_search_arguments);
+  cl.MatchArgument(tabu_search_arguments);
+  if (tabu_search_arguments.IsSet())
+    {
+      pm.SetLength(arg_tabu_tenure.GetValue(0), arg_tabu_tenure.GetValue(1));
+      max_idle_iteration = arg_max_idle_iteration.GetValue();
+    }
+}
 
 template <class Input, class State, class Move, typename CFtype>
 void TabuSearch<Input,State,Move,CFtype>::Print(std::ostream& os) const
 {
   os  << "Tabu Search Runner: " << this->GetName() << std::endl;
   os  << "  Max iterations: " << this->max_iteration << std::endl;
-  os  << "  Max idle iteration: " << this->max_idle_iteration << std::endl;
+  os  << "  Max idle iteration: " << max_idle_iteration << std::endl;
   pm.Print(os);
 }
 
@@ -94,10 +127,10 @@ void TabuSearch<Input,State,Move,CFtype>::InitializeRun()
 
 template <class Input, class State, class Move, typename CFtype>
 void TabuSearch<Input,State,Move,CFtype>::GoCheck() const
-  throw(EasyLocalException)
+ 
 {
   if (this->max_idle_iteration == 0)
-    throw EasyLocalException("max_idle_iteration is zero for object " + this->GetName());
+    throw std::logic_error("max_idle_iteration is zero for object " + this->name);
 }
 
 
@@ -184,29 +217,16 @@ bool TabuSearch<Input,State,Move,CFtype>::AcceptableMove()
 template <class Input, class State, class Move, typename CFtype>
 void TabuSearch<Input,State,Move,CFtype>::StoreMove()
 {
-#if VERBOSE >= 4
-  std::cerr << "Move : " << this->current_move << ", Move Cost:" << this->current_move_cost << " (current: "
-	    << this->current_state_cost << ", best: " 
-	    << this->best_state_cost <<  ") it: " << this->number_of_iterations
-	    << " (idle: " << this->number_of_iterations - this->iteration_of_best << ")" 
-	    << "Costs: ";
-  this->sm.PrintStateReducedCost(this->current_state, std::cerr);
-  std::cerr << std::endl; 
-#endif
+  if (this->observer != NULL)
+    this->observer->NotifyStoreMove(*this);
   pm.InsertMove(this->current_state, this->current_move, this->current_move_cost,
 		this->current_state_cost, this->best_state_cost);
   if (LessOrEqualThan(this->current_state_cost,this->best_state_cost))
     { // same cost states are accepted as best for diversification
       if (LessThan(this->current_state_cost,this->best_state_cost))
 	{
-#if VERBOSE == 3
-	  std::cerr << "  New best: " << this->current_state_cost 
-		    << " (it: " << this->number_of_iterations
-		    << ", idle: " << this->number_of_iterations - this->iteration_of_best << "), " 
-		    << "Costs: ";
-	  this->sm.PrintStateReducedCost(this->current_state, std::cerr);
-	  std::cerr << std::endl; 
-#endif
+	  if (this->observer != NULL)
+	    this->observer->NotifyNewBest(*this);
 	  this->iteration_of_best = this->number_of_iterations;
 	  this->best_state_cost = this->current_state_cost;
 	}
@@ -216,11 +236,11 @@ void TabuSearch<Input,State,Move,CFtype>::StoreMove()
 
 template <class Input, class State, class Move, typename CFtype>
 void TabuSearch<Input,State,Move,CFtype>::ReadParameters(std::istream& is, std::ostream& os)
-  throw(EasyLocalException)
+ 
 {
   os << "TABU SEARCH -- INPUT PARAMETERS" << std::endl;
   pm.ReadParameters(is, os);
   os << "  Number of idle iterations: ";
-  is >> this->max_idle_iteration;
+  is >> max_idle_iteration;
 }
 #endif /*TABUSEARCH_HH_*/

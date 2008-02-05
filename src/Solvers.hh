@@ -10,10 +10,9 @@
     are linked to one or more runners (for simple or composite
     search, respectively) and to some of the helpers.  
 */  
-
+#include "solvers/Solver.hh"
+#include "solvers/AbstractLocalSearchSolver.hh"
 #include "solvers/SimpleLocalSearch.hh"
-#include "solvers/TokenRingSolver.hh"
-#include "solvers/IteratedLocalSearch.hh"
-#include "solvers/MultiRunnerIteratedLocalSearch.hh"
+#include "solvers/GeneralizedLocalSearchSolver.hh"
 
 #endif /*SOLVERS_HH_*/

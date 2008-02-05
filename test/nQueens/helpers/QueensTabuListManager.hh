@@ -8,9 +8,9 @@
 /** This class handles the tabu list. */
 class QueensTabuListManager : public TabuListManager<std::vector<unsigned>, Swap>
 {
-public:
-	QueensTabuListManager(int min = 0, int max = 0) 
-	: TabuListManager<std::vector<unsigned>, Swap>(min,max) {}
+/* public:
+	QueensTabuListManager() 
+	: TabuListManager<std::vector<unsigned>, Swap>() {} */
 protected:
 	bool Inverse(const Swap& m1, const Swap& m2) const { return m1 == m2; }
 };

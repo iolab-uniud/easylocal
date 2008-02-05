@@ -1,11 +1,12 @@
 #ifndef SOLVER_HH_
 #define SOLVER_HH_
 
-#include "AbstractSolver.hh"
-#include "../basics/EasyLocalException.hh"
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include "../helpers/StateManager.hh"
 #include "../helpers/OutputManager.hh"
-#include "utils/Chronometer.hh"
 
 /** A Solver represents the external layer of EasyLocal++; it
     implements the Abstract Solver interface and furthermore is
@@ -14,17 +15,28 @@
 */
 template <class Input, class Output>
 class Solver
-            : public AbstractSolver
 {
 public:
+  //  virtual void Solve() = 0;
     /** Returns the output by translating the best state found by the
         solver to an output object. */
     virtual const Output& GetOutput() = 0;
-  virtual void SetTimeout(unsigned int t);
+  const std::string name;
+  void SetTimeout(float timeout);
 protected:
-    Solver(const Input& in);
-
-    const Input& in; /**< A reference to the input manager. */
+  Solver(const Input& in, std::string name);
+  virtual ~Solver() {}
+  const Input& in; /**< A reference to the input manager. */
+#ifdef HAVE_PTHREAD    
+protected:
+  /**< This variable will be shared among runners (and possibly other lower-level components) and controls their termination. */
+  RWLockVariable<bool> termination_request;
+  /**< This variable avoids active waiting of runners termination. */
+  ConditionVariable runner_termination;  
+  float timeout, current_timeout;
+  bool timeout_set;
+public:
+#endif
 };
 
 /*************************************************************************
@@ -37,14 +49,29 @@ protected:
     @param im a reference to the input manager
 */
 template <class Input, class Output>
-Solver<Input, Output>::Solver(const Input& i)
-        : in(i)
-{}
+Solver<Input, Output>::Solver(const Input& i, std::string e_name)
+: name(e_name), in(i)
+{
+#ifdef HAVE_PTHREAD
+  this->timeout = 0.0; 
+  this->current_timeout = 0.0;
+	this->timeout_set = false;
+#endif
+}
 
 template <class Input, class Output>
-void Solver<Input, Output>::SetTimeout(unsigned int t)
+void Solver<Input, Output>::SetTimeout(float to)
 {
-	StoppableObject::SetTimeout(t);
+#ifdef HAVE_PTHREAD
+	if (to > 0.0)
+	{
+		this->timeout = to;
+		this->current_timeout = to;
+		this->timeout_set = true;
+	}
+	else
+		this->timeout_set = false;
+#endif
 }
 
 

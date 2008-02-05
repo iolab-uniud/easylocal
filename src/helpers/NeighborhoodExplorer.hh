@@ -4,6 +4,7 @@
 #include "DeltaCostComponent.hh"
 #include "StateManager.hh"
 #include <typeinfo>
+#include <stdexcept>
 
 /** The Neighborhood Explorer is responsible for the strategy
     exploited in the exploration of the neighborhood, and for 
@@ -15,7 +16,6 @@
 
 template <class Input, class State, class Move, typename CFtype = int>
 class NeighborhoodExplorer
-  : virtual public EasyLocalObject
 {
 public:
   
@@ -103,9 +103,9 @@ public:
   { return *delta_cost_component[i]; }
   
   // debugging/statistic functions
-  virtual void PrintNeighborhoodStatistics(const State &st, std::ostream& os = std::cout);
-  virtual void ReadMove(Move& mv, std::istream& is = std::cin);
-  virtual void PrintMoveInfo(const State &st, const Move& mv, std::ostream& os = std::cout);
+  //  virtual void PrintNeighborhoodStatistics(const State &st, std::ostream& os = std::cout);
+//   virtual void ReadMove(Move& mv, std::istream& is = std::cin);
+//   virtual void PrintMoveInfo(const State &st, const Move& mv, std::ostream& os = std::cout);
   virtual void PrintMoveCost(const State &st, const Move& mv, std::ostream& os = std::cout);
   
   /** Prompts for reading a move in the neighborhood of a given state
@@ -116,12 +116,12 @@ public:
       @param is the input stream
   */
   virtual void InputMove(const State &st, Move& mv,
-                         std::istream& is = std::cin) const
-    throw (EasyLocalException);
+                         std::istream& is = std::cin) const;
   
-  void Check() const throw(EasyLocalException);
+  void Check() const;
 protected:
-  NeighborhoodExplorer(const Input& in, StateManager<Input,State,CFtype>& e_sm);
+		NeighborhoodExplorer(const Input& in, StateManager<Input,State,CFtype>& sm, std::string name);
+  virtual ~NeighborhoodExplorer() {}
   
   const Input& in;/**< A reference to the input manager */
   StateManager<Input, State,CFtype>& sm; /**< A reference to the attached state manager. */
@@ -135,6 +135,7 @@ protected:
     
   std::vector<AbstractDeltaCostComponent<Input,State,Move,CFtype>* > delta_cost_component;
   unsigned number_of_delta_not_implemented;
+  std::string name;
 };
 
 /*************************************************************************
@@ -148,19 +149,12 @@ protected:
    @param sm a pointer to a compatible state manager
    @param in a pointer to an input object virtual void InputMove(const State &st, Move& mv, 
    std::istream& is = std::cin) const 
-   throw (EasyLocalException);
 */
 template <class Input, class State, class Move, typename CFtype>
 NeighborhoodExplorer<Input,State,Move,CFtype>::NeighborhoodExplorer(const Input& i,
-                                                                    StateManager<Input,State,CFtype>& e_sm)
-  : in(i), sm(e_sm), delta_cost_component(0), number_of_delta_not_implemented(0)
+                                                                    StateManager<Input,State,CFtype>& e_sm, std::string e_name)
+  : in(i), sm(e_sm), delta_cost_component(0), number_of_delta_not_implemented(0), name(e_name)
 { }
-
-template <class Input, class State, class Move, typename CFtype>
-void NeighborhoodExplorer<Input,State,Move,CFtype>::Print(std::ostream& os) const
-{ 
-  os  << "NeighborhoodExplorer: " << this->GetName() << std::endl; 
-}
 
 /**
    Evaluates the variation of the cost function obtainted by applying the
@@ -293,9 +287,6 @@ CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::BestMove(const State &st, 
   do // look for the best move
     {
       mv_cost = DeltaCostFunction(st,mv);
-#if VERBOSE >= 4
-      std::cerr << mv << " " << mv_cost << std::endl;
-#endif
       if (mv_cost < best_delta)
 	{
 	  best_move = mv;
@@ -339,57 +330,12 @@ CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::FirstImprovingMove(const S
   return best_delta;
 } 
 
-/**
-   Outputs some statistics about the neighborhood of the given state.
-   In detail it prints out the number of neighbors, the number of 
-   improving/non-improving/worsening moves and their percentages.
- 
-   @param st the state to inspect
-*/
-template <class Input, class State, class Move, typename CFtype>
-void NeighborhoodExplorer<Input,State,Move,CFtype>::PrintNeighborhoodStatistics(const State &st, std::ostream& os)
-{
-  unsigned int neighbors = 0, improving_neighbors = 0,
-    worsening_neighbors = 0, non_improving_neighbors = 0;
-  Move mv;
-  State tmp_st = st;
-  CFtype mv_cost;
-  
-  FirstMove(tmp_st,mv);
-  do
-    {
-      neighbors++;
-      mv_cost = DeltaCostFunction(tmp_st,mv);
-#if VERBOSE >= 3
-      std::cerr << mv << " " << mv_cost << std::endl;
-#endif
-      if (mv_cost < 0)
-	improving_neighbors++;
-      else if (mv_cost > 0)
-	worsening_neighbors++;
-      else
-	non_improving_neighbors++;
-      NextMove(tmp_st,mv);
-    }
-  while (!LastMoveDone(st,mv));
-  os << "Neighborhood size: " <<  neighbors << std::endl
-     << "   improving moves: " << improving_neighbors << " ("
-     << (100.0*improving_neighbors)/neighbors << "%)" << std::endl
-     << "   worsening moves: " << worsening_neighbors << " ("
-     << (100.0*worsening_neighbors)/neighbors << "%)" << std::endl
-     << "   sideways moves: " << non_improving_neighbors << " ("
-     << (100.0*non_improving_neighbors)/neighbors << "%)" << std::endl;
-}
-
-
-
 template <class Input, class State, class Move, typename CFtype>
 void NeighborhoodExplorer<Input,State,Move,CFtype>::InputMove(const State &,
                                                               Move&,
                                                               std::istream&) const
-  throw (EasyLocalException)
-{ throw EasyLocalException("The function InputMove() has not been redefined"
-                           " for the NeighborhoodExplorer" + this->GetName()); }
+{ throw std::logic_error("The function InputMove() has not been redefined"
+                           " for the NeighborhoodExplorer" + name); }
 
 /**
    Generates the first move in the exploration of the neighborhood of a 
@@ -439,46 +385,6 @@ CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::SampleMove(const State &st
   return best_delta;
 }
 
-/**
-   Reads a move from an input stream.
- 
-   @param mv the move
-   @param is an input stream
-*/
-
-template <class Input, class State, class Move, typename CFtype>
-void NeighborhoodExplorer<Input,State,Move,CFtype>::ReadMove(Move& mv,
-                                                             std::istream& is)
-{
-  is >> mv;
-}
-
-/**
-   Outputs some informations about a move in a given state on a stream.
- 
-   @param st the state
-   @param mv the move
-   @param os an output stream
-*/
-template <class Input, class State, class Move, typename CFtype>
-void NeighborhoodExplorer<Input,State,Move,CFtype>::PrintMoveInfo(const State &st,
-                                                                  const Move& mv,
-                                                                  std::ostream& os)
-{
-  os << "Move : " << mv << std::endl;
-  os << "Start state:" << std::endl;
-  sm.PrintStateCost(st, os);
-  
-  PrintMoveCost(st, mv, os);
-  
-  State st1 = st;
-  MakeMove(st1, mv);
-  os << "Final state: " << std::endl;
-
-  sm.PrintStateCost(st1, os);
-  
-  os << "Error : " << sm.CostFunction(st1) - DeltaCostFunction(st, mv) - sm.CostFunction(st) << std::endl;
-}
 
 /**
    Outputs the state cost components of the state passed as parameter.
@@ -498,7 +404,7 @@ void NeighborhoodExplorer<Input,State,Move,CFtype>::PrintMoveCost(const State& s
     
       for (unsigned i = 0; i < delta_cost_component.size(); i++)
 	{
-	  os << "  " << i << ". " << delta_cost_component[i]->GetName() << " : ";
+	  os << "  " << i << ". " << delta_cost_component[i]->name << " : ";
 	  if (delta_cost_component[i]->IsDeltaImplemented())
 	    {
 	      FilledDeltaCostComponent<Input,State,Move,CFtype>& dcc = static_cast<FilledDeltaCostComponent<Input,State,Move,CFtype>& >(*this->delta_cost_component[i]);
@@ -526,7 +432,7 @@ void NeighborhoodExplorer<Input,State,Move,CFtype>::PrintMoveCost(const State& s
       for (unsigned i = 0; i < delta_cost_component.size(); i++)
 	{
 	  FilledDeltaCostComponent<Input,State,Move,CFtype>& dcc = static_cast<FilledDeltaCostComponent<Input,State,Move,CFtype>& >(*this->delta_cost_component[i]);
-	  os << "  " << i << ". " << dcc.GetName() << " : ";
+	  os << "  " << i << ". " << dcc.name << " : ";
 	  delta_cost = dcc.DeltaCost(st, mv);
 	  os << delta_cost;
 	  if (delta_cost_component[i]->IsHard())
@@ -550,7 +456,6 @@ void NeighborhoodExplorer<Input,State,Move,CFtype>::PrintMoveCost(const State& s
 */
 template <class Input, class State, class Move, typename CFtype>
 void NeighborhoodExplorer<Input,State,Move,CFtype>::Check() const
-  throw(EasyLocalException)
 {}
 
 /**

@@ -1,0 +1,231 @@
+#ifndef _ABSTRACT_LOCAL_SEARCH_SOLVER_HH_
+#define _ABSTRACT_LOCAL_SEARCH_SOLVER_HH_
+
+#include "Solver.hh"
+#include "../helpers/StateManager.hh"
+#include "../helpers/OutputManager.hh"
+#include <iostream> 
+#include <fstream> 
+#include <string>
+
+/** A Local Search Solver has an internal state, and defines the ways for
+    dealing with a local search algorithm.
+    @ingroup Solvers
+*/
+template <class Input, class Output, class State, typename CFtype = int>
+class AbstractLocalSearchSolver
+  : public Solver<Input, Output>
+{
+public:
+  void SetInitTrials(unsigned int t);
+  CFtype GetCurrentCost() const;
+  CFtype GetBestCost() const;
+  const Output& GetOutput();
+  const State& GetCurrentState() const;
+  const State& GetBestState() const;
+  virtual void SetCurrentState(const State& st, CFtype cost);
+  virtual void SetCurrentState(const State& st);
+  virtual void SetCurrentState(const Output& out);
+  virtual void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout) = 0;
+protected:
+  AbstractLocalSearchSolver(const Input& in,
+			    StateManager<Input,State,CFtype>& e_sm,
+			    OutputManager<Input,Output,State,CFtype>& e_om,
+			    std::string name);
+  /** Performs some checking before making a run of the solver,
+      if something goes wrong it raises an exception. */
+  virtual void FindInitialState();
+  StateManager<Input,State,CFtype>& sm; /**< A pointer to the attached
+					   state manager. */
+  OutputManager<Input,Output,State,CFtype>& om; /**< A pointer to the attached
+						   output manager. */
+  CFtype current_state_cost, best_state_cost;  /**< The cost of the internal states. */
+  State current_state, best_state;        /**< The internal states of the solver. */
+  unsigned int number_of_init_trials; /**< Number of different initial
+					 states tested for a run. */
+  Output out;
+protected:
+  bool LetGo(Runner<Input,State,CFtype>& runner);
+};
+
+/*************************************************************************
+ * Implementation
+ *************************************************************************/
+
+/**
+   Constructs a local search solver by providing it a state manager,
+   an output manager, an input object, and an output object.
+ 
+   @param sm a pointer to a compatible state manager
+   @param om a pointer to a compatible output manager
+   @param in a pointer to an input object
+   @param out a pointer to an output object
+*/
+template <class Input, class Output, class State, typename CFtype>
+AbstractLocalSearchSolver<Input,Output,State,CFtype>::AbstractLocalSearchSolver(const Input& in,
+										StateManager<Input,State,CFtype>& e_sm,
+										OutputManager<Input,Output,State,CFtype>& e_om,  
+										std::string name)
+  : Solver<Input, Output>(in, name), sm(e_sm),  om(e_om), current_state(in), best_state(in),
+    number_of_init_trials(1), out(in)
+{}
+
+template <class Input, class Output, class State, typename CFtype>
+const State& AbstractLocalSearchSolver<Input,Output,State,CFtype>::GetCurrentState() const
+{ return current_state; }
+
+template <class Input, class Output, class State, typename CFtype>
+CFtype AbstractLocalSearchSolver<Input,Output,State,CFtype>::GetCurrentCost() const
+{ return current_state_cost; }
+
+template <class Input, class Output, class State, typename CFtype>
+const State& AbstractLocalSearchSolver<Input,Output,State,CFtype>::GetBestState() const
+{ return best_state; }
+
+template <class Input, class Output, class State, typename CFtype>
+CFtype AbstractLocalSearchSolver<Input,Output,State,CFtype>::GetBestCost() const
+{ return best_state_cost; }
+
+template <class Input, class Output, class State, typename CFtype>
+void AbstractLocalSearchSolver<Input,Output,State,CFtype>::SetCurrentState(const State& st)
+{
+  current_state = st;
+  current_state_cost = sm.CostFunction(current_state); 
+}
+
+template <class Input, class Output, class State, typename CFtype>
+void AbstractLocalSearchSolver<Input,Output,State,CFtype>::SetCurrentState(const State& st, CFtype cost)
+{
+  current_state = st;
+  current_state_cost = cost; 
+}
+
+template <class Input, class Output, class State, typename CFtype>
+void AbstractLocalSearchSolver<Input,Output,State,CFtype>::SetCurrentState(const Output& out)
+{
+  om.InputState(current_state,out);
+  current_state_cost = sm.CostFunction(current_state); 
+}
+
+/**
+   Set the number of states which should be tried in 
+   the initialization phase.
+*/
+template <class Input, class Output, class State, typename CFtype>
+void AbstractLocalSearchSolver<Input,Output,State,CFtype>::SetInitTrials(unsigned int t)
+{
+  number_of_init_trials = t;
+}
+
+/**
+   The output is delivered by converting the best state
+   to an output object by means of the output manager.
+*/
+template <class Input, class Output, class State, typename CFtype>
+const Output& AbstractLocalSearchSolver<Input,Output,State,CFtype>::GetOutput() 
+{
+  om.OutputState(best_state, out);
+  return out;
+}
+
+/**
+   The initial state is generated by delegating this task to 
+   the state manager. The function invokes the SampleState function.
+*/
+template <class Input, class Output, class State, typename CFtype>
+void AbstractLocalSearchSolver<Input,Output,State,CFtype>::FindInitialState()
+{
+  current_state_cost = sm.SampleState(current_state, number_of_init_trials);
+}
+
+// /**
+//    Performs a full solving procedure by finding an initial state, 
+//    running the attached runner and delivering the output.
+// */
+// template <class Input, class Output, class State, typename CFtype>
+// void AbstractLocalSearchSolver<Input,Output,State,CFtype>::Solve()
+
+// {
+//   FindInitialState();
+//   Run();
+// }
+
+// /**
+//    Start again a solving procedure, running the attached runner from
+//    the current internal state.
+// */
+// template <class Input, class Output, class State, typename CFtype>
+// void AbstractLocalSearchSolver<Input,Output,State,CFtype>::ReSolve()
+
+// {
+//   Run();
+// }
+
+// /**
+//    Tries multiple runs on different initial states and records the
+//    best one.
+ 
+//    @param n the number of trials
+// */
+// template <class Input, class Output, class State, typename CFtype>
+// void AbstractLocalSearchSolver<Input,Output,State,CFtype>::MultiTrialSolve(unsigned int n)
+
+// {
+//   State best_state(this->in);
+//   CFtype best_state_cost = 0; // value set just to prevent warning from smart compilers
+  
+//   for (unsigned int i = 0; i < n; i++)
+//     {
+//       FindInitialState();
+//       Run();
+    
+//       if (i == 0 || internal_state_cost < best_state_cost)
+// 	{
+// 	  best_state = internal_state;
+// 	  best_state_cost = internal_state_cost;
+// 	}
+//     }
+//   internal_state = best_state;
+//   internal_state_cost = best_state_cost;
+// }
+
+template <class Input, class Output, class State, typename CFtype>
+bool AbstractLocalSearchSolver<Input,Output,State,CFtype>::LetGo(Runner<Input,State,CFtype>& runner)
+{
+#ifdef HAVE_PTHREAD
+  if (this->timeout_set)
+    {
+      float time_left;
+      this->termination_request = false;
+      pthread_t runner_thread = runner.GoThread(this->runner_termination, this->termination_request);
+      try
+	{
+	  time_left = this->runner_termination.WaitTimeout(this->current_timeout);
+	  this->current_timeout = time_left;
+	}
+      catch (TimeoutExpired e)
+	{
+	  this->current_timeout = 0.0;
+	}
+      this->termination_request = true;
+      pthread_join(runner_thread, NULL);
+      if (this->current_timeout == 0.0)
+	return true;
+      else
+	return false;
+    }
+  else
+    {
+      this->termination_request = false;
+      pthread_t runner_thread = runner.GoThread(this->runner_termination, this->termination_request);
+      this->termination_request = true;
+      pthread_join(runner_thread, NULL);
+      return false;
+    }
+#else
+  runner.Go();
+  return false;
+#endif
+}
+
+#endif /*LOCALSEARCHSOLVER_HH_*/

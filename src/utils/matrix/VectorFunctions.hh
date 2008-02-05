@@ -122,7 +122,7 @@ inline T dot_prod(const Vector<T>& a, const Vector<T>& b)
 {
 	T sum = (T)0;
 	if (a.size() != b.size())
-		throw std::runtime_error("Dotprod error: the vectors are not the same size");
+		throw std::logic_error("Dotprod error: the vectors are not the same size");
 	for (unsigned int i = 0; i < a.size(); i++)
 		sum += a[i] * b[i];
 	

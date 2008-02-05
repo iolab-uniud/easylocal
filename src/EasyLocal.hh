@@ -18,9 +18,14 @@
 #ifndef __EASYLOCAL_HH_
 #define __EASYLOCAL_HH_
 
-#include <cfloat>
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
-//#define EPS 0
-
+//#include "Utils.hh"
+#include "Helpers.hh"
+#include "Runners.hh"
+#include "Kickers.hh"
+#include "Solvers.hh"
 
 #endif // define __EASYLOCAL_HH_

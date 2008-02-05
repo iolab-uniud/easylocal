@@ -7,8 +7,7 @@ class BimodalTabuSearchWithShiftingPenalty
 {
 public:
   void Print(std::ostream& os = std::cout) const;
-  void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout)
-    throw(EasyLocalException);
+  void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout);
   BimodalTabuSearchWithShiftingPenalty(const Input& in, StateManager<Input,State,CFtype>& s,
 				       NeighborhoodExplorer<Input,State,Move1,CFtype>& ne1,
 				       NeighborhoodExplorer<Input,State,Move2,CFtype>& ne2,
@@ -208,7 +207,6 @@ void BimodalTabuSearchWithShiftingPenalty<Input,State,Move1,Move2,CFtype>::Store
 
 template <class Input, class State, class Move1, class Move2, typename CFtype>
 void BimodalTabuSearchWithShiftingPenalty<Input,State,Move1,Move2,CFtype>::ReadParameters(std::istream& is, std::ostream& os)
-  throw(EasyLocalException)
 {
   os << "BIMODAL TABU SEARCH WITH SHIFTING PENALTY -- INPUT PARAMETERS" << std::endl;
   BimodalTabuSearch<Input,State,Move1,Move2,CFtype>::ReadParameters(is,os);

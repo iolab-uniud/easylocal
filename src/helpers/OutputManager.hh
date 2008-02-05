@@ -1,8 +1,6 @@
 #ifndef OUTPUTMANAGER_HH_
 #define OUTPUTMANAGER_HH_
 
-#include "basics/EasyLocalObject.hh"
-#include "basics/EasyLocalException.hh"
 #include "StateManager.hh"
 #include <iostream>
 
@@ -18,7 +16,6 @@
 
 template <class Input, class Output, class State, typename CFtype = int>
 class OutputManager
-            : virtual public EasyLocalObject
 {
 public:
     void Print(std::ostream& os = std::cout) const;
@@ -32,23 +29,19 @@ public:
     virtual void InputState(State &st, const Output& out) const = 0;
     virtual void ReadState(State &st, std::istream &is) const;
     virtual void WriteState(const State &st, std::ostream &os) const;
-
-    virtual void PrettyPrintOutput(const Output &st, const std::string& string_name) const
-        { std::cout << "Sorry, not implemented yet" << std::endl; }
-
-    virtual void Check() const throw(EasyLocalException);
-    Input* GetInput();
+    virtual void Check() const;
 protected:
     /** Constructs an output manager by providing it a state manager
      and an input object.
      @param sm a pointer to a state manager
      @param in a pointer to an input object */
-    OutputManager(const Input& i, StateManager<Input, State,CFtype>& e_sm)
-            :  in(i), sm(e_sm)
-    {}
+    OutputManager(const Input& i, StateManager<Input, State,CFtype>& e_sm, std::string e_name)
+            :  in(i), sm(e_sm), name(e_name) {}
+    virtual ~OutputManager() {}
     const Input& in; /**< A reference to the input manager. */
     StateManager<Input, State,CFtype>& sm; /**< A reference to an attached
     	state manager. */
+    const std::string name;
 };
 
 /*************************************************************************
@@ -58,7 +51,7 @@ protected:
 template <class Input, class Output, class State, typename CFtype>
 void OutputManager<Input,Output,State,CFtype>::Print(std::ostream& os) const
 {
-    os  << "Output Manager: " << GetName() << std::endl;
+    os  << "Output Manager: " << name << std::endl;
 }
 
 /**
@@ -98,7 +91,6 @@ void OutputManager<Input,Output,State,CFtype>::WriteState(const State &st, std::
 */
 template <class Input, class Output, class State, typename CFtype>
 void OutputManager<Input,Output,State,CFtype>::Check() const
-throw(EasyLocalException)
 {}
 
 #endif

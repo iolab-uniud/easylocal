@@ -18,7 +18,7 @@
 */
 
 #include "MoveRunner.hh"
-#include "../basics/EasyLocalException.hh"
+#include "../basics/std::logic_exception.hh"
 #include "../helpers/StateManager.hh"
 #include "../helpers/NeighborhoodExplorer.hh"
 #include "helpers/TabuListManager.hh"
@@ -29,18 +29,20 @@ class SampleTabuSearch
             : public TabuSearch<Input,State, Move>
 {
 public:
-    void Print(std::ostream& os = std::cout) const;
-    // FIXME: to implement
-//    void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout)
-//    throw(EasyLocalException);
-    void SetSampleSize(unsigned int s)
-    { sample_size = s; }
-    SampleTabuSearch(const Input& in, StateManager<Input,State,CFtype>& s,
-               NeighborhoodExplorer<Input,State,Move>& ne,
-										 TabuListManager<State,Move,CFtype>& tlm, const std::string& name = "Anonymous Sample Tabu Search runner");
+	void Print(std::ostream& os = std::cout) const;
+	void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout);
+	void SetSampleSize(unsigned int s)
+	{ sample_size = s; }
+	SampleTabuSearch(const Input& in, StateManager<Input,State,CFtype>& s,
+									 NeighborhoodExplorer<Input,State,Move>& ne,
+									 TabuListManager<State,Move,CFtype>& tlm, std::string name);
+	SampleTabuSearch(const Input& in, StateManager<Input,State,CFtype>& s,
+									 NeighborhoodExplorer<Input,State,Move>& ne,
+									 TabuListManager<State,Move,CFtype>& tlm, std::string name, CLParser& cl);
 protected:
-    void SelectMove();
-    unsigned int sample_size;
+	void SelectMove();
+	unsigned int sample_size;
+	ValArgument<unsigned int> arg_sample_size;
 };
 
 /*************************************************************************
@@ -50,11 +52,27 @@ protected:
 
 template <class Input, class State, class Move, typename CFtype = int>
 SampleTabuSearch<Input,State,Move>::SampleTabuSearch(const Input& in, StateManager<Input,State,CFtype>& sm,
-        NeighborhoodExplorer<Input,State,Move>& ne,
-        TabuListManager<State,Move,CFtype>& tlm,
-																										 const std::string& name)
-        : TabuSearch<Input,State,Move>(sm, ne, tlm, name)
-{}
+																										 NeighborhoodExplorer<Input,State,Move>& ne,
+																										 TabuListManager<State,Move,CFtype>& tlm,
+																										 std::string name)
+: TabuSearch<Input,State,Move>(sm, ne, tlm, name), arg_sample_size("sample_size", "ss", true)
+{
+	this->tabu_search_arguments.AddArgument(arg_sample_size);
+}
+
+template <class Input, class State, class Move, typename CFtype = int>
+SampleTabuSearch<Input,State,Move>::SampleTabuSearch(const Input& in, StateManager<Input,State,CFtype>& sm,
+																										 NeighborhoodExplorer<Input,State,Move>& ne,
+																										 TabuListManager<State,Move,CFtype>& tlm,
+																										 std::string name,
+																										 CLParser& cl)
+: TabuSearch<Input,State,Move>(sm, ne, tlm, name, cl), arg_sample_size("sample_size", "ss", true)
+{
+	this->tabu_search_arguments.AddArgument(arg_sample_size);
+	cl.MatchArgument(this->tabu_search_arguments);
+	if (this->tabu_search_arguments.IsSet())
+		sample_size = arg_sample_size.GetValue();
+}
 
 
 template <class Input, class State, class Move, typename CFtype = int>
@@ -69,7 +87,7 @@ void SampleTabuSearch<Input,State,Move>::Print(std::ostream& os) const
     mechanism.
 */
 template <class Input, class State, class Move, typename CFtype = int>
-void TabuSearch<Input,State,Move>::SelectMove()
+void SampleTabuSearch<Input,State,Move>::SelectMove()
 {
     unsigned int s = 1;
     register CFtype mv_cost;
@@ -102,4 +120,17 @@ void TabuSearch<Input,State,Move>::SelectMove()
     this->current_move = best_move;
     this->current_move_cost = best_delta;
 }
+
+template <class Input, class State, class Move, typename CFtype>
+void SampleTabuSearch<Input,State,Move,CFtype>::ReadParameters(std::istream& is, std::ostream& os)
+
+{
+  os << "SAMPLE TABU SEARCH -- INPUT PARAMETERS" << std::endl;
+  pm.ReadParameters(is, os);
+  os << "  Number of idle iterations: ";
+  is >> this->max_idle_iteration;
+	os << "  Sample size: ";
+	is >> sample_size;
+}
+
 #endif /*SAMPLETABUSEARCH_HH_*/

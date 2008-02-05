@@ -9,8 +9,8 @@
 class SecondaryDiagonalDeltaCostComponent : public FilledDeltaCostComponent<unsigned,std::vector<unsigned>,Swap>
 {
 public:
-  SecondaryDiagonalDeltaCostComponent(const unsigned& in, SecondaryDiagonalCostComponent& cc, bool shifted = false) 
-    : FilledDeltaCostComponent<unsigned,std::vector<unsigned>,Swap>(in,cc,"Secondary diagonal",shifted)
+  SecondaryDiagonalDeltaCostComponent(const unsigned& in, SecondaryDiagonalCostComponent& cc) 
+    : FilledDeltaCostComponent<unsigned,std::vector<unsigned>,Swap>(in,cc,"Secondary diagonal")
 { }
 	int ComputeDeltaCost(const std::vector<unsigned>& st, const Swap& sw) const;
 };

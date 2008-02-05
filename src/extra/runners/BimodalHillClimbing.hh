@@ -2,6 +2,7 @@
 #define BIMODALHILLCLIMBING_HH_
 
 #include "BimodalMoveRunner.hh"
+#include <stdexcept>
 
 /** The Hill Climbing runner considers random move selection. A move
     is then performed only if it does improve or it leaves unchanged
@@ -14,8 +15,7 @@ class BimodalHillClimbing
 {
 public:
     void Print(std::ostream& os = std::cout) const;
-    void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout)
-    throw(EasyLocalException);
+    void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout);
     virtual void SetMaxIdleIteration(unsigned long m) { max_idle_iteration = m; }
     BimodalHillClimbing(const Input& in,
     					StateManager<Input,State,CFtype>& sm,
@@ -23,7 +23,7 @@ public:
                         NeighborhoodExplorer<Input,State,Move2,CFtype>& ne2,
                         std::string name = "Anonymous Bimodal Hill Climbing runner");
 protected:
-    void GoCheck() const throw(EasyLocalException);
+    void GoCheck() const;
     void InitializeRun();
     void TerminateRun();
     bool StopCriterion();
@@ -58,7 +58,7 @@ BimodalHillClimbing<Input,State,Move1,Move2,CFtype>::BimodalHillClimbing(const I
 template <class Input, class State, class Move1, class Move2, typename CFtype>
 void BimodalHillClimbing<Input,State,Move1,Move2,CFtype>::Print(std::ostream& os) const
 {
-    os  << "Hill Climbing Runner: " << this->GetName() << std::endl;
+    os  << "Hill Climbing Runner: " << this->name << std::endl;
     os  << "  Max iterations: " << this->max_iteration << std::endl;
     os  << "  Max idle iteration: " << this->max_idle_iteration << std::endl;
 }
@@ -94,10 +94,9 @@ void BimodalHillClimbing<Input,State,Move1,Move2,CFtype>::InitializeRun()
 
 template <class Input, class State, class Move1, class Move2, typename CFtype>
 void BimodalHillClimbing<Input,State,Move1,Move2,CFtype>::GoCheck() const
-throw(EasyLocalException)
 {
-    if (this->max_idle_iteration == 0)
-        throw EasyLocalException("this->max_idle_iteration is zero for object " + this->GetName());
+  if (this->max_idle_iteration == 0)
+    throw std::logic_error("max_idle_iteration is zero for object " + this->name);
 }
 
 /**
@@ -156,12 +155,9 @@ void BimodalHillClimbing<Input,State,Move1,Move2,CFtype>::StoreMove()
 
 template <class Input, class State, class Move1, class Move2, typename CFtype>
 void BimodalHillClimbing<Input,State,Move1,Move2,CFtype>::ReadParameters(std::istream& is, std::ostream& os)
-throw(EasyLocalException)
 {
     os << "HILL CLIMBING -- INPUT PARAMETERS" << std::endl;
     os << "  Number of idle iterations: ";
     is >> this->max_idle_iteration;
-    os << "  Timeout: ";
-    is >> this->timeout;
 }
 #endif /*BIMODALHILLCLIMBING_HH_*/

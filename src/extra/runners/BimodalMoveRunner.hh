@@ -4,7 +4,6 @@
 #include "../../helpers/StateManager.hh"
 #include "../../helpers/NeighborhoodExplorer.hh"
 #include "../../runners/Runner.hh"
-#include "../../basics/EasyLocalException.hh"
 #include <vector>
 
 #ifndef MOVE_ENUM
@@ -30,14 +29,14 @@ class BimodalMoveRunner
 {
 public:
   // Runner interface
-  virtual void Check() const throw(EasyLocalException);
+  virtual void Check() const;
 protected:
   BimodalMoveRunner(const Input& im, StateManager<Input,State,CFtype>& sm,
 		    NeighborhoodExplorer<Input,State,Move1,CFtype>& ne1,
 		    NeighborhoodExplorer<Input,State,Move2,CFtype>& ne2,
 		    std::string name = "");
   /* state manipulations */
-  virtual void GoCheck() const throw(EasyLocalException) = 0;
+  virtual void GoCheck() const = 0;
   /** Actions to be perfomed at the beginning of the run. */
   virtual void ComputeMoveCost();
 
@@ -68,8 +67,8 @@ BimodalMoveRunner<Input,State,Move1,Move2,CFtype>::BimodalMoveRunner(const Input
 								     StateManager<Input,State,CFtype>& sm,
 								     NeighborhoodExplorer<Input,State,Move1,CFtype>& e_ne1,
 								     NeighborhoodExplorer<Input,State,Move2,CFtype>& e_ne2, std::string name)
-  : Runner<Input,State,CFtype>(in, sm), ne1(e_ne1), ne2(e_ne2)
-{ EasyLocalObject::SetName(name); }
+  : Runner<Input,State,CFtype>(in, sm, name), ne1(e_ne1), ne2(e_ne2)
+{ }
 
 /**
    Checks wether the object state is consistent with all the related
@@ -77,7 +76,6 @@ BimodalMoveRunner<Input,State,Move1,Move2,CFtype>::BimodalMoveRunner(const Input
 */
 template <class Input, class State, class Move1, class Move2, typename CFtype>
 void BimodalMoveRunner<Input,State,Move1,Move2,CFtype>::Check() const
-  throw(EasyLocalException)
 {
   Runner<Input,State,CFtype>::Check();
 }

@@ -4,7 +4,7 @@
 #include "Runner.hh"
 #include "../helpers/StateManager.hh"
 #include "../helpers/NeighborhoodExplorer.hh"
-#include "../basics/EasyLocalException.hh"
+#include "../helpers/RunnerObserver.hh"
 
 /** A Move Runner is an instance of the Runner interface which it compels to
     with a particular definition of @Move (given as template instantiation).
@@ -14,33 +14,41 @@
 
 template <class Input, class State, class Move, typename CFtype = int>
 class MoveRunner
-            : public Runner<Input,State,CFtype>
+: public Runner<Input,State,CFtype>
 {
+  friend class RunnerObserver<Input,State,Move,CFtype>;
 public:
-    // Runner interface
-    virtual void Check() const throw(EasyLocalException);
-    void ResetTimeout();
+  // Runner interface
+  virtual void Check() const;
+  void ResetTimeout();
+  void AttachObserver(RunnerObserver<Input,State,Move,CFtype>& ob) { observer = &ob; }
+  void InitializeRun();
+  Move CurrentMove() const { return current_move; }
+  CFtype CurrentMoveCost() const { return current_move_cost; }
+
 protected:
-   MoveRunner(const Input& in, StateManager<Input,State,CFtype>& e_sm,
-               NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
-               const std::string& name = "");
-    /* state manipulations */
-    virtual void GoCheck() const throw(EasyLocalException) = 0;
-    /** Actions to be perfomed at the beginning of the run. */
-    virtual void ComputeMoveCost();
-
-    /** Encodes the criterion used to select the move at each step. */
-    //    virtual void SelectMove() = 0;
-    virtual void MakeMove();
-    void UpdateStateCost();
- 
+  MoveRunner(const Input& in, StateManager<Input,State,CFtype>& e_sm,
+             NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
+             std::string name);
+  /* state manipulations */
+  virtual void GoCheck() const = 0;
+  /** Actions to be perfomed at the beginning of the run. */
+  virtual void ComputeMoveCost();
+  
+  /** Encodes the criterion used to select the move at each step. */
+  //    virtual void SelectMove() = 0;
+  virtual void MakeMove();
+  void UpdateStateCost();
+  
   NeighborhoodExplorer<Input,State,Move,CFtype>& ne; /**< A pointer to the
-    		      attached neighborhood 
-    		      explorer. */
+    attached neighborhood 
+    explorer. */
+  
+  // state data
+  Move current_move;      /**< The currently selected move. */
+  CFtype current_move_cost; /**< The cost of the selected move. */
 
-    // state data
-    Move current_move;      /**< The currently selected move. */
-    CFtype current_move_cost; /**< The cost of the selected move. */
+  RunnerObserver<Input,State,Move,CFtype>* observer;
 };
 
 /*************************************************************************
@@ -49,13 +57,22 @@ protected:
 
 template <class Input, class State, class Move, typename CFtype>
 MoveRunner<Input,State,Move,CFtype>::MoveRunner(const Input& in, 
-		StateManager<Input,State,CFtype>& e_sm,
-        NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
-        const std::string& name)
-  : Runner<Input,State,CFtype>(in, e_sm), ne(e_ne)
+                                                StateManager<Input,State,CFtype>& e_sm,
+                                                NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
+                                                std::string name)
+  : Runner<Input,State,CFtype>(in, e_sm, name), ne(e_ne)
 {
-		EasyLocalObject::SetName(name);
+  observer = NULL;
 }
+
+template <class Input, class State, class Move, typename CFtype>
+void MoveRunner<Input,State,Move,CFtype>::InitializeRun() 
+{
+	Runner<Input,State,CFtype>::InitializeRun();
+	if (observer != NULL)
+		observer->NotifyStartRunner(*this);
+}
+
 
 /**
    Checks wether the object state is consistent with all the related
@@ -63,7 +80,6 @@ MoveRunner<Input,State,Move,CFtype>::MoveRunner(const Input& in,
 */
 template <class Input, class State, class Move, typename CFtype>
 void MoveRunner<Input,State,Move,CFtype>::Check() const
-throw(EasyLocalException)
 {}
 
 /**

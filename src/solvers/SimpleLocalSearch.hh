@@ -3,11 +3,14 @@
 
 #include "../helpers/StateManager.hh"
 #include "../helpers/OutputManager.hh"
-#include "LocalSearchSolver.hh"
+#include "AbstractLocalSearchSolver.hh"
 #include "../runners/Runner.hh"
-#ifdef EASYLOCAL_PTHREADS
+#ifdef HAVE_PTHREAD
 #include <pthread.h>
 #endif
+#include "../utils/clparser/CLParser.hh"
+#include "../utils/clparser/ArgumentGroup.hh"
+#include "../utils/clparser/ValArgument.hh"
 
 
 /** The Simple Local Search solver handles a simple local search algorithm
@@ -16,23 +19,27 @@
 */
 template <class Input, class Output, class State, typename CFtype = int>
 class SimpleLocalSearch
-            : public LocalSearchSolver<Input,Output,State,CFtype>
+: public AbstractLocalSearchSolver<Input,Output,State,CFtype>
 {
 public:
-    SimpleLocalSearch(const Input& in,
-                      StateManager<Input,State,CFtype>& e_sm,
-                      OutputManager<Input,Output,State,CFtype>& e_om,
-                      const std::string& name = "Anonymous Simple Local Search solver");
-
-    void Print(std::ostream& os = std::cout) const;
-    void SetRunner(Runner<Input,State,CFtype>& r);
-    void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout); 
-    void RaiseTimeout();
-    
+	SimpleLocalSearch(const Input& in,
+										StateManager<Input,State,CFtype>& e_sm,
+										OutputManager<Input,Output,State,CFtype>& e_om,
+										std::string name);	
+	SimpleLocalSearch(const Input& in,
+										StateManager<Input,State,CFtype>& e_sm,
+										OutputManager<Input,Output,State,CFtype>& e_om,
+										std::string name,
+										CLParser& cl);
+	void Print(std::ostream& os = std::cout) const;
+	void SetRunner(Runner<Input,State,CFtype>& r);
+	void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout);     
 protected:
-    void Run();
-    void Check() const throw(EasyLocalException);
-    Runner<Input,State,CFtype>* p_runner; /**< A pointer to the managed runner. */
+	void Run();
+	void Check() const;
+	Runner<Input,State,CFtype>* p_runner; /**< A pointer to the managed runner. */
+	ArgumentGroup simple_ls_arguments;
+	ValArgument<double> arg_timeout;	
 };
 
 /*************************************************************************
@@ -52,23 +59,47 @@ protected:
 */
 template <class Input, class Output, class State, typename CFtype>
 SimpleLocalSearch<Input,Output,State,CFtype>::SimpleLocalSearch(const Input& in,
-        StateManager<Input,State,CFtype>& e_sm,
-        OutputManager<Input,Output,State,CFtype>& e_om,
-        const std::string& name)
-        : LocalSearchSolver<Input,Output,State,CFtype>(in, e_sm, e_om, name)
+																																StateManager<Input,State,CFtype>& e_sm,
+																																OutputManager<Input,Output,State,CFtype>& e_om,
+																																std::string name)
+: AbstractLocalSearchSolver<Input,Output,State,CFtype>(in, e_sm, e_om, name),
+simple_ls_arguments("sls_" + name, "sls_" + name, false), arg_timeout("timeout", "to", false, 0.0)
 {
+	simple_ls_arguments.AddArgument(arg_timeout);
+	p_runner = NULL;
+}
+
+
+template <class Input, class Output, class State, typename CFtype>
+SimpleLocalSearch<Input,Output,State,CFtype>::SimpleLocalSearch(const Input& in,
+																																StateManager<Input,State,CFtype>& e_sm,
+																																OutputManager<Input,Output,State,CFtype>& e_om,
+																																std::string name,
+																																CLParser& cl)
+: AbstractLocalSearchSolver<Input,Output,State,CFtype>(in, e_sm, e_om, name),
+simple_ls_arguments("sls_" + name, "sls_" + name, false), arg_timeout("timeout", "to", false, 0.0)
+{
+	simple_ls_arguments.AddArgument(arg_timeout);
+	cl.AddArgument(simple_ls_arguments);
+	cl.MatchArgument(simple_ls_arguments);	
+	if (simple_ls_arguments.IsSet())
+		if (arg_timeout.IsSet())
+			this->SetTimeout(arg_timeout.GetValue());
 	p_runner = NULL;
 }
 
 template <class Input, class Output, class State, typename CFtype>
 void SimpleLocalSearch<Input,Output,State,CFtype>::ReadParameters(std::istream& is, std::ostream& os)
 {
-	os << "Simple Local Search Solver: " << this->GetName() << " parameters" << std::endl;
+	os << "Simple Local Search Solver: " << this->name << " parameters" << std::endl;
 	os << "Runner: " << std::endl; 
 	if (this->p_runner)
 		this->p_runner->ReadParameters(is, os);
-	os << "Timeout: ";
-	is >> this->timeout;
+#ifdef HAVE_PTHREAD
+  os << "Timeout: ";
+  is >> this->timeout;
+	this->current_timeout = this->timeout;
+#endif  
 }
 
 
@@ -95,54 +126,26 @@ void SimpleLocalSearch<Input,Output,State,CFtype>::SetRunner(Runner<Input,State,
 { this->p_runner = &r; }
 
 
-template <class Input, class Output, class State, typename CFtype>
-void SimpleLocalSearch<Input,Output,State,CFtype>::RaiseTimeout()
-{
-    LocalSearchSolver<Input,Output,State,CFtype>::RaiseTimeout();
-    this->p_runner->RaiseTimeout();
-}
-
 /**
    Lets the runner Go, and then collects the best state found.
 */
 template <class Input, class Output, class State, typename CFtype>
 void SimpleLocalSearch<Input,Output,State,CFtype>::Run()
 {
-#ifndef EASYLOCAL_PTHREADS
-    this->p_runner->SetState(this->internal_state);
-    this->p_runner->Go();
-    this->internal_state = this->p_runner->GetState();
-    this->internal_state_cost = this->p_runner->GetStateCost();
-#if VERBOSE >= 2
-      std::cerr << "Runner, cost: " << this->p_runner->GetStateCost() 
-		<< ", distance " << this->sm.StateDistance( this->internal_state, this->p_runner->GetState())
-		<< " (" << this->p_runner->GetIterationsPerformed() << " iterations"
-		<< ")" << std::endl;
-#endif
-#else
-    pthread_t runner_thd_id;
-    this->p_runner->SetState(this->internal_state);
-    this->SetTimer();
-    runner_thd_id = this->p_runner->GoThread();
-    unsigned int waiting_time = this->timeout;
-    while (!this->p_runner->WaitTermination(waiting_time) && !this->Timeout())
-#ifdef DEBUG_PTHREADS
-    	std::cerr << "CHECKING TERMINATION" << std::endl;
-#else
-		;
-#endif
-    pthread_join(runner_thd_id, NULL);
-#endif
+	this->p_runner->SetState(this->internal_state);
+	LetGo(*this->p_runner);
+	this->internal_state = this->p_runner->GetState();
+	this->internal_state_cost = this->p_runner->GetStateCost();
 }
 
 template <class Input, class Output, class State, typename CFtype>
 void SimpleLocalSearch<Input,Output,State,CFtype>::Check() const
-throw(EasyLocalException)
+
 {
-    LocalSearchSolver<Input,Output,State,CFtype>::Check();
-    if (this->p_runner == NULL)
-      throw EasyLocalException("Check(): runner not set in object " + this->GetName());
-    this->p_runner->Check();
+	AbstractLocalSearchSolver<Input,Output,State,CFtype>::Check();
+	if (this->p_runner == NULL)
+		throw std::logic_error("Check(): runner not set in object " + this->name);
+	this->p_runner->Check();
 }
 
 #endif /*SIMPLELOCALSEARCH_HH_*/

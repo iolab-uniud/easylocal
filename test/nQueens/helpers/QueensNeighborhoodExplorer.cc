@@ -11,7 +11,7 @@ void QueensNeighborhoodExplorer::RandomMove(const std::vector<unsigned> &, Swap&
         sw.to = Random::Int(0, in - 1);
     while (sw.from == sw.to);
     if (sw.from > sw.to) // swap from and to so that from < to
-    { int tmp = sw.from;
+    { unsigned int tmp = sw.from;
         sw.from = sw.to;
         sw.to = tmp;
     }

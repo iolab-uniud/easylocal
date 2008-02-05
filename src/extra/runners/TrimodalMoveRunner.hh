@@ -12,12 +12,12 @@ class TrimodalMoveRunner
 {
 public:
     // Runner interface
-    virtual void Check() const throw(EasyLocalException);
+    virtual void Check();
     void SetInput(Input* in);
     // event functions, needed by observers (defined below)
 protected:
     /* state manipulations */
-    virtual void GoCheck() const throw(EasyLocalException) = 0;
+    virtual void GoCheck() const = 0;
     /** Actions to be perfomed at the beginning of the run. */
     virtual void ComputeMoveCost();
 
@@ -59,19 +59,8 @@ TrimodalMoveRunner<Input,State,Move1,Move2,Move3,CFtype>::TrimodalMoveRunner(con
         NeighborhoodExplorer<Input,State,Move1,CFtype>& e_ne1,
         NeighborhoodExplorer<Input,State,Move2,CFtype>& e_ne2,
         NeighborhoodExplorer<Input,State,Move3,CFtype>& e_ne3, std::string name)
-        : Runner<Input,State,CFtype>(in,sm), ne1(e_ne1), ne2(e_ne2), ne3(e_ne3)
-{ EasyLocalObject::SetName(name); }
-
-/**
-   Checks wether the object state is consistent with all the related
-   objects.
-*/
-template <class Input, class State, class Move1, class Move2, class Move3, typename CFtype>
-void TrimodalMoveRunner<Input,State,Move1,Move2,Move3,CFtype>::Check() const
-throw(EasyLocalException)
-{
-    Runner<Input,State,CFtype>::Check();
- }
+        : Runner<Input,State,CFtype>(in,sm,name), ne1(e_ne1), ne2(e_ne2), ne3(e_ne3)
+{}
 
 /**
    Actually performs the move selected by the local search strategy.

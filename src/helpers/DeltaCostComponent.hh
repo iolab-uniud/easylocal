@@ -4,7 +4,6 @@
 #include <cassert>
 #include "CostComponent.hh"
 #include "ShiftingPenaltyManager.hh"
-#include "../basics/EasyLocalException.hh"
 #include <stdexcept>
 
 /** The class DeltaCostComponent manages the variation of one single
@@ -49,7 +48,6 @@ ShiftedResult<CFtype> operator*(const ShiftedResult<CFtype>& sr, const Multype& 
 
 template <class Input, class State, class Move, typename CFtype = int>
 class AbstractDeltaCostComponent
-: public EasyLocalObject
 {
 public:
   virtual bool IsDeltaImplemented() const = 0;
@@ -58,9 +56,10 @@ public:
   virtual void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout) = 0;
   virtual void ResetShift() = 0;
   virtual void UpdateShift(const State& st) = 0;  
+  const std::string name;
 protected:
-    AbstractDeltaCostComponent(std::string name = "")
-    : EasyLocalObject(name) {}
+  AbstractDeltaCostComponent(std::string e_name) : name(e_name) {}
+  virtual ~AbstractDeltaCostComponent() {}
 };
 
 template <class Input, class State, class Move, bool is_delta_implemented, typename CFtype = int>
@@ -69,7 +68,7 @@ class DeltaCostComponent
 {
 public:
   void Print(std::ostream& os = std::cout) const;
-  DeltaCostComponent(const Input& in, CostComponent<Input,State,CFtype>& cc, std::string name = "", ShiftingPenaltyManager<CFtype>* spm  = NULL);
+  DeltaCostComponent(const Input& in, CostComponent<Input,State,CFtype>& cc, std::string name, ShiftingPenaltyManager<CFtype>* spm  = NULL);
   void SetShiftingPenaltyManager(ShiftingPenaltyManager<CFtype>* spm);
   virtual void ResetShift();
   virtual bool IsDeltaImplemented() const  { return is_delta_implemented; }
@@ -95,7 +94,7 @@ public:
   virtual CFtype DeltaCost(const State& st, const Move& mv) const;
   virtual ShiftedResult<CFtype> DeltaShiftedCost(const State& st, const Move& mv) const;
 protected:
-  FilledDeltaCostComponent(const Input& in, CostComponent<Input,State,CFtype>& cc, std::string name = "", ShiftingPenaltyManager<CFtype>* spm  = NULL)
+  FilledDeltaCostComponent(const Input& in, CostComponent<Input,State,CFtype>& cc, std::string name, ShiftingPenaltyManager<CFtype>* spm  = NULL)
     : DeltaCostComponent<Input,State,Move,true,CFtype>(in,cc,name,spm) {}
 };
 
@@ -109,7 +108,7 @@ public:
   virtual CFtype DeltaCost(const State& st, const State& st1) const; 
   virtual ShiftedResult<CFtype> DeltaShiftedCost(const State& st, const State& st1) const;
   CFtype ComputeDeltaCost(const State& st, const Move& mv) const 
-  { throw std::runtime_error("This method should never be called"); }
+  { throw std::logic_error("This method should never be called"); }
 };
 
 
@@ -122,9 +121,7 @@ DeltaCostComponent<Input,State,Move,is_delta_implemented,CFtype>::DeltaCostCompo
 							 CostComponent<Input,State,CFtype>& e_cc, std::string name, ShiftingPenaltyManager<CFtype>* a_spm)
   : AbstractDeltaCostComponent<Input,State,Move,CFtype>(name), in(i), cc(e_cc), spm(a_spm)
 {
-  if (name == "")
-    SetName("Delta-" + cc.GetName());
-  if (spm != NULL)
+	if (spm != NULL)
     is_shifted = true;
   else
     is_shifted = false;

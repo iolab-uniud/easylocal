@@ -2,7 +2,7 @@
 
 int PrimaryDiagonalDeltaCostComponent::ComputeDeltaCost(const std::vector<unsigned>& a, const Swap& sw) const {
   int violations = 0;
-  for (int i = 0; i < in; i++)
+  for (unsigned int i = 0; i < in; i++)
     {
       if (i == sw.from || i == sw.to)
 	continue;

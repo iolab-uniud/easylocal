@@ -1,9 +1,11 @@
 #ifndef KICKER_HH_
 #define KICKER_HH_
 
-#include "../basics/RegistrableObject.hh"
-#include "../basics/StoppableObject.hh"
 #include <exception>
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
 enum KickTypes {
     RANDOM_KICK = 0,
@@ -13,36 +15,20 @@ enum KickTypes {
     TOTAL_FIRST_IMPROVING_KICK
 };
 
-class KickerException : public std::exception
-{
-public:
-  KickerException(std::string msg)
-  { message = msg; }
-  ~KickerException() throw() {}
-  virtual const char* what() const throw()
-  { return message.c_str(); }
-protected:
-  std::string message;
-};
-
-
 /** The Kicker class is an interface for the actual Kickers.
     Kickers select a new state by trying to apply a sequence of
     moves.  
     @ingroup Perturbers */
 template <class Input, class State, typename CFtype = int>
 class Kicker
-            : public RegistrableObject, public StoppableObject
 {
 public:
-  Kicker(const Input& i, unsigned step);
   Kicker(const Input& i, unsigned step, std::string name);
   virtual ~Kicker() {}
   void SetKickType(const KickTypes& kt);
   virtual CFtype SelectKick(const State& st) = 0;
   virtual void MakeKick(State &st) = 0;
   virtual CFtype KickCost() = 0;
-
 
   virtual CFtype BestKick(const State &st) = 0;
   virtual CFtype FirstImprovingKick(const State &st) = 0;
@@ -59,9 +45,9 @@ public:
   virtual void SetStep(unsigned int s);
   unsigned int Step() const { return step; }
   virtual void ReadParameters(std::istream& is = std::cin,
-                        std::ostream& os = std::cout)
-    throw(EasyLocalException);
+                              std::ostream& os = std::cout);
   virtual void PrintKick(std::ostream& os = std::cout) const = 0;
+  const std::string name;
 protected:
 //   virtual CFtype ComputeKickCost(const State& st) = 0;
   const Input& in;
@@ -75,17 +61,9 @@ protected:
  *************************************************************************/
 
 template <class Input, class State, typename CFtype>
-Kicker<Input,State,CFtype>::Kicker(const Input& i, unsigned int s)
-  : in(i), states(0, State(in)), max_step(s), step(s), current_kick_type(BEST_KICK)
+Kicker<Input,State,CFtype>::Kicker(const Input& i, unsigned int s, std::string e_name)
+  : name(e_name), in(i), states(0, State(in)), max_step(s), step(s), current_kick_type(BEST_KICK)
 {
-	states.resize(s + 1, State(in));
-}
-
-template <class Input, class State, typename CFtype>
-Kicker<Input,State,CFtype>::Kicker(const Input& i, unsigned int s, std::string name)
-  : in(i), states(0, State(in)), max_step(s), step(s), current_kick_type(BEST_KICK)
-{
-  this->name = name;
   states.resize(s + 1, State(in));
 }
 
@@ -176,19 +154,17 @@ void Kicker<Input,State,CFtype>::SetKickType(const KickTypes& kt)
 
 template <class Input, class State, typename CFtype>
 void Kicker<Input,State,CFtype>::PrintStatistics(std::ostream &os) const
-    { }
+{ }
 
 
 template <class Input, class State, typename CFtype>
 void Kicker<Input,State,CFtype>::ReadParameters(std::istream& is, std::ostream& os)
-throw(EasyLocalException)
+
 {
     unsigned s;
     os << "KICKER -- INPUT PARAMETERS" << std::endl;
     os << "  Max Step: ";
     is >> s;
-    os << "  Timeout: ";
-    is >> timeout;
     SetMaxStep(s);
 }
 

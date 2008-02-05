@@ -12,16 +12,16 @@ void ChessBoard::SetSquare(int i, int j, char ch)
 
 void ChessBoard::Clean()
 {
-    for (int i = 0; i < cb.size(); i++)
-        for (int j = 0; j < cb.size(); j++)
+    for (unsigned int i = 0; i < cb.size(); i++)
+        for (unsigned int j = 0; j < cb.size(); j++)
             cb[i][j] = '-';
 }
 
 std::ostream& operator<<(std::ostream& os, const ChessBoard& board)
 {
-    for (int i = 0; i < board.cb.size(); i++)
+    for (unsigned int i = 0; i < board.cb.size(); i++)
     {
-        for (int j = 0; j < board.cb.size(); j++)
+        for (unsigned int j = 0; j < board.cb.size(); j++)
             os << board.cb[i][j];
         os << std::endl;
     }
@@ -30,8 +30,8 @@ std::ostream& operator<<(std::ostream& os, const ChessBoard& board)
 
 std::istream& operator>>(std::istream& is, ChessBoard& board)
 {
-    for (int i = 0; i < board.cb.size(); i++)
-        for (int j = 0; j < board.cb.size(); j++)
+    for (unsigned int i = 0; i < board.cb.size(); i++)
+        for (unsigned int j = 0; j < board.cb.size(); j++)
             is >> board.cb[i][j];
     return is;
 }
@@ -39,20 +39,20 @@ std::istream& operator>>(std::istream& is, ChessBoard& board)
 int ChessBoard::CountAttacks()
 {
     int attacks = 0;
-    for (int i = 0; i < cb.size(); i++)
-        for (int j = 0; j < cb.size(); j++)
+    for (unsigned int i = 0; i < cb.size(); i++)
+        for (unsigned int j = 0; j < cb.size(); j++)
             if (cb[i][j] == 'Q')
                 attacks += CountSingleAttacks(i,j);
     return attacks/2;
 }
 
-int ChessBoard::CountSingleAttacks(int h, int k)
+int ChessBoard::CountSingleAttacks(unsigned int h, unsigned int k)
 {
-    int attacks = 0, l;
-    for (int i = 0; i < cb.size(); i++)
+    unsigned int attacks = 0, l;
+    for (unsigned int i = 0; i < cb.size(); i++)
         if (i != h && cb[i][k] == 'Q')
             attacks++;
-    for (int j = 0; j < cb.size(); j++)
+    for (unsigned int j = 0; j < cb.size(); j++)
         if (j != k && cb[h][j] == 'Q')
             attacks++;
     for (l = -cb.size(); l < cb.size(); l++)

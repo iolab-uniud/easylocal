@@ -23,7 +23,7 @@ public:
 
     // used for doublechecking the correctness of the solvers
     int CountAttacks();
-    int CountSingleAttacks(int h, int k);
+    int CountSingleAttacks(unsigned int h, unsigned int k);
 
 private:
 		std::vector<std::vector<char> > cb;

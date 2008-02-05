@@ -9,7 +9,6 @@ public:
     void Print(std::ostream& os = std::cout) const;
     void ReadParameters(std::istream& is = std::cin,
                         std::ostream& os = std::cout)
-    throw(EasyLocalException);
 protected:
     TrimodalTabuSearchWithShiftingPenalty(StateManager<Input,State,CFtype>* s,
                                           NeighborhoodExplorer<Input,State,Move1>* ne1,
@@ -151,7 +150,6 @@ void TrimodalTabuSearchWithShiftingPenalty<Input,State,Move1,Move2,Move3>::Store
 
 template <class Input, class State, class Move1, class Move2, class Move3>
 void TrimodalTabuSearchWithShiftingPenalty<Input,State,Move1,Move2,Move3>::ReadParameters(std::istream& is, std::ostream& os)
-throw(EasyLocalException)
 {
     os << "TRIMODAL TABU SEARCH WITH SHIFTING PENALTY -- INPUT PARAMETERS" << std::endl;
     TrimodalTabuSearch<Input,State,Move1,Move2,Move3>::ReadParameters(is,os);

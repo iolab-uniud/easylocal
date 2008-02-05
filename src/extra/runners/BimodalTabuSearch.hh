@@ -2,6 +2,7 @@
 #define BIMODALTABUSEARCH_HH_
 
 #include "BimodalMoveRunner.hh"
+#include <stdexcept>
 
 template <class Input, class State, class Move1, class Move2, typename CFtype = int>
 class BimodalTabuSearch
@@ -9,8 +10,7 @@ class BimodalTabuSearch
 {
 public:
   void Print(std::ostream& os = std::cout) const;
-  void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout)
-    throw(EasyLocalException);
+  void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout);
   virtual void SetMaxIdleIteration(unsigned long m) 
   { max_idle_iteration = m; }
   void SetTabuTenure1(unsigned int min, unsigned int max) 
@@ -25,7 +25,7 @@ public:
 		    TabuListManager<State, Move2,CFtype>& tlm2,
 		    std::string name = "Anonymous Bimodal Tabu Search runner");
 protected:
-  void GoCheck() const throw(EasyLocalException);
+  void GoCheck() const;
   void InitializeRun();
   bool StopCriterion();
   void SelectMove();
@@ -90,10 +90,9 @@ void BimodalTabuSearch<Input,State,Move1,Move2,CFtype>::InitializeRun()
 
 template <class Input, class State, class Move1, class Move2, typename CFtype>
 void BimodalTabuSearch<Input,State,Move1,Move2,CFtype>::GoCheck() const
-throw(EasyLocalException)
 {
   if (this->max_idle_iteration == 0)
-    throw EasyLocalException("max_idle_iteration is zero for object " + this->GetName());
+    throw std::logic_error("max_idle_iteration is zero for object " + this->GetName());
 }
 
 
@@ -266,7 +265,6 @@ void BimodalTabuSearch<Input,State,Move1,Move2,CFtype>::TerminateRun()
 
 template <class Input, class State, class Move1, class Move2, typename CFtype>
 void BimodalTabuSearch<Input,State,Move1,Move2,CFtype>::ReadParameters(std::istream& is, std::ostream& os)
-throw(EasyLocalException)
 {
 	os << "BIMODAL TABU SEARCH -- INPUT PARAMETERS" << std::endl;
 	pm1.ReadParameters(is,os);

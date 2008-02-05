@@ -2,71 +2,129 @@
 
 #include <ctime>
 
-
 Chronometer::Chronometer()
-        : running(false), secs(0), microsecs(0), p_secs(0), p_microsecs(0), t_secs(0), t_microsecs(0)
+: running(false), secs(0), microsecs(0), p_secs(0), p_microsecs(0), t_secs(0), t_microsecs(0)
 {}
 
 void Chronometer::Reset()
 {
-    t_secs = p_secs = 0;
-    p_microsecs = t_microsecs = 0;
-    running = false;
+  t_secs = p_secs = 0;
+  p_microsecs = t_microsecs = 0;
+  running = false;
 }
 
 void Chronometer::Start()
 {
-    getrusage(RUSAGE_SELF,&time_read);
-    secs = time_read.ru_utime.tv_sec;
-    p_secs = 0;
-    microsecs = time_read.ru_utime.tv_usec;
-    p_microsecs = 0;
-    running = true;
+#ifdef CPUTIME
+  getrusage(RUSAGE_SELF,&time_read);
+  secs = time_read.ru_utime.tv_sec;
+  microsecs = time_read.ru_utime.tv_usec;
+#else
+#ifdef HAVE_CLOCK_GETTIME
+  clock_gettime(CLOCK_REALTIME, &time_read);
+  secs = time_read.tv_sec;
+  microsecs = time_read.tv_nsec / 1000;
+#else
+#ifdef HAVE_GETTIMEOFDAY
+  gettimeofday(&time_read, NULL);
+  secs = time_read.tv_sec;
+  microsecs = time_read.tv_usec;
+#endif
+#endif
+#endif
+  p_secs = 0;
+  p_microsecs = 0;
+  running = true;
 }
 
 void Chronometer::Partial()
 {
-    getrusage(RUSAGE_SELF,&time_read);
-    p_secs = time_read.ru_utime.tv_sec - secs;
-    t_secs += p_secs;
-    p_microsecs = time_read.ru_utime.tv_usec - microsecs;
-    t_microsecs += p_microsecs;
-    running = false;
+  long r_secs, r_microsecs;
+#ifdef CPUTIME
+  getrusage(RUSAGE_SELF,&time_read);
+  r_secs = time_read.ru_utime.tv_sec;
+  r_microsecs = time_read.ru_utime.tv_usec;
+#else
+#ifdef HAVE_CLOCK_GETTIME
+  clock_gettime(CLOCK_REALTIME, &time_read);
+  r_secs = time_read.tv_sec;
+  r_microsecs = time_read.tv_nsec / 1000;
+#else
+#ifdef HAVE_GETTIMEOFDAY
+  gettimeofday(&time_read, NULL);
+  r_secs = time_read.tv_sec;
+  r_microsecs = time_read.tv_usec;
+#endif
+#endif
+#endif
+  p_secs = r_secs - secs;
+  t_secs += p_secs;
+  p_microsecs = r_microsecs - microsecs;
+  t_microsecs += p_microsecs;
+  running = false;
 }
 
 void Chronometer::Stop()
 {
-    if (running)
-    {
-        getrusage(RUSAGE_SELF,&time_read);
-        p_secs = time_read.ru_utime.tv_sec - secs;
-        t_secs += p_secs;
-        p_microsecs = time_read.ru_utime.tv_usec - microsecs;
-        t_microsecs += p_microsecs;
-    }
-    running = false;
+  if (running)
+    Partial();
+  running = false;
 }
 
 double Chronometer::TotalTime() const
 {
-    if (!running)
-        return t_secs+t_microsecs/1E6;
-    else
-    {
-        getrusage(RUSAGE_SELF,(struct rusage*)&time_read);
-        return (t_secs + time_read.ru_utime.tv_sec - secs)+(t_microsecs + time_read.ru_utime.tv_usec - microsecs)/1E6;
-    }
+  if (!running)
+    return t_secs + t_microsecs / 1.0E6;
+  else
+  {
+    long r_secs, r_microsecs;
+#ifdef CPUTIME
+    getrusage(RUSAGE_SELF, &time_read);
+    r_secs = time_read.ru_utime.tv_sec;
+    r_microsecs = time_read.ru_utime.tv_usec;
+#else
+#ifdef HAVE_CLOCK_GETTIME
+    clock_gettime(CLOCK_REALTIME, &time_read);
+    r_secs = time_read.tv_sec;
+    r_microsecs = time_read.tv_nsec / 1000;
+#else
+#ifdef HAVE_GETTIMEOFDAY
+    gettimeofday(&time_read, NULL);
+    r_secs = time_read.tv_sec;
+    r_microsecs = time_read.tv_usec;
+#endif
+#endif
+#endif    
+    return (t_secs + r_secs - secs) + (t_microsecs + r_microsecs - microsecs) / 1.0E6;
+  }
 }
 
 double Chronometer::PartialTime() const
 {
-    if (!running)
-        return p_secs+p_microsecs/1E6;
-    else
-    {
-        getrusage(RUSAGE_SELF,(struct rusage*)&time_read);
-        return (p_secs + time_read.ru_utime.tv_sec - secs)+(p_microsecs + time_read.ru_utime.tv_usec - microsecs)/1E6;
-    }
+  if (!running)
+    return p_secs + p_microsecs / 1.0E6;
+  else
+  {
+    long r_secs, r_microsecs;
+#ifdef CPUTIME
+    getrusage(RUSAGE_SELF, &time_read);
+    r_secs = time_read.ru_utime.tv_sec;
+    r_microsecs = time_read.ru_utime.tv_usec;
+#else
+#ifdef HAVE_CLOCK_GETTIME
+    clock_gettime(CLOCK_REALTIME, &time_read);
+    r_secs = time_read.tv_sec;
+    r_microsecs = time_read.tv_nsec / 1000;
+#else
+#ifdef HAVE_GETTIMEOFDAY
+    gettimeofday(&time_read, NULL);
+    r_secs = time_read.tv_sec;
+    r_microsecs = time_read.tv_usec;
+#endif
+#endif
+#endif 
+    return (p_secs + r_secs - secs) + (p_microsecs + r_microsecs - microsecs) / 1.0E6;
+  }
 }
 
 const char* Chronometer::Now()
@@ -78,4 +136,3 @@ const char* Chronometer::Now()
             tmp[i] = ' ';
     return tmp;
 }
-

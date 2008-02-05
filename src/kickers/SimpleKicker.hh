@@ -2,6 +2,7 @@
 #define SIMPLEKICKER_HH_
 
 #include "Kicker.hh"
+#include <stdexcept>
 
 /** A Simple Kicker simply considers sequences of moves of a given type
     (instantiated as template). 
@@ -12,7 +13,7 @@ class SimpleKicker
   : public Kicker<Input,State,CFtype>
 {
 public:
-  SimpleKicker(const Input& i, NeighborhoodExplorer<Input,State,Move>& nhe,                 
+  SimpleKicker(const Input& i, NeighborhoodExplorer<Input,State,Move,CFtype>& nhe,                 
 	       unsigned int s, std::string name);
   void Print(std::ostream& os = std::cout) const;
   CFtype SelectKick(const State& st);
@@ -20,21 +21,21 @@ public:
   CFtype FirstImprovingKick(const State &st);
   CFtype DenseBestKick(const State &st);
   CFtype RandomKick(const State &st);
-  CFtype TotalFirstImprovingKick(const State &st) { throw std::runtime_error("No TOTAL_BEST_KICK allowed for Simple Kickers"); }
-  CFtype TotalBestKick(const State &st) { throw std::runtime_error("No TOTAL_FIRST_IMPROVING_KICK allowed for Simple Kickers"); }
+  CFtype TotalFirstImprovingKick(const State &st) { throw std::logic_error("No TOTAL_BEST_KICK allowed for Simple Kickers"); }
+  CFtype TotalBestKick(const State &st) { throw std::logic_error("No TOTAL_FIRST_IMPROVING_KICK allowed for Simple Kickers"); }
 
   void MakeKick(State &st);
   virtual CFtype KickCost();
   virtual void PrintKick(std::ostream& os = std::cout) const;
   void SetMaxStep(unsigned int s);
 protected:
-  void FirstKick(const State &st) throw(KickerException);
+  void FirstKick(const State &st);
   bool NextKick();
   Move GetKickComponent(unsigned int i) const;
   void SetKickComponent(unsigned int i, const Move& mv);
   //  virtual CFtype ComputeKickCost(const State &st);
   virtual bool RelatedMoves(const Move&, const Move&) const = 0;
-  NeighborhoodExplorer<Input,State,Move>& ne;
+  NeighborhoodExplorer<Input,State,Move,CFtype>& ne;
   std::vector<Move> current_moves, internal_best_moves, start_moves;
   CFtype current_kick_cost, best_kick_cost;
   void FirstKickComponent(unsigned int i);  // used by the backtracking algorithm of bestkick
@@ -48,7 +49,7 @@ protected:
 
 template <class Input, class State, class Move, typename CFtype>
 SimpleKicker<Input,State,Move,CFtype>::SimpleKicker(const Input& in,
-						    NeighborhoodExplorer<Input,State,Move>& e_ne,
+						    NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
 						    unsigned int s, std::string name)
   : Kicker<Input,State,CFtype>(in, s, name), ne(e_ne), current_moves(s), internal_best_moves(s), start_moves(s)
 {}
@@ -65,13 +66,13 @@ CFtype SimpleKicker<Input,State,Move,CFtype>::SelectKick(const State& st)
     case FIRST_IMPROVING_KICK:
       return FirstImprovingKick(st);
     case TOTAL_BEST_KICK:
-      throw std::runtime_error("No TOTAL_BEST_KICK allowed for Simple Kickers");
+      throw std::logic_error("No TOTAL_BEST_KICK allowed for Simple Kickers");
       break;
     case TOTAL_FIRST_IMPROVING_KICK:
-      throw std::runtime_error("No TOTAL_FIRST_IMPROVING_KICK allowed for Simple Kickers");
+      throw std::logic_error("No TOTAL_FIRST_IMPROVING_KICK allowed for Simple Kickers");
       break;
     default:
-      throw std::runtime_error("Unknown Kick Type for Simple Kickers");    
+      throw std::logic_error("Unknown Kick Type for Simple Kickers");    
     }
   return 0;  // Only to prevent warnings (never reached)
 }
@@ -84,7 +85,7 @@ void SimpleKicker<Input,State,Move,CFtype>::Print(std::ostream& os) const
   os  << "Max Step: " << this->step << std::endl;
   os  << "Kick selection: ";
   switch (this->current_kick_type)
-    {
+	{
     case RANDOM_KICK:
       os << "RANDOM" << std::endl;
       break;
@@ -100,8 +101,7 @@ void SimpleKicker<Input,State,Move,CFtype>::Print(std::ostream& os) const
     case TOTAL_FIRST_IMPROVING_KICK:
       os << "TOTAL FIRST_IMPROVING" << std::endl;
       break;
-    }
-	
+	}
 }
 
 template <class Input, class State, class Move, typename CFtype>
@@ -143,7 +143,7 @@ CFtype SimpleKicker<Input,State,Move,CFtype>::DenseBestKick(const State &st)
 {
   unsigned dense_best_step = 0;
   CFtype dense_best_kick_cost = 0;
-  vector<Move> dense_best_moves;
+  std::vector<Move> dense_best_moves;
 	
   for (this->step = 1; this->step <= this->max_step; this->step++)
     {
@@ -173,7 +173,7 @@ CFtype SimpleKicker<Input,State,Move,CFtype>::BestKick(const State &st)
     std::cerr << j << " : " << internal_best_moves[j] << "   ";
   std::cerr << "first cost : " << best_kick_cost << std::endl;
 #endif
-  while (NextKick() && !this->Timeout())
+  while (NextKick())
     {
       if (LessThan(current_kick_cost,best_kick_cost))
 	{
@@ -207,8 +207,8 @@ CFtype SimpleKicker<Input,State,Move,CFtype>::FirstImprovingKick(const State &st
     std::cerr << j << " : " << internal_best_moves[j] << "   ";
   std::cerr << "first cost : " << best_kick_cost << std::endl;
 #endif
-  if (LessThan(current_kick_cost,0)) return current_kick_cost;
-  while (NextKick() && !this->Timeout())
+  if (LessThan(current_kick_cost,(CFtype)0)) return current_kick_cost;
+  while (NextKick())
     {
       if (LessThan(current_kick_cost,best_kick_cost))
 	{
@@ -219,7 +219,7 @@ CFtype SimpleKicker<Input,State,Move,CFtype>::FirstImprovingKick(const State &st
 	    std::cerr << j << " : " << internal_best_moves[j] << "   ";
 	  std::cerr << "best cost : " << best_kick_cost << std::endl;
 #endif
-	  if (LessThan(current_kick_cost,0)) return current_kick_cost;
+	  if (LessThan(current_kick_cost,(CFtype)0)) return current_kick_cost;
 	}
     }
   current_kick_cost = best_kick_cost;
@@ -233,7 +233,7 @@ CFtype SimpleKicker<Input,State,Move,CFtype>::FirstImprovingKick(const State &st
 }
 
 template <class Input, class State, class Move, typename CFtype>
-void SimpleKicker<Input,State,Move,CFtype>::FirstKick(const State &st) throw(KickerException)
+void SimpleKicker<Input,State,Move,CFtype>::FirstKick(const State &st)
 { 
   int i = 0;
   this->states[0] = st;
@@ -262,7 +262,7 @@ void SimpleKicker<Input,State,Move,CFtype>::FirstKick(const State &st) throw(Kic
 	}
     }
   while (i >= 0);
-  throw KickerException("No kick build in SimpleKicker::FirstKick()");
+  throw std::logic_error("No kick build in SimpleKicker::FirstKick()");
 }
 
 template <class Input, class State, class Move, typename CFtype>
@@ -344,7 +344,9 @@ CFtype SimpleKicker<Input,State,Move,CFtype>::KickCost()
 {
   CFtype cost = 0;
   for (unsigned int i = 0; i < this->step; i++) 
-    cost += ne.DeltaCostFunction(this->states[i], current_moves[i]);
+    {
+      cost += ne.DeltaCostFunction(this->states[i], current_moves[i]);
+    }
   return cost;
 }
 

@@ -1,6 +1,10 @@
 #ifndef RANDOM_HH_
 #define RANDOM_HH_
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <vector>
 
 

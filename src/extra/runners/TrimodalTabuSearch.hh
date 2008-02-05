@@ -2,6 +2,7 @@
 #define TRIMODALTABUSEARCH_HH_
 
 #include "TrimodalMoveRunner.hh"
+#include <stdexcept>
 
 template <class Input, class State, class Move1, class Move2, class Move3, typename CFtype = int>
 class TrimodalTabuSearch
@@ -9,8 +10,7 @@ class TrimodalTabuSearch
 {
 public:
   void Print(std::ostream& os = std::cout) const;
-  void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout)
-    throw(EasyLocalException);
+  void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout);
   virtual void SetMaxIdleIteration(unsigned long m) 
   { max_idle_iteration = m; }
   void SetTabuTenure1(unsigned int min, unsigned int max) 
@@ -29,7 +29,7 @@ public:
 		    TabuListManager<State, Move3,CFtype>& tlm3,
 		    std::string name = "Anonymous Trimodal Tabu Search runner");
 protected:
-  void GoCheck() const throw(EasyLocalException);
+  void GoCheck() const;
   void InitializeRun();
   bool StopCriterion();
   void SelectMove();
@@ -100,10 +100,9 @@ void TrimodalTabuSearch<Input,State,Move1,Move2,Move3,CFtype>::InitializeRun()
 
 template <class Input, class State, class Move1, class Move2, class Move3, typename CFtype>
 void TrimodalTabuSearch<Input,State,Move1,Move2,Move3,CFtype>::GoCheck() const
-throw(EasyLocalException)
 {
   if (this->max_idle_iteration == 0)
-    throw EasyLocalException("max_idle_iteration is zero for object " + this->GetName());
+    throw std::logic_error("max_idle_iteration is zero for object " + this->GetName());
 }
 
 
@@ -341,7 +340,6 @@ void TrimodalTabuSearch<Input,State,Move1,Move2,Move3,CFtype>::TerminateRun()
 
 template <class Input, class State, class Move1, class Move2, class Move3, typename CFtype>
 void TrimodalTabuSearch<Input,State,Move1,Move2,Move3,CFtype>::ReadParameters(std::istream& is, std::ostream& os)
-throw(EasyLocalException)
 {
 	os << "TRIMODAL TABU SEARCH -- INPUT PARAMETERS" << std::endl;
 	pm1.ReadParameters(is,os);

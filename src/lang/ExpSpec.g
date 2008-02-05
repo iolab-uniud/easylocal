@@ -63,7 +63,7 @@ protected singleSolve
                 {
                   plotstream = new std::ofstream(plot_filename.c_str());
                   if (!*plotstream)
-                    throw easylocal::EasyLocalException("Cannot open file " + plot_filename + " for plotting");
+                    throw easylocal::std::logic_exception("Cannot open file " + plot_filename + " for plotting");
                 }
                 sol->AttachPlotStream(plotstream);
                 sol->SetTimeout(solve_timeout);
@@ -82,7 +82,7 @@ protected singleSolve
                 if (plotstream != NULL)
                   delete plotstream;
             } 
-            catch (easylocal::EasyLocalException& e)
+            catch (easylocal::std::logic_exception& e)
             {
                 if (logstream != &std::cout)
                   delete logstream;
@@ -147,7 +147,7 @@ protected trialSolve
                         tmp << i << ".plot";	 
                         plotstream = new std::ofstream(tmp.str().c_str());
                         if (!*plotstream)
-                          throw easylocal::EasyLocalException("Cannot open file " + tmp.str() + " for plotting");
+                          throw easylocal::std::logic_exception("Cannot open file " + tmp.str() + " for plotting");
                         sol->AttachPlotStream(plotstream);
                         *logstream << "PLOTTING RESULTS ON FILE " << tmp.str() << std::endl;
                     }     
@@ -191,7 +191,7 @@ protected trialSolve
                   *logstream << '-';
                 *logstream << std::endl;             
             } 
-            catch (easylocal::EasyLocalException& e)
+            catch (easylocal::std::logic_exception& e)
             {
                 if (logstream != &std::cout)
                   delete logstream;              

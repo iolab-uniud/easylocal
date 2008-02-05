@@ -4,10 +4,8 @@
 #include <list>
 #include "ProhibitionManager.hh"
 #include "TabuListItem.hh"
-#include "../basics/EasyLocalException.hh"
 #include "../utils/Random.hh"
 #include "../utils/Types.hh"
-
 
 // forward class tag declaration
 template <class Move, typename CFtype = int> class ListItem;
@@ -22,58 +20,58 @@ template <class Move, typename CFtype = int> class ListItem;
 */
 template <class State, class Move, typename CFtype = int>
 class TabuListManager
-  : public ProhibitionManager<State,Move,CFtype>
+: public ProhibitionManager<State,Move,CFtype>
 {
 public:
-    void Print(std::ostream& os = std::cout) const;
-    void InsertMove(const State& st, const Move& mv, const CFtype& mv_cost, const CFtype& curr, const CFtype& best);
-    bool ProhibitedMove(const State& st, const Move& mv, const CFtype& mv_cost) const;
-    /** Sets the length of the tabu list to be comprised in the range
-    [min, max].
-    @param min the minimum tabu tenure
-    @param max the maximum tabu tenure */
-    void SetLength(unsigned int min, unsigned int max);
-    void ReadParameters(std::istream& is = std::cin,
-                        std::ostream& os = std::cout) throw(EasyLocalException);
-    void Clean();
-    /** Returns the minimum number of iterations a move is considered tabu.
-    @return the minimum tabu tenure */
-    unsigned int MinTenure() const
-        { return min_tenure; }
-    /** Returns the maximum number of iterations a move is considered tabu.
-    @return the maximum tabu tenure */
-    unsigned int MaxTenure() const
-        { return max_tenure; }
-    /** Verifies whether a move is the inverse of another one. Namely it
-    tests whether mv1 is the inverse of mv2 (that will be an element of
-    the tabu list).
-    @note @bf To be implemented in the application.
-    @param mv1 the move to be tested
-    @param mv2 the move used for comparison  */
-    virtual bool Inverse(const Move& mv1, const Move& mv2) const = 0;
-    void UpdateIteration() { PurgeList(); iter++; }
-    TabuListManager(unsigned int min = 0, unsigned int max = 0);
+	void Print(std::ostream& os = std::cout) const;
+	void InsertMove(const State& st, const Move& mv, const CFtype& mv_cost, const CFtype& curr, const CFtype& best);
+	bool ProhibitedMove(const State& st, const Move& mv, const CFtype& mv_cost) const;
+	/** Sets the length of the tabu list to be comprised in the range
+	 [min, max].
+	 @param min the minimum tabu tenure
+	 @param max the maximum tabu tenure */
+	void SetLength(unsigned int min, unsigned int max);
+	void ReadParameters(std::istream& is = std::cin,
+											std::ostream& os = std::cout);
+	void Clean();
+	/** Returns the minimum number of iterations a move is considered tabu.
+	 @return the minimum tabu tenure */
+	unsigned int MinTenure() const
+	{ return min_tenure; }
+	/** Returns the maximum number of iterations a move is considered tabu.
+	 @return the maximum tabu tenure */
+	unsigned int MaxTenure() const
+	{ return max_tenure; }
+	/** Verifies whether a move is the inverse of another one. Namely it
+	 tests whether mv1 is the inverse of mv2 (that will be an element of
+	 the tabu list).
+	 @note @bf To be implemented in the application.
+	 @param mv1 the move to be tested
+	 @param mv2 the move used for comparison  */
+	virtual bool Inverse(const Move& mv1, const Move& mv2) const = 0;
+	void UpdateIteration() { PurgeList(); iter++; }
+	TabuListManager();
+	/** Virtual destructor. */
+	virtual ~TabuListManager();
 protected:    
-    virtual ~TabuListManager();
-    /** Virtual destructor. */
-    virtual bool Aspiration(const State& st, const Move&, const CFtype& mv_cost) const;
-    virtual void InsertIntoList(const State& st, const Move& mv);
-    void PurgeList();
-    /** Updates the function associated with the aspiration criterion.
-    For default it does nothing.
-    @param mv_cost the cost of the move
-    @param curr the cost of the current solution
-    @param best the cost of the best solution found so far */
-    void UpdateAspirationFunction(const CFtype& curr_cost, const CFtype& best_cost)
-    { current_state_cost = curr_cost; best_state_cost = best_cost; }
-    bool ListMember(const Move&) const;
-    // parameters
-    unsigned int min_tenure; /**< The minimum tenure of the tabu list. */
-    unsigned int max_tenure;  /**< The maximum tenure of the tabu list. */
-    unsigned long iter; /**< The current iteration. */
-    std::list<TabuListItem<State,Move,CFtype> > tlist; /**< The list of tabu moves. */
-    CFtype current_state_cost; /**< The cost of current state of the attached runner (for the aspiration criterion) */
-    CFtype best_state_cost; /**< The cost of best state of the attached runner (for the aspiration criterion) */
+	virtual bool Aspiration(const State& st, const Move&, const CFtype& mv_cost) const;
+	virtual void InsertIntoList(const State& st, const Move& mv);
+	void PurgeList();
+	/** Updates the function associated with the aspiration criterion.
+	 For default it does nothing.
+	 @param mv_cost the cost of the move
+	 @param curr the cost of the current solution
+	 @param best the cost of the best solution found so far */
+	void UpdateAspirationFunction(const CFtype& curr_cost, const CFtype& best_cost)
+	{ current_state_cost = curr_cost; best_state_cost = best_cost; }
+	bool ListMember(const Move&) const;
+	// parameters
+	unsigned int min_tenure; /**< The minimum tenure of the tabu list. */
+	unsigned int max_tenure;  /**< The maximum tenure of the tabu list. */
+	unsigned long iter; /**< The current iteration. */
+	std::list<TabuListItem<State,Move,CFtype> > tlist; /**< The list of tabu moves. */
+	CFtype current_state_cost; /**< The cost of current state of the attached runner (for the aspiration criterion) */
+	CFtype best_state_cost; /**< The cost of best state of the attached runner (for the aspiration criterion) */
 };
 
 /*************************************************************************
@@ -87,18 +85,20 @@ protected:
     @param max the maximum tabu tenure
 */
 template <class State, class Move, typename CFtype>
-TabuListManager<State, Move,CFtype>::TabuListManager(unsigned int min, unsigned int max)
-        : iter(0)
-{ min_tenure = min; max_tenure = max; }
+TabuListManager<State, Move,CFtype>::TabuListManager()
+: min_tenure(0), max_tenure(1), iter(0)
+{}
 
 template <class State, class Move, typename CFtype>
 void TabuListManager<State, Move,CFtype>::SetLength(unsigned int min, unsigned int max)
-{ min_tenure = min; max_tenure = max; }
+{ 
+	min_tenure = min; 
+	max_tenure = max; 
+}
 
 template <class State, class Move, typename CFtype>
 void TabuListManager<State, Move,CFtype>::ReadParameters(std::istream& is,
         std::ostream& os)
-throw(EasyLocalException)
 {
     os << "  TABU LIST PARAMETERS" << std::endl;
     os << "    Length of the tabu list (min,max): ";

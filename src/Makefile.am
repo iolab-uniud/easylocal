@@ -1,15 +1,15 @@
 ## Automake file
 
 lib_LTLIBRARIES = libEasyLocalpp.la
-libEasyLocalpp_la_SOURCES = basics/EasyLocalObject.cc basics/EasyLocalSystemObjects.cc \
-basics/ObjectNotFoundException.cc basics/EasyLocalException.cc \
-basics/RegistrableObject.cc basics/StoppableObject.cc utils/Chronometer.cc \
-utils/Random.cc utils/CLParser.cc utils/Argument.cc utils/ArgumentGroup.cc utils/matrix/IndexUtils.cc utils/Types.cc
+libEasyLocalpp_la_SOURCES = utils/Chronometer.cc utils/Random.cc \
+  utils/clparser/CLParser.cc utils/clparser/Argument.cc utils/clparser/ArgumentGroup.cc \
+  utils/matrix/IndexUtils.cc utils/Types.cc utils/Mutex.cc utils/ConditionVariable.cc
 
-AM_LDFLAGS = -lstdc++
+AM_CPPFLAGS = -I@EASYLOCALPP_BUILD@
+AM_LDFLAGS = -lstdc++ 
 
 if DEBUG
-AM_CXXFLAGS = -g @EOFWARNING@
+AM_CXXFLAGS = -g -O0 @EOFWARNING@
 else
 AM_CXXFLAGS = -O3 @EOFWARNING@ #-cxxlib-gcc
 endif

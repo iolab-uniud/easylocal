@@ -1,12 +1,17 @@
 #ifndef RUNNER_HH_
 #define RUNNER_HH_
 
-#include "AbstractRunner.hh"
-#include "../helpers/StateManager.hh"
-#include <set>
-#ifdef EASYLOCAL_PTHREADS
-#include <pthread.h>
+#ifdef HAVE_CONFIG_H
+#include "config.h"
 #endif
+
+#include "../helpers/StateManager.hh"
+#ifdef HAVE_PTHREAD
+#include "../utils/RWLockVariable.hh"
+#include "../utils/ConditionVariable.hh"
+#endif
+#include <stdexcept>
+#include "../utils/Chronometer.hh"
 
 /** @defgroup Runners Runner classes
     Runner classes are the algorithmic core of the framework. They are 
@@ -16,72 +21,103 @@
 
 template <class Input, class State, typename CFtype = int>
 class Runner
-            : public AbstractRunner<Input, State,CFtype>
 {
 public:
-    // Runner interface
-  void SetState(const State& st, CFtype cost);
-  void SetState(const State& st);
-  const State& GetState() const;
-  CFtype GetStateCost() const;
-  void Go() throw(EasyLocalException);
-  void Step(unsigned int n) throw(EasyLocalException);
-  void ComputeCost();
-  unsigned long GetIterationsPerformed() const;
+  /** Performs a full run of the search method. */
+  virtual void Go();
+  /** Performs a given number of steps of the search method.
+  @param n the number of steps to make */	
+  virtual void Step(unsigned int n);
+  /** Sets the internal state of the runner to be equal to the
+    one passed as parameter.
+    @param st the state to become the new runner's state */
+  virtual void SetState(const State& st);
+  /** Sets the internal state of the runner to be equal to the
+    one passed as parameter and updates the cost with the value of the @c cost variable.
+    @param st the state to become the new runner's state 
+    @param cost the state cost
+    */  
+  virtual void SetState(const State& st, CFtype cost);
+  /** Gets the internal state of the runner.
+    @return the internal state of the runner */
+  virtual const State& GetState() const;
+  /** Gets the cost of the runner's internal state
+    @returns the cost value of the runner's internal state. */
+  virtual CFtype GetStateCost() const;
+  /** Gets the best state of the runner.
+    @return the internal state of the runner */
+  virtual void ComputeCost();
+  /** Gets the number of iterations performed by the runner.
+    @return the number of iterations performed */
+  virtual unsigned long GetIterationsPerformed() const;
+  /** Checks wether the object state is consistent with all the related
+    objects. */
+  virtual void Check() const;
   unsigned long GetMaxIteration() const;
   void SetMaxIteration(unsigned long max);
   virtual void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout) = 0;
-  virtual void Check() const throw(EasyLocalException);
   bool LowerBoundReached() const;
+
+  unsigned IterationOfBest() const { return iteration_of_best; }
+  unsigned NumberOfIterations() const { return number_of_iterations; }
+
+  const std::string name;
 protected:
-    Runner(const Input& i, StateManager<Input,State,CFtype>& sm);
-    /* state manipulations */
-    virtual void GoCheck() const throw(EasyLocalException) = 0;
-    /** Actions to be perfomed at the beginning of the run. */
-    virtual void InitializeRun();
-    /** Actions to be performed at the end of the run. */
-    virtual void TerminateRun();
-    virtual void UpdateIterationCounter();
-    bool MaxIterationExpired() const;
-    /** Encodes the criterion used to stop the search. */
-    virtual bool StopCriterion() = 0;
-    /** Encodes the criterion used to select the move at each step. */
-    virtual void SelectMove() = 0;
-    /** Verifies whether the move selected could be performed. */
-    virtual bool AcceptableMove();
-    /** Actually performs the move. */
-    virtual void MakeMove() = 0;
-    /** Stores the move and updates the related data. */
-    virtual void StoreMove() = 0;
-    virtual void UpdateStateCost() = 0;
-    // input
-    const Input& in; /**< A pointer to the input object. */
-    // helpers
-    StateManager<Input, State,CFtype>& sm; /**< A pointer to the attached
-    	state manager. */
-
-    // state data
-    State current_state; /**< The current state object. */
-    CFtype current_state_cost; /**< The cost of the current state. */
-    bool current_state_set; /**< A flag that whether the current state is set.
-          It is so until a new input is given. */
-
-    State best_state;         /**< The best state object. */
-    CFtype best_state_cost;   /**< The cost of the best state. */
-
-    unsigned long iteration_of_best; /**< The iteration when the best
-    	state has found. */
-    unsigned long number_of_iterations; /**< The overall number of iterations
-    	   performed. */
-    unsigned long start_iteration;
-    unsigned long max_iteration; /**< The maximum number of iterations
-        allowed. */
-#ifdef EASYLOCAL_PTHREADS
+  Runner(const Input& i, StateManager<Input,State,CFtype>& sm, std::string name);
+  virtual ~Runner() {}
+  /* state manipulations */
+  virtual void GoCheck() const = 0;
+  /** Actions to be perfomed at the beginning of the run. */
+  virtual void InitializeRun();
+  /** Actions to be performed at the end of the run. */
+  virtual void TerminateRun();
+  virtual void UpdateIterationCounter();
+  bool MaxIterationExpired() const;
+  bool ExternalTerminationRequest() const;
+  /** Encodes the criterion used to stop the search. */
+  virtual bool StopCriterion() = 0;
+  /** Encodes the criterion used to select the move at each step. */
+  virtual void SelectMove() = 0;
+  /** Verifies whether the move selected could be performed. */
+  virtual bool AcceptableMove();
+  /** Actually performs the move. */
+  virtual void MakeMove() = 0;
+  /** Stores the move and updates the related data. */
+  virtual void StoreMove() = 0;
+  virtual void UpdateStateCost() = 0;
+  // input
+  const Input& in; /**< A pointer to the input object. */
+  // helpers
+  StateManager<Input, State,CFtype>& sm; /**< A pointer to the attached
+    state manager. */
+  
+  // state data
+  State current_state, /**< The current state object. */
+    best_state; /**< The best state object. */
+  CFtype current_state_cost, /**< The cost of the current state. */
+    best_state_cost; /**< The cost of the best state. */
+  bool current_state_set; /**< A flag that whether the current state is set.
+    It is so until a new input is given. */  
+  
+  unsigned long iteration_of_best; /**< The iteration when the best
+    state has found. */
+  unsigned long number_of_iterations; /**< The overall number of iterations
+    performed. */
+  unsigned long start_iteration;
+  unsigned long max_iteration; /**< The maximum number of iterations
+    allowed. */
+#ifdef HAVE_PTHREAD    
+protected:
+  ConditionVariable* termination;
+  RWLockVariable<bool>* external_termination_request;
 public:
-    pthread_t GoThread() throw(EasyLocalException);
-protected:
-    static void* _pthread_start_function(void *);
+  pthread_t& GoThread(ConditionVariable& termination, RWLockVariable<bool>& external_termination_request);
+private:
+  static void* _pthreads_Run(void* pthis);
+  pthread_t this_thread;
 #endif
+protected:
+  Chronometer chrono;
 };
 
 /*************************************************************************
@@ -99,13 +135,12 @@ protected:
   @param name the name of the runner
 */
 template <class Input, class State, typename CFtype>
-Runner<Input,State,CFtype>::Runner(const Input& i, StateManager<Input,State,CFtype>& e_sm)
-        : in(i), sm(e_sm),
-        current_state(in), current_state_set(false),
-        best_state(in),
-        number_of_iterations(0), max_iteration(ULONG_MAX)
+Runner<Input,State,CFtype>::Runner(const Input& i, StateManager<Input,State,CFtype>& e_sm, std::string e_name)
+: name(e_name), in(i), sm(e_sm), current_state(i), best_state(i), current_state_set(false), number_of_iterations(0), max_iteration(ULONG_MAX)
+#ifdef HAVE_PTHREAD
+,  termination(NULL), external_termination_request(NULL)
+#endif
 {}
-
 
 /**
    Checks whether the object state is consistent with all the related
@@ -113,35 +148,7 @@ Runner<Input,State,CFtype>::Runner(const Input& i, StateManager<Input,State,CFty
 */
 template <class Input, class State, typename CFtype>
 void Runner<Input,State,CFtype>::Check() const
-throw(EasyLocalException)
 {}
-
-#ifdef EASYLOCAL_PTHREADS
-template <class Input, class State, typename CFtype>
-pthread_t Runner<Input,State,CFtype>::GoThread() throw(EasyLocalException)
-{
-    pthread_t id;
-    pthread_attr_t attr;
-    pthread_attr_init(&attr);
-    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
-		
-    pthread_create(&id, &attr, Runner<Input,State,CFtype>::_pthread_start_function, this);
- 
-    pthread_attr_destroy(&attr);
-     
-    return id;
-}
-
-template <class Input, class State, typename CFtype>
-void* Runner<Input,State,CFtype>::_pthread_start_function(void *obj)
-{
-    Runner<Input,State,CFtype>* r = static_cast<Runner<Input,State,CFtype>*>(obj);
-    r->Go();
-    
-    return NULL;
-}
-#endif
-
 
 /**
    Sets the internal state of the runner to the value passed as parameter.
@@ -151,11 +158,11 @@ void* Runner<Input,State,CFtype>::_pthread_start_function(void *obj)
 template <class Input, class State, typename CFtype>
 void Runner<Input,State,CFtype>::SetState(const State& s)
 {
-    current_state = s;
-    current_state_cost = sm.CostFunction(current_state);
-    current_state_set = true;
-    best_state = current_state;
-    best_state_cost = current_state_cost;
+  current_state = s;
+  current_state_cost = sm.CostFunction(current_state);
+  current_state_set = true;
+  best_state = current_state;
+  best_state_cost = current_state_cost;
 }
 
 /**
@@ -166,11 +173,11 @@ void Runner<Input,State,CFtype>::SetState(const State& s)
 template <class Input, class State, typename CFtype>
 void Runner<Input,State,CFtype>::SetState(const State& s, CFtype cost)
 {
-    current_state = s;
-    current_state_cost = cost;
-    current_state_set = true;
-    best_state = current_state;
-    best_state_cost = current_state_cost;
+  current_state = s;
+  current_state_cost = cost;
+  current_state_set = true;
+  best_state = current_state;
+  best_state_cost = current_state_cost;
 }
 
 /**
@@ -181,7 +188,7 @@ void Runner<Input,State,CFtype>::SetState(const State& s, CFtype cost)
 template <class Input, class State, typename CFtype>
 const State& Runner<Input,State,CFtype>::GetState() const
 {
-    return best_state;
+  return best_state;
 }
 
 /**
@@ -191,7 +198,7 @@ const State& Runner<Input,State,CFtype>::GetState() const
 template <class Input, class State, typename CFtype>
 CFtype Runner<Input,State,CFtype>::GetStateCost() const
 {
-    return best_state_cost;
+  return best_state_cost;
 }
 
 /**
@@ -201,7 +208,7 @@ CFtype Runner<Input,State,CFtype>::GetStateCost() const
 template <class Input, class State, typename CFtype>
 void Runner<Input,State,CFtype>::ComputeCost()
 {
-    current_state_cost = sm.CostFunction(current_state);
+  current_state_cost = sm.CostFunction(current_state);
 }
 
 /**
@@ -212,7 +219,7 @@ void Runner<Input,State,CFtype>::ComputeCost()
 template <class Input, class State, typename CFtype>
 unsigned long Runner<Input,State,CFtype>::GetIterationsPerformed() const
 {
-    return number_of_iterations;
+  return number_of_iterations;
 }
 
 /**
@@ -223,7 +230,7 @@ unsigned long Runner<Input,State,CFtype>::GetIterationsPerformed() const
 template <class Input, class State, typename CFtype>
 unsigned long Runner<Input,State,CFtype>::GetMaxIteration() const
 {
-    return max_iteration;
+  return max_iteration;
 }
 
 /**
@@ -233,15 +240,13 @@ unsigned long Runner<Input,State,CFtype>::GetMaxIteration() const
 template <class Input, class State, typename CFtype>
 void Runner<Input,State,CFtype>::SetMaxIteration(unsigned long max)
 {
-    max_iteration = max;
+  max_iteration = max;
 }
 
 template <class Input, class State, typename CFtype>
 void Runner<Input,State,CFtype>::TerminateRun()
-{
-#ifdef EASYLOCAL_PTHREADS
-	StoppableObject::Terminating();
-#endif
+{	
+  chrono.Stop();
 }
 
 /**
@@ -249,32 +254,32 @@ void Runner<Input,State,CFtype>::TerminateRun()
  */
 template <class Input, class State, typename CFtype>
 void Runner<Input,State,CFtype>::Go()
-throw(EasyLocalException)
+
 {
-    GoCheck();
-    InitializeRun();
-    while (!MaxIterationExpired() && !StopCriterion()
-            && !LowerBoundReached() && !this->Timeout())
+  GoCheck();
+  InitializeRun();
+  while (!ExternalTerminationRequest()  && 
+         !MaxIterationExpired() && 
+         !StopCriterion() && !LowerBoundReached())
+  {
+    UpdateIterationCounter();
+    SelectMove();
+    if (AcceptableMove())
     {
-        UpdateIterationCounter();
-        SelectMove();
-        if (AcceptableMove())
-        {
-            MakeMove();
-            UpdateStateCost();
-            StoreMove();
-        }
+      MakeMove();
+      UpdateStateCost();
+      StoreMove();
     }
-    TerminateRun();
+  }
+  TerminateRun();
 }
 
 template <class Input, class State, typename CFtype>
 void Runner<Input,State,CFtype>::GoCheck() const
-throw(EasyLocalException)
+
 {
-    if (!current_state_set)
-        throw EasyLocalException("Current State not set in object " + this->GetName(),
-                                 std::string(__FILE__), __LINE__);
+  if (!current_state_set)
+    throw std::logic_error("Current State not set in runner object " + this->name);
 }
 
 
@@ -285,22 +290,22 @@ throw(EasyLocalException)
 */
 template <class Input, class State, typename CFtype>
 void Runner<Input,State,CFtype>::Step(unsigned int n)
-throw(EasyLocalException)
+
 {
-    GoCheck();
-    for (unsigned int i = 0; i < n; i++)
+  GoCheck();
+  for (unsigned int i = 0; i < n; i++)
+  {
+    UpdateIterationCounter();
+    SelectMove();
+    if (AcceptableMove())
     {
-        UpdateIterationCounter();
-        SelectMove();
-        if (AcceptableMove())
-        {
-            MakeMove();
-            UpdateStateCost();
-            StoreMove();
-            if (LowerBoundReached())
-                break;
-        }
+      MakeMove();
+      UpdateStateCost();
+      StoreMove();
+      if (ExternalTerminationRequest() || LowerBoundReached())
+        break;
     }
+  }
 }
 
 /**
@@ -309,7 +314,7 @@ throw(EasyLocalException)
 template <class Input, class State, typename CFtype>
 void Runner<Input,State,CFtype>::UpdateIterationCounter()
 {
-    number_of_iterations++;
+  number_of_iterations++;
 }
 
 /**
@@ -322,8 +327,22 @@ void Runner<Input,State,CFtype>::UpdateIterationCounter()
 template <class Input, class State, typename CFtype>
 bool Runner<Input,State,CFtype>::MaxIterationExpired() const
 {
-    return number_of_iterations > max_iteration;
+  return number_of_iterations > max_iteration;
 }
+
+template <class Input, class State, typename CFtype>
+bool Runner<Input,State,CFtype>::ExternalTerminationRequest() const
+{
+#ifdef HAVE_PTHREAD  
+  if (external_termination_request)
+    return *external_termination_request;
+  else
+    return false;
+#else
+  return false;
+#endif
+}
+
 
 /**
     Checks whether the selected move can be performed.
@@ -332,7 +351,7 @@ bool Runner<Input,State,CFtype>::MaxIterationExpired() const
 template <class Input, class State, typename CFtype>
 bool Runner<Input,State,CFtype>::AcceptableMove()
 {
-    return true;
+  return true;
 }
 
 /**
@@ -341,18 +360,47 @@ bool Runner<Input,State,CFtype>::AcceptableMove()
 template <class Input, class State, typename CFtype>
 void Runner<Input,State,CFtype>::InitializeRun()
 {
-#ifdef EASYLOCAL_PTHREADS
-	StoppableObject::Starting();
-#endif
-    number_of_iterations = 0;
-    iteration_of_best = 0;
-    ComputeCost();
+  number_of_iterations = 0;
+  iteration_of_best = 0;
+  ComputeCost();
+  chrono.Reset();
+  chrono.Start();
 }
 
 template <class Input, class State, typename CFtype>
 bool Runner<Input,State,CFtype>::LowerBoundReached() const
 {
-	return sm.LowerBoundReached(current_state_cost);
+  return sm.LowerBoundReached(current_state_cost);
 }
+
+#ifdef HAVE_PTHREAD
+template <class Input, class State, typename CFtype>
+void* Runner<Input,State,CFtype>::_pthreads_Run(void* ep_this)
+{
+  Runner<Input,State,CFtype>* p_this = static_cast<Runner<Input,State,CFtype>*>(ep_this);
+  if (!p_this)
+    return NULL;
+    
+  p_this->Go();
+  if (p_this->termination)
+    p_this->termination->Signal();
+  p_this->termination = NULL;
+  p_this->external_termination_request = NULL;
+  
+  return NULL;
+}
+
+template <class Input, class State, typename CFtype>
+pthread_t& Runner<Input,State,CFtype>::GoThread(ConditionVariable& r_termination, 
+                                          RWLockVariable<bool>& r_external_termination_request)
+{
+  termination = &r_termination;
+  external_termination_request = &r_external_termination_request;	
+  pthread_create(&this_thread, NULL, Runner<Input,State,CFtype>::_pthreads_Run, this);
+	
+  return this_thread;
+}
+
+#endif
 
 #endif /*RUNNER_HH_*/
