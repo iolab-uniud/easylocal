@@ -30,6 +30,8 @@ public:
     virtual void ReadState(State &st, std::istream &is) const;
     virtual void WriteState(const State &st, std::ostream &os) const;
     virtual void Check() const;
+    virtual void PrettyPrintOutput(const Output &st, const std::string& string_name) const
+        { std::cout << "Sorry, not implemented yet" << std::endl; }
 protected:
     /** Constructs an output manager by providing it a state manager
      and an input object.

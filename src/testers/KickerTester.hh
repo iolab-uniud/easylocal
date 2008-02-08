@@ -51,17 +51,17 @@ KickerTester<Input,Output,State,CFtype>::KickerTester(
 template <class Input, class Output, class State, typename CFtype>
 void KickerTester<Input,Output,State,CFtype>::ShowMenu()
 {
-    std::cout << "Kicker " << this->name << " Menu: " << std::endl
-    << "    (1) Random kick" << std::endl
-    << "    (2) Best kick" << std::endl
-    << "    (3) First improving kick" << std::endl
-    << "    (4) Total Best kick" << std::endl
-    << "    (5) Total first improving kick" << std::endl
-    << "    (6) Dense Best kick" << std::endl
-    << "    (7) Set Kicker parameters" << std::endl
-    << "    (0) Return to Main Menu" << std::endl
-    << "Your choice : ";
-    std::cin >> this->choice;
+  std::cout << "Kicker \"" << this->name << "\" Menu (max step = " << kicker.MaxStep() << "):" << std::endl
+	    << "    (1) Random kick" << std::endl
+	    << "    (2) Best kick" << std::endl
+	    << "    (3) First improving kick" << std::endl
+	    << "    (" << (kicker.SingleKicker() ? '-' :  '4') << ") Total Best kick" << std::endl
+	    << "    (" << (kicker.SingleKicker() ? '-' :  '5') << ") Total first improving kick" << std::endl
+	    << "    (6) Best Dense kick" << std::endl
+	    << "    (7) Set Kicker parameters" << std::endl
+	    << "    (0) Return to Main Menu" << std::endl
+	    << "Your choice : ";
+  std::cin >> this->choice;
 }
 
 /**

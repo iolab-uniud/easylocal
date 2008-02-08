@@ -15,6 +15,11 @@ enum KickTypes {
     TOTAL_FIRST_IMPROVING_KICK
 };
 
+enum KickerTypes {
+    SINGLE = 0,
+    BIMODAL
+};
+
 /** The Kicker class is an interface for the actual Kickers.
     Kickers select a new state by trying to apply a sequence of
     moves.  
@@ -37,7 +42,7 @@ public:
   virtual CFtype TotalBestKick(const State &st) = 0;
   virtual CFtype RandomKick(const State &st) = 0;
 
-
+  bool SingleKicker() const { return kicker_type == SINGLE; }
   void PrintStatistics(std::ostream& os = std::cout) const;
 
   virtual void SetMaxStep(unsigned int s);
@@ -54,6 +59,7 @@ protected:
   std::vector<State> states; // for overcoming the need of () constructor
   unsigned int max_step, step;
   KickTypes current_kick_type;
+  KickerTypes kicker_type;
 };
 
 /*************************************************************************
@@ -62,7 +68,7 @@ protected:
 
 template <class Input, class State, typename CFtype>
 Kicker<Input,State,CFtype>::Kicker(const Input& i, unsigned int s, std::string e_name)
-  : name(e_name), in(i), states(0, State(in)), max_step(s), step(s), current_kick_type(BEST_KICK)
+  : name(e_name), in(i), states(0, State(in)), max_step(s), step(s), current_kick_type(BEST_KICK), kicker_type(SINGLE)
 {
   states.resize(s + 1, State(in));
 }

@@ -21,8 +21,8 @@ public:
   CFtype FirstImprovingKick(const State &st);
   CFtype DenseBestKick(const State &st);
   CFtype RandomKick(const State &st);
-  CFtype TotalFirstImprovingKick(const State &st) { throw std::logic_error("No TOTAL_BEST_KICK allowed for Simple Kickers"); }
-  CFtype TotalBestKick(const State &st) { throw std::logic_error("No TOTAL_FIRST_IMPROVING_KICK allowed for Simple Kickers"); }
+  CFtype TotalFirstImprovingKick(const State &st) { throw std::logic_error("No TOTAL_FIRST_IMPROVING_KICK allowed for Simple Kickers"); }
+  CFtype TotalBestKick(const State &st) { throw std::logic_error("No TOTAL_BEST_KICK allowed for Simple Kickers"); }
 
   void MakeKick(State &st);
   virtual CFtype KickCost();

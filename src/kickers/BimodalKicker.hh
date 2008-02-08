@@ -86,12 +86,13 @@ BimodalKicker<Input,State,Move1,Move2,CFtype>::BimodalKicker(const Input& i,
     current_moves1(s), internal_best_moves1(s), start_moves1(s),
     current_moves2(s), internal_best_moves2(s), start_moves2(s), pattern(s)
 {
-    for (unsigned int i = 0; i < s; i++)
+  this->kicker_type = BIMODAL;
+  for (unsigned int i = 0; i < s; i++)
     {
-        if ((i % 2) == 0)
-            pattern[i] = MOVE_1;
-        else // (i % 1) == 1
-            pattern[i] = MOVE_2;
+      if ((i % 2) == 0)
+	pattern[i] = MOVE_1;
+      else // (i % 1) == 1
+	pattern[i] = MOVE_2;
     }
 }
 

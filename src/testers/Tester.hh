@@ -331,6 +331,7 @@ void Tester<Input,Output,State,CFtype>::ShowStateMenu()
 	    << "    (6) Show input" << std::endl
 	    << "    (7) Show cost function components" << std::endl
 	    << "    (8) Show cost elements" << std::endl
+	    << "    (9) Pretty print output" << std::endl
 	    << "    (0) Return to Main Menu" << std::endl
 	    << "Your choice : ";
   std::cin >> sub_choice;
@@ -359,6 +360,11 @@ void Tester<Input,Output,State,CFtype>::ShowReducedStateMenu()
 template <class Input, class Output, class State, typename CFtype>
 bool Tester<Input,Output,State,CFtype>::ExecuteStateChoice()
 {
+  std::string file_name;
+  bool read_failed;
+  std::ifstream is;
+  std::ofstream os;
+
   switch(sub_choice)
     {
     case 1:
@@ -366,9 +372,6 @@ bool Tester<Input,Output,State,CFtype>::ExecuteStateChoice()
       break;
     case 2:
       {
-	std::string file_name;
-	bool read_failed;
-	std::ifstream is;
 	do
 	  {
 	    read_failed = false;
@@ -396,10 +399,9 @@ bool Tester<Input,Output,State,CFtype>::ExecuteStateChoice()
       }
     case 4:
       {
-	std::string file_name;
 	std::cout << "File name : ";
 	std::cin >> file_name;
-	std::ofstream os(file_name.c_str());
+	os.open(file_name.c_str());
 	this->om.WriteState(test_state, os);
 	break;
       }
@@ -421,6 +423,15 @@ bool Tester<Input,Output,State,CFtype>::ExecuteStateChoice()
     case 8:
       {
 	this->sm.PrintStateDetailedCost(test_state);
+	break;
+      }
+    case 9:
+      {
+	std::string file_name;
+	std::cout << "File name : ";
+	std::cin >> file_name;
+	this->om.OutputState(test_state,this->out);
+	this->om.PrettyPrintOutput(this->out,file_name);
 	break;
       }
     default:
