@@ -34,6 +34,7 @@ public:
 	void Print(std::ostream& os = std::cout) const;
 	void SetRunner(Runner<Input,State,CFtype>& r);
 	void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout);     
+	void Solve();
 protected:
 	void Run();
 	void Check() const;
@@ -124,6 +125,22 @@ void SimpleLocalSearch<Input,Output,State,CFtype>::Print(std::ostream& os) const
 template <class Input, class Output, class State, typename CFtype>
 void SimpleLocalSearch<Input,Output,State,CFtype>::SetRunner(Runner<Input,State,CFtype>& r)
 { this->p_runner = &r; }
+
+
+template <class Input, class Output, class State, typename CFtype>
+void SimpleLocalSearch<Input,Output,State,CFtype>::Solve() {
+	chrono.Reset();
+	chrono.Start();
+	this->FindInitialState();
+	p_runner->SetState(this->current_state);
+	LetGo(*p_runner);
+	this->current_state = this->p_runner->GetState();
+	this->current_state_cost = this->p_runner->GetStateCost();
+	this->best_state = this->current_state;
+	this->best_state_cost = this->current_state_cost;
+	chrono.Stop();
+}
+
 
 
 /**

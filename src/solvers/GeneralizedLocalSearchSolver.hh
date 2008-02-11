@@ -215,8 +215,8 @@ void GeneralizedLocalSearchSolver<Input,Output,State,CFtype>::SimpleSolve(unsign
     this->FindInitialState();
   runners[runner]->SetState(this->current_state);
   LetGo(*runners[runner]);
-  this->current_state = this->p_runner->GetState();
-  this->current_state_cost = this->p_runner->GetStateCost();
+  this->current_state = runners[runner]->GetState();
+  this->current_state_cost = runners[runner]->GetStateCost();
   this->best_state = this->current_state;
   this->best_state_cost = this->current_state_cost;
   chrono.Stop();
