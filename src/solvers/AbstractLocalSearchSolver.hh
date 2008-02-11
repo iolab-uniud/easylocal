@@ -25,7 +25,7 @@ public:
   const State& GetBestState() const;
   virtual void SetCurrentState(const State& st, CFtype cost);
   virtual void SetCurrentState(const State& st);
-  virtual void SetCurrentState(const Output& out);
+//  virtual void SetCurrentState(const Output& out);
   virtual void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout) = 0;
 protected:
   AbstractLocalSearchSolver(const Input& in,
@@ -98,13 +98,6 @@ void AbstractLocalSearchSolver<Input,Output,State,CFtype>::SetCurrentState(const
 {
   current_state = st;
   current_state_cost = cost; 
-}
-
-template <class Input, class Output, class State, typename CFtype>
-void AbstractLocalSearchSolver<Input,Output,State,CFtype>::SetCurrentState(const Output& out)
-{
-  om.InputState(current_state,out);
-  current_state_cost = sm.CostFunction(current_state); 
 }
 
 /**

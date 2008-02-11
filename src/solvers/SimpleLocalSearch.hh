@@ -129,8 +129,6 @@ void SimpleLocalSearch<Input,Output,State,CFtype>::SetRunner(Runner<Input,State,
 
 template <class Input, class Output, class State, typename CFtype>
 void SimpleLocalSearch<Input,Output,State,CFtype>::Solve() {
-	chrono.Reset();
-	chrono.Start();
 	this->FindInitialState();
 	p_runner->SetState(this->current_state);
 	LetGo(*p_runner);
@@ -138,7 +136,6 @@ void SimpleLocalSearch<Input,Output,State,CFtype>::Solve() {
 	this->current_state_cost = this->p_runner->GetStateCost();
 	this->best_state = this->current_state;
 	this->best_state_cost = this->current_state_cost;
-	chrono.Stop();
 }
 
 
