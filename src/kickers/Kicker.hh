@@ -41,9 +41,13 @@ public:
   virtual CFtype DenseBestKick(const State &st) = 0;
   virtual CFtype TotalBestKick(const State &st) = 0;
   virtual CFtype RandomKick(const State &st) = 0;
+  virtual void FirstKick(const State &st) = 0;
+  virtual bool NextKick() = 0;
 
   bool SingleKicker() const { return kicker_type == SINGLE; }
   void PrintStatistics(std::ostream& os = std::cout) const;
+
+  virtual void PrintCurrentMoves(unsigned i, std::ostream& os) const = 0;
 
   virtual void SetMaxStep(unsigned int s);
   unsigned int MaxStep() const { return max_step; }

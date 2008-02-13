@@ -49,6 +49,9 @@ public:
   CFtype TotalBestKick(const State &st);
   CFtype RandomKick(const State &st);
 
+  void PrintCurrentMoves(unsigned i, std::ostream& os) const  { if (pattern[i] == MOVE_1) os << current_moves1[i]; else os << current_moves2[i];}
+
+
   virtual bool RelatedMoves(const Move1 &mv1, const Move1 &mv2) const = 0;
   virtual bool RelatedMoves(const Move1 &mv1, const Move2 &mv2) const = 0;
   virtual bool RelatedMoves(const Move2 &mv1, const Move1 &mv2) const = 0;
@@ -66,7 +69,8 @@ protected:
   void FirstKickComponent(unsigned int i);  // used by the backtracking algorithm of bestkick
   bool NextKickComponent(unsigned int i);   // (idem)
   bool UnrelatedMoves(unsigned int i);      // (idem)
-  bool FirstKick(const State &st);
+  void FirstKick(const State &st) { throw std::runtime_error("Fix me!"); }
+  bool NextKick() { throw std::runtime_error("Fix me!"); }
 private:
   void FirstPattern();
 	bool NextPattern();
