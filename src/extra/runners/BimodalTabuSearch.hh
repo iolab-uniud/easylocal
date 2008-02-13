@@ -92,7 +92,7 @@ template <class Input, class State, class Move1, class Move2, typename CFtype>
 void BimodalTabuSearch<Input,State,Move1,Move2,CFtype>::GoCheck() const
 {
   if (this->max_idle_iteration == 0)
-    throw std::logic_error("max_idle_iteration is zero for object " + this->GetName());
+    throw std::logic_error("max_idle_iteration is zero for object " + this->name);
 }
 
 
@@ -271,7 +271,7 @@ void BimodalTabuSearch<Input,State,Move1,Move2,CFtype>::ReadParameters(std::istr
 	pm2.ReadParameters(is,os);
 	os << "  Number of idle iterations: ";
 	is >> this->max_idle_iteration;
-	os << "  Timeout: ";
-	is >> this->timeout;
+// 	os << "  Timeout: ";
+// 	is >> this->timeout;
 }
 #endif /*BIMODALTABUSEARCH_HH_*/

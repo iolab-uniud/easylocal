@@ -235,8 +235,8 @@ CFtype BimodalKicker<Input,State,Move1,Move2,CFtype>::BestKick(const State &st)
   FirstKickComponent(0);
   do
     {
-      if (this->Timeout())
-	break;
+//       if (this->Timeout())
+// 	break;
       bool backtrack = UnrelatedMoves(i);
       if (i == int(this->step - 1) && !backtrack)
 	{
@@ -323,8 +323,8 @@ CFtype BimodalKicker<Input,State,Move1,Move2,CFtype>::FirstImprovingKick(const S
   FirstKickComponent(0);
   do
     {
-      if (this->Timeout())
-	break;
+//       if (this->Timeout())
+// 	break;
       bool backtrack = UnrelatedMoves(i);
       if (i == int(this->step - 1) && !backtrack)
 	{
@@ -409,7 +409,8 @@ CFtype BimodalKicker<Input,State,Move1,Move2,CFtype>::TotalBestKick(const State 
   total_best_cost = best_kick_cost;
   std::vector<Move1> total_best_moves1 = internal_best_moves1;
   std::vector<Move2> total_best_moves2 = internal_best_moves2;
-  while(NextPattern() && !this->Timeout())
+  while(NextPattern() // && !this->Timeout()
+	)
     {
       best_kick_cost = BestKick(st);
       if (LessThan(best_kick_cost, total_best_cost))
@@ -435,7 +436,8 @@ CFtype BimodalKicker<Input,State,Move1,Move2,CFtype>::TotalFirstImprovingKick(co
   CFtype current_kick_cost = FirstImprovingKick(st);
   if (LessThan(current_kick_cost, 0)) return current_kick_cost;
   
-  while(NextPattern() && !this->Timeout())
+  while(NextPattern() // && !this->Timeout()
+	)
     {
       current_kick_cost = FirstImprovingKick(st);
       if (LessThan(current_kick_cost, 0)) return current_kick_cost;
@@ -563,8 +565,8 @@ void BimodalKicker<Input,State,Move1,Move2,CFtype>::ReadParameters(std::istream&
 		else
 			std::cerr << "Wrong move type while pattern input" << std::endl;
 	}
-	os << "  Timeout: ";
-	is >> this->timeout;
+// 	os << "  Timeout: ";
+// 	is >> this->timeout;
 }
 
 template <class Input, class State, class Move1, class Move2, typename CFtype>

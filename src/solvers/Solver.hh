@@ -55,7 +55,7 @@ Solver<Input, Output>::Solver(const Input& i, std::string e_name)
 #ifdef HAVE_PTHREAD
   this->timeout = 0.0; 
   this->current_timeout = 0.0;
-	this->timeout_set = false;
+  this->timeout_set = false;
 #endif
 }
 
