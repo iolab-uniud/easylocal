@@ -54,16 +54,15 @@ KickerTester<Input,Output,State,CFtype>::KickerTester(
 template <class Input, class Output, class State, typename CFtype>
 void KickerTester<Input,Output,State,CFtype>::ShowMenu()
 {
-  std::cout << "Kicker \"" << this->name << "\" Menu (max step = " << kicker.MaxStep() << "):" << std::endl
+  std::cout << "Kicker \"" << this->name << "\" Menu (step = " << kicker.Step() << "):" << std::endl
 	    << "    (1) Perform Random Kick" << std::endl
 	    << "    (2) Perform Best Kick" << std::endl
 	    << "    (3) Perform First Improving Kick" << std::endl
 	    << "    (" << (kicker.SingleKicker() ? '-' :  '4') << ") Perform Total Best Kick" << std::endl
 	    << "    (" << (kicker.SingleKicker() ? '-' :  '5') << ") Perform Total First Improving Kick" << std::endl
-	    << "    (6) Perform Best Dense Kick" << std::endl
-	    << "    (7) Show All Kicks" << std::endl
-	    << "    (8) Show Improving Kicks" << std::endl
-	    << "    (9) Set Kicker Parameters" << std::endl
+	    << "    (6) Show All Kicks" << std::endl
+	    << "    (7) Show Improving Kicks" << std::endl
+	    << "    (8) Set Kicker Parameters" << std::endl
 	    << "    (0) Return to Main Menu" << std::endl
 	    << "Your choice : ";
   std::cin >> this->choice;
@@ -77,51 +76,48 @@ void KickerTester<Input,Output,State,CFtype>::ShowMenu()
 template <class Input, class Output, class State, typename CFtype>
 bool KickerTester<Input,Output,State,CFtype>::ExecuteChoice(State& st)
 {
-    switch(this->choice)
+  switch(this->choice)
     {
     case 1:
-        kicker.RandomKick(st);
-        break;
+      kicker.RandomKick(st);
+      break;
     case 2:
-        kicker.BestKick(st);
-        break;
+      kicker.BestKick(st);
+      break;
     case 3:
-        kicker.FirstImprovingKick(st);
-        break;
+      kicker.FirstImprovingKick(st);
+      break;
     case 4:
-        kicker.TotalBestKick(st);
-        break;
+      kicker.TotalBestKick(st);
+      break;
     case 5:
-        kicker.TotalFirstImprovingKick(st);
-        break;
+      kicker.TotalFirstImprovingKick(st);
+      break;
     case 6:
-        kicker.DenseBestKick(st);
-        break;
-    case 7:
       PrintKicks(st,false);
-        break;
-    case 8:
+      break;
+    case 7:
       PrintKicks(st,true);
-        break;
-    case 9:
-        kicker.ReadParameters();
-        break;
+      break;
+    case 8:
+      kicker.ReadParameters();
+      break;
     default:
-        std::cout << "Invalid choice" << std::endl;
+      std::cout << "Invalid choice" << std::endl;
     }
-    if (this->choice >= 1 && this->choice <= 6)
-      {
-	kicker.MakeKick(st);
-        return true;
-      }
-    else
-      return false;
-} 
+  if (this->choice >= 1 && this->choice <= 5)
+    {
+      kicker.MakeKick(st);
+      return true;
+    }
+  else
+    return false;
+}
 
 template <class Input, class Output, class State, typename CFtype>
 void KickerTester<Input,Output,State,CFtype>::PrintKick(State& st, std::ostream& os)
 {
-  for (unsigned i = 0; i < kicker.MaxStep(); i++)
+  for (unsigned i = 0; i < kicker.Step(); i++)
     {
       os << i << " : ";
       kicker.PrintCurrentMoves(i,os);
@@ -134,6 +130,7 @@ void KickerTester<Input,Output,State,CFtype>::PrintKick(State& st, std::ostream&
 template <class Input, class Output, class State, typename CFtype>
 void KickerTester<Input,Output,State,CFtype>::PrintKicks(State& st, bool only_improving, std::ostream& os)
 {
+  unsigned count = 0;
   CFtype best_kick_cost;
   kicker.FirstKick(st);
   best_kick_cost = kicker.KickCost();
@@ -147,11 +144,16 @@ void KickerTester<Input,Output,State,CFtype>::PrintKicks(State& st, bool only_im
 	    {
 	      best_kick_cost = kicker.KickCost();
 	      PrintKick(st,os);
+	      count++;
 	    }
 	}
       else
-	PrintKick(st,os);	
+	{
+	  PrintKick(st,os);	
+	  count++;
+	}
     }
+  os << "Number of kicks : " << count << std::endl;
 }
 
 #endif /*KICKERTESTER_HH_*/

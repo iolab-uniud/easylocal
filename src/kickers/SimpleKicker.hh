@@ -141,11 +141,11 @@ bool SimpleKicker<Input,State,Move,CFtype>::UnrelatedMoves(int i) const
 template <class Input, class State, class Move, typename CFtype>
 CFtype SimpleKicker<Input,State,Move,CFtype>::DenseBestKick(const State &st)
 {
-  unsigned dense_best_step = 0;
+  unsigned dense_best_step = 0, max_step = this->step;
   CFtype dense_best_kick_cost = 0;
   std::vector<Move> dense_best_moves;
 	
-  for (this->step = 1; this->step <= this->max_step; this->step++)
+  for (this->step = 1; this->step <= max_step; this->step++)
     {
       BestKick(st);
       if (this->step == 1 || current_kick_cost < dense_best_kick_cost)
@@ -168,31 +168,16 @@ CFtype SimpleKicker<Input,State,Move,CFtype>::BestKick(const State &st)
   FirstKick(st);
   best_kick_cost = current_kick_cost;
   internal_best_moves = current_moves;
-#if VERBOSE >= 3
-  for (unsigned int j = 0; j < this->step; j++)
-    std::cerr << j << " : " << internal_best_moves[j] << "   ";
-  std::cerr << "first cost : " << best_kick_cost << std::endl;
-#endif
   while (NextKick())
     {
       if (LessThan(current_kick_cost,best_kick_cost))
 	{
 	  best_kick_cost = current_kick_cost;
 	  internal_best_moves = current_moves;
-#if VERBOSE >= 3
-	  for (unsigned int j = 0; j < this->step; j++)
-	    std::cerr << j << " : " << internal_best_moves[j] << "   ";
-	  std::cerr << "best cost : " << best_kick_cost << std::endl;
-#endif
 	}
     }
   current_kick_cost = best_kick_cost;
   current_moves = internal_best_moves;
-#if VERBOSE >= 3
-  for (unsigned int j = 0; j < this->step; j++)
-    std::cerr << j << " : " << internal_best_moves[j] << "   ";
-  std::cerr << "final best cost : " << best_kick_cost << std::endl;
-#endif
   return current_kick_cost;
 }
 
@@ -202,11 +187,6 @@ CFtype SimpleKicker<Input,State,Move,CFtype>::FirstImprovingKick(const State &st
   FirstKick(st);
   best_kick_cost = current_kick_cost;
   internal_best_moves = current_moves;
-#if VERBOSE >= 3
-  for (unsigned int j = 0; j < this->step; j++)
-    std::cerr << j << " : " << internal_best_moves[j] << "   ";
-  std::cerr << "first cost : " << best_kick_cost << std::endl;
-#endif
   if (LessThan(current_kick_cost,(CFtype)0)) return current_kick_cost;
   while (NextKick())
     {
@@ -214,21 +194,11 @@ CFtype SimpleKicker<Input,State,Move,CFtype>::FirstImprovingKick(const State &st
 	{
 	  best_kick_cost = current_kick_cost;
 	  internal_best_moves = current_moves;
-#if VERBOSE >= 3
-	  for (unsigned int j = 0; j < this->step; j++)
-	    std::cerr << j << " : " << internal_best_moves[j] << "   ";
-	  std::cerr << "best cost : " << best_kick_cost << std::endl;
-#endif
 	  if (LessThan(current_kick_cost,(CFtype)0)) return current_kick_cost;
 	}
     }
   current_kick_cost = best_kick_cost;
   current_moves = internal_best_moves;
-#if VERBOSE >= 3
-  for (unsigned int j = 0; j < this->step; j++)
-    std::cerr << j << " : " << internal_best_moves[j] << "   ";
-  std::cerr << "final best cost : " << best_kick_cost << std::endl;
-#endif
   return current_kick_cost;
 }
 
@@ -300,30 +270,20 @@ bool SimpleKicker<Input,State,Move,CFtype>::NextKick()
 template <class Input, class State, class Move, typename CFtype>
 Move SimpleKicker<Input,State,Move,CFtype>::GetKickComponent(unsigned int i) const
 {
-  assert(i < this->step);
   return current_moves[i];
 }
 
 template <class Input, class State, class Move, typename CFtype>
 void SimpleKicker<Input,State,Move,CFtype>::SetKickComponent(unsigned int i, const Move& mv)
 {
-  assert(i < this->step);
   current_moves[i] = mv;
 }
 
 template <class Input, class State, class Move, typename CFtype>
 void SimpleKicker<Input,State,Move,CFtype>::MakeKick(State &st)
 {
-#if VERBOSE >= 3
-  std::cerr << "Kick Made: ";
-#endif
   for (unsigned int i = 0; i < this->step; i++)
-    {
-#if VERBOSE >= 3
-      std::cerr << current_moves[i] << '[' << ne.DeltaCostFunction(st,current_moves[i]) << "] ";
-#endif
-      ne.MakeMove(st,current_moves[i]);
-    }
+    ne.MakeMove(st,current_moves[i]);
 }
 
 template <class Input, class State, class Move, typename CFtype>
@@ -344,25 +304,9 @@ CFtype SimpleKicker<Input,State,Move,CFtype>::KickCost()
 {
   CFtype cost = 0;
   for (unsigned int i = 0; i < this->step; i++) 
-    {
-      cost += ne.DeltaCostFunction(this->states[i], current_moves[i]);
-    }
+    cost += ne.DeltaCostFunction(this->states[i], current_moves[i]);
   return cost;
 }
-
-// template <class Input, class State, class Move, typename CFtype>
-// CFtype SimpleKicker<Input,State,Move,CFtype>::ComputeKickCost(const State& st)
-// {
-//   CFtype cost = 0;
-//   this->states[0] = st;
-//   for (unsigned int i = 0; i < this->step; i++)
-//     {
-//       cost += ne.DeltaCostFunction(this->states[i], current_moves[i]);
-//       this->states[i+1] = this->states[i];
-//       ne.MakeMove(this->states[i+1], current_moves[i]);
-//     }
-//   return cost;
-// }
 
 template <class Input, class State, class Move, typename CFtype>
 void SimpleKicker<Input,State,Move,CFtype>::PrintKick(std::ostream& os) const

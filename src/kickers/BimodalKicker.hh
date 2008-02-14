@@ -251,14 +251,6 @@ CFtype BimodalKicker<Input,State,Move1,Move2,CFtype>::BestKick(const State &st)
 	      internal_best_moves1 = current_moves1;
 	      internal_best_moves2 = current_moves2;
 	      first_kick_found = true;
-#if VERBOSE >= 3 
-	      for (unsigned int j = 0; j < this->step; j++)
-		if (pattern[j] == MOVE_1)
-		  std::cerr << j << " : " << internal_best_moves1[j] << "   ";
-		else // pattern[j] == MOVE_2
-		  std::cerr << j << " : " << internal_best_moves2[j] << "   ";
-	      std::cerr << "first cost : " << best_kick_cost << std::endl;
-#endif
 	    }
 	  else
 	    {
@@ -268,14 +260,6 @@ CFtype BimodalKicker<Input,State,Move1,Move2,CFtype>::BestKick(const State &st)
 		  best_kick_cost = kick_cost;
 		  internal_best_moves1 = current_moves1;
 		  internal_best_moves2 = current_moves2;
-#if VERBOSE >= 3 
-		  for (unsigned int j = 0; j < this->step; j++)
-		    if (pattern[j] == MOVE_1)
-		      std::cerr << j << " : " << internal_best_moves1[j] << "   ";
-		    else // pattern[j] == MOVE_2
-		      std::cerr << j << " : " << internal_best_moves2[j] << "   ";
-		  std::cerr << "best cost : " << best_kick_cost << std::endl;
-#endif
 		}
 	    }
 	  backtrack = true;
@@ -305,14 +289,6 @@ CFtype BimodalKicker<Input,State,Move1,Move2,CFtype>::BestKick(const State &st)
   kick_cost = best_kick_cost;
   current_moves1 = internal_best_moves1;
   current_moves2 = internal_best_moves2;
-#if VERBOSE >= 3
-  for (unsigned int j = 0; j < this->step; j++)
-    if (pattern[j] == MOVE_1)
-      std::cerr << j << " : " << internal_best_moves1[j] << "   ";
-    else // pattern[j] == MOVE_2
-      std::cerr << j << " : " << internal_best_moves2[j] << "   ";
-  std::cerr << "final best cost : " << best_kick_cost << std::endl;
-#endif
   return kick_cost;
   //FIXME    this->TimeoutUnsubscribe();
 }
@@ -339,14 +315,6 @@ CFtype BimodalKicker<Input,State,Move1,Move2,CFtype>::FirstImprovingKick(const S
 	      internal_best_moves1 = current_moves1;
 	      internal_best_moves2 = current_moves2;
 	      first_kick_found = true;
-#if VERBOSE >= 3 
-	      for (unsigned int j = 0; j < this->step; j++)
-		if (pattern[j] == MOVE_1)
-		  std::cerr << j << " : " << internal_best_moves1[j] << "   ";
-		else // pattern[j] == MOVE_2
-		  std::cerr << j << " : " << internal_best_moves2[j] << "   ";
-	      std::cerr << "first cost : " << best_kick_cost << std::endl;
-#endif
 	      if (LessThan(kick_cost,0))
 		return kick_cost;
 	    }
@@ -358,14 +326,6 @@ CFtype BimodalKicker<Input,State,Move1,Move2,CFtype>::FirstImprovingKick(const S
 		  best_kick_cost = kick_cost;
 		  internal_best_moves1 = current_moves1;
 		  internal_best_moves2 = current_moves2;
-#if VERBOSE >= 3 
-		  for (unsigned int j = 0; j < this->step; j++)
-		    if (pattern[j] == MOVE_1)
-		      std::cerr << j << " : " << internal_best_moves1[j] << "   ";
-		    else // pattern[j] == MOVE_2
-		      std::cerr << j << " : " << internal_best_moves2[j] << "   ";
-		  std::cerr << "best cost : " << best_kick_cost << std::endl;
-#endif
 		  if (LessThan(kick_cost,0))
 		    return kick_cost;
 		}
