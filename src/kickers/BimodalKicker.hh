@@ -5,9 +5,9 @@
 
 #ifndef MOVE_ENUM
 typedef enum {
-	MOVE_1 = 1,
-	MOVE_2,
-	MOVE_3
+  MOVE_1 = 1,
+  MOVE_2,
+  MOVE_3
 } PatternMove;
 #define MOVE_ENUM
 #endif
@@ -17,12 +17,12 @@ typedef enum {
 typedef std::vector<PatternMove> PatternType;
 
 /** The Bimodal Kicker compounds two different kind of moves given by
-template instantiation.
-@ingroup Perturbers 
+    template instantiation.
+    @ingroup Perturbers 
 */
 template <class Input, class State, class Move1, class Move2, typename CFtype = int>
 class BimodalKicker
-: public Kicker<Input,State,CFtype>
+  : public Kicker<Input,State,CFtype>
 {
 public:
   BimodalKicker(const Input& in, 
@@ -73,17 +73,17 @@ protected:
   bool NextKick() { throw std::runtime_error("Fix me!"); }
 private:
   void FirstPattern();
-	bool NextPattern();
+  bool NextPattern();
 };
 
 /*************************************************************************
-* Implementation
-*************************************************************************/
+ * Implementation
+ *************************************************************************/
 
 template <class Input, class State, class Move1, class Move2, typename CFtype>
 BimodalKicker<Input,State,Move1,Move2,CFtype>::BimodalKicker(const Input& i,
-						      NeighborhoodExplorer<Input,State,Move1,CFtype>& nhe1,
-						      NeighborhoodExplorer<Input,State,Move2,CFtype>& nhe2,
+							     NeighborhoodExplorer<Input,State,Move1,CFtype>& nhe1,
+							     NeighborhoodExplorer<Input,State,Move2,CFtype>& nhe2,
 							     unsigned int s,
 							     std::string name)
   : Kicker<Input,State,CFtype>(i,s,name), nhe1(nhe1), nhe2(nhe2),
@@ -124,109 +124,109 @@ CFtype BimodalKicker<Input,State,Move1,Move2,CFtype>::SelectKick(const State& st
 template <class Input, class State, class Move1, class Move2, typename CFtype>
 void BimodalKicker<Input,State,Move1,Move2,CFtype>::Print(std::ostream& os) const
 {
-	os  << "Bimodal Kicker: " << this->GetName() << std::endl;
+  os  << "Bimodal Kicker: " << this->GetName() << std::endl;
 	
-	os  << "Step: " << this->step << std::endl;
-	os  << "Kick selection: ";
-	switch (this->current_kick_type)
-	{
+  os  << "Step: " << this->step << std::endl;
+  os  << "Kick selection: ";
+  switch (this->current_kick_type)
+    {
     case RANDOM_KICK:
-			os << "RANDOM" << std::endl;
-			os  << "Pattern: ";
-			for (unsigned int i = 0; i < pattern.size(); i++)
-				os << pattern[i] << " ";
-        os << std::endl;
-			break;
+      os << "RANDOM" << std::endl;
+      os  << "Pattern: ";
+      for (unsigned int i = 0; i < pattern.size(); i++)
+	os << pattern[i] << " ";
+      os << std::endl;
+      break;
     case BEST_KICK:
-			os << "BEST" << std::endl;
-			os  << "Pattern: ";
-			for (unsigned int i = 0; i < pattern.size(); i++)
-				os << pattern[i] << " ";
-        os << std::endl;
-			break;
+      os << "BEST" << std::endl;
+      os  << "Pattern: ";
+      for (unsigned int i = 0; i < pattern.size(); i++)
+	os << pattern[i] << " ";
+      os << std::endl;
+      break;
     case TOTAL_BEST_KICK:
-			os << "TOTAL BEST" << std::endl;
-			break;
+      os << "TOTAL BEST" << std::endl;
+      break;
     case FIRST_IMPROVING_KICK:
-			os << "FIRST_IMPROVING" << std::endl;
-			os  << "Pattern: ";
-			for (unsigned int i = 0; i < pattern.size(); i++)
-				os << pattern[i] << " ";
-        os << std::endl;
-			break;
+      os << "FIRST_IMPROVING" << std::endl;
+      os  << "Pattern: ";
+      for (unsigned int i = 0; i < pattern.size(); i++)
+	os << pattern[i] << " ";
+      os << std::endl;
+      break;
     case TOTAL_FIRST_IMPROVING_KICK:
-			os << "TOTAL FIRST_IMPROVING" << std::endl;
-			break;
-	}
+      os << "TOTAL FIRST_IMPROVING" << std::endl;
+      break;
+    }
 	
 }
 
 template <class Input, class State, class Move1, class Move2, typename CFtype>
 void BimodalKicker<Input,State,Move1,Move2,CFtype>::SetStep(unsigned int s)
 {
-	this->step = s;
-	this->states.resize(s+1,State(this->in));
-	current_moves1.resize(s);
-	internal_best_moves1.resize(s);
-	start_moves1.resize(s);
-	current_moves2.resize(s);
-	internal_best_moves2.resize(s);
-	start_moves2.resize(s);
-	pattern.resize(s);
-	best_pattern.resize(s);
-	for (unsigned int i = 0; i < s; i++)
-	{
-		if ((i % 2) == 0)
-			pattern[i] = MOVE_1;
-		else // (i % 1) == 1
-			pattern[i] = MOVE_2;
-	}
+  this->step = s;
+  this->states.resize(s+1,State(this->in));
+  current_moves1.resize(s);
+  internal_best_moves1.resize(s);
+  start_moves1.resize(s);
+  current_moves2.resize(s);
+  internal_best_moves2.resize(s);
+  start_moves2.resize(s);
+  pattern.resize(s);
+  best_pattern.resize(s);
+  for (unsigned int i = 0; i < s; i++)
+    {
+      if ((i % 2) == 0)
+	pattern[i] = MOVE_1;
+      else // (i % 1) == 1
+	pattern[i] = MOVE_2;
+    }
 }
 
 template <class Input, class State, class Move1, class Move2, typename CFtype>
 void BimodalKicker<Input,State,Move1,Move2,CFtype>::FirstKickComponent(unsigned int i)
 {
-	if (pattern[i] == MOVE_1)
-	{
-		nhe1.FirstMove(this->states[i], current_moves1[i]);
-		start_moves1[i] = current_moves1[i];
-	}
-	else // pattern[i] == MOVE_2
-	{
-		nhe2.FirstMove(this->states[i], current_moves2[i]);
-		start_moves2[i] = current_moves2[i];
-	}
+  if (pattern[i] == MOVE_1)
+    {
+      nhe1.FirstMove(this->states[i], current_moves1[i]);
+      start_moves1[i] = current_moves1[i];
+    }
+  else // pattern[i] == MOVE_2
+    {
+      nhe2.FirstMove(this->states[i], current_moves2[i]);
+      start_moves2[i] = current_moves2[i];
+    }
 }
 
 template <class Input, class State, class Move1, class Move2, typename CFtype>
 bool BimodalKicker<Input,State,Move1,Move2,CFtype>::NextKickComponent(unsigned int i)
 {
-	if (pattern[i] == MOVE_1)
-	{
-		nhe1.NextMove(this->states[i], current_moves1[i]);
-		return !(current_moves1[i] == start_moves1[i]);
-	}
-	else // pattern[i] == MOVE_2
-	{
-		nhe2.NextMove(this->states[i], current_moves2[i]);
-		return !(current_moves2[i] == start_moves2[i]);
-	}
+  if (pattern[i] == MOVE_1)
+    {
+      nhe1.NextMove(this->states[i], current_moves1[i]);
+      return !(current_moves1[i] == start_moves1[i]);
+    }
+  else // pattern[i] == MOVE_2
+    {
+      nhe2.NextMove(this->states[i], current_moves2[i]);
+      return !(current_moves2[i] == start_moves2[i]);
+    }
 }
 
 template <class Input, class State, class Move1, class Move2, typename CFtype>
 bool BimodalKicker<Input,State,Move1,Move2,CFtype>::UnrelatedMoves(unsigned int i)
 {
-	if (i == 0)
-		return false;
-	else
-		if (pattern[i-1] == MOVE_1 && pattern[i] == MOVE_1)
-			return !RelatedMoves(current_moves1[i-1], current_moves1[i]);
-	else if (pattern[i-1] == MOVE_1 && pattern[i] == MOVE_2)
-		return !RelatedMoves(current_moves1[i-1], current_moves2[i]);
-	else if (pattern[i-1] == MOVE_2 && pattern[i] == MOVE_1)
-		return !RelatedMoves(current_moves2[i-1], current_moves1[i]);
-	else // if (pattern[i-1] == MOVE_2 && pattern[i] == MOVE_2)
-		return !RelatedMoves(current_moves2[i-1], current_moves2[i]);
+  if (i == 0)
+    return false;
+  else
+    if (pattern[i-1] == MOVE_1 && pattern[i] == MOVE_1)
+      return !RelatedMoves(current_moves1[i-1], current_moves1[i]);
+    else if (pattern[i-1] == MOVE_1 && pattern[i] == MOVE_2)
+      return !RelatedMoves(current_moves1[i-1], current_moves2[i]);
+    else if (pattern[i-1] == MOVE_2 && pattern[i] == MOVE_1)
+      return !RelatedMoves(current_moves2[i-1], current_moves1[i]);
+    else // if (pattern[i-1] == MOVE_2 && pattern[i] == MOVE_2)
+      return !RelatedMoves(current_moves2[i-1], current_moves2[i]);
 }
 
 template <class Input, class State, class Move1, class Move2, typename CFtype>
@@ -239,8 +239,8 @@ CFtype BimodalKicker<Input,State,Move1,Move2,CFtype>::BestKick(const State &st)
   FirstKickComponent(0);
   do
     {
-//       if (this->Timeout())
-// 	break;
+      //       if (this->Timeout())
+      // 	break;
       bool backtrack = UnrelatedMoves(i);
       if (i == int(this->step - 1) && !backtrack)
 	{
@@ -303,8 +303,8 @@ CFtype BimodalKicker<Input,State,Move1,Move2,CFtype>::FirstImprovingKick(const S
   FirstKickComponent(0);
   do
     {
-//       if (this->Timeout())
-// 	break;
+      //       if (this->Timeout())
+      // 	break;
       bool backtrack = UnrelatedMoves(i);
       if (i == int(this->step - 1) && !backtrack)
 	{
@@ -429,22 +429,22 @@ void BimodalKicker<Input,State,Move1,Move2,CFtype>::MakeKick(State &st)
 template <class Input, class State, class Move1, class Move2, typename CFtype>
 CFtype BimodalKicker<Input,State,Move1,Move2,CFtype>::RandomKick(const State &st)
 {
-	this->states[0] = st;
-	for (unsigned int i = 0; i < this->step; i++)
+  this->states[0] = st;
+  for (unsigned int i = 0; i < this->step; i++)
+    {
+      if (pattern[i] == MOVE_1)
 	{
-		if (pattern[i] == MOVE_1)
-		{
-			nhe1.RandomMove(this->states[i],current_moves1[i]);
-			this->states[i+1] = this->states[i];
-			nhe1.MakeMove(this->states[i+1],current_moves1[i]);
-		}
-		else // pattern[i] == MOVE_2
-		{
-			nhe2.RandomMove(this->states[i],current_moves2[i]);
-			this->states[i+1] = this->states[i];
-			nhe2.MakeMove(this->states[i+1],current_moves2[i]);
-		}
+	  nhe1.RandomMove(this->states[i],current_moves1[i]);
+	  this->states[i+1] = this->states[i];
+	  nhe1.MakeMove(this->states[i+1],current_moves1[i]);
 	}
+      else // pattern[i] == MOVE_2
+	{
+	  nhe2.RandomMove(this->states[i],current_moves2[i]);
+	  this->states[i+1] = this->states[i];
+	  nhe2.MakeMove(this->states[i+1],current_moves2[i]);
+	}
+    }
   return KickCost();
 }
 
@@ -489,48 +489,48 @@ CFtype BimodalKicker<Input,State,Move1,Move2,CFtype>::KickCost()
 template <class Input, class State, class Move1, class Move2, typename CFtype>
 void BimodalKicker<Input,State,Move1,Move2,CFtype>::FirstPattern()
 {
-	for (unsigned int i = 0; i < pattern.size(); i++)
-		pattern[i] = MOVE_1;
-	best_pattern = pattern;
+  for (unsigned int i = 0; i < pattern.size(); i++)
+    pattern[i] = MOVE_1;
+  best_pattern = pattern;
 }
 
 template <class Input, class State, class Move1, class Move2, typename CFtype>
 bool BimodalKicker<Input,State,Move1,Move2,CFtype>::NextPattern()
 {
-	for (unsigned int i = 0; i < pattern.size(); i++)
-		if (pattern[i] == MOVE_1)
-		{
-			pattern[i] = MOVE_2;
-			return true;
-		}
-			else
-				pattern[i] = MOVE_1;
-	return false;
+  for (unsigned int i = 0; i < pattern.size(); i++)
+    if (pattern[i] == MOVE_1)
+      {
+	pattern[i] = MOVE_2;
+	return true;
+      }
+    else
+      pattern[i] = MOVE_1;
+  return false;
 }
 
 template <class Input, class State, class Move1, class Move2, typename CFtype>
 void BimodalKicker<Input,State,Move1,Move2,CFtype>::ReadParameters(std::istream& is , std::ostream& os)
 {
-	unsigned s;
-	os << "BIMODAL KICKER -- INPUT PARAMETERS" << std::endl;
-	os << "  Step: ";
-	is >> s;
-	SetStep(s);
-	//    pattern.resize(this->step);
-	os << "  Pattern: ";
-	for (unsigned int i = 0; i < this->step; i++)
-	{
-		unsigned int tmp;
-		is >> tmp;
-		if (tmp == 1)
-			pattern[i] = MOVE_1;
-		else if (tmp == 2)
-			pattern[i] = MOVE_2;
-		else
-			std::cerr << "Wrong move type while pattern input" << std::endl;
-	}
-// 	os << "  Timeout: ";
-// 	is >> this->timeout;
+  unsigned s;
+  os << "BIMODAL KICKER -- INPUT PARAMETERS" << std::endl;
+  os << "  Step: ";
+  is >> s;
+  SetStep(s);
+  //    pattern.resize(this->step);
+  os << "  Pattern: ";
+  for (unsigned int i = 0; i < this->step; i++)
+    {
+      unsigned int tmp;
+      is >> tmp;
+      if (tmp == 1)
+	pattern[i] = MOVE_1;
+      else if (tmp == 2)
+	pattern[i] = MOVE_2;
+      else
+	std::cerr << "Wrong move type while pattern input" << std::endl;
+    }
+  // 	os << "  Timeout: ";
+  // 	is >> this->timeout;
 }
 
 template <class Input, class State, class Move1, class Move2, typename CFtype>
