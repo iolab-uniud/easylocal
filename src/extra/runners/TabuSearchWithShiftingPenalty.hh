@@ -19,8 +19,8 @@ public:
 				std::string name = "Anonymous Tabu Search With Shifting Penalty runner");
   void Print(std::ostream& os = std::cout) const;
   void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout);
-	void SetShiftRegion(double sr)
-	{ shift_region = sr; }
+  void SetShiftRegion(double sr)
+  { shift_region = sr; }
   void SetWeightRegion(double w) { shift_region = w; }
 protected:
   void InitializeRun();

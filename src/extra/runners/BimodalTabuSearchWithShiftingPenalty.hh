@@ -1,6 +1,8 @@
 #ifndef BIMODALTABUSEARCHWITHSHIFTINGPENALTY_HH_
 #define BIMODALTABUSEARCHWITHSHIFTINGPENALTY_HH_
 
+#include "BimodalTabuSearch.hh"
+
 template <class Input, class State, class Move1, class Move2, typename CFtype = int>
 class BimodalTabuSearchWithShiftingPenalty
   : public BimodalTabuSearch<Input,State,Move1,Move2,CFtype>
@@ -14,6 +16,9 @@ public:
 				       TabuListManager<State, Move1,CFtype>& tlm1,
 				       TabuListManager<State, Move2,CFtype>& tlm2,
 				       std::string name = "Anonymous Bimodal Tabu Search With Shifting Penalty");
+  void SetShiftRegion(double sr)
+  { shift_region = sr; }
+  void SetWeightRegion(double w) { shift_region = w; }
   void InitializeRun();
   void SelectMove1();
   void SelectMove2();
