@@ -124,7 +124,7 @@ CFtype BimodalKicker<Input,State,Move1,Move2,CFtype>::SelectKick(const State& st
 template <class Input, class State, class Move1, class Move2, typename CFtype>
 void BimodalKicker<Input,State,Move1,Move2,CFtype>::Print(std::ostream& os) const
 {
-  os  << "Bimodal Kicker: " << this->GetName() << std::endl;
+  os  << "Bimodal Kicker: " << this->name << std::endl;
 	
   os  << "Step: " << this->step << std::endl;
   os  << "Kick selection: ";

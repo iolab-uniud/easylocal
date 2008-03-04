@@ -50,6 +50,7 @@ public:
 	 @param mv2 the move used for comparison  */
 	virtual bool Inverse(const Move& mv1, const Move& mv2) const = 0;
 	void UpdateIteration() { PurgeList(); iter++; }
+	TabuListManager(unsigned int min_tenure, unsigned int max_tenure);
 	TabuListManager();
 	/** Virtual destructor. */
 	virtual ~TabuListManager();
@@ -87,6 +88,11 @@ protected:
 template <class State, class Move, typename CFtype>
 TabuListManager<State, Move,CFtype>::TabuListManager()
 : min_tenure(0), max_tenure(1), iter(0)
+{}
+
+template <class State, class Move, typename CFtype>
+TabuListManager<State, Move,CFtype>::TabuListManager(unsigned int min_t, unsigned int max_t)
+: min_tenure(min_t), max_tenure(max_t), iter(0)
 {}
 
 template <class State, class Move, typename CFtype>
@@ -179,7 +185,7 @@ bool TabuListManager<State, Move,CFtype>::ListMember(const Move& mv) const
 template <class State, class Move, typename CFtype>
 void TabuListManager<State, Move,CFtype>::Print(std::ostream& os) const
 {
-    os <<  "Tabu List Manager: " << this->GetName() << std::endl;
+    os <<  "Tabu List Manager: " << this->name << std::endl;
     os <<  "  Tenure: " << min_tenure << " - " << max_tenure << std::endl;
     typename std::list<TabuListItem<State,Move,CFtype> >::const_iterator p = tlist.begin();
     while (p != tlist.end())

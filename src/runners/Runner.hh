@@ -62,6 +62,7 @@ public:
   unsigned NumberOfIterations() const { return number_of_iterations; }
 
   const std::string name;
+  virtual void Print(std::ostream& os = std::cout) const = 0;
 protected:
   Runner(const Input& i, StateManager<Input,State,CFtype>& sm, std::string name);
   virtual ~Runner() {}

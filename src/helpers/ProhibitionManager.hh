@@ -40,6 +40,7 @@ public:
 protected:
       ProhibitionManager();
     virtual ~ProhibitionManager() {}
+  const std::string name;
 };
 
 template <class State, class Move, typename CFtype>

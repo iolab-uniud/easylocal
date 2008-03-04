@@ -67,7 +67,7 @@ BimodalTabuSearch<Input,State,Move1,Move2,CFtype>::BimodalTabuSearch(const Input
 template <class Input, class State, class Move1, class Move2, typename CFtype>
 void BimodalTabuSearch<Input,State,Move1,Move2,CFtype>::Print(std::ostream& os) const
 {
-  os  << "Bimodal Tabu Search Runner: " << this->GetName() << std::endl;
+  os  << "Bimodal Tabu Search Runner: " << this->name << std::endl;
   
   os  << "Max iterations: " << this->max_iteration << std::endl;
   os  << "Max idle iteration: " << this->max_idle_iteration << std::endl;

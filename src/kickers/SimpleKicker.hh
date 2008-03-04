@@ -82,7 +82,7 @@ CFtype SimpleKicker<Input,State,Move,CFtype>::SelectKick(const State& st)
 template <class Input, class State, class Move, typename CFtype>
 void SimpleKicker<Input,State,Move,CFtype>::Print(std::ostream& os) const
 {
-  os  << "Simple Kicker: " << this->GetName() << std::endl;
+  os  << "Simple Kicker: " << this->name << std::endl;
 	
   os  << "Max Step: " << this->step << std::endl;
   os  << "Kick selection: ";

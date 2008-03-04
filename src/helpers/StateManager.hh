@@ -79,12 +79,12 @@ public:
   CostComponent<Input, State,CFtype>& GetCostComponent(unsigned i) const { return *(cost_component[i]); }
   unsigned CostComponents() const { return cost_component.size(); }
 
+  const std::string name;
 protected:
   StateManager(const Input& in, std::string name);
   virtual ~StateManager() {}
   std::vector<CostComponent<Input,State,CFtype>* > cost_component;
   const Input& in;
-  std::string name;
 };
 
 /*************************************************************************
@@ -98,7 +98,7 @@ Builds a state manager object linked to the provided input.
  */
 template <class Input, class State, typename CFtype>
 StateManager<Input,State,CFtype>::StateManager(const Input& i, std::string e_name)
-: in(i), name(e_name)
+  :  name(e_name), in(i)
 {}
 
 template <class Input, class State, typename CFtype>

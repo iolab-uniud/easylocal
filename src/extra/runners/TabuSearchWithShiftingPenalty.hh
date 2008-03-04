@@ -51,7 +51,7 @@ TabuSearchWithShiftingPenalty<Input,State,Move,CFtype>::TabuSearchWithShiftingPe
 template <class Input, class State, class Move, typename CFtype>
 void TabuSearchWithShiftingPenalty<Input,State,Move,CFtype>::Print(std::ostream& os) const
 {
-  os  << "Tabu Search with Shifting Penalty Runner: " << this->GetName() << std::endl;
+  os  << "Tabu Search with Shifting Penalty Runner: " << this->name << std::endl;
   os  << "  Max iterations: " << this->max_iteration << std::endl;
   os  << "  Max idle iteration: " << this->max_idle_iteration << std::endl;
   this->pm.Print(os);

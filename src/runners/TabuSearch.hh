@@ -108,7 +108,7 @@ TabuSearch<Input,State,Move,CFtype>::TabuSearch(const Input& in,
 template <class Input, class State, class Move, typename CFtype>
 void TabuSearch<Input,State,Move,CFtype>::Print(std::ostream& os) const
 {
-  os  << "Tabu Search Runner: " << this->GetName() << std::endl;
+  os  << "Tabu Search Runner: " << this->name << std::endl;
   os  << "  Max iterations: " << this->max_iteration << std::endl;
   os  << "  Max idle iteration: " << max_idle_iteration << std::endl;
   pm.Print(os);

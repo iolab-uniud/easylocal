@@ -50,7 +50,7 @@ BimodalTabuSearchWithShiftingPenalty<Input,State,Move1,Move2,CFtype>
 template <class Input, class State, class Move1, class Move2, typename CFtype>
 void BimodalTabuSearchWithShiftingPenalty<Input,State,Move1,Move2,CFtype>::Print(std::ostream& os) const
 {
-  os  << "Bimodal Tabu Search with Shifting Penalty Runner: " << this->GetName() << std::endl;
+  os  << "Bimodal Tabu Search with Shifting Penalty Runner: " << this->name << std::endl;
   os  << "  Max iterations: " << this->max_iteration << std::endl;
   os  << "  Max idle iteration: " << this->max_idle_iteration << std::endl;
   this->pm1.Print(os);

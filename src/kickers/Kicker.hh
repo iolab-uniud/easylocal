@@ -47,6 +47,7 @@ public:
   bool SingleKicker() const { return kicker_type == SINGLE; }
   void PrintStatistics(std::ostream& os = std::cout) const;
 
+  virtual void Print(std::ostream& os = std::cout) const = 0;
   virtual void PrintCurrentMoves(unsigned i, std::ostream& os) const = 0;
   virtual void SetStep(unsigned int s);
   unsigned int Step() const { return step; }

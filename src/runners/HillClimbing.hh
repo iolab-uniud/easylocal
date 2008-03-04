@@ -83,7 +83,7 @@ hill_climbing_arguments("hc_" + name, "hc_" + name, false), arg_max_idle_iterati
 template <class Input, class State, class Move, typename CFtype>
 void HillClimbing<Input,State,Move,CFtype>::Print(std::ostream& os) const
 {
-    os  << "Hill Climbing Runner: " << this->GetName() << std::endl;
+    os  << "Hill Climbing Runner: " << this->name << std::endl;
     os  << "  Max iterations: " << this->max_iteration << std::endl;
     os  << "  Max idle iteration: " << this->max_idle_iteration << std::endl;
 }
