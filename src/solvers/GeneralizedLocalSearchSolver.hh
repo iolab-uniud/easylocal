@@ -288,7 +288,7 @@ void GeneralizedLocalSearchSolver<Input,Output,State,CFtype>::GeneralSolve(KickS
 		    observer->NotifyKickStep(*this,kick_cost);
 		  p_kicker->MakeKick(this->current_state);
 		  this->current_state_cost += kick_cost; 
-		  if (LessThan(kick_cost, 0)) 
+		  if (LessThan(kick_cost, static_cast<CFtype>(0))) 
 		    improve_state = true;
 		}
 	      else if (kick_strategy == INTENSIFIER_RUN)
@@ -331,7 +331,7 @@ bool GeneralizedLocalSearchSolver<Input,Output,State,CFtype>::PerformKickRun()
     {
       // perturb the current solution	     
       kick_cost =  p_kicker->SelectKick(current_state);
-      if (LessThan(kick_cost, 0))
+      if (LessThan(kick_cost, static_cast<CFtype>(0)))
 	{
 	  p_kicker->MakeKick(current_state);	   
 	  current_state_cost += kick_cost; 
@@ -342,7 +342,7 @@ bool GeneralizedLocalSearchSolver<Input,Output,State,CFtype>::PerformKickRun()
       //       if (this->Timeout())
       // 	return improve;
     }
-  while (LessThan(kick_cost,0));
+  while (LessThan(kick_cost,static_cast<CFtype>(0)));
   
   this->current_state = current_state;
   this->current_state_cost = current_state_cost;
