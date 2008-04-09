@@ -58,8 +58,8 @@ protected:
   OutputManager<Input,Output,State,CFtype>& om; /**< A pointer to an output producer. */
   State test_state; /**< The current state managed by the tester. */
   Output out; /**< The output object. */
-  unsigned int choice, /**< The option currently chosen from the menu. */
-    sub_choice; /** The suboption currently chosen from the menu. */
+  unsigned int choice; /**< The option currently chosen from the menu. */
+  int sub_choice; /** The suboption currently chosen from the menu. */
 };
 
 /*************************************************************************
