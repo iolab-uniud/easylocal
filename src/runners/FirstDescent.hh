@@ -53,7 +53,7 @@ FirstDescent<Input,State,Move,CFtype>::FirstDescent(const Input& in,
 template <class Input, class State, class Move, typename CFtype>
 void FirstDescent<Input,State,Move,CFtype>::Print(std::ostream& os) const
 {
-	os  << "First Descent Runner: " << this->GetName() << std::endl;
+	os  << "First Descent Runner: " << this->name << std::endl;
 	os  << "  Max iterations: " << this->max_iteration << std::endl;
 }
 
