@@ -70,7 +70,7 @@ SteepestDescent<Input,State,Move,CFtype>::SteepestDescent(const Input& in,
 template <class Input, class State, class Move, typename CFtype>
 void SteepestDescent<Input,State,Move,CFtype>::Print(std::ostream& os) const
 {
-    os  << "Steepest Descent Runner: " << this->GetName() << std::endl;
+    os  << "Steepest Descent Runner: " << this->name << std::endl;
     os  << "  Max iterations: " << this->max_iteration << std::endl;
 }
 

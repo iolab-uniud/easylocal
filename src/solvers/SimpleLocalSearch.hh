@@ -34,7 +34,7 @@ public:
 	void Print(std::ostream& os = std::cout) const;
 	void SetRunner(Runner<Input,State,CFtype>& r);
 	void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout);     
-	void Solve();
+	void Solve(bool random_init = true);
 protected:
 	void Run();
 	void Check() const;
@@ -128,8 +128,9 @@ void SimpleLocalSearch<Input,Output,State,CFtype>::SetRunner(Runner<Input,State,
 
 
 template <class Input, class Output, class State, typename CFtype>
-void SimpleLocalSearch<Input,Output,State,CFtype>::Solve() {
-	this->FindInitialState();
+void SimpleLocalSearch<Input,Output,State,CFtype>::Solve(bool random_init) {
+	if (random_init)
+		this->FindInitialState();
 	p_runner->SetState(this->current_state);
 	LetGo(*p_runner);
 	this->current_state = this->p_runner->GetState();
