@@ -132,7 +132,8 @@ template <class Input, class Output, class State, typename CFtype>
 void GeneralizedLocalSearchSolver<Input,Output,State,CFtype>::ReadParameters(std::istream& is, std::ostream& os)
 {
   os << "Multi-runner Iterated Local Search Solver: " << this->name << " parameters" << std::endl;
-  os << "Runners: " << std::endl; 
+  os << "Runners: " << std::endl;
+  long timeout; 
 	
   for (unsigned int i = 0; i < this->runners.size(); i++)
     {
