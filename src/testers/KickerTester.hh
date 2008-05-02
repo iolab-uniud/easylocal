@@ -54,18 +54,37 @@ KickerTester<Input,Output,State,CFtype>::KickerTester(
 template <class Input, class Output, class State, typename CFtype>
 void KickerTester<Input,Output,State,CFtype>::ShowMenu()
 {
-  std::cout << "Kicker \"" << this->name << "\" Menu (step = " << kicker.Step() << "):" << std::endl
-	    << "    (1) Perform Random Kick" << std::endl
-	    << "    (2) Perform Best Kick" << std::endl
-	    << "    (3) Perform First Improving Kick" << std::endl
-	    << "    (" << (kicker.SingleKicker() ? '-' :  '4') << ") Perform Total Best Kick" << std::endl
-	    << "    (" << (kicker.SingleKicker() ? '-' :  '5') << ") Perform Total First Improving Kick" << std::endl
-	    << "    (6) Show All Kicks" << std::endl
-	    << "    (7) Show Improving Kicks" << std::endl
-	    << "    (8) Set Kicker Parameters" << std::endl
-	    << "    (0) Return to Main Menu" << std::endl
-	    << "Your choice : ";
-  std::cin >> this->choice;
+  if (kicker.SingleKicker())
+    {
+      std::cout << "Kicker \"" << this->name << "\" Menu (step = " << kicker.Step() << "):" << std::endl
+		<< "    (1) Perform Random Kick" << std::endl
+		<< "    (2) Perform Best Kick" << std::endl
+		<< "    (3) Perform First Improving Kick" << std::endl
+		<< "    (-) --- only for Bimodal Kickers --- " << std::endl
+		<< "    (-) --- only for Bimodal Kickers --- " << std::endl
+		<< "    (6) Show All Kicks" << std::endl
+		<< "    (7) Show Current Best Kicks" << std::endl
+		<< "    (8) Set Kicker Parameters" << std::endl
+		<< "    (0) Return to Main Menu" << std::endl
+		<< "Your choice : ";
+    }
+  else
+    {
+      std::cout << "Kicker \"" << this->name << "\" Menu (step = " << kicker.Step() << ", pattern = <";
+      kicker.PrintPattern(std::cout);
+      std::cout << ">:" << std::endl
+		<< "    (1) Perform Random Kick" << std::endl
+		<< "    (2) Perform Best Kick" << std::endl
+		<< "    (3) Perform First Improving Kick" << std::endl
+		<< "    (4) Perform Total Best Kick" << std::endl
+		<< "    (5) Perform Total First Improving Kick" << std::endl
+		<< "    (6) Show All Kicks (for current pattern)" << std::endl
+		<< "    (7) Show Current Best Kicks (for current pattern)" << std::endl
+		<< "    (8) Set Kicker Parameters" << std::endl
+		<< "    (0) Return to Main Menu" << std::endl
+		<< "Your choice : ";
+    }
+      std::cin >> this->choice;
 }
 
 /**

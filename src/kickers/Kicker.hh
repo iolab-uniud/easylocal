@@ -49,6 +49,7 @@ public:
 
   virtual void Print(std::ostream& os = std::cout) const = 0;
   virtual void PrintCurrentMoves(unsigned i, std::ostream& os) const = 0;
+  virtual void PrintPattern(std::ostream& os = std::cout) {}
   virtual void SetStep(unsigned int s);
   unsigned int Step() const { return step; }
   virtual void ReadParameters(std::istream& is = std::cin,

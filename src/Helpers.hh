@@ -29,6 +29,7 @@
 #include "helpers/DeltaCostComponent.hh"
 #include "helpers/GeneralizedLocalSearchObserver.hh"
 #include "helpers/RunnerObserver.hh"
+#include "helpers/ShiftingPenaltyObserver.hh"
 //#include "helpers/KickerObserver.hh"
 
 #endif /*HELPERS_HH_*/

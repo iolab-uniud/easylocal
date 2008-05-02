@@ -51,7 +51,6 @@ public:
 
   void PrintCurrentMoves(unsigned i, std::ostream& os) const  { if (pattern[i] == MOVE_1) os << current_moves1[i]; else os << current_moves2[i];}
 
-
   virtual bool RelatedMoves(const Move1 &mv1, const Move1 &mv2) const = 0;
   virtual bool RelatedMoves(const Move1 &mv1, const Move2 &mv2) const = 0;
   virtual bool RelatedMoves(const Move2 &mv1, const Move1 &mv2) const = 0;
@@ -69,8 +68,8 @@ protected:
   void FirstKickComponent(unsigned int i);  // used by the backtracking algorithm of bestkick
   bool NextKickComponent(unsigned int i);   // (idem)
   bool UnrelatedMoves(unsigned int i);      // (idem)
-  void FirstKick(const State &st) { throw std::runtime_error("Fix me!"); }
-  bool NextKick() { throw std::runtime_error("Fix me!"); }
+  void FirstKick(const State &st); // { throw std::runtime_error("Fix me!"); }
+  bool NextKick(); // { throw std::runtime_error("Fix me!"); }
 private:
   void FirstPattern();
   bool NextPattern();
@@ -361,6 +360,90 @@ CFtype BimodalKicker<Input,State,Move1,Move2,CFtype>::FirstImprovingKick(const S
   //FIXME    this->TimeoutUnsubscribe();
 }
 
+template <class Input, class State, class Move1, class Move2, typename CFtype>
+void BimodalKicker<Input,State,Move1,Move2,CFtype>::FirstKick(const State &st)
+{
+  int i = 0;
+  this->states[0] = st;
+  FirstKickComponent(0);
+  do
+    {
+      //       if (this->Timeout())
+      // 	break;
+      bool backtrack = UnrelatedMoves(i);
+      if (i == int(this->step - 1) && !backtrack)
+	{
+	  kick_cost = KickCost();
+	  best_kick_cost = kick_cost;
+	  internal_best_moves1 = current_moves1;
+	  internal_best_moves2 = current_moves2;
+	  return;
+	}
+      if (backtrack)
+	do
+	  {
+	    if (NextKickComponent(i))
+	      backtrack = false;
+	    else
+	      i--;
+	  }
+	while (backtrack && i >= 0);
+      else
+	{
+	  this->states[i+1] = this->states[i];
+	  if (pattern[i] == MOVE_1)
+	    nhe1.MakeMove(this->states[i+1],current_moves1[i]);
+	  else // pattern[i] == MOVE_2
+	    nhe2.MakeMove(this->states[i+1],current_moves2[i]);
+	  i++;
+	  FirstKickComponent(i);
+	}
+    }
+  while (i >= 0);
+  throw std::logic_error("No kick build in BimodalKicker::FirstKick()");
+}
+
+template <class Input, class State, class Move1, class Move2, typename CFtype>
+bool BimodalKicker<Input,State,Move1,Move2,CFtype>::NextKick()
+{
+  int i = this->step - 1;
+  bool backtrack = true;
+  do
+    {
+      //       if (this->Timeout())
+      // 	break;
+      if (i == int(this->step - 1) && !backtrack)
+	{
+	  kick_cost = KickCost();
+	  best_kick_cost = kick_cost;
+	  internal_best_moves1 = current_moves1;
+	  internal_best_moves2 = current_moves2;
+	  return true;
+	}
+      if (backtrack)
+	do
+	  {
+	    if (NextKickComponent(i))
+	      backtrack = false;
+	    else
+	      i--;
+	  }
+	while (backtrack && i >= 0);
+      else
+	{
+	  this->states[i+1] = this->states[i];
+	  if (pattern[i] == MOVE_1)
+	    nhe1.MakeMove(this->states[i+1],current_moves1[i]);
+	  else // pattern[i] == MOVE_2
+	    nhe2.MakeMove(this->states[i+1],current_moves2[i]);
+	  i++;
+	  FirstKickComponent(i);
+	}
+    }
+  while (i >= 0);
+  return false;
+}
+
 
 template <class Input, class State, class Move1, class Move2, typename CFtype>
 CFtype BimodalKicker<Input,State,Move1,Move2,CFtype>::TotalBestKick(const State &st)
@@ -547,7 +630,9 @@ void BimodalKicker<Input,State,Move1,Move2,CFtype>::PrintKick(std::ostream& os) 
 template <class Input, class State, class Move1, class Move2, typename CFtype>
 void BimodalKicker<Input,State,Move1,Move2,CFtype>::PrintPattern(std::ostream& os)
 {
-  for (unsigned int i = 0; i < this->step; i++)
-    os << pattern[i];
+  unsigned int i;
+  for (i = 0; i < this->step - 1; i++)
+    os << pattern[i] << ' ';
+  os << pattern[i];
 }
 #endif /*BIMODALKICKER_HH_*/
