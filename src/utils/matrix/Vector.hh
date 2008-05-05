@@ -9,8 +9,6 @@
 #ifndef _VECTOR_HH
 #define _VECTOR_HH
 
-#include <EasyLocalConfig.hh>
-
 #include <stdexcept>
 #include <set>
 #include <iostream>

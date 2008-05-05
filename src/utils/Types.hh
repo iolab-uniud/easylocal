@@ -1,8 +1,9 @@
-#ifndef TYPES_HH_
-#define TYPES_HH_
+#if !defined(_TYPES_HH_)
+#define _TYPES_HH_
 
-#ifdef _HAVE_EASYLOCALCONFIG
-#include <EasyLocalConfig.hh>
+#include <EasyLocal.conf.hh>
+#if defined(HAVE_CONFIG_H)
+#include <config.hh>
 #endif
 
 template <typename CFtype>
@@ -23,7 +24,8 @@ bool GreaterThan(CFtype value1, CFtype value2);
 template <typename CFtype>
 bool GreaterOrEqualThan(CFtype value1, CFtype value2);
 
-#ifdef _MSC_VER
+#if defined(_MSC_VER)
+// in Microsoft Visual C++ the I/O operators on strings are not defined.
 #include <iostream>
 #include <string>
 
@@ -33,7 +35,7 @@ inline std::ostream& operator<<(std::ostream& os, const std::string& s)
 	return os;
 }
 
-inline std::istream& operator<<(std::istream& is, std::string& s)
+inline std::istream& operator>>(std::istream& is, std::string& s)
 { 
 	char c[2048]; 
 	is >> c; s = c; 
@@ -41,4 +43,4 @@ inline std::istream& operator<<(std::istream& is, std::string& s)
 }
 #endif 
 
-#endif /*TYPES_HH_*/
+#endif // !defined(_TYPES_HH_)

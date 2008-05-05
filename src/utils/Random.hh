@@ -1,8 +1,9 @@
 #ifndef RANDOM_HH_
 #define RANDOM_HH_
 
-#ifdef _HAVE_EASYLOCALCONFIG
-#include <EasyLocalConfig.hh>
+#include <EasyLocal.conf.hh>
+#if defined(HAVE_CONFIG_H)
+#include <config.hh>
 #endif
 #include <vector>
 

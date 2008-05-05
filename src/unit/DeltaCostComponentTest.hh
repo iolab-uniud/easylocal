@@ -48,7 +48,7 @@ public:
 	
 	void testComputeDeltaCost() 
 	{
-		State* st1;
+		State* st1 = NULL;
 		CPPUNIT_ASSERT_NO_THROW_MESSAGE(stringify("State creation raises an exception", __FILE__, __LINE__), st1 = new State(*in));	
 		bool previous_cc_hard = dcc->cc.is_hard;
 		dcc->cc.is_hard = false;
@@ -87,7 +87,7 @@ public:
 	void testComputeAllDeltaCosts() 
 	{
 		Move mv;
-		State* st1;
+		State* st1 = NULL;
 		CPPUNIT_ASSERT_NO_THROW_MESSAGE(stringify("First move raises an exception", __FILE__, __LINE__), ne->FirstMove(*st, mv));
 		CPPUNIT_ASSERT_NO_THROW_MESSAGE(stringify("State creation raises an exception", __FILE__, __LINE__), st1 = new State(*in));	
 		bool previous_cc_hard = dcc->cc.is_hard;

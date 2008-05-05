@@ -1,18 +1,21 @@
 #include "Chronometer.hh"
 
-#ifdef _MSC_VER // The compiler is Visual C++
+#include <ctime>
+
+#if defined(_MSC_VER) 
+// For the MS Visual C++ compiler
 #include <windows.h>
 union TimeConvert { FILETIME ftValue; __int64 i64Value; };
-#else
+#elif defined(CPUTIME)
 #include <sys/resource.h>
-#endif
-
-#include <ctime> 
+#elif defined(HAVE_GETTIMEOFDAY)
+#include <sys/time.h>
+#endif 
 
 inline Chronometer::TimeValue Chronometer::TimeValue::ReadTime()
 {
 	TimeValue res;
-#ifdef _MSC_VER
+#if defined(_MSC_VER)
 	static FILETIME ftCreation, ftExit, ftKernel, ftUser;
 	GetProcessTimes(GetCurrentProcess(), &ftCreation, &ftExit, &ftKernel, &ftUser);
 	TimeConvert tcKernel, tcUser;
@@ -20,25 +23,20 @@ inline Chronometer::TimeValue Chronometer::TimeValue::ReadTime()
 	tcUser.ftValue = ftUser;
 	res.seconds = (unsigned long)((tcKernel.i64Value + tcUser.i64Value) / 10000000U);
 	res.milli_seconds = (unsigned long)(((tcKernel.i64Value + tcUser.i64Value) % 10000000U) / 10000U);
-#else 
-#ifdef CPUTIME
+#elif defined(CPUTIME)
 	static struct rusage time_read; 
 	getrusage(RUSAGE_SELF,&time_read);
 	res.seconds = time_read.ru_utime.tv_sec;
 	res.milli_seconds = time_read.ru_utime.tv_usec / 1000U;
-#else 
-#ifdef HAVE_CLOCK_GETTIME
+#elif defined(HAVE_CLOCK_GETTIME)
 	clock_gettime(CLOCK_REALTIME, &time_read);
   res.seconds = time_read.tv_sec;
   res.milli_seconds = time_read.tv_nsec / 1000000U;	
-#else
-#ifdef HAVE_GETTIMEOFDAY
+#elif defined(HAVE_GETTIMEOFDAY)
+	struct timeval time_read;
   gettimeofday(&time_read, NULL);
   res.seconds = time_read.tv_sec;
   res.milli_seconds = time_read.tv_usec / 1000U;
-#endif
-#endif
-#endif
 #endif
 	return res;
 }
@@ -83,7 +81,7 @@ double Chronometer::TotalTime() const
 std::string Chronometer::Now()
 {
 	time_t curr_time = time(0);
-#ifndef _MSC_VER
+#if !defined(_MSC_VER)
 	char *tmp = asctime(localtime(&curr_time));
 #else
 	char tmp[256];

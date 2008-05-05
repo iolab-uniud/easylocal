@@ -21,7 +21,7 @@
 #include <sstream>
 
 ConditionVariable::ConditionVariable()
-#ifdef _MSC_VER
+#if defined(_MSC_VER)
 : event(FALSE, FALSE)
 {}
 #else
@@ -35,7 +35,7 @@ ConditionVariable::ConditionVariable()
 
 ConditionVariable::~ConditionVariable() 
 {
-#ifndef _MSC_VER
+#if !defined(_MSC_VER)
   pthread_mutex_destroy(&event_mutex);
   pthread_cond_destroy(&event);
   pthread_mutexattr_destroy(&attr);
@@ -44,7 +44,7 @@ ConditionVariable::~ConditionVariable()
 
 void ConditionVariable::Wait() 
 {
-#ifdef _MSC_VER
+#if defined(_MSC_VER)
   // FIXME: to be handled correctly
 #else 
   int l_ret_code = pthread_mutex_lock(&event_mutex);
@@ -55,7 +55,7 @@ void ConditionVariable::Wait()
 #endif
 }
 
-#ifdef CPUTIME
+#if defined(CPUTIME)
 float ConditionVariable::WaitTimeout(float timeout) throw (TimeoutExpired, std::logic_error)
 {
 	const long NANOSEC_PER_MICROSEC = 1000;
@@ -71,17 +71,15 @@ float ConditionVariable::WaitTimeout(float timeout) throw (TimeoutExpired, std::
   do 
     {
       pthread_mutex_lock(&event_mutex);
-#ifdef HAVE_CLOCK_GETTIME 
+#if defined(HAVE_CLOCK_GETTIME)
       clock_gettime(CLOCK_REALTIME, &ts_end);
-#else
-#ifdef HAVE_GETTIMEOFDAY
+#elif defined(HAVE_GETTIMEOFDAY)
       struct timeval tv_now;
       gettimeofday(&tv_now, NULL);
       ts_end.tv_sec = tv_now.tv_sec;
       ts_end.tv_nsec = tv_now.tv_usec * NANOSEC_PER_MICROSEC;
 #else
 #error "No gettime function is present, please configure the software with the --disable-threading option"
-#endif
 #endif
 			ts_end.tv_sec += (time_t)floor(time_left);
 			ts_end.tv_nsec += (time_t)(timeout - floor(time_left)) * NANOSEC_PER_SEC;

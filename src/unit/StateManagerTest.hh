@@ -42,7 +42,7 @@ public:
 	
 	void testRandomState() 
 	{
-		State *st1, *st2;
+		State *st1 = NULL, *st2 = NULL;
 		CPPUNIT_ASSERT_NO_THROW_MESSAGE(stringify("State creation raises an exception", __FILE__, __LINE__), st1 = new State(*in));
 		for (unsigned int i = 0; i < Trials; i++)
 		{

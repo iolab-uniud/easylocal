@@ -2,10 +2,7 @@
 #define KICKER_HH_
 
 #include <exception>
-
-#ifdef _HAVE_EASYLOCALCONFIG
-#include <EasyLocalConfig.hh>
-#endif
+#include <EasyLocal.conf.hh>
 
 enum KickTypes {
     RANDOM_KICK = 0,

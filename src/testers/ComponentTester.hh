@@ -1,9 +1,6 @@
 #ifndef COMPONENTTESTER_HH_
 #define COMPONENTTESTER_HH_
 
-#ifdef _HAVE_EASYLOCALCONFIG
-#include <EasyLocalConfig.hh>
-#endif
 #include <helpers/StateManager.hh>
 #include <helpers/OutputManager.hh>
 #include <utils/Chronometer.hh>

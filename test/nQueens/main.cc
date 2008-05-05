@@ -32,8 +32,8 @@
 #include <runners/SimulatedAnnealing.hh>
 #include <runners/TabuSearchWithShiftingPenalty.hh>
 #include <solvers/SimpleLocalSearch.hh>
-#include <solvers/GeneralizedLocalSearchSolver.hh>
-#include <solvers/VNDSolver.hh>
+#include <solvers/GeneralizedLocalSearch.hh>
+#include <solvers/VariableNeighborhoodDescent.hh>
 #include <testers/Tester.hh>
 #include <testers/MoveTester.hh>
 #include <testers/KickerTester.hh>

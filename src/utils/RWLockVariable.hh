@@ -6,14 +6,12 @@
  *
  */
 
-#ifdef _HAVE_EASYLOCALCONFIG
-#include <EasyLocalConfig.hh>
-#endif
-
 #ifdef HAVE_PTHREAD
 
 #ifndef _RWLOCKVARIABLE_H
 #define _RWLOCKVARIABLE_H
+
+#include <EasyLocal.conf.hh>
 
 #include <pthread.h>
 

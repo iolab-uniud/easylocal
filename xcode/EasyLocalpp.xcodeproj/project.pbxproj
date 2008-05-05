@@ -21,8 +21,10 @@
 /* End PBXAggregateTarget section */
 
 /* Begin PBXFileReference section */
+		ACDFC76D0DCFB2E5004D11E8 /* EasyLocal.conf.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = EasyLocal.conf.hh; sourceTree = "<group>"; };
+		ACDFC7A90DCFB717004D11E8 /* GeneralizedLocalSearch.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = GeneralizedLocalSearch.hh; sourceTree = "<group>"; };
+		ACDFC7AA0DCFB717004D11E8 /* VariableNeighborhoodDescent.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = VariableNeighborhoodDescent.hh; sourceTree = "<group>"; };
 		ACF4B0FC0DBFA668008A0207 /* EasyLocal.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = EasyLocal.hh; sourceTree = "<group>"; };
-		ACF4B0FD0DBFA668008A0207 /* EasyLocalConfig.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = EasyLocalConfig.hh; sourceTree = "<group>"; };
 		ACF4B10E0DBFA668008A0207 /* CostComponent.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = CostComponent.hh; sourceTree = "<group>"; };
 		ACF4B10F0DBFA668008A0207 /* DeltaCostComponent.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = DeltaCostComponent.hh; sourceTree = "<group>"; };
 		ACF4B1100DBFA668008A0207 /* GeneralizedLocalSearchObserver.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = GeneralizedLocalSearchObserver.hh; sourceTree = "<group>"; };
@@ -53,13 +55,8 @@
 		ACF4B12D0DBFA668008A0207 /* TresholdAcceptance.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = TresholdAcceptance.hh; sourceTree = "<group>"; };
 		ACF4B12E0DBFA668008A0207 /* Runners.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Runners.hh; sourceTree = "<group>"; };
 		ACF4B1300DBFA668008A0207 /* AbstractLocalSearchSolver.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = AbstractLocalSearchSolver.hh; sourceTree = "<group>"; };
-		ACF4B1310DBFA668008A0207 /* ComparativeSolver.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = ComparativeSolver.hh; sourceTree = "<group>"; };
-		ACF4B1320DBFA668008A0207 /* GeneralizedLocalSearchSolver.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = GeneralizedLocalSearchSolver.hh; sourceTree = "<group>"; };
-		ACF4B1330DBFA668008A0207 /* MultiRunnerSolver.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = MultiRunnerSolver.hh; sourceTree = "<group>"; };
 		ACF4B1340DBFA668008A0207 /* SimpleLocalSearch.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = SimpleLocalSearch.hh; sourceTree = "<group>"; };
 		ACF4B1350DBFA668008A0207 /* Solver.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Solver.hh; sourceTree = "<group>"; };
-		ACF4B1360DBFA668008A0207 /* TokenRingSolver.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = TokenRingSolver.hh; sourceTree = "<group>"; };
-		ACF4B1370DBFA668008A0207 /* VNDSolver.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = VNDSolver.hh; sourceTree = "<group>"; };
 		ACF4B1380DBFA668008A0207 /* Solvers.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Solvers.hh; sourceTree = "<group>"; };
 		ACF4B13A0DBFA668008A0207 /* ComponentTester.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = ComponentTester.hh; sourceTree = "<group>"; };
 		ACF4B13B0DBFA668008A0207 /* KickerTester.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = KickerTester.hh; sourceTree = "<group>"; };
@@ -169,7 +166,7 @@
 			children = (
 				ACF4B1220DBFA668008A0207 /* Makefile.am */,
 				ACF4B0FC0DBFA668008A0207 /* EasyLocal.hh */,
-				ACF4B0FD0DBFA668008A0207 /* EasyLocalConfig.hh */,
+				ACDFC76D0DCFB2E5004D11E8 /* EasyLocal.conf.hh */,
 				ACF4B10D0DBFA668008A0207 /* helpers */,
 				ACF4B11A0DBFA668008A0207 /* Helpers.hh */,
 				ACF4B11B0DBFA668008A0207 /* kickers */,
@@ -256,14 +253,11 @@
 		ACF4B12F0DBFA668008A0207 /* solvers */ = {
 			isa = PBXGroup;
 			children = (
+				ACDFC7A90DCFB717004D11E8 /* GeneralizedLocalSearch.hh */,
+				ACDFC7AA0DCFB717004D11E8 /* VariableNeighborhoodDescent.hh */,
 				ACF4B1300DBFA668008A0207 /* AbstractLocalSearchSolver.hh */,
-				ACF4B1310DBFA668008A0207 /* ComparativeSolver.hh */,
-				ACF4B1320DBFA668008A0207 /* GeneralizedLocalSearchSolver.hh */,
-				ACF4B1330DBFA668008A0207 /* MultiRunnerSolver.hh */,
 				ACF4B1340DBFA668008A0207 /* SimpleLocalSearch.hh */,
 				ACF4B1350DBFA668008A0207 /* Solver.hh */,
-				ACF4B1360DBFA668008A0207 /* TokenRingSolver.hh */,
-				ACF4B1370DBFA668008A0207 /* VNDSolver.hh */,
 			);
 			path = solvers;
 			sourceTree = "<group>";
@@ -282,19 +276,19 @@
 		ACF4B13F0DBFA668008A0207 /* utils */ = {
 			isa = PBXGroup;
 			children = (
-				ACF4B1400DBFA668008A0207 /* Chronometer.cc */,
 				ACF4B1410DBFA668008A0207 /* Chronometer.hh */,
+				ACF4B1400DBFA668008A0207 /* Chronometer.cc */,
 				ACF4B1420DBFA668008A0207 /* clparser */,
-				ACF4B14B0DBFA668008A0207 /* ConditionVariable.cc */,
 				ACF4B14C0DBFA668008A0207 /* ConditionVariable.hh */,
-				ACF4B14D0DBFA668008A0207 /* matrix */,
-				ACF4B1550DBFA668008A0207 /* Mutex.cc */,
+				ACF4B14B0DBFA668008A0207 /* ConditionVariable.cc */,
 				ACF4B1560DBFA668008A0207 /* Mutex.hh */,
-				ACF4B1570DBFA668008A0207 /* Random.cc */,
-				ACF4B1580DBFA668008A0207 /* Random.hh */,
+				ACF4B1550DBFA668008A0207 /* Mutex.cc */,
 				ACF4B1590DBFA668008A0207 /* RWLockVariable.hh */,
-				ACF4B15A0DBFA668008A0207 /* Types.cc */,
+				ACF4B14D0DBFA668008A0207 /* matrix */,
+				ACF4B1580DBFA668008A0207 /* Random.hh */,
+				ACF4B1570DBFA668008A0207 /* Random.cc */,
 				ACF4B15B0DBFA668008A0207 /* Types.hh */,
+				ACF4B15A0DBFA668008A0207 /* Types.cc */,
 			);
 			path = utils;
 			sourceTree = "<group>";

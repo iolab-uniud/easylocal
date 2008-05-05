@@ -1,9 +1,7 @@
 #ifndef SOLVER_HH_
 #define SOLVER_HH_
 
-#ifdef _HAVE_EASYLOCALCONFIG
-#include <EasyLocalConfig.hh>
-#endif
+#include <EasyLocal.conf.hh>
 #include <helpers/StateManager.hh>
 #include <helpers/OutputManager.hh>
 
@@ -26,7 +24,7 @@ protected:
   Solver(const Input& in, std::string name);
   virtual ~Solver() {}
   const Input& in; /**< A reference to the input manager. */
-#ifdef HAVE_PTHREAD    
+#if defined(HAVE_PTHREAD)
 protected:
   /**< This variable will be shared among runners (and possibly other lower-level components) and controls their termination. */
   RWLockVariable<bool> termination_request;
@@ -34,7 +32,6 @@ protected:
   ConditionVariable runner_termination;  
   float timeout, current_timeout;
   bool timeout_set;
-public:
 #endif
 };
 

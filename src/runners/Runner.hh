@@ -1,10 +1,7 @@
 #ifndef RUNNER_HH_
 #define RUNNER_HH_
 
-#ifdef _HAVE_EASYLOCALCONFIG
-#include <EasyLocalConfig.hh>
-#endif
-
+#include <EasyLocal.conf.hh>
 #include <helpers/StateManager.hh>
 #ifdef HAVE_PTHREAD
 #include <utils/RWLockVariable.hh>

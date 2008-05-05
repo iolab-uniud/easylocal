@@ -1,13 +1,10 @@
 #ifndef TESTER_HH_
 #define TESTER_HH_
 
-#ifdef _HAVE_EASYLOCALCONFIG
-#include <EasyLocalConfig.hh>
-#endif
 #include <helpers/StateManager.hh>
 #include <helpers/OutputManager.hh>
 #include <runners/Runner.hh>
-#include <ComponentTester.hh>
+#include <testers/ComponentTester.hh>
 #include <stdexcept>
 #include <fstream>
 #include <utils/Types.hh>

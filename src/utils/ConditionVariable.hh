@@ -7,14 +7,14 @@
  *
  */
 
-#ifdef _HAVE_EASYLOCALCONFIG
-#include <EasyLocalConfig.hh>
-#endif
 
-#ifdef HAVE_PTHREAD
-
-#ifndef _CONDITIONVARIABLE_HH
+#include <EasyLocal.conf.hh>
+#if !defined(_CONDITIONVARIABLE_HH)
 #define _CONDITIONVARIABLE_HH
+
+#if defined(HAVE_CONFIG_H)
+#include <config.hh>
+#endif
 
 #include <exception>
 #include <stdexcept>
@@ -22,14 +22,14 @@
 class TimeoutExpired : public std::exception
 {};
 
-#ifdef _MSC_VER
+#if defined(_MSC_VER)
 #include <afxmt.h>
 #else
 #include <pthread.h> 
 #endif
 
 class ConditionVariable {
-#ifdef _MSC_VER
+#if defined(_MSC_VER)
   CEvent event;
 #else 
   pthread_mutex_t event_mutex;
@@ -44,7 +44,5 @@ public:
 	void Signal();
 	void Broadcast();	
 };
-
-#endif
 
 #endif

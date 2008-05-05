@@ -1,8 +1,8 @@
 #ifndef CHRONOMETER_HH_
 #define CHRONOMETER_HH_
 
-#ifdef _HAVE_EASYLOCALCONFIG
-#include <EasyLocalConfig.hh>
+#if defined(HAVE_CONFIG_H)
+#include <config.hh>
 #endif
 #include <string>
 

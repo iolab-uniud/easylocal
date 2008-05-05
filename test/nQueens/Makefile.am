@@ -2,7 +2,11 @@
 
 lib_LTLIBRARIES = libnQueens.la
 
-bin_PROGRAMS = queens QueensTest
+bin_PROGRAMS = queens
+
+if CPPUNIT
+bin_PROGRAMS += QueensTest
+endif
 
 libnQueens_la_SOURCES = data/ChessBoard.cc data/Swap.cc \
   helpers/SwapNeighborhoodExplorer.cc helpers/PrimaryDiagonalDeltaCostComponent.cc \
@@ -21,13 +25,14 @@ else
 AM_CXXFLAGS = -O3 @ICCFLAGS@
 endif
 
+if CPPUNIT
 check_PROGRAMS = QueensTest
 
 TESTS = $(check_PROGRAMS)
 
-
 QueensTest_SOURCES = unit/QueensStateManagerTest.cc unit/QueensOutputManagerTest.cc unit/QueensCostComponentsTest.cc \
-	unit/SwapNeighborhoodExplorerTest.cc unit/QueensDeltaCostComponentsTest.cc \
-	@EASYLOCALPP@/src/unit/UnitTestingMain.cc
+		unit/SwapNeighborhoodExplorerTest.cc unit/QueensDeltaCostComponentsTest.cc \
+		@EASYLOCALPP@/src/unit/UnitTestingMain.cc
 QueensTest_CPPFLAGS = $(AM_CPPFLAGS) $(CPPUNIT_CFLAGS)
 QueensTest_LDFLAGS = $(AM_LDFLAGS) -LnQueens $(CPPUNIT_LIBS)
+endif
