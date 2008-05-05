@@ -1,5 +1,5 @@
-#ifndef TESTERS_HH_
-#define TESTERS_HH_
+#ifndef _TESTERS_HH_
+#define _TESTERS_HH_
 
 /** @defgroup Testers Tester classes
     Tester classes represent a simple predefined interface of the user
@@ -9,9 +9,8 @@
     experiments, and collect the results in aggregated form.  
 */
 
-#include "testers/ComponentTester.hh"
-#include "testers/KickerTester.hh"
-#include "testers/MoveTester.hh"
 #include "testers/Tester.hh"
+#include "testers/MoveTester.hh"
+#include "testers/KickerTester.hh"
 
-#endif /*TESTERS_HH_*/
+#endif // _TESTERS_HH_

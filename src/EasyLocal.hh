@@ -1,5 +1,3 @@
-// The -*- C++ -*- EasyLocal header.
-
 /**
     @file EasyLocal.hh
     @brief Class inclusions.
@@ -14,17 +12,19 @@
          compiler. Yet, it is extensively tested only with the GNU compiler.
 */
 
-#ifndef __EASYLOCAL_HH_
-#define __EASYLOCAL_HH_
+#ifndef _EASYLOCAL_HH_
+#define _EASYLOCAL_HH_
+
+#define _HAVE_EASYLOCALCONFIG
 
 #ifdef _HAVE_EASYLOCALCONFIG
 #include <EasyLocalConfig.hh>
 #endif
 
-//#include "Utils.hh"
-#include "Helpers.hh"
-#include "Runners.hh"
-#include "Kickers.hh"
-#include "Solvers.hh"
+#include <Utils.hh>
+#include <Helpers.hh>
+#include <Runners.hh>
+#include <Kickers.hh>
+#include <Solvers.hh>
 
-#endif // define __EASYLOCAL_HH_
+#endif // define _EASYLOCAL_HH_

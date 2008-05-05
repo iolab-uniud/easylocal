@@ -22,17 +22,18 @@ void QueensStateManager::RandomState(std::vector<unsigned> &a)
 	}
 }
 
-void QueensStateManager::CheckConsistency(const std::vector<unsigned> &a) const
+bool QueensStateManager::CheckConsistency(const std::vector<unsigned> &a) const
 {
-	std::vector<bool> tag(in, false);
-	for (unsigned int j = 0; j < in; j++)
-	{
-		if (a[j] >= in)
-			throw std::runtime_error("State is not consistent (queen out of the chessboard)");
-		if (tag[a[j]])
-			throw std::runtime_error("State is not consistent (queens do not form a permutation)");
-		tag[a[j]] = true;
-	}
+  std::vector<bool> tag(in, false);
+  for (unsigned int j = 0; j < in; j++)
+    {
+      if (a[j] >= in)
+	throw std::runtime_error("State is not consistent (queen out of the chessboard)");
+      if (tag[a[j]])
+	throw std::runtime_error("State is not consistent (queens do not form a permutation)");
+      tag[a[j]] = true;
+    }
+  return true;
 }
 
 std::ostream& operator<<(std::ostream& os, const std::vector<unsigned>& a)

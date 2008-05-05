@@ -11,7 +11,7 @@ class QueensStateManager
 public:
     QueensStateManager(const unsigned& bs);
     void RandomState(std::vector<unsigned> &a);
-	void CheckConsistency(const std::vector<unsigned> &a) const;
+  bool CheckConsistency(const std::vector<unsigned> &a) const;
 };
 
 std::ostream& operator<<(std::ostream& os, const std::vector<unsigned>& a);

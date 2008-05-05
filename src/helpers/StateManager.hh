@@ -1,5 +1,5 @@
-#ifndef STATEMANAGER_HH_
-#define STATEMANAGER_HH_
+#ifndef _STATEMANAGER_HH_
+#define _STATEMANAGER_HH_
 
 #include <iostream>
 #include <vector>
@@ -15,9 +15,11 @@ hierarchical formulation of the Cost function (i.e.,
 waiting for an idea of a general mechanism for managing cost function 
 weights.
 */
+
 #ifndef HARD_WEIGHT_SET
 const int HARD_WEIGHT = 1000;
 #endif
+
 
 /** The State Manager is responsible for all operations on the state
 which are independent of the neighborhood definition, such as
@@ -79,6 +81,8 @@ protected:
   std::vector<CostComponent<Input,State,CFtype>* > cost_component;
   const Input& in;
 };
+
+
 
 /*************************************************************************
 * Implementation
@@ -299,21 +303,6 @@ CFtype StateManager<Input,State,CFtype>::Objective(const State& st) const
 }
 
 
-/* template <class Input, class State, typename CFtype>
-CFtype StateManager<Input,State,CFtype>::Violations(const State& st, unsigned int i) const
-{
-  if (hard_costs.size() > i);
-  return hard_costs[i]->Cost(st);
-}
-
-template <class Input, class State, typename CFtype>
-CFtype StateManager<Input,State,CFtype>::Objective(const State& st, unsigned int i) const
-{
-  assert(soft_costs.size() > i);
-  return soft_costs[i]->Cost(st);
-} */
-
-
 /**
 Adds a component to the cost component array
  */
@@ -353,4 +342,4 @@ int StateManager<Input,State,CFtype>::IsMember(const State& s, const std::vector
 }
 
 
-#endif /*STATEMANAGER_HH_*/
+#endif // define _STATEMANAGER_HH_

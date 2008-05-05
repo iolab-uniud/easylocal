@@ -8,6 +8,50 @@
 
 5. Rivedere gli include
 
-6. Rivedere il kicker tester (stile movetester)
+6. Rivedere il kicker tester (stile movetester) [FATTO]
 
 7. NextRelatedMove
+
+
+
+// Aggiunte 5-5-2008
+
+1. rivedere commento di intestazione
+
+2. nomi direttive di isolamento (_NOME_)
+
+3. #define _HAVE_EASYLOCALCONFIG
+
+4. no using namespace std;
+
+5. compilazione condizionale se CPPUNIT non e' presente
+
+6. #include <...> e non "..."
+
+7. clparser tutto in unico file (hh e cc)
+
+8. Mutex e co in Syncrhonize.hh e cc
+
+9. spostare gli observers in una cartella apposita
+
+10. Fare i bimodal mancanti
+
+11. HARD_WEIGHT
+
+12. Pulizia di fino: 
+- commenti sulle funzioni nella def e non nella dic
+- ordinare le funzioni con criterio (?)
+- 
+
+// Release
+
+1. licenza (GPL)
+
+2. svn con release (e accesso pubblico in lettura)
+
+
+// Longer term
+
+1. KickerObserver
+
+2. Struttura delle cartelle per EasySin e EsayAnalyzer

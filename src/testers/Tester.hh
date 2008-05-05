@@ -7,7 +7,7 @@
 #include <helpers/StateManager.hh>
 #include <helpers/OutputManager.hh>
 #include <runners/Runner.hh>
-#include "ComponentTester.hh"
+#include <ComponentTester.hh>
 #include <stdexcept>
 #include <fstream>
 #include <utils/Types.hh>
@@ -257,7 +257,7 @@ void Tester<Input,Output, State,CFtype>::ShowRunMenu()
 template <class Input, class Output, class State, typename CFtype>
 void Tester<Input,Output, State,CFtype>::ExecuteMovesChoice()
 {
-  if (sub_choice > 0 && sub_choice <= (int)move_testers.size())
+  if (sub_choice > 0 && sub_choice <= move_testers.size())
     move_testers[sub_choice-1]->RunTestMenu(test_state);
 }
 

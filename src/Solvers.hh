@@ -1,5 +1,5 @@
-#ifndef SOLVERS_HH_
-#define SOLVERS_HH_
+#ifndef _SOLVERS_HH_
+#define _SOLVERS_HH_
 
 /** @defgroup Solvers Solver classes
     Solver classes control the search by generating the initial solutions, 
@@ -10,9 +10,9 @@
     are linked to one or more runners (for simple or composite
     search, respectively) and to some of the helpers.  
 */  
-#include "solvers/Solver.hh"
-#include "solvers/AbstractLocalSearchSolver.hh"
-#include "solvers/SimpleLocalSearch.hh"
-#include "solvers/GeneralizedLocalSearchSolver.hh"
 
-#endif /*SOLVERS_HH_*/
+#include "solvers/SimpleLocalSearch.hh"
+#include "solvers/GeneralizedLocal.hh"
+#include "solvers/VariableNeighborhoodDescent.hh"
+
+#endif // define _SOLVERS_HH_

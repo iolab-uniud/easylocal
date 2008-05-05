@@ -8,8 +8,6 @@
 
 #include "ConditionVariable.hh"
 
-#ifdef HAVE_PTHREAD
-
 #ifdef _MSC_VER
 #define _AFXDLL
 #else
@@ -215,4 +213,3 @@ void ConditionVariable::Broadcast()
 #endif
 }
 
-#endif

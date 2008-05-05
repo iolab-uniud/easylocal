@@ -1,5 +1,5 @@
-#ifndef HELPERS_HH_
-#define HELPERS_HH_
+#ifndef _HELPERS_HH_
+#define _HELPERS_HH_
 
 /** @defgroup Helpers Helper classes
       Helper classes perform actions related to some specific aspects of the
@@ -27,9 +27,10 @@
 #include "helpers/ShiftingPenaltyManager.hh"
 #include "helpers/CostComponent.hh"
 #include "helpers/DeltaCostComponent.hh"
+
 #include "helpers/GeneralizedLocalSearchObserver.hh"
 #include "helpers/RunnerObserver.hh"
+#include "helpers/BomodalRunnerObserver.hh"
 #include "helpers/ShiftingPenaltyObserver.hh"
-//#include "helpers/KickerObserver.hh"
 
-#endif /*HELPERS_HH_*/
+#endif /*define _HELPERS_HH_*/

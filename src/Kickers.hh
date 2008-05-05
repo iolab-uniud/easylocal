@@ -1,8 +1,7 @@
-#ifndef KICKERS_HH_
-#define KICKERS_HH_
+#ifndef _KICKERS_HH_
+#define _KICKERS_HH_
 
-#include "kickers/Kicker.hh"
 #include "kickers/SimpleKicker.hh"
 #include "kickers/BimodalKicker.hh"
 
-#endif /*RUNNERS_HH_*/
+#endif // _KICKERS_HH_

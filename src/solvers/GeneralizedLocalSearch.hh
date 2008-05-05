@@ -1,8 +1,8 @@
 #ifndef _GENERALIZED_LOCAL_SEARCH_SOLVER_HH_
 #define _GENERALIZED_LOCAL_SEARCH_SOLVER_HH_
 
-#include "AbstractLocalSearchSolver.hh"
-#include "../kickers/Kicker.hh"
+#include <solvers/AbstractLocalSearchSolver.hh>
+#include <kickers/Kicker.hh>
 #include <vector>
 #include <utils/clparser/CLParser.hh>
 #include <utils/clparser/ArgumentGroup.hh>
@@ -145,6 +145,7 @@ void GeneralizedLocalSearchSolver<Input,Output,State,CFtype>::ReadParameters(std
   os << "Max idle rounds: ";
   is >> max_idle_rounds;
 #ifdef HAVE_PTHREAD
+  double timeout;
   os << "Timeout: ";
   is >> timeout;
   this->SetTimeout(timeout);
@@ -269,7 +270,9 @@ void GeneralizedLocalSearchSolver<Input,Output,State,CFtype>::GeneralSolve(KickS
 	idle_rounds = 0;
       else
 	{
+#ifdef HAVE_PTHREAD
 	  double time = chrono.TotalTime();
+#endif
 	  improve_state = false;
 	  idle_rounds++;
 	  if (idle_rounds % kick_rate != 0) continue;

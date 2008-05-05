@@ -64,7 +64,7 @@ if test "$enable_cpu_time" ==  yes; then
   AC_DEFINE([CPUTIME], [], [Use CPU time capabilities instead of wall-clock time])
 fi
 
-CPPFLAGS="$CPPFLAGS -Wall"
+CPPFLAGS="$CPPFLAGS -Wall -D_HAVE_EASYLOCALCONFIG"
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_HEADER_STDBOOL

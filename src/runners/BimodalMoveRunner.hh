@@ -11,7 +11,6 @@
 typedef enum {
   MOVE_1 = 1,
   MOVE_2
-  //    MOVE_3
 } PatternMove;
 #define MOVE_ENUM
 #endif

@@ -1,5 +1,5 @@
-#ifndef RUNNERS_HH_
-#define RUNNERS_HH_
+#ifndef _RUNNERS_HH_
+#define _RUNNERS_HH_
 
 #include "runners/SteepestDescent.hh"
 #include "runners/FirstDescent.hh"
@@ -16,4 +16,4 @@
 #include "runners/BimodalTabuSearchWithShiftingPenalty.hh"
 
 
-#endif /*RUNNERS_HH_*/
+#endif // define _RUNNERS_HH_
