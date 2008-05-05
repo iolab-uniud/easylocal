@@ -3,7 +3,7 @@
 
 #include "DeltaCostComponent.hh"
 #include "CostComponent.hh"
-#include "../utils/Random.hh"
+#include <utils/Random.hh>
 #include "ShiftingPenaltyObserver.hh"
 
 /** This class implements the shifting penalty mechanism for a single

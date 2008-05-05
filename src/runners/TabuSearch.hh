@@ -17,12 +17,12 @@
 */
 
 #include "MoveRunner.hh"
-#include "../helpers/StateManager.hh"
-#include "../helpers/NeighborhoodExplorer.hh"
-#include "../helpers/TabuListManager.hh"
-#include "../utils/clparser/CLParser.hh"
-#include "../utils/clparser/ValArgument.hh"
-#include "../utils/clparser/ArgumentGroup.hh"
+#include <helpers/StateManager.hh>
+#include <helpers/NeighborhoodExplorer.hh>
+#include <helpers/TabuListManager.hh>
+#include <utils/clparser/CLParser.hh>
+#include <utils/clparser/ValArgument.hh>
+#include <utils/clparser/ArgumentGroup.hh>
 #include <stdexcept>
 
 template <class Input, class State, class Move, typename CFtype = int>

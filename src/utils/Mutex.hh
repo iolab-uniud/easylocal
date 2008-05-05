@@ -6,8 +6,8 @@
  *
  */
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
+#ifdef _HAVE_EASYLOCALCONFIG
+#include <EasyLocalConfig.hh>
 #endif
 
 #ifdef HAVE_PTHREAD
@@ -15,6 +15,9 @@
 #ifndef _MUTEX_HH
 #define _MUTEX_HH
 
+#ifdef _MSC_VER
+#define _AFXDLL
+#else
 #include <pthread.h>
 
 class Mutex 
@@ -31,3 +34,5 @@ public:
 #endif
 
 #endif
+#endif
+

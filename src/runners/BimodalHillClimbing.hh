@@ -11,27 +11,27 @@
 */
 template <class Input, class State, class Move1, class Move2, typename CFtype = int>
 class BimodalHillClimbing
-  : public BimodalMoveRunner<Input,State,Move1,Move2,CFtype>
+            : public BimodalMoveRunner<Input,State,Move1,Move2,CFtype>
 {
 public:
-  void Print(std::ostream& os = std::cout) const;
-  void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout);
-  virtual void SetMaxIdleIteration(unsigned long m) { max_idle_iteration = m; }
-  BimodalHillClimbing(const Input& in,
-		      StateManager<Input,State,CFtype>& sm,
-		      NeighborhoodExplorer<Input,State,Move1,CFtype>& ne1,
-		      NeighborhoodExplorer<Input,State,Move2,CFtype>& ne2,
-		      std::string name = "Anonymous Bimodal Hill Climbing runner");
+    void Print(std::ostream& os = std::cout) const;
+    void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout);
+    virtual void SetMaxIdleIteration(unsigned long m) { max_idle_iteration = m; }
+    BimodalHillClimbing(const Input& in,
+    					StateManager<Input,State,CFtype>& sm,
+                        NeighborhoodExplorer<Input,State,Move1,CFtype>& ne1,
+                        NeighborhoodExplorer<Input,State,Move2,CFtype>& ne2,
+                        std::string name = "Anonymous Bimodal Hill Climbing runner");
 protected:
-  void GoCheck() const;
-  void InitializeRun();
-  void TerminateRun();
-  bool StopCriterion();
-  bool AcceptableMove();
-  void StoreMove();
-  void SelectMove();
-  // parameters
-  unsigned long max_idle_iteration;
+    void GoCheck() const;
+    void InitializeRun();
+    void TerminateRun();
+    bool StopCriterion();
+    bool AcceptableMove();
+    void StoreMove();
+    void SelectMove();
+    // parameters
+    unsigned long max_idle_iteration;
 };
 
 /*************************************************************************
@@ -48,19 +48,19 @@ protected:
 */
 template <class Input, class State, class Move1, class Move2, typename CFtype>
 BimodalHillClimbing<Input,State,Move1,Move2,CFtype>::BimodalHillClimbing(const Input& in,
-									 StateManager<Input,State,CFtype>& sm,
-									 NeighborhoodExplorer<Input,State,Move1,CFtype>& ne1,
-									 NeighborhoodExplorer<Input,State,Move2,CFtype>& ne2,
-									 std::string name)
-  : BimodalMoveRunner<Input,State,Move1,Move2,CFtype>(in, sm, ne1, ne2, name), max_idle_iteration(0)
+																																	StateManager<Input,State,CFtype>& sm,
+																																	NeighborhoodExplorer<Input,State,Move1,CFtype>& ne1,
+																																	NeighborhoodExplorer<Input,State,Move2,CFtype>& ne2,
+																																	std::string name)
+        : BimodalMoveRunner<Input,State,Move1,Move2,CFtype>(in, sm, ne1, ne2, name), max_idle_iteration(0)
 {}
 
 template <class Input, class State, class Move1, class Move2, typename CFtype>
 void BimodalHillClimbing<Input,State,Move1,Move2,CFtype>::Print(std::ostream& os) const
 {
-  os  << "Hill Climbing Runner: " << this->name << std::endl;
-  os  << "  Max iterations: " << this->max_iteration << std::endl;
-  os  << "  Max idle iteration: " << this->max_idle_iteration << std::endl;
+    os  << "Hill Climbing Runner: " << this->name << std::endl;
+    os  << "  Max iterations: " << this->max_iteration << std::endl;
+    os  << "  Max idle iteration: " << this->max_idle_iteration << std::endl;
 }
 
 /**
@@ -70,16 +70,16 @@ void BimodalHillClimbing<Input,State,Move1,Move2,CFtype>::Print(std::ostream& os
 template <class Input, class State, class Move1, class Move2, typename CFtype>
 void BimodalHillClimbing<Input,State,Move1,Move2,CFtype>::SelectMove()
 {
-  this->ne1.RandomMove(this->current_state, this->current_move1);
-  this->current_move_cost1 = this->ne1.DeltaCostFunction(this->current_state, this->current_move1);
-  this->ne2.RandomMove(this->current_state, this->current_move2);
-  this->current_move_cost2 = this->ne2.DeltaCostFunction(this->current_state, this->current_move2);
-  if (LessThan(this->current_move_cost1, this->current_move_cost2))
-    this->current_move_type = MOVE_1;
-  else if (this->current_move_cost1 > this->current_move_cost2)
-    this->current_move_type = MOVE_2;
-  else
-    this->current_move_type = Random::Int(0,1) == 0 ? MOVE_1 : MOVE_2;
+    this->ne1.RandomMove(this->current_state, this->current_move1);
+    this->current_move_cost1 = this->ne1.DeltaCostFunction(this->current_state, this->current_move1);
+    this->ne2.RandomMove(this->current_state, this->current_move2);
+    this->current_move_cost2 = this->ne2.DeltaCostFunction(this->current_state, this->current_move2);
+    if (LessThan(this->current_move_cost1, this->current_move_cost2))
+        this->current_move_type = MOVE_1;
+    else if (this->current_move_cost1 > this->current_move_cost2)
+        this->current_move_type = MOVE_2;
+    else
+        this->current_move_type = Random::Int(0,1) == 0 ? MOVE_1 : MOVE_2;
 }
 
 /**
@@ -89,7 +89,7 @@ void BimodalHillClimbing<Input,State,Move1,Move2,CFtype>::SelectMove()
 template <class Input, class State, class Move1, class Move2, typename CFtype>
 void BimodalHillClimbing<Input,State,Move1,Move2,CFtype>::InitializeRun()
 {
-  BimodalMoveRunner<Input,State,Move1,Move2,CFtype>::InitializeRun();
+    BimodalMoveRunner<Input,State,Move1,Move2,CFtype>::InitializeRun();
 }
 
 template <class Input, class State, class Move1, class Move2, typename CFtype>
@@ -106,9 +106,9 @@ void BimodalHillClimbing<Input,State,Move1,Move2,CFtype>::GoCheck() const
 template <class Input, class State, class Move1, class Move2, typename CFtype>
 void BimodalHillClimbing<Input,State,Move1,Move2,CFtype>::TerminateRun()
 {
-  BimodalMoveRunner<Input,State,Move1,Move2,CFtype>::TerminateRun();
-  this->best_state = this->current_state;
-  this->best_state_cost = this->current_state_cost;
+    BimodalMoveRunner<Input,State,Move1,Move2,CFtype>::TerminateRun();
+    this->best_state = this->current_state;
+    this->best_state_cost = this->current_state_cost;
 }
 
 /**
@@ -126,10 +126,10 @@ bool BimodalHillClimbing<Input,State,Move1,Move2,CFtype>::StopCriterion()
 template <class Input, class State, class Move1, class Move2, typename CFtype>
 bool BimodalHillClimbing<Input,State,Move1,Move2,CFtype>::AcceptableMove()
 {
-  if (this->current_move_type == MOVE_1)
-    return this->current_move_cost1 <= 0;
-  else
-    return this->current_move_cost2 <= 0;
+    if (this->current_move_type == MOVE_1)
+        return this->current_move_cost1 <= 0;
+    else
+        return this->current_move_cost2 <= 0;
 }
 
 /**
@@ -139,31 +139,25 @@ bool BimodalHillClimbing<Input,State,Move1,Move2,CFtype>::AcceptableMove()
 template <class Input, class State, class Move1, class Move2, typename CFtype>
 void BimodalHillClimbing<Input,State,Move1,Move2,CFtype>::StoreMove()
 {
-  if (this->observer != NULL)
-    this->observer->NotifyStoreMove(*this);
-  if (this->current_move_type == MOVE_1)
-    if (LessThan(this->current_move_cost1,0))
-      {
-	if (this->observer != NULL)
-	  this->observer->NotifyNewBest(*this);
-	this->iteration_of_best = this->number_of_iterations;
-	this->best_state_cost = this->current_state_cost;
-      }
-    else
-      if (LessThan(this->current_move_cost2,0))
-	{
-	  if (this->observer != NULL)
-	    this->observer->NotifyNewBest(*this);
-	  this->iteration_of_best = this->number_of_iterations;
-	  this->best_state_cost = this->current_state_cost;
-	}
+    if (this->current_move_type == MOVE_1)
+      if (LessThan(this->current_move_cost1,0))
+        {
+            this->iteration_of_best = this->number_of_iterations;
+            this->best_state_cost = this->current_state_cost;
+        }
+        else
+	  if (LessThan(this->current_move_cost2,0))
+            {
+                this->iteration_of_best = this->number_of_iterations;
+                this->best_state_cost = this->current_state_cost;
+            }
 }
 
 template <class Input, class State, class Move1, class Move2, typename CFtype>
 void BimodalHillClimbing<Input,State,Move1,Move2,CFtype>::ReadParameters(std::istream& is, std::ostream& os)
 {
-  os << "HILL CLIMBING -- INPUT PARAMETERS" << std::endl;
-  os << "  Number of idle iterations: ";
-  is >> this->max_idle_iteration;
+    os << "HILL CLIMBING -- INPUT PARAMETERS" << std::endl;
+    os << "  Number of idle iterations: ";
+    is >> this->max_idle_iteration;
 }
 #endif /*BIMODALHILLCLIMBING_HH_*/

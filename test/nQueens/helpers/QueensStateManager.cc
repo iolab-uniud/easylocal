@@ -1,6 +1,7 @@
 #include "QueensStateManager.hh"
 #include <utils/Random.hh>
 #include <vector>
+#include <stdexcept>
 
 QueensStateManager::QueensStateManager(const unsigned& bs)
 : StateManager<unsigned,std::vector<unsigned> >(bs, "QueensStateManager")
@@ -8,12 +9,9 @@ QueensStateManager::QueensStateManager(const unsigned& bs)
 
 void QueensStateManager::RandomState(std::vector<unsigned> &a)
 {
-	std::vector<bool> tag(in);
+	std::vector<bool> tag(in, false);
 	unsigned int i, j;
 	
-	for (j = 0; j < in; j++)
-		tag[j] = false;
-
 	for (j = 0; j < in; j++)
 	{ 
 		do
@@ -21,6 +19,19 @@ void QueensStateManager::RandomState(std::vector<unsigned> &a)
 		while (tag[i]);
 		tag[i] = true;
 		a[j] = i;
+	}
+}
+
+void QueensStateManager::CheckConsistency(const std::vector<unsigned> &a) const
+{
+	std::vector<bool> tag(in, false);
+	for (unsigned int j = 0; j < in; j++)
+	{
+		if (a[j] >= in)
+			throw std::runtime_error("State is not consistent (queen out of the chessboard)");
+		if (tag[a[j]])
+			throw std::runtime_error("State is not consistent (queens do not form a permutation)");
+		tag[a[j]] = true;
 	}
 }
 

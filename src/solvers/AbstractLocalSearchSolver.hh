@@ -2,8 +2,8 @@
 #define _ABSTRACT_LOCAL_SEARCH_SOLVER_HH_
 
 #include "Solver.hh"
-#include "../helpers/StateManager.hh"
-#include "../helpers/OutputManager.hh"
+#include <helpers/StateManager.hh>
+#include <helpers/OutputManager.hh>
 #include <iostream> 
 #include <fstream> 
 #include <string>

@@ -1,16 +1,14 @@
 #ifndef CHRONOMETER_HH_
 #define CHRONOMETER_HH_
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
+#ifdef _HAVE_EASYLOCALCONFIG
+#include <EasyLocalConfig.hh>
 #endif
+#include <string>
 
-
-#include <sys/time.h>
-#include <sys/resource.h>
-
-/** A class for measuring execution times: it relies on
-      standard C functions which are encapsulated. */
+/** A class for measuring CPU execution times: it relies on
+      standard C functions / not standard Visual C++ functions 
+	  which are encapsulated in this class. */
 
 class Chronometer
 {
@@ -18,27 +16,25 @@ public:
     Chronometer();
     void Reset();
     void Start();
-    void Partial();
     void Stop();
     double TotalTime() const;
-    double PartialTime() const;
-    static const char* Now();
+	static std::string Now();
 private:
+	class TimeValue
+	{
+	protected:
+	  unsigned long seconds;
+	  unsigned long milli_seconds;
+	public:
+		TimeValue() : seconds(0), milli_seconds(0) {}
+	  operator double () const
+	  { return seconds + milli_seconds / 1.0E3; }
+	  void Reset()
+	  { seconds = 0; milli_seconds = 0; }
+	  static TimeValue ReadTime();
+	};
     bool running;
-#ifdef CPUTIME
-    mutable struct rusage time_read;
-#else
-#ifdef HAVE_CLOCK_GETTIME
-    mutable struct timespec time_read;
-#else
-#ifdef HAVE_GETTIMEOFDAY
-    mutable struct timeval time_read;
-#else
-#error "No gettime function is present, please configure the software with the --disable-threading option"
-#endif
-#endif
-#endif
-    long secs, microsecs, p_secs, p_microsecs, t_secs, t_microsecs;
+	TimeValue start, end; 
 };
 
 #endif /*CHRONOMETER_HH_*/

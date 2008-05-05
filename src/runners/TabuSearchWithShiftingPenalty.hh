@@ -1,11 +1,11 @@
 #ifndef TABUSEARCHWITHSHIFTINGPENALTY_HH_
 #define TABUSEARCHWITHSHIFTINGPENALTY_HH_
 
-#include "../../runners/MoveRunner.hh"
-#include "../../runners/TabuSearch.hh"
-#include "../../helpers/StateManager.hh"
-#include "../../helpers/NeighborhoodExplorer.hh"
-#include "../../helpers/TabuListManager.hh"
+#include <runners/MoveRunner.hh>
+#include <runners/TabuSearch.hh>
+#include <helpers/StateManager.hh>
+#include <helpers/NeighborhoodExplorer.hh>
+#include <helpers/TabuListManager.hh>
 
 template <class Input, class State, class Move, typename CFtype = int>
 class TabuSearchWithShiftingPenalty

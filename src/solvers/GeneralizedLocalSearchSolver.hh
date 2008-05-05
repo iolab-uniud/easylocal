@@ -4,9 +4,9 @@
 #include "AbstractLocalSearchSolver.hh"
 #include "../kickers/Kicker.hh"
 #include <vector>
-#include "../utils/clparser/CLParser.hh"
-#include "../utils/clparser/ArgumentGroup.hh"
-#include "../utils/clparser/ValArgument.hh"
+#include <utils/clparser/CLParser.hh>
+#include <utils/clparser/ArgumentGroup.hh>
+#include <utils/clparser/ValArgument.hh>
 
 enum KickStrategy {
     NO_KICKER = 0,
@@ -60,7 +60,7 @@ protected:
   GeneralizedLocalSearchObserver<Input,Output,State,CFtype>* observer;
   ArgumentGroup generalized_ls_arguments;
   ValArgument<unsigned> arg_max_idle_rounds, arg_max_rounds;
-  ValArgument<double> arg_timeout;
+  ValArgument<float> arg_timeout;
   Chronometer chrono;
 };
 
@@ -133,7 +133,6 @@ void GeneralizedLocalSearchSolver<Input,Output,State,CFtype>::ReadParameters(std
 {
   os << "Multi-runner Iterated Local Search Solver: " << this->name << " parameters" << std::endl;
   os << "Runners: " << std::endl;
-  long timeout; 
 	
   for (unsigned int i = 0; i < this->runners.size(); i++)
     {
@@ -270,7 +269,7 @@ void GeneralizedLocalSearchSolver<Input,Output,State,CFtype>::GeneralSolve(KickS
 	idle_rounds = 0;
       else
 	{
-	  float time = chrono.TotalTime();
+	  double time = chrono.TotalTime();
 	  improve_state = false;
 	  idle_rounds++;
 	  if (idle_rounds % kick_rate != 0) continue;

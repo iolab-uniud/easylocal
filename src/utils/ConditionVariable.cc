@@ -10,36 +10,51 @@
 
 #ifdef HAVE_PTHREAD
 
+#ifdef _MSC_VER
+#define _AFXDLL
+#else
 #include <sys/time.h>
 #include <sys/resource.h>
 #include <sys/errno.h>
+#endif
 #include <stdexcept>
 #include <cmath>
 #include <iostream>
 #include <sstream>
 
-ConditionVariable::ConditionVariable() 
+ConditionVariable::ConditionVariable()
+#ifdef _MSC_VER
+: event(FALSE, FALSE)
+{}
+#else
 {
   pthread_mutexattr_init(&attr);
   pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_ERRORCHECK);
   pthread_mutex_init(&event_mutex, &attr);
   pthread_cond_init(&event, NULL);
 }
+#endif
 
 ConditionVariable::~ConditionVariable() 
 {
+#ifndef _MSC_VER
   pthread_mutex_destroy(&event_mutex);
   pthread_cond_destroy(&event);
   pthread_mutexattr_destroy(&attr);
+#endif 
 }
 
 void ConditionVariable::Wait() 
 {
+#ifdef _MSC_VER
+  // FIXME: to be handled correctly
+#else 
   int l_ret_code = pthread_mutex_lock(&event_mutex);
   int c_ret_code = pthread_cond_wait(&event, &event_mutex);  
   l_ret_code = pthread_mutex_unlock(&event_mutex);
   if (c_ret_code == EINVAL)
     throw std::logic_error("Invalid event mutex");
+#endif
 }
 
 #ifdef CPUTIME
@@ -122,6 +137,7 @@ float ConditionVariable::WaitTimeout(float timeout) throw (TimeoutExpired, std::
 #else
 float ConditionVariable::WaitTimeout(float timeout) throw (TimeoutExpired, std::logic_error)
 {
+#ifndef _MSC_VER
 	const long NANOSEC_PER_MICROSEC = 1000;
   const long NANOSEC_PER_SEC = 1000000000;
   if (timeout <= 0.0)
@@ -175,21 +191,28 @@ float ConditionVariable::WaitTimeout(float timeout) throw (TimeoutExpired, std::
 #endif
 #endif
   return (ts_end.tv_sec - ts_now.tv_sec) + (ts_end.tv_nsec - ts_now.tv_nsec) / (double)NANOSEC_PER_SEC;
+#else
+	return 0;
+#endif
 }
 #endif
 
 void ConditionVariable::Signal() 
 {
+#ifndef _MSC_VER
   pthread_mutex_lock(&event_mutex);
   pthread_cond_signal(&event);
   pthread_mutex_unlock(&event_mutex);
+#endif
 }
 
 void ConditionVariable::Broadcast() 
 {
+#ifndef _MSC_VER
   pthread_mutex_lock(&event_mutex);
   pthread_cond_broadcast(&event);
   pthread_mutex_unlock(&event_mutex);
+#endif
 }
 
 #endif

@@ -48,6 +48,7 @@ public:
   CFtype TotalFirstImprovingKick(const State &st);
   CFtype TotalBestKick(const State &st);
   CFtype RandomKick(const State &st);
+  bool SingleKicker() { return false; }
 
   void PrintCurrentMoves(unsigned i, std::ostream& os) const  { if (pattern[i] == MOVE_1) os << current_moves1[i]; else os << current_moves2[i];}
 

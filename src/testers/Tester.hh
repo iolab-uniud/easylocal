@@ -1,16 +1,16 @@
 #ifndef TESTER_HH_
 #define TESTER_HH_
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
+#ifdef _HAVE_EASYLOCALCONFIG
+#include <EasyLocalConfig.hh>
 #endif
-
-#include "../helpers/StateManager.hh"
-#include "../helpers/OutputManager.hh"
-#include "../runners/Runner.hh"
+#include <helpers/StateManager.hh>
+#include <helpers/OutputManager.hh>
+#include <runners/Runner.hh>
 #include "ComponentTester.hh"
 #include <stdexcept>
 #include <fstream>
+#include <utils/Types.hh>
 
 /** A Tester collects a set of basic testers (move, state, ...) and
     allows to access them through sub-menus. It represent the external
@@ -58,8 +58,8 @@ protected:
   OutputManager<Input,Output,State,CFtype>& om; /**< A pointer to an output producer. */
   State test_state; /**< The current state managed by the tester. */
   Output out; /**< The output object. */
-  unsigned int choice; /**< The option currently chosen from the menu. */
-  int sub_choice; /** The suboption currently chosen from the menu. */
+  unsigned int choice, /**< The option currently chosen from the menu. */
+    sub_choice; /** The suboption currently chosen from the menu. */
 };
 
 /*************************************************************************
@@ -258,7 +258,7 @@ template <class Input, class Output, class State, typename CFtype>
 void Tester<Input,Output, State,CFtype>::ExecuteMovesChoice()
 {
   if (sub_choice > 0 && sub_choice <= (int)move_testers.size())
-        move_testers[sub_choice-1]->RunTestMenu(test_state);
+    move_testers[sub_choice-1]->RunTestMenu(test_state);
 }
 
 /**
@@ -331,7 +331,6 @@ void Tester<Input,Output,State,CFtype>::ShowStateMenu()
 	    << "    (6) Show input" << std::endl
 	    << "    (7) Show cost function components" << std::endl
 	    << "    (8) Show cost elements" << std::endl
-	    << "    (9) Pretty print output" << std::endl
 	    << "    (0) Return to Main Menu" << std::endl
 	    << "Your choice : ";
   std::cin >> sub_choice;
@@ -360,11 +359,6 @@ void Tester<Input,Output,State,CFtype>::ShowReducedStateMenu()
 template <class Input, class Output, class State, typename CFtype>
 bool Tester<Input,Output,State,CFtype>::ExecuteStateChoice()
 {
-  std::string file_name;
-  bool read_failed;
-  std::ifstream is;
-  std::ofstream os;
-
   switch(sub_choice)
     {
     case 1:
@@ -372,6 +366,9 @@ bool Tester<Input,Output,State,CFtype>::ExecuteStateChoice()
       break;
     case 2:
       {
+	std::string file_name;
+	bool read_failed;
+	std::ifstream is;
 	do
 	  {
 	    read_failed = false;
@@ -399,9 +396,10 @@ bool Tester<Input,Output,State,CFtype>::ExecuteStateChoice()
       }
     case 4:
       {
+	std::string file_name;
 	std::cout << "File name : ";
 	std::cin >> file_name;
-	os.open(file_name.c_str());
+	std::ofstream os(file_name.c_str());
 	this->om.WriteState(test_state, os);
 	break;
       }
@@ -423,15 +421,6 @@ bool Tester<Input,Output,State,CFtype>::ExecuteStateChoice()
     case 8:
       {
 	this->sm.PrintStateDetailedCost(test_state);
-	break;
-      }
-    case 9:
-      {
-	std::string file_name;
-	std::cout << "File name : ";
-	std::cin >> file_name;
-	this->om.OutputState(test_state,this->out);
-	this->om.PrettyPrintOutput(this->out,file_name);
 	break;
       }
     default:

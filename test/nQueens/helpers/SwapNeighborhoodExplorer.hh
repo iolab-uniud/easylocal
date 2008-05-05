@@ -1,5 +1,5 @@
-#ifndef QUEENSNEIGHBORHOODEXPLORER_HH_
-#define QUEENSNEIGHBORHOODEXPLORER_HH_
+#ifndef SwapNeighborhoodExplorer_HH_
+#define SwapNeighborhoodExplorer_HH_
 
 #include <helpers/NeighborhoodExplorer.hh>
 #include "../data/Swap.hh"
@@ -7,11 +7,11 @@
 
 /** This class implements a possible neighborhood explorartion strategy
 for the Swap move. */
-class QueensNeighborhoodExplorer
+class SwapNeighborhoodExplorer
 :  public NeighborhoodExplorer<unsigned,std::vector<unsigned>,Swap>
 {
 public:
-	QueensNeighborhoodExplorer(const unsigned& in, QueensStateManager& qsm, std::string name = "")
+	SwapNeighborhoodExplorer(const unsigned& in, QueensStateManager& qsm, std::string name = "")
 	: NeighborhoodExplorer<unsigned,std::vector<unsigned>,Swap>(in, qsm, name)
   {}
 	void RandomMove(const std::vector<unsigned> &a, Swap& sw);
@@ -21,4 +21,4 @@ protected:
     void NextMove(const std::vector<unsigned> &a, Swap& sw);
 };
 
-#endif /*QUEENSNEIGHBORHOODEXPLORER_H_*/
+#endif /*SwapNeighborhoodExplorer_H_*/

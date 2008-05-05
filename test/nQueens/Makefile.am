@@ -1,16 +1,19 @@
 ## Automake file
 
-bin_PROGRAMS = nQueens
+lib_LTLIBRARIES = libnQueens.la
 
-nQueens_SOURCES = data/ChessBoard.cc data/Swap.cc \
-  helpers/QueensNeighborhoodExplorer.cc helpers/PrimaryDiagonalDeltaCostComponent.cc \
+bin_PROGRAMS = queens QueensTest
+
+libnQueens_la_SOURCES = data/ChessBoard.cc data/Swap.cc \
+  helpers/SwapNeighborhoodExplorer.cc helpers/PrimaryDiagonalDeltaCostComponent.cc \
   helpers/QueensOutputManager.cc helpers/SecondaryDiagonalCostComponent.cc \
   helpers/SecondaryDiagonalDeltaCostComponent.cc \
-  helpers/QueensStateManager.cc helpers/PrimaryDiagonalCostComponent.cc \
-  main.cc
+  helpers/QueensStateManager.cc helpers/PrimaryDiagonalCostComponent.cc
+
+queens_SOURCES = main.cc
 
 AM_CPPFLAGS = -I@EASYLOCALPP@/src -I@EASYLOCALPP_BUILD@ @EOFWARNING@
-AM_LDFLAGS = -L@EASYLOCALPP_BUILD@/lib -lEasyLocalpp -lstdc++
+AM_LDFLAGS = -L@EASYLOCALPP_BUILD@/src -L. -lEasyLocalpp -lnQueens -lstdc++
 
 if DEBUG
 AM_CXXFLAGS = -g
@@ -18,3 +21,13 @@ else
 AM_CXXFLAGS = -O3 @ICCFLAGS@
 endif
 
+check_PROGRAMS = QueensTest
+
+TESTS = $(check_PROGRAMS)
+
+
+QueensTest_SOURCES = unit/QueensStateManagerTest.cc unit/QueensOutputManagerTest.cc unit/QueensCostComponentsTest.cc \
+	unit/SwapNeighborhoodExplorerTest.cc unit/QueensDeltaCostComponentsTest.cc \
+	@EASYLOCALPP@/src/unit/UnitTestingMain.cc
+QueensTest_CPPFLAGS = $(AM_CPPFLAGS) $(CPPUNIT_CFLAGS)
+QueensTest_LDFLAGS = $(AM_LDFLAGS) -LnQueens $(CPPUNIT_LIBS)

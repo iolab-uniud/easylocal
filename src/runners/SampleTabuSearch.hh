@@ -18,10 +18,10 @@
 */
 
 #include "MoveRunner.hh"
-#include "../basics/std::logic_exception.hh"
-#include "../helpers/StateManager.hh"
-#include "../helpers/NeighborhoodExplorer.hh"
-#include "helpers/TabuListManager.hh"
+#include <basics/std::logic_exception.hh>
+#include <helpers/StateManager.hh>
+#include <helpers/NeighborhoodExplorer.hh>
+#include <helpers/TabuListManager.hh>
 #include "TabuSearch.hh"
 
 template <class Input, class State, class Move, typename CFtype = int>

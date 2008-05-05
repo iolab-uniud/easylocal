@@ -97,7 +97,7 @@ public:
   virtual void AddDeltaCostComponent(AbstractDeltaCostComponent<Input,State,Move,CFtype>& dcc);
   
   virtual unsigned int DeltaCostComponents()
-  { return delta_cost_component.size(); }
+  { return (unsigned int)delta_cost_component.size(); }
   
   virtual AbstractDeltaCostComponent<Input,State,Move,CFtype>& DeltaCostComponent(unsigned i)
   { return *delta_cost_component[i]; }

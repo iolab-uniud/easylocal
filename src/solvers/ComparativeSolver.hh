@@ -2,9 +2,9 @@
 #define COMPARATIVESOLVER_HH_
 
 #include "MultiRunnerSolver.hh"
-#include "../helpers/InputManager.hh"
-#include "../helpers/StateManager.hh"
-#include "../helpers/OutputManager.hh"
+#include <helpers/InputManager.hh>
+#include <helpers/StateManager.hh>
+#include <helpers/OutputManager.hh>
 
 /** A Comparative Solver applies different runners to the same instances
     (and the same initial solutions).

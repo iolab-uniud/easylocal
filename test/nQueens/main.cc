@@ -1,4 +1,4 @@
-/** @file main.cpp
+/** @file main.cc
     @brief Main file
 
     This file contains the main function of the n-Queens applications.
@@ -12,7 +12,7 @@
 #include "data/ChessBoard.hh"
 #include "data/Swap.hh"
 #include "helpers/QueensFrequencyTabuListManager.hh"
-#include "helpers/QueensNeighborhoodExplorer.hh"
+#include "helpers/SwapNeighborhoodExplorer.hh"
 #include "helpers/QueensOutputManager.hh"
 #include "helpers/QueensStateManager.hh"
 #include "helpers/QueensTabuListManager.hh"
@@ -30,7 +30,7 @@
 #include <runners/SteepestDescent.hh>
 #include <runners/TabuSearch.hh>
 #include <runners/SimulatedAnnealing.hh>
-#include <extra/runners/TabuSearchWithShiftingPenalty.hh>
+#include <runners/TabuSearchWithShiftingPenalty.hh>
 #include <solvers/SimpleLocalSearch.hh>
 #include <solvers/GeneralizedLocalSearchSolver.hh>
 #include <solvers/VNDSolver.hh>
@@ -46,9 +46,9 @@ int main(int argc, char* argv[])
   CLParser cl(argc, argv);
   ValArgument<unsigned> arg_size("size", "s", true, cl);
   ValArgument<std::string> arg_solmethod("method", "m", false, cl);
-  ValArgument<unsigned> arg_plot_level("plot", "p", false, 0, cl);
-  ValArgument<unsigned> arg_verbosity_level("verbose", "v", false, 0, cl);
-	ValArgument<double> arg_timeout("timeout", "to", false, 0.0, cl);
+  ValArgument<unsigned> arg_plot_level("plot", "p", false, 0u, cl);
+  ValArgument<unsigned> arg_verbosity_level("verbose", "v", false, 0u, cl);
+	ValArgument<float> arg_timeout("timeout", "to", false, 0.0f, cl);
   cl.MatchArgument(arg_size);
   
   // data classes
@@ -65,8 +65,8 @@ int main(int argc, char* argv[])
   // helpers
   QueensStateManager qsm(in);
   QueensTabuListManager qtlm;
-  QueensNeighborhoodExplorer qnhe(in, qsm);
-  QueensOutputManager qom(in, qsm);
+  SwapNeighborhoodExplorer qnhe(in, qsm);
+  QueensOutputManager qom(in);
   
   // kickers
   QueensKicker qk(in, qnhe);
@@ -129,7 +129,7 @@ int main(int argc, char* argv[])
 		if (arg_solmethod.GetValue() == "VND") 
 		{
 			qvnd.Solve();
-			std::cout << qvnd.GetOutput() << std::endl << qvnd.GetBestCost() << std::endl;
+			std::cout << qvnd.GetOutput() << std::endl << qvnd.GetCurrentCost() << std::endl;
 		}
 		else if (arg_solmethod.GetValue() == "GLS") 
 		{
@@ -141,7 +141,7 @@ int main(int argc, char* argv[])
 			chrono.Start();
 			qgls.GeneralSolve();
 			chrono.Stop();
-			std::cout << qgls.GetOutput() << std::endl << qgls.GetBestCost() << ' ' << chrono.TotalTime() << std::endl;
+			std::cout << qgls.GetOutput() << std::endl << qgls.GetCurrentCost() << ' ' << chrono.TotalTime() << std::endl;
 		}
 		
 	}

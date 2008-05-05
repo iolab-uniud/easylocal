@@ -7,8 +7,8 @@
  *
  */
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
+#ifdef _HAVE_EASYLOCALCONFIG
+#include <EasyLocalConfig.hh>
 #endif
 
 #ifdef HAVE_PTHREAD
@@ -16,17 +16,26 @@
 #ifndef _CONDITIONVARIABLE_HH
 #define _CONDITIONVARIABLE_HH
 
-#include <pthread.h>
 #include <exception>
 #include <stdexcept>
 
 class TimeoutExpired : public std::exception
 {};
 
+#ifdef _MSC_VER
+#include <afxmt.h>
+#else
+#include <pthread.h> 
+#endif
+
 class ConditionVariable {
+#ifdef _MSC_VER
+  CEvent event;
+#else 
   pthread_mutex_t event_mutex;
   pthread_cond_t event;
-	pthread_mutexattr_t attr;
+  pthread_mutexattr_t attr;
+#endif 
 public:
   ConditionVariable(); 
 	~ConditionVariable(); 

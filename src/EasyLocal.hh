@@ -1,15 +1,14 @@
 // The -*- C++ -*- EasyLocal header.
 
 /**
-    @file EasyLocal.h
-    @brief Class declarations
+    @file EasyLocal.hh
+    @brief Class inclusions.
 
     This file contains all the class declarations of the EasyLocal++
     framework.   
     
-   @author Andrea Schaerf (schaerf@uniud.it), 
-            Luca Di Gaspero (digasper@dimi.uniud.it)
-   @version 0.1
+   @author Andrea Schaerf (schaerf@uniud.it), Luca Di Gaspero (l.digaspero@uniud.it)
+   @version 1.0
    @date 15 Jun 2001
    @note This version works both with MS Visual C++ and the GNU C++ 
          compiler. Yet, it is extensively tested only with the GNU compiler.
@@ -18,8 +17,8 @@
 #ifndef __EASYLOCAL_HH_
 #define __EASYLOCAL_HH_
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
+#ifdef _HAVE_EASYLOCALCONFIG
+#include <EasyLocalConfig.hh>
 #endif
 
 //#include "Utils.hh"

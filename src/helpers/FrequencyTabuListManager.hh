@@ -1,7 +1,7 @@
 #ifndef FREQUENCYTABULISTMANAGER_HH_
 #define FREQUENCYTABULISTMANAGER_HH_
 
-#include "../../helpers/TabuListManager.hh"
+#include <helpers/TabuListManager.hh>
 #include <map>
 
 template <class State, class Move, typename CFtype = int>

@@ -6,7 +6,7 @@
 #include <cassert>
 #include <cmath>
 #include "CostComponent.hh"
-#include "../utils/Types.hh"
+#include <utils/Types.hh>
 
 /** This constant multiplies the value of the Violations function in the
 hierarchical formulation of the Cost function (i.e., 
@@ -39,18 +39,10 @@ public:
   virtual CFtype CostFunction(const State& st) const;
   virtual CFtype Violations(const State& st) const;
   virtual CFtype Objective(const State& st) const;
-  // Partial State Evaluation functions (for each cost component)
-  /* virtual CFtype Objective(const State& st, unsigned int i) const;
-  virtual CFtype Violations(const State& st, unsigned int i) const; */
-		/** Checks whether the lower bound of the cost function has been
-    reached.
-    @return true if the lower bound of the cost function has reached,
-    false otherwise */
+  /** Checks whether the lower bound of the cost function has been reached.
+	 @return true if the lower bound of the cost function has reached,
+	 false otherwise */
   virtual bool LowerBoundReached(const CFtype& fvalue) const;
-		/** Checks whether the lower bound of the cost function has been
-    reached.
-    @return true if the lower bound of the cost function has reached,
-    false otherwise */
   virtual bool OptimalStateReached(const State& st) const;
   virtual unsigned StateDistance(const State& st1, const State& st2) const;
   virtual void PrintStateDistance(const State& st1, const State& st2, std::ostream& os = std::cout) const;
@@ -58,6 +50,7 @@ public:
   int IsMember(const State& s, const std::vector<State>& v);
 
   void AddCostComponent(CostComponent<Input,State,CFtype>& cc);
+  void ClearCostComponents();
   
   // debug functions
   virtual void PrintState(const State& st,
@@ -74,7 +67,7 @@ public:
                                CFtype& objective,
                                std::vector<CFtype>& single_objective_cost) const;
   
-  virtual void Check() const ;
+  virtual void CheckConsistency(const State& st) const = 0;
   
   CostComponent<Input, State,CFtype>& GetCostComponent(unsigned i) const { return *(cost_component[i]); }
   unsigned CostComponents() const { return cost_component.size(); }
@@ -331,12 +324,14 @@ void StateManager<Input,State,CFtype>::AddCostComponent(CostComponent<Input,Stat
 }
 
 /**
-Checks wether the object state is consistent with all the related
- objects.
+Clears the cost component array
  */
 template <class Input, class State, typename CFtype>
-void StateManager<Input,State,CFtype>::Check() const
-{}
+void StateManager<Input,State,CFtype>::ClearCostComponents()
+{
+  cost_component.clear();
+}
+
 
 template <class Input, class State, typename CFtype>
 unsigned StateManager<Input,State,CFtype>::StateDistance(const State& st1, const State& st2) const

@@ -29,20 +29,15 @@ public:
     virtual void InputState(State &st, const Output& out) const = 0;
     virtual void ReadState(State &st, std::istream &is) const;
     virtual void WriteState(const State &st, std::ostream &os) const;
-    virtual void Check() const;
     virtual void PrettyPrintOutput(const Output &st, const std::string& string_name) const
         { std::cout << "Sorry, not implemented yet" << std::endl; }
 protected:
-    /** Constructs an output manager by providing it a state manager
-     and an input object.
-     @param sm a pointer to a state manager
+    /** Constructs an output manager by providing it an input object.
      @param in a pointer to an input object */
-    OutputManager(const Input& i, StateManager<Input, State,CFtype>& e_sm, std::string e_name)
-            :  in(i), sm(e_sm), name(e_name) {}
+    OutputManager(const Input& i, std::string e_name)
+            :  in(i), name(e_name) {}
     virtual ~OutputManager() {}
     const Input& in; /**< A reference to the input manager. */
-    StateManager<Input, State,CFtype>& sm; /**< A reference to an attached
-    	state manager. */
     const std::string name;
 };
 
@@ -86,13 +81,5 @@ void OutputManager<Input,Output,State,CFtype>::WriteState(const State &st, std::
     OutputState(st, out);
     os << out;
 }
-
-/**
-   Checks wether the object state is consistent with all the related
-   objects.
-*/
-template <class Input, class Output, class State, typename CFtype>
-void OutputManager<Input,Output,State,CFtype>::Check() const
-{}
 
 #endif

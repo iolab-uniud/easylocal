@@ -23,6 +23,7 @@ public:
   CFtype RandomKick(const State &st);
   CFtype TotalFirstImprovingKick(const State &st) { throw std::logic_error("No TOTAL_FIRST_IMPROVING_KICK allowed for Simple Kickers"); }
   CFtype TotalBestKick(const State &st) { throw std::logic_error("No TOTAL_BEST_KICK allowed for Simple Kickers"); }
+  bool SingleKicker() { return true; }
 
   void PrintCurrentMoves(unsigned i, std::ostream& os) const  { os << current_moves[i]; }
 

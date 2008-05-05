@@ -1,12 +1,11 @@
 #ifndef SOLVER_HH_
 #define SOLVER_HH_
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
+#ifdef _HAVE_EASYLOCALCONFIG
+#include <EasyLocalConfig.hh>
 #endif
-
-#include "../helpers/StateManager.hh"
-#include "../helpers/OutputManager.hh"
+#include <helpers/StateManager.hh>
+#include <helpers/OutputManager.hh>
 
 /** A Solver represents the external layer of EasyLocal++; it
     implements the Abstract Solver interface and furthermore is
@@ -55,7 +54,7 @@ Solver<Input, Output>::Solver(const Input& i, std::string e_name)
 #ifdef HAVE_PTHREAD
   this->timeout = 0.0; 
   this->current_timeout = 0.0;
-  this->timeout_set = false;
+	this->timeout_set = false;
 #endif
 }
 

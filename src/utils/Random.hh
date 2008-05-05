@@ -1,10 +1,9 @@
 #ifndef RANDOM_HH_
 #define RANDOM_HH_
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
+#ifdef _HAVE_EASYLOCALCONFIG
+#include <EasyLocalConfig.hh>
 #endif
-
 #include <vector>
 
 

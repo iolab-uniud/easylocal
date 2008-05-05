@@ -2,8 +2,7 @@
 #define VNDSOLVER_HH_
 
 #include "AbstractLocalSearchSolver.hh"
-//#include "../runners/Runner.hh"
-#include <stdexcept>
+//#include <runners/Runner.hh>
 
 /** The Variable Neighborhood Descent solver handles a VND algorithm
     implemented through a Kicker.
@@ -25,8 +24,8 @@ public:
   void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout); 
   void RaiseTimeout();
   void Solve();
-
 protected:
+  void Run();
   void RunCheck() const;
   Kicker<Input,State,CFtype>* p_kicker; /**< A pointer to the managed kicker. */
   unsigned max_k;
@@ -103,14 +102,20 @@ void VNDSolver<Input,Output,State,CFtype>::RaiseTimeout()
   this->p_kicker->RaiseTimeout();
 }
 
+template <class Input, class Output, class State, typename CFtype>
+void VNDSolver<Input,Output,State,CFtype>::Solve()
+{
+	assert(false); // FIXME: to be removed
+}
+
+
 /**
    Lets the runner Go, and then collects the best state found.
 */
 template <class Input, class Output, class State, typename CFtype>
-void VNDSolver<Input,Output,State,CFtype>::Solve()
+void VNDSolver<Input,Output,State,CFtype>::Run()
 {
-  throw std::runtime_error("This method have to be reimplemented");
-  /*  unsigned k = 1;
+  unsigned k = 1;
   CFtype kick_cost;
   do 
     {
@@ -133,7 +138,7 @@ void VNDSolver<Input,Output,State,CFtype>::Solve()
       else
 	k++;
     }
-    while (k <= this->max_k && !this->sm.LowerBoundReached(this->internal_state_cost)); */
+  while (k <= this->max_k && !this->sm.LowerBoundReached(this->internal_state_cost));
 }
 
 template <class Input, class Output, class State, typename CFtype>

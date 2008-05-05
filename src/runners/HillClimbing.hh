@@ -1,12 +1,12 @@
 #ifndef HILLCLIMBING_HH_
 #define HILLCLIMBING_HH_
 
-#include "../helpers/StateManager.hh"
-#include "../helpers/NeighborhoodExplorer.hh"
+#include <helpers/StateManager.hh>
+#include <helpers/NeighborhoodExplorer.hh>
 #include "MoveRunner.hh"
-#include "../utils/clparser/CLParser.hh"
-#include "../utils/clparser/ArgumentGroup.hh"
-#include "../utils/clparser/ValArgument.hh"
+#include <utils/clparser/CLParser.hh>
+#include <utils/clparser/ArgumentGroup.hh>
+#include <utils/clparser/ValArgument.hh>
 #include <stdexcept>
 
 /** The Hill Climbing runner considers random move selection. A move

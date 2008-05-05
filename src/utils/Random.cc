@@ -9,6 +9,10 @@
 
 using namespace std;
 
+#ifdef _MSC_VER
+const double M_PI = atan(1.0);
+#endif
+
 /*
    For the random number generator Random::Rand() adapted from:
      
@@ -458,7 +462,7 @@ float Random::Float(const float min, const float max)
 */
 float Random::Float_1()
 {
-    return ((((float)Rand() * 2.0) / (float)RANDOM_RAND_MAX) - 1.0);
+    return ((((float)Rand() * 2.0f) / (float)RANDOM_RAND_MAX) - 1.0f);
 }
 
 /**
@@ -493,19 +497,19 @@ float Random::Float_Gaussian(const float mean, const float stddev)
     // Generate P = (u,v) uniform in rectangular acceptance region.
     do
     {
-        u = 1.0 - Float_Unit_Uniform();	           // draw u in the range [0.0, 1.0]
-        v = 1.7156 * (0.5 - Float_Unit_Uniform()); // and v  in the range [-0.8578,0.8578]
+        u = 1.0f - Float_Unit_Uniform();	           // draw u in the range [0.0, 1.0]
+        v = 1.7156f * (0.5f - Float_Unit_Uniform()); // and v  in the range [-0.8578,0.8578]
 
         // Evaluate the quadratic form
-        x = u - 0.449871;
-        y = fabs(v) + 0.386595;
-        q = x * x + y * (0.19600 * y - 0.25472 * x);
+        x = (float)(u - 0.449871f);
+        y = (float)(fabs(v) + 0.386595);
+        q = x * x + y * (0.19600f * y - 0.25472f * x);
         // Accept P if inside inner ellipse.
         // Reject P if outside outer ellipse, or outside acceptance region.
-    } while ((q >= 0.27597) && ((q > 0.27846) || (v * v > -4.0 * log(u) * u * u)));
+    } while ((q >= 0.27597f) && ((q > 0.27846f) || (v * v > -4.0f * log(u) * u * u)));
 
     // Return ratio of P's coordinates as the normal deviate.
-    return (mean + 2.0 * stddev * v / u);
+    return (mean + 2.0f * stddev * v / u);
 }
 
 /**
@@ -528,12 +532,12 @@ float Random::Float_Unit_Gaussian()
 
     do
     {
-        u = 2.0 * Float_Unit_Uniform() - 1.0;
-        v = 2.0 * Float_Unit_Uniform() - 1.0;
+        u = 2.0f * Float_Unit_Uniform() - 1.0f;
+        v = 2.0f * Float_Unit_Uniform() - 1.0f;
         r = u*u + v*v;
-    } while (r >= 1.0);
+    } while (r >= 1.0f);
 
-    fac = sqrtf(-2.0 * log(r) / r);
+    fac = sqrtf(-2.0f * log(r) / r);
     dset = v*fac;
 
     return u*fac;
@@ -545,7 +549,7 @@ float Random::Float_Unit_Gaussian()
 */
 float Random::Float_Cauchy()
 {
-    return tan(Float(-M_PI/2,M_PI/2));
+    return tan(Float((float)-M_PI/2.0f,(float)M_PI/2.0f));
 }
 
 

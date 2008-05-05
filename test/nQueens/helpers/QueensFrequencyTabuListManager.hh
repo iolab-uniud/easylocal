@@ -1,7 +1,7 @@
 #ifndef QUEENSFREQUENCYTABULISTMANAGER_HH_
 #define QUEENSFREQUENCYTABULISTMANAGER_HH_
 
-#include <extra/helpers/FrequencyTabuListManager.hh>
+#include <helpers/FrequencyTabuListManager.hh>
 #include <vector>
 #include "../data/Swap.hh"
 

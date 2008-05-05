@@ -2,8 +2,8 @@
 #define TOKENRINGSOLVER_HH_
 
 #include "MultiRunnerSolver.hh"
-#include "../helpers/StateManager.hh"
-#include "../helpers/OutputManager.hh"
+#include <helpers/StateManager.hh>
+#include <helpers/OutputManager.hh>
 #include <stdexcept>
 #ifdef HAVE_PTHREAD
 #include <pthread.h>

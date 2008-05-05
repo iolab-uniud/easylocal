@@ -1,16 +1,16 @@
 #ifndef SIMPLELOCALSEARCH_HH_
 #define SIMPLELOCALSEARCH_HH_
 
-#include "../helpers/StateManager.hh"
-#include "../helpers/OutputManager.hh"
+#include <helpers/StateManager.hh>
+#include <helpers/OutputManager.hh>
 #include "AbstractLocalSearchSolver.hh"
-#include "../runners/Runner.hh"
+#include <runners/Runner.hh>
 #ifdef HAVE_PTHREAD
 #include <pthread.h>
 #endif
-#include "../utils/clparser/CLParser.hh"
-#include "../utils/clparser/ArgumentGroup.hh"
-#include "../utils/clparser/ValArgument.hh"
+#include <utils/clparser/CLParser.hh>
+#include <utils/clparser/ArgumentGroup.hh>
+#include <utils/clparser/ValArgument.hh>
 
 
 /** The Simple Local Search solver handles a simple local search algorithm
@@ -40,7 +40,7 @@ protected:
 	void Check() const;
 	Runner<Input,State,CFtype>* p_runner; /**< A pointer to the managed runner. */
 	ArgumentGroup simple_ls_arguments;
-	ValArgument<double> arg_timeout;	
+	ValArgument<float> arg_timeout;	
 };
 
 /*************************************************************************

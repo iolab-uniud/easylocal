@@ -2,8 +2,8 @@
 #define MOVETESTER_HH_
 
 #include "ComponentTester.hh"
-#include "../helpers/OutputManager.hh"
-#include "../helpers/NeighborhoodExplorer.hh"
+#include <helpers/OutputManager.hh>
+#include <helpers/NeighborhoodExplorer.hh>
 
 /** A Move Tester allows to test the behavior of a given
     neighborhood explorer.

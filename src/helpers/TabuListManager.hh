@@ -4,8 +4,8 @@
 #include <list>
 #include "ProhibitionManager.hh"
 #include "TabuListItem.hh"
-#include "../utils/Random.hh"
-#include "../utils/Types.hh"
+#include <utils/Random.hh>
+#include <utils/Types.hh>
 
 // forward class tag declaration
 template <class Move, typename CFtype = int> class ListItem;

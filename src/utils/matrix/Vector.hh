@@ -9,9 +9,7 @@
 #ifndef _VECTOR_HH
 #define _VECTOR_HH
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
+#include <EasyLocalConfig.hh>
 
 #include <stdexcept>
 #include <set>

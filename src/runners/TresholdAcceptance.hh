@@ -2,9 +2,9 @@
 #define THRESHOLDACCEPTANCE_HH_
 
 #include "MoveRunner.hh"
-#include "../helpers/StateManager.hh"
-#include "../helpers/NeighborhoodExplorer.hh"
-#include "../basics/std::logic_exception.hh"
+#include <helpers/StateManager.hh>
+#include <helpers/NeighborhoodExplorer.hh>
+#include <basics/std::logic_exception.hh>
 #include <cmath>
 
 /** @ingroup Runners

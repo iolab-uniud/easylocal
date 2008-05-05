@@ -1,13 +1,12 @@
 #ifndef COMPONENTTESTER_HH_
 #define COMPONENTTESTER_HH_
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
+#ifdef _HAVE_EASYLOCALCONFIG
+#include <EasyLocalConfig.hh>
 #endif
-
-#include "../helpers/StateManager.hh"
-#include "../helpers/OutputManager.hh"
-#include "../utils/Chronometer.hh"
+#include <helpers/StateManager.hh>
+#include <helpers/OutputManager.hh>
+#include <utils/Chronometer.hh>
 
 /** The Abstract Move Tester is an interface for a tester that handles
     moves.

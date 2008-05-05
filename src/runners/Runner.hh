@@ -1,17 +1,17 @@
 #ifndef RUNNER_HH_
 #define RUNNER_HH_
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
+#ifdef _HAVE_EASYLOCALCONFIG
+#include <EasyLocalConfig.hh>
 #endif
 
-#include "../helpers/StateManager.hh"
+#include <helpers/StateManager.hh>
 #ifdef HAVE_PTHREAD
-#include "../utils/RWLockVariable.hh"
-#include "../utils/ConditionVariable.hh"
+#include <utils/RWLockVariable.hh>
+#include <utils/ConditionVariable.hh>
 #endif
 #include <stdexcept>
-#include "../utils/Chronometer.hh"
+#include <utils/Chronometer.hh>
 
 /** @defgroup Runners Runner classes
     Runner classes are the algorithmic core of the framework. They are 
@@ -62,7 +62,6 @@ public:
   unsigned NumberOfIterations() const { return number_of_iterations; }
 
   const std::string name;
-  virtual void Print(std::ostream& os = std::cout) const = 0;
 protected:
   Runner(const Input& i, StateManager<Input,State,CFtype>& sm, std::string name);
   virtual ~Runner() {}
