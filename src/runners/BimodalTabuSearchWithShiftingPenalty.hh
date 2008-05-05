@@ -1,7 +1,7 @@
 #ifndef BIMODALTABUSEARCHWITHSHIFTINGPENALTY_HH_
 #define BIMODALTABUSEARCHWITHSHIFTINGPENALTY_HH_
 
-#include "BimodalTabuSearch.hh"
+#include <runners/BimodalTabuSearch.hh>
 
 template <class Input, class State, class Move1, class Move2, typename CFtype = int>
 class BimodalTabuSearchWithShiftingPenalty

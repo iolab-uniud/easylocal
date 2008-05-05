@@ -38,9 +38,7 @@ public:
   virtual CFtype RandomKick(const State &st) = 0;
   virtual void FirstKick(const State &st) = 0;
   virtual bool NextKick() = 0;
-virtual void PrintCurrentMoves(unsigned i, std::ostream& os) const = 0;
-
-
+  virtual void PrintCurrentMoves(unsigned i, std::ostream& os) const = 0;
 
   virtual bool SingleKicker() = 0;
 

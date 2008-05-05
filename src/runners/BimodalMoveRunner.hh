@@ -1,9 +1,10 @@
 #ifndef BIMODALMOVERUNNER_HH_
 #define BIMODALMOVERUNNER_HH_
 
-#include "../../helpers/StateManager.hh"
-#include "../../helpers/NeighborhoodExplorer.hh"
-#include "../../runners/Runner.hh"
+#include <helpers/StateManager.hh>
+#include <helpers/NeighborhoodExplorer.hh>
+#include <helpers/BimodalRunnerObserver.hh>
+#include <runners/Runner.hh>
 #include <vector>
 
 #ifndef MOVE_ENUM

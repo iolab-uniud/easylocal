@@ -67,7 +67,7 @@ public:
                                CFtype& objective,
                                std::vector<CFtype>& single_objective_cost) const;
   
-  virtual void CheckConsistency(const State& st) const = 0;
+  virtual bool CheckConsistency(const State& st) const = 0;
   
   CostComponent<Input, State,CFtype>& GetCostComponent(unsigned i) const { return *(cost_component[i]); }
   unsigned CostComponents() const { return cost_component.size(); }

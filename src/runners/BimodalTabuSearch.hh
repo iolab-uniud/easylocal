@@ -1,7 +1,7 @@
 #ifndef BIMODALTABUSEARCH_HH_
 #define BIMODALTABUSEARCH_HH_
 
-#include "BimodalMoveRunner.hh"
+#include <runners/BimodalMoveRunner.hh>
 #include <stdexcept>
 
 template <class Input, class State, class Move1, class Move2, typename CFtype = int>
