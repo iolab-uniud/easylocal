@@ -4,7 +4,8 @@
 #include "../../helpers/StateManager.hh"
 #include "../../helpers/NeighborhoodExplorer.hh"
 #include "../../runners/Runner.hh"
-#include <vector>
+#include "../extra/helpers/BimodalRunnerObserver.hh"
+//#include <vector>
 
 #ifndef MOVE_ENUM
 typedef enum {
