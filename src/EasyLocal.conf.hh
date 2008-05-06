@@ -1,9 +1,8 @@
 /**
-    @file EasyLocal.hh
+    @file EasyLocal.conf.hh
     @brief Class inclusions.
 
-    This file contains all the class declarations of the EasyLocal++
-    framework.   
+    This file contains the configuration of the framework.   
     
    @author Andrea Schaerf (schaerf@uniud.it), Luca Di Gaspero (l.digaspero@uniud.it)
    @version 1.0
@@ -12,14 +11,9 @@
          compiler. Yet, it is extensively tested only with the GNU compiler.
 */
 
-#ifndef _EASYLOCAL_HH_
-#define _EASYLOCAL_HH_
+#if !defined(_EASYLOCAL_CONF_HH_)
+#define _EASYLOCAL_CONF_HH_
 
-#include <Utils.hh>
-#include <Helpers.hh>
-#include <Observers.hh>
-#include <Runners.hh>
-#include <Kickers.hh>
-#include <Solvers.hh>
+#define HAVE_PTHREAD 1
 
-#endif // define _EASYLOCAL_HH_
+#endif

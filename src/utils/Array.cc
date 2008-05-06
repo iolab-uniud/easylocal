@@ -1,4 +1,4 @@
-#include "Vector.hh"
+#include <utils/Array.hh>
 
 /**
   Index utilities

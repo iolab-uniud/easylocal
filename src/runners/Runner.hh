@@ -4,8 +4,7 @@
 #include <EasyLocal.conf.hh>
 #include <helpers/StateManager.hh>
 #ifdef HAVE_PTHREAD
-#include <utils/RWLockVariable.hh>
-#include <utils/ConditionVariable.hh>
+#include <utils/Synchronize.hh>
 #endif
 #include <stdexcept>
 #include <utils/Chronometer.hh>

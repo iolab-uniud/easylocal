@@ -575,10 +575,10 @@ bool Random::Test()
     double r;			// Pseudo-random number
     long bins[NUM_BINS];	// Bins
     double sum, sumsq;		// Stats
-    cout << "Testing random numbers." << endl;
+    std::cout << "Testing random numbers." << std::endl;
 
     // Uniform Distribution.
-    cout << "Uniform distribution.  Mean should be about 0.5." << endl;
+    std::cout << "Uniform distribution.  Mean should be about 0.5." << std::endl;
 
     for (unsigned int i = 0; i < NUM_BINS; i++)
         bins[i] = 0;
@@ -595,17 +595,17 @@ bool Random::Test()
             sumsq += SQU(r);
         }
         else
-            cout << "Number generated out of range [0.0, 1.0]." << endl;
+	  std::cout << "Number generated out of range [0.0, 1.0]." << std::endl;
     }
-    cout << "Mean = " <<  sum / NUM_SAMPLES << endl;
-    cout << "Standard deviation = "
-    << (sumsq - sum * sum / NUM_SAMPLES) / NUM_SAMPLES << endl;
+    std::cout << "Mean = " <<  sum / NUM_SAMPLES << std::endl;
+    std::cout << "Standard deviation = "
+    << (sumsq - sum * sum / NUM_SAMPLES) / NUM_SAMPLES << std::endl;
 
     for (unsigned int i = 0; i < NUM_BINS; i++)
         printf("%5.3f %ld\n", i/(double)NUM_BINS, bins[i]);
 
     // Gaussian Distribution.
-    cout << "Gaussian distribution.  Mean should be about 0.45.  Standard deviation should be about 0.05." << endl;
+    std::cout << "Gaussian distribution.  Mean should be about 0.45.  Standard deviation should be about 0.05." << std::endl;
 
     sum = 0;
     sumsq = 0;
@@ -623,18 +623,18 @@ bool Random::Test()
             sumsq += SQU(r);
         }
         else
-            cout << "Number generated out of range [0.0, 1.0]." << endl;
+            std::cout << "Number generated out of range [0.0, 1.0]." << std::endl;
     }
-    cout << "Mean = " <<  sum / NUM_SAMPLES << endl;
-    cout << "Standard deviation = "
-    << (sumsq - sum * sum / NUM_SAMPLES) / NUM_SAMPLES  << endl;
-    cout << sumsq  << " " << sum << " " << NUM_SAMPLES << endl;
+    std::cout << "Mean = " <<  sum / NUM_SAMPLES << std::endl;
+    std::cout << "Standard deviation = "
+    << (sumsq - sum * sum / NUM_SAMPLES) / NUM_SAMPLES  << std::endl;
+    std::cout << sumsq  << " " << sum << " " << NUM_SAMPLES << std::endl;
 
     for (unsigned int i = 0; i < NUM_BINS; i++)
         printf("%5.3f %ld\n", i/(double)NUM_BINS, bins[i]);
 
     // Unit Gaussian Distribution.
-    cout << "Gaussian distribution.  Mean should be about 0.0.  Standard deviation should be about 1.0." << endl;
+    std::cout << "Gaussian distribution.  Mean should be about 0.0.  Standard deviation should be about 1.0." << std::endl;
 
     sum = 0;
     sumsq = 0;
@@ -652,17 +652,17 @@ bool Random::Test()
             sumsq += SQU(r);
         }
         else
-            cout << "Number generated out of range [-5.0, 5.0]." << endl;
+            std::cout << "Number generated out of range [-5.0, 5.0]." << std::endl;
     }
-    cout << "Mean = " <<  sum / NUM_SAMPLES << endl;
-    cout << "Standard deviation = "
-    << (sumsq - sum * sum / NUM_SAMPLES) / NUM_SAMPLES << endl;
+    std::cout << "Mean = " <<  sum / NUM_SAMPLES << std::endl;
+    std::cout << "Standard deviation = "
+    << (sumsq - sum * sum / NUM_SAMPLES) / NUM_SAMPLES << std::endl;
 
     for (unsigned int i = 0; i < NUM_BINS; i++)
         printf("%5.3f %ld\n", -5.0+10*i/(double)NUM_BINS, bins[i]);
 
     // Random bool
-    cout << "Random Booleans.  Two counts should be approximately equal." << endl;
+    std::cout << "Random Booleans.  Two counts should be approximately equal." << std::endl;
 
     unsigned int numtrue = 0, numfalse = 0;
     for (unsigned int i = 0; i < NUM_SAMPLES; i++)
@@ -672,10 +672,10 @@ bool Random::Test()
         else
             numfalse++;
     }
-    cout << "true/false = " << numtrue << '/' << numfalse << endl;
+    std::cout << "true/false = " << numtrue << '/' << numfalse << std::endl;
 
     // Random int
-    cout << "Random Integers.  The distribution should be approximately uniform." << endl;
+    std::cout << "Random Integers.  The distribution should be approximately uniform." << std::endl;
 
     for (unsigned int i = 0; i < NUM_BINS; i++)
         bins[i] = 0;

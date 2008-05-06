@@ -2,10 +2,9 @@
 
 lib_LTLIBRARIES = libEasyLocalpp.la
 libEasyLocalpp_la_SOURCES = utils/Chronometer.cc utils/Random.cc \
-  utils/clparser/CLParser.cc utils/clparser/Argument.cc utils/clparser/ArgumentGroup.cc \
-  utils/matrix/IndexUtils.cc utils/Types.cc 
+  utils/CLParser.cc  utils/Array.cc utils/Types.cc 
 if THREADING	
-libEasyLocalpp_la_SOURCES += utils/Mutex.cc utils/ConditionVariable.cc
+libEasyLocalpp_la_SOURCES += utils/Synchronize.cc
 endif
 
 AM_CPPFLAGS = -I@EASYLOCALPP_BUILD@
