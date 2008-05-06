@@ -21,7 +21,7 @@
 /* End PBXAggregateTarget section */
 
 /* Begin PBXFileReference section */
-		AC759BE40DD0AC25001056B9 /* COPYING.LESSER */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = COPYING.LESSER; path = ../COPYING.LESSER; sourceTree = SOURCE_ROOT; };
+		AC759BE40DD0AC25001056B9 /* COPYING */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = COPYING; path = ../COPYING.LESSER; sourceTree = SOURCE_ROOT; };
 		AC759BE50DD0AE73001056B9 /* LICENSE */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = LICENSE; sourceTree = "<group>"; };
 		AC75B24B0DD08BB8003EBD1F /* BimodalRunnerObserver.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = BimodalRunnerObserver.hh; sourceTree = "<group>"; };
 		AC75B24C0DD08BB8003EBD1F /* GeneralizedLocalSearchObserver.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = GeneralizedLocalSearchObserver.hh; sourceTree = "<group>"; };
@@ -51,7 +51,6 @@
 		ACF4B11D0DBFA668008A0207 /* Kicker.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Kicker.hh; sourceTree = "<group>"; };
 		ACF4B11E0DBFA668008A0207 /* SimpleKicker.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = SimpleKicker.hh; sourceTree = "<group>"; };
 		ACF4B11F0DBFA668008A0207 /* Kickers.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Kickers.hh; sourceTree = "<group>"; };
-		ACF4B1210DBFA668008A0207 /* ExpSpec.g */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = ExpSpec.g; sourceTree = "<group>"; };
 		ACF4B1220DBFA668008A0207 /* Makefile.am */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = Makefile.am; sourceTree = "<group>"; };
 		ACF4B1250DBFA668008A0207 /* FirstDescent.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = FirstDescent.hh; sourceTree = "<group>"; };
 		ACF4B1260DBFA668008A0207 /* HillClimbing.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = HillClimbing.hh; sourceTree = "<group>"; };
@@ -146,7 +145,7 @@
 				ACF4B1A00DBFA73A008A0207 /* m4 */,
 				ACF4B0FA0DBFA668008A0207 /* src */,
 				ACF4B15C0DBFA685008A0207 /* test */,
-				AC759BE40DD0AC25001056B9 /* COPYING.LESSER */,
+				AC759BE40DD0AC25001056B9 /* COPYING */,
 				AC759BE50DD0AE73001056B9 /* LICENSE */,
 			);
 			name = EasyLocalpp;
@@ -173,7 +172,6 @@
 				ACF4B11A0DBFA668008A0207 /* Helpers.hh */,
 				ACF4B11B0DBFA668008A0207 /* kickers */,
 				ACF4B11F0DBFA668008A0207 /* Kickers.hh */,
-				ACF4B1200DBFA668008A0207 /* lang */,
 				AC75B24A0DD08BB8003EBD1F /* observers */,
 				ACF4B1240DBFA668008A0207 /* runners */,
 				ACF4B12E0DBFA668008A0207 /* Runners.hh */,
@@ -213,14 +211,6 @@
 				ACF4B11E0DBFA668008A0207 /* SimpleKicker.hh */,
 			);
 			path = kickers;
-			sourceTree = "<group>";
-		};
-		ACF4B1200DBFA668008A0207 /* lang */ = {
-			isa = PBXGroup;
-			children = (
-				ACF4B1210DBFA668008A0207 /* ExpSpec.g */,
-			);
-			path = lang;
 			sourceTree = "<group>";
 		};
 		ACF4B1240DBFA668008A0207 /* runners */ = {

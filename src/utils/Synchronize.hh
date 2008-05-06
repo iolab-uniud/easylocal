@@ -29,7 +29,7 @@ class TimeoutExpired : public std::exception
 class ConditionVariable {
 #if defined(_MSC_VER)
   CRITICAL_SECTION event_mutex;
-	CONDITION_VARIABLE event;
+  CONDITION_VARIABLE event;
   Chronometer chrono;
 #else 
   pthread_mutex_t event_mutex;

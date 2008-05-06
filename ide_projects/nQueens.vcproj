@@ -2,9 +2,9 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="8,00"
-	Name="EasyLocalpp"
-	ProjectGUID="{D3EC27C5-0A0A-4788-9AC8-29340A750379}"
-	RootNamespace="EasyLocalpp"
+	Name="nQueens"
+	ProjectGUID="{75FC00DB-5C86-4AE1-B4CD-99FAC2E41C54}"
+	RootNamespace="nQueens"
 	Keyword="Win32Proj"
 	>
 	<Platforms>
@@ -19,7 +19,7 @@
 			Name="Debug|Win32"
 			OutputDirectory="Debug"
 			IntermediateDirectory="Debug"
-			ConfigurationType="4"
+			ConfigurationType="1"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
@@ -39,9 +39,9 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="&quot;$(ProjectDir)\src&quot;"
-				PreprocessorDefinitions="WIN32;_DEBUG;_LIB;"
-				MinimalRebuild="true"
+				AdditionalIncludeDirectories="&quot;$(ProjectDir)\..\src&quot;;&quot;$(ProjectDir)\..\test\nQueens&quot;"
+				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;"
+				MinimalRebuild="false"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
 				UsePrecompiledHeader="0"
@@ -59,10 +59,17 @@
 				Name="VCPreLinkEventTool"
 			/>
 			<Tool
-				Name="VCLibrarianTool"
+				Name="VCLinkerTool"
+				LinkIncremental="2"
+				GenerateDebugInformation="true"
+				SubSystem="1"
+				TargetMachine="1"
 			/>
 			<Tool
 				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
 			/>
 			<Tool
 				Name="VCXDCMakeTool"
@@ -74,6 +81,12 @@
 				Name="VCFxCopTool"
 			/>
 			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCWebDeploymentTool"
+			/>
+			<Tool
 				Name="VCPostBuildEventTool"
 			/>
 		</Configuration>
@@ -81,7 +94,7 @@
 			Name="Release|Win32"
 			OutputDirectory="Release"
 			IntermediateDirectory="Release"
-			ConfigurationType="4"
+			ConfigurationType="1"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
@@ -100,8 +113,9 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalIncludeDirectories="&quot;%InputDir%\src&quot;"
-				PreprocessorDefinitions="WIN32;NDEBUG;_LIB;"
+				AdditionalIncludeDirectories="&quot;$(ProjectDir)\..\src&quot;;&quot;$(ProjectDir)\..\test\nQueens&quot;"
+				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;"
+				MinimalRebuild="false"
 				RuntimeLibrary="2"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
@@ -118,10 +132,19 @@
 				Name="VCPreLinkEventTool"
 			/>
 			<Tool
-				Name="VCLibrarianTool"
+				Name="VCLinkerTool"
+				LinkIncremental="2"
+				GenerateDebugInformation="true"
+				SubSystem="1"
+				OptimizeReferences="2"
+				EnableCOMDATFolding="2"
+				TargetMachine="1"
 			/>
 			<Tool
 				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
 			/>
 			<Tool
 				Name="VCXDCMakeTool"
@@ -131,6 +154,12 @@
 			/>
 			<Tool
 				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCWebDeploymentTool"
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
@@ -146,31 +175,51 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
-				RelativePath=".\src\utils\Chronometer.hh"
+				RelativePath="..\test\nqueens\data\ChessBoard.hh"
 				>
 			</File>
 			<File
-				RelativePath=".\src\utils\ConditionVariable.hh"
+				RelativePath="..\test\nqueens\helpers\PrimaryDiagonalCostComponent.hh"
 				>
 			</File>
 			<File
-				RelativePath=".\src\EasyLocal.hh"
+				RelativePath="..\test\nqueens\helpers\PrimaryDiagonalDeltaCostComponent.hh"
 				>
 			</File>
 			<File
-				RelativePath=".\src\utils\Mutex.hh"
+				RelativePath="..\test\nqueens\helpers\QueensFrequencyTabuListManager.hh"
 				>
 			</File>
 			<File
-				RelativePath=".\src\utils\Random.hh"
+				RelativePath="..\test\nqueens\kickers\QueensKicker.hh"
 				>
 			</File>
 			<File
-				RelativePath=".\src\utils\RWLockVariable.hh"
+				RelativePath="..\test\nqueens\helpers\QueensOutputManager.hh"
 				>
 			</File>
 			<File
-				RelativePath=".\src\utils\Types.hh"
+				RelativePath="..\test\nqueens\helpers\QueensStateManager.hh"
+				>
+			</File>
+			<File
+				RelativePath="..\test\nqueens\helpers\QueensTabuListManager.hh"
+				>
+			</File>
+			<File
+				RelativePath="..\test\nqueens\helpers\SecondaryDiagonalCostComponent.hh"
+				>
+			</File>
+			<File
+				RelativePath="..\test\nqueens\helpers\SecondaryDiagonalDeltaCostComponent.hh"
+				>
+			</File>
+			<File
+				RelativePath="..\test\nqueens\data\Swap.hh"
+				>
+			</File>
+			<File
+				RelativePath="..\test\nqueens\helpers\SwapNeighborhoodExplorer.hh"
 				>
 			</File>
 		</Filter>
@@ -186,39 +235,43 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath=".\src\utils\clparser\Argument.cc"
+				RelativePath="..\test\nqueens\data\ChessBoard.cc"
 				>
 			</File>
 			<File
-				RelativePath=".\src\utils\clparser\ArgumentGroup.cc"
+				RelativePath="..\test\nqueens\main.cc"
 				>
 			</File>
 			<File
-				RelativePath=".\src\utils\Chronometer.cc"
+				RelativePath="..\test\nqueens\helpers\PrimaryDiagonalCostComponent.cc"
 				>
 			</File>
 			<File
-				RelativePath=".\src\utils\clparser\CLParser.cc"
+				RelativePath="..\test\nqueens\helpers\PrimaryDiagonalDeltaCostComponent.cc"
 				>
 			</File>
 			<File
-				RelativePath=".\src\utils\ConditionVariable.cc"
+				RelativePath="..\test\nqueens\helpers\QueensOutputManager.cc"
 				>
 			</File>
 			<File
-				RelativePath=".\src\utils\matrix\IndexUtils.cc"
+				RelativePath="..\test\nqueens\helpers\QueensStateManager.cc"
 				>
 			</File>
 			<File
-				RelativePath=".\src\utils\Mutex.cc"
+				RelativePath="..\test\nqueens\helpers\SecondaryDiagonalCostComponent.cc"
 				>
 			</File>
 			<File
-				RelativePath=".\src\utils\Random.cc"
+				RelativePath="..\test\nqueens\helpers\SecondaryDiagonalDeltaCostComponent.cc"
 				>
 			</File>
 			<File
-				RelativePath=".\src\utils\Types.cc"
+				RelativePath="..\test\nqueens\data\Swap.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\test\nqueens\helpers\SwapNeighborhoodExplorer.cc"
 				>
 			</File>
 		</Filter>
