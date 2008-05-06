@@ -1,7 +1,7 @@
 #ifndef BIMODALKICKER_HH_
 #define BIMODALKICKER_HH_
 
-#include "Kicker.hh"
+#include <Kicker.hh>
 
 #ifndef MOVE_ENUM
 typedef enum {

@@ -1,7 +1,7 @@
 #ifndef MOVETESTER_HH_
 #define MOVETESTER_HH_
 
-#include "ComponentTester.hh"
+#include <testers/ComponentTester.hh>
 #include <helpers/OutputManager.hh>
 #include <helpers/NeighborhoodExplorer.hh>
 

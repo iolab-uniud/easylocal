@@ -1,7 +1,7 @@
 #ifndef FIRSTDESCENT_HH_
 #define FIRSTDESCENT_HH_
 
-#include "MoveRunner.hh"
+#include <MoveRunner.hh>
 #include <helpers/StateManager.hh>
 #include <helpers/NeighborhoodExplorer.hh>
 

@@ -1,7 +1,7 @@
 #ifndef TRIMODALTABUSEARCH_HH_
 #define TRIMODALTABUSEARCH_HH_
 
-#include "TrimodalMoveRunner.hh"
+#include <TrimodalMoveRunner.hh>
 #include <stdexcept>
 
 template <class Input, class State, class Move1, class Move2, class Move3, typename CFtype = int>

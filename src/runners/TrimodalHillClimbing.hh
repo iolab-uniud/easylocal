@@ -1,7 +1,7 @@
 #ifndef TRIMODALHILLCLIMBING_HH_
 #define TRIMODALHILLCLIMBING_HH_
 
-#include "TrimodalMoveRunner.hh"
+#include <TrimodalMoveRunner.hh>
 #include <stdexcept>
 
 /** The Hill Climbing runner considers random move selection. A move

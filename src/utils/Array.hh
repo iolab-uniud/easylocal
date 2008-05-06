@@ -844,7 +844,7 @@ inline Vector<double> rank(const Vector<T>& v)
 }
 
 // #ifdef HAVE_CONFIG_H
-// #include "config.h"
+// #include <config.h>
 // #endif
 
 #include <set>

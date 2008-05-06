@@ -21,6 +21,8 @@
 /* End PBXAggregateTarget section */
 
 /* Begin PBXFileReference section */
+		AC759BE40DD0AC25001056B9 /* COPYING.LESSER */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = COPYING.LESSER; path = ../COPYING.LESSER; sourceTree = SOURCE_ROOT; };
+		AC759BE50DD0AE73001056B9 /* LICENSE */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = LICENSE; sourceTree = "<group>"; };
 		AC75B24B0DD08BB8003EBD1F /* BimodalRunnerObserver.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = BimodalRunnerObserver.hh; sourceTree = "<group>"; };
 		AC75B24C0DD08BB8003EBD1F /* GeneralizedLocalSearchObserver.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = GeneralizedLocalSearchObserver.hh; sourceTree = "<group>"; };
 		AC75B24D0DD08BB8003EBD1F /* RunnerObserver.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = RunnerObserver.hh; sourceTree = "<group>"; };
@@ -102,7 +104,7 @@
 		ACF4B1800DBFA685008A0207 /* Makefile.am */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = Makefile.am; sourceTree = "<group>"; };
 		ACF4B19E0DBFA73A008A0207 /* aminclude.am */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = aminclude.am; path = ../aminclude.am; sourceTree = SOURCE_ROOT; };
 		ACF4B19F0DBFA73A008A0207 /* configure.ac */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = configure.ac; path = ../configure.ac; sourceTree = SOURCE_ROOT; };
-		ACF4B1A10DBFA73A008A0207 /* ax_prog_doxygen.m4 */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = ax_prog_doxygen.m4; sourceTree = "<group>"; };
+		ACF4B1A10DBFA73A008A0207 /* doxygen.m4 */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = doxygen.m4; sourceTree = "<group>"; };
 		ACF4B1A20DBFA73A008A0207 /* cppunit.m4 */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = cppunit.m4; sourceTree = "<group>"; };
 		ACF4B1A30DBFA73A008A0207 /* pthread.m4 */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = pthread.m4; sourceTree = "<group>"; };
 		ACF4B1A40DBFA73A008A0207 /* Makefile.am */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Makefile.am; path = ../Makefile.am; sourceTree = SOURCE_ROOT; };
@@ -144,6 +146,8 @@
 				ACF4B1A00DBFA73A008A0207 /* m4 */,
 				ACF4B0FA0DBFA668008A0207 /* src */,
 				ACF4B15C0DBFA685008A0207 /* test */,
+				AC759BE40DD0AC25001056B9 /* COPYING.LESSER */,
+				AC759BE50DD0AE73001056B9 /* LICENSE */,
 			);
 			name = EasyLocalpp;
 			sourceTree = "<group>";
@@ -272,12 +276,12 @@
 		ACF4B13F0DBFA668008A0207 /* utils */ = {
 			isa = PBXGroup;
 			children = (
-				AC75B24F0DD08C30003EBD1F /* Array.cc */,
 				AC75B2500DD08C30003EBD1F /* Array.hh */,
-				AC75B2510DD08C30003EBD1F /* CLParser.cc */,
+				AC75B24F0DD08C30003EBD1F /* Array.cc */,
 				AC75B2520DD08C30003EBD1F /* CLParser.hh */,
-				AC75B2530DD08C30003EBD1F /* Synchronize.cc */,
+				AC75B2510DD08C30003EBD1F /* CLParser.cc */,
 				AC75B2540DD08C30003EBD1F /* Synchronize.hh */,
+				AC75B2530DD08C30003EBD1F /* Synchronize.cc */,
 				ACF4B1410DBFA668008A0207 /* Chronometer.hh */,
 				ACF4B1400DBFA668008A0207 /* Chronometer.cc */,
 				ACF4B1580DBFA668008A0207 /* Random.hh */,
@@ -356,7 +360,7 @@
 		ACF4B1A00DBFA73A008A0207 /* m4 */ = {
 			isa = PBXGroup;
 			children = (
-				ACF4B1A10DBFA73A008A0207 /* ax_prog_doxygen.m4 */,
+				ACF4B1A10DBFA73A008A0207 /* doxygen.m4 */,
 				ACF4B1A20DBFA73A008A0207 /* cppunit.m4 */,
 				ACF4B1A30DBFA73A008A0207 /* pthread.m4 */,
 			);

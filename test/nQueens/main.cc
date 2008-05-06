@@ -9,22 +9,22 @@
     @author Andrea Schaerf (schaerf@uniud.it), Luca Di Gaspero (l.digaspero@uniud.it) */
 
 #include <iostream>     
-#include "data/ChessBoard.hh"
-#include "data/Swap.hh"
-#include "helpers/QueensFrequencyTabuListManager.hh"
-#include "helpers/SwapNeighborhoodExplorer.hh"
-#include "helpers/QueensOutputManager.hh"
-#include "helpers/QueensStateManager.hh"
-#include "helpers/QueensTabuListManager.hh"
-#include "helpers/PrimaryDiagonalCostComponent.hh"
-#include "helpers/PrimaryDiagonalDeltaCostComponent.hh"
-#include "helpers/SecondaryDiagonalCostComponent.hh"
-#include "helpers/SecondaryDiagonalDeltaCostComponent.hh"
+#include <data/ChessBoard.hh>
+#include <data/Swap.hh>
+#include <helpers/QueensFrequencyTabuListManager.hh>
+#include <helpers/SwapNeighborhoodExplorer.hh>
+#include <helpers/QueensOutputManager.hh>
+#include <helpers/QueensStateManager.hh>
+#include <helpers/QueensTabuListManager.hh>
+#include <helpers/PrimaryDiagonalCostComponent.hh>
+#include <helpers/PrimaryDiagonalDeltaCostComponent.hh>
+#include <helpers/SecondaryDiagonalCostComponent.hh>
+#include <helpers/SecondaryDiagonalDeltaCostComponent.hh>
 #include <helpers/DeltaCostComponent.hh>
-#include "kickers/QueensKicker.hh"
+#include <kickers/QueensKicker.hh>
 
-#include <helpers/RunnerObserver.hh>
-#include <helpers/GeneralizedLocalSearchObserver.hh>
+#include <observers/RunnerObserver.hh>
+#include <observers/GeneralizedLocalSearchObserver.hh>
 
 #include <runners/HillClimbing.hh>
 #include <runners/SteepestDescent.hh>
@@ -37,8 +37,7 @@
 #include <testers/Tester.hh>
 #include <testers/MoveTester.hh>
 #include <testers/KickerTester.hh>
-#include <utils/clparser/CLParser.hh>
-#include <utils/clparser/ValArgument.hh>
+#include <utils/CLParser.hh>
 #include <utils/Chronometer.hh>
 
 int main(int argc, char* argv[])

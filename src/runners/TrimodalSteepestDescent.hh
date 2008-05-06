@@ -1,7 +1,7 @@
 #ifndef TRIMODALSTEEPESTDESCENT_HH_
 #define TRIMODALSTEEPESTDESCENT_HH_
 
-#include "TrimodalMoveRunner.hh"
+#include <TrimodalMoveRunner.hh>
 
 /** The Steepest Descent runner ...  
     @ingroup Runners 

@@ -1,7 +1,7 @@
 #ifndef BIMODALHILLCLIMBING_HH_
 #define BIMODALHILLCLIMBING_HH_
 
-#include "BimodalMoveRunner.hh"
+#include <BimodalMoveRunner.hh>
 #include <stdexcept>
 
 /** The Hill Climbing runner considers random move selection. A move

@@ -1,7 +1,7 @@
 #ifndef KICKERTESTER_HH_
 #define KICKERTESTER_HH_
 
-#include "ComponentTester.hh"
+#include <testers/ComponentTester.hh>
 #include <kickers/Kicker.hh>
 
 /** The Kicker Tester allows to test a Kicker.

@@ -9,9 +9,20 @@
 
 #include <utils/Synchronize.hh>
 
-#ifdef HAVE_PTHREAD
+#if defined(HAVE_PTHREAD) && !defined(_MSC_VER)
+
+#if !defined(HAVE_CLOCK_GETTIME) && !defined(HAVE_GETTIMEOFDAY)
+#error "No gettime function is present, please configure the software with the --disable-threading option"
+#endif
 
 #include <errno.h>
+#include <sys/time.h>
+#include <sys/resource.h>
+#include <sys/errno.h>
+#include <stdexcept>
+#include <cmath>
+#include <iostream>
+#include <sstream>
 
 Mutex::Mutex()
 {
@@ -38,56 +49,33 @@ bool Mutex::TryLock()
   return pthread_mutex_trylock(&mutex) == EBUSY;
 }
 
-
-#ifdef _MSC_VER
-#define _AFXDLL
-#else
-#include <sys/time.h>
-#include <sys/resource.h>
-#include <sys/errno.h>
-#endif
-#include <stdexcept>
-#include <cmath>
-#include <iostream>
-#include <sstream>
-
 ConditionVariable::ConditionVariable()
-#if defined(_MSC_VER)
-: event(FALSE, FALSE)
-{}
-#else
 {
   pthread_mutexattr_init(&attr);
   pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_ERRORCHECK);
   pthread_mutex_init(&event_mutex, &attr);
   pthread_cond_init(&event, NULL);
 }
-#endif
 
 ConditionVariable::~ConditionVariable() 
 {
-#if !defined(_MSC_VER)
   pthread_mutex_destroy(&event_mutex);
   pthread_cond_destroy(&event);
   pthread_mutexattr_destroy(&attr);
-#endif 
 }
 
 void ConditionVariable::Wait() 
 {
-#if defined(_MSC_VER)
-  // FIXME: to be handled correctly
-#else 
   int l_ret_code = pthread_mutex_lock(&event_mutex);
   int c_ret_code = pthread_cond_wait(&event, &event_mutex);  
   l_ret_code = pthread_mutex_unlock(&event_mutex);
   if (c_ret_code == EINVAL)
     throw std::logic_error("Invalid event mutex");
-#endif
 }
 
 #if defined(CPUTIME)
-float ConditionVariable::WaitTimeout(float timeout) throw (TimeoutExpired, std::logic_error)
+
+double ConditionVariable::WaitTimeout(double timeout) 
 {
 	const long NANOSEC_PER_MICROSEC = 1000;
 	const long MICROSEC_PER_SEC = 1000000;
@@ -109,8 +97,6 @@ float ConditionVariable::WaitTimeout(float timeout) throw (TimeoutExpired, std::
       gettimeofday(&tv_now, NULL);
       ts_end.tv_sec = tv_now.tv_sec;
       ts_end.tv_nsec = tv_now.tv_usec * NANOSEC_PER_MICROSEC;
-#else
-#error "No gettime function is present, please configure the software with the --disable-threading option"
 #endif
 			ts_end.tv_sec += (time_t)floor(time_left);
 			ts_end.tv_nsec += (time_t)(timeout - floor(time_left)) * NANOSEC_PER_SEC;
@@ -161,27 +147,24 @@ float ConditionVariable::WaitTimeout(float timeout) throw (TimeoutExpired, std::
 	
   return time_left;
 }
-#else
-float ConditionVariable::WaitTimeout(float timeout) throw (TimeoutExpired, std::logic_error)
+
+#else // no CPUTIME
+
+double ConditionVariable::WaitTimeout(double timeout) 
 {
-#ifndef _MSC_VER
 	const long NANOSEC_PER_MICROSEC = 1000;
   const long NANOSEC_PER_SEC = 1000000000;
   if (timeout <= 0.0)
     throw std::logic_error("Error: trying to use a timeout value less or equal than zero");
   struct timespec ts_end, ts_now;
   pthread_mutex_lock(&event_mutex);
-#ifdef HAVE_CLOCK_GETTIME
+#if defined(HAVE_CLOCK_GETTIME)
   clock_gettime(CLOCK_REALTIME, &ts_end);
-#else 
-#ifdef HAVE_GETTIMEOFDAY
+#elif defined(HAVE_GETTIMEOFDAY)
   struct timeval tv_now;
   gettimeofday(&tv_now, NULL);
   ts_end.tv_sec = tv_now.tv_sec;
   ts_end.tv_nsec = tv_now.tv_usec * NANOSEC_PER_MICROSEC;
-#else
-#error "No gettime function is present, please configure the software with the --disable-threading option"
-#endif
 #endif
   ts_end.tv_sec += (time_t)floor(timeout);
   ts_end.tv_nsec += (time_t)(timeout - floor(timeout)) * NANOSEC_PER_SEC;
@@ -208,38 +191,108 @@ float ConditionVariable::WaitTimeout(float timeout) throw (TimeoutExpired, std::
       throw std::logic_error("The event_mutex was not owned by the thread");
       break;
     } 
-#ifdef HAVE_CLOCK_GETTIME
+#if defined(HAVE_CLOCK_GETTIME)
   clock_gettime(CLOCK_REALTIME, &ts_now);
-#else 
-#ifdef HAVE_GETTIMEOFDAY
+#elif defined(HAVE_GETTIMEOFDAY)
   gettimeofday(&tv_now, NULL);
   ts_now.tv_sec = tv_now.tv_sec;
   ts_now.tv_nsec = tv_now.tv_usec * NANOSEC_PER_MICROSEC;
 #endif
-#endif
   return (ts_end.tv_sec - ts_now.tv_sec) + (ts_end.tv_nsec - ts_now.tv_nsec) / (double)NANOSEC_PER_SEC;
-#else
-	return 0;
-#endif
 }
+
 #endif
 
 void ConditionVariable::Signal() 
 {
-#ifndef _MSC_VER
   pthread_mutex_lock(&event_mutex);
   pthread_cond_signal(&event);
   pthread_mutex_unlock(&event_mutex);
-#endif
 }
 
 void ConditionVariable::Broadcast() 
 {
-#ifndef _MSC_VER
   pthread_mutex_lock(&event_mutex);
   pthread_cond_broadcast(&event);
   pthread_mutex_unlock(&event_mutex);
-#endif
 }
 
+#elif defined(_MSC_VER) // Visual C++ versions
+#if defined(CPUTIME)
+#warning "CPUTIME is not currently supported on windows platforms, using Wall-clock time instead"
 #endif
+
+Mutex::Mutex()
+{
+  InitializeCriticalSection(&mutex);
+}
+
+Mutex::~Mutex()
+{
+  DeleteCriticalSection(&mutex);
+}
+
+void Mutex::Lock()
+{
+  EnterCriticalSection(&mutex);
+}
+
+void Mutex::Unlock()
+{
+  LeaveCriticalSection(&mutex);
+}
+
+bool Mutex::TryLock()
+{
+  return TryEnterCriticalSection(&mutex);
+}
+
+
+ConditionVariable::ConditionVariable()
+{
+  InitializeCriticalSection(&event_mutex);
+  InitializeConditionVariable(&event);  
+}
+
+ConditionVariable::~ConditionVariable()
+{
+  DeleteConditionVariable(&event);
+  DeleteCriticalSection(&event_mutex);
+}
+
+void ConditionVariable::Wait() 
+{
+  EnterCriticalSection(&event_mutex);
+  SleepConditionVariableCS(&event, &event_mutex, INFINITE);
+  LeaveCriticalSection(&event_mutex);
+}
+
+double ConditionVariable::WaitTimeout(double timeout) 
+{
+  if (timeout <= 0.0)
+    throw std::logic_error("Error: trying to use a timeout value less or equal than zero");
+  chrono.Reset();
+  chrono.Start();
+  EnterCriticalSection(&event_mutex);
+  if (!SleepConditionVariableCS(&event, &event_mutex, timeout * 1000.0))
+    throw TimeoutExpired(); // FIXME: verify whether this behavior is correct
+  LeaveCriticalSection(&event_mutex);
+  chrono.Stop();
+  return (timeout - chrono.TotalTime() < 0.0) ? 0.0 : (timeout - chrono.TotalTime());
+}
+
+void ConditionVariable::Signal() 
+{  
+  WakeConditionVariable(&event);
+}
+
+void ConditionVariable::Broadcast() 
+{
+  WakeAllConditionVariable(&event);
+}
+
+
+
+#endif
+
+

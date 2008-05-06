@@ -1,7 +1,7 @@
 #ifndef SIMPLEKICKER_HH_
 #define SIMPLEKICKER_HH_
 
-#include "Kicker.hh"
+#include <kickers/Kicker.hh>
 #include <stdexcept>
 
 /** A Simple Kicker simply considers sequences of moves of a given type

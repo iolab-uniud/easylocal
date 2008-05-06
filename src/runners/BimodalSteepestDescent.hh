@@ -1,7 +1,7 @@
 #ifndef BIMODALSTEEPESTDESCENT_HH_
 #define BIMODALSTEEPESTDESCENT_HH_
 
-#include "BimodalMoveRunner.hh"
+#include <BimodalMoveRunner.hh>
 
 /** The Steepest Descent runner ...  
     @ingroup Runners 

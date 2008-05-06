@@ -2,12 +2,12 @@
     @file EasyLocal.hh
     @brief Class inclusions.
 
-    This file contains all the class declarations of the EasyLocal++
-    framework.   
+    This file contains all the class declarations of the EasyLocal framework.   
     
-   @author Andrea Schaerf (schaerf@uniud.it), Luca Di Gaspero (l.digaspero@uniud.it)
+   @author Luca Di Gaspero, Andrea Schaerf - University of Udine, Italy
    @version 1.0
-   @date 15 Jun 2001
+   @lastrevision $Date$
+   @license $License$
    @note This version works both with MS Visual C++ and the GNU C++ 
          compiler. Yet, it is extensively tested only with the GNU compiler.
 */
