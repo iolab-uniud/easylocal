@@ -1,3 +1,4 @@
+// $Id$
 /**
     @file EasyLocal.hh
     @brief Class inclusions.
