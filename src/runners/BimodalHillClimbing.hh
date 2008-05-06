@@ -139,15 +139,21 @@ bool BimodalHillClimbing<Input,State,Move1,Move2,CFtype>::AcceptableMove()
 template <class Input, class State, class Move1, class Move2, typename CFtype>
 void BimodalHillClimbing<Input,State,Move1,Move2,CFtype>::StoreMove()
 {
+  if (this->observer != NULL)
+    this->observer->NotifyStoreMove(*this);
   if (this->current_move_type == MOVE_1)
     if (LessThan(this->current_move_cost1,0))
       {
+	if (this->observer != NULL)
+	  this->observer->NotifyNewBest(*this);
 	this->iteration_of_best = this->number_of_iterations;
 	this->best_state_cost = this->current_state_cost;
       }
     else
       if (LessThan(this->current_move_cost2,0))
 	{
+	  if (this->observer != NULL)
+	    this->observer->NotifyNewBest(*this);
 	  this->iteration_of_best = this->number_of_iterations;
 	  this->best_state_cost = this->current_state_cost;
 	}

@@ -27,9 +27,12 @@ template <class Input, class State, class Move1, class Move2, typename CFtype>
 class BimodalMoveRunner
   : public Runner<Input,State,CFtype>
 {
+  friend class BimodalRunnerObserver<Input,State,Move1,Move2,CFtype>;
 public:
   // Runner interface
   virtual void Check() const;
+  void InitializeRun();
+  void AttachObserver(BimodalRunnerObserver<Input,State,Move1,Move2,CFtype>& ob) { observer = &ob; }
 protected:
   BimodalMoveRunner(const Input& im, StateManager<Input,State,CFtype>& sm,
 		    NeighborhoodExplorer<Input,State,Move1,CFtype>& ne1,
@@ -58,6 +61,8 @@ protected:
   CFtype current_move_cost1; /**< The cost of the selected move. */
   CFtype current_move_cost2; /**< The cost of the selected move. */
   PatternMove current_move_type;
+
+  BimodalRunnerObserver<Input,State,Move1,Move2,CFtype>* observer;
 };
 
 /*  ***** BIMOVE RUNNER ******* */
@@ -68,7 +73,17 @@ BimodalMoveRunner<Input,State,Move1,Move2,CFtype>::BimodalMoveRunner(const Input
 								     NeighborhoodExplorer<Input,State,Move1,CFtype>& e_ne1,
 								     NeighborhoodExplorer<Input,State,Move2,CFtype>& e_ne2, std::string name)
   : Runner<Input,State,CFtype>(in, sm, name), ne1(e_ne1), ne2(e_ne2)
-{ }
+{   
+  observer = NULL;
+}
+
+template <class Input, class State, class Move1, class Move2, typename CFtype>
+void BimodalMoveRunner<Input,State,Move1,Move2,CFtype>::InitializeRun() 
+{
+  Runner<Input,State,CFtype>::InitializeRun();
+  if (observer != NULL)
+    observer->NotifyStartRunner(*this);
+}
 
 /**
    Checks wether the object state is consistent with all the related
