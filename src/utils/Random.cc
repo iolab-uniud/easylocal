@@ -7,8 +7,6 @@
 #include <iostream>
 #include <cfloat>
 
-using namespace std;
-
 #ifdef _MSC_VER
 const double M_PI = atan(1.0);
 #endif

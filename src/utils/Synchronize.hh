@@ -1,10 +1,76 @@
 /*
- *  RWLockVariable.hh
+ *  Synchronize.hh
  *
- *  Created by Luca Di Gaspero on 25/09/07.
+ *  Created by Luca Di Gaspero on 27/09/07.
  *  Copyright 2007 __MyCompanyName__. All rights reserved.
  *
  */
+
+#ifdef HAVE_PTHREAD
+
+#ifndef _MUTEX_HH
+#define _MUTEX_HH
+
+#include <EasyLocal.conf.hh>
+#if defined(HAVE_CONFIG_H)
+#include <config.hh>
+#endif
+
+
+#ifdef _MSC_VER
+#define _AFXDLL
+#else
+#include <pthread.h>
+
+class Mutex 
+{
+  pthread_mutex_t mutex;
+public:
+  Mutex();
+  ~Mutex();
+  void Lock();
+  void Unlock();  
+  bool TryLock();
+};
+
+#endif
+
+#include <EasyLocal.conf.hh>
+#if !defined(_CONDITIONVARIABLE_HH)
+#define _CONDITIONVARIABLE_HH
+
+#if defined(HAVE_CONFIG_H)
+#include <config.hh>
+#endif
+
+#include <exception>
+#include <stdexcept>
+
+class TimeoutExpired : public std::exception
+{};
+
+#if defined(_MSC_VER)
+#include <afxmt.h>
+#else
+#include <pthread.h> 
+#endif
+
+class ConditionVariable {
+#if defined(_MSC_VER)
+  CEvent event;
+#else 
+  pthread_mutex_t event_mutex;
+  pthread_cond_t event;
+  pthread_mutexattr_t attr;
+#endif 
+public:
+  ConditionVariable(); 
+	~ConditionVariable(); 
+  void Wait();
+  float WaitTimeout(float timeout) throw (TimeoutExpired, std::logic_error);
+	void Signal();
+	void Broadcast();	
+};
 
 #ifdef HAVE_PTHREAD
 
@@ -84,3 +150,13 @@ void RWLockVariable<T>::write(const T& v)
 #endif
 
 #endif
+
+
+
+#endif
+
+
+
+#endif
+#endif
+
