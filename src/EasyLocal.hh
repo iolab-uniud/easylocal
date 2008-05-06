@@ -8,8 +8,8 @@
    @author Luca Di Gaspero, Andrea Schaerf - University of Udine, Italy
    @version 1.0
    @lastrevision $Date$
-   @license $license$
-   @copyright $copyright$
+   @license $License$
+   @copyright $Copyright$
    @note This version works both with MS Visual C++ and the GNU C++ 
          compiler. Yet, it is extensively tested only with the GNU compiler.
 */
