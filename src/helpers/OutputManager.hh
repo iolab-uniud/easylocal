@@ -1,7 +1,6 @@
-#ifndef OUTPUTMANAGER_HH_
-#define OUTPUTMANAGER_HH_
+#ifndef _OUTPUT_MANAGER_HH_
+#define _OUTPUT_MANAGER_HH_
 
-#include "StateManager.hh"
 #include <iostream>
 
 /** The Output Manager is responsible for translating between
@@ -82,4 +81,4 @@ void OutputManager<Input,Output,State,CFtype>::WriteState(const State &st, std::
     os << out;
 }
 
-#endif
+#endif // define _OUTPUT_MANAGER_HH_

@@ -227,18 +227,6 @@ Stores the move by inserting it in the tabu list, if the state obtained
 template <class Input, class State, class Move1, class Move2, typename CFtype>
 void BimodalTabuSearch<Input,State,Move1,Move2,CFtype>::StoreMove()
 {
-#if VERBOSE >= 3
-  if (this->current_move_type == MOVE_1)
-    std::cerr << "Move (1) : " << this->current_move1 << ", Cost:" << this->current_move_cost1 << " (current: "
-	    << this->current_state_cost << ", best: " << this->best_state_cost << "), it: " << this->number_of_iterations
-	      << " (idle: " << this->number_of_iterations - this->iteration_of_best << ")" 
-	     << std::endl;
-  else
-    std::cerr << "Move (2) : " << this->current_move2 << ", Cost:" << this->current_move_cost2 << " (current: "
-	    << this->current_state_cost << ", best: " << this->best_state_cost << "), it: " << this->number_of_iterations
-	      << " (idle: " << this->number_of_iterations - this->iteration_of_best << ")" 
-	      << std::endl;    
-#endif
 	if (this->current_move_type == MOVE_1)
 	{
 		this->pm1.InsertMove(this->current_state, this->current_move1, this->current_move_cost1, this->current_state_cost, this->best_state_cost);

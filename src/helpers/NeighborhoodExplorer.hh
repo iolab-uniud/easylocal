@@ -1,8 +1,8 @@
-#ifndef NEIGHBORHOODEXPLORER_HH_
-#define NEIGHBORHOODEXPLORER_HH_
+#ifndef _NEIGHBORHOOD_EXPLORER_HH_
+#define _NEIGHBORHOOD_EXPLORER_HH_
 
-#include "DeltaCostComponent.hh"
-#include "StateManager.hh"
+#include <helpers/DeltaCostComponent.hh>
+#include <helpers/StateManager.hh>
 #include <typeinfo>
 #include <stdexcept>
 
@@ -637,4 +637,4 @@ bool NeighborhoodExplorer<Input,State,Move,CFtype>::LastMoveDone(const State& st
                                                                  const Move& mv) const
 { return mv == start_move; }
 
-#endif /*NEIGHBORHOODEXPLORER_HH_*/
+#endif // define _NEIGHBORHOOD_EXPLORER_HH_

@@ -75,8 +75,7 @@ template <class Input, class Output, class State, typename CFtype>
 Tester<Input, Output, State,CFtype>::Tester(const Input& i,
 					    StateManager<Input,State,CFtype>& e_sm,
 					    OutputManager<Input,Output,State,CFtype>& e_om)
-  : move_testers(0), runners(0), 
-    in(i), sm(e_sm), om(e_om), 
+  :  in(i), sm(e_sm), om(e_om), 
     test_state(i), out(i)
 {}
 
@@ -116,19 +115,13 @@ void Tester<Input, Output, State,CFtype>::AddRunner(Runner<Input,State,CFtype>& 
 template <class Input, class Output, class State, typename CFtype>
 void Tester<Input, Output, State,CFtype>::RunMainMenu(std::string file_name)
 {
-  unsigned int i;
-  
-  for (i = 0; i < move_testers.size(); i++)
-    assert(move_testers[i] != NULL);
-  for (i = 0; i < runners.size(); i++)
-    assert(runners[i] != NULL);
-  
   if (file_name == "")
     RunInputMenu();
   else
     {
       std::ifstream is(file_name.c_str());
-      assert (!is.fail());
+      if (is.fail())
+	throw std::runtime_error("Cannot open file!"); 	
       om.ReadState(test_state, is);
       om.OutputState(test_state, out);
       std::cout << "SOLUTION IMPORTED " << std::endl << out << std::endl;

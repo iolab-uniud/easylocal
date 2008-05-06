@@ -86,12 +86,6 @@ void TrimodalSteepestDescent<Input,State,Move1,Move2,Move3,CFtype>::SelectMove()
             this->current_move_type = Random::Int(0,1) == 0 ? MOVE_2 : MOVE_3;
     else
         this->current_move_type = Random::Int(0,1) == 0 ? MOVE_1 : MOVE_2;
-
-#ifdef VERBOSE
-    std::cerr << "Move 1: " << this->current_move1 << " (" << this->current_move_cost1 << ")   " 
-	      << "Move 2: " << this->current_move2 << " (" << this->current_move_cost2 << ")   " 
-	      << "Move 3: " << this->current_move3 << " (" << this->current_move_cost3 << ")" <<   std::endl; 
-#endif
 }
 
 /**

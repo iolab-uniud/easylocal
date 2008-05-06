@@ -151,7 +151,6 @@ bool TrimodalHillClimbing<Input,State,Move1,Move2,Move3,CFtype>::AcceptableMove(
     case MOVE_3:
         return this->current_move_cost3 <= 0;
     }
-    assert(false);
     return false;
 }
 
@@ -163,23 +162,6 @@ template <class Input, class State, class Move1, class Move2, class Move3, typen
 void TrimodalHillClimbing<Input,State,Move1,Move2,Move3,CFtype>::StoreMove()
 {
     bool update_state = false;
-#if VERBOSE >= 3
-  if (this->current_move_type == MOVE_1)
-    std::cerr << "Move (1) : " << this->current_move1 << ", Cost:" << this->current_move_cost1 << " (best: " 
-	      << this->best_state_cost << "), it: " << this->number_of_iterations
-	      << " (idle: " << this->number_of_iterations - this->iteration_of_best << ")" 
-	     << std::endl;
-  else if (this->current_move_type == MOVE_2)
-    std::cerr << "Move (2) : " << this->current_move2 << ", Cost:" << this->current_move_cost2 << " (best: " 
-	      << this->best_state_cost << "), it: " << this->number_of_iterations
-	      << " (idle: " << this->number_of_iterations - this->iteration_of_best << ")" 
-	      << std::endl;
-  else
-    std::cerr << "Move (3) : " << this->current_move3 << ", Cost:" << this->current_move_cost3 << " (best: " 
-	      << this->best_state_cost << "), it: " << this->number_of_iterations
-	      << " (idle: " << this->number_of_iterations - this->iteration_of_best << ")" 
-	      << std::endl;
-#endif
     switch (this->current_move_type)
     {
     case MOVE_1:

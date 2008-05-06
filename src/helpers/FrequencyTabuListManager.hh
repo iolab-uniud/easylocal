@@ -1,5 +1,5 @@
-#ifndef FREQUENCYTABULISTMANAGER_HH_
-#define FREQUENCYTABULISTMANAGER_HH_
+#ifndef _FREQUENCY_TABU_LIST_MANAGER_HH_
+#define _FREQUENCY_TABU_LIST_MANAGER_HH_
 
 #include <helpers/TabuListManager.hh>
 #include <map>
@@ -79,4 +79,4 @@ void FrequencyTabuListManager<State,Move,CFtype>::Clean()
     frequency_map.clear();
 }
 
-#endif /*FREQUENCYTABULISTMANAGER_HH_*/
+#endif // define _FREQUENCY_TABU_LIST_MANAGER_HH_

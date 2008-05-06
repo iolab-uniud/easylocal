@@ -3,10 +3,7 @@
 
 #include <helpers/StateManager.hh>
 #include <helpers/NeighborhoodExplorer.hh>
-#include "MoveRunner.hh"
-#include <utils/clparser/CLParser.hh>
-#include <utils/clparser/ArgumentGroup.hh>
-#include <utils/clparser/ValArgument.hh>
+#include <runners/MoveRunner.hh>
 #include <stdexcept>
 
 /** The Hill Climbing runner considers random move selection. A move

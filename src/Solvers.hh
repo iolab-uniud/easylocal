@@ -11,8 +11,8 @@
     search, respectively) and to some of the helpers.  
 */  
 
-#include "solvers/SimpleLocalSearch.hh"
-#include "solvers/GeneralizedLocal.hh"
-#include "solvers/VariableNeighborhoodDescent.hh"
+#include <solvers/SimpleLocalSearch.hh>
+#include <solvers/GeneralizedLocalSearch.hh>
+#include <solvers/VariableNeighborhoodDescent.hh>
 
 #endif // define _SOLVERS_HH_

@@ -1,14 +1,11 @@
 #ifndef SIMULATEDANNEALING_HH_
 #define SIMULATEDANNEALING_HH_
 
-#include "MoveRunner.hh"
+#include <runners/MoveRunner.hh>
 #include <helpers/StateManager.hh>
 #include <helpers/NeighborhoodExplorer.hh>
 #include <cmath>
 #include <stdexcept>
-#include <utils/clparser/CLParser.hh>
-#include <utils/clparser/ArgumentGroup.hh>
-#include <utils/clparser/ValArgument.hh>
 
 /** The Simulated annealing runner relies on a probabilistic local
     search technique whose name comes from the fact that it

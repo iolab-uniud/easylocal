@@ -1,10 +1,10 @@
 #ifndef MOVERUNNER_HH_
 #define MOVERUNNER_HH_
 
-#include "Runner.hh"
+#include <runners/Runner.hh>
 #include <helpers/StateManager.hh>
 #include <helpers/NeighborhoodExplorer.hh>
-#include <helpers/RunnerObserver.hh>
+#include <observers/RunnerObserver.hh>
 
 /** A Move Runner is an instance of the Runner interface which it compels to
     with a particular definition of @Move (given as template instantiation).

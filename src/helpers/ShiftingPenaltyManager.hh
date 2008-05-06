@@ -1,10 +1,10 @@
-#ifndef SHIFTINGPENALTYMANAGER_HH_
-#define SHIFTINGPENALTYMANAGER_HH_
+#ifndef _SHIFTING_PENALTY_MANAGER_HH_
+#define _SHIFTING_PENALTY_MANAGER_HH_
 
-#include "DeltaCostComponent.hh"
-#include "CostComponent.hh"
+#include <helpers/DeltaCostComponent.hh>
+#include <helpers/CostComponent.hh>
 #include <utils/Random.hh>
-#include "ShiftingPenaltyObserver.hh"
+#include <observers/ShiftingPenaltyObserver.hh>
 
 /** This class implements the shifting penalty mechanism for a single
     DeltaCost component */
@@ -135,9 +135,6 @@ bool ComplexShiftingPenaltyManager<CFtype>::Update(CFtype cost)
   if (cost <= this->cost_threshold)
     {
       feasible_iter++;
-#if VERBOSE >= 5
-      std::cerr << '+';
-#endif
       infeasible_iter = 0;
       if (feasible_iter == max_feasible_iter)
         {
@@ -161,9 +158,6 @@ bool ComplexShiftingPenaltyManager<CFtype>::Update(CFtype cost)
   else
     {
       infeasible_iter++;
-#if VERBOSE >= 5
-      std::cerr << '-';
-#endif
       feasible_iter = 0;
       if (infeasible_iter == max_infeasible_iter)
         {
@@ -271,4 +265,4 @@ void SimpleShiftingPenaltyManager<CFtype>::ReadParameters(std::istream& is, std:
 }
 
 
-#endif /*SHIFTINGPENALTYMANAGER_HH_*/
+#endif // define _SHIFTING_PENALTY_MANAGER_HH_

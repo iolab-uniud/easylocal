@@ -22,15 +22,15 @@
 
 3. #define _HAVE_EASYLOCALCONFIG
 
-4. no using namespace std;
+4. no using namespace std; [FATTO]
 
 5. compilazione condizionale se CPPUNIT non e' presente
 
-6. #include <...> e non "..."
+6. #include <...> e non "..." [FATTO]
 
-7. clparser tutto in unico file (hh e cc)
+7. clparser tutto in unico file (hh e cc) [FATTO]
 
-8. Mutex e co in Syncrhonize.hh e cc
+8. Mutex e co in Syncrhonize.hh e cc [FATTO]
 
 9. spostare gli observers in una cartella apposita
 

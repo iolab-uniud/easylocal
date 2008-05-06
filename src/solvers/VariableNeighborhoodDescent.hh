@@ -105,7 +105,7 @@ void VNDSolver<Input,Output,State,CFtype>::RaiseTimeout()
 template <class Input, class Output, class State, typename CFtype>
 void VNDSolver<Input,Output,State,CFtype>::Solve()
 {
-	assert(false); // FIXME: to be removed
+   throw std::runtime_error("Fix me!"); 	
 }
 
 
@@ -125,7 +125,7 @@ void VNDSolver<Input,Output,State,CFtype>::Run()
       std::cerr << "Selected Kick: " << k << " " << kick_cost << std::endl;
       this->p_kicker->PrintKick(std::cerr);
 #endif
-      if (kick_cost < 0.0)
+      if (LessThan(kick_cost,0))
 	{
 	  this->p_kicker->MakeKick(this->internal_state);
 	  this->internal_state_cost += kick_cost;

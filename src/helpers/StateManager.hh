@@ -3,9 +3,8 @@
 
 #include <iostream>
 #include <vector>
-#include <cassert>
 #include <cmath>
-#include "CostComponent.hh"
+#include <helpers/CostComponent.hh>
 #include <utils/Types.hh>
 
 /** This constant multiplies the value of the Violations function in the

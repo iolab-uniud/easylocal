@@ -1,12 +1,13 @@
 #ifndef _ABSTRACT_LOCAL_SEARCH_SOLVER_HH_
 #define _ABSTRACT_LOCAL_SEARCH_SOLVER_HH_
 
-#include "Solver.hh"
+#include <solvers/Solver.hh>
 #include <helpers/StateManager.hh>
 #include <helpers/OutputManager.hh>
 #include <iostream> 
 #include <fstream> 
 #include <string>
+#include <utils/CLParser.hh>
 
 /** A Local Search Solver has an internal state, and defines the ways for
     dealing with a local search algorithm.

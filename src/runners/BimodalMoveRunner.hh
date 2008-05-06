@@ -3,7 +3,7 @@
 
 #include <helpers/StateManager.hh>
 #include <helpers/NeighborhoodExplorer.hh>
-#include <helpers/BimodalRunnerObserver.hh>
+#include <observers/BimodalRunnerObserver.hh>
 #include <runners/Runner.hh>
 #include <vector>
 

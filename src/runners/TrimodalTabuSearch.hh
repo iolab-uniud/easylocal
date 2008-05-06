@@ -292,23 +292,6 @@ Stores the move by inserting it in the tabu list, if the state obtained
 template <class Input, class State, class Move1, class Move2, class Move3, typename CFtype>
 void TrimodalTabuSearch<Input,State,Move1,Move2,Move3,CFtype>::StoreMove()
 {
-#if VERBOSE >= 3
-  if (this->current_move_type == MOVE_1)
-    std::cerr << "Move (1) : " << this->current_move1 << ", Cost:" << this->current_move_cost1 << " (best: " 
-	      << this->best_state_cost << "), it: " << this->number_of_iterations
-	      << " (idle: " << this->number_of_iterations - this->iteration_of_best << ")" 
-	     << std::endl;
-  else if (this->current_move_type == MOVE_2)
-    std::cerr << "Move (2) : " << this->current_move2 << ", Cost:" << this->current_move_cost2 << " (best: " 
-	      << this->best_state_cost << "), it: " << this->number_of_iterations
-	      << " (idle: " << this->number_of_iterations - this->iteration_of_best << ")" 
-	      << std::endl;
-  else
-    std::cerr << "Move (3) : " << this->current_move3 << ", Cost:" << this->current_move_cost3 << " (best: " 
-	      << this->best_state_cost << "), it: " << this->number_of_iterations
-	      << " (idle: " << this->number_of_iterations - this->iteration_of_best << ")" 
-	      << std::endl;
-#endif
 	if (this->current_move_type == MOVE_1)
 	{
 		this->pm1.InsertMove(this->current_state, this->current_move1, this->current_move_cost1, this->current_state_cost, this->best_state_cost);

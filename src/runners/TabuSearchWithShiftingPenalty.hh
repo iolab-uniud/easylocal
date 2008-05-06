@@ -142,13 +142,6 @@ void TabuSearchWithShiftingPenalty<Input,State,Move,CFtype>::SelectMove()
     {
       this->current_move = best_actual_move;
       this->current_move_cost = best_actual_delta;
-#if VERBOSE >= 4
-      if (best_actual_delta < best_shifted_delta.actual_value)
-	{
-	  std::cerr << "ShiftingPenalty found a new different current best " << (this->current_state_cost + best_actual_delta) << " old was " << this->best_state_cost << std::endl;
-	  std::cerr << best_actual_move << ":" << best_actual_delta << ", " << best_shifted_move <<  ":" << best_shifted_delta.actual_value << std::endl;
-	}
-#endif
     }
   else
     {

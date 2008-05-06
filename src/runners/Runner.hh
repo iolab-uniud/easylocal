@@ -10,6 +10,8 @@
 #include <stdexcept>
 #include <utils/Chronometer.hh>
 
+#include <utils/CLParser.hh>
+
 /** @defgroup Runners Runner classes
     Runner classes are the algorithmic core of the framework. They are 
     responsible for performing a run of a local search technique, 

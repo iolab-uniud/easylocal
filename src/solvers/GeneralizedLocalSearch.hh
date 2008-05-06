@@ -3,10 +3,9 @@
 
 #include <solvers/AbstractLocalSearchSolver.hh>
 #include <kickers/Kicker.hh>
+#include <observers/GeneralizedLocalSearchObserver.hh>
 #include <vector>
-#include <utils/clparser/CLParser.hh>
-#include <utils/clparser/ArgumentGroup.hh>
-#include <utils/clparser/ValArgument.hh>
+
 
 enum KickStrategy {
     NO_KICKER = 0,
@@ -16,8 +15,8 @@ enum KickStrategy {
 };
 
 
-template <class Input, class Output, class State, typename CFtype>
-class GeneralizedLocalSearchObserver;
+// template <class Input, class Output, class State, typename CFtype>
+// class GeneralizedLocalSearchObserver;
 
 /** An Iterated Local Search solver handles both a runner encapsulating a local
     search algorithm and a kicker used for perturbing current solution.

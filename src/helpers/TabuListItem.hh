@@ -1,7 +1,5 @@
-#ifndef TABULISTITEM_HH_
-#define TABULISTITEM_HH_
-
-//#include "TabuListManager.hh"
+#ifndef _TABU_LIST_ITEM_HH_
+#define _TABU_LIST_ITEM_HH_
 
 template <class State, class Move, typename CFtype> class TabuListManager;
 template <class State, class Move, typename CFtype> class FrequencyTabuListManager;
@@ -31,4 +29,4 @@ protected:
 	 leaves the list */
 };
 
-#endif /*TABULISTITEM_HH_*/
+#endif // define _TABU_LIST_ITEM_HH_

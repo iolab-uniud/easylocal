@@ -17,6 +17,7 @@
 
 #include <Utils.hh>
 #include <Helpers.hh>
+#include <Observers.hh>
 #include <Runners.hh>
 #include <Kickers.hh>
 #include <Solvers.hh>

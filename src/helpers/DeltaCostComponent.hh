@@ -1,9 +1,8 @@
-#ifndef DELTACOSTCOMPONENT_HH_
-#define DELTACOSTCOMPONENT_HH_
+#ifndef _DELTACOSTCOMPONENT_HH_
+#define _DELTACOSTCOMPONENT_HH_
 
-#include <cassert>
-#include "CostComponent.hh"
-#include "ShiftingPenaltyManager.hh"
+#include <helpers/CostComponent.hh>
+#include <helpers/ShiftingPenaltyManager.hh>
 #include <stdexcept>
 
 /** The class DeltaCostComponent manages the variation of one single
@@ -200,13 +199,6 @@ void DeltaCostComponent<Input,State,Move,is_delta_implemented,CFtype>::ResetShif
     {
       bool reset;
       reset = spm->Reset();
-#if VERBOSE >= 5
-      if (reset)
-	{
-	  std::cerr << "Reset " << "[" << this->GetName() << "] to ";
-	  std::cerr << spm->Shift() << std::endl;
-	} 
-#endif
     }
 }
 
@@ -217,13 +209,6 @@ void DeltaCostComponent<Input,State,Move,is_delta_implemented,CFtype>::UpdateShi
     {
       bool update;
       update = spm->Update(cc.Cost(st));
-#if VERBOSE >= 5
-      if (update)
-	{
-	  std::cerr << "Update " << "[" << this->GetName() << "] to ";
-	  std::cerr << spm->Shift() << ", Threshold = " << spm->Threshold() << std::endl;
-      } 
-#endif
     }
 }   
 
@@ -276,4 +261,4 @@ ShiftedResult<CFtype> operator*(const ShiftedResult<CFtype>& sr, const Multype& 
 }
 
 
-#endif /*DELTACOSTCOMPONENT_HH_*/
+#endif // define _DELTACOSTCOMPONENT_HH_

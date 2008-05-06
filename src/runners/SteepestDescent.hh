@@ -1,11 +1,11 @@
 #ifndef STEEPESTDESCENT_HH_
 #define STEEPESTDESCENT_HH_
 
-#include "MoveRunner.hh"
+#include <runners/MoveRunner.hh>
 #include <helpers/StateManager.hh>
 #include <helpers/NeighborhoodExplorer.hh>
 #include <utils/Types.hh>
-#include <utils/clparser/CLParser.hh>
+#include <utils/CLParser.hh>
 
 /** The Steepest Descent runner performs a simple local search.
    At each step of the search, the best move in the neighborhood of current

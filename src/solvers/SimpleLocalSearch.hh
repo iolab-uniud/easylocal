@@ -3,14 +3,11 @@
 
 #include <helpers/StateManager.hh>
 #include <helpers/OutputManager.hh>
-#include "AbstractLocalSearchSolver.hh"
+#include <solvers/AbstractLocalSearchSolver.hh>
 #include <runners/Runner.hh>
 #ifdef HAVE_PTHREAD
 #include <pthread.h>
 #endif
-#include <utils/clparser/CLParser.hh>
-#include <utils/clparser/ArgumentGroup.hh>
-#include <utils/clparser/ValArgument.hh>
 
 
 /** The Simple Local Search solver handles a simple local search algorithm

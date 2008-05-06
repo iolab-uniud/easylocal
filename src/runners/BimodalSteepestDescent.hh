@@ -73,11 +73,6 @@ void BimodalSteepestDescent<Input,State,Move1,Move2,CFtype>::SelectMove()
         this->current_move_type = MOVE_2;
     else
         this->current_move_type = Random::Int(0,1) == 0 ? MOVE_1 : MOVE_2;
-
-#ifdef VERBOSE
-    std::cerr << "Move 1: " << this->current_move1 << " (" << this->current_move_cost1 << ")   " 
-      << "Move 2: " << this->current_move2 << " (" << this->current_move_cost2 << ")" <<   std::endl; 
-#endif
 }
 
 /**

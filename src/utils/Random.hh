@@ -1,5 +1,5 @@
-#ifndef RANDOM_HH_
-#define RANDOM_HH_
+#ifndef _RANDOM_HH_
+#define _RANDOM_HH_
 
 #include <EasyLocal.conf.hh>
 #if defined(HAVE_CONFIG_H)
@@ -64,4 +64,4 @@ protected:
     static unsigned long initial_seed;
 };
 
-#endif /*RANDOM_HH_*/
+#endif // define _RANDOM_HH_

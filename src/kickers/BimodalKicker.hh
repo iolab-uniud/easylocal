@@ -44,7 +44,7 @@ public:
   CFtype SelectKick(const State& st);
   CFtype BestKick(const State &st);
   CFtype FirstImprovingKick(const State &st);
-  CFtype DenseBestKick(const State &st) { assert(false); }
+  CFtype DenseBestKick(const State &st) { throw std::runtime_error("Not implemented yet!"); }
   CFtype TotalFirstImprovingKick(const State &st);
   CFtype TotalBestKick(const State &st);
   CFtype RandomKick(const State &st);
