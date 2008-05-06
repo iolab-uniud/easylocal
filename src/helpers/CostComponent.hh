@@ -1,8 +1,7 @@
-#ifndef COSTCOMPONENT_HH_
-#define COSTCOMPONENT_HH_
+#ifndef _COST_COMPONENT_HH_
+#define _COST_COMPONENT_HH_
 
 #include <iostream>
-
 
 /** The class CostComponent manages one single component of the
       cost, either hard or soft 
@@ -16,7 +15,7 @@ public:
     void Print(std::ostream& os = std::cout) const;
     virtual CFtype ComputeCost(const State& st) const = 0;
     CFtype Cost(const State& st) const { return weight * ComputeCost(st); }
-    virtual void PrintCost(const State& st, std::ostream& os = std::cout) const;
+//     virtual void PrintCost(const State& st, std::ostream& os = std::cout) const;
     CFtype Weight() const { return weight; }
     void SetWeight(const CFtype& w) { weight = w; }
     void SetHard() { is_hard = true; }
@@ -44,12 +43,12 @@ CostComponent<Input,State,CFtype>::CostComponent(const Input& i, const CFtype& w
 
 template <class Input, class State, typename CFtype>
 void CostComponent<Input,State,CFtype>::Print(std::ostream& os) const
-    { os  << "Cost Component: " << name << std::endl; }
+{ os  << "Cost Component " << name << ": weight " << weight << (is_hard ? "*" : "") << std::endl; }
 
-template <class Input, class State, typename CFtype>
-void CostComponent<Input,State,CFtype>::PrintCost(const State& st,
-        std::ostream& os) const
-    { os  << "Cost Component: " << name << ": " << Cost(st) << std::endl; }
+// template <class Input, class State, typename CFtype>
+// void CostComponent<Input,State,CFtype>::PrintCost(const State& st,
+//         std::ostream& os) const
+//     { os  << "Cost Component: " << name << ": " << Cost(st) << std::endl; }
 
 
 #endif

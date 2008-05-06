@@ -32,10 +32,6 @@ public:
     virtual bool ProhibitedMove(const State& st, const Move& mv, const CFtype& mv_cost) const = 0;
     /** Resets the prohibition manager mechanisms. */
     virtual void Clean() = 0;
-    /** Checks whether the state of the prohibition manager is consistent
-    with the attached objects. */
-    virtual void Check() const
-    {}
     virtual void UpdateIteration() = 0;
 protected:
       ProhibitionManager();

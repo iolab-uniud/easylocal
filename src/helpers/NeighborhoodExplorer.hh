@@ -85,40 +85,20 @@ public:
   virtual CFtype DeltaCostFunction(const State& st, const Move& mv);
   virtual CFtype DeltaObjective(const State& st, const Move & mv);
   virtual CFtype DeltaViolations(const State& st, const Move & mv);
-  //virtual CFtype DeltaObjective(const State& st, const State& st1, const Move & mv);
-  //virtual CFtype DeltaViolations(const State& st, const State& st1, const Move & mv);
   
   virtual ShiftedResult<CFtype> DeltaShiftedCostFunction(const State& st, const Move& mv);
-  //virtual ShiftedResult<CFtype> DeltaShiftedObjective(const State& st, const Move & mv);
-  //virtual ShiftedResult<CFtype> DeltaShiftedViolations(const State& st, const Move & mv);
-  //virtual ShiftedResult<CFtype> DeltaShiftedObjective(const State& st, const State& st1, const Move & mv);
-  //virtual ShiftedResult<CFtype> DeltaShiftedViolations(const State& st, const State& st1, const Move & mv);
   
   virtual void AddDeltaCostComponent(AbstractDeltaCostComponent<Input,State,Move,CFtype>& dcc);
   
   virtual unsigned int DeltaCostComponents()
-  { return (unsigned int)delta_cost_component.size(); }
+  { return delta_cost_component.size(); }
   
   virtual AbstractDeltaCostComponent<Input,State,Move,CFtype>& DeltaCostComponent(unsigned i)
   { return *delta_cost_component[i]; }
   
   // debugging/statistic functions
-  //  virtual void PrintNeighborhoodStatistics(const State &st, std::ostream& os = std::cout);
-//   virtual void ReadMove(Move& mv, std::istream& is = std::cin);
-//   virtual void PrintMoveInfo(const State &st, const Move& mv, std::ostream& os = std::cout);
-  virtual void PrintMoveCost(const State &st, const Move& mv, std::ostream& os = std::cout);
+  //  virtual void PrintMoveCost(const State &st, const Move& mv, std::ostream& os = std::cout);
   
-  /** Prompts for reading a move in the neighborhood of a given state
-      from an input stream.
-    
-      @param st the start state
-      @param mv the move read from the input stream
-      @param is the input stream
-  */
-  virtual void InputMove(const State &st, Move& mv,
-                         std::istream& is = std::cin) const;
-  
-  void Check() const;
 protected:
 		NeighborhoodExplorer(const Input& in, StateManager<Input,State,CFtype>& sm, std::string name);
   virtual ~NeighborhoodExplorer() {}
@@ -450,13 +430,6 @@ void NeighborhoodExplorer<Input,State,Move,CFtype>::PrintMoveCost(const State& s
   os << "Total Delta Cost : " << HARD_WEIGHT * total_delta_hard_cost + total_delta_soft_cost << std::endl;
 }
 
-/**
-   Checks wether the object state is consistent with all the related
-   objects.
-*/
-template <class Input, class State, class Move, typename CFtype>
-void NeighborhoodExplorer<Input,State,Move,CFtype>::Check() const
-{}
 
 /**
    Evaluates the variation of the violations function obtained by 
@@ -528,102 +501,7 @@ CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::DeltaObjective(const State
   return total_delta;
 }
 
-/* template <class Input, class State, class Move, typename CFtype>
-   CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::DeltaObjective(const State& st, const State& st1, const Move & mv)
-   {
-   CFtype total_delta = 0;
-   for (unsigned i = 0; i < this->delta_cost_component.size(); i++)
-   if (!delta_cost_component[i]->IsHard())
-   if (this->delta_cost_component[i]->IsDeltaImplemented())
-   {
-   FilledDeltaCostComponent<Input,State,Move,CFtype>& dcc = static_cast<FilledDeltaCostComponent<Input,State,Move,CFtype>& >(*this->delta_cost_component[i]);
-   total_delta += dcc.DeltaCost(st, mv);
-   }
-   else
-   {
-   EmptyDeltaCostComponent<Input,State,Move,CFtype>& dcc = static_cast<EmptyDeltaCostComponent<Input,State,Move,CFtype>& >(*this->delta_cost_component[i]);
-   total_delta += dcc.DeltaCost(st, st1);
-   }
-   return total_delta;
-   } */
 
-/* template <class Input, class State, class Move, typename CFtype>
-   ShiftedResult<CFtype> NeighborhoodExplorer<Input,State,Move,CFtype>::DeltaShiftedViolations(const State& st, const Move & mv)
-   {
-   // in the current version, if hard_delta_cost is not used
-   // the function returns 0. This means that the default
-   // version is not available
-   ShiftedResult<CFtype> total_delta;
-   for (unsigned i = 0; i < delta_cost_component.size(); i++)
-   if (delta_cost_component[i]->IsHard())
-   {
-   FilledDeltaCostComponent<Input,State,Move,CFtype>& dcc = static_cast<FilledDeltaCostComponent<Input,State,Move,CFtype>& >(*this->delta_cost_component[i]);
-   total_delta = total_delta + dcc.DeltaShiftedCost(st, mv);
-   }
-   return total_delta;
-   }
-
-   template <class Input, class State, class Move, typename CFtype>
-   ShiftedResult<CFtype> NeighborhoodExplorer<Input,State,Move,CFtype>::DeltaShiftedViolations(const State& st, const State& st1, const Move & mv)
-   {
-   ShiftedResult<CFtype> total_delta;
-   for (unsigned i = 0; i < delta_cost_component.size(); i++)
-   if (delta_cost_component[i]->IsHard())
-   if (delta_cost_component[i]->IsDeltaImplemented())
-   {
-   FilledDeltaCostComponent<Input,State,Move,CFtype>& dcc = static_cast<FilledDeltaCostComponent<Input,State,Move,CFtype>& >(*this->delta_cost_component[i]);
-   total_delta = total_delta + dcc.DeltaShiftedCost(st, mv);
-   }
-   else
-   {
-   EmptyDeltaCostComponent<Input,State,Move,CFtype>& dcc = static_cast<EmptyDeltaCostComponent<Input,State,Move,CFtype>& >(*this->delta_cost_component[i]);
-   total_delta = total_delta + dcc.DeltaShiftedCost(st, st1);
-   }
-   return total_delta;
-   } */
-
-/**
-   Evaluates the variation of the objective function obtained by performing
-   a move in a given state.
-   The tentative definition simply makes the move and invokes the 
-   companion StateManager method (Objective) on the initial and on the
-   final state.
- 
-   @param st the state
-   @param mv the move to evaluate
-   @return the difference in the objective function induced by the move mv
-*/
-/* template <class Input, class State, class Move, typename CFtype>
-   ShiftedResult<CFtype> NeighborhoodExplorer<Input,State,Move,CFtype>::DeltaShiftedObjective(const State& st, const Move & mv)
-   {
-   ShiftedResult<CFtype> total_delta;
-   for (unsigned i = 0; i < this->delta_cost_component.size(); i++)
-   if (!delta_cost_component[i]->IsHard())
-   {
-   FilledDeltaCostComponent<Input,State,Move,CFtype>& dcc = static_cast<FilledDeltaCostComponent<Input,State,Move,CFtype>& >(*this->delta_cost_component[i]);
-   total_delta = total_delta + dcc.DeltaShiftedCost(st, mv);
-   }
-   return total_delta;
-   }
-
-   template <class Input, class State, class Move, typename CFtype>
-   ShiftedResult<CFtype> NeighborhoodExplorer<Input,State,Move,CFtype>::DeltaShiftedObjective(const State& st, const State& st1, const Move & mv)
-   {
-   ShiftedResult<CFtype> total_delta;
-   for (unsigned i = 0; i < this->delta_cost_component.size(); i++)
-   if (!delta_cost_component[i]->IsHard())
-   if (delta_cost_component[i]->IsDeltaImplemented())
-   {
-   FilledDeltaCostComponent<Input,State,Move,CFtype>& dcc = static_cast<FilledDeltaCostComponent<Input,State,Move,CFtype>& >(*this->delta_cost_component[i]);
-   total_delta = total_delta + dcc.DeltaShiftedCost(st, mv);
-   }
-   else
-   {
-   EmptyDeltaCostComponent<Input,State,Move,CFtype>& dcc = static_cast<EmptyDeltaCostComponent<Input,State,Move,CFtype>& >(*this->delta_cost_component[i]);
-   total_delta = total_delta + dcc.DeltaShiftedCost(st, st1);
-   }
-   return total_delta;
-   } */
 /**
    Checks whether the whole neighborhood has been explored.
    The tentative definition verifies is the move passed as parameter 

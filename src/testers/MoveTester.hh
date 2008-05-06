@@ -237,8 +237,8 @@ void MoveTester<Input,Output,State,Move,CFtype>::CheckMoveIndependence(const Sta
 								       std::ostream& os) const
 {
   Move mv;
-  std::vector<State> states;
-  std::vector<Move> moves;
+  std::set<State> states;
+  std::set<Move> moves;
   unsigned repeat_states = 0, null_moves = 0, all_moves = 0;
   int index;
   State st1 = st;

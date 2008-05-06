@@ -1,5 +1,5 @@
-#ifndef _STATEMANAGER_HH_
-#define _STATEMANAGER_HH_
+#ifndef _STATE_MANAGER_HH_
+#define _STATE_MANAGER_HH_
 
 #include <iostream>
 #include <vector>
@@ -45,23 +45,24 @@ public:
 	 false otherwise */
   virtual bool LowerBoundReached(const CFtype& fvalue) const;
   virtual bool OptimalStateReached(const State& st) const;
-  virtual unsigned StateDistance(const State& st1, const State& st2) const;
-  virtual void PrintStateDistance(const State& st1, const State& st2, std::ostream& os = std::cout) const;
 
-  int IsMember(const State& s, const std::vector<State>& v);
+  virtual unsigned StateDistance(const State& st1, const State& st2) const;
+  //  virtual void PrintStateDistance(const State& st1, const State& st2, std::ostream& os = std::cout) const;
+
+//   int IsMember(const State& s, const std::vector<State>& v);  // usare set nel Tester
 
   void AddCostComponent(CostComponent<Input,State,CFtype>& cc);
   void ClearCostComponents();
   
-  // debug functions
-  virtual void PrintState(const State& st,
-                          std::ostream& os = std::cout) const;
-  virtual void PrintStateCost(const State& st,
-                              std::ostream& os = std::cout) const;
-  virtual void PrintStateDetailedCost(const State& st,
-                                      std::ostream& os = std::cout) const;
-  virtual void PrintStateReducedCost(const State& st,
-                                      std::ostream& os = std::cout) const;
+//   // debug functions
+//   virtual void PrintState(const State& st,
+//                           std::ostream& os = std::cout) const;
+//   virtual void PrintStateCost(const State& st,
+//                               std::ostream& os = std::cout) const;
+//   virtual void PrintStateDetailedCost(const State& st,
+//                                       std::ostream& os = std::cout) const;
+//   virtual void PrintStateReducedCost(const State& st,
+//                                       std::ostream& os = std::cout) const;
   // info functions
   virtual void GetDetailedCost(const State& st, CFtype& violations,
                                std::vector<CFtype>& single_violations_cost,
@@ -72,6 +73,7 @@ public:
   
   CostComponent<Input, State,CFtype>& GetCostComponent(unsigned i) const { return *(cost_component[i]); }
   unsigned CostComponents() const { return cost_component.size(); }
+  CFtype Cost(unsigned int i) const { return cost_component[i]->Cost(); }
 
   const std::string name;
 protected:
@@ -261,7 +263,7 @@ void StateManager<Input,State,CFtype>::GetDetailedCost(const State& st,
   single_objective_cost.resize(0);
   for (unsigned int i = 0; i < cost_component.size(); i++)
     if (cost_component[i]->IsSoft())
-      single_objective_cost.push_back(cost_component[i]->Cost(st));
+     single_objective_cost.push_back(cost_component[i]->Cost(st));
 }
 
 /**
@@ -324,12 +326,15 @@ void StateManager<Input,State,CFtype>::ClearCostComponents()
 template <class Input, class State, typename CFtype>
 unsigned StateManager<Input,State,CFtype>::StateDistance(const State& st1, const State& st2) const
 { 
+  throw std::runtime_error("For using this feature StateDistance must be implemented in the concrete class!");
   return 0;
 }
 
 template <class Input, class State, typename CFtype>
 void StateManager<Input,State,CFtype>::PrintStateDistance(const State& st1, const State& st2, std::ostream& os) const
-{}
+{  
+  throw std::runtime_error("For using this feature PrintStateDistance must be implemented in the concrete class!");
+}
 
 template <class Input, class State, typename CFtype>
 int StateManager<Input,State,CFtype>::IsMember(const State& s, const std::vector<State>& v)

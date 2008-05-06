@@ -1,5 +1,5 @@
-#ifndef _DELTACOSTCOMPONENT_HH_
-#define _DELTACOSTCOMPONENT_HH_
+#ifndef _DELTA_COST_COMPONENT_HH_
+#define _DELTA_COST_COMPONENT_HH_
 
 #include <helpers/CostComponent.hh>
 #include <helpers/ShiftingPenaltyManager.hh>
@@ -107,7 +107,7 @@ public:
   virtual CFtype DeltaCost(const State& st, const State& st1) const; 
   virtual ShiftedResult<CFtype> DeltaShiftedCost(const State& st, const State& st1) const;
   CFtype ComputeDeltaCost(const State& st, const Move& mv) const 
-  { throw std::logic_error("This method should never be called"); }
+  { throw std::logic_error("This method should never be called because the implementation is missing"); }
 };
 
 
