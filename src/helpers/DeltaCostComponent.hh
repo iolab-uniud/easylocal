@@ -71,6 +71,7 @@ public:
   void SetShiftingPenaltyManager(ShiftingPenaltyManager<CFtype>* spm);
   virtual void ResetShift();
   virtual bool IsDeltaImplemented() const  { return is_delta_implemented; }
+  CostComponent<Input,State,CFtype>& GetCostComponent() const { return cc; }
   virtual void UpdateShift(const State& st);
   virtual void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout);
   bool IsHard() const

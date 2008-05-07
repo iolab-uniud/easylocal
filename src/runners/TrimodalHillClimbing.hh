@@ -168,7 +168,6 @@ void TrimodalHillClimbing<Input,State,Move1,Move2,Move3,CFtype>::StoreMove()
       if (LessThan(this->current_move_cost1,0))
         {
             update_state = true;
-            //      std::cerr << 1 << ' ' << this->current_move_cost1 << std::endl;
         }
         break;
     case MOVE_2:

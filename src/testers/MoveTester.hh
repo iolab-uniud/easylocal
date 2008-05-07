@@ -11,26 +11,34 @@
 */
 template <class Input, class Output, class State, class Move, typename CFtype = int>
 class MoveTester
-  : public ComponentTester<Input,Output,State,CFtype>
+            : public ComponentTester<Input,Output,State,CFtype>
 {
 public:
   MoveTester(const Input& in,
 	     StateManager<Input,State,CFtype>& e_sm,
 	     OutputManager<Input,Output,State,CFtype>& e_om,
 	     NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
-	     std::string name);
-  void PrintNeighborhoodStatistics(const State& st, std::ostream& os = std::cout) const;
-  void PrintAllNeighbors(const State& st, std::ostream& os = std::cout) const;
-  void CheckNeighborhoodCosts(const State& st, std::ostream& os = std::cout) const;
-  void CheckMoveCosts(const State& st,  const Move& mv, 
-		      std::ostream& os = std::cout) const;
-  void CheckMoveIndependence(const State& st, std::ostream& os = std::cout) const;
+	     std::string name, std::ostream& o = std::cout);
+  void RunMainMenu(State& st);
+  void PrintNeighborhoodStatistics(const State& st) const;
+  void PrintAllNeighbors(const State& st) const;
+  void CheckNeighborhoodCosts(const State& st) const;
+  void PrintMoveCosts(const State& st,  const Move& mv) const;
+  void CheckMoveIndependence(const State& st) const;
 protected:
   void ShowMenu();
   bool ExecuteChoice(State& st);
+  const Input& in;
+  Output out;   /**< The output object. */
+  StateManager<Input,State,CFtype>& sm; /**< A pointer to the attached
+					   state manager. */
+  OutputManager<Input,Output,State,CFtype>& om; /**< A pointer to the attached
+						   output manager. */
   NeighborhoodExplorer<Input,State,Move,CFtype>& ne; /**< A reference to the
 							attached neighborhood
 							explorer. */
+  unsigned int choice;   /**< The option currently chosen from the menu. */
+  std::ostream& os;
 };
 
 /*************************************************************************
@@ -49,33 +57,60 @@ protected:
    @param in a pointer to an input object
 */
 template <class Input, class Output, class State, class Move, typename CFtype>
-MoveTester<Input,Output,State,Move,CFtype>::MoveTester(const Input& in,
+MoveTester<Input,Output,State,Move,CFtype>::MoveTester(const Input& i,
 						       StateManager<Input,State,CFtype>& e_sm,
 						       OutputManager<Input,Output,State,CFtype>& e_om,
 						       NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
-						       std::string name)
-  : ComponentTester<Input,Output,State,CFtype>(in, e_sm, e_om, name), ne(e_ne)
+						       std::string name, std::ostream& o)
+  : ComponentTester<Input,Output,State,CFtype>(name), in(i), out(i), sm(e_sm), om(e_om), ne(e_ne), os(o)
 {}
 
 
+template <class Input, class Output, class State, class Move, typename CFtype>
+void MoveTester<Input,Output,State,Move,CFtype>::RunMainMenu(State& st)
+{
+    bool show_state;
+    do
+    {
+        ShowMenu();
+        if (choice != 0)
+        {
+          Chronometer chrono;
+          chrono.Start();
+          show_state = ExecuteChoice(st);
+          chrono.Stop();
+          if (show_state)
+          {
+            om.OutputState(st,out);
+            os << "CURRENT SOLUTION " << std::endl << out << std::endl;
+            os << "CURRENT COST : " << sm.CostFunction(st) << std::endl;
+          }
+          os << "ELAPSED TIME : " << chrono.TotalTime() << 's' << std::endl;
+        }
+    }
+    while (choice != 0);
+    os << "Leaving " << this->name << " menu" << std::endl;
+}
+ 
 /**
    Outputs the menu options.
 */
 template <class Input, class Output, class State, class Move, typename CFtype>
 void MoveTester<Input,Output,State,Move,CFtype>::ShowMenu()
 {
-  std::cout << "Move Menu: " << std::endl
-	    << "     (1)  Perform Best Move" << std::endl
-	    << "     (2)  Perform Random Move" << std::endl
-	    << "     (3)  Perform Input Move" << std::endl
-	    << "     (4)  Print All Neighbors" << std::endl
-	    << "     (5)  Print Neighborhood Statistics" << std::endl
-	    << "     (6)  Check Input Move Cost" << std::endl 
-	    << "     (7)  Check Neighborhood Costs" << std::endl 
-	    << "     (8)  Check Move Indenpendence" << std::endl 
-	    << "     (0)  Return to Main Menu" << std::endl
-	    << " Your choice: ";
-  std::cin >> this->choice;
+  os << "Move Menu: " << std::endl
+     << "     (1)  Perform Best Move" << std::endl
+     << "     (2)  Perform Random Move" << std::endl
+     << "     (3)  Perform Input Move" << std::endl
+     << "     (4)  Print All Neighbors" << std::endl
+     << "     (5)  Print Neighborhood Statistics" << std::endl
+     << "     (6)  Print Random Move Cost" << std::endl 
+     << "     (7)  Print Input Move Cost" << std::endl 
+     << "     (8)  Check Neighborhood Costs" << std::endl 
+     << "     (9)  Check Move Indenpendence" << std::endl 
+     << "     (0)  Return to Main Menu" << std::endl
+     << " Your choice: ";
+  std::cin >> choice;
 }
 
 /**
@@ -87,7 +122,7 @@ template <class Input, class Output, class State, class Move, typename CFtype>
 bool MoveTester<Input,Output,State,Move,CFtype>::ExecuteChoice(State& st)
 {
   Move mv;
-  switch(this->choice)
+  switch(choice)
     {
     case 1:
       ne.BestMove(st,mv);
@@ -96,7 +131,7 @@ bool MoveTester<Input,Output,State,Move,CFtype>::ExecuteChoice(State& st)
       ne.RandomMove(st,mv);
       break;
     case 3:
-      std::cout << "Input move : ";
+      os << "Input move : ";
       std::cin >> mv;
       break;
     case 4:
@@ -106,59 +141,61 @@ bool MoveTester<Input,Output,State,Move,CFtype>::ExecuteChoice(State& st)
       PrintNeighborhoodStatistics(st);
       break;
     case 6:
-      std::cout << "Input move : ";
-      std::cin >> mv;
-      CheckMoveCosts(st,mv);
+      ne.RandomMove(st,mv);
+      PrintMoveCosts(st,mv);
       break;
     case 7:
-      CheckNeighborhoodCosts(st);
+      do 
+	{
+	  os << "Input move : ";
+	  std::cin >> mv;
+	  if (!ne.FeasibleMove(st,mv))
+	    os << "Move " << mv << " is infeasible " << std::endl;
+	}
+      while (!ne.FeasibleMove(st,mv));
+      PrintMoveCosts(st,mv);
       break;
     case 8:
+      CheckNeighborhoodCosts(st);
+      break;
+    case 9:
       CheckMoveIndependence(st);
       break;
     default:
-      std::cout << "Invalid choice" << std::endl;
+      os << "Invalid choice" << std::endl;
     }
-  if (this->choice == 1 || this->choice == 2 || this->choice == 3)
+  if (choice == 1 || choice == 2 || choice == 3)
     {
-      std::cout << "Move : " << mv << std::endl;
+      os << "Move : " << mv << std::endl;
       if (ne.FeasibleMove(st,mv))
 	{
 	  ne.MakeMove(st,mv);
 	  return true;
 	}
       else
-	std::cout << "Infeasible move!" << std::endl;
+	os << "Infeasible move!" << std::endl;
     }
   
   return false;
 }
  
 template <class Input, class Output, class State, class Move, typename CFtype>
-void MoveTester<Input,Output,State,Move,CFtype>::CheckMoveCosts(const State& st, const Move& mv, 
-								std::ostream& os) const
+void MoveTester<Input,Output,State,Move,CFtype>::PrintMoveCosts(const State& st, const Move& mv) const
 {
   CFtype delta_cost, total_delta_hard_cost = 0, total_delta_soft_cost = 0;
   State st1 = st;
 
   os << "Move : " << mv << std::endl;
-  ne->MakeMove(st1,mv);
+  ne.MakeMove(st1,mv);
 
-  for (unsigned i = 0; i < ne->DeltaCostComponents(); i++)
+  for (unsigned i = 0; i < ne.DeltaCostComponents(); i++)
     {
-      AbstractDeltaCostComponent<Input,State,Move,CFtype>& dcc = ne->DeltaCostComponent(i);
-      os << "  " << i << ". " << dcc.name << " : ";
+      AbstractDeltaCostComponent<Input,State,Move,CFtype>& dcc = ne.DeltaCostComponent(i);
       if (dcc.IsDeltaImplemented())
-	{
-	  FilledDeltaCostComponent<Input,State,Move,CFtype>& dcc = static_cast<FilledDeltaCostComponent<Input,State,Move,CFtype>& >(*this->delta_cost_component[i]);
-	  delta_cost = dcc.DeltaCost(st, mv);        
-	}
+	delta_cost = static_cast<FilledDeltaCostComponent<Input,State,Move,CFtype>& >(dcc).DeltaCost(st, mv);        
       else
-	{
-	  EmptyDeltaCostComponent<Input,State,Move,CFtype>& dcc = static_cast<EmptyDeltaCostComponent<Input,State,Move,CFtype>& >(*this->delta_cost_component[i]);
-	  delta_cost = dcc.DeltaCost(st, st1);
-	}
-      os <<  delta_cost;
+	delta_cost = static_cast<EmptyDeltaCostComponent<Input,State,Move,CFtype>& >(dcc).DeltaCost(st, st1);
+      os << "  " << i << ". " << dcc.name << " : " <<  delta_cost;
       if (dcc.IsHard())
 	{
 	  total_delta_hard_cost += delta_cost;
@@ -174,11 +211,11 @@ void MoveTester<Input,Output,State,Move,CFtype>::CheckMoveCosts(const State& st,
 }
 
 template <class Input, class Output, class State, class Move, typename CFtype>
-void MoveTester<Input,Output,State,Move,CFtype>::CheckNeighborhoodCosts(const State& st, std::ostream& os) const
+void MoveTester<Input,Output,State,Move,CFtype>::CheckNeighborhoodCosts(const State& st) const
 {
   Move mv;
   unsigned move_count = 0;
-  CFtype error;
+  CFtype error, error_cc, delta_cost, cost, cost1;
   State st1 = st;
   bool error_found = false;
   ne.FirstMove(st, mv);
@@ -189,10 +226,26 @@ void MoveTester<Input,Output,State,Move,CFtype>::CheckNeighborhoodCosts(const St
       error = this->sm.CostFunction(st1) - ne.DeltaCostFunction(st, mv) - this->sm.CostFunction(st);
       if (!IsZero(error))
 	{
-	  std::cout << std::endl << "Error: Move n. " << move_count << ", Info" << std::endl;
-	  CheckMoveCosts(st,mv);
 	  error_found = true;
-	  std::cout << "Press enter to continue " << std::endl;
+	  os << std::endl << "Error: Move n. " << move_count << ", Info" << std::endl;
+	  for (unsigned i = 0; i < ne.DeltaCostComponents(); i++)
+	    {
+	      if (ne.DeltaCostComponent(i).IsDeltaImplemented()) // only implemented delta can be buggy
+		{
+		  FilledDeltaCostComponent<Input,State,Move,CFtype>& dcc = (FilledDeltaCostComponent<Input,State,Move,CFtype>&) ne.DeltaCostComponent(i);
+		  CostComponent<Input,State,CFtype>& cc = dcc.GetCostComponent();
+		  delta_cost = dcc.DeltaCost(st, mv);        
+		  cost = cc.Cost(st);
+		  cost1 = cc.Cost(st1);
+		  error_cc = cost - cost1 + delta_cost;
+		  if (!IsZero(error_cc))
+		    {		    
+		      os << "  " << i << ". " << dcc.name << " : Initial = " << cost << ", final = " 
+			 << cost1 << ", delta = " << delta_cost << " (error = " << error_cc << ")" << std::endl;		      
+		    }
+		}
+	    }
+	  os << "Press enter to continue " << std::endl;
 	  std::cin.get();
 	}          
       if (move_count % 100 == 0) std::cerr << '.'; // show that it is alive
@@ -202,7 +255,7 @@ void MoveTester<Input,Output,State,Move,CFtype>::CheckNeighborhoodCosts(const St
   while(!ne.LastMoveDone(st, mv));
   
   if (!error_found)
-    std::cout << std::endl << "No error found (for " << move_count << " moves)!" << std::endl;
+    os << std::endl << "No error found (for " << move_count << " moves)!" << std::endl;
 }
 
 /**
@@ -213,7 +266,7 @@ void MoveTester<Input,Output,State,Move,CFtype>::CheckNeighborhoodCosts(const St
    @param st the state to inspect
 */
 template <class Input, class Output, class State, class Move, typename CFtype>
-void MoveTester<Input,Output,State,Move,CFtype>::PrintNeighborhoodStatistics(const State& st, std::ostream& os) const
+void MoveTester<Input,Output,State,Move,CFtype>::PrintNeighborhoodStatistics(const State& st) const
 {
   unsigned int neighbors = 0, improving_neighbors = 0,
     worsening_neighbors = 0, non_improving_neighbors = 0;
@@ -244,7 +297,7 @@ void MoveTester<Input,Output,State,Move,CFtype>::PrintNeighborhoodStatistics(con
 }
 
 template <class Input, class Output, class State, class Move, typename CFtype>
-void MoveTester<Input,Output,State,Move,CFtype>::PrintAllNeighbors(const State& st, std::ostream& os) const
+void MoveTester<Input,Output,State,Move,CFtype>::PrintAllNeighbors(const State& st) const
 {
   Move mv;
   ne.FirstMove(st,mv);
@@ -257,8 +310,7 @@ void MoveTester<Input,Output,State,Move,CFtype>::PrintAllNeighbors(const State& 
 }
 
 template <class Input, class Output, class State, class Move, typename CFtype>
-void MoveTester<Input,Output,State,Move,CFtype>::CheckMoveIndependence(const State& st, 
-								       std::ostream& os) const
+void MoveTester<Input,Output,State,Move,CFtype>::CheckMoveIndependence(const State& st) const
 {
   Move mv;
   std::vector<pair<Move,State> > reached_states;

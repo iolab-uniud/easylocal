@@ -96,8 +96,6 @@ public:
   virtual AbstractDeltaCostComponent<Input,State,Move,CFtype>& DeltaCostComponent(unsigned i)
   { return *delta_cost_component[i]; }
   
-  // debugging/statistic functions
-  //  virtual void PrintMoveCost(const State &st, const Move& mv, std::ostream& os = std::cout);
   
 protected:
 		NeighborhoodExplorer(const Input& in, StateManager<Input,State,CFtype>& sm, std::string name);

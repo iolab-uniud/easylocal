@@ -466,7 +466,6 @@ CFtype BimodalKicker<Input,State,Move1,Move2,CFtype>::TotalBestKick(const State 
 	  total_best_moves1 = internal_best_moves1;
 	  total_best_moves2 = internal_best_moves2;
 	  best_pattern = pattern;
-	  //      std::cerr << "Total best kick cost : " << total_best_cost << std::endl;
 	}
     }
   current_moves1 = total_best_moves1;

@@ -1,5 +1,5 @@
-#ifndef KICKERTESTER_HH_
-#define KICKERTESTER_HH_
+#ifndef _KICKER_TESTER_HH_
+#define _KICKER_TESTER_HH_
 
 #include <testers/ComponentTester.hh>
 #include <kickers/Kicker.hh>
@@ -16,15 +16,23 @@ public:
                  StateManager<Input,State,CFtype>& e_sm,
                  OutputManager<Input,Output,State,CFtype>& e_om,
                  Kicker<Input,State,CFtype>& k,
-		 std::string name
-		 );
+		 std::string name, std::ostream& o = std::cout);
 
+  void RunMainMenu(State& st);
 protected:
-  void PrintKicks(State& st, bool only_improving, std::ostream& os = std::cout);
-  void PrintKick(State& st, std::ostream& os);
+  void PrintKicks(State& st, bool only_improving);
+  void PrintKick(State& st);
   void ShowMenu();
   bool ExecuteChoice(State& st);
+  const Input& in;
+  Output out;   /**< The output object. */
+  StateManager<Input,State,CFtype>& sm; /**< A pointer to the attached
+        state manager. */
+  OutputManager<Input,Output,State,CFtype>& om; /**< A pointer to the attached
+                output manager. */
+  unsigned int choice;   /**< The option currently chosen from the menu. */
   Kicker<Input,State,CFtype>& kicker;
+  std::ostream& os;
 };
 
 /*************************************************************************
@@ -41,13 +49,43 @@ protected:
 */
 template <class Input, class Output, class State, typename CFtype>
 KickerTester<Input,Output,State,CFtype>::KickerTester(
-        const Input& in,
+        const Input& i,
         StateManager<Input,State,CFtype>& e_sm,
         OutputManager<Input,Output,State,CFtype>& e_om,
-        Kicker<Input,State,CFtype>& k, std::string name)
-  : ComponentTester<Input,Output,State,CFtype>(in, e_sm, e_om, name), kicker(k)
+        Kicker<Input,State,CFtype>& k, std::string name, std::ostream& o)
+  : ComponentTester<Input,Output,State,CFtype>(name), in(i), out(i), sm(e_sm), om(e_om), kicker(k), os(o)
 { }
 
+/**
+   Manages the component tester menu for the given state.     
+   @param st the state to test
+*/
+template <class Input, class Output, class State, typename CFtype>
+void KickerTester<Input,Output,State,CFtype>::RunMainMenu(State& st)
+{
+    bool show_state;
+    do
+    {
+        ShowMenu();
+        if (choice != 0)
+        {
+          Chronometer chrono;
+          chrono.Start();
+          show_state = ExecuteChoice(st);
+          chrono.Stop();
+          if (show_state)
+          {
+            om.OutputState(st,out);
+            os << "CURRENT SOLUTION " << std::endl << out << std::endl;
+            os << "CURRENT COST : " << sm.CostFunction(st) << std::endl;
+          }
+          os << "ELAPSED TIME : " << chrono.TotalTime() << 's' << std::endl;
+        }
+    }
+    while (choice != 0);
+    os << "Leaving " << this->name << " menu" << std::endl;
+}
+ 
 /**
     Outputs the menu options.
  */
@@ -56,7 +94,7 @@ void KickerTester<Input,Output,State,CFtype>::ShowMenu()
 {
   if (kicker.SingleKicker())
     {
-      std::cout << "Kicker \"" << this->name << "\" Menu (step = " << kicker.Step() << "):" << std::endl
+      os << "Kicker \"" << this->name << "\" Menu (step = " << kicker.Step() << "):" << std::endl
 		<< "    (1) Perform Random Kick" << std::endl
 		<< "    (2) Perform Best Kick" << std::endl
 		<< "    (3) Perform First Improving Kick" << std::endl
@@ -70,9 +108,9 @@ void KickerTester<Input,Output,State,CFtype>::ShowMenu()
     }
   else
     {
-      std::cout << "Kicker \"" << this->name << "\" Menu (step = " << kicker.Step() << ", pattern = <";
-      kicker.PrintPattern(std::cout);
-      std::cout << ">:" << std::endl
+      os << "Kicker \"" << this->name << "\" Menu (step = " << kicker.Step() << ", pattern = <";
+      kicker.PrintPattern(os);
+      os << ">:" << std::endl
 		<< "    (1) Perform Random Kick" << std::endl
 		<< "    (2) Perform Best Kick" << std::endl
 		<< "    (3) Perform First Improving Kick" << std::endl
@@ -84,7 +122,7 @@ void KickerTester<Input,Output,State,CFtype>::ShowMenu()
 		<< "    (0) Return to Main Menu" << std::endl
 		<< "Your choice : ";
     }
-      std::cin >> this->choice;
+      std::cin >> choice;
 }
 
 /**
@@ -95,7 +133,7 @@ void KickerTester<Input,Output,State,CFtype>::ShowMenu()
 template <class Input, class Output, class State, typename CFtype>
 bool KickerTester<Input,Output,State,CFtype>::ExecuteChoice(State& st)
 {
-  switch(this->choice)
+  switch(choice)
     {
     case 1:
       kicker.RandomKick(st);
@@ -122,9 +160,9 @@ bool KickerTester<Input,Output,State,CFtype>::ExecuteChoice(State& st)
       kicker.ReadParameters();
       break;
     default:
-      std::cout << "Invalid choice" << std::endl;
+      os << "Invalid choice" << std::endl;
     }
-  if (this->choice >= 1 && this->choice <= 5)
+  if (choice >= 1 && choice <= 5)
     {
       kicker.MakeKick(st);
       return true;
@@ -134,7 +172,7 @@ bool KickerTester<Input,Output,State,CFtype>::ExecuteChoice(State& st)
 }
 
 template <class Input, class Output, class State, typename CFtype>
-void KickerTester<Input,Output,State,CFtype>::PrintKick(State& st, std::ostream& os)
+void KickerTester<Input,Output,State,CFtype>::PrintKick(State& st)
 {
   for (unsigned i = 0; i < kicker.Step(); i++)
     {
@@ -147,13 +185,13 @@ void KickerTester<Input,Output,State,CFtype>::PrintKick(State& st, std::ostream&
 
 
 template <class Input, class Output, class State, typename CFtype>
-void KickerTester<Input,Output,State,CFtype>::PrintKicks(State& st, bool only_improving, std::ostream& os)
+void KickerTester<Input,Output,State,CFtype>::PrintKicks(State& st, bool only_improving)
 {
   unsigned count = 0;
   CFtype best_kick_cost;
   kicker.FirstKick(st);
   best_kick_cost = kicker.KickCost();
-  PrintKick(st,os);
+  PrintKick(st);
 
   while (kicker.NextKick())
     {
@@ -162,17 +200,17 @@ void KickerTester<Input,Output,State,CFtype>::PrintKicks(State& st, bool only_im
 	  if (LessThan(kicker.KickCost(),best_kick_cost))
 	    {
 	      best_kick_cost = kicker.KickCost();
-	      PrintKick(st,os);
+	      PrintKick(st);
 	      count++;
 	    }
 	}
       else
 	{
-	  PrintKick(st,os);	
+	  PrintKick(st);	
 	  count++;
 	}
     }
   os << "Number of kicks : " << count << std::endl;
 }
 
-#endif /*KICKERTESTER_HH_*/
+#endif // define _KICKER_TESTER_HH_
