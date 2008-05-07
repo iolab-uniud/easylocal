@@ -63,9 +63,14 @@ void BimodalRunnerObserver<Input,State,Move1,Move2,CFtype>::NotifyNewBest(Bimoda
     {
       log << "--New best: " << r.current_state_cost 
 	  << " (it: " << r.number_of_iterations << ", idle: " << r.number_of_iterations - r.iteration_of_best 
-	  << "), Costs: ";
-      r.sm.PrintStateReducedCost(r.current_state, log);
-      log << std::endl;
+	  << "), Costs: (";
+      for (unsigned int i = 0; i < r.sm.CostComponents(); i++)
+	{
+	  log << r.sm.Cost(r.current_state,i);
+	  if (i < r.sm.CostComponents() - 1) 
+	    log << ',';
+	}
+      log << ')' << std::endl;
     }
   if (plot_improving_moves && !plot_all_moves)
     plot << r.number_of_iterations << ' ' << r.chrono.TotalTime() << ' ' << r.current_state_cost << std::endl;
@@ -84,9 +89,14 @@ void BimodalRunnerObserver<Input,State,Move1,Move2,CFtype>::NotifyStoreMove(Bimo
 	  << r.current_state_cost << ", best: " 
 	  << r.best_state_cost <<  ") it: " << r.number_of_iterations
 	  << " (idle: " << r.number_of_iterations - r.iteration_of_best << ")" 
-	  << ", Costs: ";      
-      r.sm.PrintStateReducedCost(r.current_state, log);
-      log << std::endl; 
+	  << "), Costs: (";
+      for (unsigned int i = 0; i < r.sm.CostComponents(); i++)
+	{
+	  log << r.sm.Cost(r.current_state,i);
+	  if (i < r.sm.CostComponents() - 1) 
+	    log << ',';
+	}
+      log << ')' << std::endl;
     }
   if (plot_all_moves)
     plot << r.number_of_iterations << ' ' << r.chrono.TotalTime() << ' ' << r.current_state_cost << std::endl;

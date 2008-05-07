@@ -1,13 +1,12 @@
-#ifndef BIMODALKICKER_HH_
-#define BIMODALKICKER_HH_
+#ifndef _BIMODAL_KICKER_HH_
+#define _BIMODAL_KICKER_HH_
 
-#include <Kicker.hh>
+#include <kickers/Kicker.hh>
 
 #ifndef MOVE_ENUM
 typedef enum {
   MOVE_1 = 1,
-  MOVE_2,
-  MOVE_3
+  MOVE_2
 } PatternMove;
 #define MOVE_ENUM
 #endif
@@ -636,4 +635,4 @@ void BimodalKicker<Input,State,Move1,Move2,CFtype>::PrintPattern(std::ostream& o
     os << pattern[i] << ' ';
   os << pattern[i];
 }
-#endif /*BIMODALKICKER_HH_*/
+#endif // _BIMODAL_KICKER_HH_

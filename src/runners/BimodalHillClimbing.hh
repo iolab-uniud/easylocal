@@ -1,7 +1,7 @@
-#ifndef BIMODALHILLCLIMBING_HH_
-#define BIMODALHILLCLIMBING_HH_
+#ifndef _BIMODAL_HILL_CLIMBING_HH_
+#define _BIMODAL_HILL_CLIMBING_HH_
 
-#include <BimodalMoveRunner.hh>
+#include <runners/BimodalMoveRunner.hh>
 #include <stdexcept>
 
 /** The Hill Climbing runner considers random move selection. A move
@@ -166,4 +166,4 @@ void BimodalHillClimbing<Input,State,Move1,Move2,CFtype>::ReadParameters(std::is
   os << "  Number of idle iterations: ";
   is >> this->max_idle_iteration;
 }
-#endif /*BIMODALHILLCLIMBING_HH_*/
+#endif // define _BIMODAL_HILL_CLIMBING_HH_

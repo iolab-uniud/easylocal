@@ -73,7 +73,7 @@ public:
   
   CostComponent<Input, State,CFtype>& GetCostComponent(unsigned i) const { return *(cost_component[i]); }
   unsigned CostComponents() const { return cost_component.size(); }
-  CFtype Cost(unsigned int i) const { return cost_component[i]->Cost(); }
+  CFtype Cost(const State& st, unsigned int i) const { return cost_component[i]->Cost(st); }
 
   const std::string name;
 protected:
@@ -185,67 +185,67 @@ template <class Input, class State, typename CFtype>
 bool StateManager<Input,State,CFtype>::OptimalStateReached(const State& st) const
 { return LowerBoundReached(CostFunction(st)); }
 
-/**
-Outputs some informations about the state passed as parameter.
+// /**
+// Outputs some informations about the state passed as parameter.
  
- @param st the state to be inspected
- */
-template <class Input, class State, typename CFtype>
-void StateManager<Input,State,CFtype>::PrintState(const State& st,
-                                                  std::ostream& os) const
-{
-  os  << st << std::endl;
-  os  << "Violations:\t" << Violations(st) << std::endl
-    << "Objective: \t" << Objective(st) << std::endl;
-  os  << "Total cost:  \t" << CostFunction(st) << std::endl;
-}
+//  @param st the state to be inspected
+//  */
+// template <class Input, class State, typename CFtype>
+// void StateManager<Input,State,CFtype>::PrintState(const State& st,
+//                                                   std::ostream& os) const
+// {
+//   os  << st << std::endl;
+//   os  << "Violations:\t" << Violations(st) << std::endl
+//     << "Objective: \t" << Objective(st) << std::endl;
+//   os  << "Total cost:  \t" << CostFunction(st) << std::endl;
+// }
 
-/**
-Outputs the state cost components of the state passed as parameter.
+// /**
+// Outputs the state cost components of the state passed as parameter.
  
- @param st the state to be inspected
- */
-template <class Input, class State, typename CFtype>
-void StateManager<Input,State,CFtype>::PrintStateCost(const State& st,
-                                                      std::ostream& os) const
-{
-  CFtype violations = Violations(st), objective = Objective(st), 
-  cost_function = CostFunction(st);
-  for (unsigned int i = 0; i < cost_component.size(); i++)
-    os  << i << ". " << cost_component[i]->name << " : " 
-      << cost_component[i]->Cost(st) << (cost_component[i]->IsHard() ? '*' : ' ') << std::endl;
-  os  << "Total Violations:\t" << violations << std::endl;
-  os  << "Total Objective:\t" << objective << std::endl;
-  os  << "Total Cost:  \t" << cost_function << std::endl;
-}
+//  @param st the state to be inspected
+//  */
+// template <class Input, class State, typename CFtype>
+// void StateManager<Input,State,CFtype>::PrintStateCost(const State& st,
+//                                                       std::ostream& os) const
+// {
+//   CFtype violations = Violations(st), objective = Objective(st), 
+//   cost_function = CostFunction(st);
+//   for (unsigned int i = 0; i < cost_component.size(); i++)
+//     os  << i << ". " << cost_component[i]->name << " : " 
+//       << cost_component[i]->Cost(st) << (cost_component[i]->IsHard() ? '*' : ' ') << std::endl;
+//   os  << "Total Violations:\t" << violations << std::endl;
+//   os  << "Total Objective:\t" << objective << std::endl;
+//   os  << "Total Cost:  \t" << cost_function << std::endl;
+// }
 
-/**
-Outputs the state cost components of the state passed as parameter.
+// /**
+// Outputs the state cost components of the state passed as parameter.
  
- @param st the state to be inspected
- */
-template <class Input, class State, typename CFtype>
-void StateManager<Input,State,CFtype>::PrintStateDetailedCost(const State& st,
-                                                              std::ostream& os) const
-{
-  for (unsigned int i = 0; i < cost_component.size(); i++)
-      cost_component[i]->PrintCost(st, os);
-  PrintStateCost(st, os);
-}
+//  @param st the state to be inspected
+//  */
+// template <class Input, class State, typename CFtype>
+// void StateManager<Input,State,CFtype>::PrintStateDetailedCost(const State& st,
+//                                                               std::ostream& os) const
+// {
+//   for (unsigned int i = 0; i < cost_component.size(); i++)
+//       cost_component[i]->PrintCost(st, os);
+//   PrintStateCost(st, os);
+// }
 
-template <class Input, class State, typename CFtype>
-void StateManager<Input,State,CFtype>::PrintStateReducedCost(const State& st,
-                                                              std::ostream& os) const
-{
-  os << '(' ;
-  for (unsigned int i = 0; i < cost_component.size(); i++)
-    {
-      os << cost_component[i]->Cost(st);
-      if (i < cost_component.size() - 1) 
-	os << ',';
-    }
-  os << ')';
-}
+// template <class Input, class State, typename CFtype>
+// void StateManager<Input,State,CFtype>::PrintStateReducedCost(const State& st,
+//                                                               std::ostream& os) const
+// {
+//   os << '(' ;
+//   for (unsigned int i = 0; i < cost_component.size(); i++)
+//     {
+//       os << cost_component[i]->Cost(st);
+//       if (i < cost_component.size() - 1) 
+// 	os << ',';
+//     }
+//   os << ')';
+// }
 
 template <class Input, class State, typename CFtype>
 void StateManager<Input,State,CFtype>::GetDetailedCost(const State& st,
@@ -330,20 +330,20 @@ unsigned StateManager<Input,State,CFtype>::StateDistance(const State& st1, const
   return 0;
 }
 
-template <class Input, class State, typename CFtype>
-void StateManager<Input,State,CFtype>::PrintStateDistance(const State& st1, const State& st2, std::ostream& os) const
-{  
-  throw std::runtime_error("For using this feature PrintStateDistance must be implemented in the concrete class!");
-}
+// template <class Input, class State, typename CFtype>
+// void StateManager<Input,State,CFtype>::PrintStateDistance(const State& st1, const State& st2, std::ostream& os) const
+// {  
+//   throw std::runtime_error("For using this feature PrintStateDistance must be implemented in the concrete class!");
+// }
 
-template <class Input, class State, typename CFtype>
-int StateManager<Input,State,CFtype>::IsMember(const State& s, const std::vector<State>& v)
-{
-  for (unsigned i = 0; i < v.size(); i++)
-    if (s == v[i])
-      return i;
-  return -1;
-}
+// template <class Input, class State, typename CFtype>
+// int StateManager<Input,State,CFtype>::IsMember(const State& s, const std::vector<State>& v)
+// {
+//   for (unsigned i = 0; i < v.size(); i++)
+//     if (s == v[i])
+//       return i;
+//   return -1;
+// }
 
 
 #endif // define _STATEMANAGER_HH_

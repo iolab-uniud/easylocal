@@ -1,7 +1,7 @@
-#ifndef BIMODALSTEEPESTDESCENT_HH_
-#define BIMODALSTEEPESTDESCENT_HH_
+#ifndef _BIMODAL_STEEPEST_DESCENT_HH_
+#define _BIMODAL_STEEPEST_DESCENT_HH_
 
-#include <BimodalMoveRunner.hh>
+#include <runners/BimodalMoveRunner.hh>
 
 /** The Steepest Descent runner ...  
     @ingroup Runners 
@@ -160,4 +160,4 @@ void BimodalSteepestDescent<Input,State,Move1,Move2,CFtype>::ReadParameters(std:
     os << "  Timeout: ";
     is >> this->timeout;
 }
-#endif /*BIMODALSTEEPESTDESCENT_HH_*/
+#endif // define _BIMODAL_STEEPEST_DESCENT_HH_

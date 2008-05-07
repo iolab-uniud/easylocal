@@ -1,5 +1,5 @@
-#ifndef MOVETESTER_HH_
-#define MOVETESTER_HH_
+#ifndef _MOVE_TESTER_HH_
+#define _MOVE_TESTER_HH_
 
 #include <testers/ComponentTester.hh>
 #include <helpers/OutputManager.hh>
@@ -138,15 +138,39 @@ template <class Input, class Output, class State, class Move, typename CFtype>
 void MoveTester<Input,Output,State,Move,CFtype>::CheckMoveCosts(const State& st, const Move& mv, 
 								std::ostream& os) const
 {
+  CFtype delta_cost, total_delta_hard_cost = 0, total_delta_soft_cost = 0;
   State st1 = st;
+
   os << "Move : " << mv << std::endl;
-  os << "Start state:" << std::endl;
-  this->sm.PrintStateCost(st, os);
-  ne.PrintMoveCost(st, mv, os);
-  ne.MakeMove(st1, mv);
-  os << "Final state: " << std::endl;  
-  this->sm.PrintStateCost(st1, os);
-  os << "Error : " << this->sm.CostFunction(st1) - ne.DeltaCostFunction(st, mv) - this->sm.CostFunction(st) << std::endl;
+  ne->MakeMove(st1,mv);
+
+  for (unsigned i = 0; i < ne->DeltaCostComponents(); i++)
+    {
+      AbstractDeltaCostComponent<Input,State,Move,CFtype>& dcc = ne->DeltaCostComponent(i);
+      os << "  " << i << ". " << dcc.name << " : ";
+      if (dcc.IsDeltaImplemented())
+	{
+	  FilledDeltaCostComponent<Input,State,Move,CFtype>& dcc = static_cast<FilledDeltaCostComponent<Input,State,Move,CFtype>& >(*this->delta_cost_component[i]);
+	  delta_cost = dcc.DeltaCost(st, mv);        
+	}
+      else
+	{
+	  EmptyDeltaCostComponent<Input,State,Move,CFtype>& dcc = static_cast<EmptyDeltaCostComponent<Input,State,Move,CFtype>& >(*this->delta_cost_component[i]);
+	  delta_cost = dcc.DeltaCost(st, st1);
+	}
+      os <<  delta_cost;
+      if (dcc.IsHard())
+	{
+	  total_delta_hard_cost += delta_cost;
+	  os << '*';
+	}
+      else
+	total_delta_soft_cost += delta_cost;
+      os << std::endl;
+    }
+  os << "Total Delta Violations : " << total_delta_hard_cost << std::endl;
+  os << "Total Delta Objective : " << total_delta_soft_cost << std::endl;
+  os << "Total Delta Cost : " << HARD_WEIGHT * total_delta_hard_cost + total_delta_soft_cost << std::endl;
 }
 
 template <class Input, class Output, class State, class Move, typename CFtype>
@@ -237,14 +261,12 @@ void MoveTester<Input,Output,State,Move,CFtype>::CheckMoveIndependence(const Sta
 								       std::ostream& os) const
 {
   Move mv;
-  std::set<State> states;
-  std::set<Move> moves;
-  unsigned repeat_states = 0, null_moves = 0, all_moves = 0;
-  int index;
+  std::vector<pair<Move,State> > reached_states;
+  unsigned repeat_states = 0, null_moves = 0, all_moves = 0, i;
+  bool repeated_state;
   State st1 = st;
   ne.FirstMove(st1,mv);
-  states.push_back(st1);
-  moves.push_back(mv);
+  reached_states.push_back(make_pair(mv,st1));
 
   do
     {
@@ -256,15 +278,19 @@ void MoveTester<Input,Output,State,Move,CFtype>::CheckMoveIndependence(const Sta
 	  os << "Null move " << mv << std::endl;
 	  null_moves++;
 	}	      	      
-      else if ((index = this->sm.IsMember(st1,states)) != -1)
+      else 
 	{
-	  os << "Repeated state for moves " << moves[index] << " and " << mv << std::endl;
-	  repeat_states++;
-	}
-      else
-	{
-	  states.push_back(st1);
-	  moves.push_back(mv);
+	  repeated_state = false;
+	  for (i = 0; i < reached_states.size(); i++)
+	    if (st1 == reached_states[i].second)
+	      repeated_state = true;
+	  if (repeated_state)
+	    {
+	      os << "Repeated state for moves " <<  reached_states[i].first << " and " << mv << std::endl;
+	      repeat_states++;
+	    }
+	  else
+	    reached_states.push_back(make_pair(mv,st1));
 	}
       if (all_moves % 100 == 0) std::cerr << '.'; // show that it is alive
       all_moves++;
@@ -282,4 +308,4 @@ void MoveTester<Input,Output,State,Move,CFtype>::CheckMoveIndependence(const Sta
     os << "There are " << null_moves << " null moves" << std::endl;
 }
 
-#endif /*MOVETESTER_HH_*/
+#endif // define _MOVE_TESTER_HH_

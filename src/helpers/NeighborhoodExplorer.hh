@@ -310,12 +310,12 @@ CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::FirstImprovingMove(const S
   return best_delta;
 } 
 
-template <class Input, class State, class Move, typename CFtype>
-void NeighborhoodExplorer<Input,State,Move,CFtype>::InputMove(const State &,
-                                                              Move&,
-                                                              std::istream&) const
-{ throw std::logic_error("The function InputMove() has not been redefined"
-                           " for the NeighborhoodExplorer" + name); }
+// template <class Input, class State, class Move, typename CFtype>
+// void NeighborhoodExplorer<Input,State,Move,CFtype>::InputMove(const State &,
+//                                                               Move&,
+//                                                               std::istream&) const
+// { throw std::logic_error("The function InputMove() has not been redefined"
+//                            " for the NeighborhoodExplorer" + name); }
 
 /**
    Generates the first move in the exploration of the neighborhood of a 
@@ -366,69 +366,69 @@ CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::SampleMove(const State &st
 }
 
 
-/**
-   Outputs the state cost components of the state passed as parameter.
+// /**
+//    Outputs the state cost components of the state passed as parameter.
  
-   @param st the state to be inspected
-*/
-template <class Input, class State, class Move, typename CFtype>
-void NeighborhoodExplorer<Input,State,Move,CFtype>::PrintMoveCost(const State& st,
-                                                                  const Move& mv,
-                                                                  std::ostream& os)
-{ 
-  CFtype delta_cost, total_delta_hard_cost = 0, total_delta_soft_cost = 0;
-  if (number_of_delta_not_implemented > 0)
-    {
-      State st1 = st;
-      MakeMove(st1,mv);
+//    @param st the state to be inspected
+// */
+// template <class Input, class State, class Move, typename CFtype>
+// void NeighborhoodExplorer<Input,State,Move,CFtype>::PrintMoveCost(const State& st,
+//                                                                   const Move& mv,
+//                                                                   std::ostream& os)
+// { 
+//   CFtype delta_cost, total_delta_hard_cost = 0, total_delta_soft_cost = 0;
+//   if (number_of_delta_not_implemented > 0)
+//     {
+//       State st1 = st;
+//       MakeMove(st1,mv);
     
-      for (unsigned i = 0; i < delta_cost_component.size(); i++)
-	{
-	  os << "  " << i << ". " << delta_cost_component[i]->name << " : ";
-	  if (delta_cost_component[i]->IsDeltaImplemented())
-	    {
-	      FilledDeltaCostComponent<Input,State,Move,CFtype>& dcc = static_cast<FilledDeltaCostComponent<Input,State,Move,CFtype>& >(*this->delta_cost_component[i]);
-	      delta_cost = dcc.DeltaCost(st, mv);        
-	    }
-	  else
-	    {
-	      EmptyDeltaCostComponent<Input,State,Move,CFtype>& dcc = static_cast<EmptyDeltaCostComponent<Input,State,Move,CFtype>& >(*this->delta_cost_component[i]);
-	      delta_cost = dcc.DeltaCost(st, st1);
-	    }
-	  os <<  delta_cost;
-	  if (delta_cost_component[i]->IsHard())
-	    {
-	      total_delta_hard_cost += delta_cost;
-	      os << '*';
-	    }
-	  else
-	    total_delta_soft_cost += delta_cost;
-	  os << std::endl;
-	}
+//       for (unsigned i = 0; i < delta_cost_component.size(); i++)
+// 	{
+// 	  os << "  " << i << ". " << delta_cost_component[i]->name << " : ";
+// 	  if (delta_cost_component[i]->IsDeltaImplemented())
+// 	    {
+// 	      FilledDeltaCostComponent<Input,State,Move,CFtype>& dcc = static_cast<FilledDeltaCostComponent<Input,State,Move,CFtype>& >(*this->delta_cost_component[i]);
+// 	      delta_cost = dcc.DeltaCost(st, mv);        
+// 	    }
+// 	  else
+// 	    {
+// 	      EmptyDeltaCostComponent<Input,State,Move,CFtype>& dcc = static_cast<EmptyDeltaCostComponent<Input,State,Move,CFtype>& >(*this->delta_cost_component[i]);
+// 	      delta_cost = dcc.DeltaCost(st, st1);
+// 	    }
+// 	  os <<  delta_cost;
+// 	  if (delta_cost_component[i]->IsHard())
+// 	    {
+// 	      total_delta_hard_cost += delta_cost;
+// 	      os << '*';
+// 	    }
+// 	  else
+// 	    total_delta_soft_cost += delta_cost;
+// 	  os << std::endl;
+// 	}
         
-    }
-  else
-    {
-      for (unsigned i = 0; i < delta_cost_component.size(); i++)
-	{
-	  FilledDeltaCostComponent<Input,State,Move,CFtype>& dcc = static_cast<FilledDeltaCostComponent<Input,State,Move,CFtype>& >(*this->delta_cost_component[i]);
-	  os << "  " << i << ". " << dcc.name << " : ";
-	  delta_cost = dcc.DeltaCost(st, mv);
-	  os << delta_cost;
-	  if (delta_cost_component[i]->IsHard())
-	    {
-	      total_delta_hard_cost += delta_cost;
-	      os << '*';
-	    }
-	  else
-	    total_delta_soft_cost += delta_cost;
-	  os << std::endl;
-	}
-    }
-  os << "Total Delta Violations : " << total_delta_hard_cost << std::endl;
-  os << "Total Delta Objective : " << total_delta_soft_cost << std::endl;
-  os << "Total Delta Cost : " << HARD_WEIGHT * total_delta_hard_cost + total_delta_soft_cost << std::endl;
-}
+//     }
+//   else
+//     {
+//       for (unsigned i = 0; i < delta_cost_component.size(); i++)
+// 	{
+// 	  FilledDeltaCostComponent<Input,State,Move,CFtype>& dcc = static_cast<FilledDeltaCostComponent<Input,State,Move,CFtype>& >(*this->delta_cost_component[i]);
+// 	  os << "  " << i << ". " << dcc.name << " : ";
+// 	  delta_cost = dcc.DeltaCost(st, mv);
+// 	  os << delta_cost;
+// 	  if (delta_cost_component[i]->IsHard())
+// 	    {
+// 	      total_delta_hard_cost += delta_cost;
+// 	      os << '*';
+// 	    }
+// 	  else
+// 	    total_delta_soft_cost += delta_cost;
+// 	  os << std::endl;
+// 	}
+//     }
+//   os << "Total Delta Violations : " << total_delta_hard_cost << std::endl;
+//   os << "Total Delta Objective : " << total_delta_soft_cost << std::endl;
+//   os << "Total Delta Cost : " << HARD_WEIGHT * total_delta_hard_cost + total_delta_soft_cost << std::endl;
+// }
 
 
 /**

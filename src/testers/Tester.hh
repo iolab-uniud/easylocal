@@ -349,6 +349,8 @@ void Tester<Input,Output,State,CFtype>::ShowReducedStateMenu()
 template <class Input, class Output, class State, typename CFtype>
 bool Tester<Input,Output,State,CFtype>::ExecuteStateChoice()
 {
+  unsigned int i;
+  std::string file_name;
   switch(sub_choice)
     {
     case 1:
@@ -356,7 +358,6 @@ bool Tester<Input,Output,State,CFtype>::ExecuteStateChoice()
       break;
     case 2:
       {
-	std::string file_name;
 	bool read_failed;
 	std::ifstream is;
 	do
@@ -386,7 +387,6 @@ bool Tester<Input,Output,State,CFtype>::ExecuteStateChoice()
       }
     case 4:
       {
-	std::string file_name;
 	std::cout << "File name : ";
 	std::cin >> file_name;
 	std::ofstream os(file_name.c_str());
@@ -395,7 +395,8 @@ bool Tester<Input,Output,State,CFtype>::ExecuteStateChoice()
       }
     case 5:
       {
-	this->sm.PrintState(test_state);
+	std::cout  << test_state << std::endl;
+	std::cout  << "Total cost: " << this->sm.CostFunction(test_state) << std::endl;
 	break;
       }
     case 6:
@@ -405,12 +406,37 @@ bool Tester<Input,Output,State,CFtype>::ExecuteStateChoice()
       }
     case 7:
       {
-	this->sm.PrintStateCost(test_state);
+	for (i = 0; i < this->sm.CostComponents(); i++)
+	{
+	  CostComponent<Input,State,CFtype>& cc = this->sm.GetCostComponent(i);
+	  std::cout  << i << ". " << cc.name << " : " 
+		     << cc.Cost(test_state) << (cc.IsHard() ? '*' : ' ') << std::endl;
+	  if (i < this->sm.CostComponents() - 1) 
+	    std::cout << ',';
+	}
+	std::cout  << "Total Violations:\t" << this->sm.Violations(test_state) << std::endl;
+	std::cout  << "Total Objective:\t" << this->sm.Objective(test_state) << std::endl;
+	std::cout  << "Total Cost:  \t" << this->sm.CostFunction(test_state) << std::endl;
 	break;
       }
     case 8:
       {
-	this->sm.PrintStateDetailedCost(test_state);
+	for (unsigned int i = 0; i < this->sm.CostComponents(); i++)
+	{
+	  CostComponent<Input,State,CFtype>& cc = this->sm.GetCostComponent(i);
+	  cc.PrintViolations(test_state);
+	}
+	for (unsigned int i = 0; i < this->sm.CostComponents(); i++)
+	{
+	  CostComponent<Input,State,CFtype>& cc = this->sm.GetCostComponent(i);
+	  std::cout  << i << ". " << cc.name << " : " 
+		     << cc.Cost(test_state) << (cc.IsHard() ? '*' : ' ') << std::endl;
+	  if (i < this->sm.CostComponents() - 1) 
+	    std::cout << ',';
+	}
+	std::cout  << "Total Violations:\t" << this->sm.Violations(test_state) << std::endl;
+	std::cout  << "Total Objective:\t" << this->sm.Objective(test_state) << std::endl;
+	std::cout  << "Total Cost:  \t" << this->sm.CostFunction(test_state) << std::endl;
 	break;
       }
     default:

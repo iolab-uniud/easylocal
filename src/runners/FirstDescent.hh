@@ -1,7 +1,7 @@
-#ifndef FIRSTDESCENT_HH_
-#define FIRSTDESCENT_HH_
+#ifndef _FIRST_DESCENT_HH_
+#define _FIRST_DESCENT_HH_
 
-#include <MoveRunner.hh>
+#include <runners/MoveRunner.hh>
 #include <helpers/StateManager.hh>
 #include <helpers/NeighborhoodExplorer.hh>
 
@@ -125,4 +125,4 @@ template <class Input, class State, class Move, typename CFtype>
 void FirstDescent<Input,State,Move,CFtype>::ReadParameters(std::istream& is, std::ostream& os)
 
 {}
-#endif /*FIRSTDESCENT_HH_*/
+#endif // define _FIRST_DESCENT_HH_
