@@ -1,5 +1,5 @@
-#ifndef BIMODALMOVERUNNER_HH_
-#define BIMODALMOVERUNNER_HH_
+#ifndef _BIMODAL_MOVE_RUNNER_HH_
+#define _BIMODAL_MOVE_RUNNER_HH_
 
 #include <helpers/StateManager.hh>
 #include <helpers/NeighborhoodExplorer.hh>
@@ -133,4 +133,4 @@ void BimodalMoveRunner<Input,State,Move1,Move2,CFtype>::UpdateStateCost()
     this->current_state_cost += current_move_cost2;
 }
 
-#endif /*BIMODALMOVERUNNER_HH_*/
+#endif // define _BIMODAL_MOVE_RUNNER_HH_

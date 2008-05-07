@@ -127,9 +127,9 @@ template <class Input, class State, class Move1, class Move2, typename CFtype>
 bool BimodalHillClimbing<Input,State,Move1,Move2,CFtype>::AcceptableMove()
 {
   if (this->current_move_type == MOVE_1)
-    return this->current_move_cost1 <= 0;
+    return LessOrEqualThan(this->current_move_cost1,0);
   else
-    return this->current_move_cost2 <= 0;
+    return LessOrEqualThan(this->current_move_cost2,0);
 }
 
 /**

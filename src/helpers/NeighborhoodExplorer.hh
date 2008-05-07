@@ -131,7 +131,7 @@ protected:
 template <class Input, class State, class Move, typename CFtype>
 NeighborhoodExplorer<Input,State,Move,CFtype>::NeighborhoodExplorer(const Input& i,
                                                                     StateManager<Input,State,CFtype>& e_sm, std::string e_name)
-  : in(i), sm(e_sm), delta_cost_component(0), number_of_delta_not_implemented(0), name(e_name)
+  : in(i), sm(e_sm), number_of_delta_not_implemented(0), name(e_name)
 { }
 
 /**
@@ -148,10 +148,11 @@ template <class Input, class State, class Move, typename CFtype>
 CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::DeltaCostFunction(const State& st, const Move & mv)
 {
   CFtype delta_hard_cost = 0, delta_soft_cost = 0;
-  
+  unsigned int i;
+
   if (number_of_delta_not_implemented == 0)
     {
-      for (unsigned int i = 0; i < delta_cost_component.size(); i++)
+      for (i = 0; i < delta_cost_component.size(); i++)
 	{
 	  FilledDeltaCostComponent<Input,State,Move,CFtype>& dcc = static_cast<FilledDeltaCostComponent<Input,State,Move,CFtype>& >(*this->delta_cost_component[i]);
 	  if (dcc.IsHard())
@@ -164,7 +165,7 @@ CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::DeltaCostFunction(const St
     {
       State st1 = st;
       MakeMove(st1, mv);
-      for (unsigned int i = 0; i < delta_cost_component.size(); i++)
+      for (i = 0; i < delta_cost_component.size(); i++)
 	if (delta_cost_component[i]->IsHard())
 	  if (delta_cost_component[i]->IsDeltaImplemented())
 	    {

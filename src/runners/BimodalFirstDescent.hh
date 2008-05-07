@@ -65,14 +65,14 @@ void BimodalFirstDescent<Input,State,Move1,Move2,CFtype>::Print(std::ostream& os
 template <class Input, class State, class Move1, class Move2, typename CFtype>
 void BimodalFirstDescent<Input,State,Move1,Move2,CFtype>::SelectMove()
 {    
-    this->current_move_cost1 = this->ne1.FirstImprovingMove(this->current_state, this->current_move1);
-    if (LessThan(this->current_move_cost1,CFtype(0)))
-      this->current_move_type = MOVE_1;
-    else
-      {
-	this->current_move_cost2 = this->ne2.FirstImprovingMove(this->current_state, this->current_move2);
-	this->current_move_type = MOVE_1;
-      }
+  this->current_move_cost1 = this->ne1.FirstImprovingMove(this->current_state, this->current_move1);
+  if (LessThan(this->current_move_cost1,CFtype(0)))
+    this->current_move_type = MOVE_1;
+  else
+    {
+      this->current_move_cost2 = this->ne2.FirstImprovingMove(this->current_state, this->current_move2);
+      this->current_move_type = MOVE_2;
+    }
 }
 
 /**
@@ -139,18 +139,20 @@ bool BimodalFirstDescent<Input,State,Move1,Move2,CFtype>::AcceptableMove()
 template <class Input, class State, class Move1, class Move2, typename CFtype>
 void BimodalFirstDescent<Input,State,Move1,Move2,CFtype>::StoreMove()
 {
-    if (this->current_move_type == MOVE_1)
-      if (LessThan(this->current_move_cost1,0))
-        {
-            this->iteration_of_best = this->number_of_iterations;
-            this->best_state_cost = this->current_state_cost;
-        }
-      else
-	if (LessThan(this->current_move_cost2,0))
-            {
-                this->iteration_of_best = this->number_of_iterations;
-                this->best_state_cost = this->current_state_cost;
-            }
+  if (this->observer != NULL)
+    this->observer->NotifyNewBest(*this);
+  if (this->current_move_type == MOVE_1)
+    if (LessThan(this->current_move_cost1,0))
+      {
+	this->iteration_of_best = this->number_of_iterations;
+	this->best_state_cost = this->current_state_cost;
+      }
+    else
+      if (LessThan(this->current_move_cost2,0))
+	{
+	  this->iteration_of_best = this->number_of_iterations;
+	  this->best_state_cost = this->current_state_cost;
+	}
 }
 
 template <class Input, class State, class Move1, class Move2, typename CFtype>
