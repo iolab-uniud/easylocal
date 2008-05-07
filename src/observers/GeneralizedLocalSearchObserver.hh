@@ -8,7 +8,7 @@ template <class Input, class Output, class State, typename CFtype = int>
 class GeneralizedLocalSearchObserver
 {
 public:
-  GeneralizedLocalSearchObserver(unsigned notify_level = 2, std::ostream& r_os = std::cerr);
+  GeneralizedLocalSearchObserver(unsigned notify_level = 2, std::ostream& r_os = std::cout);
   void NotifyRound(GeneralizedLocalSearchSolver<Input,Output,State,CFtype>& s);
   void NotifyRunnerStart(GeneralizedLocalSearchSolver<Input,Output,State,CFtype>& s);
   void NotifyRunnerStop(GeneralizedLocalSearchSolver<Input,Output,State,CFtype>& s);

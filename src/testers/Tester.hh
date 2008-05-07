@@ -368,7 +368,7 @@ bool Tester<Input,Output,State,CFtype>::ExecuteStateChoice()
 	    is.open(file_name.c_str());
 	    if (is.fail())
 	      {
-		std::cerr << "File " << file_name << " does not exist!" << std::endl;
+		os << "File " << file_name << " does not exist!" << std::endl;
 		read_failed = true;
 		is.clear();
 	      }

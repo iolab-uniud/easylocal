@@ -16,7 +16,7 @@ template <class Input, class State, class Move1, class Move2,typename CFtype = i
 class BimodalRunnerObserver
 {
 public:
-  BimodalRunnerObserver(unsigned verbosity_level, unsigned plot_level, std::ostream& log_os = std::cerr, std::ostream& plot_os = std::cerr);
+  BimodalRunnerObserver(unsigned verbosity_level, unsigned plot_level, std::ostream& log_os = std::cout, std::ostream& plot_os = std::cout);
   void NotifyStartRunner(BimodalMoveRunner<Input,State,Move1,Move2,CFtype>& r);
   void NotifyNewBest(BimodalMoveRunner<Input,State,Move1,Move2,CFtype>& r);
   void NotifyStoreMove(BimodalMoveRunner<Input,State,Move1,Move2,CFtype>& r);

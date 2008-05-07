@@ -9,7 +9,7 @@
 #include <runners/TabuSearchWithShiftingPenalty.hh>
 
 #include <runners/BimodalSteepestDescent.hh>
-//#include <runners/BimodalFirstDescent.hh>
+#include <runners/BimodalFirstDescent.hh>
 #include <runners/BimodalHillClimbing.hh>
 //#include <runners/BimodalSimulatedAnnealing.hh>
 #include <runners/BimodalTabuSearch.hh>

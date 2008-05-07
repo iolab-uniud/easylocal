@@ -609,7 +609,7 @@ void BimodalKicker<Input,State,Move1,Move2,CFtype>::ReadParameters(std::istream&
       else if (tmp == 2)
 	pattern[i] = MOVE_2;
       else
-	std::cerr << "Wrong move type while pattern input" << std::endl;
+	os << "Wrong move type while pattern input" << std::endl;
     }
   // 	os << "  Timeout: ";
   // 	is >> this->timeout;

@@ -8,7 +8,7 @@ template <typename CFtype = int>
 class ShiftingPenaltyObserver
 {
 public:
-  ShiftingPenaltyObserver(std::ostream& r_os = std::cerr);
+  ShiftingPenaltyObserver(std::ostream& r_os = std::cout);
   void NotifyReset(ShiftingPenaltyManager<CFtype>& r);
   void NotifyUpdate(ShiftingPenaltyManager<CFtype>& r, CFtype cost);
   void NotifyNewThreshold(ShiftingPenaltyManager<CFtype>& r);

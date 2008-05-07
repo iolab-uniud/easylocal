@@ -1,23 +1,23 @@
-#ifndef _BIMODAL_STEEPEST_DESCENT_HH_
-#define _BIMODAL_STEEPEST_DESCENT_HH_
+#ifndef _BIMODAL_FIRST_DESCENT_HH_
+#define _BIMODAL_FIRST_DESCENT_HH_
 
 #include <runners/BimodalMoveRunner.hh>
 
-/** The Steepest Descent runner ...  
+/** The First Descent runner ...  
     @ingroup Runners 
 */
 template <class Input, class State, class Move1, class Move2, typename CFtype = int>
-class BimodalSteepestDescent
+class BimodalFirstDescent
             : public BimodalMoveRunner<Input,State,Move1,Move2,CFtype>
 {
 public:
     void Print(std::ostream& os = std::cout) const;
 	void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout);
-    BimodalSteepestDescent(const Input& in,
+    BimodalFirstDescent(const Input& in,
 			   StateManager<Input,State,CFtype>& sm,
                         NeighborhoodExplorer<Input,State,Move1,CFtype>& ne1,
                         NeighborhoodExplorer<Input,State,Move2,CFtype>& ne2,
-                        std::string name = "Anonymous Bimodal Steepest Descent runner");
+                        std::string name = "Anonymous Bimodal First Descent runner");
 protected:
     void GoCheck() const;
     void InitializeRun();
@@ -35,7 +35,7 @@ protected:
  *************************************************************************/
  
 /**
-   Constructs a steepest descent runner by linking it to a state manager, 
+   Constructs a first descent runner by linking it to a state manager, 
    a neighborhood explorer, and an input object.
 
    @param s a pointer to a compatible state manager
@@ -43,7 +43,7 @@ protected:
    @param in a poiter to an input object
 */
 template <class Input, class State, class Move1, class Move2, typename CFtype>
-BimodalSteepestDescent<Input,State,Move1,Move2,CFtype>::BimodalSteepestDescent(const Input& in,
+BimodalFirstDescent<Input,State,Move1,Move2,CFtype>::BimodalFirstDescent(const Input& in,
 									StateManager<Input,State,CFtype>& sm,
 									NeighborhoodExplorer<Input,State,Move1,CFtype>& ne1,
 									NeighborhoodExplorer<Input,State,Move2,CFtype>& ne2,
@@ -52,35 +52,35 @@ BimodalSteepestDescent<Input,State,Move1,Move2,CFtype>::BimodalSteepestDescent(c
 {}
 
 template <class Input, class State, class Move1, class Move2, typename CFtype>
-void BimodalSteepestDescent<Input,State,Move1,Move2,CFtype>::Print(std::ostream& os) const
+void BimodalFirstDescent<Input,State,Move1,Move2,CFtype>::Print(std::ostream& os) const
 {
-    os  << "Steepest Descent Runner: " << this->GetName() << std::endl;
+    os  << "First Descent Runner: " << this->GetName() << std::endl;
     os  << "  Max iterations: " << this->max_iteration << std::endl;
 }
 
 /**
-   The select move strategy for the steepest descent simply looks for a
+   The select move strategy for the first descent simply looks for a
    random move.
 */
 template <class Input, class State, class Move1, class Move2, typename CFtype>
-void BimodalSteepestDescent<Input,State,Move1,Move2,CFtype>::SelectMove()
+void BimodalFirstDescent<Input,State,Move1,Move2,CFtype>::SelectMove()
 {    
-    this->current_move_cost1 = this->ne1.BestMove(this->current_state, this->current_move1);    
-    this->current_move_cost2 = this->ne2.BestMove(this->current_state, this->current_move2);
-    if (LessThan(this->current_move_cost1,this->current_move_cost2))
-        this->current_move_type = MOVE_1;
-    else if (LessThan(this->current_move_cost2,this->current_move_cost1))
-        this->current_move_type = MOVE_2;
+    this->current_move_cost1 = this->ne1.FirstImprovingMove(this->current_state, this->current_move1);
+    if (LessThan(this->current_move_cost1,CFtype(0)))
+      this->current_move_type = MOVE_1;
     else
-        this->current_move_type = Random::Int(0,1) == 0 ? MOVE_1 : MOVE_2;
+      {
+	this->current_move_cost2 = this->ne2.FirstImprovingMove(this->current_state, this->current_move2);
+	this->current_move_type = MOVE_1;
+      }
 }
 
 /**
-   The steepest descent initialization simply invokes 
+   The first descent initialization simply invokes 
    the superclass companion method.
 */
 template <class Input, class State, class Move1, class Move2, typename CFtype>
-void BimodalSteepestDescent<Input,State,Move1,Move2,CFtype>::InitializeRun()
+void BimodalFirstDescent<Input,State,Move1,Move2,CFtype>::InitializeRun()
 {
     BimodalMoveRunner<Input,State,Move1,Move2,CFtype>::InitializeRun();
     this->current_move_cost1 = -1; // needed for passing the first time
@@ -89,7 +89,7 @@ void BimodalSteepestDescent<Input,State,Move1,Move2,CFtype>::InitializeRun()
 }
 
 template <class Input, class State, class Move1, class Move2, typename CFtype>
-void BimodalSteepestDescent<Input,State,Move1,Move2,CFtype>::GoCheck() const
+void BimodalFirstDescent<Input,State,Move1,Move2,CFtype>::GoCheck() const
 {
 }
 
@@ -98,7 +98,7 @@ void BimodalSteepestDescent<Input,State,Move1,Move2,CFtype>::GoCheck() const
    state (it is always a local minimum).
 */
 template <class Input, class State, class Move1, class Move2, typename CFtype>
-void BimodalSteepestDescent<Input,State,Move1,Move2,CFtype>::TerminateRun()
+void BimodalFirstDescent<Input,State,Move1,Move2,CFtype>::TerminateRun()
 {
     BimodalMoveRunner<Input,State,Move1,Move2,CFtype>::TerminateRun();
     this->best_state = this->current_state;
@@ -106,11 +106,11 @@ void BimodalSteepestDescent<Input,State,Move1,Move2,CFtype>::TerminateRun()
 }
 
 /**
-   The stop criterion for the steepest descent strategy is based on the number
+   The stop criterion for the first descent strategy is based on the number
    of iterations elapsed from the last strict improving move performed.
 */
 template <class Input, class State, class Move1, class Move2, typename CFtype>
-bool BimodalSteepestDescent<Input,State,Move1,Move2,CFtype>::StopCriterion()
+bool BimodalFirstDescent<Input,State,Move1,Move2,CFtype>::StopCriterion()
 { 
   if (this->current_move_type == MOVE_1)
     return GreaterOrEqualThan(this->current_move_cost1, 0);
@@ -124,7 +124,7 @@ bool BimodalSteepestDescent<Input,State,Move1,Move2,CFtype>::StopCriterion()
    or leaves it unchanged).
 */
 template <class Input, class State, class Move1, class Move2, typename CFtype>
-bool BimodalSteepestDescent<Input,State,Move1,Move2,CFtype>::AcceptableMove()
+bool BimodalFirstDescent<Input,State,Move1,Move2,CFtype>::AcceptableMove()
 {
   if (this->current_move_type == MOVE_1)
     return LessThan(this->current_move_cost1,0);
@@ -133,11 +133,11 @@ bool BimodalSteepestDescent<Input,State,Move1,Move2,CFtype>::AcceptableMove()
 }
 
 /**
-   The store move for steepest descent simply updates the variable that
+   The store move for first descent simply updates the variable that
    keeps track of the last improvement.
 */
 template <class Input, class State, class Move1, class Move2, typename CFtype>
-void BimodalSteepestDescent<Input,State,Move1,Move2,CFtype>::StoreMove()
+void BimodalFirstDescent<Input,State,Move1,Move2,CFtype>::StoreMove()
 {
     if (this->current_move_type == MOVE_1)
       if (LessThan(this->current_move_cost1,0))
@@ -154,10 +154,10 @@ void BimodalSteepestDescent<Input,State,Move1,Move2,CFtype>::StoreMove()
 }
 
 template <class Input, class State, class Move1, class Move2, typename CFtype>
-void BimodalSteepestDescent<Input,State,Move1,Move2,CFtype>::ReadParameters(std::istream& is, std::ostream& os)
+void BimodalFirstDescent<Input,State,Move1,Move2,CFtype>::ReadParameters(std::istream& is, std::ostream& os)
 {
-    os << "STEEPEST DESCENT -- INPUT PARAMETERS" << std::endl;
+    os << "FIRST DESCENT -- INPUT PARAMETERS" << std::endl;
     os << "  Timeout: ";
     //    is >> this->timeout;
 }
-#endif // define _BIMODAL_STEEPEST_DESCENT_HH_
+#endif // define _BIMODAL_FIRST_DESCENT_HH_

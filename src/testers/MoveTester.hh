@@ -248,7 +248,8 @@ void MoveTester<Input,Output,State,Move,CFtype>::CheckNeighborhoodCosts(const St
 	  os << "Press enter to continue " << std::endl;
 	  std::cin.get();
 	}          
-      if (move_count % 100 == 0) std::cerr << '.'; // show that it is alive
+      if (move_count % 100 == 0) 
+	std::cerr << '.'; // print dots to show that it is alive
       ne.NextMove(st, mv);
       st1 = st;
     }
@@ -344,12 +345,13 @@ void MoveTester<Input,Output,State,Move,CFtype>::CheckMoveIndependence(const Sta
 	  else
 	    reached_states.push_back(make_pair(mv,st1));
 	}
-      if (all_moves % 100 == 0) std::cerr << '.'; // show that it is alive
+      if (all_moves % 100 == 0) 
+	std::cerr << '.'; // print dots to show that it is alive
       all_moves++;
     }
   while (!ne.LastMoveDone(st, mv));
 
-  os << "Number of moves: " << all_moves << std::endl;
+  os << std::endl << "Number of moves: " << all_moves << std::endl;
   if (repeat_states == 0)
     os << "No repeated states" << std::endl;
   else

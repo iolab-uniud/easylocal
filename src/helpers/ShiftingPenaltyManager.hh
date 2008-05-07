@@ -17,9 +17,9 @@ public:
   virtual ~ShiftingPenaltyManager() {}
   void AttachObserver(ShiftingPenaltyObserver<CFtype>& ob) { observer = &ob; }
 
-  void Print(std::ostream& os = std::cerr) const;
+  void Print(std::ostream& os = std::cout) const;
   virtual void ReadParameters(std::istream& is = std::cin,
- 		      std::ostream& os = std::cerr) = 0;
+ 		      std::ostream& os = std::cout) = 0;
   virtual bool Reset() = 0;
   virtual bool Update(CFtype cost) = 0;
   double Shift() const { return shift; }
@@ -44,8 +44,8 @@ class ComplexShiftingPenaltyManager : public ShiftingPenaltyManager<CFtype>
 public:
   ComplexShiftingPenaltyManager(CFtype threshold = 0, double s = 1.0, std::string n = "ComplexShiftingPenaltyManager");
   void ReadParameters(std::istream& is = std::cin,
-											std::ostream& os = std::cerr);
-  void Print(std::ostream& os = std::cerr) const;
+											std::ostream& os = std::cout);
+  void Print(std::ostream& os = std::cout) const;
   bool Reset();
   bool Update(CFtype cost);
   void SetMaxFeasibleIterations(unsigned mf) { max_feasible_iter = mf; }
@@ -66,7 +66,7 @@ public:
   SimpleShiftingPenaltyManager(double min_perturb, double max_perturb, CFtype threshold, double s, std::string n = "Shifting Penalty Manager");
   SimpleShiftingPenaltyManager(CFtype threshold = 0, double s = 1.0, std::string n = "SimpleShiftingPenaltyManager");
   void ReadParameters(std::istream& is = std::cin,
-											std::ostream& os = std::cerr);
+											std::ostream& os = std::cout);
   bool Reset();
   bool Update(CFtype cost);
   void SetPerturbRange(double min_p, double max_p) { min_perturb = min_p; max_perturb = max_p; }

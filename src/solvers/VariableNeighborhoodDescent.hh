@@ -122,16 +122,16 @@ void VNDSolver<Input,Output,State,CFtype>::Run()
       this->p_kicker->SetStep(k);
       kick_cost = this->p_kicker->BestKick(this->internal_state);
 #if VERBOSE >= 2
-      std::cerr << "Selected Kick: " << k << " " << kick_cost << std::endl;
-      this->p_kicker->PrintKick(std::cerr);
+      std::cout << "Selected Kick: " << k << " " << kick_cost << std::endl;
+      this->p_kicker->PrintKick(std::cout);
 #endif
       if (LessThan(kick_cost,0))
 	{
 	  this->p_kicker->MakeKick(this->internal_state);
 	  this->internal_state_cost += kick_cost;
 #if VERBOSE >= 2
-	  std::cerr << "Performed Kick: [" << this->internal_state_cost << "]: " << k;
-	  this->p_kicker->PrintKick(std::cerr);
+	  std::cout << "Performed Kick: [" << this->internal_state_cost << "]: " << k;
+	  this->p_kicker->PrintKick(std::cout);
 #endif
 	  k = 1;
 	}

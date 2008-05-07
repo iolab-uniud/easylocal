@@ -8,7 +8,7 @@ template <class Input, class State, class Move, typename CFtype = int>
 class RunnerObserver
 {
 public:
-  RunnerObserver(unsigned verbosity_level, unsigned plot_level, std::ostream& log_os = std::cerr, std::ostream& plot_os = std::cerr);
+  RunnerObserver(unsigned verbosity_level, unsigned plot_level, std::ostream& log_os = std::cout, std::ostream& plot_os = std::cout);
   void NotifyStartRunner(MoveRunner<Input,State,Move,CFtype>& r);
   void NotifyNewBest(MoveRunner<Input,State,Move,CFtype>& r);
   void NotifyStoreMove(MoveRunner<Input,State,Move,CFtype>& r);
