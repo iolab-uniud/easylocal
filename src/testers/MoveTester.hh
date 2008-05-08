@@ -314,7 +314,7 @@ template <class Input, class Output, class State, class Move, typename CFtype>
 void MoveTester<Input,Output,State,Move,CFtype>::CheckMoveIndependence(const State& st) const
 {
   Move mv;
-  std::vector<pair<Move,State> > reached_states;
+  std::vector<std::pair<Move,State> > reached_states;
   unsigned repeat_states = 0, null_moves = 0, all_moves = 0, i;
   bool repeated_state;
   State st1 = st;

@@ -10,7 +10,7 @@ class SecondaryDiagonalCostComponent : public CostComponent<unsigned,std::vector
     SecondaryDiagonalCostComponent(unsigned& in) : CostComponent<unsigned,std::vector<unsigned> >(in,1,true, "UpRight <--> DownLeft Violations")
       { }
     int ComputeCost(const std::vector<unsigned>& st) const;
-    void PrintCost(const std::vector<unsigned>& st, std::ostream& os = std::cout) const
+    void PrintViolations(const std::vector<unsigned>& st, std::ostream& os = std::cout) const
       { os << name << ": " << Cost(st); }
   };
 
