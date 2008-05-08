@@ -19,7 +19,7 @@ public:
         solver to an output object. */
     virtual const Output& GetOutput() = 0;
   const std::string name;
-  void SetTimeout(float timeout);
+  void SetTimeout(double timeout);
 protected:
   Solver(const Input& in, std::string name);
   virtual ~Solver() {}
@@ -30,7 +30,7 @@ protected:
   RWLockVariable<bool> termination_request;
   /**< This variable avoids active waiting of runners termination. */
   ConditionVariable runner_termination;  
-  float timeout, current_timeout;
+  double timeout, current_timeout;
   bool timeout_set;
 #endif
 };
@@ -56,7 +56,7 @@ Solver<Input, Output>::Solver(const Input& i, std::string e_name)
 }
 
 template <class Input, class Output>
-void Solver<Input, Output>::SetTimeout(float to)
+void Solver<Input, Output>::SetTimeout(double to)
 {
 #ifdef HAVE_PTHREAD
 	if (to > 0.0)
