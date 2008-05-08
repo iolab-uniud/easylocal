@@ -142,7 +142,7 @@ void BimodalHillClimbing<Input,State,Move1,Move2,CFtype>::StoreMove()
   if (this->observer != NULL)
     this->observer->NotifyStoreMove(*this);
   if (this->current_move_type == MOVE_1)
-    if (LessThan(this->current_move_cost1,0))
+    if (LessThan(this->current_move_cost1,(CFtype)0))
       {
 	if (this->observer != NULL)
 	  this->observer->NotifyNewBest(*this);
@@ -150,7 +150,7 @@ void BimodalHillClimbing<Input,State,Move1,Move2,CFtype>::StoreMove()
 	this->best_state_cost = this->current_state_cost;
       }
     else
-      if (LessThan(this->current_move_cost2,0))
+      if (LessThan(this->current_move_cost2,(CFtype)0))
 	{
 	  if (this->observer != NULL)
 	    this->observer->NotifyNewBest(*this);

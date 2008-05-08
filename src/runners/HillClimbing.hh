@@ -13,29 +13,29 @@
 */
 template <class Input, class State, class Move, typename CFtype = int>
 class HillClimbing
-: public MoveRunner<Input,State,Move,CFtype>
+  : public MoveRunner<Input,State,Move,CFtype>
 {
 public:
-	HillClimbing(const Input& in, StateManager<Input,State,CFtype>& e_sm,
-							 NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne, std::string name);
-	HillClimbing(const Input& in, StateManager<Input,State,CFtype>& e_sm,
-							 NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne, std::string name, CLParser& cl);
-	void Print(std::ostream& os = std::cout) const;
-	void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout);
-	virtual void SetMaxIdleIteration(unsigned long m) { max_idle_iteration = m; }
+  HillClimbing(const Input& in, StateManager<Input,State,CFtype>& e_sm,
+	       NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne, std::string name);
+  HillClimbing(const Input& in, StateManager<Input,State,CFtype>& e_sm,
+	       NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne, std::string name, CLParser& cl);
+  void Print(std::ostream& os = std::cout) const;
+  void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout);
+  virtual void SetMaxIdleIteration(unsigned long m) { max_idle_iteration = m; }
   bool MaxIdleIterationExpired() const;
 protected:
-	void GoCheck() const;
-	void InitializeRun();
-	void TerminateRun();
-	bool StopCriterion();
-	bool AcceptableMove();
-	void StoreMove();
-	void SelectMove();
-	// parameters
-	unsigned long max_idle_iteration;
-	ArgumentGroup hill_climbing_arguments;
-	ValArgument<unsigned long> arg_max_idle_iteration;
+  void GoCheck() const;
+  void InitializeRun();
+  void TerminateRun();
+  bool StopCriterion();
+  bool AcceptableMove();
+  void StoreMove();
+  void SelectMove();
+  // parameters
+  unsigned long max_idle_iteration;
+  ArgumentGroup hill_climbing_arguments;
+  ValArgument<unsigned long> arg_max_idle_iteration;
 };
 
 /*************************************************************************
@@ -55,10 +55,10 @@ HillClimbing<Input,State,Move,CFtype>::HillClimbing(const Input& in,
                                                     StateManager<Input,State,CFtype>& e_sm,
                                                     NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
                                                     std::string name)
-: MoveRunner<Input,State,Move,CFtype>(in, e_sm, e_ne, name), max_idle_iteration(0),
-hill_climbing_arguments("hc_" + name, "hc_" + name, false), arg_max_idle_iteration("max_idle_iteration", "mii", true)
+  : MoveRunner<Input,State,Move,CFtype>(in, e_sm, e_ne, name), max_idle_iteration(0),
+    hill_climbing_arguments("hc_" + name, "hc_" + name, false), arg_max_idle_iteration("max_idle_iteration", "mii", true)
 {
-	hill_climbing_arguments.AddArgument(arg_max_idle_iteration);
+  hill_climbing_arguments.AddArgument(arg_max_idle_iteration);
 }
 
 template <class Input, class State, class Move, typename CFtype>
@@ -66,23 +66,23 @@ HillClimbing<Input,State,Move,CFtype>::HillClimbing(const Input& in,
                                                     StateManager<Input,State,CFtype>& e_sm,
                                                     NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
                                                     std::string name,
-																										CLParser& cl)
-: MoveRunner<Input,State,Move,CFtype>(in, e_sm, e_ne, name), max_idle_iteration(0),
-hill_climbing_arguments("hc_" + name, "hc_" + name, false), arg_max_idle_iteration("max_idle_iteration", "mii", true)
+						    CLParser& cl)
+  : MoveRunner<Input,State,Move,CFtype>(in, e_sm, e_ne, name), max_idle_iteration(0),
+    hill_climbing_arguments("hc_" + name, "hc_" + name, false), arg_max_idle_iteration("max_idle_iteration", "mii", true)
 {
-	hill_climbing_arguments.AddArgument(arg_max_idle_iteration);
-	cl.AddArgument(hill_climbing_arguments);
-	cl.MatchArgument(hill_climbing_arguments);
-	if (hill_climbing_arguments.IsSet())
-		max_idle_iteration = arg_max_idle_iteration.GetValue();
+  hill_climbing_arguments.AddArgument(arg_max_idle_iteration);
+  cl.AddArgument(hill_climbing_arguments);
+  cl.MatchArgument(hill_climbing_arguments);
+  if (hill_climbing_arguments.IsSet())
+    max_idle_iteration = arg_max_idle_iteration.GetValue();
 }
 
 template <class Input, class State, class Move, typename CFtype>
 void HillClimbing<Input,State,Move,CFtype>::Print(std::ostream& os) const
 {
-    os  << "Hill Climbing Runner: " << this->name << std::endl;
-    os  << "  Max iterations: " << this->max_iteration << std::endl;
-    os  << "  Max idle iteration: " << this->max_idle_iteration << std::endl;
+  os  << "Hill Climbing Runner: " << this->name << std::endl;
+  os  << "  Max iterations: " << this->max_iteration << std::endl;
+  os  << "  Max idle iteration: " << this->max_idle_iteration << std::endl;
 }
 
 /**
@@ -92,8 +92,8 @@ void HillClimbing<Input,State,Move,CFtype>::Print(std::ostream& os) const
 template <class Input, class State, class Move, typename CFtype>
 void HillClimbing<Input,State,Move,CFtype>::SelectMove()
 {
-    this->ne.RandomMove(this->current_state, this->current_move);
-    this->ComputeMoveCost();
+  this->ne.RandomMove(this->current_state, this->current_move);
+  this->ComputeMoveCost();
 }
 
 /**
@@ -103,15 +103,15 @@ void HillClimbing<Input,State,Move,CFtype>::SelectMove()
 template <class Input, class State, class Move, typename CFtype>
 void HillClimbing<Input,State,Move,CFtype>::InitializeRun()
 {
-    MoveRunner<Input,State,Move,CFtype>::InitializeRun();
+  MoveRunner<Input,State,Move,CFtype>::InitializeRun();
 }
 
 template <class Input, class State, class Move, typename CFtype>
 void HillClimbing<Input,State,Move,CFtype>::GoCheck() const
 
 {
-    if (this->max_idle_iteration == 0)
-        throw std::logic_error("max_idle_iteration is zero for object " + this->name);
+  if (this->max_idle_iteration == 0)
+    throw std::logic_error("max_idle_iteration is zero for object " + this->name);
 }
 
 /**
@@ -121,9 +121,9 @@ void HillClimbing<Input,State,Move,CFtype>::GoCheck() const
 template <class Input, class State, class Move, typename CFtype>
 void HillClimbing<Input,State,Move,CFtype>::TerminateRun()
 {
-    MoveRunner<Input,State,Move,CFtype>::TerminateRun();
-    this->best_state = this->current_state;
-    this->best_state_cost = this->current_state_cost;
+  MoveRunner<Input,State,Move,CFtype>::TerminateRun();
+  this->best_state = this->current_state;
+  this->best_state_cost = this->current_state_cost;
 }
 
 template <class Input, class State, class Move, typename CFtype>
@@ -148,7 +148,7 @@ bool HillClimbing<Input,State,Move,CFtype>::StopCriterion()
 */
 template <class Input, class State, class Move, typename CFtype>
 bool HillClimbing<Input,State,Move,CFtype>::AcceptableMove()
-{ return this->current_move_cost <= 0; }
+{ return LessOrEqualThan(this->current_move_cost,(CFtype)0); }
 
 /**
    The store move for hill climbing simply updates the variable that
@@ -160,21 +160,21 @@ void HillClimbing<Input,State,Move,CFtype>::StoreMove()
   if (this->observer != NULL)
     this->observer->NotifyStoreMove(*this);
   if (LessThan(this->current_move_cost, (CFtype)0))
-	{
-		if (this->observer != NULL)
-			this->observer->NotifyNewBest(*this);
-		this->iteration_of_best = this->number_of_iterations;
-		this->best_state_cost = this->current_state_cost;
-	}
+    {
+      if (this->observer != NULL)
+	this->observer->NotifyNewBest(*this);
+      this->iteration_of_best = this->number_of_iterations;
+      this->best_state_cost = this->current_state_cost;
+    }
 }
 
 template <class Input, class State, class Move, typename CFtype>
 void HillClimbing<Input,State,Move,CFtype>::ReadParameters(std::istream& is, std::ostream& os)
 
 {
-    os << "HILL CLIMBING -- INPUT PARAMETERS" << std::endl;
-    os << "  Number of idle iterations: ";
-    is >> this->max_idle_iteration;
+  os << "HILL CLIMBING -- INPUT PARAMETERS" << std::endl;
+  os << "  Number of idle iterations: ";
+  is >> this->max_idle_iteration;
 }
 
 #endif /*HILLCLIMBING_HH_*/

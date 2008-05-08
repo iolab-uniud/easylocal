@@ -4,13 +4,12 @@
 
 3. Costi di nQueens
 
-4. Scrivere informazioni di configurazione (header, ad es. per gettime)
+4. Scrivere informazioni di configurazione (header, ad es. per gettime) [FATTO]
 
 5. Rivedere gli include [FATTO]
 
 6. Rivedere il kicker tester (stile movetester) [FATTO]
 
-7. NextRelatedMove
 
 
 
@@ -20,7 +19,7 @@
 
 2. nomi direttive di isolamento (_NOME_) [FATTO]
 
-3. #define _HAVE_EASYLOCALCONFIG
+3. #define _HAVE_EASYLOCALCONFIG [FATTO]
 
 4. no using namespace std; [FATTO]
 
@@ -34,14 +33,22 @@
 
 9. spostare gli observers in una cartella apposita [FATTO]
 
-10. Fare i bimodal mancanti
+10. Fare i bimodal mancanti [FATTO]
 
-11. HARD_WEIGHT
+11. HARD_WEIGHT (niente da fare)
 
 12. Pulizia di fino: 
 - commenti sulle funzioni nella def e non nella dic
 - ordinare le funzioni con criterio (?)
 - 
+
+13. Uso del chrono
+
+14. CL per runner bimodali
+
+15. Timeout 0
+
+16. Rivedere gli #ifdef HAVE_PTHREADS
 
 // Release
 
@@ -55,3 +62,5 @@
 1. KickerObserver
 
 2. Struttura delle cartelle per EasySin e EsayAnalyzer
+
+7. NextRelatedMove

@@ -112,7 +112,7 @@ bool SteepestDescent<Input,State,Move,CFtype>::StopCriterion()
 */
 template <class Input, class State, class Move, typename CFtype>
 bool SteepestDescent<Input,State,Move,CFtype>::AcceptableMove()
-{ return LessThan<CFtype>(this->current_move_cost, (CFtype)0); }
+{ return LessThan(this->current_move_cost, (CFtype)0); }
 
 template <class Input, class State, class Move, typename CFtype>
 void SteepestDescent<Input,State,Move,CFtype>::StoreMove()

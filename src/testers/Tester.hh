@@ -1,5 +1,5 @@
-#ifndef TESTER_HH_
-#define TESTER_HH_
+#ifndef _TESTER_HH_
+#define _TESTER_HH_
 
 #include <helpers/StateManager.hh>
 #include <helpers/OutputManager.hh>
@@ -293,17 +293,17 @@ void Tester<Input,Output,State,CFtype>::RunInputMenu()
 {
   bool show_state;
   ShowReducedStateMenu();
-//   Chronometer chrono;
-//   chrono.Start();
+  Chronometer chrono;
+  chrono.Start();
   show_state = ExecuteStateChoice();
-//   chrono.Stop();
+  chrono.Stop();
   if (show_state)
     {
       this->om.OutputState(test_state, this->out);
       os << "INITIAL SOLUTION " << std::endl << this->out << std::endl;
       os << "INITIAL COST : " << this->sm.CostFunction(test_state) << std::endl;
     }
-//   os << "ELAPSED TIME : " << chrono.TotalTime() << 's' << std::endl;
+  os << "ELAPSED TIME : " << chrono.TotalTime() << 's' << std::endl;
 }
 
 /**
@@ -406,35 +406,34 @@ bool Tester<Input,Output,State,CFtype>::ExecuteStateChoice()
       }
     case 7:
       {
+	os  << "Cost Components: " << std::endl;
 	for (i = 0; i < this->sm.CostComponents(); i++)
 	{
 	  CostComponent<Input,State,CFtype>& cc = this->sm.GetCostComponent(i);
 	  os  << i << ". " << cc.name << " : " 
-		     << cc.Cost(test_state) << (cc.IsHard() ? '*' : ' ') << std::endl;
-	  if (i < this->sm.CostComponents() - 1) 
-	    os << ',';
+	      << cc.Cost(test_state) << (cc.IsHard() ? '*' : ' ') << std::endl;
 	}
-	os  << "Total Violations:\t" << this->sm.Violations(test_state) << std::endl;
-	os  << "Total Objective:\t" << this->sm.Objective(test_state) << std::endl;
-	os  << "Total Cost:  \t" << this->sm.CostFunction(test_state) << std::endl;
+	os  << "Total Violations: " << this->sm.Violations(test_state) << std::endl;
+	os  << "Total Objective:  " << this->sm.Objective(test_state) << std::endl;
+	os  << "Total Cost:       " << this->sm.CostFunction(test_state) << std::endl;
 	break;
       }
     case 8:
       {
+	os  << "Detailed Violations: " << std::endl;
 	for (unsigned int i = 0; i < this->sm.CostComponents(); i++)
 	{
 	  CostComponent<Input,State,CFtype>& cc = this->sm.GetCostComponent(i);
 	  cc.PrintViolations(test_state);
 	}
+	os  << std::endl << "Summary of Cost Components: " << std::endl;
 	for (unsigned int i = 0; i < this->sm.CostComponents(); i++)
 	{
 	  CostComponent<Input,State,CFtype>& cc = this->sm.GetCostComponent(i);
 	  os  << i << ". " << cc.name << " : " 
-		     << cc.Cost(test_state) << (cc.IsHard() ? '*' : ' ') << std::endl;
-	  if (i < this->sm.CostComponents() - 1) 
-	    os << ',';
+	      << cc.Cost(test_state) << (cc.IsHard() ? '*' : ' ') << std::endl;
 	}
-	os  << "Total Violations:\t" << this->sm.Violations(test_state) << std::endl;
+	os  << std::endl << "Total Violations:\t" << this->sm.Violations(test_state) << std::endl;
 	os  << "Total Objective:\t" << this->sm.Objective(test_state) << std::endl;
 	os  << "Total Cost:  \t" << this->sm.CostFunction(test_state) << std::endl;
 	break;
@@ -458,22 +457,21 @@ void Tester<Input,Output,State,CFtype>::RunStateTestMenu()
       ShowStateMenu();
       if (sub_choice != 0)
         {
-//           Chronometer chrono;
-// 	  chrono.Start();
+	  Chronometer chrono;
+ 	  chrono.Start();
 	  show_state = ExecuteStateChoice();
-// 	  chrono.Stop();
+ 	  chrono.Stop();
 	  if (show_state)
             {
 	      om.OutputState(test_state,out);
 	      os << "CURRENT SOLUTION " << std::endl << out << std::endl;
 	      os << "CURRENT COST : " << sm.CostFunction(test_state) << std::endl;
             }
-	  os << "ELAPSED TIME : " //  << chrono.TotalTime() << 's' 
-		    << std::endl;
+	  os << "ELAPSED TIME : " << chrono.TotalTime() << 's' << std::endl;
         }
     }
   while (sub_choice != 0);
   os << "Leaving state menu" << std::endl;
 }
 
-#endif /*TESTER_HH_*/
+#endif // define _TESTER_HH_

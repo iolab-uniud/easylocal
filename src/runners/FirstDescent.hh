@@ -102,7 +102,7 @@ void FirstDescent<Input,State,Move,CFtype>::StoreMove()
 {
   if (this->observer != NULL)
     this->observer->NotifyStoreMove(*this);
-  if (LessThan<CFtype>(this->current_state_cost, this->best_state_cost))
+  if (LessThan(this->current_state_cost, this->best_state_cost))
     {
       if (this->observer != NULL)
 	this->observer->NotifyNewBest(*this);
