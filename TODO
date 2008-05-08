@@ -1,12 +1,12 @@
 1. Rivedere VNDSolve
 
-2. Ripulire i solver
+2. Ripulire i solver [FATTO]
 
 3. Costi di nQueens
 
 4. Scrivere informazioni di configurazione (header, ad es. per gettime)
 
-5. Rivedere gli include
+5. Rivedere gli include [FATTO]
 
 6. Rivedere il kicker tester (stile movetester) [FATTO]
 
@@ -18,7 +18,7 @@
 
 1. rivedere commento di intestazione
 
-2. nomi direttive di isolamento (_NOME_)
+2. nomi direttive di isolamento (_NOME_) [FATTO]
 
 3. #define _HAVE_EASYLOCALCONFIG
 
@@ -32,7 +32,7 @@
 
 8. Mutex e co in Syncrhonize.hh e cc [FATTO]
 
-9. spostare gli observers in una cartella apposita
+9. spostare gli observers in una cartella apposita [FATTO]
 
 10. Fare i bimodal mancanti
 

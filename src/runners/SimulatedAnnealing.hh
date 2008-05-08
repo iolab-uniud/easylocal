@@ -167,6 +167,7 @@ void SimulatedAnnealing<Input,State,Move,CFtype>::InitializeRun()
 		for (unsigned int i = 0; i < neighbors_sampled; i++)
 			variance += (cost_values[i] - mean) * (cost_values[i] - mean) / neighbors_sampled;
 		temperature = variance;
+		std::cerr << "Temperature: " << temperature << endl;
 	}
 }
 
@@ -197,11 +198,15 @@ void SimulatedAnnealing<Input,State,Move,CFtype>::SelectMove()
 template <class Input, class State, class Move, typename CFtype>
 void SimulatedAnnealing<Input,State,Move,CFtype>::StoreMove()
 {
-  if (LessThan(this->current_move_cost, (CFtype)0))
+  if (this->observer != NULL)
+    this->observer->NotifyStoreMove(*this);
+  if (LessThan(this->current_state_cost, this->best_state_cost))
     {
       if (this->observer != NULL)
-				this->observer->NotifyNewBest(*this);
+	this->observer->NotifyNewBest(*this);      
+      this->best_state = this->current_state;
       this->best_state_cost = this->current_state_cost;
+      this->iteration_of_best = this->number_of_iterations;
     }
 }
 

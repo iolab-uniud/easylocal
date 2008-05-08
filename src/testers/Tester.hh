@@ -269,18 +269,18 @@ void Tester<Input,Output, State,CFtype>::ExecuteRunChoice()
 {
   if (sub_choice > 0)
     {
-//       Chronometer chrono;
-//       chrono.Start();
+      Chronometer chrono;
+      chrono.Start();
       Runner<Input,State,CFtype>& r = *runners[sub_choice-1];
       r.ReadParameters();      
       r.SetState(test_state);
       r.Go();
-//       chrono.Stop();
+      chrono.Stop();
       test_state = r.GetState();
       om.OutputState(test_state,out);
       os << "CURRENT SOLUTION " << std::endl << out << std::endl;
       os << "CURRENT COST : " << r.GetStateCost() << std::endl;
-//       os << "ELAPSED TIME : " << chrono.TotalTime() << 's' << std::endl;
+      os << "ELAPSED TIME : " << chrono.TotalTime() << 's' << std::endl;
       os << "NUMBER OF ITERATIONS : " << r.GetIterationsPerformed() << std::endl;
     }
 }

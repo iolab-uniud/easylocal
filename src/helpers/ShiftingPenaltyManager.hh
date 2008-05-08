@@ -27,12 +27,15 @@ public:
   void SetStartShift(double s) { start_shift = s; shift = s; }
   void SetCostThreshold(CFtype t) { cost_threshold = t; }
   double Threshold() const { return cost_threshold; }
+  void SetPerturbRange(double min_p, double max_p) { min_perturb = min_p; max_perturb = max_p; }
+  void SetPerturbValue(double p) { min_perturb = p - (p-1)/10; max_perturb = p + (p-1)/10; }
 protected:
   // parameters
   double min_shift;
   double max_shift;
   double cost_threshold;
   std::string name;
+  double min_perturb, max_perturb;
   double start_shift, shift;
   ShiftingPenaltyObserver<CFtype>* observer;
 };
@@ -43,8 +46,7 @@ class ComplexShiftingPenaltyManager : public ShiftingPenaltyManager<CFtype>
 {
 public:
   ComplexShiftingPenaltyManager(CFtype threshold = 0, double s = 1.0, std::string n = "ComplexShiftingPenaltyManager");
-  void ReadParameters(std::istream& is = std::cin,
-											std::ostream& os = std::cout);
+  void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout);
   void Print(std::ostream& os = std::cout) const;
   bool Reset();
   bool Update(CFtype cost);
@@ -65,14 +67,10 @@ class SimpleShiftingPenaltyManager : public ShiftingPenaltyManager<CFtype>
 public:
   SimpleShiftingPenaltyManager(double min_perturb, double max_perturb, CFtype threshold, double s, std::string n = "Shifting Penalty Manager");
   SimpleShiftingPenaltyManager(CFtype threshold = 0, double s = 1.0, std::string n = "SimpleShiftingPenaltyManager");
-  void ReadParameters(std::istream& is = std::cin,
-											std::ostream& os = std::cout);
+  void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout);
   bool Reset();
   bool Update(CFtype cost);
-  void SetPerturbRange(double min_p, double max_p) { min_perturb = min_p; max_perturb = max_p; }
-  void SetPerturbValue(double p) { min_perturb = p - (p-1)/10; max_perturb = p + (p-1)/10; }
 protected:
-  double min_perturb, max_perturb;
 };
 
 /*************************************************************************
@@ -81,7 +79,7 @@ protected:
 
 template <typename CFtype>
 ShiftingPenaltyManager<CFtype>::ShiftingPenaltyManager(CFtype threshold, double s, std::string n)
-  : min_shift(0.0001), max_shift(1.0), cost_threshold(threshold), name(n),
+  : min_shift(0.0001), max_shift(1.0), cost_threshold(threshold), name(n), min_perturb(1.03), max_perturb(1.05),
     start_shift(s), shift(s), observer(NULL)  {}
 
 template <typename CFtype>
@@ -92,11 +90,11 @@ template <typename CFtype>
 
 template <typename CFtype>
 SimpleShiftingPenaltyManager<CFtype>::SimpleShiftingPenaltyManager(double min_p, double max_p, CFtype threshold, double s, std::string n)
-  : ShiftingPenaltyManager<CFtype>(threshold,s,n), min_perturb(min_p), max_perturb(max_p) {}
+  : ShiftingPenaltyManager<CFtype>(threshold,s,n, min_p, max_p) {}
 
 template <typename CFtype>
 SimpleShiftingPenaltyManager<CFtype>::SimpleShiftingPenaltyManager(CFtype threshold, double s, std::string n)
-  : ShiftingPenaltyManager<CFtype>(threshold,s,n), min_perturb(1.03), max_perturb(1.05) {}
+  : ShiftingPenaltyManager<CFtype>(threshold,s,n) {}
 
 
 template <typename CFtype>
@@ -131,7 +129,7 @@ template <typename CFtype>
 bool ComplexShiftingPenaltyManager<CFtype>::Update(CFtype cost)
 {
   bool update = false;
-  float perturb = Random::Double(1.04, 1.05);
+  float perturb = Random::Double(this->min_perturb, this->max_perturb);
   if (cost <= this->cost_threshold)
     {
       feasible_iter++;
@@ -199,7 +197,7 @@ template <typename CFtype>
 bool SimpleShiftingPenaltyManager<CFtype>::Update(CFtype cost)
 {
   bool update = false;
-  float perturb = Random::Double(min_perturb, max_perturb);
+  float perturb = Random::Double(this->min_perturb, this->max_perturb);
   if (cost <= this->cost_threshold)
     {
       if (this->shift > this->min_shift)
@@ -235,7 +233,11 @@ bool SimpleShiftingPenaltyManager<CFtype>::Update(CFtype cost)
 template <typename CFtype>
 void ComplexShiftingPenaltyManager<CFtype>::ReadParameters(std::istream& is, std::ostream& os)
 {
+  double perturb_level;
   os << "  COMPLEX SHIFTING PENALTY PARAMETERS" << std::endl;
+  os << "    Perturb level: ";
+  is >> perturb_level;
+  this->SetPerturbValue(perturb_level);
   os << "    Number of feasible iterations: ";
   is >> max_feasible_iter;
   os << "    Number of infeasible iterations: ";
@@ -252,16 +254,18 @@ void ComplexShiftingPenaltyManager<CFtype>::ReadParameters(std::istream& is, std
 template <typename CFtype>
 void SimpleShiftingPenaltyManager<CFtype>::ReadParameters(std::istream& is, std::ostream& os)
 {
+  double perturb_level;
   os << "  SIMPLE SHIFTING PENALTY PARAMETERS" << std::endl;
-  os << "    Min & max perturb: ";
-  is >> min_perturb >> max_perturb;
-//   os << "    Shift range (min,max): ";
-//   is >> this->min_shift >> this->max_shift;
-//   os << "    Start shift: ";
-//   is >> this->start_shift;
-//   os << "    Cost threshold: ";
-//   is >> this->cost_threshold;
-//   this->shift = this->start_shift;
+  os << "    Perturb level: ";
+  is >> perturb_level;
+  this->SetPerturbValue(perturb_level);
+  os << "    Shift range (min,max): ";
+  is >> this->min_shift >> this->max_shift;
+  os << "    Start shift: ";
+  is >> this->start_shift;
+  os << "    Cost threshold: ";
+  is >> this->cost_threshold;
+  this->shift = this->start_shift;
 }
 
 

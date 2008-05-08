@@ -17,41 +17,42 @@
     time decreasing probability.
 
     @ingroup Runners
- */
+*/
 template <class Input, class State, class Move1, class Move2, typename CFtype = int>
 class BimodalSimulatedAnnealing
-: public MoveRunner<Input,State,Move1,Move2,CFtype>
+  : public BimodalMoveRunner<Input,State,Move1,Move2,CFtype>
 {
 public:
-	BimodalSimulatedAnnealing(const Input& in,
-										 StateManager<Input,State,CFtype>& e_sm,
-										 NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
-										 std::string name);
-	BimodalSimulatedAnnealing(const Input& in,
-										 StateManager<Input,State,CFtype>& e_sm,
-										 NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
-										 std::string name,
-										 CLParser& cl);	
-	void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout);
-	void Print(std::ostream& os = std::cout) const;
+  BimodalSimulatedAnnealing(const Input& in,
+			    StateManager<Input,State,CFtype>& e_sm,
+			    NeighborhoodExplorer<Input,State,Move1,CFtype>& ne1,
+			    NeighborhoodExplorer<Input,State,Move2,CFtype>& ne2,
+			    std::string name);
+  BimodalSimulatedAnnealing(const Input& in,
+			    StateManager<Input,State,CFtype>& e_sm,
+			    NeighborhoodExplorer<Input,State,Move1,CFtype>& ne1,
+			    NeighborhoodExplorer<Input,State,Move2,CFtype>& ne2,
+			    std::string name, CLParser& cl);
+ void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout);
+  void Print(std::ostream& os = std::cout) const;
 protected:
-	void GoCheck() const;
-	void InitializeRun();
-	void TerminateRun();
-	bool StopCriterion();
-	void UpdateIterationCounter();
-	void SelectMove();
-	bool AcceptableMove();
-	void StoreMove();
-	// parameters
-	double temperature; /**< The current temperature. */
-	double start_temperature;
-	double min_temperature;
-	double cooling_rate;
-	unsigned int neighbors_sampled;
-	ArgumentGroup simulated_annealing_arguments;
-	ValArgument<double> arg_start_temperature, arg_min_temperature, arg_cooling_rate;
-	ValArgument<unsigned int> arg_neighbors_sampled;
+  void GoCheck() const;
+  void InitializeRun();
+  void TerminateRun();
+  bool StopCriterion();
+  void UpdateIterationCounter();
+  void SelectMove();
+  bool AcceptableMove();
+  void StoreMove();
+  // parameters
+  double temperature; /**< The current temperature. */
+  double start_temperature;
+  double min_temperature;
+  double cooling_rate;
+  unsigned int neighbors_sampled;
+  ArgumentGroup simulated_annealing_arguments;
+  ValArgument<double> arg_start_temperature, arg_min_temperature, arg_cooling_rate;
+  ValArgument<unsigned int> arg_neighbors_sampled;
 };
 
 /*************************************************************************
@@ -67,49 +68,51 @@ protected:
    @param in a poiter to an input object
 */
 template <class Input, class State, class Move1, class Move2, typename CFtype>
-BimodalSimulatedAnnealing<Input,State,Move,CFtype>::BimodalSimulatedAnnealing(const Input& in,
-																																StateManager<Input,State,CFtype>& e_sm,
-																																NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
-																																std::string name)
-: MoveRunner<Input,State,Move,CFtype>(in, e_sm, e_ne, name),
-start_temperature(0.0), min_temperature(0.0001), cooling_rate(0.75), neighbors_sampled(10), 
-simulated_annealing_arguments("sa_" + name, "sa_" + name, false), arg_start_temperature("start_temperature", "st", false),
-arg_min_temperature("min_temperature", "mt", false), arg_cooling_rate("cooling_rate", "cr", true),
-arg_neighbors_sampled("neighbors_sampled", "ns", true)
+BimodalSimulatedAnnealing<Input,State,Move1,Move2,CFtype>::BimodalSimulatedAnnealing(const Input& in,
+									      StateManager<Input,State,CFtype>& e_sm,
+									      NeighborhoodExplorer<Input,State,Move1,CFtype>& ne1,
+									      NeighborhoodExplorer<Input,State,Move2,CFtype>& ne2,
+									      std::string name)
+  : BimodalMoveRunner<Input,State,Move1,Move2,CFtype>(in, e_sm, ne1, ne2, name),
+    start_temperature(10.0), min_temperature(0.0001), cooling_rate(0.75), neighbors_sampled(10), 
+    simulated_annealing_arguments("sa_" + name, "sa_" + name, false), arg_start_temperature("start_temperature", "st", false),
+    arg_min_temperature("min_temperature", "mt", false), arg_cooling_rate("cooling_rate", "cr", true),
+    arg_neighbors_sampled("neighbors_sampled", "ns", true)
 {
-	simulated_annealing_arguments.AddArgument(arg_start_temperature);
-	simulated_annealing_arguments.AddArgument(arg_min_temperature);
-	simulated_annealing_arguments.AddArgument(arg_cooling_rate);
-	simulated_annealing_arguments.AddArgument(arg_neighbors_sampled);
+  simulated_annealing_arguments.AddArgument(arg_start_temperature);
+  simulated_annealing_arguments.AddArgument(arg_min_temperature);
+  simulated_annealing_arguments.AddArgument(arg_cooling_rate);
+  simulated_annealing_arguments.AddArgument(arg_neighbors_sampled);
 }
 
 template <class Input, class State, class Move1, class Move2, typename CFtype>
-BimodalSimulatedAnnealing<Input,State,Move,CFtype>::BimodalSimulatedAnnealing(const Input& in,
-																																StateManager<Input,State,CFtype>& e_sm,
-																																NeighborhoodExplorer<Input,State,Move1,Move2,CFtype>& e_ne,
-																																std::string name,
-																																CLParser& cl)
-: MoveRunner<Input,State,Move1,Move2,CFtype>(in, e_sm, e_ne, name),
-start_temperature(0.0), min_temperature(0.0001), cooling_rate(0.75), neighbors_sampled(10), 
-simulated_annealing_arguments("sa_" + name, "sa_" + name, false), arg_start_temperature("start_temperature", "st", false),
-arg_min_temperature("min_temperature", "mt", false), arg_cooling_rate("cooling_rate", "cr", true),
-arg_neighbors_sampled("neighbors_sampled", "ns", true)
+BimodalSimulatedAnnealing<Input,State,Move1,Move2,CFtype>::BimodalSimulatedAnnealing(const Input& in,
+									      StateManager<Input,State,CFtype>& e_sm,
+									      NeighborhoodExplorer<Input,State,Move1,CFtype>& ne1,
+									      NeighborhoodExplorer<Input,State,Move2,CFtype>& ne2,
+									      std::string name,
+									      CLParser& cl)
+  : BimodalMoveRunner<Input,State,Move1,Move2,CFtype>(in, e_sm, ne1, ne2, name),
+    start_temperature(0.0), min_temperature(0.0001), cooling_rate(0.75), neighbors_sampled(10), 
+    simulated_annealing_arguments("sa_" + name, "sa_" + name, false), arg_start_temperature("start_temperature", "st", false),
+    arg_min_temperature("min_temperature", "mt", false), arg_cooling_rate("cooling_rate", "cr", true),
+    arg_neighbors_sampled("neighbors_sampled", "ns", true)
 {
-	simulated_annealing_arguments.AddArgument(arg_start_temperature);
-	simulated_annealing_arguments.AddArgument(arg_min_temperature);
-	simulated_annealing_arguments.AddArgument(arg_cooling_rate);
-	simulated_annealing_arguments.AddArgument(arg_neighbors_sampled);	
-	cl.AddArgument(simulated_annealing_arguments);
-	cl.MatchArgument(simulated_annealing_arguments);
-	if (simulated_annealing_arguments.IsSet())
-	{
-		if (arg_start_temperature.IsSet())
-			start_temperature = arg_start_temperature.GetValue();
-		if (arg_min_temperature.IsSet())
-			min_temperature = arg_min_temperature.GetValue();
-		cooling_rate = arg_cooling_rate.GetValue();
-		neighbors_sampled = arg_neighbors_sampled.GetValue();
-	}
+  simulated_annealing_arguments.AddArgument(arg_start_temperature);
+  simulated_annealing_arguments.AddArgument(arg_min_temperature);
+  simulated_annealing_arguments.AddArgument(arg_cooling_rate);
+  simulated_annealing_arguments.AddArgument(arg_neighbors_sampled);	
+  cl.AddArgument(simulated_annealing_arguments);
+  cl.MatchArgument(simulated_annealing_arguments);
+  if (simulated_annealing_arguments.IsSet())
+    {
+      if (arg_start_temperature.IsSet())
+	start_temperature = arg_start_temperature.GetValue();
+      if (arg_min_temperature.IsSet())
+	min_temperature = arg_min_temperature.GetValue();
+      cooling_rate = arg_cooling_rate.GetValue();
+      neighbors_sampled = arg_neighbors_sampled.GetValue();
+    }
 }
 
 
@@ -117,25 +120,25 @@ arg_neighbors_sampled("neighbors_sampled", "ns", true)
 template <class Input, class State, class Move1, class Move2, typename CFtype>
 void BimodalSimulatedAnnealing<Input,State,Move1,Move2,CFtype>::Print(std::ostream& os) const
 {
-    os  << "BimodalSimulated Annealing Runner: " << std::endl;
-    os  << "  Max iterations: " << this->max_iteration << std::endl;
-    os  << "  Start temperature: " << start_temperature << std::endl;
-    os  << "  Min temperature: " << min_temperature << std::endl;
-    os  << "  Cooling rate: " << cooling_rate << std::endl;
-    os  << "  Neighbors sampled: " << neighbors_sampled << std::endl;
+  os  << "BimodalSimulated Annealing Runner: " << std::endl;
+  os  << "  Max iterations: " << this->max_iteration << std::endl;
+  os  << "  Start temperature: " << start_temperature << std::endl;
+  os  << "  Min temperature: " << min_temperature << std::endl;
+  os  << "  Cooling rate: " << cooling_rate << std::endl;
+  os  << "  Neighbors sampled: " << neighbors_sampled << std::endl;
 }
 
 template <class Input, class State, class Move1, class Move2, typename CFtype>
 void BimodalSimulatedAnnealing<Input,State,Move1,Move2,CFtype>::GoCheck() const
 
 {
-	if (start_temperature < 0)
-		throw std::logic_error("negative start_temparature for object " + this->name);
-	if (cooling_rate <= 0)
-		throw std::logic_error("negative cooling_rate for object " + this->name)
-		;
-	if (neighbors_sampled == 0)
-		throw std::logic_error("neighbors_sampled is zero for object " + this->name);
+  if (start_temperature < 0)
+    throw std::logic_error("negative start_temparature for object " + this->name);
+  if (cooling_rate <= 0)
+    throw std::logic_error("negative cooling_rate for object " + this->name)
+      ;
+  if (neighbors_sampled == 0)
+    throw std::logic_error("neighbors_sampled is zero for object " + this->name);
 }
 
 
@@ -147,27 +150,36 @@ void BimodalSimulatedAnnealing<Input,State,Move1,Move2,CFtype>::GoCheck() const
 template <class Input, class State, class Move1, class Move2, typename CFtype>
 void BimodalSimulatedAnnealing<Input,State,Move1,Move2,CFtype>::InitializeRun()
 {
-	MoveRunner<Input,State,Move1,Move2,CFtype>::InitializeRun();
-	if (start_temperature > 0.0)
-		temperature = start_temperature;
-	else
+  BimodalMoveRunner<Input,State,Move1,Move2,CFtype>::InitializeRun();
+  if (start_temperature > 0.0)
+    temperature = start_temperature;
+  else
+    {
+      // Compute a start temperature by sampling the neighborhood and computing the variance
+      // according to [van Laarhoven and Aarts, 1987] (allow an acceptance ratio of approximately 80%)
+      unsigned int i;
+      Move1 mv1;
+      Move2 mv2;
+      std::vector<CFtype> cost_values(neighbors_sampled);
+      double mean = 0.0, variance = 0.0;
+      for (i = 0; i < (neighbors_sampled + 1)/2; i++)
 	{
-		// Compute a start temperature by sampling the neighborhood and computing the variance
-		// according to [van Laarhoven and Aarts, 1987] (allow an acceptance ratio of approximately 80%)
-		Move mv;
-		std::vector<CFtype> cost_values(neighbors_sampled);
-		double mean = 0.0, variance = 0.0;
-		for (unsigned int i = 0; i < neighbors_sampled; i++)
-		{
-			this->ne.RandomMove(this->current_state, mv);
-			cost_values[i] = this->ne.DeltaCostFunction(this->current_state, mv);
-			mean += cost_values[i];
-		}
-		mean /= neighbors_sampled;
-		for (unsigned int i = 0; i < neighbors_sampled; i++)
-			variance += (cost_values[i] - mean) * (cost_values[i] - mean) / neighbors_sampled;
-		temperature = variance;
+	  this->ne1.RandomMove(this->current_state, mv1);
+	  cost_values[i] = this->ne1.DeltaCostFunction(this->current_state, mv1);
+	  mean += cost_values[i];
 	}
+      for (i = 0; i < neighbors_sampled/2; i++)
+	{
+	  this->ne2.RandomMove(this->current_state, mv2);
+	  cost_values[i] = this->ne2.DeltaCostFunction(this->current_state, mv2);
+	  mean += cost_values[i];
+	}
+      mean /= neighbors_sampled;
+      for (unsigned int i = 0; i < neighbors_sampled; i++)
+	variance += (cost_values[i] - mean) * (cost_values[i] - mean) / neighbors_sampled;
+      temperature = variance;
+      std::cerr << "Temperature: " << temperature << endl;
+    }
 }
 
 /**
@@ -176,9 +188,9 @@ void BimodalSimulatedAnnealing<Input,State,Move1,Move2,CFtype>::InitializeRun()
 template <class Input, class State, class Move1, class Move2, typename CFtype>
 void BimodalSimulatedAnnealing<Input,State,Move1,Move2,CFtype>::TerminateRun()
 {
-    MoveRunner<Input,State,Move1,Move2,CFtype>::TerminateRun();
-    this->best_state = this->current_state;
-    this->best_state_cost = this->current_state_cost;
+  BimodalMoveRunner<Input,State,Move1,Move2,CFtype>::TerminateRun();
+  this->best_state = this->current_state;
+  this->best_state_cost = this->current_state_cost;
 }
 
 /**
@@ -187,8 +199,16 @@ void BimodalSimulatedAnnealing<Input,State,Move1,Move2,CFtype>::TerminateRun()
 template <class Input, class State, class Move1, class Move2, typename CFtype>
 void BimodalSimulatedAnnealing<Input,State,Move1,Move2,CFtype>::SelectMove()
 {
-    this->ne.RandomMove(this->current_state, this->current_move);
-    this->ComputeMoveCost();
+  this->ne1.RandomMove(this->current_state, this->current_move1);
+  this->current_move_cost1 = this->ne1.DeltaCostFunction(this->current_state, this->current_move1);
+  this->ne2.RandomMove(this->current_state, this->current_move2);
+  this->current_move_cost2 = this->ne2.DeltaCostFunction(this->current_state, this->current_move2);
+  if (LessThan(this->current_move_cost1, this->current_move_cost2))
+    this->current_move_type = MOVE_1;
+  else if (LessThan(this->current_move_cost2,this->current_move_cost1))
+    this->current_move_type = MOVE_2;
+  else
+    this->current_move_type = Random::Int(0,1) == 0 ? MOVE_1 : MOVE_2;
 }
 
 /**
@@ -197,10 +217,14 @@ void BimodalSimulatedAnnealing<Input,State,Move1,Move2,CFtype>::SelectMove()
 template <class Input, class State, class Move1, class Move2, typename CFtype>
 void BimodalSimulatedAnnealing<Input,State,Move1,Move2,CFtype>::StoreMove()
 {
-  if (LessThan(this->current_move_cost, (CFtype)0))
+  if (this->observer != NULL)
+    this->observer->NotifyStoreMove(*this);
+  if (LessThan(this->current_state_cost,this->best_state_cost))
     {
       if (this->observer != NULL)
-				this->observer->NotifyNewBest(*this);
+	this->observer->NotifyNewBest(*this);
+      this->iteration_of_best = this->number_of_iterations;
+      this->best_state = this->current_state;
       this->best_state_cost = this->current_state_cost;
     }
 }
@@ -209,18 +233,18 @@ template <class Input, class State, class Move1, class Move2, typename CFtype>
 void BimodalSimulatedAnnealing<Input,State,Move1,Move2,CFtype>::ReadParameters(std::istream& is, std::ostream& os)
 
 {
-    os << "SIMULATED ANNEALING -- INPUT PARAMETERS" << std::endl;
-    os << "  Start temperature: ";
-    is >> start_temperature;
-    os << "  Cooling rate: ";
-    is >> cooling_rate;
-    os << "  Neighbors sampled at each temperature: ";
-    is >> neighbors_sampled;
+  os << "SIMULATED ANNEALING -- INPUT PARAMETERS" << std::endl;
+  os << "  Start temperature: ";
+  is >> start_temperature;
+  os << "  Cooling rate: ";
+  is >> cooling_rate;
+  os << "  Neighbors sampled at each temperature: ";
+  is >> neighbors_sampled;
 }
 
 /**
    The search stops when a low temperature has reached.
- */
+*/
 template <class Input, class State, class Move1, class Move2, typename CFtype>
 bool BimodalSimulatedAnnealing<Input,State,Move1,Move2,CFtype>::StopCriterion()
 { return temperature <= min_temperature; }
@@ -232,9 +256,9 @@ bool BimodalSimulatedAnnealing<Input,State,Move1,Move2,CFtype>::StopCriterion()
 template <class Input, class State, class Move1, class Move2, typename CFtype>
 void BimodalSimulatedAnnealing<Input,State,Move1,Move2,CFtype>::UpdateIterationCounter()
 {
-	MoveRunner<Input,State,Move1,Move2,CFtype>::UpdateIterationCounter();
-	if (this->number_of_iterations % neighbors_sampled == 0)
-		temperature *= cooling_rate;
+  BimodalMoveRunner<Input,State,Move1,Move2,CFtype>::UpdateIterationCounter();
+  if (this->number_of_iterations % neighbors_sampled == 0)
+    temperature *= cooling_rate;
 }
 
 /** A move is surely accepted if it improves the cost function
@@ -244,8 +268,12 @@ void BimodalSimulatedAnnealing<Input,State,Move1,Move2,CFtype>::UpdateIterationC
 template <class Input, class State, class Move1, class Move2, typename CFtype>
 bool BimodalSimulatedAnnealing<Input,State,Move1,Move2,CFtype>::AcceptableMove()
 { 
-	return (this->current_move_cost <= 0)
-	|| (Random::Double_Unit_Uniform() < exp(-this->current_move_cost/temperature)); 
+  if (this->current_move_type == MOVE_1)
+    return LessOrEqualThan(this->current_move_cost1,CFtype(0))
+      || (Random::Double_Unit_Uniform() < exp(-this->current_move_cost1/temperature)); 
+  else
+    return LessOrEqualThan(this->current_move_cost2,CFtype(0))
+      || (Random::Double_Unit_Uniform() < exp(-this->current_move_cost2/temperature));     
 }
 
 #endif // _BIMODAL_SIMULATED_ANNEALING_HH_

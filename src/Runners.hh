@@ -11,7 +11,7 @@
 #include <runners/BimodalSteepestDescent.hh>
 #include <runners/BimodalFirstDescent.hh>
 #include <runners/BimodalHillClimbing.hh>
-//#include <runners/BimodalSimulatedAnnealing.hh>
+#include <runners/BimodalSimulatedAnnealing.hh>
 #include <runners/BimodalTabuSearch.hh>
 #include <runners/BimodalTabuSearchWithShiftingPenalty.hh>
 

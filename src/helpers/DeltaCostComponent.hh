@@ -67,8 +67,10 @@ class DeltaCostComponent
 {
 public:
   void Print(std::ostream& os = std::cout) const;
-  DeltaCostComponent(const Input& in, CostComponent<Input,State,CFtype>& cc, std::string name, ShiftingPenaltyManager<CFtype>* spm  = NULL);
-  void SetShiftingPenaltyManager(ShiftingPenaltyManager<CFtype>* spm);
+  DeltaCostComponent(const Input& in, CostComponent<Input,State,CFtype>& cc, std::string name);
+  DeltaCostComponent(const Input& in, CostComponent<Input,State,CFtype>& cc, ShiftingPenaltyManager<CFtype>& spm, std::string name);
+  void SetShiftingPenaltyManager(ShiftingPenaltyManager<CFtype>& spm);
+  void UnsetShiftingPenaltyManager();
   virtual void ResetShift();
   virtual bool IsDeltaImplemented() const  { return is_delta_implemented; }
   CostComponent<Input,State,CFtype>& GetCostComponent() const { return cc; }
@@ -94,8 +96,10 @@ public:
   virtual CFtype DeltaCost(const State& st, const Move& mv) const;
   virtual ShiftedResult<CFtype> DeltaShiftedCost(const State& st, const Move& mv) const;
 protected:
-  FilledDeltaCostComponent(const Input& in, CostComponent<Input,State,CFtype>& cc, std::string name, ShiftingPenaltyManager<CFtype>* spm  = NULL)
-    : DeltaCostComponent<Input,State,Move,true,CFtype>(in,cc,name,spm) {}
+  FilledDeltaCostComponent(const Input& in, CostComponent<Input,State,CFtype>& cc, std::string name)
+    : DeltaCostComponent<Input,State,Move,true,CFtype>(in,cc,name) {}
+  FilledDeltaCostComponent(const Input& in, CostComponent<Input,State,CFtype>& cc, ShiftingPenaltyManager<CFtype>& spm, std::string name)
+    : DeltaCostComponent<Input,State,Move,true,CFtype>(in,cc,spm,name) {}
 };
 
 template <class Input, class State, class Move, typename CFtype = int>
@@ -103,8 +107,10 @@ class EmptyDeltaCostComponent
 : public DeltaCostComponent<Input,State,Move,false,CFtype>
 {
 public:
-  EmptyDeltaCostComponent(const Input& in, CostComponent<Input,State,CFtype>& cc,  std::string name = "", ShiftingPenaltyManager<CFtype>* spm  = NULL)
-  : DeltaCostComponent<Input,State,Move,false,CFtype>(in,cc,name,spm)   {}
+  EmptyDeltaCostComponent(const Input& in, CostComponent<Input,State,CFtype>& cc,  std::string name)
+  : DeltaCostComponent<Input,State,Move,false,CFtype>(in,cc,name)   {}
+  EmptyDeltaCostComponent(const Input& in, CostComponent<Input,State,CFtype>& cc,ShiftingPenaltyManager<CFtype>& spm,  std::string name)
+  : DeltaCostComponent<Input,State,Move,false,CFtype>(in,cc,spm,name)   {}
   virtual CFtype DeltaCost(const State& st, const State& st1) const; 
   virtual ShiftedResult<CFtype> DeltaShiftedCost(const State& st, const State& st1) const;
   CFtype ComputeDeltaCost(const State& st, const Move& mv) const 
@@ -118,24 +124,34 @@ public:
 
 template <class Input, class State, class Move, bool is_delta_implemented, typename CFtype>
 DeltaCostComponent<Input,State,Move,is_delta_implemented,CFtype>::DeltaCostComponent(const Input& i,
-							 CostComponent<Input,State,CFtype>& e_cc, std::string name, ShiftingPenaltyManager<CFtype>* a_spm)
-  : AbstractDeltaCostComponent<Input,State,Move,CFtype>(name), in(i), cc(e_cc), spm(a_spm)
+							 CostComponent<Input,State,CFtype>& e_cc, std::string name)
+  : AbstractDeltaCostComponent<Input,State,Move,CFtype>(name), in(i), cc(e_cc), spm(NULL)
 {
-	if (spm != NULL)
-    is_shifted = true;
-  else
-    is_shifted = false;
+  is_shifted = false;
+}
+
+template <class Input, class State, class Move, bool is_delta_implemented, typename CFtype>
+DeltaCostComponent<Input,State,Move,is_delta_implemented,CFtype>::DeltaCostComponent(const Input& i,
+							 CostComponent<Input,State,CFtype>& e_cc, ShiftingPenaltyManager<CFtype>& a_spm, std::string name)
+  : AbstractDeltaCostComponent<Input,State,Move,CFtype>(name), in(i), cc(e_cc), spm(&a_spm)
+{
+  is_shifted = true;
 }
 
 template <class Input, class State, class Move, bool is_delta_implemented, typename CFtype>
 void DeltaCostComponent<Input,State,Move,is_delta_implemented,CFtype>::
-       SetShiftingPenaltyManager(ShiftingPenaltyManager<CFtype>* a_spm)
+       SetShiftingPenaltyManager(ShiftingPenaltyManager<CFtype>& a_spm)
 {
-  spm = a_spm;
-  if (spm != NULL)
-    is_shifted = true;
-  else
-    is_shifted = false;
+  spm = &a_spm;
+  is_shifted = true;
+}
+
+template <class Input, class State, class Move, bool is_delta_implemented, typename CFtype>
+void DeltaCostComponent<Input,State,Move,is_delta_implemented,CFtype>::
+       UnsetShiftingPenaltyManager()
+{
+  spm = NULL;
+  is_shifted = false;
 }
 
 
