@@ -6,6 +6,7 @@
 #include <cmath>
 #include <helpers/CostComponent.hh>
 #include <utils/Types.hh>
+#include <stdexcept>
 
 /** This constant multiplies the value of the Violations function in the
 hierarchical formulation of the Cost function (i.e., 
