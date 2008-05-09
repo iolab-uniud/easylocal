@@ -7,6 +7,7 @@
  *
  */
 
+#include <utils/Random.hh>
 #include <cppunit/extensions/HelperMacros.h>
 #include <cppunit/CompilerOutputter.h>
 #include <cppunit/TestResultCollector.h>
@@ -16,6 +17,8 @@
 
 int main(int argc, char *argv[]) 
 {
+	Random::Seed(0); // to ensure reproducibility of results
+	
 	CPPUNIT_NS::TextUi::TestRunner runner;	
 	CPPUNIT_NS::TestResult test_result;
 	CPPUNIT_NS::TestFactoryRegistry &registry = CPPUNIT_NS::TestFactoryRegistry::getRegistry();

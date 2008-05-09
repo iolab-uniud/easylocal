@@ -15,7 +15,7 @@ class ChessBoard
     friend std::ostream& operator<<(std::ostream&, const ChessBoard &);
     friend std::istream& operator>>(std::istream&, ChessBoard &);
 public:
-    ChessBoard(const unsigned&bs);
+    ChessBoard(const int& bs);
     char operator()(int i, int j) const;
     void SetSquare(int i, int j, char ch); 
 		
@@ -23,7 +23,7 @@ public:
 
     // used for doublechecking the correctness of the solvers
     int CountAttacks();
-    int CountSingleAttacks(unsigned int h, unsigned int k);
+    int CountSingleAttacks(int h, int k);
 
 private:
 		std::vector<std::vector<char> > cb;

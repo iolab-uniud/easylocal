@@ -145,8 +145,8 @@
 				ACF4B1A00DBFA73A008A0207 /* m4 */,
 				ACF4B0FA0DBFA668008A0207 /* src */,
 				ACF4B15C0DBFA685008A0207 /* test */,
-				AC759BE40DD0AC25001056B9 /* COPYING */,
 				AC759BE50DD0AE73001056B9 /* LICENSE */,
+				AC759BE40DD0AC25001056B9 /* COPYING */,
 			);
 			name = EasyLocalpp;
 			sourceTree = "<group>";
@@ -308,10 +308,10 @@
 		ACF4B1630DBFA685008A0207 /* data */ = {
 			isa = PBXGroup;
 			children = (
-				ACF4B1640DBFA685008A0207 /* ChessBoard.cc */,
 				ACF4B1650DBFA685008A0207 /* ChessBoard.hh */,
-				ACF4B1660DBFA685008A0207 /* Swap.cc */,
+				ACF4B1640DBFA685008A0207 /* ChessBoard.cc */,
 				ACF4B1670DBFA685008A0207 /* Swap.hh */,
+				ACF4B1660DBFA685008A0207 /* Swap.cc */,
 			);
 			path = data;
 			sourceTree = "<group>";
@@ -319,22 +319,22 @@
 		ACF4B1680DBFA685008A0207 /* helpers */ = {
 			isa = PBXGroup;
 			children = (
-				ACF4B1690DBFA685008A0207 /* PrimaryDiagonalCostComponent.cc */,
 				ACF4B16A0DBFA685008A0207 /* PrimaryDiagonalCostComponent.hh */,
-				ACF4B16B0DBFA685008A0207 /* PrimaryDiagonalDeltaCostComponent.cc */,
+				ACF4B1690DBFA685008A0207 /* PrimaryDiagonalCostComponent.cc */,
 				ACF4B16C0DBFA685008A0207 /* PrimaryDiagonalDeltaCostComponent.hh */,
+				ACF4B16B0DBFA685008A0207 /* PrimaryDiagonalDeltaCostComponent.cc */,
 				ACF4B16D0DBFA685008A0207 /* QueensFrequencyTabuListManager.hh */,
-				ACF4B16E0DBFA685008A0207 /* SwapNeighborhoodExplorer.cc */,
 				ACF4B16F0DBFA685008A0207 /* SwapNeighborhoodExplorer.hh */,
+				ACF4B16E0DBFA685008A0207 /* SwapNeighborhoodExplorer.cc */,
 				ACF4B1710DBFA685008A0207 /* QueensOutputManager.hh */,
 				ACF4B1700DBFA685008A0207 /* QueensOutputManager.cc */,
 				ACF4B1730DBFA685008A0207 /* QueensStateManager.hh */,
 				ACF4B1720DBFA685008A0207 /* QueensStateManager.cc */,
 				ACF4B1740DBFA685008A0207 /* QueensTabuListManager.hh */,
-				ACF4B1750DBFA685008A0207 /* SecondaryDiagonalCostComponent.cc */,
 				ACF4B1760DBFA685008A0207 /* SecondaryDiagonalCostComponent.hh */,
-				ACF4B1770DBFA685008A0207 /* SecondaryDiagonalDeltaCostComponent.cc */,
+				ACF4B1750DBFA685008A0207 /* SecondaryDiagonalCostComponent.cc */,
 				ACF4B1780DBFA685008A0207 /* SecondaryDiagonalDeltaCostComponent.hh */,
+				ACF4B1770DBFA685008A0207 /* SecondaryDiagonalDeltaCostComponent.cc */,
 			);
 			path = helpers;
 			sourceTree = "<group>";

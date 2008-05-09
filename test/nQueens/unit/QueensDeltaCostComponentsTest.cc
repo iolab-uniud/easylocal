@@ -14,12 +14,12 @@
 #include "../helpers/SecondaryDiagonalDeltaCostComponent.hh"
 
 template <typename QueensDeltaCostComponent, typename QueensCostComponent>
-class QueensDeltaCostComponentTest : public DeltaCostComponentTest<unsigned int, std::vector<unsigned>, Swap, 
+class QueensDeltaCostComponentTest : public DeltaCostComponentTest<int, std::vector<int>, Swap, 
   QueensStateManager, SwapNeighborhoodExplorer, QueensDeltaCostComponent>
 {
 	// This type rename is mandatory for passing the parent class to the CPPUNIT_TEST_SUB_SUITE macro
 	// that is not protected against template parameters
-	typedef DeltaCostComponentTest<unsigned int, std::vector<unsigned>, Swap, QueensStateManager, 
+	typedef DeltaCostComponentTest<int, std::vector<int>, Swap, QueensStateManager, 
 		SwapNeighborhoodExplorer, QueensDeltaCostComponent> abstractDeltaCostComponentTest;
 	CPPUNIT_TEST_SUB_SUITE(QueensDeltaCostComponentTest, abstractDeltaCostComponentTest);
 	CPPUNIT_TEST_SUITE_END();
@@ -27,7 +27,7 @@ class QueensDeltaCostComponentTest : public DeltaCostComponentTest<unsigned int,
 public:
 	QueensDeltaCostComponentTest() 
 	{ 
-		CPPUNIT_ASSERT_NO_THROW_MESSAGE(stringify("Input creation raises an exception", __FILE__, __LINE__), this->in = new unsigned int);
+		CPPUNIT_ASSERT_NO_THROW_MESSAGE(stringify("Input creation raises an exception", __FILE__, __LINE__), this->in = new int);
 		*(this->in) = 5; 
 		CPPUNIT_ASSERT_NO_THROW_MESSAGE(stringify("State manager creation raises an exception", __FILE__, __LINE__), this->sm = new QueensStateManager(*this->in));	
 		CPPUNIT_ASSERT_NO_THROW_MESSAGE(stringify("Neighborhood explorer creation raises an exception", __FILE__, __LINE__), this->ne = new SwapNeighborhoodExplorer(*this->in, *this->sm));
@@ -46,5 +46,5 @@ public:
 
 typedef QueensDeltaCostComponentTest<PrimaryDiagonalDeltaCostComponent, PrimaryDiagonalCostComponent> primaryDeltaCostSignature;
 CPPUNIT_TEST_SUITE_REGISTRATION(primaryDeltaCostSignature);
-typedef QueensDeltaCostComponentTest<PrimaryDiagonalDeltaCostComponent, PrimaryDiagonalCostComponent> secondaryDeltaCostSignature;
+typedef QueensDeltaCostComponentTest<SecondaryDiagonalDeltaCostComponent, SecondaryDiagonalCostComponent> secondaryDeltaCostSignature;
 CPPUNIT_TEST_SUITE_REGISTRATION(secondaryDeltaCostSignature);

@@ -4,20 +4,20 @@
 
 // the first parameter is not used, therefore it is not named
 // (CC gives a warning if it is named)
-void SwapNeighborhoodExplorer::RandomMove(const std::vector<unsigned> &, Swap& sw)
+void SwapNeighborhoodExplorer::RandomMove(const std::vector<int> &, Swap& sw)
 {
     sw.from = Random::Int(0, in - 1);
     do
         sw.to = Random::Int(0, in - 1);
     while (sw.from == sw.to);
     if (sw.from > sw.to) // swap from and to so that from < to
-    { unsigned int tmp = sw.from;
+    { int tmp = sw.from;
         sw.from = sw.to;
         sw.to = tmp;
     }
 }
 
-void SwapNeighborhoodExplorer::NextMove(const std::vector<unsigned> &, Swap& sw)
+void SwapNeighborhoodExplorer::NextMove(const std::vector<int> &, Swap& sw)
 {
     if (sw.to < in - 1) sw.to++;
     else if (sw.from < in - 2)
@@ -26,7 +26,7 @@ void SwapNeighborhoodExplorer::NextMove(const std::vector<unsigned> &, Swap& sw)
     { sw.from = 0; sw.to = 1; }
 }
 
-void SwapNeighborhoodExplorer::MakeMove(std::vector<unsigned> &a, const Swap& sw)
+void SwapNeighborhoodExplorer::MakeMove(std::vector<int> &a, const Swap& sw)
 { 
 	std::swap(a[sw.from], a[sw.to]);
 	/* int temp = a(sw.from);
@@ -34,5 +34,5 @@ void SwapNeighborhoodExplorer::MakeMove(std::vector<unsigned> &a, const Swap& sw
     a(sw.to) = temp; */
 }
 
-bool SwapNeighborhoodExplorer::FeasibleMove(const std::vector<unsigned>&, const Swap&)
+bool SwapNeighborhoodExplorer::FeasibleMove(const std::vector<int>&, const Swap&)
 { return true; }

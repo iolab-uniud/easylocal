@@ -10,17 +10,17 @@
 #include <unit/OutputManagerTest.hh>
 #include "../helpers/QueensOutputManager.hh"
 
-class QueensOutputManagerTest : public OutputManagerTest<unsigned int, ChessBoard, std::vector<unsigned>, QueensStateManager, QueensOutputManager>
+class QueensOutputManagerTest : public OutputManagerTest<int, ChessBoard, std::vector<int>, QueensStateManager, QueensOutputManager>
 {
 	// This type rename is mandatory for passing the parent class to the CPPUNIT_TEST_SUB_SUITE macro
 	// that is not protected against template parameters
-	typedef OutputManagerTest<unsigned int, ChessBoard, std::vector<unsigned>, QueensStateManager, QueensOutputManager> abstractOutputManagerTest;
+	typedef OutputManagerTest<int, ChessBoard, std::vector<int>, QueensStateManager, QueensOutputManager> abstractOutputManagerTest;
 	CPPUNIT_TEST_SUB_SUITE(QueensOutputManagerTest, abstractOutputManagerTest);
 	CPPUNIT_TEST_SUITE_END();
 public:
 	QueensOutputManagerTest() 
 	{ 
-		CPPUNIT_ASSERT_NO_THROW_MESSAGE(stringify("Input creation raises an exception", __FILE__, __LINE__), this->in = new unsigned int);
+		CPPUNIT_ASSERT_NO_THROW_MESSAGE(stringify("Input creation raises an exception", __FILE__, __LINE__), this->in = new int);
 		*(this->in) = 5; 
 		CPPUNIT_ASSERT_NO_THROW_MESSAGE(stringify("State manager creation raises an exception", __FILE__, __LINE__), this->sm = new QueensStateManager(*this->in));
 		CPPUNIT_ASSERT_NO_THROW_MESSAGE(stringify("Output manager creation raises an exception", __FILE__, __LINE__), this->om = new QueensOutputManager(*this->in));															

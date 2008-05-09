@@ -6,13 +6,13 @@
 #include "PrimaryDiagonalCostComponent.hh"
 
 class PrimaryDiagonalDeltaCostComponent
-            : public FilledDeltaCostComponent<unsigned,std::vector<unsigned>,Swap>
+            : public FilledDeltaCostComponent<int, std::vector<int>, Swap>
 {
 public:
-  PrimaryDiagonalDeltaCostComponent(const unsigned& in, PrimaryDiagonalCostComponent& cc)
-    : FilledDeltaCostComponent<unsigned,std::vector<unsigned>,Swap>(in,cc,"ULDR")
+  PrimaryDiagonalDeltaCostComponent(const int& in, PrimaryDiagonalCostComponent& cc)
+    : FilledDeltaCostComponent<int, std::vector<int>, Swap>(in, cc, "PrimaryDiagonal")
     {}
-    int ComputeDeltaCost(const std::vector<unsigned>& st, const Swap& sw) const;
+    int ComputeDeltaCost(const std::vector<int>& st, const Swap& sw) const;
 };
 
 #endif /*PRIMARYDIAGONALDELTACOSTCOMPONENT_HH_*/

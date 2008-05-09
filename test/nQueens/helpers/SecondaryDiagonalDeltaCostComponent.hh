@@ -6,13 +6,13 @@
 #include "../data/Swap.hh"
 #include "SecondaryDiagonalCostComponent.hh"
 
-class SecondaryDiagonalDeltaCostComponent : public FilledDeltaCostComponent<unsigned,std::vector<unsigned>,Swap>
+class SecondaryDiagonalDeltaCostComponent : public FilledDeltaCostComponent<int, std::vector<int>, Swap>
 {
 public:
-  SecondaryDiagonalDeltaCostComponent(const unsigned& in, SecondaryDiagonalCostComponent& cc) 
-    : FilledDeltaCostComponent<unsigned,std::vector<unsigned>,Swap>(in,cc,"Secondary diagonal")
+  SecondaryDiagonalDeltaCostComponent(const int& in, SecondaryDiagonalCostComponent& cc) 
+    : FilledDeltaCostComponent<int, std::vector<int>, Swap>(in,cc,"Secondary diagonal")
 { }
-	int ComputeDeltaCost(const std::vector<unsigned>& st, const Swap& sw) const;
+	int ComputeDeltaCost(const std::vector<int>& st, const Swap& sw) const;
 };
 
 #endif /*SECONDARYDIAGONALDELTACOSTCOMPONENT_HH_*/

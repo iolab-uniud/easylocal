@@ -1,22 +1,22 @@
 #include "QueensOutputManager.hh"
 
-void QueensOutputManager::OutputState(const std::vector<unsigned> &a, ChessBoard& cb) const
+void QueensOutputManager::OutputState(const std::vector<int> &a, ChessBoard& cb) const
 {
-  unsigned int i, j;
+  int i, j;
   for (i = 0; i < in; i++)
     for (j = 0; j < in; j++)
-      cb.SetSquare(i,j,'-');
+      cb.SetSquare(i, j, '-');
   for (i = 0; i < in; i++)
-    cb.SetSquare(i,a[i],'Q');
+    cb.SetSquare(a[i], i, 'Q');
 }
 
-void QueensOutputManager::InputState(std::vector<unsigned> &a, const ChessBoard& cb) const
+void QueensOutputManager::InputState(std::vector<int> &a, const ChessBoard& cb) const
 {
-  for (unsigned int i = 0; i < in; i++)
-    for (unsigned int j = 0; j < in; j++)
-      if (cb(i,j) == 'Q')
+  for (int i = 0; i < in; i++)
+    for (int j = 0; j < in; j++)
+      if (cb(i, j) == 'Q')
 			{
-				a[i] = j;
+				a[j] = i;
 				break;
 			}
 }

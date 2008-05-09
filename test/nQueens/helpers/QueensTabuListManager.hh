@@ -6,11 +6,11 @@
 #include "../data/Swap.hh"
 
 /** This class handles the tabu list. */
-class QueensTabuListManager : public TabuListManager<std::vector<unsigned>, Swap>
+class QueensTabuListManager : public TabuListManager<std::vector<int>, Swap>
 {
 /* public:
 	QueensTabuListManager() 
-	: TabuListManager<std::vector<unsigned>, Swap>() {} */
+	: TabuListManager<std::vector<int>, Swap>() {} */
 protected:
 	bool Inverse(const Swap& m1, const Swap& m2) const { return m1 == m2; }
 };

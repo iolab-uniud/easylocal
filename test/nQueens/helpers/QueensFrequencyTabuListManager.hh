@@ -5,11 +5,11 @@
 #include <vector>
 #include "../data/Swap.hh"
 
-class QueensFrequencyTabuListManager : public FrequencyTabuListManager<std::vector<unsigned>, Swap>
+class QueensFrequencyTabuListManager : public FrequencyTabuListManager<std::vector<int>, Swap>
 {
 public:
 	QueensFrequencyTabuListManager(int min = 0, int max = 0) 
-	: FrequencyTabuListManager<std::vector<unsigned>, Swap>(min,max) {}
+	: FrequencyTabuListManager<std::vector<int>, Swap>(min,max) {}
 protected:
 	bool Inverse(const Swap& m1, const Swap& m2) const; 
 };

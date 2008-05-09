@@ -1,6 +1,6 @@
 #include "ChessBoard.hh"
 
-ChessBoard::ChessBoard(const unsigned&bs)
+ChessBoard::ChessBoard(const int& bs)
   : cb(bs, std::vector<char>(bs, '-'))
 {}
 
@@ -12,16 +12,16 @@ void ChessBoard::SetSquare(int i, int j, char ch)
 
 void ChessBoard::Clean()
 {
-    for (unsigned int i = 0; i < cb.size(); i++)
-        for (unsigned int j = 0; j < cb.size(); j++)
+    for (int i = 0; i < (int)cb.size(); i++)
+        for (int j = 0; j < (int)cb.size(); j++)
             cb[i][j] = '-';
 }
 
 std::ostream& operator<<(std::ostream& os, const ChessBoard& board)
 {
-    for (unsigned int i = 0; i < board.cb.size(); i++)
+    for (int i = 0; i < (int)board.cb.size(); i++)
     {
-        for (unsigned int j = 0; j < board.cb.size(); j++)
+        for (int j = 0; j < (int)board.cb.size(); j++)
             os << board.cb[i][j];
         os << std::endl;
     }
@@ -30,8 +30,8 @@ std::ostream& operator<<(std::ostream& os, const ChessBoard& board)
 
 std::istream& operator>>(std::istream& is, ChessBoard& board)
 {
-    for (unsigned int i = 0; i < board.cb.size(); i++)
-        for (unsigned int j = 0; j < board.cb.size(); j++)
+    for (int i = 0; i < (int)board.cb.size(); i++)
+        for (int j = 0; j < (int)board.cb.size(); j++)
             is >> board.cb[i][j];
     return is;
 }
@@ -39,30 +39,30 @@ std::istream& operator>>(std::istream& is, ChessBoard& board)
 int ChessBoard::CountAttacks()
 {
     int attacks = 0;
-    for (unsigned int i = 0; i < cb.size(); i++)
-        for (unsigned int j = 0; j < cb.size(); j++)
+    for (int i = 0; i < (int)cb.size(); i++)
+        for (int j = 0; j < (int)cb.size(); j++)
             if (cb[i][j] == 'Q')
                 attacks += CountSingleAttacks(i,j);
     return attacks/2;
 }
 
-int ChessBoard::CountSingleAttacks(unsigned int h, unsigned int k)
+int ChessBoard::CountSingleAttacks(int h, int k)
 {
-    unsigned int attacks = 0, l;
-    for (unsigned int i = 0; i < cb.size(); i++)
+		int attacks = 0, l;
+    for (int i = 0; i < (int)cb.size(); i++)
         if (i != h && cb[i][k] == 'Q')
             attacks++;
-    for (unsigned int j = 0; j < cb.size(); j++)
+    for (int j = 0; j < (int)cb.size(); j++)
         if (j != k && cb[h][j] == 'Q')
             attacks++;
-    for (l = -cb.size(); l < cb.size(); l++)
-        if (h + l >= 0 && h + l < cb.size()
-                && k + l >= 0 && k + l < cb.size()
+    for (l = -cb.size(); l < (int)cb.size(); l++)
+        if (h + l >= 0 && h + l < (int)cb.size()
+                && k + l >= 0 && k + l < (int)cb.size()
                 && l != 0 && cb[h+l][k+l] == 'Q')
             attacks++;
-    for (l = -cb.size(); l < cb.size(); l++)
-        if (h + l >= 0 && h + l < cb.size()
-                && k - l >= 0 && k - l < cb.size()
+    for (l = -cb.size(); l < (int)cb.size(); l++)
+        if (h + l >= 0 && h + l < (int)cb.size()
+                && k - l >= 0 && k - l < (int)cb.size()
                 && l != 0 && cb[h+l][k-l] == 'Q')
             attacks++;
     return attacks;

@@ -6,15 +6,15 @@
 
 /** This class is the state manager for the problem. */
 class QueensStateManager
-            : public StateManager<unsigned,std::vector<unsigned> >
+            : public StateManager<int,std::vector<int> >
 {
 public:
-    QueensStateManager(const unsigned& bs);
-    void RandomState(std::vector<unsigned> &a);
-  bool CheckConsistency(const std::vector<unsigned> &a) const;
+    QueensStateManager(const int& bs);
+    void RandomState(std::vector<int> &a);
+  bool CheckConsistency(const std::vector<int> &a) const;
 };
 
-std::ostream& operator<<(std::ostream& os, const std::vector<unsigned>& a);
+std::ostream& operator<<(std::ostream& os, const std::vector<int>& a);
 
 
 #endif /*QUEENSSTATEMANAGER_H_*/

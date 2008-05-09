@@ -5,11 +5,11 @@
 #include <vector>
 #include "../data/Swap.hh"
 
-class QueensKicker : public SimpleKicker<unsigned,std::vector<unsigned>,Swap>
+class QueensKicker : public SimpleKicker<int,std::vector<int>,Swap>
 {
 public:
-	QueensKicker(const unsigned& bs, SwapNeighborhoodExplorer& qnhe, unsigned s = 2)
-	: SimpleKicker<unsigned,std::vector<unsigned>,Swap>(bs, qnhe, s, "QueensKicker") 
+	QueensKicker(const int& bs, SwapNeighborhoodExplorer& qnhe, int s = 2)
+	: SimpleKicker<int,std::vector<int>,Swap>(bs, qnhe, s, "QueensKicker") 
 {}
 	bool RelatedMoves(const Swap&, const Swap&) const
 { return true; } 

@@ -13,7 +13,7 @@ public:
     bool operator==(const Swap&) const;
     bool operator!=(const Swap&) const;
     bool operator<(const Swap&) const;
-    unsigned int from, to;
+    int from, to;
 };
 
 std::istream& operator>>(std::istream& is, Swap& m);

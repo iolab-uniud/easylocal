@@ -4,14 +4,14 @@
 #include <helpers/CostComponent.hh>
 #include <vector>
 
-class SecondaryDiagonalCostComponent : public CostComponent<unsigned,std::vector<unsigned> >
+class SecondaryDiagonalCostComponent : public CostComponent<int,std::vector<int> >
   {
   public:
-    SecondaryDiagonalCostComponent(unsigned& in) : CostComponent<unsigned,std::vector<unsigned> >(in,1,true, "UpRight <--> DownLeft Violations")
+    SecondaryDiagonalCostComponent(int& in) : CostComponent<int,std::vector<int> >(in,1,true, "SecondaryDiagonal")
       { }
-    int ComputeCost(const std::vector<unsigned>& st) const;
-    void PrintViolations(const std::vector<unsigned>& st, std::ostream& os = std::cout) const
-      { os << name << ": " << Cost(st); }
+		static bool Violation(int i, int j, int ai, int aj);
+    int ComputeCost(const std::vector<int>& st) const;
+    void PrintViolations(const std::vector<int>& st, std::ostream& os = std::cout) const;
   };
 
 #endif /*SECONDARYDIAGONALCOSTCOMPONENT_HH_*/

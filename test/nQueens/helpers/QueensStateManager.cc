@@ -3,14 +3,14 @@
 #include <vector>
 #include <stdexcept>
 
-QueensStateManager::QueensStateManager(const unsigned& bs)
-: StateManager<unsigned,std::vector<unsigned> >(bs, "QueensStateManager")
+QueensStateManager::QueensStateManager(const int& bs)
+: StateManager<int,std::vector<int> >(bs, "QueensStateManager")
 {}
 
-void QueensStateManager::RandomState(std::vector<unsigned> &a)
+void QueensStateManager::RandomState(std::vector<int> &a)
 {
 	std::vector<bool> tag(in, false);
-	unsigned int i, j;
+	int i, j;
 	
 	for (j = 0; j < in; j++)
 	{ 
@@ -22,10 +22,10 @@ void QueensStateManager::RandomState(std::vector<unsigned> &a)
 	}
 }
 
-bool QueensStateManager::CheckConsistency(const std::vector<unsigned> &a) const
+bool QueensStateManager::CheckConsistency(const std::vector<int> &a) const
 {
   std::vector<bool> tag(in, false);
-  for (unsigned int j = 0; j < in; j++)
+  for (int j = 0; j < in; j++)
     {
       if (a[j] >= in)
 	throw std::runtime_error("State is not consistent (queen out of the chessboard)");
@@ -36,9 +36,9 @@ bool QueensStateManager::CheckConsistency(const std::vector<unsigned> &a) const
   return true;
 }
 
-std::ostream& operator<<(std::ostream& os, const std::vector<unsigned>& a)
+std::ostream& operator<<(std::ostream& os, const std::vector<int>& a)
 {
-	for (unsigned i = 0; i < a.size(); i++)
+	for (int i = 0; i < (int)a.size(); i++)
 		os << a[i] << ' ';
 	os << std::endl;
 	
