@@ -78,14 +78,14 @@ int main(int argc, char* argv[])
   SimulatedAnnealing<int, std::vector<int>, Swap> qsa(in, qsm, qnhe, "SwapSimulatedAnnealing", cl);
   TabuSearchWithShiftingPenalty<int, std::vector<int>, Swap> qtsw(in, qsm, qnhe, qtlm);
   
-  SimpleLocalSearch<int, ChessBoard, std::vector<int> > qss(in, qsm, qom, "QueensSLS", cl);
-  GeneralizedLocalSearchSolver<int, ChessBoard, std::vector<int> > qgls(in, qsm, qom, "QueensGLS", cl);
-  VNDSolver<int, ChessBoard, std::vector<int> > qvnd(in, qsm, qom, 3);
+  SimpleLocalSearch<unsigned, ChessBoard, std::vector<unsigned> > qss(in, qsm, qom, "QueensSLS", cl);
+  GeneralizedLocalSearch<unsigned, ChessBoard, std::vector<unsigned> > qgls(in, qsm, qom, "QueensGLS", cl);
+  VNDSolver<unsigned, ChessBoard, std::vector<unsigned> > qvnd(in, qsm, qom, 3);
 
-	cl.MatchArguments();
-	if (arg_random_seed.IsSet())
-		Random::Seed(arg_random_seed.GetValue());
-	
+  cl.MatchArguments();
+  if (arg_random_seed.IsSet())
+    Random::Seed(arg_random_seed.GetValue());
+  
   RunnerObserver<int, std::vector<int>, Swap> ro(arg_verbosity_level.GetValue(), arg_plot_level.GetValue());
   GeneralizedLocalSearchObserver<int, ChessBoard, std::vector<int> > so(arg_plot_level.GetValue());
 

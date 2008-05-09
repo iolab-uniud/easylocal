@@ -10,7 +10,7 @@
 */
 template <class Input, class Output, class State, typename CFtype = int>
 class VNDSolver
-  : public AbstractLocalSearchSolver<Input,Output,State,CFtype>
+  : public AbstractLocalSearch<Input,Output,State,CFtype>
 {
 public:
   VNDSolver(const Input& in,
@@ -51,7 +51,7 @@ VNDSolver<Input,Output,State,CFtype>::VNDSolver(const Input& in,
 						OutputManager<Input,Output,State,CFtype>& e_om,
 						unsigned max_k,
 						std::string name)
-  : AbstractLocalSearchSolver<Input,Output,State,CFtype>(in, e_sm, e_om, name)
+  : AbstractLocalSearch<Input,Output,State,CFtype>(in, e_sm, e_om, name)
 {
   p_kicker = NULL;
   this->max_k = max_k;
@@ -98,7 +98,7 @@ void VNDSolver<Input,Output,State,CFtype>::SetKicker(Kicker<Input,State,CFtype>&
 template <class Input, class Output, class State, typename CFtype>
 void VNDSolver<Input,Output,State,CFtype>::RaiseTimeout()
 {
-  AbstractLocalSearchSolver<Input,Output,State,CFtype>::RaiseTimeout();
+  AbstractLocalSearch<Input,Output,State,CFtype>::RaiseTimeout();
   this->p_kicker->RaiseTimeout();
 }
 
@@ -145,7 +145,7 @@ template <class Input, class Output, class State, typename CFtype>
 void VNDSolver<Input,Output,State,CFtype>::RunCheck() const
 
 {
-  AbstractLocalSearchSolver<Input,Output,State,CFtype>::RunCheck();
+  AbstractLocalSearch<Input,Output,State,CFtype>::RunCheck();
   if (this->p_kicker == NULL)
     throw std::logic_error("RunCheck(): kicker not set in object " + this->GetName());
 }

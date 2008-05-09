@@ -1,5 +1,5 @@
-#ifndef SIMPLELOCALSEARCH_HH_
-#define SIMPLELOCALSEARCH_HH_
+#ifndef _SIMPLE_LOCAL_SEARCH_HH_
+#define _SIMPLE_LOCAL_SEARCH_HH_
 
 #include <helpers/StateManager.hh>
 #include <helpers/OutputManager.hh>
@@ -16,7 +16,7 @@
 */
 template <class Input, class Output, class State, typename CFtype = int>
 class SimpleLocalSearch
-: public AbstractLocalSearchSolver<Input,Output,State,CFtype>
+: public AbstractLocalSearch<Input,Output,State,CFtype>
 {
 public:
 	SimpleLocalSearch(const Input& in,
@@ -60,7 +60,7 @@ SimpleLocalSearch<Input,Output,State,CFtype>::SimpleLocalSearch(const Input& in,
 																																StateManager<Input,State,CFtype>& e_sm,
 																																OutputManager<Input,Output,State,CFtype>& e_om,
 																																std::string name)
-: AbstractLocalSearchSolver<Input,Output,State,CFtype>(in, e_sm, e_om, name),
+: AbstractLocalSearch<Input,Output,State,CFtype>(in, e_sm, e_om, name),
 simple_ls_arguments("sls_" + name, "sls_" + name, false), arg_timeout("timeout", "to", false, 0.0)
 {
 	simple_ls_arguments.AddArgument(arg_timeout);
@@ -74,7 +74,7 @@ SimpleLocalSearch<Input,Output,State,CFtype>::SimpleLocalSearch(const Input& in,
 																																OutputManager<Input,Output,State,CFtype>& e_om,
 																																std::string name,
 																																CLParser& cl)
-: AbstractLocalSearchSolver<Input,Output,State,CFtype>(in, e_sm, e_om, name),
+: AbstractLocalSearch<Input,Output,State,CFtype>(in, e_sm, e_om, name),
 simple_ls_arguments("sls_" + name, "sls_" + name, false), arg_timeout("timeout", "to", false, 0.0)
 {
 	simple_ls_arguments.AddArgument(arg_timeout);
@@ -154,10 +154,10 @@ template <class Input, class Output, class State, typename CFtype>
 void SimpleLocalSearch<Input,Output,State,CFtype>::Check() const
 
 {
-	AbstractLocalSearchSolver<Input,Output,State,CFtype>::Check();
+	AbstractLocalSearch<Input,Output,State,CFtype>::Check();
 	if (this->p_runner == NULL)
 		throw std::logic_error("Check(): runner not set in object " + this->name);
 	this->p_runner->Check();
 }
 
-#endif /*SIMPLELOCALSEARCH_HH_*/
+#endif // _SIMPLE_LOCAL_SEARCH_HH_

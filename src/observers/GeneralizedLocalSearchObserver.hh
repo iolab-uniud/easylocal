@@ -2,19 +2,19 @@
 #define _SOLVER_OBSERVER_HH_
 
 template <class Input, class Output, class State, typename CFtype>
-class GeneralizedLocalSearchSolver;
+class GeneralizedLocalSearch;
 
 template <class Input, class Output, class State, typename CFtype = int>
 class GeneralizedLocalSearchObserver
 {
 public:
   GeneralizedLocalSearchObserver(unsigned notify_level = 2, std::ostream& r_os = std::cout);
-  void NotifyRound(GeneralizedLocalSearchSolver<Input,Output,State,CFtype>& s);
-  void NotifyRunnerStart(GeneralizedLocalSearchSolver<Input,Output,State,CFtype>& s);
-  void NotifyRunnerStop(GeneralizedLocalSearchSolver<Input,Output,State,CFtype>& s);
-  void NotifyKickerStart(GeneralizedLocalSearchSolver<Input,Output,State,CFtype>& s);
-  void NotifyKickStep(GeneralizedLocalSearchSolver<Input,Output,State,CFtype>& s, const CFtype& c);
-  void NotifyKickerStop(GeneralizedLocalSearchSolver<Input,Output,State,CFtype>& s);
+  void NotifyRound(GeneralizedLocalSearch<Input,Output,State,CFtype>& s);
+  void NotifyRunnerStart(GeneralizedLocalSearch<Input,Output,State,CFtype>& s);
+  void NotifyRunnerStop(GeneralizedLocalSearch<Input,Output,State,CFtype>& s);
+  void NotifyKickerStart(GeneralizedLocalSearch<Input,Output,State,CFtype>& s);
+  void NotifyKickStep(GeneralizedLocalSearch<Input,Output,State,CFtype>& s, const CFtype& c);
+  void NotifyKickerStop(GeneralizedLocalSearch<Input,Output,State,CFtype>& s);
   void SetNotifyRunner() {  notify_runner = true; } 
   //... FIXME
 protected:
@@ -43,7 +43,7 @@ GeneralizedLocalSearchObserver<Input,Output,State,CFtype>::GeneralizedLocalSearc
 }
 
 template <class Input, class Output, class State, typename CFtype>
-void GeneralizedLocalSearchObserver<Input,Output,State,CFtype>::NotifyRound(GeneralizedLocalSearchSolver<Input,Output,State,CFtype>& s)
+void GeneralizedLocalSearchObserver<Input,Output,State,CFtype>::NotifyRound(GeneralizedLocalSearch<Input,Output,State,CFtype>& s)
 {
   if (notify_round)
     {
@@ -52,7 +52,7 @@ void GeneralizedLocalSearchObserver<Input,Output,State,CFtype>::NotifyRound(Gene
 }
 
 template <class Input, class Output, class State, typename CFtype>
-void GeneralizedLocalSearchObserver<Input,Output,State,CFtype>::NotifyKickerStart(GeneralizedLocalSearchSolver<Input,Output,State,CFtype>& s)
+void GeneralizedLocalSearchObserver<Input,Output,State,CFtype>::NotifyKickerStart(GeneralizedLocalSearch<Input,Output,State,CFtype>& s)
 {
   if (notify_kicker)
     {
@@ -61,7 +61,7 @@ void GeneralizedLocalSearchObserver<Input,Output,State,CFtype>::NotifyKickerStar
 }
 
 template <class Input, class Output, class State, typename CFtype>
-void GeneralizedLocalSearchObserver<Input,Output,State,CFtype>::NotifyKickStep(GeneralizedLocalSearchSolver<Input,Output,State,CFtype>& s, const CFtype& cost)
+void GeneralizedLocalSearchObserver<Input,Output,State,CFtype>::NotifyKickStep(GeneralizedLocalSearch<Input,Output,State,CFtype>& s, const CFtype& cost)
 {
   if (notify_kicker)
     {
@@ -72,7 +72,7 @@ void GeneralizedLocalSearchObserver<Input,Output,State,CFtype>::NotifyKickStep(G
 }
 
 template <class Input, class Output, class State, typename CFtype>
-void GeneralizedLocalSearchObserver<Input,Output,State,CFtype>::NotifyKickerStop(GeneralizedLocalSearchSolver<Input,Output,State,CFtype>& s)
+void GeneralizedLocalSearchObserver<Input,Output,State,CFtype>::NotifyKickerStop(GeneralizedLocalSearch<Input,Output,State,CFtype>& s)
 {
   if (notify_kicker)
     {
@@ -81,7 +81,7 @@ void GeneralizedLocalSearchObserver<Input,Output,State,CFtype>::NotifyKickerStop
 }
 
 template <class Input, class Output, class State, typename CFtype>
-void GeneralizedLocalSearchObserver<Input,Output,State,CFtype>::NotifyRunnerStart(GeneralizedLocalSearchSolver<Input,Output,State,CFtype>& s)
+void GeneralizedLocalSearchObserver<Input,Output,State,CFtype>::NotifyRunnerStart(GeneralizedLocalSearch<Input,Output,State,CFtype>& s)
 {
   if (notify_runner)
     {
@@ -90,7 +90,7 @@ void GeneralizedLocalSearchObserver<Input,Output,State,CFtype>::NotifyRunnerStar
 }
 
 template <class Input, class Output, class State, typename CFtype>
-void GeneralizedLocalSearchObserver<Input,Output,State,CFtype>::NotifyRunnerStop(GeneralizedLocalSearchSolver<Input,Output,State,CFtype>& s)
+void GeneralizedLocalSearchObserver<Input,Output,State,CFtype>::NotifyRunnerStop(GeneralizedLocalSearch<Input,Output,State,CFtype>& s)
 {
   if (notify_runner)
     {
