@@ -1,7 +1,7 @@
 #ifndef _UTILS_HH_
 #define _UTILS_HH_
 
-/** @defgroup Utils
+/** @defgroup Utils Utility classes
   */
 
 #include <utils/Chronometer.hh>

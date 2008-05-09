@@ -54,13 +54,12 @@ protected:
  *************************************************************************/
 
 /**
-   Constructs a local search solver by providing it a state manager,
-   an output manager, an input object, and an output object.
- 
-   @param sm a pointer to a compatible state manager
-   @param om a pointer to a compatible output manager
-   @param in a pointer to an input object
-   @param out a pointer to an output object
+   @brief Constructs an abstract local search solver.
+  
+   @param in an input object
+   @param e_sm a compatible state manager
+   @param e_om a compatible output manager
+   @param name a descriptive name for the solver
 */
 template <class Input, class Output, class State, typename CFtype>
 AbstractLocalSearch<Input,Output,State,CFtype>::AbstractLocalSearch(const Input& in,

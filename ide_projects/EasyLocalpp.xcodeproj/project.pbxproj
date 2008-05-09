@@ -18,11 +18,20 @@
 			name = configure;
 			productName = configure;
 		};
+		ACFAF4C30DD489630095F6A0 /* documentation */ = {
+			isa = PBXAggregateTarget;
+			buildConfigurationList = ACFAF4D20DD489A60095F6A0 /* Build configuration list for PBXAggregateTarget "documentation" */;
+			buildPhases = (
+				ACFAF4C20DD489630095F6A0 /* ShellScript */,
+			);
+			dependencies = (
+			);
+			name = documentation;
+			productName = documentation;
+		};
 /* End PBXAggregateTarget section */
 
 /* Begin PBXFileReference section */
-		AC759BE40DD0AC25001056B9 /* COPYING */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = COPYING; path = ../COPYING.LESSER; sourceTree = SOURCE_ROOT; };
-		AC759BE50DD0AE73001056B9 /* LICENSE */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = LICENSE; sourceTree = "<group>"; };
 		AC75B24B0DD08BB8003EBD1F /* BimodalRunnerObserver.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = BimodalRunnerObserver.hh; sourceTree = "<group>"; };
 		AC75B24C0DD08BB8003EBD1F /* GeneralizedLocalSearchObserver.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = GeneralizedLocalSearchObserver.hh; sourceTree = "<group>"; };
 		AC75B24D0DD08BB8003EBD1F /* RunnerObserver.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = RunnerObserver.hh; sourceTree = "<group>"; };
@@ -33,6 +42,7 @@
 		AC75B2520DD08C30003EBD1F /* CLParser.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = CLParser.hh; sourceTree = "<group>"; };
 		AC75B2530DD08C30003EBD1F /* Synchronize.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Synchronize.cc; sourceTree = "<group>"; };
 		AC75B2540DD08C30003EBD1F /* Synchronize.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Synchronize.hh; sourceTree = "<group>"; };
+		AC97D3830DD4762100454E4E /* COPYING */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = COPYING; path = ../COPYING; sourceTree = SOURCE_ROOT; };
 		ACDFC76D0DCFB2E5004D11E8 /* EasyLocal.conf.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = EasyLocal.conf.hh; sourceTree = "<group>"; };
 		ACDFC7A90DCFB717004D11E8 /* GeneralizedLocalSearch.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = GeneralizedLocalSearch.hh; sourceTree = "<group>"; };
 		ACDFC7AA0DCFB717004D11E8 /* VariableNeighborhoodDescent.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = VariableNeighborhoodDescent.hh; sourceTree = "<group>"; };
@@ -62,7 +72,6 @@
 		ACF4B12C0DBFA668008A0207 /* TabuSearch.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = TabuSearch.hh; sourceTree = "<group>"; };
 		ACF4B12D0DBFA668008A0207 /* TresholdAcceptance.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = TresholdAcceptance.hh; sourceTree = "<group>"; };
 		ACF4B12E0DBFA668008A0207 /* Runners.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Runners.hh; sourceTree = "<group>"; };
-		ACF4B1300DBFA668008A0207 /* AbstractLocalSearchSolver.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = AbstractLocalSearchSolver.hh; sourceTree = "<group>"; };
 		ACF4B1340DBFA668008A0207 /* SimpleLocalSearch.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = SimpleLocalSearch.hh; sourceTree = "<group>"; };
 		ACF4B1350DBFA668008A0207 /* Solver.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Solver.hh; sourceTree = "<group>"; };
 		ACF4B1380DBFA668008A0207 /* Solvers.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Solvers.hh; sourceTree = "<group>"; };
@@ -86,7 +95,6 @@
 		ACF4B16A0DBFA685008A0207 /* PrimaryDiagonalCostComponent.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = PrimaryDiagonalCostComponent.hh; sourceTree = "<group>"; };
 		ACF4B16B0DBFA685008A0207 /* PrimaryDiagonalDeltaCostComponent.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = PrimaryDiagonalDeltaCostComponent.cc; sourceTree = "<group>"; };
 		ACF4B16C0DBFA685008A0207 /* PrimaryDiagonalDeltaCostComponent.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = PrimaryDiagonalDeltaCostComponent.hh; sourceTree = "<group>"; };
-		ACF4B16D0DBFA685008A0207 /* QueensFrequencyTabuListManager.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = QueensFrequencyTabuListManager.hh; sourceTree = "<group>"; };
 		ACF4B16E0DBFA685008A0207 /* SwapNeighborhoodExplorer.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SwapNeighborhoodExplorer.cc; sourceTree = "<group>"; };
 		ACF4B16F0DBFA685008A0207 /* SwapNeighborhoodExplorer.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = SwapNeighborhoodExplorer.hh; sourceTree = "<group>"; };
 		ACF4B1700DBFA685008A0207 /* QueensOutputManager.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = QueensOutputManager.cc; sourceTree = "<group>"; };
@@ -132,6 +140,9 @@
 		ACF4DE500DC22223006507B1 /* QueensDeltaCostComponentsTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = QueensDeltaCostComponentsTest.cc; sourceTree = "<group>"; };
 		ACF4DEB10DC23181006507B1 /* OutputManagerTest.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = OutputManagerTest.hh; sourceTree = "<group>"; };
 		ACF4DEB80DC233F3006507B1 /* QueensOutputManagerTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = QueensOutputManagerTest.cc; sourceTree = "<group>"; };
+		ACFAF4BB0DD486BC0095F6A0 /* doxygen.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = doxygen.cfg; path = ../doxygen.cfg; sourceTree = SOURCE_ROOT; };
+		ACFAF4BC0DD486CF0095F6A0 /* AbstractLocalSearch.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = AbstractLocalSearch.hh; sourceTree = "<group>"; };
+		ACFAF4BD0DD486E20095F6A0 /* README */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = README; path = ../README; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -142,11 +153,12 @@
 				ACF4B19E0DBFA73A008A0207 /* aminclude.am */,
 				ACF4B1A40DBFA73A008A0207 /* Makefile.am */,
 				ACF4B1A50DBFA73A008A0207 /* TODO */,
+				AC97D3830DD4762100454E4E /* COPYING */,
+				ACFAF4BD0DD486E20095F6A0 /* README */,
+				ACFAF4BB0DD486BC0095F6A0 /* doxygen.cfg */,
 				ACF4B1A00DBFA73A008A0207 /* m4 */,
 				ACF4B0FA0DBFA668008A0207 /* src */,
 				ACF4B15C0DBFA685008A0207 /* test */,
-				AC759BE50DD0AE73001056B9 /* LICENSE */,
-				AC759BE40DD0AC25001056B9 /* COPYING */,
 			);
 			name = EasyLocalpp;
 			sourceTree = "<group>";
@@ -243,9 +255,9 @@
 		ACF4B12F0DBFA668008A0207 /* solvers */ = {
 			isa = PBXGroup;
 			children = (
+				ACFAF4BC0DD486CF0095F6A0 /* AbstractLocalSearch.hh */,
 				ACDFC7A90DCFB717004D11E8 /* GeneralizedLocalSearch.hh */,
 				ACDFC7AA0DCFB717004D11E8 /* VariableNeighborhoodDescent.hh */,
-				ACF4B1300DBFA668008A0207 /* AbstractLocalSearchSolver.hh */,
 				ACF4B1340DBFA668008A0207 /* SimpleLocalSearch.hh */,
 				ACF4B1350DBFA668008A0207 /* Solver.hh */,
 			);
@@ -323,7 +335,6 @@
 				ACF4B1690DBFA685008A0207 /* PrimaryDiagonalCostComponent.cc */,
 				ACF4B16C0DBFA685008A0207 /* PrimaryDiagonalDeltaCostComponent.hh */,
 				ACF4B16B0DBFA685008A0207 /* PrimaryDiagonalDeltaCostComponent.cc */,
-				ACF4B16D0DBFA685008A0207 /* QueensFrequencyTabuListManager.hh */,
 				ACF4B16F0DBFA685008A0207 /* SwapNeighborhoodExplorer.hh */,
 				ACF4B16E0DBFA685008A0207 /* SwapNeighborhoodExplorer.cc */,
 				ACF4B1710DBFA685008A0207 /* QueensOutputManager.hh */,
@@ -430,6 +441,7 @@
 				D28A88AD04BDD90700651E21 /* EasyLocalpp */,
 				ACF4B1830DBFA6A1008A0207 /* configure */,
 				ACF4B1F00DBFAC98008A0207 /* check */,
+				ACFAF4C30DD489630095F6A0 /* documentation */,
 			);
 		};
 /* End PBXProject section */
@@ -447,6 +459,19 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "# shell script goes here\ncd $BUILD_DIR\necho $CONFIGURATION\nif [ \"$CONFIGURATION\" == \"Debug\" ]; then\necho \"DEBUG configuration\"\n$PROJECT_DIR/../configure --enable-debug --with-cppunit-prefix=/opt/local\nelse\necho \"RELEASE configuration\"\n$PROJECT_DIR/../configure --with-cppunit-prefix=/opt/local\nfi\nmake clean\nexit 0";
+		};
+		ACFAF4C20DD489630095F6A0 /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# shell script goes here\ncd $PROJECT_DIR/..\n/opt/local/bin/doxygen doxygen.cfg\nexit 0";
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -543,6 +568,27 @@
 			};
 			name = Release;
 		};
+		ACFAF4C40DD489630095F6A0 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = NO;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				PRODUCT_NAME = documentation;
+			};
+			name = Debug;
+		};
+		ACFAF4C50DD489630095F6A0 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				GCC_ENABLE_FIX_AND_CONTINUE = NO;
+				PRODUCT_NAME = documentation;
+				ZERO_LINK = NO;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -578,6 +624,15 @@
 			buildConfigurations = (
 				ACF4B1F10DBFAC98008A0207 /* Debug */,
 				ACF4B1F20DBFAC98008A0207 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		ACFAF4D20DD489A60095F6A0 /* Build configuration list for PBXAggregateTarget "documentation" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				ACFAF4C40DD489630095F6A0 /* Debug */,
+				ACFAF4C50DD489630095F6A0 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
