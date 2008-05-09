@@ -132,50 +132,6 @@ void AbstractLocalSearch<Input,Output,State,CFtype>::FindInitialState()
   current_state_cost = sm.SampleState(current_state, number_of_init_trials);
 }
 
-
-
-<<<<<<< .mine
-	=======
-	// /**
-	//    Start again a solving procedure, running the attached runner from
-	//    the current internal state.
-	// */
-	// template <class Input, class Output, class State, typename CFtype>
-	// void AbstractLocalSearchSolver<Input,Output,State,CFtype>::ReSolve()
-
-	// {
-	//   Run();
-	// }
-
-	// /**
-	//    Tries multiple runs on different initial states and records the
-	//    best one.
-
-	//    @param n the number of trials
-	// */
-	// template <class Input, class Output, class State, typename CFtype>
-	// void AbstractLocalSearchSolver<Input,Output,State,CFtype>::MultiTrialSolve(unsigned int n)
-
-	// {
-	//   State best_state(this->in);
-	//   CFtype best_state_cost = 0; // value set just to prevent warning from smart compilers
-
-	//   for (unsigned int i = 0; i < n; i++)
-	//     {
-	//       FindInitialState();
-	//       Run();
-
-	//       if (i == 0 || internal_state_cost < best_state_cost)
-	// 	{
-	// 	  best_state = internal_state;
-	// 	  best_state_cost = internal_state_cost;
-	// 	}
-	//     }
-	//   internal_state = best_state;
-	//   internal_state_cost = best_state_cost;
-	// }
-
-	>>>>>>> .r156
 template <class Input, class Output, class State, typename CFtype>
 bool AbstractLocalSearch<Input,Output,State,CFtype>::LetGo(Runner<Input,State,CFtype>& runner)
 {

@@ -1,7 +1,7 @@
 #ifndef VNDSOLVER_HH_
 #define VNDSOLVER_HH_
 
-#include <solvers/AbstractLocalSearchSolver.hh>
+#include <solvers/AbstractLocalSearch.hh>
 //#include <runners/Runner.hh>
 
 /** The Variable Neighborhood Descent solver handles a VND algorithm

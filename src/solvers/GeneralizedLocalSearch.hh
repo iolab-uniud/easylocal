@@ -1,7 +1,7 @@
 #ifndef _GENERALIZED_LOCAL_SEARCH_SOLVER_HH_
 #define _GENERALIZED_LOCAL_SEARCH_SOLVER_HH_
 
-#include <solvers/AbstractLocalSearchSolver.hh>
+#include <solvers/AbstractLocalSearch.hh>
 #include <kickers/Kicker.hh>
 #include <observers/GeneralizedLocalSearchObserver.hh>
 #include <vector>
@@ -81,7 +81,6 @@ protected:
 */
 template <class Input, class Output, class State, typename CFtype>
 GeneralizedLocalSearch<Input,Output,State,CFtype>::GeneralizedLocalSearch(const Input& i,
-									  <<<<<<< .mine
 									  StateManager<Input,State,CFtype>& sm,
 									  OutputManager<Input,Output,State,CFtype>& om,
 									  std::string name)
@@ -90,16 +89,6 @@ GeneralizedLocalSearch<Input,Output,State,CFtype>::GeneralizedLocalSearch(const 
     max_idle_rounds(1), max_rounds(100), generalized_ls_arguments("gls_" + name, "gls_" + name, false), 
     arg_max_idle_rounds("max_idle_rounds", "-mir", false), arg_max_rounds("max_rounds", "-mr", false),
     arg_timeout("timeout", "to", false, 0.0)
-  =======
-										  StateManager<Input,State,CFtype>& sm,
-										  OutputManager<Input,Output,State,CFtype>& om,
-										  std::string name)
-: AbstractLocalSearchSolver<Input,Output,State,CFtype>(i, sm, om, name), current_runner(0), idle_rounds(0), 
-rounds(0), kick_rate(4),
-max_idle_rounds(1), max_rounds(100), generalized_ls_arguments("gls_" + name, "gls_" + name, false), 
-arg_max_idle_rounds("max_idle_rounds", "-mir", false), arg_max_rounds("max_rounds", "-mr", false),
-arg_timeout("timeout", "to", false, 0.0)
->>>>>>> .r156
 {
   generalized_ls_arguments.AddArgument(arg_max_idle_rounds);
   generalized_ls_arguments.AddArgument(arg_max_rounds);
@@ -110,7 +99,6 @@ arg_timeout("timeout", "to", false, 0.0)
 
 template <class Input, class Output, class State, typename CFtype>
 GeneralizedLocalSearch<Input,Output,State,CFtype>::GeneralizedLocalSearch(const Input& i,
-<<<<<<< .mine
 										      StateManager<Input,State,CFtype>& sm,
 										      OutputManager<Input,Output,State,CFtype>& om,
 										      std::string name,
@@ -119,16 +107,6 @@ GeneralizedLocalSearch<Input,Output,State,CFtype>::GeneralizedLocalSearch(const 
     max_idle_rounds(1), max_rounds(100), generalized_ls_arguments("gls_" + name, "gls_" + name, false), 
     arg_max_idle_rounds("max_idle_rounds", "-mir", false), arg_max_rounds("max_rounds", "-mr", false),
     arg_timeout("timeout", "to", false, 0.0)
-=======
-                                                                                      StateManager<Input,State,CFtype>& sm,
-                                                                                      OutputManager<Input,Output,State,CFtype>& om,
-                                                                                      std::string name,
-                                                                                      CLParser& cl)
-: AbstractLocalSearchSolver<Input,Output,State,CFtype>(i, sm, om, name), current_runner(0), idle_rounds(0), rounds(0),
-max_idle_rounds(1), max_rounds(100), generalized_ls_arguments("gls_" + name, "gls_" + name, false), 
-arg_max_idle_rounds("max_idle_rounds", "-mir", false), arg_max_rounds("max_rounds", "-mr", false),
-arg_timeout("timeout", "to", false, 0.0)
->>>>>>> .r156
 {
   generalized_ls_arguments.AddArgument(arg_max_idle_rounds);
   generalized_ls_arguments.AddArgument(arg_max_rounds);
