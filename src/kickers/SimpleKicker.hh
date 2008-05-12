@@ -128,14 +128,20 @@ void SimpleKicker<Input,State,Move,CFtype>::SetMaxStep(unsigned int s)
 template <class Input, class State, class Move, typename CFtype>
 void SimpleKicker<Input,State,Move,CFtype>::FirstKickComponent(unsigned int i)
 {
-  ne.FirstMove(this->states[i], current_moves[i]);
+  if (i == 0)
+    ne.FirstMove(this->states[i], current_moves[i]);
+  else
+    ne.FirstRelatedMove(this->states[i], current_moves[i], current_moves[i-1]);
   start_moves[i] = current_moves[i];
 }
 
 template <class Input, class State, class Move, typename CFtype>
 bool SimpleKicker<Input,State,Move,CFtype>::NextKickComponent(unsigned int i)
 {
-  ne.NextMove(this->states[i], current_moves[i]);
+  if (i == 0)
+    ne.NextMove(this->states[i], current_moves[i]);
+  else
+    ne.NextRelatedMove(this->states[i], current_moves[i], current_moves[i-1]);
   return current_moves[i] != start_moves[i];
 }
 
