@@ -32,6 +32,7 @@
 /* End PBXAggregateTarget section */
 
 /* Begin PBXFileReference section */
+		AC31226A0DD5C6A00043AFE9 /* EasyLocal.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = EasyLocal.txt; sourceTree = "<group>"; };
 		AC75B24B0DD08BB8003EBD1F /* BimodalRunnerObserver.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = BimodalRunnerObserver.hh; sourceTree = "<group>"; };
 		AC75B24C0DD08BB8003EBD1F /* GeneralizedLocalSearchObserver.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = GeneralizedLocalSearchObserver.hh; sourceTree = "<group>"; };
 		AC75B24D0DD08BB8003EBD1F /* RunnerObserver.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = RunnerObserver.hh; sourceTree = "<group>"; };
@@ -178,6 +179,7 @@
 			isa = PBXGroup;
 			children = (
 				ACF4B1220DBFA668008A0207 /* Makefile.am */,
+				AC31226A0DD5C6A00043AFE9 /* EasyLocal.txt */,
 				ACF4B0FC0DBFA668008A0207 /* EasyLocal.hh */,
 				ACDFC76D0DCFB2E5004D11E8 /* EasyLocal.conf.hh */,
 				ACF4B10D0DBFA668008A0207 /* helpers */,

@@ -1,3 +1,9 @@
+/**
+ @defgroup Runners Runners
+ 
+ @brief Runners are the algorithmic core of the framework.
+ */
+
 #ifndef _RUNNERS_HH_
 #define _RUNNERS_HH_
 

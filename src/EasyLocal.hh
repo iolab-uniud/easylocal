@@ -28,13 +28,6 @@
  @note This version works both with MS Visual C++ and the GNU C++ 
  compiler. Yet, it is extensively tested only with the GNU compiler.
  
- @mainpage EasyLocalpp
- 
- This is EasyLocalpp: a C++ Object-Oriented framework
- aimed at easing the development of Local Search algorithms.
- Copyright (C) 2001--2008 Andrea Schaerf, Luca Di Gaspero. 
- 
- @subpage nQueens
  */
 
 #ifndef _EASYLOCAL_HH_
