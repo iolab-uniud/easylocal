@@ -105,7 +105,9 @@ void VNDSolver<Input,Output,State,CFtype>::RaiseTimeout()
 template <class Input, class Output, class State, typename CFtype>
 void VNDSolver<Input,Output,State,CFtype>::Solve()
 {
-   throw std::runtime_error("Fix me!"); 	
+  this->FindInitialState();
+  this->Run();    
+  //   throw std::runtime_error("Fix me!"); 	
 }
 
 
@@ -120,25 +122,21 @@ void VNDSolver<Input,Output,State,CFtype>::Run()
   do 
     {
       this->p_kicker->SetStep(k);
-      kick_cost = this->p_kicker->BestKick(this->internal_state);
-#if VERBOSE >= 2
+      kick_cost = this->p_kicker->BestKick(this->current_state);
       std::cout << "Selected Kick: " << k << " " << kick_cost << std::endl;
       this->p_kicker->PrintKick(std::cout);
-#endif
       if (LessThan(kick_cost,0))
 	{
-	  this->p_kicker->MakeKick(this->internal_state);
-	  this->internal_state_cost += kick_cost;
-#if VERBOSE >= 2
-	  std::cout << "Performed Kick: [" << this->internal_state_cost << "]: " << k;
+	  this->p_kicker->MakeKick(this->current_state);
+	  this->current_state_cost += kick_cost;
+	  std::cout << "Performed Kick: [" << this->current_state_cost << "]: " << k;
 	  this->p_kicker->PrintKick(std::cout);
-#endif
 	  k = 1;
 	}
       else
 	k++;
     }
-  while (k <= this->max_k && !this->sm.LowerBoundReached(this->internal_state_cost));
+  while (k <= this->max_k && !this->sm.LowerBoundReached(this->current_state_cost));
 }
 
 template <class Input, class Output, class State, typename CFtype>

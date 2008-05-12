@@ -175,7 +175,7 @@ void GeneralizedLocalSearch<Input,Output,State,CFtype>::AddRunner(Runner<Input,S
 template <class Input, class Output, class State, typename CFtype>
 void GeneralizedLocalSearch<Input,Output,State,CFtype>::Print(std::ostream& os) const
 {
-  os  << "Multi-runner Iterated Local Search Solver: " << this->name << std::endl;
+  os  << "Generalized Local Search Solver: " << this->name << std::endl;
 	
   if (this->runners.size() > 0)
     for (unsigned int i = 0; i < this->runners.size(); i++)

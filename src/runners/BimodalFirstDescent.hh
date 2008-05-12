@@ -54,7 +54,7 @@ BimodalFirstDescent<Input,State,Move1,Move2,CFtype>::BimodalFirstDescent(const I
 template <class Input, class State, class Move1, class Move2, typename CFtype>
 void BimodalFirstDescent<Input,State,Move1,Move2,CFtype>::Print(std::ostream& os) const
 {
-    os  << "First Descent Runner: " << this->GetName() << std::endl;
+    os  << "First Descent Runner: " << this->name << std::endl;
     os  << "  Max iterations: " << this->max_iteration << std::endl;
 }
 

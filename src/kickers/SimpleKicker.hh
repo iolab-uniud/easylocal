@@ -2,6 +2,7 @@
 #define SIMPLEKICKER_HH_
 
 #include <kickers/Kicker.hh>
+#include <observers/SimpleKickerObserver.hh>
 #include <stdexcept>
 
 /** A Simple Kicker simply considers sequences of moves of a given type
@@ -12,10 +13,12 @@ template <class Input, class State, class Move, typename CFtype = int>
 class SimpleKicker
   : public Kicker<Input,State,CFtype>
 {
+  friend class SimpleKickerObserver<Input,State,Move,CFtype>;
 public:
   SimpleKicker(const Input& i, NeighborhoodExplorer<Input,State,Move,CFtype>& nhe,                 
 	       unsigned int s, std::string name);
   void Print(std::ostream& os = std::cout) const;
+  void AttachObserver(SimpleKickerObserver<Input,State,Move,CFtype>& ob) { observer = &ob; }
   CFtype SelectKick(const State& st);
   CFtype BestKick(const State &st);
   CFtype FirstImprovingKick(const State &st);
@@ -44,6 +47,8 @@ protected:
   void FirstKickComponent(unsigned int i);  // used by the backtracking algorithm of bestkick
   bool NextKickComponent(unsigned int i);   // (idem)
   bool UnrelatedMoves(int i) const;      // (idem)
+
+  SimpleKickerObserver<Input,State,Move,CFtype>* observer;
 };
 
 /*************************************************************************
@@ -55,11 +60,15 @@ SimpleKicker<Input,State,Move,CFtype>::SimpleKicker(const Input& in,
 						    NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
 						    unsigned int s, std::string name)
   : Kicker<Input,State,CFtype>(in, s, name), ne(e_ne), current_moves(s), internal_best_moves(s), start_moves(s)
-{}
+{  
+  observer = NULL;
+}
 
 template <class Input, class State, class Move, typename CFtype>
 CFtype SimpleKicker<Input,State,Move,CFtype>::SelectKick(const State& st)
 {
+  if (observer != NULL)
+    observer->NotifyStartKicking(*this);
   switch (this->current_kick_type)
     {
     case RANDOM_KICK:
@@ -169,16 +178,24 @@ CFtype SimpleKicker<Input,State,Move,CFtype>::BestKick(const State &st)
   FirstKick(st);
   best_kick_cost = current_kick_cost;
   internal_best_moves = current_moves;
+  if (observer != NULL)
+    observer->NotifyBestKick(*this);
   while (NextKick())
     {
+      if (observer != NULL)
+	observer->NotifyNewKick(*this);
       if (LessThan(current_kick_cost,best_kick_cost))
 	{
 	  best_kick_cost = current_kick_cost;
 	  internal_best_moves = current_moves;
+	  if (observer != NULL)
+	    observer->NotifyBestKick(*this);
 	}
     }
   current_kick_cost = best_kick_cost;
   current_moves = internal_best_moves;
+  if (observer != NULL)
+    observer->NotifyStopKicking(*this);
   return current_kick_cost;
 }
 
@@ -188,18 +205,26 @@ CFtype SimpleKicker<Input,State,Move,CFtype>::FirstImprovingKick(const State &st
   FirstKick(st);
   best_kick_cost = current_kick_cost;
   internal_best_moves = current_moves;
+  if (observer != NULL)
+    observer->NotifyBestKick(*this);
   if (LessThan(current_kick_cost,(CFtype)0)) return current_kick_cost;
   while (NextKick())
     {
+      if (observer != NULL)
+	observer->NotifyNewKick(*this);
       if (LessThan(current_kick_cost,best_kick_cost))
 	{
 	  best_kick_cost = current_kick_cost;
 	  internal_best_moves = current_moves;
+	  if (observer != NULL)
+	    observer->NotifyBestKick(*this);
 	  if (LessThan(current_kick_cost,(CFtype)0)) return current_kick_cost;
 	}
     }
   current_kick_cost = best_kick_cost;
   current_moves = internal_best_moves;
+  if (observer != NULL)
+    observer->NotifyStopKicking(*this);
   return current_kick_cost;
 }
 

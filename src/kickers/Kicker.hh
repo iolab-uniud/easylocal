@@ -22,6 +22,7 @@ class Kicker
 public:
   Kicker(const Input& i, unsigned step, std::string name);
   virtual ~Kicker() {}
+  virtual void Print(std::ostream& os = std::cout) const = 0;
   void SetKickType(const KickTypes& kt);
   virtual CFtype SelectKick(const State& st) = 0;
   virtual void MakeKick(State &st) = 0;

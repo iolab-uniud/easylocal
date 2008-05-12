@@ -54,7 +54,7 @@ BimodalSteepestDescent<Input,State,Move1,Move2,CFtype>::BimodalSteepestDescent(c
 template <class Input, class State, class Move1, class Move2, typename CFtype>
 void BimodalSteepestDescent<Input,State,Move1,Move2,CFtype>::Print(std::ostream& os) const
 {
-    os  << "Steepest Descent Runner: " << this->GetName() << std::endl;
+    os  << "Steepest Descent Runner: " << this->name << std::endl;
     os  << "  Max iterations: " << this->max_iteration << std::endl;
 }
 

@@ -51,6 +51,7 @@ public:
   /** Checks wether the object state is consistent with all the related
     objects. */
   virtual void Check() const;
+  virtual void Print(std::ostream& os = std::cout) const = 0;
   unsigned long GetMaxIteration() const;
   void SetMaxIteration(unsigned long max);
   virtual void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout) = 0;

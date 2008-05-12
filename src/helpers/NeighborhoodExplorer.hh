@@ -81,6 +81,12 @@ public:
   */
   virtual void MakeMove(State &st, const Move& mv) = 0;
   
+  virtual void RandomRelatedMove(const State &st, Move& mv, const Move&)
+  { return RandomMove(st,mv); }
+  virtual void NextRelatedMove(const State &st, Move& mv, const Move&)
+  { return NextMove(st,mv); }
+
+
   // evaluation function
   virtual CFtype DeltaCostFunction(const State& st, const Move& mv);
   virtual CFtype DeltaObjective(const State& st, const Move & mv);
