@@ -197,48 +197,7 @@
 	<key>Notifications</key>
 	<array/>
 	<key>OpenEditors</key>
-	<array>
-		<dict>
-			<key>Content</key>
-			<dict>
-				<key>PBXProjectModuleGUID</key>
-				<string>AC4276A40DD8548E006C3B31</string>
-				<key>PBXProjectModuleLabel</key>
-				<string>EasyLocal.hh</string>
-				<key>PBXSplitModuleInNavigatorKey</key>
-				<dict>
-					<key>Split0</key>
-					<dict>
-						<key>PBXProjectModuleGUID</key>
-						<string>AC4276A80DD85497006C3B31</string>
-						<key>PBXProjectModuleLabel</key>
-						<string>EasyLocal.hh</string>
-						<key>_historyCapacity</key>
-						<integer>0</integer>
-						<key>bookmark</key>
-						<string>AC4276AC0DD855C3006C3B31</string>
-						<key>history</key>
-						<array>
-							<string>AC4276A30DD8548E006C3B31</string>
-						</array>
-					</dict>
-					<key>SplitCount</key>
-					<string>1</string>
-				</dict>
-				<key>StatusBarVisibility</key>
-				<true/>
-			</dict>
-			<key>Geometry</key>
-			<dict>
-				<key>Frame</key>
-				<string>{{0, 20}, {1088, 524}}</string>
-				<key>PBXModuleWindowStatusBarHidden2</key>
-				<false/>
-				<key>RubberWindowFrame</key>
-				<string>107 124 1088 565 0 0 1280 778 </string>
-			</dict>
-		</dict>
-	</array>
+	<array/>
 	<key>PerspectiveWidths</key>
 	<array>
 		<integer>-1</integer>
@@ -375,7 +334,7 @@
 										<key>_historyCapacity</key>
 										<integer>0</integer>
 										<key>bookmark</key>
-										<string>AC4276AB0DD855C3006C3B31</string>
+										<string>AC4276AF0DD855D9006C3B31</string>
 										<key>history</key>
 										<array>
 											<string>AC4AAE500DD08D0500BE59D2</string>
@@ -673,8 +632,8 @@
 	<key>WindowOrderList</key>
 	<array>
 		<string>AC4AAE480DD08C9F00BE59D2</string>
-		<string>/Users/digasper/Documents/Development/EasyLocalpp/ide_projects/EasyLocalpp.xcodeproj</string>
 		<string>AC4276A40DD8548E006C3B31</string>
+		<string>/Users/digasper/Documents/Development/EasyLocalpp/ide_projects/EasyLocalpp.xcodeproj</string>
 	</array>
 	<key>WindowString</key>
 	<string>203 136 998 568 0 0 1280 778 </string>
