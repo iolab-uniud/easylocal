@@ -32,7 +32,6 @@
 /* End PBXAggregateTarget section */
 
 /* Begin PBXFileReference section */
-		AC31226A0DD5C6A00043AFE9 /* EasyLocal.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = EasyLocal.txt; sourceTree = "<group>"; };
 		AC75B24B0DD08BB8003EBD1F /* BimodalRunnerObserver.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = BimodalRunnerObserver.hh; sourceTree = "<group>"; };
 		AC75B24C0DD08BB8003EBD1F /* GeneralizedLocalSearchObserver.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = GeneralizedLocalSearchObserver.hh; sourceTree = "<group>"; };
 		AC75B24D0DD08BB8003EBD1F /* RunnerObserver.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = RunnerObserver.hh; sourceTree = "<group>"; };
@@ -55,7 +54,6 @@
 		ACF4B1130DBFA668008A0207 /* ProhibitionManager.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = ProhibitionManager.hh; sourceTree = "<group>"; };
 		ACF4B1150DBFA668008A0207 /* ShiftingPenaltyManager.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = ShiftingPenaltyManager.hh; sourceTree = "<group>"; };
 		ACF4B1170DBFA668008A0207 /* StateManager.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = StateManager.hh; sourceTree = "<group>"; };
-		ACF4B1180DBFA668008A0207 /* TabuListItem.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = TabuListItem.hh; sourceTree = "<group>"; };
 		ACF4B1190DBFA668008A0207 /* TabuListManager.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = TabuListManager.hh; sourceTree = "<group>"; };
 		ACF4B11A0DBFA668008A0207 /* Helpers.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Helpers.hh; sourceTree = "<group>"; };
 		ACF4B11C0DBFA668008A0207 /* BimodalKicker.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = BimodalKicker.hh; sourceTree = "<group>"; };
@@ -117,7 +115,6 @@
 		ACF4B1A30DBFA73A008A0207 /* pthread.m4 */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = pthread.m4; sourceTree = "<group>"; };
 		ACF4B1A40DBFA73A008A0207 /* Makefile.am */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Makefile.am; path = ../Makefile.am; sourceTree = SOURCE_ROOT; };
 		ACF4B1A50DBFA73A008A0207 /* TODO */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = TODO; path = ../TODO; sourceTree = SOURCE_ROOT; };
-		ACF4B2010DBFAD99008A0207 /* FrequencyTabuListManager.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = FrequencyTabuListManager.hh; sourceTree = "<group>"; };
 		ACF4B2020DBFADB3008A0207 /* BimodalHillClimbing.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = BimodalHillClimbing.hh; sourceTree = "<group>"; };
 		ACF4B2030DBFADB3008A0207 /* BimodalMoveRunner.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = BimodalMoveRunner.hh; sourceTree = "<group>"; };
 		ACF4B2040DBFADB3008A0207 /* BimodalSteepestDescent.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = BimodalSteepestDescent.hh; sourceTree = "<group>"; };
@@ -179,20 +176,19 @@
 			isa = PBXGroup;
 			children = (
 				ACF4B1220DBFA668008A0207 /* Makefile.am */,
-				AC31226A0DD5C6A00043AFE9 /* EasyLocal.txt */,
 				ACF4B0FC0DBFA668008A0207 /* EasyLocal.hh */,
 				ACDFC76D0DCFB2E5004D11E8 /* EasyLocal.conf.hh */,
-				ACF4B10D0DBFA668008A0207 /* helpers */,
 				ACF4B11A0DBFA668008A0207 /* Helpers.hh */,
-				ACF4B11B0DBFA668008A0207 /* kickers */,
+				ACF4B12E0DBFA668008A0207 /* Runners.hh */,
 				ACF4B11F0DBFA668008A0207 /* Kickers.hh */,
+				ACF4B1380DBFA668008A0207 /* Solvers.hh */,
+				ACF4B13E0DBFA668008A0207 /* Testers.hh */,
+				ACF4B10D0DBFA668008A0207 /* helpers */,
+				ACF4B11B0DBFA668008A0207 /* kickers */,
 				AC75B24A0DD08BB8003EBD1F /* observers */,
 				ACF4B1240DBFA668008A0207 /* runners */,
-				ACF4B12E0DBFA668008A0207 /* Runners.hh */,
 				ACF4B12F0DBFA668008A0207 /* solvers */,
-				ACF4B1380DBFA668008A0207 /* Solvers.hh */,
 				ACF4B1390DBFA668008A0207 /* testers */,
-				ACF4B13E0DBFA668008A0207 /* Testers.hh */,
 				ACF4B13F0DBFA668008A0207 /* utils */,
 				ACF4DD620DC1F3A4006507B1 /* unit */,
 			);
@@ -203,7 +199,6 @@
 		ACF4B10D0DBFA668008A0207 /* helpers */ = {
 			isa = PBXGroup;
 			children = (
-				ACF4B2010DBFAD99008A0207 /* FrequencyTabuListManager.hh */,
 				ACF4B10E0DBFA668008A0207 /* CostComponent.hh */,
 				ACF4B10F0DBFA668008A0207 /* DeltaCostComponent.hh */,
 				ACF4B1110DBFA668008A0207 /* NeighborhoodExplorer.hh */,
@@ -211,7 +206,6 @@
 				ACF4B1130DBFA668008A0207 /* ProhibitionManager.hh */,
 				ACF4B1150DBFA668008A0207 /* ShiftingPenaltyManager.hh */,
 				ACF4B1170DBFA668008A0207 /* StateManager.hh */,
-				ACF4B1180DBFA668008A0207 /* TabuListItem.hh */,
 				ACF4B1190DBFA668008A0207 /* TabuListManager.hh */,
 			);
 			path = helpers;

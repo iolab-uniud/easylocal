@@ -24,8 +24,9 @@
  the class declarations of the EasyLocal framework.   
  
  @author Luca Di Gaspero, Andrea Schaerf - University of Udine, Italy
- @version 1.0-$Rev$
- @date $Date$
+ @version 1.0
+ $Rev$
+ $Date$
  @note This version works both with MS Visual C++ and the GNU C++ 
  compiler. Yet, it is extensively tested only with the GNU compiler.
  
