@@ -177,15 +177,6 @@ void SimulatedAnnealing<Input,State,Move,CFtype>::InitializeRun()
 }
 
 /**
-   Stores the current state as best state (it is obviously a local minimum).
-*/
-template <class Input, class State, class Move, typename CFtype>
-void SimulatedAnnealing<Input,State,Move,CFtype>::TerminateRun()
-{
-    MoveRunner<Input,State,Move,CFtype>::TerminateRun();
-}
-
-/**
    A move is randomly picked.
 */
 template <class Input, class State, class Move, typename CFtype>
