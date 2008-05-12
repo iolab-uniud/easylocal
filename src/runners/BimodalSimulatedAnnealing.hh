@@ -41,7 +41,6 @@ public:
 protected:
   void GoCheck() const;
   void InitializeRun();
-  void TerminateRun();
   bool StopCriterion();
   void UpdateIterationCounter();
   void SelectMove();
