@@ -186,17 +186,6 @@ void BimodalSimulatedAnnealing<Input,State,Move1,Move2,CFtype>::InitializeRun()
 }
 
 /**
-   Stores the current state as best state (it is obviously a local minimum).
-*/
-template <class Input, class State, class Move1, class Move2, typename CFtype>
-void BimodalSimulatedAnnealing<Input,State,Move1,Move2,CFtype>::TerminateRun()
-{
-  BimodalMoveRunner<Input,State,Move1,Move2,CFtype>::TerminateRun();
-  this->best_state = this->current_state;
-  this->best_state_cost = this->current_state_cost;
-}
-
-/**
    A move is randomly picked.
 */
 template <class Input, class State, class Move1, class Move2, typename CFtype>

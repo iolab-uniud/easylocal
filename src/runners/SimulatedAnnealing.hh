@@ -183,8 +183,6 @@ template <class Input, class State, class Move, typename CFtype>
 void SimulatedAnnealing<Input,State,Move,CFtype>::TerminateRun()
 {
     MoveRunner<Input,State,Move,CFtype>::TerminateRun();
-    this->best_state = this->current_state;
-    this->best_state_cost = this->current_state_cost;
 }
 
 /**

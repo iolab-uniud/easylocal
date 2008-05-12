@@ -81,10 +81,11 @@ public:
   */
   virtual void MakeMove(State &st, const Move& mv) = 0;
   
-  virtual void FirstRelatedMove(const State &st, Move& mv, const Move& mv2)
-  { FirstMove(st,mv); }
+  virtual void RandomRelatedMove(const State &st, Move& mv, const Move& mv2)
+  { RandomMove(st,mv); }
   virtual void NextRelatedMove(const State &st, Move& mv, const Move& mv2)
   { NextMove(st,mv); }
+  virtual void FirstRelatedMove(const State &st, Move& mv, const Move& mv2);
 
   // evaluation function
   virtual CFtype DeltaCostFunction(const State& st, const Move& mv);
@@ -333,6 +334,13 @@ template <class Input, class State, class Move, typename CFtype>
 void NeighborhoodExplorer<Input,State,Move,CFtype>::FirstMove(const State& st, Move& mv)
 {
   RandomMove(st,mv);
+  start_move = mv;
+}
+
+template <class Input, class State, class Move, typename CFtype>
+void NeighborhoodExplorer<Input,State,Move,CFtype>::FirstRelatedMove(const State& st, Move& mv, const Move& mv_r)
+{
+  RandomRelatedMove(st,mv,mv_r);
   start_move = mv;
 }
 
