@@ -210,13 +210,16 @@ void BimodalSimulatedAnnealing<Input,State,Move1,Move2,CFtype>::StoreMove()
 {
   if (this->observer != NULL)
     this->observer->NotifyStoreMove(*this);
-  if (LessThan(this->current_state_cost,this->best_state_cost))
+  if (LessOrEqualThan(this->current_state_cost,this->best_state_cost))
     {
-      if (this->observer != NULL)
-	this->observer->NotifyNewBest(*this);
-      this->iteration_of_best = this->number_of_iterations;
       this->best_state = this->current_state;
-      this->best_state_cost = this->current_state_cost;
+      if (LessThan(this->current_state_cost,this->best_state_cost))
+	{
+	  if (this->observer != NULL)
+	    this->observer->NotifyNewBest(*this);
+	  this->iteration_of_best = this->number_of_iterations;
+	  this->best_state_cost = this->current_state_cost;
+	}
     }
 }
 

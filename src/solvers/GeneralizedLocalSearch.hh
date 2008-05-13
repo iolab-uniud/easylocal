@@ -39,6 +39,7 @@ public:
   void Print(std::ostream& os = std::cout) const;
   void SetKicker(Kicker<Input,State,CFtype>& k);
   void AddRunner(Runner<Input,State,CFtype>& r);
+  void ClearRunners();
   void SetIdleRounds(unsigned int r);
   void SetRounds(unsigned int r);
   void AttachObserver(GeneralizedLocalSearchObserver<Input,Output,State,CFtype>& obs) { observer = &obs; }
@@ -172,6 +173,15 @@ void GeneralizedLocalSearch<Input,Output,State,CFtype>::AddRunner(Runner<Input,S
   runners.push_back(&r);
 }
 
+/**
+Remove all runners
+  */
+template <class Input, class Output, class State, typename CFtype>
+void GeneralizedLocalSearch<Input,Output,State,CFtype>::ClearRunners()
+{
+  runners.clear();
+}
+
 template <class Input, class Output, class State, typename CFtype>
 void GeneralizedLocalSearch<Input,Output,State,CFtype>::Print(std::ostream& os) const
 {
@@ -207,13 +217,14 @@ void GeneralizedLocalSearch<Input,Output,State,CFtype>::SimpleSolve(unsigned run
 {
   if (runner >= runners.size())
     throw std::logic_error("No runner set for solver " + this->name);
-  
   chrono.Reset();
   chrono.Start();
   if (state_init)
     this->FindInitialState();
   runners[runner]->SetState(this->current_state);
+  if (observer != NULL) observer->NotifyRunnerStart(*this);
   LetGo(*runners[runner]);
+  if (observer != NULL) observer->NotifyRunnerStop(*this);	  
   this->current_state = runners[runner]->GetState();
   this->current_state_cost = runners[runner]->GetStateCost();
   this->best_state = this->current_state;
@@ -278,7 +289,7 @@ void GeneralizedLocalSearch<Input,Output,State,CFtype>::GeneralSolve(KickStrateg
       if (kick_strategy != NO_KICKER)
 	    {
 	      if (observer != NULL)
-          observer->NotifyKickerStart(*this);
+		observer->NotifyKickerStart(*this);
 	      if (kick_strategy == DIVERSIFIER || kick_strategy == INTENSIFIER)
         {
           if (kick_strategy == DIVERSIFIER)
