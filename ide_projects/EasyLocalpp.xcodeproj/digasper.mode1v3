@@ -281,13 +281,12 @@
 							<key>PBXSmartGroupTreeModuleOutlineStateSelectionKey</key>
 							<array>
 								<array>
-									<integer>11</integer>
-									<integer>9</integer>
+									<integer>8</integer>
 									<integer>0</integer>
 								</array>
 							</array>
 							<key>PBXSmartGroupTreeModuleOutlineStateVisibleRectKey</key>
-							<string>{{0, 121}, {290, 509}}</string>
+							<string>{{0, 0}, {290, 509}}</string>
 						</dict>
 						<key>PBXTopSmartGroupGIDs</key>
 						<array/>
@@ -322,7 +321,7 @@
 								<key>PBXProjectModuleGUID</key>
 								<string>1CE0B20306471E060097A5F4</string>
 								<key>PBXProjectModuleLabel</key>
-								<string>EasyLocal.hh</string>
+								<string>index.html</string>
 								<key>PBXSplitModuleInNavigatorKey</key>
 								<dict>
 									<key>Split0</key>
@@ -330,11 +329,11 @@
 										<key>PBXProjectModuleGUID</key>
 										<string>1CE0B20406471E060097A5F4</string>
 										<key>PBXProjectModuleLabel</key>
-										<string>EasyLocal.hh</string>
+										<string>index.html</string>
 										<key>_historyCapacity</key>
 										<integer>0</integer>
 										<key>bookmark</key>
-										<string>AC4276AF0DD855D9006C3B31</string>
+										<string>ACE7E56C0DD984590074FD6A</string>
 										<key>history</key>
 										<array>
 											<string>AC4AAE500DD08D0500BE59D2</string>
@@ -380,11 +379,12 @@
 											<string>AC3122750DD5D0610043AFE9</string>
 											<string>AC3122890DD5DC170043AFE9</string>
 											<string>AC42768D0DD85485006C3B31</string>
-											<string>AC42768E0DD85485006C3B31</string>
 											<string>AC42768F0DD85485006C3B31</string>
 											<string>AC4276900DD85485006C3B31</string>
-											<string>AC4276910DD85485006C3B31</string>
-											<string>AC42769A0DD85485006C3B31</string>
+											<string>AC4276B60DD86DC0006C3B31</string>
+											<string>AC4276D60DD874D6006C3B31</string>
+											<string>AC4276D70DD874D6006C3B31</string>
+											<string>ACE7E56B0DD984590074FD6A</string>
 										</array>
 										<key>prevStack</key>
 										<array>
@@ -493,9 +493,9 @@
 			</array>
 			<key>TableOfContents</key>
 			<array>
-				<string>AC4276A60DD85497006C3B31</string>
+				<string>ACE7E5630DD983E30074FD6A</string>
 				<string>1CE0B1FE06471DED0097A5F4</string>
-				<string>AC4276A70DD85497006C3B31</string>
+				<string>ACE7E5640DD983E30074FD6A</string>
 				<string>1CE0B20306471E060097A5F4</string>
 				<string>1CE0B20506471E060097A5F4</string>
 			</array>
@@ -608,7 +608,7 @@
 	<key>PerspectivesBarVisible</key>
 	<false/>
 	<key>PinnedNavigatorIdentifier</key>
-	<string>AC4276A40DD8548E006C3B31</string>
+	<string>ACE7E5600DD983CF0074FD6A</string>
 	<key>ShelfIsVisible</key>
 	<false/>
 	<key>SourceDescription</key>
@@ -632,7 +632,7 @@
 	<key>WindowOrderList</key>
 	<array>
 		<string>AC4AAE480DD08C9F00BE59D2</string>
-		<string>AC4276A40DD8548E006C3B31</string>
+		<string>ACE7E5600DD983CF0074FD6A</string>
 		<string>/Users/digasper/Documents/Development/EasyLocalpp/ide_projects/EasyLocalpp.xcodeproj</string>
 	</array>
 	<key>WindowString</key>
@@ -715,7 +715,7 @@
 			<key>TableOfContents</key>
 			<array>
 				<string>AC4AAE480DD08C9F00BE59D2</string>
-				<string>AC4276AD0DD855C3006C3B31</string>
+				<string>ACE7E56D0DD984590074FD6A</string>
 				<string>1CD0528F0623707200166675</string>
 				<string>XCMainBuildResultsModuleGUID</string>
 			</array>
@@ -873,7 +873,7 @@
 										<key>PBXProjectModuleGUID</key>
 										<string>1CDD528C0622207200134675</string>
 										<key>PBXProjectModuleLabel</key>
-										<string>SecondaryDiagonalDeltaCostComponent.cc</string>
+										<string>&lt;No Editor&gt;</string>
 										<key>StatusBarVisibility</key>
 										<true/>
 									</dict>
@@ -931,8 +931,8 @@
 			<key>TableOfContents</key>
 			<array>
 				<string>1C530D57069F1CE1000CFCEE</string>
-				<string>AC93738D0DD416870077257B</string>
-				<string>AC93738E0DD416870077257B</string>
+				<string>AC4276E00DD8750C006C3B31</string>
+				<string>AC4276E10DD8750C006C3B31</string>
 				<string>1CDD528C0622207200134675</string>
 				<string>1CD0528E0623707200166675</string>
 			</array>

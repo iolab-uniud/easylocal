@@ -9,7 +9,8 @@
 /** The Neighborhood Explorer is responsible for the strategy
     exploited in the exploration of the neighborhood, and for 
     computing the variations of the cost function due to a specific
-    @c Move. 
+    @ref Move. 
+ 
     @ingroup Helpers
 */
 
@@ -28,31 +29,33 @@ public:
       neighborhood of the state st. 
       It returns the generated move in the same variable mv.
     
-      @note @bf To be implemented in the application.
+      @note To be implemented in the application.
       @param st the start state 
       @param mv the move 
   */
   virtual void NextMove(const State &st, Move& mv) = 0;
   
-  /** Generates a random move in the neighborhood of a given state.
-   * 
-   * @note @bf To be implemented in the application.
-   * @param st the start state 
-   * @param mv the generated move 
+  /** 
+	 Generates a random move in the neighborhood of a given state.	
+   @note To be implemented in the application.
+   @param st the start state 
+   @param mv the generated move 
    */
   virtual void RandomMove(const State &st, Move& mv) = 0;
   
-  /** Generates the best move in the full exploration of the neighborhood
-   *  of a given state.
-   * @param st the start state
-   * @param mv the generated move
+  /** 
+	 Generates the best move in the full exploration of the neighborhood
+	 of a given state.
+   @param st the start state
+   @param mv the generated move
    */
   virtual CFtype BestMove(const State& st, Move& mv);
 		
-  /** Generate the first improvement move in the exploration of the neighborhood
-   *  of a given state.
-   * @param st the start state
-   * @param mv the generated move
+  /** 
+	 Generate the first improvement move in the exploration of the neighborhood
+   of a given state.
+   @param st the start state
+   @param mv the generated move
    */		
   virtual CFtype FirstImprovingMove(const State& st, Move& mv);
 		
@@ -61,23 +64,25 @@ public:
   // end of exploration detection
   virtual bool LastMoveDone(const State&st, const Move &mv) const;
   
-  /** States whether a move is feasible or not in a given state.
-      For default it acceptsall the moves as feasible ones, but it can
-      be overwritten by the user.
+  /** 
+	 States whether a move is feasible or not in a given state.
+	 By default it acceptsall the moves as feasible ones, but it can
+	 be overwritten by the user.
     
-      @param st the start state
-      @param mv the move to check for feasibility
-      @return true if the move is feasible in st, false otherwise
+	 @param st the start state
+	 @param mv the move to check for feasibility
+	 @return true if the move is feasible in st, false otherwise
   */
-  virtual bool FeasibleMove(const State&, const Move&)
+  virtual bool FeasibleMove(const State& st, const Move& mv)
   { return true; }
   
-  /** Modifies the state passed as parameter by applying a given
-      move upon it.
-    
-      @note @bf To be implemented in the application.
-      @param st the state to modify
-      @param mv the move to be applied
+  /** 
+	 Modifies the state passed as parameter by applying a given
+	 move upon it.
+	 
+	 @note To be implemented in the application.
+	 @param st the state to modify
+	 @param mv the move to be applied
   */
   virtual void MakeMove(State &st, const Move& mv) = 0;
   
@@ -104,7 +109,15 @@ public:
   
   
 protected:
-		NeighborhoodExplorer(const Input& in, StateManager<Input,State,CFtype>& sm, std::string name);
+/**
+ Constructs a neighborhood explorer passing a pointer to a state manager 
+ and a pointer to the input.
+ 
+ @param in a pointer to an input object.
+ @param sm a pointer to a compatible state manager.
+ @param name the name associated to the NeighborhoodExplorer.
+ */
+NeighborhoodExplorer(const Input& in, StateManager<Input,State,CFtype>& sm, std::string name);
   virtual ~NeighborhoodExplorer() {}
   
   const Input& in;/**< A reference to the input manager */
@@ -126,14 +139,6 @@ protected:
  * Implementation
  *************************************************************************/
 
-/**
-   Constructs a neighborhood explorer passing a pointer to a state manager 
-   and a pointer to the input.
- 
-   @param sm a pointer to a compatible state manager
-   @param in a pointer to an input object virtual void InputMove(const State &st, Move& mv, 
-   std::istream& is = std::cin) const 
-*/
 template <class Input, class State, class Move, typename CFtype>
 NeighborhoodExplorer<Input,State,Move,CFtype>::NeighborhoodExplorer(const Input& i,
                                                                     StateManager<Input,State,CFtype>& e_sm, std::string e_name)

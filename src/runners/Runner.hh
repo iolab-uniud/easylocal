@@ -11,12 +11,6 @@
 
 #include <utils/CLParser.hh>
 
-/** @defgroup Runners Runner classes
-    Runner classes are the algorithmic core of the framework. They are 
-    responsible for performing a run of a local search technique, 
-    starting from an initial state and leading to a final one. 
-*/ 
-
 template <class Input, class State, typename CFtype = int>
 class Runner
 {

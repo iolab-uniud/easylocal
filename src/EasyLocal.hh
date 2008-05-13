@@ -25,7 +25,7 @@
  
  @author Luca Di Gaspero, Andrea Schaerf - University of Udine, Italy
  @version 1.0
- $Rev$
+ $Revision$
  $Date$
  @note This version works both with MS Visual C++ and the GNU C++ 
  compiler. Yet, it is extensively tested only with the GNU compiler.
@@ -141,6 +141,11 @@
  - @anchor Output @a Output: output as it has to be delivered to the user.
  - @anchor State @a State: an element of the search space.
  - @anchor Move @a Move: a local move.
+ - @anchor CFType @a CFType: the cost function type. This template is by default
+   instantiated to @c int, representing an integer (discrete) cost function.
+   However it can be redefined by the user to allow for real-valued cost 
+   functions or cost functions of arbitrary types (provided that the basic
+   arithmetic and comparison operators will be defined).
  
  In a few applications, @a State and @a Output classes may
  coincide but, in general, the @e search @e space, -which is explored

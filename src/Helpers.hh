@@ -7,7 +7,7 @@
  @brief Helpers perform actions related to some specific aspects of the search and have to be
  partially implemented by the user.
  
- EasyLocalpp defines a number of helper classes. Helpers are not related
+ EasyLocalpp defines a number of helper classes that are not related
  hierarchically, but they are linked to @ref Runners, @ref Solvers, @ref Testers 
  and to each other through references. The helpers are the following ones:
  

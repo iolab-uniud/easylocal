@@ -3,9 +3,11 @@
 
 #include <iostream>
 
-/** The class CostComponent manages one single component of the
-    cost, either hard or soft 
-    @ingroup Helpers      
+/** 
+ @brief The class CostComponent manages one single component of the
+ cost, either hard or soft.
+ 
+ @ingroup Helpers      
 */
 
 template <class Input, class State, typename CFtype = int>
@@ -40,15 +42,8 @@ CostComponent<Input,State,CFtype>::CostComponent(const Input& i, const CFtype& w
   : name(e_name), in(i), weight(w), is_hard(hard)
 {}
 
-
 template <class Input, class State, typename CFtype>
 void CostComponent<Input,State,CFtype>::Print(std::ostream& os) const
 { os  << "Cost Component " << name << ": weight " << weight << (is_hard ? "*" : "") << std::endl; }
-
-// template <class Input, class State, typename CFtype>
-// void CostComponent<Input,State,CFtype>::PrintCost(const State& st,
-//         std::ostream& os) const
-//     { os  << "Cost Component: " << name << ": " << Cost(st) << std::endl; }
-
 
 #endif
