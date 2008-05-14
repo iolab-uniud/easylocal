@@ -97,7 +97,7 @@ void BimodalTabuSearchWithShiftingPenalty<Input,State,Move1,Move2,CFtype>::Selec
   bool shifted = (this->number_of_iterations - this->iteration_of_best < shift_region * this->max_idle_iteration);
   Move1 mv;
   ShiftedResult<CFtype> mv_cost;
-  bool all_moves_tabu = true;
+  bool all_moves_tabu = true, not_last_move;
 	
   this->ne1.FirstMove(this->current_state, mv);
   mv_cost = this->ne1.DeltaShiftedCostFunction(this->current_state, mv);
@@ -130,12 +130,12 @@ void BimodalTabuSearchWithShiftingPenalty<Input,State,Move1,Move2,CFtype>::Selec
 	  best_delta = mv_cost;
 	  all_moves_tabu = false;
 	}
-      this->ne1.NextMove(this->current_state, mv);
+      not_last_move = this->ne1.NextMove(this->current_state, mv);
       mv_cost = this->ne1.DeltaShiftedCostFunction(this->current_state, mv);
       if (!shifted)
 	mv_cost.shifted_value = (double)mv_cost.actual_value;
     }
-  while (!this->ne1.LastMoveDone(this->current_state, mv));
+  while (not_last_move);
 	
   this->current_move1 = best_move;
   // in all cases the cost should not be the shifted one
@@ -148,7 +148,7 @@ void BimodalTabuSearchWithShiftingPenalty<Input,State,Move1,Move2,CFtype>::Selec
   bool shifted = (this->number_of_iterations - this->iteration_of_best < shift_region * this->max_idle_iteration);
   Move2 mv;
   ShiftedResult<CFtype> mv_cost;
-  bool all_moves_tabu = true;
+  bool all_moves_tabu = true, not_last_move;
 	
   this->ne2.FirstMove(this->current_state, mv);
   mv_cost = this->ne2.DeltaShiftedCostFunction(this->current_state, mv);
@@ -180,12 +180,12 @@ void BimodalTabuSearchWithShiftingPenalty<Input,State,Move1,Move2,CFtype>::Selec
 	  best_delta = mv_cost;
 	  all_moves_tabu = false;
 	}
-      this->ne2.NextMove(this->current_state, mv);
+      not_last_move = this->ne2.NextMove(this->current_state, mv);
       mv_cost = this->ne2.DeltaShiftedCostFunction(this->current_state, mv);
       if (!shifted)
 	mv_cost.shifted_value = (double)mv_cost.actual_value;
     }
-  while (!this->ne2.LastMoveDone(this->current_state, mv));
+  while (not_last_move);
 	
   this->current_move2 = best_move;
   // in all cases the cost should not be the shifted one

@@ -87,7 +87,6 @@
 #include <iostream>     
 #include <data/ChessBoard.hh>
 #include <data/Swap.hh>
-#include <helpers/QueensFrequencyTabuListManager.hh>
 #include <helpers/SwapNeighborhoodExplorer.hh>
 #include <helpers/QueensOutputManager.hh>
 #include <helpers/QueensStateManager.hh>
@@ -123,8 +122,8 @@ int main(int argc, char* argv[])
   ValArgument<std::string> arg_solmethod("method", "m", false, cl);
   ValArgument<unsigned> arg_plot_level("plot", "p", false, 0u, cl);
   ValArgument<unsigned> arg_verbosity_level("verbose", "v", false, 0u, cl);
-	ValArgument<double> arg_timeout("timeout", "to", false, 0.0, cl);
-	ValArgument<double> arg_random_seed("random_seed", "rs", false, cl);
+  ValArgument<double> arg_timeout("timeout", "to", false, 0.0, cl);
+  ValArgument<int> arg_random_seed("random_seed", "rs", false, cl);
   cl.MatchArgument(arg_size);
   
   // data classes

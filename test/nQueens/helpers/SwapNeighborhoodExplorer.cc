@@ -17,14 +17,32 @@ void SwapNeighborhoodExplorer::RandomMove(const std::vector<int> &, Swap& sw)
     }
 }
 
-void SwapNeighborhoodExplorer::NextMove(const std::vector<int> &, Swap& sw)
+bool SwapNeighborhoodExplorer::NextMove(const std::vector<int> &, Swap& sw)
 {
-    if (sw.to < in - 1) sw.to++;
+    if (sw.to < in - 1) 
+      {
+	sw.to++;
+	return true;
+      }
     else if (sw.from < in - 2)
-    { sw.from++; sw.to = sw.from + 1; }
+      { 
+	sw.from++; 
+	sw.to = sw.from + 1; 
+	return true;
+      }
     else
-    { sw.from = 0; sw.to = 1; }
+      return false;
 }
+
+
+bool SwapNeighborhoodExplorer::FirstMove(const std::vector<int> &, Swap& sw)
+{
+  sw.from = 0; 
+  sw.to = 1; 
+  return true;
+}
+
+
 
 void SwapNeighborhoodExplorer::MakeMove(std::vector<int> &a, const Swap& sw)
 { 

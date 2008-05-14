@@ -140,7 +140,7 @@ void TabuSearch<Input,State,Move,CFtype>::SelectMove()
 {
   Move mv;
   register CFtype mv_cost;
-  register bool all_moves_tabu = true;
+  register bool all_moves_tabu = true, not_last_move;
 
   this->ne.FirstMove(this->current_state, mv);
   mv_cost = this->ne.DeltaCostFunction(this->current_state, mv);
@@ -170,10 +170,10 @@ void TabuSearch<Input,State,Move,CFtype>::SelectMove()
 	  best_delta = mv_cost;
 	  all_moves_tabu = false;
         }
-      this->ne.NextMove(this->current_state, mv);
+      not_last_move = this->ne.NextMove(this->current_state, mv);
       mv_cost = this->ne.DeltaCostFunction(this->current_state, mv);
     }
-  while (!this->ne.LastMoveDone(this->current_state, mv));
+  while (not_last_move);
 
   this->current_move = best_move;
   this->current_move_cost = best_delta;

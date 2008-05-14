@@ -91,7 +91,7 @@ void TabuSearchWithShiftingPenalty<Input,State,Move,CFtype>::SelectMove()
   bool shifted = (this->number_of_iterations - this->iteration_of_best < shift_region * this->max_idle_iteration);
   Move mv;
   ShiftedResult<CFtype> mv_cost;
-  bool all_moves_tabu = true;
+  bool all_moves_tabu = true, not_last_move;
 	
   this->ne.FirstMove(this->current_state, mv);
   mv_cost = this->ne.DeltaShiftedCostFunction(this->current_state, mv);
@@ -131,12 +131,12 @@ void TabuSearchWithShiftingPenalty<Input,State,Move,CFtype>::SelectMove()
 	  best_actual_move = mv;
 	  best_actual_delta = mv_cost.actual_value;
 	}
-      this->ne.NextMove(this->current_state, mv);
+      not_last_move = this->ne.NextMove(this->current_state, mv);
       mv_cost = this->ne.DeltaShiftedCostFunction(this->current_state, mv);
       if (!shifted)
 	mv_cost.shifted_value = (double)mv_cost.actual_value;
     }
-  while (!this->ne.LastMoveDone(this->current_state, mv));
+  while (not_last_move);
 
   if (LessThan(this->current_state_cost + best_actual_delta, this->best_state_cost))
     {

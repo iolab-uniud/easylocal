@@ -18,7 +18,8 @@ public:
 	void MakeMove(std::vector<int> &a, const Swap& sw);
 	bool FeasibleMove(const std::vector<int> &a, const Swap& sw);
 protected:
-    void NextMove(const std::vector<int> &a, Swap& sw);
+    bool NextMove(const std::vector<int> &a, Swap& sw);
+    bool FirstMove(const std::vector<int> &a, Swap& sw);
 };
 
 #endif /*SwapNeighborhoodExplorer_H_*/

@@ -254,16 +254,23 @@ void Runner<Input,State,CFtype>::Go()
   while (!ExternalTerminationRequest()  && 
          !MaxIterationExpired() && 
          !StopCriterion() && !LowerBoundReached())
-  {
-    UpdateIterationCounter();
-    SelectMove();
-    if (AcceptableMove())
     {
-      MakeMove();
-      UpdateStateCost();
-      StoreMove();
+      UpdateIterationCounter();
+      try 
+	{
+	  SelectMove();
+	}
+      catch (EmptyNeighborhood e)
+	{
+	  break; // If the neighborhood is empty, the search will be stopped
+	}
+      if (AcceptableMove())
+	{
+	  MakeMove();
+	  UpdateStateCost();
+	  StoreMove();
+	}
     }
-  }
   TerminateRun();
 }
 

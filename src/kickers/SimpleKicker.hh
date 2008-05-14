@@ -42,7 +42,7 @@ protected:
   //  virtual CFtype ComputeKickCost(const State &st);
   virtual bool RelatedMoves(const Move&, const Move&) const = 0;
   NeighborhoodExplorer<Input,State,Move,CFtype>& ne;
-  std::vector<Move> current_moves, internal_best_moves, start_moves;
+  std::vector<Move> current_moves, internal_best_moves; //, start_moves;
   CFtype current_kick_cost, best_kick_cost;
   void FirstKickComponent(unsigned int i);  // used by the backtracking algorithm of bestkick
   bool NextKickComponent(unsigned int i);   // (idem)
@@ -59,7 +59,7 @@ template <class Input, class State, class Move, typename CFtype>
 SimpleKicker<Input,State,Move,CFtype>::SimpleKicker(const Input& in,
 						    NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
 						    unsigned int s, std::string name)
-  : Kicker<Input,State,CFtype>(in, s, name), ne(e_ne), current_moves(s), internal_best_moves(s), start_moves(s)
+  : Kicker<Input,State,CFtype>(in, s, name), ne(e_ne), current_moves(s), internal_best_moves(s) //, start_moves(s)
 {  
   observer = NULL;
 }
@@ -122,7 +122,7 @@ void SimpleKicker<Input,State,Move,CFtype>::SetMaxStep(unsigned int s)
   Kicker<Input,State,CFtype>::SetMaxStep(s);
   current_moves.resize(s);
   internal_best_moves.resize(s);
-  start_moves.resize(s);
+//   start_moves.resize(s);
 }
 
 template <class Input, class State, class Move, typename CFtype>
@@ -132,17 +132,17 @@ void SimpleKicker<Input,State,Move,CFtype>::FirstKickComponent(unsigned int i)
     ne.FirstMove(this->states[i], current_moves[i]);
   else
     ne.FirstRelatedMove(this->states[i], current_moves[i], current_moves[i-1]);
-  start_moves[i] = current_moves[i];
+  //  start_moves[i] = current_moves[i];
 }
 
 template <class Input, class State, class Move, typename CFtype>
 bool SimpleKicker<Input,State,Move,CFtype>::NextKickComponent(unsigned int i)
 {
   if (i == 0)
-    ne.NextMove(this->states[i], current_moves[i]);
+    return ne.NextMove(this->states[i], current_moves[i]);
   else
-    ne.NextRelatedMove(this->states[i], current_moves[i], current_moves[i-1]);
-  return current_moves[i] != start_moves[i];
+    return ne.NextRelatedMove(this->states[i], current_moves[i], current_moves[i-1]);
+  //  return current_moves[i] != start_moves[i];
 }
 
 template <class Input, class State, class Move, typename CFtype>

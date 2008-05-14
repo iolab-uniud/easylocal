@@ -217,7 +217,7 @@ void MoveTester<Input,Output,State,Move,CFtype>::CheckNeighborhoodCosts(const St
   unsigned move_count = 0;
   CFtype error, error_cc, delta_cost, cost, cost1;
   State st1 = st;
-  bool error_found = false;
+  bool error_found = false, not_last_move;
   ne.FirstMove(st, mv);
   do
     {
@@ -250,10 +250,10 @@ void MoveTester<Input,Output,State,Move,CFtype>::CheckNeighborhoodCosts(const St
 	}          
       if (move_count % 100 == 0) 
 	std::cerr << '.'; // print dots to show that it is alive
-      ne.NextMove(st, mv);
+      not_last_move = ne.NextMove(st, mv);
       st1 = st;
     }
-  while(!ne.LastMoveDone(st, mv));
+  while(not_last_move);
   
   if (!error_found)
     os << std::endl << "No error found (for " << move_count << " moves)!" << std::endl;
@@ -285,9 +285,8 @@ void MoveTester<Input,Output,State,Move,CFtype>::PrintNeighborhoodStatistics(con
 	worsening_neighbors++;
       else
 	non_improving_neighbors++;
-      ne.NextMove(st,mv);
     }
-  while (!ne.LastMoveDone(st,mv));
+  while (ne.NextMove(st,mv));
   os << "Neighborhood size: " <<  neighbors << std::endl
      << "   improving moves: " << improving_neighbors << " ("
      << (100.0*improving_neighbors)/neighbors << "%)" << std::endl
@@ -305,9 +304,8 @@ void MoveTester<Input,Output,State,Move,CFtype>::PrintAllNeighbors(const State& 
   do
     {
       os << mv << ' ' << ne.DeltaCostFunction(st,mv) << std::endl;
-      ne.NextMove(st,mv);
     }
-  while (!ne.LastMoveDone(st,mv));
+  while (ne.NextMove(st,mv));
 }
 
 template <class Input, class Output, class State, class Move, typename CFtype>
@@ -315,15 +313,14 @@ void MoveTester<Input,Output,State,Move,CFtype>::CheckMoveIndependence(const Sta
 {
   Move mv;
   std::vector<std::pair<Move,State> > reached_states;
-  unsigned repeat_states = 0, null_moves = 0, all_moves = 0, i;
+  unsigned repeat_states = 0, null_moves = 0, all_moves = 1, i;
   bool repeated_state;
   State st1 = st;
   ne.FirstMove(st1,mv);
   reached_states.push_back(make_pair(mv,st1));
 
-  do
+  while (ne.NextMove(st,mv))
     {
-      ne.NextMove(st,mv);
       st1 = st;
       ne.MakeMove(st1, mv);
       if (st1 == st)
@@ -349,7 +346,6 @@ void MoveTester<Input,Output,State,Move,CFtype>::CheckMoveIndependence(const Sta
 	std::cerr << '.'; // print dots to show that it is alive
       all_moves++;
     }
-  while (!ne.LastMoveDone(st, mv));
 
   os << std::endl << "Number of moves: " << all_moves << std::endl;
   if (repeat_states == 0)

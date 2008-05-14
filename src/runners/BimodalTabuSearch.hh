@@ -119,7 +119,7 @@ void BimodalTabuSearch<Input,State,Move1,Move2,CFtype>::SelectMove1()
 {
   Move1 mv;
   register CFtype mv_cost;
-  register bool all_moves_tabu = true;
+  register bool all_moves_tabu = true, not_last_move;
 	
   this->ne1.FirstMove(this->current_state, mv);
   mv_cost = this->ne1.DeltaCostFunction(this->current_state, mv);
@@ -149,10 +149,10 @@ void BimodalTabuSearch<Input,State,Move1,Move2,CFtype>::SelectMove1()
 	  best_delta = mv_cost;
 	  all_moves_tabu = false;
 	}
-      this->ne1.NextMove(this->current_state, mv);
+      not_last_move = this->ne1.NextMove(this->current_state, mv);
       mv_cost = this->ne1.DeltaCostFunction(this->current_state, mv);
     }
-  while (!this->ne1.LastMoveDone(this->current_state, mv));
+  while (not_last_move);
 	
   this->current_move1 = best_move;
   this->current_move_cost1 = best_delta;
@@ -163,7 +163,7 @@ void BimodalTabuSearch<Input,State,Move1,Move2,CFtype>::SelectMove2()
 {
   Move2 mv;
   register CFtype mv_cost;
-  register bool all_moves_tabu = true;
+  register bool all_moves_tabu = true, not_last_move;
 	
   this->ne2.FirstMove(this->current_state, mv);
   mv_cost = this->ne2.DeltaCostFunction(this->current_state, mv);
@@ -193,10 +193,10 @@ void BimodalTabuSearch<Input,State,Move1,Move2,CFtype>::SelectMove2()
 	  best_delta = mv_cost;
 	  all_moves_tabu = false;
 	}
-      this->ne2.NextMove(this->current_state, mv);
+      not_last_move = this->ne2.NextMove(this->current_state, mv);
       mv_cost = this->ne2.DeltaCostFunction(this->current_state, mv);
     }
-  while (!this->ne2.LastMoveDone(this->current_state, mv));
+  while (not_last_move);
 	
   this->current_move2 = best_move;
   this->current_move_cost2 = best_delta;

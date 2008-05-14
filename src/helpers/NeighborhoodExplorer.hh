@@ -6,6 +6,8 @@
 #include <typeinfo>
 #include <stdexcept>
 
+class EmptyNeighborhood : public std::exception {};
+
 /** The Neighborhood Explorer is responsible for the strategy
     exploited in the exploration of the neighborhood, and for 
     computing the variations of the cost function due to a specific
@@ -14,42 +16,32 @@
     @ingroup Helpers
 */
 
-
 template <class Input, class State, class Move, typename CFtype = int>
 class NeighborhoodExplorer
 {
-public:
-  
+public:   
   void Print(std::ostream& os = std::cout) const;
-  
-  // move generating functions
-  virtual void FirstMove(const State& st, Move& mv);
-  
-  /** Generates the move that follows mv in the exploration of the
-      neighborhood of the state st. 
-      It returns the generated move in the same variable mv.
-    
-      @note To be implemented in the application.
-      @param st the start state 
-      @param mv the move 
-  */
-  virtual void NextMove(const State &st, Move& mv) = 0;
-  
   /** 
 	 Generates a random move in the neighborhood of a given state.	
    @note To be implemented in the application.
    @param st the start state 
    @param mv the generated move 
    */
-  virtual void RandomMove(const State &st, Move& mv) = 0;
+  virtual void RandomMove(const State &st, Move& mv) const = 0;
+  // move generating functions
+  virtual void FirstMove(const State& st, Move& mv) const = 0;
   
-  /** 
-	 Generates the best move in the full exploration of the neighborhood
-	 of a given state.
-   @param st the start state
-   @param mv the generated move
-   */
-  virtual CFtype BestMove(const State& st, Move& mv);
+  /** Generates the move that follows mv in the exploration of the
+      neighborhood of the state st. 
+      It returns the generated move in the same variable mv.
+      Returns false if mv is the last in the state.
+    
+      @note To be implemented in the application.
+      @param st the start state 
+      @param mv the move 
+  */
+  virtual bool NextMove(const State &st, Move& mv) const = 0;
+
 		
   /** 
 	 Generate the first improvement move in the exploration of the neighborhood
@@ -57,12 +49,19 @@ public:
    @param st the start state
    @param mv the generated move
    */		
-  virtual CFtype FirstImprovingMove(const State& st, Move& mv);
+  virtual CFtype FirstImprovingMove(const State& st, Move& mv) const throw (EmptyNeighborhood);
+  /** 
+	 Generates the best move in the full exploration of the neighborhood
+	 of a given state.
+   @param st the start state
+   @param mv the generated move
+   */
+  virtual CFtype BestMove(const State& st, Move& mv) const throw (EmptyNeighborhood);
 		
-  virtual CFtype SampleMove(const State &st, Move& mv, unsigned int samples);
+  virtual CFtype SampleMove(const State &st, Move& mv, unsigned int samples) const throw (EmptyNeighborhood);
   
-  // end of exploration detection
-  virtual bool LastMoveDone(const State&st, const Move &mv) const;
+//   // end of exploration detection
+//   virtual bool LastMoveDone(const State&st, const Move &mv) const;
   
   /** 
 	 States whether a move is feasible or not in a given state.
@@ -73,7 +72,7 @@ public:
 	 @param mv the move to check for feasibility
 	 @return true if the move is feasible in st, false otherwise
   */
-  virtual bool FeasibleMove(const State& st, const Move& mv)
+  virtual bool FeasibleMove(const State& st, const Move& mv) const
   { return true; }
   
   /** 
@@ -84,24 +83,33 @@ public:
 	 @param st the state to modify
 	 @param mv the move to be applied
   */
-  virtual void MakeMove(State &st, const Move& mv) = 0;
+  virtual void MakeMove(State &st, const Move& mv) const = 0;
   
-  virtual void RandomRelatedMove(const State &st, Move& mv, const Move& mv2)
-  { RandomMove(st,mv); }
-  virtual void NextRelatedMove(const State &st, Move& mv, const Move& mv2)
-  { NextMove(st,mv); }
-  virtual void FirstRelatedMove(const State &st, Move& mv, const Move& mv2);
+  virtual bool NextRelatedMove(const State &st, Move& mv, const Move& mv2) const
+  { return NextMove(st,mv); }
+  virtual bool FirstRelatedMove(const State &st, Move& mv, const Move& mv2) const 
+  {
+    try 
+      {
+	FirstMove(st,mv); 
+      }
+    catch (EmptyNeighborhood e)
+      {
+	return false;
+      }
+    return true;
+  }
 
   // evaluation function
-  virtual CFtype DeltaCostFunction(const State& st, const Move& mv);
-  virtual CFtype DeltaObjective(const State& st, const Move & mv);
-  virtual CFtype DeltaViolations(const State& st, const Move & mv);
+  virtual CFtype DeltaCostFunction(const State& st, const Move& mv) const;
+  virtual CFtype DeltaObjective(const State& st, const Move & mv) const;
+  virtual CFtype DeltaViolations(const State& st, const Move & mv) const;
   
-  virtual ShiftedResult<CFtype> DeltaShiftedCostFunction(const State& st, const Move& mv);
+  virtual ShiftedResult<CFtype> DeltaShiftedCostFunction(const State& st, const Move& mv) const;
   
   virtual void AddDeltaCostComponent(AbstractDeltaCostComponent<Input,State,Move,CFtype>& dcc);
   
-  virtual unsigned int DeltaCostComponents()
+  virtual unsigned int DeltaCostComponents() const
   { return delta_cost_component.size(); }
   
   virtual AbstractDeltaCostComponent<Input,State,Move,CFtype>& DeltaCostComponent(unsigned i)
@@ -120,15 +128,16 @@ protected:
 NeighborhoodExplorer(const Input& in, StateManager<Input,State,CFtype>& sm, std::string name);
   virtual ~NeighborhoodExplorer() {}
   
+
   const Input& in;/**< A reference to the input manager */
   StateManager<Input, State,CFtype>& sm; /**< A reference to the attached state manager. */
     
-  Move best_move; /**< The best move found in the exploration of the
-		     neighborhood (used from the neighborhood enumerating
-		     functions such as BestMove). */
+//   Move best_move; /**< The best move found in the exploration of the
+// 		     neighborhood (used from the neighborhood enumerating
+// 		     functions such as BestMove). */
     
-  Move start_move;  /**< The first move in the exploration of
-		       the neighborhood. Needed to detect the end of the exploration. */
+//   Move start_move;  /**< The first move in the exploration of
+// 		       the neighborhood. Needed to detect the end of the exploration. */
     
   std::vector<AbstractDeltaCostComponent<Input,State,Move,CFtype>* > delta_cost_component;
   unsigned number_of_delta_not_implemented;
@@ -156,7 +165,7 @@ NeighborhoodExplorer<Input,State,Move,CFtype>::NeighborhoodExplorer(const Input&
    @return the variation in the cost function
 */
 template <class Input, class State, class Move, typename CFtype>
-CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::DeltaCostFunction(const State& st, const Move & mv)
+CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::DeltaCostFunction(const State& st, const Move & mv) const
 {
   CFtype delta_hard_cost = 0, delta_soft_cost = 0;
   unsigned int i;
@@ -204,7 +213,7 @@ CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::DeltaCostFunction(const St
 }
 
 template <class Input, class State, class Move, typename CFtype>
-ShiftedResult<CFtype> NeighborhoodExplorer<Input,State,Move,CFtype>::DeltaShiftedCostFunction(const State& st, const Move & mv)
+ShiftedResult<CFtype> NeighborhoodExplorer<Input,State,Move,CFtype>::DeltaShiftedCostFunction(const State& st, const Move & mv) const
 {
   ShiftedResult<CFtype> delta_hard_cost, delta_soft_cost;
   
@@ -268,24 +277,32 @@ void NeighborhoodExplorer<Input,State,Move,CFtype>::AddDeltaCostComponent(Abstra
    @return the cost of move mv
 */
 template <class Input, class State, class Move, typename CFtype>
-CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::BestMove(const State &st, Move& mv)
+CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::BestMove(const State &st, Move& mv) const throw (EmptyNeighborhood)
 {
+  unsigned int number_of_bests = 1; // number of moves found with the same best value
   FirstMove(st,mv);
   CFtype mv_cost = DeltaCostFunction(st,mv);
-  best_move = mv;
+  Move best_move = mv;
   CFtype best_delta = mv_cost;
   do // look for the best move
     {
       mv_cost = DeltaCostFunction(st,mv);
-      if (mv_cost < best_delta)
+      if (LessThan(mv_cost, best_delta))
 	{
 	  best_move = mv;
 	  best_delta = mv_cost;
+	  number_of_bests = 1;	  
 	}
-      NextMove(st,mv);
+      else if (EqualTo(mv_cost, best_delta))
+	{
+	  if (Random::Int(0,number_of_bests) == 0) // with probability 1/(1+number_of_bests)
+	    best_move = mv;
+	  number_of_bests++;
+	} 
     }
-  while (!LastMoveDone(st,mv));
+  while (NextMove(st,mv));
   mv = best_move;
+  std::cerr << number_of_bests << std::endl;
   return best_delta;
 } 
 
@@ -299,55 +316,48 @@ CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::BestMove(const State &st, 
    @return the cost of move mv
 */
 template <class Input, class State, class Move, typename CFtype>
-CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::FirstImprovingMove(const State &st, Move& mv)
+CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::FirstImprovingMove(const State &st, Move& mv) const throw (EmptyNeighborhood)
 {
   FirstMove(st,mv);
   CFtype mv_cost = DeltaCostFunction(st,mv);
-  best_move = mv;
+  Move best_move = mv;
   CFtype best_delta = mv_cost;
   do // look for the best move
     {
       mv_cost = DeltaCostFunction(st,mv);
-      if (mv_cost < best_delta)
+      if (LessThan(mv_cost, best_delta))
 	{
 	  best_move = mv;
 	  best_delta = mv_cost;
 	}
-      NextMove(st,mv);
     }
-  while (!LastMoveDone(st,mv) && mv_cost >= 0.0);
+  while (NextMove(st,mv) && GreaterOrEqualThan(mv_cost,(CFtype)0));
   mv = best_move;
   return best_delta;
 } 
 
-// template <class Input, class State, class Move, typename CFtype>
-// void NeighborhoodExplorer<Input,State,Move,CFtype>::InputMove(const State &,
-//                                                               Move&,
-//                                                               std::istream&) const
-// { throw std::logic_error("The function InputMove() has not been redefined"
-//                            " for the NeighborhoodExplorer" + name); }
 
-/**
-   Generates the first move in the exploration of the neighborhood of a 
-   given state. 
-   By default, it invokes the RandomMove function and records mv as 
-   start move.
+// /**
+//    Generates the first move in the exploration of the neighborhood of a 
+//    given state. 
+//    By default, it invokes the RandomMove function and records mv as 
+//    start move.
  
-   @param st the state
-*/
-template <class Input, class State, class Move, typename CFtype>
-void NeighborhoodExplorer<Input,State,Move,CFtype>::FirstMove(const State& st, Move& mv)
-{
-  RandomMove(st,mv);
-  start_move = mv;
-}
+//    @param st the state
+// */
+// template <class Input, class State, class Move, typename CFtype>
+// void NeighborhoodExplorer<Input,State,Move,CFtype>::FirstMove(const State& st, Move& mv)
+// {
+//   RandomMove(st,mv);
+//   start_move = mv;
+// }
 
-template <class Input, class State, class Move, typename CFtype>
-void NeighborhoodExplorer<Input,State,Move,CFtype>::FirstRelatedMove(const State& st, Move& mv, const Move& mv_r)
-{
-  RandomRelatedMove(st,mv,mv_r);
-  start_move = mv;
-}
+// template <class Input, class State, class Move, typename CFtype>
+// void NeighborhoodExplorer<Input,State,Move,CFtype>::FirstRelatedMove(const State& st, Move& mv, const Move& mv_r)
+// {
+//   RandomRelatedMove(st,mv,mv_r);
+//   start_move = mv;
+// }
 
 /**
    Returns the best move found out of a number of sampled moves from a given
@@ -359,12 +369,12 @@ void NeighborhoodExplorer<Input,State,Move,CFtype>::FirstRelatedMove(const State
    @return the cost of the move mv
 */
 template <class Input, class State, class Move, typename CFtype>
-CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::SampleMove(const State &st, Move& mv, unsigned int samples)
+CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::SampleMove(const State &st, Move& mv, unsigned int samples) const throw (EmptyNeighborhood)
 {
   unsigned int s = 1;
   RandomMove(st,mv);
   CFtype mv_cost = DeltaCostFunction(st,mv);
-  best_move = mv;
+  Move best_move = mv;
   CFtype best_delta = mv_cost;
   do // look for the best sampled move
     {
@@ -383,70 +393,6 @@ CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::SampleMove(const State &st
 }
 
 
-// /**
-//    Outputs the state cost components of the state passed as parameter.
- 
-//    @param st the state to be inspected
-// */
-// template <class Input, class State, class Move, typename CFtype>
-// void NeighborhoodExplorer<Input,State,Move,CFtype>::PrintMoveCost(const State& st,
-//                                                                   const Move& mv,
-//                                                                   std::ostream& os)
-// { 
-//   CFtype delta_cost, total_delta_hard_cost = 0, total_delta_soft_cost = 0;
-//   if (number_of_delta_not_implemented > 0)
-//     {
-//       State st1 = st;
-//       MakeMove(st1,mv);
-    
-//       for (unsigned i = 0; i < delta_cost_component.size(); i++)
-// 	{
-// 	  os << "  " << i << ". " << delta_cost_component[i]->name << " : ";
-// 	  if (delta_cost_component[i]->IsDeltaImplemented())
-// 	    {
-// 	      FilledDeltaCostComponent<Input,State,Move,CFtype>& dcc = static_cast<FilledDeltaCostComponent<Input,State,Move,CFtype>& >(*this->delta_cost_component[i]);
-// 	      delta_cost = dcc.DeltaCost(st, mv);        
-// 	    }
-// 	  else
-// 	    {
-// 	      EmptyDeltaCostComponent<Input,State,Move,CFtype>& dcc = static_cast<EmptyDeltaCostComponent<Input,State,Move,CFtype>& >(*this->delta_cost_component[i]);
-// 	      delta_cost = dcc.DeltaCost(st, st1);
-// 	    }
-// 	  os <<  delta_cost;
-// 	  if (delta_cost_component[i]->IsHard())
-// 	    {
-// 	      total_delta_hard_cost += delta_cost;
-// 	      os << '*';
-// 	    }
-// 	  else
-// 	    total_delta_soft_cost += delta_cost;
-// 	  os << std::endl;
-// 	}
-        
-//     }
-//   else
-//     {
-//       for (unsigned i = 0; i < delta_cost_component.size(); i++)
-// 	{
-// 	  FilledDeltaCostComponent<Input,State,Move,CFtype>& dcc = static_cast<FilledDeltaCostComponent<Input,State,Move,CFtype>& >(*this->delta_cost_component[i]);
-// 	  os << "  " << i << ". " << dcc.name << " : ";
-// 	  delta_cost = dcc.DeltaCost(st, mv);
-// 	  os << delta_cost;
-// 	  if (delta_cost_component[i]->IsHard())
-// 	    {
-// 	      total_delta_hard_cost += delta_cost;
-// 	      os << '*';
-// 	    }
-// 	  else
-// 	    total_delta_soft_cost += delta_cost;
-// 	  os << std::endl;
-// 	}
-//     }
-//   os << "Total Delta Violations : " << total_delta_hard_cost << std::endl;
-//   os << "Total Delta Objective : " << total_delta_soft_cost << std::endl;
-//   os << "Total Delta Cost : " << HARD_WEIGHT * total_delta_hard_cost + total_delta_soft_cost << std::endl;
-// }
-
 
 /**
    Evaluates the variation of the violations function obtained by 
@@ -460,7 +406,7 @@ CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::SampleMove(const State &st
    @return the difference in the violations function induced by the move mv
 */
 template <class Input, class State, class Move, typename CFtype>
-CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::DeltaViolations(const State& st, const Move & mv)
+CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::DeltaViolations(const State& st, const Move & mv) const
 {
   // in the current version, if hard_delta_cost is not used
   // the function returns 0. This means that the default
@@ -506,7 +452,7 @@ CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::DeltaViolations(const Stat
    @return the difference in the objective function induced by the move mv
 */
 template <class Input, class State, class Move, typename CFtype>
-CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::DeltaObjective(const State& st, const Move & mv)
+CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::DeltaObjective(const State& st, const Move & mv) const
 {
   CFtype total_delta = 0;
   for (unsigned i = 0; i < this->delta_cost_component.size(); i++)
@@ -519,17 +465,17 @@ CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::DeltaObjective(const State
 }
 
 
-/**
-   Checks whether the whole neighborhood has been explored.
-   The tentative definition verifies is the move passed as parameter 
-   coincides with the start move.
+// /**
+//    Checks whether the whole neighborhood has been explored.
+//    The tentative definition verifies is the move passed as parameter 
+//    coincides with the start move.
  
-   @param mv the move to check
-   @return true if the whole neighborhood has been explored, false otherwise
-*/
-template <class Input, class State, class Move, typename CFtype>
-bool NeighborhoodExplorer<Input,State,Move,CFtype>::LastMoveDone(const State& st,
-                                                                 const Move& mv) const
-{ return mv == start_move; }
+//    @param mv the move to check
+//    @return true if the whole neighborhood has been explored, false otherwise
+// */
+// template <class Input, class State, class Move, typename CFtype>
+// bool NeighborhoodExplorer<Input,State,Move,CFtype>::LastMoveDone(const State& st,
+//                                                                  const Move& mv) const
+// { return mv == start_move; }
 
 #endif // define _NEIGHBORHOOD_EXPLORER_HH_
