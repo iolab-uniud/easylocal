@@ -70,7 +70,6 @@
 		ACF4B12A0DBFA668008A0207 /* SimulatedAnnealing.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = SimulatedAnnealing.hh; sourceTree = "<group>"; };
 		ACF4B12B0DBFA668008A0207 /* SteepestDescent.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = SteepestDescent.hh; sourceTree = "<group>"; };
 		ACF4B12C0DBFA668008A0207 /* TabuSearch.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = TabuSearch.hh; sourceTree = "<group>"; };
-		ACF4B12D0DBFA668008A0207 /* TresholdAcceptance.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = TresholdAcceptance.hh; sourceTree = "<group>"; };
 		ACF4B12E0DBFA668008A0207 /* Runners.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Runners.hh; sourceTree = "<group>"; };
 		ACF4B1340DBFA668008A0207 /* SimpleLocalSearch.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = SimpleLocalSearch.hh; sourceTree = "<group>"; };
 		ACF4B1350DBFA668008A0207 /* Solver.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Solver.hh; sourceTree = "<group>"; };
@@ -122,11 +121,6 @@
 		ACF4B2050DBFADB3008A0207 /* BimodalTabuSearch.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = BimodalTabuSearch.hh; sourceTree = "<group>"; };
 		ACF4B2060DBFADB3008A0207 /* BimodalTabuSearchWithShiftingPenalty.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = BimodalTabuSearchWithShiftingPenalty.hh; sourceTree = "<group>"; };
 		ACF4B2070DBFADB3008A0207 /* TabuSearchWithShiftingPenalty.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = TabuSearchWithShiftingPenalty.hh; sourceTree = "<group>"; };
-		ACF4B2080DBFADB3008A0207 /* TrimodalHillClimbing.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = TrimodalHillClimbing.hh; sourceTree = "<group>"; };
-		ACF4B2090DBFADB3008A0207 /* TrimodalMoveRunner.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = TrimodalMoveRunner.hh; sourceTree = "<group>"; };
-		ACF4B20A0DBFADB3008A0207 /* TrimodalSteepestDescent.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = TrimodalSteepestDescent.hh; sourceTree = "<group>"; };
-		ACF4B20B0DBFADB3008A0207 /* TrimodalTabuSearch.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = TrimodalTabuSearch.hh; sourceTree = "<group>"; };
-		ACF4B20C0DBFADB3008A0207 /* TrimodalTabuSearchWithShiftingPenalty.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = TrimodalTabuSearchWithShiftingPenalty.hh; sourceTree = "<group>"; };
 		ACF4DD630DC1F3A4006507B1 /* StateManagerTest.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = StateManagerTest.hh; sourceTree = "<group>"; };
 		ACF4DD640DC1F3A4006507B1 /* UnitTestingMain.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = UnitTestingMain.cc; sourceTree = "<group>"; };
 		ACF4DD660DC1F3E2006507B1 /* QueensStateManagerTest.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = QueensStateManagerTest.cc; sourceTree = "<group>"; };
@@ -232,11 +226,6 @@
 				ACF4B2050DBFADB3008A0207 /* BimodalTabuSearch.hh */,
 				ACF4B2060DBFADB3008A0207 /* BimodalTabuSearchWithShiftingPenalty.hh */,
 				ACF4B2070DBFADB3008A0207 /* TabuSearchWithShiftingPenalty.hh */,
-				ACF4B2080DBFADB3008A0207 /* TrimodalHillClimbing.hh */,
-				ACF4B2090DBFADB3008A0207 /* TrimodalMoveRunner.hh */,
-				ACF4B20A0DBFADB3008A0207 /* TrimodalSteepestDescent.hh */,
-				ACF4B20B0DBFADB3008A0207 /* TrimodalTabuSearch.hh */,
-				ACF4B20C0DBFADB3008A0207 /* TrimodalTabuSearchWithShiftingPenalty.hh */,
 				ACF4B1250DBFA668008A0207 /* FirstDescent.hh */,
 				ACF4B1260DBFA668008A0207 /* HillClimbing.hh */,
 				ACF4B1270DBFA668008A0207 /* MoveRunner.hh */,
@@ -245,7 +234,6 @@
 				ACF4B12A0DBFA668008A0207 /* SimulatedAnnealing.hh */,
 				ACF4B12B0DBFA668008A0207 /* SteepestDescent.hh */,
 				ACF4B12C0DBFA668008A0207 /* TabuSearch.hh */,
-				ACF4B12D0DBFA668008A0207 /* TresholdAcceptance.hh */,
 			);
 			path = runners;
 			sourceTree = "<group>";

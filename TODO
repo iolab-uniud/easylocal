@@ -10,7 +10,7 @@
 
 6. Rivedere il kicker tester (stile movetester) [FATTO]
 
-
+7. Rivedere il timeout (se 0 non funziona GeneralizedLocalSearchSolver)
 
 
 // Aggiunte 5-5-2008

@@ -89,36 +89,7 @@ void SampleTabuSearch<Input,State,Move>::Print(std::ostream& os) const
 template <class Input, class State, class Move, typename CFtype = int>
 void SampleTabuSearch<Input,State,Move>::SelectMove()
 {
-    unsigned int s = 1;
-    register CFtype mv_cost;
-    Move mv;
-    bool tabu_move;
-    bool all_moves_tabu = true;
-
-    this->p_nhe->RandomMove(this->current_state, mv);
-    mv_cost = this->p_nhe->DeltaCostFunction(this->current_state, mv);
-    Move best_move = mv;
-    CFtype best_delta = mv_cost;
-    do
-    {
-        tabu_move = p_pm->ProhibitedMove(this->current_state, mv, mv_cost);
-        if (   (mv_cost < best_delta && !tabu_move)
-                || (mv_cost < best_delta && all_moves_tabu)
-                || (all_moves_tabu && !tabu_move))
-        {
-            best_move = mv;
-            best_delta = mv_cost;
-        }
-        if (!tabu_move)
-            all_moves_tabu = false;
-        this->p_nhe->RandomMove(this->current_state, mv);
-        mv_cost = DeltaCostFunction(this->current_state, mv);
-        s++;
-    }
-    while (s < sample_size);
-    
-    this->current_move = best_move;
-    this->current_move_cost = best_delta;
+    this->current_move_cost = this->ne.SampleMove(this->current_state, this->current_move, sample_size, &this->pm);
 }
 
 template <class Input, class State, class Move, typename CFtype>

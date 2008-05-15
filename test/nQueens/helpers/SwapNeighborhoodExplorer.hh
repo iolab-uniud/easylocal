@@ -14,12 +14,10 @@ public:
 	SwapNeighborhoodExplorer(const int& in, QueensStateManager& qsm, std::string name = "")
 	: NeighborhoodExplorer<int,std::vector<int>,Swap>(in, qsm, name)
   {}
-	void RandomMove(const std::vector<int> &a, Swap& sw);
-	void MakeMove(std::vector<int> &a, const Swap& sw);
-	bool FeasibleMove(const std::vector<int> &a, const Swap& sw);
-protected:
-    bool NextMove(const std::vector<int> &a, Swap& sw);
-    bool FirstMove(const std::vector<int> &a, Swap& sw);
+	void MakeMove(std::vector<int> &a, const Swap& sw) const;
+  void RandomMove(const std::vector<int> &a, Swap& sw) const;
+  void FirstMove(const std::vector<int> &a, Swap& sw) const;
+  bool NextMove(const std::vector<int> &a, Swap& sw) const;
 };
 
 #endif /*SwapNeighborhoodExplorer_H_*/

@@ -88,8 +88,7 @@ public:
 			bool finished = false;
 			do 
 			{
-				CPPUNIT_ASSERT_NO_THROW_MESSAGE(stringify("Next move raises an exception", __FILE__, __LINE__), ne->NextMove(*st, mv));
-				CPPUNIT_ASSERT_NO_THROW_MESSAGE(stringify("Last move detection raises an exception", __FILE__, __LINE__), finished = ne->LastMoveDone(*st, mv));
+				CPPUNIT_ASSERT_NO_THROW_MESSAGE(stringify("Next move raises an exception", __FILE__, __LINE__), finished = ne->NextMove(*st, mv));
 			}
 			while (!finished);
 		}	

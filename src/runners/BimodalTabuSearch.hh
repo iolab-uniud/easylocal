@@ -29,8 +29,6 @@ protected:
   void InitializeRun();
   bool StopCriterion();
   void SelectMove();
-  virtual void SelectMove1();
-  virtual void SelectMove2();
   bool AcceptableMove();
   void StoreMove();
   void TerminateRun();
@@ -103,103 +101,14 @@ void BimodalTabuSearch<Input,State,Move1,Move2,CFtype>::GoCheck() const
 template <class Input, class State, class Move1, class Move2, typename CFtype>
 void BimodalTabuSearch<Input,State,Move1,Move2,CFtype>::SelectMove()
 {
-  // FIXME: to review
-  SelectMove1();
-  SelectMove2();
+  this->current_move_cost1 = this->ne1.BestMove(this->current_state, this->current_move1, &pm1); 
+  this->current_move_cost2 = this->ne2.BestMove(this->current_state, this->current_move2, &pm2); 
   if (LessThan(this->current_move_cost1, this->current_move_cost2))
     this->current_move_type = MOVE_1;
   else if (LessThan(this->current_move_cost2, this->current_move_cost1))
     this->current_move_type = MOVE_2;
   else
     this->current_move_type = Random::Int(0,1) == 0 ? MOVE_1 : MOVE_2;
-}
-
-template <class Input, class State, class Move1, class Move2, typename CFtype>
-void BimodalTabuSearch<Input,State,Move1,Move2,CFtype>::SelectMove1() 
-{
-  Move1 mv;
-  register CFtype mv_cost;
-  register bool all_moves_tabu = true, not_last_move;
-	
-  this->ne1.FirstMove(this->current_state, mv);
-  mv_cost = this->ne1.DeltaCostFunction(this->current_state, mv);
-  Move1 best_move = mv;
-  CFtype best_delta = mv_cost;
-  do  // look for the best non prohibited move
-    {   // (if all moves are prohibited, then get the best)
-      // For efficency, ProhibitedMove is invoked only when strictly necessary
-      if (mv_cost < best_delta)
-	{
-	  if (!pm1.ProhibitedMove(this->current_state, mv, mv_cost))
-	    {
-	      best_move = mv;
-	      best_delta = mv_cost;
-	      all_moves_tabu = false;
-	    }
-	  if (all_moves_tabu)
-	    {
-	      best_move = mv;
-	      best_delta = mv_cost;
-	    }
-	}
-      else if (all_moves_tabu && !pm1.ProhibitedMove(this->current_state, mv, mv_cost))
-	{ // even though it is not an improving move,
-	  // this move is the actual best since it's the first non-tabu
-	  best_move = mv;
-	  best_delta = mv_cost;
-	  all_moves_tabu = false;
-	}
-      not_last_move = this->ne1.NextMove(this->current_state, mv);
-      mv_cost = this->ne1.DeltaCostFunction(this->current_state, mv);
-    }
-  while (not_last_move);
-	
-  this->current_move1 = best_move;
-  this->current_move_cost1 = best_delta;
-}
-
-template <class Input, class State, class Move1, class Move2, typename CFtype>
-void BimodalTabuSearch<Input,State,Move1,Move2,CFtype>::SelectMove2() 
-{
-  Move2 mv;
-  register CFtype mv_cost;
-  register bool all_moves_tabu = true, not_last_move;
-	
-  this->ne2.FirstMove(this->current_state, mv);
-  mv_cost = this->ne2.DeltaCostFunction(this->current_state, mv);
-  Move2 best_move = mv;
-  CFtype best_delta = mv_cost;
-  do  // look for the best non prohibited move
-    {   // (if all moves are prohibited, then get the best)
-      // For efficency, ProhibitedMove is invoked only when strictly necessary
-      if (mv_cost < best_delta)
-	{
-	  if (!pm2.ProhibitedMove(this->current_state, mv, mv_cost))
-	    {
-	      best_move = mv;
-	      best_delta = mv_cost;
-	      all_moves_tabu = false;
-	    }
-	  if (all_moves_tabu)
-	    {
-	      best_move = mv;
-	      best_delta = mv_cost;
-	    }
-	}
-      else if (all_moves_tabu && !pm2.ProhibitedMove(this->current_state, mv, mv_cost))
-	{ // even though it is not an improving move,
-	  // this move is the actual best since it's the first non-tabu
-	  best_move = mv;
-	  best_delta = mv_cost;
-	  all_moves_tabu = false;
-	}
-      not_last_move = this->ne2.NextMove(this->current_state, mv);
-      mv_cost = this->ne2.DeltaCostFunction(this->current_state, mv);
-    }
-  while (not_last_move);
-	
-  this->current_move2 = best_move;
-  this->current_move_cost2 = best_delta;
 }
 
 /**

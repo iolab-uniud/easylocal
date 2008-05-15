@@ -95,12 +95,11 @@ public:
 		bool finished = false;
 		do 
 		{
-			CPPUNIT_ASSERT_NO_THROW_MESSAGE(stringify("Next move raises an exception", __FILE__, __LINE__), ne->NextMove(*st, mv));
+			CPPUNIT_ASSERT_NO_THROW_MESSAGE(stringify("Next move raises an exception", __FILE__, __LINE__), finished = ne->NextMove(*st, mv));
 			CPPUNIT_ASSERT_NO_THROW_MESSAGE(stringify("State copy raises an exception", __FILE__, __LINE__), *st1 = *st);
 			CPPUNIT_ASSERT_NO_THROW_MESSAGE(stringify("Make move raises an exception", __FILE__, __LINE__), ne->MakeMove(*st1, mv));
 			CPPUNIT_ASSERT_EQUAL_MESSAGE(stringify("Cost computed through delta cost component does not correspond to the actual state cost", __FILE__, __LINE__),
 																	 dcc->DeltaCost(*st, mv), dcc->cc.Cost(*st1) - dcc->cc.Cost(*st));
-			CPPUNIT_ASSERT_NO_THROW_MESSAGE(stringify("Last move detection raises an exception", __FILE__, __LINE__), finished = ne->LastMoveDone(*st, mv));
 		}
 		while (!finished);
 		dcc->cc.is_hard = previous_cc_hard;

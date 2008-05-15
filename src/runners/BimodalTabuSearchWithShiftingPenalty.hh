@@ -20,8 +20,7 @@ public:
   { shift_region = sr; }
   void SetWeightRegion(double w) { shift_region = w; }
   void InitializeRun();
-  void SelectMove1();
-  void SelectMove2();
+  void SelectMove();
   void MakeMove();
   void StoreMove();
   // for the shifting penalty
@@ -92,105 +91,63 @@ void BimodalTabuSearchWithShiftingPenalty<Input,State,Move1,Move2,CFtype>::Initi
 }
 
 template <class Input, class State, class Move1, class Move2, typename CFtype>
-void BimodalTabuSearchWithShiftingPenalty<Input,State,Move1,Move2,CFtype>::SelectMove1()
+void BimodalTabuSearchWithShiftingPenalty<Input,State,Move1,Move2,CFtype>::SelectMove()
 {
   bool shifted = (this->number_of_iterations - this->iteration_of_best < shift_region * this->max_idle_iteration);
-  Move1 mv;
-  ShiftedResult<CFtype> mv_cost;
-  bool all_moves_tabu = true, not_last_move;
-	
-  this->ne1.FirstMove(this->current_state, mv);
-  mv_cost = this->ne1.DeltaShiftedCostFunction(this->current_state, mv);
   if (!shifted)
-    mv_cost.shifted_value = (double)mv_cost.actual_value;
-  Move1 best_move = mv;
-  ShiftedResult<CFtype> best_delta = mv_cost;
-
-  do  // look for the best non prohibited move
-    {   // (if all moves are prohibited, then get the best)
-      // For efficency, ProhibitedMove is invoked only when strictly necessary
-      if (LessThan(mv_cost.shifted_value,best_delta.shifted_value))
-	{
-	  if (!this->pm1.ProhibitedMove(this->current_state, mv, mv_cost.actual_value))
-	    {
-	      best_move = mv;
-	      best_delta = mv_cost;
-	      all_moves_tabu = false;
-	    }
-	  if (all_moves_tabu)
-	    {
-	      best_move = mv;
-	      best_delta = mv_cost;
-	    }
-	}
-      else if (all_moves_tabu && !this->pm1.ProhibitedMove(this->current_state, mv, mv_cost.actual_value))
-	{ // even though it is not an improving move,
-	  // this move is the actual best since it's the first non-tabu
-	  best_move = mv;
-	  best_delta = mv_cost;
-	  all_moves_tabu = false;
-	}
-      not_last_move = this->ne1.NextMove(this->current_state, mv);
-      mv_cost = this->ne1.DeltaShiftedCostFunction(this->current_state, mv);
-      if (!shifted)
-	mv_cost.shifted_value = (double)mv_cost.actual_value;
+  {
+    BimodalTabuSearch::SelectMove();
+    return;
+  }
+  Move1 shifted_best_mv1, actual_best_mv1;
+  std::pair<ShiftedResult<CFtype>, ShiftedResult<CFtype> > moves_cost1 = this->ne1.BestShiftedMove(this->current_state, shifted_best_mv1, actual_best_mv1, &this->pm1);
+  
+  Move2 shifted_best_mv2, actual_best_mv2;
+  std::pair<ShiftedResult<CFtype>, ShiftedResult<CFtype> > moves_cost2 = this->ne2.BestShiftedMove(this->current_state, shifted_best_mv2, actual_best_mv2, &this->pm2);
+    
+  // this is a sort of "Aspiration" for the case one (or both) of the actual_best_move improve over the current best
+  if (LessThan(this->current_state_cost + moves_cost1.second.actual_value, this->best_state_cost))
+  {
+    this->current_move1 = actual_best_mv1;
+    this->current_move_cost1 = moves_cost1.second.actual_value;
+    if (LessThan(moves_cost1.second.actual_value, moves_cost2.second.actual_value))
+      this->current_move_type = MOVE_1;
+    else if (EqualTo(moves_cost1.second.actual_value, moves_cost2.second.actual_value))
+    {
+      this->current_move2 = actual_best_mv2;
+      this->current_move_cost2 = moves_cost2.second.actual_value;
+      this->current_move_type = Random::Int(0,1) == 0 ? MOVE_1 : MOVE_2;
     }
-  while (not_last_move);
-	
-  this->current_move1 = best_move;
-  // in all cases the cost should not be the shifted one
-  this->current_move_cost1 = this->ne1.DeltaCostFunction(this->current_state, best_move);
+    return;
+  }
+  if (LessThan(this->current_state_cost + moves_cost2.second.actual_value, this->best_state_cost))
+  {
+    this->current_move2 = actual_best_mv2;
+    this->current_move_cost2 = moves_cost2.second.actual_value;
+    if (LessThan(moves_cost2.second.actual_value, moves_cost1.second.actual_value))
+      this->current_move_type = MOVE_2;
+    else if (EqualTo(moves_cost2.second.actual_value, moves_cost1.second.actual_value))
+    {
+      this->current_move1 = actual_best_mv1;
+      this->current_move_cost1 = moves_cost1.second.actual_value;
+      this->current_move_type = Random::Int(0,1) == 0 ? MOVE_1 : MOVE_2;
+    }
+    return;
+  }
+  
+  this->current_move1 = shifted_best_mv1;
+  this->current_move_cost1 = moves_cost1.first.actual_value;
+  this->current_move2 = shifted_best_mv2;
+  this->current_move_cost2 = moves_cost2.first.actual_value;
+    
+  if (LessThan(this->current_move_cost1, this->current_move_cost2))
+    this->current_move_type = MOVE_1;
+  else if (LessThan(this->current_move_cost2, this->current_move_cost1))
+    this->current_move_type = MOVE_2;
+  else
+    this->current_move_type = Random::Int(0,1) == 0 ? MOVE_1 : MOVE_2;
 }
 
-template <class Input, class State, class Move1, class Move2, typename CFtype>
-void BimodalTabuSearchWithShiftingPenalty<Input,State,Move1,Move2,CFtype>::SelectMove2()
-{
-  bool shifted = (this->number_of_iterations - this->iteration_of_best < shift_region * this->max_idle_iteration);
-  Move2 mv;
-  ShiftedResult<CFtype> mv_cost;
-  bool all_moves_tabu = true, not_last_move;
-	
-  this->ne2.FirstMove(this->current_state, mv);
-  mv_cost = this->ne2.DeltaShiftedCostFunction(this->current_state, mv);
-  if (!shifted)
-    mv_cost.shifted_value = (double)mv_cost.actual_value;
-  Move2 best_move = mv;
-  ShiftedResult<CFtype> best_delta = mv_cost;
-  do  // look for the best non prohibited move
-    {   // (if all moves are prohibited, then get the best)
-      // For efficency, ProhibitedMove is invoked only when strictly necessary
-      if (LessThan(mv_cost.shifted_value,best_delta.shifted_value))
-	{
-	  if (!this->pm2.ProhibitedMove(this->current_state, mv, mv_cost.actual_value))
-	    {
-	      best_move = mv;
-	      best_delta = mv_cost;
-	      all_moves_tabu = false;
-	    }
-	  if (all_moves_tabu)
-	    {
-	      best_move = mv;
-	      best_delta = mv_cost;
-	    }
-	}
-      else if (all_moves_tabu && !this->pm2.ProhibitedMove(this->current_state, mv, mv_cost.actual_value))
-	{ // even though it is not an improving move,
-	  // this move is the actual best since it's the first non-tabu
-	  best_move = mv;
-	  best_delta = mv_cost;
-	  all_moves_tabu = false;
-	}
-      not_last_move = this->ne2.NextMove(this->current_state, mv);
-      mv_cost = this->ne2.DeltaShiftedCostFunction(this->current_state, mv);
-      if (!shifted)
-	mv_cost.shifted_value = (double)mv_cost.actual_value;
-    }
-  while (not_last_move);
-	
-  this->current_move2 = best_move;
-  // in all cases the cost should not be the shifted one
-  this->current_move_cost2 = this->ne2.DeltaCostFunction(this->current_state, best_move);
-}
 
 template <class Input, class State, class Move1, class Move2, typename CFtype>
 void BimodalTabuSearchWithShiftingPenalty<Input,State,Move1,Move2,CFtype>::MakeMove()
