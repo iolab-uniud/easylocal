@@ -290,8 +290,7 @@ void SimpleKicker<Input,State,Move,CFtype>::FirstKick(const State &st)
 	    backtrack = false;
 	  else
 	    {
-	      backtrack = true;
-	      i--;
+	      i--; // backtrack remains true
 	      continue;	      
 	    }
 	}
@@ -300,16 +299,14 @@ void SimpleKicker<Input,State,Move,CFtype>::FirstKick(const State &st)
 	  this->states[i+1] = this->states[i];
 	  ne.MakeMove(this->states[i+1],current_moves[i]);
 	  i++;
-	  if (FirstKickComponent(i))
-	    {
-	      backtrack = false;	      
-	    }
-	  else
+	  if (!FirstKickComponent(i))
 	    {
 	      backtrack = true;
 	      i--;
 	      continue;
 	    }
+	  // else proceed: backtrack remains false
+
 	}
       backtrack = UnrelatedMoves(i);
     }
@@ -330,27 +327,27 @@ bool SimpleKicker<Input,State,Move,CFtype>::NextKick()
 	  return true;
 	}
       if (backtrack)
-	do
+	{
 	  if (NextKickComponent(i))
 	    backtrack = false;
 	  else
-	    i--;
-	while (backtrack && i >= 0);
+	    {
+	      i--; // backtrack remains true
+	      continue;	      
+	    }
+	}
       else
 	{
 	  this->states[i+1] = this->states[i];
 	  ne.MakeMove(this->states[i+1],current_moves[i]);
 	  i++;
-	  if (FirstKickComponent(i))
-	    {
-	      backtrack = false;	      
-	    }
-	  else
+	  if (!FirstKickComponent(i))
 	    {
 	      backtrack = true;
 	      i--;
 	      continue;
 	    }
+	  // else proceed: backtrack remains false
 	}
       backtrack = UnrelatedMoves(i);
     }
