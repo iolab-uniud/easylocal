@@ -96,28 +96,35 @@ void BimodalTabuSearchWithShiftingPenalty<Input,State,Move1,Move2,CFtype>::Selec
   bool shifted = (this->number_of_iterations - this->iteration_of_best < shift_region * this->max_idle_iteration);
   if (!shifted)
   {
-    BimodalTabuSearch::SelectMove();
+    BimodalTabuSearch<Input,State,Move1,Move2,CFtype>::SelectMove();
     return;
   }
   Move1 shifted_best_mv1, actual_best_mv1;
-  std::pair<ShiftedResult<CFtype>, ShiftedResult<CFtype> > moves_cost1 = this->ne1.BestShiftedMove(this->current_state, shifted_best_mv1, actual_best_mv1, &this->pm1);
+  std::pair<ShiftedResult<CFtype>, ShiftedResult<CFtype> > moves_cost1 = 
+    this->ne1.BestShiftedMove(this->current_state, shifted_best_mv1, actual_best_mv1, &this->pm1);
   
   Move2 shifted_best_mv2, actual_best_mv2;
-  std::pair<ShiftedResult<CFtype>, ShiftedResult<CFtype> > moves_cost2 = this->ne2.BestShiftedMove(this->current_state, shifted_best_mv2, actual_best_mv2, &this->pm2);
-    
+  std::pair<ShiftedResult<CFtype>, ShiftedResult<CFtype> > moves_cost2 = 
+    this->ne2.BestShiftedMove(this->current_state, shifted_best_mv2, actual_best_mv2, &this->pm2);
+  
   // this is a sort of "Aspiration" for the case one (or both) of the actual_best_move improve over the current best
   if (LessThan(this->current_state_cost + moves_cost1.second.actual_value, this->best_state_cost))
   {
     this->current_move1 = actual_best_mv1;
     this->current_move_cost1 = moves_cost1.second.actual_value;
     if (LessThan(moves_cost1.second.actual_value, moves_cost2.second.actual_value))
-      this->current_move_type = MOVE_1;
-    else if (EqualTo(moves_cost1.second.actual_value, moves_cost2.second.actual_value))
-    {
-      this->current_move2 = actual_best_mv2;
-      this->current_move_cost2 = moves_cost2.second.actual_value;
-      this->current_move_type = Random::Int(0,1) == 0 ? MOVE_1 : MOVE_2;
-    }
+      {
+	this->current_move_type = MOVE_1;
+      }
+    else 
+      {
+	this->current_move2 = actual_best_mv2;
+	this->current_move_cost2 = moves_cost2.second.actual_value;
+	if (LessThan(moves_cost2.second.actual_value, moves_cost1.second.actual_value))
+	  this->current_move_type = MOVE_2;
+	else if (EqualTo(moves_cost1.second.actual_value, moves_cost2.second.actual_value))
+	  this->current_move_type = Random::Int(0,1) == 0 ? MOVE_1 : MOVE_2;
+      }
     return;
   }
   if (LessThan(this->current_state_cost + moves_cost2.second.actual_value, this->best_state_cost))
@@ -126,12 +133,6 @@ void BimodalTabuSearchWithShiftingPenalty<Input,State,Move1,Move2,CFtype>::Selec
     this->current_move_cost2 = moves_cost2.second.actual_value;
     if (LessThan(moves_cost2.second.actual_value, moves_cost1.second.actual_value))
       this->current_move_type = MOVE_2;
-    else if (EqualTo(moves_cost2.second.actual_value, moves_cost1.second.actual_value))
-    {
-      this->current_move1 = actual_best_mv1;
-      this->current_move_cost1 = moves_cost1.second.actual_value;
-      this->current_move_type = Random::Int(0,1) == 0 ? MOVE_1 : MOVE_2;
-    }
     return;
   }
   

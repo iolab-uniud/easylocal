@@ -324,7 +324,8 @@ CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::BestMove(const State &st, 
       number_of_bests++;
     } 
     not_last_move = NextMove(st, mv);
-    mv_cost = DeltaCostFunction(st, mv);
+    if (not_last_move)
+      mv_cost = DeltaCostFunction(st, mv);
   }
   while (not_last_move);
   
@@ -386,7 +387,8 @@ std::pair<ShiftedResult<CFtype>, ShiftedResult<CFtype> > NeighborhoodExplorer<In
       best_actual_delta = mv_cost;
     }    
     not_last_move = NextMove(st, mv);
-    mv_cost = DeltaShiftedCostFunction(st, mv);
+    if (not_last_move)
+      mv_cost = DeltaShiftedCostFunction(st, mv);
   }
   while (not_last_move);
   
@@ -399,7 +401,7 @@ std::pair<ShiftedResult<CFtype>, ShiftedResult<CFtype> > NeighborhoodExplorer<In
 template <class Input, class State, class Move, typename CFtype>
 CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::FirstImprovingMove(const State &st, Move& mv, ProhibitionManager<State,Move,CFtype>* pm) const throw (EmptyNeighborhood)
 {
-  unsigned int number_of_bests;
+  unsigned int number_of_bests = 0;
   FirstMove(st, mv);
   CFtype mv_cost = DeltaCostFunction(st, mv);
   Move best_move = mv;
@@ -444,7 +446,8 @@ CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::FirstImprovingMove(const S
       number_of_bests++;
     }         
     not_last_move = NextMove(st, mv);
-    mv_cost = DeltaCostFunction(st, mv);
+    if (not_last_move)
+      mv_cost = DeltaCostFunction(st, mv);
   }
   while (not_last_move);
   
@@ -457,7 +460,7 @@ CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::FirstImprovingMove(const S
 template <class Input, class State, class Move, typename CFtype>
 CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::SampleMove(const State &st, Move& mv, unsigned int samples, ProhibitionManager<State,Move,CFtype>* pm) const throw (EmptyNeighborhood)
 {
-  unsigned int number_of_bests;
+  unsigned int number_of_bests = 0;
   unsigned int s = 1;
   CFtype mv_cost;
   bool all_moves_prohibited = true;
