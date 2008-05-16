@@ -2,7 +2,7 @@
 
 AC_PREREQ(2.59)
 
-AC_INIT([libEasyLocalpp], [0.9], [l.digaspero@uniud.it])
+AC_INIT([libEasyLocal++], [2.0], [l.digaspero@uniud.it])
 AC_CONFIG_AUX_DIR(config)
 AC_CONFIG_SRCDIR([src])
 AC_CONFIG_HEADER([src/config.hh])
@@ -16,14 +16,16 @@ case "${target_os}" in
   ;;
 esac
 
+# Search for the EasyLocal source dir (when the build happens in a separate
+# directory).
 curdir=`pwd`
 while test "$curdir" != "/"; do
-	if test -e "$curdir/src/EasyLocal.hh"; then
-	  break
-	fi
+  if test -e "$curdir/src/EasyLocal.hh"; then
+    break
+  fi
   curdir=`dirname $curdir`
 done
-AC_MSG_RESULT([Found EasyLocalpp source directory at $curdir])
+AC_MSG_RESULT([Found EasyLocal++ source directory at $curdir])
 EASYLOCALPP=$curdir
 EASYLOCALPP_BUILD=`pwd`
 AC_PREFIX_DEFAULT([`pwd`])
@@ -123,7 +125,7 @@ DX_RTF_FEATURE(OFF)
 DX_XML_FEATURE(OFF)
 DX_PDF_FEATURE(OFF)
 DX_PS_FEATURE(OFF)
-DX_INIT_DOXYGEN([EasyLocalpp], [doxygen.cfg])
+DX_INIT_DOXYGEN([EasyLocal++], [doxygen.cfg])
 
 AH_TOP([
 #if !defined(CONFIG_INCLUDED)
