@@ -160,7 +160,6 @@ bool AbstractLocalSearch<Input,Output,State,CFtype>::LetGo(Runner<Input,State,CF
     {
       this->termination_request = false;
       pthread_t runner_thread = runner.GoThread(this->runner_termination, this->termination_request);
-      this->termination_request = true;
       pthread_join(runner_thread, NULL);
       return false;
     }

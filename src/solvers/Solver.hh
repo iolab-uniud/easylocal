@@ -51,7 +51,7 @@ Solver<Input, Output>::Solver(const Input& i, std::string e_name)
 #ifdef HAVE_PTHREAD
   this->timeout = 0.0; 
   this->current_timeout = 0.0;
-	this->timeout_set = false;
+  this->timeout_set = false;
 #endif
 }
 
@@ -59,14 +59,14 @@ template <class Input, class Output>
 void Solver<Input, Output>::SetTimeout(double to)
 {
 #ifdef HAVE_PTHREAD
-	if (to > 0.0)
-	{
-		this->timeout = to;
-		this->current_timeout = to;
-		this->timeout_set = true;
-	}
-	else
-		this->timeout_set = false;
+  if (to > 0.0)
+    {
+      this->timeout = to;
+      this->current_timeout = to;
+      this->timeout_set = true;
+    }
+  else
+    this->timeout_set = false;
 #endif
 }
 
