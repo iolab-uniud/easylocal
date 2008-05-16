@@ -99,7 +99,7 @@ double ConditionVariable::WaitTimeout(double timeout)
       ts_end.tv_nsec = tv_now.tv_usec * NANOSEC_PER_MICROSEC;
 #endif
       ts_end.tv_sec += (time_t)floor(time_left);
-      ts_end.tv_nsec += (time_t)(timeout - floor(time_left)) * NANOSEC_PER_SEC;
+      ts_end.tv_nsec += (time_t)(time_left - floor(time_left)) * NANOSEC_PER_SEC;
       if (ts_end.tv_nsec > NANOSEC_PER_SEC)
 	{
 	  ts_end.tv_sec += 1;
@@ -115,7 +115,7 @@ double ConditionVariable::WaitTimeout(double timeout)
 	case EINVAL:
 	  {
 	    std::ostringstream oss;
-	    oss << "Invalid timeout " << timeout << " (" << ts_end.tv_sec << ":" << ts_end.tv_nsec << ")" << " or invalid mutex";
+	    oss << "Invalid timeout " << time_left << " (" << ts_end.tv_sec << ":" << ts_end.tv_nsec << ")" << " or invalid mutex";
 	    throw std::logic_error(oss.str());
 	    break;
 	  }				
