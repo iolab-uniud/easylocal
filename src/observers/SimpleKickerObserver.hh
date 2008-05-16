@@ -90,6 +90,9 @@ void SimpleKickerObserver<Input,State,Move,CFtype>::NotifyStopKicking(SimpleKick
       << "Improving kicks : " << improving_kicks << " (" << improving_kicks*100.0/total_kicks << "%)" << std::endl
       << "Sideways kicks : " << sideways_kicks << " (" << sideways_kicks*100.0/total_kicks << "%)" << std::endl
       << "End kicking" << std::endl;
+  total_kicks = 0;
+  improving_kicks = 0;
+  sideways_kicks = 0;
 }
 
 

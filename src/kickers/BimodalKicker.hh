@@ -86,10 +86,9 @@ BimodalKicker<Input,State,Move1,Move2,CFtype>::BimodalKicker(const Input& i,
 							     unsigned int s,
 							     std::string name)
   : Kicker<Input,State,CFtype>(i,s,name), nhe1(nhe1), nhe2(nhe2),
-    current_moves1(s), internal_best_moves1(s), //, start_moves1(s),
-  current_moves2(s), internal_best_moves2(s), pattern(s) //, start_moves2(s)
+    current_moves1(s), internal_best_moves1(s), 
+  current_moves2(s), internal_best_moves2(s), pattern(s) 
 {
-//   this->kicker_type = BIMODAL;
   for (unsigned int i = 0; i < s; i++)
     {
       if ((i % 2) == 0)
@@ -163,14 +162,11 @@ void BimodalKicker<Input,State,Move1,Move2,CFtype>::Print(std::ostream& os) cons
 template <class Input, class State, class Move1, class Move2, typename CFtype>
 void BimodalKicker<Input,State,Move1,Move2,CFtype>::SetStep(unsigned int s)
 {
-  this->step = s;
-  this->states.resize(s+1,State(this->in));
+  Kicker<Input,State,CFtype>::SetStep(s);
   current_moves1.resize(s);
   internal_best_moves1.resize(s);
-//   start_moves1.resize(s);
   current_moves2.resize(s);
   internal_best_moves2.resize(s);
-//   start_moves2.resize(s);
   pattern.resize(s);
   best_pattern.resize(s);
   for (unsigned int i = 0; i < s; i++)
@@ -188,12 +184,10 @@ void BimodalKicker<Input,State,Move1,Move2,CFtype>::FirstKickComponent(unsigned 
   if (pattern[i] == MOVE_1)
     {
       nhe1.FirstMove(this->states[i], current_moves1[i]);
-//       start_moves1[i] = current_moves1[i];
     }
   else // pattern[i] == MOVE_2
     {
       nhe2.FirstMove(this->states[i], current_moves2[i]);
-//       start_moves2[i] = current_moves2[i];
     }
 }
 
@@ -203,12 +197,10 @@ bool BimodalKicker<Input,State,Move1,Move2,CFtype>::NextKickComponent(unsigned i
   if (pattern[i] == MOVE_1)
     {
       return nhe1.NextMove(this->states[i], current_moves1[i]);
-//       return !(current_moves1[i] == start_moves1[i]);
     }
   else // pattern[i] == MOVE_2
     {
       return nhe2.NextMove(this->states[i], current_moves2[i]);
-//       return !(current_moves2[i] == start_moves2[i]);
     }
 }
 

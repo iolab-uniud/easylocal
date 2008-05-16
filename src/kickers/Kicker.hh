@@ -42,8 +42,6 @@ public:
 
   void PrintStatistics(std::ostream& os = std::cout) const;
 
-  virtual void SetMaxStep(unsigned int s);
-  unsigned int MaxStep() const { return max_step; }
   virtual void PrintPattern(std::ostream& os = std::cout) {}
   virtual void SetStep(unsigned int s);
   unsigned int Step() const { return step; }
@@ -55,7 +53,7 @@ protected:
 //   virtual CFtype ComputeKickCost(const State& st) = 0;
   const Input& in;
   std::vector<State> states; // for overcoming the need of () constructor
-  unsigned int max_step, step;
+  unsigned int step;
   KickTypes current_kick_type;
 };
 
@@ -65,95 +63,21 @@ protected:
 
 template <class Input, class State, typename CFtype>
 Kicker<Input,State,CFtype>::Kicker(const Input& i, unsigned int s, std::string e_name)
-  : name(e_name), in(i), states(0, State(in)), max_step(s), step(s), current_kick_type(BEST_KICK)
+  : name(e_name), in(i), states(0, State(in)), step(s), current_kick_type(BEST_KICK)
 {
   states.resize(s + 1, State(in));
 }
 
 template <class Input, class State, typename CFtype>
-void Kicker<Input,State,CFtype>::SetMaxStep(unsigned int s)
-{
-    max_step = s;
-    states.resize(s + 1, State(in));
-}
-
-template <class Input, class State, typename CFtype>
 void Kicker<Input,State,CFtype>::SetStep(unsigned int s)
 {
-	step = s;
-  if (s > max_step)
-		SetMaxStep(s);
-}
+  step = s;
+  states.resize(s + 1, State(in));
+ }
 
 template <class Input, class State, typename CFtype>
 void Kicker<Input,State,CFtype>::SetKickType(const KickTypes& kt)
 { current_kick_type = kt; }
-
-// template <class Input, class State, typename CFtype>
-// void Kicker<Input,State,CFtype>::SelectKick(const State& st)
-// {
-//     switch (current_kick_type)
-//     {
-//     case RANDOM_KICK:
-//         RandomKick(st);
-//         break;
-//     case BEST_KICK:
-//         BestKick(st);
-//         break;
-//     case TOTAL_BEST_KICK:
-//         TotalBestKick(st);
-//         break;
-//     case FIRST_IMPROVING_KICK:
-//         FirstImprovingKick(st);
-//         break;
-//     case TOTAL_FIRST_IMPROVING_KICK:
-//         TotalFirstImprovingKick(st);
-//         break;
-//     }
-// }
-
-
-// template <class Input, class State, typename CFtype>
-// CFtype Kicker<Input,State,CFtype>::MakeBestKick(State &st)
-// {
-//     BestKick(st);
-//     return MakeKick(st);
-// }
-
-// template <class Input, class State, typename CFtype>
-// CFtype Kicker<Input,State,CFtype>::MakeFirstImprovingKick(State &st)
-// {
-//     FirstImprovingKick(st);
-//     return MakeKick(st);
-// }
-
-// template <class Input, class State, typename CFtype>
-// CFtype Kicker<Input,State,CFtype>::MakeTotalFirstImprovingKick(State &st)
-// {
-//     TotalFirstImprovingKick(st);
-//     return MakeKick(st);
-// }
-
-// template <class Input, class State, typename CFtype>
-// CFtype Kicker<Input,State,CFtype>::MakeDenseBestKick(State &st)
-// {
-//     DenseBestKick(st);
-//     return MakeKick(st);
-// }
-
-// template <class Input, class State, typename CFtype>
-// CFtype Kicker<Input,State,CFtype>::MakeTotalBestKick(State &st)
-// {
-//     TotalBestKick(st);
-//     return MakeKick(st);
-// }
-
-// template <class Input, class State, typename CFtype>
-// CFtype Kicker<Input,State,CFtype>::MakeRandomKick(State &st)
-// {
-//     RandomKick(st);
-//     return MakeKick(st);
-// }
 
 template <class Input, class State, typename CFtype>
 void Kicker<Input,State,CFtype>::PrintStatistics(std::ostream &os) const
@@ -166,9 +90,9 @@ void Kicker<Input,State,CFtype>::ReadParameters(std::istream& is, std::ostream& 
 {
     unsigned s;
     os << "KICKER -- INPUT PARAMETERS" << std::endl;
-    os << "  Max Step: ";
+    os << "  Step: ";
     is >> s;
-    SetMaxStep(s);
+    SetStep(s);
 }
 
 

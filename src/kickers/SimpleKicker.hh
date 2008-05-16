@@ -33,16 +33,15 @@ public:
   void MakeKick(State &st);
   virtual CFtype KickCost();
   virtual void PrintKick(std::ostream& os = std::cout) const;
-  void SetMaxStep(unsigned int s);
+  void SetStep(unsigned int s);
 protected:
   void FirstKick(const State &st);
   bool NextKick();
   Move GetKickComponent(unsigned int i) const;
   void SetKickComponent(unsigned int i, const Move& mv);
-  //  virtual CFtype ComputeKickCost(const State &st);
   virtual bool RelatedMoves(const Move&, const Move&) const = 0;
   NeighborhoodExplorer<Input,State,Move,CFtype>& ne;
-  std::vector<Move> current_moves, internal_best_moves; //, start_moves;
+  std::vector<Move> current_moves, internal_best_moves; 
   CFtype current_kick_cost, best_kick_cost;
   bool FirstKickComponent(unsigned int i);  // used by the backtracking algorithm of bestkick
   bool NextKickComponent(unsigned int i);   // (idem)
@@ -59,7 +58,7 @@ template <class Input, class State, class Move, typename CFtype>
 SimpleKicker<Input,State,Move,CFtype>::SimpleKicker(const Input& in,
 						    NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
 						    unsigned int s, std::string name)
-  : Kicker<Input,State,CFtype>(in, s, name), ne(e_ne), current_moves(s), internal_best_moves(s) //, start_moves(s)
+  : Kicker<Input,State,CFtype>(in, s, name), ne(e_ne), current_moves(s), internal_best_moves(s)
 {  
   observer = NULL;
 }
@@ -117,12 +116,11 @@ void SimpleKicker<Input,State,Move,CFtype>::Print(std::ostream& os) const
 }
 
 template <class Input, class State, class Move, typename CFtype>
-void SimpleKicker<Input,State,Move,CFtype>::SetMaxStep(unsigned int s)
+void SimpleKicker<Input,State,Move,CFtype>::SetStep(unsigned int s)
 {
-  Kicker<Input,State,CFtype>::SetMaxStep(s);
+  Kicker<Input,State,CFtype>::SetStep(s);
   current_moves.resize(s);
   internal_best_moves.resize(s);
-//   start_moves.resize(s);
 }
 
 template <class Input, class State, class Move, typename CFtype>
@@ -135,7 +133,6 @@ bool SimpleKicker<Input,State,Move,CFtype>::FirstKickComponent(unsigned int i)
     }
   else
     return ne.FirstRelatedMove(this->states[i], current_moves[i], current_moves[i-1]);
-  //  start_moves[i] = current_moves[i];
 }
 
 template <class Input, class State, class Move, typename CFtype>
@@ -145,7 +142,6 @@ bool SimpleKicker<Input,State,Move,CFtype>::NextKickComponent(unsigned int i)
     return ne.NextMove(this->states[i], current_moves[i]);
   else
     return ne.NextRelatedMove(this->states[i], current_moves[i], current_moves[i-1]);
-  //  return current_moves[i] != start_moves[i];
 }
 
 template <class Input, class State, class Move, typename CFtype>

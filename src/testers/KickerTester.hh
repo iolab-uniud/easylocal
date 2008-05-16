@@ -133,22 +133,34 @@ void KickerTester<Input,Output,State,CFtype>::ShowMenu()
 template <class Input, class Output, class State, typename CFtype>
 bool KickerTester<Input,Output,State,CFtype>::ExecuteChoice(State& st)
 {
+  bool execute_kick = false;
   switch(choice)
     {
     case 1:
       kicker.RandomKick(st);
+      execute_kick = true;
       break;
     case 2:
       kicker.BestKick(st);
+      execute_kick = true;
       break;
     case 3:
       kicker.FirstImprovingKick(st);
+      execute_kick = true;
       break;
     case 4:
-      kicker.TotalBestKick(st);
+      if (!kicker.SingleKicker())
+	{
+	  kicker.TotalBestKick(st);
+	  execute_kick = true;
+	}
       break;
     case 5:
-      kicker.TotalFirstImprovingKick(st);
+      if (!kicker.SingleKicker())
+	{
+	  kicker.TotalFirstImprovingKick(st);
+	  execute_kick = true;
+	}
       break;
     case 6:
       PrintKicks(st,false);
@@ -162,13 +174,9 @@ bool KickerTester<Input,Output,State,CFtype>::ExecuteChoice(State& st)
     default:
       os << "Invalid choice" << std::endl;
     }
-  if (choice >= 1 && choice <= 5)
-    {
-      kicker.MakeKick(st);
-      return true;
-    }
-  else
-    return false;
+  if (execute_kick)
+    kicker.MakeKick(st);
+  return  execute_kick;
 }
 
 template <class Input, class Output, class State, typename CFtype>
