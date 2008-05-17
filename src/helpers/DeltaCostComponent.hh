@@ -1,4 +1,4 @@
-#ifndef _DELTA_COST_COMPONENT_HH_
+#if !defined(_DELTA_COST_COMPONENT_HH_)
 #define _DELTA_COST_COMPONENT_HH_
 
 #include <helpers/CostComponent.hh>

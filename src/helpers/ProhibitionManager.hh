@@ -1,4 +1,4 @@
-#ifndef PROHIBITIONMANAGER_HH_
+#if !defined(PROHIBITIONMANAGER_HH_)
 #define PROHIBITIONMANAGER_HH_
 
 /** The Prohibition Manager deals with move prohibition mechanisms

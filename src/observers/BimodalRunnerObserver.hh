@@ -1,7 +1,7 @@
-#ifndef _BIMODAL_RUNNER_OBSERVER_HH_
+#if !defined(_BIMODAL_RUNNER_OBSERVER_HH_)
 #define _BIMODAL_RUNNER_OBSERVER_HH_
 
-#ifndef MOVE_ENUM
+#if !defined(MOVE_ENUM)
 typedef enum {
   MOVE_1 = 1,
   MOVE_2

@@ -1,4 +1,4 @@
-#ifndef _BIMODAL_HILL_CLIMBING_HH_
+#if !defined(_BIMODAL_HILL_CLIMBING_HH_)
 #define _BIMODAL_HILL_CLIMBING_HH_
 
 #include <runners/BimodalMoveRunner.hh>

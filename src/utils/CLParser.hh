@@ -1,6 +1,6 @@
 /* A command line parser class */
 
-#ifndef _CLPARSER_HH
+#if !defined(_CLPARSER_HH)
 #define _CLPARSER_HH
 
 #include <vector>
@@ -33,6 +33,9 @@ protected:
   bool required;
 };
 
+class ArgumentNotFound : public std::logic_error 
+{};
+
 class ArgumentGroup : public Argument
 {
   friend class CLParser;
@@ -48,12 +51,10 @@ public:
 protected:
   typedef std::list<Argument*> arg_list;
   ArgumentGroup(arg_list& al);
-  Argument& FindArgument(const std::string&) const throw (std::logic_error);
+  Argument& FindArgument(const std::string&) const;
   arg_list arguments;
   unsigned int num_of_values;
 };
-
-
 
 template <typename T, unsigned int N = 1>
 class ValArgument : public Argument
@@ -153,14 +154,12 @@ public:
   virtual ~CLParser();
 protected:
   typedef std::list<Argument*> arg_list;
-  void Parse() throw (std::logic_error);
+  void Parse();
   std::string command_name;
   std::vector<std::string> command_line_arguments;
   arg_list arguments;
 };
 
 std::ostream& operator<<(std::ostream& os, const CLParser& cl);
-
-//extern CLParser nullCL;
 
 #endif

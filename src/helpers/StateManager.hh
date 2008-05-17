@@ -1,4 +1,4 @@
-#ifndef _STATE_MANAGER_HH_
+#if !defined(_STATE_MANAGER_HH_)
 #define _STATE_MANAGER_HH_
 
 #include <iostream>
@@ -16,7 +16,7 @@ waiting for an idea of a general mechanism for managing cost function
 weights.
 */
 
-#ifndef HARD_WEIGHT_SET
+#if !defined(HARD_WEIGHT_SET)
 const int HARD_WEIGHT = 1000;
 #endif
 

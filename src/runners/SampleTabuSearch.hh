@@ -1,4 +1,4 @@
-#ifndef SAMPLETABUSEARCH_HH_
+#if !defined(SAMPLETABUSEARCH_HH_)
 #define SAMPLETABUSEARCH_HH_
 
 /** The Sample Tabu Search runner explores a subset of the current

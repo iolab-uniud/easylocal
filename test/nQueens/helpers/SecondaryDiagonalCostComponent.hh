@@ -1,5 +1,5 @@
-#ifndef SECONDARYDIAGONALCOSTCOMPONENT_HH_
-#define SECONDARYDIAGONALCOSTCOMPONENT_HH_
+#if !defined(_SECONDARYDIAGONALCOSTCOMPONENT_HH_)
+#define _SECONDARYDIAGONALCOSTCOMPONENT_HH_
 
 #include <helpers/CostComponent.hh>
 #include <vector>
@@ -14,4 +14,4 @@ class SecondaryDiagonalCostComponent : public CostComponent<int,std::vector<int>
     void PrintViolations(const std::vector<int>& st, std::ostream& os = std::cout) const;
   };
 
-#endif /*SECONDARYDIAGONALCOSTCOMPONENT_HH_*/
+#endif /*_SECONDARYDIAGONALCOSTCOMPONENT_HH_*/

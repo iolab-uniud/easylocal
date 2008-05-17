@@ -1,4 +1,4 @@
-#ifndef _SOLVERS_HH_
+#if !defined(_SOLVERS_HH_)
 #define _SOLVERS_HH_
 
 /** @defgroup Solvers Solvers

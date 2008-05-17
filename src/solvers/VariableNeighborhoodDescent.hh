@@ -1,4 +1,4 @@
-#ifndef VNDSOLVER_HH_
+#if !defined(VNDSOLVER_HH_)
 #define VNDSOLVER_HH_
 
 #include <solvers/AbstractLocalSearch.hh>
@@ -63,7 +63,7 @@ void VNDSolver<Input,Output,State,CFtype>::ReadParameters(std::istream& is, std:
   os << "Variable Neighborhood Descent Solver: " << this->name << " parameters" << std::endl;
   os << "Max k: ";
   is >> this->max_k;
-#ifdef HAVE_PTHREAD
+#if defined(HAVE_PTHREAD)
   os << "Timeout: ";
   is >> this->timeout;
   this->current_timeout = this->timeout;

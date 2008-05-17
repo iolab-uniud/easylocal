@@ -1,9 +1,9 @@
-#ifndef RUNNER_HH_
+#if !defined(RUNNER_HH_)
 #define RUNNER_HH_
 
 #include <EasyLocal.conf.hh>
 #include <helpers/StateManager.hh>
-#ifdef HAVE_PTHREAD
+#if defined(HAVE_PTHREAD)
 #include <utils/Synchronize.hh>
 #endif
 #include <stdexcept>
@@ -99,7 +99,7 @@ protected:
   unsigned long start_iteration;
   unsigned long max_iteration; /**< The maximum number of iterations
     allowed. */
-#ifdef HAVE_PTHREAD    
+#if defined(HAVE_PTHREAD)  
 protected:
   ConditionVariable* termination;
   RWLockVariable<bool>* external_termination_request;
@@ -130,7 +130,7 @@ protected:
 template <class Input, class State, typename CFtype>
 Runner<Input,State,CFtype>::Runner(const Input& i, StateManager<Input,State,CFtype>& e_sm, std::string e_name)
 : name(e_name), in(i), sm(e_sm), current_state(i), best_state(i), current_state_set(false), number_of_iterations(0), max_iteration(ULONG_MAX)
-#ifdef HAVE_PTHREAD
+#if defined(HAVE_PTHREAD)
 ,  termination(NULL), external_termination_request(NULL)
 #endif
 {}
@@ -333,7 +333,7 @@ bool Runner<Input,State,CFtype>::MaxIterationExpired() const
 template <class Input, class State, typename CFtype>
 bool Runner<Input,State,CFtype>::ExternalTerminationRequest() const
 {
-#ifdef HAVE_PTHREAD  
+#if defined(HAVE_PTHREAD)  
   if (external_termination_request)
     return *external_termination_request;
   else
@@ -373,7 +373,7 @@ bool Runner<Input,State,CFtype>::LowerBoundReached() const
   return sm.LowerBoundReached(current_state_cost);
 }
 
-#ifdef HAVE_PTHREAD
+#if defined(HAVE_PTHREAD)
 template <class Input, class State, typename CFtype>
 void* Runner<Input,State,CFtype>::_pthreads_Run(void* ep_this)
 {

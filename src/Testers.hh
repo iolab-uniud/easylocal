@@ -1,4 +1,4 @@
-#ifndef _TESTERS_HH_
+#if !defined(_TESTERS_HH_)
 #define _TESTERS_HH_
 
 /** @defgroup Testers Testers

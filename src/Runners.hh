@@ -26,7 +26,7 @@
  @ref Move "Move"s of two different types so they have two @ref Move templates. 
  */
 
-#ifndef _RUNNERS_HH_
+#if !defined(_RUNNERS_HH_)
 #define _RUNNERS_HH_
 
 #include <runners/SteepestDescent.hh>

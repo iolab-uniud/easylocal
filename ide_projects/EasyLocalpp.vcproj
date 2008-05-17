@@ -2,9 +2,9 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="8,00"
-	Name="EasyLocalpp"
+	Name="EasyLocal"
 	ProjectGUID="{D3EC27C5-0A0A-4788-9AC8-29340A750379}"
-	RootNamespace="EasyLocalpp"
+	RootNamespace="EasyLocal"
 	Keyword="Win32Proj"
 	>
 	<Platforms>
@@ -149,11 +149,19 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
+				RelativePath="..\src\solvers\AbstractLocalSearch.hh"
+				>
+			</File>
+			<File
 				RelativePath="..\src\solvers\AbstractLocalSearchSolver.hh"
 				>
 			</File>
 			<File
 				RelativePath="..\src\utils\Array.hh"
+				>
+			</File>
+			<File
+				RelativePath="..\src\runners\BimodalFirstDescent.hh"
 				>
 			</File>
 			<File
@@ -170,6 +178,10 @@
 			</File>
 			<File
 				RelativePath="..\src\observers\BimodalRunnerObserver.hh"
+				>
+			</File>
+			<File
+				RelativePath="..\src\runners\BimodalSimulatedAnnealing.hh"
 				>
 			</File>
 			<File
@@ -193,11 +205,19 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\testers\ComponentTester.hh"
+				>
+			</File>
+			<File
 				RelativePath="..\src\helpers\CostComponent.hh"
 				>
 			</File>
 			<File
 				RelativePath="..\src\helpers\DeltaCostComponent.hh"
+				>
+			</File>
+			<File
+				RelativePath="..\src\EasyLocal.conf.hh"
 				>
 			</File>
 			<File
@@ -221,7 +241,15 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\testers\KickerTester.hh"
+				>
+			</File>
+			<File
 				RelativePath="..\src\runners\MoveRunner.hh"
+				>
+			</File>
+			<File
+				RelativePath="..\src\testers\MoveTester.hh"
 				>
 			</File>
 			<File
@@ -265,6 +293,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\observers\SimpleKickerObserver.hh"
+				>
+			</File>
+			<File
 				RelativePath="..\src\solvers\SimpleLocalSearch.hh"
 				>
 			</File>
@@ -298,6 +330,10 @@
 			</File>
 			<File
 				RelativePath="..\src\runners\TabuSearchWithShiftingPenalty.hh"
+				>
+			</File>
+			<File
+				RelativePath="..\src\testers\Tester.hh"
 				>
 			</File>
 			<File
@@ -358,6 +394,10 @@
 			</File>
 			<File
 				RelativePath="..\src\utils\Random.cc"
+				>
+			</File>
+			<File
+				RelativePath="..\src\utils\Synchronize.cc"
 				>
 			</File>
 			<File

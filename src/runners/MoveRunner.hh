@@ -1,4 +1,4 @@
-#ifndef MOVERUNNER_HH_
+#if !defined(MOVERUNNER_HH_)
 #define MOVERUNNER_HH_
 
 #include <runners/Runner.hh>

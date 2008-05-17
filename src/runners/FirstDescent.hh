@@ -1,4 +1,4 @@
-#ifndef _FIRST_DESCENT_HH_
+#if !defined(_FIRST_DESCENT_HH_)
 #define _FIRST_DESCENT_HH_
 
 #include <runners/MoveRunner.hh>

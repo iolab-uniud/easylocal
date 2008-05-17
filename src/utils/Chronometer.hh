@@ -1,5 +1,5 @@
-#ifndef CHRONOMETER_HH_
-#define CHRONOMETER_HH_
+#if !defined(_CHRONOMETER_HH_)
+#define _CHRONOMETER_HH_
 
 #if defined(HAVE_CONFIG_H)
 #include <config.hh>
@@ -37,4 +37,4 @@ private:
 	TimeValue start, end; 
 };
 
-#endif /*CHRONOMETER_HH_*/
+#endif /*_CHRONOMETER_HH_*/

@@ -1,4 +1,4 @@
-#ifndef BIMODALTABUSEARCH_HH_
+#if !defined(BIMODALTABUSEARCH_HH_)
 #define BIMODALTABUSEARCH_HH_
 
 #include <runners/BimodalMoveRunner.hh>

@@ -1,4 +1,4 @@
-#ifndef KICKER_HH_
+#if !defined(KICKER_HH_)
 #define KICKER_HH_
 
 #include <exception>

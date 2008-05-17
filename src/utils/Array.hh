@@ -1,25 +1,8 @@
-/*
- *  CanonicalBaseVector.h
- *  CWM
- *
- *  Created by Luca Di Gaspero on 11/11/06.
- *  Copyright 2006 Luca Di Gaspero. All rights reserved.
- *
- */
-
-#ifndef _ARRAY_HH
+#if !defined(_ARRAY_HH)
 #define _ARRAY_HH
 
-/*
- *  Vector.hh
- *
- *  Created by Luca Di Gaspero on 10/11/06.
- *  Copyright 2006 Luca Di Gaspero. All rights reserved.
- *
- */
-
-#include <stdexcept>
 #include <set>
+#include <stdexcept>
 #include <iostream>
 #include <iomanip>
 #include <cmath>
@@ -842,15 +825,6 @@ inline Vector<double> rank(const Vector<T>& v)
 	
   return tmp_rank;
 }
-
-// #ifdef HAVE_CONFIG_H
-// #include <config.h>
-// #endif
-
-#include <set>
-#include <cmath>
-#include <iomanip>
-#include <stdexcept>
 
 enum MType { DIAG };
 

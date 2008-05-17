@@ -6,6 +6,9 @@
  *
  */
 
+// The multi-threading capabilities do not work under Visual C++ yet.
+// FIXME: they have to be fixed in a future release.
+#if !defined(_MSC_VER) 
 #if !defined(_SYNCHRONIZE_HH)
 #define _SYNCHRONIZE_HH
 
@@ -167,3 +170,5 @@ RWLockVariable<T>& RWLockVariable<T>::operator=(const RWLockVariable<T>& rw)
 }
 
 #endif // !defined(_SYNCHRONIZE_HH)
+
+#endif // !defined(_MSC_VER)

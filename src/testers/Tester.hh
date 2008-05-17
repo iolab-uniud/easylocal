@@ -1,4 +1,4 @@
-#ifndef _TESTER_HH_
+#if !defined(_TESTER_HH_)
 #define _TESTER_HH_
 
 #include <helpers/StateManager.hh>

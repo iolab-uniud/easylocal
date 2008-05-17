@@ -1,4 +1,4 @@
-#ifndef _TABU_LIST_MANAGER_HH_
+#if !defined(_TABU_LIST_MANAGER_HH_)
 #define _TABU_LIST_MANAGER_HH_
 
 #include <list>

@@ -1,4 +1,4 @@
-#ifndef _HELPERS_HH_
+#if !defined(_HELPERS_HH_)
 #define _HELPERS_HH_
 
 /** 

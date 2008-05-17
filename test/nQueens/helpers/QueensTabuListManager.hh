@@ -1,5 +1,5 @@
-#ifndef QUEENSTABULISTMANAGER_HH_
-#define QUEENSTABULISTMANAGER_HH_
+#if !defined(_QUEENSTABULISTMANAGER_HH_)
+#define _QUEENSTABULISTMANAGER_HH_
 
 #include <helpers/TabuListManager.hh>
 #include <vector>
@@ -28,4 +28,4 @@ bool QueensFrequencyTabuListManager::Inverse(const Swap& m1, const Swap& m2) con
 { return m1 == m2; }
 
 
-#endif /*QUEENSTABULISTMANAGER_HH_*/
+#endif /*_QUEENSTABULISTMANAGER_HH_*/

@@ -32,7 +32,7 @@
  
  */
 
-#ifndef _EASYLOCAL_HH_
+#if !defined(_EASYLOCAL_HH_)
 #define _EASYLOCAL_HH_
 
 #include <Utils.hh>

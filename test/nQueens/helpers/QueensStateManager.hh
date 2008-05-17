@@ -1,5 +1,5 @@
-#ifndef QUEENSSTATEMANAGER_H_
-#define QUEENSSTATEMANAGER_H_
+#if !defined(_QUEENSSTATEMANAGER_H_)
+#define _QUEENSSTATEMANAGER_H_
 
 #include <iostream>
 #include <helpers/StateManager.hh>
@@ -17,4 +17,4 @@ public:
 std::ostream& operator<<(std::ostream& os, const std::vector<int>& a);
 
 
-#endif /*QUEENSSTATEMANAGER_H_*/
+#endif /*_QUEENSSTATEMANAGER_H_*/

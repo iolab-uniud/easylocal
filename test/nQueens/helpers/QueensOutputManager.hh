@@ -1,5 +1,5 @@
-#ifndef QUEENSOUTPUTMANAGER_HH_
-#define QUEENSOUTPUTMANAGER_HH_
+#if !defined(_QUEENSOUTPUTMANAGER_HH_)
+#define _QUEENSOUTPUTMANAGER_HH_
 
 #include <helpers/OutputManager.hh>
 #include "../data/ChessBoard.hh"
@@ -17,4 +17,4 @@ public:
     void InputState(std::vector<int> &a, const ChessBoard& cb) const;
 };
 
-#endif /*QUEENSOUTPUTMANAGER_HH_*/
+#endif /*_QUEENSOUTPUTMANAGER_HH_*/

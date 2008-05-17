@@ -1,4 +1,4 @@
-#ifndef _ABSTRACT_LOCAL_SEARCH_HH_
+#if !defined(_ABSTRACT_LOCAL_SEARCH_HH_)
 #define _ABSTRACT_LOCAL_SEARCH_HH_
 
 #include <solvers/Solver.hh>
@@ -134,7 +134,7 @@ void AbstractLocalSearch<Input,Output,State,CFtype>::FindInitialState()
 template <class Input, class Output, class State, typename CFtype>
 bool AbstractLocalSearch<Input,Output,State,CFtype>::LetGo(Runner<Input,State,CFtype>& runner)
 {
-#ifdef HAVE_PTHREAD
+#if defined(HAVE_PTHREAD)
   if (this->timeout_set)
     {
       float time_left;

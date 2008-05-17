@@ -1,4 +1,4 @@
-#ifndef SIMPLEKICKER_HH_
+#if !defined(SIMPLEKICKER_HH_)
 #define SIMPLEKICKER_HH_
 
 #include <kickers/Kicker.hh>

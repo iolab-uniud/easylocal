@@ -1,4 +1,4 @@
-#ifndef _GENERALIZED_LOCAL_SEARCH_SOLVER_HH_
+#if !defined(_GENERALIZED_LOCAL_SEARCH_SOLVER_HH_)
 #define _GENERALIZED_LOCAL_SEARCH_SOLVER_HH_
 
 #include <solvers/AbstractLocalSearch.hh>
@@ -144,7 +144,7 @@ void GeneralizedLocalSearch<Input,Output,State,CFtype>::ReadParameters(std::istr
     p_kicker->ReadParameters(is, os);
   os << "Max idle rounds: ";
   is >> max_idle_rounds;
-#ifdef HAVE_PTHREAD
+#if defined(HAVE_PTHREAD)
   double timeout;
   os << "Timeout: ";
   is >> timeout;
@@ -280,7 +280,7 @@ void GeneralizedLocalSearch<Input,Output,State,CFtype>::GeneralSolve(KickStrateg
       idle_rounds = 0;
     else
     {
-#ifdef HAVE_PTHREAD
+#if defined(HAVE_PTHREAD)
       double time = chrono.TotalTime();
 #endif
       improve_state = false;
@@ -317,7 +317,7 @@ void GeneralizedLocalSearch<Input,Output,State,CFtype>::GeneralSolve(KickStrateg
 	      if (observer != NULL)
           observer->NotifyKickerStop(*this);
 	    }
-#ifdef HAVE_PTHREAD
+#if defined(HAVE_PTHREAD)
       if (this->timeout_set) 
       {
         this->current_timeout -= (chrono.TotalTime() - time);

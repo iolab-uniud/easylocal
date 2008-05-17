@@ -1,4 +1,4 @@
-#ifndef _SOLVER_OBSERVER_HH_
+#if !defined(_SOLVER_OBSERVER_HH_)
 #define _SOLVER_OBSERVER_HH_
 
 template <class Input, class Output, class State, typename CFtype>

@@ -1,4 +1,4 @@
-#ifndef _RANDOM_HH_
+#if !defined(_RANDOM_HH_)
 #define _RANDOM_HH_
 
 #include <EasyLocal.conf.hh>

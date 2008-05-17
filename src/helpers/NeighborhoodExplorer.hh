@@ -1,4 +1,4 @@
-#ifndef _NEIGHBORHOOD_EXPLORER_HH_
+#if !defined(_NEIGHBORHOOD_EXPLORER_HH_)
 #define _NEIGHBORHOOD_EXPLORER_HH_
 
 #include <helpers/DeltaCostComponent.hh>
@@ -50,8 +50,9 @@ virtual bool NextMove(const State &st, Move& mv) const = 0;
  of a given state.
  @param st the start state
  @param mv the generated move
+ @throws EmptyNeighborhood when the State st has no neighbor
  */		
-virtual CFtype FirstImprovingMove(const State& st, Move& mv, ProhibitionManager<State,Move,CFtype>* pm = NULL) const throw (EmptyNeighborhood);
+virtual CFtype FirstImprovingMove(const State& st, Move& mv, ProhibitionManager<State,Move,CFtype>* pm = NULL) const;
 /** 
  Generates the best move in the full exploration of the neighborhood
  of a given state.
@@ -399,7 +400,7 @@ std::pair<ShiftedResult<CFtype>, ShiftedResult<CFtype> > NeighborhoodExplorer<In
 } 
 
 template <class Input, class State, class Move, typename CFtype>
-CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::FirstImprovingMove(const State &st, Move& mv, ProhibitionManager<State,Move,CFtype>* pm) const throw (EmptyNeighborhood)
+CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::FirstImprovingMove(const State &st, Move& mv, ProhibitionManager<State,Move,CFtype>* pm) const 
 {
   unsigned int number_of_bests = 0;
   FirstMove(st, mv);

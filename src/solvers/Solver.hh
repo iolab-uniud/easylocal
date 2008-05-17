@@ -1,4 +1,4 @@
-#ifndef SOLVER_HH_
+#if !defined(SOLVER_HH_)
 #define SOLVER_HH_
 
 #include <EasyLocal.conf.hh>
@@ -48,7 +48,7 @@ template <class Input, class Output>
 Solver<Input, Output>::Solver(const Input& i, std::string e_name)
 : name(e_name), in(i)
 {
-#ifdef HAVE_PTHREAD
+#if defined(HAVE_PTHREAD)
   this->timeout = 0.0; 
   this->current_timeout = 0.0;
   this->timeout_set = false;
@@ -58,7 +58,7 @@ Solver<Input, Output>::Solver(const Input& i, std::string e_name)
 template <class Input, class Output>
 void Solver<Input, Output>::SetTimeout(double to)
 {
-#ifdef HAVE_PTHREAD
+#if defined(HAVE_PTHREAD)
   if (to > 0.0)
     {
       this->timeout = to;

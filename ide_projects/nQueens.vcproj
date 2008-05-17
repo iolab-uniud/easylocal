@@ -167,6 +167,10 @@
 		</Configuration>
 	</Configurations>
 	<References>
+		<ProjectReference
+			ReferencedProjectIdentifier="{D3EC27C5-0A0A-4788-9AC8-29340A750379}"
+			RelativePathToProject=".\EasyLocalpp.vcproj"
+		/>
 	</References>
 	<Files>
 		<Filter

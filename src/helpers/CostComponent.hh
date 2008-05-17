@@ -1,4 +1,4 @@
-#ifndef _COST_COMPONENT_HH_
+#if !defined(_COST_COMPONENT_HH_)
 #define _COST_COMPONENT_HH_
 
 #include <iostream>

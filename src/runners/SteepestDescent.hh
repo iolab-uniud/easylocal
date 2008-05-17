@@ -1,4 +1,4 @@
-#ifndef _STEEPEST_DESCENT_HH_
+#if !defined(_STEEPEST_DESCENT_HH_)
 #define _STEEPEST_DESCENT_HH_
 
 #include <runners/MoveRunner.hh>

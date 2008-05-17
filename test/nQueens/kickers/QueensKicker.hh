@@ -1,5 +1,5 @@
-#ifndef QUEENSKICKER_HH_
-#define QUEENSKICKER_HH_
+#if !defined(_QUEENSKICKER_HH_)
+#define _QUEENSKICKER_HH_
 
 #include <kickers/SimpleKicker.hh>
 #include <vector>
@@ -15,4 +15,4 @@ public:
 { return true; } 
 };  	
 
-#endif /*QUEENSKICKER_HH_*/
+#endif /*_QUEENSKICKER_HH_*/

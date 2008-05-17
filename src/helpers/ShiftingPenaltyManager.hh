@@ -1,4 +1,4 @@
-#ifndef _SHIFTING_PENALTY_MANAGER_HH_
+#if !defined(_SHIFTING_PENALTY_MANAGER_HH_)
 #define _SHIFTING_PENALTY_MANAGER_HH_
 
 #include <helpers/DeltaCostComponent.hh>

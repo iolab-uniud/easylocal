@@ -1,5 +1,5 @@
-#ifndef CHESSBOARD_HH_
-#define CHESSBOARD_HH_
+#if !defined(_CHESSBOARD_HH_)
+#define _CHESSBOARD_HH_
 
 #include <iostream>
 #include <vector>
@@ -29,4 +29,4 @@ private:
 		std::vector<std::vector<char> > cb;
 };
 
-#endif /*CHESSBOARD_HH_*/
+#endif /*_CHESSBOARD_HH_*/

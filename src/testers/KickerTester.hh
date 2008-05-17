@@ -1,4 +1,4 @@
-#ifndef _KICKER_TESTER_HH_
+#if !defined(_KICKER_TESTER_HH_)
 #define _KICKER_TESTER_HH_
 
 #include <testers/ComponentTester.hh>

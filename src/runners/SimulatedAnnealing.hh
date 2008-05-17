@@ -1,4 +1,4 @@
-#ifndef SIMULATEDANNEALING_HH_
+#if !defined(SIMULATEDANNEALING_HH_)
 #define SIMULATEDANNEALING_HH_
 
 #include <runners/MoveRunner.hh>

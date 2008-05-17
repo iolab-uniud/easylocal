@@ -15,6 +15,10 @@
 #if !defined(_EASYLOCAL_CONF_HH_)
 #define _EASYLOCAL_CONF_HH_
 
+#if defined(_MSC_VER) // for Visual C++ another inclusion file is needed
+#include <EasyLocal.conf.vc.hh>
+#else
 #define HAVE_PTHREAD 1
+#endif
 
 #endif

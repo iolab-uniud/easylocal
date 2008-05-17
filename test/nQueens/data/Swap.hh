@@ -1,5 +1,5 @@
-#ifndef SWAP_H_
-#define SWAP_H_
+#if !defined(_SWAP_H_)
+#define _SWAP_H_
 
 #include <iostream>
 
@@ -19,4 +19,4 @@ public:
 std::istream& operator>>(std::istream& is, Swap& m);
 std::ostream& operator<<(std::ostream& os, const Swap& m);
 
-#endif /*SWAP_H_*/
+#endif /*_SWAP_H_*/

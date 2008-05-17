@@ -1,4 +1,4 @@
-#ifndef _MOVE_TESTER_HH_
+#if !defined(_MOVE_TESTER_HH_)
 #define _MOVE_TESTER_HH_
 
 #include <testers/ComponentTester.hh>

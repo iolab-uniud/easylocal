@@ -1,4 +1,4 @@
-#ifndef _SHIFTING_PENALTY_OBSERVER_HH_
+#if !defined(_SHIFTING_PENALTY_OBSERVER_HH_)
 #define _SHIFTING_PENALTY_OBSERVER_HH_
 
 template <typename CFtype>

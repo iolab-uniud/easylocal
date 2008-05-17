@@ -1,4 +1,4 @@
-#ifndef _RUNNER_OBSERVER_HH_
+#if !defined(_RUNNER_OBSERVER_HH_)
 #define _RUNNER_OBSERVER_HH_
 
 template <class Input, class State, class Move, typename CFtype>

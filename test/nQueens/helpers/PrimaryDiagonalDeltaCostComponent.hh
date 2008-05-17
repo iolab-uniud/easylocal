@@ -1,5 +1,5 @@
-#ifndef PRIMARYDIAGONALDELTACOSTCOMPONENT_HH_
-#define PRIMARYDIAGONALDELTACOSTCOMPONENT_HH_
+#if !defined(_PRIMARYDIAGONALDELTACOSTCOMPONENT_HH_)
+#define _PRIMARYDIAGONALDELTACOSTCOMPONENT_HH_
 
 #include <helpers/DeltaCostComponent.hh>
 #include "../data/Swap.hh"
@@ -15,4 +15,4 @@ public:
     int ComputeDeltaCost(const std::vector<int>& st, const Swap& sw) const;
 };
 
-#endif /*PRIMARYDIAGONALDELTACOSTCOMPONENT_HH_*/
+#endif /*_PRIMARYDIAGONALDELTACOSTCOMPONENT_HH_*/

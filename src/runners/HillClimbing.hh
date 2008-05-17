@@ -1,4 +1,4 @@
-#ifndef HILLCLIMBING_HH_
+#if !defined(HILLCLIMBING_HH_)
 #define HILLCLIMBING_HH_
 
 #include <helpers/StateManager.hh>

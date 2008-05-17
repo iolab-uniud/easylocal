@@ -1,5 +1,5 @@
-#ifndef SwapNeighborhoodExplorer_HH_
-#define SwapNeighborhoodExplorer_HH_
+#if !defined(_SWAPNEIGHBORHOODEXPLORER_HH_)
+#define _SWAPNEIGHBORHOODEXPLORER_HH_
 
 #include <helpers/NeighborhoodExplorer.hh>
 #include "../data/Swap.hh"
@@ -20,4 +20,4 @@ public:
   bool NextMove(const std::vector<int> &a, Swap& sw) const;
 };
 
-#endif /*SwapNeighborhoodExplorer_H_*/
+#endif /*_SWAPNEIGHBORHOODEXPLORER_HH_*/

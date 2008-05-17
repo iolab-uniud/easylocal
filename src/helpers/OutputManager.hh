@@ -1,4 +1,4 @@
-#ifndef _OUTPUT_MANAGER_HH_
+#if !defined(_OUTPUT_MANAGER_HH_)
 #define _OUTPUT_MANAGER_HH_
 
 #include <iostream>

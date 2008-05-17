@@ -1,4 +1,4 @@
-#ifndef _COMPONENT_TESTER_HH_
+#if !defined(_COMPONENT_TESTER_HH_)
 #define _COMPONENT_TESTER_HH_
 
 #include <helpers/StateManager.hh>

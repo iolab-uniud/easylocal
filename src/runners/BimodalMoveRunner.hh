@@ -1,4 +1,4 @@
-#ifndef _BIMODAL_MOVE_RUNNER_HH_
+#if !defined(_BIMODAL_MOVE_RUNNER_HH_)
 #define _BIMODAL_MOVE_RUNNER_HH_
 
 #include <helpers/StateManager.hh>
@@ -7,7 +7,7 @@
 #include <runners/Runner.hh>
 #include <vector>
 
-#ifndef MOVE_ENUM
+#if !defined(MOVE_ENUM)
 typedef enum {
   MOVE_1 = 1,
   MOVE_2

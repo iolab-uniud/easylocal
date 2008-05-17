@@ -1,4 +1,4 @@
-#ifndef TABUSEARCH_HH_
+#if !defined(TABUSEARCH_HH_)
 #define TABUSEARCH_HH_
 
 /** The Tabu Search runner explores a subset of the current

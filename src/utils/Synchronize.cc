@@ -1,5 +1,5 @@
 /*
- *  Mutex.cpp
+ *  Synchronize.cc
  *  ProvaThreads
  *
  *  Created by Luca Di Gaspero on 27/09/07.
@@ -9,7 +9,9 @@
 
 #include <utils/Synchronize.hh>
 
-#if defined(HAVE_PTHREAD) && !defined(_MSC_VER)
+#if !defined(_MSC_VER)
+
+#if defined(HAVE_PTHREAD)
 
 #if !defined(HAVE_CLOCK_GETTIME) && !defined(HAVE_GETTIMEOFDAY)
 #error "No gettime function is present, please configure the software with the --disable-threading option"
@@ -287,4 +289,4 @@ void ConditionVariable::Broadcast()
 
 #endif
 
-
+#endif // !defined(_MSC_VER)

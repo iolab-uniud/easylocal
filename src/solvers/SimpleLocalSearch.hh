@@ -1,11 +1,11 @@
-#ifndef _SIMPLE_LOCAL_SEARCH_HH_
+#if !defined(_SIMPLE_LOCAL_SEARCH_HH_)
 #define _SIMPLE_LOCAL_SEARCH_HH_
 
 #include <helpers/StateManager.hh>
 #include <helpers/OutputManager.hh>
 #include <solvers/AbstractLocalSearch.hh>
 #include <runners/Runner.hh>
-#ifdef HAVE_PTHREAD
+#if defined(HAVE_PTHREAD)
 #include <pthread.h>
 #endif
 
@@ -93,7 +93,7 @@ void SimpleLocalSearch<Input,Output,State,CFtype>::ReadParameters(std::istream& 
   os << "Runner: " << std::endl; 
   if (this->p_runner)
     this->p_runner->ReadParameters(is, os);
-#ifdef HAVE_PTHREAD
+#if defined(HAVE_PTHREAD)
   os << "Timeout: ";
   is >> this->timeout;
   this->current_timeout = this->timeout;
