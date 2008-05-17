@@ -1,9 +1,9 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 9.00
 # Visual Studio 2005
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "EasyLocalpp", "EasyLocalpp.vcproj", "{D3EC27C5-0A0A-4788-9AC8-29340A750379}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "EasyLocal", "EasyLocalpp.vcproj", "{D3EC27C5-0A0A-4788-9AC8-29340A750379}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "nQueens", "nQueens.vcproj", "{75FC00DB-5C86-4AE1-B4CD-99FAC2E41C54}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "nQueens", "nQueens.vcproj", "{24950ACE-F17D-4D23-8CBD-37CBEEF21BE0}"
 	ProjectSection(ProjectDependencies) = postProject
 		{D3EC27C5-0A0A-4788-9AC8-29340A750379} = {D3EC27C5-0A0A-4788-9AC8-29340A750379}
 	EndProjectSection
@@ -18,10 +18,10 @@ Global
 		{D3EC27C5-0A0A-4788-9AC8-29340A750379}.Debug|Win32.Build.0 = Debug|Win32
 		{D3EC27C5-0A0A-4788-9AC8-29340A750379}.Release|Win32.ActiveCfg = Release|Win32
 		{D3EC27C5-0A0A-4788-9AC8-29340A750379}.Release|Win32.Build.0 = Release|Win32
-		{75FC00DB-5C86-4AE1-B4CD-99FAC2E41C54}.Debug|Win32.ActiveCfg = Debug|Win32
-		{75FC00DB-5C86-4AE1-B4CD-99FAC2E41C54}.Debug|Win32.Build.0 = Debug|Win32
-		{75FC00DB-5C86-4AE1-B4CD-99FAC2E41C54}.Release|Win32.ActiveCfg = Release|Win32
-		{75FC00DB-5C86-4AE1-B4CD-99FAC2E41C54}.Release|Win32.Build.0 = Release|Win32
+		{24950ACE-F17D-4D23-8CBD-37CBEEF21BE0}.Debug|Win32.ActiveCfg = Debug|Win32
+		{24950ACE-F17D-4D23-8CBD-37CBEEF21BE0}.Debug|Win32.Build.0 = Debug|Win32
+		{24950ACE-F17D-4D23-8CBD-37CBEEF21BE0}.Release|Win32.ActiveCfg = Release|Win32
+		{24950ACE-F17D-4D23-8CBD-37CBEEF21BE0}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

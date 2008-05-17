@@ -61,6 +61,7 @@
 			/>
 			<Tool
 				Name="VCLibrarianTool"
+				IgnoreAllDefaultLibraries="true"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -122,6 +123,7 @@
 			/>
 			<Tool
 				Name="VCLibrarianTool"
+				IgnoreAllDefaultLibraries="true"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -218,6 +220,10 @@
 			</File>
 			<File
 				RelativePath="..\src\EasyLocal.conf.hh"
+				>
+			</File>
+			<File
+				RelativePath="..\src\EasyLocal.conf.vc.hh"
 				>
 			</File>
 			<File

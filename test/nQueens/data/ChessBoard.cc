@@ -48,19 +48,19 @@ int ChessBoard::CountAttacks()
 
 int ChessBoard::CountSingleAttacks(int h, int k)
 {
-		int attacks = 0, l;
+	int attacks = 0, l;
     for (int i = 0; i < (int)cb.size(); i++)
         if (i != h && cb[i][k] == 'Q')
             attacks++;
     for (int j = 0; j < (int)cb.size(); j++)
         if (j != k && cb[h][j] == 'Q')
             attacks++;
-    for (l = -cb.size(); l < (int)cb.size(); l++)
+    for (l = -(int)cb.size(); l < (int)cb.size(); l++)
         if (h + l >= 0 && h + l < (int)cb.size()
                 && k + l >= 0 && k + l < (int)cb.size()
                 && l != 0 && cb[h+l][k+l] == 'Q')
             attacks++;
-    for (l = -cb.size(); l < (int)cb.size(); l++)
+    for (l = -(int)cb.size(); l < (int)cb.size(); l++)
         if (h + l >= 0 && h + l < (int)cb.size()
                 && k - l >= 0 && k - l < (int)cb.size()
                 && l != 0 && cb[h+l][k-l] == 'Q')

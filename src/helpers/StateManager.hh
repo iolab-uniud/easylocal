@@ -55,7 +55,7 @@ public:
   virtual bool CheckConsistency(const State& st) const = 0;
   
   CostComponent<Input, State,CFtype>& GetCostComponent(unsigned i) const { return *(cost_component[i]); }
-  unsigned CostComponents() const { return cost_component.size(); }
+  size_t CostComponents() const { return cost_component.size(); }
   CFtype Cost(const State& st, unsigned int i) const { return cost_component[i]->Cost(st); }
 
   const std::string name;
