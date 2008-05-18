@@ -1,3 +1,21 @@
+// $Id$
+// This file is part of EasyLocalpp: a C++ Object-Oriented framework
+// aimed at easing the development of Local Search algorithms.
+// Copyright (C) 2001--2008 Andrea Schaerf, Luca Di Gaspero. 
+//
+// EasyLocalpp is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// EasyLocalpp is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with EasyLocalpp. If not, see <http://www.gnu.org/licenses/>.
+
 #include <utils/CLParser.hh>
 #include <cstring>
 #include <algorithm>
@@ -66,7 +84,7 @@ void ArgumentGroup::PrintUsage(std::ostream& os, unsigned int tabs) const
     }
 }
 
-Argument& ArgumentGroup::FindArgument(const std::string& f) const throw (std::logic_error)
+Argument& ArgumentGroup::FindArgument(const std::string& f) const 
 {
   arg_list::const_iterator li;
   for (li = arguments.begin(); li != arguments.end(); li++)
@@ -77,7 +95,7 @@ Argument& ArgumentGroup::FindArgument(const std::string& f) const throw (std::lo
 
 void ArgumentGroup::Read(const std::vector<std::string>& command_line_arguments)
 {
-  unsigned int i;
+  size_t i;
   std::string flag, value;
   arg_list::iterator pos;
   Argument* arg;
@@ -94,14 +112,14 @@ void ArgumentGroup::Read(const std::vector<std::string>& command_line_arguments)
 	}
       else
 	{
-	  unsigned int size = arg->NumOfValues();
+	  size_t size = arg->NumOfValues();
 	  if (i + size >= command_line_arguments.size() && strstr(typeid(*arg).name(), "ValArgument"))
 	    throw std::logic_error("Error: Value(s) for option " + flag + " not specified");
 	  else
-	    size = std::min<unsigned int>(size, command_line_arguments.size() - (i + 1));
+	    size = std::min<size_t>(size, command_line_arguments.size() - (i + 1));
 	  std::vector<std::string> tmp(size);
 	  std::string tmp_w = "";
-	  for (unsigned int j = 0; j < size; j++)
+	  for (size_t j = 0; j < size; j++)
 	    {
 	      tmp[j] = command_line_arguments[i + j + 1];
 	      tmp_w += command_line_arguments[i + j + 1] + " ";
@@ -172,7 +190,7 @@ void CLParser::MatchArguments()
 
 void CLParser::MatchArgument(Argument& a) 
 {
-  for (unsigned int i = 0; i < command_line_arguments.size(); i++)
+  for (size_t i = 0; i < command_line_arguments.size(); i++)
     {
       const std::string& flag = command_line_arguments[i];
       if (flag == a.GetFlag() || flag == a.GetAlias())
@@ -184,14 +202,14 @@ void CLParser::MatchArgument(Argument& a)
 	    }
 	  else
 	    {
-	      unsigned int size = a.NumOfValues();
+	      size_t size = a.NumOfValues();
 	      if (i + size >= command_line_arguments.size() && strstr(typeid(a).name(), "ValArgument"))
 		throw std::logic_error("Error: Value(s) for option " + a.GetFlag() + " not specified");
 	      else
-		size = std::min<unsigned int>(size, command_line_arguments.size() - (i + 1));
+		size = std::min<size_t>(size, command_line_arguments.size() - (i + 1));
 	      std::vector<std::string> tmp(size);
 	      std::string tmp_w = "";
-	      for (unsigned int j = 0; j < size; j++)
+	      for (size_t j = 0; j < size; j++)
 		{
 		  tmp[j] = command_line_arguments[i + j + 1];
 		  tmp_w += command_line_arguments[i + j + 1] + " ";
@@ -207,7 +225,7 @@ void CLParser::MatchArgument(Argument& a)
     throw std::logic_error("Error: Required option " + a.GetFlag() + " has not been specified");
 }
 
-void CLParser::Parse() throw (std::logic_error)
+void CLParser::Parse()
 {
   for (unsigned int i = 0; i < command_line_arguments.size(); i++)
     {

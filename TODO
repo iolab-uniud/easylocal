@@ -9,5 +9,6 @@ of EasyLocal++:
    HARD_WEIGHT constant. A different and more principled mechanism has
    to be found.
 3. The CLParser object for automatically posting the parameters in the
-   case of BimodalRunners has to be added.
+   case of BimodalRunners has to be added in their constructor.
 4. The NextRelatedMove mechanism has to be investigated more deeply.
+5. Once the documentation is ready, it should be included into TRAC.

@@ -1,6 +1,22 @@
-/* A command line parser class */
+// $Id$
+// This file is part of EasyLocalpp: a C++ Object-Oriented framework
+// aimed at easing the development of Local Search algorithms.
+// Copyright (C) 2001--2008 Andrea Schaerf, Luca Di Gaspero. 
+//
+// EasyLocalpp is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// EasyLocalpp is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with EasyLocalpp. If not, see <http://www.gnu.org/licenses/>.
 
-#ifndef _CLPARSER_HH
+#if !defined(_CLPARSER_HH)
 #define _CLPARSER_HH
 
 #include <vector>
@@ -33,6 +49,9 @@ protected:
   bool required;
 };
 
+class ArgumentNotFound : public std::logic_error 
+{};
+
 class ArgumentGroup : public Argument
 {
   friend class CLParser;
@@ -48,12 +67,10 @@ public:
 protected:
   typedef std::list<Argument*> arg_list;
   ArgumentGroup(arg_list& al);
-  Argument& FindArgument(const std::string&) const throw (std::logic_error);
+  Argument& FindArgument(const std::string&) const;
   arg_list arguments;
   unsigned int num_of_values;
 };
-
-
 
 template <typename T, unsigned int N = 1>
 class ValArgument : public Argument
@@ -153,14 +170,12 @@ public:
   virtual ~CLParser();
 protected:
   typedef std::list<Argument*> arg_list;
-  void Parse() throw (std::logic_error);
+  void Parse();
   std::string command_name;
   std::vector<std::string> command_line_arguments;
   arg_list arguments;
 };
 
 std::ostream& operator<<(std::ostream& os, const CLParser& cl);
-
-//extern CLParser nullCL;
 
 #endif

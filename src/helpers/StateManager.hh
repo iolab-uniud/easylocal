@@ -1,4 +1,22 @@
-#ifndef _STATE_MANAGER_HH_
+// $Id$
+// This file is part of EasyLocalpp: a C++ Object-Oriented framework
+// aimed at easing the development of Local Search algorithms.
+// Copyright (C) 2001--2008 Andrea Schaerf, Luca Di Gaspero. 
+//
+// EasyLocalpp is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// EasyLocalpp is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with EasyLocalpp. If not, see <http://www.gnu.org/licenses/>.
+
+#if !defined(_STATE_MANAGER_HH_)
 #define _STATE_MANAGER_HH_
 
 #include <iostream>
@@ -16,7 +34,7 @@ waiting for an idea of a general mechanism for managing cost function
 weights.
 */
 
-#ifndef HARD_WEIGHT_SET
+#if !defined(HARD_WEIGHT_SET)
 const int HARD_WEIGHT = 1000;
 #endif
 
@@ -55,7 +73,7 @@ public:
   virtual bool CheckConsistency(const State& st) const = 0;
   
   CostComponent<Input, State,CFtype>& GetCostComponent(unsigned i) const { return *(cost_component[i]); }
-  unsigned CostComponents() const { return cost_component.size(); }
+  size_t CostComponents() const { return cost_component.size(); }
   CFtype Cost(const State& st, unsigned int i) const { return cost_component[i]->Cost(st); }
 
   const std::string name;

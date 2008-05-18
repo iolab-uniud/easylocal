@@ -1,3 +1,4 @@
+
 // $Id$
 // This file is part of EasyLocalpp: a C++ Object-Oriented framework
 // aimed at easing the development of Local Search algorithms.
@@ -15,22 +16,41 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with EasyLocalpp. If not, see <http://www.gnu.org/licenses/>.
+/**
+ @file EasyLocal.conf.vc.hh
+ @brief Basic configuration for Visual C++.
+ 
+ This file contains the configuration of the framework.   
+ 
+ @author Andrea Schaerf (schaerf@uniud.it), Luca Di Gaspero (l.digaspero@uniud.it)
+ @version 1.0
+ $Revision$
+ @date 15 Jun 2001
+ @note This version works both with MS Visual C++ and the GNU C++ 
+ compiler. Yet, it is extensively tested only with the GNU compiler.
+*/
 
-#if !defined(_PRIMARYDIAGONALDELTACOSTCOMPONENT_HH_)
-#define _PRIMARYDIAGONALDELTACOSTCOMPONENT_HH_
+#if !defined(_EASYLOCAL_CONF_VC_HH_)
+#define _EASYLOCAL_CONF_VC_HH_
 
-#include <helpers/DeltaCostComponent.hh>
-#include "../data/Swap.hh"
-#include "PrimaryDiagonalCostComponent.hh"
+#if defined(_MSC_VER)
+// in Microsoft Visual C++ the I/O operators on strings are not defined.
+#include <iostream>
+#include <string>
 
-class PrimaryDiagonalDeltaCostComponent
-            : public FilledDeltaCostComponent<int, std::vector<int>, Swap>
-{
-public:
-  PrimaryDiagonalDeltaCostComponent(const int& in, PrimaryDiagonalCostComponent& cc)
-    : FilledDeltaCostComponent<int, std::vector<int>, Swap>(in, cc, "PrimaryDiagonal")
-    {}
-    int ComputeDeltaCost(const std::vector<int>& st, const Swap& sw) const;
-};
+inline std::ostream& operator<<(std::ostream& os, const std::string& s)
+{ 
+	os << s.c_str(); 
+	return os;
+}
 
-#endif /*_PRIMARYDIAGONALDELTACOSTCOMPONENT_HH_*/
+inline std::istream& operator>>(std::istream& is, std::string& s)
+{ 
+	char c[2048]; 
+	is >> c; s = c; 
+	return is;
+}
+#endif 
+
+
+#endif

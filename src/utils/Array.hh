@@ -1,25 +1,26 @@
-/*
- *  CanonicalBaseVector.h
- *  CWM
- *
- *  Created by Luca Di Gaspero on 11/11/06.
- *  Copyright 2006 Luca Di Gaspero. All rights reserved.
- *
- */
+// $Id$
+// This file is part of EasyLocalpp: a C++ Object-Oriented framework
+// aimed at easing the development of Local Search algorithms.
+// Copyright (C) 2001--2008 Andrea Schaerf, Luca Di Gaspero. 
+//
+// EasyLocalpp is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// EasyLocalpp is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with EasyLocalpp. If not, see <http://www.gnu.org/licenses/>.
 
-#ifndef _ARRAY_HH
+#if !defined(_ARRAY_HH)
 #define _ARRAY_HH
 
-/*
- *  Vector.hh
- *
- *  Created by Luca Di Gaspero on 10/11/06.
- *  Copyright 2006 Luca Di Gaspero. All rights reserved.
- *
- */
-
-#include <stdexcept>
 #include <set>
+#include <stdexcept>
 #include <iostream>
 #include <iomanip>
 #include <cmath>
@@ -842,15 +843,6 @@ inline Vector<double> rank(const Vector<T>& v)
 	
   return tmp_rank;
 }
-
-// #ifdef HAVE_CONFIG_H
-// #include <config.h>
-// #endif
-
-#include <set>
-#include <cmath>
-#include <iomanip>
-#include <stdexcept>
 
 enum MType { DIAG };
 

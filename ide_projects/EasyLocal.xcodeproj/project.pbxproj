@@ -43,6 +43,7 @@
 		AC75B2520DD08C30003EBD1F /* CLParser.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = CLParser.hh; sourceTree = "<group>"; };
 		AC75B2530DD08C30003EBD1F /* Synchronize.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Synchronize.cc; sourceTree = "<group>"; };
 		AC75B2540DD08C30003EBD1F /* Synchronize.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Synchronize.hh; sourceTree = "<group>"; };
+		AC77656E0DDEE52200A4A736 /* EasyLocal.conf.vc.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = EasyLocal.conf.vc.hh; sourceTree = "<group>"; };
 		AC97D3830DD4762100454E4E /* COPYING */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = COPYING; path = ../COPYING; sourceTree = SOURCE_ROOT; };
 		ACDFC76D0DCFB2E5004D11E8 /* EasyLocal.conf.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = EasyLocal.conf.hh; sourceTree = "<group>"; };
 		ACDFC7A90DCFB717004D11E8 /* GeneralizedLocalSearch.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = GeneralizedLocalSearch.hh; sourceTree = "<group>"; };
@@ -145,16 +146,24 @@
 				ACF4B19F0DBFA73A008A0207 /* configure.ac */,
 				ACF4B19E0DBFA73A008A0207 /* aminclude.am */,
 				ACF4B1A40DBFA73A008A0207 /* Makefile.am */,
-				ACF4B1A50DBFA73A008A0207 /* TODO */,
-				AC97D3830DD4762100454E4E /* COPYING */,
-				ACFAF4BD0DD486E20095F6A0 /* README */,
-				ACFAF4BB0DD486BC0095F6A0 /* doxygen.cfg */,
-				AC4276C40DD873F6006C3B31 /* index.html */,
+				AC2A95650DE0B0A700E6F462 /* doc */,
 				ACF4B1A00DBFA73A008A0207 /* m4 */,
 				ACF4B0FA0DBFA668008A0207 /* src */,
 				ACF4B15C0DBFA685008A0207 /* test */,
 			);
 			name = EasyLocalpp;
+			sourceTree = "<group>";
+		};
+		AC2A95650DE0B0A700E6F462 /* doc */ = {
+			isa = PBXGroup;
+			children = (
+				ACF4B1A50DBFA73A008A0207 /* TODO */,
+				AC97D3830DD4762100454E4E /* COPYING */,
+				ACFAF4BD0DD486E20095F6A0 /* README */,
+				ACFAF4BB0DD486BC0095F6A0 /* doxygen.cfg */,
+				AC4276C40DD873F6006C3B31 /* index.html */,
+			);
+			name = doc;
 			sourceTree = "<group>";
 		};
 		AC75B24A0DD08BB8003EBD1F /* observers */ = {
@@ -174,6 +183,7 @@
 				ACF4B1220DBFA668008A0207 /* Makefile.am */,
 				ACF4B0FC0DBFA668008A0207 /* EasyLocal.hh */,
 				ACDFC76D0DCFB2E5004D11E8 /* EasyLocal.conf.hh */,
+				AC77656E0DDEE52200A4A736 /* EasyLocal.conf.vc.hh */,
 				ACF4B11A0DBFA668008A0207 /* Helpers.hh */,
 				ACF4B12E0DBFA668008A0207 /* Runners.hh */,
 				ACF4B11F0DBFA668008A0207 /* Kickers.hh */,
@@ -398,17 +408,17 @@
 			passBuildSettingsInEnvironment = 1;
 			productName = check;
 		};
-		D28A88AD04BDD90700651E21 /* EasyLocalpp */ = {
+		D28A88AD04BDD90700651E21 /* EasyLocal */ = {
 			isa = PBXLegacyTarget;
 			buildArgumentsString = "$(ACTION)";
-			buildConfigurationList = 1DEB918F08733D9F0010E9CD /* Build configuration list for PBXLegacyTarget "EasyLocalpp" */;
+			buildConfigurationList = 1DEB918F08733D9F0010E9CD /* Build configuration list for PBXLegacyTarget "EasyLocal" */;
 			buildPhases = (
 			);
 			buildToolPath = /usr/bin/make;
 			buildWorkingDirectory = "$(BUILD_DIR)";
 			dependencies = (
 			);
-			name = EasyLocalpp;
+			name = EasyLocal;
 			passBuildSettingsInEnvironment = 1;
 			productName = EasyLocalpp;
 		};
@@ -417,14 +427,14 @@
 /* Begin PBXProject section */
 		08FB7793FE84155DC02AAC07 /* Project object */ = {
 			isa = PBXProject;
-			buildConfigurationList = 1DEB919308733D9F0010E9CD /* Build configuration list for PBXProject "EasyLocalpp" */;
+			buildConfigurationList = 1DEB919308733D9F0010E9CD /* Build configuration list for PBXProject "EasyLocal" */;
 			compatibilityVersion = "Xcode 3.1";
 			hasScannedForEncodings = 1;
 			mainGroup = 08FB7794FE84155DC02AAC07 /* EasyLocalpp */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				D28A88AD04BDD90700651E21 /* EasyLocalpp */,
+				D28A88AD04BDD90700651E21 /* EasyLocal */,
 				ACF4B1830DBFA6A1008A0207 /* configure */,
 				ACF4B1F00DBFAC98008A0207 /* check */,
 				ACFAF4C30DD489630095F6A0 /* documentation */,
@@ -578,7 +588,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		1DEB918F08733D9F0010E9CD /* Build configuration list for PBXLegacyTarget "EasyLocalpp" */ = {
+		1DEB918F08733D9F0010E9CD /* Build configuration list for PBXLegacyTarget "EasyLocal" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				1DEB919008733D9F0010E9CD /* Debug */,
@@ -587,7 +597,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		1DEB919308733D9F0010E9CD /* Build configuration list for PBXProject "EasyLocalpp" */ = {
+		1DEB919308733D9F0010E9CD /* Build configuration list for PBXProject "EasyLocal" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				1DEB919408733D9F0010E9CD /* Debug */,

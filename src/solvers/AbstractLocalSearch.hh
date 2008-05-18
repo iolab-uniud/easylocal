@@ -1,4 +1,22 @@
-#ifndef _ABSTRACT_LOCAL_SEARCH_HH_
+// $Id$
+// This file is part of EasyLocalpp: a C++ Object-Oriented framework
+// aimed at easing the development of Local Search algorithms.
+// Copyright (C) 2001--2008 Andrea Schaerf, Luca Di Gaspero. 
+//
+// EasyLocalpp is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// EasyLocalpp is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with EasyLocalpp. If not, see <http://www.gnu.org/licenses/>.
+
+#if !defined(_ABSTRACT_LOCAL_SEARCH_HH_)
 #define _ABSTRACT_LOCAL_SEARCH_HH_
 
 #include <solvers/Solver.hh>
@@ -134,7 +152,7 @@ void AbstractLocalSearch<Input,Output,State,CFtype>::FindInitialState()
 template <class Input, class Output, class State, typename CFtype>
 bool AbstractLocalSearch<Input,Output,State,CFtype>::LetGo(Runner<Input,State,CFtype>& runner)
 {
-#ifdef HAVE_PTHREAD
+#if defined(HAVE_PTHREAD)
   if (this->timeout_set)
     {
       float time_left;

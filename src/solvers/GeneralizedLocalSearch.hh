@@ -1,4 +1,22 @@
-#ifndef _GENERALIZED_LOCAL_SEARCH_SOLVER_HH_
+// $Id$
+// This file is part of EasyLocalpp: a C++ Object-Oriented framework
+// aimed at easing the development of Local Search algorithms.
+// Copyright (C) 2001--2008 Andrea Schaerf, Luca Di Gaspero. 
+//
+// EasyLocalpp is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// EasyLocalpp is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with EasyLocalpp. If not, see <http://www.gnu.org/licenses/>.
+
+#if !defined(_GENERALIZED_LOCAL_SEARCH_SOLVER_HH_)
 #define _GENERALIZED_LOCAL_SEARCH_SOLVER_HH_
 
 #include <solvers/AbstractLocalSearch.hh>
@@ -144,7 +162,7 @@ void GeneralizedLocalSearch<Input,Output,State,CFtype>::ReadParameters(std::istr
     p_kicker->ReadParameters(is, os);
   os << "Max idle rounds: ";
   is >> max_idle_rounds;
-#ifdef HAVE_PTHREAD
+#if defined(HAVE_PTHREAD)
   double timeout;
   os << "Timeout: ";
   is >> timeout;
@@ -280,7 +298,7 @@ void GeneralizedLocalSearch<Input,Output,State,CFtype>::GeneralSolve(KickStrateg
       idle_rounds = 0;
     else
     {
-#ifdef HAVE_PTHREAD
+#if defined(HAVE_PTHREAD)
       double time = chrono.TotalTime();
 #endif
       improve_state = false;
@@ -317,7 +335,7 @@ void GeneralizedLocalSearch<Input,Output,State,CFtype>::GeneralSolve(KickStrateg
 	      if (observer != NULL)
           observer->NotifyKickerStop(*this);
 	    }
-#ifdef HAVE_PTHREAD
+#if defined(HAVE_PTHREAD)
       if (this->timeout_set) 
       {
         this->current_timeout -= (chrono.TotalTime() - time);
