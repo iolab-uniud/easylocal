@@ -1,11 +1,11 @@
-This file is part of EasyLocalpp: a C++ Object-Oriented framework
+This file is part of EasyLocal++: a C++ Object-Oriented framework
 aimed at easing the development of Local Search algorithms.
 Copyright (C) 2001--2008 Andrea Schaerf, Luca Di Gaspero. 
 
-We have invested a lot of time and effort in creating EasyLocalpp,
+We have invested a lot of time and effort in creating EasyLocal++,
 if you find this software useful and if you use it for developing
 software for scientific publications we will be grateful if you
-cite EasyLocalpp in your publications.
+cite EasyLocal++ in your publications.
 
 In order to do that use:
 
@@ -45,16 +45,16 @@ The BibTeX entries for LaTeX users convenience are:
 	Series = {OR/CS},
 	Year = {2002}}
 
-EasyLocalpp is free software: you can redistribute it and/or modify
+EasyLocal++ is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
 (at your option) any later version.
 
-EasyLocalpp is distributed in the hope that it will be useful,
+EasyLocal++ is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
-along with EasyLocalpp.  If not, see <http://www.gnu.org/licenses/>.
+along with EasyLocal++.  If not, see <http://www.gnu.org/licenses/>.
 

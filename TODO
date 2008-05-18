@@ -1,66 +1,14 @@
-1. Rivedere VNDSolve
+There are still some issues to be fixed or known bugs in the current version
+of EasyLocal++:
 
-2. Ripulire i solver [FATTO]
-
-3. Costi di nQueens
-
-4. Scrivere informazioni di configurazione (header, ad es. per gettime) [FATTO]
-
-5. Rivedere gli include [FATTO]
-
-6. Rivedere il kicker tester (stile movetester) [FATTO]
-
-7. Rivedere il timeout (se 0 non funziona GeneralizedLocalSearchSolver)
-
-
-// Aggiunte 5-5-2008
-
-1. rivedere commento di intestazione
-
-2. nomi direttive di isolamento (_NOME_) [FATTO]
-
-3. #define _HAVE_EASYLOCALCONFIG [FATTO]
-
-4. no using namespace std; [FATTO]
-
-5. compilazione condizionale se CPPUNIT non e' presente
-
-6. #include <...> e non "..." [FATTO]
-
-7. clparser tutto in unico file (hh e cc) [FATTO]
-
-8. Mutex e co in Syncrhonize.hh e cc [FATTO]
-
-9. spostare gli observers in una cartella apposita [FATTO]
-
-10. Fare i bimodal mancanti [FATTO]
-
-11. HARD_WEIGHT (niente da fare)
-
-12. Pulizia di fino: 
-- commenti sulle funzioni nella def e non nella dic
-- ordinare le funzioni con criterio (?)
-- 
-
-13. Uso del chrono
-
-14. CL per runner bimodali
-
-15. Timeout 0
-
-16. Rivedere gli #ifdef HAVE_PTHREADS
-
-// Release
-
-1. licenza (GPL)
-
-2. svn con release (e accesso pubblico in lettura)
-
-
-// Longer term
-
-1. KickerObserver
-
-2. Struttura delle cartelle per EasySin e EsayAnalyzer
-
-7. NextRelatedMove
+0. The Visual C++ version must be equipped with the multi-threading
+   capabilities.
+1. VariableNeighborhoodDescent must be thoroughly reviewed (because of the
+   recent changes in the NeighborhoodExplorer/Kicker strategies).
+2. The mechanism for handling hard-constraints violations is still the
+   HARD_WEIGHT constant. A different and more principled mechanism has
+   to be found.
+3. The CLParser object for automatically posting the parameters in the
+   case of BimodalRunners has to be added in their constructor.
+4. The NextRelatedMove mechanism has to be investigated more deeply.
+5. Once the documentation is ready, it should be included into TRAC.
