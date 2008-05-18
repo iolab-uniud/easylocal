@@ -271,7 +271,7 @@ AM_LDFLAGS = -L@EASYLOCALPP_BUILD@/src -L. -lEasyLocalpp -lnQueens -lstdc++
 @CPPUNIT_TRUE@		@EASYLOCALPP@/src/unit/UnitTestingMain.cc
 
 @CPPUNIT_TRUE@QueensTest_CPPFLAGS = $(AM_CPPFLAGS) $(CPPUNIT_CFLAGS)
-@CPPUNIT_TRUE@QueensTest_LDFLAGS = $(AM_LDFLAGS) -LnQueens $(CPPUNIT_LIBS)
+@CPPUNIT_TRUE@QueensTest_LDFLAGS = $(AM_LDFLAGS) -L. $(CPPUNIT_LIBS)
 all: all-am
 
 .SUFFIXES:

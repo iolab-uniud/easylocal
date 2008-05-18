@@ -34,5 +34,5 @@ QueensTest_SOURCES = unit/QueensStateManagerTest.cc unit/QueensOutputManagerTest
 		unit/SwapNeighborhoodExplorerTest.cc unit/QueensDeltaCostComponentsTest.cc \
 		@EASYLOCALPP@/src/unit/UnitTestingMain.cc
 QueensTest_CPPFLAGS = $(AM_CPPFLAGS) $(CPPUNIT_CFLAGS)
-QueensTest_LDFLAGS = $(AM_LDFLAGS) -LnQueens $(CPPUNIT_LIBS)
+QueensTest_LDFLAGS = $(AM_LDFLAGS) -L. $(CPPUNIT_LIBS)
 endif
