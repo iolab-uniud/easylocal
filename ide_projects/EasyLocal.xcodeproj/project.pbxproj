@@ -146,16 +146,24 @@
 				ACF4B19F0DBFA73A008A0207 /* configure.ac */,
 				ACF4B19E0DBFA73A008A0207 /* aminclude.am */,
 				ACF4B1A40DBFA73A008A0207 /* Makefile.am */,
-				ACF4B1A50DBFA73A008A0207 /* TODO */,
-				AC97D3830DD4762100454E4E /* COPYING */,
-				ACFAF4BD0DD486E20095F6A0 /* README */,
-				ACFAF4BB0DD486BC0095F6A0 /* doxygen.cfg */,
-				AC4276C40DD873F6006C3B31 /* index.html */,
+				AC2A95650DE0B0A700E6F462 /* doc */,
 				ACF4B1A00DBFA73A008A0207 /* m4 */,
 				ACF4B0FA0DBFA668008A0207 /* src */,
 				ACF4B15C0DBFA685008A0207 /* test */,
 			);
 			name = EasyLocalpp;
+			sourceTree = "<group>";
+		};
+		AC2A95650DE0B0A700E6F462 /* doc */ = {
+			isa = PBXGroup;
+			children = (
+				ACF4B1A50DBFA73A008A0207 /* TODO */,
+				AC97D3830DD4762100454E4E /* COPYING */,
+				ACFAF4BD0DD486E20095F6A0 /* README */,
+				ACFAF4BB0DD486BC0095F6A0 /* doxygen.cfg */,
+				AC4276C40DD873F6006C3B31 /* index.html */,
+			);
+			name = doc;
 			sourceTree = "<group>";
 		};
 		AC75B24A0DD08BB8003EBD1F /* observers */ = {
