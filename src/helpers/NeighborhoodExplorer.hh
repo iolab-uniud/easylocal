@@ -112,8 +112,6 @@ virtual std::pair<ShiftedResult<CFtype>, ShiftedResult<CFtype> > BestShiftedMove
  @return the variation of the cost due to the Move mv.
  @throws EmptyNeighborhood when the State st has no neighbor 
  */
-virtual CFtype SampleMove(const State &st, Move& mv, unsigned int samples, ProhibitionManager<State,Move,CFtype>* pm) const;
-
   virtual CFtype SampleMove(const State &st, Move& mv, unsigned int samples, ProhibitionManager<State,Move,CFtype>* pm) const throw (EmptyNeighborhood);
 
   /** 
@@ -497,7 +495,7 @@ CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::FirstImprovingMove(const S
 
 
 template <class Input, class State, class Move, typename CFtype>
-CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::SampleMove(const State &st, Move& mv, unsigned int samples, ProhibitionManager<State,Move,CFtype>* pm) const
+CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::SampleMove(const State &st, Move& mv, unsigned int samples, ProhibitionManager<State,Move,CFtype>* pm) const throw (EmptyNeighborhood)
 {
   unsigned int number_of_bests = 0;
   unsigned int s = 1;

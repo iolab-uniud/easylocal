@@ -846,7 +846,7 @@ inline Vector<double> rank(const Vector<T>& v)
   return tmp_rank;
 }
 
-enum MType { DIAG };
+//enum MType { DIAG };
 
 template <typename T>
 class Matrix 
