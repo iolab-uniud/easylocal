@@ -303,9 +303,9 @@ void TabuListManager<State, Move,CFtype>::PurgeList()
 {
     typename std::list<TabuListItem<State,Move,CFtype> >::iterator p = tlist.begin();
     while (p != tlist.end())
-        if (p->out_iter <= iter) // era "p->out_iter == iter". Ora consideriamo anche minore
-            // perche' nel caso di runner multimodale questa funzione
-            // non viene invocata a tutte le iterazioni
+        if (p->out_iter <= iter) // Note: it must be "<=" and not "==" because for bimodal runners 
+	                         // this function is not invoked at every iteration (and thus there
+	                         // are old moves to be removed)
             p = tlist.erase(p);
         else
             p++;

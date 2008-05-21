@@ -63,7 +63,7 @@ protected:
   CFtype current_kick_cost, best_kick_cost;
   bool FirstKickComponent(unsigned int i);  // used by the backtracking algorithm of bestkick
   bool NextKickComponent(unsigned int i);   // (idem)
-  bool UnrelatedMoves(int i) const;      // (idem)
+  bool UnrelatedMoves(int i) const;         // (idem)
 
   SimpleKickerObserver<Input,State,Move,CFtype>* observer;
 };
@@ -250,40 +250,6 @@ CFtype SimpleKicker<Input,State,Move,CFtype>::FirstImprovingKick(const State &st
     observer->NotifyStopKicking(*this);
   return current_kick_cost;
 }
-
-// template <class Input, class State, class Move, typename CFtype>
-// void SimpleKicker<Input,State,Move,CFtype>::FirstKick(const State &st)
-// { 
-//   int i = 0;
-//   this->states[0] = st;
-//   FirstKickComponent(0);
-//   do
-//     {
-//       bool backtrack = UnrelatedMoves(i);
-//       if (i == int(this->step - 1) && !backtrack)
-// 	{ // the first kick has been found
-// 	  current_kick_cost = KickCost();
-// 	  return;
-// 	}
-//       if (backtrack)
-// 	do
-// 	  if (NextKickComponent(i))
-// 	    backtrack = false;
-// 	  else
-// 	    i--;
-// 	while (backtrack && i >= 0);
-//       else
-// 	do 
-// 	  {
-// 	    this->states[i+1] = this->states[i];
-// 	    ne.MakeMove(this->states[i+1],current_moves[i]);
-// 	    i++;
-// 	    FirstKickComponent(i);
-// 	}
-//     }
-//   while (i >= 0);
-//   throw std::logic_error("No kick build in SimpleKicker::FirstKick()");
-// }
 
 template <class Input, class State, class Move, typename CFtype>
 void SimpleKicker<Input,State,Move,CFtype>::FirstKick(const State &st)

@@ -69,4 +69,4 @@
 #include <helpers/CostComponent.hh>
 #include <helpers/DeltaCostComponent.hh>
 
-#endif /*define _HELPERS_HH_*/
+#endif // define _HELPERS_HH_ 

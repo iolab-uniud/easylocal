@@ -26,8 +26,7 @@ protected:
     bool AcceptableMove();
     void StoreMove();
     void SelectMove();
-    // parameters
-      // none
+    // no parameters
 };
 
 /*************************************************************************
@@ -83,8 +82,8 @@ template <class Input, class State, class Move1, class Move2, typename CFtype>
 void BimodalFirstDescent<Input,State,Move1,Move2,CFtype>::InitializeRun()
 {
     BimodalMoveRunner<Input,State,Move1,Move2,CFtype>::InitializeRun();
-    this->current_move_cost1 = -1; // needed for passing the first time
-    this->current_move_type = MOVE_1; // the StopCriterion test
+    this->current_move_cost1 = -1;     // needed for passing the first time the StopCriterion test
+    this->current_move_type = MOVE_1;  
 
 }
 
@@ -159,7 +158,6 @@ template <class Input, class State, class Move1, class Move2, typename CFtype>
 void BimodalFirstDescent<Input,State,Move1,Move2,CFtype>::ReadParameters(std::istream& is, std::ostream& os)
 {
     os << "FIRST DESCENT -- INPUT PARAMETERS" << std::endl;
-    os << "  Timeout: ";
-    //    is >> this->timeout;
+    os << "none: ";
 }
 #endif // define _BIMODAL_FIRST_DESCENT_HH_

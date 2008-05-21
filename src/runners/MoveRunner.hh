@@ -54,7 +54,6 @@ protected:
   virtual void ComputeMoveCost();
   
   /** Encodes the criterion used to select the move at each step. */
-  //    virtual void SelectMove() = 0;
   virtual void MakeMove();
   void UpdateStateCost();
   

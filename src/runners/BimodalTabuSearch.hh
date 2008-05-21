@@ -190,7 +190,5 @@ void BimodalTabuSearch<Input,State,Move1,Move2,CFtype>::ReadParameters(std::istr
   pm2.ReadParameters(is,os);
   os << "  Number of idle iterations: ";
   is >> this->max_idle_iteration;
-  // 	os << "  Timeout: ";
-  // 	is >> this->timeout;
 }
-#endif /*BIMODALTABUSEARCH_HH_*/
+#endif // BIMODAL_TABUSEARCH_HH_

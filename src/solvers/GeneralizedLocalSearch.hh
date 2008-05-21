@@ -372,8 +372,6 @@ bool GeneralizedLocalSearch<Input,Output,State,CFtype>::PerformKickRun()
         observer->NotifyKickStep(*this,kick_cost);
       improve = true;
     }
-    //       if (this->Timeout())
-    // 	return improve;
   }
   while (LessThan(kick_cost,static_cast<CFtype>(0)));
   
@@ -383,4 +381,4 @@ bool GeneralizedLocalSearch<Input,Output,State,CFtype>::PerformKickRun()
   return improve;
 }
 
-#endif /*_GENERALIZED_LOCAL_SEARCH_SOLVER_HH_*/
+#endif // _GENERALIZED_LOCAL_SEARCH_SOLVER_HH_

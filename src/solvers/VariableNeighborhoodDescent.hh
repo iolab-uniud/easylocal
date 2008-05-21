@@ -20,7 +20,6 @@
 #define VNDSOLVER_HH_
 
 #include <solvers/AbstractLocalSearch.hh>
-//#include <runners/Runner.hh>
 
 /** The Variable Neighborhood Descent solver handles a VND algorithm
     implemented through a Kicker.
@@ -125,7 +124,6 @@ void VNDSolver<Input,Output,State,CFtype>::Solve()
 {
   this->FindInitialState();
   this->Run();    
-  //   throw std::runtime_error("Fix me!"); 	
 }
 
 

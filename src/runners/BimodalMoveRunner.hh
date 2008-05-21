@@ -61,8 +61,6 @@ protected:
   /** Actions to be perfomed at the beginning of the run. */
   virtual void ComputeMoveCost();
 
-  /** Encodes the criterion used to select the move at each step. */
-  //    virtual void SelectMove() = 0;
   void MakeMove();
   void UpdateStateCost();
    
@@ -73,7 +71,6 @@ protected:
   NeighborhoodExplorer<Input,State,Move2>& ne2; /**< A pointer to the
 						   attached neighborhood 
 						   explorer. */
-  // state data
   Move1 current_move1;      /**< The currently selected move. */
   Move2 current_move2;      /**< The currently selected move. */
   CFtype current_move_cost1; /**< The cost of the selected move. */

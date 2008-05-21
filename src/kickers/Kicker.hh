@@ -68,7 +68,6 @@ public:
   virtual void PrintKick(std::ostream& os = std::cout) const = 0;
   const std::string name;
 protected:
-//   virtual CFtype ComputeKickCost(const State& st) = 0;
   const Input& in;
   std::vector<State> states; // for overcoming the need of () constructor
   unsigned int step;

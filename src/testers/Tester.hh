@@ -134,7 +134,9 @@ template <class Input, class Output, class State, typename CFtype>
 void Tester<Input, Output, State,CFtype>::RunMainMenu(std::string file_name)
 {
   if (file_name == "")
-    RunInputMenu();
+    {
+      RunInputMenu();
+    }
   else
     {
       std::ifstream is(file_name.c_str());
@@ -317,7 +319,7 @@ void Tester<Input,Output,State,CFtype>::RunInputMenu()
   chrono.Stop();
   if (show_state)
     {
-      this->om.OutputState(test_state, this->out);
+       this->om.OutputState(test_state, this->out);
       os << "INITIAL SOLUTION " << std::endl << this->out << std::endl;
       os << "INITIAL COST : " << this->sm.CostFunction(test_state) << std::endl;
     }
@@ -419,7 +421,7 @@ bool Tester<Input,Output,State,CFtype>::ExecuteStateChoice()
       }
     case 6:
       {
-	os << this->in;
+	os << in;
 	break;
       }
     case 7:
@@ -439,13 +441,13 @@ bool Tester<Input,Output,State,CFtype>::ExecuteStateChoice()
     case 8:
       {
 	os  << "Detailed Violations: " << std::endl;
-	for (unsigned int i = 0; i < this->sm.CostComponents(); i++)
+	for (i = 0; i < this->sm.CostComponents(); i++)
 	{
 	  CostComponent<Input,State,CFtype>& cc = this->sm.GetCostComponent(i);
 	  cc.PrintViolations(test_state);
 	}
 	os  << std::endl << "Summary of Cost Components: " << std::endl;
-	for (unsigned int i = 0; i < this->sm.CostComponents(); i++)
+	for (i = 0; i < this->sm.CostComponents(); i++)
 	{
 	  CostComponent<Input,State,CFtype>& cc = this->sm.GetCostComponent(i);
 	  os  << i << ". " << cc.name << " : " 

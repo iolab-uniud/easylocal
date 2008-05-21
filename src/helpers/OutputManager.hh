@@ -78,7 +78,6 @@ template <class Input, class Output, class State, typename CFtype>
 void OutputManager<Input,Output,State,CFtype>::ReadState(State &st,
         std::istream &is) const
 {
-	// FIXME: controllare se ha senso
   Output out(in);
   is >> out;
   InputState(st, out);
@@ -93,7 +92,6 @@ void OutputManager<Input,Output,State,CFtype>::ReadState(State &st,
 template <class Input, class Output, class State, typename CFtype>
 void OutputManager<Input,Output,State,CFtype>::WriteState(const State &st, std::ostream &os) const
 {
-	// FIXME: controllare se ha senso
     Output out(in);
     OutputState(st, out);
     os << out;

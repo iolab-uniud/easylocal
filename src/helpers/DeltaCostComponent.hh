@@ -23,10 +23,6 @@
 #include <helpers/ShiftingPenaltyManager.hh>
 #include <stdexcept>
 
-// // forward class tag declaration
-// template <class Input, class State, class Move, typename CFtype>
-// class NeighborhoodExplorer;
-
 /**
  @brief This class handles a shifted cost value as modified by the ShiftingPenaltyManager.
  

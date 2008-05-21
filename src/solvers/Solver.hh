@@ -32,7 +32,6 @@ template <class Input, class Output>
 class Solver
 {
 public:
-  //  virtual void Solve() = 0;
     /** Returns the output by translating the best state found by the
         solver to an output object. */
     virtual const Output& GetOutput() = 0;

@@ -54,7 +54,6 @@ public:
   void SetPattern(PatternType p) { pattern = p; }
   PatternType GetPattern() { return pattern; }
   void PrintPattern(std::ostream& os = std::cout);
-  //  CFtype ComputeKickCost(const State& st);
   virtual void SetStep(unsigned int s);
   virtual void PrintKick(std::ostream& os = std::cout) const;
 	
@@ -77,8 +76,8 @@ public:
 protected:
   NeighborhoodExplorer<Input,State,Move1,CFtype>& nhe1;
   NeighborhoodExplorer<Input,State,Move2,CFtype>& nhe2;
-  std::vector<Move1> current_moves1, internal_best_moves1; //, start_moves1;
-  std::vector<Move2> current_moves2, internal_best_moves2; //, start_moves2;
+  std::vector<Move1> current_moves1, internal_best_moves1; 
+  std::vector<Move2> current_moves2, internal_best_moves2;
   PatternType pattern;
   PatternType best_pattern;
   CFtype kick_cost, best_kick_cost;
@@ -86,8 +85,8 @@ protected:
   void FirstKickComponent(unsigned int i);  // used by the backtracking algorithm of bestkick
   bool NextKickComponent(unsigned int i);   // (idem)
   bool UnrelatedMoves(unsigned int i);      // (idem)
-  void FirstKick(const State &st); // { throw std::runtime_error("Fix me!"); }
-  bool NextKick(); // { throw std::runtime_error("Fix me!"); }
+  void FirstKick(const State &st);
+  bool NextKick();
 private:
   void FirstPattern();
   bool NextPattern();
@@ -108,10 +107,10 @@ BimodalKicker<Input,State,Move1,Move2,CFtype>::BimodalKicker(const Input& i,
   current_moves2(s), internal_best_moves2(s), pattern(s) 
 {
   for (unsigned int i = 0; i < s; i++)
-    {
+    { // Default pattern is 1 2 1 2 ...
       if ((i % 2) == 0)
 	pattern[i] = MOVE_1;
-      else // (i % 1) == 1
+      else
 	pattern[i] = MOVE_2;
     }
 }
@@ -188,10 +187,10 @@ void BimodalKicker<Input,State,Move1,Move2,CFtype>::SetStep(unsigned int s)
   pattern.resize(s);
   best_pattern.resize(s);
   for (unsigned int i = 0; i < s; i++)
-    {
+    {// Default pattern is 1 2 1 2 ...
       if ((i % 2) == 0)
 	pattern[i] = MOVE_1;
-      else // (i % 1) == 1
+      else 
 	pattern[i] = MOVE_2;
     }
 }
@@ -203,7 +202,7 @@ void BimodalKicker<Input,State,Move1,Move2,CFtype>::FirstKickComponent(unsigned 
     {
       nhe1.FirstMove(this->states[i], current_moves1[i]);
     }
-  else // pattern[i] == MOVE_2
+  else
     {
       nhe2.FirstMove(this->states[i], current_moves2[i]);
     }
@@ -216,7 +215,7 @@ bool BimodalKicker<Input,State,Move1,Move2,CFtype>::NextKickComponent(unsigned i
     {
       return nhe1.NextMove(this->states[i], current_moves1[i]);
     }
-  else // pattern[i] == MOVE_2
+  else
     {
       return nhe2.NextMove(this->states[i], current_moves2[i]);
     }
@@ -241,15 +240,12 @@ bool BimodalKicker<Input,State,Move1,Move2,CFtype>::UnrelatedMoves(unsigned int 
 template <class Input, class State, class Move1, class Move2, typename CFtype>
 CFtype BimodalKicker<Input,State,Move1,Move2,CFtype>::BestKick(const State &st)
 {
-  //FIXME    this->TimeoutSubscribe();
   bool first_kick_found = false;
   int i = 0;
   this->states[0] = st;
   FirstKickComponent(0);
   do
     {
-      //       if (this->Timeout())
-      // 	break;
       bool backtrack = UnrelatedMoves(i);
       if (i == int(this->step - 1) && !backtrack)
 	{
@@ -287,7 +283,7 @@ CFtype BimodalKicker<Input,State,Move1,Move2,CFtype>::BestKick(const State &st)
 	  this->states[i+1] = this->states[i];
 	  if (pattern[i] == MOVE_1)
 	    nhe1.MakeMove(this->states[i+1],current_moves1[i]);
-	  else // pattern[i] == MOVE_2
+	  else
 	    nhe2.MakeMove(this->states[i+1],current_moves2[i]);
 	  i++;
 	  FirstKickComponent(i);
@@ -299,21 +295,17 @@ CFtype BimodalKicker<Input,State,Move1,Move2,CFtype>::BestKick(const State &st)
   current_moves1 = internal_best_moves1;
   current_moves2 = internal_best_moves2;
   return kick_cost;
-  //FIXME    this->TimeoutUnsubscribe();
 }
 
 template <class Input, class State, class Move1, class Move2, typename CFtype>
 CFtype BimodalKicker<Input,State,Move1,Move2,CFtype>::FirstImprovingKick(const State &st)
 {
-  //FIXME    this->TimeoutSubscribe();
   bool first_kick_found = false;
   int i = 0;
   this->states[0] = st;
   FirstKickComponent(0);
   do
     {
-      //       if (this->Timeout())
-      // 	break;
       bool backtrack = UnrelatedMoves(i);
       if (i == int(this->step - 1) && !backtrack)
 	{
@@ -355,7 +347,7 @@ CFtype BimodalKicker<Input,State,Move1,Move2,CFtype>::FirstImprovingKick(const S
 	  this->states[i+1] = this->states[i];
 	  if (pattern[i] == MOVE_1)
 	    nhe1.MakeMove(this->states[i+1],current_moves1[i]);
-	  else // pattern[i] == MOVE_2
+	  else
 	    nhe2.MakeMove(this->states[i+1],current_moves2[i]);
 	  i++;
 	  FirstKickComponent(i);
@@ -367,7 +359,6 @@ CFtype BimodalKicker<Input,State,Move1,Move2,CFtype>::FirstImprovingKick(const S
   current_moves1 = internal_best_moves1;
   current_moves2 = internal_best_moves2;
   return kick_cost;
-  //FIXME    this->TimeoutUnsubscribe();
 }
 
 template <class Input, class State, class Move1, class Move2, typename CFtype>
@@ -378,8 +369,6 @@ void BimodalKicker<Input,State,Move1,Move2,CFtype>::FirstKick(const State &st)
   FirstKickComponent(0);
   do
     {
-      //       if (this->Timeout())
-      // 	break;
       bool backtrack = UnrelatedMoves(i);
       if (i == int(this->step - 1) && !backtrack)
 	{
@@ -403,7 +392,7 @@ void BimodalKicker<Input,State,Move1,Move2,CFtype>::FirstKick(const State &st)
 	  this->states[i+1] = this->states[i];
 	  if (pattern[i] == MOVE_1)
 	    nhe1.MakeMove(this->states[i+1],current_moves1[i]);
-	  else // pattern[i] == MOVE_2
+	  else
 	    nhe2.MakeMove(this->states[i+1],current_moves2[i]);
 	  i++;
 	  FirstKickComponent(i);
@@ -420,8 +409,6 @@ bool BimodalKicker<Input,State,Move1,Move2,CFtype>::NextKick()
   bool backtrack = true;
   do
     {
-      //       if (this->Timeout())
-      // 	break;
       if (i == int(this->step - 1) && !backtrack)
 	{
 	  kick_cost = KickCost();
@@ -444,7 +431,7 @@ bool BimodalKicker<Input,State,Move1,Move2,CFtype>::NextKick()
 	  this->states[i+1] = this->states[i];
 	  if (pattern[i] == MOVE_1)
 	    nhe1.MakeMove(this->states[i+1],current_moves1[i]);
-	  else // pattern[i] == MOVE_2
+	  else
 	    nhe2.MakeMove(this->states[i+1],current_moves2[i]);
 	  i++;
 	  FirstKickComponent(i);
@@ -461,13 +448,11 @@ CFtype BimodalKicker<Input,State,Move1,Move2,CFtype>::TotalBestKick(const State 
   // NOTE: assumes one consistent kick for any pattern (it would need to capture the exceptions)
   CFtype total_best_cost;
   FirstPattern();
-  //  bool one_consistent_pattern_has_found = false;
   best_kick_cost = BestKick(st);
   total_best_cost = best_kick_cost;
   std::vector<Move1> total_best_moves1 = internal_best_moves1;
   std::vector<Move2> total_best_moves2 = internal_best_moves2;
-  while(NextPattern() // && !this->Timeout()
-	)
+  while(NextPattern())
     {
       best_kick_cost = BestKick(st);
       if (LessThan(best_kick_cost, total_best_cost))
@@ -492,8 +477,7 @@ CFtype BimodalKicker<Input,State,Move1,Move2,CFtype>::TotalFirstImprovingKick(co
   CFtype current_kick_cost = FirstImprovingKick(st);
   if (LessThan(current_kick_cost, 0)) return current_kick_cost;
   
-  while(NextPattern() // && !this->Timeout()
-	)
+  while(NextPattern())
     {
       current_kick_cost = FirstImprovingKick(st);
       if (LessThan(current_kick_cost, 0)) return current_kick_cost;
@@ -511,7 +495,7 @@ void BimodalKicker<Input,State,Move1,Move2,CFtype>::MakeKick(State &st)
 	{
 	  nhe1.MakeMove(st,current_moves1[i]);
 	}
-      else // pattern[i] == MOVE_2
+      else
 	{
 	  nhe2.MakeMove(st,current_moves2[i]);
 	}
@@ -530,7 +514,7 @@ CFtype BimodalKicker<Input,State,Move1,Move2,CFtype>::RandomKick(const State &st
 	  this->states[i+1] = this->states[i];
 	  nhe1.MakeMove(this->states[i+1],current_moves1[i]);
 	}
-      else // pattern[i] == MOVE_2
+      else
 	{
 	  nhe2.RandomMove(this->states[i],current_moves2[i]);
 	  this->states[i+1] = this->states[i];
@@ -549,34 +533,12 @@ CFtype BimodalKicker<Input,State,Move1,Move2,CFtype>::KickCost()
       {
 	cost += nhe1.DeltaCostFunction(this->states[i], current_moves1[i]);
       }
-    else // pattern[i] == MOVE_2
+    else
       {
 	cost += nhe2.DeltaCostFunction(this->states[i], current_moves2[i]);
       }
   return cost;
 }
-
-// template <class Input, class State, class Move1, class Move2, typename CFtype>
-// CFtype BimodalKicker<Input,State,Move1,Move2,CFtype>::ComputeKickCost(const State& st)
-// {
-// 	CFtype cost = 0;
-// 	this->states[0] = st;
-// 	for (unsigned int i = 0; i < this->step; i++)
-// 	{
-// 		this->states[i+1] = this->states[i];
-// 		if (pattern[i] == MOVE_1)
-// 		{
-// 			cost += nhe1.DeltaCostFunction(this->states[i], current_moves1[i]);
-// 			nhe1.MakeMove(this->states[i+1], current_moves1[i]);
-// 		}
-// 		else // pattern[i] == MOVE_2
-// 		{
-// 			cost += nhe2.DeltaCostFunction(this->states[i], current_moves2[i]);
-// 			nhe2.MakeMove(this->states[i+1], current_moves2[i]);
-// 		}
-// 	}
-// 	return cost;
-// }
 
 template <class Input, class State, class Move1, class Move2, typename CFtype>
 void BimodalKicker<Input,State,Move1,Move2,CFtype>::FirstPattern()
@@ -608,7 +570,6 @@ void BimodalKicker<Input,State,Move1,Move2,CFtype>::ReadParameters(std::istream&
   os << "  Step: ";
   is >> s;
   SetStep(s);
-  //    pattern.resize(this->step);
   os << "  Pattern: ";
   for (unsigned int i = 0; i < this->step; i++)
     {
@@ -621,8 +582,6 @@ void BimodalKicker<Input,State,Move1,Move2,CFtype>::ReadParameters(std::istream&
       else
 	os << "Wrong move type while pattern input" << std::endl;
     }
-  // 	os << "  Timeout: ";
-  // 	is >> this->timeout;
 }
 
 template <class Input, class State, class Move1, class Move2, typename CFtype>

@@ -48,7 +48,6 @@ public:
   void SetPerturbRange(double min_p, double max_p) { min_perturb = min_p; max_perturb = max_p; }
   void SetPerturbValue(double p) { min_perturb = p - (p-1)/10; max_perturb = p + (p-1)/10; }
 protected:
-  // parameters
   double min_shift;
   double max_shift;
   double cost_threshold;
@@ -71,10 +70,8 @@ public:
   void SetMaxFeasibleIterations(unsigned mf) { max_feasible_iter = mf; }
   void SetMaxInfeasibleIterations(unsigned mf) { max_infeasible_iter = mf; }
 protected:
-  // parameters
   unsigned int max_feasible_iter;
   unsigned int max_infeasible_iter;
-  // internal data
   unsigned int feasible_iter;
   unsigned int infeasible_iter;
 };
@@ -161,7 +158,6 @@ bool ComplexShiftingPenaltyManager<CFtype>::Update(CFtype cost)
 	      if (this->shift < this->min_shift)
 		{		
 		  this->shift = this->min_shift;
-		  //		  update = false;
 		}
             }
 	  feasible_iter = 0;
@@ -184,7 +180,6 @@ bool ComplexShiftingPenaltyManager<CFtype>::Update(CFtype cost)
 	      if (this->shift > this->max_shift)
 		{
 		  this->shift = this->max_shift;
-		  //		  update = false;
 		}
 	    }
 	  infeasible_iter = 0;

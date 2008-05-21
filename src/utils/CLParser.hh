@@ -142,8 +142,6 @@ void ValArgument<T, N>::PrintUsage(std::ostream& os, unsigned int tabs) const
       os << " <value" << i << ">";
 }	
 
-//class ArgumentGroup;
-
 class FlagArgument : public Argument
 {
 public:
@@ -159,7 +157,7 @@ public:
   { return 0; }
 };
 
-class CLParser // : public CLParserInterface
+class CLParser 
 {
   friend std::ostream& operator<<(std::ostream& os, const CLParser& cl);
 public:
@@ -178,4 +176,4 @@ protected:
 
 std::ostream& operator<<(std::ostream& os, const CLParser& cl);
 
-#endif
+#endif // define _CLPARSER_HH_

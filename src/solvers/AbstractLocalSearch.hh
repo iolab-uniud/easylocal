@@ -44,7 +44,6 @@ public:
   const State& GetBestState() const;
   virtual void SetCurrentState(const State& st, CFtype cost);
   virtual void SetCurrentState(const State& st);
-  //  virtual void SetCurrentState(const Output& out);
   virtual void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout) = 0;
 protected:
   AbstractLocalSearch(const Input& in,
@@ -187,4 +186,4 @@ bool AbstractLocalSearch<Input,Output,State,CFtype>::LetGo(Runner<Input,State,CF
 #endif
 }
 
-#endif // _ABSTRACT_LOCAL_SEARCH_HH_*/
+#endif // _ABSTRACT_LOCAL_SEARCH_HH_

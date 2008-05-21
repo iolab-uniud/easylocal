@@ -34,7 +34,6 @@ public:
   void NotifyKickStep(GeneralizedLocalSearch<Input,Output,State,CFtype>& s, const CFtype& c);
   void NotifyKickerStop(GeneralizedLocalSearch<Input,Output,State,CFtype>& s);
   void SetNotifyRunner() {  notify_runner = true; } 
-  //... FIXME
 protected:
   bool notify_round, notify_runner, notify_kicker;
   std::ostream& os;

@@ -136,7 +136,6 @@ double ConditionVariable::WaitTimeout(double timeout)
 	default:
 	  run_terminated = true;
 	} 
-      // 
       getrusage(RUSAGE_SELF, &now);
       //std::cerr << "Sec: " << now.ru_utime.tv_sec << ' ' << start.ru_utime.tv_sec << std::endl;
       elapsed_time = (now.ru_utime.tv_sec - start.ru_utime.tv_sec) + (now.ru_utime.tv_usec - start.ru_utime.tv_usec) / (double)MICROSEC_PER_SEC;
