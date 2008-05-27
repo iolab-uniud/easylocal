@@ -134,8 +134,8 @@
 					PBXFileDataSource_Warnings_ColumnID,
 				);
 			};
-			PBXPerProjectTemplateStateSaveDate = 233616510;
-			PBXWorkspaceStateSaveDate = 233616510;
+			PBXPerProjectTemplateStateSaveDate = 233617251;
+			PBXWorkspaceStateSaveDate = 233617251;
 		};
 		perUserProjectItems = {
 			AC2A95C30DE0B58000E6F462 /* PBXTextBookmark */ = AC2A95C30DE0B58000E6F462 /* PBXTextBookmark */;
@@ -250,8 +250,9 @@
 			ACA64BC10DDC76E700040515 /* PBXTextBookmark */ = ACA64BC10DDC76E700040515 /* PBXTextBookmark */;
 			ACA64BC20DDC76E700040515 /* PBXTextBookmark */ = ACA64BC20DDC76E700040515 /* PBXTextBookmark */;
 			ACA64BC50DDC76E700040515 /* PBXTextBookmark */ = ACA64BC50DDC76E700040515 /* PBXTextBookmark */;
-			ACAE6F8D0DECB48E0045A066 /* PBXTextBookmark */ = ACAE6F8D0DECB48E0045A066 /* PBXTextBookmark */;
-			ACAE6F8F0DECB48E0045A066 /* PBXTextBookmark */ = ACAE6F8F0DECB48E0045A066 /* PBXTextBookmark */;
+			ACAE6F9B0DECB78C0045A066 /* PBXTextBookmark */ = ACAE6F9B0DECB78C0045A066 /* PBXTextBookmark */;
+			ACAE6F9C0DECB78C0045A066 /* PBXTextBookmark */ = ACAE6F9C0DECB78C0045A066 /* PBXTextBookmark */;
+			ACAE6FA10DECB8CF0045A066 /* PBXTextBookmark */ = ACAE6FA10DECB8CF0045A066 /* PBXTextBookmark */;
 			ACFAF49D0DD477340095F6A0 /* PBXTextBookmark */ = ACFAF49D0DD477340095F6A0 /* PBXTextBookmark */;
 			ACFAF4AB0DD4863A0095F6A0 /* PBXTextBookmark */ = ACFAF4AB0DD4863A0095F6A0 /* PBXTextBookmark */;
 			ACFAF4AC0DD4863A0095F6A0 /* PBXTextBookmark */ = ACFAF4AC0DD4863A0095F6A0 /* PBXTextBookmark */;
@@ -1562,40 +1563,47 @@
 		vrLen = 929;
 		vrLoc = 0;
 	};
-	ACAE6F8D0DECB48E0045A066 /* PBXTextBookmark */ = {
-		isa = PBXTextBookmark;
-		fRef = ACAE6F8E0DECB48E0045A066 /* NeighborhoodExplorer.hh */;
-		rLen = 0;
-		rLoc = 2147483647;
-		rType = 0;
-	};
-	ACAE6F8E0DECB48E0045A066 /* NeighborhoodExplorer.hh */ = {
+	ACAE6F900DECB48E0045A066 /* NeighborhoodExplorer.hh */ = {
 		isa = PBXFileReference;
 		lastKnownFileType = sourcecode.cpp.h;
 		name = NeighborhoodExplorer.hh;
 		path = /Users/digasper/Documents/Development/trunk/src/helpers/NeighborhoodExplorer.hh;
 		sourceTree = "<absolute>";
 		uiCtxt = {
-			sepNavIntBoundsRect = "{{0, 0}, {625, 8008}}";
+			sepNavIntBoundsRect = "{{0, 0}, {625, 6650}}";
 			sepNavSelRange = "{0, 0}";
-			sepNavVisRange = "{0, 1060}";
+			sepNavVisRange = "{0, 1061}";
 		};
 	};
-	ACAE6F8F0DECB48E0045A066 /* PBXTextBookmark */ = {
+	ACAE6F9B0DECB78C0045A066 /* PBXTextBookmark */ = {
 		isa = PBXTextBookmark;
 		fRef = ACAE6F900DECB48E0045A066 /* NeighborhoodExplorer.hh */;
 		name = "NeighborhoodExplorer.hh: 1";
 		rLen = 0;
 		rLoc = 0;
 		rType = 0;
-		vrLen = 1060;
+		vrLen = 1061;
 		vrLoc = 0;
 	};
-	ACAE6F900DECB48E0045A066 /* NeighborhoodExplorer.hh */ = {
-		isa = PBXFileReference;
-		name = NeighborhoodExplorer.hh;
-		path = /Users/digasper/Documents/Development/trunk/src/helpers/NeighborhoodExplorer.hh;
-		sourceTree = "<absolute>";
+	ACAE6F9C0DECB78C0045A066 /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = ACAE6F900DECB48E0045A066 /* NeighborhoodExplorer.hh */;
+		name = "NeighborhoodExplorer.hh: 1";
+		rLen = 0;
+		rLoc = 0;
+		rType = 0;
+		vrLen = 1061;
+		vrLoc = 0;
+	};
+	ACAE6FA10DECB8CF0045A066 /* PBXTextBookmark */ = {
+		isa = PBXTextBookmark;
+		fRef = ACF4B1110DBFA668008A0207 /* NeighborhoodExplorer.hh */;
+		name = "NeighborhoodExplorer.hh: 156";
+		rLen = 0;
+		rLoc = 6450;
+		rType = 0;
+		vrLen = 856;
+		vrLoc = 5899;
 	};
 	ACDFC76D0DCFB2E5004D11E8 /* EasyLocal.conf.hh */ = {
 		uiCtxt = {
@@ -1659,9 +1667,9 @@
 	};
 	ACF4B1110DBFA668008A0207 /* NeighborhoodExplorer.hh */ = {
 		uiCtxt = {
-			sepNavIntBoundsRect = "{{0, 0}, {1029, 6818}}";
-			sepNavSelRange = "{893, 0}";
-			sepNavVisRange = "{516, 1135}";
+			sepNavIntBoundsRect = "{{0, 0}, {1104, 7140}}";
+			sepNavSelRange = "{6450, 0}";
+			sepNavVisRange = "{5899, 856}";
 			sepNavWindowFrame = "{{188, 154}, {1088, 621}}";
 		};
 	};

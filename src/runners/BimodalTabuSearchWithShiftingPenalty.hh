@@ -119,11 +119,11 @@ void BimodalTabuSearchWithShiftingPenalty<Input,State,Move1,Move2,CFtype>::Selec
   }
   Move1 shifted_best_mv1, actual_best_mv1;
   std::pair<ShiftedResult<CFtype>, ShiftedResult<CFtype> > moves_cost1 = 
-    this->ne1.BestShiftedMove(this->current_state, shifted_best_mv1, actual_best_mv1, &this->pm1);
+    this->ne1.BestShiftedMove(this->current_state, shifted_best_mv1, actual_best_mv1, this->pm1);
   
   Move2 shifted_best_mv2, actual_best_mv2;
   std::pair<ShiftedResult<CFtype>, ShiftedResult<CFtype> > moves_cost2 = 
-    this->ne2.BestShiftedMove(this->current_state, shifted_best_mv2, actual_best_mv2, &this->pm2);
+    this->ne2.BestShiftedMove(this->current_state, shifted_best_mv2, actual_best_mv2, this->pm2);
   
   // this is a sort of "Aspiration" for the case one (or both) of the actual_best_move improve over the current best
   if (LessThan(this->current_state_cost + moves_cost1.second.actual_value, this->best_state_cost))
