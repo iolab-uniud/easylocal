@@ -109,11 +109,11 @@ void TabuSearchWithShiftingPenalty<Input,State,Move,CFtype>::SelectMove()
   bool shifted = (this->number_of_iterations - this->iteration_of_best < shift_region * this->max_idle_iteration);
   if (!shifted)
   {
-    this->current_move_cost = this->ne.BestMove(this->current_state, this->current_move, &this->pm);
+    this->current_move_cost = this->ne.BestMove(this->current_state, this->current_move, this->pm);
     return;
   }
   Move shifted_best_mv, actual_best_mv;
-  std::pair<ShiftedResult<CFtype>, ShiftedResult<CFtype> > moves_cost = this->ne.BestShiftedMove(this->current_state, shifted_best_mv, actual_best_mv, &this->pm);
+  std::pair<ShiftedResult<CFtype>, ShiftedResult<CFtype> > moves_cost = this->ne.BestShiftedMove(this->current_state, shifted_best_mv, actual_best_mv, this->pm);
   
   if (LessThan(this->current_state_cost + moves_cost.second.actual_value, this->best_state_cost))
   {

@@ -156,7 +156,7 @@ void TabuSearch<Input,State,Move,CFtype>::GoCheck() const
 template <class Input, class State, class Move, typename CFtype>
 void TabuSearch<Input,State,Move,CFtype>::SelectMove()
 {
-  this->current_move_cost = this->ne.BestMove(this->current_state, this->current_move, &pm);  
+  this->current_move_cost = this->ne.BestMove(this->current_state, this->current_move, pm);  
 }
 
 template <class Input, class State, class Move, typename CFtype>
