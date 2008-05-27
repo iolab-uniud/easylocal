@@ -54,7 +54,7 @@ public:
 	void Print(std::ostream& os = std::cout) const;
   void SetStartTemperature(double st)  { start_temperature = st; }
   void SetCoolingRate(double cr)  { cooling_rate = cr; }
-  void SetNeighborsSampled(double ns)  { neighbors_sampled = ns; }
+  void SetNeighborsSampled(unsigned int ns)  { neighbors_sampled = ns; }
 
 
 protected:
