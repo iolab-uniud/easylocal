@@ -119,8 +119,8 @@ void BimodalTabuSearch<Input,State,Move1,Move2,CFtype>::GoCheck() const
 template <class Input, class State, class Move1, class Move2, typename CFtype>
 void BimodalTabuSearch<Input,State,Move1,Move2,CFtype>::SelectMove()
 {
-  this->current_move_cost1 = this->ne1.BestMove(this->current_state, this->current_move1, &pm1); 
-  this->current_move_cost2 = this->ne2.BestMove(this->current_state, this->current_move2, &pm2); 
+  this->current_move_cost1 = this->ne1.BestMove(this->current_state, this->current_move1, pm1); 
+  this->current_move_cost2 = this->ne2.BestMove(this->current_state, this->current_move2, pm2); 
   if (LessThan(this->current_move_cost1, this->current_move_cost2))
     this->current_move_type = MOVE_1;
   else if (LessThan(this->current_move_cost2, this->current_move_cost1))
