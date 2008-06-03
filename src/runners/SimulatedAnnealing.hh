@@ -174,16 +174,17 @@ void SimulatedAnnealing<Input,State,Move,CFtype>::InitializeRun()
 		temperature = start_temperature;
 	else
 	{
-		// Compute a start temperature by sampling the neighborhood and computing the variance
+		// Compute a start temperature by sampling the search space and computing the variance
 		// according to [van Laarhoven and Aarts, 1987] (allow an acceptance ratio of approximately 80%)
-		Move mv;
+    State sampled_state(this->in);
 		std::vector<CFtype> cost_values(neighbors_sampled);
 		double mean = 0.0, variance = 0.0;
-		for (unsigned int i = 0; i < neighbors_sampled; i++)
+		for (unsigned int i = 0; i < 100; i++)
 		{
-			this->ne.RandomMove(this->current_state, mv);
-			cost_values[i] = this->ne.DeltaCostFunction(this->current_state, mv);
+			this->sm.RandomState(sampled_state);
+			cost_values[i] = this->sm.CostFunction(sampled_state);
 			mean += cost_values[i];
+      // the best state sampled could also be remembered
 		}
 		mean /= neighbors_sampled;
 		for (unsigned int i = 0; i < neighbors_sampled; i++)
