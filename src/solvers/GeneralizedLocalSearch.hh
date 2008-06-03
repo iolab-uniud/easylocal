@@ -55,7 +55,7 @@ public:
 			 std::string name,
 			 CLParser& cl);	
   void Print(std::ostream& os = std::cout) const;
-  void SetKicker(Kicker<Input,State,CFtype>& k);
+  void SetKicker(Kicker<Input,State,CFtype>& k, unsigned int kick_rate = 2);
   void AddRunner(Runner<Input,State,CFtype>& r);
   void ClearRunners();
   void SetIdleRounds(unsigned int r);
@@ -64,6 +64,7 @@ public:
   void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout);
 
   void SimpleSolve(unsigned runner = 0, bool random_init = true);
+  void MultiStartSimpleSolve(unsigned runner = 0, unsigned trials = 1);
   void GeneralSolve(KickStrategy kick_strategy = NO_KICKER, bool state_init = true);
 
 protected:
@@ -104,7 +105,7 @@ GeneralizedLocalSearch<Input,Output,State,CFtype>::GeneralizedLocalSearch(const 
 									  OutputManager<Input,Output,State,CFtype>& om,
 									  std::string name)
   : AbstractLocalSearch<Input,Output,State,CFtype>(i, sm, om, name), current_runner(0), idle_rounds(0), 
-    rounds(0), kick_rate(4),
+    rounds(0), kick_rate(2),
     max_idle_rounds(1), max_rounds(100), generalized_ls_arguments("gls_" + name, "gls_" + name, false), 
     arg_max_idle_rounds("max_idle_rounds", "-mir", false), arg_max_rounds("max_rounds", "-mr", false),
     arg_timeout("timeout", "to", false, 0.0)
@@ -118,10 +119,10 @@ GeneralizedLocalSearch<Input,Output,State,CFtype>::GeneralizedLocalSearch(const 
 
 template <class Input, class Output, class State, typename CFtype>
 GeneralizedLocalSearch<Input,Output,State,CFtype>::GeneralizedLocalSearch(const Input& i,
-										      StateManager<Input,State,CFtype>& sm,
-										      OutputManager<Input,Output,State,CFtype>& om,
-										      std::string name,
-										      CLParser& cl)
+									  StateManager<Input,State,CFtype>& sm,
+									  OutputManager<Input,Output,State,CFtype>& om,
+									  std::string name,
+									  CLParser& cl)
   : AbstractLocalSearch<Input,Output,State,CFtype>(i, sm, om, name), current_runner(0), idle_rounds(0), rounds(0),
     max_idle_rounds(1), max_rounds(100), generalized_ls_arguments("gls_" + name, "gls_" + name, false), 
     arg_max_idle_rounds("max_idle_rounds", "-mir", false), arg_max_rounds("max_rounds", "-mr", false),
@@ -133,14 +134,14 @@ GeneralizedLocalSearch<Input,Output,State,CFtype>::GeneralizedLocalSearch(const 
   cl.AddArgument(generalized_ls_arguments);
   cl.MatchArgument(generalized_ls_arguments);	
   if (generalized_ls_arguments.IsSet())
-  {
-    if (arg_max_idle_rounds.IsSet())
-      max_idle_rounds = arg_max_idle_rounds.GetValue();
-    if (arg_max_rounds.IsSet())
-      max_rounds = arg_max_rounds.GetValue();
-    if (arg_timeout.IsSet())
-      this->SetTimeout(arg_timeout.GetValue());
-  }
+    {
+      if (arg_max_idle_rounds.IsSet())
+	max_idle_rounds = arg_max_idle_rounds.GetValue();
+      if (arg_max_rounds.IsSet())
+	max_rounds = arg_max_rounds.GetValue();
+      if (arg_timeout.IsSet())
+	this->SetTimeout(arg_timeout.GetValue());
+    }
   p_kicker = NULL;
   observer = NULL;
 }
@@ -153,10 +154,10 @@ void GeneralizedLocalSearch<Input,Output,State,CFtype>::ReadParameters(std::istr
   os << "Runners: " << std::endl;
 	
   for (unsigned int i = 0; i < this->runners.size(); i++)
-  {
-    os  << "Runner[" << i << "]" << std::endl;
-    this->runners[i]->ReadParameters(is, os);
-  }
+    {
+      os  << "Runner[" << i << "]" << std::endl;
+      this->runners[i]->ReadParameters(is, os);
+    }
   os << "Kicker: " << std::endl;
   if (p_kicker)
     p_kicker->ReadParameters(is, os);
@@ -181,10 +182,10 @@ void GeneralizedLocalSearch<Input,Output,State,CFtype>::SetRounds(unsigned int r
 
 
 /**
- Adds the given runner to the list of the managed runners.
+   Adds the given runner to the list of the managed runners.
  
- @param r a pointer to a compatible runner to add
- */
+   @param r a pointer to a compatible runner to add
+*/
 template <class Input, class Output, class State, typename CFtype>
 void GeneralizedLocalSearch<Input,Output,State,CFtype>::AddRunner(Runner<Input,State,CFtype>& r)
 {
@@ -192,8 +193,8 @@ void GeneralizedLocalSearch<Input,Output,State,CFtype>::AddRunner(Runner<Input,S
 }
 
 /**
-Remove all runners
-  */
+   Remove all runners
+*/
 template <class Input, class Output, class State, typename CFtype>
 void GeneralizedLocalSearch<Input,Output,State,CFtype>::ClearRunners()
 {
@@ -207,10 +208,10 @@ void GeneralizedLocalSearch<Input,Output,State,CFtype>::Print(std::ostream& os) 
 	
   if (this->runners.size() > 0)
     for (unsigned int i = 0; i < this->runners.size(); i++)
-    {
-      os  << "Runner[" << i << "]" << std::endl;
-      this->runners[i]->Print(os);
-    }
+      {
+	os  << "Runner[" << i << "]" << std::endl;
+	this->runners[i]->Print(os);
+      }
   else
     os  << "<no runner attached>" << std::endl;
   if (p_kicker)
@@ -222,14 +223,15 @@ void GeneralizedLocalSearch<Input,Output,State,CFtype>::Print(std::ostream& os) 
 }
 
 template <class Input, class Output, class State, typename CFtype>
-void GeneralizedLocalSearch<Input,Output,State,CFtype>::SetKicker(Kicker<Input,State,CFtype>& k)
+void GeneralizedLocalSearch<Input,Output,State,CFtype>::SetKicker(Kicker<Input,State,CFtype>& k, unsigned int kr)
 { 
   p_kicker = &k; 
+  kick_rate = kr;
 }
 
 /**
- Solves using a single runner
- */
+   Solves using a single runner
+*/
 template <class Input, class Output, class State, typename CFtype>
 void GeneralizedLocalSearch<Input,Output,State,CFtype>::SimpleSolve(unsigned runner, bool state_init)
 {
@@ -249,10 +251,41 @@ void GeneralizedLocalSearch<Input,Output,State,CFtype>::SimpleSolve(unsigned run
   this->best_state_cost = this->current_state_cost;
   chrono.Stop();
 }
+/**
+   Solves using a single runner, but making many starts
+*/
+template <class Input, class Output, class State, typename CFtype>
+void GeneralizedLocalSearch<Input,Output,State,CFtype>::MultiStartSimpleSolve(unsigned runner, unsigned trials)
+{
+  bool timeout_expired = false;
+  if (runner >= runners.size())
+    throw std::logic_error("No runner set for solver " + this->name);
+  chrono.Reset();
+  chrono.Start();
+  for (unsigned t = 0; t < trials; t++)
+    {
+      this->FindInitialState();
+      runners[runner]->SetState(this->current_state);
+      if (observer != NULL) observer->NotifyRunnerStart(*this);
+      timeout_expired = LetGo(*runners[runner]);
+      if (observer != NULL) observer->NotifyRunnerStop(*this);	  
+      this->current_state = runners[runner]->GetState();
+      this->current_state_cost = runners[runner]->GetStateCost();
+
+      if (t == 0 || LessThan(this->current_state_cost, this->best_state_cost))
+	{
+	  this->best_state = this->current_state;
+	  this->best_state_cost = this->current_state_cost;
+	}
+      if (timeout_expired)
+	break;
+    }
+  chrono.Stop();
+}
 
 /**
- Solves using the general strategy
- */
+   Solves using the general strategy
+*/
 template <class Input, class Output, class State, typename CFtype>
 void GeneralizedLocalSearch<Input,Output,State,CFtype>::GeneralSolve(KickStrategy kick_strategy, bool state_init)
 
@@ -274,80 +307,80 @@ void GeneralizedLocalSearch<Input,Output,State,CFtype>::GeneralSolve(KickStrateg
   this->best_state_cost = this->current_state_cost;
   
   do
-  {
-    improve_state = false;
-    for (current_runner = 0; current_runner < this->runners.size(); current_runner++)
     {
-      this->runners[current_runner]->SetState(this->current_state, this->current_state_cost);
-      if (observer != NULL) observer->NotifyRunnerStart(*this);
-      timeout_expired = LetGo(*this->runners[current_runner]);
-      if (observer != NULL) observer->NotifyRunnerStop(*this);	  
-      this->current_state = this->runners[current_runner]->GetState();
-      this->current_state_cost = this->runners[current_runner]->GetStateCost();
-      if (LessThan(this->current_state_cost, this->best_state_cost))
+      improve_state = false;
+      for (current_runner = 0; current_runner < this->runners.size(); current_runner++)
+	{
+	  this->runners[current_runner]->SetState(this->current_state, this->current_state_cost);
+	  if (observer != NULL) observer->NotifyRunnerStart(*this);
+	  timeout_expired = LetGo(*this->runners[current_runner]);
+	  if (observer != NULL) observer->NotifyRunnerStop(*this);	  
+	  this->current_state = this->runners[current_runner]->GetState();
+	  this->current_state_cost = this->runners[current_runner]->GetStateCost();
+	  if (LessThan(this->current_state_cost, this->best_state_cost))
 	    {
 	      improve_state = true;
 	      this->best_state = this->current_state;
 	      this->best_state_cost = this->current_state_cost;
 	      lower_bound_reached = this->sm.LowerBoundReached(this->best_state_cost); 
 	    }
-      if (lower_bound_reached || timeout_expired) break;
-    }
-    rounds++;
-    if (improve_state)
-      idle_rounds = 0;
-    else
-    {
+	  if (lower_bound_reached || timeout_expired) break;
+	}
+      rounds++;
+      if (improve_state)
+	idle_rounds = 0;
+      else
+	{
 #if defined(HAVE_PTHREAD)
-      double time = chrono.TotalTime();
+	  double time = chrono.TotalTime();
 #endif
-      improve_state = false;
-      idle_rounds++;
-      if (idle_rounds % kick_rate != 0) continue;
-      if (kick_strategy != NO_KICKER)
+	  improve_state = false;
+	  idle_rounds++;
+	  if (idle_rounds % kick_rate != 0) continue;
+	  if (kick_strategy != NO_KICKER)
 	    {
 	      if (observer != NULL)
 		observer->NotifyKickerStart(*this);
 	      if (kick_strategy == DIVERSIFIER || kick_strategy == INTENSIFIER)
-        {
-          if (kick_strategy == DIVERSIFIER)
-            kick_cost = p_kicker->RandomKick(this->current_state);
-          else // INTENSIFIER
-            kick_cost = p_kicker->SelectKick(this->current_state);
-          if (observer != NULL)
-            observer->NotifyKickStep(*this,kick_cost);
-          p_kicker->MakeKick(this->current_state);
-          this->current_state_cost += kick_cost; 
-          if (LessThan(kick_cost, static_cast<CFtype>(0))) 
-            improve_state = true;
-        }
+		{
+		  if (kick_strategy == DIVERSIFIER)
+		    kick_cost = p_kicker->RandomKick(this->current_state);
+		  else // INTENSIFIER
+		    kick_cost = p_kicker->SelectKick(this->current_state);
+		  if (observer != NULL)
+		    observer->NotifyKickStep(*this,kick_cost);
+		  p_kicker->MakeKick(this->current_state);
+		  this->current_state_cost += kick_cost; 
+		  if (LessThan(kick_cost, static_cast<CFtype>(0))) 
+		    improve_state = true;
+		}
 	      else if (kick_strategy == INTENSIFIER_RUN)
-        {
-          improve_state = this->PerformKickRun();
-        }	  
+		{
+		  improve_state = this->PerformKickRun();
+		}	  
 	      if (improve_state)
-        {
-          this->best_state = this->current_state;
-          this->best_state_cost = this->current_state_cost;
-          lower_bound_reached = this->sm.LowerBoundReached(this->best_state_cost); 
-          idle_rounds = 0;
-        }
+		{
+		  this->best_state = this->current_state;
+		  this->best_state_cost = this->current_state_cost;
+		  lower_bound_reached = this->sm.LowerBoundReached(this->best_state_cost); 
+		  idle_rounds = 0;
+		}
 	      if (observer != NULL)
-          observer->NotifyKickerStop(*this);
+		observer->NotifyKickerStop(*this);
 	    }
 #if defined(HAVE_PTHREAD)
-      if (this->timeout_set) 
-      {
-        this->current_timeout -= (chrono.TotalTime() - time);
-        if (this->current_timeout <= 0.0)
-        {
-          timeout_expired = true;
-          this->current_timeout = 0.0;
-        }
-      }
+	  if (this->timeout_set) 
+	    {
+	      this->current_timeout -= (chrono.TotalTime() - time);
+	      if (this->current_timeout <= 0.0)
+		{
+		  timeout_expired = true;
+		  this->current_timeout = 0.0;
+		}
+	    }
 #endif
+	}
     }
-  }
   while (idle_rounds < max_idle_rounds && rounds < max_rounds && !timeout_expired && !lower_bound_reached);
   chrono.Stop();
 }
@@ -361,18 +394,18 @@ bool GeneralizedLocalSearch<Input,Output,State,CFtype>::PerformKickRun()
   bool improve = false;
   
   do
-  {
-    // perturb the current solution	     
-    kick_cost =  p_kicker->SelectKick(current_state);
-    if (LessThan(kick_cost, static_cast<CFtype>(0)))
     {
-      p_kicker->MakeKick(current_state);	   
-      current_state_cost += kick_cost; 
-      if (observer != NULL)
-        observer->NotifyKickStep(*this,kick_cost);
-      improve = true;
+      // perturb the current solution	     
+      kick_cost =  p_kicker->SelectKick(current_state);
+      if (LessThan(kick_cost, static_cast<CFtype>(0)))
+	{
+	  p_kicker->MakeKick(current_state);	   
+	  current_state_cost += kick_cost; 
+	  if (observer != NULL)
+	    observer->NotifyKickStep(*this,kick_cost);
+	  improve = true;
+	}
     }
-  }
   while (LessThan(kick_cost,static_cast<CFtype>(0)));
   
   this->current_state = current_state;
