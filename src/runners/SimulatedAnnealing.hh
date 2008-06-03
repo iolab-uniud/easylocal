@@ -179,7 +179,7 @@ void SimulatedAnnealing<Input,State,Move,CFtype>::InitializeRun()
     State sampled_state(this->in);
 		std::vector<CFtype> cost_values(neighbors_sampled);
 		double mean = 0.0, variance = 0.0;
-		for (unsigned int i = 0; i < 100; i++)
+		for (unsigned int i = 0; i < neighbors_sampled; i++)
 		{
 			this->sm.RandomState(sampled_state);
 			cost_values[i] = this->sm.CostFunction(sampled_state);
