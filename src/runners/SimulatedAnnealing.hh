@@ -188,7 +188,7 @@ void SimulatedAnnealing<Input,State,Move,CFtype>::InitializeRun()
 		// according to [van Laarhoven and Aarts, 1987] (allow an acceptance ratio of approximately 80%)
     //State sampled_state(this->in);
 		std::vector<CFtype> cost_values(samples);
-		double mean = 0.0, variance = 0.0;
+		//		double mean = 0.0, variance = 0.0;
 		for (unsigned int i = 0; i < samples; i++)
 		{
 			//this->sm.RandomState(sampled_state);
@@ -202,7 +202,7 @@ void SimulatedAnnealing<Input,State,Move,CFtype>::InitializeRun()
 			variance += (cost_values[i] - mean) * (cost_values[i] - mean) / samples;
 		temperature = variance; */
     temperature = max(cost_values);
-		std::cerr << "Temperature: " << temperature << std::endl;
+    //		std::cerr << "Temperature: " << temperature << std::endl;
 	}
 }
 

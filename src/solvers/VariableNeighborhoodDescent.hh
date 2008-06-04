@@ -16,8 +16,8 @@
 // You should have received a copy of the GNU General Public License
 // along with EasyLocalpp. If not, see <http://www.gnu.org/licenses/>.
 
-#if !defined(VNDSOLVER_HH_)
-#define VNDSOLVER_HH_
+#if !defined(_VARIABLE_NEIGHBORHOOD_DESCENT_HH_)
+#define _VARIABLE_NEIGHBORHOOD_DESCENT_HH_
 
 #include <solvers/AbstractLocalSearch.hh>
 
@@ -26,11 +26,11 @@
     @ingroup Solvers
 */
 template <class Input, class Output, class State, typename CFtype = int>
-class VNDSolver
+class VariableNeighborhoodDescent
   : public AbstractLocalSearch<Input,Output,State,CFtype>
 {
 public:
-  VNDSolver(const Input& in,
+  VariableNeighborhoodDescent(const Input& in,
 	    StateManager<Input,State,CFtype>& e_sm,
 	    OutputManager<Input,Output,State,CFtype>& e_om,
 	    unsigned max_k,
@@ -63,7 +63,7 @@ protected:
    @param out a pointer to an output object
 */
 template <class Input, class Output, class State, typename CFtype>
-VNDSolver<Input,Output,State,CFtype>::VNDSolver(const Input& in,
+VariableNeighborhoodDescent<Input,Output,State,CFtype>::VariableNeighborhoodDescent(const Input& in,
 						StateManager<Input,State,CFtype>& e_sm,
 						OutputManager<Input,Output,State,CFtype>& e_om,
 						unsigned max_k,
@@ -75,7 +75,7 @@ VNDSolver<Input,Output,State,CFtype>::VNDSolver(const Input& in,
 }
 
 template <class Input, class Output, class State, typename CFtype>
-void VNDSolver<Input,Output,State,CFtype>::ReadParameters(std::istream& is, std::ostream& os)
+void VariableNeighborhoodDescent<Input,Output,State,CFtype>::ReadParameters(std::istream& is, std::ostream& os)
 {
   os << "Variable Neighborhood Descent Solver: " << this->name << " parameters" << std::endl;
   os << "Max k: ";
@@ -90,7 +90,7 @@ void VNDSolver<Input,Output,State,CFtype>::ReadParameters(std::istream& is, std:
 
 
 template <class Input, class Output, class State, typename CFtype>
-void VNDSolver<Input,Output,State,CFtype>::Print(std::ostream& os) const
+void VariableNeighborhoodDescent<Input,Output,State,CFtype>::Print(std::ostream& os) const
 {
   os << "Variable Neighborhood Descent: " << this->GetName() << std::endl;
   os << "Max k:" << this->max_k << std::endl;
@@ -108,19 +108,19 @@ void VNDSolver<Input,Output,State,CFtype>::Print(std::ostream& os) const
    @param r the new runner to be used
 */
 template <class Input, class Output, class State, typename CFtype>
-void VNDSolver<Input,Output,State,CFtype>::SetKicker(Kicker<Input,State,CFtype>& k)
+void VariableNeighborhoodDescent<Input,Output,State,CFtype>::SetKicker(Kicker<Input,State,CFtype>& k)
 { this->p_kicker = &k; }
 
 
 template <class Input, class Output, class State, typename CFtype>
-void VNDSolver<Input,Output,State,CFtype>::RaiseTimeout()
+void VariableNeighborhoodDescent<Input,Output,State,CFtype>::RaiseTimeout()
 {
   AbstractLocalSearch<Input,Output,State,CFtype>::RaiseTimeout();
   this->p_kicker->RaiseTimeout();
 }
 
 template <class Input, class Output, class State, typename CFtype>
-void VNDSolver<Input,Output,State,CFtype>::Solve()
+void VariableNeighborhoodDescent<Input,Output,State,CFtype>::Solve()
 {
   this->FindInitialState();
   this->Run();    
@@ -131,22 +131,22 @@ void VNDSolver<Input,Output,State,CFtype>::Solve()
    Lets the runner Go, and then collects the best state found.
 */
 template <class Input, class Output, class State, typename CFtype>
-void VNDSolver<Input,Output,State,CFtype>::Run()
+void VariableNeighborhoodDescent<Input,Output,State,CFtype>::Run()
 {
   unsigned k = 1;
   CFtype kick_cost;
   do 
     {
       this->p_kicker->SetStep(k);
-      kick_cost = this->p_kicker->BestKick(this->current_state);
-      std::cout << "Selected Kick: " << k << " " << kick_cost << std::endl;
-      this->p_kicker->PrintKick(std::cout);
+      std::cerr << "Selected Kick: " << k << " ";
+      kick_cost = this->p_kicker->FirstImprovingKick(this->current_state);
+      std::cerr << kick_cost << std::endl;
       if (LessThan(kick_cost,0))
 	{
 	  this->p_kicker->MakeKick(this->current_state);
 	  this->current_state_cost += kick_cost;
-	  std::cout << "Performed Kick: [" << this->current_state_cost << "]: " << k;
-	  this->p_kicker->PrintKick(std::cout);
+	  std::cerr << "Performed Kick: [" << this->current_state_cost << "]: " << k << std::endl;
+	  this->p_kicker->PrintKick(std::cerr);
 	  k = 1;
 	}
       else
@@ -156,7 +156,7 @@ void VNDSolver<Input,Output,State,CFtype>::Run()
 }
 
 template <class Input, class Output, class State, typename CFtype>
-void VNDSolver<Input,Output,State,CFtype>::RunCheck() const
+void VariableNeighborhoodDescent<Input,Output,State,CFtype>::RunCheck() const
 
 {
   AbstractLocalSearch<Input,Output,State,CFtype>::RunCheck();
@@ -164,4 +164,4 @@ void VNDSolver<Input,Output,State,CFtype>::RunCheck() const
     throw std::logic_error("RunCheck(): kicker not set in object " + this->GetName());
 }
 
-#endif /*VNDSOLVER_HH_*/
+#endif // _VARIABLE_NEIGHBORHOOD_DESCENT_HH_
