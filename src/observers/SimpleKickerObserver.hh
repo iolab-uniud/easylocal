@@ -72,7 +72,7 @@ void SimpleKickerObserver<Input,State,Move,CFtype>::NotifyNewKick(SimpleKicker<I
     sideways_kicks++;
   if (notify_new_kick)
     {
-      log << "--New kick: " << k.current_kick_cost;
+      log << "--New kick: (" << k.current_kick_cost;
       for (unsigned int i = 0; i < k.step; i++)
 	{
 	  log << k.current_moves[i];

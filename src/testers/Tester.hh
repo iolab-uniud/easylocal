@@ -238,7 +238,7 @@ template <class Input, class Output, class State, typename CFtype>
 void Tester<Input, Output,State,CFtype>::ShowKickersMenu()
 {
   unsigned int i;
-  os << "MOVE MENU: " << std::endl;
+  os << "KICK MENU: " << std::endl;
   for (i = 0; i < kicker_testers.size(); i++)
     os << "   (" << i+1 << ") " << kicker_testers[i]->name << std::endl;
   os << "   (0) Return to Main Menu" << std::endl;

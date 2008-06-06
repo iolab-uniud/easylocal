@@ -19,6 +19,7 @@
 #if !defined(_BIMODAL_KICKER_HH_)
 #define _BIMODAL_KICKER_HH_
 
+#include <observers/BimodalKickerObserver.hh>
 #include <kickers/Kicker.hh>
 
 #if !defined(MOVE_ENUM)
@@ -41,6 +42,7 @@ template <class Input, class State, class Move1, class Move2, typename CFtype = 
 class BimodalKicker
   : public Kicker<Input,State,CFtype>
 {
+  friend class BimodalKickerObserver<Input,State,Move1,Move2,CFtype>;
 public:
   BimodalKicker(const Input& in, 
 		NeighborhoodExplorer<Input,State,Move1,CFtype>& nhe1,
@@ -49,6 +51,7 @@ public:
 		std::string name);
   void Print(std::ostream& os = std::cout) const;
   void MakeKick(State &st);
+  void AttachObserver(BimodalKickerObserver<Input,State,Move1,Move2,CFtype>& ob) { observer = &ob; }
   Move1 CurrentMoves1(unsigned int i) const { return current_moves1[i]; }
   Move2 CurrentMoves2(unsigned int i) const { return current_moves2[i]; }
   void SetPattern(PatternType p) { pattern = p; }
@@ -80,7 +83,7 @@ protected:
   std::vector<Move2> current_moves2, internal_best_moves2;
   PatternType pattern;
   PatternType best_pattern;
-  CFtype kick_cost, best_kick_cost;
+  CFtype current_kick_cost, best_kick_cost;
   CFtype KickCost();
   void FirstKickComponent(unsigned int i);  // used by the backtracking algorithm of bestkick
   bool NextKickComponent(unsigned int i);   // (idem)
@@ -90,6 +93,7 @@ protected:
 private:
   void FirstPattern();
   bool NextPattern();
+  BimodalKickerObserver<Input,State,Move1,Move2,CFtype>* observer;
 };
 
 /*************************************************************************
@@ -112,12 +116,15 @@ BimodalKicker<Input,State,Move1,Move2,CFtype>::BimodalKicker(const Input& i,
 	pattern[i] = MOVE_1;
       else
 	pattern[i] = MOVE_2;
-    }
+    }  
+  observer = NULL;
 }
 
 template <class Input, class State, class Move1, class Move2, typename CFtype>
 CFtype BimodalKicker<Input,State,Move1,Move2,CFtype>::SelectKick(const State& st)
 {
+  if (observer != NULL)
+    observer->NotifyStartKicking(*this);
   switch (this->current_kick_type)
     {
     case RANDOM_KICK:
@@ -249,22 +256,28 @@ CFtype BimodalKicker<Input,State,Move1,Move2,CFtype>::BestKick(const State &st)
       bool backtrack = UnrelatedMoves(i);
       if (i == int(this->step - 1) && !backtrack)
 	{
+	  if (observer != NULL)
+	    observer->NotifyNewKick(*this);
 	  if (!first_kick_found)
 	    {
-	      kick_cost = KickCost();
-	      best_kick_cost = kick_cost;
+	      current_kick_cost = KickCost();
+	      best_kick_cost = current_kick_cost;
 	      internal_best_moves1 = current_moves1;
 	      internal_best_moves2 = current_moves2;
 	      first_kick_found = true;
+	      if (observer != NULL)
+		observer->NotifyBestKick(*this);
 	    }
 	  else
 	    {
-	      kick_cost = KickCost();
-	      if (LessThan(kick_cost,best_kick_cost))
+	      current_kick_cost = KickCost();
+	      if (LessThan(current_kick_cost,best_kick_cost))
 		{
-		  best_kick_cost = kick_cost;
+		  best_kick_cost = current_kick_cost;
 		  internal_best_moves1 = current_moves1;
 		  internal_best_moves2 = current_moves2;
+		  if (observer != NULL)
+		    observer->NotifyBestKick(*this);
 		}
 	    }
 	  backtrack = true;
@@ -291,10 +304,12 @@ CFtype BimodalKicker<Input,State,Move1,Move2,CFtype>::BestKick(const State &st)
     }
   while (i >= 0);
   
-  kick_cost = best_kick_cost;
+  current_kick_cost = best_kick_cost;
   current_moves1 = internal_best_moves1;
   current_moves2 = internal_best_moves2;
-  return kick_cost;
+  if (observer != NULL)
+    observer->NotifyStopKicking(*this);
+  return current_kick_cost;
 }
 
 template <class Input, class State, class Move1, class Move2, typename CFtype>
@@ -309,26 +324,32 @@ CFtype BimodalKicker<Input,State,Move1,Move2,CFtype>::FirstImprovingKick(const S
       bool backtrack = UnrelatedMoves(i);
       if (i == int(this->step - 1) && !backtrack)
 	{
+	  if (observer != NULL)
+	    observer->NotifyNewKick(*this);
 	  if (!first_kick_found)
 	    {
-	      kick_cost = KickCost();
-	      best_kick_cost = kick_cost;
+	      current_kick_cost = KickCost();
+	      best_kick_cost = current_kick_cost;
 	      internal_best_moves1 = current_moves1;
 	      internal_best_moves2 = current_moves2;
 	      first_kick_found = true;
-	      if (LessThan(kick_cost,0))
-		return kick_cost;
+	      if (observer != NULL)
+		observer->NotifyBestKick(*this);
+	      if (LessThan(current_kick_cost,0))
+		return current_kick_cost;
 	    }
 	  else
 	    {
-	      kick_cost = KickCost();
-	      if (LessThan(kick_cost,best_kick_cost))
+	      current_kick_cost = KickCost();
+	      if (LessThan(current_kick_cost,best_kick_cost))
 		{
-		  best_kick_cost = kick_cost;
+		  best_kick_cost = current_kick_cost;
 		  internal_best_moves1 = current_moves1;
 		  internal_best_moves2 = current_moves2;
-		  if (LessThan(kick_cost,0))
-		    return kick_cost;
+		  if (observer != NULL)
+		    observer->NotifyBestKick(*this);
+		  if (LessThan(current_kick_cost,0))
+		    return current_kick_cost;
 		}
 	    }
 	  backtrack = true;
@@ -355,10 +376,12 @@ CFtype BimodalKicker<Input,State,Move1,Move2,CFtype>::FirstImprovingKick(const S
     }
   while (i >= 0);
 
-  kick_cost = best_kick_cost;
+  current_kick_cost = best_kick_cost;
   current_moves1 = internal_best_moves1;
   current_moves2 = internal_best_moves2;
-  return kick_cost;
+  if (observer != NULL)
+    observer->NotifyStopKicking(*this);
+  return current_kick_cost;
 }
 
 template <class Input, class State, class Move1, class Move2, typename CFtype>
@@ -372,8 +395,8 @@ void BimodalKicker<Input,State,Move1,Move2,CFtype>::FirstKick(const State &st)
       bool backtrack = UnrelatedMoves(i);
       if (i == int(this->step - 1) && !backtrack)
 	{
-	  kick_cost = KickCost();
-	  best_kick_cost = kick_cost;
+	  current_kick_cost = KickCost();
+	  best_kick_cost = current_kick_cost;
 	  internal_best_moves1 = current_moves1;
 	  internal_best_moves2 = current_moves2;
 	  return;
@@ -411,8 +434,8 @@ bool BimodalKicker<Input,State,Move1,Move2,CFtype>::NextKick()
     {
       if (i == int(this->step - 1) && !backtrack)
 	{
-	  kick_cost = KickCost();
-	  best_kick_cost = kick_cost;
+	  current_kick_cost = KickCost();
+	  best_kick_cost = current_kick_cost;
 	  internal_best_moves1 = current_moves1;
 	  internal_best_moves2 = current_moves2;
 	  return true;
@@ -436,6 +459,7 @@ bool BimodalKicker<Input,State,Move1,Move2,CFtype>::NextKick()
 	  i++;
 	  FirstKickComponent(i);
 	}
+      backtrack = UnrelatedMoves(i);
     }
   while (i >= 0);
   return false;
@@ -474,15 +498,15 @@ template <class Input, class State, class Move1, class Move2, typename CFtype>
 CFtype BimodalKicker<Input,State,Move1,Move2,CFtype>::TotalFirstImprovingKick(const State &st)
 {
   FirstPattern();
-  CFtype current_kick_cost = FirstImprovingKick(st);
-  if (LessThan(current_kick_cost, 0)) return current_kick_cost;
+  CFtype first_kick_cost = FirstImprovingKick(st);
+  if (LessThan(current_kick_cost, 0)) return first_kick_cost;
   
   while(NextPattern())
     {
-      current_kick_cost = FirstImprovingKick(st);
-      if (LessThan(current_kick_cost, 0)) return current_kick_cost;
+      first_kick_cost = FirstImprovingKick(st);
+      if (LessThan(current_kick_cost, 0)) return first_kick_cost;
     }
-  return current_kick_cost;  // if no improving found, return the last
+  return first_kick_cost;  // if no improving found, return the last
 }
 
 

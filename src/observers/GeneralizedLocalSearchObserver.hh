@@ -93,7 +93,7 @@ void GeneralizedLocalSearchObserver<Input,Output,State,CFtype>::NotifyKickerStop
 {
   if (notify_kicker)
     {
-      os << "Stop kicker" << std::endl;
+      os << "Stop kicker. Cost : " << s.best_state_cost << std::endl;
     }
 }
 
