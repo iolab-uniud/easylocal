@@ -137,6 +137,10 @@ void Tester<Input, Output, State,CFtype>::RunMainMenu(std::string file_name)
     {
       RunInputMenu();
     }
+  else if (file_name == "random")
+    {
+      this->sm.RandomState(test_state);
+    }
   else
     {
       std::ifstream is(file_name.c_str());
