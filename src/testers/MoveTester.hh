@@ -22,6 +22,7 @@
 #include <testers/ComponentTester.hh>
 #include <helpers/OutputManager.hh>
 #include <helpers/NeighborhoodExplorer.hh>
+#include <helpers/TabuListManager.hh>
 
 /** A Move Tester allows to test the behavior of a given
     neighborhood explorer.
@@ -29,7 +30,7 @@
 */
 template <class Input, class Output, class State, class Move, typename CFtype = int>
 class MoveTester
-            : public ComponentTester<Input,Output,State,CFtype>
+  : public ComponentTester<Input,Output,State,CFtype>
 {
 public:
   MoveTester(const Input& in,
@@ -37,12 +38,19 @@ public:
 	     OutputManager<Input,Output,State,CFtype>& e_om,
 	     NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
 	     std::string name, std::ostream& o = std::cout);
+  MoveTester(const Input& in,
+	     StateManager<Input,State,CFtype>& e_sm,
+	     OutputManager<Input,Output,State,CFtype>& e_om,
+	     NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
+	     TabuListManager<State,Move>& e_tlm,
+	     std::string name, std::ostream& o = std::cout);
   void RunMainMenu(State& st);
   void PrintNeighborhoodStatistics(const State& st) const;
   void PrintAllNeighbors(const State& st) const;
   void CheckNeighborhoodCosts(const State& st) const;
   void PrintMoveCosts(const State& st,  const Move& mv) const;
   void CheckMoveIndependence(const State& st) const;
+  void CheckTabuStrength(const State& st) const;
 protected:
   void ShowMenu();
   bool ExecuteChoice(State& st);
@@ -55,6 +63,8 @@ protected:
   NeighborhoodExplorer<Input,State,Move,CFtype>& ne; /**< A reference to the
 							attached neighborhood
 							explorer. */
+  TabuListManager<State,Move>* tlm; /**< A reference to the
+				       attached tabu list manager (if any). */
   unsigned int choice;   /**< The option currently chosen from the menu. */
   std::ostream& os;
 };
@@ -81,33 +91,45 @@ MoveTester<Input,Output,State,Move,CFtype>::MoveTester(const Input& i,
 						       NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
 						       std::string name, std::ostream& o)
   : ComponentTester<Input,Output,State,CFtype>(name), in(i), out(i), sm(e_sm), om(e_om), ne(e_ne), os(o)
+{
+  tlm = NULL;
+}
+
+template <class Input, class Output, class State, class Move, typename CFtype>
+MoveTester<Input,Output,State,Move,CFtype>::MoveTester(const Input& i,
+						       StateManager<Input,State,CFtype>& e_sm,
+						       OutputManager<Input,Output,State,CFtype>& e_om,
+						       NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
+						       TabuListManager<State,Move>& e_tlm,
+						       std::string name, std::ostream& o)
+  : ComponentTester<Input,Output,State,CFtype>(name), in(i), out(i), sm(e_sm), om(e_om), ne(e_ne), tlm(&e_tlm), os(o)
 {}
 
 
 template <class Input, class Output, class State, class Move, typename CFtype>
 void MoveTester<Input,Output,State,Move,CFtype>::RunMainMenu(State& st)
 {
-    bool show_state;
-    do
+  bool show_state;
+  do
     {
-        ShowMenu();
-        if (choice != 0)
+      ShowMenu();
+      if (choice != 0)
         {
           Chronometer chrono;
           chrono.Start();
           show_state = ExecuteChoice(st);
           chrono.Stop();
           if (show_state)
-          {
-            om.OutputState(st,out);
-            os << "CURRENT SOLUTION " << std::endl << out << std::endl;
-            os << "CURRENT COST : " << sm.CostFunction(st) << std::endl;
-          }
+	    {
+	      om.OutputState(st,out);
+	      os << "CURRENT SOLUTION " << std::endl << out << std::endl;
+	      os << "CURRENT COST : " << sm.CostFunction(st) << std::endl;
+	    }
           os << "ELAPSED TIME : " << chrono.TotalTime() << 's' << std::endl;
         }
     }
-    while (choice != 0);
-    os << "Leaving " << this->name << " menu" << std::endl;
+  while (choice != 0);
+  os << "Leaving " << this->name << " menu" << std::endl;
 }
  
 /**
@@ -125,8 +147,10 @@ void MoveTester<Input,Output,State,Move,CFtype>::ShowMenu()
      << "     (6)  Print Random Move Cost" << std::endl 
      << "     (7)  Print Input Move Cost" << std::endl 
      << "     (8)  Check Neighborhood Costs" << std::endl 
-     << "     (9)  Check Move Indenpendence" << std::endl 
-     << "     (0)  Return to Main Menu" << std::endl
+     << "     (9)  Check Move Indenpendence" << std::endl;
+  if (tlm != NULL)
+    os << "    (10)  Chech Tabu Strength" << std::endl;
+  os << "     (0)  Return to Main Menu" << std::endl
      << " Your choice: ";
   std::cin >> choice;
 }
@@ -178,6 +202,9 @@ bool MoveTester<Input,Output,State,Move,CFtype>::ExecuteChoice(State& st)
       break;
     case 9:
       CheckMoveIndependence(st);
+      break;
+    case 10:
+      CheckTabuStrength(st);
       break;
     default:
       os << "Invalid choice" << std::endl;
@@ -249,19 +276,19 @@ void MoveTester<Input,Output,State,Move,CFtype>::CheckNeighborhoodCosts(const St
 	  for (unsigned i = 0; i < ne.DeltaCostComponents(); i++)
 	    {
 	      if (ne.DeltaCostComponent(i).IsDeltaImplemented()) // only implemented delta can be buggy
-				{
-					FilledDeltaCostComponent<Input,State,Move,CFtype>& dcc = (FilledDeltaCostComponent<Input,State,Move,CFtype>&) ne.DeltaCostComponent(i);
-					CostComponent<Input,State,CFtype>& cc = dcc.GetCostComponent();
-					delta_cost = dcc.DeltaCost(st, mv);        
-					cost = cc.Cost(st);
-					cost1 = cc.Cost(st1);
-					error_cc = cost - cost1 + delta_cost;
-					if (!IsZero(error_cc))
-					{		    
-						os << "  " << i << ". " << dcc.name << " : Initial = " << cost << ", final = " 
-						<< cost1 << ", delta computed = " << delta_cost << " (error = " << error_cc << ")" << std::endl;		      
-					}
-				}
+		{
+		  FilledDeltaCostComponent<Input,State,Move,CFtype>& dcc = (FilledDeltaCostComponent<Input,State,Move,CFtype>&) ne.DeltaCostComponent(i);
+		  CostComponent<Input,State,CFtype>& cc = dcc.GetCostComponent();
+		  delta_cost = dcc.DeltaCost(st, mv);        
+		  cost = cc.Cost(st);
+		  cost1 = cc.Cost(st1);
+		  error_cc = cost - cost1 + delta_cost;
+		  if (!IsZero(error_cc))
+		    {		    
+		      os << "  " << i << ". " << dcc.name << " : Initial = " << cost << ", final = " 
+			 << cost1 << ", delta computed = " << delta_cost << " (error = " << error_cc << ")" << std::endl;		      
+		    }
+		}
 	    }
 	  os << "Press enter to continue " << std::endl;
 	  std::cin.get();
@@ -375,5 +402,31 @@ void MoveTester<Input,Output,State,Move,CFtype>::CheckMoveIndependence(const Sta
   else
     os << "There are " << null_moves << " null moves" << std::endl;
 }
+
+template <class Input, class Output, class State, class Move, typename CFtype>
+void MoveTester<Input,Output,State,Move,CFtype>::CheckTabuStrength(const State& st) const
+{
+  Move mv1,mv2;
+  long long unsigned moves = 0, pairs = 0, inverse_pairs = 0;
+  ne.FirstMove(st,mv1);
+  do
+    {
+      moves++;
+      ne.FirstMove(st,mv2);
+      do 
+	{
+	  pairs++;
+	  if (tlm->Inverse(mv1,mv2))
+	    inverse_pairs++;	        
+	  if (pairs % 1000 == 0) 
+	    std::cerr << '.'; // print dots to show that it is alive
+	}
+      while (ne.NextMove(st,mv2));
+    }
+  while (ne.NextMove(st,mv1));
+  os << std::endl << "Tabu ratio : " << double(inverse_pairs)/pairs * 100 << "%" << std::endl;
+  os << "Non-inverse moves " << double(pairs - inverse_pairs)/moves << std::endl;
+}
+
 
 #endif // define _MOVE_TESTER_HH_

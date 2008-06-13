@@ -276,6 +276,8 @@ void GeneralizedLocalSearch<Input,Output,State,CFtype>::MultiStartSimpleSolve(un
 	{
 	  this->best_state = this->current_state;
 	  this->best_state_cost = this->current_state_cost;
+	  if (this->sm.LowerBoundReached(this->best_state_cost))
+	    break;
 	}
       if (timeout_expired)
 	break;

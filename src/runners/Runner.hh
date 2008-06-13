@@ -28,6 +28,7 @@
 #include <utils/Chronometer.hh>
 
 #include <utils/CLParser.hh>
+#include <helpers/NeighborhoodExplorer.hh>
 
 template <class Input, class State, typename CFtype = int>
 class Runner

@@ -61,7 +61,7 @@ BimodalTabuSearchWithShiftingPenalty<Input,State,Move1,Move2,CFtype>
 				       TabuListManager<State, Move1,CFtype>& tlm1,
 				       TabuListManager<State, Move2,CFtype>& tlm2,
 				       std::string name)
-  :  BimodalTabuSearch<Input,State,Move1,Move2,CFtype>(in,sm,ne1,ne2,tlm1,tlm2,name), shift_region(0.9), shifts_reset(false)
+  :  BimodalTabuSearch<Input,State,Move1,Move2,CFtype>(in,sm,ne1,ne2,tlm1,tlm2,name), shift_region(0.75), shifts_reset(false)
 {}
 
 template <class Input, class State, class Move1, class Move2, typename CFtype>
