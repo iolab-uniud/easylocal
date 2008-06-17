@@ -329,6 +329,7 @@ void GeneralizedLocalSearch<Input,Output,State,CFtype>::GeneralSolve(KickStrateg
 	  if (lower_bound_reached || timeout_expired) break;
 	}
       rounds++;
+      if (observer != NULL) observer->NotifyRound(*this);	
       if (improve_state)
 	idle_rounds = 0;
       else

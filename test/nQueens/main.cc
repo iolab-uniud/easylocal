@@ -155,7 +155,7 @@ int main(int argc, char* argv[])
   
   SimpleLocalSearch<int, ChessBoard, std::vector<int> > qss(in, qsm, qom, "QueensSLS", cl);
   GeneralizedLocalSearch<int, ChessBoard, std::vector<int> > qgls(in, qsm, qom, "QueensGLS", cl);
-  VNDSolver<int, ChessBoard, std::vector<int> > qvnd(in, qsm, qom, 3);
+  VariableNeighborhoodDescent<int, ChessBoard, std::vector<int> > qvnd(in, qsm, qom, 3);
 
   cl.MatchArguments();
   if (arg_random_seed.IsSet())

@@ -108,7 +108,7 @@ BimodalKicker<Input,State,Move1,Move2,CFtype>::BimodalKicker(const Input& i,
 							     std::string name)
   : Kicker<Input,State,CFtype>(i,s,name), nhe1(nhe1), nhe2(nhe2),
     current_moves1(s), internal_best_moves1(s), 
-  current_moves2(s), internal_best_moves2(s), pattern(s) 
+    current_moves2(s), internal_best_moves2(s), pattern(s) 
 {
   for (unsigned int i = 0; i < s; i++)
     { // Default pattern is 1 2 1 2 ...
@@ -441,14 +441,15 @@ bool BimodalKicker<Input,State,Move1,Move2,CFtype>::NextKick()
 	  return true;
 	}
       if (backtrack)
-	do
-	  {
-	    if (NextKickComponent(i))
-	      backtrack = false;
-	    else
+	{
+	  if (NextKickComponent(i))
+	    backtrack = false;
+	  else
+	    {	
 	      i--;
-	  }
-	while (backtrack && i >= 0);
+	      continue;
+	    }
+	}
       else
 	{
 	  this->states[i+1] = this->states[i];

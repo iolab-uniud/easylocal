@@ -64,7 +64,7 @@ void GeneralizedLocalSearchObserver<Input,Output,State,CFtype>::NotifyRound(Gene
 {
   if (notify_round)
     {
-      
+      os << "Round " << s.rounds << "/" << s.max_rounds << " finished (idle " << s.idle_rounds << "/" << s.max_idle_rounds << ")" << std::endl;
     }
 }
 
@@ -112,12 +112,12 @@ void GeneralizedLocalSearchObserver<Input,Output,State,CFtype>::NotifyRunnerStop
   if (notify_runner)
     {
       os << "Runner: " << s.current_runner << ", cost: " << s.runners[s.current_runner]->GetStateCost() 
-	 << ", distance from current " << s.sm.StateDistance( s.current_state, s.runners[s.current_runner]->GetState())
-	 << ", distance from (previous) best " << s.sm.StateDistance( s.best_state, s.runners[s.current_runner]->GetState())
+	 << ", distance from starting/best states " << s.sm.StateDistance(s.current_state, s.runners[s.current_runner]->GetState())
+	 << "/" << s.sm.StateDistance(s.best_state, s.runners[s.current_runner]->GetState())
 	 << " (" << s.runners[s.current_runner]->GetIterationsPerformed() << " iterations, time " << s.chrono.TotalTime() 
 	 << "), Rounds " << s.rounds << "/" << s.max_rounds << ", Idle rounds " << s.idle_rounds << "/" << s.max_idle_rounds << std::endl;
     }
 }
 
 
-#endif /*OBSERVER_HH_*/
+#endif // define _SOLVER_OBSERVER_HH_
