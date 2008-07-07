@@ -26,7 +26,7 @@ template <class Input, class Output, class State, typename CFtype = int>
 class GeneralizedLocalSearchObserver
 {
 public:
-  GeneralizedLocalSearchObserver(unsigned notify_level = 2, std::ostream& r_os = std::cout);
+  GeneralizedLocalSearchObserver(unsigned verbosity_level, unsigned plot_level = 0,  std::ostream& log_os = std::cout, std::ostream& plot_os = std::cout);
   void NotifyRound(GeneralizedLocalSearch<Input,Output,State,CFtype>& s);
   void NotifyRunnerStart(GeneralizedLocalSearch<Input,Output,State,CFtype>& s);
   void NotifyRunnerStop(GeneralizedLocalSearch<Input,Output,State,CFtype>& s);
@@ -35,19 +35,18 @@ public:
   void NotifyKickerStop(GeneralizedLocalSearch<Input,Output,State,CFtype>& s);
   void SetNotifyRunner() {  notify_runner = true; } 
 protected:
-  bool notify_round, notify_runner, notify_kicker;
-  std::ostream& os;
+  bool notify_round, notify_runner, notify_kicker, plot_rounds;
+  std::ostream &log, &plot;
 };
 
 template <class Input, class Output, class State, typename CFtype>
-GeneralizedLocalSearchObserver<Input,Output,State,CFtype>::GeneralizedLocalSearchObserver(unsigned notify_level, std::ostream& r_os) 
-  : os(r_os)
+GeneralizedLocalSearchObserver<Input,Output,State,CFtype>::  GeneralizedLocalSearchObserver(unsigned verbosity_level, unsigned plot_level,  std::ostream& log_os, std::ostream& plot_os)  : log(log_os), plot(plot_os)
 {
-  if (notify_level >= 1)
+  if (verbosity_level >= 1)
     notify_round = true;
   else
     notify_round = false;
-  if (notify_level == 2)  
+  if (verbosity_level == 2)  
     {
       notify_runner = true;
       notify_kicker = true;
@@ -57,6 +56,7 @@ GeneralizedLocalSearchObserver<Input,Output,State,CFtype>::GeneralizedLocalSearc
       notify_runner = false;
       notify_kicker = false;
     }
+  plot_rounds = (bool) plot_level;
 }
 
 template <class Input, class Output, class State, typename CFtype>
@@ -64,7 +64,7 @@ void GeneralizedLocalSearchObserver<Input,Output,State,CFtype>::NotifyRound(Gene
 {
   if (notify_round)
     {
-      os << "Round " << s.rounds << "/" << s.max_rounds << " finished (idle " << s.idle_rounds << "/" << s.max_idle_rounds << ")" << std::endl;
+      log << "Round " << s.rounds << "/" << s.max_rounds << " finished (idle " << s.idle_rounds << "/" << s.max_idle_rounds << ")" << std::endl;
     }
 }
 
@@ -73,7 +73,7 @@ void GeneralizedLocalSearchObserver<Input,Output,State,CFtype>::NotifyKickerStar
 {
   if (notify_kicker)
     {
-      os << "Start kicker of solver " << s.name << std::endl;
+      log << "Start kicker of solver " << s.name << std::endl;
     }
 }
 
@@ -82,7 +82,7 @@ void GeneralizedLocalSearchObserver<Input,Output,State,CFtype>::NotifyKickStep(G
 {
   if (notify_kicker)
     {
-      os << "   Kick move, cost: " <<  cost
+      log << "   Kick move, cost: " <<  cost
 	 << ", time " << s.chrono.TotalTime()
 	 << ", step " << s.p_kicker->Step() << std::endl;
     }
@@ -93,7 +93,7 @@ void GeneralizedLocalSearchObserver<Input,Output,State,CFtype>::NotifyKickerStop
 {
   if (notify_kicker)
     {
-      os << "Stop kicker. Cost : " << s.best_state_cost << std::endl;
+      log << "Stop kicker. Cost : " << s.best_state_cost << std::endl;
     }
 }
 
@@ -102,7 +102,7 @@ void GeneralizedLocalSearchObserver<Input,Output,State,CFtype>::NotifyRunnerStar
 {
   if (notify_runner)
     {
-      os << "Starting runner " << s.current_runner << " of solver " << s.name << std::endl;
+      log << "Starting runner " << s.current_runner << " of solver " << s.name << std::endl;
     }
 }
 
@@ -111,11 +111,18 @@ void GeneralizedLocalSearchObserver<Input,Output,State,CFtype>::NotifyRunnerStop
 {
   if (notify_runner)
     {
-      os << "Runner: " << s.current_runner << ", cost: " << s.runners[s.current_runner]->GetStateCost() 
+      log << "Runner: " << s.current_runner << ", cost: " << s.runners[s.current_runner]->GetStateCost() 
 	 << ", distance from starting/best states " << s.sm.StateDistance(s.current_state, s.runners[s.current_runner]->GetState())
 	 << "/" << s.sm.StateDistance(s.best_state, s.runners[s.current_runner]->GetState())
 	 << " (" << s.runners[s.current_runner]->GetIterationsPerformed() << " iterations, time " << s.chrono.TotalTime() 
 	 << "), Rounds " << s.rounds << "/" << s.max_rounds << ", Idle rounds " << s.idle_rounds << "/" << s.max_idle_rounds << std::endl;
+    }
+  if (plot_rounds)
+    {
+      plot << s.in.Name() << ", " << s.runners[s.current_runner]->name << ", " << s.runners[s.current_runner]->GetStateCost()
+	   << ", " << s.current_state_cost << ", " << s.chrono.TotalTime() << ", " 
+	   << s.sm.StateDistance(s.best_state, s.runners[s.current_runner]->GetState())
+	   << ", " << s.rounds << ", " << s.idle_rounds << std::endl;
     }
 }
 
