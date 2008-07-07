@@ -145,10 +145,10 @@ void ValArgument<T, N>::PrintUsage(std::ostream& os, unsigned int tabs) const
 class FlagArgument : public Argument
 {
 public:
-  FlagArgument(const std::string& flag, const std::string& alias, bool required)
-    : Argument(flag, alias, required) {}
-  FlagArgument(const std::string& flag, const std::string& alias, bool required, CLParser& cl)
-    : Argument(flag, alias, required, cl) {}
+  FlagArgument(const std::string& flag, const std::string& alias)
+    : Argument(flag, alias, false) {}
+  FlagArgument(const std::string& flag, const std::string& alias, CLParser& cl)
+    : Argument(flag, alias, false, cl) {}
   void Read(const std::string& val)
   { value_set = true; }
   void Read(const std::vector<std::string>& val)
