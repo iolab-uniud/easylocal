@@ -162,7 +162,7 @@ int main(int argc, char* argv[])
     Random::Seed(arg_random_seed.GetValue());
   
   RunnerObserver<int, std::vector<int>, Swap> ro(arg_verbosity_level.GetValue(), arg_plot_level.GetValue());
-  GeneralizedLocalSearchObserver<int, ChessBoard, std::vector<int> > so(arg_plot_level.GetValue());
+  GeneralizedLocalSearchObserver<int, ChessBoard, std::vector<int> > so(arg_verbosity_level.GetValue(), arg_plot_level.GetValue());
 
 	
 	if (arg_plot_level.IsSet())
