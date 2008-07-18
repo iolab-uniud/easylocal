@@ -362,7 +362,13 @@ void MoveTester<Input,Output,State,Move,CFtype>::CheckMoveIndependence(const Sta
   bool repeated_state;
   State st1 = st;
   ne.FirstMove(st1,mv);
-  reached_states.push_back(make_pair(mv,st1));
+  if (st1 == st)
+    {
+      os << "Null move " << mv << std::endl;
+      null_moves++;
+    }
+  else
+    reached_states.push_back(make_pair(mv,st1));
 
   while (ne.NextMove(st,mv))
     {

@@ -227,7 +227,7 @@ void SimulatedAnnealing<Input,State,Move,CFtype>::StoreMove()
   if (LessOrEqualThan(this->current_state_cost, this->best_state_cost))
     {
       this->best_state = this->current_state; // Change best_state in case of equal cost to improve diversification
-      if (LessOrEqualThan(this->current_state_cost, this->best_state_cost))
+      if (LessThan(this->current_state_cost, this->best_state_cost))
 	{
 	  if (this->observer != NULL)
 	    this->observer->NotifyNewBest(*this);      
