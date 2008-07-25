@@ -50,8 +50,8 @@ public:
   void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout);
   void Print(std::ostream& os = std::cout) const;
   void SetLevelRate(double lr)  { level_rate = lr; }
-  virtual void SetMaxIdleIteration(unsigned long m) { max_idle_iteration = m; }
-
+  void SetMinLevel(double ml)  { min_level = ml; }
+  void SetNeighborsSampled(unsigned int ns)  { neighbors_sampled = ns; }
 
 protected:
   void GoCheck() const;
@@ -66,9 +66,9 @@ protected:
   double level; /**< The current level. */
   double min_level; /**< The minimum level. */
   double level_rate; /**< The level decreasing rate. */
-  unsigned long max_idle_iteration;
+  unsigned int neighbors_sampled;
   ArgumentGroup great_deluge_arguments;
-  ValArgument<unsigned> arg_max_idle_iteration;
+  ValArgument<unsigned> arg_neighbors_sampled;
   ValArgument<double> arg_level_rate;
 };
 
@@ -90,12 +90,12 @@ GreatDeluge<Input,State,Move,CFtype>::GreatDeluge(const Input& in,
 						  NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
 						  std::string name)
   : MoveRunner<Input,State,Move,CFtype>(in, e_sm, e_ne, name),
-    min_level(0.001), level_rate(0.9999), 
-    great_deluge_arguments("sa_" + name, "sa_" + name, false), 
-    arg_max_idle_iteration("max_idle_iteration", "mii", true), arg_level_rate("level_rate", "lr", false)
+    min_level(0.9), level_rate(0.99), neighbors_sampled(1000)
+    great_deluge_arguments("gd_" + name, "gd_" + name, false), 
+    arg_neighbors_sampled("neighbors_sampled", "ns", true), arg_level_rate("level_rate", "lr", false)
 {
   great_deluge_arguments.AddArgument(arg_level_rate);
-  great_deluge_arguments.AddArgument(arg_max_idle_iteration);
+  great_deluge_arguments.AddArgument(arg_neighbors_sampled);
 }
 
 template <class Input, class State, class Move, typename CFtype>
@@ -105,20 +105,20 @@ GreatDeluge<Input,State,Move,CFtype>::GreatDeluge(const Input& in,
 						  std::string name,
 						  CLParser& cl)
   : MoveRunner<Input,State,Move,CFtype>(in, e_sm, e_ne, name),
-    min_level(0.001), level_rate(0.9999), 
-    great_deluge_arguments("sa_" + name, "sa_" + name, false), 
-    arg_max_idle_iteration("max_idle_iteration", "mii", true), arg_level_rate("level_rate", "lr", false)
+    min_level(0.9), level_rate(0.99), neighbors_sampled(1000)
+    great_deluge_arguments("gd_" + name, "gd_" + name, false), 
+    arg_neighbors_sampled("neighbors_sampled", "ns", true), arg_level_rate("level_rate", "lr", false)
 {
   great_deluge_arguments.AddArgument(arg_level_rate);
-  great_deluge_arguments.AddArgument(arg_max_idle_iteration);
+  great_deluge_arguments.AddArgument(arg_neighbors_sampled);
   cl.AddArgument(great_deluge_arguments);
   cl.MatchArgument(great_deluge_arguments);
   if (great_deluge_arguments.IsSet())
     {
       if (arg_level_rate.IsSet())
 	level_rate = arg_level_rate.GetValue();
-      if (arg_max_idle_iteration.IsSet())
-	max_idle_iteration = arg_max_idle_iteration.GetValue();
+      if (arg_neighbors_sampled.IsSet())
+	neighbors_sampled = arg_neighbors_sampled.GetValue();
     }
 }
 
@@ -128,7 +128,7 @@ template <class Input, class State, class Move, typename CFtype>
 void GreatDeluge<Input,State,Move,CFtype>::Print(std::ostream& os) const
 {
   os  << "Great Deluge Runner: " << std::endl;
-  os  << "  Max idle iteration: " << max_idle_iteration << std::endl;
+  os  << "  Neighbors sampled: " << neighbors_sampled << std::endl;
   os  << "  Level rate: " << level_rate << std::endl;
 }
 
@@ -139,8 +139,8 @@ void GreatDeluge<Input,State,Move,CFtype>::GoCheck() const
   if (level_rate <= 0)
     throw std::logic_error("negative level_rate for object " + this->name)
       ;
-  if (max_idle_iteration == 0)
-    throw std::logic_error("max_idle_iteration is zero for object " + this->name);
+  if (neighbors_sampled == 0)
+    throw std::logic_error("neighbors_sampled is zero for object " + this->name);
 }
 
 /**
@@ -151,7 +151,7 @@ template <class Input, class State, class Move, typename CFtype>
 void GreatDeluge<Input,State,Move,CFtype>::InitializeRun()
 {
   MoveRunner<Input,State,Move,CFtype>::InitializeRun();
-  level = static_cast<double>(this->current_state_cost);
+  level = 1.15 * this->current_state_cost;
 }
 
 /**
@@ -192,8 +192,8 @@ void GreatDeluge<Input,State,Move,CFtype>::ReadParameters(std::istream& is, std:
   os << "GREAT DELUGE -- INPUT PARAMETERS" << std::endl;
   os << "  Level rate: ";
   is >> level_rate;
-  os << "  Max number of idle iterations: ";
-  is >> this->max_idle_iteration;
+  os << "  Neighbors sampled: ";
+  is >> this->neighbors_sampled;
 }
 
 /**
@@ -201,7 +201,7 @@ void GreatDeluge<Input,State,Move,CFtype>::ReadParameters(std::istream& is, std:
 */
 template <class Input, class State, class Move, typename CFtype>
 bool GreatDeluge<Input,State,Move,CFtype>::StopCriterion()
-{ return (this->number_of_iterations - this->iteration_of_best >= this->max_idle_iteration) && level < min_level; }
+{ return level < min_level * this->best_state_cost; }
 
 /**
    At regular steps, the temperature is decreased 
@@ -211,7 +211,10 @@ template <class Input, class State, class Move, typename CFtype>
 void GreatDeluge<Input,State,Move,CFtype>::UpdateIterationCounter()
 {
   MoveRunner<Input,State,Move,CFtype>::UpdateIterationCounter();
-  level *= level_rate;
+  if (this->number_of_iterations % neighbors_sampled == 0)
+    {
+      level *= level_rate;
+    }
 }
 
 /** A move is surely accepted if it improves the cost function
