@@ -191,7 +191,7 @@ void HillClimbing<Input,State,Move,CFtype>::ReadParameters(std::istream& is, std
 
 {
   os << "HILL CLIMBING -- INPUT PARAMETERS" << std::endl;
-  os << "  Number of idle iterations: ";
+  os << "  Max number of idle iterations: ";
   is >> this->max_idle_iteration;
 }
 
