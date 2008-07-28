@@ -90,7 +90,7 @@ GreatDeluge<Input,State,Move,CFtype>::GreatDeluge(const Input& in,
 						  NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
 						  std::string name)
   : MoveRunner<Input,State,Move,CFtype>(in, e_sm, e_ne, name),
-    min_level(0.9), level_rate(0.99), neighbors_sampled(1000)
+    min_level(0.9), level_rate(0.99), neighbors_sampled(1000),
     great_deluge_arguments("gd_" + name, "gd_" + name, false), 
     arg_neighbors_sampled("neighbors_sampled", "ns", true), arg_level_rate("level_rate", "lr", false)
 {
@@ -105,7 +105,7 @@ GreatDeluge<Input,State,Move,CFtype>::GreatDeluge(const Input& in,
 						  std::string name,
 						  CLParser& cl)
   : MoveRunner<Input,State,Move,CFtype>(in, e_sm, e_ne, name),
-    min_level(0.9), level_rate(0.99), neighbors_sampled(1000)
+    min_level(0.9), level_rate(0.99), neighbors_sampled(1000),
     great_deluge_arguments("gd_" + name, "gd_" + name, false), 
     arg_neighbors_sampled("neighbors_sampled", "ns", true), arg_level_rate("level_rate", "lr", false)
 {
