@@ -84,13 +84,14 @@ void ArgumentGroup::PrintUsage(std::ostream& os, unsigned int tabs) const
     }
 }
 
-Argument& ArgumentGroup::FindArgument(const std::string& f) const 
+Argument& ArgumentGroup::FindArgument(const std::string& f) const
 {
   arg_list::const_iterator li;
   for (li = arguments.begin(); li != arguments.end(); li++)
     if ((*li)->GetFlag() == f || (*li)->GetAlias() == f)
       return *(*li);
-  throw std::logic_error("Error: Option " + f + " not supported");
+  FlagNotFound e(f);
+  throw e;
 }
 
 void ArgumentGroup::Read(const std::vector<std::string>& command_line_arguments)
@@ -98,48 +99,52 @@ void ArgumentGroup::Read(const std::vector<std::string>& command_line_arguments)
   size_t i;
   std::string flag, value;
   arg_list::iterator pos;
-  Argument* arg;
   
   i = 0;
   while (i < command_line_arguments.size())
+  {
+    flag = command_line_arguments[i];   
+    try 
     {
-      flag = command_line_arguments[i];
-      arg = &FindArgument(flag);
-      if (strstr(typeid(*arg).name(), "FlagArgument"))
-	{
-	  arg->Read("");
-	  i++;
-	}
+      Argument& arg = FindArgument(flag);
+      if (arg.IsFlagArgument())
+      {
+        arg.Read("");
+        i++;
+      }
       else
-	{
-	  size_t size = arg->NumOfValues();
-	  if (i + size >= command_line_arguments.size() && strstr(typeid(*arg).name(), "ValArgument"))
-	    throw std::logic_error("Error: Value(s) for option " + flag + " not specified");
-	  else
-	    size = std::min<size_t>(size, command_line_arguments.size() - (i + 1));
-	  std::vector<std::string> tmp(size);
-	  std::string tmp_w = "";
-	  for (size_t j = 0; j < size; j++)
-	    {
-	      tmp[j] = command_line_arguments[i + j + 1];
-	      tmp_w += command_line_arguments[i + j + 1] + " ";
-	    }
-	  arg->Read(tmp);
-	  if (!arg->IsSet())
-	    throw std::logic_error("Error: Value <" + tmp_w + "> for option " + flag + " not correct");
-	  i += size + 1;
-	}
+      {
+        size_t size = arg.NumOfValues();
+        if (i + size >= command_line_arguments.size() && arg.IsValArgument())
+          throw std::logic_error("Error: Value(s) for option " + flag + " not specified");
+        else
+          size = std::min<size_t>(size, command_line_arguments.size() - (i + 1));
+        std::vector<std::string> tmp(size);
+        std::string tmp_w = "";
+        for (size_t j = 0; j < size; j++)
+        {
+          tmp[j] = command_line_arguments[i + j + 1];
+          tmp_w += command_line_arguments[i + j + 1] + " ";
+        }
+        arg.Read(tmp);
+        if (!arg.IsSet())
+          throw std::logic_error("Error: Value <" + tmp_w + "> for option " + flag + " not correct");
+        i += size + 1;
+      }
     }
-  for (pos = arguments.begin(); pos != arguments.end(); pos++)
+    catch (FlagNotFound e)
     {
-      arg = *pos;
-      if (arg->IsRequired() && !arg->IsSet())
-	throw std::logic_error("Error: Required option " + arg->GetFlag() + " has not been specified");
-    }	
+      break;
+    }
+  }
+  for (pos = arguments.begin(); pos != arguments.end(); pos++)
+  {
+    Argument& arg = **pos;
+    if (arg.IsRequired() && !arg.IsSet())
+      throw std::logic_error("Error: Required option " + arg.GetFlag() + " has not been specified");
+  }	
   value_set = true;
 }
-
-
 
 std::ostream& operator<<(std::ostream& os, const CLParser& cl)
 {

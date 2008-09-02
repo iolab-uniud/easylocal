@@ -33,13 +33,16 @@ class Argument
 public:
   virtual const std::string& GetFlag() const { return flag; }
   virtual const std::string& GetAlias() const { return alias; }
-  void SetAlias(const std::string& s) { alias = s; }
+  void SetAlias(const std::string& s) { alias = "-" + s; }
   virtual void Read(const std::string& val) = 0;
   virtual void Read(const std::vector<std::string>& val) = 0;
   virtual void PrintUsage(std::ostream& os, unsigned int tabs = 1) const;
   virtual unsigned int NumOfValues() const = 0;
   bool IsSet() const { return value_set; }
   bool IsRequired() const { return required; }
+  virtual bool IsFlagArgument() const = 0;
+  virtual bool IsValArgument() const = 0;
+  virtual bool IsArgumentGroup() const = 0;  
 protected:
   Argument(const std::string& fl, const std::string& al, bool req);
   Argument(const std::string& fl, const std::string& al, bool req, CLParser& cl);
@@ -50,7 +53,21 @@ protected:
 };
 
 class ArgumentNotFound : public std::logic_error 
-{};
+{
+public:
+  ArgumentNotFound() : std::logic_error("Argument not found") {}
+  ~ArgumentNotFound() throw() {}
+};
+
+class FlagNotFound : public std::logic_error
+{
+public:
+  FlagNotFound(const std::string& f) : std::logic_error("Option " + flag + " not supported"), flag(f) {}
+  ~FlagNotFound() throw () {}
+protected:
+  std::string flag;
+};
+
 
 class ArgumentGroup : public Argument
 {
@@ -64,6 +81,9 @@ public:
   unsigned int NumOfValues() const
   { return num_of_values; }
   void PrintUsage(std::ostream& os, unsigned int tabs = 0) const;
+  bool IsFlagArgument() const { return false; }
+  bool IsValArgument() const { return false; }
+  bool IsArgumentGroup() const { return true; }  
 protected:
   typedef std::list<Argument*> arg_list;
   ArgumentGroup(arg_list& al);
@@ -91,6 +111,9 @@ public:
   void Read(const std::string& val);
   void Read(const std::vector<std::string>& val);
   void PrintUsage(std::ostream& os, unsigned int tabs = 1) const;
+bool IsFlagArgument() const { return false; }
+bool IsValArgument() const { return true; }
+bool IsArgumentGroup() const { return false; }
 protected:
   T value;
   std::vector<T> values;
@@ -155,6 +178,9 @@ public:
   { value_set = true; }
   unsigned int NumOfValues() const
   { return 0; }
+  bool IsFlagArgument() const { return true; }
+  bool IsValArgument() const { return false; }
+  bool IsArgumentGroup() const { return false; }
 };
 
 class CLParser 

@@ -119,7 +119,7 @@ void GeneralizedLocalSearchObserver<Input,Output,State,CFtype>::NotifyRunnerStop
     }
   if (plot_rounds)
     {
-      plot << s.in.Name() << ", " << s.runners[s.current_runner]->name << ", " << s.runners[s.current_runner]->GetStateCost()
+      plot << s.runners[s.current_runner]->name << ", " << s.runners[s.current_runner]->GetStateCost()
 	   << ", " << s.current_state_cost << ", " << s.chrono.TotalTime() << ", " 
 	   << s.sm.StateDistance(s.best_state, s.runners[s.current_runner]->GetState())
 	   << ", " << s.rounds << ", " << s.idle_rounds << std::endl;

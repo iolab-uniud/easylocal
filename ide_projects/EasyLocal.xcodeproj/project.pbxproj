@@ -394,20 +394,6 @@
 /* End PBXGroup section */
 
 /* Begin PBXLegacyTarget section */
-		ACF4B1F00DBFAC98008A0207 /* check */ = {
-			isa = PBXLegacyTarget;
-			buildArgumentsString = check;
-			buildConfigurationList = ACF4B1F90DBFACA4008A0207 /* Build configuration list for PBXLegacyTarget "check" */;
-			buildPhases = (
-			);
-			buildToolPath = /usr/bin/make;
-			buildWorkingDirectory = "$(BUILD_DIR)";
-			dependencies = (
-			);
-			name = check;
-			passBuildSettingsInEnvironment = 1;
-			productName = check;
-		};
 		D28A88AD04BDD90700651E21 /* EasyLocal */ = {
 			isa = PBXLegacyTarget;
 			buildArgumentsString = "$(ACTION)";
@@ -436,7 +422,6 @@
 			targets = (
 				D28A88AD04BDD90700651E21 /* EasyLocal */,
 				ACF4B1830DBFA6A1008A0207 /* configure */,
-				ACF4B1F00DBFAC98008A0207 /* check */,
 				ACFAF4C30DD489630095F6A0 /* documentation */,
 			);
 		};
@@ -542,27 +527,6 @@
 			};
 			name = Release;
 		};
-		ACF4B1F10DBFAC98008A0207 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				COPY_PHASE_STRIP = NO;
-				GCC_DYNAMIC_NO_PIC = NO;
-				GCC_OPTIMIZATION_LEVEL = 0;
-				PRODUCT_NAME = check;
-			};
-			name = Debug;
-		};
-		ACF4B1F20DBFAC98008A0207 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				COPY_PHASE_STRIP = YES;
-				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				GCC_ENABLE_FIX_AND_CONTINUE = NO;
-				PRODUCT_NAME = check;
-				ZERO_LINK = NO;
-			};
-			name = Release;
-		};
 		ACFAF4C40DD489630095F6A0 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -610,15 +574,6 @@
 			buildConfigurations = (
 				ACF4B1840DBFA6A1008A0207 /* Debug */,
 				ACF4B1850DBFA6A1008A0207 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		ACF4B1F90DBFACA4008A0207 /* Build configuration list for PBXLegacyTarget "check" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				ACF4B1F10DBFAC98008A0207 /* Debug */,
-				ACF4B1F20DBFAC98008A0207 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

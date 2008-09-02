@@ -151,7 +151,7 @@ int main(int argc, char* argv[])
   SteepestDescent<int, std::vector<int>, Swap> qsd(in, qsm, qnhe, "SwapSteepestDescent");
   TabuSearch<int, std::vector<int>, Swap> qts(in, qsm, qnhe, qtlm, "SwapTabuSearch", cl);
   SimulatedAnnealing<int, std::vector<int>, Swap> qsa(in, qsm, qnhe, "SwapSimulatedAnnealing", cl);
-  TabuSearchWithShiftingPenalty<int, std::vector<int>, Swap> qtsw(in, qsm, qnhe, qtlm);
+  TabuSearchWithShiftingPenalty<int, std::vector<int>, Swap> qtsw(in, qsm, qnhe, qtlm, "SwapTabuSearchWithShiftingPenalty", cl);
   
   SimpleLocalSearch<int, ChessBoard, std::vector<int> > qss(in, qsm, qom, "QueensSLS", cl);
   GeneralizedLocalSearch<int, ChessBoard, std::vector<int> > qgls(in, qsm, qom, "QueensGLS", cl);

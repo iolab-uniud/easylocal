@@ -69,11 +69,12 @@ BimodalTabuSearchWithShiftingPenalty<Input,State,Move1,Move2,CFtype>
 				       TabuListManager<State, Move1,CFtype>& tlm1,
 				       TabuListManager<State, Move2,CFtype>& tlm2,
 				       std::string name)
-  :  BimodalTabuSearch<Input,State,Move1,Move2,CFtype>(in,sm,ne1,ne2,tlm1,tlm2,name), shift_region(0.75), shifts_reset(false), arg_shift_region("shift_region", "sr", false, 0.75)
+  :  BimodalTabuSearch<Input,State,Move1,Move2,CFtype>(in,sm,ne1,ne2,tlm1,tlm2,name), shift_region(0.75), 
+  shifts_reset(false), arg_shift_region("shift_region", "sr", false, 0.75)
 {
-  // FIXME: Bimodal Tabu Search command line arguments are not defined yet. To be done.
-  //this->tabu_search_arguments.SetAlias("dts_" + name);
-  //this->tabu_search_arguments.AddArgument(arg_shift_region);
+  
+  this->bimodal_tabu_search_arguments.SetAlias("dbts_" + name);
+  this->bimodal_tabu_search_arguments.AddArgument(arg_shift_region);
 }
 
 template <class Input, class State, class Move1, class Move2, typename CFtype>
@@ -84,11 +85,20 @@ BimodalTabuSearchWithShiftingPenalty<Input,State,Move1,Move2,CFtype>
 				       TabuListManager<State, Move1,CFtype>& tlm1,
 				       TabuListManager<State, Move2,CFtype>& tlm2,
 				       std::string name, CLParser& cl)
-  :  BimodalTabuSearch<Input,State,Move1,Move2,CFtype>(in,sm,ne1,ne2,tlm1,tlm2,name), shift_region(0.75), shifts_reset(false), arg_shift_region("shift_region", "sr", false, 0.75)
+  :  BimodalTabuSearch<Input,State,Move1,Move2,CFtype>(in,sm,ne1,ne2,tlm1,tlm2,name), shift_region(0.75), shifts_reset(false), 
+  arg_shift_region("shift_region", "sr", false, 0.75)
 {  
-  // FIXME: Bimodal Tabu Search command line arguments are not defined yet. To be done.
-  //this->tabu_search_arguments.SetAlias("dbts_" + name);
-  //this->tabu_search_arguments.AddArgument(arg_shift_region);
+  this->bimodal_tabu_search_arguments.SetAlias("dbts_" + name);
+  this->bimodal_tabu_search_arguments.AddArgument(arg_shift_region); 
+  cl.AddArgument(this->bimodal_tabu_search_arguments);
+  cl.MatchArgument(this->bimodal_tabu_search_arguments);
+  if (this->bimodal_tabu_search_arguments.IsSet())
+  {
+    this->pm1.SetLength(this->arg_tabu_tenure_1.GetValue(0), this->arg_tabu_tenure_1.GetValue(1));
+    this->pm2.SetLength(this->arg_tabu_tenure_2.GetValue(0), this->arg_tabu_tenure_2.GetValue(1));
+    this->max_idle_iteration = this->arg_max_idle_iteration.GetValue();
+    shift_region =  arg_shift_region.GetValue();
+  }
 }
 
 template <class Input, class State, class Move1, class Move2, typename CFtype>
