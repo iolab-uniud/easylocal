@@ -33,7 +33,13 @@ public:
 				       NeighborhoodExplorer<Input,State,Move2,CFtype>& ne2,
 				       TabuListManager<State, Move1,CFtype>& tlm1,
 				       TabuListManager<State, Move2,CFtype>& tlm2,
-				       std::string name = "Anonymous Bimodal Tabu Search With Shifting Penalty");
+				       std::string name);
+ BimodalTabuSearchWithShiftingPenalty(const Input& in, StateManager<Input,State,CFtype>& s,
+				       NeighborhoodExplorer<Input,State,Move1,CFtype>& ne1,
+				       NeighborhoodExplorer<Input,State,Move2,CFtype>& ne2,
+				       TabuListManager<State, Move1,CFtype>& tlm1,
+				       TabuListManager<State, Move2,CFtype>& tlm2,
+				      std::string name, CLParser& cl);
   void SetShiftRegion(double sr)
   { shift_region = sr; }
   void SetWeightRegion(double w) { shift_region = w; }
@@ -47,6 +53,8 @@ public:
   // parameters
   double shift_region;
   bool shifts_reset;
+  // command line arguments
+  ValArgument<double> arg_shift_region; 
 };
 
 /*************************************************************************
@@ -61,8 +69,27 @@ BimodalTabuSearchWithShiftingPenalty<Input,State,Move1,Move2,CFtype>
 				       TabuListManager<State, Move1,CFtype>& tlm1,
 				       TabuListManager<State, Move2,CFtype>& tlm2,
 				       std::string name)
-  :  BimodalTabuSearch<Input,State,Move1,Move2,CFtype>(in,sm,ne1,ne2,tlm1,tlm2,name), shift_region(0.75), shifts_reset(false)
-{}
+  :  BimodalTabuSearch<Input,State,Move1,Move2,CFtype>(in,sm,ne1,ne2,tlm1,tlm2,name), shift_region(0.75), shifts_reset(false), arg_shift_region("shift_region", "sr", false, 0.75)
+{
+  // FIXME: Bimodal Tabu Search command line arguments are not defined yet. To be done.
+  //this->tabu_search_arguments.SetAlias("dts_" + name);
+  //this->tabu_search_arguments.AddArgument(arg_shift_region);
+}
+
+template <class Input, class State, class Move1, class Move2, typename CFtype>
+BimodalTabuSearchWithShiftingPenalty<Input,State,Move1,Move2,CFtype>
+::BimodalTabuSearchWithShiftingPenalty(const Input& in, StateManager<Input,State,CFtype>& sm,
+				       NeighborhoodExplorer<Input,State,Move1,CFtype>& ne1,
+				       NeighborhoodExplorer<Input,State,Move2,CFtype>& ne2,
+				       TabuListManager<State, Move1,CFtype>& tlm1,
+				       TabuListManager<State, Move2,CFtype>& tlm2,
+				       std::string name, CLParser& cl)
+  :  BimodalTabuSearch<Input,State,Move1,Move2,CFtype>(in,sm,ne1,ne2,tlm1,tlm2,name), shift_region(0.75), shifts_reset(false), arg_shift_region("shift_region", "sr", false, 0.75)
+{  
+  // FIXME: Bimodal Tabu Search command line arguments are not defined yet. To be done.
+  //this->tabu_search_arguments.SetAlias("dbts_" + name);
+  //this->tabu_search_arguments.AddArgument(arg_shift_region);
+}
 
 template <class Input, class State, class Move1, class Move2, typename CFtype>
 void BimodalTabuSearchWithShiftingPenalty<Input,State,Move1,Move2,CFtype>::Print(std::ostream& os) const

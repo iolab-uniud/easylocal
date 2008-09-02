@@ -60,6 +60,8 @@ public:
   void ClearRunners();
   void SetIdleRounds(unsigned int r);
   void SetRounds(unsigned int r);
+  unsigned int GetRounds() const { return rounds; }
+  unsigned int GetIdleRounds() const { return idle_rounds; }
   void AttachObserver(GeneralizedLocalSearchObserver<Input,Output,State,CFtype>& obs) { observer = &obs; }
   void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout);
 
