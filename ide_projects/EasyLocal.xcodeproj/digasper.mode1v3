@@ -288,7 +288,7 @@
 								</array>
 							</array>
 							<key>PBXSmartGroupTreeModuleOutlineStateVisibleRectKey</key>
-							<string>{{0, 136}, {289, 509}}</string>
+							<string>{{0, 54}, {289, 509}}</string>
 						</dict>
 						<key>PBXTopSmartGroupGIDs</key>
 						<array/>
@@ -307,7 +307,7 @@
 							<real>289</real>
 						</array>
 						<key>RubberWindowFrame</key>
-						<string>1034 407 998 568 0 0 1920 1178 </string>
+						<string>131 212 998 568 0 0 1920 1178 </string>
 					</dict>
 					<key>Module</key>
 					<string>PBXSmartGroupTreeModule</string>
@@ -335,7 +335,7 @@
 										<key>_historyCapacity</key>
 										<integer>0</integer>
 										<key>bookmark</key>
-										<string>AC9D01C80E6E93E100C75EF6</string>
+										<string>AC9D02100E6EBF1300C75EF6</string>
 										<key>history</key>
 										<array>
 											<string>AC4AAE500DD08D0500BE59D2</string>
@@ -406,7 +406,7 @@
 											<string>AC3172DE0E6DD663001431AB</string>
 											<string>AC9D01AD0E6E931500C75EF6</string>
 											<string>AC9D01AE0E6E931500C75EF6</string>
-											<string>AC9D01C70E6E93E100C75EF6</string>
+											<string>AC9D020F0E6EBF1300C75EF6</string>
 										</array>
 										<key>prevStack</key>
 										<array>
@@ -491,7 +491,7 @@
 								<key>Frame</key>
 								<string>{{0, 0}, {687, 349}}</string>
 								<key>RubberWindowFrame</key>
-								<string>1034 407 998 568 0 0 1920 1178 </string>
+								<string>131 212 998 568 0 0 1920 1178 </string>
 							</dict>
 							<key>Module</key>
 							<string>PBXNavigatorGroup</string>
@@ -511,7 +511,7 @@
 								<key>Frame</key>
 								<string>{{0, 354}, {687, 173}}</string>
 								<key>RubberWindowFrame</key>
-								<string>1034 407 998 568 0 0 1920 1178 </string>
+								<string>131 212 998 568 0 0 1920 1178 </string>
 							</dict>
 							<key>Module</key>
 							<string>XCDetailModule</string>
@@ -535,9 +535,9 @@
 			</array>
 			<key>TableOfContents</key>
 			<array>
-				<string>AC9D01C90E6E93E100C75EF6</string>
+				<string>AC9D02110E6EBF1300C75EF6</string>
 				<string>1CE0B1FE06471DED0097A5F4</string>
-				<string>AC9D01CA0E6E93E100C75EF6</string>
+				<string>AC9D02120E6EBF1300C75EF6</string>
 				<string>1CE0B20306471E060097A5F4</string>
 				<string>1CE0B20506471E060097A5F4</string>
 			</array>
@@ -674,7 +674,7 @@
 		<string>/Users/digasper/Documents/Development/EasyLocalpp/ide_projects/EasyLocal.xcodeproj</string>
 	</array>
 	<key>WindowString</key>
-	<string>1034 407 998 568 0 0 1920 1178 </string>
+	<string>131 212 998 568 0 0 1920 1178 </string>
 	<key>WindowToolsV3</key>
 	<array>
 		<dict>
