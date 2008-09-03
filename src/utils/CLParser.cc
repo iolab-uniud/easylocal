@@ -90,8 +90,7 @@ Argument& ArgumentGroup::FindArgument(const std::string& f) const
   for (li = arguments.begin(); li != arguments.end(); li++)
     if ((*li)->GetFlag() == f || (*li)->GetAlias() == f)
       return *(*li);
-  FlagNotFound e(f);
-  throw e;
+  throw FlagNotFound(f);
 }
 
 void ArgumentGroup::Read(const std::vector<std::string>& command_line_arguments)
@@ -196,7 +195,7 @@ void CLParser::MatchArguments()
 void CLParser::MatchArgument(Argument& a) 
 {
   for (size_t i = 0; i < command_line_arguments.size(); i++)
-    {
+      {
       const std::string& flag = command_line_arguments[i];
       if (flag == a.GetFlag() || flag == a.GetAlias())
 	{

@@ -62,7 +62,7 @@ public:
 class FlagNotFound : public std::logic_error
 {
 public:
-  FlagNotFound(const std::string& f) : std::logic_error("Option " + flag + " not supported"), flag(f) {}
+  FlagNotFound(const std::string& f) : std::logic_error("Option " + f + " not supported"), flag(f) {}
   ~FlagNotFound() throw () {}
 protected:
   std::string flag;
