@@ -64,12 +64,15 @@ protected:
 
   // parameters
   double level; /**< The current level. */
+  double initial_level; /**< The initial level. */
   double min_level; /**< The minimum level. */
   double level_rate; /**< The level decreasing rate. */
   unsigned int neighbors_sampled;
   ArgumentGroup great_deluge_arguments;
   ValArgument<unsigned> arg_neighbors_sampled;
   ValArgument<double> arg_level_rate;
+  ValArgument<double> arg_initial_level_ratio;
+  ValArgument<double> arg_min_level_ratio;
 };
 
 /*************************************************************************
@@ -90,12 +93,15 @@ GreatDeluge<Input,State,Move,CFtype>::GreatDeluge(const Input& in,
 						  NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
 						  std::string name)
   : MoveRunner<Input,State,Move,CFtype>(in, e_sm, e_ne, name),
-    min_level(0.9), level_rate(0.99), neighbors_sampled(1000),
+    initial_level(1.15), min_level(0.9), level_rate(0.99), neighbors_sampled(1000),
     great_deluge_arguments("gd_" + name, "gd_" + name, false), 
-    arg_neighbors_sampled("neighbors_sampled", "ns", true), arg_level_rate("level_rate", "lr", false)
+    arg_neighbors_sampled("neighbors_sampled", "ns", true), arg_level_rate("level_rate", "lr", false), 
+    arg_initial_level_ratio("intial_level_ratio", "ilr", false, 1.15), arg_min_level_ratio("min_level_ratio", "mlr", false, 0.9)
 {
   great_deluge_arguments.AddArgument(arg_level_rate);
   great_deluge_arguments.AddArgument(arg_neighbors_sampled);
+  great_deluge_arguments.AddArgument(arg_initial_level_ratio);
+  great_deluge_arguments.AddArgument(arg_min_level_ratio);  
 }
 
 template <class Input, class State, class Move, typename CFtype>
@@ -105,20 +111,27 @@ GreatDeluge<Input,State,Move,CFtype>::GreatDeluge(const Input& in,
 						  std::string name,
 						  CLParser& cl)
   : MoveRunner<Input,State,Move,CFtype>(in, e_sm, e_ne, name),
-    min_level(0.9), level_rate(0.99), neighbors_sampled(1000),
+    initial_level(1.15), min_level(0.9), level_rate(0.99), neighbors_sampled(1000),
     great_deluge_arguments("gd_" + name, "gd_" + name, false), 
-    arg_neighbors_sampled("neighbors_sampled", "ns", true), arg_level_rate("level_rate", "lr", false)
+    arg_neighbors_sampled("neighbors_sampled", "ns", true), arg_level_rate("level_rate", "lr", false),
+    arg_initial_level_ratio("intial_level_ratio", "ilr", false, 1.15), arg_min_level_ratio("min_level_ratio", "mlr", false, 0.9)
 {
   great_deluge_arguments.AddArgument(arg_level_rate);
   great_deluge_arguments.AddArgument(arg_neighbors_sampled);
+  great_deluge_arguments.AddArgument(arg_initial_level_ratio);
+  great_deluge_arguments.AddArgument(arg_min_level_ratio);
   cl.AddArgument(great_deluge_arguments);
   cl.MatchArgument(great_deluge_arguments);
   if (great_deluge_arguments.IsSet())
     {
       if (arg_level_rate.IsSet())
-	level_rate = arg_level_rate.GetValue();
+        level_rate = arg_level_rate.GetValue();
       if (arg_neighbors_sampled.IsSet())
-	neighbors_sampled = arg_neighbors_sampled.GetValue();
+        neighbors_sampled = arg_neighbors_sampled.GetValue();
+      if (arg_initial_level_ratio.IsSet())
+        initial_level = arg_initial_level_ratio.GetValue();
+      if (arg_min_level_ratio.IsSet())
+        min_level = arg_min_level_ratio.GetValue();
     }
 }
 
@@ -151,7 +164,7 @@ template <class Input, class State, class Move, typename CFtype>
 void GreatDeluge<Input,State,Move,CFtype>::InitializeRun()
 {
   MoveRunner<Input,State,Move,CFtype>::InitializeRun();
-  level = 1.15 * this->current_state_cost;
+  level = initial_level * this->current_state_cost;
 }
 
 /**
