@@ -228,15 +228,15 @@ void TabuListManager<State, Move,CFtype>::Clean()
 template <class State, class Move, typename CFtype>
 bool TabuListManager<State, Move,CFtype>::ListMember(const Move& mv) const
 {
-    typename std::list<TabuListItem<State,Move,CFtype> >::const_iterator p = tlist.begin();
-    while (p != tlist.end())
-    {
-      if (Inverse(mv,p->elem))
-	return true;
-      else
-	p++;
-    }
-    return false;
+  typename std::list<TabuListItem<State,Move,CFtype> >::const_iterator p = tlist.begin();
+  while (p != tlist.end())
+  {
+    if (Inverse(mv, p->elem))
+      return true;
+    else
+      p++;
+  }
+  return false;
 }
 
 /**

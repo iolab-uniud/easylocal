@@ -44,6 +44,7 @@
 		AC75B2530DD08C30003EBD1F /* Synchronize.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Synchronize.cc; sourceTree = "<group>"; };
 		AC75B2540DD08C30003EBD1F /* Synchronize.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Synchronize.hh; sourceTree = "<group>"; };
 		AC77656E0DDEE52200A4A736 /* EasyLocal.conf.vc.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = EasyLocal.conf.vc.hh; sourceTree = "<group>"; };
+		AC8357BF0EA47DF5002980DC /* MultimodalTabuListManager.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = MultimodalTabuListManager.hh; sourceTree = "<group>"; };
 		AC9665AE0E712AE100802631 /* GreatDeluge.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = GreatDeluge.hh; sourceTree = "<group>"; };
 		AC97D3830DD4762100454E4E /* COPYING */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = COPYING; path = ../COPYING; sourceTree = SOURCE_ROOT; };
 		ACDFC76D0DCFB2E5004D11E8 /* EasyLocal.conf.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = EasyLocal.conf.hh; sourceTree = "<group>"; };
@@ -138,6 +139,7 @@
 		ACFAF4BB0DD486BC0095F6A0 /* doxygen.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = doxygen.cfg; path = ../doxygen.cfg; sourceTree = SOURCE_ROOT; };
 		ACFAF4BC0DD486CF0095F6A0 /* AbstractLocalSearch.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = AbstractLocalSearch.hh; sourceTree = "<group>"; };
 		ACFAF4BD0DD486E20095F6A0 /* README */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = README; path = ../README; sourceTree = SOURCE_ROOT; };
+		ACFEBF670E9BFD8A00946609 /* MultimodalNeighborhoodExplorer.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = MultimodalNeighborhoodExplorer.hh; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -209,6 +211,8 @@
 				ACF4B10E0DBFA668008A0207 /* CostComponent.hh */,
 				ACF4B10F0DBFA668008A0207 /* DeltaCostComponent.hh */,
 				ACF4B1110DBFA668008A0207 /* NeighborhoodExplorer.hh */,
+				ACFEBF670E9BFD8A00946609 /* MultimodalNeighborhoodExplorer.hh */,
+				AC8357BF0EA47DF5002980DC /* MultimodalTabuListManager.hh */,
 				ACF4B1120DBFA668008A0207 /* OutputManager.hh */,
 				ACF4B1130DBFA668008A0207 /* ProhibitionManager.hh */,
 				ACF4B1150DBFA668008A0207 /* ShiftingPenaltyManager.hh */,

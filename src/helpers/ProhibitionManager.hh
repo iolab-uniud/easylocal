@@ -31,6 +31,7 @@ template <class State, class Move, typename CFtype = int>
 class ProhibitionManager
 {
 public:
+  typedef Move ThisMove;
     /** Marks a given move as prohibited, according to the prohibition
     strategy.
     @param mv the move

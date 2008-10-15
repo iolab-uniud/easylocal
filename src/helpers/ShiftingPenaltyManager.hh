@@ -185,9 +185,8 @@ SimpleShiftingPenaltyManager<CFtype>::SimpleShiftingPenaltyManager(std::string n
 template <typename CFtype>
 void ShiftingPenaltyManager<CFtype>::Print(std::ostream& os) const
 {
-  os << "  Perturb: " << min_perturb << " / " << max_perturb << std::endl;
-  os << "  Min/Max shift: " << min_shift << " / " << max_shift << std::endl;
-  os << "  Current shift: " << shift << std::endl;
+  os  << "  Min/Max shift: " << min_shift << " / " << max_shift << std::endl;
+  os  << "  Current shift: " << shift << std::endl;
 }
 
 template <typename CFtype>

@@ -39,7 +39,9 @@ class EmptyNeighborhood : public std::exception {};
 template <class Input, class State, class Move, typename CFtype = int>
 class NeighborhoodExplorer
 {
+
 public:   
+typedef Move ThisMove;
 void Print(std::ostream& os = std::cout) const;
 /** 
  Generates a random move in the neighborhood of a given state.	

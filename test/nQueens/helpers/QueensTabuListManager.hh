@@ -29,7 +29,7 @@ class QueensTabuListManager : public TabuListManager<std::vector<int>, Swap>
 /* public:
 	QueensTabuListManager() 
 	: TabuListManager<std::vector<int>, Swap>() {} */
-protected:
+public:
 	bool Inverse(const Swap& m1, const Swap& m2) const { return m1 == m2; }
 };
 
@@ -38,7 +38,7 @@ class QueensFrequencyTabuListManager : public FrequencyTabuListManager<std::vect
 public:
 	QueensFrequencyTabuListManager(int min = 0, int max = 0) 
 	: FrequencyTabuListManager<std::vector<int>, Swap>(min,max) {}
-protected:
+public:
 	bool Inverse(const Swap& m1, const Swap& m2) const; 
 };
 

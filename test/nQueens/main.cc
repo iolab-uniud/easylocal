@@ -96,6 +96,8 @@
 #include <helpers/SecondaryDiagonalCostComponent.hh>
 #include <helpers/SecondaryDiagonalDeltaCostComponent.hh>
 #include <helpers/DeltaCostComponent.hh>
+#include <helpers/MultimodalNeighborhoodExplorer.hh>
+#include <helpers/MultimodalTabuListManager.hh>
 #include <kickers/QueensKicker.hh>
 #include <observers/RunnerObserver.hh>
 #include <observers/GeneralizedLocalSearchObserver.hh>
@@ -142,7 +144,7 @@ int main(int argc, char* argv[])
   QueensTabuListManager qtlm;
   SwapNeighborhoodExplorer qnhe(in, qsm);
   QueensOutputManager qom(in);
-  
+    
   // kickers
   QueensKicker qk(in, qnhe);
   
@@ -156,6 +158,17 @@ int main(int argc, char* argv[])
   SimpleLocalSearch<int, ChessBoard, std::vector<int> > qss(in, qsm, qom, "QueensSLS", cl);
   GeneralizedLocalSearch<int, ChessBoard, std::vector<int> > qgls(in, qsm, qom, "QueensGLS", cl);
   VariableNeighborhoodDescent<int, ChessBoard, std::vector<int> > qvnd(in, qsm, qom, 3);
+  
+  typedef PrepareSetUnionNeighborhoodExplorerTypes<int, std::vector<int>, TYPELIST_2(SwapNeighborhoodExplorer, SwapNeighborhoodExplorer)> MultimodalTypes;
+  typedef MultimodalTypes::MoveList DoubleSwap; // this line is not mandatory, it just aliases the movelist type for reader's convenience
+  MultimodalTypes::NeighborhoodExplorer qmmnhe(in, qsm, "Multimodal Swap");
+  qmmnhe.AddNeighborhoodExplorer(qnhe);
+  qmmnhe.AddNeighborhoodExplorer(qnhe);
+  typedef PrepareSetUnionTabuListManager<std::vector<int>, TYPELIST_2(QueensTabuListManager, QueensTabuListManager)> MultimodalTabuListManagerTypes;
+  MultimodalTabuListManagerTypes::TabuListManager qmmtlm;
+  qmmtlm.AddTabuListManager(qtlm);
+  qmmtlm.AddTabuListManager(qtlm);
+  TabuSearch<int, std::vector<int>, DoubleSwap> qmmts(in, qsm, qmmnhe, qmmtlm, "DoubleSwapTabuSearch", cl);
 
   cl.MatchArguments();
   if (arg_random_seed.IsSet())
@@ -163,7 +176,6 @@ int main(int argc, char* argv[])
   
   RunnerObserver<int, std::vector<int>, Swap> ro(arg_verbosity_level.GetValue(), arg_plot_level.GetValue());
   GeneralizedLocalSearchObserver<int, ChessBoard, std::vector<int> > so(arg_verbosity_level.GetValue(), arg_plot_level.GetValue());
-
 	
 	if (arg_plot_level.IsSet())
 	{
@@ -187,17 +199,20 @@ int main(int argc, char* argv[])
   if (!arg_solmethod.IsSet())
 	{
 		// testers
-		MoveTester<int, ChessBoard, std::vector<int>, Swap> move_test(in,qsm,qom,qnhe, "Swap move");
+		MoveTester<int, ChessBoard, std::vector<int>, Swap> swap_move_test(in,qsm,qom,qnhe, "Swap move");
+    MoveTester<int, ChessBoard, std::vector<int>, DoubleSwap> multimodal_move_test(in,qsm,qom,qmmnhe, "Multimodal swap move");
 		KickerTester<int, ChessBoard, std::vector<int> > monokicker_test(in,qsm,qom, qk, "Monomodal kick");
 		Tester<int, ChessBoard, std::vector<int> > tester(in,qsm,qom);
 		
-		tester.AddMoveTester(move_test);
+		tester.AddMoveTester(swap_move_test);
+    tester.AddMoveTester(multimodal_move_test);
 		tester.AddKickerTester(monokicker_test);
 		tester.AddRunner(qhc);
 		tester.AddRunner(qsd);
 		tester.AddRunner(qts);
 		tester.AddRunner(qsa);  
 		tester.AddRunner(qtsw);
+    tester.AddRunner(qmmts);
 		
 		tester.RunMainMenu();
 	}

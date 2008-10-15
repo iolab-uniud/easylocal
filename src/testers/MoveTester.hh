@@ -147,7 +147,7 @@ void MoveTester<Input,Output,State,Move,CFtype>::ShowMenu()
      << "     (6)  Print Random Move Cost" << std::endl 
      << "     (7)  Print Input Move Cost" << std::endl 
      << "     (8)  Check Neighborhood Costs" << std::endl 
-     << "     (9)  Check Move Indenpendence" << std::endl;
+     << "     (9)  Check Move Independence" << std::endl;
   if (tlm != NULL)
     os << "    (10)  Chech Tabu Strength" << std::endl;
   os << "     (0)  Return to Main Menu" << std::endl

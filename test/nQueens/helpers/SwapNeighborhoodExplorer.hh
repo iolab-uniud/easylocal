@@ -29,7 +29,7 @@ class SwapNeighborhoodExplorer
 :  public NeighborhoodExplorer<int,std::vector<int>,Swap>
 {
 public:
-	SwapNeighborhoodExplorer(const int& in, QueensStateManager& qsm, std::string name = "")
+	SwapNeighborhoodExplorer(const int& in, StateManager<int, std::vector<int> >& qsm, std::string name = "")
 	: NeighborhoodExplorer<int,std::vector<int>,Swap>(in, qsm, name)
   {}
 	void MakeMove(std::vector<int> &a, const Swap& sw) const;
