@@ -180,7 +180,7 @@ void BimodalSimulatedAnnealing<Input,State,Move1,Move2,CFtype>::InitializeRun()
       for (unsigned int i = 0; i < neighbors_sampled; i++)
 	variance += (cost_values[i] - mean) * (cost_values[i] - mean) / neighbors_sampled;
       temperature = variance;
-      std::cerr << "Temperature: " << temperature << std::endl;
+      //      std::cerr << "Temperature: " << temperature << std::endl;
     }
 }
 

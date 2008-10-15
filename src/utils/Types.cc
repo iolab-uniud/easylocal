@@ -22,6 +22,9 @@
 #include <cmath>
 #include <iostream>
 
+// FIXME: a more general mechanism for tolerance should be adopted
+#define TOL 1.0E+04
+
 template <>
 bool IsZero<int>(int value)
 { return value == 0; }
@@ -45,7 +48,6 @@ bool GreaterThan<int>(int value1, int value2)
 template <>
 bool GreaterOrEqualThan<int>(int value1, int value2)
 { return value1 >= value2; }
-
 
 
 template <>
@@ -76,23 +78,23 @@ bool GreaterOrEqualThan<float>(float value1, float value2)
 
 template <>
 bool IsZero<double>(double value)
-{ return fabs(value) <= 1000000 * std::numeric_limits<double>::epsilon(); }
+{ return fabs(value) <= TOL * std::numeric_limits<double>::epsilon(); }
 
 template <>
 bool EqualTo<double>(double value1, double value2)
-{ return fabs(value1 - value2) <= 1000000 * std::numeric_limits<double>::epsilon(); }
+{ return fabs(value1 - value2) <= TOL * std::numeric_limits<double>::epsilon(); }
 
 template <>
 bool LessThan<double>(double value1, double value2)
-{ return value1 + 1000000 * std::numeric_limits<double>::epsilon() < value2; }
+{ return value1 + TOL * std::numeric_limits<double>::epsilon() < value2; }
 
 template <>
 bool LessOrEqualThan<double>(double value1, double value2)
 { return value1 <= value2; }
 
 template <>
-bool GreaterThan<double>(double value1, double value2)
-{ return value1 - 1000000 * std::numeric_limits<double>::epsilon() > value2; }
+bool GreaterThan<double>(double value1, double value2)\
+{ return value1 - TOL * std::numeric_limits<double>::epsilon() > value2; }
 
 template <>
 bool GreaterOrEqualThan<double>(double value1, double value2)

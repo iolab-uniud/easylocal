@@ -42,7 +42,7 @@ public:
 	     StateManager<Input,State,CFtype>& e_sm,
 	     OutputManager<Input,Output,State,CFtype>& e_om,
 	     NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
-	     TabuListManager<State,Move>& e_tlm,
+	     TabuListManager<State,Move,CFtype>& e_tlm,
 	     std::string name, std::ostream& o = std::cout);
   void RunMainMenu(State& st);
   void PrintNeighborhoodStatistics(const State& st) const;
@@ -63,7 +63,7 @@ protected:
   NeighborhoodExplorer<Input,State,Move,CFtype>& ne; /**< A reference to the
 							attached neighborhood
 							explorer. */
-  TabuListManager<State,Move>* tlm; /**< A reference to the
+  TabuListManager<State,Move,CFtype>* tlm; /**< A reference to the
 				       attached tabu list manager (if any). */
   unsigned int choice;   /**< The option currently chosen from the menu. */
   std::ostream& os;
@@ -100,7 +100,7 @@ MoveTester<Input,Output,State,Move,CFtype>::MoveTester(const Input& i,
 						       StateManager<Input,State,CFtype>& e_sm,
 						       OutputManager<Input,Output,State,CFtype>& e_om,
 						       NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
-						       TabuListManager<State,Move>& e_tlm,
+						       TabuListManager<State,Move,CFtype>& e_tlm,
 						       std::string name, std::ostream& o)
   : ComponentTester<Input,Output,State,CFtype>(name), in(i), out(i), sm(e_sm), om(e_om), ne(e_ne), tlm(&e_tlm), os(o)
 {}
@@ -414,12 +414,15 @@ template <class Input, class Output, class State, class Move, typename CFtype>
 void MoveTester<Input,Output,State,Move,CFtype>::CheckTabuStrength(const State& st) const
 {
   Move mv1,mv2;
+  State st1 = st;
   long long unsigned moves = 0, pairs = 0, inverse_pairs = 0;
-  ne.FirstMove(st,mv1);
+  ne.FirstMove(st1,mv1);
   do
     {
+      st1 = st;
+      ne.MakeMove(st1,mv1);
+      ne.FirstMove(st1,mv2);
       moves++;
-      ne.FirstMove(st,mv2);
       do 
 	{
 	  pairs++;
@@ -428,7 +431,7 @@ void MoveTester<Input,Output,State,Move,CFtype>::CheckTabuStrength(const State& 
 	  if (pairs % 1000 == 0) 
 	    std::cerr << '.'; // print dots to show that it is alive
 	}
-      while (ne.NextMove(st,mv2));
+      while (ne.NextMove(st1,mv2));
     }
   while (ne.NextMove(st,mv1));
   os << std::endl << "Tabu ratio : " << double(inverse_pairs)/pairs * 100 << "%" << std::endl;
