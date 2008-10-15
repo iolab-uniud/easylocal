@@ -263,7 +263,7 @@ void MoveTester<Input,Output,State,Move,CFtype>::CheckNeighborhoodCosts(const St
   CFtype error, error_cc, delta_cost, cost, cost1;
   State st1 = st;
   bool error_found = false, not_last_move;
-  ne.FirstMove(st, mv);
+  ne.FirstMove(st1, mv);
   do
     {
       move_count++;
@@ -362,6 +362,7 @@ void MoveTester<Input,Output,State,Move,CFtype>::CheckMoveIndependence(const Sta
   bool repeated_state;
   State st1 = st;
   ne.FirstMove(st1,mv);
+  ne.MakeMove(st1, mv);
   if (st1 == st)
     {
       os << "Null move " << mv << std::endl;

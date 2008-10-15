@@ -361,23 +361,23 @@ CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::BestMove(const State &st, 
   FirstMove(st, mv);
   Move best_move = mv;
   CFtype mv_cost = DeltaCostFunction(st, mv);
-	CFtype best_delta = mv_cost;
+  CFtype best_delta = mv_cost;
   
   while (NextMove(st, mv)) 
   { 		
-		mv_cost = DeltaCostFunction(st, mv);
-		if (LessThan(mv_cost, best_delta))
-    {
+    mv_cost = DeltaCostFunction(st, mv);
+    if (LessThan(mv_cost, best_delta))
+      {
         best_move = mv;
         best_delta = mv_cost;
         number_of_bests = 1;
-		}
+      }
     else if (EqualTo(mv_cost, best_delta))
-    {
-      if (Random::Int(0,number_of_bests) == 0) // accept the move with probability 1 / (1 + number_of_bests)
-        best_move = mv;
-      number_of_bests++;
-    } 
+      {
+	if (Random::Int(0,number_of_bests) == 0) // accept the move with probability 1 / (1 + number_of_bests)
+	  best_move = mv;
+	number_of_bests++;
+      } 
   }
   
   mv = best_move;
@@ -432,7 +432,6 @@ CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::BestMove(const State &st, 
       mv_cost = DeltaCostFunction(st, mv);
   }
   while (not_last_move);
-  
   mv = best_move;
   return best_delta;
 }

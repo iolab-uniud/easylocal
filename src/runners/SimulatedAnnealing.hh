@@ -53,6 +53,7 @@ public:
 	void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout);
 	void Print(std::ostream& os = std::cout) const;
   void SetStartTemperature(double st)  { start_temperature = st; }
+  void SetMinTemperature(double st)  { min_temperature = st; }
   void SetCoolingRate(double cr)  { cooling_rate = cr; }
   void SetNeighborsSampled(unsigned int ns)  { neighbors_sampled = ns; }
 
