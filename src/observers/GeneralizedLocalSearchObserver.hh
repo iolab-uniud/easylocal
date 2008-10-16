@@ -27,6 +27,7 @@ class GeneralizedLocalSearchObserver
 {
 public:
   GeneralizedLocalSearchObserver(unsigned verbosity_level, unsigned plot_level = 0,  std::ostream& log_os = std::cout, std::ostream& plot_os = std::cout);
+  void NotifyRestart(GeneralizedLocalSearch<Input,Output,State,CFtype>& s, unsigned restart);
   void NotifyRound(GeneralizedLocalSearch<Input,Output,State,CFtype>& s);
   void NotifyRunnerStart(GeneralizedLocalSearch<Input,Output,State,CFtype>& s);
   void NotifyRunnerStop(GeneralizedLocalSearch<Input,Output,State,CFtype>& s);
@@ -57,6 +58,15 @@ GeneralizedLocalSearchObserver<Input,Output,State,CFtype>::  GeneralizedLocalSea
       notify_kicker = false;
     }
   plot_rounds = (bool) plot_level;
+}
+
+template <class Input, class Output, class State, typename CFtype>
+void GeneralizedLocalSearchObserver<Input,Output,State,CFtype>::NotifyRestart(GeneralizedLocalSearch<Input,Output,State,CFtype>& s, unsigned restart)
+{
+  if (notify_round)
+    {
+      log << "Restart " << restart << " trials " << std::endl;
+    }
 }
 
 template <class Input, class Output, class State, typename CFtype>

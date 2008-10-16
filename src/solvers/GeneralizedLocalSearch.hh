@@ -67,6 +67,7 @@ public:
 
   void SimpleSolve(unsigned runner = 0, bool random_init = true);
   void MultiStartSimpleSolve(unsigned runner = 0, unsigned trials = 1);
+  void MultiStartGeneralSolve(KickStrategy kick_strategy = NO_KICKER, unsigned trials = 1);
   void GeneralSolve(KickStrategy kick_strategy = NO_KICKER, bool state_init = true);
 
 protected:
@@ -266,6 +267,7 @@ void GeneralizedLocalSearch<Input,Output,State,CFtype>::MultiStartSimpleSolve(un
   chrono.Start();
   for (unsigned t = 0; t < trials; t++)
     {
+      if (observer != NULL) observer->NotifyRestart(*this, t);
       this->FindInitialState();
       runners[runner]->SetState(this->current_state);
       if (observer != NULL) observer->NotifyRunnerStart(*this);
@@ -285,6 +287,45 @@ void GeneralizedLocalSearch<Input,Output,State,CFtype>::MultiStartSimpleSolve(un
 	break;
     }
   chrono.Stop();
+}
+
+/**
+   Solves making many starts
+*/
+
+template <class Input, class Output, class State, typename CFtype>
+void GeneralizedLocalSearch<Input,Output,State,CFtype>::MultiStartGeneralSolve(KickStrategy kick_strategy, unsigned trials)
+{
+  State global_best_state(this->in);
+  CFtype global_best_state_cost;
+  bool timeout_expired = false; 
+  
+  for (unsigned t = 0; t < trials; t++)
+    {
+      if (observer != NULL) observer->NotifyRestart(*this, t);
+      this->GeneralSolve(kick_strategy,true);
+      if (t == 0 || LessThan(this->best_state_cost, global_best_state_cost))
+	{
+	  global_best_state = this->best_state;
+	  global_best_state_cost = this->best_state_cost;
+	  if (this->sm.LowerBoundReached(global_best_state_cost))
+	    break;
+	}
+#if defined(HAVE_PTHREAD)
+      if (this->timeout_set) 
+	{
+	  if (this->current_timeout <= 0.0)
+	    {
+	      timeout_expired = true;
+	      this->current_timeout = 0.0;
+	    }
+	}
+#endif
+      if (timeout_expired)
+	break;
+    }
+  this->best_state = global_best_state;
+  this->best_state_cost	= global_best_state_cost;
 }
 
 /**
