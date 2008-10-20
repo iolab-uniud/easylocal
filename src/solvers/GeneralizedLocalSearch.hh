@@ -286,7 +286,7 @@ void GeneralizedLocalSearch<Input,Output,State,CFtype>::MultiStartSimpleSolve(un
 	}
       if (timeout_expired)
 	break;
-      restart++;
+      restarts++;
     }
   chrono.Stop();
 }
@@ -325,7 +325,7 @@ void GeneralizedLocalSearch<Input,Output,State,CFtype>::MultiStartGeneralSolve(K
 #endif
       if (timeout_expired)
 	break;
-      restart++;
+      restarts++;
     }
   this->best_state = global_best_state;
   this->best_state_cost	= global_best_state_cost;
