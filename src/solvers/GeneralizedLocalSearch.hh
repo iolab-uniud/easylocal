@@ -62,6 +62,7 @@ public:
   void SetRounds(unsigned int r);
   unsigned int GetRounds() const { return rounds; }
   unsigned int GetIdleRounds() const { return idle_rounds; }
+  unsigned int GetRestarts() const { return restarts; }
   void AttachObserver(GeneralizedLocalSearchObserver<Input,Output,State,CFtype>& obs) { observer = &obs; }
   void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout);
 
@@ -72,7 +73,7 @@ public:
 
 protected:
   bool PerformKickRun();
-  unsigned int current_runner, idle_rounds, rounds, kick_rate;
+  unsigned int current_runner, idle_rounds, restarts, rounds, kick_rate;
 
   std::vector<Runner<Input,State,CFtype>* > runners; /**< The vector of
 							the linked runners. */
@@ -285,6 +286,7 @@ void GeneralizedLocalSearch<Input,Output,State,CFtype>::MultiStartSimpleSolve(un
 	}
       if (timeout_expired)
 	break;
+      restart++;
     }
   chrono.Stop();
 }
@@ -323,6 +325,7 @@ void GeneralizedLocalSearch<Input,Output,State,CFtype>::MultiStartGeneralSolve(K
 #endif
       if (timeout_expired)
 	break;
+      restart++;
     }
   this->best_state = global_best_state;
   this->best_state_cost	= global_best_state_cost;
