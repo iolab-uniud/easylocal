@@ -43,6 +43,7 @@ public:
   virtual bool IsFlagArgument() const = 0;
   virtual bool IsValArgument() const = 0;
   virtual bool IsArgumentGroup() const = 0;  
+  virtual unsigned int NumOfValuesRead() const = 0;
 protected:
   Argument(const std::string& fl, const std::string& al, bool req);
   Argument(const std::string& fl, const std::string& al, bool req, CLParser& cl);
@@ -55,8 +56,15 @@ protected:
 class ArgumentNotFound : public std::logic_error 
 {
 public:
-  ArgumentNotFound() : std::logic_error("Argument not found") {}
+  ArgumentNotFound(const std::string& message) : std::logic_error(message) {}
   ~ArgumentNotFound() throw() {}
+};
+
+class ArgumentValueNotCorrect : public std::logic_error 
+{
+public:
+  ArgumentValueNotCorrect(const std::string& message) : std::logic_error(message) {}
+  ~ArgumentValueNotCorrect() throw() {}
 };
 
 class FlagNotFound : public std::logic_error
@@ -84,12 +92,13 @@ public:
   bool IsFlagArgument() const { return false; }
   bool IsValArgument() const { return false; }
   bool IsArgumentGroup() const { return true; }  
+  unsigned int NumOfValuesRead() const { return num_of_values_read; }
 protected:
   typedef std::list<Argument*> arg_list;
   ArgumentGroup(arg_list& al);
   Argument& FindArgument(const std::string&) const;
   arg_list arguments;
-  unsigned int num_of_values;
+  unsigned int num_of_values, num_of_values_read;
 };
 
 template <typename T, unsigned int N = 1>
@@ -111,47 +120,59 @@ public:
   void Read(const std::string& val);
   void Read(const std::vector<std::string>& val);
   void PrintUsage(std::ostream& os, unsigned int tabs = 1) const;
-bool IsFlagArgument() const { return false; }
-bool IsValArgument() const { return true; }
-bool IsArgumentGroup() const { return false; }
+  bool IsFlagArgument() const { return false; } 
+  bool IsValArgument() const { return true; }
+  bool IsArgumentGroup() const { return false; }
+  unsigned int NumOfValuesRead() const { return num_of_values_read; }
 protected:
   T value;
   std::vector<T> values;
+  unsigned int num_of_values_read;
 };
 
 template <typename T, unsigned int N>
 void ValArgument<T, N>::Read(const std::string& val)
 {
+  std::vector<std::string> tmp_v;
+  std::string tmp_s;
   std::istringstream is(val);
-  if (N == 1)
-    is >> value;
-  else
-    for (unsigned int i = 0; i < values.size(); i++)
-      is >> values[i];
-  value_set = !is.fail();
+  
+  while (is >> tmp_s)
+    tmp_v.push_back(tmp_s);
+
+  Read(tmp_v);
 }
 
 template <typename T, unsigned int N>
 void ValArgument<T, N>::Read(const std::vector<std::string>& val)
 {
-  bool fail = false;
+  value_set = false;
+  num_of_values_read = 0;
   if (val.size() < N)
-    throw new std::logic_error("Not enough values for ValArgument");
+    throw ArgumentValueNotCorrect("Not enough values for ValArgument");
 	
   if (N == 1) 
     {
       std::istringstream is(val[0]);
       is >> value;
-      fail = is.fail();
+      if (is.fail())
+        throw ArgumentValueNotCorrect("Error parsing argument " + this->GetFlag());
+      if (val.size() > 1 && val[0][0] == '-' &&  isalpha(val[0][1]))
+        throw ArgumentValueNotCorrect("Found an additional argument specification while parsing argument " + this->GetFlag());
+      num_of_values_read = 1;
     } 
   else
     for (unsigned int i = 0; i < values.size(); i++) 
       {
-	std::istringstream is(val[i]);
-	is >> values[i];
-	fail = is.fail();
+        std::istringstream is(val[i]);
+        is >> values[i];
+        if (is.fail())
+          throw ArgumentValueNotCorrect("Error parsing argument " + this->GetFlag());
+        if (val.size() > 1 && val[i][0] == '-' && isalpha(val[i][1]))
+          throw ArgumentValueNotCorrect("Found an additional argument specification while parsing argument " + this->GetFlag());
+        num_of_values_read++;
       }
-  value_set = !fail;
+  value_set = true;
 }
 
 template <typename T, unsigned int N>
@@ -181,6 +202,7 @@ public:
   bool IsFlagArgument() const { return true; }
   bool IsValArgument() const { return false; }
   bool IsArgumentGroup() const { return false; }
+  unsigned int NumOfValuesRead() const { return 0; }
 };
 
 class CLParser 
@@ -189,12 +211,13 @@ class CLParser
 public:
   CLParser(int argc, char * const argv[]);
   void AddArgument(Argument& a);
-  void MatchArguments();
-  void MatchArgument(Argument& a);
+  void MatchArguments(bool terminate_if_fail = true);
+  void MatchArgument(Argument& a, bool terminate_if_fail = true);
   virtual ~CLParser();
 protected:
   typedef std::list<Argument*> arg_list;
   void Parse();
+  void Parse(Argument& a);
   std::string command_name;
   std::vector<std::string> command_line_arguments;
   arg_list arguments;

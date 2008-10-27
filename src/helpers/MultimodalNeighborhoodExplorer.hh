@@ -160,7 +160,6 @@ class SetUnionNeighborhoodExplorer
 protected:
   typedef typename NeighborhoodExplorerList::Head ThisNeighborhoodExplorer;
   typedef SetUnionNeighborhoodExplorer<Input, State, CFtype, class NeighborhoodExplorerList::Tail> OtherNeighborhoodExplorers;
-  
 public:   
   typedef Movelist<CFtype, typename ThisNeighborhoodExplorer::ThisMove, typename OtherNeighborhoodExplorers::MoveList> MoveList;
   
@@ -234,6 +233,11 @@ public:
    @param name the name associated to the NeighborhoodExplorer.
    */
   SetUnionNeighborhoodExplorer(const Input& in, StateManager<Input,State,CFtype>& sm, std::string name = "SetUnionNeighborhoodExplorer");
+  
+  /** 
+   Sets all moves in a movelist to unselected.
+   */
+  void SetAllUnselected(MoveList& mv) const;
 protected:
   const Input& in;/**< A reference to the input object */
   StateManager<Input, State, CFtype>& sm; /**< A reference to the attached state manager. */
@@ -429,12 +433,14 @@ SetUnionNeighborhoodExplorer<Input,State,CFtype,NeighborhoodExplorerList>::SetUn
 template <typename Input, typename State, typename CFtype, class NeighborhoodExplorerList>
 void SetUnionNeighborhoodExplorer<Input,State,CFtype,NeighborhoodExplorerList>::RandomMove(const State &st, MoveList& mv) const
 {
-  if (Random::Int(0, mv.length) == 0) {
-    // with uniform probability select this move
+  mv.selected = false;
+  if (mv.length == 1 || Random::Int(1, mv.length) == 1) {
+    // with uniform probability select this move, or at last select this move
     try
     {
       p_nhe->RandomMove(st, mv.move);    
       mv.selected = true;
+      other_nhes.SetAllUnselected(mv.movelist);
     }
     catch (EmptyNeighborhood e)
     {
@@ -528,6 +534,14 @@ ShiftedResult<CFtype> SetUnionNeighborhoodExplorer<Input,State,CFtype,Neighborho
     return other_nhes.DeltaShiftedCostFunction(st, mv.movelist);
 }
 
+template <typename Input, typename State, typename CFtype, class NeighborhoodExplorerList>
+void SetUnionNeighborhoodExplorer<Input,State,CFtype,NeighborhoodExplorerList>::SetAllUnselected(MoveList& mv) const
+{
+  mv.selected = false;
+  other_nhes.SetAllUnselected(mv.movelist);
+}
+
+
 /** Template specialization for the end of the typelist (i.e., NullType) */
 
 template <typename Input, typename State, typename CFtype>
@@ -551,10 +565,10 @@ public:
   void MakeMove(State& st, const MoveList& mv) const;
   CFtype DeltaCostFunction(const State& st, const MoveList& mv) const;
   ShiftedResult<CFtype> DeltaShiftedCostFunction(const State& st, const MoveList& mv) const;
+  void SetAllUnselected(MoveList& mv) const;
 protected:
-  
- const Input& in;/**< A reference to the input object */
- StateManager<Input, State, CFtype>& sm; /**< A reference to the attached state manager. */
+  const Input& in;/**< A reference to the input object */
+  StateManager<Input, State, CFtype>& sm; /**< A reference to the attached state manager. */
   
   std::string name;
 };
@@ -598,6 +612,10 @@ ShiftedResult<CFtype> SetUnionNeighborhoodExplorer<Input,State,CFtype,NullType>:
   ShiftedResult<CFtype> sr;
   return sr; // just to prevent warnings
 }
+
+template <typename Input, typename State, typename CFtype>
+void SetUnionNeighborhoodExplorer<Input,State,CFtype,NullType>::SetAllUnselected(MoveList& mv) const
+{}
 
 // CartesianProduct
 

@@ -100,14 +100,14 @@ void BimodalRunnerObserver<Input,State,Move1,Move2,CFtype>::NotifyStoreMove(Bimo
   if (notify_store_move)
     {
       if (r.current_move_type == MOVE_1)
-	log << "Move (1): " << r.current_move1 << ", Move Cost: " << r.current_move_cost1;
+        log << "Move (1): " << r.current_move1 << ", Move Cost: " << r.current_move_cost1;
       else
-	log << "Move (2): " << r.current_move2 << ", Move Cost: " << r.current_move_cost2;	
+        log << "Move (2): " << r.current_move2 << ", Move Cost: " << r.current_move_cost2;	
       log << " (current: "
-	  << r.current_state_cost << ", best: " 
-	  << r.best_state_cost <<  ") it: " << r.number_of_iterations
-	  << " (idle: " << r.number_of_iterations - r.iteration_of_best << ")" 
-	  << "), Costs: (";
+      << r.current_state_cost << ", best: " 
+      << r.best_state_cost <<  ") it: " << r.number_of_iterations
+      << " (idle: " << r.number_of_iterations - r.iteration_of_best << ")" 
+      << "), Costs: (";
       for (unsigned int i = 0; i < r.sm.CostComponents(); i++)
 	{
 	  log << r.sm.Cost(r.current_state,i);

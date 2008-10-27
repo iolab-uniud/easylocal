@@ -158,7 +158,7 @@ template <class Input, class State, class Move1, class Move2, typename CFtype>
 void BimodalSteepestDescent<Input,State,Move1,Move2,CFtype>::StoreMove()
 {
   if (this->observer != NULL)
-    this->observer->NotifyNewBest(*this);
+    this->observer->NotifyStoreMove(*this);
   if (this->current_move_type == MOVE_1)
     {
       if (LessThan(this->current_move_cost1,(CFtype)0))

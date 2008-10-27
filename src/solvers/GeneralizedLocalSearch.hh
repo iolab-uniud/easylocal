@@ -111,7 +111,7 @@ GeneralizedLocalSearch<Input,Output,State,CFtype>::GeneralizedLocalSearch(const 
   : AbstractLocalSearch<Input,Output,State,CFtype>(i, sm, om, name), current_runner(0), idle_rounds(0), 
     rounds(0), kick_rate(2),
     max_idle_rounds(1), max_rounds(100), generalized_ls_arguments("gls_" + name, "gls_" + name, false), 
-    arg_max_idle_rounds("max_idle_rounds", "-mir", false), arg_max_rounds("max_rounds", "-mr", false),
+    arg_max_idle_rounds("max_idle_rounds", "mir", false), arg_max_rounds("max_rounds", "mr", false),
     arg_timeout("timeout", "to", false, 0.0)
 {
   generalized_ls_arguments.AddArgument(arg_max_idle_rounds);
@@ -129,7 +129,7 @@ GeneralizedLocalSearch<Input,Output,State,CFtype>::GeneralizedLocalSearch(const 
 									  CLParser& cl)
   : AbstractLocalSearch<Input,Output,State,CFtype>(i, sm, om, name), current_runner(0), idle_rounds(0), rounds(0),
     max_idle_rounds(1), max_rounds(100), generalized_ls_arguments("gls_" + name, "gls_" + name, false), 
-    arg_max_idle_rounds("max_idle_rounds", "-mir", false), arg_max_rounds("max_rounds", "-mr", false),
+    arg_max_idle_rounds("max_idle_rounds", "mir", false), arg_max_rounds("max_rounds", "mr", false),
     arg_timeout("timeout", "to", false, 0.0)
 {
   generalized_ls_arguments.AddArgument(arg_max_idle_rounds);

@@ -46,6 +46,7 @@
 		AC77656E0DDEE52200A4A736 /* EasyLocal.conf.vc.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = EasyLocal.conf.vc.hh; sourceTree = "<group>"; };
 		AC8357BF0EA47DF5002980DC /* MultimodalTabuListManager.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = MultimodalTabuListManager.hh; sourceTree = "<group>"; };
 		AC9665AE0E712AE100802631 /* GreatDeluge.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = GreatDeluge.hh; sourceTree = "<group>"; };
+		AC9770D20EB338BD00517FE5 /* CLParserTest.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = CLParserTest.hh; sourceTree = "<group>"; };
 		AC97D3830DD4762100454E4E /* COPYING */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = COPYING; path = ../COPYING; sourceTree = SOURCE_ROOT; };
 		ACDFC76D0DCFB2E5004D11E8 /* EasyLocal.conf.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = EasyLocal.conf.hh; sourceTree = "<group>"; };
 		ACDFC7A90DCFB717004D11E8 /* GeneralizedLocalSearch.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = GeneralizedLocalSearch.hh; sourceTree = "<group>"; };
@@ -374,6 +375,7 @@
 		ACF4DD620DC1F3A4006507B1 /* unit */ = {
 			isa = PBXGroup;
 			children = (
+				AC9770D20EB338BD00517FE5 /* CLParserTest.hh */,
 				ACF4DEB10DC23181006507B1 /* OutputManagerTest.hh */,
 				ACF4DD7A0DC1F56C006507B1 /* TestUtils.hh */,
 				ACF4DD630DC1F3A4006507B1 /* StateManagerTest.hh */,
