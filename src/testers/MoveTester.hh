@@ -369,7 +369,7 @@ void MoveTester<Input,Output,State,Move,CFtype>::CheckMoveIndependence(const Sta
       null_moves++;
     }
   else
-    reached_states.push_back(make_pair(mv,st1));
+    reached_states.push_back(std::make_pair(mv,st1));
 
   while (ne.NextMove(st,mv))
     {
@@ -392,7 +392,7 @@ void MoveTester<Input,Output,State,Move,CFtype>::CheckMoveIndependence(const Sta
 	      repeat_states++;
 	    }
 	  else
-	    reached_states.push_back(make_pair(mv,st1));
+	    reached_states.push_back(std::make_pair(mv,st1));
 	}
       if (all_moves % 100 == 0) 
 	std::cerr << '.'; // print dots to show that it is alive

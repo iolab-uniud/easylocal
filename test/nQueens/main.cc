@@ -159,7 +159,7 @@ int main(int argc, char* argv[])
   GeneralizedLocalSearch<int, ChessBoard, std::vector<int> > qgls(in, qsm, qom, "QueensGLS", cl);
   VariableNeighborhoodDescent<int, ChessBoard, std::vector<int> > qvnd(in, qsm, qom, 3);
   
-  typedef PrepareSetUnionNeighborhoodExplorerTypes<int, std::vector<int>, TYPELIST_2(SwapNeighborhoodExplorer, SwapNeighborhoodExplorer)> MultimodalTypes;
+  /* typedef PrepareSetUnionNeighborhoodExplorerTypes<int, std::vector<int>, TYPELIST_2(SwapNeighborhoodExplorer, SwapNeighborhoodExplorer)> MultimodalTypes;
   typedef MultimodalTypes::MoveList DoubleSwap; // this line is not mandatory, it just aliases the movelist type for reader's convenience
   MultimodalTypes::NeighborhoodExplorer qmmnhe(in, qsm, "Multimodal Swap");
   qmmnhe.AddNeighborhoodExplorer(qnhe);
@@ -168,7 +168,18 @@ int main(int argc, char* argv[])
   MultimodalTabuListManagerTypes::TabuListManager qmmtlm;
   qmmtlm.AddTabuListManager(qtlm);
   qmmtlm.AddTabuListManager(qtlm);
+  TabuSearch<int, std::vector<int>, DoubleSwap> qmmts(in, qsm, qmmnhe, qmmtlm, "DoubleSwapTabuSearch", cl); */
+  typedef PrepareCartesianProductNeighborhoodExplorerTypes<int, std::vector<int>, TYPELIST_2(SwapNeighborhoodExplorer, SwapNeighborhoodExplorer)> MultimodalTypes;
+  typedef MultimodalTypes::MoveList DoubleSwap; // this line is not mandatory, it just aliases the movelist type for reader's convenience
+  MultimodalTypes::NeighborhoodExplorer qmmnhe(in, qsm, "Multimodal Swap");
+  qmmnhe.AddNeighborhoodExplorer(qnhe);
+  qmmnhe.AddNeighborhoodExplorer(qnhe);
+  typedef PrepareCartesianProductTabuListManager<std::vector<int>, TYPELIST_2(QueensTabuListManager, QueensTabuListManager)> MultimodalTabuListManagerTypes;
+  MultimodalTabuListManagerTypes::TabuListManager qmmtlm;
+  qmmtlm.AddTabuListManager(qtlm);
+  qmmtlm.AddTabuListManager(qtlm);
   TabuSearch<int, std::vector<int>, DoubleSwap> qmmts(in, qsm, qmmnhe, qmmtlm, "DoubleSwapTabuSearch", cl);
+  
 
   cl.MatchArguments();
   if (arg_random_seed.IsSet())

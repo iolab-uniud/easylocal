@@ -58,7 +58,37 @@ public:
 protected:
   ThisTabuListManager* p_tlm;
   OtherTabuListManager other_tlms;
-};    
+};
+
+template <class State, typename CFtype, class TabuListManagerList>
+class CartesianProductTabuListManager 
+{
+protected:
+  typedef typename TabuListManagerList::Head ThisTabuListManager;
+  typedef SetUnionTabuListManager<State, CFtype, class TabuListManagerList::Tail> OtherTabuListManager;
+public:       
+  typedef Movelist<CFtype, typename ThisTabuListManager::ThisMove, typename OtherTabuListManager::MoveList> MoveList;
+  
+  CartesianProductTabuListManager();
+  /**
+   Adds a (monomodal) tabu list manager to the pool.
+   @param tl the tabu list manager to be added
+   */
+  template <typename TabuListManager>
+  void AddTabuListManager(TabuListManager& tl)
+  {
+    if (inspect_types<TabuListManager, ThisTabuListManager>::are_equal() && p_tlm == NULL) // the second condition is just to allow duplicated types in the typelist
+      p_tlm = dynamic_cast<ThisTabuListManager*>(&tl); // only to prevent a compilation error
+    else
+      other_tlms.AddTabuListManager(tl);
+  }
+  
+  bool Inverse(const MoveList& mv1, const MoveList& mv2) const;
+protected:
+  ThisTabuListManager* p_tlm;
+  OtherTabuListManager other_tlms;
+};
+
 
 template <class State, class MoveList, class MultimodalTabuListManager, typename CFtype = int>
 class MultimodalTabuListManagerAdapter : public TabuListManager<State, MoveList, CFtype>
@@ -89,6 +119,15 @@ public:
   typedef SetUnionTabuListManager<State, CFtype, TabuListManagerList> MultimodaTabuListManagerType;  
   typedef typename MultimodaTabuListManagerType::MoveList MoveList;
   typedef MultimodalTabuListManagerAdapter<State, MoveList, MultimodaTabuListManagerType, CFtype> TabuListManager;
+};
+
+template <typename State, typename TabuListManagerList, typename CFtype = int>
+class PrepareCartesianProductTabuListManager
+{
+public:
+typedef CartesianProductTabuListManager<State, CFtype, TabuListManagerList> MultimodaTabuListManagerType;  
+typedef typename MultimodaTabuListManagerType::MoveList MoveList;
+typedef MultimodalTabuListManagerAdapter<State, MoveList, MultimodaTabuListManagerType, CFtype> TabuListManager;
 };
 
 /*************************************************************************
@@ -126,6 +165,35 @@ public:
   }
   bool Inverse(const MoveList& mv1, const MoveList& mv2) const
   { return false; }
+};
+
+template <class State, typename CFtype, class TabuListManagerList>
+CartesianProductTabuListManager<State,CFtype,TabuListManagerList>::CartesianProductTabuListManager()
+: p_tlm(NULL)
+{}
+
+template <class State, typename CFtype, class TabuListManagerList>
+bool CartesianProductTabuListManager<State,CFtype,TabuListManagerList>::Inverse(const MoveList& mv1, const MoveList& mv2) const
+{
+  return other_tlms.Inverse(mv1.movelist, mv2.movelist) && p_tlm->Inverse(mv1.move, mv2.move);
+}
+
+/** Template specialization for the end of the typelist (i.e., NullType) */
+
+template <class State, typename CFtype>
+class CartesianProductTabuListManager<State, CFtype, NullType>
+{
+public:  
+  typedef NullType MoveList;
+  
+  template <typename TabuListManager>
+  void AddTabuListManager(TabuListManager& tl)
+  {
+    throw std::logic_error("Error passing a tabu list manager object to a Multimodal tabu list manager:"
+                           "either the added tabu list manager is not of a compatible type or a compatible one has already been added");
+  }
+  bool Inverse(const MoveList& mv1, const MoveList& mv2) const
+  { return true; }
 };
 
 

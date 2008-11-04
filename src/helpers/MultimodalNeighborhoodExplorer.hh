@@ -630,38 +630,89 @@ CartesianProductNeighborhoodExplorer<Input,State,CFtype,NeighborhoodExplorerList
 template <typename Input, typename State, typename CFtype, class NeighborhoodExplorerList>
 void CartesianProductNeighborhoodExplorer<Input,State,CFtype,NeighborhoodExplorerList>::RandomMove(const State &st, MoveList& mv) const
 {
-  //FIXME: to be implemented
+  p_nhe->RandomMove(st, mv.move);
+  mv.selected = true;
+  State st1 = st;
+  p_nhe->MakeMove(st1, mv.move);
+  other_nhes.RandomMove(st1, mv.movelist);
 }
 
 template <typename Input, typename State, typename CFtype, class NeighborhoodExplorerList>
 void CartesianProductNeighborhoodExplorer<Input,State,CFtype,NeighborhoodExplorerList>::FirstMove(const State& st, MoveList& mv) const
 { 
-  //FIXME: to be implemented
+  // TODO: in principle, one of the neighborhoods could be empty raising an EmptyNeighborhood exception
+  // this case could be treated separately
+  p_nhe->FirstMove(st, mv.move);
+  mv.selected = true;
+  if (mv.length == 1)
+    return;
+  State st1 = st;
+  p_nhe->MakeMove(st1, mv.move);
+  other_nhes.FirstMove(st1, mv.movelist);
 }
 
 template <typename Input, typename State, typename CFtype, class NeighborhoodExplorerList>
 bool CartesianProductNeighborhoodExplorer<Input,State,CFtype,NeighborhoodExplorerList>::NextMove(const State& st, MoveList& mv) const
 {
-  //FIXME: to be implemented
-  return false;
+  if (mv.length == 1) // end of recursion
+    return p_nhe->NextMove(st, mv.move);
+  State st1 = st;
+  p_nhe->MakeMove(st1, mv.move);
+  if (other_nhes.NextMove(st1, mv.movelist))
+    return true;
+  bool exists_next_move;
+  do
+  {
+    if (!p_nhe->NextMove(st, mv.move))
+      return false;
+    st1 = st;
+    p_nhe->MakeMove(st1, mv.move);
+    try 
+    {
+      other_nhes.FirstMove(st1, mv.movelist);
+      exists_next_move = true;
+    } catch (EmptyNeighborhood e)
+    {
+      exists_next_move = false;
+    }
+  } 
+  while (!exists_next_move);
+  return true;
 }
 
 template <typename Input, typename State, typename CFtype, class NeighborhoodExplorerList>
 void CartesianProductNeighborhoodExplorer<Input,State,CFtype,NeighborhoodExplorerList>::MakeMove(State& st, const MoveList& mv) const
 {
-  //FIXME: to be implemented
+  if (mv.length == 1) // end of recursion
+    p_nhe->MakeMove(st, mv.move);
+  else 
+  {
+    p_nhe->MakeMove(st, mv.move);
+    other_nhes.MakeMove(st, mv.movelist);
+  }
 }
 
 template <typename Input, typename State, typename CFtype, class NeighborhoodExplorerList>
 CFtype CartesianProductNeighborhoodExplorer<Input,State,CFtype,NeighborhoodExplorerList>::DeltaCostFunction(const State& st, const MoveList& mv) const
 {
-  //FIXME: to be implemented
+  if (mv.length == 1)
+    return p_nhe->DeltaCostFunction(st, mv.move);
+  State st1 = st;
+  p_nhe->MakeMove(st1, mv.move);
+  return other_nhes.DeltaCostFunction(st1, mv.movelist) + p_nhe->DeltaCostFunction(st, mv.move);
 }
 
 template <typename Input, typename State, typename CFtype, class NeighborhoodExplorerList>
 ShiftedResult<CFtype> CartesianProductNeighborhoodExplorer<Input,State,CFtype,NeighborhoodExplorerList>::DeltaShiftedCostFunction(const State& st, const MoveList& mv) const
 {
-  //FIXME: to be implemented
+  if (mv.length == 1)
+    return p_nhe->DeltaShiftedCostFunction(st, mv.move);
+  State st1 = st;
+  p_nhe->MakeMove(st1, mv.move);
+  ShiftedResult<CFtype> acc_value = other_nhes.DeltaShiftedCostFunction(st1, mv.movelist), cur_value = p_nhe->DeltaShiftedCostFunction(st, mv.move);
+  acc_value.shifted_value += cur_value.shifted_value;
+  acc_value.actual_value += cur_value.actual_value;
+  return acc_value;
 }
 
 /** Template specialization for the end of the typelist (i.e., NullType) */
