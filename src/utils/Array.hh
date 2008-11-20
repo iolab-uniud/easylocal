@@ -24,6 +24,7 @@
 #include <iostream>
 #include <iomanip>
 #include <cmath>
+#include <cstdlib>
 
 enum MType { DIAG };
 

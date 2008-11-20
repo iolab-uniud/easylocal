@@ -25,6 +25,7 @@
 #include <stdexcept>
 #include <list>
 #include <sstream>
+#include <typeinfo>
 
 class CLParser;
 
