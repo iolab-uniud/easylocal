@@ -263,38 +263,38 @@ void MoveTester<Input,Output,State,Move,CFtype>::CheckNeighborhoodCosts(const St
   CFtype error, error_cc, delta_cost, cost, cost1;
   State st1 = st;
   bool error_found = false, not_last_move;
-  ne.FirstMove(st1, mv);
+  ne.FirstMove(st, mv);
   do
     {
       move_count++;
       ne.MakeMove(st1, mv);
       error = this->sm.CostFunction(st1) - ne.DeltaCostFunction(st, mv) - this->sm.CostFunction(st);
       if (!IsZero(error))
-	{
-	  error_found = true;
-	  os << std::endl << "Error: Move n. " << move_count << ", " << mv << ", Info" << std::endl;
-	  for (unsigned i = 0; i < ne.DeltaCostComponents(); i++)
-	    {
-	      if (ne.DeltaCostComponent(i).IsDeltaImplemented()) // only implemented delta can be buggy
-		{
-		  FilledDeltaCostComponent<Input,State,Move,CFtype>& dcc = (FilledDeltaCostComponent<Input,State,Move,CFtype>&) ne.DeltaCostComponent(i);
-		  CostComponent<Input,State,CFtype>& cc = dcc.GetCostComponent();
-		  delta_cost = dcc.DeltaCost(st, mv);        
-		  cost = cc.Cost(st);
-		  cost1 = cc.Cost(st1);
-		  error_cc = cost - cost1 + delta_cost;
-		  if (!IsZero(error_cc))
-		    {		    
-		      os << "  " << i << ". " << dcc.name << " : Initial = " << cost << ", final = " 
-			 << cost1 << ", delta computed = " << delta_cost << " (error = " << error_cc << ")" << std::endl;		      
-		    }
-		}
-	    }
-	  os << "Press enter to continue " << std::endl;
-	  std::cin.get();
-	}          
+      {
+        error_found = true;
+        os << std::endl << "Error: Move n. " << move_count << ", " << mv << ", Info" << std::endl;
+        for (unsigned i = 0; i < ne.DeltaCostComponents(); i++)
+        {
+          if (ne.DeltaCostComponent(i).IsDeltaImplemented()) // only implemented delta can be buggy
+          {
+            FilledDeltaCostComponent<Input,State,Move,CFtype>& dcc = (FilledDeltaCostComponent<Input,State,Move,CFtype>&) ne.DeltaCostComponent(i);
+            CostComponent<Input,State,CFtype>& cc = dcc.GetCostComponent();
+            delta_cost = dcc.DeltaCost(st, mv);        
+            cost = cc.Cost(st);
+            cost1 = cc.Cost(st1);
+            error_cc = cost - cost1 + delta_cost;
+            if (!IsZero(error_cc))
+            {		    
+              os << "  " << i << ". " << dcc.name << " : Initial = " << cost << ", final = " 
+              << cost1 << ", delta computed = " << delta_cost << " (error = " << error_cc << ")" << std::endl;		      
+            }
+          }
+        }
+        os << "Press enter to continue " << std::endl;
+        std::cin.get();
+      }          
       if (move_count % 100 == 0) 
-	std::cerr << '.'; // print dots to show that it is alive
+        std::cerr << '.'; // print dots to show that it is alive
       not_last_move = ne.NextMove(st, mv);
       st1 = st;
     }
@@ -325,11 +325,11 @@ void MoveTester<Input,Output,State,Move,CFtype>::PrintNeighborhoodStatistics(con
       neighbors++;
       mv_cost = ne.DeltaCostFunction(st,mv);
       if (mv_cost < 0)
-	improving_neighbors++;
+        improving_neighbors++;
       else if (mv_cost > 0)
-	worsening_neighbors++;
+        worsening_neighbors++;
       else
-	non_improving_neighbors++;
+        non_improving_neighbors++;
     }
   while (ne.NextMove(st,mv));
   os << "Neighborhood size: " <<  neighbors << std::endl
