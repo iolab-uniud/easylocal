@@ -262,11 +262,12 @@ template <class Input, class Output, class State, typename CFtype>
 void GeneralizedLocalSearch<Input,Output,State,CFtype>::MultiStartSimpleSolve(unsigned runner, unsigned trials)
 {
   bool timeout_expired = false;
+  unsigned t;
   if (runner >= runners.size())
     throw std::logic_error("No runner set for solver " + this->name);
   chrono.Reset();
   chrono.Start();
-  for (unsigned t = 0; t < trials; t++)
+  for (t = 0; t < trials; t++)
     {
       if (observer != NULL) observer->NotifyRestart(*this, t);
       this->FindInitialState();
@@ -288,6 +289,7 @@ void GeneralizedLocalSearch<Input,Output,State,CFtype>::MultiStartSimpleSolve(un
 	break;
       restarts++;
     }
+
   chrono.Stop();
 }
 

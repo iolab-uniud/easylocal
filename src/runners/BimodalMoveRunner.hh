@@ -65,10 +65,10 @@ protected:
   void UpdateStateCost();
    
 
-  NeighborhoodExplorer<Input,State,Move1>& ne1; /**< A pointer to the
+  NeighborhoodExplorer<Input,State,Move1,CFtype>& ne1; /**< A pointer to the
 						   attached neighborhood 
 						   explorer. */
-  NeighborhoodExplorer<Input,State,Move2>& ne2; /**< A pointer to the
+  NeighborhoodExplorer<Input,State,Move2,CFtype>& ne2; /**< A pointer to the
 						   attached neighborhood 
 						   explorer. */
   Move1 current_move1;      /**< The currently selected move. */
