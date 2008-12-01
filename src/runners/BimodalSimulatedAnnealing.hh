@@ -38,6 +38,7 @@ public:
   void SetStartTemperature(double st)  { start_temperature = st; }
   void SetCoolingRate(double cr)  { cooling_rate = cr; }
   void SetNeighborsSampled(unsigned int ns)  { neighbors_sampled = ns; }
+  void SetMinTemperature(double mt) { min_temperature = mt; }
 protected:
   void GoCheck() const;
   void InitializeRun();

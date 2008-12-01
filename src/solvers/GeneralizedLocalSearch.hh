@@ -305,30 +305,30 @@ void GeneralizedLocalSearch<Input,Output,State,CFtype>::MultiStartGeneralSolve(K
   bool timeout_expired = false; 
   
   for (unsigned t = 0; t < trials; t++)
+  {
+    if (observer != NULL) observer->NotifyRestart(*this, t);
+    this->GeneralSolve(kick_strategy,true);
+    if (t == 0 || LessThan(this->best_state_cost, global_best_state_cost))
     {
-      if (observer != NULL) observer->NotifyRestart(*this, t);
-      this->GeneralSolve(kick_strategy,true);
-      if (t == 0 || LessThan(this->best_state_cost, global_best_state_cost))
-	{
-	  global_best_state = this->best_state;
-	  global_best_state_cost = this->best_state_cost;
-	  if (this->sm.LowerBoundReached(global_best_state_cost))
-	    break;
-	}
+      global_best_state = this->best_state;
+      global_best_state_cost = this->best_state_cost;
+      if (this->sm.LowerBoundReached(global_best_state_cost))
+        break;
+    }
 #if defined(HAVE_PTHREAD)
-      if (this->timeout_set) 
-	{
-	  if (this->current_timeout <= 0.0)
+    if (this->timeout_set) 
+    {
+      if (this->current_timeout <= 0.0)
 	    {
 	      timeout_expired = true;
 	      this->current_timeout = 0.0;
 	    }
-	}
-#endif
-      if (timeout_expired)
-	break;
-      restarts++;
     }
+#endif
+    if (timeout_expired)
+      break;
+    restarts++;
+  }
   this->best_state = global_best_state;
   this->best_state_cost	= global_best_state_cost;
 }
@@ -360,77 +360,77 @@ void GeneralizedLocalSearch<Input,Output,State,CFtype>::GeneralSolve(KickStrateg
     {
       improve_state = false;
       for (current_runner = 0; current_runner < this->runners.size(); current_runner++)
-	{
-	  this->runners[current_runner]->SetState(this->current_state, this->current_state_cost);
-	  if (observer != NULL) observer->NotifyRunnerStart(*this);
-	  timeout_expired = LetGo(*this->runners[current_runner]);
-	  if (observer != NULL) observer->NotifyRunnerStop(*this);	  
-	  this->current_state = this->runners[current_runner]->GetState();
-	  this->current_state_cost = this->runners[current_runner]->GetStateCost();
-	  if (LessThan(this->current_state_cost, this->best_state_cost))
-	    {
-	      improve_state = true;
-	      this->best_state = this->current_state;
-	      this->best_state_cost = this->current_state_cost;
-	      lower_bound_reached = this->sm.LowerBoundReached(this->best_state_cost); 
-	    }
-	  if (lower_bound_reached || timeout_expired) break;
-	}
+      {
+        this->runners[current_runner]->SetState(this->current_state, this->current_state_cost);
+        if (observer != NULL) observer->NotifyRunnerStart(*this);
+        timeout_expired = LetGo(*this->runners[current_runner]);
+        if (observer != NULL) observer->NotifyRunnerStop(*this);	  
+        this->current_state = this->runners[current_runner]->GetState();
+        this->current_state_cost = this->runners[current_runner]->GetStateCost();
+        if (LessThan(this->current_state_cost, this->best_state_cost))
+        {
+          improve_state = true;
+          this->best_state = this->current_state;
+          this->best_state_cost = this->current_state_cost;
+          lower_bound_reached = this->sm.LowerBoundReached(this->best_state_cost); 
+        }
+        if (lower_bound_reached || timeout_expired) break;
+      }
       rounds++;
       if (observer != NULL) observer->NotifyRound(*this);	
       if (improve_state)
-	idle_rounds = 0;
+        idle_rounds = 0;
       else
-	{
+      {
 #if defined(HAVE_PTHREAD)
-	  double time = chrono.TotalTime();
+        double time = chrono.TotalTime();
 #endif
-	  improve_state = false;
-	  idle_rounds++;
-	  if (idle_rounds % kick_rate != 0) continue;
-	  if (kick_strategy != NO_KICKER)
-	    {
-	      if (observer != NULL)
-		observer->NotifyKickerStart(*this);
-	      if (kick_strategy == DIVERSIFIER || kick_strategy == INTENSIFIER)
-		{
-		  if (kick_strategy == DIVERSIFIER)
-		    kick_cost = p_kicker->RandomKick(this->current_state);
-		  else // INTENSIFIER
-		    kick_cost = p_kicker->SelectKick(this->current_state);
-		  if (observer != NULL)
-		    observer->NotifyKickStep(*this,kick_cost);
-		  p_kicker->MakeKick(this->current_state);
-		  this->current_state_cost += kick_cost; 
-		  if (LessThan(kick_cost, static_cast<CFtype>(0))) 
-		    improve_state = true;
-		}
-	      else if (kick_strategy == INTENSIFIER_RUN)
-		{
-		  improve_state = this->PerformKickRun();
-		}	  
-	      if (improve_state)
-		{
-		  this->best_state = this->current_state;
-		  this->best_state_cost = this->current_state_cost;
-		  lower_bound_reached = this->sm.LowerBoundReached(this->best_state_cost); 
-		  idle_rounds = 0;
-		}
-	      if (observer != NULL)
-		observer->NotifyKickerStop(*this);
-	    }
+        improve_state = false;
+        idle_rounds++;
+        if (idle_rounds % kick_rate != 0) continue;
+        if (kick_strategy != NO_KICKER)
+        {
+          if (observer != NULL)
+            observer->NotifyKickerStart(*this);
+          if (kick_strategy == DIVERSIFIER || kick_strategy == INTENSIFIER)
+          {
+            if (kick_strategy == DIVERSIFIER)
+              kick_cost = p_kicker->RandomKick(this->current_state);
+            else // INTENSIFIER
+              kick_cost = p_kicker->SelectKick(this->current_state);
+            if (observer != NULL)
+              observer->NotifyKickStep(*this,kick_cost);
+            p_kicker->MakeKick(this->current_state);
+            this->current_state_cost += kick_cost; 
+            if (LessThan(kick_cost, static_cast<CFtype>(0))) 
+              improve_state = true;
+          }
+          else if (kick_strategy == INTENSIFIER_RUN)
+          {
+            improve_state = this->PerformKickRun();
+          }	  
+          if (improve_state)
+          {
+            this->best_state = this->current_state;
+            this->best_state_cost = this->current_state_cost;
+            lower_bound_reached = this->sm.LowerBoundReached(this->best_state_cost); 
+            idle_rounds = 0;
+          }
+          if (observer != NULL)
+            observer->NotifyKickerStop(*this);
+        }
 #if defined(HAVE_PTHREAD)
-	  if (this->timeout_set) 
-	    {
-	      this->current_timeout -= (chrono.TotalTime() - time);
-	      if (this->current_timeout <= 0.0)
-		{
-		  timeout_expired = true;
-		  this->current_timeout = 0.0;
-		}
-	    }
+        if (this->timeout_set) 
+        {
+          this->current_timeout -= (chrono.TotalTime() - time);
+          if (this->current_timeout <= 0.0)
+          {
+            timeout_expired = true;
+            this->current_timeout = 0.0;
+          }
+        }
 #endif
-	}
+      }
     }
   while (idle_rounds < max_idle_rounds && rounds < max_rounds && !timeout_expired && !lower_bound_reached);
   chrono.Stop();

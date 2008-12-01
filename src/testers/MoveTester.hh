@@ -265,6 +265,11 @@ void MoveTester<Input,Output,State,Move,CFtype>::CheckNeighborhoodCosts(const St
   bool error_found = false, not_last_move;
   ne.FirstMove(st, mv);
   do
+  {
+    move_count++;
+    ne.MakeMove(st1, mv);
+    error = this->sm.CostFunction(st1) - ne.DeltaCostFunction(st, mv) - this->sm.CostFunction(st);
+    if (!IsZero(error))
     {
       move_count++;
       ne.MakeMove(st1, mv);

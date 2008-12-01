@@ -51,6 +51,7 @@
 		ACDFC76D0DCFB2E5004D11E8 /* EasyLocal.conf.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = EasyLocal.conf.hh; sourceTree = "<group>"; };
 		ACDFC7A90DCFB717004D11E8 /* GeneralizedLocalSearch.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = GeneralizedLocalSearch.hh; sourceTree = "<group>"; };
 		ACDFC7AA0DCFB717004D11E8 /* VariableNeighborhoodDescent.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = VariableNeighborhoodDescent.hh; sourceTree = "<group>"; };
+		ACE15CF80EE4268500DC9C32 /* BimodalSimulatedAnnealing.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = BimodalSimulatedAnnealing.hh; sourceTree = "<group>"; };
 		ACF4B0FC0DBFA668008A0207 /* EasyLocal.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = EasyLocal.hh; sourceTree = "<group>"; };
 		ACF4B10E0DBFA668008A0207 /* CostComponent.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = CostComponent.hh; sourceTree = "<group>"; };
 		ACF4B10F0DBFA668008A0207 /* DeltaCostComponent.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = DeltaCostComponent.hh; sourceTree = "<group>"; };
@@ -236,6 +237,7 @@
 		ACF4B1240DBFA668008A0207 /* runners */ = {
 			isa = PBXGroup;
 			children = (
+				ACE15CF80EE4268500DC9C32 /* BimodalSimulatedAnnealing.hh */,
 				ACF4B2020DBFADB3008A0207 /* BimodalHillClimbing.hh */,
 				ACF4B2030DBFADB3008A0207 /* BimodalMoveRunner.hh */,
 				ACF4B2040DBFADB3008A0207 /* BimodalSteepestDescent.hh */,
