@@ -303,6 +303,7 @@ void MoveTester<Input,Output,State,Move,CFtype>::CheckNeighborhoodCosts(const St
       not_last_move = ne.NextMove(st, mv);
       st1 = st;
     }
+  }
   while(not_last_move);
   
   if (!error_found)
