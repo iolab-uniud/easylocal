@@ -621,8 +621,8 @@ void SetUnionNeighborhoodExplorer<Input,State,CFtype,NullType>::SetAllUnselected
 
 template <class Input, class State, typename CFtype, class NeighborhoodExplorerList>
 CartesianProductNeighborhoodExplorer<Input,State,CFtype,NeighborhoodExplorerList>::CartesianProductNeighborhoodExplorer(const Input& i, 
-                                                                                                        StateManager<Input,State,CFtype>& e_sm, 
-                                                                                                        std::string e_name)
+                                                                                                                        StateManager<Input,State,CFtype>& e_sm, 
+                                                                                                                        std::string e_name)
 : in(i), sm(e_sm),  p_nhe(NULL), other_nhes(i, e_sm, e_name), name(e_name)
 {}
 
@@ -639,16 +639,37 @@ void CartesianProductNeighborhoodExplorer<Input,State,CFtype,NeighborhoodExplore
 
 template <typename Input, typename State, typename CFtype, class NeighborhoodExplorerList>
 void CartesianProductNeighborhoodExplorer<Input,State,CFtype,NeighborhoodExplorerList>::FirstMove(const State& st, MoveList& mv) const
-{ 
-  // TODO: in principle, one of the neighborhoods could be empty raising an EmptyNeighborhood exception
-  // this case could be treated separately
+{
   p_nhe->FirstMove(st, mv.move);
   mv.selected = true;
   if (mv.length == 1)
     return;
   State st1 = st;
   p_nhe->MakeMove(st1, mv.move);
-  other_nhes.FirstMove(st1, mv.movelist);
+  bool exists_first_move;
+  try
+  {
+    other_nhes.FirstMove(st1, mv.movelist);
+    exists_first_move = true;
+  }
+  catch (EmptyNeighborhood e) {
+    exists_first_move = false;
+  }
+  while (!exists_first_move) 
+  {
+    if (!p_nhe->NextMove(st, mv.move))
+      throw EmptyNeighborhood();
+    st1 = st;
+    p_nhe->MakeMove(st1, mv.move);
+    try
+    {
+      other_nhes.FirstMove(st1, mv.movelist);
+      exists_first_move = true;
+    }
+    catch (EmptyNeighborhood e) {
+      exists_first_move = false;
+    }
+  }
 }
 
 template <typename Input, typename State, typename CFtype, class NeighborhoodExplorerList>
