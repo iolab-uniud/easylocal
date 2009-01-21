@@ -262,7 +262,7 @@ void MoveTester<Input,Output,State,Move,CFtype>::CheckNeighborhoodCosts(const St
   unsigned move_count = 0;
   CFtype error, error_cc, delta_cost, cost, cost1;
   State st1 = st;
-  bool error_found = false, not_last_move;
+  bool error_found = false, not_last_move = false;
   ne.FirstMove(st, mv);
   do
   {

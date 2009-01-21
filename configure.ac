@@ -96,6 +96,7 @@ AC_CHECK_HEADERS([sys/time.h])
 AC_CHECK_HEADERS([sys/resource.h])
 
 # For CppUnit testing
+AM_CONDITIONAL(CPPUNIT, false)
 AM_PATH_CPPUNIT(1.9.0, 
 	[AM_CONDITIONAL(CPPUNIT, true)], 
 	[AM_CONDITIONAL(CPPUNIT, false)])

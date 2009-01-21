@@ -153,33 +153,36 @@ bool AbstractLocalSearch<Input,Output,State,CFtype>::LetGo(Runner<Input,State,CF
 {
 #if defined(HAVE_PTHREAD)
   if (this->timeout_set)
+  {
+    float time_left;
+    this->termination_request = false;
+    this->termination_request_confirmation = false;
+    pthread_t runner_thread = runner.GoThread(this->runner_termination, this->termination_request, this->termination_request_confirmation);
+    try
     {
-      float time_left;
-      this->termination_request = false;
-      pthread_t runner_thread = runner.GoThread(this->runner_termination, this->termination_request);
-      try
-	{
-	  time_left = this->runner_termination.WaitTimeout(this->current_timeout);
-	  this->current_timeout = time_left;
-	}
-      catch (TimeoutExpired e)
-	{
-	  this->current_timeout = 0.0;
-	}
-      this->termination_request = true;
-      pthread_join(runner_thread, NULL);
-      if (this->current_timeout == 0.0)
-	return true;
-      else
-	return false;
+      time_left = this->runner_termination.WaitTimeout(this->current_timeout);
+      this->current_timeout = time_left;
+      this->termination_request_confirmation = true;
     }
-  else
+    catch (TimeoutExpired e)
     {
-      this->termination_request = false;
-      pthread_t runner_thread = runner.GoThread(this->runner_termination, this->termination_request);
-      pthread_join(runner_thread, NULL);
+      this->current_timeout = 0.0;
+    }
+    this->termination_request = true;
+    pthread_join(runner_thread, NULL);
+    if (this->current_timeout == 0.0)
+      return true;
+    else
       return false;
-    }
+  }
+  else
+  {
+    this->termination_request = false;
+    this->termination_request_confirmation = false;
+    pthread_t runner_thread = runner.GoThread(this->runner_termination, this->termination_request, this->termination_request_confirmation);
+    pthread_join(runner_thread, NULL);
+    return false;
+  }
 #else
   runner.Go();
   return false;
