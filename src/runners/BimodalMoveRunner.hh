@@ -55,7 +55,7 @@ protected:
   BimodalMoveRunner(const Input& im, StateManager<Input,State,CFtype>& sm,
 		    NeighborhoodExplorer<Input,State,Move1,CFtype>& ne1,
 		    NeighborhoodExplorer<Input,State,Move2,CFtype>& ne2,
-		    std::string name = "");
+		    std::string name);
   /* state manipulations */
   virtual void GoCheck() const = 0;
   /** Actions to be perfomed at the beginning of the run. */

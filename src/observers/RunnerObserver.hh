@@ -19,6 +19,8 @@
 #if !defined(_RUNNER_OBSERVER_HH_)
 #define _RUNNER_OBSERVER_HH_
 
+#include <utils/Chronometer.hh>
+
 template <class Input, class State, class Move, typename CFtype>
 class MoveRunner;
 
@@ -71,40 +73,40 @@ void RunnerObserver<Input,State,Move,CFtype>::NotifyNewBest(MoveRunner<Input,Sta
   if (notify_new_best)
     {
       log << "--New best: " << r.current_state_cost 
-	  << " (it: " << r.number_of_iterations << ", idle: " << r.number_of_iterations - r.iteration_of_best 
-	  << "), Costs: (";
+      << " (it: " << r.number_of_iterations << ", idle: " << r.number_of_iterations - r.iteration_of_best 
+      << "), Costs: (";
       for (unsigned int i = 0; i < r.sm.CostComponents(); i++)
-	{
-	  log << r.sm.Cost(r.current_state,i);
-	  if (i < r.sm.CostComponents() - 1) 
-	    log << ',';
-	}
+      {
+        log << r.sm.Cost(r.current_state,i);
+        if (i < r.sm.CostComponents() - 1) 
+          log << ',';
+      }
       log << ')' << std::endl;
     }
   if (plot_improving_moves && !plot_all_moves)
-    plot << r.number_of_iterations << ' ' << r.chrono.TotalTime() << ' ' << r.current_state_cost << std::endl;
+    plot << r.name << ' ' << r.number_of_iterations << ' ' << r.chrono.TotalTime() << ' ' << r.current_state_cost << std::endl;
 }
 
 template <class Input, class State, class Move, typename CFtype>
 void RunnerObserver<Input,State,Move,CFtype>::NotifyStoreMove(MoveRunner<Input,State,Move,CFtype>& r)
 {
   if (notify_store_move)
-    {
-      log << "Move: " << r.current_move << ", Move Cost: " << r.current_move_cost << " (current: "
+  {
+    log << "Move: " << r.current_move << ", Move Cost: " << r.current_move_cost << " (current: "
 	  << r.current_state_cost << ", best: " 
 	  << r.best_state_cost <<  ") it: " << r.number_of_iterations
 	  << " (idle: " << r.number_of_iterations - r.iteration_of_best << ")" 
 	  << "), Costs: (";
       for (unsigned int i = 0; i < r.sm.CostComponents(); i++)
-	{
-	  log << r.sm.Cost(r.current_state,i);
-	  if (i < r.sm.CostComponents() - 1) 
-	    log << ',';
-	}
-      log << ')' << std::endl;
-    }
+      {
+        log << r.sm.Cost(r.current_state,i);
+        if (i < r.sm.CostComponents() - 1) 
+          log << ',';
+      }
+    log << ')' << std::endl;
+  }
   if (plot_all_moves)
-    plot << r.number_of_iterations << ' ' << r.chrono.TotalTime() << ' ' << r.current_state_cost << std::endl;
+    plot << r.name << ' '<< r.number_of_iterations << ' ' << r.chrono.TotalTime() << ' ' << r.current_state_cost << std::endl;
 }
 
 

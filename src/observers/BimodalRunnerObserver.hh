@@ -70,7 +70,7 @@ template <class Input, class State, class Move1, class Move2,typename CFtype>
 void BimodalRunnerObserver<Input,State,Move1,Move2,CFtype>::NotifyStartRunner(BimodalMoveRunner<Input,State,Move1,Move2,CFtype>& r)
 {
   if (plot_improving_moves || plot_all_moves)
-    plot << r.number_of_iterations << ' ' << r.chrono.TotalTime() << ' ' << r.current_state_cost << std::endl;
+    plot << r.name << ' ' << r.number_of_iterations << ' ' << r.chrono.TotalTime() << ' ' << r.current_state_cost << std::endl;
 }
 
 
@@ -91,7 +91,7 @@ void BimodalRunnerObserver<Input,State,Move1,Move2,CFtype>::NotifyNewBest(Bimoda
       log << ')' << std::endl;
     }
   if (plot_improving_moves && !plot_all_moves)
-    plot << r.number_of_iterations << ' ' << r.chrono.TotalTime() << ' ' << r.current_state_cost << std::endl;
+    plot << r.name << ' ' << r.number_of_iterations << ' ' << r.chrono.TotalTime() << ' ' << r.current_state_cost << std::endl;
 }
 
 template <class Input, class State, class Move1, class Move2,typename CFtype>
@@ -117,7 +117,7 @@ void BimodalRunnerObserver<Input,State,Move1,Move2,CFtype>::NotifyStoreMove(Bimo
       log << ')' << std::endl;
     }
   if (plot_all_moves)
-    plot << r.number_of_iterations << ' ' << r.chrono.TotalTime() << ' ' << r.current_state_cost << std::endl;
+    plot << r.name << ' ' << r.number_of_iterations << ' ' << r.chrono.TotalTime() << ' ' << r.current_state_cost << std::endl;
 }
 
 
