@@ -161,14 +161,15 @@ bool AbstractLocalSearch<Input,Output,State,CFtype>::LetGo(Runner<Input,State,CF
     try
     {
       time_left = this->runner_termination.WaitTimeout(this->current_timeout);
-      this->current_timeout = time_left;
       this->termination_request_confirmation = true;
+      this->current_timeout = time_left;      
     }
     catch (TimeoutExpired e)
     {
       this->current_timeout = 0.0;
     }
     this->termination_request = true;
+    this->termination_request_confirmation = true;
     pthread_join(runner_thread, NULL);
     if (this->current_timeout == 0.0)
       return true;

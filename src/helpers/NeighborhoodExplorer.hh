@@ -25,6 +25,10 @@
 #include <typeinfo>
 #include <stdexcept>
 
+#if defined(HAVE_PTHREAD)
+#include <utils/Synchronize.hh>
+#endif
+
 
 class EmptyNeighborhood : public std::exception {};
 
@@ -218,8 +222,8 @@ NeighborhoodExplorer(const Input& in, StateManager<Input,State,CFtype>& sm, std:
 virtual ~NeighborhoodExplorer() {}
 
 
-const Input& in;/**< A reference to the input manager */
-StateManager<Input, State,CFtype>& sm; /**< A reference to the attached state manager. */
+  const Input& in;/**< A reference to the input manager */
+  StateManager<Input, State,CFtype>& sm; /**< A reference to the attached state manager. */
 
 //   Move best_move; /**< The best move found in the exploration of the
 // 		     neighborhood (used from the neighborhood enumerating
@@ -228,10 +232,20 @@ StateManager<Input, State,CFtype>& sm; /**< A reference to the attached state ma
 //   Move start_move;  /**< The first move in the exploration of
 // 		       the neighborhood. Needed to detect the end of the exploration. */
 
-std::vector<AbstractDeltaCostComponent<Input,State,Move,CFtype>* > delta_cost_component;
-unsigned number_of_delta_not_implemented;
-std::string name;
+  std::vector<AbstractDeltaCostComponent<Input,State,Move,CFtype>* > delta_cost_component;
+  unsigned number_of_delta_not_implemented;
+  std::string name;
+#if defined(HAVE_PTHREAD)
+  RWLockVariable<bool>* external_termination_request;
+public:
+  void SetExternalTerminationRequest(RWLockVariable<bool>* external_termination_request);
+  void ResetExternalTerminationRequest();
+#endif
+protected:
+  bool ExternalTerminationRequest() const;
 };
+
+
 
 /*************************************************************************
  * Implementation
@@ -365,7 +379,7 @@ CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::BestMove(const State &st, 
   CFtype mv_cost = DeltaCostFunction(st, mv);
   CFtype best_delta = mv_cost;
   
-  while (NextMove(st, mv)) 
+  while (NextMove(st, mv) && !ExternalTerminationRequest()) 
   { 		
     mv_cost = DeltaCostFunction(st, mv);
     if (LessThan(mv_cost, best_delta))
@@ -433,7 +447,7 @@ CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::BestMove(const State &st, 
     if (not_last_move)
       mv_cost = DeltaCostFunction(st, mv);
   }
-  while (not_last_move);
+  while (not_last_move && !ExternalTerminationRequest());
   mv = best_move;
   return best_delta;
 }
@@ -448,7 +462,7 @@ std::pair<ShiftedResult<CFtype>, ShiftedResult<CFtype> > NeighborhoodExplorer<In
   Move best_shifted_move = mv, best_actual_move = mv;
   ShiftedResult<CFtype> best_shifted_delta = mv_cost, best_actual_delta = mv_cost;
   
-  while (NextMove(st, mv)) 
+  while (NextMove(st, mv) && !ExternalTerminationRequest()) 
   { 
 		mv_cost = DeltaShiftedCostFunction(st, mv);
 		if (LessThan(mv_cost.shifted_value, best_shifted_delta.shifted_value))
@@ -557,7 +571,7 @@ std::pair<ShiftedResult<CFtype>, ShiftedResult<CFtype> > NeighborhoodExplorer<In
     if (not_last_move)
       mv_cost = DeltaShiftedCostFunction(st, mv);
   }
-  while (not_last_move);
+  while (not_last_move && !ExternalTerminationRequest());
   
   shifted_mv = best_shifted_move;
   actual_mv = best_actual_move;
@@ -574,7 +588,7 @@ CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::FirstImprovingMove(const S
   Move best_move = mv;
   CFtype best_delta = mv_cost; 
   
-  while (NextMove(st, mv))
+  while (NextMove(st, mv) && !ExternalTerminationRequest())
   {
 		mv_cost = DeltaCostFunction(st, mv);
     if (LessThan(mv_cost, (CFtype)0))
@@ -649,7 +663,7 @@ CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::FirstImprovingMove(const S
     if (not_last_move)
       mv_cost = DeltaCostFunction(st, mv);
   }
-  while (not_last_move);
+  while (not_last_move && !ExternalTerminationRequest());
 
   // these instructions are reached when no improving move has been found  
   mv = best_move;
@@ -687,7 +701,7 @@ CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::SampleMove(const State &st
     mv_cost = DeltaCostFunction(st, mv);
     s++;
   }
-  while (s < samples);
+  while (s < samples && !ExternalTerminationRequest());
   
   mv = best_move;
   return best_delta;
@@ -741,7 +755,7 @@ CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::SampleMove(const State &st
     mv_cost = DeltaCostFunction(st, mv);
     s++;
   }
-  while (s < samples);
+  while (s < samples && !ExternalTerminationRequest());
   
   mv = best_move;
   return best_delta;
@@ -796,6 +810,28 @@ CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::DeltaObjective(const State
       total_delta += dcc.DeltaCost(st, mv);
     }
   return total_delta;
+}
+
+#if defined(HAVE_PTHREAD)
+template <class Input, class State, class Move, typename CFtype>
+void NeighborhoodExplorer<Input,State,Move,CFtype>::SetExternalTerminationRequest(RWLockVariable<bool>* external_termination_request) {
+  this->external_termination_request = external_termination_request;
+}
+
+template <class Input, class State, class Move, typename CFtype>
+void NeighborhoodExplorer<Input,State,Move,CFtype>::ResetExternalTerminationRequest() {
+  external_termination_request = NULL;
+}
+#endif
+
+template <class Input, class State, class Move, typename CFtype>
+bool NeighborhoodExplorer<Input,State,Move,CFtype>::ExternalTerminationRequest() const 
+{
+#if defined(HAVE_PTHREAD)
+  if (external_termination_request)
+    return *external_termination_request;
+#endif
+  return false;
 }
 
 #endif // define _NEIGHBORHOOD_EXPLORER_HH_

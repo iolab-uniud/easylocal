@@ -41,6 +41,7 @@ public:
   void ResetTimeout();
   void AttachObserver(RunnerObserver<Input,State,Move,CFtype>& ob) { observer = &ob; }
   void InitializeRun();
+  void TerminateRun();
   Move CurrentMove() const { return current_move; }
   CFtype CurrentMoveCost() const { return current_move_cost; }
 
@@ -88,6 +89,19 @@ void MoveRunner<Input,State,Move,CFtype>::InitializeRun()
 	Runner<Input,State,CFtype>::InitializeRun();
 	if (observer != NULL)
 		observer->NotifyStartRunner(*this);
+#if defined(HAVE_PTHREAD)
+  ne.SetExternalTerminationRequest(this->external_termination_request);
+#endif
+}
+
+
+template <class Input, class State, class Move, typename CFtype>
+void MoveRunner<Input,State,Move,CFtype>::TerminateRun() 
+{
+  Runner<Input,State,CFtype>::TerminateRun();
+#if defined(HAVE_PTHREAD)
+  ne.ResetExternalTerminationRequest();
+#endif
 }
 
 

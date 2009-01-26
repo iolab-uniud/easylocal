@@ -29,6 +29,7 @@
 
 #include <utils/CLParser.hh>
 #include <helpers/NeighborhoodExplorer.hh>
+#include <climits>
 
 template <class Input, class State, typename CFtype = int>
 class Runner
@@ -401,7 +402,7 @@ void* Runner<Input,State,CFtype>::_pthreads_Run(void* ep_this)
     return NULL;
     
   p_this->Go();
-  if (p_this->termination)
+  if (p_this->termination && !(*p_this->external_termination_request)) // this means that the runner stopped before its granted time
     while (!(*p_this->external_termination_request_confirmation))
       p_this->termination->Signal();
   p_this->termination = NULL;

@@ -114,8 +114,8 @@
 #include <testers/KickerTester.hh>
 #include <utils/CLParser.hh>
 #include <utils/Chronometer.hh>
-#include <kickers/MultimodalKicker.hh>
-
+//#include <kickers/MultimodalKicker.hh>
+ 
 int main(int argc, char* argv[])
 {
 	// The CLParser object parses the command line arguments
@@ -182,7 +182,7 @@ int main(int argc, char* argv[])
   TabuSearch<int, std::vector<int>, DoubleSwap> qmmts(in, qsm, qmmnhe, qmmtlm, "DoubleSwapTabuSearch", cl); */
   
   
-  class QueensKicker2 : public MultimodalKicker<int,std::vector<int>,DoubleSwap>
+  /* class QueensKicker2 : public MultimodalKicker<int,std::vector<int>,DoubleSwap>
   {
   public:
     QueensKicker2(const int& bs, MultimodalTypes::NeighborhoodExplorer& qnhe, int s = 2)
@@ -190,7 +190,7 @@ int main(int argc, char* argv[])
     {}
     bool RelatedMoves(const DoubleSwap&, const DoubleSwap&) const
     { return true; } 
-  } qk2(in, qmmnhe);  	  
+  } qk2(in, qmmnhe); */
   
 
   cl.MatchArguments();
@@ -225,13 +225,13 @@ int main(int argc, char* argv[])
 		MoveTester<int, ChessBoard, std::vector<int>, Swap> swap_move_test(in,qsm,qom,qnhe, "Swap move");
     MoveTester<int, ChessBoard, std::vector<int>, DoubleSwap> multimodal_move_test(in,qsm,qom,qmmnhe, "Multimodal swap move");
 		KickerTester<int, ChessBoard, std::vector<int> > monokicker_test(in,qsm,qom, qk, "Monomodal kick");
-    KickerTester<int, ChessBoard, std::vector<int> > multikicker_test(in,qsm,qom, qk2, "Multimodal kick");
+    //KickerTester<int, ChessBoard, std::vector<int> > multikicker_test(in,qsm,qom, qk2, "Multimodal kick");
 		Tester<int, ChessBoard, std::vector<int> > tester(in,qsm,qom);
 		
 		tester.AddMoveTester(swap_move_test);
     tester.AddMoveTester(multimodal_move_test);
 		tester.AddKickerTester(monokicker_test);
-    tester.AddKickerTester(multikicker_test);
+    //tester.AddKickerTester(multikicker_test);
 		tester.AddRunner(qhc);
 		tester.AddRunner(qsd);
 		tester.AddRunner(qts);
