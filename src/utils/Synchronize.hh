@@ -174,7 +174,8 @@ RWLockVariable<T>::operator T () const
 template <typename T>
 RWLockVariable<T>& RWLockVariable<T>::operator=(const RWLockVariable<T>& rw)
 {
-	write(rw.read());
+  T tmp = rw.read();
+	write(tmp);
 	
 	return *this;
 }

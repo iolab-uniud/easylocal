@@ -43,10 +43,6 @@ protected:
   const Input& in; /**< A reference to the input manager. */
 #if defined(HAVE_PTHREAD)
 protected:
-  /**< This variable will be shared among runners (and possibly other lower-level components) and controls their termination. */
-  RWLockVariable<bool> termination_request, termination_request_confirmation;
-  /**< This variable avoids active waiting of runners termination. */
-  ConditionVariable runner_termination;  
   double timeout, current_timeout;
   bool timeout_set;
 #endif

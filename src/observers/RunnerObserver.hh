@@ -29,9 +29,10 @@ class RunnerObserver
 {
 public:
   RunnerObserver(unsigned verbosity_level, unsigned plot_level, std::ostream& log_os = std::cout, std::ostream& plot_os = std::cout);
-  void NotifyStartRunner(MoveRunner<Input,State,Move,CFtype>& r);
+void NotifyStartRunner(MoveRunner<Input,State,Move,CFtype>& r);
   void NotifyNewBest(MoveRunner<Input,State,Move,CFtype>& r);
   void NotifyStoreMove(MoveRunner<Input,State,Move,CFtype>& r);
+  void NotifyEndRunner(MoveRunner<Input,State,Move,CFtype>& r);
 protected:
   bool notify_new_best, notify_store_move, plot_improving_moves, plot_all_moves;
   std::ostream &log, &plot;
@@ -109,5 +110,11 @@ void RunnerObserver<Input,State,Move,CFtype>::NotifyStoreMove(MoveRunner<Input,S
     plot << r.name << ' '<< r.number_of_iterations << ' ' << r.chrono.TotalTime() << ' ' << r.current_state_cost << std::endl;
 }
 
+template <class Input, class State, class Move, typename CFtype>
+void RunnerObserver<Input,State,Move,CFtype>::NotifyEndRunner(MoveRunner<Input,State,Move,CFtype>& r)
+{
+  if (plot_improving_moves || plot_all_moves)
+    plot << r.number_of_iterations << ' ' << r.chrono.TotalTime() << ' ' << r.current_state_cost << std::endl;
+}
 
 #endif /*OBSERVER_HH_*/

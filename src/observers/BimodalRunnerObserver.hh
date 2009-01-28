@@ -38,6 +38,7 @@ public:
   void NotifyStartRunner(BimodalMoveRunner<Input,State,Move1,Move2,CFtype>& r);
   void NotifyNewBest(BimodalMoveRunner<Input,State,Move1,Move2,CFtype>& r);
   void NotifyStoreMove(BimodalMoveRunner<Input,State,Move1,Move2,CFtype>& r);
+  void NotifyEndRunner(BimodalMoveRunner<Input,State,Move1,Move2,CFtype>& r);
 protected:
   bool notify_new_best, notify_store_move, plot_improving_moves, plot_all_moves;
   std::ostream &log, &plot;
@@ -72,7 +73,6 @@ void BimodalRunnerObserver<Input,State,Move1,Move2,CFtype>::NotifyStartRunner(Bi
   if (plot_improving_moves || plot_all_moves)
     plot << r.name << ' ' << r.number_of_iterations << ' ' << r.chrono.TotalTime() << ' ' << r.current_state_cost << std::endl;
 }
-
 
 template <class Input, class State, class Move1, class Move2,typename CFtype>
 void BimodalRunnerObserver<Input,State,Move1,Move2,CFtype>::NotifyNewBest(BimodalMoveRunner<Input,State,Move1,Move2,CFtype>& r)
@@ -120,5 +120,11 @@ void BimodalRunnerObserver<Input,State,Move1,Move2,CFtype>::NotifyStoreMove(Bimo
     plot << r.name << ' ' << r.number_of_iterations << ' ' << r.chrono.TotalTime() << ' ' << r.current_state_cost << std::endl;
 }
 
+template <class Input, class State, class Move1, class Move2,typename CFtype>
+void BimodalRunnerObserver<Input,State,Move1,Move2,CFtype>::NotifyEndRunner(BimodalMoveRunner<Input,State,Move1,Move2,CFtype>& r)
+{
+  if (plot_improving_moves || plot_all_moves)
+    plot << r.name << ' ' << r.number_of_iterations << ' ' << r.chrono.TotalTime() << ' ' << r.current_state_cost << std::endl;
+}
 
 #endif /*OBSERVER_HH_*/

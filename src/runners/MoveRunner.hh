@@ -58,7 +58,7 @@ protected:
   virtual void MakeMove();
   void UpdateStateCost();
   
-  NeighborhoodExplorer<Input,State,Move,CFtype>& ne; /**< A pointer to the
+  NeighborhoodExplorer<Input,State,Move,CFtype>& ne; /**< A reference to the
     attached neighborhood 
     explorer. */
   
@@ -90,7 +90,7 @@ void MoveRunner<Input,State,Move,CFtype>::InitializeRun()
 	if (observer != NULL)
 		observer->NotifyStartRunner(*this);
 #if defined(HAVE_PTHREAD)
-  ne.SetExternalTerminationRequest(this->external_termination_request);
+  ne.SetExternalTerminationRequest(*this->external_termination_request);
 #endif
 }
 
@@ -99,6 +99,8 @@ template <class Input, class State, class Move, typename CFtype>
 void MoveRunner<Input,State,Move,CFtype>::TerminateRun() 
 {
   Runner<Input,State,CFtype>::TerminateRun();
+  if (observer != NULL)
+		observer->NotifyEndRunner(*this);
 #if defined(HAVE_PTHREAD)
   ne.ResetExternalTerminationRequest();
 #endif
@@ -141,4 +143,5 @@ void MoveRunner<Input,State,Move,CFtype>::UpdateStateCost()
 { 
 	this->current_state_cost += current_move_cost; 
 }
+
 #endif /*MOVERUNNER_HH_*/

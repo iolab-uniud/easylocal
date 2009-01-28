@@ -50,12 +50,13 @@ public:
   // Runner interface
   virtual void Check() const;
   void InitializeRun();
+  void TerminateRun();
   void AttachObserver(BimodalRunnerObserver<Input,State,Move1,Move2,CFtype>& ob) { observer = &ob; }
 protected:
   BimodalMoveRunner(const Input& im, StateManager<Input,State,CFtype>& sm,
-		    NeighborhoodExplorer<Input,State,Move1,CFtype>& ne1,
-		    NeighborhoodExplorer<Input,State,Move2,CFtype>& ne2,
-		    std::string name);
+                    NeighborhoodExplorer<Input,State,Move1,CFtype>& ne1,
+                    NeighborhoodExplorer<Input,State,Move2,CFtype>& ne2,
+                    std::string name);
   /* state manipulations */
   virtual void GoCheck() const = 0;
   /** Actions to be perfomed at the beginning of the run. */
@@ -98,7 +99,28 @@ void BimodalMoveRunner<Input,State,Move1,Move2,CFtype>::InitializeRun()
   Runner<Input,State,CFtype>::InitializeRun();
   if (observer != NULL)
     observer->NotifyStartRunner(*this);
+#if defined(HAVE_PTHREAD)
+  if (this->external_termination_request) {
+    ne1.SetExternalTerminationRequest(*this->external_termination_request);
+    ne2.SetExternalTerminationRequest(*this->external_termination_request);
+  }
+#endif
 }
+
+template <class Input, class State, class Move1, class Move2, typename CFtype>
+void BimodalMoveRunner<Input,State,Move1,Move2,CFtype>::TerminateRun() 
+{
+  Runner<Input,State,CFtype>::TerminateRun();
+  if (observer != NULL)
+    observer->NotifyEndRunner(*this);
+#if defined(HAVE_PTHREAD)
+  if (this->external_termination_request) {
+    ne1.ResetExternalTerminationRequest();
+    ne2.ResetExternalTerminationRequest();
+  }
+#endif
+}
+
 
 /**
    Checks wether the object state is consistent with all the related

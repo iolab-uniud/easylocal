@@ -122,9 +122,12 @@ protected:
 #if defined(HAVE_PTHREAD)  
 protected:
   ConditionVariable* termination;
-  RWLockVariable<bool>* external_termination_request, *external_termination_request_confirmation;
+  RWLockVariable<bool> *external_termination_request, *external_termination_confirmation;
 public:
-  pthread_t& GoThread(ConditionVariable& termination, RWLockVariable<bool>& external_termination_request, RWLockVariable<bool>& external_termination_request_confirmation);
+  virtual void SetExternalTerminationVariables(ConditionVariable& termination, RWLockVariable<bool>& external_termination_request,
+                                               RWLockVariable<bool>& external_termination_confirmation);
+  virtual void ResetExternalTerminationVariables();
+  pthread_t& GoThread();
 private:
   static void* _pthreads_Run(void* pthis);
   pthread_t this_thread;
@@ -351,7 +354,7 @@ bool Runner<Input,State,CFtype>::MaxIterationExpired() const
 }
 
 template <class Input, class State, typename CFtype>
-bool Runner<Input,State,CFtype>::ExternalTerminationRequest() const
+inline bool Runner<Input,State,CFtype>::ExternalTerminationRequest() const
 {
 #if defined(HAVE_PTHREAD)  
   if (external_termination_request)
@@ -402,28 +405,43 @@ void* Runner<Input,State,CFtype>::_pthreads_Run(void* ep_this)
     return NULL;
     
   p_this->Go();
-  if (p_this->termination && !(*p_this->external_termination_request)) // this means that the runner stopped before its granted time
-    while (!(*p_this->external_termination_request_confirmation))
-      p_this->termination->Signal();
-  p_this->termination = NULL;
-  p_this->external_termination_request = NULL;
-  p_this->external_termination_request_confirmation = NULL;
+  if (p_this->termination && !(*p_this->external_termination_request))
+  do
+    p_this->termination->Signal();
+  while (!(*p_this->external_termination_confirmation));
+  p_this->ResetExternalTerminationVariables();
   
   return NULL;
 }
 
 template <class Input, class State, typename CFtype>
-pthread_t& Runner<Input,State,CFtype>::GoThread(ConditionVariable& r_termination, 
-                                                RWLockVariable<bool>& r_external_termination_request,
-                                                RWLockVariable<bool>& r_external_termination_request_confirmation)
+pthread_t& Runner<Input,State,CFtype>::GoThread()
 {
-  termination = &r_termination;
-  external_termination_request = &r_external_termination_request;	
-  external_termination_request_confirmation = &r_external_termination_request_confirmation;
   pthread_create(&this_thread, NULL, Runner<Input,State,CFtype>::_pthreads_Run, this);
 	
   return this_thread;
 }
+
+#if defined(HAVE_PTHREAD)
+template <class Input, class State, typename CFtype>
+void Runner<Input,State,CFtype>::SetExternalTerminationVariables(ConditionVariable& r_termination, 
+                                                                 RWLockVariable<bool>& r_external_termination_request,
+                                                                 RWLockVariable<bool>& r_external_termination_confirmation)
+{
+  this->termination = &r_termination;
+  this->external_termination_request = &r_external_termination_request;	
+  this->external_termination_confirmation = &r_external_termination_confirmation;
+}
+
+template <class Input, class State, typename CFtype>
+void Runner<Input,State,CFtype>::ResetExternalTerminationVariables()
+{
+  this->termination = NULL;
+  this->external_termination_request = NULL;	
+  this->external_termination_confirmation = NULL;
+}
+#endif
+
 
 #endif
 

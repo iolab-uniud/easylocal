@@ -64,6 +64,12 @@ protected:
   Output out;
 protected:
   bool LetGo(Runner<Input,State,CFtype>& runner);
+#if defined(HAVE_PTHREAD)
+/**< This variable will be shared among runners (and possibly other lower-level components) and controls their termination. */
+RWLockVariable<bool> termination_request, termination_confirmation;
+/**< This variable avoids active waiting of runners termination. */
+ConditionVariable runner_termination;  
+#endif
 };
 
 /*************************************************************************
@@ -154,23 +160,25 @@ bool AbstractLocalSearch<Input,Output,State,CFtype>::LetGo(Runner<Input,State,CF
 #if defined(HAVE_PTHREAD)
   if (this->timeout_set)
   {
-    float time_left;
-    this->termination_request = false;
-    this->termination_request_confirmation = false;
-    pthread_t runner_thread = runner.GoThread(this->runner_termination, this->termination_request, this->termination_request_confirmation);
+    double time_left;
+    termination_request = false;
+    termination_confirmation = false;
+    runner.SetExternalTerminationVariables(runner_termination, termination_request, termination_confirmation);
+    pthread_t runner_thread = runner.GoThread();
     try
     {
-      time_left = this->runner_termination.WaitTimeout(this->current_timeout);
-      this->termination_request_confirmation = true;
-      this->current_timeout = time_left;      
+      time_left = runner_termination.WaitTimeout(this->current_timeout);
+      this->current_timeout = time_left;
+      termination_confirmation = true;
     }
     catch (TimeoutExpired e)
     {
       this->current_timeout = 0.0;
+      termination_confirmation = true;
     }
     this->termination_request = true;
-    this->termination_request_confirmation = true;
     pthread_join(runner_thread, NULL);
+    runner.ResetExternalTerminationVariables();
     if (this->current_timeout == 0.0)
       return true;
     else
@@ -178,10 +186,12 @@ bool AbstractLocalSearch<Input,Output,State,CFtype>::LetGo(Runner<Input,State,CF
   }
   else
   {
-    this->termination_request = false;
-    this->termination_request_confirmation = false;
-    pthread_t runner_thread = runner.GoThread(this->runner_termination, this->termination_request, this->termination_request_confirmation);
+    termination_request = false;
+    termination_confirmation = false;
+    runner.SetExternalTerminationVariables(runner_termination, termination_request, termination_confirmation);
+    pthread_t runner_thread = runner.GoThread();
     pthread_join(runner_thread, NULL);
+    runner.ResetExternalTerminationVariables();
     return false;
   }
 #else

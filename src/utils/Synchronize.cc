@@ -96,13 +96,15 @@ struct timespec compute_end_time(double time_left) {
   ts_end.tv_sec = tv_now.tv_sec;
   ts_end.tv_nsec = tv_now.tv_usec * NANOSEC_PER_MICROSEC;
 #endif
+//  std::cerr << "Now: " << ts_end.tv_sec << ' ' << ts_end.tv_nsec << std::endl;
   ts_end.tv_sec += (time_t)floor(time_left);
-  ts_end.tv_nsec += (time_t)(time_left - floor(time_left)) * NANOSEC_PER_SEC;
+  ts_end.tv_nsec += (time_t)((time_left - floor(time_left)) * NANOSEC_PER_SEC);
   if (ts_end.tv_nsec > NANOSEC_PER_SEC)
   {
     ts_end.tv_sec += ts_end.tv_nsec / NANOSEC_PER_SEC;
     ts_end.tv_nsec %= NANOSEC_PER_SEC;
   }  
+//  std::cerr << "End: " << ts_end.tv_sec << ' ' << ts_end.tv_nsec << std::endl;
   
   return ts_end;
 }
@@ -144,13 +146,14 @@ double ConditionVariable::WaitTimeout(double timeout)
         run_terminated = true;
     } 
     getrusage(RUSAGE_SELF, &now);
-    //std::cerr << "Sec: " << now.ru_utime.tv_sec << ' ' << start.ru_utime.tv_sec << std::endl;
+ //   std::cerr << "Sec: " << now.ru_utime.tv_sec << ' ' << start.ru_utime.tv_sec << std::endl;
     elapsed_time = (now.ru_utime.tv_sec - start.ru_utime.tv_sec) + (now.ru_utime.tv_usec - start.ru_utime.tv_usec) / (double)MICROSEC_PER_SEC;
-    //std::cerr << "Elapsed time: " << elapsed_time << std::endl;
+ //   std::cerr << "Elapsed time: " << elapsed_time << std::endl;
     if (elapsed_time < timeout)
       time_left = timeout - elapsed_time;
     else
       throw TimeoutExpired();
+ //   std::cerr << "Time left: " << time_left << std::endl;
   }
   while (!run_terminated);
   
