@@ -54,24 +54,35 @@ protected:
   bool required;
 };
 
-class ArgumentNotFound : public std::logic_error 
+// Just an interface
+class CLParserException : public std::exception
 {
+protected:
+  CLParserException(const std::string& m) throw() : msg(m) {}
+  std::string msg;
 public:
-  ArgumentNotFound(const std::string& message) : std::logic_error(message) {}
-  ~ArgumentNotFound() throw() {}
+  ~CLParserException() throw() {}
+  virtual std::string message() const { return msg; }
 };
 
-class ArgumentValueNotCorrect : public std::logic_error 
+class ArgumentNotFound : public CLParserException 
 {
 public:
-  ArgumentValueNotCorrect(const std::string& message) : std::logic_error(message) {}
+  ArgumentNotFound(const std::string& message) : CLParserException(message) {}
+  ~ArgumentNotFound() throw() {}  
+};
+
+class ArgumentValueNotCorrect : public CLParserException
+{
+public:
+  ArgumentValueNotCorrect(const std::string& message) : CLParserException(message) {}
   ~ArgumentValueNotCorrect() throw() {}
 };
 
-class FlagNotFound : public std::logic_error
+class FlagNotFound : public CLParserException
 {
 public:
-  FlagNotFound(const std::string& f) : std::logic_error("Option " + f + " not supported"), flag(f) {}
+  FlagNotFound(const std::string& f) : CLParserException("Option " + f + " not supported"), flag(f) {}
   ~FlagNotFound() throw () {}
 protected:
   std::string flag;

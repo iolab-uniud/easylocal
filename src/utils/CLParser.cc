@@ -197,9 +197,9 @@ void CLParser::MatchArguments(bool terminate_if_fail)
     {
       Parse();
     }
-    catch (std::exception e)
+    catch (CLParserException e)
     {
-      std::cerr << e.what() << std::endl;
+      std::cerr << e.message() << std::endl;
       std::cerr << *this << std::endl;
       exit(-1);
     }

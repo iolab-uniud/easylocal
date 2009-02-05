@@ -187,7 +187,7 @@ bool AbstractLocalSearch<Input,Output,State,CFtype>::LetGo(Runner<Input,State,CF
   else
   {
     termination_request = false;
-    termination_confirmation = false;
+    termination_confirmation = true;
     runner.SetExternalTerminationVariables(runner_termination, termination_request, termination_confirmation);
     pthread_t runner_thread = runner.GoThread();
     pthread_join(runner_thread, NULL);
