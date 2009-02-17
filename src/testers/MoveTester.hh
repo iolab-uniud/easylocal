@@ -271,11 +271,11 @@ void MoveTester<Input,Output,State,Move,CFtype>::CheckNeighborhoodCosts(const St
     error = this->sm.CostFunction(st1) - ne.DeltaCostFunction(st, mv) - this->sm.CostFunction(st);
     if (!IsZero(error))
     {
-      move_count++;
-      ne.MakeMove(st1, mv);
-      error = this->sm.CostFunction(st1) - ne.DeltaCostFunction(st, mv) - this->sm.CostFunction(st);
-      if (!IsZero(error))
-      {
+//       move_count++;
+//       ne.MakeMove(st1, mv);
+//       error = this->sm.CostFunction(st1) - ne.DeltaCostFunction(st, mv) - this->sm.CostFunction(st);
+//       if (!IsZero(error))
+//       {
         error_found = true;
         os << std::endl << "Error: Move n. " << move_count << ", " << mv << ", Info" << std::endl;
         for (unsigned i = 0; i < ne.DeltaCostComponents(); i++)
@@ -297,7 +297,7 @@ void MoveTester<Input,Output,State,Move,CFtype>::CheckNeighborhoodCosts(const St
         }
         os << "Press enter to continue " << std::endl;
         std::cin.get();
-      }          
+	//      }          
     }    
     if (move_count % 100 == 0) 
       std::cerr << '.'; // print dots to show that it is alive
@@ -440,13 +440,16 @@ void MoveTester<Input,Output,State,Move,CFtype>::CheckTabuStrength(const State& 
 	  pairs++;
 	  if (tlm->Inverse(mv1,mv2))
 	    inverse_pairs++;	        
-	  if (pairs % 1000 == 0) 
+	  if (pairs % 100000 == 0) 
 	    std::cerr << '.'; // print dots to show that it is alive
 	}
       while (ne.NextMove(st1,mv2));
     }
   while (ne.NextMove(st,mv1));
-  os << std::endl << "Tabu ratio : " << double(inverse_pairs)/pairs * 100 << "%" << std::endl;
+  os << std::endl
+     << "Moves : " << moves << ", total pairs : " << pairs 
+     << ", inverse pairs : " << inverse_pairs << std::endl
+     << "Tabu ratio : " << double(inverse_pairs)/pairs * 100 << "%" << std::endl;
   os << "Non-inverse moves " << double(pairs - inverse_pairs)/moves << std::endl;
 }
 
