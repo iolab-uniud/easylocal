@@ -47,6 +47,8 @@
 #if !defined(_RUNNERS_HH_)
 #define _RUNNERS_HH_
 
+#include <climits>
+
 #include <runners/SteepestDescent.hh>
 #include <runners/FirstDescent.hh>
 #include <runners/HillClimbing.hh>
