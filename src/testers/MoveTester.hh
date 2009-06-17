@@ -23,6 +23,9 @@
 #include <helpers/OutputManager.hh>
 #include <helpers/NeighborhoodExplorer.hh>
 #include <helpers/TabuListManager.hh>
+#include <map>
+#include <iterator>
+#include <math.h>
 
 /** A Move Tester allows to test the behavior of a given
     neighborhood explorer.
@@ -50,6 +53,7 @@ public:
   void CheckNeighborhoodCosts(const State& st) const;
   void PrintMoveCosts(const State& st,  const Move& mv) const;
   void CheckMoveIndependence(const State& st) const;
+  void CheckRandomMoveDistribution(const State& st) const;
   void CheckTabuStrength(const State& st) const;
 protected:
   void ShowMenu();
@@ -147,9 +151,10 @@ void MoveTester<Input,Output,State,Move,CFtype>::ShowMenu()
      << "     (6)  Print Random Move Cost" << std::endl 
      << "     (7)  Print Input Move Cost" << std::endl 
      << "     (8)  Check Neighborhood Costs" << std::endl 
-     << "     (9)  Check Move Independence" << std::endl;
+     << "     (9)  Check Move Independence" << std::endl
+     << "    (10)  Check Random Move Distribution" << std::endl;
   if (tlm != NULL)
-    os << "    (10)  Chech Tabu Strength" << std::endl;
+    os << "    (11)  Chech Tabu Strength" << std::endl;
   os << "     (0)  Return to Main Menu" << std::endl
      << " Your choice: ";
   std::cin >> choice;
@@ -204,6 +209,9 @@ bool MoveTester<Input,Output,State,Move,CFtype>::ExecuteChoice(State& st)
       CheckMoveIndependence(st);
       break;
     case 10:
+      CheckRandomMoveDistribution(st);
+      break;
+    case 11:
       CheckTabuStrength(st);
       break;
     default:
@@ -357,6 +365,65 @@ void MoveTester<Input,Output,State,Move,CFtype>::PrintAllNeighbors(const State& 
       os << mv << ' ' << ne.DeltaCostFunction(st,mv) << std::endl;
     }
   while (ne.NextMove(st,mv));
+}
+
+template <class Input, class Output, class State, class Move, typename CFtype>
+void MoveTester<Input,Output,State,Move,CFtype>::CheckRandomMoveDistribution(const State& st) const
+{
+  Move mv;  
+  std::map<Move, unsigned> frequency;
+  typename std::map<Move,unsigned>:: iterator it;  
+
+  unsigned trials = 0, tot_trials, rounds;
+  double dev = 0;
+
+  ne.FirstMove(st,mv);
+  do
+    {
+      frequency[mv] = 0;
+    }
+  while (ne.NextMove(st,mv));
+
+  os << "The neighborhood has " << frequency.size() << " members." << std::endl;
+  os << "How many rounds do you want to test: ";
+  cin >> rounds;
+
+  tot_trials = frequency.size() * rounds;
+  while (trials < tot_trials)
+    {
+      ne.RandomMove(st,mv);
+      if (frequency.find(mv) != frequency.end())
+	{
+	  frequency[mv]++;
+	}
+      else
+	os << "Random move not in neighborhood " << mv << endl;
+      trials++;
+      if (trials % frequency.size() == 0)
+	cerr << '.';
+    }
+
+  // Compute the standard deviation
+  for (it = frequency.begin(); it != frequency.end(); it++)
+    {
+      dev += pow((double)(*it).second, 2);
+    }
+
+  dev = sqrt(fabs(dev/frequency.size() - pow(double(rounds), 2))); 
+
+  double error = 0;
+
+  os << "Outlier moves [move frequency]:" << endl;
+  for (it = frequency.begin(); it != frequency.end(); it++)
+    {
+      if (fabs((*it).second - double(rounds)) > 3*dev || (*it).second == 0)
+	{
+	  error++;
+	  os << it->first << " " << it->second/double(rounds) << endl;
+	}
+    }
+ cerr << "Deviation of move frequency: " << dev << endl;
+ cerr << "Percentage of outliers " << 100 * error/frequency.size() << '%' << endl;
 }
 
 template <class Input, class Output, class State, class Move, typename CFtype>

@@ -163,16 +163,22 @@ void BimodalSteepestDescent<Input,State,Move1,Move2,CFtype>::StoreMove()
     {
       if (LessThan(this->current_move_cost1,(CFtype)0))
 	{
+	  if (this->observer != NULL)
+	    this->observer->NotifyNewBest(*this);
 	  this->iteration_of_best = this->number_of_iterations;
 	  this->best_state_cost = this->current_state_cost;
 	}
     }
   else
-    if (LessThan(this->current_move_cost2,(CFtype)0))
-      {
-	this->iteration_of_best = this->number_of_iterations;
-	this->best_state_cost = this->current_state_cost;
-      }
+    {
+      if (LessThan(this->current_move_cost2,(CFtype)0))
+	{
+	  if (this->observer != NULL)
+	    this->observer->NotifyNewBest(*this);
+	  this->iteration_of_best = this->number_of_iterations;
+	  this->best_state_cost = this->current_state_cost;
+	}
+    }
 }
 
 template <class Input, class State, class Move1, class Move2, typename CFtype>

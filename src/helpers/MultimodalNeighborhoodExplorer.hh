@@ -131,17 +131,61 @@ std::istream& operator>>(std::istream& is, Movelist<CFtype, H, NullType>& mv)
 template <typename CFtype, typename H, typename T>
 bool operator==(const Movelist<CFtype, H, T>& mv1, const Movelist<CFtype, H, T>& mv2)
 {
-  if (mv1.selected != mv2.selected || mv1.move != mv2.move)
+  if (mv1.selected != mv2.selected)
     return false;
-  return mv1.movelist == mv2.movelist;
+  else if (mv1.selected && mv2.selected)
+    return mv1.move == mv2.move && mv1.movelist == mv2.movelist;
+  else
+    return mv1.movelist == mv2.movelist;
 }
 
 template <typename CFtype, typename H>
 bool operator==(const Movelist<CFtype, H, NullType>& mv1, const Movelist<CFtype, H, NullType>& mv2)
 {
-  if (mv1.selected != mv2.selected || mv1.move != mv2.move)
+  if (mv1.selected != mv2.selected)
     return false;
-  return true;
+  else if (mv1.selected && mv2.selected)
+    return mv1.move == mv2.move;
+  else
+    return true;
+}
+
+template <typename CFtype, typename H, typename T>
+bool operator<(const Movelist<CFtype, H, T>& mv1, const Movelist<CFtype, H, T>& mv2)
+{
+  if (mv1.selected && mv2.selected)
+    {
+      if (mv1.move < mv2.move)
+	return true;
+      else if (mv2.move < mv1.move)
+	return false;
+      else // mv1.move == mv2.move
+	return mv1.movelist < mv2.movelist;
+    }
+  else if (mv1.selected && !mv2.selected)
+    return true;
+  else if (!mv1.selected && mv2.selected)
+    return false;
+  else
+    return mv1.movelist < mv2.movelist;
+}
+
+template <typename CFtype, typename H>
+bool operator<(const Movelist<CFtype, H, NullType>& mv1, const Movelist<CFtype, H, NullType>& mv2)
+{
+  if (mv1.selected && mv2.selected)
+    {
+      return mv1.move < mv2.move;
+    }
+  else 
+    {      
+      if (mv1.selected && !mv2.selected)
+	return true;
+      else if (!mv1.selected && mv2.selected)
+	return false;
+      else
+	return false;
+    }
 }
 
 /** The SetUnion Neighborhood Explorer is responsible for the strategy

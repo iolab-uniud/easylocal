@@ -231,6 +231,8 @@ void BimodalSimulatedAnnealing<Input,State,Move1,Move2,CFtype>::ReadParameters(s
   os << "SIMULATED ANNEALING -- INPUT PARAMETERS" << std::endl;
   os << "  Start temperature: ";
   is >> start_temperature;
+  os << "  Min temperature: ";
+  is >> min_temperature;
   os << "  Cooling rate: ";
   is >> cooling_rate;
   os << "  Neighbors sampled at each temperature: ";

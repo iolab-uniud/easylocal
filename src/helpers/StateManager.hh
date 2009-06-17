@@ -55,6 +55,7 @@ public:
   @param st the state generated */
   virtual void RandomState(State &st) = 0;
   virtual CFtype SampleState(State &st, unsigned int samples);
+  virtual void GreedyState(State &st, double alpha, unsigned int k);
   // State Evaluation functions
   virtual CFtype CostFunction(const State& st) const;
   virtual CFtype Violations(const State& st) const;
@@ -144,6 +145,12 @@ CFtype StateManager<Input,State,CFtype>::SampleState(State &st,
   }
   st = best_state;
   return best_cost;
+}
+
+template <class Input, class State, typename CFtype>
+void StateManager<Input,State,CFtype>::GreedyState(State &st, double alpha, unsigned int k)
+{// Dummy implementation
+   RandomState(st);
 }
 
 /**
