@@ -386,7 +386,7 @@ void MoveTester<Input,Output,State,Move,CFtype>::CheckRandomMoveDistribution(con
 
   os << "The neighborhood has " << frequency.size() << " members." << std::endl;
   os << "How many rounds do you want to test: ";
-  cin >> rounds;
+  std::cin >> rounds;
 
   tot_trials = frequency.size() * rounds;
   while (trials < tot_trials)
@@ -397,10 +397,10 @@ void MoveTester<Input,Output,State,Move,CFtype>::CheckRandomMoveDistribution(con
 	  frequency[mv]++;
 	}
       else
-	os << "Random move not in neighborhood " << mv << endl;
+	os << "Random move not in neighborhood " << mv << std::endl;
       trials++;
       if (trials % frequency.size() == 0)
-	cerr << '.';
+	std::cerr << '.';
     }
 
   // Compute the standard deviation
@@ -413,17 +413,17 @@ void MoveTester<Input,Output,State,Move,CFtype>::CheckRandomMoveDistribution(con
 
   double error = 0;
 
-  os << "Outlier moves [move frequency]:" << endl;
+  os << "Outlier moves [move frequency]:" << std::endl;
   for (it = frequency.begin(); it != frequency.end(); it++)
     {
       if (fabs((*it).second - double(rounds)) > 3*dev || (*it).second == 0)
 	{
 	  error++;
-	  os << it->first << " " << it->second/double(rounds) << endl;
+	  os << it->first << " " << it->second/double(rounds) << std::endl;
 	}
     }
- cerr << "Deviation of move frequency: " << dev << endl;
- cerr << "Percentage of outliers " << 100 * error/frequency.size() << '%' << endl;
+    std::cerr << "Deviation of move frequency: " << dev << std::endl;
+    std::cerr << "Percentage of outliers " << 100 * error/frequency.size() << '%' << std::endl;
 }
 
 template <class Input, class Output, class State, class Move, typename CFtype>

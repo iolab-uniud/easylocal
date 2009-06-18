@@ -16,8 +16,7 @@
 // You should have received a copy of the GNU General Public License
 // along with EasyLocalpp. If not, see <http://www.gnu.org/licenses/>.
 
-#include <utils/Chronometer.hh>
-
+#include "Chronometer.hh"
 #include <ctime>
 
 #if defined(_MSC_VER) 
