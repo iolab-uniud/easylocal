@@ -66,7 +66,7 @@ public:
   void AttachObserver(GeneralizedLocalSearchObserver<Input,Output,State,CFtype>& obs) { observer = &obs; }
   void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout);
 
-  void SimpleSolve(unsigned runner = 0, bool random_init = true);
+  void SimpleSolve(unsigned runner = 0, unsigned init_state = 1); // 0: leave unchanged, 1: random, 2 :greedy
   void MultiStartSimpleSolve(unsigned runner = 0, unsigned trials = 1);
   void MultiStartGeneralSolve(KickStrategy kick_strategy = NO_KICKER, unsigned trials = 1);
   void GeneralSolve(KickStrategy kick_strategy = NO_KICKER, bool state_init = true);
@@ -237,14 +237,17 @@ void GeneralizedLocalSearch<Input,Output,State,CFtype>::SetKicker(Kicker<Input,S
    Solves using a single runner
 */
 template <class Input, class Output, class State, typename CFtype>
-void GeneralizedLocalSearch<Input,Output,State,CFtype>::SimpleSolve(unsigned runner, bool state_init)
+void GeneralizedLocalSearch<Input,Output,State,CFtype>::SimpleSolve(unsigned runner, unsigned init_state)
 {
   if (runner >= runners.size())
     throw std::logic_error("No runner set for solver " + this->name);
   chrono.Reset();
   chrono.Start();
-  if (state_init)
-    this->FindInitialState();
+  if (init_state == 1)
+    this->FindInitialState(true);
+  else if (init_state == 2)
+    this->FindInitialState(false);
+  // else: do not call FindInitialState, leave initial state unchanged    
   runners[runner]->SetState(this->current_state);
   if (observer != NULL) observer->NotifyRunnerStart(*this);
   LetGo(*runners[runner]);

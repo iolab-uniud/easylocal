@@ -337,16 +337,17 @@ template <class Input, class Output, class State, typename CFtype>
 void Tester<Input,Output,State,CFtype>::ShowStateMenu()
 {
   os << "STATE MENU: " << std::endl
-	    << "    (1) Random state " << std::endl
-	    << "    (2) Read from file" << std::endl
-	    << "    (3) Sample state" << std::endl
-	    << "    (4) Write to file" << std::endl
-	    << "    (5) Show state" << std::endl
-	    << "    (6) Show input" << std::endl
-	    << "    (7) Show cost function components" << std::endl
-	    << "    (8) Show cost elements" << std::endl
-	    << "    (0) Return to Main Menu" << std::endl
-	    << "Your choice : ";
+     << "    (1) Random state " << std::endl
+     << "    (2) Read from file" << std::endl
+     << "    (3) Greedy state " << std::endl
+     << "    (4) Sample state" << std::endl
+     << "    (5) Write to file" << std::endl
+     << "    (6) Show state" << std::endl
+     << "    (7) Show input" << std::endl
+     << "    (8) Show cost function components" << std::endl
+     << "    (9) Show cost elements" << std::endl
+     << "    (0) Return to Main Menu" << std::endl
+     << "Your choice : ";
   std::cin >> sub_choice;
 }
 
@@ -357,11 +358,12 @@ template <class Input, class Output, class State, typename CFtype>
 void Tester<Input,Output,State,CFtype>::ShowReducedStateMenu()
 {
   os << "INITIAL STATE MENU: " << std::endl
-	    << "    (1) Random state " << std::endl
-	    << "    (2) Read from file" << std::endl
-	    << "Your choice : ";
+     << "    (1) Random state " << std::endl
+     << "    (2) Read from file" << std::endl
+     << "    (3) Greedy state " << std::endl
+     << "Your choice : ";
   std::cin >> sub_choice;
-  if (sub_choice >= 3) 
+  if (sub_choice >= 4) 
     sub_choice = -1; 
 }
 
@@ -403,13 +405,18 @@ bool Tester<Input,Output,State,CFtype>::ExecuteStateChoice()
       }
     case 3:
       {
+	this->sm.GreedyState(test_state);
+	break;
+      }
+    case 4:
+      {
 	unsigned int samples;
 	os << "How many samples : ";
 	std::cin >> samples;
 	this->sm.SampleState(test_state,samples);
 	break;
       }
-    case 4:
+    case 5:
       {
 	os << "File name : ";
 	std::cin >> file_name;
@@ -417,18 +424,18 @@ bool Tester<Input,Output,State,CFtype>::ExecuteStateChoice()
 	this->om.WriteState(test_state, os);
 	break;
       }
-    case 5:
+    case 6:
       {
 	os  << test_state << std::endl;
 	os  << "Total cost: " << this->sm.CostFunction(test_state) << std::endl;
 	break;
       }
-    case 6:
+    case 7:
       {
 	os << in;
 	break;
       }
-    case 7:
+    case 8:
       {
 	os  << "Cost Components: " << std::endl;
 	for (i = 0; i < this->sm.CostComponents(); i++)
@@ -442,7 +449,7 @@ bool Tester<Input,Output,State,CFtype>::ExecuteStateChoice()
 	os  << "Total Cost:       " << this->sm.CostFunction(test_state) << std::endl;
 	break;
       }
-    case 8:
+    case 9:
       {
 	os  << "Detailed Violations: " << std::endl;
 	for (i = 0; i < this->sm.CostComponents(); i++)
@@ -465,7 +472,7 @@ bool Tester<Input,Output,State,CFtype>::ExecuteStateChoice()
     default:
       os << "Invalid choice" << std::endl;
     }
-  return (sub_choice >= 1 && sub_choice <= 3);
+  return (sub_choice >= 1 && sub_choice <= 4);
 }
 
 /**

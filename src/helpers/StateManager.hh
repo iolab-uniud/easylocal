@@ -56,6 +56,7 @@ public:
   virtual void RandomState(State &st) = 0;
   virtual CFtype SampleState(State &st, unsigned int samples);
   virtual void GreedyState(State &st, double alpha, unsigned int k);
+  virtual void GreedyState(State &st);
   // State Evaluation functions
   virtual CFtype CostFunction(const State& st) const;
   virtual CFtype Violations(const State& st) const;
@@ -149,6 +150,12 @@ CFtype StateManager<Input,State,CFtype>::SampleState(State &st,
 
 template <class Input, class State, typename CFtype>
 void StateManager<Input,State,CFtype>::GreedyState(State &st, double alpha, unsigned int k)
+{// Dummy implementation
+   RandomState(st);
+}
+
+template <class Input, class State, typename CFtype>
+void StateManager<Input,State,CFtype>::GreedyState(State &st)
 {// Dummy implementation
    RandomState(st);
 }

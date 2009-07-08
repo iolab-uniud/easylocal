@@ -52,7 +52,7 @@ protected:
 		      std::string name);
   /** Performs some checking before making a run of the solver,
       if something goes wrong it raises an exception. */
-  virtual void FindInitialState();
+  virtual void FindInitialState(bool random_state = true);
   StateManager<Input,State,CFtype>& sm; /**< A pointer to the attached
 					   state manager. */
   OutputManager<Input,Output,State,CFtype>& om; /**< A pointer to the attached
@@ -149,9 +149,15 @@ const Output& AbstractLocalSearch<Input,Output,State,CFtype>::GetOutput()
    the state manager. The function invokes the SampleState function.
 */
 template <class Input, class Output, class State, typename CFtype>
-void AbstractLocalSearch<Input,Output,State,CFtype>::FindInitialState()
+void AbstractLocalSearch<Input,Output,State,CFtype>::FindInitialState(bool random_state)
 {
-  current_state_cost = sm.SampleState(current_state, number_of_init_trials);
+  if (random_state)
+    current_state_cost = sm.SampleState(current_state, number_of_init_trials);
+  else
+    {
+      sm.GreedyState(current_state);
+      current_state_cost = sm.CostFunction(current_state);
+    }
 }
 
 template <class Input, class Output, class State, typename CFtype>
