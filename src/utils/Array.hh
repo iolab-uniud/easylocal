@@ -779,9 +779,9 @@ inline Vector<T> sign(const Vector<T>& v)
 }
 
 template <typename T>
-inline unsigned int partition(Vector<T>& v, unsigned int begin, unsigned int end)
+inline unsigned int partition(Vector<T>& v, int begin, int end)
 {
-  unsigned int i = begin + 1, j = begin + 1;
+  int i = begin + 1, j = begin + 1;
   T pivot = v[begin];
   while (j <= end) 
     {
@@ -798,11 +798,11 @@ inline unsigned int partition(Vector<T>& v, unsigned int begin, unsigned int end
 	
 
 template <typename T>
-inline void quicksort(Vector<T>& v, unsigned int begin, unsigned int end)
+inline void quicksort(Vector<T>& v, int begin, int end)
 {
   if (end > begin)
     {
-      unsigned int index = partition(v, begin, end);
+      int index = partition(v, begin, end);
       quicksort(v, begin, index);
       quicksort(v, index + 2, end);
     }
