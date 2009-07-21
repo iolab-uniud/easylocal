@@ -162,7 +162,10 @@ int main(int argc, char* argv[])
   
   typedef PrepareSetUnionNeighborhoodExplorerTypes<int, std::vector<int>, TYPELIST_2(SwapNeighborhoodExplorer, SwapNeighborhoodExplorer)> MultimodalTypes;
   typedef MultimodalTypes::MoveList DoubleSwap; // this line is not mandatory, it just aliases the movelist type for reader's convenience
-  MultimodalTypes::NeighborhoodExplorer qmmnhe(in, qsm, "Multimodal Swap");
+  std::vector<double> bias(2);
+  bias[0] = 0.7;
+  bias[1] = 0.3;
+  MultimodalTypes::NeighborhoodExplorer qmmnhe(in, qsm, bias, "Multimodal Swap");
   qmmnhe.AddNeighborhoodExplorer(qnhe);
   qmmnhe.AddNeighborhoodExplorer(qnhe);
   typedef PrepareSetUnionTabuListManager<std::vector<int>, TYPELIST_2(QueensTabuListManager, QueensTabuListManager)> MultimodalTabuListManagerTypes;

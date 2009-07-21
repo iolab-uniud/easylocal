@@ -37,9 +37,9 @@ public:
     virtual const Output& GetOutput() = 0;
   const std::string name;
   void SetTimeout(double timeout);
+  virtual ~Solver() {}
 protected:
   Solver(const Input& in, std::string name);
-  virtual ~Solver() {}
   const Input& in; /**< A reference to the input manager. */
 #if defined(HAVE_PTHREAD)
 protected:

@@ -77,9 +77,9 @@ public:
   unsigned NumberOfIterations() const { return number_of_iterations; }
 
   const std::string name;
+virtual ~Runner() {}
 protected:
   Runner(const Input& i, StateManager<Input,State,CFtype>& sm, std::string name);
-  virtual ~Runner() {}
   /* state manipulations */
   virtual void GoCheck() const = 0;
   /** Actions to be perfomed at the beginning of the run. */

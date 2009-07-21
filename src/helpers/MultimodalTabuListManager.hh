@@ -36,7 +36,7 @@ class SetUnionTabuListManager
 {
 protected:
   typedef typename TabuListManagerList::Head ThisTabuListManager;
-  typedef SetUnionTabuListManager<State, CFtype, class TabuListManagerList::Tail> OtherTabuListManager;
+  typedef SetUnionTabuListManager<State, CFtype, typename TabuListManagerList::Tail> OtherTabuListManager;
 public:       
   typedef Movelist<CFtype, typename ThisTabuListManager::ThisMove, typename OtherTabuListManager::MoveList> MoveList;
   

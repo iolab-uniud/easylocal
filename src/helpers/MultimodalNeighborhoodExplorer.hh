@@ -203,7 +203,7 @@ class SetUnionNeighborhoodExplorer
 {
 protected:
   typedef typename NeighborhoodExplorerList::Head ThisNeighborhoodExplorer;
-  typedef SetUnionNeighborhoodExplorer<Input, State, CFtype, class NeighborhoodExplorerList::Tail> OtherNeighborhoodExplorers;
+  typedef SetUnionNeighborhoodExplorer<Input, State, CFtype, typename NeighborhoodExplorerList::Tail> OtherNeighborhoodExplorers;
 public:   
   typedef Movelist<CFtype, typename ThisNeighborhoodExplorer::ThisMove, typename OtherNeighborhoodExplorers::MoveList> MoveList;
   
@@ -217,7 +217,7 @@ public:
     if (inspect_types<NeighborhoodExplorer, ThisNeighborhoodExplorer>::are_equal() && p_nhe == NULL) // the second condition is just to allow duplicated types in the typelist
       p_nhe = dynamic_cast<ThisNeighborhoodExplorer*>(&ne); // only to prevent a compilation error
     else
-      other_nhes.AddNeighborhoodExplorer(ne);
+      other_nhes->AddNeighborhoodExplorer(ne);
   }
     
   /** 
@@ -278,17 +278,56 @@ public:
    */
   SetUnionNeighborhoodExplorer(const Input& in, StateManager<Input,State,CFtype>& sm, std::string name = "SetUnionNeighborhoodExplorer");
   
+  /**
+   Constructs a set-union multimodal neighborhood explorer passing a reference to a state manager, a bias vector for the random picking probability 
+   and a reference to the input.
+   
+   @param in a pointer to an input object.
+   @param sm a pointer to a compatible state manager.
+   @param bias a sum 1 vector with a bias for the random picking probability
+   @param name the name associated to the NeighborhoodExplorer.
+   */
+  SetUnionNeighborhoodExplorer(const Input& in, StateManager<Input,State,CFtype>& sm, const std::vector<double>& bias, std::string name = "SetUnionNeighborhoodExplorer");
+  
+  /** Destructs a set-union multimodal neighborhood explorer */
+  ~SetUnionNeighborhoodExplorer();
+  
   /** 
    Sets all moves in a movelist to unselected.
    */
   void SetAllUnselected(MoveList& mv) const;
+  
+  
+  /** 
+   Generates a random move in the neighborhood of a given state according to the move bias.	
+   
+   @param st the start state 
+   @param mv the generated move 
+   @param random_value a uniformly distributed random value to be compared to the bias
+   */
+  void RandomMove(const State &st, MoveList& mv, double random_value) const;
+  
+  /**
+   Constructs a set-union multimodal neighborhood explorer passing a reference to a state manager, the range of the (possibly) biased probability distribution
+   and a reference to the input.
+   
+   @param in a pointer to an input object.
+   @param sm a pointer to a compatible state manager.
+   @param bias a sum 1 vector with a bias for the random picking probability
+   @param index the index up to which summing the bias
+   @param name the name associated to the NeighborhoodExplorer.
+   */
+  SetUnionNeighborhoodExplorer(const Input& in, StateManager<Input,State,CFtype>& sm, const std::vector<double>& bias, unsigned int index, std::string name = "SetUnionNeighborhoodExplorer");
+  
+  
 protected:
   const Input& in;/**< A reference to the input object */
   StateManager<Input, State, CFtype>& sm; /**< A reference to the attached state manager. */
-  
+     
   ThisNeighborhoodExplorer* p_nhe;
-  OtherNeighborhoodExplorers other_nhes;
+  OtherNeighborhoodExplorers* other_nhes;
   std::string name;
+  double probability_l, probability_u;
 };
 
 
@@ -382,6 +421,8 @@ public:
    @param name the name associated to the NeighborhoodExplorer.
    */
   CartesianProductNeighborhoodExplorer(const Input& in, StateManager<Input,State,CFtype>& sm, std::string name = "CartesianProductNeighborhoodExplorer");
+  
+  CartesianProductNeighborhoodExplorer(const Input& in, StateManager<Input,State,CFtype>& sm, const std::vector<double>& bias, std::string name = "CartesianProductNeighborhoodExplorer");
 protected:
   const Input& in;/**< A reference to the input object */
   StateManager<Input, State, CFtype>& sm; /**< A reference to the attached state manager. */
@@ -404,6 +445,9 @@ public:
   
   MultimodalNeighborhoodExplorerAdapter(const Input& in, StateManager<Input,State,CFtype>& sm, std::string name = "MultimodalNeighborhoodExplorerAdapter")
   : NeighborhoodExplorer<Input, State, MoveList, CFtype>(in, sm, name), mmnhe(in, sm, name) {}
+
+  MultimodalNeighborhoodExplorerAdapter(const Input& in, StateManager<Input,State,CFtype>& sm, const std::vector<double>& bias, std::string name = "MultimodalNeighborhoodExplorerAdapter")
+  : NeighborhoodExplorer<Input, State, MoveList, CFtype>(in, sm, name), mmnhe(in, sm, bias, name) {}
   
   template <typename NeighborhoodExplorer>
   void AddNeighborhoodExplorer(NeighborhoodExplorer& ne)
@@ -470,30 +514,97 @@ template <class Input, class State, typename CFtype, class NeighborhoodExplorerL
 SetUnionNeighborhoodExplorer<Input,State,CFtype,NeighborhoodExplorerList>::SetUnionNeighborhoodExplorer(const Input& i, 
                                                                                                         StateManager<Input,State,CFtype>& e_sm, 
                                                                                                         std::string e_name)
-: in(i), sm(e_sm),  p_nhe(NULL), other_nhes(i, e_sm, e_name), name(e_name)
-{}
+: in(i), sm(e_sm),  p_nhe(NULL), name(e_name)
+{
+  std::vector<double> bias(MoveList::length, 1.0 / MoveList::length);
+  probability_l = 0;
+  probability_u = bias[0];
+  other_nhes = new SetUnionNeighborhoodExplorer<Input, State, CFtype, typename NeighborhoodExplorerList::Tail>(i, e_sm, bias, 1, e_name);
+}
 
+template <class Input, class State, typename CFtype, class NeighborhoodExplorerList>
+SetUnionNeighborhoodExplorer<Input,State,CFtype,NeighborhoodExplorerList>::SetUnionNeighborhoodExplorer(const Input& i, 
+                                                                                                        StateManager<Input,State,CFtype>& e_sm, 
+                                                                                                        const std::vector<double>& bias,
+                                                                                                        std::string e_name)
+: in(i), sm(e_sm),  p_nhe(NULL), name(e_name)
+{
+  probability_l = 0;
+  probability_u = bias[0];
+  other_nhes = new SetUnionNeighborhoodExplorer<Input, State, CFtype, typename NeighborhoodExplorerList::Tail>(i, e_sm, bias, 1, e_name);
+}
+
+template <class Input, class State, typename CFtype, class NeighborhoodExplorerList>
+SetUnionNeighborhoodExplorer<Input,State,CFtype,NeighborhoodExplorerList>::SetUnionNeighborhoodExplorer(const Input& i, 
+                                                                                                        StateManager<Input,State,CFtype>& e_sm, 
+                                                                                                        const std::vector<double>& bias,
+                                                                                                        unsigned int index,
+                                                                                                        std::string e_name)
+: in(i), sm(e_sm),  p_nhe(NULL), name(e_name)
+{
+  probability_l = 0.0;
+  for (unsigned int j = 0; j < index; j++)
+    probability_l += bias[j];
+  probability_u = probability_l + bias[index];
+  other_nhes = new SetUnionNeighborhoodExplorer<Input, State, CFtype, typename NeighborhoodExplorerList::Tail>(i, e_sm, bias, index + 1, e_name);
+}
+
+
+
+template <class Input, class State, typename CFtype, class NeighborhoodExplorerList>
+SetUnionNeighborhoodExplorer<Input,State,CFtype,NeighborhoodExplorerList>::~SetUnionNeighborhoodExplorer()
+{
+  if (other_nhes)
+    delete other_nhes;
+}
 
 template <typename Input, typename State, typename CFtype, class NeighborhoodExplorerList>
 void SetUnionNeighborhoodExplorer<Input,State,CFtype,NeighborhoodExplorerList>::RandomMove(const State &st, MoveList& mv) const
 {
-  mv.selected = false;
+  /* mv.selected = false;
   if (mv.length == 1 || Random::Int(1, mv.length) == 1) {
     // with uniform probability select this move, or at last select this move
     try
     {
       p_nhe->RandomMove(st, mv.move);    
       mv.selected = true;
-      other_nhes.SetAllUnselected(mv.movelist);
+      other_nhes->SetAllUnselected(mv.movelist);
     }
     catch (EmptyNeighborhood e)
     {
-      other_nhes.RandomMove(st, mv.movelist);
+      other_nhes->RandomMove(st, mv.movelist);
     }
   }
   else
-    other_nhes.RandomMove(st, mv.movelist);
+    other_nhes->RandomMove(st, mv.movelist); */
+  // new definition: first pick up a uniformly distributed random value and then search for the corresponding neighborhood according to the bias
+  double random_value = Random::Double_Unit_Uniform();
+  RandomMove(st, mv, random_value);
 }
+
+template <typename Input, typename State, typename CFtype, class NeighborhoodExplorerList>
+void SetUnionNeighborhoodExplorer<Input,State,CFtype,NeighborhoodExplorerList>::RandomMove(const State &st, MoveList& mv, double random_value) const
+{
+  mv.selected = false;
+  if (mv.length == 1 || (random_value >= probability_l && random_value < probability_u)) {
+    // with biased probability select this move, or at last select this move
+    try
+    {
+      p_nhe->RandomMove(st, mv.move);    
+      mv.selected = true;
+      other_nhes->SetAllUnselected(mv.movelist);
+    }
+    catch (EmptyNeighborhood e)
+    {
+      random_value = Random::Double(random_value, 1.0); // go ahead with the following neighborhoods
+      other_nhes->RandomMove(st, mv.movelist, random_value);
+    }
+  }
+  else
+    other_nhes->RandomMove(st, mv.movelist, random_value);
+}
+
+
 
 template <typename Input, typename State, typename CFtype, class NeighborhoodExplorerList>
 void SetUnionNeighborhoodExplorer<Input,State,CFtype,NeighborhoodExplorerList>::FirstMove(const State& st, MoveList& mv) const
@@ -508,7 +619,7 @@ void SetUnionNeighborhoodExplorer<Input,State,CFtype,NeighborhoodExplorerList>::
   {
     try
     {
-      other_nhes.FirstMove(st, mv.movelist);   
+      other_nhes->FirstMove(st, mv.movelist);   
     }
     catch (EmptyNeighborhood e)
     {
@@ -524,7 +635,7 @@ bool SetUnionNeighborhoodExplorer<Input,State,CFtype,NeighborhoodExplorerList>::
   bool exists_next_move;
   if (!mv.selected) // this neighborhood was not active yet
   {
-    exists_next_move = other_nhes.NextMove(st, mv.movelist);
+    exists_next_move = other_nhes->NextMove(st, mv.movelist);
     if (exists_next_move)
       return true;    
     // all the following neighborhoods have already finished
@@ -557,7 +668,7 @@ void SetUnionNeighborhoodExplorer<Input,State,CFtype,NeighborhoodExplorerList>::
   if (mv.selected)
     p_nhe->MakeMove(st, mv.move);
   else
-    other_nhes.MakeMove(st, mv.movelist);
+    other_nhes->MakeMove(st, mv.movelist);
 }
 
 template <typename Input, typename State, typename CFtype, class NeighborhoodExplorerList>
@@ -566,7 +677,7 @@ CFtype SetUnionNeighborhoodExplorer<Input,State,CFtype,NeighborhoodExplorerList>
   if (mv.selected)
     return p_nhe->DeltaCostFunction(st, mv.move);
   else
-    return other_nhes.DeltaCostFunction(st, mv.movelist);
+    return other_nhes->DeltaCostFunction(st, mv.movelist);
 }
 
 template <typename Input, typename State, typename CFtype, class NeighborhoodExplorerList>
@@ -575,14 +686,14 @@ ShiftedResult<CFtype> SetUnionNeighborhoodExplorer<Input,State,CFtype,Neighborho
   if (mv.selected)
     return p_nhe->DeltaShiftedCostFunction(st, mv.move);
   else
-    return other_nhes.DeltaShiftedCostFunction(st, mv.movelist);
+    return other_nhes->DeltaShiftedCostFunction(st, mv.movelist);
 }
 
 template <typename Input, typename State, typename CFtype, class NeighborhoodExplorerList>
 void SetUnionNeighborhoodExplorer<Input,State,CFtype,NeighborhoodExplorerList>::SetAllUnselected(MoveList& mv) const
 {
   mv.selected = false;
-  other_nhes.SetAllUnselected(mv.movelist);
+  other_nhes->SetAllUnselected(mv.movelist);
 }
 
 
@@ -597,6 +708,15 @@ public:
   SetUnionNeighborhoodExplorer(const Input& i,
                                StateManager<Input,State,CFtype>& e_sm, 
                                std::string e_name = "NullSetUnionNeighborhoodExplorer"); 
+  SetUnionNeighborhoodExplorer(const Input& i,
+                               StateManager<Input,State,CFtype>& e_sm, 
+                               const std::vector<double>& bias,
+                               std::string e_name = "NullSetUnionNeighborhoodExplorer"); 
+  SetUnionNeighborhoodExplorer(const Input& i,
+                               StateManager<Input,State,CFtype>& e_sm, 
+                               const std::vector<double>& bias,
+                               unsigned int index,
+                               std::string e_name = "NullSetUnionNeighborhoodExplorer"); 
   template <typename NeighborhoodExplorer>
   void AddNeighborhoodExplorer(NeighborhoodExplorer& ne)
   {
@@ -604,13 +724,14 @@ public:
                            "either the added neighborhood explorer is not of a compatible type or a compatible one has already been added");
   }
   void RandomMove(const State &st, NullType& mv) const;
+  void RandomMove(const State &st, MoveList& mv, double random_value) const;  
   void FirstMove(const State& st, MoveList& mv) const;
   bool NextMove(const State& st, MoveList& mv) const;
   void MakeMove(State& st, const MoveList& mv) const;
   CFtype DeltaCostFunction(const State& st, const MoveList& mv) const;
   ShiftedResult<CFtype> DeltaShiftedCostFunction(const State& st, const MoveList& mv) const;
   void SetAllUnselected(MoveList& mv) const;
-protected:
+protected:  
   const Input& in;/**< A reference to the input object */
   StateManager<Input, State, CFtype>& sm; /**< A reference to the attached state manager. */
   
@@ -625,7 +746,29 @@ SetUnionNeighborhoodExplorer<Input,State,CFtype,NullType>::SetUnionNeighborhoodE
 {}
 
 template <typename Input, typename State, typename CFtype>
+SetUnionNeighborhoodExplorer<Input,State,CFtype,NullType>::SetUnionNeighborhoodExplorer(const Input& i,
+                                                                                        StateManager<Input,State,CFtype>& e_sm, 
+                                                                                        const std::vector<double>& bias,
+                                                                                        std::string e_name)
+: in(i), sm(e_sm), name(e_name)
+{}
+
+template <typename Input, typename State, typename CFtype>
+SetUnionNeighborhoodExplorer<Input,State,CFtype,NullType>::SetUnionNeighborhoodExplorer(const Input& i,
+                                                                                        StateManager<Input,State,CFtype>& e_sm, 
+                                                                                        const std::vector<double>& bias,
+                                                                                        unsigned int index,
+                                                                                        std::string e_name)
+: in(i), sm(e_sm), name(e_name)
+{}
+
+
+template <typename Input, typename State, typename CFtype>
 void SetUnionNeighborhoodExplorer<Input,State,CFtype,NullType>::RandomMove(const State &st, NullType& mv) const
+{ throw EmptyNeighborhood(); }
+
+template <typename Input, typename State, typename CFtype>
+void SetUnionNeighborhoodExplorer<Input,State,CFtype,NullType>::RandomMove(const State &st, NullType& mv, double random_value) const
 { throw EmptyNeighborhood(); }
 
 template <typename Input, typename State, typename CFtype>
@@ -670,6 +813,13 @@ CartesianProductNeighborhoodExplorer<Input,State,CFtype,NeighborhoodExplorerList
 : in(i), sm(e_sm),  p_nhe(NULL), other_nhes(i, e_sm, e_name), name(e_name)
 {}
 
+template <class Input, class State, typename CFtype, class NeighborhoodExplorerList>
+CartesianProductNeighborhoodExplorer<Input,State,CFtype,NeighborhoodExplorerList>::CartesianProductNeighborhoodExplorer(const Input& i, 
+                                                                                                                        StateManager<Input,State,CFtype>& e_sm, 
+                                                                                                                        const std::vector<double>& bias,
+                                                                                                                        std::string e_name)
+: CartesianProductNeighborhoodExplorer<Input,State,CFtype,NeighborhoodExplorerList>(i, e_sm, e_name)
+{}
 
 template <typename Input, typename State, typename CFtype, class NeighborhoodExplorerList>
 void CartesianProductNeighborhoodExplorer<Input,State,CFtype,NeighborhoodExplorerList>::RandomMove(const State &st, MoveList& mv) const

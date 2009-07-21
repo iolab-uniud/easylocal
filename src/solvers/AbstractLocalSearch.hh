@@ -22,6 +22,7 @@
 #include <solvers/Solver.hh>
 #include <helpers/StateManager.hh>
 #include <helpers/OutputManager.hh>
+#include <runners/Runner.hh>
 #include <iostream> 
 #include <fstream> 
 #include <string>
