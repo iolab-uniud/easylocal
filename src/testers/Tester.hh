@@ -346,6 +346,7 @@ void Tester<Input,Output,State,CFtype>::ShowStateMenu()
      << "    (7) Show input" << std::endl
      << "    (8) Show cost function components" << std::endl
      << "    (9) Show cost elements" << std::endl
+     << "    (10) Pretty print output" << std::endl
      << "    (0) Return to Main Menu" << std::endl
      << "Your choice : ";
   std::cin >> sub_choice;
@@ -467,6 +468,14 @@ bool Tester<Input,Output,State,CFtype>::ExecuteStateChoice()
 	os  << std::endl << "Total Violations:\t" << this->sm.Violations(test_state) << std::endl;
 	os  << "Total Objective:\t" << this->sm.Objective(test_state) << std::endl;
 	os  << "Total Cost:  \t" << this->sm.CostFunction(test_state) << std::endl;
+	break;
+      }
+    case 10:
+      {
+	os << "File name : ";
+	std::cin >> file_name;
+	this->om.PrettyPrintOutput(test_state,file_name);
+	std::cout << "Output pretty-printed in file " << file_name << std::endl;
 	break;
       }
     default:

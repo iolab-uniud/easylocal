@@ -453,6 +453,7 @@ CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::BestMove(const State &st, 
     not_last_move = NextMove(st, mv);
     if (not_last_move)
       mv_cost = DeltaCostFunction(st, mv);
+
   }
   while (not_last_move && !ExternalTerminationRequest());
   mv = best_move;
