@@ -221,7 +221,7 @@ class CLParser
 {
   friend std::ostream& operator<<(std::ostream& os, const CLParser& cl);
 public:
-  CLParser(int argc, char * const argv[]);
+  CLParser(int argc, char const* const argv[]);
   void AddArgument(Argument& a);
   void MatchArguments(bool terminate_if_fail = true);
   void MatchArgument(Argument& a, bool terminate_if_fail = true);

@@ -19,6 +19,7 @@
 #include <utils/CLParser.hh>
 #include <cstring>
 #include <algorithm>
+#include <typeinfo>
 
 Argument::Argument(const std::string& fl, const std::string& al, bool req)
 : flag("-" + fl), alias("-" + al), value_set(false), required(req)
@@ -170,7 +171,7 @@ std::ostream& operator<<(std::ostream& os, const CLParser& cl)
   return os;
 }
 
-CLParser::CLParser(int argc, char * const argv[])
+CLParser::CLParser(int argc, char const * const argv[])
 {
   if (argc > 0)
   {

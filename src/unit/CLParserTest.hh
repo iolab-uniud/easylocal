@@ -49,7 +49,7 @@ public:
   	
 	void testValArguments1() 
 	{ // Tests presence of required argument on the command-line and the absence of the optional argument
-    char * argv[] = { "dummy_command_name", "-r", "required_value" }; 
+    char const* argv[] = { "dummy_command_name", "-r", "required_value" }; 
     CLParser cl(3, argv);
     ValArgument<std::string> areq("required", "r", true, cl);
     ValArgument<int> aopt("optional", "o", false, cl);
@@ -61,7 +61,7 @@ public:
 
 	void testValArguments2()   
   { // Tests presence of both the required argument and the optional argument on the command-line
-    char * argv[] = { "dummy_command_name", "-r", "required_value", "-o", "3" }; 
+    char const* argv[] = { "dummy_command_name", "-r", "required_value", "-o", "3" }; 
     CLParser cl(5, argv);
     ValArgument<std::string> areq("required", "r", true, cl);
     ValArgument<int> aopt("optional", "o", false, cl);
@@ -74,7 +74,7 @@ public:
   
   void testValArgumentMultiLength1()   
   { // Tests multi-length required arguments (and more optional arguments)
-    char * argv[] = { "dummy_command_name", "-r", "required_value1", "required_value2", "-o1", "3" }; 
+    char const* argv[] = { "dummy_command_name", "-r", "required_value1", "required_value2", "-o1", "3" }; 
     CLParser cl(6, argv);
     ValArgument<std::string, 2> areq("required", "r", true, cl);
     ValArgument<int> aopt1("optional1", "o1", false, cl), aopt2("optional2", "o2", false, cl);
@@ -89,7 +89,7 @@ public:
   
   void testValArgumentMultiLength2()   
   { // Tests multi-length required arguments (and more optional arguments)
-    char * argv[] = { "dummy_command_name", "-o1", "3", "-r", "required_value1", "required_value2" }; 
+    char const* argv[] = { "dummy_command_name", "-o1", "3", "-r", "required_value1", "required_value2" }; 
     CLParser cl(6, argv);
     ValArgument<std::string, 2> areq("required", "r", true, cl);
     ValArgument<int> aopt1("optional1", "o1", false, cl), aopt2("optional2", "o2", false, cl);
@@ -104,7 +104,7 @@ public:
   
   void testValArgumentMultiLength3()   
   { // Tests multi-length required arguments not completely specified
-    char * argv[] = { "dummy_command_name", "-r", "required_value1", "-o", "3" }; 
+    char const* argv[] = { "dummy_command_name", "-r", "required_value1", "-o", "3" }; 
     CLParser cl(5, argv);
     ValArgument<std::string, 2> areq("required", "r", true, cl);
     ValArgument<int> aopt1("optional", "o", false, cl);
@@ -113,7 +113,7 @@ public:
   
   void testFlagArguments1()   
   { // Tests flag arguments (absence)
-    char * argv[] = { "dummy_command_name" }; 
+    char const* argv[] = { "dummy_command_name" }; 
     CLParser cl(2, argv);
     FlagArgument aflag("flag", "f", cl);
     CPPUNIT_ASSERT_NO_THROW_MESSAGE(stringify("Match argument failed", __FILE__, __LINE__), cl.MatchArguments(false));
@@ -122,7 +122,7 @@ public:
   
   void testFlagArguments2()   
   { // Tests flag arguments (presence)
-    char * argv[] = { "dummy_command_name", "-f" }; 
+    char const* argv[] = { "dummy_command_name", "-f" }; 
     CLParser cl(2, argv);
     FlagArgument aflag("flag", "f", cl);
     CPPUNIT_ASSERT_NO_THROW_MESSAGE(stringify("Match argument failed", __FILE__, __LINE__), cl.MatchArguments(false));
@@ -131,7 +131,7 @@ public:
   
   void testMixedArguments1()   
   { // Tests mixed flag and valued arguments
-    char * argv[] = { "dummy_command_name", "-f", "-r", "required_value" }; 
+    char const* argv[] = { "dummy_command_name", "-f", "-r", "required_value" }; 
     CLParser cl(4, argv);
     ValArgument<std::string> areq("required", "r", true, cl);
     FlagArgument aflag("flag", "f", cl);
@@ -143,7 +143,7 @@ public:
   
   void testMixedArguments2()   
   { // Tests mixed flag and valued arguments
-    char * argv[] = { "dummy_command_name", "-r", "required_value", "-f" }; 
+    char const* argv[] = { "dummy_command_name", "-r", "required_value", "-f" }; 
     CLParser cl(4, argv);
     ValArgument<std::string> areq("required", "r", true, cl);
     FlagArgument aflag("flag", "f", cl);
@@ -155,7 +155,7 @@ public:
   
   void testMixedArguments3()   
   { // Tests mixed flag and valued arguments (absence of flag)
-    char * argv[] = { "dummy_command_name", "-r", "required_value" }; 
+    char const* argv[] = { "dummy_command_name", "-r", "required_value" }; 
     CLParser cl(3, argv);
     ValArgument<std::string> areq("required", "r", true, cl);
     FlagArgument aflag("flag", "f", cl);
@@ -167,7 +167,7 @@ public:
   
   void testGroupArguments1()   
   { // Tests argument groups (just one, required)
-    char * argv[] = { "dummy_command_name", "-g", "-r", "required_value" }; 
+    char const* argv[] = { "dummy_command_name", "-g", "-r", "required_value" }; 
     CLParser cl(4, argv);
     ArgumentGroup agrp("group", "g", true, cl);
     ValArgument<std::string> areq("required", "r", true);
@@ -182,7 +182,7 @@ public:
   
   void testGroupArguments2()   
   { // Tests argument groups (just one, optional)
-    char * argv[] = { "dummy_command_name" }; 
+    char const* argv[] = { "dummy_command_name" }; 
     CLParser cl(1, argv);
     ArgumentGroup agrp("group", "g", false, cl);
     ValArgument<std::string> areq("required", "r", true);
@@ -194,7 +194,7 @@ public:
 
   void testGroupArguments3()   
   { // Tests argument groups (just one, optional, with two levels required)
-    char * argv[] = { "dummy_command_name", "-g", "-gr", "required_value", "-o", "3"}; 
+    char const* argv[] = { "dummy_command_name", "-g", "-gr", "required_value", "-o", "3"}; 
     CLParser cl(6, argv);
     ArgumentGroup agrp("group", "g", false, cl);
     ValArgument<std::string> agreq("group_required", "gr", true);
