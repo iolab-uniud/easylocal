@@ -189,8 +189,8 @@ template <class State, class Move, typename CFtype>
 void TabuListManager<State, Move,CFtype>::InsertMove(const State& st, const Move& mv, const CFtype& mv_cost, const CFtype& curr, 
 						     const CFtype& best)
 {
-    InsertIntoList(st, mv);
-    UpdateAspirationFunction(curr,best);
+  InsertIntoList(st, mv);
+  UpdateAspirationFunction(curr,best);
 }
 
 /**

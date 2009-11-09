@@ -23,7 +23,7 @@
 #include <iostream>
 
 // FIXME: a more general mechanism for tolerance should be adopted
-#define TOL 1.0E+04
+#define TOL 1.0E+10
 
 template <>
 bool IsZero<int>(int value)

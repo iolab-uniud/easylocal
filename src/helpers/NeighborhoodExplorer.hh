@@ -416,6 +416,8 @@ CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::BestMove(const State &st, 
   Move best_move = mv;
   CFtype best_delta = mv_cost;
   bool all_moves_prohibited = true, not_last_move;
+
+//   static unsigned int i1 = 0, i2 = 0;
   
   do // look for the best move 
   {  // if the prohibition mechanism is active get the best non-prohibited move
@@ -456,6 +458,10 @@ CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::BestMove(const State &st, 
 
   }
   while (not_last_move && !ExternalTerminationRequest());
+//   if (all_moves_prohibited)
+//     i1++;
+//   i2++;
+//   std::cerr << (float)i1/i2 << ' ';
   mv = best_move;
   return best_delta;
 }

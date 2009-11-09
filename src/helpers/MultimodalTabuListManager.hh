@@ -55,6 +55,7 @@ public:
   }
   
   bool Inverse(const MoveList& mv1, const MoveList& mv2) const;
+  void InsertMove(const State& st, const MoveList& mv, const CFtype& mv_cost, const CFtype& curr, const CFtype& best);
 protected:
   ThisTabuListManager* p_tlm;
   OtherTabuListManager other_tlms;
@@ -84,6 +85,7 @@ public:
   }
   
   bool Inverse(const MoveList& mv1, const MoveList& mv2) const;
+  void InsertMove(const State& st, const MoveList& mv, const CFtype& mv_cost, const CFtype& curr, const CFtype& best);
 protected:
   ThisTabuListManager* p_tlm;
   OtherTabuListManager other_tlms;
@@ -109,6 +111,11 @@ public:
   bool Inverse(const MoveList& mv1, const MoveList& mv2) const
   { 
     return mmtlm.Inverse(mv1, mv2);
+  }
+
+  void InsertMove(const State& st, const MoveList& mv, const CFtype& mv_cost, const CFtype& curr, const CFtype& best)
+  {
+    mmtlm.InsertMove(st, mv, mv_cost, curr, best);
   }
 };
 
@@ -149,6 +156,15 @@ bool SetUnionTabuListManager<State,CFtype,TabuListManagerList>::Inverse(const Mo
   return other_tlms.Inverse(mv1.movelist, mv2.movelist);    
 }
 
+template <class State, typename CFtype, class TabuListManagerList>
+void  SetUnionTabuListManager<State,CFtype,TabuListManagerList>::InsertMove(const State& st, const MoveList& mv, const CFtype& mv_cost, const CFtype& curr, const CFtype& best)
+{
+  if (mv.selected)
+    p_tlm->InsertMove(st, mv.move, mv_cost, curr, best);
+  else
+    other_tlms.InsertMove(st, mv.movelist, mv_cost, curr, best);
+}
+
 /** Template specialization for the end of the typelist (i.e., NullType) */
 
 template <class State, typename CFtype>
@@ -165,6 +181,8 @@ public:
   }
   bool Inverse(const MoveList& mv1, const MoveList& mv2) const
   { return false; }
+  void InsertMove(const State& st, const MoveList& mv, const CFtype& mv_cost, const CFtype& curr, const CFtype& best)
+  {}
 };
 
 template <class State, typename CFtype, class TabuListManagerList>
@@ -176,6 +194,13 @@ template <class State, typename CFtype, class TabuListManagerList>
 bool CartesianProductTabuListManager<State,CFtype,TabuListManagerList>::Inverse(const MoveList& mv1, const MoveList& mv2) const
 {
   return other_tlms.Inverse(mv1.movelist, mv2.movelist) && p_tlm->Inverse(mv1.move, mv2.move);
+}
+
+template <class State, typename CFtype, class TabuListManagerList>
+void  CartesianProductTabuListManager<State,CFtype,TabuListManagerList>::InsertMove(const State& st, const MoveList& mv, const CFtype& mv_cost, const CFtype& curr, const CFtype& best)
+{
+  p_tlm->InsertMove(st, mv.move, mv_cost, curr, best);  
+  other_tlms.InsertMove(st, mv.movelist, mv_cost, curr, best);
 }
 
 /** Template specialization for the end of the typelist (i.e., NullType) */
@@ -194,6 +219,9 @@ public:
   }
   bool Inverse(const MoveList& mv1, const MoveList& mv2) const
   { return true; }
+
+  void InsertMove(const State& st, const MoveList& mv, const CFtype& mv_cost, const CFtype& curr, const CFtype& best)
+  {}
 };
 
 
