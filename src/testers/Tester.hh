@@ -406,7 +406,13 @@ bool Tester<Input,Output,State,CFtype>::ExecuteStateChoice()
       }
     case 3:
       {
-	this->sm.GreedyState(test_state);
+	unsigned int lenght; 
+	double randomness;
+	os << "Lenght of the restricted candidate list: ";
+	std::cin >> lenght;
+	os << "Level of randomness (0 <= alpha <= 1): ";
+	std::cin >> randomness;
+	this->sm.GreedyState(test_state, lenght, randomness);
 	break;
       }
     case 4:
