@@ -50,7 +50,9 @@ protected:
 };
 
 class ArgumentNotFound : public std::logic_error 
-{};
+{
+  ArgumentNotFound(char s[]) : std::logic_error(s) {}
+};
 
 class ArgumentGroup : public Argument
 {
