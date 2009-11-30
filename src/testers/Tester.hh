@@ -412,7 +412,7 @@ bool Tester<Input,Output,State,CFtype>::ExecuteStateChoice()
 	std::cin >> lenght;
 	os << "Level of randomness (0 <= alpha <= 1): ";
 	std::cin >> randomness;
-	this->sm.GreedyState(test_state, lenght, randomness);
+	this->sm.GreedyState(test_state, randomness, lenght);
 	break;
       }
     case 4:

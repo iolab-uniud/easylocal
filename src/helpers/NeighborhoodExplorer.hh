@@ -104,7 +104,7 @@ virtual CFtype BestMove(const State& st, Move& mv) const;
  @return the variation of the cost due to the Move mv.
  @throws EmptyNeighborhood when the State st has no neighbor 
  */
-virtual CFtype BestMove(const State& st, Move& mv, ProhibitionManager<State, Move,CFtype>& pm) const;
+virtual CFtype BestMove(const State& st, Move& mv, ProhibitionManager<State,Move,CFtype>& pm) const;
 
 /** 
  Generates a pair of moves in the full exploration of the neighborhood of a given state. The 
@@ -224,13 +224,6 @@ virtual ~NeighborhoodExplorer() {}
 
   const Input& in;/**< A reference to the input manager */
   StateManager<Input, State,CFtype>& sm; /**< A reference to the attached state manager. */
-
-//   Move best_move; /**< The best move found in the exploration of the
-// 		     neighborhood (used from the neighborhood enumerating
-// 		     functions such as BestMove). */
-
-//   Move start_move;  /**< The first move in the exploration of
-// 		       the neighborhood. Needed to detect the end of the exploration. */
 
   std::vector<AbstractDeltaCostComponent<Input,State,Move,CFtype>* > delta_cost_component;
   unsigned number_of_delta_not_implemented;
@@ -381,6 +374,7 @@ template <class Input, class State, class Move, typename CFtype>
 CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::BestMove(const State &st, Move& mv) const
 {
   unsigned int number_of_bests = 1; // number of moves found with the same best value
+
   FirstMove(st, mv);
   Move best_move = mv;
   CFtype mv_cost = DeltaCostFunction(st, mv);
@@ -409,19 +403,19 @@ CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::BestMove(const State &st, 
 
 template <class Input, class State, class Move, typename CFtype>
 CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::BestMove(const State &st, Move& mv, ProhibitionManager<State, Move, CFtype>& pm) const
-{
+{ // get the best non-prohibited move, but if all moves are prohibited, then get the best one among them
   unsigned int number_of_bests = 1; // number of moves found with the same best value
   FirstMove(st,mv);
   CFtype mv_cost = DeltaCostFunction(st,mv);
   Move best_move = mv;
   CFtype best_delta = mv_cost;
-  bool all_moves_prohibited = true, not_last_move;
+  bool all_moves_prohibited = pm.ProhibitedMove(st, mv, mv_cost);
 
 //   static unsigned int i1 = 0, i2 = 0;
   
-  do // look for the best move 
-  {  // if the prohibition mechanism is active get the best non-prohibited move
-		// if all moves are prohibited, then get the best one
+  while (NextMove(st, mv) && !ExternalTerminationRequest()) 
+  { 		
+    mv_cost = DeltaCostFunction(st, mv);
     if (LessThan(mv_cost, best_delta))
     {
       if (!pm.ProhibitedMove(st, mv, mv_cost))
@@ -431,33 +425,48 @@ CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::BestMove(const State &st, 
         number_of_bests = 1;
         all_moves_prohibited = false;
       }
-      if (all_moves_prohibited)
+      else if (all_moves_prohibited)
       {
         best_move = mv;
         best_delta = mv_cost;
         number_of_bests = 1;
       }
     }
-    else if (all_moves_prohibited && !pm.ProhibitedMove(st, mv, mv_cost))
-    { // when the prohibition mechanism is active, even though it is not an improving move,
-      // this move is the actual best since it is the first non-prohibited
-      best_move = mv;
-      best_delta = mv_cost;
-      number_of_bests = 1;
-      all_moves_prohibited = false;
-    }
-    else if (EqualTo(mv_cost, best_delta) && !pm.ProhibitedMove(st, mv, mv_cost))
-    {
-      if (Random::Int(0,number_of_bests) == 0) // accept the move with probability 1 / (1 + number_of_bests)
-        best_move = mv;
-      number_of_bests++;
-    } 
-    not_last_move = NextMove(st, mv);
-    if (not_last_move)
-      mv_cost = DeltaCostFunction(st, mv);
-
+    else if (EqualTo(mv_cost, best_delta))
+      {
+	if (!pm.ProhibitedMove(st, mv, mv_cost))
+	  {
+	    if (all_moves_prohibited)
+	      {
+		best_move = mv;
+		number_of_bests = 1;
+		all_moves_prohibited = false;
+	      }
+	    else
+	      {
+		if (Random::Int(0,number_of_bests) == 0) // accept the move with probability 1 / (1 + number_of_bests)
+		  best_move = mv;
+		number_of_bests++;
+	      }
+	  }
+	else 
+	  if (all_moves_prohibited)
+	    {
+	      if (Random::Int(0,number_of_bests) == 0) // accept the move with probability 1 / (1 + number_of_bests)
+		best_move = mv;
+	      number_of_bests++;
+	    }
+      }
+    else // mv_cost is greater than best_delta
+      if (all_moves_prohibited && !pm.ProhibitedMove(st, mv, mv_cost))
+	{
+	  best_move = mv;
+	  best_delta = mv_cost;
+	  number_of_bests = 1;
+	  all_moves_prohibited = false;
+	}
   }
-  while (not_last_move && !ExternalTerminationRequest());
+
 //   if (all_moves_prohibited)
 //     i1++;
 //   i2++;
@@ -465,6 +474,7 @@ CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::BestMove(const State &st, 
   mv = best_move;
   return best_delta;
 }
+
 
 template <class Input, class State, class Move, typename CFtype>
 std::pair<ShiftedResult<CFtype>, ShiftedResult<CFtype> > NeighborhoodExplorer<Input,State,Move,CFtype>::BestShiftedMove(const State &st, Move& shifted_mv, Move& actual_mv) const 

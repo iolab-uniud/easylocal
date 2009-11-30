@@ -99,8 +99,6 @@ template <>
 bool GreaterOrEqualThan<float>(float value1, float value2)
 { return value1 >= value2; }
 
-
-
 template <>
 bool IsZero<double>(double value)
 { return fabs(value) <= TOL * std::numeric_limits<double>::epsilon(); }
