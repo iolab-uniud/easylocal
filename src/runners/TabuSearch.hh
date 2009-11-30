@@ -193,6 +193,8 @@ bool TabuSearch<Input,State,Move,CFtype>::AcceptableMove()
 template <class Input, class State, class Move, typename CFtype>
 void TabuSearch<Input,State,Move,CFtype>::StoreMove()
 {
+  pm.Print();
+  std::cin.get();
   if (this->observer != NULL)
     this->observer->NotifyStoreMove(*this);
   pm.InsertMove(this->current_state, this->current_move, this->current_move_cost,

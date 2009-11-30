@@ -44,9 +44,8 @@ class EmptyNeighborhood : public std::exception {};
 template <class Input, class State, class Move, typename CFtype = int>
 class NeighborhoodExplorer
 {
-
 public:   
-typedef Move ThisMove;
+  typedef Move ThisMove;
 void Print(std::ostream& os = std::cout) const;
 /** 
  Generates a random move in the neighborhood of a given state.	
@@ -228,6 +227,9 @@ virtual ~NeighborhoodExplorer() {}
   std::vector<AbstractDeltaCostComponent<Input,State,Move,CFtype>* > delta_cost_component;
   unsigned number_of_delta_not_implemented;
   std::string name;
+
+public:
+  unsigned int modality;
 protected:
 /** Checks wether an external request to terminate the exploration of the neighborhood 
  has been issued.
@@ -250,7 +252,7 @@ void ResetExternalTerminationRequest();
 template <class Input, class State, class Move, typename CFtype>
 NeighborhoodExplorer<Input,State,Move,CFtype>::NeighborhoodExplorer(const Input& i,
                                                                     StateManager<Input,State,CFtype>& e_sm, std::string e_name)
-: in(i), sm(e_sm), number_of_delta_not_implemented(0), name(e_name)
+  : in(i), sm(e_sm), number_of_delta_not_implemented(0), name(e_name), modality(1)
 { 
 #if defined(HAVE_PTHREAD)
   ResetExternalTerminationRequest();
@@ -411,7 +413,7 @@ CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::BestMove(const State &st, 
   CFtype best_delta = mv_cost;
   bool all_moves_prohibited = pm.ProhibitedMove(st, mv, mv_cost);
 
-//   static unsigned int i1 = 0, i2 = 0;
+  static unsigned int i1 = 0, i2 = 0;
   
   while (NextMove(st, mv) && !ExternalTerminationRequest()) 
   { 		
@@ -467,10 +469,10 @@ CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::BestMove(const State &st, 
 	}
   }
 
-//   if (all_moves_prohibited)
-//     i1++;
-//   i2++;
-//   std::cerr << (float)i1/i2 << ' ';
+  if (all_moves_prohibited)
+    i1++;
+  i2++;
+  std::cerr << (float)i1/i2 << ' ' << best_move << " ";
   mv = best_move;
   return best_delta;
 }

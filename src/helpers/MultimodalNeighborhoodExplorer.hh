@@ -444,10 +444,10 @@ public:
   MultimodalNeighborhoodExplorer mmnhe;
   
   MultimodalNeighborhoodExplorerAdapter(const Input& in, StateManager<Input,State,CFtype>& sm, std::string name = "MultimodalNeighborhoodExplorerAdapter")
-  : NeighborhoodExplorer<Input, State, MoveList, CFtype>(in, sm, name), mmnhe(in, sm, name) {}
+    : NeighborhoodExplorer<Input, State, MoveList, CFtype>(in, sm, name), mmnhe(in, sm, name) { this->modality = MoveList::length; }
 
   MultimodalNeighborhoodExplorerAdapter(const Input& in, StateManager<Input,State,CFtype>& sm, const std::vector<double>& bias, std::string name = "MultimodalNeighborhoodExplorerAdapter")
-  : NeighborhoodExplorer<Input, State, MoveList, CFtype>(in, sm, name), mmnhe(in, sm, bias, name) {}
+  : NeighborhoodExplorer<Input, State, MoveList, CFtype>(in, sm, name), mmnhe(in, sm, bias, name) { this->modality = MoveList::length; }
   
   template <typename NeighborhoodExplorer>
   void AddNeighborhoodExplorer(NeighborhoodExplorer& ne)

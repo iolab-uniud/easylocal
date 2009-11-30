@@ -217,7 +217,7 @@ void Tester<Input, Output,State,CFtype>::ShowMovesMenu()
   unsigned int i;
   os << "MOVE MENU: " << std::endl;
   for (i = 0; i < move_testers.size(); i++)
-    os << "   (" << i+1 << ") " << move_testers[i]->name << std::endl;
+    os << "   (" << i+1 << ") " << move_testers[i]->name << " [" << move_testers[i]->modality << "-modal]" << std::endl;
   os << "   (0) Return to Main Menu" << std::endl;
   os << " Your choice: ";
   std::cin >> sub_choice;

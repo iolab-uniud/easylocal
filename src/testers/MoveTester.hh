@@ -97,6 +97,7 @@ MoveTester<Input,Output,State,Move,CFtype>::MoveTester(const Input& i,
   : ComponentTester<Input,Output,State,CFtype>(name), in(i), out(i), sm(e_sm), om(e_om), ne(e_ne), os(o)
 {
   tlm = NULL;
+  this->modality = e_ne.modality;
 }
 
 template <class Input, class Output, class State, class Move, typename CFtype>
@@ -107,7 +108,9 @@ MoveTester<Input,Output,State,Move,CFtype>::MoveTester(const Input& i,
 						       TabuListManager<State,Move,CFtype>& e_tlm,
 						       std::string name, std::ostream& o)
   : ComponentTester<Input,Output,State,CFtype>(name), in(i), out(i), sm(e_sm), om(e_om), ne(e_ne), tlm(&e_tlm), os(o)
-{}
+{
+  this->modality = e_ne.modality;
+}
 
 
 template <class Input, class Output, class State, class Move, typename CFtype>
@@ -489,23 +492,29 @@ void MoveTester<Input,Output,State,Move,CFtype>::CheckTabuStrength(const State& 
 {
   Move mv1,mv2;
   State st1 = st;
-  long long unsigned moves = 0, pairs = 0, inverse_pairs = 0;
-  ne.FirstMove(st1,mv1);
+  long long unsigned moves = 0, moves2, pairs = 0, inverse_pairs = 0;
+  ne.FirstMove(st,mv1);
   do
     {
       st1 = st;
       ne.MakeMove(st1,mv1);
       ne.FirstMove(st1,mv2);
       moves++;
+      moves2 = 0;
       do 
 	{
+	  moves2++;
 	  pairs++;
 	  if (tlm->Inverse(mv1,mv2))
-	    inverse_pairs++;	        
+	    {
+	      std::cerr << mv1 << " -- " << mv2 << std::endl;
+	      inverse_pairs++;	        
+	    }
 	  if (pairs % 100000 == 0) 
 	    std::cerr << '.'; // print dots to show that it is alive
 	}
       while (ne.NextMove(st1,mv2));
+      std::cerr << "----------------------------------- " << moves2 << std::endl;
     }
   while (ne.NextMove(st,mv1));
   os << std::endl

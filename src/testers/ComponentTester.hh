@@ -45,6 +45,8 @@ protected:
   ComponentTester(std::string name);
     /** Virtual destructor. */
     virtual ~ComponentTester() {}
+public:
+  unsigned int modality;
 };
 
 /*************************************************************************
@@ -61,7 +63,7 @@ protected:
 */
 template <class Input, class Output, class State, typename CFtype>
 ComponentTester<Input,Output,State,CFtype>::ComponentTester(std::string e_name)
-  : name(e_name) {}
+  : name(e_name), modality(1) {}
 
 
 #endif // _COMPONENT_TESTER_HH_
