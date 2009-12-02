@@ -55,6 +55,7 @@ public:
   void CheckMoveIndependence(const State& st) const;
   void CheckRandomMoveDistribution(const State& st) const;
   void CheckTabuStrength(const State& st) const;
+  unsigned int Modality() const;
 protected:
   void ShowMenu();
   bool ExecuteChoice(State& st);
@@ -95,10 +96,7 @@ MoveTester<Input,Output,State,Move,CFtype>::MoveTester(const Input& i,
 						       NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
 						       std::string name, std::ostream& o)
   : ComponentTester<Input,Output,State,CFtype>(name), in(i), out(i), sm(e_sm), om(e_om), ne(e_ne), os(o)
-{
-  tlm = NULL;
-  this->modality = e_ne.modality;
-}
+{ tlm = NULL; }
 
 template <class Input, class Output, class State, class Move, typename CFtype>
 MoveTester<Input,Output,State,Move,CFtype>::MoveTester(const Input& i,
@@ -108,9 +106,7 @@ MoveTester<Input,Output,State,Move,CFtype>::MoveTester(const Input& i,
 						       TabuListManager<State,Move,CFtype>& e_tlm,
 						       std::string name, std::ostream& o)
   : ComponentTester<Input,Output,State,CFtype>(name), in(i), out(i), sm(e_sm), om(e_om), ne(e_ne), tlm(&e_tlm), os(o)
-{
-  this->modality = e_ne.modality;
-}
+{}
 
 
 template <class Input, class Output, class State, class Move, typename CFtype>
@@ -490,39 +486,49 @@ void MoveTester<Input,Output,State,Move,CFtype>::CheckMoveIndependence(const Sta
 template <class Input, class Output, class State, class Move, typename CFtype>
 void MoveTester<Input,Output,State,Move,CFtype>::CheckTabuStrength(const State& st) const
 {
-  Move mv1,mv2;
+  Move mv1, mv2;
   State st1 = st;
-  long long unsigned moves = 0, moves2, pairs = 0, inverse_pairs = 0;
+  long long unsigned moves = 0, pairs = 0, inverse_pairs = 0;
+  std::vector<long long unsigned> moves_per_type(ne.Modality(), 0);
   ne.FirstMove(st,mv1);
   do
+  {
+    for (unsigned int i = 0; i < ne.Modality(); i++)
+      moves_per_type[i] = 0;
+    moves_per_type[ne.MoveModality(mv1)]++;
+    st1 = st;
+    ne.MakeMove(st1, mv1);
+    ne.FirstMove(st1, mv2);    
+    moves++;    
+    do 
     {
-      st1 = st;
-      ne.MakeMove(st1,mv1);
-      ne.FirstMove(st1,mv2);
-      moves++;
-      moves2 = 0;
-      do 
-	{
-	  moves2++;
-	  pairs++;
-	  if (tlm->Inverse(mv1,mv2))
+      moves_per_type[ne.MoveModality(mv2)]++;
+      pairs++;
+      if (tlm->Inverse(mv1, mv2))
 	    {
 	      std::cerr << mv1 << " -- " << mv2 << std::endl;
 	      inverse_pairs++;	        
 	    }
-	  if (pairs % 100000 == 0) 
-	    std::cerr << '.'; // print dots to show that it is alive
-	}
-      while (ne.NextMove(st1,mv2));
-      std::cerr << "----------------------------------- " << moves2 << std::endl;
+      if (pairs % 100000 == 0) 
+        std::cerr << '.'; // print dots to show that it is alive
     }
+    while (ne.NextMove(st1, mv2));
+    std::cerr << ne.MoveModality(mv1) << ':';
+    for (unsigned int i = 0; i < ne.Modality(); i++)
+      std::cerr << moves_per_type[i] << (i < (ne.Modality() - 1) ? "/" : "");
+    std::cerr << std::endl;
+  }
   while (ne.NextMove(st,mv1));
   os << std::endl
-     << "Moves : " << moves << ", total pairs : " << pairs 
-     << ", inverse pairs : " << inverse_pairs << std::endl
-     << "Tabu ratio : " << double(inverse_pairs)/pairs * 100 << "%" << std::endl;
+  << "Moves : " << moves << ", total pairs : " << pairs 
+  << ", inverse pairs : " << inverse_pairs << std::endl
+  << "Tabu ratio : " << double(inverse_pairs)/pairs * 100 << "%" << std::endl;
   os << "Non-inverse moves " << double(pairs - inverse_pairs)/moves << std::endl;
 }
 
+
+template <class Input, class Output, class State, class Move, typename CFtype>
+unsigned int MoveTester<Input,Output,State,Move,CFtype>::Modality() const
+{ return ne.Modality(); }
 
 #endif // define _MOVE_TESTER_HH_

@@ -41,12 +41,11 @@ public:
     @param st the state */    
     virtual bool ExecuteChoice(State& st) = 0;
     const std::string name;
+    virtual unsigned int Modality() const = 0;
 protected:
   ComponentTester(std::string name);
     /** Virtual destructor. */
     virtual ~ComponentTester() {}
-public:
-  unsigned int modality;
 };
 
 /*************************************************************************
@@ -63,7 +62,7 @@ public:
 */
 template <class Input, class Output, class State, typename CFtype>
 ComponentTester<Input,Output,State,CFtype>::ComponentTester(std::string e_name)
-  : name(e_name), modality(1) {}
+  : name(e_name) {}
 
 
 #endif // _COMPONENT_TESTER_HH_

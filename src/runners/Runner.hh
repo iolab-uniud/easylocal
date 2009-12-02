@@ -78,6 +78,8 @@ public:
 
   const std::string name;
 virtual ~Runner() {}
+  
+  virtual unsigned int Modality() const = 0;
 protected:
   Runner(const Input& i, StateManager<Input,State,CFtype>& sm, std::string name);
   /* state manipulations */

@@ -206,8 +206,13 @@ virtual size_t DeltaCostComponents() const
 
 virtual AbstractDeltaCostComponent<Input,State,Move,CFtype>& DeltaCostComponent(unsigned int i)
 { return *delta_cost_component[i]; }
+  
+  virtual unsigned int Modality() const
+  { return 1; }
 
 
+  virtual unsigned int MoveModality(const Move& mv) const
+  { return 0; }
 protected:
 /**
  Constructs a neighborhood explorer passing a pointer to a state manager 
@@ -228,8 +233,6 @@ virtual ~NeighborhoodExplorer() {}
   unsigned number_of_delta_not_implemented;
   std::string name;
 
-public:
-  unsigned int modality;
 protected:
 /** Checks wether an external request to terminate the exploration of the neighborhood 
  has been issued.
@@ -252,7 +255,7 @@ void ResetExternalTerminationRequest();
 template <class Input, class State, class Move, typename CFtype>
 NeighborhoodExplorer<Input,State,Move,CFtype>::NeighborhoodExplorer(const Input& i,
                                                                     StateManager<Input,State,CFtype>& e_sm, std::string e_name)
-  : in(i), sm(e_sm), number_of_delta_not_implemented(0), name(e_name), modality(1)
+  : in(i), sm(e_sm), number_of_delta_not_implemented(0), name(e_name)
 { 
 #if defined(HAVE_PTHREAD)
   ResetExternalTerminationRequest();

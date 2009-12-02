@@ -318,7 +318,9 @@ public:
    @param name the name associated to the NeighborhoodExplorer.
    */
   SetUnionNeighborhoodExplorer(const Input& in, StateManager<Input,State,CFtype>& sm, const std::vector<double>& bias, unsigned int index, std::string name = "SetUnionNeighborhoodExplorer");
-  
+
+  unsigned int Modality() const;
+  unsigned int MoveModality(const MoveList& mv) const;
   
 protected:
   const Input& in;/**< A reference to the input object */
@@ -423,6 +425,9 @@ public:
   CartesianProductNeighborhoodExplorer(const Input& in, StateManager<Input,State,CFtype>& sm, std::string name = "CartesianProductNeighborhoodExplorer");
   
   CartesianProductNeighborhoodExplorer(const Input& in, StateManager<Input,State,CFtype>& sm, const std::vector<double>& bias, std::string name = "CartesianProductNeighborhoodExplorer");
+  
+  unsigned int Modality() const;
+  unsigned int MoveModality(const MoveList& mv) const;
 protected:
   const Input& in;/**< A reference to the input object */
   StateManager<Input, State, CFtype>& sm; /**< A reference to the attached state manager. */
@@ -444,10 +449,16 @@ public:
   MultimodalNeighborhoodExplorer mmnhe;
   
   MultimodalNeighborhoodExplorerAdapter(const Input& in, StateManager<Input,State,CFtype>& sm, std::string name = "MultimodalNeighborhoodExplorerAdapter")
-    : NeighborhoodExplorer<Input, State, MoveList, CFtype>(in, sm, name), mmnhe(in, sm, name) { this->modality = MoveList::length; }
+    : NeighborhoodExplorer<Input, State, MoveList, CFtype>(in, sm, name), mmnhe(in, sm, name) {}
 
   MultimodalNeighborhoodExplorerAdapter(const Input& in, StateManager<Input,State,CFtype>& sm, const std::vector<double>& bias, std::string name = "MultimodalNeighborhoodExplorerAdapter")
-  : NeighborhoodExplorer<Input, State, MoveList, CFtype>(in, sm, name), mmnhe(in, sm, bias, name) { this->modality = MoveList::length; }
+  : NeighborhoodExplorer<Input, State, MoveList, CFtype>(in, sm, name), mmnhe(in, sm, bias, name) {}
+    
+  unsigned int Modality() const
+  { return mmnhe.Modality(); }
+  
+  unsigned int MoveModality(const MoveList& mv) const
+  { return mmnhe.MoveModality(mv); }
   
   template <typename NeighborhoodExplorer>
   void AddNeighborhoodExplorer(NeighborhoodExplorer& ne)
@@ -696,6 +707,20 @@ void SetUnionNeighborhoodExplorer<Input,State,CFtype,NeighborhoodExplorerList>::
   other_nhes->SetAllUnselected(mv.movelist);
 }
 
+template <typename Input, typename State, typename CFtype, class NeighborhoodExplorerList>
+unsigned int SetUnionNeighborhoodExplorer<Input,State,CFtype,NeighborhoodExplorerList>::Modality() const
+{
+  return MoveList::length;
+}
+
+template <typename Input, typename State, typename CFtype, class NeighborhoodExplorerList>
+unsigned int SetUnionNeighborhoodExplorer<Input,State,CFtype,NeighborhoodExplorerList>::MoveModality(const MoveList& mv) const
+{
+  if (mv.selected)
+    return MoveList::length - 1;
+  else 
+    return other_nhes->MoveModality(mv.movelist);
+}
 
 /** Template specialization for the end of the typelist (i.e., NullType) */
 
@@ -731,6 +756,8 @@ public:
   CFtype DeltaCostFunction(const State& st, const MoveList& mv) const;
   ShiftedResult<CFtype> DeltaShiftedCostFunction(const State& st, const MoveList& mv) const;
   void SetAllUnselected(MoveList& mv) const;
+  unsigned int Modality() const;
+  unsigned int MoveModality(const MoveList& mv) const;
 protected:  
   const Input& in;/**< A reference to the input object */
   StateManager<Input, State, CFtype>& sm; /**< A reference to the attached state manager. */
@@ -803,6 +830,20 @@ ShiftedResult<CFtype> SetUnionNeighborhoodExplorer<Input,State,CFtype,NullType>:
 template <typename Input, typename State, typename CFtype>
 void SetUnionNeighborhoodExplorer<Input,State,CFtype,NullType>::SetAllUnselected(MoveList& mv) const
 {}
+
+template <typename Input, typename State, typename CFtype>
+unsigned int SetUnionNeighborhoodExplorer<Input,State,CFtype,NullType>::Modality() const
+{
+  throw std::logic_error("Error: this function should never be reached through the typelist");
+  return 0;
+}
+
+template <typename Input, typename State, typename CFtype>
+unsigned int SetUnionNeighborhoodExplorer<Input,State,CFtype,NullType>::MoveModality(const MoveList& mv) const
+{
+  throw std::logic_error("Error: this function should never be reached through the typelist");
+  return 0;
+}
 
 // CartesianProduct
 
@@ -930,6 +971,18 @@ ShiftedResult<CFtype> CartesianProductNeighborhoodExplorer<Input,State,CFtype,Ne
   return acc_value;
 }
 
+template <typename Input, typename State, typename CFtype, class NeighborhoodExplorerList>
+unsigned int CartesianProductNeighborhoodExplorer<Input,State,CFtype,NeighborhoodExplorerList>::Modality() const
+{
+  return 1;
+}
+
+template <typename Input, typename State, typename CFtype, class NeighborhoodExplorerList>
+unsigned int CartesianProductNeighborhoodExplorer<Input,State,CFtype,NeighborhoodExplorerList>::MoveModality(const MoveList& mv) const
+{
+  return 0;
+}
+
 /** Template specialization for the end of the typelist (i.e., NullType) */
 
 template <typename Input, typename State, typename CFtype>
@@ -953,6 +1006,8 @@ public:
   void MakeMove(State& st, const MoveList& mv) const;
   CFtype DeltaCostFunction(const State& st, const MoveList& mv) const;
   ShiftedResult<CFtype> DeltaShiftedCostFunction(const State& st, const MoveList& mv) const;
+  unsigned int Modality() const;
+  unsigned int MoveModality(const MoveList& mv) const;
 protected:
   
   const Input& in;/**< A reference to the input object */
@@ -999,6 +1054,20 @@ ShiftedResult<CFtype> CartesianProductNeighborhoodExplorer<Input,State,CFtype,Nu
   throw std::logic_error("Error: this function should never be reached through the typelist");
   ShiftedResult<CFtype> sr;
   return sr; // just to prevent warnings
+}
+
+template <typename Input, typename State, typename CFtype>
+unsigned int CartesianProductNeighborhoodExplorer<Input,State,CFtype,NullType>::Modality() const
+{
+  throw std::logic_error("Error: this function should never be reached through the typelist");
+  return 1;
+}
+
+template <typename Input, typename State, typename CFtype>
+unsigned int CartesianProductNeighborhoodExplorer<Input,State,CFtype,NullType>::MoveModality(const MoveList& mv) const
+{
+  throw std::logic_error("Error: this function should never be reached through the typelist");
+  return 0;
 }
 
 #endif // define _MULTIMODALNEIGHBORHOOD_EXPLORER_HH_

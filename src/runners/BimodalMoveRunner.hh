@@ -52,6 +52,7 @@ public:
   void InitializeRun();
   void TerminateRun();
   void AttachObserver(BimodalRunnerObserver<Input,State,Move1,Move2,CFtype>& ob) { observer = &ob; }
+  unsigned int Modality() const { return 2; }
 protected:
   BimodalMoveRunner(const Input& im, StateManager<Input,State,CFtype>& sm,
                     NeighborhoodExplorer<Input,State,Move1,CFtype>& ne1,

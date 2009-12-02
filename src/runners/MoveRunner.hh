@@ -44,6 +44,7 @@ public:
   void TerminateRun();
   Move CurrentMove() const { return current_move; }
   CFtype CurrentMoveCost() const { return current_move_cost; }
+  unsigned int Modality() const { return ne.Modality(); }
 
 protected:
   MoveRunner(const Input& in, StateManager<Input,State,CFtype>& e_sm,

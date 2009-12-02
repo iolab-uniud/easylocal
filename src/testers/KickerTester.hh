@@ -37,6 +37,7 @@ public:
 		 std::string name, std::ostream& o = std::cout);
 
   void RunMainMenu(State& st);
+  unsigned int Modality() const;
 protected:
   void PrintKicks(State& st, bool only_improving);
   void PrintKick(State& st);
@@ -237,6 +238,12 @@ void KickerTester<Input,Output,State,CFtype>::PrintKicks(State& st, bool only_im
 	}
     }
   os << "Number of kicks : " << count << std::endl;
+}
+
+template <class Input, class Output, class State, typename CFtype>
+unsigned int KickerTester<Input,Output,State,CFtype>::Modality() const
+{
+  return 0;
 }
 
 #endif // define _KICKER_TESTER_HH_
