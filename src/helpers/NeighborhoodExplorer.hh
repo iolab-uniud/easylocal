@@ -475,7 +475,7 @@ CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::BestMove(const State &st, 
   if (all_moves_prohibited)
     i1++;
   i2++;
-  std::cerr << (float)i1/i2 << ' ' << best_move << " ";
+  //std::cerr << (float)i1/i2 << ' ' << best_move << " ";
   mv = best_move;
   return best_delta;
 }
