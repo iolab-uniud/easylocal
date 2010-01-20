@@ -7,7 +7,7 @@ if THREADING
 libEasyLocalpp_la_SOURCES += utils/Synchronize.cc
 endif
 
-AM_CPPFLAGS = -I@EASYLOCALPP_BUILD@
+AM_CPPFLAGS = -I@EASYLOCALPP_BUILD@ 
 AM_LDFLAGS = -lstdc++ 
 
 if DEBUG
