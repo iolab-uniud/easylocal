@@ -60,6 +60,7 @@ public:
 #define TYPELIST_2(Type1, Type2) Typelist<Type1, TYPELIST_1(Type2) >
 #define TYPELIST_3(Type1, Type2, Type3) Typelist<Type1, TYPELIST_2(Type2, Type3) >
 #define TYPELIST_4(Type1, Type2, Type3, Type4) Typelist<Type1, TYPELIST_3(Type2, Type3, Type4) >
+#define TYPELIST_5(Type1, Type2, Type3, Type4, Type5) Typelist<Type1, TYPELIST_4(Type2, Type3, Type4) >
 
 template <typename CFtype, typename H, typename T>
 class Movelist
