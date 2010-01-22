@@ -29,10 +29,10 @@ class RunnerObserver
 {
 public:
   RunnerObserver(unsigned verbosity_level, unsigned plot_level, std::ostream& log_os = std::cout, std::ostream& plot_os = std::cout);
-void NotifyStartRunner(MoveRunner<Input,State,Move,CFtype>& r);
-  void NotifyNewBest(MoveRunner<Input,State,Move,CFtype>& r);
-  void NotifyStoreMove(MoveRunner<Input,State,Move,CFtype>& r);
-  void NotifyEndRunner(MoveRunner<Input,State,Move,CFtype>& r);
+  virtual void NotifyStartRunner(MoveRunner<Input,State,Move,CFtype>& r);
+  virtual void NotifyNewBest(MoveRunner<Input,State,Move,CFtype>& r);
+  virtual void NotifyStoreMove(MoveRunner<Input,State,Move,CFtype>& r);
+  virtual void NotifyEndRunner(MoveRunner<Input,State,Move,CFtype>& r);
 protected:
   bool notify_new_best, notify_store_move, plot_improving_moves, plot_all_moves;
   std::ostream &log, &plot;

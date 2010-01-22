@@ -216,10 +216,10 @@
 						<key>_historyCapacity</key>
 						<integer>0</integer>
 						<key>bookmark</key>
-						<string>AC9170E0110769190031D212</string>
+						<string>AC3ACC5C11089EE000C15639</string>
 						<key>history</key>
 						<array>
-							<string>ACDC4D5010FDE90B00A946EA</string>
+							<string>AC9170E0110769190031D212</string>
 						</array>
 					</dict>
 					<key>SplitCount</key>
@@ -270,6 +270,8 @@
 			<key>Layout</key>
 			<array>
 				<dict>
+					<key>BecomeActive</key>
+					<true/>
 					<key>ContentConfiguration</key>
 					<dict>
 						<key>PBXBottomSmartGroupGIDs</key>
@@ -308,6 +310,7 @@
 							<array>
 								<string>08FB7794FE84155DC02AAC07</string>
 								<string>ACF4B0FA0DBFA668008A0207</string>
+								<string>AC75B24A0DD08BB8003EBD1F</string>
 								<string>ACF4B1240DBFA668008A0207</string>
 								<string>1C37FBAC04509CD000000102</string>
 								<string>1C37FAAC04509CD000000102</string>
@@ -315,11 +318,14 @@
 							<key>PBXSmartGroupTreeModuleOutlineStateSelectionKey</key>
 							<array>
 								<array>
-									<integer>47</integer>
+									<integer>21</integer>
+									<integer>18</integer>
+									<integer>6</integer>
+									<integer>0</integer>
 								</array>
 							</array>
 							<key>PBXSmartGroupTreeModuleOutlineStateVisibleRectKey</key>
-							<string>{{0, 392}, {386, 509}}</string>
+							<string>{{0, 34}, {386, 509}}</string>
 						</dict>
 						<key>PBXTopSmartGroupGIDs</key>
 						<array/>
@@ -351,8 +357,6 @@
 					<key>Dock</key>
 					<array>
 						<dict>
-							<key>BecomeActive</key>
-							<true/>
 							<key>ContentConfiguration</key>
 							<dict>
 								<key>PBXProjectModuleGUID</key>
@@ -370,7 +374,7 @@
 										<key>_historyCapacity</key>
 										<integer>0</integer>
 										<key>bookmark</key>
-										<string>AC9170DD110769190031D212</string>
+										<string>AC3ACC5911089EE000C15639</string>
 										<key>history</key>
 										<array>
 											<string>AC4AAE500DD08D0500BE59D2</string>
@@ -455,7 +459,7 @@
 											<string>AC40406C104FCAEE00CF4A33</string>
 											<string>AC40408C104FCBCE00CF4A33</string>
 											<string>AC9170DB110769190031D212</string>
-											<string>AC9170DC110769190031D212</string>
+											<string>AC9170DD110769190031D212</string>
 										</array>
 									</dict>
 									<key>SplitCount</key>
@@ -467,14 +471,14 @@
 							<key>GeometryConfiguration</key>
 							<dict>
 								<key>Frame</key>
-								<string>{{0, 0}, {590, 285}}</string>
+								<string>{{0, 0}, {590, 275}}</string>
 								<key>RubberWindowFrame</key>
 								<string>664 616 998 568 0 0 2560 1418 </string>
 							</dict>
 							<key>Module</key>
 							<string>PBXNavigatorGroup</string>
 							<key>Proportion</key>
-							<string>285pt</string>
+							<string>275pt</string>
 						</dict>
 						<dict>
 							<key>ContentConfiguration</key>
@@ -487,14 +491,14 @@
 							<key>GeometryConfiguration</key>
 							<dict>
 								<key>Frame</key>
-								<string>{{0, 290}, {590, 237}}</string>
+								<string>{{0, 280}, {590, 247}}</string>
 								<key>RubberWindowFrame</key>
 								<string>664 616 998 568 0 0 2560 1418 </string>
 							</dict>
 							<key>Module</key>
 							<string>XCDetailModule</string>
 							<key>Proportion</key>
-							<string>237pt</string>
+							<string>247pt</string>
 						</dict>
 					</array>
 					<key>Proportion</key>
@@ -513,9 +517,9 @@
 			</array>
 			<key>TableOfContents</key>
 			<array>
-				<string>AC9170DE110769190031D212</string>
+				<string>AC3ACC5A11089EE000C15639</string>
 				<string>1CE0B1FE06471DED0097A5F4</string>
-				<string>AC9170DF110769190031D212</string>
+				<string>AC3ACC5B11089EE000C15639</string>
 				<string>1CE0B20306471E060097A5F4</string>
 				<string>1CE0B20506471E060097A5F4</string>
 			</array>
@@ -651,9 +655,9 @@
 	<integer>5</integer>
 	<key>WindowOrderList</key>
 	<array>
+		<string>AC3ACC5E11089EE000C15639</string>
 		<string>AC4AAE480DD08C9F00BE59D2</string>
 		<string>ACDC4D4E10FDE90B00A946EA</string>
-		<string>1C530D57069F1CE1000CFCEE</string>
 		<string>/Users/digasper/Documents/Development/EasyLocalpp/ide_projects/EasyLocal.xcodeproj</string>
 	</array>
 	<key>WindowString</key>
@@ -734,7 +738,7 @@
 			<key>TableOfContents</key>
 			<array>
 				<string>AC4AAE480DD08C9F00BE59D2</string>
-				<string>AC9170E1110769190031D212</string>
+				<string>AC3ACC5D11089EE000C15639</string>
 				<string>1CD0528F0623707200166675</string>
 				<string>XCMainBuildResultsModuleGUID</string>
 			</array>

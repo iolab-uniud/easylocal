@@ -93,12 +93,12 @@ public:
   enum { length = 1 };
 };
 
-// FIXME: this is not the right way to read and write this kind of move
-
 template <typename CFtype, typename H, typename T>
 std::ostream& operator<<(std::ostream& os, const Movelist<CFtype, H, T>& mv)
 {
-  os << mv.move << "[ " << mv.selected << " ]" << mv.movelist;
+  if (mv.selected)
+    os << mv.move << "[ " << mv.selected << " ]";
+  os << mv.movelist;
   
   return os;
 }
@@ -106,10 +106,13 @@ std::ostream& operator<<(std::ostream& os, const Movelist<CFtype, H, T>& mv)
 template <typename CFtype, typename H>
 std::ostream& operator<<(std::ostream& os, const Movelist<CFtype, H, NullType>& mv)
 {
-  os << mv.move << "[ " << mv.selected << " ]";
+  if (mv.selected)
+    os << mv.move << "[ " << mv.selected << " ]";
   
   return os;
 }
+
+// FIXME: this is not the right way to read this kind of move
 
 template <typename CFtype, typename H, typename T>
 std::istream& operator>>(std::istream& is, Movelist<CFtype, H, T>& mv)
