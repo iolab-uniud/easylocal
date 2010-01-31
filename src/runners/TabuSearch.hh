@@ -45,14 +45,23 @@ class TabuSearch
 : public MoveRunner<Input,State,Move,CFtype>
 {
 public:
-TabuSearch(const Input& in, StateManager<Input,State,CFtype>& e_sm,
+  TabuSearch(const Input& in, StateManager<Input,State,CFtype>& e_sm,
            NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
            TabuListManager<State,Move,CFtype>& e_tlm,
            std::string name);
-TabuSearch(const Input& in, StateManager<Input,State,CFtype>& e_sm,
+  TabuSearch(const Input& in, StateManager<Input,State,CFtype>& e_sm,
            NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
            TabuListManager<State,Move,CFtype>& e_tlm,
            std::string name, CLParser& cl);	
+  
+  TabuSearch(const Input& in, StateManager<Input,State,CFtype>& e_sm,
+             NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
+             TabuListManager<State,Move,CFtype>& e_tlm,
+             std::string name, AbstractTester<Input,State,CFtype>& t);
+  TabuSearch(const Input& in, StateManager<Input,State,CFtype>& e_sm,
+             NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
+             TabuListManager<State,Move,CFtype>& e_tlm,
+             std::string name, CLParser& cl, AbstractTester<Input,State,CFtype>& t);	  
 void Print(std::ostream& os = std::cout) const;
 void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout);
 virtual void SetMaxIdleIteration(unsigned long m) { max_idle_iteration = m; }
@@ -107,6 +116,40 @@ TabuSearch<Input,State,Move,CFtype>::TabuSearch(const Input& in,
                                                 std::string name, 
                                                 CLParser& cl)
 : MoveRunner<Input,State,Move,CFtype>(in, e_sm, e_ne, name), pm(tlm), max_idle_iteration(0), 
+tabu_search_arguments("ts_" + name, "ts_" + name, false), arg_max_idle_iteration("max_idle_iteration", "mii", true), arg_tabu_tenure("tabu_tenure", "tt", true)
+{
+  tabu_search_arguments.AddArgument(arg_max_idle_iteration);
+  tabu_search_arguments.AddArgument(arg_tabu_tenure);
+  cl.AddArgument(tabu_search_arguments);
+  cl.MatchArgument(tabu_search_arguments);
+  if (tabu_search_arguments.IsSet())
+  {
+    pm.SetLength(arg_tabu_tenure.GetValue(0), arg_tabu_tenure.GetValue(1));
+    max_idle_iteration = arg_max_idle_iteration.GetValue();
+  }
+}
+
+template <class Input, class State, class Move, typename CFtype>
+TabuSearch<Input,State,Move,CFtype>::TabuSearch(const Input& in,
+                                                StateManager<Input,State,CFtype>& e_sm,
+                                                NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
+                                                TabuListManager<State,Move,CFtype>& tlm,
+                                                std::string name, AbstractTester<Input,State,CFtype>& t)
+: MoveRunner<Input,State,Move,CFtype>(in, e_sm, e_ne, name, t), pm(tlm), max_idle_iteration(0), 
+tabu_search_arguments("ts_" + name, "ts_" + name, false), arg_max_idle_iteration("max_idle_iteration", "mii", true), arg_tabu_tenure("tabu_tenure", "tt", true)
+{
+  tabu_search_arguments.AddArgument(arg_max_idle_iteration);
+  tabu_search_arguments.AddArgument(arg_tabu_tenure);
+}
+
+template <class Input, class State, class Move, typename CFtype>
+TabuSearch<Input,State,Move,CFtype>::TabuSearch(const Input& in,
+                                                StateManager<Input,State,CFtype>& e_sm,
+                                                NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
+                                                TabuListManager<State,Move,CFtype>& tlm,
+                                                std::string name, 
+                                                CLParser& cl, AbstractTester<Input,State,CFtype>& t)
+: MoveRunner<Input,State,Move,CFtype>(in, e_sm, e_ne, name, t), pm(tlm), max_idle_iteration(0), 
 tabu_search_arguments("ts_" + name, "ts_" + name, false), arg_max_idle_iteration("max_idle_iteration", "mii", true), arg_tabu_tenure("tabu_tenure", "tt", true)
 {
   tabu_search_arguments.AddArgument(arg_max_idle_iteration);

@@ -145,16 +145,19 @@ int main(int argc, char* argv[])
   QueensTabuListManager qtlm;
   SwapNeighborhoodExplorer qnhe(in, qsm);
   QueensOutputManager qom(in);
+  
+  // tester
+  Tester<int, ChessBoard, std::vector<int> > tester(in,qsm,qom);
     
   // kickers
   QueensKicker qk(in, qnhe);
   
   // runners
-  HillClimbing<int, std::vector<int>, Swap> qhc(in, qsm, qnhe, "SwapHillClimbing", cl);
-  SteepestDescent<int, std::vector<int>, Swap> qsd(in, qsm, qnhe, "SwapSteepestDescent");
-  TabuSearch<int, std::vector<int>, Swap> qts(in, qsm, qnhe, qtlm, "SwapTabuSearch", cl);
-  SimulatedAnnealing<int, std::vector<int>, Swap> qsa(in, qsm, qnhe, "SwapSimulatedAnnealing", cl);
-  TabuSearchWithShiftingPenalty<int, std::vector<int>, Swap> qtsw(in, qsm, qnhe, qtlm, "SwapTabuSearchWithShiftingPenalty", cl);
+  HillClimbing<int, std::vector<int>, Swap> qhc(in, qsm, qnhe, "SwapHillClimbing", cl, tester);
+  SteepestDescent<int, std::vector<int>, Swap> qsd(in, qsm, qnhe, "SwapSteepestDescent", tester);
+  TabuSearch<int, std::vector<int>, Swap> qts(in, qsm, qnhe, qtlm, "SwapTabuSearch", cl, tester);
+  SimulatedAnnealing<int, std::vector<int>, Swap> qsa(in, qsm, qnhe, "SwapSimulatedAnnealing", cl, tester);
+  TabuSearchWithShiftingPenalty<int, std::vector<int>, Swap> qtsw(in, qsm, qnhe, qtlm, "SwapTabuSearchWithShiftingPenalty", cl, tester);
   
   SimpleLocalSearch<int, ChessBoard, std::vector<int> > qss(in, qsm, qom, "QueensSLS", cl);
   GeneralizedLocalSearch<int, ChessBoard, std::vector<int> > qgls(in, qsm, qom, "QueensGLS", cl);
@@ -172,7 +175,7 @@ int main(int argc, char* argv[])
   MultimodalTabuListManagerTypes::TabuListManager qmmtlm;
   qmmtlm.AddTabuListManager(qtlm);
   qmmtlm.AddTabuListManager(qtlm);
-  TabuSearch<int, std::vector<int>, DoubleSwap> qmmts(in, qsm, qmmnhe, qmmtlm, "DoubleSwapTabuSearch", cl); 
+  TabuSearch<int, std::vector<int>, DoubleSwap> qmmts(in, qsm, qmmnhe, qmmtlm, "DoubleSwapTabuSearch", cl, tester); 
   /* typedef PrepareCartesianProductNeighborhoodExplorerTypes<int, std::vector<int>, TYPELIST_2(SwapNeighborhoodExplorer, SwapNeighborhoodExplorer)> MultimodalTypes;
   typedef MultimodalTypes::MoveList DoubleSwap; // this line is not mandatory, it just aliases the movelist type for reader's convenience
   MultimodalTypes::NeighborhoodExplorer qmmnhe(in, qsm, "Multimodal Swap");
@@ -225,22 +228,13 @@ int main(int argc, char* argv[])
   if (!arg_solmethod.IsSet())
 	{
 		// testers
-		MoveTester<int, ChessBoard, std::vector<int>, Swap> swap_move_test(in,qsm,qom,qnhe, "Swap move");
-    MoveTester<int, ChessBoard, std::vector<int>, DoubleSwap> multimodal_move_test(in,qsm,qom,qmmnhe, "Multimodal swap move");
+		MoveTester<int, ChessBoard, std::vector<int>, Swap> swap_move_test(in,qsm,qom,qnhe, "Swap move", tester);
+    MoveTester<int, ChessBoard, std::vector<int>, DoubleSwap> multimodal_move_test(in,qsm,qom,qmmnhe, "Multimodal swap move", tester);
 		KickerTester<int, ChessBoard, std::vector<int> > monokicker_test(in,qsm,qom, qk, "Monomodal kick");
     //KickerTester<int, ChessBoard, std::vector<int> > multikicker_test(in,qsm,qom, qk2, "Multimodal kick");
-		Tester<int, ChessBoard, std::vector<int> > tester(in,qsm,qom);
 		
-		tester.AddMoveTester(swap_move_test);
-    tester.AddMoveTester(multimodal_move_test);
 		tester.AddKickerTester(monokicker_test);
-    //tester.AddKickerTester(multikicker_test);
-		tester.AddRunner(qhc);
-		tester.AddRunner(qsd);
-		tester.AddRunner(qts);
-		tester.AddRunner(qsa);  
-		tester.AddRunner(qtsw);
-    tester.AddRunner(qmmts);
+    //tester.AddKickerTester(multikicker_test);	
 		
 		tester.RunMainMenu();
 	}

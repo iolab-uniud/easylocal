@@ -50,6 +50,15 @@ public:
 										 NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
 										 std::string name,
 										 CLParser& cl);	
+  SimulatedAnnealing(const Input& in,
+										 StateManager<Input,State,CFtype>& e_sm,
+										 NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
+										 std::string name, AbstractTester<Input,State,CFtype>& t);
+	SimulatedAnnealing(const Input& in,
+										 StateManager<Input,State,CFtype>& e_sm,
+										 NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
+										 std::string name,
+										 CLParser& cl, AbstractTester<Input,State,CFtype>& t);
 	void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout);
 	void Print(std::ostream& os = std::cout) const;
   void SetStartTemperature(double st)  { start_temperature = st; }
@@ -113,6 +122,52 @@ SimulatedAnnealing<Input,State,Move,CFtype>::SimulatedAnnealing(const Input& in,
 																																std::string name,
 																																CLParser& cl)
 : MoveRunner<Input,State,Move,CFtype>(in, e_sm, e_ne, name),
+start_temperature(0.0), min_temperature(0.0001), cooling_rate(0.75), neighbors_sampled(10), 
+simulated_annealing_arguments("sa_" + name, "sa_" + name, false), arg_start_temperature("start_temperature", "st", false),
+arg_min_temperature("min_temperature", "mt", false), arg_cooling_rate("cooling_rate", "cr", true),
+arg_neighbors_sampled("neighbors_sampled", "ns", true)
+{
+	simulated_annealing_arguments.AddArgument(arg_start_temperature);
+	simulated_annealing_arguments.AddArgument(arg_min_temperature);
+	simulated_annealing_arguments.AddArgument(arg_cooling_rate);
+	simulated_annealing_arguments.AddArgument(arg_neighbors_sampled);	
+	cl.AddArgument(simulated_annealing_arguments);
+	cl.MatchArgument(simulated_annealing_arguments);
+	if (simulated_annealing_arguments.IsSet())
+	{
+		if (arg_start_temperature.IsSet())
+			start_temperature = arg_start_temperature.GetValue();
+		if (arg_min_temperature.IsSet())
+			min_temperature = arg_min_temperature.GetValue();
+		cooling_rate = arg_cooling_rate.GetValue();
+		neighbors_sampled = arg_neighbors_sampled.GetValue();
+	}
+}
+
+template <class Input, class State, class Move, typename CFtype>
+SimulatedAnnealing<Input,State,Move,CFtype>::SimulatedAnnealing(const Input& in,
+																																StateManager<Input,State,CFtype>& e_sm,
+																																NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
+																																std::string name, AbstractTester<Input,State,CFtype>& t)
+: MoveRunner<Input,State,Move,CFtype>(in, e_sm, e_ne, name, t),
+start_temperature(0.0), min_temperature(0.0001), cooling_rate(0.75), neighbors_sampled(10), 
+simulated_annealing_arguments("sa_" + name, "sa_" + name, false), arg_start_temperature("start_temperature", "st", false),
+arg_min_temperature("min_temperature", "mt", false), arg_cooling_rate("cooling_rate", "cr", true),
+arg_neighbors_sampled("neighbors_sampled", "ns", true)
+{
+	simulated_annealing_arguments.AddArgument(arg_start_temperature);
+	simulated_annealing_arguments.AddArgument(arg_min_temperature);
+	simulated_annealing_arguments.AddArgument(arg_cooling_rate);
+	simulated_annealing_arguments.AddArgument(arg_neighbors_sampled);
+}
+
+template <class Input, class State, class Move, typename CFtype>
+SimulatedAnnealing<Input,State,Move,CFtype>::SimulatedAnnealing(const Input& in,
+																																StateManager<Input,State,CFtype>& e_sm,
+																																NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
+																																std::string name,
+																																CLParser& cl, AbstractTester<Input,State,CFtype>& t)
+: MoveRunner<Input,State,Move,CFtype>(in, e_sm, e_ne, name, t),
 start_temperature(0.0), min_temperature(0.0001), cooling_rate(0.75), neighbors_sampled(10), 
 simulated_annealing_arguments("sa_" + name, "sa_" + name, false), arg_start_temperature("start_temperature", "st", false),
 arg_min_temperature("min_temperature", "mt", false), arg_cooling_rate("cooling_rate", "cr", true),

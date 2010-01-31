@@ -20,6 +20,7 @@
 #define _MOVE_TESTER_HH_
 
 #include <testers/ComponentTester.hh>
+#include <testers/Tester.hh>
 #include <helpers/OutputManager.hh>
 #include <helpers/NeighborhoodExplorer.hh>
 #include <helpers/TabuListManager.hh>
@@ -47,6 +48,21 @@ public:
 	     NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
 	     TabuListManager<State,Move,CFtype>& e_tlm,
 	     std::string name, std::ostream& o = std::cout);
+  MoveTester(const Input& in,
+             StateManager<Input,State,CFtype>& e_sm,
+             OutputManager<Input,Output,State,CFtype>& e_om,
+             NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
+             std::string name,
+             Tester<Input,Output,State,CFtype>& t,
+             std::ostream& o = std::cout);
+  MoveTester(const Input& in,
+             StateManager<Input,State,CFtype>& e_sm,
+             OutputManager<Input,Output,State,CFtype>& e_om,
+             NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
+             TabuListManager<State,Move,CFtype>& e_tlm,
+             std::string name,
+             Tester<Input,Output,State,CFtype>& t,
+             std::ostream& o = std::cout);
   void RunMainMenu(State& st);
   void PrintNeighborhoodStatistics(const State& st) const;
   void PrintAllNeighbors(const State& st) const;
@@ -107,6 +123,29 @@ MoveTester<Input,Output,State,Move,CFtype>::MoveTester(const Input& i,
 						       std::string name, std::ostream& o)
   : ComponentTester<Input,Output,State,CFtype>(name), in(i), out(i), sm(e_sm), om(e_om), ne(e_ne), tlm(&e_tlm), os(o)
 {}
+
+template <class Input, class Output, class State, class Move, typename CFtype>
+MoveTester<Input,Output,State,Move,CFtype>::MoveTester(const Input& i,
+                                                       StateManager<Input,State,CFtype>& e_sm,
+                                                       OutputManager<Input,Output,State,CFtype>& e_om,
+                                                       NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
+                                                       std::string name,
+                                                       Tester<Input,Output,State,CFtype>& t,
+                                                       std::ostream& o)
+: ComponentTester<Input,Output,State,CFtype>(name), in(i), out(i), sm(e_sm), om(e_om), ne(e_ne), os(o)
+{ tlm = NULL; t.AddMoveTester(*this); }
+
+template <class Input, class Output, class State, class Move, typename CFtype>
+MoveTester<Input,Output,State,Move,CFtype>::MoveTester(const Input& i,
+                                                       StateManager<Input,State,CFtype>& e_sm,
+                                                       OutputManager<Input,Output,State,CFtype>& e_om,
+                                                       NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
+                                                       TabuListManager<State,Move,CFtype>& e_tlm,
+                                                       std::string name,
+                                                       Tester<Input,Output,State,CFtype>& t,
+                                                       std::ostream& o)
+: ComponentTester<Input,Output,State,CFtype>(name), in(i), out(i), sm(e_sm), om(e_om), ne(e_ne), tlm(&e_tlm), os(o)
+{ t.AddMoveTester(*this); }
 
 
 template <class Input, class Output, class State, class Move, typename CFtype>

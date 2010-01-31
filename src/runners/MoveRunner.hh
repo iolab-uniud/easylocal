@@ -23,6 +23,7 @@
 #include <helpers/StateManager.hh>
 #include <helpers/NeighborhoodExplorer.hh>
 #include <observers/RunnerObserver.hh>
+#include <testers/Tester.hh>
 
 /** A Move Runner is an instance of the Runner interface which it compels to
     with a particular definition of @Move (given as template instantiation).
@@ -50,6 +51,9 @@ protected:
   MoveRunner(const Input& in, StateManager<Input,State,CFtype>& e_sm,
              NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
              std::string name);
+  MoveRunner(const Input& in, StateManager<Input,State,CFtype>& e_sm,
+             NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
+             std::string name, AbstractTester<Input,State,CFtype>& t);
   /* state manipulations */
   virtual void GoCheck() const = 0;
   /** Actions to be perfomed at the beginning of the run. */
@@ -82,6 +86,18 @@ MoveRunner<Input,State,Move,CFtype>::MoveRunner(const Input& in,
   : Runner<Input,State,CFtype>(in, e_sm, name), ne(e_ne)
 {
   observer = NULL;
+}
+
+template <class Input, class State, class Move, typename CFtype>
+MoveRunner<Input,State,Move,CFtype>::MoveRunner(const Input& in, 
+                                                StateManager<Input,State,CFtype>& e_sm,
+                                                NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
+                                                std::string name,
+                                                AbstractTester<Input,State,CFtype>& t)
+: Runner<Input,State,CFtype>(in, e_sm, name), ne(e_ne)
+{
+  observer = NULL;
+  t.AddRunner(*this);
 }
 
 template <class Input, class State, class Move, typename CFtype>

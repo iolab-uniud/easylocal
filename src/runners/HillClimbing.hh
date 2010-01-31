@@ -38,6 +38,10 @@ public:
 	       NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne, std::string name);
   HillClimbing(const Input& in, StateManager<Input,State,CFtype>& e_sm,
 	       NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne, std::string name, CLParser& cl);
+  HillClimbing(const Input& in, StateManager<Input,State,CFtype>& e_sm,
+               NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne, std::string name, AbstractTester<Input,State,CFtype>& t);
+  HillClimbing(const Input& in, StateManager<Input,State,CFtype>& e_sm,
+               NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne, std::string name, CLParser& cl, AbstractTester<Input,State,CFtype>& t);
   void Print(std::ostream& os = std::cout) const;
   void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout);
   virtual void SetMaxIdleIteration(unsigned long m) { max_idle_iteration = m; }
@@ -84,9 +88,38 @@ HillClimbing<Input,State,Move,CFtype>::HillClimbing(const Input& in,
                                                     StateManager<Input,State,CFtype>& e_sm,
                                                     NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
                                                     std::string name,
-						    CLParser& cl)
+                                                    CLParser& cl)
   : MoveRunner<Input,State,Move,CFtype>(in, e_sm, e_ne, name), max_idle_iteration(0),
     hill_climbing_arguments("hc_" + name, "hc_" + name, false), arg_max_idle_iteration("max_idle_iteration", "mii", true)
+{
+  hill_climbing_arguments.AddArgument(arg_max_idle_iteration);
+  cl.AddArgument(hill_climbing_arguments);
+  cl.MatchArgument(hill_climbing_arguments);
+  if (hill_climbing_arguments.IsSet())
+    max_idle_iteration = arg_max_idle_iteration.GetValue();
+}
+
+template <class Input, class State, class Move, typename CFtype>
+HillClimbing<Input,State,Move,CFtype>::HillClimbing(const Input& in,
+                                                    StateManager<Input,State,CFtype>& e_sm,
+                                                    NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
+                                                    std::string name,
+                                                    AbstractTester<Input,State,CFtype>& t)
+: MoveRunner<Input,State,Move,CFtype>(in, e_sm, e_ne, name, t), max_idle_iteration(0),
+hill_climbing_arguments("hc_" + name, "hc_" + name, false), arg_max_idle_iteration("max_idle_iteration", "mii", true)
+{
+  hill_climbing_arguments.AddArgument(arg_max_idle_iteration);
+}
+
+template <class Input, class State, class Move, typename CFtype>
+HillClimbing<Input,State,Move,CFtype>::HillClimbing(const Input& in,
+                                                    StateManager<Input,State,CFtype>& e_sm,
+                                                    NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
+                                                    std::string name,
+                                                    CLParser& cl,
+                                                    AbstractTester<Input,State,CFtype>& t)
+: MoveRunner<Input,State,Move,CFtype>(in, e_sm, e_ne, name, t), max_idle_iteration(0),
+hill_climbing_arguments("hc_" + name, "hc_" + name, false), arg_max_idle_iteration("max_idle_iteration", "mii", true)
 {
   hill_climbing_arguments.AddArgument(arg_max_idle_iteration);
   cl.AddArgument(hill_climbing_arguments);

@@ -36,7 +36,11 @@ public:
   FirstDescent(const Input& in,
 	       StateManager<Input,State,CFtype>& e_sm,
 	       NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
-	       std::string name = "Anonymous First Descent runner");
+	       std::string name);
+  FirstDescent(const Input& in,
+               StateManager<Input,State,CFtype>& e_sm,
+               NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
+               std::string name, AbstractTester<Input,State,CFtype>& t);
   void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout);
   void Print(std::ostream& os = std::cout) const;
 protected:
@@ -66,6 +70,14 @@ FirstDescent<Input,State,Move,CFtype>::FirstDescent(const Input& in,
 						    StateManager<Input,State,CFtype>& e_sm, NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
 						    std::string name)
   : MoveRunner<Input,State,Move,CFtype>(in, e_sm, e_ne, name)
+{}
+
+template <class Input, class State, class Move, typename CFtype>
+FirstDescent<Input,State,Move,CFtype>::FirstDescent(const Input& in,
+                                                    StateManager<Input,State,CFtype>& e_sm, NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
+                                                    std::string name, 
+                                                    AbstractTester<Input,State,CFtype>& t)
+: MoveRunner<Input,State,Move,CFtype>(in, e_sm, e_ne, name, t)
 {}
 
 template <class Input, class State, class Move, typename CFtype>

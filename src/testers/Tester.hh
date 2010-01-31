@@ -27,13 +27,20 @@
 #include <fstream>
 #include <utils/Types.hh>
 
+template <class Input, class State, typename CFtype = int>
+class AbstractTester
+{
+public:
+  virtual void AddRunner(Runner<Input,State,CFtype>& r) = 0;
+};
+
 /** A Tester collects a set of basic testers (move, state, ...) and
     allows to access them through sub-menus. It represent the external
     user interface provided by the framework.
     @ingroup Testers
 */
 template <class Input, class Output, class State, typename CFtype = int>
-class Tester
+class Tester : public AbstractTester<Input, State, CFtype>
 {
 public:
   Tester(const Input& in, StateManager<Input,State,CFtype>& e_sm, 
@@ -346,7 +353,8 @@ void Tester<Input,Output,State,CFtype>::ShowStateMenu()
      << "    (7) Show input" << std::endl
      << "    (8) Show cost function components" << std::endl
      << "    (9) Show cost elements" << std::endl
-     << "    (10) Pretty print output" << std::endl
+     << "    (10) Check state consistency" << std::endl
+     << "    (11) Pretty print output" << std::endl
      << "    (0) Return to Main Menu" << std::endl
      << "Your choice : ";
   std::cin >> sub_choice;
@@ -385,104 +393,114 @@ bool Tester<Input,Output,State,CFtype>::ExecuteStateChoice()
       break;
     case 2:
       {
-	bool read_failed;
-	std::ifstream is;
-	do
-	  {
-	    read_failed = false;
-	    os << "File name : ";
-	    std::cin >> file_name;
-	    is.open(file_name.c_str());
-	    if (is.fail())
-	      {
-		os << "File " << file_name << " does not exist!" << std::endl;
-		read_failed = true;
-		is.clear();
-	      }
-	  }
-	while (read_failed);
-	this->om.ReadState(test_state, is);
-	break;
+        bool read_failed;
+        std::ifstream is;
+        do
+        {
+          read_failed = false;
+          os << "File name : ";
+          std::cin >> file_name;
+          is.open(file_name.c_str());
+          if (is.fail())
+          {
+            os << "File " << file_name << " does not exist!" << std::endl;
+            read_failed = true;
+            is.clear();
+          }
+        }
+        while (read_failed);
+        this->om.ReadState(test_state, is);
+        break;
       }
     case 3:
       {
-	unsigned int lenght; 
-	double randomness;
-	os << "Lenght of the restricted candidate list: ";
-	std::cin >> lenght;
-	os << "Level of randomness (0 <= alpha <= 1): ";
-	std::cin >> randomness;
-	this->sm.GreedyState(test_state, randomness, lenght);
-	break;
+        unsigned int lenght; 
+        double randomness;
+        os << "Lenght of the restricted candidate list: ";
+        std::cin >> lenght;
+        os << "Level of randomness (0 <= alpha <= 1): ";
+        std::cin >> randomness;
+        this->sm.GreedyState(test_state, randomness, lenght);
+        break;
       }
     case 4:
       {
-	unsigned int samples;
-	os << "How many samples : ";
-	std::cin >> samples;
-	this->sm.SampleState(test_state,samples);
-	break;
+        unsigned int samples;
+        os << "How many samples : ";
+        std::cin >> samples;
+        this->sm.SampleState(test_state,samples);
+        break;
       }
     case 5:
       {
-	os << "File name : ";
-	std::cin >> file_name;
-	std::ofstream os(file_name.c_str());
-	this->om.WriteState(test_state, os);
-	break;
+        os << "File name : ";
+        std::cin >> file_name;
+        std::ofstream os(file_name.c_str());
+        this->om.WriteState(test_state, os);
+        break;
       }
     case 6:
       {
-	os  << test_state << std::endl;
-	os  << "Total cost: " << this->sm.CostFunction(test_state) << std::endl;
-	break;
+        os  << test_state << std::endl;
+        os  << "Total cost: " << this->sm.CostFunction(test_state) << std::endl;
+        break;
       }
     case 7:
       {
-	os << in;
-	break;
+        os << in;
+        break;
       }
     case 8:
       {
-	os  << "Cost Components: " << std::endl;
-	for (i = 0; i < this->sm.CostComponents(); i++)
-	{
-	  CostComponent<Input,State,CFtype>& cc = this->sm.GetCostComponent(i);
-	  os  << i << ". " << cc.name << " : " 
-	      << cc.Cost(test_state) << (cc.IsHard() ? '*' : ' ') << std::endl;
-	}
-	os  << "Total Violations: " << this->sm.Violations(test_state) << std::endl;
-	os  << "Total Objective:  " << this->sm.Objective(test_state) << std::endl;
-	os  << "Total Cost:       " << this->sm.CostFunction(test_state) << std::endl;
-	break;
+        os  << "Cost Components: " << std::endl;
+        for (i = 0; i < this->sm.CostComponents(); i++)
+        {
+          CostComponent<Input,State,CFtype>& cc = this->sm.GetCostComponent(i);
+          os  << i << ". " << cc.name << " : " 
+              << cc.Cost(test_state) << (cc.IsHard() ? '*' : ' ') << std::endl;
+        }
+        os << "Total Violations: " << this->sm.Violations(test_state) << std::endl;
+        os << "Total Objective:  " << this->sm.Objective(test_state) << std::endl;
+        os << "Total Cost:       " << this->sm.CostFunction(test_state) << std::endl;
+        break;
       }
     case 9:
       {
-	os  << "Detailed Violations: " << std::endl;
-	for (i = 0; i < this->sm.CostComponents(); i++)
-	{
-	  CostComponent<Input,State,CFtype>& cc = this->sm.GetCostComponent(i);
-	  cc.PrintViolations(test_state);
-	}
-	os  << std::endl << "Summary of Cost Components: " << std::endl;
-	for (i = 0; i < this->sm.CostComponents(); i++)
-	{
-	  CostComponent<Input,State,CFtype>& cc = this->sm.GetCostComponent(i);
-	  os  << i << ". " << cc.name << " : " 
-	      << cc.Cost(test_state) << (cc.IsHard() ? '*' : ' ') << std::endl;
-	}
-	os  << std::endl << "Total Violations:\t" << this->sm.Violations(test_state) << std::endl;
-	os  << "Total Objective:\t" << this->sm.Objective(test_state) << std::endl;
-	os  << "Total Cost:  \t" << this->sm.CostFunction(test_state) << std::endl;
-	break;
+        os << "Detailed Violations: " << std::endl;
+        for (i = 0; i < this->sm.CostComponents(); i++)
+        {
+          CostComponent<Input,State,CFtype>& cc = this->sm.GetCostComponent(i);
+          cc.PrintViolations(test_state);
+        }
+        os << std::endl << "Summary of Cost Components: " << std::endl;
+        for (i = 0; i < this->sm.CostComponents(); i++)
+        {
+          CostComponent<Input,State,CFtype>& cc = this->sm.GetCostComponent(i);
+          os  << i << ". " << cc.name << " : " 
+              << cc.Cost(test_state) << (cc.IsHard() ? '*' : ' ') << std::endl;
+        }
+        os << std::endl << "Total Violations:\t" << this->sm.Violations(test_state) << std::endl;
+        os << "Total Objective:\t" << this->sm.Objective(test_state) << std::endl;
+        os << "Total Cost:  \t" << this->sm.CostFunction(test_state) << std::endl;
+        break;
       }
     case 10:
       {
-	os << "File name : ";
-	std::cin >> file_name;
-	this->om.PrettyPrintOutput(test_state,file_name);
-	std::cout << "Output pretty-printed in file " << file_name << std::endl;
-	break;
+        os << "Checking state consistency: " << std::endl;
+        bool consistent = this->sm.CheckConsistency(test_state);
+        if (consistent)
+          os << "The state is consistent" << std::endl;
+        else 
+          os << "The state is not consistent" << std::endl;
+        break;
+      }
+    case 11:
+      {
+        os << "File name : ";
+        std::cin >> file_name;
+        this->om.PrettyPrintOutput(test_state,file_name);
+        std::cout << "Output pretty-printed in file " << file_name << std::endl;
+        break;
       }
     default:
       os << "Invalid choice" << std::endl;

@@ -31,8 +31,6 @@
 #include <helpers/NeighborhoodExplorer.hh>
 #include <climits>
 
-#include <climits>
-
 template <class Input, class State, typename CFtype = int>
 class Runner
 {

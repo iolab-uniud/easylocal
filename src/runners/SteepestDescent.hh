@@ -46,6 +46,15 @@ public:
 		  NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
 		  std::string name,
 		  CLParser& cl);		
+  SteepestDescent(const Input& in,
+                  StateManager<Input,State,CFtype>& e_sm,
+                  NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
+                  std::string name, AbstractTester<Input,State,CFtype>& t);	
+  SteepestDescent(const Input& in,
+                  StateManager<Input,State,CFtype>& e_sm,
+                  NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
+                  std::string name,
+                  CLParser& cl, AbstractTester<Input,State,CFtype>& t);
   void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout);
   void Print(std::ostream& os = std::cout) const;
 protected:
@@ -83,6 +92,21 @@ SteepestDescent<Input,State,Move,CFtype>::SteepestDescent(const Input& in,
 							  std::string name,
 							  CLParser& cl)
   : MoveRunner<Input,State,Move,CFtype>(in, e_sm, e_ne, name)
+{}
+
+template <class Input, class State, class Move, typename CFtype>
+SteepestDescent<Input,State,Move,CFtype>::SteepestDescent(const Input& in,
+                                                          StateManager<Input,State,CFtype>& e_sm, NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
+                                                          std::string name, AbstractTester<Input,State,CFtype>& t)
+: MoveRunner<Input,State,Move,CFtype>(in, e_sm, e_ne, name, t)
+{}
+
+template <class Input, class State, class Move, typename CFtype>
+SteepestDescent<Input,State,Move,CFtype>::SteepestDescent(const Input& in,
+                                                          StateManager<Input,State,CFtype>& e_sm, NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
+                                                          std::string name,
+                                                          CLParser& cl, AbstractTester<Input,State,CFtype>& t)
+: MoveRunner<Input,State,Move,CFtype>(in, e_sm, e_ne, name, t)
 {}
 
 template <class Input, class State, class Move, typename CFtype>

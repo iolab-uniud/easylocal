@@ -57,6 +57,14 @@ public:
 	SampleTabuSearch(const Input& in, StateManager<Input,State,CFtype>& s,
 									 NeighborhoodExplorer<Input,State,Move>& ne,
 									 TabuListManager<State,Move,CFtype>& tlm, std::string name, CLParser& cl);
+  SampleTabuSearch(const Input& in, StateManager<Input,State,CFtype>& s,
+									 NeighborhoodExplorer<Input,State,Move>& ne,
+									 TabuListManager<State,Move,CFtype>& tlm, std::string name,
+                   Tester<Input,Output,State>& t);
+	SampleTabuSearch(const Input& in, StateManager<Input,State,CFtype>& s,
+									 NeighborhoodExplorer<Input,State,Move>& ne,
+									 TabuListManager<State,Move,CFtype>& tlm, std::string name, CLParser& cl,
+                   Tester<Input,Output,State>& t);
 protected:
 	void SelectMove();
 	unsigned int sample_size;
@@ -85,6 +93,33 @@ SampleTabuSearch<Input,State,Move>::SampleTabuSearch(const Input& in, StateManag
 																										 std::string name,
 																										 CLParser& cl)
 : TabuSearch<Input,State,Move>(sm, ne, tlm, name, cl), arg_sample_size("sample_size", "ss", true)
+{
+	this->tabu_search_arguments.AddArgument(arg_sample_size);
+	cl.MatchArgument(this->tabu_search_arguments);
+	if (this->tabu_search_arguments.IsSet())
+		sample_size = arg_sample_size.GetValue();
+}
+
+
+template <class Input, class State, class Move, typename CFtype = int>
+SampleTabuSearch<Input,State,Move>::SampleTabuSearch(const Input& in, StateManager<Input,State,CFtype>& sm,
+																										 NeighborhoodExplorer<Input,State,Move>& ne,
+																										 TabuListManager<State,Move,CFtype>& tlm,
+																										 std::string name,
+                                                     Tester<Input,Output,State,CFtype>& t)
+: TabuSearch<Input,State,Move>(sm, ne, tlm, name, t), arg_sample_size("sample_size", "ss", true)
+{
+	this->tabu_search_arguments.AddArgument(arg_sample_size);
+}
+
+template <class Input, class State, class Move, typename CFtype = int>
+SampleTabuSearch<Input,State,Move>::SampleTabuSearch(const Input& in, StateManager<Input,State,CFtype>& sm,
+																										 NeighborhoodExplorer<Input,State,Move>& ne,
+																										 TabuListManager<State,Move,CFtype>& tlm,
+																										 std::string name,
+																										 CLParser& cl,
+                                                     Tester<Input,Output,State,CFtype>& t)
+: TabuSearch<Input,State,Move>(sm, ne, tlm, name, cl, t), arg_sample_size("sample_size", "ss", true)
 {
 	this->tabu_search_arguments.AddArgument(arg_sample_size);
 	cl.MatchArgument(this->tabu_search_arguments);
