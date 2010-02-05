@@ -207,65 +207,72 @@ template <class Input, class Output, class State, class Move, typename CFtype>
 bool MoveTester<Input,Output,State,Move,CFtype>::ExecuteChoice(State& st)
 {
   Move mv;
-  switch(choice)
+  try
+  {
+    switch(choice)
     {
-    case 1:
-      ne.BestMove(st,mv);
-      break;
-    case 2:
-      ne.RandomMove(st,mv);
-      break;
-    case 3:
-      os << "Input move : ";
-      std::cin >> mv;
-      break;
-    case 4:
-      PrintAllNeighbors(st);
-      break;
-    case 5:
-      PrintNeighborhoodStatistics(st);
-      break;
-    case 6:
-      ne.RandomMove(st,mv);
-      PrintMoveCosts(st,mv);
-      break;
-    case 7:
-      do 
-	{
-	  os << "Input move : ";
-	  std::cin >> mv;
-	  if (!ne.FeasibleMove(st,mv))
-	    os << "Move " << mv << " is infeasible " << std::endl;
-	}
-      while (!ne.FeasibleMove(st,mv));
-      PrintMoveCosts(st,mv);
-      break;
-    case 8:
-      CheckNeighborhoodCosts(st);
-      break;
-    case 9:
-      CheckMoveIndependence(st);
-      break;
-    case 10:
-      CheckRandomMoveDistribution(st);
-      break;
-    case 11:
-      CheckTabuStrength(st);
-      break;
-    default:
-      os << "Invalid choice" << std::endl;
+      case 1:
+        ne.BestMove(st,mv);
+        break;
+      case 2: 
+        ne.RandomMove(st,mv);     
+        break;
+      case 3:
+        os << "Input move : ";
+        std::cin >> mv;
+        break;
+      case 4:
+        PrintAllNeighbors(st);
+        break;
+      case 5:
+        PrintNeighborhoodStatistics(st);
+        break;
+      case 6:
+        ne.RandomMove(st,mv);
+        PrintMoveCosts(st,mv);
+        break;
+      case 7:
+        do 
+        {
+          os << "Input move : ";
+          std::cin >> mv;
+          if (!ne.FeasibleMove(st,mv))
+            os << "Move " << mv << " is infeasible " << std::endl;
+        }
+        while (!ne.FeasibleMove(st,mv));
+        PrintMoveCosts(st,mv);
+        break;
+      case 8:
+        CheckNeighborhoodCosts(st);
+        break;
+      case 9:
+        CheckMoveIndependence(st);
+        break;
+      case 10:
+        CheckRandomMoveDistribution(st);
+        break;
+      case 11:
+        CheckTabuStrength(st);
+        break;
+      default:
+        os << "Invalid choice" << std::endl;
     }
-  if (choice == 1 || choice == 2 || choice == 3)
+    if (choice == 1 || choice == 2 || choice == 3)
     {
       os << "Move : " << mv << std::endl;
       if (ne.FeasibleMove(st,mv))
-	{
-	  ne.MakeMove(st,mv);
-	  return true;
-	}
+      {
+        ne.MakeMove(st,mv);
+        return true;
+      }
       else
-	os << "Infeasible move!" << std::endl;
-    }
+        os << "Infeasible move!" << std::endl;
+    }    
+  }
+  catch (EmptyNeighborhood e)
+  {
+    os << "Empty neighborhood" << std::endl;
+  }
   
   return false;
 }
