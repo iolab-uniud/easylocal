@@ -202,6 +202,46 @@
 			<key>Content</key>
 			<dict>
 				<key>PBXProjectModuleGUID</key>
+				<string>ACF15875111DE7390077DCC2</string>
+				<key>PBXProjectModuleLabel</key>
+				<string>KickerTester.hh</string>
+				<key>PBXSplitModuleInNavigatorKey</key>
+				<dict>
+					<key>Split0</key>
+					<dict>
+						<key>PBXProjectModuleGUID</key>
+						<string>ACF15876111DE7390077DCC2</string>
+						<key>PBXProjectModuleLabel</key>
+						<string>KickerTester.hh</string>
+						<key>_historyCapacity</key>
+						<integer>0</integer>
+						<key>bookmark</key>
+						<string>ACF15877111DE7390077DCC2</string>
+						<key>history</key>
+						<array>
+							<string>ACF1586A111DE6EA0077DCC2</string>
+						</array>
+					</dict>
+					<key>SplitCount</key>
+					<string>1</string>
+				</dict>
+				<key>StatusBarVisibility</key>
+				<true/>
+			</dict>
+			<key>Geometry</key>
+			<dict>
+				<key>Frame</key>
+				<string>{{0, 20}, {1088, 524}}</string>
+				<key>PBXModuleWindowStatusBarHidden2</key>
+				<false/>
+				<key>RubberWindowFrame</key>
+				<string>192 164 1088 565 0 0 1280 778 </string>
+			</dict>
+		</dict>
+		<dict>
+			<key>Content</key>
+			<dict>
+				<key>PBXProjectModuleGUID</key>
 				<string>ACC5A9781116049E00381634</string>
 				<key>PBXProjectModuleLabel</key>
 				<string>MultimodalNeighborhoodExplorer.hh</string>
@@ -216,10 +256,10 @@
 						<key>_historyCapacity</key>
 						<integer>0</integer>
 						<key>bookmark</key>
-						<string>ACC5A97A1116049E00381634</string>
+						<string>ACF15878111DE7390077DCC2</string>
 						<key>history</key>
 						<array>
-							<string>ACC5A9711116047400381634</string>
+							<string>ACC5A97A1116049E00381634</string>
 						</array>
 					</dict>
 					<key>SplitCount</key>
@@ -256,10 +296,10 @@
 						<key>_historyCapacity</key>
 						<integer>0</integer>
 						<key>bookmark</key>
-						<string>ACC5A97B1116049E00381634</string>
+						<string>ACF15879111DE7390077DCC2</string>
 						<key>history</key>
 						<array>
-							<string>ACC5A91C1115F53100381634</string>
+							<string>ACC5A97B1116049E00381634</string>
 						</array>
 					</dict>
 					<key>SplitCount</key>
@@ -296,10 +336,10 @@
 						<key>_historyCapacity</key>
 						<integer>0</integer>
 						<key>bookmark</key>
-						<string>ACC5A97C1116049E00381634</string>
+						<string>ACF1587A111DE7390077DCC2</string>
 						<key>history</key>
 						<array>
-							<string>ACC5A91D1115F53100381634</string>
+							<string>ACC5A97C1116049E00381634</string>
 						</array>
 					</dict>
 					<key>SplitCount</key>
@@ -336,10 +376,10 @@
 						<key>_historyCapacity</key>
 						<integer>0</integer>
 						<key>bookmark</key>
-						<string>ACC5A97D1116049E00381634</string>
+						<string>ACF1587B111DE7390077DCC2</string>
 						<key>history</key>
 						<array>
-							<string>ACC5A91E1115F53100381634</string>
+							<string>ACC5A97D1116049E00381634</string>
 						</array>
 					</dict>
 					<key>SplitCount</key>
@@ -376,10 +416,10 @@
 						<key>_historyCapacity</key>
 						<integer>0</integer>
 						<key>bookmark</key>
-						<string>ACC5A97E1116049E00381634</string>
+						<string>ACF1587C111DE7390077DCC2</string>
 						<key>history</key>
 						<array>
-							<string>ACC5A91F1115F53100381634</string>
+							<string>ACC5A97E1116049E00381634</string>
 						</array>
 					</dict>
 					<key>SplitCount</key>
@@ -416,10 +456,10 @@
 						<key>_historyCapacity</key>
 						<integer>0</integer>
 						<key>bookmark</key>
-						<string>ACC5A97F1116049E00381634</string>
+						<string>ACF1587D111DE7390077DCC2</string>
 						<key>history</key>
 						<array>
-							<string>ACC5A9201115F53100381634</string>
+							<string>ACC5A97F1116049E00381634</string>
 						</array>
 					</dict>
 					<key>SplitCount</key>
@@ -510,15 +550,15 @@
 							<array>
 								<string>08FB7794FE84155DC02AAC07</string>
 								<string>ACF4B0FA0DBFA668008A0207</string>
-								<string>ACF4B10D0DBFA668008A0207</string>
+								<string>ACF4B1390DBFA668008A0207</string>
 								<string>1C37FBAC04509CD000000102</string>
 								<string>1C37FAAC04509CD000000102</string>
 							</array>
 							<key>PBXSmartGroupTreeModuleOutlineStateSelectionKey</key>
 							<array>
 								<array>
-									<integer>20</integer>
-									<integer>16</integer>
+									<integer>24</integer>
+									<integer>21</integer>
 									<integer>6</integer>
 									<integer>0</integer>
 								</array>
@@ -573,7 +613,7 @@
 										<key>_historyCapacity</key>
 										<integer>0</integer>
 										<key>bookmark</key>
-										<string>ACC5A9751116049E00381634</string>
+										<string>ACF15872111DE7390077DCC2</string>
 										<key>history</key>
 										<array>
 											<string>AC4AAE500DD08D0500BE59D2</string>
@@ -661,7 +701,7 @@
 											<string>ACC5A7681115C32E00381634</string>
 											<string>ACC5A78A1115C55800381634</string>
 											<string>ACC5A9741116049E00381634</string>
-											<string>AC5208B10F277A2F00E45976</string>
+											<string>ACC5A9751116049E00381634</string>
 										</array>
 									</dict>
 									<key>SplitCount</key>
@@ -673,14 +713,14 @@
 							<key>GeometryConfiguration</key>
 							<dict>
 								<key>Frame</key>
-								<string>{{0, 0}, {590, 221}}</string>
+								<string>{{0, 0}, {590, 209}}</string>
 								<key>RubberWindowFrame</key>
 								<string>13 161 998 568 0 0 1280 778 </string>
 							</dict>
 							<key>Module</key>
 							<string>PBXNavigatorGroup</string>
 							<key>Proportion</key>
-							<string>221pt</string>
+							<string>209pt</string>
 						</dict>
 						<dict>
 							<key>ContentConfiguration</key>
@@ -693,14 +733,14 @@
 							<key>GeometryConfiguration</key>
 							<dict>
 								<key>Frame</key>
-								<string>{{0, 226}, {590, 301}}</string>
+								<string>{{0, 214}, {590, 313}}</string>
 								<key>RubberWindowFrame</key>
 								<string>13 161 998 568 0 0 1280 778 </string>
 							</dict>
 							<key>Module</key>
 							<string>XCDetailModule</string>
 							<key>Proportion</key>
-							<string>301pt</string>
+							<string>313pt</string>
 						</dict>
 					</array>
 					<key>Proportion</key>
@@ -719,9 +759,9 @@
 			</array>
 			<key>TableOfContents</key>
 			<array>
-				<string>ACC5A9761116049E00381634</string>
+				<string>ACF15873111DE7390077DCC2</string>
 				<string>1CE0B1FE06471DED0097A5F4</string>
-				<string>ACC5A9771116049E00381634</string>
+				<string>ACF15874111DE7390077DCC2</string>
 				<string>1CE0B20306471E060097A5F4</string>
 				<string>1CE0B20506471E060097A5F4</string>
 			</array>
@@ -857,7 +897,6 @@
 	<integer>5</integer>
 	<key>WindowOrderList</key>
 	<array>
-		<string>1CD10A99069EF8BA00B06720</string>
 		<string>AC4AAE480DD08C9F00BE59D2</string>
 		<string>AC404071104FCAEE00CF4A33</string>
 		<string>ACC5A6211115926B00381634</string>
@@ -865,6 +904,7 @@
 		<string>ACC5A6191115926B00381634</string>
 		<string>ACC5A6151115926B00381634</string>
 		<string>ACC5A9781116049E00381634</string>
+		<string>ACF15875111DE7390077DCC2</string>
 		<string>/Users/digasper/Documents/Development/EasyLocalpp/ide_projects/EasyLocal.xcodeproj</string>
 	</array>
 	<key>WindowString</key>
@@ -945,7 +985,7 @@
 			<key>TableOfContents</key>
 			<array>
 				<string>AC4AAE480DD08C9F00BE59D2</string>
-				<string>ACC5A9801116049E00381634</string>
+				<string>ACF1587E111DE7390077DCC2</string>
 				<string>1CD0528F0623707200166675</string>
 				<string>XCMainBuildResultsModuleGUID</string>
 			</array>
