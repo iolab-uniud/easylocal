@@ -28,6 +28,7 @@
 enum KickStrategy {
   NO_KICKER = 0,
   DIVERSIFIER,
+  DIVERSIFIER_AT_EVERY_ROUND,
   INTENSIFIER,
   INTENSIFIER_RUN
 };
@@ -271,28 +272,28 @@ void GeneralizedLocalSearch<Input,Output,State,CFtype>::MultiStartSimpleSolve(un
   chrono.Reset();
   chrono.Start();
   for (t = 0; t < trials; t++)
+  {
+    if (observer != NULL) observer->NotifyRestart(*this, t);
+    this->FindInitialState();
+    runners[runner]->SetState(this->current_state);
+    if (observer != NULL) observer->NotifyRunnerStart(*this);
+    timeout_expired = LetGo(*runners[runner]);
+    if (observer != NULL) observer->NotifyRunnerStop(*this);	  
+    this->current_state = runners[runner]->GetState();
+    this->current_state_cost = runners[runner]->GetStateCost();
+    
+    if (t == 0 || LessThan(this->current_state_cost, this->best_state_cost))
     {
-      if (observer != NULL) observer->NotifyRestart(*this, t);
-      this->FindInitialState();
-      runners[runner]->SetState(this->current_state);
-      if (observer != NULL) observer->NotifyRunnerStart(*this);
-      timeout_expired = LetGo(*runners[runner]);
-      if (observer != NULL) observer->NotifyRunnerStop(*this);	  
-      this->current_state = runners[runner]->GetState();
-      this->current_state_cost = runners[runner]->GetStateCost();
-
-      if (t == 0 || LessThan(this->current_state_cost, this->best_state_cost))
-	{
-	  this->best_state = this->current_state;
-	  this->best_state_cost = this->current_state_cost;
-	  if (this->sm.LowerBoundReached(this->best_state_cost))
-	    break;
-	}
-      if (timeout_expired)
-	break;
-      restarts++;
+      this->best_state = this->current_state;
+      this->best_state_cost = this->current_state_cost;
+      if (this->sm.LowerBoundReached(this->best_state_cost))
+        break;
     }
-
+    if (timeout_expired)
+      break;
+    restarts++;
+  }
+  
   chrono.Stop();
 }
 
@@ -380,24 +381,26 @@ void GeneralizedLocalSearch<Input,Output,State,CFtype>::GeneralSolve(KickStrateg
         if (lower_bound_reached || timeout_expired) break;
       }
       rounds++;
-      if (observer != NULL) observer->NotifyRound(*this);	
+      if (observer != NULL) observer->NotifyRound(*this);	        
       if (improve_state)
         idle_rounds = 0;
       else
+        idle_rounds++;
+
+      if (!improve_state || kick_strategy == DIVERSIFIER_AT_EVERY_ROUND)
       {
 #if defined(HAVE_PTHREAD)
         double time = chrono.TotalTime();
 #endif
         improve_state = false;
-        idle_rounds++;
         if (idle_rounds % kick_rate != 0) continue;
         if (kick_strategy != NO_KICKER)
         {
           if (observer != NULL)
             observer->NotifyKickerStart(*this);
-          if (kick_strategy == DIVERSIFIER || kick_strategy == INTENSIFIER)
+          if (kick_strategy == DIVERSIFIER || kick_strategy == DIVERSIFIER_AT_EVERY_ROUND || kick_strategy == INTENSIFIER)
           {
-            if (kick_strategy == DIVERSIFIER)
+            if (kick_strategy == DIVERSIFIER || kick_strategy == DIVERSIFIER_AT_EVERY_ROUND)
               kick_cost = p_kicker->RandomKick(this->current_state);
             else // INTENSIFIER
               kick_cost = p_kicker->SelectKick(this->current_state);
@@ -448,18 +451,18 @@ bool GeneralizedLocalSearch<Input,Output,State,CFtype>::PerformKickRun()
   bool improve = false;
   
   do
+  {
+    // perturb the current solution	     
+    kick_cost =  p_kicker->SelectKick(current_state);
+    if (LessThan(kick_cost, static_cast<CFtype>(0)))
     {
-      // perturb the current solution	     
-      kick_cost =  p_kicker->SelectKick(current_state);
-      if (LessThan(kick_cost, static_cast<CFtype>(0)))
-	{
-	  p_kicker->MakeKick(current_state);	   
-	  current_state_cost += kick_cost; 
-	  if (observer != NULL)
-	    observer->NotifyKickStep(*this,kick_cost);
-	  improve = true;
-	}
+      p_kicker->MakeKick(current_state);	   
+      current_state_cost += kick_cost; 
+      if (observer != NULL)
+        observer->NotifyKickStep(*this,kick_cost);
+      improve = true;
     }
+  }
   while (LessThan(kick_cost,static_cast<CFtype>(0)));
   
   this->current_state = current_state;
