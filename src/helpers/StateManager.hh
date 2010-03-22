@@ -151,7 +151,7 @@ CFtype StateManager<Input,State,CFtype>::SampleState(State &st,
 template <class Input, class State, typename CFtype>
 void StateManager<Input,State,CFtype>::GreedyState(State &st, double alpha, unsigned int k)
 {// Dummy implementation
-   RandomState(st);
+   GreedyState(st);
 }
 
 template <class Input, class State, typename CFtype>
