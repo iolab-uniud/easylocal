@@ -96,10 +96,16 @@ AC_CHECK_HEADERS([sys/time.h])
 AC_CHECK_HEADERS([sys/resource.h])
 
 # For CppUnit testing
-AM_CONDITIONAL(CPPUNIT, false)
-AM_PATH_CPPUNIT(1.9.0, 
-	[AM_CONDITIONAL(CPPUNIT, true)], 
-	[AM_CONDITIONAL(CPPUNIT, false)])
+AC_ARG_ENABLE(cppunit, 
+  [AS_HELP_STRING([--enable-cppunit], [enable unit testing with cppunit (default: no)])], 
+  [], [])
+AC_MSG_RESULT($enable_cppunit)
+AM_CONDITIONAL(CPPUNIT, test "$enable_cppunit" = yes)
+if test "$enable_cppunit" = yes; then
+  AM_PATH_CPPUNIT(1.9.0, 
+	  [AM_CONDITIONAL(CPPUNIT, true)], 
+	  [AM_CONDITIONAL(CPPUNIT, false)])
+fi
 
 
 AC_CONFIG_FILES([Makefile src/Makefile test/Makefile test/nQueens/Makefile])

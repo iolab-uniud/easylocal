@@ -216,7 +216,7 @@
 						<key>_historyCapacity</key>
 						<integer>0</integer>
 						<key>bookmark</key>
-						<string>AC9E7B771123F58500C94E0E</string>
+						<string>AC9E7B9F112403EC00C94E0E</string>
 						<key>history</key>
 						<array>
 							<string>ACF15877111DE7390077DCC2</string>
@@ -242,46 +242,6 @@
 			<key>Content</key>
 			<dict>
 				<key>PBXProjectModuleGUID</key>
-				<string>ACC5A9781116049E00381634</string>
-				<key>PBXProjectModuleLabel</key>
-				<string>MultimodalNeighborhoodExplorer.hh</string>
-				<key>PBXSplitModuleInNavigatorKey</key>
-				<dict>
-					<key>Split0</key>
-					<dict>
-						<key>PBXProjectModuleGUID</key>
-						<string>ACC5A9791116049E00381634</string>
-						<key>PBXProjectModuleLabel</key>
-						<string>MultimodalNeighborhoodExplorer.hh</string>
-						<key>_historyCapacity</key>
-						<integer>0</integer>
-						<key>bookmark</key>
-						<string>AC9E7B781123F58500C94E0E</string>
-						<key>history</key>
-						<array>
-							<string>ACF15878111DE7390077DCC2</string>
-						</array>
-					</dict>
-					<key>SplitCount</key>
-					<string>1</string>
-				</dict>
-				<key>StatusBarVisibility</key>
-				<true/>
-			</dict>
-			<key>Geometry</key>
-			<dict>
-				<key>Frame</key>
-				<string>{{0, 20}, {1085, 523}}</string>
-				<key>PBXModuleWindowStatusBarHidden2</key>
-				<false/>
-				<key>RubberWindowFrame</key>
-				<string>401 339 1085 564 0 0 2560 1418 </string>
-			</dict>
-		</dict>
-		<dict>
-			<key>Content</key>
-			<dict>
-				<key>PBXProjectModuleGUID</key>
 				<string>ACC5A6151115926B00381634</string>
 				<key>PBXProjectModuleLabel</key>
 				<string>SteepestDescent.hh</string>
@@ -296,7 +256,7 @@
 						<key>_historyCapacity</key>
 						<integer>0</integer>
 						<key>bookmark</key>
-						<string>AC9E7B791123F58500C94E0E</string>
+						<string>AC9E7BA0112403EC00C94E0E</string>
 						<key>history</key>
 						<array>
 							<string>ACF15879111DE7390077DCC2</string>
@@ -336,7 +296,7 @@
 						<key>_historyCapacity</key>
 						<integer>0</integer>
 						<key>bookmark</key>
-						<string>AC9E7B7A1123F58500C94E0E</string>
+						<string>AC9E7BA1112403EC00C94E0E</string>
 						<key>history</key>
 						<array>
 							<string>ACF1587A111DE7390077DCC2</string>
@@ -376,7 +336,7 @@
 						<key>_historyCapacity</key>
 						<integer>0</integer>
 						<key>bookmark</key>
-						<string>AC9E7B7B1123F58500C94E0E</string>
+						<string>AC9E7BA2112403EC00C94E0E</string>
 						<key>history</key>
 						<array>
 							<string>ACF1587B111DE7390077DCC2</string>
@@ -416,7 +376,7 @@
 						<key>_historyCapacity</key>
 						<integer>0</integer>
 						<key>bookmark</key>
-						<string>AC9E7B7C1123F58500C94E0E</string>
+						<string>AC9E7BA3112403EC00C94E0E</string>
 						<key>history</key>
 						<array>
 							<string>ACF1587C111DE7390077DCC2</string>
@@ -456,7 +416,7 @@
 						<key>_historyCapacity</key>
 						<integer>0</integer>
 						<key>bookmark</key>
-						<string>AC9E7B7D1123F58500C94E0E</string>
+						<string>AC9E7BA4112403EC00C94E0E</string>
 						<key>history</key>
 						<array>
 							<string>ACF1587D111DE7390077DCC2</string>
@@ -550,6 +510,7 @@
 							<array>
 								<string>08FB7794FE84155DC02AAC07</string>
 								<string>ACF4B0FA0DBFA668008A0207</string>
+								<string>ACF4B12F0DBFA668008A0207</string>
 								<string>ACF4B1390DBFA668008A0207</string>
 								<string>1C37FBAC04509CD000000102</string>
 								<string>1C37FAAC04509CD000000102</string>
@@ -557,14 +518,14 @@
 							<key>PBXSmartGroupTreeModuleOutlineStateSelectionKey</key>
 							<array>
 								<array>
-									<integer>24</integer>
-									<integer>21</integer>
+									<integer>22</integer>
+									<integer>20</integer>
 									<integer>6</integer>
 									<integer>0</integer>
 								</array>
 							</array>
 							<key>PBXSmartGroupTreeModuleOutlineStateVisibleRectKey</key>
-							<string>{{0, 0}, {386, 509}}</string>
+							<string>{{0, 43}, {386, 509}}</string>
 						</dict>
 						<key>PBXTopSmartGroupGIDs</key>
 						<array/>
@@ -613,7 +574,7 @@
 										<key>_historyCapacity</key>
 										<integer>0</integer>
 										<key>bookmark</key>
-										<string>AC9E7B741123F58500C94E0E</string>
+										<string>AC9E7B9E112403EC00C94E0E</string>
 										<key>history</key>
 										<array>
 											<string>AC4AAE500DD08D0500BE59D2</string>
@@ -903,7 +864,6 @@
 		<string>ACC5A61D1115926B00381634</string>
 		<string>ACC5A6191115926B00381634</string>
 		<string>ACC5A6151115926B00381634</string>
-		<string>ACC5A9781116049E00381634</string>
 		<string>ACF15875111DE7390077DCC2</string>
 		<string>/Users/digasper/Documents/Development/EasyLocalpp/ide_projects/EasyLocal.xcodeproj</string>
 	</array>
@@ -946,6 +906,8 @@
 							<string>327pt</string>
 						</dict>
 						<dict>
+							<key>BecomeActive</key>
+							<true/>
 							<key>ContentConfiguration</key>
 							<dict>
 								<key>PBXProjectModuleGUID</key>
