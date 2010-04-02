@@ -192,6 +192,7 @@ double ConditionVariable::WaitTimeout(double timeout)
 #if defined(HAVE_CLOCK_GETTIME)
   clock_gettime(CLOCK_REALTIME, &ts_now);
 #elif defined(HAVE_GETTIMEOFDAY)
+  struct timeval tv_now;
   gettimeofday(&tv_now, NULL);
   ts_now.tv_sec = tv_now.tv_sec;
   ts_now.tv_nsec = tv_now.tv_usec * NANOSEC_PER_MICROSEC;

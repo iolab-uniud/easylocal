@@ -5,9 +5,6 @@
 #define CONFIG_INCLUDED
 
 
-/* Use CPU time capabilities instead of wall-clock time */
-#undef CPUTIME
-
 /* Define to 1 if you have the `clock_gettime' function. */
 #undef HAVE_CLOCK_GETTIME
 

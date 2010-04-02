@@ -31,12 +31,20 @@
 class Chronometer
 {
 public:
-    Chronometer();
-    void Reset();
-    void Start();
-    void Stop();
-    double TotalTime() const;
+  Chronometer();
+  void Reset();
+  void Start();
+  void Stop();
+  double TotalTime() const;
 	static std::string Now();
+  enum ClockTypes {
+#if defined(_MSC_VER)
+    MSWindows
+#else
+    CpuTime, ClockTime, TimeOfDay
+#endif
+  };
+  static void SetClockType(ClockTypes ct) { clock_type = ct; }
 private:
 	class TimeValue
 	{
@@ -51,8 +59,9 @@ private:
 	  { seconds = 0; milli_seconds = 0; }
 	  static TimeValue ReadTime();
 	};
-    bool running;
+  bool running;
 	TimeValue start, end; 
+  static ClockTypes clock_type;
 };
 
 #endif /*_CHRONOMETER_HH_*/

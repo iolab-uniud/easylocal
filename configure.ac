@@ -71,14 +71,6 @@ else
 		sed 's/.*\(#define HAVE_PTHREAD\).*/\/\/\1 1/g' $EASYLOCALPP/src/EasyLocal.conf.hh	> tmpEasyLocalconf.hh
 		mv tmpEasyLocalconf.hh $EASYLOCALPP/src/EasyLocal.conf.hh
 fi
-AC_MSG_CHECKING([--enable-cpu-time])
-AC_ARG_ENABLE(cpu_time, 
-  [AS_HELP_STRING([--enable-cpu-time], [use CPU time capabilities instead of wall-clock time (default: yes)])], 
-  [], [])
-AC_MSG_RESULT($enable_cpu_time)
-if test "$enable_cpu_time" !=  no; then
-  AC_DEFINE([CPUTIME], [], [Use CPU time capabilities instead of wall-clock time])
-fi
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_HEADER_STDBOOL

@@ -23,39 +23,77 @@
 // For the MS Visual C++ compiler
 #include <windows.h>
 union TimeConvert { FILETIME ftValue; __int64 i64Value; };
-#elif defined(CPUTIME)
+#endif
+#if defined(CPUTIME)
 #include <sys/resource.h>
-#elif defined(HAVE_GETTIMEOFDAY)
+#endif
+#if defined(HAVE_GETTIMEOFDAY)
 #include <sys/time.h>
 #endif 
+#include <stdexcept>
+
+#if defined(_MSC_VER)
+Chronometer::ClockTypes Chronometer::clock_type = MSWindows;
+#else
+#if defined(CPUTIME)
+Chronometer::ClockTypes Chronometer::clock_type = CpuTime;
+#elif defined(HAVE_CLOCK_GETTIME)
+Chronometer::ClockTypes Chronometer::clock_type = ClockTime;
+#elif defined(HAVE_GETTIMEOFDAY)
+Chronometer::ClockTypes Chronometer::clock_type = TimeOfDay;
+#endif
+#endif
 
 inline Chronometer::TimeValue Chronometer::TimeValue::ReadTime()
 {
 	TimeValue res;
 #if defined(_MSC_VER)
-	static FILETIME ftCreation, ftExit, ftKernel, ftUser;
-	GetProcessTimes(GetCurrentProcess(), &ftCreation, &ftExit, &ftKernel, &ftUser);
-	TimeConvert tcKernel, tcUser;
-	tcKernel.ftValue = ftKernel;
-	tcUser.ftValue = ftUser;
-	res.seconds = (unsigned long)((tcKernel.i64Value + tcUser.i64Value) / 10000000U);
-	res.milli_seconds = (unsigned long)(((tcKernel.i64Value + tcUser.i64Value) % 10000000U) / 10000U);
-#elif defined(CPUTIME)
-	static struct rusage time_read; 
-	getrusage(RUSAGE_SELF,&time_read);
-	res.seconds = time_read.ru_utime.tv_sec;
-	res.milli_seconds = time_read.ru_utime.tv_usec / 1000U;
-#elif defined(HAVE_CLOCK_GETTIME)
-	clock_gettime(CLOCK_REALTIME, &time_read);
-  res.seconds = time_read.tv_sec;
-  res.milli_seconds = time_read.tv_nsec / 1000000U;	
-#elif defined(HAVE_GETTIMEOFDAY)
-	struct timeval time_read;
-  gettimeofday(&time_read, NULL);
-  res.seconds = time_read.tv_sec;
-  res.milli_seconds = time_read.tv_usec / 1000U;
+  if (clock_type == MSWindows)
+  {
+    static FILETIME ftCreation, ftExit, ftKernel, ftUser;
+    GetProcessTimes(GetCurrentProcess(), &ftCreation, &ftExit, &ftKernel, &ftUser);
+    TimeConvert tcKernel, tcUser;
+    tcKernel.ftValue = ftKernel;
+    tcUser.ftValue = ftUser;
+    res.seconds = (unsigned long)((tcKernel.i64Value + tcUser.i64Value) / 10000000U);
+    res.milli_seconds = (unsigned long)(((tcKernel.i64Value + tcUser.i64Value) % 10000000U) / 10000U);
+    return res;
+  }
 #endif
-	return res;
+#if defined(CPUTIME)
+  if (clock_type == CpuTime)
+  {
+    static struct rusage time_read; 
+    getrusage(RUSAGE_SELF,&time_read);
+    res.seconds = time_read.ru_utime.tv_sec + time_read.ru_stime.tv_sec;
+    res.milli_seconds = (time_read.ru_utime.tv_usec + time_read.ru_stime.tv_usec) / 1000U;
+    getrusage(RUSAGE_CHILDREN,&time_read);
+    res.seconds += time_read.ru_utime.tv_sec + time_read.ru_stime.tv_sec;
+    res.milli_seconds += (time_read.ru_utime.tv_usec + time_read.ru_stime.tv_usec) / 1000U;
+    return res;
+  }
+#endif
+#if defined(HAVE_CLOCK_GETTIME)
+  if (clock_type == ClockTime)
+  {
+    clock_gettime(CLOCK_REALTIME, &time_read);
+    res.seconds = time_read.tv_sec;
+    res.milli_seconds = time_read.tv_nsec / 1000000U;	
+    return res;
+  }
+#endif
+#if defined(HAVE_GETTIMEOFDAY)
+  if (clock_type == TimeOfDay)
+  {
+    struct timeval time_read;
+    gettimeofday(&time_read, NULL);
+    res.seconds = time_read.tv_sec;
+    res.milli_seconds = time_read.tv_usec / 1000U;
+    return res;
+  }
+#endif
+  throw std::runtime_error("ClockType not supported in this implementation");
+  return res;
 }
 
 Chronometer::Chronometer()

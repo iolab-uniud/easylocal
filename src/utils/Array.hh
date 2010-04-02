@@ -2183,9 +2183,18 @@ Vector<T> backward_elimination(const Matrix<T>& U, const Vector<T> y)
 
 /* Setting default linear systems machinery */
 
-#define det lu_det
-#define inverse lu_inverse
-#define solve lu_solve
+
+template <typename T>
+T det(const Matrix<T>& A)
+{	
+  return lu_det(A);
+}
+
+template <typename T>
+Matrix<T> inverse(const Matrix<T>& A)
+{
+  return lu_inverse(A);
+}
 
 /* Random */
 
