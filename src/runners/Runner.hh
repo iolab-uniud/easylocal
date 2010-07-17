@@ -59,6 +59,9 @@ public:
   /** Gets the best state of the runner.
     @return the internal state of the runner */
   virtual void ComputeCost();
+  /** Gets the current state of the runner.
+   @return the current internal state of the runner */
+  virtual CFtype GetCurrentStateCost() const;
   /** Gets the number of iterations performed by the runner.
     @return the number of iterations performed */
   virtual unsigned long GetIterationsPerformed() const;
@@ -227,6 +230,16 @@ template <class Input, class State, typename CFtype>
 void Runner<Input,State,CFtype>::ComputeCost()
 {
   current_state_cost = sm.CostFunction(current_state);
+}
+
+/**
+ Returns the current cost of the state
+ @return the current cost of the state
+ */
+template <class Input, class State, typename CFtype>
+CFtype Runner<Input,State,CFtype>::GetCurrentStateCost() const
+{
+  return current_state_cost;
 }
 
 /**
