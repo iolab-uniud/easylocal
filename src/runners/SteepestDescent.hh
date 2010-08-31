@@ -147,7 +147,7 @@ void SteepestDescent<Input,State,Move,CFtype>::GoCheck() const
 */
 template <class Input, class State, class Move, typename CFtype>
 bool SteepestDescent<Input,State,Move,CFtype>::StopCriterion()
-{ return GreaterOrEqualThan<CFtype>(this->current_move_cost,0); }
+{ return this->current_move_cost > 0; }
 
 /**
    A move is accepted if it is an improving one.
