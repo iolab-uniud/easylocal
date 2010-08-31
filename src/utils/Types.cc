@@ -101,15 +101,15 @@ bool GreaterOrEqualThan<float>(float value1, float value2)
 
 template <>
 bool IsZero<double>(double value)
-{ return fabs(value) <= TOL * std::numeric_limits<double>::epsilon(); }
+{ return fabs(value) <= std::numeric_limits<double>::epsilon(); }
 
 template <>
 bool EqualTo<double>(double value1, double value2)
-{ return fabs(value1 - value2) <= TOL * std::numeric_limits<double>::epsilon(); }
+{ return fabs(value1 - value2) <= std::numeric_limits<double>::epsilon(); }
 
 template <>
 bool LessThan<double>(double value1, double value2)
-{ return value1 + TOL * std::numeric_limits<double>::epsilon() < value2; }
+{ return value1 + std::numeric_limits<double>::epsilon() < value2; }
 
 template <>
 bool LessOrEqualThan<double>(double value1, double value2)
@@ -117,7 +117,7 @@ bool LessOrEqualThan<double>(double value1, double value2)
 
 template <>
 bool GreaterThan<double>(double value1, double value2)\
-{ return value1 - TOL * std::numeric_limits<double>::epsilon() > value2; }
+{ return value1 - std::numeric_limits<double>::epsilon() > value2; }
 
 template <>
 bool GreaterOrEqualThan<double>(double value1, double value2)
