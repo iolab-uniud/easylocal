@@ -22,9 +22,6 @@
 #include <cmath>
 #include <iostream>
 
-// FIXME: a more general mechanism for tolerance should be adopted
-#define TOL 1.0E+10
-
 template <>
 bool IsZero<int>(int value)
 { return value == 0; }
@@ -74,7 +71,6 @@ template <>
 bool GreaterOrEqualThan<long int>(long int value1, long int value2)
 { return value1 >= value2; }
 
-
 template <>
 bool IsZero<float>(float value)
 { return fabsf(value) <= std::numeric_limits<float>::epsilon(); }
@@ -116,7 +112,7 @@ bool LessOrEqualThan<double>(double value1, double value2)
 { return value1 <= value2; }
 
 template <>
-bool GreaterThan<double>(double value1, double value2)\
+bool GreaterThan<double>(double value1, double value2)
 { return value1 - std::numeric_limits<double>::epsilon() > value2; }
 
 template <>
