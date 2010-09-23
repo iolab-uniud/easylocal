@@ -37,9 +37,9 @@ AC_LANG([C++])
 AC_DISABLE_SHARED
 AC_PROG_LIBTOOL
 AC_PROG_CXX
-if test "$CXX" == "g++"; then
-  CXXFLAGS="$CXXFLAGS -fvisibility-inlines-hidden"
-fi
+#if test "$CXX" == "g++"; then
+#  CXXFLAGS="$CXXFLAGS -fvisibility-inlines-hidden"
+#fi
 AC_MSG_CHECKING([--enable-debug])
 AC_ARG_ENABLE(debug, 
   [AS_HELP_STRING([--enable-debug], [enable debugging (default: no)])], 

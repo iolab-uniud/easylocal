@@ -36,6 +36,7 @@ weights.
 
 #if !defined(HARD_WEIGHT_SET)
 const int HARD_WEIGHT = 1000;
+#define HARD_WEIGHT_SET
 #endif
 
 
