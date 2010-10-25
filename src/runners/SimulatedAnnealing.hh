@@ -65,6 +65,7 @@ public:
   void SetMinTemperature(double st)  { min_temperature = st; }
   void SetCoolingRate(double cr)  { cooling_rate = cr; }
   void SetNeighborsSampled(unsigned int ns)  { neighbors_sampled = ns; }
+  unsigned int NeighborsSampled() const { return neighbors_sampled; }
 
 
 protected:
