@@ -76,7 +76,8 @@ inline Chronometer::TimeValue Chronometer::TimeValue::ReadTime()
 #if defined(HAVE_CLOCK_GETTIME)
   if (clock_type == ClockTime)
   {
-    clock_gettime(CLOCK_REALTIME, &time_read);
+     static struct timespec time_read; 
+     clock_gettime(CLOCK_REALTIME, &time_read);
     res.seconds = time_read.tv_sec;
     res.milli_seconds = time_read.tv_nsec / 1000000U;	
     return res;
