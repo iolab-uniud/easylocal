@@ -53,6 +53,7 @@ public:
   void AddRunner(Runner<Input,State,CFtype>& r);
   void RunInputMenu();
   void RunStateTestMenu();
+  void SetState(const State& st){test_state = st;}
 protected:
   void ShowStateMenu();
   void ShowReducedStateMenu();
