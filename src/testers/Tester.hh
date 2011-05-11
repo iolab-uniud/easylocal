@@ -32,6 +32,7 @@ class AbstractTester
 {
 public:
   virtual void AddRunner(Runner<Input,State,CFtype>& r) = 0;
+  virtual ~AbstractTester() {};
 };
 
 /** A Tester collects a set of basic testers (move, state, ...) and

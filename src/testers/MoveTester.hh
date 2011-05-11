@@ -71,6 +71,7 @@ public:
   void CheckMoveIndependence(const State& st) const;
   void CheckRandomMoveDistribution(const State& st) const;
   void CheckTabuStrength(const State& st) const;
+  void CheckCandidateInitialTemperature() const;
   unsigned int Modality() const;
 protected:
   void ShowMenu();
@@ -190,9 +191,10 @@ void MoveTester<Input,Output,State,Move,CFtype>::ShowMenu()
      << "     (7)  Print Input Move Cost" << std::endl 
      << "     (8)  Check Neighborhood Costs" << std::endl 
      << "     (9)  Check Move Independence" << std::endl
-     << "    (10)  Check Random Move Distribution" << std::endl;
+     << "    (10)  Check Random Move Distribution" << std::endl
+     << "    (11)  Check Candidate Initial Temperature for SA" << std::endl;
   if (tlm != NULL)
-    os << "    (11)  Chech Tabu Strength" << std::endl;
+    os << "    (12)  Chech Tabu Strength" << std::endl;
   os << "     (0)  Return to Main Menu" << std::endl
      << " Your choice: ";
   std::cin >> choice;
@@ -252,6 +254,9 @@ bool MoveTester<Input,Output,State,Move,CFtype>::ExecuteChoice(State& st)
         CheckRandomMoveDistribution(st);
         break;
       case 11:
+        CheckCandidateInitialTemperature();
+        break;
+      case 12:
         CheckTabuStrength(st);
         break;
       default:
@@ -370,10 +375,23 @@ void MoveTester<Input,Output,State,Move,CFtype>::PrintNeighborhoodStatistics(con
 {
   unsigned int neighbors = 0, improving_neighbors = 0,
     worsening_neighbors = 0, non_improving_neighbors = 0;
+  unsigned i;
   Move mv;
-  CFtype mv_cost;
+  CFtype mv_cost, delta_cost;
+  double total_positive_cost = 0.0;
+
+
+  std::vector<std::pair<CFtype,CFtype> > min_max_costs(ne.DeltaCostComponents());
 
   ne.FirstMove(st,mv);
+  for (i = 0; i < ne.DeltaCostComponents(); i++)
+    if (ne.DeltaCostComponent(i).IsDeltaImplemented()) // only implemented delta can be buggy
+      {
+	FilledDeltaCostComponent<Input,State,Move,CFtype>& dcc = 
+	  (FilledDeltaCostComponent<Input,State,Move,CFtype>&) ne.DeltaCostComponent(i);
+	min_max_costs[i].first =  min_max_costs[i].second = dcc.DeltaCost(st, mv);  
+      }
+
   do
     {
       neighbors++;
@@ -381,18 +399,39 @@ void MoveTester<Input,Output,State,Move,CFtype>::PrintNeighborhoodStatistics(con
       if (mv_cost < 0)
         improving_neighbors++;
       else if (mv_cost > 0)
-        worsening_neighbors++;
+	{
+	  worsening_neighbors++;
+	  total_positive_cost += mv_cost;
+	}
       else
         non_improving_neighbors++;
+      for (i = 0; i < ne.DeltaCostComponents(); i++)
+	{
+	  if (ne.DeltaCostComponent(i).IsDeltaImplemented()) // only implemented delta can be buggy
+	    {
+	      FilledDeltaCostComponent<Input,State,Move,CFtype>& dcc = 
+		(FilledDeltaCostComponent<Input,State,Move,CFtype>&) ne.DeltaCostComponent(i);
+	      delta_cost = dcc.DeltaCost(st, mv);  
+	      if (delta_cost < min_max_costs[i].first)
+		min_max_costs[i].first = delta_cost;
+	      else if (delta_cost > min_max_costs[i].second)
+		min_max_costs[i].second = delta_cost;
+	    }	    
+	}
     }
   while (ne.NextMove(st,mv));
+
   os << "Neighborhood size: " <<  neighbors << std::endl
      << "   improving moves: " << improving_neighbors << " ("
      << (100.0*improving_neighbors)/neighbors << "%)" << std::endl
      << "   worsening moves: " << worsening_neighbors << " ("
-     << (100.0*worsening_neighbors)/neighbors << "%)" << std::endl
+     << (100.0*worsening_neighbors)/neighbors << "%), average cost: " << total_positive_cost/neighbors << std::endl
      << "   sideways moves: " << non_improving_neighbors << " ("
      << (100.0*non_improving_neighbors)/neighbors << "%)" << std::endl;
+
+  os << "Min and max component costs:" << std::endl;
+  for (i = 0; i < ne.DeltaCostComponents(); i++)
+    os << "  " << i << ". " << ne.DeltaCostComponent(i).name << " : Min = " << min_max_costs[i].first << ", Max = "  << min_max_costs[i].second << std::endl; 
 }
 
 template <class Input, class Output, class State, class Move, typename CFtype>
@@ -572,6 +611,46 @@ void MoveTester<Input,Output,State,Move,CFtype>::CheckTabuStrength(const State& 
   os << "Non-inverse moves " << double(pairs - inverse_pairs)/moves << std::endl;
 }
 
+
+
+template <class Input, class Output, class State, class Move, typename CFtype>
+void MoveTester<Input,Output,State,Move,CFtype>::CheckCandidateInitialTemperature() const
+{
+  const unsigned init_states = 100, samples = 1000;
+  unsigned i, j;
+  CFtype cost_value, max_cost_value = (CFtype) 0;
+  double mean, square_mean, variance, mean_variance = 0.0;
+
+  // Compute a start temperature by sampling the search space and computing the variance
+  // according to [van Laarhoven and Aarts, 1987] (allow an acceptance ratio of approximately 80%)
+  State sample_state(this->in);
+  Move mv;
+  
+  for (i = 0; i < init_states; i++)
+    {
+      mean = 0.0;
+      square_mean = 0.0;
+      this->sm.RandomState(sample_state);
+      for (j = 0; j < samples; j++)
+	{
+	  this->ne.RandomMove(sample_state, mv);
+	  cost_value = this->ne.DeltaCostFunction(sample_state, mv);
+	  if (cost_value > max_cost_value)
+	    max_cost_value = cost_value;
+	  mean += cost_value;
+	  square_mean += cost_value * cost_value;
+	}
+      mean /= samples;
+      variance = square_mean - mean * mean;
+      mean_variance += variance;
+    }
+  mean_variance /= init_states;
+
+  mean_variance /= 10e04; // scaling
+
+  os << "Start temperature 1 = " << mean_variance << std::endl;
+  os << "Start temperature 2 = " << max_cost_value << " (" << mean_variance/max_cost_value << ")" << std::endl;
+}
 
 template <class Input, class Output, class State, class Move, typename CFtype>
 unsigned int MoveTester<Input,Output,State,Move,CFtype>::Modality() const
