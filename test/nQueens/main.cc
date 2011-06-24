@@ -1,7 +1,7 @@
 // $Id$
 // This file is part of EasyLocalpp: a C++ Object-Oriented framework
 // aimed at easing the development of Local Search algorithms.
-// Copyright (C) 2001--2008 Andrea Schaerf, Luca Di Gaspero. 
+// Copyright (C) 2001--2011 Andrea Schaerf, Luca Di Gaspero. 
 //
 // EasyLocalpp is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -79,7 +79,7 @@
  
  @see UnitTesting for more details about setting up the classes for automatic unit testing.
  
- @version 1.0-r$Revision$
+ @version 2.0-r$Revision$
  @date $Date$
  @author Luca Di Gaspero, Andrea Schaerf
  */
@@ -176,28 +176,6 @@ int main(int argc, char* argv[])
   qmmtlm.AddTabuListManager(qtlm);
   qmmtlm.AddTabuListManager(qtlm);
   TabuSearch<int, std::vector<int>, DoubleSwap> qmmts(in, qsm, qmmnhe, qmmtlm, "DoubleSwapTabuSearch", cl, tester); 
-  /* typedef PrepareCartesianProductNeighborhoodExplorerTypes<int, std::vector<int>, TYPELIST_2(SwapNeighborhoodExplorer, SwapNeighborhoodExplorer)> MultimodalTypes;
-  typedef MultimodalTypes::MoveList DoubleSwap; // this line is not mandatory, it just aliases the movelist type for reader's convenience
-  MultimodalTypes::NeighborhoodExplorer qmmnhe(in, qsm, "Multimodal Swap");
-  qmmnhe.AddNeighborhoodExplorer(qnhe);
-  qmmnhe.AddNeighborhoodExplorer(qnhe);
-  typedef PrepareCartesianProductTabuListManager<std::vector<int>, TYPELIST_2(QueensTabuListManager, QueensTabuListManager)> MultimodalTabuListManagerTypes;
-  MultimodalTabuListManagerTypes::TabuListManager qmmtlm;
-  qmmtlm.AddTabuListManager(qtlm);
-  qmmtlm.AddTabuListManager(qtlm);
-  TabuSearch<int, std::vector<int>, DoubleSwap> qmmts(in, qsm, qmmnhe, qmmtlm, "DoubleSwapTabuSearch", cl); */
-  
-  
-  /* class QueensKicker2 : public MultimodalKicker<int,std::vector<int>,DoubleSwap>
-  {
-  public:
-    QueensKicker2(const int& bs, MultimodalTypes::NeighborhoodExplorer& qnhe, int s = 2)
-    : MultimodalKicker<int,std::vector<int>,DoubleSwap>(bs, qnhe, s, "QueensKicker2") 
-    {}
-    bool RelatedMoves(const DoubleSwap&, const DoubleSwap&) const
-    { return true; } 
-  } qk2(in, qmmnhe); */
-  
 
   cl.MatchArguments();
   if (arg_random_seed.IsSet())
@@ -231,10 +209,8 @@ int main(int argc, char* argv[])
 		MoveTester<int, ChessBoard, std::vector<int>, Swap> swap_move_test(in,qsm,qom,qnhe, "Swap move", tester);
     MoveTester<int, ChessBoard, std::vector<int>, DoubleSwap> multimodal_move_test(in,qsm,qom,qmmnhe, "Multimodal swap move", tester);
 		KickerTester<int, ChessBoard, std::vector<int> > monokicker_test(in,qsm,qom, qk, "Monomodal kick");
-    //KickerTester<int, ChessBoard, std::vector<int> > multikicker_test(in,qsm,qom, qk2, "Multimodal kick");
 		
 		tester.AddKickerTester(monokicker_test);
-    //tester.AddKickerTester(multikicker_test);	
 		
 		tester.RunMainMenu();
 	}

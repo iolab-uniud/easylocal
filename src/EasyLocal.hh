@@ -1,7 +1,7 @@
 // $Id$
 // This file is part of EasyLocalpp: a C++ Object-Oriented framework
 // aimed at easing the development of Local Search algorithms.
-// Copyright (C) 2001--2008 Andrea Schaerf, Luca Di Gaspero. 
+// Copyright (C) 2001--2011 Andrea Schaerf, Luca Di Gaspero. 
 //
 // EasyLocalpp is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -24,7 +24,7 @@
  the class declarations of the EasyLocal framework.   
  
  @author Luca Di Gaspero, Andrea Schaerf - University of Udine, Italy
- @version 1.0
+ @version 2.0
  $Revision$
  $Date$
  @note This version works both with MS Visual C++ and the GNU C++ 
@@ -49,7 +49,7 @@
  This is EasyLocalpp: a C++ Object-Oriented framework
  aimed at easing the development of Local Search algorithms.
  
- Copyright (C) 2001--2008 Andrea Schaerf, Luca Di Gaspero. 
+ Copyright (C) 2001--2011 Andrea Schaerf, Luca Di Gaspero. 
  
  The abstract classes that compose the framework specify and implement
  the invariant part of the algorithm, and are meant to be specialized by 

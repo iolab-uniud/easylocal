@@ -1,7 +1,7 @@
 // $Id$
 // This file is part of EasyLocalpp: a C++ Object-Oriented framework
 // aimed at easing the development of Local Search algorithms.
-// Copyright (C) 2001--2008 Andrea Schaerf, Luca Di Gaspero. 
+// Copyright (C) 2001--2011 Andrea Schaerf, Luca Di Gaspero. 
 //
 // EasyLocalpp is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
