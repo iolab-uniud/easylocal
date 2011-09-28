@@ -335,7 +335,7 @@ CFtype BimodalKicker<Input,State,Move1,Move2,CFtype>::FirstImprovingKick(const S
 	      first_kick_found = true;
 	      if (observer != NULL)
 		observer->NotifyBestKick(*this);
-	      if (LessThan(current_kick_cost,0))
+	      if (LessThan(current_kick_cost,static_cast<CFtype>(0)))
 		return current_kick_cost;
 	    }
 	  else
@@ -348,7 +348,7 @@ CFtype BimodalKicker<Input,State,Move1,Move2,CFtype>::FirstImprovingKick(const S
 		  internal_best_moves2 = current_moves2;
 		  if (observer != NULL)
 		    observer->NotifyBestKick(*this);
-		  if (LessThan(current_kick_cost,0))
+		  if (LessThan(current_kick_cost,static_cast<CFtype>(0)))
 		    return current_kick_cost;
 		}
 	    }
@@ -500,12 +500,12 @@ CFtype BimodalKicker<Input,State,Move1,Move2,CFtype>::TotalFirstImprovingKick(co
 {
   FirstPattern();
   CFtype first_kick_cost = FirstImprovingKick(st);
-  if (LessThan(current_kick_cost, 0)) return first_kick_cost;
+  if (LessThan(current_kick_cost, static_cast<CFtype>(0))) return first_kick_cost;
   
   while(NextPattern())
     {
       first_kick_cost = FirstImprovingKick(st);
-      if (LessThan(current_kick_cost, 0)) return first_kick_cost;
+      if (LessThan(current_kick_cost, static_cast<CFtype>(0))) return first_kick_cost;
     }
   return first_kick_cost;  // if no improving found, return the last
 }
