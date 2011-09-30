@@ -36,7 +36,7 @@ class Runner
 {
 public:
   /** Performs a full run of the search method. */
-  virtual void Go();
+  virtual void Go(bool first_round = true);
   /** Performs a given number of steps of the search method.
   @param n the number of steps to make */	
   virtual void Step(unsigned int n);
@@ -86,7 +86,7 @@ protected:
   /* state manipulations */
   virtual void GoCheck() const = 0;
   /** Actions to be perfomed at the beginning of the run. */
-  virtual void InitializeRun();
+  virtual void InitializeRun(bool first_round = true);
   /** Actions to be performed at the end of the run. */
   virtual void TerminateRun();
   virtual void UpdateIterationCounter();
@@ -284,11 +284,11 @@ void Runner<Input,State,CFtype>::TerminateRun()
    Performs a full run of a local search method.
  */
 template <class Input, class State, typename CFtype>
-void Runner<Input,State,CFtype>::Go()
+void Runner<Input,State,CFtype>::Go(bool first_round)
 
 {
   GoCheck();
-  InitializeRun();
+  InitializeRun(first_round);
   while (!ExternalTerminationRequest()  && 
          !MaxIterationExpired() && 
          !StopCriterion() && !LowerBoundReached())
@@ -333,6 +333,9 @@ void Runner<Input,State,CFtype>::Step(unsigned int n)
   GoCheck();
   for (unsigned int i = 0; i < n; i++)
   {
+    Chronometer chrono_it;
+    chrono_it.Reset();
+    chrono_it.Start();
     UpdateIterationCounter();
     SelectMove();
     if (AcceptableMove())
@@ -343,6 +346,7 @@ void Runner<Input,State,CFtype>::Step(unsigned int n)
       if (ExternalTerminationRequest() || LowerBoundReached())
         break;
     }
+    chrono_it.Stop();
   }
 }
 
@@ -396,7 +400,7 @@ bool Runner<Input,State,CFtype>::AcceptableMove()
    Initializes all the runner variable for starting a new run.
 */
 template <class Input, class State, typename CFtype>
-void Runner<Input,State,CFtype>::InitializeRun()
+void Runner<Input,State,CFtype>::InitializeRun(bool first_round)
 {
   number_of_iterations = 0;
   iteration_of_best = 0;
@@ -433,7 +437,6 @@ template <class Input, class State, typename CFtype>
 pthread_t& Runner<Input,State,CFtype>::GoThread()
 {
   pthread_create(&this_thread, NULL, Runner<Input,State,CFtype>::_pthreads_Run, this);
-	
   return this_thread;
 }
 

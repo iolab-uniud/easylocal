@@ -59,7 +59,7 @@ public:
   void Print(std::ostream& os = std::cout) const;
 protected:
   void GoCheck() const;
-  void InitializeRun();
+  void InitializeRun(bool first_round = true);
   void TerminateRun();
   void StoreMove();
   bool StopCriterion();
@@ -130,7 +130,7 @@ void SteepestDescent<Input,State,Move,CFtype>::SelectMove()
    at a negative value for fulfilling the stop criterion the first time
 */     
 template <class Input, class State, class Move, typename CFtype>
-void SteepestDescent<Input,State,Move,CFtype>::InitializeRun()
+void SteepestDescent<Input,State,Move,CFtype>::InitializeRun(bool first_round)
 {
   MoveRunner<Input,State,Move,CFtype>::InitializeRun();
   this->current_move_cost = -1; // needed for passing the first time

@@ -56,7 +56,7 @@ void SetShiftRegion(double sr)
 { shift_region = sr; }
 void SetWeightRegion(double w) { shift_region = w; }
 protected:
-void InitializeRun();
+void InitializeRun(bool first_round = true);
 void SelectMove();
 void StoreMove();
 // for the shifting penalty
@@ -174,7 +174,7 @@ void TabuSearchWithShiftingPenalty<Input,State,Move,CFtype>::UpdateShifts()
 }
 
 template <class Input, class State, class Move, typename CFtype>
-void TabuSearchWithShiftingPenalty<Input,State,Move,CFtype>::InitializeRun()
+void TabuSearchWithShiftingPenalty<Input,State,Move,CFtype>::InitializeRun(bool first_round)
 {
   TabuSearch<Input,State,Move,CFtype>::InitializeRun();
   ResetShifts();

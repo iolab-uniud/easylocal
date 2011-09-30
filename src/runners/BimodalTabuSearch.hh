@@ -51,7 +51,7 @@ BimodalTabuSearch(const Input& in,
                   std::string name, CLParser& cl);
 protected:
 void GoCheck() const;
-void InitializeRun();
+void InitializeRun(bool first_round = true);
 bool StopCriterion();
 void SelectMove();
 bool AcceptableMove();
@@ -139,7 +139,7 @@ void BimodalTabuSearch<Input,State,Move1,Move2,CFtype>::Print(std::ostream& os) 
  cleans the tabu list.
  */
 template <class Input, class State, class Move1, class Move2, typename CFtype>
-void BimodalTabuSearch<Input,State,Move1,Move2,CFtype>::InitializeRun()
+void BimodalTabuSearch<Input,State,Move1,Move2,CFtype>::InitializeRun(bool first_round)
 {
   BimodalMoveRunner<Input,State,Move1,Move2,CFtype>::InitializeRun();
   pm1.Clean();

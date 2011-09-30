@@ -43,7 +43,7 @@ public:
   void SetShiftRegion(double sr)
   { shift_region = sr; }
   void SetWeightRegion(double w) { shift_region = w; }
-  void InitializeRun();
+  void InitializeRun(bool first_round = true);
   void SelectMove();
   void MakeMove();
   void StoreMove();
@@ -139,7 +139,7 @@ void BimodalTabuSearchWithShiftingPenalty<Input,State,Move1,Move2,CFtype>::Updat
 
 
 template <class Input, class State, class Move1, class Move2, typename CFtype>
-void BimodalTabuSearchWithShiftingPenalty<Input,State,Move1,Move2,CFtype>::InitializeRun()
+void BimodalTabuSearchWithShiftingPenalty<Input,State,Move1,Move2,CFtype>::InitializeRun(bool first_round)
 {
   BimodalTabuSearch<Input,State,Move1,Move2,CFtype>::InitializeRun();
   ResetShifts();

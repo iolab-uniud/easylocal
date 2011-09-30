@@ -278,6 +278,8 @@ CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::DeltaCostFunction(const St
   CFtype delta_hard_cost = 0, delta_soft_cost = 0;
   unsigned int i;
   
+//   std::cerr << mv << std::endl;
+
   if (number_of_delta_not_implemented == 0)
   {
     for (i = 0; i < delta_cost_component.size(); i++)
@@ -286,7 +288,9 @@ CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::DeltaCostFunction(const St
       if (dcc.IsHard())
         delta_hard_cost += dcc.DeltaCost(st, mv);
       else
-        delta_soft_cost += dcc.DeltaCost(st, mv);			
+        delta_soft_cost += dcc.DeltaCost(st, mv);
+	
+//       std::cerr <<  dcc.DeltaCost(st, mv) << " "; 
     }
   }
   else
@@ -317,6 +321,8 @@ CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::DeltaCostFunction(const St
             delta_soft_cost += dcc.DeltaCost(st, st1);
           }					
   }
+//   std::cerr <<  std::endl << delta_hard_cost << " " << delta_soft_cost <<  std::endl;
+       			
   return HARD_WEIGHT * delta_hard_cost + delta_soft_cost;
 }
 

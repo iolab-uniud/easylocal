@@ -69,7 +69,7 @@ TabuListManager<State,Move,CFtype>& GetTabuListManager() { return pm; }
 bool MaxIdleIterationExpired() const;
 protected:
 void GoCheck() const;
-void InitializeRun();
+void InitializeRun(bool first_round = true);
 bool StopCriterion();
 void SelectMove();
 bool AcceptableMove();
@@ -177,7 +177,7 @@ void TabuSearch<Input,State,Move,CFtype>::Print(std::ostream& os) const
  cleans the tabu list.
  */
 template <class Input, class State, class Move, typename CFtype>
-void TabuSearch<Input,State,Move,CFtype>::InitializeRun()
+void TabuSearch<Input,State,Move,CFtype>::InitializeRun(bool first_round)
 {
   MoveRunner<Input,State,Move,CFtype>::InitializeRun();
   pm.Clean();

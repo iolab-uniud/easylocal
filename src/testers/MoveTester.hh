@@ -325,6 +325,7 @@ void MoveTester<Input,Output,State,Move,CFtype>::CheckNeighborhoodCosts(const St
   do
   {
     move_count++;
+
     ne.MakeMove(st1, mv);
     error = this->sm.CostFunction(st1) - ne.DeltaCostFunction(st, mv) - this->sm.CostFunction(st);
     if (!IsZero(error))
@@ -352,10 +353,12 @@ void MoveTester<Input,Output,State,Move,CFtype>::CheckNeighborhoodCosts(const St
       os << "Press enter to continue " << std::endl;
       std::cin.get();
     }    
+
     if (move_count % 100 == 0) 
       std::cerr << '.'; // print dots to show that it is alive
     not_last_move = ne.NextMove(st, mv);
-    st1 = st;
+     st1 = st;
+
   }
   while(not_last_move);
   

@@ -46,6 +46,8 @@ class Tester : public AbstractTester<Input, State, CFtype>
 public:
   Tester(const Input& in, StateManager<Input,State,CFtype>& e_sm, 
 	 OutputManager<Input,Output,State,CFtype>& e_om, std::ostream& o = std::cout);
+  Tester(const Input& in, State st, StateManager<Input,State,CFtype>& e_sm, 
+	 OutputManager<Input,Output,State,CFtype>& e_om, std::ostream& o = std::cout);
   /** Virtual destructor. */
   virtual ~Tester() {}
   void RunMainMenu(std::string file_name = "");
@@ -105,6 +107,7 @@ Tester<Input, Output, State,CFtype>::Tester(const Input& i,
   :  in(i), os(o), sm(e_sm), om(e_om),
     test_state(i), out(i)
 {}
+
 
 /**
    Adds a move tester.

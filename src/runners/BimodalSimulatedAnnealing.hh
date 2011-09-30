@@ -41,7 +41,7 @@ public:
   void SetMinTemperature(double mt) { min_temperature = mt; }
 protected:
   void GoCheck() const;
-  void InitializeRun();
+  void InitializeRun(bool first_round = true);
   bool StopCriterion();
   void UpdateIterationCounter();
   void SelectMove();
@@ -151,10 +151,10 @@ void BimodalSimulatedAnnealing<Input,State,Move1,Move2,CFtype>::GoCheck() const
    setting the temperature to the start value.
 */
 template <class Input, class State, class Move1, class Move2, typename CFtype>
-void BimodalSimulatedAnnealing<Input,State,Move1,Move2,CFtype>::InitializeRun()
+void BimodalSimulatedAnnealing<Input,State,Move1,Move2,CFtype>::InitializeRun(bool first_round)
 {
   BimodalMoveRunner<Input,State,Move1,Move2,CFtype>::InitializeRun();
-  if (start_temperature > 0.0)
+  if (start_temperature > 0.0 && first_round)
     temperature = start_temperature;
   else
     {

@@ -177,7 +177,7 @@ CFtype StateManager<Input,State,CFtype>::CostFunction(const State& st) const
       hard_cost += cost_component[i]->Cost(st);
     else
       soft_cost += cost_component[i]->Cost(st);
-
+ 
   return HARD_WEIGHT * hard_cost  + soft_cost; 
 }
 

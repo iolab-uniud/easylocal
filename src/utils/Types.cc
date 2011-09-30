@@ -72,6 +72,32 @@ bool GreaterOrEqualThan<long int>(long int value1, long int value2)
 { return value1 >= value2; }
 
 template <>
+bool IsZero<int64_t>(int64_t value)
+{ return value == 0; }
+
+
+template <>
+bool EqualTo<int64_t>(int64_t value1, int64_t value2)
+{ return value1 == value2; }
+
+template <>
+bool LessThan<int64_t>(int64_t value1, int64_t value2)
+{ return value1 < value2; }
+
+template <>
+bool LessOrEqualThan<int64_t>(int64_t value1, int64_t value2)
+{ return value1 <= value2; }
+
+template <>
+bool GreaterThan<int64_t>(int64_t value1, int64_t value2)
+{ return value1 > value2; }
+
+template <>
+bool GreaterOrEqualThan<int64_t>(int64_t value1, int64_t value2)
+{ return value1 >= value2; }
+
+
+template <>
 bool IsZero<float>(float value)
 { return fabsf(value) <= std::numeric_limits<float>::epsilon(); }
 

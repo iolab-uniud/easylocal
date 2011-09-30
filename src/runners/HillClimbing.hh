@@ -48,7 +48,7 @@ public:
   bool MaxIdleIterationExpired() const;
 protected:
   void GoCheck() const;
-  void InitializeRun();
+  void InitializeRun(bool first_round = true);
   void TerminateRun();
   bool StopCriterion();
   bool AcceptableMove();
@@ -152,7 +152,7 @@ void HillClimbing<Input,State,Move,CFtype>::SelectMove()
    the superclass companion method.
 */
 template <class Input, class State, class Move, typename CFtype>
-void HillClimbing<Input,State,Move,CFtype>::InitializeRun()
+void HillClimbing<Input,State,Move,CFtype>::InitializeRun(bool first_round )
 {
   MoveRunner<Input,State,Move,CFtype>::InitializeRun();
 }

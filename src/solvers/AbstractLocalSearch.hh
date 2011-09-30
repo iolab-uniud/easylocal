@@ -64,7 +64,7 @@ protected:
 					 states tested for a run. */
   Output out;
 protected:
-  bool LetGo(Runner<Input,State,CFtype>& runner);
+  bool LetGo(Runner<Input,State,CFtype>& runner, bool first_round = true);
 #if defined(HAVE_PTHREAD)
 /**< This variable will be shared among runners (and possibly other lower-level components) and controls their termination. */
 RWLockVariable<bool> termination_request, termination_confirmation;
@@ -162,7 +162,7 @@ void AbstractLocalSearch<Input,Output,State,CFtype>::FindInitialState(bool rando
 }
 
 template <class Input, class Output, class State, typename CFtype>
-bool AbstractLocalSearch<Input,Output,State,CFtype>::LetGo(Runner<Input,State,CFtype>& runner)
+bool AbstractLocalSearch<Input,Output,State,CFtype>::LetGo(Runner<Input,State,CFtype>& runner, bool first_round)
 {
 #if defined(HAVE_PTHREAD)
   if (this->timeout_set)
@@ -202,7 +202,7 @@ bool AbstractLocalSearch<Input,Output,State,CFtype>::LetGo(Runner<Input,State,CF
     return false;
   }
 #else
-  runner.Go();
+  runner.Go(first_round);
   return false;
 #endif
 }

@@ -49,7 +49,7 @@ class BimodalMoveRunner
 public:
   // Runner interface
   virtual void Check() const;
-  void InitializeRun();
+  void InitializeRun(bool first_round = true);
   void TerminateRun();
   void AttachObserver(BimodalRunnerObserver<Input,State,Move1,Move2,CFtype>& ob) { observer = &ob; }
   unsigned int Modality() const { return 2; }
@@ -95,7 +95,7 @@ BimodalMoveRunner<Input,State,Move1,Move2,CFtype>::BimodalMoveRunner(const Input
 }
 
 template <class Input, class State, class Move1, class Move2, typename CFtype>
-void BimodalMoveRunner<Input,State,Move1,Move2,CFtype>::InitializeRun() 
+void BimodalMoveRunner<Input,State,Move1,Move2,CFtype>::InitializeRun(bool first_round) 
 {
   Runner<Input,State,CFtype>::InitializeRun();
   if (observer != NULL)

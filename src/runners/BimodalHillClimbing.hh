@@ -42,7 +42,7 @@ public:
 		      std::string name = "Anonymous Bimodal Hill Climbing runner");
 protected:
   void GoCheck() const;
-  void InitializeRun();
+  void InitializeRun(bool first_round = true);
   void TerminateRun();
   bool StopCriterion();
   bool AcceptableMove();
@@ -105,7 +105,7 @@ void BimodalHillClimbing<Input,State,Move1,Move2,CFtype>::SelectMove()
    the superclass companion method.
 */
 template <class Input, class State, class Move1, class Move2, typename CFtype>
-void BimodalHillClimbing<Input,State,Move1,Move2,CFtype>::InitializeRun()
+void BimodalHillClimbing<Input,State,Move1,Move2,CFtype>::InitializeRun(bool first_round)
 {
   BimodalMoveRunner<Input,State,Move1,Move2,CFtype>::InitializeRun();
 }

@@ -41,7 +41,7 @@ public:
   virtual void Check() const;
   void ResetTimeout();
   void AttachObserver(RunnerObserver<Input,State,Move,CFtype>& ob) { observer = &ob; }
-  void InitializeRun();
+  void InitializeRun(bool first_round = true);
   void TerminateRun();
   Move CurrentMove() const { return current_move; }
   CFtype CurrentMoveCost() const { return current_move_cost; }
@@ -101,11 +101,11 @@ MoveRunner<Input,State,Move,CFtype>::MoveRunner(const Input& in,
 }
 
 template <class Input, class State, class Move, typename CFtype>
-void MoveRunner<Input,State,Move,CFtype>::InitializeRun() 
+void MoveRunner<Input,State,Move,CFtype>::InitializeRun(bool first_round) 
 {
-	Runner<Input,State,CFtype>::InitializeRun();
-	if (observer != NULL)
-		observer->NotifyStartRunner(*this);
+  Runner<Input,State,CFtype>::InitializeRun();
+  if (observer != NULL)
+    observer->NotifyStartRunner(*this);
 #if defined(HAVE_PTHREAD)
   ne.SetExternalTerminationRequest(*this->external_termination_request);
 #endif
@@ -158,7 +158,9 @@ void MoveRunner<Input,State,Move,CFtype>::ComputeMoveCost()
 template <class Input, class State, class Move, typename CFtype>
 void MoveRunner<Input,State,Move,CFtype>::UpdateStateCost()
 { 
+  // std:: cerr << this->current_state_cost << std::endl; 
 	this->current_state_cost += current_move_cost; 
+//  	std:: cerr << current_move_cost << " " << this->current_state_cost << std::endl; 
 }
 
 #endif /*MOVERUNNER_HH_*/

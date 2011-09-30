@@ -20,7 +20,7 @@ public:
                         std::string name = "Anonymous Bimodal First Descent runner");
 protected:
     void GoCheck() const;
-    void InitializeRun();
+    void InitializeRun(bool first_round = true);
     void TerminateRun();
     bool StopCriterion();
     bool AcceptableMove();
@@ -79,7 +79,7 @@ void BimodalFirstDescent<Input,State,Move1,Move2,CFtype>::SelectMove()
    the superclass companion method.
 */
 template <class Input, class State, class Move1, class Move2, typename CFtype>
-void BimodalFirstDescent<Input,State,Move1,Move2,CFtype>::InitializeRun()
+void BimodalFirstDescent<Input,State,Move1,Move2,CFtype>::InitializeRun(bool first_round)
 {
     BimodalMoveRunner<Input,State,Move1,Move2,CFtype>::InitializeRun();
     this->current_move_cost1 = -1;     // needed for passing the first time the StopCriterion test

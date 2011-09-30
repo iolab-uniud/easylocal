@@ -64,7 +64,7 @@ public:
 
 protected:
   void GoCheck() const;
-  void InitializeRun();
+  void InitializeRun(bool first_round = true);
   bool StopCriterion();
   void UpdateIterationCounter();
   void SelectMove();
@@ -217,7 +217,7 @@ void GreatDeluge<Input,State,Move,CFtype>::GoCheck() const
    setting the temperature to the start value.
 */
 template <class Input, class State, class Move, typename CFtype>
-void GreatDeluge<Input,State,Move,CFtype>::InitializeRun()
+void GreatDeluge<Input,State,Move,CFtype>::InitializeRun(bool first_round)
 {
   MoveRunner<Input,State,Move,CFtype>::InitializeRun();
   level = initial_level * this->current_state_cost;
