@@ -21,6 +21,7 @@
 #include <limits>
 #include <cmath>
 #include <iostream>
+#include <stdint.h>
 
 template <>
 bool IsZero<int>(int value)
@@ -44,31 +45,6 @@ bool GreaterThan<int>(int value1, int value2)
 
 template <>
 bool GreaterOrEqualThan<int>(int value1, int value2)
-{ return value1 >= value2; }
-
-
-template <>
-bool IsZero<long int>(long int value)
-{ return value == 0; }
-
-template <>
-bool EqualTo<long int>(long int value1, long int value2)
-{ return value1 == value2; }
-
-template <>
-bool LessThan<long int>(long int value1, long int value2)
-{ return value1 < value2; }
-
-template <>
-bool LessOrEqualThan<long int>(long int value1, long int value2)
-{ return value1 <= value2; }
-
-template <>
-bool GreaterThan<long int>(long int value1, long int value2)
-{ return value1 > value2; }
-
-template <>
-bool GreaterOrEqualThan<long int>(long int value1, long int value2)
 { return value1 >= value2; }
 
 template <>
