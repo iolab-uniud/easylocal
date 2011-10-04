@@ -171,7 +171,7 @@ bool AbstractLocalSearch<Input,Output,State,CFtype>::LetGo(Runner<Input,State,CF
     termination_request = false;
     termination_confirmation = false;
     runner.SetExternalTerminationVariables(runner_termination, termination_request, termination_confirmation);
-    pthread_t runner_thread = runner.GoThread();
+    pthread_t runner_thread = runner.GoThread(first_round);
     try
     {
       time_left = runner_termination.WaitTimeout(this->current_timeout);
@@ -196,7 +196,7 @@ bool AbstractLocalSearch<Input,Output,State,CFtype>::LetGo(Runner<Input,State,CF
     termination_request = false;
     termination_confirmation = true;
     runner.SetExternalTerminationVariables(runner_termination, termination_request, termination_confirmation);
-    pthread_t runner_thread = runner.GoThread();
+    pthread_t runner_thread = runner.GoThread(first_round);
     pthread_join(runner_thread, NULL);
     runner.ResetExternalTerminationVariables();
     return false;

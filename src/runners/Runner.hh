@@ -132,10 +132,11 @@ public:
   virtual void SetExternalTerminationVariables(ConditionVariable& termination, RWLockVariable<bool>& external_termination_request,
                                                RWLockVariable<bool>& external_termination_confirmation);
   virtual void ResetExternalTerminationVariables();
-  pthread_t& GoThread();
+  pthread_t& GoThread(bool first_round = true);
 private:
   static void* _pthreads_Run(void* pthis);
   pthread_t this_thread;
+  bool first_round; 
 #endif
 protected:
   Chronometer chrono;
@@ -423,7 +424,8 @@ void* Runner<Input,State,CFtype>::_pthreads_Run(void* ep_this)
   if (!p_this)
     return NULL;
     
-  p_this->Go();
+  p_this->Go(p_this->first_round);
+
   if (p_this->termination && !(*p_this->external_termination_request))
   do
     p_this->termination->Signal();
@@ -434,8 +436,9 @@ void* Runner<Input,State,CFtype>::_pthreads_Run(void* ep_this)
 }
 
 template <class Input, class State, typename CFtype>
-pthread_t& Runner<Input,State,CFtype>::GoThread()
+pthread_t& Runner<Input,State,CFtype>::GoThread(bool first_round)
 {
+  this->first_round = first_round;
   pthread_create(&this_thread, NULL, Runner<Input,State,CFtype>::_pthreads_Run, this);
   return this_thread;
 }
