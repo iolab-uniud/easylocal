@@ -110,7 +110,7 @@ SimulatedAnnealing<Input,State,Move,CFtype>::SimulatedAnnealing(const Input& in,
     start_temperature(0.0), min_temperature(0.0001), cooling_rate(0.75), restart_temperature_ratio(1.0), neighbors_sampled(10), 
     simulated_annealing_arguments("sa_" + name, "sa_" + name, false), arg_start_temperature("start_temperature", "st", false),
     arg_min_temperature("min_temperature", "mt", false), arg_cooling_rate("cooling_rate", "cr", true), 
-    arg_neighbors_sampled("neighbors_sampled", "ns", true), arg_start_temperature("restart_temperature_ratio", "rst", false)
+    arg_restart_temperature_ratio("restart_temperature_ratio", "rst", false), arg_neighbors_sampled("neighbors_sampled", "ns", true)
 {
   simulated_annealing_arguments.AddArgument(arg_start_temperature);
   simulated_annealing_arguments.AddArgument(arg_min_temperature);
