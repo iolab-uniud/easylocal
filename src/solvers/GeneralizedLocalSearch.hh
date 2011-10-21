@@ -67,6 +67,9 @@ public:
   void AttachObserver(GeneralizedLocalSearchObserver<Input,Output,State,CFtype>& obs) { observer = &obs; }
   void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout);
 
+  unsigned int GetKickRounds() const { return kick_rounds; }
+  unsigned int GetKickImprovingRounds() const { return kick_improving_rounds; }
+
   void SimpleSolve(unsigned runner = 0, unsigned init_state = 1); // 0: leave unchanged, 1: random, 2 :greedy
   void MultiStartSimpleSolve(unsigned runner = 0, unsigned trials = 1);
   void MultiStartGeneralSolve(KickStrategy kick_strategy = NO_KICKER, unsigned trials = 1);
@@ -74,7 +77,7 @@ public:
 
 protected:
   bool PerformKickRun();
-  unsigned int current_runner, idle_rounds, restarts, rounds, kick_rate;
+  unsigned int current_runner, idle_rounds, restarts, rounds, kick_rate, kick_rounds, kick_improving_rounds;
 
   std::vector<Runner<Input,State,CFtype>* > runners; /**< The vector of
 							the linked runners. */
@@ -346,6 +349,11 @@ void GeneralizedLocalSearch<Input,Output,State,CFtype>::GeneralSolve(KickStrateg
 {
   bool improve_state, lower_bound_reached = false, timeout_expired = false, first_round = true;
   CFtype kick_cost;
+
+  // Debug
+
+  kick_rounds = 0, kick_improving_rounds = 0;
+
   idle_rounds = 0;
   rounds = 0;
   
@@ -397,6 +405,7 @@ void GeneralizedLocalSearch<Input,Output,State,CFtype>::GeneralSolve(KickStrateg
         if (idle_rounds % kick_rate != 0) continue;
         if (kick_strategy != NO_KICKER)
         {
+	  kick_rounds++;
           if (observer != NULL)
             observer->NotifyKickerStart(*this);
           if (kick_strategy == DIVERSIFIER || kick_strategy == DIVERSIFIER_AT_EVERY_ROUND || kick_strategy == INTENSIFIER)
@@ -422,6 +431,7 @@ void GeneralizedLocalSearch<Input,Output,State,CFtype>::GeneralSolve(KickStrateg
             this->best_state_cost = this->current_state_cost;
             lower_bound_reached = this->sm.LowerBoundReached(this->best_state_cost); 
             idle_rounds = 0;
+	    kick_improving_rounds++;
           }
           if (observer != NULL)
             observer->NotifyKickerStop(*this);
