@@ -207,6 +207,7 @@ template <class Input, class Output, class State, typename CFtype>
 void GeneralizedLocalSearch<Input,Output,State,CFtype>::ClearRunners()
 {
   runners.clear();
+  current_runner = 0;
 }
 
 template <class Input, class Output, class State, typename CFtype>
@@ -388,6 +389,7 @@ void GeneralizedLocalSearch<Input,Output,State,CFtype>::GeneralSolve(KickStrateg
         }
         if (lower_bound_reached || timeout_expired) break;
       }
+      current_runner = 0;
       rounds++;
       first_round = false;
       if (observer != NULL) observer->NotifyRound(*this);	        
@@ -418,7 +420,7 @@ void GeneralizedLocalSearch<Input,Output,State,CFtype>::GeneralSolve(KickStrateg
               observer->NotifyKickStep(*this,kick_cost);
             p_kicker->MakeKick(this->current_state);
             this->current_state_cost += kick_cost; 
-            if (LessThan(kick_cost, static_cast<CFtype>(0))) 
+            if (LessThan(kick_cost, static_cast<CFtype>(0)))
               improve_state = true;
           }
           else if (kick_strategy == INTENSIFIER_RUN)

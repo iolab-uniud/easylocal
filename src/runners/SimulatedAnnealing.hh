@@ -262,6 +262,7 @@ CFtype min(const std::vector<CFtype>& values)
 template <class Input, class State, class Move, typename CFtype>
 void SimulatedAnnealing<Input,State,Move,CFtype>::InitializeRun(bool first_round)
 {
+
   MoveRunner<Input,State,Move,CFtype>::InitializeRun();
   if (start_temperature > 0.0 && first_round)
     temperature = start_temperature;
