@@ -66,7 +66,11 @@ public:
   void SetMinTemperature(double st)  { min_temperature = st; }
   void SetCoolingRate(double cr)  { cooling_rate = cr; }
   void SetNeighborsSampled(unsigned int ns)  { neighbors_sampled = ns; }
+
   unsigned int NeighborsSampled() const { return neighbors_sampled; }
+  double StartTemperature() const { return start_temperature; }
+  double MinTemperature() const { return min_temperature; }
+  double CoolingRate() const { return cooling_rate; }
 
 
 protected:
