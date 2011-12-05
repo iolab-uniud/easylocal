@@ -54,11 +54,8 @@
  
  - ShiftingPenaltyManager: is responsible for the adaptive modification of the weights of the
  cost function, according to the @e shifting @e penalty mechanism. For each component of the
- cost function, it maintains an independent weight, which varies
- depending on the number of violations and according to a
- customizable scheme.
- 
- 
+ cost function, it maintains an independent weight, which varies depending on the number of 
+ violations and according to a customizable scheme.
 */
 
 #include <helpers/StateManager.hh>

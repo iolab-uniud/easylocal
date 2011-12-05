@@ -140,7 +140,7 @@
  - @anchor Input @a Input: input data of the problem.  
  - @anchor Output @a Output: output as it has to be delivered to the user.
  - @anchor State @a State: an element of the search space.
- - @anchor Move @a Move: a local move.
+ - @anchor Move @a Move: a local move. The class move needs to have the operators == and < defined.
  - @anchor CFType @a CFType: the cost function type. This template is by default
    instantiated to @c int, representing an integer (discrete) cost function.
    However it can be redefined by the user to allow for real-valued cost 

@@ -39,65 +39,159 @@ const int HARD_WEIGHT = 1000;
 #define HARD_WEIGHT_SET
 #endif
 
-
 /** The State Manager is responsible for all operations on the state
 which are independent of the neighborhood definition, such as
 generating a random state, and computing the cost of a state.
 No @c Move template is supplied to it.  
+@tparam Input User defined input class
+@tparam Output User defined output class
+@tparam CFtype Codomain of the objective function (int by default)
 @ingroup Helpers
 */
 template <class Input, class State, typename CFtype = int>
 class StateManager
 {
 public:
+  /** Prints the configuration of the object (attached cost components)
+      @param os Output stream 
+  */
   void Print(std::ostream& os = std::cout) const;
   /** Generates a random state.
-  @note @bf To be implemented in the application.
-  @param st the state generated */
+  @note To be implemented in the application (MustDef).
+  @param st state to be written */
   virtual void RandomState(State &st) = 0;
+
+  /**
+     Looks for the best state out of a given number of random
+     states.
+     
+     @param st state to be written 
+     @param samples number of states sampled
+  */
   virtual CFtype SampleState(State &st, unsigned int samples);
+
+
+  /** 
+      Generate a greedy state with a random component controlled by the parameters alpha and k
+
+      @todo Complete the documentation of alpha and k
+  */
   virtual void GreedyState(State &st, double alpha, unsigned int k);
+
+  /** 
+      Generate a greedy state.
+      @note To be implemented in the application. Default behaviour is RandomState (MayRedef).
+  */
   virtual void GreedyState(State &st);
-  // State Evaluation functions
+
+  /**
+     Compute the cost function calling the cost components. 
+     The normal definition computes a weighted sum of the violation
+     function and the objective function (rarely it is needed to
+     redefine it) 
+
+     @param st the state to be evaluated 
+     @return the value of the cost function in the given state (hard + soft costs)
+   */
   virtual CFtype CostFunction(const State& st) const;
+
+  /**
+     Compute the violations calling the hard cost components (rarely it is needed to redefine it)
+     @param st the state to be evaluated
+     @return the violations (hard costs)
+   */
   virtual CFtype Violations(const State& st) const;
+
+  /**
+     Compute the objective function calling the soft cost components (rarely it is needed to redefine it)
+     @param st the state to be evaluated
+     @return the objective (soft costs)
+   */
   virtual CFtype Objective(const State& st) const;
-  /** Checks whether the lower bound of the cost function has been reached.
-	 @return true if the lower bound of the cost function has reached,
-	 false otherwise */
+
+  /** Checks whether the lower bound of the cost function has been
+      reached. The tentative definition verifies whether the state
+      cost is equal to zero.  @return true if the lower bound of the
+      cost function has reached, false otherwise 
+      @param st the state to be evaluated
+  */
   virtual bool LowerBoundReached(const CFtype& fvalue) const;
+
+  /** Checks whether the cost of the current state has
+      reached the lower bound. By default calls @c LowerBoundReached(CostFunction(st)).
+      @return true if the state is optimal w.r.t. the lower bound
+      cost function has reached, false otherwise 
+      @param st the state to be evaluated
+  */
   virtual bool OptimalStateReached(const State& st) const;
 
+  /**
+     Adds a component to the cost component array
+     @param cc the cost component to be added
+  */
+  void AddCostComponent(CostComponent<Input,State,CFtype>& cc);
+
+
+  /**
+     Clears the cost component array
+  */
+  void ClearCostComponents();
+
+  /**
+     Computes the distance of two states (for example the Hamming distance). 
+     Currently not used by any solver. Used only by the @ref GeneralizedLocalSearchObserver.
+     @return the distance, assumed always @c unsigned
+  */
   virtual unsigned StateDistance(const State& st1, const State& st2) const;
 
-  void AddCostComponent(CostComponent<Input,State,CFtype>& cc);
-  void ClearCostComponents();
   
+  /**
+     Checks whether the state is consistent. In particular, should
+     check whether the redundant data structures are consistent with
+     the main ones. Used only for debugging purposes.
+  */
   virtual bool CheckConsistency(const State& st) const = 0;
   
+  /**
+     @return the reference to a cost component
+     @param i the index of the cost component
+  */
   CostComponent<Input, State,CFtype>& GetCostComponent(unsigned i) const { return *(cost_component[i]); }
+
+  /**
+     @return the numer of cost components
+  */
   size_t CostComponents() const { return cost_component.size(); }
+
+  /**
+     @return the cost of a specific cost component
+     @param i the index of the cost component
+     @param st the state to be evaluated
+  */
   CFtype Cost(const State& st, unsigned int i) const { return cost_component[i]->Cost(st); }
 
   const std::string name;
 protected:
+  /**
+     Builds an StateManager object linked to the provided input.
+     
+     @param in a reference to an input object
+     @param name is the name of the object
+  */
   StateManager(const Input& in, std::string name);
   virtual ~StateManager() {}
+
+  /**
+     The set of the cost components. Hard and soft ones are all in this @c vector.
+  */
   std::vector<CostComponent<Input,State,CFtype>* > cost_component;
   const Input& in;
 };
 
+// -----------------------------------------------------------------------
+// Implementation
+// ----------------------------------------------------------------------
 
-
-/*************************************************************************
-* Implementation
-*************************************************************************/
-
-/**
-Builds a state manager object linked to the provided input.
- 
- @param in a reference to an input object
- */
 template <class Input, class State, typename CFtype>
 StateManager<Input,State,CFtype>::StateManager(const Input& i, std::string e_name)
   :  name(e_name), in(i)
@@ -117,13 +211,6 @@ void StateManager<Input,State,CFtype>::Print(std::ostream& os) const
       cost_component[i]->Print(os);
 }
 
-/**
-Looks for the best state out of a given number of sampled
- states.
- 
- @param st the best state found
- @param samples the number of sampled states
- */
 template <class Input, class State, typename CFtype>
 CFtype StateManager<Input,State,CFtype>::SampleState(State &st,
                                                      unsigned int samples)
@@ -151,23 +238,16 @@ CFtype StateManager<Input,State,CFtype>::SampleState(State &st,
 
 template <class Input, class State, typename CFtype>
 void StateManager<Input,State,CFtype>::GreedyState(State &st, double alpha, unsigned int k)
-{// Dummy implementation
+{
    GreedyState(st);
 }
 
 template <class Input, class State, typename CFtype>
 void StateManager<Input,State,CFtype>::GreedyState(State &st)
-{// Dummy implementation
-   RandomState(st);
+{
+  throw std::runtime_error("For using this feature GreedyState must be implemented in the concrete class!");
 }
 
-/**
-Evaluates the cost function value in a given state.  
- The tentative definition computes a weighted sum of the violation 
- function and the objective function.
- 
- @param st the state to be evaluated
- @return the value of the cost function in the given state */
 template <class Input, class State, typename CFtype>
 CFtype StateManager<Input,State,CFtype>::CostFunction(const State& st) const
 { 
@@ -181,34 +261,18 @@ CFtype StateManager<Input,State,CFtype>::CostFunction(const State& st) const
   return HARD_WEIGHT * hard_cost  + soft_cost; 
 }
 
-/**
-Checks whether the lower bound of the cost function has been reached.
- The tentative definition verifies whether the state cost is
- equal to zero.
- */
 template <class Input, class State, typename CFtype>
 bool StateManager<Input,State,CFtype>::LowerBoundReached(const CFtype& fvalue) const
 { 
   return IsZero(fvalue); 
 }
 
-/**
-Checks whether the lower bound of the cost function has been reached.
- The tentative definition verifies whether the current state cost is
- equal to zero.
- */
 template <class Input, class State, typename CFtype>
 bool StateManager<Input,State,CFtype>::OptimalStateReached(const State& st) const
-{ return LowerBoundReached(CostFunction(st)); }
+{ 
+  return LowerBoundReached(CostFunction(st)); 
+}
 
-/**
-A component-based definition of the violation function: 
- it returns the sum of the components. If components are 
- not used, this definition must be overwritten
- 
- @param st the state to be evaluated
- @return the value of the violations function in the given state
- */
 template <class Input, class State, typename CFtype>
 CFtype StateManager<Input,State,CFtype>::Violations(const State& st) const
 {
@@ -219,14 +283,6 @@ CFtype StateManager<Input,State,CFtype>::Violations(const State& st) const
   return cost;
 }
 
-/**
-A component-based definition of the objective function: 
- it returns the sum of the components. If components are 
- not used, this definition must be overwritten
- 
- @param st the state to be evaluated
- @return the value of the violations function in the given state
- */
 template <class Input, class State, typename CFtype>
 CFtype StateManager<Input,State,CFtype>::Objective(const State& st) const
 {
@@ -234,29 +290,20 @@ CFtype StateManager<Input,State,CFtype>::Objective(const State& st) const
   for (unsigned int i = 0; i < cost_component.size(); i++)
     if (cost_component[i]->IsSoft())
       cost += cost_component[i]->Cost(st);
-
   return cost;
 }
 
-
-/**
-Adds a component to the cost component array
- */
 template <class Input, class State, typename CFtype>
 void StateManager<Input,State,CFtype>::AddCostComponent(CostComponent<Input,State,CFtype>& cc)
 {
   cost_component.push_back(&cc);
 }
 
-/**
-Clears the cost component array
- */
 template <class Input, class State, typename CFtype>
 void StateManager<Input,State,CFtype>::ClearCostComponents()
 {
   cost_component.clear();
 }
-
 
 template <class Input, class State, typename CFtype>
 unsigned StateManager<Input,State,CFtype>::StateDistance(const State& st1, const State& st2) const
