@@ -1,0 +1,42 @@
+6-12-2011, Luca, Tommaso e Andrea
+
+1[A]. Scrivere classi di input di base: assignment, permutation, ... (state), swap, change (neighborhood)
+
+2[A/T]. Documentazione Doxygen
+
+3[L]. Rivedere intestazione con informazioni di licenza (fare uno script che li mette)
+
+4[T]. Unificare ifndef e if !defined --> if !defined
+
+5[A]. Creare documentazione per le classi base (Input, ...). Mettere riferimenti a queste classi nelle classi helpers e simili. Fare delle classi astratte (per derivazione o per usarli come stub)
+
+- Move: ==, != e <
+- State: const Input& in, costruttore con in
+- Output: (come State)
+- Input: costruttore con parametro string (nome file)
+
+6[T]. Significato di alpha e k su GRASP
+
+7[T]. Unificare unsigned e unsigned int (e simili)  --> unsigned int 
+
+8[A]. Sostituire StateDistance con l'operatore - 
+
+9[A]. Evitare SEMPRE di ricalcolare i costi delle mosse (per poter gestire anche casi in cui i costi sono stocastici), lo stesso per lo stato nuovo 
+
+10[L]. Rivedere CLparser in modo che non servano i vari MatchArgument(s)
+
+11[L]. Threading compliant C++x11
+
+12[?]. Parallelizzazione su cluster MPI
+
+13[?]. Rivedere i kicker: 
+- separate diversificatori dagli intensificatori
+- kicker multimodali con metaprogramming
+
+14[L/T]. eccezioni
+-- assert --> throw, documentare le funzioni che lanciano le eccezioni (con throws)
+-- definire classi per le eccezioni piu' precise (di logic_error)
+
+15[L/T]. resuscitare EasySyn
+
+16[L]. rivedere i multimodali per composizione
