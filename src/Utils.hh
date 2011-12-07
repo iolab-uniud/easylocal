@@ -1,4 +1,4 @@
-#ifndef _UTILS_HH_
+#if !defined(_UTILS_HH_)
 #define _UTILS_HH_
 
 /** @defgroup Utils Utility classes

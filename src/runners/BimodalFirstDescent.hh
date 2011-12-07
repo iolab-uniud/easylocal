@@ -1,4 +1,4 @@
-#ifndef _BIMODAL_FIRST_DESCENT_HH_
+#if !defined(_BIMODAL_FIRST_DESCENT_HH_)
 #define _BIMODAL_FIRST_DESCENT_HH_
 
 #include <runners/BimodalMoveRunner.hh>

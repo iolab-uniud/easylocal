@@ -1,4 +1,4 @@
-#ifndef TIMEOBSERVER_HH_
+#if !defined(TIMEOBSERVER_HH_)
 #define TIMEOBSERVER_HH_
 
 #include <observers/RunnerObserver.hh>

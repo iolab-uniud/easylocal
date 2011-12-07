@@ -1,4 +1,4 @@
-#ifndef _BIMODAL_KICKER_OBSERVER_HH_
+#if !defined(_BIMODAL_KICKER_OBSERVER_HH_)
 #define _BIMODAL_KICKER_OBSERVER_HH_
 
 template <class Input, class State, class Move1, class Move2, typename CFtype>

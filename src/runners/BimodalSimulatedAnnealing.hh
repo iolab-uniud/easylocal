@@ -1,4 +1,4 @@
-#ifndef _BIMODAL_SIMULATED_ANNEALING_HH_
+#if !defined(_BIMODAL_SIMULATED_ANNEALING_HH_)
 #define _BIMODAL_SIMULATED_ANNEALING_HH_
 
 #include <runners/MoveRunner.hh>

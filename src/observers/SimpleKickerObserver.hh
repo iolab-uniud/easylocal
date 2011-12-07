@@ -1,4 +1,4 @@
-#ifndef _SIMPLE_KICKER_OBSERVER_HH_
+#if !defined(_SIMPLE_KICKER_OBSERVER_HH_)
 #define _SIMPLE_KICKER_OBSERVER_HH_
 
 template <class Input, class State, class Move, typename CFtype>

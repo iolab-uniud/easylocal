@@ -1,4 +1,4 @@
-#ifndef _OBSERVERS_HH_
+#if !defined(_OBSERVERS_HH_)
 #define _OBSERVERS_HH_
 
 /** @defgroup Observers Observer classes

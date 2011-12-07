@@ -6,8 +6,6 @@
 
 3[L]. Rivedere intestazione con informazioni di licenza (fare uno script che li mette)
 
-4[T]. Unificare ifndef e if !defined --> if !defined
-
 5[A]. Creare documentazione per le classi base (Input, ...). Mettere riferimenti a queste classi nelle classi helpers e simili. Fare delle classi astratte (per derivazione o per usarli come stub)
 
 - Move: ==, != e <
