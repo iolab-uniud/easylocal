@@ -55,14 +55,6 @@
 #include <runners/SimulatedAnnealing.hh>
 #include <runners/GreatDeluge.hh>
 #include <runners/TabuSearch.hh>
-#include <runners/TabuSearchWithShiftingPenalty.hh>
-
-#include <runners/BimodalSteepestDescent.hh>
-#include <runners/BimodalFirstDescent.hh>
-#include <runners/BimodalHillClimbing.hh>
-#include <runners/BimodalSimulatedAnnealing.hh>
-#include <runners/BimodalTabuSearch.hh>
-#include <runners/BimodalTabuSearchWithShiftingPenalty.hh>
-
+// #include <runners/TabuSearchWithShiftingPenalty.hh>
 
 #endif // define _RUNNERS_HH_

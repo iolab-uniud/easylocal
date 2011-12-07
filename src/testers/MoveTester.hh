@@ -287,27 +287,46 @@ void MoveTester<Input,Output,State,Move,CFtype>::PrintMoveCosts(const State& st,
 {
   CFtype delta_cost, total_delta_hard_cost = 0, total_delta_soft_cost = 0;
   State st1 = st;
+  unsigned int i;
 
+  // it's a tester, so we can avoid optimizations
   os << "Move : " << mv << std::endl;
   ne.MakeMove(st1,mv);
 
-  for (unsigned int i = 0; i < ne.DeltaCostComponents(); i++)
+  // process all delta cost components
+  for (i = 0; i < ne.DeltaCostComponents(); i++)
+  {
+    DeltaCostComponent<Input,State,Move,CFtype>& dcc = ne.DeltaCostComponent(i);
+    delta_cost = dcc.DeltaCost(st,mv);
+    os << "  " << i << ". " << dcc.name << " : " <<  delta_cost;
+
+    // print * or not, add up to right variable
+    if (dcc.IsHard()) 
     {
-      AbstractDeltaCostComponent<Input,State,Move,CFtype>& dcc = ne.DeltaCostComponent(i);
-      if (dcc.IsDeltaImplemented())
-	delta_cost = static_cast<FilledDeltaCostComponent<Input,State,Move,CFtype>& >(dcc).DeltaCost(st, mv);        
-      else
-	delta_cost = static_cast<EmptyDeltaCostComponent<Input,State,Move,CFtype>& >(dcc).DeltaCost(st, st1);
-      os << "  " << i << ". " << dcc.name << " : " <<  delta_cost;
-      if (dcc.IsHard())
-	{
-	  total_delta_hard_cost += delta_cost;
-	  os << '*';
-	}
-      else
-	total_delta_soft_cost += delta_cost;
-      os << std::endl;
-    }
+      total_delta_hard_cost += delta_cost;
+      os << "*";
+    } else
+      total_delta_soft_cost = delta_cost;
+    os << std::endl;
+  }
+
+  // process all cost components
+  for(i = 0; i < ne.CostComponents(); i++)
+  {
+    CostComponent<Input,State,CFtype>& cc = ne.CostComponent(i);
+    delta_cost = cc.Weight() * (cc.ComputeCost(st1) - cc.ComputeCost(st));
+    os << "  " << i << ". " << cc.name << " : " <<  delta_cost;
+
+    // print * or not, add up to right variable
+    if (cc.IsHard()) 
+    {
+      total_delta_hard_cost += delta_cost;
+      os << "*";
+    } else
+      total_delta_soft_cost = delta_cost;
+    os << std::endl;
+  }
+
   os << "Total Delta Violations : " << total_delta_hard_cost << std::endl;
   os << "Total Delta Objective : " << total_delta_soft_cost << std::endl;
   os << "Total Delta Cost : " << HARD_WEIGHT * total_delta_hard_cost + total_delta_soft_cost << std::endl;
@@ -336,8 +355,7 @@ void MoveTester<Input,Output,State,Move,CFtype>::CheckNeighborhoodCosts(const St
         {
           if (ne.DeltaCostComponent(i).IsDeltaImplemented()) // only implemented delta can be buggy
 	    {
-	      FilledDeltaCostComponent<Input,State,Move,CFtype>& dcc = 
-		(FilledDeltaCostComponent<Input,State,Move,CFtype>&) ne.DeltaCostComponent(i);
+	      DeltaCostComponent<Input,State,Move,CFtype>& dcc = ne.DeltaCostComponent(i);
 	      CostComponent<Input,State,CFtype>& cc = dcc.GetCostComponent();
 	      delta_cost = dcc.DeltaCost(st, mv);        
 	      cost = cc.Cost(st);
@@ -389,11 +407,10 @@ void MoveTester<Input,Output,State,Move,CFtype>::PrintNeighborhoodStatistics(con
   ne.FirstMove(st,mv);
   for (i = 0; i < ne.DeltaCostComponents(); i++)
     if (ne.DeltaCostComponent(i).IsDeltaImplemented()) // only implemented delta can be buggy
-      {
-	FilledDeltaCostComponent<Input,State,Move,CFtype>& dcc = 
-	  (FilledDeltaCostComponent<Input,State,Move,CFtype>&) ne.DeltaCostComponent(i);
-	min_max_costs[i].first =  min_max_costs[i].second = dcc.DeltaCost(st, mv);  
-      }
+    {
+	    DeltaCostComponent<Input,State,Move,CFtype>& dcc = ne.DeltaCostComponent(i);
+	    min_max_costs[i].first =  min_max_costs[i].second = dcc.DeltaCost(st, mv);  
+    }
 
   do
     {
@@ -411,15 +428,14 @@ void MoveTester<Input,Output,State,Move,CFtype>::PrintNeighborhoodStatistics(con
       for (i = 0; i < ne.DeltaCostComponents(); i++)
 	{
 	  if (ne.DeltaCostComponent(i).IsDeltaImplemented()) // only implemented delta can be buggy
-	    {
-	      FilledDeltaCostComponent<Input,State,Move,CFtype>& dcc = 
-		(FilledDeltaCostComponent<Input,State,Move,CFtype>&) ne.DeltaCostComponent(i);
-	      delta_cost = dcc.DeltaCost(st, mv);  
-	      if (delta_cost < min_max_costs[i].first)
-		min_max_costs[i].first = delta_cost;
-	      else if (delta_cost > min_max_costs[i].second)
-		min_max_costs[i].second = delta_cost;
-	    }	    
+    {
+	    DeltaCostComponent<Input,State,Move,CFtype>& dcc = ne.DeltaCostComponent(i);
+	    delta_cost = dcc.DeltaCost(st, mv);  
+	    if (delta_cost < min_max_costs[i].first)
+		    min_max_costs[i].first = delta_cost;
+      else if (delta_cost > min_max_costs[i].second)
+		    min_max_costs[i].second = delta_cost;
+    }	    
 	}
     }
   while (ne.NextMove(st,mv));

@@ -26,12 +26,13 @@
 #include <utils/Types.hh>
 #include <stdexcept>
 
-/** This constant multiplies the value of the Violations function in the
-hierarchical formulation of the Cost function (i.e., 
-                                               CostFunction(s) = HARD_WEIGHT * Violations(s) + Objective(s)).
-@todo The use of the global HARD_WEIGHT is a rough solution, 
-waiting for an idea of a general mechanism for managing cost function 
-weights.
+/** 
+  This constant multiplies the value of the Violations function in the hierarchical 
+  formulation of the Cost function (i.e., CostFunction(s) = HARD_WEIGHT * Violations(s) 
+  + Objective(s)).
+
+  @todo The use of the global HARD_WEIGHT is a rough solution, waiting for an idea of 
+  a general mechanism for managing cost function weights.
 */
 
 #if !defined(HARD_WEIGHT_SET)
@@ -39,14 +40,16 @@ const int HARD_WEIGHT = 1000;
 #define HARD_WEIGHT_SET
 #endif
 
-/** The State Manager is responsible for all operations on the state
-which are independent of the neighborhood definition, such as
-generating a random state, and computing the cost of a state.
-No @c Move template is supplied to it.  
-@tparam Input User defined input class
-@tparam Output User defined output class
-@tparam CFtype Codomain of the objective function (int by default)
-@ingroup Helpers
+/** 
+  The State Manager is responsible for all operations on the state
+  which are independent of the neighborhood definition, such as
+  generating a random state, and computing the cost of a state.
+  No @c Move template is supplied to it.  
+
+  @tparam Input User defined input class
+  @tparam Output User defined output class
+  @tparam CFtype Codomain of the objective function (int by default)
+  @ingroup Helpers
 */
 template <class Input, class State, typename CFtype = int>
 class StateManager

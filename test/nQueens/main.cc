@@ -56,7 +56,7 @@
  the neighborhood of a given @ref State. The @ref DeltaCostComponent "DeltaCostComponent"s
  compute the difference of the cost function due to the application
  of a @ref Move; in this application they have a concrete implementation 
- (@ref FilledDeltaCostComponent), which avoids to really apply the move to 
+ (@ref DeltaCostComponent), which avoids to really apply the move to 
  the curent state for evaluating its effects but, for efficiency 
  purposes, it only simulates its behavior.
  
@@ -96,8 +96,6 @@
 #include <helpers/SecondaryDiagonalCostComponent.hh>
 #include <helpers/SecondaryDiagonalDeltaCostComponent.hh>
 #include <helpers/DeltaCostComponent.hh>
-#include <helpers/MultimodalNeighborhoodExplorer.hh>
-#include <helpers/MultimodalTabuListManager.hh>
 #include <kickers/QueensKicker.hh>
 #include <observers/RunnerObserver.hh>
 #include <observers/GeneralizedLocalSearchObserver.hh>
@@ -105,7 +103,6 @@
 #include <runners/SteepestDescent.hh>
 #include <runners/TabuSearch.hh>
 #include <runners/SimulatedAnnealing.hh>
-#include <runners/TabuSearchWithShiftingPenalty.hh>
 #include <solvers/SimpleLocalSearch.hh>
 #include <solvers/GeneralizedLocalSearch.hh>
 #include <solvers/VariableNeighborhoodDescent.hh>
@@ -137,8 +134,6 @@ int main(int argc, char* argv[])
   SecondaryDiagonalCostComponent cc2(in);
   PrimaryDiagonalDeltaCostComponent dcc1(in, cc1);
   SecondaryDiagonalDeltaCostComponent dcc2(in, cc2);
-  //EmptyDeltaCostComponent<int, std::vector<int>, Swap> dcc1(in, cc1, "Primary diagonal delta");
-  //EmptyDeltaCostComponent<int, std::vector<int>, Swap> dcc2(in, cc2, "Secondary diagonal delta");
   
   // helpers
   QueensStateManager qsm(in);
@@ -157,12 +152,13 @@ int main(int argc, char* argv[])
   SteepestDescent<int, std::vector<int>, Swap> qsd(in, qsm, qnhe, "SwapSteepestDescent", tester);
   TabuSearch<int, std::vector<int>, Swap> qts(in, qsm, qnhe, qtlm, "SwapTabuSearch", cl, tester);
   SimulatedAnnealing<int, std::vector<int>, Swap> qsa(in, qsm, qnhe, "SwapSimulatedAnnealing", cl, tester);
-  TabuSearchWithShiftingPenalty<int, std::vector<int>, Swap> qtsw(in, qsm, qnhe, qtlm, "SwapTabuSearchWithShiftingPenalty", cl, tester);
+  //TabuSearchWithShiftingPenalty<int, std::vector<int>, Swap> qtsw(in, qsm, qnhe, qtlm, "SwapTabuSearchWithShiftingPenalty", cl, tester);
   
   SimpleLocalSearch<int, ChessBoard, std::vector<int> > qss(in, qsm, qom, "QueensSLS", cl);
   GeneralizedLocalSearch<int, ChessBoard, std::vector<int> > qgls(in, qsm, qom, "QueensGLS", cl);
   VariableNeighborhoodDescent<int, ChessBoard, std::vector<int> > qvnd(in, qsm, qom, 3);
   
+  /*
   typedef PrepareSetUnionNeighborhoodExplorerTypes<int, std::vector<int>, TYPELIST_2(SwapNeighborhoodExplorer, SwapNeighborhoodExplorer)> MultimodalTypes;
   typedef MultimodalTypes::MoveList DoubleSwap; // this line is not mandatory, it just aliases the movelist type for reader's convenience
   std::vector<double> bias(2);
@@ -175,7 +171,10 @@ int main(int argc, char* argv[])
   MultimodalTabuListManagerTypes::TabuListManager qmmtlm;
   qmmtlm.AddTabuListManager(qtlm);
   qmmtlm.AddTabuListManager(qtlm);
+  
   TabuSearch<int, std::vector<int>, DoubleSwap> qmmts(in, qsm, qmmnhe, qmmtlm, "DoubleSwapTabuSearch", cl, tester); 
+  */
+
   /* typedef PrepareCartesianProductNeighborhoodExplorerTypes<int, std::vector<int>, TYPELIST_2(SwapNeighborhoodExplorer, SwapNeighborhoodExplorer)> MultimodalTypes;
   typedef MultimodalTypes::MoveList DoubleSwap; // this line is not mandatory, it just aliases the movelist type for reader's convenience
   MultimodalTypes::NeighborhoodExplorer qmmnhe(in, qsm, "Multimodal Swap");
@@ -229,7 +228,7 @@ int main(int argc, char* argv[])
 	{
 		// testers
 		MoveTester<int, ChessBoard, std::vector<int>, Swap> swap_move_test(in,qsm,qom,qnhe, "Swap move", tester);
-    MoveTester<int, ChessBoard, std::vector<int>, DoubleSwap> multimodal_move_test(in,qsm,qom,qmmnhe, "Multimodal swap move", tester);
+    // MoveTester<int, ChessBoard, std::vector<int>, DoubleSwap> multimodal_move_test(in,qsm,qom,qmmnhe, "Multimodal swap move", tester);
 		KickerTester<int, ChessBoard, std::vector<int> > monokicker_test(in,qsm,qom, qk, "Monomodal kick");
     //KickerTester<int, ChessBoard, std::vector<int> > multikicker_test(in,qsm,qom, qk2, "Multimodal kick");
 		
