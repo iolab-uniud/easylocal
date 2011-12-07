@@ -15,8 +15,6 @@
 
 6[T]. Significato di alpha e k su GRASP
 
-7[T]. Unificare unsigned e unsigned int (e simili)  --> unsigned int 
-
 8[A]. Sostituire StateDistance con l'operatore - 
 
 9[A]. Evitare SEMPRE di ricalcolare i costi delle mosse (per poter gestire anche casi in cui i costi sono stocastici), lo stesso per lo stato nuovo 
@@ -38,3 +36,5 @@
 15[L/T]. resuscitare EasySyn
 
 16[L]. rivedere i multimodali per composizione
+
+17[T]. refactoring per eliminare Filled e EmptyDeltaCostComponent
