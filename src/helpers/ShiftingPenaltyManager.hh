@@ -74,9 +74,9 @@ void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout);
 void Print(std::ostream& os = std::cout) const;
 bool Reset();
 bool Update(CFtype cost);
-void SetMaxFeasibleIterations(unsigned mf) { max_feasible_iter = mf; }
-void SetMaxInfeasibleIterations(unsigned mf) { max_infeasible_iter = mf; }
-void SetIterationsRange(unsigned mf1, unsigned mf2) { max_feasible_iter = mf1; max_infeasible_iter = mf2; }
+void SetMaxFeasibleIterations(unsigned int mf) { max_feasible_iter = mf; }
+void SetMaxInfeasibleIterations(unsigned int mf) { max_infeasible_iter = mf; }
+void SetIterationsRange(unsigned int mf1, unsigned int mf2) { max_feasible_iter = mf1; max_infeasible_iter = mf2; }
 protected:
 unsigned int max_feasible_iter;
 unsigned int max_infeasible_iter;

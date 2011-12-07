@@ -215,7 +215,7 @@ bool KickerTester<Input,Output,State,CFtype>::ExecuteChoice(State& st)
 template <class Input, class Output, class State, typename CFtype>
 void KickerTester<Input,Output,State,CFtype>::PrintKick(State& st)
 {
-  for (unsigned i = 0; i < kicker.Step(); i++)
+  for (unsigned int i = 0; i < kicker.Step(); i++)
     {
       os << i << " : ";
       kicker.PrintCurrentMoves(i,os);
@@ -228,7 +228,7 @@ void KickerTester<Input,Output,State,CFtype>::PrintKick(State& st)
 template <class Input, class Output, class State, typename CFtype>
 void KickerTester<Input,Output,State,CFtype>::PrintKicks(State& st, bool only_improving)
 {
-  unsigned count = 0;
+  unsigned int count = 0;
   CFtype best_kick_cost;
   kicker.FirstKick(st);
   best_kick_cost = kicker.KickCost();

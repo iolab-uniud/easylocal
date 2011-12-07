@@ -33,7 +33,7 @@ public:
   VariableNeighborhoodDescent(const Input& in,
 	    StateManager<Input,State,CFtype>& e_sm,
 	    OutputManager<Input,Output,State,CFtype>& e_om,
-	    unsigned max_k,
+	    unsigned int max_k,
 	    std::string name = "Anonymous Variable Neighborhood Descent solver");
 	
   void Print(std::ostream& os = std::cout) const;
@@ -45,7 +45,7 @@ protected:
   void Run();
   void RunCheck() const;
   Kicker<Input,State,CFtype>* p_kicker; /**< A pointer to the managed kicker. */
-  unsigned max_k;
+  unsigned int max_k;
 };
 
 /*************************************************************************
@@ -66,7 +66,7 @@ template <class Input, class Output, class State, typename CFtype>
 VariableNeighborhoodDescent<Input,Output,State,CFtype>::VariableNeighborhoodDescent(const Input& in,
 						StateManager<Input,State,CFtype>& e_sm,
 						OutputManager<Input,Output,State,CFtype>& e_om,
-						unsigned max_k,
+						unsigned int max_k,
 						std::string name)
   : AbstractLocalSearch<Input,Output,State,CFtype>(in, e_sm, e_om, name)
 {
@@ -133,7 +133,7 @@ void VariableNeighborhoodDescent<Input,Output,State,CFtype>::Solve()
 template <class Input, class Output, class State, typename CFtype>
 void VariableNeighborhoodDescent<Input,Output,State,CFtype>::Run()
 {
-  unsigned k = 1;
+  unsigned int k = 1;
   CFtype kick_cost;
   do 
     {

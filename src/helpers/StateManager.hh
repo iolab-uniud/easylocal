@@ -140,9 +140,9 @@ public:
   /**
      Computes the distance of two states (for example the Hamming distance). 
      Currently not used by any solver. Used only by the @ref GeneralizedLocalSearchObserver.
-     @return the distance, assumed always @c unsigned
+     @return the distance, assumed always @c unsigned int
   */
-  virtual unsigned StateDistance(const State& st1, const State& st2) const;
+  virtual unsigned int StateDistance(const State& st1, const State& st2) const;
 
   
   /**
@@ -156,7 +156,7 @@ public:
      @return the reference to a cost component
      @param i the index of the cost component
   */
-  CostComponent<Input, State,CFtype>& GetCostComponent(unsigned i) const { return *(cost_component[i]); }
+  CostComponent<Input, State,CFtype>& GetCostComponent(unsigned int i) const { return *(cost_component[i]); }
 
   /**
      @return the numer of cost components
@@ -306,7 +306,7 @@ void StateManager<Input,State,CFtype>::ClearCostComponents()
 }
 
 template <class Input, class State, typename CFtype>
-unsigned StateManager<Input,State,CFtype>::StateDistance(const State& st1, const State& st2) const
+unsigned int StateManager<Input,State,CFtype>::StateDistance(const State& st1, const State& st2) const
 { 
   throw std::runtime_error("For using this feature StateDistance must be implemented in the concrete class!");
   return 0;

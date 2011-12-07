@@ -78,7 +78,7 @@ protected:
   double level_rate; /**< The level decreasing rate. */
   unsigned int neighbors_sampled;
   ArgumentGroup great_deluge_arguments;
-  ValArgument<unsigned> arg_neighbors_sampled;
+  ValArgument<unsigned int> arg_neighbors_sampled;
   ValArgument<double> arg_level_rate;
   ValArgument<double> arg_initial_level_ratio;
   ValArgument<double> arg_min_level_ratio;

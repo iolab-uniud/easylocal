@@ -1596,7 +1596,7 @@ inline bool operator==(const Matrix<T>& a, const Matrix<T>& b)
   if (a.nrows() != b.nrows() || a.ncols() != b.ncols())
     throw std::logic_error("Matrices of different size are not confrontable");
   for (unsigned i = 0; i < a.nrows(); i++)
-    for (unsigned j = 0; j < a.ncols(); j++)
+    for (unsigned int j = 0; j < a.ncols(); j++)
       if (a[i][j] != b[i][j])
 	return false;
   return true;
@@ -1608,7 +1608,7 @@ inline bool operator!=(const Matrix<T>& a, const Matrix<T>& b)
   if (a.nrows() != b.nrows() || a.ncols() != b.ncols())
     throw std::logic_error("Matrices of different size are not confrontable");
   for (unsigned i = 0; i < a.nrows(); i++)
-    for (unsigned j = 0; j < a.ncols(); j++)
+    for (unsigned int j = 0; j < a.ncols(); j++)
       if (a[i][j] != b[i][j])
 	return true;
   return false;

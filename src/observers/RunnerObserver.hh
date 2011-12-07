@@ -28,7 +28,7 @@ template <class Input, class State, class Move, typename CFtype = int>
 class RunnerObserver
 {
 public:
-  RunnerObserver(unsigned verbosity_level, unsigned plot_level, std::ostream& log_os = std::cout, std::ostream& plot_os = std::cout);
+  RunnerObserver(unsigned int verbosity_level, unsigned int plot_level, std::ostream& log_os = std::cout, std::ostream& plot_os = std::cout);
   virtual ~RunnerObserver() {}
   virtual void NotifyStartRunner(MoveRunner<Input,State,Move,CFtype>& r);
   virtual void NotifyNewBest(MoveRunner<Input,State,Move,CFtype>& r);
@@ -40,7 +40,7 @@ protected:
 };
 
 template <class Input, class State, class Move, typename CFtype>
-RunnerObserver<Input,State,Move,CFtype>::RunnerObserver(unsigned verbosity_level, unsigned plot_level, std::ostream& log_os, std::ostream& plot_os) 
+RunnerObserver<Input,State,Move,CFtype>::RunnerObserver(unsigned int verbosity_level, unsigned int plot_level, std::ostream& log_os, std::ostream& plot_os) 
   : log(log_os), plot(plot_os)
 {
   if (verbosity_level >= 1)

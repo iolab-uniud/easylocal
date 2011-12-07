@@ -38,7 +38,7 @@ template <class Input, class State, typename CFtype = int>
 class Kicker
 {
 public:
-  Kicker(const Input& i, unsigned step, std::string name);
+  Kicker(const Input& i, unsigned int step, std::string name);
   virtual ~Kicker() {}
   virtual void Print(std::ostream& os = std::cout) const = 0;
   void SetKickType(const KickTypes& kt);
@@ -54,7 +54,7 @@ public:
   virtual CFtype RandomKick(const State &st) = 0;
   virtual void FirstKick(const State &st) = 0;
   virtual bool NextKick() = 0;
-  virtual void PrintCurrentMoves(unsigned i, std::ostream& os) const = 0;
+  virtual void PrintCurrentMoves(unsigned int i, std::ostream& os) const = 0;
 
   virtual bool SingleKicker() = 0;
 
@@ -105,7 +105,7 @@ template <class Input, class State, typename CFtype>
 void Kicker<Input,State,CFtype>::ReadParameters(std::istream& is, std::ostream& os)
 
 {
-    unsigned s;
+    unsigned int s;
     os << "KICKER -- INPUT PARAMETERS" << std::endl;
     os << "  Step: ";
     is >> s;

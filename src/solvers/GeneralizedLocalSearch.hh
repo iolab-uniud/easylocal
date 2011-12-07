@@ -86,7 +86,7 @@ protected:
 					       allowed. */
   GeneralizedLocalSearchObserver<Input,Output,State,CFtype>* observer;
   ArgumentGroup generalized_ls_arguments;
-  ValArgument<unsigned> arg_max_idle_rounds, arg_max_rounds;
+  ValArgument<unsigned int> arg_max_idle_rounds, arg_max_rounds;
   ValArgument<float> arg_timeout;
   Chronometer chrono;
 };

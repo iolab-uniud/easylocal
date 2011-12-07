@@ -291,7 +291,7 @@ void MoveTester<Input,Output,State,Move,CFtype>::PrintMoveCosts(const State& st,
   os << "Move : " << mv << std::endl;
   ne.MakeMove(st1,mv);
 
-  for (unsigned i = 0; i < ne.DeltaCostComponents(); i++)
+  for (unsigned int i = 0; i < ne.DeltaCostComponents(); i++)
     {
       AbstractDeltaCostComponent<Input,State,Move,CFtype>& dcc = ne.DeltaCostComponent(i);
       if (dcc.IsDeltaImplemented())
@@ -317,7 +317,7 @@ template <class Input, class Output, class State, class Move, typename CFtype>
 void MoveTester<Input,Output,State,Move,CFtype>::CheckNeighborhoodCosts(const State& st) const
 {
   Move mv;
-  unsigned move_count = 0;
+  unsigned int move_count = 0;
   CFtype error, error_cc, delta_cost, cost, cost1;
   State st1 = st;
   bool error_found = false, not_last_move = true;
@@ -332,7 +332,7 @@ void MoveTester<Input,Output,State,Move,CFtype>::CheckNeighborhoodCosts(const St
     {
       error_found = true;
       os << std::endl << "Error: Move n. " << move_count << ", " << mv << ", Total error = " << error <<  ", Info" << std::endl;
-      for (unsigned i = 0; i < ne.DeltaCostComponents(); i++)
+      for (unsigned int i = 0; i < ne.DeltaCostComponents(); i++)
         {
           if (ne.DeltaCostComponent(i).IsDeltaImplemented()) // only implemented delta can be buggy
 	    {
@@ -378,7 +378,7 @@ void MoveTester<Input,Output,State,Move,CFtype>::PrintNeighborhoodStatistics(con
 {
   unsigned int neighbors = 0, improving_neighbors = 0,
     worsening_neighbors = 0, non_improving_neighbors = 0;
-  unsigned i;
+  unsigned int i;
   Move mv;
   CFtype mv_cost, delta_cost;
   double total_positive_cost = 0.0;
@@ -453,10 +453,10 @@ template <class Input, class Output, class State, class Move, typename CFtype>
 void MoveTester<Input,Output,State,Move,CFtype>::CheckRandomMoveDistribution(const State& st) const
 {
   Move mv;  
-  std::map<Move, unsigned> frequency;
-  typename std::map<Move,unsigned>:: iterator it;  
+  std::map<Move, unsigned int> frequency;
+  typename std::map<Move,unsigned int>:: iterator it;  
 
-  unsigned trials = 0, tot_trials, rounds;
+  unsigned int trials = 0, tot_trials, rounds;
   double dev = 0;
 
   ne.FirstMove(st,mv);
@@ -513,7 +513,7 @@ void MoveTester<Input,Output,State,Move,CFtype>::CheckMoveIndependence(const Sta
 {
   Move mv;
   std::vector<std::pair<Move,State> > reached_states;
-  unsigned repeat_states = 0, null_moves = 0, all_moves = 1, i;
+  unsigned int repeat_states = 0, null_moves = 0, all_moves = 1, i;
   bool repeated_state;
   State st1 = st;
   ne.FirstMove(st1,mv);
@@ -619,8 +619,8 @@ void MoveTester<Input,Output,State,Move,CFtype>::CheckTabuStrength(const State& 
 template <class Input, class Output, class State, class Move, typename CFtype>
 void MoveTester<Input,Output,State,Move,CFtype>::CheckCandidateInitialTemperature() const
 {
-  const unsigned init_states = 100, samples = 1000;
-  unsigned i, j;
+  const unsigned int init_states = 100, samples = 1000;
+  unsigned int i, j;
   CFtype cost_value, max_cost_value = (CFtype) 0;
   double mean, square_mean, variance, mean_variance = 0.0;
 

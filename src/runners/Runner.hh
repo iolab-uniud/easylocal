@@ -74,8 +74,8 @@ public:
   virtual void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout) = 0;
   bool LowerBoundReached() const;
 
-  unsigned IterationOfBest() const { return iteration_of_best; }
-  unsigned NumberOfIterations() const { return number_of_iterations; }
+  unsigned int IterationOfBest() const { return iteration_of_best; }
+  unsigned int NumberOfIterations() const { return number_of_iterations; }
 
   const std::string name;
 virtual ~Runner() {}

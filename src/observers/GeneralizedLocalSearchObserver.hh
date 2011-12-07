@@ -26,8 +26,8 @@ template <class Input, class Output, class State, typename CFtype = int>
 class GeneralizedLocalSearchObserver
 {
 public:
-  GeneralizedLocalSearchObserver(unsigned verbosity_level, unsigned plot_level = 0,  std::ostream& log_os = std::cout, std::ostream& plot_os = std::cout);
-  void NotifyRestart(GeneralizedLocalSearch<Input,Output,State,CFtype>& s, unsigned restart);
+  GeneralizedLocalSearchObserver(unsigned int verbosity_level, unsigned int plot_level = 0,  std::ostream& log_os = std::cout, std::ostream& plot_os = std::cout);
+  void NotifyRestart(GeneralizedLocalSearch<Input,Output,State,CFtype>& s, unsigned int restart);
   void NotifyRound(GeneralizedLocalSearch<Input,Output,State,CFtype>& s);
   void NotifyRunnerStart(GeneralizedLocalSearch<Input,Output,State,CFtype>& s);
   void NotifyRunnerStop(GeneralizedLocalSearch<Input,Output,State,CFtype>& s);
@@ -41,7 +41,7 @@ protected:
 };
 
 template <class Input, class Output, class State, typename CFtype>
-GeneralizedLocalSearchObserver<Input,Output,State,CFtype>::  GeneralizedLocalSearchObserver(unsigned verbosity_level, unsigned plot_level,  std::ostream& log_os, std::ostream& plot_os)  : log(log_os), plot(plot_os)
+GeneralizedLocalSearchObserver<Input,Output,State,CFtype>::  GeneralizedLocalSearchObserver(unsigned int verbosity_level, unsigned int plot_level,  std::ostream& log_os, std::ostream& plot_os)  : log(log_os), plot(plot_os)
 {
   if (verbosity_level >= 1)
     notify_round = true;
@@ -61,7 +61,7 @@ GeneralizedLocalSearchObserver<Input,Output,State,CFtype>::  GeneralizedLocalSea
 }
 
 template <class Input, class Output, class State, typename CFtype>
-void GeneralizedLocalSearchObserver<Input,Output,State,CFtype>::NotifyRestart(GeneralizedLocalSearch<Input,Output,State,CFtype>& s, unsigned restart)
+void GeneralizedLocalSearchObserver<Input,Output,State,CFtype>::NotifyRestart(GeneralizedLocalSearch<Input,Output,State,CFtype>& s, unsigned int restart)
 {
   if (notify_round)
     {

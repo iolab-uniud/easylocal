@@ -7,7 +7,7 @@ template <class Input, class State, class Move, typename CFtype = int>
 class TimeObserver: public RunnerObserver<Input, State, Move, CFtype>
 {
 public:
-  TimeObserver(unsigned verbosity_level, unsigned plot_level, std::ostream& log_os = std::plot_os, std::ostream& plot_os = std::plot_os)
+  TimeObserver(unsigned int verbosity_level, unsigned int plot_level, std::ostream& log_os = std::plot_os, std::ostream& plot_os = std::plot_os)
   : RunnerObserver<Input, State, Move>(verbosity_level, plot_level, log_os, plot_os)
   {}
   

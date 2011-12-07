@@ -8,7 +8,7 @@ template <class Input, class State, class Move, typename CFtype = int>
 class SimpleKickerObserver
 {
 public:
-  SimpleKickerObserver(unsigned verbosity_level, std::ostream& log_os = std::cout);
+  SimpleKickerObserver(unsigned int verbosity_level, std::ostream& log_os = std::cout);
   void NotifyStartKicking(SimpleKicker<Input,State,Move,CFtype>& k);
   void NotifyNewKick(SimpleKicker<Input,State,Move,CFtype>& k);
   void NotifyBestKick(SimpleKicker<Input,State,Move,CFtype>& k);
@@ -20,7 +20,7 @@ protected:
 };
 
 template <class Input, class State, class Move, typename CFtype>
-SimpleKickerObserver<Input,State,Move,CFtype>::SimpleKickerObserver(unsigned verbosity_level, std::ostream& log_os) 
+SimpleKickerObserver<Input,State,Move,CFtype>::SimpleKickerObserver(unsigned int verbosity_level, std::ostream& log_os) 
   : log(log_os)
 {
   if (verbosity_level >= 1)

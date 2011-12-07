@@ -8,7 +8,7 @@ template <class Input, class State, class Move1, class Move2, typename CFtype = 
 class BimodalKickerObserver
 {
 public:
-  BimodalKickerObserver(unsigned verbosity_level, std::ostream& log_os = std::cout);
+  BimodalKickerObserver(unsigned int verbosity_level, std::ostream& log_os = std::cout);
   void NotifyStartKicking(BimodalKicker<Input,State,Move1,Move2,CFtype>& k);
   void NotifyNewKick(BimodalKicker<Input,State,Move1,Move2,CFtype>& k);
   void NotifyBestKick(BimodalKicker<Input,State,Move1,Move2,CFtype>& k);
@@ -20,7 +20,7 @@ protected:
 };
 
 template <class Input, class State, class Move1, class Move2, typename CFtype>
-BimodalKickerObserver<Input,State,Move1,Move2,CFtype>::BimodalKickerObserver(unsigned verbosity_level, std::ostream& log_os) 
+BimodalKickerObserver<Input,State,Move1,Move2,CFtype>::BimodalKickerObserver(unsigned int verbosity_level, std::ostream& log_os) 
   : log(log_os)
 {
   if (verbosity_level >= 1)

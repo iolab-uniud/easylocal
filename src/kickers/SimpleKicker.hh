@@ -46,7 +46,7 @@ public:
   CFtype TotalBestKick(const State &st) { throw std::logic_error("No TOTAL_BEST_KICK allowed for Simple Kickers"); }
   bool SingleKicker() { return true; }
 
-  void PrintCurrentMoves(unsigned i, std::ostream& os) const  { os << current_moves[i]; }
+  void PrintCurrentMoves(unsigned int i, std::ostream& os) const  { os << current_moves[i]; }
 
   void MakeKick(State &st);
   virtual CFtype KickCost();
@@ -174,7 +174,7 @@ bool SimpleKicker<Input,State,Move,CFtype>::UnrelatedMoves(int i) const
 template <class Input, class State, class Move, typename CFtype>
 CFtype SimpleKicker<Input,State,Move,CFtype>::DenseBestKick(const State &st)
 {
-  unsigned dense_best_step = 0, max_step = this->step;
+  unsigned int dense_best_step = 0, max_step = this->step;
   CFtype dense_best_kick_cost = 0;
   std::vector<Move> dense_best_moves;
 	
