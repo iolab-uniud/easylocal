@@ -470,7 +470,7 @@
 				GCC_OPTIMIZATION_LEVEL = 0;
 				OTHER_CFLAGS = "";
 				OTHER_LDFLAGS = "";
-				PRODUCT_NAME = "$(ARCHS_STANDARD_32_BIT) $(ARCHS_STANDARD_64_BIT)\n";
+				PRODUCT_NAME = "$(ARCHS_STANDARD_64_BIT)\n";
 			};
 			name = Debug;
 		};
@@ -480,7 +480,7 @@
 				COPY_PHASE_STRIP = YES;
 				OTHER_CFLAGS = "";
 				OTHER_LDFLAGS = "";
-				PRODUCT_NAME = "$(ARCHS_STANDARD_32_BIT) $(ARCHS_STANDARD_64_BIT)\n";
+				PRODUCT_NAME = "$(ARCHS_STANDARD_64_BIT)\n";
 			};
 			name = Release;
 		};
@@ -553,7 +553,7 @@
 				1DEB919108733D9F0010E9CD /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
+			defaultConfigurationName = Debug;
 		};
 		1DEB919308733D9F0010E9CD /* Build configuration list for PBXProject "EasyLocal" */ = {
 			isa = XCConfigurationList;
@@ -562,7 +562,7 @@
 				1DEB919508733D9F0010E9CD /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
+			defaultConfigurationName = Debug;
 		};
 		ACF4B18F0DBFA6C0008A0207 /* Build configuration list for PBXAggregateTarget "configure" */ = {
 			isa = XCConfigurationList;
@@ -571,7 +571,7 @@
 				ACF4B1850DBFA6A1008A0207 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
+			defaultConfigurationName = Debug;
 		};
 		ACFAF4D20DD489A60095F6A0 /* Build configuration list for PBXAggregateTarget "documentation" */ = {
 			isa = XCConfigurationList;
@@ -580,7 +580,7 @@
 				ACFAF4C50DD489630095F6A0 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
+			defaultConfigurationName = Debug;
 		};
 /* End XCConfigurationList section */
 	};

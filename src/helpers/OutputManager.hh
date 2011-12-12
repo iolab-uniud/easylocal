@@ -54,7 +54,7 @@ protected:
     OutputManager(const Input& i, std::string e_name)
             :  in(i), name(e_name) {}
     virtual ~OutputManager() {}
-    const Input& in; /**< A reference to the input manager. */
+    const Input& in; /**< A reference to the input. */
     const std::string name;
 };
 

@@ -44,8 +44,9 @@ public:
 		    CLParser& cl);
   void Print(std::ostream& os = std::cout) const;
   void SetRunner(Runner<Input,State,CFtype>& r);
-  void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout);     
-  void Solve(bool random_init = true);
+  void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout);   
+  // FIXME: all these methods should become solving parameters to sent to the Solver class
+  void Solve();
 protected:
   void Run();
   void Check() const;
@@ -137,11 +138,10 @@ void SimpleLocalSearch<Input,Output,State,CFtype>::SetRunner(Runner<Input,State,
 
 
 template <class Input, class Output, class State, typename CFtype>
-void SimpleLocalSearch<Input,Output,State,CFtype>::Solve(bool random_init) {
-  if (random_init)
-    this->FindInitialState();
+void SimpleLocalSearch<Input,Output,State,CFtype>::Solve() {
+  this->FindInitialState();
   p_runner->SetState(this->current_state);
-  LetGo(*p_runner);
+  p_runner->Go();
   this->current_state = this->p_runner->GetState();
   this->current_state_cost = this->p_runner->GetStateCost();
   this->best_state = this->current_state;

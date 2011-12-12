@@ -225,7 +225,7 @@ protected:
   NeighborhoodExplorer(const Input& in, StateManager<Input,State,CFtype>& sm, std::string name);
   virtual ~NeighborhoodExplorer() {}
   
-  const Input& in;/**< A reference to the input manager */
+  const Input& in;/**< A reference to the input */
   StateManager<Input, State,CFtype>& sm; /**< A reference to the attached state manager. */
 
   /** List of delta cost component */

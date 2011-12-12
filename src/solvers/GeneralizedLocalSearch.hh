@@ -70,6 +70,10 @@ public:
   unsigned int GetKickRounds() const { return kick_rounds; }
   unsigned int GetKickImprovingRounds() const { return kick_improving_rounds; }
 
+  // FIXME: all these methods should become solving parameters to sent to the Solver class
+  void Solve() { this->SimpleSolve(); }
+
+  // FIXME: all these methods should become solving parameters to sent to the Solver class
   void SimpleSolve(unsigned runner = 0, unsigned init_state = 1); // 0: leave unchanged, 1: random, 2 :greedy
   void MultiStartSimpleSolve(unsigned runner = 0, unsigned trials = 1);
   void MultiStartGeneralSolve(KickStrategy kick_strategy = NO_KICKER, unsigned trials = 1);
@@ -251,7 +255,7 @@ void GeneralizedLocalSearch<Input,Output,State,CFtype>::SimpleSolve(unsigned run
   // else: do not call FindInitialState, leave initial state unchanged    
   runners[runner]->SetState(this->current_state);
   if (observer != NULL) observer->NotifyRunnerStart(*this);
-  Run(*runners[runner]);
+  runners[runner]->Go();
   if (observer != NULL) observer->NotifyRunnerStop(*this);	  
   this->current_state = runners[runner]->GetState();
   this->current_state_cost = runners[runner]->GetStateCost();
