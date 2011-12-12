@@ -41,7 +41,7 @@
 #include <Kickers.hh>
 #include <Solvers.hh>
 
-#endif // define _EASYLOCAL_HH_
+#endif // _EASYLOCAL_HH_
 
 /**
  @mainpage EasyLocalpp: an Object-Oriented framework for Local Search algorithms.

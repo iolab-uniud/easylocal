@@ -12,4 +12,4 @@
 #include <observers/BimodalKickerObserver.hh>
 #include <observers/ShiftingPenaltyObserver.hh>
 
-#endif // define _OBSERVERS_HH_
+#endif // _OBSERVERS_HH_

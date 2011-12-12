@@ -1,5 +1,5 @@
-#if !defined(TIMEOBSERVER_HH_)
-#define TIMEOBSERVER_HH_
+#if !defined(_RUNNER_TIME_OBSERVER_HH)
+#define _RUNNER_TIME_OBSERVER_HH
 
 #include <observers/RunnerObserver.hh>
 
@@ -51,4 +51,4 @@ void TimeObserver<Input,State,Move,CFtype>::NotifyEndRunner(MoveRunner<Input,Sta
  	chrono.Stop();
 }
 
-#endif /*TRUETIMEOBSERVER_HPP_*/
+#endif // _RUNNER_TIME_OBSERVER_HH

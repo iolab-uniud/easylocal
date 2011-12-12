@@ -11,4 +11,4 @@
 #include <utils/Array.hh>
 #include <utils/CLParser.hh>
 
-#endif // define _UTILS_HH_
+#endif // _UTILS_HH_

@@ -55,4 +55,4 @@
 #include <runners/TabuSearch.hh>
 // #include <runners/TabuSearchWithShiftingPenalty.hh>
 
-#endif // define _RUNNERS_HH_
+#endif // _RUNNERS_HH_

@@ -30,4 +30,4 @@
 #include <solvers/VariableNeighborhoodDescent.hh>
 #include <solvers/GRASP.hh>
 
-#endif // define _SOLVERS_HH_
+#endif // _SOLVERS_HH_
