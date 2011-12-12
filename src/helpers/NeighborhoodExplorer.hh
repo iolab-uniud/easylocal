@@ -198,14 +198,14 @@ public:
   virtual size_t DeltaCostComponents() const
   { return delta_cost_component.size(); }
   
-  virtual DeltaCostComponent<Input,State,Move,CFtype>& DeltaCostComponent(unsigned int i)
+  virtual DeltaCostComponent<Input,State,Move,CFtype>& GetDeltaCostComponent(unsigned int i)
   { return *delta_cost_component[i]; }
 
   virtual size_t CostComponents() const
   { return cost_component.size(); }
   
-  virtual CostComponent<Input,State,CFtype>& CostComponent(unsigned int i)
-  { return *cost_component[i]; }
+  virtual CostComponent<Input,State,CFtype>& GetCostComponent(unsigned int i)
+  { return *cost_component[i]; } 
   
   virtual unsigned int Modality() const
   { return 1; }

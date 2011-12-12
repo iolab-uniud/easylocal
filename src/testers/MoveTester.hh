@@ -29,25 +29,25 @@
 #include <math.h>
 
 /** A Move Tester allows to test the behavior of a given
-    neighborhood explorer.
-    @ingroup Testers
-*/
+ neighborhood explorer.
+ @ingroup Testers
+ */
 template <class Input, class Output, class State, class Move, typename CFtype = int>
 class MoveTester
-  : public ComponentTester<Input,Output,State,CFtype>
+: public ComponentTester<Input,Output,State,CFtype>
 {
 public:
   MoveTester(const Input& in,
-	     StateManager<Input,State,CFtype>& e_sm,
-	     OutputManager<Input,Output,State,CFtype>& e_om,
-	     NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
-	     std::string name, std::ostream& o = std::cout);
+             StateManager<Input,State,CFtype>& e_sm,
+             OutputManager<Input,Output,State,CFtype>& e_om,
+             NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
+             std::string name, std::ostream& o = std::cout);
   MoveTester(const Input& in,
-	     StateManager<Input,State,CFtype>& e_sm,
-	     OutputManager<Input,Output,State,CFtype>& e_om,
-	     NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
-	     TabuListManager<State,Move,CFtype>& e_tlm,
-	     std::string name, std::ostream& o = std::cout);
+             StateManager<Input,State,CFtype>& e_sm,
+             OutputManager<Input,Output,State,CFtype>& e_om,
+             NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
+             TabuListManager<State,Move,CFtype>& e_tlm,
+             std::string name, std::ostream& o = std::cout);
   MoveTester(const Input& in,
              StateManager<Input,State,CFtype>& e_sm,
              OutputManager<Input,Output,State,CFtype>& e_om,
@@ -79,14 +79,14 @@ protected:
   const Input& in;
   Output out;   /**< The output object. */
   StateManager<Input,State,CFtype>& sm; /**< A pointer to the attached
-					   state manager. */
+                                         state manager. */
   OutputManager<Input,Output,State,CFtype>& om; /**< A pointer to the attached
-						   output manager. */
+                                                 output manager. */
   NeighborhoodExplorer<Input,State,Move,CFtype>& ne; /**< A reference to the
-							attached neighborhood
-							explorer. */
+                                                      attached neighborhood
+                                                      explorer. */
   TabuListManager<State,Move,CFtype>* tlm; /**< A reference to the
-				       attached tabu list manager (if any). */
+                                            attached tabu list manager (if any). */
   unsigned int choice;   /**< The option currently chosen from the menu. */
   std::ostream& os;
 };
@@ -96,33 +96,33 @@ protected:
  *************************************************************************/
 
 /**
-   Constructs a move tester by providing it links to
-   a state manager, an output manager, a neighborhood explorer, a name and 
-   an input object.
-
-   @param sm a pointer to a compatible state manager
-   @param om a pointer to a compatible output manager
-   @param ne a pointer to a compatible neighborhood explorer
-   @param nm the name of the move tester
-   @param in a pointer to an input object
-*/
+ Constructs a move tester by providing it links to
+ a state manager, an output manager, a neighborhood explorer, a name and 
+ an input object.
+ 
+ @param sm a pointer to a compatible state manager
+ @param om a pointer to a compatible output manager
+ @param ne a pointer to a compatible neighborhood explorer
+ @param nm the name of the move tester
+ @param in a pointer to an input object
+ */
 template <class Input, class Output, class State, class Move, typename CFtype>
 MoveTester<Input,Output,State,Move,CFtype>::MoveTester(const Input& i,
-						       StateManager<Input,State,CFtype>& e_sm,
-						       OutputManager<Input,Output,State,CFtype>& e_om,
-						       NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
-						       std::string name, std::ostream& o)
-  : ComponentTester<Input,Output,State,CFtype>(name), in(i), out(i), sm(e_sm), om(e_om), ne(e_ne), os(o)
+                                                       StateManager<Input,State,CFtype>& e_sm,
+                                                       OutputManager<Input,Output,State,CFtype>& e_om,
+                                                       NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
+                                                       std::string name, std::ostream& o)
+: ComponentTester<Input,Output,State,CFtype>(name), in(i), out(i), sm(e_sm), om(e_om), ne(e_ne), os(o)
 { tlm = NULL; }
 
 template <class Input, class Output, class State, class Move, typename CFtype>
 MoveTester<Input,Output,State,Move,CFtype>::MoveTester(const Input& i,
-						       StateManager<Input,State,CFtype>& e_sm,
-						       OutputManager<Input,Output,State,CFtype>& e_om,
-						       NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
-						       TabuListManager<State,Move,CFtype>& e_tlm,
-						       std::string name, std::ostream& o)
-  : ComponentTester<Input,Output,State,CFtype>(name), in(i), out(i), sm(e_sm), om(e_om), ne(e_ne), tlm(&e_tlm), os(o)
+                                                       StateManager<Input,State,CFtype>& e_sm,
+                                                       OutputManager<Input,Output,State,CFtype>& e_om,
+                                                       NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
+                                                       TabuListManager<State,Move,CFtype>& e_tlm,
+                                                       std::string name, std::ostream& o)
+: ComponentTester<Input,Output,State,CFtype>(name), in(i), out(i), sm(e_sm), om(e_om), ne(e_ne), tlm(&e_tlm), os(o)
 {}
 
 template <class Input, class Output, class State, class Move, typename CFtype>
@@ -154,56 +154,56 @@ void MoveTester<Input,Output,State,Move,CFtype>::RunMainMenu(State& st)
 {
   bool show_state;
   do
+  {
+    ShowMenu();
+    if (choice != 0)
     {
-      ShowMenu();
-      if (choice != 0)
-        {
-          std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
-          show_state = ExecuteChoice(st);
-          std::chrono::system_clock::duration duration = std::chrono::system_clock::now() - start;
-          if (show_state)
-          {
-            om.OutputState(st,out);
-            os << "CURRENT SOLUTION " << std::endl << out << std::endl;
-            os << "CURRENT COST : " << sm.CostFunction(st) << std::endl;
-          }
-          os << "ELAPSED TIME : " << duration.count() << 's' << std::endl;
-        }
+      std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
+      show_state = ExecuteChoice(st);
+      std::chrono::system_clock::duration duration = std::chrono::system_clock::now() - start;
+      if (show_state)
+      {
+        om.OutputState(st,out);
+        os << "CURRENT SOLUTION " << std::endl << out << std::endl;
+        os << "CURRENT COST : " << sm.CostFunction(st) << std::endl;
+      }
+      os << "ELAPSED TIME : " << duration.count() << 's' << std::endl;
     }
+  }
   while (choice != 0);
   os << "Leaving " << this->name << " menu" << std::endl;
 }
- 
+
 /**
-   Outputs the menu options.
-*/
+ Outputs the menu options.
+ */
 template <class Input, class Output, class State, class Move, typename CFtype>
 void MoveTester<Input,Output,State,Move,CFtype>::ShowMenu()
 {
   os << "Move Menu: " << std::endl
-     << "     (1)  Perform Best Move" << std::endl
-     << "     (2)  Perform Random Move" << std::endl
-     << "     (3)  Perform Input Move" << std::endl
-     << "     (4)  Print All Neighbors" << std::endl
-     << "     (5)  Print Neighborhood Statistics" << std::endl
-     << "     (6)  Print Random Move Cost" << std::endl 
-     << "     (7)  Print Input Move Cost" << std::endl 
-     << "     (8)  Check Neighborhood Costs" << std::endl 
-     << "     (9)  Check Move Independence" << std::endl
-     << "    (10)  Check Random Move Distribution" << std::endl
-     << "    (11)  Check Candidate Initial Temperature for SA" << std::endl;
+  << "     (1)  Perform Best Move" << std::endl
+  << "     (2)  Perform Random Move" << std::endl
+  << "     (3)  Perform Input Move" << std::endl
+  << "     (4)  Print All Neighbors" << std::endl
+  << "     (5)  Print Neighborhood Statistics" << std::endl
+  << "     (6)  Print Random Move Cost" << std::endl 
+  << "     (7)  Print Input Move Cost" << std::endl 
+  << "     (8)  Check Neighborhood Costs" << std::endl 
+  << "     (9)  Check Move Independence" << std::endl
+  << "    (10)  Check Random Move Distribution" << std::endl
+  << "    (11)  Check Candidate Initial Temperature for SA" << std::endl;
   if (tlm != NULL)
     os << "    (12)  Chech Tabu Strength" << std::endl;
   os << "     (0)  Return to Main Menu" << std::endl
-     << " Your choice: ";
+  << " Your choice: ";
   std::cin >> choice;
 }
 
 /**
-   Execute the menu choice on the given state.
-
-   @param st the current state
-*/
+ Execute the menu choice on the given state.
+ 
+ @param st the current state
+ */
 template <class Input, class Output, class State, class Move, typename CFtype>
 bool MoveTester<Input,Output,State,Move,CFtype>::ExecuteChoice(State& st)
 {
@@ -280,25 +280,25 @@ bool MoveTester<Input,Output,State,Move,CFtype>::ExecuteChoice(State& st)
   
   return false;
 }
- 
+
 template <class Input, class Output, class State, class Move, typename CFtype>
 void MoveTester<Input,Output,State,Move,CFtype>::PrintMoveCosts(const State& st, const Move& mv) const
 {
   CFtype delta_cost, total_delta_hard_cost = 0, total_delta_soft_cost = 0;
   State st1 = st;
   unsigned int i;
-
+  
   // it's a tester, so we can avoid optimizations
   os << "Move : " << mv << std::endl;
   ne.MakeMove(st1,mv);
-
+  
   // process all delta cost components
   for (i = 0; i < ne.DeltaCostComponents(); i++)
   {
-    DeltaCostComponent<Input,State,Move,CFtype>& dcc = ne.DeltaCostComponent(i);
+    DeltaCostComponent<Input,State,Move,CFtype>& dcc = ne.GetDeltaCostComponent(i);
     delta_cost = dcc.DeltaCost(st,mv);
     os << "  " << i << ". " << dcc.name << " : " <<  delta_cost;
-
+    
     // print * or not, add up to right variable
     if (dcc.IsHard()) 
     {
@@ -308,14 +308,14 @@ void MoveTester<Input,Output,State,Move,CFtype>::PrintMoveCosts(const State& st,
       total_delta_soft_cost = delta_cost;
     os << std::endl;
   }
-
+  
   // process all cost components
   for(i = 0; i < ne.CostComponents(); i++)
   {
-    CostComponent<Input,State,CFtype>& cc = ne.CostComponent(i);
+    CostComponent<Input,State,CFtype>& cc = ne.GetCostComponent(i);
     delta_cost = cc.Weight() * (cc.ComputeCost(st1) - cc.ComputeCost(st));
     os << "  " << i << ". " << cc.name << " : " <<  delta_cost;
-
+    
     // print * or not, add up to right variable
     if (cc.IsHard()) 
     {
@@ -325,7 +325,7 @@ void MoveTester<Input,Output,State,Move,CFtype>::PrintMoveCosts(const State& st,
       total_delta_soft_cost = delta_cost;
     os << std::endl;
   }
-
+  
   os << "Total Delta Violations : " << total_delta_hard_cost << std::endl;
   os << "Total Delta Objective : " << total_delta_soft_cost << std::endl;
   os << "Total Delta Cost : " << HARD_WEIGHT * total_delta_hard_cost + total_delta_soft_cost << std::endl;
@@ -343,39 +343,37 @@ void MoveTester<Input,Output,State,Move,CFtype>::CheckNeighborhoodCosts(const St
   do
   {
     move_count++;
-
+    
     ne.MakeMove(st1, mv);
     error = this->sm.CostFunction(st1) - ne.DeltaCostFunction(st, mv) - this->sm.CostFunction(st);
     if (!IsZero(error))
     {
       error_found = true;
       os << std::endl << "Error: Move n. " << move_count << ", " << mv << ", Total error = " << error <<  ", Info" << std::endl;
+      // only implemented delta can be buggy
       for (unsigned int i = 0; i < ne.DeltaCostComponents(); i++)
-        {
-          if (ne.DeltaCostComponent(i).IsDeltaImplemented()) // only implemented delta can be buggy
-	    {
-	      DeltaCostComponent<Input,State,Move,CFtype>& dcc = ne.DeltaCostComponent(i);
-	      CostComponent<Input,State,CFtype>& cc = dcc.GetCostComponent();
-	      delta_cost = dcc.DeltaCost(st, mv);        
-	      cost = cc.Cost(st);
-	      cost1 = cc.Cost(st1);
-	      error_cc = cost - cost1 + delta_cost;
-	      if (!IsZero(error_cc))
-		{		    
-		  os << "  " << i << ". " << dcc.name << " : Initial = " << cost << ", final = " 
-		     << cost1 << ", delta computed = " << delta_cost << " (error = " << error_cc << ")" << std::endl;		      
-		}
-	    }
+      {      
+        DeltaCostComponent<Input,State,Move,CFtype>& dcc = ne.GetDeltaCostComponent(i);
+        CostComponent<Input,State,CFtype>& cc = dcc.GetCostComponent();
+        delta_cost = dcc.DeltaCost(st, mv);        
+        cost = cc.Cost(st);
+        cost1 = cc.Cost(st1);
+        error_cc = cost - cost1 + delta_cost;
+        if (!IsZero(error_cc))
+        {		    
+          os << "  " << i << ". " << dcc.name << " : Initial = " << cost << ", final = " 
+          << cost1 << ", delta computed = " << delta_cost << " (error = " << error_cc << ")" << std::endl;		      
         }
+      }
       os << "Press enter to continue " << std::endl;
       std::cin.get();
     }    
-
+    
     if (move_count % 100 == 0) 
       std::cerr << '.'; // print dots to show that it is alive
     not_last_move = ne.NextMove(st, mv);
-     st1 = st;
-
+    st1 = st;
+    
   }
   while(not_last_move);
   
@@ -384,72 +382,70 @@ void MoveTester<Input,Output,State,Move,CFtype>::CheckNeighborhoodCosts(const St
 }
 
 /**
-   Outputs some statistics about the neighborhood of the given state.
-   In detail it prints out the number of neighbors, the number of 
-   improving/non-improving/worsening moves and their percentages.
-
-   @param st the state to inspect
-*/
+ Outputs some statistics about the neighborhood of the given state.
+ In detail it prints out the number of neighbors, the number of 
+ improving/non-improving/worsening moves and their percentages.
+ 
+ @param st the state to inspect
+ */
 template <class Input, class Output, class State, class Move, typename CFtype>
 void MoveTester<Input,Output,State,Move,CFtype>::PrintNeighborhoodStatistics(const State& st) const
 {
   unsigned int neighbors = 0, improving_neighbors = 0,
-    worsening_neighbors = 0, non_improving_neighbors = 0;
+  worsening_neighbors = 0, non_improving_neighbors = 0;
   unsigned int i;
   Move mv;
   CFtype mv_cost, delta_cost;
   double total_positive_cost = 0.0;
-
-
+  
+  
   std::vector<std::pair<CFtype,CFtype> > min_max_costs(ne.DeltaCostComponents());
-
+  
   ne.FirstMove(st,mv);
+  // only implemented delta can be buggy
   for (i = 0; i < ne.DeltaCostComponents(); i++)
-    if (ne.DeltaCostComponent(i).IsDeltaImplemented()) // only implemented delta can be buggy
-    {
-	    DeltaCostComponent<Input,State,Move,CFtype>& dcc = ne.DeltaCostComponent(i);
-	    min_max_costs[i].first =  min_max_costs[i].second = dcc.DeltaCost(st, mv);  
-    }
-
+  {
+    DeltaCostComponent<Input,State,Move,CFtype>& dcc = ne.GetDeltaCostComponent(i);
+    min_max_costs[i].first =  min_max_costs[i].second = dcc.DeltaCost(st, mv);  
+  }
+  
   do
+  {
+    neighbors++;
+    mv_cost = ne.DeltaCostFunction(st,mv);
+    if (mv_cost < 0)
+      improving_neighbors++;
+    else if (mv_cost > 0)
     {
-      neighbors++;
-      mv_cost = ne.DeltaCostFunction(st,mv);
-      if (mv_cost < 0)
-        improving_neighbors++;
-      else if (mv_cost > 0)
-	{
-	  worsening_neighbors++;
-	  total_positive_cost += mv_cost;
-	}
-      else
-        non_improving_neighbors++;
-      for (i = 0; i < ne.DeltaCostComponents(); i++)
-	{
-	  if (ne.DeltaCostComponent(i).IsDeltaImplemented()) // only implemented delta can be buggy
-    {
-	    DeltaCostComponent<Input,State,Move,CFtype>& dcc = ne.DeltaCostComponent(i);
-	    delta_cost = dcc.DeltaCost(st, mv);  
-	    if (delta_cost < min_max_costs[i].first)
-		    min_max_costs[i].first = delta_cost;
-      else if (delta_cost > min_max_costs[i].second)
-		    min_max_costs[i].second = delta_cost;
-    }	    
-	}
+      worsening_neighbors++;
+      total_positive_cost += mv_cost;
     }
+    else
+      non_improving_neighbors++;
+    // only implemented delta can be buggy
+    for (i = 0; i < ne.DeltaCostComponents(); i++)
+    {      
+      DeltaCostComponent<Input,State,Move,CFtype>& dcc = ne.GetDeltaCostComponent(i);
+      delta_cost = dcc.DeltaCost(st, mv);  
+      if (delta_cost < min_max_costs[i].first)
+        min_max_costs[i].first = delta_cost;
+      else if (delta_cost > min_max_costs[i].second)
+        min_max_costs[i].second = delta_cost;
+    }
+  }
   while (ne.NextMove(st,mv));
-
+  
   os << "Neighborhood size: " <<  neighbors << std::endl
-     << "   improving moves: " << improving_neighbors << " ("
-     << (100.0*improving_neighbors)/neighbors << "%)" << std::endl
-     << "   worsening moves: " << worsening_neighbors << " ("
-     << (100.0*worsening_neighbors)/neighbors << "%), average cost: " << total_positive_cost/neighbors << std::endl
-     << "   sideways moves: " << non_improving_neighbors << " ("
-     << (100.0*non_improving_neighbors)/neighbors << "%)" << std::endl;
-
+  << "   improving moves: " << improving_neighbors << " ("
+  << (100.0*improving_neighbors)/neighbors << "%)" << std::endl
+  << "   worsening moves: " << worsening_neighbors << " ("
+  << (100.0*worsening_neighbors)/neighbors << "%), average cost: " << total_positive_cost/neighbors << std::endl
+  << "   sideways moves: " << non_improving_neighbors << " ("
+  << (100.0*non_improving_neighbors)/neighbors << "%)" << std::endl;
+  
   os << "Min and max component costs:" << std::endl;
   for (i = 0; i < ne.DeltaCostComponents(); i++)
-    os << "  " << i << ". " << ne.DeltaCostComponent(i).name << " : Min = " << min_max_costs[i].first << ", Max = "  << min_max_costs[i].second << std::endl; 
+    os << "  " << i << ". " << ne.GetDeltaCostComponent(i).name << " : Min = " << min_max_costs[i].first << ", Max = "  << min_max_costs[i].second << std::endl; 
 }
 
 template <class Input, class Output, class State, class Move, typename CFtype>
@@ -458,9 +454,9 @@ void MoveTester<Input,Output,State,Move,CFtype>::PrintAllNeighbors(const State& 
   Move mv;
   ne.FirstMove(st,mv);
   do
-    {
-      os << mv << ' ' << ne.DeltaCostFunction(st,mv) << std::endl;
-    }
+  {
+    os << mv << ' ' << ne.DeltaCostFunction(st,mv) << std::endl;
+  }
   while (ne.NextMove(st,mv));
 }
 
@@ -470,57 +466,57 @@ void MoveTester<Input,Output,State,Move,CFtype>::CheckRandomMoveDistribution(con
   Move mv;  
   std::map<Move, unsigned int> frequency;
   typename std::map<Move,unsigned int>:: iterator it;  
-
+  
   unsigned int trials = 0, tot_trials, rounds;
   double dev = 0;
-
+  
   ne.FirstMove(st,mv);
   do
-    {
-      frequency[mv] = 0;
-    }
+  {
+    frequency[mv] = 0;
+  }
   while (ne.NextMove(st,mv));
-
+  
   os << "The neighborhood has " << frequency.size() << " members." << std::endl;
   os << "How many rounds do you want to test: ";
   std::cin >> rounds;
-
+  
   tot_trials = frequency.size() * rounds;
   while (trials < tot_trials)
+  {
+    ne.RandomMove(st,mv);
+    if (frequency.find(mv) != frequency.end())
     {
-      ne.RandomMove(st,mv);
-      if (frequency.find(mv) != frequency.end())
-	{
-	  frequency[mv]++;
-	}
-      else
-	os << "Random move not in neighborhood " << mv << std::endl;
-      trials++;
-      if (trials % frequency.size() == 0)
-	std::cerr << '.';
+      frequency[mv]++;
     }
-
+    else
+      os << "Random move not in neighborhood " << mv << std::endl;
+    trials++;
+    if (trials % frequency.size() == 0)
+      std::cerr << '.';
+  }
+  
   // Compute the standard deviation
   for (it = frequency.begin(); it != frequency.end(); it++)
-    {
-      dev += pow((double)(*it).second, 2);
-    }
-
+  {
+    dev += pow((double)(*it).second, 2);
+  }
+  
   dev = sqrt(fabs(dev/frequency.size() - pow(double(rounds), 2))); 
-
+  
   double error = 0;
-
+  
   os << "Outlier moves [move frequency]:" << std::endl;
   for (it = frequency.begin(); it != frequency.end(); it++)
+  {
+    if (fabs((*it).second - double(rounds)) > 3*dev || (*it).second == 0)
     {
-      if (fabs((*it).second - double(rounds)) > 3*dev || (*it).second == 0)
-	{
-	  error++;
-	  os << it->first << " " << it->second/double(rounds) << std::endl;
-	}
+      error++;
+      os << it->first << " " << it->second/double(rounds) << std::endl;
     }
-    std::cerr << "Deviation of move frequency: " << dev << std::endl;
-    std::cerr << "Percentage of outliers " << 100 * error/frequency.size() << '%' << std::endl;
+  }
+  std::cerr << "Deviation of move frequency: " << dev << std::endl;
+  std::cerr << "Percentage of outliers " << 100 * error/frequency.size() << '%' << std::endl;
 }
 
 template <class Input, class Output, class State, class Move, typename CFtype>
@@ -534,47 +530,47 @@ void MoveTester<Input,Output,State,Move,CFtype>::CheckMoveIndependence(const Sta
   ne.FirstMove(st1,mv);
   ne.MakeMove(st1, mv);
   if (st1 == st)
+  {
+    os << "Null move " << mv << std::endl;
+    null_moves++;
+  }
+  else
+  {
+    reached_states.push_back(std::make_pair(mv,st1));
+  }
+  while (ne.NextMove(st,mv))
+  {
+    st1 = st;
+    ne.MakeMove(st1, mv);
+    if (st1 == st)
     {
       os << "Null move " << mv << std::endl;
       null_moves++;
-    }
-  else
+    }	      	      
+    else 
     {
-      reached_states.push_back(std::make_pair(mv,st1));
-    }
-  while (ne.NextMove(st,mv))
-    {
-      st1 = st;
-      ne.MakeMove(st1, mv);
-      if (st1 == st)
-	{
-	  os << "Null move " << mv << std::endl;
-	  null_moves++;
-	}	      	      
-      else 
-	{
-	  repeated_state = false;
-	  for (i = 0; i < reached_states.size(); i++)
-	    if (st1 == reached_states[i].second)
+      repeated_state = false;
+      for (i = 0; i < reached_states.size(); i++)
+        if (st1 == reached_states[i].second)
 	      {
-		repeated_state = true;
-		break;
+          repeated_state = true;
+          break;
 	      }
-	  if (repeated_state)
+      if (repeated_state)
 	    {
 	      os << "Repeated state for moves " <<  reached_states[i].first << " and " << mv << std::endl;
 	      repeat_states++;
 	    }
-	  else
+      else
 	    {
 	      reached_states.push_back(std::make_pair(mv,st1));
 	    }
-	}
-      if (all_moves % 100 == 0) 
-	std::cerr << '.'; // print dots to show that it is alive
-      all_moves++;
     }
-
+    if (all_moves % 100 == 0) 
+      std::cerr << '.'; // print dots to show that it is alive
+    all_moves++;
+  }
+  
   os << std::endl << "Number of moves: " << all_moves << std::endl;
   if (repeat_states == 0)
     os << "No repeated states" << std::endl;
@@ -638,34 +634,34 @@ void MoveTester<Input,Output,State,Move,CFtype>::CheckCandidateInitialTemperatur
   unsigned int i, j;
   CFtype cost_value, max_cost_value = (CFtype) 0;
   double mean, square_mean, variance, mean_variance = 0.0;
-
+  
   // Compute a start temperature by sampling the search space and computing the variance
   // according to [van Laarhoven and Aarts, 1987] (allow an acceptance ratio of approximately 80%)
   State sample_state(this->in);
   Move mv;
   
   for (i = 0; i < init_states; i++)
+  {
+    mean = 0.0;
+    square_mean = 0.0;
+    this->sm.RandomState(sample_state);
+    for (j = 0; j < samples; j++)
     {
-      mean = 0.0;
-      square_mean = 0.0;
-      this->sm.RandomState(sample_state);
-      for (j = 0; j < samples; j++)
-	{
-	  this->ne.RandomMove(sample_state, mv);
-	  cost_value = this->ne.DeltaCostFunction(sample_state, mv);
-	  if (cost_value > max_cost_value)
-	    max_cost_value = cost_value;
-	  mean += cost_value;
-	  square_mean += cost_value * cost_value;
-	}
-      mean /= samples;
-      variance = square_mean - mean * mean;
-      mean_variance += variance;
+      this->ne.RandomMove(sample_state, mv);
+      cost_value = this->ne.DeltaCostFunction(sample_state, mv);
+      if (cost_value > max_cost_value)
+        max_cost_value = cost_value;
+      mean += cost_value;
+      square_mean += cost_value * cost_value;
     }
+    mean /= samples;
+    variance = square_mean - mean * mean;
+    mean_variance += variance;
+  }
   mean_variance /= init_states;
-
+  
   mean_variance /= 10e04; // scaling
-
+  
   os << "Start temperature 1 = " << mean_variance << std::endl;
   os << "Start temperature 2 = " << max_cost_value << " (" << mean_variance/max_cost_value << ")" << std::endl;
 }
