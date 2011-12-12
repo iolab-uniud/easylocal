@@ -39,9 +39,7 @@
  This feature makes the construction and the copy of objects of type
  @ref State completely transparent to the user, since it does not
  require any explicit cast operation or dynamic allocation. 
- 
- @ref BimodalMoveRunner "BimodalRunner"s deal with the composition of
- @ref Move "Move"s of two different types so they have two @ref Move templates. 
+
  */
 
 #if !defined(_RUNNERS_HH_)

@@ -2,7 +2,7 @@
 
 AC_PREREQ(2.59)
 
-AC_INIT([libEasyLocal++], [2.0], [l.digaspero@uniud.it])
+AC_INIT([libEasyLocal++], [3.0 francis], [luca.digaspero@uniud.it])
 AC_CONFIG_AUX_DIR(config)
 AC_CONFIG_SRCDIR([src])
 AC_CONFIG_HEADER([src/config.hh])
@@ -10,7 +10,7 @@ AC_CONFIG_MACRO_DIR([m4])
 
 AC_CANONICAL_TARGET
 case "${target_os}" in
-  *darwin* ) EOFWARNING=-Wnewline-eof
+  *darwin* ) EOFWARNING=
   ;;
   *) EOFWARNING=
   ;;
@@ -37,44 +37,19 @@ AC_LANG([C++])
 AC_DISABLE_SHARED
 AC_PROG_LIBTOOL
 AC_PROG_CXX
-#if test "$CXX" == "g++"; then
-#  CXXFLAGS="$CXXFLAGS -fvisibility-inlines-hidden"
-#fi
+
+# Checking for debug option
 AC_MSG_CHECKING([--enable-debug])
 AC_ARG_ENABLE(debug, 
   [AS_HELP_STRING([--enable-debug], [enable debugging (default: no)])], 
   [], [])
 AC_MSG_RESULT($enable_debug)
 AM_CONDITIONAL(DEBUG, test "$enable_debug" = yes)
-AC_MSG_CHECKING([--enable-threading])
-AC_ARG_ENABLE(threading, 
-  [AS_HELP_STRING([--enable-threading], [enable threading and timeout capabilities (default: yes)])], 
-  [], [])
-AC_MSG_RESULT($enable_threading)
-AM_CONDITIONAL(THREADING, test "$enable_threading" != no)
-if test "$enable_threading" != no; then
-	ACX_PTHREAD([
-		if test "$PTHREAD_CC" != "$CC"; then
-			CC="$PTHREAD_CC"
-		fi
-		LIBS="$PTHREAD_LIBS $LIBS"
-		CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
-		CXXFLAGS="$CXXFLAGS $PTHREAD_CFLAGS"
-# strip the comments before HAVE_PTHREAD
-		sed 's/.*\(#define HAVE_PTHREAD\).*/\1 1/g' $EASYLOCALPP/src/EasyLocal.conf.hh > tmpEasyLocalconf.hh
-		mv tmpEasyLocalconf.hh $EASYLOCALPP/src/EasyLocal.conf.hh 
-	],
-	[
-# make sure that the comments before HAVE_PTHREAD are set
-		sed 's/.*\(#define HAVE_PTHREAD\).*/\/\/\1 1/g' $EASYLOCALPP/src/EasyLocal.conf.hh	> tmpEasyLocalconf.hh
-		mv tmpEasyLocalconf.hh $EASYLOCALPP/src/EasyLocal.conf.hh
-	]) 
-else
-# make sure that the comments before HAVE_PTHREAD are set
-		sed 's/.*\(#define HAVE_PTHREAD\).*/\/\/\1 1/g' $EASYLOCALPP/src/EasyLocal.conf.hh	> tmpEasyLocalconf.hh
-		mv tmpEasyLocalconf.hh $EASYLOCALPP/src/EasyLocal.conf.hh
-fi
 
+# Checking for C++11 compliance
+AC_MSG_CHECKING([for C++11 compiler compliance]) 
+AX_CHECK_COMPILE_FLAG([-std=c++11], [AX_APPEND_FLAG(CXXFLAGS, [-std=c++11])], [AC_ERROR([This version of EasyLocal++ works only with C++11 compliant compilers])])
+CXXFLAGS="$CXXFLAGS -std=c++11"
 # Checks for typedefs, structures, and compiler characteristics.
 AC_HEADER_STDBOOL
 AC_C_CONST
@@ -82,13 +57,13 @@ AC_C_INLINE
 
 # Checks for library functions.
 AC_HEADER_STDC
-AC_HEADER_TIME
+#AC_HEADER_TIME
 AC_CHECK_FUNCS([memset pow sqrt strstr floor])
-AC_CHECK_FUNCS([getrusage])
-AC_CHECK_FUNCS([clock_gettime])
-AC_CHECK_FUNCS([gettimeofday])
-AC_CHECK_HEADERS([sys/time.h])
-AC_CHECK_HEADERS([sys/resource.h])
+#AC_CHECK_FUNCS([getrusage])
+#AC_CHECK_FUNCS([clock_gettime])
+#AC_CHECK_FUNCS([gettimeofday])
+#AC_CHECK_HEADERS([sys/time.h])
+#AC_CHECK_HEADERS([sys/resource.h])
 
 # For CppUnit testing
 AC_ARG_ENABLE(cppunit, 

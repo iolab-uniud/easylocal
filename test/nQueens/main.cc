@@ -110,7 +110,7 @@
 #include <testers/MoveTester.hh>
 #include <testers/KickerTester.hh>
 #include <utils/CLParser.hh>
-#include <utils/Chronometer.hh>
+#include <chrono>
 //#include <kickers/MultimodalKicker.hh>
  
 int main(int argc, char* argv[])
@@ -248,13 +248,12 @@ int main(int argc, char* argv[])
 		{
 			qgls.AddRunner(qhc);
 			qgls.AddRunner(qsd);
-			Chronometer chrono;
 			if (arg_timeout.IsSet())
 				qgls.SetTimeout(arg_timeout.GetValue());
-			chrono.Start();
+      std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
 			qgls.GeneralSolve();
-			chrono.Stop();
-			std::cout << qgls.GetOutput() << std::endl << qgls.GetCurrentCost() << ' ' << chrono.TotalTime() << std::endl;
+			std::chrono::system_clock::duration duration = std::chrono::system_clock::now() - start;
+			std::cout << qgls.GetOutput() << std::endl << qgls.GetCurrentCost() << ' ' << duration.count() << std::endl;
 		}
 		
 	}

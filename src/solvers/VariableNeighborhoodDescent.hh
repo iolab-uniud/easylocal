@@ -80,11 +80,9 @@ void VariableNeighborhoodDescent<Input,Output,State,CFtype>::ReadParameters(std:
   os << "Variable Neighborhood Descent Solver: " << this->name << " parameters" << std::endl;
   os << "Max k: ";
   is >> this->max_k;
-#if defined(HAVE_PTHREAD)
   os << "Timeout: ";
   is >> this->timeout;
   this->current_timeout = this->timeout;
-#endif 
 }
 
 

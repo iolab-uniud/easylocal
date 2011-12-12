@@ -1,0 +1,6 @@
+3.0 francis
+
+* Code has been rewritten to meet C++11 standard
+* Multi-threading support has changed accordingly to the previous point
+* Code have been refactored to eliminate source of inefficiency
+

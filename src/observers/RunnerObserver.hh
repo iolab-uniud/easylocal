@@ -19,8 +19,6 @@
 #if !defined(_RUNNER_OBSERVER_HH_)
 #define _RUNNER_OBSERVER_HH_
 
-#include <utils/Chronometer.hh>
-
 template <class Input, class State, class Move, typename CFtype>
 class MoveRunner;
 
@@ -65,7 +63,9 @@ template <class Input, class State, class Move, typename CFtype>
 void RunnerObserver<Input,State,Move,CFtype>::NotifyStartRunner(MoveRunner<Input,State,Move,CFtype>& r)
 {
   if (plot_improving_moves || plot_all_moves)
-    plot << r.number_of_iterations << ' ' << r.chrono.TotalTime() << ' ' << r.current_state_cost << std::endl;
+    plot << r.number_of_iterations << ' ' << 
+    // r.chrono.TotalTime() << ' ' << 
+    r.current_state_cost << std::endl;
 }
 
 
@@ -86,7 +86,9 @@ void RunnerObserver<Input,State,Move,CFtype>::NotifyNewBest(MoveRunner<Input,Sta
       log << ')' << std::endl;
     }
   if (plot_improving_moves && !plot_all_moves)
-    plot << r.name << ' ' << r.number_of_iterations << ' ' << r.chrono.TotalTime() << ' ' << r.current_state_cost << std::endl;
+    plot << r.name << ' ' << r.number_of_iterations << ' ' // 
+                                                           // << r.chrono.TotalTime() 
+    << ' ' << r.current_state_cost << std::endl;
 }
 
 template <class Input, class State, class Move, typename CFtype>
@@ -108,14 +110,16 @@ void RunnerObserver<Input,State,Move,CFtype>::NotifyStoreMove(MoveRunner<Input,S
     log << ')' << std::endl;
   }
   if (plot_all_moves)
-    plot << r.name << ' '<< r.number_of_iterations << ' ' << r.chrono.TotalTime() << ' ' << r.current_state_cost << std::endl;
+    plot << r.name << ' '<< r.number_of_iterations << ' ' // << r.chrono.TotalTime() 
+    << ' ' << r.current_state_cost << std::endl;
 }
 
 template <class Input, class State, class Move, typename CFtype>
 void RunnerObserver<Input,State,Move,CFtype>::NotifyEndRunner(MoveRunner<Input,State,Move,CFtype>& r)
 {
   if (plot_improving_moves || plot_all_moves)
-    plot << r.number_of_iterations << ' ' << r.chrono.TotalTime() << ' ' << r.current_state_cost << std::endl;
+    plot << r.number_of_iterations << ' ' // << r.chrono.TotalTime() 
+    << ' ' << r.current_state_cost << std::endl;
 }
 
 #endif /*OBSERVER_HH_*/

@@ -23,10 +23,6 @@
 #include <helpers/OutputManager.hh>
 #include <solvers/AbstractLocalSearch.hh>
 #include <runners/Runner.hh>
-#if defined(HAVE_PTHREAD)
-#include <pthread.h>
-#endif
-
 
 /** The Simple Local Search solver handles a simple local search algorithm
     encapsulated in a runner.
@@ -111,11 +107,9 @@ void SimpleLocalSearch<Input,Output,State,CFtype>::ReadParameters(std::istream& 
   os << "Runner: " << std::endl; 
   if (this->p_runner)
     this->p_runner->ReadParameters(is, os);
-#if defined(HAVE_PTHREAD)
   os << "Timeout: ";
   is >> this->timeout;
   this->current_timeout = this->timeout;
-#endif  
 }
 
 

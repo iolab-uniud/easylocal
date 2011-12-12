@@ -64,13 +64,6 @@ protected:
 					 states tested for a run. */
   Output out;
 protected:
-  bool LetGo(Runner<Input,State,CFtype>& runner, bool first_round = true);
-#if defined(HAVE_PTHREAD)
-/**< This variable will be shared among runners (and possibly other lower-level components) and controls their termination. */
-RWLockVariable<bool> termination_request, termination_confirmation;
-/**< This variable avoids active waiting of runners termination. */
-ConditionVariable runner_termination;  
-#endif
 };
 
 /*************************************************************************
@@ -159,52 +152,6 @@ void AbstractLocalSearch<Input,Output,State,CFtype>::FindInitialState(bool rando
       sm.GreedyState(current_state);
       current_state_cost = sm.CostFunction(current_state);
     }
-}
-
-template <class Input, class Output, class State, typename CFtype>
-bool AbstractLocalSearch<Input,Output,State,CFtype>::LetGo(Runner<Input,State,CFtype>& runner, bool first_round)
-{
-#if defined(HAVE_PTHREAD)
-  if (this->timeout_set)
-  {
-    double time_left;
-    termination_request = false;
-    termination_confirmation = false;
-    runner.SetExternalTerminationVariables(runner_termination, termination_request, termination_confirmation);
-    pthread_t runner_thread = runner.GoThread(first_round);
-    try
-    {
-      time_left = runner_termination.WaitTimeout(this->current_timeout);
-      this->current_timeout = time_left;
-      termination_confirmation = true;
-    }
-    catch (TimeoutExpired e)
-    {
-      this->current_timeout = 0.0;
-      termination_confirmation = true;
-    }
-    this->termination_request = true;
-    pthread_join(runner_thread, NULL);
-    runner.ResetExternalTerminationVariables();
-    if (this->current_timeout == 0.0)
-      return true;
-    else
-      return false;
-  }
-  else
-  {
-    termination_request = false;
-    termination_confirmation = true;
-    runner.SetExternalTerminationVariables(runner_termination, termination_request, termination_confirmation);
-    pthread_t runner_thread = runner.GoThread(first_round);
-    pthread_join(runner_thread, NULL);
-    runner.ResetExternalTerminationVariables();
-    return false;
-  }
-#else
-  runner.Go(first_round);
-  return false;
-#endif
 }
 
 #endif // _ABSTRACT_LOCAL_SEARCH_HH_

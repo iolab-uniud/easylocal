@@ -21,15 +21,12 @@
 
 #include <EasyLocal.conf.hh>
 #include <helpers/StateManager.hh>
-#if defined(HAVE_PTHREAD)
-#include <utils/Synchronize.hh>
-#endif
 #include <stdexcept>
-#include <utils/Chronometer.hh>
 
 #include <utils/CLParser.hh>
 #include <helpers/NeighborhoodExplorer.hh>
 #include <climits>
+#include <chrono>
 
 template <class Input, class State, typename CFtype = int>
 class Runner
@@ -91,7 +88,6 @@ protected:
   virtual void TerminateRun();
   virtual void UpdateIterationCounter();
   bool MaxIterationExpired() const;
-  bool ExternalTerminationRequest() const;
   /** Encodes the criterion used to stop the search. */
   virtual bool StopCriterion() = 0;
   /** Encodes the criterion used to select the move at each step. */
@@ -124,22 +120,6 @@ protected:
   unsigned long start_iteration;
   unsigned long max_iteration; /**< The maximum number of iterations
     allowed. */
-#if defined(HAVE_PTHREAD)  
-protected:
-  ConditionVariable* termination;
-  RWLockVariable<bool> *external_termination_request, *external_termination_confirmation;
-public:
-  virtual void SetExternalTerminationVariables(ConditionVariable& termination, RWLockVariable<bool>& external_termination_request,
-                                               RWLockVariable<bool>& external_termination_confirmation);
-  virtual void ResetExternalTerminationVariables();
-  pthread_t& GoThread(bool first_round = true);
-private:
-  static void* _pthreads_Run(void* pthis);
-  pthread_t this_thread;
-  bool first_round; 
-#endif
-protected:
-  Chronometer chrono;
 };
 
 /*************************************************************************
@@ -159,9 +139,6 @@ protected:
 template <class Input, class State, typename CFtype>
 Runner<Input,State,CFtype>::Runner(const Input& i, StateManager<Input,State,CFtype>& e_sm, std::string e_name)
 : name(e_name), in(i), sm(e_sm), current_state(i), best_state(i), current_state_set(false), number_of_iterations(0), max_iteration(ULONG_MAX)
-#if defined(HAVE_PTHREAD)
-,  termination(NULL), external_termination_request(NULL)
-#endif
 {}
 
 /**
@@ -277,9 +254,7 @@ void Runner<Input,State,CFtype>::SetMaxIteration(unsigned long max)
 
 template <class Input, class State, typename CFtype>
 void Runner<Input,State,CFtype>::TerminateRun()
-{	
-  chrono.Stop();
-}
+{}
 
 /**
    Performs a full run of a local search method.
@@ -290,8 +265,7 @@ void Runner<Input,State,CFtype>::Go(bool first_round)
 {
   GoCheck();
   InitializeRun(first_round);
-  while (!ExternalTerminationRequest()  && 
-         !MaxIterationExpired() && 
+  while (!MaxIterationExpired() && 
          !StopCriterion() && !LowerBoundReached())
     {
       UpdateIterationCounter();
@@ -334,9 +308,6 @@ void Runner<Input,State,CFtype>::Step(unsigned int n)
   GoCheck();
   for (unsigned int i = 0; i < n; i++)
   {
-    Chronometer chrono_it;
-    chrono_it.Reset();
-    chrono_it.Start();
     UpdateIterationCounter();
     SelectMove();
     if (AcceptableMove())
@@ -344,10 +315,9 @@ void Runner<Input,State,CFtype>::Step(unsigned int n)
       MakeMove();
       UpdateStateCost();
       StoreMove();
-      if (ExternalTerminationRequest() || LowerBoundReached())
+      if (LowerBoundReached())
         break;
     }
-    chrono_it.Stop();
   }
 }
 
@@ -373,20 +343,6 @@ bool Runner<Input,State,CFtype>::MaxIterationExpired() const
   return number_of_iterations > max_iteration;
 }
 
-template <class Input, class State, typename CFtype>
-inline bool Runner<Input,State,CFtype>::ExternalTerminationRequest() const
-{
-#if defined(HAVE_PTHREAD)  
-  if (external_termination_request)
-    return *external_termination_request;
-  else
-    return false;
-#else
-  return false;
-#endif
-}
-
-
 /**
     Checks whether the selected move can be performed.
     Its tentative definition simply returns true
@@ -406,8 +362,6 @@ void Runner<Input,State,CFtype>::InitializeRun(bool first_round)
   number_of_iterations = 0;
   iteration_of_best = 0;
   ComputeCost();
-  chrono.Reset();
-  chrono.Start();
 }
 
 template <class Input, class State, typename CFtype>
@@ -415,55 +369,5 @@ bool Runner<Input,State,CFtype>::LowerBoundReached() const
 {
   return sm.LowerBoundReached(current_state_cost);
 }
-
-#if defined(HAVE_PTHREAD)
-template <class Input, class State, typename CFtype>
-void* Runner<Input,State,CFtype>::_pthreads_Run(void* ep_this)
-{
-  Runner<Input,State,CFtype>* p_this = static_cast<Runner<Input,State,CFtype>*>(ep_this);
-  if (!p_this)
-    return NULL;
-    
-  p_this->Go(p_this->first_round);
-
-  if (p_this->termination && !(*p_this->external_termination_request))
-  do
-    p_this->termination->Signal();
-  while (!(*p_this->external_termination_confirmation));
-  p_this->ResetExternalTerminationVariables();
-  
-  return NULL;
-}
-
-template <class Input, class State, typename CFtype>
-pthread_t& Runner<Input,State,CFtype>::GoThread(bool first_round)
-{
-  this->first_round = first_round;
-  pthread_create(&this_thread, NULL, Runner<Input,State,CFtype>::_pthreads_Run, this);
-  return this_thread;
-}
-
-#if defined(HAVE_PTHREAD)
-template <class Input, class State, typename CFtype>
-void Runner<Input,State,CFtype>::SetExternalTerminationVariables(ConditionVariable& r_termination, 
-                                                                 RWLockVariable<bool>& r_external_termination_request,
-                                                                 RWLockVariable<bool>& r_external_termination_confirmation)
-{
-  this->termination = &r_termination;
-  this->external_termination_request = &r_external_termination_request;	
-  this->external_termination_confirmation = &r_external_termination_confirmation;
-}
-
-template <class Input, class State, typename CFtype>
-void Runner<Input,State,CFtype>::ResetExternalTerminationVariables()
-{
-  this->termination = NULL;
-  this->external_termination_request = NULL;	
-  this->external_termination_confirmation = NULL;
-}
-#endif
-
-
-#endif
 
 #endif /*RUNNER_HH_*/

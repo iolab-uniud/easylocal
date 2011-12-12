@@ -106,9 +106,6 @@ void MoveRunner<Input,State,Move,CFtype>::InitializeRun(bool first_round)
   Runner<Input,State,CFtype>::InitializeRun();
   if (observer != NULL)
     observer->NotifyStartRunner(*this);
-#if defined(HAVE_PTHREAD)
-  ne.SetExternalTerminationRequest(*this->external_termination_request);
-#endif
 }
 
 
@@ -118,9 +115,6 @@ void MoveRunner<Input,State,Move,CFtype>::TerminateRun()
   Runner<Input,State,CFtype>::TerminateRun();
   if (observer != NULL)
 		observer->NotifyEndRunner(*this);
-#if defined(HAVE_PTHREAD)
-  ne.ResetExternalTerminationRequest();
-#endif
 }
 
 

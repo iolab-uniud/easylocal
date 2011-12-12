@@ -22,15 +22,10 @@
 #include <helpers/DeltaCostComponent.hh>
 #include <helpers/StateManager.hh>
 #include <helpers/ProhibitionManager.hh>
-#include <utils/Synchronize.hh>
 #include <utils/Random.hh>
 #include <typeinfo>
 #include <iostream>
 #include <stdexcept>
-
-#if defined(HAVE_PTHREAD)
-#include <utils/Synchronize.hh>
-#endif
 
 class EmptyNeighborhood : public std::exception {};
 
@@ -241,19 +236,6 @@ protected:
 
   /** Name of user-defined neighborhood explorer */
   std::string name;
-
-  /** Checks wether an external request to terminate the exploration of the neighborhood 
-    has been issued. */
-    bool ExternalTerminationRequest() const;
-
-  #if defined(HAVE_PTHREAD)
-    RWLockVariable<bool> *p_external_termination_request;
-    public:
-    void SetExternalTerminationRequest(RWLockVariable<bool>& external_termination_request);
-    void ResetExternalTerminationRequest();
-  #endif
-
-
 };
 
 /*************************************************************************
@@ -265,11 +247,7 @@ template <class Input, class State, class Move, typename CFtype>
 NeighborhoodExplorer<Input,State,Move,CFtype>::NeighborhoodExplorer(const Input& i,
   StateManager<Input,State,CFtype>& e_sm, std::string e_name)
   : in(i), sm(e_sm), name(e_name)
-{ 
-#if defined(HAVE_PTHREAD)
-  ResetExternalTerminationRequest();
-#endif
-}
+{}
 
 /**
  Evaluates the variation of the cost function obtainted either by applying the move to 
@@ -342,7 +320,7 @@ CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::BestMove(const State &st, 
   CFtype mv_cost = DeltaCostFunction(st, mv);
   CFtype best_delta = mv_cost;
   
-  while (NextMove(st, mv) && !ExternalTerminationRequest()) 
+  while (NextMove(st, mv)) 
   { 		
     mv_cost = DeltaCostFunction(st, mv);
     if (LessThan(mv_cost, best_delta))
@@ -375,7 +353,7 @@ CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::BestMove(const State &st, 
 
   static unsigned int i1 = 0, i2 = 0;
   
-  while (NextMove(st, mv) && !ExternalTerminationRequest()) 
+  while (NextMove(st, mv)) 
   { 		
     mv_cost = DeltaCostFunction(st, mv);
     if (LessThan(mv_cost, best_delta))
@@ -446,7 +424,7 @@ CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::FirstImprovingMove(const S
   Move best_move = mv;
   CFtype best_delta = mv_cost; 
   
-  while (NextMove(st, mv) && !ExternalTerminationRequest())
+  while (NextMove(st, mv))
   {
 		mv_cost = DeltaCostFunction(st, mv);
     if (LessThan(mv_cost, (CFtype)0))
@@ -521,7 +499,7 @@ CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::FirstImprovingMove(const S
     if (not_last_move)
       mv_cost = DeltaCostFunction(st, mv);
   }
-  while (not_last_move && !ExternalTerminationRequest());
+  while (not_last_move);
 
   // these instructions are reached when no improving move has been found  
   mv = best_move;
@@ -559,7 +537,7 @@ CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::SampleMove(const State &st
     mv_cost = DeltaCostFunction(st, mv);
     s++;
   }
-  while (s < samples && !ExternalTerminationRequest());
+  while (s < samples);
   
   mv = best_move;
   return best_delta;
@@ -613,7 +591,7 @@ CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::SampleMove(const State &st
     mv_cost = DeltaCostFunction(st, mv);
     s++;
   }
-  while (s < samples && !ExternalTerminationRequest());
+  while (s < samples);
   
   mv = best_move;
   return best_delta;
@@ -668,31 +646,6 @@ CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::DeltaObjective(const State
       total_delta += dcc.DeltaCost(st, mv);
     }
   return total_delta;
-}
-
-#if defined(HAVE_PTHREAD)
-template <class Input, class State, class Move, typename CFtype>
-void NeighborhoodExplorer<Input,State,Move,CFtype>::SetExternalTerminationRequest(RWLockVariable<bool>& external_termination_request) {
-  p_external_termination_request = &external_termination_request;
-}
-
-template <class Input, class State, class Move, typename CFtype>
-void NeighborhoodExplorer<Input,State,Move,CFtype>::ResetExternalTerminationRequest() {
-  p_external_termination_request = NULL;
-}
-#endif
-
-template <class Input, class State, class Move, typename CFtype>
-inline bool NeighborhoodExplorer<Input,State,Move,CFtype>::ExternalTerminationRequest() const
-{
-#if defined(HAVE_PTHREAD)  
-  if (p_external_termination_request)
-    return *p_external_termination_request;
-  else
-    return false;
-#else
-  return false;
-#endif
 }
 
 #endif // define _NEIGHBORHOOD_EXPLORER_HH_

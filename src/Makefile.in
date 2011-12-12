@@ -35,16 +35,16 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-@THREADING_TRUE@am__append_1 = utils/Synchronize.cc
 subdir = src
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in \
 	$(srcdir)/config.hh.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
-am__aclocal_m4_deps = $(top_srcdir)/m4/cppunit.m4 \
-	$(top_srcdir)/m4/doxygen.m4 $(top_srcdir)/m4/libtool.m4 \
-	$(top_srcdir)/m4/ltoptions.m4 $(top_srcdir)/m4/ltsugar.m4 \
-	$(top_srcdir)/m4/ltversion.m4 $(top_srcdir)/m4/lt~obsolete.m4 \
-	$(top_srcdir)/m4/pthread.m4 $(top_srcdir)/configure.ac
+am__aclocal_m4_deps = $(top_srcdir)/m4/ax_append_flag.m4 \
+	$(top_srcdir)/m4/ax_check_compile_flag.m4 \
+	$(top_srcdir)/m4/cppunit.m4 $(top_srcdir)/m4/doxygen.m4 \
+	$(top_srcdir)/m4/libtool.m4 $(top_srcdir)/m4/ltoptions.m4 \
+	$(top_srcdir)/m4/ltsugar.m4 $(top_srcdir)/m4/ltversion.m4 \
+	$(top_srcdir)/m4/lt~obsolete.m4 $(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 mkinstalldirs = $(install_sh) -d
@@ -75,12 +75,7 @@ am__base_list = \
 am__installdirs = "$(DESTDIR)$(libdir)"
 LTLIBRARIES = $(lib_LTLIBRARIES)
 libEasyLocalpp_la_LIBADD =
-am__libEasyLocalpp_la_SOURCES_DIST = utils/Chronometer.cc \
-	utils/Random.cc utils/CLParser.cc utils/Array.cc \
-	utils/Types.cc utils/Synchronize.cc
-@THREADING_TRUE@am__objects_1 = Synchronize.lo
-am_libEasyLocalpp_la_OBJECTS = Chronometer.lo Random.lo CLParser.lo \
-	Array.lo Types.lo $(am__objects_1)
+am_libEasyLocalpp_la_OBJECTS = Random.lo CLParser.lo Array.lo Types.lo
 libEasyLocalpp_la_OBJECTS = $(am_libEasyLocalpp_la_OBJECTS)
 DEFAULT_INCLUDES = -I.@am__isrc@
 depcomp = $(SHELL) $(top_srcdir)/config/depcomp
@@ -96,7 +91,7 @@ CXXLINK = $(LIBTOOL) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CXXLD) $(AM_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
 SOURCES = $(libEasyLocalpp_la_SOURCES)
-DIST_SOURCES = $(am__libEasyLocalpp_la_SOURCES_DIST)
+DIST_SOURCES = $(libEasyLocalpp_la_SOURCES)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -191,9 +186,6 @@ PACKAGE_TARNAME = @PACKAGE_TARNAME@
 PACKAGE_URL = @PACKAGE_URL@
 PACKAGE_VERSION = @PACKAGE_VERSION@
 PATH_SEPARATOR = @PATH_SEPARATOR@
-PTHREAD_CC = @PTHREAD_CC@
-PTHREAD_CFLAGS = @PTHREAD_CFLAGS@
-PTHREAD_LIBS = @PTHREAD_LIBS@
 RANLIB = @RANLIB@
 SED = @SED@
 SET_MAKE = @SET_MAKE@
@@ -208,7 +200,6 @@ ac_ct_AR = @ac_ct_AR@
 ac_ct_CC = @ac_ct_CC@
 ac_ct_CXX = @ac_ct_CXX@
 ac_ct_DUMPBIN = @ac_ct_DUMPBIN@
-acx_pthread_config = @acx_pthread_config@
 am__include = @am__include@
 am__leading_dot = @am__leading_dot@
 am__quote = @am__quote@
@@ -259,9 +250,9 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 lib_LTLIBRARIES = libEasyLocalpp.la
-libEasyLocalpp_la_SOURCES = utils/Chronometer.cc utils/Random.cc \
-	utils/CLParser.cc utils/Array.cc utils/Types.cc \
-	$(am__append_1)
+libEasyLocalpp_la_SOURCES = utils/Random.cc \
+  utils/CLParser.cc  utils/Array.cc utils/Types.cc
+
 AM_CPPFLAGS = -I@EASYLOCALPP_BUILD@ 
 AM_LDFLAGS = -lstdc++ 
 @DEBUG_FALSE@AM_CXXFLAGS = -O3 @EOFWARNING@ #-cxxlib-gcc
@@ -360,9 +351,7 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Array.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CLParser.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Chronometer.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Random.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Synchronize.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Types.Plo@am__quote@
 
 .cc.o:
@@ -385,13 +374,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LTCXXCOMPILE) -c -o $@ $<
-
-Chronometer.lo: utils/Chronometer.cc
-@am__fastdepCXX_TRUE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT Chronometer.lo -MD -MP -MF $(DEPDIR)/Chronometer.Tpo -c -o Chronometer.lo `test -f 'utils/Chronometer.cc' || echo '$(srcdir)/'`utils/Chronometer.cc
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/Chronometer.Tpo $(DEPDIR)/Chronometer.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='utils/Chronometer.cc' object='Chronometer.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o Chronometer.lo `test -f 'utils/Chronometer.cc' || echo '$(srcdir)/'`utils/Chronometer.cc
 
 Random.lo: utils/Random.cc
 @am__fastdepCXX_TRUE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT Random.lo -MD -MP -MF $(DEPDIR)/Random.Tpo -c -o Random.lo `test -f 'utils/Random.cc' || echo '$(srcdir)/'`utils/Random.cc
@@ -420,13 +402,6 @@ Types.lo: utils/Types.cc
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='utils/Types.cc' object='Types.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o Types.lo `test -f 'utils/Types.cc' || echo '$(srcdir)/'`utils/Types.cc
-
-Synchronize.lo: utils/Synchronize.cc
-@am__fastdepCXX_TRUE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT Synchronize.lo -MD -MP -MF $(DEPDIR)/Synchronize.Tpo -c -o Synchronize.lo `test -f 'utils/Synchronize.cc' || echo '$(srcdir)/'`utils/Synchronize.cc
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/Synchronize.Tpo $(DEPDIR)/Synchronize.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='utils/Synchronize.cc' object='Synchronize.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o Synchronize.lo `test -f 'utils/Synchronize.cc' || echo '$(srcdir)/'`utils/Synchronize.cc
 
 mostlyclean-libtool:
 	-rm -f *.lo

@@ -41,11 +41,9 @@ public:
 protected:
   Solver(const Input& in, std::string name);
   const Input& in; /**< A reference to the input manager. */
-#if defined(HAVE_PTHREAD)
 protected:
   double timeout, current_timeout;
   bool timeout_set;
-#endif
 };
 
 /*************************************************************************
@@ -61,17 +59,14 @@ template <class Input, class Output>
 Solver<Input, Output>::Solver(const Input& i, std::string e_name)
 : name(e_name), in(i)
 {
-#if defined(HAVE_PTHREAD)
   this->timeout = 0.0; 
   this->current_timeout = 0.0;
   this->timeout_set = false;
-#endif
 }
 
 template <class Input, class Output>
 void Solver<Input, Output>::SetTimeout(double to)
 {
-#if defined(HAVE_PTHREAD)
   if (to > 0.0)
     {
       this->timeout = to;
@@ -80,7 +75,6 @@ void Solver<Input, Output>::SetTimeout(double to)
     }
   else
     this->timeout_set = false;
-#endif
 }
 
 

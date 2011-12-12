@@ -305,18 +305,17 @@ void Tester<Input,Output, State,CFtype>::ExecuteRunChoice()
 {
   if (sub_choice > 0)
     {
-      Chronometer chrono;
-      chrono.Start();
+      std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
       Runner<Input,State,CFtype>& r = *runners[sub_choice-1];
       r.ReadParameters();      
       r.SetState(test_state);
       r.Go();
-      chrono.Stop();
+      std::chrono::system_clock::duration duration = std::chrono::system_clock::now() - start;
       test_state = r.GetState();
       om.OutputState(test_state,out);
       os << "CURRENT SOLUTION " << std::endl << out << std::endl;
       os << "CURRENT COST : " << r.GetStateCost() << std::endl;
-      os << "ELAPSED TIME : " << chrono.TotalTime() << 's' << std::endl;
+      os << "ELAPSED TIME : " << duration.count() << 's' << std::endl;
       os << "NUMBER OF ITERATIONS : " << r.GetIterationsPerformed() << std::endl;
     }
 }
@@ -329,17 +328,16 @@ void Tester<Input,Output,State,CFtype>::RunInputMenu()
 {
   bool show_state;
   ShowReducedStateMenu();
-  Chronometer chrono;
-  chrono.Start();
+  std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
   show_state = ExecuteStateChoice();
-  chrono.Stop();
+  std::chrono::system_clock::duration duration = std::chrono::system_clock::now() - start;
   if (show_state)
     {
        this->om.OutputState(test_state, this->out);
       os << "INITIAL SOLUTION " << std::endl << this->out << std::endl;
       os << "INITIAL COST : " << this->sm.CostFunction(test_state) << std::endl;
     }
-  os << "ELAPSED TIME : " << chrono.TotalTime() << 's' << std::endl;
+  os << "ELAPSED TIME : " << duration.count() << 's' << std::endl;
 }
 
 /**
@@ -526,17 +524,16 @@ void Tester<Input,Output,State,CFtype>::RunStateTestMenu()
       ShowStateMenu();
       if (sub_choice != 0)
         {
-	  Chronometer chrono;
- 	  chrono.Start();
-	  show_state = ExecuteStateChoice();
- 	  chrono.Stop();
-	  if (show_state)
+          std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
+          show_state = ExecuteStateChoice();
+          std::chrono::system_clock::duration duration = start - std::chrono::system_clock::now();
+          if (show_state)
             {
-	      om.OutputState(test_state,out);
-	      os << "CURRENT SOLUTION " << std::endl << out << std::endl;
-	      os << "CURRENT COST : " << sm.CostFunction(test_state) << std::endl;
+              om.OutputState(test_state,out);
+              os << "CURRENT SOLUTION " << std::endl << out << std::endl;
+              os << "CURRENT COST : " << sm.CostFunction(test_state) << std::endl;
             }
-	  os << "ELAPSED TIME : " << chrono.TotalTime() << 's' << std::endl;
+          os << "ELAPSED TIME : " << duration.count()  << 's' << std::endl;
         }
     }
   while (sub_choice != 0);

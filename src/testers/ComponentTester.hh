@@ -21,7 +21,7 @@
 
 #include <helpers/StateManager.hh>
 #include <helpers/OutputManager.hh>
-#include <utils/Chronometer.hh>
+#include <chrono>
 
 /** The Abstract Move Tester is an interface for a tester that handles
     moves.

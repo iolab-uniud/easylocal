@@ -88,7 +88,7 @@ protected:
   ArgumentGroup generalized_ls_arguments;
   ValArgument<unsigned int> arg_max_idle_rounds, arg_max_rounds;
   ValArgument<float> arg_timeout;
-  Chronometer chrono;
+  //  Chronometer chrono;
 };
 
 /*************************************************************************
@@ -171,12 +171,10 @@ void GeneralizedLocalSearch<Input,Output,State,CFtype>::ReadParameters(std::istr
     p_kicker->ReadParameters(is, os);
   os << "Max idle rounds: ";
   is >> max_idle_rounds;
-#if defined(HAVE_PTHREAD)
   double timeout;
   os << "Timeout: ";
   is >> timeout;
   this->SetTimeout(timeout);
-#endif 
 }
 
 
@@ -246,8 +244,6 @@ void GeneralizedLocalSearch<Input,Output,State,CFtype>::SimpleSolve(unsigned run
 {
   if (runner >= runners.size())
     throw std::logic_error("No runner set for solver " + this->name);
-  chrono.Reset();
-  chrono.Start();
   if (init_state == 1)
     this->FindInitialState(true);
   else if (init_state == 2)
@@ -255,13 +251,12 @@ void GeneralizedLocalSearch<Input,Output,State,CFtype>::SimpleSolve(unsigned run
   // else: do not call FindInitialState, leave initial state unchanged    
   runners[runner]->SetState(this->current_state);
   if (observer != NULL) observer->NotifyRunnerStart(*this);
-  LetGo(*runners[runner]);
+  Run(*runners[runner]);
   if (observer != NULL) observer->NotifyRunnerStop(*this);	  
   this->current_state = runners[runner]->GetState();
   this->current_state_cost = runners[runner]->GetStateCost();
   this->best_state = this->current_state;
   this->best_state_cost = this->current_state_cost;
-  chrono.Stop();
 }
 /**
    Solves using a single runner, but making many starts
@@ -273,15 +268,13 @@ void GeneralizedLocalSearch<Input,Output,State,CFtype>::MultiStartSimpleSolve(un
   unsigned t;
   if (runner >= runners.size())
     throw std::logic_error("No runner set for solver " + this->name);
-  chrono.Reset();
-  chrono.Start();
   for (t = 0; t < trials; t++)
   {
     if (observer != NULL) observer->NotifyRestart(*this, t);
     this->FindInitialState();
     runners[runner]->SetState(this->current_state);
     if (observer != NULL) observer->NotifyRunnerStart(*this);
-    timeout_expired = LetGo(*runners[runner]);
+    timeout_expired = Run(*runners[runner]);
     if (observer != NULL) observer->NotifyRunnerStop(*this);	  
     this->current_state = runners[runner]->GetState();
     this->current_state_cost = runners[runner]->GetStateCost();
@@ -297,8 +290,6 @@ void GeneralizedLocalSearch<Input,Output,State,CFtype>::MultiStartSimpleSolve(un
       break;
     restarts++;
   }
-  
-  chrono.Stop();
 }
 
 /**
@@ -323,7 +314,6 @@ void GeneralizedLocalSearch<Input,Output,State,CFtype>::MultiStartGeneralSolve(K
       if (this->sm.LowerBoundReached(global_best_state_cost))
         break;
     }
-#if defined(HAVE_PTHREAD)
     if (this->timeout_set) 
     {
       if (this->current_timeout <= 0.0)
@@ -332,7 +322,6 @@ void GeneralizedLocalSearch<Input,Output,State,CFtype>::MultiStartGeneralSolve(K
 	      this->current_timeout = 0.0;
 	    }
     }
-#endif
     if (timeout_expired)
       break;
     restarts++;
@@ -361,8 +350,6 @@ void GeneralizedLocalSearch<Input,Output,State,CFtype>::GeneralSolve(KickStrateg
   if (kick_strategy != NO_KICKER && p_kicker == NULL)
     throw std::logic_error("No kicker set for solver " + this->name);
   
-  chrono.Reset();
-  chrono.Start();
   if (state_init)
     this->FindInitialState();
   
@@ -376,7 +363,7 @@ void GeneralizedLocalSearch<Input,Output,State,CFtype>::GeneralSolve(KickStrateg
       {
         this->runners[current_runner]->SetState(this->current_state, this->current_state_cost);
         if (observer != NULL) observer->NotifyRunnerStart(*this);
-	timeout_expired = LetGo(*this->runners[current_runner], first_round);
+        this->runners[current_runner]->Go(first_round);
         if (observer != NULL) observer->NotifyRunnerStop(*this);	  
         this->current_state = this->runners[current_runner]->GetState();
         this->current_state_cost = this->runners[current_runner]->GetStateCost();
@@ -400,9 +387,6 @@ void GeneralizedLocalSearch<Input,Output,State,CFtype>::GeneralSolve(KickStrateg
 
       if (!improve_state || kick_strategy == DIVERSIFIER_AT_EVERY_ROUND)
       {
-#if defined(HAVE_PTHREAD)
-        double time = chrono.TotalTime();
-#endif
         improve_state = false;
         if (idle_rounds % kick_rate != 0) continue;
         if (kick_strategy != NO_KICKER)
@@ -438,21 +422,18 @@ void GeneralizedLocalSearch<Input,Output,State,CFtype>::GeneralSolve(KickStrateg
           if (observer != NULL)
             observer->NotifyKickerStop(*this);
         }
-#if defined(HAVE_PTHREAD)
         if (this->timeout_set) 
         {
-          this->current_timeout -= (chrono.TotalTime() - time);
+          // FIXME: check for timeout in kickers this->current_timeout -= (chrono.TotalTime() - time);
           if (this->current_timeout <= 0.0)
           {
             timeout_expired = true;
             this->current_timeout = 0.0;
           }
         }
-#endif
       }
     }
   while (idle_rounds < max_idle_rounds && rounds < max_rounds && !timeout_expired && !lower_bound_reached);
-  chrono.Stop();
 }
 
 

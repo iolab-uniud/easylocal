@@ -195,6 +195,12 @@ protected:
 // Implementation
 // ----------------------------------------------------------------------
 
+/**
+Builds a state manager object linked to the provided input.
+ 
+ @param in a reference to an input object
+ @param name a name for the state manager
+ */
 template <class Input, class State, typename CFtype>
 StateManager<Input,State,CFtype>::StateManager(const Input& i, std::string e_name)
   :  name(e_name), in(i)
