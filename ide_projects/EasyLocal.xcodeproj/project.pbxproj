@@ -32,6 +32,7 @@
 /* End PBXAggregateTarget section */
 
 /* Begin PBXFileReference section */
+		50BDA6F5160200CC0069BFF7 /* LateAcceptanceHillClimbing.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = LateAcceptanceHillClimbing.hh; sourceTree = "<group>"; };
 		A29C12D3148F74CC00EDC517 /* ToDo2012 */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = ToDo2012; path = ../ToDo2012; sourceTree = "<group>"; };
 		AC4276C40DD873F6006C3B31 /* index.html */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.html; name = index.html; path = ../doc/html/index.html; sourceTree = SOURCE_ROOT; };
 		AC75B24B0DD08BB8003EBD1F /* BimodalRunnerObserver.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = BimodalRunnerObserver.hh; sourceTree = "<group>"; };
@@ -240,6 +241,7 @@
 				AC9665AE0E712AE100802631 /* GreatDeluge.hh */,
 				ACF4B12B0DBFA668008A0207 /* SteepestDescent.hh */,
 				ACF4B12C0DBFA668008A0207 /* TabuSearch.hh */,
+				50BDA6F5160200CC0069BFF7 /* LateAcceptanceHillClimbing.hh */,
 			);
 			path = runners;
 			sourceTree = "<group>";

@@ -103,6 +103,7 @@
 #include <runners/SteepestDescent.hh>
 #include <runners/TabuSearch.hh>
 #include <runners/SimulatedAnnealing.hh>
+#include <runners/LateAcceptanceHillClimbing.hh>
 #include <solvers/SimpleLocalSearch.hh>
 #include <solvers/GeneralizedLocalSearch.hh>
 #include <solvers/VariableNeighborhoodDescent.hh>
@@ -152,6 +153,7 @@ int main(int argc, char* argv[])
   SteepestDescent<int, std::vector<int>, Swap> qsd(in, qsm, qnhe, "SwapSteepestDescent", tester);
   TabuSearch<int, std::vector<int>, Swap> qts(in, qsm, qnhe, qtlm, "SwapTabuSearch", cl, tester);
   SimulatedAnnealing<int, std::vector<int>, Swap> qsa(in, qsm, qnhe, "SwapSimulatedAnnealing", cl, tester);
+  LateAcceptanceHillClimbing<int, std::vector<int>, Swap> qlhc(in, qsm, qnhe, "LateAcceptanceHillClimbing", cl, tester);
   //TabuSearchWithShiftingPenalty<int, std::vector<int>, Swap> qtsw(in, qsm, qnhe, qtlm, "SwapTabuSearchWithShiftingPenalty", cl, tester);
   
   SimpleLocalSearch<int, ChessBoard, std::vector<int> > qss(in, qsm, qom, "QueensSLS", cl);

@@ -1,4 +1,4 @@
-#if !defined(_HILLC_LIMBING_HH_)
+#if !defined(_HILL_CLIMBING_HH_)
 #define _HILL_CLIMBING_HH_
 
 #include <helpers/StateManager.hh>
