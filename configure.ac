@@ -48,8 +48,8 @@ AM_CONDITIONAL(DEBUG, test "$enable_debug" = yes)
 
 # Checking for C++11 compliance
 AC_MSG_CHECKING([for C++11 compiler compliance]) 
-AX_CHECK_COMPILE_FLAG([-std=c++11], [AX_APPEND_FLAG(CXXFLAGS, [-std=c++11])], [AC_ERROR([This version of EasyLocal++ works only with C++11 compliant compilers])])
-CXXFLAGS="$CXXFLAGS -std=c++11"
+AX_CHECK_COMPILE_FLAG([-std=c++0x], [AX_APPEND_FLAG(CXXFLAGS, [-std=c++0x])], [AC_ERROR([This version of EasyLocal++ works only with C++11 compliant compilers])])
+CXXFLAGS="$CXXFLAGS -std=c++0x"
 # Checks for typedefs, structures, and compiler characteristics.
 AC_HEADER_STDBOOL
 AC_C_CONST
