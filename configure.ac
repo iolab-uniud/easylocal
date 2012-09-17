@@ -50,7 +50,9 @@ AM_CONDITIONAL(DEBUG, test "$enable_debug" = yes)
 AC_MSG_CHECKING([for C++11 compiler compliance]) 
 AC_MSG_RESULT() # just for the newline
 AX_CHECK_COMPILE_FLAG([-std=c++11], [CXX11PPFLAG=-std=c++11])
-AX_CHECK_COMPILE_FLAG([-std=c++0x], [CXX11PPFLAG=-std=c++0x])
+if test "$CXX11PPFLAG" == ""; then
+  AX_CHECK_COMPILE_FLAG([-std=c++0x], [CXX11PPFLAG=-std=c++0x])
+fi
 if test "$CXX11PPFLAG" != ""; then
   CXXFLAGS="$CXXFLAGS $CXX11PPFLAG"
 	is_cxx11=yes
