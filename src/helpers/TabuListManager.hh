@@ -52,8 +52,8 @@ class TabuListManager
 {
 public:
 	void Print(std::ostream& os = std::cout) const;
-	void InsertMove(const State& st, const Move& mv, const CFtype& mv_cost, const CFtype& curr, const CFtype& best);
-	bool ProhibitedMove(const State& st, const Move& mv, const CFtype& mv_cost) const;
+	virtual void InsertMove(const State& st, const Move& mv, const CFtype& mv_cost, const CFtype& curr, const CFtype& best);
+	virtual bool ProhibitedMove(const State& st, const Move& mv, const CFtype& mv_cost) const;
 	/** Sets the length of the tabu list to be comprised in the range
 	 [min, max].
 	 @param min the minimum tabu tenure
@@ -61,7 +61,7 @@ public:
 	void SetLength(unsigned int min, unsigned int max);
 	void ReadParameters(std::istream& is = std::cin,
 											std::ostream& os = std::cout);
-	void Clean();
+	virtual void Clean();
 	/** Returns the minimum number of iterations a move is considered tabu.
 	 @return the minimum tabu tenure */
 	unsigned int MinTenure() const
@@ -105,13 +105,13 @@ protected:
 
 template <class State, class Move, typename CFtype = int>
 class FrequencyTabuListManager
-            : public TabuListManager<State, Move>
+            : public TabuListManager<State, Move, CFtype>
 {
 public:
     void Print(std::ostream& os = std::cout) const;
-    void InsertMove(const State& st, const Move& mv, double mv_cost, double curr, double best);
-    bool ProhibitedMove(const State& st, const Move& mv, double mv_cost) const;
-    void Clean();
+    virtual void InsertMove(const State& st, const Move& mv, const CFtype& mv_cost, const CFtype& curr, const CFtype& best);
+    virtual bool ProhibitedMove(const State& st, const Move& mv, const CFtype& mv_cost) const;
+    virtual void Clean();
 protected:
     FrequencyTabuListManager(double thr = 0.04, unsigned int min_it = 100);
     typedef std::map<Move,unsigned long> MapType;
@@ -303,7 +303,7 @@ void FrequencyTabuListManager<State,Move,CFtype>::Print(std::ostream& os) const
 }
 
 template <class State, class Move, typename CFtype>
-void FrequencyTabuListManager<State,Move,CFtype>::InsertMove(const State& st, const Move& mv, double mv_cost, double curr, double best)
+void FrequencyTabuListManager<State,Move,CFtype>::InsertMove(const State& st, const Move& mv, const CFtype& mv_cost, const CFtype& curr, const CFtype& best)
 {
     TabuListManager<State,Move,CFtype>::InsertMove(st, mv,mv_cost,curr,best);
     if (frequency_map.find(mv) != frequency_map.end())
@@ -319,11 +319,11 @@ FrequencyTabuListManager<State,Move,CFtype>::FrequencyTabuListManager(double thr
 {}
 
 template <class State, class Move, typename CFtype>
-bool FrequencyTabuListManager<State,Move,CFtype>::ProhibitedMove(const State& st, const Move& mv, double mv_cost) const
+bool FrequencyTabuListManager<State,Move,CFtype>::ProhibitedMove(const State& st, const Move& mv, const CFtype& mv_cost) const
 {
-    if (Aspiration(st, mv,mv_cost))
+    if (this->Aspiration(st, mv,mv_cost))
         return false;
-    if (ListMember(mv))
+    if (this->ListMember(mv))
         return true;
     else if (this->iter > min_iter)
     {

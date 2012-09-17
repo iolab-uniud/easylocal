@@ -36,8 +36,8 @@ public:
 class QueensFrequencyTabuListManager : public FrequencyTabuListManager<std::vector<int>, Swap>
 {
 public:
-	QueensFrequencyTabuListManager(int min = 0, int max = 0) 
-	: FrequencyTabuListManager<std::vector<int>, Swap>(min,max) {}
+	QueensFrequencyTabuListManager(double thr = 0.04, unsigned int min_it = 100) 
+	: FrequencyTabuListManager<std::vector<int>, Swap, int>(thr, min_it) {}
 public:
 	bool Inverse(const Swap& m1, const Swap& m2) const; 
 };
