@@ -28,7 +28,6 @@ protected:
   unsigned int restarts;
 
   Runner<Input,State,CFtype>* runner; /**< The linked runner. */
-  Chronometer chrono;
 };
 
 /*************************************************************************
@@ -99,8 +98,8 @@ void GRASP<Input,Output,State,CFtype>::Solve(double alpha, unsigned int k, unsig
   unsigned t;
   if (runner == NULL)
     throw std::logic_error("No runner set for solver " + this->name);
-  chrono.Reset();
-  chrono.Start();
+//   chrono.Reset();
+//   chrono.Start();
   for (t = 0; t < trials; t++)
     {
       this->sm.GreedyState(this->current_state, alpha, k);
@@ -120,7 +119,7 @@ void GRASP<Input,Output,State,CFtype>::Solve(double alpha, unsigned int k, unsig
       if (timeout_expired)
 	break;
     }
-  chrono.Stop();
+//   chrono.Stop();
 }
 
 template <class Input, class Output, class State, typename CFtype>
