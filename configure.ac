@@ -49,16 +49,19 @@ AM_CONDITIONAL(DEBUG, test "$enable_debug" = yes)
 # Checking for C++11 compliance
 AC_MSG_CHECKING([for C++11 compiler compliance]) 
 AC_MSG_RESULT() # just for the newline
-AX_CHECK_COMPILE_FLAG([-std=c++0x], [AX_APPEND_FLAG(CXXFLAGS, [-std=c++0x])], [CXX11PPFLAGS=yes; is_cxx11=yes])
-if test "$CXX11PPFLAGS" = "yes"; then
-  CXXFLAGS="$CXXFLAGS -std=c++0x"
+AX_CHECK_COMPILE_FLAG([-std=c++11], [CXX11PPFLAG=-std=c++11])
+AX_CHECK_COMPILE_FLAG([-std=c++0x], [CXX11PPFLAG=-std=c++0x])
+if test "$CXX11PPFLAG" != ""; then
+  CXXFLAGS="$CXXFLAGS $CXX11PPFLAG"
+	is_cxx11=yes
 else
   AC_MSG_CHECKING([whether C++ compiler defines a __cplusplus macro more recent than 199711L])
-	AC_EGREP_CPP([yes],
-	[#if __cplusplus > 199711L
-	  yes
-	#endif
-	], is_cxx11=yes, is_cxx11=no)	
+	AC_EGREP_CPP(yes,
+	[	
+#if defined(__cplusplus) && __cplusplus > 199711L
+  yes
+#endif
+	], is_cxx11=yes, is_cxx11=no)
 fi
 if test "$is_cxx11" != "yes"; then
   AC_MSG_ERROR([A C++11 compliant compiler should be used in order to compile this version of EasyLocal++])

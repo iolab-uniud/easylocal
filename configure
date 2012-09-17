@@ -15810,6 +15810,41 @@ fi
 $as_echo_n "checking for C++11 compiler compliance... " >&6; }
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: " >&5
 $as_echo "" >&6; } # just for the newline
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether C++ compiler accepts -std=c++11" >&5
+$as_echo_n "checking whether C++ compiler accepts -std=c++11... " >&6; }
+if ${ax_cv_check_cxxflags___std_cpp11+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+
+  ax_check_save_flags=$CXXFLAGS
+  CXXFLAGS="$CXXFLAGS  -std=c++11"
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_compile "$LINENO"; then :
+  ax_cv_check_cxxflags___std_cpp11=yes
+else
+  ax_cv_check_cxxflags___std_cpp11=no
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+  CXXFLAGS=$ax_check_save_flags
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ax_cv_check_cxxflags___std_cpp11" >&5
+$as_echo "$ax_cv_check_cxxflags___std_cpp11" >&6; }
+if test x"$ax_cv_check_cxxflags___std_cpp11" = xyes; then :
+  CXX11PPFLAG=-std=c++11
+else
+  :
+fi
+
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether C++ compiler accepts -std=c++0x" >&5
 $as_echo_n "checking whether C++ compiler accepts -std=c++0x... " >&6; }
 if ${ax_cv_check_cxxflags___std_cpp0x+:} false; then :
@@ -15840,53 +15875,34 @@ fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ax_cv_check_cxxflags___std_cpp0x" >&5
 $as_echo "$ax_cv_check_cxxflags___std_cpp0x" >&6; }
 if test x"$ax_cv_check_cxxflags___std_cpp0x" = xyes; then :
-  if ${_std_cpp0x+:} false; then :
-  case " $_std_cpp0x " in
-    *" CXXFLAGS "*)
-      { { $as_echo "$as_me:${as_lineno-$LINENO}: : _std_cpp0x already contains CXXFLAGS"; } >&5
-  (: _std_cpp0x already contains CXXFLAGS) 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; }
-      ;;
-    *)
-      { { $as_echo "$as_me:${as_lineno-$LINENO}: : _std_cpp0x=\"\$_std_cpp0x CXXFLAGS\""; } >&5
-  (: _std_cpp0x="$_std_cpp0x CXXFLAGS") 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; }
-      _std_cpp0x="$_std_cpp0x CXXFLAGS"
-      ;;
-   esac
+  CXX11PPFLAG=-std=c++0x
 else
-  _std_cpp0x="CXXFLAGS"
+  :
 fi
 
+if test "$CXX11PPFLAG" != ""; then
+  CXXFLAGS="$CXXFLAGS $CXX11PPFLAG"
+	is_cxx11=yes
 else
-  CXX11PPFLAGS=yes; is_cxx11=yes
-fi
-
-if test "$CXX11PPFLAGS" = "yes"; then
-  CXXFLAGS="$CXXFLAGS -std=c++0x"
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether C++ compiler defines a __cplusplus macro more recent than 199711L" >&5
-$as_echo_n "checking whether C++ compiler defines a __cplusplus macro more recent than 199711L... " >&6; }
-
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether C++ compiler is implicitly C++11 compliant" >&5
+$as_echo_n "checking whether C++ compiler is implicitly C++11 compliant... " >&6; }
+	cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
-#if __cplusplus > 199711L
-	  yes
-	#endif
-
+#include <vector>
+int
+main ()
+{
+std::vector<int> v(10); for (auto& i : v) {}
+  ;
+  return 0;
+}
 _ACEOF
-if (eval "$ac_cpp conftest.$ac_ext") 2>&5 |
-  $EGREP "yes" >/dev/null 2>&1; then :
+if ac_fn_cxx_try_compile "$LINENO"; then :
   is_cxx11=yes
 else
   is_cxx11=no
 fi
-rm -f conftest*
-
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 fi
 if test "$is_cxx11" != "yes"; then
   as_fn_error $? "A C++11 compliant compiler should be used in order to compile this version of EasyLocal++" "$LINENO" 5
@@ -16110,6 +16126,7 @@ esac
 
 
 # Checks for library functions.
+
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for ANSI C header files" >&5
 $as_echo_n "checking for ANSI C header files... " >&6; }
 if ${ac_cv_header_stdc+:} false; then :
