@@ -153,6 +153,9 @@ std::ostream& operator<<(std::ostream& os, const CLParser& cl)
   return os;
 }
 
+// static empty CLParser
+CLParser CLParser::empty;
+
 CLParser::CLParser(int argc, char const * const argv[])
 {
   if (argc > 0)

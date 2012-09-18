@@ -208,7 +208,9 @@ public:
   void MatchArguments(bool terminate_if_fail = true);
   void MatchArgument(Argument& a, bool terminate_if_fail = true);
   virtual ~CLParser();
+  static CLParser empty;
 protected:
+  CLParser() {}
   typedef std::list<Argument*> arg_list;
   void Parse();
   void Parse(Argument& a);

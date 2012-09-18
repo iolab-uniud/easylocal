@@ -18,7 +18,6 @@
 
 #include "SwapNeighborhoodExplorer.hh"
 #include <algorithm>
-#include <utils/Random.hh>
 
 // the first parameter is not used, therefore it is not named
 // (CC gives a warning if it is named)
