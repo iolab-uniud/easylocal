@@ -63,7 +63,7 @@ MoveRunner<Input,State,Move,CFtype>::MoveRunner(const Input& in,
                                                 StateManager<Input,State,CFtype>& e_sm,
                                                 NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
                                                 std::string name)
-  : Runner<Input,State,CFtype>(in, e_sm, name), ne(e_ne), observer(nullptr)
+  : Runner<Input,State,CFtype>(in, e_sm, name), ne(e_ne), observer(NULL)
 {}
 
 template <class Input, class State, class Move, typename CFtype>

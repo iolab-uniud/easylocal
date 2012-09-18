@@ -47,10 +47,11 @@ public:
     void SetSteps(unsigned int s) { steps = s; previous_steps.resize(s); }
 
 protected:
-    void GoCheck() const;
-    void InitializeRun(bool first_round = true);
-    bool AcceptableMove();
-    void StoreMove();
+  void GoCheck() const;
+  void InitializeRun(bool first_round = true);
+  void TerminateRun();    
+  bool AcceptableMove();
+  void StoreMove();
     
     // parameters
     unsigned int steps;
@@ -165,6 +166,16 @@ void LateAcceptanceHillClimbing<Input,State,Move,CFtype>::InitializeRun(bool fir
 }
 
 /**
+   At the end of the run, ...
+*/
+template <class Input, class State, class Move, typename CFtype>
+void LateAcceptanceHillClimbing<Input,State,Move,CFtype>::TerminateRun()
+{
+  if (this->observer != NULL)
+    this->observer->NotifyEndRunner(*this);
+}
+
+/**
  A move is randomly picked.
  @todo move all common code to superclass HillClimbing.
  */
@@ -176,8 +187,7 @@ void LateAcceptanceHillClimbing<Input,State,Move,CFtype>::StoreMove()
   
     if (LessOrEqualThan(this->current_state_cost, this->best_state_cost)) 
     {
-      this->best_state = this->current_state;
-      
+      this->best_state = this->current_state;      
       if (LessThan(this->current_state_cost, this->best_state_cost))
       {
         if (this->observer != NULL)
@@ -186,7 +196,6 @@ void LateAcceptanceHillClimbing<Input,State,Move,CFtype>::StoreMove()
         this->iteration_of_best = this->number_of_iterations;
       }
     }
-  
     previous_steps[this->number_of_iterations % steps] = this->current_state_cost;
 }
 
@@ -194,12 +203,13 @@ template <class Input, class State, class Move, typename CFtype>
 void LateAcceptanceHillClimbing<Input,State,Move,CFtype>::ReadParameters(std::istream& is, std::ostream& os)
 
 {
-    os << "LATE ACCEPTANCE HILL CLIMBING -- INPUT PARAMETERS" << std::endl;
-
-    os << "  Number of idle iterations: ";
-    is >> this->max_idle_iteration;
-	os << "  Step size: ";
-	is >> steps;
+  unsigned step;
+  os << "LATE ACCEPTANCE HILL CLIMBING -- INPUT PARAMETERS" << std::endl;
+  os << "  Number of idle iterations: ";
+  is >> this->max_idle_iteration;
+  os << "  Step size: ";
+  is >> step;
+  SetSteps(step);
 }
 
 /** A move is surely accepted if it improves the cost function

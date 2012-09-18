@@ -4,6 +4,32 @@
 #include <helpers/CostComponent.hh>
 #include <stdexcept>
 
+template <typename CFtype>
+class ShiftedResult
+{
+public:
+	/** @brief Creates an empty ShiftedResult object, whose actual and shifted values are both zero. */
+  ShiftedResult() : actual_value(0), shifted_value(0.0) {}
+  CFtype actual_value; /**< The actual value of the cost function variation, as computed by a DeltaCostComponent. */
+  double shifted_value; /**< The shifted value of the cost function variation, modified by a ShiftingPenaltyManager. */
+};
+
+/** @brief Sum operator for two @ref ShiftedResult "ShiftedResult"s. */
+template <typename CFtype>
+ShiftedResult<CFtype> operator+(const ShiftedResult<CFtype>& sr1, const ShiftedResult<CFtype>& sr2);
+
+/** @brief Subtraction operator for two @ref ShiftedResult "ShiftedResult"s. */
+template <typename CFtype>
+ShiftedResult<CFtype> operator-(const ShiftedResult<CFtype>& sr1, const ShiftedResult<CFtype>& sr2);
+
+/** @brief Multiplication operator for a ShiftedResult. */
+template <typename CFtype, typename Multype>
+ShiftedResult<CFtype> operator*(const Multype& mul, const ShiftedResult<CFtype>& sr);
+
+/** @brief Multiplication operator for a ShiftedResult. */
+template <typename CFtype, typename Multype>
+ShiftedResult<CFtype> operator*(const ShiftedResult<CFtype>& sr, const Multype& mul);
+
 /** A class for managing the variations of a single component of the cost function. Some
  of the methods are MustDef.
  

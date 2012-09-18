@@ -53,6 +53,6 @@
 #include <runners/SimulatedAnnealing.hh>
 #include <runners/GreatDeluge.hh>
 #include <runners/TabuSearch.hh>
-// #include <runners/TabuSearchWithShiftingPenalty.hh>
+#include <runners/LateAcceptanceHillClimbing.hh>
 
 #endif // _RUNNERS_HH_

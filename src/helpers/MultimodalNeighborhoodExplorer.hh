@@ -141,9 +141,9 @@ bool operator<(const Movelist<CFtype, H, T>& mv1, const Movelist<CFtype, H, T>& 
 {
   if (mv1.selected && mv2.selected)
     {
-      if (mv1.move < mv2.move)
+      if ((mv1.move) < (mv2.move))
 	return true;
-      else if (mv2.move < mv1.move)
+      else if ((mv2.move) < (mv1.move))
 	return false;
       else // mv1.move == mv2.move
 	return mv1.movelist < mv2.movelist;
@@ -161,7 +161,7 @@ bool operator<(const Movelist<CFtype, H, NullType>& mv1, const Movelist<CFtype, 
 {
   if (mv1.selected && mv2.selected)
     {
-      return mv1.move < mv2.move;
+      return (mv1.move) < (mv2.move);
     }
   else 
     {      
