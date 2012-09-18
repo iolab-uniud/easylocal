@@ -300,16 +300,16 @@ void SimulatedAnnealing<Input,State,Move,CFtype>::StoreMove()
   if (this->observer != NULL)
     this->observer->NotifyStoreMove(*this);
   if (LessOrEqualThan(this->current_state_cost, this->best_state_cost))
+  {
+    this->best_state = this->current_state; // Change best_state in case of equal cost to improve diversification
+    if (LessThan(this->current_state_cost, this->best_state_cost))
     {
-      this->best_state = this->current_state; // Change best_state in case of equal cost to improve diversification
-      if (LessThan(this->current_state_cost, this->best_state_cost))
-	{
-	  if (this->observer != NULL)
-	    this->observer->NotifyNewBest(*this);      
-	  this->best_state_cost = this->current_state_cost;
-	  this->iteration_of_best = this->number_of_iterations;
-	}
+      if (this->observer != NULL)
+        this->observer->NotifyNewBest(*this);      
+      this->best_state_cost = this->current_state_cost;
+      this->iteration_of_best = this->number_of_iterations;
     }
+  }
 }
 
 template <class Input, class State, class Move, typename CFtype>

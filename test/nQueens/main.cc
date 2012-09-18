@@ -118,6 +118,7 @@ int main(int argc, char* argv[])
 {
 	// The CLParser object parses the command line arguments
   CLParser cl(argc, argv);
+  
 	// The set of arguments added are the following:
   ValArgument<int> arg_size("size", "s", true, cl); /*< The size of the chessboard, that is, the input of the problem */
   ValArgument<std::string> arg_solmethod("method", "m", false, cl);
