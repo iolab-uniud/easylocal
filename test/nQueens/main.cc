@@ -220,6 +220,7 @@ int main(int argc, char* argv[])
 		qsd.AttachObserver(ro);
 		qts.AttachObserver(ro);
 		qsa.AttachObserver(ro);
+    qlhc.AttachObserver(ro);
 	}
 	if (arg_verbosity_level.IsSet())
 		qgls.AttachObserver(so);
