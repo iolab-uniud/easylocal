@@ -20,46 +20,34 @@
  @ingroup Runners
  */
 template <class Input, class State, class Move, typename CFtype = int>
-class LateAcceptanceHillClimbing
-: public HillClimbing<Input,State,Move,CFtype>
+class LateAcceptanceHillClimbing : public HillClimbing<Input,State,Move,CFtype>
 {
 public:
-    LateAcceptanceHillClimbing(const Input& in,
-                StateManager<Input,State,CFtype>& e_sm,
-                NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
-                std::string name);
-    LateAcceptanceHillClimbing(const Input& in,
-                StateManager<Input,State,CFtype>& e_sm,
-                NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
-                std::string name,
-                CLParser& cl);	
-    LateAcceptanceHillClimbing(const Input& in,
-                StateManager<Input,State,CFtype>& e_sm,
-                NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
-                std::string name, AbstractTester<Input,State,CFtype>& t);
-    LateAcceptanceHillClimbing(const Input& in,
-                StateManager<Input,State,CFtype>& e_sm,
-                NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
-                std::string name,
-                CLParser& cl, AbstractTester<Input,State,CFtype>& t);
-    void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout);
-    void Print(std::ostream& os = std::cout) const;
-    void SetSteps(unsigned int s) { steps = s; previous_steps.resize(s); }
-
+  
+  LateAcceptanceHillClimbing(const Input& in,
+                             StateManager<Input,State,CFtype>& e_sm,
+                             NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
+                             std::string name,
+                             CLParser& cl = CLParser::empty);	
+  
+  void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout);
+  void Print(std::ostream& os = std::cout) const;
+  void SetSteps(unsigned int s) { steps = s; previous_steps.resize(s); }
+  
 protected:
   void GoCheck() const;
   void InitializeRun(bool first_round = true);
   void TerminateRun();    
   bool AcceptableMove();
   void StoreMove();
-    
-    // parameters
-    unsigned int steps;
-    
-    ValArgument<unsigned int> arg_steps;
-
-    std::vector<CFtype> previous_steps;
-
+  
+  // parameters
+  unsigned int steps;
+  
+  ValArgument<unsigned int> arg_steps;
+  
+  std::vector<CFtype> previous_steps;
+  
 };
 
 /*************************************************************************
@@ -76,80 +64,36 @@ protected:
  */
 template <class Input, class State, class Move, typename CFtype>
 LateAcceptanceHillClimbing<Input,State,Move,CFtype>::LateAcceptanceHillClimbing(const Input& in,
-                                                  StateManager<Input,State,CFtype>& e_sm,
-                                                  NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
-                                                  std::string name)
+                                                                                StateManager<Input,State,CFtype>& e_sm,
+                                                                                NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
+                                                                                std::string name,
+                                                                                CLParser& cl)
 : HillClimbing<Input,State,Move,CFtype>(in, e_sm, e_ne, name),
 arg_steps("steps", "ns", true)
 
 {
-    SetSteps(10);
-    this->hill_climbing_arguments.AddArgument(arg_steps);
-}
-
-template <class Input, class State, class Move, typename CFtype>
-LateAcceptanceHillClimbing<Input,State,Move,CFtype>::LateAcceptanceHillClimbing(const Input& in,
-                                                  StateManager<Input,State,CFtype>& e_sm,
-                                                  NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
-                                                  std::string name,
-                                                  CLParser& cl)
-: HillClimbing<Input,State,Move,CFtype>(in, e_sm, e_ne, name),
-arg_steps("steps", "ns", true)
-
-{
-    SetSteps(10);
-    this->hill_climbing_arguments.AddArgument(arg_steps);
-
-    cl.MatchArgument(this->hill_climbing_arguments);
+  SetSteps(10);
+  this->hill_climbing_arguments.AddArgument(arg_steps);
+  
+  cl.MatchArgument(this->hill_climbing_arguments);
 	if (this->hill_climbing_arguments.IsSet())
 		steps = arg_steps.GetValue();
-    
+  
 }
-
-template <class Input, class State, class Move, typename CFtype>
-LateAcceptanceHillClimbing<Input,State,Move,CFtype>::LateAcceptanceHillClimbing(const Input& in,
-                                                  StateManager<Input,State,CFtype>& e_sm,
-                                                  NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
-                                                  std::string name, AbstractTester<Input,State,CFtype>& t)
-: HillClimbing<Input,State,Move,CFtype>(in, e_sm, e_ne, name),
-arg_steps("steps", "ns", true)
-{
-    SetSteps(10);
-    this->hill_climbing_arguments.AddArgument(arg_steps);
-}
-
-template <class Input, class State, class Move, typename CFtype>
-LateAcceptanceHillClimbing<Input,State,Move,CFtype>::LateAcceptanceHillClimbing(const Input& in,
-                                                  StateManager<Input,State,CFtype>& e_sm,
-                                                  NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
-                                                  std::string name,
-                                                  CLParser& cl, AbstractTester<Input,State,CFtype>& t)
-: HillClimbing<Input,State,Move,CFtype>(in, e_sm, e_ne, name, t),
-arg_steps("steps", "ns", true)
-{
-    SetSteps(10);
-    this->hill_climbing_arguments.AddArgument(arg_steps);
-    
-    cl.MatchArgument(this->hill_climbing_arguments);
-	if (this->hill_climbing_arguments.IsSet())
-		steps = arg_steps.GetValue();
-}
-
-
 
 template <class Input, class State, class Move, typename CFtype>
 void LateAcceptanceHillClimbing<Input,State,Move,CFtype>::Print(std::ostream& os) const
 {
-    HillClimbing<Input,State,Move>::Print(os);
-    os << "  Steps size: " << steps;
+  HillClimbing<Input,State,Move>::Print(os);
+  os << "  Steps size: " << steps;
 }
 
 template <class Input, class State, class Move, typename CFtype>
 void LateAcceptanceHillClimbing<Input,State,Move,CFtype>::GoCheck() const
 {
-    HillClimbing<Input,State,Move,CFtype>::GoCheck();
-    if (steps == 0)
-        throw std::logic_error("steps is zero for object " + this->name);
+  HillClimbing<Input,State,Move,CFtype>::GoCheck();
+  if (steps == 0)
+    throw std::logic_error("steps is zero for object " + this->name);
 }
 
 /**
@@ -159,15 +103,15 @@ void LateAcceptanceHillClimbing<Input,State,Move,CFtype>::GoCheck() const
 template <class Input, class State, class Move, typename CFtype>
 void LateAcceptanceHillClimbing<Input,State,Move,CFtype>::InitializeRun(bool first_round)
 {    
-    HillClimbing<Input,State,Move,CFtype>::InitializeRun(first_round);
-    
-    // the queue must be filled with the initial state cost at the beginning
-    fill(previous_steps.begin(), previous_steps.end(), this->current_state_cost);
+  HillClimbing<Input,State,Move,CFtype>::InitializeRun(first_round);
+  
+  // the queue must be filled with the initial state cost at the beginning
+  fill(previous_steps.begin(), previous_steps.end(), this->current_state_cost);
 }
 
 /**
-   At the end of the run, ...
-*/
+ At the end of the run, ...
+ */
 template <class Input, class State, class Move, typename CFtype>
 void LateAcceptanceHillClimbing<Input,State,Move,CFtype>::TerminateRun()
 {
@@ -182,21 +126,21 @@ void LateAcceptanceHillClimbing<Input,State,Move,CFtype>::TerminateRun()
 template <class Input, class State, class Move, typename CFtype>
 void LateAcceptanceHillClimbing<Input,State,Move,CFtype>::StoreMove()
 {
-    if (this->observer != NULL)
-      this->observer->NotifyStoreMove(*this);
+  if (this->observer != NULL)
+    this->observer->NotifyStoreMove(*this);
   
-    if (LessOrEqualThan(this->current_state_cost, this->best_state_cost)) 
+  if (LessOrEqualThan(this->current_state_cost, this->best_state_cost)) 
+  {
+    this->best_state = this->current_state;      
+    if (LessThan(this->current_state_cost, this->best_state_cost))
     {
-      this->best_state = this->current_state;      
-      if (LessThan(this->current_state_cost, this->best_state_cost))
-      {
-        if (this->observer != NULL)
-          this->observer->NotifyNewBest(*this);      
-        this->best_state_cost = this->current_state_cost;
-        this->iteration_of_best = this->number_of_iterations;
-      }
+      if (this->observer != NULL)
+        this->observer->NotifyNewBest(*this);      
+      this->best_state_cost = this->current_state_cost;
+      this->iteration_of_best = this->number_of_iterations;
     }
-    previous_steps[this->number_of_iterations % steps] = this->current_state_cost;
+  }
+  previous_steps[this->number_of_iterations % steps] = this->best_state_cost;
 }
 
 template <class Input, class State, class Move, typename CFtype>
@@ -219,9 +163,9 @@ void LateAcceptanceHillClimbing<Input,State,Move,CFtype>::ReadParameters(std::is
 template <class Input, class State, class Move, typename CFtype>
 bool LateAcceptanceHillClimbing<Input,State,Move,CFtype>::AcceptableMove()
 {
-    return LessOrEqualThan(this->current_move_cost,(CFtype)0)
-    || LessOrEqualThan(this->current_move_cost + this->current_state_cost, previous_steps[this->number_of_iterations % steps]);
+  return LessOrEqualThan(this->current_move_cost,(CFtype)0)
+  || LessOrEqualThan(this->current_move_cost + this->current_state_cost, previous_steps[this->number_of_iterations % steps]);
 }
 
-#endif // _GREAT_DELUGE_HH_
+#endif
 

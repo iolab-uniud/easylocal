@@ -2,20 +2,20 @@
 #define _SAMPLE_TABU_SEARCH_HH_
 
 /** The Sample Tabu Search runner explores a subset of the current
-    neighborhood. Among the elements in it, the one that gives the
-    minimum value of the cost function becomes the new current
-    state, independently of the fact whether its value is less or
-    greater than the current one. The neighborhood is sampled according 
-    to a uniform distribution.
-    
-    Such a choice allows the algorithm to escape from local minima,
-    but creates the risk of cycling among a set of states.  In order to
-    prevent cycling, the so-called tabu list is used, which
-    determines the forbidden moves. This list stores the most recently
-    accepted moves, and the inverses of the moves in the list are
-    forbidden.  
-    @ingroup Runners
-*/
+ neighborhood. Among the elements in it, the one that gives the
+ minimum value of the cost function becomes the new current
+ state, independently of the fact whether its value is less or
+ greater than the current one. The neighborhood is sampled according 
+ to a uniform distribution.
+ 
+ Such a choice allows the algorithm to escape from local minima,
+ but creates the risk of cycling among a set of states.  In order to
+ prevent cycling, the so-called tabu list is used, which
+ determines the forbidden moves. This list stores the most recently
+ accepted moves, and the inverses of the moves in the list are
+ forbidden.  
+ @ingroup Runners
+ */
 
 #include <MoveRunner.hh>
 #include <basics/std::logic_exception.hh>
@@ -25,8 +25,7 @@
 #include <TabuSearch.hh>
 
 template <class Input, class State, class Move, typename CFtype = int>
-class SampleTabuSearch
-            : public TabuSearch<Input,State, Move>
+class SampleTabuSearch : public TabuSearch<Input,State, Move>
 {
 public:
 	void Print(std::ostream& os = std::cout) const;
@@ -35,18 +34,7 @@ public:
 	{ sample_size = s; }
 	SampleTabuSearch(const Input& in, StateManager<Input,State,CFtype>& s,
 									 NeighborhoodExplorer<Input,State,Move>& ne,
-									 TabuListManager<State,Move,CFtype>& tlm, std::string name);
-	SampleTabuSearch(const Input& in, StateManager<Input,State,CFtype>& s,
-									 NeighborhoodExplorer<Input,State,Move>& ne,
-									 TabuListManager<State,Move,CFtype>& tlm, std::string name, CLParser& cl);
-  SampleTabuSearch(const Input& in, StateManager<Input,State,CFtype>& s,
-									 NeighborhoodExplorer<Input,State,Move>& ne,
-									 TabuListManager<State,Move,CFtype>& tlm, std::string name,
-                   Tester<Input,Output,State>& t);
-	SampleTabuSearch(const Input& in, StateManager<Input,State,CFtype>& s,
-									 NeighborhoodExplorer<Input,State,Move>& ne,
-									 TabuListManager<State,Move,CFtype>& tlm, std::string name, CLParser& cl,
-                   Tester<Input,Output,State>& t);
+									 TabuListManager<State,Move,CFtype>& tlm, std::string name, CLParser& cl = CLParser::empty);
 protected:
 	void SelectMove();
 	unsigned int sample_size;
@@ -56,17 +44,6 @@ protected:
 /*************************************************************************
  * Implementation
  *************************************************************************/
-
-
-template <class Input, class State, class Move, typename CFtype = int>
-SampleTabuSearch<Input,State,Move>::SampleTabuSearch(const Input& in, StateManager<Input,State,CFtype>& sm,
-																										 NeighborhoodExplorer<Input,State,Move>& ne,
-																										 TabuListManager<State,Move,CFtype>& tlm,
-																										 std::string name)
-: TabuSearch<Input,State,Move>(sm, ne, tlm, name), arg_sample_size("sample_size", "ss", true)
-{
-	this->tabu_search_arguments.AddArgument(arg_sample_size);
-}
 
 template <class Input, class State, class Move, typename CFtype = int>
 SampleTabuSearch<Input,State,Move>::SampleTabuSearch(const Input& in, StateManager<Input,State,CFtype>& sm,
@@ -82,49 +59,21 @@ SampleTabuSearch<Input,State,Move>::SampleTabuSearch(const Input& in, StateManag
 		sample_size = arg_sample_size.GetValue();
 }
 
-
-template <class Input, class State, class Move, typename CFtype = int>
-SampleTabuSearch<Input,State,Move>::SampleTabuSearch(const Input& in, StateManager<Input,State,CFtype>& sm,
-																										 NeighborhoodExplorer<Input,State,Move>& ne,
-																										 TabuListManager<State,Move,CFtype>& tlm,
-																										 std::string name,
-                                                     Tester<Input,Output,State,CFtype>& t)
-: TabuSearch<Input,State,Move>(sm, ne, tlm, name, t), arg_sample_size("sample_size", "ss", true)
-{
-	this->tabu_search_arguments.AddArgument(arg_sample_size);
-}
-
-template <class Input, class State, class Move, typename CFtype = int>
-SampleTabuSearch<Input,State,Move>::SampleTabuSearch(const Input& in, StateManager<Input,State,CFtype>& sm,
-																										 NeighborhoodExplorer<Input,State,Move>& ne,
-																										 TabuListManager<State,Move,CFtype>& tlm,
-																										 std::string name,
-																										 CLParser& cl,
-                                                     Tester<Input,Output,State,CFtype>& t)
-: TabuSearch<Input,State,Move>(sm, ne, tlm, name, cl, t), arg_sample_size("sample_size", "ss", true)
-{
-	this->tabu_search_arguments.AddArgument(arg_sample_size);
-	cl.MatchArgument(this->tabu_search_arguments);
-	if (this->tabu_search_arguments.IsSet())
-		sample_size = arg_sample_size.GetValue();
-}
-
-
 template <class Input, class State, class Move, typename CFtype = int>
 void SampleTabuSearch<Input,State,Move>::Print(std::ostream& os) const
 {
-    TabuSearch<Input,State,Move>::Print(os);
-    os << "Sample size: " << sample_size;
+  TabuSearch<Input,State,Move>::Print(os);
+  os << "Sample size: " << sample_size;
 }
 
 /**
-    Selects always the best move that is non prohibited by the tabu list 
-    mechanism.
-*/
+ Selects always the best move that is non prohibited by the tabu list 
+ mechanism.
+ */
 template <class Input, class State, class Move, typename CFtype = int>
 void SampleTabuSearch<Input,State,Move>::SelectMove()
 {
-    this->current_move_cost = this->ne.SampleMove(this->current_state, this->current_move, sample_size, &this->pm);
+  this->current_move_cost = this->ne.SampleMove(this->current_state, this->current_move, sample_size, &this->pm);
 }
 
 template <class Input, class State, class Move, typename CFtype>

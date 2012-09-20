@@ -8,45 +8,34 @@
 #include <helpers/TabuListManager.hh>
 
 template <class Input, class State, class Move, typename CFtype = int>
-class TabuSearchWithShiftingPenalty
-: public TabuSearch<Input,State,Move,CFtype>
+class TabuSearchWithShiftingPenalty : public TabuSearch<Input,State,Move,CFtype>
 {
 public:
-TabuSearchWithShiftingPenalty(const Input& in,
-                              StateManager<Input,State,CFtype>& sm,
-                              NeighborhoodExplorer<Input,State,Move,CFtype>& ne,
-                              TabuListManager<State,Move,CFtype>& tlm,
-                              std::string name);
-TabuSearchWithShiftingPenalty(const Input& in,
-                              StateManager<Input,State,CFtype>& sm,
-                              NeighborhoodExplorer<Input,State,Move,CFtype>& ne,
-                              TabuListManager<State,Move,CFtype>& tlm,
-                              std::string name, CLParser& cl);
+  
   TabuSearchWithShiftingPenalty(const Input& in,
                                 StateManager<Input,State,CFtype>& sm,
                                 NeighborhoodExplorer<Input,State,Move,CFtype>& ne,
                                 TabuListManager<State,Move,CFtype>& tlm,
-                                std::string name, AbstractTester<Input,State,CFtype>& t);
-  TabuSearchWithShiftingPenalty(const Input& in,
-                                StateManager<Input,State,CFtype>& sm,
-                                NeighborhoodExplorer<Input,State,Move,CFtype>& ne,
-                                TabuListManager<State,Move,CFtype>& tlm,
-                                std::string name, CLParser& cl, AbstractTester<Input,State,CFtype>& t);
-void Print(std::ostream& os = std::cout) const;
-void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout);
-void SetShiftRegion(double sr)
-{ shift_region = sr; }
-void SetWeightRegion(double w) { shift_region = w; }
+                                std::string name, CLParser& cl = CLParser::empty);
+  
+  void Print(std::ostream& os = std::cout) const;
+  void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout);
+  void SetShiftRegion(double sr)
+  { shift_region = sr; }
+  void SetWeightRegion(double w) { shift_region = w; }
 protected:
-void InitializeRun(bool first_round = true);
-void SelectMove();
-void StoreMove();
-// for the shifting penalty
-void ResetShifts();
-void UpdateShifts();
-// parameters
+  void InitializeRun(bool first_round = true);
+  void SelectMove();
+  void StoreMove();
+  
+  // for the shifting penalty
+  void ResetShifts();
+  void UpdateShifts();
+  
+  // parameters
   double shift_region;
   bool shifts_reset;
+  
   // command line arguments
   ValArgument<double> arg_shift_region;  
 };
@@ -60,58 +49,9 @@ TabuSearchWithShiftingPenalty<Input,State,Move,CFtype>::TabuSearchWithShiftingPe
                                                                                       StateManager<Input,State,CFtype>& e_sm,
                                                                                       NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
                                                                                       TabuListManager<State,Move,CFtype>& tlm,
-                                                                                      std::string name)
+                                                                                      std::string name,
+                                                                                      CLParser& cl)
 :  TabuSearch<Input,State,Move,CFtype>(i, e_sm, e_ne, tlm, name),
-   shift_region(0.75), shifts_reset(false), arg_shift_region("shift_region", "sr", false, 0.75)
-{
-  this->tabu_search_arguments.SetAlias("dts_" + name);
-  this->tabu_search_arguments.AddArgument(arg_shift_region);
-}
-
-template <class Input, class State, class Move, typename CFtype>
-TabuSearchWithShiftingPenalty<Input,State,Move,CFtype>::TabuSearchWithShiftingPenalty(const Input& i,
-                                                                                      StateManager<Input,State,CFtype>& e_sm,
-                                                                                      NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
-                                                                                      TabuListManager<State,Move,CFtype>& tlm,
-                                                                                      std::string name,
-										      CLParser& cl)
-  :  TabuSearch<Input,State,Move,CFtype>(i, e_sm, e_ne, tlm, name),
-   shift_region(0.75), shifts_reset(false), arg_shift_region("shift_region", "sr", false, 0.75)
-{ 
-  this->tabu_search_arguments.SetAlias("dts_" + name);
-  this->tabu_search_arguments.AddArgument(arg_shift_region); 
-  cl.AddArgument(this->tabu_search_arguments);
-  cl.MatchArgument(this->tabu_search_arguments);
-  if (this->tabu_search_arguments.IsSet())
-  {
-    this->pm.SetLength(this->arg_tabu_tenure.GetValue(0), this->arg_tabu_tenure.GetValue(1));
-    this->max_idle_iteration = this->arg_max_idle_iteration.GetValue();
-    shift_region =  arg_shift_region.GetValue();
-  }
-}
-
-template <class Input, class State, class Move, typename CFtype>
-TabuSearchWithShiftingPenalty<Input,State,Move,CFtype>::TabuSearchWithShiftingPenalty(const Input& i,
-                                                                                      StateManager<Input,State,CFtype>& e_sm,
-                                                                                      NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
-                                                                                      TabuListManager<State,Move,CFtype>& tlm,
-                                                                                      std::string name,
-                                                                                      AbstractTester<Input,State,CFtype>& t)
-:  TabuSearch<Input,State,Move,CFtype>(i, e_sm, e_ne, tlm, name, t),
-shift_region(0.75), shifts_reset(false), arg_shift_region("shift_region", "sr", false, 0.75)
-{
-  this->tabu_search_arguments.SetAlias("dts_" + name);
-  this->tabu_search_arguments.AddArgument(arg_shift_region);
-}
-
-template <class Input, class State, class Move, typename CFtype>
-TabuSearchWithShiftingPenalty<Input,State,Move,CFtype>::TabuSearchWithShiftingPenalty(const Input& i,
-                                                                                      StateManager<Input,State,CFtype>& e_sm,
-                                                                                      NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
-                                                                                      TabuListManager<State,Move,CFtype>& tlm,
-                                                                                      std::string name,
-                                                                                      CLParser& cl, AbstractTester<Input,State,CFtype>& t)
-:  TabuSearch<Input,State,Move,CFtype>(i, e_sm, e_ne, tlm, name, t),
 shift_region(0.75), shifts_reset(false), arg_shift_region("shift_region", "sr", false, 0.75)
 { 
   this->tabu_search_arguments.SetAlias("dts_" + name);

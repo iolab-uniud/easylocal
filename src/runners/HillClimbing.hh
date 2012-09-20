@@ -12,8 +12,7 @@
     @ingroup Runners 
 */
 template <class Input, class State, class Move, typename CFtype = int>
-class HillClimbing
-  : public MoveRunner<Input,State,Move,CFtype>
+class HillClimbing : public MoveRunner<Input,State,Move,CFtype>
 {
 public:
   HillClimbing(const Input& in, StateManager<Input,State,CFtype>& e_sm,
@@ -160,7 +159,7 @@ void HillClimbing<Input,State,Move,CFtype>::StoreMove()
   if (LessThan(this->current_move_cost, (CFtype)0))
     {
       if (this->observer != NULL)
-	this->observer->NotifyNewBest(*this);
+        this->observer->NotifyNewBest(*this);
       this->iteration_of_best = this->number_of_iterations;
       this->best_state_cost = this->current_state_cost;
     }
@@ -175,4 +174,4 @@ void HillClimbing<Input,State,Move,CFtype>::ReadParameters(std::istream& is, std
   is >> this->max_idle_iteration;
 }
 
-#endif // _HILL_CLIMBING_HH_
+#endif

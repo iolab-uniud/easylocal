@@ -8,14 +8,13 @@
 #include <testers/Tester.hh>
 
 /** A Move Runner is an instance of the Runner interface which it compels to
-    with a particular definition of @Move (given as template instantiation).
-    It is at the root of the inheritance hierarchy of actual runners.
-    @ingroup Runners
-*/
+ with a particular definition of @Move (given as template instantiation).
+ It is at the root of the inheritance hierarchy of actual runners.
+ @ingroup Runners
+ */
 
 template <class Input, class State, class Move, typename CFtype = int>
-class MoveRunner
-: public Runner<Input,State,CFtype>
+class MoveRunner : public Runner<Input,State,CFtype>
 {
   friend class RunnerObserver<Input,State,Move,CFtype>;
 public:
@@ -28,12 +27,12 @@ public:
   Move CurrentMove() const { return current_move; }
   CFtype CurrentMoveCost() const { return current_move_cost; }
   unsigned int Modality() const { return ne.Modality(); }
-
+  
 protected:
   MoveRunner(const Input& in, StateManager<Input,State,CFtype>& e_sm,
              NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
              std::string name);
-
+  
   /* state manipulations */
   virtual void GoCheck() const = 0;
   /** Actions to be perfomed at the beginning of the run. */
@@ -44,13 +43,13 @@ protected:
   void UpdateStateCost();
   
   NeighborhoodExplorer<Input,State,Move,CFtype>& ne; /**< A reference to the
-    attached neighborhood 
-    explorer. */
+                                                      attached neighborhood 
+                                                      explorer. */
   
   // state data
   Move current_move;      /**< The currently selected move. */
   CFtype current_move_cost; /**< The cost of the selected move. */
-
+  
   RunnerObserver<Input,State,Move,CFtype>* observer;
 };
 
@@ -63,7 +62,7 @@ MoveRunner<Input,State,Move,CFtype>::MoveRunner(const Input& in,
                                                 StateManager<Input,State,CFtype>& e_sm,
                                                 NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
                                                 std::string name)
-  : Runner<Input,State,CFtype>(in, e_sm, name), ne(e_ne), observer(NULL)
+: Runner<Input,State,CFtype>(in, e_sm, name), ne(e_ne), observer(NULL)
 {}
 
 template <class Input, class State, class Move, typename CFtype>
@@ -85,15 +84,15 @@ void MoveRunner<Input,State,Move,CFtype>::TerminateRun()
 
 
 /**
-   Checks wether the object state is consistent with all the related
-   objects.
-*/
+ Checks wether the object state is consistent with all the related
+ objects.
+ */
 template <class Input, class State, class Move, typename CFtype>
 void MoveRunner<Input,State,Move,CFtype>::Check() const
 {}
 
 /**
-   Actually performs the move selected by the local search strategy.
+ Actually performs the move selected by the local search strategy.
  */
 template <class Input, class State, class Move, typename CFtype>
 void MoveRunner<Input,State,Move,CFtype>::MakeMove()
@@ -103,9 +102,9 @@ void MoveRunner<Input,State,Move,CFtype>::MakeMove()
 
 
 /**
-   Computes the cost of the selected move; it delegates this task to the
-   neighborhood explorer.
-*/
+ Computes the cost of the selected move; it delegates this task to the
+ neighborhood explorer.
+ */
 template <class Input, class State, class Move, typename CFtype>
 void MoveRunner<Input,State,Move,CFtype>::ComputeMoveCost()
 { 
@@ -113,14 +112,14 @@ void MoveRunner<Input,State,Move,CFtype>::ComputeMoveCost()
 }
 
 /**
-   Updates the cost of the internal state of the runner.
-*/
+ Updates the cost of the internal state of the runner.
+ */
 template <class Input, class State, class Move, typename CFtype>
 void MoveRunner<Input,State,Move,CFtype>::UpdateStateCost()
 { 
   // std:: cerr << this->current_state_cost << std::endl; 
 	this->current_state_cost += current_move_cost; 
-//  	std:: cerr << current_move_cost << " " << this->current_state_cost << std::endl; 
+  //  	std:: cerr << current_move_cost << " " << this->current_state_cost << std::endl; 
 }
 
 #endif // _MOVE_RUNNER_HH_
