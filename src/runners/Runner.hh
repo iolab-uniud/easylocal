@@ -1,5 +1,23 @@
-#if !defined(_RUNNER_HH_)
-#define _RUNNER_HH_
+// $Id: Runner.hh 314 2011-10-04 13:36:41Z sara $
+// This file is part of EasyLocalpp: a C++ Object-Oriented framework
+// aimed at easing the development of Local Search algorithms.
+// Copyright (C) 2001--2008 Andrea Schaerf, Luca Di Gaspero. 
+//
+// EasyLocalpp is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// EasyLocalpp is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with EasyLocalpp. If not, see <http://www.gnu.org/licenses/>.
+
+#if !defined(RUNNER_HH_)
+#define RUNNER_HH_
 
 #include <EasyLocal.conf.hh>
 #include <helpers/StateManager.hh>
@@ -15,7 +33,7 @@ class Runner
 {
 public:
   /** Performs a full run of the search method. */
-  virtual void Go(bool first_round = true);
+  virtual void Go(unsigned rounds = 0, unsigned max_rounds = 1);
   /** Performs a given number of steps of the search method.
   @param n the number of steps to make */	
   virtual void Step(unsigned int n);
@@ -65,7 +83,7 @@ protected:
   /* state manipulations */
   virtual void GoCheck() const = 0;
   /** Actions to be perfomed at the beginning of the run. */
-  virtual void InitializeRun(bool first_round = true);
+  virtual void InitializeRun(unsigned rounds = 0, unsigned max_rounds = 1);
   /** Actions to be performed at the end of the run. */
   virtual void TerminateRun();
   virtual void UpdateIterationCounter();
@@ -242,11 +260,11 @@ void Runner<Input,State,CFtype>::TerminateRun()
    Performs a full run of a local search method.
  */
 template <class Input, class State, typename CFtype>
-void Runner<Input,State,CFtype>::Go(bool first_round)
+void Runner<Input,State,CFtype>::Go(unsigned rounds, unsigned max_rounds)
 
 {
   GoCheck();
-  InitializeRun(first_round);
+  InitializeRun(rounds, max_rounds);
   while (!MaxIterationExpired() && 
          !StopCriterion() && !LowerBoundReached())
     {
@@ -339,7 +357,7 @@ bool Runner<Input,State,CFtype>::AcceptableMove()
    Initializes all the runner variable for starting a new run.
 */
 template <class Input, class State, typename CFtype>
-void Runner<Input,State,CFtype>::InitializeRun(bool first_round)
+void Runner<Input,State,CFtype>::InitializeRun(unsigned rounds, unsigned max_rounds)
 {
   number_of_iterations = 0;
   iteration_of_best = 0;

@@ -139,7 +139,9 @@ template <class Input, class Output, class State, typename CFtype>
 void SimpleLocalSearch<Input,Output,State,CFtype>::Run()
 {
   this->p_runner->SetState(this->internal_state);
-  LetGo(*this->p_runner);
+  // LetGo(*this->p_runner);
+  // TODO: LetGo is no longer defined, in the meanwhile ...
+  this->p_runner->Go();
   this->internal_state = this->p_runner->GetState();
   this->internal_state_cost = this->p_runner->GetStateCost();
 }

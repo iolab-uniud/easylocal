@@ -22,7 +22,7 @@ public:
   virtual void Check() const;
   void ResetTimeout();
   void AttachObserver(RunnerObserver<Input,State,Move,CFtype>& ob) { observer = &ob; }
-  void InitializeRun(bool first_round = true);
+  void InitializeRun(unsigned rounds = 0, unsigned max_rounds = 1);
   void TerminateRun();
   Move CurrentMove() const { return current_move; }
   CFtype CurrentMoveCost() const { return current_move_cost; }
@@ -66,7 +66,7 @@ MoveRunner<Input,State,Move,CFtype>::MoveRunner(const Input& in,
 {}
 
 template <class Input, class State, class Move, typename CFtype>
-void MoveRunner<Input,State,Move,CFtype>::InitializeRun(bool first_round) 
+void MoveRunner<Input,State,Move,CFtype>::InitializeRun(unsigned rounds, unsigned max_rounds) 
 {
   Runner<Input,State,CFtype>::InitializeRun();
   if (observer != NULL)
@@ -122,4 +122,4 @@ void MoveRunner<Input,State,Move,CFtype>::UpdateStateCost()
   //  	std:: cerr << current_move_cost << " " << this->current_state_cost << std::endl; 
 }
 
-#endif // _MOVE_RUNNER_HH_
+#endif /*MOVERUNNER_HH_*/
