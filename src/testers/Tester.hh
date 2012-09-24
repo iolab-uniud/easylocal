@@ -18,18 +18,18 @@ public:
 };
 
 /** A Tester collects a set of basic testers (move, state, ...) and
-    allows to access them through sub-menus. It represent the external
-    user interface provided by the framework.
-    @ingroup Testers
-*/
+ allows to access them through sub-menus. It represent the external
+ user interface provided by the framework.
+ @ingroup Testers
+ */
 template <class Input, class Output, class State, typename CFtype = int>
 class Tester : public AbstractTester<Input, State, CFtype>
 {
 public:
   Tester(const Input& in, StateManager<Input,State,CFtype>& e_sm, 
-	 OutputManager<Input,Output,State,CFtype>& e_om, std::ostream& o = std::cout);
+         OutputManager<Input,Output,State,CFtype>& e_om, std::ostream& o = std::cout);
   Tester(const Input& in, State st, StateManager<Input,State,CFtype>& e_sm, 
-	 OutputManager<Input,Output,State,CFtype>& e_om, std::ostream& o = std::cout);
+         OutputManager<Input,Output,State,CFtype>& e_om, std::ostream& o = std::cout);
   /** Virtual destructor. */
   virtual ~Tester() {}
   void RunMainMenu(std::string file_name = "");
@@ -59,7 +59,7 @@ protected:
   std::vector<ComponentTester<Input,Output,State,CFtype>* > kicker_testers;
   /**< The set of attached move testers. */
   std::vector<Runner<Input,State,CFtype>* > runners; /**< The set of attached
-							runners. */
+                                                      runners. */
   const Input& in;
   std::ostream& os;
   StateManager<Input,State,CFtype>& sm;  /**< A pointer to a state manager. */
@@ -67,7 +67,7 @@ protected:
   State test_state; /**< The current state managed by the tester. */
   Output out; /**< The output object. */
   unsigned int choice, /**< The option currently chosen from the menu. */
-    sub_choice; /** The suboption currently chosen from the menu. */
+  sub_choice; /** The suboption currently chosen from the menu. */
 };
 
 /*************************************************************************
@@ -75,45 +75,45 @@ protected:
  *************************************************************************/
 
 /**
-   Constructs a tester by providing it links to
-   a state manager, an output manager, and an input object.
-
-   @param sm a pointer to a compatible state manager
-   @param om a pointer to a compatible output manager
-   @param in a pointer to an input object
-*/
+ Constructs a tester by providing it links to
+ a state manager, an output manager, and an input object.
+ 
+ @param sm a pointer to a compatible state manager
+ @param om a pointer to a compatible output manager
+ @param in a pointer to an input object
+ */
 template <class Input, class Output, class State, typename CFtype>
 Tester<Input, Output, State,CFtype>::Tester(const Input& i,
-					    StateManager<Input,State,CFtype>& e_sm,
-					    OutputManager<Input,Output,State,CFtype>& e_om, std::ostream& o)
-  :  in(i), os(o), sm(e_sm), om(e_om),
-    test_state(i), out(i)
+                                            StateManager<Input,State,CFtype>& e_sm,
+                                            OutputManager<Input,Output,State,CFtype>& e_om, std::ostream& o)
+:  in(i), os(o), sm(e_sm), om(e_om),
+test_state(i), out(i)
 {}
 
 
 /**
-   Adds a move tester.
-
-   @param p_amt a pointer to a move tester
-*/
+ Adds a move tester.
+ 
+ @param p_amt a pointer to a move tester
+ */
 template <class Input, class Output, class State, typename CFtype>
 void Tester<Input, Output, State,CFtype>::AddMoveTester(ComponentTester<Input,Output,State,CFtype>& amt)
 { move_testers.push_back(&amt); }
 
 /**
-   Adds a kicker tester.
-
-   @param p_amt a pointer to a move tester
-*/
+ Adds a kicker tester.
+ 
+ @param p_amt a pointer to a move tester
+ */
 template <class Input, class Output, class State, typename CFtype>
 void Tester<Input, Output, State,CFtype>::AddKickerTester(ComponentTester<Input,Output,State,CFtype>& kt)
 { kicker_testers.push_back(&kt); }
 
 /**
-   Adds a runner to the tester.
-   
-   @param p_ru a pointer to a compatible runner
-*/
+ Adds a runner to the tester.
+ 
+ @param p_ru a pointer to a compatible runner
+ */
 template <class Input, class Output, class State, typename CFtype>
 void Tester<Input, Output, State,CFtype>::AddRunner(Runner<Input,State,CFtype>& r)
 {
@@ -121,65 +121,65 @@ void Tester<Input, Output, State,CFtype>::AddRunner(Runner<Input,State,CFtype>& 
 }
 
 /**
-   Manages the tester main menu.     
-*/  
+ Manages the tester main menu.     
+ */  
 
 template <class Input, class Output, class State, typename CFtype>
 void Tester<Input, Output, State,CFtype>::RunMainMenu(std::string file_name)
 {
   if (file_name == "")
-    {
-      RunInputMenu();
-    }
+  {
+    RunInputMenu();
+  }
   else if (file_name == "random")
-    {
-      this->sm.RandomState(test_state);
-    }
+  {
+    this->sm.RandomState(test_state);
+  }
   else
-    {
-      std::ifstream is(file_name.c_str());
-      if (is.fail())
-	throw std::runtime_error("Cannot open file!"); 	
-      om.ReadState(test_state, is);
-      om.OutputState(test_state, out);
-      os << "SOLUTION IMPORTED " << std::endl << out << std::endl;
-      os << "IMPORTED SOLUTION COST : " << sm.CostFunction(test_state) << std::endl;
-    }
+  {
+    std::ifstream is(file_name.c_str());
+    if (is.fail())
+      throw std::runtime_error("Cannot open file!"); 	
+    om.ReadState(test_state, is);
+    om.OutputState(test_state, out);
+    os << "SOLUTION IMPORTED " << std::endl << out << std::endl;
+    os << "IMPORTED SOLUTION COST : " << sm.CostFunction(test_state) << std::endl;
+  }
   
   do
-    {
-      ShowMainMenu();
-      if (this->choice != 0)
-	ExecuteMainChoice();
-    }
+  {
+    ShowMainMenu();
+    if (this->choice != 0)
+      ExecuteMainChoice();
+  }
   while (this->choice != 0);
   os << "Bye bye..." << std::endl;
 }
 
 /**
-   Outputs the main menu options.
-*/
+ Outputs the main menu options.
+ */
 template <class Input, class Output, class State, typename CFtype>
 void Tester<Input,Output, State,CFtype>::ShowMainMenu()
 {
   os << "MAIN MENU:" << std::endl
-	    << "   (1) Move menu" << std::endl
-	    << "   (2) Kicker menu" << std::endl
-	    << "   (3) Run menu" << std::endl
-	    << "   (4) State menu" << std::endl
-	    << "   (0) Exit" << std::endl
-	    << " Your choice: ";
+  << "   (1) Move menu" << std::endl
+  << "   (2) Kicker menu" << std::endl
+  << "   (3) Run menu" << std::endl
+  << "   (4) State menu" << std::endl
+  << "   (0) Exit" << std::endl
+  << " Your choice: ";
   std::cin >> this->choice;
 }
 
 /**
-   Execute a choice made in the main menu.
-*/
+ Execute a choice made in the main menu.
+ */
 template <class Input, class Output, class State, typename CFtype>
 void Tester<Input, Output,State,CFtype>::ExecuteMainChoice()
 {
   switch(this->choice)
-    {
+  {
     case 1:
       ShowMovesMenu();
       ExecuteMovesChoice();
@@ -199,12 +199,12 @@ void Tester<Input, Output,State,CFtype>::ExecuteMainChoice()
       break;
     default:
       os << "Invalid choice" << std::endl;
-    }
+  }
 }
 
 /**
-   Outputs the menu for the move testers.
-*/
+ Outputs the menu for the move testers.
+ */
 template <class Input, class Output, class State, typename CFtype>
 void Tester<Input, Output,State,CFtype>::ShowMovesMenu()
 {
@@ -230,8 +230,8 @@ void Tester<Input, Output,State,CFtype>::ShowSolverMenu()
 }
 
 /**
-   Outputs the menu for the move testers.
-*/
+ Outputs the menu for the move testers.
+ */
 template <class Input, class Output, class State, typename CFtype>
 void Tester<Input, Output,State,CFtype>::ShowKickersMenu()
 {
@@ -245,8 +245,8 @@ void Tester<Input, Output,State,CFtype>::ShowKickersMenu()
 }
 
 /**
-   Outputs the menu for the runners.
-*/
+ Outputs the menu for the runners.
+ */
 template <class Input, class Output, class State, typename CFtype>
 void Tester<Input,Output, State,CFtype>::ShowRunMenu()
 {
@@ -260,8 +260,8 @@ void Tester<Input,Output, State,CFtype>::ShowRunMenu()
 }
 
 /**
-   Execute a choice from the move testers menu.
-*/
+ Execute a choice from the move testers menu.
+ */
 template <class Input, class Output, class State, typename CFtype>
 void Tester<Input,Output, State,CFtype>::ExecuteMovesChoice()
 {
@@ -270,8 +270,8 @@ void Tester<Input,Output, State,CFtype>::ExecuteMovesChoice()
 }
 
 /**
-   Execute a choice from the move testers menu.
-*/
+ Execute a choice from the move testers menu.
+ */
 template <class Input, class Output, class State, typename CFtype>
 void Tester<Input,Output, State,CFtype>::ExecuteKickersChoice()
 {
@@ -280,244 +280,244 @@ void Tester<Input,Output, State,CFtype>::ExecuteKickersChoice()
 }
 
 /**
-   Execute a choice from the runners menu.
-*/
+ Execute a choice from the runners menu.
+ */
 template <class Input, class Output, class State, typename CFtype>
 void Tester<Input,Output, State,CFtype>::ExecuteRunChoice()
 {
   if (sub_choice > 0)
-    {
-      std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
-      Runner<Input,State,CFtype>& r = *runners[sub_choice-1];
-      r.ReadParameters();      
-      r.SetState(test_state);
-      r.Go();
-      std::chrono::system_clock::duration duration = std::chrono::system_clock::now() - start;
-      test_state = r.GetState();
-      om.OutputState(test_state,out);
-      os << "CURRENT SOLUTION " << std::endl << out << std::endl;
-      os << "CURRENT COST : " << r.GetStateCost() << std::endl;
-      os << "ELAPSED TIME : " << duration.count() << 's' << std::endl;
-      os << "NUMBER OF ITERATIONS : " << r.GetIterationsPerformed() << std::endl;
-    }
+  {
+    std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
+    Runner<Input,State,CFtype>& r = *runners[sub_choice-1];
+    r.ReadParameters();      
+    r.SetState(test_state);
+    r.Go();
+    std::chrono::high_resolution_clock::duration duration = std::chrono::high_resolution_clock::now() - start;
+    test_state = r.GetState();
+    om.OutputState(test_state,out);
+    os << "CURRENT SOLUTION " << std::endl << out << std::endl;
+    os << "CURRENT COST : " << r.GetStateCost() << std::endl;
+    os << "ELAPSED TIME : " << std::max((double)0.0,(double)std::chrono::duration_cast<milliseconds>(duration).count()) << "ms" << std::endl;
+    os << "NUMBER OF ITERATIONS : " << r.GetIterationsPerformed() << std::endl;
+  }
 }
 
 /**
-   Manages an adbridged menu for building the initial state.
-*/
+ Manages an adbridged menu for building the initial state.
+ */
 template <class Input, class Output, class State, typename CFtype>
 void Tester<Input,Output,State,CFtype>::RunInputMenu()
 {
   bool show_state;
   ShowReducedStateMenu();
-  std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
+  std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
   show_state = ExecuteStateChoice();
-  std::chrono::system_clock::duration duration = std::chrono::system_clock::now() - start;
+  std::chrono::high_resolution_clock::duration duration = std::chrono::high_resolution_clock::now() - start;
   if (show_state)
-    {
-       this->om.OutputState(test_state, this->out);
-      os << "INITIAL SOLUTION " << std::endl << this->out << std::endl;
-      os << "INITIAL COST : " << this->sm.CostFunction(test_state) << std::endl;
-    }
-  os << "ELAPSED TIME : " << duration.count() << 's' << std::endl;
+  {
+    this->om.OutputState(test_state, this->out);
+    os << "INITIAL SOLUTION " << std::endl << this->out << std::endl;
+    os << "INITIAL COST : " << this->sm.CostFunction(test_state) << std::endl;
+  }
+  os << "ELAPSED TIME : " << std::max((double)0.0,(double)std::chrono::duration_cast<milliseconds>(duration).count()) << "ms" << std::endl;
 }
 
 /**
-   Outputs the menu options.
-*/
+ Outputs the menu options.
+ */
 template <class Input, class Output, class State, typename CFtype>
 void Tester<Input,Output,State,CFtype>::ShowStateMenu()
 {
   os << "STATE MENU: " << std::endl
-     << "    (1) Random state " << std::endl
-     << "    (2) Read from file" << std::endl
-     << "    (3) Greedy state " << std::endl
-     << "    (4) Sample state" << std::endl
-     << "    (5) Write to file" << std::endl
-     << "    (6) Show state" << std::endl
-     << "    (7) Show input" << std::endl
-     << "    (8) Show cost function components" << std::endl
-     << "    (9) Show cost elements" << std::endl
-     << "    (10) Check state consistency" << std::endl
-     << "    (11) Pretty print output" << std::endl
-     << "    (0) Return to Main Menu" << std::endl
-     << "Your choice : ";
+  << "    (1) Random state " << std::endl
+  << "    (2) Read from file" << std::endl
+  << "    (3) Greedy state " << std::endl
+  << "    (4) Sample state" << std::endl
+  << "    (5) Write to file" << std::endl
+  << "    (6) Show state" << std::endl
+  << "    (7) Show input" << std::endl
+  << "    (8) Show cost function components" << std::endl
+  << "    (9) Show cost elements" << std::endl
+  << "    (10) Check state consistency" << std::endl
+  << "    (11) Pretty print output" << std::endl
+  << "    (0) Return to Main Menu" << std::endl
+  << "Your choice : ";
   std::cin >> sub_choice;
 }
 
 /**
-   Outputs a reduced set of options for the initial state building.
-*/
+ Outputs a reduced set of options for the initial state building.
+ */
 template <class Input, class Output, class State, typename CFtype>
 void Tester<Input,Output,State,CFtype>::ShowReducedStateMenu()
 {
   os << "INITIAL STATE MENU: " << std::endl
-     << "    (1) Random state " << std::endl
-     << "    (2) Read from file" << std::endl
-     << "    (3) Greedy state " << std::endl
-     << "Your choice : ";
+  << "    (1) Random state " << std::endl
+  << "    (2) Read from file" << std::endl
+  << "    (3) Greedy state " << std::endl
+  << "Your choice : ";
   std::cin >> sub_choice;
   if (sub_choice >= 4) 
     sub_choice = -1; 
 }
 
 /**
-   Execute the menu choice on the given state.
-   
-   @param st the current state
-*/
+ Execute the menu choice on the given state.
+ 
+ @param st the current state
+ */
 template <class Input, class Output, class State, typename CFtype>
 bool Tester<Input,Output,State,CFtype>::ExecuteStateChoice()
 {
   unsigned int i;
   std::string file_name;
   switch(sub_choice)
-    {
+  {
     case 1:
       this->sm.RandomState(test_state);
       break;
     case 2:
+    {
+      bool read_failed;
+      std::ifstream is;
+      do
       {
-        bool read_failed;
-        std::ifstream is;
-        do
+        read_failed = false;
+        os << "File name : ";
+        std::cin >> file_name;
+        is.open(file_name.c_str());
+        if (is.fail())
         {
-          read_failed = false;
-          os << "File name : ";
-          std::cin >> file_name;
-          is.open(file_name.c_str());
-          if (is.fail())
-          {
-            os << "File " << file_name << " does not exist!" << std::endl;
-            read_failed = true;
-            is.clear();
-          }
+          os << "File " << file_name << " does not exist!" << std::endl;
+          read_failed = true;
+          is.clear();
         }
-        while (read_failed);
-        this->om.ReadState(test_state, is);
-        break;
       }
+      while (read_failed);
+      this->om.ReadState(test_state, is);
+      break;
+    }
     case 3:
-      {
-        unsigned int lenght; 
-        double randomness;
-        os << "Lenght of the restricted candidate list: ";
-        std::cin >> lenght;
-        os << "Level of randomness (0 <= alpha <= 1): ";
-        std::cin >> randomness;
-        this->sm.GreedyState(test_state, randomness, lenght);
-        break;
-      }
+    {
+      unsigned int lenght; 
+      double randomness;
+      os << "Lenght of the restricted candidate list: ";
+      std::cin >> lenght;
+      os << "Level of randomness (0 <= alpha <= 1): ";
+      std::cin >> randomness;
+      this->sm.GreedyState(test_state, randomness, lenght);
+      break;
+    }
     case 4:
-      {
-        unsigned int samples;
-        os << "How many samples : ";
-        std::cin >> samples;
-        this->sm.SampleState(test_state,samples);
-        break;
-      }
+    {
+      unsigned int samples;
+      os << "How many samples : ";
+      std::cin >> samples;
+      this->sm.SampleState(test_state,samples);
+      break;
+    }
     case 5:
-      {
-        os << "File name : ";
-        std::cin >> file_name;
-        std::ofstream os(file_name.c_str());
-        this->om.WriteState(test_state, os);
-        break;
-      }
+    {
+      os << "File name : ";
+      std::cin >> file_name;
+      std::ofstream os(file_name.c_str());
+      this->om.WriteState(test_state, os);
+      break;
+    }
     case 6:
-      {
-        os  << test_state << std::endl;
-        os  << "Total cost: " << this->sm.CostFunction(test_state) << std::endl;
-        break;
-      }
+    {
+      os  << test_state << std::endl;
+      os  << "Total cost: " << this->sm.CostFunction(test_state) << std::endl;
+      break;
+    }
     case 7:
-      {
-        os << in;
-        break;
-      }
+    {
+      os << in;
+      break;
+    }
     case 8:
+    {
+      os  << "Cost Components: " << std::endl;
+      for (i = 0; i < this->sm.CostComponents(); i++)
       {
-        os  << "Cost Components: " << std::endl;
-        for (i = 0; i < this->sm.CostComponents(); i++)
-        {
-          CostComponent<Input,State,CFtype>& cc = this->sm.GetCostComponent(i);
-          os  << i << ". " << cc.name << " : " 
-              << cc.Cost(test_state) << (cc.IsHard() ? '*' : ' ') << std::endl;
-        }
-        os << "Total Violations: " << this->sm.Violations(test_state) << std::endl;
-        os << "Total Objective:  " << this->sm.Objective(test_state) << std::endl;
-        os << "Total Cost:       " << this->sm.CostFunction(test_state) << std::endl;
-        break;
+        CostComponent<Input,State,CFtype>& cc = this->sm.GetCostComponent(i);
+        os  << i << ". " << cc.name << " : " 
+        << cc.Cost(test_state) << (cc.IsHard() ? '*' : ' ') << std::endl;
       }
+      os << "Total Violations: " << this->sm.Violations(test_state) << std::endl;
+      os << "Total Objective:  " << this->sm.Objective(test_state) << std::endl;
+      os << "Total Cost:       " << this->sm.CostFunction(test_state) << std::endl;
+      break;
+    }
     case 9:
+    {
+      os << "Detailed Violations: " << std::endl;
+      for (i = 0; i < this->sm.CostComponents(); i++)
       {
-        os << "Detailed Violations: " << std::endl;
-        for (i = 0; i < this->sm.CostComponents(); i++)
-        {
-          CostComponent<Input,State,CFtype>& cc = this->sm.GetCostComponent(i);
-          cc.PrintViolations(test_state);
-        }
-        os << std::endl << "Summary of Cost Components: " << std::endl;
-        for (i = 0; i < this->sm.CostComponents(); i++)
-        {
-          CostComponent<Input,State,CFtype>& cc = this->sm.GetCostComponent(i);
-          os  << i << ". " << cc.name << " : " 
-              << cc.Cost(test_state) << (cc.IsHard() ? '*' : ' ') << std::endl;
-        }
-        os << std::endl << "Total Violations:\t" << this->sm.Violations(test_state) << std::endl;
-        os << "Total Objective:\t" << this->sm.Objective(test_state) << std::endl;
-        os << "Total Cost:  \t" << this->sm.CostFunction(test_state) << std::endl;
-        break;
+        CostComponent<Input,State,CFtype>& cc = this->sm.GetCostComponent(i);
+        cc.PrintViolations(test_state);
       }
+      os << std::endl << "Summary of Cost Components: " << std::endl;
+      for (i = 0; i < this->sm.CostComponents(); i++)
+      {
+        CostComponent<Input,State,CFtype>& cc = this->sm.GetCostComponent(i);
+        os  << i << ". " << cc.name << " : " 
+        << cc.Cost(test_state) << (cc.IsHard() ? '*' : ' ') << std::endl;
+      }
+      os << std::endl << "Total Violations:\t" << this->sm.Violations(test_state) << std::endl;
+      os << "Total Objective:\t" << this->sm.Objective(test_state) << std::endl;
+      os << "Total Cost:  \t" << this->sm.CostFunction(test_state) << std::endl;
+      break;
+    }
     case 10:
-      {
-        os << "Checking state consistency: " << std::endl;
-        bool consistent = this->sm.CheckConsistency(test_state);
-        if (consistent)
-          os << "The state is consistent" << std::endl;
-        else 
-          os << "The state is not consistent" << std::endl;
-        break;
-      }
+    {
+      os << "Checking state consistency: " << std::endl;
+      bool consistent = this->sm.CheckConsistency(test_state);
+      if (consistent)
+        os << "The state is consistent" << std::endl;
+      else 
+        os << "The state is not consistent" << std::endl;
+      break;
+    }
     case 11:
-      {
-        os << "File name : ";
-        std::cin >> file_name;
-        this->om.PrettyPrintOutput(test_state,file_name);
-        std::cout << "Output pretty-printed in file " << file_name << std::endl;
-        break;
-      }
+    {
+      os << "File name : ";
+      std::cin >> file_name;
+      this->om.PrettyPrintOutput(test_state,file_name);
+      std::cout << "Output pretty-printed in file " << file_name << std::endl;
+      break;
+    }
     default:
       os << "Invalid choice" << std::endl;
-    }
+  }
   return (sub_choice >= 1 && sub_choice <= 4);
 }
 
 /**
-   Manages the component tester menu for the given state.     
-   @param st the state to test
-*/
+ Manages the component tester menu for the given state.     
+ @param st the state to test
+ */
 template <class Input, class Output, class State, typename CFtype>
 void Tester<Input,Output,State,CFtype>::RunStateTestMenu()
 {
   bool show_state;
   do
+  {
+    ShowStateMenu();
+    if (sub_choice != 0)
     {
-      ShowStateMenu();
-      if (sub_choice != 0)
-        {
-          std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
-          show_state = ExecuteStateChoice();
-          std::chrono::system_clock::duration duration = start - std::chrono::system_clock::now();
-          if (show_state)
-            {
-              om.OutputState(test_state,out);
-              os << "CURRENT SOLUTION " << std::endl << out << std::endl;
-              os << "CURRENT COST : " << sm.CostFunction(test_state) << std::endl;
-            }
-          os << "ELAPSED TIME : " << duration.count()  << 's' << std::endl;
-        }
+      std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
+      show_state = ExecuteStateChoice();
+      std::chrono::high_resolution_clock::duration duration = start - std::chrono::high_resolution_clock::now();
+      if (show_state)
+      {
+        om.OutputState(test_state,out);
+        os << "CURRENT SOLUTION " << std::endl << out << std::endl;
+        os << "CURRENT COST : " << sm.CostFunction(test_state) << std::endl;
+      }
+      os << "ELAPSED TIME : " << std::max((double)0.0,(double)std::chrono::duration_cast<milliseconds>(duration).count()) << "ms" << std::endl;
     }
+  }
   while (sub_choice != 0);
   os << "Leaving state menu" << std::endl;
 }
