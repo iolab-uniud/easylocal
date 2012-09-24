@@ -7,7 +7,8 @@
 
 /** A Solver represents the external layer of EasyLocal++; it
  implements the Abstract Solver interface and furthermore is
- parametrized with the Input and Output of the problem.  @ingroup
+ parametrized with the Input and Output of the problem.  
+ @ingroup
  Solvers 
  */
 template <class Input, class Output>

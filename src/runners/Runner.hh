@@ -28,6 +28,8 @@
 #include <climits>
 #include <chrono>
 
+using namespace std::chrono;
+
 template <class Input, class State, typename CFtype = int>
 class Runner
 {
@@ -120,6 +122,11 @@ protected:
   unsigned long start_iteration;
   unsigned long max_iteration; /**< The maximum number of iterations
     allowed. */
+  
+  /** Chronometer. */
+  high_resolution_clock chrono;
+  high_resolution_clock::time_point begin;
+  high_resolution_clock::time_point end;
 };
 
 /*************************************************************************
@@ -254,7 +261,9 @@ void Runner<Input,State,CFtype>::SetMaxIteration(unsigned long max)
 
 template <class Input, class State, typename CFtype>
 void Runner<Input,State,CFtype>::TerminateRun()
-{}
+{
+  end = chrono.now();
+}
 
 /**
    Performs a full run of a local search method.
@@ -265,25 +274,24 @@ void Runner<Input,State,CFtype>::Go(unsigned rounds, unsigned max_rounds)
 {
   GoCheck();
   InitializeRun(rounds, max_rounds);
-  while (!MaxIterationExpired() && 
-         !StopCriterion() && !LowerBoundReached())
+  while (!MaxIterationExpired() && !StopCriterion() && !LowerBoundReached())
+  {
+    UpdateIterationCounter();
+    try 
     {
-      UpdateIterationCounter();
-      try 
-	{
-	  SelectMove();
-	}
-      catch (EmptyNeighborhood e)
-	{
-	  break; // If the neighborhood is empty, the search will be stopped
-	}
-      if (AcceptableMove())
-	{
-	  MakeMove();
-	  UpdateStateCost();
-	  StoreMove();
-	}
+      SelectMove();
     }
+    catch (EmptyNeighborhood e)
+    {
+      break; // If the neighborhood is empty, the search will be stopped
+    }
+    if (AcceptableMove())
+    {
+      MakeMove();
+      UpdateStateCost();
+      StoreMove();
+    }
+  }
   TerminateRun();
 }
 
@@ -359,6 +367,7 @@ bool Runner<Input,State,CFtype>::AcceptableMove()
 template <class Input, class State, typename CFtype>
 void Runner<Input,State,CFtype>::InitializeRun(unsigned rounds, unsigned max_rounds)
 {
+  begin = chrono.now();
   number_of_iterations = 0;
   iteration_of_best = 0;
   ComputeCost();

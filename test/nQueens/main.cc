@@ -37,7 +37,7 @@
  handling the @ref Input and the @ref Output of the problem and the 
  classes for the @ref State representation of the Search Space and 
  the @ref Move features. In the case of the nQueens problem these classes
- are respectively @a int (for @ref Input), @ref ChessBoard, @a std::vector<int> 
+ are respectively @a int (for @ref Input), @ref ChessBoard, @a vector<int> 
  (for @ref State, representing a permutation, whose values correspond to the rows 
  assigned to each queen) and @ref Swap.
  
@@ -113,7 +113,10 @@
 #include <utils/CLParser.hh>
 #include <chrono>
 //#include <kickers/MultimodalKicker.hh>
- 
+
+using namespace std;
+using namespace chrono;
+
 int main(int argc, char* argv[])
 {
 	// The CLParser object parses the command line arguments
@@ -121,7 +124,7 @@ int main(int argc, char* argv[])
   
 	// The set of arguments added are the following:
   ValArgument<int> arg_size("size", "s", true, cl); /*< The size of the chessboard, that is, the input of the problem */
-  ValArgument<std::string> arg_solmethod("method", "m", false, cl);
+  ValArgument<string> arg_solmethod("method", "m", false, cl);
   ValArgument<unsigned> arg_plot_level("plot", "p", false, 0u, cl);
   ValArgument<unsigned> arg_verbosity_level("verbose", "v", false, 0u, cl);
   ValArgument<double> arg_timeout("timeout", "to", false, 0.0, cl);
@@ -144,63 +147,63 @@ int main(int argc, char* argv[])
   QueensOutputManager qom(in);
   
   // tester
-  Tester<int, ChessBoard, std::vector<int> > tester(in,qsm,qom);
+  Tester<int, ChessBoard, vector<int> > tester(in,qsm,qom);
     
   // kickers
   QueensKicker qk(in, qnhe);
   
   // runners
-  HillClimbing<int, std::vector<int>, Swap> qhc(in, qsm, qnhe, "SwapHillClimbing", cl);
+  HillClimbing<int, vector<int>, Swap> qhc(in, qsm, qnhe, "SwapHillClimbing", cl);
   tester.AddRunner(qhc);
-  SteepestDescent<int, std::vector<int>, Swap> qsd(in, qsm, qnhe, "SwapSteepestDescent");
+  SteepestDescent<int, vector<int>, Swap> qsd(in, qsm, qnhe, "SwapSteepestDescent");
   tester.AddRunner(qsd);
-  TabuSearch<int, std::vector<int>, Swap> qts(in, qsm, qnhe, qtlm, "SwapTabuSearch", cl);
+  TabuSearch<int, vector<int>, Swap> qts(in, qsm, qnhe, qtlm, "SwapTabuSearch", cl);
   tester.AddRunner(qts);
-  SimulatedAnnealing<int, std::vector<int>, Swap> qsa(in, qsm, qnhe, "SwapSimulatedAnnealing", cl);
+  SimulatedAnnealing<int, vector<int>, Swap> qsa(in, qsm, qnhe, "SwapSimulatedAnnealing", cl);
   tester.AddRunner(qsa);
-  LateAcceptanceHillClimbing<int, std::vector<int>, Swap> qlhc(in, qsm, qnhe, "LateAcceptanceHillClimbing", cl);
+  LateAcceptanceHillClimbing<int, vector<int>, Swap> qlhc(in, qsm, qnhe, "LateAcceptanceHillClimbing", cl);
   tester.AddRunner(qlhc);
   
-  //TabuSearchWithShiftingPenalty<int, std::vector<int>, Swap> qtsw(in, qsm, qnhe, qtlm, "SwapTabuSearchWithShiftingPenalty", cl);
+  //TabuSearchWithShiftingPenalty<int, vector<int>, Swap> qtsw(in, qsm, qnhe, qtlm, "SwapTabuSearchWithShiftingPenalty", cl);
   
-  SimpleLocalSearch<int, ChessBoard, std::vector<int> > qss(in, qsm, qom, "QueensSLS", cl);
-  GeneralizedLocalSearch<int, ChessBoard, std::vector<int> > qgls(in, qsm, qom, "QueensGLS", cl);
-  VariableNeighborhoodDescent<int, ChessBoard, std::vector<int> > qvnd(in, qsm, qom, 3);
+  SimpleLocalSearch<int, ChessBoard, vector<int> > qss(in, qsm, qom, "QueensSLS", cl);
+  GeneralizedLocalSearch<int, ChessBoard, vector<int> > qgls(in, qsm, qom, "QueensGLS", cl);
+  VariableNeighborhoodDescent<int, ChessBoard, vector<int> > qvnd(in, qsm, qom, 3);
   
   /*
-  typedef PrepareSetUnionNeighborhoodExplorerTypes<int, std::vector<int>, TYPELIST_2(SwapNeighborhoodExplorer, SwapNeighborhoodExplorer)> MultimodalTypes;
+  typedef PrepareSetUnionNeighborhoodExplorerTypes<int, vector<int>, TYPELIST_2(SwapNeighborhoodExplorer, SwapNeighborhoodExplorer)> MultimodalTypes;
   typedef MultimodalTypes::MoveList DoubleSwap; // this line is not mandatory, it just aliases the movelist type for reader's convenience
-  std::vector<double> bias(2);
+  vector<double> bias(2);
   bias[0] = 0.7;
   bias[1] = 0.3;
   MultimodalTypes::NeighborhoodExplorer qmmnhe(in, qsm, bias, "Multimodal Swap");
   qmmnhe.AddNeighborhoodExplorer(qnhe);
   qmmnhe.AddNeighborhoodExplorer(qnhe);
-  typedef PrepareSetUnionTabuListManager<std::vector<int>, TYPELIST_2(QueensTabuListManager, QueensTabuListManager)> MultimodalTabuListManagerTypes;
+  typedef PrepareSetUnionTabuListManager<vector<int>, TYPELIST_2(QueensTabuListManager, QueensTabuListManager)> MultimodalTabuListManagerTypes;
   MultimodalTabuListManagerTypes::TabuListManager qmmtlm;
   qmmtlm.AddTabuListManager(qtlm);
   qmmtlm.AddTabuListManager(qtlm);
   
-  TabuSearch<int, std::vector<int>, DoubleSwap> qmmts(in, qsm, qmmnhe, qmmtlm, "DoubleSwapTabuSearch", cl, tester); 
+  TabuSearch<int, vector<int>, DoubleSwap> qmmts(in, qsm, qmmnhe, qmmtlm, "DoubleSwapTabuSearch", cl, tester); 
   */
 
-  /* typedef PrepareCartesianProductNeighborhoodExplorerTypes<int, std::vector<int>, TYPELIST_2(SwapNeighborhoodExplorer, SwapNeighborhoodExplorer)> MultimodalTypes;
+  /* typedef PrepareCartesianProductNeighborhoodExplorerTypes<int, vector<int>, TYPELIST_2(SwapNeighborhoodExplorer, SwapNeighborhoodExplorer)> MultimodalTypes;
   typedef MultimodalTypes::MoveList DoubleSwap; // this line is not mandatory, it just aliases the movelist type for reader's convenience
   MultimodalTypes::NeighborhoodExplorer qmmnhe(in, qsm, "Multimodal Swap");
   qmmnhe.AddNeighborhoodExplorer(qnhe);
   qmmnhe.AddNeighborhoodExplorer(qnhe);
-  typedef PrepareCartesianProductTabuListManager<std::vector<int>, TYPELIST_2(QueensTabuListManager, QueensTabuListManager)> MultimodalTabuListManagerTypes;
+  typedef PrepareCartesianProductTabuListManager<vector<int>, TYPELIST_2(QueensTabuListManager, QueensTabuListManager)> MultimodalTabuListManagerTypes;
   MultimodalTabuListManagerTypes::TabuListManager qmmtlm;
   qmmtlm.AddTabuListManager(qtlm);
   qmmtlm.AddTabuListManager(qtlm);
-  TabuSearch<int, std::vector<int>, DoubleSwap> qmmts(in, qsm, qmmnhe, qmmtlm, "DoubleSwapTabuSearch", cl); */
+  TabuSearch<int, vector<int>, DoubleSwap> qmmts(in, qsm, qmmnhe, qmmtlm, "DoubleSwapTabuSearch", cl); */
   
   
-  /* class QueensKicker2 : public MultimodalKicker<int,std::vector<int>,DoubleSwap>
+  /* class QueensKicker2 : public MultimodalKicker<int,vector<int>,DoubleSwap>
   {
   public:
     QueensKicker2(const int& bs, MultimodalTypes::NeighborhoodExplorer& qnhe, int s = 2)
-    : MultimodalKicker<int,std::vector<int>,DoubleSwap>(bs, qnhe, s, "QueensKicker2") 
+    : MultimodalKicker<int,vector<int>,DoubleSwap>(bs, qnhe, s, "QueensKicker2") 
     {}
     bool RelatedMoves(const DoubleSwap&, const DoubleSwap&) const
     { return true; } 
@@ -211,8 +214,8 @@ int main(int argc, char* argv[])
   if (arg_random_seed.IsSet())
     Random::Seed(arg_random_seed.GetValue());
   
-  RunnerObserver<int, std::vector<int>, Swap> ro(arg_verbosity_level.GetValue(), arg_plot_level.GetValue());
-  GeneralizedLocalSearchObserver<int, ChessBoard, std::vector<int> > so(arg_verbosity_level.GetValue(), arg_plot_level.GetValue());
+  RunnerObserver<int, vector<int>, Swap> ro(arg_verbosity_level.GetValue(), arg_plot_level.GetValue());
+  GeneralizedLocalSearchObserver<int, ChessBoard, vector<int> > so(arg_verbosity_level.GetValue(), arg_plot_level.GetValue());
 	
 	if (arg_plot_level.IsSet())
 	{
@@ -237,10 +240,10 @@ int main(int argc, char* argv[])
   if (!arg_solmethod.IsSet())
 	{
 		// testers
-		MoveTester<int, ChessBoard, std::vector<int>, Swap> swap_move_test(in,qsm,qom,qnhe, "Swap move", tester);
-    // MoveTester<int, ChessBoard, std::vector<int>, DoubleSwap> multimodal_move_test(in,qsm,qom,qmmnhe, "Multimodal swap move", tester);
-		KickerTester<int, ChessBoard, std::vector<int> > monokicker_test(in,qsm,qom, qk, "Monomodal kick");
-    //KickerTester<int, ChessBoard, std::vector<int> > multikicker_test(in,qsm,qom, qk2, "Multimodal kick");
+		MoveTester<int, ChessBoard, vector<int>, Swap> swap_move_test(in,qsm,qom,qnhe, "Swap move", tester);
+    // MoveTester<int, ChessBoard, vector<int>, DoubleSwap> multimodal_move_test(in,qsm,qom,qmmnhe, "Multimodal swap move", tester);
+		KickerTester<int, ChessBoard, vector<int> > monokicker_test(in,qsm,qom, qk, "Monomodal kick");
+    //KickerTester<int, ChessBoard, vector<int> > multikicker_test(in,qsm,qom, qk2, "Multimodal kick");
 		
 		tester.AddKickerTester(monokicker_test);
     //tester.AddKickerTester(multikicker_test);	
@@ -252,7 +255,7 @@ int main(int argc, char* argv[])
 		if (arg_solmethod.GetValue() == "VND") 
 		{
 			qvnd.Solve();
-			std::cout << qvnd.GetOutput() << std::endl << qvnd.GetCurrentCost() << std::endl;
+			cout << qvnd.GetOutput() << endl << qvnd.GetCurrentCost() << endl;
 		}
 		else if (arg_solmethod.GetValue() == "GLS") 
 		{
@@ -260,10 +263,10 @@ int main(int argc, char* argv[])
 			qgls.AddRunner(qsd);
 			if (arg_timeout.IsSet())
 				qgls.SetTimeout(arg_timeout.GetValue());
-      std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
+      chrono::high_resolution_clock::time_point start = chrono::high_resolution_clock::now();
 			qgls.GeneralSolve();
-			std::chrono::system_clock::duration duration = std::chrono::system_clock::now() - start;
-			std::cout << qgls.GetOutput() << std::endl << qgls.GetCurrentCost() << ' ' << duration.count() << std::endl;
+			chrono::high_resolution_clock::duration duration = chrono::high_resolution_clock::now() - start;
+			cout << qgls.GetOutput() << endl << qgls.GetCurrentCost() << ' ' << duration.count() << endl;
 		}
 		
 	}
