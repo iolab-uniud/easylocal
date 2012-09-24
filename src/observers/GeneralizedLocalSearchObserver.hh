@@ -75,7 +75,7 @@ void GeneralizedLocalSearchObserver<Input,Output,State,CFtype>::NotifyKickStep(G
   if (notify_kicker)
     {
       log << "   Kick move, cost: " <<  cost
-          << ", time " << (s.end) - s.begin).count()
+          << ", time " << (s.end - s.begin).count()
           << ", step " << s.p_kicker->Step() << std::endl;
     }
 }
@@ -107,14 +107,14 @@ void GeneralizedLocalSearchObserver<Input,Output,State,CFtype>::NotifyRunnerStop
       << ", distance from starting/best states " << s.sm.StateDistance(s.current_state, s.runners[s.current_runner]->GetState())
       << "/" << s.sm.StateDistance(s.best_state, s.runners[s.current_runner]->GetState())
       << " (" << s.runners[s.current_runner]->GetIterationsPerformed() << " iterations" 
-      << ", time " << (s.end) - s.begin).count()
+      << ", time " << (s.end - s.begin).count()
       << "), Rounds " << s.rounds << "/" << s.max_rounds << ", Idle rounds " << s.idle_rounds << "/" << s.max_idle_rounds << std::endl;
     }
   if (plot_rounds)
   {
     plot << s.runners[s.current_runner]->name << ", " << s.runners[s.current_runner]->GetStateCost()
     << ", " << s.current_state_cost << ", " 
-    << ", time " << (s.end) - s.begin).count()
+    << ", time " << (s.end - s.begin).count()
     << s.sm.StateDistance(s.best_state, s.runners[s.current_runner]->GetState())
     << ", " << s.rounds << ", " << s.idle_rounds << std::endl;
   }
