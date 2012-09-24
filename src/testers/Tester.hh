@@ -9,6 +9,8 @@
 #include <fstream>
 #include <utils/Types.hh>
 
+typedef std::chrono::duration<double, std::ratio<1>> secs;
+
 template <class Input, class State, typename CFtype = int>
 class AbstractTester
 {
@@ -292,12 +294,12 @@ void Tester<Input,Output, State,CFtype>::ExecuteRunChoice()
     r.ReadParameters();      
     r.SetState(test_state);
     r.Go();
-    std::chrono::high_resolution_clock::duration duration = std::chrono::high_resolution_clock::now() - start;
+    secs duration = std::chrono::duration_cast<secs>(std::chrono::high_resolution_clock::now() - start);
     test_state = r.GetState();
     om.OutputState(test_state,out);
     os << "CURRENT SOLUTION " << std::endl << out << std::endl;
     os << "CURRENT COST : " << r.GetStateCost() << std::endl;
-    os << "ELAPSED TIME : " << std::max((double)0.0,(double)std::chrono::duration_cast<milliseconds>(duration).count()) << "ms" << std::endl;
+    os << "ELAPSED TIME : " << duration.count() << "s" << std::endl;
     os << "NUMBER OF ITERATIONS : " << r.GetIterationsPerformed() << std::endl;
   }
 }
@@ -312,14 +314,14 @@ void Tester<Input,Output,State,CFtype>::RunInputMenu()
   ShowReducedStateMenu();
   std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
   show_state = ExecuteStateChoice();
-  std::chrono::high_resolution_clock::duration duration = std::chrono::high_resolution_clock::now() - start;
+  secs duration = std::chrono::duration_cast<secs>(std::chrono::high_resolution_clock::now() - start);
   if (show_state)
   {
     this->om.OutputState(test_state, this->out);
     os << "INITIAL SOLUTION " << std::endl << this->out << std::endl;
     os << "INITIAL COST : " << this->sm.CostFunction(test_state) << std::endl;
   }
-  os << "ELAPSED TIME : " << std::max((double)0.0,(double)std::chrono::duration_cast<milliseconds>(duration).count()) << "ms" << std::endl;
+  os << "ELAPSED TIME : " << duration.count() << "s" << std::endl;
 }
 
 /**
@@ -508,14 +510,14 @@ void Tester<Input,Output,State,CFtype>::RunStateTestMenu()
     {
       std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
       show_state = ExecuteStateChoice();
-      std::chrono::high_resolution_clock::duration duration = start - std::chrono::high_resolution_clock::now();
+      secs duration = std::chrono::duration_cast<secs>(std::chrono::high_resolution_clock::now() - start);
       if (show_state)
       {
         om.OutputState(test_state,out);
         os << "CURRENT SOLUTION " << std::endl << out << std::endl;
         os << "CURRENT COST : " << sm.CostFunction(test_state) << std::endl;
       }
-      os << "ELAPSED TIME : " << std::max((double)0.0,(double)std::chrono::duration_cast<milliseconds>(duration).count()) << "ms" << std::endl;
+      os << "ELAPSED TIME : " << duration.count() << "s" << std::endl;
     }
   }
   while (sub_choice != 0);
