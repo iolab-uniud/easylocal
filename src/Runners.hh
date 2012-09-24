@@ -54,5 +54,6 @@
 #include <runners/GreatDeluge.hh>
 #include <runners/TabuSearch.hh>
 #include <runners/LateAcceptanceHillClimbing.hh>
+#include <runners/TabuSearchWithShiftingPenalty.hh>
 
 #endif // _RUNNERS_HH_

@@ -24,10 +24,6 @@ class NeighborhoodExplorer
 public:   
   typedef Move ThisMove;
 
-
-  typedef DeltaCostComponent<Input,State,Move,CFtype> DCC;
-  typedef CostComponent<Input,State,CFtype> CC;
-
   /** Prints the configuration of the object (attached cost components)
       @param os Output stream 
   */
@@ -173,9 +169,9 @@ public:
   virtual CFtype DeltaObjective(const State& st, const Move & mv) const;
   virtual CFtype DeltaViolations(const State& st, const Move & mv) const;
     
-  virtual void AddDeltaCostComponent(DCC& dcc);
+  virtual void AddDeltaCostComponent(DeltaCostComponent<Input,State,Move,CFtype>& dcc);
   
-  virtual void AddDeltaCostComponent(CC& cc);
+  virtual void AddDeltaCostComponent(CostComponent<Input,State,CFtype>& cc);
 
   virtual size_t DeltaCostComponents() const
   { return delta_cost_component.size(); }
@@ -211,10 +207,10 @@ protected:
   StateManager<Input, State,CFtype>& sm; /**< A reference to the attached state manager. */
 
   /** List of delta cost component */
-  std::vector<DCC* > delta_cost_component;
+  std::vector<DeltaCostComponent<Input,State,Move,CFtype>* > delta_cost_component;
 
   /** List of cost component */
-  std::vector<CC* > cost_component;
+  std::vector<CostComponent<Input,State,CFtype>* > cost_component;
 
   /** Name of user-defined neighborhood explorer */
   std::string name;
@@ -251,7 +247,7 @@ CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::DeltaCostFunction(const St
   for (i = 0; i < this->delta_cost_component.size(); i++)
   {
     // get reference to delta cost component
-    DCC& dcc = *(delta_cost_component[i]);
+    DeltaCostComponent<Input,State,Move,CFtype>& dcc = *(delta_cost_component[i]);
     if (dcc.IsHard()) 
       delta_hard_cost += dcc.DeltaCost(st, mv);
     else
@@ -268,7 +264,7 @@ CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::DeltaCostFunction(const St
     for (i = 0; i < cost_component.size(); i++) 
     {
       // get reference to cost component
-      CC& cc = *(cost_component[i]);
+      CostComponent<Input,State,CFtype>& cc = *(cost_component[i]);
       if (cc.IsHard())
         // hard weight considered later
         delta_hard_cost += cc.ComputeCost(st1) - cc.ComputeCost(st);
@@ -281,13 +277,13 @@ CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::DeltaCostFunction(const St
 }
 
 template <class Input, class State, class Move, typename CFtype>
-void NeighborhoodExplorer<Input,State,Move,CFtype>::AddDeltaCostComponent(DCC& dcc)
+void NeighborhoodExplorer<Input,State,Move,CFtype>::AddDeltaCostComponent(DeltaCostComponent<Input,State,Move,CFtype>& dcc)
 {
   delta_cost_component.push_back(&dcc);
 }
 
 template <class Input, class State, class Move, typename CFtype>
-void NeighborhoodExplorer<Input,State,Move,CFtype>::AddDeltaCostComponent(CC& cc)
+void NeighborhoodExplorer<Input,State,Move,CFtype>::AddDeltaCostComponent(CostComponent<Input,State,CFtype>& cc)
 {
   cost_component.push_back(&cc);
 }
@@ -601,7 +597,7 @@ CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::DeltaViolations(const Stat
   for (unsigned i = 0; i < delta_cost_component.size(); i++)
     if (delta_cost_component[i]->IsHard())
     {
-      DCC& dcc = *this->delta_cost_component[i];
+      DeltaCostComponent<Input,State,Move,CFtype>& dcc = *this->delta_cost_component[i];
       total_delta += dcc.DeltaCost(st, mv);
     }
   return total_delta;
@@ -624,7 +620,7 @@ CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::DeltaObjective(const State
   for (unsigned i = 0; i < this->delta_cost_component.size(); i++)
     if (delta_cost_component[i]->IsSoft())
     {
-      DCC& dcc = *this->delta_cost_component[i];
+      DeltaCostComponent<Input,State,Move,CFtype>& dcc = *this->delta_cost_component[i];
       total_delta += dcc.DeltaCost(st, mv);
     }
   return total_delta;
