@@ -328,7 +328,7 @@ template <class Input, class State, class Move, typename CFtype>
 bool SimulatedAnnealing<Input,State,Move,CFtype>::AcceptableMove()
 { 
   return LessOrEqualThan(this->current_move_cost,(CFtype)0)
-  || (Random::Double_Unit_Uniform() < exp(-this->current_move_cost/temperature)); 
+  || (Random::Double() < exp(-this->current_move_cost/temperature)); 
 }
 
 #endif // _SIMULATED_ANNEALING_HH_

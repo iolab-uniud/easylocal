@@ -121,7 +121,6 @@ void LateAcceptanceHillClimbing<Input,State,Move,CFtype>::TerminateRun()
 
 /**
  A move is randomly picked.
- @todo move all common code to superclass HillClimbing.
  */
 template <class Input, class State, class Move, typename CFtype>
 void LateAcceptanceHillClimbing<Input,State,Move,CFtype>::StoreMove()

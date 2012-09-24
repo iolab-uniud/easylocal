@@ -32,6 +32,7 @@
 /* End PBXAggregateTarget section */
 
 /* Begin PBXFileReference section */
+		5005F4ED16106B78002BA61D /* Random.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Random.cc; sourceTree = "<group>"; };
 		50BDA6F5160200CC0069BFF7 /* LateAcceptanceHillClimbing.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = LateAcceptanceHillClimbing.hh; sourceTree = "<group>"; };
 		A29C12D3148F74CC00EDC517 /* ToDo2012 */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = ToDo2012; path = ../ToDo2012; sourceTree = "<group>"; };
 		AC4276C40DD873F6006C3B31 /* index.html */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.html; name = index.html; path = ../doc/html/index.html; sourceTree = SOURCE_ROOT; };
@@ -81,7 +82,6 @@
 		ACF4B13C0DBFA668008A0207 /* MoveTester.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = MoveTester.hh; sourceTree = "<group>"; };
 		ACF4B13D0DBFA668008A0207 /* Tester.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Tester.hh; sourceTree = "<group>"; };
 		ACF4B13E0DBFA668008A0207 /* Testers.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Testers.hh; sourceTree = "<group>"; };
-		ACF4B1570DBFA668008A0207 /* Random.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Random.cc; sourceTree = "<group>"; };
 		ACF4B1580DBFA668008A0207 /* Random.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Random.hh; sourceTree = "<group>"; };
 		ACF4B15A0DBFA668008A0207 /* Types.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Types.cc; sourceTree = "<group>"; };
 		ACF4B15B0DBFA668008A0207 /* Types.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Types.hh; sourceTree = "<group>"; };
@@ -271,7 +271,7 @@
 				AC75B2520DD08C30003EBD1F /* CLParser.hh */,
 				AC75B2510DD08C30003EBD1F /* CLParser.cc */,
 				ACF4B1580DBFA668008A0207 /* Random.hh */,
-				ACF4B1570DBFA668008A0207 /* Random.cc */,
+				5005F4ED16106B78002BA61D /* Random.cc */,
 				ACF4B15B0DBFA668008A0207 /* Types.hh */,
 				ACF4B15A0DBFA668008A0207 /* Types.cc */,
 			);

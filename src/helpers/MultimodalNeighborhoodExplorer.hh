@@ -575,7 +575,7 @@ void SetUnionNeighborhoodExplorer<Input,State,CFtype,NeighborhoodExplorerList>::
   else
     other_nhes->RandomMove(st, mv.movelist); */
   // new definition: first pick up a uniformly distributed random value and then search for the corresponding neighborhood according to the bias
-  double random_value = Random::Double_Unit_Uniform();
+  double random_value = Random::Double();
   RandomMove(st, mv, random_value);
 }
 
