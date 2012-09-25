@@ -28,8 +28,6 @@
 #include <climits>
 #include <chrono>
 
-using namespace std::chrono;
-
 template <class Input, class State, typename CFtype = int>
 class Runner
 {
@@ -124,9 +122,8 @@ protected:
     allowed. */
   
   /** Chronometer. */
-  high_resolution_clock chrono;
-  high_resolution_clock::time_point begin;
-  high_resolution_clock::time_point end;
+  std::chrono::high_resolution_clock::time_point begin;
+  std::chrono::high_resolution_clock::time_point end;
 };
 
 /*************************************************************************
@@ -262,7 +259,7 @@ void Runner<Input,State,CFtype>::SetMaxIteration(unsigned long max)
 template <class Input, class State, typename CFtype>
 void Runner<Input,State,CFtype>::TerminateRun()
 {
-  end = chrono.now();
+  end = std::chrono::high_resolution_clock::now();
 }
 
 /**
@@ -367,7 +364,7 @@ bool Runner<Input,State,CFtype>::AcceptableMove()
 template <class Input, class State, typename CFtype>
 void Runner<Input,State,CFtype>::InitializeRun(unsigned rounds, unsigned max_rounds)
 {
-  begin = chrono.now();
+  begin = std::chrono::high_resolution_clock::now();
   number_of_iterations = 0;
   iteration_of_best = 0;
   ComputeCost();

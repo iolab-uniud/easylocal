@@ -119,9 +119,8 @@ protected:
   ValArgument<float> arg_timeout;
 
   /** Chronometer. */
-  high_resolution_clock chrono;
-  high_resolution_clock::time_point begin;
-  high_resolution_clock::time_point end;
+  std::chrono::high_resolution_clock::time_point begin;
+  std::chrono::high_resolution_clock::time_point end;
 };
 
 /*************************************************************************
@@ -230,7 +229,7 @@ void GeneralizedLocalSearch<Input,Output,State,CFtype>::SimpleSolve(unsigned run
   if (runner >= runners.size())
     throw std::logic_error("No runner set for solver " + this->name);
   
-  begin = chrono.now();
+  begin = std::chrono::high_resolution_clock::now();
   if (init_state == 1)
     this->FindInitialState(true);
   else if (init_state == 2)
@@ -246,7 +245,7 @@ void GeneralizedLocalSearch<Input,Output,State,CFtype>::SimpleSolve(unsigned run
   this->current_state_cost = runners[runner]->GetStateCost();
   this->best_state = this->current_state;
   this->best_state_cost = this->current_state_cost;
-  end = chrono.now();
+  end = std::chrono::high_resolution_clock::now();
 }
 
 /**
@@ -260,7 +259,7 @@ void GeneralizedLocalSearch<Input,Output,State,CFtype>::MultiStartSimpleSolve(un
   if (runner >= runners.size())
     throw std::logic_error("No runner set for solver " + this->name);
   
-  begin = chrono.now();
+  begin = std::chrono::high_resolution_clock::now();
   for (t = 0; t < trials; t++)
   {
     if (observer != NULL) observer->NotifyRestart(*this, t);
@@ -287,7 +286,7 @@ void GeneralizedLocalSearch<Input,Output,State,CFtype>::MultiStartSimpleSolve(un
       break;
     restarts++;
   }
-  end = chrono.now();
+  end = std::chrono::high_resolution_clock::now();
 }
 
 /**
@@ -301,7 +300,7 @@ void GeneralizedLocalSearch<Input,Output,State,CFtype>::MultiStartGeneralSolve(K
   CFtype global_best_state_cost;
   bool timeout_expired = false; 
   
-  begin = chrono.now();
+  begin = std::chrono::high_resolution_clock::now();
   for (unsigned t = 0; t < trials; t++)
   {
     if (observer != NULL) observer->NotifyRestart(*this, t);
@@ -327,7 +326,7 @@ void GeneralizedLocalSearch<Input,Output,State,CFtype>::MultiStartGeneralSolve(K
   }
   this->best_state = global_best_state;
   this->best_state_cost	= global_best_state_cost;
-  end = chrono.now();
+  end = std::chrono::high_resolution_clock::now();
 }
 
 /**
@@ -350,7 +349,7 @@ void GeneralizedLocalSearch<Input,Output,State,CFtype>::GeneralSolve(KickStrateg
   if (kick_strategy != NO_KICKER && p_kicker == NULL)
     throw std::logic_error("No kicker set for solver " + this->name);
 
-  begin = chrono.now();
+  begin = std::chrono::high_resolution_clock::now();
   if (state_init)
     this->FindInitialState();
   
@@ -434,7 +433,7 @@ void GeneralizedLocalSearch<Input,Output,State,CFtype>::GeneralSolve(KickStrateg
     }
   }
   while (idle_rounds < max_idle_rounds && rounds < max_rounds && !timeout_expired && !lower_bound_reached);
-  end = chrono.now();
+  end = std::chrono::high_resolution_clock::now();
 }
 
 /**
@@ -452,7 +451,7 @@ void GeneralizedLocalSearch<Input,Output,State,CFtype>::IteratedSolve(unsigned r
   idle_rounds = 0;
   rounds = 0;
   
-  begin = chrono.now();
+  begin = std::chrono::high_resolution_clock::now();
   if (state_init)
     this->FindInitialState();
   
@@ -484,7 +483,7 @@ void GeneralizedLocalSearch<Input,Output,State,CFtype>::IteratedSolve(unsigned r
       idle_rounds++;
   }
   while (idle_rounds < max_idle_rounds && rounds < max_rounds && !timeout_expired && !lower_bound_reached);
-  end = chrono.now();
+  end = std::chrono::high_resolution_clock::now();
 }
 
 template <class Input, class Output, class State, typename CFtype>
@@ -494,7 +493,7 @@ bool GeneralizedLocalSearch<Input,Output,State,CFtype>::PerformKickRun()
   CFtype kick_cost, current_state_cost = this->current_state_cost;
   bool improve = false;
   
-  begin = chrono.now();
+  begin = std::chrono::high_resolution_clock::now();
   do
   {
     // perturb the current solution	     
@@ -509,7 +508,7 @@ bool GeneralizedLocalSearch<Input,Output,State,CFtype>::PerformKickRun()
     }
   }
   while (LessThan(kick_cost,static_cast<CFtype>(0)));
-  end = chrono.now();
+  end = std::chrono::high_resolution_clock::now();
 
   this->current_state = current_state;
   this->current_state_cost = current_state_cost;

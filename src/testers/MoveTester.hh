@@ -140,9 +140,9 @@ void MoveTester<Input,Output,State,Move,CFtype>::RunMainMenu(State& st)
     ShowMenu();
     if (choice != 0)
     {
-      std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
+      std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
       show_state = ExecuteChoice(st);
-      std::chrono::system_clock::duration duration = std::chrono::system_clock::now() - start;
+      secs duration = std::chrono::duration_cast<secs>(std::chrono::high_resolution_clock::now() - start);
       if (show_state)
       {
         om.OutputState(st,out);

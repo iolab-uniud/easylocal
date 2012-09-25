@@ -116,6 +116,7 @@
 
 using namespace std;
 using namespace chrono;
+typedef std::chrono::duration<double, std::ratio<1>> secs;
 
 int main(int argc, char* argv[])
 {
@@ -263,9 +264,9 @@ int main(int argc, char* argv[])
 			qgls.AddRunner(qsd);
 			if (arg_timeout.IsSet())
 				qgls.SetTimeout(arg_timeout.GetValue());
-      chrono::high_resolution_clock::time_point start = chrono::high_resolution_clock::now();
+      high_resolution_clock::time_point start = high_resolution_clock::now();
 			qgls.GeneralSolve();
-			chrono::high_resolution_clock::duration duration = chrono::high_resolution_clock::now() - start;
+			secs duration = duration_cast<secs>(high_resolution_clock::now() - start);
 			cout << qgls.GetOutput() << endl << qgls.GetCurrentCost() << ' ' << duration.count() << endl;
 		}
 		

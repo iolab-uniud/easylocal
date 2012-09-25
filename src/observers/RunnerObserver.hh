@@ -1,6 +1,10 @@
 #if !defined(_RUNNER_OBSERVER_HH_)
 #define _RUNNER_OBSERVER_HH_
 
+#include <chrono>
+
+typedef std::chrono::duration<double, std::ratio<1>> secs;
+
 template <class Input, class State, class Move, typename CFtype>
 class MoveRunner;
 
@@ -46,8 +50,9 @@ void RunnerObserver<Input,State,Move,CFtype>::NotifyStartRunner(MoveRunner<Input
 {
   if (plot_improving_moves || plot_all_moves)
     plot << r.number_of_iterations << ' ' << 
-    // r.chrono.TotalTime() << ' ' << 
-    r.current_state_cost << std::endl;
+            std::chrono::duration_cast<secs>(r.end - r.begin).count() << "s " <<
+            r.current_state_cost << 
+            std::endl;
 }
 
 
@@ -68,9 +73,11 @@ void RunnerObserver<Input,State,Move,CFtype>::NotifyNewBest(MoveRunner<Input,Sta
       log << ')' << std::endl;
     }
   if (plot_improving_moves && !plot_all_moves)
-    plot << r.name << ' ' << r.number_of_iterations << ' ' // 
-                                                           // << r.chrono.TotalTime() 
-    << ' ' << r.current_state_cost << std::endl;
+    plot << r.name << ' ' << 
+            r.number_of_iterations << ' ' <<
+            std::chrono::duration_cast<secs>(r.end - r.begin).count() << "s " << 
+            r.current_state_cost << 
+            std::endl;
 }
 
 template <class Input, class State, class Move, typename CFtype>
@@ -92,16 +99,20 @@ void RunnerObserver<Input,State,Move,CFtype>::NotifyStoreMove(MoveRunner<Input,S
     log << ')' << std::endl;
   }
   if (plot_all_moves)
-    plot << r.name << ' '<< r.number_of_iterations << ' ' // << r.chrono.TotalTime() 
-    << ' ' << r.current_state_cost << std::endl;
+    plot << r.name << ' ' << 
+            r.number_of_iterations << ' '  <<
+            std::chrono::duration_cast<secs>(r.end - r.begin).count() << "s " <<
+            r.current_state_cost << 
+            std::endl;
 }
 
 template <class Input, class State, class Move, typename CFtype>
 void RunnerObserver<Input,State,Move,CFtype>::NotifyEndRunner(MoveRunner<Input,State,Move,CFtype>& r)
 {
   if (plot_improving_moves || plot_all_moves)
-    plot << r.number_of_iterations << ' ' // << r.chrono.TotalTime() 
-    << ' ' << r.current_state_cost << std::endl;
+    plot << r.number_of_iterations << ' ' <<
+            std::chrono::duration_cast<secs>(r.end - r.begin).count() << "s " <<
+            r.current_state_cost << std::endl;
 }
 
 #endif // _RUNNER_OBSERVER_HH_
