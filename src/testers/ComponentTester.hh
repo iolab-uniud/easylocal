@@ -39,7 +39,7 @@ protected:
    @param nm the name of the tester
    @param sm a pointer to a state manager
    @param om a pointer to an output manager
-   @param in a pointer to an input object (NULL for default(
+   @param in a pointer to an input object (nullptr for default)
 */
 template <class Input, class Output, class State, typename CFtype>
 ComponentTester<Input,Output,State,CFtype>::ComponentTester(std::string e_name)

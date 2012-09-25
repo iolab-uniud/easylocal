@@ -30,7 +30,7 @@ public:
   template <typename TabuListManager>
   void AddTabuListManager(TabuListManager& tl)
   {
-    if (inspect_types<TabuListManager, ThisTabuListManager>::are_equal() && p_tlm == NULL) // the second condition is just to allow duplicated types in the typelist
+    if (inspect_types<TabuListManager, ThisTabuListManager>::are_equal() && p_tlm == nullptr) // the second condition is just to allow duplicated types in the typelist
       p_tlm = dynamic_cast<ThisTabuListManager*>(&tl); // only to prevent a compilation error
     else
       other_tlms.AddTabuListManager(tl);
@@ -59,7 +59,7 @@ public:
   template <typename TabuListManager>
   void AddTabuListManager(TabuListManager& tl)
   {
-    if (inspect_types<TabuListManager, ThisTabuListManager>::are_equal() && p_tlm == NULL) // the second condition is just to allow duplicated types in the typelist
+    if (inspect_types<TabuListManager, ThisTabuListManager>::are_equal() && p_tlm == nullptr) // the second condition is just to allow duplicated types in the typelist
       p_tlm = dynamic_cast<ThisTabuListManager*>(&tl); // only to prevent a compilation error
     else
       other_tlms.AddTabuListManager(tl);
@@ -119,7 +119,7 @@ typedef MultimodalTabuListManagerAdapter<State, MoveList, MultimodaTabuListManag
 
 template <class State, typename CFtype, class TabuListManagerList>
 SetUnionTabuListManager<State,CFtype,TabuListManagerList>::SetUnionTabuListManager()
-: p_tlm(NULL)
+: p_tlm(nullptr)
 {}
 
 template <class State, typename CFtype, class TabuListManagerList>
@@ -152,7 +152,7 @@ public:
 
 template <class State, typename CFtype, class TabuListManagerList>
 CartesianProductTabuListManager<State,CFtype,TabuListManagerList>::CartesianProductTabuListManager()
-: p_tlm(NULL)
+: p_tlm(nullptr)
 {}
 
 template <class State, typename CFtype, class TabuListManagerList>

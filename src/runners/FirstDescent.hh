@@ -99,11 +99,11 @@ bool FirstDescent<Input,State,Move,CFtype>::AcceptableMove()
 template <class Input, class State, class Move, typename CFtype>
 void FirstDescent<Input,State,Move,CFtype>::StoreMove()
 {
-  if (this->observer != NULL)
+  if (this->observer != nullptr)
     this->observer->NotifyStoreMove(*this);
   if (LessThan(this->current_state_cost, this->best_state_cost))
   {
-    if (this->observer != NULL)
+    if (this->observer != nullptr)
       this->observer->NotifyNewBest(*this);
     this->iteration_of_best = this->number_of_iterations;
     this->best_state_cost = this->current_state_cost;

@@ -200,7 +200,7 @@ public:
   template <typename NeighborhoodExplorer>
   void AddNeighborhoodExplorer(NeighborhoodExplorer& ne)
   {
-    if (inspect_types<NeighborhoodExplorer, ThisNeighborhoodExplorer>::are_equal() && p_nhe == NULL) // the second condition is just to allow duplicated types in the typelist
+    if (inspect_types<NeighborhoodExplorer, ThisNeighborhoodExplorer>::are_equal() && p_nhe == nullptr) // the second condition is just to allow duplicated types in the typelist
       p_nhe = dynamic_cast<ThisNeighborhoodExplorer*>(&ne); // only to prevent a compilation error
     else
       other_nhes->AddNeighborhoodExplorer(ne);
@@ -346,7 +346,7 @@ public:
   template <typename NeighborhoodExplorer>
   void AddNeighborhoodExplorer(NeighborhoodExplorer& ne)
   {
-    if (inspect_types<NeighborhoodExplorer, ThisNeighborhoodExplorer>::are_equal() && p_nhe == NULL) // the second condition is just to allow duplicated types in the typelist
+    if (inspect_types<NeighborhoodExplorer, ThisNeighborhoodExplorer>::are_equal() && p_nhe == nullptr) // the second condition is just to allow duplicated types in the typelist
       p_nhe = dynamic_cast<ThisNeighborhoodExplorer*>(&ne); // only to prevent a compilation error
     else
       other_nhes.AddNeighborhoodExplorer(ne);
@@ -511,7 +511,7 @@ template <class Input, class State, typename CFtype, class NeighborhoodExplorerL
 SetUnionNeighborhoodExplorer<Input,State,CFtype,NeighborhoodExplorerList>::SetUnionNeighborhoodExplorer(const Input& i, 
                                                                                                         StateManager<Input,State,CFtype>& e_sm, 
                                                                                                         std::string e_name)
-: in(i), sm(e_sm),  p_nhe(NULL), name(e_name)
+: in(i), sm(e_sm),  p_nhe(nullptr), name(e_name)
 {
   std::vector<double> bias(MoveList::length, 1.0 / MoveList::length);
   probability_l = 0;
@@ -524,7 +524,7 @@ SetUnionNeighborhoodExplorer<Input,State,CFtype,NeighborhoodExplorerList>::SetUn
                                                                                                         StateManager<Input,State,CFtype>& e_sm, 
                                                                                                         const std::vector<double>& bias,
                                                                                                         std::string e_name)
-: in(i), sm(e_sm),  p_nhe(NULL), name(e_name)
+: in(i), sm(e_sm),  p_nhe(nullptr), name(e_name)
 {
   probability_l = 0;
   probability_u = bias[0];
@@ -537,7 +537,7 @@ SetUnionNeighborhoodExplorer<Input,State,CFtype,NeighborhoodExplorerList>::SetUn
                                                                                                         const std::vector<double>& bias,
                                                                                                         unsigned int index,
                                                                                                         std::string e_name)
-: in(i), sm(e_sm),  p_nhe(NULL), name(e_name)
+: in(i), sm(e_sm),  p_nhe(nullptr), name(e_name)
 {
   probability_l = 0.0;
   for (unsigned int j = 0; j < index; j++)

@@ -276,9 +276,7 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 lib_LTLIBRARIES = libEasyLocalpp.la
-libEasyLocalpp_la_SOURCES = utils/Random.cc \
-  utils/CLParser.cc  utils/Array.cc utils/Types.cc
-
+libEasyLocalpp_la_SOURCES = utils/Random.cc utils/CLParser.cc  utils/Array.cc utils/Types.cc
 AM_CPPFLAGS = -I@EASYLOCALPP_BUILD@ 
 AM_LDFLAGS = -lstdc++ 
 @DEBUG_FALSE@AM_CXXFLAGS = -O3 @EOFWARNING@ #-cxxlib-gcc

@@ -60,13 +60,13 @@ SimpleKicker<Input,State,Move,CFtype>::SimpleKicker(const Input& in,
 						    unsigned int s, std::string name)
   : Kicker<Input,State,CFtype>(in, s, name), ne(e_ne), current_moves(s), internal_best_moves(s)
 {  
-  observer = NULL;
+  observer = nullptr;
 }
 
 template <class Input, class State, class Move, typename CFtype>
 CFtype SimpleKicker<Input,State,Move,CFtype>::SelectKick(const State& st)
 {
-  if (observer != NULL)
+  if (observer != nullptr)
     observer->NotifyStartKicking(*this);
   switch (this->current_kick_type)
     {
@@ -183,23 +183,23 @@ CFtype SimpleKicker<Input,State,Move,CFtype>::BestKick(const State &st)
   FirstKick(st);
   best_kick_cost = current_kick_cost;
   internal_best_moves = current_moves;
-  if (observer != NULL)
+  if (observer != nullptr)
     observer->NotifyBestKick(*this);
   while (NextKick())
     {
-      if (observer != NULL)
+      if (observer != nullptr)
 	observer->NotifyNewKick(*this);
       if (LessThan(current_kick_cost,best_kick_cost))
 	{
 	  best_kick_cost = current_kick_cost;
 	  internal_best_moves = current_moves;
-	  if (observer != NULL)
+	  if (observer != nullptr)
 	    observer->NotifyBestKick(*this);
 	}
     }
   current_kick_cost = best_kick_cost;
   current_moves = internal_best_moves;
-  if (observer != NULL)
+  if (observer != nullptr)
     observer->NotifyStopKicking(*this);
   return current_kick_cost;
 }
@@ -210,25 +210,25 @@ CFtype SimpleKicker<Input,State,Move,CFtype>::FirstImprovingKick(const State &st
   FirstKick(st);
   best_kick_cost = current_kick_cost;
   internal_best_moves = current_moves;
-  if (observer != NULL)
+  if (observer != nullptr)
     observer->NotifyBestKick(*this);
   if (LessThan(current_kick_cost,(CFtype)0)) return current_kick_cost;
   while (NextKick())
     {
-      if (observer != NULL)
+      if (observer != nullptr)
 	observer->NotifyNewKick(*this);
       if (LessThan(current_kick_cost,best_kick_cost))
 	{
 	  best_kick_cost = current_kick_cost;
 	  internal_best_moves = current_moves;
-	  if (observer != NULL)
+	  if (observer != nullptr)
 	    observer->NotifyBestKick(*this);
 	  if (LessThan(current_kick_cost,(CFtype)0)) return current_kick_cost;
 	}
     }
   current_kick_cost = best_kick_cost;
   current_moves = internal_best_moves;
-  if (observer != NULL)
+  if (observer != nullptr)
     observer->NotifyStopKicking(*this);
   return current_kick_cost;
 }

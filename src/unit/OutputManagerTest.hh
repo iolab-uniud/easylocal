@@ -17,13 +17,13 @@ protected:
 	OutputManager *om;
 	void checkObjects()
 	{
-		CPPUNIT_ASSERT_MESSAGE(stringify("Actual input should be set in the class constructor before testing", __FILE__, __LINE__), in != NULL);	
-		CPPUNIT_ASSERT_MESSAGE(stringify("Actual state manager should be set in the class constructor before testing", __FILE__, __LINE__), sm != NULL);	
-		CPPUNIT_ASSERT_MESSAGE(stringify("Actual output manager should be set in the class constructor before testing", __FILE__, __LINE__), om != NULL);	
+		CPPUNIT_ASSERT_MESSAGE(stringify("Actual input should be set in the class constructor before testing", __FILE__, __LINE__), in != nullptr);	
+		CPPUNIT_ASSERT_MESSAGE(stringify("Actual state manager should be set in the class constructor before testing", __FILE__, __LINE__), sm != nullptr);	
+		CPPUNIT_ASSERT_MESSAGE(stringify("Actual output manager should be set in the class constructor before testing", __FILE__, __LINE__), om != nullptr);	
 	}
 	const unsigned int Trials;
 public:
-	OutputManagerTest() : in(NULL), st(NULL), out(NULL), sm(NULL), om(NULL), Trials(20) {}
+	OutputManagerTest() : in(nullptr), st(nullptr), out(nullptr), sm(nullptr), om(nullptr), Trials(20) {}
 	
 	void setUp()
 	{
@@ -42,7 +42,7 @@ public:
 	
 	void testOuputManager() 
 	{
-		State *st1 = NULL;
+		State *st1 = nullptr;
 		CPPUNIT_ASSERT_NO_THROW_MESSAGE(stringify("State creation raises an exception", __FILE__, __LINE__), st1 = new State(*in));
 		for (unsigned int i = 0; i < Trials; i++)
 		{

@@ -15,12 +15,12 @@ protected:
 	StateManager *sm;
 	void checkObjects()
 	{
-		CPPUNIT_ASSERT_MESSAGE(stringify("Actual input should be set in the class constructor before testing", __FILE__, __LINE__), in != NULL);	
-		CPPUNIT_ASSERT_MESSAGE(stringify("Actual state manager should be set in the class constructor before testing", __FILE__, __LINE__), sm != NULL);	
+		CPPUNIT_ASSERT_MESSAGE(stringify("Actual input should be set in the class constructor before testing", __FILE__, __LINE__), in != nullptr);	
+		CPPUNIT_ASSERT_MESSAGE(stringify("Actual state manager should be set in the class constructor before testing", __FILE__, __LINE__), sm != nullptr);	
 	}
 	const unsigned int Trials;
 public:
-	StateManagerTest() : in(NULL), st(NULL), sm(NULL), Trials(20) {}
+	StateManagerTest() : in(nullptr), st(nullptr), sm(nullptr), Trials(20) {}
 	
 	void setUp()
 	{
@@ -36,7 +36,7 @@ public:
 	
 	void testRandomState() 
 	{
-		State *st1 = NULL, *st2 = NULL;
+		State *st1 = nullptr, *st2 = nullptr;
 		CPPUNIT_ASSERT_NO_THROW_MESSAGE(stringify("State creation raises an exception", __FILE__, __LINE__), st1 = new State(*in));
 		for (unsigned int i = 0; i < Trials; i++)
 		{

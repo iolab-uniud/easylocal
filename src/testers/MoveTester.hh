@@ -95,7 +95,7 @@ MoveTester<Input,Output,State,Move,CFtype>::MoveTester(const Input& i,
                                                        NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
                                                        std::string name, std::ostream& o)
 : ComponentTester<Input,Output,State,CFtype>(name), in(i), out(i), sm(e_sm), om(e_om), ne(e_ne), os(o)
-{ tlm = NULL; }
+{ tlm = nullptr; }
 
 template <class Input, class Output, class State, class Move, typename CFtype>
 MoveTester<Input,Output,State,Move,CFtype>::MoveTester(const Input& i,
@@ -116,7 +116,7 @@ MoveTester<Input,Output,State,Move,CFtype>::MoveTester(const Input& i,
                                                        Tester<Input,Output,State,CFtype>& t,
                                                        std::ostream& o)
 : ComponentTester<Input,Output,State,CFtype>(name), in(i), out(i), sm(e_sm), om(e_om), ne(e_ne), os(o)
-{ tlm = NULL; t.AddMoveTester(*this); }
+{ tlm = nullptr; t.AddMoveTester(*this); }
 
 template <class Input, class Output, class State, class Move, typename CFtype>
 MoveTester<Input,Output,State,Move,CFtype>::MoveTester(const Input& i,
@@ -174,7 +174,7 @@ void MoveTester<Input,Output,State,Move,CFtype>::ShowMenu()
   << "     (9)  Check Move Independence" << std::endl
   << "    (10)  Check Random Move Distribution" << std::endl
   << "    (11)  Check Candidate Initial Temperature for SA" << std::endl;
-  if (tlm != NULL)
+  if (tlm != nullptr)
     os << "    (12)  Chech Tabu Strength" << std::endl;
   os << "     (0)  Return to Main Menu" << std::endl
   << " Your choice: ";

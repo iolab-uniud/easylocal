@@ -115,7 +115,7 @@ void LateAcceptanceHillClimbing<Input,State,Move,CFtype>::InitializeRun(bool fir
 template <class Input, class State, class Move, typename CFtype>
 void LateAcceptanceHillClimbing<Input,State,Move,CFtype>::TerminateRun()
 {
-  if (this->observer != NULL)
+  if (this->observer != nullptr)
     this->observer->NotifyEndRunner(*this);
 }
 
@@ -125,7 +125,7 @@ void LateAcceptanceHillClimbing<Input,State,Move,CFtype>::TerminateRun()
 template <class Input, class State, class Move, typename CFtype>
 void LateAcceptanceHillClimbing<Input,State,Move,CFtype>::StoreMove()
 {
-  if (this->observer != NULL)
+  if (this->observer != nullptr)
     this->observer->NotifyStoreMove(*this);
   
   if (LessOrEqualThan(this->current_state_cost, this->best_state_cost)) 
@@ -133,7 +133,7 @@ void LateAcceptanceHillClimbing<Input,State,Move,CFtype>::StoreMove()
     this->best_state = this->current_state;      
     if (LessThan(this->current_state_cost, this->best_state_cost))
     {
-      if (this->observer != NULL)
+      if (this->observer != nullptr)
         this->observer->NotifyNewBest(*this);      
       this->best_state_cost = this->current_state_cost;
       this->iteration_of_best = this->number_of_iterations;

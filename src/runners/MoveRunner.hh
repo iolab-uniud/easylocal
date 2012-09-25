@@ -62,14 +62,14 @@ MoveRunner<Input,State,Move,CFtype>::MoveRunner(const Input& in,
                                                 StateManager<Input,State,CFtype>& e_sm,
                                                 NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
                                                 std::string name)
-: Runner<Input,State,CFtype>(in, e_sm, name), ne(e_ne), observer(NULL)
+: Runner<Input,State,CFtype>(in, e_sm, name), ne(e_ne), observer(nullptr)
 {}
 
 template <class Input, class State, class Move, typename CFtype>
 void MoveRunner<Input,State,Move,CFtype>::InitializeRun(unsigned rounds, unsigned max_rounds) 
 {
   Runner<Input,State,CFtype>::InitializeRun();
-  if (observer != NULL)
+  if (observer != nullptr)
     observer->NotifyStartRunner(*this);
 }
 
@@ -78,7 +78,7 @@ template <class Input, class State, class Move, typename CFtype>
 void MoveRunner<Input,State,Move,CFtype>::TerminateRun() 
 {
   Runner<Input,State,CFtype>::TerminateRun();
-  if (observer != NULL)
+  if (observer != nullptr)
 		observer->NotifyEndRunner(*this);
 }
 

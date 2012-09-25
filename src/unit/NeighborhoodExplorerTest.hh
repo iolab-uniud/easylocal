@@ -19,13 +19,13 @@ protected:
 	NeighborhoodExplorer *ne;
 	void checkObjects()
 	{
-		CPPUNIT_ASSERT_MESSAGE(stringify("Actual input should be set in the class constructor before testing", __FILE__, __LINE__), in != NULL);	
-		CPPUNIT_ASSERT_MESSAGE(stringify("Actual state manager should be set in the class constructor before testing", __FILE__, __LINE__), sm != NULL);	
-		CPPUNIT_ASSERT_MESSAGE(stringify("Actual neighborhood explorer should be set in the class constructor before testing", __FILE__, __LINE__), ne != NULL);	
+		CPPUNIT_ASSERT_MESSAGE(stringify("Actual input should be set in the class constructor before testing", __FILE__, __LINE__), in != nullptr);	
+		CPPUNIT_ASSERT_MESSAGE(stringify("Actual state manager should be set in the class constructor before testing", __FILE__, __LINE__), sm != nullptr);	
+		CPPUNIT_ASSERT_MESSAGE(stringify("Actual neighborhood explorer should be set in the class constructor before testing", __FILE__, __LINE__), ne != nullptr);	
 	}	
 	const unsigned int Trials;
 public:
-	NeighborhoodExplorerTest() : in(NULL), st(NULL), sm(NULL), ne(NULL), Trials(20) {}
+	NeighborhoodExplorerTest() : in(nullptr), st(nullptr), sm(nullptr), ne(nullptr), Trials(20) {}
 	
 	void setUp()
 	{

@@ -19,14 +19,14 @@ protected:
 	DeltaCostComponent *dcc;
 	void checkObjects()
 	{
-		CPPUNIT_ASSERT_MESSAGE(stringify("Actual input should be set in the class constructor before testing", __FILE__, __LINE__), in != NULL);	
-		CPPUNIT_ASSERT_MESSAGE(stringify("Actual state manager should be set in the class constructor before testing", __FILE__, __LINE__), sm != NULL);	
-		CPPUNIT_ASSERT_MESSAGE(stringify("Actual neighborhood explorer should be set in the class constructor before testing", __FILE__, __LINE__), ne != NULL);	
-		CPPUNIT_ASSERT_MESSAGE(stringify("Actual delta cost component should be set in the class constructor before testing", __FILE__, __LINE__), dcc != NULL);	
+		CPPUNIT_ASSERT_MESSAGE(stringify("Actual input should be set in the class constructor before testing", __FILE__, __LINE__), in != nullptr);	
+		CPPUNIT_ASSERT_MESSAGE(stringify("Actual state manager should be set in the class constructor before testing", __FILE__, __LINE__), sm != nullptr);	
+		CPPUNIT_ASSERT_MESSAGE(stringify("Actual neighborhood explorer should be set in the class constructor before testing", __FILE__, __LINE__), ne != nullptr);	
+		CPPUNIT_ASSERT_MESSAGE(stringify("Actual delta cost component should be set in the class constructor before testing", __FILE__, __LINE__), dcc != nullptr);	
 	}
 	const unsigned int Trials;
 public:
-	DeltaCostComponentTest() : in(NULL), st(NULL), sm(NULL), ne(NULL), dcc(NULL), Trials(20) {}
+	DeltaCostComponentTest() : in(nullptr), st(nullptr), sm(nullptr), ne(nullptr), dcc(nullptr), Trials(20) {}
 	
 	void setUp()
 	{
@@ -42,7 +42,7 @@ public:
 	
 	void testComputeDeltaCost() 
 	{
-		State* st1 = NULL;
+		State* st1 = nullptr;
 		CPPUNIT_ASSERT_NO_THROW_MESSAGE(stringify("State creation raises an exception", __FILE__, __LINE__), st1 = new State(*in));	
 		bool previous_cc_hard = dcc->cc.is_hard;
 		dcc->cc.is_hard = false;
@@ -81,7 +81,7 @@ public:
 	void testComputeAllDeltaCosts() 
 	{
 		Move mv;
-		State* st1 = NULL;
+		State* st1 = nullptr;
 		CPPUNIT_ASSERT_NO_THROW_MESSAGE(stringify("First move raises an exception", __FILE__, __LINE__), ne->FirstMove(*st, mv));
 		CPPUNIT_ASSERT_NO_THROW_MESSAGE(stringify("State creation raises an exception", __FILE__, __LINE__), st1 = new State(*in));	
 		bool previous_cc_hard = dcc->cc.is_hard;

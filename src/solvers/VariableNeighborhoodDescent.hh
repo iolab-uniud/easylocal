@@ -52,7 +52,7 @@ VariableNeighborhoodDescent<Input,Output,State,CFtype>::VariableNeighborhoodDesc
 						std::string name)
   : AbstractLocalSearch<Input,Output,State,CFtype>(in, e_sm, e_om, name)
 {
-  p_kicker = NULL;
+  p_kicker = nullptr;
   this->max_k = max_k;
 }
 
@@ -140,7 +140,7 @@ void VariableNeighborhoodDescent<Input,Output,State,CFtype>::RunCheck() const
 
 {
   AbstractLocalSearch<Input,Output,State,CFtype>::RunCheck();
-  if (this->p_kicker == NULL)
+  if (this->p_kicker == nullptr)
     throw std::logic_error("RunCheck(): kicker not set in object " + this->GetName());
 }
 

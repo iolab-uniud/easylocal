@@ -61,7 +61,7 @@ SimpleLocalSearch<Input,Output,State,CFtype>::SimpleLocalSearch(const Input& in,
     simple_ls_arguments("sls_" + name, "sls_" + name, false), arg_timeout("timeout", "to", false, 0.0)
 {
   simple_ls_arguments.AddArgument(arg_timeout);
-  p_runner = NULL;
+  p_runner = nullptr;
 }
 
 
@@ -80,7 +80,7 @@ SimpleLocalSearch<Input,Output,State,CFtype>::SimpleLocalSearch(const Input& in,
   if (simple_ls_arguments.IsSet())
     if (arg_timeout.IsSet())
       this->SetTimeout(arg_timeout.GetValue());
-  p_runner = NULL;
+  p_runner = nullptr;
 }
 
 template <class Input, class Output, class State, typename CFtype>
@@ -151,7 +151,7 @@ void SimpleLocalSearch<Input,Output,State,CFtype>::Check() const
 
 {
   AbstractLocalSearch<Input,Output,State,CFtype>::Check();
-  if (this->p_runner == NULL)
+  if (this->p_runner == nullptr)
     throw std::logic_error("Check(): runner not set in object " + this->name);
   this->p_runner->Check();
 }

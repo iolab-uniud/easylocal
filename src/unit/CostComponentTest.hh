@@ -17,13 +17,13 @@ protected:
 	CostComponent *cc;
 	void checkObjects()
 	{
-		CPPUNIT_ASSERT_MESSAGE(stringify("Actual input should be set in the class constructor before testing", __FILE__, __LINE__), in != NULL);	
-		CPPUNIT_ASSERT_MESSAGE(stringify("Actual state manager should be set in the class constructor before testing", __FILE__, __LINE__), sm != NULL);	
-		CPPUNIT_ASSERT_MESSAGE(stringify("Actual cost component should be set in the class constructor before testing", __FILE__, __LINE__), cc != NULL);	
+		CPPUNIT_ASSERT_MESSAGE(stringify("Actual input should be set in the class constructor before testing", __FILE__, __LINE__), in != nullptr);	
+		CPPUNIT_ASSERT_MESSAGE(stringify("Actual state manager should be set in the class constructor before testing", __FILE__, __LINE__), sm != nullptr);	
+		CPPUNIT_ASSERT_MESSAGE(stringify("Actual cost component should be set in the class constructor before testing", __FILE__, __LINE__), cc != nullptr);	
 	}
 	const unsigned int Trials;
 public:
-	CostComponentTest() : in(NULL), st(NULL), sm(NULL), cc(NULL), Trials(20) {}
+	CostComponentTest() : in(nullptr), st(nullptr), sm(nullptr), cc(nullptr), Trials(20) {}
 	
 	void setUp()
 	{

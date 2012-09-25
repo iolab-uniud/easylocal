@@ -86,7 +86,7 @@ protected:
 template <typename CFtype>
 ShiftingPenaltyManager<CFtype>::ShiftingPenaltyManager(std::string n)
 : min_shift(0.0001), max_shift(1.0), cost_threshold((CFtype)0), name(n), min_perturb(1.03), max_perturb(1.05),
-start_shift(1.0), shift(1.0), observer(NULL), 
+start_shift(1.0), shift(1.0), observer(nullptr), 
 shifting_penalty_arguments("sp_" + name, "sp_" + name, false), arg_shift_range("shift_range", "sr", true), 
 arg_cost_threshold("cost_threshold", "ct", false, (CFtype)0), arg_perturb_value("perturb_value", "alpha", true),
 arg_start_shift("start_shift", "ss", false, 1.0)
@@ -100,7 +100,7 @@ arg_start_shift("start_shift", "ss", false, 1.0)
 template <typename CFtype>
 ShiftingPenaltyManager<CFtype>::ShiftingPenaltyManager(std::string n, CLParser& cl)
 : min_shift(0.0001), max_shift(1.0), cost_threshold((CFtype)0), name(n), min_perturb(1.03), max_perturb(1.05),
-start_shift(1.0), shift(1.0), observer(NULL), 
+start_shift(1.0), shift(1.0), observer(nullptr), 
 shifting_penalty_arguments("sp_" + name, "sp_" + name, false), arg_shift_range("shift_range", "sr", true), 
 arg_cost_threshold("cost_threshold", "ct", false, (CFtype)0), arg_perturb_value("perturb_value", "alpha", true),
 arg_start_shift("start_shift", "ss", false, 1.0)
@@ -251,7 +251,7 @@ bool SimpleShiftingPenaltyManager<CFtype>::Reset()
   }
   else
     reset = false;
-  if (this->observer != NULL)
+  if (this->observer != nullptr)
     this->observer->NotifyReset(*this);
   
   return reset;
@@ -275,7 +275,7 @@ bool SimpleShiftingPenaltyManager<CFtype>::Update(CFtype cost)
     if (cost < this->cost_threshold)
     {	 
       this->cost_threshold = cost;
-      if (this->observer != NULL)
+      if (this->observer != nullptr)
         this->observer->NotifyNewThreshold(*this);
     }
   }
@@ -289,7 +289,7 @@ bool SimpleShiftingPenaltyManager<CFtype>::Update(CFtype cost)
         this->shift = this->max_shift;
     }
   }
-  if (this->observer != NULL)
+  if (this->observer != nullptr)
     this->observer->NotifyUpdate(*this, cost);
   
   return update;
