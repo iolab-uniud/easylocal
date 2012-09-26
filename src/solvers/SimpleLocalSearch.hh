@@ -14,16 +14,12 @@ template <class Input, class Output, class State, typename CFtype = int>
 class SimpleLocalSearch
   : public AbstractLocalSearch<Input,Output,State,CFtype>
 {
-public:
-  SimpleLocalSearch(const Input& in,
-		    StateManager<Input,State,CFtype>& e_sm,
-		    OutputManager<Input,Output,State,CFtype>& e_om,
-		    std::string name);	
+public:	
   SimpleLocalSearch(const Input& in,
 		    StateManager<Input,State,CFtype>& e_sm,
 		    OutputManager<Input,Output,State,CFtype>& e_om,
 		    std::string name,
-		    CLParser& cl);
+		    CLParser& cl = CLParser::empty);
   void Print(std::ostream& os = std::cout) const;
   void SetRunner(Runner<Input,State,CFtype>& r);
   void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout);   
@@ -56,21 +52,8 @@ template <class Input, class Output, class State, typename CFtype>
 SimpleLocalSearch<Input,Output,State,CFtype>::SimpleLocalSearch(const Input& in,
 								StateManager<Input,State,CFtype>& e_sm,
 								OutputManager<Input,Output,State,CFtype>& e_om,
-								std::string name)
-  : AbstractLocalSearch<Input,Output,State,CFtype>(in, e_sm, e_om, name),
-    simple_ls_arguments("sls_" + name, "sls_" + name, false), arg_timeout("timeout", "to", false, 0.0)
-{
-  simple_ls_arguments.AddArgument(arg_timeout);
-  p_runner = nullptr;
-}
-
-
-template <class Input, class Output, class State, typename CFtype>
-SimpleLocalSearch<Input,Output,State,CFtype>::SimpleLocalSearch(const Input& in,
-								StateManager<Input,State,CFtype>& e_sm,
-								OutputManager<Input,Output,State,CFtype>& e_om,
 								std::string name,
-								CLParser& cl)
+                CLParser& cl)
   : AbstractLocalSearch<Input,Output,State,CFtype>(in, e_sm, e_om, name),
     simple_ls_arguments("sls_" + name, "sls_" + name, false), arg_timeout("timeout", "to", false, 0.0)
 {
@@ -91,8 +74,10 @@ void SimpleLocalSearch<Input,Output,State,CFtype>::ReadParameters(std::istream& 
   if (this->p_runner)
     this->p_runner->ReadParameters(is, os);
   os << "Timeout: ";
-  is >> this->timeout;
-  this->current_timeout = this->timeout;
+  
+  double to;
+  is >> to;
+  this->SetTimeout(to);
 }
 
 
@@ -142,6 +127,7 @@ void SimpleLocalSearch<Input,Output,State,CFtype>::Run()
   // LetGo(*this->p_runner);
   // TODO: LetGo is no longer defined, in the meanwhile ...
   this->p_runner->Go();
+  
   this->internal_state = this->p_runner->GetState();
   this->internal_state_cost = this->p_runner->GetStateCost();
 }

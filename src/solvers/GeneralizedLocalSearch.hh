@@ -421,15 +421,6 @@ void GeneralizedLocalSearch<Input,Output,State,CFtype>::GeneralSolve(KickStrateg
         if (observer != nullptr)
           observer->NotifyKickerStop(*this);
       }
-      if (this->timeout_set) 
-      {
-        // FIXME: check for timeout in kickers this->current_timeout -= (chrono.TotalTime() - time);
-        if (this->current_timeout <= 0.0)
-        {
-          timeout_expired = true;
-          this->current_timeout = 0.0;
-        }
-      }
     }
   }
   while (idle_rounds < max_idle_rounds && rounds < max_rounds && !timeout_expired && !lower_bound_reached);

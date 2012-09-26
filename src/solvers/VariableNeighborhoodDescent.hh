@@ -63,9 +63,9 @@ void VariableNeighborhoodDescent<Input,Output,State,CFtype>::ReadParameters(std:
   os << "Max k: ";
   is >> this->max_k;
   os << "Timeout: ";
-  is >> this->timeout;
-  this->current_timeout = this->timeout;
-}
+  double to;
+  is >> to;
+  this->SetTimeout(to);}
 
 
 

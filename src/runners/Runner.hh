@@ -27,6 +27,8 @@
 #include <helpers/NeighborhoodExplorer.hh>
 #include <climits>
 #include <chrono>
+#include <condition_variable>
+#include <atomic>
 
 template <class Input, class State, typename CFtype = int>
 class Runner
@@ -75,9 +77,18 @@ public:
   unsigned int NumberOfIterations() const { return number_of_iterations; }
 
   const std::string name;
-virtual ~Runner() {}
+    
+  virtual ~Runner() {}
   
   virtual unsigned int Modality() const = 0;
+
+  virtual void Terminate() { timeout_expired = true; }
+  
+  virtual void Wait(double timeout) 
+  {
+    terminate_run.wait(std::chrono::milliseconds((long long)(timeout * 1000)));
+  }
+  
 protected:
   Runner(const Input& i, StateManager<Input,State,CFtype>& sm, std::string name);
   /* state manipulations */
@@ -120,6 +131,10 @@ protected:
   unsigned long start_iteration;
   unsigned long max_iteration; /**< The maximum number of iterations
     allowed. */
+  
+  /** Threading. */
+  std::condition_variable terminate_run;
+  std::atomic<bool> timeout_expired;
   
   /** Chronometer. */
   std::chrono::high_resolution_clock::time_point begin;
@@ -260,6 +275,7 @@ template <class Input, class State, typename CFtype>
 void Runner<Input,State,CFtype>::TerminateRun()
 {
   end = std::chrono::high_resolution_clock::now();
+  terminate_run.notify_all();
 }
 
 /**
@@ -367,6 +383,7 @@ void Runner<Input,State,CFtype>::InitializeRun(unsigned rounds, unsigned max_rou
   begin = std::chrono::high_resolution_clock::now();
   number_of_iterations = 0;
   iteration_of_best = 0;
+  timeout_expired = false;
   ComputeCost();
 }
 
