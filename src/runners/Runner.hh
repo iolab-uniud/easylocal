@@ -35,7 +35,7 @@ class Runner
 {
 public:
   /** Performs a full run of the search method. */
-  virtual void Go(unsigned rounds = 0, unsigned max_rounds = 1);
+  State Go(unsigned rounds = 0, unsigned max_rounds = 1);
   /** Performs a given number of steps of the search method.
   @param n the number of steps to make */	
   virtual void Step(unsigned int n);
@@ -84,11 +84,6 @@ public:
 
   virtual void Terminate() { timeout_expired = true; }
   
-  virtual void Wait(double timeout) 
-  {
-    terminate_run.wait(std::chrono::milliseconds((long long)(timeout * 1000)));
-  }
-  
 protected:
   Runner(const Input& i, StateManager<Input,State,CFtype>& sm, std::string name);
   /* state manipulations */
@@ -99,6 +94,7 @@ protected:
   virtual void TerminateRun();
   virtual void UpdateIterationCounter();
   bool MaxIterationExpired() const;
+  bool TimeoutExpired() const { return timeout_expired; }
   /** Encodes the criterion used to stop the search. */
   virtual bool StopCriterion() = 0;
   /** Encodes the criterion used to select the move at each step. */
@@ -275,19 +271,18 @@ template <class Input, class State, typename CFtype>
 void Runner<Input,State,CFtype>::TerminateRun()
 {
   end = std::chrono::high_resolution_clock::now();
-  terminate_run.notify_all();
 }
 
 /**
    Performs a full run of a local search method.
  */
 template <class Input, class State, typename CFtype>
-void Runner<Input,State,CFtype>::Go(unsigned rounds, unsigned max_rounds)
+State Runner<Input,State,CFtype>::Go(unsigned rounds, unsigned max_rounds)
 
 {
   GoCheck();
   InitializeRun(rounds, max_rounds);
-  while (!MaxIterationExpired() && !StopCriterion() && !LowerBoundReached())
+  while (!MaxIterationExpired() && !StopCriterion() && !LowerBoundReached() && !TimeoutExpired())
   {
     UpdateIterationCounter();
     try 
@@ -306,6 +301,8 @@ void Runner<Input,State,CFtype>::Go(unsigned rounds, unsigned max_rounds)
     }
   }
   TerminateRun();
+  
+  return current_state;
 }
 
 template <class Input, class State, typename CFtype>
