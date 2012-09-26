@@ -8,6 +8,8 @@
 #include <stdexcept>
 #include <fstream>
 #include <utils/Types.hh>
+#include <chrono>
+#include <future>
 
 typedef std::chrono::duration<double, std::ratio<1>> secs;
 
@@ -293,10 +295,34 @@ void Tester<Input,Output, State,CFtype>::ExecuteRunChoice()
     Runner<Input,State,CFtype>& r = *runners[sub_choice-1];
     r.ReadParameters();      
     r.SetState(test_state);
-    r.Go();
+    
+    /*
+     r.Go();
+     */
+    
+    double timeout;
+    os << "  Timeout: ";
+    std::cin >> timeout;
+    os << std::endl;
+    
+    std::future<State> runner_result = std::async([&]() -> State { return r.Go(); });
+    runner_result.wait_for(std::chrono::milliseconds((long long)(timeout * 1000)));
+
+    os << "Tester has been awaken, and solution is " << (runner_result.valid() ? "ready" : "not ready") << "." << std::endl;
+
+    if (!runner_result.valid())
+    {
+      os << "Stopping runner." << std::endl;
+
+      r.Terminate();
+      runner_result.wait();
+    }
+    
     secs duration = std::chrono::duration_cast<secs>(std::chrono::high_resolution_clock::now() - start);
-    test_state = r.GetState();
+        
+    test_state = runner_result.get();
     om.OutputState(test_state,out);
+    
     os << "CURRENT SOLUTION " << std::endl << out << std::endl;
     os << "CURRENT COST : " << r.GetStateCost() << std::endl;
     os << "ELAPSED TIME : " << duration.count() << "s" << std::endl;
