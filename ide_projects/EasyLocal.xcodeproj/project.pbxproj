@@ -145,8 +145,10 @@
 				ACF4B0FA0DBFA668008A0207 /* src */,
 				ACF4B15C0DBFA685008A0207 /* test */,
 			);
+			indentWidth = 2;
 			name = EasyLocalpp;
 			sourceTree = "<group>";
+			tabWidth = 2;
 		};
 		AC2A95650DE0B0A700E6F462 /* doc */ = {
 			isa = PBXGroup;

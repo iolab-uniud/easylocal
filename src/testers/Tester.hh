@@ -291,7 +291,7 @@ void Tester<Input,Output, State,CFtype>::ExecuteRunChoice()
 {
   if (sub_choice > 0)
   {
-    std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
+    std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
     Runner<Input,State,CFtype>& r = *runners[sub_choice-1];
     r.ReadParameters();      
     
@@ -304,22 +304,20 @@ void Tester<Input,Output, State,CFtype>::ExecuteRunChoice()
     std::cin >> timeout;
     os << std::endl;
     
-    std::future<CFtype> runner_result = std::async([&r, this]() -> CFtype { return r.Go(this->test_state); });
+    std::shared_future<CFtype> runner_result = std::async([&r, this]() -> CFtype { return r.Go(this->test_state); std::cout << "timeout passed " << r.TimeoutExpired() << std::endl; });
     runner_result.wait_for(std::chrono::milliseconds((long long)(timeout * 1000)));
 
-    os << "Tester has been awaken, and solution is " << (runner_result.valid() ? "ready" : "not ready") << "." << std::endl;
+    bool result_ready = runner_result.wait_for(std::chrono::milliseconds::zero()) == std::future_status::ready;
+    os << "Tester has been awaken, and solution is " << (result_ready ? "ready" : "not ready") << "." << std::endl;
 
-    if (!runner_result.valid())
+    if (!result_ready)
     {
       os << "Stopping runner." << std::endl;
-
       r.Terminate();
-      runner_result.wait();
     }
     
     CFtype result = runner_result.get();
-    
-    std::chrono::milliseconds duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - start);
+    std::chrono::milliseconds duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start);
     
     om.OutputState(test_state,out);
     
@@ -338,9 +336,9 @@ void Tester<Input,Output,State,CFtype>::RunInputMenu()
 {
   bool show_state;
   ShowReducedStateMenu();
-  std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
+  std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
   show_state = ExecuteStateChoice();
-  secs duration = std::chrono::duration_cast<secs>(std::chrono::system_clock::now() - start);
+  secs duration = std::chrono::duration_cast<secs>(std::chrono::high_resolution_clock::now() - start);
   if (show_state)
   {
     this->om.OutputState(test_state, this->out);
@@ -534,9 +532,9 @@ void Tester<Input,Output,State,CFtype>::RunStateTestMenu()
     ShowStateMenu();
     if (sub_choice != 0)
     {
-      std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
+      std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
       show_state = ExecuteStateChoice();
-      secs duration = std::chrono::duration_cast<secs>(std::chrono::system_clock::now() - start);
+      secs duration = std::chrono::duration_cast<secs>(std::chrono::high_resolution_clock::now() - start);
       if (show_state)
       {
         om.OutputState(test_state,out);

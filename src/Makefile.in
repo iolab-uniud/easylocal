@@ -96,7 +96,7 @@ am__uninstall_files_from_dir = { \
 am__installdirs = "$(DESTDIR)$(libdir)"
 LTLIBRARIES = $(lib_LTLIBRARIES)
 libEasyLocalpp_la_LIBADD =
-am_libEasyLocalpp_la_OBJECTS = Random.lo CLParser.lo Array.lo Types.lo
+am_libEasyLocalpp_la_OBJECTS = Random.lo CLParser.lo Types.lo
 libEasyLocalpp_la_OBJECTS = $(am_libEasyLocalpp_la_OBJECTS)
 DEFAULT_INCLUDES = -I.@am__isrc@
 depcomp = $(SHELL) $(top_srcdir)/config/depcomp
@@ -276,7 +276,7 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 lib_LTLIBRARIES = libEasyLocalpp.la
-libEasyLocalpp_la_SOURCES = utils/Random.cc utils/CLParser.cc  utils/Array.cc utils/Types.cc
+libEasyLocalpp_la_SOURCES = utils/Random.cc utils/CLParser.cc utils/Types.cc
 AM_CPPFLAGS = -I@EASYLOCALPP_BUILD@ 
 AM_LDFLAGS = -lstdc++ 
 @DEBUG_FALSE@AM_CXXFLAGS = -O3 @EOFWARNING@ #-cxxlib-gcc
@@ -374,7 +374,6 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Array.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/CLParser.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Random.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/Types.Plo@am__quote@
@@ -413,13 +412,6 @@ CLParser.lo: utils/CLParser.cc
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='utils/CLParser.cc' object='CLParser.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o CLParser.lo `test -f 'utils/CLParser.cc' || echo '$(srcdir)/'`utils/CLParser.cc
-
-Array.lo: utils/Array.cc
-@am__fastdepCXX_TRUE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT Array.lo -MD -MP -MF $(DEPDIR)/Array.Tpo -c -o Array.lo `test -f 'utils/Array.cc' || echo '$(srcdir)/'`utils/Array.cc
-@am__fastdepCXX_TRUE@	$(am__mv) $(DEPDIR)/Array.Tpo $(DEPDIR)/Array.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='utils/Array.cc' object='Array.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o Array.lo `test -f 'utils/Array.cc' || echo '$(srcdir)/'`utils/Array.cc
 
 Types.lo: utils/Types.cc
 @am__fastdepCXX_TRUE@	$(LIBTOOL)  --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT Types.lo -MD -MP -MF $(DEPDIR)/Types.Tpo -c -o Types.lo `test -f 'utils/Types.cc' || echo '$(srcdir)/'`utils/Types.cc

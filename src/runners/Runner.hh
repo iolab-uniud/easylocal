@@ -67,6 +67,9 @@ public:
   virtual constexpr unsigned int Modality() const = 0;
 
   virtual void Terminate() { timeout_expired = true; }
+
+  bool TimeoutExpired() const { return timeout_expired; }
+
   
 protected:
 
@@ -82,7 +85,6 @@ protected:
     
   bool MaxIterationExpired() const;
   
-  bool TimeoutExpired() const { return timeout_expired; }
   
   /** Encodes the criterion used to stop the search. */
   virtual bool StopCriterion() = 0;
