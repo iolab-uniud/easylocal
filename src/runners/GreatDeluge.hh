@@ -7,7 +7,7 @@
 #include <stdexcept>
 
 /** The Great Deluge runner relies on a probabilistic local
- search technique whose name comes from...
+ search technique whose name comes from ... the Bible?
  
  At each iteration a candidate move is generated at random, and
  it is always accepted if it is an improving move.  Instead, if
@@ -33,13 +33,11 @@ public:
   void SetNeighborsSampled(unsigned int ns)  { neighbors_sampled = ns; }
   
 protected:
-  void GoCheck() const;
-  void InitializeRun(bool first_round = true);
+  void InitializeRun();
   bool StopCriterion();
   void UpdateIterationCounter();
   void SelectMove();
   bool AcceptableMove();
-  void StoreMove();
   
   // parameters
   double level; /**< The current level. */
@@ -106,57 +104,25 @@ void GreatDeluge<Input,State,Move,CFtype>::Print(std::ostream& os) const
   os  << "  Level rate: " << level_rate << std::endl;
 }
 
-template <class Input, class State, class Move, typename CFtype>
-void GreatDeluge<Input,State,Move,CFtype>::GoCheck() const
-
-{
-  if (level_rate <= 0)
-    throw std::logic_error("negative level_rate for object " + this->name)
-    ;
-  if (neighbors_sampled == 0)
-    throw std::logic_error("neighbors_sampled is zero for object " + this->name);
-}
-
 /**
  Initializes the run by invoking the companion superclass method, and
  setting the temperature to the start value.
  */
 template <class Input, class State, class Move, typename CFtype>
-void GreatDeluge<Input,State,Move,CFtype>::InitializeRun(bool first_round)
+void GreatDeluge<Input,State,Move,CFtype>::InitializeRun()
 {
   MoveRunner<Input,State,Move,CFtype>::InitializeRun();
   level = initial_level * this->current_state_cost;
 }
 
 /**
- A move is randomly picked.
+ A move is randomly picked and its cost is stored.
  */
 template <class Input, class State, class Move, typename CFtype>
 void GreatDeluge<Input,State,Move,CFtype>::SelectMove()
 {
   this->ne.RandomMove(this->current_state, this->current_move);
-  this->ComputeMoveCost();
-}
-
-/**
- A move is randomly picked.
- */
-template <class Input, class State, class Move, typename CFtype>
-void GreatDeluge<Input,State,Move,CFtype>::StoreMove()
-{
-  if (this->observer != nullptr)
-    this->observer->NotifyStoreMove(*this);
-  if (LessOrEqualThan(this->current_state_cost, this->best_state_cost))
-  {
-    this->best_state = this->current_state; // Change best_state in case of equal cost to improve diversification
-    if (LessThan(this->current_state_cost, this->best_state_cost))
-    {
-      if (this->observer != nullptr)
-        this->observer->NotifyNewBest(*this);      
-      this->best_state_cost = this->current_state_cost;
-      this->iteration_of_best = this->number_of_iterations;
-    }
-  }
+  this->current_move_cost = this->ne.DeltaCostFunction(this->current_state, this->current_move);
 }
 
 template <class Input, class State, class Move, typename CFtype>

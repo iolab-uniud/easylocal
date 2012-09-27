@@ -105,7 +105,6 @@
 #include <runners/SimulatedAnnealing.hh>
 #include <runners/LateAcceptanceHillClimbing.hh>
 #include <solvers/SimpleLocalSearch.hh>
-#include <solvers/GeneralizedLocalSearch.hh>
 #include <solvers/VariableNeighborhoodDescent.hh>
 #include <testers/Tester.hh>
 #include <testers/MoveTester.hh>
@@ -168,7 +167,6 @@ int main(int argc, char* argv[])
   //TabuSearchWithShiftingPenalty<int, vector<int>, Swap> qtsw(in, qsm, qnhe, qtlm, "SwapTabuSearchWithShiftingPenalty", cl);
   
   SimpleLocalSearch<int, ChessBoard, vector<int> > qss(in, qsm, qom, "QueensSLS", cl);
-  GeneralizedLocalSearch<int, ChessBoard, vector<int> > qgls(in, qsm, qom, "QueensGLS", cl);
   VariableNeighborhoodDescent<int, ChessBoard, vector<int> > qvnd(in, qsm, qom, 3);
   
   /*
@@ -226,12 +224,9 @@ int main(int argc, char* argv[])
 		qsa.AttachObserver(ro);
     qlhc.AttachObserver(ro);
 	}
-	if (arg_verbosity_level.IsSet())
-		qgls.AttachObserver(so);
+
 
   qvnd.SetKicker(qk);
-  
-  qgls.SetKicker(qk);
 
   qsm.AddCostComponent(cc1);
   qsm.AddCostComponent(cc2);
@@ -251,26 +246,11 @@ int main(int argc, char* argv[])
 		
 		tester.RunMainMenu();
 	}
-  else
-	{
-		if (arg_solmethod.GetValue() == "VND") 
-		{
-			qvnd.Solve();
-			cout << qvnd.GetOutput() << endl << qvnd.GetCurrentCost() << endl;
-		}
-		else if (arg_solmethod.GetValue() == "GLS") 
-		{
-			qgls.AddRunner(qhc);
-			qgls.AddRunner(qsd);
-			if (arg_timeout.IsSet())
-				qgls.SetTimeout(arg_timeout.GetValue());
-      high_resolution_clock::time_point start = high_resolution_clock::now();
-			qgls.GeneralSolve();
-			secs duration = duration_cast<secs>(high_resolution_clock::now() - start);
-			cout << qgls.GetOutput() << endl << qgls.GetCurrentCost() << ' ' << duration.count() << endl;
-		}
-		
-	}
+  else if (arg_solmethod.GetValue() == "VND")
+  {
+    qvnd.Solve();
+    cout << qvnd.GetOutput() << endl << qvnd.GetCurrentCost() << endl;
+  }
 	
   return 0;
 }

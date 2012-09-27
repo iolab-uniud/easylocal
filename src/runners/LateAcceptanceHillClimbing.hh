@@ -35,11 +35,9 @@ public:
   void SetSteps(unsigned int s) { steps = s; previous_steps.resize(s); }
   
 protected:
-  void GoCheck() const;
-  void InitializeRun(bool first_round = true);
-  void TerminateRun();    
+  void InitializeRun();
   bool AcceptableMove();
-  void StoreMove();
+  void CompleteMove();
   
   // parameters
   unsigned int steps;
@@ -88,58 +86,27 @@ void LateAcceptanceHillClimbing<Input,State,Move,CFtype>::Print(std::ostream& os
   os << "  Steps size: " << steps;
 }
 
-template <class Input, class State, class Move, typename CFtype>
-void LateAcceptanceHillClimbing<Input,State,Move,CFtype>::GoCheck() const
-{
-  HillClimbing<Input,State,Move,CFtype>::GoCheck();
-  if (steps == 0)
-    throw std::logic_error("steps is zero for object " + this->name);
-}
-
 /**
  Initializes the run by invoking the companion superclass method, and
  setting the temperature to the start value.
  */
 template <class Input, class State, class Move, typename CFtype>
-void LateAcceptanceHillClimbing<Input,State,Move,CFtype>::InitializeRun(bool first_round)
+void LateAcceptanceHillClimbing<Input,State,Move,CFtype>::InitializeRun()
 {    
-  HillClimbing<Input,State,Move,CFtype>::InitializeRun(first_round);
+  HillClimbing<Input,State,Move,CFtype>::InitializeRun();
   
   // the queue must be filled with the initial state cost at the beginning
   fill(previous_steps.begin(), previous_steps.end(), this->current_state_cost);
 }
 
-/**
- At the end of the run, ...
- */
-template <class Input, class State, class Move, typename CFtype>
-void LateAcceptanceHillClimbing<Input,State,Move,CFtype>::TerminateRun()
-{
-  if (this->observer != nullptr)
-    this->observer->NotifyEndRunner(*this);
-}
 
 /**
  A move is randomly picked.
  */
 template <class Input, class State, class Move, typename CFtype>
-void LateAcceptanceHillClimbing<Input,State,Move,CFtype>::StoreMove()
+void LateAcceptanceHillClimbing<Input,State,Move,CFtype>::CompleteMove()
 {
-  if (this->observer != nullptr)
-    this->observer->NotifyStoreMove(*this);
-  
-  if (LessOrEqualThan(this->current_state_cost, this->best_state_cost)) 
-  {
-    this->best_state = this->current_state;      
-    if (LessThan(this->current_state_cost, this->best_state_cost))
-    {
-      if (this->observer != nullptr)
-        this->observer->NotifyNewBest(*this);      
-      this->best_state_cost = this->current_state_cost;
-      this->iteration_of_best = this->number_of_iterations;
-    }
-  }
-  previous_steps[this->number_of_iterations % steps] = this->best_state_cost;
+  previous_steps[this->iteration % steps] = this->best_state_cost;
 }
 
 template <class Input, class State, class Move, typename CFtype>
@@ -163,7 +130,7 @@ template <class Input, class State, class Move, typename CFtype>
 bool LateAcceptanceHillClimbing<Input,State,Move,CFtype>::AcceptableMove()
 {
   return LessOrEqualThan(this->current_move_cost,(CFtype)0)
-  || LessOrEqualThan(this->current_move_cost + this->current_state_cost, previous_steps[this->number_of_iterations % steps]);
+  || LessOrEqualThan(this->current_move_cost + this->current_state_cost, previous_steps[this->iteration % steps]);
 }
 
 #endif

@@ -19,27 +19,29 @@ class MoveRunner : public Runner<Input,State,CFtype>
   friend class RunnerObserver<Input,State,Move,CFtype>;
 public:
   // Runner interface
-  virtual void Check() const;
   void ResetTimeout();
   void AttachObserver(RunnerObserver<Input,State,Move,CFtype>& ob) { observer = &ob; }
-  void InitializeRun(unsigned rounds = 0, unsigned max_rounds = 1);
-  void TerminateRun();
   Move CurrentMove() const { return current_move; }
   CFtype CurrentMoveCost() const { return current_move_cost; }
   unsigned int Modality() const { return ne.Modality(); }
+  
   
 protected:
   MoveRunner(const Input& in, StateManager<Input,State,CFtype>& e_sm,
              NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
              std::string name);
   
-  /* state manipulations */
-  virtual void GoCheck() const = 0;
+  
+  virtual void TerminateRun();
+  
+  virtual void InitializeRun();
+  
+
   /** Actions to be perfomed at the beginning of the run. */
-  virtual void ComputeMoveCost();
   
   /** Encodes the criterion used to select the move at each step. */
   virtual void MakeMove();
+
   void UpdateStateCost();
   
   NeighborhoodExplorer<Input,State,Move,CFtype>& ne; /**< A reference to the
@@ -66,9 +68,8 @@ MoveRunner<Input,State,Move,CFtype>::MoveRunner(const Input& in,
 {}
 
 template <class Input, class State, class Move, typename CFtype>
-void MoveRunner<Input,State,Move,CFtype>::InitializeRun(unsigned rounds, unsigned max_rounds) 
+void MoveRunner<Input,State,Move,CFtype>::InitializeRun() 
 {
-  Runner<Input,State,CFtype>::InitializeRun();
   if (observer != nullptr)
     observer->NotifyStartRunner(*this);
 }
@@ -77,19 +78,9 @@ void MoveRunner<Input,State,Move,CFtype>::InitializeRun(unsigned rounds, unsigne
 template <class Input, class State, class Move, typename CFtype>
 void MoveRunner<Input,State,Move,CFtype>::TerminateRun() 
 {
-  Runner<Input,State,CFtype>::TerminateRun();
   if (observer != nullptr)
 		observer->NotifyEndRunner(*this);
 }
-
-
-/**
- Checks wether the object state is consistent with all the related
- objects.
- */
-template <class Input, class State, class Move, typename CFtype>
-void MoveRunner<Input,State,Move,CFtype>::Check() const
-{}
 
 /**
  Actually performs the move selected by the local search strategy.
@@ -97,29 +88,11 @@ void MoveRunner<Input,State,Move,CFtype>::Check() const
 template <class Input, class State, class Move, typename CFtype>
 void MoveRunner<Input,State,Move,CFtype>::MakeMove()
 { 
-	ne.MakeMove(this->current_state, current_move);  
+	ne.MakeMove(this->current_state, current_move);
+  this->current_state_cost += current_move_cost;
+  if (observer != nullptr)
+		observer->NotifyMadeMove(*this);
 }
 
-
-/**
- Computes the cost of the selected move; it delegates this task to the
- neighborhood explorer.
- */
-template <class Input, class State, class Move, typename CFtype>
-void MoveRunner<Input,State,Move,CFtype>::ComputeMoveCost()
-{ 
-	current_move_cost = ne.DeltaCostFunction(this->current_state, current_move); 
-}
-
-/**
- Updates the cost of the internal state of the runner.
- */
-template <class Input, class State, class Move, typename CFtype>
-void MoveRunner<Input,State,Move,CFtype>::UpdateStateCost()
-{ 
-  // std:: cerr << this->current_state_cost << std::endl; 
-	this->current_state_cost += current_move_cost; 
-  //  	std:: cerr << current_move_cost << " " << this->current_state_cost << std::endl; 
-}
 
 #endif /*MOVERUNNER_HH_*/

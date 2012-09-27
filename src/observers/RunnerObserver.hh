@@ -16,10 +16,10 @@ public:
   virtual ~RunnerObserver() {}
   virtual void NotifyStartRunner(MoveRunner<Input,State,Move,CFtype>& r);
   virtual void NotifyNewBest(MoveRunner<Input,State,Move,CFtype>& r);
-  virtual void NotifyStoreMove(MoveRunner<Input,State,Move,CFtype>& r);
+  virtual void NotifyMadeMove(MoveRunner<Input,State,Move,CFtype>& r);
   virtual void NotifyEndRunner(MoveRunner<Input,State,Move,CFtype>& r);
 protected:
-  bool notify_new_best, notify_store_move, plot_improving_moves, plot_all_moves;
+  bool notify_new_best, notify_made_move, plot_improving_moves, plot_all_moves;
   std::ostream &log, &plot;
 };
 
@@ -32,9 +32,9 @@ RunnerObserver<Input,State,Move,CFtype>::RunnerObserver(unsigned int verbosity_l
   else
     notify_new_best = false;
   if (verbosity_level >= 2)
-    notify_store_move = true;
+    notify_made_move = true;
   else
-    notify_store_move = false;
+    notify_made_move = false;
   if (plot_level >= 1)
     plot_improving_moves = true;
   else
@@ -49,7 +49,7 @@ template <class Input, class State, class Move, typename CFtype>
 void RunnerObserver<Input,State,Move,CFtype>::NotifyStartRunner(MoveRunner<Input,State,Move,CFtype>& r)
 {
   if (plot_improving_moves || plot_all_moves)
-    plot << r.number_of_iterations << ' ' << 
+    plot << r.iteration << ' ' <<
             std::chrono::duration_cast<secs>(r.end - r.begin).count() << "s " <<
             r.current_state_cost << 
             std::endl;
@@ -62,7 +62,7 @@ void RunnerObserver<Input,State,Move,CFtype>::NotifyNewBest(MoveRunner<Input,Sta
   if (notify_new_best)
     {
       log << "--New best: " << r.current_state_cost 
-      << " (it: " << r.number_of_iterations << ", idle: " << r.number_of_iterations - r.iteration_of_best 
+      << " (it: " << r.iteration << ", idle: " << r.iteration - r.iteration_of_best 
       << "), Costs: (";
       for (unsigned int i = 0; i < r.sm.CostComponents(); i++)
       {
@@ -74,21 +74,21 @@ void RunnerObserver<Input,State,Move,CFtype>::NotifyNewBest(MoveRunner<Input,Sta
     }
   if (plot_improving_moves && !plot_all_moves)
     plot << r.name << ' ' << 
-            r.number_of_iterations << ' ' <<
+            r.iteration << ' ' <<
             std::chrono::duration_cast<secs>(r.end - r.begin).count() << "s " << 
             r.current_state_cost << 
             std::endl;
 }
 
 template <class Input, class State, class Move, typename CFtype>
-void RunnerObserver<Input,State,Move,CFtype>::NotifyStoreMove(MoveRunner<Input,State,Move,CFtype>& r)
+void RunnerObserver<Input,State,Move,CFtype>::NotifyMadeMove(MoveRunner<Input,State,Move,CFtype>& r)
 {
-  if (notify_store_move)
+  if (notify_made_move)
   {
     log << "Move: " << r.current_move << ", Move Cost: " << r.current_move_cost << " (current: "
 	  << r.current_state_cost << ", best: " 
-	  << r.best_state_cost <<  ") it: " << r.number_of_iterations
-	  << " (idle: " << r.number_of_iterations - r.iteration_of_best << ")" 
+	  << r.best_state_cost <<  ") it: " << r.iteration
+	  << " (idle: " << r.iteration - r.iteration_of_best << ")"
 	  << "), Costs: (";
       for (unsigned int i = 0; i < r.sm.CostComponents(); i++)
       {
@@ -100,7 +100,7 @@ void RunnerObserver<Input,State,Move,CFtype>::NotifyStoreMove(MoveRunner<Input,S
   }
   if (plot_all_moves)
     plot << r.name << ' ' << 
-            r.number_of_iterations << ' '  <<
+            r.iteration << ' '  <<
             std::chrono::duration_cast<secs>(r.end - r.begin).count() << "s " <<
             r.current_state_cost << 
             std::endl;
@@ -110,7 +110,7 @@ template <class Input, class State, class Move, typename CFtype>
 void RunnerObserver<Input,State,Move,CFtype>::NotifyEndRunner(MoveRunner<Input,State,Move,CFtype>& r)
 {
   if (plot_improving_moves || plot_all_moves)
-    plot << r.number_of_iterations << ' ' <<
+    plot << r.iteration << ' ' <<
             std::chrono::duration_cast<secs>(r.end - r.begin).count() << "s " <<
             r.current_state_cost << std::endl;
 }

@@ -108,9 +108,8 @@ void SimpleLocalSearch<Input,Output,State,CFtype>::SetRunner(Runner<Input,State,
 template <class Input, class Output, class State, typename CFtype>
 void SimpleLocalSearch<Input,Output,State,CFtype>::Solve() {
   this->FindInitialState();
-  this->p_runner->SetState(this->current_state);
-  
-  std::future<State> runner_result = std::async([this]() -> State { return this->p_runner->Go(); });
+    
+  std::future<CFtype> runner_result = std::async([this]() -> CFtype { return this->p_runner->Go(this->current_state); });
   
   runner_result.wait_for(this->timeout);
   if (!runner_result.valid())
@@ -119,8 +118,7 @@ void SimpleLocalSearch<Input,Output,State,CFtype>::Solve() {
     runner_result.wait();
   }
   
-  this->current_state = runner_result.get();
-  this->current_state_cost = this->p_runner->GetStateCost();
+  this->current_state_cost = runner_result.get();
   this->best_state = this->current_state;
   this->best_state_cost = this->current_state_cost;
 }

@@ -23,12 +23,8 @@ public:
 protected:
   bool MaxIdleIterationExpired() const;
   bool MaxIterationExpired() const;
-  void GoCheck() const;
-  void InitializeRun(bool first_round = true);
-  void TerminateRun();
   bool StopCriterion();
   bool AcceptableMove();
-  void StoreMove();
   void SelectMove();
   // parameters
   unsigned long max_idle_iteration;
@@ -84,49 +80,21 @@ template <class Input, class State, class Move, typename CFtype>
 void HillClimbing<Input,State,Move,CFtype>::SelectMove()
 {
   this->ne.RandomMove(this->current_state, this->current_move);
-  this->ComputeMoveCost();
+  this->current_move_cost = this->ne.DeltaCostFunction(this->current_state, this->current_move);
 }
 
-/**
-   The hill climbing initialization simply invokes 
-   the superclass companion method.
-*/
-template <class Input, class State, class Move, typename CFtype>
-void HillClimbing<Input,State,Move,CFtype>::InitializeRun(bool first_round )
-{
-  MoveRunner<Input,State,Move,CFtype>::InitializeRun();
-}
 
-template <class Input, class State, class Move, typename CFtype>
-void HillClimbing<Input,State,Move,CFtype>::GoCheck() const
-
-{
-  if (this->max_idle_iteration == 0)
-    throw std::logic_error("max_idle_iteration is zero for object " + this->name);
-}
-
-/**
-   At the end of the run, the best state found is set with the last visited
-   state (it is always a local minimum).
-*/
-template <class Input, class State, class Move, typename CFtype>
-void HillClimbing<Input,State,Move,CFtype>::TerminateRun()
-{
-  MoveRunner<Input,State,Move,CFtype>::TerminateRun();
-  this->best_state = this->current_state;
-  this->best_state_cost = this->current_state_cost;
-}
 
 template <class Input, class State, class Move, typename CFtype>
 bool HillClimbing<Input,State,Move,CFtype>::MaxIdleIterationExpired() const
 {
-  return this->number_of_iterations - this->iteration_of_best >= this->max_idle_iteration; 
+  return this->iteration - this->iteration_of_best >= this->max_idle_iteration;
 }
 
 template <class Input, class State, class Move, typename CFtype>
 bool HillClimbing<Input,State,Move,CFtype>::MaxIterationExpired() const
 {
-  return this->number_of_iterations >= this->max_iteration; 
+  return this->iteration >= this->max_iterations;
 }
 
 /**
@@ -146,24 +114,6 @@ bool HillClimbing<Input,State,Move,CFtype>::StopCriterion()
 template <class Input, class State, class Move, typename CFtype>
 bool HillClimbing<Input,State,Move,CFtype>::AcceptableMove()
 { return LessOrEqualThan(this->current_move_cost,(CFtype)0); }
-
-/**
-   The store move for hill climbing simply updates the variable that
-   keeps track of the last improvement.
-*/
-template <class Input, class State, class Move, typename CFtype>
-void HillClimbing<Input,State,Move,CFtype>::StoreMove()
-{
-  if (this->observer != nullptr)
-    this->observer->NotifyStoreMove(*this);
-  if (LessThan(this->current_move_cost, (CFtype)0))
-    {
-      if (this->observer != nullptr)
-        this->observer->NotifyNewBest(*this);
-      this->iteration_of_best = this->number_of_iterations;
-      this->best_state_cost = this->current_state_cost;
-    }
-}
 
 template <class Input, class State, class Move, typename CFtype>
 void HillClimbing<Input,State,Move,CFtype>::ReadParameters(std::istream& is, std::ostream& os)

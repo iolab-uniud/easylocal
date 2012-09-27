@@ -37,12 +37,11 @@ public:
   TabuListManager<State,Move,CFtype>& GetTabuListManager() { return pm; }
   bool MaxIdleIterationExpired() const;
 protected:
-  void GoCheck() const;
-  void InitializeRun(bool first_round = true);
+  void InitializeRun();
   bool StopCriterion();
   void SelectMove();
   bool AcceptableMove();
-  void StoreMove();
+  void CompleteMove();
   TabuListManager<State,Move,CFtype>& pm; /**< A reference to a tabu list manger. */
   // parameters
   unsigned long max_idle_iteration;
@@ -90,7 +89,7 @@ template <class Input, class State, class Move, typename CFtype>
 void TabuSearch<Input,State,Move,CFtype>::Print(std::ostream& os) const
 {
   os  << "Tabu Search Runner: " << this->name << std::endl;
-  os  << "  Max iterations: " << this->max_iteration << std::endl;
+  os  << "  Max iterations: " << this->max_iterations << std::endl;
   os  << "  Max idle iteration: " << max_idle_iteration << std::endl;
   pm.Print(os);
 }
@@ -100,18 +99,10 @@ void TabuSearch<Input,State,Move,CFtype>::Print(std::ostream& os) const
  cleans the tabu list.
  */
 template <class Input, class State, class Move, typename CFtype>
-void TabuSearch<Input,State,Move,CFtype>::InitializeRun(bool first_round)
+void TabuSearch<Input,State,Move,CFtype>::InitializeRun()
 {
   MoveRunner<Input,State,Move,CFtype>::InitializeRun();
   pm.Clean();
-}
-
-template <class Input, class State, class Move, typename CFtype>
-void TabuSearch<Input,State,Move,CFtype>::GoCheck() const
-
-{
-  if (this->max_idle_iteration == 0)
-    throw std::logic_error("max_idle_iteration is zero for object " + this->name);
 }
 
 
@@ -128,7 +119,7 @@ void TabuSearch<Input,State,Move,CFtype>::SelectMove()
 template <class Input, class State, class Move, typename CFtype>
 bool TabuSearch<Input,State,Move,CFtype>::MaxIdleIterationExpired() const
 {
-  return this->number_of_iterations - this->iteration_of_best >= this->max_idle_iteration; 
+  return this->iteration - this->iteration_of_best >= this->max_idle_iteration;
 }
 
 /**
@@ -157,23 +148,10 @@ bool TabuSearch<Input,State,Move,CFtype>::AcceptableMove()
  is better than the one found so far also the best state is updated.
  */
 template <class Input, class State, class Move, typename CFtype>
-void TabuSearch<Input,State,Move,CFtype>::StoreMove()
+void TabuSearch<Input,State,Move,CFtype>::CompleteMove()
 {
-  if (this->observer != nullptr)
-    this->observer->NotifyStoreMove(*this);
   pm.InsertMove(this->current_state, this->current_move, this->current_move_cost,
                 this->current_state_cost, this->best_state_cost);
-  if (LessOrEqualThan(this->current_state_cost,this->best_state_cost))
-  { // same cost states are accepted as best for diversification
-    if (LessThan(this->current_state_cost,this->best_state_cost))
-    {
-      if (this->observer != nullptr)
-        this->observer->NotifyNewBest(*this);
-      this->iteration_of_best = this->number_of_iterations;
-      this->best_state_cost = this->current_state_cost;
-    }
-    this->best_state = this->current_state;
-  }
 }
 
 template <class Input, class State, class Move, typename CFtype>

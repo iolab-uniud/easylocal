@@ -21,10 +21,7 @@ public:
   void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout);
   void Print(std::ostream& os = std::cout) const;
 protected:
-  void GoCheck() const;
-  void InitializeRun(bool first_round = true);
-  void TerminateRun();
-  void StoreMove();
+  void InitializeRun();
   bool StopCriterion();
   bool AcceptableMove();
   void SelectMove();
@@ -70,17 +67,13 @@ void FirstDescent<Input,State,Move,CFtype>::SelectMove()
  at a negative value for fulfilling the stop criterion the first time
  */     
 template <class Input, class State, class Move, typename CFtype>
-void FirstDescent<Input,State,Move,CFtype>::InitializeRun(bool first_round)
+void FirstDescent<Input,State,Move,CFtype>::InitializeRun()
 {
   MoveRunner<Input,State,Move,CFtype>::InitializeRun();
   this->current_move_cost = -1; // needed for passing the first time
   // the StopCriterion test
 }
 
-template <class Input, class State, class Move, typename CFtype>
-void FirstDescent<Input,State,Move,CFtype>::GoCheck() const
-
-{}
 
 /**
  The search is stopped when no (strictly) improving move has been found.
@@ -95,32 +88,6 @@ bool FirstDescent<Input,State,Move,CFtype>::StopCriterion()
 template <class Input, class State, class Move, typename CFtype>
 bool FirstDescent<Input,State,Move,CFtype>::AcceptableMove()
 { return LessThan<CFtype>(this->current_move_cost,0); }
-
-template <class Input, class State, class Move, typename CFtype>
-void FirstDescent<Input,State,Move,CFtype>::StoreMove()
-{
-  if (this->observer != nullptr)
-    this->observer->NotifyStoreMove(*this);
-  if (LessThan(this->current_state_cost, this->best_state_cost))
-  {
-    if (this->observer != nullptr)
-      this->observer->NotifyNewBest(*this);
-    this->iteration_of_best = this->number_of_iterations;
-    this->best_state_cost = this->current_state_cost;
-  }
-}
-
-/**
- At the end of the run, the best state found is set with the last visited
- state (it is always a local minimum).
- */
-template <class Input, class State, class Move, typename CFtype>
-void FirstDescent<Input,State,Move,CFtype>::TerminateRun()
-{
-  MoveRunner<Input,State,Move,CFtype>::TerminateRun();
-  this->best_state = this->current_state;
-  this->best_state_cost = this->current_state_cost;
-}
 
 template <class Input, class State, class Move, typename CFtype>
 void FirstDescent<Input,State,Move,CFtype>::ReadParameters(std::istream& is, std::ostream& os)

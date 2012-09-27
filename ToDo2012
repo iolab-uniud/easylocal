@@ -21,8 +21,6 @@
 
 11[L]. Threading compliant C++x11
 
-12[?]. Parallelizzazione su cluster MPI
-
 13[?]. Rivedere i kicker: 
 - separate diversificatori dagli intensificatori
 - kicker multimodali con metaprogramming
@@ -37,4 +35,6 @@
 
 18. Rivedere shifting penalty
 
-19. Rivedere costruttori runner e passaggio parametri con CLParser
+20. Uniformare nomi accessors, i.e. tutti con Get o senza Get, Set o senza Set
+
+21. Uniformare segnatura RandomMove e BestMove (con CFtype di ritorno)

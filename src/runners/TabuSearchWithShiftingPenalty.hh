@@ -23,10 +23,14 @@ public:
   void SetShiftRegion(double sr)
   { shift_region = sr; }
   void SetWeightRegion(double w) { shift_region = w; }
+
+
 protected:
-  void InitializeRun(bool first_round = true);
+  
   void SelectMove();
-  void StoreMove();
+  
+  void InitializeRun();
+
   
   // for the shifting penalty
   void ResetShifts();
@@ -96,7 +100,7 @@ void TabuSearchWithShiftingPenalty<Input,State,Move,CFtype>::UpdateShifts()
 }
 
 template <class Input, class State, class Move, typename CFtype>
-void TabuSearchWithShiftingPenalty<Input,State,Move,CFtype>::InitializeRun(bool first_round)
+void TabuSearchWithShiftingPenalty<Input,State,Move,CFtype>::InitializeRun()
 {
   TabuSearch<Input,State,Move,CFtype>::InitializeRun();
   ResetShifts();
@@ -130,7 +134,7 @@ void TabuSearchWithShiftingPenalty<Input,State,Move,CFtype>::SelectMove()
 }
 
 template <class Input, class State, class Move, typename CFtype>
-void TabuSearchWithShiftingPenalty<Input,State,Move,CFtype>::StoreMove()
+void TabuSearchWithShiftingPenalty<Input,State,Move,CFtype>::CompleteMove()
 {
   if (LessThan(this->current_state_cost,this->best_state_cost))
   {
@@ -144,7 +148,7 @@ void TabuSearchWithShiftingPenalty<Input,State,Move,CFtype>::StoreMove()
   {
     ResetShifts();
   }
-  TabuSearch<Input,State,Move,CFtype>::StoreMove();
+  TabuSearch<Input,State,Move,CFtype>::CompleteMove();
 }
 
 template <class Input, class State, class Move, typename CFtype>
