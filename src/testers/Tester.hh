@@ -295,14 +295,15 @@ void Tester<Input,Output, State,CFtype>::ExecuteRunChoice()
     Runner<Input,State,CFtype>& r = *runners[sub_choice-1];
     r.ReadParameters();      
     
-    /*
-     r.Go();
-     */
-    
     double timeout;
     os << "  Timeout: ";
     std::cin >> timeout;
     os << std::endl;
+    
+    /*
+    r.Go();
+    
+    ///
     
     std::shared_future<CFtype> runner_result = std::async([&r, this]() -> CFtype { return r.Go(this->test_state); std::cout << "timeout passed " << r.TimeoutExpired() << std::endl; });
     runner_result.wait_for(std::chrono::milliseconds((long long)(timeout * 1000)));
@@ -315,8 +316,11 @@ void Tester<Input,Output, State,CFtype>::ExecuteRunChoice()
       os << "Stopping runner." << std::endl;
       r.Terminate();
     }
+    */
     
-    CFtype result = runner_result.get();
+    std::chrono::milliseconds to = std::chrono::milliseconds((long long)(timeout * 1000));
+    
+    CFtype result = r.SyncRun(to, this->test_state);
     std::chrono::milliseconds duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start);
     
     om.OutputState(test_state,out);
