@@ -25,6 +25,7 @@
 
 #include <utils/CLParser.hh>
 #include <helpers/NeighborhoodExplorer.hh>
+#include <utils/Interruptible.hh>
 #include <climits>
 #include <chrono>
 #include <condition_variable>
@@ -32,7 +33,7 @@
 
 
 template <class Input, class State, typename CFtype = int>
-class Runner
+class Runner : public Interruptible<CFtype, State&>
 {
 public:
   
@@ -65,8 +66,6 @@ public:
   virtual ~Runner() { }
   
   virtual constexpr unsigned int Modality() const = 0;
-
-  virtual void Terminate() { timeout_expired = true; }
   
 protected:
 
@@ -81,8 +80,6 @@ protected:
   virtual void TerminateRun() = 0;
     
   bool MaxIterationExpired() const;
-  
-  bool TimeoutExpired() const { return timeout_expired; }
   
   /** Encodes the criterion used to stop the search. */
   virtual bool StopCriterion() = 0;
@@ -99,6 +96,13 @@ protected:
   virtual void MakeMove() = 0;
   
   virtual void CompleteMove() {};
+  
+  /** Implements Interruptible. */
+  virtual std::function<CFtype(State&)> MakeFunction() {
+    return [this](State& s) -> CFtype {
+      return this->Go(s);
+    };
+  }
   
   // Helpers
   const Input& in;
@@ -117,10 +121,6 @@ protected:
     performed. */
   
   unsigned long int max_iterations; /**< The maximum number of iterations allowed. */
-  
-  /** Threading. */
-  std::condition_variable terminate_run;
-  std::atomic<bool> timeout_expired;
   
   /** Chronometer. */
   std::chrono::high_resolution_clock::time_point begin;
@@ -192,7 +192,7 @@ template <class Input, class State, typename CFtype>
 CFtype Runner<Input,State,CFtype>::Go(State& s)
 {
   InitializeRun(s);
-  while (!MaxIterationExpired() && !StopCriterion() && !LowerBoundReached() && !TimeoutExpired())
+  while (!MaxIterationExpired() && !StopCriterion() && !LowerBoundReached() && !this->TimeoutExpired())
   {
     iteration++;
     try
@@ -262,7 +262,6 @@ void Runner<Input,State,CFtype>::InitializeRun(State& s)
   begin = std::chrono::high_resolution_clock::now();
   iteration = 0;
   iteration_of_best = 0;
-  timeout_expired = false;
   best_state = current_state = s;
   best_state_cost = current_state_cost = sm.CostFunction(s);
   InitializeRun();
