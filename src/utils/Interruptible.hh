@@ -16,10 +16,10 @@ public:
    @param timeout a duration in milliseconds
    @param args the list of arguments to pass (possibly empty)
    */
-  Rtype SyncRun(std::chrono::milliseconds timeout, Args ... args)
+  Rtype SyncRun(std::chrono::milliseconds timeout, Args... args)
   {
     timeout_expired = false;
-    std::future<Rtype> result = std::async(std::launch::async, MakeFunction(), args ...);
+    std::future<Rtype> result = std::async(std::launch::async, this->MakeFunction(), std::ref(args) ...);
     result.wait_for(timeout);
     if (result.wait_for(std::chrono::milliseconds::zero()) != std::future_status::ready)
       timeout_expired = true;
@@ -30,14 +30,14 @@ public:
    @param timeout a duration in milliseconds
    @param args the list of arguments to pass (possibly empty)
    */
-  std::shared_future<Rtype> AsyncRun(std::chrono::milliseconds timeout, Args ... args)
+  std::shared_future<Rtype> AsyncRun(std::chrono::milliseconds timeout, Args... args)
   {
     timeout_expired = false;
-    std::shared_future<Rtype> result = std::async(std::launch::async, MakeFunction(), args ...);
-    std::thread t([this, timeout, result]() {
+    result = std::async(std::launch::async, this->MakeFunction(), std::ref(args) ...);
+    std::thread t([this, timeout]() {
       std::this_thread::sleep_for(timeout);
       // If the function has not returned a value already
-      if(result.wait_for(std::chrono::milliseconds::zero()) != std::future_status::ready)
+      if(!HasReturned())
         this->timeout_expired = true;
       
     });
@@ -47,34 +47,27 @@ public:
   
 protected:
   
+  /** Checks if timeout has expired. */
   inline const std::atomic<bool>& TimeoutExpired() { return timeout_expired; }
   
+  /** Checks if function has returned (naturally). */
+  inline bool HasReturned() { return result.wait_for(std::chrono::milliseconds::zero()) == std::future_status::ready;  }
+  
   /** Produces a function object to be launched in a separate thread. */
-  virtual std::function<Rtype(Args ...)> MakeFunction() = 0;
+  inline virtual std::function<Rtype(Args& ...)> MakeFunction() {
+    // Default behavior
+    return [](Args& ...) -> Rtype {
+      return Rtype();
+    };
+  }
   
 private:
   
   /** Atomic flags. */
   std::atomic<bool> timeout_expired;
-};
-
-using namespace std;
-using namespace std::chrono;
-
-/** Test class. */
-class Test : public Interruptible<long int, double, double> {
-protected:
   
-  std::function<long int(double,double)> MakeFunction() {
-    return [this](double a, double b) -> long int {
-      long int iterations = 0, r = -1;
-      while(!TimeoutExpired() && iterations < (long int) b)
-        r = ++iterations;
-      if (TimeoutExpired())
-        r = 0;
-      return r;
-    };
-  }
+  /** For async. */
+  std::shared_future<Rtype> result;
 };
 
 #endif
