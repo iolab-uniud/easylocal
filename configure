@@ -16584,14 +16584,10 @@ fi
 # Checks for boost::program_options (macports boost could be compiled with an incompatible c++11 compiler)
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether the boost_program_options library can be linked" >&5
 $as_echo_n "checking whether the boost_program_options library can be linked... " >&6; }
-ac_ext=cpp
-ac_cpp='$CXXCPP $CPPFLAGS'
-ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
-ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
-ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
-
 LDFLAGS_SAVED="$LDFLAGS"
-LDFLAGS="$LDFLAGS $BOOST_LDFLAGS -lboost_program_options"
+LDFLAGS="$LDFLAGS $BOOST_LDFLAGS"
+LIBS_SAVED="$LIBS"
+LIBS="-lboost_program_options $LIBS"
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 #include <boost/program_options/options_description.hpp>
@@ -16626,12 +16622,7 @@ fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
 LDFLAGS=$LDFLAGS_SAVED
-ac_ext=cpp
-ac_cpp='$CXXCPP $CPPFLAGS'
-ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
-ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
-ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
-
+LIBS=$LIBS_SAVED
 
 # For CppUnit testing
 # Check whether --enable-cppunit was given.
