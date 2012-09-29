@@ -46,15 +46,6 @@ public:
   static std::vector<const ParameterBox*> overall_parameters;
 };
 
-
-ParameterBox::ParameterBox(const std::string& p, const std::string& description) : prefix(p)
-#if defined(HAVE_BOOST)
-, cl_options(description)
-#endif
-{
-  overall_parameters.push_back(this);
-}
-
 template <typename T>
 class Parameter : public AbstractParameter
 {
