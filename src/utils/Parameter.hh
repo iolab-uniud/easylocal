@@ -7,7 +7,7 @@
 #endif
 
 #include <stdexcept>
-#if defined(HAVE_BOOST)
+#if HAVE_BOOST
 #include <boost/program_options/options_description.hpp>
 #endif
 #include <vector>
