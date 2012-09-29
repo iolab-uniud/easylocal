@@ -16590,7 +16590,7 @@ cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 int
 main ()
 {
-bboost::program_options::options_description tmp("Test program options");
+boost::program_options::options_description tmp("Test program options");
   ;
   return 0;
 }
