@@ -195,8 +195,15 @@ int main(int argc, char* argv[])
   {
     main_program_options.add(pb->cl_options);
   }
+  main_program_options.add()
+  ("help", "produce help message");
   
   boost::program_options::store(boost::program_options::parse_command_line(argc, argv, main_program_options), vm);
+  
+  if (vm.count("help")) {
+    std::cout << main_program_options << std::endl;
+    return 1;
+  }
 #endif
 	
 	/* if (arg_plot_level.IsSet())
