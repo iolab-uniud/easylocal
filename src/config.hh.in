@@ -5,6 +5,9 @@
 #define CONFIG_INCLUDED
 
 
+/* define if the Boost library is available */
+#undef HAVE_BOOST
+
 /* Define to 1 if you have the <dlfcn.h> header file. */
 #undef HAVE_DLFCN_H
 

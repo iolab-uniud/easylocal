@@ -26,8 +26,7 @@ public:
   SimulatedAnnealing(const Input& in,
                      StateManager<Input,State,CFtype>& e_sm,
                      NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
-                     std::string name,
-                     CLParser& cl = CLParser::empty);	
+                     std::string name);
   
   void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout);
   void Print(std::ostream& os = std::cout) const;
@@ -53,14 +52,13 @@ protected:
   bool AcceptableMove();
   void CompleteMove();
   // parameters
+  Parameter<double> start_temperature;
+  Parameter<double> min_temperature;
+  Parameter<double> cooling_rate;
+  Parameter<unsigned int> max_neighbors_sampled, max_neighbors_accepted;
+  // state of SA
   double temperature; /**< The current temperature. */
-  double start_temperature;
-  double min_temperature;
-  double cooling_rate;
-  unsigned int max_neighbors_sampled, neighbors_sampled, max_neighbors_accepted, neighbors_accepted;
-  ArgumentGroup simulated_annealing_arguments;
-  ValArgument<double> arg_start_temperature, arg_min_temperature, arg_cooling_rate;
-  ValArgument<unsigned int> arg_neighbors_sampled, arg_neighbors_accepted;
+  unsigned int neighbors_sampled, neighbors_accepted;
 };
 
 /*************************************************************************
@@ -79,35 +77,13 @@ template <class Input, class State, class Move, typename CFtype>
 SimulatedAnnealing<Input,State,Move,CFtype>::SimulatedAnnealing(const Input& in,
                                                                 StateManager<Input,State,CFtype>& e_sm,
                                                                 NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
-                                                                std::string name,
-                                                                CLParser& cl)
-: MoveRunner<Input,State,Move,CFtype>(in, e_sm, e_ne, name),
-start_temperature(0.0), min_temperature(0.0001), cooling_rate(0.75), max_neighbors_sampled(10), max_neighbors_accepted(neighbors_sampled),
-simulated_annealing_arguments("sa_" + name, "sa_" + name, false), arg_start_temperature("start_temperature", "st", false),
-arg_min_temperature("min_temperature", "mt", false), arg_cooling_rate("cooling_rate", "cr", true), 
-arg_neighbors_sampled("neighbors_sampled", "ns", true),
-arg_neighbors_accepted("neighbors_accepted", "na", false)
-{
-  simulated_annealing_arguments.AddArgument(arg_start_temperature);
-  simulated_annealing_arguments.AddArgument(arg_min_temperature);
-  simulated_annealing_arguments.AddArgument(arg_cooling_rate);
-  simulated_annealing_arguments.AddArgument(arg_neighbors_sampled);
-  simulated_annealing_arguments.AddArgument(arg_neighbors_accepted);
-  
-  cl.AddArgument(simulated_annealing_arguments);
-  cl.MatchArgument(simulated_annealing_arguments);
-  if (simulated_annealing_arguments.IsSet())
-  {
-    if (arg_start_temperature.IsSet())
-      start_temperature = arg_start_temperature.GetValue();
-    if (arg_min_temperature.IsSet())
-      min_temperature = arg_min_temperature.GetValue();
-    cooling_rate = arg_cooling_rate.GetValue();
-    max_neighbors_sampled = arg_neighbors_sampled.GetValue();
-    if (arg_neighbors_accepted.IsSet())
-      max_neighbors_accepted = arg_neighbors_accepted.GetValue();
-  }
-}
+                                                                std::string name)
+: MoveRunner<Input,State,Move,CFtype>(in, e_sm, e_ne, name, "Simulated Annealing Runner"),
+start_temperature("start_temperature", "st", this->parameters),
+min_temperature("min_temperature", "mt", this->parameters), cooling_rate("cooling_rate", "cr", this->parameters),
+max_neighbors_sampled("neighbors_sampled", "ns", this->parameters),
+max_neighbors_accepted("neighbors_accepted", "na", this->parameters)
+{}
 
 template <class Input, class State, class Move, typename CFtype>
 void SimulatedAnnealing<Input,State,Move,CFtype>::Print(std::ostream& os) const

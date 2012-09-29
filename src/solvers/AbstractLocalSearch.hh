@@ -8,7 +8,6 @@
 #include <iostream> 
 #include <fstream> 
 #include <string>
-#include <utils/CLParser.hh>
 
 /** A Local Search Solver has an internal state, and defines the ways for
     dealing with a local search algorithm.

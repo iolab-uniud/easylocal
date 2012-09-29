@@ -5,7 +5,6 @@
 #include <helpers/StateManager.hh>
 #include <helpers/NeighborhoodExplorer.hh>
 #include <utils/Types.hh>
-#include <utils/CLParser.hh>
 
 /** The Steepest Descent runner performs a simple local search.
  At each step of the search, the best move in the neighborhood of current
@@ -22,8 +21,7 @@ public:
   SteepestDescent(const Input& in,
                   StateManager<Input,State,CFtype>& e_sm,
                   NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
-                  std::string name,
-                  CLParser& cl = CLParser::empty);
+                  std::string name);
   
   void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout);
   void Print(std::ostream& os = std::cout) const;
@@ -50,9 +48,8 @@ protected:
 template <class Input, class State, class Move, typename CFtype>
 SteepestDescent<Input,State,Move,CFtype>::SteepestDescent(const Input& in,
                                                           StateManager<Input,State,CFtype>& e_sm, NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
-                                                          std::string name,
-                                                          CLParser& cl)
-: MoveRunner<Input,State,Move,CFtype>(in, e_sm, e_ne, name)
+                                                          std::string name)
+: MoveRunner<Input,State,Move,CFtype>(in, e_sm, e_ne, name, "Steepest Descent Runner")
 {}
 
 template <class Input, class State, class Move, typename CFtype>

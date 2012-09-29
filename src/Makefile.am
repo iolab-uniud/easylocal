@@ -1,9 +1,9 @@
 ## Automake file
 
 lib_LTLIBRARIES = libEasyLocalpp.la
-libEasyLocalpp_la_SOURCES = utils/Random.cc utils/CLParser.cc utils/Types.cc
+libEasyLocalpp_la_SOURCES = utils/Random.cc utils/Types.cc utils/Parameter.cc
 
-AM_CPPFLAGS = -I@EASYLOCALPP_BUILD@ 
+AM_CPPFLAGS = -I@EASYLOCALPP_BUILD@ @BOOST_CPPFLAGS@
 AM_LDFLAGS = -lstdc++ 
 
 if DEBUG

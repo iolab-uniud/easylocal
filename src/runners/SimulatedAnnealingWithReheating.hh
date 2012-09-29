@@ -87,7 +87,7 @@ SimulatedAnnealingWithReheating<Input,State,Move,CFtype>::SimulatedAnnealingWith
                                                                 NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
                                                                 std::string name,
                                                                 CLParser& cl)
-: MoveRunner<Input,State,Move,CFtype>(in, e_sm, e_ne, name),
+: SimulatedAnnealing<Input,State,Move,CFtype>(in, e_sm, e_ne, name, cl),
 start_temperature(0.0), min_temperature(0.0001), cooling_rate(0.75), restart_temperature_ratio(1.0), restart_temperature_ratio_first_round(1.0), iterations_ratio(1.0), max_neighbors_sampled(10), max_neighbors_accepted(neighbors_sampled),
 simulated_annealing_arguments("sa_" + name, "sa_" + name, false), arg_start_temperature("start_temperature", "st", false),
 arg_min_temperature("min_temperature", "mt", false), arg_cooling_rate("cooling_rate", "cr", true),

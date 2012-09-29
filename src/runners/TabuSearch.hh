@@ -29,11 +29,11 @@ public:
   TabuSearch(const Input& in, StateManager<Input,State,CFtype>& e_sm,
              NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
              TabuListManager<State,Move,CFtype>& e_tlm,
-             std::string name, CLParser& cl = CLParser::empty);	
+             std::string name);	
   
   void Print(std::ostream& os = std::cout) const;
   void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout);
-  virtual void SetMaxIdleIteration(unsigned long m) { max_idle_iteration = m; }
+  virtual void SetMaxIdleIteration(unsigned long m) { max_idle_iterations = m; }
   TabuListManager<State,Move,CFtype>& GetTabuListManager() { return pm; }
   bool MaxIdleIterationExpired() const;
 protected:
@@ -44,10 +44,8 @@ protected:
   void CompleteMove();
   TabuListManager<State,Move,CFtype>& pm; /**< A reference to a tabu list manger. */
   // parameters
-  unsigned long max_idle_iteration;
-  ArgumentGroup tabu_search_arguments;
-  ValArgument<unsigned long> arg_max_idle_iteration;
-  ValArgument<unsigned int, 2> arg_tabu_tenure;
+  Parameter<unsigned long int> max_idle_iterations;
+  Parameter<unsigned int> min_tabu_tenure, max_tabu_tenure;
 };
 
 /*************************************************************************
@@ -69,20 +67,11 @@ TabuSearch<Input,State,Move,CFtype>::TabuSearch(const Input& in,
                                                 StateManager<Input,State,CFtype>& e_sm,
                                                 NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
                                                 TabuListManager<State,Move,CFtype>& tlm,
-                                                std::string name, 
-                                                CLParser& cl)
-: MoveRunner<Input,State,Move,CFtype>(in, e_sm, e_ne, name), pm(tlm), max_idle_iteration(0), 
-tabu_search_arguments("ts_" + name, "ts_" + name, false), arg_max_idle_iteration("max_idle_iteration", "mii", true), arg_tabu_tenure("tabu_tenure", "tt", true)
+                                                std::string name)
+: MoveRunner<Input,State,Move,CFtype>(in, e_sm, e_ne, name, "Tabu Search Runner"), pm(tlm),
+// parameters
+max_idle_iterations("max_idle_iterations", "//FIXME: give a description", this->parameters), min_tabu_tenure("min_tabu_tenure", "//FIXME: again", this->parameters), max_tabu_tenure("max_tabu_tenure", "//FIXME: again", this->parameters)
 {
-  tabu_search_arguments.AddArgument(arg_max_idle_iteration);
-  tabu_search_arguments.AddArgument(arg_tabu_tenure);
-  cl.AddArgument(tabu_search_arguments);
-  cl.MatchArgument(tabu_search_arguments);
-  if (tabu_search_arguments.IsSet())
-  {
-    pm.SetLength(arg_tabu_tenure.GetValue(0), arg_tabu_tenure.GetValue(1));
-    max_idle_iteration = arg_max_idle_iteration.GetValue();
-  }
 }
 
 template <class Input, class State, class Move, typename CFtype>
@@ -90,7 +79,7 @@ void TabuSearch<Input,State,Move,CFtype>::Print(std::ostream& os) const
 {
   os  << "Tabu Search Runner: " << this->name << std::endl;
   os  << "  Max iterations: " << this->max_iterations << std::endl;
-  os  << "  Max idle iteration: " << max_idle_iteration << std::endl;
+  os  << "  Max idle iteration: " << max_idle_iterations << std::endl;
   pm.Print(os);
 }
 
@@ -119,7 +108,7 @@ void TabuSearch<Input,State,Move,CFtype>::SelectMove()
 template <class Input, class State, class Move, typename CFtype>
 bool TabuSearch<Input,State,Move,CFtype>::MaxIdleIterationExpired() const
 {
-  return this->iteration - this->iteration_of_best >= this->max_idle_iteration;
+  return this->iteration - this->iteration_of_best >= this->max_idle_iterations;
 }
 
 /**
@@ -161,6 +150,6 @@ void TabuSearch<Input,State,Move,CFtype>::ReadParameters(std::istream& is, std::
   os << "TABU SEARCH -- INPUT PARAMETERS" << std::endl;
   pm.ReadParameters(is, os);
   os << "  Number of idle iterations: ";
-  is >> max_idle_iteration;
+  is >> max_idle_iterations;
 }
 #endif // _TABU_SEARCH_HH_

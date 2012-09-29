@@ -27,8 +27,7 @@ public:
   LateAcceptanceHillClimbing(const Input& in,
                              StateManager<Input,State,CFtype>& e_sm,
                              NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
-                             std::string name,
-                             CLParser& cl = CLParser::empty);	
+                             std::string name);	
   
   void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout);
   void Print(std::ostream& os = std::cout) const;
@@ -40,9 +39,7 @@ protected:
   void CompleteMove();
   
   // parameters
-  unsigned int steps;
-  
-  ValArgument<unsigned int> arg_steps;
+  Parameter<unsigned int> steps;
   
   std::vector<CFtype> previous_steps;
   
@@ -64,20 +61,11 @@ template <class Input, class State, class Move, typename CFtype>
 LateAcceptanceHillClimbing<Input,State,Move,CFtype>::LateAcceptanceHillClimbing(const Input& in,
                                                                                 StateManager<Input,State,CFtype>& e_sm,
                                                                                 NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
-                                                                                std::string name,
-                                                                                CLParser& cl)
+                                                                                std::string name)
 : HillClimbing<Input,State,Move,CFtype>(in, e_sm, e_ne, name),
-arg_steps("steps", "ns", true)
+steps("steps", "ns", this->parameters)
 
-{
-  SetSteps(10);
-  this->hill_climbing_arguments.AddArgument(arg_steps);
-  
-  cl.MatchArgument(this->hill_climbing_arguments);
-	if (this->hill_climbing_arguments.IsSet())
-		steps = arg_steps.GetValue();
-  
-}
+{}
 
 template <class Input, class State, class Move, typename CFtype>
 void LateAcceptanceHillClimbing<Input,State,Move,CFtype>::Print(std::ostream& os) const
@@ -116,7 +104,7 @@ void LateAcceptanceHillClimbing<Input,State,Move,CFtype>::ReadParameters(std::is
   unsigned step;
   os << "LATE ACCEPTANCE HILL CLIMBING -- INPUT PARAMETERS" << std::endl;
   os << "  Number of idle iterations: ";
-  is >> this->max_idle_iteration;
+  is >> this->max_idle_iterations;
   os << "  Step size: ";
   is >> step;
   SetSteps(step);

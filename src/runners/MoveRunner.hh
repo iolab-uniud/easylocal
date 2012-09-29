@@ -29,7 +29,7 @@ public:
 protected:
   MoveRunner(const Input& in, StateManager<Input,State,CFtype>& e_sm,
              NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
-             std::string name);
+             std::string name, std::string description);
   
   
   virtual void TerminateRun();
@@ -63,8 +63,9 @@ template <class Input, class State, class Move, typename CFtype>
 MoveRunner<Input,State,Move,CFtype>::MoveRunner(const Input& in, 
                                                 StateManager<Input,State,CFtype>& e_sm,
                                                 NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
-                                                std::string name)
-: Runner<Input,State,CFtype>(in, e_sm, name), ne(e_ne), observer(nullptr)
+                                                std::string name,
+                                                std::string description)
+: Runner<Input,State,CFtype>(in, e_sm, name, description), ne(e_ne), observer(nullptr)
 {}
 
 template <class Input, class State, class Move, typename CFtype>

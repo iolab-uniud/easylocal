@@ -109,8 +109,13 @@
 #include <testers/Tester.hh>
 #include <testers/MoveTester.hh>
 #include <testers/KickerTester.hh>
-#include <utils/CLParser.hh>
 #include <chrono>
+#if defined(HAVE_BOOST)
+#include <boost/program_options/options_description.hpp>
+#include <boost/program_options/parsers.hpp>
+#include <boost/program_options/variables_map.hpp>
+#endif
+
 //#include <kickers/MultimodalKicker.hh>
 
 using namespace std;
@@ -119,20 +124,24 @@ typedef std::chrono::duration<double, std::ratio<1>> secs;
 
 int main(int argc, char* argv[])
 {
+  boost::program_options::options_description main_program_options("Main program options");
+  
+  boost::program_options::variables_map vm;
 	// The CLParser object parses the command line arguments
-  CLParser cl(argc, argv);
+  //CLParser cl(argc, argv);
   
 	// The set of arguments added are the following:
-  ValArgument<int> arg_size("size", "s", true, cl); /*< The size of the chessboard, that is, the input of the problem */
+  /*< The size of the chessboard, that is, the input of the problem */
+  /* ValArgument<int> arg_size("size", "s", true, cl);
   ValArgument<string> arg_solmethod("method", "m", false, cl);
   ValArgument<unsigned> arg_plot_level("plot", "p", false, 0u, cl);
   ValArgument<unsigned> arg_verbosity_level("verbose", "v", false, 0u, cl);
   ValArgument<double> arg_timeout("timeout", "to", false, 0.0, cl);
-  ValArgument<int> arg_random_seed("random_seed", "rs", false, cl);
-  cl.MatchArgument(arg_size);
+  ValArgument<int> arg_random_seed("random_seed", "rs", false, cl); */
+  //cl.MatchArgument(arg_size);
   
   // data classes
-  int in(arg_size.GetValue());
+  int in;
   
   // cost components
   PrimaryDiagonalCostComponent cc1(in);
@@ -153,70 +162,37 @@ int main(int argc, char* argv[])
   QueensKicker qk(in, qnhe);
   
   // runners
-  HillClimbing<int, vector<int>, Swap> qhc(in, qsm, qnhe, "SwapHillClimbing", cl);
+  HillClimbing<int, vector<int>, Swap> qhc(in, qsm, qnhe, "SwapHillClimbing");
   tester.AddRunner(qhc);
   SteepestDescent<int, vector<int>, Swap> qsd(in, qsm, qnhe, "SwapSteepestDescent");
   tester.AddRunner(qsd);
-  TabuSearch<int, vector<int>, Swap> qts(in, qsm, qnhe, qtlm, "SwapTabuSearch", cl);
+  TabuSearch<int, vector<int>, Swap> qts(in, qsm, qnhe, qtlm, "SwapTabuSearch");
   tester.AddRunner(qts);
-  SimulatedAnnealing<int, vector<int>, Swap> qsa(in, qsm, qnhe, "SwapSimulatedAnnealing", cl);
+  SimulatedAnnealing<int, vector<int>, Swap> qsa(in, qsm, qnhe, "SwapSimulatedAnnealing");
   tester.AddRunner(qsa);
-  LateAcceptanceHillClimbing<int, vector<int>, Swap> qlhc(in, qsm, qnhe, "LateAcceptanceHillClimbing", cl);
+  LateAcceptanceHillClimbing<int, vector<int>, Swap> qlhc(in, qsm, qnhe, "LateAcceptanceHillClimbing");
   tester.AddRunner(qlhc);
   
   //TabuSearchWithShiftingPenalty<int, vector<int>, Swap> qtsw(in, qsm, qnhe, qtlm, "SwapTabuSearchWithShiftingPenalty", cl);
   
-  SimpleLocalSearch<int, ChessBoard, vector<int> > qss(in, qsm, qom, "QueensSLS", cl);
-  VariableNeighborhoodDescent<int, ChessBoard, vector<int> > qvnd(in, qsm, qom, 3);
-  
-  /*
-  typedef PrepareSetUnionNeighborhoodExplorerTypes<int, vector<int>, TYPELIST_2(SwapNeighborhoodExplorer, SwapNeighborhoodExplorer)> MultimodalTypes;
-  typedef MultimodalTypes::MoveList DoubleSwap; // this line is not mandatory, it just aliases the movelist type for reader's convenience
-  vector<double> bias(2);
-  bias[0] = 0.7;
-  bias[1] = 0.3;
-  MultimodalTypes::NeighborhoodExplorer qmmnhe(in, qsm, bias, "Multimodal Swap");
-  qmmnhe.AddNeighborhoodExplorer(qnhe);
-  qmmnhe.AddNeighborhoodExplorer(qnhe);
-  typedef PrepareSetUnionTabuListManager<vector<int>, TYPELIST_2(QueensTabuListManager, QueensTabuListManager)> MultimodalTabuListManagerTypes;
-  MultimodalTabuListManagerTypes::TabuListManager qmmtlm;
-  qmmtlm.AddTabuListManager(qtlm);
-  qmmtlm.AddTabuListManager(qtlm);
-  
-  TabuSearch<int, vector<int>, DoubleSwap> qmmts(in, qsm, qmmnhe, qmmtlm, "DoubleSwapTabuSearch", cl, tester); 
-  */
+  SimpleLocalSearch<int, ChessBoard, vector<int> > qss(in, qsm, qom, "QueensSLS");
+  VariableNeighborhoodDescent<int, ChessBoard, vector<int> > qvnd(in, qsm, qom, 3);  
 
-  /* typedef PrepareCartesianProductNeighborhoodExplorerTypes<int, vector<int>, TYPELIST_2(SwapNeighborhoodExplorer, SwapNeighborhoodExplorer)> MultimodalTypes;
-  typedef MultimodalTypes::MoveList DoubleSwap; // this line is not mandatory, it just aliases the movelist type for reader's convenience
-  MultimodalTypes::NeighborhoodExplorer qmmnhe(in, qsm, "Multimodal Swap");
-  qmmnhe.AddNeighborhoodExplorer(qnhe);
-  qmmnhe.AddNeighborhoodExplorer(qnhe);
-  typedef PrepareCartesianProductTabuListManager<vector<int>, TYPELIST_2(QueensTabuListManager, QueensTabuListManager)> MultimodalTabuListManagerTypes;
-  MultimodalTabuListManagerTypes::TabuListManager qmmtlm;
-  qmmtlm.AddTabuListManager(qtlm);
-  qmmtlm.AddTabuListManager(qtlm);
-  TabuSearch<int, vector<int>, DoubleSwap> qmmts(in, qsm, qmmnhe, qmmtlm, "DoubleSwapTabuSearch", cl); */
-  
-  
-  /* class QueensKicker2 : public MultimodalKicker<int,vector<int>,DoubleSwap>
-  {
-  public:
-    QueensKicker2(const int& bs, MultimodalTypes::NeighborhoodExplorer& qnhe, int s = 2)
-    : MultimodalKicker<int,vector<int>,DoubleSwap>(bs, qnhe, s, "QueensKicker2") 
-    {}
-    bool RelatedMoves(const DoubleSwap&, const DoubleSwap&) const
-    { return true; } 
-  } qk2(in, qmmnhe); */
-  
-
-  cl.MatchArguments();
+  /* cl.MatchArguments();
   if (arg_random_seed.IsSet())
     Random::Seed(arg_random_seed.GetValue());
   
   RunnerObserver<int, vector<int>, Swap> ro(arg_verbosity_level.GetValue(), arg_plot_level.GetValue());
-  GeneralizedLocalSearchObserver<int, ChessBoard, vector<int> > so(arg_verbosity_level.GetValue(), arg_plot_level.GetValue());
+  GeneralizedLocalSearchObserver<int, ChessBoard, vector<int> > so(arg_verbosity_level.GetValue(), arg_plot_level.GetValue()); */
+  
+  for (auto pb : ParameterBox::overall_parameters)
+  {
+    main_program_options.add(pb->cl_options);
+  }
+  
+  boost::program_options::store(boost::program_options::parse_command_line(argc, argv, main_program_options), vm);
 	
-	if (arg_plot_level.IsSet())
+	/* if (arg_plot_level.IsSet())
 	{
 		qhc.AttachObserver(ro);
 		qsd.AttachObserver(ro);
@@ -250,7 +226,7 @@ int main(int argc, char* argv[])
   {
     qvnd.Solve();
     cout << qvnd.GetOutput() << endl << qvnd.GetCurrentCost() << endl;
-  }
+  } */
 	
   return 0;
 }

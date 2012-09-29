@@ -43,7 +43,7 @@ template <class Input, class State, class Move, typename CFtype>
 FirstDescent<Input,State,Move,CFtype>::FirstDescent(const Input& in,
                                                     StateManager<Input,State,CFtype>& e_sm, NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
                                                     std::string name)
-: MoveRunner<Input,State,Move,CFtype>(in, e_sm, e_ne, name)
+: MoveRunner<Input,State,Move,CFtype>(in, e_sm, e_ne, name, cl)
 {}
 
 template <class Input, class State, class Move, typename CFtype>

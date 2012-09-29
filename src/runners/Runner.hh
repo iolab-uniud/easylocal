@@ -23,13 +23,13 @@
 #include <helpers/StateManager.hh>
 #include <stdexcept>
 
-#include <utils/CLParser.hh>
 #include <helpers/NeighborhoodExplorer.hh>
 #include <utils/Interruptible.hh>
 #include <climits>
 #include <chrono>
 #include <condition_variable>
 #include <atomic>
+#include <utils/Parameter.hh>
 
 
 template <class Input, class State, typename CFtype = int>
@@ -51,6 +51,7 @@ public:
   
   virtual void Print(std::ostream& os = std::cout) const = 0;
   
+  // FIXME: remove parameter accessors
   unsigned long GetMaxIterations() const;
   
   void SetMaxIterations(unsigned long max);
@@ -69,7 +70,7 @@ public:
   
 protected:
 
-  Runner(const Input& i, StateManager<Input,State,CFtype>& sm, std::string name);
+  Runner(const Input& i, StateManager<Input,State,CFtype>& sm, std::string name, std::string e_desc);
   
   virtual bool LowerBoundReached() const;
   
@@ -120,8 +121,10 @@ protected:
   unsigned long int iteration; /**< The overall number of iterations
     performed. */
   
-  unsigned long int max_iterations; /**< The maximum number of iterations allowed. */
-  
+  // Parameters
+  ParameterBox parameters;
+  Parameter<unsigned long int> max_iterations; /**< The maximum number of iterations allowed. */  
+  //  unsigned long int max_iterations;
   /** Chronometer. */
   std::chrono::high_resolution_clock::time_point begin;
   std::chrono::high_resolution_clock::time_point end;
@@ -151,15 +154,22 @@ private:
   @param name the name of the runner
 */
 template <class Input, class State, typename CFtype>
-Runner<Input,State,CFtype>::Runner(const Input& i, StateManager<Input,State,CFtype>& e_sm, std::string e_name)
-: name(e_name), in(i), sm(e_sm), current_state(in), best_state(in), max_iterations(ULONG_MAX)
-{}
+Runner<Input,State,CFtype>::Runner(const Input& i, StateManager<Input,State,CFtype>& e_sm, std::string e_name, std::string e_desc)
+: name(e_name), in(i), sm(e_sm), current_state(in), best_state(in),
+  parameters(e_name, e_desc),
+// parameters
+  max_iterations("max_iterations", "Maximum total number of iterations allowed", parameters)
+{
+  // this parameter has a default value
+  max_iterations = std::numeric_limits<unsigned long int>::max();
+}
 
 /**
    Returns the maximum value of iterations allowed for the runner.
 
    @return the maximum value of iterations allowed
 */
+// FIXME remove parameter accessors
 template <class Input, class State, typename CFtype>
 unsigned long Runner<Input,State,CFtype>::GetMaxIterations() const
 {

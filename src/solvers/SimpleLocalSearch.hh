@@ -19,8 +19,7 @@ public:
   SimpleLocalSearch(const Input& in,
 		    StateManager<Input,State,CFtype>& e_sm,
 		    OutputManager<Input,Output,State,CFtype>& e_om,
-		    std::string name,
-		    CLParser& cl = CLParser::empty);
+		    std::string name);
   void Print(std::ostream& os = std::cout) const;
   void SetRunner(Runner<Input,State,CFtype>& r);
   void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout);   
@@ -30,8 +29,6 @@ protected:
   void Run();
   void Check() const;
   Runner<Input,State,CFtype>* p_runner; /**< A pointer to the managed runner. */
-  ArgumentGroup simple_ls_arguments;
-  ValArgument<float> arg_timeout;	
 };
 
 /*************************************************************************
@@ -53,17 +50,9 @@ template <class Input, class Output, class State, typename CFtype>
 SimpleLocalSearch<Input,Output,State,CFtype>::SimpleLocalSearch(const Input& in,
 								StateManager<Input,State,CFtype>& e_sm,
 								OutputManager<Input,Output,State,CFtype>& e_om,
-								std::string name,
-                CLParser& cl)
-  : AbstractLocalSearch<Input,Output,State,CFtype>(in, e_sm, e_om, name),
-    simple_ls_arguments("sls_" + name, "sls_" + name, false), arg_timeout("timeout", "to", false, 0.0)
+								std::string name)
+  : AbstractLocalSearch<Input,Output,State,CFtype>(in, e_sm, e_om, name)
 {
-  simple_ls_arguments.AddArgument(arg_timeout);
-  cl.AddArgument(simple_ls_arguments);
-  cl.MatchArgument(simple_ls_arguments);	
-  if (simple_ls_arguments.IsSet())
-    if (arg_timeout.IsSet())
-      this->SetTimeout(arg_timeout.GetValue());
   p_runner = nullptr;
 }
 
