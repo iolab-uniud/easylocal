@@ -21,10 +21,6 @@ protected:
   std::string cmdline_flag;
 };
 
-AbstractParameter::AbstractParameter(const std::string& cf, const std::string& d)
-: description(d), cmdline_flag(cf)
-{}
-
 class ParameterNotSet
 : public std::exception
 {
