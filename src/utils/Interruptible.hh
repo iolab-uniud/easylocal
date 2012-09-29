@@ -5,6 +5,31 @@
 #include <future>
 #include <chrono>
 #include <atomic>
+#include <thread>
+
+/* hack for simulating sleep_for when the compiler is not defininig it (e.g., macports g++ >= 4.6) */
+#if defined(HAVE_THIS_THREAD_SLEEP_FOR)
+namespace _easylocal {
+  template <class Rep, class Period>
+  void sleep_for(std::chrono::duration<Rep,Period> sleep_duration)
+  {
+    std::this_thread::sleep_for(sleep_duration);
+  }
+};
+#else
+#include <condition_variable>
+namespace _easylocal {
+  template <class Rep, class Period>
+  void sleep_for(std::chrono::duration<Rep,Period> sleep_duration)
+  {
+    std::condition_variable c;
+    std::mutex m;
+    std::unique_lock<std::mutex> l(m);
+    c.wait_for(l, sleep_duration);
+  }
+};
+#endif
+
 
 /** A mixin class to add timeouts to anything. */
 template <typename Rtype, typename ... Args>
@@ -35,7 +60,7 @@ public:
     timeout_expired = false;
     result = std::async(std::launch::async, this->MakeFunction(), std::ref(args) ...);
     std::thread t([this, timeout]() {
-      std::this_thread::sleep_for(timeout);
+      _easylocal::sleep_for(timeout);
       // If the function has not returned a value already
       if(!HasReturned())
         this->timeout_expired = true;
