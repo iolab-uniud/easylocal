@@ -690,6 +690,8 @@ EASYLOCALPP_BUILD
 EASYLOCALPP
 BOOST_LDFLAGS
 BOOST_CPPFLAGS
+BOOST_FALSE
+BOOST_TRUE
 CPPUNIT_LIBS
 CPPUNIT_CFLAGS
 CPPUNIT_CONFIG
@@ -16723,7 +16725,14 @@ $as_echo "$as_me: We could not detect the boost libraries (version $boost_lib_ve
 $as_echo "$as_me: Your boost libraries seems to old (version $_version)." >&6;}
         fi
         # execute ACTION-IF-NOT-FOUND (if present):
-        :
+         if false; then
+  BOOST_TRUE=
+  BOOST_FALSE='#'
+else
+  BOOST_TRUE='#'
+  BOOST_FALSE=
+fi
+
     else
 
 
@@ -16731,7 +16740,14 @@ $as_echo "$as_me: Your boost libraries seems to old (version $_version)." >&6;}
 $as_echo "#define HAVE_BOOST /**/" >>confdefs.h
 
         # execute ACTION-IF-FOUND (if present):
-        :
+         if true; then
+  BOOST_TRUE=
+  BOOST_FALSE='#'
+else
+  BOOST_TRUE='#'
+  BOOST_FALSE=
+fi
+
     fi
 
     CPPFLAGS="$CPPFLAGS_SAVED"
@@ -18844,6 +18860,14 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${CPPUNIT_TRUE}" && test -z "${CPPUNIT_FALSE}"; then
   as_fn_error $? "conditional \"CPPUNIT\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${BOOST_TRUE}" && test -z "${BOOST_FALSE}"; then
+  as_fn_error $? "conditional \"BOOST\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${BOOST_TRUE}" && test -z "${BOOST_FALSE}"; then
+  as_fn_error $? "conditional \"BOOST\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${DX_COND_doc_TRUE}" && test -z "${DX_COND_doc_FALSE}"; then

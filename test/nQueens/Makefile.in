@@ -54,6 +54,8 @@ host_triplet = @host@
 target_triplet = @target@
 bin_PROGRAMS = queens$(EXEEXT) $(am__EXEEXT_1)
 @CPPUNIT_TRUE@am__append_1 = QueensTest
+@BOOST_TRUE@am__append_2 = @BOOST_CPPFLAGS@
+@BOOST_TRUE@am__append_3 = @BOOST_LDFLAGS@ -lboost_program_options
 @CPPUNIT_TRUE@check_PROGRAMS = QueensTest$(EXEEXT)
 subdir = test/nQueens
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in \
@@ -324,8 +326,10 @@ libnQueens_la_SOURCES = data/ChessBoard.cc data/Swap.cc \
   helpers/QueensStateManager.cc helpers/PrimaryDiagonalCostComponent.cc
 
 queens_SOURCES = main.cc
-AM_CPPFLAGS = -I@EASYLOCALPP@/src -I@EASYLOCALPP_BUILD@ @EOFWARNING@ @BOOST_CPPFLAGS@
-AM_LDFLAGS = -L@EASYLOCALPP_BUILD@/src -L. -lEasyLocalpp -lnQueens -lstdc++ @BOOST_LDFLAGS@ -lboost_program_options
+AM_CPPFLAGS = -I@EASYLOCALPP@/src -I@EASYLOCALPP_BUILD@ @EOFWARNING@ \
+	$(am__append_2)
+AM_LDFLAGS = -L@EASYLOCALPP_BUILD@/src -L. -lEasyLocalpp -lnQueens \
+	-lstdc++ $(am__append_3)
 @DEBUG_FALSE@AM_CXXFLAGS = -O3 @ICCFLAGS@
 @DEBUG_TRUE@AM_CXXFLAGS = -g
 @CPPUNIT_TRUE@TESTS = $(check_PROGRAMS)

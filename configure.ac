@@ -103,7 +103,7 @@ if test "$enable_cppunit" = yes; then
 fi
 
 # For Boost library.
-AX_BOOST_BASE([1.40], [], [])
+AX_BOOST_BASE([1.40], [AM_CONDITIONAL(BOOST, true)], [AM_CONDITIONAL(BOOST, false)])
 
 AC_CONFIG_FILES([Makefile src/Makefile test/Makefile test/nQueens/Makefile])
 AC_SUBST(EASYLOCALPP)
