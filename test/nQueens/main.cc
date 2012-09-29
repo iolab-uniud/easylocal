@@ -103,6 +103,7 @@
 #include <runners/SteepestDescent.hh>
 #include <runners/TabuSearch.hh>
 #include <runners/SimulatedAnnealing.hh>
+#include <runners/SimulatedAnnealingWithReheating.hh>
 #include <runners/LateAcceptanceHillClimbing.hh>
 #include <solvers/SimpleLocalSearch.hh>
 #include <solvers/VariableNeighborhoodDescent.hh>
@@ -170,6 +171,8 @@ int main(int argc, char* argv[])
   tester.AddRunner(qts);
   SimulatedAnnealing<int, vector<int>, Swap> qsa(in, qsm, qnhe, "SwapSimulatedAnnealing");
   tester.AddRunner(qsa);
+  SimulatedAnnealingWithReheating<int, vector<int>, Swap> qsawr(in, qsm, qnhe, "SwapSimulatedAnnealingWithReheating");
+  tester.AddRunner(qsawr);
   LateAcceptanceHillClimbing<int, vector<int>, Swap> qlhc(in, qsm, qnhe, "LateAcceptanceHillClimbing");
   tester.AddRunner(qlhc);
   

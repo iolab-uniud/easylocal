@@ -97,7 +97,7 @@ void SimulatedAnnealing<Input,State,Move,CFtype>::Print(std::ostream& os) const
   os  << "  Neighbors accepted: " << max_neighbors_accepted << std::endl;
 }
 
-template <typename CFtype>
+/* template <typename CFtype>
 CFtype max(const std::vector<CFtype>& values) 
 {
   CFtype max_val = values[0];
@@ -106,7 +106,7 @@ CFtype max(const std::vector<CFtype>& values)
       max_val = values[i];
   
   return max_val;
-}
+} 
 
 template <typename CFtype>
 CFtype min(const std::vector<CFtype>& values) 
@@ -117,7 +117,7 @@ CFtype min(const std::vector<CFtype>& values)
       min_val = values[i];
   
   return min_val;
-}
+} */
 
 /**
  Initializes the run by invoking the companion superclass method, and
@@ -151,11 +151,11 @@ void SimulatedAnnealing<Input,State,Move,CFtype>::InitializeRun()
      for (unsigned int i = 0; i < samples; i++)
      variance += (cost_values[i] - mean) * (cost_values[i] - mean) / samples;
      temperature = variance; */
-    temperature = max(cost_values);
+    typename std::vector<CFtype>::iterator max_el = std::max_element(cost_values.begin(), cost_values.end());
+    temperature = *max_el;
     /*From "An improved annealing scheme for the QAP. Connoly. EJOR 46 (1990) 93-100"
-     temperature = min(cost_values) + (max(cost_values) - min(cost_values))/10;*/
+     temperature = *std::min_element(cost_values.begin(), cost_values.end()) + (*std::max_element(cost_values.begin(), cost_values.end()) - std::min_element(cost_values.begin(), cost_values.end()))/10;*/
   }
-  
   
   neighbors_sampled = 0;
   neighbors_accepted = 0;

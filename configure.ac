@@ -76,6 +76,21 @@ AC_C_INLINE
 AC_HEADER_STDC
 AC_CHECK_FUNCS([memset pow sqrt strstr floor])
 
+# Checks for std::this_thread::sleep_for availability (in g++ <= 4.8 is not ensured)
+AC_MSG_CHECKING([for std::this_thread::sleep_for])
+AC_COMPILE_IFELSE(  [AC_LANG_PROGRAM([[#include <thread>]],
+                                     [[std::this_thread::sleep_for(std::chrono::seconds(1));]])],
+                    [
+                      AC_MSG_RESULT([yes])
+                      AC_DEFINE_UNQUOTED([HAVE_THIS_THREAD_SLEEP_FOR], 1, [Define to 1 if you have the `sleep_for' function.])
+                    ],
+                    [
+                      AC_MSG_RESULT([no])
+                      AC_DEFINE_UNQUOTED([HAVE_THIS_THREAD_SLEEP_FOR], 0, [Define to 1 if you have the `sleep_for' function.])
+                    ]
+                 )
+
+
 # For CppUnit testing
 AC_ARG_ENABLE(cppunit, 
   [AS_HELP_STRING([--enable-cppunit], [enable unit testing with cppunit (default: no)])], 

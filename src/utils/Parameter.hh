@@ -55,11 +55,11 @@ ParameterBox::ParameterBox(const std::string& p, const std::string& description)
   overall_parameters.push_back(this);
 }
 
-
 template <typename T>
 class Parameter : public AbstractParameter
 {
-  friend std::istream& operator>>(std::istream& is, Parameter<T>& p);
+  template <typename _T>
+  friend std::istream& operator>>(std::istream& is, Parameter<_T>& p);
 public:
   Parameter(const std::string& description, const std::string& cmdline_flag, ParameterBox& parameters);
   operator T() const throw (ParameterNotSet);
@@ -99,6 +99,8 @@ std::istream& operator>>(std::istream& is, Parameter<T>& p)
 {
   is >> p.value;
   p.is_set = true;
+  
+  return is;
 }
 
 
