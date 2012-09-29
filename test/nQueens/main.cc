@@ -125,9 +125,11 @@ typedef std::chrono::duration<double, std::ratio<1>> secs;
 
 int main(int argc, char* argv[])
 {
+#if defined(HAVE_BOOST)
   boost::program_options::options_description main_program_options("Main program options");
   
   boost::program_options::variables_map vm;
+#endif
 	// The CLParser object parses the command line arguments
   //CLParser cl(argc, argv);
   
