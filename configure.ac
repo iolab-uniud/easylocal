@@ -85,8 +85,7 @@ AC_COMPILE_IFELSE(  [AC_LANG_PROGRAM([[#include <thread>]],
                       AC_DEFINE_UNQUOTED([HAVE_THIS_THREAD_SLEEP_FOR], 1, [Define to 1 if you have the `sleep_for' function.])
                     ],
                     [
-                      AC_MSG_RESULT([no])
-                      AC_DEFINE_UNQUOTED([HAVE_THIS_THREAD_SLEEP_FOR], 0, [Define to 1 if you have the `sleep_for' function.])
+                      AC_MSG_RESULT([no])                      
                     ]
                  )
 
