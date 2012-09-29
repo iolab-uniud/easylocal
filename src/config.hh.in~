@@ -5,6 +5,9 @@
 #define CONFIG_INCLUDED
 
 
+/* define if the Boost library is available */
+#undef HAVE_BOOST
+
 /* Define to 1 if you have the <dlfcn.h> header file. */
 #undef HAVE_DLFCN_H
 
@@ -13,6 +16,41 @@
 
 /* Define to 1 if you have the <inttypes.h> header file. */
 #undef HAVE_INTTYPES_H
+
+/* Define to 1 if you have the `sleep_for' function.; else { $as_echo
+   "$as_me:${as_lineno-$LINENO}: result: no" >&5 $as_echo "no" >&6; } fi rm -f
+   core conftest.err conftest.$ac_objext conftest$ac_exeext conftest.$ac_ext #
+   For CppUnit testing --enable-cppunit enable unit testing with cppunit
+   (default: no) # Check whether --enable-cppunit was given. if test
+   "${enable_cppunit+set}" = set; then : enableval=$enable_cppunit; fi {
+   $as_echo "$as_me:${as_lineno-$LINENO}: result: $enable_cppunit" >&5
+   $as_echo "$enable_cppunit" >&6; } if test "$enable_cppunit" = yes; then
+   CPPUNIT_TRUE= CPPUNIT_FALSE='#' else CPPUNIT_TRUE='#' CPPUNIT_FALSE= fi if
+   test "$enable_cppunit" = yes; then --with-cppunit-prefix=PFX Prefix where
+   CppUnit is installed (optional) # Check whether --with-cppunit-prefix was
+   given. if test "${with_cppunit_prefix+set}" = set; then :
+   withval=$with_cppunit_prefix; cppunit_config_prefix="$withval" else
+   cppunit_config_prefix="" fi --with-cppunit-exec-prefix=PFX Exec prefix
+   where CppUnit is installed (optional) # Check whether
+   --with-cppunit-exec-prefix was given. if test
+   "${with_cppunit_exec_prefix+set}" = set; then :
+   withval=$with_cppunit_exec_prefix; cppunit_config_exec_prefix="$withval"
+   else cppunit_config_exec_prefix="" fi if test x$cppunit_config_exec_prefix
+   != x ; then cppunit_config_args="$cppunit_config_args
+   --exec-prefix=$cppunit_config_exec_prefix" if test x${CPPUNIT_CONFIG+set}
+   != xset ; then
+   CPPUNIT_CONFIG=$cppunit_config_exec_prefix/bin/cppunit-config fi fi if test
+   x$cppunit_config_prefix != x ; then
+   cppunit_config_args="$cppunit_config_args --prefix=$cppunit_config_prefix"
+   if test x${CPPUNIT_CONFIG+set} != xset ; then
+   CPPUNIT_CONFIG=$cppunit_config_prefix/bin/cppunit-config fi fi # Extract
+   the first word of "cppunit-config", so it can be a program name with args.
+   set dummy cppunit-config; ac_word=$2 { $as_echo
+   "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5 $as_echo_n
+   "checking for $ac_word... " >&6; } if ${ac_cv_path_CPPUNIT_CONFIG+:} false;
+   then : $as_echo_n "(cached) " >&6 else case $CPPUNIT_CONFIG in [\\/]* |
+   ?:[\\/]* */
+#undef HAVE_LINKABLE_BOOST
 
 /* Define to 1 if you have the <memory.h> header file. */
 #undef HAVE_MEMORY_H
@@ -49,6 +87,9 @@
 
 /* Define to 1 if you have the <sys/types.h> header file. */
 #undef HAVE_SYS_TYPES_H
+
+/* Define to 1 if you have the `sleep_for' function. */
+#undef HAVE_THIS_THREAD_SLEEP_FOR
 
 /* Define to 1 if you have the <unistd.h> header file. */
 #undef HAVE_UNISTD_H

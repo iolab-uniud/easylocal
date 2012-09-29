@@ -12,7 +12,7 @@ const char* ParameterNotSet::what() const throw()
 std::vector<const ParameterBox*> ParameterBox::overall_parameters;
 
 ParameterBox::ParameterBox(const std::string& p, const std::string& description) : prefix(p)
-#if defined(HAVE_BOOST)
+#if defined(HAVE_LINKABLE_BOOST)
 , cl_options(description)
 #endif
 {

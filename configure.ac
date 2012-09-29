@@ -90,6 +90,18 @@ AC_COMPILE_IFELSE(  [AC_LANG_PROGRAM([[#include <thread>]],
                  )
 
 
+# For Boost library.
+AX_BOOST_BASE([1.40], [AM_CONDITIONAL(BOOST, true)], [AM_CONDITIONAL(BOOST, false)])
+# Checks for boost::program_options (macports boost could be compiled with an incompatible c++11 compiler)
+AC_MSG_CHECKING([whether the boost_program_options library can be linked])
+AC_LINK_IFELSE(
+    [AC_LANG_PROGRAM([[#include <boost/program_options.hpp>]],
+        [[bboost::program_options::options_description tmp("Test program options");]])],
+    [AC_MSG_RESULT([yes])
+        AC_DEFINE_UNQUOTED([HAVE_LINKABLE_BOOST], 1, [Define to 1 if you have the `sleep_for' function.])],
+    [AC_MSG_RESULT([no])
+    AM_CONDITIONAL(BOOST, false)])
+
 # For CppUnit testing
 AC_ARG_ENABLE(cppunit, 
   [AS_HELP_STRING([--enable-cppunit], [enable unit testing with cppunit (default: no)])], 
@@ -102,8 +114,6 @@ if test "$enable_cppunit" = yes; then
 	  [AM_CONDITIONAL(CPPUNIT, false)])
 fi
 
-# For Boost library.
-AX_BOOST_BASE([1.40], [AM_CONDITIONAL(BOOST, true)], [AM_CONDITIONAL(BOOST, false)])
 
 AC_CONFIG_FILES([Makefile src/Makefile test/Makefile test/nQueens/Makefile])
 AC_SUBST(EASYLOCALPP)

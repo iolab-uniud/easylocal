@@ -281,7 +281,6 @@ top_srcdir = @top_srcdir@
 lib_LTLIBRARIES = libEasyLocalpp.la
 libEasyLocalpp_la_SOURCES = utils/Random.cc utils/Types.cc utils/Parameter.cc
 AM_CPPFLAGS = -I@EASYLOCALPP_BUILD@ @BOOST_CPPFLAGS@
-AM_LDFLAGS = -lstdc++ 
 @DEBUG_FALSE@AM_CXXFLAGS = -O3 @EOFWARNING@ #-cxxlib-gcc
 @DEBUG_TRUE@AM_CXXFLAGS = -g -O0 @EOFWARNING@
 all: config.hh

@@ -440,7 +440,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "# shell script goes here\nexport CXX=\"clang++\"\nexport CC=\"clang\"\nexport CXXFLAGS=\"-stdlib=libc++\"\nexport CPPFLAGS=\"-I$PROJECT_DIR/../src\"\ncd $BUILD_DIR\necho $CONFIGURATION\nif [ \"$CONFIGURATION\" == \"Debug\" ]; then\necho \"DEBUG configuration\"\n$PROJECT_DIR/../configure --enable-debug --with-cppunit-prefix=/opt/local\nelse\necho \"RELEASE configuration\"\n$PROJECT_DIR/../configure --with-cppunit-prefix=/opt/local\nfi\nmake clean\nexit 0";
+			shellScript = "# shell script goes here\nexport CC=\"clang\"\nexport CXX=\"clang++\"\nexport CXXFLAGS=\"-stdlib=libc++\"\nexport CPPFLAGS=\"-I$PROJECT_DIR/../src\"\ncd $BUILD_DIR\necho $CONFIGURATION\nif [ \"$CONFIGURATION\" == \"Debug\" ]; then\necho \"DEBUG configuration\"\n$PROJECT_DIR/../configure --enable-debug --with-cppunit-prefix=/opt/local\nelse\necho \"RELEASE configuration\"\n$PROJECT_DIR/../configure --with-cppunit-prefix=/opt/local\nfi\nmake clean\nexit 0";
 		};
 		ACFAF4C20DD489630095F6A0 /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;

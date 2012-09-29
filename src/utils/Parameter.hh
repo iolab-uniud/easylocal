@@ -7,10 +7,11 @@
 #endif
 
 #include <stdexcept>
-#if defined(HAVE_BOOST)
+#if defined(HAVE_LINKABLE_BOOST)
 #include <boost/program_options/options_description.hpp>
 #endif
 #include <vector>
+#include <string>
 
 class AbstractParameter
 {
@@ -36,7 +37,7 @@ class ParameterBox : public std::vector<AbstractParameter>
 public:
   ParameterBox(const std::string& prefix, const std::string& description);
   const std::string prefix;
-#if defined(HAVE_BOOST)
+#if defined(HAVE_LINKABLE_BOOST)
   boost::program_options::options_description cl_options;
 #endif
   static std::vector<const ParameterBox*> overall_parameters;
@@ -61,7 +62,7 @@ Parameter<T>::Parameter(const std::string& cmdline_flag, const std::string& desc
 : AbstractParameter(cmdline_flag, description), is_set(false)
 {
   std::string flag = parameters.prefix + "::" + cmdline_flag;
-#if defined(HAVE_BOOST)
+#if defined(HAVE_LINKABLE_BOOST)
   parameters.cl_options.add_options()
   (flag.c_str(), boost::program_options::value<T>(&value)->notifier([this](const T&){ this->is_set = true; }), description.c_str());
 #endif

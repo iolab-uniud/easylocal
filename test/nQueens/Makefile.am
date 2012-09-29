@@ -17,7 +17,7 @@ libnQueens_la_SOURCES = data/ChessBoard.cc data/Swap.cc \
 queens_SOURCES = main.cc
 
 AM_CPPFLAGS = -I@EASYLOCALPP@/src -I@EASYLOCALPP_BUILD@ @EOFWARNING@ 
-AM_LDFLAGS = -L@EASYLOCALPP_BUILD@/src -L. -lEasyLocalpp -lnQueens -lstdc++ 
+AM_LDFLAGS = -L@EASYLOCALPP_BUILD@/src -L. -lEasyLocalpp -lnQueens 
 
 if BOOST
 AM_CPPFLAGS += @BOOST_CPPFLAGS@

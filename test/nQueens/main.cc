@@ -111,7 +111,7 @@
 #include <testers/MoveTester.hh>
 #include <testers/KickerTester.hh>
 #include <chrono>
-#if defined(HAVE_BOOST)
+#if defined(HAVE_LINKABLE_BOOST)
 #include <boost/program_options/options_description.hpp>
 #include <boost/program_options/parsers.hpp>
 #include <boost/program_options/variables_map.hpp>
@@ -125,7 +125,7 @@ typedef std::chrono::duration<double, std::ratio<1>> secs;
 
 int main(int argc, char* argv[])
 {
-#if defined(HAVE_BOOST)
+#if defined(HAVE_LINKABLE_BOOST)
   boost::program_options::options_description main_program_options("Main program options");
   
   boost::program_options::variables_map vm;
@@ -190,7 +190,7 @@ int main(int argc, char* argv[])
   RunnerObserver<int, vector<int>, Swap> ro(arg_verbosity_level.GetValue(), arg_plot_level.GetValue());
   GeneralizedLocalSearchObserver<int, ChessBoard, vector<int> > so(arg_verbosity_level.GetValue(), arg_plot_level.GetValue()); */
 
-#if defined(HAVE_BOOST)
+#if defined(HAVE_LINKABLE_BOOST)
   for (auto pb : ParameterBox::overall_parameters)
   {
     main_program_options.add(pb->cl_options);
