@@ -16586,7 +16586,7 @@ fi
 $as_echo_n "checking whether the boost_program_options library can be linked... " >&6; }
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
-#include <boost/program_options.hpp>
+#include <boost/program_options/options_description.hpp>
 int
 main ()
 {

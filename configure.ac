@@ -95,7 +95,7 @@ AX_BOOST_BASE([1.40], [AM_CONDITIONAL(BOOST, true)], [AM_CONDITIONAL(BOOST, fals
 # Checks for boost::program_options (macports boost could be compiled with an incompatible c++11 compiler)
 AC_MSG_CHECKING([whether the boost_program_options library can be linked])
 AC_LINK_IFELSE(
-    [AC_LANG_PROGRAM([[#include <boost/program_options.hpp>]],
+    [AC_LANG_PROGRAM([[#include <boost/program_options/options_description.hpp>]],
         [[bboost::program_options::options_description tmp("Test program options");]])],
     [AC_MSG_RESULT([yes])
         AC_DEFINE_UNQUOTED([HAVE_LINKABLE_BOOST], 1, [Define to 1 if you have the `sleep_for' function.])],
