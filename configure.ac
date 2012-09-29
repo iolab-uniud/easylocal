@@ -94,6 +94,7 @@ AC_COMPILE_IFELSE(  [AC_LANG_PROGRAM([[#include <thread>]],
 AX_BOOST_BASE([1.40], [AM_CONDITIONAL(BOOST, true)], [AM_CONDITIONAL(BOOST, false)])
 # Checks for boost::program_options (macports boost could be compiled with an incompatible c++11 compiler)
 AC_MSG_CHECKING([whether the boost_program_options library can be linked])
+AC_LANG_PUSH([C++])
 LDFLAGS_SAVED="$LDFLAGS"
 LDFLAGS="$LDFLAGS $BOOST_LDFLAGS -lboost_program_options"
 AC_LINK_IFELSE(
@@ -104,6 +105,7 @@ AC_LINK_IFELSE(
     [AC_MSG_RESULT([no])
     AM_CONDITIONAL(BOOST, false)])
 LDFLAGS=$LDFLAGS_SAVED
+AC_LANG_POP([C++])
 
 # For CppUnit testing
 AC_ARG_ENABLE(cppunit, 
