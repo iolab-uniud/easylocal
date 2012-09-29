@@ -37,6 +37,8 @@
 		50B7DC6316147D16006CFED0 /* SimulatedAnnealingWithReheating.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = SimulatedAnnealingWithReheating.hh; sourceTree = "<group>"; };
 		50BDA6F5160200CC0069BFF7 /* LateAcceptanceHillClimbing.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = LateAcceptanceHillClimbing.hh; sourceTree = "<group>"; };
 		A29C12D3148F74CC00EDC517 /* ToDo2012 */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = ToDo2012; path = ../ToDo2012; sourceTree = "<group>"; };
+		A2DF65DD16170709002DFB3D /* Parameter.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Parameter.cc; sourceTree = "<group>"; };
+		A2DF65DE16170709002DFB3D /* Parameter.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Parameter.hh; sourceTree = "<group>"; };
 		AC4276C40DD873F6006C3B31 /* index.html */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.html; name = index.html; path = ../doc/html/index.html; sourceTree = SOURCE_ROOT; };
 		AC75B24C0DD08BB8003EBD1F /* GeneralizedLocalSearchObserver.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = GeneralizedLocalSearchObserver.hh; sourceTree = "<group>"; };
 		AC75B24D0DD08BB8003EBD1F /* RunnerObserver.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = RunnerObserver.hh; sourceTree = "<group>"; };
@@ -267,6 +269,8 @@
 		ACF4B13F0DBFA668008A0207 /* utils */ = {
 			isa = PBXGroup;
 			children = (
+				A2DF65DE16170709002DFB3D /* Parameter.hh */,
+				A2DF65DD16170709002DFB3D /* Parameter.cc */,
 				ACF4B1580DBFA668008A0207 /* Random.hh */,
 				5005F4ED16106B78002BA61D /* Random.cc */,
 				ACF4B15B0DBFA668008A0207 /* Types.hh */,
@@ -436,7 +440,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "# shell script goes here\nexport CXX=\"g++-mp-4.8\"\nexport CC=\"gcc-mp-4.8 \"\n#export CXXFLAGS=\"-stdlib=libc++\"\nexport CPPFLAGS=\"-I$PROJECT_DIR/../src\"\ncd $BUILD_DIR\necho $CONFIGURATION\nif [ \"$CONFIGURATION\" == \"Debug\" ]; then\necho \"DEBUG configuration\"\n$PROJECT_DIR/../configure --enable-debug --with-cppunit-prefix=/opt/local\nelse\necho \"RELEASE configuration\"\n$PROJECT_DIR/../configure --with-cppunit-prefix=/opt/local\nfi\nmake clean\nexit 0";
+			shellScript = "# shell script goes here\nexport CXX=\"clang++\"\nexport CC=\"clang\"\nexport CXXFLAGS=\"-stdlib=libc++\"\nexport CPPFLAGS=\"-I$PROJECT_DIR/../src\"\ncd $BUILD_DIR\necho $CONFIGURATION\nif [ \"$CONFIGURATION\" == \"Debug\" ]; then\necho \"DEBUG configuration\"\n$PROJECT_DIR/../configure --enable-debug --with-cppunit-prefix=/opt/local\nelse\necho \"RELEASE configuration\"\n$PROJECT_DIR/../configure --with-cppunit-prefix=/opt/local\nfi\nmake clean\nexit 0";
 		};
 		ACFAF4C20DD489630095F6A0 /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;
