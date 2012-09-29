@@ -187,13 +187,15 @@ int main(int argc, char* argv[])
   
   RunnerObserver<int, vector<int>, Swap> ro(arg_verbosity_level.GetValue(), arg_plot_level.GetValue());
   GeneralizedLocalSearchObserver<int, ChessBoard, vector<int> > so(arg_verbosity_level.GetValue(), arg_plot_level.GetValue()); */
-  
+
+#if defined(HAVE_BOOST)
   for (auto pb : ParameterBox::overall_parameters)
   {
     main_program_options.add(pb->cl_options);
   }
   
   boost::program_options::store(boost::program_options::parse_command_line(argc, argv, main_program_options), vm);
+#endif
 	
 	/* if (arg_plot_level.IsSet())
 	{
