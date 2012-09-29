@@ -45,7 +45,9 @@ class ParameterBox : public std::vector<AbstractParameter>
 public:
   ParameterBox(const std::string& prefix, const std::string& description);
   const std::string prefix;
+#if HAVE_BOOST
   boost::program_options::options_description cl_options;
+#endif
   static std::vector<const ParameterBox*> overall_parameters;
 };
 
