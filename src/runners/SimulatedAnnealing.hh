@@ -6,6 +6,7 @@
 #include <helpers/NeighborhoodExplorer.hh>
 #include <cmath>
 #include <stdexcept>
+#include <algorithm>
 
 /** The Simulated annealing runner relies on a probabilistic local
  search technique whose name comes from the fact that it

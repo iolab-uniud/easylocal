@@ -62,7 +62,7 @@ public:
     std::thread t([this, timeout]() {
       _easylocal::sleep_for(timeout);
       // If the function has not returned a value already
-      if(!HasReturned())
+      if(!this->HasReturned())
         this->timeout_expired = true;
       
     });
