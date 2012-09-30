@@ -49,9 +49,10 @@ class Parameter : public AbstractParameter
   template <typename _T>
   friend std::istream& operator>>(std::istream& is, Parameter<_T>& p);
 public:
-  Parameter(const std::string& description, const std::string& cmdline_flag, ParameterBox& parameters);
+  Parameter(const std::string& cmdline_flag, const std::string& description, ParameterBox& parameters);
   operator T() const throw (ParameterNotSet);
   const T& operator=(const T&);
+  bool IsSet() const { return is_set; }
 protected:
   bool is_set;
   T value;
@@ -93,6 +94,8 @@ std::istream& operator>>(std::istream& is, Parameter<T>& p)
   return is;
 }
 
+
+// TODO: add Parameter for boolean flags
 
 // TODO: specialize for bool (i.e., flags)
 /* class Parameter<bool>

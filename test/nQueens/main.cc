@@ -125,26 +125,40 @@ typedef std::chrono::duration<double, std::ratio<1>> secs;
 
 int main(int argc, char* argv[])
 {
-#if defined(HAVE_LINKABLE_BOOST)
-  boost::program_options::options_description main_program_options("Main program options");
-  
-  boost::program_options::variables_map vm;
-#endif
 	// The CLParser object parses the command line arguments
-  //CLParser cl(argc, argv);
-  
-	// The set of arguments added are the following:
-  /*< The size of the chessboard, that is, the input of the problem */
-  /* ValArgument<int> arg_size("size", "s", true, cl);
-  ValArgument<string> arg_solmethod("method", "m", false, cl);
-  ValArgument<unsigned> arg_plot_level("plot", "p", false, 0u, cl);
-  ValArgument<unsigned> arg_verbosity_level("verbose", "v", false, 0u, cl);
-  ValArgument<double> arg_timeout("timeout", "to", false, 0.0, cl);
+  /* ValArgument<double> arg_timeout("timeout", "to", false, 0.0, cl);
   ValArgument<int> arg_random_seed("random_seed", "rs", false, cl); */
   //cl.MatchArgument(arg_size);
   
-  // data classes
+  // input classe
   int in;
+  
+#if defined(HAVE_LINKABLE_BOOST)
+  ParameterBox main_parameters("main", "Main Program options");
+  // Main program parameters
+  Parameter<int> size("size", "Chessboard size", main_parameters);
+  Parameter<std::string> solution_method("method", "Solution method (none for tester)", main_parameters);
+  Parameter<unsigned int> verbosity_level("verbosity", "Verbosity level", main_parameters);
+  Parameter<unsigned int> plot_level("plot", "Plot level", main_parameters);
+  Parameter<unsigned long> random_seed("random_seed", "Random seed", main_parameters);
+  
+  boost::program_options::variables_map vm_for_input;
+  boost::program_options::parsed_options parsed_for_input = boost::program_options::command_line_parser(argc, argv).options(main_parameters.cl_options).allow_unregistered().run();
+
+  boost::program_options::store(parsed_for_input, vm_for_input);
+  boost::program_options::notify(vm_for_input);
+  
+  bool terminate = true;
+
+  if (size.IsSet())
+  {
+    in = size;
+    terminate = false;
+  }
+  
+#else
+  // the value of in shoud be read from the command line
+#endif
   
   // cost components
   PrimaryDiagonalCostComponent cc1(in);
@@ -183,31 +197,50 @@ int main(int argc, char* argv[])
   SimpleLocalSearch<int, ChessBoard, vector<int> > qss(in, qsm, qom, "QueensSLS");
   VariableNeighborhoodDescent<int, ChessBoard, vector<int> > qvnd(in, qsm, qom, 3);  
 
-  /* cl.MatchArguments();
-  if (arg_random_seed.IsSet())
-    Random::Seed(arg_random_seed.GetValue());
+  if (random_seed.IsSet())
+    Random::Seed(random_seed);
   
-  RunnerObserver<int, vector<int>, Swap> ro(arg_verbosity_level.GetValue(), arg_plot_level.GetValue());
-  GeneralizedLocalSearchObserver<int, ChessBoard, vector<int> > so(arg_verbosity_level.GetValue(), arg_plot_level.GetValue()); */
-
 #if defined(HAVE_LINKABLE_BOOST)
+  boost::program_options::options_description cmdline_options; 
+  boost::program_options::variables_map vm;
   for (auto pb : ParameterBox::overall_parameters)
+    cmdline_options.add(pb->cl_options);
+  
+  cmdline_options.add_options()
+  ("help", "Produce help message");
+  
+  boost::program_options::parsed_options parsed = boost::program_options::command_line_parser(argc, argv).options(cmdline_options).allow_unregistered().run();
+  
+  std::vector<std::string> unrecognized_options = boost::program_options::collect_unrecognized(parsed.options, boost::program_options::include_positional);
+  
+  if (unrecognized_options.size() > 0)
   {
-    main_program_options.add(pb->cl_options);
+    std::cout << "Unrecognized options: ";
+    for (const std::string& o : unrecognized_options)
+      std::cout << o << " ";
+    std::cout << std::endl << "Run " << argv[0] << " --help for the allowed options" << std::endl;
+    return 1;
   }
-  main_program_options.add_options()
-  ("help", "produce help message");
+  boost::program_options::store(parsed, vm);
+  boost::program_options::notify(vm);
   
-  boost::program_options::store(boost::program_options::parse_command_line(argc, argv, main_program_options), vm);
-  
-  if (vm.count("help")) {
-    std::cout << main_program_options << std::endl;
+  if (vm.count("help") || terminate)
+  {
+    std::cout << cmdline_options << std::endl;
     return 1;
   }
 #endif
+  
+  qsm.AddCostComponent(cc1);
+  qsm.AddCostComponent(cc2);
+  qnhe.AddDeltaCostComponent(dcc1);
+  qnhe.AddDeltaCostComponent(dcc2);
 	
-	/* if (arg_plot_level.IsSet())
+	if (plot_level.IsSet() && verbosity_level.IsSet())
 	{
+    RunnerObserver<int, vector<int>, Swap> ro(verbosity_level, plot_level);
+    GeneralizedLocalSearchObserver<int, ChessBoard, vector<int> > so(verbosity_level, plot_level);
+
 		qhc.AttachObserver(ro);
 		qsd.AttachObserver(ro);
 		qts.AttachObserver(ro);
@@ -216,14 +249,9 @@ int main(int argc, char* argv[])
 	}
 
 
-  qvnd.SetKicker(qk);
-
-  qsm.AddCostComponent(cc1);
-  qsm.AddCostComponent(cc2);
-  qnhe.AddDeltaCostComponent(dcc1);
-  qnhe.AddDeltaCostComponent(dcc2);
+  //  qvnd.SetKicker(qk);  
 	
-  if (!arg_solmethod.IsSet())
+  if (!solution_method.IsSet())
 	{
 		// testers
 		MoveTester<int, ChessBoard, vector<int>, Swap> swap_move_test(in,qsm,qom,qnhe, "Swap move", tester);
@@ -236,7 +264,8 @@ int main(int argc, char* argv[])
 		
 		tester.RunMainMenu();
 	}
-  else if (arg_solmethod.GetValue() == "VND")
+  /*
+  else if (solution_method == "VND")
   {
     qvnd.Solve();
     cout << qvnd.GetOutput() << endl << qvnd.GetCurrentCost() << endl;
