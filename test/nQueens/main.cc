@@ -123,7 +123,7 @@ using namespace std;
 using namespace chrono;
 typedef std::chrono::duration<double, std::ratio<1>> secs;
 
-int main(int argc, char* argv[])
+int main(int argc, const char* argv[])
 {
 	// The CLParser object parses the command line arguments
   /* ValArgument<double> arg_timeout("timeout", "to", false, 0.0, cl);
@@ -142,20 +142,14 @@ int main(int argc, char* argv[])
   Parameter<unsigned int> plot_level("plot", "Plot level", main_parameters);
   Parameter<unsigned long> random_seed("random_seed", "Random seed", main_parameters);
   
-  boost::program_options::variables_map vm_for_input;
-  boost::program_options::parsed_options parsed_for_input = boost::program_options::command_line_parser(argc, argv).options(main_parameters.cl_options).allow_unregistered().run();
-
-  boost::program_options::store(parsed_for_input, vm_for_input);
-  boost::program_options::notify(vm_for_input);
+  // parse only the previous parameters
+  CommandLineParameters::Parse(argc, argv, false);  
   
-  bool terminate = true;
-
   if (size.IsSet())
-  {
     in = size;
-    terminate = false;
-  }
-  
+  else
+    in = 0;
+    
 #else
   // the value of in shoud be read from the command line
 #endif
@@ -200,33 +194,14 @@ int main(int argc, char* argv[])
   if (random_seed.IsSet())
     Random::Seed(random_seed);
   
-#if defined(HAVE_LINKABLE_BOOST)
-  boost::program_options::options_description cmdline_options; 
-  boost::program_options::variables_map vm;
-  for (auto pb : ParameterBox::overall_parameters)
-    cmdline_options.add(pb->cl_options);
-  
-  cmdline_options.add_options()
-  ("help", "Produce help message");
-  
-  boost::program_options::parsed_options parsed = boost::program_options::command_line_parser(argc, argv).options(cmdline_options).allow_unregistered().run();
-  
-  std::vector<std::string> unrecognized_options = boost::program_options::collect_unrecognized(parsed.options, boost::program_options::include_positional);
-  
-  if (unrecognized_options.size() > 0)
-  {
-    std::cout << "Unrecognized options: ";
-    for (const std::string& o : unrecognized_options)
-      std::cout << o << " ";
-    std::cout << std::endl << "Run " << argv[0] << " --help for the allowed options" << std::endl;
+#if defined(HAVE_LINKABLE_BOOST)  
+  // parse all command line parameters, including those posted by runners and solvers
+  if (!CommandLineParameters::Parse(argc, argv, true))
     return 1;
-  }
-  boost::program_options::store(parsed, vm);
-  boost::program_options::notify(vm);
   
-  if (vm.count("help") || terminate)
+  if (!size.IsSet())
   {
-    std::cout << cmdline_options << std::endl;
+    std::cout << "Error: --main::size=N option must always be set" << std::endl;
     return 1;
   }
 #endif

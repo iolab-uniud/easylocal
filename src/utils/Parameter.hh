@@ -94,7 +94,6 @@ std::istream& operator>>(std::istream& is, Parameter<T>& p)
   return is;
 }
 
-
 // TODO: add Parameter for boolean flags
 
 // TODO: specialize for bool (i.e., flags)
@@ -104,5 +103,11 @@ protected:
   bool is_set;
   FlagArgument cl_arg;
 }; */
+
+class CommandLineParameters
+{
+public:
+  static bool Parse(int argc, const char* argv[], bool check_unregistered = true);
+};
 
 #endif
