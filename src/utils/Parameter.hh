@@ -206,11 +206,11 @@ public:
   }
 
   /** Print all parameter values on an output stream. */
-  virtual void PrintParameters(std::ostream& os = std::cout) const
+  virtual void Print(std::ostream& os = std::cout) const
   {
     for(auto p : this->parameters)
     {
-      os << "  " << p->cmdline_flag << "(" << p->description << "): ";
+      os << "  " << p->description << ": ";
       p->Write(os) << std::endl;
     }
   }

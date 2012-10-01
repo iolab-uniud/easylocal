@@ -20,7 +20,6 @@ public:
                                 TabuListManager<State,Move,CFtype>& tlm,
                                 std::string name);
   
-  void Print(std::ostream& os = std::cout) const;
   void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout);
   void SetShiftRegion(double sr)
   { shift_region = sr; }
@@ -58,16 +57,6 @@ TabuSearchWithShiftingPenalty<Input,State,Move,CFtype>::TabuSearchWithShiftingPe
 // parameters
 shift_region("shift_region", "FIXME", this->parameters)
 {}
-
-template <class Input, class State, class Move, typename CFtype>
-void TabuSearchWithShiftingPenalty<Input,State,Move,CFtype>::Print(std::ostream& os) const
-{
-  os  << "Tabu Search with Shifting Penalty Runner: " << this->name << std::endl;
-  os  << "  Max iterations: " << this->max_iterations << std::endl;
-  os  << "  Max idle iteration: " << this->max_idle_iterations << std::endl;
-  this->pm.Print(os);
-  os  << "  Shift region: " << shift_region << std::endl;
-}
 
 template <class Input, class State, class Move, typename CFtype>
 void TabuSearchWithShiftingPenalty<Input,State,Move,CFtype>::ResetShifts()
@@ -143,11 +132,6 @@ void TabuSearchWithShiftingPenalty<Input,State,Move,CFtype>::CompleteMove()
 template <class Input, class State, class Move, typename CFtype>
 void TabuSearchWithShiftingPenalty<Input,State,Move,CFtype>::ReadParameters(std::istream& is, std::ostream& os)
 {
-  os << "TABU SEARCH WITH SHIFTING PENALTY -- INPUT PARAMETERS" << std::endl;
-  TabuSearch<Input,State,Move,CFtype>::ReadParameters(is,os);
-  os << "  Shift region (% of idle iterations): ";
-  is >> shift_region;
-  
   for (unsigned i = 0; i < this->ne.DeltaCostComponents(); i++)
     this->ne.DeltaCostComponent(i).ReadParameters(is, os);
 }

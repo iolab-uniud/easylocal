@@ -25,8 +25,6 @@ public:
               NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
               std::string name);	
   
-  void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout);
-  void Print(std::ostream& os = std::cout) const;
   void SetLevelRate(double lr)  { level_rate = lr; }
   void SetMinLevel(double ml)  { min_level = ml; }
   void SetNeighborsSampled(unsigned int ns)  { neighbors_sampled = ns; }
@@ -71,14 +69,8 @@ initial_level("initial_level", "FIXME", this->parameters),
 min_level("min_level", "FIXME", this->parameters),
 level_rate("level_rate", "FIXME", this->parameters),
 neighbors_sampled("neighbors_sampled", "FIXME", this->parameters)
-{}
-
-template <class Input, class State, class Move, typename CFtype>
-void GreatDeluge<Input,State,Move,CFtype>::Print(std::ostream& os) const
 {
-  os  << "Great Deluge Runner: " << std::endl;
-  os  << "  Neighbors sampled: " << neighbors_sampled << std::endl;
-  os  << "  Level rate: " << level_rate << std::endl;
+
 }
 
 /**
@@ -108,17 +100,6 @@ void GreatDeluge<Input,State,Move,CFtype>::SelectMove()
 {
   this->ne.RandomMove(this->current_state, this->current_move);
   this->current_move_cost = this->ne.DeltaCostFunction(this->current_state, this->current_move);
-}
-
-template <class Input, class State, class Move, typename CFtype>
-void GreatDeluge<Input,State,Move,CFtype>::ReadParameters(std::istream& is, std::ostream& os)
-
-{
-  os << "GREAT DELUGE -- INPUT PARAMETERS" << std::endl;
-  os << "  Level rate: ";
-  is >> level_rate;
-  os << "  Neighbors sampled: ";
-  is >> this->neighbors_sampled;
 }
 
 /**

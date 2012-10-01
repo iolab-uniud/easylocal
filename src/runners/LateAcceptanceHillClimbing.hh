@@ -29,8 +29,6 @@ public:
                              NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
                              std::string name);	
   
-  void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout);
-  void Print(std::ostream& os = std::cout) const;
   void SetSteps(unsigned int s) { steps = s; previous_steps.resize(s); }
   
 protected:
@@ -40,7 +38,6 @@ protected:
   
   // parameters
   Parameter<unsigned int> steps;
-  
   std::vector<CFtype> previous_steps;
   
 };
@@ -63,15 +60,9 @@ LateAcceptanceHillClimbing<Input,State,Move,CFtype>::LateAcceptanceHillClimbing(
                                                                                 NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
                                                                                 std::string name)
 : HillClimbing<Input,State,Move,CFtype>(in, e_sm, e_ne, name),
-steps("steps", "ns", this->parameters)
-
-{}
-
-template <class Input, class State, class Move, typename CFtype>
-void LateAcceptanceHillClimbing<Input,State,Move,CFtype>::Print(std::ostream& os) const
+steps("steps", "Delay (number of steps in the queue)", this->parameters)
 {
-  HillClimbing<Input,State,Move>::Print(os);
-  os << "  Steps size: " << steps;
+  steps = 10;
 }
 
 /**
@@ -84,6 +75,7 @@ void LateAcceptanceHillClimbing<Input,State,Move,CFtype>::InitializeRun()
   HillClimbing<Input,State,Move,CFtype>::InitializeRun();
   
   // the queue must be filled with the initial state cost at the beginning
+  previous_steps = std::vector<CFtype>(steps);
   fill(previous_steps.begin(), previous_steps.end(), this->current_state_cost);
 }
 
@@ -95,19 +87,6 @@ template <class Input, class State, class Move, typename CFtype>
 void LateAcceptanceHillClimbing<Input,State,Move,CFtype>::CompleteMove()
 {
   previous_steps[this->iteration % steps] = this->best_state_cost;
-}
-
-template <class Input, class State, class Move, typename CFtype>
-void LateAcceptanceHillClimbing<Input,State,Move,CFtype>::ReadParameters(std::istream& is, std::ostream& os)
-
-{
-  unsigned step;
-  os << "LATE ACCEPTANCE HILL CLIMBING -- INPUT PARAMETERS" << std::endl;
-  os << "  Number of idle iterations: ";
-  is >> this->max_idle_iterations;
-  os << "  Step size: ";
-  is >> step;
-  SetSteps(step);
 }
 
 /** A move is surely accepted if it improves the cost function

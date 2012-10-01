@@ -29,8 +29,6 @@ public:
                      NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
                      std::string name);
   
-  void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout);
-  void Print(std::ostream& os = std::cout) const;
   void SetStartTemperature(double st)  { start_temperature = st; }
   void SetMinTemperature(double st)  { min_temperature = st; }
   void SetCoolingRate(double cr)  { cooling_rate = cr; }
@@ -81,24 +79,16 @@ SimulatedAnnealing<Input,State,Move,CFtype>::SimulatedAnnealing(const Input& in,
                                                                 NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
                                                                 std::string name)
 : MoveRunner<Input,State,Move,CFtype>(in, e_sm, e_ne, name, "Simulated Annealing Runner"),
-compute_start_temperature("compute_start_temperature", "compute start temperature", this->parameters),
-start_temperature("start_temperature", "st", this->parameters),
-min_temperature("min_temperature", "mt", this->parameters), cooling_rate("cooling_rate", "cr", this->parameters),
-max_neighbors_sampled("neighbors_sampled", "ns", this->parameters),
-max_neighbors_accepted("neighbors_accepted", "na", this->parameters)
-{}
-
-template <class Input, class State, class Move, typename CFtype>
-void SimulatedAnnealing<Input,State,Move,CFtype>::Print(std::ostream& os) const
+  compute_start_temperature("compute_start_temperature", "Should the runner compute the initial temperature?", this->parameters),
+  start_temperature("start_temperature", "Starting temperature", this->parameters),
+  min_temperature("min_temperature", "Minimum temperature", this->parameters),
+  cooling_rate("cooling_rate", "Cooling rate", this->parameters),
+  max_neighbors_sampled("neighbors_sampled", "Maximum number of neighbors sampled at each temp.", this->parameters),
+  max_neighbors_accepted("neighbors_accepted", "Maximum number of neighbor accepted at each temp.", this->parameters)
 {
-  os  << "Simulated Annealing Runner: " << std::endl;
-  os  << "  Max iterations: " << this->max_iterations << std::endl;
-  os  << "  Start temperature: " << start_temperature << std::endl;
-  os  << "  Min temperature: " << min_temperature << std::endl;
-  os  << "  Cooling rate: " << cooling_rate << std::endl;
-  os  << "  Neighbors sampled: " << max_neighbors_sampled << std::endl;
-  os  << "  Neighbors accepted: " << max_neighbors_accepted << std::endl;
+  compute_start_temperature = true;
 }
+
 
 /**
  Initializes the run by invoking the companion superclass method, and
@@ -176,23 +166,6 @@ void SimulatedAnnealing<Input,State,Move,CFtype>::CompleteMove()
     neighbors_sampled = 0;
     neighbors_accepted = 0;
   }
-}
-
-template <class Input, class State, class Move, typename CFtype>
-void SimulatedAnnealing<Input,State,Move,CFtype>::ReadParameters(std::istream& is, std::ostream& os)
-
-{
-  os << "SIMULATED ANNEALING -- INPUT PARAMETERS" << std::endl;
-  os << "  Start temperature: ";
-  is >> start_temperature;
-  os << "  Min temperature: ";
-  is >> min_temperature;
-  os << "  Cooling rate: ";
-  is >> cooling_rate;
-  os << "  Neighbors sampled at each temperature: ";
-  is >> max_neighbors_sampled;
-  os << "  Neighbors accepted at each temperature: ";
-  is >> max_neighbors_accepted;
 }
 
 /**

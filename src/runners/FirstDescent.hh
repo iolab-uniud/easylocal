@@ -9,7 +9,7 @@
  At each step of the search, the first improving move in the neighborhood of current
  solution is selected and performed.
  @ingroup Runners
- */  
+ */
 template <class Input, class State, class Move, typename CFtype = int>
 class FirstDescent : public MoveRunner<Input,State,Move,CFtype>
 {
@@ -18,8 +18,6 @@ public:
                StateManager<Input,State,CFtype>& e_sm,
                NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
                std::string name);
-  void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout);
-  void Print(std::ostream& os = std::cout) const;
 protected:
   void InitializeRun();
   bool StopCriterion();
@@ -32,7 +30,7 @@ protected:
  *************************************************************************/
 
 /**
- Constructs a first descent runner by linking it to a state manager, 
+ Constructs a first descent runner by linking it to a state manager,
  a neighborhood explorer, and an input object.
  
  @param s a pointer to a compatible state manager
@@ -44,14 +42,9 @@ FirstDescent<Input,State,Move,CFtype>::FirstDescent(const Input& in,
                                                     StateManager<Input,State,CFtype>& e_sm, NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
                                                     std::string name)
 : MoveRunner<Input,State,Move,CFtype>(in, e_sm, e_ne, name, cl)
-{}
-
-template <class Input, class State, class Move, typename CFtype>
-void FirstDescent<Input,State,Move,CFtype>::Print(std::ostream& os) const
 {
-  os  << "First Descent Runner: " << this->name << std::endl;
-  os  << "  Max iterations: " << this->max_iteration << std::endl;
 }
+
 
 /**
  Selects always the first improving move in the neighborhood.
@@ -65,7 +58,7 @@ void FirstDescent<Input,State,Move,CFtype>::SelectMove()
 /**
  Invokes the companion superclass method, and initializes the move cost
  at a negative value for fulfilling the stop criterion the first time
- */     
+ */
 template <class Input, class State, class Move, typename CFtype>
 void FirstDescent<Input,State,Move,CFtype>::InitializeRun()
 {
@@ -89,8 +82,4 @@ template <class Input, class State, class Move, typename CFtype>
 bool FirstDescent<Input,State,Move,CFtype>::AcceptableMove()
 { return LessThan<CFtype>(this->current_move_cost,0); }
 
-template <class Input, class State, class Move, typename CFtype>
-void FirstDescent<Input,State,Move,CFtype>::ReadParameters(std::istream& is, std::ostream& os)
-
-{}
 #endif // _FIRST_DESCENT_HH_
