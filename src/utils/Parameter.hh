@@ -196,7 +196,7 @@ public:
   }
   
   /** Read all parameters from an input stream (prints hints on output stream). */
-  void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout)
+  virtual void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout)
   {
     for(auto p : this->parameters)
     {
@@ -206,7 +206,7 @@ public:
   }
 
   /** Print all parameter values on an output stream. */
-  void PrintParameters(std::ostream& os = std::cout) const
+  virtual void PrintParameters(std::ostream& os = std::cout) const
   {
     for(auto p : this->parameters)
     {
