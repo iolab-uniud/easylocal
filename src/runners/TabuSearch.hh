@@ -91,6 +91,7 @@ template <class Input, class State, class Move, typename CFtype>
 void TabuSearch<Input,State,Move,CFtype>::InitializeRun()
 {
   MoveRunner<Input,State,Move,CFtype>::InitializeRun();
+  pm.SetLength(min_tabu_tenure, max_tabu_tenure);
   pm.Clean();
 }
 

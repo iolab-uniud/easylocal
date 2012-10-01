@@ -69,7 +69,6 @@
 		ACF4B1260DBFA668008A0207 /* HillClimbing.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = HillClimbing.hh; sourceTree = "<group>"; };
 		ACF4B1270DBFA668008A0207 /* MoveRunner.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = MoveRunner.hh; sourceTree = "<group>"; };
 		ACF4B1280DBFA668008A0207 /* Runner.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Runner.hh; sourceTree = "<group>"; };
-		ACF4B1290DBFA668008A0207 /* SampleTabuSearch.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = SampleTabuSearch.hh; sourceTree = "<group>"; };
 		ACF4B12A0DBFA668008A0207 /* SimulatedAnnealing.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = SimulatedAnnealing.hh; sourceTree = "<group>"; };
 		ACF4B12B0DBFA668008A0207 /* SteepestDescent.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = SteepestDescent.hh; sourceTree = "<group>"; };
 		ACF4B12C0DBFA668008A0207 /* TabuSearch.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = TabuSearch.hh; sourceTree = "<group>"; };
@@ -227,18 +226,17 @@
 		ACF4B1240DBFA668008A0207 /* runners */ = {
 			isa = PBXGroup;
 			children = (
-				ACF4B2070DBFADB3008A0207 /* TabuSearchWithShiftingPenalty.hh */,
-				ACF4B1250DBFA668008A0207 /* FirstDescent.hh */,
-				ACF4B1260DBFA668008A0207 /* HillClimbing.hh */,
-				ACF4B1270DBFA668008A0207 /* MoveRunner.hh */,
 				ACF4B1280DBFA668008A0207 /* Runner.hh */,
-				ACF4B1290DBFA668008A0207 /* SampleTabuSearch.hh */,
-				ACF4B12A0DBFA668008A0207 /* SimulatedAnnealing.hh */,
-				AC9665AE0E712AE100802631 /* GreatDeluge.hh */,
+				ACF4B1270DBFA668008A0207 /* MoveRunner.hh */,
+				ACF4B1250DBFA668008A0207 /* FirstDescent.hh */,
 				ACF4B12B0DBFA668008A0207 /* SteepestDescent.hh */,
+				ACF4B1260DBFA668008A0207 /* HillClimbing.hh */,
 				ACF4B12C0DBFA668008A0207 /* TabuSearch.hh */,
-				50BDA6F5160200CC0069BFF7 /* LateAcceptanceHillClimbing.hh */,
+				AC9665AE0E712AE100802631 /* GreatDeluge.hh */,
+				ACF4B12A0DBFA668008A0207 /* SimulatedAnnealing.hh */,
 				50B7DC6316147D16006CFED0 /* SimulatedAnnealingWithReheating.hh */,
+				ACF4B2070DBFADB3008A0207 /* TabuSearchWithShiftingPenalty.hh */,
+				50BDA6F5160200CC0069BFF7 /* LateAcceptanceHillClimbing.hh */,
 			);
 			path = runners;
 			sourceTree = "<group>";

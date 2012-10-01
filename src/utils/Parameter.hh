@@ -14,6 +14,7 @@
 #include <string>
 #include <iostream>
 #include <memory>
+#include <sstream>
 
 /** Abstract parameter type, for containers. */
 class AbstractParameter
@@ -80,6 +81,7 @@ class Parameter : public AbstractParameter
 {
   template <typename _T>
   friend std::istream& operator>>(std::istream& is, Parameter<_T>& p);
+  friend class IncorrectParameterValue;
 public:
   /** Constructor.
    @param cmdline_flag flag used to pass the parameter to the command line
@@ -110,6 +112,17 @@ protected:
   
   /** Real value of the parameter. */
   T value;
+};
+
+class IncorrectParameterValue
+: public std::exception
+{
+public:
+  template <typename T>
+  IncorrectParameterValue(const Parameter<T>& p, std::string desc);
+  const char* what() const throw();
+protected:
+  std::string message;
 };
 
 template <typename T>
@@ -162,14 +175,13 @@ std::istream& operator>>(std::istream& is, Parameter<T>& p)
   return is;
 }
 
-// TODO: add Parameter for boolean flags
-/* class Parameter<bool>
+template <typename T>
+IncorrectParameterValue::IncorrectParameterValue(const Parameter<T>& p, std::string desc)
 {
-protected:
-  bool is_set;
-  FlagArgument cl_arg;
-}; 
-*/
+  std::ostringstream os;
+  os << "Parameter " << p.cmdline_flag << " set to incorrect value " << p.value << " (" << desc << ")";
+  message = os.str();
+}
 
 /** A class representing a parametrized component of EasyLocal++. */
 class Parametrized {

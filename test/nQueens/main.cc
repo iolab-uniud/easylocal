@@ -102,6 +102,7 @@
 #include <runners/HillClimbing.hh>
 #include <runners/SteepestDescent.hh>
 #include <runners/TabuSearch.hh>
+#include <runners/GreatDeluge.hh>
 #include <runners/SimulatedAnnealing.hh>
 #include <runners/SimulatedAnnealingWithReheating.hh>
 #include <runners/LateAcceptanceHillClimbing.hh>
@@ -143,15 +144,16 @@ int main(int argc, const char* argv[])
   Parameter<unsigned long> random_seed("random_seed", "Random seed", main_parameters);
   
   // parse only the previous parameters
-  CommandLineParameters::Parse(argc, argv, false);  
+  CommandLineParameters::Parse(argc, argv, false);
+
   
   if (size.IsSet())
     in = size;
   else
-    in = 0;
-    
+    in = 0;  
+  
 #else
-  // the value of in shoud be read from the command line
+  // at least the value of in shoud be read from the command line
 #endif
   
   // cost components
@@ -183,10 +185,13 @@ int main(int argc, const char* argv[])
   tester.AddRunner(qsa);
   SimulatedAnnealingWithReheating<int, vector<int>, Swap> qsawr(in, qsm, qnhe, "SwapSimulatedAnnealingWithReheating");
   tester.AddRunner(qsawr);
-  LateAcceptanceHillClimbing<int, vector<int>, Swap> qlhc(in, qsm, qnhe, "LateAcceptanceHillClimbing");
+  LateAcceptanceHillClimbing<int, vector<int>, Swap> qlhc(in, qsm, qnhe, "SwapLateAcceptanceHillClimbing");
   tester.AddRunner(qlhc);
-  
-  //TabuSearchWithShiftingPenalty<int, vector<int>, Swap> qtsw(in, qsm, qnhe, qtlm, "SwapTabuSearchWithShiftingPenalty", cl);
+  GreatDeluge<int, vector<int>, Swap> qgd(in, qsm, qnhe, "SwapGreatDeluge");
+  tester.AddRunner(qgd);
+  // FIXME: currently TSWSP is not working
+  /* TabuSearchWithShiftingPenalty<int, vector<int>, Swap> qtsw(in, qsm, qnhe, qtlm, "SwapTabuSearchWithShiftingPenalty");
+  tester.AddRunner(qtsw); */
   
   SimpleLocalSearch<int, ChessBoard, vector<int> > qss(in, qsm, qom, "QueensSLS");
   VariableNeighborhoodDescent<int, ChessBoard, vector<int> > qvnd(in, qsm, qom, 3);  
