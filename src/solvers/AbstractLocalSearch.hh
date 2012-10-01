@@ -8,6 +8,8 @@
 #include <iostream> 
 #include <fstream> 
 #include <string>
+#include <utils/Parameter.hh>
+#include <utils/Interruptible.hh>
 
 /** A Local Search Solver has an internal state, and defines the ways for
     dealing with a local search algorithm.
@@ -15,36 +17,48 @@
 */
 template <class Input, class Output, class State, typename CFtype = int>
 class AbstractLocalSearch
-  : public Solver<Input, Output>
+  : public Solver<Input, Output>, public Interruptible<int>
 {
 public:
-  void SetInitTrials(unsigned int t);
-  CFtype GetCurrentCost() const;
-  CFtype GetBestCost() const;
-  const Output& GetOutput();
-  const State& GetCurrentState() const;
-  const State& GetBestState() const;
-  virtual void SetCurrentState(const State& st, CFtype cost);
-  virtual void SetCurrentState(const State& st);
-  virtual void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout) = 0;
+  /** These methods are the unique interface of Solvers */
+  virtual Output Solve() final;
+  virtual Output Resolve(const Output& initial_solution) final;
 protected:
   AbstractLocalSearch(const Input& in,
 		      StateManager<Input,State,CFtype>& e_sm,
 		      OutputManager<Input,Output,State,CFtype>& e_om,
-		      std::string name);
-  /** Performs some checking before making a run of the solver,
-      if something goes wrong it raises an exception. */
-  virtual void FindInitialState(bool random_state = true);
+                      std::string name, std::string description);
+  
+  /** Implements Interruptible. */
+  virtual std::function<int(void)> MakeFunction()
+  {
+    return [this](void) -> int {
+      this->Go();
+      return 1;
+    };
+  }
+  
+  virtual void FindInitialState();
+  // This will be the actual solver strategy implementation
+  virtual void Go() = 0;
   StateManager<Input,State,CFtype>& sm; /**< A pointer to the attached
 					   state manager. */
   OutputManager<Input,Output,State,CFtype>& om; /**< A pointer to the attached
 						   output manager. */
+  std::shared_ptr<State> p_current_state, p_best_state;        /**< The internal states of the solver. */
+
   CFtype current_state_cost, best_state_cost;  /**< The cost of the internal states. */
-  State current_state, best_state;        /**< The internal states of the solver. */
-  unsigned int number_of_init_trials; /**< Number of different initial
-					 states tested for a run. */
-  Output out;
-protected:
+  std::shared_ptr<Output> p_out; /**< The output object of the solver. */
+  // parameters
+  ParameterBox parameters;
+  Parameter<unsigned int> init_trials;
+  Parameter<bool> random_initial_state;
+  Parameter<double> timeout;
+  // TODO: set those values
+  std::chrono::milliseconds accumulated_time;
+private:
+  virtual void InitializeSolve();
+  virtual const Output& TerminateSolve();
 };
 
 /*************************************************************************
@@ -63,60 +77,13 @@ template <class Input, class Output, class State, typename CFtype>
 AbstractLocalSearch<Input,Output,State,CFtype>::AbstractLocalSearch(const Input& in,
 								    StateManager<Input,State,CFtype>& e_sm,
 								    OutputManager<Input,Output,State,CFtype>& e_om,  
-								    std::string name)
-  : Solver<Input, Output>(in, name), sm(e_sm),  om(e_om), current_state(in), best_state(in),
-    number_of_init_trials(1), out(in)
-{}
-
-template <class Input, class Output, class State, typename CFtype>
-const State& AbstractLocalSearch<Input,Output,State,CFtype>::GetCurrentState() const
-{ return current_state; }
-
-template <class Input, class Output, class State, typename CFtype>
-CFtype AbstractLocalSearch<Input,Output,State,CFtype>::GetCurrentCost() const
-{ return current_state_cost; }
-
-template <class Input, class Output, class State, typename CFtype>
-const State& AbstractLocalSearch<Input,Output,State,CFtype>::GetBestState() const
-{ return best_state; }
-
-template <class Input, class Output, class State, typename CFtype>
-CFtype AbstractLocalSearch<Input,Output,State,CFtype>::GetBestCost() const
-{ return best_state_cost; }
-
-template <class Input, class Output, class State, typename CFtype>
-void AbstractLocalSearch<Input,Output,State,CFtype>::SetCurrentState(const State& st)
+								    std::string name,
+                                                                    std::string description)
+  : Solver<Input, Output>(in, name), sm(e_sm),  om(e_om), 
+parameters(name, description), init_trials("init_trials", "Number of states to be tried in the initialization phase (default = 1)", parameters), random_initial_state("random_state", "Random initial state (default = true)", parameters), timeout("timeout", "Solver timeout (if not specified, no timeout)", parameters)
 {
-  current_state = st;
-  current_state_cost = sm.CostFunction(current_state); 
-}
-
-template <class Input, class Output, class State, typename CFtype>
-void AbstractLocalSearch<Input,Output,State,CFtype>::SetCurrentState(const State& st, CFtype cost)
-{
-  current_state = st;
-  current_state_cost = cost; 
-}
-
-/**
-   Set the number of states which should be tried in 
-   the initialization phase.
-*/
-template <class Input, class Output, class State, typename CFtype>
-void AbstractLocalSearch<Input,Output,State,CFtype>::SetInitTrials(unsigned int t)
-{
-  number_of_init_trials = t;
-}
-
-/**
-   The output is delivered by converting the best state
-   to an output object by means of the output manager.
-*/
-template <class Input, class Output, class State, typename CFtype>
-const Output& AbstractLocalSearch<Input,Output,State,CFtype>::GetOutput() 
-{
-  om.OutputState(best_state, out);
-  return out;
+  init_trials = 1;
+  random_initial_state = true;
 }
 
 /**
@@ -124,15 +91,61 @@ const Output& AbstractLocalSearch<Input,Output,State,CFtype>::GetOutput()
    the state manager. The function invokes the SampleState function.
 */
 template <class Input, class Output, class State, typename CFtype>
-void AbstractLocalSearch<Input,Output,State,CFtype>::FindInitialState(bool random_state)
+void AbstractLocalSearch<Input,Output,State,CFtype>::FindInitialState()
 {
-  if (random_state)
-    current_state_cost = sm.SampleState(current_state, number_of_init_trials);
+  if (random_initial_state)
+    current_state_cost = sm.SampleState(*p_current_state, init_trials);
   else
     {
-      sm.GreedyState(current_state);
-      current_state_cost = sm.CostFunction(current_state);
+      sm.GreedyState(*p_current_state);
+      current_state_cost = sm.CostFunction(*p_current_state);
     }
+  *p_best_state = *p_current_state;
+  best_state_cost = current_state_cost;
 }
+
+template <class Input, class Output, class State, typename CFtype>
+void AbstractLocalSearch<Input,Output,State,CFtype>::InitializeSolve()
+{
+  p_best_state = std::make_shared<State>(this->in);
+  p_current_state = std::make_shared<State>(this->in);
+  p_out = std::make_shared<Output>(this->in);
+}
+
+template <class Input, class Output, class State, typename CFtype>
+Output AbstractLocalSearch<Input,Output,State,CFtype>::Solve()
+{
+  InitializeSolve();
+  FindInitialState();
+  if (timeout.IsSet())
+    SyncRun(std::chrono::milliseconds(static_cast<long long int>(timeout * 1000.0)));
+  else
+    Go();
+  return TerminateSolve();
+}
+
+template <class Input, class Output, class State, typename CFtype>
+Output AbstractLocalSearch<Input,Output,State,CFtype>::Resolve(const Output& initial_solution)
+{
+  InitializeSolve();
+  om.InputState(*p_current_state, initial_solution);
+  *p_best_state = *p_current_state;
+  best_state_cost = current_state_cost = sm.CostFunction(*p_current_state);
+  if (timeout.IsSet())
+    SyncRun(std::chrono::milliseconds(static_cast<long long int>(timeout * 1000.0)));
+  else
+    Go();
+  return TerminateSolve();
+}
+
+template <class Input, class Output, class State, typename CFtype>
+const Output& AbstractLocalSearch<Input,Output,State,CFtype>::TerminateSolve()
+{
+  om.OutputState(*p_best_state, *p_out);
+  p_best_state.reset();
+  p_current_state.reset();
+  return *p_out;
+}
+
 
 #endif // _ABSTRACT_LOCAL_SEARCH_HH_

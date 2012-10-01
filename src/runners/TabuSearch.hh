@@ -103,7 +103,7 @@ void TabuSearch<Input,State,Move,CFtype>::InitializeRun()
 template <class Input, class State, class Move, typename CFtype>
 void TabuSearch<Input,State,Move,CFtype>::SelectMove()
 {
-  this->current_move_cost = this->ne.BestMove(this->current_state, this->current_move, pm);  
+  this->current_move_cost = this->ne.BestMove(*this->p_current_state, this->current_move, pm);
 }
 
 template <class Input, class State, class Move, typename CFtype>
@@ -140,7 +140,7 @@ bool TabuSearch<Input,State,Move,CFtype>::AcceptableMove()
 template <class Input, class State, class Move, typename CFtype>
 void TabuSearch<Input,State,Move,CFtype>::CompleteMove()
 {
-  pm.InsertMove(this->current_state, this->current_move, this->current_move_cost,
+  pm.InsertMove(*this->p_current_state, this->current_move, this->current_move_cost,
                 this->current_state_cost, this->best_state_cost);
 }
 

@@ -133,8 +133,8 @@ void SimulatedAnnealing<Input,State,Move,CFtype>::InitializeRun()
     {
       //this->sm.RandomState(sampled_state);
       Move mv;
-      this->ne.RandomMove(this->current_state, mv);
-      cost_values[i] = this->ne.DeltaCostFunction(this->current_state, mv);
+      this->ne.RandomMove(*this->p_current_state, mv);
+      cost_values[i] = this->ne.DeltaCostFunction(*this->p_current_state, mv);
       //mean += cost_values[i];
     }
     /* mean /= samples;
@@ -156,8 +156,8 @@ void SimulatedAnnealing<Input,State,Move,CFtype>::InitializeRun()
 template <class Input, class State, class Move, typename CFtype>
 void SimulatedAnnealing<Input,State,Move,CFtype>::SelectMove()
 {
-  this->ne.RandomMove(this->current_state, this->current_move);
-  this->current_move_cost = this->ne.DeltaCostFunction(this->current_state, this->current_move);
+  this->ne.RandomMove(*this->p_current_state, this->current_move);
+  this->current_move_cost = this->ne.DeltaCostFunction(*this->p_current_state, this->current_move);
   neighbors_sampled++;
 }
 

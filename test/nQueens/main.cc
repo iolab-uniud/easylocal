@@ -126,6 +126,8 @@ typedef std::chrono::duration<double, std::ratio<1>> secs;
 
 int main(int argc, const char* argv[])
 {
+  try
+  {
 	// The CLParser object parses the command line arguments
   /* ValArgument<double> arg_timeout("timeout", "to", false, 0.0, cl);
   ValArgument<int> arg_random_seed("random_seed", "rs", false, cl); */
@@ -194,7 +196,7 @@ int main(int argc, const char* argv[])
   tester.AddRunner(qtsw); */
   
   SimpleLocalSearch<int, ChessBoard, vector<int> > qss(in, qsm, qom, "QueensSLS");
-  VariableNeighborhoodDescent<int, ChessBoard, vector<int> > qvnd(in, qsm, qom, 3);  
+  VariableNeighborhoodDescent<int, ChessBoard, vector<int> > qvnd(in, qsm, qom, 3, "VNDS");
 
   if (random_seed.IsSet())
     Random::Seed(random_seed);
@@ -250,6 +252,12 @@ int main(int argc, const char* argv[])
     qvnd.Solve();
     cout << qvnd.GetOutput() << endl << qvnd.GetCurrentCost() << endl;
   } */
+  }
+  catch (std::exception e)
+  {
+    std::cerr << "Exception: " << e.what() << std::endl;
+    return 1;
+  }
 	
   return 0;
 }

@@ -82,7 +82,7 @@
       </PathRunnable>
       <CommandLineArguments>
          <CommandLineArgument
-            argument = "-s 500 -rs 0"
+            argument = "--main::size 500"
             isEnabled = "YES">
          </CommandLineArgument>
       </CommandLineArguments>

@@ -89,7 +89,7 @@ void MoveRunner<Input,State,Move,CFtype>::TerminateRun()
 template <class Input, class State, class Move, typename CFtype>
 void MoveRunner<Input,State,Move,CFtype>::MakeMove()
 { 
-	ne.MakeMove(this->current_state, current_move);
+	ne.MakeMove(*this->p_current_state, current_move);
   this->current_state_cost += current_move_cost;
   if (observer != nullptr)
 		observer->NotifyMadeMove(*this);

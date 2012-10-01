@@ -66,7 +66,7 @@ void RunnerObserver<Input,State,Move,CFtype>::NotifyNewBest(MoveRunner<Input,Sta
       << "), Costs: (";
       for (unsigned int i = 0; i < r.sm.CostComponents(); i++)
       {
-        log << r.sm.Cost(r.current_state,i);
+        log << r.sm.Cost(*r.p_current_state, i);
         if (i < r.sm.CostComponents() - 1) 
           log << ',';
       }
@@ -92,7 +92,7 @@ void RunnerObserver<Input,State,Move,CFtype>::NotifyMadeMove(MoveRunner<Input,St
 	  << "), Costs: (";
       for (unsigned int i = 0; i < r.sm.CostComponents(); i++)
       {
-        log << r.sm.Cost(r.current_state,i);
+        log << r.sm.Cost(*r.p_current_state, i);
         if (i < r.sm.CostComponents() - 1) 
           log << ',';
       }

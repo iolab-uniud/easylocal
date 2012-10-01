@@ -71,8 +71,8 @@ void HillClimbing<Input,State,Move,CFtype>::Print(std::ostream& os) const
 template <class Input, class State, class Move, typename CFtype>
 void HillClimbing<Input,State,Move,CFtype>::SelectMove()
 {
-  this->ne.RandomMove(this->current_state, this->current_move);
-  this->current_move_cost = this->ne.DeltaCostFunction(this->current_state, this->current_move);
+  this->ne.RandomMove(*this->p_current_state, this->current_move);
+  this->current_move_cost = this->ne.DeltaCostFunction(*this->p_current_state, this->current_move);
 }
 
 

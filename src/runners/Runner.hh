@@ -100,7 +100,8 @@ protected:
   virtual void CompleteMove() {};
   
   /** Implements Interruptible. */
-  virtual std::function<CFtype(State&)> MakeFunction() {
+  virtual std::function<CFtype(State&)> MakeFunction()
+  {
     return [this](State& s) -> CFtype {
       return this->Go(s);
     };
@@ -111,8 +112,8 @@ protected:
   StateManager<Input, State,CFtype>& sm; /**< A pointer to the attached state manager. */
   
   // state data
-  State current_state, /**< The current state object. */
-  best_state; /**< The best state object. */
+  std::shared_ptr<State> p_current_state, /**< The current state object. */
+  p_best_state; /**< The best state object. */
   CFtype current_state_cost, /**< The cost of the current state. */
         best_state_cost; /**< The cost of the best state. */
   
@@ -156,8 +157,7 @@ private:
 */
 template <class Input, class State, typename CFtype>
 Runner<Input,State,CFtype>::Runner(const Input& i, StateManager<Input,State,CFtype>& e_sm, std::string e_name, std::string e_desc)
-: name(e_name), in(i), sm(e_sm), current_state(in), best_state(in),
-  parameters(e_name, e_desc),
+: name(e_name), in(i), sm(e_sm), parameters(e_name, e_desc),
 // parameters
   max_iterations("max_iterations", "Maximum total number of iterations allowed", parameters)
 {
@@ -185,15 +185,6 @@ template <class Input, class State, typename CFtype>
 void Runner<Input,State,CFtype>::SetMaxIterations(unsigned long max)
 {
   max_iterations = max;
-}
-
-template <class Input, class State, typename CFtype>
-CFtype Runner<Input,State,CFtype>::TerminateRun(State& s)
-{
-  s = best_state;
-  end = std::chrono::high_resolution_clock::now();
-  TerminateRun();
-  return best_state_cost;
 }
 
 /**
@@ -231,7 +222,7 @@ void Runner<Input,State,CFtype>::UpdateBestState()
 {
   if (LessOrEqualThan(current_state_cost, best_state_cost))
   {
-    best_state = current_state; // Change best_state in case of equal cost to improve diversification
+    *p_best_state = *p_current_state; // Change best_state in case of equal cost to improve diversification
     if (LessThan(current_state_cost, best_state_cost))
     {
       best_state_cost = current_state_cost;
@@ -282,9 +273,25 @@ void Runner<Input,State,CFtype>::InitializeRun(State& s)
   begin = std::chrono::high_resolution_clock::now();
   iteration = 0;
   iteration_of_best = 0;
-  best_state = current_state = s;
+  p_best_state = std::make_shared<State>(s);    // creates the best state object by copying the content of s
+  p_current_state = std::make_shared<State>(s); // creates the current state object by copying the content of s
   best_state_cost = current_state_cost = sm.CostFunction(s);
   InitializeRun();
+}
+
+/**
+ These finalizations are common to all runner (and cannot be redefined).
+ */
+template <class Input, class State, typename CFtype>
+CFtype Runner<Input,State,CFtype>::TerminateRun(State& s)
+{
+  s = *p_best_state;
+  end = std::chrono::high_resolution_clock::now();
+  TerminateRun();
+  // to release the objects
+  p_best_state.reset();
+  p_current_state.reset(); 
+  return best_state_cost;
 }
 
 template <class Input, class State, typename CFtype>

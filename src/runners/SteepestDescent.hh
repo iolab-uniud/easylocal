@@ -65,7 +65,7 @@ void SteepestDescent<Input,State,Move,CFtype>::Print(std::ostream& os) const
 template <class Input, class State, class Move, typename CFtype>
 void SteepestDescent<Input,State,Move,CFtype>::SelectMove()
 {
-  this->current_move_cost = this->ne.BestMove(this->current_state, this->current_move);
+  this->current_move_cost = this->ne.BestMove(*this->p_current_state, this->current_move);
 }
 
 /**
