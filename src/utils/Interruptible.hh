@@ -70,6 +70,11 @@ public:
     return result;
   }
   
+  /** Interrupt execution. */
+  inline void Interrupt() {
+    timeout_expired = true;
+  }
+  
 protected:
   
   /** Checks if timeout has expired. */
