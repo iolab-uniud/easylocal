@@ -32,7 +32,7 @@ public:
   void SetSteps(unsigned int s) { steps = s; previous_steps.resize(s); }
   
 protected:
-  void InitializeRun();
+  void InitializeRun() throw (ParameterNotSet, IncorrectParameterValue);
   bool AcceptableMove();
   void CompleteMove();
   
@@ -70,7 +70,7 @@ steps("steps", "Delay (number of steps in the queue)", this->parameters)
  setting the temperature to the start value.
  */
 template <class Input, class State, class Move, typename CFtype>
-void LateAcceptanceHillClimbing<Input,State,Move,CFtype>::InitializeRun()
+void LateAcceptanceHillClimbing<Input,State,Move,CFtype>::InitializeRun() throw (ParameterNotSet, IncorrectParameterValue)
 {    
   HillClimbing<Input,State,Move,CFtype>::InitializeRun();
   

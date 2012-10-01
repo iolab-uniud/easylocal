@@ -21,7 +21,7 @@
 
 // the first parameter is not used, therefore it is not named
 // (CC gives a warning if it is named)
-void SwapNeighborhoodExplorer::RandomMove(const std::vector<int> &, Swap& sw) const
+void SwapNeighborhoodExplorer::RandomMove(const std::vector<int> &, Swap& sw) const throw (EmptyNeighborhood)
 {
   sw.from = Random::Int(0, in - 1);
   do
@@ -49,13 +49,11 @@ bool SwapNeighborhoodExplorer::NextMove(const std::vector<int> &, Swap& sw) cons
 }
 
 
-void SwapNeighborhoodExplorer::FirstMove(const std::vector<int> &, Swap& sw) const
+void SwapNeighborhoodExplorer::FirstMove(const std::vector<int> &, Swap& sw) const throw (EmptyNeighborhood)
 {
   sw.from = 0; 
   sw.to = 1; 
 }
-
-
 
 void SwapNeighborhoodExplorer::MakeMove(std::vector<int> &a, const Swap& sw) const
 { 

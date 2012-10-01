@@ -30,7 +30,7 @@ public:
 protected:
   bool StopCriterion();
   void CompleteMove();
-  void InitializeRun();
+  void InitializeRun() throw (ParameterNotSet, IncorrectParameterValue);
   // parameters
   Parameter<double> first_reheat;
   Parameter<double> reheat;
@@ -65,7 +65,7 @@ SimulatedAnnealingWithReheating<Input,State,Move,CFtype>::SimulatedAnnealingWith
 }
 
 template <class Input, class State, class Move, typename CFtype>
-void SimulatedAnnealingWithReheating<Input,State,Move,CFtype>::InitializeRun()
+void SimulatedAnnealingWithReheating<Input,State,Move,CFtype>::InitializeRun() throw (ParameterNotSet, IncorrectParameterValue)
 {
   SimulatedAnnealing<Input,State,Move,CFtype>::InitializeRun();
   

@@ -24,7 +24,7 @@ public:
                   std::string name);
   
 protected:
-  void InitializeRun();
+  void InitializeRun() throw (ParameterNotSet, IncorrectParameterValue);
   void StoreMove();
   bool StopCriterion();
   bool AcceptableMove();
@@ -65,7 +65,7 @@ void SteepestDescent<Input,State,Move,CFtype>::SelectMove()
  at a negative value for fulfilling the stop criterion the first time
  */     
 template <class Input, class State, class Move, typename CFtype>
-void SteepestDescent<Input,State,Move,CFtype>::InitializeRun()
+void SteepestDescent<Input,State,Move,CFtype>::InitializeRun() throw (ParameterNotSet, IncorrectParameterValue)
 {
   MoveRunner<Input,State,Move,CFtype>::InitializeRun();
   this->current_move_cost = -1; // needed for passing the first time

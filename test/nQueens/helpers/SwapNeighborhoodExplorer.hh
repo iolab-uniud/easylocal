@@ -33,8 +33,8 @@ public:
 	: NeighborhoodExplorer<int,std::vector<int>,Swap>(in, qsm, name)
   {}
 	void MakeMove(std::vector<int> &a, const Swap& sw) const;
-  void RandomMove(const std::vector<int> &a, Swap& sw) const;
-  void FirstMove(const std::vector<int> &a, Swap& sw) const;
+  void RandomMove(const std::vector<int> &a, Swap& sw) const throw (EmptyNeighborhood);
+  void FirstMove(const std::vector<int> &a, Swap& sw) const throw (EmptyNeighborhood);
   bool NextMove(const std::vector<int> &a, Swap& sw) const;
 };
 

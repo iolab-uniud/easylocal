@@ -79,7 +79,7 @@
  
  @see UnitTesting for more details about setting up the classes for automatic unit testing.
  
- @version 1.0-r$Revision$
+ @version 3.0-r$Revision$
  @date $Date$
  @author Luca Di Gaspero, Andrea Schaerf
  */
@@ -244,7 +244,7 @@ int main(int argc, const char* argv[])
     cout << qvnd.GetOutput() << endl << qvnd.GetCurrentCost() << endl;
   } */
   }
-  catch (std::exception e)
+  catch (std::logic_error e)
   {
     std::cerr << "Exception: " << e.what() << std::endl;
     return 1;

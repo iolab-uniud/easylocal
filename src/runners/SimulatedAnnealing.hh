@@ -45,7 +45,7 @@ public:
 
 protected:
 
-  void InitializeRun();
+  void InitializeRun() throw (ParameterNotSet, IncorrectParameterValue);
   bool StopCriterion();
   void SelectMove();
   bool AcceptableMove();
@@ -96,7 +96,7 @@ SimulatedAnnealing<Input,State,Move,CFtype>::SimulatedAnnealing(const Input& in,
  */
 // FIXME
 template <class Input, class State, class Move, typename CFtype>
-void SimulatedAnnealing<Input,State,Move,CFtype>::InitializeRun()
+void SimulatedAnnealing<Input,State,Move,CFtype>::InitializeRun() throw (ParameterNotSet, IncorrectParameterValue)
 {
   MoveRunner<Input,State,Move,CFtype>::InitializeRun();
   

@@ -23,9 +23,7 @@ public:
   void AttachObserver(RunnerObserver<Input,State,Move,CFtype>& ob) { observer = &ob; }
   Move CurrentMove() const { return current_move; }
   CFtype CurrentMoveCost() const { return current_move_cost; }
-  unsigned int Modality() const { return ne.Modality(); }
-  
-  
+  unsigned int Modality() const { return ne.Modality(); }    
 protected:
   MoveRunner(const Input& in, StateManager<Input,State,CFtype>& e_sm,
              NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
@@ -34,7 +32,7 @@ protected:
   
   virtual void TerminateRun();
   
-  virtual void InitializeRun();
+  virtual void InitializeRun() throw (ParameterNotSet, IncorrectParameterValue);
   
 
   /** Actions to be perfomed at the beginning of the run. */
@@ -69,7 +67,7 @@ MoveRunner<Input,State,Move,CFtype>::MoveRunner(const Input& in,
 {}
 
 template <class Input, class State, class Move, typename CFtype>
-void MoveRunner<Input,State,Move,CFtype>::InitializeRun() 
+void MoveRunner<Input,State,Move,CFtype>::InitializeRun() throw (ParameterNotSet, IncorrectParameterValue)
 {
   if (observer != nullptr)
     observer->NotifyStartRunner(*this);

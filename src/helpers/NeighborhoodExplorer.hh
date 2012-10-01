@@ -9,7 +9,11 @@
 #include <iostream>
 #include <stdexcept>
 
-class EmptyNeighborhood : public std::exception {};
+class EmptyNeighborhood : public std::logic_error
+{
+public:
+  EmptyNeighborhood() : std::logic_error("Empty neighborhood") {}
+};
 
 /** The Neighborhood Explorer is responsible for the strategy
  exploited in the exploration of the neighborhood, and for 
@@ -35,7 +39,7 @@ public:
       @param st the start state 
       @param mv the generated move 
   */
-  virtual void RandomMove(const State &st, Move& mv) const = 0;
+  virtual void RandomMove(const State &st, Move& mv) const throw (EmptyNeighborhood) = 0;
 
   /** Generates the first move in the neighborhood (a total ordering
       of the neighborhood is assumed). It is always used on
@@ -48,7 +52,7 @@ public:
       @param st the start state 
       @param mv the move 
   */
-  virtual void FirstMove(const State& st, Move& mv) const = 0;
+  virtual void FirstMove(const State& st, Move& mv) const throw (EmptyNeighborhood) = 0;
   
   /** Generates the move that follows mv in the exploration of the
       neighborhood of the state st. 
@@ -68,7 +72,7 @@ public:
       @param mv the generated move
       @throws EmptyNeighborhood when the State st has no neighbor
   */		
-  virtual CFtype FirstImprovingMove(const State& st, Move& mv) const;
+  virtual CFtype FirstImprovingMove(const State& st, Move& mv) const throw (EmptyNeighborhood);
 
   /** 
       Generate the first improvement move in the exploration of the neighborhood
@@ -78,7 +82,7 @@ public:
       @param pm a prohibition manager, which filters out prohibited moves (e.g., for the Tabu Search).
       @throws EmptyNeighborhood when the State st has no neighbor
   */		
-  virtual CFtype FirstImprovingMove(const State& st, Move& mv, ProhibitionManager<State,Move,CFtype>& pm) const;
+  virtual CFtype FirstImprovingMove(const State& st, Move& mv, ProhibitionManager<State,Move,CFtype>& pm) const throw (EmptyNeighborhood);
 
   /** 
       Generates the best move in the full exploration of the neighborhood
@@ -88,7 +92,7 @@ public:
       @return the variation of the cost due to the Move mv.
       @throws EmptyNeighborhood when the State st has no neighbor 
   */
-  virtual CFtype BestMove(const State& st, Move& mv) const;
+  virtual CFtype BestMove(const State& st, Move& mv) const throw (EmptyNeighborhood);
 
   /** 
       Generates the best move in the full exploration of the neighborhood
@@ -99,7 +103,7 @@ public:
       @return the variation of the cost due to the Move mv.
       @throws EmptyNeighborhood when the State st has no neighbor 
   */
-  virtual CFtype BestMove(const State& st, Move& mv, ProhibitionManager<State,Move,CFtype>& pm) const;
+  virtual CFtype BestMove(const State& st, Move& mv, ProhibitionManager<State,Move,CFtype>& pm) const throw (EmptyNeighborhood);
   
   /** 
       Generates the best move in a random sample exploration of the neighborhood
@@ -110,7 +114,7 @@ public:
       @return the variation of the cost due to the Move mv.
       @throws EmptyNeighborhood when the State st has no neighbor 
   */
-  virtual CFtype SampleMove(const State &st, Move& mv, unsigned int samples) const;
+  virtual CFtype SampleMove(const State &st, Move& mv, unsigned int samples) const throw (EmptyNeighborhood);
 
   /** 
       Generates the best move in a random sample exploration of the neighborhood
@@ -122,7 +126,7 @@ public:
       @return the variation of the cost due to the Move mv.
       @throws EmptyNeighborhood when the State st has no neighbor 
   */
-  virtual CFtype SampleMove(const State &st, Move& mv, unsigned int samples, ProhibitionManager<State,Move,CFtype>& pm) const;
+  virtual CFtype SampleMove(const State &st, Move& mv, unsigned int samples, ProhibitionManager<State,Move,CFtype>& pm) const throw (EmptyNeighborhood);
   
   /** 
       States whether a move is feasible or not in a given state.
@@ -187,8 +191,7 @@ public:
   
   virtual unsigned int Modality() const
   { return 1; }
-  
-  
+    
   virtual unsigned int MoveModality(const Move& mv) const
   { return 0; }
 protected:
@@ -289,7 +292,7 @@ void NeighborhoodExplorer<Input,State,Move,CFtype>::AddDeltaCostComponent(CostCo
 }
 
 template <class Input, class State, class Move, typename CFtype>
-CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::BestMove(const State &st, Move& mv) const
+CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::BestMove(const State &st, Move& mv) const throw (EmptyNeighborhood)
 {
   unsigned int number_of_bests = 1; // number of moves found with the same best value
 
@@ -320,7 +323,7 @@ CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::BestMove(const State &st, 
 } 
 
 template <class Input, class State, class Move, typename CFtype>
-CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::BestMove(const State &st, Move& mv, ProhibitionManager<State, Move, CFtype>& pm) const
+CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::BestMove(const State &st, Move& mv, ProhibitionManager<State, Move, CFtype>& pm) const throw (EmptyNeighborhood)
 { // get the best non-prohibited move, but if all moves are prohibited, then get the best one among them
   unsigned int number_of_bests = 1; // number of moves found with the same best value
   FirstMove(st,mv);
@@ -394,7 +397,7 @@ CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::BestMove(const State &st, 
 }
 
 template <class Input, class State, class Move, typename CFtype>
-CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::FirstImprovingMove(const State &st, Move& mv) const 
+CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::FirstImprovingMove(const State &st, Move& mv) const throw (EmptyNeighborhood)
 {
   unsigned int number_of_bests = 0;
   FirstMove(st, mv);
@@ -428,7 +431,7 @@ CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::FirstImprovingMove(const S
 } 
 
 template <class Input, class State, class Move, typename CFtype>
-CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::FirstImprovingMove(const State &st, Move& mv, ProhibitionManager<State,Move,CFtype>& pm) const 
+CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::FirstImprovingMove(const State &st, Move& mv, ProhibitionManager<State,Move,CFtype>& pm) const throw (EmptyNeighborhood)
 {
   unsigned int number_of_bests = 0;
   FirstMove(st, mv);
@@ -486,7 +489,7 @@ CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::FirstImprovingMove(const S
 
 
 template <class Input, class State, class Move, typename CFtype>
-CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::SampleMove(const State &st, Move& mv, unsigned int samples) const
+CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::SampleMove(const State &st, Move& mv, unsigned int samples) const throw (EmptyNeighborhood)
 {
   unsigned int number_of_bests = 0;
   unsigned int s = 1;
@@ -522,7 +525,7 @@ CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::SampleMove(const State &st
 }
 
 template <class Input, class State, class Move, typename CFtype>
-CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::SampleMove(const State &st, Move& mv, unsigned int samples, ProhibitionManager<State,Move,CFtype>& pm) const
+CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::SampleMove(const State &st, Move& mv, unsigned int samples, ProhibitionManager<State,Move,CFtype>& pm) const throw (EmptyNeighborhood)
 {
   unsigned int number_of_bests = 0;
   unsigned int s = 1;

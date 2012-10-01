@@ -41,11 +41,11 @@ class Runner : public Interruptible<CFtype, State&>, public Parametrized
 public:
   
   /** Performs a full run of the search method (possibly being interrupted before its natural ending) on the passed state and returns the cost value after the run. */
-  CFtype Go(State& s);
+  CFtype Go(State& s) throw (ParameterNotSet, IncorrectParameterValue);
   
   /** Performs a given number of steps of the search method.
   @param n the number of steps to make */	
-  CFtype Step(State& s, unsigned int n = 1);
+  CFtype Step(State& s, unsigned int n = 1) throw (ParameterNotSet, IncorrectParameterValue);
   
   /** @todo */
   virtual std::chrono::milliseconds GetTimeElapsed() const
@@ -81,7 +81,7 @@ protected:
   virtual bool LowerBoundReached() const;
   
   /** Actions and checks to be perfomed at the beginning of the run. */
-  virtual void InitializeRun();
+  virtual void InitializeRun() throw (ParameterNotSet, IncorrectParameterValue);
   
   /** Actions to be performed at the end of the run. */
   virtual void TerminateRun() = 0;
@@ -139,10 +139,9 @@ private:
   
   /** Stores the move and updates the related data. */
   void UpdateBestState();
-  
+
+  void InitializeRun(State& s) throw (ParameterNotSet, IncorrectParameterValue);
   CFtype TerminateRun(State& s);
-  void InitializeRun(State& s);
-  
 };
 
 /*************************************************************************
@@ -200,7 +199,7 @@ void Runner<Input,State,CFtype>::SetMaxIterations(unsigned long max)
    Performs a full run of a local search method.
  */
 template <class Input, class State, typename CFtype>
-CFtype Runner<Input,State,CFtype>::Go(State& s)
+CFtype Runner<Input,State,CFtype>::Go(State& s) throw (ParameterNotSet, IncorrectParameterValue)
 {
   InitializeRun(s);
   while (!MaxIterationExpired() && !StopCriterion() && !LowerBoundReached() && !this->TimeoutExpired())
@@ -268,7 +267,7 @@ bool Runner<Input,State,CFtype>::AcceptableMove()
    Initializes all the runner variable for starting a new run.
 */
 template <class Input, class State, typename CFtype>
-void Runner<Input,State,CFtype>::InitializeRun()
+void Runner<Input,State,CFtype>::InitializeRun() throw (ParameterNotSet, IncorrectParameterValue)
 {
   // parameter consistency check
 }
@@ -277,7 +276,7 @@ void Runner<Input,State,CFtype>::InitializeRun()
  These initializations are common to all runner (and cannot be redefined).
  */
 template <class Input, class State, typename CFtype>
-void Runner<Input,State,CFtype>::InitializeRun(State& s)
+void Runner<Input,State,CFtype>::InitializeRun(State& s) throw (ParameterNotSet, IncorrectParameterValue)
 {
   begin = std::chrono::high_resolution_clock::now();
   iteration = 0;

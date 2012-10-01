@@ -42,17 +42,13 @@ protected:
 };
 
 /** Exception called whenever a needed parameter hasn't been set. */
-class ParameterNotSet : public std::exception
+class ParameterNotSet : public std::logic_error
 {
 public:
   /** Constructor. 
    @param p parameter which generated the exception. 
    */
-  ParameterNotSet(const AbstractParameter* p) : p_par(p) {}
-  const char* what() const throw();
-protected:
-  /** Parameter to which the exception refers. */
-  const AbstractParameter* p_par;
+  ParameterNotSet(const AbstractParameter& p) : std::logic_error(std::string("Parameter ") + p.cmdline_flag + " not set") {}
 };
 
 /** List of parameters, to access aggregates of parameters. */
@@ -82,7 +78,7 @@ class Parameter : public AbstractParameter
   template <typename _T>
   friend std::istream& operator>>(std::istream& is, Parameter<_T>& p);
   template <typename _T>
-  friend bool operator==(const Parameter<_T>&, const _T&);
+  friend bool operator==(const Parameter<_T>&, const _T&) throw (ParameterNotSet);
   friend class IncorrectParameterValue;
 public:
   /** Constructor.
@@ -117,12 +113,12 @@ protected:
 };
 
 class IncorrectParameterValue
-: public std::exception
+: public std::logic_error
 {
 public:
   template <typename T>
   IncorrectParameterValue(const Parameter<T>& p, std::string desc);
-  const char* what() const throw();
+  virtual const char* what() const throw();
 protected:
   std::string message;
 };
@@ -143,7 +139,7 @@ template <typename T>
 Parameter<T>::operator T() const throw (ParameterNotSet)
 {
   if (!is_set)
-    throw new ParameterNotSet(this);
+    throw ParameterNotSet(*this);
   return value;
 }
 
@@ -178,13 +174,14 @@ std::istream& operator>>(std::istream& is, Parameter<T>& p)
 }
 
 template <typename T>
-bool operator==(const Parameter<T>& t1, const T& t2)
+bool operator==(const Parameter<T>& t1, const T& t2) throw (ParameterNotSet)
 {
   return t1.value == t2;
 }
 
 template <typename T>
 IncorrectParameterValue::IncorrectParameterValue(const Parameter<T>& p, std::string desc)
+: std::logic_error("Incorrect parameter value")
 {
   std::ostringstream os;
   os << "Parameter " << p.cmdline_flag << " set to incorrect value " << p.value << " (" << desc << ")";

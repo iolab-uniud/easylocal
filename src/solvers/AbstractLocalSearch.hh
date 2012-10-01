@@ -21,8 +21,8 @@ class AbstractLocalSearch
 {
 public:
   /** These methods are the unique interface of Solvers */
-  virtual Output Solve() final;
-  virtual Output Resolve(const Output& initial_solution) final;
+  virtual Output Solve() throw (ParameterNotSet, IncorrectParameterValue) final;
+  virtual Output Resolve(const Output& initial_solution) throw (ParameterNotSet, IncorrectParameterValue) final;
 protected:
   AbstractLocalSearch(const Input& in,
 		      StateManager<Input,State,CFtype>& e_sm,
@@ -57,7 +57,7 @@ protected:
   // TODO: set those values
   std::chrono::milliseconds accumulated_time;
 private:
-  void InitializeSolve();
+  void InitializeSolve() throw (ParameterNotSet, IncorrectParameterValue);
   void TerminateSolve();
 };
 
@@ -105,14 +105,14 @@ void AbstractLocalSearch<Input,Output,State,CFtype>::FindInitialState()
 }
 
 template <class Input, class Output, class State, typename CFtype>
-void AbstractLocalSearch<Input,Output,State,CFtype>::InitializeSolve()
+void AbstractLocalSearch<Input,Output,State,CFtype>::InitializeSolve() throw (ParameterNotSet, IncorrectParameterValue)
 {
   p_best_state = std::make_shared<State>(this->in);
   p_current_state = std::make_shared<State>(this->in);
 }
 
 template <class Input, class Output, class State, typename CFtype>
-Output AbstractLocalSearch<Input,Output,State,CFtype>::Solve()
+Output AbstractLocalSearch<Input,Output,State,CFtype>::Solve() throw (ParameterNotSet, IncorrectParameterValue)
 {
   InitializeSolve();
   FindInitialState();
@@ -129,7 +129,7 @@ Output AbstractLocalSearch<Input,Output,State,CFtype>::Solve()
 }
 
 template <class Input, class Output, class State, typename CFtype>
-Output AbstractLocalSearch<Input,Output,State,CFtype>::Resolve(const Output& initial_solution)
+Output AbstractLocalSearch<Input,Output,State,CFtype>::Resolve(const Output& initial_solution) throw (ParameterNotSet, IncorrectParameterValue)
 {
   InitializeSolve();
   om.InputState(*p_current_state, initial_solution);
@@ -147,10 +147,7 @@ Output AbstractLocalSearch<Input,Output,State,CFtype>::Resolve(const Output& ini
 
 template <class Input, class Output, class State, typename CFtype>
 void AbstractLocalSearch<Input,Output,State,CFtype>::TerminateSolve()
-{
-  /* p_best_state.reset();
-  p_current_state.reset(); */
-}
+{}
 
 
 #endif // _ABSTRACT_LOCAL_SEARCH_HH_

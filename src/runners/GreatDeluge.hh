@@ -36,7 +36,7 @@ public:
   void SetNeighborsSampled(unsigned int ns)  { neighbors_sampled = ns; }
   
 protected:
-  void InitializeRun();
+  void InitializeRun() throw (ParameterNotSet, IncorrectParameterValue);
   bool StopCriterion();
   void UpdateIterationCounter();
   void SelectMove();
@@ -83,7 +83,7 @@ GreatDeluge<Input,State,Move,CFtype>::GreatDeluge(const Input& in,
  setting current level to the initial one.
  */
 template <class Input, class State, class Move, typename CFtype>
-void GreatDeluge<Input,State,Move,CFtype>::InitializeRun()
+void GreatDeluge<Input,State,Move,CFtype>::InitializeRun() throw (ParameterNotSet, IncorrectParameterValue)
 {
   level = initial_level * this->current_state_cost;
 }

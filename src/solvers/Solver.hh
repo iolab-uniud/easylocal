@@ -4,7 +4,7 @@
 #include <EasyLocal.conf.hh>
 #include <helpers/StateManager.hh>
 #include <helpers/OutputManager.hh>
-#include <chrono>
+#include <utils/Parameter.hh>
 
 /** A Solver represents the external layer of EasyLocal++; it
  implements the Abstract Solver interface and furthermore is
@@ -19,8 +19,8 @@ class Solver
 {
 public:
   const std::string name;
-  virtual Output Solve() = 0;
-  virtual Output Resolve(const Output& initial_solution) = 0;
+  virtual Output Solve() throw (ParameterNotSet, IncorrectParameterValue) = 0;
+  virtual Output Resolve(const Output& initial_solution) throw (ParameterNotSet, IncorrectParameterValue) = 0;
   virtual ~Solver() {}
 protected:
   Solver(const Input& in, std::string name);
