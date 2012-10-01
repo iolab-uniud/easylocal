@@ -144,12 +144,6 @@ int main(int argc, const char* argv[])
   Parameter<unsigned int> verbosity_level("verbosity", "Verbosity level", main_parameters);
   Parameter<unsigned int> plot_level("plot", "Plot level", main_parameters);
   Parameter<unsigned long> random_seed("random_seed", "Random seed", main_parameters);
-  
-  if (size.IsSet())
-    in = size;
-  else
-    in = 0;
-    
 #else
   // at least the value of in shoud be read from the command line
 #endif
@@ -165,31 +159,20 @@ int main(int argc, const char* argv[])
   QueensTabuListManager qtlm;
   SwapNeighborhoodExplorer qnhe(in, qsm);
   QueensOutputManager qom(in);
-  
-  // tester
-  Tester<int, ChessBoard, vector<int> > tester(in,qsm,qom);
-    
+      
   // kickers
   QueensKicker qk(in, qnhe);
   
   // runners
   HillClimbing<int, vector<int>, Swap> qhc(in, qsm, qnhe, "SwapHillClimbing");
-  tester.AddRunner(qhc);
   SteepestDescent<int, vector<int>, Swap> qsd(in, qsm, qnhe, "SwapSteepestDescent");
-  tester.AddRunner(qsd);
   TabuSearch<int, vector<int>, Swap> qts(in, qsm, qnhe, qtlm, "SwapTabuSearch");
-  tester.AddRunner(qts);
   SimulatedAnnealing<int, vector<int>, Swap> qsa(in, qsm, qnhe, "SwapSimulatedAnnealing");
-  tester.AddRunner(qsa);
   SimulatedAnnealingWithReheating<int, vector<int>, Swap> qsawr(in, qsm, qnhe, "SwapSimulatedAnnealingWithReheating");
-  tester.AddRunner(qsawr);
   LateAcceptanceHillClimbing<int, vector<int>, Swap> qlhc(in, qsm, qnhe, "SwapLateAcceptanceHillClimbing");
-  tester.AddRunner(qlhc);
   GreatDeluge<int, vector<int>, Swap> qgd(in, qsm, qnhe, "SwapGreatDeluge");
-  tester.AddRunner(qgd);
   // FIXME: currently TSWSP is not working
-  /* TabuSearchWithShiftingPenalty<int, vector<int>, Swap> qtsw(in, qsm, qnhe, qtlm, "SwapTabuSearchWithShiftingPenalty");
-  tester.AddRunner(qtsw); */
+  // TabuSearchWithShiftingPenalty<int, vector<int>, Swap> qtsw(in, qsm, qnhe, qtlm, "SwapTabuSearchWithShiftingPenalty");
   
   SimpleLocalSearch<int, ChessBoard, vector<int> > qss(in, qsm, qom, "QueensSLS");
   VariableNeighborhoodDescent<int, ChessBoard, vector<int> > qvnd(in, qsm, qom, 3, "VNDS");
@@ -208,8 +191,8 @@ int main(int argc, const char* argv[])
     return 1;
   }
   // FIXME: it should work after tester reworking
-  // else
-  //  in = size;
+  else
+    in = size;
 #endif
   
   qsm.AddCostComponent(cc1);
@@ -234,6 +217,8 @@ int main(int argc, const char* argv[])
 	
   if (!solution_method.IsSet())
 	{
+    // tester
+    Tester<int, ChessBoard, vector<int> > tester(in, qsm, qom);
 		// testers
 		MoveTester<int, ChessBoard, vector<int>, Swap> swap_move_test(in,qsm,qom,qnhe, "Swap move", tester);
     // MoveTester<int, ChessBoard, vector<int>, DoubleSwap> multimodal_move_test(in,qsm,qom,qmmnhe, "Multimodal swap move", tester);

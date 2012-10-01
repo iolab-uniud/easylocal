@@ -11,14 +11,19 @@
 #include <chrono>
 #include <future>
 
-typedef std::chrono::duration<double, std::ratio<1>> secs;
-
 template <class Input, class State, typename CFtype = int>
 class AbstractTester
 {
 public:
-  virtual void AddRunner(Runner<Input,State,CFtype>& r) = 0;
   virtual ~AbstractTester() {};
+protected:
+  AbstractTester() { AddRunners(); }
+  virtual void AddRunner(Runner<Input,State,CFtype>& r) {};
+  void AddRunners()
+  {
+    for (auto p_r : Runner<Input,State,CFtype>::runners)
+      AddRunner(*p_r);
+  }
 };
 
 /** A Tester collects a set of basic testers (move, state, ...) and
@@ -39,11 +44,11 @@ public:
   void RunMainMenu(std::string file_name = "");
   void AddMoveTester(ComponentTester<Input,Output,State,CFtype>& amt);
   void AddKickerTester(ComponentTester<Input,Output,State,CFtype>& kt);
-  void AddRunner(Runner<Input,State,CFtype>& r);
   void RunInputMenu();
   void RunStateTestMenu();
   void SetState(const State& st){test_state = st;}
 protected:
+  void AddRunner(Runner<Input,State,CFtype>& r);
   void ShowStateMenu();
   void ShowReducedStateMenu();
   bool ExecuteStateChoice();
@@ -87,7 +92,7 @@ protected:
  @param in a pointer to an input object
  */
 template <class Input, class Output, class State, typename CFtype>
-Tester<Input, Output, State,CFtype>::Tester(const Input& i,
+Tester<Input, Output, State, CFtype>::Tester(const Input& i,
                                             StateManager<Input,State,CFtype>& e_sm,
                                             OutputManager<Input,Output,State,CFtype>& e_om, std::ostream& o)
 :  in(i), os(o), sm(e_sm), om(e_om),

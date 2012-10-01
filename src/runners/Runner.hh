@@ -31,10 +31,13 @@
 #include <atomic>
 #include <utils/Parameter.hh>
 
+template <class Input, class State, typename CFtype>
+class AbstractTester;
 
 template <class Input, class State, typename CFtype = int>
 class Runner : public Interruptible<CFtype, State&>, public Parametrized
 {
+  friend class AbstractTester<Input, State, CFtype>;
 public:
   
   /** Performs a full run of the search method (possibly being interrupted before its natural ending) on the passed state and returns the cost value after the run. */
@@ -68,6 +71,8 @@ public:
   virtual ~Runner() { }
   
   virtual constexpr unsigned int Modality() const = 0;
+  
+  static std::vector<Runner<Input,State,CFtype>*> runners;
   
 protected:
 
@@ -162,7 +167,12 @@ Runner<Input,State,CFtype>::Runner(const Input& i, StateManager<Input,State,CFty
 {
   // this parameter has a default value
   max_iterations = std::numeric_limits<unsigned long int>::max();
+  // add to the list of all runners
+  runners.push_back(this);
 }
+
+template <class Input, class State, typename CFtype>
+std::vector<Runner<Input,State,CFtype>*> Runner<Input,State,CFtype>::runners;
 
 /**
    Returns the maximum value of iterations allowed for the runner.
