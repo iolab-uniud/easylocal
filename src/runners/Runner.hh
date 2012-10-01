@@ -45,7 +45,8 @@ public:
   CFtype Step(State& s, unsigned int n = 1);
   
   /** @todo */
-  virtual std::chrono::milliseconds GetTimeElapsed() const {
+  virtual std::chrono::milliseconds GetTimeElapsed() const
+  {
     return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - begin);
   }
   
@@ -75,7 +76,7 @@ protected:
   virtual bool LowerBoundReached() const;
   
   /** Actions and checks to be perfomed at the beginning of the run. */
-  virtual void InitializeRun() = 0;
+  virtual void InitializeRun();
   
   /** Actions to be performed at the end of the run. */
   virtual void TerminateRun() = 0;
@@ -266,6 +267,15 @@ bool Runner<Input,State,CFtype>::AcceptableMove()
 /**
    Initializes all the runner variable for starting a new run.
 */
+template <class Input, class State, typename CFtype>
+void Runner<Input,State,CFtype>::InitializeRun()
+{
+  // parameter consistency check
+}
+
+/**
+ These initializations are common to all runner (and cannot be redefined).
+ */
 template <class Input, class State, typename CFtype>
 void Runner<Input,State,CFtype>::InitializeRun(State& s)
 {

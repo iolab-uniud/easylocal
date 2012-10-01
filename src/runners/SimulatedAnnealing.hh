@@ -53,6 +53,7 @@ protected:
   bool AcceptableMove();
   void CompleteMove();
   // parameters
+  Parameter<bool> compute_start_temperature;
   Parameter<double> start_temperature;
   Parameter<double> min_temperature;
   Parameter<double> cooling_rate;
@@ -80,6 +81,7 @@ SimulatedAnnealing<Input,State,Move,CFtype>::SimulatedAnnealing(const Input& in,
                                                                 NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
                                                                 std::string name)
 : MoveRunner<Input,State,Move,CFtype>(in, e_sm, e_ne, name, "Simulated Annealing Runner"),
+compute_start_temperature("compute_start_temperature", "compute start temperature", this->parameters),
 start_temperature("start_temperature", "st", this->parameters),
 min_temperature("min_temperature", "mt", this->parameters), cooling_rate("cooling_rate", "cr", this->parameters),
 max_neighbors_sampled("neighbors_sampled", "ns", this->parameters),
@@ -98,28 +100,6 @@ void SimulatedAnnealing<Input,State,Move,CFtype>::Print(std::ostream& os) const
   os  << "  Neighbors accepted: " << max_neighbors_accepted << std::endl;
 }
 
-/* template <typename CFtype>
-CFtype max(const std::vector<CFtype>& values) 
-{
-  CFtype max_val = values[0];
-  for (unsigned int i = 1; i < values.size(); i++)
-    if (values[i] > max_val)
-      max_val = values[i];
-  
-  return max_val;
-} 
-
-template <typename CFtype>
-CFtype min(const std::vector<CFtype>& values) 
-{
-  CFtype min_val = values[0];
-  for (unsigned int i = 1; i < values.size(); i++)
-    if (values[i] < min_val)
-      min_val = values[i];
-  
-  return min_val;
-} */
-
 /**
  Initializes the run by invoking the companion superclass method, and
  setting the temperature to the start value.
@@ -129,9 +109,18 @@ template <class Input, class State, class Move, typename CFtype>
 void SimulatedAnnealing<Input,State,Move,CFtype>::InitializeRun()
 {
   MoveRunner<Input,State,Move,CFtype>::InitializeRun();
+  
+  if (min_temperature <= 0.0)
+    throw IncorrectParameterValue(min_temperature, "should be greater than zero");
+  if (cooling_rate <= 0.0 || cooling_rate >= 1.0)
+    throw IncorrectParameterValue(cooling_rate, "should be a value in the interval ]0, 1[");
 
-  if (start_temperature > 0.0)
+  if (!compute_start_temperature)
+  {
+    if (start_temperature <= 0.0)
+      throw IncorrectParameterValue(start_temperature, "should be greater than zero");
     temperature = start_temperature;
+  }
   else
   {
     // Compute a start temperature by sampling the search space and computing the variance
@@ -152,11 +141,10 @@ void SimulatedAnnealing<Input,State,Move,CFtype>::InitializeRun()
      for (unsigned int i = 0; i < samples; i++)
      variance += (cost_values[i] - mean) * (cost_values[i] - mean) / samples;
      temperature = variance; */
-    typename std::vector<CFtype>::iterator max_el = std::max_element(cost_values.begin(), cost_values.end());
-    temperature = *max_el;
+    temperature = max(cost_values);
     /*From "An improved annealing scheme for the QAP. Connoly. EJOR 46 (1990) 93-100"
-     temperature = *std::min_element(cost_values.begin(), cost_values.end()) + (*std::max_element(cost_values.begin(), cost_values.end()) - std::min_element(cost_values.begin(), cost_values.end()))/10;*/
-  }
+     temperature = min(cost_values.begin(), cost_values.end()) + (max(cost_values.begin(), cost_values.end()) - min(cost_values.begin(), cost_values.end()))/10;*/
+  }  
   
   neighbors_sampled = 0;
   neighbors_accepted = 0;

@@ -12,6 +12,7 @@
 #endif
 #include <vector>
 #include <string>
+#include <sstream>
 
 class AbstractParameter
 {
@@ -48,6 +49,7 @@ class Parameter : public AbstractParameter
 {
   template <typename _T>
   friend std::istream& operator>>(std::istream& is, Parameter<_T>& p);
+  friend class IncorrectParameterValue;
 public:
   Parameter(const std::string& cmdline_flag, const std::string& description, ParameterBox& parameters);
   operator T() const throw (ParameterNotSet);
@@ -56,6 +58,17 @@ public:
 protected:
   bool is_set;
   T value;
+};
+
+class IncorrectParameterValue
+: public std::exception
+{
+public:
+  template <typename T>
+  IncorrectParameterValue(const Parameter<T>& p, std::string desc);
+  const char* what() const throw();
+protected:
+  std::string message;
 };
 
 template <typename T>
@@ -94,15 +107,13 @@ std::istream& operator>>(std::istream& is, Parameter<T>& p)
   return is;
 }
 
-// TODO: add Parameter for boolean flags
-
-// TODO: specialize for bool (i.e., flags)
-/* class Parameter<bool>
+template <typename T>
+IncorrectParameterValue::IncorrectParameterValue(const Parameter<T>& p, std::string desc)
 {
-protected:
-  bool is_set;
-  FlagArgument cl_arg;
-}; */
+  std::ostringstream os;
+  os << "Parameter " << p.cmdline_flag << " set to incorrect value " << p.value << " (" << desc << ")";
+  message = os.str();
+}
 
 class CommandLineParameters
 {

@@ -23,6 +23,24 @@ ParameterBox::ParameterBox(const std::string& p, const std::string& description)
   overall_parameters.push_back(this);
 }
 
+const char* IncorrectParameterValue::what() const throw()
+{
+  return message.c_str();
+}
+
+// specialization for bool parameters (i.e., enable/disable flags)
+template <>
+Parameter<bool>::Parameter(const std::string& cmdline_flag, const std::string& description, ParameterBox& parameters)
+: AbstractParameter(cmdline_flag, description), is_set(false)
+{
+  std::string flag = parameters.prefix + "::" + cmdline_flag;
+#if defined(HAVE_LINKABLE_BOOST)
+  parameters.cl_options.add_options()
+  (("enable-" + flag).c_str(), boost::program_options::value<std::string>()->implicit_value("true")->zero_tokens()->notifier([this](const std::string& v){ this->is_set = true; this->value = true; }), "")
+  (("disable-" + flag).c_str(), boost::program_options::value<std::string>()->implicit_value("false")->zero_tokens()->notifier([this](const std::string & v){ this->is_set = true; this->value = false; }), ("[enable/disable] " + description).c_str());
+#endif
+}
+
 bool CommandLineParameters::Parse(int argc, const char* argv[], bool check_unregistered)
 {
 #if defined(HAVE_LINKABLE_BOOST)
