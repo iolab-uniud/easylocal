@@ -46,8 +46,10 @@ public:
     timeout_expired = false;
     std::future<Rtype> result = std::async(std::launch::async, this->MakeFunction(), std::ref(args) ...);
     result.wait_for(timeout);
-    if (result.wait_for(std::chrono::milliseconds::zero()) != std::future_status::ready)
+    if (result.wait_for(std::chrono::milliseconds::zero()) != std::future_status::ready) {
       timeout_expired = true;
+      AtTimeoutExpired();
+    }
     return result.get();
   }
   
@@ -62,8 +64,10 @@ public:
     std::thread t([this, timeout]() {
       _easylocal::sleep_for(timeout);
       // If the function has not returned a value already
-      if(!this->HasReturned())
-        this->timeout_expired = true;
+      if(!this->HasReturned()) {
+        timeout_expired = true;
+        AtTimeoutExpired();
+      }
       
     });
     t.detach();
@@ -90,6 +94,9 @@ protected:
       return Rtype();
     };
   }
+  
+  /** Called when timeout is expired. */
+  inline virtual AtTimeoutExpired() { }
   
 private:
   
