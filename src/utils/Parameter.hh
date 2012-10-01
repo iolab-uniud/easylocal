@@ -13,6 +13,7 @@
 #include <vector>
 #include <string>
 #include <iostream>
+#include <memory>
 
 /** Abstract parameter type, for containers. */
 class AbstractParameter
@@ -20,6 +21,7 @@ class AbstractParameter
   friend class Parametrized;
   friend class ParameterNotSet;
 public:
+  
   /** Reads the value of the parameter from a stream, defined in Parameter<T>. */
   virtual std::istream& Read(std::istream& is = std::cin) = 0;
   
@@ -53,7 +55,7 @@ protected:
 };
 
 /** List of parameters, to access aggregates of parameters. */
-class ParameterBox : public std::vector<AbstractParameter>
+class ParameterBox : public std::vector<AbstractParameter*>
 {
 public:
   /** Constructor. 
@@ -115,6 +117,7 @@ Parameter<T>::Parameter(const std::string& cmdline_flag, const std::string& desc
 : AbstractParameter(cmdline_flag, description), is_set(false)
 {
   std::string flag = parameters.prefix + "::" + cmdline_flag;
+  parameters.push_back(this);
 #if defined(HAVE_LINKABLE_BOOST)
   parameters.cl_options.add_options()
   (flag.c_str(), boost::program_options::value<T>(&value)->notifier([this](const T&){ this->is_set = true; }), description.c_str());
@@ -140,8 +143,7 @@ const T& Parameter<T>::operator=(const T& v)
 template <typename T>
 std::istream& Parameter<T>::Read(std::istream& is)
 {
-  is >> value;
-  return is;
+  return is >> *this;
 }
 
 template <typename T>
@@ -178,25 +180,26 @@ public:
    @param prefix namespace of the parameters
    @param description semantics of the parameters group
   */
-  Parametrized(const std::string& prefix, const std::string& description) : parameters(prefix, description) { }
+  Parametrized(const std::string& prefix, const std::string& description) : parameters(prefix, description) {
+  }
   
   /** Read all parameters from an input stream (prints hints on output stream). */
   void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout)
   {
-    for(auto& p : parameters)
+    for(auto p : this->parameters)
     {
-      os << "  " << p.cmdline_flag << "(" << p.description << "): " << std::endl;
-      p.Read(is);
+      os << "  " << p->description << ": ";
+      p->Read(is);
     }
   }
 
   /** Print all parameter values on an output stream. */
   void PrintParameters(std::ostream& os = std::cout) const
   {
-    for(auto& p : parameters)
+    for(auto p : this->parameters)
     {
-      os << "  " << p.cmdline_flag << "(" << p.description << "): ";
-      p.Write(os) << std::endl;
+      os << "  " << p->cmdline_flag << "(" << p->description << "): ";
+      p->Write(os) << std::endl;
     }
   }
   

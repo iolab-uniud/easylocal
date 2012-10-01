@@ -18,7 +18,7 @@ public:
   HillClimbing(const Input& in, StateManager<Input,State,CFtype>& e_sm,
                NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne, std::string name);
   void Print(std::ostream& os = std::cout) const;
-  void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout);
+  // void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout);
   // FIXME: to remove parameter accessors
   virtual void SetMaxIdleIterations(unsigned long m) { max_idle_iterations = m; }
 protected:
@@ -55,6 +55,7 @@ HillClimbing<Input,State,Move,CFtype>::HillClimbing(const Input& in,
 max_idle_iterations("max_idle_iterations", "Total number of allowed idle iterations", this->parameters)
 {
 }
+
 
 template <class Input, class State, class Move, typename CFtype>
 void HillClimbing<Input,State,Move,CFtype>::Print(std::ostream& os) const
@@ -107,6 +108,7 @@ template <class Input, class State, class Move, typename CFtype>
 bool HillClimbing<Input,State,Move,CFtype>::AcceptableMove()
 { return LessOrEqualThan(this->current_move_cost,(CFtype)0); }
 
+/*
 template <class Input, class State, class Move, typename CFtype>
 void HillClimbing<Input,State,Move,CFtype>::ReadParameters(std::istream& is, std::ostream& os)
 
@@ -115,5 +117,5 @@ void HillClimbing<Input,State,Move,CFtype>::ReadParameters(std::istream& is, std
   os << "  Max number of idle iterations: ";
   is >> this->max_idle_iterations;
 }
-
+*/
 #endif

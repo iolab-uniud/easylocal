@@ -155,8 +155,10 @@ Runner<Input,State,CFtype>::Runner(const Input& i, StateManager<Input,State,CFty
 : name(e_name), in(i), sm(e_sm), current_state(in), best_state(in),
   // parameters
   Parametrized(e_name, e_desc),
-  max_iterations("max_iterations", "Maximum total number of iterations allowed", parameters)
+  max_iterations("max_iterations", "Maximum total number of iterations allowed ", this->parameters)
 {
+  std::cout << "Registered max iterations on " << &parameters << std::endl;
+  std::cout << "Parameters: " << this->parameters.size() << std::endl;
   // this parameter has a default value
   max_iterations = std::numeric_limits<unsigned long int>::max();
 }
