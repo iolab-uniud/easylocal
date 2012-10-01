@@ -17,7 +17,6 @@ class AbstractTester
 public:
   virtual ~AbstractTester() {};
 protected:
-  AbstractTester() { AddRunners(); }
   virtual void AddRunner(Runner<Input,State,CFtype>& r) {};
   void AddRunners()
   {
@@ -97,7 +96,7 @@ Tester<Input, Output, State, CFtype>::Tester(const Input& i,
                                             OutputManager<Input,Output,State,CFtype>& e_om, std::ostream& o)
 :  in(i), os(o), sm(e_sm), om(e_om),
 test_state(i), out(i)
-{}
+{ this->AddRunners(); }
 
 
 /**

@@ -218,6 +218,7 @@ int main(int argc, const char* argv[])
   if (!solution_method.IsSet())
 	{
     // tester
+    // FIXME: now the tester should be defined only when it is used (because of State management)
     Tester<int, ChessBoard, vector<int> > tester(in, qsm, qom);
 		// testers
 		MoveTester<int, ChessBoard, vector<int>, Swap> swap_move_test(in,qsm,qom,qnhe, "Swap move", tester);
