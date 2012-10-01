@@ -9,9 +9,15 @@
 /** The Great Deluge runner relies on a probabilistic local
  search technique whose name comes from ... the Bible?
  
- At each iteration a candidate move is generated at random, and
- it is always accepted if it is an improving move.  Instead, if
- the move is a worsening one, the new solution is accepted ...
+ The solver is initialized with a minimum water level, at each
+ step a candidate move is generated at random, the move is 
+ accepted if its quality is greater than the water level. After
+ the number of neighbors have been sampled at a certain water
+ level, the water level is updated.
+ The algorithm stops if we have reached the maximum water level
+ or if we have done a certain number of non-improving solutions.
+ 
+ In the implementation, the concept of water levels is reversed.
  
  @ingroup Runners
  */
@@ -40,7 +46,7 @@ protected:
   Parameter<double> initial_level; /**< The initial level. */
   Parameter<double> min_level; /**< The minimum level. */
   Parameter<double> level_rate; /**< The level decreasing rate. */
-  Parameter<unsigned int> neighbors_sampled; /**< The number of neighbos sampled. */
+  Parameter<unsigned int> neighbors_sampled; /**< The number of neighbors sampled. */
   // state
   double level; /**< The current level. */
 };
@@ -64,13 +70,12 @@ GreatDeluge<Input,State,Move,CFtype>::GreatDeluge(const Input& in,
                                                   NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
                                                   std::string name)
 : MoveRunner<Input,State,Move,CFtype>(in, e_sm, e_ne, name, "Great Deluge"),
-// parameters
-initial_level("initial_level", "FIXME", this->parameters),
-min_level("min_level", "FIXME", this->parameters),
-level_rate("level_rate", "FIXME", this->parameters),
-neighbors_sampled("neighbors_sampled", "FIXME", this->parameters)
+  // parameters
+  initial_level("initial_level", "Initial water level", this->parameters),
+  min_level("min_level", "Minimum water level", this->parameters),
+  level_rate("level_rate", "Water decrease factor", this->parameters),
+  neighbors_sampled("neighbors_sampled", "Number of neighbors sampled at each water level", this->parameters)
 {
-
 }
 
 /**
@@ -80,15 +85,6 @@ neighbors_sampled("neighbors_sampled", "FIXME", this->parameters)
 template <class Input, class State, class Move, typename CFtype>
 void GreatDeluge<Input,State,Move,CFtype>::InitializeRun()
 {
-  // FIXME: perform all other meaningful parameter checks (now they are not verified properly)
-  MoveRunner<Input,State,Move,CFtype>::InitializeRun();
-  if (initial_level <= 0.0)
-    throw IncorrectParameterValue(initial_level, "should be greater than zero");
-  if (min_level <= 0.0)
-    throw IncorrectParameterValue(initial_level, "should be greater than zero");
-  if (level_rate <= 0.0 || level_rate >= 1.0)
-    throw IncorrectParameterValue(initial_level, "should be in the interval ]0, 1[");  
-  
   level = initial_level * this->current_state_cost;
 }
 
@@ -107,7 +103,9 @@ void GreatDeluge<Input,State,Move,CFtype>::SelectMove()
  */
 template <class Input, class State, class Move, typename CFtype>
 bool GreatDeluge<Input,State,Move,CFtype>::StopCriterion()
-{ return level < min_level * this->best_state_cost; }
+{
+  return level < min_level * this->best_state_cost;
+}
 
 /**
  At regular steps, the temperature is decreased 
@@ -130,8 +128,7 @@ void GreatDeluge<Input,State,Move,CFtype>::UpdateIterationCounter()
 template <class Input, class State, class Move, typename CFtype>
 bool GreatDeluge<Input,State,Move,CFtype>::AcceptableMove()
 { 
-  return LessOrEqualThan(this->current_move_cost,(CFtype)0)
-  || LessOrEqualThan((double)(this->current_move_cost + this->current_state_cost),level); 
+  return LessOrEqualThan(this->current_move_cost,(CFtype)0) || LessOrEqualThan((double)(this->current_move_cost + this->current_state_cost),level); 
 }
 
 #endif // _GREAT_DELUGE_HH_
