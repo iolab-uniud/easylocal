@@ -24,8 +24,6 @@ public:
                      NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
                      std::string name);
   
-  void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout);
-  void Print(std::ostream& os = std::cout) const;
   void SetReheat(double rst)  { reheat = rst; }
   void SetFirstReheat(double rst)  { first_reheat = rst; } // applied only to the first round
   void SetFirstDescentIterationsRatio(double r) { first_descent_iterations_ratio = r; } // the percentage of max_iterations granted to the first descent
@@ -58,21 +56,12 @@ SimulatedAnnealingWithReheating<Input,State,Move,CFtype>::SimulatedAnnealingWith
                                                                 StateManager<Input,State,CFtype>& e_sm,
                                                                 NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
                                                                 std::string name)
-: SimulatedAnnealing<Input,State,Move,CFtype>(in, e_sm, e_ne, name), first_reheat("first_reheat", "frh", this->parameters), reheat("reheat", "rh", this->parameters),  first_descent_iterations_ratio("first_descent_iterations_ratio", "fdir", this->parameters), max_reheats("max_reheats", "mr", this->parameters)
-{}
-
-template <class Input, class State, class Move, typename CFtype>
-void SimulatedAnnealingWithReheating<Input,State,Move,CFtype>::Print(std::ostream& os) const
+: SimulatedAnnealing<Input,State,Move,CFtype>(in, e_sm, e_ne, name),
+  first_reheat("first_reheat", "First reheat ratio", this->parameters),
+  reheat("reheat", "Reheat ratio", this->parameters),
+  first_descent_iterations_ratio("first_descent_iterations_ratio", "First descent iterations ratio", this->parameters),
+  max_reheats("max_reheats", "Maximum number of reheats", this->parameters)
 {
-  os  << "Simulated Annealing With Reheating Runner: " << std::endl;
-  os  << "  Max iterations: " << this->max_iterations << std::endl;
-  os  << "  Start temperature: " << this->start_temperature << std::endl;
-  os  << "  Min temperature: " << this->min_temperature << std::endl;
-  os  << "  Cooling rate: " << this->cooling_rate << std::endl;
-  os  << "  Reheat ratio: " << reheat << std::endl;
-  os  << "  First reheat ratio: " << first_reheat << std::endl;
-  os  << "  First Descent Iterations ratio: " << first_descent_iterations_ratio << std::endl;
-  os  << "  Number of reheats: " << max_reheats << std::endl;
 }
 
 template <class Input, class State, class Move, typename CFtype>
@@ -117,29 +106,6 @@ void SimulatedAnnealingWithReheating<Input,State,Move,CFtype>::CompleteMove()
     this->max_neighbors_accepted = this->max_neighbors_sampled;
     reheats++;
   }
-}
-
-template <class Input, class State, class Move, typename CFtype>
-void SimulatedAnnealingWithReheating<Input,State,Move,CFtype>::ReadParameters(std::istream& is, std::ostream& os)
-
-{
-  os << "SIMULATED ANNEALING WITH REHEATING -- INPUT PARAMETERS" << std::endl;
-  os << "  Start temperature: ";
-  is >> this->start_temperature;
-  os << "  Min temperature: ";
-  is >> this->min_temperature;
-  os << "  Cooling rate: ";
-  is >> this->cooling_rate;
-  os << "  Max total iterations: ";
-  is >> this->max_iterations;
-  os << "  Number of reheats: ";
-  is >> this->max_reheats;
-  os << "  Reheat ratio: ";
-  is >> reheat;
-  os << "  First reheat ratio: ";
-  is >> first_reheat;
-  os << "  First Descent Iterations ratio: ";
-  is >> first_descent_iterations_ratio;
 }
 
 /**

@@ -1,5 +1,5 @@
-#ifndef EasyLocal_Interruptible_hh
-#define EasyLocal_Interruptible_hh
+#if !defined(_INTERRUPTIBLE_HH_)
+#define _INTERRUPTIBLE_HH_
 
 #include <iostream>
 #include <future>
@@ -7,7 +7,7 @@
 #include <atomic>
 #include <thread>
 
-/* hack for simulating sleep_for when the compiler is not defininig it (e.g., macports g++ >= 4.6) */
+/* Hack for simulating sleep_for when the compiler is not defininig it (e.g., macports g++ >= 4.6). */
 #if HAVE_THIS_THREAD_SLEEP_FOR
 namespace _easylocal {
   template <class Rep, class Period>

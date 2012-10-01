@@ -98,9 +98,14 @@ void SimpleLocalSearch<Input,Output,State,CFtype>::Go()
   if (!p_runner)
     // FIXME: add a more specific exception behavior
     throw std::logic_error("Runner not set in object " + this->name);
-  std::shared_future<CFtype> runner_result = this->p_runner->AsyncRun(std::chrono::milliseconds(static_cast<long long int>(this->timeout * 1000.0)), *this->p_current_state);
+  if (this->timeout.IsSet())
+  {
+    std::shared_future<CFtype> runner_result = this->p_runner->AsyncRun(std::chrono::milliseconds(static_cast<long long int>(this->timeout * 1000.0)), *this->p_current_state);
+    this->current_state_cost = runner_result.get();
+  }
+  else
+    this->current_state_cost = p_runner->Go(*this->p_current_state);
   
-  this->current_state_cost = runner_result.get();
   *this->p_best_state = *this->p_current_state;
   this->best_state_cost = this->current_state_cost;
 }

@@ -31,7 +31,7 @@ public:
              TabuListManager<State,Move,CFtype>& e_tlm,
              std::string name);	
   
-  void Print(std::ostream& os = std::cout) const;
+  virtual void Print(std::ostream& os = std::cout) const;
   void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout);
   virtual void SetMaxIdleIteration(unsigned long m) { max_idle_iterations = m; }
   TabuListManager<State,Move,CFtype>& GetTabuListManager() { return pm; }
@@ -45,7 +45,6 @@ protected:
   TabuListManager<State,Move,CFtype>& pm; /**< A reference to a tabu list manger. */
   // parameters
   Parameter<unsigned long int> max_idle_iterations;
-  Parameter<unsigned int> min_tabu_tenure, max_tabu_tenure;
 };
 
 /*************************************************************************
@@ -70,16 +69,14 @@ TabuSearch<Input,State,Move,CFtype>::TabuSearch(const Input& in,
                                                 std::string name)
 : MoveRunner<Input,State,Move,CFtype>(in, e_sm, e_ne, name, "Tabu Search Runner"), pm(tlm),
 // parameters
-max_idle_iterations("max_idle_iterations", "//FIXME: give a description", this->parameters), min_tabu_tenure("min_tabu_tenure", "//FIXME: again", this->parameters), max_tabu_tenure("max_tabu_tenure", "//FIXME: again", this->parameters)
+max_idle_iterations("max_idle_iterations", "Maximum number of idle iterations", this->parameters)
 {
 }
 
 template <class Input, class State, class Move, typename CFtype>
 void TabuSearch<Input,State,Move,CFtype>::Print(std::ostream& os) const
 {
-  os  << "Tabu Search Runner: " << this->name << std::endl;
-  os  << "  Max iterations: " << this->max_iterations << std::endl;
-  os  << "  Max idle iteration: " << max_idle_iterations << std::endl;
+  Runner<Input, State, CFtype>::Print(os);
   pm.Print(os);
 }
 
@@ -91,7 +88,7 @@ template <class Input, class State, class Move, typename CFtype>
 void TabuSearch<Input,State,Move,CFtype>::InitializeRun()
 {
   MoveRunner<Input,State,Move,CFtype>::InitializeRun();
-  pm.SetLength(min_tabu_tenure, max_tabu_tenure);
+  // pm.SetLength(min_tenure, max_tenure); not my responsibility
   pm.Clean();
 }
 
@@ -146,11 +143,8 @@ void TabuSearch<Input,State,Move,CFtype>::CompleteMove()
 
 template <class Input, class State, class Move, typename CFtype>
 void TabuSearch<Input,State,Move,CFtype>::ReadParameters(std::istream& is, std::ostream& os)
-
 {
-  os << "TABU SEARCH -- INPUT PARAMETERS" << std::endl;
+  Runner<Input, State, CFtype>::ReadParameters(is, os);
   pm.ReadParameters(is, os);
-  os << "  Number of idle iterations: ";
-  is >> max_idle_iterations;
 }
 #endif // _TABU_SEARCH_HH_

@@ -23,8 +23,6 @@ public:
                   NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
                   std::string name);
   
-  void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout);
-  void Print(std::ostream& os = std::cout) const;
 protected:
   void InitializeRun();
   void StoreMove();
@@ -50,13 +48,7 @@ SteepestDescent<Input,State,Move,CFtype>::SteepestDescent(const Input& in,
                                                           StateManager<Input,State,CFtype>& e_sm, NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
                                                           std::string name)
 : MoveRunner<Input,State,Move,CFtype>(in, e_sm, e_ne, name, "Steepest Descent Runner")
-{}
-
-template <class Input, class State, class Move, typename CFtype>
-void SteepestDescent<Input,State,Move,CFtype>::Print(std::ostream& os) const
 {
-  os  << "Steepest Descent Runner: " << this->name << std::endl;
-  os  << "  Max iterations: " << this->max_iterations << std::endl;
 }
 
 /**
@@ -94,8 +86,4 @@ template <class Input, class State, class Move, typename CFtype>
 bool SteepestDescent<Input,State,Move,CFtype>::AcceptableMove()
 { return LessThan(this->current_move_cost, (CFtype)0); }
 
-template <class Input, class State, class Move, typename CFtype>
-void SteepestDescent<Input,State,Move,CFtype>::ReadParameters(std::istream& is, std::ostream& os)
-
-{}
 #endif // _STEEPEST_DESCENT_HH_

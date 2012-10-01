@@ -33,7 +33,7 @@
 
 
 template <class Input, class State, typename CFtype = int>
-class Runner : public Interruptible<CFtype, State&>
+class Runner : public Interruptible<CFtype, State&>, public Parametrized
 {
 public:
   
@@ -50,15 +50,15 @@ public:
     return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - begin);
   }
   
-  virtual void Print(std::ostream& os = std::cout) const = 0;
+  virtual void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout);
+  
+  virtual void Print(std::ostream& os = std::cout) const;
   
   // FIXME: remove parameter accessors
   unsigned long GetMaxIterations() const;
   
   void SetMaxIterations(unsigned long max);
   
-  virtual void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout) = 0;
-
   unsigned int IterationOfBest() const { return iteration_of_best; }
 
   unsigned long int Iteration() const { return iteration; }
@@ -124,7 +124,6 @@ protected:
     performed. */
   
   // Parameters
-  ParameterBox parameters;
   Parameter<unsigned long int> max_iterations; /**< The maximum number of iterations allowed. */  
   //  unsigned long int max_iterations;
   /** Chronometer. */
@@ -157,9 +156,9 @@ private:
 */
 template <class Input, class State, typename CFtype>
 Runner<Input,State,CFtype>::Runner(const Input& i, StateManager<Input,State,CFtype>& e_sm, std::string e_name, std::string e_desc)
-: name(e_name), in(i), sm(e_sm), parameters(e_name, e_desc),
-// parameters
-  max_iterations("max_iterations", "Maximum total number of iterations allowed", parameters)
+: Parametrized(e_name, e_desc), name(e_name), in(i), sm(e_sm),
+  // parameters
+  max_iterations("max_iterations", "Maximum total number of iterations allowed (default value max unsigned long int)", this->parameters)
 {
   // this parameter has a default value
   max_iterations = std::numeric_limits<unsigned long int>::max();
@@ -299,5 +298,20 @@ bool Runner<Input,State,CFtype>::LowerBoundReached() const
 {
   return sm.LowerBoundReached(current_state_cost);
 }
+
+template <class Input, class State, typename CFtype>
+void Runner<Input,State,CFtype>::ReadParameters(std::istream& is, std::ostream& os)
+{
+  os << this->name << " -- INPUT PARAMETERS" << std::endl;
+  Parametrized::ReadParameters();
+}
+
+template <class Input, class State, typename CFtype>
+void Runner<Input,State,CFtype>::Print(std::ostream& os) const
+{
+  os  << "  " << this->name << std::endl;
+  Parametrized::Print(os);  
+}
+
 
 #endif // _RUNNER_HH_
