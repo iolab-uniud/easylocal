@@ -84,7 +84,7 @@
 		ACF4B1580DBFA668008A0207 /* Random.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Random.hh; sourceTree = "<group>"; };
 		ACF4B15A0DBFA668008A0207 /* Types.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Types.cc; sourceTree = "<group>"; };
 		ACF4B15B0DBFA668008A0207 /* Types.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Types.hh; sourceTree = "<group>"; };
-		ACF4B1600DBFA685008A0207 /* Makefile.am */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = Makefile.am; path = ../../Makefile.am; sourceTree = "<group>"; };
+		ACF4B1600DBFA685008A0207 /* Makefile.am */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = Makefile.am; sourceTree = "<group>"; };
 		ACF4B1640DBFA685008A0207 /* ChessBoard.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ChessBoard.cc; sourceTree = "<group>"; };
 		ACF4B1650DBFA685008A0207 /* ChessBoard.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = ChessBoard.hh; sourceTree = "<group>"; };
 		ACF4B1660DBFA685008A0207 /* Swap.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Swap.cc; sourceTree = "<group>"; };
@@ -281,6 +281,7 @@
 		ACF4B15C0DBFA685008A0207 /* test */ = {
 			isa = PBXGroup;
 			children = (
+				ACF4B1600DBFA685008A0207 /* Makefile.am */,
 				ACF4B1620DBFA685008A0207 /* nQueens */,
 			);
 			name = test;
@@ -303,7 +304,6 @@
 		ACF4B1630DBFA685008A0207 /* data */ = {
 			isa = PBXGroup;
 			children = (
-				ACF4B1600DBFA685008A0207 /* Makefile.am */,
 				ACF4B1650DBFA685008A0207 /* ChessBoard.hh */,
 				ACF4B1640DBFA685008A0207 /* ChessBoard.cc */,
 				ACF4B1670DBFA685008A0207 /* Swap.hh */,

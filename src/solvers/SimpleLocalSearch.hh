@@ -26,7 +26,8 @@ public:
   // FIXME: all these methods should become solving parameters to sent to the Solver class
 protected:
   void Go();
-  std::shared_ptr<Runner<Input,State,CFtype>> p_runner; /**< to the managed runner. */
+  void AtTimeoutExpired();
+  Runner<Input,State,CFtype>* p_runner; /**< to the managed runner. */
 };
 
 /*************************************************************************
@@ -49,10 +50,8 @@ SimpleLocalSearch<Input,Output,State,CFtype>::SimpleLocalSearch(const Input& in,
 								StateManager<Input,State,CFtype>& e_sm,
 								OutputManager<Input,Output,State,CFtype>& e_om,
                                                                 std::string name)
-  : AbstractLocalSearch<Input,Output,State,CFtype>(in, e_sm, e_om, name, "Simple Local Search Solver")
-{
-  p_runner = nullptr;
-}
+  : AbstractLocalSearch<Input,Output,State,CFtype>(in, e_sm, e_om, name, "Simple Local Search Solver"), p_runner(nullptr)
+{}
 
 template <class Input, class Output, class State, typename CFtype>
 void SimpleLocalSearch<Input,Output,State,CFtype>::ReadParameters(std::istream& is, std::ostream& os)
@@ -89,7 +88,7 @@ void SimpleLocalSearch<Input,Output,State,CFtype>::Print(std::ostream& os) const
 */
 template <class Input, class Output, class State, typename CFtype>
 void SimpleLocalSearch<Input,Output,State,CFtype>::SetRunner(Runner<Input,State,CFtype>& r)
-{ this->p_runner.reset(&r); }
+{ this->p_runner = &r; }
 
 
 template <class Input, class Output, class State, typename CFtype>
@@ -98,16 +97,22 @@ void SimpleLocalSearch<Input,Output,State,CFtype>::Go()
   if (!p_runner)
     // FIXME: add a more specific exception behavior
     throw std::logic_error("Runner not set in object " + this->name);
-  if (this->timeout.IsSet())
-  {
-    std::shared_future<CFtype> runner_result = this->p_runner->AsyncRun(std::chrono::milliseconds(static_cast<long long int>(this->timeout * 1000.0)), *this->p_current_state);
-    this->current_state_cost = runner_result.get();
-  }
-  else
-    this->current_state_cost = p_runner->Go(*this->p_current_state);
+  //  if (this->timeout.IsSet())
+  //{
+  //  std::shared_future<CFtype> runner_result = this->p_runner->AsyncRun(std::chrono::milliseconds(static_cast<long long int>(this->timeout * 1000.0)), *this->p_current_state);
+  //  this->current_state_cost = runner_result.get();
+  //}
+  //else
+  this->current_state_cost = p_runner->Go(*this->p_current_state);
   
   *this->p_best_state = *this->p_current_state;
   this->best_state_cost = this->current_state_cost;
+}
+
+template <class Input, class Output, class State, typename CFtype>
+void SimpleLocalSearch<Input,Output,State,CFtype>::AtTimeoutExpired()
+{
+  p_runner->Interrupt();
 }
 
 #endif // _SIMPLE_LOCAL_SEARCH_HH_

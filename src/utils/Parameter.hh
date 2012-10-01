@@ -81,6 +81,8 @@ class Parameter : public AbstractParameter
 {
   template <typename _T>
   friend std::istream& operator>>(std::istream& is, Parameter<_T>& p);
+  template <typename _T>
+  friend bool operator==(const Parameter<_T>&, const _T&);
   friend class IncorrectParameterValue;
 public:
   /** Constructor.
@@ -173,6 +175,12 @@ std::istream& operator>>(std::istream& is, Parameter<T>& p)
   p.is_set = true;
   
   return is;
+}
+
+template <typename T>
+bool operator==(const Parameter<T>& t1, const T& t2)
+{
+  return t1.value == t2;
 }
 
 template <typename T>

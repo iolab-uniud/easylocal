@@ -285,11 +285,8 @@ template <class Input, class State, typename CFtype>
 CFtype Runner<Input,State,CFtype>::TerminateRun(State& s)
 {
   s = *p_best_state;
-  end = std::chrono::high_resolution_clock::now();
   TerminateRun();
-  // to release the objects
-  p_best_state.reset();
-  p_current_state.reset(); 
+  end = std::chrono::high_resolution_clock::now();
   return best_state_cost;
 }
 

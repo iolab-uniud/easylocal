@@ -83,6 +83,10 @@
       <CommandLineArguments>
          <CommandLineArgument
             argument = "--main::size 500"
+            isEnabled = "NO">
+         </CommandLineArgument>
+         <CommandLineArgument
+            argument = "--main::method=simple --main::size=500 --SwapHillClimbing::max_idle_iteration=1000000 --QueensSLS::timeout=1"
             isEnabled = "YES">
          </CommandLineArgument>
       </CommandLineArguments>

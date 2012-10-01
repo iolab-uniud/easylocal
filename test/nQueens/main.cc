@@ -145,15 +145,11 @@ int main(int argc, const char* argv[])
   Parameter<unsigned int> plot_level("plot", "Plot level", main_parameters);
   Parameter<unsigned long> random_seed("random_seed", "Random seed", main_parameters);
   
-  // parse only the previous parameters
-  CommandLineParameters::Parse(argc, argv, false);
-
-  
   if (size.IsSet())
     in = size;
   else
-    in = 0;  
-  
+    in = 0;
+    
 #else
   // at least the value of in shoud be read from the command line
 #endif
@@ -211,6 +207,9 @@ int main(int argc, const char* argv[])
     std::cout << "Error: --main::size=N option must always be set" << std::endl;
     return 1;
   }
+  // FIXME: it should work after tester reworking
+  // else
+  //  in = size;
 #endif
   
   qsm.AddCostComponent(cc1);
@@ -246,6 +245,12 @@ int main(int argc, const char* argv[])
 		
 		tester.RunMainMenu();
 	}
+  else if (solution_method == std::string("simple"))
+  {
+    qss.SetRunner(qhc);
+    std::cout << qss.Solve() << std::endl;
+  }
+    
   /*
   else if (solution_method == "VND")
   {

@@ -57,8 +57,8 @@ protected:
   // TODO: set those values
   std::chrono::milliseconds accumulated_time;
 private:
-  virtual void InitializeSolve();
-  virtual const Output& TerminateSolve();
+  void InitializeSolve();
+  void TerminateSolve();
 };
 
 /*************************************************************************
@@ -109,7 +109,6 @@ void AbstractLocalSearch<Input,Output,State,CFtype>::InitializeSolve()
 {
   p_best_state = std::make_shared<State>(this->in);
   p_current_state = std::make_shared<State>(this->in);
-  p_out = std::make_shared<Output>(this->in);
 }
 
 template <class Input, class Output, class State, typename CFtype>
@@ -118,10 +117,15 @@ Output AbstractLocalSearch<Input,Output,State,CFtype>::Solve()
   InitializeSolve();
   FindInitialState();
   if (timeout.IsSet())
+  {
     SyncRun(std::chrono::milliseconds(static_cast<long long int>(timeout * 1000.0)));
+  }
   else
     Go();
-  return TerminateSolve();
+  p_out = std::make_shared<Output>(this->in);
+  om.OutputState(*p_best_state, *p_out);
+  TerminateSolve();
+  return *p_out;
 }
 
 template <class Input, class Output, class State, typename CFtype>
@@ -135,16 +139,17 @@ Output AbstractLocalSearch<Input,Output,State,CFtype>::Resolve(const Output& ini
     SyncRun(std::chrono::milliseconds(static_cast<long long int>(timeout * 1000.0)));
   else
     Go();
-  return TerminateSolve();
+  p_out = std::make_shared<Output>(this->in);
+  om.OutputState(*p_best_state, *p_out);
+  TerminateSolve();
+  return *p_out;
 }
 
 template <class Input, class Output, class State, typename CFtype>
-const Output& AbstractLocalSearch<Input,Output,State,CFtype>::TerminateSolve()
+void AbstractLocalSearch<Input,Output,State,CFtype>::TerminateSolve()
 {
-  om.OutputState(*p_best_state, *p_out);
-  p_best_state.reset();
-  p_current_state.reset();
-  return *p_out;
+  /* p_best_state.reset();
+  p_current_state.reset(); */
 }
 
 

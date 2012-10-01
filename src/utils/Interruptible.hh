@@ -96,7 +96,7 @@ protected:
   }
   
   /** Called when timeout is expired. */
-  inline virtual AtTimeoutExpired() { }
+  inline virtual void AtTimeoutExpired() { }
   
 private:
   
