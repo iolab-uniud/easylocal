@@ -33,7 +33,7 @@
 
 
 template <class Input, class State, typename CFtype = int>
-class Runner : public Interruptible<CFtype, State&>
+class Runner : public Interruptible<CFtype, State&>, public Parametrized
 {
 public:
   
@@ -56,8 +56,6 @@ public:
   
   void SetMaxIterations(unsigned long max);
   
-  virtual void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout) = 0;
-
   unsigned int IterationOfBest() const { return iteration_of_best; }
 
   unsigned long int Iteration() const { return iteration; }
@@ -122,7 +120,6 @@ protected:
     performed. */
   
   // Parameters
-  ParameterBox parameters;
   Parameter<unsigned long int> max_iterations; /**< The maximum number of iterations allowed. */  
   //  unsigned long int max_iterations;
   /** Chronometer. */
@@ -156,8 +153,8 @@ private:
 template <class Input, class State, typename CFtype>
 Runner<Input,State,CFtype>::Runner(const Input& i, StateManager<Input,State,CFtype>& e_sm, std::string e_name, std::string e_desc)
 : name(e_name), in(i), sm(e_sm), current_state(in), best_state(in),
-  parameters(e_name, e_desc),
-// parameters
+  // parameters
+  Parametrized(e_name, e_desc),
   max_iterations("max_iterations", "Maximum total number of iterations allowed", parameters)
 {
   // this parameter has a default value
