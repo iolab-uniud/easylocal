@@ -313,8 +313,6 @@ void Tester<Input,Output, State,CFtype>::ExecuteRunChoice()
     auto end = std::chrono::high_resolution_clock::now();
     
     auto duration = end - start;
-  
-    
     om.OutputState(test_state,out);
     
     os << "CURRENT SOLUTION " << std::endl << out << std::endl;

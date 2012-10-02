@@ -25,10 +25,6 @@ const char* IncorrectParameterValue::what() const throw()
   return message.c_str();
 }
 
-IncorrectParameterValue::~IncorrectParameterValue() throw() {
-  
-}
-
 // specialization for bool parameters (i.e., enable/disable flags)
 template <>
 Parameter<bool>::Parameter(const std::string& cmdline_flag, const std::string& description, ParameterBox& parameters)
