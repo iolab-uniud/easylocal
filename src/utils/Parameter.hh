@@ -119,6 +119,7 @@ public:
   template <typename T>
   IncorrectParameterValue(const Parameter<T>& p, std::string desc);
   virtual const char* what() const throw();
+  virtual ~IncorrectParameterValue() throw();
 protected:
   std::string message;
 };
