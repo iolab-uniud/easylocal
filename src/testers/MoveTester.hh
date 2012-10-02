@@ -569,8 +569,8 @@ void MoveTester<Input,Output,State,Move,CFtype>::CheckTabuStrength(const State& 
 {
   Move mv1, mv2;
   State st1 = st;
-  long long unsigned moves = 0, pairs = 0, inverse_pairs = 0;
-  std::vector<long long unsigned> moves_per_type(ne.Modality(), 0);
+  unsigned long long int moves = 0, pairs = 0, inverse_pairs = 0;
+  std::vector<unsigned long long int> moves_per_type(ne.Modality(), 0);
   ne.FirstMove(st,mv1);
   do
   {

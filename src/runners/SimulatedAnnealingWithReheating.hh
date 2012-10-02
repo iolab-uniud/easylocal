@@ -78,7 +78,7 @@ void SimulatedAnnealingWithReheating<Input,State,Move,CFtype>::InitializeRun() t
   if (first_descent_iterations_ratio <= 0.0 || first_descent_iterations_ratio > 1.0)
     throw IncorrectParameterValue(first_descent_iterations_ratio, "should be a value in the interval ]0, 1]");  
   
-  unsigned number_of_temperatures = -log(this->start_temperature/this->min_temperature) / log(this->cooling_rate);
+  unsigned int number_of_temperatures = -log(this->start_temperature/this->min_temperature) / log(this->cooling_rate);
   this->max_neighbors_sampled = ceil((first_descent_iterations_ratio * this->max_iterations) /number_of_temperatures);
   this->max_neighbors_accepted = this->max_neighbors_sampled;
 }
@@ -101,7 +101,7 @@ void SimulatedAnnealingWithReheating<Input,State,Move,CFtype>::CompleteMove()
     
     std::cerr << "Reheat " << this->temperature << std::endl;
     
-    unsigned number_of_temperatures = -log(this->start_temperature / this->min_temperature) / log(this->cooling_rate);
+    unsigned int number_of_temperatures = -log(this->start_temperature / this->min_temperature) / log(this->cooling_rate);
     this->max_neighbors_sampled = ceil(((1.0 - first_descent_iterations_ratio) * this->max_iterations) / number_of_temperatures);
     this->max_neighbors_accepted = this->max_neighbors_sampled;
     reheats++;

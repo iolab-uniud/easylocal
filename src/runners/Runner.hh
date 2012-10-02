@@ -1,21 +1,3 @@
-// $Id: Runner.hh 314 2011-10-04 13:36:41Z sara $
-// This file is part of EasyLocalpp: a C++ Object-Oriented framework
-// aimed at easing the development of Local Search algorithms.
-// Copyright (C) 2001--2008 Andrea Schaerf, Luca Di Gaspero. 
-//
-// EasyLocalpp is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// EasyLocalpp is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with EasyLocalpp. If not, see <http://www.gnu.org/licenses/>.
-
 #if !defined(RUNNER_HH_)
 #define RUNNER_HH_
 
@@ -31,77 +13,126 @@
 #include <atomic>
 #include <utils/Parameter.hh>
 
+/** Forward declaration of tester. */
 template <class Input, class State, typename CFtype>
 class AbstractTester;
 
+/** A class representing a single search strategy, e.g. hill climbing
+ or simulated annealing. It must be loaded into a solver by using
+ Solver::AddRunner() in order to be called correctly.
+ @ingroup Helpers
+ */
 template <class Input, class State, typename CFtype = int>
 class Runner : public Interruptible<CFtype, State&>, public Parametrized
 {
   friend class AbstractTester<Input, State, CFtype>;
+
 public:
   
-  /** Performs a full run of the search method (possibly being interrupted before its natural ending) on the passed state and returns the cost value after the run. */
+  /** Performs a full run of the search method (possibly being interrupted before its natural ending).
+   @param s state to start with and to modify
+   @return the cost of the best state found
+   @throw ParameterNotSet if one of the parameters needed by the runner (or other components) hasn't been set
+   @throw IncorrectParameterValue if one of the parameters has an incorrect value
+   */
   CFtype Go(State& s) throw (ParameterNotSet, IncorrectParameterValue);
   
-  /** Performs a given number of steps of the search method.
-  @param n the number of steps to make */	
+  /** Performs a given number of steps of the search method on the passed state.
+   @param s state to start with and to modify
+   @param n the number of steps to make
+   @return the cost of the best state found
+   @throw ParameterNotSet if one of the parameters needed by the runner (or other components) hasn't been set
+   @throw IncorrectParameterValue if one of the parameters has an incorrect value
+   */
   CFtype Step(State& s, unsigned int n = 1) throw (ParameterNotSet, IncorrectParameterValue);
   
-  /** @todo */
+  /** Computes the duration of the last run (in milliseconds). 
+   @return the duration of the last run
+   */
   virtual std::chrono::milliseconds GetTimeElapsed() const
   {
     return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - begin);
   }
   
+  /** Reads the parameter from an input stream.
+   @param is input stream to read from
+   @param os output stream to give indication about the needed parameters
+   */
   virtual void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout);
   
+  /** Prints the state of the runner.
+   @param os output stream to print onto
+   */
   virtual void Print(std::ostream& os = std::cout) const;
   
-  // FIXME: remove parameter accessors
-  unsigned long GetMaxIterations() const;
-  
-  void SetMaxIterations(unsigned long max);
-  
-  unsigned int IterationOfBest() const { return iteration_of_best; }
+  /** Gets the index of the iteration at which the last best state was found. */
+  unsigned int IterationOfBest() const
+  {
+    return iteration_of_best;
+  }
 
-  unsigned long int Iteration() const { return iteration; }
+  /** Gets the index of the current iteration. */
+  unsigned long int Iteration() const
+  {
+    return iteration;
+  }
 
+  /** Name of the runner. */
   const std::string name;
-    
+
+  /** Description of the runner. */
+  const std::string description;
+  
+  /** Destructor, for inheritance. */
   virtual ~Runner() { }
   
+  /** Modality of this runner. */
   virtual constexpr unsigned int Modality() const = 0;
   
+  /** List of all runners that have been instantiated so far. For autoloading. */
   static std::vector<Runner<Input,State,CFtype>*> runners;
   
 protected:
 
-  Runner(const Input& i, StateManager<Input,State,CFtype>& sm, std::string name, std::string e_desc);
+  /** Constructor.
+   @param i a reference to the input
+   @param sm a StateManager, as defined by the user
+   @param name name of the runner
+   @param desc description of the runner
+   */
+  Runner(const Input& i, StateManager<Input,State,CFtype>&, std::string, std::string);
   
-  virtual bool LowerBoundReached() const;
-  
-  /** Actions and checks to be perfomed at the beginning of the run. */
-  virtual void InitializeRun() throw (ParameterNotSet, IncorrectParameterValue);
+  /** Actions and checks to be perfomed at the beginning of the run. Redefinition intended.
+   @throw ParameterNotSet if one of the parameters needed by the runner (or other components) hasn't been set
+   @throw IncorrectParameterValue if one of the parameters has an incorrect value
+   */
+  virtual void InitializeRun() throw (ParameterNotSet, IncorrectParameterValue) { }
   
   /** Actions to be performed at the end of the run. */
   virtual void TerminateRun() = 0;
-    
-  bool MaxIterationExpired() const;
   
   /** Encodes the criterion used to stop the search. */
   virtual bool StopCriterion() = 0;
   
+  /** Tells if the runner has found a lower bound. For stopping condition. */
+  virtual bool LowerBoundReached() const;
+  
+  /** Tells if the maximum number of iterations allowed have been exhausted. */
+  bool MaxIterationExpired() const;
+  
   /** Encodes the criterion used to select the move at each step. */
   virtual void SelectMove() = 0;
   
-  /** Verifies whether the move selected could be performed. */
+  /** Verifies whether the move selected can be performed. */
   virtual bool AcceptableMove();
   
+  /** Actions to be performed after a move has been accepted. Redefinition intended. */
   virtual void PrepareMove() {};
   
   /** Actually performs the move. */
   virtual void MakeMove() = 0;
   
+  /** Actions to be performed after a move has been done. Redefinition intended. */
   virtual void CompleteMove() {};
   
   /** Implements Interruptible. */
@@ -112,92 +143,68 @@ protected:
     };
   }
   
-  // Helpers
+  /** A reference to the input. */
   const Input& in;
-  StateManager<Input, State,CFtype>& sm; /**< A pointer to the attached state manager. */
   
-  // state data
-  std::shared_ptr<State> p_current_state, /**< The current state object. */
-  p_best_state; /**< The best state object. */
-  CFtype current_state_cost, /**< The cost of the current state. */
-        best_state_cost; /**< The cost of the best state. */
+  /** The state manager attached to this runner. */
+  StateManager<Input, State,CFtype>& sm;
   
-  unsigned long int iteration_of_best; /**< The iteration when the best
-    state has found. */
+  /** Current state of the search. */
+  std::shared_ptr<State> p_current_state,
   
-  unsigned long int iteration; /**< The overall number of iterations
-    performed. */
+  /** Best state found so far. */
+  p_best_state;
   
-  // Parameters
-  Parameter<unsigned long int> max_iterations; /**< The maximum number of iterations allowed. */  
-  //  unsigned long int max_iterations;
+  /** Cost of the current state. */
+  CFtype current_state_cost;
+  
+  /** Cost of the best state. */
+  CFtype best_state_cost;
+  
+  /** Index of the iteration where the best has been found. */
+  unsigned long int iteration_of_best;
+  
+  /** Index of the current iteration. */
+  unsigned long int iteration;
+  
+  /** Generic parameter of every runner: maximum number of iterations. */
+  Parameter<unsigned long int> max_iterations;
+
   /** Chronometer. */
-  std::chrono::high_resolution_clock::time_point begin;
-  std::chrono::high_resolution_clock::time_point end;
+  std::chrono::high_resolution_clock::time_point begin, end;
   
 private:
   
   /** Stores the move and updates the related data. */
   void UpdateBestState();
 
-  void InitializeRun(State& s) throw (ParameterNotSet, IncorrectParameterValue);
-  CFtype TerminateRun(State& s);
+  /** Actions that must be done at the start of the search, and which cannot be redefined by subclasses. */
+  void InitializeRun(State&) throw (ParameterNotSet, IncorrectParameterValue);
+  
+  /** Actions that must be done at the end of the search. */
+  CFtype TerminateRun(State&);
 };
 
 /*************************************************************************
  * Implementation
  *************************************************************************/
 
-/**
-  Creates a move runner and links it to a given state manager, neighborhood
-  explorer and input objects. In addition, it sets its name and type to
-  the given values.
-
-  @param sm a pointer to a compatible state manager
-  @param ne a pointer to a compatible neighborhood explorer
-  @param in a pointer to the input object
-  @param name the name of the runner
-*/
-template <class Input, class State, typename CFtype>
-Runner<Input,State,CFtype>::Runner(const Input& i, StateManager<Input,State,CFtype>& e_sm, std::string e_name, std::string e_desc)
-: Parametrized(e_name, e_desc), name(e_name), in(i), sm(e_sm),
-  // parameters
-  max_iterations("max_iterations", "Maximum total number of iterations allowed (default value max unsigned long int)", this->parameters)
-{
-  // this parameter has a default value
-  max_iterations = std::numeric_limits<unsigned long int>::max();
-  // add to the list of all runners
-  runners.push_back(this);
-}
-
 template <class Input, class State, typename CFtype>
 std::vector<Runner<Input,State,CFtype>*> Runner<Input,State,CFtype>::runners;
 
-/**
-   Returns the maximum value of iterations allowed for the runner.
-
-   @return the maximum value of iterations allowed
-*/
-// FIXME remove parameter accessors
 template <class Input, class State, typename CFtype>
-unsigned long Runner<Input,State,CFtype>::GetMaxIterations() const
+Runner<Input,State,CFtype>::Runner(const Input& i, StateManager<Input,State,CFtype>& sm, std::string name, std::string description)
+: // Parameters
+  Parametrized(name, description), name(name), description(description), in(i), sm(sm),
+  max_iterations("max_iterations", "Maximum total number of iterations allowed (default value max unsigned long int)", this->parameters)
 {
-  return max_iterations;
+  // This parameter has a default value
+  max_iterations = std::numeric_limits<unsigned long int>::max();
+  
+  // Add to the list of all runners
+  runners.push_back(this);
 }
 
-/**
-   Sets a bound on the maximum number of iterations allowed for the runner.
-   
-   @param max the maximum number of iterations allowed */
-template <class Input, class State, typename CFtype>
-void Runner<Input,State,CFtype>::SetMaxIterations(unsigned long max)
-{
-  max_iterations = max;
-}
-
-/**
-   Performs a full run of a local search method.
- */
 template <class Input, class State, typename CFtype>
 CFtype Runner<Input,State,CFtype>::Go(State& s) throw (ParameterNotSet, IncorrectParameterValue)
 {
@@ -211,7 +218,7 @@ CFtype Runner<Input,State,CFtype>::Go(State& s) throw (ParameterNotSet, Incorrec
     }
     catch (EmptyNeighborhood e)
     {
-      break; // If the neighborhood is empty, the search will be stopped
+      break;
     }
     if (AcceptableMove())
     {
@@ -228,9 +235,10 @@ CFtype Runner<Input,State,CFtype>::Go(State& s) throw (ParameterNotSet, Incorrec
 template <class Input, class State, typename CFtype>
 void Runner<Input,State,CFtype>::UpdateBestState()
 {
+  /** Neutral moves allowed for diversification (@todo should be parameter=?) */
   if (LessOrEqualThan(current_state_cost, best_state_cost))
   {
-    *p_best_state = *p_current_state; // Change best_state in case of equal cost to improve diversification
+    *p_best_state = *p_current_state;
     if (LessThan(current_state_cost, best_state_cost))
     {
       best_state_cost = current_state_cost;
@@ -239,42 +247,18 @@ void Runner<Input,State,CFtype>::UpdateBestState()
   }
 }
 
-
-/**
-   Verifies whether the upper bound on the number of iterations
-   allowed for the strategy has been reached.
-
-   @return true if the maximum number of iteration has been reached, false
-   otherwise
-*/
 template <class Input, class State, typename CFtype>
 bool Runner<Input,State,CFtype>::MaxIterationExpired() const
 {
   return iteration > max_iterations;
 }
 
-/**
-    Checks whether the selected move can be performed.
-    Its tentative definition simply returns true
-*/
 template <class Input, class State, typename CFtype>
 bool Runner<Input,State,CFtype>::AcceptableMove()
 {
   return true;
 }
 
-/**
-   Initializes all the runner variable for starting a new run.
-*/
-template <class Input, class State, typename CFtype>
-void Runner<Input,State,CFtype>::InitializeRun() throw (ParameterNotSet, IncorrectParameterValue)
-{
-  // parameter consistency check
-}
-
-/**
- These initializations are common to all runner (and cannot be redefined).
- */
 template <class Input, class State, typename CFtype>
 void Runner<Input,State,CFtype>::InitializeRun(State& s) throw (ParameterNotSet, IncorrectParameterValue)
 {
@@ -287,9 +271,6 @@ void Runner<Input,State,CFtype>::InitializeRun(State& s) throw (ParameterNotSet,
   InitializeRun();
 }
 
-/**
- These finalizations are common to all runner (and cannot be redefined).
- */
 template <class Input, class State, typename CFtype>
 CFtype Runner<Input,State,CFtype>::TerminateRun(State& s)
 {
@@ -318,6 +299,5 @@ void Runner<Input,State,CFtype>::Print(std::ostream& os) const
   os  << "  " << this->name << std::endl;
   Parametrized::Print(os);  
 }
-
 
 #endif // _RUNNER_HH_

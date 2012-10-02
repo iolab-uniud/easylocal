@@ -597,7 +597,7 @@ CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::DeltaViolations(const Stat
   // the function returns 0. This means that the default
   // version is not available
   CFtype total_delta = 0;
-  for (unsigned i = 0; i < delta_cost_component.size(); i++)
+  for (unsigned int i = 0; i < delta_cost_component.size(); i++)
     if (delta_cost_component[i]->IsHard())
     {
       DeltaCostComponent<Input,State,Move,CFtype>& dcc = *this->delta_cost_component[i];
@@ -620,7 +620,7 @@ template <class Input, class State, class Move, typename CFtype>
 CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::DeltaObjective(const State& st, const Move & mv) const
 {
   CFtype total_delta = 0;
-  for (unsigned i = 0; i < this->delta_cost_component.size(); i++)
+  for (unsigned int i = 0; i < this->delta_cost_component.size(); i++)
     if (delta_cost_component[i]->IsSoft())
     {
       DeltaCostComponent<Input,State,Move,CFtype>& dcc = *this->delta_cost_component[i];

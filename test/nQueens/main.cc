@@ -143,7 +143,7 @@ int main(int argc, const char* argv[])
   Parameter<std::string> solution_method("method", "Solution method (none for tester)", main_parameters);
   Parameter<unsigned int> verbosity_level("verbosity", "Verbosity level", main_parameters);
   Parameter<unsigned int> plot_level("plot", "Plot level", main_parameters);
-  Parameter<unsigned long> random_seed("random_seed", "Random seed", main_parameters);
+  Parameter<unsigned long int> random_seed("random_seed", "Random seed", main_parameters);
 #else
   // at least the value of in shoud be read from the command line
 #endif

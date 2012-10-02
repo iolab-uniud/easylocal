@@ -19,7 +19,7 @@ public:
                NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne, std::string name);
 
   // FIXME: to remove parameter accessors
-  virtual void SetMaxIdleIterations(unsigned long m) { max_idle_iterations = m; }
+  virtual void SetMaxIdleIterations(unsigned long int m) { max_idle_iterations = m; }
 protected:
   bool MaxIdleIterationExpired() const;
   bool MaxIterationExpired() const;
@@ -27,7 +27,7 @@ protected:
   bool AcceptableMove();
   void SelectMove();
   // parameters
-  Parameter<unsigned long> max_idle_iterations;
+  Parameter<unsigned long int> max_idle_iterations;
 };
 
 /*************************************************************************

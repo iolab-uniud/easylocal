@@ -28,14 +28,14 @@ public:
    @param mv the move to insert into the list
    @param out the iteration at which the move leaves the list.
    */
-	TabuListItem(Move mv, unsigned long out)
+	TabuListItem(Move mv, unsigned long int out)
 	: elem(mv), out_iter(out)
 	{}
 	virtual ~TabuListItem() {}
 protected:
 	Move elem;              /**< The move stored in the list item. */
-	unsigned long out_iter; /**< iteration at which the element
-                           leaves the list */
+	unsigned long int out_iter; /**< iteration at which the element
+                               leaves the list */
 };
 
 /** The Tabu List Manager handles a list of @c Move elements according
@@ -96,7 +96,7 @@ protected:
 	// parameters
 	Parameter<unsigned int> min_tenure; /**< The minimum tenure of the tabu list. */
 	Parameter<unsigned int> max_tenure;  /**< The maximum tenure of the tabu list. */
-	unsigned long iter; /**< The current iteration. */
+	unsigned long int iter; /**< The current iteration. */
 	std::list<TabuListItem<State,Move,CFtype> > tlist; /**< The list of tabu moves. */
 	CFtype current_state_cost; /**< The cost of current state of the attached runner (for the aspiration criterion) */
 	CFtype best_state_cost; /**< The cost of best state of the attached runner (for the aspiration criterion) */
@@ -113,7 +113,7 @@ public:
   virtual void Clean();
 protected:
   FrequencyTabuListManager(double thr = 0.04, unsigned int min_it = 100);
-  typedef std::map<Move,unsigned long> MapType;
+  typedef std::map<Move,unsigned long int> MapType;
   MapType frequency_map;
   double threshold;
   unsigned int min_iter;
@@ -132,9 +132,9 @@ protected:
 template <class State, class Move, typename CFtype>
 TabuListManager<State, Move,CFtype>::TabuListManager()
 : ProhibitionManager<State,Move,CFtype>("Tabu List", "List of moves which cannot be done"),
-  min_tenure("min_tabu_tenure", "Minimum length of the tabu list", this->parameters),
-  max_tenure("max_tabu_tenure", "Maximum length of the tabu list", this->parameters),
-  iter(0)
+min_tenure("min_tabu_tenure", "Minimum length of the tabu list", this->parameters),
+max_tenure("max_tabu_tenure", "Maximum length of the tabu list", this->parameters),
+iter(0)
 {
   min_tenure = 0;
   max_tenure = 1;

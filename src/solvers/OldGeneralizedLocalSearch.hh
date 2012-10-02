@@ -97,11 +97,11 @@ public:
   void Solve() { this->SimpleSolve(); }
   
   // FIXME: all these methods should become solving parameters to sent to the Solver class
-  void SimpleSolve(unsigned runner = 0, unsigned init_state = 1); // 0: leave unchanged, 1: random, 2 :greedy
-  void MultiStartSimpleSolve(unsigned runner = 0, unsigned trials = 1);
-  void MultiStartGeneralSolve(KickStrategy kick_strategy = NO_KICKER, unsigned trials = 1);
+  void SimpleSolve(unsigned int runner = 0, unsigned int init_state = 1); // 0: leave unchanged, 1: random, 2 :greedy
+  void MultiStartSimpleSolve(unsigned int runner = 0, unsigned int trials = 1);
+  void MultiStartGeneralSolve(KickStrategy kick_strategy = NO_KICKER, unsigned int trials = 1);
   void GeneralSolve(KickStrategy kick_strategy = NO_KICKER, bool state_init = true);
-  void IteratedSolve(unsigned runner = 0, bool state_init = true);
+  void IteratedSolve(unsigned int runner = 0, bool state_init = true);
   
 protected:
   
@@ -224,7 +224,7 @@ void GeneralizedLocalSearch<Input,Output,State,CFtype>::SetKicker(Kicker<Input,S
  Solves using a single runner
  */
 template <class Input, class Output, class State, typename CFtype>
-void GeneralizedLocalSearch<Input,Output,State,CFtype>::SimpleSolve(unsigned runner, unsigned init_state)
+void GeneralizedLocalSearch<Input,Output,State,CFtype>::SimpleSolve(unsigned int runner, unsigned int init_state)
 {
   if (runner >= runners.size())
     throw std::logic_error("No runner set for solver " + this->name);
@@ -255,7 +255,7 @@ template <class Input, class Output, class State, typename CFtype>
 void GeneralizedLocalSearch<Input,Output,State,CFtype>::MultiStartSimpleSolve(unsigned runner, unsigned trials)
 {
   bool timeout_expired = false;
-  unsigned t;
+  unsigned int t;
   if (runner >= runners.size())
     throw std::logic_error("No runner set for solver " + this->name);
   
@@ -294,14 +294,14 @@ void GeneralizedLocalSearch<Input,Output,State,CFtype>::MultiStartSimpleSolve(un
  */
 
 template <class Input, class Output, class State, typename CFtype>
-void GeneralizedLocalSearch<Input,Output,State,CFtype>::MultiStartGeneralSolve(KickStrategy kick_strategy, unsigned trials)
+void GeneralizedLocalSearch<Input,Output,State,CFtype>::MultiStartGeneralSolve(KickStrategy kick_strategy, unsigned int trials)
 {
   State global_best_state(this->in);
   CFtype global_best_state_cost;
   bool timeout_expired = false; 
   
   begin = std::chrono::high_resolution_clock::now();
-  for (unsigned t = 0; t < trials; t++)
+  for (unsigned int t = 0; t < trials; t++)
   {
     if (observer != nullptr) observer->NotifyRestart(*this, t);
     this->GeneralSolve(kick_strategy);
@@ -431,7 +431,7 @@ void GeneralizedLocalSearch<Input,Output,State,CFtype>::GeneralSolve(KickStrateg
  Solves using a single runner and iterated strategy
  */
 template <class Input, class Output, class State, typename CFtype>
-void GeneralizedLocalSearch<Input,Output,State,CFtype>::IteratedSolve(unsigned runner, bool state_init)
+void GeneralizedLocalSearch<Input,Output,State,CFtype>::IteratedSolve(unsigned int runner, bool state_init)
 
 {
   bool improve_state, lower_bound_reached = false, timeout_expired = false;

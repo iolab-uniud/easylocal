@@ -33,7 +33,7 @@ public:
   
   virtual void Print(std::ostream& os = std::cout) const;
   void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout);
-  virtual void SetMaxIdleIteration(unsigned long m) { max_idle_iterations = m; }
+  virtual void SetMaxIdleIteration(unsigned long int m) { max_idle_iterations = m; }
   TabuListManager<State,Move,CFtype>& GetTabuListManager() { return pm; }
   bool MaxIdleIterationExpired() const;
 protected:

@@ -280,8 +280,8 @@
 		ACF4B15C0DBFA685008A0207 /* test */ = {
 			isa = PBXGroup;
 			children = (
-				ACF4B1600DBFA685008A0207 /* Makefile.am */,
 				ACF4B1620DBFA685008A0207 /* nQueens */,
+				ACF4B1600DBFA685008A0207 /* Makefile.am */,
 			);
 			name = test;
 			path = ../test;
