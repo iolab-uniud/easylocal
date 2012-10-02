@@ -4,6 +4,8 @@
 #include <boost/program_options/variables_map.hpp>
 #endif
 
+IncorrectParameterValue::~IncorrectParameterValue() throw() { }
+
 AbstractParameter::AbstractParameter(const std::string& cf, const std::string& d)
 : description(d), cmdline_flag(cf)
 {}

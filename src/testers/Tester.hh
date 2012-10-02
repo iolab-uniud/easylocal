@@ -296,7 +296,7 @@ void Tester<Input,Output, State,CFtype>::ExecuteRunChoice()
 {
   if (sub_choice > 0)
   {
-    auto start = std::chrono::system_clock::now();
+
     
     Runner<Input,State,CFtype>& r = *runners[sub_choice-1];
     r.ReadParameters();
@@ -307,10 +307,10 @@ void Tester<Input,Output, State,CFtype>::ExecuteRunChoice()
     std::cin >> timeout;
     os << std::endl;
     auto to = std::chrono::milliseconds((long long)(timeout * 1000));
-    
+
+    auto start = std::chrono::high_resolution_clock::now();
     CFtype result = r.SyncRun(to, this->test_state);
-    
-    auto end = std::chrono::system_clock::now();
+    auto end = std::chrono::high_resolution_clock::now();
     
     auto duration = end - start;
   
@@ -319,12 +319,7 @@ void Tester<Input,Output, State,CFtype>::ExecuteRunChoice()
     
     os << "CURRENT SOLUTION " << std::endl << out << std::endl;
     os << "CURRENT COST : " << result << std::endl;
-    os << "START " << std::chrono::duration_cast<std::chrono::milliseconds>(start.time_since_epoch()).count() << " " << std::endl;
-    os << "END " << std::chrono::duration_cast<std::chrono::milliseconds>(end.time_since_epoch()).count() << std::endl;
-    os << "ELAPSED TIME : " << std::chrono::duration_cast<std::chrono::seconds>(duration).count() << " s" << std::endl;
     os << "ELAPSED TIME : " << std::chrono::duration_cast<std::chrono::milliseconds>(duration).count() << " ms" << std::endl;
-    os << "ELAPSED TIME : " << std::chrono::duration_cast<std::chrono::microseconds>(duration).count() << " mus" << std::endl;
-    os << "ELAPSED TIME : " << std::chrono::duration_cast<std::chrono::nanoseconds>(duration).count() << " ns" << std::endl;
     os << "NUMBER OF ITERATIONS : " << r.Iteration() << std::endl;
   }
 }
