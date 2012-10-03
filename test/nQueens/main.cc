@@ -111,7 +111,7 @@
 #include <testers/Tester.hh>
 #include <testers/MoveTester.hh>
 #include <testers/KickerTester.hh>
-#include <chrono>
+#include <helpers/ShiftingPenaltyManager.hh>
 #if defined(HAVE_LINKABLE_BOOST)
 #include <boost/program_options/options_description.hpp>
 #include <boost/program_options/parsers.hpp>
@@ -119,10 +119,7 @@
 #endif
 
 //#include <kickers/MultimodalKicker.hh>
-
 using namespace std;
-using namespace chrono;
-typedef std::chrono::duration<double, std::ratio<1>> secs;
 
 int main(int argc, const char* argv[])
 {
@@ -158,6 +155,10 @@ int main(int argc, const char* argv[])
   QueensStateManager qsm(in);
   QueensTabuListManager qtlm;
   SwapNeighborhoodExplorer qnhe(in, qsm);
+    
+  // compose a multimodal neighborhood explorer
+  
+  
   QueensOutputManager qom(in);
       
   // kickers
@@ -234,7 +235,13 @@ int main(int argc, const char* argv[])
   else if (solution_method == std::string("simple"))
   {
     qss.SetRunner(qhc);
-    std::cout << qss.Solve() << std::endl;
+    
+    std::tuple<ChessBoard, int, int, double> res = qss.Solve();
+    
+    std::cout << std::get<0>(res) << std::endl;
+    std::cout << "Violations: " << std::get<1>(res) << std::endl;
+    std::cout << "Objectives: " << std::get<2>(res) << std::endl;
+    std::cout << "Timeout: " << std::get<3>(res) << " s" << std::endl;
   }
     
   /*

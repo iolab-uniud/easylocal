@@ -29,6 +29,12 @@ public:
   /** Writes the value of the parameter on a stream, defined in Parameter<T>. */
   virtual std::ostream& Write(std::ostream& os = std::cout) const = 0;
   
+  /** Checks if the parameter has been set. */
+  bool IsSet() const { return is_set; }
+  
+  /** To print out values. */
+  virtual std::string ToString() const = 0;
+  
 protected:
   
   /** Can't instantiate an AbstractParameter from the outside. */
@@ -39,6 +45,9 @@ protected:
   
   /** Flag representing the parameter. */
   std::string cmdline_flag;
+  
+  /** True if this is set. */
+  bool is_set;
 };
 
 /** Exception called whenever a needed parameter hasn't been set. */
@@ -94,19 +103,20 @@ public:
   /** @copydoc AbstractParameter::Write */
   virtual std::ostream& Write(std::ostream& os = std::cout) const;
   
+  /** @copydoc AbstractParameter::Write */
+  virtual std::string ToString() const {
+    std::stringstream ss;
+    ss << this->value;
+    return ss.str();
+  }
+  
   /** Implicit cast. */
   operator T() const throw (ParameterNotSet);
   
   /** Assignment. */
   const T& operator=(const T&);
   
-  /** Checks if the parameter has been set. */
-  bool IsSet() const { return is_set; }
-  
 protected:
-  
-  /** True if this is set. */
-  bool is_set;
   
   /** Real value of the parameter. */
   T value;
@@ -126,7 +136,7 @@ protected:
 
 template <typename T>
 Parameter<T>::Parameter(const std::string& cmdline_flag, const std::string& description, ParameterBox& parameters)
-: AbstractParameter(cmdline_flag, description), is_set(false)
+: AbstractParameter(cmdline_flag, description)
 {
   std::string flag = parameters.prefix + "::" + cmdline_flag;
   parameters.push_back(this);
@@ -206,7 +216,7 @@ public:
   {
     for(auto p : this->parameters)
     {
-      os << "  " << p->description << ": ";
+      os << "  " << p->description << (p->IsSet() ? (std::string(" (default: ") + p->ToString() + ")") : ": ");
       p->Read(is);
     }
   }

@@ -20,9 +20,9 @@ public:
 		    StateManager<Input,State,CFtype>& e_sm,
 		    OutputManager<Input,Output,State,CFtype>& e_om,
 		    std::string name);
-  void Print(std::ostream& os = std::cout) const;
   void SetRunner(Runner<Input,State,CFtype>& r);
-  void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout);   
+  void Print(std::ostream& os = std::cout) const;
+  void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout);
   // FIXME: all these methods should become solving parameters to sent to the Solver class
 protected:
   void Go();
@@ -60,19 +60,12 @@ void SimpleLocalSearch<Input,Output,State,CFtype>::ReadParameters(std::istream& 
   os << "Runner: " << std::endl; 
   if (this->p_runner)
     this->p_runner->ReadParameters(is, os);
-  os << "Timeout: ";
-  
-  double to;
-  is >> to;
-  this->SetTimeout(to);
 }
-
-
 
 template <class Input, class Output, class State, typename CFtype>
 void SimpleLocalSearch<Input,Output,State,CFtype>::Print(std::ostream& os) const
 {
-  os  << "Simple Local Search Solver: " << this->GetName() << std::endl;
+  os  << "Simple Local Search Solver: " << this->name << std::endl;
   if (this->p_runner)
     this->p_runner->Print(os);
   else

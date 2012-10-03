@@ -18,9 +18,8 @@ public:
                               unsigned int max_k,
                               std::string name);
 	
-  void Print(std::ostream& os = std::cout) const;
   void SetKicker(Kicker<Input,State,CFtype>& k);
-  void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout);
+
 protected:
   void Go();
   Kicker<Input,State,CFtype>* p_kicker; /**< A pointer to the managed kicker. */

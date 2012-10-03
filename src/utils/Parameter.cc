@@ -7,7 +7,7 @@
 IncorrectParameterValue::~IncorrectParameterValue() throw() { }
 
 AbstractParameter::AbstractParameter(const std::string& cf, const std::string& d)
-: description(d), cmdline_flag(cf)
+: description(d), cmdline_flag(cf), is_set(false)
 {}
 
 std::vector<const ParameterBox*> ParameterBox::overall_parameters;
@@ -28,7 +28,7 @@ const char* IncorrectParameterValue::what() const throw()
 // specialization for bool parameters (i.e., enable/disable flags)
 template <>
 Parameter<bool>::Parameter(const std::string& cmdline_flag, const std::string& description, ParameterBox& parameters)
-: AbstractParameter(cmdline_flag, description), is_set(false)
+: AbstractParameter(cmdline_flag, description)
 {
   std::string flag = parameters.prefix + "::" + cmdline_flag;
 #if defined(HAVE_LINKABLE_BOOST)

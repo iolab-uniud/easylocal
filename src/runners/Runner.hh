@@ -87,7 +87,7 @@ public:
   virtual ~Runner() { }
   
   /** Modality of this runner. */
-  virtual constexpr unsigned int Modality() const = 0;
+  virtual unsigned int Modality() const = 0;
   
   /** List of all runners that have been instantiated so far. For autoloading. */
   static std::vector<Runner<Input,State,CFtype>*> runners;
@@ -196,7 +196,7 @@ template <class Input, class State, typename CFtype>
 Runner<Input,State,CFtype>::Runner(const Input& i, StateManager<Input,State,CFtype>& sm, std::string name, std::string description)
 : // Parameters
   Parametrized(name, description), name(name), description(description), in(i), sm(sm),
-  max_iterations("max_iterations", "Maximum total number of iterations allowed (default value max unsigned long int)", this->parameters)
+  max_iterations("max_iterations", "Maximum total number of iterations allowed", this->parameters)
 {
   // This parameter has a default value
   max_iterations = std::numeric_limits<unsigned long int>::max();

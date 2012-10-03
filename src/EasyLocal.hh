@@ -126,8 +126,7 @@
  interface for their programs. 
  
  - @ref Utils "Utils" are a set of utility classes that provide a set of miscellaneous
- services. For example the CLParser class handles the parsing of 
- arguments passed through the command line.
+ services. 
  
  - @ref UnitTesting "Unit Testing" components provide a set of basic automatic checks
  for the user developed classes.

@@ -31,16 +31,14 @@ public:
               NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
               std::string name);	
   
-  void SetLevelRate(double lr)  { level_rate = lr; }
-  void SetMinLevel(double ml)  { min_level = ml; }
-  void SetNeighborsSampled(unsigned int ns)  { neighbors_sampled = ns; }
-  
 protected:
   void InitializeRun() throw (ParameterNotSet, IncorrectParameterValue);
   bool StopCriterion();
   void UpdateIterationCounter();
   void SelectMove();
   bool AcceptableMove();
+  
+  
   
   // parameters
   Parameter<double> initial_level; /**< The initial level. */

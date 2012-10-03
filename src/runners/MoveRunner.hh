@@ -12,21 +12,30 @@
  It is at the root of the inheritance hierarchy of actual runners.
  @ingroup Runners
  */
-
 template <class Input, class State, class Move, typename CFtype = int>
 class MoveRunner : public Runner<Input,State,CFtype>
 {
   friend class RunnerObserver<Input,State,Move,CFtype>;
+
 public:
-  // Runner interface
-  void ResetTimeout();
-  void AttachObserver(RunnerObserver<Input,State,Move,CFtype>& ob) { observer = &ob; }
-  Move CurrentMove() const { return current_move; }
-  CFtype CurrentMoveCost() const { return current_move_cost; }
-  unsigned int Modality() const { return ne.Modality(); }    
+
+  /** Attaches an observer to this runner.
+   @param ob a RunnerObserver of a compliant type
+   */
+  void AttachObserver(RunnerObserver<Input,State,Move,CFtype>& ob)
+  {
+    observer = &ob;
+  }
+  
+  /** Modality of this runner. */
+  virtual unsigned int Modality() const { return ne.Modality(); }
+
 protected:
+  
+  /** Constructor. 
+   @param e_sm */
   MoveRunner(const Input& in, StateManager<Input,State,CFtype>& e_sm,
-             NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
+  NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
              std::string name, std::string description);
   
   
@@ -51,6 +60,8 @@ protected:
   CFtype current_move_cost; /**< The cost of the selected move. */
   
   RunnerObserver<Input,State,Move,CFtype>* observer;
+  
+  
 };
 
 /*************************************************************************

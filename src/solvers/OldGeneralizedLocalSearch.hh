@@ -7,7 +7,8 @@
 #include <vector>
 
 
-enum KickStrategy {
+enum KickStrategy
+{
   NO_KICKER = 0,
   DIVERSIFIER,
   DIVERSIFIER_AT_EVERY_ROUND,

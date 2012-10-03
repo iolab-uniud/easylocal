@@ -5,7 +5,6 @@
 #include <cppunit/BriefTestProgressListener.h>
 #include <cppunit/TestResult.h>
 #include <cppunit/ui/text/TestRunner.h>
-#include "CLParserTest.hh"
 
 int main(int argc, char *argv[]) 
 {

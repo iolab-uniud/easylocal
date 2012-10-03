@@ -18,8 +18,6 @@ public:
   HillClimbing(const Input& in, StateManager<Input,State,CFtype>& e_sm,
                NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne, std::string name);
 
-  // FIXME: to remove parameter accessors
-  virtual void SetMaxIdleIterations(unsigned long int m) { max_idle_iterations = m; }
 protected:
   bool MaxIdleIterationExpired() const;
   bool MaxIterationExpired() const;
@@ -40,8 +38,7 @@ protected:
 
    @param s a pointer to a compatible state manager
    @param ne a pointer to a compatible neighborhood explorer
-   @param in a poiter to an input object
-   @param cl a CLParser optional object with command line parameters
+   @param in a pointer to an input object
 */
 
 template <class Input, class State, class Move, typename CFtype>

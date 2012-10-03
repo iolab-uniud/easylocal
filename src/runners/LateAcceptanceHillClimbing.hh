@@ -29,7 +29,6 @@ public:
                              NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
                              std::string name);	
   
-  void SetSteps(unsigned int s) { steps = s; previous_steps.resize(s); }
   
 protected:
   void InitializeRun() throw (ParameterNotSet, IncorrectParameterValue);
