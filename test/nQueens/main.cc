@@ -158,7 +158,7 @@ int main(int argc, const char* argv[])
   SwapNeighborhoodExplorer qnhe(in, qsm);
     
   // compose a multimodal neighborhood explorer
-  
+  MultimodalNeighborhoodExplorer<int, std::vector<int>, int, decltype(qnhe), decltype(qnhe)> qnhe2(in, qsm, "SwapUnion", qnhe, qnhe);
   
   QueensOutputManager qom(in);
       

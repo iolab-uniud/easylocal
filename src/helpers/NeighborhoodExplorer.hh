@@ -15,12 +15,6 @@ public:
   EmptyNeighborhood() : std::logic_error("Empty neighborhood") {}
 };
 
-class NoNextMove : public std::logic_error
-{
-public:
-  NoNextMove() : std::logic_error("No next move") {}
-};
-
 /** The Neighborhood Explorer is responsible for the strategy
  exploited in the exploration of the neighborhood, and for
  computing the variations of the cost function due to a specific

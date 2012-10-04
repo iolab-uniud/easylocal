@@ -37,31 +37,29 @@ namespace TupleUtils {
   }
 }
 
-template <class Move>
-class ActiveMove : public Move {
+template <class ... Move>
+class ActiveMove : public Move ... {
 public:
   bool active;
 };
 
+
+
 template <class Input, class State, typename CFtype, class ... BaseNeighborhoodExplorers>
-class MultimodalNeighborhoodExplorer : public NeighborhoodExplorer<Input, State, CFtype, std::tuple<ActiveMove<typename BaseNeighborhoodExplorers::ThisMove ...>>>
+class MultimodalNeighborhoodExplorer : public NeighborhoodExplorer<Input, State, std::tuple<ActiveMove<typename BaseNeighborhoodExplorers::ThisMove> ...>, CFtype>
 {
 public:
 
   /** Typedefs. */
-  typedef std::tuple<ActiveMove<typename BaseNeighborhoodExplorers::ThisMove ...>> TheseMoves;
-  typedef NeighborhoodExplorer<Input, State, CFtype, TheseMoves> SuperNeighborhoodExplorer;
+  typedef std::tuple<ActiveMove<typename BaseNeighborhoodExplorers::ThisMove> ...> TheseMoves;
+  typedef NeighborhoodExplorer<Input, State, std::tuple<ActiveMove<typename BaseNeighborhoodExplorers::ThisMove> ...>, CFtype> SuperNeighborhoodExplorer;
   typedef std::tuple<BaseNeighborhoodExplorers ...> TheseNeighborhoodExplorers;
 
   /** Modality of the NeighborhoodExplorer */
-  virtual int Modality() { return sizeof...(BaseNeighborhoodExplorers); }
-
-protected:
-  
-  typedef ActiveMove<typename BaseNeighborhoodExplorers::ThisMove ...> UnpackedMoves;
-  
+  virtual unsigned int Modality() const { return sizeof...(BaseNeighborhoodExplorers); }
+    
   /** Constructor, takes a variable number of base NeighborhoodExplorers.  */
-  MultimodalNeighborhoodExplorer(Input& in, StateManager<Input,State,CFtype>& sm, std::string name, BaseNeighborhoodExplorers& ... nhes)
+  MultimodalNeighborhoodExplorer(const Input& in, StateManager<Input,State,CFtype>& sm, std::string name, BaseNeighborhoodExplorers& ... nhes)
   : SuperNeighborhoodExplorer(in, sm, name),
     nhes(std::make_tuple(nhes ...))
   { }
@@ -89,8 +87,7 @@ protected:
     if (iter == 0)
       f(std::get<0>(temp_nhe), st, std::get<0>(temp_move));
   }
-  
-  
+
   /** UnpackAll - run a function at every element of the tuple */
   template <typename F, typename S, typename ... T>
   void UnpackAll (State& st, std::tuple<ActiveMove<typename F::ThisMove>, ActiveMove<typename S::ThisMove>, ActiveMove<typename T::ThisMove ...>>& temp_moves,  std::tuple<F, S, T ...> temp_nhes, std::function<void(F&, State&, ActiveMove<typename F::ThisMove>&)>& f)
@@ -286,18 +283,18 @@ protected:
   }
 
   
-};
+/* };
 
 
 template <class Input, class State, typename CFtype, class ... BaseNeighborhoodExplorers>
-class SetUnionNeighborhoodExplorer : MultimodalNeighborhoodExplorer<Input, State, CFtype, BaseNeighborhoodExplorers ...>
+class SetUnionNeighborhoodExplorer : public MultimodalNeighborhoodExplorer<Input, State, CFtype, BaseNeighborhoodExplorers ...>
 {
 private:
-  
+*/
   /** Typedefs. */
-  typedef typename MultimodalNeighborhoodExplorer<Input, State, CFtype, BaseNeighborhoodExplorers ...>::TheseMoves TheseMoves;
-  typedef typename MultimodalNeighborhoodExplorer<Input, State, CFtype, BaseNeighborhoodExplorers ...>::TheseNeighborhoodExplorers TheseNeighborhoodExplorers;
-  typedef MultimodalNeighborhoodExplorer<Input, State, CFtype, BaseNeighborhoodExplorers ...> SuperNeighborhoodExplorer;
+//  typedef typename MultimodalNeighborhoodExplorer<Input, State, CFtype, BaseNeighborhoodExplorers ...>::TheseMoves TheseMoves;
+//  typedef typename MultimodalNeighborhoodExplorer<Input, State, CFtype, BaseNeighborhoodExplorers ...>::TheseNeighborhoodExplorers TheseNeighborhoodExplorers;
+//  typedef MultimodalNeighborhoodExplorer<Input, State, CFtype, BaseNeighborhoodExplorers ...> SuperNeighborhoodExplorer;
 
 
 public:
@@ -306,11 +303,11 @@ public:
   /** Inherit constructor from superclass. Not yet, amigo. */
   // using MultimodalNeighborhoodExplorer<Input, State, CFtype, BaseNeighborhoodExplorers ...>::MultimodalNeighborhoodExplorer;
   
-  SetUnionNeighborhoodExplorer(Input& in, StateManager<Input,State,CFtype>& sm, std::string name, BaseNeighborhoodExplorers& ... nhes)
-  : MultimodalNeighborhoodExplorer<Input, State, CFtype, BaseNeighborhoodExplorers ...>(in, sm, name, nhes ...)
-  { }
+//  SetUnionNeighborhoodExplorer(Input& in, StateManager<Input,State,CFtype>& sm, std::string name, BaseNeighborhoodExplorers& ... nhes)
+//  : MultimodalNeighborhoodExplorer<Input, State, CFtype, BaseNeighborhoodExplorers ...>(in, sm, name, nhes ...)
+//  { }
   
-  virtual void RandomMove(const State& st, TheseMoves& moves) const throw(EmptyNeighborhood)
+  virtual void RandomMove(const State& st, typename SuperNeighborhoodExplorer::ThisMove& moves) const throw(EmptyNeighborhood)
   {
     int selected = Random::Int(0, this->Modality()-1);
     
@@ -318,7 +315,7 @@ public:
     UnpackAt(st, moves, this->nhes, &SuperNeighborhoodExplorer::DoRandomMove, selected);
   }
   
-  virtual void FirstMove(const State& st, TheseMoves& moves) const throw(EmptyNeighborhood)
+  virtual void FirstMove(const State& st, typename SuperNeighborhoodExplorer::ThisMove& moves) const throw(EmptyNeighborhood)
   {
     int selected = this->Modality()-1;
     
@@ -339,7 +336,7 @@ public:
       throw EmptyNeighborhood();
   }
   
-  virtual bool NextMove(const State& st, TheseMoves& moves) const
+  virtual bool NextMove(const State& st, typename SuperNeighborhoodExplorer::ThisMove& moves) const
   {
     int selected = this->CurrentActiveMove(st, moves);
     if (CheckAt(st, moves, this->nhes, &SuperNeighborhoodExplorer::TryNextMove, selected))
@@ -360,20 +357,40 @@ public:
     return false;
   }
   
-  virtual CFtype DeltaCostFunction(const State& st, const TheseMoves& moves) const
+  virtual CFtype DeltaCostFunction(const State& st, const typename SuperNeighborhoodExplorer::ThisMove& moves) const
   {
     int selected = this->CurrentActiveMove(st, moves);
-    
+    return UnpackAt(st, moves, this->nhes, &DoDeltaCostFunction, selected);
+  }
+
+  virtual CFtype DeltaShiftedCostFunction(const State& st, const typename SuperNeighborhoodExplorer::ThisMove& moves) const
+  {
+    int selected = this->CurrentActiveMove(st, moves);
+    return UnpackAt(st, moves, this->nhes, &DoDeltaShiftedCostFunction, selected);
   }
   
 protected:
-  int CurrentActiveMove(const State& st, const TheseMoves& moves) const
+  int CurrentActiveMove(const State& st, const typename SuperNeighborhoodExplorer::ThisMove& moves) const
   {
-    std::vector<bool> is_active = this->CheckAllMoves(st, moves, this->nhes, &SuperNeighborhoodExplorer::IsActive);
+    std::vector<bool> is_active = CheckAllMoves(st, moves, this->nhes, &SuperNeighborhoodExplorer::IsActive);
     return std::distance(is_active.begin(), std::find_if(is_active.begin(), is_active.end(), [](bool& element) { return element; }));
   }
   
+  
+  template<class N, class S, class M>
+  CFtype DoDeltaCostFunction(const N& n, const S& s, const M& m)
+  {
+    return n.DeltaCostFunction(s, m);
+  }
+  
+  template<class N, class S, class M>
+  CFtype DoDeltaShiftedCostFunction(const N& n, const S& s, const M& m)
+  {
+    return n.DeltaShiftedCostFunction(s, m);
+  }
 };
+
+
 
 
 #endif
