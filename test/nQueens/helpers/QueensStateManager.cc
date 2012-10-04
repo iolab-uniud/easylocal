@@ -22,7 +22,7 @@
 #include <stdexcept>
 
 QueensStateManager::QueensStateManager(const int& bs)
-: StateManager<int,std::vector<int> >(bs, "QueensStateManager")
+: StateManager<int,std::vector<int>, int>(bs, "QueensStateManager")
 {}
 
 void QueensStateManager::RandomState(std::vector<int> &a)

@@ -12,7 +12,7 @@
 #include <future>
 #include <iomanip>
 
-template <class Input, class State, typename CFtype = int>
+template <class Input, class State, typename CFtype>
 class AbstractTester
 {
 public:
@@ -31,7 +31,7 @@ protected:
  user interface provided by the framework.
  @ingroup Testers
  */
-template <class Input, class Output, class State, typename CFtype = int>
+template <class Input, class Output, class State, typename CFtype>
 class Tester : public AbstractTester<Input, State, CFtype>
 {
 public:

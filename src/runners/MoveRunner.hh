@@ -12,13 +12,13 @@
  It is at the root of the inheritance hierarchy of actual runners.
  @ingroup Runners
  */
-template <class Input, class State, class Move, typename CFtype = int>
+template <class Input, class State, class Move, typename CFtype>
 class MoveRunner : public Runner<Input,State,CFtype>
 {
   friend class RunnerObserver<Input,State,Move,CFtype>;
-
+  
 public:
-
+  
   /** Attaches an observer to this runner.
    @param ob a RunnerObserver of a compliant type
    */
@@ -29,13 +29,13 @@ public:
   
   /** Modality of this runner. */
   virtual unsigned int Modality() const { return ne.Modality(); }
-
+  
 protected:
   
-  /** Constructor. 
+  /** Constructor.
    @param e_sm */
   MoveRunner(const Input& in, StateManager<Input,State,CFtype>& e_sm,
-  NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
+             NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
              std::string name, std::string description);
   
   
@@ -43,16 +43,16 @@ protected:
   
   virtual void InitializeRun() throw (ParameterNotSet, IncorrectParameterValue);
   
-
+  
   /** Actions to be perfomed at the beginning of the run. */
   
   /** Encodes the criterion used to select the move at each step. */
   virtual void MakeMove();
-
+  
   void UpdateStateCost();
   
   NeighborhoodExplorer<Input,State,Move,CFtype>& ne; /**< A reference to the
-                                                      attached neighborhood 
+                                                      attached neighborhood
                                                       explorer. */
   
   // state data
@@ -69,7 +69,7 @@ protected:
  *************************************************************************/
 
 template <class Input, class State, class Move, typename CFtype>
-MoveRunner<Input,State,Move,CFtype>::MoveRunner(const Input& in, 
+MoveRunner<Input,State,Move,CFtype>::MoveRunner(const Input& in,
                                                 StateManager<Input,State,CFtype>& e_sm,
                                                 NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
                                                 std::string name,
@@ -86,7 +86,7 @@ void MoveRunner<Input,State,Move,CFtype>::InitializeRun() throw (ParameterNotSet
 
 
 template <class Input, class State, class Move, typename CFtype>
-void MoveRunner<Input,State,Move,CFtype>::TerminateRun() 
+void MoveRunner<Input,State,Move,CFtype>::TerminateRun()
 {
   if (observer != nullptr)
 		observer->NotifyEndRunner(*this);
@@ -97,7 +97,7 @@ void MoveRunner<Input,State,Move,CFtype>::TerminateRun()
  */
 template <class Input, class State, class Move, typename CFtype>
 void MoveRunner<Input,State,Move,CFtype>::MakeMove()
-{ 
+{
 	ne.MakeMove(*this->p_current_state, current_move);
   this->current_state_cost += current_move_cost;
   if (observer != nullptr)

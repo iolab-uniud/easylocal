@@ -10,7 +10,7 @@
  solution is selected and performed.
  @ingroup Runners
  */
-template <class Input, class State, class Move, typename CFtype = int>
+template <class Input, class State, class Move, typename CFtype>
 class FirstDescent : public MoveRunner<Input,State,Move,CFtype>
 {
 public:

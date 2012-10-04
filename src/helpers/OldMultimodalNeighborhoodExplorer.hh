@@ -428,7 +428,7 @@ protected:
  to allow using it with runners and other EasyLocal components.
 */
 
-template <typename Input, typename State, typename MoveList, typename MultimodalNeighborhoodExplorer, typename CFtype = int>
+template <typename Input, typename State, typename MoveList, typename MultimodalNeighborhoodExplorer, typename CFtype>
 class MultimodalNeighborhoodExplorerAdapter : public NeighborhoodExplorer<Input, State, MoveList, CFtype>
 {
 public:
@@ -483,7 +483,7 @@ public:
   }
 };
 
-template <typename Input, typename State, typename NeighborhoodExplorerList, typename CFtype = int>
+template <typename Input, typename State, typename NeighborhoodExplorerList, typename CFtype>
 class PrepareSetUnionNeighborhoodExplorerTypes
 {
 public:
@@ -492,7 +492,7 @@ public:
   typedef MultimodalNeighborhoodExplorerAdapter<Input, State, MoveList, MultimodalNeighborhoodExplorerType, CFtype> NeighborhoodExplorer;
 };
 
-template <typename Input, typename State, typename NeighborhoodExplorerList, typename CFtype = int>
+template <typename Input, typename State, typename NeighborhoodExplorerList, typename CFtype>
 class PrepareCartesianProductNeighborhoodExplorerTypes
 {
 public:

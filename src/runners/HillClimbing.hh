@@ -11,7 +11,7 @@
     the value of the cost function.  
     @ingroup Runners 
 */
-template <class Input, class State, class Move, typename CFtype = int>
+template <class Input, class State, class Move, typename CFtype>
 class HillClimbing : public MoveRunner<Input,State,Move,CFtype>
 {
 public:

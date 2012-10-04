@@ -13,7 +13,7 @@
  @ingroup
  Solvers
  */
-template <class Input, class Output, typename CFtype = int>
+template <class Input, class Output, typename CFtype>
 class Solver
 {  
 public:

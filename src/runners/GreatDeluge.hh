@@ -21,7 +21,7 @@
  
  @ingroup Runners
  */
-template <class Input, class State, class Move, typename CFtype = int>
+template <class Input, class State, class Move, typename CFtype>
 class GreatDeluge : public MoveRunner<Input,State,Move,CFtype>
 {
 public:

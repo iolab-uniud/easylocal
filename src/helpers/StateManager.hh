@@ -34,7 +34,7 @@ const int HARD_WEIGHT = 1000;
   @remarks no @ref Move template is supplied to this class.
   @ingroup Helpers
 */
-template <class Input, class State, typename CFtype = int>
+template <class Input, class State, typename CFtype>
 class StateManager
 {
 public:

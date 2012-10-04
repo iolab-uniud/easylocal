@@ -8,7 +8,7 @@
     moves.
     @ingroup Testers
 */  
-template <class Input, class Output, class State, typename CFtype = int>
+template <class Input, class Output, class State, typename CFtype>
 class ComponentTester
 {
 public:

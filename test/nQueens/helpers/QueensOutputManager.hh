@@ -26,11 +26,11 @@
 /** This class handles the output objects, and translate among them
      and the corresponding state objects. */
 class QueensOutputManager
-            : public OutputManager<int, ChessBoard, std::vector<int> >
+            : public OutputManager<int, ChessBoard, std::vector<int>, int >
 {
 public:
   QueensOutputManager(const int& bs)
-  : OutputManager<int,ChessBoard,std::vector<int> >(bs, "QueensOutputManager") {}
+  : OutputManager<int,ChessBoard,std::vector<int>, int >(bs, "QueensOutputManager") {}
     void OutputState(const std::vector<int> &a, ChessBoard& cb) const;
     void InputState(std::vector<int> &a, const ChessBoard& cb) const;
 };

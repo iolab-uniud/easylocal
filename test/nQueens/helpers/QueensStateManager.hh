@@ -24,7 +24,7 @@
 
 /** This class is the state manager for the problem. */
 class QueensStateManager
-            : public StateManager<int,std::vector<int> >
+            : public StateManager<int,std::vector<int>, int >
 {
 public:
     QueensStateManager(const int& bs);

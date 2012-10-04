@@ -14,7 +14,7 @@
   @tparam CFtype the type of the cost function (typically int)
   @ingroup Helpers      
 */
-template <class Input, class State, typename CFtype = int>
+template <class Input, class State, typename CFtype>
 class CostComponent
 {
 public:

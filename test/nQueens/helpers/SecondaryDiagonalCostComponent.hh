@@ -22,10 +22,10 @@
 #include <helpers/CostComponent.hh>
 #include <vector>
 
-class SecondaryDiagonalCostComponent : public CostComponent<int,std::vector<int> >
+class SecondaryDiagonalCostComponent : public CostComponent<int,std::vector<int>, int >
   {
   public:
-    SecondaryDiagonalCostComponent(int& in) : CostComponent<int,std::vector<int> >(in,1,true, "SecondaryDiagonal")
+    SecondaryDiagonalCostComponent(int& in) : CostComponent<int,std::vector<int>, int >(in,1,true, "SecondaryDiagonal")
       { }
     static bool Violation(int i, int j, int ai, int aj);
     int ComputeCost(const std::vector<int>& st) const;

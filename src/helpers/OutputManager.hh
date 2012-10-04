@@ -13,7 +13,7 @@
      @ingroup Helpers
  */	
 
-template <class Input, class Output, class State, typename CFtype = int>
+template <class Input, class Output, class State, typename CFtype>
 class OutputManager
 {
 public:

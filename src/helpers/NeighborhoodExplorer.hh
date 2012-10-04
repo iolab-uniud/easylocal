@@ -15,151 +15,157 @@ public:
   EmptyNeighborhood() : std::logic_error("Empty neighborhood") {}
 };
 
+class NoNextMove : public std::logic_error
+{
+public:
+  NoNextMove() : std::logic_error("No next move") {}
+};
+
 /** The Neighborhood Explorer is responsible for the strategy
- exploited in the exploration of the neighborhood, and for 
+ exploited in the exploration of the neighborhood, and for
  computing the variations of the cost function due to a specific
- @ref Move. 
+ @ref Move.
  
  @ingroup Helpers
  */
-template <class Input, class State, class Move, typename CFtype = int>
+template <class Input, class State, class Move, typename CFtype>
 class NeighborhoodExplorer
 {
-public:   
+public:
   typedef Move ThisMove;
-
+  
   /** Prints the configuration of the object (attached cost components)
-      @param os Output stream 
-  */
+   @param os Output stream
+   */
   void Print(std::ostream& os = std::cout) const;
-
-  /** 
-      Generates a random move in the neighborhood of a given state.	
-      @note To be implemented in the application (MustDef)
-      @param st the start state 
-      @param mv the generated move 
-  */
+  
+  /**
+   Generates a random move in the neighborhood of a given state.
+   @note To be implemented in the application (MustDef)
+   @param st the start state
+   @param mv the generated move
+   */
   virtual void RandomMove(const State &st, Move& mv) const throw (EmptyNeighborhood) = 0;
-
+  
   /** Generates the first move in the neighborhood (a total ordering
-      of the neighborhood is assumed). It is always used on
-      cooperation with @ref NextMove to generate the whole
-      neighborhood. It returns @c void because it is assumed that at
-      least a move exists in the neighborhood.  It writes the first
-      move in @c mv.
-      
-      @note To be implemented in the application (MustDef)
-      @param st the start state 
-      @param mv the move 
-  */
+   of the neighborhood is assumed). It is always used on
+   cooperation with @ref NextMove to generate the whole
+   neighborhood. It returns @c void because it is assumed that at
+   least a move exists in the neighborhood.  It writes the first
+   move in @c mv.
+   
+   @note To be implemented in the application (MustDef)
+   @param st the start state
+   @param mv the move
+   */
   virtual void FirstMove(const State& st, Move& mv) const throw (EmptyNeighborhood) = 0;
   
   /** Generates the move that follows mv in the exploration of the
-      neighborhood of the state st. 
-      It returns the generated move in the same variable mv.
-      @return @c false if @c mv is the last in the neighborhood of the state.
-      
-      @note To be implemented in the application.
-      @param st the start state 
-      @param mv the move 
-  */
+   neighborhood of the state st.
+   It returns the generated move in the same variable mv.
+   @return @c false if @c mv is the last in the neighborhood of the state.
+   
+   @note To be implemented in the application.
+   @param st the start state
+   @param mv the move
+   */
   virtual bool NextMove(const State &st, Move& mv) const = 0;
-
-  /** 
-      Generate the first improvingt move in the exploration of the neighborhood
-      of a given state. It uses @ref FirstMove and @ref NextMove
-      @param st the start state
-      @param mv the generated move
-      @throws EmptyNeighborhood when the State st has no neighbor
-  */		
+  
+  /**
+   Generate the first improvingt move in the exploration of the neighborhood
+   of a given state. It uses @ref FirstMove and @ref NextMove
+   @param st the start state
+   @param mv the generated move
+   @throws EmptyNeighborhood when the State st has no neighbor
+   */
   virtual CFtype FirstImprovingMove(const State& st, Move& mv) const throw (EmptyNeighborhood);
-
-  /** 
-      Generate the first improvement move in the exploration of the neighborhood
-      of a given state, excluding the moves prohibited by @c pm.
-      @param st the start state
-      @param mv the generated move
-      @param pm a prohibition manager, which filters out prohibited moves (e.g., for the Tabu Search).
-      @throws EmptyNeighborhood when the State st has no neighbor
-  */		
+  
+  /**
+   Generate the first improvement move in the exploration of the neighborhood
+   of a given state, excluding the moves prohibited by @c pm.
+   @param st the start state
+   @param mv the generated move
+   @param pm a prohibition manager, which filters out prohibited moves (e.g., for the Tabu Search).
+   @throws EmptyNeighborhood when the State st has no neighbor
+   */
   virtual CFtype FirstImprovingMove(const State& st, Move& mv, ProhibitionManager<State,Move,CFtype>& pm) const throw (EmptyNeighborhood);
-
-  /** 
-      Generates the best move in the full exploration of the neighborhood
-      of a given state. It uses @ref FirstMove and @ref NextMove
-      @param st the start state.
-      @param mv the generated move.
-      @return the variation of the cost due to the Move mv.
-      @throws EmptyNeighborhood when the State st has no neighbor 
-  */
+  
+  /**
+   Generates the best move in the full exploration of the neighborhood
+   of a given state. It uses @ref FirstMove and @ref NextMove
+   @param st the start state.
+   @param mv the generated move.
+   @return the variation of the cost due to the Move mv.
+   @throws EmptyNeighborhood when the State st has no neighbor
+   */
   virtual CFtype BestMove(const State& st, Move& mv) const throw (EmptyNeighborhood);
-
-  /** 
-      Generates the best move in the full exploration of the neighborhood
-      of a given state, excluding the moves prohibited by @c pm.
-      @param st the start state.
-      @param mv the generated move.
-      @param pm a prohibition manager, which filters out prohibited moves (e.g., for the Tabu Search).
-      @return the variation of the cost due to the Move mv.
-      @throws EmptyNeighborhood when the State st has no neighbor 
-  */
+  
+  /**
+   Generates the best move in the full exploration of the neighborhood
+   of a given state, excluding the moves prohibited by @c pm.
+   @param st the start state.
+   @param mv the generated move.
+   @param pm a prohibition manager, which filters out prohibited moves (e.g., for the Tabu Search).
+   @return the variation of the cost due to the Move mv.
+   @throws EmptyNeighborhood when the State st has no neighbor
+   */
   virtual CFtype BestMove(const State& st, Move& mv, ProhibitionManager<State,Move,CFtype>& pm) const throw (EmptyNeighborhood);
   
-  /** 
-      Generates the best move in a random sample exploration of the neighborhood
-      of a given state.
-      @param st the start state.
-      @param mv the generated move.
-      @param samples the number of sampled neighbors
-      @return the variation of the cost due to the Move mv.
-      @throws EmptyNeighborhood when the State st has no neighbor 
-  */
+  /**
+   Generates the best move in a random sample exploration of the neighborhood
+   of a given state.
+   @param st the start state.
+   @param mv the generated move.
+   @param samples the number of sampled neighbors
+   @return the variation of the cost due to the Move mv.
+   @throws EmptyNeighborhood when the State st has no neighbor
+   */
   virtual CFtype SampleMove(const State &st, Move& mv, unsigned int samples) const throw (EmptyNeighborhood);
-
-  /** 
-      Generates the best move in a random sample exploration of the neighborhood
-      of a given state.
-      @param st the start state.
-      @param mv the generated move.
-      @param samples the number of sampled neighbors
-      @param pm a prohibition manager, which filters out prohibited moves (e.g., for the Tabu Search).
-      @return the variation of the cost due to the Move mv.
-      @throws EmptyNeighborhood when the State st has no neighbor 
-  */
+  
+  /**
+   Generates the best move in a random sample exploration of the neighborhood
+   of a given state.
+   @param st the start state.
+   @param mv the generated move.
+   @param samples the number of sampled neighbors
+   @param pm a prohibition manager, which filters out prohibited moves (e.g., for the Tabu Search).
+   @return the variation of the cost due to the Move mv.
+   @throws EmptyNeighborhood when the State st has no neighbor
+   */
   virtual CFtype SampleMove(const State &st, Move& mv, unsigned int samples, ProhibitionManager<State,Move,CFtype>& pm) const throw (EmptyNeighborhood);
   
-  /** 
-      States whether a move is feasible or not in a given state.
-      By default it considers all the moves as feasible, but it can
-      be overwritten by the user.
-      
-      @param st the start state
-      @param @c mv the move checked for feasibility
-      @return @c true if the move @mv is feasible in @c st, false otherwise
-  */
+  /**
+   States whether a move is feasible or not in a given state.
+   By default it considers all the moves as feasible, but it can
+   be overwritten by the user.
+   
+   @param st the start state
+   @param @c mv the move checked for feasibility
+   @return @c true if the move @mv is feasible in @c st, false otherwise
+   */
   virtual bool FeasibleMove(const State& st, const Move& mv) const
-  { 
-    return true; 
+  {
+    return true;
   }
-
-  /** 
-      Modifies the state passed as parameter by applying a given
-      move upon it.
-      
-      @note To be implemented in the application (MustDef)
-      @param st the state to modify
-      @param mv the move to be applied
-  */
+  
+  /**
+   Modifies the state passed as parameter by applying a given
+   move upon it.
+   
+   @note To be implemented in the application (MustDef)
+   @param st the state to modify
+   @param mv the move to be applied
+   */
   virtual void MakeMove(State &st, const Move& mv) const = 0;
-
+  
   virtual bool NextRelatedMove(const State &st, Move& mv, const Move& mv2) const
   { return NextMove(st,mv); }
-
-  virtual bool FirstRelatedMove(const State &st, Move& mv, const Move& mv2) const 
+  
+  virtual bool FirstRelatedMove(const State &st, Move& mv, const Move& mv2) const
   {
-    try 
+    try
     {
-      FirstMove(st,mv); 
+      FirstMove(st,mv);
     }
     catch (EmptyNeighborhood e)
     {
@@ -172,49 +178,49 @@ public:
   virtual CFtype DeltaCostFunction(const State& st, const Move& mv) const;
   virtual CFtype DeltaObjective(const State& st, const Move & mv) const;
   virtual CFtype DeltaViolations(const State& st, const Move & mv) const;
-    
+  
   virtual void AddDeltaCostComponent(DeltaCostComponent<Input,State,Move,CFtype>& dcc);
   
   virtual void AddDeltaCostComponent(CostComponent<Input,State,CFtype>& cc);
-
+  
   virtual size_t DeltaCostComponents() const
   { return delta_cost_component.size(); }
   
   virtual DeltaCostComponent<Input,State,Move,CFtype>& GetDeltaCostComponent(unsigned int i)
   { return *delta_cost_component[i]; }
-
+  
   virtual size_t CostComponents() const
   { return cost_component.size(); }
   
   virtual CostComponent<Input,State,CFtype>& GetCostComponent(unsigned int i)
-  { return *cost_component[i]; } 
+  { return *cost_component[i]; }
   
   virtual unsigned int Modality() const
   { return 1; }
-    
+  
   virtual unsigned int MoveModality(const Move& mv) const
   { return 0; }
 protected:
   /**
-     Constructs a neighborhood explorer passing a pointer to a state manager 
-     and a pointer to the input.
-     
-     @param in a pointer to an input object.
-     @param sm a pointer to a compatible state manager.
-     @param name the name associated to the NeighborhoodExplorer.
-  */
+   Constructs a neighborhood explorer passing a pointer to a state manager
+   and a pointer to the input.
+   
+   @param in a pointer to an input object.
+   @param sm a pointer to a compatible state manager.
+   @param name the name associated to the NeighborhoodExplorer.
+   */
   NeighborhoodExplorer(const Input& in, StateManager<Input,State,CFtype>& sm, std::string name);
   virtual ~NeighborhoodExplorer() {}
   
   const Input& in;/**< A reference to the input */
   StateManager<Input, State,CFtype>& sm; /**< A reference to the attached state manager. */
-
+  
   /** List of delta cost component */
   std::vector<DeltaCostComponent<Input,State,Move,CFtype>* > delta_cost_component;
-
+  
   /** List of cost component */
   std::vector<CostComponent<Input,State,CFtype>* > cost_component;
-
+  
   /** Name of user-defined neighborhood explorer */
   std::string name;
 };
@@ -226,14 +232,14 @@ protected:
 
 template <class Input, class State, class Move, typename CFtype>
 NeighborhoodExplorer<Input,State,Move,CFtype>::NeighborhoodExplorer(const Input& i,
-  StateManager<Input,State,CFtype>& e_sm, std::string e_name)
-  : in(i), sm(e_sm), name(e_name)
+                                                                    StateManager<Input,State,CFtype>& e_sm, std::string e_name)
+: in(i), sm(e_sm), name(e_name)
 {}
 
 /**
- Evaluates the variation of the cost function obtainted either by applying the move to 
+ Evaluates the variation of the cost function obtainted either by applying the move to
  the given state or simulating it.
- The tentative definition computes a weighted sum of the variation of 
+ The tentative definition computes a weighted sum of the variation of
  the violations function and of the difference in the objective function.
  
  @param st the start state
@@ -251,20 +257,20 @@ CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::DeltaCostFunction(const St
   {
     // get reference to delta cost component
     DeltaCostComponent<Input,State,Move,CFtype>& dcc = *(delta_cost_component[i]);
-    if (dcc.IsHard()) 
+    if (dcc.IsHard())
       delta_hard_cost += dcc.DeltaCost(st, mv);
     else
       delta_soft_cost += dcc.DeltaCost(st, mv);
   }
-
+  
   // only if there is more than one cost component
   if (cost_component.size() != 0)
   {
     // compute move
     State st1 = st;
     MakeMove(st1, mv);
-  
-    for (i = 0; i < cost_component.size(); i++) 
+    
+    for (i = 0; i < cost_component.size(); i++)
     {
       // get reference to cost component
       CostComponent<Input,State,CFtype>& cc = *(cost_component[i]);
@@ -275,7 +281,7 @@ CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::DeltaCostFunction(const St
         delta_soft_cost += cc.Weight() * (cc.ComputeCost(st1) - cc.ComputeCost(st));
     }
   }
-      			
+  
   return HARD_WEIGHT * delta_hard_cost + delta_soft_cost;
 }
 
@@ -295,32 +301,32 @@ template <class Input, class State, class Move, typename CFtype>
 CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::BestMove(const State &st, Move& mv) const throw (EmptyNeighborhood)
 {
   unsigned int number_of_bests = 1; // number of moves found with the same best value
-
+  
   FirstMove(st, mv);
   Move best_move = mv;
   CFtype mv_cost = DeltaCostFunction(st, mv);
   CFtype best_delta = mv_cost;
   
-  while (NextMove(st, mv)) 
-  { 		
+  while (NextMove(st, mv))
+  {
     mv_cost = DeltaCostFunction(st, mv);
     if (LessThan(mv_cost, best_delta))
-      {
-        best_move = mv;
-        best_delta = mv_cost;
-        number_of_bests = 1;
-      }
+    {
+      best_move = mv;
+      best_delta = mv_cost;
+      number_of_bests = 1;
+    }
     else if (EqualTo(mv_cost, best_delta))
-      {
-	if (Random::Int(0,number_of_bests) == 0) // accept the move with probability 1 / (1 + number_of_bests)
-	  best_move = mv;
-        number_of_bests++;
-      } 
+    {
+      if (Random::Int(0,number_of_bests) == 0) // accept the move with probability 1 / (1 + number_of_bests)
+        best_move = mv;
+      number_of_bests++;
+    }
   }
   
   mv = best_move;
   return best_delta;
-} 
+}
 
 template <class Input, class State, class Move, typename CFtype>
 CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::BestMove(const State &st, Move& mv, ProhibitionManager<State, Move, CFtype>& pm) const throw (EmptyNeighborhood)
@@ -331,11 +337,11 @@ CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::BestMove(const State &st, 
   Move best_move = mv;
   CFtype best_delta = mv_cost;
   bool all_moves_prohibited = pm.ProhibitedMove(st, mv, mv_cost);
-
+  
   static unsigned int i1 = 0, i2 = 0;
   
-  while (NextMove(st, mv)) 
-  { 		
+  while (NextMove(st, mv))
+  {
     mv_cost = DeltaCostFunction(st, mv);
     if (LessThan(mv_cost, best_delta))
     {
@@ -354,40 +360,40 @@ CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::BestMove(const State &st, 
       }
     }
     else if (EqualTo(mv_cost, best_delta))
+    {
+      if (!pm.ProhibitedMove(st, mv, mv_cost))
       {
-	if (!pm.ProhibitedMove(st, mv, mv_cost))
-	  {
-	    if (all_moves_prohibited)
+        if (all_moves_prohibited)
 	      {
-		best_move = mv;
-		number_of_bests = 1;
-		all_moves_prohibited = false;
+          best_move = mv;
+          number_of_bests = 1;
+          all_moves_prohibited = false;
 	      }
-	    else
+        else
 	      {
-		if (Random::Int(0,number_of_bests) == 0) // accept the move with probability 1 / (1 + number_of_bests)
-		  best_move = mv;
-		number_of_bests++;
+          if (Random::Int(0,number_of_bests) == 0) // accept the move with probability 1 / (1 + number_of_bests)
+            best_move = mv;
+          number_of_bests++;
 	      }
-	  }
-	else 
-	  if (all_moves_prohibited)
-	    {
-	      if (Random::Int(0,number_of_bests) == 0) // accept the move with probability 1 / (1 + number_of_bests)
-		best_move = mv;
-	      number_of_bests++;
-	    }
       }
+      else
+        if (all_moves_prohibited)
+        {
+          if (Random::Int(0,number_of_bests) == 0) // accept the move with probability 1 / (1 + number_of_bests)
+            best_move = mv;
+          number_of_bests++;
+        }
+    }
     else // mv_cost is greater than best_delta
       if (all_moves_prohibited && !pm.ProhibitedMove(st, mv, mv_cost))
-	{
-	  best_move = mv;
-	  best_delta = mv_cost;
-	  number_of_bests = 1;
-	  all_moves_prohibited = false;
-	}
+      {
+        best_move = mv;
+        best_delta = mv_cost;
+        number_of_bests = 1;
+        all_moves_prohibited = false;
+      }
   }
-
+  
   if (all_moves_prohibited)
     i1++;
   i2++;
@@ -403,14 +409,14 @@ CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::FirstImprovingMove(const S
   FirstMove(st, mv);
   CFtype mv_cost = DeltaCostFunction(st, mv);
   Move best_move = mv;
-  CFtype best_delta = mv_cost; 
+  CFtype best_delta = mv_cost;
   
   while (NextMove(st, mv))
   {
 		mv_cost = DeltaCostFunction(st, mv);
     if (LessThan(mv_cost, (CFtype)0))
 			return mv_cost; // mv is an improving move
-
+    
     if (LessThan(mv_cost, best_delta))
     {
 			best_move = mv;
@@ -422,13 +428,13 @@ CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::FirstImprovingMove(const S
       if (Random::Int(0,number_of_bests) == 0) // accept the move with probability 1 / (1 + number_of_bests)
         best_move = mv;
       number_of_bests++;
-    }         
+    }
   }
   
   // these instructions are reached when no improving move has been found
   mv = best_move;
   return best_delta;
-} 
+}
 
 template <class Input, class State, class Move, typename CFtype>
 CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::FirstImprovingMove(const State &st, Move& mv, ProhibitionManager<State,Move,CFtype>& pm) const throw (EmptyNeighborhood)
@@ -440,7 +446,7 @@ CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::FirstImprovingMove(const S
   CFtype best_delta = mv_cost;
   bool all_moves_prohibited = true, not_last_move;
   
-  do // look for the best move 
+  do // look for the best move
   {  // if the prohibition mechanism is active get the best non-prohibited move
 		// if all moves are prohibited, then get the best one
 		if (LessThan(mv_cost, (CFtype)0) && !pm.ProhibitedMove(st, mv, mv_cost))
@@ -475,14 +481,14 @@ CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::FirstImprovingMove(const S
       if (Random::Int(0,number_of_bests) == 0) // accept the move with probability 1 / (1 + number_of_bests)
         best_move = mv;
       number_of_bests++;
-    } 
+    }
     not_last_move = NextMove(st, mv);
     if (not_last_move)
       mv_cost = DeltaCostFunction(st, mv);
   }
   while (not_last_move);
-
-  // these instructions are reached when no improving move has been found  
+  
+  // these instructions are reached when no improving move has been found
   mv = best_move;
   return best_delta;
 }
@@ -498,7 +504,7 @@ CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::SampleMove(const State &st
   RandomMove(st, mv);
   mv_cost = DeltaCostFunction(st, mv);
   Move best_move = mv;
-  CFtype best_delta = mv_cost;	
+  CFtype best_delta = mv_cost;
 	
   do
   {
@@ -509,11 +515,11 @@ CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::SampleMove(const State &st
       number_of_bests = 1;
     }
     else if (EqualTo(mv_cost, best_delta))
-      {
-	if (Random::Int(0,number_of_bests) == 0) // accept the move with probability 1 / (1 + number_of_bests)
-	  best_move = mv;
-	number_of_bests++;
-      }     
+    {
+      if (Random::Int(0,number_of_bests) == 0) // accept the move with probability 1 / (1 + number_of_bests)
+        best_move = mv;
+      number_of_bests++;
+    }
     RandomMove(st, mv);
     mv_cost = DeltaCostFunction(st, mv);
     s++;
@@ -567,7 +573,7 @@ CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::SampleMove(const State &st
       if (Random::Int(0,number_of_bests) == 0) // accept the move with probability 1 / (1 + number_of_bests)
         best_move = mv;
       number_of_bests++;
-    }     
+    }
     RandomMove(st, mv);
     mv_cost = DeltaCostFunction(st, mv);
     s++;
@@ -580,9 +586,9 @@ CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::SampleMove(const State &st
 
 
 /**
- Evaluates the variation of the violations function obtained by 
+ Evaluates the variation of the violations function obtained by
  performing a move in a given state.
- The tentative definition simply makes the move and invokes the 
+ The tentative definition simply makes the move and invokes the
  companion StateManager method (Violations) on the initial and on the
  final state.
  
@@ -608,7 +614,7 @@ CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::DeltaViolations(const Stat
 /**
  Evaluates the variation of the objective function obtained by performing
  a move in a given state.
- The tentative definition simply makes the move and invokes the 
+ The tentative definition simply makes the move and invokes the
  companion StateManager method (Objective) on the initial and on the
  final state.
  

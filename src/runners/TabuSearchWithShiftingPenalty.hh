@@ -9,7 +9,7 @@
 
 // FIXME: currently TSWSP is not working
 
-template <class Input, class State, class Move, typename CFtype = int>
+template <class Input, class State, class Move, typename CFtype>
 class TabuSearchWithShiftingPenalty : public TabuSearch<Input,State,Move,CFtype>
 {
 public:

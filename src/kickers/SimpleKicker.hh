@@ -9,7 +9,7 @@
     (instantiated as template). 
     @ingroup Perturbers 
 */
-template <class Input, class State, class Move, typename CFtype = int>
+template <class Input, class State, class Move, typename CFtype>
 class SimpleKicker
   : public Kicker<Input,State,CFtype>
 {

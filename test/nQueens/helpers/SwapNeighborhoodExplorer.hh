@@ -26,11 +26,11 @@
 /** This class implements a possible neighborhood explorartion strategy
 for the Swap move. */
 class SwapNeighborhoodExplorer
-:  public NeighborhoodExplorer<int,std::vector<int>,Swap>
+:  public NeighborhoodExplorer<int,std::vector<int>,Swap, int>
 {
 public:
-	SwapNeighborhoodExplorer(const int& in, StateManager<int, std::vector<int> >& qsm, std::string name = "")
-	: NeighborhoodExplorer<int,std::vector<int>,Swap>(in, qsm, name)
+	SwapNeighborhoodExplorer(const int& in, StateManager<int, std::vector<int> , int>& qsm, std::string name = "")
+	: NeighborhoodExplorer<int,std::vector<int>,Swap, int>(in, qsm, name)
   {}
 	void MakeMove(std::vector<int> &a, const Swap& sw) const;
   void RandomMove(const std::vector<int> &a, Swap& sw) const throw (EmptyNeighborhood);

@@ -8,7 +8,7 @@ typedef std::chrono::duration<double, std::ratio<1>> secs;
 template <class Input, class State, class Move, typename CFtype>
 class MoveRunner;
 
-template <class Input, class State, class Move, typename CFtype = int>
+template <class Input, class State, class Move, typename CFtype>
 class RunnerObserver
 {
 public:

@@ -112,6 +112,7 @@
 #include <testers/MoveTester.hh>
 #include <testers/KickerTester.hh>
 #include <helpers/ShiftingPenaltyManager.hh>
+#include <helpers/MultimodalNeighborhoodExplorer.hh>
 #if defined(HAVE_LINKABLE_BOOST)
 #include <boost/program_options/options_description.hpp>
 #include <boost/program_options/parsers.hpp>
@@ -165,18 +166,18 @@ int main(int argc, const char* argv[])
   QueensKicker qk(in, qnhe);
   
   // runners
-  HillClimbing<int, vector<int>, Swap> qhc(in, qsm, qnhe, "SwapHillClimbing");
-  SteepestDescent<int, vector<int>, Swap> qsd(in, qsm, qnhe, "SwapSteepestDescent");
-  TabuSearch<int, vector<int>, Swap> qts(in, qsm, qnhe, qtlm, "SwapTabuSearch");
-  SimulatedAnnealing<int, vector<int>, Swap> qsa(in, qsm, qnhe, "SwapSimulatedAnnealing");
-  SimulatedAnnealingWithReheating<int, vector<int>, Swap> qsawr(in, qsm, qnhe, "SwapSimulatedAnnealingWithReheating");
-  LateAcceptanceHillClimbing<int, vector<int>, Swap> qlhc(in, qsm, qnhe, "SwapLateAcceptanceHillClimbing");
-  GreatDeluge<int, vector<int>, Swap> qgd(in, qsm, qnhe, "SwapGreatDeluge");
+  HillClimbing<int, vector<int>, Swap, int> qhc(in, qsm, qnhe, "SwapHillClimbing");
+  SteepestDescent<int, vector<int>, Swap, int> qsd(in, qsm, qnhe, "SwapSteepestDescent");
+  TabuSearch<int, vector<int>, Swap, int> qts(in, qsm, qnhe, qtlm, "SwapTabuSearch");
+  SimulatedAnnealing<int, vector<int>, Swap, int> qsa(in, qsm, qnhe, "SwapSimulatedAnnealing");
+  SimulatedAnnealingWithReheating<int, vector<int>, Swap, int> qsawr(in, qsm, qnhe, "SwapSimulatedAnnealingWithReheating");
+  LateAcceptanceHillClimbing<int, vector<int>, Swap, int> qlhc(in, qsm, qnhe, "SwapLateAcceptanceHillClimbing");
+  GreatDeluge<int, vector<int>, Swap, int> qgd(in, qsm, qnhe, "SwapGreatDeluge");
   // FIXME: currently TSWSP is not working
   // TabuSearchWithShiftingPenalty<int, vector<int>, Swap> qtsw(in, qsm, qnhe, qtlm, "SwapTabuSearchWithShiftingPenalty");
   
-  SimpleLocalSearch<int, ChessBoard, vector<int> > qss(in, qsm, qom, "QueensSLS");
-  VariableNeighborhoodDescent<int, ChessBoard, vector<int> > qvnd(in, qsm, qom, 3, "VNDS");
+  SimpleLocalSearch<int, ChessBoard, vector<int> , int> qss(in, qsm, qom, "QueensSLS");
+  VariableNeighborhoodDescent<int, ChessBoard, vector<int>, int > qvnd(in, qsm, qom, 3, "VNDS");
 
   if (random_seed.IsSet())
     Random::Seed(random_seed);
@@ -203,8 +204,8 @@ int main(int argc, const char* argv[])
 	
 	if (plot_level.IsSet() && verbosity_level.IsSet())
 	{
-    RunnerObserver<int, vector<int>, Swap> ro(verbosity_level, plot_level);
-    GeneralizedLocalSearchObserver<int, ChessBoard, vector<int> > so(verbosity_level, plot_level);
+    RunnerObserver<int, vector<int>, Swap, int> ro(verbosity_level, plot_level);
+    GeneralizedLocalSearchObserver<int, ChessBoard, vector<int> , int> so(verbosity_level, plot_level);
 
 		qhc.AttachObserver(ro);
 		qsd.AttachObserver(ro);
@@ -220,11 +221,11 @@ int main(int argc, const char* argv[])
 	{
     // tester
     // FIXME: now the tester should be defined only when it is used (because of State management)
-    Tester<int, ChessBoard, vector<int> > tester(in, qsm, qom);
+    Tester<int, ChessBoard, vector<int>, int > tester(in, qsm, qom);
 		// testers
-		MoveTester<int, ChessBoard, vector<int>, Swap> swap_move_test(in,qsm,qom,qnhe, "Swap move", tester);
+		MoveTester<int, ChessBoard, vector<int>, Swap, int> swap_move_test(in,qsm,qom,qnhe, "Swap move", tester);
     // MoveTester<int, ChessBoard, vector<int>, DoubleSwap> multimodal_move_test(in,qsm,qom,qmmnhe, "Multimodal swap move", tester);
-		KickerTester<int, ChessBoard, vector<int> > monokicker_test(in,qsm,qom, qk, "Monomodal kick");
+		KickerTester<int, ChessBoard, vector<int>, int> monokicker_test(in,qsm,qom, qk, "Monomodal kick");
     //KickerTester<int, ChessBoard, vector<int> > multikicker_test(in,qsm,qom, qk2, "Multimodal kick");
 		
 		tester.AddKickerTester(monokicker_test);

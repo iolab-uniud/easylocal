@@ -14,7 +14,7 @@
  neighborhood explorer.
  @ingroup Testers
  */
-template <class Input, class Output, class State, class Move, typename CFtype = int>
+template <class Input, class Output, class State, class Move, typename CFtype>
 class MoveTester
 : public ComponentTester<Input,Output,State,CFtype>
 {

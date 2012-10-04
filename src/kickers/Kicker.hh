@@ -16,7 +16,7 @@ enum KickTypes {
     Kickers select a new state by trying to apply a sequence of
     moves.  
     @ingroup Perturbers */
-template <class Input, class State, typename CFtype = int>
+template <class Input, class State, typename CFtype>
 class Kicker
 {
 public:

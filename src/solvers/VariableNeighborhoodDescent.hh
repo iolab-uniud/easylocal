@@ -7,7 +7,7 @@
  implemented through a Kicker.
  @ingroup Solvers
  */
-template <class Input, class Output, class State, typename CFtype = int>
+template <class Input, class Output, class State, typename CFtype>
 class VariableNeighborhoodDescent
 : public AbstractLocalSearch<Input,Output,State,CFtype>
 {

@@ -4,7 +4,7 @@
 template <typename CFtype>
 class ShiftingPenaltyManager;
 
-template <typename CFtype = int>
+template <typename CFtype>
 class ShiftingPenaltyObserver
 {
 public:

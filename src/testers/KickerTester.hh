@@ -10,7 +10,7 @@ typedef std::chrono::duration<double, std::ratio<1>> secs;
 /** The Kicker Tester allows to test a Kicker.
     @ingroup Testers
 */
-template <class Input, class Output, class State, typename CFtype = int>
+template <class Input, class Output, class State, typename CFtype>
 class KickerTester
             : public ComponentTester<Input,Output,State,CFtype>
 {

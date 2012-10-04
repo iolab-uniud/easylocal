@@ -11,7 +11,7 @@
     encapsulated in a runner.
     @ingroup Solvers
 */
-template <class Input, class Output, class State, typename CFtype = int>
+template <class Input, class Output, class State, typename CFtype>
 class SimpleLocalSearch
   : public AbstractLocalSearch<Input,Output,State,CFtype>
 {

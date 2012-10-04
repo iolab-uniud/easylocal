@@ -17,7 +17,7 @@ class FrequencyTabuListManager;
  It is simply a compound data made up of the @c Move itself and the
  iteration at which the element shall leave the list.
  */
-template <class State, class Move, typename CFtype = int>
+template <class State, class Move, typename CFtype>
 class TabuListItem
 {
   friend class TabuListManager<State, Move,CFtype>;
@@ -46,7 +46,7 @@ protected:
  iteration count has expired are removed.
  @ingroup Helpers
  */
-template <class State, class Move, typename CFtype = int>
+template <class State, class Move, typename CFtype>
 class TabuListManager
 : public ProhibitionManager<State,Move,CFtype>
 {
@@ -102,7 +102,7 @@ protected:
 	CFtype best_state_cost; /**< The cost of best state of the attached runner (for the aspiration criterion) */
 };
 
-template <class State, class Move, typename CFtype = int>
+template <class State, class Move, typename CFtype>
 class FrequencyTabuListManager
 : public TabuListManager<State, Move, CFtype>
 {

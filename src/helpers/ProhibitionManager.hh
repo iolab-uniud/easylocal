@@ -11,7 +11,7 @@
  elements according to the prohibition mechanisms of tabu search.
  @ingroup Helpers
  */
-template <class State, class Move, typename CFtype = int>
+template <class State, class Move, typename CFtype>
 class ProhibitionManager : public Parametrized
 {
 public:

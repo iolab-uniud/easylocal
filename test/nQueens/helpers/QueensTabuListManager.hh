@@ -24,7 +24,7 @@
 #include "../data/Swap.hh"
 
 /** This class handles the tabu list. */
-class QueensTabuListManager : public TabuListManager<std::vector<int>, Swap>
+class QueensTabuListManager : public TabuListManager<std::vector<int>, Swap, int>
 {
 /* public:
 	QueensTabuListManager() 
@@ -33,7 +33,7 @@ public:
 	bool Inverse(const Swap& m1, const Swap& m2) const { return m1 == m2; }
 };
 
-class QueensFrequencyTabuListManager : public FrequencyTabuListManager<std::vector<int>, Swap>
+class QueensFrequencyTabuListManager : public FrequencyTabuListManager<std::vector<int>, Swap, int>
 {
 public:
 	QueensFrequencyTabuListManager(double thr = 0.04, unsigned int min_it = 100) 

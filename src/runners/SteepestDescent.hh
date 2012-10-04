@@ -13,7 +13,7 @@
  nearest local minimum of a given state.
  @ingroup Runners
  */  
-template <class Input, class State, class Move, typename CFtype = int>
+template <class Input, class State, class Move, typename CFtype>
 class SteepestDescent : public MoveRunner<Input,State,Move,CFtype>
 {
 public:

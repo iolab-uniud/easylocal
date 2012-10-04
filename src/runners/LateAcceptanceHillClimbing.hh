@@ -19,7 +19,7 @@
  
  @ingroup Runners
  */
-template <class Input, class State, class Move, typename CFtype = int>
+template <class Input, class State, class Move, typename CFtype>
 class LateAcceptanceHillClimbing : public HillClimbing<Input,State,Move,CFtype>
 {
 public:

@@ -22,7 +22,7 @@ class AbstractTester;
  Solver::AddRunner() in order to be called correctly.
  @ingroup Helpers
  */
-template <class Input, class State, typename CFtype = int>
+template <class Input, class State, typename CFtype>
 class Runner : public Interruptible<CFtype, State&>, public Parametrized
 {
   friend class AbstractTester<Input, State, CFtype>;

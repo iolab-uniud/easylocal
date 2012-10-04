@@ -72,7 +72,7 @@ protected:
 };
 
 
-template <class State, class MoveList, class MultimodalTabuListManager, typename CFtype = int>
+template <class State, class MoveList, class MultimodalTabuListManager, typename CFtype>
 class MultimodalTabuListManagerAdapter : public TabuListManager<State, MoveList, CFtype>
 {
 public:
@@ -95,7 +95,7 @@ public:
 
 };
 
-template <typename State, typename TabuListManagerList, typename CFtype = int>
+template <typename State, typename TabuListManagerList, typename CFtype>
 class PrepareSetUnionTabuListManager
 {
 public:
@@ -104,7 +104,7 @@ public:
   typedef MultimodalTabuListManagerAdapter<State, MoveList, MultimodaTabuListManagerType, CFtype> TabuListManager;
 };
 
-template <typename State, typename TabuListManagerList, typename CFtype = int>
+template <typename State, typename TabuListManagerList, typename CFtype>
 class PrepareCartesianProductTabuListManager
 {
 public:

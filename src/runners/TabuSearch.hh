@@ -22,7 +22,7 @@
 #include <helpers/TabuListManager.hh>
 #include <stdexcept>
 
-template <class Input, class State, class Move, typename CFtype = int>
+template <class Input, class State, class Move, typename CFtype>
 class TabuSearch : public MoveRunner<Input,State,Move,CFtype>
 {
 public:

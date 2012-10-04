@@ -14,7 +14,7 @@
  
  @ingroup Runners
  */
-template <class Input, class State, class Move, typename CFtype = int>
+template <class Input, class State, class Move, typename CFtype>
 class SimulatedAnnealingWithReheating : public SimulatedAnnealing<Input,State,Move,CFtype>
 {
 public:

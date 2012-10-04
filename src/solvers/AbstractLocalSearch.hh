@@ -15,9 +15,9 @@
  dealing with a local search algorithm.
  @ingroup Solvers
  */
-template <class Input, class Output, class State, typename CFtype = int>
+template <class Input, class Output, class State, typename CFtype>
 class AbstractLocalSearch
-: public Parametrized, public Solver<Input, Output>, public Interruptible<int>
+: public Parametrized, public Solver<Input, Output, CFtype>, public Interruptible<int>
 {
 public:
   
@@ -81,7 +81,7 @@ AbstractLocalSearch<Input,Output,State,CFtype>::AbstractLocalSearch(const Input&
                                                                     std::string name,
                                                                     std::string description)
 : Parametrized(name, description),
-  Solver<Input, Output>(in, name),
+  Solver<Input, Output, CFtype>(in, name),
   sm(e_sm),
   om(e_om),
   // Parameters

@@ -8,7 +8,7 @@ typedef std::chrono::duration<double, std::ratio<1>> secs;
 template <class Input, class Output, class State, typename CFtype>
 class GeneralizedLocalSearch;
 
-template <class Input, class Output, class State, typename CFtype = int>
+template <class Input, class Output, class State, typename CFtype>
 class GeneralizedLocalSearchObserver
 {
 public:

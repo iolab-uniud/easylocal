@@ -9,7 +9,7 @@
 
 /** This class implements the shifting penalty mechanism for a single
  DeltaCost component */
-template <typename CFtype = int>
+template <typename CFtype>
 class ShiftingPenaltyManager : public Parametrized
 {
   friend class ShiftingPenaltyObserver<CFtype>;
@@ -54,7 +54,7 @@ protected:
 };
 
 
-template <typename CFtype = int>
+template <typename CFtype>
 class ComplexShiftingPenaltyManager : public ShiftingPenaltyManager<CFtype>
 {
 public:
@@ -73,7 +73,7 @@ protected:
   unsigned int infeasible_iter;
 };
 
-template <typename CFtype = int>
+template <typename CFtype>
 class SimpleShiftingPenaltyManager : public ShiftingPenaltyManager<CFtype>
 {
 public:

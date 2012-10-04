@@ -23,11 +23,11 @@
 #include <vector>
 #include "../data/Swap.hh"
 
-class QueensKicker : public SimpleKicker<int,std::vector<int>,Swap>
+class QueensKicker : public SimpleKicker<int,std::vector<int>,Swap, int>
 {
 public:
 	QueensKicker(const int& bs, SwapNeighborhoodExplorer& qnhe, int s = 2)
-	: SimpleKicker<int,std::vector<int>,Swap>(bs, qnhe, s, "QueensKicker") 
+	: SimpleKicker<int,std::vector<int>,Swap, int>(bs, qnhe, s, "QueensKicker") 
 {}
 	bool RelatedMoves(const Swap&, const Swap&) const
 { return true; } 
