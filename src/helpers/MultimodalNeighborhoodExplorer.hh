@@ -1,7 +1,6 @@
 #if !defined(_MULTIMODALNEIGHBORHOOD_EXPLORER_HH_)
 #define _MULTIMODALNEIGHBORHOOD_EXPLORER_HH_
 
-#include <helpers/DeltaCostComponent.hh>
 #include <helpers/StateManager.hh>
 #include <helpers/ProhibitionManager.hh>
 #include <helpers/NeighborhoodExplorer.hh>
@@ -47,54 +46,46 @@ public:
 template <typename Move>
 std::istream& operator>>(std::istream& is, ActiveMove<Move>& m)
 {
-  is >> m;
+  is >> static_cast<Move&>(m);
   return is;
 }
 
 template <typename Move>
-std::ostream& operator<<(std::ostream& os, ActiveMove<Move>& m)
+std::ostream& operator<<(std::ostream& os, const ActiveMove<Move>& m)
 {
-  os << m;
+  if (m.active)
+    os << static_cast<const Move&>(m);
   return os;
 }
 
-
-template <typename H, typename ... T>
-std::istream& operator>>(std::istream& is, std::tuple<H, T...>& t)
+template <typename H, typename S, typename ...T>
+void print_tuple(std::ostream& os, const std::tuple<H, S, T...>& t)
 {
-  H& h = std::get<0>(t);
-  is >> h;
-  // FIXME: to be fixed
-  //is >> TupleUtils::tuple_tail(t);
-  
-  return is;
+  os << std::get<0>(t) << " ";
+  auto temp_tuple_tail = TupleUtils::tuple_tail(t);
+  print_tuple<S, T...>(os, temp_tuple_tail);
 }
 
-template <class H>
-std::istream& operator>>(std::istream& is, std::tuple<H>& t)
-{
-  H& h = std::get<0>(t);
-  is >> h;
-  return is;
-}
-
-template <typename H, typename ... T>
-std::ostream& operator<<(std::ostream& os, const std::tuple<H, T...>& t)
+template <typename H>
+void print_tuple(std::ostream& os, const std::tuple<H>& t)
 {
   os << std::get<0>(t);
-  // FIXME: to be fixed
-  //is >> TupleUtils::tuple_tail(t);
-  
-  return os;
 }
 
-template <class H>
-std::ostream& operator>>(std::ostream& os, const std::tuple<H>& t)
+template <typename ...T>
+std::ostream& operator<<(std::ostream& os, const std::tuple<T...>& t)
 {
-  os << std::get<0>(t);
+  print_tuple<T...>(os, t);
   return os;
 }
 
+template <typename ... T>
+std::istream& operator>>(std::istream& is, std::tuple<T...>& t)
+{
+  // FIXME: when we'll really need it we'll take time to implement it
+  //read_tuple(is, t);
+  return is;
+}
 
 template <class Input, class State, typename CFtype, class ... BaseNeighborhoodExplorers>
 class MultimodalNeighborhoodExplorer : public NeighborhoodExplorer<Input, State, std::tuple<ActiveMove<typename BaseNeighborhoodExplorers::ThisMove> ...>, CFtype>
@@ -104,19 +95,12 @@ protected:
   class Call
   {
   public:
-    enum Function { make_move, is_feasible_move, initialize_inactive, do_random_move, do_first_move, try_next_move, is_active, do_delta_cost_function, do_delta_shifted_cost_function };
+    enum Function { make_move, is_feasible_move, initialize_inactive, do_random_move, do_first_move, try_next_move, is_active, do_delta_cost_function };
     Call(Function f) : to_call(f) { }
     
     
-    template <typename R, class N, class M>
-    std::function<R(const N&, State&, M&)> get() const throw(std::logic_error)
-    {
-      throw std::logic_error("This type of function call is not implemented");
-      return std::function<R(const N&, State&, M&)>(nullptr);
-    }
-    
     template <class N, class M>
-    std::function<void(const N&, State&, M&)> get() const throw(std::logic_error)
+    std::function<void(const N&, State&, M&)> getVoid() const throw(std::logic_error)
     {
       std::function<void(const N&, State&, M&)> f;
       switch (to_call)
@@ -130,6 +114,9 @@ protected:
         case do_first_move:
           f = &DoFirstMove<N,M>;
           break;
+        case do_random_move:
+          f = &DoRandomMove<N,M>;
+          break;
         default:
           throw std::logic_error("Function not implemented");
       }
@@ -137,7 +124,7 @@ protected:
     }
     
     template <class N, class M>
-    std::function<CFtype(const N&, State&, M&)> get() const throw(std::logic_error)
+    std::function<CFtype(const N&, State&, M&)> getCFtype() const throw(std::logic_error)
     {
       std::function<CFtype(const N&, State&, M&)> f;
       switch (to_call)
@@ -145,11 +132,6 @@ protected:
           case do_delta_cost_function:
           f = &DoDeltaCostFunction<N,M>;
           break;
-          
-        case do_delta_shifted_cost_function:
-          f = &DoDeltaShiftedCostFunction<N,M>;
-          break;
-      
         default:
           throw std::logic_error("Function not implemented");
       }
@@ -157,7 +139,7 @@ protected:
     }
     
     template <class N, class M>
-    std::function<bool(const N&, State&, M&)> get() const throw(std::logic_error)
+    std::function<bool(const N&, State&, M&)> getBool() const throw(std::logic_error)
     {
       std::function<bool(const N&, State&, M&)> f;
       switch (to_call)
@@ -177,26 +159,6 @@ protected:
       return f;
     }
     
-    template <class N, class M>
-    std::function<CFtype(const N&, const State&, const M&)> getCFtype() const throw(std::logic_error)
-    {
-      std::function<CFtype(const N&, const State&, const M&)> f;
-      switch (to_call)
-      {
-        case do_delta_cost_function:
-          f = &DoDeltaCostFunction<N,M>;
-          break;
-          
-        case do_delta_shifted_cost_function:
-          f = &DoDeltaShiftedCostFunction<N,M>;
-          break;
-          
-        default:
-          throw std::logic_error("Function not implemented");
-      }
-      return f;
-    }
-    
     Function to_call;
   };
   
@@ -205,7 +167,7 @@ public:
   typedef std::tuple<ActiveMove<typename BaseNeighborhoodExplorers::ThisMove> ...> TheseMoves;
   typedef std::tuple<std::reference_wrapper<ActiveMove<typename BaseNeighborhoodExplorers::ThisMove>> ...> TheseRefMoves;
   typedef NeighborhoodExplorer<Input, State, std::tuple<ActiveMove<typename BaseNeighborhoodExplorers::ThisMove> ...>, CFtype> SuperNeighborhoodExplorer;
-  typedef std::tuple<BaseNeighborhoodExplorers ...> TheseNeighborhoodExplorers;
+  typedef std::tuple<std::reference_wrapper<BaseNeighborhoodExplorers> ...> TheseNeighborhoodExplorers;
 
   /** Modality of the NeighborhoodExplorer */
   virtual unsigned int Modality() const { return sizeof...(BaseNeighborhoodExplorers); }
@@ -213,7 +175,7 @@ public:
   /** Constructor, takes a variable number of base NeighborhoodExplorers.  */
   MultimodalNeighborhoodExplorer(const Input& in, StateManager<Input,State,CFtype>& sm, std::string name, BaseNeighborhoodExplorers& ... nhes)
   : SuperNeighborhoodExplorer(in, sm, name),
-    nhes(std::make_tuple(nhes ...))
+  nhes(std::make_tuple(std::reference_wrapper<BaseNeighborhoodExplorers>(nhes) ...))
   { }
     
   /**< Instantiated base NeighborhoodExplorers. */
@@ -221,12 +183,12 @@ public:
   
   /** ExecuteAt - run function at a certain level of the tuple */
   template <typename H, typename ... T>
-  static void ExecuteAt (State& st, std::tuple<std::reference_wrapper<ActiveMove<typename H::ThisMove>>, std::reference_wrapper<ActiveMove<typename T::ThisMove> ...>>& temp_moves, const std::tuple<H, T ...> temp_nhes, const Call& c, int iter)
+  static void ExecuteAt (State& st, std::tuple<std::reference_wrapper<ActiveMove<typename H::ThisMove>>, std::reference_wrapper<ActiveMove<typename T::ThisMove> ...>>& temp_moves, const std::tuple<std::reference_wrapper<H>, std::reference_wrapper<T> ...> temp_nhes, const Call& c, int iter)
   {
     if (iter == 0)
     {
-      std::function<void(const H&, State&, ActiveMove<typename H::ThisMove>&)> f =  c.template get<void,H,ActiveMove<typename H::ThisMove>>();
-      f(std::get<0>(temp_nhes), st, std::get<0>(temp_moves).get());
+      std::function<void(const H&, State&, ActiveMove<typename H::ThisMove>&)> f =  c.template getVoid<H,ActiveMove<typename H::ThisMove>>();
+      f(std::get<0>(temp_nhes).get(), st, std::get<0>(temp_moves).get());
     }
     if (iter > 0)
     {
@@ -237,42 +199,42 @@ public:
   }
   
   template <class H>
-  static void ExecuteAt (State& st, std::tuple<std::reference_wrapper<ActiveMove<typename H::ThisMove>>>& temp_move, const std::tuple<H> temp_nhe, const Call& c, int iter)
+  static void ExecuteAt (State& st, std::tuple<std::reference_wrapper<ActiveMove<typename H::ThisMove>>>& temp_move, const std::tuple<std::reference_wrapper<H>> temp_nhe, const Call& c, int iter)
   {
     if (iter == 0)
     {
-      std::function<void(const H&, State&, ActiveMove<typename H::ThisMove>&)> f =  c.template get<void,H,ActiveMove<typename H::ThisMove>>();
-      f(std::get<0>(temp_nhe), st, std::get<0>(temp_move).get());
+      std::function<void(const H&, State&, ActiveMove<typename H::ThisMove>&)> f =  c.template getVoid<H,ActiveMove<typename H::ThisMove>>();
+      f(std::get<0>(temp_nhe).get(), st, std::get<0>(temp_move).get());
     }
   }
 
   /** ExecuteAll - run a function at every element of the tuple */
   template <typename H, typename ... T>
-  static void ExecuteAll (State& st, std::tuple<std::reference_wrapper<ActiveMove<typename H::ThisMove>>, std::reference_wrapper<ActiveMove<typename T::ThisMove>...>>& temp_moves, const std::tuple<H, T ...> temp_nhes, const Call& c)
+  static void ExecuteAll (State& st, std::tuple<std::reference_wrapper<ActiveMove<typename H::ThisMove>>, std::reference_wrapper<ActiveMove<typename T::ThisMove>...>>& temp_moves, const std::tuple<std::reference_wrapper<H>, std::reference_wrapper<T> ...> temp_nhes, const Call& c)
   {
     // Apply f on head of the tuple
-    std::function<void(const H&, State&, ActiveMove<typename H::ThisMove>&)> f =  c.template get<void,H,ActiveMove<typename H::ThisMove>>();
-    f(std::get<0>(temp_nhes), st, std::get<0>(temp_moves).get());
+    std::function<void(const H&, State&, ActiveMove<typename H::ThisMove>&)> f =  c.template getVoid<H,ActiveMove<typename H::ThisMove>>();
+    f(std::get<0>(temp_nhes).get(), st, std::get<0>(temp_moves).get());
     auto tail_temp_moves = TupleUtils::tuple_tail(temp_moves);
     ExecuteAll(st, tail_temp_moves, TupleUtils::tuple_tail(temp_nhes), c);
     temp_moves = std::tuple_cat(std::make_tuple(std::get<0>(temp_moves)), tail_temp_moves);
   }
   
   template <class H>
-  static void ExecuteAll (State& st, std::tuple<std::reference_wrapper<ActiveMove<typename H::ThisMove>>>& temp_move, const std::tuple<H> temp_nhe, const Call& c)
+  static void ExecuteAll (State& st, std::tuple<std::reference_wrapper<ActiveMove<typename H::ThisMove>>>& temp_move, const std::tuple<std::reference_wrapper<H>> temp_nhe, const Call& c)
   {
-    std::function<void(const H&, State&, ActiveMove<typename H::ThisMove>&)> f = c.template get<void,H,ActiveMove<typename H::ThisMove>>();
-    f(std::get<0>(temp_nhe), st, std::get<0>(temp_move).get());
+    std::function<void(const H&, State&, ActiveMove<typename H::ThisMove>&)> f = c.template getVoid<H,ActiveMove<typename H::ThisMove>>();
+    f(std::get<0>(temp_nhe).get(), st, std::get<0>(temp_move).get());
   }
   
   /** ComputeAt - run function at a certain level of the tuple and returns its value (CFtype only) */
   template <typename H, typename ... T>
-  static CFtype ComputeAt (State& st, std::tuple<ActiveMove<typename H::ThisMove>, ActiveMove<typename T::ThisMove ...>>& temp_moves, const std::tuple<H, T ...> temp_nhes, const Call& c, int iter)
+  static CFtype ComputeAt (State& st, std::tuple<std::reference_wrapper<ActiveMove<typename H::ThisMove>>, std::reference_wrapper<ActiveMove<typename T::ThisMove> ...>>& temp_moves, const std::tuple<std::reference_wrapper<H>, std::reference_wrapper<T> ...> temp_nhes, const Call& c, int iter)
   {
     if (iter == 0)
     {
-      std::function<CFtype(const H&, State&, ActiveMove<typename H::ThisMove>&)> f =  c.template get<CFtype,H,ActiveMove<typename H::ThisMove>>();
-      f(std::get<0>(temp_nhes), st, std::get<0>(temp_moves));
+      std::function<CFtype(const H&, State&, ActiveMove<typename H::ThisMove>&)> f =  c.template getCFtype<H,ActiveMove<typename H::ThisMove>>();
+      f(std::get<0>(temp_nhes).get(), st, std::get<0>(temp_moves).get());
     }
     if (iter > 0)
     {
@@ -284,12 +246,12 @@ public:
   }
   
   template <class H>
-  static CFtype ComputeAt (State& st, std::tuple<ActiveMove<typename H::ThisMove>>& temp_move, const std::tuple<H> temp_nhe, const Call& c, int iter)
+  static CFtype ComputeAt (State& st, std::tuple<std::reference_wrapper<ActiveMove<typename H::ThisMove>>>& temp_move, const std::tuple<std::reference_wrapper<H>> temp_nhe, const Call& c, int iter)
   {
     if (iter == 0)
     {
-      std::function<CFtype(const H&, State&, ActiveMove<typename H::ThisMove>&)> f =  c.template get<CFtype,H,ActiveMove<typename H::ThisMove>>();
-      return f(std::get<0>(temp_nhe), st, std::get<0>(temp_move));
+      std::function<CFtype(const H&, State&, ActiveMove<typename H::ThisMove>&)> f =  c.template getCFtype<H,ActiveMove<typename H::ThisMove>>();
+      return f(std::get<0>(temp_nhe).get(), st, std::get<0>(temp_move).get());
     }
     // just to prevent warning from smart compilers
     return static_cast<CFtype>(0);
@@ -297,11 +259,11 @@ public:
 
   /** Check - check a predicate on each element of a tuple and returns a vector of the corresponding boolean variable */
   template <typename H, typename ... T>
-  static std::vector<bool> Check (State& st, std::tuple<ActiveMove<typename H::ThisMove>, ActiveMove<typename T::ThisMove ...>>& temp_moves,  const std::tuple<H, T ...> temp_nhes, const Call& c)
+  static std::vector<bool> Check (State& st, std::tuple<std::reference_wrapper<ActiveMove<typename H::ThisMove>>, std::reference_wrapper<ActiveMove<typename T::ThisMove> ...>>& temp_moves,  const std::tuple<std::reference_wrapper<H>, std::reference_wrapper<T> ...> temp_nhes, const Call& c)
   {
-    std::function<bool(const H&, State&, ActiveMove<typename H::ThisMove>&)> f =  c.template get<bool,H,ActiveMove<typename H::ThisMove>>();
+    std::function<bool(const H&, State&, ActiveMove<typename H::ThisMove>&)> f =  c.template getBool<H,ActiveMove<typename H::ThisMove>>();
     std::vector<bool> v;
-    v.push_back(f(std::get<0>(temp_nhes), st, std::get<0>(temp_moves)));
+    v.push_back(f(std::get<0>(temp_nhes).get(), st, std::get<0>(temp_moves).get()));
     auto tail_temp_moves = TupleUtils::tuple_tail(temp_moves);
     std::vector<bool> ch = Check(st, tail_temp_moves, TupleUtils::tuple_tail(temp_nhes), c);
     v.insert(v.end(), ch.begin(), ch.end());
@@ -309,60 +271,60 @@ public:
   }
   
   template <class H>
-  static std::vector<bool> Check (State& st, std::tuple<ActiveMove<typename H::ThisMove>>& temp_move,  const std::tuple<H> temp_nhe, const Call& c)
+  static std::vector<bool> Check (State& st, std::tuple<std::reference_wrapper<ActiveMove<typename H::ThisMove>>>& temp_move,  const std::tuple<std::reference_wrapper<H>> temp_nhe, const Call& c)
   {
-    std::function<bool(const H&, State&, ActiveMove<typename H::ThisMove>&)> f =  c.template get<bool,H,ActiveMove<typename H::ThisMove>>();
+    std::function<bool(const H&, State&, ActiveMove<typename H::ThisMove>&)> f =  c.template getBool<H,ActiveMove<typename H::ThisMove>>();
     std::vector<bool> v;
-    v.push_back(f(std::get<0>(temp_nhe), st, std::get<0>(temp_move)));
+    v.push_back(f(std::get<0>(temp_nhe).get(), st, std::get<0>(temp_move).get()));
     return v;
   }
   
   /** CheckAll - check predicate on all tuple */
   template <typename H, typename ... T>
-  static bool CheckAll (State& st, std::tuple<ActiveMove<typename H::ThisMove>, ActiveMove<typename T::ThisMove ...>>& temp_moves, const std::tuple<H, T ...> temp_nhes, const Call& c)
+  static bool CheckAll (State& st, std::tuple<std::reference_wrapper<ActiveMove<typename H::ThisMove>>, std::reference_wrapper<ActiveMove<typename T::ThisMove> ...>>& temp_moves, const std::tuple<std::reference_wrapper<H>, std::reference_wrapper<T> ...> temp_nhes, const Call& c)
   {
     // Apply f on head of the tuple
-    std::function<bool(const H&, State&, ActiveMove<typename H::ThisMove>&)> f =  c.template get<bool,H,ActiveMove<typename H::ThisMove>>();
-    if (!f(std::get<0>(temp_nhes), st, std::get<0>(temp_moves)))
+    std::function<bool(const H&, State&, ActiveMove<typename H::ThisMove>&)> f =  c.template getBool<H,ActiveMove<typename H::ThisMove>>();
+    if (!f(std::get<0>(temp_nhes).get(), st, std::get<0>(temp_moves).get()))
       return false;
     auto tail_temp_moves = TupleUtils::tuple_tail(temp_moves);
     return CheckAll(st, tail_temp_moves, TupleUtils::tuple_tail(temp_nhes), c);
   }
   
   template <class H>
-  static bool CheckAll (State& st, std::tuple<ActiveMove<typename H::ThisMove>>& temp_move, const std::tuple<H> temp_nhe, const Call& c)
+  static bool CheckAll (State& st, std::tuple<std::reference_wrapper<ActiveMove<typename H::ThisMove>>>& temp_move, const std::tuple<std::reference_wrapper<H>> temp_nhe, const Call& c)
   {
-    std::function<bool(const H&, State&, ActiveMove<typename H::ThisMove>&)> f = c.template get<bool,H,ActiveMove<typename H::ThisMove>>();
-    return f(std::get<0>(temp_nhe), st, std::get<0>(temp_move));
+    std::function<bool(const H&, State&, ActiveMove<typename H::ThisMove>&)> f = c.template getBool<H,ActiveMove<typename H::ThisMove>>();
+    return f(std::get<0>(temp_nhe).get(), st, std::get<0>(temp_move).get());
   }
   
   /** CheckAny - check predicate on all tuple */
   template <typename H, typename ... T>
-  static bool CheckAny (State& st, std::tuple<ActiveMove<typename H::ThisMove>, ActiveMove<typename T::ThisMove ...>>& temp_moves, const std::tuple<H, T ...> temp_nhes, const Call& c)
+  static bool CheckAny (State& st, std::tuple<std::reference_wrapper<ActiveMove<typename H::ThisMove>>, std::reference_wrapper<ActiveMove<typename T::ThisMove> ...>>& temp_moves, const std::tuple<std::reference_wrapper<H>, std::reference_wrapper<T> ...> temp_nhes, const Call& c)
   {
     // Apply f on head of the tuple
-    std::function<bool(const H&, State&, ActiveMove<typename H::ThisMove>&)> f =  c.template get<bool,H,ActiveMove<typename H::ThisMove>>();
-    if (f(std::get<0>(temp_nhes), st, std::get<0>(temp_moves)))
+    std::function<bool(const H&, State&, ActiveMove<typename H::ThisMove>&)> f =  c.template getBool<H,ActiveMove<typename H::ThisMove>>();
+    if (f(std::get<0>(temp_nhes).get(), st, std::get<0>(temp_moves).get()))
       return true;
     auto tail_temp_moves = TupleUtils::tuple_tail(temp_moves);
     return CheckAll(st, tail_temp_moves, TupleUtils::tuple_tail(temp_nhes), c);
   }
   
   template <class H>
-  static bool CheckAny (State& st, std::tuple<ActiveMove<typename H::ThisMove>>& temp_move, const std::tuple<H> temp_nhe, const Call& c)
+  static bool CheckAny (State& st, std::tuple<std::reference_wrapper<ActiveMove<typename H::ThisMove>>>& temp_move, const std::tuple<std::reference_wrapper<H>> temp_nhe, const Call& c)
   {
-    std::function<bool(const H&, State&, ActiveMove<typename H::ThisMove>&)> f = c.template get<bool,H,ActiveMove<typename H::ThisMove>>();
-    return f(std::get<0>(temp_nhe), st, std::get<0>(temp_move));
+    std::function<bool(const H&, State&, ActiveMove<typename H::ThisMove>&)> f = c.template getBool<H,ActiveMove<typename H::ThisMove>>();
+    return f(std::get<0>(temp_nhe).get(), st, std::get<0>(temp_move).get());
   }
   
   /** CheckAt - check predicate at a certain level of a tuple */
   template <typename H, typename ... T>
-  static bool CheckAt (State& st, std::tuple<ActiveMove<typename H::ThisMove>, ActiveMove<typename T::ThisMove ...>>& temp_moves,  const std::tuple<H, T ...> temp_nhes, const Call& c, int iter)
+  static bool CheckAt (State& st, std::tuple<std::reference_wrapper<ActiveMove<typename H::ThisMove>>, std::reference_wrapper<ActiveMove<typename T::ThisMove> ...>>& temp_moves,  const std::tuple<std::reference_wrapper<H>, std::reference_wrapper<T> ...> temp_nhes, const Call& c, int iter)
   {
     if (iter == 0)
     {
-      std::function<bool(const H&, State&, ActiveMove<typename H::ThisMove>&)> f =  c.template get<bool,H,ActiveMove<typename H::ThisMove>>();
-      return f(std::get<0>(temp_nhes), st, std::get<0>(temp_moves));
+      std::function<bool(const H&, State&, ActiveMove<typename H::ThisMove>&)> f =  c.template getBool<H,ActiveMove<typename H::ThisMove>>();
+      return f(std::get<0>(temp_nhes).get(), st, std::get<0>(temp_moves).get());
     }
     if (iter > 0)
     {
@@ -373,12 +335,15 @@ public:
   }
   
   template <class H>
-  static bool CheckAt (State& st, std::tuple<ActiveMove<typename H::ThisMove>>& temp_move,  const std::tuple<H> temp_nhe, const Call& c, int iter)
+  static bool CheckAt (State& st, std::tuple<std::reference_wrapper<ActiveMove<typename H::ThisMove>>>& temp_move,  const std::tuple<std::reference_wrapper<H>> temp_nhe, const Call& c, int iter)
   {
-    std::function<bool(const H&, State&, ActiveMove<typename H::ThisMove>&)> f =  c.template get<bool,H,ActiveMove<typename H::ThisMove>>();
-    return (iter == 0 && f(std::get<0>(temp_nhe), st, std::get<0>(temp_move)));
+    if (iter == 0)
+    {
+      std::function<bool(const H&, State&, ActiveMove<typename H::ThisMove>&)> f =  c.template getBool<H,ActiveMove<typename H::ThisMove>>();
+      return f(std::get<0>(temp_nhe).get(), st, std::get<0>(temp_move).get());
+    }
+    return false;
   }
-  
   
   /* end of Check at */
   
@@ -392,7 +357,8 @@ public:
   virtual bool FeasibleMove(const State& st, const TheseMoves& moves) const
   {
     Call is_feasible_move(Call::Function::is_feasible_move);
-    return CheckAll(const_cast<State&>(st), const_cast<TheseMoves&>(moves), this->nhes, is_feasible_move);
+    TheseRefMoves r_moves = const_cast<TheseMoves&>(moves);
+    return CheckAll(const_cast<State&>(st), r_moves, this->nhes, is_feasible_move);
   }
   
 protected:
@@ -448,16 +414,10 @@ protected:
   }
   
   template<class N, class M>
-  static CFtype DoDeltaCostFunction(const N& n, const State& s, const M& m)
+  static CFtype DoDeltaCostFunction(const N& n, State& s, M& m)
   {
     return n.DeltaCostFunction(s, m);
   }
-  
-  template<class N, class M>
-  static CFtype DoDeltaShiftedCostFunction(const N& n, const State& s, const M& m)
-  {
-    return n.DeltaShiftedCostFunction(s, m);
-  }  
 };
 
 
@@ -525,12 +485,15 @@ public:
   {
     Call try_next_move(Call::Function::try_next_move);
     int selected = this->CurrentActiveMove(st, moves);
-    if (SuperNeighborhoodExplorer::CheckAt(const_cast<State&>(st), moves, this->nhes, try_next_move, selected))
+    TheseRefMoves r_moves = moves;
+    if (SuperNeighborhoodExplorer::CheckAt(const_cast<State&>(st), r_moves, this->nhes, try_next_move, selected))
       return true;
     
     do
     {
       selected--;
+      if (selected < 0)
+        return false;
       try
       {
         TheseRefMoves r_moves = moves;
@@ -540,7 +503,7 @@ public:
       }
       catch (EmptyNeighborhood e)
       { }
-    } while (selected > 0);
+    } while (true);
     
     return false;
   }
@@ -549,23 +512,17 @@ public:
   {
     int selected = this->CurrentActiveMove(st, moves);
     Call do_delta_cost_function(Call::Function::do_delta_cost_function);
-
-    return SuperNeighborhoodExplorer::ComputeAt(const_cast<State&>(st), const_cast<typename SuperNeighborhoodExplorer::ThisMove&>(moves), this->nhes, do_delta_cost_function, selected);
-  }
-
-  virtual CFtype DeltaShiftedCostFunction(const State& st, const typename SuperNeighborhoodExplorer::ThisMove& moves) const
-  {
-    int selected = this->CurrentActiveMove(st, moves);
-    Call do_delta_shifted_cost_function(Call::Function::do_delta_shifted_cost_function);
+    TheseRefMoves r_moves = const_cast<typename SuperNeighborhoodExplorer::ThisMove&>(moves);
     
-    return SuperNeighborhoodExplorer::ComputeAt(const_cast<State&>(st), const_cast<typename SuperNeighborhoodExplorer::ThisMove&>(moves), this->nhes, do_delta_shifted_cost_function, selected);
+    return SuperNeighborhoodExplorer::ComputeAt(const_cast<State&>(st), r_moves, this->nhes, do_delta_cost_function, selected);
   }
   
 protected:
   int CurrentActiveMove(const State& st, const typename SuperNeighborhoodExplorer::ThisMove& moves) const
   {
     Call is_active(Call::Function::is_active);
-    std::vector<bool> moves_status = SuperNeighborhoodExplorer::Check(const_cast<State&>(st), const_cast<typename SuperNeighborhoodExplorer::ThisMove&>(moves), this->nhes, is_active);
+    TheseRefMoves r_moves = const_cast<typename SuperNeighborhoodExplorer::ThisMove&>(moves);
+    std::vector<bool> moves_status = SuperNeighborhoodExplorer::Check(const_cast<State&>(st), r_moves, this->nhes, is_active);
     return std::distance(moves_status.begin(), std::find_if(moves_status.begin(), moves_status.end(), [](bool element) { return element; }));
   }
 };
