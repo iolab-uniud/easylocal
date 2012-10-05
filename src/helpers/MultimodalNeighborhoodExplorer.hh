@@ -25,13 +25,29 @@ namespace TupleUtils {
   
   /** Generates a tuple's tail. */
   template <typename H, typename ... T>
-  std::tuple<T...> tuple_tail(const std::tuple<H, T...>& original) {
+  std::tuple<T...> tuple_tail(const std::tuple<H, T...>& original)
+  {
+    return tuple_tail(typename make_tail<std::tuple_size<std::tuple<H,T...>>::value>::type(), original);
+  }
+  
+  /** Generates a tuple's tail. */
+  template <typename H, typename ... T>
+  std::tuple<std::reference_wrapper<T>...> tuple_tail(const std::tuple<std::reference_wrapper<H>, std::reference_wrapper<T>...>& original)
+  {
     return tuple_tail(typename make_tail<std::tuple_size<std::tuple<H,T...>>::value>::type(), original);
   }
   
   /** Make a new tuple by accessing indices 1 to N. */
   template <typename H, typename ... T, int ... S>
-  std::tuple<T...> tuple_tail(tail_index<S...>, const std::tuple<H,T...>& original) {
+  std::tuple<T...> tuple_tail(tail_index<S...>, const std::tuple<H,T...>& original)
+  {
+    return std::make_tuple(std::get<S>(original) ...);
+  }
+  
+  /** Make a new tuple by accessing indices 1 to N. */
+  template <typename H, typename ... T, int ... S>
+  std::tuple<std::reference_wrapper<T>...> tuple_tail(tail_index<S...>, const std::tuple<std::reference_wrapper<H>, std::reference_wrapper<T>...>& original)
+  {
     return std::make_tuple(std::get<S>(original) ...);
   }
 }
@@ -234,7 +250,7 @@ public:
     if (iter == 0)
     {
       std::function<CFtype(const H&, State&, ActiveMove<typename H::ThisMove>&)> f =  c.template getCFtype<H,ActiveMove<typename H::ThisMove>>();
-      f(std::get<0>(temp_nhes).get(), st, std::get<0>(temp_moves).get());
+      return f(std::get<0>(temp_nhes).get(), st, std::get<0>(temp_moves).get());
     }
     if (iter > 0)
     {
