@@ -30,13 +30,23 @@
       </Testables>
    </TestAction>
    <LaunchAction
-      selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.GDB"
-      selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.GDB"
+      selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"
+      selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
       launchStyle = "0"
       useCustomWorkingDirectory = "NO"
       buildConfiguration = "Debug"
+      ignoresPersistentStateOnLaunch = "NO"
       debugDocumentVersioning = "YES"
       allowLocationSimulation = "YES">
+      <PathRunnable
+         FilePath = "/Users/tunnuz/Library/Developer/Xcode/DerivedData/EasyLocal-dvzztzlyopxbtkfdbqakjxrjjdwj/Build/Products/test/nQueens/queens">
+      </PathRunnable>
+      <CommandLineArguments>
+         <CommandLineArgument
+            argument = "--main::size 8"
+            isEnabled = "YES">
+         </CommandLineArgument>
+      </CommandLineArguments>
       <AdditionalOptions>
       </AdditionalOptions>
    </LaunchAction>
