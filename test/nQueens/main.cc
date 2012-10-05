@@ -224,7 +224,7 @@ int main(int argc, const char* argv[])
     Tester<int, ChessBoard, vector<int>, int > tester(in, qsm, qom);
 		// testers
 		MoveTester<int, ChessBoard, vector<int>, Swap, int> swap_move_test(in,qsm,qom,qnhe, "Swap move", tester);
-    // MoveTester<int, ChessBoard, vector<int>, DoubleSwap> multimodal_move_test(in,qsm,qom,qmmnhe, "Multimodal swap move", tester);
+    MoveTester<int, ChessBoard, vector<int>, decltype(qnhe2)::ThisMove, int> multimodal_move_test(in,qsm,qom,qnhe2, "Multimodal swap move", tester);
 		KickerTester<int, ChessBoard, vector<int>, int> monokicker_test(in,qsm,qom, qk, "Monomodal kick");
     //KickerTester<int, ChessBoard, vector<int> > multikicker_test(in,qsm,qom, qk2, "Multimodal kick");
 		
