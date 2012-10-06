@@ -229,8 +229,8 @@ protected:
       auto& this_nhe = std::get<N>(temp_nhes).get();
       auto& this_move = std::get<N>(temp_moves).get();
       std::function<void(const decltype(this_nhe)&, State&, decltype(this_move)&)> f =  c.template getVoid<decltype(this_nhe),decltype(this_move)>();
-      f(this_nhe, st, this_move);
       TupleDispatcher<TupleOfMoves, TupleOfNHEs, N - 1>::ExecuteAll(st, temp_moves, temp_nhes, c);
+      f(this_nhe, st, this_move);
     }
     
     static CFtype ComputeAt(State& st, TupleOfMoves& temp_moves, const TupleOfNHEs& temp_nhes, const Call& c, int iter)
@@ -256,7 +256,7 @@ protected:
       auto& this_nhe = std::get<N>(temp_nhes).get();
       auto& this_move = std::get<N>(temp_moves).get();
       std::function<CFtype(const decltype(this_nhe)&, State&, decltype(this_move)&)> f =  c.template getCFtype<decltype(this_nhe),decltype(this_move)>();
-      return f(this_nhe, st, this_move) + TupleDispatcher<TupleOfMoves, TupleOfNHEs, N - 1>::ComputeAll(st, temp_moves, temp_nhes, c);
+      return TupleDispatcher<TupleOfMoves, TupleOfNHEs, N - 1>::ComputeAll(st, temp_moves, temp_nhes, c) + f(this_nhe, st, this_move);
     }
     
     static std::vector<bool> Check(State& st, TupleOfMoves& temp_moves, const TupleOfNHEs& temp_nhes, const Call& c)
@@ -794,7 +794,7 @@ public:
     for (int i = 1; i < this->Modality(); i++)
     {
       temp_states[i] = temp_states[i - 1];
-      SuperNeighborhoodExplorer::ExecuteAt(temp_states[i], r_moves, this->nhes, make_move, i);
+      SuperNeighborhoodExplorer::ExecuteAt(temp_states[i], r_moves, this->nhes, make_move, i - 1);
     }
     
     if (SuperNeighborhoodExplorer::CheckAt(temp_states[this->Modality() - 1], r_moves, this->nhes, try_next_move, this->Modality() - 1))
@@ -857,7 +857,7 @@ public:
     for (int i = 1; i < this->Modality(); i++)
     {
       temp_states[i] = temp_states[i - 1];
-      SuperNeighborhoodExplorer::ExecuteAt(temp_states[i], r_moves, this->nhes, make_move, i);
+      SuperNeighborhoodExplorer::ExecuteAt(temp_states[i], r_moves, this->nhes, make_move, i - 1);
       sum += SuperNeighborhoodExplorer::ComputeAt(temp_states[i], r_moves, this->nhes, do_delta_cost_function, i);
     }
     
@@ -880,18 +880,29 @@ public:
     VerifyAllActives(st, moves);
 #endif
     Call is_feasible_move(Call::Function::is_feasible_move);
+    Call make_move(Call::Function::make_move);
     TheseRefMoves r_moves = const_cast<typename SuperNeighborhoodExplorer::ThisMove&>(moves);
-    return SuperNeighborhoodExplorer::CheckAll(const_cast<State&>(st), r_moves, this->nhes, is_feasible_move);
+
+    std::vector<State> temp_states(this->Modality(), State(this->in)); // the chain of states
+    temp_states[0] = st; // the first state is a copy of to st
+                         // create and initialize all the remaining states in the chain
+    if (!SuperNeighborhoodExplorer::CheckAt(temp_states[0], r_moves, this->nhes, is_feasible_move, 0))
+      return false;
+    for (int i = 1; i < this->Modality(); i++)
+    {
+      temp_states[i] = temp_states[i - 1];
+      SuperNeighborhoodExplorer::ExecuteAt(temp_states[i], r_moves, this->nhes, make_move, i - 1);
+      if (!SuperNeighborhoodExplorer::CheckAt(temp_states[i], r_moves, this->nhes, is_feasible_move, i))
+        return false;
+    }
+    return true;
   }
   
 protected:
-  // Note: this is a state information needed to speed up computation and not
-  // recompute the effect of the whole chain of moves
+  // TODO: a state information needed to speed up computation and not
+  // to recompute the effect of the whole chain of moves
   // TODO: find a mechanism to be sure that state is consistent across calls
-  //       now it relies on a proper call order of the different methods
-  //       (to be documented)
-  // FIXME: to be implemented later as a cache
-  //std::vector<std::shared_ptr<State>> temp_states;
+  //std::vector<State> temp_states;
 };
 
 

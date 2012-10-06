@@ -126,134 +126,129 @@ int main(int argc, const char* argv[])
 {
   try
   {
-	// The CLParser object parses the command line arguments
-  /* ValArgument<double> arg_timeout("timeout", "to", false, 0.0, cl);
-  ValArgument<int> arg_random_seed("random_seed", "rs", false, cl); */
-  //cl.MatchArgument(arg_size);
-  
-  // input classe
-  int in;
-  
+    // input classe
+    int in;
+    
 #if defined(HAVE_LINKABLE_BOOST)
-  ParameterBox main_parameters("main", "Main Program options");
-  // Main program parameters
-  Parameter<int> size("size", "Chessboard size", main_parameters);
-  Parameter<std::string> solution_method("method", "Solution method (none for tester)", main_parameters);
-  Parameter<unsigned int> verbosity_level("verbosity", "Verbosity level", main_parameters);
-  Parameter<unsigned int> plot_level("plot", "Plot level", main_parameters);
-  Parameter<unsigned long int> random_seed("random_seed", "Random seed", main_parameters);
+    ParameterBox main_parameters("main", "Main Program options");
+    // Main program parameters
+    Parameter<int> size("size", "Chessboard size", main_parameters);
+    Parameter<std::string> solution_method("method", "Solution method (none for tester)", main_parameters);
+    Parameter<unsigned int> verbosity_level("verbosity", "Verbosity level", main_parameters);
+    Parameter<unsigned int> plot_level("plot", "Plot level", main_parameters);
+    Parameter<unsigned long int> random_seed("random_seed", "Random seed", main_parameters);
 #else
-  // at least the value of in shoud be read from the command line
+    // at least the value of in shoud be read from the command line
 #endif
-  
-  // cost components
-  PrimaryDiagonalCostComponent cc1(in);
-  SecondaryDiagonalCostComponent cc2(in);
-  PrimaryDiagonalDeltaCostComponent dcc1(in, cc1);
-  SecondaryDiagonalDeltaCostComponent dcc2(in, cc2);
-  
-  // helpers
-  QueensStateManager qsm(in);
-  QueensTabuListManager qtlm;
-  SwapNeighborhoodExplorer qnhe(in, qsm);
     
-  // compose a multimodal neighborhood explorer
-
-  SetUnionNeighborhoodExplorer<int, std::vector<int>, int, decltype(qnhe), decltype(qnhe), decltype(qnhe)> qnheumm(in, qsm, "SwapUnion", qnhe, qnhe, qnhe);
-  CartesianProductNeighborhoodExplorer<int, std::vector<int>, int, decltype(qnhe), decltype(qnhe), decltype(qnhe)> qnhexmm(in, qsm, "SwapProduct", qnhe, qnhe, qnhe);
-  
-  QueensOutputManager qom(in);
+    // cost components
+    PrimaryDiagonalCostComponent cc1(in);
+    SecondaryDiagonalCostComponent cc2(in);
+    PrimaryDiagonalDeltaCostComponent dcc1(in, cc1);
+    SecondaryDiagonalDeltaCostComponent dcc2(in, cc2);
+    
+    // helpers
+    QueensStateManager qsm(in);
+    QueensTabuListManager qtlm;
+    SwapNeighborhoodExplorer qnhe(in, qsm);
+    
+    // compose a multimodal neighborhood explorer
+    
+    SetUnionNeighborhoodExplorer<int, std::vector<int>, int, decltype(qnhe), decltype(qnhe), decltype(qnhe)> qnheumm(in, qsm, "SwapUnion", qnhe, qnhe, qnhe);
+    CartesianProductNeighborhoodExplorer<int, std::vector<int>, int, decltype(qnhe), decltype(qnhe), decltype(qnhe)> qnhexmm(in, qsm, "SwapProduct", qnhe, qnhe, qnhe);
+    
+    QueensOutputManager qom(in);
+    
+    // kickers
+    QueensKicker qk(in, qnhe);
+    
+    // runners
+    HillClimbing<int, vector<int>, Swap, int> qhc(in, qsm, qnhe, "SwapHillClimbing");
+    SteepestDescent<int, vector<int>, Swap, int> qsd(in, qsm, qnhe, "SwapSteepestDescent");
+    TabuSearch<int, vector<int>, Swap, int> qts(in, qsm, qnhe, qtlm, "SwapTabuSearch");
+    SimulatedAnnealing<int, vector<int>, Swap, int> qsa(in, qsm, qnhe, "SwapSimulatedAnnealing");
+    SimulatedAnnealingWithReheating<int, vector<int>, Swap, int> qsawr(in, qsm, qnhe, "SwapSimulatedAnnealingWithReheating");
+    LateAcceptanceHillClimbing<int, vector<int>, Swap, int> qlhc(in, qsm, qnhe, "SwapLateAcceptanceHillClimbing");
+    GreatDeluge<int, vector<int>, Swap, int> qgd(in, qsm, qnhe, "SwapGreatDeluge");
+    // FIXME: currently TSWSP is not working
+    // TabuSearchWithShiftingPenalty<int, vector<int>, Swap> qtsw(in, qsm, qnhe, qtlm, "SwapTabuSearchWithShiftingPenalty");
+    
+    SimpleLocalSearch<int, ChessBoard, vector<int> , int> qss(in, qsm, qom, "QueensSLS");
+    VariableNeighborhoodDescent<int, ChessBoard, vector<int>, int > qvnd(in, qsm, qom, 3, "VNDS");
+        
+#if defined(HAVE_LINKABLE_BOOST)
+    // parse all command line parameters, including those posted by runners and solvers
+    if (!CommandLineParameters::Parse(argc, argv, true))
+      return 1;
+    
+    if (!size.IsSet())
+    {
+      std::cout << "Error: --main::size=N option must always be set" << std::endl;
+      return 1;
+    }
+    // FIXME: it should work after tester reworking
+    else
+      in = size;
+    
+    if (random_seed.IsSet())
+      Random::Seed(random_seed);
+#endif
+    
+    qsm.AddCostComponent(cc1);
+    qsm.AddCostComponent(cc2);
+    qnhe.AddDeltaCostComponent(dcc1);
+    qnhe.AddDeltaCostComponent(dcc2);
+    
+    if (plot_level.IsSet() && verbosity_level.IsSet())
+    {
+      RunnerObserver<int, vector<int>, Swap, int> ro(verbosity_level, plot_level);
+      GeneralizedLocalSearchObserver<int, ChessBoard, vector<int> , int> so(verbosity_level, plot_level);
       
-  // kickers
-  QueensKicker qk(in, qnhe);
-  
-  // runners
-  HillClimbing<int, vector<int>, Swap, int> qhc(in, qsm, qnhe, "SwapHillClimbing");
-  SteepestDescent<int, vector<int>, Swap, int> qsd(in, qsm, qnhe, "SwapSteepestDescent");
-  TabuSearch<int, vector<int>, Swap, int> qts(in, qsm, qnhe, qtlm, "SwapTabuSearch");
-  SimulatedAnnealing<int, vector<int>, Swap, int> qsa(in, qsm, qnhe, "SwapSimulatedAnnealing");
-  SimulatedAnnealingWithReheating<int, vector<int>, Swap, int> qsawr(in, qsm, qnhe, "SwapSimulatedAnnealingWithReheating");
-  LateAcceptanceHillClimbing<int, vector<int>, Swap, int> qlhc(in, qsm, qnhe, "SwapLateAcceptanceHillClimbing");
-  GreatDeluge<int, vector<int>, Swap, int> qgd(in, qsm, qnhe, "SwapGreatDeluge");
-  // FIXME: currently TSWSP is not working
-  // TabuSearchWithShiftingPenalty<int, vector<int>, Swap> qtsw(in, qsm, qnhe, qtlm, "SwapTabuSearchWithShiftingPenalty");
-  
-  SimpleLocalSearch<int, ChessBoard, vector<int> , int> qss(in, qsm, qom, "QueensSLS");
-  VariableNeighborhoodDescent<int, ChessBoard, vector<int>, int > qvnd(in, qsm, qom, 3, "VNDS");
-
-  if (random_seed.IsSet())
-    Random::Seed(random_seed);
-  
-#if defined(HAVE_LINKABLE_BOOST)  
-  // parse all command line parameters, including those posted by runners and solvers
-  if (!CommandLineParameters::Parse(argc, argv, true))
-    return 1;
-  
-  if (!size.IsSet())
-  {
-    std::cout << "Error: --main::size=N option must always be set" << std::endl;
-    return 1;
-  }
-  // FIXME: it should work after tester reworking
-  else
-    in = size;
-#endif
-  
-  qsm.AddCostComponent(cc1);
-  qsm.AddCostComponent(cc2);
-  qnhe.AddDeltaCostComponent(dcc1);
-  qnhe.AddDeltaCostComponent(dcc2);
-	
-	if (plot_level.IsSet() && verbosity_level.IsSet())
-	{
-    RunnerObserver<int, vector<int>, Swap, int> ro(verbosity_level, plot_level);
-    GeneralizedLocalSearchObserver<int, ChessBoard, vector<int> , int> so(verbosity_level, plot_level);
-
-		qhc.AttachObserver(ro);
-		qsd.AttachObserver(ro);
-		qts.AttachObserver(ro);
-		qsa.AttachObserver(ro);
-    qlhc.AttachObserver(ro);
-	}
-
-
-  //  qvnd.SetKicker(qk);  
-	
-  if (!solution_method.IsSet())
-	{
-    // tester
-    // FIXME: now the tester should be defined only when it is used (because of State management)
-    Tester<int, ChessBoard, vector<int>, int > tester(in, qsm, qom);
-		// testers
-		MoveTester<int, ChessBoard, vector<int>, Swap, int> swap_move_test(in,qsm,qom,qnhe, "Swap move", tester);
-    MoveTester<int, ChessBoard, vector<int>, decltype(qnheumm)::ThisMove, int> multimodal_move_test_union(in,qsm,qom,qnheumm, "Multimodal union swap move", tester);
-    MoveTester<int, ChessBoard, vector<int>, decltype(qnhexmm)::ThisMove, int> multimodal_move_test_product(in,qsm,qom,qnhexmm, "Multimodal product swap move", tester);
-		KickerTester<int, ChessBoard, vector<int>, int> monokicker_test(in,qsm,qom, qk, "Monomodal kick");
-    //KickerTester<int, ChessBoard, vector<int> > multikicker_test(in,qsm,qom, qk2, "Multimodal kick");
-		
-		tester.AddKickerTester(monokicker_test);
-    //tester.AddKickerTester(multikicker_test);	
-		
-		tester.RunMainMenu();
-	}
-  else if (solution_method == std::string("simple"))
-  {
-    qss.SetRunner(qhc);
+      qhc.AttachObserver(ro);
+      qsd.AttachObserver(ro);
+      qts.AttachObserver(ro);
+      qsa.AttachObserver(ro);
+      qlhc.AttachObserver(ro);
+    }
     
-    std::tuple<ChessBoard, int, int, double> res = qss.Solve();
     
-    std::cout << std::get<0>(res) << std::endl;
-    std::cout << "Violations: " << std::get<1>(res) << std::endl;
-    std::cout << "Objectives: " << std::get<2>(res) << std::endl;
-    std::cout << "Timeout: " << std::get<3>(res) << " s" << std::endl;
-  }
+    //  qvnd.SetKicker(qk);
     
-  /*
-  else if (solution_method == "VND")
-  {
-    qvnd.Solve();
-    cout << qvnd.GetOutput() << endl << qvnd.GetCurrentCost() << endl;
-  } */
+    if (!solution_method.IsSet())
+    {
+      // tester
+      // FIXME: now the tester should be defined only when it is used (because of State management)
+      Tester<int, ChessBoard, vector<int>, int > tester(in, qsm, qom);
+      // testers
+      MoveTester<int, ChessBoard, vector<int>, Swap, int> swap_move_test(in,qsm,qom,qnhe, "Swap move", tester);
+      MoveTester<int, ChessBoard, vector<int>, decltype(qnheumm)::ThisMove, int> multimodal_move_test_union(in,qsm,qom,qnheumm, "Multimodal union swap move", tester);
+      MoveTester<int, ChessBoard, vector<int>, decltype(qnhexmm)::ThisMove, int> multimodal_move_test_product(in,qsm,qom,qnhexmm, "Multimodal product swap move", tester);
+      KickerTester<int, ChessBoard, vector<int>, int> monokicker_test(in,qsm,qom, qk, "Monomodal kick");
+      //KickerTester<int, ChessBoard, vector<int> > multikicker_test(in,qsm,qom, qk2, "Multimodal kick");
+      
+      tester.AddKickerTester(monokicker_test);
+      //tester.AddKickerTester(multikicker_test);
+      
+      tester.RunMainMenu();
+    }
+    else if (solution_method == std::string("simple"))
+    {
+      qss.SetRunner(qhc);
+      
+      std::tuple<ChessBoard, int, int, double> res = qss.Solve();
+      
+      std::cout << std::get<0>(res) << std::endl;
+      std::cout << "Violations: " << std::get<1>(res) << std::endl;
+      std::cout << "Objectives: " << std::get<2>(res) << std::endl;
+      std::cout << "Timeout: " << std::get<3>(res) << " s" << std::endl;
+    }
+    
+    /*
+     else if (solution_method == "VND")
+     {
+     qvnd.Solve();
+     cout << qvnd.GetOutput() << endl << qvnd.GetCurrentCost() << endl;
+     } */
   }
   catch (std::logic_error e)
   {
