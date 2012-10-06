@@ -160,7 +160,7 @@ int main(int argc, const char* argv[])
   // compose a multimodal neighborhood explorer
 
   SetUnionNeighborhoodExplorer<int, std::vector<int>, int, decltype(qnhe), decltype(qnhe), decltype(qnhe)> qnheumm(in, qsm, "SwapUnion", qnhe, qnhe, qnhe);
-  CartesianProductNeighborhoodExplorer<int, std::vector<int>, int, decltype(qnhe), decltype(qnhe)> qnhexmm(in, qsm, "SwapProduct", qnhe, qnhe);
+  CartesianProductNeighborhoodExplorer<int, std::vector<int>, int, decltype(qnhe), decltype(qnhe), decltype(qnhe)> qnhexmm(in, qsm, "SwapProduct", qnhe, qnhe, qnhe);
   
   QueensOutputManager qom(in);
       
