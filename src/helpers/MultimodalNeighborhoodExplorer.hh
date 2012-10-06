@@ -111,7 +111,7 @@ protected:
   class Call
   {
   public:
-    enum Function { make_move, is_feasible_move, initialize_inactive, do_random_move, do_first_move, try_next_move, is_active, do_delta_cost_function };
+    enum Function { initialize_inactive, initialize_active, make_move, is_feasible_move, do_random_move, do_first_move, try_next_move, is_active, do_delta_cost_function };
     Call(Function f) : to_call(f) { }
     
     
@@ -126,6 +126,9 @@ protected:
           break;
         case initialize_inactive:
           f = &InitializeInactive<N, M>;
+          break;
+        case initialize_active:
+          f = &InitializeActive<N, M>;
           break;
         case do_first_move:
           f = &DoFirstMove<N,M>;
@@ -465,20 +468,6 @@ public:
   
   /* end of Check at */
   
-  virtual void MakeMove(State& st, const TheseMoves& moves) const
-  {
-    Call make_move(Call::Function::make_move);
-    TheseRefMoves r_moves = const_cast<TheseMoves&>(moves);
-    ExecuteAll(st, r_moves, this->nhes, make_move);
-  }
-  
-  virtual bool FeasibleMove(const State& st, const TheseMoves& moves) const
-  {
-    Call is_feasible_move(Call::Function::is_feasible_move);
-    TheseRefMoves r_moves = const_cast<TheseMoves&>(moves);
-    return CheckAll(const_cast<State&>(st), r_moves, this->nhes, is_feasible_move);
-  }
-  
 protected:
   
   template<class N, class M>
@@ -532,6 +521,12 @@ protected:
   }
   
   template<class N, class M>
+  static void InitializeActive(const N& n, State& s, M& m)
+  {
+    m.active = false;
+  }
+  
+  template<class N, class M>
   static CFtype DoDeltaCostFunction(const N& n, State& s, M& m)
   {
     return n.DeltaCostFunction(s, m);
@@ -579,12 +574,12 @@ public:
     Call initialize_inactive(Call::Function::initialize_inactive);
     Call do_first_move(Call::Function::do_first_move);
     
-    int selected = this->Modality()-1;
+    int selected = 0;
     
     TheseRefMoves r_moves = moves;
     SuperNeighborhoodExplorer::ExecuteAll(const_cast<State&>(st), r_moves, this->nhes, initialize_inactive);
        
-    while (selected > 0)
+    while (selected < this->Modality())
     {
       try
       {
@@ -593,9 +588,9 @@ public:
       }
       catch (EmptyNeighborhood e)
       {}
-      selected--;
+      selected++;
     }
-    if (selected < 0)
+    if (selected == this->Modality())
       throw EmptyNeighborhood();
   }
   
@@ -609,8 +604,8 @@ public:
     
     do
     {
-      selected--;
-      if (selected < 0)
+      selected++;
+      if (selected == this->Modality())
         return false;
       try
       {
@@ -635,6 +630,22 @@ public:
     return SuperNeighborhoodExplorer::ComputeAt(const_cast<State&>(st), r_moves, this->nhes, do_delta_cost_function, selected);
   }
   
+  virtual void MakeMove(State& st, const typename SuperNeighborhoodExplorer::ThisMove& moves) const
+  {
+    int selected = this->CurrentActiveMove(st, moves);
+    Call make_move(Call::Function::make_move);
+    TheseRefMoves r_moves = const_cast<typename SuperNeighborhoodExplorer::ThisMove&>(moves);
+    SuperNeighborhoodExplorer::ExecuteAt(st, r_moves, this->nhes, make_move, selected);
+  }
+  
+  virtual bool FeasibleMove(const State& st, const typename SuperNeighborhoodExplorer::ThisMove& moves) const
+  {
+    int selected = this->CurrentActiveMove(st, moves);
+    Call is_feasible_move(Call::Function::is_feasible_move);
+    TheseRefMoves r_moves = const_cast<typename SuperNeighborhoodExplorer::ThisMove&>(moves);
+    return SuperNeighborhoodExplorer::CheckAt(const_cast<State&>(st), r_moves, this->nhes, is_feasible_move, selected);
+  }
+  
 protected:
   int CurrentActiveMove(const State& st, const typename SuperNeighborhoodExplorer::ThisMove& moves) const
   {
@@ -645,6 +656,122 @@ protected:
   }
 };
 
+template <class Input, class State, typename CFtype, class ... BaseNeighborhoodExplorers>
+class CartesianProductNeighborhoodExplorer : public MultimodalNeighborhoodExplorer<Input, State, CFtype, BaseNeighborhoodExplorers ...>
+{
+private:
+  
+  /** Typedefs. */
+  //  typedef typename MultimodalNeighborhoodExplorer<Input, State, CFtype, BaseNeighborhoodExplorers ...>::TheseMoves TheseMoves;
+  //  typedef typename MultimodalNeighborhoodExplorer<Input, State, CFtype, BaseNeighborhoodExplorers ...>::TheseNeighborhoodExplorers TheseNeighborhoodExplorers;
+  typedef MultimodalNeighborhoodExplorer<Input, State, CFtype, BaseNeighborhoodExplorers ...> SuperNeighborhoodExplorer;
+  typedef typename SuperNeighborhoodExplorer::TheseRefMoves TheseRefMoves;
+  
+  
+public:
+  
+  typedef typename SuperNeighborhoodExplorer::Call Call;
+  
+  /** Inherit constructor from superclass. Not yet, amigo. */
+  // using MultimodalNeighborhoodExplorer<Input, State, CFtype, BaseNeighborhoodExplorers ...>::MultimodalNeighborhoodExplorer;
+  
+  CartesianProductNeighborhoodExplorer(Input& in, StateManager<Input,State,CFtype>& sm, std::string name, BaseNeighborhoodExplorers& ... nhes)
+  : MultimodalNeighborhoodExplorer<Input, State, CFtype, BaseNeighborhoodExplorers ...>(in, sm, name, nhes ...)
+  { }
+  
+  virtual void RandomMove(const State& st, typename SuperNeighborhoodExplorer::ThisMove& moves) const throw(EmptyNeighborhood)
+  {
+    Call initialize_active(Call::Function::initialize_active);
+    Call do_random_move(SuperNeighborhoodExplorer::Call::Function::do_random_move);
+    
+    TheseRefMoves r_moves = moves;
+    SuperNeighborhoodExplorer::ExecuteAll(const_cast<State&>(st), r_moves, this->nhes, initialize_active);
+    SuperNeighborhoodExplorer::ExecuteAll(const_cast<State&>(st), r_moves, this->nhes, do_random_move);
+  }
+  
+  virtual void FirstMove(const State& st, typename SuperNeighborhoodExplorer::ThisMove& moves) const throw(EmptyNeighborhood)
+  {
+    Call initialize_inactive(Call::Function::initialize_active);
+    Call do_first_move(Call::Function::do_first_move);
+    
+    int current = 0;
+    
+    TheseRefMoves r_moves = moves;
+    SuperNeighborhoodExplorer::ExecuteAll(const_cast<State&>(st), r_moves, this->nhes, initialize_active);
+    
+    while (current < this->Modality())
+    {
+      try
+      {
+        SuperNeighborhoodExplorer::ExecuteAt(const_cast<State&>(st), r_moves, this->nhes, do_first_move, current);
+        break;
+      }
+      catch (EmptyNeighborhood e)
+      {}
+      current++;
+    }
+    if (current == this->Modality())
+      throw EmptyNeighborhood();
+  }
+  
+  virtual bool NextMove(const State& st, typename SuperNeighborhoodExplorer::ThisMove& moves) const
+  {
+    Call try_next_move(Call::Function::try_next_move);
+    int selected = this->CurrentActiveMove(st, moves);
+    TheseRefMoves r_moves = moves;
+    if (SuperNeighborhoodExplorer::CheckAt(const_cast<State&>(st), r_moves, this->nhes, try_next_move, selected))
+      return true;
+    
+    do
+    {
+      selected++;
+      if (selected == this->Modality())
+        return false;
+      try
+      {
+        TheseRefMoves r_moves = moves;
+        Call do_first_move(Call::Function::do_first_move);
+        SuperNeighborhoodExplorer::ExecuteAt(const_cast<State&>(st), r_moves, this->nhes, do_first_move, selected);
+        return true;
+      }
+      catch (EmptyNeighborhood e)
+      { }
+    } while (true);
+    
+    return false;
+  }
+  
+  virtual CFtype DeltaCostFunction(const State& st, const typename SuperNeighborhoodExplorer::ThisMove& moves) const
+  {
+    int selected = this->CurrentActiveMove(st, moves);
+    Call do_delta_cost_function(Call::Function::do_delta_cost_function);
+    TheseRefMoves r_moves = const_cast<typename SuperNeighborhoodExplorer::ThisMove&>(moves);
+    
+    return SuperNeighborhoodExplorer::ComputeAt(const_cast<State&>(st), r_moves, this->nhes, do_delta_cost_function, selected);
+  }
+  
+  virtual void MakeMove(State& st, const typename SuperNeighborhoodExplorer::ThisMove& moves) const
+  {
+    Call make_move(Call::Function::make_move);
+    TheseRefMoves r_moves = const_cast<typename SuperNeighborhoodExplorer::ThisMove&>(moves);
+    SuperNeighborhoodExplorer::ExecuteAll(st, r_moves, this->nhes, make_move);
+  }
+  
+  virtual bool FeasibleMove(const State& st, const typename SuperNeighborhoodExplorer::ThisMove& moves) const
+  {
+    Call is_feasible_move(Call::Function::is_feasible_move);
+    TheseRefMoves r_moves = const_cast<typename SuperNeighborhoodExplorer::ThisMove&>(moves);
+    return SuperNeighborhoodExplorer::CheckAll(const_cast<State&>(st), r_moves, this->nhes, is_feasible_move);
+  }
+  
+protected:
+  // Note: this is a state information needed to speed up computation and not
+  // recompute the effect of the whole chain of moves
+  // TODO: find a mechanism to be sure that state is consistent across calls
+  //       now it relies on a proper call order of the different methods
+  //       (to be documented)
+  std::vector<std::shared_ptr<State>> temp_states;
+};
 
 
 
