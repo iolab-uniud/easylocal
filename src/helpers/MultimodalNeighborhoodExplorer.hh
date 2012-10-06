@@ -106,7 +106,29 @@ std::istream& operator>>(std::istream& is, std::tuple<T...>& t)
 template <class Input, class State, typename CFtype, class ... BaseNeighborhoodExplorers>
 class MultimodalNeighborhoodExplorer : public NeighborhoodExplorer<Input, State, std::tuple<ActiveMove<typename BaseNeighborhoodExplorers::ThisMove> ...>, CFtype>
 {
+public:
+  /** Typedefs. */
+  typedef std::tuple<ActiveMove<typename BaseNeighborhoodExplorers::ThisMove> ...> TheseMoves;
+  typedef std::tuple<std::reference_wrapper<ActiveMove<typename BaseNeighborhoodExplorers::ThisMove>> ...> TheseRefMoves;
+  typedef NeighborhoodExplorer<Input, State, std::tuple<ActiveMove<typename BaseNeighborhoodExplorers::ThisMove> ...>, CFtype> SuperNeighborhoodExplorer;
+  typedef std::tuple<std::reference_wrapper<BaseNeighborhoodExplorers> ...> TheseNeighborhoodExplorers;
+
+  /** Modality of the NeighborhoodExplorer */
+  virtual unsigned int Modality() const { return sizeof...(BaseNeighborhoodExplorers); }
+  
 protected:
+  
+  /** Constructor, takes a variable number of base NeighborhoodExplorers.  */
+  MultimodalNeighborhoodExplorer(const Input& in, StateManager<Input,State,CFtype>& sm, std::string name, BaseNeighborhoodExplorers& ... nhes)
+  : SuperNeighborhoodExplorer(in, sm, name),
+  nhes(std::make_tuple(std::reference_wrapper<BaseNeighborhoodExplorers>(nhes) ...))
+  { }
+  
+  /**< Instantiated base NeighborhoodExplorers. */
+  TheseNeighborhoodExplorers nhes;
+  
+  /** TupleDispatching helper classes/functions */
+  
   
   class Call
   {
@@ -148,7 +170,7 @@ protected:
       std::function<CFtype(const N&, State&, M&)> f;
       switch (to_call)
       {
-          case do_delta_cost_function:
+        case do_delta_cost_function:
           f = &DoDeltaCostFunction<N,M>;
           break;
         default:
@@ -180,29 +202,6 @@ protected:
     
     Function to_call;
   };
-  
-public:
-  /** Typedefs. */
-  typedef std::tuple<ActiveMove<typename BaseNeighborhoodExplorers::ThisMove> ...> TheseMoves;
-  typedef std::tuple<std::reference_wrapper<ActiveMove<typename BaseNeighborhoodExplorers::ThisMove>> ...> TheseRefMoves;
-  typedef NeighborhoodExplorer<Input, State, std::tuple<ActiveMove<typename BaseNeighborhoodExplorers::ThisMove> ...>, CFtype> SuperNeighborhoodExplorer;
-  typedef std::tuple<std::reference_wrapper<BaseNeighborhoodExplorers> ...> TheseNeighborhoodExplorers;
-
-  /** Modality of the NeighborhoodExplorer */
-  virtual unsigned int Modality() const { return sizeof...(BaseNeighborhoodExplorers); }
-    
-  /** Constructor, takes a variable number of base NeighborhoodExplorers.  */
-  MultimodalNeighborhoodExplorer(const Input& in, StateManager<Input,State,CFtype>& sm, std::string name, BaseNeighborhoodExplorers& ... nhes)
-  : SuperNeighborhoodExplorer(in, sm, name),
-  nhes(std::make_tuple(std::reference_wrapper<BaseNeighborhoodExplorers>(nhes) ...))
-  { }
-    
-  /**< Instantiated base NeighborhoodExplorers. */
-  TheseNeighborhoodExplorers nhes;
-  
-protected:
-  
-  /** TupleDispatching helper classes/functions */
   
   template <class TupleOfMoves, class TupleOfNHEs, std::size_t N>
   struct TupleDispatcher
@@ -369,7 +368,7 @@ protected:
       auto& this_nhe = std::get<0>(temp_nhes).get();
       auto& this_move = std::get<0>(temp_moves).get();
       std::function<bool(const decltype(this_nhe)&, State&, decltype(this_move)&)> f =  c.template getBool<decltype(this_nhe),decltype(this_move)>();
-      std::vector<bool> current, others;
+      std::vector<bool> current;
       current.push_back(f(this_nhe, st, this_move));
       return current;
     }
@@ -473,6 +472,7 @@ protected:
     return TupleDispatcher<std::tuple<std::reference_wrapper<ActiveMove<typename NHEs::ThisMove>>...>, std::tuple<std::reference_wrapper<NHEs>...>, sizeof...(NHEs) - 1>::CheckAt(st, moves, nhes, c, (sizeof...(NHEs) - 1) - iter);
   }
   
+  // helper functions
   
   template<class N, class M>
   static bool IsActive(const N& n, State& s, M& m)

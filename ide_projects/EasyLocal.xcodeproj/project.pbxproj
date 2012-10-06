@@ -130,7 +130,6 @@
 		ACFAF4BB0DD486BC0095F6A0 /* doxygen.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = doxygen.cfg; path = ../doxygen.cfg; sourceTree = SOURCE_ROOT; };
 		ACFAF4BC0DD486CF0095F6A0 /* AbstractLocalSearch.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = AbstractLocalSearch.hh; sourceTree = "<group>"; };
 		ACFAF4BD0DD486E20095F6A0 /* README */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = README; path = ../README; sourceTree = SOURCE_ROOT; };
-		ACFEBF670E9BFD8A00946609 /* OldMultimodalNeighborhoodExplorer.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = OldMultimodalNeighborhoodExplorer.hh; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -205,7 +204,6 @@
 				ACF4B10E0DBFA668008A0207 /* CostComponent.hh */,
 				ACF4B10F0DBFA668008A0207 /* DeltaCostComponent.hh */,
 				ACF4B1110DBFA668008A0207 /* NeighborhoodExplorer.hh */,
-				ACFEBF670E9BFD8A00946609 /* OldMultimodalNeighborhoodExplorer.hh */,
 				504771E6161C52090055CA54 /* MultimodalNeighborhoodExplorer.hh */,
 				AC8357BF0EA47DF5002980DC /* MultimodalTabuListManager.hh */,
 				ACF4B1120DBFA668008A0207 /* OutputManager.hh */,
