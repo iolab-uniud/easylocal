@@ -200,275 +200,255 @@ public:
   /**< Instantiated base NeighborhoodExplorers. */
   TheseNeighborhoodExplorers nhes;
   
-  /** ExecuteAt - run function at a certain level of the tuple */
-  template <typename H, typename ... T>
-  static void ExecuteAt (State& st, std::tuple<std::reference_wrapper<ActiveMove<typename H::ThisMove>>, std::reference_wrapper<ActiveMove<typename T::ThisMove> ...>>& temp_moves, const std::tuple<std::reference_wrapper<H>, std::reference_wrapper<T> ...> temp_nhes, const Call& c, int iter)
-  {
-    if (iter == 0)
-    {
-      std::function<void(const H&, State&, ActiveMove<typename H::ThisMove>&)> f =  c.template getVoid<H,ActiveMove<typename H::ThisMove>>();
-      f(std::get<0>(temp_nhes).get(), st, std::get<0>(temp_moves).get());
-    }
-    if (iter > 0)
-    {
-      auto tail_temp_moves = TupleUtils::tuple_tail(temp_moves);
-      ExecuteAt(st, tail_temp_moves, TupleUtils::tuple_tail(temp_nhes), c, --iter);
-      temp_moves = std::tuple_cat(std::make_tuple(std::get<0>(temp_moves)), tail_temp_moves);
-    }
-  }
-  
-  template <class H>
-  static void ExecuteAt (State& st, std::tuple<std::reference_wrapper<ActiveMove<typename H::ThisMove>>>& temp_move, const std::tuple<std::reference_wrapper<H>> temp_nhe, const Call& c, int iter)
-  {
-    if (iter == 0)
-    {
-      std::function<void(const H&, State&, ActiveMove<typename H::ThisMove>&)> f =  c.template getVoid<H,ActiveMove<typename H::ThisMove>>();
-      f(std::get<0>(temp_nhe).get(), st, std::get<0>(temp_move).get());
-    }
-  }
-  
-  /** ExecuteFromTo - run function from a certain level of the tuple to another one */
-  template <typename H, typename ... T>
-  static void ExecuteFromTo (State& st, std::tuple<std::reference_wrapper<ActiveMove<typename H::ThisMove>>, std::reference_wrapper<ActiveMove<typename T::ThisMove> ...>>& temp_moves, const std::tuple<std::reference_wrapper<H>, std::reference_wrapper<T> ...> temp_nhes, const Call& c, int iter_f, int iter_t)
-  {
-    if (iter_f <= 0 && iter_t >= 0)
-    {
-      std::function<void(const H&, State&, ActiveMove<typename H::ThisMove>&)> f =  c.template getVoid<H,ActiveMove<typename H::ThisMove>>();
-      f(std::get<0>(temp_nhes).get(), st, std::get<0>(temp_moves).get());
-    }
-    if (iter_t >= 0)
-    {
-      auto tail_temp_moves = TupleUtils::tuple_tail(temp_moves);
-      ExecuteFromTo(st, tail_temp_moves, TupleUtils::tuple_tail(temp_nhes), c, --iter_f, --iter_t);
-      temp_moves = std::tuple_cat(std::make_tuple(std::get<0>(temp_moves)), tail_temp_moves);
-    }    
-  }
-  
-  template <class H>
-  static void ExecuteFromTo (State& st, std::tuple<std::reference_wrapper<ActiveMove<typename H::ThisMove>>>& temp_move, const std::tuple<std::reference_wrapper<H>> temp_nhe, const Call& c, int iter_f, int iter_t)
-  {
-    if (iter_t >= 0)
-    {
-      std::function<void(const H&, State&, ActiveMove<typename H::ThisMove>&)> f =  c.template getVoid<H,ActiveMove<typename H::ThisMove>>();
-      f(std::get<0>(temp_nhe).get(), st, std::get<0>(temp_move).get());
-    }
-  }
-
-  /** ExecuteAll - run a function at every element of the tuple */
-  template <typename H, typename ... T>
-  static void ExecuteAll (State& st, std::tuple<std::reference_wrapper<ActiveMove<typename H::ThisMove>>, std::reference_wrapper<ActiveMove<typename T::ThisMove>...>>& temp_moves, const std::tuple<std::reference_wrapper<H>, std::reference_wrapper<T> ...> temp_nhes, const Call& c)
-  {
-    // Apply f on head of the tuple
-    std::function<void(const H&, State&, ActiveMove<typename H::ThisMove>&)> f =  c.template getVoid<H,ActiveMove<typename H::ThisMove>>();
-    f(std::get<0>(temp_nhes).get(), st, std::get<0>(temp_moves).get());
-    auto tail_temp_moves = TupleUtils::tuple_tail(temp_moves);
-    ExecuteAll(st, tail_temp_moves, TupleUtils::tuple_tail(temp_nhes), c);
-    temp_moves = std::tuple_cat(std::make_tuple(std::get<0>(temp_moves)), tail_temp_moves);
-  }
-  
-  template <class H>
-  static void ExecuteAll (State& st, std::tuple<std::reference_wrapper<ActiveMove<typename H::ThisMove>>>& temp_move, const std::tuple<std::reference_wrapper<H>> temp_nhe, const Call& c)
-  {
-    std::function<void(const H&, State&, ActiveMove<typename H::ThisMove>&)> f = c.template getVoid<H,ActiveMove<typename H::ThisMove>>();
-    f(std::get<0>(temp_nhe).get(), st, std::get<0>(temp_move).get());
-  }
-  
-  /** ComputeAt - run function at a certain level of the tuple and returns its value (CFtype only) */
-  template <typename H, typename ... T>
-  static CFtype ComputeAt (State& st, std::tuple<std::reference_wrapper<ActiveMove<typename H::ThisMove>>, std::reference_wrapper<ActiveMove<typename T::ThisMove> ...>>& temp_moves, const std::tuple<std::reference_wrapper<H>, std::reference_wrapper<T> ...> temp_nhes, const Call& c, int iter)
-  {
-    if (iter == 0)
-    {
-      std::function<CFtype(const H&, State&, ActiveMove<typename H::ThisMove>&)> f =  c.template getCFtype<H,ActiveMove<typename H::ThisMove>>();
-      return f(std::get<0>(temp_nhes).get(), st, std::get<0>(temp_moves).get());
-    }
-    if (iter > 0)
-    {
-      auto tail_temp_moves = TupleUtils::tuple_tail(temp_moves);
-      return ComputeAt(st, tail_temp_moves, TupleUtils::tuple_tail(temp_nhes), c, --iter);
-    }
-    // just to prevent warning from smart compilers
-    return static_cast<CFtype>(0);
-  }
-  
-  template <class H>
-  static CFtype ComputeAt (State& st, std::tuple<std::reference_wrapper<ActiveMove<typename H::ThisMove>>>& temp_move, const std::tuple<std::reference_wrapper<H>> temp_nhe, const Call& c, int iter)
-  {
-    if (iter == 0)
-    {
-      std::function<CFtype(const H&, State&, ActiveMove<typename H::ThisMove>&)> f =  c.template getCFtype<H,ActiveMove<typename H::ThisMove>>();
-      return f(std::get<0>(temp_nhe).get(), st, std::get<0>(temp_move).get());
-    }
-    // just to prevent warning from smart compilers
-    return static_cast<CFtype>(0);
-  }
-  
-  /** ComputeAll - run a function at every element of the tuple and sums up the results */
-  template <typename H, typename ... T>
-  static CFtype ComputeAll (State& st, std::tuple<std::reference_wrapper<ActiveMove<typename H::ThisMove>>, std::reference_wrapper<ActiveMove<typename T::ThisMove>...>>& temp_moves, const std::tuple<std::reference_wrapper<H>, std::reference_wrapper<T> ...> temp_nhes, const Call& c)
-  {
-    CFtype value = static_cast<CFtype>(0);
-    // Apply f on head of the tuple
-    std::function<CFtype(const H&, State&, ActiveMove<typename H::ThisMove>&)> f =  c.template getCFtype<H,ActiveMove<typename H::ThisMove>>();
-    value = f(std::get<0>(temp_nhes).get(), st, std::get<0>(temp_moves).get());
-    auto tail_temp_moves = TupleUtils::tuple_tail(temp_moves);
-    value += ComputeAll(st, tail_temp_moves, TupleUtils::tuple_tail(temp_nhes), c);
-    // note that the function f is allowed to have side effects on the moves
-    temp_moves = std::tuple_cat(std::make_tuple(std::get<0>(temp_moves)), tail_temp_moves);
-    return value;
-  }
-  
-  template <class H>
-  static CFtype ComputeAll (State& st, std::tuple<std::reference_wrapper<ActiveMove<typename H::ThisMove>>>& temp_move, const std::tuple<std::reference_wrapper<H>> temp_nhe, const Call& c)
-  {
-    std::function<CFtype(const H&, State&, ActiveMove<typename H::ThisMove>&)> f = c.template getCFtype<H,ActiveMove<typename H::ThisMove>>();
-    return f(std::get<0>(temp_nhe).get(), st, std::get<0>(temp_move).get());
-  }
-  
-  /** ComputeFromTo - run function from a certain level of the tuple to another one and sums up the results */
-  template <typename H, typename ... T>
-  static CFtype ComputeFromTo (State& st, std::tuple<std::reference_wrapper<ActiveMove<typename H::ThisMove>>, std::reference_wrapper<ActiveMove<typename T::ThisMove> ...>>& temp_moves, const std::tuple<std::reference_wrapper<H>, std::reference_wrapper<T> ...> temp_nhes, const Call& c, int iter_f, int iter_t)
-  {
-    CFtype value = static_cast<CFtype>(0);
-    if (iter_f <= 0 && iter_t >= 0)
-    {
-      std::function<void(const H&, State&, ActiveMove<typename H::ThisMove>&)> f =  c.template getVoid<H,ActiveMove<typename H::ThisMove>>();
-      value = f(std::get<0>(temp_nhes).get(), st, std::get<0>(temp_moves).get());
-    }
-    if (iter_t >= 0)
-    {
-      auto tail_temp_moves = TupleUtils::tuple_tail(temp_moves);
-      value += ComputeFromTo(st, tail_temp_moves, TupleUtils::tuple_tail(temp_nhes), c, --iter_f, --iter_t);
-      // note that the function f is allowed to have side effects on the moves
-      temp_moves = std::tuple_cat(std::make_tuple(std::get<0>(temp_moves)), tail_temp_moves);
-    }
-    return value;
-  }
-  
-  template <class H>
-  static void ComputeFromTo (State& st, std::tuple<std::reference_wrapper<ActiveMove<typename H::ThisMove>>>& temp_move, const std::tuple<std::reference_wrapper<H>> temp_nhe, const Call& c, int iter_f, int iter_t)
-  {
-    if (iter_t >= 0)
-    {
-      std::function<void(const H&, State&, ActiveMove<typename H::ThisMove>&)> f =  c.template getVoid<H,ActiveMove<typename H::ThisMove>>();
-      return f(std::get<0>(temp_nhe).get(), st, std::get<0>(temp_move).get());
-    }
-    return static_cast<CFtype>(0);
-  }
-  
-  /** Compute - computes a function on each element of a tuple and returns a vector of the corresponding CFtype values */
-  template <typename H, typename ... T>
-  static std::vector<CFtype> Compute (State& st, std::tuple<std::reference_wrapper<ActiveMove<typename H::ThisMove>>, std::reference_wrapper<ActiveMove<typename T::ThisMove> ...>>& temp_moves,  const std::tuple<std::reference_wrapper<H>, std::reference_wrapper<T> ...> temp_nhes, const Call& c)
-  {
-    std::function<CFtype(const H&, State&, ActiveMove<typename H::ThisMove>&)> f =  c.template getCFtype<H,ActiveMove<typename H::ThisMove>>();
-    std::vector<CFtype> v;
-    v.push_back(f(std::get<0>(temp_nhes).get(), st, std::get<0>(temp_moves).get()));
-    auto tail_temp_moves = TupleUtils::tuple_tail(temp_moves);
-    std::vector<CFtype> ch = Check(st, tail_temp_moves, TupleUtils::tuple_tail(temp_nhes), c);
-    v.insert(v.end(), ch.begin(), ch.end());
-    return v;
-  }
-  
-  template <class H>
-  static std::vector<CFtype> Compute (State& st, std::tuple<std::reference_wrapper<ActiveMove<typename H::ThisMove>>>& temp_move,  const std::tuple<std::reference_wrapper<H>> temp_nhe, const Call& c)
-  {
-    std::function<CFtype(const H&, State&, ActiveMove<typename H::ThisMove>&)> f =  c.template getCFtype<H,ActiveMove<typename H::ThisMove>>();
-    std::vector<CFtype> v;
-    v.push_back(f(std::get<0>(temp_nhe).get(), st, std::get<0>(temp_move).get()));
-    return v;
-  }
-
-  /** Check - check a predicate on each element of a tuple and returns a vector of the corresponding boolean variable */
-  template <typename H, typename ... T>
-  static std::vector<bool> Check (State& st, std::tuple<std::reference_wrapper<ActiveMove<typename H::ThisMove>>, std::reference_wrapper<ActiveMove<typename T::ThisMove> ...>>& temp_moves,  const std::tuple<std::reference_wrapper<H>, std::reference_wrapper<T> ...> temp_nhes, const Call& c)
-  {
-    std::function<bool(const H&, State&, ActiveMove<typename H::ThisMove>&)> f =  c.template getBool<H,ActiveMove<typename H::ThisMove>>();
-    std::vector<bool> v;
-    v.push_back(f(std::get<0>(temp_nhes).get(), st, std::get<0>(temp_moves).get()));
-    auto tail_temp_moves = TupleUtils::tuple_tail(temp_moves);
-    std::vector<bool> ch = Check(st, tail_temp_moves, TupleUtils::tuple_tail(temp_nhes), c);
-    v.insert(v.end(), ch.begin(), ch.end());
-    return v;
-  }
-  
-  template <class H>
-  static std::vector<bool> Check (State& st, std::tuple<std::reference_wrapper<ActiveMove<typename H::ThisMove>>>& temp_move,  const std::tuple<std::reference_wrapper<H>> temp_nhe, const Call& c)
-  {
-    std::function<bool(const H&, State&, ActiveMove<typename H::ThisMove>&)> f =  c.template getBool<H,ActiveMove<typename H::ThisMove>>();
-    std::vector<bool> v;
-    v.push_back(f(std::get<0>(temp_nhe).get(), st, std::get<0>(temp_move).get()));
-    return v;
-  }
-  
-  /** CheckAll - check predicate on all tuple */
-  template <typename H, typename ... T>
-  static bool CheckAll (State& st, std::tuple<std::reference_wrapper<ActiveMove<typename H::ThisMove>>, std::reference_wrapper<ActiveMove<typename T::ThisMove> ...>>& temp_moves, const std::tuple<std::reference_wrapper<H>, std::reference_wrapper<T> ...> temp_nhes, const Call& c)
-  {
-    // Apply f on head of the tuple
-    std::function<bool(const H&, State&, ActiveMove<typename H::ThisMove>&)> f =  c.template getBool<H,ActiveMove<typename H::ThisMove>>();
-    if (!f(std::get<0>(temp_nhes).get(), st, std::get<0>(temp_moves).get()))
-      return false;
-    auto tail_temp_moves = TupleUtils::tuple_tail(temp_moves);
-    return CheckAll(st, tail_temp_moves, TupleUtils::tuple_tail(temp_nhes), c);
-  }
-  
-  template <class H>
-  static bool CheckAll (State& st, std::tuple<std::reference_wrapper<ActiveMove<typename H::ThisMove>>>& temp_move, const std::tuple<std::reference_wrapper<H>> temp_nhe, const Call& c)
-  {
-    std::function<bool(const H&, State&, ActiveMove<typename H::ThisMove>&)> f = c.template getBool<H,ActiveMove<typename H::ThisMove>>();
-    return f(std::get<0>(temp_nhe).get(), st, std::get<0>(temp_move).get());
-  }
-  
-  /** CheckAny - check predicate on all tuple */
-  template <typename H, typename ... T>
-  static bool CheckAny (State& st, std::tuple<std::reference_wrapper<ActiveMove<typename H::ThisMove>>, std::reference_wrapper<ActiveMove<typename T::ThisMove> ...>>& temp_moves, const std::tuple<std::reference_wrapper<H>, std::reference_wrapper<T> ...> temp_nhes, const Call& c)
-  {
-    // Apply f on head of the tuple
-    std::function<bool(const H&, State&, ActiveMove<typename H::ThisMove>&)> f =  c.template getBool<H,ActiveMove<typename H::ThisMove>>();
-    if (f(std::get<0>(temp_nhes).get(), st, std::get<0>(temp_moves).get()))
-      return true;
-    auto tail_temp_moves = TupleUtils::tuple_tail(temp_moves);
-    return CheckAll(st, tail_temp_moves, TupleUtils::tuple_tail(temp_nhes), c);
-  }
-  
-  template <class H>
-  static bool CheckAny (State& st, std::tuple<std::reference_wrapper<ActiveMove<typename H::ThisMove>>>& temp_move, const std::tuple<std::reference_wrapper<H>> temp_nhe, const Call& c)
-  {
-    std::function<bool(const H&, State&, ActiveMove<typename H::ThisMove>&)> f = c.template getBool<H,ActiveMove<typename H::ThisMove>>();
-    return f(std::get<0>(temp_nhe).get(), st, std::get<0>(temp_move).get());
-  }
-  
-  /** CheckAt - check predicate at a certain level of a tuple */
-  template <typename H, typename ... T>
-  static bool CheckAt (State& st, std::tuple<std::reference_wrapper<ActiveMove<typename H::ThisMove>>, std::reference_wrapper<ActiveMove<typename T::ThisMove> ...>>& temp_moves,  const std::tuple<std::reference_wrapper<H>, std::reference_wrapper<T> ...> temp_nhes, const Call& c, int iter)
-  {
-    if (iter == 0)
-    {
-      std::function<bool(const H&, State&, ActiveMove<typename H::ThisMove>&)> f =  c.template getBool<H,ActiveMove<typename H::ThisMove>>();
-      return f(std::get<0>(temp_nhes).get(), st, std::get<0>(temp_moves).get());
-    }
-    if (iter > 0)
-    {
-      auto tail_temp_moves = TupleUtils::tuple_tail(temp_moves);
-      return CheckAt(st, tail_temp_moves, TupleUtils::tuple_tail(temp_nhes), c, --iter);
-    }
-    return false;
-  }
-  
-  template <class H>
-  static bool CheckAt (State& st, std::tuple<std::reference_wrapper<ActiveMove<typename H::ThisMove>>>& temp_move,  const std::tuple<std::reference_wrapper<H>> temp_nhe, const Call& c, int iter)
-  {
-    if (iter == 0)
-    {
-      std::function<bool(const H&, State&, ActiveMove<typename H::ThisMove>&)> f =  c.template getBool<H,ActiveMove<typename H::ThisMove>>();
-      return f(std::get<0>(temp_nhe).get(), st, std::get<0>(temp_move).get());
-    }
-    return false;
-  }
-  
-  /* end of Check at */
-  
 protected:
+  
+  /** TupleDispatching helper classes/functions */
+  
+  template <class TupleOfMoves, class TupleOfNHEs, std::size_t N>
+  struct TupleDispatcher
+  {
+    static void ExecuteAt(State& st, TupleOfMoves& temp_moves, const TupleOfNHEs& temp_nhes, const Call& c, int iter)
+    {
+      if (iter == 0)
+      {
+        auto& this_nhe = std::get<N>(temp_nhes).get();
+        auto& this_move = std::get<N>(temp_moves).get();
+        std::function<void(const decltype(this_nhe)&, State&, decltype(this_move)&)> f =  c.template getVoid<decltype(this_nhe),decltype(this_move)>();
+        f(this_nhe, st, this_move);
+      }
+      if (iter > 0)
+        TupleDispatcher<TupleOfMoves, TupleOfNHEs, N - 1>::ExecuteAt(st, temp_moves, temp_nhes, c, --iter);
+    }
+    
+    static void ExecuteAll(State& st, TupleOfMoves& temp_moves, const TupleOfNHEs& temp_nhes, const Call& c)
+    {
+      auto& this_nhe = std::get<N>(temp_nhes).get();
+      auto& this_move = std::get<N>(temp_moves).get();
+      std::function<void(const decltype(this_nhe)&, State&, decltype(this_move)&)> f =  c.template getVoid<decltype(this_nhe),decltype(this_move)>();
+      f(this_nhe, st, this_move);
+      TupleDispatcher<TupleOfMoves, TupleOfNHEs, N - 1>::ExecuteAll(st, temp_moves, temp_nhes, c);
+    }
+    
+    static CFtype ComputeAt(State& st, TupleOfMoves& temp_moves, const TupleOfNHEs& temp_nhes, const Call& c, int iter)
+    {
+      if (iter == 0)
+      {
+        auto& this_nhe = std::get<N>(temp_nhes).get();
+        auto& this_move = std::get<N>(temp_moves).get();
+        std::function<CFtype(const decltype(this_nhe)&, State&, decltype(this_move)&)> f =  c.template getCFtype<decltype(this_nhe),decltype(this_move)>();
+        return f(this_nhe, st, this_move);
+      }
+      if (iter > 0)
+        return TupleDispatcher<TupleOfMoves, TupleOfNHEs, N - 1>::ComputeAt(st, temp_moves, temp_nhes, c, --iter);
+      return static_cast<CFtype>(0);
+    }
+    
+    static CFtype ComputeAll(State& st, TupleOfMoves& temp_moves, const TupleOfNHEs& temp_nhes, const Call& c)
+    {
+      auto& this_nhe = std::get<N>(temp_nhes).get();
+      auto& this_move = std::get<N>(temp_moves).get();
+      std::function<CFtype(const decltype(this_nhe)&, State&, decltype(this_move)&)> f =  c.template getCFtype<decltype(this_nhe),decltype(this_move)>();
+      return f(this_nhe, st, this_move) + TupleDispatcher<TupleOfMoves, TupleOfNHEs, N - 1>::ComputeAll(st, temp_moves, temp_nhes, c);
+    }
+    
+    static std::vector<bool> Check(State& st, TupleOfMoves& temp_moves, const TupleOfNHEs& temp_nhes, const Call& c)
+    {
+      auto& this_nhe = std::get<N>(temp_nhes).get();
+      auto& this_move = std::get<N>(temp_moves).get();
+      std::function<bool(const decltype(this_nhe)&, State&, decltype(this_move)&)> f =  c.template getBool<decltype(this_nhe),decltype(this_move)>();
+      std::vector<bool> current, others;
+      current.push_back(f(this_nhe, st, this_move));
+      others = TupleDispatcher<TupleOfMoves, TupleOfNHEs, N - 1>::Check(st, temp_moves, temp_nhes, c);
+      current.insert(current.begin(), others.begin(), others.end());
+      return current;
+    }
+    
+    static bool CheckAll(State& st, TupleOfMoves& temp_moves, const TupleOfNHEs& temp_nhes, const Call& c)
+    {
+      auto& this_nhe = std::get<N>(temp_nhes).get();
+      auto& this_move = std::get<N>(temp_moves).get();
+      std::function<bool(const decltype(this_nhe)&, State&, decltype(this_move)&)> f =  c.template getBool<decltype(this_nhe),decltype(this_move)>();
+      
+      if (!f(this_nhe, st, this_move))
+        return false;
+      
+      return TupleDispatcher<TupleOfMoves, TupleOfNHEs, N - 1>::CheckAll(st, temp_moves, temp_nhes, c);
+    }
+    
+    static bool CheckAny(State& st, TupleOfMoves& temp_moves, const TupleOfNHEs& temp_nhes, const Call& c)
+    {
+      auto& this_nhe = std::get<N>(temp_nhes).get();
+      auto& this_move = std::get<N>(temp_moves).get();
+      std::function<bool(const decltype(this_nhe)&, State&, decltype(this_move)&)> f =  c.template getBool<decltype(this_nhe),decltype(this_move)>();
+      
+      if (f(this_nhe, st, this_move))
+        return true;
+      
+      return TupleDispatcher<TupleOfMoves, TupleOfNHEs, N - 1>::CheckAll(st, temp_moves, temp_nhes, c);
+    }
+    
+    static bool CheckAt(State& st, TupleOfMoves& temp_moves, const TupleOfNHEs& temp_nhes, const Call& c, int iter)
+    {
+      if (iter == 0)
+      {
+        auto& this_nhe = std::get<N>(temp_nhes).get();
+        auto& this_move = std::get<N>(temp_moves).get();
+        std::function<bool(const decltype(this_nhe)&, State&, decltype(this_move)&)> f =  c.template getBool<decltype(this_nhe),decltype(this_move)>();
+        return f(this_nhe, st, this_move);
+      }
+      if (iter > 0)
+        return TupleDispatcher<TupleOfMoves, TupleOfNHEs, N - 1>::CheckAt(st, temp_moves, temp_nhes, c, --iter);
+      return false;
+    }
+  };
+  
+  template <class TupleOfMoves, class TupleOfNHEs>
+  struct TupleDispatcher<TupleOfMoves, TupleOfNHEs, 0>
+  {
+    static void ExecuteAt(State& st, TupleOfMoves& temp_moves, const TupleOfNHEs& temp_nhes, const Call& c, int iter)
+    {
+      if (iter == 0)
+      {
+        auto& this_nhe = std::get<0>(temp_nhes).get();
+        auto& this_move = std::get<0>(temp_moves).get();
+        std::function<void(const decltype(this_nhe)&, State&, decltype(this_move)&)> f =  c.template getVoid<decltype(this_nhe),decltype(this_move)>();
+        f(this_nhe, st, this_move);
+      }
+    }
+    
+    static void ExecuteAll(State& st, TupleOfMoves& temp_moves, const TupleOfNHEs& temp_nhes, const Call& c)
+    {
+      auto& this_nhe = std::get<0>(temp_nhes).get();
+      auto& this_move = std::get<0>(temp_moves).get();
+      std::function<void(const decltype(this_nhe)&, State&, decltype(this_move)&)> f =  c.template getVoid<decltype(this_nhe),decltype(this_move)>();
+      f(this_nhe, st, this_move);
+    }
+    
+    static CFtype ComputeAt(State& st, TupleOfMoves& temp_moves, const TupleOfNHEs& temp_nhes, const Call& c, int iter)
+    {
+      if (iter == 0)
+      {
+        auto& this_nhe = std::get<0>(temp_nhes).get();
+        auto& this_move = std::get<0>(temp_moves).get();
+        std::function<CFtype(const decltype(this_nhe)&, State&, decltype(this_move)&)> f =  c.template getCFtype<decltype(this_nhe),decltype(this_move)>();
+        return f(this_nhe, st, this_move);
+      }
+      return static_cast<CFtype>(0);
+    }
+    
+    static CFtype ComputeAt(State& st, TupleOfMoves& temp_moves, const TupleOfNHEs& temp_nhes, const Call& c)
+    {
+      auto& this_nhe = std::get<0>(temp_nhes).get();
+      auto& this_move = std::get<0>(temp_moves).get();
+      std::function<CFtype(const decltype(this_nhe)&, State&, decltype(this_move)&)> f =  c.template getCFtype<decltype(this_nhe),decltype(this_move)>();
+      return f(this_nhe, st, this_move);
+    }
+    
+    static std::vector<bool> Check(State& st, TupleOfMoves& temp_moves, const TupleOfNHEs& temp_nhes, const Call& c)
+    {
+      auto& this_nhe = std::get<0>(temp_nhes).get();
+      auto& this_move = std::get<0>(temp_moves).get();
+      std::function<bool(const decltype(this_nhe)&, State&, decltype(this_move)&)> f =  c.template getBool<decltype(this_nhe),decltype(this_move)>();
+      std::vector<bool> current, others;
+      current.push_back(f(this_nhe, st, this_move));
+      return current;
+    }
+    
+    static bool CheckAll(State& st, TupleOfMoves& temp_moves, const TupleOfNHEs& temp_nhes, const Call& c)
+    {
+      auto& this_nhe = std::get<0>(temp_nhes).get();
+      auto& this_move = std::get<0>(temp_moves).get();
+      std::function<bool(const decltype(this_nhe)&, State&, decltype(this_move)&)> f =  c.template getBool<decltype(this_nhe),decltype(this_move)>();
+      
+      return f(this_nhe, st, this_move);
+    }
+    
+    static bool CheckAny(State& st, TupleOfMoves& temp_moves, const TupleOfNHEs& temp_nhes, const Call& c)
+    {
+      auto& this_nhe = std::get<0>(temp_nhes).get();
+      auto& this_move = std::get<0>(temp_moves).get();
+      std::function<bool(const decltype(this_nhe)&, State&, decltype(this_move)&)> f =  c.template getBool<decltype(this_nhe),decltype(this_move)>();
+      
+      return f(this_nhe, st, this_move);
+    }
+    
+    static bool CheckAt(State& st, TupleOfMoves& temp_moves, const TupleOfNHEs& temp_nhes, const Call& c, int iter)
+    {
+      if (iter == 0)
+      {
+        auto& this_nhe = std::get<0>(temp_nhes).get();
+        auto& this_move = std::get<0>(temp_moves).get();
+        std::function<bool(const decltype(this_nhe)&, State&, decltype(this_move)&)> f =  c.template getBool<decltype(this_nhe),decltype(this_move)>();
+        return f(this_nhe, st, this_move);
+      }
+      return false;
+    }
+  };
+  
+  /** ExecuteAt - runs a function at a specific element of the tuple */
+  template <class ...NHEs>
+  static void ExecuteAt(State& st, std::tuple<std::reference_wrapper<ActiveMove<typename NHEs::ThisMove>>...>& moves,
+                        const std::tuple<std::reference_wrapper<NHEs>...>& nhes, const Call& c, int iter)
+  {
+    TupleDispatcher<std::tuple<std::reference_wrapper<ActiveMove<typename NHEs::ThisMove>>...>, std::tuple<std::reference_wrapper<NHEs>...>, sizeof...(NHEs) - 1>::ExecuteAt(st, moves, nhes, c, (sizeof...(NHEs) - 1) - iter);
+  }
+  
+  /** ExecuteAll - runs a function at every element of the tuple */
+  template <class ...NHEs>
+  static void ExecuteAll(State& st, std::tuple<std::reference_wrapper<ActiveMove<typename NHEs::ThisMove>>...>& moves,
+                         const std::tuple<std::reference_wrapper<NHEs>...>& nhes, const Call& c)
+  {
+    TupleDispatcher<std::tuple<std::reference_wrapper<ActiveMove<typename NHEs::ThisMove>>...>, std::tuple<std::reference_wrapper<NHEs>...>, sizeof...(NHEs) - 1>::ExecuteAll(st, moves, nhes, c);
+  }
+  
+  /** ComputeAt - runs a function at a certain level of the tuple and returns its value (CFtype only) */
+  template <class ...NHEs>
+  static CFtype ComputeAt(State& st, std::tuple<std::reference_wrapper<ActiveMove<typename NHEs::ThisMove>>...>& moves,
+                          const std::tuple<std::reference_wrapper<NHEs>...>& nhes, const Call& c, int iter)
+  {
+    return TupleDispatcher<std::tuple<std::reference_wrapper<ActiveMove<typename NHEs::ThisMove>>...>, std::tuple<std::reference_wrapper<NHEs>...>, sizeof...(NHEs) - 1>::ComputeAt(st, moves, nhes, c, (sizeof...(NHEs) - 1) - iter);
+  }
+  
+  /** ComputeAll - runs a function at every element of the tuple and sums up the results */
+  template <class ...NHEs>
+  static CFtype ComputeAll(State& st, std::tuple<std::reference_wrapper<ActiveMove<typename NHEs::ThisMove>>...>& moves,
+                           const std::tuple<std::reference_wrapper<NHEs>...>& nhes, const Call& c)
+  {
+    return TupleDispatcher<std::tuple<std::reference_wrapper<ActiveMove<typename NHEs::ThisMove>>...>, std::tuple<std::reference_wrapper<NHEs>...>, sizeof...(NHEs) - 1>::ComputeAll(st, moves, nhes, c);
+  }
+  
+  /** Check - checks a predicate on each element of a tuple and returns a vector of the corresponding boolean variable */
+  template <class ...NHEs>
+  static std::vector<bool> Check(State& st, std::tuple<std::reference_wrapper<ActiveMove<typename NHEs::ThisMove>>...>& moves,
+                                 const std::tuple<std::reference_wrapper<NHEs>...>& nhes, const Call& c)
+  {
+    return TupleDispatcher<std::tuple<std::reference_wrapper<ActiveMove<typename NHEs::ThisMove>>...>, std::tuple<std::reference_wrapper<NHEs>...>, sizeof...(NHEs) - 1>::Check(st, moves, nhes, c);
+  }
+  
+  /** CheckAll - checks a predicate on all tuple */
+  template <class ...NHEs>
+  static bool CheckAll(State& st, std::tuple<std::reference_wrapper<ActiveMove<typename NHEs::ThisMove>>...>& moves,
+                       const std::tuple<std::reference_wrapper<NHEs>...>& nhes, const Call& c)
+  {
+    return TupleDispatcher<std::tuple<std::reference_wrapper<ActiveMove<typename NHEs::ThisMove>>...>, std::tuple<std::reference_wrapper<NHEs>...>, sizeof...(NHEs) - 1>::CheckAll(st, moves, nhes, c);
+  }
+  
+  /** CheckAny - checks a predicate on all tuple */
+  template <class ...NHEs>
+  static bool CheckAny(State& st, std::tuple<std::reference_wrapper<ActiveMove<typename NHEs::ThisMove>>...>& moves,
+                       const std::tuple<std::reference_wrapper<NHEs>...>& nhes, const Call& c)
+  {
+    return TupleDispatcher<std::tuple<std::reference_wrapper<ActiveMove<typename NHEs::ThisMove>>...>, std::tuple<std::reference_wrapper<NHEs>...>, sizeof...(NHEs) - 1>::CheckAny(st, moves, nhes, c);
+  }
+  
+  /** CheckAt - checks a predicate at a certain level of the tuple and returns its value */
+  template <class ...NHEs>
+  static CFtype CheckAt(State& st, std::tuple<std::reference_wrapper<ActiveMove<typename NHEs::ThisMove>>...>& moves,
+                        const std::tuple<std::reference_wrapper<NHEs>...>& nhes, const Call& c, int iter)
+  {
+    return TupleDispatcher<std::tuple<std::reference_wrapper<ActiveMove<typename NHEs::ThisMove>>...>, std::tuple<std::reference_wrapper<NHEs>...>, sizeof...(NHEs) - 1>::CheckAt(st, moves, nhes, c, (sizeof...(NHEs) - 1) - iter);
+  }
+  
   
   template<class N, class M>
   static bool IsActive(const N& n, State& s, M& m)

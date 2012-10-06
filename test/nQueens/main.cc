@@ -158,7 +158,9 @@ int main(int argc, const char* argv[])
   SwapNeighborhoodExplorer qnhe(in, qsm);
     
   // compose a multimodal neighborhood explorer
-  SetUnionNeighborhoodExplorer<int, std::vector<int>, int, decltype(qnhe), decltype(qnhe)> qnhemm(in, qsm, "SwapUnion", qnhe, qnhe);
+
+  SetUnionNeighborhoodExplorer<int, std::vector<int>, int, decltype(qnhe), decltype(qnhe), decltype(qnhe)> qnheumm(in, qsm, "SwapUnion", qnhe, qnhe, qnhe);
+    //CartesianProductNeighborhoodExplorer<int, std::vector<int>, int, decltype(qnhe), decltype(qnhe)> qnhexmm(in, qsm, "SwapProduct", qnhe, qnhe);
   
   QueensOutputManager qom(in);
       
@@ -224,7 +226,8 @@ int main(int argc, const char* argv[])
     Tester<int, ChessBoard, vector<int>, int > tester(in, qsm, qom);
 		// testers
 		MoveTester<int, ChessBoard, vector<int>, Swap, int> swap_move_test(in,qsm,qom,qnhe, "Swap move", tester);
-    MoveTester<int, ChessBoard, vector<int>, decltype(qnhemm)::ThisMove, int> multimodal_move_test(in,qsm,qom,qnhemm, "Multimodal swap move", tester);
+    MoveTester<int, ChessBoard, vector<int>, decltype(qnheumm)::ThisMove, int> multimodal_move_test_union(in,qsm,qom,qnheumm, "Multimodal union swap move", tester);
+    //    MoveTester<int, ChessBoard, vector<int>, decltype(qnhexmm)::ThisMove, int> multimodal_move_test_product(in,qsm,qom,qnheumm, "Multimodal product swap move", tester);
 		KickerTester<int, ChessBoard, vector<int>, int> monokicker_test(in,qsm,qom, qk, "Monomodal kick");
     //KickerTester<int, ChessBoard, vector<int> > multikicker_test(in,qsm,qom, qk2, "Multimodal kick");
 		
