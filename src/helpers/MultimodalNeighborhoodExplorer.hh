@@ -218,6 +218,9 @@ protected:
       }
       if (iter > 0)
         TupleDispatcher<TupleOfMoves, TupleOfNHEs, N - 1>::ExecuteAt(st, temp_moves, temp_nhes, c, --iter);
+#if defined(DEBUG)
+      throw std::logic_error("In function ExecuteAt (recursive case) iter is less than zero");
+#endif
     }
     
     static void ExecuteAll(State& st, TupleOfMoves& temp_moves, const TupleOfNHEs& temp_nhes, const Call& c)
@@ -240,6 +243,9 @@ protected:
       }
       if (iter > 0)
         return TupleDispatcher<TupleOfMoves, TupleOfNHEs, N - 1>::ComputeAt(st, temp_moves, temp_nhes, c, --iter);
+#if defined(DEBUG)
+      throw std::logic_error("In function ComputeAt (recursive case) iter is less than zero");
+#endif
       return static_cast<CFtype>(0);
     }
     
@@ -298,6 +304,9 @@ protected:
       }
       if (iter > 0)
         return TupleDispatcher<TupleOfMoves, TupleOfNHEs, N - 1>::CheckAt(st, temp_moves, temp_nhes, c, --iter);
+#if defined(DEBUG)
+      throw std::logic_error("In function CheckAt (recursive case) iter is less than zero");
+#endif
       return false;
     }
   };
@@ -314,6 +323,9 @@ protected:
         std::function<void(const decltype(this_nhe)&, State&, decltype(this_move)&)> f =  c.template getVoid<decltype(this_nhe),decltype(this_move)>();
         f(this_nhe, st, this_move);
       }
+#if defined(DEBUG)
+      throw std::logic_error("In function ExecuteAt (base case) iter is not zero");
+#endif
     }
     
     static void ExecuteAll(State& st, TupleOfMoves& temp_moves, const TupleOfNHEs& temp_nhes, const Call& c)
@@ -333,10 +345,13 @@ protected:
         std::function<CFtype(const decltype(this_nhe)&, State&, decltype(this_move)&)> f =  c.template getCFtype<decltype(this_nhe),decltype(this_move)>();
         return f(this_nhe, st, this_move);
       }
+#if defined(DEBUG)
+      throw std::logic_error("In function ComputeAt (base case) iter is not zero");
+#endif
       return static_cast<CFtype>(0);
     }
     
-    static CFtype ComputeAt(State& st, TupleOfMoves& temp_moves, const TupleOfNHEs& temp_nhes, const Call& c)
+    static CFtype ComputeAll(State& st, TupleOfMoves& temp_moves, const TupleOfNHEs& temp_nhes, const Call& c)
     {
       auto& this_nhe = std::get<0>(temp_nhes).get();
       auto& this_move = std::get<0>(temp_moves).get();
@@ -381,6 +396,9 @@ protected:
         std::function<bool(const decltype(this_nhe)&, State&, decltype(this_move)&)> f =  c.template getBool<decltype(this_nhe),decltype(this_move)>();
         return f(this_nhe, st, this_move);
       }
+#if defined(DEBUG)
+      throw std::logic_error("In function CheckAt (base case) iter is not zero");
+#endif
       return false;
     }
   };
@@ -524,11 +542,10 @@ private:
 //  typedef typename MultimodalNeighborhoodExplorer<Input, State, CFtype, BaseNeighborhoodExplorers ...>::TheseNeighborhoodExplorers TheseNeighborhoodExplorers;
   typedef MultimodalNeighborhoodExplorer<Input, State, CFtype, BaseNeighborhoodExplorers ...> SuperNeighborhoodExplorer;
   typedef typename SuperNeighborhoodExplorer::TheseRefMoves TheseRefMoves;
-
+  typedef typename SuperNeighborhoodExplorer::Call Call;
 
 public:
   
-  typedef typename SuperNeighborhoodExplorer::Call Call;
   
   /** Inherit constructor from superclass. Not yet, amigo. */
   // using MultimodalNeighborhoodExplorer<Input, State, CFtype, BaseNeighborhoodExplorers ...>::MultimodalNeighborhoodExplorer;
@@ -646,11 +663,10 @@ private:
   //  typedef typename MultimodalNeighborhoodExplorer<Input, State, CFtype, BaseNeighborhoodExplorers ...>::TheseNeighborhoodExplorers TheseNeighborhoodExplorers;
   typedef MultimodalNeighborhoodExplorer<Input, State, CFtype, BaseNeighborhoodExplorers ...> SuperNeighborhoodExplorer;
   typedef typename SuperNeighborhoodExplorer::TheseRefMoves TheseRefMoves;
-  
+  typedef typename SuperNeighborhoodExplorer::Call Call;
   
 public:
   
-  typedef typename SuperNeighborhoodExplorer::Call Call;
   
   /** Inherit constructor from superclass. Not yet, amigo. */
   // using MultimodalNeighborhoodExplorer<Input, State, CFtype, BaseNeighborhoodExplorers ...>::MultimodalNeighborhoodExplorer;
@@ -661,12 +677,13 @@ public:
   
   virtual void RandomMove(const State& st, typename SuperNeighborhoodExplorer::ThisMove& moves) const throw(EmptyNeighborhood)
   {
-    Call initialize_active(Call::Function::initialize_active);
     Call do_random_move(SuperNeighborhoodExplorer::Call::Function::do_random_move);
     
     TheseRefMoves r_moves = moves;
-    SuperNeighborhoodExplorer::ExecuteAll(const_cast<State&>(st), r_moves, this->nhes, initialize_active);
+    std::vector<State> temp_states(this->Modality() - 1); // the chain of states (including the first one, but excluding the last)
+    temp_states[0] = st;
     SuperNeighborhoodExplorer::ExecuteAll(const_cast<State&>(st), r_moves, this->nhes, do_random_move);
+    // just for debugging
   }
   
   virtual void FirstMove(const State& st, typename SuperNeighborhoodExplorer::ThisMove& moves) const throw(EmptyNeighborhood)
@@ -750,7 +767,8 @@ protected:
   // TODO: find a mechanism to be sure that state is consistent across calls
   //       now it relies on a proper call order of the different methods
   //       (to be documented)
-  std::vector<std::shared_ptr<State>> temp_states;
+  // FIXME: to be implemented later as a cache
+  //std::vector<std::shared_ptr<State>> temp_states;
 };
 
 

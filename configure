@@ -15818,6 +15818,11 @@ else
   DEBUG_FALSE=
 fi
 
+if test "$enable_debug" == "yes"; then
+
+$as_echo "#define DEBUG 1" >>confdefs.h
+
+fi
 
 # Checking for C++11 compliance
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for C++11 compiler compliance" >&5

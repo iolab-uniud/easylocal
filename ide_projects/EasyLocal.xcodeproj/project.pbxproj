@@ -37,6 +37,7 @@
 		504771E6161C52090055CA54 /* MultimodalNeighborhoodExplorer.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = MultimodalNeighborhoodExplorer.hh; sourceTree = "<group>"; };
 		50B7DC6316147D16006CFED0 /* SimulatedAnnealingWithReheating.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = SimulatedAnnealingWithReheating.hh; sourceTree = "<group>"; };
 		50BDA6F5160200CC0069BFF7 /* LateAcceptanceHillClimbing.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = LateAcceptanceHillClimbing.hh; sourceTree = "<group>"; };
+		A22C6461162072DD00A58459 /* config.hh.in */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = config.hh.in; sourceTree = "<group>"; };
 		A29C12D3148F74CC00EDC517 /* ToDo2012 */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = ToDo2012; path = ../ToDo2012; sourceTree = "<group>"; };
 		A2DF65DD16170709002DFB3D /* Parameter.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Parameter.cc; sourceTree = "<group>"; };
 		A2DF65DE16170709002DFB3D /* Parameter.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Parameter.hh; sourceTree = "<group>"; };
@@ -175,6 +176,7 @@
 		ACF4B0FA0DBFA668008A0207 /* src */ = {
 			isa = PBXGroup;
 			children = (
+				A22C6461162072DD00A58459 /* config.hh.in */,
 				ACF4B1220DBFA668008A0207 /* Makefile.am */,
 				ACF4B0FC0DBFA668008A0207 /* EasyLocal.hh */,
 				ACDFC76D0DCFB2E5004D11E8 /* EasyLocal.conf.hh */,
