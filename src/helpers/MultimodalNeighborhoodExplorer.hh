@@ -691,7 +691,7 @@ public:
   
   virtual void FirstMove(const State& st, typename SuperNeighborhoodExplorer::ThisMove& moves) const throw(EmptyNeighborhood)
   {
-    Call initialize_inactive(Call::Function::initialize_active);
+    Call initialize_active(Call::Function::initialize_active);
     Call do_first_move(Call::Function::do_first_move);
     
     int current = 0;
