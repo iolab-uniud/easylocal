@@ -35,6 +35,7 @@
 		5005F4ED16106B78002BA61D /* Random.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Random.cc; sourceTree = "<group>"; };
 		5029007D1615987400F5EFCB /* Interruptible.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Interruptible.hh; sourceTree = "<group>"; };
 		504771E6161C52090055CA54 /* MultimodalNeighborhoodExplorer.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = MultimodalNeighborhoodExplorer.hh; sourceTree = "<group>"; };
+		5064C5AC1621898300BD59A4 /* Tuple.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Tuple.hh; sourceTree = "<group>"; };
 		50B7DC6316147D16006CFED0 /* SimulatedAnnealingWithReheating.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = SimulatedAnnealingWithReheating.hh; sourceTree = "<group>"; };
 		50BDA6F5160200CC0069BFF7 /* LateAcceptanceHillClimbing.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = LateAcceptanceHillClimbing.hh; sourceTree = "<group>"; };
 		A29C12D3148F74CC00EDC517 /* ToDo2012 */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = ToDo2012; path = ../ToDo2012; sourceTree = "<group>"; };
@@ -275,6 +276,7 @@
 				ACF4B15B0DBFA668008A0207 /* Types.hh */,
 				ACF4B15A0DBFA668008A0207 /* Types.cc */,
 				5029007D1615987400F5EFCB /* Interruptible.hh */,
+				5064C5AC1621898300BD59A4 /* Tuple.hh */,
 			);
 			path = utils;
 			sourceTree = "<group>";
