@@ -38,6 +38,7 @@
 		5064C5AC1621898300BD59A4 /* Tuple.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Tuple.hh; sourceTree = "<group>"; };
 		50B7DC6316147D16006CFED0 /* SimulatedAnnealingWithReheating.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = SimulatedAnnealingWithReheating.hh; sourceTree = "<group>"; };
 		50BDA6F5160200CC0069BFF7 /* LateAcceptanceHillClimbing.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = LateAcceptanceHillClimbing.hh; sourceTree = "<group>"; };
+		A22C6461162072DD00A58459 /* config.hh.in */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = config.hh.in; sourceTree = "<group>"; };
 		A29C12D3148F74CC00EDC517 /* ToDo2012 */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = ToDo2012; path = ../ToDo2012; sourceTree = "<group>"; };
 		A2DF65DD16170709002DFB3D /* Parameter.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Parameter.cc; sourceTree = "<group>"; };
 		A2DF65DE16170709002DFB3D /* Parameter.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Parameter.hh; sourceTree = "<group>"; };
@@ -130,7 +131,6 @@
 		ACFAF4BB0DD486BC0095F6A0 /* doxygen.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = doxygen.cfg; path = ../doxygen.cfg; sourceTree = SOURCE_ROOT; };
 		ACFAF4BC0DD486CF0095F6A0 /* AbstractLocalSearch.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = AbstractLocalSearch.hh; sourceTree = "<group>"; };
 		ACFAF4BD0DD486E20095F6A0 /* README */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = README; path = ../README; sourceTree = SOURCE_ROOT; };
-		ACFEBF670E9BFD8A00946609 /* OldMultimodalNeighborhoodExplorer.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = OldMultimodalNeighborhoodExplorer.hh; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -176,6 +176,7 @@
 		ACF4B0FA0DBFA668008A0207 /* src */ = {
 			isa = PBXGroup;
 			children = (
+				A22C6461162072DD00A58459 /* config.hh.in */,
 				ACF4B1220DBFA668008A0207 /* Makefile.am */,
 				ACF4B0FC0DBFA668008A0207 /* EasyLocal.hh */,
 				ACDFC76D0DCFB2E5004D11E8 /* EasyLocal.conf.hh */,
@@ -204,7 +205,6 @@
 				ACF4B10E0DBFA668008A0207 /* CostComponent.hh */,
 				ACF4B10F0DBFA668008A0207 /* DeltaCostComponent.hh */,
 				ACF4B1110DBFA668008A0207 /* NeighborhoodExplorer.hh */,
-				ACFEBF670E9BFD8A00946609 /* OldMultimodalNeighborhoodExplorer.hh */,
 				504771E6161C52090055CA54 /* MultimodalNeighborhoodExplorer.hh */,
 				AC8357BF0EA47DF5002980DC /* MultimodalTabuListManager.hh */,
 				ACF4B1120DBFA668008A0207 /* OutputManager.hh */,

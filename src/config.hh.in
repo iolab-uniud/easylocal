@@ -5,6 +5,9 @@
 #define CONFIG_INCLUDED
 
 
+/* Compile further debugging controls. */
+#undef DEBUG
+
 /* define if the Boost library is available */
 #undef HAVE_BOOST
 

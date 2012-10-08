@@ -44,6 +44,9 @@ AC_ARG_ENABLE(debug,
   [], [])
 AC_MSG_RESULT($enable_debug)
 AM_CONDITIONAL(DEBUG, test "$enable_debug" = yes)
+if test "$enable_debug" == "yes"; then
+  AC_DEFINE([DEBUG], 1, [Compile further debugging controls.])
+fi
 
 # Checking for C++11 compliance
 AC_MSG_CHECKING([for C++11 compiler compliance]) 
