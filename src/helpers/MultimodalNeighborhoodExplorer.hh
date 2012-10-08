@@ -1090,7 +1090,31 @@ public:
     return true;
   }
   
+private:
+  template <class Move1, class Move2>
+  void _RelatedGetOrSet(std::function<bool(const Move1&, const Move2&)>& f, bool is_set)
+  {
+    static std::function<bool(const Move1&, const Move2&)> this_f = [](const Move1& m1, const Move2& m2)->bool { return true; };
+    
+    if (is_set)
+      this_f = f;
+    else
+      f = this_f;
+  }
+  
 protected:
+  template <class Move1, class Move2>
+  void RelatedFunction(std::function<bool(const Move1&, const Move2&)>& f)
+  {
+    _RelatedGetOrSet(f, false);
+  }
+  
+public:
+  template <class Move1, class Move2>
+  void RelatedFunction(std::function<bool(const Move1&, const Move2&)>&& f)
+  {
+    _RelatedGetOrSet(f, true);
+  }
   
   // TODO: a state information needed to speed up computation and not
   // to recompute the effect of the whole chain of moves

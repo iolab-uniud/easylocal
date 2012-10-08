@@ -157,7 +157,8 @@ int main(int argc, const char* argv[])
     
     SetUnionNeighborhoodExplorer<int, std::vector<int>, int, decltype(qnhe), decltype(qnhe), decltype(qnhe)> qnheumm(in, qsm, "SwapUnion", qnhe, qnhe, qnhe);
     CartesianProductNeighborhoodExplorer<int, std::vector<int>, int, decltype(qnhe), decltype(qnhe), decltype(qnhe)> qnhexmm(in, qsm, "SwapProduct", qnhe, qnhe, qnhe);
-    
+    qnhexmm.RelatedFunction<Swap, Swap>([](const Swap& s1, const Swap& s2)->bool { return s1.to == s1.from; });
+   
     SetUnionTabuListManager<std::vector<int>, int, decltype(qtlm), decltype(qtlm), decltype(qtlm)> qtlmumm(qtlm, qtlm, qtlm);
     CartesianProductTabuListManager<std::vector<int>, int, decltype(qtlm), decltype(qtlm), decltype(qtlm)> qtlmxmm(qtlm, qtlm, qtlm);
     
