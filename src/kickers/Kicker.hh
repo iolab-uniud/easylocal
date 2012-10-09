@@ -4,7 +4,8 @@
 #include <exception>
 #include <EasyLocal.conf.hh>
 
-enum KickTypes {
+enum KickTypes
+{
     RANDOM_KICK = 0,
     BEST_KICK,
     TOTAL_BEST_KICK,

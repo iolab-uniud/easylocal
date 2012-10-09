@@ -88,6 +88,7 @@
 #include <data/ChessBoard.hh>
 #include <data/Swap.hh>
 #include <helpers/SwapNeighborhoodExplorer.hh>
+#include <helpers/MultimodalNeighborhoodExplorer.hh>
 #include <helpers/QueensOutputManager.hh>
 #include <helpers/QueensStateManager.hh>
 #include <helpers/QueensTabuListManager.hh>
@@ -112,7 +113,6 @@
 #include <testers/MoveTester.hh>
 #include <testers/KickerTester.hh>
 #include <helpers/ShiftingPenaltyManager.hh>
-#include <helpers/MultimodalNeighborhoodExplorer.hh>
 #include <helpers/MultimodalTabuListManager.hh>
 #if defined(HAVE_LINKABLE_BOOST)
 #include <boost/program_options/options_description.hpp>

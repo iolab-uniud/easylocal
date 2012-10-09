@@ -47,4 +47,38 @@ CFtype min(const std::vector<CFtype>& values)
  return min_val;
 }
 
+/** Template class to incapsulate a boolean flag that marks a Move active or inactive in a multi-modal context. */
+template <class Move>
+class ActiveMove : public Move
+{
+public:
+  bool active;
+};
+
+/** Input operator for ActiveMove, calls input operator for Move. */
+template <typename Move>
+std::istream& operator>>(std::istream& is, ActiveMove<Move>& m)
+{
+  is >> static_cast<Move&>(m);
+  return is;
+}
+
+/** Output operator for ActiveMove, calls output operator for Move. */
+template <typename Move>
+std::ostream& operator<<(std::ostream& os, const ActiveMove<Move>& m)
+{
+  if (m.active)
+    os << static_cast<const Move&>(m);
+  return os;
+}
+
+template <class M1, class M2>
+struct MoveRelations
+{
+  static bool RelatedMove(const M1&, const M2&)
+  {
+    return true;
+  }
+};
+
 #endif // _TYPES_HH_

@@ -2,7 +2,22 @@
 #define _TUPLE_HH_
 
 
-/** Template struct whose parameters are types from 1 to N (tail indices). */
+/** Template struct whose parameters are types from 0 to N-1 (tail indices). */
+template <int ...>
+struct tuple_index { };
+
+/** Struct to generate tail_index given a certain N-1. */
+template <int N, int ... S>
+struct make_index : make_index<N-1, N-1, S ...> { };
+
+/** Struct to generate tail_index given a certain N, base case. */
+template <int ... S>
+struct make_index<0, S ...>
+{
+  typedef tuple_index<S ...> type;
+};
+
+/** Template struct whose parameters are types from 1 to N-1 (tail indices). */
 template <int ...>
 struct tail_index { };
 
