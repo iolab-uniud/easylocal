@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <utils/Tuple.hh>
 
+/** General rule: all moves are related. */
 template<class Move1, class Move2>
 void GetRelatedCheck(std::function<bool(const Move1& m1, const Move2& m2)>& f)
 {
