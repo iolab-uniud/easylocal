@@ -123,6 +123,12 @@
 //#include <kickers/MultimodalKicker.hh>
 using namespace std;
 
+
+void GetRelatedCheck(std::function<bool(const ActiveMove<Swap>& m1, const ActiveMove<Swap>& m2)>& f)
+{
+  f = ([](const ActiveMove<Swap>&, const ActiveMove<Swap>&) -> bool { std::cerr << "activeswap" << std::endl; return false; });
+}
+
 int main(int argc, const char* argv[])
 {
   try
