@@ -218,7 +218,7 @@ public:
   {
     for(auto p : this->parameters)
     {
-      os << "  " << p->description << (p->IsSet() ? (std::string(" (default: ") + p->ToString() + ")") : ": ");
+      os << "  " << p->description << (p->IsSet() ? (std::string(" (default: ") + p->ToString() + ") ") : ": ");
       p->Read(is);
     }
   }

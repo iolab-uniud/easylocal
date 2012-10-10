@@ -156,10 +156,21 @@ int main(int argc, const char* argv[])
     // compose a multimodal neighborhood explorer
     
     SetUnionNeighborhoodExplorer<int, std::vector<int>, int, decltype(qnhe), decltype(qnhe), decltype(qnhe)> qnheumm(in, qsm, "SwapUnion", qnhe, qnhe, qnhe);
-    CartesianProductNeighborhoodExplorer<int, std::vector<int>, int, decltype(qnhe), decltype(qnhe), decltype(qnhe)> qnhexmm(in, qsm, "SwapProduct", qnhe, qnhe, qnhe);
     
     SetUnionTabuListManager<std::vector<int>, int, decltype(qtlm), decltype(qtlm), decltype(qtlm)> qtlmumm(qtlm, qtlm, qtlm);
     CartesianProductTabuListManager<std::vector<int>, int, decltype(qtlm), decltype(qtlm), decltype(qtlm)> qtlmxmm(qtlm, qtlm, qtlm);
+    
+    CartesianProductNeighborhoodExplorer<int, std::vector<int>, int, decltype(qnhe), decltype(qnhe), decltype(qnhe)> qnhexmm(in, qsm, "SwapProduct", qnhe, qnhe, qnhe);
+    
+    /*
+    std::tuple<std::reference_wrapper<decltype(qnhe)>, std::reference_wrapper<decltype(qnhe)>, std::reference_wrapper<decltype(qnhe)>> qnhe3 = make_tuple(
+      std::reference_wrapper<decltype(qnhe)>(qnhe),
+      std::reference_wrapper<decltype(qnhe)>(qnhe),
+      std::reference_wrapper<decltype(qnhe)>(qnhe)
+    );
+    
+    PowerNeighborhoodExplorer<int, std::vector<int>, int, decltype(qnhe), 3> qnhexmm(in, qsm, "SwapProduct", qnhe3);
+    */
     
     QueensOutputManager qom(in);
     

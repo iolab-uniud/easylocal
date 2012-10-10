@@ -33,7 +33,8 @@ namespace _easylocal {
 
 /** A mixin class to add timeouts to anything. */
 template <typename Rtype, typename ... Args>
-class Interruptible {
+class Interruptible
+{
   
 public:
   
@@ -45,10 +46,20 @@ public:
   {
     timeout_expired = false;
     std::future<Rtype> result = std::async(std::launch::async, this->MakeFunction(), std::ref(args) ...);
-    result.wait_for(timeout);
-    if (result.wait_for(std::chrono::milliseconds::zero()) != std::future_status::ready) {
-      timeout_expired = true;
-      AtTimeoutExpired();
+    
+    // If timeout is greater than zero
+    if (timeout.count() != 0)
+    {
+      result.wait_for(timeout);
+      if (result.wait_for(std::chrono::milliseconds::zero()) != std::future_status::ready)
+      {
+        timeout_expired = true;
+        AtTimeoutExpired();
+      }
+    }
+    else
+    {
+      result.wait();
     }
     return result.get();
   }
@@ -61,16 +72,22 @@ public:
   {
     timeout_expired = false;
     result = std::async(std::launch::async, this->MakeFunction(), std::ref(args) ...);
-    std::thread t([this, timeout]() {
-      _easylocal::sleep_for(timeout);
-      // If the function has not returned a value already
-      if(!this->HasReturned()) {
-        timeout_expired = true;
-        AtTimeoutExpired();
-      }
-      
-    });
-    t.detach();
+    
+    // If timeout is greater than zero, launch stopper thread
+    if (timeout.count() != 0)
+    {
+      std::thread t([this, timeout]()
+      {
+        _easylocal::sleep_for(timeout);
+        // If the function has not returned a value already
+        if(!this->HasReturned()) {
+          timeout_expired = true;
+          AtTimeoutExpired();
+        }
+        
+      });
+      t.detach();
+    }
     return result;
   }
   
