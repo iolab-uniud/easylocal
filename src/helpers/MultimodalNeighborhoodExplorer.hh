@@ -48,6 +48,12 @@ protected:
   nhes(std::make_tuple(std::reference_wrapper<BaseNeighborhoodExplorers>(nhes) ...))
   { }
   
+  /** Constructor, takes a variable number of base NeighborhoodExplorers.  */
+  MultimodalNeighborhoodExplorer(const Input& in, StateManager<Input,State,CFtype>& sm, std::string name, TheseNeighborhoodExplorers& nhes)
+  : SuperNeighborhoodExplorer(in, sm, name),
+  nhes(nhes)
+  { }
+  
   /** Instantiated base NeighborhoodExplorers. */
   TheseNeighborhoodExplorers nhes;
     
@@ -1028,6 +1034,9 @@ private:
   
 public:
 
+  /** Tuple type representing references to BaseNeighborhoodExplorers. */
+  typedef std::tuple<std::reference_wrapper<BaseNeighborhoodExplorers> ...> TheseNeighborhoodExplorers;
+  
   /** Inherit constructor from superclass. Not yet. */
   // using MultimodalNeighborhoodExplorer<Input, State, CFtype, BaseNeighborhoodExplorers ...>::MultimodalNeighborhoodExplorer;
   
@@ -1035,6 +1044,12 @@ public:
   : MultimodalNeighborhoodExplorer<Input, State, CFtype, BaseNeighborhoodExplorers ...>(in, sm, name, nhes ...)
   { }
   
+  
+  CartesianProductNeighborhoodExplorer(Input& in, StateManager<Input,State,CFtype>& sm, std::string name, TheseNeighborhoodExplorers& nhes)
+  : MultimodalNeighborhoodExplorer<Input, State, CFtype, BaseNeighborhoodExplorers ...>(in, sm, name, nhes)
+  { }
+  
+    
   /** @copydoc NeighborhoodExplorer::RandomMove */
   virtual void RandomMove(const State& st, typename SuperNeighborhoodExplorer::ThisMove& moves) const throw(EmptyNeighborhood)
   {
@@ -1323,8 +1338,45 @@ public:
     }
     return true;
   }
-
-  
 };
+
+// Generic variadic struct, to be used as accumulator
+template<class... Ps>
+struct TypeList
+{
+};
+
+// Forward declaration of PowerNeighborhoodExplorer helper struct
+template <class A, class B, class C, class D, int N, class E>
+struct PowerNeighborhoodExplorerHelp;
+
+// Base case of the recursion used to build the right neighborhoodExplorer type
+template<class Input, class State, class CFtype, class NeighborhoodExplorer, class... NeighborhoodExplorers>
+struct PowerNeighborhoodExplorerHelp<Input, State, CFtype, NeighborhoodExplorer, 0, TypeList<NeighborhoodExplorers...> >
+{
+  typedef CartesianProductNeighborhoodExplorer<Input, State, CFtype, NeighborhoodExplorers... > CartesianProductNeighborhoodExplorer;
+  typedef std::tuple<std::reference_wrapper<NeighborhoodExplorers>...> PartialNeighborhoodExplorers;
+
+};
+
+// Recursive step
+template<class Input, class State, class CFtype, class NeighborhoodExplorer, unsigned N, class... NeighborhoodExplorers>
+struct PowerNeighborhoodExplorerHelp< Input,  State,  CFtype,  NeighborhoodExplorer, N, TypeList<NeighborhoodExplorers...>> : public PowerNeighborhoodExplorerHelp<Input, State, CFtype, NeighborhoodExplorer, N-1, TypeList<NeighborhoodExplorer, NeighborhoodExplorers...>>
+{
+};
+
+template<class Input, class State, class CFtype, class NeighborhoodExplorer, unsigned N>
+class PowerNeighborhoodExplorer : public PowerNeighborhoodExplorerHelp<Input, State, CFtype, NeighborhoodExplorer, N, TypeList<>>::CartesianProductNeighborhoodExplorer
+{
+public:
+  
+  typedef typename PowerNeighborhoodExplorerHelp<Input, State, CFtype, NeighborhoodExplorer, N, TypeList<>>::CartesianProductNeighborhoodExplorer SuperNeighborhoodExplorer;
+  typedef typename SuperNeighborhoodExplorer::TheseNeighborhoodExplorers TheseNeighborhoodExplorers;
+    
+  PowerNeighborhoodExplorer(Input& in, StateManager<Input,State,CFtype>& sm, std::string name, TheseNeighborhoodExplorers& nhe) : PowerNeighborhoodExplorerHelp<Input, State, CFtype, NeighborhoodExplorer, N, TypeList<>>::CartesianProductNeighborhoodExplorer(in, sm, name, nhe)
+  {
+  }
+};
+                            
 
 #endif
