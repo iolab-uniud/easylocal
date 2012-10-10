@@ -32,6 +32,7 @@ protected:
   
   void InitializeRun();
 
+  void CompleteMove();
   
   // for the shifting penalty
   void ResetShifts();

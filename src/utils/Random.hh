@@ -39,7 +39,10 @@ public:
   static void Seed(int seed)
   {
     g.seed(seed);
+		Random::seed = seed;
   }
+	
+	static int seed;
 };
 
 #endif // _RANDOM_HH_

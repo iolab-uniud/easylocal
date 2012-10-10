@@ -190,7 +190,6 @@ int main(int argc, const char* argv[])
       std::cout << "Error: --main::size=N option must always be set" << std::endl;
       return 1;
     }
-    // FIXME: it should work after tester reworking
     else
       in = size;
     

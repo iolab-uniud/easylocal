@@ -190,6 +190,8 @@ bool operator==(const Parameter<T>& t1, const T& t2) throw (ParameterNotSet)
   return t1.value == t2;
 }
 
+bool operator==(const Parameter<std::string>& s1, const char* s2) throw (ParameterNotSet);
+
 template <typename T>
 IncorrectParameterValue::IncorrectParameterValue(const Parameter<T>& p, std::string desc)
 : std::logic_error("Incorrect parameter value")

@@ -40,6 +40,7 @@
 		50BDA6F5160200CC0069BFF7 /* LateAcceptanceHillClimbing.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = LateAcceptanceHillClimbing.hh; sourceTree = "<group>"; };
 		A22C6461162072DD00A58459 /* config.hh.in */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = config.hh.in; sourceTree = "<group>"; };
 		A29C12D3148F74CC00EDC517 /* ToDo2012 */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = ToDo2012; path = ../ToDo2012; sourceTree = "<group>"; };
+		A2BB009716258D25002AE3EF /* Utils.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Utils.hh; sourceTree = "<group>"; };
 		A2DF65DD16170709002DFB3D /* Parameter.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Parameter.cc; sourceTree = "<group>"; };
 		A2DF65DE16170709002DFB3D /* Parameter.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Parameter.hh; sourceTree = "<group>"; };
 		AC4276C40DD873F6006C3B31 /* index.html */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.html; name = index.html; path = ../doc/html/index.html; sourceTree = SOURCE_ROOT; };
@@ -178,14 +179,15 @@
 			children = (
 				A22C6461162072DD00A58459 /* config.hh.in */,
 				ACF4B1220DBFA668008A0207 /* Makefile.am */,
+				ACF4B1380DBFA668008A0207 /* Solvers.hh */,
 				ACF4B0FC0DBFA668008A0207 /* EasyLocal.hh */,
 				ACDFC76D0DCFB2E5004D11E8 /* EasyLocal.conf.hh */,
 				AC77656E0DDEE52200A4A736 /* EasyLocal.conf.vc.hh */,
 				ACF4B11A0DBFA668008A0207 /* Helpers.hh */,
 				ACF4B12E0DBFA668008A0207 /* Runners.hh */,
 				ACF4B11F0DBFA668008A0207 /* Kickers.hh */,
-				ACF4B1380DBFA668008A0207 /* Solvers.hh */,
 				ACF4B13E0DBFA668008A0207 /* Testers.hh */,
+				A2BB009716258D25002AE3EF /* Utils.hh */,
 				ACF4B10D0DBFA668008A0207 /* helpers */,
 				ACF4B11B0DBFA668008A0207 /* kickers */,
 				AC75B24A0DD08BB8003EBD1F /* observers */,
@@ -440,7 +442,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "# shell script goes here\nexport CC=\"clang\"\nexport CXX=\"clang++\"\nexport CXXFLAGS=\"-stdlib=libc++\"\nexport CPPFLAGS=\"-I$PROJECT_DIR/../src\"\ncd $BUILD_DIR\necho $CONFIGURATION\nif [ \"$CONFIGURATION\" == \"Debug\" ]; then\necho \"DEBUG configuration\"\n$PROJECT_DIR/../configure --enable-debug --with-cppunit-prefix=/opt/local --with-boost=/usr/local/include --with-boost-libdir=/usr/local/lib\nelse\necho \"RELEASE configuration\"\n$PROJECT_DIR/../configure --with-cppunit-prefix=/opt/local\nfi\nmake clean\nexit 0";
+			shellScript = "# shell script goes here\nexport CC=\"clang\"\nexport CXX=\"clang++\"\nexport CXXFLAGS=\"-stdlib=libc++\"\nexport CPPFLAGS=\"-I$PROJECT_DIR/../src\"\ncd $BUILD_DIR\necho $CONFIGURATION\nif [ \"$CONFIGURATION\" == \"Debug\" ]; then\necho \"DEBUG configuration\"\n$PROJECT_DIR/../configure --enable-debug --with-cppunit-prefix=/opt/local --with-boost=/usr/local/include --with-boost-libdir=/usr/local/lib\nelse\necho \"RELEASE configuration\"\n$PROJECT_DIR/../configure --with-cppunit-prefix=/opt/local --with-boost=/usr/local/include --with-boost-libdir=/usr/local/lib\nfi\nmake clean\nexit 0";
 		};
 		ACFAF4C20DD489630095F6A0 /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;

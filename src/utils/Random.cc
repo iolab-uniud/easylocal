@@ -11,3 +11,4 @@
 std::random_device Random::dev;
 std::mt19937 Random::g(Random::dev());
 
+int Random::seed;

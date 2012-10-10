@@ -26,8 +26,8 @@
 */  
 
 #include <solvers/SimpleLocalSearch.hh>
-#include <solvers/GeneralizedLocalSearch.hh>
+			//#include <solvers/GeneralizedLocalSearch.hh>
 #include <solvers/VariableNeighborhoodDescent.hh>
-#include <solvers/GRASP.hh>
+			//#include <solvers/GRASP.hh>
 
 #endif // _SOLVERS_HH_

@@ -957,6 +957,8 @@ private:
       else
         throw std::logic_error("In function CompareMovesAt (base case) level is not zero");
 #endif
+      // just to prevent warnings from smart compilers
+      return false;
     }
     
     /** Run a function on a specific element of the tuples. Based on compile-time recursion.
