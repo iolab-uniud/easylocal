@@ -1355,8 +1355,6 @@ template<class Input, class State, class CFtype, class NeighborhoodExplorer, cla
 struct PowerNeighborhoodExplorerHelp<Input, State, CFtype, NeighborhoodExplorer, 0, TypeList<NeighborhoodExplorers...> >
 {
   typedef CartesianProductNeighborhoodExplorer<Input, State, CFtype, NeighborhoodExplorers... > CartesianProductNeighborhoodExplorer;
-  typedef std::tuple<std::reference_wrapper<NeighborhoodExplorers>...> PartialNeighborhoodExplorers;
-
 };
 
 // Recursive step
