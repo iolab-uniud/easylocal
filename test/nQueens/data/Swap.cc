@@ -48,3 +48,12 @@ std::istream& operator>>(std::istream& is, Swap& m)
 {
     return is >>  m.from >> m.to;
 }
+
+/** This works for the argument resolution rule: if we find a non-templated function with the right
+ parameter types, that is used. Otherwise the function template (see MultimodalNeighborhoodExplorer.hh)
+ is instantiated with the right types and the default (return true) strategy is used.
+ */
+bool IsRelated(const Swap& m1, const Swap& m2)
+{
+  return m1.to == m2.from;
+}

@@ -34,6 +34,9 @@ public:
     int from, to;
 };
 
+// Must be declared here to be visible
+bool IsRelated(const Swap& m1, const Swap& m2);
+
 std::istream& operator>>(std::istream& is, Swap& m);
 std::ostream& operator<<(std::ostream& os, const Swap& m);
 

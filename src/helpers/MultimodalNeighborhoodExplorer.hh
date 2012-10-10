@@ -10,11 +10,14 @@
 #include <utils/Tuple.hh>
 
 /** General rule: all moves are related. */
-template<class Move1, class Move2>
-void GetRelatedCheck(std::function<bool(const Move1& m1, const Move2& m2)>& f)
+template <class Move1, class Move2>
+bool IsRelated(const Move1& m1, const Move2& m2)
 {
-  f = ([](const Move1&, const Move2&) -> bool { std::cerr << "default" << std::endl; return true; });
+  return true;
 }
+
+
+// f = ([](const Move1&, const Move2&) -> bool { std::cerr << "default" << std::endl; return true; });
 
 /** Variadic multi-modal neighborhood explorer. Generates a NeighborhoodExplorer whose move type is a tuple of ActiveMoves.*/
 template <class Input, class State, typename CFtype, class ... BaseNeighborhoodExplorers>
@@ -318,7 +321,7 @@ protected:
      @param st reference to the current state
      @param temp_moves tuple of references to ActiveMoves
      @param temp_nhes tuple of references to associated NeighborhoodExplorers
-     @param level level at which to execute the function
+     @param level tuple level at which to execute the function (0 is the last element, N - 1 is the first)
      */
     static bool CheckAt(State& st, TupleOfMoves& temp_moves, const TupleOfNHEs& temp_nhes, const Call& c, int level)
     {
@@ -519,9 +522,9 @@ protected:
   /** @copydoc TupleDispatcher::ExecuteAt */
   template <class ...NHEs>
   static void ExecuteAt(State& st, std::tuple<std::reference_wrapper<ActiveMove<typename NHEs::ThisMove>>...>& moves,
-                        const std::tuple<std::reference_wrapper<NHEs>...>& nhes, const Call& c, int level)
+                        const std::tuple<std::reference_wrapper<NHEs>...>& nhes, const Call& c, int index)
   {
-    TupleDispatcher<std::tuple<std::reference_wrapper<ActiveMove<typename NHEs::ThisMove>>...>, std::tuple<std::reference_wrapper<NHEs>...>, sizeof...(NHEs) - 1>::ExecuteAt(st, moves, nhes, c, (sizeof...(NHEs) - 1) - level);
+    TupleDispatcher<std::tuple<std::reference_wrapper<ActiveMove<typename NHEs::ThisMove>>...>, std::tuple<std::reference_wrapper<NHEs>...>, sizeof...(NHEs) - 1>::ExecuteAt(st, moves, nhes, c, (sizeof...(NHEs) - 1) - index);
   }
   
   /** @copydoc TupleDispatcher::ExecuteAll */
@@ -535,9 +538,9 @@ protected:
   /** @copydoc TupleDispatcher::ComputeAt */
   template <class ...NHEs>
   static CFtype ComputeAt(State& st, std::tuple<std::reference_wrapper<ActiveMove<typename NHEs::ThisMove>>...>& moves,
-                          const std::tuple<std::reference_wrapper<NHEs>...>& nhes, const Call& c, int level)
+                          const std::tuple<std::reference_wrapper<NHEs>...>& nhes, const Call& c, int index)
   {
-    return TupleDispatcher<std::tuple<std::reference_wrapper<ActiveMove<typename NHEs::ThisMove>>...>, std::tuple<std::reference_wrapper<NHEs>...>, sizeof...(NHEs) - 1>::ComputeAt(st, moves, nhes, c, (sizeof...(NHEs) - 1) - level);
+    return TupleDispatcher<std::tuple<std::reference_wrapper<ActiveMove<typename NHEs::ThisMove>>...>, std::tuple<std::reference_wrapper<NHEs>...>, sizeof...(NHEs) - 1>::ComputeAt(st, moves, nhes, c, (sizeof...(NHEs) - 1) - index);
   }
   
   /** @copydoc TupleDispatcher::ComputeAll */
@@ -575,9 +578,9 @@ protected:
   /** @copydoc TupleDispatcher::CheckAt */
   template <class ...NHEs>
   static CFtype CheckAt(State& st, std::tuple<std::reference_wrapper<ActiveMove<typename NHEs::ThisMove>>...>& moves,
-                        const std::tuple<std::reference_wrapper<NHEs>...>& nhes, const Call& c, int level)
+                        const std::tuple<std::reference_wrapper<NHEs>...>& nhes, const Call& c, int index)
   {
-    return TupleDispatcher<std::tuple<std::reference_wrapper<ActiveMove<typename NHEs::ThisMove>>...>, std::tuple<std::reference_wrapper<NHEs>...>, sizeof...(NHEs) - 1>::CheckAt(st, moves, nhes, c, (sizeof...(NHEs) - 1) - level);
+    return TupleDispatcher<std::tuple<std::reference_wrapper<ActiveMove<typename NHEs::ThisMove>>...>, std::tuple<std::reference_wrapper<NHEs>...>, sizeof...(NHEs) - 1>::CheckAt(st, moves, nhes, c, (sizeof...(NHEs) - 1) - index);
   }
   
   /** Checks if a move is active.
@@ -623,9 +626,8 @@ protected:
   template<class N, class M>
   static bool TryNextMove(const N& n, State& s, M& m)
   {
-    M& mm = const_cast<M&>(m);
-    mm.active = n.NextMove(s, mm);
-    return mm.active;
+    m.active = n.NextMove(s, m);
+    return m.active;
   }
   
   /** Executes the move on the state, modifies it
@@ -893,15 +895,11 @@ private:
       if (level == 0)
       {
         // Get last element of the tuples
-        auto this_move = std::get<N-1>(temp_moves).get();
-        auto next_move = std::get<N>(temp_moves).get();
-        
-        // Instantiate the function with the right template parameters
-        std::function<bool(const decltype(this_move)&, const decltype(next_move)&)> f;
-        GetRelatedCheck(f);
+        auto this_move = std::get<N-1>(temp_moves).get().RawMove();
+        auto next_move = std::get<N>(temp_moves).get().RawMove();
         
         // Call on the last element
-        return f(this_move, next_move);
+        return IsRelated(this_move, next_move);
       }
       // Otherwise go down with recursion
       else if (level > 0)
@@ -927,15 +925,11 @@ private:
       others = TupleDispatcher<TupleOfMoves, TupleOfNHEs, N-1>::CompareMoves(st, temp_moves, cp_nhe);
       
       // Get last element of the tuples
-      auto this_move = std::get<N-1>(temp_moves).get();
-      auto next_move = std::get<N>(temp_moves).get();
-      
-      // Instantiate the function with the right template parameters
-      std::function<bool(const decltype(this_move)&, const decltype(next_move)&)> f;
-      GetRelatedCheck(f);
+      auto this_move = std::get<N-1>(temp_moves).get().RawMove();
+      auto next_move = std::get<N>(temp_moves).get().RawMove();
       
       // Call on the last element
-      current.push_back(f(this_move, next_move));
+      current.push_back(IsRelated(this_move, next_move));
       current.insert(current.begin(), others.begin(), others.end());
       
       return current;
@@ -983,12 +977,12 @@ private:
    @param moves a reference to the current tuple of moves
    @param nhes a reference to the current tuple of NeighborhoodExplorers
    @param c wrapper to a predicate to compare two moves
-   @param level index of the first move
+   @param index index of the first move 
   */
   template <class ...NHEs>
-  static bool CompareMovesAt(State& st, std::tuple<std::reference_wrapper<ActiveMove<typename NHEs::ThisMove>>...>& moves, const ThisNeighborhoodExplorer& cp_nhe, int level)
+  static bool CompareMovesAt(State& st, std::tuple<std::reference_wrapper<ActiveMove<typename NHEs::ThisMove>>...>& moves, const ThisNeighborhoodExplorer& cp_nhe, int index)
   {
-    return TupleDispatcher<std::tuple<std::reference_wrapper<ActiveMove<typename NHEs::ThisMove>>...>, std::tuple<std::reference_wrapper<NHEs>...>, sizeof...(NHEs)-1>::CompareMovesAt(st, moves, const_cast<ThisNeighborhoodExplorer&>(cp_nhe), level);
+    return TupleDispatcher<std::tuple<std::reference_wrapper<ActiveMove<typename NHEs::ThisMove>>...>, std::tuple<std::reference_wrapper<NHEs>...>, sizeof...(NHEs)-1>::CompareMovesAt(st, moves, const_cast<ThisNeighborhoodExplorer&>(cp_nhe), (sizeof...(NHEs) - 1) - index);
   }
   
   /** Checks that a move is related to the previous one.
@@ -1149,32 +1143,34 @@ public:
           
           // Reset state which was modified during visit
           temp_states[i+1] = temp_states[i];
+
+          // Generate first move
+          //SuperNeighborhoodExplorer::ExecuteAt(temp_states[i], r_moves, this->nhes, first_move, i);
           
-          // Generaste first move
-          SuperNeighborhoodExplorer::ExecuteAt(temp_states[i], r_moves, this->nhes, first_move, i);
           
           bool empty = false;
-          while (!CompareMovesAt<BaseNeighborhoodExplorers...>(temp_states[i], r_moves, *this, i))
+          
+          do
           {
             // We can't throw an exception to backtrack since we're already backtracking
             if (!SuperNeighborhoodExplorer::CheckAt(temp_states[i], r_moves, this->nhes, try_next_move, i))
               empty = true;
           }
+          while (!CompareMovesAt<BaseNeighborhoodExplorers...>(temp_states[i], r_moves, *this, i));
           
-          // Backtrack on empty neighborhood
-          if (empty)
-            continue;
-          else
+          // a move to be performed has been found
+          if (!empty)
           {
-            // Otherwise execute generated move
+            // execute generated move
             SuperNeighborhoodExplorer::ExecuteAt(temp_states[i+1], r_moves, this->nhes, make_move, i);
             break;
           }
-        }
-        if (i < 0)
-        {
-          // No combination whatsoever could be extended as a "first move"
-          throw EmptyNeighborhood();
+          else
+            if (i == 0)
+            {
+              // No combination whatsoever could be extended as a "first move" on the first neighborhood
+              throw EmptyNeighborhood();
+            }
         }
       }
       i++;

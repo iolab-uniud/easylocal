@@ -53,6 +53,7 @@ class ActiveMove : public Move
 {
 public:
   bool active;
+  Move& RawMove() { return *this; }
 };
 
 /** Input operator for ActiveMove, calls input operator for Move. */

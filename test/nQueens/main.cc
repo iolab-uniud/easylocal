@@ -123,15 +123,6 @@
 //#include <kickers/MultimodalKicker.hh>
 using namespace std;
 
-/** This works for the argument resolution rule: if we find a non-templated function with the right 
- parameter types, that is used. Otherwise the function template (see MultimodalNeighborhoodExplorer.hh)
- is instantiated with the right types and the default (return true) strategy is used.
- */
-void GetRelatedCheck(std::function<bool(const ActiveMove<Swap>& m1, const ActiveMove<Swap>& m2)>& f)
-{
-  f = ([](const ActiveMove<Swap>&, const ActiveMove<Swap>&) -> bool { std::cerr << "activeswap" << std::endl; return false; });
-}
-
 int main(int argc, const char* argv[])
 {
   try
