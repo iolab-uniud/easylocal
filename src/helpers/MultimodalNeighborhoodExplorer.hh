@@ -171,7 +171,7 @@ protected:
         auto& this_move = std::get<N>(temp_moves).get();
         
         // Instantiate the function with the right template parameters
-        std::function<void(const decltype(this_nhe)&, State&, decltype(this_move)&)> f =  c.template getVoid<decltype(this_nhe),decltype(this_move)>();
+        std::function<void(const decltype(this_nhe)&, State&, decltype(this_move)&)> f =  c.template getVoid<decltype(this_nhe), decltype(this_move)>();
         
         // Call on the last element
         f(this_nhe, st, this_move);
@@ -726,7 +726,7 @@ public:
   virtual void RandomMove(const State& st, typename SuperNeighborhoodExplorer::ThisMove& moves) const throw(EmptyNeighborhood)
   {
     // Pick a random number withing modality
-    int selected = Random::Int(0, this->Modality()-1);
+    unsigned int selected = Random::Int(0, this->Modality()-1);
     
     Call initialize_inactive(Call::Function::INITIALIZE_INACTIVE);
     Call random_move(SuperNeighborhoodExplorer::Call::Function::RANDOM_MOVE);
@@ -745,7 +745,7 @@ public:
   virtual void FirstMove(const State& st, typename SuperNeighborhoodExplorer::ThisMove& moves) const throw(EmptyNeighborhood)
   {
     // Select first NeighborhoodExplorer
-    int selected = 0;
+    unsigned int selected = 0;
  
     Call initialize_inactive(Call::Function::INITIALIZE_INACTIVE);
     Call first_move(Call::Function::FIRST_MOVE);
@@ -778,7 +778,7 @@ public:
   virtual bool NextMove(const State& st, typename SuperNeighborhoodExplorer::ThisMove& moves) const
   {
     // Select the current active NeighborhoodExplorer
-    int selected = this->CurrentActiveMove(st, moves);
+    unsigned int selected = this->CurrentActiveMove(st, moves);
     
     Call try_next_move(Call::Function::TRY_NEXT_MOVE);
     
@@ -813,7 +813,7 @@ public:
   virtual CFtype DeltaCostFunction(const State& st, const typename SuperNeighborhoodExplorer::ThisMove& moves) const
   {
     // Select the current active NeighborhoodExplorer
-    int selected = this->CurrentActiveMove(st, moves);
+    unsigned int selected = this->CurrentActiveMove(st, moves);
     
     // Compute delta cost
     Call delta_cost_function(Call::Function::DELTA_COST_FUNCTION);
@@ -829,7 +829,7 @@ public:
   virtual void MakeMove(State& st, const typename SuperNeighborhoodExplorer::ThisMove& moves) const
   {
     // Select current active move
-    int selected = this->CurrentActiveMove(st, moves);
+    unsigned int selected = this->CurrentActiveMove(st, moves);
     Call make_move(Call::Function::MAKE_MOVE);
     
     // Convert to references to non-const
@@ -843,7 +843,7 @@ public:
   virtual bool FeasibleMove(const State& st, const typename SuperNeighborhoodExplorer::ThisMove& moves) const
   {
     // Select current active move
-    int selected = this->CurrentActiveMove(st, moves);
+    unsigned int selected = this->CurrentActiveMove(st, moves);
     Call feasible_move(Call::Function::FEASIBLE_MOVE);
     
     // Convert to references to non-const
@@ -1074,7 +1074,7 @@ public:
     SuperNeighborhoodExplorer::ExecuteAt(temp_states[1], r_moves, this->nhes, make_move, 0);
     
     // Generate all the random moves of the tuple
-    for (int i = 1; i < this->Modality(); i++)
+    for (unsigned int i = 1; i < this->Modality(); i++)
     {
       // Duplicate current state (to process it later)
       temp_states[i+1] = temp_states[i];
@@ -1123,7 +1123,7 @@ public:
     SuperNeighborhoodExplorer::ExecuteAt(temp_states[1], r_moves, this->nhes, make_move, 0);
     
     int i = 1;
-    while (i < this->Modality())
+    while (i < static_cast<int>(this->Modality()))
     {      
       try
       {
@@ -1136,7 +1136,7 @@ public:
             throw EmptyNeighborhood(); // just to enter backtracking
         }
         
-        if (i == this->Modality() - 1)
+        if (i == static_cast<int>(this->Modality()) - 1)
         {
           // The whole chain of moves has been dispatched
 #if defined(DEBUG)
@@ -1212,7 +1212,7 @@ public:
     temp_states[0] = st;
     
     // create and initialize all the remaining states in the chain
-    for (int i = 1; i < this->Modality(); i++)
+    for (unsigned int i = 1; i < this->Modality(); i++)
     {
       temp_states[i] = temp_states[i - 1];
       SuperNeighborhoodExplorer::ExecuteAt(temp_states[i], r_moves, this->nhes, make_move, i - 1);
@@ -1225,7 +1225,7 @@ public:
         return true;
 
     bool backtracking = true;
-    while (i < this->Modality())
+    while (i < static_cast<int>(this->Modality()))
     {
       // backtracking to the first available component that has a next move
       while (backtracking && i > 0)
@@ -1260,7 +1260,7 @@ public:
             throw EmptyNeighborhood(); // just to enter backtracking
         }
         
-        if (i == this->Modality() - 1)
+        if (i == static_cast<int>(this->Modality()) - 1)
           return true;
         
         temp_states[i + 1] = temp_states[i];
@@ -1294,7 +1294,7 @@ public:
     temp_states[0] = st; // the first state is a copy of to st
     // create and initialize all the remaining states in the chain
     sum = SuperNeighborhoodExplorer::ComputeAt(temp_states[0], r_moves, this->nhes, do_delta_cost_function, 0);
-    for (int i = 1; i < this->Modality(); i++)
+    for (unsigned int i = 1; i < this->Modality(); i++)
     {
       temp_states[i] = temp_states[i - 1];
       SuperNeighborhoodExplorer::ExecuteAt(temp_states[i], r_moves, this->nhes, make_move, i - 1);
@@ -1331,7 +1331,7 @@ public:
     // create and initialize all the remaining states in the chain
     if (!SuperNeighborhoodExplorer::CheckAt(temp_states[0], r_moves, this->nhes, is_feasible_move, 0))
       return false;
-    for (int i = 1; i < this->Modality(); i++)
+    for (unsigned int i = 1; i < this->Modality(); i++)
     {
       temp_states[i] = temp_states[i - 1];
       SuperNeighborhoodExplorer::ExecuteAt(temp_states[i], r_moves, this->nhes, make_move, i - 1);
