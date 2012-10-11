@@ -7,7 +7,7 @@
 #endif
 
 #include <stdexcept>
-#if defined(HAVE_LINKABLE_BOOST)
+#if defined(HAVE_BOOST)
 #include <boost/program_options/options_description.hpp>
 #endif
 #include <vector>
@@ -72,7 +72,7 @@ public:
   
   /** Namespace of the parameter. */
   const std::string prefix;
-#if defined(HAVE_LINKABLE_BOOST)
+#if defined(HAVE_BOOST)
   /** Object to configure boost's parameter parser. */
   boost::program_options::options_description cl_options;
 #endif
@@ -140,7 +140,7 @@ Parameter<T>::Parameter(const std::string& cmdline_flag, const std::string& desc
 {
   std::string flag = parameters.prefix + "::" + cmdline_flag;
   parameters.push_back(this);
-#if defined(HAVE_LINKABLE_BOOST)
+#if defined(HAVE_BOOST)
   parameters.cl_options.add_options()
   (flag.c_str(), boost::program_options::value<T>(&value)->notifier([this](const T&){ this->is_set = true; }), description.c_str());
 #endif

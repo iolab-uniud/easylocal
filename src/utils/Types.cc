@@ -2,7 +2,6 @@
 
 #include <limits>
 #include <cmath>
-#include <iostream>
 #include <stdint.h>
 
 template <>

@@ -219,7 +219,7 @@ public:
   SetUnionTabuListManager(BaseTabuListManagers& ... tlms)
   : MultimodalTabuListManager<State, CFtype, BaseTabuListManagers...>(tlms...)
   {}
-  virtual bool Inverse(const typename SuperTabuListManager::ThisMove& moves_1, const const typename SuperTabuListManager::ThisMove& moves_2) const
+  virtual bool Inverse(const typename SuperTabuListManager::ThisMove& moves_1, const typename SuperTabuListManager::ThisMove& moves_2) const
   {
     Call is_inverse(Call::Function::is_inverse);
     return SuperTabuListManager::CheckAny(moves_1, moves_2, this->tlms, is_inverse);
@@ -235,7 +235,7 @@ public:
   CartesianProductTabuListManager(BaseTabuListManagers& ... tlms)
   : MultimodalTabuListManager<State, CFtype, BaseTabuListManagers...>(tlms...)
   {}
-  virtual bool Inverse(const typename SuperTabuListManager::ThisMove& moves_1, const const typename SuperTabuListManager::ThisMove& moves_2) const
+  virtual bool Inverse(const typename SuperTabuListManager::ThisMove& moves_1, const typename SuperTabuListManager::ThisMove& moves_2) const
   {
     Call is_inverse(Call::Function::is_inverse);
     return SuperTabuListManager::CheckAll(moves_1, moves_2, this->tlms, is_inverse);

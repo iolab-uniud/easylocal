@@ -16589,45 +16589,19 @@ fi
 # Checks for boost::program_options (macports boost could be compiled with an incompatible c++11 compiler)
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether the boost_program_options library can be linked" >&5
 $as_echo_n "checking whether the boost_program_options library can be linked... " >&6; }
-LDFLAGS_SAVED="$LDFLAGS"
-LDFLAGS="$LDFLAGS $BOOST_LDFLAGS"
-LIBS_SAVED="$LIBS"
-LIBS="-lboost_program_options $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-#include <boost/program_options/options_description.hpp>
-int
-main ()
-{
-boost::program_options::options_description tmp("Test program options");
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_cxx_try_link "$LINENO"; then :
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-$as_echo "yes" >&6; }
-
-cat >>confdefs.h <<_ACEOF
-#define HAVE_LINKABLE_BOOST 1
-_ACEOF
-
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-     if false; then
-  BOOST_TRUE=
-  BOOST_FALSE='#'
-else
-  BOOST_TRUE='#'
-  BOOST_FALSE=
-fi
-
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext conftest.$ac_ext
-LDFLAGS=$LDFLAGS_SAVED
-LIBS=$LIBS_SAVED
+#LDFLAGS_SAVED="$LDFLAGS"
+#LDFLAGS="$LDFLAGS $BOOST_LDFLAGS"
+#LIBS_SAVED="$LIBS"
+#LIBS="-lboost_program_options $LIBS"
+#AC_LINK_IFELSE(
+#    [AC_LANG_PROGRAM([[#include <boost/program_options/options_description.hpp>]],
+#        [[boost::program_options::options_description tmp("Test program options");]])],
+#    [AC_MSG_RESULT([yes])
+#        AC_DEFINE_UNQUOTED([HAVE_LINKABLE_BOOST], 1, [Define to 1 if you have the `sleep_for' function.])],
+#    [AC_MSG_RESULT([no])
+#    AM_CONDITIONAL(BOOST, false)])
+#LDFLAGS=$LDFLAGS_SAVED
+#LIBS=$LIBS_SAVED
 
 # For CppUnit testing
 # Check whether --enable-cppunit was given.
@@ -18896,10 +18870,6 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${DEBUG_TRUE}" && test -z "${DEBUG_FALSE}"; then
   as_fn_error $? "conditional \"DEBUG\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
-if test -z "${BOOST_TRUE}" && test -z "${BOOST_FALSE}"; then
-  as_fn_error $? "conditional \"BOOST\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${BOOST_TRUE}" && test -z "${BOOST_FALSE}"; then

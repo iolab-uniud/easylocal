@@ -97,19 +97,19 @@ AC_COMPILE_IFELSE(  [AC_LANG_PROGRAM([[#include <thread>]],
 AX_BOOST_BASE([1.40], [AM_CONDITIONAL(BOOST, true)], [AM_CONDITIONAL(BOOST, false)])
 # Checks for boost::program_options (macports boost could be compiled with an incompatible c++11 compiler)
 AC_MSG_CHECKING([whether the boost_program_options library can be linked])
-LDFLAGS_SAVED="$LDFLAGS"
-LDFLAGS="$LDFLAGS $BOOST_LDFLAGS"
-LIBS_SAVED="$LIBS"
-LIBS="-lboost_program_options $LIBS"
-AC_LINK_IFELSE(
-    [AC_LANG_PROGRAM([[#include <boost/program_options/options_description.hpp>]],
-        [[boost::program_options::options_description tmp("Test program options");]])],
-    [AC_MSG_RESULT([yes])
-        AC_DEFINE_UNQUOTED([HAVE_LINKABLE_BOOST], 1, [Define to 1 if you have the `sleep_for' function.])],
-    [AC_MSG_RESULT([no])
-    AM_CONDITIONAL(BOOST, false)])
-LDFLAGS=$LDFLAGS_SAVED
-LIBS=$LIBS_SAVED
+#LDFLAGS_SAVED="$LDFLAGS"
+#LDFLAGS="$LDFLAGS $BOOST_LDFLAGS"
+#LIBS_SAVED="$LIBS"
+#LIBS="-lboost_program_options $LIBS"
+#AC_LINK_IFELSE(
+#    [AC_LANG_PROGRAM([[#include <boost/program_options/options_description.hpp>]],
+#        [[boost::program_options::options_description tmp("Test program options");]])],
+#    [AC_MSG_RESULT([yes])
+#        AC_DEFINE_UNQUOTED([HAVE_LINKABLE_BOOST], 1, [Define to 1 if you have the `sleep_for' function.])],
+#    [AC_MSG_RESULT([no])
+#    AM_CONDITIONAL(BOOST, false)])
+#LDFLAGS=$LDFLAGS_SAVED
+#LIBS=$LIBS_SAVED
 
 # For CppUnit testing
 AC_ARG_ENABLE(cppunit, 

@@ -114,7 +114,7 @@
 #include <testers/KickerTester.hh>
 #include <helpers/ShiftingPenaltyManager.hh>
 #include <helpers/MultimodalTabuListManager.hh>
-#if defined(HAVE_LINKABLE_BOOST)
+#if defined(HAVE_BOOST)
 #include <boost/program_options/options_description.hpp>
 #include <boost/program_options/parsers.hpp>
 #include <boost/program_options/variables_map.hpp>
@@ -130,7 +130,7 @@ int main(int argc, const char* argv[])
     // input classe
     int in;
     
-#if defined(HAVE_LINKABLE_BOOST)
+#if defined(HAVE_BOOST)
     ParameterBox main_parameters("main", "Main Program options");
     // Main program parameters
     Parameter<int> size("size", "Chessboard size", main_parameters);
@@ -191,7 +191,7 @@ int main(int argc, const char* argv[])
     SimpleLocalSearch<int, ChessBoard, vector<int> , int> qss(in, qsm, qom, "QueensSLS");
     VariableNeighborhoodDescent<int, ChessBoard, vector<int>, int > qvnd(in, qsm, qom, 3, "VNDS");
         
-#if defined(HAVE_LINKABLE_BOOST)
+#if defined(HAVE_BOOST)
     // parse all command line parameters, including those posted by runners and solvers
     if (!CommandLineParameters::Parse(argc, argv, true))
       return 1;

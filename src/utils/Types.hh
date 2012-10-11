@@ -6,6 +6,7 @@
 #include <config.hh>
 #endif
 #include <vector>
+#include <iostream>
 
 template <typename CFtype>
 bool IsZero(CFtype value);

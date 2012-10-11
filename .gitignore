@@ -7,3 +7,6 @@ xcuserdata
 *.a
 *.o
 *.la
+.libs
+.deps
+Makefile
