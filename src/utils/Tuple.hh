@@ -92,4 +92,20 @@ std::istream& operator>>(std::istream& is, std::tuple<T...>& t)
 }
 
 
+template <class H, class S, class ...T>
+std::tuple<std::reference_wrapper<H>, std::reference_wrapper<S>, std::reference_wrapper<T>...> to_refs(const std::tuple<H, S, T...>& original)
+{
+  std::reference_wrapper<H> head_ref = std::ref(const_cast<H&>(std::get<0>(original)));
+  std::tuple<std::reference_wrapper<S>, std::reference_wrapper<T>...> tail_refs = to_refs(tuple_tail(original));
+  return tuple_cat(make_tuple(head_ref), tail_refs);
+}
+
+template <class H>
+std::tuple<std::reference_wrapper<H>> to_refs(const std::tuple<H>& original)
+{
+  std::reference_wrapper<H> head_ref = std::ref(const_cast<H&>(std::get<0>(original)));
+  return make_tuple(head_ref);
+}
+
+
 #endif
