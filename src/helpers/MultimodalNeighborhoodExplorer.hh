@@ -1356,7 +1356,7 @@ struct PowerNeighborhoodExplorerHelp;
 template<class Input, class State, class CFtype, class NeighborhoodExplorer, class... NeighborhoodExplorers>
 struct PowerNeighborhoodExplorerHelp<Input, State, CFtype, NeighborhoodExplorer, 0, TypeList<NeighborhoodExplorers...> >
 {
-  typedef CartesianProductNeighborhoodExplorer<Input, State, CFtype, NeighborhoodExplorers... > CartesianProductNeighborhoodExplorer;
+  typedef CartesianProductNeighborhoodExplorer<Input, State, CFtype, NeighborhoodExplorers... > ThisCartesianProductNeighborhoodExplorer;
 };
 
 // Recursive step
