@@ -2,3 +2,8 @@
 ar-lib
 autom4te.cache
 xcuserdata
+*.o
+*.Plo
+*.a
+*.o
+*.la
