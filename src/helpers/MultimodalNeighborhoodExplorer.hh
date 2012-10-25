@@ -82,26 +82,26 @@ protected:
     Call(Function f) : to_call(f) { }
 
     /** Method to generate a function with void return type. */
-    template <class N, class M>
-    std::function<void(const N&, State&, M&)> getVoid() const throw(std::logic_error)
+    template <class N>
+    std::function<void(const N&, State&, ActiveMove<typename N::ThisMove>&)> getVoid() const throw(std::logic_error)
     {
-      std::function<void(const N&, State&, M&)> f;
+      std::function<void(const N&, State&, ActiveMove<typename N::ThisMove>&)> f;
       switch (to_call)
       {
         case MAKE_MOVE:
-          f = &DoMakeMove<N, M>;
+          f = &DoMakeMove<N>;
           break;
         case INITIALIZE_INACTIVE:
-          f = &InitializeInactive<N, M>;
+          f = &InitializeInactive<N>;
           break;
         case INITIALIZE_ACTIVE:
-          f = &InitializeActive<N, M>;
+          f = &InitializeActive<N>;
           break;
         case FIRST_MOVE:
-          f = &DoFirstMove<N,M>;
+          f = &DoFirstMove<N>;
           break;
         case RANDOM_MOVE:
-          f = &DoRandomMove<N,M>;
+          f = &DoRandomMove<N>;
           break;
         default:
           throw std::logic_error("Function not implemented");
@@ -110,14 +110,14 @@ protected:
     }
 
     /** Method to generate a function with CFtype return type. */
-    template <class N, class M>
-    std::function<CFtype(const N&, State&, M&)> getCFtype() const throw(std::logic_error)
+    template <class N>
+    std::function<CFtype(const N&, State&, ActiveMove<typename N::ThisMove>&)> getCFtype() const throw(std::logic_error)
     {
-      std::function<CFtype(const N&, State&, M&)> f;
+      std::function<CFtype(const N&, State&, ActiveMove<typename N::ThisMove>&)> f;
       switch (to_call)
       {
         case DELTA_COST_FUNCTION:
-          f = &DoDeltaCostFunction<N,M>;
+          f = &DoDeltaCostFunction<N>;
           break;
         default:
           throw std::logic_error("Function not implemented");
@@ -126,20 +126,20 @@ protected:
     }
 
     /** Method to generate a function with bool return type. */
-    template <class N, class M>
-    std::function<bool(const N&, State&, M&)> getBool() const throw(std::logic_error)
+    template <class N>
+    std::function<bool(const N&, State&, ActiveMove<typename N::ThisMove>&)> getBool() const throw(std::logic_error)
     {
-      std::function<bool(const N&, State&, M&)> f;
+      std::function<bool(const N&, State&, ActiveMove<typename N::ThisMove>&)> f;
       switch (to_call)
       {
         case FEASIBLE_MOVE:
-          f = &IsFeasibleMove<N,M>;
+          f = &IsFeasibleMove<N>;
           break;
         case TRY_NEXT_MOVE:
-          f = &TryNextMove<N,M>;
+          f = &TryNextMove<N>;
           break;
         case IS_ACTIVE:
-          f = &IsActive<N,M>;
+          f = &IsActive<N>;
           break;
         default:
           throw std::logic_error("Function not implemented");
@@ -167,11 +167,13 @@ protected:
       if (level == 0)
       {
         // Get last element of the tuples
-        auto& this_nhe = std::get<N>(temp_nhes).get();
-        auto& this_move = std::get<N>(temp_moves).get();
-        
+        typedef typename std::tuple_element<N, TupleOfNHEs>::type::type CurrentNHE;
+        typedef typename std::tuple_element<N, TupleOfMoves>::type::type CurrentMove;
+        CurrentNHE& this_nhe = std::get<N>(temp_nhes).get();
+        CurrentMove& this_move = std::get<N>(temp_moves).get();
+       
         // Instantiate the function with the right template parameters
-        std::function<void(const decltype(this_nhe)&, State&, decltype(this_move)&)> f =  c.template getVoid<decltype(this_nhe), decltype(this_move)>();
+        std::function<void(const CurrentNHE &, State&,  CurrentMove &)> f =  c.template getVoid<CurrentNHE>();
         
         // Call on the last element
         f(this_nhe, st, this_move);
@@ -194,11 +196,13 @@ protected:
     static void ExecuteAll(State& st, TupleOfMoves& temp_moves, const TupleOfNHEs& temp_nhes, const Call& c)
     {
       // Get last element of the tuples
-      auto& this_nhe = std::get<N>(temp_nhes).get();
-      auto& this_move = std::get<N>(temp_moves).get();
-      
+      typedef typename std::tuple_element<N, TupleOfNHEs>::type::type CurrentNHE;
+      typedef typename std::tuple_element<N, TupleOfMoves>::type::type CurrentMove;
+      CurrentNHE& this_nhe = std::get<N>(temp_nhes).get();
+      CurrentMove& this_move = std::get<N>(temp_moves).get();
+       
       // Instantiate the function with the right template parameters
-      std::function<void(const decltype(this_nhe)&, State&, decltype(this_move)&)> f =  c.template getVoid<decltype(this_nhe),decltype(this_move)>();
+      std::function<void(const CurrentNHE&, State&, CurrentMove&)> f =  c.template getVoid<CurrentNHE>();
       
       // Call recursively on first N-1 elements of the tuple, then call on the last element of the tuple
       TupleDispatcher<TupleOfMoves, TupleOfNHEs, N - 1>::ExecuteAll(st, temp_moves, temp_nhes, c);
@@ -217,11 +221,13 @@ protected:
       if (level == 0)
       {
         // Get last element of the tuples
-        auto& this_nhe = std::get<N>(temp_nhes).get();
-        auto& this_move = std::get<N>(temp_moves).get();
-        
+        typedef typename std::tuple_element<N, TupleOfNHEs>::type::type CurrentNHE;
+        typedef typename std::tuple_element<N, TupleOfMoves>::type::type CurrentMove;
+        CurrentNHE& this_nhe = std::get<N>(temp_nhes).get();
+        CurrentMove& this_move = std::get<N>(temp_moves).get();
+
         // Instantiate the function with the right template parameters
-        std::function<CFtype(const decltype(this_nhe)&, State&, decltype(this_move)&)> f =  c.template getCFtype<decltype(this_nhe),decltype(this_move)>();
+        std::function<CFtype(const CurrentNHE&, State&, CurrentMove&)> f =  c.template getCFtype<CurrentNHE>();
         
         // Call on the last element, return result
         return f(this_nhe, st, this_move);
@@ -246,11 +252,13 @@ protected:
     static CFtype ComputeAll(State& st, TupleOfMoves& temp_moves, const TupleOfNHEs& temp_nhes, const Call& c)
     {
       // Get last element of the tuples
-      auto& this_nhe = std::get<N>(temp_nhes).get();
-      auto& this_move = std::get<N>(temp_moves).get();
+      typedef typename std::tuple_element<N, TupleOfNHEs>::type::type CurrentNHE;
+      typedef typename std::tuple_element<N, TupleOfMoves>::type::type CurrentMove;
+      CurrentNHE& this_nhe = std::get<N>(temp_nhes).get();
+      CurrentMove& this_move = std::get<N>(temp_moves).get();
       
       // Instantiate the function with the right template parameters
-      std::function<CFtype(const decltype(this_nhe)&, State&, decltype(this_move)&)> f =  c.template getCFtype<decltype(this_nhe),decltype(this_move)>();
+      std::function<CFtype(const CurrentNHE&, State&, CurrentMove&)> f =  c.template getCFtype<CurrentNHE>();
       
       // Return aggregate result
       return TupleDispatcher<TupleOfMoves, TupleOfNHEs, N - 1>::ComputeAll(st, temp_moves, temp_nhes, c) + f(this_nhe, st, this_move);
@@ -265,11 +273,13 @@ protected:
     static std::vector<bool> Check(State& st, TupleOfMoves& temp_moves, const TupleOfNHEs& temp_nhes, const Call& c)
     {
       // Get last element of the tuple
-      auto& this_nhe = std::get<N>(temp_nhes).get();
-      auto& this_move = std::get<N>(temp_moves).get();
-      
+      typedef typename std::tuple_element<N, TupleOfNHEs>::type::type CurrentNHE;
+      typedef typename std::tuple_element<N, TupleOfMoves>::type::type CurrentMove;
+      CurrentNHE& this_nhe = std::get<N>(temp_nhes).get();
+      CurrentMove& this_move = std::get<N>(temp_moves).get();
+
       // Instantiate the function with the right template parameters
-      std::function<bool(const decltype(this_nhe)&, State&, decltype(this_move)&)> f =  c.template getBool<decltype(this_nhe),decltype(this_move)>();
+      std::function<bool(const CurrentNHE&, State&, CurrentMove&)> f =  c.template getBool<CurrentNHE>();
 
       // Go down with recursion and merge results
       std::vector<bool> current, others;
@@ -288,11 +298,13 @@ protected:
     static bool CheckAll(State& st, TupleOfMoves& temp_moves, const TupleOfNHEs& temp_nhes, const Call& c)
     {
       // Get last element of the tuple
-      auto& this_nhe = std::get<N>(temp_nhes).get();
-      auto& this_move = std::get<N>(temp_moves).get();
+      typedef typename std::tuple_element<N, TupleOfNHEs>::type::type CurrentNHE;
+      typedef typename std::tuple_element<N, TupleOfMoves>::type::type CurrentMove;
+      CurrentNHE& this_nhe = std::get<N>(temp_nhes).get();
+      CurrentMove& this_move = std::get<N>(temp_moves).get();
       
       // Instantiate the function with the right template parameters
-      std::function<bool(const decltype(this_nhe)&, State&, decltype(this_move)&)> f =  c.template getBool<decltype(this_nhe),decltype(this_move)>();
+      std::function<bool(const CurrentNHE&, State&, CurrentMove&)> f =  c.template getBool<CurrentNHE&>();
       
       // Lazy evaluation
       if (!f(this_nhe, st, this_move))
@@ -310,11 +322,13 @@ protected:
     static bool CheckAny(State& st, TupleOfMoves& temp_moves, const TupleOfNHEs& temp_nhes, const Call& c)
     {
       // Get last element of the tuple
-      auto& this_nhe = std::get<N>(temp_nhes).get();
-      auto& this_move = std::get<N>(temp_moves).get();
+      typedef typename std::tuple_element<N, TupleOfNHEs>::type::type CurrentNHE;
+      typedef typename std::tuple_element<N, TupleOfMoves>::type::type CurrentMove;
+      CurrentNHE& this_nhe = std::get<N>(temp_nhes).get();
+      CurrentMove& this_move = std::get<N>(temp_moves).get();
       
       // Instantiate the function with the right template parameters
-      std::function<bool(const decltype(this_nhe)&, State&, decltype(this_move)&)> f =  c.template getBool<decltype(this_nhe),decltype(this_move)>();
+      std::function<bool(const CurrentNHE&, State&, CurrentMove&)> f =  c.template getBool<CurrentNHE>();
       
       // Lazy evaluation
       if (f(this_nhe, st, this_move))
@@ -335,11 +349,14 @@ protected:
       if (level == 0)
       {
         // Get the last element of the tuples
-        auto& this_nhe = std::get<N>(temp_nhes).get();
-        auto& this_move = std::get<N>(temp_moves).get();
+        typedef typename std::tuple_element<N, TupleOfNHEs>::type::type CurrentNHE;
+        typedef typename std::tuple_element<N, TupleOfMoves>::type::type CurrentMove;
+        CurrentNHE& this_nhe = std::get<N>(temp_nhes).get();
+        CurrentMove& this_move = std::get<N>(temp_moves).get();
+       
+        // Instantiate the function with the right template parameters
+        std::function<bool(const CurrentNHE&, State&,  CurrentMove&)> f =  c.template getBool<CurrentNHE>();
         
-        // Instantiate the function with the right template parameters and return the result
-        std::function<bool(const decltype(this_nhe)&, State&, decltype(this_move)&)> f =  c.template getBool<decltype(this_nhe),decltype(this_move)>();
         return f(this_nhe, st, this_move);
       }
       // Otherwise, go down with recursion
@@ -370,11 +387,13 @@ protected:
       if (level == 0)
       {
         // Get the last element of the tuples
-        auto& this_nhe = std::get<0>(temp_nhes).get();
-        auto& this_move = std::get<0>(temp_moves).get();
-        
+        typedef typename std::tuple_element<0, TupleOfNHEs>::type::type CurrentNHE;
+        typedef typename std::tuple_element<0, TupleOfMoves>::type::type CurrentMove;
+        CurrentNHE& this_nhe = std::get<0>(temp_nhes).get();
+        CurrentMove& this_move = std::get<0>(temp_moves).get();
+
         // Instantiate the function with the right template parameters
-        std::function<void(const decltype(this_nhe)&, State&, decltype(this_move)&)> f =  c.template getVoid<decltype(this_nhe),decltype(this_move)>();
+        std::function<void(const CurrentNHE&, State&, CurrentMove&)> f =  c.template getVoid<CurrentNHE>();
         f(this_nhe, st, this_move);
       }
 #if defined(DEBUG)
@@ -392,11 +411,13 @@ protected:
     static void ExecuteAll(State& st, TupleOfMoves& temp_moves, const TupleOfNHEs& temp_nhes, const Call& c)
     {
       // Get the last element of the tuples
-      auto& this_nhe = std::get<0>(temp_nhes).get();
-      auto& this_move = std::get<0>(temp_moves).get();
-      
+      typedef typename std::tuple_element<0, TupleOfNHEs>::type::type CurrentNHE;
+      typedef typename std::tuple_element<0, TupleOfMoves>::type::type CurrentMove;
+      CurrentNHE& this_nhe = std::get<0>(temp_nhes).get();
+      CurrentMove& this_move = std::get<0>(temp_moves).get();
+
       // Instantiate the function with the right template parameters
-      std::function<void(const decltype(this_nhe)&, State&, decltype(this_move)&)> f =  c.template getVoid<decltype(this_nhe),decltype(this_move)>();
+      std::function<void(const CurrentNHE&, State&, CurrentMove&)> f =  c.template getVoid<CurrentNHE>();
       f(this_nhe, st, this_move);
     }
     
@@ -412,11 +433,13 @@ protected:
       if (level == 0)
       {
         // Get the last element of the tuples
-        auto& this_nhe = std::get<0>(temp_nhes).get();
-        auto& this_move = std::get<0>(temp_moves).get();
-        
+        typedef typename std::tuple_element<0, TupleOfNHEs>::type::type CurrentNHE;
+        typedef typename std::tuple_element<0, TupleOfMoves>::type::type CurrentMove;
+        CurrentNHE& this_nhe = std::get<0>(temp_nhes).get();
+        CurrentMove& this_move = std::get<0>(temp_moves).get();
+
         // Instantiate the function with the right template parameters
-        std::function<CFtype(const decltype(this_nhe)&, State&, decltype(this_move)&)> f =  c.template getCFtype<decltype(this_nhe),decltype(this_move)>();
+        std::function<CFtype(const CurrentNHE&, State&, CurrentMove&)> f =  c.template getCFtype<CurrentNHE>();
         return f(this_nhe, st, this_move);
       }
 #if defined(DEBUG)
@@ -436,11 +459,13 @@ protected:
     static CFtype ComputeAll(State& st, TupleOfMoves& temp_moves, const TupleOfNHEs& temp_nhes, const Call& c)
     {
       // Get the last element of the tuples
-      auto& this_nhe = std::get<0>(temp_nhes).get();
-      auto& this_move = std::get<0>(temp_moves).get();
+      typedef typename std::tuple_element<0, TupleOfNHEs>::type::type CurrentNHE;
+      typedef typename std::tuple_element<0, TupleOfMoves>::type::type CurrentMove;
+      CurrentNHE& this_nhe = std::get<0>(temp_nhes).get();
+      CurrentMove& this_move = std::get<0>(temp_moves).get();
       
       // Instantiate the function with the right template parameters
-      std::function<CFtype(const decltype(this_nhe)&, State&, decltype(this_move)&)> f =  c.template getCFtype<decltype(this_nhe),decltype(this_move)>();
+      std::function<CFtype(const CurrentNHE&, State&, CurrentMove&)> f =  c.template getCFtype<CurrentNHE>();
       return f(this_nhe, st, this_move);
     }
 
@@ -453,11 +478,13 @@ protected:
     static std::vector<bool> Check(State& st, TupleOfMoves& temp_moves, const TupleOfNHEs& temp_nhes, const Call& c)
     {
       // Get the last element of the tuples
-      auto& this_nhe = std::get<0>(temp_nhes).get();
-      auto& this_move = std::get<0>(temp_moves).get();
-      
+      typedef typename std::tuple_element<0, TupleOfNHEs>::type::type CurrentNHE;
+      typedef typename std::tuple_element<0, TupleOfMoves>::type::type CurrentMove;
+      CurrentNHE& this_nhe = std::get<0>(temp_nhes).get();
+      CurrentMove& this_move = std::get<0>(temp_moves).get();
+
       // Instantiate the function with the right template parameters
-      std::function<bool(const decltype(this_nhe)&, State&, decltype(this_move)&)> f =  c.template getBool<decltype(this_nhe),decltype(this_move)>();
+      std::function<bool(const CurrentNHE&, State&, CurrentMove&)> f =  c.template getBool<CurrentNHE>();
       std::vector<bool> current;
       current.push_back(f(this_nhe, st, this_move));
       return current;
@@ -472,11 +499,13 @@ protected:
     static bool CheckAll(State& st, TupleOfMoves& temp_moves, const TupleOfNHEs& temp_nhes, const Call& c)
     {
       // Get the last element of the tuples
-      auto& this_nhe = std::get<0>(temp_nhes).get();
-      auto& this_move = std::get<0>(temp_moves).get();
+      typedef typename std::tuple_element<0, TupleOfNHEs>::type::type CurrentNHE;
+      typedef typename std::tuple_element<0, TupleOfMoves>::type::type CurrentMove;
+      CurrentNHE& this_nhe = std::get<0>(temp_nhes).get();
+      CurrentMove& this_move = std::get<0>(temp_moves).get();
       
       // Instantiate the function with the right template parameters
-      std::function<bool(const decltype(this_nhe)&, State&, decltype(this_move)&)> f =  c.template getBool<decltype(this_nhe),decltype(this_move)>();
+      std::function<bool(const CurrentNHE&, State&, CurrentMove&)> f =  c.template getBool<CurrentNHE>();
       return f(this_nhe, st, this_move);
     }
 
@@ -489,11 +518,13 @@ protected:
     static bool CheckAny(State& st, TupleOfMoves& temp_moves, const TupleOfNHEs& temp_nhes, const Call& c)
     {
       // Get the last element of the tuples
-      auto& this_nhe = std::get<0>(temp_nhes).get();
-      auto& this_move = std::get<0>(temp_moves).get();
+      typedef typename std::tuple_element<0, TupleOfNHEs>::type::type CurrentNHE;
+      typedef typename std::tuple_element<0, TupleOfMoves>::type::type CurrentMove;
+      CurrentNHE& this_nhe = std::get<0>(temp_nhes).get();
+      CurrentMove& this_move = std::get<0>(temp_moves).get();
       
       // Instantiate the function with the right template parameters
-      std::function<bool(const decltype(this_nhe)&, State&, decltype(this_move)&)> f =  c.template getBool<decltype(this_nhe),decltype(this_move)>();
+      std::function<bool(const CurrentNHE&, State&, CurrentMove&)> f =  c.template getBool<CurrentNHE>();
       return f(this_nhe, st, this_move);
     }
 
@@ -509,11 +540,13 @@ protected:
       if (level == 0)
       {
         // Get the last element of the tuples
-        auto& this_nhe = std::get<0>(temp_nhes).get();
-        auto& this_move = std::get<0>(temp_moves).get();
-        
+        typedef typename std::tuple_element<0, TupleOfNHEs>::type::type CurrentNHE;
+        typedef typename std::tuple_element<0, TupleOfMoves>::type::type CurrentMove; 
+        CurrentNHE& this_nhe = std::get<0>(temp_nhes).get();
+        CurrentMove& this_move = std::get<0>(temp_moves).get();
+
         // Instantiate the function with the right template parameters
-        std::function<bool(const decltype(this_nhe)&, State&, decltype(this_move)&)> f =  c.template getBool<decltype(this_nhe),decltype(this_move)>();
+        std::function<bool(const CurrentNHE&, State&, CurrentMove&)> f =  c.template getBool<CurrentNHE>();
         return f(this_nhe, st, this_move);
       }
 #if defined(DEBUG)
@@ -594,8 +627,8 @@ protected:
    @param s a reference to the current State
    @param m a reference to the ActiveMove to check
    */
-  template<class N, class M>
-  static bool IsActive(const N& n, State& s, M& m)
+  template<class N>
+  static bool IsActive(const N& n, State& s, ActiveMove<typename N::ThisMove>& m)
   {
     return m.active;
   }
@@ -605,8 +638,8 @@ protected:
    @param s a reference to the current State
    @param m a reference to the ActiveMove which must be set
    */
-  template<class N, class M>
-  static void DoRandomMove(const N& n, State& s, M& m)
+  template<class N>
+  static void DoRandomMove(const N& n, State& s, ActiveMove<typename N::ThisMove>& m)
   {
     n.RandomMove(s, m);
     m.active = true;
@@ -617,8 +650,8 @@ protected:
    @param s a reference to the current State
    @param m a reference to the ActiveMove which must be set
    */
-  template<class N, class M>
-  static void DoFirstMove(const N& n, State& s, M& m)
+  template<class N>
+  static void DoFirstMove(const N& n, State& s, ActiveMove<typename N::ThisMove>& m)
   {
     n.FirstMove(s, m);
     m.active = true;
@@ -629,8 +662,8 @@ protected:
    @param s a reference to the current State
    @param m a reference to the current move, where the next move will be written
    */
-  template<class N, class M>
-  static bool TryNextMove(const N& n, State& s, M& m)
+  template<class N>
+  static bool TryNextMove(const N& n, State& s, ActiveMove<typename N::ThisMove>& m)
   {
     m.active = n.NextMove(s, m);
     return m.active;
@@ -641,8 +674,8 @@ protected:
    @param s a reference to the current State
    @param m a reference to the current move
    */
-  template<class N, class M>
-  static void DoMakeMove(const N& n, State& s, M& m)
+  template<class N>
+  static void DoMakeMove(const N& n, State& s, ActiveMove<typename N::ThisMove>& m)
   {
     if (m.active)
       n.MakeMove(s,m);
@@ -653,10 +686,10 @@ protected:
    @param s a reference to the current State
    @param m a reference to the ActiveMove to check
    */
-  template<class N, class M>
-  static bool IsFeasibleMove(const N& n, State& s, M& m)
+  template<class N>
+  static bool IsFeasibleMove(const N& n, State& s, ActiveMove<typename N::ThisMove>& m)
   {
-    if (m.active)
+    if (m.active) 
       return n.FeasibleMove(s, m);
     else
       return true;
@@ -667,8 +700,8 @@ protected:
    @param s a reference to the current State
    @param m a reference to the ActiveMove to check
    */
-  template<class N, class M>
-  static void InitializeInactive(const N& n, State& s, M& m)
+  template<class N>
+  static void InitializeInactive(const N& n, State& s, ActiveMove<typename N::ThisMove>& m)
   {
     m.active = false;
   }
@@ -678,8 +711,8 @@ protected:
    @param s a reference to the current State
    @param m a reference to the ActiveMove to check
    */
-  template<class N, class M>
-  static void InitializeActive(const N& n, State& s, M& m)
+  template<class N>
+  static void InitializeActive(const N& n, State& s, ActiveMove<typename N::ThisMove>& m)
   {
     m.active = true;
   }
@@ -689,8 +722,8 @@ protected:
    @param s a reference to the current State
    @param m a reference to the ActiveMove to check
    */
-  template<class N, class M>
-  static CFtype DoDeltaCostFunction(const N& n, State& s, M& m)
+  template<class N>
+  static CFtype DoDeltaCostFunction(const N& n, State& s, ActiveMove<typename N::ThisMove>& m)
   {
     return n.DeltaCostFunction(s, m);
   }
@@ -732,6 +765,7 @@ public:
     Call random_move(SuperNeighborhoodExplorer::Call::Function::RANDOM_MOVE);
     
     // Convert to references
+    
     TheseMovesRefs r_moves = to_refs(moves);
     
     // Set all actions to inactive
@@ -746,6 +780,7 @@ public:
   {
     // Select first NeighborhoodExplorer
     unsigned int selected = 0;
+    unsigned int modality = this->Modality();
  
     Call initialize_inactive(Call::Function::INITIALIZE_INACTIVE);
     Call first_move(Call::Function::FIRST_MOVE);
@@ -779,11 +814,12 @@ public:
   {
     // Select the current active NeighborhoodExplorer
     unsigned int selected = this->CurrentActiveMove(st, moves);
+    unsigned int modality = this->Modality();
     
     Call try_next_move(Call::Function::TRY_NEXT_MOVE);
     
     // Convert to references
-    TheseMovesRefs r_moves = to_refs(moves);
+    TheseMovesRefs r_moves = to_refs(moves);    
     
     // If the current NeighborhoodExplorer has a next move, return true
     if (SuperNeighborhoodExplorer::CheckAt(const_cast<State&>(st), r_moves, this->nhes, try_next_move, selected))
@@ -864,6 +900,7 @@ protected:
     Call is_active(Call::Function::IS_ACTIVE);
     TheseMovesRefs r_moves = to_refs(moves);
     std::vector<bool> moves_status = SuperNeighborhoodExplorer::Check(const_cast<State&>(st), r_moves, this->nhes, is_active);
+
     return std::distance(moves_status.begin(), std::find_if(moves_status.begin(), moves_status.end(), [](bool element) { return element; }));
   }
 };
