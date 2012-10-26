@@ -780,7 +780,6 @@ public:
   {
     // Select first NeighborhoodExplorer
     unsigned int selected = 0;
-    unsigned int modality = this->Modality();
  
     Call initialize_inactive(Call::Function::INITIALIZE_INACTIVE);
     Call first_move(Call::Function::FIRST_MOVE);
@@ -814,7 +813,6 @@ public:
   {
     // Select the current active NeighborhoodExplorer
     unsigned int selected = this->CurrentActiveMove(st, moves);
-    unsigned int modality = this->Modality();
     
     Call try_next_move(Call::Function::TRY_NEXT_MOVE);
     

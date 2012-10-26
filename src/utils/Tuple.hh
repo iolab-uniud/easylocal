@@ -63,7 +63,7 @@ std::tuple<std::reference_wrapper<T>...> tuple_tail(tail_index<S...>, const std:
 template <typename H, typename S, typename ...T>
 void print_tuple(std::ostream& os, const std::tuple<H, S, T...>& t)
 {
-  os << std::get<0>(t) << " ";
+  os << std::get<0>(t) << "-";
   auto temp_tuple_tail = tuple_tail(t);
   print_tuple<S, T...>(os, temp_tuple_tail);
 }

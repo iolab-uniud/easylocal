@@ -55,6 +55,5 @@ std::istream& operator>>(std::istream& is, Swap& m)
  */
 bool IsRelated(const Swap& m1, const Swap& m2)
 {
-  bool related = m1.to == m2.from;
-  return related;
+  return m1.to == m2.from;
 }
