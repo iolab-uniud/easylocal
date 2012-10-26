@@ -1,7 +1,6 @@
 #if !defined(_TUPLE_HH_)
 #define _TUPLE_HH_
 
-
 /** Template struct whose parameters are types from 0 to N-1 (tail indices). */
 template <int ...>
 struct tuple_index { };
@@ -91,7 +90,22 @@ std::istream& operator>>(std::istream& is, std::tuple<T...>& t)
   return is;
 }
 
+template <int... s, typename... T>
+auto ref_tuple_impl(tuple_index<s...> seq, const std::tuple<T...>& tup)
+-> decltype(std::make_tuple(std::ref(std::get<s>(tup))...))
+{
+  return std::make_tuple(std::ref(std::get<s>(tup))...);
+}
 
+template <typename... T>
+auto to_refs(const std::tuple<T...>& tup)
+-> decltype(ref_tuple_impl(typename make_index<sizeof...(T)>::type(), tup))
+{
+  return ref_tuple_impl(typename make_index<sizeof...(T)>::type(), tup);
+}
+
+
+/*
 template <class H, class S, class ...T>
 std::tuple<std::reference_wrapper<H>, std::reference_wrapper<S>, std::reference_wrapper<T>...> to_refs(const std::tuple<H, S, T...>& original)
 {
@@ -106,6 +120,6 @@ std::tuple<std::reference_wrapper<H>> to_refs(const std::tuple<H>& original)
   std::reference_wrapper<H> head_ref = std::ref(const_cast<H&>(std::get<0>(original)));
   return make_tuple(head_ref);
 }
-
+*/
 
 #endif
