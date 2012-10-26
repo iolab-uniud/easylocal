@@ -91,17 +91,18 @@ std::istream& operator>>(std::istream& is, std::tuple<T...>& t)
 }
 
 template <int... s, typename... T>
-auto ref_tuple_impl(tuple_index<s...> seq, const std::tuple<T...>& tup)
+auto ref_tuple_impl(tuple_index<s...> seq, std::tuple<T...>& tup)
 -> decltype(std::make_tuple(std::ref(std::get<s>(tup))...))
 {
   return std::make_tuple(std::ref(std::get<s>(tup))...);
 }
 
 template <typename... T>
-auto to_refs(const std::tuple<T...>& tup)
+auto to_refs(std::tuple<T...>& tup)
 -> decltype(ref_tuple_impl(typename make_index<sizeof...(T)>::type(), tup))
 {
-  return ref_tuple_impl(typename make_index<sizeof...(T)>::type(), tup);
+  std::tuple<std::reference_wrapper<T>...> rt = ref_tuple_impl(typename make_index<sizeof...(T)>::type(), tup);
+  return rt;
 }
 
 

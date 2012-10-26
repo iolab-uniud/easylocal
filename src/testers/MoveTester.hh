@@ -437,7 +437,7 @@ void MoveTester<Input,Output,State,Move,CFtype>::PrintAllNeighbors(const State& 
   ne.FirstMove(st,mv);
   do
   {
-    os << mv << ' ' << ne.DeltaCostFunction(st,mv) << std::endl;
+    os << mv << " " << ne.DeltaCostFunction(st,mv) << std::endl;
   }
   while (ne.NextMove(st,mv));
 }

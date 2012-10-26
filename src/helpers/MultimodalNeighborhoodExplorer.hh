@@ -855,8 +855,8 @@ public:
     Call delta_cost_function(Call::Function::DELTA_COST_FUNCTION);
     
     // Convert to references to non-const
-    TheseMovesRefs r_moves = to_refs(moves);
-    
+    auto c_moves = const_cast<decltype(moves)>(moves);
+    TheseMovesRefs r_moves = to_refs(c_moves);
     // Return cost
     return SuperNeighborhoodExplorer::ComputeAt(const_cast<State&>(st), r_moves, this->nhes, delta_cost_function, selected);
   }
@@ -869,8 +869,8 @@ public:
     Call make_move(Call::Function::MAKE_MOVE);
     
     // Convert to references to non-const
-    TheseMovesRefs r_moves = to_refs(moves);
-    
+    auto c_moves = const_cast<decltype(moves)>(moves);
+    TheseMovesRefs r_moves = to_refs(c_moves);
     // Execute move on state
     SuperNeighborhoodExplorer::ExecuteAt(st, r_moves, this->nhes, make_move, selected);
   }
@@ -883,8 +883,8 @@ public:
     Call feasible_move(Call::Function::FEASIBLE_MOVE);
     
     // Convert to references to non-const
-    TheseMovesRefs r_moves = to_refs(moves);
-    
+    auto c_moves = const_cast<decltype(moves)>(moves);
+    TheseMovesRefs r_moves = to_refs(c_moves);
     // Check if current move is feasible
     return SuperNeighborhoodExplorer::CheckAt(const_cast<State&>(st), r_moves, this->nhes, feasible_move, selected);
   }
@@ -898,7 +898,8 @@ protected:
   int CurrentActiveMove(const State& st, const typename SuperNeighborhoodExplorer::ThisMove& moves) const
   {
     Call is_active(Call::Function::IS_ACTIVE);
-    TheseMovesRefs r_moves = to_refs(moves);
+    auto c_moves = const_cast<decltype(moves)>(moves);
+    TheseMovesRefs r_moves = to_refs(c_moves);
     std::vector<bool> moves_status = SuperNeighborhoodExplorer::Check(const_cast<State&>(st), r_moves, this->nhes, is_active);
 
     return std::distance(moves_status.begin(), std::find_if(moves_status.begin(), moves_status.end(), [](bool element) { return element; }));
@@ -1050,7 +1051,8 @@ private:
   void VerifyAllActives(const State& st, const typename SuperNeighborhoodExplorer::ThisMove& moves) const throw (std::logic_error)
   {
     Call is_active(SuperNeighborhoodExplorer::Call::Function::IS_ACTIVE);
-    TheseMovesRefs r_moves = to_refs(moves);
+    auto c_moves = const_cast<decltype(moves)>(moves);
+    TheseMovesRefs r_moves = to_refs(c_moves);
     std::vector<bool> active = SuperNeighborhoodExplorer::Check(const_cast<State&>(st), r_moves, this->nhes, is_active);
     for (bool v : active)
     {
@@ -1061,7 +1063,8 @@ private:
   
   void VerifyAllRelated(const State& st, const typename SuperNeighborhoodExplorer::ThisMove& moves) const throw (std::logic_error)
   {
-    TheseMovesRefs r_moves = to_refs(moves);
+    auto c_moves = const_cast<decltype(moves)>(moves);
+    TheseMovesRefs r_moves = to_refs(c_moves);
     std::vector<bool> are_related = CompareMoves<BaseNeighborhoodExplorers...>(const_cast<State&>(st), r_moves, *this);
     for (bool v : are_related)
     {
@@ -1325,8 +1328,8 @@ public:
     Call make_move(Call::Function::MAKE_MOVE);
     
     CFtype sum = static_cast<CFtype>(0);
-    TheseMovesRefs r_moves = to_refs(moves);
-    
+    auto c_moves = const_cast<decltype(moves)>(moves);
+    TheseMovesRefs r_moves = to_refs(c_moves);
     std::vector<State> temp_states(this->Modality(), State(this->in)); // the chain of states
     temp_states[0] = st; // the first state is a copy of to st
     // create and initialize all the remaining states in the chain
@@ -1349,7 +1352,8 @@ public:
     VerifyAllRelated(st, moves);
 #endif
     Call make_move(Call::Function::MAKE_MOVE);
-    TheseMovesRefs r_moves = to_refs(moves);
+    auto c_moves = const_cast<decltype(moves)>(moves);
+    TheseMovesRefs r_moves = to_refs(c_moves);
     SuperNeighborhoodExplorer::ExecuteAll(st, r_moves, this->nhes, make_move);
   }
   
@@ -1361,8 +1365,8 @@ public:
 #endif
     Call is_feasible_move(Call::Function::FEASIBLE_MOVE);
     Call make_move(Call::Function::MAKE_MOVE);
-    TheseMovesRefs r_moves = to_refs(moves);
-    
+    auto c_moves = const_cast<decltype(moves)>(moves);
+    TheseMovesRefs r_moves = to_refs(c_moves);
     std::vector<State> temp_states(this->Modality(), State(this->in)); // the chain of states
     temp_states[0] = st; // the first state is a copy of to st
     // create and initialize all the remaining states in the chain

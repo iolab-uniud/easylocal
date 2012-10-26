@@ -160,7 +160,7 @@ int main(int argc, const char* argv[])
     //SetUnionTabuListManager<std::vector<int>, int, decltype(qtlm), decltype(qtlm), decltype(qtlm)> qtlmumm(qtlm, qtlm, qtlm);
     //CartesianProductTabuListManager<std::vector<int>, int, decltype(qtlm), decltype(qtlm), decltype(qtlm)> qtlmxmm(qtlm, qtlm, qtlm);
     
-    CartesianProductNeighborhoodExplorer<int, std::vector<int>, int, decltype(qnhe), decltype(qnhe), decltype(qnhe)> qnhexmm(in, qsm, "SwapProduct", qnhe, qnhe, qnhe);
+    CartesianProductNeighborhoodExplorer<int, std::vector<int>, int, decltype(qnhe), decltype(qnhe), decltype(qnhe), decltype(qnhe), decltype(qnhe)> qnhexmm(in, qsm, "SwapProduct", qnhe, qnhe, qnhe, qnhe, qnhe);
     
     /*
     std::tuple<std::reference_wrapper<decltype(qnhe)>, std::reference_wrapper<decltype(qnhe)>, std::reference_wrapper<decltype(qnhe)>> qnhe3 = make_tuple(
