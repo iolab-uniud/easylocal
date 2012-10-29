@@ -60,10 +60,15 @@ protected:
   {
     static std::vector<bool> Check(State& st, const TupleOfMoves& temp_moves_1, const TupleOfMoves& temp_moves_2, const TupleOfTLMs& temp_tlms, const Call& c)
     {
-      auto& this_tlm = std::get<N>(temp_tlms).get();
-      auto& this_move_1 = std::get<N>(temp_moves_1);
-      auto& this_move_2 = std::get<N>(temp_moves_2);
-      std::function<bool(const decltype(this_tlm)&, decltype(this_move_1)&, decltype(this_move_2)&)> f =  c.template getBool<decltype(this_tlm),decltype(this_move_1)>();
+      typedef typename std::tuple_element<N, TupleOfMoves>::type CurrentMove;
+      typedef typename std::tuple_element<N, TupleOfTLMs>::type CurrentTLM;
+      
+      const CurrentTLM& this_tlm = std::get<N>(temp_tlms);
+      const CurrentMove& this_move_1 = std::get<N>(temp_moves_1);
+      const CurrentMove& this_move_2 = std::get<N>(temp_moves_2);
+      
+      std::function<bool(const CurrentTLM&, const CurrentMove&, const CurrentMove&)> f =  c.template getBool<CurrentTLM,CurrentMove>();
+      
       std::vector<bool> current, others;
       current.push_back(f(this_tlm, this_move_1, this_move_2));
       others = TupleDispatcher<TupleOfMoves, TupleOfTLMs, N - 1>::Check(st, temp_moves_1, temp_moves_2, temp_tlms, c);
@@ -75,12 +80,12 @@ protected:
     {
       typedef typename std::tuple_element<N, TupleOfMoves>::type CurrentMove;
       typedef typename std::tuple_element<N, TupleOfTLMs>::type CurrentTLM;
-
-      const CurrentTLM& this_tlm = std::get<N>(temp_tlms);
-      CurrentMove& this_move_1 = const_cast<CurrentMove&>(std::get<N>(temp_moves_1));
-      CurrentMove& this_move_2 = const_cast<CurrentMove&>(std::get<N>(temp_moves_2));
       
-      std::function<bool(const CurrentTLM&, CurrentMove&, CurrentMove&)> f =  c.template getBool<CurrentTLM, CurrentMove>();
+      const CurrentTLM& this_tlm = std::get<N>(temp_tlms);
+      const CurrentMove& this_move_1 = std::get<N>(temp_moves_1);
+      const CurrentMove& this_move_2 = std::get<N>(temp_moves_2);
+      
+      std::function<bool(const CurrentTLM&, const CurrentMove&, const CurrentMove&)> f =  c.template getBool<CurrentTLM,CurrentMove>();
       
       if (!f(this_tlm, this_move_1, this_move_2))
         return false;
@@ -92,12 +97,12 @@ protected:
     {
       typedef typename std::tuple_element<N, TupleOfMoves>::type CurrentMove;
       typedef typename std::tuple_element<N, TupleOfTLMs>::type CurrentTLM;
-
+      
       const CurrentTLM& this_tlm = std::get<N>(temp_tlms);
-      CurrentMove& this_move_1 = const_cast<CurrentMove&>(std::get<N>(temp_moves_1));
-      CurrentMove& this_move_2 = const_cast<CurrentMove&>(std::get<N>(temp_moves_2));
-
-      std::function<bool(const CurrentTLM&, CurrentMove&, CurrentMove&)> f =  c.template getBool<CurrentTLM, CurrentMove>();
+      const CurrentMove& this_move_1 = std::get<N>(temp_moves_1);
+      const CurrentMove& this_move_2 = std::get<N>(temp_moves_2);
+      
+      std::function<bool(const CurrentTLM&, const CurrentMove&, const CurrentMove&)> f =  c.template getBool<CurrentTLM,CurrentMove>();
 
       
       if (f(this_tlm, this_move_1, this_move_2))
@@ -110,10 +115,14 @@ protected:
     {
       if (iter == 0)
       {
-        auto& this_tlm = std::get<N>(temp_tlms).get();
-        auto& this_move_1 = std::get<N>(temp_moves_1);
-        auto& this_move_2 = std::get<N>(temp_moves_2);
-        std::function<bool(const decltype(this_tlm)&, decltype(this_move_1)&, decltype(this_move_2)&)> f =  c.template getBool<decltype(this_tlm),decltype(this_move_1)>();
+        typedef typename std::tuple_element<N, TupleOfMoves>::type CurrentMove;
+        typedef typename std::tuple_element<N, TupleOfTLMs>::type CurrentTLM;
+        
+        const CurrentTLM& this_tlm = std::get<N>(temp_tlms);
+        const CurrentMove& this_move_1 = std::get<N>(temp_moves_1);
+        const CurrentMove& this_move_2 = std::get<N>(temp_moves_2);
+        
+        std::function<bool(const CurrentTLM&, const CurrentMove&, const CurrentMove&)> f =  c.template getBool<CurrentTLM,CurrentMove>();
         return f(this_tlm, this_move_1, this_move_2);
       }
       else if (iter > 0)
@@ -131,10 +140,14 @@ protected:
   {
     static std::vector<bool> Check(const TupleOfMoves& temp_moves_1, const TupleOfMoves& temp_moves_2, const TupleOfTLMs& temp_tlms, const Call& c)
     {
-      auto& this_tlm = std::get<0>(temp_tlms).get();
-      auto& this_move_1 = std::get<0>(temp_moves_1);
-      auto& this_move_2 = std::get<0>(temp_moves_2);
-      std::function<bool(const decltype(this_tlm)&, decltype(this_move_1)&, decltype(this_move_2)&)> f =  c.template getBool<decltype(this_tlm),decltype(this_move_1)>();
+      typedef typename std::tuple_element<0, TupleOfMoves>::type CurrentMove;
+      typedef typename std::tuple_element<0, TupleOfTLMs>::type CurrentTLM;
+      
+      const CurrentTLM& this_tlm = std::get<0>(temp_tlms);
+      const CurrentMove& this_move_1 = std::get<0>(temp_moves_1);
+      const CurrentMove& this_move_2 = std::get<0>(temp_moves_2);
+      
+      std::function<bool(const CurrentTLM&, const CurrentMove&, const CurrentMove&)> f =  c.template getBool<CurrentTLM,CurrentMove>();
       std::vector<bool> current;
       current.push_back(f(this_tlm, this_move_1, this_move_2));
       return current;
@@ -142,21 +155,27 @@ protected:
     
     static bool CheckAll(const TupleOfMoves& temp_moves_1, const TupleOfMoves& temp_moves_2, const TupleOfTLMs& temp_tlms, const Call& c)
     {
-      auto& this_tlm = std::get<0>(temp_tlms).get();
-      auto& this_move_1 = std::get<0>(temp_moves_1);
-      auto& this_move_2 = std::get<0>(temp_moves_2);
-      std::function<bool(const decltype(this_tlm)&, decltype(this_move_1)&, decltype(this_move_2)&)> f =  c.template getBool<decltype(this_tlm),decltype(this_move_1)>();
+      typedef typename std::tuple_element<0, TupleOfMoves>::type CurrentMove;
+      typedef typename std::tuple_element<0, TupleOfTLMs>::type CurrentTLM;
       
+      const CurrentTLM& this_tlm = std::get<0>(temp_tlms);
+      const CurrentMove& this_move_1 = std::get<0>(temp_moves_1);
+      const CurrentMove& this_move_2 = std::get<0>(temp_moves_2);
+      
+      std::function<bool(const CurrentTLM&, const CurrentMove&, const CurrentMove&)> f =  c.template getBool<CurrentTLM,CurrentMove>();
       return f(this_tlm, this_move_1, this_move_2);
     }
     
     static bool CheckAny(const TupleOfMoves& temp_moves_1, const TupleOfMoves& temp_moves_2, const TupleOfTLMs& temp_tlms, const Call& c)
     {
-      auto& this_tlm = std::get<0>(temp_tlms).get();
-      auto& this_move_1 = std::get<0>(temp_moves_1);
-      auto& this_move_2 = std::get<0>(temp_moves_2);
-      std::function<bool(const decltype(this_tlm)&, decltype(this_move_1)&, decltype(this_move_2)&)> f =  c.template getBool<decltype(this_tlm),decltype(this_move_1)>();
+      typedef typename std::tuple_element<0, TupleOfMoves>::type CurrentMove;
+      typedef typename std::tuple_element<0, TupleOfTLMs>::type CurrentTLM;
       
+      const CurrentTLM& this_tlm = std::get<0>(temp_tlms);
+      const CurrentMove& this_move_1 = std::get<0>(temp_moves_1);
+      const CurrentMove& this_move_2 = std::get<0>(temp_moves_2);
+      
+      std::function<bool(const CurrentTLM&, const CurrentMove&, const CurrentMove&)> f =  c.template getBool<CurrentTLM,CurrentMove>();
       return f(this_tlm, this_move_1, this_move_2);
     }
     
@@ -164,10 +183,14 @@ protected:
     {
       if (iter == 0)
       {
-        auto& this_tlm = std::get<0>(temp_tlms).get();
-        auto& this_move_1 = std::get<0>(temp_moves_1);
-        auto& this_move_2 = std::get<0>(temp_moves_2);
-        std::function<bool(const decltype(this_tlm)&, decltype(this_move_1)&, decltype(this_move_2)&)> f =  c.template getBool<decltype(this_tlm),decltype(this_move_1)>();
+        typedef typename std::tuple_element<0, TupleOfMoves>::type CurrentMove;
+        typedef typename std::tuple_element<0, TupleOfTLMs>::type CurrentTLM;
+        
+        const CurrentTLM& this_tlm = std::get<0>(temp_tlms);
+        const CurrentMove& this_move_1 = std::get<0>(temp_moves_1);
+        const CurrentMove& this_move_2 = std::get<0>(temp_moves_2);
+        
+        std::function<bool(const CurrentTLM&, const CurrentMove&, const CurrentMove&)> f =  c.template getBool<CurrentTLM,CurrentMove>();
         return f(this_tlm, this_move_1, this_move_2);
       }
 #if defined(DEBUG)
@@ -209,7 +232,7 @@ protected:
   template <class T, class M>
   static bool IsInverse(const T& tlm, const M& move_1, const M& move_2)
   {
-    return (move_1.active && move_2.active && tlm.Inverse(move_1, move_2));
+    return (move_1.active && move_2.active && tlm.get().Inverse(move_1, move_2));
   }
   
   template <class T, class M>
