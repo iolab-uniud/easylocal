@@ -73,10 +73,14 @@ protected:
     
     static bool CheckAll(const TupleOfMoves& temp_moves_1, const TupleOfMoves& temp_moves_2, const TupleOfTLMs& temp_tlms, const Call& c)
     {
-      auto& this_tlm = std::get<N>(temp_tlms).get();
-      auto& this_move_1 = std::get<N>(temp_moves_1);
-      auto& this_move_2 = std::get<N>(temp_moves_2);
-      std::function<bool(const decltype(this_tlm)&, decltype(this_move_1)&, decltype(this_move_2)&)> f =  c.template getBool<decltype(this_tlm),decltype(this_move_1)>();
+      typedef typename std::tuple_element<N, TupleOfMoves>::type CurrentMove;
+      typedef typename std::tuple_element<N, TupleOfTLMs>::type CurrentTLM;
+
+      const CurrentTLM& this_tlm = std::get<N>(temp_tlms);
+      CurrentMove& this_move_1 = const_cast<CurrentMove&>(std::get<N>(temp_moves_1));
+      CurrentMove& this_move_2 = const_cast<CurrentMove&>(std::get<N>(temp_moves_2));
+      
+      std::function<bool(const CurrentTLM&, CurrentMove&, CurrentMove&)> f =  c.template getBool<CurrentTLM, CurrentMove>();
       
       if (!f(this_tlm, this_move_1, this_move_2))
         return false;
@@ -86,10 +90,15 @@ protected:
     
     static bool CheckAny(const TupleOfMoves& temp_moves_1, const TupleOfMoves& temp_moves_2, const TupleOfTLMs& temp_tlms, const Call& c)
     {
-      auto& this_tlm = std::get<N>(temp_tlms).get();
-      auto& this_move_1 = std::get<N>(temp_moves_1);
-      auto& this_move_2 = std::get<N>(temp_moves_2);
-      std::function<bool(const decltype(this_tlm)&, decltype(this_move_1)&, decltype(this_move_2)&)> f =  c.template getBool<decltype(this_tlm),decltype(this_move_1)>();
+      typedef typename std::tuple_element<N, TupleOfMoves>::type CurrentMove;
+      typedef typename std::tuple_element<N, TupleOfTLMs>::type CurrentTLM;
+
+      const CurrentTLM& this_tlm = std::get<N>(temp_tlms);
+      CurrentMove& this_move_1 = const_cast<CurrentMove&>(std::get<N>(temp_moves_1));
+      CurrentMove& this_move_2 = const_cast<CurrentMove&>(std::get<N>(temp_moves_2));
+
+      std::function<bool(const CurrentTLM&, CurrentMove&, CurrentMove&)> f =  c.template getBool<CurrentTLM, CurrentMove>();
+
       
       if (f(this_tlm, this_move_1, this_move_2))
         return true;
