@@ -4,10 +4,12 @@
 #include <helpers/TabuListManager.hh>
 #include <helpers/MultimodalNeighborhoodExplorer.hh>
 
+/** Multimodal tabu list manager, to handle tabu lists of multimodal moves. */
 template <class State, typename CFtype, class ... BaseTabuListManagers>
 class MultimodalTabuListManager : public TabuListManager<State, std::tuple<ActiveMove<typename BaseTabuListManagers::ThisMove> ...>, CFtype>
 {
 public:
+  
   /** Typedefs. */
   typedef std::tuple<ActiveMove<typename BaseTabuListManagers::ThisMove> ...> TheseMoves;
   typedef TabuListManager<State, std::tuple<ActiveMove<typename BaseTabuListManagers::ThisMove> ...>, CFtype> SuperTabuListManager;
@@ -17,22 +19,21 @@ public:
   virtual unsigned int Modality() const { return sizeof...(BaseTabuListManagers); }
   
 protected:
+  
   /** Constructor, takes a variable number of base TabuListManagers.  */
   MultimodalTabuListManager(BaseTabuListManagers& ... tlms)
   : tlms(std::make_tuple(std::reference_wrapper<BaseTabuListManagers>(tlms) ...))
-  {}
-
+  { }
   
+  /** List of tabu list managers. */
   TheseTabuListManagers tlms;
   
-  /** Tuple dispatching helpers */
-  
+  /** Tuple dispatching helpers. */
   class Call
   {
   public:
     enum Function { is_inverse, is_active };
     Call(Function f) : to_call(f) { }
-    
     
     template <class T, class M>
     std::function<bool(const T&, const M&, const M&)> getBool() const throw(std::logic_error)
@@ -60,6 +61,7 @@ protected:
   {
     static std::vector<bool> Check(State& st, const TupleOfMoves& temp_moves_1, const TupleOfMoves& temp_moves_2, const TupleOfTLMs& temp_tlms, const Call& c)
     {
+      // Get right types (be nice to gcc)
       typedef typename std::tuple_element<N, TupleOfMoves>::type CurrentMove;
       typedef typename std::tuple_element<N, TupleOfTLMs>::type CurrentTLM;
       
@@ -78,6 +80,7 @@ protected:
     
     static bool CheckAll(const TupleOfMoves& temp_moves_1, const TupleOfMoves& temp_moves_2, const TupleOfTLMs& temp_tlms, const Call& c)
     {
+      // Get right types (be nice to gcc)
       typedef typename std::tuple_element<N, TupleOfMoves>::type CurrentMove;
       typedef typename std::tuple_element<N, TupleOfTLMs>::type CurrentTLM;
       
@@ -95,6 +98,7 @@ protected:
     
     static bool CheckAny(const TupleOfMoves& temp_moves_1, const TupleOfMoves& temp_moves_2, const TupleOfTLMs& temp_tlms, const Call& c)
     {
+      // Get right types (be nice to gcc)
       typedef typename std::tuple_element<N, TupleOfMoves>::type CurrentMove;
       typedef typename std::tuple_element<N, TupleOfTLMs>::type CurrentTLM;
       
@@ -115,6 +119,7 @@ protected:
     {
       if (iter == 0)
       {
+        // Get right types (be nice to gcc)
         typedef typename std::tuple_element<N, TupleOfMoves>::type CurrentMove;
         typedef typename std::tuple_element<N, TupleOfTLMs>::type CurrentTLM;
         
@@ -140,6 +145,7 @@ protected:
   {
     static std::vector<bool> Check(const TupleOfMoves& temp_moves_1, const TupleOfMoves& temp_moves_2, const TupleOfTLMs& temp_tlms, const Call& c)
     {
+      // Get right types (be nice to gcc)
       typedef typename std::tuple_element<0, TupleOfMoves>::type CurrentMove;
       typedef typename std::tuple_element<0, TupleOfTLMs>::type CurrentTLM;
       
@@ -155,6 +161,7 @@ protected:
     
     static bool CheckAll(const TupleOfMoves& temp_moves_1, const TupleOfMoves& temp_moves_2, const TupleOfTLMs& temp_tlms, const Call& c)
     {
+      // Get right types (be nice to gcc)
       typedef typename std::tuple_element<0, TupleOfMoves>::type CurrentMove;
       typedef typename std::tuple_element<0, TupleOfTLMs>::type CurrentTLM;
       
@@ -168,6 +175,7 @@ protected:
     
     static bool CheckAny(const TupleOfMoves& temp_moves_1, const TupleOfMoves& temp_moves_2, const TupleOfTLMs& temp_tlms, const Call& c)
     {
+      // Get right types (be nice to gcc)
       typedef typename std::tuple_element<0, TupleOfMoves>::type CurrentMove;
       typedef typename std::tuple_element<0, TupleOfTLMs>::type CurrentTLM;
       
@@ -183,6 +191,7 @@ protected:
     {
       if (iter == 0)
       {
+        // Get right types (be nice to gcc)
         typedef typename std::tuple_element<0, TupleOfMoves>::type CurrentMove;
         typedef typename std::tuple_element<0, TupleOfTLMs>::type CurrentTLM;
         

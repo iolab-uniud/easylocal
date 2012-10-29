@@ -17,10 +17,6 @@
 
 9[A]. Evitare SEMPRE di ricalcolare i costi delle mosse (per poter gestire anche casi in cui i costi sono stocastici), lo stesso per lo stato nuovo 
 
-10[L]. Rivedere CLparser in modo che non servano i vari MatchArgument(s)
-
-11[L]. Threading compliant C++x11
-
 13[?]. Rivedere i kicker: 
 - separate diversificatori dagli intensificatori
 - kicker multimodali con metaprogramming
@@ -31,10 +27,4 @@
 
 15[L/T]. resuscitare EasySyn
 
-16[L]. rivedere i multimodali per composizione
-
 18. Rivedere shifting penalty
-
-20. Uniformare nomi accessors, i.e. tutti con Get o senza Get, Set o senza Set
-
-21. Uniformare segnatura RandomMove e BestMove (con CFtype di ritorno)

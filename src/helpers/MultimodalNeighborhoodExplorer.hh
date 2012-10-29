@@ -166,7 +166,7 @@ protected:
       // If we're at the right level of the recursion
       if (level == 0)
       {
-        // Get last element of the tuples
+        // Get right types (be nice to gcc)
         typedef typename std::tuple_element<N, TupleOfNHEs>::type::type CurrentNHE;
         typedef typename std::tuple_element<N, TupleOfMoves>::type::type CurrentMove;
         CurrentNHE& this_nhe = std::get<N>(temp_nhes).get();
@@ -195,7 +195,7 @@ protected:
      */
     static void ExecuteAll(State& st, TupleOfMoves& temp_moves, const TupleOfNHEs& temp_nhes, const Call& c)
     {
-      // Get last element of the tuples
+      // Get right types (be nice to gcc)
       typedef typename std::tuple_element<N, TupleOfNHEs>::type::type CurrentNHE;
       typedef typename std::tuple_element<N, TupleOfMoves>::type::type CurrentMove;
       CurrentNHE& this_nhe = std::get<N>(temp_nhes).get();
@@ -220,7 +220,7 @@ protected:
       // If we're at the right level of the recursion
       if (level == 0)
       {
-        // Get last element of the tuples
+        // Get right types (be nice to gcc)
         typedef typename std::tuple_element<N, TupleOfNHEs>::type::type CurrentNHE;
         typedef typename std::tuple_element<N, TupleOfMoves>::type::type CurrentMove;
         CurrentNHE& this_nhe = std::get<N>(temp_nhes).get();
@@ -251,7 +251,7 @@ protected:
      */
     static CFtype ComputeAll(State& st, TupleOfMoves& temp_moves, const TupleOfNHEs& temp_nhes, const Call& c)
     {
-      // Get last element of the tuples
+      // Get right types (be nice to gcc)
       typedef typename std::tuple_element<N, TupleOfNHEs>::type::type CurrentNHE;
       typedef typename std::tuple_element<N, TupleOfMoves>::type::type CurrentMove;
       CurrentNHE& this_nhe = std::get<N>(temp_nhes).get();
@@ -272,7 +272,7 @@ protected:
      */
     static std::vector<bool> Check(State& st, TupleOfMoves& temp_moves, const TupleOfNHEs& temp_nhes, const Call& c)
     {
-      // Get last element of the tuple
+      // Get right types (be nice to gcc)
       typedef typename std::tuple_element<N, TupleOfNHEs>::type::type CurrentNHE;
       typedef typename std::tuple_element<N, TupleOfMoves>::type::type CurrentMove;
       CurrentNHE& this_nhe = std::get<N>(temp_nhes).get();
@@ -297,7 +297,7 @@ protected:
      */
     static bool CheckAll(State& st, TupleOfMoves& temp_moves, const TupleOfNHEs& temp_nhes, const Call& c)
     {
-      // Get last element of the tuple
+      // Get right types (be nice to gcc)
       typedef typename std::tuple_element<N, TupleOfNHEs>::type::type CurrentNHE;
       typedef typename std::tuple_element<N, TupleOfMoves>::type::type CurrentMove;
       CurrentNHE& this_nhe = std::get<N>(temp_nhes).get();
@@ -321,7 +321,7 @@ protected:
      */
     static bool CheckAny(State& st, TupleOfMoves& temp_moves, const TupleOfNHEs& temp_nhes, const Call& c)
     {
-      // Get last element of the tuple
+      // Get right types (be nice to gcc)
       typedef typename std::tuple_element<N, TupleOfNHEs>::type::type CurrentNHE;
       typedef typename std::tuple_element<N, TupleOfMoves>::type::type CurrentMove;
       CurrentNHE& this_nhe = std::get<N>(temp_nhes).get();
@@ -348,7 +348,7 @@ protected:
       // If we're at the right level of the recursion
       if (level == 0)
       {
-        // Get the last element of the tuples
+        // Get right types (be nice to gcc)
         typedef typename std::tuple_element<N, TupleOfNHEs>::type::type CurrentNHE;
         typedef typename std::tuple_element<N, TupleOfMoves>::type::type CurrentMove;
         CurrentNHE& this_nhe = std::get<N>(temp_nhes).get();
@@ -386,7 +386,7 @@ protected:
       // If we're at the right level of the recursion
       if (level == 0)
       {
-        // Get the last element of the tuples
+        // Get right types (be nice to gcc)
         typedef typename std::tuple_element<0, TupleOfNHEs>::type::type CurrentNHE;
         typedef typename std::tuple_element<0, TupleOfMoves>::type::type CurrentMove;
         CurrentNHE& this_nhe = std::get<0>(temp_nhes).get();
@@ -410,7 +410,7 @@ protected:
      */
     static void ExecuteAll(State& st, TupleOfMoves& temp_moves, const TupleOfNHEs& temp_nhes, const Call& c)
     {
-      // Get the last element of the tuples
+      // Get right types (be nice to gcc)
       typedef typename std::tuple_element<0, TupleOfNHEs>::type::type CurrentNHE;
       typedef typename std::tuple_element<0, TupleOfMoves>::type::type CurrentMove;
       CurrentNHE& this_nhe = std::get<0>(temp_nhes).get();
@@ -432,7 +432,7 @@ protected:
       // If we're at the right level of the recursion
       if (level == 0)
       {
-        // Get the last element of the tuples
+        // Get right types (be nice to gcc)
         typedef typename std::tuple_element<0, TupleOfNHEs>::type::type CurrentNHE;
         typedef typename std::tuple_element<0, TupleOfMoves>::type::type CurrentMove;
         CurrentNHE& this_nhe = std::get<0>(temp_nhes).get();
@@ -458,7 +458,7 @@ protected:
      */
     static CFtype ComputeAll(State& st, TupleOfMoves& temp_moves, const TupleOfNHEs& temp_nhes, const Call& c)
     {
-      // Get the last element of the tuples
+      // Get right types (be nice to gcc)
       typedef typename std::tuple_element<0, TupleOfNHEs>::type::type CurrentNHE;
       typedef typename std::tuple_element<0, TupleOfMoves>::type::type CurrentMove;
       CurrentNHE& this_nhe = std::get<0>(temp_nhes).get();
@@ -477,7 +477,7 @@ protected:
      */
     static std::vector<bool> Check(State& st, TupleOfMoves& temp_moves, const TupleOfNHEs& temp_nhes, const Call& c)
     {
-      // Get the last element of the tuples
+      // Get right types (be nice to gcc)
       typedef typename std::tuple_element<0, TupleOfNHEs>::type::type CurrentNHE;
       typedef typename std::tuple_element<0, TupleOfMoves>::type::type CurrentMove;
       CurrentNHE& this_nhe = std::get<0>(temp_nhes).get();
@@ -498,7 +498,7 @@ protected:
      */
     static bool CheckAll(State& st, TupleOfMoves& temp_moves, const TupleOfNHEs& temp_nhes, const Call& c)
     {
-      // Get the last element of the tuples
+      // Get right types (be nice to gcc)
       typedef typename std::tuple_element<0, TupleOfNHEs>::type::type CurrentNHE;
       typedef typename std::tuple_element<0, TupleOfMoves>::type::type CurrentMove;
       CurrentNHE& this_nhe = std::get<0>(temp_nhes).get();
@@ -517,7 +517,7 @@ protected:
      */
     static bool CheckAny(State& st, TupleOfMoves& temp_moves, const TupleOfNHEs& temp_nhes, const Call& c)
     {
-      // Get the last element of the tuples
+      // Get right types (be nice to gcc)
       typedef typename std::tuple_element<0, TupleOfNHEs>::type::type CurrentNHE;
       typedef typename std::tuple_element<0, TupleOfMoves>::type::type CurrentMove;
       CurrentNHE& this_nhe = std::get<0>(temp_nhes).get();
@@ -539,7 +539,7 @@ protected:
       // If we're at the right level of the recursion
       if (level == 0)
       {
-        // Get the last element of the tuples
+        // Get right types (be nice to gcc)
         typedef typename std::tuple_element<0, TupleOfNHEs>::type::type CurrentNHE;
         typedef typename std::tuple_element<0, TupleOfMoves>::type::type CurrentMove; 
         CurrentNHE& this_nhe = std::get<0>(temp_nhes).get();
