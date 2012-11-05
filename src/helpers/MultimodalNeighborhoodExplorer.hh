@@ -763,10 +763,14 @@ public:
   virtual void RandomMove(const State& st, typename SuperNeighborhoodExplorer::ThisMove& moves) const throw(EmptyNeighborhood)
   {
     // Select random neighborhood explorer with bias (don't assume that they sum up to one)
-    double total_bias = std::accumulate(this->bias.begin(), this->bias.end(), 0);
-    double pick = Random::Double(0, total_bias);
+    double total_bias = 0.0;
+    double pick;
     unsigned int selected = 0;
-    
+
+    for (unsigned int i = 0; i < bias.size(); i++)
+      total_bias += bias[i];
+    pick = Random::Double(0.0, total_bias);
+
     // Subtract bias until we're on the right neighborhood explorer
     while(pick > this->bias[selected])
     {
