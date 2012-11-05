@@ -16,9 +16,6 @@ bool IsRelated(const Move1& m1, const Move2& m2)
   return true;
 }
 
-
-// f = ([](const Move1&, const Move2&) -> bool { std::cerr << "default" << std::endl; return true; });
-
 /** Variadic multi-modal neighborhood explorer. Generates a NeighborhoodExplorer whose move type is a tuple of ActiveMoves.*/
 template <class Input, class State, typename CFtype, class ... BaseNeighborhoodExplorers>
 class MultimodalNeighborhoodExplorer : public NeighborhoodExplorer<Input, State, std::tuple<ActiveMove<typename BaseNeighborhoodExplorers::ThisMove> ...>, CFtype>
@@ -750,16 +747,32 @@ public:
   
   /** Inherit constructor from superclass. Not yet. */
   // using MultimodalNeighborhoodExplorer<Input, State, CFtype, BaseNeighborhoodExplorers ...>::MultimodalNeighborhoodExplorer;
-  
+
   SetUnionNeighborhoodExplorer(Input& in, StateManager<Input,State,CFtype>& sm, std::string name, BaseNeighborhoodExplorers& ... nhes)
   : MultimodalNeighborhoodExplorer<Input, State, CFtype, BaseNeighborhoodExplorers ...>(in, sm, name, nhes ...)
+  {
+    // If not otherwise specified, initialize the probabilities as 1 / Modality
+    this->bias = std::vector<double>(this->Modality(), 1.0 / (double) this->Modality());
+  }
+  
+  SetUnionNeighborhoodExplorer(Input& in, StateManager<Input,State,CFtype>& sm, std::string name, std::vector<double> bias, BaseNeighborhoodExplorers& ... nhes)
+  : MultimodalNeighborhoodExplorer<Input, State, CFtype, BaseNeighborhoodExplorers ...>(in, sm, name, nhes ...), bias(bias)
   { }
 
   /** @copydoc NeighborhoodExplorer::RandomMove */
   virtual void RandomMove(const State& st, typename SuperNeighborhoodExplorer::ThisMove& moves) const throw(EmptyNeighborhood)
   {
-    // Pick a random number withing modality
-    unsigned int selected = Random::Int(0, this->Modality()-1);
+    // Select random neighborhood explorer with bias (don't assume that they sum up to one)
+    double total_bias = std::accumulate(this->bias.begin(), this->bias.end(), 0);
+    double pick = Random::Double(0, total_bias);
+    unsigned int selected = 0;
+    
+    // Subtract bias until we're on the right neighborhood explorer
+    while(pick > this->bias[selected])
+    {
+      pick -= this->bias[selected];
+      selected++;
+    }
     
     Call initialize_inactive(Call::Function::INITIALIZE_INACTIVE);
     Call random_move(SuperNeighborhoodExplorer::Call::Function::RANDOM_MOVE);
@@ -888,6 +901,8 @@ public:
   }
   
 protected:
+  
+  std::vector<double> bias;
 
   /** Computes the index of the current active move.
    @param st current state

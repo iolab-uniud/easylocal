@@ -29,7 +29,7 @@ public:
    @param b upper bound
    @remarks generates an uniform random double in [0,1] if called without arguments
    */
-  static int Double(double a = 0, double b = 1) 
+  static double Double(double a = 0, double b = 1)
   {
     std::uniform_real_distribution<> d(a,b);
     return d(g);
