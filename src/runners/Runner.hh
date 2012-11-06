@@ -111,6 +111,12 @@ protected:
   /** Actions to be performed at the end of the run. */
   virtual void TerminateRun() = 0;
   
+  /** Actions to be performed at each iteration independently of the acceptance of the move */
+  virtual void PrepareIteration();
+
+  /** Actions to be performed at the end of each iteration independently of the acceptance of the move */
+  virtual void CompleteIteration();
+
   /** Encodes the criterion used to stop the search. */
   virtual bool StopCriterion() = 0;
   
@@ -211,7 +217,7 @@ CFtype Runner<Input,State,CFtype>::Go(State& s) throw (ParameterNotSet, Incorrec
   InitializeRun(s);
   while (!MaxIterationExpired() && !StopCriterion() && !LowerBoundReached() && !this->TimeoutExpired())
   {
-    iteration++;
+    PrepareIteration();
     try
     {
       SelectMove();
@@ -227,6 +233,7 @@ CFtype Runner<Input,State,CFtype>::Go(State& s) throw (ParameterNotSet, Incorrec
       CompleteMove();
       this->UpdateBestState();
     }
+    CompleteIteration();
   }
   
   return TerminateRun(s);
@@ -246,6 +253,22 @@ void Runner<Input,State,CFtype>::UpdateBestState()
     }
   }
 }
+
+/**
+   Prepare the iteration (e.g. updates the counter that tracks the number of iterations elapsed)
+*/
+template <class Input, class State, typename CFtype>
+void Runner<Input,State,CFtype>::PrepareIteration()
+{
+  iteration++;
+}
+
+/**
+   Complete the iteration (e.g. decreate the temperature for Simulated Annealing)
+*/
+template <class Input, class State, typename CFtype>
+void Runner<Input,State,CFtype>::CompleteIteration()
+{}
 
 template <class Input, class State, typename CFtype>
 bool Runner<Input,State,CFtype>::MaxIterationExpired() const

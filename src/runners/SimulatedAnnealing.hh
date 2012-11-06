@@ -47,9 +47,11 @@ protected:
 
   void InitializeRun() throw (ParameterNotSet, IncorrectParameterValue);
   bool StopCriterion();
+  void UpdateIterationCounter();
   void SelectMove();
   bool AcceptableMove();
   void CompleteMove();
+  void CompleteIteration();
   // parameters
   Parameter<bool> compute_start_temperature;
   Parameter<double> start_temperature;
@@ -162,14 +164,22 @@ template <class Input, class State, class Move, typename CFtype>
 void SimulatedAnnealing<Input,State,Move,CFtype>::CompleteMove()
 {
   neighbors_accepted++;
-  
+}
+
+/**  
+At regular steps, the temperature is decreased 
+   multiplying it by a cooling rate.
+*/
+template <class Input, class State, class Move, typename CFtype>
+void SimulatedAnnealing<Input,State,Move,CFtype>::CompleteIteration()
+{
   if (neighbors_sampled == max_neighbors_sampled || neighbors_accepted == max_neighbors_accepted)
-  {
-    //       std::cerr << neighbors_accepted << "/" << neighbors_sampled  << std::endl;
-    temperature *= cooling_rate;
-    neighbors_sampled = 0;
-    neighbors_accepted = 0;
-  }
+    {      
+      //       std::cerr << neighbors_accepted << "/" << neighbors_sampled  << std::endl;
+      temperature *= cooling_rate;
+      neighbors_sampled = 0;
+      neighbors_accepted = 0;
+    }
 }
 
 /**
