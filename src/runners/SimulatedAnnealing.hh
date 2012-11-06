@@ -134,8 +134,12 @@ void SimulatedAnnealing<Input,State,Move,CFtype>::InitializeRun() throw (Paramet
     temperature = max(cost_values);
     /*From "An improved annealing scheme for the QAP. Connoly. EJOR 46 (1990) 93-100"
      temperature = min(cost_values.begin(), cost_values.end()) + (max(cost_values.begin(), cost_values.end()) - min(cost_values.begin(), cost_values.end()))/10;*/
-  }  
-  
+  } 
+
+  // If the number of maximum accepted neighbors for each temperature is not set, default to all of them 
+  if (!max_neighbors_accepted.IsSet())
+    max_neighbors_accepted = max_neighbors_sampled;
+ 
   neighbors_sampled = 0;
   neighbors_accepted = 0;
 }

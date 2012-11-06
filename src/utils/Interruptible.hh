@@ -35,9 +35,11 @@ namespace _easylocal {
 template <typename Rtype, typename ... Args>
 class Interruptible
 {
-  
 public:
   
+   /** Constructor, sets timeout_expired to false to avoid problems when classes are called without threads. */
+   Interruptible() : timeout_expired(false) {}
+
   /** Runs this interruptible synchronously for a specified number of milliseconds.
    @param timeout a duration in milliseconds
    @param args the list of arguments to pass (possibly empty)
