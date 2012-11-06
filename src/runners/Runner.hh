@@ -176,7 +176,7 @@ protected:
 private:
   
   /** Stores the move and updates the related data. */
-  void UpdateBestState();
+  virtual void UpdateBestState();
 
   /** Actions that must be done at the start of the search, and which cannot be redefined by subclasses. */
   void InitializeRun(State&) throw (ParameterNotSet, IncorrectParameterValue);
@@ -225,7 +225,7 @@ CFtype Runner<Input,State,CFtype>::Go(State& s) throw (ParameterNotSet, Incorrec
       PrepareMove();
       MakeMove();
       CompleteMove();
-      UpdateBestState();
+      this->UpdateBestState();
     }
   }
   

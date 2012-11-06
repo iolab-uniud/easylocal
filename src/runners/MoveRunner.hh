@@ -49,6 +49,7 @@ protected:
   /** Encodes the criterion used to select the move at each step. */
   virtual void MakeMove();
   
+  void UpdateBestState();
   void UpdateStateCost();
   
   NeighborhoodExplorer<Input,State,Move,CFtype>& ne; /**< A reference to the
@@ -68,6 +69,25 @@ protected:
  * Implementation
  *************************************************************************/
 
+
+template <class Input, class State, class Move, typename CFtype>
+void MoveRunner<Input,State, Move, CFtype>::UpdateBestState()
+{
+  if (LessOrEqualThan(this->current_state_cost, this->best_state_cost))
+  {
+    *(this->p_best_state) = *(this->p_current_state);
+    if (LessThan(this->current_state_cost, this->best_state_cost))
+    {
+
+      this->best_state_cost = this->current_state_cost;
+      this->iteration_of_best = this->iteration;
+      if (this->observer != nullptr)
+        this->observer->NotifyNewBest(*this);
+    }
+  }
+}
+
+
 template <class Input, class State, class Move, typename CFtype>
 MoveRunner<Input,State,Move,CFtype>::MoveRunner(const Input& in,
                                                 StateManager<Input,State,CFtype>& e_sm,
@@ -83,7 +103,6 @@ void MoveRunner<Input,State,Move,CFtype>::InitializeRun() throw (ParameterNotSet
   if (observer != nullptr)
     observer->NotifyStartRunner(*this);
 }
-
 
 template <class Input, class State, class Move, typename CFtype>
 void MoveRunner<Input,State,Move,CFtype>::TerminateRun()
