@@ -41,17 +41,14 @@ Parameter<bool>::Parameter(const std::string& cmdline_flag, const std::string& d
 bool CommandLineParameters::Parse(int argc, const char* argv[], bool check_unregistered)
 {
 #if defined(HAVE_BOOST)
-  static bool help_already_added = false;
   boost::program_options::options_description cmdline_options;
   boost::program_options::variables_map vm;
   for (auto pb : ParameterBox::overall_parameters)
     cmdline_options.add(pb->cl_options);
-  if (!help_already_added)
-  {
-    cmdline_options.add_options()
-    ("help", "Produce help message");
-    help_already_added = true;
-  }
+
+  cmdline_options.add_options()
+    ("help", "Produce help message")
+  ;
   boost::program_options::parsed_options parsed = boost::program_options::command_line_parser(argc, argv).options(cmdline_options).allow_unregistered().run();
   
   std::vector<std::string> unrecognized_options = boost::program_options::collect_unrecognized(parsed.options, boost::program_options::include_positional);
