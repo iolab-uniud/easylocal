@@ -242,7 +242,7 @@ protected:
 class CommandLineParameters
 {
 public:
-  static bool Parse(int argc, const char* argv[], bool check_unregistered = true);
+  static bool Parse(int argc, const char* argv[], bool check_unregistered = true, bool silent = false);
 };
 
 #endif

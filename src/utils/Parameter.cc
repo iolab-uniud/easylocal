@@ -38,7 +38,7 @@ Parameter<bool>::Parameter(const std::string& cmdline_flag, const std::string& d
 #endif
 }
 
-bool CommandLineParameters::Parse(int argc, const char* argv[], bool check_unregistered)
+bool CommandLineParameters::Parse(int argc, const char* argv[], bool check_unregistered, bool silent)
 {
 #if defined(HAVE_BOOST)
   boost::program_options::options_description cmdline_options;
@@ -63,7 +63,7 @@ bool CommandLineParameters::Parse(int argc, const char* argv[], bool check_unreg
   }
   boost::program_options::store(parsed, vm);
   boost::program_options::notify(vm);
-  if (vm.count("help"))
+  if (!silent && vm.count("help"))
   {
     std::cout << cmdline_options << std::endl;
     return false;
