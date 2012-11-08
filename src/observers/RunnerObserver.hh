@@ -105,6 +105,7 @@ void RunnerObserver<Input,State,Move,CFtype>::NotifyMadeMove(MoveRunner<Input,St
       }
     log << ')' << std::endl;
   }
+
   if (notify_violations_increased && r.current_state_violations > previous_violations)
   {
     log << "Violations increased (" << previous_violations << " -> " << r.current_state_violations << "), cost " << ((previous_cost >= r.current_state_cost) ? ((previous_cost > r.current_state_cost) ? "increased" : "is unchanged") : "decreased" ) << std::endl;

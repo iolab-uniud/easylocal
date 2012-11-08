@@ -70,7 +70,8 @@ protected:
       FIRST_MOVE,
       TRY_NEXT_MOVE,
       IS_ACTIVE,
-      DELTA_COST_FUNCTION
+      DELTA_COST_FUNCTION,
+      DELTA_VIOLATIONS
     };
     
     /** Constructor.
@@ -115,6 +116,9 @@ protected:
       {
         case DELTA_COST_FUNCTION:
           f = &DoDeltaCostFunction<N>;
+          break;
+        case DELTA_VIOLATIONS:
+          f = &DoDeltaViolations<N>;
           break;
         default:
           throw std::logic_error("Function not implemented");
@@ -725,6 +729,17 @@ protected:
     return n.DeltaCostFunction(s, m);
   }
   
+  /** Computes the hard cost of making a move on a state
+   @param n a reference to the move's NeighborhoodExplorer
+   @param s a reference to the current State
+   @param m a reference to the ActiveMove to check
+   */
+  template<class N>
+  static CFtype DoDeltaViolations(const N& n, State& s, ActiveMove<typename N::ThisMove>& m)
+  {
+    return n.DeltaViolations(s, m);
+  }
+  
 };
 
 
@@ -874,6 +889,22 @@ public:
     TheseMovesRefs r_moves = to_refs(c_moves);
     // Return cost
     return SuperNeighborhoodExplorer::ComputeAt(const_cast<State&>(st), r_moves, this->nhes, delta_cost_function, selected);
+  }
+
+  /** @copydoc NeighborhoodExplorer::DeltaViolations */
+  virtual CFtype DeltaViolations(const State& st, const typename SuperNeighborhoodExplorer::ThisMove& moves) const
+  {
+    // Select the current active NeighborhoodExplorer
+    unsigned int selected = this->CurrentActiveMove(st, moves);
+    
+    // Compute delta cost
+    Call delta_violations(Call::Function::DELTA_VIOLATIONS);
+    
+    // Convert to references to non-const
+    auto c_moves = const_cast<decltype(moves)>(moves);
+    TheseMovesRefs r_moves = to_refs(c_moves);
+    // Return cost
+    return SuperNeighborhoodExplorer::ComputeAt(const_cast<State&>(st), r_moves, this->nhes, delta_violations, selected);
   }
 
   /** @copydoc NeighborhoodExplorer::MakeMove */
@@ -1356,6 +1387,34 @@ public:
       temp_states[i] = temp_states[i - 1];
       SuperNeighborhoodExplorer::ExecuteAt(temp_states[i], r_moves, this->nhes, make_move, i - 1);
       sum += SuperNeighborhoodExplorer::ComputeAt(temp_states[i], r_moves, this->nhes, do_delta_cost_function, i);
+    }
+    
+    return sum;
+  }
+
+  /** @copydoc NeighborhoodExplorer::DeltaViolations */
+  virtual CFtype DeltaViolations(const State& st, const typename SuperNeighborhoodExplorer::ThisMove& moves) const
+  {
+#if defined(DEBUG)
+    VerifyAllActives(st, moves);
+    VerifyAllRelated(st, moves);
+#endif
+
+    Call do_delta_violations(Call::Function::DELTA_VIOLATIONS);
+    Call make_move(Call::Function::MAKE_MOVE);
+    
+    CFtype sum = static_cast<CFtype>(0);
+    auto c_moves = const_cast<decltype(moves)>(moves);
+    TheseMovesRefs r_moves = to_refs(c_moves);
+    std::vector<State> temp_states(this->Modality(), State(this->in)); // the chain of states
+    temp_states[0] = st; // the first state is a copy of to st
+    // create and initialize all the remaining states in the chain
+    sum = SuperNeighborhoodExplorer::ComputeAt(temp_states[0], r_moves, this->nhes, do_delta_violations, 0);
+    for (unsigned int i = 1; i < this->Modality(); i++)
+    {
+      temp_states[i] = temp_states[i - 1];
+      SuperNeighborhoodExplorer::ExecuteAt(temp_states[i], r_moves, this->nhes, make_move, i - 1);
+      sum += SuperNeighborhoodExplorer::ComputeAt(temp_states[i], r_moves, this->nhes, do_delta_violations, i);
     }
     
     return sum;

@@ -88,7 +88,7 @@ SimulatedAnnealing<Input,State,Move,CFtype>::SimulatedAnnealing(const Input& in,
   max_neighbors_sampled("neighbors_sampled", "Maximum number of neighbors sampled at each temp.", this->parameters),
   max_neighbors_accepted("neighbors_accepted", "Maximum number of neighbor accepted at each temp.", this->parameters)
 {
-  compute_start_temperature = true;
+  compute_start_temperature = false;
 }
 
 
@@ -154,7 +154,10 @@ void SimulatedAnnealing<Input,State,Move,CFtype>::SelectMove()
 {
   this->ne.RandomMove(*this->p_current_state, this->current_move);
   this->current_move_cost = this->ne.DeltaCostFunction(*this->p_current_state, this->current_move);
-  this->current_move_violations = this->ne.DeltaViolations(*this->p_current_state, this->current_move);
+  if (this->observer != nullptr)
+    {
+      this->current_move_violations = this->ne.DeltaViolations(*this->p_current_state, this->current_move);
+    }
   neighbors_sampled++;
 }
 
@@ -200,7 +203,7 @@ template <class Input, class State, class Move, typename CFtype>
 bool SimulatedAnnealing<Input,State,Move,CFtype>::AcceptableMove()
 { 
   return LessOrEqualThan(this->current_move_cost,(CFtype)0)
-  || (Random::Double() < exp(-this->current_move_cost/temperature)); 
+    || (Random::Double() < exp(-this->current_move_cost/temperature)); 
 }
 
 #endif // _SIMULATED_ANNEALING_HH_

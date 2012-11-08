@@ -82,9 +82,12 @@ void MoveRunner<Input,State, Move, CFtype>::UpdateBestState()
 
       this->best_state_cost = this->current_state_cost;
       this->best_state_violations = this->current_state_violations;
-      this->iteration_of_best = this->iteration;
+
       if (this->observer != nullptr)
         this->observer->NotifyNewBest(*this);
+ 
+      // so that idle iterations are printed correctly
+      this->iteration_of_best = this->iteration;
     }
   }
 }
