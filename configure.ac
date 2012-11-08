@@ -31,6 +31,9 @@ EASYLOCALPP_BUILD=`pwd`
 AC_PREFIX_DEFAULT([`pwd`])
 
 AM_INIT_AUTOMAKE([1.9 -Wall foreign])
+# only to prevent the automatic addition of -g -O2 by AC_PROG_CXX
+CFLAGS="$CFLAGS" 
+CXXFLAGS="$CXXFLAGS"
 AM_PROG_AR
 AC_LANG([C++])
 AC_DISABLE_SHARED
