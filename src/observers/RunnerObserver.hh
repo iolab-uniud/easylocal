@@ -19,7 +19,8 @@ public:
   virtual void NotifyMadeMove(MoveRunner<Input,State,Move,CFtype>& r);
   virtual void NotifyEndRunner(MoveRunner<Input,State,Move,CFtype>& r);
 protected:
-  bool notify_new_best, notify_made_move, plot_improving_moves, plot_all_moves;
+  bool notify_new_best, notify_made_move, plot_improving_moves, plot_all_moves, notify_violations_increased;
+  CFtype previous_violations, previous_cost;
   std::ostream &log, &plot;
 };
 
@@ -27,14 +28,21 @@ template <class Input, class State, class Move, typename CFtype>
 RunnerObserver<Input,State,Move,CFtype>::RunnerObserver(unsigned int verbosity_level, unsigned int plot_level, std::ostream& log_os, std::ostream& plot_os) 
   : log(log_os), plot(plot_os)
 {
+  // notify
   if (verbosity_level >= 1)
     notify_new_best = true;
   else
     notify_new_best = false;
   if (verbosity_level >= 2)
+    notify_violations_increased = true;
+  else
+    notify_violations_increased = false;
+  if (verbosity_level >= 3)
     notify_made_move = true;
   else
     notify_made_move = false;
+
+  // plot
   if (plot_level >= 1)
     plot_improving_moves = true;
   else
@@ -54,7 +62,6 @@ void RunnerObserver<Input,State,Move,CFtype>::NotifyStartRunner(MoveRunner<Input
             r.current_state_cost << 
             std::endl;
 }
-
 
 template <class Input, class State, class Move, typename CFtype>
 void RunnerObserver<Input,State,Move,CFtype>::NotifyNewBest(MoveRunner<Input,State,Move,CFtype>& r)
@@ -98,6 +105,12 @@ void RunnerObserver<Input,State,Move,CFtype>::NotifyMadeMove(MoveRunner<Input,St
       }
     log << ')' << std::endl;
   }
+  if (notify_violations_increased && r.current_state_violations > previous_violations)
+  {
+    log << "Violations increased (" << previous_violations << " -> " << r.current_state_violations << "), cost " << ((previous_cost >= r.current_state_cost) ? ((previous_cost > r.current_state_cost) ? "increased" : "is unchanged") : "decreased" ) << std::endl;
+  }
+  previous_violations = r.current_state_violations;
+  previous_cost = r.current_state_cost;
   if (plot_all_moves)
     plot << r.name << ' ' << 
             r.iteration << ' '  <<

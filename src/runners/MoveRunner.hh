@@ -59,6 +59,7 @@ protected:
   // state data
   Move current_move;      /**< The currently selected move. */
   CFtype current_move_cost; /**< The cost of the selected move. */
+  CFtype current_move_violations; /**< The violations of the selected move. */
   
   RunnerObserver<Input,State,Move,CFtype>* observer;
   
@@ -80,6 +81,7 @@ void MoveRunner<Input,State, Move, CFtype>::UpdateBestState()
     {
 
       this->best_state_cost = this->current_state_cost;
+      this->best_state_violations = this->current_state_violations;
       this->iteration_of_best = this->iteration;
       if (this->observer != nullptr)
         this->observer->NotifyNewBest(*this);
@@ -108,7 +110,7 @@ template <class Input, class State, class Move, typename CFtype>
 void MoveRunner<Input,State,Move,CFtype>::TerminateRun()
 {
   if (observer != nullptr)
-		observer->NotifyEndRunner(*this);
+    observer->NotifyEndRunner(*this);
 }
 
 /**
@@ -117,10 +119,12 @@ void MoveRunner<Input,State,Move,CFtype>::TerminateRun()
 template <class Input, class State, class Move, typename CFtype>
 void MoveRunner<Input,State,Move,CFtype>::MakeMove()
 {
-	ne.MakeMove(*this->p_current_state, current_move);
+  ne.MakeMove(*this->p_current_state, current_move);
   this->current_state_cost += current_move_cost;
-  if (observer != nullptr)
-		observer->NotifyMadeMove(*this);
+  this->current_state_violations += current_move_violations;
+  if (observer != nullptr) {
+    observer->NotifyMadeMove(*this);
+  }
 }
 
 

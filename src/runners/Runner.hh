@@ -163,9 +163,15 @@ protected:
   
   /** Cost of the current state. */
   CFtype current_state_cost;
-  
+
+  /** Current state violations. */ 
+  CFtype current_state_violations;
+ 
   /** Cost of the best state. */
   CFtype best_state_cost;
+  
+   /** Cost of the best state. */
+  CFtype best_state_violations;
   
   /** Index of the iteration where the best has been found. */
   unsigned long int iteration_of_best;
@@ -231,7 +237,7 @@ CFtype Runner<Input,State,CFtype>::Go(State& s) throw (ParameterNotSet, Incorrec
       PrepareMove();
       MakeMove();
       CompleteMove();
-      this->UpdateBestState();
+      UpdateBestState();
     }
     CompleteIteration();
   }
@@ -249,6 +255,7 @@ void Runner<Input,State,CFtype>::UpdateBestState()
     if (LessThan(current_state_cost, best_state_cost))
     {
       best_state_cost = current_state_cost;
+      best_state_violations = current_state_violations;
       iteration_of_best = iteration;
     }
   }
@@ -291,6 +298,7 @@ void Runner<Input,State,CFtype>::InitializeRun(State& s) throw (ParameterNotSet,
   p_best_state = std::make_shared<State>(s);    // creates the best state object by copying the content of s
   p_current_state = std::make_shared<State>(s); // creates the current state object by copying the content of s
   best_state_cost = current_state_cost = sm.CostFunction(s);
+  best_state_violations = current_state_violations = sm.Violations(s);
   InitializeRun();
 }
 
