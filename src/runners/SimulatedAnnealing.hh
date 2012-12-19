@@ -43,6 +43,7 @@ public:
 
   double Temperature() const { return temperature; }
 
+  std::string StatusString();
 protected:
 
   void InitializeRun() throw (ParameterNotSet, IncorrectParameterValue);
@@ -204,6 +205,17 @@ bool SimulatedAnnealing<Input,State,Move,CFtype>::AcceptableMove()
 { 
   return LessOrEqualThan(this->current_move_cost,(CFtype)0)
     || (Random::Double() < exp(-this->current_move_cost/temperature)); 
+}
+
+/**
+ Create a string containing the status of the runner
+ */
+template <class Input, class State, class Move, typename CFtype>
+std::string SimulatedAnnealing<Input,State,Move,CFtype>::StatusString()
+{
+  std::stringstream status;
+  status << "[Temp = " << temperature << ", NS = " << neighbors_sampled << ", NA = " << neighbors_accepted << "]";
+  return status.str();
 }
 
 #endif // _SIMULATED_ANNEALING_HH_

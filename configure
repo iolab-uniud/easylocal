@@ -3155,6 +3155,9 @@ am__tar='$${TAR-tar} chof - "$$tardir"' am__untar='$${TAR-tar} xf -'
 
 
 
+# only to prevent the automatic addition of -g -O2 by AC_PROG_CXX
+CFLAGS="$CFLAGS"
+CXXFLAGS="$CXXFLAGS"
 DEPDIR="${am__leading_dot}deps"
 
 ac_config_commands="$ac_config_commands depfiles"

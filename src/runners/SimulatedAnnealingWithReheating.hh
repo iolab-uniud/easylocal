@@ -78,9 +78,10 @@ void SimulatedAnnealingWithReheating<Input,State,Move,CFtype>::InitializeRun() t
   if (first_descent_iterations_ratio <= 0.0 || first_descent_iterations_ratio > 1.0)
     throw IncorrectParameterValue(first_descent_iterations_ratio, "should be a value in the interval ]0, 1]");  
   
-  unsigned int number_of_temperatures = -log(this->start_temperature/this->min_temperature) / log(this->cooling_rate);
-  this->max_neighbors_sampled = ceil((first_descent_iterations_ratio * this->max_iterations) /number_of_temperatures);
-  this->max_neighbors_accepted = this->max_neighbors_sampled;
+  reheats = 0;
+//   unsigned int number_of_temperatures = -log(this->start_temperature/this->min_temperature) / log(this->cooling_rate);
+//   this->max_neighbors_sampled = ceil((first_descent_iterations_ratio * this->max_iterations) /number_of_temperatures);
+  //  this->max_neighbors_accepted = this->max_neighbors_sampled;
 }
 
 /**
@@ -90,10 +91,12 @@ template <class Input, class State, class Move, typename CFtype>
 void SimulatedAnnealingWithReheating<Input,State,Move,CFtype>::CompleteMove()
 {
   SimulatedAnnealing<Input,State,Move,CFtype>::CompleteMove();
-  if (SimulatedAnnealing<Input,State,Move,CFtype>::StopCriterion() && reheats < max_reheats)
+  if (SimulatedAnnealing<Input,State,Move,CFtype>::StopCriterion() && reheats <= max_reheats)
   {
     if (reheats == 0)
-      this->start_temperature = this->start_temperature * first_reheat;
+      {
+	this->start_temperature = this->start_temperature * first_reheat;
+      }
     else
       this->start_temperature = this->start_temperature * reheat;
     
@@ -102,7 +105,7 @@ void SimulatedAnnealingWithReheating<Input,State,Move,CFtype>::CompleteMove()
     std::cerr << "Reheat " << this->temperature << std::endl;
     
     unsigned int number_of_temperatures = -log(this->start_temperature / this->min_temperature) / log(this->cooling_rate);
-    this->max_neighbors_sampled = ceil(((1.0 - first_descent_iterations_ratio) * this->max_iterations) / number_of_temperatures);
+    this->max_neighbors_sampled = ceil(((1.0 - first_descent_iterations_ratio) * this->max_iterations) / (max_reheats * number_of_temperatures));
     this->max_neighbors_accepted = this->max_neighbors_sampled;
     reheats++;
   }

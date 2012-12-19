@@ -77,7 +77,7 @@ void RunnerObserver<Input,State,Move,CFtype>::NotifyNewBest(MoveRunner<Input,Sta
         if (i < r.sm.CostComponents() - 1) 
           log << ',';
       }
-      log << ')' << std::endl;
+      log << ") " << r.StatusString() << std::endl;
     }
   if (plot_improving_moves && !plot_all_moves)
     plot << r.name << ' ' << 
@@ -103,7 +103,7 @@ void RunnerObserver<Input,State,Move,CFtype>::NotifyMadeMove(MoveRunner<Input,St
         if (i < r.sm.CostComponents() - 1) 
           log << ',';
       }
-    log << ')' << std::endl;
+    log << ") " << r.StatusString() << std::endl;
   }
 
   if (notify_violations_increased && r.current_state_violations > previous_violations)
