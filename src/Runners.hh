@@ -51,6 +51,7 @@
 #include <runners/FirstDescent.hh>
 #include <runners/HillClimbing.hh>
 #include <runners/SimulatedAnnealing.hh>
+#include <runners/SimulatedAnnealingIterationBased.hh>
 #include <runners/SimulatedAnnealingWithReheating.hh>
 #include <runners/GreatDeluge.hh>
 #include <runners/TabuSearch.hh>

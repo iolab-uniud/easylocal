@@ -280,7 +280,7 @@ void Runner<Input,State,CFtype>::CompleteIteration()
 template <class Input, class State, typename CFtype>
 bool Runner<Input,State,CFtype>::MaxIterationExpired() const
 {
-  return iteration > max_iterations;
+  return iteration >= max_iterations;
 }
 
 template <class Input, class State, typename CFtype>
