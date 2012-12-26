@@ -1,5 +1,5 @@
 #if !defined(_SIMULATED_ANNEALING_ITERATION_BASED_HH_)
-#define _SIMULATED_ANNEALING_ITERATION_BASEDHH_
+#define _SIMULATED_ANNEALING_ITERATION_BASED_HH_
 
 #include <runners/AbstractSimulatedAnnealing.hh>
 

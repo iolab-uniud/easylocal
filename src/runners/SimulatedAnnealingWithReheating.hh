@@ -70,23 +70,31 @@ template <class Input, class State, class Move, typename CFtype>
 void SimulatedAnnealingWithReheating<Input,State,Move,CFtype>::InitializeRun() throw (ParameterNotSet, IncorrectParameterValue)
 {
   SimulatedAnnealingIterationBased<Input,State,Move,CFtype>::InitializeRun();
-  
-  if (reheat_ratio <= 0.0)
-    throw IncorrectParameterValue(reheat_ratio, "should be greater than zero");
-  if (!first_reheat_ratio.IsSet())
-    first_reheat_ratio = reheat_ratio;
-  if (first_reheat_ratio <= 0.0)
-    throw IncorrectParameterValue(first_reheat_ratio, "should be greater than zero");
-  if (first_descent_iterations_share <= 0.0 || first_descent_iterations_share > 1.0)
-    throw IncorrectParameterValue(first_descent_iterations_share, "should be a value in the interval ]0, 1]");  
-  
   reheats = 0;
 
-  this->max_neighbors_sampled = ceil(this->max_neighbors_sampled * first_descent_iterations_share);
+  if (max_reheats > 0)
+  {
+    if (max_reheats > 1)
+    {
+      if (reheat_ratio <= 0.0)
+        throw IncorrectParameterValue(reheat_ratio, "should be greater than zero");
+
+      if (!first_reheat_ratio.IsSet())
+        first_reheat_ratio = reheat_ratio;
+    }
+
+    if (first_reheat_ratio <= 0.0)
+      throw IncorrectParameterValue(first_reheat_ratio, "should be greater than zero");
+    if (first_descent_iterations_share <= 0.0 || first_descent_iterations_share > 1.0)
+      throw IncorrectParameterValue(first_descent_iterations_share, "should be a value in the interval ]0, 1]");  
+
+    this->max_neighbors_sampled = ceil(this->max_neighbors_sampled * first_descent_iterations_share);
+    first_descent_iterations = this->max_iterations * first_descent_iterations_share;
+    other_descent_iterations = (this->max_iterations - first_descent_iterations)/max_reheats;     
+  }  
+
   this->max_neighbors_accepted = ceil(this->max_neighbors_sampled * this->neighbors_accepted_ratio);
 
-  first_descent_iterations = this->max_iterations * first_descent_iterations_share;
-  other_descent_iterations = (this->max_iterations - first_descent_iterations)/max_reheats;     
 }
 
 /**
@@ -99,19 +107,20 @@ void SimulatedAnnealingWithReheating<Input,State,Move,CFtype>::CompleteMove()
   if (ReheatCondition()
        && reheats <= max_reheats)
   {
-    if (reheats == 0)
-      this->start_temperature = this->start_temperature * first_reheat_ratio;
-    else
-      this->start_temperature = this->start_temperature * reheat_ratio;
-        
+    if (max_reheats != 0)
+    {
+      if (reheats == 0)
+        this->start_temperature = this->start_temperature * first_reheat_ratio;
+      else
+        this->start_temperature = this->start_temperature * reheat_ratio;
+    }    
     this->expected_number_of_temperatures = -log(this->start_temperature/this->expected_min_temperature) / log(this->cooling_rate);
 
     this->max_neighbors_sampled = other_descent_iterations / this->expected_number_of_temperatures;
     this->max_neighbors_accepted = this->max_neighbors_sampled;
     reheats++;
 
-    std::cerr << reheats << " " << this->max_neighbors_sampled << " " << this->max_neighbors_accepted 
-	      << " " << this->start_temperature << " " << this->temperature << std::endl;
+    // std::cerr << reheats << " " << this->max_neighbors_sampled << " " << this->max_neighbors_accepted  << " " << this->start_temperature << " " << this->temperature << std::endl;
     this->temperature = this->start_temperature;    
   }
 }
@@ -119,6 +128,8 @@ void SimulatedAnnealingWithReheating<Input,State,Move,CFtype>::CompleteMove()
 template <class Input, class State, class Move, typename CFtype>
 bool SimulatedAnnealingWithReheating<Input,State,Move,CFtype>::ReheatCondition()
 {
+  if (max_reheats == 0)
+    return true;
   unsigned int stop_iteration;
   stop_iteration = first_descent_iterations + other_descent_iterations * reheats;
   return this->iteration >= stop_iteration;
