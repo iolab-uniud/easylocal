@@ -1,7 +1,7 @@
 #if !defined(_SIMULATED_ANNEALING_WITH_REHEATING_HH_)
 #define _SIMULATED_ANNEALING_WITH_REHEATING_HH_
 
-#include <runners/SimulatedAnnealing.hh>
+#include <runners/SimulatedAnnealingIterationBased.hh>
 
 /** The Simulated annealing with Reheating runner relies on a probabilistic local
  search technique whose name comes from the fact that it
