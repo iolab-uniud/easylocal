@@ -104,16 +104,16 @@ template <class Input, class State, class Move, typename CFtype>
 void SimulatedAnnealingWithReheating<Input,State,Move,CFtype>::CompleteMove()
 {
   SimulatedAnnealingIterationBased<Input,State,Move,CFtype>::CompleteMove();
-  if (ReheatCondition()
-       && reheats <= max_reheats)
+  if (ReheatCondition() && reheats <= max_reheats)
   {
-    if (max_reheats != 0)
-    {
+//     if (max_reheats != 0)
+//     {
       if (reheats == 0)
         this->start_temperature = this->start_temperature * first_reheat_ratio;
       else
-        this->start_temperature = this->start_temperature * reheat_ratio;
-    }    
+	if (max_reheats > 1)
+	  this->start_temperature = this->start_temperature * reheat_ratio;
+//     }    
     this->expected_number_of_temperatures = -log(this->start_temperature/this->expected_min_temperature) / log(this->cooling_rate);
 
     this->max_neighbors_sampled = other_descent_iterations / this->expected_number_of_temperatures;
@@ -129,7 +129,7 @@ template <class Input, class State, class Move, typename CFtype>
 bool SimulatedAnnealingWithReheating<Input,State,Move,CFtype>::ReheatCondition()
 {
   if (max_reheats == 0)
-    return true;
+    return false; //true;
   unsigned int stop_iteration;
   stop_iteration = first_descent_iterations + other_descent_iterations * reheats;
   return this->iteration >= stop_iteration;
