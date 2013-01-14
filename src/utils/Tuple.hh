@@ -60,26 +60,46 @@ std::tuple<std::reference_wrapper<T>...> tuple_tail(tail_index<S...>, const std:
 }
 
 /** Prints a generic tuple. */
-template <typename H, typename S, typename ...T>
+template <unsigned int N>
+struct print_tuple {
+  template <typename Tuple>
+  static void print(std::ostream& os, const Tuple& t)
+  {
+    print_tuple<N-1>::print(os, t);
+    os << " - " << std::get<N-1>(t);
+  }
+};
+
+template<>
+struct print_tuple<0>
+{
+  template <typename Tuple>
+  static void print(std::ostream& os, const Tuple& t)
+  {
+    os << std::get<0>(t);
+  }
+};
+/* template <typename H, typename S, typename ...T>
 void print_tuple(std::ostream& os, const std::tuple<H, S, T...>& t)
 {
   os << std::get<0>(t) << "-";
   auto temp_tuple_tail = tuple_tail(t);
   print_tuple<S, T...>(os, temp_tuple_tail);
-}
+} */
 
 /** Prints a generic tuple, base case. */
-template <typename H>
+/* template <typename H>
 void print_tuple(std::ostream& os, const std::tuple<H>& t)
 {
   os << std::get<0>(t);
 }
+*/
 
 /** Output operator for generic tuple. */
 template <typename ...T>
 std::ostream& operator<<(std::ostream& os, const std::tuple<T...>& t)
 {
-  print_tuple<T...>(os, t);
+  print_tuple<sizeof...(T)>::print(os, t);
   return os;
 }
 
