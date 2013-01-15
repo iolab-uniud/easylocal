@@ -270,7 +270,7 @@ CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::DeltaCostFunction(const St
       CostComponent<Input,State,CFtype>& cc = *(cost_component[i]);
       if (cc.IsHard())
         // hard weight considered later
-        delta_hard_cost += cc.ComputeCost(st1) - cc.ComputeCost(st);
+        delta_hard_cost +=  cc.Weight() * (cc.ComputeCost(st1) - cc.ComputeCost(st));
       else
         delta_soft_cost += cc.Weight() * (cc.ComputeCost(st1) - cc.ComputeCost(st));
     }
