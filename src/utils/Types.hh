@@ -83,4 +83,28 @@ struct MoveRelations
   }
 };
 
+template <class Move>
+bool operator==(const ActiveMove<Move>& mv1, const ActiveMove<Move>& mv2)
+{
+	if (!mv1.active && !mv2.active)
+		return true;
+	else if (mv1.active != mv2.active)
+		return false;
+	else
+		return mv1 == mv2;
+}
+
+template <class Move>
+bool operator<(const ActiveMove<Move>& mv1, const ActiveMove<Move>& mv2)
+{
+	if (!mv1.active && !mv2.active)
+		return false;
+	else if (mv1.active < mv2.active)
+		return true;
+	else if (mv1.active > mv2.active)
+		return false;
+	else
+		return mv1 < mv2;
+}
+
 #endif // _TYPES_HH_
