@@ -86,6 +86,7 @@ struct MoveRelations
 template <class Move>
 bool operator==(const ActiveMove<Move>& mv1, const ActiveMove<Move>& mv2)
 {
+		std::cerr << "operator== " << mv1 << ' ' << mv2 << std::endl;
 	if (!mv1.active && !mv2.active)
 		return true;
 	else if (mv1.active != mv2.active)
@@ -97,6 +98,7 @@ bool operator==(const ActiveMove<Move>& mv1, const ActiveMove<Move>& mv2)
 template <class Move>
 bool operator<(const ActiveMove<Move>& mv1, const ActiveMove<Move>& mv2)
 {
+	std::cerr << "operator< " << mv1 << ' ' << mv2 << std::endl;
 	if (!mv1.active && !mv2.active)
 		return false;
 	else if (mv1.active < mv2.active)
