@@ -152,6 +152,7 @@ public:
    */
   virtual void MakeMove(State &st, const Move& mv) const = 0;
   
+    
   virtual bool NextRelatedMove(const State &st, Move& mv, const Move& mv2) const
   { return NextMove(st,mv); }
   
@@ -166,32 +167,111 @@ public:
       return false;
     }
     return true;
-  }
+  } 
   
   // evaluation function
+  
+ /**
+  Computes the differences in the cost function obtained by applying the move @c mv 
+  to the state @c st.
+   
+  @param st the state to modify
+  @param mv the move to be applied
+  @return the difference in the cost function
+  */
   virtual CFtype DeltaCostFunction(const State& st, const Move& mv) const;
+  
+  /**
+   Computes the differences in the objective component of the cost function obtained 
+   by applying the move @c mv to the state @c st.
+   
+   @param st the state to modify
+   @param mv the move to be applied
+   @return the difference in the objective function
+   */ 
   virtual CFtype DeltaObjective(const State& st, const Move & mv) const;
+  /**
+   Computes the differences in the violations component (i.e., hard constraints)
+   of the cost function obtained by applying the move @c mv to the state @c st.
+   
+   @param st the state to modify
+   @param mv the move to be applied
+   @return the difference in the violation function
+   */
+ 
   virtual CFtype DeltaViolations(const State& st, const Move & mv) const;
   
+ /**
+  Adds a delta cost component to the neighborhood explorer, which is responsible for computing
+  one component of the cost function.
+  A delta cost component requires the implementation of a way to compute the difference in the
+  cost function without simulating the move on a given state.
+   
+  @param dcc a delta cost component object
+  */
   virtual void AddDeltaCostComponent(DeltaCostComponent<Input,State,Move,CFtype>& dcc);
   
+  /**
+   Adds a cost component to the neighborhood explorer, which is responsible for computing
+   one component of the cost function.
+   A cost component passed to the neighborhood explorer will compute the difference in the
+   cost function due to that component as the difference between the cost in the current state
+   and the new state obtained after (actually) performing the move. It might be seen as 
+   an unimplemented delta cost component.
+   @note In general it is a quite unefficient way to compute the contribution of the move and
+   it should be avoided, if possible.
+   
+   @param dcc a delta cost component object
+   */
+ 
   virtual void AddDeltaCostComponent(CostComponent<Input,State,CFtype>& cc);
   
+ /**
+  Returns the number of delta cost components attached to the neighborhood explorer.
+  @return the size of the delta cost components vector
+  */
   virtual size_t DeltaCostComponents() const
   { return delta_cost_component.size(); }
   
+  /**
+    Returns an element of the delta cost component vector attached to the neighborhood explorer.
+    @param i the index of the required delta cost component
+    @return the delta cost component of index i
+  */
   virtual DeltaCostComponent<Input,State,Move,CFtype>& GetDeltaCostComponent(unsigned int i)
   { return *delta_cost_component[i]; }
+  
+  /**
+   Returns the number of cost components attached to the neighborhood explorer.
+   @return the size of the cost components vector
+   */
   
   virtual size_t CostComponents() const
   { return cost_component.size(); }
   
+  /**
+    Returns an element of the cost component vector attached to the neighborhood explorer.
+    @param i the index of the required cost component
+    @return the cost component of index i
+  */
+ 
   virtual CostComponent<Input,State,CFtype>& GetCostComponent(unsigned int i)
   { return *cost_component[i]; }
   
+ /**
+  Retuns the modality of the neighborhood explorer, i.e., the number of different kind of
+  moves handled by it.
+  @return the modality of the neighborhood explorer
+  */
   virtual unsigned int Modality() const
   { return 1; }
   
+ /**
+  Returns the modality of the move passed as parameter, i.e., the number of move components
+  in a composite move that are active.
+  @param mv a move
+  @return the modality of the move
+  */
   virtual unsigned int MoveModality(const Move& mv) const
   { return 0; }
 protected:
@@ -257,8 +337,8 @@ CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::DeltaCostFunction(const St
       delta_soft_cost += dcc.DeltaCost(st, mv);
   }
   
-  // only if there is more than one cost component
-  if (cost_component.size() != 0)
+  // only if there is at least one cost component
+  if (cost_component.size() > 0)
   {
     // compute move
     State st1 = st;
@@ -277,6 +357,84 @@ CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::DeltaCostFunction(const St
   }
   
   return HARD_WEIGHT * delta_hard_cost + delta_soft_cost;
+}
+
+template <class Input, class State, class Move, typename CFtype>
+CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::DeltaViolations(const State& st, const Move & mv) const
+{
+  CFtype delta_hard_cost = 0;
+  unsigned int i;
+  
+  // compute delta costs
+  for (i = 0; i < this->delta_cost_component.size(); i++)
+  {
+    // get reference to delta cost component
+    DeltaCostComponent<Input,State,Move,CFtype>& dcc = *(delta_cost_component[i]);
+    if (dcc.IsHard())
+      delta_hard_cost += dcc.DeltaCost(st, mv);
+  }
+  
+  // only if there is at least one hard cost component
+  bool hard_cost_components_unimplemented = false;
+  for (i = 0; i < cost_component.size(); i++)
+    if (cost_component[i]->IsHard())
+      hard_cost_components_unimplemented = true;
+  
+  if (hard_cost_components_unimplemented)
+  {
+    // compute move
+    State st1 = st;
+    MakeMove(st1, mv);
+    
+    for (i = 0; i < cost_component.size(); i++)
+    {
+      // get reference to cost component
+      CostComponent<Input,State,CFtype>& cc = *(cost_component[i]);
+      if (cc.IsHard())
+        delta_hard_cost +=  cc.Weight() * (cc.ComputeCost(st1) - cc.ComputeCost(st));
+    }
+  }
+  
+  return delta_hard_cost;  
+}
+
+template <class Input, class State, class Move, typename CFtype>
+CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::DeltaObjective(const State& st, const Move & mv) const
+{
+  CFtype delta_soft_cost = 0;
+  unsigned int i;
+  
+  // compute delta costs
+  for (i = 0; i < this->delta_cost_component.size(); i++)
+  {
+    // get reference to delta cost component
+    DeltaCostComponent<Input,State,Move,CFtype>& dcc = *(delta_cost_component[i]);
+    if (!dcc.IsHard())
+      delta_soft_cost += dcc.DeltaCost(st, mv);
+  }
+  
+  // only if there is at least one soft cost component
+  bool soft_cost_components_unimplemented = false;
+  for (i = 0; i < cost_component.size(); i++)
+    if (!cost_component[i]->IsHard())
+      soft_cost_components_unimplemented = true;
+  
+  if (soft_cost_components_unimplemented)
+  {
+    // compute move
+    State st1 = st;
+    MakeMove(st1, mv);
+    
+    for (i = 0; i < cost_component.size(); i++)
+    {
+      // get reference to cost component
+      CostComponent<Input,State,CFtype>& cc = *(cost_component[i]);
+      if (!cc.IsHard())
+        delta_soft_cost +=  cc.Weight() * (cc.ComputeCost(st1) - cc.ComputeCost(st));
+    }
+  }
+  
+  return delta_soft_cost;    
 }
 
 template <class Input, class State, class Move, typename CFtype>
@@ -576,57 +734,6 @@ CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::SampleMove(const State &st
   
   mv = best_move;
   return best_delta;
-}
-
-
-/**
- Evaluates the variation of the violations function obtained by
- performing a move in a given state.
- The tentative definition simply makes the move and invokes the
- companion StateManager method (Violations) on the initial and on the
- final state.
- 
- @param st the state
- @param mv the move to evaluate
- @return the difference in the violations function induced by the move mv
- */
-template <class Input, class State, class Move, typename CFtype>
-CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::DeltaViolations(const State& st, const Move & mv) const
-{
-  // in the current version, if hard_delta_cost is not used
-  // the function returns 0. This means that the default
-  // version is not available
-  CFtype total_delta = 0;
-  for (unsigned int i = 0; i < delta_cost_component.size(); i++)
-    if (delta_cost_component[i]->IsHard())
-    {
-      DeltaCostComponent<Input,State,Move,CFtype>& dcc = *this->delta_cost_component[i];
-      total_delta += dcc.DeltaCost(st, mv);
-    }
-  return total_delta;
-}
-/**
- Evaluates the variation of the objective function obtained by performing
- a move in a given state.
- The tentative definition simply makes the move and invokes the
- companion StateManager method (Objective) on the initial and on the
- final state.
- 
- @param st the state
- @param mv the move to evaluate
- @return the difference in the objective function induced by the move mv
- */
-template <class Input, class State, class Move, typename CFtype>
-CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::DeltaObjective(const State& st, const Move & mv) const
-{
-  CFtype total_delta = 0;
-  for (unsigned int i = 0; i < this->delta_cost_component.size(); i++)
-    if (delta_cost_component[i]->IsSoft())
-    {
-      DeltaCostComponent<Input,State,Move,CFtype>& dcc = *this->delta_cost_component[i];
-      total_delta += dcc.DeltaCost(st, mv);
-    }
-  return total_delta;
 }
 
 #endif // _NEIGHBORHOOD_EXPLORER_HH_
