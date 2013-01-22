@@ -181,6 +181,7 @@ int main(int argc, const char* argv[])
     HillClimbing<int, vector<int>, Swap, int> qhc(in, qsm, qnhe, "SwapHillClimbing");
     SteepestDescent<int, vector<int>, Swap, int> qsd(in, qsm, qnhe, "SwapSteepestDescent");
     TabuSearch<int, vector<int>, Swap, int> qts(in, qsm, qnhe, qtlm, "SwapTabuSearch");
+    TabuSearch<int, vector<int>, decltype(qnheumm)::ThisMove, int> qtsmm(in, qsm, qnheumm, qtlmumm, "MultiModalTabuSearch");
     SimulatedAnnealing<int, vector<int>, Swap, int> qsa(in, qsm, qnhe, "SwapSimulatedAnnealing");
     SimulatedAnnealingWithReheating<int, vector<int>, Swap, int> qsawr(in, qsm, qnhe, "SwapSimulatedAnnealingWithReheating");
     LateAcceptanceHillClimbing<int, vector<int>, Swap, int> qlhc(in, qsm, qnhe, "SwapLateAcceptanceHillClimbing");

@@ -252,7 +252,7 @@ protected:
 };
 
 template <class State, typename CFtype, class ... BaseTabuListManagers>
-class SetUnionTabuListManager : MultimodalTabuListManager<State, CFtype, BaseTabuListManagers...>
+class SetUnionTabuListManager : public MultimodalTabuListManager<State, CFtype, BaseTabuListManagers...>
 {
   typedef MultimodalTabuListManager<State, CFtype, BaseTabuListManagers...> SuperTabuListManager;
   typedef typename SuperTabuListManager::Call Call;
@@ -268,7 +268,7 @@ public:
 };
 
 template <class State, typename CFtype, class ... BaseTabuListManagers>
-class CartesianProductTabuListManager : MultimodalTabuListManager<State, CFtype, BaseTabuListManagers...>
+class CartesianProductTabuListManager : public MultimodalTabuListManager<State, CFtype, BaseTabuListManagers...>
 {
   typedef MultimodalTabuListManager<State, CFtype, BaseTabuListManagers...> SuperTabuListManager;
   typedef typename SuperTabuListManager::Call Call;
