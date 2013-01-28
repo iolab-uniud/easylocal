@@ -16,6 +16,7 @@ class SimpleLocalSearch
   : public AbstractLocalSearch<Input,Output,State,CFtype>
 {
 public:	
+	typedef Runner<Input,State,CFtype> RunnerType;
   SimpleLocalSearch(const Input& in,
 		    StateManager<Input,State,CFtype>& e_sm,
 		    OutputManager<Input,Output,State,CFtype>& e_om,
@@ -23,11 +24,10 @@ public:
   void SetRunner(Runner<Input,State,CFtype>& r);
   void Print(std::ostream& os = std::cout) const;
   void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout);
-  // FIXME: all these methods should become solving parameters to sent to the Solver class
 protected:
   void Go();
   void AtTimeoutExpired();
-  Runner<Input,State,CFtype>* p_runner; /**< to the managed runner. */
+  RunnerType* p_runner; /**< to the managed runner. */
 };
 
 /*************************************************************************
@@ -90,12 +90,6 @@ void SimpleLocalSearch<Input,Output,State,CFtype>::Go()
   if (!p_runner)
     // FIXME: add a more specific exception behavior
     throw std::logic_error("Runner not set in object " + this->name);
-  //  if (this->timeout.IsSet())
-  //{
-  //  std::shared_future<CFtype> runner_result = this->p_runner->AsyncRun(std::chrono::milliseconds(static_cast<long long int>(this->timeout * 1000.0)), *this->p_current_state);
-  //  this->current_state_cost = runner_result.get();
-  //}
-  //else
   this->current_state_cost = p_runner->Go(*this->p_current_state);
   
   *this->p_best_state = *this->p_current_state;

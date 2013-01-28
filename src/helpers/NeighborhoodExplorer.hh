@@ -4,6 +4,7 @@
 #include <helpers/DeltaCostComponent.hh>
 #include <helpers/StateManager.hh>
 #include <helpers/ProhibitionManager.hh>
+#include <helpers/WeightManager.hh>
 #include <utils/Random.hh>
 #include <typeinfo>
 #include <iostream>
@@ -73,17 +74,7 @@ public:
    @throws EmptyNeighborhood when the State st has no neighbor
    */
   virtual CFtype FirstImprovingMove(const State& st, Move& mv) const throw (EmptyNeighborhood);
-  
-  /**
-   Generate the first improvement move in the exploration of the neighborhood
-   of a given state, excluding the moves prohibited by @c pm.
-   @param st the start state
-   @param mv the generated move
-   @param pm a prohibition manager, which filters out prohibited moves (e.g., for the Tabu Search).
-   @throws EmptyNeighborhood when the State st has no neighbor
-   */
-  virtual CFtype FirstImprovingMove(const State& st, Move& mv, ProhibitionManager<State,Move,CFtype>& pm) const throw (EmptyNeighborhood);
-  
+    
   /**
    Generates the best move in the full exploration of the neighborhood
    of a given state. It uses @ref FirstMove and @ref NextMove
@@ -95,17 +86,6 @@ public:
   virtual CFtype BestMove(const State& st, Move& mv) const throw (EmptyNeighborhood);
   
   /**
-   Generates the best move in the full exploration of the neighborhood
-   of a given state, excluding the moves prohibited by @c pm.
-   @param st the start state.
-   @param mv the generated move.
-   @param pm a prohibition manager, which filters out prohibited moves (e.g., for the Tabu Search).
-   @return the variation of the cost due to the Move mv.
-   @throws EmptyNeighborhood when the State st has no neighbor
-   */
-  virtual CFtype BestMove(const State& st, Move& mv, ProhibitionManager<State,Move,CFtype>& pm) const throw (EmptyNeighborhood);
-  
-  /**
    Generates the best move in a random sample exploration of the neighborhood
    of a given state.
    @param st the start state.
@@ -115,18 +95,6 @@ public:
    @throws EmptyNeighborhood when the State st has no neighbor
    */
   virtual CFtype SampleMove(const State &st, Move& mv, unsigned int samples) const throw (EmptyNeighborhood);
-  
-  /**
-   Generates the best move in a random sample exploration of the neighborhood
-   of a given state.
-   @param st the start state.
-   @param mv the generated move.
-   @param samples the number of sampled neighbors
-   @param pm a prohibition manager, which filters out prohibited moves (e.g., for the Tabu Search).
-   @return the variation of the cost due to the Move mv.
-   @throws EmptyNeighborhood when the State st has no neighbor
-   */
-  virtual CFtype SampleMove(const State &st, Move& mv, unsigned int samples, ProhibitionManager<State,Move,CFtype>& pm) const throw (EmptyNeighborhood);
   
   /**
    States whether a move is feasible or not in a given state.
@@ -481,80 +449,6 @@ CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::BestMove(const State &st, 
 }
 
 template <class Input, class State, class Move, typename CFtype>
-CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::BestMove(const State &st, Move& mv, ProhibitionManager<State, Move, CFtype>& pm) const throw (EmptyNeighborhood)
-{ // get the best non-prohibited move, but if all moves are prohibited, then get the best one among them
-  unsigned int number_of_bests = 1; // number of moves found with the same best value
-  FirstMove(st,mv);
-  CFtype mv_cost = DeltaCostFunction(st,mv);
-  Move best_move = mv;
-  CFtype best_delta = mv_cost;
-  bool all_moves_prohibited = pm.ProhibitedMove(st, mv, mv_cost);
-  
-  static unsigned int i1 = 0, i2 = 0;
-  
-  while (NextMove(st, mv))
-  {
-    mv_cost = DeltaCostFunction(st, mv);
-    if (LessThan(mv_cost, best_delta))
-    {
-      if (!pm.ProhibitedMove(st, mv, mv_cost))
-      {
-        best_move = mv;
-        best_delta = mv_cost;
-        number_of_bests = 1;
-        all_moves_prohibited = false;
-      }
-      else if (all_moves_prohibited)
-      {
-        best_move = mv;
-        best_delta = mv_cost;
-        number_of_bests = 1;
-      }
-    }
-    else if (EqualTo(mv_cost, best_delta))
-    {
-      if (!pm.ProhibitedMove(st, mv, mv_cost))
-      {
-        if (all_moves_prohibited)
-	      {
-          best_move = mv;
-          number_of_bests = 1;
-          all_moves_prohibited = false;
-	      }
-        else
-	      {
-          if (Random::Int(0,number_of_bests) == 0) // accept the move with probability 1 / (1 + number_of_bests)
-            best_move = mv;
-          number_of_bests++;
-	      }
-      }
-      else
-        if (all_moves_prohibited)
-        {
-          if (Random::Int(0,number_of_bests) == 0) // accept the move with probability 1 / (1 + number_of_bests)
-            best_move = mv;
-          number_of_bests++;
-        }
-    }
-    else // mv_cost is greater than best_delta
-      if (all_moves_prohibited && !pm.ProhibitedMove(st, mv, mv_cost))
-      {
-        best_move = mv;
-        best_delta = mv_cost;
-        number_of_bests = 1;
-        all_moves_prohibited = false;
-      }
-  }
-  
-  if (all_moves_prohibited)
-    i1++;
-  i2++;
-  //std::cerr << (float)i1/i2 << ' ' << best_move << " ";
-  mv = best_move;
-  return best_delta;
-}
-
-template <class Input, class State, class Move, typename CFtype>
 CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::FirstImprovingMove(const State &st, Move& mv) const throw (EmptyNeighborhood)
 {
   unsigned int number_of_bests = 0;
@@ -589,64 +483,6 @@ CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::FirstImprovingMove(const S
 }
 
 template <class Input, class State, class Move, typename CFtype>
-CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::FirstImprovingMove(const State &st, Move& mv, ProhibitionManager<State,Move,CFtype>& pm) const throw (EmptyNeighborhood)
-{
-  unsigned int number_of_bests = 0;
-  FirstMove(st, mv);
-  CFtype mv_cost = DeltaCostFunction(st, mv);
-  Move best_move = mv;
-  CFtype best_delta = mv_cost;
-  bool all_moves_prohibited = true, not_last_move;
-  
-  do // look for the best move
-  {  // if the prohibition mechanism is active get the best non-prohibited move
-		// if all moves are prohibited, then get the best one
-		if (LessThan(mv_cost, (CFtype)0) && !pm.ProhibitedMove(st, mv, mv_cost))
-			return mv_cost; // mv is an improving move
-		
-    if (LessThan(mv_cost, best_delta))
-    {
-      if (!pm.ProhibitedMove(st, mv, mv_cost))
-      {
-        best_move = mv;
-        best_delta = mv_cost;
-        number_of_bests = 1;
-        all_moves_prohibited = false;
-      }
-      if (all_moves_prohibited)
-      {
-        best_move = mv;
-        best_delta = mv_cost;
-        number_of_bests = 1;
-      }
-    }
-    else if (all_moves_prohibited && !pm.ProhibitedMove(st, mv, mv_cost))
-    { // when the prohibition mechanism is active, even though it is not an improving move,
-      // this move is the actual best since it is the first non-prohibited
-      best_move = mv;
-      best_delta = mv_cost;
-      number_of_bests = 1;
-      all_moves_prohibited = false;
-    }
-    else if (EqualTo(mv_cost, best_delta) && !pm.ProhibitedMove(st, mv, mv_cost))
-    {
-      if (Random::Int(0,number_of_bests) == 0) // accept the move with probability 1 / (1 + number_of_bests)
-        best_move = mv;
-      number_of_bests++;
-    }
-    not_last_move = NextMove(st, mv);
-    if (not_last_move)
-      mv_cost = DeltaCostFunction(st, mv);
-  }
-  while (not_last_move);
-  
-  // these instructions are reached when no improving move has been found
-  mv = best_move;
-  return best_delta;
-}
-
-
-template <class Input, class State, class Move, typename CFtype>
 CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::SampleMove(const State &st, Move& mv, unsigned int samples) const throw (EmptyNeighborhood)
 {
   unsigned int number_of_bests = 0;
@@ -667,60 +503,6 @@ CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::SampleMove(const State &st
       number_of_bests = 1;
     }
     else if (EqualTo(mv_cost, best_delta))
-    {
-      if (Random::Int(0,number_of_bests) == 0) // accept the move with probability 1 / (1 + number_of_bests)
-        best_move = mv;
-      number_of_bests++;
-    }
-    RandomMove(st, mv);
-    mv_cost = DeltaCostFunction(st, mv);
-    s++;
-  }
-  while (s < samples);
-  
-  mv = best_move;
-  return best_delta;
-}
-
-template <class Input, class State, class Move, typename CFtype>
-CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::SampleMove(const State &st, Move& mv, unsigned int samples, ProhibitionManager<State,Move,CFtype>& pm) const throw (EmptyNeighborhood)
-{
-  unsigned int number_of_bests = 0;
-  unsigned int s = 1;
-  CFtype mv_cost;
-  bool all_moves_prohibited = true;
-  
-  RandomMove(st, mv);
-  mv_cost = DeltaCostFunction(st, mv);
-  Move best_move = mv;
-  CFtype best_delta = mv_cost;
-  do
-  {
-    if (LessThan(mv_cost, best_delta))
-    {
-      if (!pm.ProhibitedMove(st, mv, mv_cost))
-      {
-        best_move = mv;
-        best_delta = mv_cost;
-        number_of_bests = 1;
-        all_moves_prohibited = false;
-      }
-      if (all_moves_prohibited)
-      {
-        best_move = mv;
-        best_delta = mv_cost;
-        number_of_bests = 1;
-      }
-    }
-    else if (all_moves_prohibited && !pm.ProhibitedMove(st, mv, mv_cost))
-    { // when the prohibition mechanism is active, even though it is not an improving move,
-      // this move is the actual best since it is the first non-prohibited
-      best_move = mv;
-      best_delta = mv_cost;
-      number_of_bests = 1;
-      all_moves_prohibited = false;
-    }
-    else if (EqualTo(mv_cost, best_delta) && !pm.ProhibitedMove(st, mv, mv_cost))
     {
       if (Random::Int(0,number_of_bests) == 0) // accept the move with probability 1 / (1 + number_of_bests)
         best_move = mv;

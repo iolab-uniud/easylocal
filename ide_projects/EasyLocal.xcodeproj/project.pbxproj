@@ -39,6 +39,12 @@
 		50B7DC6316147D16006CFED0 /* SimulatedAnnealingWithReheating.hh */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = SimulatedAnnealingWithReheating.hh; sourceTree = "<group>"; };
 		50BDA6F5160200CC0069BFF7 /* LateAcceptanceHillClimbing.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = LateAcceptanceHillClimbing.hh; sourceTree = "<group>"; };
 		A22C6461162072DD00A58459 /* config.hh.in */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = config.hh.in; sourceTree = "<group>"; };
+		A245D81016B2B5CE004734C4 /* GRASP.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = GRASP.hh; sourceTree = "<group>"; };
+		A245D81116B2B5CE004734C4 /* TokenRingSearch.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = TokenRingSearch.hh; sourceTree = "<group>"; };
+		A245D81216B2B942004734C4 /* WeightManager.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = WeightManager.hh; sourceTree = "<group>"; };
+		A2765ABC16B6929A00980D1F /* FirstImprovementTabuSearch.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = FirstImprovementTabuSearch.hh; sourceTree = "<group>"; };
+		A2765ABD16B6929A00980D1F /* SampleTabuSearch.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = SampleTabuSearch.hh; sourceTree = "<group>"; };
+		A2765ABE16B6929A00980D1F /* SimulatedAnnealingIterationBased.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = SimulatedAnnealingIterationBased.hh; sourceTree = "<group>"; };
 		A29C12D3148F74CC00EDC517 /* ToDo2012 */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = ToDo2012; path = ../ToDo2012; sourceTree = "<group>"; };
 		A2BB009716258D25002AE3EF /* Utils.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Utils.hh; sourceTree = "<group>"; };
 		A2DF65DD16170709002DFB3D /* Parameter.cc */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Parameter.cc; sourceTree = "<group>"; };
@@ -210,9 +216,10 @@
 				AC8357BF0EA47DF5002980DC /* MultimodalTabuListManager.hh */,
 				ACF4B1120DBFA668008A0207 /* OutputManager.hh */,
 				ACF4B1130DBFA668008A0207 /* ProhibitionManager.hh */,
-				ACF4B1150DBFA668008A0207 /* ShiftingPenaltyManager.hh */,
 				ACF4B1170DBFA668008A0207 /* StateManager.hh */,
 				ACF4B1190DBFA668008A0207 /* TabuListManager.hh */,
+				A245D81216B2B942004734C4 /* WeightManager.hh */,
+				ACF4B1150DBFA668008A0207 /* ShiftingPenaltyManager.hh */,
 			);
 			path = helpers;
 			sourceTree = "<group>";
@@ -229,6 +236,8 @@
 		ACF4B1240DBFA668008A0207 /* runners */ = {
 			isa = PBXGroup;
 			children = (
+				A2765ABC16B6929A00980D1F /* FirstImprovementTabuSearch.hh */,
+				A2765ABD16B6929A00980D1F /* SampleTabuSearch.hh */,
 				ACF4B1280DBFA668008A0207 /* Runner.hh */,
 				ACF4B1270DBFA668008A0207 /* MoveRunner.hh */,
 				ACF4B1250DBFA668008A0207 /* FirstDescent.hh */,
@@ -238,6 +247,7 @@
 				AC9665AE0E712AE100802631 /* GreatDeluge.hh */,
 				ACF4B12A0DBFA668008A0207 /* SimulatedAnnealing.hh */,
 				50B7DC6316147D16006CFED0 /* SimulatedAnnealingWithReheating.hh */,
+				A2765ABE16B6929A00980D1F /* SimulatedAnnealingIterationBased.hh */,
 				ACF4B2070DBFADB3008A0207 /* TabuSearchWithShiftingPenalty.hh */,
 				50BDA6F5160200CC0069BFF7 /* LateAcceptanceHillClimbing.hh */,
 			);
@@ -247,9 +257,11 @@
 		ACF4B12F0DBFA668008A0207 /* solvers */ = {
 			isa = PBXGroup;
 			children = (
+				A245D81016B2B5CE004734C4 /* GRASP.hh */,
 				ACF4B1350DBFA668008A0207 /* Solver.hh */,
 				ACFAF4BC0DD486CF0095F6A0 /* AbstractLocalSearch.hh */,
 				ACF4B1340DBFA668008A0207 /* SimpleLocalSearch.hh */,
+				A245D81116B2B5CE004734C4 /* TokenRingSearch.hh */,
 				ACDFC7AA0DCFB717004D11E8 /* VariableNeighborhoodDescent.hh */,
 			);
 			path = solvers;
@@ -440,7 +452,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "# shell script goes here\nexport CC=\"clang\"\nexport CXX=\"clang++\"\nexport CXXFLAGS=\"-stdlib=libc++\"\nexport CPPFLAGS=\"-I$PROJECT_DIR/../src\"\ncd $BUILD_DIR\necho $CONFIGURATION\nif [ \"$CONFIGURATION\" == \"Debug\" ]; then\necho \"DEBUG configuration\"\n$PROJECT_DIR/../configure --enable-debug --with-cppunit-prefix=/opt/local --with-boost=/usr/local/include --with-boost-libdir=/usr/local/lib\nelse\necho \"RELEASE configuration\"\n$PROJECT_DIR/../configure --with-cppunit-prefix=/opt/local --with-boost=/usr/local/include --with-boost-libdir=/usr/local/lib\nfi\nmake clean\nexit 0";
+			shellScript = "# shell script goes here\nexport PATH=\"$PATH:/opt/local/bin\"\nexport CC=\"gcc-mp-4.7\"\nexport CXX=\"g++-mp-4.7\"\n#export CXXFLAGS=\"-stdlib=libc++\"\nexport CPPFLAGS=\"-I$PROJECT_DIR/../src\"\ncd $BUILD_DIR\necho $CONFIGURATION\nif [ \"$CONFIGURATION\" == \"Debug\" ]; then\necho \"DEBUG configuration\"\n$PROJECT_DIR/../configure --enable-debug --with-cppunit-prefix=/opt/local\nelse\necho \"RELEASE configuration\"\n$PROJECT_DIR/../configure --with-cppunit-prefix=/opt/local \nfi\nmake clean\nexit 0";
 		};
 		ACFAF4C20DD489630095F6A0 /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -469,6 +481,7 @@
 				GCC_OPTIMIZATION_LEVEL = 0;
 				OTHER_CFLAGS = "";
 				OTHER_LDFLAGS = "";
+				PATH = "$PATH:/opt/local/bin";
 				PRODUCT_NAME = "$(ARCHS_STANDARD_64_BIT)\n";
 			};
 			name = Debug;
@@ -480,6 +493,7 @@
 				COPY_PHASE_STRIP = YES;
 				OTHER_CFLAGS = "";
 				OTHER_LDFLAGS = "";
+				PATH = "$PATH:/opt/local/bin";
 				PRODUCT_NAME = "$(ARCHS_STANDARD_64_BIT)\n";
 			};
 			name = Release;
