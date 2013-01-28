@@ -143,21 +143,6 @@ iter(0)
 }
 
 template <class State, class Move, typename CFtype>
-TabuListManager<State, Move,CFtype>::TabuListManager(unsigned int min_t, unsigned int max_t)
-: TabuListManager()
-{
-  min_tenure = min_t;
-  max_tenure = max_t;
-}
-
-template <class State, class Move, typename CFtype>
-void TabuListManager<State, Move,CFtype>::SetLength(unsigned int min, unsigned int max)
-{
-	min_tenure = min;
-	max_tenure = max;
-}
-
-template <class State, class Move, typename CFtype>
 TabuListManager<State, Move,CFtype>::~TabuListManager()
 {}
 
