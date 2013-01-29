@@ -41,7 +41,6 @@
 		A22C6461162072DD00A58459 /* config.hh.in */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = config.hh.in; sourceTree = "<group>"; };
 		A245D81016B2B5CE004734C4 /* GRASP.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = GRASP.hh; sourceTree = "<group>"; };
 		A245D81116B2B5CE004734C4 /* TokenRingSearch.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = TokenRingSearch.hh; sourceTree = "<group>"; };
-		A245D81216B2B942004734C4 /* WeightManager.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = WeightManager.hh; sourceTree = "<group>"; };
 		A2765ABC16B6929A00980D1F /* FirstImprovementTabuSearch.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = FirstImprovementTabuSearch.hh; sourceTree = "<group>"; };
 		A2765ABD16B6929A00980D1F /* SampleTabuSearch.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = SampleTabuSearch.hh; sourceTree = "<group>"; };
 		A2765ABE16B6929A00980D1F /* SimulatedAnnealingIterationBased.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = SimulatedAnnealingIterationBased.hh; sourceTree = "<group>"; };
@@ -65,7 +64,6 @@
 		ACF4B1110DBFA668008A0207 /* NeighborhoodExplorer.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = NeighborhoodExplorer.hh; sourceTree = "<group>"; };
 		ACF4B1120DBFA668008A0207 /* OutputManager.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = OutputManager.hh; sourceTree = "<group>"; };
 		ACF4B1130DBFA668008A0207 /* ProhibitionManager.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = ProhibitionManager.hh; sourceTree = "<group>"; };
-		ACF4B1150DBFA668008A0207 /* ShiftingPenaltyManager.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = ShiftingPenaltyManager.hh; sourceTree = "<group>"; };
 		ACF4B1170DBFA668008A0207 /* StateManager.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = StateManager.hh; sourceTree = "<group>"; };
 		ACF4B1190DBFA668008A0207 /* TabuListManager.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = TabuListManager.hh; sourceTree = "<group>"; };
 		ACF4B11A0DBFA668008A0207 /* Helpers.hh */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Helpers.hh; sourceTree = "<group>"; };
@@ -218,8 +216,6 @@
 				ACF4B1170DBFA668008A0207 /* StateManager.hh */,
 				ACF4B1190DBFA668008A0207 /* TabuListManager.hh */,
 				AC8357BF0EA47DF5002980DC /* MultimodalTabuListManager.hh */,
-				A245D81216B2B942004734C4 /* WeightManager.hh */,
-				ACF4B1150DBFA668008A0207 /* ShiftingPenaltyManager.hh */,
 			);
 			path = helpers;
 			sourceTree = "<group>";
