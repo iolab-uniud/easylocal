@@ -452,7 +452,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "# shell script goes here\nexport PATH=\"$PATH:/opt/local/bin\"\nexport CC=\"gcc-mp-4.7\"\nexport CXX=\"g++-mp-4.7\"\n#export CXXFLAGS=\"-stdlib=libc++\"\nexport CPPFLAGS=\"-I$PROJECT_DIR/../src\"\ncd $BUILD_DIR\necho $CONFIGURATION\nif [ \"$CONFIGURATION\" == \"Debug\" ]; then\necho \"DEBUG configuration\"\n$PROJECT_DIR/../configure --enable-debug --with-cppunit-prefix=/opt/local\nelse\necho \"RELEASE configuration\"\n$PROJECT_DIR/../configure --with-cppunit-prefix=/opt/local \nfi\nmake clean\nexit 0";
+			shellScript = "# shell script goes here\nexport PATH=\"$PATH:/opt/local/bin\"\nexport CC=\"clang\"\nexport CXX=\"clang++\"\nexport CPPFLAGS=\"-I$PROJECT_DIR/../src\"\ncd $BUILD_DIR\necho $CONFIGURATION\nif [ \"$CONFIGURATION\" == \"Debug\" ]; then\necho \"DEBUG configuration\"\n$PROJECT_DIR/../configure --enable-debug --with-cppunit-prefix=/opt/local --with-boost=/usr/local --with-boost-libdir=/usr/local/lib\nelse\necho \"RELEASE configuration\"\n$PROJECT_DIR/../configure --with-cppunit-prefix=/opt/local --with-boost=/usr/local --with-boost-libdir=/usr/local/lib\nfi\nmake clean\nexit 0";
 		};
 		ACFAF4C20DD489630095F6A0 /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;

@@ -16668,12 +16668,12 @@ fi
 
 
 # Checks for boost::program_options (macports boost could be compiled with an incompatible c++11 compiler)
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether the boost_program_options library can be linked" >&5
-$as_echo_n "checking whether the boost_program_options library can be linked... " >&6; }
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether the boost_program_options library can be linked (single-threaded version)" >&5
+$as_echo_n "checking whether the boost_program_options library can be linked (single-threaded version)... " >&6; }
 LDFLAGS_SAVED="$LDFLAGS"
 LDFLAGS="$LDFLAGS $BOOST_LDFLAGS"
 LIBS_SAVED="$LIBS"
-LIBS="-lboost_program_options-mt $LIBS_SAVED"
+LIBS="-lboost_program_options $LIBS_SAVED"
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 #include <boost/program_options/options_description.hpp>
@@ -16694,7 +16694,7 @@ cat >>confdefs.h <<_ACEOF
 #define HAVE_LINKABLE_BOOST 1
 _ACEOF
 
-      BOOST_PROGRAM_OPTIONS_LIB=-lboost_program_options-mt
+      BOOST_PROGRAM_OPTIONS_LIB=-lboost_program_options
 
 else
   { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
@@ -16711,7 +16711,9 @@ fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
 if test "$BOOST_PROGRAM_OPTIONS_LIB" = ""; then
-  LIBS="-lboost_program_options $LIBS_SAVED"
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether the boost_program_options library can be linked (multi-threaded version)" >&5
+$as_echo_n "checking whether the boost_program_options library can be linked (multi-threaded version)... " >&6; }
+  LIBS="-lboost_program_options-mt $LIBS_SAVED"
   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 #include <boost/program_options/options_description.hpp>
@@ -16732,7 +16734,7 @@ cat >>confdefs.h <<_ACEOF
 #define HAVE_LINKABLE_BOOST 1
 _ACEOF
 
-      BOOST_PROGRAM_OPTIONS_LIB=-lboost_program_options
+      BOOST_PROGRAM_OPTIONS_LIB=-lboost_program_options-mt
 
 else
   { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
