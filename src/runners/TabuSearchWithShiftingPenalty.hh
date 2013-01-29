@@ -1,13 +1,7 @@
 #if !defined(_TABU_SEARCH_WITH_SHIFTING_PENALTY_HH_)
 #define _TABU_SEARCH_WITH_SHIFTING_PENALTY_HH_
 
-#include <runners/MoveRunner.hh>
 #include <runners/TabuSearch.hh>
-#include <helpers/StateManager.hh>
-#include <helpers/NeighborhoodExplorer.hh>
-#include <helpers/TabuListManager.hh>
-
-// FIXME: currently TSWSP is not working
 
 template <class Input, class State, class Move, typename CFtype>
 class TabuSearchWithShiftingPenalty : public TabuSearch<Input,State,Move,CFtype>
@@ -42,6 +36,7 @@ protected:
   Parameter<double> shift_region;
   // state
   bool shifts_reset;
+  std::vector<double> shifts;
 };
 
 /*************************************************************************
@@ -56,18 +51,15 @@ TabuSearchWithShiftingPenalty<Input,State,Move,CFtype>::TabuSearchWithShiftingPe
                                                                                       std::string name)
 :  TabuSearch<Input,State,Move,CFtype>(i, e_sm, e_ne, tlm, name),
 // parameters
-shift_region("shift_region", "FIXME", this->parameters)
-{}
+shift_region("shift_region", "Shifting penalty region", this->parameters)
+{
+  shifts.resize(this->ne.);
+}
 
 template <class Input, class State, class Move, typename CFtype>
 void TabuSearchWithShiftingPenalty<Input,State,Move,CFtype>::ResetShifts()
 {
-  if (!shifts_reset)
-  {
-    for (unsigned i = 0; i < this->ne.DeltaCostComponents(); i++)
-      this->ne.GetDeltaCostComponent(i).ResetShift();
-    shifts_reset = true;
-  }
+ 
 }
 
 template <class Input, class State, class Move, typename CFtype>

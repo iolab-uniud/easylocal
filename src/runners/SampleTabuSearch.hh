@@ -12,10 +12,11 @@ template <class Input, class State, class Move, typename CFtype>
 class SampleTabuSearch : public TabuSearch<Input,State,Move,CFtype>
 {
 public:
-  SampleTabuSearch<Input,State,Move,CFtype>(const Input& in, StateManager<Input,State,CFtype>& e_sm,
-                                                       NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
-                                                       TabuListManager<State,Move,CFtype>& e_tlm,
-                                                       std::string name) : TabuSearch<Input,State,Move,CFtype>(in, e_sm, e_ne, e_tlm, name), samples("samples", "Number of neighbors sampled", this->parameters) {}
+  SampleTabuSearch<Input,State,Move,CFtype>(const Input& in,
+                                            StateManager<Input,State,CFtype>& e_sm,
+                                            NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
+                                            TabuListManager<State,Move,CFtype>& e_tlm,
+                                            std::string name) : TabuSearch<Input,State,Move,CFtype>(in, e_sm, e_ne, e_tlm, name), samples("samples", "Number of neighbors sampled", this->parameters) {}
 protected:
   void SelectMove();
 	Parameter<unsigned int> samples;

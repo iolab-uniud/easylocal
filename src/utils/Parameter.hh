@@ -233,6 +233,27 @@ public:
     }
   }
   
+  /** Sets a given parameter to a given value */
+  template <typename T>
+  void SetParameter(std::string flag, const T& value)
+  {
+    bool found = false;
+    for (auto p : this->parameters)
+    {
+      if (p->cmdline_flag == flag)
+      {
+        Parameter<T>* p_par = dynamic_cast<Parameter<T>*>(p);
+        if (!p_par)
+          throw std::logic_error("Parameter " + p->cmdline_flag + " value of an incorrect type");
+        (*p_par) = value;
+        found = true;
+      }
+    }
+    // FIXME: a more specific exception should be raised
+    if (!found)
+      throw std::logic_error("Parameter " + flag + " not in the list");
+  }
+  
 protected:
   
   ParameterBox parameters;

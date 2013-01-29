@@ -115,7 +115,6 @@
 #include <testers/Tester.hh>
 #include <testers/MoveTester.hh>
 #include <testers/KickerTester.hh>
-#include <helpers/ShiftingPenaltyManager.hh>
 #include <helpers/MultimodalTabuListManager.hh>
 #if defined(HAVE_BOOST)
 #include <boost/program_options/options_description.hpp>

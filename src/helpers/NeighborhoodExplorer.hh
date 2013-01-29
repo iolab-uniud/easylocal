@@ -3,8 +3,6 @@
 
 #include <helpers/DeltaCostComponent.hh>
 #include <helpers/StateManager.hh>
-#include <helpers/ProhibitionManager.hh>
-#include <helpers/WeightManager.hh>
 #include <utils/Random.hh>
 #include <typeinfo>
 #include <iostream>

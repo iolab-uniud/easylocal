@@ -99,11 +99,11 @@ AC_COMPILE_IFELSE(  [AC_LANG_PROGRAM([[#include <thread>]],
 # For Boost library.
 AX_BOOST_BASE([1.40], [AM_CONDITIONAL(BOOST, true)], [AM_CONDITIONAL(BOOST, false)])
 # Checks for boost::program_options (macports boost could be compiled with an incompatible c++11 compiler)
-AC_MSG_CHECKING([whether the boost_program_options library can be linked (single-threaded version)])
 LDFLAGS_SAVED="$LDFLAGS"
 LDFLAGS="$LDFLAGS $BOOST_LDFLAGS"
 LIBS_SAVED="$LIBS"
 LIBS="-lboost_program_options $LIBS_SAVED"
+AC_MSG_CHECKING([whether the boost_program_options library can be linked (single-threaded version)])
 AC_LINK_IFELSE(
     [AC_LANG_PROGRAM([[#include <boost/program_options/options_description.hpp>]],
         [[boost::program_options::options_description tmp("Test program options");]])],
