@@ -182,15 +182,15 @@ public:
    one component of the cost function.
    A cost component passed to the neighborhood explorer will compute the difference in the
    cost function due to that component as the difference between the cost in the current state
-   and the new state obtained after (actually) performing the move. It might be seen as 
-   an unimplemented delta cost component.
+   and the new state obtained after (actually) performing the move. It will be wrapped into a delta cost component
+   by means of an adapter and it might be seen as an unimplemented delta cost component.
    @note In general it is a quite unefficient way to compute the contribution of the move and
    it should be avoided, if possible.
    
-   @param dcc a delta cost component object
+   @param cc a cost component object
    */
  
-  virtual void AddDeltaCostComponent(CostComponent<Input,State,CFtype>& cc);
+  virtual void AddCostComponent(CostComponent<Input,State,CFtype>& cc);
   
  /**
   Returns the number of delta cost components attached to the neighborhood explorer.
@@ -255,11 +255,11 @@ protected:
   const Input& in;/**< A reference to the input */
   StateManager<Input, State,CFtype>& sm; /**< A reference to the attached state manager. */
   
-  /** List of delta cost component */
-  std::vector<DeltaCostComponent<Input,State,Move,CFtype>* > delta_cost_component;
+  /** Lists of delta cost components (or adapters) */
+  std::vector<DeltaCostComponent<Input,State,Move,CFtype>* > hard_delta_cost_components, soft_delta_cost_components;
   
-  /** List of cost component */
-  std::vector<CostComponent<Input,State,CFtype>* > cost_component;
+  /** List of created adapters (to be automatically deleted in the destructor). */
+  std::vector<std::unique_ptr<DeltaCostComponentAdapter<Input, State, Move, CFtype>>> dcc_adapters;
   
   /** Name of user-defined neighborhood explorer */
   std::string name;
@@ -335,14 +335,14 @@ CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::DeltaViolations(const Stat
   for (i = 0; i < this->delta_cost_component.size(); i++)
   {
     // get reference to delta cost component
-    DeltaCostComponent<Input,State,Move,CFtype>& dcc = *(delta_cost_component[i]);
+    DeltaCostComponent<Input,State,Move,CFtype>& dcc = *(delta_cost_components[i]);
     if (dcc.IsHard())
       delta_hard_cost += dcc.DeltaCost(st, mv);
   }
   
   // only if there is at least one hard cost component
   bool hard_cost_components_unimplemented = false;
-  for (i = 0; i < cost_component.size(); i++)
+  for (DeltaCostComponent<)
     if (cost_component[i]->IsHard())
       hard_cost_components_unimplemented = true;
   
@@ -406,13 +406,20 @@ CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::DeltaObjective(const State
 template <class Input, class State, class Move, typename CFtype>
 void NeighborhoodExplorer<Input,State,Move,CFtype>::AddDeltaCostComponent(DeltaCostComponent<Input,State,Move,CFtype>& dcc)
 {
-  delta_cost_component.push_back(&dcc);
+  if (dcc.IsHard())
+    hard_delta_cost_components.push_back(&dcc);
+  else
+    soft_delta_cost_components.push_back(&dcc);
 }
 
 template <class Input, class State, class Move, typename CFtype>
 void NeighborhoodExplorer<Input,State,Move,CFtype>::AddDeltaCostComponent(CostComponent<Input,State,CFtype>& cc)
 {
-  cost_component.push_back(&cc);
+  dcc_adapters.push_back(new DeltaCostComponentAdapter<Input, State, Move, CFtype>(dcc(in, cc));
+  if (cc.IsHard())
+    hard_delta_cost_components.push_back(dcc_adapters[dcc_adapters.size() - 1]);
+  else
+    soft_delta_cost_components.push_back(dcc_adapters[dcc_adapters.size() - 1]);
 }
 
 template <class Input, class State, class Move, typename CFtype>

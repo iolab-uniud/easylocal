@@ -4,38 +4,12 @@
 #include <helpers/CostComponent.hh>
 #include <stdexcept>
 
-template <typename CFtype>
-class ShiftedResult
-{
-public:
-	/** @brief Creates an empty ShiftedResult object, whose actual and shifted values are both zero. */
-  ShiftedResult() : actual_value(0), shifted_value(0.0) {}
-  CFtype actual_value; /**< The actual value of the cost function variation, as computed by a DeltaCostComponent. */
-  double shifted_value; /**< The shifted value of the cost function variation, modified by a ShiftingPenaltyManager. */
-};
-
-/** @brief Sum operator for two @ref ShiftedResult "ShiftedResult"s. */
-template <typename CFtype>
-ShiftedResult<CFtype> operator+(const ShiftedResult<CFtype>& sr1, const ShiftedResult<CFtype>& sr2);
-
-/** @brief Subtraction operator for two @ref ShiftedResult "ShiftedResult"s. */
-template <typename CFtype>
-ShiftedResult<CFtype> operator-(const ShiftedResult<CFtype>& sr1, const ShiftedResult<CFtype>& sr2);
-
-/** @brief Multiplication operator for a ShiftedResult. */
-template <typename CFtype, typename Multype>
-ShiftedResult<CFtype> operator*(const Multype& mul, const ShiftedResult<CFtype>& sr);
-
-/** @brief Multiplication operator for a ShiftedResult. */
-template <typename CFtype, typename Multype>
-ShiftedResult<CFtype> operator*(const ShiftedResult<CFtype>& sr, const Multype& mul);
-
 /** A class for managing the variations of a single component of the cost function. Some
  of the methods are MustDef.
  
  @ingroup Helpers
  */
-template <class Input, class State, class Move, typename CFtype = int>
+template <class Input, class State, class Move, typename CFtype>
 class DeltaCostComponent
 {
 public:
@@ -57,7 +31,7 @@ public:
 
   virtual CFtype DeltaCost(const State& st, const Move& mv) const;
 
-  bool IsDeltaImplemented() const { return true; }
+  virtual bool IsDeltaImplemented() const { return true; }
 
   /** A symbolic name of the DeltaCostComponent. */
   const std::string name; 
@@ -101,7 +75,7 @@ DeltaCostComponent<Input,State,Move,CFtype>::DeltaCostComponent(const Input& i,
 template <class Input, class State, class Move, typename CFtype>
 void DeltaCostComponent<Input,State,Move,CFtype>::Print(std::ostream& os) const
 {
-  os << "  DeltaCost Component: " + this->GetName() << std::endl;
+  os << "  DeltaCost Component: " + this->name << std::endl;
 }
 
 template <class Input, class State, class Move, typename CFtype>
@@ -109,7 +83,23 @@ CFtype DeltaCostComponent<Input,State,Move,CFtype>::DeltaCost(const State& st,
   const Move& mv) const
 {
   return this->cc.Weight() * ComputeDeltaCost(st, mv);
-}  
+}
 
+/** An adapter class for using a cost component in place of a delta cost component.
+ It is used by the neighborhood explorer to wrap the unimplemented deltas.
+ @ingroup Helpers
+ */
+template <class Input, class State, class Move, typename CFtype>
+class DeltaCostComponentAdapter : public DeltaCostComponent<Input, State, Move, CFtype>
+{
+public:
+  DeltaCostComponentAdapter(const Input& in, CostComponent<Input,State,CFtype>& cc);
+  virtual bool IsDeltaImplemented() const { return false; }
+};
+
+template <class Input, class State, class Move, typename CFtype>
+DeltaCostComponentAdapter<Input, State, Move, CFtype>::DeltaCostComponentAdapter(const Input& in, CostComponent<Input,State,CFtype>& cc)
+: DeltaCostComponent<Input, State, Move, CFtype>(in, cc, "UDelta" + cc.name)
+{}
 
 #endif // _DELTA_COST_COMPONENT_HH_
