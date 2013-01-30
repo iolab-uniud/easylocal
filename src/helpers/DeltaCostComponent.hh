@@ -85,6 +85,10 @@ CFtype DeltaCostComponent<Input,State,Move,CFtype>::DeltaCost(const State& st,
   return this->cc.Weight() * ComputeDeltaCost(st, mv);
 }
 
+// forward class declaration
+template <class Input, class State, class Move, typename CFtype>
+class NeighborhoodExplorer;
+
 /** An adapter class for using a cost component in place of a delta cost component.
  It is used by the neighborhood explorer to wrap the unimplemented deltas.
  @ingroup Helpers
@@ -93,13 +97,23 @@ template <class Input, class State, class Move, typename CFtype>
 class DeltaCostComponentAdapter : public DeltaCostComponent<Input, State, Move, CFtype>
 {
 public:
-  DeltaCostComponentAdapter(const Input& in, CostComponent<Input,State,CFtype>& cc);
+  DeltaCostComponentAdapter(const Input& in, CostComponent<Input,State,CFtype>& cc, NeighborhoodExplorer<Input, State, Move, CFtype>& ne);
   virtual bool IsDeltaImplemented() const { return false; }
+protected:
+  virtual CFtype ComputeDeltaCost(const State& st, const Move& mv) const
+  {
+    State new_st = st;
+    ne.MakeMove(new_st, mv);
+    return this->cc.ComputeCost(new_st) - this->cc.ComputeCost(st);
+  }
+  NeighborhoodExplorer<Input, State, Move, CFtype>& ne;
 };
 
 template <class Input, class State, class Move, typename CFtype>
-DeltaCostComponentAdapter<Input, State, Move, CFtype>::DeltaCostComponentAdapter(const Input& in, CostComponent<Input,State,CFtype>& cc)
-: DeltaCostComponent<Input, State, Move, CFtype>(in, cc, "UDelta" + cc.name)
+DeltaCostComponentAdapter<Input, State, Move, CFtype>::DeltaCostComponentAdapter(const Input& in,
+                                                                                 CostComponent<Input,State,CFtype>& cc,
+                                                                                 NeighborhoodExplorer<Input, State, Move, CFtype>& ne)
+: DeltaCostComponent<Input, State, Move, CFtype>(in, cc, "UDelta" + cc.name), ne(ne)
 {}
 
 #endif // _DELTA_COST_COMPONENT_HH_

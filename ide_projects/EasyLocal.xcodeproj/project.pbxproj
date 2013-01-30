@@ -232,14 +232,14 @@
 		ACF4B1240DBFA668008A0207 /* runners */ = {
 			isa = PBXGroup;
 			children = (
-				A2765ABC16B6929A00980D1F /* FirstImprovementTabuSearch.hh */,
-				A2765ABD16B6929A00980D1F /* SampleTabuSearch.hh */,
 				ACF4B1280DBFA668008A0207 /* Runner.hh */,
 				ACF4B1270DBFA668008A0207 /* MoveRunner.hh */,
 				ACF4B1250DBFA668008A0207 /* FirstDescent.hh */,
 				ACF4B12B0DBFA668008A0207 /* SteepestDescent.hh */,
 				ACF4B1260DBFA668008A0207 /* HillClimbing.hh */,
 				ACF4B12C0DBFA668008A0207 /* TabuSearch.hh */,
+				A2765ABC16B6929A00980D1F /* FirstImprovementTabuSearch.hh */,
+				A2765ABD16B6929A00980D1F /* SampleTabuSearch.hh */,
 				AC9665AE0E712AE100802631 /* GreatDeluge.hh */,
 				ACF4B12A0DBFA668008A0207 /* SimulatedAnnealing.hh */,
 				50B7DC6316147D16006CFED0 /* SimulatedAnnealingWithReheating.hh */,
