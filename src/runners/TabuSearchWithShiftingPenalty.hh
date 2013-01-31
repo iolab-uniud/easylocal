@@ -14,14 +14,13 @@ public:
                                 TabuListManager<State,Move,CFtype>& tlm,
                                 std::string name);
   
-  void Print(std::ostream& os = std::cout);
 protected:
   
   void SelectMove();
   
   void MakeMove();
   
-  void InitializeRun();
+  void InitializeRun() throw (ParameterNotSet, IncorrectParameterValue);
 
   void CompleteMove();
 
@@ -49,32 +48,32 @@ TabuSearchWithShiftingPenalty<Input,State,Move,CFtype>::TabuSearchWithShiftingPe
 shift_region("shift_region", "Shifting penalty region", this->parameters), alpha("alpha", "Shift adjustment", this->parameters),
 iterations_for_shift_update("iterations_for_shift_update", "Number of iterations between shift updates", this->parameters)
 {
-  shifts.resize(this->ne.DeltaCostComponents(), 1.0);
   alpha = 2.0;
   iterations_for_shift_update = 1;
-  current_state_hard_cost_components.resize(this->ne.DeltaCostComponents(), (CFtype)0);
-  current_move_hard_cost_components.resize(this->ne.DeltaCostComponents(), (CFtype)0);
 }
 
 template <class Input, class State, class Move, typename CFtype>
-void TabuSearchWithShiftingPenalty<Input,State,Move,CFtype>::InitializeRun()
+void TabuSearchWithShiftingPenalty<Input,State,Move,CFtype>::InitializeRun() throw (ParameterNotSet, IncorrectParameterValue)
 {
   TabuSearch<Input,State,Move,CFtype>::InitializeRun();
+  current_state_cost_components.resize(this->ne.DeltaCostComponents(), (CFtype)0);
+  current_move_cost_components.resize(this->ne.DeltaCostComponents(), (CFtype)0);
+  shifts.resize(this->ne.DeltaCostComponents(), 1.0);
   // reset shifts
   for (double& s: shifts)
     s = 1.0;
   for (unsigned int i = 0; i < this->ne.DeltaCostComponents(); i++)
-    current_state_hard_cost_components[i] = this->ne.DeltaCostComponents(i).GetCostComponent().CostFunction(*this->current_state);
+    current_state_cost_components[i] =  this->ne.GetDeltaCostComponent(i).GetCostComponent().Cost(*this->p_current_state);
 }
 
 template <class Input, class State, class Move, typename CFtype>
 void TabuSearchWithShiftingPenalty<Input,State,Move,CFtype>::SelectMove()
 {
-  bool shifted = (this->number_of_iterations - this->iteration_of_best < shift_region * this->max_idle_iterations);
+  bool shifted = (this->iteration - this->iteration_of_best < shift_region * this->max_idle_iterations);
   if (!shifted)
   {
     TabuSearch<Input, State, Move, CFtype>::SelectMove();
-    current_move_cost_components = this->ne.DeltaCostFunctionComponents(*this->current_state, this->current_move);
+    current_move_cost_components = this->ne.DeltaCostFunctionComponents(*this->p_current_state, this->current_move);
     return;
   }
   // get the best non-prohibited move according to the shifted cost, but if all moves are prohibited, then get the best one among them
@@ -82,17 +81,19 @@ void TabuSearchWithShiftingPenalty<Input,State,Move,CFtype>::SelectMove()
   const State& current_state = *this->p_current_state; // an alias for the current state object referenced through a pointer
   Move mv;
   this->ne.FirstMove(current_state, mv);
-  CFtype mv_cost = (CFtype)0, shifted_mv_cost = (CFtype)0;
+  CFtype mv_cost = (CFtype)0;
+  double shifted_mv_cost = 0.0;
   std::vector<CFtype> mv_cost_components = this->ne.DeltaCostFunctionComponents(current_state, mv);
   for (unsigned int i = 0; i < this->ne.DeltaCostComponents(); i++)
   {
-    mv_cost += (this->ne.DeltaCostComponents(i).IsHard() ? HARD_WEIGHT : 1) * mv_cost_components[i];
-    shifted_mv_cost += (this->ne.DeltaCostComponents(i).IsHard() ? HARD_WEIGHT : 1) * shifts[i] * mv_cost_components[i];
+    CFtype cost_value = (this->ne.GetDeltaCostComponent(i).IsHard() ? HARD_WEIGHT : 1) * mv_cost_components[i];
+    mv_cost += cost_value;
+    shifted_mv_cost += cost_value * shifts[i];
   }
   Move best_move = mv, best_shifted_move = mv;
-  CFtype best_delta = mv_cost, best_shifted_delta = shifted_mv_cost;
-  bool all_moves_prohibited = pm.ProhibitedMove(current_state, mv, mv_cost);
-  CFtype current_best_state_cost = this->best_state_cost;
+  CFtype best_delta = mv_cost;
+  double best_shifted_delta = shifted_mv_cost;
+  bool all_moves_prohibited = this->pm.ProhibitedMove(current_state, mv, mv_cost);
   
   while (this->ne.NextMove(current_state, mv))
   {
@@ -101,12 +102,13 @@ void TabuSearchWithShiftingPenalty<Input,State,Move,CFtype>::SelectMove()
     mv_cost_components = this->ne.DeltaCostFunctionComponents(current_state, mv);
     for (unsigned int i = 0; i < this->ne.DeltaCostComponents(); i++)
     {
-      mv_cost += (this->ne.DeltaCostComponents(i).IsHard() ? HARD_WEIGHT : 1) * mv_cost_components[i];
-      shifted_mv_cost += (this->ne.DeltaCostComponents(i).IsHard() ? HARD_WEIGHT : 1) * shifts[i] * mv_cost_components[i];
+      CFtype cost_value = (this->ne.GetDeltaCostComponent(i).IsHard() ? HARD_WEIGHT : 1) * mv_cost_components[i];
+      mv_cost += cost_value;
+      shifted_mv_cost += cost_value * shifts[i];
     }
-    if (LessThan(mv_cost, best_delta) || LessThan(shifted_mv_cost, shifted_best_delta))
+    if (LessThan(mv_cost, best_delta) || LessThan(shifted_mv_cost, best_shifted_delta))
     {
-      if (!pm.ProhibitedMove(current_state, mv, mv_cost))
+      if (!this->pm.ProhibitedMove(current_state, mv, mv_cost))
       {
         if (LessThan(mv_cost, best_delta))
         {
@@ -114,10 +116,10 @@ void TabuSearchWithShiftingPenalty<Input,State,Move,CFtype>::SelectMove()
           best_delta = mv_cost;
           number_of_bests = 1;
         }
-        if (LessThan(shifted_mv_cost, shifted_best_delta))
+        if (LessThan(shifted_mv_cost, best_shifted_delta))
         {
           best_shifted_move = mv;
-          best_shifted_delta = mv_cost;
+          best_shifted_delta = shifted_mv_cost;
           number_of_shifted_bests = 1;
         }
         all_moves_prohibited = false;
@@ -130,17 +132,17 @@ void TabuSearchWithShiftingPenalty<Input,State,Move,CFtype>::SelectMove()
           best_delta = mv_cost;
           number_of_bests = 1;
         }
-        if (LessThan(shifted_mv_cost, shifted_best_delta))
+        if (LessThan(shifted_mv_cost, best_shifted_delta))
         {
           best_shifted_move = mv;
-          best_shifted_delta = mv_cost;
+          best_shifted_delta = shifted_mv_cost;
           number_of_shifted_bests = 1;
         }
       }
     }
-    else if (EqualTo(mv_cost, best_delta) || EqualTo(shifted_mv_cost, shifted_best_delta))
+    else if (EqualTo(mv_cost, best_delta) || EqualTo(shifted_mv_cost, best_shifted_delta))
     {
-      if (!pm.ProhibitedMove(current_state, mv, mv_cost))
+      if (!this->pm.ProhibitedMove(current_state, mv, mv_cost))
       {
         if (all_moves_prohibited)
 	      {
@@ -149,9 +151,9 @@ void TabuSearchWithShiftingPenalty<Input,State,Move,CFtype>::SelectMove()
             best_move = mv;
             number_of_bests = 1;
           }
-          if (EqualTo(shifted_mv_cost, shifted_best_delta))
+          if (EqualTo(shifted_mv_cost, best_shifted_delta))
           {
-            shifted_best_move = mv;
+            best_shifted_move = mv;
             number_of_shifted_bests = 1;
           }
           all_moves_prohibited = false;
@@ -164,11 +166,11 @@ void TabuSearchWithShiftingPenalty<Input,State,Move,CFtype>::SelectMove()
               best_move = mv;
             number_of_bests++;
           }
-          if (EqualTo(shifted_mv_cost, shifted_best_delta))
+          if (EqualTo(shifted_mv_cost, best_shifted_delta))
           {
-            if (Random::Int(0, shifted_number_of_bests) == 0) // accept the move with probability 1 / (1 + number_of_bests)
-              shifted_best_move = mv;
-            shifted_number_of_bests++;
+            if (Random::Int(0, number_of_shifted_bests) == 0) // accept the move with probability 1 / (1 + number_of_bests)
+              best_shifted_move = mv;
+            number_of_shifted_bests++;
           }
 	      }
       }
@@ -181,23 +183,23 @@ void TabuSearchWithShiftingPenalty<Input,State,Move,CFtype>::SelectMove()
               best_move = mv;
             number_of_bests++;
           }
-          if (EqualTo(shifted_mv_cost, shifted_best_delta))
+          if (EqualTo(shifted_mv_cost, best_shifted_delta))
           {
-            if (Random::Int(0, shifted_number_of_bests) == 0) // accept the move with probability 1 / (1 + number_of_bests)
-              shifted_best_move = mv;
-            shifted_number_of_bests++;
+            if (Random::Int(0, number_of_shifted_bests) == 0) // accept the move with probability 1 / (1 + number_of_bests)
+              best_shifted_move = mv;
+            number_of_shifted_bests++;
           }
         }
     }
     else // mv_cost is greater than best_delta
-      if (all_moves_prohibited && !pm.ProhibitedMove(current_state, mv, mv_cost))
+      if (all_moves_prohibited && !this->pm.ProhibitedMove(current_state, mv, mv_cost))
       {
         best_move = mv;
         best_delta = mv_cost;
         number_of_bests = 1;
-        shifted_best_move = mv;
-        shifted_best_delta = shifted_mv_cost;
-        shifted_number_of_bests = 1;
+        best_shifted_move = mv;
+        best_shifted_delta = shifted_mv_cost;
+        number_of_shifted_bests = 1;
         all_moves_prohibited = false;
       }    
   }
@@ -211,46 +213,44 @@ void TabuSearchWithShiftingPenalty<Input,State,Move,CFtype>::SelectMove()
   }
   else
   {
-    this->current_move = shifted_best_move;
+    this->current_move = best_shifted_move;
     this->current_move_cost = this->ne.DeltaCostFunction(current_state, this->current_move);
-    current_move_hard_delta_cost_components = this->ne.DeltaCostFunctionComponents(current_state, this->current_move);
   }
+  current_move_cost_components = this->ne.DeltaCostFunctionComponents(current_state, this->current_move);
 }
 
 template <class Input, class State, class Move, typename CFtype>
 void TabuSearchWithShiftingPenalty<Input,State,Move,CFtype>::MakeMove()
 {
-  TabuSearch<Input,Stte,Move,CFtype>::MakeMove();
+  TabuSearch<Input,State,Move,CFtype>::MakeMove();
   // update the hard components of the cost function
-  for (unsigned int i = 0; i < this->ne.DeltaHardCostComponents(); i++)
-    current_state_hard_cost_components[i] += current_move_hard_delta_cost_components[i];
+  for (unsigned int i = 0; i < this->ne.DeltaCostComponents(); i++)
+    current_state_cost_components[i] += current_move_cost_components[i];
 }
 
 template <class Input, class State, class Move, typename CFtype>
 void TabuSearchWithShiftingPenalty<Input,State,Move,CFtype>::CompleteMove()
 {
-  if (LessThan(this->current_state_cost, this->best_state_cost))
+  if (LessThan(this->current_state_cost, this->best_state_cost) || this->iteration - this->iteration_of_best >= shift_region * this->max_idle_iterations)
   {
-    // reset shifts
+    // reset shifts if improving or out of the shift-region
     for (double& s: shifts)
       s = 1.0;
-  }
-  else if (this->number_of_iterations % iterations_for_shift_update == 0 && this->number_of_iterations - this->iteration_of_best < shift_region * this->max_idle_iteration)
-  {
-    // update shifts
-    for (unsigned int i = 0; i < this->ne.DeltaCostComponents(); i++)
-    {
-      if (current_state_cost_components[i] == 0)
-        shifts[i] /= Random::Double(0.95, 1.05) * alpha;
-      else
-        shifts[i] *= Random::Double(0.95, 1.05) * alpha;
-    }
   }
   else
   {
-    // reset shifts (out of the shift region)
-    for (double& s: shifts)
-      s = 1.0;
+    if (this->iteration % iterations_for_shift_update == 0)
+    {
+      // update shifts
+      for (unsigned int i = 0; i < this->ne.DeltaCostComponents(); i++)
+        if (this->ne.GetDeltaCostComponent(i).IsHard())
+        {
+          if (current_state_cost_components[i] == 0)
+            shifts[i] /= Random::Double(0.95, 1.05) * alpha;
+          else
+            shifts[i] *= Random::Double(0.95, 1.05) * alpha;
+        }
+    }
   }
   TabuSearch<Input, State, Move, CFtype>::CompleteMove();
 }
