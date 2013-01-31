@@ -295,9 +295,7 @@ template <class Input, class Output, class State, typename CFtype>
 void Tester<Input,Output, State,CFtype>::ExecuteRunChoice()
 {
   if (sub_choice > 0)
-  {
-
-    
+  {    
     Runner<Input,State,CFtype>& r = *runners[sub_choice-1];
     r.ReadParameters();
     

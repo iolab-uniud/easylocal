@@ -291,23 +291,6 @@ void MoveTester<Input,Output,State,Move,CFtype>::PrintMoveCosts(const State& st,
     os << std::endl;
   }
   
-  // process all cost components
-  for(i = 0; i < ne.CostComponents(); i++)
-  {
-    CostComponent<Input,State,CFtype>& cc = ne.GetCostComponent(i);
-    delta_cost = cc.Weight() * (cc.ComputeCost(st1) - cc.ComputeCost(st));
-    os << "  " << i << ". " << cc.name << " : " <<  delta_cost;
-    
-    // print * or not, add up to right variable
-    if (cc.IsHard()) 
-    {
-      total_delta_hard_cost += delta_cost;
-      os << "*";
-    } else
-      total_delta_soft_cost = delta_cost;
-    os << std::endl;
-  }
-  
   os << "Total Delta Violations : " << total_delta_hard_cost << std::endl;
   os << "Total Delta Objective : " << total_delta_soft_cost << std::endl;
   os << "Total Delta Cost : " << HARD_WEIGHT * total_delta_hard_cost + total_delta_soft_cost << std::endl;

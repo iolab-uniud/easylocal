@@ -105,6 +105,7 @@
 #include <runners/TabuSearch.hh>
 #include <runners/SampleTabuSearch.hh>
 #include <runners/FirstImprovementTabuSearch.hh>
+#include <runners/TabuSearchWithShiftingPenalty.hh>
 #include <runners/GreatDeluge.hh>
 #include <runners/SimulatedAnnealing.hh>
 #include <runners/SimulatedAnnealingWithReheating.hh>
@@ -115,7 +116,6 @@
 #include <testers/Tester.hh>
 #include <testers/MoveTester.hh>
 #include <testers/KickerTester.hh>
-#include <helpers/ShiftingPenaltyManager.hh>
 #include <helpers/MultimodalTabuListManager.hh>
 #if defined(HAVE_BOOST)
 #include <boost/program_options/options_description.hpp>
@@ -191,8 +191,7 @@ int main(int argc, const char* argv[])
     SimulatedAnnealingWithReheating<int, vector<int>, Swap, int> qsawr(in, qsm, qnhe, "SwapSimulatedAnnealingWithReheating");
     LateAcceptanceHillClimbing<int, vector<int>, Swap, int> qlhc(in, qsm, qnhe, "SwapLateAcceptanceHillClimbing");
     GreatDeluge<int, vector<int>, Swap, int> qgd(in, qsm, qnhe, "SwapGreatDeluge");
-    // FIXME: currently TSWSP is not working
-    // TabuSearchWithShiftingPenalty<int, vector<int>, Swap> qtsw(in, qsm, qnhe, qtlm, "SwapTabuSearchWithShiftingPenalty");
+    TabuSearchWithShiftingPenalty<int, vector<int>, Swap, int> qtsw(in, qsm, qnhe, qtlm, "SwapTabuSearchWithShiftingPenalty");
     
     SimpleLocalSearch<int, ChessBoard, vector<int> , int> qss(in, qsm, qom, "QueensSLS");
     TokenRingSearch<int, ChessBoard, vector<int> , int> qtr(in, qsm, qom, "QueensTR");
