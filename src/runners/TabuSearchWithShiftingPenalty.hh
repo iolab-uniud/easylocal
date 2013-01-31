@@ -52,7 +52,7 @@ iterations_for_shift_update("iterations_for_shift_update", "Number of iterations
 shift_min("shift_min", "Minimum value for the shifts", this->parameters),
 shift_max("shift_max", "Maximum value for the shifts", this->parameters)
 {
-  alpha = 2.0;
+  alpha = 1.03;
   iterations_for_shift_update = 1;
   shift_min = 1.0 / HARD_WEIGHT;
   shift_max = 10.0 * HARD_WEIGHT;
