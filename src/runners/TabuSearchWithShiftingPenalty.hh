@@ -78,7 +78,7 @@ void TabuSearchWithShiftingPenalty<Input,State,Move,CFtype>::SelectMove()
     return;
   }
   // get the best non-prohibited move according to the shifted cost, but if all moves are prohibited, then get the best one among them
-  unsigned int number_of_bests = 1; // number of moves found with the same best value
+  unsigned int number_of_bests = 1, number_of_shifted_bests = 1; // number of moves found with the same best value
   const State& current_state = *this->p_current_state; // an alias for the current state object referenced through a pointer
   Move mv;
   this->ne.FirstMove(current_state, mv);
@@ -89,7 +89,7 @@ void TabuSearchWithShiftingPenalty<Input,State,Move,CFtype>::SelectMove()
     mv_cost += (this->ne.DeltaCostComponents(i).IsHard() ? HARD_WEIGHT : 1) * mv_cost_components[i];
     shifted_mv_cost += (this->ne.DeltaCostComponents(i).IsHard() ? HARD_WEIGHT : 1) * shifts[i] * mv_cost_components[i];
   }
-  Move best_move = mv;
+  Move best_move = mv, best_shifted_move = mv;
   CFtype best_delta = mv_cost, best_shifted_delta = shifted_mv_cost;
   bool all_moves_prohibited = pm.ProhibitedMove(current_state, mv, mv_cost);
   CFtype current_best_state_cost = this->best_state_cost;
@@ -98,76 +98,123 @@ void TabuSearchWithShiftingPenalty<Input,State,Move,CFtype>::SelectMove()
   {
     mv_cost = (CFtype)0;
     shifted_mv_cost = (CFtype)0;
-    std::vector<CFtype> mv_cost_components = this->ne.DeltaCostFunctionComponents(current_state, mv);
+    mv_cost_components = this->ne.DeltaCostFunctionComponents(current_state, mv);
     for (unsigned int i = 0; i < this->ne.DeltaCostComponents(); i++)
     {
       mv_cost += (this->ne.DeltaCostComponents(i).IsHard() ? HARD_WEIGHT : 1) * mv_cost_components[i];
       shifted_mv_cost += (this->ne.DeltaCostComponents(i).IsHard() ? HARD_WEIGHT : 1) * shifts[i] * mv_cost_components[i];
     }
-    // this is an aspiration criterion for the shifting penalty
-    if (LessThan(this->current_state_cost + mv_cost, current_best_state_cost))
-    {
-      best_move = mv;
-      best_delta = mv_cost;
-      current_best_state_cost = this->current_state_cost + mv_cost;
-    }
-    else if (LessThan(shifted_mv_cost, best_shifted_delta))
+    if (LessThan(mv_cost, best_delta) || LessThan(shifted_mv_cost, shifted_best_delta))
     {
       if (!pm.ProhibitedMove(current_state, mv, mv_cost))
       {
-        best_move = mv;
-        best_delta = mv_cost;
-        best_shifted_delta = shifted_mv_cost;
-        number_of_bests = 1;
+        if (LessThan(mv_cost, best_delta))
+        {
+          best_move = mv;
+          best_delta = mv_cost;
+          number_of_bests = 1;
+        }
+        if (LessThan(shifted_mv_cost, shifted_best_delta))
+        {
+          best_shifted_move = mv;
+          best_shifted_delta = mv_cost;
+          number_of_shifted_bests = 1;
+        }
         all_moves_prohibited = false;
       }
       else if (all_moves_prohibited)
       {
-        best_move = mv;
-        best_delta = mv_cost;
-        best_shifted_delta = shifted_mv_cost;
-        number_of_bests = 1;
+        if (LessThan(mv_cost, best_delta))
+        {
+          best_move = mv;
+          best_delta = mv_cost;
+          number_of_bests = 1;
+        }
+        if (LessThan(shifted_mv_cost, shifted_best_delta))
+        {
+          best_shifted_move = mv;
+          best_shifted_delta = mv_cost;
+          number_of_shifted_bests = 1;
+        }
       }
     }
-    else if (EqualTo(shifted_mv_cost, best_shifted_delta))
+    else if (EqualTo(mv_cost, best_delta) || EqualTo(shifted_mv_cost, shifted_best_delta))
     {
       if (!pm.ProhibitedMove(current_state, mv, mv_cost))
       {
         if (all_moves_prohibited)
 	      {
-          best_move = mv;
-          number_of_bests = 1;
+          if (EqualTo(mv_cost, best_delta))
+          {
+            best_move = mv;
+            number_of_bests = 1;
+          }
+          if (EqualTo(shifted_mv_cost, shifted_best_delta))
+          {
+            shifted_best_move = mv;
+            number_of_shifted_bests = 1;
+          }
           all_moves_prohibited = false;
 	      }
         else
 	      {
-          if (Random::Int(0, number_of_bests) == 0) // accept the move with probability 1 / (1 + number_of_bests)
-            best_move = mv;
-          number_of_bests++;
+          if (EqualTo(mv_cost, best_delta))
+          {
+            if (Random::Int(0, number_of_bests) == 0) // accept the move with probability 1 / (1 + number_of_bests)
+              best_move = mv;
+            number_of_bests++;
+          }
+          if (EqualTo(shifted_mv_cost, shifted_best_delta))
+          {
+            if (Random::Int(0, shifted_number_of_bests) == 0) // accept the move with probability 1 / (1 + number_of_bests)
+              shifted_best_move = mv;
+            shifted_number_of_bests++;
+          }
 	      }
       }
       else
         if (all_moves_prohibited)
         {
-          if (Random::Int(0, number_of_bests) == 0) // accept the move with probability 1 / (1 + number_of_bests)
-            best_move = mv;
-          number_of_bests++;
+          if (EqualTo(mv_cost, best_delta))
+          {
+            if (Random::Int(0, number_of_bests) == 0) // accept the move with probability 1 / (1 + number_of_bests)
+              best_move = mv;
+            number_of_bests++;
+          }
+          if (EqualTo(shifted_mv_cost, shifted_best_delta))
+          {
+            if (Random::Int(0, shifted_number_of_bests) == 0) // accept the move with probability 1 / (1 + number_of_bests)
+              shifted_best_move = mv;
+            shifted_number_of_bests++;
+          }
         }
     }
-    else // shifted_mv_cost is greater than best_shifted_delta
+    else // mv_cost is greater than best_delta
       if (all_moves_prohibited && !pm.ProhibitedMove(current_state, mv, mv_cost))
       {
         best_move = mv;
         best_delta = mv_cost;
-        best_shifted_delta = shifted_mv_cost;
         number_of_bests = 1;
+        shifted_best_move = mv;
+        shifted_best_delta = shifted_mv_cost;
+        shifted_number_of_bests = 1;
         all_moves_prohibited = false;
-      }
+      }    
   }
   
-  this->current_move = best_move;
-  this->current_move_cost = best_delta;
-  current_state_hard_cost_components = this->ne.DeltaCostFunctionComponents(current_state, best_move);
+  // "aspiration criterion" for the shifting penalty
+  
+  if (this->current_state_cost + best_delta < this->best_state_cost)
+  {
+    this->current_move = best_move;
+    this->current_move_cost = best_delta;
+  }
+  else
+  {
+    this->current_move = shifted_best_move;
+    this->current_move_cost = this->ne.DeltaCostFunction(current_state, this->current_move);
+    current_move_hard_delta_cost_components = this->ne.DeltaCostFunctionComponents(current_state, this->current_move);
+  }
 }
 
 template <class Input, class State, class Move, typename CFtype>
