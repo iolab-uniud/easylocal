@@ -28,8 +28,10 @@ protected:
   // parameters
   Parameter<double> shift_region, alpha;
   Parameter<unsigned int> iterations_for_shift_update;
+  Parameter<double> shift_min, shift_max;
   // state of the shifting penalty
   std::vector<double> shifts;
+  // utility vectors for handling the unaggregated cost
   std::vector<CFtype> current_state_cost_components, current_move_cost_components;
 };
 
@@ -46,10 +48,14 @@ TabuSearchWithShiftingPenalty<Input,State,Move,CFtype>::TabuSearchWithShiftingPe
 :  TabuSearch<Input,State,Move,CFtype>(i, e_sm, e_ne, tlm, name),
 // parameters
 shift_region("shift_region", "Shifting penalty region", this->parameters), alpha("alpha", "Shift adjustment", this->parameters),
-iterations_for_shift_update("iterations_for_shift_update", "Number of iterations between shift updates", this->parameters)
+iterations_for_shift_update("iterations_for_shift_update", "Number of iterations between shift updates", this->parameters),
+shift_min("shift_min", "Minimum value for the shifts", this->parameters),
+shift_max("shift_max", "Maximum value for the shifts", this->parameters)
 {
   alpha = 2.0;
   iterations_for_shift_update = 1;
+  shift_min = 1.0 / HARD_WEIGHT;
+  shift_max = 10.0 * HARD_WEIGHT;
 }
 
 template <class Input, class State, class Move, typename CFtype>
@@ -249,6 +255,10 @@ void TabuSearchWithShiftingPenalty<Input,State,Move,CFtype>::CompleteMove()
             shifts[i] /= Random::Double(0.95, 1.05) * alpha;
           else
             shifts[i] *= Random::Double(0.95, 1.05) * alpha;
+          if (shifts[i] < shift_min)
+            shifts[i] = shift_min;
+          if (shifts[i] > shift_max)
+            shifts[i] = shift_max;
         }
     }
   }
