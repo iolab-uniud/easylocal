@@ -17,7 +17,10 @@ public:
   
   /** Modality of the TabuListManager */
   virtual unsigned int Modality() const { return sizeof...(BaseTabuListManagers); }
-  
+  void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout)
+  { 
+    // FIXME: to redefine letting each tlm in tlms to read its own parameters 
+  }
 protected:
   
   /** Constructor, takes a variable number of base TabuListManagers.  */

@@ -37,7 +37,7 @@ public:
   virtual void Clean() = 0;
   virtual void UpdateIteration() = 0;
   
-  void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout);
+  virtual void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout);
 protected:
   ProhibitionManager(std::string name, std::string description);
   virtual ~ProhibitionManager() {}

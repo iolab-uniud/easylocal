@@ -30,6 +30,7 @@ public:
              NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
              TabuListManager<State,Move,CFtype>& e_tlm,
              std::string name);	
+  std::string StatusString();
   
   virtual void Print(std::ostream& os = std::cout) const;
   void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout);
@@ -147,4 +148,18 @@ void TabuSearch<Input,State,Move,CFtype>::ReadParameters(std::istream& is, std::
   Runner<Input, State, CFtype>::ReadParameters(is, os);
   pm.ReadParameters(is, os);
 }
+
+/**
+ Create a string containing the status of the runner
+ */
+template <class Input, class State, class Move, typename CFtype>
+std::string TabuSearch<Input,State,Move,CFtype>::StatusString()
+{
+  std::stringstream status;
+  status << "["
+	 << "TL length = " << pm.ListLength() << " (" << pm.MinTenure() << "-" << pm.MaxTenure() << ")"
+	   << "]";
+  return status.str();
+}
+
 #endif // _TABU_SEARCH_HH_
