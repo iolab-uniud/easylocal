@@ -24,11 +24,11 @@
 #include "PrimaryDiagonalCostComponent.hh"
 
 class PrimaryDiagonalDeltaCostComponent
-            : public DeltaCostComponent<int, std::vector<int>, Swap>
+            : public DeltaCostComponent<int, std::vector<int>, Swap, int>
 {
 public:
   PrimaryDiagonalDeltaCostComponent(const int& in, PrimaryDiagonalCostComponent& cc)
-    : DeltaCostComponent<int, std::vector<int>, Swap>(in, cc, "PrimaryDiagonal")
+    : DeltaCostComponent<int, std::vector<int>, Swap, int>(in, cc, "PrimaryDiagonal")
     {}
     int ComputeDeltaCost(const std::vector<int>& st, const Swap& sw) const;
 };

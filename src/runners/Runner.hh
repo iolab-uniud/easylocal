@@ -156,8 +156,7 @@ protected:
   StateManager<Input, State,CFtype>& sm;
   
   /** Current state of the search. */
-  std::shared_ptr<State> p_current_state,
-  
+  std::shared_ptr<State> p_current_state,  
   /** Best state found so far. */
   p_best_state;
   

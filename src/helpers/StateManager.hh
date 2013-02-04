@@ -106,6 +106,18 @@ public:
     @note It is rarely needed to redefine this method.
    */
   virtual CFtype CostFunction(const State& st) const;
+  
+  /**
+   Compute the cost function calling the cost components.
+   @param st the state to be evaluated
+   @return the unaggregated components of the cost function in the given state (hard + soft costs)
+   
+   @remarks The normal definition computes a weighted sum of the violation
+   function and the objective function.
+   
+   @note It is rarely needed to redefine this method.
+   */
+  virtual std::vector<CFtype> CostFunctionComponents(const State& st) const;
 
   /**
     Compute the violations by calling the hard cost components (it is rarely 
@@ -286,6 +298,16 @@ CFtype StateManager<Input,State,CFtype>::CostFunction(const State& st) const
       soft_cost += cost_component[i]->Cost(st);
  
   return HARD_WEIGHT * hard_cost  + soft_cost; 
+}
+
+template <class Input, class State, typename CFtype>
+std::vector<CFtype> StateManager<Input,State,CFtype>::CostFunctionComponents(const State& st) const
+{
+  std::vector<CFtype> cost_function(cost_component.size());
+  for (unsigned int i = 0; i < cost_component.size(); i++)
+    cost_function[i] = cost_component[i]->Cost(st);
+  
+  return cost_function;
 }
 
 template <class Input, class State, typename CFtype>

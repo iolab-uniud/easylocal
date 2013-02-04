@@ -41,7 +41,7 @@ Parameter<bool>::Parameter(const std::string& cmdline_flag, const std::string& d
 bool CommandLineParameters::Parse(int argc, const char* argv[], bool check_unregistered, bool silent)
 {
 #if defined(HAVE_BOOST)
-  boost::program_options::options_description cmdline_options;
+  boost::program_options::options_description cmdline_options(argv[0]);
   boost::program_options::variables_map vm;
   for (auto pb : ParameterBox::overall_parameters)
     cmdline_options.add(pb->cl_options);

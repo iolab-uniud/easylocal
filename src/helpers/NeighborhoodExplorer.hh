@@ -3,7 +3,6 @@
 
 #include <helpers/DeltaCostComponent.hh>
 #include <helpers/StateManager.hh>
-#include <helpers/ProhibitionManager.hh>
 #include <utils/Random.hh>
 #include <typeinfo>
 #include <iostream>
@@ -73,17 +72,7 @@ public:
    @throws EmptyNeighborhood when the State st has no neighbor
    */
   virtual CFtype FirstImprovingMove(const State& st, Move& mv) const throw (EmptyNeighborhood);
-  
-  /**
-   Generate the first improvement move in the exploration of the neighborhood
-   of a given state, excluding the moves prohibited by @c pm.
-   @param st the start state
-   @param mv the generated move
-   @param pm a prohibition manager, which filters out prohibited moves (e.g., for the Tabu Search).
-   @throws EmptyNeighborhood when the State st has no neighbor
-   */
-  virtual CFtype FirstImprovingMove(const State& st, Move& mv, ProhibitionManager<State,Move,CFtype>& pm) const throw (EmptyNeighborhood);
-  
+    
   /**
    Generates the best move in the full exploration of the neighborhood
    of a given state. It uses @ref FirstMove and @ref NextMove
@@ -95,17 +84,6 @@ public:
   virtual CFtype BestMove(const State& st, Move& mv) const throw (EmptyNeighborhood);
   
   /**
-   Generates the best move in the full exploration of the neighborhood
-   of a given state, excluding the moves prohibited by @c pm.
-   @param st the start state.
-   @param mv the generated move.
-   @param pm a prohibition manager, which filters out prohibited moves (e.g., for the Tabu Search).
-   @return the variation of the cost due to the Move mv.
-   @throws EmptyNeighborhood when the State st has no neighbor
-   */
-  virtual CFtype BestMove(const State& st, Move& mv, ProhibitionManager<State,Move,CFtype>& pm) const throw (EmptyNeighborhood);
-  
-  /**
    Generates the best move in a random sample exploration of the neighborhood
    of a given state.
    @param st the start state.
@@ -115,18 +93,6 @@ public:
    @throws EmptyNeighborhood when the State st has no neighbor
    */
   virtual CFtype SampleMove(const State &st, Move& mv, unsigned int samples) const throw (EmptyNeighborhood);
-  
-  /**
-   Generates the best move in a random sample exploration of the neighborhood
-   of a given state.
-   @param st the start state.
-   @param mv the generated move.
-   @param samples the number of sampled neighbors
-   @param pm a prohibition manager, which filters out prohibited moves (e.g., for the Tabu Search).
-   @return the variation of the cost due to the Move mv.
-   @throws EmptyNeighborhood when the State st has no neighbor
-   */
-  virtual CFtype SampleMove(const State &st, Move& mv, unsigned int samples, ProhibitionManager<State,Move,CFtype>& pm) const throw (EmptyNeighborhood);
   
   /**
    States whether a move is feasible or not in a given state.
@@ -182,6 +148,16 @@ public:
   virtual CFtype DeltaCostFunction(const State& st, const Move& mv) const;
   
   /**
+   Computes the differences in the cost function obtained by applying the move @c mv
+   to the state @c st and returns the unaggregated value as a vector of components.
+   
+   @param st the state to modify
+   @param mv the move to be applied
+   @return the difference in the cost function for each cost component
+   */
+  virtual std::vector<CFtype> DeltaCostFunctionComponents(const State& st, const Move& mv) const;
+  
+  /**
    Computes the differences in the objective component of the cost function obtained 
    by applying the move @c mv to the state @c st.
    
@@ -216,22 +192,22 @@ public:
    one component of the cost function.
    A cost component passed to the neighborhood explorer will compute the difference in the
    cost function due to that component as the difference between the cost in the current state
-   and the new state obtained after (actually) performing the move. It might be seen as 
-   an unimplemented delta cost component.
+   and the new state obtained after (actually) performing the move. It will be wrapped into a delta cost component
+   by means of an adapter and it might be seen as an unimplemented delta cost component.
    @note In general it is a quite unefficient way to compute the contribution of the move and
    it should be avoided, if possible.
    
-   @param dcc a delta cost component object
+   @param cc a cost component object
    */
  
-  virtual void AddDeltaCostComponent(CostComponent<Input,State,CFtype>& cc);
+  virtual void AddCostComponent(CostComponent<Input,State,CFtype>& cc);
   
  /**
   Returns the number of delta cost components attached to the neighborhood explorer.
   @return the size of the delta cost components vector
   */
   virtual size_t DeltaCostComponents() const
-  { return delta_cost_component.size(); }
+  { return delta_hard_cost_components.size() + delta_soft_cost_components.size(); }
   
   /**
     Returns an element of the delta cost component vector attached to the neighborhood explorer.
@@ -239,24 +215,54 @@ public:
     @return the delta cost component of index i
   */
   virtual DeltaCostComponent<Input,State,Move,CFtype>& GetDeltaCostComponent(unsigned int i)
-  { return *delta_cost_component[i]; }
+  {
+    if (i < delta_hard_cost_components.size())
+      return *delta_hard_cost_components[i];
+    else if (i < delta_hard_cost_components.size() + delta_soft_cost_components.size())
+      return *delta_soft_cost_components[i - delta_hard_cost_components.size()];
+    else
+      throw std::logic_error("GetDeltaCostComponent: index out of bounds");
+  }
   
   /**
-   Returns the number of cost components attached to the neighborhood explorer.
-   @return the size of the cost components vector
+   Returns the number of delta cost components attached to the neighborhood explorer which are hard cost components.
+   @return the size of the hard delta cost components vector
    */
-  
-  virtual size_t CostComponents() const
-  { return cost_component.size(); }
+  virtual size_t DeltaHardCostComponents() const
+  { return delta_hard_cost_components.size(); }
   
   /**
-    Returns an element of the cost component vector attached to the neighborhood explorer.
-    @param i the index of the required cost component
-    @return the cost component of index i
-  */
- 
-  virtual CostComponent<Input,State,CFtype>& GetCostComponent(unsigned int i)
-  { return *cost_component[i]; }
+   Returns an element of the delta hard cost component vector attached to the neighborhood explorer.
+   @param i the index of the required delta cost component
+   @return the delta cost component of index i
+   */
+  virtual DeltaCostComponent<Input,State,Move,CFtype>& GetDeltaHardCostComponent(unsigned int i)
+  {
+    if (i < delta_hard_cost_components.size())
+      return *delta_hard_cost_components[i];
+    else
+      throw std::logic_error("GetDeltaHardCostComponent: index out of bounds");
+  }
+  
+  /**
+   Returns the number of delta cost components attached to the neighborhood explorer which are soft cost components.
+   @return the size of the hard delta cost components vector
+   */
+  virtual size_t DeltaSoftCostComponents() const
+  { return delta_soft_cost_components.size(); }
+  
+  /**
+   Returns an element of the delta soft cost component vector attached to the neighborhood explorer.
+   @param i the index of the required delta cost component
+   @return the delta cost component of index i
+   */
+  virtual DeltaCostComponent<Input,State,Move,CFtype>& GetDeltaSoftCostComponent(unsigned int i)
+  {
+    if (i < delta_soft_cost_components.size())
+      return *delta_soft_cost_components[i];
+    else
+      throw std::logic_error("GetDeltaSoftCostComponent: index out of bounds");
+  }
   
  /**
   Retuns the modality of the neighborhood explorer, i.e., the number of different kind of
@@ -289,14 +295,17 @@ protected:
   const Input& in;/**< A reference to the input */
   StateManager<Input, State,CFtype>& sm; /**< A reference to the attached state manager. */
   
-  /** List of delta cost component */
-  std::vector<DeltaCostComponent<Input,State,Move,CFtype>* > delta_cost_component;
+  /** Lists of delta cost components (or adapters) */
+  std::vector<DeltaCostComponent<Input,State,Move,CFtype>* > delta_hard_cost_components, delta_soft_cost_components;
   
-  /** List of cost component */
-  std::vector<CostComponent<Input,State,CFtype>* > cost_component;
+  /** List of created adapters (to be automatically deleted in the destructor). */
+  std::vector<std::unique_ptr<DeltaCostComponentAdapter<Input, State, Move, CFtype>>> dcc_adapters;
   
   /** Name of user-defined neighborhood explorer */
   std::string name;
+  
+  /** States whether there are unimplemented delta cost components attached */
+  bool unimplemented_hard_components, unimplemented_soft_components;
 };
 
 /*************************************************************************
@@ -307,7 +316,7 @@ protected:
 template <class Input, class State, class Move, typename CFtype>
 NeighborhoodExplorer<Input,State,Move,CFtype>::NeighborhoodExplorer(const Input& i,
                                                                     StateManager<Input,State,CFtype>& e_sm, std::string e_name)
-: in(i), sm(e_sm), name(e_name)
+: in(i), sm(e_sm), name(e_name), unimplemented_hard_components(false), unimplemented_soft_components(false)
 {}
 
 /**
@@ -324,129 +333,177 @@ template <class Input, class State, class Move, typename CFtype>
 CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::DeltaCostFunction(const State& st, const Move & mv) const
 {
   CFtype delta_hard_cost = 0, delta_soft_cost = 0;
-  unsigned int i;
   
-  // compute delta costs
-  for (i = 0; i < this->delta_cost_component.size(); i++)
-  {
-    // get reference to delta cost component
-    DeltaCostComponent<Input,State,Move,CFtype>& dcc = *(delta_cost_component[i]);
-    if (dcc.IsHard())
-      delta_hard_cost += dcc.DeltaCost(st, mv);
-    else
-      delta_soft_cost += dcc.DeltaCost(st, mv);
-  }
+  // compute delta costs (of implemented delta cost components)
+  for (DeltaCostComponent<Input,State,Move,CFtype>* dcc : delta_hard_cost_components)
+    if (dcc->IsDeltaImplemented())
+      delta_hard_cost += dcc->DeltaCost(st, mv);
+  for (DeltaCostComponent<Input,State,Move,CFtype>* dcc : delta_soft_cost_components)
+    if (dcc->IsDeltaImplemented())
+      delta_soft_cost += dcc->DeltaCost(st, mv);
   
-  // only if there is at least one cost component
-  if (cost_component.size() > 0)
+  // only if there is at least one unimplemented delta cost component (i.e., a wrapper along a cost component)
+  if (unimplemented_hard_components || unimplemented_soft_components)
   {
     // compute move
-    State st1 = st;
-    MakeMove(st1, mv);
+    State new_st = st;
+    MakeMove(new_st, mv);
     
-    for (i = 0; i < cost_component.size(); i++)
-    {
-      // get reference to cost component
-      CostComponent<Input,State,CFtype>& cc = *(cost_component[i]);
-      if (cc.IsHard())
-        // hard weight considered later
-        delta_hard_cost +=  cc.Weight() * (cc.ComputeCost(st1) - cc.ComputeCost(st));
-      else
-        delta_soft_cost += cc.Weight() * (cc.ComputeCost(st1) - cc.ComputeCost(st));
-    }
+    if (unimplemented_hard_components)
+      for (DeltaCostComponent<Input,State,Move,CFtype>* dcc : delta_hard_cost_components)
+        if (!dcc->IsDeltaImplemented())
+        {
+          // get reference to cost component
+          CostComponent<Input,State,CFtype>& cc = dcc->GetCostComponent();
+          delta_hard_cost +=  cc.Weight() * (cc.ComputeCost(new_st) - cc.ComputeCost(st));
+        }
+    if (unimplemented_soft_components)
+      for (DeltaCostComponent<Input,State,Move,CFtype>* dcc : delta_soft_cost_components)
+        if (!dcc->IsDeltaImplemented())
+        {
+          // get reference to cost component
+          CostComponent<Input,State,CFtype>& cc = dcc->GetCostComponent();
+          delta_soft_cost +=  cc.Weight() * (cc.ComputeCost(new_st) - cc.ComputeCost(st));
+        }
   }
   
   return HARD_WEIGHT * delta_hard_cost + delta_soft_cost;
 }
 
 template <class Input, class State, class Move, typename CFtype>
+std::vector<CFtype> NeighborhoodExplorer<Input,State,Move,CFtype>::DeltaCostFunctionComponents(const State& st, const Move & mv) const
+{
+  std::vector<CFtype> delta_cost_function(delta_hard_cost_components.size() + delta_soft_cost_components.size(), (CFtype)0);
+
+  for (unsigned int i = 0; i < delta_hard_cost_components.size(); i++)
+  {
+    DeltaCostComponent<Input, State, Move, CFtype>* dcc = delta_hard_cost_components[i];
+    if (dcc->IsDeltaImplemented())
+      delta_cost_function[i] = dcc->DeltaCost(st, mv);
+  }
+  for (unsigned int i = 0; i < delta_soft_cost_components.size(); i++)
+  {
+     DeltaCostComponent<Input, State, Move, CFtype>* dcc = delta_soft_cost_components[i];
+    if (dcc->IsDeltaImplemented())
+      delta_cost_function[i + delta_hard_cost_components.size()] = dcc->DeltaCost(st, mv);
+  }
+
+  // only if there is at least one unimplemented delta cost component (i.e., a wrapper along a cost component)
+  if (unimplemented_hard_components || unimplemented_soft_components)
+  {
+    // compute move
+    State new_st = st;
+    MakeMove(new_st, mv);
+    
+    if (unimplemented_hard_components)
+      for (unsigned int i = 0; i < delta_hard_cost_components.size(); i++)
+      {
+        DeltaCostComponent<Input, State, Move, CFtype>* dcc = delta_hard_cost_components[i];
+        if (!dcc->IsDeltaImplemented())
+        {
+          // get reference to cost component
+          CostComponent<Input,State,CFtype>& cc = dcc->GetCostComponent();
+          delta_cost_function[i] =  cc.Weight() * (cc.ComputeCost(new_st) - cc.ComputeCost(st));
+        }
+      }
+    if (unimplemented_soft_components)
+      for (unsigned int i = 0; i < delta_soft_cost_components.size(); i++)
+      {
+        DeltaCostComponent<Input, State, Move, CFtype>* dcc = delta_soft_cost_components[i];
+        if (!dcc->IsDeltaImplemented())
+        {
+          // get reference to cost component
+          CostComponent<Input,State,CFtype>& cc = dcc->GetCostComponent();
+          delta_cost_function[i + delta_hard_cost_components.size()] =  cc.Weight() * (cc.ComputeCost(new_st) - cc.ComputeCost(st));
+        }
+      }
+  }
+  
+  return delta_cost_function;
+}
+
+template <class Input, class State, class Move, typename CFtype>
 CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::DeltaViolations(const State& st, const Move & mv) const
 {
   CFtype delta_hard_cost = 0;
-  unsigned int i;
   
-  // compute delta costs
-  for (i = 0; i < this->delta_cost_component.size(); i++)
-  {
-    // get reference to delta cost component
-    DeltaCostComponent<Input,State,Move,CFtype>& dcc = *(delta_cost_component[i]);
-    if (dcc.IsHard())
-      delta_hard_cost += dcc.DeltaCost(st, mv);
-  }
+  // compute delta costs (of implemented delta cost components)
+  for (DeltaCostComponent<Input,State,Move,CFtype>* dcc : delta_hard_cost_components)
+    if (dcc->IsDeltaImplemented())
+      delta_hard_cost += dcc->DeltaCost(st, mv);
   
-  // only if there is at least one hard cost component
-  bool hard_cost_components_unimplemented = false;
-  for (i = 0; i < cost_component.size(); i++)
-    if (cost_component[i]->IsHard())
-      hard_cost_components_unimplemented = true;
-  
-  if (hard_cost_components_unimplemented)
+  // only if there is at least one unimplemented delta cost component (i.e., a wrapper along a cost component)
+  if (unimplemented_hard_components)
   {
     // compute move
-    State st1 = st;
-    MakeMove(st1, mv);
+    State new_st = st;
+    MakeMove(new_st, mv);
     
-    for (i = 0; i < cost_component.size(); i++)
-    {
-      // get reference to cost component
-      CostComponent<Input,State,CFtype>& cc = *(cost_component[i]);
-      if (cc.IsHard())
-        delta_hard_cost +=  cc.Weight() * (cc.ComputeCost(st1) - cc.ComputeCost(st));
-    }
+    for (DeltaCostComponent<Input,State,Move,CFtype>* dcc : delta_hard_cost_components)
+      if (!dcc->IsDeltaImplemented())
+      {
+        // get reference to cost component
+        CostComponent<Input,State,CFtype>& cc = dcc->GetCostComponent();
+        delta_hard_cost +=  cc.Weight() * (cc.ComputeCost(new_st) - cc.ComputeCost(st));
+      }
   }
   
-  return delta_hard_cost;  
+  return delta_hard_cost;
 }
 
 template <class Input, class State, class Move, typename CFtype>
 CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::DeltaObjective(const State& st, const Move & mv) const
 {
   CFtype delta_soft_cost = 0;
-  unsigned int i;
   
-  // compute delta costs
-  for (i = 0; i < this->delta_cost_component.size(); i++)
-  {
-    // get reference to delta cost component
-    DeltaCostComponent<Input,State,Move,CFtype>& dcc = *(delta_cost_component[i]);
-    if (!dcc.IsHard())
-      delta_soft_cost += dcc.DeltaCost(st, mv);
-  }
+  // compute delta costs (of implemented delta cost components)
+  for (DeltaCostComponent<Input,State,Move,CFtype>* dcc : delta_soft_cost_components)
+    if (dcc->IsDeltaImplemented())
+      delta_soft_cost += dcc->DeltaCost(st, mv);
   
-  // only if there is at least one soft cost component
-  bool soft_cost_components_unimplemented = false;
-  for (i = 0; i < cost_component.size(); i++)
-    if (!cost_component[i]->IsHard())
-      soft_cost_components_unimplemented = true;
-  
-  if (soft_cost_components_unimplemented)
+  // only if there is at least one unimplemented delta cost component (i.e., a wrapper along a cost component)
+  if (unimplemented_soft_components)
   {
     // compute move
-    State st1 = st;
-    MakeMove(st1, mv);
+    State new_st = st;
+    MakeMove(new_st, mv);
     
-    for (i = 0; i < cost_component.size(); i++)
-    {
-      // get reference to cost component
-      CostComponent<Input,State,CFtype>& cc = *(cost_component[i]);
-      if (!cc.IsHard())
-        delta_soft_cost +=  cc.Weight() * (cc.ComputeCost(st1) - cc.ComputeCost(st));
-    }
+    for (DeltaCostComponent<Input,State,Move,CFtype>* dcc : delta_soft_cost_components)
+      if (!dcc->IsDeltaImplemented())
+      {
+        // get reference to cost component
+        CostComponent<Input,State,CFtype>& cc = dcc->GetCostComponent();
+        delta_soft_cost +=  cc.Weight() * (cc.ComputeCost(new_st) - cc.ComputeCost(st));
+      }
   }
   
-  return delta_soft_cost;    
+  return delta_soft_cost;
 }
 
 template <class Input, class State, class Move, typename CFtype>
 void NeighborhoodExplorer<Input,State,Move,CFtype>::AddDeltaCostComponent(DeltaCostComponent<Input,State,Move,CFtype>& dcc)
 {
-  delta_cost_component.push_back(&dcc);
+  if (dcc.IsHard())
+    delta_hard_cost_components.push_back(&dcc);
+  else
+    delta_soft_cost_components.push_back(&dcc);
 }
 
 template <class Input, class State, class Move, typename CFtype>
-void NeighborhoodExplorer<Input,State,Move,CFtype>::AddDeltaCostComponent(CostComponent<Input,State,CFtype>& cc)
+void NeighborhoodExplorer<Input,State,Move,CFtype>::AddCostComponent(CostComponent<Input,State,CFtype>& cc)
 {
-  cost_component.push_back(&cc);
+
+  dcc_adapters.push_back(std::unique_ptr<DeltaCostComponentAdapter<Input, State, Move, CFtype>>(new DeltaCostComponentAdapter<Input, State, Move, CFtype>(in, cc, *this)));
+  if (cc.IsHard())
+  {
+    unimplemented_hard_components = true;
+    delta_hard_cost_components.push_back(dcc_adapters[dcc_adapters.size() - 1].get());
+  }
+  else
+  {
+    unimplemented_soft_components = true;
+    delta_soft_cost_components.push_back(dcc_adapters[dcc_adapters.size() - 1].get());
+  }
 }
 
 template <class Input, class State, class Move, typename CFtype>
@@ -470,86 +527,12 @@ CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::BestMove(const State &st, 
     }
     else if (EqualTo(mv_cost, best_delta))
     {
-      if (Random::Int(0,number_of_bests) == 0) // accept the move with probability 1 / (1 + number_of_bests)
+      if (Random::Int(0, number_of_bests) == 0) // accept the move with probability 1 / (1 + number_of_bests)
         best_move = mv;
       number_of_bests++;
     }
   }
   
-  mv = best_move;
-  return best_delta;
-}
-
-template <class Input, class State, class Move, typename CFtype>
-CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::BestMove(const State &st, Move& mv, ProhibitionManager<State, Move, CFtype>& pm) const throw (EmptyNeighborhood)
-{ // get the best non-prohibited move, but if all moves are prohibited, then get the best one among them
-  unsigned int number_of_bests = 1; // number of moves found with the same best value
-  FirstMove(st,mv);
-  CFtype mv_cost = DeltaCostFunction(st,mv);
-  Move best_move = mv;
-  CFtype best_delta = mv_cost;
-  bool all_moves_prohibited = pm.ProhibitedMove(st, mv, mv_cost);
-  
-  static unsigned int i1 = 0, i2 = 0;
-  
-  while (NextMove(st, mv))
-  {
-    mv_cost = DeltaCostFunction(st, mv);
-    if (LessThan(mv_cost, best_delta))
-    {
-      if (!pm.ProhibitedMove(st, mv, mv_cost))
-      {
-        best_move = mv;
-        best_delta = mv_cost;
-        number_of_bests = 1;
-        all_moves_prohibited = false;
-      }
-      else if (all_moves_prohibited)
-      {
-        best_move = mv;
-        best_delta = mv_cost;
-        number_of_bests = 1;
-      }
-    }
-    else if (EqualTo(mv_cost, best_delta))
-    {
-      if (!pm.ProhibitedMove(st, mv, mv_cost))
-      {
-        if (all_moves_prohibited)
-	      {
-          best_move = mv;
-          number_of_bests = 1;
-          all_moves_prohibited = false;
-	      }
-        else
-	      {
-          if (Random::Int(0,number_of_bests) == 0) // accept the move with probability 1 / (1 + number_of_bests)
-            best_move = mv;
-          number_of_bests++;
-	      }
-      }
-      else
-        if (all_moves_prohibited)
-        {
-          if (Random::Int(0,number_of_bests) == 0) // accept the move with probability 1 / (1 + number_of_bests)
-            best_move = mv;
-          number_of_bests++;
-        }
-    }
-    else // mv_cost is greater than best_delta
-      if (all_moves_prohibited && !pm.ProhibitedMove(st, mv, mv_cost))
-      {
-        best_move = mv;
-        best_delta = mv_cost;
-        number_of_bests = 1;
-        all_moves_prohibited = false;
-      }
-  }
-  
-  if (all_moves_prohibited)
-    i1++;
-  i2++;
-  //std::cerr << (float)i1/i2 << ' ' << best_move << " ";
   mv = best_move;
   return best_delta;
 }
@@ -577,7 +560,7 @@ CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::FirstImprovingMove(const S
     }
     else if (EqualTo(mv_cost, best_delta))
     {
-      if (Random::Int(0,number_of_bests) == 0) // accept the move with probability 1 / (1 + number_of_bests)
+      if (Random::Int(0, number_of_bests) == 0) // accept the move with probability 1 / (1 + number_of_bests)
         best_move = mv;
       number_of_bests++;
     }
@@ -587,64 +570,6 @@ CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::FirstImprovingMove(const S
   mv = best_move;
   return best_delta;
 }
-
-template <class Input, class State, class Move, typename CFtype>
-CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::FirstImprovingMove(const State &st, Move& mv, ProhibitionManager<State,Move,CFtype>& pm) const throw (EmptyNeighborhood)
-{
-  unsigned int number_of_bests = 0;
-  FirstMove(st, mv);
-  CFtype mv_cost = DeltaCostFunction(st, mv);
-  Move best_move = mv;
-  CFtype best_delta = mv_cost;
-  bool all_moves_prohibited = true, not_last_move;
-  
-  do // look for the best move
-  {  // if the prohibition mechanism is active get the best non-prohibited move
-		// if all moves are prohibited, then get the best one
-		if (LessThan(mv_cost, (CFtype)0) && !pm.ProhibitedMove(st, mv, mv_cost))
-			return mv_cost; // mv is an improving move
-		
-    if (LessThan(mv_cost, best_delta))
-    {
-      if (!pm.ProhibitedMove(st, mv, mv_cost))
-      {
-        best_move = mv;
-        best_delta = mv_cost;
-        number_of_bests = 1;
-        all_moves_prohibited = false;
-      }
-      if (all_moves_prohibited)
-      {
-        best_move = mv;
-        best_delta = mv_cost;
-        number_of_bests = 1;
-      }
-    }
-    else if (all_moves_prohibited && !pm.ProhibitedMove(st, mv, mv_cost))
-    { // when the prohibition mechanism is active, even though it is not an improving move,
-      // this move is the actual best since it is the first non-prohibited
-      best_move = mv;
-      best_delta = mv_cost;
-      number_of_bests = 1;
-      all_moves_prohibited = false;
-    }
-    else if (EqualTo(mv_cost, best_delta) && !pm.ProhibitedMove(st, mv, mv_cost))
-    {
-      if (Random::Int(0,number_of_bests) == 0) // accept the move with probability 1 / (1 + number_of_bests)
-        best_move = mv;
-      number_of_bests++;
-    }
-    not_last_move = NextMove(st, mv);
-    if (not_last_move)
-      mv_cost = DeltaCostFunction(st, mv);
-  }
-  while (not_last_move);
-  
-  // these instructions are reached when no improving move has been found
-  mv = best_move;
-  return best_delta;
-}
-
 
 template <class Input, class State, class Move, typename CFtype>
 CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::SampleMove(const State &st, Move& mv, unsigned int samples) const throw (EmptyNeighborhood)
@@ -668,61 +593,7 @@ CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::SampleMove(const State &st
     }
     else if (EqualTo(mv_cost, best_delta))
     {
-      if (Random::Int(0,number_of_bests) == 0) // accept the move with probability 1 / (1 + number_of_bests)
-        best_move = mv;
-      number_of_bests++;
-    }
-    RandomMove(st, mv);
-    mv_cost = DeltaCostFunction(st, mv);
-    s++;
-  }
-  while (s < samples);
-  
-  mv = best_move;
-  return best_delta;
-}
-
-template <class Input, class State, class Move, typename CFtype>
-CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::SampleMove(const State &st, Move& mv, unsigned int samples, ProhibitionManager<State,Move,CFtype>& pm) const throw (EmptyNeighborhood)
-{
-  unsigned int number_of_bests = 0;
-  unsigned int s = 1;
-  CFtype mv_cost;
-  bool all_moves_prohibited = true;
-  
-  RandomMove(st, mv);
-  mv_cost = DeltaCostFunction(st, mv);
-  Move best_move = mv;
-  CFtype best_delta = mv_cost;
-  do
-  {
-    if (LessThan(mv_cost, best_delta))
-    {
-      if (!pm.ProhibitedMove(st, mv, mv_cost))
-      {
-        best_move = mv;
-        best_delta = mv_cost;
-        number_of_bests = 1;
-        all_moves_prohibited = false;
-      }
-      if (all_moves_prohibited)
-      {
-        best_move = mv;
-        best_delta = mv_cost;
-        number_of_bests = 1;
-      }
-    }
-    else if (all_moves_prohibited && !pm.ProhibitedMove(st, mv, mv_cost))
-    { // when the prohibition mechanism is active, even though it is not an improving move,
-      // this move is the actual best since it is the first non-prohibited
-      best_move = mv;
-      best_delta = mv_cost;
-      number_of_bests = 1;
-      all_moves_prohibited = false;
-    }
-    else if (EqualTo(mv_cost, best_delta) && !pm.ProhibitedMove(st, mv, mv_cost))
-    {
-      if (Random::Int(0,number_of_bests) == 0) // accept the move with probability 1 / (1 + number_of_bests)
+      if (Random::Int(0, number_of_bests) == 0) // accept the move with probability 1 / (1 + number_of_bests)
         best_move = mv;
       number_of_bests++;
     }

@@ -9,7 +9,7 @@
 /** An Iterated Local Search solver handles both a runner encapsulating a local
     search algorithm and a kicker used for perturbing current solution.
     @ingroup Solvers */
-template <class Input, class Output, class State, typename CFtype = int>
+template <class Input, class Output, class State, typename CFtype>
 class GRASP
   : public AbstractLocalSearch<Input,Output,State,CFtype>
 {

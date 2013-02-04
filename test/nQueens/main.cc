@@ -103,16 +103,19 @@
 #include <runners/HillClimbing.hh>
 #include <runners/SteepestDescent.hh>
 #include <runners/TabuSearch.hh>
+#include <runners/SampleTabuSearch.hh>
+#include <runners/FirstImprovementTabuSearch.hh>
+#include <runners/TabuSearchWithShiftingPenalty.hh>
 #include <runners/GreatDeluge.hh>
 #include <runners/SimulatedAnnealing.hh>
 #include <runners/SimulatedAnnealingWithReheating.hh>
 #include <runners/LateAcceptanceHillClimbing.hh>
 #include <solvers/SimpleLocalSearch.hh>
+#include <solvers/TokenRingSearch.hh>
 #include <solvers/VariableNeighborhoodDescent.hh>
 #include <testers/Tester.hh>
 #include <testers/MoveTester.hh>
 #include <testers/KickerTester.hh>
-#include <helpers/ShiftingPenaltyManager.hh>
 #include <helpers/MultimodalTabuListManager.hh>
 #if defined(HAVE_BOOST)
 #include <boost/program_options/options_description.hpp>
@@ -181,16 +184,18 @@ int main(int argc, const char* argv[])
     HillClimbing<int, vector<int>, Swap, int> qhc(in, qsm, qnhe, "SwapHillClimbing");
     SteepestDescent<int, vector<int>, Swap, int> qsd(in, qsm, qnhe, "SwapSteepestDescent");
     TabuSearch<int, vector<int>, Swap, int> qts(in, qsm, qnhe, qtlm, "SwapTabuSearch");
+    SampleTabuSearch<int, vector<int>, Swap, int> qsts(in, qsm, qnhe, qtlm, "SwapSampleTabuSearch");
+    FirstImprovementTabuSearch<int, vector<int>, Swap, int> qfits(in, qsm, qnhe, qtlm, "SwapFirstImprovementTabuSearch");
     TabuSearch<int, vector<int>, decltype(qnheumm)::ThisMove, int> qtsmm(in, qsm, qnheumm, qtlmumm, "MultiModalTabuSearch");
     SimulatedAnnealing<int, vector<int>, Swap, int> qsa(in, qsm, qnhe, "SwapSimulatedAnnealing");
     SimulatedAnnealingWithReheating<int, vector<int>, Swap, int> qsawr(in, qsm, qnhe, "SwapSimulatedAnnealingWithReheating");
     LateAcceptanceHillClimbing<int, vector<int>, Swap, int> qlhc(in, qsm, qnhe, "SwapLateAcceptanceHillClimbing");
     GreatDeluge<int, vector<int>, Swap, int> qgd(in, qsm, qnhe, "SwapGreatDeluge");
-    // FIXME: currently TSWSP is not working
-    // TabuSearchWithShiftingPenalty<int, vector<int>, Swap> qtsw(in, qsm, qnhe, qtlm, "SwapTabuSearchWithShiftingPenalty");
+    TabuSearchWithShiftingPenalty<int, vector<int>, Swap, int> qtsw(in, qsm, qnhe, qtlm, "SwapTabuSearchWithShiftingPenalty");
     
     SimpleLocalSearch<int, ChessBoard, vector<int> , int> qss(in, qsm, qom, "QueensSLS");
-    VariableNeighborhoodDescent<int, ChessBoard, vector<int>, int > qvnd(in, qsm, qom, 3, "VNDS");
+    TokenRingSearch<int, ChessBoard, vector<int> , int> qtr(in, qsm, qom, "QueensTR");
+    //VariableNeighborhoodDescent<int, ChessBoard, vector<int>, int > qvnd(in, qsm, qom, 3, "VNDS");
         
 #if defined(HAVE_BOOST)
     // parse all command line parameters, including those posted by runners and solvers

@@ -17,11 +17,18 @@ public:
   
   /** Modality of the TabuListManager */
   virtual unsigned int Modality() const { return sizeof...(BaseTabuListManagers); }
-  void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout)
-  { 
-    // FIXME: to redefine letting each tlm in tlms to read its own parameters 
+  /** Read all parameters from an input stream (prints hints on output stream). */
+  virtual void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout)
+  {
+    ParametersDispatcher<TheseTabuListManagers, sizeof...(BaseTabuListManagers) - 1>::ReadParameters(tlms, is, os);
   }
-protected:
+  
+  /** Print all parameter values on an output stream. */
+  virtual void Print(std::ostream& os = std::cout) const
+  {
+    ParametersDispatcher<TheseTabuListManagers, sizeof...(BaseTabuListManagers) - 1>::Print(const_cast<TheseTabuListManagers&>(tlms), os);
+  }
+  protected:
   
   /** Constructor, takes a variable number of base TabuListManagers.  */
   MultimodalTabuListManager(BaseTabuListManagers& ... tlms)
@@ -140,7 +147,7 @@ protected:
         throw std::logic_error("In function CheckAt (recursive case) iter is less than zero");
 #endif
       return false;
-    }
+    }    
   };
   
   template <class TupleOfMoves, class TupleOfTLMs>
@@ -211,7 +218,7 @@ protected:
 #endif
       return false;
     }
-  };
+  };  
     
   /** Check - checks a predicate on each element of a tuple and returns a vector of the corresponding boolean variable */
   template <class ...TLMs>
@@ -252,6 +259,44 @@ protected:
   {
     return move_1.active;
   }
+  
+  template <typename T, std::size_t N>
+  struct ParametersDispatcher
+  {
+    static void ReadParameters(TheseTabuListManagers& tlms, std::istream& is, std::ostream& os)
+    {
+      typedef typename std::tuple_element<N, TheseTabuListManagers>::type CurrentTLM;
+      CurrentTLM& tlm = std::get<N>(tlms);
+      tlm.get().ReadParameters(is, os);
+      ParametersDispatcher<T, N - 1>::ReadParameters(tlms, is, os);
+    }
+    
+    static void Print(TheseTabuListManagers& tlms, std::ostream& os)
+    {
+      typedef typename std::tuple_element<N, TheseTabuListManagers>::type CurrentTLM;
+      CurrentTLM& tlm = std::get<N>(tlms);
+      tlm.get().Print(os);
+      ParametersDispatcher<T, N - 1>::Print(tlms, os);
+    }
+  };
+  
+  template<typename T>
+  struct ParametersDispatcher<T, 0>
+  {
+    static void ReadParameters(TheseTabuListManagers& tlms, std::istream& is, std::ostream& os)
+    {
+      typedef typename std::tuple_element<0, TheseTabuListManagers>::type CurrentTLM;
+      CurrentTLM& tlm = std::get<0>(tlms);
+      tlm.get().ReadParameters(is, os);
+    }
+    
+    static void Print(TheseTabuListManagers& tlms, std::ostream& os)
+    {      
+      typedef typename std::tuple_element<0, TheseTabuListManagers>::type CurrentTLM;
+      CurrentTLM& tlm = std::get<0>(tlms);
+      tlm.get().Print(os);
+    }
+  };
 };
 
 template <class State, typename CFtype, class ... BaseTabuListManagers>
