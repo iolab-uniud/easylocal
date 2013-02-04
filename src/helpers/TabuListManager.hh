@@ -79,11 +79,13 @@ public:
 	 @param mv2 the move used for comparison  */
 	virtual bool Inverse(const Move& mv1, const Move& mv2) const = 0;
 	void UpdateIteration() { PurgeList(); iter++; }
-	TabuListManager(unsigned int min_tenure, unsigned int max_tenure);
-	TabuListManager();
+        unsigned ListLength() const { return tlist.size(); }
+  TabuListManager(unsigned int min_tenure, unsigned int max_tenure, std::string);
+  TabuListManager(std::string);
 	/** Virtual destructor. */
 	virtual ~TabuListManager();
 protected:
+  TabuListManager() : TabuListManager("TabuList") {}
 	virtual bool Aspiration(const State& st, const Move&, const CFtype& mv_cost) const;
 	virtual void InsertIntoList(const State& st, const Move& mv);
 	void PurgeList();
@@ -132,14 +134,29 @@ protected:
  @param max the maximum tabu tenure
  */
 template <class State, class Move, typename CFtype>
-TabuListManager<State, Move,CFtype>::TabuListManager()
-: ProhibitionManager<State,Move,CFtype>("Tabu List", "List of moves which cannot be done"),
+TabuListManager<State, Move,CFtype>::TabuListManager(std::string name)
+: ProhibitionManager<State,Move,CFtype>(name, "List of moves which cannot be done"),
 min_tenure("min_tabu_tenure", "Minimum length of the tabu list", this->parameters),
 max_tenure("max_tabu_tenure", "Maximum length of the tabu list", this->parameters),
 iter(0)
 {
   min_tenure = 0;
   max_tenure = 1;
+}
+
+template <class State, class Move, typename CFtype>
+TabuListManager<State, Move,CFtype>::TabuListManager(unsigned int min_t, unsigned int max_t, std::string name)
+: TabuListManager(name)
+{
+  min_tenure = min_t;
+  max_tenure = max_t;
+}
+
+template <class State, class Move, typename CFtype>
+void TabuListManager<State, Move,CFtype>::SetLength(unsigned int min, unsigned int max)
+{
+	min_tenure = min;
+	max_tenure = max;
 }
 
 template <class State, class Move, typename CFtype>

@@ -17,7 +17,6 @@ public:
   
   /** Modality of the TabuListManager */
   virtual unsigned int Modality() const { return sizeof...(BaseTabuListManagers); }
-  
   /** Read all parameters from an input stream (prints hints on output stream). */
   virtual void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout)
   {
@@ -29,8 +28,7 @@ public:
   {
     ParametersDispatcher<TheseTabuListManagers, sizeof...(BaseTabuListManagers) - 1>::Print(const_cast<TheseTabuListManagers&>(tlms), os);
   }
-  
-protected:
+  protected:
   
   /** Constructor, takes a variable number of base TabuListManagers.  */
   MultimodalTabuListManager(BaseTabuListManagers& ... tlms)
