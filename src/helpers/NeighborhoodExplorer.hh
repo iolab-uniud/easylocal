@@ -7,6 +7,7 @@
 #include <typeinfo>
 #include <iostream>
 #include <stdexcept>
+#include <memory>
 
 class EmptyNeighborhood : public std::logic_error
 {

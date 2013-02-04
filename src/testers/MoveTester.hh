@@ -432,7 +432,7 @@ void MoveTester<Input,Output,State,Move,CFtype>::CheckRandomMoveDistribution(con
   std::map<Move, unsigned int> frequency;
   typename std::map<Move,unsigned int>:: iterator it;  
   
-  unsigned int trials = 0, tot_trials, rounds;
+  unsigned long int trials = 0, tot_trials, rounds;
   double dev = 0;
   
   ne.FirstMove(st,mv);
