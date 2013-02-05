@@ -13,7 +13,7 @@ public:
   /** Typedefs. */
   typedef std::tuple<ActiveMove<typename BaseTabuListManagers::ThisMove> ...> TheseMoves;
   typedef TabuListManager<State, std::tuple<ActiveMove<typename BaseTabuListManagers::ThisMove> ...>, CFtype> SuperTabuListManager;
-  typedef std::tuple<std::reference_wrapper<BaseTabuListManagers> ...> TheseTabuListManagers;
+  typedef std::tuple<BaseTabuListManagers...> TheseTabuListManagers;
   
   /** Modality of the TabuListManager */
   virtual unsigned int Modality() const { return sizeof...(BaseTabuListManagers); }
@@ -32,7 +32,7 @@ public:
   
   /** Constructor, takes a variable number of base TabuListManagers.  */
   MultimodalTabuListManager(BaseTabuListManagers& ... tlms)
-  : tlms(std::make_tuple(std::reference_wrapper<BaseTabuListManagers>(tlms) ...))
+  : tlms(std::make_tuple(BaseTabuListManagers(tlms) ...))
   { }
   
   /** List of tabu list managers. */
@@ -222,36 +222,36 @@ public:
     
   /** Check - checks a predicate on each element of a tuple and returns a vector of the corresponding boolean variable */
   template <class ...TLMs>
-  static std::vector<bool> Check(const std::tuple<ActiveMove<typename TLMs::ThisMove>...>& moves_1, const std::tuple<ActiveMove<typename TLMs::ThisMove>...>& moves_2, const std::tuple<std::reference_wrapper<TLMs>...>& tlms, const Call& c)
+  static std::vector<bool> Check(const std::tuple<ActiveMove<typename TLMs::ThisMove>...>& moves_1, const std::tuple<ActiveMove<typename TLMs::ThisMove>...>& moves_2, const std::tuple<TLMs...>& tlms, const Call& c)
   {
-    return TupleDispatcher<std::tuple<ActiveMove<typename TLMs::ThisMove>...>, std::tuple<std::reference_wrapper<TLMs>...>, sizeof...(TLMs) - 1>::Check(moves_1, moves_2, tlms, c);
+    return TupleDispatcher<std::tuple<ActiveMove<typename TLMs::ThisMove>...>, std::tuple<TLMs...>, sizeof...(TLMs) - 1>::Check(moves_1, moves_2, tlms, c);
   }
   
   /** CheckAll - checks a predicate on all tuple */
   template <class ...TLMs>
-  static bool CheckAll(const std::tuple<ActiveMove<typename TLMs::ThisMove>...>& moves_1, const std::tuple<ActiveMove<typename TLMs::ThisMove>...>& moves_2, const std::tuple<std::reference_wrapper<TLMs>...>& tlms, const Call& c)
+  static bool CheckAll(const std::tuple<ActiveMove<typename TLMs::ThisMove>...>& moves_1, const std::tuple<ActiveMove<typename TLMs::ThisMove>...>& moves_2, const std::tuple<TLMs...>& tlms, const Call& c)
   {
-    return TupleDispatcher<std::tuple<ActiveMove<typename TLMs::ThisMove>...>, std::tuple<std::reference_wrapper<TLMs>...>, sizeof...(TLMs) - 1>::CheckAll(moves_1, moves_2, tlms, c);
+    return TupleDispatcher<std::tuple<ActiveMove<typename TLMs::ThisMove>...>, std::tuple<TLMs...>, sizeof...(TLMs) - 1>::CheckAll(moves_1, moves_2, tlms, c);
   }
   
   /** CheckAny - checks a predicate on all tuple */
   template <class ...TLMs>
-  static bool CheckAny(const std::tuple<ActiveMove<typename TLMs::ThisMove>...>& moves_1, const std::tuple<ActiveMove<typename TLMs::ThisMove>...>& moves_2, const std::tuple<std::reference_wrapper<TLMs>...>& tlms, const Call& c)
+  static bool CheckAny(const std::tuple<ActiveMove<typename TLMs::ThisMove>...>& moves_1, const std::tuple<ActiveMove<typename TLMs::ThisMove>...>& moves_2, const std::tuple<TLMs...>& tlms, const Call& c)
   {
-    return TupleDispatcher<std::tuple<ActiveMove<typename TLMs::ThisMove>...>, std::tuple<std::reference_wrapper<TLMs>...>, sizeof...(TLMs) - 1>::CheckAny(moves_1, moves_2, tlms, c);
+    return TupleDispatcher<std::tuple<ActiveMove<typename TLMs::ThisMove>...>, std::tuple<TLMs...>, sizeof...(TLMs) - 1>::CheckAny(moves_1, moves_2, tlms, c);
   }
   
   /** CheckAt - checks a predicate at a certain level of the tuple and returns its value */
   template <class ...TLMs>
-  static CFtype CheckAt(const std::tuple<ActiveMove<typename TLMs::ThisMove>...>& moves_1, const std::tuple<ActiveMove<typename TLMs::ThisMove>...>& moves_2, const std::tuple<std::reference_wrapper<TLMs>...>& tlms, const Call& c, int iter)
+  static CFtype CheckAt(const std::tuple<ActiveMove<typename TLMs::ThisMove>...>& moves_1, const std::tuple<ActiveMove<typename TLMs::ThisMove>...>& moves_2, const std::tuple<TLMs...>& tlms, const Call& c, int iter)
   {
-    return TupleDispatcher<std::tuple<ActiveMove<typename TLMs::ThisMove>...>, std::tuple<std::reference_wrapper<TLMs>...>, sizeof...(TLMs) - 1>::CheckAt(moves_1, moves_2, tlms, c, (sizeof...(TLMs) - 1) - iter);
+    return TupleDispatcher<std::tuple<ActiveMove<typename TLMs::ThisMove>...>, std::tuple<TLMs...>, sizeof...(TLMs) - 1>::CheckAt(moves_1, moves_2, tlms, c, (sizeof...(TLMs) - 1) - iter);
   }
   
   template <class T, class M>
   static bool IsInverse(const T& tlm, const M& move_1, const M& move_2)
   {
-    return (move_1.active && move_2.active && tlm.get().Inverse(move_1, move_2));
+    return (move_1.active && move_2.active && tlm.Inverse(move_1, move_2));
   }
   
   template <class T, class M>
@@ -267,7 +267,7 @@ public:
     {
       typedef typename std::tuple_element<N, T>::type CurrentTLM;
       CurrentTLM& tlm = std::get<N>(tlms);
-      tlm.get().ReadParameters(is, os);
+      tlm.ReadParameters(is, os);
       ParametersDispatcher<T, N - 1>::ReadParameters(tlms, is, os);
     }
     
@@ -275,7 +275,7 @@ public:
     {
       typedef typename std::tuple_element<N, T>::type CurrentTLM;
       CurrentTLM& tlm = std::get<N>(tlms);
-      tlm.get().Print(os);
+      tlm.Print(os);
       ParametersDispatcher<T, N - 1>::Print(tlms, os);
     }
   };
@@ -287,14 +287,14 @@ public:
     {
       typedef typename std::tuple_element<0, T>::type CurrentTLM;
       CurrentTLM& tlm = std::get<0>(tlms);
-      tlm.get().ReadParameters(is, os);
+      tlm.ReadParameters(is, os);
     }
     
     static void Print(T& tlms, std::ostream& os)
     {      
       typedef typename std::tuple_element<0, T>::type CurrentTLM;
       CurrentTLM& tlm = std::get<0>(tlms);
-      tlm.get().Print(os);
+      tlm.Print(os);
     }
   };
 };
