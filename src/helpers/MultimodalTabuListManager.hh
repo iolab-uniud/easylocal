@@ -263,17 +263,17 @@ public:
   template <typename T, std::size_t N>
   struct ParametersDispatcher
   {
-    static void ReadParameters(TheseTabuListManagers& tlms, std::istream& is, std::ostream& os)
+    static void ReadParameters(T& tlms, std::istream& is, std::ostream& os)
     {
-      typedef typename std::tuple_element<N, TheseTabuListManagers>::type CurrentTLM;
+      typedef typename std::tuple_element<N, T>::type CurrentTLM;
       CurrentTLM& tlm = std::get<N>(tlms);
       tlm.get().ReadParameters(is, os);
       ParametersDispatcher<T, N - 1>::ReadParameters(tlms, is, os);
     }
     
-    static void Print(TheseTabuListManagers& tlms, std::ostream& os)
+    static void Print(T& tlms, std::ostream& os)
     {
-      typedef typename std::tuple_element<N, TheseTabuListManagers>::type CurrentTLM;
+      typedef typename std::tuple_element<N, T>::type CurrentTLM;
       CurrentTLM& tlm = std::get<N>(tlms);
       tlm.get().Print(os);
       ParametersDispatcher<T, N - 1>::Print(tlms, os);
@@ -283,16 +283,16 @@ public:
   template<typename T>
   struct ParametersDispatcher<T, 0>
   {
-    static void ReadParameters(TheseTabuListManagers& tlms, std::istream& is, std::ostream& os)
+    static void ReadParameters(T& tlms, std::istream& is, std::ostream& os)
     {
-      typedef typename std::tuple_element<0, TheseTabuListManagers>::type CurrentTLM;
+      typedef typename std::tuple_element<0, T>::type CurrentTLM;
       CurrentTLM& tlm = std::get<0>(tlms);
       tlm.get().ReadParameters(is, os);
     }
     
-    static void Print(TheseTabuListManagers& tlms, std::ostream& os)
+    static void Print(T& tlms, std::ostream& os)
     {      
-      typedef typename std::tuple_element<0, TheseTabuListManagers>::type CurrentTLM;
+      typedef typename std::tuple_element<0, T>::type CurrentTLM;
       CurrentTLM& tlm = std::get<0>(tlms);
       tlm.get().Print(os);
     }
