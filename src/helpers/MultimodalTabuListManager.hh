@@ -251,7 +251,9 @@ public:
   template <class T, class M>
   static bool IsInverse(const T& tlm, const M& move_1, const M& move_2)
   {
-    return (move_1.active && move_2.active && tlm.Inverse(move_1, move_2));
+    if (move_1.active && move_2.active)
+      return tlm.Inverse(move_1, move_2);
+    return false;
   }
   
   template <class T, class M>
