@@ -3,6 +3,7 @@
 
 #include <list>
 #include <map>
+#include <sstream>
 #include <helpers/ProhibitionManager.hh>
 #include <utils/Random.hh>
 #include <utils/Types.hh>
@@ -32,6 +33,8 @@ public:
 	: elem(mv), out_iter(out)
 	{}
 	virtual ~TabuListItem() {}
+
+
 protected:
 	Move elem;              /**< The move stored in the list item. */
 	unsigned long int out_iter; /**< iteration at which the element
@@ -84,6 +87,8 @@ public:
   TabuListManager(std::string);
 	/** Virtual destructor. */
 	virtual ~TabuListManager();
+        virtual std::string StatusString() const;
+
 protected:
   TabuListManager() : TabuListManager("TabuList") {}
 	virtual bool Aspiration(const State& st, const Move&, const CFtype& mv_cost) const;
@@ -243,6 +248,13 @@ void TabuListManager<State, Move,CFtype>::Print(std::ostream& os) const
   }
 }
 
+template <class State, class Move, typename CFtype>
+std::string TabuListManager<State, Move, CFtype>::StatusString() const 
+{
+   std::stringstream ss;
+   ss << min_tenure << " < " << tlist.size() << " < " << max_tenure;
+   return ss.str();
+}
 
 /**
  Checks whether the aspiration criterion is satisfied for a given move.

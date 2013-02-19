@@ -12,11 +12,12 @@ public:
   
   /** Typedefs. */
   typedef std::tuple<ActiveMove<typename BaseTabuListManagers::ThisMove> ...> TheseMoves;
-  typedef TabuListManager<State, std::tuple<ActiveMove<typename BaseTabuListManagers::ThisMove> ...>, CFtype> SuperTabuListManager;
+  typedef TabuListManager<State, std::tuple<ActiveMove<typename BaseTabuListManagers::ThisMove> ...>, CFtype> SuperTabuListManager; // type of this tabu list manager
   typedef std::tuple<BaseTabuListManagers...> TheseTabuListManagers;
   
   /** Modality of the TabuListManager */
   virtual unsigned int Modality() const { return sizeof...(BaseTabuListManagers); }
+
   /** Read all parameters from an input stream (prints hints on output stream). */
   virtual void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout)
   {
@@ -28,7 +29,15 @@ public:
   {
     ParametersDispatcher<TheseTabuListManagers, sizeof...(BaseTabuListManagers) - 1>::Print(const_cast<TheseTabuListManagers&>(tlms), os);
   }
-  protected:
+
+  /** Queries for status all of its composing TabuListManagers. */
+  virtual std::string StatusString() const 
+  {
+    Call status_string(Call::Function::STATUS_STRING); 
+    return TupleDispatcher<TheseMoves, TheseTabuListManagers, sizeof...(BaseTabuListManagers)-1>::QueryAll(const_cast<TheseTabuListManagers&>(tlms), status_string);
+  }
+
+protected:
   
   /** Constructor, takes a variable number of base TabuListManagers.  */
   MultimodalTabuListManager(BaseTabuListManagers& ... tlms)
@@ -42,7 +51,7 @@ public:
   class Call
   {
   public:
-    enum Function { is_inverse, is_active };
+    enum Function { IS_INVERSE, IS_ACTIVE, STATUS_STRING };
     Call(Function f) : to_call(f) { }
     
     template <class T, class M>
@@ -51,14 +60,29 @@ public:
       std::function<bool(const T&, const M&, const M&)> f;
       switch (to_call)
       {
-        case is_inverse:
+        case IS_INVERSE:
           f = &IsInverse<T, M>;
           break;
-        case is_active:
+        case IS_ACTIVE:
           f = &IsActive<T, M>;
           break;
         default:
           throw std::logic_error("Function not implemented");
+      }
+      return f;
+    }
+
+    template <class T>
+    std::function<std::string(const T&)> getString() const throw(std::logic_error)
+    {
+      std::function<std::string(const T&)> f;
+      switch(to_call)
+      {
+        case STATUS_STRING:
+          f = &GetStatusString<T>;
+          break;
+        default:
+          throw std::logic_error("Function not implemented.");
       }
       return f;
     }
@@ -69,6 +93,23 @@ public:
   template <class TupleOfMoves, class TupleOfTLMs, std::size_t N>
   struct TupleDispatcher
   {
+    static std::string QueryAll(const TupleOfTLMs& temp_tlms, const Call& c)
+    {
+      // Get right types (be nice to gcc)
+      typedef typename std::tuple_element<N, TupleOfTLMs>::type CurrentTLM;
+      
+      const CurrentTLM& this_tlm = std::get<N>(temp_tlms);
+      
+      std::function<std::string(const CurrentTLM&)> f =  c.template getString<CurrentTLM>();
+      
+      std::string current, others;
+      current = f(this_tlm);
+      others = TupleDispatcher<TupleOfMoves, TupleOfTLMs, N - 1>::QueryAll(temp_tlms, c);
+      current.append(", ");
+      current.append(others);
+      return current;
+    }
+
     static std::vector<bool> Check(State& st, const TupleOfMoves& temp_moves_1, const TupleOfMoves& temp_moves_2, const TupleOfTLMs& temp_tlms, const Call& c)
     {
       // Get right types (be nice to gcc)
@@ -153,6 +194,15 @@ public:
   template <class TupleOfMoves, class TupleOfTLMs>
   struct TupleDispatcher<TupleOfMoves, TupleOfTLMs, 0>
   {
+    static std::string QueryAll(const TupleOfTLMs& temp_tlms, const Call& c)
+    {
+      // Get right types (be nice to gcc)
+      typedef typename std::tuple_element<0, TupleOfTLMs>::type CurrentTLM;
+      const CurrentTLM& this_tlm = std::get<0>(temp_tlms);
+      std::function<std::string(const CurrentTLM&)> f =  c.template getString<CurrentTLM>();
+      return f(this_tlm);
+    }
+
     static std::vector<bool> Check(const TupleOfMoves& temp_moves_1, const TupleOfMoves& temp_moves_2, const TupleOfTLMs& temp_tlms, const Call& c)
     {
       // Get right types (be nice to gcc)
@@ -219,7 +269,7 @@ public:
       return false;
     }
   };  
-    
+  
   /** Check - checks a predicate on each element of a tuple and returns a vector of the corresponding boolean variable */
   template <class ...TLMs>
   static std::vector<bool> Check(const std::tuple<ActiveMove<typename TLMs::ThisMove>...>& moves_1, const std::tuple<ActiveMove<typename TLMs::ThisMove>...>& moves_2, const std::tuple<TLMs...>& tlms, const Call& c)
@@ -260,6 +310,12 @@ public:
   static bool IsActive(const T& tlm, const M& move_1, const M& move_2)
   {
     return move_1.active;
+  }
+
+  template <class T>
+  static std::string GetStatusString(const T& tlm)
+  {
+    return tlm.StatusString();
   }
   
   template <typename T, std::size_t N>
@@ -312,7 +368,7 @@ public:
   {}
   virtual bool Inverse(const typename SuperTabuListManager::ThisMove& moves_1, const typename SuperTabuListManager::ThisMove& moves_2) const
   {
-    Call is_inverse(Call::Function::is_inverse);
+    Call is_inverse(Call::Function::IS_INVERSE);
     return SuperTabuListManager::CheckAny(moves_1, moves_2, this->tlms, is_inverse);
   }
 };
@@ -328,7 +384,7 @@ public:
   {}
   virtual bool Inverse(const typename SuperTabuListManager::ThisMove& moves_1, const typename SuperTabuListManager::ThisMove& moves_2) const
   {
-    Call is_inverse(Call::Function::is_inverse);
+    Call is_inverse(Call::Function::IS_INVERSE);
     return SuperTabuListManager::CheckAll(moves_1, moves_2, this->tlms, is_inverse);
   }
 };

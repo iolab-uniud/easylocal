@@ -151,8 +151,7 @@ protected:
     Function to_call;
   };
   
-  /** Tuple dispatcher. Similarly to Call, this struct defines a number of templated functions that accept a tuple of moves and a tuple of neighborhood explorers, together with additional paramters. The struct is template-specialized to handle compile-time recursion.
-   */
+  /** Tuple dispatcher. Similarly to Call, this struct defines a number of templated functions that accept a tuple of moves and a tuple of neighborhood explorers, together with additional parameters. The struct is template-specialized to handle compile-time recursion. */
   template <class TupleOfMoves, class TupleOfNHEs, std::size_t N>
   struct TupleDispatcher
   {

@@ -33,10 +33,14 @@ public:
    @param best the cost of the best solution found so far
    @return true if the move is prohibited in the given state, false otherwise */
   virtual bool ProhibitedMove(const State& st, const Move& mv, const CFtype& mv_cost) const = 0;
+  
   /** Resets the prohibition manager mechanisms. */
   virtual void Clean() = 0;
+  
   virtual void UpdateIteration() = 0;
   
+  virtual std::string StatusString() const { return ""; } 
+
   virtual void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout);
 protected:
   ProhibitionManager(std::string name, std::string description);

@@ -221,9 +221,7 @@ template <class Input, class State, class Move, typename CFtype>
 std::string TabuSearch<Input,State,Move,CFtype>::StatusString()
 {
   std::stringstream status;
-  status << "["
-	 << "TL length = " << pm.ListLength() << " (" << pm.MinTenure() << "-" << pm.MaxTenure() << ")"
-	   << "]";
+  status << "[" << "TL = " << pm.StatusString() << "]";
   return status.str();
 }
 
