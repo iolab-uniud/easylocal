@@ -12,3 +12,8 @@ std::random_device Random::dev;
 std::mt19937 Random::g(Random::dev());
 
 int Random::seed;
+
+// Initialize random seed from default random sequence, so that we can save it
+std::uniform_int_distribution<> t;
+Random::Seed(t(g));
+
