@@ -7,7 +7,7 @@
 
 
 /* Compile further debugging controls. */
-#define DEBUG 1
+/* #undef DEBUG */
 
 /* define if the Boost library is available */
 #define HAVE_BOOST /**/
@@ -37,7 +37,7 @@
 #define HAVE_SQRT 1
 
 /* Define to 1 if stdbool.h conforms to C99. */
-/* #undef HAVE_STDBOOL_H */
+#define HAVE_STDBOOL_H 1
 
 /* Define to 1 if you have the <stdint.h> header file. */
 #define HAVE_STDINT_H 1
