@@ -8,12 +8,11 @@
 
 #include "Random.hh"
 
+// Initialize pseudo-random generation machinery
 std::random_device Random::dev;
 std::mt19937 Random::g(Random::dev());
 
-int Random::seed;
+// By default the recorded seed is -1 (no seed provided)
+int Random::seed = -1; 
 
-// Initialize random seed from default random sequence, so that we can save it
-std::uniform_int_distribution<> t;
-Random::Seed(t(g));
-
+// Each solver must include: Random::Seed(Random::Int());

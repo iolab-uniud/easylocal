@@ -133,6 +133,9 @@ int main(int argc, const char* argv[])
     // input classe
     int in;
     
+    // Since we plan to save the seed we need to generate one
+    Random::Seed(Random::Int());
+
 #if defined(HAVE_BOOST)
     ParameterBox main_parameters("main", "Main Program options");
     // Main program parameters
@@ -214,6 +217,7 @@ int main(int argc, const char* argv[])
       Random::Seed(random_seed);
 #endif
     
+    std::cout << "Random seed: " << Random::seed << std::endl;
     qsm.AddCostComponent(cc1);
     qsm.AddCostComponent(cc2);
     qnhe.AddDeltaCostComponent(dcc1);

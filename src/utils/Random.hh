@@ -7,6 +7,7 @@
 #endif
 
 #include <random>
+#include <iostream>
 
 class Random
 {
@@ -23,7 +24,13 @@ public:
     std::uniform_int_distribution<> d(a,b);
     return d(g);
   }
-  
+
+  /** Generates random int without bounds, useful to generate a random seed. */
+  static int Int() 
+  {
+    std::uniform_int_distribution<> d;
+    return d(g);
+  }
   /** Generates an uniform random double in [a,b]
    @param a lower bound
    @param b upper bound
@@ -39,10 +46,10 @@ public:
   static void Seed(int seed)
   {
     g.seed(seed);
-		Random::seed = seed;
+    Random::seed = seed;
   }
-	
-	static int seed;
+
+  static int seed;
 };
 
 #endif // _RANDOM_HH_
