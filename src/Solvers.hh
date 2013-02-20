@@ -29,5 +29,6 @@
 			//#include <solvers/GeneralizedLocalSearch.hh>
 #include <solvers/VariableNeighborhoodDescent.hh>
 			//#include <solvers/GRASP.hh>
+#include <solvers/TokenRingSearch.hh>
 
 #endif // _SOLVERS_HH_

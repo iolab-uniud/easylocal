@@ -13,7 +13,7 @@ public:
                                 NeighborhoodExplorer<Input,State,Move,CFtype>& ne,
                                 TabuListManager<State,Move,CFtype>& tlm,
                                 std::string name);
-  
+  std::string StatusString();
 protected:
   
   void SelectMove();
@@ -52,10 +52,11 @@ iterations_for_shift_update("iterations_for_shift_update", "Number of iterations
 shift_min("shift_min", "Minimum value for the shifts", this->parameters),
 shift_max("shift_max", "Maximum value for the shifts", this->parameters)
 {
+  shift_region = 0.95;
   alpha = 1.03;
   iterations_for_shift_update = 1;
   shift_min = 1.0 / HARD_WEIGHT;
-  shift_max = 10.0 * HARD_WEIGHT;
+  shift_max = 10.0;
 }
 
 template <class Input, class State, class Move, typename CFtype>
@@ -263,6 +264,25 @@ void TabuSearchWithShiftingPenalty<Input,State,Move,CFtype>::CompleteMove()
     }
   }
   TabuSearch<Input, State, Move, CFtype>::CompleteMove();
+//   std::cerr << "(";
+//   for (unsigned int i = 0; i < shifts.size(); i++)
+//     std::cerr << shifts[i] << (i < shifts.size() - 1 ? ',' : ')');
+//   std::cerr << std::endl;
+}
+
+
+/**
+ Create a string containing the status of the runner
+ */
+template <class Input, class State, class Move, typename CFtype>
+std::string TabuSearchWithShiftingPenalty<Input,State,Move,CFtype>::StatusString()
+{
+  std::stringstream status;
+  status << "[" << "TL = " << this->pm.StatusString() << ", SP = (";
+  for (unsigned int i = 0; i < shifts.size(); i++)
+    status << shifts[i] << (i < shifts.size() - 1 ? ',' : ')');
+  status << "]";
+  return status.str();
 }
 
 #endif // _TABU_SEARCH_WITH_SHIFTING_PENALTY_HH_
