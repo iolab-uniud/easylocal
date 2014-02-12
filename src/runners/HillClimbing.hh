@@ -18,6 +18,7 @@ public:
   HillClimbing(const Input& in, StateManager<Input,State,CFtype>& e_sm,
                NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne, std::string name);
 
+  Parameter<unsigned long int> max_idle_iterations;
 protected:
   bool MaxIdleIterationExpired() const;
   bool MaxIterationExpired() const;
@@ -25,7 +26,6 @@ protected:
   bool AcceptableMove();
   void SelectMove();
   // parameters
-  Parameter<unsigned long int> max_idle_iterations;
 };
 
 /*************************************************************************

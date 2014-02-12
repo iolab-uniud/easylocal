@@ -75,12 +75,11 @@ protected:
 template <class Input, class State, class Move, typename CFtype>
 void MoveRunner<Input,State, Move, CFtype>::UpdateBestState()
 {
-  if (LessOrEqualThan(this->current_state_cost, this->best_state_cost))
-  {
-    *(this->p_best_state) = *(this->p_current_state);
+//   if (LessOrEqualThan(this->current_state_cost, this->best_state_cost))
+//   {
     if (LessThan(this->current_state_cost, this->best_state_cost))
     {
-
+      *(this->p_best_state) = *(this->p_current_state);
       this->best_state_cost = this->current_state_cost;
       this->best_state_violations = this->current_state_violations;
 
@@ -90,7 +89,7 @@ void MoveRunner<Input,State, Move, CFtype>::UpdateBestState()
       // so that idle iterations are printed correctly
       this->iteration_of_best = this->iteration;
     }
-  }
+//   }
 }
 
 
