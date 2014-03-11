@@ -19,7 +19,7 @@
 #if !defined(_SWAPNEIGHBORHOODEXPLORER_HH_)
 #define _SWAPNEIGHBORHOODEXPLORER_HH_
 
-#include "../../src/helpers/NeighborhoodExplorer.hh"
+#include "helpers/NeighborhoodExplorer.hh"
 #include "../data/Swap.hh"
 #include "QueensStateManager.hh"
 
