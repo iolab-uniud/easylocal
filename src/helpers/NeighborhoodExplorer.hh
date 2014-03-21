@@ -511,7 +511,7 @@ template <class Input, class State, class Move, typename CFtype>
 CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::BestMove(const State &st, Move& mv) const throw (EmptyNeighborhood)
 {
   unsigned int number_of_bests = 1; // number of moves found with the same best value
-  
+
   FirstMove(st, mv);
   Move best_move = mv;
   CFtype mv_cost = DeltaCostFunction(st, mv);
