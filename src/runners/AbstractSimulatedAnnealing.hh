@@ -35,12 +35,14 @@ public:
   void SetCoolingRate(double cr)  { cooling_rate = cr; }
   void SetMaxNeighborsSampled(unsigned int ns)  { max_neighbors_sampled = ns; }
   void SetMaxNeighborsAccepted(unsigned int na)  { max_neighbors_accepted = na; }
+  void SetMaxIterations(unsigned long i)  { this->max_iterations = i; }
   
   unsigned int MaxNeighborsSampled() const { return max_neighbors_sampled; }
   unsigned int MaxNeighborsAccepted() const { return max_neighbors_accepted; }
   double StartTemperature() const { return start_temperature; }
   double CoolingRate() const { return cooling_rate; }
   double Temperature() const { return temperature; }
+  unsigned long MaxIterations() const  { return this->max_iterations; }
 
 protected:
 

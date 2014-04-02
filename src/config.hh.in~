@@ -5,9 +5,6 @@
 #define CONFIG_INCLUDED
 
 
-/* Define with the boost library for program option */
-#undef BOOST_PROGRAM_OPTIONS_LIB
-
 /* Compile further debugging controls. */
 #undef DEBUG
 
