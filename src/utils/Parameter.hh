@@ -233,6 +233,25 @@ public:
     }
   }
   
+  /** Gets a given parameter */
+  template <typename T>
+  T GetParameter(std::string flag)
+  {
+    for (auto p : this->parameters)
+      {
+	if (p->cmdline_flag == flag)
+	  {
+	    Parameter<T>* p_par = dynamic_cast<Parameter<T>*>(p);
+	    if (!p_par)
+	      throw std::logic_error("Parameter " + p->cmdline_flag + " value of an incorrect type");
+	    return *p_par;
+	  }
+      }
+    // FIXME: a more specific exception should be raised
+    throw std::logic_error("Parameter " + flag + " not in the list");
+  }
+
+
   /** Sets a given parameter to a given value */
   template <typename T>
   void SetParameter(std::string flag, const T& value)
