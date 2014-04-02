@@ -1,8 +1,6 @@
 #include "Parameter.hh"
-#if defined(HAVE_BOOST)
 #include <boost/program_options/parsers.hpp>
 #include <boost/program_options/variables_map.hpp>
-#endif
 
 IncorrectParameterValue::~IncorrectParameterValue() throw() { }
 
@@ -12,10 +10,7 @@ AbstractParameter::AbstractParameter(const std::string& cf, const std::string& d
 
 std::vector<const ParameterBox*> ParameterBox::overall_parameters;
 
-ParameterBox::ParameterBox(const std::string& p, const std::string& description) : prefix(p)
-#if defined(HAVE_BOOST)
-, cl_options(description)
-#endif
+ParameterBox::ParameterBox(const std::string& p, const std::string& description) : prefix(p), cl_options(description)
 {
   overall_parameters.push_back(this);
 }
@@ -31,16 +26,13 @@ Parameter<bool>::Parameter(const std::string& cmdline_flag, const std::string& d
 : AbstractParameter(cmdline_flag, description)
 {
   std::string flag = parameters.prefix + "::" + cmdline_flag;
-#if defined(HAVE_BOOST)
   parameters.cl_options.add_options()
   (("enable-" + flag).c_str(), boost::program_options::value<std::string>()->implicit_value("true")->zero_tokens()->notifier([this](const std::string& v){ this->is_set = true; this->value = true; }), "")
   (("disable-" + flag).c_str(), boost::program_options::value<std::string>()->implicit_value("false")->zero_tokens()->notifier([this](const std::string & v){ this->is_set = true; this->value = false; }), ("[enable/disable] " + description).c_str());
-#endif
 }
 
 bool CommandLineParameters::Parse(int argc, const char* argv[], bool check_unregistered, bool silent)
 {
-#if defined(HAVE_BOOST)
   boost::program_options::options_description cmdline_options(argv[0]);
   boost::program_options::variables_map vm;
   for (auto pb : ParameterBox::overall_parameters)
@@ -68,7 +60,6 @@ bool CommandLineParameters::Parse(int argc, const char* argv[], bool check_unreg
     std::cout << cmdline_options << std::endl;
     return false;
   }
-#endif
   return true;
 }
 

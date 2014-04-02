@@ -85,19 +85,19 @@
  */
 
 #include <iostream>     
-#include <data/ChessBoard.hh>
-#include <data/Swap.hh>
-#include <helpers/SwapNeighborhoodExplorer.hh>
-#include <helpers/MultimodalNeighborhoodExplorer.hh>
-#include <helpers/QueensOutputManager.hh>
-#include <helpers/QueensStateManager.hh>
-#include <helpers/QueensTabuListManager.hh>
-#include <helpers/PrimaryDiagonalCostComponent.hh>
-#include <helpers/PrimaryDiagonalDeltaCostComponent.hh>
-#include <helpers/SecondaryDiagonalCostComponent.hh>
-#include <helpers/SecondaryDiagonalDeltaCostComponent.hh>
+#include "data/ChessBoard.hh"
+#include "data/Swap.hh"
+#include "helpers/SwapNeighborhoodExplorer.hh"
+#include "helpers/MultimodalNeighborhoodExplorer.hh"
+#include "helpers/QueensOutputManager.hh"
+#include "helpers/QueensStateManager.hh"
+#include "helpers/QueensTabuListManager.hh"
+#include "helpers/PrimaryDiagonalCostComponent.hh"
+#include "helpers/PrimaryDiagonalDeltaCostComponent.hh"
+#include "helpers/SecondaryDiagonalCostComponent.hh"
+#include "helpers/SecondaryDiagonalDeltaCostComponent.hh"
 #include <helpers/DeltaCostComponent.hh>
-#include <kickers/QueensKicker.hh>
+#include "kickers/QueensKicker.hh"
 #include <observers/RunnerObserver.hh>
 #include <observers/GeneralizedLocalSearchObserver.hh>
 #include <runners/HillClimbing.hh>
@@ -117,11 +117,9 @@
 #include <testers/MoveTester.hh>
 #include <testers/KickerTester.hh>
 #include <helpers/MultimodalTabuListManager.hh>
-#if defined(HAVE_BOOST)
-#include <boost/program_options/options_description.hpp>
-#include <boost/program_options/parsers.hpp>
-#include <boost/program_options/variables_map.hpp>
-#endif
+//#include <boost/program_options/options_description.hpp>
+//#include <boost/program_options/parsers.hpp>
+//#include <boost/program_options/variables_map.hpp>
 
 //#include <kickers/MultimodalKicker.hh>
 using namespace std;
@@ -136,7 +134,6 @@ int main(int argc, const char* argv[])
     // Since we plan to save the seed we need to generate one
     Random::Seed(Random::Int());
 
-#if defined(HAVE_BOOST)
     ParameterBox main_parameters("main", "Main Program options");
     // Main program parameters
     Parameter<int> size("size", "Chessboard size", main_parameters);
@@ -144,9 +141,6 @@ int main(int argc, const char* argv[])
     Parameter<unsigned int> verbosity_level("verbosity", "Verbosity level", main_parameters);
     Parameter<unsigned int> plot_level("plot", "Plot level", main_parameters);
     Parameter<unsigned long int> random_seed("random_seed", "Random seed", main_parameters);
-#else
-    // at least the value of in shoud be read from the command line
-#endif
     
     // cost components
     PrimaryDiagonalCostComponent cc1(in);
@@ -200,22 +194,14 @@ int main(int argc, const char* argv[])
     TokenRingSearch<int, ChessBoard, vector<int> , int> qtr(in, qsm, qom, "QueensTR");
     //VariableNeighborhoodDescent<int, ChessBoard, vector<int>, int > qvnd(in, qsm, qom, 3, "VNDS");
         
-#if defined(HAVE_BOOST)
     // parse all command line parameters, including those posted by runners and solvers
     if (!CommandLineParameters::Parse(argc, argv, true))
       return 1;
     
-    if (!size.IsSet())
-    {
-      std::cout << "Error: --main::size=N option must always be set" << std::endl;
-      return 1;
-    }
-    else
-      in = size;
+    in = size;
     
     if (random_seed.IsSet())
       Random::Seed(random_seed);
-#endif
     
     std::cout << "Random seed: " << Random::seed << std::endl;
     qsm.AddCostComponent(cc1);

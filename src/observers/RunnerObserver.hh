@@ -58,9 +58,10 @@ void RunnerObserver<Input,State,Move,CFtype>::NotifyStartRunner(MoveRunner<Input
 {
   if (plot_improving_moves || plot_all_moves)
     plot << r.iteration << ' ' <<
-            std::chrono::duration_cast<secs>(r.end - r.begin).count() << "s " <<
+    std::chrono::duration_cast<std::chrono::milliseconds>(r.end - r.begin).count() / 1000.0 << "s " <<
             r.current_state_cost << 
             std::endl;
+  previous_violations = r.current_state_violations;
 }
 
 template <class Input, class State, class Move, typename CFtype>
@@ -82,7 +83,7 @@ void RunnerObserver<Input,State,Move,CFtype>::NotifyNewBest(MoveRunner<Input,Sta
   if (plot_improving_moves && !plot_all_moves)
     plot << r.name << ' ' << 
             r.iteration << ' ' <<
-            std::chrono::duration_cast<secs>(r.end - r.begin).count() << "s " << 
+    std::chrono::duration_cast<std::chrono::milliseconds>(r.end - r.begin).count() / 1000.0 << "s " <<
             r.current_state_cost << 
             std::endl;
 }
@@ -115,7 +116,7 @@ void RunnerObserver<Input,State,Move,CFtype>::NotifyMadeMove(MoveRunner<Input,St
   if (plot_all_moves)
     plot << r.name << ' ' << 
             r.iteration << ' '  <<
-            std::chrono::duration_cast<secs>(r.end - r.begin).count() << "s " <<
+            std::chrono::duration_cast<std::chrono::milliseconds>(r.end - r.begin).count() / 1000.0 << "s " <<
             r.current_state_cost << 
             std::endl;
 }
@@ -125,7 +126,7 @@ void RunnerObserver<Input,State,Move,CFtype>::NotifyEndRunner(MoveRunner<Input,S
 {
   if (plot_improving_moves || plot_all_moves)
     plot << r.iteration << ' ' <<
-            std::chrono::duration_cast<secs>(r.end - r.begin).count() << "s " <<
+    std::chrono::duration_cast<std::chrono::milliseconds>(r.end - r.begin).count() / 1000.0 << "s " <<
             r.current_state_cost << std::endl;
 }
 

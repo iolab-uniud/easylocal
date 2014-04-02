@@ -214,6 +214,7 @@ Runner<Input,State,CFtype>::Runner(const Input& i, StateManager<Input,State,CFty
   
   // Add to the list of all runners
   runners.push_back(this);
+  begin = end = std::chrono::high_resolution_clock::now();
 }
 
 template <class Input, class State, typename CFtype>
@@ -274,7 +275,9 @@ void Runner<Input,State,CFtype>::PrepareIteration()
 */
 template <class Input, class State, typename CFtype>
 void Runner<Input,State,CFtype>::CompleteIteration()
-{}
+{
+  end = std::chrono::high_resolution_clock::now();
+}
 
 template <class Input, class State, typename CFtype>
 bool Runner<Input,State,CFtype>::MaxIterationExpired() const
@@ -299,6 +302,7 @@ void Runner<Input,State,CFtype>::InitializeRun(State& s) throw (ParameterNotSet,
   best_state_cost = current_state_cost = sm.CostFunction(s);
   best_state_violations = current_state_violations = sm.Violations(s);
   InitializeRun();
+  end = std::chrono::high_resolution_clock::now();
 }
 
 template <class Input, class State, typename CFtype>
