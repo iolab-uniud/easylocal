@@ -142,14 +142,14 @@ void MoveTester<Input,Output,State,Move,CFtype>::RunMainMenu(State& st)
     {
       std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
       show_state = ExecuteChoice(st);
-      secs duration = std::chrono::duration_cast<secs>(std::chrono::high_resolution_clock::now() - start);
+      std::chrono::milliseconds duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start);
       if (show_state)
       {
         om.OutputState(st,out);
         os << "CURRENT SOLUTION " << std::endl << out << std::endl;
         os << "CURRENT COST : " << sm.CostFunction(st) << std::endl;
       }
-      os << "ELAPSED TIME : " << duration.count() << 's' << std::endl;
+      os << "ELAPSED TIME : " << duration.count() / 1000.0 << 's' << std::endl;
     }
   }
   while (choice != 0);

@@ -330,14 +330,14 @@ void Tester<Input,Output,State,CFtype>::RunInputMenu()
   ShowReducedStateMenu();
   std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
   show_state = ExecuteStateChoice();
-  secs duration = std::chrono::duration_cast<secs>(std::chrono::high_resolution_clock::now() - start);
+  std::chrono::milliseconds duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start);
   if (show_state)
   {
     this->om.OutputState(test_state, this->out);
     os << "INITIAL SOLUTION " << std::endl << this->out << std::endl;
     os << "INITIAL COST : " << this->sm.CostFunction(test_state) << std::endl;
   }
-  os << "ELAPSED TIME : " << duration.count() << "s" << std::endl;
+  os << "ELAPSED TIME : " << duration.count() / 1000.0 << "s" << std::endl;
 }
 
 /**
@@ -526,14 +526,14 @@ void Tester<Input,Output,State,CFtype>::RunStateTestMenu()
     {
       std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
       show_state = ExecuteStateChoice();
-      secs duration = std::chrono::duration_cast<secs>(std::chrono::high_resolution_clock::now() - start);
+      std::chrono::milliseconds duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start);
       if (show_state)
       {
         om.OutputState(test_state,out);
         os << "CURRENT SOLUTION " << std::endl << out << std::endl;
         os << "CURRENT COST : " << sm.CostFunction(test_state) << std::endl;
       }
-      os << "ELAPSED TIME : " << duration.count() << "s" << std::endl;
+      os << "ELAPSED TIME : " << duration.count() /1000.0 << "s" << std::endl;
     }
   }
   while (sub_choice != 0);

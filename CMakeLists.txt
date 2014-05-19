@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 2.8)
 
-project(EasyLocalpp CXX)
+project(EasyLocalpp C CXX)
+
+find_package(Threads)
 
 set(CMAKE_CXX_FLAGS "-std=c++11")
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${EasyLocalpp_SOURCE_DIR}/cmake)
@@ -24,5 +26,5 @@ if(DOXYGEN_FOUND)
 endif(DOXYGEN_FOUND)
 
 add_subdirectory(src)
-add_subdirectory(test)
+#add_subdirectory(test)
 

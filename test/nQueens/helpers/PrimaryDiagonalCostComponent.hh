@@ -30,7 +30,7 @@
     int ComputeCost(const std::vector<unsigned>& st) const;
     void PrintViolations(const std::vector<unsigned>& st, std::ostream& os = std::cout) const;
     int ComputeCost(const std::vector<int>& st) const;
-		static bool Violation(int i, int j, int ai, int aj);
+	static bool Violation(int i, int j, int ai, int aj);
     void PrintViolations(const std::vector<int>& st, std::ostream& os = std::cout) const;
   };
   
