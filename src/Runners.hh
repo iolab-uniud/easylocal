@@ -54,6 +54,7 @@
 #include <runners/AbstractSimulatedAnnealing.hh>
 #include <runners/SimulatedAnnealingIterationBased.hh>
 #include <runners/SimulatedAnnealingWithReheating.hh>
+#include <runners/SimulatedAnnealingWithShiftingPenalty.hh>
 #include <runners/GreatDeluge.hh>
 #include <runners/TabuSearch.hh>
 #include <runners/LateAcceptanceHillClimbing.hh>

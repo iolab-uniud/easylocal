@@ -21,7 +21,6 @@ public:
                      NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
                      std::string name);
   std::string StatusString();
-
 protected:
   void InitializeRun() throw (ParameterNotSet, IncorrectParameterValue);
   bool StopCriterion();
