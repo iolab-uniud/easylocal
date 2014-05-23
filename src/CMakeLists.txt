@@ -1,6 +1,17 @@
-# todo complete the set of headers
-file(GLOB hdrs "${CMAKE_CURRENT_SOURCE_DIR}/*.hh ${CMAKE_CURRENT_SOURCE_DIR}/helpers/*.hh ${CMAKE_CURRENT_SOURCE_DIR}/runners/*.hh")
-add_library(EasyLocalpp utils/Random.cc utils/Types.cc utils/Parameter.cc ${hdrs})
-target_link_libraries(EasyLocalpp ${Boost_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+find_package(Threads)
+find_package(Boost 1.45.0 COMPONENTS program_options) 
 
-source_group("Header Files" REGULAR_EXPRESSION "${CMAKE_CURRENT_SOURCE_DIR}/([.]|helpers|runners|solvers)/[^/]*([.]h|[.]hpp|[.]hh)")
+include_directories(${Boost_INCLUDE_DIR})
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+
+add_subdirectory(helpers)
+add_subdirectory(utils)
+add_subdirectory(kickers)
+add_subdirectory(observers)
+add_subdirectory(runners)
+add_subdirectory(solvers)
+add_subdirectory(testers)
+add_subdirectory(unit)
+
+add_library(${PROJECT_NAME} SHARED $<TARGET_OBJECTS:Utils>)
+target_link_libraries(EasyLocalpp ${Boost_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
