@@ -1,14 +1,29 @@
-add_executable(nQueens main.cc data/ChessBoard.cc data/Swap.cc 
-  helpers/SwapNeighborhoodExplorer.cc helpers/PrimaryDiagonalDeltaCostComponent.cc 
-  helpers/QueensOutputManager.cc helpers/SecondaryDiagonalCostComponent.cc 
-  helpers/SecondaryDiagonalDeltaCostComponent.cc 
-  helpers/QueensStateManager.cc helpers/PrimaryDiagonalCostComponent.cc)
+project(nQueens)
 
-include_directories(${PROJECT_DIR}/src)
-target_link_libraries(nQueens ${Boost_LIBRARIES} EasyLocalpp)
+set(data helpers kickers)
 
-find_package(CPPUNIT)
-if(CPPUNIT_FOUND)
-#  add_subdirectory(unit)
-endif(CPPUNIT_FOUND)
+# Generate list of all files and directories to add to executable
+set(subdir_sources)
+set(subdir_headers)
 
+# Add files from subdirectories
+FOREACH (subdir ${subdirs})
+
+	string(SUBSTRING ${subdir} 0 1 FIRST_LETTER)
+	string(TOUPPER ${FIRST_LETTER} FIRST_LETTER)
+	string(REGEX REPLACE "^.(.*)" "${FIRST_LETTER}\\1" subdir_cap "${subdir}")
+
+	file(GLOB headers RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/${subdir}/*.hh)
+	source_group("Header Files\\${subdir_cap}" FILES ${headers})
+	
+	file(GLOB sources RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/${subdir}/*.cc)
+	source_group("Source Files\\${subdir_cap}" FILES ${sources})
+	
+	set(subdir_sources ${subdir_sources} ${sources})
+	set(subdir_headers ${subdir_headers} ${headers})
+	
+ENDFOREACH(subdir)
+
+file(GLOB sources *.hh *.cc)
+add_executable(nQueens ${sources} ${all_sources} ${all_headers})
+target_link_libraries(nQueens ${Boost_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} EasyLocalpp)
