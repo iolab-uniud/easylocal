@@ -155,7 +155,21 @@ const T& Parameter<T>::operator=(const T& v)
 template <typename T>
 std::istream& Parameter<T>::Read(std::istream& is)
 {
-  return is >> *this;
+  std::string in;
+  std::getline(is, in);
+    
+  if (in.size())
+  {
+    std::stringstream ss;
+    ss.str(in);
+    ss >> *this;
+  }
+  else
+  {
+    is_set = true;
+  }
+
+  return is;
 }
 
 template <typename T>
@@ -206,10 +220,15 @@ public:
   /** Read all parameters from an input stream (prints hints on output stream). */
   virtual void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout)
   {
+    is.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+
     for(auto p : this->parameters)
     {
-      os << "  " << p->description << (p->IsSet() ? (std::string(" (default: ") + p->ToString() + ") ") : ": ");
-      p->Read(is);
+      os << "  " << p->description << (p->IsSet() ? (std::string(" (def.: ") + p->ToString() + "): ") : ": ");
+      do
+      {
+        p->Read(is);
+      } while (!p->IsSet());
     }
   }
 
