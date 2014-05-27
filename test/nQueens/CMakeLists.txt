@@ -1,10 +1,10 @@
-project(nQueens)
-
-set(data helpers kickers)
+set(subdirs data helpers kickers)
 
 # Generate list of all files and directories to add to executable
 set(subdir_sources)
 set(subdir_headers)
+
+include_directories(${PROJECT_INCLUDE_DIR} ${Boost_INCLUDE_DIR} ${CMAKE_CURRENT_SOURCE_DIR})
 
 # Add files from subdirectories
 FOREACH (subdir ${subdirs})
@@ -25,5 +25,5 @@ FOREACH (subdir ${subdirs})
 ENDFOREACH(subdir)
 
 file(GLOB sources *.hh *.cc)
-add_executable(nQueens ${sources} ${all_sources} ${all_headers})
+add_executable(nQueens ${sources} ${subdir_sources} ${subdir_headers})
 target_link_libraries(nQueens ${Boost_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} EasyLocalpp)
