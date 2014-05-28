@@ -92,7 +92,6 @@ void SimulatedAnnealingWithShiftingPenalty<Input,State,Move,CFtype>::CompleteMov
     shift = min(1.0,shift*alpha);
   else
     shift = max(min_shift,shift/alpha);
-  //  std::cerr << StatusString() << std::endl;
 }
 
 template <class Input, class State, class Move, typename CFtype>
@@ -108,7 +107,6 @@ void SimulatedAnnealingWithShiftingPenalty<Input,State,Move,CFtype>::SelectMove(
       this->current_move_violations = this->ne.DeltaViolations(*this->p_current_state, this->current_move);
     }
   this->neighbors_sampled++;
-
 }
 
 template <class Input, class State, class Move, typename CFtype>

@@ -150,11 +150,9 @@ template <class Input, class State, class Move, typename CFtype>
 void AbstractSimulatedAnnealing<Input,State,Move,CFtype>::SelectMove()
 {
   this->ne.RandomMove(*this->p_current_state, this->current_move);
-  this->current_move_cost = this->ne.DeltaCostFunction(*this->p_current_state, this->current_move);
-  if (this->observer != nullptr)
-    {
-      this->current_move_violations = this->ne.DeltaViolations(*this->p_current_state, this->current_move);
-    }
+  this->current_move_violations = this->ne.DeltaViolations(*this->p_current_state, this->current_move);
+  this->current_move_cost = this->ne.DeltaObjective(*this->p_current_state, this->current_move) 
+    + this->current_move_violations;
   neighbors_sampled++;
 }
 
@@ -176,7 +174,6 @@ void AbstractSimulatedAnnealing<Input,State,Move,CFtype>::CompleteIteration()
 {
   if (neighbors_sampled == max_neighbors_sampled || neighbors_accepted == max_neighbors_accepted)
     {      
-      std::cerr << this->StatusString() << std::endl;
       temperature *= cooling_rate;
       neighbors_sampled = 0;
       neighbors_accepted = 0;
