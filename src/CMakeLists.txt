@@ -24,11 +24,17 @@ FOREACH (subdir ${subdirs})
 		
 	set(subdir_sources ${subdir_sources} ${sources})
 	set(subdir_headers ${subdir_headers} ${headers})
+
+	install_files(/include/easylocal/${subdir} FILES ${headers})
 	
 ENDFOREACH(subdir)
 
 file(GLOB headers RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/include/*.hh)
 source_group("Header Files" FILES ${headers})
 
+install_files(/include/easylocal FILES ${headers})
+
 add_library(${PROJECT_NAME} ${headers} ${subdir_sources} ${subdir_headers})
 target_link_libraries(${PROJECT_NAME} ${Boost_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+
+install_targets(/lib ${PROJECT_NAME})
