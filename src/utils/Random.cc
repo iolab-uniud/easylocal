@@ -6,7 +6,7 @@
 //  Copyright (c) 2012 University of Udine. All rights reserved.
 //
 
-#include "Random.hh"
+#include <utils/Random.hh>
 
 // Initialize pseudo-random generation machinery
 std::random_device Random::dev;

@@ -1,0 +1,180 @@
+#if !defined(_TOKEN_RING_SEARCH_HH_)
+#define _TOKEN_RING_SEARCH_HH_
+
+#include <future>
+
+#include "helpers/StateManager.hh"
+#include "helpers/OutputManager.hh"
+#include "solvers/AbstractLocalSearch.hh"
+#include "runners/Runner.hh"
+
+/** The Simple Local Search solver handles a simple local search algorithm
+    encapsulated in a runner.
+    @ingroup Solvers
+*/
+template <class Input, class Output, class State, typename CFtype>
+class TokenRingSearch
+  : public AbstractLocalSearch<Input,Output,State,CFtype>
+{
+public:	
+  typedef Runner<Input,State,CFtype> RunnerType;
+  TokenRingSearch(const Input& in,
+		  StateManager<Input,State,CFtype>& e_sm,
+		  OutputManager<Input,Output,State,CFtype>& e_om,
+		  std::string name);
+  void AddRunner(RunnerType& r);
+  void RemoveRunner(const RunnerType& r);
+  void Print(std::ostream& os = std::cout) const;
+  void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout);
+  unsigned int Round() const { return round; }
+  unsigned int IdleRound() const { return idle_round; }
+protected:
+  void InitializeSolve() throw (ParameterNotSet, IncorrectParameterValue);
+  void Go();
+  void AtTimeoutExpired();
+  
+  std::vector<RunnerType*> p_runners; /**< pointers to the managed runner. */
+	unsigned int current_runner;
+	Parameter<unsigned int> max_rounds, max_idle_rounds;
+  unsigned int round;
+  unsigned int idle_round;
+};
+
+/*************************************************************************
+ * Implementation
+ *************************************************************************/
+
+/**
+   Constructs a token ring solver by providing it links to
+   a state manager, an output manager, a runner, an input,
+   and an output object.
+
+   @param sm a pointer to a compatible state manager
+   @param om a pointer to a compatible output manager
+   @param r a pointer to a compatible runner
+   @param in a pointer to an input object
+   @param out a pointer to an output object
+*/
+template <class Input, class Output, class State, typename CFtype>
+TokenRingSearch<Input,Output,State,CFtype>::TokenRingSearch(const Input& in,
+							    StateManager<Input,State,CFtype>& e_sm,
+							    OutputManager<Input,Output,State,CFtype>& e_om,
+							    std::string name)
+  : AbstractLocalSearch<Input,Output,State,CFtype>(in, e_sm, e_om, name, "Token Ring Solver"), max_rounds("max_rounds", "Maximum number of rounds", this->parameters),
+    max_idle_rounds("max_idle_rounds", "Maximum number of idle rounds", this->parameters)
+{
+  round = 0;
+  idle_round = 0;
+}
+
+template <class Input, class Output, class State, typename CFtype>
+void TokenRingSearch<Input,Output,State,CFtype>::ReadParameters(std::istream& is, std::ostream& os)
+{
+  os << "Token Ring Solver: " << this->name << " parameters" << std::endl;
+  unsigned int i = 0;
+  for (RunnerType* p_r : p_runners)
+    {
+      os << "Runner [" << i++ << "]: " << std::endl; 
+      p_r->ReadParameters(is, os);
+    }
+}
+
+template <class Input, class Output, class State, typename CFtype>
+void TokenRingSearch<Input,Output,State,CFtype>::Print(std::ostream& os) const
+{
+  os  << "Token Ring Solver: " << this->name << std::endl;
+  unsigned int i = 0;
+  for (const RunnerType* p_r : p_runners)
+    {
+      os << "Runner [" << i++ << "]: " << std::endl; 
+      p_r->Print(os);
+    }
+  if (p_runners.size() == 0)
+    os  << "<no runner attached>" << std::endl;
+}
+
+
+/**
+   Adds to the runner list employed for solving the problem to the one passed as
+   parameter.
+
+   @param r the new runner to be used
+*/
+template <class Input, class Output, class State, typename CFtype>
+void TokenRingSearch<Input,Output,State,CFtype>::AddRunner(RunnerType& r)
+{ p_runners.push_back(&r); }
+	 
+/**
+   Removes from the runner list employed for solving the problem the one passed as
+   parameter.
+
+   @param r the runner to remove
+*/
+template <class Input, class Output, class State, typename CFtype>
+void TokenRingSearch<Input,Output,State,CFtype>::RemoveRunner(const RunnerType& r)
+{
+  typename std::vector<RunnerType*>::const_iterator it;
+  for (it = p_runners.begin(); it != p_runners.end(); it++)
+    {
+      if (*it == &r)
+	break;
+    }
+  if (it == p_runners.end())
+    throw std::logic_error("Runner " + r->name + " was not added to the Token Ring Search");
+  p_runners.erase(it);
+}
+
+template <class Input, class Output, class State, typename CFtype>
+void TokenRingSearch<Input,Output,State,CFtype>::InitializeSolve() throw (ParameterNotSet, IncorrectParameterValue)
+{
+  AbstractLocalSearch<Input,Output,State,CFtype>::InitializeSolve();
+  if (max_idle_rounds.IsSet())
+    {
+      if (max_idle_rounds == 0)
+	throw IncorrectParameterValue(max_rounds, "It should be greater than zero");
+      if (!max_rounds.IsSet())
+	max_rounds = std::numeric_limits<unsigned int>::max();
+    }
+  if (max_rounds.IsSet())
+    {
+      if (max_rounds == 0)
+	throw IncorrectParameterValue(max_idle_rounds, "It should be greater than zero");
+      if (!max_idle_rounds.IsSet())
+	max_idle_rounds = max_rounds;
+    }
+  if (p_runners.size() == 0)
+    // FIXME: add a more specific exception behavior
+    throw std::logic_error("No runner set in object " + this->name);
+  round = 0;
+  idle_round = 0;
+}
+
+template <class Input, class Output, class State, typename CFtype>
+void TokenRingSearch<Input,Output,State,CFtype>::Go()
+{
+  current_runner = 0;
+  do
+    {
+      //      std::cerr << "Rounds = " << rounds << "/" << max_rounds << ", " << idle_rounds << "/" << max_idle_rounds<< std::endl;
+      this->current_state_cost = p_runners[current_runner]->Go(*this->p_current_state);
+      round++;
+      idle_round++;		
+      if (this->current_state_cost <= this->best_state_cost) // the less or equal is here for diversification purpose
+	{
+	  if (this->current_state_cost < this->best_state_cost)
+	    idle_round = 0;			
+	  *this->p_best_state = *this->p_current_state;
+	  this->best_state_cost = this->current_state_cost;
+	}
+      current_runner = (current_runner + 1) % p_runners.size();
+    }
+  while (idle_round < max_idle_rounds && round < max_rounds);
+}
+
+template <class Input, class Output, class State, typename CFtype>
+void TokenRingSearch<Input,Output,State,CFtype>::AtTimeoutExpired()
+{
+  p_runners[current_runner]->Interrupt();
+}
+
+#endif // _TOKEN_RING_SEARCH_HH_

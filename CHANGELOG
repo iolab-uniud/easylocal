@@ -4,3 +4,7 @@
 * Multi-threading support has changed accordingly to the previous point
 * Code have been refactored to eliminate source of inefficiency
 
+4.0 lucy
+
+* Moved build system to CMake
+* Now libraries get installed in system default paths
