@@ -2,8 +2,8 @@
 #define _OBSERVERS_HH_
 
 /** @defgroup Observers Observer classes
-      Observer classes perform actions 
-  */
+Observer classes perform actions 
+*/
 
 #include "observers/GeneralizedLocalSearchObserver.hh"
 #include "observers/RunnerObserver.hh"

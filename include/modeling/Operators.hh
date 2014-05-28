@@ -3,8 +3,9 @@
 
 #include "modeling/AST.hh"
 
-namespace easylocal {
-  namespace modeling {
+namespace EasyLocal {
+    
+  namespace Modeling {
     
     template <typename T>
     class Exp;

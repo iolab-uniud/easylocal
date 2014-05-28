@@ -5,8 +5,9 @@
 
 #include "modeling/Symbols.hh"
 
-namespace easylocal {
-  namespace modeling {
+namespace EasyLocal {
+    
+  namespace Modeling {
     
     /** Forward declaration */
     template <typename T>
@@ -27,17 +28,17 @@ namespace easylocal {
     public:
       
       /** Registers a subscriber for the resize event.
-       @param n the ResizeNotify object to notify
-       */
+      @param n the ResizeNotify object to notify
+      */
       void subscribe(ResizeNotify* n)
       {
         subscribers.push_back(n);
       }
       
       /** Compile an expression into a compiled expression.
-       @param e the original expression
-       @return a pointer to the root of the compiled expression
-       */
+      @param e the original expression
+      @return a pointer to the root of the compiled expression
+      */
       std::shared_ptr<Sym<T>> compile(Exp<T>& e)
       {
         e.normalize();
@@ -52,9 +53,9 @@ namespace easylocal {
       }
       
       /** Evaluates all the registered expressions within a given ValueStore at a given level.
-       @param st the ValueStore to use as data source and storage
-       @param level level on which to evaluate
-       */
+      @param st the ValueStore to use as data source and storage
+      @param level level on which to evaluate
+      */
       void evaluate(ValueStore<T>& st, unsigned int level = 0) const
       {
         const size_t n = this->size();
@@ -70,10 +71,10 @@ namespace easylocal {
       }
       
       /** Evaluates all the registered expressions within a given ValueStore at a given level and a given set of variables that have been changed (delta).
-       @param st the ValueStore to use as data source and storage
-       @param variables a set of variables that have been changed
-       @param level level on which to evaluate
-       */
+      @param st the ValueStore to use as data source and storage
+      @param variables a set of variables that have been changed
+      @param level level on which to evaluate
+      */
       void evaluate_diff(ValueStore<T>& st, const std::set<size_t>& variables, unsigned int level) const
       {
         std::priority_queue<std::pair<int, size_t>> queue;
@@ -103,15 +104,15 @@ namespace easylocal {
           // parents are pushed to the queue only if the current expression value has changed and they have not been already queued
           if (st.changed(current_index, level))
             for (const size_t& i : current_sym->parents)
+          {
+            const std::shared_ptr<Sym<T>>& parent_sym = (*this)[i];
+            if (!processed_symbols[i])
             {
-              const std::shared_ptr<Sym<T>>& parent_sym = (*this)[i];
-              if (!processed_symbols[i])
-              {
-                queue.push(std::make_pair(parent_sym->depth, i));
-                processed_symbols[i] = true;
-              }
-              st.changed_children(i, level).insert(current_index);
+              queue.push(std::make_pair(parent_sym->depth, i));
+              processed_symbols[i] = true;
             }
+            st.changed_children(i, level).insert(current_index);
+          }
         }
       }
       
@@ -128,11 +129,11 @@ namespace easylocal {
     protected:
       
       /** Evaluates all the registered expressions within a given ValueStore at a given level and a given set of expressions whose value has changed (delta).
-       @param st the ValueStore to use as data source and storage
-       @param expressions a set of expressions that have been changed
-       @param level level on which to evaluate
-       @remarks Internally used by the public evaluate method
-       */
+      @param st the ValueStore to use as data source and storage
+      @param expressions a set of expressions that have been changed
+      @param level level on which to evaluate
+      @remarks Internally used by the public evaluate method
+      */
       void evaluate(ValueStore<T>& st, const std::set<size_t>& expressions, unsigned int level) const
       {
         std::queue<size_t> queue;

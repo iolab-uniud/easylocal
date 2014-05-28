@@ -3,21 +3,28 @@
 
 #include <iostream>
 
-/** Interface for printable objects. Defines output operator based on print method. */
-class Printable
-{
-public:
+namespace EasyLocal {
 
-/** Prints the object.
- @param os output stream to print to 
- */
-virtual void print(std::ostream& os) const = 0;
-};
+  namespace Core {
+  
+    /** Interface for printable objects. Defines output operator based on print method. */
+    class Printable
+    {
+    public:
 
-/** Output operator.
-@param os output stream to print to
-@param p printable object
-*/
-std::ostream& operator<<(std::ostream& os, const Printable& p);
+      /** Prints the object.
+      @param os output stream to print to 
+      */
+      virtual void print(std::ostream& os) const = 0;
+    };
+
+    /** Output operator.
+    @param os output stream to print to
+    @param p printable object
+    */
+    std::ostream& operator<<(std::ostream& os, const Printable& p);
+
+  }
+}
 
 #endif

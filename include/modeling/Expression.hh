@@ -13,10 +13,10 @@
 #include "modeling/AST.hh"
 #include "modeling/Operators.hh"
 
-namespace easylocal
-{
-  namespace modeling
-  {    
+namespace EasyLocal {
+    
+  namespace Modeling {    
+        
     template <typename T>
     class Exp : public virtual Printable
     {
@@ -94,18 +94,18 @@ namespace easylocal
 
     
     /**
-     A modeling variable to be used inside expressions.
-     @remarks extends Symbol
-     */
+    A modeling variable to be used inside expressions.
+    @remarks extends Symbol
+    */
     template <typename T>
     class Var : public Exp<T>
     {
     public:
       /**
-       Constructor.
-       @param exp_store a reference to the ExpressionStore (compiled expression) where the variable will be registered
-       @param name name of the variable (for printing purposes)
-       */
+      Constructor.
+      @param exp_store a reference to the ExpressionStore (compiled expression) where the variable will be registered
+      @param name name of the variable (for printing purposes)
+      */
       explicit Var(ExpressionStore<T>& exp_store, const std::string& name)
       {
         std::shared_ptr<ASTVar<T>> var = std::make_shared<ASTVar<T>>(name);
@@ -116,28 +116,28 @@ namespace easylocal
       Var() = default;
       
       /**
-       Copy constructor.
-       @param v the variable to copy
-       */
+      Copy constructor.
+      @param v the variable to copy
+      */
       Var(const Var& v) = default;
 
       virtual ~Var() = default;
     };
     
     /**
-     A variable array to facilitate the initialization of sequences of variables.
-     @remarks extends ginac::symbol
-     */
+    A variable array to facilitate the initialization of sequences of variables.
+    @remarks extends ginac::symbol
+    */
     template <typename T>
     class VarArray : public Exp<T>, public std::vector<Var<T>>
     {
     public:
       /**
-       Constructor.
-       @param exp_store a reference to the ExpressionStore (compiled expression) where the variable will be registered
-       @param name name of the variable array
-       @param size size of the variable array to declare
-       */
+      Constructor.
+      @param exp_store a reference to the ExpressionStore (compiled expression) where the variable will be registered
+      @param name name of the variable array
+      @param size size of the variable array to declare
+      */
       explicit VarArray(ExpressionStore<T>& exp_store, const std::string& name, size_t size)
       {
         std::shared_ptr<ASTVarArray<T>> var_array = std::make_shared<ASTVarArray<T>>(name, size);
@@ -155,9 +155,9 @@ namespace easylocal
       virtual ~VarArray() = default;
       
       /**
-       Copy Constructor.
-       @param the passed variable
-       */
+      Copy Constructor.
+      @param the passed variable
+      */
       VarArray(const VarArray& v) = default;
       
       /** Forwards access to the vector */

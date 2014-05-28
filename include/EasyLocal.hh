@@ -1,20 +1,5 @@
-// $Id$
-// This file is part of EasyLocalpp: a C++ Object-Oriented framework
-// aimed at easing the development of Local Search algorithms.
-// Copyright (C) 2001--2008 Andrea Schaerf, Luca Di Gaspero. 
-//
-// EasyLocalpp is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// EasyLocalpp is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with EasyLocalpp. If not, see <http://www.gnu.org/licenses/>.
+#if !defined(_EASYLOCAL_HH_)
+#define _EASYLOCAL_HH_
 
 /**
  @file EasyLocal.hh
@@ -29,11 +14,7 @@
  $Date$
  @note This version works both with MS Visual C++ and the GNU C++ 
  compiler. Yet, it is extensively tested only with the GNU compiler.
- 
  */
-
-#if !defined(_EASYLOCAL_HH_)
-#define _EASYLOCAL_HH_
 
 #include "Utils.hh"
 #include "Helpers.hh"
@@ -41,6 +22,23 @@
 #include "Kickers.hh"
 #include "Solvers.hh"
 #include "Modeling.hh"
+
+/** Outermost library namespace. Contains all the components. */
+namespace EasyLocal {
+
+  /** Namespace dedicated to fundamental components, i.e., Helpers, Runners, Solvers and Utils. */
+  namespace Core { }
+  
+  /** Namespace dedicated to modeling facilities, such as AutoStates. */
+  namespace Modeling { }  
+  
+  /** Namespace dedicated to running / debugging facilities, such as Testers and Observers. */
+  namespace Debug { }
+  
+  /** Namespace dedicated to additional components, such as Kickers. */
+  namespace Extra { }
+
+}
 
 #endif // _EASYLOCAL_HH_
 

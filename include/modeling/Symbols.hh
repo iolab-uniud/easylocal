@@ -6,9 +6,9 @@
 #include <memory>
 #include <algorithm>
 
-namespace easylocal {
+namespace EasyLocal {
   
-  namespace modeling {
+  namespace Modeling {
     
     /** Forward declaration */
     template <typename T>
@@ -29,8 +29,8 @@ namespace easylocal {
     public:
       
       /** Constructor. 
-       @param exp_store ExpressionStore into which to register the compiled expression
-       */
+      @param exp_store ExpressionStore into which to register the compiled expression
+      */
       Sym(const ExpressionStore<T>& exp_store) : exp_store(exp_store)
       {
         depth = 0;
@@ -57,15 +57,15 @@ namespace easylocal {
       unsigned int depth;
       
       /** Computes the value of the expression within ValueStore (from scratch).
-       @param st the ValueStore to get the children values from, and store the expression data to
-       @param level level to use for the evaluation
-       */
+      @param st the ValueStore to get the children values from, and store the expression data to
+      @param level level to use for the evaluation
+      */
       virtual void compute(ValueStore<T>& st, unsigned int level = 0) const = 0;
       
       /** Computes the value of the expression within ValueStore (delta from previous value).
-       @param st the ValueStore to get the children values from, and store the expression data to
-       @param level level to use for the evaluation
-       */
+      @param st the ValueStore to get the children values from, and store the expression data to
+      @param level level to use for the evaluation
+      */
       virtual void compute_diff(ValueStore<T>& st, unsigned int level = 0) const = 0;
 
       
@@ -87,8 +87,8 @@ namespace easylocal {
     };
     
     /** Generic terminal expression.
-     @remarks Currently only variable or constant
-     */
+    @remarks Currently only variable or constant
+    */
     template <typename T>
     class TermSym : public Sym<T>
     {
@@ -105,11 +105,11 @@ namespace easylocal {
       
       /** @copydoc Sym<T>::compute(ValueStore<T>&, unsigned int) */
       virtual void compute(ValueStore<T>& st, unsigned int level = 0) const
-      { }
+        { }
       
       /** @copydoc Sym<T>::compute_diff(ValueStore<T>&, unsigned int) */
       virtual void compute_diff(ValueStore<T>& st, unsigned int level = 0) const
-      { }
+        { }
       
       /** @copydoc Printable::print(std::ostream&) */
       virtual void print(std::ostream& os) const
@@ -128,11 +128,11 @@ namespace easylocal {
       
       /** @copydoc Sym<T>::compute(ValueStore<T>&, unsigned int) */
       virtual void compute(ValueStore<T>& st, unsigned int level = 0) const
-      { }
+        { }
       
       /** @copydoc Sym<T>::compute_diff(ValueStore<T>&, unsigned int) */
       virtual void compute_diff(ValueStore<T>& st, unsigned int level = 0) const
-      { }
+        { }
       
       /** @copydoc Printable::print(std::ostream&) */
       virtual void print(std::ostream& os) const
@@ -161,7 +161,7 @@ namespace easylocal {
       
       /** @copydoc Sym<T>::compute_diff(ValueStore<T>&, unsigned int) */
       virtual void compute_diff(ValueStore<T>& st, unsigned int level = 0) const
-      { }
+        { }
       
       /** Value of the constant */
       T value;
