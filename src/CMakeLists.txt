@@ -1,6 +1,40 @@
-# todo complete the set of headers
-file(GLOB hdrs "${CMAKE_CURRENT_SOURCE_DIR}/*.hh ${CMAKE_CURRENT_SOURCE_DIR}/helpers/*.hh ${CMAKE_CURRENT_SOURCE_DIR}/runners/*.hh")
-add_library(EasyLocalpp utils/Random.cc utils/Types.cc utils/Parameter.cc ${hdrs})
-target_link_libraries(EasyLocalpp ${Boost_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+find_package(Threads)
+find_package(Boost 1.45.0 COMPONENTS program_options) 
 
-source_group("Header Files" REGULAR_EXPRESSION "${CMAKE_CURRENT_SOURCE_DIR}/([.]|helpers|runners|solvers)/[^/]*([.]h|[.]hpp|[.]hh)")
+include_directories(${Boost_INCLUDE_DIR} ${PROJECT_INCLUDE_DIR})
+
+set(subdirs helpers kickers observers runners solvers testers utils modeling)
+
+# Generate list of all files and directories to add to library
+set(subdir_sources)
+set(subdir_headers)
+
+# Add files from subdirectories
+FOREACH (subdir ${subdirs})
+
+	string(SUBSTRING ${subdir} 0 1 FIRST_LETTER)
+	string(TOUPPER ${FIRST_LETTER} FIRST_LETTER)
+	string(REGEX REPLACE "^.(.*)" "${FIRST_LETTER}\\1" subdir_cap "${subdir}")
+
+	file(GLOB headers RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/include/${subdir}/*.hh)
+	source_group("Header Files\\${subdir_cap}" FILES ${headers})
+	
+	file(GLOB sources RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/src/${subdir}/*.cc)
+	source_group("Source Files\\${subdir_cap}" FILES ${sources})
+		
+	set(subdir_sources ${subdir_sources} ${sources})
+	set(subdir_headers ${subdir_headers} ${headers})
+
+	install_files(/include/easylocal/${subdir} FILES ${headers})
+	
+ENDFOREACH(subdir)
+
+file(GLOB headers RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/include/*.hh)
+source_group("Header Files" FILES ${headers})
+
+install_files(/include/easylocal FILES ${headers})
+
+add_library(${PROJECT_NAME} ${headers} ${subdir_sources} ${subdir_headers})
+target_link_libraries(${PROJECT_NAME} ${Boost_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+
+install_targets(/lib ${PROJECT_NAME})

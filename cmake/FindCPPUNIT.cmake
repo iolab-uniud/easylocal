@@ -1,4 +1,3 @@
-#
 # Find the CppUnit includes and library
 #
 # This module defines
