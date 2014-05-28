@@ -4,7 +4,7 @@ EasyLocal++ is a framework for modeling and solving combinatorial optimization p
 
 Typically, to solve a problem, it is sufficient to implement methods to compute the problem-specific cost function and to enumerate the problem-specific local search moves. The framework takes care of calling the user-defined hook methods to solve the problem using one of the implemented meta-heuristics (e.g. simulated annealing, tabu search, hill climbing, ...).
 
-This repository contains both the latest iteration of the framework, and some test projects which can be used to understand how the framework works.
+This repository contains the last iteration (currently 3.0) of the EasyLocal++ framework. Examples of solvers implemented with EasyLocal++ are in ..., a seed project to use as a starting point is in ... .
 
 ## How to install EasyLocal++
 
