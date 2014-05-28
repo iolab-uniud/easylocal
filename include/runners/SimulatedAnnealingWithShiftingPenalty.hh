@@ -1,7 +1,7 @@
 #if !defined(_SIMULATED_ANNEALING_WITH_SHIFTING_PENALTY_HH_)
 #define _SIMULATED_ANNEALING_WITH_SHIFTING_PENALTY_HH_
 
-#include <runners/SimulatedAnnealingIterationBased.hh>
+#include "runners/SimulatedAnnealingIterationBased.hh"
 
 /** Implements the Simulated annealing runner with a stop condition
     based on the number of iterations and the shifting penalty mechanism.

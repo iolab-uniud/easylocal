@@ -1,9 +1,9 @@
 #if !defined(_FIRST_DESCENT_HH_)
 #define _FIRST_DESCENT_HH_
 
-#include <runners/MoveRunner.hh>
-#include <helpers/StateManager.hh>
-#include <helpers/NeighborhoodExplorer.hh>
+#include "runners/MoveRunner.hh"
+#include "helpers/StateManager.hh"
+#include "helpers/NeighborhoodExplorer.hh"
 
 /** The First Descent runner performs a simple local search.
  At each step of the search, the first improving move in the neighborhood of current

@@ -7,3 +7,4 @@
 4.0 lucy
 
 * Moved build system to CMake
+* Now libraries get installed in system default paths

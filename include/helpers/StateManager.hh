@@ -4,9 +4,10 @@
 #include <iostream>
 #include <vector>
 #include <cmath>
-#include <helpers/CostComponent.hh>
-#include <utils/Types.hh>
 #include <stdexcept>
+
+#include "helpers/CostComponent.hh"
+#include "utils/Types.hh"
 
 /** 
   This constant multiplies the value of the Violations function in thehierarchical 

@@ -35,11 +35,12 @@
 #if !defined(_EASYLOCAL_HH_)
 #define _EASYLOCAL_HH_
 
-#include <Utils.hh>
-#include <Helpers.hh>
-#include <Runners.hh>
-#include <Kickers.hh>
-#include <Solvers.hh>
+#include "Utils.hh"
+#include "Helpers.hh"
+#include "Runners.hh"
+#include "Kickers.hh"
+#include "Solvers.hh"
+#include "Modeling.hh"
 
 #endif // _EASYLOCAL_HH_
 

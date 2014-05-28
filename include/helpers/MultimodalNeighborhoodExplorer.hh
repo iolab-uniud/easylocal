@@ -1,13 +1,14 @@
 #if !defined(_MULTIMODALNEIGHBORHOOD_EXPLORER_HH_)
 #define _MULTIMODALNEIGHBORHOOD_EXPLORER_HH_
 
-#include <helpers/StateManager.hh>
-#include <helpers/ProhibitionManager.hh>
-#include <helpers/NeighborhoodExplorer.hh>
 #include <stdexcept>
 #include <functional>
 #include <algorithm>
-#include <utils/Tuple.hh>
+
+#include "helpers/StateManager.hh"
+#include "helpers/ProhibitionManager.hh"
+#include "helpers/NeighborhoodExplorer.hh"
+#include "utils/Tuple.hh"
 
 /** General rule: all moves are related. */
 template <class Move1, class Move2>

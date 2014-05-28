@@ -5,11 +5,11 @@
       Observer classes perform actions 
   */
 
-#include <observers/GeneralizedLocalSearchObserver.hh>
-#include <observers/RunnerObserver.hh>
-//#include <observers/BimodalRunnerObserver.hh>
-#include <observers/SimpleKickerObserver.hh>
-//#include <observers/BimodalKickerObserver.hh>
-#include <observers/ShiftingPenaltyObserver.hh>
+#include "observers/GeneralizedLocalSearchObserver.hh"
+#include "observers/RunnerObserver.hh"
+#include "observers/SimpleKickerObserver.hh"
+#include "observers/ShiftingPenaltyObserver.hh"
+//#include "observers/BimodalRunnerObserver.hh"
+//#include "observers/BimodalKickerObserver.hh"
 
 #endif // _OBSERVERS_HH_

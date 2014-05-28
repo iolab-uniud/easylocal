@@ -1,10 +1,10 @@
 #if !defined(_GRASP_HH_)
 #define _GRASP_HH_
 
-#include <solvers/AbstractLocalSearch.hh>
-#include <kickers/Kicker.hh>
 #include <vector>
 
+#include "solvers/AbstractLocalSearch.hh"
+#include "kickers/Kicker.hh"
 
 /** An Iterated Local Search solver handles both a runner encapsulating a local
     search algorithm and a kicker used for perturbing current solution.

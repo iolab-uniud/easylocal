@@ -1,7 +1,7 @@
 #if !defined(_TYPES_HH_)
 #define _TYPES_HH_
 
-#include <EasyLocal.conf.hh>
+#include "EasyLocal.conf.hh"
 #include <vector>
 #include <iostream>
 

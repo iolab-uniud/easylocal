@@ -47,17 +47,17 @@
 
 #include <climits>
 
-#include <runners/SteepestDescent.hh>
-#include <runners/FirstDescent.hh>
-#include <runners/HillClimbing.hh>
-#include <runners/SimulatedAnnealing.hh>
-#include <runners/AbstractSimulatedAnnealing.hh>
-#include <runners/SimulatedAnnealingIterationBased.hh>
-#include <runners/SimulatedAnnealingWithReheating.hh>
-#include <runners/SimulatedAnnealingWithShiftingPenalty.hh>
-#include <runners/GreatDeluge.hh>
-#include <runners/TabuSearch.hh>
-#include <runners/LateAcceptanceHillClimbing.hh>
-#include <runners/TabuSearchWithShiftingPenalty.hh>
+#include "runners/SteepestDescent.hh"
+#include "runners/FirstDescent.hh"
+#include "runners/HillClimbing.hh"
+#include "runners/SimulatedAnnealing.hh"
+#include "runners/AbstractSimulatedAnnealing.hh"
+#include "runners/SimulatedAnnealingIterationBased.hh"
+#include "runners/SimulatedAnnealingWithReheating.hh"
+#include "runners/SimulatedAnnealingWithShiftingPenalty.hh"
+#include "runners/GreatDeluge.hh"
+#include "runners/TabuSearch.hh"
+#include "runners/LateAcceptanceHillClimbing.hh"
+#include "runners/TabuSearchWithShiftingPenalty.hh"
 
 #endif // _RUNNERS_HH_

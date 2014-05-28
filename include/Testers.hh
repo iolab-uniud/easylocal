@@ -25,8 +25,8 @@
     program.   
 */
 
-#include <testers/Tester.hh>
-#include <testers/MoveTester.hh>
-#include <testers/KickerTester.hh>
+#include "testers/Tester.hh"
+#include "testers/MoveTester.hh"
+#include "testers/KickerTester.hh"
 
 #endif // _TESTERS_HH_

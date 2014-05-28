@@ -4,9 +4,10 @@
 #include <list>
 #include <map>
 #include <sstream>
-#include <helpers/ProhibitionManager.hh>
-#include <utils/Random.hh>
-#include <utils/Types.hh>
+
+#include "helpers/ProhibitionManager.hh"
+#include "utils/Random.hh"
+#include "utils/Types.hh"
 
 template <class State, class Move, typename CFtype>
 class TabuListManager;

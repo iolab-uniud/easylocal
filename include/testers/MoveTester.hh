@@ -1,14 +1,15 @@
 #if !defined(_MOVE_TESTER_HH_)
 #define _MOVE_TESTER_HH_
 
-#include <testers/ComponentTester.hh>
-#include <testers/Tester.hh>
-#include <helpers/OutputManager.hh>
-#include <helpers/NeighborhoodExplorer.hh>
-#include <helpers/TabuListManager.hh>
 #include <map>
 #include <iterator>
-#include <math.h>
+#include <cmath>
+
+#include "testers/ComponentTester.hh"
+#include "testers/Tester.hh"
+#include "helpers/OutputManager.hh"
+#include "helpers/NeighborhoodExplorer.hh"
+#include "helpers/TabuListManager.hh"
 
 /** A Move Tester allows to test the behavior of a given
  neighborhood explorer.

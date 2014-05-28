@@ -1,11 +1,13 @@
 #if !defined(_SIMPLE_LOCAL_SEARCH_HH_)
 #define _SIMPLE_LOCAL_SEARCH_HH_
 
-#include <helpers/StateManager.hh>
-#include <helpers/OutputManager.hh>
-#include <solvers/AbstractLocalSearch.hh>
-#include <runners/Runner.hh>
 #include <future>
+
+#include "helpers/StateManager.hh"
+#include "helpers/OutputManager.hh"
+#include "solvers/AbstractLocalSearch.hh"
+#include "runners/Runner.hh"
+
 
 /** The Simple Local Search solver handles a simple local search algorithm
     encapsulated in a runner.

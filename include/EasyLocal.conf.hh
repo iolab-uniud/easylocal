@@ -34,7 +34,7 @@
 #define _EASYLOCAL_CONF_HH_
 
 #if defined(_MSC_VER) // for Visual C++ another inclusion file is needed
-#include <EasyLocal.conf.vc.hh>
+#include "EasyLocal.conf.vc.hh"
 #endif
 
 #endif

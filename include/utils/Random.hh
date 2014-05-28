@@ -1,10 +1,10 @@
 #if !defined(_RANDOM_HH_)
 #define _RANDOM_HH_
 
-#include <EasyLocal.conf.hh>
-
 #include <random>
 #include <iostream>
+
+#include "EasyLocal.conf.hh"
 
 class Random
 {

@@ -16,11 +16,12 @@
  @ingroup Runners
  */
 
-#include <runners/MoveRunner.hh>
-#include <helpers/StateManager.hh>
-#include <helpers/NeighborhoodExplorer.hh>
-#include <helpers/TabuListManager.hh>
 #include <stdexcept>
+
+#include "runners/MoveRunner.hh"
+#include "helpers/StateManager.hh"
+#include "helpers/NeighborhoodExplorer.hh"
+#include "helpers/TabuListManager.hh"
 
 template <class Input, class State, class Move, typename CFtype>
 class TabuSearch : public MoveRunner<Input,State,Move,CFtype>

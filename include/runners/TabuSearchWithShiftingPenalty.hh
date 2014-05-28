@@ -1,7 +1,7 @@
 #if !defined(_TABU_SEARCH_WITH_SHIFTING_PENALTY_HH_)
 #define _TABU_SEARCH_WITH_SHIFTING_PENALTY_HH_
 
-#include <runners/TabuSearch.hh>
+#include "runners/TabuSearch.hh"
 
 template <class Input, class State, class Move, typename CFtype>
 class TabuSearchWithShiftingPenalty : public TabuSearch<Input,State,Move,CFtype>

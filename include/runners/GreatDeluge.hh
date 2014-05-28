@@ -1,10 +1,11 @@
 #if !defined(_GREAT_DELUGE_HH_)
 #define _GREAT_DELUGE_HH_
 
-#include <runners/MoveRunner.hh>
-#include <helpers/StateManager.hh>
-#include <helpers/NeighborhoodExplorer.hh>
 #include <stdexcept>
+
+#include "runners/MoveRunner.hh"
+#include "helpers/StateManager.hh"
+#include "helpers/NeighborhoodExplorer.hh"
 
 /** The Great Deluge runner relies on a probabilistic local
  search technique whose name comes from ... the Bible?

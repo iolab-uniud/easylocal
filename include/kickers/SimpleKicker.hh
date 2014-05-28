@@ -1,9 +1,10 @@
 #if !defined(_SIMPLE_KICKER_HH_)
 #define _SIMPLE_KICKER_HH_
 
-#include <kickers/Kicker.hh>
-#include <observers/SimpleKickerObserver.hh>
 #include <stdexcept>
+
+#include "kickers/Kicker.hh"
+#include "observers/SimpleKickerObserver.hh"
 
 /** A Simple Kicker simply considers sequences of moves of a given type
     (instantiated as template). 

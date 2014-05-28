@@ -1,7 +1,7 @@
 #if !defined(_SIMULATED_ANNEALING_ITERATION_BASED_HH_)
 #define _SIMULATED_ANNEALING_ITERATION_BASED_HH_
 
-#include <runners/AbstractSimulatedAnnealing.hh>
+#include "runners/AbstractSimulatedAnnealing.hh"
 
 /** Implements the Simulated annealing runner with a stop condition
     based on the number of iterations. In addition, the number of neighbors

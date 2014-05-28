@@ -2,7 +2,7 @@
 #define _KICKER_HH_
 
 #include <exception>
-#include <EasyLocal.conf.hh>
+#include "EasyLocal.conf.hh"
 
 enum KickTypes
 {

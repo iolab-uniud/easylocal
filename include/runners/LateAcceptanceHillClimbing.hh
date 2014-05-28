@@ -9,10 +9,11 @@
 #if !defined(_LATE_ACCEPTANCE_HILL_CLIMBING_HH_)
 #define _LATE_ACCEPTANCE_HILL_CLIMBING_HH_
 
-#include <runners/HillClimbing.hh>
-#include <helpers/StateManager.hh>
-#include <helpers/NeighborhoodExplorer.hh>
 #include <stdexcept>
+
+#include "runners/HillClimbing.hh"
+#include "helpers/StateManager.hh"
+#include "helpers/NeighborhoodExplorer.hh"
 
 /** The Late Acceptance Hill Climbing maintains a list of previous
  moves and defers acceptance to k steps further.

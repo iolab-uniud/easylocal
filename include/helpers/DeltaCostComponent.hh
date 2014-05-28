@@ -1,8 +1,9 @@
 #if !defined(_DELTA_COST_COMPONENT_HH_)
 #define _DELTA_COST_COMPONENT_HH_
 
-#include <helpers/CostComponent.hh>
 #include <stdexcept>
+
+#include "helpers/CostComponent.hh"
 
 /** A class for managing the variations of a single component of the cost function. Some
  of the methods are MustDef.

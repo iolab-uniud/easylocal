@@ -1,15 +1,16 @@
 #if !defined(_ABSTRACT_LOCAL_SEARCH_HH_)
 #define _ABSTRACT_LOCAL_SEARCH_HH_
 
-#include <solvers/Solver.hh>
-#include <helpers/StateManager.hh>
-#include <helpers/OutputManager.hh>
-#include <runners/Runner.hh>
 #include <iostream>
 #include <fstream>
 #include <string>
-#include <utils/Parameter.hh>
-#include <utils/Interruptible.hh>
+
+#include "solvers/Solver.hh"
+#include "helpers/StateManager.hh"
+#include "helpers/OutputManager.hh"
+#include "runners/Runner.hh"
+#include "utils/Parameter.hh"
+#include "utils/Interruptible.hh"
 
 /** A Local Search Solver has an internal state, and defines the ways for
  dealing with a local search algorithm.

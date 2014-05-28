@@ -1,8 +1,8 @@
 #if !defined(_MULTIMODAL_TABU_LIST_MANAGER_HH_)
 #define _MULTIMODAL_TABU_LIST_MANAGER_HH_
 
-#include <helpers/TabuListManager.hh>
-#include <helpers/MultimodalNeighborhoodExplorer.hh>
+#include "helpers/TabuListManager.hh"
+#include "helpers/MultimodalNeighborhoodExplorer.hh"
 
 /** Multimodal tabu list manager, to handle tabu lists of multimodal moves. */
 template <class State, typename CFtype, class ... BaseTabuListManagers>

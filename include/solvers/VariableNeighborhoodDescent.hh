@@ -1,7 +1,7 @@
 #if !defined(_VARIABLE_NEIGHBORHOOD_DESCENT_HH_)
 #define _VARIABLE_NEIGHBORHOOD_DESCENT_HH_
 
-#include <solvers/AbstractLocalSearch.hh>
+#include "solvers/AbstractLocalSearch.hh"
 
 /** The Variable Neighborhood Descent solver handles a VND algorithm
  implemented through a Kicker.

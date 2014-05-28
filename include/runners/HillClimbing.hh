@@ -1,10 +1,11 @@
 #if !defined(_HILL_CLIMBING_HH_)
 #define _HILL_CLIMBING_HH_
 
-#include <helpers/StateManager.hh>
-#include <helpers/NeighborhoodExplorer.hh>
-#include <runners/MoveRunner.hh>
 #include <stdexcept>
+
+#include "helpers/StateManager.hh"
+#include "helpers/NeighborhoodExplorer.hh"
+#include "runners/MoveRunner.hh"
 
 /** The Hill Climbing runner considers random move selection. A move
     is then performed only if it does improve or it leaves unchanged

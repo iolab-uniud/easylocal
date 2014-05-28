@@ -1,14 +1,15 @@
 #if !defined(_PARAMETER_HH_)
 #define _PARAMETER_HH_
 
-#include <EasyLocal.conf.hh>
 #include <stdexcept>
-#include <boost/program_options/options_description.hpp>
 #include <vector>
 #include <string>
 #include <iostream>
 #include <memory>
 #include <sstream>
+
+#include "EasyLocal.conf.hh"
+#include "boost/program_options/options_description.hpp"
 
 /** Abstract parameter type, for containers. */
 class AbstractParameter

@@ -7,7 +7,7 @@
  @ingroup Runners
  */
 
-#include "TabuSearch.hh"
+#include "runners/TabuSearch.hh"
 
 template <class Input, class State, class Move, typename CFtype>
 class FirstImprovementTabuSearch : public TabuSearch<Input,State,Move,CFtype>

@@ -1,17 +1,17 @@
 #if !defined(RUNNER_HH_)
 #define RUNNER_HH_
 
-#include <EasyLocal.conf.hh>
-#include <helpers/StateManager.hh>
 #include <stdexcept>
-
-#include <helpers/NeighborhoodExplorer.hh>
-#include <utils/Interruptible.hh>
 #include <climits>
 #include <chrono>
 #include <condition_variable>
 #include <atomic>
-#include <utils/Parameter.hh>
+
+#include "EasyLocal.conf.hh"
+#include "helpers/StateManager.hh"
+#include "helpers/NeighborhoodExplorer.hh"
+#include "utils/Interruptible.hh"
+#include "utils/Parameter.hh"
 
 /** Forward declaration of tester. */
 template <class Input, class State, typename CFtype>

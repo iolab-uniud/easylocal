@@ -1,9 +1,10 @@
 #if !defined(_KICKER_TESTER_HH_)
 #define _KICKER_TESTER_HH_
 
-#include <testers/ComponentTester.hh>
-#include <kickers/Kicker.hh>
 #include <chrono>
+
+#include "testers/ComponentTester.hh"
+#include "kickers/Kicker.hh"
 
 typedef std::chrono::duration<double, std::ratio<1>> secs;
 

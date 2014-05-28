@@ -1,7 +1,7 @@
 #if !defined(_RUNNER_TIME_OBSERVER_HH)
 #define _RUNNER_TIME_OBSERVER_HH
 
-#include <observers/RunnerObserver.hh>
+#include "observers/RunnerObserver.hh"
 
 template <class Input, class State, class Move, typename CFtype = int>
 class TimeObserver: public RunnerObserver<Input, State, Move, CFtype>

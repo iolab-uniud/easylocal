@@ -1,8 +1,8 @@
 #if !defined(_COMPONENT_TESTER_HH_)
 #define _COMPONENT_TESTER_HH_
 
-#include <helpers/StateManager.hh>
-#include <helpers/OutputManager.hh>
+#include "helpers/StateManager.hh"
+#include "helpers/OutputManager.hh"
 
 /** The Abstract Move Tester is an interface for a tester that handles
     moves.

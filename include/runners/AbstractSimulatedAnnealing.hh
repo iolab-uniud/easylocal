@@ -1,12 +1,13 @@
 #if !defined(_ABSTRACT_SIMULATED_ANNEALING_HH_)
 #define _ABSTRACT_SIMULATED_ANNEALING_HH_
 
-#include <runners/MoveRunner.hh>
-#include <helpers/StateManager.hh>
-#include <helpers/NeighborhoodExplorer.hh>
 #include <cmath>
 #include <stdexcept>
 #include <algorithm>
+
+#include "runners/MoveRunner.hh"
+#include "helpers/StateManager.hh"
+#include "helpers/NeighborhoodExplorer.hh"
 
 /** The Abstract Simulated annealing runner relies on a probabilistic local
  search technique whose name comes from the fact that it

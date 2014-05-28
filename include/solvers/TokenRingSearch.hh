@@ -1,11 +1,12 @@
 #if !defined(_TOKEN_RING_SEARCH_HH_)
 #define _TOKEN_RING_SEARCH_HH_
 
-#include <helpers/StateManager.hh>
-#include <helpers/OutputManager.hh>
-#include <solvers/AbstractLocalSearch.hh>
-#include <runners/Runner.hh>
 #include <future>
+
+#include "helpers/StateManager.hh"
+#include "helpers/OutputManager.hh"
+#include "solvers/AbstractLocalSearch.hh"
+#include "runners/Runner.hh"
 
 /** The Simple Local Search solver handles a simple local search algorithm
     encapsulated in a runner.

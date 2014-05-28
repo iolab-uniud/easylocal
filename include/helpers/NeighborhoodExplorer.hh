@@ -1,9 +1,10 @@
 #if !defined(_NEIGHBORHOOD_EXPLORER_HH_)
 #define _NEIGHBORHOOD_EXPLORER_HH_
 
-#include <helpers/DeltaCostComponent.hh>
-#include <helpers/StateManager.hh>
-#include <utils/Random.hh>
+#include "helpers/DeltaCostComponent.hh"
+#include "helpers/StateManager.hh"
+#include "utils/Random.hh"
+
 #include <typeinfo>
 #include <iostream>
 #include <stdexcept>

@@ -1,11 +1,12 @@
 #if !defined(_SOLVER_HH_)
 #define _SOLVER_HH_
 
-#include <EasyLocal.conf.hh>
-#include <helpers/StateManager.hh>
-#include <helpers/OutputManager.hh>
-#include <utils/Parameter.hh>
 #include <tuple>
+
+#include "EasyLocal.conf.hh"
+#include "helpers/StateManager.hh"
+#include "helpers/OutputManager.hh"
+#include "utils/Parameter.hh"
 
 /** A Solver represents the external layer of EasyLocal++; it 
  implements the Abstract Solver interface and furthermore is
