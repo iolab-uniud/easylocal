@@ -21,6 +21,8 @@ namespace EasyLocal {
     class AbstractTester;
   }
   
+  using namespace Debug;
+  
   namespace Core {
     
     
