@@ -1,9 +1,10 @@
 #include "utils/Printable.hh"
 
-namespace easylocal {
-  std::ostream& operator<<(std::ostream& os, const Printable& p)
-  {
-    p.print(os);
-    return os;
-  }
+using namespace EasyLocal;
+using namespace Core;
+
+std::ostream& operator<<(std::ostream& os, const Printable& p)
+{
+p.Print(os);
+return os;
 }

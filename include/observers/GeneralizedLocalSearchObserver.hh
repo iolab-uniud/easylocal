@@ -5,12 +5,16 @@
 
 namespace EasyLocal {
 
-  namespace Observers {
-        
-    typedef std::chrono::duration<double, std::ratio<1>> secs;
-
+  namespace Core {
     template <class Input, class Output, class State, typename CFtype>
     class GeneralizedLocalSearch;
+  }
+  
+  using namespace Core;
+
+  namespace Debug {
+        
+    typedef std::chrono::duration<double, std::ratio<1>> secs;
 
     template <class Input, class Output, class State, typename CFtype>
     class GeneralizedLocalSearchObserver

@@ -22,23 +22,8 @@
 #include "Kickers.hh"
 #include "Solvers.hh"
 #include "Modeling.hh"
-
-/** Outermost library namespace. Contains all the components. */
-namespace EasyLocal {
-
-  /** Namespace dedicated to fundamental components, i.e., Helpers, Runners, Solvers and Utils. */
-  namespace Core { }
-  
-  /** Namespace dedicated to modeling facilities, such as AutoStates. */
-  namespace Modeling { }  
-  
-  /** Namespace dedicated to running / debugging facilities, such as Testers and Observers. */
-  namespace Debug { }
-  
-  /** Namespace dedicated to additional components, such as Kickers. */
-  namespace Extra { }
-
-}
+#include "Observers.hh"
+#include "Testers.hh"
 
 #endif // _EASYLOCAL_HH_
 

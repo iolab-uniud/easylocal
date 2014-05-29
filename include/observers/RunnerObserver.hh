@@ -5,12 +5,17 @@
 
 namespace EasyLocal {
 
+  namespace Core {
+    template <class Input, class State, class Move, typename CFtype>
+    class MoveRunner;
+  }
+  
+  using namespace Core;
+
   namespace Debug {
         
     typedef std::chrono::duration<double, std::ratio<1>> secs;
 
-    template <class Input, class State, class Move, typename CFtype>
-    class MoveRunner;
 
     template <class Input, class State, class Move, typename CFtype>
     class RunnerObserver

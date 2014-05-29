@@ -40,7 +40,7 @@ namespace EasyLocal {
     @ingroup Helpers
     */
     template <class Input, class State, typename CFtype>
-    class StateManager
+    class StateManager : public Printable
     {
     public:
 

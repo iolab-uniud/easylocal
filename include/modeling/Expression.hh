@@ -9,7 +9,7 @@
 #include <functional>
 #include <unordered_map>
 
-#include "modeling/Printable.hh"
+#include "utils/Printable.hh"
 #include "modeling/AST.hh"
 #include "modeling/Operators.hh"
 

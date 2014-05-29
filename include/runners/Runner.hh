@@ -15,12 +15,15 @@
 
 namespace EasyLocal {
   
-  namespace Core {
-    
+  namespace Debug {
     /** Forward declaration of tester. */
     template <class Input, class State, typename CFtype>
     class AbstractTester;
-
+  }
+  
+  namespace Core {
+    
+    
     /** A class representing a single search strategy, e.g. hill climbing
     or simulated annealing. It must be loaded into a solver by using
     Solver::AddRunner() in order to be called correctly.

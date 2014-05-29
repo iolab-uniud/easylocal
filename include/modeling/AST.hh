@@ -6,7 +6,7 @@
 #include <list>
 #include <map>
 
-#include "modeling/Printable.hh"
+#include "utils/Printable.hh"
 #include "modeling/Symbols.hh"
 
 namespace EasyLocal {

@@ -39,6 +39,8 @@ require any explicit cast operation or dynamic allocation.
 #include "runners/SimulatedAnnealingWithShiftingPenalty.hh"
 #include "runners/GreatDeluge.hh"
 #include "runners/TabuSearch.hh"
+#include "runners/FirstImprovementTabuSearch.hh"
+#include "runners/SampleTabuSearch.hh"
 #include "runners/LateAcceptanceHillClimbing.hh"
 #include "runners/TabuSearchWithShiftingPenalty.hh"
 

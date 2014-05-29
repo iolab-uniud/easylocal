@@ -1,132 +1,100 @@
 #if !defined(_NEIGHBORHOOD_EXPLORER_HH_)
 #define _NEIGHBORHOOD_EXPLORER_HH_
 
-#include "helpers/DeltaCostComponent.hh"
-#include "helpers/StateManager.hh"
-#include "utils/Random.hh"
-
 #include <typeinfo>
 #include <iostream>
 #include <stdexcept>
 #include <memory>
 
+#include "helpers/DeltaCostComponent.hh"
+#include "helpers/StateManager.hh"
+#include "utils/Random.hh"
+
 namespace EasyLocal {
 
   namespace Core {
-        
+    
+    /** Exception raised when all the moves in a neighborhood have been tried already. */
     class EmptyNeighborhood : public std::logic_error
     {
     public:
-      EmptyNeighborhood() : std::logic_error("Empty neighborhood") {}
+      EmptyNeighborhood() : std::logic_error("Empty neighborhood") { }
     };
 
-    /** The Neighborhood Explorer is responsible for the strategy
-    exploited in the exploration of the neighborhood, and for
-    computing the variations of the cost function due to a specific
-    @ref Move.
- 
-    @ingroup Helpers
+    /** The Neighborhood Explorer is responsible for the strategy exploited in the exploration of the neighborhood, and for computing the variations of the cost function due to a specific
+        @ref Move.
+        @ingroup Helpers
     */
     template <class Input, class State, class Move, typename CFtype>
     class NeighborhoodExplorer
     {
     public:
       typedef Move ThisMove;
-  
-      /** Prints the configuration of the object (attached cost components)
-      @param os Output stream
-      */
-      void Print(std::ostream& os = std::cout) const;
-  
-      /**
-      Generates a random move in the neighborhood of a given state.
-      @note To be implemented in the application (MustDef)
-      @param st the start state
-      @param mv the generated move
+
+      /** Generates a random move in the neighborhood of a given state.
+          @note To be implemented in the application (MustDef)
+          @param st the start state
+          @param mv the generated move
       */
       virtual void RandomMove(const State &st, Move& mv) const throw (EmptyNeighborhood) = 0;
   
-      /** Generates the first move in the neighborhood (a total ordering
-      of the neighborhood is assumed). It is always used on
-      cooperation with @ref NextMove to generate the whole
-      neighborhood. It returns @c void because it is assumed that at
-      least a move exists in the neighborhood.  It writes the first
-      move in @c mv.
-   
-      @note To be implemented in the application (MustDef)
-      @param st the start state
-      @param mv the move
+      /** Generates the first move in the neighborhood (a total ordering of the neighborhood is assumed). It is always used on cooperation with @ref NextMove to generate the whole neighborhood. It returns @c void because it is assumed that at least a move exists in the neighborhood.  It writes the first move in @c mv.
+          @note To be implemented in the application (MustDef)
+          @param st the start state
+          @param mv the move
       */
       virtual void FirstMove(const State& st, Move& mv) const throw (EmptyNeighborhood) = 0;
   
-      /** Generates the move that follows mv in the exploration of the
-      neighborhood of the state st.
-      It returns the generated move in the same variable mv.
-      @return @c false if @c mv is the last in the neighborhood of the state.
-   
-      @note To be implemented in the application.
-      @param st the start state
-      @param mv the move
+      /** Generates the move that follows mv in the exploration of the neighborhood of the state st. It returns the generated move in the same variable mv.
+          @return @c false if @c mv is the last in the neighborhood of the state.
+          @note To be implemented in the application.
+          @param st the start state
+          @param mv the move
       */
       virtual bool NextMove(const State &st, Move& mv) const = 0;
   
-      /**
-      Generate the first improvingt move in the exploration of the neighborhood
-      of a given state. It uses @ref FirstMove and @ref NextMove
-      @param st the start state
-      @param mv the generated move
-      @throws EmptyNeighborhood when the State st has no neighbor
+      /** Generate the first improvingt move in the exploration of the neighborhood of a given state. It uses @ref FirstMove and @ref NextMove
+          @param st the start state
+          @param mv the generated move
+          @throws EmptyNeighborhood when the State st has no neighbor
       */
       virtual CFtype FirstImprovingMove(const State& st, Move& mv) const throw (EmptyNeighborhood);
     
-      /**
-      Generates the best move in the full exploration of the neighborhood
-      of a given state. It uses @ref FirstMove and @ref NextMove
-      @param st the start state.
-      @param mv the generated move.
-      @return the variation of the cost due to the Move mv.
-      @throws EmptyNeighborhood when the State st has no neighbor
+      /** Generates the best move in the full exploration of the neighborhood of a given state. It uses @ref FirstMove and @ref NextMove
+          @param st the start state.
+          @param mv the generated move.
+          @return the variation of the cost due to the Move mv.
+          @throws EmptyNeighborhood when the State st has no neighbor
       */
       virtual CFtype BestMove(const State& st, Move& mv) const throw (EmptyNeighborhood);
   
-      /**
-      Generates the best move in a random sample exploration of the neighborhood
-      of a given state.
-      @param st the start state.
-      @param mv the generated move.
-      @param samples the number of sampled neighbors
-      @return the variation of the cost due to the Move mv.
-      @throws EmptyNeighborhood when the State st has no neighbor
+      /** Generates the best move in a random sample exploration of the neighborhood of a given state.
+          @param st the start state.
+          @param mv the generated move.
+          @param samples the number of sampled neighbors
+          @return the variation of the cost due to the Move mv.
+          @throws EmptyNeighborhood when the State st has no neighbor
       */
       virtual CFtype SampleMove(const State &st, Move& mv, unsigned int samples) const throw (EmptyNeighborhood);
   
-      /**
-      States whether a move is feasible or not in a given state.
-      By default it considers all the moves as feasible, but it can
-      be overwritten by the user.
-   
-      @param st the start state
-      @param @c mv the move checked for feasibility
-      @return @c true if the move @mv is feasible in @c st, false otherwise
+      /** States whether a move is feasible or not in a given state. By default it considers all the moves as feasible, but it can be overwritten by the user.
+          @param st the start state
+          @param @c mv the move checked for feasibility
+          @return @c true if the move @mv is feasible in @c st, false otherwise
       */
       virtual bool FeasibleMove(const State& st, const Move& mv) const
       {
         return true;
       }
   
-      /**
-      Modifies the state passed as parameter by applying a given
-      move upon it.
-   
-      @note To be implemented in the application (MustDef)
-      @param st the state to modify
-      @param mv the move to be applied
+      /** Modifies the state passed as parameter by applying a given move upon it.   
+          @note To be implemented in the application (MustDef)
+          @param st the state to modify
+          @param mv the move to be applied
       */
       virtual void MakeMove(State &st, const Move& mv) const = 0;
   
-    
-      virtual bool NextRelatedMove(const State &st, Move& mv, const Move& mv2) const
-        { return NextMove(st,mv); }
+      virtual bool NextRelatedMove(const State &st, Move& mv, const Move& mv2) const { return NextMove(st,mv); }
   
       virtual bool FirstRelatedMove(const State &st, Move& mv, const Move& mv2) const
       {
@@ -140,85 +108,56 @@ namespace EasyLocal {
         }
         return true;
       } 
-  
-      // evaluation function
-  
-      /**
-      Computes the differences in the cost function obtained by applying the move @c mv 
-      to the state @c st.
-   
-      @param st the state to modify
-      @param mv the move to be applied
-      @return the difference in the cost function
+    
+      /** Computes the differences in the cost function obtained by applying the move @c mv to the state @c st.
+          @param st the state to modify
+          @param mv the move to be applied
+          @return the difference in the cost function
       */
       virtual CFtype DeltaCostFunction(const State& st, const Move& mv) const;
   
-      /**
-      Computes the differences in the cost function obtained by applying the move @c mv
-      to the state @c st and returns the unaggregated value as a vector of components.
-   
-      @param st the state to modify
-      @param mv the move to be applied
-      @return the difference in the cost function for each cost component
+      /** Computes the differences in the cost function obtained by applying the move @c mv to the state @c st and returns the unaggregated value as a vector of components.
+          @param st the state to modify
+          @param mv the move to be applied
+          @return the difference in the cost function for each cost component
       */
       virtual std::vector<CFtype> DeltaCostFunctionComponents(const State& st, const Move& mv) const;
   
-      /**
-      Computes the differences in the objective component of the cost function obtained 
-      by applying the move @c mv to the state @c st.
-   
-      @param st the state to modify
-      @param mv the move to be applied
-      @return the difference in the objective function
+      /** Computes the differences in the objective component of the cost function obtained by applying the move @c mv to the state @c st.
+          @param st the state to modify
+          @param mv the move to be applied
+          @return the difference in the objective function
       */ 
       virtual CFtype DeltaObjective(const State& st, const Move & mv) const;
-      /**
-      Computes the differences in the violations component (i.e., hard constraints)
-      of the cost function obtained by applying the move @c mv to the state @c st.
-   
-      @param st the state to modify
-      @param mv the move to be applied
-      @return the difference in the violation function
+      /** Computes the differences in the violations component (i.e., hard constraints) of the cost function obtained by applying the move @c mv to the state @c st.
+          @param st the state to modify
+          @param mv the move to be applied
+          @return the difference in the violation function
       */
  
       virtual CFtype DeltaViolations(const State& st, const Move & mv) const;
   
-      /**
-      Adds a delta cost component to the neighborhood explorer, which is responsible for computing
-      one component of the cost function.
-      A delta cost component requires the implementation of a way to compute the difference in the
-      cost function without simulating the move on a given state.
-   
-      @param dcc a delta cost component object
+      /** Adds a delta cost component to the neighborhood explorer, which is responsible for computing one component of the cost function. A delta cost component requires the implementation of a way to compute the difference in the cost function without simulating the move on a given state.
+          @param dcc a delta cost component object
       */
       virtual void AddDeltaCostComponent(DeltaCostComponent<Input,State,Move,CFtype>& dcc);
   
-      /**
-      Adds a cost component to the neighborhood explorer, which is responsible for computing
-      one component of the cost function.
-      A cost component passed to the neighborhood explorer will compute the difference in the
-      cost function due to that component as the difference between the cost in the current state
-      and the new state obtained after (actually) performing the move. It will be wrapped into a delta cost component
-      by means of an adapter and it might be seen as an unimplemented delta cost component.
-      @note In general it is a quite unefficient way to compute the contribution of the move and
-      it should be avoided, if possible.
-   
-      @param cc a cost component object
+      /** Adds a cost component to the neighborhood explorer, which is responsible for computing one component of the cost function. A cost component passed to the neighborhood explorer will compute the difference in the cost function due to that component as the difference between the cost in the current state and the new state obtained after (actually) performing the move. It will be wrapped into a delta cost component by means of an adapter and it might be seen as an unimplemented delta cost component.
+          @note In general it is a quite unefficient way to compute the contribution of the move and it should be avoided, if possible.
+          @param cc a cost component object
       */
  
       virtual void AddCostComponent(CostComponent<Input,State,CFtype>& cc);
   
-      /**
-      Returns the number of delta cost components attached to the neighborhood explorer.
-      @return the size of the delta cost components vector
+      /** Returns the number of delta cost components attached to the neighborhood explorer.
+          @return the size of the delta cost components vector
       */
       virtual size_t DeltaCostComponents() const
         { return delta_hard_cost_components.size() + delta_soft_cost_components.size(); }
   
-      /**
-      Returns an element of the delta cost component vector attached to the neighborhood explorer.
-      @param i the index of the required delta cost component
-      @return the delta cost component of index i
+      /** Returns an element of the delta cost component vector attached to the neighborhood explorer.
+          @param i the index of the required delta cost component
+          @return the delta cost component of index i
       */
       virtual DeltaCostComponent<Input,State,Move,CFtype>& GetDeltaCostComponent(unsigned int i)
       {
@@ -230,17 +169,15 @@ namespace EasyLocal {
           throw std::logic_error("GetDeltaCostComponent: index out of bounds");
       }
   
-      /**
-      Returns the number of delta cost components attached to the neighborhood explorer which are hard cost components.
-      @return the size of the hard delta cost components vector
+      /** Returns the number of delta cost components attached to the neighborhood explorer which are hard cost components.
+          @return the size of the hard delta cost components vector
       */
       virtual size_t DeltaHardCostComponents() const
         { return delta_hard_cost_components.size(); }
   
-      /**
-      Returns an element of the delta hard cost component vector attached to the neighborhood explorer.
-      @param i the index of the required delta cost component
-      @return the delta cost component of index i
+      /** Returns an element of the delta hard cost component vector attached to the neighborhood explorer.
+          @param i the index of the required delta cost component
+          @return the delta cost component of index i
       */
       virtual DeltaCostComponent<Input,State,Move,CFtype>& GetDeltaHardCostComponent(unsigned int i)
       {
@@ -250,17 +187,15 @@ namespace EasyLocal {
           throw std::logic_error("GetDeltaHardCostComponent: index out of bounds");
       }
   
-      /**
-      Returns the number of delta cost components attached to the neighborhood explorer which are soft cost components.
-      @return the size of the hard delta cost components vector
+      /** Returns the number of delta cost components attached to the neighborhood explorer which are soft cost components.
+          @return the size of the hard delta cost components vector
       */
       virtual size_t DeltaSoftCostComponents() const
         { return delta_soft_cost_components.size(); }
   
-      /**
-      Returns an element of the delta soft cost component vector attached to the neighborhood explorer.
-      @param i the index of the required delta cost component
-      @return the delta cost component of index i
+      /** Returns an element of the delta soft cost component vector attached to the neighborhood explorer.
+          @param i the index of the required delta cost component
+          @return the delta cost component of index i
       */
       virtual DeltaCostComponent<Input,State,Move,CFtype>& GetDeltaSoftCostComponent(unsigned int i)
       {
@@ -270,19 +205,15 @@ namespace EasyLocal {
           throw std::logic_error("GetDeltaSoftCostComponent: index out of bounds");
       }
   
-      /**
-      Retuns the modality of the neighborhood explorer, i.e., the number of different kind of
-      moves handled by it.
-      @return the modality of the neighborhood explorer
+      /** Retuns the modality of the neighborhood explorer, i.e., the number of different kind of moves handled by it.
+          @return the modality of the neighborhood explorer
       */
       virtual unsigned int Modality() const
         { return 1; }
   
-      /**
-      Returns the modality of the move passed as parameter, i.e., the number of move components
-      in a composite move that are active.
-      @param mv a move
-      @return the modality of the move
+      /** Returns the modality of the move passed as parameter, i.e., the number of move components in a composite move that are active.
+          @param mv a move
+          @return the modality of the move
       */
       virtual unsigned int MoveModality(const Move& mv) const
         { return 0; }
@@ -314,28 +245,17 @@ namespace EasyLocal {
       bool unimplemented_hard_components, unimplemented_soft_components;
     };
 
-    /*************************************************************************
-    * Implementation
-    *************************************************************************/
-
+    /** IMPLEMENTATION */
 
     template <class Input, class State, class Move, typename CFtype>
-    NeighborhoodExplorer<Input,State,Move,CFtype>::NeighborhoodExplorer(const Input& i,
-    StateManager<Input,State,CFtype>& e_sm, std::string e_name)
+    NeighborhoodExplorer<Input,State,Move,CFtype>::NeighborhoodExplorer(const Input& i, StateManager<Input,State,CFtype>& e_sm, std::string e_name)
       : in(i), sm(e_sm), name(e_name), unimplemented_hard_components(false), unimplemented_soft_components(false)
-    {
-      
-    }
+        { }
 
-    /**
-    Evaluates the variation of the cost function obtainted either by applying the move to
-    the given state or simulating it.
-    The tentative definition computes a weighted sum of the variation of
-    the violations function and of the difference in the objective function.
- 
-    @param st the start state
-    @param mv the move
-    @return the variation in the cost function
+    /** Evaluates the variation of the cost function obtainted either by applying the move to the given state or simulating it. The tentative definition computes a weighted sum of the variation of the violations function and of the difference in the objective function.
+        @param st the start state
+        @param mv the move
+        @return the variation in the cost function
     */
     template <class Input, class State, class Move, typename CFtype>
     CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::DeltaCostFunction(const State& st, const Move & mv) const

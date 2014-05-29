@@ -10,6 +10,7 @@ and deciding how, and in which sequence, Runners and Kickers have to be activate
 #include "solvers/SimpleLocalSearch.hh"
 #include "solvers/VariableNeighborhoodDescent.hh"
 #include "solvers/TokenRingSearch.hh"
+
 //#include "solvers/GeneralizedLocalSearch.hh"
 //#include "solvers/GRASP.hh"
 

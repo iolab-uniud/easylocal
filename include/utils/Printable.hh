@@ -13,14 +13,14 @@ namespace EasyLocal {
     public:
 
       /** Prints the object.
-      @param os output stream to print to 
+          @param os output stream to print to 
       */
-      virtual void print(std::ostream& os) const = 0;
+      virtual void Print(std::ostream& os = std::cout) const = 0;
     };
 
     /** Output operator.
-    @param os output stream to print to
-    @param p printable object
+        @param os output stream to print to
+        @param p printable object
     */
     std::ostream& operator<<(std::ostream& os, const Printable& p);
 

@@ -1,7 +1,7 @@
 #if !defined(_AUTOSTATE_HH_)
 #define _AUTOSTATE_HH_
 
-#include "modeling/Printable.hh"
+#include "utils/Printable.hh"
 #include "modeling/Expression.hh"
 #include "modeling/ValueStore.hh"
 #include "modeling/ExpressionStore.hh"

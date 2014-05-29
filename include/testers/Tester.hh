@@ -14,18 +14,18 @@
 #include "utils/Types.hh"
 
 namespace EasyLocal {
-
+  
   using namespace Core;
   
   namespace Debug {
-  
+    
     template <class Input, class State, typename CFtype>
     class AbstractTester
     {
     public:
-      virtual ~AbstractTester() { };
+      virtual ~AbstractTester() {};
     protected:
-      virtual void AddRunner(Runner<Input,State,CFtype>& r) { };
+      virtual void AddRunner(Runner<Input,State,CFtype>& r) {};
       void AddRunners()
       {
         for (auto p_r : Runner<Input,State,CFtype>::runners)
@@ -47,7 +47,7 @@ namespace EasyLocal {
       Tester(const Input& in, State st, StateManager<Input,State,CFtype>& e_sm,
       OutputManager<Input,Output,State,CFtype>& e_om, std::ostream& o = std::cout);
       /** Virtual destructor. */
-      virtual ~Tester() { }
+      virtual ~Tester() {}
       void RunMainMenu(std::string file_name = "");
       void AddMoveTester(ComponentTester<Input,Output,State,CFtype>& amt);
       void AddKickerTester(ComponentTester<Input,Output,State,CFtype>& kt);
@@ -451,7 +451,7 @@ namespace EasyLocal {
         }
         case 6:
         {
-          os  << test_state << std::endl;
+          // os  << test_state << std::endl;
           os  << "Total cost: " << this->sm.CostFunction(test_state) << std::endl;
           break;
         }
@@ -546,6 +546,7 @@ namespace EasyLocal {
       while (sub_choice != 0);
       os << "Leaving state menu" << std::endl;
     }
+    
   }
 }
 

@@ -25,12 +25,12 @@ namespace EasyLocal {
       KickerTester(const Input& in,
       StateManager<Input,State,CFtype>& e_sm,
       OutputManager<Input,Output,State,CFtype>& e_om,
-      Kicker<Input,State,CFtype>& k,
+      Extra::Kicker<Input,State,CFtype>& k,
       std::string name, std::ostream& o = std::cout);
       KickerTester(const Input& in,
       StateManager<Input,State,CFtype>& e_sm,
       OutputManager<Input,Output,State,CFtype>& e_om,
-      Kicker<Input,State,CFtype>& k,
+      Extra::Kicker<Input,State,CFtype>& k,
       std::string name, Tester<Input,Output,State,CFtype>& t, std::ostream& o = std::cout);
 
       void RunMainMenu(State& st);
@@ -47,7 +47,7 @@ namespace EasyLocal {
         OutputManager<Input,Output,State,CFtype>& om; /**< A pointer to the attached
           output manager. */
           unsigned int choice;   /**< The option currently chosen from the menu. */
-      Kicker<Input,State,CFtype>& kicker;
+      Extra::Kicker<Input,State,CFtype>& kicker;
       std::ostream& os;
     };
 
@@ -68,7 +68,7 @@ namespace EasyLocal {
       const Input& i,
     StateManager<Input,State,CFtype>& e_sm,
     OutputManager<Input,Output,State,CFtype>& e_om,
-    Kicker<Input,State,CFtype>& k, std::string name, std::ostream& o)
+    Extra::Kicker<Input,State,CFtype>& k, std::string name, std::ostream& o)
       : ComponentTester<Input,Output,State,CFtype>(name), in(i), out(i), sm(e_sm), om(e_om), kicker(k), os(o)
         { }
 
@@ -77,7 +77,7 @@ namespace EasyLocal {
       const Input& i,
     StateManager<Input,State,CFtype>& e_sm,
     OutputManager<Input,Output,State,CFtype>& e_om,                                                      
-    Kicker<Input,State,CFtype>& k, std::string name, Tester<Input,Output,State,CFtype>& t, std::ostream& o)
+    Extra::Kicker<Input,State,CFtype>& k, std::string name, Tester<Input,Output,State,CFtype>& t, std::ostream& o)
       : ComponentTester<Input,Output,State,CFtype>(name), in(i), out(i), sm(e_sm), om(e_om), kicker(k), os(o)
         { t.AddKickerTester(*this); }
 

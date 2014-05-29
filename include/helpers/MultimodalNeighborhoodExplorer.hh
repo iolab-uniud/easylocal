@@ -80,7 +80,7 @@ namespace EasyLocal {
         };
     
         /** Constructor.
-        @param f the Function to call. 
+          @param f the Function to call. 
         */
         Call(Function f) : to_call(f) { }
 
@@ -161,10 +161,10 @@ namespace EasyLocal {
       struct TupleDispatcher
       {
         /** Run a function on a specific element of the tuples. Based on compile-time recursion.
-        @param st reference to the current state
-        @param temp_moves tuple of references to ActiveMoves
-        @param temp_nhes tuple of references to associated NeighborhoodExplorers
-        @param level level at which to execute the function
+            @param st reference to the current state
+            @param temp_moves tuple of references to ActiveMoves
+            @param temp_nhes tuple of references to associated NeighborhoodExplorers
+            @param level level at which to execute the function
         */
         static void ExecuteAt(State& st, TupleOfMoves& temp_moves, const TupleOfNHEs& temp_nhes, const Call& c, int level)
         {
@@ -193,10 +193,10 @@ namespace EasyLocal {
         }
     
         /** Run a function on all the elements of the Moves (and NeighborhoodExplorers) tuple. Based on compile-time recursion.
-        @param st reference to the current state
-        @param temp_moves tuple of references to ActiveMoves
-        @param temp_nhes tuple of references to associated NeighborhoodExplorers
-        @param level level at which to execute the function
+            @param st reference to the current state
+            @param temp_moves tuple of references to ActiveMoves
+            @param temp_nhes tuple of references to associated NeighborhoodExplorers
+            @param level level at which to execute the function
         */
         static void ExecuteAll(State& st, TupleOfMoves& temp_moves, const TupleOfNHEs& temp_nhes, const Call& c)
         {
@@ -215,10 +215,10 @@ namespace EasyLocal {
         }
     
         /** Run a function on all the elements of tuples, then return the result. Based on compile-time recursion.
-        @param st reference to the current state
-        @param temp_moves tuple of references to ActiveMoves
-        @param temp_nhes tuple of references to associated NeighborhoodExplorers
-        @param level level at which to execute the function
+            @param st reference to the current state
+            @param temp_moves tuple of references to ActiveMoves
+            @param temp_nhes tuple of references to associated NeighborhoodExplorers
+            @param level level at which to execute the function
         */
         static CFtype ComputeAt(State& st, TupleOfMoves& temp_moves, const TupleOfNHEs& temp_nhes, const Call& c, int level)
         {
@@ -249,10 +249,10 @@ namespace EasyLocal {
         }
     
         /** Run a function at all the levels of tuples, then return the sum of the result. Based on compile-time recursion.
-        @param st reference to the current state
-        @param temp_moves tuple of references to ActiveMoves
-        @param temp_nhes tuple of references to associated NeighborhoodExplorers
-        @param level level at which to execute the function
+            @param st reference to the current state
+            @param temp_moves tuple of references to ActiveMoves
+            @param temp_nhes tuple of references to associated NeighborhoodExplorers
+            @param level level at which to execute the function
         */
         static CFtype ComputeAll(State& st, TupleOfMoves& temp_moves, const TupleOfNHEs& temp_nhes, const Call& c)
         {
@@ -270,10 +270,10 @@ namespace EasyLocal {
         }
 
         /** Check a predicate on each element of the tuples and returns the vector of the corresponding boolean results. Based on compile-time recursion.
-        @param st reference to the current state
-        @param temp_moves tuple of references to ActiveMoves
-        @param temp_nhes tuple of references to associated NeighborhoodExplorers
-        @param level level at which to execute the function
+            @param st reference to the current state
+            @param temp_moves tuple of references to ActiveMoves
+            @param temp_nhes tuple of references to associated NeighborhoodExplorers
+            @param level level at which to execute the function
         */
         static std::vector<bool> Check(State& st, TupleOfMoves& temp_moves, const TupleOfNHEs& temp_nhes, const Call& c)
         {
@@ -295,10 +295,10 @@ namespace EasyLocal {
         }
 
         /** Check a predicate on each element of the tuples and returns true if all of them satisfies the predicate. Based on compile-time recursion.
-        @param st reference to the current state
-        @param temp_moves tuple of references to ActiveMoves
-        @param temp_nhes tuple of references to associated NeighborhoodExplorers
-        @param level level at which to execute the function
+            @param st reference to the current state
+            @param temp_moves tuple of references to ActiveMoves
+            @param temp_nhes tuple of references to associated NeighborhoodExplorers
+            @param level level at which to execute the function
         */
         static bool CheckAll(State& st, TupleOfMoves& temp_moves, const TupleOfNHEs& temp_nhes, const Call& c)
         {
@@ -319,10 +319,10 @@ namespace EasyLocal {
         }
     
         /** Check a predicate on each element of the tuples and returns true if at least one of them satisfies the predicate. Based on compile-time recursion.
-        @param st reference to the current state
-        @param temp_moves tuple of references to ActiveMoves
-        @param temp_nhes tuple of references to associated NeighborhoodExplorers
-        @param level level at which to execute the function
+            @param st reference to the current state
+            @param temp_moves tuple of references to ActiveMoves
+            @param temp_nhes tuple of references to associated NeighborhoodExplorers
+            @param level level at which to execute the function
         */
         static bool CheckAny(State& st, TupleOfMoves& temp_moves, const TupleOfNHEs& temp_nhes, const Call& c)
         {
@@ -343,10 +343,10 @@ namespace EasyLocal {
         }
 
         /** Check a predicate on a specific element of the tuples and returns true if it satisfies the predicate. Based on compile-time recursion.
-        @param st reference to the current state
-        @param temp_moves tuple of references to ActiveMoves
-        @param temp_nhes tuple of references to associated NeighborhoodExplorers
-        @param level tuple level at which to execute the function (0 is the last element, N - 1 is the first)
+            @param st reference to the current state
+            @param temp_moves tuple of references to ActiveMoves
+            @param temp_nhes tuple of references to associated NeighborhoodExplorers
+            @param level tuple level at which to execute the function (0 is the last element, N - 1 is the first)
         */
         static bool CheckAt(State& st, TupleOfMoves& temp_moves, const TupleOfNHEs& temp_nhes, const Call& c, int level)
         {
@@ -381,10 +381,10 @@ namespace EasyLocal {
       struct TupleDispatcher<TupleOfMoves, TupleOfNHEs, 0>
       {
         /** Run a function on a specific element of the tuples. Based on compile-time recursion.
-        @param st reference to the current state
-        @param temp_moves tuple of references to ActiveMoves
-        @param temp_nhes tuple of references to associated NeighborhoodExplorers
-        @param level level at which to execute the function
+            @param st reference to the current state
+            @param temp_moves tuple of references to ActiveMoves
+            @param temp_nhes tuple of references to associated NeighborhoodExplorers
+            @param level level at which to execute the function
         */
         static void ExecuteAt(State& st, TupleOfMoves& temp_moves, const TupleOfNHEs& temp_nhes, const Call& c, int level)
         {
@@ -408,10 +408,10 @@ namespace EasyLocal {
         }
 
         /** Run a function on all the elements of the Moves (and NeighborhoodExplorers) tuple. Based on compile-time recursion.
-        @param st reference to the current state
-        @param temp_moves tuple of references to ActiveMoves
-        @param temp_nhes tuple of references to associated NeighborhoodExplorers
-        @param level level at which to execute the function
+            @param st reference to the current state
+            @param temp_moves tuple of references to ActiveMoves
+            @param temp_nhes tuple of references to associated NeighborhoodExplorers
+            @param level level at which to execute the function
         */
         static void ExecuteAll(State& st, TupleOfMoves& temp_moves, const TupleOfNHEs& temp_nhes, const Call& c)
         {
@@ -427,10 +427,10 @@ namespace EasyLocal {
         }
     
         /** Run a function on all the elements of tuples, then return the result. Based on compile-time recursion.
-        @param st reference to the current state
-        @param temp_moves tuple of references to ActiveMoves
-        @param temp_nhes tuple of references to associated NeighborhoodExplorers
-        @param level level at which to execute the function
+            @param st reference to the current state
+            @param temp_moves tuple of references to ActiveMoves
+            @param temp_nhes tuple of references to associated NeighborhoodExplorers
+            @param level level at which to execute the function
         */
         static CFtype ComputeAt(State& st, TupleOfMoves& temp_moves, const TupleOfNHEs& temp_nhes, const Call& c, int level)
         {
@@ -456,10 +456,10 @@ namespace EasyLocal {
         }
     
         /** Run a function at all the levels of tuples, then return the sum of the result. Based on compile-time recursion.
-        @param st reference to the current state
-        @param temp_moves tuple of references to ActiveMoves
-        @param temp_nhes tuple of references to associated NeighborhoodExplorers
-        @param level level at which to execute the function
+            @param st reference to the current state
+            @param temp_moves tuple of references to ActiveMoves
+            @param temp_nhes tuple of references to associated NeighborhoodExplorers
+            @param level level at which to execute the function
         */
         static CFtype ComputeAll(State& st, TupleOfMoves& temp_moves, const TupleOfNHEs& temp_nhes, const Call& c)
         {
@@ -475,10 +475,10 @@ namespace EasyLocal {
         }
 
         /** Check a predicate on each element of the tuples and returns the vector of the corresponding boolean results. Based on compile-time recursion.
-        @param st reference to the current state
-        @param temp_moves tuple of references to ActiveMoves
-        @param temp_nhes tuple of references to associated NeighborhoodExplorers
-        @param level level at which to execute the function
+            @param st reference to the current state
+            @param temp_moves tuple of references to ActiveMoves
+            @param temp_nhes tuple of references to associated NeighborhoodExplorers
+            @param level level at which to execute the function
         */
         static std::vector<bool> Check(State& st, TupleOfMoves& temp_moves, const TupleOfNHEs& temp_nhes, const Call& c)
         {
@@ -496,10 +496,10 @@ namespace EasyLocal {
         }
     
         /** Check a predicate on each element of the tuples and returns true if all of them satisfies the predicate. Based on compile-time recursion.
-        @param st reference to the current state
-        @param temp_moves tuple of references to ActiveMoves
-        @param temp_nhes tuple of references to associated NeighborhoodExplorers
-        @param level level at which to execute the function
+            @param st reference to the current state
+            @param temp_moves tuple of references to ActiveMoves
+            @param temp_nhes tuple of references to associated NeighborhoodExplorers
+            @param level level at which to execute the function
         */
         static bool CheckAll(State& st, TupleOfMoves& temp_moves, const TupleOfNHEs& temp_nhes, const Call& c)
         {
@@ -515,10 +515,10 @@ namespace EasyLocal {
         }
 
         /** Check a predicate on each element of the tuples and returns true if at least one of them satisfies the predicate. Based on compile-time recursion.
-        @param st reference to the current state
-        @param temp_moves tuple of references to ActiveMoves
-        @param temp_nhes tuple of references to associated NeighborhoodExplorers
-        @param level level at which to execute the function
+            @param st reference to the current state
+            @param temp_moves tuple of references to ActiveMoves
+            @param temp_nhes tuple of references to associated NeighborhoodExplorers
+            @param level level at which to execute the function
         */
         static bool CheckAny(State& st, TupleOfMoves& temp_moves, const TupleOfNHEs& temp_nhes, const Call& c)
         {
@@ -534,10 +534,10 @@ namespace EasyLocal {
         }
 
         /** Check a predicate on a specific element of the tuples and returns true if it satisfies the predicate. Based on compile-time recursion.
-        @param st reference to the current state
-        @param temp_moves tuple of references to ActiveMoves
-        @param temp_nhes tuple of references to associated NeighborhoodExplorers
-        @param level level at which to execute the function
+            @param st reference to the current state
+            @param temp_moves tuple of references to ActiveMoves
+            @param temp_nhes tuple of references to associated NeighborhoodExplorers
+            @param level level at which to execute the function
         */
         static bool CheckAt(State& st, TupleOfMoves& temp_moves, const TupleOfNHEs& temp_nhes, const Call& c, int level)
         {
@@ -628,9 +628,9 @@ namespace EasyLocal {
       }
   
       /** Checks if a move is active.
-      @param n a reference to the move's NeighborhoodExplorer
-      @param s a reference to the current State
-      @param m a reference to the ActiveMove to check
+          @param n a reference to the move's NeighborhoodExplorer
+          @param s a reference to the current State
+          @param m a reference to the ActiveMove to check
       */
       template<class N>
       static bool IsActive(const N& n, State& s, ActiveMove<typename N::ThisMove>& m)
@@ -639,9 +639,9 @@ namespace EasyLocal {
       }
 
       /** Generates a random move in the neighborhood.
-      @param n a reference to the NeighborhoodExplorer
-      @param s a reference to the current State
-      @param m a reference to the ActiveMove which must be set
+          @param n a reference to the NeighborhoodExplorer
+          @param s a reference to the current State
+          @param m a reference to the ActiveMove which must be set
       */
       template<class N>
       static void DoRandomMove(const N& n, State& s, ActiveMove<typename N::ThisMove>& m)
@@ -651,9 +651,9 @@ namespace EasyLocal {
       }
 
       /** Get the first move of the neighborhood
-      @param n a reference to the move's NeighborhoodExplorer
-      @param s a reference to the current State
-      @param m a reference to the ActiveMove which must be set
+          @param n a reference to the move's NeighborhoodExplorer
+          @param s a reference to the current State
+          @param m a reference to the ActiveMove which must be set
       */
       template<class N>
       static void DoFirstMove(const N& n, State& s, ActiveMove<typename N::ThisMove>& m)
@@ -663,9 +663,9 @@ namespace EasyLocal {
       }
 
       /** Try to produce the next move of the neighborhood
-      @param n a reference to the move's NeighborhoodExplorer
-      @param s a reference to the current State
-      @param m a reference to the current move, where the next move will be written
+          @param n a reference to the move's NeighborhoodExplorer
+          @param s a reference to the current State
+          @param m a reference to the current move, where the next move will be written
       */
       template<class N>
       static bool TryNextMove(const N& n, State& s, ActiveMove<typename N::ThisMove>& m)
@@ -675,9 +675,9 @@ namespace EasyLocal {
       }
   
       /** Executes the move on the state, modifies it
-      @param n a reference to the move's NeighborhoodExplorer
-      @param s a reference to the current State
-      @param m a reference to the current move
+          @param n a reference to the move's NeighborhoodExplorer
+          @param s a reference to the current State
+          @param m a reference to the current move
       */
       template<class N>
       static void DoMakeMove(const N& n, State& s, ActiveMove<typename N::ThisMove>& m)
@@ -687,9 +687,9 @@ namespace EasyLocal {
       }
 
       /** Checks if a move is feasible.
-      @param n a reference to the move's NeighborhoodExplorer
-      @param s a reference to the current State
-      @param m a reference to the ActiveMove to check
+          @param n a reference to the move's NeighborhoodExplorer
+          @param s a reference to the current State
+          @param m a reference to the ActiveMove to check
       */
       template<class N>
       static bool IsFeasibleMove(const N& n, State& s, ActiveMove<typename N::ThisMove>& m)
@@ -701,9 +701,9 @@ namespace EasyLocal {
       }
 
       /** Sets the active flag of an ActiveMove to false
-      @param n a reference to the move's NeighborhoodExplorer
-      @param s a reference to the current State
-      @param m a reference to the ActiveMove to check
+          @param n a reference to the move's NeighborhoodExplorer
+          @param s a reference to the current State
+          @param m a reference to the ActiveMove to check
       */
       template<class N>
       static void InitializeInactive(const N& n, State& s, ActiveMove<typename N::ThisMove>& m)
@@ -712,9 +712,9 @@ namespace EasyLocal {
       }
 
       /** Sets the active flag of an ActiveMove to true
-      @param n a reference to the move's NeighborhoodExplorer
-      @param s a reference to the current State
-      @param m a reference to the ActiveMove to check
+          @param n a reference to the move's NeighborhoodExplorer
+          @param s a reference to the current State
+          @param m a reference to the ActiveMove to check
       */
       template<class N>
       static void InitializeActive(const N& n, State& s, ActiveMove<typename N::ThisMove>& m)
@@ -723,9 +723,9 @@ namespace EasyLocal {
       }
   
       /** Computes the cost of making a move on a state
-      @param n a reference to the move's NeighborhoodExplorer
-      @param s a reference to the current State
-      @param m a reference to the ActiveMove to check
+          @param n a reference to the move's NeighborhoodExplorer
+          @param s a reference to the current State
+          @param m a reference to the ActiveMove to check
       */
       template<class N>
       static CFtype DoDeltaCostFunction(const N& n, State& s, ActiveMove<typename N::ThisMove>& m)
@@ -734,9 +734,9 @@ namespace EasyLocal {
       }
   
       /** Computes the hard cost of making a move on a state
-      @param n a reference to the move's NeighborhoodExplorer
-      @param s a reference to the current State
-      @param m a reference to the ActiveMove to check
+          @param n a reference to the move's NeighborhoodExplorer
+          @param s a reference to the current State
+          @param m a reference to the ActiveMove to check
       */
       template<class N>
       static CFtype DoDeltaViolations(const N& n, State& s, ActiveMove<typename N::ThisMove>& m)
@@ -764,7 +764,7 @@ namespace EasyLocal {
   
     public:
   
-      /** Inherit constructor from superclass. Not yet. */
+      /** Inherit constructor from superclass. Not yet supported by all compilers. */
       // using MultimodalNeighborhoodExplorer<Input, State, CFtype, BaseNeighborhoodExplorers ...>::MultimodalNeighborhoodExplorer;
 
       SetUnionNeighborhoodExplorer(Input& in, StateManager<Input,State,CFtype>& sm, std::string name, BaseNeighborhoodExplorers& ... nhes)
@@ -944,8 +944,8 @@ namespace EasyLocal {
       std::vector<double> bias;
 
       /** Computes the index of the current active move.
-      @param st current state
-      @param moves tuple of moves
+          @param st current state
+          @param moves tuple of moves
       */
       int CurrentActiveMove(const State& st, const typename SuperNeighborhoodExplorer::ThisMove& moves) const
       {
@@ -980,10 +980,10 @@ namespace EasyLocal {
       struct TupleDispatcher : public SuperNeighborhoodExplorer::template TupleDispatcher<TupleOfMoves, TupleOfNHEs, N>
       {
         /** Compare (n)th and (n+1)th moves according to a predicate. We don't have base case because we don't want to get down to zero.
-        @param st reference to the current state
-        @param temp_moves tuple of references to ActiveMoves
-        @param temp_nhes tuple of references to associated NeighborhoodExplorers
-        @param level level at which to execute the function
+            @param st reference to the current state
+            @param temp_moves tuple of references to ActiveMoves
+            @param temp_nhes tuple of references to associated NeighborhoodExplorers
+            @param level level at which to execute the function
         */
         static bool CompareMovesAt(State& st, TupleOfMoves& temp_moves, ThisNeighborhoodExplorer& cp_nhe, int level)
         {
@@ -1010,10 +1010,10 @@ namespace EasyLocal {
         }
     
         /** Compare (n)th and (n+1)th moves according to a predicate. We don't have base case because we don't want to get down to zero.
-        @param st reference to the current state
-        @param temp_moves tuple of references to ActiveMoves
-        @param temp_nhes tuple of references to associated NeighborhoodExplorers
-        @param level level at which to execute the function
+            @param st reference to the current state
+            @param temp_moves tuple of references to ActiveMoves
+            @param temp_nhes tuple of references to associated NeighborhoodExplorers
+            @param level level at which to execute the function
         */
         static std::vector<bool> CompareMoves(State& st, TupleOfMoves& temp_moves, ThisNeighborhoodExplorer& cp_nhe)
         {
@@ -1037,10 +1037,10 @@ namespace EasyLocal {
       struct TupleDispatcher<TupleOfMoves, TupleOfNHEs, 0>
       {
         /** Run a function on a specific element of the tuples. Based on compile-time recursion.
-        @param st reference to the current state
-        @param temp_moves tuple of references to ActiveMoves
-        @param temp_nhes tuple of references to associated NeighborhoodExplorers
-        @param level level at which to execute the function
+            @param st reference to the current state
+            @param temp_moves tuple of references to ActiveMoves
+            @param temp_nhes tuple of references to associated NeighborhoodExplorers
+            @param level level at which to execute the function
         */
         static bool CompareMovesAt(State& st, TupleOfMoves& temp_moves, const ThisNeighborhoodExplorer& cp_nhe, int level)
         {
@@ -1058,10 +1058,10 @@ namespace EasyLocal {
         }
     
         /** Run a function on a specific element of the tuples. Based on compile-time recursion.
-        @param st reference to the current state
-        @param temp_moves tuple of references to ActiveMoves
-        @param temp_nhes tuple of references to associated NeighborhoodExplorers
-        @param level level at which to execute the function
+            @param st reference to the current state
+            @param temp_moves tuple of references to ActiveMoves
+            @param temp_nhes tuple of references to associated NeighborhoodExplorers
+            @param level level at which to execute the function
         */
         static std::vector<bool> CompareMoves(State& st, TupleOfMoves& temp_moves, const ThisNeighborhoodExplorer& cp_nhe)
         {
@@ -1071,11 +1071,11 @@ namespace EasyLocal {
 
   
       /** Checks that a move is related to the previous one.
-      @param st a reference to the current State
-      @param moves a reference to the current tuple of moves
-      @param nhes a reference to the current tuple of NeighborhoodExplorers
-      @param c wrapper to a predicate to compare two moves
-      @param index index of the first move 
+          @param st a reference to the current State
+          @param moves a reference to the current tuple of moves
+          @param nhes a reference to the current tuple of NeighborhoodExplorers
+          @param c wrapper to a predicate to compare two moves
+          @param index index of the first move 
       */
       template <class ...NHEs>
       static bool CompareMovesAt(State& st, std::tuple<std::reference_wrapper<ActiveMove<typename NHEs::ThisMove>>...>& moves, const ThisNeighborhoodExplorer& cp_nhe, int index)
@@ -1084,11 +1084,11 @@ namespace EasyLocal {
       }
   
       /** Checks that a move is related to the previous one.
-      @param st a reference to the current State
-      @param moves a reference to the current tuple of moves
-      @param nhes a reference to the current tuple of NeighborhoodExplorers
-      @param c wrapper to a predicate to compare two moves
-      @param level index of the first move
+          @param st a reference to the current State
+          @param moves a reference to the current tuple of moves
+          @param nhes a reference to the current tuple of NeighborhoodExplorers
+          @param c wrapper to a predicate to compare two moves
+          @param level index of the first move
       */
       template <class ...NHEs>
       static std::vector<bool> CompareMoves(State& st, std::tuple<std::reference_wrapper<ActiveMove<typename NHEs::ThisMove>>...>& moves, const ThisNeighborhoodExplorer& cp_nhe)
@@ -1131,7 +1131,7 @@ namespace EasyLocal {
       /** Tuple type representing references to BaseNeighborhoodExplorers. */
       typedef std::tuple<std::reference_wrapper<BaseNeighborhoodExplorers> ...> TheseNeighborhoodExplorers;
   
-      /** Inherit constructor from superclass. Not yet. */
+      /** Inherit constructor from superclass. Not yet supported by all compilers. */
       // using MultimodalNeighborhoodExplorer<Input, State, CFtype, BaseNeighborhoodExplorers ...>::MultimodalNeighborhoodExplorer;
   
       CartesianProductNeighborhoodExplorer(Input& in, StateManager<Input,State,CFtype>& sm, std::string name, BaseNeighborhoodExplorers& ... nhes)
@@ -1255,7 +1255,6 @@ namespace EasyLocal {
 
               // Generate first move
               //SuperNeighborhoodExplorer::ExecuteAt(temp_states[i], r_moves, this->nhes, first_move, i);
-          
           
               bool empty = false;
           
@@ -1501,4 +1500,4 @@ namespace EasyLocal {
   }
 }                            
 
-#endif
+#endif // _MULTIMODALNEIGHBORHOOD_EXPLORER_HH_

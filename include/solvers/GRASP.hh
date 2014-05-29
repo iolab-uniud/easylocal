@@ -11,7 +11,7 @@ namespace EasyLocal {
   using namespace Extra;
   
   namespace Core {
-  
+    
     /** An Iterated Local Search solver handles both a runner encapsulating a local
     search algorithm and a kicker used for perturbing current solution.
     @ingroup Solvers */

@@ -6,6 +6,8 @@
 #include <chrono>
 #include <atomic>
 #include <thread>
+#include <condition_variable>
+
 
 namespace EasyLocal {
 
@@ -21,7 +23,6 @@ namespace EasyLocal {
       }
     };
 #else
-#include <condition_variable>
     namespace _easylocal {
       template <class Rep, class Period>
       void sleep_for(std::chrono::duration<Rep,Period> sleep_duration)

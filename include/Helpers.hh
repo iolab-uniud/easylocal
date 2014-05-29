@@ -46,6 +46,10 @@
 #include "helpers/TabuListManager.hh"
 #include "helpers/CostComponent.hh"
 #include "helpers/DeltaCostComponent.hh"
+#include "helpers/ProhibitionManager.hh"
+#include "helpers/MultimodalNeighborhoodExplorer.hh"
+#include "helpers/MultimodalTabuListManager.hh"
+
 // #include "helpers/ShiftingPenaltyManager.hh"
 
 #endif // _HELPERS_HH_ 

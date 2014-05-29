@@ -4,12 +4,17 @@
 #include <random>
 #include <iostream>
 
-#include "EasyLocal.conf.hh"
+//#include "EasyLocal.conf.hh"
 
 namespace EasyLocal {
 
   namespace Core {
   
+    /** Utility static class to generate pseudo-random values according to distributions. 
+    In order to make experiments repeatable, each solver must include:
+    
+      Random::Seed(Random::Int());
+    */
     class Random
     {
     public:

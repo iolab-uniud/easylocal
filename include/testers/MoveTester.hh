@@ -12,7 +12,7 @@
 #include "helpers/TabuListManager.hh"
 
 namespace EasyLocal {
-
+  
   using namespace Core;
   
   namespace Debug {
@@ -27,28 +27,28 @@ namespace EasyLocal {
     {
     public:
       MoveTester(const Input& in,
-      StateManager<Input,State,CFtype>& e_sm,
-      OutputManager<Input,Output,State,CFtype>& e_om,
-      NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
+      Core::StateManager<Input,State,CFtype>& e_sm,
+      Core::OutputManager<Input,Output,State,CFtype>& e_om,
+      Core::NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
       std::string name, std::ostream& o = std::cout);
       MoveTester(const Input& in,
-      StateManager<Input,State,CFtype>& e_sm,
-      OutputManager<Input,Output,State,CFtype>& e_om,
-      NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
-      TabuListManager<State,Move,CFtype>& e_tlm,
+      Core::StateManager<Input,State,CFtype>& e_sm,
+      Core::OutputManager<Input,Output,State,CFtype>& e_om,
+      Core::NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
+      Core::TabuListManager<State,Move,CFtype>& e_tlm,
       std::string name, std::ostream& o = std::cout);
       MoveTester(const Input& in,
-      StateManager<Input,State,CFtype>& e_sm,
-      OutputManager<Input,Output,State,CFtype>& e_om,
-      NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
+      Core::StateManager<Input,State,CFtype>& e_sm,
+      Core::OutputManager<Input,Output,State,CFtype>& e_om,
+      Core::NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
       std::string name,
       Tester<Input,Output,State,CFtype>& t,
       std::ostream& o = std::cout);
       MoveTester(const Input& in,
-      StateManager<Input,State,CFtype>& e_sm,
-      OutputManager<Input,Output,State,CFtype>& e_om,
-      NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
-      TabuListManager<State,Move,CFtype>& e_tlm,
+      Core::StateManager<Input,State,CFtype>& e_sm,
+      Core::OutputManager<Input,Output,State,CFtype>& e_om,
+      Core::NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
+      Core::TabuListManager<State,Move,CFtype>& e_tlm,
       std::string name,
       Tester<Input,Output,State,CFtype>& t,
       std::ostream& o = std::cout);
@@ -67,16 +67,11 @@ namespace EasyLocal {
       bool ExecuteChoice(State& st);
       const Input& in;
       Output out;   /**< The output object. */
-      StateManager<Input,State,CFtype>& sm; /**< A pointer to the attached
-        state manager. */
-        OutputManager<Input,Output,State,CFtype>& om; /**< A pointer to the attached
-          output manager. */
-          NeighborhoodExplorer<Input,State,Move,CFtype>& ne; /**< A reference to the
-            attached neighborhood
-            explorer. */
-            TabuListManager<State,Move,CFtype>* tlm; /**< A reference to the
-              attached tabu list manager (if any). */
-              unsigned int choice;   /**< The option currently chosen from the menu. */
+      Core::StateManager<Input,State,CFtype>& sm; /**< A pointer to the attached  state manager. */
+      Core::OutputManager<Input,Output,State,CFtype>& om; /**< A pointer to the attached output manager. */
+      Core::NeighborhoodExplorer<Input,State,Move,CFtype>& ne; /**< A reference to the attached neighborhood explorer. */
+      Core::TabuListManager<State,Move,CFtype>* tlm; /**< A reference to the attached tabu list manager (if any). */
+      unsigned int choice;   /**< The option currently chosen from the menu. */
       std::ostream& os;
     };
 
@@ -97,28 +92,28 @@ namespace EasyLocal {
     */
     template <class Input, class Output, class State, class Move, typename CFtype>
     MoveTester<Input,Output,State,Move,CFtype>::MoveTester(const Input& i,
-    StateManager<Input,State,CFtype>& e_sm,
-    OutputManager<Input,Output,State,CFtype>& e_om,
-    NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
+    Core::StateManager<Input,State,CFtype>& e_sm,
+    Core::OutputManager<Input,Output,State,CFtype>& e_om,
+    Core::NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
     std::string name, std::ostream& o)
       : ComponentTester<Input,Output,State,CFtype>(name), in(i), out(i), sm(e_sm), om(e_om), ne(e_ne), os(o)
         { tlm = nullptr; }
 
     template <class Input, class Output, class State, class Move, typename CFtype>
     MoveTester<Input,Output,State,Move,CFtype>::MoveTester(const Input& i,
-    StateManager<Input,State,CFtype>& e_sm,
-    OutputManager<Input,Output,State,CFtype>& e_om,
-    NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
-    TabuListManager<State,Move,CFtype>& e_tlm,
+    Core::StateManager<Input,State,CFtype>& e_sm,
+    Core::OutputManager<Input,Output,State,CFtype>& e_om,
+    Core::NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
+    Core::TabuListManager<State,Move,CFtype>& e_tlm,
     std::string name, std::ostream& o)
       : ComponentTester<Input,Output,State,CFtype>(name), in(i), out(i), sm(e_sm), om(e_om), ne(e_ne), tlm(&e_tlm), os(o)
         { }
 
     template <class Input, class Output, class State, class Move, typename CFtype>
     MoveTester<Input,Output,State,Move,CFtype>::MoveTester(const Input& i,
-    StateManager<Input,State,CFtype>& e_sm,
-    OutputManager<Input,Output,State,CFtype>& e_om,
-    NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
+    Core::StateManager<Input,State,CFtype>& e_sm,
+    Core::OutputManager<Input,Output,State,CFtype>& e_om,
+    Core::NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
     std::string name,
     Tester<Input,Output,State,CFtype>& t,
     std::ostream& o)
@@ -127,10 +122,10 @@ namespace EasyLocal {
 
     template <class Input, class Output, class State, class Move, typename CFtype>
     MoveTester<Input,Output,State,Move,CFtype>::MoveTester(const Input& i,
-    StateManager<Input,State,CFtype>& e_sm,
-    OutputManager<Input,Output,State,CFtype>& e_om,
-    NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
-    TabuListManager<State,Move,CFtype>& e_tlm,
+    Core::StateManager<Input,State,CFtype>& e_sm,
+    Core::OutputManager<Input,Output,State,CFtype>& e_om,
+    Core::NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
+    Core::TabuListManager<State,Move,CFtype>& e_tlm,
     std::string name,
     Tester<Input,Output,State,CFtype>& t,
     std::ostream& o)

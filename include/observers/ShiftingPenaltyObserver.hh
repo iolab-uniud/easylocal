@@ -3,10 +3,14 @@
 
 namespace EasyLocal {
     
-  namespace Debug {
-    
+  namespace Core {
     template <typename CFtype>
     class ShiftingPenaltyManager;
+  }
+  
+  using namespace Core;
+  
+  namespace Debug {
 
     template <typename CFtype>
     class ShiftingPenaltyObserver

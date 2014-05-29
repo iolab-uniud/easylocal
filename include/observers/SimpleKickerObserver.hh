@@ -3,10 +3,14 @@
 
 namespace EasyLocal {
     
-  namespace Debug {
-        
+  namespace Extra {
     template <class Input, class State, class Move, typename CFtype>
     class SimpleKicker;
+  }
+  
+  using namespace Extra;
+    
+  namespace Debug {
 
     template <class Input, class State, class Move, typename CFtype = int>
     class SimpleKickerObserver

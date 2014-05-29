@@ -3,6 +3,7 @@
 
 #include "helpers/TabuListManager.hh"
 #include "helpers/MultimodalNeighborhoodExplorer.hh"
+#include "utils/Printable.hh"
 
 namespace EasyLocal {
 
@@ -10,10 +11,10 @@ namespace EasyLocal {
 
     /** Multimodal tabu list manager, to handle tabu lists of multimodal moves. */
     template <class State, typename CFtype, class ... BaseTabuListManagers>
-    class MultimodalTabuListManager : public TabuListManager<State, std::tuple<ActiveMove<typename BaseTabuListManagers::ThisMove> ...>, CFtype>
+    class MultimodalTabuListManager : public TabuListManager<State, std::tuple<ActiveMove<typename BaseTabuListManagers::ThisMove> ...>, CFtype>, public Printable
     {
     public:
-
+      
       /** Typedefs. */
       typedef std::tuple<ActiveMove<typename BaseTabuListManagers::ThisMove> ...> TheseMoves;
       typedef TabuListManager<State, std::tuple<ActiveMove<typename BaseTabuListManagers::ThisMove> ...>, CFtype> SuperTabuListManager; // type of this tabu list manager
@@ -28,7 +29,7 @@ namespace EasyLocal {
         ParametersDispatcher<TheseTabuListManagers, sizeof...(BaseTabuListManagers) - 1>::ReadParameters(tlms, is, os);
       }
 
-      /** Print all parameter values on an output stream. */
+      /** @copydoc Printable::Print() */
       virtual void Print(std::ostream& os = std::cout) const
       {
         ParametersDispatcher<TheseTabuListManagers, sizeof...(BaseTabuListManagers) - 1>::Print(const_cast<TheseTabuListManagers&>(tlms), os);

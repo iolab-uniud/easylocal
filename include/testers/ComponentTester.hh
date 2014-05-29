@@ -1,12 +1,7 @@
 #if !defined(_COMPONENT_TESTER_HH_)
 #define _COMPONENT_TESTER_HH_
 
-#include "helpers/StateManager.hh"
-#include "helpers/OutputManager.hh"
-
 namespace EasyLocal {
-
-  using namespace Core;
 
   namespace Debug {
     

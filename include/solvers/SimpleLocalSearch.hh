@@ -9,6 +9,7 @@
 #include "runners/Runner.hh"
 
 namespace EasyLocal {
+  
   namespace Core {
     
     /** The Simple Local Search solver handles a simple local search algorithm
