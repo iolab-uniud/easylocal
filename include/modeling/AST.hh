@@ -6,7 +6,7 @@
 #include <list>
 #include <map>
 
-#include "modeling/Printable.hh"
+#include "utils/Printable.hh"
 #include "modeling/Symbols.hh"
 
 // TODO: perform syntactic check for subexpressions (i.e., filter out incompatible subexpressions)

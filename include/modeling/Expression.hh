@@ -9,14 +9,14 @@
 #include <functional>
 #include <unordered_map>
 
-#include "modeling/Printable.hh"
+#include "utils/Printable.hh"
 #include "modeling/AST.hh"
 #include "modeling/Operators.hh"
 
 namespace easylocal
 {
   namespace modeling
-  {    
+  {
     template <typename T>
     class Exp : public virtual Printable
     {
@@ -25,12 +25,12 @@ namespace easylocal
       {
         //std::cout << "Created Exp from scratch." << std::endl;
       }
-      
+
       Exp(const T& value) : p_ai(std::make_shared<ASTConst<T>>(value))
       {
-      
+
       }
-        
+
       Exp(const Exp<T>& other)
       {
         p_ai = other.p_ai;
@@ -41,31 +41,31 @@ namespace easylocal
         swap(*this, other);
       }
 
-      
+
       Exp<T>& operator=(Exp<T> other) // (1)
       {
         swap(*this, other); // (2)
         return *this;
       }
-      
+
       friend void swap(Exp<T>& first, Exp<T>& second) // nothrow
       {
         using std::swap;
         swap(first.p_ai, second.p_ai);
       }
-      
+
       Exp(const std::shared_ptr<ASTItem<T>>& p_ai) : p_ai(p_ai) { }
-      
+
       virtual void print(std::ostream& os) const
       {
         p_ai->print(os);
       }
-      
+
       void simplify()
       {
         p_ai = p_ai->simplify();
       }
-      
+
       void normalize()
       {
         p_ai->normalize(true);
@@ -79,20 +79,20 @@ namespace easylocal
         //  ASTItem<T>::erase(p_ai);
         //std::cout << "Destructing (Exp<T>) " << this << std::endl;
       }
-      
+
       size_t hash() const
       {
         return p_ai->hash();
       }
-      
+
       size_t compile(ExpressionStore<T>& exp_store) const
       {
         return p_ai->compile(exp_store);
       }
-      
+
     };
 
-    
+
     /**
      A modeling variable to be used inside expressions.
      @remarks extends Symbol
@@ -112,9 +112,9 @@ namespace easylocal
         this->p_ai = var;
         var->compile(exp_store);
       }
-      
+
       Var() = default;
-      
+
       /**
        Copy constructor.
        @param v the variable to copy
@@ -123,7 +123,7 @@ namespace easylocal
 
       virtual ~Var() = default;
     };
-    
+
     /**
      A variable array to facilitate the initialization of sequences of variables.
      @remarks extends ginac::symbol
@@ -151,20 +151,20 @@ namespace easylocal
           this->push_back(Var<T>(exp_store, os.str()));
         }
       }
-      
+
       virtual ~VarArray() = default;
-      
+
       /**
        Copy Constructor.
        @param the passed variable
        */
       VarArray(const VarArray& v) = default;
-      
+
       /** Forwards access to the vector */
       using std::vector<Var<T>>::operator[];
-      
+
       VarArray() = default;
-      
+
     };
   }
 }

@@ -1,16 +1,16 @@
 #if !defined(_AUTOSTATE_HH_)
 #define _AUTOSTATE_HH_
 
-#include "modeling/Printable.hh"
+#include "utils/Printable.hh"
 #include "modeling/Expression.hh"
 #include "modeling/ValueStore.hh"
 #include "modeling/ExpressionStore.hh"
 #include "modeling/Change.hh"
 
 namespace easylocal{
-    
+
   namespace modeling {
-    
+
     /** A class which takes care of handling the compilation of an Expression and its connection with an ExpressionStore.
      @remarks Largely a calling convenience.
      */
@@ -18,17 +18,17 @@ namespace easylocal{
     class CompiledExpression
     {
     public:
-      
+
       /** Default constructor. */
       CompiledExpression() : compiled_exp(nullptr), exp_store(nullptr)
       { }
-      
+
       /** Copy constructor.
        @param ce the compiled expression to copy
        */
       CompiledExpression(const CompiledExpression& ce) : compiled_exp(ce.compiled_exp), exp_store(ce.exp_store)
       { }
-      
+
       /** Constructor. Takes an Expression (not compiled) and compiles it, also adding it to an ExpressionStore.
        @param ex the expression to compile
        @param exp_store the expression store to add the compiled expression to
@@ -37,29 +37,29 @@ namespace easylocal{
       {
         compiled_exp = exp_store->compile(ex);
       }
-      
+
       /** Const cast operator to the actual expression.
        */
       operator const Sym<T>&() const
       {
         return *compiled_exp;
       }
-      
+
       bool is_valid() const
       {
         return compiled_exp != nullptr;
       }
-      
+
     protected:
-      
+
       /** Pointer to the compiled expression. */
       std::shared_ptr<Sym<T>> compiled_exp;
-      
+
       /** Pointer to the expression store where the expression is stored. */
       std::shared_ptr<ExpressionStore<T>> exp_store;
     };
-    
-    
+
+
     /** An "abstract" state whose deltas are computed based on CompiledExpressions.
      Provides methods to create "managed" decision variables and arbitrarily complex
      expressions which can be used as cost components or cost functions.
@@ -68,7 +68,7 @@ namespace easylocal{
     class AutoState : public virtual Printable
     {
     public:
-      
+
       /** Constructor.
        @remarks Initializes an ExpressionStore, and a ValueStore supporting any number
        of evaluation scenarios (e.g., for simultaneous evaluation of multiple Changes
@@ -77,19 +77,19 @@ namespace easylocal{
        */
       AutoState(size_t levels = 1) : es(std::make_shared<ExpressionStore<T>>()), st(es, levels)
       { }
-      
+
       /** Sets (in a definitive way) the value of one of the registered decision variables. */
       void set(const Var<T>& var, const T& val)
       {
         st.assign(var, 0, val);
       }
-      
+
       /** Evaluates (completely) the registered CompiledExpressions. */
       void evaluate()
       {
         es->evaluate(st);
       }
-      
+
       /** Gets the value of a CompiledExpression (possibly at a specific level).
        @param ce compiled expression to get the value for
        @param level level to get the values from
@@ -100,7 +100,7 @@ namespace easylocal{
           throw std::logic_error("Trying to access an unassigned compiled expression");
         return st(ce, level);
       }
-      
+
       /** Gets the value of a Variable (possibly at a specific level).
        @param ce compiled expression to get the value for
        @param level level to get the values from
@@ -109,7 +109,7 @@ namespace easylocal{
       {
         return st(v, level);
       }
-      
+
       /** Simulates the execution of a simple Change on a specific simulation level.
        @param m the Change to simulate
        @param level level onto which the Change must be simulated
@@ -120,7 +120,7 @@ namespace easylocal{
           throw std::logic_error("Cannot simulate at level 0");
         const_cast<ValueStore<T>&>(st).simulate(m, level);
       }
-      
+
       /** Simulates the execution of a composite Change on a specific simulation level.
        @param m the Change to simulate
        @param level level onto which the Change must be simulated
@@ -131,7 +131,7 @@ namespace easylocal{
           throw std::logic_error("Cannot simulate at level 0");
         const_cast<ValueStore<T>&>(st).simulate(m, level);
       }
-      
+
       /** Executes a simple Change.
        @param m the Change to execute
        */
@@ -139,7 +139,7 @@ namespace easylocal{
       {
         st.execute(m);
       }
-      
+
       /** Executes a composite Change.
        @param m the Change to execute
        */
@@ -147,15 +147,15 @@ namespace easylocal{
       {
         st.execute(m);
       }
-      
+
       /** @copydoc Printable::print(std::ostream&) */
       virtual void print(std::ostream& os = std::cout) const
       {
         os << st;
       }
-      
+
     protected:
-      
+
       /** Takes an expression and compiles it on the AutoState's ExpressionStore.
        @param e expression to compile
        */
@@ -163,7 +163,7 @@ namespace easylocal{
       {
         return CompiledExpression<T>(e, es);
       }
-      
+
       /** Generates a scalar value, and registers it in the ExpressionStore.
        @param name name of the variable to generate
        */
@@ -171,7 +171,7 @@ namespace easylocal{
       {
         return Var<T>(es, name);
       }
-      
+
       /** Generates a vector value, and registers it in the ExpressionStore.
        @param name name of the variable to generate
        @param size size of the vector of variables
@@ -181,10 +181,10 @@ namespace easylocal{
         VarArray<T> v(*es, name, size);
         return v;
       }
-      
+
       /** The AutoState's ExpressionStore */
       std::shared_ptr<ExpressionStore<T>> es;
-      
+
       /** The AutoState's ValueStore (inner state) */
       ValueStore<T> st;
     };
