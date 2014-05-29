@@ -2,7 +2,7 @@
 #include <cmath>
 #include <cstdint>
 
-#include "utils/Types.hh"
+#include "easylocal/utils/types.hh"
 
 namespace EasyLocal {
   

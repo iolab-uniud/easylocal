@@ -1,7 +1,7 @@
 #include "boost/program_options/parsers.hpp"
 #include "boost/program_options/variables_map.hpp"
 
-#include "utils/Parameter.hh"
+#include "easylocal/utils/parameter.hh"
 
 using namespace EasyLocal;
 using namespace Core;

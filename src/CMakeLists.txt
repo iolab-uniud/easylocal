@@ -33,5 +33,5 @@ source_group("Header Files" FILES ${headers})
 add_library(${PROJECT_NAME} ${headers} ${subdir_sources} ${subdir_headers})
 target_link_libraries(${PROJECT_NAME} ${Boost_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
 
-install_files(/include FILES ${PROJECT_INCLUDE_DIR})
+install_files(/include FILES ${PROJECT_INCLUDE_DIR}/easylocal)
 install_targets(/lib ${PROJECT_NAME})
