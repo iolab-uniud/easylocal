@@ -181,7 +181,6 @@ namespace EasyLocal {
     {
       if (neighbors_sampled == max_neighbors_sampled || neighbors_accepted == max_neighbors_accepted)
       {      
-        std::cerr << this->StatusString() << std::endl;
         temperature *= cooling_rate;
         neighbors_sampled = 0;
         neighbors_accepted = 0;
