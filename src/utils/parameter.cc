@@ -3,8 +3,7 @@
 
 #include "easylocal/utils/parameter.hh"
 
-using namespace EasyLocal;
-using namespace Core;
+using namespace EasyLocal::Core;
 
 // Overall collection of aprameters
 std::vector<const ParameterBox*> ParameterBox::overall_parameters;
@@ -25,16 +24,22 @@ ParameterBox::ParameterBox(const std::string& p, const std::string& description)
   overall_parameters.push_back(this);
 }
 
-// Specialization for bool parameters (handle as enable/disable flags)
-template <>
-Parameter<bool>::Parameter(const std::string& cmdline_flag, const std::string& description, ParameterBox& parameters)
-  : AbstractParameter(cmdline_flag, description)
+namespace EasyLocal
 {
-  std::string flag = parameters.prefix + "::" + cmdline_flag;
-  parameters.cl_options.add_options()
-    (("enable-" + flag).c_str(), boost::program_options::value<std::string>()->implicit_value("true")->zero_tokens()->notifier([this](const std::string& v){ this->is_set = true; this->value = true; }), "")
-    (("disable-" + flag).c_str(), boost::program_options::value<std::string>()->implicit_value("false")->zero_tokens()->notifier([this](const std::string & v){ this->is_set = true; this->value = false; }),
-    ("[enable/disable] " + description).c_str());
+  namespace Core
+  {
+    // Specialization for bool parameters (handle as enable/disable flags)
+    template <>
+    Parameter<bool>::Parameter(const std::string& cmdline_flag, const std::string& description, ParameterBox& parameters)
+      : AbstractParameter(cmdline_flag, description)
+    {
+      std::string flag = parameters.prefix + "::" + cmdline_flag;
+      parameters.cl_options.add_options()
+	(("enable-" + flag).c_str(), boost::program_options::value<std::string>()->implicit_value("true")->zero_tokens()->notifier([this](const std::string& v){ this->is_set = true; this->value = true; }), "")
+	(("disable-" + flag).c_str(), boost::program_options::value<std::string>()->implicit_value("false")->zero_tokens()->notifier([this](const std::string & v){ this->is_set = true; this->value = false; }),
+	 ("[enable/disable] " + description).c_str());
+    }
+  }
 }
 
 // Parameter parsing (courtesy of Boost)

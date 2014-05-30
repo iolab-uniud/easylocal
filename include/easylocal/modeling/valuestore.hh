@@ -12,15 +12,15 @@ namespace EasyLocal {
     /** Forward declaration */
     template <typename T>
     class BasicChange;
-    
+
     /** Forward declaration */
     template <typename T>
     class CompositeChange;
-    
+
     /** Forward declaration */
     template <typename T>
     class Var;
-        
+
     /** A store for the values of CompiledExpressions, used to efficiently compute
     delta changes in the expression values, and to support concurrent simulation
     of Changes. 
@@ -43,7 +43,7 @@ namespace EasyLocal {
         e->subscribe(this);
         evaluated = false;
       }
-      
+
       /** Copy constructor (avoids copy of levels above 0).
       @param other ValueStore to get data from
       */
@@ -102,7 +102,7 @@ namespace EasyLocal {
         std::fill(valid[level].begin(), valid[level].end(), false);
         std::fill(value[level].begin(), value[level].end(), 0);
       }
-      
+
       /** Simulates the execution of a simple Change on a specific simulation level.
       @param m the Change to simulate
       @param level level onto which the Change must be simulated
@@ -119,7 +119,7 @@ namespace EasyLocal {
         vars.insert(var_index);
         e->evaluate_diff(*this, vars, level);
       }
-      
+
       /** Simulates the execution of a composite Change on a specific simulation level.
       @param m the Change to simulate
       @param level level onto which the Change must be simulated
@@ -136,7 +136,7 @@ namespace EasyLocal {
           assign(m.var, level, m.val);
           size_t var_index = e->compiled_symbols[m.var.hash()];
           vars.insert(var_index);
-        }        
+        }
         e->evaluate_diff(*this, vars, level);
       }
 
@@ -165,7 +165,7 @@ namespace EasyLocal {
           if (this->changed(i, 1))
             value[0][i] = value[1][i];
       }
-      
+
       /** Write access to the values of the expressions in this ValueStore
       @param i the index of the expression to get the value for
       @return the value of the ith expression in this ValueStore
@@ -176,7 +176,7 @@ namespace EasyLocal {
       {
         return value[0][i];
       }
-      
+
       /** Const access to the values of the expressions in the ValueStore
       @param i the index of the expression to get the value for
       @param level level to get the value from
@@ -198,7 +198,7 @@ namespace EasyLocal {
       {
         return valid[level][i] && value[level][i] != value[0][i];
       }
-      
+
       /** Write access to the values of the expressions in this ValueStore
       @param e expression to get the value for
       @remarks the expression itself is used to access the ValueStore, instead of the index 
@@ -208,7 +208,7 @@ namespace EasyLocal {
       {
         return operator()(ex.index);
       }
-      
+
       /** Const access to the values of the expressions in the ValueStore
       @param e expression to get the value for
       @param level level to get the value from
@@ -219,7 +219,7 @@ namespace EasyLocal {
       {
         return operator()(ex.index, level);
       }
-      
+
       /** Checks whether the value of an expression at a specific level has changed
       @param i index of the expression to check
       @param level level to check
@@ -229,7 +229,7 @@ namespace EasyLocal {
       {
         return changed(ex.index, level);
       }
-      
+
       /** Write access to the values of the variables in this ValueStore
       @param v the variable to get the value for
       @return a reference to the value
@@ -238,7 +238,7 @@ namespace EasyLocal {
       {
         return operator()(e->compiled_symbols[v.hash()]);
       }
-      
+
       /** Const access to the values of the variables in the ValueStore
       @param v the variable to get the value for
       @param level the level to get the value from
@@ -248,7 +248,7 @@ namespace EasyLocal {
       {
         return operator()(e->compiled_symbols[v.hash()], level);
       }
-      
+
       /** Checks whether the variable of an expression at a specific level has changed
       @param v the variable to check
       @param level level to check
@@ -257,7 +257,7 @@ namespace EasyLocal {
       {
         return changed(e->compiled_symbols[v.hash()], level);
       }
-      
+
       /** @copydoc Printable::print(std::ostream&) */
       virtual void print(std::ostream& os) const
       {
@@ -270,26 +270,26 @@ namespace EasyLocal {
           os << ")" << std::endl;
         }
       }
-      
+
       // TODO: all assign are used only by Expressions, possibly Change into protected and enable friendship
       void assign(const Sym<T>& ex, unsigned int level, const T& val)
       {
         value[level][ex.index] = val;
         valid[level][ex.index] = true;
       }
-      
+
       void assign(size_t i, unsigned int level, const T& val)
       {
         value[level][i] = val;
         valid[level][i] = true;
       }
-      
+
       void assign(const Var<T>& v, unsigned int level, const T& val)
       {
         value[level][e->compiled_symbols[v.hash()]] = val;
         valid[level][e->compiled_symbols[v.hash()]] = true;
       }
-      
+
       /** Gets the indices of the changed children of an expression at a specific level
       @param i index of the expression to get the changed children for
       @param level reference level
@@ -309,19 +309,19 @@ namespace EasyLocal {
       }
 
     protected:
-      
+
       /** Keeps track of the values of the expressions / variables at the various levels */
       std::vector<std::vector<T>> value;
-      
+
       /** Keeps track whether the value at a specific level is valid or whether the accessors should fall back to the level zero */
       std::vector<std::vector<bool>> valid;
-      
+
       /** Keeps track of the changed children of each expression */
       std::vector<std::vector<std::set<size_t>>> _changed_children;
-      
+
       /** ExpressionStore to which the ValueStore is subscribed for resizing */
       const std::shared_ptr<ExpressionStore<T>>& e;
-      
+
       /** Whether the first complete evaluation has been already done */
       mutable bool evaluated;
     };
