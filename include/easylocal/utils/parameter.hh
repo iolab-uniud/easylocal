@@ -200,6 +200,18 @@ namespace EasyLocal {
 
     bool operator==(const Parameter<std::string>& s1, const char* s2) throw (ParameterNotSet);
 
+    // Specialization for bool parameters (handle as enable/disable flags)
+    template <>
+    Parameter<bool>::Parameter(const std::string& cmdline_flag, const std::string& description, ParameterBox& parameters)
+      : AbstractParameter(cmdline_flag, description)
+    {
+      std::string flag = parameters.prefix + "::" + cmdline_flag;
+      parameters.cl_options.add_options()
+	(("enable-" + flag).c_str(), boost::program_options::value<std::string>()->implicit_value("true")->zero_tokens()->notifier([this](const std::string& v){ this->is_set = true; this->value = true; }), "")
+	(("disable-" + flag).c_str(), boost::program_options::value<std::string>()->implicit_value("false")->zero_tokens()->notifier([this](const std::string & v){ this->is_set = true; this->value = false; }),
+	 ("[enable/disable] " + description).c_str());
+    }
+    
     template <typename T>
     IncorrectParameterValue::IncorrectParameterValue(const Parameter<T>& p, std::string desc)
       : std::logic_error("Incorrect parameter value")
