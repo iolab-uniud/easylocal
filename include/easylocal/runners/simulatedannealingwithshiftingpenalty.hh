@@ -93,9 +93,9 @@ namespace EasyLocal {
     {
       SimulatedAnnealingIterationBased<Input,State,Move,CFtype>::CompleteMove();
       if (this->current_state_violations > 0)
-        shift = min(1.0,shift*alpha);
+        shift = std::min(1.0,shift*alpha);
       else
-        shift = max(min_shift,shift/alpha);
+        shift = std::max(min_shift,shift/alpha);
       //  std::cerr << StatusString() << std::endl;
     }
 
