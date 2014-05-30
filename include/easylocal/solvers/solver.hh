@@ -3,7 +3,6 @@
 
 #include <tuple>
 
-#include "easylocal/easylocal.conf.hh"
 #include "easylocal/helpers/statemanager.hh"
 #include "easylocal/helpers/outputmanager.hh"
 #include "easylocal/utils/parameter.hh"

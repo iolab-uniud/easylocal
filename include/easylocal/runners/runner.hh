@@ -7,7 +7,6 @@
 #include <condition_variable>
 #include <atomic>
 
-#include "easylocal/easylocal.conf.hh"
 #include "easylocal/helpers/statemanager.hh"
 #include "easylocal/helpers/neighborhoodexplorer.hh"
 #include "easylocal/utils/interruptible.hh"
@@ -16,13 +15,12 @@
 namespace EasyLocal {
   
   namespace Debug {
+    
     /** Forward declaration of tester. */
     template <class Input, class State, typename CFtype>
     class AbstractTester;
   }
-  
-  using namespace Debug;
-  
+    
   namespace Core {
     
     
@@ -34,7 +32,7 @@ namespace EasyLocal {
     template <class Input, class State, typename CFtype>
     class Runner : public Interruptible<CFtype, State&>, public Parametrized
     {
-      friend class AbstractTester<Input, State, CFtype>;
+      friend class Debug::AbstractTester<Input, State, CFtype>;
 
     public:
   

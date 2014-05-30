@@ -4,13 +4,11 @@
 #include "easylocal/runners/runner.hh"
 #include "easylocal/helpers/statemanager.hh"
 #include "easylocal/helpers/neighborhoodexplorer.hh"
+
 #include "easylocal/observers/runnerobserver.hh"
-#include "easylocal/testers/tester.hh"
 
 namespace EasyLocal {
   
-  using namespace Debug;
-
   namespace Core {
     
     /** A Move Runner is an instance of the Runner interface which it compels to
@@ -21,14 +19,14 @@ namespace EasyLocal {
     template <class Input, class State, class Move, typename CFtype>
     class MoveRunner : public Runner<Input,State,CFtype>
     {
-      friend class RunnerObserver<Input,State,Move,CFtype>;
+      friend class Debug::RunnerObserver<Input,State,Move,CFtype>;
   
     public:
   
       /** Attaches an observer to this runner.
       @param ob a RunnerObserver of a compliant type
       */
-      void AttachObserver(RunnerObserver<Input,State,Move,CFtype>& ob)
+      void AttachObserver(Debug::RunnerObserver<Input,State,Move,CFtype>& ob)
       {
         observer = &ob;
       }
@@ -68,7 +66,7 @@ namespace EasyLocal {
       CFtype current_move_cost; /**< The cost of the selected move. */
       CFtype current_move_violations; /**< The violations of the selected move. */
   
-      RunnerObserver<Input,State,Move,CFtype>* observer;
+      Debug::RunnerObserver<Input,State,Move,CFtype>* observer;
   
   
     };

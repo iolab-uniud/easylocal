@@ -6,9 +6,7 @@
 #include "easylocal/solvers/abstractlocalsearch.hh"
 
 namespace EasyLocal {
-  
-  using namespace Extra;
-  
+    
   namespace Core {
     
     /** An Iterated Local Search solver handles both a runner encapsulating a local

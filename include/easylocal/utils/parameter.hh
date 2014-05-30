@@ -8,7 +8,6 @@
 #include <memory>
 #include <sstream>
 
-//#include "EasyLocal.conf.hh"
 #include "boost/program_options/options_description.hpp"
 
 namespace EasyLocal {

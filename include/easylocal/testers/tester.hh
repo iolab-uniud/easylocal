@@ -14,9 +14,7 @@
 #include "easylocal/utils/types.hh"
 
 namespace EasyLocal {
-  
-  using namespace Core;
-  
+    
   namespace Debug {
     
     template <class Input, class State, typename CFtype>
@@ -25,10 +23,10 @@ namespace EasyLocal {
     public:
       virtual ~AbstractTester() {};
     protected:
-      virtual void AddRunner(Runner<Input,State,CFtype>& r) {};
+      virtual void AddRunner(Core::Runner<Input,State,CFtype>& r) {};
       void AddRunners()
       {
-        for (auto p_r : Runner<Input,State,CFtype>::runners)
+        for (auto p_r : Core::Runner<Input,State,CFtype>::runners)
           AddRunner(*p_r);
       }
     };
@@ -43,9 +41,9 @@ namespace EasyLocal {
     {
     public:
       Tester(const Input& in, StateManager<Input,State,CFtype>& e_sm,
-      OutputManager<Input,Output,State,CFtype>& e_om, std::ostream& o = std::cout);
+      Core::OutputManager<Input,Output,State,CFtype>& e_om, std::ostream& o = std::cout);
       Tester(const Input& in, State st, StateManager<Input,State,CFtype>& e_sm,
-      OutputManager<Input,Output,State,CFtype>& e_om, std::ostream& o = std::cout);
+      Core::OutputManager<Input,Output,State,CFtype>& e_om, std::ostream& o = std::cout);
       /** Virtual destructor. */
       virtual ~Tester() {}
       void RunMainMenu(std::string file_name = "");
@@ -55,7 +53,7 @@ namespace EasyLocal {
       void RunStateTestMenu();
       void SetState(const State& st){test_state = st;}
     protected:
-      void AddRunner(Runner<Input,State,CFtype>& r);
+      void AddRunner(Core::Runner<Input,State,CFtype>& r);
       void ShowStateMenu();
       void ShowReducedStateMenu();
       bool ExecuteStateChoice();
@@ -74,12 +72,12 @@ namespace EasyLocal {
       std::vector<ComponentTester<Input,Output,State,CFtype>* > move_testers;
       std::vector<ComponentTester<Input,Output,State,CFtype>* > kicker_testers;
       /**< The set of attached move testers. */
-      std::vector<Runner<Input,State,CFtype>* > runners; /**< The set of attached
+      std::vector<Core::Runner<Input,State,CFtype>* > runners; /**< The set of attached
         runners. */
         const Input& in;
       std::ostream& os;
-      StateManager<Input,State,CFtype>& sm;  /**< A pointer to a state manager. */
-      OutputManager<Input,Output,State,CFtype>& om; /**< A pointer to an output producer. */
+      Core::StateManager<Input,State,CFtype>& sm;  /**< A pointer to a state manager. */
+      Core::OutputManager<Input,Output,State,CFtype>& om; /**< A pointer to an output producer. */
       State test_state; /**< The current state managed by the tester. */
       Output out; /**< The output object. */
       unsigned int choice, /**< The option currently chosen from the menu. */
@@ -100,8 +98,8 @@ namespace EasyLocal {
     */
     template <class Input, class Output, class State, typename CFtype>
     Tester<Input, Output, State, CFtype>::Tester(const Input& i,
-    StateManager<Input,State,CFtype>& e_sm,
-    OutputManager<Input,Output,State,CFtype>& e_om, std::ostream& o)
+    Core::StateManager<Input,State,CFtype>& e_sm,
+    Core::OutputManager<Input,Output,State,CFtype>& e_om, std::ostream& o)
       :  in(i), os(o), sm(e_sm), om(e_om),
     test_state(i), out(i)
       { this->AddRunners(); }
@@ -131,7 +129,7 @@ namespace EasyLocal {
     @param p_ru a pointer to a compatible runner
     */
     template <class Input, class Output, class State, typename CFtype>
-    void Tester<Input, Output, State,CFtype>::AddRunner(Runner<Input,State,CFtype>& r)
+    void Tester<Input, Output, State,CFtype>::AddRunner(Core::Runner<Input,State,CFtype>& r)
     {
       runners.push_back(&r);
     }

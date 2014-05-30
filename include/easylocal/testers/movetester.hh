@@ -12,9 +12,7 @@
 #include "easylocal/helpers/tabulistmanager.hh"
 
 namespace EasyLocal {
-  
-  using namespace Core;
-  
+    
   namespace Debug {
   
     /** A Move Tester allows to test the behavior of a given

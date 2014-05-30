@@ -4,8 +4,6 @@
 #include <random>
 #include <iostream>
 
-//#include "EasyLocal.conf.hh"
-
 namespace EasyLocal {
 
   namespace Core {
