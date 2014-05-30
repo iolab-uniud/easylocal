@@ -95,21 +95,6 @@ namespace EasyLocal {
           @param mv the move to be applied
       */
       virtual void MakeMove(State &st, const Move& mv) const = 0;
-  
-      virtual bool NextRelatedMove(const State &st, Move& mv, const Move& mv2) const { return NextMove(st,mv); }
-  
-      virtual bool FirstRelatedMove(const State &st, Move& mv, const Move& mv2) const
-      {
-        try
-        {
-          FirstMove(st,mv);
-        }
-        catch (EmptyNeighborhood e)
-        {
-          return false;
-        }
-        return true;
-      } 
     
       /** Computes the differences in the cost function obtained by applying the move @c mv to the state @c st.
           @param st the state to modify
