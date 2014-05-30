@@ -18,7 +18,6 @@
 
 #include "easylocal/core.hh"
 #include "easylocal/debug.hh"
-#include "easylocal/extra.hh"
 #include "easylocal/modeling.hh"
 
 #endif // _EASYLOCAL_HH_

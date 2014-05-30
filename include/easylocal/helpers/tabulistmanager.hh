@@ -61,7 +61,7 @@ namespace EasyLocal {
       : public ProhibitionManager<State,Move,CFtype>
     {
     public:
-      typedef Move ThisMove;
+      typedef Move MoveType;
 
       void Print(std::ostream& os = std::cout) const;
       virtual void InsertMove(const State& st, const Move& mv, const CFtype& mv_cost, const CFtype& curr, const CFtype& best);

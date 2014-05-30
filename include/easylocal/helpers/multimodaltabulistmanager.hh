@@ -11,14 +11,14 @@ namespace EasyLocal {
 
     /** Multimodal tabu list manager, to handle tabu lists of multimodal moves. */
     template <class State, typename CFtype, class ... BaseTabuListManagers>
-    class MultimodalTabuListManager : public TabuListManager<State, std::tuple<ActiveMove<typename BaseTabuListManagers::ThisMove> ...>, CFtype>, public Printable
+    class MultimodalTabuListManager : public TabuListManager<State, std::tuple<ActiveMove<typename BaseTabuListManagers::MoveType> ...>, CFtype>, public Printable
     {
     public:
       
       /** Typedefs. */
-      typedef std::tuple<ActiveMove<typename BaseTabuListManagers::ThisMove> ...> TheseMoves;
-      typedef TabuListManager<State, std::tuple<ActiveMove<typename BaseTabuListManagers::ThisMove> ...>, CFtype> SuperTabuListManager; // type of this tabu list manager
-      typedef std::tuple<BaseTabuListManagers...> TheseTabuListManagers;
+      typedef std::tuple<ActiveMove<typename BaseTabuListManagers::MoveType> ...> MoveTypes;
+      typedef TabuListManager<State, std::tuple<ActiveMove<typename BaseTabuListManagers::MoveType> ...>, CFtype> SuperTabuListManager; // type of this tabu list manager
+      typedef std::tuple<BaseTabuListManagers...> TabuListManagerTypes;
 
       /** Modality of the TabuListManager */
       virtual unsigned int Modality() const { return sizeof...(BaseTabuListManagers); }
@@ -26,20 +26,20 @@ namespace EasyLocal {
       /** Read all parameters from an input stream (prints hints on output stream). */
       virtual void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout)
       {
-        ParametersDispatcher<TheseTabuListManagers, sizeof...(BaseTabuListManagers) - 1>::ReadParameters(tlms, is, os);
+        ParametersDispatcher<TabuListManagerTypes, sizeof...(BaseTabuListManagers) - 1>::ReadParameters(tlms, is, os);
       }
 
       /** @copydoc Printable::Print() */
       virtual void Print(std::ostream& os = std::cout) const
       {
-        ParametersDispatcher<TheseTabuListManagers, sizeof...(BaseTabuListManagers) - 1>::Print(const_cast<TheseTabuListManagers&>(tlms), os);
+        ParametersDispatcher<TabuListManagerTypes, sizeof...(BaseTabuListManagers) - 1>::Print(const_cast<TabuListManagerTypes&>(tlms), os);
       }
 
       /** Queries for status all of its composing TabuListManagers. */
       virtual std::string StatusString() const 
       {
         Call status_string(Call::Function::STATUS_STRING); 
-        return TupleDispatcher<TheseMoves, TheseTabuListManagers, sizeof...(BaseTabuListManagers)-1>::QueryAll(const_cast<TheseTabuListManagers&>(tlms), status_string);
+        return TupleDispatcher<MoveTypes, TabuListManagerTypes, sizeof...(BaseTabuListManagers)-1>::QueryAll(const_cast<TabuListManagerTypes&>(tlms), status_string);
       }
 
     protected:
@@ -50,7 +50,7 @@ namespace EasyLocal {
           { }
 
       /** List of tabu list managers. */
-      TheseTabuListManagers tlms;
+      TabuListManagerTypes tlms;
 
       /** Tuple dispatching helpers. */
       class Call
@@ -277,30 +277,30 @@ namespace EasyLocal {
 
       /** Check - checks a predicate on each element of a tuple and returns a vector of the corresponding boolean variable */
       template <class ...TLMs>
-      static std::vector<bool> Check(const std::tuple<ActiveMove<typename TLMs::ThisMove>...>& moves_1, const std::tuple<ActiveMove<typename TLMs::ThisMove>...>& moves_2, const std::tuple<TLMs...>& tlms, const Call& c)
+      static std::vector<bool> Check(const std::tuple<ActiveMove<typename TLMs::MoveType>...>& moves_1, const std::tuple<ActiveMove<typename TLMs::MoveType>...>& moves_2, const std::tuple<TLMs...>& tlms, const Call& c)
       {
-        return TupleDispatcher<std::tuple<ActiveMove<typename TLMs::ThisMove>...>, std::tuple<TLMs...>, sizeof...(TLMs) - 1>::Check(moves_1, moves_2, tlms, c);
+        return TupleDispatcher<std::tuple<ActiveMove<typename TLMs::MoveType>...>, std::tuple<TLMs...>, sizeof...(TLMs) - 1>::Check(moves_1, moves_2, tlms, c);
       }
 
       /** CheckAll - checks a predicate on all tuple */
       template <class ...TLMs>
-      static bool CheckAll(const std::tuple<ActiveMove<typename TLMs::ThisMove>...>& moves_1, const std::tuple<ActiveMove<typename TLMs::ThisMove>...>& moves_2, const std::tuple<TLMs...>& tlms, const Call& c)
+      static bool CheckAll(const std::tuple<ActiveMove<typename TLMs::MoveType>...>& moves_1, const std::tuple<ActiveMove<typename TLMs::MoveType>...>& moves_2, const std::tuple<TLMs...>& tlms, const Call& c)
       {
-        return TupleDispatcher<std::tuple<ActiveMove<typename TLMs::ThisMove>...>, std::tuple<TLMs...>, sizeof...(TLMs) - 1>::CheckAll(moves_1, moves_2, tlms, c);
+        return TupleDispatcher<std::tuple<ActiveMove<typename TLMs::MoveType>...>, std::tuple<TLMs...>, sizeof...(TLMs) - 1>::CheckAll(moves_1, moves_2, tlms, c);
       }
 
       /** CheckAny - checks a predicate on all tuple */
       template <class ...TLMs>
-      static bool CheckAny(const std::tuple<ActiveMove<typename TLMs::ThisMove>...>& moves_1, const std::tuple<ActiveMove<typename TLMs::ThisMove>...>& moves_2, const std::tuple<TLMs...>& tlms, const Call& c)
+      static bool CheckAny(const std::tuple<ActiveMove<typename TLMs::MoveType>...>& moves_1, const std::tuple<ActiveMove<typename TLMs::MoveType>...>& moves_2, const std::tuple<TLMs...>& tlms, const Call& c)
       {
-        return TupleDispatcher<std::tuple<ActiveMove<typename TLMs::ThisMove>...>, std::tuple<TLMs...>, sizeof...(TLMs) - 1>::CheckAny(moves_1, moves_2, tlms, c);
+        return TupleDispatcher<std::tuple<ActiveMove<typename TLMs::MoveType>...>, std::tuple<TLMs...>, sizeof...(TLMs) - 1>::CheckAny(moves_1, moves_2, tlms, c);
       }
 
       /** CheckAt - checks a predicate at a certain level of the tuple and returns its value */
       template <class ...TLMs>
-      static CFtype CheckAt(const std::tuple<ActiveMove<typename TLMs::ThisMove>...>& moves_1, const std::tuple<ActiveMove<typename TLMs::ThisMove>...>& moves_2, const std::tuple<TLMs...>& tlms, const Call& c, int iter)
+      static CFtype CheckAt(const std::tuple<ActiveMove<typename TLMs::MoveType>...>& moves_1, const std::tuple<ActiveMove<typename TLMs::MoveType>...>& moves_2, const std::tuple<TLMs...>& tlms, const Call& c, int iter)
       {
-        return TupleDispatcher<std::tuple<ActiveMove<typename TLMs::ThisMove>...>, std::tuple<TLMs...>, sizeof...(TLMs) - 1>::CheckAt(moves_1, moves_2, tlms, c, (sizeof...(TLMs) - 1) - iter);
+        return TupleDispatcher<std::tuple<ActiveMove<typename TLMs::MoveType>...>, std::tuple<TLMs...>, sizeof...(TLMs) - 1>::CheckAt(moves_1, moves_2, tlms, c, (sizeof...(TLMs) - 1) - iter);
       }
 
       template <class T, class M>
@@ -373,7 +373,7 @@ namespace EasyLocal {
       {
         
       }
-      virtual bool Inverse(const typename SuperTabuListManager::ThisMove& moves_1, const typename SuperTabuListManager::ThisMove& moves_2) const
+      virtual bool Inverse(const typename SuperTabuListManager::MoveType& moves_1, const typename SuperTabuListManager::MoveType& moves_2) const
       {
         Call is_inverse(Call::Function::IS_INVERSE);
         return SuperTabuListManager::CheckAny(moves_1, moves_2, this->tlms, is_inverse);
@@ -391,7 +391,7 @@ namespace EasyLocal {
       {
           
       }
-      virtual bool Inverse(const typename SuperTabuListManager::ThisMove& moves_1, const typename SuperTabuListManager::ThisMove& moves_2) const
+      virtual bool Inverse(const typename SuperTabuListManager::MoveType& moves_1, const typename SuperTabuListManager::MoveType& moves_2) const
       {
         Call is_inverse(Call::Function::IS_INVERSE);
         return SuperTabuListManager::CheckAll(moves_1, moves_2, this->tlms, is_inverse);

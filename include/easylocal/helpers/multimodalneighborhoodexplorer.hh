@@ -23,21 +23,21 @@ namespace EasyLocal {
 
     /** Variadic multi-modal neighborhood explorer. Generates a NeighborhoodExplorer whose move type is a tuple of ActiveMoves.*/
     template <class Input, class State, typename CFtype, class ... BaseNeighborhoodExplorers>
-    class MultimodalNeighborhoodExplorer : public NeighborhoodExplorer<Input, State, std::tuple<ActiveMove<typename BaseNeighborhoodExplorers::ThisMove> ...>, CFtype>
+    class MultimodalNeighborhoodExplorer : public NeighborhoodExplorer<Input, State, std::tuple<ActiveMove<typename BaseNeighborhoodExplorers::MoveType> ...>, CFtype>
     {
     public:
   
       /** Tuple type representing the combination of BaseNeighborhoodExplorers' moves. */
-      typedef std::tuple<ActiveMove<typename BaseNeighborhoodExplorers::ThisMove> ...> TheseMoves;
+      typedef std::tuple<ActiveMove<typename BaseNeighborhoodExplorers::MoveType> ...> MoveTypes;
   
       /** Tuple type representing references to BaseNeighborhoodExplorers' moves (because we need to set them). */
-      typedef std::tuple<std::reference_wrapper<ActiveMove<typename BaseNeighborhoodExplorers::ThisMove>> ...> TheseMovesRefs;
+      typedef std::tuple<std::reference_wrapper<ActiveMove<typename BaseNeighborhoodExplorers::MoveType>> ...> MoveTypeRefs;
   
       /** Type of the NeighborhoodExplorer which has a tuple of moves as its move type. */
-      typedef NeighborhoodExplorer<Input, State, TheseMoves, CFtype> SuperNeighborhoodExplorer;
+      typedef NeighborhoodExplorer<Input, State, MoveTypes, CFtype> SuperNeighborhoodExplorer;
   
       /** Tuple type representing references to BaseNeighborhoodExplorers. */
-      typedef std::tuple<std::reference_wrapper<BaseNeighborhoodExplorers> ...> TheseNeighborhoodExplorers;
+      typedef std::tuple<std::reference_wrapper<BaseNeighborhoodExplorers> ...> NeighborhoodExplorerTypes;
   
       /** Modality of the NeighborhoodExplorer */
       virtual unsigned int Modality() const { return sizeof...(BaseNeighborhoodExplorers); }
@@ -46,18 +46,16 @@ namespace EasyLocal {
   
       /** Constructor, takes a variable number of base NeighborhoodExplorers.  */
       MultimodalNeighborhoodExplorer(const Input& in, StateManager<Input,State,CFtype>& sm, std::string name, BaseNeighborhoodExplorers& ... nhes)
-        : SuperNeighborhoodExplorer(in, sm, name),
-      nhes(std::make_tuple(std::reference_wrapper<BaseNeighborhoodExplorers>(nhes) ...))
+        : SuperNeighborhoodExplorer(in, sm, name), nhes(std::make_tuple(std::reference_wrapper<BaseNeighborhoodExplorers>(nhes) ...))
         { }
-  
+      
       /** Constructor, takes a variable number of base NeighborhoodExplorers.  */
-      MultimodalNeighborhoodExplorer(const Input& in, StateManager<Input,State,CFtype>& sm, std::string name, TheseNeighborhoodExplorers& nhes)
-        : SuperNeighborhoodExplorer(in, sm, name),
-      nhes(nhes)
+      MultimodalNeighborhoodExplorer(const Input& in, StateManager<Input,State,CFtype>& sm, std::string name)
+        : SuperNeighborhoodExplorer(in, sm, name), nhes(std::make_tuple(std::reference_wrapper<BaseNeighborhoodExplorers>(*std::make_shared<BaseNeighborhoodExplorers>(in, sm)) ...))
         { }
   
       /** Instantiated base NeighborhoodExplorers. */
-      TheseNeighborhoodExplorers nhes;
+      NeighborhoodExplorerTypes nhes;
     
       /** Struct to encapsulate a templated function call. Since the access to tuples must be done through compile-time recursion, at the moment of calling BaseNeighborhoodExplorers methods we don't know yet the type of the current NeighborhoodExplorer and move. This class is necessary so that we can defer the instantiation of the templated helper functions (DoMakeMove, DoRandomMove, ...) inside the calls to Compute* and Execute* (when they are known). */
       class Call
@@ -86,9 +84,9 @@ namespace EasyLocal {
 
         /** Method to generate a function with void return type. */
         template <class N>
-        std::function<void(const N&, State&, ActiveMove<typename N::ThisMove>&)> getVoid() const throw(std::logic_error)
+        std::function<void(const N&, State&, ActiveMove<typename N::MoveType>&)> getVoid() const throw(std::logic_error)
         {
-          std::function<void(const N&, State&, ActiveMove<typename N::ThisMove>&)> f;
+          std::function<void(const N&, State&, ActiveMove<typename N::MoveType>&)> f;
           switch (to_call)
           {
             case MAKE_MOVE:
@@ -114,9 +112,9 @@ namespace EasyLocal {
 
         /** Method to generate a function with CFtype return type. */
         template <class N>
-        std::function<CFtype(const N&, State&, ActiveMove<typename N::ThisMove>&)> getCFtype() const throw(std::logic_error)
+        std::function<CFtype(const N&, State&, ActiveMove<typename N::MoveType>&)> getCFtype() const throw(std::logic_error)
         {
-          std::function<CFtype(const N&, State&, ActiveMove<typename N::ThisMove>&)> f;
+          std::function<CFtype(const N&, State&, ActiveMove<typename N::MoveType>&)> f;
           switch (to_call)
           {
             case DELTA_COST_FUNCTION:
@@ -133,9 +131,9 @@ namespace EasyLocal {
 
         /** Method to generate a function with bool return type. */
         template <class N>
-        std::function<bool(const N&, State&, ActiveMove<typename N::ThisMove>&)> getBool() const throw(std::logic_error)
+        std::function<bool(const N&, State&, ActiveMove<typename N::MoveType>&)> getBool() const throw(std::logic_error)
         {
-          std::function<bool(const N&, State&, ActiveMove<typename N::ThisMove>&)> f;
+          std::function<bool(const N&, State&, ActiveMove<typename N::MoveType>&)> f;
           switch (to_call)
           {
             case FEASIBLE_MOVE:
@@ -565,66 +563,66 @@ namespace EasyLocal {
   
       /** @copydoc TupleDispatcher::ExecuteAt */
       template <class ...NHEs>
-      static void ExecuteAt(State& st, std::tuple<std::reference_wrapper<ActiveMove<typename NHEs::ThisMove>>...>& moves,
+      static void ExecuteAt(State& st, std::tuple<std::reference_wrapper<ActiveMove<typename NHEs::MoveType>>...>& moves,
       const std::tuple<std::reference_wrapper<NHEs>...>& nhes, const Call& c, int index)
       {
-        TupleDispatcher<std::tuple<std::reference_wrapper<ActiveMove<typename NHEs::ThisMove>>...>, std::tuple<std::reference_wrapper<NHEs>...>, sizeof...(NHEs) - 1>::ExecuteAt(st, moves, nhes, c, (sizeof...(NHEs) - 1) - index);
+        TupleDispatcher<std::tuple<std::reference_wrapper<ActiveMove<typename NHEs::MoveType>>...>, std::tuple<std::reference_wrapper<NHEs>...>, sizeof...(NHEs) - 1>::ExecuteAt(st, moves, nhes, c, (sizeof...(NHEs) - 1) - index);
       }
   
       /** @copydoc TupleDispatcher::ExecuteAll */
       template <class ...NHEs>
-      static void ExecuteAll(State& st, std::tuple<std::reference_wrapper<ActiveMove<typename NHEs::ThisMove>>...>& moves,
+      static void ExecuteAll(State& st, std::tuple<std::reference_wrapper<ActiveMove<typename NHEs::MoveType>>...>& moves,
       const std::tuple<std::reference_wrapper<NHEs>...>& nhes, const Call& c)
       {
-        TupleDispatcher<std::tuple<std::reference_wrapper<ActiveMove<typename NHEs::ThisMove>>...>, std::tuple<std::reference_wrapper<NHEs>...>, sizeof...(NHEs) - 1>::ExecuteAll(st, moves, nhes, c);
+        TupleDispatcher<std::tuple<std::reference_wrapper<ActiveMove<typename NHEs::MoveType>>...>, std::tuple<std::reference_wrapper<NHEs>...>, sizeof...(NHEs) - 1>::ExecuteAll(st, moves, nhes, c);
       }
   
       /** @copydoc TupleDispatcher::ComputeAt */
       template <class ...NHEs>
-      static CFtype ComputeAt(State& st, std::tuple<std::reference_wrapper<ActiveMove<typename NHEs::ThisMove>>...>& moves,
+      static CFtype ComputeAt(State& st, std::tuple<std::reference_wrapper<ActiveMove<typename NHEs::MoveType>>...>& moves,
       const std::tuple<std::reference_wrapper<NHEs>...>& nhes, const Call& c, int index)
       {
-        return TupleDispatcher<std::tuple<std::reference_wrapper<ActiveMove<typename NHEs::ThisMove>>...>, std::tuple<std::reference_wrapper<NHEs>...>, sizeof...(NHEs) - 1>::ComputeAt(st, moves, nhes, c, (sizeof...(NHEs) - 1) - index);
+        return TupleDispatcher<std::tuple<std::reference_wrapper<ActiveMove<typename NHEs::MoveType>>...>, std::tuple<std::reference_wrapper<NHEs>...>, sizeof...(NHEs) - 1>::ComputeAt(st, moves, nhes, c, (sizeof...(NHEs) - 1) - index);
       }
   
       /** @copydoc TupleDispatcher::ComputeAll */
       template <class ...NHEs>
-      static CFtype ComputeAll(State& st, std::tuple<std::reference_wrapper<ActiveMove<typename NHEs::ThisMove>>...>& moves,
+      static CFtype ComputeAll(State& st, std::tuple<std::reference_wrapper<ActiveMove<typename NHEs::MoveType>>...>& moves,
       const std::tuple<std::reference_wrapper<NHEs>...>& nhes, const Call& c)
       {
-        return TupleDispatcher<std::tuple<std::reference_wrapper<ActiveMove<typename NHEs::ThisMove>>...>, std::tuple<std::reference_wrapper<NHEs>...>, sizeof...(NHEs) - 1>::ComputeAll(st, moves, nhes, c);
+        return TupleDispatcher<std::tuple<std::reference_wrapper<ActiveMove<typename NHEs::MoveType>>...>, std::tuple<std::reference_wrapper<NHEs>...>, sizeof...(NHEs) - 1>::ComputeAll(st, moves, nhes, c);
       }
   
       /** @copydoc TupleDispatcher::Check */
       template <class ...NHEs>
-      static std::vector<bool> Check(State& st, std::tuple<std::reference_wrapper<ActiveMove<typename NHEs::ThisMove>>...>& moves,
+      static std::vector<bool> Check(State& st, std::tuple<std::reference_wrapper<ActiveMove<typename NHEs::MoveType>>...>& moves,
       const std::tuple<std::reference_wrapper<NHEs>...>& nhes, const Call& c)
       {
-        return TupleDispatcher<std::tuple<std::reference_wrapper<ActiveMove<typename NHEs::ThisMove>>...>, std::tuple<std::reference_wrapper<NHEs>...>, sizeof...(NHEs) - 1>::Check(st, moves, nhes, c);
+        return TupleDispatcher<std::tuple<std::reference_wrapper<ActiveMove<typename NHEs::MoveType>>...>, std::tuple<std::reference_wrapper<NHEs>...>, sizeof...(NHEs) - 1>::Check(st, moves, nhes, c);
       }
   
       /** @copydoc TupleDispatcher::CheckAll */
       template <class ...NHEs>
-      static bool CheckAll(State& st, std::tuple<std::reference_wrapper<ActiveMove<typename NHEs::ThisMove>>...>& moves,
+      static bool CheckAll(State& st, std::tuple<std::reference_wrapper<ActiveMove<typename NHEs::MoveType>>...>& moves,
       const std::tuple<std::reference_wrapper<NHEs>...>& nhes, const Call& c)
       {
-        return TupleDispatcher<std::tuple<std::reference_wrapper<ActiveMove<typename NHEs::ThisMove>>...>, std::tuple<std::reference_wrapper<NHEs>...>, sizeof...(NHEs) - 1>::CheckAll(st, moves, nhes, c);
+        return TupleDispatcher<std::tuple<std::reference_wrapper<ActiveMove<typename NHEs::MoveType>>...>, std::tuple<std::reference_wrapper<NHEs>...>, sizeof...(NHEs) - 1>::CheckAll(st, moves, nhes, c);
       }
   
       /** @copydoc TupleDispatcher::CheckAny */
       template <class ...NHEs>
-      static bool CheckAny(State& st, std::tuple<std::reference_wrapper<ActiveMove<typename NHEs::ThisMove>>...>& moves,
+      static bool CheckAny(State& st, std::tuple<std::reference_wrapper<ActiveMove<typename NHEs::MoveType>>...>& moves,
       const std::tuple<std::reference_wrapper<NHEs>...>& nhes, const Call& c)
       {
-        return TupleDispatcher<std::tuple<std::reference_wrapper<ActiveMove<typename NHEs::ThisMove>>...>, std::tuple<std::reference_wrapper<NHEs>...>, sizeof...(NHEs) - 1>::CheckAny(st, moves, nhes, c);
+        return TupleDispatcher<std::tuple<std::reference_wrapper<ActiveMove<typename NHEs::MoveType>>...>, std::tuple<std::reference_wrapper<NHEs>...>, sizeof...(NHEs) - 1>::CheckAny(st, moves, nhes, c);
       }
   
       /** @copydoc TupleDispatcher::CheckAt */
       template <class ...NHEs>
-      static CFtype CheckAt(State& st, std::tuple<std::reference_wrapper<ActiveMove<typename NHEs::ThisMove>>...>& moves,
+      static CFtype CheckAt(State& st, std::tuple<std::reference_wrapper<ActiveMove<typename NHEs::MoveType>>...>& moves,
       const std::tuple<std::reference_wrapper<NHEs>...>& nhes, const Call& c, int index)
       {
-        return TupleDispatcher<std::tuple<std::reference_wrapper<ActiveMove<typename NHEs::ThisMove>>...>, std::tuple<std::reference_wrapper<NHEs>...>, sizeof...(NHEs) - 1>::CheckAt(st, moves, nhes, c, (sizeof...(NHEs) - 1) - index);
+        return TupleDispatcher<std::tuple<std::reference_wrapper<ActiveMove<typename NHEs::MoveType>>...>, std::tuple<std::reference_wrapper<NHEs>...>, sizeof...(NHEs) - 1>::CheckAt(st, moves, nhes, c, (sizeof...(NHEs) - 1) - index);
       }
   
       /** Checks if a move is active.
@@ -633,7 +631,7 @@ namespace EasyLocal {
           @param m a reference to the ActiveMove to check
       */
       template<class N>
-      static bool IsActive(const N& n, State& s, ActiveMove<typename N::ThisMove>& m)
+      static bool IsActive(const N& n, State& s, ActiveMove<typename N::MoveType>& m)
       {
         return m.active;
       }
@@ -644,7 +642,7 @@ namespace EasyLocal {
           @param m a reference to the ActiveMove which must be set
       */
       template<class N>
-      static void DoRandomMove(const N& n, State& s, ActiveMove<typename N::ThisMove>& m)
+      static void DoRandomMove(const N& n, State& s, ActiveMove<typename N::MoveType>& m)
       {
         n.RandomMove(s, m);
         m.active = true;
@@ -656,7 +654,7 @@ namespace EasyLocal {
           @param m a reference to the ActiveMove which must be set
       */
       template<class N>
-      static void DoFirstMove(const N& n, State& s, ActiveMove<typename N::ThisMove>& m)
+      static void DoFirstMove(const N& n, State& s, ActiveMove<typename N::MoveType>& m)
       {
         n.FirstMove(s, m);
         m.active = true;
@@ -668,7 +666,7 @@ namespace EasyLocal {
           @param m a reference to the current move, where the next move will be written
       */
       template<class N>
-      static bool TryNextMove(const N& n, State& s, ActiveMove<typename N::ThisMove>& m)
+      static bool TryNextMove(const N& n, State& s, ActiveMove<typename N::MoveType>& m)
       {
         m.active = n.NextMove(s, m);
         return m.active;
@@ -680,7 +678,7 @@ namespace EasyLocal {
           @param m a reference to the current move
       */
       template<class N>
-      static void DoMakeMove(const N& n, State& s, ActiveMove<typename N::ThisMove>& m)
+      static void DoMakeMove(const N& n, State& s, ActiveMove<typename N::MoveType>& m)
       {
         if (m.active)
           n.MakeMove(s,m);
@@ -692,7 +690,7 @@ namespace EasyLocal {
           @param m a reference to the ActiveMove to check
       */
       template<class N>
-      static bool IsFeasibleMove(const N& n, State& s, ActiveMove<typename N::ThisMove>& m)
+      static bool IsFeasibleMove(const N& n, State& s, ActiveMove<typename N::MoveType>& m)
       {
         if (m.active) 
           return n.FeasibleMove(s, m);
@@ -706,7 +704,7 @@ namespace EasyLocal {
           @param m a reference to the ActiveMove to check
       */
       template<class N>
-      static void InitializeInactive(const N& n, State& s, ActiveMove<typename N::ThisMove>& m)
+      static void InitializeInactive(const N& n, State& s, ActiveMove<typename N::MoveType>& m)
       {
         m.active = false;
       }
@@ -717,7 +715,7 @@ namespace EasyLocal {
           @param m a reference to the ActiveMove to check
       */
       template<class N>
-      static void InitializeActive(const N& n, State& s, ActiveMove<typename N::ThisMove>& m)
+      static void InitializeActive(const N& n, State& s, ActiveMove<typename N::MoveType>& m)
       {
         m.active = true;
       }
@@ -728,7 +726,7 @@ namespace EasyLocal {
           @param m a reference to the ActiveMove to check
       */
       template<class N>
-      static CFtype DoDeltaCostFunction(const N& n, State& s, ActiveMove<typename N::ThisMove>& m)
+      static CFtype DoDeltaCostFunction(const N& n, State& s, ActiveMove<typename N::MoveType>& m)
       {
         return n.DeltaCostFunction(s, m);
       }
@@ -739,7 +737,7 @@ namespace EasyLocal {
           @param m a reference to the ActiveMove to check
       */
       template<class N>
-      static CFtype DoDeltaViolations(const N& n, State& s, ActiveMove<typename N::ThisMove>& m)
+      static CFtype DoDeltaViolations(const N& n, State& s, ActiveMove<typename N::MoveType>& m)
       {
         return n.DeltaViolations(s, m);
       }
@@ -757,7 +755,7 @@ namespace EasyLocal {
       typedef MultimodalNeighborhoodExplorer<Input, State, CFtype, BaseNeighborhoodExplorers ...> SuperNeighborhoodExplorer;
   
       /** Tuple type representing references to BaseNeighborhoodExplorers' moves (because we need to set them). */
-      typedef typename SuperNeighborhoodExplorer::TheseMovesRefs TheseMovesRefs;
+      typedef typename SuperNeighborhoodExplorer::MoveTypeRefs MoveTypeRefs;
   
       /** Alias to SuperNeighborhoodExplorer::Call. */
       typedef typename SuperNeighborhoodExplorer::Call Call;
@@ -773,13 +771,29 @@ namespace EasyLocal {
         // If not otherwise specified, initialize the probabilities as 1 / Modality
         this->bias = std::vector<double>(this->Modality(), 1.0 / (double) this->Modality());
       }
+
+      /** Constructor, takes a variable number of base NeighborhoodExplorers.  */
+      SetUnionNeighborhoodExplorer(const Input& in, StateManager<Input,State,CFtype>& sm, std::string name)
+        : MultimodalNeighborhoodExplorer<Input, State, CFtype, BaseNeighborhoodExplorers ...>(in, sm, name)
+      { 
+        // If not otherwise specified, initialize the probabilities as 1 / Modality
+        this->bias = std::vector<double>(this->Modality(), 1.0 / (double) this->Modality());
+      }
   
       SetUnionNeighborhoodExplorer(Input& in, StateManager<Input,State,CFtype>& sm, std::string name, std::vector<double> bias, BaseNeighborhoodExplorers& ... nhes)
         : MultimodalNeighborhoodExplorer<Input, State, CFtype, BaseNeighborhoodExplorers ...>(in, sm, name, nhes ...), bias(bias)
           { }
+      
+      
+      /** Constructor, takes a variable number of base NeighborhoodExplorers.  */
+      SetUnionNeighborhoodExplorer(const Input& in, StateManager<Input,State,CFtype>& sm, std::string name, std::vector<double> bias)
+        : MultimodalNeighborhoodExplorer<Input, State, CFtype, BaseNeighborhoodExplorers ...>(in, sm, name), bias(bias)
+          { }
+  
+
 
       /** @copydoc NeighborhoodExplorer::RandomMove */
-      virtual void RandomMove(const State& st, typename SuperNeighborhoodExplorer::ThisMove& moves) const throw(EmptyNeighborhood)
+      virtual void RandomMove(const State& st, typename SuperNeighborhoodExplorer::MoveType& moves) const throw(EmptyNeighborhood)
       {
         // Select random neighborhood explorer with bias (don't assume that they sum up to one)
         double total_bias = 0.0;
@@ -802,7 +816,7 @@ namespace EasyLocal {
     
         // Convert to references
     
-        TheseMovesRefs r_moves = to_refs(moves);
+        MoveTypeRefs r_moves = to_refs(moves);
     
         // Set all actions to inactive
         SuperNeighborhoodExplorer::ExecuteAll(const_cast<State&>(st), r_moves, this->nhes, initialize_inactive);
@@ -812,7 +826,7 @@ namespace EasyLocal {
       }
   
       /** @copydoc NeighborhoodExplorer::FirstMove */
-      virtual void FirstMove(const State& st, typename SuperNeighborhoodExplorer::ThisMove& moves) const throw(EmptyNeighborhood)
+      virtual void FirstMove(const State& st, typename SuperNeighborhoodExplorer::MoveType& moves) const throw(EmptyNeighborhood)
       {
         // Select first NeighborhoodExplorer
         unsigned int selected = 0;
@@ -821,7 +835,7 @@ namespace EasyLocal {
         Call first_move(Call::Function::FIRST_MOVE);
     
         // Convert to references
-        TheseMovesRefs r_moves = to_refs(moves);
+        MoveTypeRefs r_moves = to_refs(moves);
     
         // Set all actions to inactive
         SuperNeighborhoodExplorer::ExecuteAll(const_cast<State&>(st), r_moves, this->nhes, initialize_inactive);
@@ -845,7 +859,7 @@ namespace EasyLocal {
       }
   
       /** @copydoc NeighborhoodExplorer::NextMove */
-      virtual bool NextMove(const State& st, typename SuperNeighborhoodExplorer::ThisMove& moves) const
+      virtual bool NextMove(const State& st, typename SuperNeighborhoodExplorer::MoveType& moves) const
       {
         // Select the current active NeighborhoodExplorer
         unsigned int selected = this->CurrentActiveMove(st, moves);
@@ -853,7 +867,7 @@ namespace EasyLocal {
         Call try_next_move(Call::Function::TRY_NEXT_MOVE);
     
         // Convert to references
-        TheseMovesRefs r_moves = to_refs(moves);    
+        MoveTypeRefs r_moves = to_refs(moves);    
     
         // If the current NeighborhoodExplorer has a next move, return true
         if (SuperNeighborhoodExplorer::CheckAt(const_cast<State&>(st), r_moves, this->nhes, try_next_move, selected))
@@ -880,7 +894,7 @@ namespace EasyLocal {
       }
   
       /** @copydoc NeighborhoodExplorer::DeltaCostFunction */
-      virtual CFtype DeltaCostFunction(const State& st, const typename SuperNeighborhoodExplorer::ThisMove& moves) const
+      virtual CFtype DeltaCostFunction(const State& st, const typename SuperNeighborhoodExplorer::MoveType& moves) const
       {
         // Select the current active NeighborhoodExplorer
         unsigned int selected = this->CurrentActiveMove(st, moves);
@@ -890,13 +904,13 @@ namespace EasyLocal {
     
         // Convert to references to non-const
         auto c_moves = const_cast<decltype(moves)>(moves);
-        TheseMovesRefs r_moves = to_refs(c_moves);
+        MoveTypeRefs r_moves = to_refs(c_moves);
         // Return cost
         return SuperNeighborhoodExplorer::ComputeAt(const_cast<State&>(st), r_moves, this->nhes, delta_cost_function, selected);
       }
 
       /** @copydoc NeighborhoodExplorer::DeltaViolations */
-      virtual CFtype DeltaViolations(const State& st, const typename SuperNeighborhoodExplorer::ThisMove& moves) const
+      virtual CFtype DeltaViolations(const State& st, const typename SuperNeighborhoodExplorer::MoveType& moves) const
       {
         // Select the current active NeighborhoodExplorer
         unsigned int selected = this->CurrentActiveMove(st, moves);
@@ -906,13 +920,13 @@ namespace EasyLocal {
     
         // Convert to references to non-const
         auto c_moves = const_cast<decltype(moves)>(moves);
-        TheseMovesRefs r_moves = to_refs(c_moves);
+        MoveTypeRefs r_moves = to_refs(c_moves);
         // Return cost
         return SuperNeighborhoodExplorer::ComputeAt(const_cast<State&>(st), r_moves, this->nhes, delta_violations, selected);
       }
 
       /** @copydoc NeighborhoodExplorer::MakeMove */
-      virtual void MakeMove(State& st, const typename SuperNeighborhoodExplorer::ThisMove& moves) const
+      virtual void MakeMove(State& st, const typename SuperNeighborhoodExplorer::MoveType& moves) const
       {
         // Select current active move
         unsigned int selected = this->CurrentActiveMove(st, moves);
@@ -920,13 +934,13 @@ namespace EasyLocal {
     
         // Convert to references to non-const
         auto c_moves = const_cast<decltype(moves)>(moves);
-        TheseMovesRefs r_moves = to_refs(c_moves);
+        MoveTypeRefs r_moves = to_refs(c_moves);
         // Execute move on state
         SuperNeighborhoodExplorer::ExecuteAt(st, r_moves, this->nhes, make_move, selected);
       }
   
       /** @copydoc NeighborhoodExplorer::FeasibleMove */
-      virtual bool FeasibleMove(const State& st, const typename SuperNeighborhoodExplorer::ThisMove& moves) const
+      virtual bool FeasibleMove(const State& st, const typename SuperNeighborhoodExplorer::MoveType& moves) const
       {
         // Select current active move
         unsigned int selected = this->CurrentActiveMove(st, moves);
@@ -934,7 +948,7 @@ namespace EasyLocal {
     
         // Convert to references to non-const
         auto c_moves = const_cast<decltype(moves)>(moves);
-        TheseMovesRefs r_moves = to_refs(c_moves);
+        MoveTypeRefs r_moves = to_refs(c_moves);
         // Check if current move is feasible
         return SuperNeighborhoodExplorer::CheckAt(const_cast<State&>(st), r_moves, this->nhes, feasible_move, selected);
       }
@@ -947,11 +961,11 @@ namespace EasyLocal {
           @param st current state
           @param moves tuple of moves
       */
-      int CurrentActiveMove(const State& st, const typename SuperNeighborhoodExplorer::ThisMove& moves) const
+      int CurrentActiveMove(const State& st, const typename SuperNeighborhoodExplorer::MoveType& moves) const
       {
         Call is_active(Call::Function::IS_ACTIVE);
         auto c_moves = const_cast<decltype(moves)>(moves);
-        TheseMovesRefs r_moves = to_refs(c_moves);
+        MoveTypeRefs r_moves = to_refs(c_moves);
         std::vector<bool> moves_status = SuperNeighborhoodExplorer::Check(const_cast<State&>(st), r_moves, this->nhes, is_active);
 
         return (int)std::distance(moves_status.begin(), std::find_if(moves_status.begin(), moves_status.end(), [](bool element) { return element; }));
@@ -968,7 +982,7 @@ namespace EasyLocal {
       typedef MultimodalNeighborhoodExplorer<Input, State, CFtype, BaseNeighborhoodExplorers ...> SuperNeighborhoodExplorer;
   
       /** Tuple type representing references to BaseNeighborhoodExplorers' moves (because we need to set them). */
-      typedef typename SuperNeighborhoodExplorer::TheseMovesRefs TheseMovesRefs;
+      typedef typename SuperNeighborhoodExplorer::MoveTypeRefs MoveTypeRefs;
   
       /** Alias to SuperNeighborhoodExplorer::Call */
       typedef typename SuperNeighborhoodExplorer::Call Call;
@@ -1078,9 +1092,9 @@ namespace EasyLocal {
           @param index index of the first move 
       */
       template <class ...NHEs>
-      static bool CompareMovesAt(State& st, std::tuple<std::reference_wrapper<ActiveMove<typename NHEs::ThisMove>>...>& moves, const ThisNeighborhoodExplorer& cp_nhe, int index)
+      static bool CompareMovesAt(State& st, std::tuple<std::reference_wrapper<ActiveMove<typename NHEs::MoveType>>...>& moves, const ThisNeighborhoodExplorer& cp_nhe, int index)
       {
-        return TupleDispatcher<std::tuple<std::reference_wrapper<ActiveMove<typename NHEs::ThisMove>>...>, std::tuple<std::reference_wrapper<NHEs>...>, sizeof...(NHEs)-1>::CompareMovesAt(st, moves, const_cast<ThisNeighborhoodExplorer&>(cp_nhe), (sizeof...(NHEs) - 1) - index);
+        return TupleDispatcher<std::tuple<std::reference_wrapper<ActiveMove<typename NHEs::MoveType>>...>, std::tuple<std::reference_wrapper<NHEs>...>, sizeof...(NHEs)-1>::CompareMovesAt(st, moves, const_cast<ThisNeighborhoodExplorer&>(cp_nhe), (sizeof...(NHEs) - 1) - index);
       }
   
       /** Checks that a move is related to the previous one.
@@ -1091,20 +1105,20 @@ namespace EasyLocal {
           @param level index of the first move
       */
       template <class ...NHEs>
-      static std::vector<bool> CompareMoves(State& st, std::tuple<std::reference_wrapper<ActiveMove<typename NHEs::ThisMove>>...>& moves, const ThisNeighborhoodExplorer& cp_nhe)
+      static std::vector<bool> CompareMoves(State& st, std::tuple<std::reference_wrapper<ActiveMove<typename NHEs::MoveType>>...>& moves, const ThisNeighborhoodExplorer& cp_nhe)
       {
-        return TupleDispatcher<std::tuple<std::reference_wrapper<ActiveMove<typename NHEs::ThisMove>>...>, std::tuple<std::reference_wrapper<NHEs>...>, sizeof...(NHEs)-1>::CompareMoves(st, moves, const_cast<ThisNeighborhoodExplorer&>(cp_nhe));
+        return TupleDispatcher<std::tuple<std::reference_wrapper<ActiveMove<typename NHEs::MoveType>>...>, std::tuple<std::reference_wrapper<NHEs>...>, sizeof...(NHEs)-1>::CompareMoves(st, moves, const_cast<ThisNeighborhoodExplorer&>(cp_nhe));
       }
   
   
   
 #if defined(DEBUG)
       /** Check that all the ActiveMoves, inside a tuple of moves, are active. */
-      void VerifyAllActives(const State& st, const typename SuperNeighborhoodExplorer::ThisMove& moves) const throw (std::logic_error)
+      void VerifyAllActives(const State& st, const typename SuperNeighborhoodExplorer::MoveType& moves) const throw (std::logic_error)
       {
         Call is_active(SuperNeighborhoodExplorer::Call::Function::IS_ACTIVE);
         auto c_moves = const_cast<decltype(moves)>(moves);
-        TheseMovesRefs r_moves = to_refs(c_moves);
+        MoveTypeRefs r_moves = to_refs(c_moves);
         std::vector<bool> active = SuperNeighborhoodExplorer::Check(const_cast<State&>(st), r_moves, this->nhes, is_active);
         for (bool v : active)
         {
@@ -1113,10 +1127,10 @@ namespace EasyLocal {
         }
       }
   
-      void VerifyAllRelated(const State& st, const typename SuperNeighborhoodExplorer::ThisMove& moves) const throw (std::logic_error)
+      void VerifyAllRelated(const State& st, const typename SuperNeighborhoodExplorer::MoveType& moves) const throw (std::logic_error)
       {
         auto c_moves = const_cast<decltype(moves)>(moves);
-        TheseMovesRefs r_moves = to_refs(c_moves);
+        MoveTypeRefs r_moves = to_refs(c_moves);
         std::vector<bool> are_related = CompareMoves<BaseNeighborhoodExplorers...>(const_cast<State&>(st), r_moves, *this);
         for (bool v : are_related)
         {
@@ -1129,7 +1143,7 @@ namespace EasyLocal {
     public:
 
       /** Tuple type representing references to BaseNeighborhoodExplorers. */
-      typedef std::tuple<std::reference_wrapper<BaseNeighborhoodExplorers> ...> TheseNeighborhoodExplorers;
+      typedef std::tuple<std::reference_wrapper<BaseNeighborhoodExplorers> ...> NeighborhoodExplorerTypes;
   
       /** Inherit constructor from superclass. Not yet supported by all compilers. */
       // using MultimodalNeighborhoodExplorer<Input, State, CFtype, BaseNeighborhoodExplorers ...>::MultimodalNeighborhoodExplorer;
@@ -1137,21 +1151,20 @@ namespace EasyLocal {
       CartesianProductNeighborhoodExplorer(Input& in, StateManager<Input,State,CFtype>& sm, std::string name, BaseNeighborhoodExplorers& ... nhes)
         : MultimodalNeighborhoodExplorer<Input, State, CFtype, BaseNeighborhoodExplorers ...>(in, sm, name, nhes ...)
           { }
-  
-  
-      CartesianProductNeighborhoodExplorer(Input& in, StateManager<Input,State,CFtype>& sm, std::string name, TheseNeighborhoodExplorers& nhes)
-        : MultimodalNeighborhoodExplorer<Input, State, CFtype, BaseNeighborhoodExplorers ...>(in, sm, name, nhes)
+      
+      /** Constructor, takes a variable number of base NeighborhoodExplorers.  */
+      CartesianProductNeighborhoodExplorer(const Input& in, StateManager<Input,State,CFtype>& sm, std::string name)
+        : MultimodalNeighborhoodExplorer<Input, State, CFtype, BaseNeighborhoodExplorers ...>(in, sm, name)
           { }
   
-    
       /** @copydoc NeighborhoodExplorer::RandomMove */
-      virtual void RandomMove(const State& st, typename SuperNeighborhoodExplorer::ThisMove& moves) const throw(EmptyNeighborhood)
+      virtual void RandomMove(const State& st, typename SuperNeighborhoodExplorer::MoveType& moves) const throw(EmptyNeighborhood)
       {
         Call random_move(SuperNeighborhoodExplorer::Call::Function::RANDOM_MOVE);
         Call make_move(SuperNeighborhoodExplorer::Call::Function::MAKE_MOVE);
 
         // Convert to references
-        TheseMovesRefs r_moves = to_refs(moves);
+        MoveTypeRefs r_moves = to_refs(moves);
     
         // The chain of states generated during the execution of the multimodal move (including the first one, but excluding the last)
         std::vector<State> temp_states(this->Modality(), State(this->in));
@@ -1189,14 +1202,14 @@ namespace EasyLocal {
       }
   
       /** @copydoc NeighborhoodExplorer::FirstMove */
-      virtual void FirstMove(const State& st, typename SuperNeighborhoodExplorer::ThisMove& moves) const throw(EmptyNeighborhood)
+      virtual void FirstMove(const State& st, typename SuperNeighborhoodExplorer::MoveType& moves) const throw(EmptyNeighborhood)
       {
         Call first_move(Call::Function::FIRST_MOVE);
         Call make_move(Call::Function::MAKE_MOVE);
         Call try_next_move(Call::Function::TRY_NEXT_MOVE);
     
         // Convert to references
-        TheseMovesRefs r_moves = to_refs(moves);
+        MoveTypeRefs r_moves = to_refs(moves);
     
         // The chain of states generated during the execution of the multimodal move (including the first one, but excluding the last)
         std::vector<State> temp_states(this->Modality(), State(this->in));
@@ -1286,7 +1299,7 @@ namespace EasyLocal {
       }
 
       /** @copydoc NeighborhoodExplorer::NextMove */
-      virtual bool NextMove(const State& st, typename SuperNeighborhoodExplorer::ThisMove& moves) const
+      virtual bool NextMove(const State& st, typename SuperNeighborhoodExplorer::MoveType& moves) const
       {
         Call first_move(Call::Function::FIRST_MOVE);
         Call make_move(Call::Function::MAKE_MOVE);
@@ -1295,7 +1308,7 @@ namespace EasyLocal {
         int i = 0;
     
         // Convert to references
-        TheseMovesRefs r_moves = to_refs(moves);
+        MoveTypeRefs r_moves = to_refs(moves);
     
         // The chain of states generated during the execution of the multimodal move (including the first one, but excluding the last)
         std::vector<State> temp_states(this->Modality(), State(this->in));
@@ -1368,7 +1381,7 @@ namespace EasyLocal {
       }
   
       /** @copydoc NeighborhoodExplorer::DeltaCostFunction */
-      virtual CFtype DeltaCostFunction(const State& st, const typename SuperNeighborhoodExplorer::ThisMove& moves) const
+      virtual CFtype DeltaCostFunction(const State& st, const typename SuperNeighborhoodExplorer::MoveType& moves) const
       {
 #if defined(DEBUG)
         VerifyAllActives(st, moves);
@@ -1380,7 +1393,7 @@ namespace EasyLocal {
     
         CFtype sum = static_cast<CFtype>(0);
         auto c_moves = const_cast<decltype(moves)>(moves);
-        TheseMovesRefs r_moves = to_refs(c_moves);
+        MoveTypeRefs r_moves = to_refs(c_moves);
         std::vector<State> temp_states(this->Modality(), State(this->in)); // the chain of states
         temp_states[0] = st; // the first state is a copy of to st
         // create and initialize all the remaining states in the chain
@@ -1396,7 +1409,7 @@ namespace EasyLocal {
       }
 
       /** @copydoc NeighborhoodExplorer::DeltaViolations */
-      virtual CFtype DeltaViolations(const State& st, const typename SuperNeighborhoodExplorer::ThisMove& moves) const
+      virtual CFtype DeltaViolations(const State& st, const typename SuperNeighborhoodExplorer::MoveType& moves) const
       {
 #if defined(DEBUG)
         VerifyAllActives(st, moves);
@@ -1408,7 +1421,7 @@ namespace EasyLocal {
     
         CFtype sum = static_cast<CFtype>(0);
         auto c_moves = const_cast<decltype(moves)>(moves);
-        TheseMovesRefs r_moves = to_refs(c_moves);
+        MoveTypeRefs r_moves = to_refs(c_moves);
         std::vector<State> temp_states(this->Modality(), State(this->in)); // the chain of states
         temp_states[0] = st; // the first state is a copy of to st
         // create and initialize all the remaining states in the chain
@@ -1424,7 +1437,7 @@ namespace EasyLocal {
       }
 
       /** @copydoc NeighborhoodExplorer::MakeMove */
-      virtual void MakeMove(State& st, const typename SuperNeighborhoodExplorer::ThisMove& moves) const
+      virtual void MakeMove(State& st, const typename SuperNeighborhoodExplorer::MoveType& moves) const
       {
 #if defined(DEBUG)
         VerifyAllActives(st, moves);
@@ -1432,12 +1445,12 @@ namespace EasyLocal {
 #endif
         Call make_move(Call::Function::MAKE_MOVE);
         auto c_moves = const_cast<decltype(moves)>(moves);
-        TheseMovesRefs r_moves = to_refs(c_moves);
+        MoveTypeRefs r_moves = to_refs(c_moves);
         SuperNeighborhoodExplorer::ExecuteAll(st, r_moves, this->nhes, make_move);
       }
   
       /** @copydoc NeighborhoodExplorer::FeasibleMove */
-      virtual bool FeasibleMove(const State& st, const typename SuperNeighborhoodExplorer::ThisMove& moves) const
+      virtual bool FeasibleMove(const State& st, const typename SuperNeighborhoodExplorer::MoveType& moves) const
       {
 #if defined(DEBUG)
         VerifyAllActives(st, moves);
@@ -1445,7 +1458,7 @@ namespace EasyLocal {
         Call is_feasible_move(Call::Function::FEASIBLE_MOVE);
         Call make_move(Call::Function::MAKE_MOVE);
         auto c_moves = const_cast<decltype(moves)>(moves);
-        TheseMovesRefs r_moves = to_refs(c_moves);
+        MoveTypeRefs r_moves = to_refs(c_moves);
         std::vector<State> temp_states(this->Modality(), State(this->in)); // the chain of states
         temp_states[0] = st; // the first state is a copy of to st
         // create and initialize all the remaining states in the chain
@@ -1459,42 +1472,6 @@ namespace EasyLocal {
             return false;
         }
         return true;
-      }
-    };
-
-    // Generic variadic struct, to be used as accumulator
-    template<class... Ps>
-    struct TypeList
-    {
-    };
-
-    // Forward declaration of PowerNeighborhoodExplorer helper struct
-    template <class A, class B, class C, class D, int N, class E>
-    struct PowerNeighborhoodExplorerHelp;
-
-    // Base case of the recursion used to build the right neighborhoodExplorer type
-    template<class Input, class State, class CFtype, class NeighborhoodExplorer, class... NeighborhoodExplorers>
-    struct PowerNeighborhoodExplorerHelp<Input, State, CFtype, NeighborhoodExplorer, 0, TypeList<NeighborhoodExplorers...> >
-    {
-      typedef CartesianProductNeighborhoodExplorer<Input, State, CFtype, NeighborhoodExplorers... > ThisCartesianProductNeighborhoodExplorer;
-    };
-
-    // Recursive step
-    template<class Input, class State, class CFtype, class NeighborhoodExplorer, unsigned N, class... NeighborhoodExplorers>
-    struct PowerNeighborhoodExplorerHelp< Input,  State,  CFtype,  NeighborhoodExplorer, N, TypeList<NeighborhoodExplorers...>> : public PowerNeighborhoodExplorerHelp<Input, State, CFtype, NeighborhoodExplorer, N-1, TypeList<NeighborhoodExplorer, NeighborhoodExplorers...>>
-    {
-    };
-
-    template<class Input, class State, class CFtype, class NeighborhoodExplorer, unsigned N>
-    class PowerNeighborhoodExplorer : public PowerNeighborhoodExplorerHelp<Input, State, CFtype, NeighborhoodExplorer, N, TypeList<>>::CartesianProductNeighborhoodExplorer
-    {
-    public:
-  
-      typedef typename PowerNeighborhoodExplorerHelp<Input, State, CFtype, NeighborhoodExplorer, N, TypeList<>>::CartesianProductNeighborhoodExplorer SuperNeighborhoodExplorer;
-      typedef typename SuperNeighborhoodExplorer::TheseNeighborhoodExplorers TheseNeighborhoodExplorers;
-    
-      PowerNeighborhoodExplorer(Input& in, StateManager<Input,State,CFtype>& sm, std::string name, TheseNeighborhoodExplorers& nhe) : PowerNeighborhoodExplorerHelp<Input, State, CFtype, NeighborhoodExplorer, N, TypeList<>>::CartesianProductNeighborhoodExplorer(in, sm, name, nhe)
-      {
       }
     };
   }

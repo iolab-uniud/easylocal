@@ -29,8 +29,10 @@ namespace EasyLocal {
     class NeighborhoodExplorer
     {
     public:
-      typedef Move ThisMove;
-
+      typedef Move MoveType;
+      typedef State StateType;
+      typedef CFtype CostType;
+      
       /** Generates a random move in the neighborhood of a given state.
           @note To be implemented in the application (MustDef)
           @param st the start state
