@@ -22,11 +22,11 @@ namespace EasyLocal {
       unsigned int max_k,
       std::string name);
 	
-      void SetKicker(Kicker<Input,State,CFtype>& k);
+      // void SetKicker(Kicker<Input,State,CFtype>& k);
 
     protected:
       void Go();
-      Kicker<Input,State,CFtype>* p_kicker; /**< A pointer to the managed kicker. */
+      // Kicker<Input,State,CFtype>* p_kicker; /**< A pointer to the managed kicker. */
       unsigned int max_k;
     };
 

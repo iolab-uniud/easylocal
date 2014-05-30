@@ -10,6 +10,7 @@
 #include "easylocal/modeling/symbols.hh"
 
 namespace EasyLocal {
+  
   namespace Modeling {
         
     template <typename T>

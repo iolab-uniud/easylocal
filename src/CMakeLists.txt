@@ -3,7 +3,7 @@ find_package(Boost 1.45.0 COMPONENTS program_options)
 
 include_directories(${Boost_INCLUDE_DIR} ${PROJECT_INCLUDE_DIR})
 
-set(subdirs helpers kickers observers runners solvers testers utils modeling)
+set(subdirs helpers observers runners solvers testers utils modeling)
 
 # Generate list of all files and directories to add to library
 set(subdir_sources)

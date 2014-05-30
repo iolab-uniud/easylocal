@@ -6,7 +6,7 @@
 */  
 
 #include "easylocal/solvers/simplelocalsearch.hh"
-#include "easylocal/solvers/variableneighborhooddescent.hh"
+//#include "easylocal/solvers/variableneighborhooddescent.hh"
 #include "easylocal/solvers/tokenringsearch.hh"
 
 //#include "easylocal/solvers/generalizedlocalsearch.hh"

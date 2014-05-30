@@ -4,7 +4,6 @@
 #include <vector>
 
 #include "easylocal/solvers/abstractlocalsearch.hh"
-#include "easylocal/kickers/kicker.hh"
 
 namespace EasyLocal {
   
