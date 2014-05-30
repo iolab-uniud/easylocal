@@ -15,7 +15,7 @@ namespace EasyLocal {
       
       Kicker(const Input& in, StateManager<Input, State, CFtype>& sm, const NeighborhoodExplorer<Input, State, Move, CFtype>& ne) : ne(ne), sm(sm) { }
       
-      void FirstKick(const State& st, std::vector<Move>& kick, unsigned int length) throw(EmptyNeighborhood) const
+      void FirstKick(const State& st, std::vector<Move>& kick, unsigned int length) const throw(EmptyNeighborhood)
       {
         unsigned int i = 0;
         kick.resize(length);
@@ -37,7 +37,7 @@ namespace EasyLocal {
         
       }
       
-      void FirstKick(const State& st, std::vector<Move>& kick, unsigned int length) const;
+      void RandomKick(const State& st, std::vector<Move>& kick, unsigned int length) const;
       
       
     protected:
