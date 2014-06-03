@@ -12,7 +12,11 @@ namespace EasyLocal {
     {
     public:
       
+      /** Constructor. */
       Kicker(const Input& in, const NeighborhoodExplorer<Input, State, Move, CFtype>& ne) : ne(ne) { }
+      
+      /** Virtual destructor. */
+      virtual Kicker~() { }
       
       /** Generates the first sequence of moves. 
           @param st current state
@@ -20,7 +24,7 @@ namespace EasyLocal {
           @param length length of the kick
           @throws EmptyNeighborhood if no kick to apply can be found
       */
-      void FirstKick(const State& st, std::vector<Move>& kick, unsigned int length) const throw(EmptyNeighborhood)
+      virtual void FirstKick(const State& st, std::vector<Move>& kick, unsigned int length) const throw(EmptyNeighborhood)
       { 
         kick.clear();
         kick.resize(length);
@@ -101,8 +105,9 @@ namespace EasyLocal {
           @param kick a previously generated list of moves
           @param length length of the kick
       */
-      bool NextKick(const State& st, std::vector<Move>& kick, unsigned int length)
+      virtual bool NextKick(const State& st, std::vector<Move>& kick)
       { 
+        unsigned int length = kick.size();
         std::vector<State> t_state(length);
         
         // compute states, advance cur
@@ -193,9 +198,34 @@ namespace EasyLocal {
         return true;
       }
       
-      void RandomKick(const State& st, std::vector<Move>& kick, unsigned int length) const throw(EmptyNeighborhood)
+      virtual void RandomKick(const State& st, std::vector<Move>& kick, unsigned int length) const throw(EmptyNeighborhood)
       {
         throw EmptyNeighborhood();
+      }
+      
+      virtual CFtype FirstImprovingKick(const State& st, std::vector<Move>& kick, unsigned int length) const throw (EmptyNeighborhood)
+      {
+        throw EmptyNeighborhood();
+      }
+      
+      virtual CFtype BestKick(const State& st, std::vector<Move>& kick, unsigned int length) const throw (EmptyNeighborhood)
+      {
+        throw EmptyNeighborhood();
+      }
+      
+      virtual CFtype SampleKick(const State &st, std::vector<Move>& kick, unsigned int length, unsigned int samples) const throw (EmptyNeighborhood)
+      {
+        throw EmptyNeighborhood();
+      }
+      
+      virtual bool FeasibleKick(const State& st, const std::vector<Move>& kick) const
+      {
+        return true;
+      }
+  
+      virtual void MakeKick(State &st, const std::vector<Move>& kick) const 
+      {
+        return;
       }
       
       
