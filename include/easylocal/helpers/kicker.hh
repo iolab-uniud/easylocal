@@ -54,7 +54,7 @@ namespace EasyLocal {
                 cur--;
               }
               else
-                throw EmptyNeighborhood;
+                throw EmptyNeighborhood();
             }
           }
           else
@@ -69,7 +69,7 @@ namespace EasyLocal {
                 cur--;
               }
               else
-                throw EmptyNeighborhood;
+                throw EmptyNeighborhood();
             }
           }
           
@@ -85,7 +85,7 @@ namespace EasyLocal {
                 cur--;
               }
               else
-                throw EmptyNeighborhood;
+                throw EmptyNeighborhood();
             }
           }
           
@@ -195,7 +195,7 @@ namespace EasyLocal {
       
       void RandomKick(const State& st, std::vector<Move>& kick, unsigned int length) const throw(EmptyNeighborhood)
       {
-        throw EmptyNeighborhood;
+        throw EmptyNeighborhood();
       }
       
       
