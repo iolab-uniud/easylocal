@@ -5,6 +5,7 @@
 #include <iostream>
 #include <stdexcept>
 #include <memory>
+#include <iterator>
 
 #include "easylocal/helpers/deltacostcomponent.hh"
 #include "easylocal/helpers/statemanager.hh"
@@ -20,6 +21,8 @@ namespace EasyLocal {
     public:
       EmptyNeighborhood() : std::logic_error("Empty neighborhood") { }
     };
+    
+    
 
     /** The Neighborhood Explorer is responsible for the strategy exploited in the exploration of the neighborhood, and for computing the variations of the cost function due to a specific
         @ref Move.
@@ -29,6 +32,7 @@ namespace EasyLocal {
     class NeighborhoodExplorer
     {
     public:
+      
       typedef Move MoveType;
       typedef State StateType;
       typedef CFtype CostType;
@@ -46,7 +50,7 @@ namespace EasyLocal {
           @param mv the move
       */
       virtual void FirstMove(const State& st, Move& mv) const throw (EmptyNeighborhood) = 0;
-  
+      
       /** Generates the move that follows mv in the exploration of the neighborhood of the state st. It returns the generated move in the same variable mv.
           @return @c false if @c mv is the last in the neighborhood of the state.
           @note To be implemented in the application.
@@ -54,6 +58,22 @@ namespace EasyLocal {
           @param mv the move
       */
       virtual bool NextMove(const State &st, Move& mv) const = 0;
+      
+      /**
+        Generates the move that follows mv in the exploration of the neighborhood of the state st. It returns the generated move in the same variable mv.
+        Explores the neighborhood starting from an initial_move that is not the first move in the enumeration.
+          @return @c false if @c mv is the last in the neighborhood of the state.
+          @note To be implemented in the application.
+          @param st the start state
+          @param mv the move
+      */
+      virtual bool NextMove(const State &st, Move& mv, const Move& initial_mv) const
+      {
+        if (!NextMove(st, mv))
+          FirstMove(st, mv);        
+        return (mv != initial_mv);
+      }
+      
   
       /** Generate the first improvingt move in the exploration of the neighborhood of a given state. It uses @ref FirstMove and @ref NextMove
           @param st the start state
@@ -69,25 +89,6 @@ namespace EasyLocal {
           @throws EmptyNeighborhood when the State st has no neighbor
       */
       virtual CFtype BestMove(const State& st, Move& mv) const throw (EmptyNeighborhood);
-  
-      /** Generates the best move in a random sample exploration of the neighborhood of a given state.
-          @param st the start state.
-          @param mv the generated move.
-          @param samples the number of sampled neighbors
-          @return the variation of the cost due to the Move mv.
-          @throws EmptyNeighborhood when the State st has no neighbor
-      */
-      virtual CFtype SampleMove(const State &st, Move& mv, unsigned int samples) const throw (EmptyNeighborhood);
-  
-      /** States whether a move is feasible or not in a given state. By default it considers all the moves as feasible, but it can be overwritten by the user.
-          @param st the start state
-          @param @c mv the move checked for feasibility
-          @return @c true if the move @mv is feasible in @c st, false otherwise
-      */
-      virtual bool FeasibleMove(const State& st, const Move& mv) const
-      {
-        return true;
-      }
   
       /** Modifies the state passed as parameter by applying a given move upon it.   
           @note To be implemented in the application (MustDef)
@@ -214,7 +215,7 @@ namespace EasyLocal {
       @param name the name associated to the NeighborhoodExplorer.
       */
       NeighborhoodExplorer(const Input& in, StateManager<Input,State,CFtype>& sm, std::string name);
-      virtual ~NeighborhoodExplorer() {}
+      virtual ~NeighborhoodExplorer() {}      
   
       const Input& in;/**< A reference to the input */
       StateManager<Input, State,CFtype>& sm; /**< A reference to the attached state manager. */
@@ -485,42 +486,6 @@ namespace EasyLocal {
       mv = best_move;
       return best_delta;
     }
-
-    template <class Input, class State, class Move, typename CFtype>
-    CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::SampleMove(const State &st, Move& mv, unsigned int samples) const throw (EmptyNeighborhood)
-    {
-      unsigned int number_of_bests = 0;
-      unsigned int s = 1;
-      CFtype mv_cost;
-  
-      RandomMove(st, mv);
-      mv_cost = DeltaCostFunction(st, mv);
-      Move best_move = mv;
-      CFtype best_delta = mv_cost;
-	
-      do
-      {
-        if (LessThan(mv_cost, best_delta))
-        {
-          best_move = mv;
-          best_delta = mv_cost;
-          number_of_bests = 1;
-        }
-        else if (EqualTo(mv_cost, best_delta))
-        {
-          if (Random::Int(0, number_of_bests) == 0) // accept the move with probability 1 / (1 + number_of_bests)
-            best_move = mv;
-          number_of_bests++;
-        }
-        RandomMove(st, mv);
-        mv_cost = DeltaCostFunction(st, mv);
-        s++;
-      }
-      while (s < samples);
-  
-      mv = best_move;
-      return best_delta;
-    }     
   }
 }
 

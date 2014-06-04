@@ -68,7 +68,6 @@ namespace EasyLocal {
           INITIALIZE_INACTIVE,
           INITIALIZE_ACTIVE,
           MAKE_MOVE,
-          FEASIBLE_MOVE,
           RANDOM_MOVE,
           FIRST_MOVE,
           TRY_NEXT_MOVE,
@@ -136,9 +135,6 @@ namespace EasyLocal {
           std::function<bool(const N&, State&, ActiveMove<typename N::MoveType>&)> f;
           switch (to_call)
           {
-            case FEASIBLE_MOVE:
-            f = &IsFeasibleMove<N>;
-            break;
             case TRY_NEXT_MOVE:
             f = &TryNextMove<N>;
             break;
@@ -684,19 +680,6 @@ namespace EasyLocal {
           n.MakeMove(s,m);
       }
 
-      /** Checks if a move is feasible.
-          @param n a reference to the move's NeighborhoodExplorer
-          @param s a reference to the current State
-          @param m a reference to the ActiveMove to check
-      */
-      template<class N>
-      static bool IsFeasibleMove(const N& n, State& s, ActiveMove<typename N::MoveType>& m)
-      {
-        if (m.active) 
-          return n.FeasibleMove(s, m);
-        else
-          return true;
-      }
 
       /** Sets the active flag of an ActiveMove to false
           @param n a reference to the move's NeighborhoodExplorer
@@ -937,20 +920,6 @@ namespace EasyLocal {
         MoveTypeRefs r_moves = to_refs(c_moves);
         // Execute move on state
         SuperNeighborhoodExplorer::ExecuteAt(st, r_moves, this->nhes, make_move, selected);
-      }
-  
-      /** @copydoc NeighborhoodExplorer::FeasibleMove */
-      virtual bool FeasibleMove(const State& st, const typename SuperNeighborhoodExplorer::MoveType& moves) const
-      {
-        // Select current active move
-        unsigned int selected = this->CurrentActiveMove(st, moves);
-        Call feasible_move(Call::Function::FEASIBLE_MOVE);
-    
-        // Convert to references to non-const
-        auto c_moves = const_cast<decltype(moves)>(moves);
-        MoveTypeRefs r_moves = to_refs(c_moves);
-        // Check if current move is feasible
-        return SuperNeighborhoodExplorer::CheckAt(const_cast<State&>(st), r_moves, this->nhes, feasible_move, selected);
       }
   
     protected:
@@ -1447,31 +1416,6 @@ namespace EasyLocal {
         auto c_moves = const_cast<decltype(moves)>(moves);
         MoveTypeRefs r_moves = to_refs(c_moves);
         SuperNeighborhoodExplorer::ExecuteAll(st, r_moves, this->nhes, make_move);
-      }
-  
-      /** @copydoc NeighborhoodExplorer::FeasibleMove */
-      virtual bool FeasibleMove(const State& st, const typename SuperNeighborhoodExplorer::MoveType& moves) const
-      {
-#if defined(DEBUG)
-        VerifyAllActives(st, moves);
-#endif
-        Call is_feasible_move(Call::Function::FEASIBLE_MOVE);
-        Call make_move(Call::Function::MAKE_MOVE);
-        auto c_moves = const_cast<decltype(moves)>(moves);
-        MoveTypeRefs r_moves = to_refs(c_moves);
-        std::vector<State> temp_states(this->Modality(), State(this->in)); // the chain of states
-        temp_states[0] = st; // the first state is a copy of to st
-        // create and initialize all the remaining states in the chain
-        if (!SuperNeighborhoodExplorer::CheckAt(temp_states[0], r_moves, this->nhes, is_feasible_move, 0))
-          return false;
-        for (unsigned int i = 1; i < this->Modality(); i++)
-        {
-          temp_states[i] = temp_states[i - 1];
-          SuperNeighborhoodExplorer::ExecuteAt(temp_states[i], r_moves, this->nhes, make_move, i - 1);
-          if (!SuperNeighborhoodExplorer::CheckAt(temp_states[i], r_moves, this->nhes, is_feasible_move, i))
-            return false;
-        }
-        return true;
       }
     };
   }

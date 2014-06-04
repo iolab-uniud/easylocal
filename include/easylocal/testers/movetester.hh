@@ -4,6 +4,7 @@
 #include <map>
 #include <iterator>
 #include <cmath>
+#include <chrono>
 
 #include "easylocal/testers/componenttester.hh"
 #include "easylocal/testers/tester.hh"
@@ -215,14 +216,8 @@ namespace EasyLocal {
           PrintMoveCosts(st,mv);
           break;
           case 7:
-          do 
-          {
-            os << "Input move : ";
-            std::cin >> mv;
-            if (!ne.FeasibleMove(st,mv))
-              os << "Move " << mv << " is infeasible " << std::endl;
-          }
-          while (!ne.FeasibleMove(st,mv));
+          os << "Input move : ";
+          std::cin >> mv;
           PrintMoveCosts(st,mv);
           break;
           case 8:
@@ -246,13 +241,8 @@ namespace EasyLocal {
         if (choice == 1 || choice == 2 || choice == 3)
         {
           os << "Move : " << mv << std::endl;
-          if (ne.FeasibleMove(st,mv))
-          {
-            ne.MakeMove(st,mv);
-            return true;
-          }
-          else
-            os << "Infeasible move!" << std::endl;
+          ne.MakeMove(st,mv);
+          return true;
         }    
       }
       catch (EmptyNeighborhood e)

@@ -29,7 +29,7 @@ namespace EasyLocal {
   
       /** Checks if the parameter has been set. */
       bool IsSet() const { return is_set; }
-  
+      
       /** To print out values. */
       virtual std::string ToString() const = 0;
   

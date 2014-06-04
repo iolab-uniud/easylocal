@@ -70,7 +70,6 @@ namespace EasyLocal {
       // the StopCriterion test
     }
 
-
     /**
     The search is stopped when no (strictly) improving move has been found.
     */

@@ -21,6 +21,7 @@ namespace EasyLocal {
     {
     public:
       GeneralizedLocalSearchObserver(unsigned int verbosity_level, unsigned int plot_level = 0,  std::ostream& log_os = std::cout, std::ostream& plot_os = std::cout);
+            
       void NotifyRestart(GeneralizedLocalSearch<Input,Output,State,CFtype>& s, unsigned int restart);
       void NotifyRound(GeneralizedLocalSearch<Input,Output,State,CFtype>& s);
       void NotifyRunnerStart(GeneralizedLocalSearch<Input,Output,State,CFtype>& s);
