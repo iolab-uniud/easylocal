@@ -7,5 +7,7 @@
 
 #include "easylocal/testers/tester.hh"
 #include "easylocal/testers/movetester.hh"
+#include "easylocal/testers/componenttester.hh"
+#include "easylocal/testers/kickertester.hh"
 
 #endif // _TESTERS_HH_
