@@ -33,7 +33,7 @@ namespace EasyLocal {
         @param m @ref Move to read
     */
     template <typename Move>
-    std::istream& operator>>(std::istream& is = std::cin, ActiveMove<Move>& m)
+    std::istream& operator>>(std::istream& is, ActiveMove<Move>& m)
     {
       is >> static_cast<Move&>(m);
       return is;
@@ -44,7 +44,7 @@ namespace EasyLocal {
         @param m @ref Move to print
     */
     template <typename Move>
-    std::ostream& operator<<(std::ostream& os = std::cout, const ActiveMove<Move>& m)
+    std::ostream& operator<<(std::ostream& os, const ActiveMove<Move>& m)
     {
       if (m.active)
         os << static_cast<const Move&>(m);
