@@ -194,7 +194,7 @@ namespace EasyLocal {
     private:
   
       /** Stores the move and updates the related data. */
-      virtual void UpdateBestState();
+      virtual void UpdateBestState() = 0;
 
       /** Actions that must be done at the start of the search, and which cannot be redefined by subclasses. */
       void InitializeRun(State&) throw (ParameterNotSet, IncorrectParameterValue);
@@ -252,21 +252,6 @@ namespace EasyLocal {
       return TerminateRun(s);
     }
 
-    template <class Input, class State, typename CFtype>
-    void Runner<Input,State,CFtype>::UpdateBestState()
-    {
-      /** Neutral moves allowed for diversification (@todo should be parameter=?) */
-      if (LessOrEqualThan(current_state_cost, best_state_cost))
-      {
-        *p_best_state = *p_current_state;
-        if (LessThan(current_state_cost, best_state_cost))
-        {
-          best_state_cost = current_state_cost;
-          best_state_violations = current_state_violations;
-          iteration_of_best = iteration;
-        }
-      }
-    }
 
     /**
     Prepare the iteration (e.g. updates the counter that tracks the number of iterations elapsed)
