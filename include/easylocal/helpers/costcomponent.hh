@@ -7,22 +7,22 @@
 namespace EasyLocal {
 
   namespace Core {
-        
+
     /** The responsibility of this class is to compute a component of cost based on the information contained in a state. It doesn't handle delta costs, as they are treated in @ref DeltaCostComponent.
         @brief The class CostComponent manages one single component of the cost, either hard or soft.
         @tparam Input the class representing the problem input
         @tparam State the class representing the problem's state
         @tparam CFtype the type of the cost function (typically int)
-        @ingroup Helpers    
+        @ingroup Helpers
     */
     template <class Input, class State, typename CFtype>
     class CostComponent : public Printable
     {
     public:
-      
+
       /** @copydoc Printable::Print() */
       virtual void Print(std::ostream& os = std::cout) const;
-            
+
       /** Compute this component of cost with respect to a given state and regardless of the weight.
           @param st the @ref State to be evaluated
           @return the computed cost, regardless of its weight
@@ -58,7 +58,7 @@ namespace EasyLocal {
       /** Set this cost component to be soft. */
       void SetSoft() { is_hard = false; }
 
-      /** Tell if this cost component is hard
+      /** Tell if this cost component is hard.
           @return true if this cost component is hard, false otherwise
       */
       bool IsHard() const { return is_hard; }
@@ -72,7 +72,7 @@ namespace EasyLocal {
       const std::string name;
 
     protected:
-  
+
       /** Constructor.
           @param in @ref Input object
           @param weight weight of the cost component
@@ -83,7 +83,7 @@ namespace EasyLocal {
 
       /** Destructor. */
       virtual ~CostComponent() {}
-  
+
       /** Input object. */
       const Input& in;
 
@@ -95,18 +95,18 @@ namespace EasyLocal {
     };
 
     /** IMPLEMENTATION */
- 
+
     template <class Input, class State, typename CFtype>
     CostComponent<Input,State,CFtype>::CostComponent(const Input& i, const CFtype& w, bool hard, std::string e_name)
-      : name(e_name), in(i), weight(w), is_hard(hard)
-        { }
+    : name(e_name), in(i), weight(w), is_hard(hard)
+    { }
 
     template <class Input, class State, typename CFtype>
     void CostComponent<Input,State,CFtype>::Print(std::ostream& os) const
-    { 
-      os  << "Cost Component " << name << ": weight " << weight << (is_hard ? "*" : "") << std::endl; 
+    {
+      os  << "Cost Component " << name << ": weight " << weight << (is_hard ? "*" : "") << std::endl;
     }
-    
+
   }
 }
 
