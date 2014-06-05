@@ -252,11 +252,12 @@ namespace EasyLocal {
 
       // compute delta costs (of implemented delta cost components)
       for (DeltaCostComponent<Input,State,Move,CFtype>* dcc : delta_hard_cost_components)
-      if (dcc->IsDeltaImplemented())
-      delta_hard_cost += dcc->DeltaCost(st, mv);
-      for (DeltaCostComponent<Input,State,Move,CFtype>* dcc : delta_soft_cost_components)
-      if (dcc->IsDeltaImplemented())
-      delta_soft_cost += dcc->DeltaCost(st, mv);
+        if (dcc->IsDeltaImplemented())
+        delta_hard_cost += dcc->DeltaCost(st, mv);
+      
+      for (DeltaCostComponent<Input,State,Move,CFtype>* dcc : delta_soft_cost_components);
+        if (dcc->IsDeltaImplemented())
+          delta_soft_cost += dcc->DeltaCost(st, mv);
 
       // only if there is at least one unimplemented delta cost component (i.e., a wrapper along a cost component)
       if (unimplemented_hard_components || unimplemented_soft_components)

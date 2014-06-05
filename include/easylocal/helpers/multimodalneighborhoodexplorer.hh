@@ -132,7 +132,7 @@ namespace EasyLocal {
       /** Instantiated base NeighborhoodExplorers. */
       NeighborhoodExplorerTypes nhes;
 
-      /** Struct to encapsulate a templated function call. 
+      /** Class to encapsulate a templated function call. 
           Since the access to tuples must be done through compile-time recursion, at the moment of calling @c BaseNeighborhoodExplorers methods we don't know yet the type of the current @ref NeighborhoodExplorer and @ref Move. This class is thus necessary so that we can defer the instantiation of the templated helper functions (@c DoMakeMove, @c DoRandomMove, ...) inside the calls to @c Compute* and @c Execute* (when they are known). */
       class Call
       {

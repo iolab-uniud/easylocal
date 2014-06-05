@@ -9,18 +9,23 @@ namespace EasyLocal {
 
   namespace Core {
 
-    /** Multimodal tabu list manager, to handle tabu lists of multimodal moves. */
+    /** Multimodal @ref TabuListManager, to handle tabu lists of multimodal moves. */
     template <class State, typename CFtype, class ... BaseTabuListManagers>
     class MultimodalTabuListManager : public TabuListManager<State, std::tuple<ActiveMove<typename BaseTabuListManagers::MoveType> ...>, CFtype>, public Printable
     {
     public:
 
-      /** Typedefs. */
+
+      /** Tuple type representing the combination of @c BaseTabuListManagers::MoveType. */
       typedef std::tuple<ActiveMove<typename BaseTabuListManagers::MoveType> ...> MoveTypes;
+      
+      /** Type of the @ref TabuListManager which has a tuple of @ref Move as its @ref Move type. */
       typedef TabuListManager<State, std::tuple<ActiveMove<typename BaseTabuListManagers::MoveType> ...>, CFtype> SuperTabuListManager; // type of this tabu list manager
+      
+      /** Type of the tuple of @c BaseTabuListManagers. */
       typedef std::tuple<BaseTabuListManagers...> TabuListManagerTypes;
 
-      /** Modality of the TabuListManager */
+      /** Modality of the TabuListManager (number of @ref TabuListManager) */
       virtual unsigned int Modality() const { return sizeof...(BaseTabuListManagers); }
 
       /** Read all parameters from an input stream (prints hints on output stream). */
@@ -46,18 +51,32 @@ namespace EasyLocal {
 
       /** Constructor, takes a variable number of base TabuListManagers.  */
       MultimodalTabuListManager(BaseTabuListManagers& ... tlms) 
-        : tlms(std::make_tuple(BaseTabuListManagers(tlms) ...)) { }
+      : tlms(std::make_tuple(BaseTabuListManagers(tlms) ...)) 
+      { }
 
       /** List of tabu list managers. */
       TabuListManagerTypes tlms;
 
-      /** Tuple dispatching helpers. */
+  /** Class to encapsulate a templated function call. 
+      Since the access to tuples must be done through compile-time recursion, at the moment of calling @c BaseTabuListManagers methods we don't know yet the type of the current @ref TabuListManager and @ref Move. This class is thus necessary so that we can defer the instantiation of the templated helper functions (@c IsInverse, @c IsActive, ...) inside the calls to @c Check* (when they are known). */
       class Call
       {
       public:
-        enum Function { IS_INVERSE, IS_ACTIVE, STATUS_STRING };
+        
+        /** An enum representing the kind of functions which can be called. */
+        enum Function 
+        { 
+          IS_INVERSE, 
+          IS_ACTIVE, 
+          STATUS_STRING 
+        };
+        
+        /** Constructor.
+            @param f the @ref Function to call.
+        */
         Call(Function f) : to_call(f) { }
 
+        /** Method to generate a function with @c bool return type. */
         template <class T, class M>
         std::function<bool(const T&, const M&, const M&)> getBool() const throw(std::logic_error)
         {
@@ -76,6 +95,7 @@ namespace EasyLocal {
           return f;
         }
 
+        /** Method to generate a function with @c std::string return type. */
         template <class T>
         std::function<std::string(const T&)> getString() const throw(std::logic_error)
         {
@@ -94,6 +114,8 @@ namespace EasyLocal {
         Function to_call;
       };
 
+      /** Tuple dispatcher, used to run @ref Call objects on tuples.
+          Similarly to @ref Call, this struct defines a number of templated functions that accept a tuple of @ref Move and a tuple of @ref TabuListManager, together with other parameters (depending on the function). The struct is template-specialized to handle compile-time recursion. */
       template <class TupleOfMoves, class TupleOfTLMs, std::size_t N>
       struct TupleDispatcher
       {
