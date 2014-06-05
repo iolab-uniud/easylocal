@@ -8,61 +8,58 @@
 #include "easylocal/helpers/prohibitionmanager.hh"
 #include "easylocal/utils/random.hh"
 #include "easylocal/utils/types.hh"
+#include "easylocal/utils/printable.hh"
 
 namespace EasyLocal {
 
   namespace Core {
 
+    /** Forward declaration. */
     template <class State, class Move, typename CFtype>
     class TabuListManager;
 
+    /** Forward declaration. */
     template <class State, class Move, typename CFtype>
     class FrequencyTabuListManager;
 
-    /** The class for a @c Move item in the Tabu List.
-    It is simply a compound data made up of the @c Move itself and the
-    iteration at which the element shall leave the list.
-    */
+    /** The class for a @c Move item in the Tabu List. It is simply a compound data made up of the @c Move itself and the iteration at which the element shall leave the list. */
     template <class State, class Move, typename CFtype>
     class TabuListItem
     {
       friend class TabuListManager<State, Move,CFtype>;
       friend class FrequencyTabuListManager<State, Move,CFtype>;
+      
     public:
-      /** Creates a tabu list item constituted by a move
-      and the leaving iteration passed as parameters.
-      @param mv the move to insert into the list
-      @param out the iteration at which the move leaves the list.
+      
+      /** Creates a tabu list item constituted by a move and the leaving iteration passed as parameters.
+          @param mv the move to insert into the list
+          @param out the iteration at which the move leaves the list.
       */
       TabuListItem(Move mv, unsigned long int out)
-        : elem(mv), out_iter(out)
-      {
-        
-      }
-      virtual ~TabuListItem() {}
-
+        : elem(mv), out_iter(out) { }
+      
+      /** Virtual destructor. */
+      virtual ~TabuListItem() { }
 
     protected:
-      Move elem;              /**< The move stored in the list item. */
-      unsigned long int out_iter; /**< iteration at which the element
-        leaves the list */
+      
+      /** The move stored in the list item. */
+      Move elem;              
+      
+      /** Iteration at which the element leaves the list */
+      unsigned long int out_iter;
     };
 
-    /** The Tabu List Manager handles a list of @c Move elements according
-    to the prohibition mechanisms of tabu search.
-    Namely it maintains an item in the list for a number of iterations
-    that varies randomly in a given range.
-    Each time a new @c Move is inserted in the list, the ones which their
-    iteration count has expired are removed.
+    /** The Tabu List Manager handles a list of @c Move elements according to the prohibition mechanisms of tabu search. Namely it maintains an item in the list for a number of iterations that varies randomly in a given range. Each time a new @c Move is inserted in the list, the ones which their iteration count has expired are removed.
     @ingroup Helpers
     */
     template <class State, class Move, typename CFtype>
-    class TabuListManager
-      : public ProhibitionManager<State,Move,CFtype>
+    class TabuListManager : public ProhibitionManager<State,Move,CFtype>, Printable
     {
     public:
       typedef Move MoveType;
 
+      /** @copydoc Printable::Print() */
       void Print(std::ostream& os = std::cout) const;
       virtual void InsertMove(const State& st, const Move& mv, const CFtype& mv_cost, const CFtype& curr, const CFtype& best);
       virtual bool ProhibitedMove(const State& st, const Move& mv, const CFtype& mv_cost) const;
@@ -71,16 +68,16 @@ namespace EasyLocal {
       @param min the minimum tabu tenure
       @param max the maximum tabu tenure */
       void SetLength(unsigned int min, unsigned int max);
-  
+
       virtual void Clean();
       /** Returns the minimum number of iterations a move is considered tabu.
       @return the minimum tabu tenure */
       unsigned int MinTenure() const
-        { return min_tenure; }
+      { return min_tenure; }
       /** Returns the maximum number of iterations a move is considered tabu.
       @return the maximum tabu tenure */
       unsigned int MaxTenure() const
-        { return max_tenure; }
+      { return max_tenure; }
       /** Verifies whether a move is the inverse of another one. Namely it
       tests whether mv1 is the inverse of mv2 (that will be an element of
       the tabu list).
@@ -107,7 +104,7 @@ namespace EasyLocal {
       @param curr the cost of the current solution
       @param best the cost of the best solution found so far */
       void UpdateAspirationFunction(const CFtype& curr_cost, const CFtype& best_cost)
-        { current_state_cost = curr_cost; best_state_cost = best_cost; }
+      { current_state_cost = curr_cost; best_state_cost = best_cost; }
       bool ListMember(const Move&) const;
       // parameters
       Parameter<unsigned int> min_tenure; /**< The minimum tenure of the tabu list. */
@@ -120,7 +117,7 @@ namespace EasyLocal {
 
     template <class State, class Move, typename CFtype>
     class FrequencyTabuListManager
-      : public TabuListManager<State, Move, CFtype>
+    : public TabuListManager<State, Move, CFtype>
     {
     public:
       void Print(std::ostream& os = std::cout) const;
@@ -141,13 +138,13 @@ namespace EasyLocal {
     /**
     Constructs a tabu list manager object which manages a list of
     the given tenure (i.e., the number of steps a move is considered tabu).
- 
+
     @param min the minimum tabu tenure
     @param max the maximum tabu tenure
     */
     template <class State, class Move, typename CFtype>
     TabuListManager<State, Move,CFtype>::TabuListManager(std::string name)
-      : ProhibitionManager<State,Move,CFtype>(name, "List of moves which cannot be done"),
+    : ProhibitionManager<State,Move,CFtype>(name, "List of moves which cannot be done"),
     min_tenure("min_tabu_tenure", "Minimum length of the tabu list", this->parameters),
     max_tenure("max_tabu_tenure", "Maximum length of the tabu list", this->parameters),
     iter(0)
@@ -158,7 +155,7 @@ namespace EasyLocal {
 
     template <class State, class Move, typename CFtype>
     TabuListManager<State, Move,CFtype>::TabuListManager(unsigned int min_t, unsigned int max_t, std::string name)
-      : TabuListManager(name)
+    : TabuListManager(name)
     {
       min_tenure = min_t;
       max_tenure = max_t;
@@ -174,12 +171,12 @@ namespace EasyLocal {
     template <class State, class Move, typename CFtype>
     TabuListManager<State, Move,CFtype>::~TabuListManager()
     {
-        
+
     }
 
     /**
     Inserts the move in the tabu list and updates the aspiration function.
- 
+
     @param mv the move to add
     @param mv_cost the move cost
     @param best the best state cost found so far
@@ -194,7 +191,7 @@ namespace EasyLocal {
 
     /**
     Checks whether the given move is prohibited.
- 
+
     @param mv the move to check
     @param mv_cost the move cost
     @param curr the current state cost
@@ -219,7 +216,7 @@ namespace EasyLocal {
 
     /**
     Checks whether the inverse of a given move belongs to the tabu list.
- 
+
     @param mv the move to check
     @return true if the inverse of the move belongs to the tabu list,
     false otherwise
@@ -231,16 +228,16 @@ namespace EasyLocal {
       while (p != tlist.end())
       {
         if (Inverse(mv, p->elem))
-          return true;
+        return true;
         else
-          p++;
+        p++;
       }
       return false;
     }
 
     /**
     Prints the current status of the tabu list on an output stream.
- 
+
     @param os the output stream
     @param tl the tabu list manager to output
     */
@@ -258,7 +255,7 @@ namespace EasyLocal {
     }
 
     template <class State, class Move, typename CFtype>
-    std::string TabuListManager<State, Move, CFtype>::StatusString() const 
+    std::string TabuListManager<State, Move, CFtype>::StatusString() const
     {
       std::stringstream ss;
       ss << min_tenure << " < " << tlist.size() << " < " << max_tenure;
@@ -269,7 +266,7 @@ namespace EasyLocal {
     Checks whether the aspiration criterion is satisfied for a given move.
     By default, it verifies if the move cost applied to the current state
     gives a value lower than the best state cost found so far.
- 
+
     @param mv the move
     @param mv_cost the move cost
     @param curr the cost of the current state
@@ -285,7 +282,7 @@ namespace EasyLocal {
     /**
     Inserts the move into the tabu list, and update the list removing
     the moves for which the tenure has elapsed.
- 
+
     @param mv the move to add
     */
     template <class State, class Move, typename CFtype>
@@ -300,7 +297,7 @@ namespace EasyLocal {
     /**
     Inserts the move into the tabu list, and update the list removing
     the moves for which the tenure has elapsed.
- 
+
     @param mv the move to add
     */
     template <class State, class Move, typename CFtype>
@@ -308,12 +305,12 @@ namespace EasyLocal {
     {
       typename std::list<TabuListItem<State,Move,CFtype> >::iterator p = tlist.begin();
       while (p != tlist.end())
-        if (p->out_iter <= iter) // Note: it must be "<=" and not "==" because for bimodal runners
-          // this function is not invoked at every iteration (and thus there
-          // are old moves to be removed)
-          p = tlist.erase(p);
+      if (p->out_iter <= iter) // Note: it must be "<=" and not "==" because for bimodal runners
+      // this function is not invoked at every iteration (and thus there
+      // are old moves to be removed)
+      p = tlist.erase(p);
       else
-        p++;
+      p++;
     }
     template <class State, class Move, typename CFtype>
     void FrequencyTabuListManager<State,Move,CFtype>::Print(std::ostream& os) const
@@ -321,9 +318,9 @@ namespace EasyLocal {
       TabuListManager<State,Move,CFtype>::Print(os);
       os << "Number of iterations: " << this->iter << std::endl;
       for (typename MapType::const_iterator mv_i = frequency_map.begin(), mv_end = frequency_map.end(); mv_i != mv_end; mv_i++)
-        os << "Move : " << mv_i->first << ", frequency : "
-          << mv_i->second << " (" << mv_i->second/(double)this->iter << "); "
-            << std::endl;
+      os << "Move : " << mv_i->first << ", frequency : "
+      << mv_i->second << " (" << mv_i->second/(double)this->iter << "); "
+      << std::endl;
     }
 
     template <class State, class Move, typename CFtype>
@@ -331,31 +328,31 @@ namespace EasyLocal {
     {
       TabuListManager<State,Move,CFtype>::InsertMove(st, mv,mv_cost,curr,best);
       if (frequency_map.find(mv) != frequency_map.end())
-        frequency_map[mv]++;
+      frequency_map[mv]++;
       else
-        frequency_map[mv] = 1;
+      frequency_map[mv] = 1;
     }
 
     template <class State, class Move, typename CFtype>
     FrequencyTabuListManager<State,Move,CFtype>::FrequencyTabuListManager(double thr,
     unsigned int min_it)
-      : TabuListManager<State,Move,CFtype>(), threshold(thr), min_iter(min_it)
+    : TabuListManager<State,Move,CFtype>(), threshold(thr), min_iter(min_it)
     {
-          
+
     }
 
     template <class State, class Move, typename CFtype>
     bool FrequencyTabuListManager<State,Move,CFtype>::ProhibitedMove(const State& st, const Move& mv, const CFtype& mv_cost) const
     {
       if (this->Aspiration(st, mv,mv_cost))
-        return false;
+      return false;
       if (this->ListMember(mv))
-        return true;
+      return true;
       else if (this->iter > min_iter)
       {
         typename MapType::const_iterator it = frequency_map.find(mv);
         if (it != frequency_map.end() && it->second/double(this->iter) > threshold)
-          return true;
+        return true;
       }
       return false;
     }

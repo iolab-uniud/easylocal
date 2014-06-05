@@ -48,67 +48,6 @@ namespace EasyLocal {
  
       return min_val;
     }
-
-    /** Template class to incapsulate a boolean flag that marks a Move active or inactive in a multi-modal context. */
-    template <class Move>
-    class ActiveMove : public Move
-    {
-    public:
-      bool active;
-      Move& RawMove() { return *this; }
-    };
-
-    /** Input operator for ActiveMove, calls input operator for Move. */
-    template <typename Move>
-    std::istream& operator>>(std::istream& is, ActiveMove<Move>& m)
-    {
-      is >> static_cast<Move&>(m);
-      return is;
-    }
-
-    /** Output operator for ActiveMove, calls output operator for Move. */
-    template <typename Move>
-    std::ostream& operator<<(std::ostream& os, const ActiveMove<Move>& m)
-    {
-      if (m.active)
-        os << static_cast<const Move&>(m);
-      return os;
-    }
-
-    template <class M1, class M2>
-    struct MoveRelations
-    {
-      static bool RelatedMove(const M1&, const M2&)
-      {
-        return true;
-      }
-    };
-
-    template <class Move>
-    bool operator==(const ActiveMove<Move>& mv1, const ActiveMove<Move>& mv2)
-    {
-      std::cerr << "operator== " << mv1 << ' ' << mv2 << std::endl;
-      if (!mv1.active && !mv2.active)
-        return true;
-      else if (mv1.active != mv2.active)
-        return false;
-      else
-        return static_cast<Move>(mv1) == static_cast<Move>(mv2);
-    }
-
-    template <class Move>
-    bool operator<(const ActiveMove<Move>& mv1, const ActiveMove<Move>& mv2)
-    {
-      std::cerr << "operator< " << mv1 << ' ' << mv2 << std::endl;
-      if (!mv1.active && !mv2.active)
-        return false;
-      else if (mv1.active < mv2.active)
-        return true;
-      else if (mv1.active > mv2.active)
-        return false;
-      else
-        return static_cast<Move>(mv1) < static_cast<Move>(mv2);
-    }
   }
 }
 

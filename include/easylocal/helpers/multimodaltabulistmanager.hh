@@ -14,7 +14,7 @@ namespace EasyLocal {
     class MultimodalTabuListManager : public TabuListManager<State, std::tuple<ActiveMove<typename BaseTabuListManagers::MoveType> ...>, CFtype>, public Printable
     {
     public:
-      
+
       /** Typedefs. */
       typedef std::tuple<ActiveMove<typename BaseTabuListManagers::MoveType> ...> MoveTypes;
       typedef TabuListManager<State, std::tuple<ActiveMove<typename BaseTabuListManagers::MoveType> ...>, CFtype> SuperTabuListManager; // type of this tabu list manager
@@ -36,18 +36,17 @@ namespace EasyLocal {
       }
 
       /** Queries for status all of its composing TabuListManagers. */
-      virtual std::string StatusString() const 
+      virtual std::string StatusString() const
       {
-        Call status_string(Call::Function::STATUS_STRING); 
+        Call status_string(Call::Function::STATUS_STRING);
         return TupleDispatcher<MoveTypes, TabuListManagerTypes, sizeof...(BaseTabuListManagers)-1>::QueryAll(const_cast<TabuListManagerTypes&>(tlms), status_string);
       }
 
     protected:
 
       /** Constructor, takes a variable number of base TabuListManagers.  */
-      MultimodalTabuListManager(BaseTabuListManagers& ... tlms)
-        : tlms(std::make_tuple(BaseTabuListManagers(tlms) ...))
-          { }
+      MultimodalTabuListManager(BaseTabuListManagers& ... tlms) 
+        : tlms(std::make_tuple(BaseTabuListManagers(tlms) ...)) { }
 
       /** List of tabu list managers. */
       TabuListManagerTypes tlms;
@@ -147,7 +146,7 @@ namespace EasyLocal {
           std::function<bool(const CurrentTLM&, const CurrentMove&, const CurrentMove&)> f =  c.template getBool<CurrentTLM,CurrentMove>();
 
           if (!f(this_tlm, this_move_1, this_move_2))
-            return false;
+          return false;
 
           return TupleDispatcher<TupleOfMoves, TupleOfTLMs, N - 1>::CheckAll(temp_moves_1, temp_moves_2, temp_tlms, c);
         }
@@ -166,7 +165,7 @@ namespace EasyLocal {
 
 
           if (f(this_tlm, this_move_1, this_move_2))
-            return true;
+          return true;
 
           return TupleDispatcher<TupleOfMoves, TupleOfTLMs, N - 1>::CheckAny(temp_moves_1, temp_moves_2, temp_tlms, c);
         }
@@ -187,13 +186,13 @@ namespace EasyLocal {
             return f(this_tlm, this_move_1, this_move_2);
           }
           else if (iter > 0)
-            return TupleDispatcher<TupleOfMoves, TupleOfTLMs, N - 1>::CheckAt(temp_moves_1, temp_moves_2, temp_tlms, c, --iter);
-#if defined(DEBUG)
+          return TupleDispatcher<TupleOfMoves, TupleOfTLMs, N - 1>::CheckAt(temp_moves_1, temp_moves_2, temp_tlms, c, --iter);
+          #if defined(DEBUG)
           else
-            throw std::logic_error("In function CheckAt (recursive case) iter is less than zero");
-#endif
+          throw std::logic_error("In function CheckAt (recursive case) iter is less than zero");
+          #endif
           return false;
-        }    
+        }
       };
 
       template <class TupleOfMoves, class TupleOfTLMs>
@@ -267,13 +266,13 @@ namespace EasyLocal {
             std::function<bool(const CurrentTLM&, const CurrentMove&, const CurrentMove&)> f =  c.template getBool<CurrentTLM,CurrentMove>();
             return f(this_tlm, this_move_1, this_move_2);
           }
-#if defined(DEBUG)
+          #if defined(DEBUG)
           else
-            throw std::logic_error("In function CheckAt (base case) iter is not zero");
-#endif
+          throw std::logic_error("In function CheckAt (base case) iter is not zero");
+          #endif
           return false;
         }
-      };  
+      };
 
       /** Check - checks a predicate on each element of a tuple and returns a vector of the corresponding boolean variable */
       template <class ...TLMs>
@@ -307,7 +306,7 @@ namespace EasyLocal {
       static bool IsInverse(const T& tlm, const M& move_1, const M& move_2)
       {
         if (move_1.active && move_2.active)
-          return tlm.Inverse(move_1, move_2);
+        return tlm.Inverse(move_1, move_2);
         return false;
       }
 
@@ -354,7 +353,7 @@ namespace EasyLocal {
         }
 
         static void Print(T& tlms, std::ostream& os)
-        {      
+        {
           typedef typename std::tuple_element<0, T>::type CurrentTLM;
           CurrentTLM& tlm = std::get<0>(tlms);
           tlm.Print(os);
@@ -369,9 +368,9 @@ namespace EasyLocal {
       typedef typename SuperTabuListManager::Call Call;
     public:
       SetUnionTabuListManager(BaseTabuListManagers& ... tlms)
-        : MultimodalTabuListManager<State, CFtype, BaseTabuListManagers...>(tlms...)
+      : MultimodalTabuListManager<State, CFtype, BaseTabuListManagers...>(tlms...)
       {
-        
+
       }
       virtual bool Inverse(const typename SuperTabuListManager::MoveType& moves_1, const typename SuperTabuListManager::MoveType& moves_2) const
       {
@@ -387,16 +386,16 @@ namespace EasyLocal {
       typedef typename SuperTabuListManager::Call Call;
     public:
       CartesianProductTabuListManager(BaseTabuListManagers& ... tlms)
-        : MultimodalTabuListManager<State, CFtype, BaseTabuListManagers...>(tlms...)
+      : MultimodalTabuListManager<State, CFtype, BaseTabuListManagers...>(tlms...)
       {
-          
+
       }
       virtual bool Inverse(const typename SuperTabuListManager::MoveType& moves_1, const typename SuperTabuListManager::MoveType& moves_2) const
       {
         Call is_inverse(Call::Function::IS_INVERSE);
         return SuperTabuListManager::CheckAll(moves_1, moves_2, this->tlms, is_inverse);
       }
-    };    
+    };
   }
 }
 
