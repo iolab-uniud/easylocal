@@ -155,11 +155,9 @@ namespace EasyLocal {
     void AbstractSimulatedAnnealing<Input,State,Move,CFtype>::SelectMove()
     {
       this->ne.RandomMove(*this->p_current_state, this->current_move);
-      this->current_move_cost = this->ne.DeltaCostFunction(*this->p_current_state, this->current_move);
-      if (this->observer != nullptr)
-      {
-        this->current_move_violations = this->ne.DeltaViolations(*this->p_current_state, this->current_move);
-      }
+      this->current_move_violations = this->ne.DeltaViolations(*this->p_current_state, this->current_move);
+      this->current_move_cost = this->ne.DeltaObjective(*this->p_current_state, this->current_move) 
+	+ this->current_move_violations;
       neighbors_sampled++;
     }
 
