@@ -85,17 +85,6 @@ namespace EasyLocal {
         return static_cast<Move>(mv1) < static_cast<Move>(mv2);
     }
 
-    /** Helper function to check whether two @ref Move are related. As a general rule all @ref Move are related (unless otherwise specified by overloading this helper).
-        @param m1 first @ref Move
-        @param m2 second @ref Move
-        @remarks the ordering of moves is important
-    */
-    template <class Move1, class Move2>
-    bool IsRelated(const Move1& m1, const Move2& m2)
-    {
-      return true;
-    }
-
     /** Variadic multi-modal @ref NeighborhoodExplorer. Defines a new @ref NeighborhoodExplorer whose @c MoveType is a tuple of @c ActiveMoves. */
     template <class Input, class State, typename CFtype, class ... BaseNeighborhoodExplorers>
     class MultimodalNeighborhoodExplorer : public NeighborhoodExplorer<Input, State, std::tuple<ActiveMove<typename BaseNeighborhoodExplorers::MoveType> ...>, CFtype>

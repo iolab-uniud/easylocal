@@ -107,12 +107,8 @@ namespace EasyLocal {
       this->current_move_violations = this->ne.DeltaViolations(*this->p_current_state, this->current_move);
       shifted_delta_hard_cost =  this->current_move_violations * shift;
       this->current_move_cost = delta_soft_cost + this->current_move_violations;
-      if (this->observer != nullptr)
-      {
-        this->current_move_violations = this->ne.DeltaViolations(*this->p_current_state, this->current_move);
-      }
+      
       this->neighbors_sampled++;
-
     }
 
     template <class Input, class State, class Move, typename CFtype>

@@ -74,7 +74,7 @@ namespace EasyLocal {
       std::shared_future<Rtype> AsyncRun(std::chrono::milliseconds timeout, Args... args)
       {
         timeout_expired = false;
-        result = std::async(std::launch::async, this->MakeFunction(), std::ref(args) ...);
+        std::shared_future<Rtype> result = std::async(std::launch::async, this->MakeFunction(), std::ref(args) ...);
     
         // If timeout is greater than zero, launch stopper thread
         if (timeout.count() != 0)
@@ -83,7 +83,7 @@ namespace EasyLocal {
           {
             sleep_for(timeout);
             // If the function has not returned a value already
-            if(!this->HasReturned()) {
+            if(result.wait_for(std::chrono::milliseconds::zero()) == std::future_status::ready) {
               timeout_expired = true;
               AtTimeoutExpired();
             }
@@ -103,10 +103,7 @@ namespace EasyLocal {
   
       /** Checks if timeout has expired. */
       inline const std::atomic<bool>& TimeoutExpired() { return timeout_expired; }
-  
-      /** Checks if function has returned (naturally). */
-      inline bool HasReturned() { return result.wait_for(std::chrono::milliseconds::zero()) == std::future_status::ready;  }
-  
+
       /** Produces a function object to be launched in a separate thread. */
       inline virtual std::function<Rtype(Args& ...)> MakeFunction() {
         // Default behavior
@@ -122,9 +119,6 @@ namespace EasyLocal {
   
       /** Atomic flags. */
       std::atomic<bool> timeout_expired;
-  
-      /** For async. */
-      std::shared_future<Rtype> result;
     };
   }
 }

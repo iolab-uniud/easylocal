@@ -558,7 +558,7 @@ namespace EasyLocal {
         {
           moves_per_type[ne.MoveModality(mv2)]++;
           pairs++;
-          if (tlm->Inverse(mv1, mv2))
+          if (IsInverse(mv1, mv2))
           {
             std::cerr << mv1 << " -- " << mv2 << std::endl;
             inverse_pairs++;	        

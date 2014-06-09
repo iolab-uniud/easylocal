@@ -56,6 +56,7 @@ namespace EasyLocal {
     void FirstDescent<Input,State,Move,CFtype>::SelectMove()
     {
       this->current_move_cost = this->ne.FirstImprovingMove(this->current_state, this->current_move);
+      this->current_move_violations = this->ne.DeltaViolations(*this->p_current_state, this->current_move); // TODO: slightly inefficient
     }
 
     /**

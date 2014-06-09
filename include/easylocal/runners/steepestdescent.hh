@@ -62,6 +62,7 @@ namespace EasyLocal {
     void SteepestDescent<Input,State,Move,CFtype>::SelectMove()
     {
       this->current_move_cost = this->ne.BestMove(*this->p_current_state, this->current_move);
+      this->current_move_violations = this->ne.DeltaViolations(*this->p_current_state, this->current_move); // TODO: slightly inefficient
     }
 
     /**
