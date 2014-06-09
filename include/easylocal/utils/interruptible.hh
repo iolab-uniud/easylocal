@@ -15,24 +15,20 @@ namespace EasyLocal {
   
     /* Hack for simulating sleep_for when the compiler is not defininig it (e.g., macports g++ >= 4.6). */
 #if HAVE_THIS_THREAD_SLEEP_FOR
-    namespace _easylocal {
-      template <class Rep, class Period>
-      void sleep_for(std::chrono::duration<Rep,Period> sleep_duration)
-      {
-        std::this_thread::sleep_for(sleep_duration);
-      }
-    };
+    template <class Rep, class Period>
+    void sleep_for(std::chrono::duration<Rep,Period> sleep_duration)
+    {
+      std::this_thread::sleep_for(sleep_duration);
+    }
 #else
-    namespace _easylocal {
-      template <class Rep, class Period>
-      void sleep_for(std::chrono::duration<Rep,Period> sleep_duration)
-      {
-        std::condition_variable c;
-        std::mutex m;
-        std::unique_lock<std::mutex> l(m);
-        c.wait_for(l, sleep_duration);
-      }
-    };
+    template <class Rep, class Period>
+    void sleep_for(std::chrono::duration<Rep,Period> sleep_duration)
+    {
+      std::condition_variable c;
+      std::mutex m;
+      std::unique_lock<std::mutex> l(m);
+      c.wait_for(l, sleep_duration);
+    }
 #endif
 
 
@@ -85,7 +81,7 @@ namespace EasyLocal {
         {
           std::thread t([this, timeout]()
           {
-            _easylocal::sleep_for(timeout);
+            sleep_for(timeout);
             // If the function has not returned a value already
             if(!this->HasReturned()) {
               timeout_expired = true;

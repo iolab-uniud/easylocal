@@ -59,17 +59,24 @@ namespace EasyLocal {
 
       /**
       Generates the move that follows mv in the exploration of the neighborhood of the state st. It returns the generated move in the same variable mv.
-      Explores the neighborhood starting from an initial_move that is not the first move in the enumeration.
+      Explores the neighborhood starting from an initial_move that is not the first move in the enumeration. 
+      @note It is an internal fix for template instantiation in Multimodal Neighborhood Explorers.
       @return @c false if @c mv is the last in the neighborhood of the state.
       @note To be implemented in the application.
       @param st the start state
       @param mv the move
       */
-      virtual bool NextMove(const State &st, Move& mv, const Move& initial_mv) const
+      inline bool NextMoveWithFirst(const State &st, Move& mv, const Move& initial_mv) const
       {
         if (!NextMove(st, mv))
-        FirstMove(st, mv);
+          FirstMove(st, mv);
         return (mv != initial_mv);
+      }
+      
+      /** @copydoc NextMoveWithFirst() */
+      inline bool NextMove(const State &st, Move& mv, const Move& initial_mv) const
+      {
+        return NextMoveWithFirst(st, mv, initial_mv);
       }
 
 

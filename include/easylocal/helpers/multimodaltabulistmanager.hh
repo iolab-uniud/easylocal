@@ -15,7 +15,6 @@ namespace EasyLocal {
     {
     public:
 
-
       /** Tuple type representing the combination of @c BaseTabuListManagers::MoveType. */
       typedef std::tuple<ActiveMove<typename BaseTabuListManagers::MoveType> ...> MoveTypes;
       
