@@ -228,6 +228,7 @@ namespace EasyLocal {
         this->current_move_cost = this->ne.DeltaCostFunction(current_state, this->current_move);
       }
       current_move_cost_components = this->ne.DeltaCostFunctionComponents(current_state, this->current_move);
+      this->current_move_violations = this->ne.DeltaViolations(*this->p_current_state, this->current_move); // TODO: inefficient, review
     }
 
     template <class Input, class State, class Move, typename CFtype>

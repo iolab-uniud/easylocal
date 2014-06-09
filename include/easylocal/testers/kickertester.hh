@@ -68,7 +68,7 @@ namespace EasyLocal {
     Core::StateManager<Input,State,CFtype>& e_sm,
     Core::OutputManager<Input,Output,State,CFtype>& e_om,
     Core::Kicker<Input,State, Move, CFtype>& k, std::string name, std::ostream& o)
-      : ComponentTester<Input,Output,State,CFtype>(name), in(i), out(i), sm(e_sm), om(e_om), kicker(k), os(o), Parametrized(name, "Kicker tester parameters"), length("kick-length", "Kick length", this->parameters)
+      :  ComponentTester<Input,Output,State,CFtype>(name), Parametrized(name, "Kicker tester parameters"), in(i), out(i), sm(e_sm), om(e_om), kicker(k), os(o), length("kick-length", "Kick length", this->parameters)
         { length = 3; }
 
     template <class Input, class Output, class State, class Move, typename CFtype>
@@ -77,7 +77,7 @@ namespace EasyLocal {
     Core::StateManager<Input,State,CFtype>& e_sm,
     Core::OutputManager<Input,Output,State,CFtype>& e_om,                                                      
     Core::Kicker<Input,State, Move, CFtype>& k, std::string name, Tester<Input,Output,State,CFtype>& t, std::ostream& o)
-      : ComponentTester<Input,Output,State,CFtype>(name), in(i), out(i), sm(e_sm), om(e_om), kicker(k), os(o), Parametrized(name, "Kicker tester parameters"), length("kick-length", "Kick length", this->parameters)
+      : ComponentTester<Input,Output,State,CFtype>(name), Parametrized(name, "Kicker tester parameters"), in(i), out(i), sm(e_sm), om(e_om), kicker(k), os(o), length("kick-length", "Kick length", this->parameters)
         { t.AddKickerTester(*this); length = 3; }
 
     /**

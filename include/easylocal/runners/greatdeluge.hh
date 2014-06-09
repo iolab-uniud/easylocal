@@ -97,8 +97,7 @@ namespace EasyLocal {
     template <class Input, class State, class Move, typename CFtype>
     void GreatDeluge<Input,State,Move,CFtype>::SelectMove()
     {
-      this->ne.RandomMove(*this->p_current_state, this->current_move);
-      this->current_move_cost = this->ne.DeltaCostFunction(*this->p_current_state, this->current_move);
+      this->SelectRandomMove();
     }
 
     /**

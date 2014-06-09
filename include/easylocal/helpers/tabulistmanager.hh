@@ -10,10 +10,12 @@
 #include "easylocal/utils/types.hh"
 #include "easylocal/utils/printable.hh"
 
+
+
 namespace EasyLocal {
 
   namespace Core {
-
+    
     /** Forward declaration. */
     template <class State, class Move, typename CFtype>
     class TabuListManager;
@@ -78,17 +80,12 @@ namespace EasyLocal {
       @return the maximum tabu tenure */
       unsigned int MaxTenure() const
       { return max_tenure; }
-      /** Verifies whether a move is the inverse of another one. Namely it
-      tests whether mv1 is the inverse of mv2 (that will be an element of
-      the tabu list).
-      @note @bf To be implemented in the application.
-      @param mv1 the move to be tested
-      @param mv2 the move used for comparison  */
-      virtual bool Inverse(const Move& mv1, const Move& mv2) const = 0;
+      
       void UpdateIteration() { PurgeList(); iter++; }
       unsigned ListLength() const { return tlist.size(); }
       TabuListManager(unsigned int min_tenure, unsigned int max_tenure, std::string);
       TabuListManager(std::string);
+      
       /** Virtual destructor. */
       virtual ~TabuListManager();
       virtual std::string StatusString() const;
@@ -227,7 +224,7 @@ namespace EasyLocal {
       typename std::list<TabuListItem<State,Move,CFtype> >::const_iterator p = tlist.begin();
       while (p != tlist.end())
       {
-        if (Inverse(mv, p->elem))
+        if (IsInverse(mv, p->elem))
         return true;
         else
         p++;

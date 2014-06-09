@@ -92,7 +92,7 @@ namespace EasyLocal {
     template <class Input, class State, class Move, typename CFtype>
     class NeighborhoodExplorer;
 
-    /** An adapter class for using a cost component in place of a delta cost component. It is used by the neighborhood explorer to wrap the unimplemented deltas
+    /** An adapter class for using a (full) @ref CostComponent in place of a @ref DeltaCostComponent. It is used by the @ref NeighborhoodExplorer to wrap the unimplemented deltas.
         @ingroup Helpers
     */
     template <class Input, class State, class Move, typename CFtype>
@@ -100,11 +100,15 @@ namespace EasyLocal {
     {
     public:
       
+      /** Constructor. */
       DeltaCostComponentAdapter(const Input& in, CostComponent<Input,State,CFtype>& cc, NeighborhoodExplorer<Input, State, Move, CFtype>& ne);
+      
+      /** @copydoc DeltaCostComponent::IsDeltaImplemented() */
       virtual bool IsDeltaImplemented() const { return false; }
 
     protected:
       
+      /** @copydoc DeltaCostComponent::ComputeDeltaCost() */
       virtual CFtype ComputeDeltaCost(const State& st, const Move& mv) const
       {
         State new_st = st;
@@ -116,7 +120,7 @@ namespace EasyLocal {
 
     template <class Input, class State, class Move, typename CFtype>
     DeltaCostComponentAdapter<Input, State, Move, CFtype>::DeltaCostComponentAdapter(const Input& in, CostComponent<Input,State,CFtype>& cc, NeighborhoodExplorer<Input, State, Move, CFtype>& ne)
-    : DeltaCostComponent<Input, State, Move, CFtype>(in, cc, "UDelta" + cc.name), ne(ne)
+    : DeltaCostComponent<Input, State, Move, CFtype>(in, cc, "DeltaAdapter" + cc.name), ne(ne)
     { }
   }
 }

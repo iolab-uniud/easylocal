@@ -85,17 +85,6 @@ namespace EasyLocal {
         return static_cast<Move>(mv1) < static_cast<Move>(mv2);
     }
 
-    /** Helper function to check whether two @ref Move are related. As a general rule all @ref Move are related (unless otherwise specified by overloading this helper).
-        @param m1 first @ref Move
-        @param m2 second @ref Move
-        @remarks the ordering of moves is important
-    */
-    template <class Move1, class Move2>
-    bool IsRelated(const Move1& m1, const Move2& m2)
-    {
-      return true;
-    }
-
     /** Variadic multi-modal @ref NeighborhoodExplorer. Defines a new @ref NeighborhoodExplorer whose @c MoveType is a tuple of @c ActiveMoves. */
     template <class Input, class State, typename CFtype, class ... BaseNeighborhoodExplorers>
     class MultimodalNeighborhoodExplorer : public NeighborhoodExplorer<Input, State, std::tuple<ActiveMove<typename BaseNeighborhoodExplorers::MoveType> ...>, CFtype>
@@ -114,6 +103,9 @@ namespace EasyLocal {
       /** Tuple type representing references to @c BaseNeighborhoodExplorers. */
       typedef std::tuple<std::reference_wrapper<BaseNeighborhoodExplorers> ...> NeighborhoodExplorerTypes;
 
+      /** Tuple type representing references to @c BaseNeighborhoodExplorers. */
+      typedef std::tuple<BaseNeighborhoodExplorers ...> NeighborhoodExplorerConcreteTypes;
+
       /** Modality of the NeighborhoodExplorer, i.e., the number of @ref NeighborhoodExplorer composing this one.  */
       virtual unsigned int Modality() const { return sizeof...(BaseNeighborhoodExplorers); }
 
@@ -124,15 +116,10 @@ namespace EasyLocal {
       : SuperNeighborhoodExplorer(in, sm, name), nhes(std::make_tuple(std::reference_wrapper<BaseNeighborhoodExplorers>(nhes) ...))
       { }
 
-      /** Constructor, takes a variable number of base NeighborhoodExplorers.  */
-      MultimodalNeighborhoodExplorer(const Input& in, StateManager<Input,State,CFtype>& sm, std::string name)
-      : SuperNeighborhoodExplorer(in, sm, name), nhes(std::make_tuple(std::reference_wrapper<BaseNeighborhoodExplorers>(*std::make_shared<BaseNeighborhoodExplorers>(in, sm)) ...))
-      { }
-
       /** Instantiated base NeighborhoodExplorers. */
       NeighborhoodExplorerTypes nhes;
 
-      /** Struct to encapsulate a templated function call. 
+      /** Class to encapsulate a templated function call. 
           Since the access to tuples must be done through compile-time recursion, at the moment of calling @c BaseNeighborhoodExplorers methods we don't know yet the type of the current @ref NeighborhoodExplorer and @ref Move. This class is thus necessary so that we can defer the instantiation of the templated helper functions (@c DoMakeMove, @c DoRandomMove, ...) inside the calls to @c Compute* and @c Execute* (when they are known). */
       class Call
       {
@@ -145,8 +132,10 @@ namespace EasyLocal {
           INITIALIZE_ACTIVE,
           MAKE_MOVE,
           RANDOM_MOVE,
+          RANDOM_MOVE_WITH_FIRST,
           FIRST_MOVE,
           TRY_NEXT_MOVE,
+          TRY_NEXT_MOVE_WITH_FIRST,
           IS_ACTIVE,
           DELTA_COST_FUNCTION,
           DELTA_VIOLATIONS
@@ -178,6 +167,22 @@ namespace EasyLocal {
             break;
             case RANDOM_MOVE:
             f = &DoRandomMove<N>;
+            break;
+            default:
+            throw std::logic_error("Function not implemented");
+          }
+          return f;
+        }
+        
+        /** Method to generate a function with @c void return type. */
+        template <class N>
+        std::function<void(const N&, State&, ActiveMove<typename N::MoveType>&, ActiveMove<typename N::MoveType>&)> getVoidExt() const throw(std::logic_error)
+        {
+          std::function<void(const N&, State&, ActiveMove<typename N::MoveType>&, ActiveMove<typename N::MoveType>&)> f;
+          switch (to_call)
+          {
+            case RANDOM_MOVE_WITH_FIRST:
+            f = &DoRandomMoveWithFirst<N>;
             break;
             default:
             throw std::logic_error("Function not implemented");
@@ -223,6 +228,22 @@ namespace EasyLocal {
           return f;
         }
 
+        /** Method to generate a function with @c bool return type. */
+        template <class N>
+        std::function<bool(const N&, State&, ActiveMove<typename N::MoveType>&, ActiveMove<typename N::MoveType>&)> getBoolExt() const throw(std::logic_error)
+        {
+          std::function<bool(const N&, State&, ActiveMove<typename N::MoveType>&, ActiveMove<typename N::MoveType>&)> f;
+          switch (to_call)
+          {
+            case TRY_NEXT_MOVE_WITH_FIRST:
+            f = &TryNextMoveWithFirst<N>;
+            break;
+            default:
+            throw std::logic_error("Function not implemented");
+          }
+          return f;
+        }
+
         Function to_call;
       };
 
@@ -231,6 +252,44 @@ namespace EasyLocal {
       template <class TupleOfMoves, class TupleOfNHEs, std::size_t N>
       struct TupleDispatcher
       {
+        
+
+        
+        /** Run a function on e specific elements of the @ref Move (and @ref NeighborhoodExplorer) tuples. Based on compile-time recursion.
+            @param st reference to the current @ref State
+            @param temp_moves tuple of references to @ref ActiveMove
+            @param temp_nhes tuple of references to associated @ref NeighborhoodExplorer
+            @param c @ref Call to execute
+            @param level tuple level at which to execute the function (0 is the last element, N - 1 is the first)
+        */
+        static void ExecuteAt(State& st, TupleOfMoves& temp_moves, const TupleOfNHEs& temp_nhes, TupleOfMoves& first_moves, const Call& c, int level)
+        {
+          // If we're at the right level of the recursion
+          if (level == 0)
+          {
+            // Get right types (be nice to gcc)
+            typedef typename std::tuple_element<N, TupleOfNHEs>::type::type CurrentNHE;
+            typedef typename std::tuple_element<N, TupleOfMoves>::type::type CurrentMove;
+            CurrentNHE& this_nhe = std::get<N>(temp_nhes).get();
+            CurrentMove& this_move = std::get<N>(temp_moves).get();
+            CurrentMove& this_first_move = std::get<N>(first_moves).get();
+
+            // Instantiate the function with the right template parameters
+            std::function<void(const CurrentNHE &, State&,  CurrentMove &, CurrentMove& )> f =  c.template getVoidExt<CurrentNHE>();
+
+            // Call on the last element
+            f(this_nhe, st, this_move, this_first_move);
+          }
+          // Otherwise go down with recursion
+          else if (level > 0)
+            TupleDispatcher<TupleOfMoves, TupleOfNHEs, N - 1>::ExecuteAt(st, temp_moves, temp_nhes, first_moves, c, --level);
+#if defined(DEBUG)
+          else
+            throw std::logic_error("In function ExecuteAt (recursive case) level is less than zero");
+#endif
+        }
+
+        
         /** Run a function on e specific elements of the @ref Move (and @ref NeighborhoodExplorer) tuples. Based on compile-time recursion.
             @param st reference to the current @ref State
             @param temp_moves tuple of references to @ref ActiveMove
@@ -416,6 +475,43 @@ namespace EasyLocal {
           return TupleDispatcher<TupleOfMoves, TupleOfNHEs, N - 1>::CheckAll(st, temp_moves, temp_nhes, c);
         }
 
+
+        /** Check a predicate on a specific element of the @ref Move (and @ref NeighborhoodExplorer) tuples and returns true if it satisfies the predicate. Based on compile-time recursion.
+            @param st reference to the current @ref State
+            @param temp_moves tuple of references to @ref ActiveMove
+            @param temp_nhes tuple of references to associated @ref NeighborhoodExplorer
+            @param c @ref Call to execute
+            @param level tuple level at which to execute the function (0 is the last element, N - 1 is the first)
+        */
+        static bool CheckAt(State& st, TupleOfMoves& temp_moves, const TupleOfNHEs& temp_nhes, TupleOfMoves& first_moves, const Call& c, int level)
+        {
+          // If we're at the right level of the recursion
+          if (level == 0)
+          {
+            // Get right types (be nice to gcc)
+            typedef typename std::tuple_element<N, TupleOfNHEs>::type::type CurrentNHE;
+            typedef typename std::tuple_element<N, TupleOfMoves>::type::type CurrentMove;
+            CurrentNHE& this_nhe = std::get<N>(temp_nhes).get();
+            CurrentMove& this_move = std::get<N>(temp_moves).get();
+            CurrentMove& this_first_move = std::get<N>(first_moves).get();
+
+            // Instantiate the function with the right template parameters
+            std::function<bool(const CurrentNHE&, State&,  CurrentMove&,  CurrentMove&)> f =  c.template getBoolExt<CurrentNHE>();
+
+            return f(this_nhe, st, this_move, this_first_move);
+          }
+          
+          // Otherwise, go down with recursion
+          else if (level > 0)
+            return TupleDispatcher<TupleOfMoves, TupleOfNHEs, N - 1>::CheckAt(st, temp_moves, temp_nhes, first_moves, c, --level);
+#if defined(DEBUG)
+          else
+            throw std::logic_error("In function CheckAt (recursive case) level is less than zero");
+#endif
+          // Just to avoid warnings from smart compilers
+          return false;
+        }
+
         /** Check a predicate on a specific element of the @ref Move (and @ref NeighborhoodExplorer) tuples and returns true if it satisfies the predicate. Based on compile-time recursion.
             @param st reference to the current @ref State
             @param temp_moves tuple of references to @ref ActiveMove
@@ -456,6 +552,35 @@ namespace EasyLocal {
       template <class TupleOfMoves, class TupleOfNHEs>
       struct TupleDispatcher<TupleOfMoves, TupleOfNHEs, 0>
       {
+        /** Run a function on a specific element of @ref Move (and @ref NeighborhoodExplorer) tuples. Based on compile-time recursion.
+            @param st reference to the current @ref State
+            @param temp_moves tuple of references to @ref ActiveMove
+            @param temp_nhes tuple of references to associated @ref NeighborhoodExplorer
+            @param c @ref Call to execute
+            @param level tuple level at which to execute the function (0 is the last element, N - 1 is the first)
+        */
+        static void ExecuteAt(State& st, TupleOfMoves& temp_moves, const TupleOfNHEs& temp_nhes, TupleOfMoves& first_moves, const Call& c, int level)
+        {
+          // If we're at the right level of the recursion
+          if (level == 0)
+          {
+            // Get right types (be nice to gcc)
+            typedef typename std::tuple_element<0, TupleOfNHEs>::type::type CurrentNHE;
+            typedef typename std::tuple_element<0, TupleOfMoves>::type::type CurrentMove;
+            CurrentNHE& this_nhe = std::get<0>(temp_nhes).get();
+            CurrentMove& this_move = std::get<0>(temp_moves).get();
+            CurrentMove& this_first_move = std::get<0>(first_moves).get();
+
+            // Instantiate the function with the right template parameters
+            std::function<void(const CurrentNHE&, State&, CurrentMove&, CurrentMove&)> f =  c.template getVoidExt<CurrentNHE>();
+            f(this_nhe, st, this_move, this_first_move);
+          }
+#if defined(DEBUG)
+          else
+            throw std::logic_error("In function ExecuteAt (base case) level is not zero");
+#endif
+        }
+        
         /** Run a function on a specific element of @ref Move (and @ref NeighborhoodExplorer) tuples. Based on compile-time recursion.
             @param st reference to the current @ref State
             @param temp_moves tuple of references to @ref ActiveMove
@@ -610,6 +735,37 @@ namespace EasyLocal {
           std::function<bool(const CurrentNHE&, State&, CurrentMove&)> f =  c.template getBool<CurrentNHE>();
           return f(this_nhe, st, this_move);
         }
+        
+        /** Check a predicate on a specific element of the @ref Move (and @ref NeighborhoodExplorer) tuples and returns true if it satisfies the predicate. Based on compile-time recursion.
+            @param st reference to the current @ref State
+            @param temp_moves tuple of references to @ref ActiveMove
+            @param temp_nhes tuple of references to associated @ref NeighborhoodExplorer
+            @param c @ref Call to execute
+            @param level tuple level at which to execute the function (0 is the last element, N - 1 is the first)
+        */
+        static bool CheckAt(State& st, TupleOfMoves& temp_moves, const TupleOfNHEs& temp_nhes, TupleOfMoves& first_moves, const Call& c, int level)
+        {
+          // If we're at the right level of the recursion
+          if (level == 0)
+          {
+            // Get right types (be nice to gcc)
+            typedef typename std::tuple_element<0, TupleOfNHEs>::type::type CurrentNHE;
+            typedef typename std::tuple_element<0, TupleOfMoves>::type::type CurrentMove;
+            CurrentNHE& this_nhe = std::get<0>(temp_nhes).get();
+            CurrentMove& this_move = std::get<0>(temp_moves).get();
+            CurrentMove& this_first_move = std::get<0>(first_moves).get();
+
+            // Instantiate the function with the right template parameters
+            std::function<bool(const CurrentNHE&, State&, CurrentMove&, CurrentMove&)> f =  c.template getBoolExt<CurrentNHE>();
+            return f(this_nhe, st, this_move, this_first_move);
+          }
+#if defined(DEBUG)
+          else
+            throw std::logic_error("In function CheckAt (base case) level is not zero");
+#endif
+          // Just to avoid warnings from smart compilers
+          return false;
+        }
 
         /** Check a predicate on a specific element of the @ref Move (and @ref NeighborhoodExplorer) tuples and returns true if it satisfies the predicate. Based on compile-time recursion.
             @param st reference to the current @ref State
@@ -641,6 +797,13 @@ namespace EasyLocal {
           return false;
         }
       };
+      
+      /** @copydoc TupleDispatcher::ExecuteAt */
+      template <class ...NHEs>
+      static void ExecuteAt(State& st, std::tuple<std::reference_wrapper<ActiveMove<typename NHEs::MoveType>>...>& moves, const std::tuple<std::reference_wrapper<NHEs>...>& nhes, std::tuple<std::reference_wrapper<ActiveMove<typename NHEs::MoveType>>...>& first, const Call& c, int index)
+      {
+        TupleDispatcher<std::tuple<std::reference_wrapper<ActiveMove<typename NHEs::MoveType>>...>, std::tuple<std::reference_wrapper<NHEs>...>, sizeof...(NHEs) - 1>::ExecuteAt(st, moves, nhes, first, c, (sizeof...(NHEs) - 1) - index);
+      }
       
       /** @copydoc TupleDispatcher::ExecuteAt */
       template <class ...NHEs>
@@ -693,6 +856,13 @@ namespace EasyLocal {
 
       /** @copydoc TupleDispatcher::CheckAt */
       template <class ...NHEs>
+      static CFtype CheckAt(State& st, std::tuple<std::reference_wrapper<ActiveMove<typename NHEs::MoveType>>...>& moves, const std::tuple<std::reference_wrapper<NHEs>...>& nhes, std::tuple<std::reference_wrapper<ActiveMove<typename NHEs::MoveType>>...>& first, const Call& c, int index)
+      {
+        return TupleDispatcher<std::tuple<std::reference_wrapper<ActiveMove<typename NHEs::MoveType>>...>, std::tuple<std::reference_wrapper<NHEs>...>, sizeof...(NHEs) - 1>::CheckAt(st, moves, nhes, first, c, (sizeof...(NHEs) - 1) - index);
+      }
+
+      /** @copydoc TupleDispatcher::CheckAt */
+      template <class ...NHEs>
       static CFtype CheckAt(State& st, std::tuple<std::reference_wrapper<ActiveMove<typename NHEs::MoveType>>...>& moves, const std::tuple<std::reference_wrapper<NHEs>...>& nhes, const Call& c, int index)
       {
         return TupleDispatcher<std::tuple<std::reference_wrapper<ActiveMove<typename NHEs::MoveType>>...>, std::tuple<std::reference_wrapper<NHEs>...>, sizeof...(NHEs) - 1>::CheckAt(st, moves, nhes, c, (sizeof...(NHEs) - 1) - index);
@@ -720,6 +890,20 @@ namespace EasyLocal {
         n.RandomMove(s, m);
         m.active = true;
       }
+      
+      /** Generates a random @ref Move in the neighborhood.
+          @param n a reference to the @ref Move's @ref NeighborhoodExplorer
+          @param s a reference to the current @ref State
+          @param m a reference to the  @ref ActiveMove which must be set
+      */
+      template<class N>
+      static void DoRandomMoveWithFirst(const N& n, State& s, ActiveMove<typename N::MoveType>& m, ActiveMove<typename N::MoveType>& f)
+      {
+        n.RandomMove(s, m);
+        m.active = true;
+        f = m;
+      }
+      
 
       /** Get the first @ref Move of the neighborhood
           @param n a reference to the @ref Move's @ref NeighborhoodExplorer
@@ -742,6 +926,18 @@ namespace EasyLocal {
       static bool TryNextMove(const N& n, State& s, ActiveMove<typename N::MoveType>& m)
       {
         m.active = n.NextMove(s, m);
+        return m.active;
+      }
+      
+      /** Try to produce the next @ref Move of the neighborhood
+          @param n a reference to the @ref Move's @ref NeighborhoodExplorer
+          @param s a reference to the current @ref State
+          @param m a reference to the  @ref ActiveMove which must be set
+      */
+      template<class N>
+      static bool TryNextMoveWithFirst(const N& n, State& s, ActiveMove<typename N::MoveType>& m, ActiveMove<typename N::MoveType>& f)
+      {
+        m.active = n.NextMoveWithFirst(s, m, f);
         return m.active;
       }
 
@@ -828,22 +1024,9 @@ namespace EasyLocal {
         // If not otherwise specified, initialize the probabilities as 1 / Modality
         this->bias = std::vector<double>(this->Modality(), 1.0 / (double) this->Modality());
       }
-
-      /** Constructor, takes a variable number of base NeighborhoodExplorers.  */
-      SetUnionNeighborhoodExplorer(const Input& in, StateManager<Input,State,CFtype>& sm, std::string name)
-      : MultimodalNeighborhoodExplorer<Input, State, CFtype, BaseNeighborhoodExplorers ...>(in, sm, name)
-      {
-        // If not otherwise specified, initialize the probabilities as 1 / Modality
-        this->bias = std::vector<double>(this->Modality(), 1.0 / (double) this->Modality());
-      }
-
+      
       SetUnionNeighborhoodExplorer(Input& in, StateManager<Input,State,CFtype>& sm, std::string name, std::vector<double> bias, BaseNeighborhoodExplorers& ... nhes)
       : MultimodalNeighborhoodExplorer<Input, State, CFtype, BaseNeighborhoodExplorers ...>(in, sm, name, nhes ...), bias(bias)
-      { }
-
-      /** Constructor, takes a variable number of base NeighborhoodExplorers.  */
-      SetUnionNeighborhoodExplorer(const Input& in, StateManager<Input,State,CFtype>& sm, std::string name, std::vector<double> bias)
-      : MultimodalNeighborhoodExplorer<Input, State, CFtype, BaseNeighborhoodExplorers ...>(in, sm, name), bias(bias)
       { }
 
       /** @copydoc NeighborhoodExplorer::RandomMove */
@@ -855,7 +1038,7 @@ namespace EasyLocal {
         unsigned int selected = 0;
 
         for (unsigned int i = 0; i < bias.size(); i++)
-        total_bias += bias[i];
+          total_bias += bias[i];
         pick = Random::Double(0.0, total_bias);
 
         // Subtract bias until we're on the right neighborhood explorer
@@ -1174,19 +1357,21 @@ namespace EasyLocal {
       : MultimodalNeighborhoodExplorer<Input, State, CFtype, BaseNeighborhoodExplorers ...>(in, sm, name, nhes ...)
       { }
 
-      /** Constructor, takes a variable number of base NeighborhoodExplorers.  */
-      CartesianProductNeighborhoodExplorer(const Input& in, StateManager<Input,State,CFtype>& sm, std::string name)
-      : MultimodalNeighborhoodExplorer<Input, State, CFtype, BaseNeighborhoodExplorers ...>(in, sm, name)
-      { }
-
       /** @copydoc NeighborhoodExplorer::RandomMove */
       virtual void RandomMove(const State& st, typename SuperNeighborhoodExplorer::MoveType& moves) const throw(EmptyNeighborhood)
       {
-        Call random_move(SuperNeighborhoodExplorer::Call::Function::RANDOM_MOVE);
-        Call make_move(SuperNeighborhoodExplorer::Call::Function::MAKE_MOVE);
+        
+        Call random_move(Call::Function::RANDOM_MOVE_WITH_FIRST);
+        Call make_move(Call::Function::MAKE_MOVE);
+        Call try_next_move_with_first(Call::Function::TRY_NEXT_MOVE_WITH_FIRST);
 
         // Convert to references
         MoveTypeRefs r_moves = to_refs(moves);
+
+        // first moves generated on each neighborhood
+        typename SuperNeighborhoodExplorer::MoveType first_moves;
+        MoveTypeRefs f_moves = to_refs(first_moves);
+        
 
         // The chain of states generated during the execution of the multimodal move (including the first one, but excluding the last)
         std::vector<State> temp_states(this->Modality(), State(this->in));
@@ -1194,29 +1379,87 @@ namespace EasyLocal {
         temp_states[0] = st;
         temp_states[1] = temp_states[0];
 
-        // Generate first random move starting from the initial state
-        SuperNeighborhoodExplorer::ExecuteAt(temp_states[0], r_moves, this->nhes, random_move, 0);
+        // Generate first move starting from the initial state
+        SuperNeighborhoodExplorer::ExecuteAt(temp_states[0], r_moves, this->nhes, f_moves, random_move, 0);
+      
+        // If modality is 1 we're finished
+        if (this->Modality() == 1)
+          return;
 
-        // Make move (otherwise we wouldn't have second state for generating the second random)
+        // Execute first move and save new state in next state
         SuperNeighborhoodExplorer::ExecuteAt(temp_states[1], r_moves, this->nhes, make_move, 0);
 
-        // Generate all the random moves of the tuple
-        for (unsigned int i = 1; i < this->Modality(); i++)
+        int i = 1;
+        while (i < static_cast<int>(this->Modality()))
         {
-          // Duplicate current state (to process it later)
-          temp_states[i+1] = temp_states[i];
+          try
+          {
+            // Generate random move
+            SuperNeighborhoodExplorer::ExecuteAt(temp_states[i], r_moves, this->nhes, f_moves, random_move, i);
 
-          do {
-            // Generate next random move starting from the current state
-            SuperNeighborhoodExplorer::ExecuteAt(temp_states[i], r_moves, this->nhes, random_move, i);
+            while (!CompareMovesAt<BaseNeighborhoodExplorers...>(temp_states[i], r_moves, *this, i))
+            {
+              if (!SuperNeighborhoodExplorer::CheckAt(temp_states[i], r_moves, this->nhes, f_moves, try_next_move_with_first, i))
+                throw EmptyNeighborhood(); // just to enter backtracking
+            }
+
+            if (i == static_cast<int>(this->Modality()) - 1)
+            {
+              // The whole chain of moves has been dispatched
+#if defined(DEBUG)
+              VerifyAllActives(st, moves);
+              VerifyAllRelated(st, moves);
+#endif
+              return;
+            }
+            
+            // Duplicate current state
+            temp_states[i+1] = temp_states[i];
+
+            // Make move (otherwise we don't have next state for generating the next move)
+            SuperNeighborhoodExplorer::ExecuteAt(temp_states[i+1], r_moves, this->nhes, make_move, i);
           }
-          while (!CompareMovesAt<BaseNeighborhoodExplorers...>(temp_states[i], r_moves, *this, i));
+          catch (EmptyNeighborhood e)
+          {
+            while (i > 0)
+            {
+              // Backtrack
+              i--;
 
-          // Make move (otherwise we don't have next state for generating the next random)
-          SuperNeighborhoodExplorer::ExecuteAt(temp_states[i+1], r_moves, this->nhes, make_move, i);
+              // Reset state which was modified during visit
+              temp_states[i+1] = temp_states[i];
 
+              // Generate first move
+              //SuperNeighborhoodExplorer::ExecuteAt(temp_states[i], r_moves, this->nhes, first_move, i);
+
+              bool empty = false;
+
+              do
+              {
+                // We can't throw an exception to backtrack since we're already backtracking
+                if (!SuperNeighborhoodExplorer::CheckAt(temp_states[i], r_moves, this->nhes, f_moves, try_next_move_with_first, i))
+                  empty = true;
+              }
+              while (!CompareMovesAt<BaseNeighborhoodExplorers...>(temp_states[i], r_moves, *this, i));
+
+              // a move to be performed has been found
+              if (!empty)
+              {
+                // execute generated move
+                SuperNeighborhoodExplorer::ExecuteAt(temp_states[i+1], r_moves, this->nhes, make_move, i);
+                break;
+              }
+              else
+              if (i == 0)
+              {
+                // No combination whatsoever could be extended as a "first move" on the first neighborhood
+                throw EmptyNeighborhood();
+              }
+            }
+          }
+          i++;
         }
-
+        
 #if defined(DEBUG)
         VerifyAllActives(st, moves);
 #endif

@@ -44,7 +44,6 @@
 #include "easylocal/helpers/deltacostcomponent.hh"
 #include "easylocal/helpers/kicker.hh"
 #include "easylocal/helpers/multimodalneighborhoodexplorer.hh"
-#include "easylocal/helpers/multimodaltabulistmanager.hh"
 #include "easylocal/helpers/neighborhoodexplorer.hh"
 #include "easylocal/helpers/outputmanager.hh"
 #include "easylocal/helpers/prohibitionmanager.hh"

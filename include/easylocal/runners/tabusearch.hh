@@ -171,6 +171,7 @@ namespace EasyLocal {
   
       this->current_move = best_move;
       this->current_move_cost = best_delta;
+      this->current_move_violations = this->ne.DeltaViolations(*this->p_current_state, this->current_move); // TODO: slightly inefficient
     }
 
     template <class Input, class State, class Move, typename CFtype>

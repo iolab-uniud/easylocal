@@ -59,17 +59,24 @@ namespace EasyLocal {
 
       /**
       Generates the move that follows mv in the exploration of the neighborhood of the state st. It returns the generated move in the same variable mv.
-      Explores the neighborhood starting from an initial_move that is not the first move in the enumeration.
+      Explores the neighborhood starting from an initial_move that is not the first move in the enumeration. 
+      @note It is an internal fix for template instantiation in Multimodal Neighborhood Explorers.
       @return @c false if @c mv is the last in the neighborhood of the state.
       @note To be implemented in the application.
       @param st the start state
       @param mv the move
       */
-      virtual bool NextMove(const State &st, Move& mv, const Move& initial_mv) const
+      inline bool NextMoveWithFirst(const State &st, Move& mv, const Move& initial_mv) const
       {
         if (!NextMove(st, mv))
-        FirstMove(st, mv);
+          FirstMove(st, mv);
         return (mv != initial_mv);
+      }
+      
+      /** @copydoc NextMoveWithFirst() */
+      inline bool NextMove(const State &st, Move& mv, const Move& initial_mv) const
+      {
+        return NextMoveWithFirst(st, mv, initial_mv);
       }
 
 
@@ -205,7 +212,8 @@ namespace EasyLocal {
       */
       virtual unsigned int MoveModality(const Move& mv) const
       { return 0; }
-    protected:
+
+
       /**
       Constructs a neighborhood explorer passing a pointer to a state manager
       and a pointer to the input.
@@ -215,7 +223,11 @@ namespace EasyLocal {
       @param name the name associated to the NeighborhoodExplorer.
       */
       NeighborhoodExplorer(const Input& in, StateManager<Input,State,CFtype>& sm, std::string name);
+      
       virtual ~NeighborhoodExplorer() {}
+      
+    protected:
+
 
       const Input& in;/**< A reference to the input */
       StateManager<Input, State,CFtype>& sm; /**< A reference to the attached state manager. */
@@ -252,11 +264,12 @@ namespace EasyLocal {
 
       // compute delta costs (of implemented delta cost components)
       for (DeltaCostComponent<Input,State,Move,CFtype>* dcc : delta_hard_cost_components)
-      if (dcc->IsDeltaImplemented())
-      delta_hard_cost += dcc->DeltaCost(st, mv);
+        if (dcc->IsDeltaImplemented())
+          delta_hard_cost += dcc->DeltaCost(st, mv);
+      
       for (DeltaCostComponent<Input,State,Move,CFtype>* dcc : delta_soft_cost_components)
-      if (dcc->IsDeltaImplemented())
-      delta_soft_cost += dcc->DeltaCost(st, mv);
+        if (dcc->IsDeltaImplemented())
+          delta_soft_cost += dcc->DeltaCost(st, mv);
 
       // only if there is at least one unimplemented delta cost component (i.e., a wrapper along a cost component)
       if (unimplemented_hard_components || unimplemented_soft_components)
