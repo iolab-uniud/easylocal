@@ -114,6 +114,9 @@ namespace EasyLocal {
       /** Tuple type representing references to @c BaseNeighborhoodExplorers. */
       typedef std::tuple<std::reference_wrapper<BaseNeighborhoodExplorers> ...> NeighborhoodExplorerTypes;
 
+      /** Tuple type representing references to @c BaseNeighborhoodExplorers. */
+      typedef std::tuple<BaseNeighborhoodExplorers ...> NeighborhoodExplorerConcreteTypes;
+
       /** Modality of the NeighborhoodExplorer, i.e., the number of @ref NeighborhoodExplorer composing this one.  */
       virtual unsigned int Modality() const { return sizeof...(BaseNeighborhoodExplorers); }
 
@@ -122,11 +125,6 @@ namespace EasyLocal {
       /** Constructor, takes a variable number of base NeighborhoodExplorers.  */
       MultimodalNeighborhoodExplorer(const Input& in, StateManager<Input,State,CFtype>& sm, std::string name, BaseNeighborhoodExplorers& ... nhes)
       : SuperNeighborhoodExplorer(in, sm, name), nhes(std::make_tuple(std::reference_wrapper<BaseNeighborhoodExplorers>(nhes) ...))
-      { }
-
-      /** Constructor, takes a variable number of base NeighborhoodExplorers.  */
-      MultimodalNeighborhoodExplorer(const Input& in, StateManager<Input,State,CFtype>& sm, std::string name)
-      : SuperNeighborhoodExplorer(in, sm, name), nhes(std::make_tuple(std::reference_wrapper<BaseNeighborhoodExplorers>(*std::make_shared<BaseNeighborhoodExplorers>(in, sm)) ...))
       { }
 
       /** Instantiated base NeighborhoodExplorers. */
@@ -828,22 +826,9 @@ namespace EasyLocal {
         // If not otherwise specified, initialize the probabilities as 1 / Modality
         this->bias = std::vector<double>(this->Modality(), 1.0 / (double) this->Modality());
       }
-
-      /** Constructor, takes a variable number of base NeighborhoodExplorers.  */
-      SetUnionNeighborhoodExplorer(const Input& in, StateManager<Input,State,CFtype>& sm, std::string name)
-      : MultimodalNeighborhoodExplorer<Input, State, CFtype, BaseNeighborhoodExplorers ...>(in, sm, name)
-      {
-        // If not otherwise specified, initialize the probabilities as 1 / Modality
-        this->bias = std::vector<double>(this->Modality(), 1.0 / (double) this->Modality());
-      }
-
+      
       SetUnionNeighborhoodExplorer(Input& in, StateManager<Input,State,CFtype>& sm, std::string name, std::vector<double> bias, BaseNeighborhoodExplorers& ... nhes)
       : MultimodalNeighborhoodExplorer<Input, State, CFtype, BaseNeighborhoodExplorers ...>(in, sm, name, nhes ...), bias(bias)
-      { }
-
-      /** Constructor, takes a variable number of base NeighborhoodExplorers.  */
-      SetUnionNeighborhoodExplorer(const Input& in, StateManager<Input,State,CFtype>& sm, std::string name, std::vector<double> bias)
-      : MultimodalNeighborhoodExplorer<Input, State, CFtype, BaseNeighborhoodExplorers ...>(in, sm, name), bias(bias)
       { }
 
       /** @copydoc NeighborhoodExplorer::RandomMove */
@@ -1172,11 +1157,6 @@ namespace EasyLocal {
 
       CartesianProductNeighborhoodExplorer(Input& in, StateManager<Input,State,CFtype>& sm, std::string name, BaseNeighborhoodExplorers& ... nhes)
       : MultimodalNeighborhoodExplorer<Input, State, CFtype, BaseNeighborhoodExplorers ...>(in, sm, name, nhes ...)
-      { }
-
-      /** Constructor, takes a variable number of base NeighborhoodExplorers.  */
-      CartesianProductNeighborhoodExplorer(const Input& in, StateManager<Input,State,CFtype>& sm, std::string name)
-      : MultimodalNeighborhoodExplorer<Input, State, CFtype, BaseNeighborhoodExplorers ...>(in, sm, name)
       { }
 
       /** @copydoc NeighborhoodExplorer::RandomMove */

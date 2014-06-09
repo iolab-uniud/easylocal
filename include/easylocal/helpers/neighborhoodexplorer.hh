@@ -205,7 +205,8 @@ namespace EasyLocal {
       */
       virtual unsigned int MoveModality(const Move& mv) const
       { return 0; }
-    protected:
+
+
       /**
       Constructs a neighborhood explorer passing a pointer to a state manager
       and a pointer to the input.
@@ -215,7 +216,11 @@ namespace EasyLocal {
       @param name the name associated to the NeighborhoodExplorer.
       */
       NeighborhoodExplorer(const Input& in, StateManager<Input,State,CFtype>& sm, std::string name);
+      
       virtual ~NeighborhoodExplorer() {}
+      
+    protected:
+
 
       const Input& in;/**< A reference to the input */
       StateManager<Input, State,CFtype>& sm; /**< A reference to the attached state manager. */
@@ -253,9 +258,9 @@ namespace EasyLocal {
       // compute delta costs (of implemented delta cost components)
       for (DeltaCostComponent<Input,State,Move,CFtype>* dcc : delta_hard_cost_components)
         if (dcc->IsDeltaImplemented())
-        delta_hard_cost += dcc->DeltaCost(st, mv);
+          delta_hard_cost += dcc->DeltaCost(st, mv);
       
-      for (DeltaCostComponent<Input,State,Move,CFtype>* dcc : delta_soft_cost_components);
+      for (DeltaCostComponent<Input,State,Move,CFtype>* dcc : delta_soft_cost_components)
         if (dcc->IsDeltaImplemented())
           delta_soft_cost += dcc->DeltaCost(st, mv);
 
