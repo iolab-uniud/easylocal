@@ -241,7 +241,10 @@ namespace EasyLocal {
         if (choice == 1 || choice == 2 || choice == 3)
         {
           os << "Move : " << mv << std::endl;
-          ne.MakeMove(st,mv);
+	  if (!ne.FeasibleMove(st,mv))
+	    os << "Move not feasible" << std::endl;
+	  else
+	    ne.MakeMove(st,mv);
           return true;
         }    
       }

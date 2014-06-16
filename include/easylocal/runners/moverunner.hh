@@ -143,7 +143,7 @@ namespace EasyLocal {
       this->ne.RandomMove(*this->p_current_state, this->current_move);
       this->current_move_violations = this->ne.DeltaViolations(*this->p_current_state, this->current_move);
       this->current_move_cost = this->ne.DeltaObjective(*this->p_current_state, this->current_move) 
-	+ this->current_move_violations;
+	+ HARD_WEIGHT * this->current_move_violations;
     }
   }
 }

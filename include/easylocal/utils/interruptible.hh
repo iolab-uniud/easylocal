@@ -79,7 +79,7 @@ namespace EasyLocal {
         // If timeout is greater than zero, launch stopper thread
         if (timeout.count() != 0)
         {
-          std::thread t([this, timeout]()
+          std::thread t([this, timeout, result]()
           {
             sleep_for(timeout);
             // If the function has not returned a value already

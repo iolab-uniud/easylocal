@@ -35,6 +35,14 @@ namespace EasyLocal {
       typedef State StateType;
       typedef CFtype CostType;
 
+      /** Checks if a move in the neighborhood is legal.
+      @note Can be implemented in the application (MayRedef)
+      @param st the start state
+      @param mv the move
+      */
+      virtual bool FeasibleMove(const State &st, const Move& mv) const
+      { return true; }
+
       /** Generates a random move in the neighborhood of a given state.
       @note To be implemented in the application (MustDef)
       @param st the start state

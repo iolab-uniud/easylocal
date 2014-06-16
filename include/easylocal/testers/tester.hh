@@ -265,12 +265,18 @@ namespace EasyLocal {
     void Tester<Input,Output, State,CFtype>::ShowRunMenu()
     {
       unsigned int i;
-      os << "RUN MENU: " << std::endl;
-      for (i = 0; i < runners.size(); i++)
-        os << "   (" << (i + 1) << ") " << runners[i]->name << std::endl;
-      os << "   (0) Return to Main Menu" << std::endl;
-      os << " Your choice: ";
-      std::cin >> sub_choice;
+      do
+	{
+	  os << "RUN MENU: " << std::endl;
+	  for (i = 0; i < runners.size(); i++)
+	    os << "   (" << (i + 1) << ") " << runners[i]->name << std::endl;
+	  os << "   (0) Return to Main Menu" << std::endl;
+	  os << " Your choice: ";
+	  std::cin >> sub_choice;
+	  if (sub_choice >= runners.size())
+	    os << "Invalid choice" << std::endl;
+	}
+      while (sub_choice > runners.size());
     }
 
     /**
@@ -449,7 +455,7 @@ namespace EasyLocal {
         }
         case 6:
         {
-          // os  << test_state << std::endl;
+          os  << test_state << std::endl;
           os  << "Total cost: " << this->sm.CostFunction(test_state) << std::endl;
           break;
         }
