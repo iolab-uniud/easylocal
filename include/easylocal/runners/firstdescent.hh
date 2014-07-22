@@ -23,7 +23,7 @@ namespace EasyLocal {
       NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
       std::string name);
     protected:
-      void InitializeRun();
+      void InitializeRun() throw (ParameterNotSet, IncorrectParameterValue);;
       bool StopCriterion();
       bool AcceptableMove();
       void SelectMove();
@@ -45,7 +45,7 @@ namespace EasyLocal {
     FirstDescent<Input,State,Move,CFtype>::FirstDescent(const Input& in,
     StateManager<Input,State,CFtype>& e_sm, NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
     std::string name)
-      : MoveRunner<Input,State,Move,CFtype>(in, e_sm, e_ne, name)
+      : MoveRunner<Input,State,Move,CFtype>(in, e_sm, e_ne, name, "First Descent Runner")
     {
     }
 
@@ -55,7 +55,7 @@ namespace EasyLocal {
     template <class Input, class State, class Move, typename CFtype>
     void FirstDescent<Input,State,Move,CFtype>::SelectMove()
     {
-      this->current_move_cost = this->ne.FirstImprovingMove(this->current_state, this->current_move);
+      this->current_move_cost = this->ne.FirstImprovingMove(*this->p_current_state, this->current_move);
       this->current_move_violations = this->ne.DeltaViolations(*this->p_current_state, this->current_move); // TODO: slightly inefficient
     }
 
@@ -64,7 +64,7 @@ namespace EasyLocal {
     at a negative value for fulfilling the stop criterion the first time
     */
     template <class Input, class State, class Move, typename CFtype>
-    void FirstDescent<Input,State,Move,CFtype>::InitializeRun()
+    void FirstDescent<Input,State,Move,CFtype>::InitializeRun() throw (ParameterNotSet, IncorrectParameterValue)
     {
       MoveRunner<Input,State,Move,CFtype>::InitializeRun();
       this->current_move_cost = -1; // needed for passing the first time
