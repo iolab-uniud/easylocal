@@ -138,7 +138,8 @@ namespace EasyLocal {
           TRY_NEXT_MOVE_WITH_FIRST,
           IS_ACTIVE,
           DELTA_COST_FUNCTION,
-          DELTA_VIOLATIONS
+          DELTA_VIOLATIONS,
+		  DELTA_OBJECTIVE
         };
 
         /** Constructor.
@@ -202,6 +203,9 @@ namespace EasyLocal {
             break;
             case DELTA_VIOLATIONS:
             f = &DoDeltaViolations<N>;
+            break;
+            case DELTA_OBJECTIVE:
+            f = &DoDeltaObjective<N>;
             break;
             default:
             throw std::logic_error("Function not implemented");
@@ -996,6 +1000,17 @@ namespace EasyLocal {
       {
         return n.DeltaViolations(s, m);
       }
+	  
+	  /** Computes the objective cost of making a @ref Move on a @ref State
+	      @param n a reference to the @ref Move's @ref NeighborhoodExplorer
+	      @param s a reference to the current @ref State
+	      @param m a reference to the  @ref ActiveMove to check
+	  */
+	  template<class N>
+	  static CFtype DoDeltaObjective(const N& n, State& s, ActiveMove<typename N::MoveType>& m)
+	  {
+	    return n.DeltaObjective(s, m);
+	  }
     };
 
     /** A @ref MultimodalNeighborhoodExplorer that generates the union of @ref NeighborhoodExplorers. */
@@ -1160,6 +1175,22 @@ namespace EasyLocal {
         MoveTypeRefs r_moves = to_refs(c_moves);
         // Return cost
         return SuperNeighborhoodExplorer::ComputeAt(const_cast<State&>(st), r_moves, this->nhes, delta_violations, selected);
+      }
+	  
+      /** @copydoc NeighborhoodExplorer::DeltaObjective */
+      virtual CFtype DeltaObjective(const State& st, const typename SuperNeighborhoodExplorer::MoveType& moves) const
+      {
+        // Select the current active NeighborhoodExplorer
+        unsigned int selected = this->CurrentActiveMove(st, moves);
+
+        // Compute delta cost
+        Call delta_objective(Call::Function::DELTA_OBJECTIVE);
+
+        // Convert to references to non-const
+        auto c_moves = const_cast<decltype(moves)>(moves);
+        MoveTypeRefs r_moves = to_refs(c_moves);
+        // Return cost
+        return SuperNeighborhoodExplorer::ComputeAt(const_cast<State&>(st), r_moves, this->nhes, delta_objective, selected);
       }
 
       /** @copydoc NeighborhoodExplorer::MakeMove */
@@ -1696,6 +1727,34 @@ namespace EasyLocal {
           temp_states[i] = temp_states[i - 1];
           SuperNeighborhoodExplorer::ExecuteAt(temp_states[i], r_moves, this->nhes, make_move, i - 1);
           sum += SuperNeighborhoodExplorer::ComputeAt(temp_states[i], r_moves, this->nhes, do_delta_violations, i);
+        }
+
+        return sum;
+      }
+	  
+      /** @copydoc NeighborhoodExplorer::DeltaViolations */
+      virtual CFtype DeltaObjective(const State& st, const typename SuperNeighborhoodExplorer::MoveType& moves) const
+      {
+#if defined(DEBUG)
+        VerifyAllActives(st, moves);
+        VerifyAllRelated(st, moves);
+#endif
+
+        Call do_delta_objective(Call::Function::DELTA_OBJECTIVE);
+        Call make_move(Call::Function::MAKE_MOVE);
+
+        CFtype sum = static_cast<CFtype>(0);
+        auto c_moves = const_cast<decltype(moves)>(moves);
+        MoveTypeRefs r_moves = to_refs(c_moves);
+        std::vector<State> temp_states(this->Modality(), State(this->in)); // the chain of states
+        temp_states[0] = st; // the first state is a copy of to st
+        // create and initialize all the remaining states in the chain
+        sum = SuperNeighborhoodExplorer::ComputeAt(temp_states[0], r_moves, this->nhes, do_delta_objective, 0);
+        for (unsigned int i = 1; i < this->Modality(); i++)
+        {
+          temp_states[i] = temp_states[i - 1];
+          SuperNeighborhoodExplorer::ExecuteAt(temp_states[i], r_moves, this->nhes, make_move, i - 1);
+          sum += SuperNeighborhoodExplorer::ComputeAt(temp_states[i], r_moves, this->nhes, do_delta_objective, i);
         }
 
         return sum;
