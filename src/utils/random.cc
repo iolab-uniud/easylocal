@@ -8,4 +8,5 @@ std::random_device Random::dev;
 std::mt19937 Random::g(Random::dev());
 
 // By default the recorded seed is -1 (no seed provided)
-int Random::seed = -1; 
+
+int Random::seed = Random::Seed(Random::Int()); 

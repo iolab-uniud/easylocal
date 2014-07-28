@@ -47,10 +47,10 @@ namespace EasyLocal {
       }
   
       /** Sets a new seed for the random engine. */
-      static void Seed(int seed)
+      static int Seed(int seed)
       {
         g.seed(seed);
-        Random::seed = seed;
+        return Random::seed = seed;
       }
 
       static int seed;
