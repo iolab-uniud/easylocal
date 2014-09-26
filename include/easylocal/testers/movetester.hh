@@ -61,6 +61,7 @@ namespace EasyLocal {
       void CheckTabuStrength(const State& st) const;
       void CheckCandidateInitialTemperature() const;
       unsigned int Modality() const;
+        void SetTolerance(double t);
     protected:
       void ShowMenu();
       bool ExecuteChoice(State& st);
@@ -72,6 +73,7 @@ namespace EasyLocal {
       Core::TabuListManager<State,Move,CFtype>* tlm; /**< A reference to the attached tabu list manager (if any). */
       unsigned int choice;   /**< The option currently chosen from the menu. */
       std::ostream& os;
+        double tolerance;
     };
 
     /*************************************************************************
@@ -105,7 +107,7 @@ namespace EasyLocal {
     Core::NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
     Core::TabuListManager<State,Move,CFtype>& e_tlm,
     std::string name, std::ostream& o)
-      : ComponentTester<Input,Output,State,CFtype>(name), in(i), out(i), sm(e_sm), om(e_om), ne(e_ne), tlm(&e_tlm), os(o)
+      : ComponentTester<Input,Output,State,CFtype>(name), in(i), out(i), sm(e_sm), om(e_om), ne(e_ne), tlm(&e_tlm), os(o), tolerance(std::numeric_limits<CFtype>::epsilon())
         { }
 
     template <class Input, class Output, class State, class Move, typename CFtype>
@@ -116,7 +118,7 @@ namespace EasyLocal {
     std::string name,
     Tester<Input,Output,State,CFtype>& t,
     std::ostream& o)
-      : ComponentTester<Input,Output,State,CFtype>(name), in(i), out(i), sm(e_sm), om(e_om), ne(e_ne), os(o)
+      : ComponentTester<Input,Output,State,CFtype>(name), in(i), out(i), sm(e_sm), om(e_om), ne(e_ne), os(o), tolerance(std::numeric_limits<CFtype>::epsilon())
         { tlm = nullptr; t.AddMoveTester(*this); }
 
     template <class Input, class Output, class State, class Move, typename CFtype>
@@ -128,7 +130,7 @@ namespace EasyLocal {
     std::string name,
     Tester<Input,Output,State,CFtype>& t,
     std::ostream& o)
-      : ComponentTester<Input,Output,State,CFtype>(name), in(i), out(i), sm(e_sm), om(e_om), ne(e_ne), tlm(&e_tlm), os(o)
+      : ComponentTester<Input,Output,State,CFtype>(name), in(i), out(i), sm(e_sm), om(e_om), ne(e_ne), tlm(&e_tlm), os(o), tolerance(std::numeric_limits<CFtype>::epsilon())
         { t.AddMoveTester(*this); }
 
 
@@ -304,7 +306,7 @@ namespace EasyLocal {
     
         ne.MakeMove(st1, mv);
         error = this->sm.CostFunction(st1) - ne.DeltaCostFunction(st, mv) - this->sm.CostFunction(st);
-        if (!IsZero(error))
+        if (!IsZero(error) && fabs(error) > tolerance)
         {
           error_found = true;
           os << std::endl << "Error: Move n. " << move_count << ", " << mv << ", Total error = " << error <<  ", Info" << std::endl;
@@ -317,7 +319,7 @@ namespace EasyLocal {
             cost = cc.Cost(st);
             cost1 = cc.Cost(st1);
             error_cc = cost - cost1 + delta_cost;
-            if (!IsZero(error_cc))
+            if (!IsZero(error_cc) && fabs(error_cc) > tolerance)
             {		    
               os << "  " << i << ". " << dcc.name << " : Initial = " << cost << ", final = " 
                 << cost1 << ", delta computed = " << delta_cost << " (error = " << error_cc << ")" << std::endl;		      
@@ -629,6 +631,12 @@ namespace EasyLocal {
     { 
       return ne.Modality(); 
     }
+      
+      template <class Input, class Output, class State, class Move, typename CFtype>
+      void MoveTester<Input,Output,State,Move,CFtype>::SetTolerance(double t)
+      {
+          tolerance = t;
+      }
 
   }
 }
