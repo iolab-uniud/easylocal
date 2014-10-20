@@ -31,7 +31,7 @@ namespace EasyLocal {
       void Print(std::ostream& os = std::cout) const;
       void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout);
       unsigned int Round() const { return round; }
-      unsigned int IdleRound() const { return idle_round; }
+      unsigned int IdleRounds() const { return idle_rounds; }
     protected:
       void InitializeSolve() throw (ParameterNotSet, IncorrectParameterValue);
       void Go();
@@ -41,7 +41,7 @@ namespace EasyLocal {
       unsigned int current_runner;
       Parameter<unsigned int> max_rounds, max_idle_rounds;
       unsigned int round;
-      unsigned int idle_round;
+      unsigned int idle_rounds;
     };
 
     /*************************************************************************
@@ -68,7 +68,7 @@ namespace EasyLocal {
     max_idle_rounds("max_idle_rounds", "Maximum number of idle rounds", this->parameters)
     {
       round = 0;
-      idle_round = 0;
+      idle_rounds = 0;
     }
 
     template <class Input, class Output, class State, typename CFtype>
@@ -132,25 +132,15 @@ namespace EasyLocal {
     void TokenRingSearch<Input,Output,State,CFtype>::InitializeSolve() throw (ParameterNotSet, IncorrectParameterValue)
     {
       AbstractLocalSearch<Input,Output,State,CFtype>::InitializeSolve();
-      if (max_idle_rounds.IsSet())
-      {
-        if (max_idle_rounds == 0)
-          throw IncorrectParameterValue(max_rounds, "It should be greater than zero");
-        if (!max_rounds.IsSet())
-          max_rounds = std::numeric_limits<unsigned int>::max();
-      }
-      if (max_rounds.IsSet())
-      {
-        if (max_rounds == 0)
+      if (max_idle_rounds.IsSet() && max_idle_rounds == 0)
           throw IncorrectParameterValue(max_idle_rounds, "It should be greater than zero");
-        if (!max_idle_rounds.IsSet())
-          max_idle_rounds = max_rounds;
-      }
+      if (max_rounds.IsSet() && max_rounds == 0)
+          throw IncorrectParameterValue(max_rounds, "It should be greater than zero");
       if (p_runners.size() == 0)
         // FIXME: add a more specific exception behavior
         throw std::logic_error("No runner set in object " + this->name);
       round = 0;
-      idle_round = 0;
+      idle_rounds = 0;
     }
 
     template <class Input, class Output, class State, typename CFtype>
@@ -162,17 +152,17 @@ namespace EasyLocal {
         //      std::cerr << "Rounds = " << rounds << "/" << max_rounds << ", " << idle_rounds << "/" << max_idle_rounds<< std::endl;
         this->current_state_cost = p_runners[current_runner]->Go(*this->p_current_state);
         round++;
-        idle_round++;		
+        idle_rounds++;
         if (this->current_state_cost <= this->best_state_cost) // the less or equal is here for diversification purpose
         {
           if (this->current_state_cost < this->best_state_cost)
-            idle_round = 0;			
+            idle_rounds = 0;
           *this->p_best_state = *this->p_current_state;
           this->best_state_cost = this->current_state_cost;
         }
         current_runner = (current_runner + 1) % p_runners.size();
       }
-      while (idle_round < max_idle_rounds && round < max_rounds);
+      while (idle_rounds < max_idle_rounds && round < max_rounds);
     }
 
     template <class Input, class Output, class State, typename CFtype>
