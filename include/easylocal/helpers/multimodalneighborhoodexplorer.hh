@@ -139,7 +139,7 @@ namespace EasyLocal {
           IS_ACTIVE,
           DELTA_COST_FUNCTION,
           DELTA_VIOLATIONS,
-		  DELTA_OBJECTIVE
+          DELTA_OBJECTIVE
         };
 
         /** Constructor.
@@ -1057,7 +1057,7 @@ namespace EasyLocal {
         pick = Random::Double(0.0, total_bias);
 
         // Subtract bias until we're on the right neighborhood explorer
-        while(pick > this->bias[selected])
+        while (pick > this->bias[selected])
         {
           pick -= this->bias[selected];
           selected++;

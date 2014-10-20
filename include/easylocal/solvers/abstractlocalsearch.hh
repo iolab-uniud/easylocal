@@ -36,6 +36,9 @@ namespace EasyLocal {
       StateManager<Input,State,CFtype>& e_sm,
       OutputManager<Input,Output,State,CFtype>& e_om,
       std::string name, std::string description);
+      
+      virtual ~AbstractLocalSearch()
+      {}
   
       /** Implements Interruptible. */
       virtual std::function<int(void)> MakeFunction()
