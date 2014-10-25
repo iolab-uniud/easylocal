@@ -1222,7 +1222,7 @@ namespace EasyLocal {
         MoveTypeRefs r_moves = to_refs(c_moves);
         std::vector<bool> moves_status = SuperNeighborhoodExplorer::Check(const_cast<State&>(st), r_moves, this->nhes, is_active);
 
-        return (int)std::distance(moves_status.begin(), std::find_if(moves_status.begin(), moves_status.end(), [](bool element) { return element; }));
+        return (int)std::distance(moves_status.begin(), std::find_if (moves_status.begin(), moves_status.end(), [](bool element) { return element; }));
       }
     };
 

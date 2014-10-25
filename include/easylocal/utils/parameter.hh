@@ -226,7 +226,7 @@ namespace EasyLocal {
       {
         is.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 
-        for(auto p : this->parameters)
+        for (auto p : this->parameters)
         {
           os << "  " << p->description << (p->IsSet() ? (std::string(" (def.: ") + p->ToString() + "): ") : ": ");
           do
@@ -239,7 +239,7 @@ namespace EasyLocal {
       /** Print all parameter values on an output stream. */
       virtual void Print(std::ostream& os = std::cout) const
       {
-        for(auto p : this->parameters)
+        for (auto p : this->parameters)
         {
           os << "  " << p->description << ": ";
           p->Write(os) << std::endl;

@@ -319,7 +319,7 @@ namespace EasyLocal {
       {
         size_t h = std::hash<std::string>()(this->sym);
     
-        for(const std::shared_ptr<ASTItem<T>>& op : operands)
+        for (const std::shared_ptr<ASTItem<T>>& op : operands)
         {
           h = rol(h);
           h ^= op->hash();
@@ -366,7 +366,7 @@ namespace EasyLocal {
         for (auto it = this->operands.begin(); it != this->operands.end();)
         {
           // correct way to replace element in list
-          if(!((*it)->simplified()))
+          if (!((*it)->simplified()))
           {
             auto sim = (*it)->simplify();
         
@@ -448,7 +448,7 @@ namespace EasyLocal {
         for (auto it = this->operands.begin(); it != this->operands.end();)
         {
           // correct way to replace element in list
-          if(!((*it)->simplified()))
+          if (!((*it)->simplified()))
           {
             auto sim = (*it)->simplify();
         

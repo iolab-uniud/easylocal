@@ -83,7 +83,7 @@ namespace EasyLocal {
           {
             sleep_for(timeout);
             // If the function has not returned a value already
-            if(result.wait_for(std::chrono::milliseconds::zero()) == std::future_status::ready) {
+            if (result.wait_for(std::chrono::milliseconds::zero()) == std::future_status::ready) {
               timeout_expired = true;
               AtTimeoutExpired();
             }
