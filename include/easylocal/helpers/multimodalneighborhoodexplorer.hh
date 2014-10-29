@@ -112,7 +112,7 @@ namespace EasyLocal {
     protected:
 
       /** Constructor, takes a variable number of base NeighborhoodExplorers.  */
-      MultimodalNeighborhoodExplorer(const Input& in, StateManager<Input,State,CFtype>& sm, std::string name, BaseNeighborhoodExplorers& ... nhes)
+      MultimodalNeighborhoodExplorer(const Input& in, StateManager<Input, State, CFtype>& sm, std::string name, BaseNeighborhoodExplorers& ... nhes)
       : SuperNeighborhoodExplorer(in, sm, name), nhes(std::make_tuple(std::reference_wrapper<BaseNeighborhoodExplorers>(nhes) ...))
       { }
 
@@ -954,7 +954,7 @@ namespace EasyLocal {
       static void DoMakeMove(const N& n, State& s, ActiveMove<typename N::MoveType>& m)
       {
         if (m.active)
-        n.MakeMove(s,m);
+        n.MakeMove(s, m);
       }
 
       /** Sets the active flag of an @ref ActiveMove to false
@@ -1033,14 +1033,14 @@ namespace EasyLocal {
       /** Inherit constructor from superclass. Not yet supported by all compilers. */
       // using MultimodalNeighborhoodExplorer<Input, State, CFtype, BaseNeighborhoodExplorers ...>::MultimodalNeighborhoodExplorer;
 
-      SetUnionNeighborhoodExplorer(Input& in, StateManager<Input,State,CFtype>& sm, std::string name, BaseNeighborhoodExplorers& ... nhes)
+      SetUnionNeighborhoodExplorer(Input& in, StateManager<Input, State, CFtype>& sm, std::string name, BaseNeighborhoodExplorers& ... nhes)
       : MultimodalNeighborhoodExplorer<Input, State, CFtype, BaseNeighborhoodExplorers ...>(in, sm, name, nhes ...)
       {
         // If not otherwise specified, initialize the probabilities as 1 / Modality
         this->bias = std::vector<double>(this->Modality(), 1.0 / (double) this->Modality());
       }
       
-      SetUnionNeighborhoodExplorer(Input& in, StateManager<Input,State,CFtype>& sm, std::string name, std::vector<double> bias, BaseNeighborhoodExplorers& ... nhes)
+      SetUnionNeighborhoodExplorer(Input& in, StateManager<Input, State, CFtype>& sm, std::string name, std::vector<double> bias, BaseNeighborhoodExplorers& ... nhes)
       : MultimodalNeighborhoodExplorer<Input, State, CFtype, BaseNeighborhoodExplorers ...>(in, sm, name, nhes ...), bias(bias)
       { }
 
@@ -1384,7 +1384,7 @@ namespace EasyLocal {
       /** Inherit constructor from superclass. Not yet supported by all compilers. */
       // using MultimodalNeighborhoodExplorer<Input, State, CFtype, BaseNeighborhoodExplorers ...>::MultimodalNeighborhoodExplorer;
 
-      CartesianProductNeighborhoodExplorer(Input& in, StateManager<Input,State,CFtype>& sm, std::string name, BaseNeighborhoodExplorers& ... nhes)
+      CartesianProductNeighborhoodExplorer(Input& in, StateManager<Input, State, CFtype>& sm, std::string name, BaseNeighborhoodExplorers& ... nhes)
       : MultimodalNeighborhoodExplorer<Input, State, CFtype, BaseNeighborhoodExplorers ...>(in, sm, name, nhes ...)
       { }
 

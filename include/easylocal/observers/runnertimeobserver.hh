@@ -15,42 +15,42 @@ namespace EasyLocal {
         : RunnerObserver<Input, State, Move>(verbosity_level, plot_level, log_os, plot_os)
           { }
   
-      void NotifyStartRunner(MoveRunner<Input,State,Move, CFtype>& r);
-      void NotifyNewBest(MoveRunner<Input,State,Move, CFtype>& r);
-      void NotifyStoreMove(MoveRunner<Input,State,Move, CFtype>& r);
-      void NotifyEndRunner(MoveRunner<Input,State,Move, CFtype>& r);
+      void NotifyStartRunner(MoveRunner<Input, State, Move, CFtype>& r);
+      void NotifyNewBest(MoveRunner<Input, State, Move, CFtype>& r);
+      void NotifyStoreMove(MoveRunner<Input, State, Move, CFtype>& r);
+      void NotifyEndRunner(MoveRunner<Input, State, Move, CFtype>& r);
       Chronometer chrono;
     };
 
     template <class Input, class State, class Move, typename CFtype>
-    void TimeObserver<Input,State,Move,CFtype>::NotifyStartRunner(MoveRunner<Input,State,Move, CFtype>& r)
+    void TimeObserver<Input, State, Move, CFtype>::NotifyStartRunner(MoveRunner<Input, State, Move, CFtype>& r)
     {
       chrono.Reset();
  	
       double cost = r.GetCurrentStateCost();
-      plot_os << cost << ",";
+      plot_os << cost << ", ";
       plot_os << chrono.TotalTime()<<"\n"; plot_os.flush();
   
       chrono.Start();
     }
 
     template <class Input, class State, class Move, typename CFtype>
-    void TimeObserver<Input,State,Move,CFtype>::NotifyNewBest(MoveRunner<Input,State,Move, CFtype>& r)
+    void TimeObserver<Input, State, Move, CFtype>::NotifyNewBest(MoveRunner<Input, State, Move, CFtype>& r)
     {
       double cost = r.GetCurrentStateCost();
-      plot_os << cost << ",";
+      plot_os << cost << ", ";
       plot_os << chrono.TotalTime()<<"\n"; plot_os.flush();
     }
 
     template <class Input, class State, class Move, typename CFtype>
-    void TimeObserver<Input,State,Move,CFtype>::NotifyStoreMove(MoveRunner<Input,State,Move, CFtype>& r)
+    void TimeObserver<Input, State, Move, CFtype>::NotifyStoreMove(MoveRunner<Input, State, Move, CFtype>& r)
       { }
 
     template <class Input, class State, class Move, typename CFtype>
-    void TimeObserver<Input,State,Move,CFtype>::NotifyEndRunner(MoveRunner<Input,State,Move, CFtype>& r)
+    void TimeObserver<Input, State, Move, CFtype>::NotifyEndRunner(MoveRunner<Input, State, Move, CFtype>& r)
     {
       double cost = r.GetStateCost();
-      plot_os << cost << ",";
+      plot_os << cost << ", ";
       plot_os << chrono.TotalTime()<<"\n"; plot_os.flush();
       chrono.Stop();
     }

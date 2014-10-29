@@ -39,19 +39,19 @@ namespace EasyLocal {
     template <typename H, typename ... T>
     std::tuple<T...> tuple_tail(const std::tuple<H, T...>& original)
     {
-      return tuple_tail(typename make_tail<std::tuple_size<std::tuple<H,T...>>::value>::type(), original);
+      return tuple_tail(typename make_tail<std::tuple_size<std::tuple<H, T...>>::value>::type(), original);
     }
 
     /** Generates a tuple's tail, with reference wrappers. */
     template <typename H, typename ... T>
     std::tuple<std::reference_wrapper<T>...> tuple_tail(const std::tuple<std::reference_wrapper<H>, std::reference_wrapper<T>...>& original)
     {
-      return tuple_tail(typename make_tail<std::tuple_size<std::tuple<H,T...>>::value>::type(), original);
+      return tuple_tail(typename make_tail<std::tuple_size<std::tuple<H, T...>>::value>::type(), original);
     }
 
     /** Generates a tuple's tail, case base. */
     template <typename H, typename ... T, int ... S>
-    std::tuple<T...> tuple_tail(tail_index<S...>, const std::tuple<H,T...>& original)
+    std::tuple<T...> tuple_tail(tail_index<S...>, const std::tuple<H, T...>& original)
     {
       return std::make_tuple(std::get<S>(original) ...);
     }

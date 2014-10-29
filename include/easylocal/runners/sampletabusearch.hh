@@ -13,14 +13,14 @@ namespace EasyLocal {
   namespace Core {
 
     template <class Input, class State, class Move, typename CFtype>
-    class SampleTabuSearch : public TabuSearch<Input,State,Move,CFtype>
+    class SampleTabuSearch : public TabuSearch<Input, State, Move, CFtype>
     {
     public:
-      SampleTabuSearch<Input,State,Move,CFtype>(const Input& in,
-      StateManager<Input,State,CFtype>& e_sm,
-      NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
-      TabuListManager<State,Move,CFtype>& e_tlm,
-      std::string name) : TabuSearch<Input,State,Move,CFtype>(in, e_sm, e_ne, e_tlm, name), samples("samples", "Number of neighbors sampled", this->parameters) {}
+      SampleTabuSearch<Input, State, Move, CFtype>(const Input& in,
+      StateManager<Input, State, CFtype>& e_sm,
+      NeighborhoodExplorer<Input, State, Move, CFtype>& e_ne,
+      TabuListManager<State, Move, CFtype>& e_tlm,
+      std::string name) : TabuSearch<Input, State, Move, CFtype>(in, e_sm, e_ne, e_tlm, name), samples("samples", "Number of neighbors sampled", this->parameters) {}
     protected:
       void SelectMove();
       Parameter<unsigned int> samples;
@@ -35,7 +35,7 @@ namespace EasyLocal {
     mechanism.
     */
     template <class Input, class State, class Move, typename CFtype>
-    void SampleTabuSearch<Input,State,Move,CFtype>::SelectMove()
+    void SampleTabuSearch<Input, State, Move, CFtype>::SelectMove()
     {
       // get the first non-prohibited move 
       unsigned int number_of_bests = 0;
@@ -77,7 +77,7 @@ namespace EasyLocal {
         }
         else if (EqualTo(mv_cost, best_delta) && !this->pm.ProhibitedMove(current_state, mv, mv_cost))
         {
-          if (Random::Int(0,number_of_bests) == 0) // accept the move with probability 1 / (1 + number_of_bests)
+          if (Random::Int(0, number_of_bests) == 0) // accept the move with probability 1 / (1 + number_of_bests)
             best_move = mv;
           number_of_bests++;
         }

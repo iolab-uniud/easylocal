@@ -14,13 +14,13 @@ namespace EasyLocal {
     */
 
     template <class Input, class State, class Move, typename CFtype>
-    class SimulatedAnnealingWithShiftingPenalty : public SimulatedAnnealingIterationBased<Input,State,Move,CFtype>
+    class SimulatedAnnealingWithShiftingPenalty : public SimulatedAnnealingIterationBased<Input, State, Move, CFtype>
     {
     public:
   
       SimulatedAnnealingWithShiftingPenalty(const Input& in,
-      StateManager<Input,State,CFtype>& e_sm,
-      NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
+      StateManager<Input, State, CFtype>& e_sm,
+      NeighborhoodExplorer<Input, State, Move, CFtype>& e_ne,
       std::string name);
       std::string StatusString();
 
@@ -48,11 +48,11 @@ namespace EasyLocal {
     @param in a poiter to an input object
     */
     template <class Input, class State, class Move, typename CFtype>
-    SimulatedAnnealingWithShiftingPenalty<Input,State,Move,CFtype>::SimulatedAnnealingWithShiftingPenalty(const Input& in,
-    StateManager<Input,State,CFtype>& e_sm,
-    NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
+    SimulatedAnnealingWithShiftingPenalty<Input, State, Move, CFtype>::SimulatedAnnealingWithShiftingPenalty(const Input& in,
+    StateManager<Input, State, CFtype>& e_sm,
+    NeighborhoodExplorer<Input, State, Move, CFtype>& e_ne,
     std::string name)
-      : SimulatedAnnealingIterationBased<Input,State,Move,CFtype>(in, e_sm, e_ne, name),
+      : SimulatedAnnealingIterationBased<Input, State, Move, CFtype>(in, e_sm, e_ne, name),
     alpha("shifting_penalty_multiplier", "Multiplier for the shifting penalty", this->parameters)
       { }
 
@@ -63,10 +63,10 @@ namespace EasyLocal {
     setting the temperature to the start value.
     */
     template <class Input, class State, class Move, typename CFtype>
-    void SimulatedAnnealingWithShiftingPenalty<Input,State,Move,CFtype>::InitializeRun() throw (ParameterNotSet, IncorrectParameterValue)
+    void SimulatedAnnealingWithShiftingPenalty<Input, State, Move, CFtype>::InitializeRun() throw (ParameterNotSet, IncorrectParameterValue)
     {
 
-      SimulatedAnnealingIterationBased<Input,State,Move,CFtype>::InitializeRun(); 
+      SimulatedAnnealingIterationBased<Input, State, Move, CFtype>::InitializeRun(); 
       min_shift = 0.01; // 1.0/HARD_WEIGHT;
       shift = 1.0;  
     }
@@ -75,7 +75,7 @@ namespace EasyLocal {
     Create a string containing the status of the runner
     */
     template <class Input, class State, class Move, typename CFtype>
-    std::string SimulatedAnnealingWithShiftingPenalty<Input,State,Move,CFtype>::StatusString()
+    std::string SimulatedAnnealingWithShiftingPenalty<Input, State, Move, CFtype>::StatusString()
     {
       std::stringstream status;
       status << "["
@@ -89,18 +89,18 @@ namespace EasyLocal {
     }
 
     template <class Input, class State, class Move, typename CFtype>
-    void SimulatedAnnealingWithShiftingPenalty<Input,State,Move,CFtype>::CompleteMove()
+    void SimulatedAnnealingWithShiftingPenalty<Input, State, Move, CFtype>::CompleteMove()
     {
-      SimulatedAnnealingIterationBased<Input,State,Move,CFtype>::CompleteMove();
+      SimulatedAnnealingIterationBased<Input, State, Move, CFtype>::CompleteMove();
       if (this->current_state_violations > 0)
-        shift = std::min(1.0,shift*alpha);
+        shift = std::min(1.0, shift*alpha);
       else
-        shift = std::max(min_shift,shift/alpha);
+        shift = std::max(min_shift, shift/alpha);
       //  std::cerr << StatusString() << std::endl;
     }
 
     template <class Input, class State, class Move, typename CFtype>
-    void SimulatedAnnealingWithShiftingPenalty<Input,State,Move,CFtype>::SelectMove()
+    void SimulatedAnnealingWithShiftingPenalty<Input, State, Move, CFtype>::SelectMove()
     {
       this->ne.RandomMove(*this->p_current_state, this->current_move);
       delta_soft_cost = this->ne.DeltaObjective(*this->p_current_state, this->current_move);
@@ -112,9 +112,9 @@ namespace EasyLocal {
     }
 
     template <class Input, class State, class Move, typename CFtype>
-    bool SimulatedAnnealingWithShiftingPenalty<Input,State,Move,CFtype>::AcceptableMove()
+    bool SimulatedAnnealingWithShiftingPenalty<Input, State, Move, CFtype>::AcceptableMove()
     {
-      return LessOrEqualThan(shifted_delta_hard_cost + delta_soft_cost,0.0)
+      return LessOrEqualThan(shifted_delta_hard_cost + delta_soft_cost, 0.0)
         || (Random::Double() < exp(-(shifted_delta_hard_cost + delta_soft_cost)/this->temperature)); 
     }
   }

@@ -14,15 +14,15 @@ namespace EasyLocal {
     @ingroup Solvers */
     template <class Input, class Output, class State, typename CFtype>
     class GRASP
-      : public AbstractLocalSearch<Input,Output,State,CFtype>
+      : public AbstractLocalSearch<Input, Output, State, CFtype>
     {
     public:
       GRASP(const Input& i,
-      StateManager<Input,State,CFtype>& sm,
-      OutputManager<Input,Output,State,CFtype>& om,
+      StateManager<Input, State, CFtype>& sm,
+      OutputManager<Input, Output, State, CFtype>& om,
       std::string name);
       void Print(std::ostream& os = std::cout) const;
-      void SetRunner(Runner<Input,State,CFtype>& r);
+      void SetRunner(Runner<Input, State, CFtype>& r);
       unsigned int GetRestarts() const { return restarts; }
       void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout);
 
@@ -30,7 +30,7 @@ namespace EasyLocal {
     protected:
       unsigned int restarts;
 
-      Runner<Input,State,CFtype>* runner; /**< The linked runner. */
+      Runner<Input, State, CFtype>* runner; /**< The linked runner. */
     };
 
     /*************************************************************************
@@ -50,11 +50,11 @@ namespace EasyLocal {
     @param out a pointer to an output object
     */
     template <class Input, class Output, class State, typename CFtype>
-    GRASP<Input,Output,State,CFtype>::GRASP(const Input& i,
-    StateManager<Input,State,CFtype>& sm,
-    OutputManager<Input,Output,State,CFtype>& om,
+    GRASP<Input, Output, State, CFtype>::GRASP(const Input& i,
+    StateManager<Input, State, CFtype>& sm,
+    OutputManager<Input, Output, State, CFtype>& om,
     std::string name)
-      : AbstractLocalSearch<Input,Output,State,CFtype>(i, sm, om, name)
+      : AbstractLocalSearch<Input, Output, State, CFtype>(i, sm, om, name)
     {
       runner = NULL;
     }
@@ -65,13 +65,13 @@ namespace EasyLocal {
     @param r a pointer to a compatible runner to add
     */
     template <class Input, class Output, class State, typename CFtype>
-    void GRASP<Input,Output,State,CFtype>::SetRunner(Runner<Input,State,CFtype>& r)
+    void GRASP<Input, Output, State, CFtype>::SetRunner(Runner<Input, State, CFtype>& r)
     {
       runner = &r;
     }
 
     // template <class Input, class Output, class State, typename CFtype>
-    // void GRASP<Input,Output,State,CFtype>::Print(std::ostream& os) const
+    // void GRASP<Input, Output, State, CFtype>::Print(std::ostream& os) const
     // {
     //   os  << "Generalized Local Search Solver: " << this->name << std::endl;
 	
@@ -95,7 +95,7 @@ namespace EasyLocal {
     Solves using a single runner
     */
     template <class Input, class Output, class State, typename CFtype>
-    void GRASP<Input,Output,State,CFtype>::Solve(double alpha, unsigned int k, unsigned int trials)
+    void GRASP<Input, Output, State, CFtype>::Solve(double alpha, unsigned int k, unsigned int trials)
     {
       bool timeout_expired = false;
       unsigned t;
@@ -126,7 +126,7 @@ namespace EasyLocal {
     }
 
     template <class Input, class Output, class State, typename CFtype>
-    void GRASP<Input,Output,State,CFtype>::ReadParameters(std::istream& is, std::ostream& os)
+    void GRASP<Input, Output, State, CFtype>::ReadParameters(std::istream& is, std::ostream& os)
     {
       os << "GRASP Solver: " << this->name << " parameters" << std::endl;
       os << "Runner: " << std::endl;

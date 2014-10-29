@@ -16,13 +16,13 @@ namespace EasyLocal {
     */
 
     template <class Input, class State, class Move, typename CFtype>
-    class SimulatedAnnealingIterationBased : public AbstractSimulatedAnnealing<Input,State,Move,CFtype>
+    class SimulatedAnnealingIterationBased : public AbstractSimulatedAnnealing<Input, State, Move, CFtype>
     {
     public:
   
       SimulatedAnnealingIterationBased(const Input& in,
-      StateManager<Input,State,CFtype>& e_sm,
-      NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
+      StateManager<Input, State, CFtype>& e_sm,
+      NeighborhoodExplorer<Input, State, Move, CFtype>& e_ne,
       std::string name);
       std::string StatusString();
 
@@ -55,11 +55,11 @@ namespace EasyLocal {
     @param in a poiter to an input object
     */
     template <class Input, class State, class Move, typename CFtype>
-    SimulatedAnnealingIterationBased<Input,State,Move,CFtype>::SimulatedAnnealingIterationBased(const Input& in,
-    StateManager<Input,State,CFtype>& e_sm,
-    NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
+    SimulatedAnnealingIterationBased<Input, State, Move, CFtype>::SimulatedAnnealingIterationBased(const Input& in,
+    StateManager<Input, State, CFtype>& e_sm,
+    NeighborhoodExplorer<Input, State, Move, CFtype>& e_ne,
     std::string name)
-      : AbstractSimulatedAnnealing<Input,State,Move,CFtype>(in, e_sm, e_ne, name),
+      : AbstractSimulatedAnnealing<Input, State, Move, CFtype>(in, e_sm, e_ne, name),
     neighbors_accepted_ratio("neighbors_accepted_ratio", "Ratio of neighbors accepted", this->parameters),
     temperature_range("temperature_range", "Temperature_range", this->parameters)
       { }
@@ -72,10 +72,10 @@ namespace EasyLocal {
     */
     // FIXME
     template <class Input, class State, class Move, typename CFtype>
-    void SimulatedAnnealingIterationBased<Input,State,Move,CFtype>::InitializeRun() throw (ParameterNotSet, IncorrectParameterValue)
+    void SimulatedAnnealingIterationBased<Input, State, Move, CFtype>::InitializeRun() throw (ParameterNotSet, IncorrectParameterValue)
     {
 
-      AbstractSimulatedAnnealing<Input,State,Move,CFtype>::InitializeRun(); 
+      AbstractSimulatedAnnealing<Input, State, Move, CFtype>::InitializeRun(); 
       expected_min_temperature = this->start_temperature/temperature_range;
       expected_number_of_temperatures = - log(temperature_range)/log(this->cooling_rate);
 
@@ -93,7 +93,7 @@ namespace EasyLocal {
     The search stops when the number of iterations is expired (already checked in the superclass MoveRunner) 
     */
     template <class Input, class State, class Move, typename CFtype>
-    bool SimulatedAnnealingIterationBased<Input,State,Move,CFtype>::StopCriterion()
+    bool SimulatedAnnealingIterationBased<Input, State, Move, CFtype>::StopCriterion()
     { 
       return false; 
     }
@@ -102,7 +102,7 @@ namespace EasyLocal {
     Create a string containing the status of the runner
     */
     template <class Input, class State, class Move, typename CFtype>
-    std::string SimulatedAnnealingIterationBased<Input,State,Move,CFtype>::StatusString()
+    std::string SimulatedAnnealingIterationBased<Input, State, Move, CFtype>::StatusString()
     {
       std::stringstream status;
       status << "["

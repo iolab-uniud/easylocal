@@ -43,7 +43,7 @@ namespace EasyLocal {
     @param in a pointer to an input object (nullptr for default)
     */
     template <class Input, class Output, class State, typename CFtype>
-    ComponentTester<Input,Output,State,CFtype>::ComponentTester(std::string e_name)
+    ComponentTester<Input, Output, State, CFtype>::ComponentTester(std::string e_name)
       : name(e_name) { }
   }
 }

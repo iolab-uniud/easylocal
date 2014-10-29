@@ -97,7 +97,7 @@ namespace EasyLocal {
       virtual unsigned int Modality() const = 0;
   
       /** List of all runners that have been instantiated so far. For autoloading. */
-      static std::vector<Runner<Input,State,CFtype>*> runners;
+      static std::vector<Runner<Input, State, CFtype>*> runners;
   
     protected:
 
@@ -107,7 +107,7 @@ namespace EasyLocal {
       @param name name of the runner
       @param desc description of the runner
       */
-      Runner(const Input& i, StateManager<Input,State,CFtype>&, std::string, std::string);
+      Runner(const Input& i, StateManager<Input, State, CFtype>&, std::string, std::string);
   
       /** Actions and checks to be perfomed at the beginning of the run. Redefinition intended.
       @throw ParameterNotSet if one of the parameters needed by the runner (or other components) hasn't been set
@@ -160,7 +160,7 @@ namespace EasyLocal {
       const Input& in;
   
       /** The state manager attached to this runner. */
-      StateManager<Input, State,CFtype>& sm;
+      StateManager<Input, State, CFtype>& sm;
   
       /** Current state of the search. */
       std::shared_ptr<State> p_current_state,  
@@ -208,10 +208,10 @@ namespace EasyLocal {
     *************************************************************************/
 
     template <class Input, class State, typename CFtype>
-    std::vector<Runner<Input,State,CFtype>*> Runner<Input,State,CFtype>::runners;
+    std::vector<Runner<Input, State, CFtype>*> Runner<Input, State, CFtype>::runners;
 
     template <class Input, class State, typename CFtype>
-    Runner<Input,State,CFtype>::Runner(const Input& i, StateManager<Input,State,CFtype>& sm, std::string name, std::string description)
+    Runner<Input, State, CFtype>::Runner(const Input& i, StateManager<Input, State, CFtype>& sm, std::string name, std::string description)
       : // Parameters
     Parametrized(name, description), name(name), description(description), in(i), sm(sm),
     max_iterations("max_iterations", "Maximum total number of iterations allowed", this->parameters)
@@ -225,7 +225,7 @@ namespace EasyLocal {
     }
 
     template <class Input, class State, typename CFtype>
-    CFtype Runner<Input,State,CFtype>::Go(State& s) throw (ParameterNotSet, IncorrectParameterValue)
+    CFtype Runner<Input, State, CFtype>::Go(State& s) throw (ParameterNotSet, IncorrectParameterValue)
     {
       InitializeRun(s);
       while (!MaxIterationExpired() && !StopCriterion() && !LowerBoundReached() && !this->TimeoutExpired())
@@ -257,7 +257,7 @@ namespace EasyLocal {
     Prepare the iteration (e.g. updates the counter that tracks the number of iterations elapsed)
     */
     template <class Input, class State, typename CFtype>
-    void Runner<Input,State,CFtype>::PrepareIteration()
+    void Runner<Input, State, CFtype>::PrepareIteration()
     {
       iteration++;
     }
@@ -266,25 +266,25 @@ namespace EasyLocal {
     Complete the iteration (e.g. decreate the temperature for Simulated Annealing)
     */
     template <class Input, class State, typename CFtype>
-    void Runner<Input,State,CFtype>::CompleteIteration()
+    void Runner<Input, State, CFtype>::CompleteIteration()
     {
       end = std::chrono::high_resolution_clock::now();
     }
 
     template <class Input, class State, typename CFtype>
-    bool Runner<Input,State,CFtype>::MaxIterationExpired() const
+    bool Runner<Input, State, CFtype>::MaxIterationExpired() const
     {
       return iteration >= max_iterations;
     }
 
     template <class Input, class State, typename CFtype>
-    bool Runner<Input,State,CFtype>::AcceptableMove()
+    bool Runner<Input, State, CFtype>::AcceptableMove()
     {
       return true;
     }
 
     template <class Input, class State, typename CFtype>
-    void Runner<Input,State,CFtype>::InitializeRun(State& s) throw (ParameterNotSet, IncorrectParameterValue)
+    void Runner<Input, State, CFtype>::InitializeRun(State& s) throw (ParameterNotSet, IncorrectParameterValue)
     {
       begin = std::chrono::high_resolution_clock::now();
       iteration = 0;
@@ -298,7 +298,7 @@ namespace EasyLocal {
     }
 
     template <class Input, class State, typename CFtype>
-    CFtype Runner<Input,State,CFtype>::TerminateRun(State& s)
+    CFtype Runner<Input, State, CFtype>::TerminateRun(State& s)
     {
       s = *p_best_state;
       TerminateRun();
@@ -307,20 +307,20 @@ namespace EasyLocal {
     }
 
     template <class Input, class State, typename CFtype>
-    bool Runner<Input,State,CFtype>::LowerBoundReached() const
+    bool Runner<Input, State, CFtype>::LowerBoundReached() const
     {
       return sm.LowerBoundReached(current_state_cost);
     }
 
     template <class Input, class State, typename CFtype>
-    void Runner<Input,State,CFtype>::ReadParameters(std::istream& is, std::ostream& os)
+    void Runner<Input, State, CFtype>::ReadParameters(std::istream& is, std::ostream& os)
     {
       os << this->name << " -- INPUT PARAMETERS" << std::endl;
       Parametrized::ReadParameters();
     }
 
     template <class Input, class State, typename CFtype>
-    void Runner<Input,State,CFtype>::Print(std::ostream& os) const
+    void Runner<Input, State, CFtype>::Print(std::ostream& os) const
     {
       os  << "  " << this->name << std::endl;
       Parametrized::Print(os);  

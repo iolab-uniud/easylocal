@@ -22,34 +22,34 @@ namespace EasyLocal {
     */
     template <class Input, class Output, class State, class Move, typename CFtype>
     class MoveTester
-      : public ComponentTester<Input,Output,State,CFtype>
+      : public ComponentTester<Input, Output, State, CFtype>
     {
     public:
       MoveTester(const Input& in,
-      Core::StateManager<Input,State,CFtype>& e_sm,
-      Core::OutputManager<Input,Output,State,CFtype>& e_om,
-      Core::NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
+      Core::StateManager<Input, State, CFtype>& e_sm,
+      Core::OutputManager<Input, Output, State, CFtype>& e_om,
+      Core::NeighborhoodExplorer<Input, State, Move, CFtype>& e_ne,
       std::string name, std::ostream& o = std::cout);
       MoveTester(const Input& in,
-      Core::StateManager<Input,State,CFtype>& e_sm,
-      Core::OutputManager<Input,Output,State,CFtype>& e_om,
-      Core::NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
-      Core::TabuListManager<State,Move,CFtype>& e_tlm,
+      Core::StateManager<Input, State, CFtype>& e_sm,
+      Core::OutputManager<Input, Output, State, CFtype>& e_om,
+      Core::NeighborhoodExplorer<Input, State, Move, CFtype>& e_ne,
+      Core::TabuListManager<State, Move, CFtype>& e_tlm,
       std::string name, std::ostream& o = std::cout);
       MoveTester(const Input& in,
-      Core::StateManager<Input,State,CFtype>& e_sm,
-      Core::OutputManager<Input,Output,State,CFtype>& e_om,
-      Core::NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
+      Core::StateManager<Input, State, CFtype>& e_sm,
+      Core::OutputManager<Input, Output, State, CFtype>& e_om,
+      Core::NeighborhoodExplorer<Input, State, Move, CFtype>& e_ne,
       std::string name,
-      Tester<Input,Output,State,CFtype>& t,
+      Tester<Input, Output, State, CFtype>& t,
       std::ostream& o = std::cout);
       MoveTester(const Input& in,
-      Core::StateManager<Input,State,CFtype>& e_sm,
-      Core::OutputManager<Input,Output,State,CFtype>& e_om,
-      Core::NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
-      Core::TabuListManager<State,Move,CFtype>& e_tlm,
+      Core::StateManager<Input, State, CFtype>& e_sm,
+      Core::OutputManager<Input, Output, State, CFtype>& e_om,
+      Core::NeighborhoodExplorer<Input, State, Move, CFtype>& e_ne,
+      Core::TabuListManager<State, Move, CFtype>& e_tlm,
       std::string name,
-      Tester<Input,Output,State,CFtype>& t,
+      Tester<Input, Output, State, CFtype>& t,
       std::ostream& o = std::cout);
       void RunMainMenu(State& st);
       void PrintNeighborhoodStatistics(const State& st) const;
@@ -67,10 +67,10 @@ namespace EasyLocal {
       bool ExecuteChoice(State& st);
       const Input& in;
       Output out;   /**< The output object. */
-      Core::StateManager<Input,State,CFtype>& sm; /**< A pointer to the attached  state manager. */
-      Core::OutputManager<Input,Output,State,CFtype>& om; /**< A pointer to the attached output manager. */
-      Core::NeighborhoodExplorer<Input,State,Move,CFtype>& ne; /**< A reference to the attached neighborhood explorer. */
-      Core::TabuListManager<State,Move,CFtype>* tlm; /**< A reference to the attached tabu list manager (if any). */
+      Core::StateManager<Input, State, CFtype>& sm; /**< A pointer to the attached  state manager. */
+      Core::OutputManager<Input, Output, State, CFtype>& om; /**< A pointer to the attached output manager. */
+      Core::NeighborhoodExplorer<Input, State, Move, CFtype>& ne; /**< A reference to the attached neighborhood explorer. */
+      Core::TabuListManager<State, Move, CFtype>* tlm; /**< A reference to the attached tabu list manager (if any). */
       unsigned int choice;   /**< The option currently chosen from the menu. */
       std::ostream& os;
         double tolerance;
@@ -92,50 +92,50 @@ namespace EasyLocal {
     @param in a pointer to an input object
     */
     template <class Input, class Output, class State, class Move, typename CFtype>
-    MoveTester<Input,Output,State,Move,CFtype>::MoveTester(const Input& i,
-    Core::StateManager<Input,State,CFtype>& e_sm,
-    Core::OutputManager<Input,Output,State,CFtype>& e_om,
-    Core::NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
+    MoveTester<Input, Output, State, Move, CFtype>::MoveTester(const Input& i,
+    Core::StateManager<Input, State, CFtype>& e_sm,
+    Core::OutputManager<Input, Output, State, CFtype>& e_om,
+    Core::NeighborhoodExplorer<Input, State, Move, CFtype>& e_ne,
     std::string name, std::ostream& o)
-      : ComponentTester<Input,Output,State,CFtype>(name), in(i), out(i), sm(e_sm), om(e_om), ne(e_ne), os(o)
+      : ComponentTester<Input, Output, State, CFtype>(name), in(i), out(i), sm(e_sm), om(e_om), ne(e_ne), os(o)
         { tlm = nullptr; }
 
     template <class Input, class Output, class State, class Move, typename CFtype>
-    MoveTester<Input,Output,State,Move,CFtype>::MoveTester(const Input& i,
-    Core::StateManager<Input,State,CFtype>& e_sm,
-    Core::OutputManager<Input,Output,State,CFtype>& e_om,
-    Core::NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
-    Core::TabuListManager<State,Move,CFtype>& e_tlm,
+    MoveTester<Input, Output, State, Move, CFtype>::MoveTester(const Input& i,
+    Core::StateManager<Input, State, CFtype>& e_sm,
+    Core::OutputManager<Input, Output, State, CFtype>& e_om,
+    Core::NeighborhoodExplorer<Input, State, Move, CFtype>& e_ne,
+    Core::TabuListManager<State, Move, CFtype>& e_tlm,
     std::string name, std::ostream& o)
-      : ComponentTester<Input,Output,State,CFtype>(name), in(i), out(i), sm(e_sm), om(e_om), ne(e_ne), tlm(&e_tlm), os(o), tolerance(std::numeric_limits<CFtype>::epsilon())
+      : ComponentTester<Input, Output, State, CFtype>(name), in(i), out(i), sm(e_sm), om(e_om), ne(e_ne), tlm(&e_tlm), os(o), tolerance(std::numeric_limits<CFtype>::epsilon())
         { }
 
     template <class Input, class Output, class State, class Move, typename CFtype>
-    MoveTester<Input,Output,State,Move,CFtype>::MoveTester(const Input& i,
-    Core::StateManager<Input,State,CFtype>& e_sm,
-    Core::OutputManager<Input,Output,State,CFtype>& e_om,
-    Core::NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
+    MoveTester<Input, Output, State, Move, CFtype>::MoveTester(const Input& i,
+    Core::StateManager<Input, State, CFtype>& e_sm,
+    Core::OutputManager<Input, Output, State, CFtype>& e_om,
+    Core::NeighborhoodExplorer<Input, State, Move, CFtype>& e_ne,
     std::string name,
-    Tester<Input,Output,State,CFtype>& t,
+    Tester<Input, Output, State, CFtype>& t,
     std::ostream& o)
-      : ComponentTester<Input,Output,State,CFtype>(name), in(i), out(i), sm(e_sm), om(e_om), ne(e_ne), os(o), tolerance(std::numeric_limits<CFtype>::epsilon())
+      : ComponentTester<Input, Output, State, CFtype>(name), in(i), out(i), sm(e_sm), om(e_om), ne(e_ne), os(o), tolerance(std::numeric_limits<CFtype>::epsilon())
         { tlm = nullptr; t.AddMoveTester(*this); }
 
     template <class Input, class Output, class State, class Move, typename CFtype>
-    MoveTester<Input,Output,State,Move,CFtype>::MoveTester(const Input& i,
-    Core::StateManager<Input,State,CFtype>& e_sm,
-    Core::OutputManager<Input,Output,State,CFtype>& e_om,
-    Core::NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
-    Core::TabuListManager<State,Move,CFtype>& e_tlm,
+    MoveTester<Input, Output, State, Move, CFtype>::MoveTester(const Input& i,
+    Core::StateManager<Input, State, CFtype>& e_sm,
+    Core::OutputManager<Input, Output, State, CFtype>& e_om,
+    Core::NeighborhoodExplorer<Input, State, Move, CFtype>& e_ne,
+    Core::TabuListManager<State, Move, CFtype>& e_tlm,
     std::string name,
-    Tester<Input,Output,State,CFtype>& t,
+    Tester<Input, Output, State, CFtype>& t,
     std::ostream& o)
-      : ComponentTester<Input,Output,State,CFtype>(name), in(i), out(i), sm(e_sm), om(e_om), ne(e_ne), tlm(&e_tlm), os(o), tolerance(std::numeric_limits<CFtype>::epsilon())
+      : ComponentTester<Input, Output, State, CFtype>(name), in(i), out(i), sm(e_sm), om(e_om), ne(e_ne), tlm(&e_tlm), os(o), tolerance(std::numeric_limits<CFtype>::epsilon())
         { t.AddMoveTester(*this); }
 
 
     template <class Input, class Output, class State, class Move, typename CFtype>
-    void MoveTester<Input,Output,State,Move,CFtype>::RunMainMenu(State& st)
+    void MoveTester<Input, Output, State, Move, CFtype>::RunMainMenu(State& st)
     {
       bool show_state;
       do
@@ -148,7 +148,7 @@ namespace EasyLocal {
           std::chrono::milliseconds duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start);
           if (show_state)
           {
-            om.OutputState(st,out);
+            om.OutputState(st, out);
             os << "CURRENT SOLUTION " << std::endl << out << std::endl;
             os << "CURRENT COST : " << sm.CostFunction(st) << std::endl;
           }
@@ -163,7 +163,7 @@ namespace EasyLocal {
     Outputs the menu options.
     */
     template <class Input, class Output, class State, class Move, typename CFtype>
-    void MoveTester<Input,Output,State,Move,CFtype>::ShowMenu()
+    void MoveTester<Input, Output, State, Move, CFtype>::ShowMenu()
     {
       os << "Move Menu: " << std::endl
         << "     (1)  Perform Best Move" << std::endl
@@ -190,7 +190,7 @@ namespace EasyLocal {
     @param st the current state
     */
     template <class Input, class Output, class State, class Move, typename CFtype>
-    bool MoveTester<Input,Output,State,Move,CFtype>::ExecuteChoice(State& st)
+    bool MoveTester<Input, Output, State, Move, CFtype>::ExecuteChoice(State& st)
     {
       Move mv;
       try
@@ -198,10 +198,10 @@ namespace EasyLocal {
         switch(choice)
         {
           case 1:
-          ne.BestMove(st,mv);
+          ne.BestMove(st, mv);
           break;
           case 2: 
-          ne.RandomMove(st,mv);     
+          ne.RandomMove(st, mv);     
           break;
           case 3:
           os << "Input move : ";
@@ -214,13 +214,13 @@ namespace EasyLocal {
           PrintNeighborhoodStatistics(st);
           break;
           case 6:
-          ne.RandomMove(st,mv);
-          PrintMoveCosts(st,mv);
+          ne.RandomMove(st, mv);
+          PrintMoveCosts(st, mv);
           break;
           case 7:
           os << "Input move : ";
           std::cin >> mv;
-          PrintMoveCosts(st,mv);
+          PrintMoveCosts(st, mv);
           break;
           case 8:
           CheckNeighborhoodCosts(st);
@@ -243,10 +243,10 @@ namespace EasyLocal {
         if (choice == 1 || choice == 2 || choice == 3)
         {
           os << "Move : " << mv << std::endl;
-	  if (!ne.FeasibleMove(st,mv))
+	  if (!ne.FeasibleMove(st, mv))
 	    os << "Move not feasible" << std::endl;
 	  else
-	    ne.MakeMove(st,mv);
+	    ne.MakeMove(st, mv);
           return true;
         }    
       }
@@ -259,7 +259,7 @@ namespace EasyLocal {
     }
 
     template <class Input, class Output, class State, class Move, typename CFtype>
-    void MoveTester<Input,Output,State,Move,CFtype>::PrintMoveCosts(const State& st, const Move& mv) const
+    void MoveTester<Input, Output, State, Move, CFtype>::PrintMoveCosts(const State& st, const Move& mv) const
     {
       CFtype delta_cost, total_delta_hard_cost = 0, total_delta_soft_cost = 0;
       State st1 = st;
@@ -267,13 +267,13 @@ namespace EasyLocal {
   
       // it's a tester, so we can avoid optimizations
       os << "Move : " << mv << std::endl;
-      ne.MakeMove(st1,mv);
+      ne.MakeMove(st1, mv);
   
       // process all delta cost components
       for (i = 0; i < ne.DeltaCostComponents(); i++)
       {
-        DeltaCostComponent<Input,State,Move,CFtype>& dcc = ne.GetDeltaCostComponent(i);
-        delta_cost = dcc.DeltaCost(st,mv);
+        DeltaCostComponent<Input, State, Move, CFtype>& dcc = ne.GetDeltaCostComponent(i);
+        delta_cost = dcc.DeltaCost(st, mv);
         os << "  " << i << ". " << dcc.name << " : " <<  delta_cost;
     
         // print * or not, add up to right variable
@@ -292,7 +292,7 @@ namespace EasyLocal {
     }
 
     template <class Input, class Output, class State, class Move, typename CFtype>
-    void MoveTester<Input,Output,State,Move,CFtype>::CheckNeighborhoodCosts(const State& st) const
+    void MoveTester<Input, Output, State, Move, CFtype>::CheckNeighborhoodCosts(const State& st) const
     {
       Move mv;
       unsigned int move_count = 0;
@@ -313,8 +313,8 @@ namespace EasyLocal {
           // only implemented delta can be buggy
           for (unsigned int i = 0; i < ne.DeltaCostComponents(); i++)
           {      
-            DeltaCostComponent<Input,State,Move,CFtype>& dcc = ne.GetDeltaCostComponent(i);
-            CostComponent<Input,State,CFtype>& cc = dcc.GetCostComponent();
+            DeltaCostComponent<Input, State, Move, CFtype>& dcc = ne.GetDeltaCostComponent(i);
+            CostComponent<Input, State, CFtype>& cc = dcc.GetCostComponent();
             delta_cost = dcc.DeltaCost(st, mv);        
             cost = cc.Cost(st);
             cost1 = cc.Cost(st1);
@@ -349,7 +349,7 @@ namespace EasyLocal {
     @param st the state to inspect
     */
     template <class Input, class Output, class State, class Move, typename CFtype>
-    void MoveTester<Input,Output,State,Move,CFtype>::PrintNeighborhoodStatistics(const State& st) const
+    void MoveTester<Input, Output, State, Move, CFtype>::PrintNeighborhoodStatistics(const State& st) const
     {
       unsigned int neighbors = 0, improving_neighbors = 0,
       worsening_neighbors = 0, non_improving_neighbors = 0;
@@ -359,20 +359,20 @@ namespace EasyLocal {
       double total_positive_cost = 0.0;
   
   
-      std::vector<std::pair<CFtype,CFtype> > min_max_costs(ne.DeltaCostComponents());
+      std::vector<std::pair<CFtype, CFtype> > min_max_costs(ne.DeltaCostComponents());
   
-      ne.FirstMove(st,mv);
+      ne.FirstMove(st, mv);
       // only implemented delta can be buggy
       for (i = 0; i < ne.DeltaCostComponents(); i++)
       {
-        DeltaCostComponent<Input,State,Move,CFtype>& dcc = ne.GetDeltaCostComponent(i);
+        DeltaCostComponent<Input, State, Move, CFtype>& dcc = ne.GetDeltaCostComponent(i);
         min_max_costs[i].first =  min_max_costs[i].second = dcc.DeltaCost(st, mv);  
       }
   
       do
       {
         neighbors++;
-        mv_cost = ne.DeltaCostFunction(st,mv);
+        mv_cost = ne.DeltaCostFunction(st, mv);
         if (mv_cost < 0)
           improving_neighbors++;
         else if (mv_cost > 0)
@@ -385,7 +385,7 @@ namespace EasyLocal {
         // only implemented delta can be buggy
         for (i = 0; i < ne.DeltaCostComponents(); i++)
         {      
-          DeltaCostComponent<Input,State,Move,CFtype>& dcc = ne.GetDeltaCostComponent(i);
+          DeltaCostComponent<Input, State, Move, CFtype>& dcc = ne.GetDeltaCostComponent(i);
           delta_cost = dcc.DeltaCost(st, mv);  
           if (delta_cost < min_max_costs[i].first)
             min_max_costs[i].first = delta_cost;
@@ -393,7 +393,7 @@ namespace EasyLocal {
             min_max_costs[i].second = delta_cost;
         }
       }
-      while (ne.NextMove(st,mv));
+      while (ne.NextMove(st, mv));
   
       os << "Neighborhood size: " <<  neighbors << std::endl
         << "   improving moves: " << improving_neighbors << " ("
@@ -409,33 +409,33 @@ namespace EasyLocal {
     }
 
     template <class Input, class Output, class State, class Move, typename CFtype>
-    void MoveTester<Input,Output,State,Move,CFtype>::PrintAllNeighbors(const State& st) const
+    void MoveTester<Input, Output, State, Move, CFtype>::PrintAllNeighbors(const State& st) const
     {
       Move mv;
-      ne.FirstMove(st,mv);
+      ne.FirstMove(st, mv);
       do
       {
-        os << mv << " " << ne.DeltaCostFunction(st,mv) << std::endl;
+        os << mv << " " << ne.DeltaCostFunction(st, mv) << std::endl;
       }
-      while (ne.NextMove(st,mv));
+      while (ne.NextMove(st, mv));
     }
 
     template <class Input, class Output, class State, class Move, typename CFtype>
-    void MoveTester<Input,Output,State,Move,CFtype>::CheckRandomMoveDistribution(const State& st) const
+    void MoveTester<Input, Output, State, Move, CFtype>::CheckRandomMoveDistribution(const State& st) const
     {
       Move mv;  
       std::map<Move, unsigned int> frequency;
-      typename std::map<Move,unsigned int>:: iterator it;  
+      typename std::map<Move, unsigned int>:: iterator it;  
   
       unsigned long int trials = 0, tot_trials, rounds;
       double dev = 0;
   
-      ne.FirstMove(st,mv);
+      ne.FirstMove(st, mv);
       do
       {
         frequency[mv] = 0;
       }
-      while (ne.NextMove(st,mv));
+      while (ne.NextMove(st, mv));
   
       os << "The neighborhood has " << frequency.size() << " members." << std::endl;
       os << "How many rounds do you want to test: ";
@@ -444,7 +444,7 @@ namespace EasyLocal {
       tot_trials = frequency.size() * rounds;
       while (trials < tot_trials)
       {
-        ne.RandomMove(st,mv);
+        ne.RandomMove(st, mv);
         if (frequency.find(mv) != frequency.end())
         {
           frequency[mv]++;
@@ -480,14 +480,14 @@ namespace EasyLocal {
     }
 
     template <class Input, class Output, class State, class Move, typename CFtype>
-    void MoveTester<Input,Output,State,Move,CFtype>::CheckMoveIndependence(const State& st) const
+    void MoveTester<Input, Output, State, Move, CFtype>::CheckMoveIndependence(const State& st) const
     {
       Move mv;
-      std::vector<std::pair<Move,State> > reached_states;
+      std::vector<std::pair<Move, State> > reached_states;
       unsigned int repeat_states = 0, null_moves = 0, all_moves = 1, i;
       bool repeated_state;
       State st1 = st;
-      ne.FirstMove(st1,mv);
+      ne.FirstMove(st1, mv);
       ne.MakeMove(st1, mv);
       if (st1 == st)
       {
@@ -496,9 +496,9 @@ namespace EasyLocal {
       }
       else
       {
-        reached_states.push_back(std::make_pair(mv,st1));
+        reached_states.push_back(std::make_pair(mv, st1));
       }
-      while (ne.NextMove(st,mv))
+      while (ne.NextMove(st, mv))
       {
         st1 = st;
         ne.MakeMove(st1, mv);
@@ -523,7 +523,7 @@ namespace EasyLocal {
           }
           else
           {
-            reached_states.push_back(std::make_pair(mv,st1));
+            reached_states.push_back(std::make_pair(mv, st1));
           }
         }
         if (all_moves % 100 == 0) 
@@ -543,13 +543,13 @@ namespace EasyLocal {
     }
 
     template <class Input, class Output, class State, class Move, typename CFtype>
-    void MoveTester<Input,Output,State,Move,CFtype>::CheckTabuStrength(const State& st) const
+    void MoveTester<Input, Output, State, Move, CFtype>::CheckTabuStrength(const State& st) const
     {
       Move mv1, mv2;
       State st1 = st;
       unsigned long long int moves = 0, pairs = 0, inverse_pairs = 0;
       std::vector<unsigned long long int> moves_per_type(ne.Modality(), 0);
-      ne.FirstMove(st,mv1);
+      ne.FirstMove(st, mv1);
       do
       {
         for (unsigned int i = 0; i < ne.Modality(); i++)
@@ -577,7 +577,7 @@ namespace EasyLocal {
           std::cerr << moves_per_type[i] << (i < (ne.Modality() - 1) ? "/" : "");
         std::cerr << std::endl;
       }
-      while (ne.NextMove(st,mv1));
+      while (ne.NextMove(st, mv1));
       os << std::endl
         << "Moves : " << moves << ", total pairs : " << pairs 
           << ", inverse pairs : " << inverse_pairs << std::endl
@@ -588,7 +588,7 @@ namespace EasyLocal {
 
 
     template <class Input, class Output, class State, class Move, typename CFtype>
-    void MoveTester<Input,Output,State,Move,CFtype>::CheckCandidateInitialTemperature() const
+    void MoveTester<Input, Output, State, Move, CFtype>::CheckCandidateInitialTemperature() const
     {
       const unsigned int init_states = 100, samples = 1000;
       unsigned int i, j;
@@ -627,13 +627,13 @@ namespace EasyLocal {
     }
 
     template <class Input, class Output, class State, class Move, typename CFtype>
-    unsigned int MoveTester<Input,Output,State,Move,CFtype>::Modality() const
+    unsigned int MoveTester<Input, Output, State, Move, CFtype>::Modality() const
     { 
       return ne.Modality(); 
     }
       
       template <class Input, class Output, class State, class Move, typename CFtype>
-      void MoveTester<Input,Output,State,Move,CFtype>::SetTolerance(double t)
+      void MoveTester<Input, Output, State, Move, CFtype>::SetTolerance(double t)
       {
           tolerance = t;
       }

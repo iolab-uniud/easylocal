@@ -27,13 +27,13 @@ namespace EasyLocal {
     @ingroup Runners
     */
     template <class Input, class State, class Move, typename CFtype>
-    class AbstractSimulatedAnnealing : public MoveRunner<Input,State,Move,CFtype>
+    class AbstractSimulatedAnnealing : public MoveRunner<Input, State, Move, CFtype>
     {
     public:
   
       AbstractSimulatedAnnealing(const Input& in,
-      StateManager<Input,State,CFtype>& e_sm,
-      NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
+      StateManager<Input, State, CFtype>& e_sm,
+      NeighborhoodExplorer<Input, State, Move, CFtype>& e_ne,
       std::string name);
   
       void SetStartTemperature(double st)  { start_temperature = st; }
@@ -80,11 +80,11 @@ namespace EasyLocal {
     @param in a poiter to an input object
     */
     template <class Input, class State, class Move, typename CFtype>
-    AbstractSimulatedAnnealing<Input,State,Move,CFtype>::AbstractSimulatedAnnealing(const Input& in,
-    StateManager<Input,State,CFtype>& e_sm,
-    NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
+    AbstractSimulatedAnnealing<Input, State, Move, CFtype>::AbstractSimulatedAnnealing(const Input& in,
+    StateManager<Input, State, CFtype>& e_sm,
+    NeighborhoodExplorer<Input, State, Move, CFtype>& e_ne,
     std::string name)
-      : MoveRunner<Input,State,Move,CFtype>(in, e_sm, e_ne, name, "Simulated Annealing Runner"),
+      : MoveRunner<Input, State, Move, CFtype>(in, e_sm, e_ne, name, "Simulated Annealing Runner"),
     compute_start_temperature("compute_start_temperature", "Should the runner compute the initial temperature?", this->parameters),
     start_temperature("start_temperature", "Starting temperature", this->parameters),
     cooling_rate("cooling_rate", "Cooling rate", this->parameters),
@@ -102,9 +102,9 @@ namespace EasyLocal {
     */
     // FIXME
     template <class Input, class State, class Move, typename CFtype>
-    void AbstractSimulatedAnnealing<Input,State,Move,CFtype>::InitializeRun() throw (ParameterNotSet, IncorrectParameterValue)
+    void AbstractSimulatedAnnealing<Input, State, Move, CFtype>::InitializeRun() throw (ParameterNotSet, IncorrectParameterValue)
     {
-      MoveRunner<Input,State,Move,CFtype>::InitializeRun();
+      MoveRunner<Input, State, Move, CFtype>::InitializeRun();
 
       if (cooling_rate <= 0.0 || cooling_rate >= 1.0)
         throw IncorrectParameterValue(cooling_rate, "should be a value in the interval ]0, 1[");
@@ -152,7 +152,7 @@ namespace EasyLocal {
     A move is randomly picked.
     */
     template <class Input, class State, class Move, typename CFtype>
-    void AbstractSimulatedAnnealing<Input,State,Move,CFtype>::SelectMove()
+    void AbstractSimulatedAnnealing<Input, State, Move, CFtype>::SelectMove()
     {
       this->SelectRandomMove();
       neighbors_sampled++;
@@ -162,7 +162,7 @@ namespace EasyLocal {
     A move is randomly picked.
     */
     template <class Input, class State, class Move, typename CFtype>
-    void AbstractSimulatedAnnealing<Input,State,Move,CFtype>::CompleteMove()
+    void AbstractSimulatedAnnealing<Input, State, Move, CFtype>::CompleteMove()
     {
       neighbors_accepted++;
     }
@@ -172,7 +172,7 @@ namespace EasyLocal {
     multiplying it by a cooling rate.
     */
     template <class Input, class State, class Move, typename CFtype>
-    void AbstractSimulatedAnnealing<Input,State,Move,CFtype>::CompleteIteration()
+    void AbstractSimulatedAnnealing<Input, State, Move, CFtype>::CompleteIteration()
     {
       if (neighbors_sampled == max_neighbors_sampled || neighbors_accepted == max_neighbors_accepted)
       {      
@@ -187,9 +187,9 @@ namespace EasyLocal {
     a worsening one.
     */
     template <class Input, class State, class Move, typename CFtype>
-    bool AbstractSimulatedAnnealing<Input,State,Move,CFtype>::AcceptableMove()
+    bool AbstractSimulatedAnnealing<Input, State, Move, CFtype>::AcceptableMove()
     { 
-      return LessOrEqualThan(this->current_move_cost,(CFtype)0)
+      return LessOrEqualThan(this->current_move_cost, (CFtype)0)
         || (Random::Double() < exp(-this->current_move_cost/temperature)); 
     }    
   }

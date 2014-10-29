@@ -97,12 +97,12 @@ namespace EasyLocal {
     /** IMPLEMENTATION */
 
     template <class Input, class State, typename CFtype>
-    CostComponent<Input,State,CFtype>::CostComponent(const Input& i, const CFtype& w, bool hard, std::string e_name)
+    CostComponent<Input, State, CFtype>::CostComponent(const Input& i, const CFtype& w, bool hard, std::string e_name)
     : name(e_name), in(i), weight(w), is_hard(hard)
     { }
 
     template <class Input, class State, typename CFtype>
-    void CostComponent<Input,State,CFtype>::Print(std::ostream& os) const
+    void CostComponent<Input, State, CFtype>::Print(std::ostream& os) const
     {
       os  << "Cost Component " << name << ": weight " << weight << (is_hard ? "*" : "") << std::endl;
     }

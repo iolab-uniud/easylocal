@@ -17,16 +17,16 @@ namespace EasyLocal {
     @ingroup Runners
     */
     template <class Input, class State, class Move, typename CFtype>
-    class MoveRunner : public Runner<Input,State,CFtype>
+    class MoveRunner : public Runner<Input, State, CFtype>
     {
-      friend class Debug::RunnerObserver<Input,State,Move,CFtype>;
+      friend class Debug::RunnerObserver<Input, State, Move, CFtype>;
   
     public:
   
       /** Attaches an observer to this runner.
       @param ob a RunnerObserver of a compliant type
       */
-      void AttachObserver(Debug::RunnerObserver<Input,State,Move,CFtype>& ob)
+      void AttachObserver(Debug::RunnerObserver<Input, State, Move, CFtype>& ob)
       {
         observer = &ob;
       }
@@ -39,8 +39,8 @@ namespace EasyLocal {
   
       /** Constructor.
       @param e_sm */
-      MoveRunner(const Input& in, StateManager<Input,State,CFtype>& e_sm,
-      NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
+      MoveRunner(const Input& in, StateManager<Input, State, CFtype>& e_sm,
+      NeighborhoodExplorer<Input, State, Move, CFtype>& e_ne,
       std::string name, std::string description);
   
   
@@ -59,7 +59,7 @@ namespace EasyLocal {
       void UpdateBestState();
       void UpdateStateCost();
   
-      NeighborhoodExplorer<Input,State,Move,CFtype>& ne; /**< A reference to the
+      NeighborhoodExplorer<Input, State, Move, CFtype>& ne; /**< A reference to the
         attached neighborhood
         explorer. */
   
@@ -68,7 +68,7 @@ namespace EasyLocal {
       CFtype current_move_cost; /**< The cost of the selected move. */
       CFtype current_move_violations; /**< The violations of the selected move. */
   
-      Debug::RunnerObserver<Input,State,Move,CFtype>* observer;
+      Debug::RunnerObserver<Input, State, Move, CFtype>* observer;
   
   
     };
@@ -79,10 +79,10 @@ namespace EasyLocal {
 
 
     template <class Input, class State, class Move, typename CFtype>
-    void MoveRunner<Input,State, Move, CFtype>::UpdateBestState()
+    void MoveRunner<Input, State, Move, CFtype>::UpdateBestState()
     {
       if (LessThan(this->current_state_violations, this->best_state_violations)
-	  || (EqualTo(this->current_state_violations,this->best_state_violations) &&
+	  || (EqualTo(this->current_state_violations, this->best_state_violations) &&
 	      (LessThan(this->current_state_cost, this->best_state_cost))))
       {
         *(this->p_best_state) = *(this->p_current_state);
@@ -100,23 +100,23 @@ namespace EasyLocal {
 
 
     template <class Input, class State, class Move, typename CFtype>
-    MoveRunner<Input,State,Move,CFtype>::MoveRunner(const Input& in,
-    StateManager<Input,State,CFtype>& e_sm,
-    NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
+    MoveRunner<Input, State, Move, CFtype>::MoveRunner(const Input& in,
+    StateManager<Input, State, CFtype>& e_sm,
+    NeighborhoodExplorer<Input, State, Move, CFtype>& e_ne,
     std::string name,
     std::string description)
-      : Runner<Input,State,CFtype>(in, e_sm, name, description), ne(e_ne), observer(nullptr)
+      : Runner<Input, State, CFtype>(in, e_sm, name, description), ne(e_ne), observer(nullptr)
         { }
 
     template <class Input, class State, class Move, typename CFtype>
-    void MoveRunner<Input,State,Move,CFtype>::InitializeRun() throw (ParameterNotSet, IncorrectParameterValue)
+    void MoveRunner<Input, State, Move, CFtype>::InitializeRun() throw (ParameterNotSet, IncorrectParameterValue)
     {
       if (observer != nullptr)
         observer->NotifyStartRunner(*this);
     }
 
     template <class Input, class State, class Move, typename CFtype>
-    void MoveRunner<Input,State,Move,CFtype>::TerminateRun()
+    void MoveRunner<Input, State, Move, CFtype>::TerminateRun()
     {
       if (observer != nullptr)
         observer->NotifyEndRunner(*this);
@@ -126,7 +126,7 @@ namespace EasyLocal {
     Actually performs the move selected by the local search strategy.
     */
     template <class Input, class State, class Move, typename CFtype>
-    void MoveRunner<Input,State,Move,CFtype>::MakeMove()
+    void MoveRunner<Input, State, Move, CFtype>::MakeMove()
     {
       ne.MakeMove(*this->p_current_state, current_move);
       this->current_state_cost += current_move_cost;

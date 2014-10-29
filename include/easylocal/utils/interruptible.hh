@@ -16,13 +16,13 @@ namespace EasyLocal {
     /* Hack for simulating sleep_for when the compiler is not defininig it (e.g., macports g++ >= 4.6). */
 #if HAVE_THIS_THREAD_SLEEP_FOR
     template <class Rep, class Period>
-    void sleep_for(std::chrono::duration<Rep,Period> sleep_duration)
+    void sleep_for(std::chrono::duration<Rep, Period> sleep_duration)
     {
       std::this_thread::sleep_for(sleep_duration);
     }
 #else
     template <class Rep, class Period>
-    void sleep_for(std::chrono::duration<Rep,Period> sleep_duration)
+    void sleep_for(std::chrono::duration<Rep, Period> sleep_duration)
     {
       std::condition_variable c;
       std::mutex m;

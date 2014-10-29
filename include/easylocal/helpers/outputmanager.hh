@@ -66,13 +66,13 @@ namespace EasyLocal {
     /** IMPLEMENTATION */
 
     template <class Input, class Output, class State, typename CFtype>
-    void OutputManager<Input,Output,State,CFtype>::Print(std::ostream& os) const
+    void OutputManager<Input, Output, State, CFtype>::Print(std::ostream& os) const
     {
       os  << "Output Manager: " << name << std::endl;
     }
 
     template <class Input, class Output, class State, typename CFtype>
-    void OutputManager<Input,Output,State,CFtype>::ReadState(State &st, std::istream &is) const
+    void OutputManager<Input, Output, State, CFtype>::ReadState(State &st, std::istream &is) const
     {
       Output out(in);
       is >> out;
@@ -80,7 +80,7 @@ namespace EasyLocal {
     }
 
     template <class Input, class Output, class State, typename CFtype>
-    void OutputManager<Input,Output,State,CFtype>::WriteState(const State &st, std::ostream &os) const
+    void OutputManager<Input, Output, State, CFtype>::WriteState(const State &st, std::ostream &os) const
     {
       Output out(in);
       OutputState(st, out);

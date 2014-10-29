@@ -17,13 +17,13 @@ namespace EasyLocal {
     @ingroup Runners
     */
     template <class Input, class State, class Move, typename CFtype>
-    class LateAcceptanceHillClimbing : public HillClimbing<Input,State,Move,CFtype>
+    class LateAcceptanceHillClimbing : public HillClimbing<Input, State, Move, CFtype>
     {
     public:
   
       LateAcceptanceHillClimbing(const Input& in,
-      StateManager<Input,State,CFtype>& e_sm,
-      NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
+      StateManager<Input, State, CFtype>& e_sm,
+      NeighborhoodExplorer<Input, State, Move, CFtype>& e_ne,
       std::string name);	
   
   
@@ -51,11 +51,11 @@ namespace EasyLocal {
     @param in a poiter to an input object
     */
     template <class Input, class State, class Move, typename CFtype>
-    LateAcceptanceHillClimbing<Input,State,Move,CFtype>::LateAcceptanceHillClimbing(const Input& in,
-    StateManager<Input,State,CFtype>& e_sm,
-    NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
+    LateAcceptanceHillClimbing<Input, State, Move, CFtype>::LateAcceptanceHillClimbing(const Input& in,
+    StateManager<Input, State, CFtype>& e_sm,
+    NeighborhoodExplorer<Input, State, Move, CFtype>& e_ne,
     std::string name)
-      : HillClimbing<Input,State,Move,CFtype>(in, e_sm, e_ne, name),
+      : HillClimbing<Input, State, Move, CFtype>(in, e_sm, e_ne, name),
     steps("steps", "Delay (number of steps in the queue)", this->parameters)
     {
       steps = 10;
@@ -66,9 +66,9 @@ namespace EasyLocal {
     setting the temperature to the start value.
     */
     template <class Input, class State, class Move, typename CFtype>
-    void LateAcceptanceHillClimbing<Input,State,Move,CFtype>::InitializeRun() throw (ParameterNotSet, IncorrectParameterValue)
+    void LateAcceptanceHillClimbing<Input, State, Move, CFtype>::InitializeRun() throw (ParameterNotSet, IncorrectParameterValue)
     {    
-      HillClimbing<Input,State,Move,CFtype>::InitializeRun();
+      HillClimbing<Input, State, Move, CFtype>::InitializeRun();
   
       // the queue must be filled with the initial state cost at the beginning
       previous_steps = std::vector<CFtype>(steps);
@@ -80,7 +80,7 @@ namespace EasyLocal {
     A move is randomly picked.
     */
     template <class Input, class State, class Move, typename CFtype>
-    void LateAcceptanceHillClimbing<Input,State,Move,CFtype>::CompleteMove()
+    void LateAcceptanceHillClimbing<Input, State, Move, CFtype>::CompleteMove()
     {
       previous_steps[this->iteration % steps] = this->best_state_cost;
     }
@@ -90,9 +90,9 @@ namespace EasyLocal {
     a worsening one.
     */
     template <class Input, class State, class Move, typename CFtype>
-    bool LateAcceptanceHillClimbing<Input,State,Move,CFtype>::AcceptableMove()
+    bool LateAcceptanceHillClimbing<Input, State, Move, CFtype>::AcceptableMove()
     {
-      return LessOrEqualThan(this->current_move_cost,(CFtype)0)
+      return LessOrEqualThan(this->current_move_cost, (CFtype)0)
         || LessOrEqualThan(this->current_move_cost + this->current_state_cost, previous_steps[this->iteration % steps]);
     }
   }

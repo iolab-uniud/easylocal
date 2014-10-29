@@ -66,7 +66,7 @@ namespace EasyLocal {
     *************************************************************************/
 
     template <class Input, class Output, typename CFtype>
-    std::vector<Solver<Input,Output, CFtype>*> Solver<Input, Output, CFtype>::solvers;
+    std::vector<Solver<Input, Output, CFtype>*> Solver<Input, Output, CFtype>::solvers;
 
     template <class Input, class Output, typename CFtype>
     Solver<Input, Output, CFtype>::Solver(const Input& i, std::string e_name)

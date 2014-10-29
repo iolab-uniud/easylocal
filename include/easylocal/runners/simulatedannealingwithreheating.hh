@@ -19,13 +19,13 @@ namespace EasyLocal {
     @ingroup Runners
     */
     template <class Input, class State, class Move, typename CFtype>
-    class SimulatedAnnealingWithReheating : public SimulatedAnnealingIterationBased<Input,State,Move,CFtype>
+    class SimulatedAnnealingWithReheating : public SimulatedAnnealingIterationBased<Input, State, Move, CFtype>
     {
     public:
   
       SimulatedAnnealingWithReheating(const Input& in,
-      StateManager<Input,State,CFtype>& e_sm,
-      NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
+      StateManager<Input, State, CFtype>& e_sm,
+      NeighborhoodExplorer<Input, State, Move, CFtype>& e_ne,
       std::string name);
   
       void SetReheat(double rst)  { reheat_ratio = rst; }
@@ -58,11 +58,11 @@ namespace EasyLocal {
     @param in a poiter to an input object
     */
     template <class Input, class State, class Move, typename CFtype>
-    SimulatedAnnealingWithReheating<Input,State,Move,CFtype>::SimulatedAnnealingWithReheating(const Input& in,
-    StateManager<Input,State,CFtype>& e_sm,
-    NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
+    SimulatedAnnealingWithReheating<Input, State, Move, CFtype>::SimulatedAnnealingWithReheating(const Input& in,
+    StateManager<Input, State, CFtype>& e_sm,
+    NeighborhoodExplorer<Input, State, Move, CFtype>& e_ne,
     std::string name)
-      : SimulatedAnnealingIterationBased<Input,State,Move,CFtype>(in, e_sm, e_ne, name),
+      : SimulatedAnnealingIterationBased<Input, State, Move, CFtype>(in, e_sm, e_ne, name),
     first_reheat_ratio("first_reheat_ratio", "First reheat ratio", this->parameters),
     reheat_ratio("reheat_ratio", "Reheat ratio", this->parameters),
     first_descent_iterations_share("first_descent_iterations_share", "First descent iterations share", this->parameters),
@@ -71,9 +71,9 @@ namespace EasyLocal {
     }
 
     template <class Input, class State, class Move, typename CFtype>
-    void SimulatedAnnealingWithReheating<Input,State,Move,CFtype>::InitializeRun() throw (ParameterNotSet, IncorrectParameterValue)
+    void SimulatedAnnealingWithReheating<Input, State, Move, CFtype>::InitializeRun() throw (ParameterNotSet, IncorrectParameterValue)
     {
-      SimulatedAnnealingIterationBased<Input,State,Move,CFtype>::InitializeRun();
+      SimulatedAnnealingIterationBased<Input, State, Move, CFtype>::InitializeRun();
       reheats = 0;
 
       if (max_reheats > 0)
@@ -105,9 +105,9 @@ namespace EasyLocal {
     A move is randomly picked.
     */
     template <class Input, class State, class Move, typename CFtype>
-    void SimulatedAnnealingWithReheating<Input,State,Move,CFtype>::CompleteMove()
+    void SimulatedAnnealingWithReheating<Input, State, Move, CFtype>::CompleteMove()
     {
-      SimulatedAnnealingIterationBased<Input,State,Move,CFtype>::CompleteMove();
+      SimulatedAnnealingIterationBased<Input, State, Move, CFtype>::CompleteMove();
       if (ReheatCondition() && reheats <= max_reheats)
       {
         //     if (max_reheats != 0)
@@ -130,7 +130,7 @@ namespace EasyLocal {
     }
 
     template <class Input, class State, class Move, typename CFtype>
-    bool SimulatedAnnealingWithReheating<Input,State,Move,CFtype>::ReheatCondition()
+    bool SimulatedAnnealingWithReheating<Input, State, Move, CFtype>::ReheatCondition()
     {
       if (max_reheats == 0)
         return false; //true;
@@ -144,7 +144,7 @@ namespace EasyLocal {
     The search stops when a low temperature has reached.
     */
     template <class Input, class State, class Move, typename CFtype>
-    bool SimulatedAnnealingWithReheating<Input,State,Move,CFtype>::StopCriterion()
+    bool SimulatedAnnealingWithReheating<Input, State, Move, CFtype>::StopCriterion()
     {
       return reheats > max_reheats;
     }
@@ -153,7 +153,7 @@ namespace EasyLocal {
     Create a string containing the status of the runner
     */
     template <class Input, class State, class Move, typename CFtype>
-    std::string SimulatedAnnealingWithReheating<Input,State,Move,CFtype>::StatusString()
+    std::string SimulatedAnnealingWithReheating<Input, State, Move, CFtype>::StatusString()
     {
       std::stringstream status;
       status << "["

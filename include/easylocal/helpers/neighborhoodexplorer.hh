@@ -141,14 +141,14 @@ namespace EasyLocal {
       /** Adds a delta cost component to the neighborhood explorer, which is responsible for computing one component of the cost function. A delta cost component requires the implementation of a way to compute the difference in the cost function without simulating the move on a given state.
       @param dcc a delta cost component object
       */
-      virtual void AddDeltaCostComponent(DeltaCostComponent<Input,State,Move,CFtype>& dcc);
+      virtual void AddDeltaCostComponent(DeltaCostComponent<Input, State, Move, CFtype>& dcc);
 
       /** Adds a cost component to the neighborhood explorer, which is responsible for computing one component of the cost function. A cost component passed to the neighborhood explorer will compute the difference in the cost function due to that component as the difference between the cost in the current state and the new state obtained after (actually) performing the move. It will be wrapped into a delta cost component by means of an adapter and it might be seen as an unimplemented delta cost component.
       @note In general it is a quite unefficient way to compute the contribution of the move and it should be avoided, if possible.
       @param cc a cost component object
       */
 
-      virtual void AddCostComponent(CostComponent<Input,State,CFtype>& cc);
+      virtual void AddCostComponent(CostComponent<Input, State, CFtype>& cc);
 
       /** Returns the number of delta cost components attached to the neighborhood explorer.
       @return the size of the delta cost components vector
@@ -162,7 +162,7 @@ namespace EasyLocal {
       @param i the index of the required delta cost component
       @return the delta cost component of index i
       */
-      virtual DeltaCostComponent<Input,State,Move,CFtype>& GetDeltaCostComponent(unsigned int i)
+      virtual DeltaCostComponent<Input, State, Move, CFtype>& GetDeltaCostComponent(unsigned int i)
       {
         if (i < delta_hard_cost_components.size())
         return *delta_hard_cost_components[i];
@@ -182,7 +182,7 @@ namespace EasyLocal {
       @param i the index of the required delta cost component
       @return the delta cost component of index i
       */
-      virtual DeltaCostComponent<Input,State,Move,CFtype>& GetDeltaHardCostComponent(unsigned int i)
+      virtual DeltaCostComponent<Input, State, Move, CFtype>& GetDeltaHardCostComponent(unsigned int i)
       {
         if (i < delta_hard_cost_components.size())
         return *delta_hard_cost_components[i];
@@ -200,7 +200,7 @@ namespace EasyLocal {
       @param i the index of the required delta cost component
       @return the delta cost component of index i
       */
-      virtual DeltaCostComponent<Input,State,Move,CFtype>& GetDeltaSoftCostComponent(unsigned int i)
+      virtual DeltaCostComponent<Input, State, Move, CFtype>& GetDeltaSoftCostComponent(unsigned int i)
       {
         if (i < delta_soft_cost_components.size())
         return *delta_soft_cost_components[i];
@@ -230,7 +230,7 @@ namespace EasyLocal {
       @param sm a pointer to a compatible state manager.
       @param name the name associated to the NeighborhoodExplorer.
       */
-      NeighborhoodExplorer(const Input& in, StateManager<Input,State,CFtype>& sm, std::string name);
+      NeighborhoodExplorer(const Input& in, StateManager<Input, State, CFtype>& sm, std::string name);
       
       virtual ~NeighborhoodExplorer() {}
       
@@ -238,10 +238,10 @@ namespace EasyLocal {
 
 
       const Input& in;/**< A reference to the input */
-      StateManager<Input, State,CFtype>& sm; /**< A reference to the attached state manager. */
+      StateManager<Input, State, CFtype>& sm; /**< A reference to the attached state manager. */
 
       /** Lists of delta cost components (or adapters) */
-      std::vector<DeltaCostComponent<Input,State,Move,CFtype>* > delta_hard_cost_components, delta_soft_cost_components;
+      std::vector<DeltaCostComponent<Input, State, Move, CFtype>* > delta_hard_cost_components, delta_soft_cost_components;
 
       /** List of created adapters (to be automatically deleted in the destructor). */
       std::vector<std::unique_ptr<DeltaCostComponentAdapter<Input, State, Move, CFtype>>> dcc_adapters;
@@ -256,7 +256,7 @@ namespace EasyLocal {
     /** IMPLEMENTATION */
 
     template <class Input, class State, class Move, typename CFtype>
-    NeighborhoodExplorer<Input,State,Move,CFtype>::NeighborhoodExplorer(const Input& i, StateManager<Input,State,CFtype>& e_sm, std::string e_name)
+    NeighborhoodExplorer<Input, State, Move, CFtype>::NeighborhoodExplorer(const Input& i, StateManager<Input, State, CFtype>& e_sm, std::string e_name)
     : in(i), sm(e_sm), name(e_name), unimplemented_hard_components(false), unimplemented_soft_components(false)
     { }
 
@@ -266,16 +266,16 @@ namespace EasyLocal {
     @return the variation in the cost function
     */
     template <class Input, class State, class Move, typename CFtype>
-    CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::DeltaCostFunction(const State& st, const Move & mv) const
+    CFtype NeighborhoodExplorer<Input, State, Move, CFtype>::DeltaCostFunction(const State& st, const Move & mv) const
     {
       CFtype delta_hard_cost = 0, delta_soft_cost = 0;
 
       // compute delta costs (of implemented delta cost components)
-      for (DeltaCostComponent<Input,State,Move,CFtype>* dcc : delta_hard_cost_components)
+      for (DeltaCostComponent<Input, State, Move, CFtype>* dcc : delta_hard_cost_components)
         if (dcc->IsDeltaImplemented())
           delta_hard_cost += dcc->DeltaCost(st, mv);
       
-      for (DeltaCostComponent<Input,State,Move,CFtype>* dcc : delta_soft_cost_components)
+      for (DeltaCostComponent<Input, State, Move, CFtype>* dcc : delta_soft_cost_components)
         if (dcc->IsDeltaImplemented())
           delta_soft_cost += dcc->DeltaCost(st, mv);
 
@@ -287,19 +287,19 @@ namespace EasyLocal {
         MakeMove(new_st, mv);
 
         if (unimplemented_hard_components)
-        for (DeltaCostComponent<Input,State,Move,CFtype>* dcc : delta_hard_cost_components)
+        for (DeltaCostComponent<Input, State, Move, CFtype>* dcc : delta_hard_cost_components)
         if (!dcc->IsDeltaImplemented())
         {
           // get reference to cost component
-          CostComponent<Input,State,CFtype>& cc = dcc->GetCostComponent();
+          CostComponent<Input, State, CFtype>& cc = dcc->GetCostComponent();
           delta_hard_cost +=  cc.Weight() * (cc.ComputeCost(new_st) - cc.ComputeCost(st));
         }
         if (unimplemented_soft_components)
-        for (DeltaCostComponent<Input,State,Move,CFtype>* dcc : delta_soft_cost_components)
+        for (DeltaCostComponent<Input, State, Move, CFtype>* dcc : delta_soft_cost_components)
         if (!dcc->IsDeltaImplemented())
         {
           // get reference to cost component
-          CostComponent<Input,State,CFtype>& cc = dcc->GetCostComponent();
+          CostComponent<Input, State, CFtype>& cc = dcc->GetCostComponent();
           delta_soft_cost +=  cc.Weight() * (cc.ComputeCost(new_st) - cc.ComputeCost(st));
         }
       }
@@ -308,7 +308,7 @@ namespace EasyLocal {
     }
 
     template <class Input, class State, class Move, typename CFtype>
-    std::vector<CFtype> NeighborhoodExplorer<Input,State,Move,CFtype>::DeltaCostFunctionComponents(const State& st, const Move & mv) const
+    std::vector<CFtype> NeighborhoodExplorer<Input, State, Move, CFtype>::DeltaCostFunctionComponents(const State& st, const Move & mv) const
     {
       std::vector<CFtype> delta_cost_function(delta_hard_cost_components.size() + delta_soft_cost_components.size(), (CFtype)0);
 
@@ -339,7 +339,7 @@ namespace EasyLocal {
           if (!dcc->IsDeltaImplemented())
           {
             // get reference to cost component
-            CostComponent<Input,State,CFtype>& cc = dcc->GetCostComponent();
+            CostComponent<Input, State, CFtype>& cc = dcc->GetCostComponent();
             delta_cost_function[i] =  cc.Weight() * (cc.ComputeCost(new_st) - cc.ComputeCost(st));
           }
         }
@@ -350,7 +350,7 @@ namespace EasyLocal {
           if (!dcc->IsDeltaImplemented())
           {
             // get reference to cost component
-            CostComponent<Input,State,CFtype>& cc = dcc->GetCostComponent();
+            CostComponent<Input, State, CFtype>& cc = dcc->GetCostComponent();
             delta_cost_function[i + delta_hard_cost_components.size()] =  cc.Weight() * (cc.ComputeCost(new_st) - cc.ComputeCost(st));
           }
         }
@@ -360,12 +360,12 @@ namespace EasyLocal {
     }
 
     template <class Input, class State, class Move, typename CFtype>
-    CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::DeltaViolations(const State& st, const Move & mv) const
+    CFtype NeighborhoodExplorer<Input, State, Move, CFtype>::DeltaViolations(const State& st, const Move & mv) const
     {
       CFtype delta_hard_cost = 0;
 
       // compute delta costs (of implemented delta cost components)
-      for (DeltaCostComponent<Input,State,Move,CFtype>* dcc : delta_hard_cost_components)
+      for (DeltaCostComponent<Input, State, Move, CFtype>* dcc : delta_hard_cost_components)
       if (dcc->IsDeltaImplemented())
       delta_hard_cost += dcc->DeltaCost(st, mv);
 
@@ -376,11 +376,11 @@ namespace EasyLocal {
         State new_st = st;
         MakeMove(new_st, mv);
 
-        for (DeltaCostComponent<Input,State,Move,CFtype>* dcc : delta_hard_cost_components)
+        for (DeltaCostComponent<Input, State, Move, CFtype>* dcc : delta_hard_cost_components)
         if (!dcc->IsDeltaImplemented())
         {
           // get reference to cost component
-          CostComponent<Input,State,CFtype>& cc = dcc->GetCostComponent();
+          CostComponent<Input, State, CFtype>& cc = dcc->GetCostComponent();
           delta_hard_cost +=  cc.Weight() * (cc.ComputeCost(new_st) - cc.ComputeCost(st));
         }
       }
@@ -389,12 +389,12 @@ namespace EasyLocal {
     }
 
     template <class Input, class State, class Move, typename CFtype>
-    CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::DeltaObjective(const State& st, const Move & mv) const
+    CFtype NeighborhoodExplorer<Input, State, Move, CFtype>::DeltaObjective(const State& st, const Move & mv) const
     {
       CFtype delta_soft_cost = 0;
 
       // compute delta costs (of implemented delta cost components)
-      for (DeltaCostComponent<Input,State,Move,CFtype>* dcc : delta_soft_cost_components)
+      for (DeltaCostComponent<Input, State, Move, CFtype>* dcc : delta_soft_cost_components)
       if (dcc->IsDeltaImplemented())
       delta_soft_cost += dcc->DeltaCost(st, mv);
 
@@ -405,11 +405,11 @@ namespace EasyLocal {
         State new_st = st;
         MakeMove(new_st, mv);
 
-        for (DeltaCostComponent<Input,State,Move,CFtype>* dcc : delta_soft_cost_components)
+        for (DeltaCostComponent<Input, State, Move, CFtype>* dcc : delta_soft_cost_components)
         if (!dcc->IsDeltaImplemented())
         {
           // get reference to cost component
-          CostComponent<Input,State,CFtype>& cc = dcc->GetCostComponent();
+          CostComponent<Input, State, CFtype>& cc = dcc->GetCostComponent();
           delta_soft_cost +=  cc.Weight() * (cc.ComputeCost(new_st) - cc.ComputeCost(st));
         }
       }
@@ -418,7 +418,7 @@ namespace EasyLocal {
     }
 
     template <class Input, class State, class Move, typename CFtype>
-    void NeighborhoodExplorer<Input,State,Move,CFtype>::AddDeltaCostComponent(DeltaCostComponent<Input,State,Move,CFtype>& dcc)
+    void NeighborhoodExplorer<Input, State, Move, CFtype>::AddDeltaCostComponent(DeltaCostComponent<Input, State, Move, CFtype>& dcc)
     {
       if (dcc.IsHard())
       delta_hard_cost_components.push_back(&dcc);
@@ -427,7 +427,7 @@ namespace EasyLocal {
     }
 
     template <class Input, class State, class Move, typename CFtype>
-    void NeighborhoodExplorer<Input,State,Move,CFtype>::AddCostComponent(CostComponent<Input,State,CFtype>& cc)
+    void NeighborhoodExplorer<Input, State, Move, CFtype>::AddCostComponent(CostComponent<Input, State, CFtype>& cc)
     {
 
       dcc_adapters.push_back(std::unique_ptr<DeltaCostComponentAdapter<Input, State, Move, CFtype>>(new DeltaCostComponentAdapter<Input, State, Move, CFtype>(in, cc, *this)));
@@ -444,7 +444,7 @@ namespace EasyLocal {
     }
 
     template <class Input, class State, class Move, typename CFtype>
-    CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::BestMove(const State &st, Move& mv) const throw (EmptyNeighborhood)
+    CFtype NeighborhoodExplorer<Input, State, Move, CFtype>::BestMove(const State &st, Move& mv) const throw (EmptyNeighborhood)
     {
       unsigned int number_of_bests = 1; // number of moves found with the same best value
 
@@ -475,7 +475,7 @@ namespace EasyLocal {
     }
 
     template <class Input, class State, class Move, typename CFtype>
-    CFtype NeighborhoodExplorer<Input,State,Move,CFtype>::FirstImprovingMove(const State &st, Move& mv) const throw (EmptyNeighborhood)
+    CFtype NeighborhoodExplorer<Input, State, Move, CFtype>::FirstImprovingMove(const State &st, Move& mv) const throw (EmptyNeighborhood)
     {
       unsigned int number_of_bests = 0;
       FirstMove(st, mv);

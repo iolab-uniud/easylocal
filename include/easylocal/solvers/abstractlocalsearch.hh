@@ -33,8 +33,8 @@ namespace EasyLocal {
       virtual SolverResult Resolve(const Output& initial_solution) throw (ParameterNotSet, IncorrectParameterValue) final;
     protected:
       AbstractLocalSearch(const Input& in,
-      StateManager<Input,State,CFtype>& e_sm,
-      OutputManager<Input,Output,State,CFtype>& e_om,
+      StateManager<Input, State, CFtype>& e_sm,
+      OutputManager<Input, Output, State, CFtype>& e_om,
       std::string name, std::string description);
       
       virtual ~AbstractLocalSearch()
@@ -52,9 +52,9 @@ namespace EasyLocal {
       virtual void FindInitialState();
       // This will be the actual solver strategy implementation
       virtual void Go() = 0;
-      StateManager<Input,State,CFtype>& sm; /**< A pointer to the attached
+      StateManager<Input, State, CFtype>& sm; /**< A pointer to the attached
         state manager. */
-        OutputManager<Input,Output,State,CFtype>& om; /**< A pointer to the attached
+        OutputManager<Input, Output, State, CFtype>& om; /**< A pointer to the attached
           output manager. */
           std::shared_ptr<State> p_current_state, p_best_state;        /**< The internal states of the solver. */
   
@@ -83,9 +83,9 @@ namespace EasyLocal {
     @param name a descriptive name for the solver
     */
     template <class Input, class Output, class State, typename CFtype>
-    AbstractLocalSearch<Input,Output,State,CFtype>::AbstractLocalSearch(const Input& in,
-    StateManager<Input,State,CFtype>& e_sm,
-    OutputManager<Input,Output,State,CFtype>& e_om,
+    AbstractLocalSearch<Input, Output, State, CFtype>::AbstractLocalSearch(const Input& in,
+    StateManager<Input, State, CFtype>& e_sm,
+    OutputManager<Input, Output, State, CFtype>& e_om,
     std::string name,
     std::string description)
       : Parametrized(name, description),
@@ -106,7 +106,7 @@ namespace EasyLocal {
     the state manager. The function invokes the SampleState function.
     */
     template <class Input, class Output, class State, typename CFtype>
-    void AbstractLocalSearch<Input,Output,State,CFtype>::FindInitialState()
+    void AbstractLocalSearch<Input, Output, State, CFtype>::FindInitialState()
     {
       if (random_initial_state)
         current_state_cost = sm.SampleState(*p_current_state, init_trials);
@@ -120,14 +120,14 @@ namespace EasyLocal {
     }
 
     template <class Input, class Output, class State, typename CFtype>
-    void AbstractLocalSearch<Input,Output,State,CFtype>::InitializeSolve() throw (ParameterNotSet, IncorrectParameterValue)
+    void AbstractLocalSearch<Input, Output, State, CFtype>::InitializeSolve() throw (ParameterNotSet, IncorrectParameterValue)
     {
       p_best_state = std::make_shared<State>(this->in);
       p_current_state = std::make_shared<State>(this->in);
     }
 
     template <class Input, class Output, class State, typename CFtype>
-    typename AbstractLocalSearch<Input,Output,State,CFtype>::SolverResult AbstractLocalSearch<Input,Output,State,CFtype>::Solve() throw (ParameterNotSet, IncorrectParameterValue)
+    typename AbstractLocalSearch<Input, Output, State, CFtype>::SolverResult AbstractLocalSearch<Input, Output, State, CFtype>::Solve() throw (ParameterNotSet, IncorrectParameterValue)
     {
       auto start = std::chrono::high_resolution_clock::now();
       InitializeSolve();
@@ -148,7 +148,7 @@ namespace EasyLocal {
     }
 
     template <class Input, class Output, class State, typename CFtype>
-    typename AbstractLocalSearch<Input,Output,State,CFtype>::SolverResult AbstractLocalSearch<Input,Output,State,CFtype>::Resolve(const Output& initial_solution) throw (ParameterNotSet, IncorrectParameterValue)
+    typename AbstractLocalSearch<Input, Output, State, CFtype>::SolverResult AbstractLocalSearch<Input, Output, State, CFtype>::Resolve(const Output& initial_solution) throw (ParameterNotSet, IncorrectParameterValue)
     {
       auto start = std::chrono::high_resolution_clock::now();
   
@@ -170,7 +170,7 @@ namespace EasyLocal {
     }
 
     template <class Input, class Output, class State, typename CFtype>
-    void AbstractLocalSearch<Input,Output,State,CFtype>::TerminateSolve()
+    void AbstractLocalSearch<Input, Output, State, CFtype>::TerminateSolve()
       { }
   }
 }

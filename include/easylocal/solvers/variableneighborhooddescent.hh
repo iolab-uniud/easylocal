@@ -13,20 +13,20 @@ namespace EasyLocal {
     */
     template <class Input, class Output, class State, typename CFtype>
     class VariableNeighborhoodDescent
-      : public AbstractLocalSearch<Input,Output,State,CFtype>
+      : public AbstractLocalSearch<Input, Output, State, CFtype>
     {
     public:
       VariableNeighborhoodDescent(const Input& in,
-      StateManager<Input,State,CFtype>& e_sm,
-      OutputManager<Input,Output,State,CFtype>& e_om,
+      StateManager<Input, State, CFtype>& e_sm,
+      OutputManager<Input, Output, State, CFtype>& e_om,
       unsigned int max_k,
       std::string name);
 	
-      // void SetKicker(Kicker<Input,State,CFtype>& k);
+      // void SetKicker(Kicker<Input, State, CFtype>& k);
 
     protected:
       void Go();
-      // Kicker<Input,State,CFtype>* p_kicker; /**< A pointer to the managed kicker. */
+      // Kicker<Input, State, CFtype>* p_kicker; /**< A pointer to the managed kicker. */
       unsigned int max_k;
     };
 
@@ -45,12 +45,12 @@ namespace EasyLocal {
     @param out a pointer to an output object
     */
     template <class Input, class Output, class State, typename CFtype>
-    VariableNeighborhoodDescent<Input,Output,State,CFtype>::VariableNeighborhoodDescent(const Input& in,
-    StateManager<Input,State,CFtype>& e_sm,
-    OutputManager<Input,Output,State,CFtype>& e_om,
+    VariableNeighborhoodDescent<Input, Output, State, CFtype>::VariableNeighborhoodDescent(const Input& in,
+    StateManager<Input, State, CFtype>& e_sm,
+    OutputManager<Input, Output, State, CFtype>& e_om,
     unsigned int max_k,
     std::string name)
-      : AbstractLocalSearch<Input,Output,State,CFtype>(in, e_sm, e_om, name, "Variable Neighborhood Descent Solver")
+      : AbstractLocalSearch<Input, Output, State, CFtype>(in, e_sm, e_om, name, "Variable Neighborhood Descent Solver")
     {
       p_kicker = nullptr;
       this->max_k = max_k;
@@ -63,11 +63,11 @@ namespace EasyLocal {
     @param r the new runner to be used
     */
     template <class Input, class Output, class State, typename CFtype>
-    void VariableNeighborhoodDescent<Input,Output,State,CFtype>::SetKicker(Kicker<Input,State,CFtype>& k)
+    void VariableNeighborhoodDescent<Input, Output, State, CFtype>::SetKicker(Kicker<Input, State, CFtype>& k)
       { this->p_kicker = &k; }
 
     template <class Input, class Output, class State, typename CFtype>
-    void VariableNeighborhoodDescent<Input,Output,State,CFtype>::Go()
+    void VariableNeighborhoodDescent<Input, Output, State, CFtype>::Go()
     {
       unsigned int k = 1;
       CFtype kick_cost;
@@ -77,7 +77,7 @@ namespace EasyLocal {
         std::cerr << "Selected Kick: " << k << " ";
         kick_cost = this->p_kicker->FirstImprovingKick(*this->p_current_state);
         std::cerr << kick_cost << std::endl;
-        if (LessThan(kick_cost,0))
+        if (LessThan(kick_cost, 0))
         {
           this->p_kicker->MakeKick(*this->p_current_state);
           this->current_state_cost += kick_cost;

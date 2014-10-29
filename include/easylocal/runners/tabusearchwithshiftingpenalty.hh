@@ -8,14 +8,14 @@ namespace EasyLocal {
   namespace Core {
 
     template <class Input, class State, class Move, typename CFtype>
-    class TabuSearchWithShiftingPenalty : public TabuSearch<Input,State,Move,CFtype>
+    class TabuSearchWithShiftingPenalty : public TabuSearch<Input, State, Move, CFtype>
     {
     public:
   
       TabuSearchWithShiftingPenalty(const Input& in,
-      StateManager<Input,State,CFtype>& sm,
-      NeighborhoodExplorer<Input,State,Move,CFtype>& ne,
-      TabuListManager<State,Move,CFtype>& tlm,
+      StateManager<Input, State, CFtype>& sm,
+      NeighborhoodExplorer<Input, State, Move, CFtype>& ne,
+      TabuListManager<State, Move, CFtype>& tlm,
       std::string name);
       std::string StatusString();
     protected:
@@ -44,12 +44,12 @@ namespace EasyLocal {
     *************************************************************************/
 
     template <class Input, class State, class Move, typename CFtype>
-    TabuSearchWithShiftingPenalty<Input,State,Move,CFtype>::TabuSearchWithShiftingPenalty(const Input& i,
-    StateManager<Input,State,CFtype>& e_sm,
-    NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
-    TabuListManager<State,Move,CFtype>& tlm,
+    TabuSearchWithShiftingPenalty<Input, State, Move, CFtype>::TabuSearchWithShiftingPenalty(const Input& i,
+    StateManager<Input, State, CFtype>& e_sm,
+    NeighborhoodExplorer<Input, State, Move, CFtype>& e_ne,
+    TabuListManager<State, Move, CFtype>& tlm,
     std::string name)
-      :  TabuSearch<Input,State,Move,CFtype>(i, e_sm, e_ne, tlm, name),
+      :  TabuSearch<Input, State, Move, CFtype>(i, e_sm, e_ne, tlm, name),
     // parameters
     shift_region("shift_region", "Shifting penalty region", this->parameters), alpha("alpha", "Shift adjustment", this->parameters),
     iterations_for_shift_update("iterations_for_shift_update", "Number of iterations between shift updates", this->parameters),
@@ -64,9 +64,9 @@ namespace EasyLocal {
     }
 
     template <class Input, class State, class Move, typename CFtype>
-    void TabuSearchWithShiftingPenalty<Input,State,Move,CFtype>::InitializeRun() throw (ParameterNotSet, IncorrectParameterValue)
+    void TabuSearchWithShiftingPenalty<Input, State, Move, CFtype>::InitializeRun() throw (ParameterNotSet, IncorrectParameterValue)
     {
-      TabuSearch<Input,State,Move,CFtype>::InitializeRun();
+      TabuSearch<Input, State, Move, CFtype>::InitializeRun();
       current_state_cost_components.resize(this->ne.DeltaCostComponents(), (CFtype)0);
       current_move_cost_components.resize(this->ne.DeltaCostComponents(), (CFtype)0);
       shifts.resize(this->ne.DeltaCostComponents(), 1.0);
@@ -78,7 +78,7 @@ namespace EasyLocal {
     }
 
     template <class Input, class State, class Move, typename CFtype>
-    void TabuSearchWithShiftingPenalty<Input,State,Move,CFtype>::SelectMove()
+    void TabuSearchWithShiftingPenalty<Input, State, Move, CFtype>::SelectMove()
     {
       bool shifted = (this->iteration - this->iteration_of_best < shift_region * this->max_idle_iterations);
       if (!shifted)
@@ -232,16 +232,16 @@ namespace EasyLocal {
     }
 
     template <class Input, class State, class Move, typename CFtype>
-    void TabuSearchWithShiftingPenalty<Input,State,Move,CFtype>::MakeMove()
+    void TabuSearchWithShiftingPenalty<Input, State, Move, CFtype>::MakeMove()
     {
-      TabuSearch<Input,State,Move,CFtype>::MakeMove();
+      TabuSearch<Input, State, Move, CFtype>::MakeMove();
       // update the hard components of the cost function
       for (unsigned int i = 0; i < this->ne.DeltaCostComponents(); i++)
         current_state_cost_components[i] += current_move_cost_components[i];
     }
 
     template <class Input, class State, class Move, typename CFtype>
-    void TabuSearchWithShiftingPenalty<Input,State,Move,CFtype>::CompleteMove()
+    void TabuSearchWithShiftingPenalty<Input, State, Move, CFtype>::CompleteMove()
     {
       if (LessThan(this->current_state_cost, this->best_state_cost) || this->iteration - this->iteration_of_best >= shift_region * this->max_idle_iterations)
       {
@@ -271,7 +271,7 @@ namespace EasyLocal {
       TabuSearch<Input, State, Move, CFtype>::CompleteMove();
       //   std::cerr << "(";
       //   for (unsigned int i = 0; i < shifts.size(); i++)
-      //     std::cerr << shifts[i] << (i < shifts.size() - 1 ? ',' : ')');
+      //     std::cerr << shifts[i] << (i < shifts.size() - 1 ? ", " : ")");
       //   std::cerr << std::endl;
     }
 
@@ -280,12 +280,12 @@ namespace EasyLocal {
     Create a string containing the status of the runner
     */
     template <class Input, class State, class Move, typename CFtype>
-    std::string TabuSearchWithShiftingPenalty<Input,State,Move,CFtype>::StatusString()
+    std::string TabuSearchWithShiftingPenalty<Input, State, Move, CFtype>::StatusString()
     {
       std::stringstream status;
       status << "[" << "TL = " << this->pm.StatusString() << ", SP = (";
       for (unsigned int i = 0; i < shifts.size(); i++)
-        status << shifts[i] << (i < shifts.size() - 1 ? ',' : ')');
+        status << shifts[i] << (i < shifts.size() - 1 ? ", " : ")");
       status << "]";
       return status.str();
     }

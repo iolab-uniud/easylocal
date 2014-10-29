@@ -23,10 +23,10 @@ namespace EasyLocal {
     public:
       RunnerObserver(unsigned int verbosity_level, unsigned int plot_level, std::ostream& log_os = std::cout, std::ostream& plot_os = std::cout);
       virtual ~RunnerObserver() {}
-      virtual void NotifyStartRunner(MoveRunner<Input,State,Move,CFtype>& r);
-      virtual void NotifyNewBest(MoveRunner<Input,State,Move,CFtype>& r);
-      virtual void NotifyMadeMove(MoveRunner<Input,State,Move,CFtype>& r);
-      virtual void NotifyEndRunner(MoveRunner<Input,State,Move,CFtype>& r);
+      virtual void NotifyStartRunner(MoveRunner<Input, State, Move, CFtype>& r);
+      virtual void NotifyNewBest(MoveRunner<Input, State, Move, CFtype>& r);
+      virtual void NotifyMadeMove(MoveRunner<Input, State, Move, CFtype>& r);
+      virtual void NotifyEndRunner(MoveRunner<Input, State, Move, CFtype>& r);
     protected:
       bool notify_new_best, notify_made_move, plot_improving_moves, plot_all_moves, notify_violations_increased;
       CFtype previous_violations, previous_cost;
@@ -34,7 +34,7 @@ namespace EasyLocal {
     };
 
     template <class Input, class State, class Move, typename CFtype>
-    RunnerObserver<Input,State,Move,CFtype>::RunnerObserver(unsigned int verbosity_level, unsigned int plot_level, std::ostream& log_os, std::ostream& plot_os) 
+    RunnerObserver<Input, State, Move, CFtype>::RunnerObserver(unsigned int verbosity_level, unsigned int plot_level, std::ostream& log_os, std::ostream& plot_os) 
       : log(log_os), plot(plot_os)
     {
       // notify
@@ -63,7 +63,7 @@ namespace EasyLocal {
     }
 
     template <class Input, class State, class Move, typename CFtype>
-    void RunnerObserver<Input,State,Move,CFtype>::NotifyStartRunner(MoveRunner<Input,State,Move,CFtype>& r)
+    void RunnerObserver<Input, State, Move, CFtype>::NotifyStartRunner(MoveRunner<Input, State, Move, CFtype>& r)
     {
       if (plot_improving_moves || plot_all_moves)
         plot << r.iteration << ' ' <<
@@ -74,7 +74,7 @@ namespace EasyLocal {
     }
 
     template <class Input, class State, class Move, typename CFtype>
-    void RunnerObserver<Input,State,Move,CFtype>::NotifyNewBest(MoveRunner<Input,State,Move,CFtype>& r)
+    void RunnerObserver<Input, State, Move, CFtype>::NotifyNewBest(MoveRunner<Input, State, Move, CFtype>& r)
     {
       if (notify_new_best)
       {
@@ -85,7 +85,7 @@ namespace EasyLocal {
         {
           log << r.sm.Cost(*r.p_current_state, i);
           if (i < r.sm.CostComponents() - 1) 
-            log << ',';
+            log << ", ";
         }
         log << ") " << r.StatusString() << std::endl;
       }
@@ -98,7 +98,7 @@ namespace EasyLocal {
     }
 
     template <class Input, class State, class Move, typename CFtype>
-    void RunnerObserver<Input,State,Move,CFtype>::NotifyMadeMove(MoveRunner<Input,State,Move,CFtype>& r)
+    void RunnerObserver<Input, State, Move, CFtype>::NotifyMadeMove(MoveRunner<Input, State, Move, CFtype>& r)
     {
       if (notify_made_move)
       {
@@ -111,7 +111,7 @@ namespace EasyLocal {
         {
           log << r.sm.Cost(*r.p_current_state, i);
           if (i < r.sm.CostComponents() - 1) 
-            log << ',';
+            log << ", ";
         }
         log << ") " << r.StatusString() << std::endl;
       }
@@ -131,7 +131,7 @@ namespace EasyLocal {
     }
 
     template <class Input, class State, class Move, typename CFtype>
-    void RunnerObserver<Input,State,Move,CFtype>::NotifyEndRunner(MoveRunner<Input,State,Move,CFtype>& r)
+    void RunnerObserver<Input, State, Move, CFtype>::NotifyEndRunner(MoveRunner<Input, State, Move, CFtype>& r)
     {
       if (plot_improving_moves || plot_all_moves)
         plot << r.iteration << ' ' <<

@@ -13,13 +13,13 @@ namespace EasyLocal {
     @ingroup Runners
     */
     template <class Input, class State, class Move, typename CFtype>
-    class SimulatedAnnealing : public AbstractSimulatedAnnealing<Input,State,Move,CFtype>
+    class SimulatedAnnealing : public AbstractSimulatedAnnealing<Input, State, Move, CFtype>
     {
     public:
   
       SimulatedAnnealing(const Input& in,
-      StateManager<Input,State,CFtype>& e_sm,
-      NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
+      StateManager<Input, State, CFtype>& e_sm,
+      NeighborhoodExplorer<Input, State, Move, CFtype>& e_ne,
       std::string name);
 
       void SetMinTemperature(double st)  { min_temperature = st; }
@@ -46,11 +46,11 @@ namespace EasyLocal {
     @param in a poiter to an input object
     */
     template <class Input, class State, class Move, typename CFtype>
-    SimulatedAnnealing<Input,State,Move,CFtype>::SimulatedAnnealing(const Input& in,
-    StateManager<Input,State,CFtype>& e_sm,
-    NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
+    SimulatedAnnealing<Input, State, Move, CFtype>::SimulatedAnnealing(const Input& in,
+    StateManager<Input, State, CFtype>& e_sm,
+    NeighborhoodExplorer<Input, State, Move, CFtype>& e_ne,
     std::string name)
-      : AbstractSimulatedAnnealing<Input,State,Move,CFtype>(in, e_sm, e_ne, name),
+      : AbstractSimulatedAnnealing<Input, State, Move, CFtype>(in, e_sm, e_ne, name),
     min_temperature("min_temperature", "Minimum temperature", this->parameters)
       { }
 
@@ -60,18 +60,18 @@ namespace EasyLocal {
     */
     // FIXME
     template <class Input, class State, class Move, typename CFtype>
-    void SimulatedAnnealing<Input,State,Move,CFtype>::InitializeRun() throw (ParameterNotSet, IncorrectParameterValue)
+    void SimulatedAnnealing<Input, State, Move, CFtype>::InitializeRun() throw (ParameterNotSet, IncorrectParameterValue)
     {
       if (min_temperature <= 0.0)
         throw IncorrectParameterValue(min_temperature, "should be greater than zero");
-      AbstractSimulatedAnnealing<Input,State,Move,CFtype>::InitializeRun();  
+      AbstractSimulatedAnnealing<Input, State, Move, CFtype>::InitializeRun();  
     }
 
     /**
     The search stops when a low temperature has reached.
     */
     template <class Input, class State, class Move, typename CFtype>
-    bool SimulatedAnnealing<Input,State,Move,CFtype>::StopCriterion()
+    bool SimulatedAnnealing<Input, State, Move, CFtype>::StopCriterion()
     { 
       return this->temperature <= min_temperature;
     }
@@ -80,7 +80,7 @@ namespace EasyLocal {
     Create a string containing the status of the runner
     */
     template <class Input, class State, class Move, typename CFtype>
-    std::string SimulatedAnnealing<Input,State,Move,CFtype>::StatusString()
+    std::string SimulatedAnnealing<Input, State, Move, CFtype>::StatusString()
     {
       std::stringstream status;
       status << "["

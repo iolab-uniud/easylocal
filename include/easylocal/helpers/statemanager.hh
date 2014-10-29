@@ -160,7 +160,7 @@ namespace EasyLocal {
       Add a component to the cost component array.
       @param cc the cost component to be added
       */
-      void AddCostComponent(CostComponent<Input,State,CFtype>& cc);
+      void AddCostComponent(CostComponent<Input, State, CFtype>& cc);
 
 
       /**
@@ -188,7 +188,7 @@ namespace EasyLocal {
       @return the reference to a cost component
       @param i the index of the cost component
       */
-      CostComponent<Input, State,CFtype>& GetCostComponent(unsigned int i) const { return *(cost_component[i]); }
+      CostComponent<Input, State, CFtype>& GetCostComponent(unsigned int i) const { return *(cost_component[i]); }
 
       /**
       Get the number of registered cost components
@@ -221,7 +221,7 @@ namespace EasyLocal {
       /**
       The set of the cost components. Hard and soft ones are all in this @c vector.
       */
-      std::vector<CostComponent<Input,State,CFtype>* > cost_component;
+      std::vector<CostComponent<Input, State, CFtype>* > cost_component;
 
       /** Input object. */
       const Input& in;
@@ -232,14 +232,14 @@ namespace EasyLocal {
     * **************************************************************************/
 
     template <class Input, class State, typename CFtype>
-    StateManager<Input,State,CFtype>::StateManager(const Input& i, std::string e_name)
+    StateManager<Input, State, CFtype>::StateManager(const Input& i, std::string e_name)
     :  name(e_name), in(i)
     {
 
     }
 
     template <class Input, class State, typename CFtype>
-    void StateManager<Input,State,CFtype>::Print(std::ostream& os) const
+    void StateManager<Input, State, CFtype>::Print(std::ostream& os) const
     {
       os  << "State Manager: " + name << std::endl;
       os  << "Violations:" << std::endl;
@@ -253,7 +253,7 @@ namespace EasyLocal {
     }
 
     template <class Input, class State, typename CFtype>
-    CFtype StateManager<Input,State,CFtype>::SampleState(State &st,
+    CFtype StateManager<Input, State, CFtype>::SampleState(State &st,
     unsigned int samples)
     {
       unsigned int s = 1;
@@ -278,20 +278,20 @@ namespace EasyLocal {
     }
 
     template <class Input, class State, typename CFtype>
-    void StateManager<Input,State,CFtype>::GreedyState(State &st, double alpha,
+    void StateManager<Input, State, CFtype>::GreedyState(State &st, double alpha,
     unsigned int k)
     {
       GreedyState(st);
     }
 
     template <class Input, class State, typename CFtype>
-    void StateManager<Input,State,CFtype>::GreedyState(State &st)
+    void StateManager<Input, State, CFtype>::GreedyState(State &st)
     {
       throw std::runtime_error("For using this feature GreedyState must be implemented in the concrete class!");
     }
 
     template <class Input, class State, typename CFtype>
-    CFtype StateManager<Input,State,CFtype>::CostFunction(const State& st) const
+    CFtype StateManager<Input, State, CFtype>::CostFunction(const State& st) const
     {
       CFtype hard_cost = 0, soft_cost = 0;
       for (unsigned int i = 0; i < cost_component.size(); i++)
@@ -304,7 +304,7 @@ namespace EasyLocal {
     }
 
     template <class Input, class State, typename CFtype>
-    std::vector<CFtype> StateManager<Input,State,CFtype>::CostFunctionComponents(const State& st) const
+    std::vector<CFtype> StateManager<Input, State, CFtype>::CostFunctionComponents(const State& st) const
     {
       std::vector<CFtype> cost_function(cost_component.size());
       for (unsigned int i = 0; i < cost_component.size(); i++)
@@ -314,19 +314,19 @@ namespace EasyLocal {
     }
 
     template <class Input, class State, typename CFtype>
-    bool StateManager<Input,State,CFtype>::LowerBoundReached(const CFtype& fvalue) const
+    bool StateManager<Input, State, CFtype>::LowerBoundReached(const CFtype& fvalue) const
     {
       return IsZero(fvalue);
     }
 
     template <class Input, class State, typename CFtype>
-    bool StateManager<Input,State,CFtype>::OptimalStateReached(const State& st) const
+    bool StateManager<Input, State, CFtype>::OptimalStateReached(const State& st) const
     {
       return LowerBoundReached(CostFunction(st));
     }
 
     template <class Input, class State, typename CFtype>
-    CFtype StateManager<Input,State,CFtype>::Violations(const State& st) const
+    CFtype StateManager<Input, State, CFtype>::Violations(const State& st) const
     {
       CFtype cost = 0;
       for (unsigned int i = 0; i < cost_component.size(); i++)
@@ -336,7 +336,7 @@ namespace EasyLocal {
     }
 
     template <class Input, class State, typename CFtype>
-    CFtype StateManager<Input,State,CFtype>::Objective(const State& st) const
+    CFtype StateManager<Input, State, CFtype>::Objective(const State& st) const
     {
       CFtype cost = 0;
       for (unsigned int i = 0; i < cost_component.size(); i++)
@@ -346,19 +346,19 @@ namespace EasyLocal {
     }
 
     template <class Input, class State, typename CFtype>
-    void StateManager<Input,State,CFtype>::AddCostComponent(CostComponent<Input,State,CFtype>& cc)
+    void StateManager<Input, State, CFtype>::AddCostComponent(CostComponent<Input, State, CFtype>& cc)
     {
       cost_component.push_back(&cc);
     }
 
     template <class Input, class State, typename CFtype>
-    void StateManager<Input,State,CFtype>::ClearCostComponents()
+    void StateManager<Input, State, CFtype>::ClearCostComponents()
     {
       cost_component.clear();
     }
 
     template <class Input, class State, typename CFtype>
-    unsigned int StateManager<Input,State,CFtype>::StateDistance(const State& st1,
+    unsigned int StateManager<Input, State, CFtype>::StateDistance(const State& st1,
     const State& st2) const
     {
       throw std::runtime_error("For using this feature StateDistance must be implemented in the concrete class!");

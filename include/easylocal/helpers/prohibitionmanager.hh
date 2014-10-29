@@ -55,11 +55,11 @@ namespace EasyLocal {
     };
 
     template <class State, class Move, typename CFtype>
-    ProhibitionManager<State,Move,CFtype>::ProhibitionManager(std::string name, std::string description) : Parametrized(name, description), name(name), description(description)
+    ProhibitionManager<State, Move, CFtype>::ProhibitionManager(std::string name, std::string description) : Parametrized(name, description), name(name), description(description)
     { }
 
     template <class State, class Move, typename CFtype>
-    void ProhibitionManager<State,Move,CFtype>::ReadParameters(std::istream& is, std::ostream& os)
+    void ProhibitionManager<State, Move, CFtype>::ReadParameters(std::istream& is, std::ostream& os)
     {
       os << "  " << this->name << std::endl;
       Parametrized::ReadParameters(is, os);

@@ -21,7 +21,7 @@ namespace EasyLocal {
       /** Returns the (complete) CostComponent associated with the DeltaCostComponent object.
           @return the @ref CostComponent
       */
-      CostComponent<Input,State,CFtype>& GetCostComponent() const { return cc; }
+      CostComponent<Input, State, CFtype>& GetCostComponent() const { return cc; }
 
       /** @copydoc Printable::Print() */
       virtual void Print(std::ostream& os = std::cout) const;
@@ -52,7 +52,7 @@ namespace EasyLocal {
           @param cc a related CostComponent
           @param name the name assigned to the object
       */
-      DeltaCostComponent(const Input& in, CostComponent<Input,State,CFtype>& cc, std::string name);
+      DeltaCostComponent(const Input& in, CostComponent<Input, State, CFtype>& cc, std::string name);
 
       /** Computes the variation of the cost on a given @ref State due to a specific @ref Move.
           @param st the starting State upon which the variation of the cost has to be computed
@@ -65,25 +65,25 @@ namespace EasyLocal {
       const Input& in;
 
       /** The @ref CostComponent associated with the DeltaCostComponent. */
-      CostComponent<Input,State,CFtype>& cc;
+      CostComponent<Input, State, CFtype>& cc;
 
     };
 
     /** IMPLEMENTATION */
 
     template <class Input, class State, class Move, typename CFtype>
-    DeltaCostComponent<Input,State,Move,CFtype>::DeltaCostComponent(const Input& i, CostComponent<Input,State,CFtype>& e_cc, std::string name)
+    DeltaCostComponent<Input, State, Move, CFtype>::DeltaCostComponent(const Input& i, CostComponent<Input, State, CFtype>& e_cc, std::string name)
     : name(name), in(i), cc(e_cc)
     { }
 
     template <class Input, class State, class Move, typename CFtype>
-    void DeltaCostComponent<Input,State,Move,CFtype>::Print(std::ostream& os) const
+    void DeltaCostComponent<Input, State, Move, CFtype>::Print(std::ostream& os) const
     {
       os << "  DeltaCost Component: " + this->name << std::endl;
     }
 
     template <class Input, class State, class Move, typename CFtype>
-    CFtype DeltaCostComponent<Input,State,Move,CFtype>::DeltaCost(const State& st,
+    CFtype DeltaCostComponent<Input, State, Move, CFtype>::DeltaCost(const State& st,
     const Move& mv) const
     {
       return this->cc.Weight() * ComputeDeltaCost(st, mv);
@@ -101,7 +101,7 @@ namespace EasyLocal {
     public:
       
       /** Constructor. */
-      DeltaCostComponentAdapter(const Input& in, CostComponent<Input,State,CFtype>& cc, NeighborhoodExplorer<Input, State, Move, CFtype>& ne);
+      DeltaCostComponentAdapter(const Input& in, CostComponent<Input, State, CFtype>& cc, NeighborhoodExplorer<Input, State, Move, CFtype>& ne);
       
       /** @copydoc DeltaCostComponent::IsDeltaImplemented() */
       virtual bool IsDeltaImplemented() const { return false; }
@@ -119,7 +119,7 @@ namespace EasyLocal {
     };
 
     template <class Input, class State, class Move, typename CFtype>
-    DeltaCostComponentAdapter<Input, State, Move, CFtype>::DeltaCostComponentAdapter(const Input& in, CostComponent<Input,State,CFtype>& cc, NeighborhoodExplorer<Input, State, Move, CFtype>& ne)
+    DeltaCostComponentAdapter<Input, State, Move, CFtype>::DeltaCostComponentAdapter(const Input& in, CostComponent<Input, State, CFtype>& cc, NeighborhoodExplorer<Input, State, Move, CFtype>& ne)
     : DeltaCostComponent<Input, State, Move, CFtype>(in, cc, "DeltaAdapter" + cc.name), ne(ne)
     { }
   }

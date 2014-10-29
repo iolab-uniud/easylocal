@@ -22,13 +22,13 @@ namespace EasyLocal {
     public:
       GeneralizedLocalSearchObserver(unsigned int verbosity_level, unsigned int plot_level = 0,  std::ostream& log_os = std::cout, std::ostream& plot_os = std::cout);
             
-      void NotifyRestart(GeneralizedLocalSearch<Input,Output,State,CFtype>& s, unsigned int restart);
-      void NotifyRound(GeneralizedLocalSearch<Input,Output,State,CFtype>& s);
-      void NotifyRunnerStart(GeneralizedLocalSearch<Input,Output,State,CFtype>& s);
-      void NotifyRunnerStop(GeneralizedLocalSearch<Input,Output,State,CFtype>& s);
-      void NotifyKickerStart(GeneralizedLocalSearch<Input,Output,State,CFtype>& s);
-      void NotifyKickStep(GeneralizedLocalSearch<Input,Output,State,CFtype>& s, const CFtype& c);
-      void NotifyKickerStop(GeneralizedLocalSearch<Input,Output,State,CFtype>& s);
+      void NotifyRestart(GeneralizedLocalSearch<Input, Output, State, CFtype>& s, unsigned int restart);
+      void NotifyRound(GeneralizedLocalSearch<Input, Output, State, CFtype>& s);
+      void NotifyRunnerStart(GeneralizedLocalSearch<Input, Output, State, CFtype>& s);
+      void NotifyRunnerStop(GeneralizedLocalSearch<Input, Output, State, CFtype>& s);
+      void NotifyKickerStart(GeneralizedLocalSearch<Input, Output, State, CFtype>& s);
+      void NotifyKickStep(GeneralizedLocalSearch<Input, Output, State, CFtype>& s, const CFtype& c);
+      void NotifyKickerStop(GeneralizedLocalSearch<Input, Output, State, CFtype>& s);
       void SetNotifyRunner() {  notify_runner = true; } 
     protected:
       bool notify_round, notify_runner, notify_kicker, plot_rounds;
@@ -36,7 +36,7 @@ namespace EasyLocal {
     };
 
     template <class Input, class Output, class State, typename CFtype>
-    GeneralizedLocalSearchObserver<Input,Output,State,CFtype>::  GeneralizedLocalSearchObserver(unsigned int verbosity_level, unsigned int plot_level,  std::ostream& log_os, std::ostream& plot_os)  : log(log_os), plot(plot_os)
+    GeneralizedLocalSearchObserver<Input, Output, State, CFtype>::  GeneralizedLocalSearchObserver(unsigned int verbosity_level, unsigned int plot_level,  std::ostream& log_os, std::ostream& plot_os)  : log(log_os), plot(plot_os)
     {
       if (verbosity_level >= 1)
         notify_round = true;
@@ -56,7 +56,7 @@ namespace EasyLocal {
     }
 
     template <class Input, class Output, class State, typename CFtype>
-    void GeneralizedLocalSearchObserver<Input,Output,State,CFtype>::NotifyRestart(GeneralizedLocalSearch<Input,Output,State,CFtype>& s, unsigned int restart)
+    void GeneralizedLocalSearchObserver<Input, Output, State, CFtype>::NotifyRestart(GeneralizedLocalSearch<Input, Output, State, CFtype>& s, unsigned int restart)
     {
       if (notify_round)
       {
@@ -65,7 +65,7 @@ namespace EasyLocal {
     }
 
     template <class Input, class Output, class State, typename CFtype>
-    void GeneralizedLocalSearchObserver<Input,Output,State,CFtype>::NotifyRound(GeneralizedLocalSearch<Input,Output,State,CFtype>& s)
+    void GeneralizedLocalSearchObserver<Input, Output, State, CFtype>::NotifyRound(GeneralizedLocalSearch<Input, Output, State, CFtype>& s)
     {
       if (notify_round)
       {
@@ -74,7 +74,7 @@ namespace EasyLocal {
     }
 
     template <class Input, class Output, class State, typename CFtype>
-    void GeneralizedLocalSearchObserver<Input,Output,State,CFtype>::NotifyKickerStart(GeneralizedLocalSearch<Input,Output,State,CFtype>& s)
+    void GeneralizedLocalSearchObserver<Input, Output, State, CFtype>::NotifyKickerStart(GeneralizedLocalSearch<Input, Output, State, CFtype>& s)
     {
       if (notify_kicker)
       {
@@ -83,7 +83,7 @@ namespace EasyLocal {
     }
 
     template <class Input, class Output, class State, typename CFtype>
-    void GeneralizedLocalSearchObserver<Input,Output,State,CFtype>::NotifyKickStep(GeneralizedLocalSearch<Input,Output,State,CFtype>& s, const CFtype& cost)
+    void GeneralizedLocalSearchObserver<Input, Output, State, CFtype>::NotifyKickStep(GeneralizedLocalSearch<Input, Output, State, CFtype>& s, const CFtype& cost)
     {
       if (notify_kicker)
       {
@@ -94,7 +94,7 @@ namespace EasyLocal {
     }
 
     template <class Input, class Output, class State, typename CFtype>
-    void GeneralizedLocalSearchObserver<Input,Output,State,CFtype>::NotifyKickerStop(GeneralizedLocalSearch<Input,Output,State,CFtype>& s)
+    void GeneralizedLocalSearchObserver<Input, Output, State, CFtype>::NotifyKickerStop(GeneralizedLocalSearch<Input, Output, State, CFtype>& s)
     {
       if (notify_kicker)
       {
@@ -103,7 +103,7 @@ namespace EasyLocal {
     }
 
     template <class Input, class Output, class State, typename CFtype>
-    void GeneralizedLocalSearchObserver<Input,Output,State,CFtype>::NotifyRunnerStart(GeneralizedLocalSearch<Input,Output,State,CFtype>& s)
+    void GeneralizedLocalSearchObserver<Input, Output, State, CFtype>::NotifyRunnerStart(GeneralizedLocalSearch<Input, Output, State, CFtype>& s)
     {
       if (notify_runner)
       {
@@ -112,7 +112,7 @@ namespace EasyLocal {
     }
 
     template <class Input, class Output, class State, typename CFtype>
-    void GeneralizedLocalSearchObserver<Input,Output,State,CFtype>::NotifyRunnerStop(GeneralizedLocalSearch<Input,Output,State,CFtype>& s)
+    void GeneralizedLocalSearchObserver<Input, Output, State, CFtype>::NotifyRunnerStop(GeneralizedLocalSearch<Input, Output, State, CFtype>& s)
     {
       if (notify_runner)
       {

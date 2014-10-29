@@ -18,13 +18,13 @@ namespace EasyLocal {
     */
     template <class Input, class Output, class State, typename CFtype>
     class TokenRingSearch
-      : public AbstractLocalSearch<Input,Output,State,CFtype>
+      : public AbstractLocalSearch<Input, Output, State, CFtype>
     {
     public:	
-      typedef Runner<Input,State,CFtype> RunnerType;
+      typedef Runner<Input, State, CFtype> RunnerType;
       TokenRingSearch(const Input& in,
-      StateManager<Input,State,CFtype>& e_sm,
-      OutputManager<Input,Output,State,CFtype>& e_om,
+      StateManager<Input, State, CFtype>& e_sm,
+      OutputManager<Input, Output, State, CFtype>& e_om,
       std::string name);
       void AddRunner(RunnerType& r);
       void RemoveRunner(const RunnerType& r);
@@ -60,11 +60,11 @@ namespace EasyLocal {
     @param out a pointer to an output object
     */
     template <class Input, class Output, class State, typename CFtype>
-    TokenRingSearch<Input,Output,State,CFtype>::TokenRingSearch(const Input& in,
-    StateManager<Input,State,CFtype>& e_sm,
-    OutputManager<Input,Output,State,CFtype>& e_om,
+    TokenRingSearch<Input, Output, State, CFtype>::TokenRingSearch(const Input& in,
+    StateManager<Input, State, CFtype>& e_sm,
+    OutputManager<Input, Output, State, CFtype>& e_om,
     std::string name)
-      : AbstractLocalSearch<Input,Output,State,CFtype>(in, e_sm, e_om, name, "Token Ring Solver"), max_rounds("max_rounds", "Maximum number of rounds", this->parameters),
+      : AbstractLocalSearch<Input, Output, State, CFtype>(in, e_sm, e_om, name, "Token Ring Solver"), max_rounds("max_rounds", "Maximum number of rounds", this->parameters),
     max_idle_rounds("max_idle_rounds", "Maximum number of idle rounds", this->parameters)
     {
       round = 0;
@@ -72,7 +72,7 @@ namespace EasyLocal {
     }
 
     template <class Input, class Output, class State, typename CFtype>
-    void TokenRingSearch<Input,Output,State,CFtype>::ReadParameters(std::istream& is, std::ostream& os)
+    void TokenRingSearch<Input, Output, State, CFtype>::ReadParameters(std::istream& is, std::ostream& os)
     {
       os << "Token Ring Solver: " << this->name << " parameters" << std::endl;
       unsigned int i = 0;
@@ -84,7 +84,7 @@ namespace EasyLocal {
     }
 
     template <class Input, class Output, class State, typename CFtype>
-    void TokenRingSearch<Input,Output,State,CFtype>::Print(std::ostream& os) const
+    void TokenRingSearch<Input, Output, State, CFtype>::Print(std::ostream& os) const
     {
       os  << "Token Ring Solver: " << this->name << std::endl;
       unsigned int i = 0;
@@ -105,7 +105,7 @@ namespace EasyLocal {
     @param r the new runner to be used
     */
     template <class Input, class Output, class State, typename CFtype>
-    void TokenRingSearch<Input,Output,State,CFtype>::AddRunner(RunnerType& r)
+    void TokenRingSearch<Input, Output, State, CFtype>::AddRunner(RunnerType& r)
       { p_runners.push_back(&r); }
 	 
     /**
@@ -115,7 +115,7 @@ namespace EasyLocal {
     @param r the runner to remove
     */
     template <class Input, class Output, class State, typename CFtype>
-    void TokenRingSearch<Input,Output,State,CFtype>::RemoveRunner(const RunnerType& r)
+    void TokenRingSearch<Input, Output, State, CFtype>::RemoveRunner(const RunnerType& r)
     {
       typename std::vector<RunnerType*>::const_iterator it;
       for (it = p_runners.begin(); it != p_runners.end(); it++)
@@ -129,9 +129,9 @@ namespace EasyLocal {
     }
 
     template <class Input, class Output, class State, typename CFtype>
-    void TokenRingSearch<Input,Output,State,CFtype>::InitializeSolve() throw (ParameterNotSet, IncorrectParameterValue)
+    void TokenRingSearch<Input, Output, State, CFtype>::InitializeSolve() throw (ParameterNotSet, IncorrectParameterValue)
     {
-      AbstractLocalSearch<Input,Output,State,CFtype>::InitializeSolve();
+      AbstractLocalSearch<Input, Output, State, CFtype>::InitializeSolve();
       if (max_idle_rounds.IsSet() && max_idle_rounds == 0)
           throw IncorrectParameterValue(max_idle_rounds, "It should be greater than zero");
       if (max_rounds.IsSet() && max_rounds == 0)
@@ -144,7 +144,7 @@ namespace EasyLocal {
     }
 
     template <class Input, class Output, class State, typename CFtype>
-    void TokenRingSearch<Input,Output,State,CFtype>::Go()
+    void TokenRingSearch<Input, Output, State, CFtype>::Go()
     {
       current_runner = 0;
       do
@@ -166,7 +166,7 @@ namespace EasyLocal {
     }
 
     template <class Input, class Output, class State, typename CFtype>
-    void TokenRingSearch<Input,Output,State,CFtype>::AtTimeoutExpired()
+    void TokenRingSearch<Input, Output, State, CFtype>::AtTimeoutExpired()
     {
       p_runners[current_runner]->Interrupt();
     }

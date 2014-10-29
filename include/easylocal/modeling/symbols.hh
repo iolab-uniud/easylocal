@@ -243,7 +243,7 @@ namespace EasyLocal {
       {
         T current_contribution = st(this->index);
         std::set<size_t>& changed = st.changed_children(this->index, level);
-        if (std::any_of(changed.begin(), changed.end(), [&st,&level](const size_t& i)->bool { return st(i, level) == static_cast<T>(0); }))
+        if (std::any_of(changed.begin(), changed.end(), [&st, &level](const size_t& i)->bool { return st(i, level) == static_cast<T>(0); }))
         {
           st.assign(this->index, level, static_cast<T>(0));
           changed.clear();
@@ -367,7 +367,7 @@ namespace EasyLocal {
       {
         std::set<size_t>& changed = st.changed_children(this->index, level);
         T current_min = st(this->index);
-        std::set<size_t>::const_iterator min_it = std::min_element(changed.begin(), changed.end(), [&st,&level](const size_t& e1, const size_t& e2)->bool { return st(e1, level) < st(e2, level); });
+        std::set<size_t>::const_iterator min_it = std::min_element(changed.begin(), changed.end(), [&st, &level](const size_t& e1, const size_t& e2)->bool { return st(e1, level) < st(e2, level); });
         T changed_min = st(*min_it, level);
         if (changed_min <= current_min)
           st.assign(this->index, level, changed_min);
@@ -414,7 +414,7 @@ namespace EasyLocal {
       {
         std::set<size_t>& changed = st.changed_children(this->index, level);
         T current_min = st(this->index);
-        std::set<size_t>::const_iterator min_it = std::min_element(changed.begin(), changed.end(), [&st,&level](const size_t& e1, const size_t& e2)->bool { return st(e1, level) < st(e2, level); });
+        std::set<size_t>::const_iterator min_it = std::min_element(changed.begin(), changed.end(), [&st, &level](const size_t& e1, const size_t& e2)->bool { return st(e1, level) < st(e2, level); });
         T changed_min = st(*min_it, level);
         if (changed_min <= current_min)
         {
@@ -456,7 +456,7 @@ namespace EasyLocal {
       {
         std::set<size_t>& changed = st.changed_children(this->index, level);
         T current_max = st(this->index);
-        std::set<size_t>::const_iterator max_it = std::max_element(changed.begin(), changed.end(), [&st,&level](const size_t& e1, const size_t& e2)->bool { return st(e1, level) < st(e2, level); });
+        std::set<size_t>::const_iterator max_it = std::max_element(changed.begin(), changed.end(), [&st, &level](const size_t& e1, const size_t& e2)->bool { return st(e1, level) < st(e2, level); });
         T changed_max = st(*max_it, level);
         if (changed_max >= current_max)
           st.assign(this->index, level, changed_max);
@@ -503,7 +503,7 @@ namespace EasyLocal {
       {
         std::set<size_t>& changed = st.changed_children(this->index, level);
         T current_max = st(this->index);
-        std::set<size_t>::const_iterator max_it = std::max_element(changed.begin(), changed.end(), [&st,&level](const size_t& e1, const size_t& e2)->bool { return st(e1, level) < st(e2, level); });
+        std::set<size_t>::const_iterator max_it = std::max_element(changed.begin(), changed.end(), [&st, &level](const size_t& e1, const size_t& e2)->bool { return st(e1, level) < st(e2, level); });
         T changed_max = st(*max_it, level);
         if (changed_max >= current_max)
         {

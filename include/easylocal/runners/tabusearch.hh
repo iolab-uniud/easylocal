@@ -27,19 +27,19 @@ namespace EasyLocal {
     @ingroup Runners
     */
     template <class Input, class State, class Move, typename CFtype>
-    class TabuSearch : public MoveRunner<Input,State,Move,CFtype>
+    class TabuSearch : public MoveRunner<Input, State, Move, CFtype>
     {
     public:
-      TabuSearch(const Input& in, StateManager<Input,State,CFtype>& e_sm,
-      NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
-      TabuListManager<State,Move,CFtype>& e_tlm,
+      TabuSearch(const Input& in, StateManager<Input, State, CFtype>& e_sm,
+      NeighborhoodExplorer<Input, State, Move, CFtype>& e_ne,
+      TabuListManager<State, Move, CFtype>& e_tlm,
       std::string name);	
       std::string StatusString();
   
       virtual void Print(std::ostream& os = std::cout) const;
       void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout);
       virtual void SetMaxIdleIteration(unsigned long int m) { max_idle_iterations = m; }
-      TabuListManager<State,Move,CFtype>& GetTabuListManager() { return pm; }
+      TabuListManager<State, Move, CFtype>& GetTabuListManager() { return pm; }
       bool MaxIdleIterationExpired() const;
     protected:
       void InitializeRun() throw (ParameterNotSet, IncorrectParameterValue);
@@ -47,7 +47,7 @@ namespace EasyLocal {
       void SelectMove();
       bool AcceptableMove();
       void CompleteMove();
-      TabuListManager<State,Move,CFtype>& pm; /**< A reference to a tabu list manger. */
+      TabuListManager<State, Move, CFtype>& pm; /**< A reference to a tabu list manger. */
       // parameters
       Parameter<unsigned long int> max_idle_iterations;
     };
@@ -67,19 +67,19 @@ namespace EasyLocal {
     */
 
     template <class Input, class State, class Move, typename CFtype>
-    TabuSearch<Input,State,Move,CFtype>::TabuSearch(const Input& in,
-    StateManager<Input,State,CFtype>& e_sm,
-    NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
-    TabuListManager<State,Move,CFtype>& tlm,
+    TabuSearch<Input, State, Move, CFtype>::TabuSearch(const Input& in,
+    StateManager<Input, State, CFtype>& e_sm,
+    NeighborhoodExplorer<Input, State, Move, CFtype>& e_ne,
+    TabuListManager<State, Move, CFtype>& tlm,
     std::string name)
-      : MoveRunner<Input,State,Move,CFtype>(in, e_sm, e_ne, name, "Tabu Search Runner"), pm(tlm),
+      : MoveRunner<Input, State, Move, CFtype>(in, e_sm, e_ne, name, "Tabu Search Runner"), pm(tlm),
     // parameters
     max_idle_iterations("max_idle_iterations", "Maximum number of idle iterations", this->parameters)
     {
     }
 
     template <class Input, class State, class Move, typename CFtype>
-    void TabuSearch<Input,State,Move,CFtype>::Print(std::ostream& os) const
+    void TabuSearch<Input, State, Move, CFtype>::Print(std::ostream& os) const
     {
       Runner<Input, State, CFtype>::Print(os);
       pm.Print(os);
@@ -90,9 +90,9 @@ namespace EasyLocal {
     cleans the tabu list.
     */
     template <class Input, class State, class Move, typename CFtype>
-    void TabuSearch<Input,State,Move,CFtype>::InitializeRun() throw (ParameterNotSet, IncorrectParameterValue)
+    void TabuSearch<Input, State, Move, CFtype>::InitializeRun() throw (ParameterNotSet, IncorrectParameterValue)
     {
-      MoveRunner<Input,State,Move,CFtype>::InitializeRun();
+      MoveRunner<Input, State, Move, CFtype>::InitializeRun();
       // pm.SetLength(min_tenure, max_tenure); not my responsibility
       pm.Clean();
     }
@@ -103,7 +103,7 @@ namespace EasyLocal {
     mechanism.
     */
     template <class Input, class State, class Move, typename CFtype>
-    void TabuSearch<Input,State,Move,CFtype>::SelectMove()
+    void TabuSearch<Input, State, Move, CFtype>::SelectMove()
     {
       // get the best non-prohibited move, but if all moves are prohibited, then get the best one among them
       unsigned int number_of_bests = 1; // number of moves found with the same best value
@@ -175,7 +175,7 @@ namespace EasyLocal {
     }
 
     template <class Input, class State, class Move, typename CFtype>
-    bool TabuSearch<Input,State,Move,CFtype>::MaxIdleIterationExpired() const
+    bool TabuSearch<Input, State, Move, CFtype>::MaxIdleIterationExpired() const
     {
       return this->iteration - this->iteration_of_best >= this->max_idle_iterations;
     }
@@ -185,7 +185,7 @@ namespace EasyLocal {
     the last strict improvement of the best state cost.
     */
     template <class Input, class State, class Move, typename CFtype>
-    bool TabuSearch<Input,State,Move,CFtype>::StopCriterion()
+    bool TabuSearch<Input, State, Move, CFtype>::StopCriterion()
     { 
       return MaxIdleIterationExpired() || this->MaxIterationExpired();
     }
@@ -196,7 +196,7 @@ namespace EasyLocal {
     prohibition mechanism which is managed inside the selection.
     */
     template <class Input, class State, class Move, typename CFtype>
-    bool TabuSearch<Input,State,Move,CFtype>::AcceptableMove()
+    bool TabuSearch<Input, State, Move, CFtype>::AcceptableMove()
     { 
       return true; 
     }
@@ -206,14 +206,14 @@ namespace EasyLocal {
     is better than the one found so far also the best state is updated.
     */
     template <class Input, class State, class Move, typename CFtype>
-    void TabuSearch<Input,State,Move,CFtype>::CompleteMove()
+    void TabuSearch<Input, State, Move, CFtype>::CompleteMove()
     {
       pm.InsertMove(*this->p_current_state, this->current_move, this->current_move_cost,
       this->current_state_cost, this->best_state_cost);
     }
 
     template <class Input, class State, class Move, typename CFtype>
-    void TabuSearch<Input,State,Move,CFtype>::ReadParameters(std::istream& is, std::ostream& os)
+    void TabuSearch<Input, State, Move, CFtype>::ReadParameters(std::istream& is, std::ostream& os)
     {
       Runner<Input, State, CFtype>::ReadParameters(is, os);
       pm.ReadParameters(is, os);
@@ -223,7 +223,7 @@ namespace EasyLocal {
     Create a string containing the status of the runner
     */
     template <class Input, class State, class Move, typename CFtype>
-    std::string TabuSearch<Input,State,Move,CFtype>::StatusString()
+    std::string TabuSearch<Input, State, Move, CFtype>::StatusString()
     {
       std::stringstream status;
       status << "[" << "TL = " << pm.StatusString() << "]";

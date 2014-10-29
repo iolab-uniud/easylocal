@@ -17,11 +17,11 @@ namespace EasyLocal {
     @ingroup Runners 
     */
     template <class Input, class State, class Move, typename CFtype>
-    class HillClimbing : public MoveRunner<Input,State,Move,CFtype>
+    class HillClimbing : public MoveRunner<Input, State, Move, CFtype>
     {
     public:
-      HillClimbing(const Input& in, StateManager<Input,State,CFtype>& e_sm,
-      NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne, std::string name);
+      HillClimbing(const Input& in, StateManager<Input, State, CFtype>& e_sm,
+      NeighborhoodExplorer<Input, State, Move, CFtype>& e_ne, std::string name);
 
       Parameter<unsigned long int> max_idle_iterations;
     protected:
@@ -47,11 +47,11 @@ namespace EasyLocal {
     */
 
     template <class Input, class State, class Move, typename CFtype>
-    HillClimbing<Input,State,Move,CFtype>::HillClimbing(const Input& in,
-    StateManager<Input,State,CFtype>& e_sm,
-    NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
+    HillClimbing<Input, State, Move, CFtype>::HillClimbing(const Input& in,
+    StateManager<Input, State, CFtype>& e_sm,
+    NeighborhoodExplorer<Input, State, Move, CFtype>& e_ne,
     std::string name)
-      : MoveRunner<Input,State,Move,CFtype>(in, e_sm, e_ne, name, "Hill Climbing Runner"),
+      : MoveRunner<Input, State, Move, CFtype>(in, e_sm, e_ne, name, "Hill Climbing Runner"),
     // parameters
     max_idle_iterations("max_idle_iterations", "Total number of allowed idle iterations", this->parameters)
     {
@@ -62,7 +62,7 @@ namespace EasyLocal {
     random move.
     */
     template <class Input, class State, class Move, typename CFtype>
-    void HillClimbing<Input,State,Move,CFtype>::SelectMove()
+    void HillClimbing<Input, State, Move, CFtype>::SelectMove()
     {
       this->SelectRandomMove();
     }
@@ -70,13 +70,13 @@ namespace EasyLocal {
 
 
     template <class Input, class State, class Move, typename CFtype>
-    bool HillClimbing<Input,State,Move,CFtype>::MaxIdleIterationExpired() const
+    bool HillClimbing<Input, State, Move, CFtype>::MaxIdleIterationExpired() const
     {
       return this->iteration - this->iteration_of_best >= this->max_idle_iterations;
     }
 
     template <class Input, class State, class Move, typename CFtype>
-    bool HillClimbing<Input,State,Move,CFtype>::MaxIterationExpired() const
+    bool HillClimbing<Input, State, Move, CFtype>::MaxIterationExpired() const
     {
       return this->iteration >= this->max_iterations;
     }
@@ -86,7 +86,7 @@ namespace EasyLocal {
     the last strict improvement of the best state cost.
     */
     template <class Input, class State, class Move, typename CFtype>
-    bool HillClimbing<Input,State,Move,CFtype>::StopCriterion()
+    bool HillClimbing<Input, State, Move, CFtype>::StopCriterion()
     { 
       return MaxIdleIterationExpired() || this->MaxIterationExpired();
     }
@@ -96,9 +96,9 @@ namespace EasyLocal {
     or leaves it unchanged).
     */
     template <class Input, class State, class Move, typename CFtype>
-    bool HillClimbing<Input,State,Move,CFtype>::AcceptableMove()
+    bool HillClimbing<Input, State, Move, CFtype>::AcceptableMove()
     { 
-      return LessOrEqualThan(this->current_move_cost,(CFtype)0); 
+      return LessOrEqualThan(this->current_move_cost, (CFtype)0); 
     }
   }
 }

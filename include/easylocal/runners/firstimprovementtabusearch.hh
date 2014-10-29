@@ -13,13 +13,13 @@ namespace EasyLocal {
     @ingroup Runners
     */
     template <class Input, class State, class Move, typename CFtype>
-    class FirstImprovementTabuSearch : public TabuSearch<Input,State,Move,CFtype>
+    class FirstImprovementTabuSearch : public TabuSearch<Input, State, Move, CFtype>
     {
     public:
-      FirstImprovementTabuSearch(const Input& in, StateManager<Input,State,CFtype>& e_sm,
-      NeighborhoodExplorer<Input,State,Move,CFtype>& e_ne,
-      TabuListManager<State,Move,CFtype>& e_tlm,
-      std::string name) : TabuSearch<Input,State,Move,CFtype>(in, e_sm, e_ne, e_tlm, name) {}
+      FirstImprovementTabuSearch(const Input& in, StateManager<Input, State, CFtype>& e_sm,
+      NeighborhoodExplorer<Input, State, Move, CFtype>& e_ne,
+      TabuListManager<State, Move, CFtype>& e_tlm,
+      std::string name) : TabuSearch<Input, State, Move, CFtype>(in, e_sm, e_ne, e_tlm, name) {}
     protected:
       void SelectMove();
     };
@@ -33,7 +33,7 @@ namespace EasyLocal {
     mechanism.
     */
     template <class Input, class State, class Move, typename CFtype>
-    void FirstImprovementTabuSearch<Input,State,Move,CFtype>::SelectMove()
+    void FirstImprovementTabuSearch<Input, State, Move, CFtype>::SelectMove()
     {
       // get the first non-prohibited move, but if all moves are prohibited, then get the best one among them
       unsigned int number_of_bests = 0;
