@@ -1,11 +1,11 @@
-find_package(Threads)
-find_package(Boost 1.45.0 COMPONENTS program_options) 
+find_package(Threads REQUIRED)
+find_package(Boost 1.45.0 COMPONENTS program_options REQUIRED)
 
 include_directories(${Boost_INCLUDE_DIR} ${PROJECT_INCLUDE_DIR})
 
 set(subdirs helpers observers runners solvers testers utils modeling)
 
-# Generate list of all files and directories to add to library
+# Generate list of all files and directories to be added to the library
 set(subdir_sources)
 set(subdir_headers)
 

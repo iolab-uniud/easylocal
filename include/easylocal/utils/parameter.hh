@@ -300,4 +300,4 @@ namespace EasyLocal {
   }
 }
 
-#endif
+#endif // !defined(_PARAMETER_HH_)

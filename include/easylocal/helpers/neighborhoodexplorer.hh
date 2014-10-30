@@ -87,7 +87,6 @@ namespace EasyLocal {
         return NextMoveWithFirst(st, mv, initial_mv);
       }
 
-
       /** Generate the first improvingt move in the exploration of the neighborhood of a given state. It uses @ref FirstMove and @ref NextMove
       @param st the start state
       @param mv the generated move
@@ -221,7 +220,6 @@ namespace EasyLocal {
       virtual unsigned int MoveModality(const Move& mv) const
       { return 0; }
 
-
       /**
       Constructs a neighborhood explorer passing a pointer to a state manager
       and a pointer to the input.
@@ -235,7 +233,6 @@ namespace EasyLocal {
       virtual ~NeighborhoodExplorer() {}
       
     protected:
-
 
       const Input& in;/**< A reference to the input */
       StateManager<Input, State, CFtype>& sm; /**< A reference to the attached state manager. */
