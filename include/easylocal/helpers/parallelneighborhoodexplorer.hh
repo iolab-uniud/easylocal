@@ -124,76 +124,58 @@ namespace EasyLocal {
       {
         return NeighborhoodExplorerIteratorInterface<Input, State, Move, CFtype>::create_iterator(*this, st, true);
       }
-      
-      mutable tbb::concurrent_vector<ComputedMove<Move, CFtype>> moves;
-      
-      void FillMoveVector(const State& st) const
-      {
-        moves.reserve(moves.capacity());
-        moves.resize(0);
-        moves.grow_by(this->begin(st), this->end(st));
-        if (moves.size() > 0)
-          tbb::parallel_for<size_t>(0, moves.size() - 1, [this,&st](size_t i) {
-            this->moves[i].cost = this->DeltaCostFunction(st, this->moves[i].move);
-          });
-        tbb::parallel_sort(moves.begin(), moves.end(), [](const ComputedMove<Move, CFtype>& cm1, const ComputedMove<Move, CFtype>& cm2)->bool {
-          return cm1.cost < cm2.cost;
-        });
-      }
     public:
-      virtual CFtype BestMove(const State &st, Move& mv) const throw (EmptyNeighborhood)
-      {
-        FillMoveVector(st);
-        if (moves.empty())
-        {
-          throw EmptyNeighborhood();
-        }
-        // Draw the best move randomly from the equally best moves
-        CFtype best_cost = moves[0].cost;
-        auto it = std::find_if(moves.begin(), moves.end(), [best_cost](const ComputedMove<Move, CFtype>& cm)->bool {
-          return cm.cost > best_cost;
-        });
-        size_t number_of_bests = (it - moves.begin()) - 1;
-        size_t i = Random::Int(0, number_of_bests - 1);
-        mv = moves[i].move;
-        return moves[i].cost;
-      }
-      
-      virtual CFtype FirstImprovingMove(const State &st, Move& mv) const throw (EmptyNeighborhood)
+      virtual CFtype SelectFirst(const State &st, Move& mv, const std::function<bool(const Move& mv, CFtype cost)>& AcceptMove) const throw (EmptyNeighborhood)
       {
         ComputedMove<Move, CFtype> first_improving_move;
-        bool first_improving_move_found = false;
+        bool first_move_found = false;
         tbb::spin_mutex mx_first_improving_move;
-        moves.reserve(moves.capacity());
-        moves.resize(0);
-        tbb::parallel_for_each(this->begin(st), this->end(st), [this,&st,&mx_first_improving_move,&first_improving_move,&first_improving_move_found](ComputedMove<Move, CFtype>& cm) {
+        tbb::parallel_for_each(this->begin(st), this->end(st), [this,&st,&mx_first_improving_move,&first_improving_move,&first_move_found,AcceptMove](ComputedMove<Move, CFtype>& cm) {
           cm.cost = this->DeltaCostFunction(st, cm.move);
-          moves.push_back(cm);
-          if (cm.cost < 0)
+          tbb::spin_mutex::scoped_lock lock(mx_first_improving_move);
+          if (!first_move_found)
           {
-            tbb::spin_mutex::scoped_lock lock(mx_first_improving_move);
-            first_improving_move_found = true;
-            first_improving_move = cm;
-            tbb::task::self().cancel_group_execution();
+            if (AcceptMove(cm.move, cm.cost))
+            {
+              first_move_found = true;
+              first_improving_move = cm;
+              tbb::task::self().cancel_group_execution();
+            }
           }
         });
-        if (!first_improving_move_found && moves.empty())
+        if (!first_move_found)
         {
           throw EmptyNeighborhood();
         }
-        if (first_improving_move_found)
+        mv = first_improving_move.move;
+        return first_improving_move.cost;
+      }
+      
+      virtual CFtype SelectBest(const State &st, Move& mv, const std::function<bool(const Move& mv, CFtype cost)>& AcceptMove) const throw (EmptyNeighborhood)
+      {
+        ComputedMove<Move, CFtype> best_improving_move;
+        bool first_move_found = false;
+        tbb::spin_mutex mx_best_improving_move;
+        tbb::parallel_for_each(this->begin(st), this->end(st), [this,&st,&mx_best_improving_move,&best_improving_move,&first_move_found,AcceptMove](ComputedMove<Move, CFtype>& cm) {
+          cm.cost = this->DeltaCostFunction(st, cm.move);
+          tbb::spin_mutex::scoped_lock lock(mx_best_improving_move);
+          if (!first_move_found)
+          {
+            if (AcceptMove(cm.move, cm.cost))
+            {
+              first_move_found = true;
+              best_improving_move = cm;
+            }
+          }
+          else if (AcceptMove(cm.move, cm.cost) && cm.cost < best_improving_move.cost)
+            best_improving_move = cm;
+        });
+        if (!first_move_found)
         {
-          mv = first_improving_move.move;
-          return first_improving_move.cost;
+          throw EmptyNeighborhood();
         }
-        else
-        {
-          tbb::parallel_sort(moves.begin(), moves.end(), [](const ComputedMove<Move, CFtype>& cm1, const ComputedMove<Move, CFtype>& cm2)->bool {
-            return cm1.cost < cm2.cost;
-          });
-          mv = moves[0].move;
-          return moves[0].cost;
-        }
+        mv = best_improving_move.move;
+        return best_improving_move.cost;
       }
     };
   }
