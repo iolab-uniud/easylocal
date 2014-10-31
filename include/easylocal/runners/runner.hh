@@ -326,7 +326,7 @@ namespace EasyLocal {
     }
     
     /**
-     Prepare the iteration (e.g. updates the counter that tracks the number of iterations elapsed)
+     Takes care of when no acceptable move has been found
      */
     template <class Input, class State, typename CFtype>
     void Runner<Input, State, CFtype>::NoAcceptableMoveFound()

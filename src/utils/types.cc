@@ -21,7 +21,7 @@ namespace EasyLocal {
     { return value1 < value2; }
     
     template <>
-    bool LessOrEqualThan<int>(int value1, int value2)
+    bool LessThanOrEqualTo<int>(int value1, int value2)
     { return value1 <= value2; }
     
     template <>
@@ -29,7 +29,7 @@ namespace EasyLocal {
     { return value1 > value2; }
     
     template <>
-    bool GreaterOrEqualThan<int>(int value1, int value2)
+    bool GreaterThanOrEqualTo<int>(int value1, int value2)
     { return value1 >= value2; }
     
     template <>
@@ -46,7 +46,7 @@ namespace EasyLocal {
     { return value1 < value2; }
     
     template <>
-    bool LessOrEqualThan<int64_t>(int64_t value1, int64_t value2)
+    bool LessThanOrEqualTo<int64_t>(int64_t value1, int64_t value2)
     { return value1 <= value2; }
     
     template <>
@@ -54,7 +54,7 @@ namespace EasyLocal {
     { return value1 > value2; }
     
     template <>
-    bool GreaterOrEqualThan<int64_t>(int64_t value1, int64_t value2)
+    bool GreaterThanOrEqualTo<int64_t>(int64_t value1, int64_t value2)
     { return value1 >= value2; }
     
     
@@ -71,7 +71,7 @@ namespace EasyLocal {
     { return value1 + std::numeric_limits<float>::epsilon() < value2; }
     
     template <>
-    bool LessOrEqualThan<float>(float value1, float value2)
+    bool LessThanOrEqualTo<float>(float value1, float value2)
     { return value1  <= value2; }
     
     template <>
@@ -79,7 +79,7 @@ namespace EasyLocal {
     { return value1 + std::numeric_limits<float>::epsilon() > value2; }
     
     template <>
-    bool GreaterOrEqualThan<float>(float value1, float value2)
+    bool GreaterThanOrEqualTo<float>(float value1, float value2)
     { return value1 >= value2; }
     
     template <>
@@ -95,7 +95,7 @@ namespace EasyLocal {
     { return value1 + std::numeric_limits<double>::epsilon() < value2; }
     
     template <>
-    bool LessOrEqualThan<double>(double value1, double value2)
+    bool LessThanOrEqualTo<double>(double value1, double value2)
     { return value1 <= value2; }
     
     template <>
@@ -103,7 +103,7 @@ namespace EasyLocal {
     { return value1 - std::numeric_limits<double>::epsilon() > value2; }
     
     template <>
-    bool GreaterOrEqualThan<double>(double value1, double value2)
+    bool GreaterThanOrEqualTo<double>(double value1, double value2)
     { return value1  >= value2; }
     
     

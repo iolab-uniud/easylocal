@@ -95,7 +95,17 @@ namespace EasyLocal {
     template <class Input, class State, class Move, typename CFtype>
     void GreatDeluge<Input, State, Move, CFtype>::SelectMove()
     {
-      this->SelectRandomMove();
+      // TODO: it should become a parameter, the number of neighbors drawn at each iteration (possibly evaluated in parallel)
+      const size_t samples = 10;
+      size_t sampled;
+      CFtype cur_cost = this->current_state_cost;
+      double l = level;
+      EvaluatedMove<Move, CFtype> em = this->ne.RandomFirst(*this->p_current_state, samples, sampled, [cur_cost, l](const Move& mv, CostComponents<CFtype> move_cost) {
+        return LessThanOrEqualTo(move_cost.total_cost, (CFtype)0) || LessThanOrEqualTo((double)(move_cost.total_cost + cur_cost), l);
+      });
+      this->current_move = em.move;
+      this->current_move_cost = em.cost.total_cost;
+      this->current_move_violations = em.cost.violations;
     }
     
     /**
@@ -116,9 +126,7 @@ namespace EasyLocal {
     {
       MoveRunner<Input, State, Move, CFtype>::UpdateIterationCounter();
       if (this->number_of_iterations % neighbors_sampled == 0)
-      {
         level *= level_rate;
-      }
     }
     
     /** A move is surely accepted if it improves the cost function
@@ -128,7 +136,7 @@ namespace EasyLocal {
     /* template <class Input, class State, class Move, typename CFtype>
     bool GreatDeluge<Input, State, Move, CFtype>::AcceptableMove()
     {
-      return LessOrEqualThan(this->current_move_cost, (CFtype)0) || LessOrEqualThan((double)(this->current_move_cost + this->current_state_cost), level);
+      return ;
     } */
   }
 }

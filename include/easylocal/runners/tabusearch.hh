@@ -105,73 +105,12 @@ namespace EasyLocal {
     template <class Input, class State, class Move, typename CFtype>
     void TabuSearch<Input, State, Move, CFtype>::SelectMove()
     {
-      // get the best non-prohibited move, but if all moves are prohibited, then get the best one among them
-      unsigned int number_of_bests = 1; // number of moves found with the same best value
-      const State& current_state = *this->p_current_state; // an alias for the current state object referenced through a pointer
-      Move mv;
-      this->ne.FirstMove(current_state, mv);
-      CFtype mv_cost = this->ne.DeltaCostFunction(current_state, mv);
-      Move best_move = mv;
-      CFtype best_delta = mv_cost;
-      bool all_moves_prohibited = pm.ProhibitedMove(current_state, mv, mv_cost);
-      
-      while (this->ne.NextMove(current_state, mv))
-      {
-        mv_cost = this->ne.DeltaCostFunction(current_state, mv);
-        if (LessThan(mv_cost, best_delta))
-        {
-          if (!pm.ProhibitedMove(current_state, mv, mv_cost))
-          {
-            best_move = mv;
-            best_delta = mv_cost;
-            number_of_bests = 1;
-            all_moves_prohibited = false;
-          }
-          else if (all_moves_prohibited)
-          {
-            best_move = mv;
-            best_delta = mv_cost;
-            number_of_bests = 1;
-          }
-        }
-        else if (EqualTo(mv_cost, best_delta))
-        {
-          if (!pm.ProhibitedMove(current_state, mv, mv_cost))
-          {
-            if (all_moves_prohibited)
-            {
-              best_move = mv;
-              number_of_bests = 1;
-              all_moves_prohibited = false;
-            }
-            else
-            {
-              if (Random::Int(0, number_of_bests) == 0) // accept the move with probability 1 / (1 + number_of_bests)
-                best_move = mv;
-              number_of_bests++;
-            }
-          }
-          else
-            if (all_moves_prohibited)
-            {
-              if (Random::Int(0, number_of_bests) == 0) // accept the move with probability 1 / (1 + number_of_bests)
-                best_move = mv;
-              number_of_bests++;
-            }
-        }
-        else // mv_cost is greater than best_delta
-          if (all_moves_prohibited && !pm.ProhibitedMove(current_state, mv, mv_cost))
-          {
-            best_move = mv;
-            best_delta = mv_cost;
-            number_of_bests = 1;
-            all_moves_prohibited = false;
-          }
-      }
-      
-      this->current_move = best_move;
-      this->current_move_cost = best_delta;
-      this->current_move_violations = this->ne.DeltaViolations(*this->p_current_state, this->current_move); // TODO: slightly inefficient
+      EvaluatedMove<Move, CFtype> em = this->ne.SelectBest(*this->p_current_state, [this](const Move& mv, CostComponents<CFtype> move_cost) {
+        return !this->pm.ProhibitedMove(*this->p_current_state, mv, move_cost.total_cost);
+      });
+      this->current_move = em.move;
+      this->current_move_cost = em.cost.total_cost;
+      this->current_move_violations = em.cost.violations;
     }
     
     template <class Input, class State, class Move, typename CFtype>

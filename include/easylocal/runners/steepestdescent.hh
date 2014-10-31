@@ -60,11 +60,12 @@ namespace EasyLocal {
     template <class Input, class State, class Move, typename CFtype>
     void SteepestDescent<Input, State, Move, CFtype>::SelectMove()
     {
-      // TODO: perhaps the SelectBest method could already compute the different cost components and return all of them
-      this->current_move_cost = this->ne.SelectBest(*this->p_current_state, this->current_move, [](const Move& mv, CFtype move_cost) {
-        return LessThan(move_cost, (CFtype)0);
+      EvaluatedMove<Move, CFtype> em = this->ne.SelectBest(*this->p_current_state, [](const Move& mv, CostComponents<CFtype> move_cost) {
+        return LessThan(move_cost.total_cost, (CFtype)0);
       });
-      this->current_move_violations = this->ne.DeltaViolations(*this->p_current_state, this->current_move); // TODO: slightly inefficient
+      this->current_move = em.move;
+      this->current_move_cost = em.cost.total_cost;
+      this->current_move_violations = em.cost.violations;
     }
     
     /**

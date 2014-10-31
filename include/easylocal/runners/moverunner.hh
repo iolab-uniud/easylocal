@@ -54,8 +54,6 @@ namespace EasyLocal {
       /** Encodes the criterion used to select the move at each step. */
       virtual void MakeMove();
       
-      virtual void SelectRandomMove();
-      
       void UpdateBestState();
       void UpdateStateCost();
       
@@ -134,16 +132,6 @@ namespace EasyLocal {
       if (observer != nullptr) {
         observer->NotifyMadeMove(*this);
       }
-    }
-    
-    
-    template <class Input, class State, class Move, typename CFtype>
-    void MoveRunner<Input, State, Move, CFtype>::SelectRandomMove()
-    {
-      this->ne.RandomMove(*this->p_current_state, this->current_move);
-      this->current_move_violations = this->ne.DeltaViolations(*this->p_current_state, this->current_move);
-      this->current_move_cost = this->ne.DeltaObjective(*this->p_current_state, this->current_move) 
-      + HARD_WEIGHT * this->current_move_violations;
     }
   }
 }

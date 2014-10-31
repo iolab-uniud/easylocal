@@ -54,20 +54,26 @@ namespace EasyLocal {
     : MoveRunner<Input, State, Move, CFtype>(in, e_sm, e_ne, name, "Hill Climbing Runner"),
     // parameters
     max_idle_iterations("max_idle_iterations", "Total number of allowed idle iterations", this->parameters)
-    {
-    }
+    {}
     
     /**
      The select move strategy for the hill climbing simply looks for a
-     random move.
+     random move that improves or leaves the cost unchanged.
      */
     template <class Input, class State, class Move, typename CFtype>
     void HillClimbing<Input, State, Move, CFtype>::SelectMove()
     {
-      this->SelectRandomMove();
+      // TODO: it should become a parameter, the number of neighbors drawn at each iteration (possibly evaluated in parallel)
+      const size_t samples = 10;
+      size_t sampled;
+      EvaluatedMove<Move, CFtype> em = this->ne.RandomFirst(*this->p_current_state, samples, sampled, [](const Move& mv, CostComponents<CFtype> move_cost) {
+        return LessThanOrEqualTo(move_cost.total_cost, (CFtype)0);
+      });
+      this->current_move = em.move;
+      this->current_move_cost = em.cost.total_cost;
+      this->current_move_violations = em.cost.violations;
+      //this->iteration += sampled;
     }
-    
-    
     
     template <class Input, class State, class Move, typename CFtype>
     bool HillClimbing<Input, State, Move, CFtype>::MaxIdleIterationExpired() const

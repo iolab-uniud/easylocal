@@ -19,13 +19,13 @@ namespace EasyLocal {
     bool LessThan(CFtype value1, CFtype value2);
     
     template <typename CFtype>
-    bool LessOrEqualThan(CFtype value1, CFtype value2);
+    bool LessThanOrEqualTo(CFtype value1, CFtype value2);
     
     template <typename CFtype>
     bool GreaterThan(CFtype value1, CFtype value2);
     
     template <typename CFtype>
-    bool GreaterOrEqualThan(CFtype value1, CFtype value2);
+    bool GreaterThanOrEqualTo(CFtype value1, CFtype value2);
     
     template <typename CFtype>
     CFtype max(const std::vector<CFtype>& values)

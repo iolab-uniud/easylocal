@@ -154,8 +154,16 @@ namespace EasyLocal {
     template <class Input, class State, class Move, typename CFtype>
     void AbstractSimulatedAnnealing<Input, State, Move, CFtype>::SelectMove()
     {
-      this->SelectRandomMove();
-      neighbors_sampled++;
+      // TODO: it should become a parameter, the number of neighbors drawn at each iteration (possibly evaluated in parallel)
+      size_t sampled;
+      double t = this->temperature;
+      EvaluatedMove<Move, CFtype> em = this->ne.RandomFirst(*this->p_current_state, this->max_neighbors_sampled - neighbors_sampled, sampled, [t](const Move& mv, CostComponents<CFtype> move_cost) {
+        return LessThanOrEqualTo(move_cost.total_cost, (CFtype)0) || (Random::Double() < exp(-move_cost.total_cost / t));
+      });
+      this->current_move = em.move;
+      this->current_move_cost = em.cost.total_cost;
+      this->current_move_violations = em.cost.violations;
+      neighbors_sampled += sampled;
     }
     
     /**
@@ -180,17 +188,6 @@ namespace EasyLocal {
         neighbors_sampled = 0;
         neighbors_accepted = 0;
       }
-    }
-    
-    /** A move is surely accepted if it improves the cost function
-     or with exponentially decreasing probability if it is
-     a worsening one.
-     */
-    template <class Input, class State, class Move, typename CFtype>
-    bool AbstractSimulatedAnnealing<Input, State, Move, CFtype>::AcceptableMove()
-    {
-      return LessOrEqualThan(this->current_move_cost, (CFtype)0)
-      || (Random::Double() < exp(-this->current_move_cost/temperature));
     }
   }
 }
