@@ -105,11 +105,11 @@ namespace EasyLocal {
       
       /** @copydoc Sym<T>::compute(ValueStore<T>&, unsigned int) */
       virtual void compute(ValueStore<T>& st, unsigned int level = 0) const
-        { }
+        {}
       
       /** @copydoc Sym<T>::compute_diff(ValueStore<T>&, unsigned int) */
       virtual void compute_diff(ValueStore<T>& st, unsigned int level = 0) const
-        { }
+        {}
       
       /** @copydoc Printable::print(std::ostream&) */
       virtual void print(std::ostream& os) const
@@ -128,11 +128,11 @@ namespace EasyLocal {
       
       /** @copydoc Sym<T>::compute(ValueStore<T>&, unsigned int) */
       virtual void compute(ValueStore<T>& st, unsigned int level = 0) const
-        { }
+        {}
       
       /** @copydoc Sym<T>::compute_diff(ValueStore<T>&, unsigned int) */
       virtual void compute_diff(ValueStore<T>& st, unsigned int level = 0) const
-        { }
+        {}
       
       /** @copydoc Printable::print(std::ostream&) */
       virtual void print(std::ostream& os) const
@@ -161,7 +161,7 @@ namespace EasyLocal {
       
       /** @copydoc Sym<T>::compute_diff(ValueStore<T>&, unsigned int) */
       virtual void compute_diff(ValueStore<T>& st, unsigned int level = 0) const
-        { }
+        {}
       
       /** Value of the constant */
       T value;

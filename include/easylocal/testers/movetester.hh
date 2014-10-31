@@ -20,7 +20,7 @@ namespace EasyLocal {
      neighborhood explorer.
      @ingroup Testers
      */
-    template <class Input, class Output, class State, class Move, typename CFtype>
+    template <class Input, class Output, class State, class Move, typename CFtype = int>
     class MoveTester
     : public ComponentTester<Input, Output, State, CFtype>
     {
@@ -108,7 +108,7 @@ namespace EasyLocal {
                                                                Core::TabuListManager<State, Move, CFtype>& e_tlm,
                                                                std::string name, std::ostream& o)
     : ComponentTester<Input, Output, State, CFtype>(name), in(i), out(i), sm(e_sm), om(e_om), ne(e_ne), tlm(&e_tlm), os(o), tolerance(std::numeric_limits<CFtype>::epsilon())
-    { }
+    {}
     
     template <class Input, class Output, class State, class Move, typename CFtype>
     MoveTester<Input, Output, State, Move, CFtype>::MoveTester(const Input& i,
@@ -632,8 +632,8 @@ namespace EasyLocal {
     
     template <class Input, class Output, class State, class Move, typename CFtype>
     unsigned int MoveTester<Input, Output, State, Move, CFtype>::Modality() const
-    { 
-      return ne.Modality(); 
+    {
+      return ne.Modality();
     }
     
     template <class Input, class Output, class State, class Move, typename CFtype>

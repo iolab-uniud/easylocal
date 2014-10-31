@@ -1,14 +1,14 @@
 #if !defined(_HELPERS_HH_)
 #define _HELPERS_HH_
 
-/** 
+/**
  @defgroup Helpers Helpers
  
  @brief Helpers perform actions related to some specific aspects of the search and have to be
  partially implemented by the user.
  
  EasyLocalpp defines a number of helper classes that are not related
- hierarchically, but they are linked to @ref Runners, @ref Solvers, @ref Testers 
+ hierarchically, but they are linked to @ref Runners, @ref Solvers, @ref Testers
  and to each other through references. The helpers are the following ones:
  
  - StateManager: is responsible for all operations on the state that are
@@ -36,9 +36,9 @@
  
  - ShiftingPenaltyManager: is responsible for the adaptive modification of the weights of the
  cost function, according to the @e shifting @e penalty mechanism. For each component of the
- cost function, it maintains an independent weight, which varies depending on the number of 
+ cost function, it maintains an independent weight, which varies depending on the number of
  violations and according to a customizable scheme.
-*/
+ */
 
 #include "easylocal/helpers/costcomponent.hh"
 #include "easylocal/helpers/deltacostcomponent.hh"
@@ -50,4 +50,4 @@
 #include "easylocal/helpers/statemanager.hh"
 #include "easylocal/helpers/tabulistmanager.hh"
 
-#endif // _HELPERS_HH_ 
+#endif // _HELPERS_HH_

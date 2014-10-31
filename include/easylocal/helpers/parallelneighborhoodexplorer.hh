@@ -18,11 +18,11 @@
 namespace EasyLocal {
   namespace Core {
     
-    template <class Input, class State, class Move, class CFtype>
+    template <class Input, class State, class Move, typename CFtype = int>
     class NeighborhoodExplorerIteratorInterface;
     
     
-    template <class Move, class CFtype>
+    template <class Move, typename CFtype>
     struct ComputedMove
     {
       ComputedMove(const Move& move, CFtype cost) : move(move), cost(cost) {}
@@ -31,7 +31,7 @@ namespace EasyLocal {
       CFtype cost;
     };
     
-    template <class Input, class State, class Move, class CFtype>
+    template <class Input, class State, class Move, typename CFtype>
     class NeighborhoodIterator : public std::iterator<std::input_iterator_tag, ComputedMove<Move, CFtype>>
     {
       friend class NeighborhoodExplorerIteratorInterface<Input, State, Move, CFtype>;
@@ -99,7 +99,7 @@ namespace EasyLocal {
       bool end;
     };
     
-    template <class Input, class State, class Move, class CFtype>
+    template <class Input, class State, class Move, typename CFtype>
     class NeighborhoodExplorerIteratorInterface
     {
     protected:
@@ -109,25 +109,27 @@ namespace EasyLocal {
       }
     };
     
-    template <class Input, class State, class Move, class CFtype, class NHE>
+    template <class Input, class State, class Move, typename CFtype, class NHE>
     class ParallelNeighborhoodExplorer : public NHE, public NeighborhoodExplorerIteratorInterface<Input, State, Move, CFtype>
     {
     public:
       using NHE::NHE;
-    public:
+    protected:
       NeighborhoodIterator<Input, State, Move, CFtype> begin(const State& st) const
       {
         return NeighborhoodExplorerIteratorInterface<Input, State, Move, CFtype>::create_iterator(*this, st);
       }
+      
       NeighborhoodIterator<Input, State, Move, CFtype> end(const State& st) const
       {
         return NeighborhoodExplorerIteratorInterface<Input, State, Move, CFtype>::create_iterator(*this, st, true);
       }
+      
       mutable tbb::concurrent_vector<ComputedMove<Move, CFtype>> moves;
-    public:
+      
       void FillMoveVector(const State& st) const
       {
-        moves.reserve(moves.size());
+        moves.reserve(moves.capacity());
         moves.resize(0);
         moves.grow_by(this->begin(st), this->end(st));
         if (moves.size() > 0)
@@ -138,14 +140,23 @@ namespace EasyLocal {
           return cm1.cost < cm2.cost;
         });
       }
-      
+    public:
       virtual CFtype BestMove(const State &st, Move& mv) const throw (EmptyNeighborhood)
       {
         FillMoveVector(st);
         if (moves.empty())
+        {
           throw EmptyNeighborhood();
-        mv = moves[0].move;
-        return moves[0].cost;
+        }
+        // Draw the best move randomly from the equally best moves
+        CFtype best_cost = moves[0].cost;
+        auto it = std::find_if(moves.begin(), moves.end(), [best_cost](const ComputedMove<Move, CFtype>& cm)->bool {
+          return cm.cost > best_cost;
+        });
+        size_t number_of_bests = (it - moves.begin()) - 1;
+        size_t i = Random::Int(0, number_of_bests - 1);
+        mv = moves[i].move;
+        return moves[i].cost;
       }
       
       virtual CFtype FirstImprovingMove(const State &st, Move& mv) const throw (EmptyNeighborhood)
@@ -153,7 +164,7 @@ namespace EasyLocal {
         ComputedMove<Move, CFtype> first_improving_move;
         bool first_improving_move_found = false;
         tbb::spin_mutex mx_first_improving_move;
-        moves.reserve(moves.size());
+        moves.reserve(moves.capacity());
         moves.resize(0);
         tbb::parallel_for_each(this->begin(st), this->end(st), [this,&st,&mx_first_improving_move,&first_improving_move,&first_improving_move_found](ComputedMove<Move, CFtype>& cm) {
           cm.cost = this->DeltaCostFunction(st, cm.move);
@@ -183,7 +194,7 @@ namespace EasyLocal {
           mv = moves[0].move;
           return moves[0].cost;
         }
-      } 
+      }
     };
   }
 }

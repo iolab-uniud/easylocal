@@ -25,7 +25,7 @@ namespace EasyLocal {
       @param val the value to assign to the variable
       */
       BasicChange(const Var<T>& var, const T& val) : var(var), val(val)
-        { }
+        {}
       
       /** @copydoc Printable::print(std::ostream&) */
       virtual void print(std::ostream& os) const

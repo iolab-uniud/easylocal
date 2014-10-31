@@ -54,7 +54,7 @@ namespace EasyLocal {
         swap(first.p_ai, second.p_ai);
       }
 
-      Exp(const std::shared_ptr<ASTItem<T>>& p_ai) : p_ai(p_ai) { }
+      Exp(const std::shared_ptr<ASTItem<T>>& p_ai) : p_ai(p_ai) {}
 
       virtual void print(std::ostream& os) const
       {

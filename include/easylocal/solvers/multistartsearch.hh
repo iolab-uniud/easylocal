@@ -16,16 +16,16 @@ namespace EasyLocal {
      encapsulated in a runner.
      @ingroup Solvers
      */
-    template <class Input, class Output, class State, typename CFtype>
+    template <class Input, class Output, class State, typename CFtype = int>
     class MultiStartSearch
     : public AbstractLocalSearch<Input, Output, State, CFtype>
     {
     public:
       typedef Runner<Input, State, CFtype> RunnerType;
       MultiStartSearch(const Input& in,
-                      StateManager<Input, State, CFtype>& e_sm,
-                      OutputManager<Input, Output, State, CFtype>& e_om,
-                      std::string name);
+                       StateManager<Input, State, CFtype>& e_sm,
+                       OutputManager<Input, Output, State, CFtype>& e_om,
+                       std::string name);
       void AddRunner(RunnerType& r);
       void RemoveRunner(const RunnerType& r);
       void Print(std::ostream& os = std::cout) const;
@@ -61,9 +61,9 @@ namespace EasyLocal {
      */
     template <class Input, class Output, class State, typename CFtype>
     MultiStartSearch<Input, Output, State, CFtype>::MultiStartSearch(const Input& in,
-                                                                StateManager<Input, State, CFtype>& e_sm,
-                                                                OutputManager<Input, Output, State, CFtype>& e_om,
-                                                                std::string name)
+                                                                     StateManager<Input, State, CFtype>& e_sm,
+                                                                     OutputManager<Input, Output, State, CFtype>& e_om,
+                                                                     std::string name)
     : AbstractLocalSearch<Input, Output, State, CFtype>(in, e_sm, e_om, name, "Multi Start Solver"), max_restarts("max_restarts", "Maximum number of restarts", this->parameters),
     max_idle_restarts("max_idle_restarts", "Maximum number of idle restarts", this->parameters)
     {

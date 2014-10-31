@@ -4,34 +4,34 @@
 #include "easylocal/runners/tabusearch.hh"
 
 namespace EasyLocal {
-    
+  
   namespace Core {
-        
+    
     /** The First Improvement Tabu Search runner differs from the
-    @ref TabuSearch runner only in the selection of the move. The first non-prohibited move
-    that improves the cost function is selected.
-    @ingroup Runners
-    */
-    template <class Input, class State, class Move, typename CFtype>
+     @ref TabuSearch runner only in the selection of the move. The first non-prohibited move
+     that improves the cost function is selected.
+     @ingroup Runners
+     */
+    template <class Input, class State, class Move, typename CFtype = int>
     class FirstImprovementTabuSearch : public TabuSearch<Input, State, Move, CFtype>
     {
     public:
       FirstImprovementTabuSearch(const Input& in, StateManager<Input, State, CFtype>& e_sm,
-      NeighborhoodExplorer<Input, State, Move, CFtype>& e_ne,
-      TabuListManager<State, Move, CFtype>& e_tlm,
-      std::string name) : TabuSearch<Input, State, Move, CFtype>(in, e_sm, e_ne, e_tlm, name) {}
+                                 NeighborhoodExplorer<Input, State, Move, CFtype>& e_ne,
+                                 TabuListManager<State, Move, CFtype>& e_tlm,
+                                 std::string name) : TabuSearch<Input, State, Move, CFtype>(in, e_sm, e_ne, e_tlm, name) {}
     protected:
       void SelectMove();
     };
-
+    
     /*************************************************************************
-    * Implementation
-    *************************************************************************/
-
+     * Implementation
+     *************************************************************************/
+    
     /**
-    Selects always the best move that is non prohibited by the tabu list 
-    mechanism.
-    */
+     Selects always the best move that is non prohibited by the tabu list
+     mechanism.
+     */
     template <class Input, class State, class Move, typename CFtype>
     void FirstImprovementTabuSearch<Input, State, Move, CFtype>::SelectMove()
     {
@@ -44,10 +44,10 @@ namespace EasyLocal {
       Move best_move = mv;
       CFtype best_delta = mv_cost;
       bool all_moves_prohibited = true, not_last_move;
-  
+      
       do // look for the best move
       {  // if the prohibition mechanism is active get the best non-prohibited move
-        // if all moves are prohibited, then get the best one
+         // if all moves are prohibited, then get the best one
         if (LessThan(mv_cost, (CFtype)0) && !this->pm.ProhibitedMove(current_state, mv, mv_cost))
         {
           // mv is an improving move
@@ -55,7 +55,7 @@ namespace EasyLocal {
           this->current_move_cost = mv_cost;
           return;
         }
-		
+        
         if (LessThan(mv_cost, best_delta))
         {
           if (!this->pm.ProhibitedMove(current_state, mv, mv_cost))
@@ -91,7 +91,7 @@ namespace EasyLocal {
           mv_cost = this->ne.DeltaCostFunction(current_state, mv);
       }
       while (not_last_move);
-    
+      
       this->current_move = best_move;
       this->current_move_cost = best_delta;
     }

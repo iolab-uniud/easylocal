@@ -8,43 +8,43 @@
 #include "easylocal/helpers/neighborhoodexplorer.hh"
 
 namespace EasyLocal {
-
+  
   namespace Core {
-
+    
     /** The Great Deluge runner relies on a probabilistic local
-    search technique whose name comes from ... the Bible?
- 
-    The solver is initialized with a minimum water level, at each
-    step a candidate move is generated at random, the move is 
-    accepted if its quality is greater than the water level. After
-    the number of neighbors have been sampled at a certain water
-    level, the water level is updated.
-    The algorithm stops if we have reached the maximum water level
-    or if we have done a certain number of non-improving solutions.
- 
-    In the implementation, the concept of water levels is reversed.
- 
-    @ingroup Runners
-    */
-    template <class Input, class State, class Move, typename CFtype>
+     search technique whose name comes from ... the Bible?
+     
+     The solver is initialized with a minimum water level, at each
+     step a candidate move is generated at random, the move is
+     accepted if its quality is greater than the water level. After
+     the number of neighbors have been sampled at a certain water
+     level, the water level is updated.
+     The algorithm stops if we have reached the maximum water level
+     or if we have done a certain number of non-improving solutions.
+     
+     In the implementation, the concept of water levels is reversed.
+     
+     @ingroup Runners
+     */
+    template <class Input, class State, class Move, typename CFtype = int>
     class GreatDeluge : public MoveRunner<Input, State, Move, CFtype>
     {
     public:
-  
+      
       GreatDeluge(const Input& in,
-      StateManager<Input, State, CFtype>& e_sm,
-      NeighborhoodExplorer<Input, State, Move, CFtype>& e_ne,
-      std::string name);	
-  
+                  StateManager<Input, State, CFtype>& e_sm,
+                  NeighborhoodExplorer<Input, State, Move, CFtype>& e_ne,
+                  std::string name);
+      
     protected:
       void InitializeRun() throw (ParameterNotSet, IncorrectParameterValue);
       bool StopCriterion();
       void UpdateIterationCounter();
       void SelectMove();
       bool AcceptableMove();
-  
-  
-  
+      
+      
+      
       // parameters
       Parameter<double> initial_level; /**< The initial level. */
       Parameter<double> min_level; /**< The minimum level. */
@@ -53,26 +53,26 @@ namespace EasyLocal {
       // state
       double level; /**< The current level. */
     };
-
+    
     /*************************************************************************
-    * Implementation
-    *************************************************************************/
-
+     * Implementation
+     *************************************************************************/
+    
     /**
-    Constructs a simulated annealing runner by linking it to a state manager, 
-    a neighborhood explorer, and an input object.
- 
-    @param s a pointer to a compatible state manager
-    @param ne a pointer to a compatible neighborhood explorer
-    @param in a poiter to an input object
-    */
-
+     Constructs a simulated annealing runner by linking it to a state manager,
+     a neighborhood explorer, and an input object.
+     
+     @param s a pointer to a compatible state manager
+     @param ne a pointer to a compatible neighborhood explorer
+     @param in a poiter to an input object
+     */
+    
     template <class Input, class State, class Move, typename CFtype>
     GreatDeluge<Input, State, Move, CFtype>::GreatDeluge(const Input& in,
-    StateManager<Input, State, CFtype>& e_sm,
-    NeighborhoodExplorer<Input, State, Move, CFtype>& e_ne,
-    std::string name)
-      : MoveRunner<Input, State, Move, CFtype>(in, e_sm, e_ne, name, "Great Deluge"),
+                                                         StateManager<Input, State, CFtype>& e_sm,
+                                                         NeighborhoodExplorer<Input, State, Move, CFtype>& e_ne,
+                                                         std::string name)
+    : MoveRunner<Input, State, Move, CFtype>(in, e_sm, e_ne, name, "Great Deluge"),
     // parameters
     initial_level("initial_level", "Initial water level", this->parameters),
     min_level("min_level", "Minimum water level", this->parameters),
@@ -80,39 +80,39 @@ namespace EasyLocal {
     neighbors_sampled("neighbors_sampled", "Number of neighbors sampled at each water level", this->parameters)
     {
     }
-
+    
     /**
-    Initializes the run by invoking the companion superclass method, and
-    setting current level to the initial one.
-    */
+     Initializes the run by invoking the companion superclass method, and
+     setting current level to the initial one.
+     */
     template <class Input, class State, class Move, typename CFtype>
     void GreatDeluge<Input, State, Move, CFtype>::InitializeRun() throw (ParameterNotSet, IncorrectParameterValue)
     {
       level = initial_level * this->current_state_cost;
     }
-
+    
     /**
-    A move is randomly picked and its cost is stored.
-    */
+     A move is randomly picked and its cost is stored.
+     */
     template <class Input, class State, class Move, typename CFtype>
     void GreatDeluge<Input, State, Move, CFtype>::SelectMove()
     {
       this->SelectRandomMove();
     }
-
+    
     /**
-    The search stops when a low temperature has reached.
-    */
+     The search stops when a low temperature has reached.
+     */
     template <class Input, class State, class Move, typename CFtype>
     bool GreatDeluge<Input, State, Move, CFtype>::StopCriterion()
     {
       return level < min_level * this->best_state_cost;
     }
-
+    
     /**
-    At regular steps, the temperature is decreased 
-    multiplying it by a cooling rate.
-    */
+     At regular steps, the temperature is decreased
+     multiplying it by a cooling rate.
+     */
     template <class Input, class State, class Move, typename CFtype>
     void GreatDeluge<Input, State, Move, CFtype>::UpdateIterationCounter()
     {
@@ -122,16 +122,16 @@ namespace EasyLocal {
         level *= level_rate;
       }
     }
-
+    
     /** A move is surely accepted if it improves the cost function
-    or with exponentially decreasing probability if it is 
-    a worsening one.
-    */
+     or with exponentially decreasing probability if it is
+     a worsening one.
+     */
     template <class Input, class State, class Move, typename CFtype>
     bool GreatDeluge<Input, State, Move, CFtype>::AcceptableMove()
-    { 
-      return LessOrEqualThan(this->current_move_cost, (CFtype)0) || LessOrEqualThan((double)(this->current_move_cost + this->current_state_cost), level); 
-    }    
+    {
+      return LessOrEqualThan(this->current_move_cost, (CFtype)0) || LessOrEqualThan((double)(this->current_move_cost + this->current_state_cost), level);
+    }
   }
 }
 

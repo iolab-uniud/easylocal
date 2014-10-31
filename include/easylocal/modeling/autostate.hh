@@ -21,13 +21,13 @@ namespace EasyLocal {
 
       /** Default constructor. */
       CompiledExpression() : compiled_exp(nullptr), exp_store(nullptr)
-        { }
+        {}
       
       /** Copy constructor.
       @param ce the compiled expression to copy
       */
       CompiledExpression(const CompiledExpression& ce) : compiled_exp(ce.compiled_exp), exp_store(ce.exp_store)
-        { }
+        {}
       
       /** Constructor. Takes an Expression (not compiled) and compiles it, also adding it to an ExpressionStore.
       @param ex the expression to compile
@@ -76,7 +76,7 @@ namespace EasyLocal {
       @param levels how many scenarios are supported by the ValueStore
       */
       AutoState(size_t levels = 1) : es(std::make_shared<ExpressionStore<T>>()), st(es, levels)
-        { }
+        {}
       
       /** Sets (in a definitive way) the value of one of the registered decision variables. */
       void set(const Var<T>& var, const T& val)

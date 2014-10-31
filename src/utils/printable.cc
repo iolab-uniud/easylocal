@@ -5,6 +5,6 @@ using namespace Core;
 
 std::ostream& operator<<(std::ostream& os, const Printable& p)
 {
-p.Print(os);
-return os;
+  p.Print(os);
+  return os;
 }

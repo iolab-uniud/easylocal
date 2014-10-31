@@ -2,49 +2,49 @@
 #define _SAMPLE_TABU_SEARCH_HH_
 
 /** The First Improvement Tabu Search runner differs from the
-@ref TabuSearch runner only in the selection of the move. A random sampling of the neighborhood is performed.
-@ingroup Runners
-*/
+ @ref TabuSearch runner only in the selection of the move. A random sampling of the neighborhood is performed.
+ @ingroup Runners
+ */
 
 #include "easylocal/runners/tabusearch.hh"
 
 namespace EasyLocal {
-
+  
   namespace Core {
-
-    template <class Input, class State, class Move, typename CFtype>
+    
+    template <class Input, class State, class Move, typename CFtype = int>
     class SampleTabuSearch : public TabuSearch<Input, State, Move, CFtype>
     {
     public:
       SampleTabuSearch<Input, State, Move, CFtype>(const Input& in,
-      StateManager<Input, State, CFtype>& e_sm,
-      NeighborhoodExplorer<Input, State, Move, CFtype>& e_ne,
-      TabuListManager<State, Move, CFtype>& e_tlm,
-      std::string name) : TabuSearch<Input, State, Move, CFtype>(in, e_sm, e_ne, e_tlm, name), samples("samples", "Number of neighbors sampled", this->parameters) {}
+                                                   StateManager<Input, State, CFtype>& e_sm,
+                                                   NeighborhoodExplorer<Input, State, Move, CFtype>& e_ne,
+                                                   TabuListManager<State, Move, CFtype>& e_tlm,
+                                                   std::string name) : TabuSearch<Input, State, Move, CFtype>(in, e_sm, e_ne, e_tlm, name), samples("samples", "Number of neighbors sampled", this->parameters) {}
     protected:
       void SelectMove();
       Parameter<unsigned int> samples;
     };
-
+    
     /*************************************************************************
-    * Implementation
-    *************************************************************************/
-
+     * Implementation
+     *************************************************************************/
+    
     /**
-    Selects always the best move that is non prohibited by the tabu list 
-    mechanism.
-    */
+     Selects always the best move that is non prohibited by the tabu list
+     mechanism.
+     */
     template <class Input, class State, class Move, typename CFtype>
     void SampleTabuSearch<Input, State, Move, CFtype>::SelectMove()
     {
-      // get the first non-prohibited move 
+      // get the first non-prohibited move
       unsigned int number_of_bests = 0;
       unsigned int s = 1;
       const State& current_state = *this->p_current_state;
       Move mv;
       CFtype mv_cost;
       bool all_moves_prohibited = true;
-  
+      
       this->ne.RandomMove(current_state, mv);
       mv_cost = this->ne.DeltaCostFunction(current_state, mv);
       Move best_move = mv;
@@ -86,7 +86,7 @@ namespace EasyLocal {
         s++;
       }
       while (s < samples);
-  
+      
       this->current_move = best_move;
       this->current_move_cost = best_delta;
     }
