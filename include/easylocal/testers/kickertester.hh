@@ -16,7 +16,7 @@ namespace EasyLocal {
      */
     template <class Input, class Output, class State, class Move, typename CFtype = int>
     class KickerTester
-    : public ComponentTester<Input, Output, State, CFtype>, public Parametrized
+    : public ComponentTester<Input, Output, State, CFtype>, public Parametrized, public ChoiceReader<Input, State, CFtype>
     {
     public:
       KickerTester(const Input& in,
@@ -44,7 +44,7 @@ namespace EasyLocal {
                                                      state manager. */
       Core::OutputManager<Input, Output, State, CFtype>& om; /**< A pointer to the attached
                                                               output manager. */
-      unsigned int choice;   /**< The option currently chosen from the menu. */
+      int choice;   /**< The option currently chosen from the menu. */
       Core::Kicker<Input, State, Move, CFtype>& kicker;
       std::ostream& os;
       Parameter<unsigned int> length;
@@ -125,7 +125,7 @@ namespace EasyLocal {
       << "    (5) Show All Improving Kicks" << std::endl
       << "    (0) Return to Main Menu" << std::endl
       << "Your choice : ";
-      std::cin >> choice;
+      choice = this->ReadChoice(std::cin);
     }
     
     /**

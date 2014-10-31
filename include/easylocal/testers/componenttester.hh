@@ -27,7 +27,7 @@ namespace EasyLocal {
     protected:
       ComponentTester(std::string name);
       /** Virtual destructor. */
-      virtual ~ComponentTester() {}
+      virtual ~ComponentTester() {}      
     };
     
     /*************************************************************************
@@ -44,7 +44,7 @@ namespace EasyLocal {
      */
     template <class Input, class Output, class State, typename CFtype>
     ComponentTester<Input, Output, State, CFtype>::ComponentTester(std::string e_name)
-    : name(e_name) {}
+    : name(e_name) {}       
   }
 }
 

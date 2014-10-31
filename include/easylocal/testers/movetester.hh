@@ -22,7 +22,7 @@ namespace EasyLocal {
      */
     template <class Input, class Output, class State, class Move, typename CFtype = int>
     class MoveTester
-    : public ComponentTester<Input, Output, State, CFtype>
+    : public ComponentTester<Input, Output, State, CFtype>, public ChoiceReader<Input, State, CFtype>
     {
     public:
       MoveTester(const Input& in,
@@ -71,7 +71,7 @@ namespace EasyLocal {
       Core::OutputManager<Input, Output, State, CFtype>& om; /**< A pointer to the attached output manager. */
       Core::NeighborhoodExplorer<Input, State, Move, CFtype>& ne; /**< A reference to the attached neighborhood explorer. */
       Core::TabuListManager<State, Move, CFtype>* tlm; /**< A reference to the attached tabu list manager (if any). */
-      unsigned int choice;   /**< The option currently chosen from the menu. */
+      int choice;   /**< The option currently chosen from the menu. */
       std::ostream& os;
       double tolerance;
     };
@@ -182,7 +182,7 @@ namespace EasyLocal {
         os << "    (13)  Chech Tabu Strength" << std::endl;
       os << "     (0)  Return to Main Menu" << std::endl
       << " Your choice: ";
-      std::cin >> choice;
+      choice = this->ReadChoice(std::cin);
     }
     
     /**

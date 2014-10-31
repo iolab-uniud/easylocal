@@ -17,6 +17,30 @@ namespace EasyLocal {
   
   namespace Debug {
     
+    template <class Input, class State, typename CFtype>
+    class ChoiceReader
+    {
+    protected:
+      /** Reads a choice from an input stream and converts it to an integer (-1 if it was not correct) */
+      int ReadChoice(std::istream& is);
+    };
+    
+    template <class Input, class State, typename CFtype>
+    int ChoiceReader<Input, State, CFtype>::ReadChoice(std::istream& is)
+    {
+      std::string c;
+      std::cin >> c;
+      try
+      {
+        return std::stoi(c);
+      }
+      catch (std::invalid_argument)
+      {
+        return -1;
+      }
+    }
+
+    
     template <class Input, class State, typename CFtype = int>
     class AbstractTester
     {
@@ -37,7 +61,7 @@ namespace EasyLocal {
      @ingroup Testers
      */
     template <class Input, class Output, class State, typename CFtype>
-    class Tester : public AbstractTester<Input, State, CFtype>
+    class Tester : public AbstractTester<Input, State, CFtype>, public ChoiceReader<Input, State, CFtype>
     {
     public:
       Tester(const Input& in, StateManager<Input, State, CFtype>& e_sm,
@@ -80,7 +104,7 @@ namespace EasyLocal {
       Core::OutputManager<Input, Output, State, CFtype>& om; /**< A pointer to an output producer. */
       State test_state; /**< The current state managed by the tester. */
       Output out; /**< The output object. */
-      unsigned int choice, /**< The option currently chosen from the menu. */
+      int choice, /**< The option currently chosen from the menu. */
       sub_choice; /** The suboption currently chosen from the menu. */
     };
     
@@ -183,7 +207,7 @@ namespace EasyLocal {
       << "   (4) State menu" << std::endl
       << "   (0) Exit" << std::endl
       << " Your choice: ";
-      std::cin >> this->choice;
+      this->choice = this->ReadChoice(std::cin);
     }
     
     /**
@@ -228,7 +252,7 @@ namespace EasyLocal {
         os << "   (" << i+1 << ") " << move_testers[i]->name << " [" << move_testers[i]->Modality() << "-modal]" << std::endl;
       os << "   (0) Return to Main Menu" << std::endl;
       os << " Your choice: ";
-      std::cin >> sub_choice;
+      this->sub_choice = this->ReadChoice(std::cin);
     }
     
     
@@ -240,7 +264,7 @@ namespace EasyLocal {
       os << "   (2) Token ring solver" << std::endl;
       os << "   (0) Return to Main Menu" << std::endl;
       os << " Your choice: ";
-      std::cin >> sub_choice;
+      this->sub_choice = this->ReadChoice(std::cin);
     }
     
     /**
@@ -255,7 +279,7 @@ namespace EasyLocal {
         os << "   (" << i+1 << ") " << kicker_testers[i]->name << std::endl;
       os << "   (0) Return to Main Menu" << std::endl;
       os << " Your choice: ";
-      std::cin >> sub_choice;
+      this->sub_choice = this->ReadChoice(std::cin);
     }
     
     /**
@@ -272,11 +296,11 @@ namespace EasyLocal {
           os << "   (" << (i + 1) << ") " << runners[i]->name << std::endl;
         os << "   (0) Return to Main Menu" << std::endl;
         os << " Your choice: ";
-        std::cin >> sub_choice;
-        if (sub_choice >= runners.size())
+        this->sub_choice = this->ReadChoice(std::cin);
+        if (sub_choice == -1 || sub_choice >= runners.size())
           os << "Invalid choice" << std::endl;
       }
-      while (sub_choice > runners.size());
+      while (sub_choice == -1 || sub_choice > runners.size());
     }
     
     /**
@@ -371,7 +395,7 @@ namespace EasyLocal {
       << "    (11) Pretty print output" << std::endl
       << "    (0) Return to Main Menu" << std::endl
       << "Your choice : ";
-      std::cin >> sub_choice;
+      this->sub_choice = this->ReadChoice(std::cin);
     }
     
     /**
@@ -385,7 +409,7 @@ namespace EasyLocal {
       << "    (2) Read from file" << std::endl
       << "    (3) Greedy state " << std::endl
       << "Your choice : ";
-      std::cin >> sub_choice;
+      this->sub_choice = this->ReadChoice(std::cin);
       if (sub_choice >= 4)
         sub_choice = -1;
     }
