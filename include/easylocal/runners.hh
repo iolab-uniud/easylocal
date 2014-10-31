@@ -34,12 +34,10 @@
 #include "easylocal/runners/abstractsimulatedannealing.hh"
 #include "easylocal/runners/simulatedannealingiterationbased.hh"
 #include "easylocal/runners/simulatedannealingwithreheating.hh"
-#include "easylocal/runners/simulatedannealingwithshiftingpenalty.hh"
 #include "easylocal/runners/greatdeluge.hh"
 #include "easylocal/runners/tabusearch.hh"
 #include "easylocal/runners/firstimprovementtabusearch.hh"
 #include "easylocal/runners/sampletabusearch.hh"
 #include "easylocal/runners/lateacceptancehillclimbing.hh"
-#include "easylocal/runners/tabusearchwithshiftingpenalty.hh"
 
 #endif // _RUNNERS_HH_
