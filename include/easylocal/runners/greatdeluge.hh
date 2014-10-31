@@ -41,9 +41,7 @@ namespace EasyLocal {
       bool StopCriterion();
       void UpdateIterationCounter();
       void SelectMove();
-      bool AcceptableMove();
-      
-      
+      void NoAcceptableMoveFound();
       
       // parameters
       Parameter<double> initial_level; /**< The initial level. */
@@ -127,11 +125,11 @@ namespace EasyLocal {
      or with exponentially decreasing probability if it is
      a worsening one.
      */
-    template <class Input, class State, class Move, typename CFtype>
+    /* template <class Input, class State, class Move, typename CFtype>
     bool GreatDeluge<Input, State, Move, CFtype>::AcceptableMove()
     {
       return LessOrEqualThan(this->current_move_cost, (CFtype)0) || LessOrEqualThan((double)(this->current_move_cost + this->current_state_cost), level);
-    }
+    } */
   }
 }
 

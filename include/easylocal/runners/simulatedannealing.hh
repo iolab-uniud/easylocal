@@ -29,6 +29,7 @@ namespace EasyLocal {
     protected:
       void InitializeRun() throw (ParameterNotSet, IncorrectParameterValue);
       bool StopCriterion();
+      void NoAcceptableMoveFound();
       // parameters
       Parameter<double> min_temperature;
     };

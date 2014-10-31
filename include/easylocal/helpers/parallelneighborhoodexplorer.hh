@@ -125,7 +125,7 @@ namespace EasyLocal {
         return NeighborhoodExplorerIteratorInterface<Input, State, Move, CFtype>::create_iterator(*this, st, true);
       }
     public:
-      virtual CFtype SelectFirst(const State &st, Move& mv, const std::function<bool(const Move& mv, CFtype cost)>& AcceptMove) const throw (EmptyNeighborhood)
+      virtual CFtype SelectFirst(const State &st, Move& mv, const std::function<bool(const Move& mv, CFtype move_cost)>& AcceptMove) const throw (EmptyNeighborhood, AcceptableNeighborhoodEmpty)
       {
         ComputedMove<Move, CFtype> first_improving_move;
         bool first_move_found = false;
@@ -145,13 +145,13 @@ namespace EasyLocal {
         });
         if (!first_move_found)
         {
-          throw EmptyNeighborhood();
+          throw AcceptableNeighborhoodEmpty();
         }
         mv = first_improving_move.move;
         return first_improving_move.cost;
       }
       
-      virtual CFtype SelectBest(const State &st, Move& mv, const std::function<bool(const Move& mv, CFtype cost)>& AcceptMove) const throw (EmptyNeighborhood)
+      virtual CFtype SelectBest(const State &st, Move& mv, const std::function<bool(const Move& mv, CFtype move_cost)>& AcceptMove) const throw (EmptyNeighborhood, AcceptableNeighborhoodEmpty)
       {
         ComputedMove<Move, CFtype> best_improving_move;
         bool first_move_found = false;
@@ -167,12 +167,12 @@ namespace EasyLocal {
               best_improving_move = cm;
             }
           }
-          else if (AcceptMove(cm.move, cm.cost) && cm.cost < best_improving_move.cost)
+          else if (AcceptMove(cm.move, cm.cost) && LessThan(cm.cost, best_improving_move.cost))
             best_improving_move = cm;
         });
         if (!first_move_found)
         {
-          throw EmptyNeighborhood();
+          throw AcceptableNeighborhoodEmpty();
         }
         mv = best_improving_move.move;
         return best_improving_move.cost;

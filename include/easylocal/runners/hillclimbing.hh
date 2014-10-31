@@ -28,8 +28,8 @@ namespace EasyLocal {
       bool MaxIdleIterationExpired() const;
       bool MaxIterationExpired() const;
       bool StopCriterion();
-      bool AcceptableMove();
       void SelectMove();
+      void NoAcceptableMoveFound();
       // parameters
     };
     
@@ -89,16 +89,6 @@ namespace EasyLocal {
     bool HillClimbing<Input, State, Move, CFtype>::StopCriterion()
     {
       return MaxIdleIterationExpired() || this->MaxIterationExpired();
-    }
-    
-    /**
-     A move is accepted if it is non worsening (i.e., it improves the cost
-     or leaves it unchanged).
-     */
-    template <class Input, class State, class Move, typename CFtype>
-    bool HillClimbing<Input, State, Move, CFtype>::AcceptableMove()
-    { 
-      return LessOrEqualThan(this->current_move_cost, (CFtype)0); 
     }
   }
 }

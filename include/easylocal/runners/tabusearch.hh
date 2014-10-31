@@ -45,8 +45,8 @@ namespace EasyLocal {
       void InitializeRun() throw (ParameterNotSet, IncorrectParameterValue);
       bool StopCriterion();
       void SelectMove();
-      bool AcceptableMove();
       void CompleteMove();
+      void NoAcceptableMoveFound();
       TabuListManager<State, Move, CFtype>& pm; /**< A reference to a tabu list manger. */
       // parameters
       Parameter<unsigned long int> max_idle_iterations;
@@ -188,18 +188,7 @@ namespace EasyLocal {
     bool TabuSearch<Input, State, Move, CFtype>::StopCriterion()
     {
       return MaxIdleIterationExpired() || this->MaxIterationExpired();
-    }
-    
-    /**
-     In tabu search the selected move is always accepted.
-     That is, the acceptability test is replaced by the
-     prohibition mechanism which is managed inside the selection.
-     */
-    template <class Input, class State, class Move, typename CFtype>
-    bool TabuSearch<Input, State, Move, CFtype>::AcceptableMove()
-    {
-      return true;
-    }
+    }       
     
     /**
      Stores the move by inserting it in the tabu list, if the state obtained

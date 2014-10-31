@@ -31,8 +31,8 @@ namespace EasyLocal {
       void InitializeRun() throw (ParameterNotSet, IncorrectParameterValue);
       void StoreMove();
       bool StopCriterion();
-      bool AcceptableMove();
       void SelectMove();
+      void NoAcceptableMoveFound();
     };
     
     /*************************************************************************
@@ -52,8 +52,7 @@ namespace EasyLocal {
                                                                  StateManager<Input, State, CFtype>& e_sm, NeighborhoodExplorer<Input, State, Move, CFtype>& e_ne,
                                                                  std::string name)
     : MoveRunner<Input, State, Move, CFtype>(in, e_sm, e_ne, name, "Steepest Descent Runner")
-    {
-    }
+    {}
     
     /**
      Selects always the best move in the neighborhood.
@@ -61,7 +60,10 @@ namespace EasyLocal {
     template <class Input, class State, class Move, typename CFtype>
     void SteepestDescent<Input, State, Move, CFtype>::SelectMove()
     {
-      this->current_move_cost = this->ne.BestMove(*this->p_current_state, this->current_move);
+      // TODO: perhaps the SelectBest method could already compute the different cost components and return all of them
+      this->current_move_cost = this->ne.SelectBest(*this->p_current_state, this->current_move, [](const Move& mv, CFtype move_cost) {
+        return LessThan(move_cost, (CFtype)0);
+      });
       this->current_move_violations = this->ne.DeltaViolations(*this->p_current_state, this->current_move); // TODO: slightly inefficient
     }
     
@@ -83,16 +85,7 @@ namespace EasyLocal {
     template <class Input, class State, class Move, typename CFtype>
     bool SteepestDescent<Input, State, Move, CFtype>::StopCriterion()
     {
-      return GreaterOrEqualThan(this->current_move_cost, (CFtype)0);
-    }
-    
-    /**
-     A move is accepted if it is an improving one.
-     */
-    template <class Input, class State, class Move, typename CFtype>
-    bool SteepestDescent<Input, State, Move, CFtype>::AcceptableMove()
-    { 
-      return LessThan(this->current_move_cost, (CFtype)0); 
+      return this->no_acceptable_move_found;
     }
   }
 }

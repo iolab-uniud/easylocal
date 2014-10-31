@@ -29,8 +29,8 @@ namespace EasyLocal {
       
     protected:
       void InitializeRun() throw (ParameterNotSet, IncorrectParameterValue);
-      bool AcceptableMove();
       void CompleteMove();
+      void NoAcceptableMoveFound();
       
       // parameters
       Parameter<unsigned int> steps;
@@ -89,12 +89,12 @@ namespace EasyLocal {
      or with exponentially decreasing probability if it is
      a worsening one.
      */
-    template <class Input, class State, class Move, typename CFtype>
+    /* template <class Input, class State, class Move, typename CFtype>
     bool LateAcceptanceHillClimbing<Input, State, Move, CFtype>::AcceptableMove()
     {
       return LessOrEqualThan(this->current_move_cost, (CFtype)0)
       || LessOrEqualThan(this->current_move_cost + this->current_state_cost, previous_steps[this->iteration % steps]);
-    }
+    } */
   }
 }
 

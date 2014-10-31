@@ -25,8 +25,8 @@ namespace EasyLocal {
     protected:
       void InitializeRun() throw (ParameterNotSet, IncorrectParameterValue);;
       bool StopCriterion();
-      bool AcceptableMove();
       void SelectMove();
+      void NoAcceptableMoveFound();
     };
     
     /*************************************************************************
@@ -76,15 +76,9 @@ namespace EasyLocal {
      */
     template <class Input, class State, class Move, typename CFtype>
     bool FirstDescent<Input, State, Move, CFtype>::StopCriterion()
-    { return GreaterOrEqualThan<CFtype>(this->current_move_cost, 0); }
-    
-    /**
-     A move is accepted if it is an improving one.
-     */
-    template <class Input, class State, class Move, typename CFtype>
-    bool FirstDescent<Input, State, Move, CFtype>::AcceptableMove()
-    { return LessThan<CFtype>(this->current_move_cost, 0); }
-    
+    {
+      return this->no_acceptable_move_found;
+    }        
   }
 }
 

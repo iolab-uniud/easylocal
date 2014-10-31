@@ -136,8 +136,8 @@ namespace EasyLocal {
       /** Encodes the criterion used to select the move at each step. */
       virtual void SelectMove() = 0;
       
-      /** Verifies whether the move selected can be performed. */
-      virtual bool AcceptableMove();
+      /** Reacts to the fact that no acceptable move has been found in neighborhood exploration. */
+      void NoAcceptableMoveFound();
       
       /** Actions to be performed after a move has been accepted. Redefinition intended. */
       virtual void PrepareMove() {};
@@ -155,6 +155,9 @@ namespace EasyLocal {
           return this->Go(s);
         };
       }
+      
+      /** No acceptable move has been found in the current iteration. */
+      bool no_acceptable_move_found;
       
       /** A reference to the input. */
       const Input& in;
@@ -213,7 +216,7 @@ namespace EasyLocal {
     template <class Input, class State, typename CFtype>
     Runner<Input, State, CFtype>::Runner(const Input& i, StateManager<Input, State, CFtype>& sm, std::string name, std::string description)
     : // Parameters
-    Parametrized(name, description), name(name), description(description), in(i), sm(sm),
+    Parametrized(name, description), name(name), description(description), no_acceptable_move_found(false), in(i), sm(sm),
     max_iterations("max_iterations", "Maximum total number of iterations allowed", this->parameters)
     {
       // This parameter has a default value
@@ -234,17 +237,18 @@ namespace EasyLocal {
         try
         {
           SelectMove();
-        }
-        catch (EmptyNeighborhood e)
-        {
-          break;
-        }
-        if (AcceptableMove())
-        {
           PrepareMove();
           MakeMove();
           CompleteMove();
           UpdateBestState();
+        }
+        catch (EmptyNeighborhood)
+        {
+          break;
+        }
+        catch (AcceptableNeighborhoodEmpty)
+        {
+          NoAcceptableMoveFound();
         }
         CompleteIteration();
       }
@@ -259,6 +263,7 @@ namespace EasyLocal {
     template <class Input, class State, typename CFtype>
     void Runner<Input, State, CFtype>::PrepareIteration()
     {
+      no_acceptable_move_found = false;
       iteration++;
     }
     
@@ -275,12 +280,6 @@ namespace EasyLocal {
     bool Runner<Input, State, CFtype>::MaxIterationExpired() const
     {
       return iteration >= max_iterations;
-    }
-    
-    template <class Input, class State, typename CFtype>
-    bool Runner<Input, State, CFtype>::AcceptableMove()
-    {
-      return true;
     }
     
     template <class Input, class State, typename CFtype>
@@ -326,6 +325,14 @@ namespace EasyLocal {
       Parametrized::Print(os);  
     }
     
+    /**
+     Prepare the iteration (e.g. updates the counter that tracks the number of iterations elapsed)
+     */
+    template <class Input, class State, typename CFtype>
+    void Runner<Input, State, CFtype>::NoAcceptableMoveFound()
+    {
+      no_acceptable_move_found = true;
+    }
   }
 }
 

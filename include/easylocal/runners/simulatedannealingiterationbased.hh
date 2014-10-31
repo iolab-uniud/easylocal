@@ -33,7 +33,7 @@ namespace EasyLocal {
       
     protected:
       void InitializeRun() throw (ParameterNotSet, IncorrectParameterValue);
-      bool StopCriterion();
+      bool StopCriterion();      
       
       // additional parameters
       Parameter<double>  neighbors_accepted_ratio;
