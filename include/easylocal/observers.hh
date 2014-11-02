@@ -1,7 +1,14 @@
-#if !defined(_OBSERVERS_HH_)
-#define _OBSERVERS_HH_
+//
+//  observers.hh
+//  EasyLocal
+//
+//  Created by Luca Di Gaspero on 02/11/14.
+//
+//
 
-#include "observers/generalizedlocalsearchobserver.hh"
-#include "observers/runnerobserver.hh"
+#ifndef EasyLocal_observers_hh
+#define EasyLocal_observers_hh
 
-#endif // _OBSERVERS_HH_
+#include "easylocal/observers/moverunnerobserver.hh"
+
+#endif

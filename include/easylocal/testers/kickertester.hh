@@ -104,7 +104,7 @@ namespace EasyLocal {
             os << "CURRENT SOLUTION " << std::endl << out << std::endl;
             os << "CURRENT COST : " << sm.CostFunction(st) << std::endl;
           }
-          os << "ELAPSED TIME : " << duration.count() / 1000.0 << 's' << std::endl;
+          os << "ELAPSED TIME : " << duration.count() / 1000.0 << " s" << std::endl;
         }
       }
       while (choice != 0);

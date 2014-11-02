@@ -1,5 +1,5 @@
 find_package(Threads REQUIRED)
-find_package(Boost 1.45.0 COMPONENTS program_options REQUIRED)
+find_package(Boost 1.54.0 COMPONENTS program_options REQUIRED)
 
 include_directories(${Boost_INCLUDE_DIR} ${PROJECT_INCLUDE_DIR})
 

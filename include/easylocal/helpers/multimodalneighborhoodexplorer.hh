@@ -1107,8 +1107,10 @@ namespace EasyLocal {
         
         // If even the last NeighborhoodExplorer has an EmptyNeighborhood, throw an EmptyNeighborhood for the SetUnionNeighborhoodExplorer
         if (selected == this->Modality())
+        {
           throw EmptyNeighborhood();
-          }
+        }
+      }
       
       /** @copydoc NeighborhoodExplorer::NextMove */
       virtual bool NextMove(const State& st, typename SuperNeighborhoodExplorer::MoveType& moves) const
