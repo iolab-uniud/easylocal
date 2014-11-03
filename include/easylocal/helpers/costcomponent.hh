@@ -18,6 +18,7 @@ namespace EasyLocal {
     template <class Input, class State, typename CFtype = int>
     class CostComponent : public Printable
     {
+      static size_t last_index;
     public:
       
       /** @copydoc Printable::Print() */
@@ -92,13 +93,30 @@ namespace EasyLocal {
       
       /** Flag that tells if the cost component is soft or hard */
       bool is_hard;
+      
+      
+    public:
+      
+      size_t Index() const
+      {
+        return index;
+      }
+      
+      static const size_t NumberOfCostComponents()
+      {
+        return last_index;
+      }
+      
+    protected:
+      /** The overall index of this cost components */
+      const size_t index;
     };
     
     /** IMPLEMENTATION */
     
     template <class Input, class State, typename CFtype>
     CostComponent<Input, State, CFtype>::CostComponent(const Input& i, const CFtype& w, bool hard, std::string e_name)
-    : name(e_name), in(i), weight(w), is_hard(hard)
+    : name(e_name), in(i), weight(w), is_hard(hard), index(last_index++)
     {}
     
     template <class Input, class State, typename CFtype>
@@ -106,6 +124,9 @@ namespace EasyLocal {
     {
       os  << "Cost Component " << name << ": weight " << weight << (is_hard ? "*" : "") << std::endl;
     }
+    
+    template <class Input, class State, typename CFtype>
+    size_t CostComponent<Input, State, CFtype>::last_index = 0;
     
   }
 }

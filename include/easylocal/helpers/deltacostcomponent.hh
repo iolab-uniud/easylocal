@@ -44,6 +44,12 @@ namespace EasyLocal {
       /** A symbolic name of the DeltaCostComponent. */
       const std::string name;
       
+      /** The index of the (Delta)CostComponent in the overall components vector. */      
+      size_t Index() const
+      {
+        return cc.Index();
+      }
+      
     protected:
       
       /** Constructor.

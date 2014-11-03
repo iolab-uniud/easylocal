@@ -215,7 +215,7 @@ namespace EasyLocal {
         bool first_move_found = false;
         tbb::spin_mutex mx_first_improving_move;
         tbb::parallel_for_each(this->begin(st), this->end(st), [this, &st, &mx_first_improving_move, &first_improving_move, &first_move_found, AcceptMove](EvaluatedMove<Move, CFtype>& cm) {
-          cm.cost = this->DeltaCostFunctionMainComponents(st, cm.move);
+          cm.cost = this->DeltaCostFunctionComponents(st, cm.move);
           tbb::spin_mutex::scoped_lock lock(mx_first_improving_move);
           if (!first_move_found)
           {
@@ -238,7 +238,7 @@ namespace EasyLocal {
         bool first_move_found = false;
         tbb::spin_mutex mx_best_improving_move;
         tbb::parallel_for_each(this->begin(st), this->end(st), [this, &st, &mx_best_improving_move, &best_improving_move, &first_move_found, AcceptMove](EvaluatedMove<Move, CFtype>& cm) {
-          cm.cost = this->DeltaCostFunctionMainComponents(st, cm.move);
+          cm.cost = this->DeltaCostFunctionComponents(st, cm.move);
           tbb::spin_mutex::scoped_lock lock(mx_best_improving_move);
           if (!first_move_found)
           {
@@ -263,7 +263,7 @@ namespace EasyLocal {
         tbb::spin_mutex mx_first_improving_move;
         tbb::atomic<size_t> c_sampled = 0;
         tbb::parallel_for_each(this->sample_begin(st, samples), this->sample_end(st, samples), [this, &st, &mx_first_improving_move, &first_improving_move, &first_move_found, &c_sampled, AcceptMove](EvaluatedMove<Move, CFtype>& cm) {
-          cm.cost = this->DeltaCostFunctionMainComponents(st, cm.move);
+          cm.cost = this->DeltaCostFunctionComponents(st, cm.move);
           c_sampled++;
           tbb::spin_mutex::scoped_lock lock(mx_first_improving_move);
           if (!first_move_found)
@@ -289,7 +289,7 @@ namespace EasyLocal {
         tbb::spin_mutex mx_best_improving_move;
         tbb::atomic<size_t> c_sampled = 0;
         tbb::parallel_for_each(this->sample_begin(st, samples), this->sample_end(st, sampled), [this, &st, &mx_best_improving_move, &best_improving_move, &first_move_found, &c_sampled, AcceptMove](EvaluatedMove<Move, CFtype>& cm) {
-          cm.cost = this->DeltaCostFunctionMainComponents(st, cm.move);
+          cm.cost = this->DeltaCostFunctionComponents(st, cm.move);
           c_sampled++;
           tbb::spin_mutex::scoped_lock lock(mx_best_improving_move);
           if (!first_move_found)

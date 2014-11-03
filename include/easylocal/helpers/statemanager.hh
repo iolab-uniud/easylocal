@@ -16,22 +16,29 @@ namespace EasyLocal {
     template <typename CFtype>
     struct CostComponents
     {
-      CostComponents() : total(0), violations(0), objective(0) {}
-      CostComponents(CFtype total, CFtype violations, CFtype objective) : total(total), violations(violations), objective(objective) {}
+      CostComponents() : total(0), violations(0), objective(0), all_components(0) {}
+      CostComponents(CFtype total, CFtype violations, CFtype objective, const std::vector<CFtype>& all_components) : total(total), violations(violations), objective(objective), all_components(all_components) {}
       CFtype total, violations, objective;
+      std::vector<CFtype> all_components;
+      
       CostComponents operator+(const CostComponents& other)
       {
         CostComponents res = *this;
         res.total += other.total;
         res.violations += other.violations;
         res.objective += other.objective;
+        for (size_t i = 0; i < other.all_components.size(); i++)
+          res.all_components[i] += other.all_components[i];
         return res;
       }
+      
       CostComponents& operator+=(const CostComponents& other)
       {
         this->total += other.total;
         this->violations += other.violations;
         this->objective += other.objective;
+        for (size_t i = 0; i < other.all_components.size(); i++)
+          this->all_components[i] += other.all_components[i];
         return *this;
       }
     };
@@ -39,7 +46,14 @@ namespace EasyLocal {
     template <typename CFtype>
     std::ostream& operator<<(std::ostream& os, const CostComponents<CFtype>& cc)
     {
-      os << cc.total << "(viol: " << cc.violations << ", obj: " << cc.objective << ")";
+      os << cc.total << "(viol: " << cc.violations << ", obj: " << cc.objective << ", {";
+      for (size_t i = 0; i < cc.all_components.size(); i++)
+      {
+        if (i > 0)
+          os << ", ";
+        os << cc.all_components[i];
+      }
+      os << "})";
       
       return os;
     }
@@ -141,28 +155,16 @@ namespace EasyLocal {
       virtual CFtype CostFunction(const State& st) const;
       
       /**
-       Compute the cost function main components.
-       @param st the state to be evaluated
-       @return the value of the cost function in the given state (hard + soft costs)
-       
-       @remarks The normal definition computes a weighted sum of the violation
-       function and the objective function.
-       
-       @note It is rarely needed to redefine this method.
-       */
-      virtual CostComponents<CFtype> CostFunctionMainComponents(const State& st) const;
-      
-      /**
        Compute the cost function calling the cost components.
        @param st the state to be evaluated
-       @return the unaggregated components of the cost function in the given state (hard + soft costs)
+       @return all the components of the cost function in the given state
        
        @remarks The normal definition computes a weighted sum of the violation
        function and the objective function.
        
        @note It is rarely needed to redefine this method.
        */
-      virtual std::vector<CFtype> CostFunctionComponents(const State& st) const;
+      virtual CostComponents<CFtype> CostFunctionComponents(const State& st) const;
       
       /**
        Compute the violations by calling the hard cost components (it is rarely
@@ -348,26 +350,20 @@ namespace EasyLocal {
     }
     
     template <class Input, class State, typename CFtype>
-    CostComponents<CFtype> StateManager<Input, State, CFtype>::CostFunctionMainComponents(const State& st) const
+    CostComponents<CFtype> StateManager<Input, State, CFtype>::CostFunctionComponents(const State& st) const
     {
       CFtype hard_cost = 0, soft_cost = 0;
-      for (unsigned int i = 0; i < cost_component.size(); i++)
+      std::vector<CFtype> cost_function(CostComponent<Input, State, CFtype>::NumberOfCostComponents(), (CFtype)0);
+      for (size_t i = 0; i < cost_component.size(); i++)
+      {
+        CFtype current_cost = cost_function[cost_component[i]->Index()] = cost_component[i]->Cost(st);
         if (cost_component[i]->IsHard())
-          hard_cost += cost_component[i]->Cost(st);
+          hard_cost += current_cost;
         else
-          soft_cost += cost_component[i]->Cost(st);
+          soft_cost += current_cost;
+      }
       
-      return CostComponents<CFtype>(HARD_WEIGHT * hard_cost  + soft_cost, hard_cost, soft_cost);
-    }
-    
-    template <class Input, class State, typename CFtype>
-    std::vector<CFtype> StateManager<Input, State, CFtype>::CostFunctionComponents(const State& st) const
-    {
-      std::vector<CFtype> cost_function(cost_component.size());
-      for (unsigned int i = 0; i < cost_component.size(); i++)
-        cost_function[i] = cost_component[i]->Cost(st);
-      
-      return cost_function;
+      return CostComponents<CFtype>(HARD_WEIGHT * hard_cost  + soft_cost, hard_cost, soft_cost, cost_function);
     }
     
     template <class Input, class State, typename CFtype>

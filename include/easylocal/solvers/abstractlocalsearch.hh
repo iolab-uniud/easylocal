@@ -141,7 +141,7 @@ namespace EasyLocal {
         
         double run_time = std::chrono::duration_cast<std::chrono::duration<double, std::ratio<1>>>(std::chrono::high_resolution_clock::now() - start).count();
         
-        return SolverResult<Input, Output, CFtype>(*p_out, sm.CostFunctionMainComponents(*p_best_state), run_time);
+        return SolverResult<Input, Output, CFtype>(*p_out, sm.CostFunctionComponents(*p_best_state), run_time);
     }
     
     template <class Input, class Output, class State, typename CFtype>
@@ -163,7 +163,7 @@ namespace EasyLocal {
           
       double run_time = std::chrono::duration_cast<std::chrono::duration<double, std::ratio<1>>>(std::chrono::high_resolution_clock::now() - start).count();
           
-      return SolverResult<Input, Output, CFtype>(*p_out, sm.CostFunctionMainComponents(*p_best_state), run_time);
+      return SolverResult<Input, Output, CFtype>(*p_out, sm.CostFunctionComponents(*p_best_state), run_time);
     }
     
     template <class Input, class Output, class State, typename CFtype>

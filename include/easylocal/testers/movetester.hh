@@ -419,7 +419,7 @@ namespace EasyLocal {
       ne.FirstMove(st, mv);
       do
       {
-        os << mv << " " << ne.DeltaCostFunction(st, mv) << std::endl;
+        os << mv << " " << ne.DeltaCostFunctionComponents(st, mv) << std::endl;
       }
       while (ne.NextMove(st, mv));
     }
