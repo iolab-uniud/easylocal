@@ -66,8 +66,8 @@ namespace EasyLocal {
       const size_t samples = 10;
       size_t sampled;
       EvaluatedMove<Move, CFtype> em = this->ne.RandomFirst(*this->p_current_state, samples, sampled, [](const Move& mv, CostComponents<CFtype> move_cost) {
-        return LessThanOrEqualTo(move_cost.total, (CFtype)0);
-      });
+        return LessThanOrEqualTo(move_cost.weighted, (CFtype)0);
+      }, this->weights);
       this->current_move = em;
       this->evaluations += sampled;
     }

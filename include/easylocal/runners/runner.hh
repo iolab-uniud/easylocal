@@ -191,6 +191,10 @@ namespace EasyLocal {
       /** Chronometer. */
       std::chrono::high_resolution_clock::time_point begin, end;
       
+      /** Weights of the different cost function components. 
+          If the vector is empty (default), it is assumed all weigths to be 1.0. */
+      std::vector<double> weights;
+      
     private:
       
       /** Stores the move and updates the related data. */
@@ -214,7 +218,7 @@ namespace EasyLocal {
     Runner<Input, State, CFtype>::Runner(const Input& i, StateManager<Input, State, CFtype>& sm, std::string name, std::string description)
     : // Parameters
     Parametrized(name, description), name(name), description(description), no_acceptable_move_found(false), in(i), sm(sm),
-    max_iterations("max_iterations", "Maximum total number of iterations allowed", this->parameters)
+    max_iterations("max_iterations", "Maximum total number of iterations allowed", this->parameters), weights(0)
     {
       // This parameter has a default value
       max_iterations = std::numeric_limits<unsigned long int>::max();

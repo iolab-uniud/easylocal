@@ -186,7 +186,6 @@ namespace EasyLocal {
     public:
       using NHE::NHE;
       using typename NHE::MoveAcceptor;
-      using typename NHE::MoveCostComparator;
     protected:
       FullNeighborhoodIterator<Input, State, Move, CFtype> begin(const State& st) const
       {
@@ -211,13 +210,13 @@ namespace EasyLocal {
         return NeighborhoodExplorerIteratorInterface<Input, State, Move, CFtype>::create_sample_neighborhood_iterator(*this, st, samples, true);
       }
     public:
-      virtual EvaluatedMove<Move, CFtype> SelectFirst(const State &st, const MoveAcceptor& AcceptMove, const MoveCostComparator& CompareMoveCosts = NHE::DefaultCompareMoveCosts) const throw (EmptyNeighborhood)
+      virtual EvaluatedMove<Move, CFtype> SelectFirst(const State &st, const MoveAcceptor& AcceptMove, const std::vector<double>& weights = std::vector<double>(0)) const throw (EmptyNeighborhood)
       {
         EvaluatedMove<Move, CFtype> first_improving_move;
         bool first_move_found = false;
         tbb::spin_mutex mx_first_improving_move;
-        tbb::parallel_for_each(this->begin(st), this->end(st), [this, &st, &mx_first_improving_move, &first_improving_move, &first_move_found, AcceptMove](EvaluatedMove<Move, CFtype>& cm) {
-          cm.cost = this->DeltaCostFunctionComponents(st, cm.move);
+        tbb::parallel_for_each(this->begin(st), this->end(st), [this, &st, &mx_first_improving_move, &first_improving_move, &first_move_found, AcceptMove, &weights](EvaluatedMove<Move, CFtype>& cm) {
+          cm.cost = this->DeltaCostFunctionComponents(st, cm.move, weights);
           tbb::spin_mutex::scoped_lock lock(mx_first_improving_move);
           if (!first_move_found)
           {
@@ -234,13 +233,13 @@ namespace EasyLocal {
         return first_improving_move;
       }
       
-      virtual EvaluatedMove<Move, CFtype> SelectBest(const State &st, const MoveAcceptor& AcceptMove, const MoveCostComparator& CompareMoveCosts = NHE::DefaultCompareMoveCosts) const throw (EmptyNeighborhood)
+      virtual EvaluatedMove<Move, CFtype> SelectBest(const State &st, const MoveAcceptor& AcceptMove, const std::vector<double>& weights = std::vector<double>(0)) const throw (EmptyNeighborhood)
       {
         tbb::spin_mutex mx_best_improving_move;
         EvaluatedMove<Move, CFtype> best_improving_move;
         unsigned int number_of_bests = 0;
-        tbb::parallel_for_each(this->begin(st), this->end(st), [this, &st, &mx_best_improving_move, &best_improving_move, &number_of_bests, AcceptMove, CompareMoveCosts](EvaluatedMove<Move, CFtype>& cm) {
-          cm.cost = this->DeltaCostFunctionComponents(st, cm.move);
+        tbb::parallel_for_each(this->begin(st), this->end(st), [this, &st, &mx_best_improving_move, &best_improving_move, &number_of_bests, AcceptMove, &weights](EvaluatedMove<Move, CFtype>& cm) {
+          cm.cost = this->DeltaCostFunctionComponents(st, cm.move, weights);
           tbb::spin_mutex::scoped_lock lock(mx_best_improving_move);
           if (AcceptMove(cm.move, cm.cost))
           {
@@ -249,12 +248,12 @@ namespace EasyLocal {
               best_improving_move = cm;
               number_of_bests = 1;
             }
-            else if (CompareMoveCosts(cm.cost, best_improving_move.cost) < 0)
+            else if (LessThan(cm.cost.total, best_improving_move.cost.total))
             {
               best_improving_move = cm;
               number_of_bests = 1;
             }
-            else if (CompareMoveCosts(cm.cost, best_improving_move.cost) == 0)
+            else if (EqualTo(cm.cost.total, best_improving_move.cost.total))
             {
               if (Random::Int(0, number_of_bests) == 0) // accept the move with probability 1 / (1 + number_of_bests)
                 best_improving_move = cm;
@@ -267,14 +266,14 @@ namespace EasyLocal {
         return best_improving_move;
       }
       
-      virtual EvaluatedMove<Move, CFtype> RandomFirst(const State &st, size_t samples, size_t& sampled, const MoveAcceptor& AcceptMove, const MoveCostComparator& CompareMoveCosts = NHE::DefaultCompareMoveCosts) const throw (EmptyNeighborhood)
+      virtual EvaluatedMove<Move, CFtype> RandomFirst(const State &st, size_t samples, size_t& sampled, const MoveAcceptor& AcceptMove, const std::vector<double>& weights = std::vector<double>(0)) const throw (EmptyNeighborhood)
       {
         EvaluatedMove<Move, CFtype> first_improving_move;
         bool first_move_found = false;
         tbb::spin_mutex mx_first_improving_move;
         tbb::atomic<size_t> c_sampled = 0;
-        tbb::parallel_for_each(this->sample_begin(st, samples), this->sample_end(st, samples), [this, &st, &mx_first_improving_move, &first_improving_move, &first_move_found, &c_sampled, AcceptMove](EvaluatedMove<Move, CFtype>& cm) {
-          cm.cost = this->DeltaCostFunctionComponents(st, cm.move);
+        tbb::parallel_for_each(this->sample_begin(st, samples), this->sample_end(st, samples), [this, &st, &mx_first_improving_move, &first_improving_move, &first_move_found, &c_sampled, AcceptMove, &weights](EvaluatedMove<Move, CFtype>& cm) {
+          cm.cost = this->DeltaCostFunctionComponents(st, cm.move, weights);
           c_sampled++;
           tbb::spin_mutex::scoped_lock lock(mx_first_improving_move);
           if (!first_move_found && AcceptMove(cm.move, cm.cost))
@@ -290,15 +289,14 @@ namespace EasyLocal {
         return first_improving_move;
       }
       
-      virtual EvaluatedMove<Move, CFtype> RandomBest(const State &st, size_t samples, size_t& sampled, const MoveAcceptor& AcceptMove, const MoveCostComparator& CompareMoveCosts = NHE::DefaultCompareMoveCosts) const throw (EmptyNeighborhood)
+      virtual EvaluatedMove<Move, CFtype> RandomBest(const State &st, size_t samples, size_t& sampled, const MoveAcceptor& AcceptMove, const std::vector<double>& weights = std::vector<double>(0)) const throw (EmptyNeighborhood)
       {
-        // TODO: currently only the first (found) best moved is stored, best move selection should be better randomized
         tbb::spin_mutex mx_best_improving_move;
         EvaluatedMove<Move, CFtype> best_improving_move;
         unsigned int number_of_bests = 0;
         tbb::atomic<size_t> c_sampled = 0;
-        tbb::parallel_for_each(this->sample_begin(st, samples), this->sample_end(st, sampled), [this, &st, &mx_best_improving_move, &best_improving_move, &number_of_bests, &c_sampled, AcceptMove, CompareMoveCosts](EvaluatedMove<Move, CFtype>& cm) {
-          cm.cost = this->DeltaCostFunctionComponents(st, cm.move);
+        tbb::parallel_for_each(this->sample_begin(st, samples), this->sample_end(st, sampled), [this, &st, &mx_best_improving_move, &best_improving_move, &number_of_bests, &c_sampled, AcceptMove, &weights](EvaluatedMove<Move, CFtype>& cm) {
+          cm.cost = this->DeltaCostFunctionComponents(st, cm.move, weights);
           c_sampled++;
           tbb::spin_mutex::scoped_lock lock(mx_best_improving_move);
           if (AcceptMove(cm.move, cm.cost))
@@ -308,12 +306,12 @@ namespace EasyLocal {
               best_improving_move = cm;
               number_of_bests = 1;
             }
-            else if (CompareMoveCosts(cm.cost, best_improving_move.cost) < 0)
+            else if (LessThan(cm.cost.total, best_improving_move.cost.total))
             {
               best_improving_move = cm;
               number_of_bests = 1;
             }
-            else if (CompareMoveCosts(cm.cost, best_improving_move.cost) == 0)
+            else if (EqualTo(cm.cost.total, best_improving_move.cost.total))
             {
               if (Random::Int(0, number_of_bests) == 0) // accept the move with probability 1 / (1 + number_of_bests)
                 best_improving_move = cm;

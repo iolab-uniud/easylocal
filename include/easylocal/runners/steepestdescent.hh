@@ -60,8 +60,8 @@ namespace EasyLocal {
     void SteepestDescent<Input, State, Move, CFtype>::SelectMove()
     {
       EvaluatedMove<Move, CFtype> em = this->ne.SelectBest(*this->p_current_state, [](const Move& mv, CostComponents<CFtype> move_cost) {
-        return LessThan(move_cost.total, (CFtype)0);
-      });
+        return LessThan(move_cost.weighted, (CFtype)0);
+      }, this->weights);
       this->current_move = em;
     }
     

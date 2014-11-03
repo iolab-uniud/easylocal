@@ -16,9 +16,10 @@ namespace EasyLocal {
     template <typename CFtype>
     struct CostComponents
     {
-      CostComponents() : total(0), violations(0), objective(0), all_components(0) {}
-      CostComponents(CFtype total, CFtype violations, CFtype objective, const std::vector<CFtype>& all_components) : total(total), violations(violations), objective(objective), all_components(all_components) {}
-      CFtype total, violations, objective;
+      CostComponents() : total(0), weighted(0), violations(0), objective(0), all_components(0) {}
+      CostComponents(CFtype total, CFtype violations, CFtype objective, const std::vector<CFtype>& all_components) : total(total), weighted(total), violations(violations), objective(objective), all_components(all_components) {}
+      CostComponents(CFtype total, CFtype weighted, CFtype violations, CFtype objective, const std::vector<CFtype>& all_components) : total(total), weighted(weighted), violations(violations), objective(objective), all_components(all_components) {}
+      CFtype total, weighted, violations, objective;
       std::vector<CFtype> all_components;
       
       CostComponents operator+(const CostComponents& other)
@@ -157,6 +158,7 @@ namespace EasyLocal {
       /**
        Compute the cost function calling the cost components.
        @param st the state to be evaluated
+       @param an optional vector of weights for the cost components.
        @return all the components of the cost function in the given state
        
        @remarks The normal definition computes a weighted sum of the violation
@@ -164,7 +166,7 @@ namespace EasyLocal {
        
        @note It is rarely needed to redefine this method.
        */
-      virtual CostComponents<CFtype> CostFunctionComponents(const State& st) const;
+      virtual CostComponents<CFtype> CostFunctionComponents(const State& st, const std::vector<double>& weights = std::vector<double>(0)) const;
       
       /**
        Compute the violations by calling the hard cost components (it is rarely
@@ -350,20 +352,31 @@ namespace EasyLocal {
     }
     
     template <class Input, class State, typename CFtype>
-    CostComponents<CFtype> StateManager<Input, State, CFtype>::CostFunctionComponents(const State& st) const
+    CostComponents<CFtype> StateManager<Input, State, CFtype>::CostFunctionComponents(const State& st, const std::vector<double>& weights) const
     {
-      CFtype hard_cost = 0, soft_cost = 0;
+      CFtype hard_cost = 0, soft_cost = 0, weighted_cost = 0;
       std::vector<CFtype> cost_function(CostComponent<Input, State, CFtype>::NumberOfCostComponents(), (CFtype)0);
       for (size_t i = 0; i < cost_component.size(); i++)
       {
         CFtype current_cost = cost_function[cost_component[i]->Index()] = cost_component[i]->Cost(st);
         if (cost_component[i]->IsHard())
+        {
           hard_cost += current_cost;
+          if (!weights.empty())
+            weighted_cost += HARD_WEIGHT * weights[cost_component[i]->Index()] * current_cost;
+        }
         else
+        {
           soft_cost += current_cost;
+          if (!weights.empty())
+            weighted_cost += weights[cost_component[i]->Index()] * current_cost;
+        }
       }
       
-      return CostComponents<CFtype>(HARD_WEIGHT * hard_cost  + soft_cost, hard_cost, soft_cost, cost_function);
+      if (!weights.empty())
+        return CostComponents<CFtype>(HARD_WEIGHT * hard_cost + soft_cost, weighted_cost, hard_cost, soft_cost, cost_function);
+      else
+        return CostComponents<CFtype>(HARD_WEIGHT * hard_cost + soft_cost, hard_cost, soft_cost, cost_function);
     }
     
     template <class Input, class State, typename CFtype>

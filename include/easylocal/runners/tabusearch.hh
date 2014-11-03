@@ -106,7 +106,7 @@ namespace EasyLocal {
     {
       EvaluatedMove<Move, CFtype> em = this->ne.SelectBest(*this->p_current_state, [this](const Move& mv, CostComponents<CFtype> move_cost) {
         return !this->pm.ProhibitedMove(*this->p_current_state, mv, move_cost.total);
-      });
+      }, this->weights);
       this->current_move = em;
     }
     

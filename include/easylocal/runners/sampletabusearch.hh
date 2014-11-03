@@ -37,57 +37,11 @@ namespace EasyLocal {
     template <class Input, class State, class Move, typename CFtype>
     void SampleTabuSearch<Input, State, Move, CFtype>::SelectMove()
     {
-      // get the first non-prohibited move
-      unsigned int number_of_bests = 0;
-      unsigned int s = 1;
-      const State& current_state = *this->p_current_state;
-      Move mv;
-      CFtype mv_cost;
-      bool all_moves_prohibited = true;
-      
-      this->ne.RandomMove(current_state, mv);
-      mv_cost = this->ne.DeltaCostFunction(current_state, mv);
-      Move best_move = mv;
-      CFtype best_delta = mv_cost;
-      do
-      {
-        if (LessThan(mv_cost, best_delta))
-        {
-          if (!this->pm.ProhibitedMove(current_state, mv, mv_cost))
-          {
-            best_move = mv;
-            best_delta = mv_cost;
-            number_of_bests = 1;
-            all_moves_prohibited = false;
-          }
-          if (all_moves_prohibited)
-          {
-            best_move = mv;
-            best_delta = mv_cost;
-            number_of_bests = 1;
-          }
-        }
-        else if (all_moves_prohibited && !this->pm.ProhibitedMove(current_state, mv, mv_cost))
-        { // when the prohibition mechanism is active, even though it is not an improving move,
-          // this move is the actual best since it is the first non-prohibited
-          best_move = mv;
-          best_delta = mv_cost;
-          number_of_bests = 1;
-          all_moves_prohibited = false;
-        }
-        else if (EqualTo(mv_cost, best_delta) && !this->pm.ProhibitedMove(current_state, mv, mv_cost))
-        {
-          if (Random::Int(0, number_of_bests) == 0) // accept the move with probability 1 / (1 + number_of_bests)
-            best_move = mv;
-          number_of_bests++;
-        }
-        this->ne.RandomMove(current_state, mv);
-        mv_cost = this->ne.DeltaCostFunction(current_state, mv);
-        s++;
-      }
-      while (s < samples);
-      
-      this->current_move = EvaluatedMove<Move, CFtype>(best_move, best_delta);
+      size_t sampled = 0;
+      EvaluatedMove<Move, CFtype> em = this->ne.RandomBest(*this->p_current_state, samples, sampled, [this](const Move& mv, CostComponents<CFtype> move_cost) {
+        return !this->pm.ProhibitedMove(*this->p_current_state, mv, move_cost.total);
+      }, this->weights);
+      this->current_move = em;
     }
   }
 }

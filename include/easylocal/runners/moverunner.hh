@@ -78,6 +78,7 @@ namespace EasyLocal {
       
       // data
       EvaluatedMove<Move, CFtype> current_move;      /**< The currently selected move. */
+      
     };
     
     /*************************************************************************
