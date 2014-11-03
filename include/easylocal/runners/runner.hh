@@ -230,7 +230,7 @@ namespace EasyLocal {
     template <class Input, class State, typename CFtype>
     void Runner<Input, State, CFtype>::RegisterParameters()
     {
-      max_iterations.Attach("max_iterations", "Maximum total number of iterations allowed", this->parameters);
+      max_iterations("max_iterations", "Maximum total number of iterations allowed", this->parameters);
       // This parameter has a default value
       max_iterations = std::numeric_limits<unsigned long int>::max();
     }

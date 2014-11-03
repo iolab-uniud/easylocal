@@ -71,8 +71,8 @@ namespace EasyLocal {
     void MultiStartSearch<Input, Output, State, CFtype>::RegisterParameters()
     {
       AbstractLocalSearch<Input, Output, State, CFtype>::RegisterParameters();
-      max_restarts.Attach("max_restarts", "Maximum number of restarts", this->parameters);
-      max_idle_restarts.Attach("max_idle_restarts", "Maximum number of idle restarts", this->parameters);
+      max_restarts("max_restarts", "Maximum number of restarts", this->parameters);
+      max_idle_restarts("max_idle_restarts", "Maximum number of idle restarts", this->parameters);
       restart = 0;
       idle_restarts = 0;
     }

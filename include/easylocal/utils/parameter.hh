@@ -117,7 +117,7 @@ namespace EasyLocal {
        */
       Parameter();
       
-      virtual void Attach(const std::string& cmdline_flag, const std::string& description, ParameterBox& parameters);
+      virtual void operator()(const std::string& cmdline_flag, const std::string& description, ParameterBox& parameters);
       
       /** @copydoc AbstractParameter::Read */
       virtual std::istream& Read(std::istream& is = std::cin) throw (ParameterNotValid);
@@ -177,7 +177,7 @@ namespace EasyLocal {
         }
         
         template <typename T>
-        void Parameter<T>::Attach(const std::string& cmdline_flag, const std::string& description, ParameterBox& parameters)
+        void Parameter<T>::operator()(const std::string& cmdline_flag, const std::string& description, ParameterBox& parameters)
         {
           this->cmdline_flag = parameters.prefix + "::" + cmdline_flag;
           this->description = description;

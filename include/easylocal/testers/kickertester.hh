@@ -75,7 +75,7 @@ namespace EasyLocal {
     template <class Input, class Output, class State, class Move, typename CFtype>
     void KickerTester<Input, Output, State, Move, CFtype>::RegisterParameters()
     {
-      length.Attach("kick-length", "Kick length", this->parameters);
+      length("kick-length", "Kick length", this->parameters);
       length = 3;
     }
     

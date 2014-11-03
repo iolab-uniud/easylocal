@@ -61,7 +61,7 @@ namespace EasyLocal {
     void LateAcceptanceHillClimbing<Input, State, Move, CFtype>:: RegisterParameters()
     {
       HillClimbing<Input, State, Move, CFtype>::RegisterParameters();
-      steps.Attach("steps", "Delay (number of steps in the queue)", this->parameters);
+      steps("steps", "Delay (number of steps in the queue)", this->parameters);
       steps = 10;
     }
     

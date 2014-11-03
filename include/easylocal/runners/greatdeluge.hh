@@ -77,10 +77,10 @@ namespace EasyLocal {
     void GreatDeluge<Input, State, Move, CFtype>::RegisterParameters()
     {
       MoveRunner<Input, State, Move, CFtype>::RegisterParameters();
-      initial_level.Attach("initial_level", "Initial water level", this->parameters);
-      min_level.Attach("min_level", "Minimum water level", this->parameters);
-      level_rate.Attach("level_rate", "Water decrease factor", this->parameters);
-      neighbors_sampled.Attach("neighbors_sampled", "Number of neighbors sampled at each water level", this->parameters);
+      initial_level("initial_level", "Initial water level", this->parameters);
+      min_level("min_level", "Minimum water level", this->parameters);
+      level_rate("level_rate", "Water decrease factor", this->parameters);
+      neighbors_sampled("neighbors_sampled", "Number of neighbors sampled at each water level", this->parameters);
     }
     
     /**

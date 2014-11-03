@@ -70,10 +70,10 @@ namespace EasyLocal {
     void SimulatedAnnealingWithReheating<Input, State, Move, CFtype>::RegisterParameters()
     {
       AbstractSimulatedAnnealing<Input, State, Move, CFtype>::RegisterParameters();
-      first_reheat_ratio.Attach("first_reheat_ratio", "First reheat ratio", this->parameters);
-      reheat_ratio.Attach("reheat_ratio", "Reheat ratio", this->parameters);
-      first_descent_iterations_share.Attach("first_descent_iterations_share", "First descent iterations share", this->parameters);
-      max_reheats.Attach("max_reheats", "Maximum number of reheats", this->parameters);
+      first_reheat_ratio("first_reheat_ratio", "First reheat ratio", this->parameters);
+      reheat_ratio("reheat_ratio", "Reheat ratio", this->parameters);
+      first_descent_iterations_share("first_descent_iterations_share", "First descent iterations share", this->parameters);
+      max_reheats("max_reheats", "Maximum number of reheats", this->parameters);
     }
     
     template <class Input, class State, class Move, typename CFtype>

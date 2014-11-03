@@ -24,7 +24,7 @@ namespace EasyLocal {
       void RegisterParameters()
       {
         TabuSearch<Input, State, Move, CFtype>::RegisterParameters();
-        samples.Attach("samples", "Number of neighbors sampled", this->parameters);
+        samples("samples", "Number of neighbors sampled", this->parameters);
       }
     protected:
       void SelectMove();

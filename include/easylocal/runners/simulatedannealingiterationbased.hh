@@ -67,8 +67,8 @@ namespace EasyLocal {
     void SimulatedAnnealingIterationBased<Input, State, Move, CFtype>::RegisterParameters()
     {
       AbstractSimulatedAnnealing<Input, State, Move, CFtype>::RegisterParameters();
-      neighbors_accepted_ratio.Attach("neighbors_accepted_ratio", "Ratio of neighbors accepted", this->parameters);
-      temperature_range.Attach("temperature_range", "Temperature_range", this->parameters);
+      neighbors_accepted_ratio("neighbors_accepted_ratio", "Ratio of neighbors accepted", this->parameters);
+      temperature_range("temperature_range", "Temperature_range", this->parameters);
     }        
     
     /**

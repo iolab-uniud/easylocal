@@ -58,7 +58,7 @@ namespace EasyLocal {
     void SimulatedAnnealing<Input, State, Move, CFtype>::RegisterParameters()
     {
       AbstractSimulatedAnnealing<Input, State, Move, CFtype>::RegisterParameters();
-      min_temperature.Attach("min_temperature", "Minimum temperature", this->parameters);
+      min_temperature("min_temperature", "Minimum temperature", this->parameters);
     }
     
     /**

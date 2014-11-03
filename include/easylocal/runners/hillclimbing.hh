@@ -59,7 +59,7 @@ namespace EasyLocal {
     void HillClimbing<Input, State, Move, CFtype>::RegisterParameters()
     {
       MoveRunner<Input, State, Move, CFtype>::RegisterParameters();
-      max_idle_iterations.Attach("max_idle_iterations", "Total number of allowed idle iterations", this->parameters);
+      max_idle_iterations("max_idle_iterations", "Total number of allowed idle iterations", this->parameters);
     }
     
     /**

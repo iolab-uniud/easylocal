@@ -80,7 +80,7 @@ namespace EasyLocal {
     void TabuSearch<Input, State, Move, CFtype>::RegisterParameters()
     {
       MoveRunner<Input, State, Move, CFtype>::RegisterParameters();
-      max_idle_iterations.Attach("max_idle_iterations", "Maximum number of idle iterations", this->parameters);
+      max_idle_iterations("max_idle_iterations", "Maximum number of idle iterations", this->parameters);
     }
     
     template <class Input, class State, class Move, typename CFtype>

@@ -92,11 +92,11 @@ namespace EasyLocal {
     void AbstractSimulatedAnnealing<Input, State, Move, CFtype>::RegisterParameters()
     {
       MoveRunner<Input, State, Move, CFtype>::RegisterParameters();
-      compute_start_temperature.Attach("compute_start_temperature", "Should the runner compute the initial temperature?", this->parameters);
-      start_temperature.Attach("start_temperature", "Starting temperature", this->parameters);
-      cooling_rate.Attach("cooling_rate", "Cooling rate", this->parameters);
-      max_neighbors_sampled.Attach("neighbors_sampled", "Maximum number of neighbors sampled at each temp.", this->parameters);
-      max_neighbors_accepted.Attach("neighbors_accepted", "Maximum number of neighbor accepted at each temp.", this->parameters);
+      compute_start_temperature("compute_start_temperature", "Should the runner compute the initial temperature?", this->parameters);
+      start_temperature("start_temperature", "Starting temperature", this->parameters);
+      cooling_rate("cooling_rate", "Cooling rate", this->parameters);
+      max_neighbors_sampled("neighbors_sampled", "Maximum number of neighbors sampled at each temp.", this->parameters);
+      max_neighbors_accepted("neighbors_accepted", "Maximum number of neighbor accepted at each temp.", this->parameters);
       if (!compute_start_temperature.IsSet())
         compute_start_temperature = false; // FIXME!!
     }

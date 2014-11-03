@@ -72,8 +72,8 @@ namespace EasyLocal {
     void TokenRingSearch<Input, Output, State, CFtype>::RegisterParameters()
     {
       AbstractLocalSearch<Input, Output, State, CFtype>::RegisterParameters();
-      max_rounds.Attach("max_rounds", "Maximum number of rounds", this->parameters);
-      max_idle_rounds.Attach("max_idle_rounds", "Maximum number of idle rounds", this->parameters);
+      max_rounds("max_rounds", "Maximum number of rounds", this->parameters);
+      max_idle_rounds("max_idle_rounds", "Maximum number of idle rounds", this->parameters);
       round = 0;
       idle_rounds = 0;
     }

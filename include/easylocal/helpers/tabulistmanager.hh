@@ -152,8 +152,8 @@ namespace EasyLocal {
     template <class State, class Move, typename CFtype>
     void TabuListManager<State, Move, CFtype>::RegisterParameters()
     {
-      min_tenure.Attach("min_tabu_tenure", "Minimum length of the tabu list", this->parameters);
-      max_tenure.Attach("max_tabu_tenure", "Maximum length of the tabu list", this->parameters);
+      min_tenure("min_tabu_tenure", "Minimum length of the tabu list", this->parameters);
+      max_tenure("max_tabu_tenure", "Maximum length of the tabu list", this->parameters);
       min_tenure = 0;
       max_tenure = 1;
     }
