@@ -46,7 +46,6 @@ namespace EasyLocal {
       bool StopCriterion();
       void SelectMove();
       void CompleteMove();
-      void NoAcceptableMoveFound();
       TabuListManager<State, Move, CFtype>& pm; /**< A reference to a tabu list manger. */
       // parameters
       Parameter<unsigned long int> max_idle_iterations;
@@ -106,11 +105,9 @@ namespace EasyLocal {
     void TabuSearch<Input, State, Move, CFtype>::SelectMove()
     {
       EvaluatedMove<Move, CFtype> em = this->ne.SelectBest(*this->p_current_state, [this](const Move& mv, CostComponents<CFtype> move_cost) {
-        return !this->pm.ProhibitedMove(*this->p_current_state, mv, move_cost.total_cost);
+        return !this->pm.ProhibitedMove(*this->p_current_state, mv, move_cost.total);
       });
-      this->current_move = em.move;
-      this->current_move_cost = em.cost.total_cost;
-      this->current_move_violations = em.cost.violations;
+      this->current_move = em;
     }
     
     template <class Input, class State, class Move, typename CFtype>
@@ -136,8 +133,8 @@ namespace EasyLocal {
     template <class Input, class State, class Move, typename CFtype>
     void TabuSearch<Input, State, Move, CFtype>::CompleteMove()
     {
-      pm.InsertMove(*this->p_current_state, this->current_move, this->current_move_cost,
-                    this->current_state_cost, this->best_state_cost);
+      pm.InsertMove(*this->p_current_state, this->current_move.move, this->current_move.cost.total,
+                    this->current_state_cost.total, this->best_state_cost.total);
     }
     
     template <class Input, class State, class Move, typename CFtype>

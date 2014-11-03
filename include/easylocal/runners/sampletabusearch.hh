@@ -87,8 +87,7 @@ namespace EasyLocal {
       }
       while (s < samples);
       
-      this->current_move = best_move;
-      this->current_move_cost = best_delta;
+      this->current_move = EvaluatedMove<Move, CFtype>(best_move, best_delta);
     }
   }
 }

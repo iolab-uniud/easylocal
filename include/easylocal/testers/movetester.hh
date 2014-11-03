@@ -274,7 +274,7 @@ namespace EasyLocal {
       ne.MakeMove(st1, mv);
       
       // process all delta cost components
-      for (i = 0; i < ne.DeltaCostComponents(); i++)
+      for (i = 0; i < ne.NumberOfDeltaCostComponents(); i++)
       {
         DeltaCostComponent<Input, State, Move, CFtype>& dcc = ne.GetDeltaCostComponent(i);
         delta_cost = dcc.DeltaCost(st, mv);
@@ -315,7 +315,7 @@ namespace EasyLocal {
           error_found = true;
           os << std::endl << "Error: Move n. " << move_count << ", " << mv << ", Total error = " << error <<  ", Info" << std::endl;
           // only implemented delta can be buggy
-          for (unsigned int i = 0; i < ne.DeltaCostComponents(); i++)
+          for (unsigned int i = 0; i < ne.NumberOfDeltaCostComponents(); i++)
           {
             DeltaCostComponent<Input, State, Move, CFtype>& dcc = ne.GetDeltaCostComponent(i);
             CostComponent<Input, State, CFtype>& cc = dcc.GetCostComponent();
@@ -363,11 +363,11 @@ namespace EasyLocal {
       double total_positive_cost = 0.0;
       
       
-      std::vector<std::pair<CFtype, CFtype> > min_max_costs(ne.DeltaCostComponents());
+      std::vector<std::pair<CFtype, CFtype> > min_max_costs(ne.NumberOfDeltaCostComponents());
       
       ne.FirstMove(st, mv);
       // only implemented delta can be buggy
-      for (i = 0; i < ne.DeltaCostComponents(); i++)
+      for (i = 0; i < ne.NumberOfDeltaCostComponents(); i++)
       {
         DeltaCostComponent<Input, State, Move, CFtype>& dcc = ne.GetDeltaCostComponent(i);
         min_max_costs[i].first =  min_max_costs[i].second = dcc.DeltaCost(st, mv);
@@ -387,7 +387,7 @@ namespace EasyLocal {
         else
           non_improving_neighbors++;
         // only implemented delta can be buggy
-        for (i = 0; i < ne.DeltaCostComponents(); i++)
+        for (i = 0; i < ne.NumberOfDeltaCostComponents(); i++)
         {
           DeltaCostComponent<Input, State, Move, CFtype>& dcc = ne.GetDeltaCostComponent(i);
           delta_cost = dcc.DeltaCost(st, mv);
@@ -408,7 +408,7 @@ namespace EasyLocal {
       << (100.0*non_improving_neighbors)/neighbors << "%)" << std::endl;
       
       os << "Min and max component costs:" << std::endl;
-      for (i = 0; i < ne.DeltaCostComponents(); i++)
+      for (i = 0; i < ne.NumberOfDeltaCostComponents(); i++)
         os << "  " << i << ". " << ne.GetDeltaCostComponent(i).name << " : Min = " << min_max_costs[i].first << ", Max = "  << min_max_costs[i].second << std::endl;
     }
     

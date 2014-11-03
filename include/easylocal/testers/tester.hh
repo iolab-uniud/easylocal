@@ -491,7 +491,7 @@ namespace EasyLocal {
         case 8:
         {
           os  << "Cost Components: " << std::endl;
-          for (i = 0; i < this->sm.CostComponents(); i++)
+          for (i = 0; i < this->sm.NumberOfCostComponents(); i++)
           {
             CostComponent<Input, State, CFtype>& cc = this->sm.GetCostComponent(i);
             os  << i << ". " << cc.name << " : "
@@ -505,13 +505,13 @@ namespace EasyLocal {
         case 9:
         {
           os << "Detailed Violations: " << std::endl;
-          for (i = 0; i < this->sm.CostComponents(); i++)
+          for (i = 0; i < this->sm.NumberOfCostComponents(); i++)
           {
             CostComponent<Input, State, CFtype>& cc = this->sm.GetCostComponent(i);
             cc.PrintViolations(test_state);
           }
           os << std::endl << "Summary of Cost Components: " << std::endl;
-          for (i = 0; i < this->sm.CostComponents(); i++)
+          for (i = 0; i < this->sm.NumberOfCostComponents(); i++)
           {
             CostComponent<Input, State, CFtype>& cc = this->sm.GetCostComponent(i);
             os  << i << ". " << cc.name << " : "

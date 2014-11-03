@@ -37,10 +37,10 @@ namespace EasyLocal {
       {
         for (unsigned char i = 0; i < events; i++)
           if (event & (1 << i))
-            observers[i](event, this->current_state_cost, this->current_state_violations, this->current_move);
+            observers[i](event, this->current_state_cost, this->current_move);
       }
       
-      std::vector<boost::signals2::signal<void(Event event, CFtype cost, CFtype violations, const Move& mv)>> observers;
+      std::vector<boost::signals2::signal<void(Event event, CostComponents<CFtype> current_state_cost, const EvaluatedMove<Move, CFtype>& em)>> observers;
       
     public:
       
@@ -61,6 +61,8 @@ namespace EasyLocal {
       
       virtual void InitializeRun() throw (ParameterNotSet, IncorrectParameterValue);
       
+      virtual bool AcceptableMoveFound();
+      
       
       /** Actions to be perfomed at the beginning of the run. */
       
@@ -74,10 +76,8 @@ namespace EasyLocal {
                                                              attached neighborhood
                                                              explorer. */
       
-      // state data
-      Move current_move;      /**< The currently selected move. */
-      CFtype current_move_cost; /**< The cost of the selected move. */
-      CFtype current_move_violations; /**< The violations of the selected move. */
+      // data
+      EvaluatedMove<Move, CFtype> current_move;      /**< The currently selected move. */
     };
     
     /*************************************************************************
@@ -88,13 +88,12 @@ namespace EasyLocal {
     template <class Input, class State, class Move, typename CFtype>
     void MoveRunner<Input, State, Move, CFtype>::UpdateBestState()
     {
-      if (LessThan(this->current_state_violations, this->best_state_violations)
-          || (EqualTo(this->current_state_violations, this->best_state_violations) &&
-              (LessThan(this->current_state_cost, this->best_state_cost))))
+      if (LessThan(this->current_state_cost.violations, this->best_state_cost.violations)
+          || (EqualTo(this->current_state_cost.violations, this->best_state_cost.violations) &&
+              (LessThan(this->current_state_cost.total, this->best_state_cost.total))))
       {
         *(this->p_best_state) = *(this->p_current_state);
         this->best_state_cost = this->current_state_cost;
-        this->best_state_violations = this->current_state_violations;
         
         notify(NEW_BEST);
         
@@ -125,16 +124,25 @@ namespace EasyLocal {
       notify(END);
     }
     
+    template <class Input, class State, class Move, typename CFtype>
+    bool MoveRunner<Input, State, Move, CFtype>::AcceptableMoveFound()
+    {
+      this->no_acceptable_move_found = !this->current_move.is_valid;
+      return this->current_move.is_valid;
+    }
+    
     /**
      Actually performs the move selected by the local search strategy.
      */
     template <class Input, class State, class Move, typename CFtype>
     void MoveRunner<Input, State, Move, CFtype>::MakeMove()
     {
-      ne.MakeMove(*this->p_current_state, current_move);
-      this->current_state_cost += current_move_cost;
-      this->current_state_violations += current_move_violations;
-      notify(MADE_MOVE);
+      if (current_move.is_valid)
+      {
+        ne.MakeMove(*this->p_current_state, current_move.move);
+        this->current_state_cost += current_move.cost;
+        notify(MADE_MOVE);
+      }
     }
   }
 }

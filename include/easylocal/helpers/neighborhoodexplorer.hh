@@ -20,36 +20,27 @@ namespace EasyLocal {
     {
     public:
       EmptyNeighborhood() : std::logic_error("Empty neighborhood") {}
-    };
-    
-    class AcceptableNeighborhoodEmpty : public std::logic_error
-    {
-    public:
-      AcceptableNeighborhoodEmpty() : std::logic_error("No moves in current neighborhood can be accepted") {}
-    };
-    
-    template <typename CFtype>
-    struct CostComponents
-    {
-      CostComponents() : total_cost(0), violations(0), objective(0) {}
-      CostComponents(CFtype total_cost, CFtype violations, CFtype objective) : total_cost(total_cost), violations(violations), objective(objective) {}
-      CFtype total_cost, violations, objective;
-    };
-    
+    };    
+            
     template <class Move, typename CFtype>
     struct EvaluatedMove
     {
-      EvaluatedMove() {}
-      EvaluatedMove(const Move& move, CostComponents<CFtype> cost) : move(move), cost(cost) {}
-      EvaluatedMove(const Move& move, CFtype total_cost = 0, CFtype violations = 0, CFtype objective = 0) : move(move)
+      static EvaluatedMove empty;
+      EvaluatedMove(bool is_valid = true) : is_valid(is_valid) {}
+      EvaluatedMove(const Move& move, CostComponents<CFtype> cost) : is_valid(true), move(move), cost(cost) {}
+      EvaluatedMove(const Move& move, CFtype total = 0, CFtype violations = 0, CFtype objective = 0) : is_valid(true), move(move)
       {
-        cost.total_cost = total_cost;
+        cost.total = total;
         cost.violations = violations;
         cost.objective = objective;
       }
+      bool is_valid;
       Move move;
       CostComponents<CFtype> cost;
     };
+    
+    template <class Move, typename CFtype>
+    EvaluatedMove<Move, CFtype> EvaluatedMove<Move, CFtype>::empty = EvaluatedMove<Move, CFtype>(false);
     
     /** The Neighborhood Explorer is responsible for the strategy exploited in the exploration of the neighborhood, and for computing the variations of the cost function due to a specific
      @ref Move.
@@ -121,7 +112,7 @@ namespace EasyLocal {
        @param mv the generated move
        @throws EmptyNeighborhood when the State st has no neighbor
        */
-      virtual CFtype FirstImprovingMove(const State& st, Move& mv) const throw (EmptyNeighborhood, AcceptableNeighborhoodEmpty);
+      virtual CFtype FirstImprovingMove(const State& st, Move& mv) const throw (EmptyNeighborhood);
       
       /** Generates the best move in the full exploration of the neighborhood of a given state. It uses @ref FirstMove and @ref NextMove
        @param st the start state.
@@ -129,7 +120,7 @@ namespace EasyLocal {
        @return the variation of the cost due to the Move mv.
        @throws EmptyNeighborhood when the State st has no neighbor
        */
-      virtual CFtype BestMove(const State& st, Move& mv) const throw (EmptyNeighborhood, AcceptableNeighborhoodEmpty);
+      virtual CFtype BestMove(const State& st, Move& mv) const throw (EmptyNeighborhood);
       
       /** Modifies the state passed as parameter by applying a given move upon it.
        @note To be implemented in the application (MustDef)
@@ -188,7 +179,7 @@ namespace EasyLocal {
       /** Returns the number of delta cost components attached to the neighborhood explorer.
        @return the size of the delta cost components vector
        */
-      virtual size_t DeltaCostComponents() const
+      virtual size_t NumberOfDeltaCostComponents() const
       {
         return delta_hard_cost_components.size() + delta_soft_cost_components.size();
       }
@@ -271,26 +262,26 @@ namespace EasyLocal {
        This method will select the first move in the exhaustive neighborhood exploration that
        matches with the criterion expressed by the functional object bool f(const Move& mv, CFtype cost)
        */
-      virtual EvaluatedMove<Move, CFtype> SelectFirst(const State& st, const std::function<bool(const Move& mv, CostComponents<CFtype> move_cost)>& AcceptMove) const throw (EmptyNeighborhood, AcceptableNeighborhoodEmpty);
+      virtual EvaluatedMove<Move, CFtype> SelectFirst(const State& st, const std::function<bool(const Move& mv, CostComponents<CFtype> move_cost)>& AcceptMove) const throw (EmptyNeighborhood);
       
       /**
        This method will select the best move in the exhaustive neighborhood exploration that
        matches with the criterion expressed by the functional object bool f(const Move& mv, CFtype cost)
        */
-      virtual EvaluatedMove<Move, CFtype> SelectBest(const State& st, const std::function<bool(const Move& mv, CostComponents<CFtype> move_cost)>& AcceptMove) const throw (EmptyNeighborhood, AcceptableNeighborhoodEmpty);
+      virtual EvaluatedMove<Move, CFtype> SelectBest(const State& st, const std::function<bool(const Move& mv, CostComponents<CFtype> move_cost)>& AcceptMove) const throw (EmptyNeighborhood);
       
       
       /**
        This method will select the first move in a random neighborhood exploration that
        matches with the criterion expressed by the functional object bool f(const Move& mv, CFtype cost)
        */
-      virtual EvaluatedMove<Move, CFtype> RandomFirst(const State& st, size_t samples, size_t& sampled, const std::function<bool(const Move& mv, CostComponents<CFtype> move_cost)>& AcceptMove) const throw (EmptyNeighborhood, AcceptableNeighborhoodEmpty);
+      virtual EvaluatedMove<Move, CFtype> RandomFirst(const State& st, size_t samples, size_t& sampled, const std::function<bool(const Move& mv, CostComponents<CFtype> move_cost)>& AcceptMove) const throw (EmptyNeighborhood);
       
       /**
        This method will select the best move in a random neighborhood exploration that
        matches with the criterion expressed by the functional object bool f(const Move& mv, CFtype cost)
        */
-      virtual EvaluatedMove<Move, CFtype> RandomBest(const State& st, size_t samples, size_t& sampled, const std::function<bool(const Move& mv, CostComponents<CFtype> move_cost)>& AcceptMove) const throw (EmptyNeighborhood, AcceptableNeighborhoodEmpty);
+      virtual EvaluatedMove<Move, CFtype> RandomBest(const State& st, size_t samples, size_t& sampled, const std::function<bool(const Move& mv, CostComponents<CFtype> move_cost)>& AcceptMove) const throw (EmptyNeighborhood);
       
     protected:
       
@@ -548,19 +539,27 @@ namespace EasyLocal {
     }
     
     template <class Input, class State, class Move, typename CFtype>
-    CFtype NeighborhoodExplorer<Input, State, Move, CFtype>::BestMove(const State &st, Move& mv) const throw (EmptyNeighborhood, AcceptableNeighborhoodEmpty)
+    CFtype NeighborhoodExplorer<Input, State, Move, CFtype>::BestMove(const State &st, Move& mv) const throw (EmptyNeighborhood)
     {
       EvaluatedMove<Move, CFtype> em = SelectBest(st, [](const Move& mv, CostComponents<CFtype> cost){ return true; });
+      if (!em.is_valid)
+      {
+        throw EmptyNeighborhood();
+      }
       mv = em.move;
-      return em.cost.total_cost;
+      return em.cost.total;
     }
     
     template <class Input, class State, class Move, typename CFtype>
-    CFtype NeighborhoodExplorer<Input, State, Move, CFtype>::FirstImprovingMove(const State &st, Move& mv) const throw (EmptyNeighborhood, AcceptableNeighborhoodEmpty)
+    CFtype NeighborhoodExplorer<Input, State, Move, CFtype>::FirstImprovingMove(const State &st, Move& mv) const throw (EmptyNeighborhood)
     {
-      EvaluatedMove<Move, CFtype> em = SelectFirst(st, [](const Move& mv, CostComponents<CFtype> cost){ return LessThan(cost.total_cost, (CFtype)0); });
+      EvaluatedMove<Move, CFtype> em = SelectFirst(st, [](const Move& mv, CostComponents<CFtype> cost){ return LessThan(cost.total, (CFtype)0); });
+      if (!em.is_valid)
+      {
+        throw EmptyNeighborhood();
+      }
       mv = em.move;
-      return em.cost.total_cost;
+      return em.cost.total;
     }
   }
   
@@ -569,7 +568,7 @@ namespace EasyLocal {
    matches with the criterion expressed by the functional object bool f(const Move& mv, CFtype cost)
    */
   template <class Input, class State, class Move, typename CFtype>
-  EvaluatedMove<Move, CFtype> NeighborhoodExplorer<Input, State, Move, CFtype>::SelectFirst(const State& st, const std::function<bool(const Move& mv, CostComponents<CFtype> move_cost)>& AcceptMove) const throw (EmptyNeighborhood, AcceptableNeighborhoodEmpty)
+  EvaluatedMove<Move, CFtype> NeighborhoodExplorer<Input, State, Move, CFtype>::SelectFirst(const State& st, const std::function<bool(const Move& mv, CostComponents<CFtype> move_cost)>& AcceptMove) const throw (EmptyNeighborhood)
   {
     unsigned int number_of_bests = 0;
     Move mv;
@@ -584,13 +583,13 @@ namespace EasyLocal {
       if (AcceptMove(mv, mv_cost))
         return EvaluatedMove<Move, CFtype>(mv, mv_cost); // mv passes the acceptance criterion
       
-      if (LessThan(mv_cost.total_cost, best_delta.total_cost))
+      if (LessThan(mv_cost.total, best_delta.total))
       {
         best_move = mv;
         best_delta = mv_cost;
         number_of_bests = 1;
       }
-      else if (EqualTo(mv_cost.total_cost, best_delta.total_cost))
+      else if (EqualTo(mv_cost.total, best_delta.total))
       {
         if (Random::Int(0, number_of_bests) == 0) // accept the move with probability 1 / (1 + number_of_bests)
           best_move = mv;
@@ -598,10 +597,7 @@ namespace EasyLocal {
       }
     }
     // exiting this loop means that there is no mv passing the acceptance criterion
-    throw AcceptableNeighborhoodEmpty();
-    
-    // these instructions should never be reached
-    return EvaluatedMove<Move, CFtype>(best_move, best_delta);
+    return EvaluatedMove<Move, CFtype>::empty;
   }
   
   /**
@@ -609,7 +605,7 @@ namespace EasyLocal {
    matches with the criterion expressed by the functional object bool f(const Move& mv, CFtype cost)
    */
   template <class Input, class State, class Move, typename CFtype>
-  EvaluatedMove<Move, CFtype> NeighborhoodExplorer<Input, State, Move, CFtype>::SelectBest(const State& st, const std::function<bool(const Move& mv, CostComponents<CFtype> move_cost)>& AcceptMove) const throw (EmptyNeighborhood, AcceptableNeighborhoodEmpty)
+  EvaluatedMove<Move, CFtype> NeighborhoodExplorer<Input, State, Move, CFtype>::SelectBest(const State& st, const std::function<bool(const Move& mv, CostComponents<CFtype> move_cost)>& AcceptMove) const throw (EmptyNeighborhood)
   {
     unsigned int number_of_bests = 1; // number of moves found with the same best value
     Move mv;
@@ -629,13 +625,13 @@ namespace EasyLocal {
         number_of_bests = 1;
         first_found = true;
       }
-      if (AcceptMove(mv, mv_cost) && LessThan(mv_cost.total_cost, best_delta.total_cost))
+      if (AcceptMove(mv, mv_cost) && LessThan(mv_cost.total, best_delta.total))
       {
         best_move = mv;
         best_delta = mv_cost;
         number_of_bests = 1;
       }
-      else if (AcceptMove(mv, mv_cost) && EqualTo(mv_cost.total_cost, best_delta.total_cost))
+      else if (AcceptMove(mv, mv_cost) && EqualTo(mv_cost.total, best_delta.total))
       {
         if (Random::Int(0, number_of_bests) == 0) // accept the move with probability 1 / (1 + number_of_bests)
           best_move = mv;
@@ -644,9 +640,7 @@ namespace EasyLocal {
     }
     
     if (!first_found)
-    {
-      throw AcceptableNeighborhoodEmpty();
-    }
+      return EvaluatedMove<Move, CFtype>::empty;
     
     return EvaluatedMove<Move, CFtype>(best_move, best_delta);
   }
@@ -656,7 +650,7 @@ namespace EasyLocal {
    matches with the criterion expressed by the functional object bool f(const Move& mv, CFtype cost)
    */
   template <class Input, class State, class Move, typename CFtype>
-  EvaluatedMove<Move, CFtype> NeighborhoodExplorer<Input, State, Move, CFtype>::RandomFirst(const State& st, size_t samples, size_t& sampled, const std::function<bool(const Move& mv, CostComponents<CFtype> move_cost)>& AcceptMove) const throw (EmptyNeighborhood, AcceptableNeighborhoodEmpty)
+  EvaluatedMove<Move, CFtype> NeighborhoodExplorer<Input, State, Move, CFtype>::RandomFirst(const State& st, size_t samples, size_t& sampled, const std::function<bool(const Move& mv, CostComponents<CFtype> move_cost)>& AcceptMove) const throw (EmptyNeighborhood)
   {
     Move mv;
     CostComponents<CFtype> mv_cost;
@@ -668,10 +662,7 @@ namespace EasyLocal {
         return EvaluatedMove<Move, CFtype>(mv, mv_cost);
     }
     // exiting this loop means that there is no mv passing the acceptance criterion
-    throw AcceptableNeighborhoodEmpty();
-    
-    // this instruction should never be reached
-    return EvaluatedMove<Move, CFtype>();
+    return EvaluatedMove<Move, CFtype>::empty;
   }
   
   /**
@@ -679,7 +670,7 @@ namespace EasyLocal {
    matches with the criterion expressed by the functional object bool f(const Move& mv, CFtype cost)
    */
   template <class Input, class State, class Move, typename CFtype>
-  EvaluatedMove<Move, CFtype> NeighborhoodExplorer<Input, State, Move, CFtype>::RandomBest(const State& st, size_t samples, size_t& sampled, const std::function<bool(const Move& mv, CostComponents<CFtype> move_cost)>& AcceptMove) const throw (EmptyNeighborhood, AcceptableNeighborhoodEmpty)
+  EvaluatedMove<Move, CFtype> NeighborhoodExplorer<Input, State, Move, CFtype>::RandomBest(const State& st, size_t samples, size_t& sampled, const std::function<bool(const Move& mv, CostComponents<CFtype> move_cost)>& AcceptMove) const throw (EmptyNeighborhood)
   {
     
     unsigned int number_of_bests = 1; // number of moves found with the same best value
@@ -700,13 +691,13 @@ namespace EasyLocal {
         number_of_bests = 1;
         first_found = true;
       }
-      if (AcceptMove(mv, mv_cost) && LessThan(mv_cost.total_cost, best_delta.total_cost))
+      if (AcceptMove(mv, mv_cost) && LessThan(mv_cost.total, best_delta.total))
       {
         best_move = mv;
         best_delta = mv_cost;
         number_of_bests = 1;
       }
-      else if (AcceptMove(mv, mv_cost) && EqualTo(mv_cost.total_cost, best_delta.total_cost))
+      else if (AcceptMove(mv, mv_cost) && EqualTo(mv_cost.total, best_delta.total))
       {
         if (Random::Int(0, number_of_bests) == 0) // accept the move with probability 1 / (1 + number_of_bests)
           best_move = mv;
@@ -716,9 +707,7 @@ namespace EasyLocal {
     }
     
     if (!first_found)
-    {
-      throw AcceptableNeighborhoodEmpty();
-    }
+      return EvaluatedMove<Move, CFtype>::empty;
     
     return EvaluatedMove<Move, CFtype>(best_move, best_delta);
   }

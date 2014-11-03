@@ -70,7 +70,7 @@ namespace EasyLocal {
       
       // the queue must be filled with the initial state cost at the beginning
       previous_steps = std::vector<CFtype>(steps);
-      std::fill(previous_steps.begin(), previous_steps.end(), this->current_state_cost);
+      std::fill(previous_steps.begin(), previous_steps.end(), this->current_state_cost.total);
     }
     
     
@@ -84,14 +84,12 @@ namespace EasyLocal {
       // TODO: it should become a parameter, the number of neighbors drawn at each iteration (possibly evaluated in parallel)
       const size_t samples = 10;
       size_t sampled;
-      CFtype prev_step_delta_cost = previous_steps[this->iteration % steps] - this->current_state_cost;
+      CFtype prev_step_delta_cost = previous_steps[this->iteration % steps] - this->current_state_cost.total;
       EvaluatedMove<Move, CFtype> em = this->ne.RandomFirst(*this->p_current_state, samples, sampled, [prev_step_delta_cost](const Move& mv, CostComponents<CFtype> move_cost) {
-        return LessThanOrEqualTo(move_cost.total_cost, (CFtype)0) || LessThanOrEqualTo(move_cost.total_cost, prev_step_delta_cost);
+        return LessThanOrEqualTo(move_cost.total, (CFtype)0) || LessThanOrEqualTo(move_cost.total, prev_step_delta_cost);
       });
-      this->current_move = em.move;
-      this->current_move_cost = em.cost.total_cost;
-      this->current_move_violations = em.cost.violations;
-      //this->iteration += sampled;
+      this->current_move = em;
+      this->evaluations += sampled;
     }
     
     /**
@@ -100,7 +98,7 @@ namespace EasyLocal {
     template <class Input, class State, class Move, typename CFtype>
     void LateAcceptanceHillClimbing<Input, State, Move, CFtype>::CompleteMove()
     {
-      previous_steps[this->iteration % steps] = this->best_state_cost;
+      previous_steps[this->iteration % steps] = this->best_state_cost.total;
     }
   }
 }

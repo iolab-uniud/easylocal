@@ -136,8 +136,8 @@ namespace EasyLocal {
       /** Encodes the criterion used to select the move at each step. */
       virtual void SelectMove() = 0;
       
-      /** Reacts to the fact that no acceptable move has been found in neighborhood exploration. */
-      void NoAcceptableMoveFound();
+      /** Verifies whether the current move is acceptable (i.e., it is valid) */
+      virtual bool AcceptableMoveFound() = 0;
       
       /** Actions to be performed after a move has been accepted. Redefinition intended. */
       virtual void PrepareMove() {};
@@ -171,22 +171,19 @@ namespace EasyLocal {
       p_best_state;
       
       /** Cost of the current state. */
-      CFtype current_state_cost;
-      
-      /** Current state violations. */
-      CFtype current_state_violations;
+      CostComponents<CFtype> current_state_cost;
       
       /** Cost of the best state. */
-      CFtype best_state_cost;
-      
-      /** Cost of the best state. */
-      CFtype best_state_violations;
+      CostComponents<CFtype> best_state_cost;
       
       /** Index of the iteration where the best has been found. */
       unsigned long int iteration_of_best;
       
       /** Index of the current iteration. */
       unsigned long int iteration;
+      
+      /** Number of cost function evaluations. */
+      unsigned long int evaluations;
       
       /** Generic parameter of every runner: maximum number of iterations. */
       Parameter<unsigned long int> max_iterations;
@@ -237,18 +234,17 @@ namespace EasyLocal {
         try
         {
           SelectMove();
-          PrepareMove();
-          MakeMove();
-          CompleteMove();
-          UpdateBestState();
+          if (AcceptableMoveFound())
+          {
+            PrepareMove();
+            MakeMove();
+            CompleteMove();
+            UpdateBestState();
+          }
         }
         catch (EmptyNeighborhood)
         {
           break;
-        }
-        catch (AcceptableNeighborhoodEmpty)
-        {
-          NoAcceptableMoveFound();
         }
         CompleteIteration();
       }
@@ -288,10 +284,10 @@ namespace EasyLocal {
       begin = std::chrono::high_resolution_clock::now();
       iteration = 0;
       iteration_of_best = 0;
+      evaluations = 0;
       p_best_state = std::make_shared<State>(s);    // creates the best state object by copying the content of s
       p_current_state = std::make_shared<State>(s); // creates the current state object by copying the content of s
-      best_state_cost = current_state_cost = sm.CostFunction(s);
-      best_state_violations = current_state_violations = sm.Violations(s);
+      best_state_cost = current_state_cost = sm.CostFunctionMainComponents(s);
       InitializeRun();
       end = std::chrono::high_resolution_clock::now();
     }
@@ -302,13 +298,13 @@ namespace EasyLocal {
       s = *p_best_state;
       TerminateRun();
       end = std::chrono::high_resolution_clock::now();
-      return best_state_cost;
+      return best_state_cost.total;
     }
     
     template <class Input, class State, typename CFtype>
     bool Runner<Input, State, CFtype>::LowerBoundReached() const
     {
-      return sm.LowerBoundReached(current_state_cost);
+      return sm.LowerBoundReached(current_state_cost.total);
     }
     
     template <class Input, class State, typename CFtype>
@@ -323,16 +319,7 @@ namespace EasyLocal {
     {
       os  << "  " << this->name << std::endl;
       Parametrized::Print(os);  
-    }
-    
-    /**
-     Takes care of when no acceptable move has been found
-     */
-    template <class Input, class State, typename CFtype>
-    void Runner<Input, State, CFtype>::NoAcceptableMoveFound()
-    {
-      no_acceptable_move_found = true;
-    }
+    }    
   }
 }
 

@@ -26,7 +26,6 @@ namespace EasyLocal {
       void InitializeRun() throw (ParameterNotSet, IncorrectParameterValue);;
       bool StopCriterion();
       void SelectMove();
-      void NoAcceptableMoveFound();
     };
     
     /*************************************************************************
@@ -46,8 +45,7 @@ namespace EasyLocal {
                                                            StateManager<Input, State, CFtype>& e_sm, NeighborhoodExplorer<Input, State, Move, CFtype>& e_ne,
                                                            std::string name)
     : MoveRunner<Input, State, Move, CFtype>(in, e_sm, e_ne, name, "First Descent Runner")
-    {
-    }
+    {}
     
     /**
      Selects always the first improving move in the neighborhood.
@@ -56,11 +54,9 @@ namespace EasyLocal {
     void FirstDescent<Input, State, Move, CFtype>::SelectMove()
     {
       EvaluatedMove<Move, CFtype> em = this->ne.SelectFirst(*this->p_current_state, [](const Move& mv, CostComponents<CFtype> move_cost) {
-        return LessThan(move_cost.total_cost, (CFtype)0);
+        return LessThan(move_cost.total, (CFtype)0);
       });
-      this->current_move = em.move;
-      this->current_move_cost = em.cost.total_cost;
-      this->current_move_violations = em.cost.violations;
+      this->current_move = em;
     }
     
     /**
@@ -71,8 +67,7 @@ namespace EasyLocal {
     void FirstDescent<Input, State, Move, CFtype>::InitializeRun() throw (ParameterNotSet, IncorrectParameterValue)
     {
       MoveRunner<Input, State, Move, CFtype>::InitializeRun();
-      this->current_move_cost = -1; // needed for passing the first time
-                                    // the StopCriterion test
+      this->current_move.cost.total = -1; // needed for passing the first time the StopCriterion test
     }
     
     /**
@@ -81,7 +76,7 @@ namespace EasyLocal {
     template <class Input, class State, class Move, typename CFtype>
     bool FirstDescent<Input, State, Move, CFtype>::StopCriterion()
     {
-      return this->no_acceptable_move_found;
+      return !this->current_move.is_valid;
     }        
   }
 }

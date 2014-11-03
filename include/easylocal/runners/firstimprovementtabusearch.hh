@@ -33,11 +33,9 @@ namespace EasyLocal {
     void FirstImprovementTabuSearch<Input, State, Move, CFtype>::SelectMove()
     {
       EvaluatedMove<Move, CFtype> em = this->ne.SelectFirst(*this->p_current_state, [this](const Move& mv, CostComponents<CFtype> move_cost) {
-        return !this->pm.ProhibitedMove(*this->p_current_state, mv, move_cost.total_cost);
+        return !this->pm.ProhibitedMove(*this->p_current_state, mv, move_cost.total);
       });
-      this->current_move = em.move;
-      this->current_move_cost = em.cost.total_cost;
-      this->current_move_violations = em.cost.violations;
+      this->current_move = em;
     }
   }
 }

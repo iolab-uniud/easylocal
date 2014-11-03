@@ -209,7 +209,7 @@ namespace EasyLocal {
         return NeighborhoodExplorerIteratorInterface<Input, State, Move, CFtype>::create_sample_neighborhood_iterator(*this, st, samples, true);
       }
     public:
-      virtual EvaluatedMove<Move, CFtype> SelectFirst(const State &st, const std::function<bool(const Move& mv, CostComponents<CFtype> move_cost)>& AcceptMove) const throw (EmptyNeighborhood, AcceptableNeighborhoodEmpty)
+      virtual EvaluatedMove<Move, CFtype> SelectFirst(const State &st, const std::function<bool(const Move& mv, CostComponents<CFtype> move_cost)>& AcceptMove) const throw (EmptyNeighborhood)
       {
         EvaluatedMove<Move, CFtype> first_improving_move;
         bool first_move_found = false;
@@ -228,13 +228,11 @@ namespace EasyLocal {
           }
         });
         if (!first_move_found)
-        {
-          throw AcceptableNeighborhoodEmpty();
-        }
+          return EvaluatedMove<Move, CFtype>::empty;
         return first_improving_move;
       }
       
-      virtual EvaluatedMove<Move, CFtype> SelectBest(const State &st, const std::function<bool(const Move& mv, CostComponents<CFtype> move_cost)>& AcceptMove) const throw (EmptyNeighborhood, AcceptableNeighborhoodEmpty)
+      virtual EvaluatedMove<Move, CFtype> SelectBest(const State &st, const std::function<bool(const Move& mv, CostComponents<CFtype> move_cost)>& AcceptMove) const throw (EmptyNeighborhood)
       {
         EvaluatedMove<Move, CFtype> best_improving_move;
         bool first_move_found = false;
@@ -250,17 +248,15 @@ namespace EasyLocal {
               best_improving_move = cm;
             }
           }
-          else if (AcceptMove(cm.move, cm.cost) && LessThan(cm.cost.total_cost, best_improving_move.cost.total_cost))
+          else if (AcceptMove(cm.move, cm.cost) && LessThan(cm.cost.total, best_improving_move.cost.total))
             best_improving_move = cm;
         });
         if (!first_move_found)
-        {
-          throw AcceptableNeighborhoodEmpty();
-        }
+          return EvaluatedMove<Move, CFtype>::empty;
         return best_improving_move;
       }
       
-      virtual EvaluatedMove<Move, CFtype> RandomFirst(const State &st, size_t samples, size_t& sampled, const std::function<bool(const Move& mv, CostComponents<CFtype> move_cost)>& AcceptMove) const throw (EmptyNeighborhood, AcceptableNeighborhoodEmpty)
+      virtual EvaluatedMove<Move, CFtype> RandomFirst(const State &st, size_t samples, size_t& sampled, const std::function<bool(const Move& mv, CostComponents<CFtype> move_cost)>& AcceptMove) const throw (EmptyNeighborhood)
       {
         EvaluatedMove<Move, CFtype> first_improving_move;
         bool first_move_found = false;
@@ -281,14 +277,12 @@ namespace EasyLocal {
           }
         });
         if (!first_move_found)
-        {
-          throw AcceptableNeighborhoodEmpty();
-        }
+          return EvaluatedMove<Move, CFtype>::empty;
         sampled = c_sampled;
         return first_improving_move;
       }
       
-      virtual EvaluatedMove<Move, CFtype> RandomBest(const State &st, size_t samples, size_t& sampled, const std::function<bool(const Move& mv, CostComponents<CFtype> move_cost)>& AcceptMove) const throw (EmptyNeighborhood, AcceptableNeighborhoodEmpty)
+      virtual EvaluatedMove<Move, CFtype> RandomBest(const State &st, size_t samples, size_t& sampled, const std::function<bool(const Move& mv, CostComponents<CFtype> move_cost)>& AcceptMove) const throw (EmptyNeighborhood)
       {
         EvaluatedMove<Move, CFtype> best_improving_move;
         bool first_move_found = false;
@@ -306,13 +300,11 @@ namespace EasyLocal {
               best_improving_move = cm;
             }
           }
-          else if (AcceptMove(cm.move, cm.cost) && LessThan(cm.cost.total_cost, best_improving_move.cost.total_cost))
+          else if (AcceptMove(cm.move, cm.cost) && LessThan(cm.cost.total, best_improving_move.cost.total))
             best_improving_move = cm;
         });
         if (!first_move_found)
-        {
-          throw AcceptableNeighborhoodEmpty();
-        }
+          return EvaluatedMove<Move, CFtype>::empty;
         sampled = c_sampled;
         return best_improving_move;
       }

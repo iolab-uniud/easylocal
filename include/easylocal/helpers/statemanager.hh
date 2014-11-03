@@ -13,6 +13,38 @@ namespace EasyLocal {
   
   namespace Core {
     
+    template <typename CFtype>
+    struct CostComponents
+    {
+      CostComponents() : total(0), violations(0), objective(0) {}
+      CostComponents(CFtype total, CFtype violations, CFtype objective) : total(total), violations(violations), objective(objective) {}
+      CFtype total, violations, objective;
+      CostComponents operator+(const CostComponents& other)
+      {
+        CostComponents res = *this;
+        res.total += other.total;
+        res.violations += other.violations;
+        res.objective += other.objective;
+        return res;
+      }
+      CostComponents& operator+=(const CostComponents& other)
+      {
+        this->total += other.total;
+        this->violations += other.violations;
+        this->objective += other.objective;
+        return *this;
+      }
+    };
+
+    template <typename CFtype>
+    std::ostream& operator<<(std::ostream& os, const CostComponents<CFtype>& cc)
+    {
+      os << cc.total << "(viol: " << cc.violations << ", obj: " << cc.objective << ")";
+      
+      return os;
+    }
+    
+    
     /**
      This constant multiplies the value of the Violations function in thehierarchical formulation of the Cost function (i.e., CostFunction(s) = HARD_WEIGHT * Violations(s) + Objective(s)).
      @todo The use of the global HARD_WEIGHT is a rough solution, waiting for an idea of a general mechanism for managing cost function weights.
@@ -109,6 +141,18 @@ namespace EasyLocal {
       virtual CFtype CostFunction(const State& st) const;
       
       /**
+       Compute the cost function main components.
+       @param st the state to be evaluated
+       @return the value of the cost function in the given state (hard + soft costs)
+       
+       @remarks The normal definition computes a weighted sum of the violation
+       function and the objective function.
+       
+       @note It is rarely needed to redefine this method.
+       */
+      virtual CostComponents<CFtype> CostFunctionMainComponents(const State& st) const;
+      
+      /**
        Compute the cost function calling the cost components.
        @param st the state to be evaluated
        @return the unaggregated components of the cost function in the given state (hard + soft costs)
@@ -194,7 +238,7 @@ namespace EasyLocal {
        Get the number of registered cost components
        @return the numer of cost components
        */
-      size_t CostComponents() const { return cost_component.size(); }
+      size_t NumberOfCostComponents() const { return cost_component.size(); }
       
       /**
        Compute the cost relative to a specific cost component.
@@ -301,6 +345,19 @@ namespace EasyLocal {
           soft_cost += cost_component[i]->Cost(st);
       
       return HARD_WEIGHT * hard_cost  + soft_cost;
+    }
+    
+    template <class Input, class State, typename CFtype>
+    CostComponents<CFtype> StateManager<Input, State, CFtype>::CostFunctionMainComponents(const State& st) const
+    {
+      CFtype hard_cost = 0, soft_cost = 0;
+      for (unsigned int i = 0; i < cost_component.size(); i++)
+        if (cost_component[i]->IsHard())
+          hard_cost += cost_component[i]->Cost(st);
+        else
+          soft_cost += cost_component[i]->Cost(st);
+      
+      return CostComponents<CFtype>(HARD_WEIGHT * hard_cost  + soft_cost, hard_cost, soft_cost);
     }
     
     template <class Input, class State, typename CFtype>
