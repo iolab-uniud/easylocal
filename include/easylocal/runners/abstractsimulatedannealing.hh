@@ -58,6 +58,7 @@ namespace EasyLocal {
       void CompleteMove();
       void CompleteIteration();
       // parameters
+      void RegisterParameters();
       Parameter<bool> compute_start_temperature;
       Parameter<double> start_temperature;
       Parameter<double> cooling_rate;
@@ -84,13 +85,18 @@ namespace EasyLocal {
                                                                                        StateManager<Input, State, CFtype>& e_sm,
                                                                                        NeighborhoodExplorer<Input, State, Move, CFtype>& e_ne,
                                                                                        std::string name)
-    : MoveRunner<Input, State, Move, CFtype>(in, e_sm, e_ne, name, "Simulated Annealing Runner"),
-    compute_start_temperature("compute_start_temperature", "Should the runner compute the initial temperature?", this->parameters),
-    start_temperature("start_temperature", "Starting temperature", this->parameters),
-    cooling_rate("cooling_rate", "Cooling rate", this->parameters),
-    max_neighbors_sampled("neighbors_sampled", "Maximum number of neighbors sampled at each temp.", this->parameters),
-    max_neighbors_accepted("neighbors_accepted", "Maximum number of neighbor accepted at each temp.", this->parameters)
+    : MoveRunner<Input, State, Move, CFtype>(in, e_sm, e_ne, name, "Simulated Annealing Runner")
+    {}
+    
+    template <class Input, class State, class Move, typename CFtype>
+    void AbstractSimulatedAnnealing<Input, State, Move, CFtype>::RegisterParameters()
     {
+      MoveRunner<Input, State, Move, CFtype>::RegisterParameters();
+      compute_start_temperature.Attach("compute_start_temperature", "Should the runner compute the initial temperature?", this->parameters);
+      start_temperature.Attach("start_temperature", "Starting temperature", this->parameters);
+      cooling_rate.Attach("cooling_rate", "Cooling rate", this->parameters);
+      max_neighbors_sampled.Attach("neighbors_sampled", "Maximum number of neighbors sampled at each temp.", this->parameters);
+      max_neighbors_accepted.Attach("neighbors_accepted", "Maximum number of neighbor accepted at each temp.", this->parameters);
       if (!compute_start_temperature.IsSet())
         compute_start_temperature = false; // FIXME!!
     }
@@ -158,7 +164,10 @@ namespace EasyLocal {
       size_t sampled;
       double t = this->temperature;
       EvaluatedMove<Move, CFtype> em = this->ne.RandomFirst(*this->p_current_state, this->max_neighbors_sampled - neighbors_sampled, sampled, [t](const Move& mv, CostComponents<CFtype> move_cost) {
-        return LessThanOrEqualTo(move_cost.weighted, (CFtype)0) || (Random::Double() < exp(-move_cost.weighted / t));
+        if (move_cost.is_weighted)
+          return LessThanOrEqualTo(move_cost.weighted, 0.0) || (Random::Double() < exp(-move_cost.weighted / t));
+        else
+          return LessThanOrEqualTo(move_cost.total, (CFtype)0) || (Random::Double() < exp(-move_cost.total / t));
       }, this->weights);
       this->current_move = em;
       neighbors_sampled += sampled;

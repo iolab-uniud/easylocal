@@ -103,7 +103,10 @@ namespace EasyLocal {
       void UpdateAspirationFunction(const CFtype& curr_cost, const CFtype& best_cost)
       { current_state_cost = curr_cost; best_state_cost = best_cost; }
       bool ListMember(const Move&) const;
+      
+      
       // parameters
+      void RegisterParameters();
       Parameter<unsigned int> min_tenure; /**< The minimum tenure of the tabu list. */
       Parameter<unsigned int> max_tenure;  /**< The maximum tenure of the tabu list. */
       unsigned long int iter; /**< The current iteration. */
@@ -142,10 +145,15 @@ namespace EasyLocal {
     template <class State, class Move, typename CFtype>
     TabuListManager<State, Move, CFtype>::TabuListManager(std::string name)
     : ProhibitionManager<State, Move, CFtype>(name, "List of moves which cannot be done"),
-    min_tenure("min_tabu_tenure", "Minimum length of the tabu list", this->parameters),
-    max_tenure("max_tabu_tenure", "Maximum length of the tabu list", this->parameters),
     iter(0)
     {
+    }
+    
+    template <class State, class Move, typename CFtype>
+    void TabuListManager<State, Move, CFtype>::RegisterParameters()
+    {
+      min_tenure.Attach("min_tabu_tenure", "Minimum length of the tabu list", this->parameters);
+      max_tenure.Attach("max_tabu_tenure", "Maximum length of the tabu list", this->parameters);
       min_tenure = 0;
       max_tenure = 1;
     }

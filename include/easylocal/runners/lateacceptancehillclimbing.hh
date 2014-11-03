@@ -31,6 +31,7 @@ namespace EasyLocal {
       void SelectMove();
       
       // parameters
+      void RegisterParameters();
       Parameter<unsigned int> steps;
       std::vector<CFtype> previous_steps;
       
@@ -53,9 +54,14 @@ namespace EasyLocal {
                                                                                        StateManager<Input, State, CFtype>& e_sm,
                                                                                        NeighborhoodExplorer<Input, State, Move, CFtype>& e_ne,
                                                                                        std::string name)
-    : HillClimbing<Input, State, Move, CFtype>(in, e_sm, e_ne, name),
-    steps("steps", "Delay (number of steps in the queue)", this->parameters)
+    : HillClimbing<Input, State, Move, CFtype>(in, e_sm, e_ne, name)
+    {}
+    
+    template <class Input, class State, class Move, typename CFtype>
+    void LateAcceptanceHillClimbing<Input, State, Move, CFtype>:: RegisterParameters()
     {
+      HillClimbing<Input, State, Move, CFtype>::RegisterParameters();
+      steps.Attach("steps", "Delay (number of steps in the queue)", this->parameters);
       steps = 10;
     }
     
@@ -85,8 +91,12 @@ namespace EasyLocal {
       const size_t samples = 10;
       size_t sampled;
       CFtype prev_step_delta_cost = previous_steps[this->iteration % steps] - this->current_state_cost.total;
+      // TODO: check shifting penalty meaningfullness
       EvaluatedMove<Move, CFtype> em = this->ne.RandomFirst(*this->p_current_state, samples, sampled, [prev_step_delta_cost](const Move& mv, CostComponents<CFtype> move_cost) {
-        return LessThanOrEqualTo(move_cost.weighted, (CFtype)0) || LessThanOrEqualTo(move_cost.weighted, prev_step_delta_cost);
+        if (move_cost.is_weighted)
+          return LessThanOrEqualTo(move_cost.weighted, 0.0) || LessThanOrEqualTo(move_cost.weighted, (double)prev_step_delta_cost);
+        else
+          return LessThanOrEqualTo(move_cost.total, (CFtype)0) || LessThanOrEqualTo(move_cost.total, prev_step_delta_cost);
       }, this->weights);
       this->current_move = em;
       this->evaluations += sampled;

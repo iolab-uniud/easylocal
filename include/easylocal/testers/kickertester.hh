@@ -47,6 +47,7 @@ namespace EasyLocal {
       int choice;   /**< The option currently chosen from the menu. */
       Core::Kicker<Input, State, Move, CFtype>& kicker;
       std::ostream& os;
+      void RegisterParameters();
       Parameter<unsigned int> length;
     };
     
@@ -68,8 +69,15 @@ namespace EasyLocal {
                                                                    Core::StateManager<Input, State, CFtype>& e_sm,
                                                                    Core::OutputManager<Input, Output, State, CFtype>& e_om,
                                                                    Core::Kicker<Input, State, Move, CFtype>& k, std::string name, std::ostream& o)
-    :  ComponentTester<Input, Output, State, CFtype>(name), Parametrized(name, "Kicker tester parameters"), in(i), out(i), sm(e_sm), om(e_om), kicker(k), os(o), length("kick-length", "Kick length", this->parameters)
-    { length = 3; }
+    :  ComponentTester<Input, Output, State, CFtype>(name), Parametrized(name, "Kicker tester parameters"), in(i), out(i), sm(e_sm), om(e_om), kicker(k), os(o)
+    {}
+    
+    template <class Input, class Output, class State, class Move, typename CFtype>
+    void KickerTester<Input, Output, State, Move, CFtype>::RegisterParameters()
+    {
+      length.Attach("kick-length", "Kick length", this->parameters);
+      length = 3;
+    }
     
     template <class Input, class Output, class State, class Move, typename CFtype>
     KickerTester<Input, Output, State, Move, CFtype>::KickerTester(

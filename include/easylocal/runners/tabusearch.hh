@@ -47,6 +47,7 @@ namespace EasyLocal {
       void SelectMove();
       void CompleteMove();
       TabuListManager<State, Move, CFtype>& pm; /**< A reference to a tabu list manger. */
+      void RegisterParameters();
       // parameters
       Parameter<unsigned long int> max_idle_iterations;
     };
@@ -71,10 +72,15 @@ namespace EasyLocal {
                                                        NeighborhoodExplorer<Input, State, Move, CFtype>& e_ne,
                                                        TabuListManager<State, Move, CFtype>& tlm,
                                                        std::string name)
-    : MoveRunner<Input, State, Move, CFtype>(in, e_sm, e_ne, name, "Tabu Search Runner"), pm(tlm),
-    // parameters
-    max_idle_iterations("max_idle_iterations", "Maximum number of idle iterations", this->parameters)
+    : MoveRunner<Input, State, Move, CFtype>(in, e_sm, e_ne, name, "Tabu Search Runner"), pm(tlm)
+    {}
+    
+    
+    template <class Input, class State, class Move, typename CFtype>
+    void TabuSearch<Input, State, Move, CFtype>::RegisterParameters()
     {
+      MoveRunner<Input, State, Move, CFtype>::RegisterParameters();
+      max_idle_iterations.Attach("max_idle_iterations", "Maximum number of idle iterations", this->parameters);
     }
     
     template <class Input, class State, class Move, typename CFtype>
@@ -140,7 +146,7 @@ namespace EasyLocal {
     template <class Input, class State, class Move, typename CFtype>
     void TabuSearch<Input, State, Move, CFtype>::ReadParameters(std::istream& is, std::ostream& os)
     {
-      Runner<Input, State, CFtype>::ReadParameters(is, os);
+      MoveRunner<Input, State, CFtype>::ReadParameters(is, os);
       pm.ReadParameters(is, os);
     }
     

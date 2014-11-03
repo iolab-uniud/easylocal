@@ -352,7 +352,8 @@ namespace EasyLocal {
     template <class Input, class State, class Move, typename CFtype>
     CostComponents<CFtype> NeighborhoodExplorer<Input, State, Move, CFtype>::DeltaCostFunctionComponents(const State& st, const Move & mv, const std::vector<double>& weights) const
     {
-      CFtype delta_hard_cost = 0, delta_soft_cost = 0, delta_weighted_cost = 0;
+      CFtype delta_hard_cost = 0, delta_soft_cost = 0;
+      double delta_weighted_cost = 0.0;
       std::vector<CFtype> delta_cost_function(CostComponent<Input, State, CFtype>::NumberOfCostComponents(), (CFtype)0);
       
       for (unsigned int i = 0; i < delta_hard_cost_components.size(); i++)

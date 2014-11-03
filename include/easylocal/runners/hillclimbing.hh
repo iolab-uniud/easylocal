@@ -25,6 +25,7 @@ namespace EasyLocal {
       
       Parameter<unsigned long int> max_idle_iterations;
     protected:
+      void RegisterParameters();
       bool MaxIdleIterationExpired() const;
       bool MaxIterationExpired() const;
       bool StopCriterion();
@@ -50,10 +51,16 @@ namespace EasyLocal {
                                                            StateManager<Input, State, CFtype>& e_sm,
                                                            NeighborhoodExplorer<Input, State, Move, CFtype>& e_ne,
                                                            std::string name)
-    : MoveRunner<Input, State, Move, CFtype>(in, e_sm, e_ne, name, "Hill Climbing Runner"),
-    // parameters
-    max_idle_iterations("max_idle_iterations", "Total number of allowed idle iterations", this->parameters)
+    : MoveRunner<Input, State, Move, CFtype>(in, e_sm, e_ne, name, "Hill Climbing Runner")
     {}
+    
+    
+    template <class Input, class State, class Move, typename CFtype>
+    void HillClimbing<Input, State, Move, CFtype>::RegisterParameters()
+    {
+      MoveRunner<Input, State, Move, CFtype>::RegisterParameters();
+      max_idle_iterations.Attach("max_idle_iterations", "Total number of allowed idle iterations", this->parameters);
+    }
     
     /**
      The select move strategy for the hill climbing simply looks for a
@@ -66,7 +73,10 @@ namespace EasyLocal {
       const size_t samples = 10;
       size_t sampled;
       EvaluatedMove<Move, CFtype> em = this->ne.RandomFirst(*this->p_current_state, samples, sampled, [](const Move& mv, CostComponents<CFtype> move_cost) {
-        return LessThanOrEqualTo(move_cost.weighted, (CFtype)0);
+        if (move_cost.is_weighted)
+          return LessThanOrEqualTo(move_cost.weighted, 0.0);
+        else
+          return LessThanOrEqualTo(move_cost.total, (CFtype)0);
       }, this->weights);
       this->current_move = em;
       this->evaluations += sampled;

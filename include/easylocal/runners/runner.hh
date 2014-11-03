@@ -61,6 +61,9 @@ namespace EasyLocal {
         return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - begin);
       }
       
+      /** Register its parameters */
+      virtual void RegisterParameters();
+      
       /** Reads the parameter from an input stream.
        @param is input stream to read from
        @param os output stream to give indication about the needed parameters
@@ -215,17 +218,21 @@ namespace EasyLocal {
     std::vector<Runner<Input, State, CFtype>*> Runner<Input, State, CFtype>::runners;
     
     template <class Input, class State, typename CFtype>
-    Runner<Input, State, CFtype>::Runner(const Input& i, StateManager<Input, State, CFtype>& sm, std::string name, std::string description)
+    Runner<Input, State, CFtype>::Runner(const Input& in, StateManager<Input, State, CFtype>& sm, std::string name, std::string description)
     : // Parameters
-    Parametrized(name, description), name(name), description(description), no_acceptable_move_found(false), in(i), sm(sm),
-    max_iterations("max_iterations", "Maximum total number of iterations allowed", this->parameters), weights(0)
+    Parametrized(name, description), name(name), description(description), no_acceptable_move_found(false), in(in), sm(sm), weights(0)
     {
-      // This parameter has a default value
-      max_iterations = std::numeric_limits<unsigned long int>::max();
-      
       // Add to the list of all runners
       runners.push_back(this);
       begin = end = std::chrono::high_resolution_clock::now();
+    }
+    
+    template <class Input, class State, typename CFtype>
+    void Runner<Input, State, CFtype>::RegisterParameters()
+    {
+      max_iterations.Attach("max_iterations", "Maximum total number of iterations allowed", this->parameters);
+      // This parameter has a default value
+      max_iterations = std::numeric_limits<unsigned long int>::max();
     }
     
     template <class Input, class State, typename CFtype>

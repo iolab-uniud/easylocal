@@ -111,7 +111,7 @@ namespace EasyLocal {
                                                        std::string name,
                                                        std::string description)
     : Runner<Input, State, CFtype>(in, e_sm, name, description), observers(events), ne(e_ne)
-    {}
+    {}        
     
     template <class Input, class State, class Move, typename CFtype>
     void MoveRunner<Input, State, Move, CFtype>::InitializeRun() throw (ParameterNotSet, IncorrectParameterValue)

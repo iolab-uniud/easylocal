@@ -2,7 +2,7 @@
 #define _PARAMETER_HH_
 
 #include <stdexcept>
-#include <vector>
+#include <list>
 #include <string>
 #include <iostream>
 #include <memory>
@@ -19,6 +19,7 @@ namespace EasyLocal {
     {
       friend class Parametrized;
       friend class ParameterNotSet;
+      friend class ParameterNotValid;
     public:
       
       /** Reads the value of the parameter from a stream, defined in Parameter<T>. */
@@ -30,10 +31,15 @@ namespace EasyLocal {
       /** Checks if the parameter has been set. */
       bool IsSet() const { return is_set; }
       
+      /** Checks if the parameter is valid. */
+      bool IsValid() const { return is_valid; }
+      
       /** To print out values. */
       virtual std::string ToString() const = 0;
       
     protected:
+      
+      AbstractParameter();
       
       /** Can't instantiate an AbstractParameter from the outside. */
       AbstractParameter(const std::string& cmdline_flag, const std::string& description);
@@ -46,6 +52,9 @@ namespace EasyLocal {
       
       /** True if this is set. */
       bool is_set;
+      
+      /** True if it has been correctly instantiated. */
+      bool is_valid;
     };
     
     /** Exception called whenever a needed parameter hasn't been set. */
@@ -56,6 +65,16 @@ namespace EasyLocal {
        @param p parameter which generated the exception.
        */
       ParameterNotSet(const AbstractParameter& p) : std::logic_error(std::string("Parameter ") + p.cmdline_flag + " not set") {}
+    };
+    
+    /** Exception called whenever a needed parameter is not valid (i.e., properly created/attached). */
+    class ParameterNotValid : public std::logic_error
+    {
+    public:
+      /** Constructor.
+       @param p parameter which generated the exception.
+       */
+      ParameterNotValid(const AbstractParameter& p) : std::logic_error(std::string("Parameter ") + p.cmdline_flag + " not valid") {}
     };
     
     /** List of parameters, to access aggregates of parameters. */
@@ -73,7 +92,7 @@ namespace EasyLocal {
       /** Object to configure boost's parameter parser. */
       boost::program_options::options_description cl_options;
       /** List of all parameter boxes that have been instantiated. */
-      static std::vector<const ParameterBox*> overall_parameters;
+      static std::list<const ParameterBox*> overall_parameters;
     };
     
     /** Concrete parameter, of generic type. */
@@ -81,9 +100,9 @@ namespace EasyLocal {
     class Parameter : public AbstractParameter
     {
       template <typename _T>
-      friend std::istream& operator>>(std::istream& is, Parameter<_T>& p);
+      friend std::istream& operator>>(std::istream& is, Parameter<_T>& p) throw (ParameterNotValid);
       template <typename _T>
-      friend bool operator==(const Parameter<_T>&, const _T&) throw (ParameterNotSet);
+      friend bool operator==(const Parameter<_T>&, const _T&) throw (ParameterNotSet, ParameterNotValid);
       friend class IncorrectParameterValue;
     public:
       /** Constructor.
@@ -93,211 +112,266 @@ namespace EasyLocal {
        */
       Parameter(const std::string& cmdline_flag, const std::string& description, ParameterBox& parameters);
       
+      /** Constructor.
+       Creates an empty parameter, to be attached later.
+       */
+      Parameter();
+      
+      virtual void Attach(const std::string& cmdline_flag, const std::string& description, ParameterBox& parameters);
+      
       /** @copydoc AbstractParameter::Read */
-      virtual std::istream& Read(std::istream& is = std::cin);
+      virtual std::istream& Read(std::istream& is = std::cin) throw (ParameterNotValid);
       
       /** @copydoc AbstractParameter::Write */
-      virtual std::ostream& Write(std::ostream& os = std::cout) const;
+      virtual std::ostream& Write(std::ostream& os = std::cout) const throw (ParameterNotSet, ParameterNotValid);
       
-      /** @copydoc AbstractParameter::Write */
-      virtual std::string ToString() const {
-        std::stringstream ss;
+      /** @copydoc AbstractParameter::ToString */
+      virtual std::string ToString() const throw (ParameterNotSet, ParameterNotValid)
+      {
+        if (!is_valid)
+          throw ParameterNotValid(*this);
+          std::stringstream ss;
         ss << this->value;
         return ss.str();
-      }
-      
-      /** Implicit cast. */
-      operator T() const throw (ParameterNotSet);
-      
-      /** Assignment. */
-      const T& operator=(const T&);
-      
-    protected:
-      
-      /** Real value of the parameter. */
-      T value;
-    };
-    
-    class IncorrectParameterValue
-    : public std::logic_error
-    {
-    public:
-      template <typename T>
-      IncorrectParameterValue(const Parameter<T>& p, std::string desc);
-      virtual const char* what() const throw();
-      virtual ~IncorrectParameterValue() throw();
-    protected:
-      std::string message;
-    };
-    
-    template <typename T>
-    Parameter<T>::Parameter(const std::string& cmdline_flag, const std::string& description, ParameterBox& parameters)
-    : AbstractParameter(cmdline_flag, description)
-    {
-      std::string flag = parameters.prefix + "::" + cmdline_flag;
-      parameters.push_back(this);
-      parameters.cl_options.add_options()
-      (flag.c_str(), boost::program_options::value<T>(&value)->notifier([this](const T&){ this->is_set = true; }), description.c_str());
-    }
-    
-    template <typename T>
-    Parameter<T>::operator T() const throw (ParameterNotSet)
-    {
-      if (!is_set)
-        throw ParameterNotSet(*this);
-        return value;
-    }
-    
-    template <typename T>
-    const T& Parameter<T>::operator=(const T& v)
-    {
-      is_set = true;
-      value = v;
-      return value;
-    }
-    
-    template <typename T>
-    std::istream& Parameter<T>::Read(std::istream& is)
-    {
-      std::string in;
-      std::getline(is, in);
-      
-      if (in.size())
-      {
-        std::stringstream ss;
-        ss.str(in);
-        ss >> *this;
-      }
-      else
-      {
-        is_set = true;
-      }
-      
-      return is;
-    }
-    
-    template <typename T>
-    std::ostream& Parameter<T>::Write(std::ostream& os) const
-    {
-      os << value;
-      return os;
-    }
-    
-    template <typename T>
-    std::istream& operator>>(std::istream& is, Parameter<T>& p)
-    {
-      is >> p.value;
-      p.is_set = true;
-      
-      return is;
-    }
-    
-    template <typename T>
-    bool operator==(const Parameter<T>& t1, const T& t2) throw (ParameterNotSet)
-    {
-      return t1.value == t2;
-    }
-    
-    bool operator==(const Parameter<std::string>& s1, const char* s2) throw (ParameterNotSet);
-    
-    template <typename T>
-    IncorrectParameterValue::IncorrectParameterValue(const Parameter<T>& p, std::string desc)
-    : std::logic_error("Incorrect parameter value")
-    {
-      std::ostringstream os;
-      os << "Parameter " << p.cmdline_flag << " set to incorrect value " << p.value << " (" << desc << ")";
-      message = os.str();
-    }
-    
-    /** A class representing a parametrized component of EasyLocal++. */
-    class Parametrized {
-      
-    public:
-      
-      /** Constructor.
-       @param prefix namespace of the parameters
-       @param description semantics of the parameters group
-       */
-      Parametrized(const std::string& prefix, const std::string& description) : parameters(prefix, description) {
-      }
-      
-      /** Read all parameters from an input stream (prints hints on output stream). */
-      virtual void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout)
-      {
-        is.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+        }
         
-        for (auto p : this->parameters)
+        /** Implicit cast. */
+        operator T() const throw (ParameterNotSet, ParameterNotValid);
+        
+        /** Assignment. */
+        const T& operator=(const T&) throw (ParameterNotValid);
+        
+      protected:
+        
+        /** Real value of the parameter. */
+        T value;
+        };
+        
+        class IncorrectParameterValue
+        : public std::logic_error
         {
-          os << "  " << p->description << (p->IsSet() ? (std::string(" (def.: ") + p->ToString() + "): ") : ": ");
-          do
-          {
-            p->Read(is);
-          } while (!p->IsSet());
+        public:
+          template <typename T>
+          IncorrectParameterValue(const Parameter<T>& p, std::string desc);
+          virtual const char* what() const throw();
+          virtual ~IncorrectParameterValue() throw();
+        protected:
+          std::string message;
+        };
+        
+        template <typename T>
+        Parameter<T>::Parameter()
+        {
+          this->is_valid = false;
         }
-      }
-      
-      /** Print all parameter values on an output stream. */
-      virtual void Print(std::ostream& os = std::cout) const
-      {
-        for (auto p : this->parameters)
+        
+        template <typename T>
+        Parameter<T>::Parameter(const std::string& cmdline_flag, const std::string& description, ParameterBox& parameters)
+        : AbstractParameter(cmdline_flag, description)
         {
-          os << "  " << p->description << ": ";
-          p->Write(os) << std::endl;
+          std::string flag = parameters.prefix + "::" + cmdline_flag;
+          parameters.push_back(this);
+          parameters.cl_options.add_options()
+          (flag.c_str(), boost::program_options::value<T>(&value)->notifier([this](const T&){ this->is_set = true; }), description.c_str());
+          this->is_valid = true;
         }
-      }
-      
-      /** Gets a given parameter */
-      template <typename T>
-      T GetParameter(std::string flag)
-      {
-        for (auto p : this->parameters)
+        
+        template <typename T>
+        void Parameter<T>::Attach(const std::string& cmdline_flag, const std::string& description, ParameterBox& parameters)
         {
-          if (p->cmdline_flag == flag)
+          this->cmdline_flag = parameters.prefix + "::" + cmdline_flag;
+          this->description = description;
+          parameters.push_back(this);
+          parameters.cl_options.add_options()
+          (this->cmdline_flag.c_str(), boost::program_options::value<T>(&value)->notifier([this](const T&){ this->is_set = true; }), description.c_str());
+          this->is_valid = true;
+        }
+        
+        template <typename T>
+        Parameter<T>::operator T() const throw (ParameterNotSet, ParameterNotValid)
+        {
+          if (!is_valid)
+            throw ParameterNotValid(*this);
+          if (!is_set)
+            throw ParameterNotSet(*this);
+          return value;
+        }
+        
+        template <typename T>
+        const T& Parameter<T>::operator=(const T& v) throw (ParameterNotValid)
+        {
+          if (!is_valid)
+            throw ParameterNotValid(*this);
+          is_set = true;
+          value = v;
+          return value;
+        }
+        
+        template <typename T>
+        std::istream& Parameter<T>::Read(std::istream& is) throw (ParameterNotValid)
+        {
+          if (!is_valid)
+            throw ParameterNotValid(*this);
+          std::string in;
+          std::getline(is, in);
+          
+          if (in.size())
           {
-            Parameter<T>* p_par = dynamic_cast<Parameter<T>*>(p);
-            if (!p_par)
-              throw std::logic_error("Parameter " + p->cmdline_flag + " value of an incorrect type");
-            return *p_par;
+            std::stringstream ss;
+            ss.str(in);
+            ss >> *this;
           }
-        }
-        // FIXME: a more specific exception should be raised
-        throw std::logic_error("Parameter " + flag + " not in the list");
-      }
-      
-      
-      /** Sets a given parameter to a given value */
-      template <typename T>
-      void SetParameter(std::string flag, const T& value)
-      {
-        bool found = false;
-        for (auto p : this->parameters)
-        {
-          if (p->cmdline_flag == flag)
+          else
           {
-            Parameter<T>* p_par = dynamic_cast<Parameter<T>*>(p);
-            if (!p_par)
-              throw std::logic_error("Parameter " + p->cmdline_flag + " value of an incorrect type");
-            (*p_par) = value;
-            found = true;
+            is_set = true;
           }
+          
+          return is;
         }
-        // FIXME: a more specific exception should be raised
-        if (!found)
-          throw std::logic_error("Parameter " + flag + " not in the list");
+        
+        template <typename T>
+        std::ostream& Parameter<T>::Write(std::ostream& os) const throw (ParameterNotSet, ParameterNotValid)
+        {
+          if (!this->is_valid)
+            throw ParameterNotValid(*this);
+          if (!is_set)
+            throw ParameterNotSet(*this);
+          os << value;
+          return os;
+        }
+        
+        template <typename T>
+        std::istream& operator>>(std::istream& is, Parameter<T>& p) throw (ParameterNotValid)
+        {
+          if (!p.is_valid)
+            throw ParameterNotValid(p);
+            is >> p.value;
+          p.is_set = true;
+          
+          return is;
+        }
+        
+        template <typename T>
+        bool operator==(const Parameter<T>& t1, const T& t2) throw (ParameterNotSet, ParameterNotValid)
+        {
+          return t1.value == t2;
+        }
+        
+        bool operator==(const Parameter<std::string>& s1, const char* s2) throw (ParameterNotSet, ParameterNotValid);
+        
+        template <typename T>
+        IncorrectParameterValue::IncorrectParameterValue(const Parameter<T>& p, std::string desc)
+        : std::logic_error("Incorrect parameter value")
+        {
+          std::ostringstream os;
+          os << "Parameter " << p.cmdline_flag << " set to incorrect value " << p.value << " (" << desc << ")";
+          message = os.str();
+        }
+        
+        class CommandLineParameters
+        {
+        public:
+          static bool Parse(int argc, const char* argv[], bool check_unregistered = true, bool silent = false);
+        };
+        
+        /** A class representing a parametrized component of EasyLocal++. */
+        class Parametrized {
+          friend bool CommandLineParameters::Parse(int argc, const char* argv[], bool check_unregistered, bool silent);
+        public:
+          
+          /** Constructor.
+           @param prefix namespace of the parameters
+           @param description semantics of the parameters group
+           */
+          Parametrized(const std::string& prefix, const std::string& description) : parameters(prefix, description)
+          {
+            overall_parametrized.push_back(this);
+          }
+          
+          /** Read all parameters from an input stream (prints hints on output stream). */
+          virtual void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout)
+          {
+            is.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+            
+            for (auto p : this->parameters)
+            {
+              os << "  " << p->description << (p->IsSet() ? (std::string(" (def.: ") + p->ToString() + "): ") : ": ");
+              do
+              {
+                p->Read(is);
+              } while (!p->IsSet());
+            }
+          }
+          
+          /** Print all parameter values on an output stream. */
+          virtual void Print(std::ostream& os = std::cout) const
+          {
+            for (auto p : this->parameters)
+            {
+              os << "  " << p->description << ": ";
+              p->Write(os) << std::endl;
+            }
+          }
+          
+          /** Gets a given parameter */
+          template <typename T>
+          T GetParameter(std::string flag)
+          {
+            for (auto p : this->parameters)
+            {
+              if (p->cmdline_flag == flag)
+              {
+                Parameter<T>* p_par = dynamic_cast<Parameter<T>*>(p);
+                if (!p_par)
+                  throw std::logic_error("Parameter " + p->cmdline_flag + " value of an incorrect type");
+                return *p_par;
+              }
+            }
+            // FIXME: a more specific exception should be raised
+            throw std::logic_error("Parameter " + flag + " not in the list");
+          }
+          
+          
+          /** Sets a given parameter to a given value */
+          template <typename T>
+          void SetParameter(std::string flag, const T& value)
+          {
+            bool found = false;
+            for (auto p : this->parameters)
+            {
+              if (p->cmdline_flag == flag)
+              {
+                Parameter<T>* p_par = dynamic_cast<Parameter<T>*>(p);
+                if (!p_par)
+                  throw std::logic_error("Parameter " + p->cmdline_flag + " value of an incorrect type");
+                (*p_par) = value;
+                found = true;
+              }
+            }
+            // FIXME: a more specific exception should be raised
+            if (!found)
+              throw std::logic_error("Parameter " + flag + " not in the list");
+          }
+          
+          bool IsRegistered() const
+          {
+            for (auto p : parameters)
+              if (!p->IsValid())
+                return false;
+            return true;
+          }
+          
+        protected:
+          
+          virtual void RegisterParameters() = 0;
+          
+          ParameterBox parameters;
+          
+          static std::list<Parametrized*> overall_parametrized;
+          
+        };
+        
       }
-      
-    protected:
-      
-      ParameterBox parameters;
-      
-    };
+    }
     
-    class CommandLineParameters
-    {
-    public:
-      static bool Parse(int argc, const char* argv[], bool check_unregistered = true, bool silent = false);
-    };
-  }
-}
-
 #endif // !defined(_PARAMETER_HH_)

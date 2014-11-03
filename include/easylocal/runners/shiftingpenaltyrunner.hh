@@ -22,6 +22,11 @@ namespace EasyLocal {
     public:
       using MR::MR;
       
+      void RegisterParameters()
+      {
+        MR::RegisterParameters();
+      }
+      
       void InitializeRun() throw (ParameterNotSet, IncorrectParameterValue)
       {
         MR::InitializeRun();

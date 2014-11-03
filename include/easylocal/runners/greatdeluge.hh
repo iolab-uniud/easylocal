@@ -37,6 +37,7 @@ namespace EasyLocal {
                   std::string name);
       
     protected:
+      void RegisterParameters();
       void InitializeRun() throw (ParameterNotSet, IncorrectParameterValue);
       bool StopCriterion();
       void UpdateIterationCounter();
@@ -69,13 +70,17 @@ namespace EasyLocal {
                                                          StateManager<Input, State, CFtype>& e_sm,
                                                          NeighborhoodExplorer<Input, State, Move, CFtype>& e_ne,
                                                          std::string name)
-    : MoveRunner<Input, State, Move, CFtype>(in, e_sm, e_ne, name, "Great Deluge"),
-    // parameters
-    initial_level("initial_level", "Initial water level", this->parameters),
-    min_level("min_level", "Minimum water level", this->parameters),
-    level_rate("level_rate", "Water decrease factor", this->parameters),
-    neighbors_sampled("neighbors_sampled", "Number of neighbors sampled at each water level", this->parameters)
+    : MoveRunner<Input, State, Move, CFtype>(in, e_sm, e_ne, name, "Great Deluge")
+    {}
+    
+    template <class Input, class State, class Move, typename CFtype>
+    void GreatDeluge<Input, State, Move, CFtype>::RegisterParameters()
     {
+      MoveRunner<Input, State, Move, CFtype>::RegisterParameters();
+      initial_level.Attach("initial_level", "Initial water level", this->parameters);
+      min_level.Attach("min_level", "Minimum water level", this->parameters);
+      level_rate.Attach("level_rate", "Water decrease factor", this->parameters);
+      neighbors_sampled.Attach("neighbors_sampled", "Number of neighbors sampled at each water level", this->parameters);
     }
     
     /**
@@ -100,7 +105,10 @@ namespace EasyLocal {
       CFtype cur_cost = this->current_state_cost.total;
       double l = level;
       EvaluatedMove<Move, CFtype> em = this->ne.RandomFirst(*this->p_current_state, samples, sampled, [cur_cost, l](const Move& mv, CostComponents<CFtype> move_cost) {
-        return LessThanOrEqualTo(move_cost.weighted, (CFtype)0) || LessThanOrEqualTo((double)(move_cost.weighted + cur_cost), l);
+        if (move_cost.is_weighted)
+          return LessThanOrEqualTo(move_cost.weighted, 0.0) || LessThanOrEqualTo(move_cost.weighted + cur_cost, l);
+        else
+          return LessThanOrEqualTo(move_cost.total, (CFtype)0) || LessThanOrEqualTo((double)(move_cost.total + cur_cost), l);
       }, this->weights);
       this->current_move = em;
     }

@@ -58,6 +58,9 @@ namespace EasyLocal {
       CFtype current_state_cost, best_state_cost;  /**< The cost of the internal states. */
       std::shared_ptr<Output> p_out; /**< The output object of the solver. */
       // parameters
+      
+      void RegisterParameters();
+      
       Parameter<unsigned int> init_trials;
       Parameter<bool> random_initial_state;
       Parameter<double> timeout;
@@ -88,12 +91,16 @@ namespace EasyLocal {
     : Parametrized(name, description),
     Solver<Input, Output, CFtype>(in, name),
     sm(e_sm),
-    om(e_om),
-    // Parameters
-    init_trials("init_trials", "Number of states to be tried in the initialization phase", this->parameters),
-    random_initial_state("random_state", "Random initial state", this->parameters),
-    timeout("timeout", "Solver timeout (if not specified, no timeout)", this->parameters)
+    om(e_om)
+    {}
+    
+    
+    template <class Input, class Output, class State, typename CFtype>
+    void AbstractLocalSearch<Input, Output, State, CFtype>::RegisterParameters()
     {
+      init_trials.Attach("init_trials", "Number of states to be tried in the initialization phase", this->parameters);
+      random_initial_state.Attach("random_state", "Random initial state", this->parameters);
+      timeout.Attach("timeout", "Solver timeout (if not specified, no timeout)", this->parameters);
       init_trials = 1;
       random_initial_state = true;
     }
