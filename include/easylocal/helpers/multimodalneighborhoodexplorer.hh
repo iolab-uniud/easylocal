@@ -941,7 +941,14 @@ namespace EasyLocal {
       template<class N>
       static bool TryNextMoveWithFirst(const N& n, State& s, ActiveMove<typename N::MoveType>& m, ActiveMove<typename N::MoveType>& f)
       {
-        m.active = n.NextMoveWithFirst(s, m, f);
+        bool end = n.NextMove(s, m);
+        if (end && f != m)
+        {
+          n.FirstMove(s, m);
+          m.active = true;
+        }
+        if (f == m)
+          m.active = false;
         return m.active;
       }
       

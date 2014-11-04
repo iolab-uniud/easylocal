@@ -74,12 +74,12 @@ namespace EasyLocal {
         try
         {
           nhe.FirstMove(state, current_move);
+          computed_move = EvaluatedMove<Move, CFtype>(current_move);
         }
         catch (EmptyNeighborhood)
         {
           end = true;
         }
-        computed_move = EvaluatedMove<Move, CFtype>(current_move, 0);
       }
       const NeighborhoodExplorer<Input, State, Move, CFtype>& nhe;
       const State& state;
@@ -117,7 +117,7 @@ namespace EasyLocal {
         if (!end)
         {
           nhe.RandomMove(state, current_move);
-          computed_move = EvaluatedMove<Move, CFtype>(current_move, 0);
+          computed_move = EvaluatedMove<Move, CFtype>(current_move);
         }
         return ni;
       }
@@ -155,7 +155,7 @@ namespace EasyLocal {
         {
           end = true;
         }
-        computed_move = EvaluatedMove<Move, CFtype>(current_move, 0);
+        computed_move = EvaluatedMove<Move, CFtype>(current_move);
       }
       const NeighborhoodExplorer<Input, State, Move, CFtype>& nhe;
       const State& state;
@@ -215,15 +215,16 @@ namespace EasyLocal {
         EvaluatedMove<Move, CFtype> first_move;
         bool first_move_found = false;
         tbb::spin_mutex mx_first_move;
-        tbb::parallel_for_each(this->begin(st), this->end(st), [this, &st, &mx_first_move, &first_move, &first_move_found, AcceptMove, &weights](EvaluatedMove<Move, CFtype>& cm) {
-          cm.cost = this->DeltaCostFunctionComponents(st, cm.move, weights);
+        tbb::parallel_for_each(this->begin(st), this->end(st), [this, &st, &mx_first_move, &first_move, &first_move_found, AcceptMove, &weights](EvaluatedMove<Move, CFtype>& mv) {
+          mv.cost = this->DeltaCostFunctionComponents(st, mv.move, weights);
+          mv.is_valid = true;
           tbb::spin_mutex::scoped_lock lock(mx_first_move);
           if (!first_move_found)
           {
-            if (AcceptMove(cm.move, cm.cost))
+            if (AcceptMove(mv.move, mv.cost))
             {
               first_move_found = true;
-              first_move = cm;
+              first_move = mv;
               tbb::task::self().cancel_group_execution();
             }
           }
@@ -240,6 +241,7 @@ namespace EasyLocal {
         unsigned int number_of_bests = 0;
         tbb::parallel_for_each(this->begin(st), this->end(st), [this, &st, &mx_best_move, &best_move, &number_of_bests, AcceptMove, &weights](EvaluatedMove<Move, CFtype>& mv) {
           mv.cost = this->DeltaCostFunctionComponents(st, mv.move, weights);
+          mv.is_valid = true;
           tbb::spin_mutex::scoped_lock lock(mx_best_move);
           if (AcceptMove(mv.move, mv.cost))
           {
@@ -274,6 +276,7 @@ namespace EasyLocal {
         tbb::atomic<size_t> c_sampled = 0;
         tbb::parallel_for_each(this->sample_begin(st, samples), this->sample_end(st, samples), [this, &st, &mx_first_move, &first_move, &first_move_found, &c_sampled, AcceptMove, &weights](EvaluatedMove<Move, CFtype>& mv) {
           mv.cost = this->DeltaCostFunctionComponents(st, mv.move, weights);
+          mv.is_valid = true;
           c_sampled++;
           tbb::spin_mutex::scoped_lock lock(mx_first_move);
           if (!first_move_found && AcceptMove(mv.move, mv.cost))
@@ -297,6 +300,7 @@ namespace EasyLocal {
         tbb::atomic<size_t> c_sampled = 0;
         tbb::parallel_for_each(this->sample_begin(st, samples), this->sample_end(st, sampled), [this, &st, &mx_best_move, &best_move, &number_of_bests, &c_sampled, AcceptMove, &weights](EvaluatedMove<Move, CFtype>& mv) {
           mv.cost = this->DeltaCostFunctionComponents(st, mv.move, weights);
+          mv.is_valid = true;
           c_sampled++;
           tbb::spin_mutex::scoped_lock lock(mx_best_move);
           if (AcceptMove(mv.move, mv.cost))

@@ -48,8 +48,8 @@ namespace EasyLocal {
           std::cout << this->weights[i];
         }
         std::cout << "}" << std::endl;
-      }
-    };    
+      }      
+    };
   }
 }
 

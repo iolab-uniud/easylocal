@@ -58,7 +58,7 @@ namespace EasyLocal {
             try
             {
               ne.FirstMove(t_state[cur], kick[cur]);
-              while(cur > 0 && !IsRelated(kick[cur-1], kick[cur]))
+              while (cur > 0 && !IsRelated(kick[cur-1], kick[cur]))
               {
                 if (!ne.NextMove(t_state[cur], kick[cur]))
                 {
@@ -90,7 +90,7 @@ namespace EasyLocal {
                 goto loop;
               }
             }
-            while(cur > 0 && !IsRelated(kick[cur-1], kick[cur]));
+            while (cur > 0 && !IsRelated(kick[cur-1], kick[cur]));
             backtracking = false;
             ne.MakeMove(t_state[cur], kick[cur]);
             cur++;
@@ -140,7 +140,7 @@ namespace EasyLocal {
             try
             {
               ne.FirstMove(t_state[cur], kick[cur]);
-              while(cur > 0 && !IsRelated(kick[cur-1], kick[cur]))
+              while (cur > 0 && !IsRelated(kick[cur-1], kick[cur]))
               {
                 if (!ne.NextMove(t_state[cur], kick[cur]))
                 {
@@ -172,7 +172,7 @@ namespace EasyLocal {
                 goto loop;
               }
             }
-            while(cur > 0 && !IsRelated(kick[cur-1], kick[cur]));
+            while (cur > 0 && !IsRelated(kick[cur-1], kick[cur]));
             backtracking = false;
             ne.MakeMove(t_state[cur], kick[cur]);
             cur++;
@@ -223,7 +223,7 @@ namespace EasyLocal {
                 initial_set[cur] = true;
               }
               
-              while(cur > 0 && !IsRelated(kick[cur-1], kick[cur]))
+              while (cur > 0 && !IsRelated(kick[cur-1], kick[cur]))
               {
                 if (!ne.NextMove(t_state[cur], kick[cur], initial_move[cur]))
                 {
@@ -255,7 +255,7 @@ namespace EasyLocal {
                 goto loop;
               }
             }
-            while(cur > 0 && !IsRelated(kick[cur-1], kick[cur]));
+            while (cur > 0 && !IsRelated(kick[cur-1], kick[cur]));
             backtracking = false;
             ne.MakeMove(t_state[cur], kick[cur]);
             cur++;

@@ -54,15 +54,7 @@ namespace EasyLocal {
           return weighted;
         else
           return (double)total;
-      }
-      
-      explicit operator CFtype() const
-      {
-        if (is_weighted)
-          return (CFtype)weighted;
-        else
-          return total;
-      }
+      }      
     };
     
     template <class CFtype>

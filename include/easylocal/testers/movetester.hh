@@ -339,7 +339,7 @@ namespace EasyLocal {
         st1 = st;
         
       }
-      while(not_last_move);
+      while (not_last_move);
       
       if (!error_found)
         os << std::endl << "No error found (for " << move_count << " moves)!" << std::endl;

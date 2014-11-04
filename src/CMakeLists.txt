@@ -14,7 +14,7 @@ FOREACH (subdir ${subdirs})
 
 	string(SUBSTRING ${subdir} 0 1 FIRST_LETTER)
 	string(TOUPPER ${FIRST_LETTER} FIRST_LETTER)
-	string(REGEX REPLACE "^(.*)" "${FIRST_LETTER}\\1" subdir_cap "${subdir}")
+	string(REGEX REPLACE "^.(.*)" "${FIRST_LETTER}\\1" subdir_cap "${subdir}")
 
 	file(GLOB headers RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${PROJECT_INCLUDE_DIR}/easylocal/${subdir}/*.hh)
 	source_group("Header Files\\${subdir_cap}" FILES ${headers})
