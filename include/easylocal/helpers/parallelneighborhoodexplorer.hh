@@ -212,109 +212,109 @@ namespace EasyLocal {
     public:
       virtual EvaluatedMove<Move, CFtype> SelectFirst(const State &st, const MoveAcceptor& AcceptMove, const std::vector<double>& weights = std::vector<double>(0)) const throw (EmptyNeighborhood)
       {
-        EvaluatedMove<Move, CFtype> first_improving_move;
+        EvaluatedMove<Move, CFtype> first_move;
         bool first_move_found = false;
-        tbb::spin_mutex mx_first_improving_move;
-        tbb::parallel_for_each(this->begin(st), this->end(st), [this, &st, &mx_first_improving_move, &first_improving_move, &first_move_found, AcceptMove, &weights](EvaluatedMove<Move, CFtype>& cm) {
+        tbb::spin_mutex mx_first_move;
+        tbb::parallel_for_each(this->begin(st), this->end(st), [this, &st, &mx_first_move, &first_move, &first_move_found, AcceptMove, &weights](EvaluatedMove<Move, CFtype>& cm) {
           cm.cost = this->DeltaCostFunctionComponents(st, cm.move, weights);
-          tbb::spin_mutex::scoped_lock lock(mx_first_improving_move);
+          tbb::spin_mutex::scoped_lock lock(mx_first_move);
           if (!first_move_found)
           {
             if (AcceptMove(cm.move, cm.cost))
             {
               first_move_found = true;
-              first_improving_move = cm;
+              first_move = cm;
               tbb::task::self().cancel_group_execution();
             }
           }
         });
         if (!first_move_found)
           return EvaluatedMove<Move, CFtype>::empty;
-        return first_improving_move;
+        return first_move;
       }
       
       virtual EvaluatedMove<Move, CFtype> SelectBest(const State &st, const MoveAcceptor& AcceptMove, const std::vector<double>& weights = std::vector<double>(0)) const throw (EmptyNeighborhood)
       {
-        tbb::spin_mutex mx_best_improving_move;
-        EvaluatedMove<Move, CFtype> best_improving_move;
+        tbb::spin_mutex mx_best_move;
+        EvaluatedMove<Move, CFtype> best_move;
         unsigned int number_of_bests = 0;
-        tbb::parallel_for_each(this->begin(st), this->end(st), [this, &st, &mx_best_improving_move, &best_improving_move, &number_of_bests, AcceptMove, &weights](EvaluatedMove<Move, CFtype>& cm) {
-          cm.cost = this->DeltaCostFunctionComponents(st, cm.move, weights);
-          tbb::spin_mutex::scoped_lock lock(mx_best_improving_move);
-          if (AcceptMove(cm.move, cm.cost))
+        tbb::parallel_for_each(this->begin(st), this->end(st), [this, &st, &mx_best_move, &best_move, &number_of_bests, AcceptMove, &weights](EvaluatedMove<Move, CFtype>& mv) {
+          mv.cost = this->DeltaCostFunctionComponents(st, mv.move, weights);
+          tbb::spin_mutex::scoped_lock lock(mx_best_move);
+          if (AcceptMove(mv.move, mv.cost))
           {
             if (number_of_bests == 0)
             {
-              best_improving_move = cm;
+              best_move = mv;
               number_of_bests = 1;
             }
-            else if (LessThan(cm.cost.total, best_improving_move.cost.total))
+            else if (mv.cost < best_move.cost)
             {
-              best_improving_move = cm;
+              best_move = mv;
               number_of_bests = 1;
             }
-            else if (EqualTo(cm.cost.total, best_improving_move.cost.total))
+            else if (mv.cost == best_move.cost)
             {
               if (Random::Int(0, number_of_bests) == 0) // accept the move with probability 1 / (1 + number_of_bests)
-                best_improving_move = cm;
+                best_move = mv;
               number_of_bests++;
             }
           }
         });
         if (number_of_bests == 0)
           return EvaluatedMove<Move, CFtype>::empty;
-        return best_improving_move;
+        return best_move;
       }
       
       virtual EvaluatedMove<Move, CFtype> RandomFirst(const State &st, size_t samples, size_t& sampled, const MoveAcceptor& AcceptMove, const std::vector<double>& weights = std::vector<double>(0)) const throw (EmptyNeighborhood)
       {
-        EvaluatedMove<Move, CFtype> first_improving_move;
+        EvaluatedMove<Move, CFtype> first_move;
         bool first_move_found = false;
-        tbb::spin_mutex mx_first_improving_move;
+        tbb::spin_mutex mx_first_move;
         tbb::atomic<size_t> c_sampled = 0;
-        tbb::parallel_for_each(this->sample_begin(st, samples), this->sample_end(st, samples), [this, &st, &mx_first_improving_move, &first_improving_move, &first_move_found, &c_sampled, AcceptMove, &weights](EvaluatedMove<Move, CFtype>& cm) {
-          cm.cost = this->DeltaCostFunctionComponents(st, cm.move, weights);
+        tbb::parallel_for_each(this->sample_begin(st, samples), this->sample_end(st, samples), [this, &st, &mx_first_move, &first_move, &first_move_found, &c_sampled, AcceptMove, &weights](EvaluatedMove<Move, CFtype>& mv) {
+          mv.cost = this->DeltaCostFunctionComponents(st, mv.move, weights);
           c_sampled++;
-          tbb::spin_mutex::scoped_lock lock(mx_first_improving_move);
-          if (!first_move_found && AcceptMove(cm.move, cm.cost))
+          tbb::spin_mutex::scoped_lock lock(mx_first_move);
+          if (!first_move_found && AcceptMove(mv.move, mv.cost))
           {
             first_move_found = true;
-            first_improving_move = cm;
+            first_move = mv;
             tbb::task::self().cancel_group_execution();
           }
         });
         if (!first_move_found)
           return EvaluatedMove<Move, CFtype>::empty;
         sampled = c_sampled;
-        return first_improving_move;
+        return first_move;
       }
       
       virtual EvaluatedMove<Move, CFtype> RandomBest(const State &st, size_t samples, size_t& sampled, const MoveAcceptor& AcceptMove, const std::vector<double>& weights = std::vector<double>(0)) const throw (EmptyNeighborhood)
       {
-        tbb::spin_mutex mx_best_improving_move;
-        EvaluatedMove<Move, CFtype> best_improving_move;
+        tbb::spin_mutex mx_best_move;
+        EvaluatedMove<Move, CFtype> best_move;
         unsigned int number_of_bests = 0;
         tbb::atomic<size_t> c_sampled = 0;
-        tbb::parallel_for_each(this->sample_begin(st, samples), this->sample_end(st, sampled), [this, &st, &mx_best_improving_move, &best_improving_move, &number_of_bests, &c_sampled, AcceptMove, &weights](EvaluatedMove<Move, CFtype>& cm) {
-          cm.cost = this->DeltaCostFunctionComponents(st, cm.move, weights);
+        tbb::parallel_for_each(this->sample_begin(st, samples), this->sample_end(st, sampled), [this, &st, &mx_best_move, &best_move, &number_of_bests, &c_sampled, AcceptMove, &weights](EvaluatedMove<Move, CFtype>& mv) {
+          mv.cost = this->DeltaCostFunctionComponents(st, mv.move, weights);
           c_sampled++;
-          tbb::spin_mutex::scoped_lock lock(mx_best_improving_move);
-          if (AcceptMove(cm.move, cm.cost))
+          tbb::spin_mutex::scoped_lock lock(mx_best_move);
+          if (AcceptMove(mv.move, mv.cost))
           {
             if (number_of_bests == 0)
             {
-              best_improving_move = cm;
+              best_move = mv;
               number_of_bests = 1;
             }
-            else if (LessThan(cm.cost.total, best_improving_move.cost.total))
+            else if (mv.cost < best_move.cost)
             {
-              best_improving_move = cm;
+              best_move = mv;
               number_of_bests = 1;
             }
-            else if (EqualTo(cm.cost.total, best_improving_move.cost.total))
+            else if (mv.cost == best_move.cost)
             {
               if (Random::Int(0, number_of_bests) == 0) // accept the move with probability 1 / (1 + number_of_bests)
-                best_improving_move = cm;
+                best_move = mv;
               number_of_bests++;
             }
           }
@@ -322,7 +322,7 @@ namespace EasyLocal {
         if (number_of_bests == 0)
           return EvaluatedMove<Move, CFtype>::empty;
         sampled = c_sampled;
-        return best_improving_move;
+        return best_move;
       }
     };
   }

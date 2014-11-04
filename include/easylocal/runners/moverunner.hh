@@ -40,7 +40,7 @@ namespace EasyLocal {
             observers[i](event, this->current_state_cost, this->current_move);
       }
       
-      std::vector<boost::signals2::signal<void(Event event, CostComponents<CFtype> current_state_cost, const EvaluatedMove<Move, CFtype>& em)>> observers;
+      std::vector<boost::signals2::signal<void(Event event, CostStructure<CFtype> current_state_cost, const EvaluatedMove<Move, CFtype>& em)>> observers;
       
     public:
       

@@ -15,7 +15,7 @@ namespace EasyLocal {
       typedef typename EasyLocal::Core::MoveRunner<Input, State, Move, CFtype>::Event Event;
     public:
       MoveRunnerObserver(std::ostream& os = std::cout);
-      void operator()(Event event, CostComponents<CFtype> current_state_cost, const EvaluatedMove<Move, CFtype>& em) const;
+      void operator()(Event event, CostStructure<CFtype> current_state_cost, const EvaluatedMove<Move, CFtype>& em) const;
       unsigned int events() const
       {
         return Event::START | Event::NEW_BEST;
@@ -29,7 +29,7 @@ namespace EasyLocal {
     {}
     
     template <class Input, class State, class Move, typename CFtype>
-    void MoveRunnerObserver<Input, State, Move, CFtype>::operator()(Event event, CostComponents<CFtype> current_state_cost, const EvaluatedMove<Move, CFtype>& em) const
+    void MoveRunnerObserver<Input, State, Move, CFtype>::operator()(Event event, CostStructure<CFtype> current_state_cost, const EvaluatedMove<Move, CFtype>& em) const
     {
       switch (event)
       {

@@ -174,10 +174,10 @@ namespace EasyLocal {
       p_best_state;
       
       /** Cost of the current state. */
-      CostComponents<CFtype> current_state_cost;
+      CostStructure<CFtype> current_state_cost;
       
       /** Cost of the best state. */
-      CostComponents<CFtype> best_state_cost;
+      CostStructure<CFtype> best_state_cost;
       
       /** Index of the iteration where the best has been found. */
       unsigned long int iteration_of_best;

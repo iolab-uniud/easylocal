@@ -27,7 +27,7 @@ namespace EasyLocal {
     {
       static EvaluatedMove empty;
       EvaluatedMove(bool is_valid = true) : is_valid(is_valid) {}
-      EvaluatedMove(const Move& move, CostComponents<CFtype> cost) : is_valid(true), move(move), cost(cost) {}
+      EvaluatedMove(const Move& move, CostStructure<CFtype> cost) : is_valid(true), move(move), cost(cost) {}
       EvaluatedMove(const Move& move, CFtype total = 0, CFtype violations = 0, CFtype objective = 0) : is_valid(true), move(move)
       {
         cost.total = total;
@@ -36,7 +36,7 @@ namespace EasyLocal {
       }
       bool is_valid;
       Move move;
-      CostComponents<CFtype> cost;
+      CostStructure<CFtype> cost;
     };
     
     template <class Move, typename CFtype>
@@ -54,7 +54,7 @@ namespace EasyLocal {
       typedef State StateType;
       typedef CFtype CostType;
       
-      typedef typename std::function<bool(const Move& mv, CostComponents<CFtype> move_cost)> MoveAcceptor;
+      typedef typename std::function<bool(const Move& mv, CostStructure<CFtype> move_cost)> MoveAcceptor;
       
       /** Checks if a move in the neighborhood is legal.
        @note Can be implemented in the application (MayRedef)
@@ -142,7 +142,7 @@ namespace EasyLocal {
        @param mv the move to be applied
        @return the difference in the cost function for each cost component
        */
-      virtual CostComponents<CFtype> DeltaCostFunctionComponents(const State& st, const Move& mv, const std::vector<double>& weights = std::vector<double>(0)) const;
+      virtual CostStructure<CFtype> DeltaCostFunctionComponents(const State& st, const Move& mv, const std::vector<double>& weights = std::vector<double>(0)) const;
       
       /** Computes the differences in the objective component of the cost function obtained by applying the move @c mv to the state @c st.
        @param st the state to modify
@@ -173,7 +173,7 @@ namespace EasyLocal {
       /** Returns the number of delta cost components attached to the neighborhood explorer.
        @return the size of the delta cost components vector
        */
-      virtual size_t NumberOfDeltaCostComponents() const
+      virtual size_t DeltaCostComponents() const
       {
         return delta_hard_cost_components.size() + delta_soft_cost_components.size();
       }
@@ -195,7 +195,7 @@ namespace EasyLocal {
       /** Returns the number of delta cost components attached to the neighborhood explorer which are hard cost components.
        @return the size of the hard delta cost components vector
        */
-      virtual size_t DeltaHardCostComponents() const
+      virtual size_t DeltaHardCostStructure() const
       { return delta_hard_cost_components.size(); }
       
       /** Returns an element of the delta hard cost component vector attached to the neighborhood explorer.
@@ -213,7 +213,7 @@ namespace EasyLocal {
       /** Returns the number of delta cost components attached to the neighborhood explorer which are soft cost components.
        @return the size of the hard delta cost components vector
        */
-      virtual size_t DeltaSoftCostComponents() const
+      virtual size_t DeltaSoftCostStructure() const
       { return delta_soft_cost_components.size(); }
       
       /** Returns an element of the delta soft cost component vector attached to the neighborhood explorer.
@@ -350,11 +350,11 @@ namespace EasyLocal {
     }
     
     template <class Input, class State, class Move, typename CFtype>
-    CostComponents<CFtype> NeighborhoodExplorer<Input, State, Move, CFtype>::DeltaCostFunctionComponents(const State& st, const Move & mv, const std::vector<double>& weights) const
+    CostStructure<CFtype> NeighborhoodExplorer<Input, State, Move, CFtype>::DeltaCostFunctionComponents(const State& st, const Move & mv, const std::vector<double>& weights) const
     {
       CFtype delta_hard_cost = 0, delta_soft_cost = 0;
       double delta_weighted_cost = 0.0;
-      std::vector<CFtype> delta_cost_function(CostComponent<Input, State, CFtype>::NumberOfCostComponents(), (CFtype)0);
+      std::vector<CFtype> delta_cost_function(CostComponent<Input, State, CFtype>::CostComponents(), (CFtype)0);
       
       for (unsigned int i = 0; i < delta_hard_cost_components.size(); i++)
       {
@@ -417,9 +417,9 @@ namespace EasyLocal {
       }
       
       if (!weights.empty())
-        return CostComponents<CFtype>(HARD_WEIGHT * delta_hard_cost + delta_soft_cost, delta_weighted_cost, delta_hard_cost, delta_soft_cost, delta_cost_function);
+        return CostStructure<CFtype>(HARD_WEIGHT * delta_hard_cost + delta_soft_cost, delta_weighted_cost, delta_hard_cost, delta_soft_cost, delta_cost_function);
       else
-        return CostComponents<CFtype>(HARD_WEIGHT * delta_hard_cost + delta_soft_cost, delta_hard_cost, delta_soft_cost, delta_cost_function);
+        return CostStructure<CFtype>(HARD_WEIGHT * delta_hard_cost + delta_soft_cost, delta_hard_cost, delta_soft_cost, delta_cost_function);
     }
     
     template <class Input, class State, class Move, typename CFtype>
@@ -509,7 +509,7 @@ namespace EasyLocal {
     template <class Input, class State, class Move, typename CFtype>
     CFtype NeighborhoodExplorer<Input, State, Move, CFtype>::BestMove(const State &st, Move& mv) const throw (EmptyNeighborhood)
     {
-      EvaluatedMove<Move, CFtype> em = SelectBest(st, [](const Move& mv, CostComponents<CFtype> cost) { return true; });
+      EvaluatedMove<Move, CFtype> em = SelectBest(st, [](const Move& mv, CostStructure<CFtype> cost) { return true; });
       if (!em.is_valid)
       {
         throw EmptyNeighborhood();
@@ -521,7 +521,7 @@ namespace EasyLocal {
     template <class Input, class State, class Move, typename CFtype>
     CFtype NeighborhoodExplorer<Input, State, Move, CFtype>::FirstImprovingMove(const State &st, Move& mv) const throw (EmptyNeighborhood)
     {
-      EvaluatedMove<Move, CFtype> em = SelectFirst(st, [](const Move& mv, CostComponents<CFtype> cost) { return LessThan(cost.total, (CFtype)0); });
+      EvaluatedMove<Move, CFtype> em = SelectFirst(st, [](const Move& mv, CostStructure<CFtype> cost) { return LessThan(cost.total, (CFtype)0); });
       if (!em.is_valid)
       {
         throw EmptyNeighborhood();
@@ -541,9 +541,9 @@ namespace EasyLocal {
     unsigned int number_of_bests = 0;
     Move mv;
     FirstMove(st, mv);
-    CostComponents<CFtype> mv_cost = DeltaCostFunctionComponents(st, mv, weights);
+    CostStructure<CFtype> mv_cost = DeltaCostFunctionComponents(st, mv, weights);
     Move best_move = mv;
-    CostComponents<CFtype> best_delta = mv_cost;
+    CostStructure<CFtype> best_delta = mv_cost;
     
     while (NextMove(st, mv))
     {
@@ -575,43 +575,39 @@ namespace EasyLocal {
   template <class Input, class State, class Move, typename CFtype>
   EvaluatedMove<Move, CFtype> NeighborhoodExplorer<Input, State, Move, CFtype>::SelectBest(const State& st, const MoveAcceptor& AcceptMove, const std::vector<double>& weights) const throw (EmptyNeighborhood)
   {
-    // TODO: review by checking for move acceptance in an outer if
-    unsigned int number_of_bests = 1; // number of moves found with the same best value
-    Move mv;
-    FirstMove(st, mv);
-    Move best_move = mv;
-    CostComponents<CFtype> mv_cost = DeltaCostFunctionComponents(st, mv, weights);
-    CostComponents<CFtype> best_delta = mv_cost;
-    bool first_found = AcceptMove(mv, mv_cost);
+    unsigned int number_of_bests = 0; // number of moves found with the same best value
+    EvaluatedMove<Move, CFtype> mv, best_move;
+    FirstMove(st, mv.move);
+    mv.cost = DeltaCostFunctionComponents(st, mv.move, weights);
     
-    while (NextMove(st, mv))
+    while (NextMove(st, mv.move))
     {
-      mv_cost = DeltaCostFunctionComponents(st, mv, weights);
-      if (!first_found && AcceptMove(mv, mv_cost))
+      mv.cost = DeltaCostFunctionComponents(st, mv.move, weights);
+      if (AcceptMove(mv.move, mv.cost))
       {
-        best_move = mv;
-        best_delta = mv_cost;
-        number_of_bests = 1;
-        first_found = true;
-      }
-      if (AcceptMove(mv, mv_cost) && LessThan(mv_cost.total, best_delta.total))
-      {
-        best_move = mv;
-        best_delta = mv_cost;
-        number_of_bests = 1;
-      }
-      else if (AcceptMove(mv, mv_cost) && EqualTo(mv_cost.total, best_delta.total))
-      {
-        if (Random::Int(0, number_of_bests) == 0) // accept the move with probability 1 / (1 + number_of_bests)
+        if (number_of_bests == 0)
+        {
           best_move = mv;
-        number_of_bests++;
+          number_of_bests = 1;
+        }
+        else if (mv.cost < best_move.cost)
+        {
+          best_move = mv;
+          number_of_bests = 1;
+        }
+        else if (mv.cost == best_move.cost)
+        {
+          if (Random::Int(0, number_of_bests) == 0) // accept the move with probability 1 / (1 + number_of_bests)
+            best_move = mv;
+          number_of_bests++;
+        }
       }
     }
     
-    if (!first_found)
+    if (number_of_bests == 0)
       return EvaluatedMove<Move, CFtype>::empty;
     
-    return EvaluatedMove<Move, CFtype>(best_move, best_delta);
+    return best_move;
   }
   
   /**
@@ -621,14 +617,13 @@ namespace EasyLocal {
   template <class Input, class State, class Move, typename CFtype>
   EvaluatedMove<Move, CFtype> NeighborhoodExplorer<Input, State, Move, CFtype>::RandomFirst(const State& st, size_t samples, size_t& sampled, const MoveAcceptor& AcceptMove, const std::vector<double>& weights) const throw (EmptyNeighborhood)
   {
-    Move mv;
-    CostComponents<CFtype> mv_cost;
+    EvaluatedMove<Move, CFtype> mv;
     for (sampled = 0; sampled < samples; sampled++)
     {
-      RandomMove(st, mv);
-      mv_cost = DeltaCostFunctionComponents(st, mv, weights);
-      if (AcceptMove(mv, mv_cost))
-        return EvaluatedMove<Move, CFtype>(mv, mv_cost);
+      RandomMove(st, mv.move);
+      mv.cost = DeltaCostFunctionComponents(st, mv.move, weights);
+      if (AcceptMove(mv.move, mv.cost))
+        return mv;
     }
     // exiting this loop means that there is no mv passing the acceptance criterion
     return EvaluatedMove<Move, CFtype>::empty;
@@ -641,44 +636,40 @@ namespace EasyLocal {
   template <class Input, class State, class Move, typename CFtype>
   EvaluatedMove<Move, CFtype> NeighborhoodExplorer<Input, State, Move, CFtype>::RandomBest(const State& st, size_t samples, size_t& sampled, const MoveAcceptor& AcceptMove, const std::vector<double>& weights) const throw (EmptyNeighborhood)
   {
-    // TODO: review by checking for move acceptance in an outer if
-    unsigned int number_of_bests = 1; // number of moves found with the same best value
-    Move mv;
-    RandomMove(st, mv);
-    Move best_move = mv;
-    CostComponents<CFtype> mv_cost = DeltaCostFunctionComponents(st, mv, weights);
-    CostComponents<CFtype> best_delta = mv_cost;
-    bool first_found = AcceptMove(mv, mv_cost);
+    unsigned int number_of_bests = 0; // number of moves found with the same best value
+    EvaluatedMove<Move, CFtype> mv, best_move;
+    RandomMove(st, mv.move);
+    mv.cost = DeltaCostFunctionComponents(st, mv.move, weights);
 
     for (sampled = 0; sampled < samples; sampled++)
     {
-      mv_cost = DeltaCostFunctionComponents(st, mv, weights);
-      if (!first_found && AcceptMove(mv, mv_cost))
+      mv.cost = DeltaCostFunctionComponents(st, mv.move, weights);
+      if (AcceptMove(mv.move, mv.cost))
       {
-        best_move = mv;
-        best_delta = mv_cost;
-        number_of_bests = 1;
-        first_found = true;
-      }
-      if (AcceptMove(mv, mv_cost) && LessThan(mv_cost.total, best_delta.total))
-      {
-        best_move = mv;
-        best_delta = mv_cost;
-        number_of_bests = 1;
-      }
-      else if (AcceptMove(mv, mv_cost) && EqualTo(mv_cost.total, best_delta.total))
-      {
-        if (Random::Int(0, number_of_bests) == 0) // accept the move with probability 1 / (1 + number_of_bests)
+        if (number_of_bests == 0)
+        {
           best_move = mv;
+          number_of_bests = 1;
+        }
+        else if (mv.cost < best_move.cost)
+        {
+          best_move = mv;
+          number_of_bests = 1;
+        }
+        else if (mv.cost == best_move.cost)
+        {
+          if (Random::Int(0, number_of_bests) == 0) // accept the move with probability 1 / (1 + number_of_bests)
+            best_move = mv;
           number_of_bests++;
+        }
       }
-      RandomMove(st, mv);
+      RandomMove(st, mv.move);
     }
     
-    if (!first_found)
+    if (number_of_bests == 0)
       return EvaluatedMove<Move, CFtype>::empty;
     
-    return EvaluatedMove<Move, CFtype>(best_move, best_delta);
+    return best_move;
   }
 }
 

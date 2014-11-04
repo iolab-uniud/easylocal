@@ -92,7 +92,7 @@ namespace EasyLocal {
       CFtype weight;
       
       /** Flag that tells if the cost component is soft or hard */
-      bool is_hard;
+      bool is_hard;            
       
       
     public:
@@ -102,7 +102,7 @@ namespace EasyLocal {
         return index;
       }
       
-      static const size_t NumberOfCostComponents()
+      static const size_t CostComponents()
       {
         return last_index;
       }
@@ -111,6 +111,8 @@ namespace EasyLocal {
       /** The overall index of this cost components */
       const size_t index;
     };
+    
+    
     
     /** IMPLEMENTATION */
     

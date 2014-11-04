@@ -30,14 +30,14 @@ namespace EasyLocal {
       void InitializeRun() throw (ParameterNotSet, IncorrectParameterValue)
       {
         MR::InitializeRun();
-        this->weights.resize(CostComponent<Input, State, CFtype>::NumberOfCostComponents(), 1.0);
+        this->weights.resize(CostComponent<Input, State, CFtype>::CostComponents(), 1.0);
       }
       
       void CompleteMove()
       {
         MR::CompleteMove();
         std::cout << "new weights {";
-        for (size_t i = 0; i < CostComponent<Input, State, CFtype>::NumberOfCostComponents(); i++)
+        for (size_t i = 0; i < CostComponent<Input, State, CFtype>::CostComponents(); i++)
         {
           if (this->current_state_cost.all_components[i] == 0)
             this->weights[i] /= Random::Double(1.02, 1.15);

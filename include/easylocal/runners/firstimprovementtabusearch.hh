@@ -32,7 +32,7 @@ namespace EasyLocal {
     template <class Input, class State, class Move, typename CFtype>
     void FirstImprovementTabuSearch<Input, State, Move, CFtype>::SelectMove()
     {
-      EvaluatedMove<Move, CFtype> em = this->ne.SelectFirst(*this->p_current_state, [this](const Move& mv, CostComponents<CFtype> move_cost) {
+      EvaluatedMove<Move, CFtype> em = this->ne.SelectFirst(*this->p_current_state, [this](const Move& mv, CostStructure<CFtype> move_cost) {
         return !this->pm.ProhibitedMove(*this->p_current_state, mv, move_cost.total);
       }, this->weights);
       this->current_move = em;

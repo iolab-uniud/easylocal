@@ -72,11 +72,8 @@ namespace EasyLocal {
       // TODO: it should become a parameter, the number of neighbors drawn at each iteration (possibly evaluated in parallel)
       const size_t samples = 10;
       size_t sampled;
-      EvaluatedMove<Move, CFtype> em = this->ne.RandomFirst(*this->p_current_state, samples, sampled, [](const Move& mv, CostComponents<CFtype> move_cost) {
-        if (move_cost.is_weighted)
-          return LessThanOrEqualTo(move_cost.weighted, 0.0);
-        else
-          return LessThanOrEqualTo(move_cost.total, (CFtype)0);
+      EvaluatedMove<Move, CFtype> em = this->ne.RandomFirst(*this->p_current_state, samples, sampled, [](const Move& mv, CostStructure<CFtype> move_cost) {
+        return move_cost <= 0;
       }, this->weights);
       this->current_move = em;
       this->evaluations += sampled;

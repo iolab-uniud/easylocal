@@ -43,7 +43,7 @@ namespace EasyLocal {
     void SampleTabuSearch<Input, State, Move, CFtype>::SelectMove()
     {
       size_t sampled = 0;
-      EvaluatedMove<Move, CFtype> em = this->ne.RandomBest(*this->p_current_state, samples, sampled, [this](const Move& mv, CostComponents<CFtype> move_cost) {
+      EvaluatedMove<Move, CFtype> em = this->ne.RandomBest(*this->p_current_state, samples, sampled, [this](const Move& mv, CostStructure<CFtype> move_cost) {
         return !this->pm.ProhibitedMove(*this->p_current_state, mv, move_cost.total);
       }, this->weights);
       this->current_move = em;

@@ -92,11 +92,8 @@ namespace EasyLocal {
       size_t sampled;
       CFtype prev_step_delta_cost = previous_steps[this->iteration % steps] - this->current_state_cost.total;
       // TODO: check shifting penalty meaningfullness
-      EvaluatedMove<Move, CFtype> em = this->ne.RandomFirst(*this->p_current_state, samples, sampled, [prev_step_delta_cost](const Move& mv, CostComponents<CFtype> move_cost) {
-        if (move_cost.is_weighted)
-          return LessThanOrEqualTo(move_cost.weighted, 0.0) || LessThanOrEqualTo(move_cost.weighted, (double)prev_step_delta_cost);
-        else
-          return LessThanOrEqualTo(move_cost.total, (CFtype)0) || LessThanOrEqualTo(move_cost.total, prev_step_delta_cost);
+      EvaluatedMove<Move, CFtype> em = this->ne.RandomFirst(*this->p_current_state, samples, sampled, [prev_step_delta_cost](const Move& mv, CostStructure<CFtype> move_cost) {
+        return move_cost <= 0 || move_cost <= prev_step_delta_cost;
       }, this->weights);
       this->current_move = em;
       this->evaluations += sampled;

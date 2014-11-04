@@ -53,11 +53,8 @@ namespace EasyLocal {
     template <class Input, class State, class Move, typename CFtype>
     void FirstDescent<Input, State, Move, CFtype>::SelectMove()
     {
-      EvaluatedMove<Move, CFtype> em = this->ne.SelectFirst(*this->p_current_state, [](const Move& mv, CostComponents<CFtype> move_cost) {
-        if (move_cost.is_weighted)
-          return LessThan(move_cost.weighted, 0.0);
-        else
-          return LessThan(move_cost.total, (CFtype)0);
+      EvaluatedMove<Move, CFtype> em = this->ne.SelectFirst(*this->p_current_state, [](const Move& mv, CostStructure<CFtype> move_cost) {
+        return move_cost < 0;
       }, this->weights);
       this->current_move = em;
     }

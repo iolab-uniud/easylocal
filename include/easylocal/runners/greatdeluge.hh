@@ -104,11 +104,8 @@ namespace EasyLocal {
       size_t sampled;
       CFtype cur_cost = this->current_state_cost.total;
       double l = level;
-      EvaluatedMove<Move, CFtype> em = this->ne.RandomFirst(*this->p_current_state, samples, sampled, [cur_cost, l](const Move& mv, CostComponents<CFtype> move_cost) {
-        if (move_cost.is_weighted)
-          return LessThanOrEqualTo(move_cost.weighted, 0.0) || LessThanOrEqualTo(move_cost.weighted + cur_cost, l);
-        else
-          return LessThanOrEqualTo(move_cost.total, (CFtype)0) || LessThanOrEqualTo((double)(move_cost.total + cur_cost), l);
+      EvaluatedMove<Move, CFtype> em = this->ne.RandomFirst(*this->p_current_state, samples, sampled, [cur_cost, l](const Move& mv, CostStructure<CFtype> move_cost) {
+        return move_cost < 0 || ((double)move_cost + cur_cost) <= l;
       }, this->weights);
       this->current_move = em;
     }
