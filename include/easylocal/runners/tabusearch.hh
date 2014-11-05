@@ -18,6 +18,14 @@ namespace EasyLocal {
       TabuListItem(const Move& move, unsigned long int tenure) : move(move), tenure(tenure) {}
       Move move;
       unsigned long int tenure;
+      
+      struct Comparator
+      {
+        bool operator()(const TabuListItem& li1, const TabuListItem& li2) const
+        {
+          return li1.tenure > li2.tenure;
+        }
+      };
     };
     
     template <class Queue>
@@ -27,12 +35,6 @@ namespace EasyLocal {
       const container_type& operator*() const { return this->c; }
       container_type& operator*() { return this->c; }
     };
-
-    template <class Move>
-    bool operator<(const TabuListItem<Move>& li1, const TabuListItem<Move>& li2)
-    {
-      return li1.tenure < li2.tenure;
-    }
     
     /** The Tabu Search runner explores a subset of the current
      neighborhood. Among the elements in it, the one that gives the
@@ -73,7 +75,7 @@ namespace EasyLocal {
       
       static InverseFunction SameMoveAsInverse;
             
-      typedef QueueAdapter<std::priority_queue<TabuListItem<Move>, std::vector<TabuListItem<Move>>>> PriorityQueue;
+      typedef QueueAdapter<std::priority_queue<TabuListItem<Move>, std::vector<TabuListItem<Move>>, typename TabuListItem<Move>::Comparator>> PriorityQueue;
       
       PriorityQueue tabu_list;
       // parameters
@@ -149,9 +151,10 @@ namespace EasyLocal {
     template <class Input, class State, class Move, typename CFtype>
     void TabuSearch<Input, State, Move, CFtype>::SelectMove()
     {
-      EvaluatedMove<Move, CFtype> em = this->ne.SelectBest(*this->p_current_state, [this](const Move& mv, CostStructure<CFtype> move_cost) {
-        for (auto li : (*(this->tabu_list)))
-          if (this->Inverse(li.move, mv) && (this->current_state_cost + move_cost >= this->best_state_cost))
+      CFtype aspiration = this->best_state_cost.total - this->current_state_cost.total;
+      EvaluatedMove<Move, CFtype> em = this->ne.SelectBest(*this->p_current_state, [this, aspiration](const Move& mv, CostStructure<CFtype> move_cost) {
+        for (auto li : *(this->tabu_list))
+          if (this->Inverse(li.move, mv) && (move_cost.total >= aspiration))
             return false;
         return true;
       }, this->weights);
@@ -181,6 +184,12 @@ namespace EasyLocal {
     template <class Input, class State, class Move, typename CFtype>
     void TabuSearch<Input, State, Move, CFtype>::CompleteMove()
     {
+      std::cout << StatusString() << std::endl;
+      
+      // remove no more tabu moves
+      while (!tabu_list.empty() && tabu_list.top().tenure < this->iteration)
+        tabu_list.pop();
+      // insert current move
       tabu_list.emplace(this->current_move.move, this->iteration + Random::Int(min_tenure, max_tenure));
     }
     
@@ -191,7 +200,7 @@ namespace EasyLocal {
     std::string TabuSearch<Input, State, Move, CFtype>::StatusString()
     {
       std::stringstream status;
-      status << "TL = [";
+      status << "TL = #" << tabu_list.size() << "[";
       size_t i = 0;
       for (auto li : (*tabu_list))
       {

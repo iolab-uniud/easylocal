@@ -40,9 +40,10 @@ namespace EasyLocal {
     void SampleTabuSearch<Input, State, Move, CFtype>::SelectMove()
     {
       size_t sampled = 0;
-      EvaluatedMove<Move, CFtype> em = this->ne.RandomBest(*this->p_current_state, samples, sampled, [this](const Move& mv, CostStructure<CFtype> move_cost) {
-        for (auto li : (*(this->tabu_list)))
-          if (this->Inverse(li.move, mv) && (this->current_state_cost + move_cost >= this->best_state_cost))
+      CFtype aspiration = this->best_state_cost.total - this->current_state_cost.total;
+      EvaluatedMove<Move, CFtype> em = this->ne.RandomBest(*this->p_current_state, samples, sampled, [this, aspiration](const Move& mv, CostStructure<CFtype> move_cost) {
+        for (auto li : *(this->tabu_list))
+          if (this->Inverse(li.move, mv) && (move_cost.total >= aspiration))
             return false;
         return true;
       }, this->weights);

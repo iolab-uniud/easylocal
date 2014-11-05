@@ -37,6 +37,16 @@ namespace EasyLocal {
         return *this;
       }
       
+      CostStructure& operator-=(const CostStructure& other)
+      {
+        this->total -= other.total;
+        this->violations -= other.violations;
+        this->objective -= other.objective;
+        for (size_t i = 0; i < other.all_components.size(); i++)
+          this->all_components[i] -= other.all_components[i];
+        return *this;
+      }
+      
       explicit operator double() const
       {
         if (is_weighted)
@@ -51,6 +61,14 @@ namespace EasyLocal {
     {
       CostStructure<CFtype> res = cs1;
       res += cs2;
+      return res;
+    }
+    
+    template <typename CFtype>
+    CostStructure<CFtype> operator-(const CostStructure<CFtype>& cs1, const CostStructure<CFtype>& cs2)
+    {
+      CostStructure<CFtype> res = cs1;
+      res -= cs2;
       return res;
     }
     
