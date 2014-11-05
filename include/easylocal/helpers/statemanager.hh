@@ -27,17 +27,6 @@ namespace EasyLocal {
       
       bool is_weighted;
       
-      CostStructure operator+(const CostStructure& other)
-      {
-        CostStructure res = *this;
-        res.total += other.total;
-        res.violations += other.violations;
-        res.objective += other.objective;
-        for (size_t i = 0; i < other.all_components.size(); i++)
-          res.all_components[i] += other.all_components[i];
-        return res;
-      }
-      
       CostStructure& operator+=(const CostStructure& other)
       {
         this->total += other.total;
@@ -56,6 +45,14 @@ namespace EasyLocal {
           return (double)total;
       }      
     };
+    
+    template <typename CFtype>
+    CostStructure<CFtype> operator+(const CostStructure<CFtype>& cs1, const CostStructure<CFtype>& cs2)
+    {
+      CostStructure<CFtype> res = cs1;
+      res += cs2;
+      return res;
+    }
     
     template <class CFtype>
     bool operator<(const CostStructure<CFtype>& cs1, const CostStructure<CFtype>& cs2)

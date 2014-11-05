@@ -97,6 +97,28 @@ namespace EasyLocal {
         });
         return std::make_pair(best_kick, best_cost);
       }
+      
+      virtual std::pair<Kick<State, Move, CFtype>, CostStructure<CFtype>> SelectRandom(size_t length, const State &st) const throw (EmptyNeighborhood)
+      {
+        Kick<State, Move, CFtype> k = *this->sample_begin(length, st, 1);
+        CostStructure<CFtype> zero(0, 0, 0, std::vector<CFtype>(CostComponent<Input, State, CFtype>::CostComponents(), 0));
+        CostStructure<CFtype> cost = tbb::parallel_reduce(tbb::blocked_range<typename Kick<State, Move, CFtype>::iterator>(k.begin(), k.end()), zero,
+                                                          [this](const tbb::blocked_range<typename Kick<State, Move, CFtype>::iterator>& r, CostStructure<CFtype> init)->CostStructure<CFtype> {
+                                                            for (typename Kick<State, Move, CFtype>::iterator it = r.begin(); it != r.end(); it++)
+                                                              {
+                                                                it->first.cost = this->ne.DeltaCostFunctionComponents(it->second, it->first.move);
+                                                                it->first.is_valid = true;
+                                                                init += it->first.cost;
+                                                              }
+                                                            return init;
+                                                          },
+                                                          [](const CostStructure<CFtype>& a, const CostStructure<CFtype>& b)-> CostStructure<CFtype> {
+                                                            return CostStructure<CFtype>(a + b);
+                                                          });
+
+
+        return std::make_pair(k, cost);
+      }
     };
   }
 }

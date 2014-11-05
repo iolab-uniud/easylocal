@@ -127,17 +127,18 @@ namespace EasyLocal {
         switch(choice)
         {
           case 1:
-            //kicker.RandomKick(st, kick, length);
+            std::tie(kick, cost) = kicker.SelectRandom(length, st);
+            os << kick << " " << cost << std::endl;
             execute_kick = true;
             break;
           case 2:
             std::tie(kick, cost) = kicker.SelectBest(length, st);
-            os << kick << cost << std::endl;
+            os << kick << " " << cost << std::endl;
             execute_kick = true;
             break;
           case 3:
             std::tie(kick, cost) = kicker.SelectFirst(length, st);
-            os << kick << cost << std::endl;
+            os << kick << " " << cost << std::endl;
             execute_kick = true;
             break;
           case 4:
@@ -161,9 +162,7 @@ namespace EasyLocal {
     void KickerTester<Input, Output, State, Move, CFtype>::PrintKicks(size_t length, const State& st) const
     {
       for (auto it = kicker.begin(length, st); it != kicker.end(length, st); it++)
-      {
         os << *it << std::endl;
-      }
     }
     
     template <class Input, class Output, class State, class Move, typename CFtype>

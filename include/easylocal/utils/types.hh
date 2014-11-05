@@ -47,18 +47,7 @@ namespace EasyLocal {
           min_val = values[i];
       
       return min_val;
-    }
-    
-    /** Helper function to check whether two @ref Move are related. As a general rule all @ref Move are related (unless otherwise specified by overloading this helper).
-     @param m1 first @ref Move
-     @param m2 second @ref Move
-     @remarks the ordering of moves is important
-     */
-    template <class Move1, class Move2>
-    bool IsRelated(const Move1& m1, const Move2& m2)
-    {
-      return true;
-    }
+    }       
     
     /** Checks whether @ref Move m2 would undo @ref Move m1 (unless otherwise specified by overloading this helper).
      @param m1 first @ref Move

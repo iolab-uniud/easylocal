@@ -30,7 +30,7 @@ namespace EasyLocal {
       void InitializeRun() throw (ParameterNotSet, IncorrectParameterValue)
       {
         MR::InitializeRun();
-        this->weights.resize(CostComponent<Input, State, CFtype>::CostComponents(), 1.0);
+        this->weights.assign(CostComponent<Input, State, CFtype>::CostComponents(), 1.0);
       }
       
       void CompleteMove()
