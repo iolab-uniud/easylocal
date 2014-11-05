@@ -15,12 +15,9 @@ namespace EasyLocal {
     template <class Input, class State, class Move, typename CFtype = int>
     class SampleTabuSearch : public TabuSearch<Input, State, Move, CFtype>
     {
-    public:
-      SampleTabuSearch<Input, State, Move, CFtype>(const Input& in,
-                                                   StateManager<Input, State, CFtype>& e_sm,
-                                                   NeighborhoodExplorer<Input, State, Move, CFtype>& e_ne,
-                                                   TabuListManager<State, Move, CFtype>& e_tlm,
-                                                   std::string name) : TabuSearch<Input, State, Move, CFtype>(in, e_sm, e_ne, e_tlm, name) {}
+    public:      
+      using TabuSearch<Input, State, Move, CFtype>::TabuSearch;
+      
       void RegisterParameters()
       {
         TabuSearch<Input, State, Move, CFtype>::RegisterParameters();
@@ -44,7 +41,10 @@ namespace EasyLocal {
     {
       size_t sampled = 0;
       EvaluatedMove<Move, CFtype> em = this->ne.RandomBest(*this->p_current_state, samples, sampled, [this](const Move& mv, CostStructure<CFtype> move_cost) {
-        return !this->pm.ProhibitedMove(*this->p_current_state, mv, move_cost.total);
+        for (auto li : (*(this->tabu_list)))
+          if (this->Inverse(li.move, mv) && (this->current_state_cost + move_cost >= this->best_state_cost))
+            return false;
+        return true;
       }, this->weights);
       this->current_move = em;
     }

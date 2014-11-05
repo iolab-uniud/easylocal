@@ -41,22 +41,22 @@ namespace EasyLocal {
     public:
       typedef typename Kicker<Input, State, Move, CFtype>::MoveRelatedness MoveRelatedness;
       
-      const FullKickerIterator& operator++(int) // postfix
+      FullKickerIterator operator++(int) // postfix
+      {
+        FullKickerIterator pi = *this;
+        if (end)
+          throw std::logic_error("Attempting to go after last kick");
+        end = !NextKick();
+        kick_count++;
+        return pi;
+      }
+      FullKickerIterator& operator++() // prefix
       {
         if (end)
           throw std::logic_error("Attempting to go after last kick");
         end = !NextKick();
         kick_count++;
         return *this;
-      }
-      FullKickerIterator operator++() // prefix
-      {
-        FullKickerIterator ni = *this;
-        if (end)
-          throw std::logic_error("Attempting to go after last kick");
-        end = !NextKick();
-        kick_count++;
-        return ni;
       }
       const Kick<State, Move, CFtype>& operator*() const
       {
@@ -109,7 +109,7 @@ namespace EasyLocal {
               try
               {
                 ne.FirstMove(kick[cur].second, kick[cur].first.move);
-                while (cur > 0 && !IsRelated(kick[cur - 1].first.move, kick[cur].first.move))
+                while (cur > 0 && !RelatedMoves(kick[cur - 1].first.move, kick[cur].first.move))
                 {
                   if (!ne.NextMove(kick[cur].second, kick[cur].first.move))
                   {
@@ -141,7 +141,7 @@ namespace EasyLocal {
                   goto loop;
                 }
               }
-              while (cur > 0 && !IsRelated(kick[cur - 1].first.move, kick[cur].first.move));
+              while (cur > 0 && !RelatedMoves(kick[cur - 1].first.move, kick[cur].first.move));
               backtracking = false;
               ne.MakeMove(kick[cur].second, kick[cur].first.move);
               cur++;
@@ -171,7 +171,7 @@ namespace EasyLocal {
             try
             {
               ne.FirstMove(kick[cur].second, kick[cur].first.move);
-              while (cur > 0 && !IsRelated(kick[cur - 1].first.move, kick[cur].first.move))
+              while (cur > 0 && !RelatedMoves(kick[cur - 1].first.move, kick[cur].first.move))
               {
                 if (!ne.NextMove(kick[cur].second, kick[cur].first.move))
                 {
@@ -206,7 +206,7 @@ namespace EasyLocal {
                 goto loop;
               }
             }
-            while (cur > 0 && !IsRelated(kick[cur - 1].first.move, kick[cur].first.move));
+            while (cur > 0 && !RelatedMoves(kick[cur - 1].first.move, kick[cur].first.move));
             backtracking = false;
             ne.MakeMove(kick[cur].second, kick[cur].first.move);
             kick[cur].first.is_valid = false;
@@ -217,8 +217,8 @@ namespace EasyLocal {
         return true;
       }
     protected:
-      FullKickerIterator<Input, State, Move, CFtype>(size_t length, const NeighborhoodExplorer<Input, State, Move, CFtype>& ne, const State& state, const MoveRelatedness& IsRelated, bool end = false)
-      : length(length), ne(ne), start_state(state), kick_count(0), end(end), IsRelated(IsRelated)
+      FullKickerIterator<Input, State, Move, CFtype>(size_t length, const NeighborhoodExplorer<Input, State, Move, CFtype>& ne, const State& state, const MoveRelatedness& RelatedMoves, bool end = false)
+      : length(length), ne(ne), start_state(state), kick_count(0), end(end), RelatedMoves(RelatedMoves)
       {
         if (end)
           return;
@@ -237,7 +237,7 @@ namespace EasyLocal {
       Kick<State, Move, CFtype> kick;
       size_t kick_count;
       bool end;
-      const MoveRelatedness& IsRelated;
+      const MoveRelatedness& RelatedMoves;
     };
     
     
@@ -248,7 +248,20 @@ namespace EasyLocal {
     public:
       typedef typename Kicker<Input, State, Move, CFtype>::MoveRelatedness MoveRelatedness;
       
-      const SampleKickerIterator& operator++(int) // postfix
+      SampleKickerIterator operator++(int) // postfix
+      {
+        SampleKickerIterator pi = *this;
+        if (end)
+          throw std::logic_error("Attempting to go after last kick");
+        kick_count++;
+        end = kick_count >= samples;
+        if (!end)
+        {
+          RandomKick();
+        }
+        return pi;
+      }
+      SampleKickerIterator& operator++() // prefix
       {
         if (end)
           throw std::logic_error("Attempting to go after last kick");
@@ -259,19 +272,6 @@ namespace EasyLocal {
           RandomKick();
         }
         return *this;
-      }
-      SampleKickerIterator operator++() // prefix
-      {
-        SampleKickerIterator ni = *this;
-        if (end)
-          throw std::logic_error("Attempting to go after last kick");
-        kick_count++;
-        end = kick_count >= samples;
-        if (!end)
-        {
-          RandomKick();
-        }
-        return ni;
       }
       const Kick<State, Move, CFtype>& operator*() const
       {
@@ -334,7 +334,7 @@ namespace EasyLocal {
                 initial_set[cur] = true;
               }
               
-              while (cur > 0 && !IsRelated(kick[cur - 1].first.move, kick[cur].first.move))
+              while (cur > 0 && !RelatedMoves(kick[cur - 1].first.move, kick[cur].first.move))
               {
                 if (!ne.NextMove(kick[cur].second, kick[cur].first.move))
                   ne.FirstMove(kick[cur].second, kick[cur].first.move);
@@ -370,7 +370,7 @@ namespace EasyLocal {
                 goto loop;
               }
             }
-            while (cur > 0 && !IsRelated(kick[cur - 1].first.move, kick[cur].first.move));
+            while (cur > 0 && !RelatedMoves(kick[cur - 1].first.move, kick[cur].first.move));
             backtracking = false;
             ne.MakeMove(kick[cur].second, kick[cur].first.move);
             kick[cur].first.is_valid = false;
@@ -380,8 +380,8 @@ namespace EasyLocal {
         }
       }
       
-      SampleKickerIterator<Input, State, Move, CFtype>(size_t length, const NeighborhoodExplorer<Input, State, Move, CFtype>& ne, const State& state, size_t samples, const MoveRelatedness& IsRelated, bool end = false)
-      : length(length), ne(ne), start_state(state), kick_count(0), samples(samples), end(end), IsRelated(IsRelated)
+      SampleKickerIterator<Input, State, Move, CFtype>(size_t length, const NeighborhoodExplorer<Input, State, Move, CFtype>& ne, const State& state, size_t samples, const MoveRelatedness& RelatedMoves, bool end = false)
+      : length(length), ne(ne), start_state(state), kick_count(0), samples(samples), end(end), RelatedMoves(RelatedMoves)
       {
         if (end)
           return;
@@ -400,7 +400,7 @@ namespace EasyLocal {
       Kick<State, Move, CFtype> kick;
       size_t kick_count, samples;
       bool end;
-      const MoveRelatedness& IsRelated;
+      const MoveRelatedness& RelatedMoves;
     };
     
     /** A kicker is a special kind of neighborhood explorer, which can generate sequences of moves of arbitrary length. It is used to provide diversification or intensification strategies.
@@ -415,7 +415,7 @@ namespace EasyLocal {
       /** Constructor.
        @param ne the @ref NeighborhoodExplorer used to generate the @ref Move
        */
-      Kicker(NeighborhoodExplorer<Input, State, Move, CFtype>& ne, const MoveRelatedness& IsRelated) : ne(ne), IsRelated(IsRelated) {}
+      Kicker(NeighborhoodExplorer<Input, State, Move, CFtype>& ne, const MoveRelatedness& RelatedMoves = AllMovesRelated) : ne(ne), RelatedMoves(RelatedMoves) {}
       
       /** The modality of the @ref Move (warning: not the length of the @ref Move sequences) */
       virtual unsigned int Modality() const
@@ -527,22 +527,22 @@ namespace EasyLocal {
       
       FullKickerIterator<Input, State, Move, CFtype> begin(size_t length, const State& st) const
       {
-        return FullKickerIterator<Input, State, Move, CFtype>(length, ne, st, IsRelated);
+        return FullKickerIterator<Input, State, Move, CFtype>(length, ne, st, RelatedMoves);
       }
       
       FullKickerIterator<Input, State, Move, CFtype> end(size_t length, const State& st) const
       {
-        return FullKickerIterator<Input, State, Move, CFtype>(length, ne, st, IsRelated, true);
+        return FullKickerIterator<Input, State, Move, CFtype>(length, ne, st, RelatedMoves, true);
       }
       
       SampleKickerIterator<Input, State, Move, CFtype> sample_begin(size_t length, const State& st, size_t samples) const
       {
-        return SampleKickerIterator<Input, State, Move, CFtype>(length, ne, st, samples, IsRelated);
+        return SampleKickerIterator<Input, State, Move, CFtype>(length, ne, st, samples, RelatedMoves);
       }
       
       SampleKickerIterator<Input, State, Move, CFtype> sample_end(size_t length, const State& st, size_t samples) const
       {
-        return SampleKickerIterator<Input, State, Move, CFtype>(length, ne, st, samples, IsRelated, true);
+        return SampleKickerIterator<Input, State, Move, CFtype>(length, ne, st, samples, RelatedMoves, true);
       }
       
     protected:
@@ -552,8 +552,13 @@ namespace EasyLocal {
       
       
       /** The functor for checking for move relatedness */
-      const MoveRelatedness& IsRelated;
+      const MoveRelatedness& RelatedMoves;
+      
+      static MoveRelatedness AllMovesRelated;
     };
+    
+    template <class Input, class State, class Move, typename CFtype>
+    typename Kicker<Input, State, Move, CFtype>::MoveRelatedness Kicker<Input, State, Move, CFtype>::AllMovesRelated = [](const Move&, const Move&) { return true; };
   }
 }
 

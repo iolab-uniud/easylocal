@@ -28,22 +28,22 @@ namespace EasyLocal {
     public:
       FullNeighborhoodIterator operator++(int) // postfix
       {
+        FullNeighborhoodIterator pi = *this;
+        if (end)
+          throw std::logic_error("Attempting to go after last move");
+        end = !ne.NextMove(state, current_move);
+        move_count++;
+        computed_move = EvaluatedMove<Move, CFtype>(current_move);
+        return pi;
+      }
+      FullNeighborhoodIterator& operator++() // prefix
+      {
         if (end)
           throw std::logic_error("Attempting to go after last move");
         end = !ne.NextMove(state, current_move);
         move_count++;
         computed_move = EvaluatedMove<Move, CFtype>(current_move);
         return *this;
-      }
-      FullNeighborhoodIterator operator++() // prefix
-      {
-        FullNeighborhoodIterator ni = *this;
-        if (end)
-          throw std::logic_error("Attempting to go after last move");
-        end = !ne.NextMove(state, current_move);
-        move_count++;
-        computed_move = EvaluatedMove<Move, CFtype>(current_move);
-        return ni;
       }
       EvaluatedMove<Move, CFtype> operator*() const
       {
@@ -96,6 +96,7 @@ namespace EasyLocal {
     public:
       SampleNeighborhoodIterator operator++(int) // postfix
       {
+        SampleNeighborhoodIterator pi = *this;
         if (end)
           throw std::logic_error("Attempting to go after last move");
         move_count++;
@@ -105,11 +106,10 @@ namespace EasyLocal {
           ne.RandomMove(state, current_move);
           computed_move = EvaluatedMove<Move, CFtype>(current_move, 0);
         }
-        return *this;
+        return pi;
       }
-      SampleNeighborhoodIterator operator++() // prefix
+      SampleNeighborhoodIterator& operator++() // prefix
       {
-        SampleNeighborhoodIterator ni = *this;
         if (end)
           throw std::logic_error("Attempting to go after last move");
         move_count++;
@@ -119,7 +119,7 @@ namespace EasyLocal {
           ne.RandomMove(state, current_move);
           computed_move = EvaluatedMove<Move, CFtype>(current_move);
         }
-        return ni;
+        return *this;
       }
       EvaluatedMove<Move, CFtype> operator*() const
       {

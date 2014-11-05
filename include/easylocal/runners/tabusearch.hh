@@ -6,11 +6,33 @@
 #include "easylocal/runners/moverunner.hh"
 #include "easylocal/helpers/statemanager.hh"
 #include "easylocal/helpers/neighborhoodexplorer.hh"
-#include "easylocal/helpers/tabulistmanager.hh"
 
 namespace EasyLocal {
   
   namespace Core {
+    
+    template <class Move>
+    struct TabuListItem
+    {
+      TabuListItem() : tenure(0) {}
+      TabuListItem(const Move& move, unsigned long int tenure) : move(move), tenure(tenure) {}
+      Move move;
+      unsigned long int tenure;
+    };
+    
+    template <class Queue>
+    class QueueAdapter : public Queue {
+    public:
+      typedef typename Queue::container_type container_type;
+      const container_type& operator*() const { return this->c; }
+      container_type& operator*() { return this->c; }
+    };
+
+    template <class Move>
+    bool operator<(const TabuListItem<Move>& li1, const TabuListItem<Move>& li2)
+    {
+      return li1.tenure < li2.tenure;
+    }
     
     /** The Tabu Search runner explores a subset of the current
      neighborhood. Among the elements in it, the one that gives the
@@ -30,26 +52,33 @@ namespace EasyLocal {
     class TabuSearch : public MoveRunner<Input, State, Move, CFtype>
     {
     public:
-      TabuSearch(const Input& in, StateManager<Input, State, CFtype>& e_sm,
-                 NeighborhoodExplorer<Input, State, Move, CFtype>& e_ne,
-                 TabuListManager<State, Move, CFtype>& e_tlm,
-                 std::string name);
+      typedef std::function<bool(const Move& lm, const Move& mv)> InverseFunction;
+      
+      TabuSearch(const Input& in, StateManager<Input, State, CFtype>& sm,
+                 NeighborhoodExplorer<Input, State, Move, CFtype>& ne,
+                 std::string name,
+                 const InverseFunction& Inverse = SameMoveAsInverse);
       std::string StatusString();
       
       virtual void Print(std::ostream& os = std::cout) const;
-      void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout);
-      virtual void SetMaxIdleIteration(unsigned long int m) { max_idle_iterations = m; }
-      TabuListManager<State, Move, CFtype>& GetTabuListManager() { return pm; }
-      bool MaxIdleIterationExpired() const;
+
     protected:
+      bool MaxIdleIterationExpired() const;
       void InitializeRun() throw (ParameterNotSet, IncorrectParameterValue);
       bool StopCriterion();
       void SelectMove();
       void CompleteMove();
-      TabuListManager<State, Move, CFtype>& pm; /**< A reference to a tabu list manger. */
       void RegisterParameters();
+      const InverseFunction& Inverse;
+      
+      static InverseFunction SameMoveAsInverse;
+            
+      typedef QueueAdapter<std::priority_queue<TabuListItem<Move>, std::vector<TabuListItem<Move>>>> PriorityQueue;
+      
+      PriorityQueue tabu_list;
       // parameters
       Parameter<unsigned long int> max_idle_iterations;
+      Parameter<unsigned int> min_tenure, max_tenure;
     };
     
     /*************************************************************************
@@ -68,11 +97,11 @@ namespace EasyLocal {
     
     template <class Input, class State, class Move, typename CFtype>
     TabuSearch<Input, State, Move, CFtype>::TabuSearch(const Input& in,
-                                                       StateManager<Input, State, CFtype>& e_sm,
-                                                       NeighborhoodExplorer<Input, State, Move, CFtype>& e_ne,
-                                                       TabuListManager<State, Move, CFtype>& tlm,
-                                                       std::string name)
-    : MoveRunner<Input, State, Move, CFtype>(in, e_sm, e_ne, name, "Tabu Search Runner"), pm(tlm)
+                                                       StateManager<Input, State, CFtype>& sm,
+                                                       NeighborhoodExplorer<Input, State, Move, CFtype>& ne,
+                                                       std::string name,
+                                                       const InverseFunction& Inverse)
+    : MoveRunner<Input, State, Move, CFtype>(in, sm, ne, name, "Tabu Search Runner"), Inverse(Inverse)
     {}
     
     
@@ -81,13 +110,24 @@ namespace EasyLocal {
     {
       MoveRunner<Input, State, Move, CFtype>::RegisterParameters();
       max_idle_iterations("max_idle_iterations", "Maximum number of idle iterations", this->parameters);
+      min_tenure("min_tenure", "Minimum tabu tenure", this->parameters);
+      max_tenure("max_tenure", "Maximum tabu tenure", this->parameters);
     }
     
     template <class Input, class State, class Move, typename CFtype>
     void TabuSearch<Input, State, Move, CFtype>::Print(std::ostream& os) const
     {
       Runner<Input, State, CFtype>::Print(os);
-      pm.Print(os);
+      os << "{";
+      size_t i = 0;
+      for (typename PriorityQueue::container_type::const_iterator it = (*tabu_list).begin(); it != (*tabu_list).end(); ++it)
+      {
+        if (i > 0)
+          os << ", ";
+        os << it->move << "(" << it->tenure << ")";
+        i++;
+      }
+      os << "}";
     }
     
     /**
@@ -98,8 +138,7 @@ namespace EasyLocal {
     void TabuSearch<Input, State, Move, CFtype>::InitializeRun() throw (ParameterNotSet, IncorrectParameterValue)
     {
       MoveRunner<Input, State, Move, CFtype>::InitializeRun();
-      // pm.SetLength(min_tenure, max_tenure); not my responsibility
-      pm.Clean();
+      (*tabu_list).clear();
     }
     
     
@@ -111,7 +150,10 @@ namespace EasyLocal {
     void TabuSearch<Input, State, Move, CFtype>::SelectMove()
     {
       EvaluatedMove<Move, CFtype> em = this->ne.SelectBest(*this->p_current_state, [this](const Move& mv, CostStructure<CFtype> move_cost) {
-        return !this->pm.ProhibitedMove(*this->p_current_state, mv, move_cost.total);
+        for (auto li : (*(this->tabu_list)))
+          if (this->Inverse(li.move, mv) && (this->current_state_cost + move_cost >= this->best_state_cost))
+            return false;
+        return true;
       }, this->weights);
       this->current_move = em;
     }
@@ -139,15 +181,7 @@ namespace EasyLocal {
     template <class Input, class State, class Move, typename CFtype>
     void TabuSearch<Input, State, Move, CFtype>::CompleteMove()
     {
-      pm.InsertMove(*this->p_current_state, this->current_move.move, this->current_move.cost.total,
-                    this->current_state_cost.total, this->best_state_cost.total);
-    }
-    
-    template <class Input, class State, class Move, typename CFtype>
-    void TabuSearch<Input, State, Move, CFtype>::ReadParameters(std::istream& is, std::ostream& os)
-    {
-      MoveRunner<Input, State, CFtype>::ReadParameters(is, os);
-      pm.ReadParameters(is, os);
+      tabu_list.emplace(this->current_move.move, this->iteration + Random::Int(min_tenure, max_tenure));
     }
     
     /**
@@ -157,10 +191,22 @@ namespace EasyLocal {
     std::string TabuSearch<Input, State, Move, CFtype>::StatusString()
     {
       std::stringstream status;
-      status << "[" << "TL = " << pm.StatusString() << "]";
+      status << "TL = [";
+      size_t i = 0;
+      for (auto li : (*tabu_list))
+      {
+        if (i > 0)
+          status << ", ";
+        status << li.move << "(" << li.tenure << ")";
+        i++;
+      }
+      status << "]";
       return status.str();
     }  
   }
+  
+  template <class Input, class State, class Move, typename CFtype>
+  typename TabuSearch<Input, State, Move, CFtype>::InverseFunction TabuSearch<Input, State, Move, CFtype>::SameMoveAsInverse = [](const Move& lm, const Move& om) { return lm == om; };
 }
 
 #endif // _TABU_SEARCH_HH_
