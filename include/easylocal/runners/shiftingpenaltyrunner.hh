@@ -14,7 +14,7 @@
 namespace EasyLocal {
   namespace Core {
     
-    template <class Input, class State, class Move, typename CFtype, class MR>
+    template <class MR>
     class ShiftingPenaltyRunner : public MR
     {
       // TODO: currently it performs weight adaptation at each iteration
@@ -73,24 +73,24 @@ namespace EasyLocal {
         {
           throw IncorrectParameterValue(infeasible_iterations, "should be greater than zero");
         }
-        this->weights.assign(CostComponent<Input, State, CFtype>::CostComponents(), 1.0);
-        number_of_feasible_iterations.assign(CostComponent<Input, State, CFtype>::CostComponents(), 0);
-        number_of_infeasible_iterations.assign(CostComponent<Input, State, CFtype>::CostComponents(), 0);
+        this->weights.assign(CostComponent<typename MR::InputType, typename MR::StateType, typename MR::CostFunctionType>::CostComponents(), 1.0);
+        number_of_feasible_iterations.assign(CostComponent<typename MR::InputType, typename MR::StateType, typename MR::CostFunctionType>::CostComponents(), 0);
+        number_of_infeasible_iterations.assign(CostComponent<typename MR::InputType, typename MR::StateType, typename MR::CostFunctionType>::CostComponents(), 0);
       }
       
       void CompleteMove()
       {
         MR::CompleteMove();
-        for (size_t i = 0; i < CostComponent<Input, State, CFtype>::CostComponents(); i++)
+        for (size_t i = 0; i < CostComponent<typename MR::InputType, typename MR::StateType, typename MR::CostFunctionType>::CostComponents(); i++)
         {
-          if (CostComponent<Input, State, CFtype>::ComponentIsHard(i) && this->current_state_cost.all_components[i] == 0)
+          if (CostComponent<typename MR::InputType, typename MR::StateType, typename MR::CostFunctionType>::ComponentIsHard(i) && this->current_state_cost.all_components[i] == 0)
           {
             number_of_feasible_iterations[i]++;
             number_of_infeasible_iterations[i] = 0;
             if (number_of_feasible_iterations[i] % (unsigned int)feasible_iterations == 0)
               this->weights[i] = std::max((double)min_range, this->weights[i] / Random::Double(min_perturbation, max_perturbation));
           }
-          if (CostComponent<Input, State, CFtype>::ComponentIsHard(i) && this->current_state_cost.all_components[i] > 0)
+          if (CostComponent<typename MR::InputType, typename MR::StateType, typename MR::CostFunctionType>::ComponentIsHard(i) && this->current_state_cost.all_components[i] > 0)
           {
             number_of_infeasible_iterations[i]++;
             number_of_feasible_iterations[i] = 0;

@@ -36,6 +36,10 @@ namespace EasyLocal {
       
     public:
       
+      typedef Input InputType;
+      typedef State StateType;
+      typedef CFtype CostFunctionType;
+      
       /** Performs a full run of the search method (possibly being interrupted before its natural ending).
        @param s state to start with and to modify
        @return the cost of the best state found

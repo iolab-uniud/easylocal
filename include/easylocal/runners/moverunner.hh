@@ -20,6 +20,8 @@ namespace EasyLocal {
     {
     public:
       
+      typedef Move MoveType;
+      
       enum Event { START = 1 << 0, NEW_BEST = 1 << 1, MADE_MOVE = 1 << 2, END = 1 << 3 };
       const size_t events = 4;
       
