@@ -17,7 +17,7 @@ namespace EasyLocal {
   
   namespace Debug {
     
-    using EasyLocal::Core;
+    using namespace EasyLocal::Core;
     
     template <class Input, class State, typename CFtype>
     class ChoiceReader
