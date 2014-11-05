@@ -65,7 +65,7 @@ namespace EasyLocal {
       std::string StatusString();
       
       virtual void Print(std::ostream& os = std::cout) const;
-
+      
     protected:
       bool MaxIdleIterationExpired() const;
       void InitializeRun() throw (ParameterNotSet, IncorrectParameterValue);
@@ -76,7 +76,7 @@ namespace EasyLocal {
       const InverseFunction& Inverse;
       
       static InverseFunction SameMoveAsInverse;
-            
+      
       typedef QueueAdapter<std::priority_queue<TabuListItem<Move>, std::vector<TabuListItem<Move>>, typename TabuListItem<Move>::Comparator>> PriorityQueue;
       
       PriorityQueue tabu_list;
@@ -177,7 +177,7 @@ namespace EasyLocal {
     bool TabuSearch<Input, State, Move, CFtype>::StopCriterion()
     {
       return MaxIdleIterationExpired() || this->MaxIterationExpired();
-    }       
+    }
     
     /**
      Stores the move by inserting it in the tabu list, if the state obtained
@@ -213,11 +213,11 @@ namespace EasyLocal {
       }
       status << "]";
       return status.str();
-    }  
-  }
-  
-  template <class Input, class State, class Move, typename CFtype>
-  typename TabuSearch<Input, State, Move, CFtype>::InverseFunction TabuSearch<Input, State, Move, CFtype>::SameMoveAsInverse = [](const Move& lm, const Move& om) { return lm == om; };
+    }
+    
+    template <class Input, class State, class Move, typename CFtype>
+    typename TabuSearch<Input, State, Move, CFtype>::InverseFunction TabuSearch<Input, State, Move, CFtype>::SameMoveAsInverse = [](const Move& lm, const Move& om) { return lm == om; };
+  }  
 }
 
 #endif // _TABU_SEARCH_HH_
