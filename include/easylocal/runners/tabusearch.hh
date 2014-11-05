@@ -3,7 +3,7 @@
 
 #include <stdexcept>
 #include <list>
-#include <priority_queue>
+#include <queue>
 
 #include "easylocal/runners/moverunner.hh"
 #include "easylocal/helpers/statemanager.hh"
