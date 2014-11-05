@@ -39,7 +39,6 @@ namespace EasyLocal {
     {
       friend class Kicker<Input, State, Move, CFtype>;
     public:
-      typedef Move MoveType;
       typedef typename Kicker<Input, State, Move, CFtype>::MoveRelatedness MoveRelatedness;
       
       FullKickerIterator operator++(int) // postfix
@@ -410,7 +409,8 @@ namespace EasyLocal {
     class Kicker
     {
     public:
-      
+      typedef Move MoveType;
+
       typedef typename std::function<bool(const Move& m1, const Move& m2)> MoveRelatedness;
       
       /** Constructor.

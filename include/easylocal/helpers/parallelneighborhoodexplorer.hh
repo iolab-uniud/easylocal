@@ -165,7 +165,7 @@ namespace EasyLocal {
       bool end;
     };
     
-    template <class Input, class State, class Move, typename CFtype = int>
+    template <class Input, class State, class Move, typename CFtype>
     class NeighborhoodExplorerIteratorInterface
     {
     protected:
@@ -180,7 +180,7 @@ namespace EasyLocal {
       }
     };
     
-    template <class Input, class State, class NE, typename CFtype>
+    template <class Input, class State, class NE, typename CFtype = int>
     class ParallelNeighborhoodExplorer : public NE, public NeighborhoodExplorerIteratorInterface<Input, State, typename NE::MoveType, CFtype>
     {
     public:
