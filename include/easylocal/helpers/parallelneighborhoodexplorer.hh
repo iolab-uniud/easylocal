@@ -30,7 +30,7 @@ namespace EasyLocal {
       {
         if (end)
           throw std::logic_error("Attempting to go after last move");
-        end = !nhe.NextMove(state, current_move);
+        end = !ne.NextMove(state, current_move);
         move_count++;
         computed_move = EvaluatedMove<Move, CFtype>(current_move);
         return *this;
@@ -40,7 +40,7 @@ namespace EasyLocal {
         FullNeighborhoodIterator ni = *this;
         if (end)
           throw std::logic_error("Attempting to go after last move");
-        end = !nhe.NextMove(state, current_move);
+        end = !ne.NextMove(state, current_move);
         move_count++;
         computed_move = EvaluatedMove<Move, CFtype>(current_move);
         return ni;
@@ -66,14 +66,14 @@ namespace EasyLocal {
         return (end != it2.end || move_count != it2.move_count || &state != &it2.state);
       }
     protected:
-      FullNeighborhoodIterator<Input, State, Move, CFtype>(const NeighborhoodExplorer<Input, State, Move, CFtype>& nhe, const State& state, bool end = false)
-      : nhe(nhe), state(state), move_count(0), end(end)
+      FullNeighborhoodIterator<Input, State, Move, CFtype>(const NeighborhoodExplorer<Input, State, Move, CFtype>& ne, const State& state, bool end = false)
+      : ne(ne), state(state), move_count(0), end(end)
       {
         if (end)
           return;
         try
         {
-          nhe.FirstMove(state, current_move);
+          ne.FirstMove(state, current_move);
           computed_move = EvaluatedMove<Move, CFtype>(current_move);
         }
         catch (EmptyNeighborhood)
@@ -81,7 +81,7 @@ namespace EasyLocal {
           end = true;
         }
       }
-      const NeighborhoodExplorer<Input, State, Move, CFtype>& nhe;
+      const NeighborhoodExplorer<Input, State, Move, CFtype>& ne;
       const State& state;
       Move current_move;
       EvaluatedMove<Move, CFtype> computed_move;
@@ -102,7 +102,7 @@ namespace EasyLocal {
         end = move_count >= samples;
         if (!end)
         {
-          nhe.RandomMove(state, current_move);
+          ne.RandomMove(state, current_move);
           computed_move = EvaluatedMove<Move, CFtype>(current_move, 0);
         }
         return *this;
@@ -116,7 +116,7 @@ namespace EasyLocal {
         end = move_count >= samples;
         if (!end)
         {
-          nhe.RandomMove(state, current_move);
+          ne.RandomMove(state, current_move);
           computed_move = EvaluatedMove<Move, CFtype>(current_move);
         }
         return ni;
@@ -142,14 +142,14 @@ namespace EasyLocal {
         return (end != it2.end || move_count != it2.move_count || &state != &it2.state);
       }
     protected:
-      SampleNeighborhoodIterator<Input, State, Move, CFtype>(const NeighborhoodExplorer<Input, State, Move, CFtype>& nhe, const State& state, size_t samples, bool end = false)
-      : nhe(nhe), state(state), move_count(0), samples(samples), end(end)
+      SampleNeighborhoodIterator<Input, State, Move, CFtype>(const NeighborhoodExplorer<Input, State, Move, CFtype>& ne, const State& state, size_t samples, bool end = false)
+      : ne(ne), state(state), move_count(0), samples(samples), end(end)
       {
         if (end)
           return;
         try
         {
-          nhe.RandomMove(state, current_move);
+          ne.RandomMove(state, current_move);
         }
         catch (EmptyNeighborhood)
         {
@@ -157,7 +157,7 @@ namespace EasyLocal {
         }
         computed_move = EvaluatedMove<Move, CFtype>(current_move);
       }
-      const NeighborhoodExplorer<Input, State, Move, CFtype>& nhe;
+      const NeighborhoodExplorer<Input, State, Move, CFtype>& ne;
       const State& state;
       Move current_move;
       EvaluatedMove<Move, CFtype> computed_move;
@@ -169,23 +169,23 @@ namespace EasyLocal {
     class NeighborhoodExplorerIteratorInterface
     {
     protected:
-      static FullNeighborhoodIterator<Input, State, Move, CFtype> create_full_neighborhood_iterator(const NeighborhoodExplorer<Input, State, Move, CFtype>& nhe, const State& st, bool end = false)
+      static FullNeighborhoodIterator<Input, State, Move, CFtype> create_full_neighborhood_iterator(const NeighborhoodExplorer<Input, State, Move, CFtype>& ne, const State& st, bool end = false)
       {
-        return FullNeighborhoodIterator<Input, State, Move, CFtype>(nhe, st, end);
+        return FullNeighborhoodIterator<Input, State, Move, CFtype>(ne, st, end);
       }
       
-      static SampleNeighborhoodIterator<Input, State, Move, CFtype> create_sample_neighborhood_iterator(const NeighborhoodExplorer<Input, State, Move, CFtype>& nhe, const State& st, size_t samples, bool end = false)
+      static SampleNeighborhoodIterator<Input, State, Move, CFtype> create_sample_neighborhood_iterator(const NeighborhoodExplorer<Input, State, Move, CFtype>& ne, const State& st, size_t samples, bool end = false)
       {
-        return SampleNeighborhoodIterator<Input, State, Move, CFtype>(nhe, st, samples, end);
+        return SampleNeighborhoodIterator<Input, State, Move, CFtype>(ne, st, samples, end);
       }
     };
     
-    template <class Input, class State, class Move, typename CFtype, class NHE>
-    class ParallelNeighborhoodExplorer : public NHE, public NeighborhoodExplorerIteratorInterface<Input, State, Move, CFtype>
+    template <class Input, class State, class Move, typename CFtype, class ne>
+    class ParallelNeighborhoodExplorer : public ne, public NeighborhoodExplorerIteratorInterface<Input, State, Move, CFtype>
     {
     public:
-      using NHE::NHE;
-      using typename NHE::MoveAcceptor;
+      using ne::ne;
+      using typename ne::MoveAcceptor;
     protected:
       FullNeighborhoodIterator<Input, State, Move, CFtype> begin(const State& st) const
       {
