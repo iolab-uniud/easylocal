@@ -91,20 +91,18 @@ namespace EasyLocal {
             
             if (!first_reheat_ratio.IsSet())
               first_reheat_ratio = reheat_ratio;
-              }
+        }
         
         if (first_reheat_ratio <= 0.0)
           throw IncorrectParameterValue(first_reheat_ratio, "should be greater than zero");
-          if (first_descent_iterations_share <= 0.0 || first_descent_iterations_share > 1.0)
-            throw IncorrectParameterValue(first_descent_iterations_share, "should be a value in the interval ]0, 1]");
+        if (first_descent_iterations_share <= 0.0 || first_descent_iterations_share > 1.0)
+          throw IncorrectParameterValue(first_descent_iterations_share, "should be a value in the interval ]0, 1]");
             
-            this->max_neighbors_sampled = ceil(this->max_neighbors_sampled * first_descent_iterations_share);
-            first_descent_iterations = this->max_iterations * first_descent_iterations_share;
-            other_descent_iterations = (this->max_iterations - first_descent_iterations)/max_reheats;
-            }
-      
-      this->max_neighbors_accepted = ceil(this->max_neighbors_sampled * this->neighbors_accepted_ratio);
-      
+        this->max_neighbors_sampled = ceil(this->max_neighbors_sampled * first_descent_iterations_share);
+        first_descent_iterations = this->max_iterations * first_descent_iterations_share;
+        other_descent_iterations = (this->max_iterations - first_descent_iterations)/max_reheats;
+      }
+      this->max_neighbors_accepted = ceil(this->max_neighbors_sampled * this->neighbors_accepted_ratio);      
     }
     
     /**

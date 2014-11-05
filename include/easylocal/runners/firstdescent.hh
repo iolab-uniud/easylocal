@@ -23,7 +23,6 @@ namespace EasyLocal {
                    NeighborhoodExplorer<Input, State, Move, CFtype>& e_ne,
                    std::string name);
     protected:
-      void InitializeRun() throw (ParameterNotSet, IncorrectParameterValue);;
       bool StopCriterion();
       void SelectMove();
     };
@@ -60,23 +59,12 @@ namespace EasyLocal {
     }
     
     /**
-     Invokes the companion superclass method, and initializes the move cost
-     at a negative value for fulfilling the stop criterion the first time
-     */
-    template <class Input, class State, class Move, typename CFtype>
-    void FirstDescent<Input, State, Move, CFtype>::InitializeRun() throw (ParameterNotSet, IncorrectParameterValue)
-    {
-      MoveRunner<Input, State, Move, CFtype>::InitializeRun();
-      this->current_move.cost.total = -1; // needed for passing the first time the StopCriterion test
-    }
-    
-    /**
      The search is stopped when no (strictly) improving move has been found.
      */
     template <class Input, class State, class Move, typename CFtype>
     bool FirstDescent<Input, State, Move, CFtype>::StopCriterion()
     {
-      return !this->current_move.is_valid;
+      return this->iteration > 0 && !this->current_move.is_valid;
     }        
   }
 }

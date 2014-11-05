@@ -2,6 +2,7 @@
 #define _COST_COMPONENT_HH_
 
 #include <iostream>
+#include <vector>
 #include "easylocal/utils/printable.hh"
 
 namespace EasyLocal {
@@ -72,15 +73,20 @@ namespace EasyLocal {
       /** Name of this cost component (for debug). */
       const std::string name;
       
+      static bool ComponentIsHard(size_t i)
+      {
+        return component_is_hard[i];
+      }
+      
     protected:
       
       /** Constructor.
        @param in @ref Input object
        @param weight weight of the cost component
-       @param hard a flag which tells if the cost component is hard or soft
+       @param is_hard a flag which tells if the cost component is hard or soft
        @param name name of the cost component (for debug reasons)
        */
-      CostComponent(const Input& in, const CFtype& weight, bool hard, std::string name);
+      CostComponent(const Input& in, const CFtype& weight, bool is_hard, std::string name);
       
       /** Destructor. */
       virtual ~CostComponent() {}
@@ -110,6 +116,8 @@ namespace EasyLocal {
     protected:
       /** The overall index of this cost components */
       const size_t index;
+      
+      static std::vector<bool> component_is_hard;
     };
     
     
@@ -117,9 +125,11 @@ namespace EasyLocal {
     /** IMPLEMENTATION */
     
     template <class Input, class State, typename CFtype>
-    CostComponent<Input, State, CFtype>::CostComponent(const Input& i, const CFtype& w, bool hard, std::string e_name)
-    : name(e_name), in(i), weight(w), is_hard(hard), index(last_index++)
-    {}
+    CostComponent<Input, State, CFtype>::CostComponent(const Input& in, const CFtype& weight, bool is_hard, std::string name)
+    : name(name), in(in), weight(weight), is_hard(is_hard), index(last_index++)
+    {
+      component_is_hard.push_back(is_hard);
+    }
     
     template <class Input, class State, typename CFtype>
     void CostComponent<Input, State, CFtype>::Print(std::ostream& os) const
@@ -130,6 +140,9 @@ namespace EasyLocal {
     template <class Input, class State, typename CFtype>
     size_t CostComponent<Input, State, CFtype>::last_index = 0;
     
+    template <class Input, class State, typename CFtype>
+    std::vector<bool> CostComponent<Input, State, CFtype>::component_is_hard;
+
   }
 }
 
