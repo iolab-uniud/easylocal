@@ -33,6 +33,7 @@ namespace EasyLocal {
       unsigned int Restart() const { return restart; }
       unsigned int IdleRestarts() const { return idle_restarts; }
     protected:
+      void RegisterParameters();
       void InitializeSolve() throw (ParameterNotSet, IncorrectParameterValue);
       void Go();
       void AtTimeoutExpired();

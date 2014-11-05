@@ -165,7 +165,7 @@ namespace EasyLocal {
       bool end;
     };
     
-    template <class Input, class State, class Move, typename CFtype>
+    template <class Input, class State, class Move, typename CFtype = int>
     class NeighborhoodExplorerIteratorInterface
     {
     protected:
@@ -180,42 +180,42 @@ namespace EasyLocal {
       }
     };
     
-    template <class Input, class State, class Move, typename CFtype, class ne>
-    class ParallelNeighborhoodExplorer : public ne, public NeighborhoodExplorerIteratorInterface<Input, State, Move, CFtype>
+    template <class Input, class State, class NE, typename CFtype>
+    class ParallelNeighborhoodExplorer : public NE, public NeighborhoodExplorerIteratorInterface<Input, State, typename NE::MoveType, CFtype>
     {
     public:
-      using ne::ne;
-      using typename ne::MoveAcceptor;
+      using NE::NE;
+      using typename NE::MoveAcceptor;
     protected:
-      FullNeighborhoodIterator<Input, State, Move, CFtype> begin(const State& st) const
+      FullNeighborhoodIterator<Input, State, typename NE::MoveType, CFtype> begin(const State& st) const
       {
-        return NeighborhoodExplorerIteratorInterface<Input, State, Move, CFtype>::create_full_neighborhood_iterator(*this, st);
+        return NeighborhoodExplorerIteratorInterface<Input, State, typename NE::MoveType, CFtype>::create_full_neighborhood_iterator(*this, st);
       }
       
-      FullNeighborhoodIterator<Input, State, Move, CFtype> end(const State& st) const
+      FullNeighborhoodIterator<Input, State, typename NE::MoveType, CFtype> end(const State& st) const
       {
-        return NeighborhoodExplorerIteratorInterface<Input, State, Move, CFtype>::create_full_neighborhood_iterator(*this, st, true);
+        return NeighborhoodExplorerIteratorInterface<Input, State, typename NE::MoveType, CFtype>::create_full_neighborhood_iterator(*this, st, true);
       }
       
-      SampleNeighborhoodIterator<Input, State, Move, CFtype> sample_begin(const State& st, size_t samples) const
+      SampleNeighborhoodIterator<Input, State, typename NE::MoveType, CFtype> sample_begin(const State& st, size_t samples) const
       {
         if (samples > 0)
-          return NeighborhoodExplorerIteratorInterface<Input, State, Move, CFtype>::create_sample_neighborhood_iterator(*this, st, samples);
+          return NeighborhoodExplorerIteratorInterface<Input, State, typename NE::MoveType, CFtype>::create_sample_neighborhood_iterator(*this, st, samples);
         else
           return sample_end(st, samples);
       }
       
-      SampleNeighborhoodIterator<Input, State, Move, CFtype> sample_end(const State& st, size_t samples) const
+      SampleNeighborhoodIterator<Input, State, typename NE::MoveType, CFtype> sample_end(const State& st, size_t samples) const
       {
-        return NeighborhoodExplorerIteratorInterface<Input, State, Move, CFtype>::create_sample_neighborhood_iterator(*this, st, samples, true);
+        return NeighborhoodExplorerIteratorInterface<Input, State, typename NE::MoveType, CFtype>::create_sample_neighborhood_iterator(*this, st, samples, true);
       }
     public:
-      virtual EvaluatedMove<Move, CFtype> SelectFirst(const State &st, const MoveAcceptor& AcceptMove, const std::vector<double>& weights = std::vector<double>(0)) const throw (EmptyNeighborhood)
+      virtual EvaluatedMove<typename NE::MoveType, CFtype> SelectFirst(const State &st, const MoveAcceptor& AcceptMove, const std::vector<double>& weights = std::vector<double>(0)) const throw (EmptyNeighborhood)
       {
-        EvaluatedMove<Move, CFtype> first_move;
+        EvaluatedMove<typename NE::MoveType, CFtype> first_move;
         bool first_move_found = false;
         tbb::spin_mutex mx_first_move;
-        tbb::parallel_for_each(this->begin(st), this->end(st), [this, &st, &mx_first_move, &first_move, &first_move_found, AcceptMove, &weights](EvaluatedMove<Move, CFtype>& mv) {
+        tbb::parallel_for_each(this->begin(st), this->end(st), [this, &st, &mx_first_move, &first_move, &first_move_found, AcceptMove, &weights](EvaluatedMove<typename NE::MoveType, CFtype>& mv) {
           mv.cost = this->DeltaCostFunctionComponents(st, mv.move, weights);
           mv.is_valid = true;
           tbb::spin_mutex::scoped_lock lock(mx_first_move);
@@ -230,16 +230,16 @@ namespace EasyLocal {
           }
         });
         if (!first_move_found)
-          return EvaluatedMove<Move, CFtype>::empty;
+          return EvaluatedMove<typename NE::MoveType, CFtype>::empty;
         return first_move;
       }
       
-      virtual EvaluatedMove<Move, CFtype> SelectBest(const State &st, const MoveAcceptor& AcceptMove, const std::vector<double>& weights = std::vector<double>(0)) const throw (EmptyNeighborhood)
+      virtual EvaluatedMove<typename NE::MoveType, CFtype> SelectBest(const State &st, const MoveAcceptor& AcceptMove, const std::vector<double>& weights = std::vector<double>(0)) const throw (EmptyNeighborhood)
       {
         tbb::spin_mutex mx_best_move;
-        EvaluatedMove<Move, CFtype> best_move;
+        EvaluatedMove<typename NE::MoveType, CFtype> best_move;
         unsigned int number_of_bests = 0;
-        tbb::parallel_for_each(this->begin(st), this->end(st), [this, &st, &mx_best_move, &best_move, &number_of_bests, AcceptMove, &weights](EvaluatedMove<Move, CFtype>& mv) {
+        tbb::parallel_for_each(this->begin(st), this->end(st), [this, &st, &mx_best_move, &best_move, &number_of_bests, AcceptMove, &weights](EvaluatedMove<typename NE::MoveType, CFtype>& mv) {
           mv.cost = this->DeltaCostFunctionComponents(st, mv.move, weights);
           mv.is_valid = true;
           tbb::spin_mutex::scoped_lock lock(mx_best_move);
@@ -264,17 +264,17 @@ namespace EasyLocal {
           }
         });
         if (number_of_bests == 0)
-          return EvaluatedMove<Move, CFtype>::empty;
+          return EvaluatedMove<typename NE::MoveType, CFtype>::empty;
         return best_move;
       }
       
-      virtual EvaluatedMove<Move, CFtype> RandomFirst(const State &st, size_t samples, size_t& sampled, const MoveAcceptor& AcceptMove, const std::vector<double>& weights = std::vector<double>(0)) const throw (EmptyNeighborhood)
+      virtual EvaluatedMove<typename NE::MoveType, CFtype> RandomFirst(const State &st, size_t samples, size_t& sampled, const MoveAcceptor& AcceptMove, const std::vector<double>& weights = std::vector<double>(0)) const throw (EmptyNeighborhood)
       {
-        EvaluatedMove<Move, CFtype> first_move;
+        EvaluatedMove<typename NE::MoveType, CFtype> first_move;
         bool first_move_found = false;
         tbb::spin_mutex mx_first_move;
         tbb::atomic<size_t> c_sampled = 0;
-        tbb::parallel_for_each(this->sample_begin(st, samples), this->sample_end(st, samples), [this, &st, &mx_first_move, &first_move, &first_move_found, &c_sampled, AcceptMove, &weights](EvaluatedMove<Move, CFtype>& mv) {
+        tbb::parallel_for_each(this->sample_begin(st, samples), this->sample_end(st, samples), [this, &st, &mx_first_move, &first_move, &first_move_found, &c_sampled, AcceptMove, &weights](EvaluatedMove<typename NE::MoveType, CFtype>& mv) {
           mv.cost = this->DeltaCostFunctionComponents(st, mv.move, weights);
           mv.is_valid = true;
           c_sampled++;
@@ -287,18 +287,18 @@ namespace EasyLocal {
           }
         });
         if (!first_move_found)
-          return EvaluatedMove<Move, CFtype>::empty;
+          return EvaluatedMove<typename NE::MoveType, CFtype>::empty;
         sampled = c_sampled;
         return first_move;
       }
       
-      virtual EvaluatedMove<Move, CFtype> RandomBest(const State &st, size_t samples, size_t& sampled, const MoveAcceptor& AcceptMove, const std::vector<double>& weights = std::vector<double>(0)) const throw (EmptyNeighborhood)
+      virtual EvaluatedMove<typename NE::MoveType, CFtype> RandomBest(const State &st, size_t samples, size_t& sampled, const MoveAcceptor& AcceptMove, const std::vector<double>& weights = std::vector<double>(0)) const throw (EmptyNeighborhood)
       {
         tbb::spin_mutex mx_best_move;
-        EvaluatedMove<Move, CFtype> best_move;
+        EvaluatedMove<typename NE::MoveType, CFtype> best_move;
         unsigned int number_of_bests = 0;
         tbb::atomic<size_t> c_sampled = 0;
-        tbb::parallel_for_each(this->sample_begin(st, samples), this->sample_end(st, sampled), [this, &st, &mx_best_move, &best_move, &number_of_bests, &c_sampled, AcceptMove, &weights](EvaluatedMove<Move, CFtype>& mv) {
+        tbb::parallel_for_each(this->sample_begin(st, samples), this->sample_end(st, sampled), [this, &st, &mx_best_move, &best_move, &number_of_bests, &c_sampled, AcceptMove, &weights](EvaluatedMove<typename NE::MoveType, CFtype>& mv) {
           mv.cost = this->DeltaCostFunctionComponents(st, mv.move, weights);
           mv.is_valid = true;
           c_sampled++;
@@ -324,7 +324,7 @@ namespace EasyLocal {
           }
         });
         if (number_of_bests == 0)
-          return EvaluatedMove<Move, CFtype>::empty;
+          return EvaluatedMove<typename NE::MoveType, CFtype>::empty;
         sampled = c_sampled;
         return best_move;
       }

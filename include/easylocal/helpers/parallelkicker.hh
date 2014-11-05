@@ -18,18 +18,18 @@
 namespace EasyLocal {
   namespace Core {       
     
-    template <class Input, class State, class Move, typename CFtype, class K>
+    template <class Input, class State, class K, typename CFtype = int>
     class ParallelKicker : public K
     {
       using K::K;
     public:      
-      virtual std::pair<Kick<State, Move, CFtype>, CostStructure<CFtype>> SelectFirst(size_t length, const State &st) const throw (EmptyNeighborhood)
+      virtual std::pair<Kick<State, typename K::MoveType, CFtype>, CostStructure<CFtype>> SelectFirst(size_t length, const State &st) const throw (EmptyNeighborhood)
       {
         tbb::spin_mutex mx_first_kick;
-        Kick<State, Move, CFtype> first_kick;
+        Kick<State, typename K::MoveType, CFtype> first_kick;
         CostStructure<CFtype> first_kick_cost;
         bool first_kick_found = false;
-        tbb::parallel_for_each(this->begin(length, st), this->end(length, st), [this, &st, &mx_first_kick, &first_kick, &first_kick_cost, &first_kick_found](Kick<State, Move, CFtype>& k) {
+        tbb::parallel_for_each(this->begin(length, st), this->end(length, st), [this, &st, &mx_first_kick, &first_kick, &first_kick_cost, &first_kick_found](Kick<State, typename K::MoveType, CFtype>& k) {
           CostStructure<CFtype> cost(0, 0, 0, std::vector<CFtype>(CostComponent<Input, State, CFtype>::CostComponents(), 0));
           for (int i = 0; i < k.size(); i++)
           {
@@ -53,18 +53,18 @@ namespace EasyLocal {
           }
         });
         if (!first_kick_found)
-          return std::make_pair(Kick<State, Move, CFtype>::empty, CostStructure<CFtype>(std::numeric_limits<CFtype>::infinity(), std::numeric_limits<CFtype>::infinity(), std::numeric_limits<CFtype>::infinity(), std::vector<CFtype>(CostComponent<Input, State, CFtype>::CostComponents(), std::numeric_limits<CFtype>::infinity())));
+          return std::make_pair(Kick<State, typename K::MoveType, CFtype>::empty, CostStructure<CFtype>(std::numeric_limits<CFtype>::infinity(), std::numeric_limits<CFtype>::infinity(), std::numeric_limits<CFtype>::infinity(), std::vector<CFtype>(CostComponent<Input, State, CFtype>::CostComponents(), std::numeric_limits<CFtype>::infinity())));
         return std::make_pair(first_kick, first_kick_cost);
       }
 
       
-      virtual std::pair<Kick<State, Move, CFtype>, CostStructure<CFtype>> SelectBest(size_t length, const State &st) const throw (EmptyNeighborhood)
+      virtual std::pair<Kick<State, typename K::MoveType, CFtype>, CostStructure<CFtype>> SelectBest(size_t length, const State &st) const throw (EmptyNeighborhood)
       {
         tbb::spin_mutex mx_best_kick;
-        Kick<State, Move, CFtype> best_kick;
+        Kick<State, typename K::MoveType, CFtype> best_kick;
         CostStructure<CFtype> best_cost;
         unsigned int number_of_bests = 0;
-        tbb::parallel_for_each(this->begin(length, st), this->end(length, st), [this, &st, &mx_best_kick, &best_kick, &best_cost, &number_of_bests](Kick<State, Move, CFtype>& k) {
+        tbb::parallel_for_each(this->begin(length, st), this->end(length, st), [this, &st, &mx_best_kick, &best_kick, &best_cost, &number_of_bests](Kick<State, typename K::MoveType, CFtype>& k) {
           CostStructure<CFtype> cost(0, 0, 0, std::vector<CFtype>(CostComponent<Input, State, CFtype>::CostComponents(), 0));
           for (int i = 0; i < k.size(); i++)
           {
@@ -98,13 +98,13 @@ namespace EasyLocal {
         return std::make_pair(best_kick, best_cost);
       }
       
-      virtual std::pair<Kick<State, Move, CFtype>, CostStructure<CFtype>> SelectRandom(size_t length, const State &st) const throw (EmptyNeighborhood)
+      virtual std::pair<Kick<State, typename K::MoveType, CFtype>, CostStructure<CFtype>> SelectRandom(size_t length, const State &st) const throw (EmptyNeighborhood)
       {
-        Kick<State, Move, CFtype> k = *this->sample_begin(length, st, 1);
+        Kick<State, typename K::MoveType, CFtype> k = *this->sample_begin(length, st, 1);
         CostStructure<CFtype> zero(0, 0, 0, std::vector<CFtype>(CostComponent<Input, State, CFtype>::CostComponents(), 0));
-        CostStructure<CFtype> cost = tbb::parallel_reduce(tbb::blocked_range<typename Kick<State, Move, CFtype>::iterator>(k.begin(), k.end()), zero,
-                                                          [this](const tbb::blocked_range<typename Kick<State, Move, CFtype>::iterator>& r, CostStructure<CFtype> init)->CostStructure<CFtype> {
-                                                            for (typename Kick<State, Move, CFtype>::iterator it = r.begin(); it != r.end(); it++)
+        CostStructure<CFtype> cost = tbb::parallel_reduce(tbb::blocked_range<typename Kick<State, typename K::MoveType, CFtype>::iterator>(k.begin(), k.end()), zero,
+                                                          [this](const tbb::blocked_range<typename Kick<State, typename K::MoveType, CFtype>::iterator>& r, CostStructure<CFtype> init)->CostStructure<CFtype> {
+                                                            for (typename Kick<State, typename K::MoveType, CFtype>::iterator it = r.begin(); it != r.end(); it++)
                                                               {
                                                                 it->first.cost = this->ne.DeltaCostFunctionComponents(it->second, it->first.move);
                                                                 it->first.is_valid = true;
