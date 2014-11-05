@@ -20,8 +20,8 @@ namespace EasyLocal {
     {
     public:
       EmptyNeighborhood() : std::logic_error("Empty neighborhood") {}
-    };    
-            
+    };
+    
     template <class Move, typename CFtype>
     struct EvaluatedMove
     {
@@ -536,135 +536,135 @@ namespace EasyLocal {
       mv = em.move;
       return em.cost.total;
     }
-  }
-  
-  /**
-   This method will select the first move in the exhaustive neighborhood exploration that
-   matches with the criterion expressed by the functional object bool f(const Move& mv, CFtype cost)
-   */
-  template <class Input, class State, class Move, typename CFtype>
-  EvaluatedMove<Move, CFtype> NeighborhoodExplorer<Input, State, Move, CFtype>::SelectFirst(const State& st, const MoveAcceptor& AcceptMove, const std::vector<double>& weights) const throw (EmptyNeighborhood)
-  {
-    EvaluatedMove<Move, CFtype> mv;
-    FirstMove(st, mv.move);
     
-    do
+    /**
+     This method will select the first move in the exhaustive neighborhood exploration that
+     matches with the criterion expressed by the functional object bool f(const Move& mv, CFtype cost)
+     */
+    template <class Input, class State, class Move, typename CFtype>
+    EvaluatedMove<Move, CFtype> NeighborhoodExplorer<Input, State, Move, CFtype>::SelectFirst(const State& st, const MoveAcceptor& AcceptMove, const std::vector<double>& weights) const throw (EmptyNeighborhood)
     {
-      mv.cost = DeltaCostFunctionComponents(st, mv.move, weights);
-      mv.is_valid = true;
-    
-      if (AcceptMove(mv.move, mv.cost))
-        return mv; // mv passes the acceptance criterion
-    }
-    while (NextMove(st, mv.move));
-
-    // exiting this loop means that there is no mv passing the acceptance criterion
-    return EvaluatedMove<Move, CFtype>::empty;
-  }
-  
-  /**
-   This method will select the best move in the exhaustive neighborhood exploration that
-   matches with the criterion expressed by the functional object bool f(const Move& mv, CFtype cost)
-   */
-  template <class Input, class State, class Move, typename CFtype>
-  EvaluatedMove<Move, CFtype> NeighborhoodExplorer<Input, State, Move, CFtype>::SelectBest(const State& st, const MoveAcceptor& AcceptMove, const std::vector<double>& weights) const throw (EmptyNeighborhood)
-  {
-    unsigned int number_of_bests = 0; // number of moves found with the same best value
-    EvaluatedMove<Move, CFtype> mv, best_move;
-    FirstMove(st, mv.move);
-    
-    do
-    {
-      mv.cost = DeltaCostFunctionComponents(st, mv.move, weights);
-      mv.is_valid = true;
-      if (AcceptMove(mv.move, mv.cost))
+      EvaluatedMove<Move, CFtype> mv;
+      FirstMove(st, mv.move);
+      
+      do
       {
-        if (number_of_bests == 0)
+        mv.cost = DeltaCostFunctionComponents(st, mv.move, weights);
+        mv.is_valid = true;
+        
+        if (AcceptMove(mv.move, mv.cost))
+          return mv; // mv passes the acceptance criterion
+      }
+      while (NextMove(st, mv.move));
+      
+      // exiting this loop means that there is no mv passing the acceptance criterion
+      return EvaluatedMove<Move, CFtype>::empty;
+    }
+    
+    /**
+     This method will select the best move in the exhaustive neighborhood exploration that
+     matches with the criterion expressed by the functional object bool f(const Move& mv, CFtype cost)
+     */
+    template <class Input, class State, class Move, typename CFtype>
+    EvaluatedMove<Move, CFtype> NeighborhoodExplorer<Input, State, Move, CFtype>::SelectBest(const State& st, const MoveAcceptor& AcceptMove, const std::vector<double>& weights) const throw (EmptyNeighborhood)
+    {
+      unsigned int number_of_bests = 0; // number of moves found with the same best value
+      EvaluatedMove<Move, CFtype> mv, best_move;
+      FirstMove(st, mv.move);
+      
+      do
+      {
+        mv.cost = DeltaCostFunctionComponents(st, mv.move, weights);
+        mv.is_valid = true;
+        if (AcceptMove(mv.move, mv.cost))
         {
-          best_move = mv;
-          number_of_bests = 1;
-        }
-        else if (mv.cost < best_move.cost)
-        {
-          best_move = mv;
-          number_of_bests = 1;
-        }
-        else if (mv.cost == best_move.cost)
-        {
-          if (Random::Int(0, number_of_bests) == 0) // accept the move with probability 1 / (1 + number_of_bests)
+          if (number_of_bests == 0)
+          {
             best_move = mv;
-          number_of_bests++;
+            number_of_bests = 1;
+          }
+          else if (mv.cost < best_move.cost)
+          {
+            best_move = mv;
+            number_of_bests = 1;
+          }
+          else if (mv.cost == best_move.cost)
+          {
+            if (Random::Int(0, number_of_bests) == 0) // accept the move with probability 1 / (1 + number_of_bests)
+              best_move = mv;
+              number_of_bests++;
+          }
         }
       }
+      while (NextMove(st, mv.move));
+      
+      if (number_of_bests == 0)
+        return EvaluatedMove<Move, CFtype>::empty;
+      
+      return best_move;
     }
-    while (NextMove(st, mv.move));
     
-    if (number_of_bests == 0)
-      return EvaluatedMove<Move, CFtype>::empty;
-    
-    return best_move;
-  }
-  
-  /**
-   This method will select the first move in the random neighborhood exploration that
-   matches with the criterion expressed by the functional object bool f(const Move& mv, CFtype cost)
-   */
-  template <class Input, class State, class Move, typename CFtype>
-  EvaluatedMove<Move, CFtype> NeighborhoodExplorer<Input, State, Move, CFtype>::RandomFirst(const State& st, size_t samples, size_t& sampled, const MoveAcceptor& AcceptMove, const std::vector<double>& weights) const throw (EmptyNeighborhood)
-  {
-    EvaluatedMove<Move, CFtype> mv;
-    for (sampled = 0; sampled < samples; sampled++)
+    /**
+     This method will select the first move in the random neighborhood exploration that
+     matches with the criterion expressed by the functional object bool f(const Move& mv, CFtype cost)
+     */
+    template <class Input, class State, class Move, typename CFtype>
+    EvaluatedMove<Move, CFtype> NeighborhoodExplorer<Input, State, Move, CFtype>::RandomFirst(const State& st, size_t samples, size_t& sampled, const MoveAcceptor& AcceptMove, const std::vector<double>& weights) const throw (EmptyNeighborhood)
     {
-      RandomMove(st, mv.move);
-      mv.cost = DeltaCostFunctionComponents(st, mv.move, weights);
-      mv.is_valid = true;
-      if (AcceptMove(mv.move, mv.cost))
-        return mv;
-    }
-    // exiting this loop means that there is no mv passing the acceptance criterion
-    return EvaluatedMove<Move, CFtype>::empty;
-  }
-  
-  /**
-   This method will select the best move in the exhaustive neighborhood exploration that
-   matches with the criterion expressed by the functional object bool f(const Move& mv, CFtype cost)
-   */
-  template <class Input, class State, class Move, typename CFtype>
-  EvaluatedMove<Move, CFtype> NeighborhoodExplorer<Input, State, Move, CFtype>::RandomBest(const State& st, size_t samples, size_t& sampled, const MoveAcceptor& AcceptMove, const std::vector<double>& weights) const throw (EmptyNeighborhood)
-  {
-    unsigned int number_of_bests = 0; // number of moves found with the same best value
-    EvaluatedMove<Move, CFtype> mv, best_move;
-
-    for (sampled = 0; sampled < samples; sampled++)
-    {
-      RandomMove(st, mv.move);
-      mv.cost = DeltaCostFunctionComponents(st, mv.move, weights);
-      mv.is_valid = true;
-      if (AcceptMove(mv.move, mv.cost))
+      EvaluatedMove<Move, CFtype> mv;
+      for (sampled = 0; sampled < samples; sampled++)
       {
-        if (number_of_bests == 0)
+        RandomMove(st, mv.move);
+        mv.cost = DeltaCostFunctionComponents(st, mv.move, weights);
+        mv.is_valid = true;
+        if (AcceptMove(mv.move, mv.cost))
+          return mv;
+      }
+      // exiting this loop means that there is no mv passing the acceptance criterion
+      return EvaluatedMove<Move, CFtype>::empty;
+    }
+    
+    /**
+     This method will select the best move in the exhaustive neighborhood exploration that
+     matches with the criterion expressed by the functional object bool f(const Move& mv, CFtype cost)
+     */
+    template <class Input, class State, class Move, typename CFtype>
+    EvaluatedMove<Move, CFtype> NeighborhoodExplorer<Input, State, Move, CFtype>::RandomBest(const State& st, size_t samples, size_t& sampled, const MoveAcceptor& AcceptMove, const std::vector<double>& weights) const throw (EmptyNeighborhood)
+    {
+      unsigned int number_of_bests = 0; // number of moves found with the same best value
+      EvaluatedMove<Move, CFtype> mv, best_move;
+      
+      for (sampled = 0; sampled < samples; sampled++)
+      {
+        RandomMove(st, mv.move);
+        mv.cost = DeltaCostFunctionComponents(st, mv.move, weights);
+        mv.is_valid = true;
+        if (AcceptMove(mv.move, mv.cost))
         {
-          best_move = mv;
-          number_of_bests = 1;
-        }
-        else if (mv.cost < best_move.cost)
-        {
-          best_move = mv;
-          number_of_bests = 1;
-        }
-        else if (mv.cost == best_move.cost)
-        {
-          if (Random::Int(0, number_of_bests) == 0) // accept the move with probability 1 / (1 + number_of_bests)
+          if (number_of_bests == 0)
+          {
             best_move = mv;
-          number_of_bests++;
+            number_of_bests = 1;
+          }
+          else if (mv.cost < best_move.cost)
+          {
+            best_move = mv;
+            number_of_bests = 1;
+          }
+          else if (mv.cost == best_move.cost)
+          {
+            if (Random::Int(0, number_of_bests) == 0) // accept the move with probability 1 / (1 + number_of_bests)
+              best_move = mv;
+              number_of_bests++;
+          }
         }
       }
+      
+      if (number_of_bests == 0)
+        return EvaluatedMove<Move, CFtype>::empty;
+      
+      return best_move;
     }
-    
-    if (number_of_bests == 0)
-      return EvaluatedMove<Move, CFtype>::empty;
-    
-    return best_move;
   }
 }
 

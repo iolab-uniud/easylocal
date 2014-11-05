@@ -6,7 +6,6 @@
 #include <algorithm>
 
 #include "easylocal/helpers/statemanager.hh"
-#include "easylocal/helpers/prohibitionmanager.hh"
 #include "easylocal/helpers/neighborhoodexplorer.hh"
 #include "easylocal/utils/tuple.hh"
 

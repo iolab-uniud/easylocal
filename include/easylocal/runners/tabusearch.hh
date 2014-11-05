@@ -2,6 +2,8 @@
 #define _TABU_SEARCH_HH_
 
 #include <stdexcept>
+#include <list>
+#include <priority_queue>
 
 #include "easylocal/runners/moverunner.hh"
 #include "easylocal/helpers/statemanager.hh"
