@@ -38,6 +38,7 @@ namespace EasyLocal {
       void InitializeRun() throw (ParameterNotSet, IncorrectParameterValue);
       bool ReheatCondition();
       // additional parameters
+      void RegisterParameters();
       Parameter<double> first_reheat_ratio;
       Parameter<double> reheat_ratio;
       Parameter<double> first_descent_iterations_share;
@@ -62,12 +63,17 @@ namespace EasyLocal {
                                                                                                  StateManager<Input, State, CFtype>& e_sm,
                                                                                                  NeighborhoodExplorer<Input, State, Move, CFtype>& e_ne,
                                                                                                  std::string name)
-    : SimulatedAnnealingIterationBased<Input, State, Move, CFtype>(in, e_sm, e_ne, name),
-    first_reheat_ratio("first_reheat_ratio", "First reheat ratio", this->parameters),
-    reheat_ratio("reheat_ratio", "Reheat ratio", this->parameters),
-    first_descent_iterations_share("first_descent_iterations_share", "First descent iterations share", this->parameters),
-    max_reheats("max_reheats", "Maximum number of reheats", this->parameters)
+    : SimulatedAnnealingIterationBased<Input, State, Move, CFtype>(in, e_sm, e_ne, name)
+    {}
+    
+    template <class Input, class State, class Move, typename CFtype>
+    void SimulatedAnnealingWithReheating<Input, State, Move, CFtype>::RegisterParameters()
     {
+      AbstractSimulatedAnnealing<Input, State, Move, CFtype>::RegisterParameters();
+      first_reheat_ratio("first_reheat_ratio", "First reheat ratio", this->parameters);
+      reheat_ratio("reheat_ratio", "Reheat ratio", this->parameters);
+      first_descent_iterations_share("first_descent_iterations_share", "First descent iterations share", this->parameters);
+      max_reheats("max_reheats", "Maximum number of reheats", this->parameters);
     }
     
     template <class Input, class State, class Move, typename CFtype>

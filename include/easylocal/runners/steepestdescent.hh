@@ -31,7 +31,6 @@ namespace EasyLocal {
       void InitializeRun() throw (ParameterNotSet, IncorrectParameterValue);
       void StoreMove();
       bool StopCriterion();
-      bool AcceptableMove();
       void SelectMove();
     };
     
@@ -52,8 +51,7 @@ namespace EasyLocal {
                                                                  StateManager<Input, State, CFtype>& e_sm, NeighborhoodExplorer<Input, State, Move, CFtype>& e_ne,
                                                                  std::string name)
     : MoveRunner<Input, State, Move, CFtype>(in, e_sm, e_ne, name, "Steepest Descent Runner")
-    {
-    }
+    {}
     
     /**
      Selects always the best move in the neighborhood.
@@ -61,8 +59,10 @@ namespace EasyLocal {
     template <class Input, class State, class Move, typename CFtype>
     void SteepestDescent<Input, State, Move, CFtype>::SelectMove()
     {
-      this->current_move_cost = this->ne.BestMove(*this->p_current_state, this->current_move);
-      this->current_move_violations = this->ne.DeltaViolations(*this->p_current_state, this->current_move); // TODO: slightly inefficient
+      EvaluatedMove<Move, CFtype> em = this->ne.SelectBest(*this->p_current_state, [](const Move& mv, CostStructure<CFtype> move_cost) {
+        return move_cost < 0;
+      }, this->weights);
+      this->current_move = em;
     }
     
     /**
@@ -73,8 +73,7 @@ namespace EasyLocal {
     void SteepestDescent<Input, State, Move, CFtype>::InitializeRun() throw (ParameterNotSet, IncorrectParameterValue)
     {
       MoveRunner<Input, State, Move, CFtype>::InitializeRun();
-      this->current_move_cost = -1; // needed for passing the first time
-                                    // the StopCriterion test
+      this->current_move.cost.total = -1; // needed for passing the first time the StopCriterion test
     }
     
     /**
@@ -83,16 +82,7 @@ namespace EasyLocal {
     template <class Input, class State, class Move, typename CFtype>
     bool SteepestDescent<Input, State, Move, CFtype>::StopCriterion()
     {
-      return GreaterOrEqualThan(this->current_move_cost, (CFtype)0);
-    }
-    
-    /**
-     A move is accepted if it is an improving one.
-     */
-    template <class Input, class State, class Move, typename CFtype>
-    bool SteepestDescent<Input, State, Move, CFtype>::AcceptableMove()
-    { 
-      return LessThan(this->current_move_cost, (CFtype)0); 
+      return !this->current_move.is_valid;
     }
   }
 }

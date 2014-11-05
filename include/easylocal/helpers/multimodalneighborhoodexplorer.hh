@@ -6,7 +6,6 @@
 #include <algorithm>
 
 #include "easylocal/helpers/statemanager.hh"
-#include "easylocal/helpers/prohibitionmanager.hh"
 #include "easylocal/helpers/neighborhoodexplorer.hh"
 #include "easylocal/utils/tuple.hh"
 
@@ -941,7 +940,14 @@ namespace EasyLocal {
       template<class N>
       static bool TryNextMoveWithFirst(const N& n, State& s, ActiveMove<typename N::MoveType>& m, ActiveMove<typename N::MoveType>& f)
       {
-        m.active = n.NextMoveWithFirst(s, m, f);
+        bool end = n.NextMove(s, m);
+        if (end && f != m)
+        {
+          n.FirstMove(s, m);
+          m.active = true;
+        }
+        if (f == m)
+          m.active = false;
         return m.active;
       }
       
@@ -1107,8 +1113,10 @@ namespace EasyLocal {
         
         // If even the last NeighborhoodExplorer has an EmptyNeighborhood, throw an EmptyNeighborhood for the SetUnionNeighborhoodExplorer
         if (selected == this->Modality())
+        {
           throw EmptyNeighborhood();
-          }
+        }
+      }
       
       /** @copydoc NeighborhoodExplorer::NextMove */
       virtual bool NextMove(const State& st, typename SuperNeighborhoodExplorer::MoveType& moves) const

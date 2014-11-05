@@ -25,14 +25,13 @@ namespace EasyLocal {
                                  StateManager<Input, State, CFtype>& e_sm,
                                  NeighborhoodExplorer<Input, State, Move, CFtype>& e_ne,
                                  std::string name);
-      
-      
     protected:
       void InitializeRun() throw (ParameterNotSet, IncorrectParameterValue);
-      bool AcceptableMove();
       void CompleteMove();
+      void SelectMove();
       
       // parameters
+      void RegisterParameters();
       Parameter<unsigned int> steps;
       std::vector<CFtype> previous_steps;
       
@@ -55,9 +54,14 @@ namespace EasyLocal {
                                                                                        StateManager<Input, State, CFtype>& e_sm,
                                                                                        NeighborhoodExplorer<Input, State, Move, CFtype>& e_ne,
                                                                                        std::string name)
-    : HillClimbing<Input, State, Move, CFtype>(in, e_sm, e_ne, name),
-    steps("steps", "Delay (number of steps in the queue)", this->parameters)
+    : HillClimbing<Input, State, Move, CFtype>(in, e_sm, e_ne, name)
+    {}
+    
+    template <class Input, class State, class Move, typename CFtype>
+    void LateAcceptanceHillClimbing<Input, State, Move, CFtype>:: RegisterParameters()
     {
+      HillClimbing<Input, State, Move, CFtype>::RegisterParameters();
+      steps("steps", "Delay (number of steps in the queue)", this->parameters);
       steps = 10;
     }
     
@@ -72,9 +76,28 @@ namespace EasyLocal {
       
       // the queue must be filled with the initial state cost at the beginning
       previous_steps = std::vector<CFtype>(steps);
-      fill(previous_steps.begin(), previous_steps.end(), this->current_state_cost);
+      std::fill(previous_steps.begin(), previous_steps.end(), this->current_state_cost.total);
     }
     
+    
+    /** A move is surely accepted if it improves the cost function
+     or with exponentially decreasing probability if it is
+     a worsening one.
+     */
+    template <class Input, class State, class Move, typename CFtype>
+    void LateAcceptanceHillClimbing<Input, State, Move, CFtype>::SelectMove()
+    {
+      // TODO: it should become a parameter, the number of neighbors drawn at each iteration (possibly evaluated in parallel)
+      const size_t samples = 10;
+      size_t sampled;
+      CFtype prev_step_delta_cost = previous_steps[this->iteration % steps] - this->current_state_cost.total;
+      // TODO: check shifting penalty meaningfullness
+      EvaluatedMove<Move, CFtype> em = this->ne.RandomFirst(*this->p_current_state, samples, sampled, [prev_step_delta_cost](const Move& mv, CostStructure<CFtype> move_cost) {
+        return move_cost <= 0 || move_cost <= prev_step_delta_cost;
+      }, this->weights);
+      this->current_move = em;
+      this->evaluations += sampled;
+    }
     
     /**
      A move is randomly picked.
@@ -82,18 +105,7 @@ namespace EasyLocal {
     template <class Input, class State, class Move, typename CFtype>
     void LateAcceptanceHillClimbing<Input, State, Move, CFtype>::CompleteMove()
     {
-      previous_steps[this->iteration % steps] = this->best_state_cost;
-    }
-    
-    /** A move is surely accepted if it improves the cost function
-     or with exponentially decreasing probability if it is
-     a worsening one.
-     */
-    template <class Input, class State, class Move, typename CFtype>
-    bool LateAcceptanceHillClimbing<Input, State, Move, CFtype>::AcceptableMove()
-    {
-      return LessOrEqualThan(this->current_move_cost, (CFtype)0)
-      || LessOrEqualThan(this->current_move_cost + this->current_state_cost, previous_steps[this->iteration % steps]);
+      previous_steps[this->iteration % steps] = this->best_state_cost.total;
     }
   }
 }

@@ -32,8 +32,9 @@ namespace EasyLocal {
       double NeighborsAcceptedRatio() const { return neighbors_accepted_ratio; }
       
     protected:
+      void RegisterParameters();
       void InitializeRun() throw (ParameterNotSet, IncorrectParameterValue);
-      bool StopCriterion();
+      bool StopCriterion();      
       
       // additional parameters
       Parameter<double>  neighbors_accepted_ratio;
@@ -59,12 +60,16 @@ namespace EasyLocal {
                                                                                                    StateManager<Input, State, CFtype>& e_sm,
                                                                                                    NeighborhoodExplorer<Input, State, Move, CFtype>& e_ne,
                                                                                                    std::string name)
-    : AbstractSimulatedAnnealing<Input, State, Move, CFtype>(in, e_sm, e_ne, name),
-    neighbors_accepted_ratio("neighbors_accepted_ratio", "Ratio of neighbors accepted", this->parameters),
-    temperature_range("temperature_range", "Temperature_range", this->parameters)
+    : AbstractSimulatedAnnealing<Input, State, Move, CFtype>(in, e_sm, e_ne, name)
     {}
     
-    
+    template <class Input, class State, class Move, typename CFtype>
+    void SimulatedAnnealingIterationBased<Input, State, Move, CFtype>::RegisterParameters()
+    {
+      AbstractSimulatedAnnealing<Input, State, Move, CFtype>::RegisterParameters();
+      neighbors_accepted_ratio("neighbors_accepted_ratio", "Ratio of neighbors accepted", this->parameters);
+      temperature_range("temperature_range", "Temperature_range", this->parameters);
+    }        
     
     /**
      Initializes the run by invoking the companion superclass method, and

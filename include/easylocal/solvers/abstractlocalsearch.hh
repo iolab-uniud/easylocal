@@ -25,12 +25,9 @@ namespace EasyLocal {
     : public Parametrized, public Solver<Input, Output, CFtype>, public Interruptible<int>
     {
     public:
-      
-      typedef typename Solver<Input, Output, CFtype>::SolverResult SolverResult;
-      
       /** These methods are the unique interface of Solvers */
-      virtual SolverResult Solve() throw (ParameterNotSet, IncorrectParameterValue) final;
-      virtual SolverResult Resolve(const Output& initial_solution) throw (ParameterNotSet, IncorrectParameterValue) final;
+      virtual SolverResult<Input, Output, CFtype> Solve() throw (ParameterNotSet, IncorrectParameterValue) final;
+      virtual SolverResult<Input, Output, CFtype> Resolve(const Output& initial_solution) throw (ParameterNotSet, IncorrectParameterValue) final;
     protected:
       AbstractLocalSearch(const Input& in,
                           StateManager<Input, State, CFtype>& e_sm,
@@ -61,6 +58,9 @@ namespace EasyLocal {
       CFtype current_state_cost, best_state_cost;  /**< The cost of the internal states. */
       std::shared_ptr<Output> p_out; /**< The output object of the solver. */
       // parameters
+      
+      void RegisterParameters();
+      
       Parameter<unsigned int> init_trials;
       Parameter<bool> random_initial_state;
       Parameter<double> timeout;
@@ -91,12 +91,16 @@ namespace EasyLocal {
     : Parametrized(name, description),
     Solver<Input, Output, CFtype>(in, name),
     sm(e_sm),
-    om(e_om),
-    // Parameters
-    init_trials("init_trials", "Number of states to be tried in the initialization phase", this->parameters),
-    random_initial_state("random_state", "Random initial state", this->parameters),
-    timeout("timeout", "Solver timeout (if not specified, no timeout)", this->parameters)
+    om(e_om)
+    {}
+    
+    
+    template <class Input, class Output, class State, typename CFtype>
+    void AbstractLocalSearch<Input, Output, State, CFtype>::RegisterParameters()
     {
+      init_trials("init_trials", "Number of states to be tried in the initialization phase", this->parameters);
+      random_initial_state("random_state", "Random initial state", this->parameters);
+      timeout("timeout", "Solver timeout (if not specified, no timeout)", this->parameters);
       init_trials = 1;
       random_initial_state = true;
     }
@@ -127,7 +131,7 @@ namespace EasyLocal {
     }
     
     template <class Input, class Output, class State, typename CFtype>
-    typename AbstractLocalSearch<Input, Output, State, CFtype>::SolverResult AbstractLocalSearch<Input, Output, State, CFtype>::Solve() throw (ParameterNotSet, IncorrectParameterValue)
+    SolverResult<Input, Output, CFtype> AbstractLocalSearch<Input, Output, State, CFtype>::Solve() throw (ParameterNotSet, IncorrectParameterValue)
     {
       auto start = std::chrono::high_resolution_clock::now();
       InitializeSolve();
@@ -144,11 +148,11 @@ namespace EasyLocal {
         
         double run_time = std::chrono::duration_cast<std::chrono::duration<double, std::ratio<1>>>(std::chrono::high_resolution_clock::now() - start).count();
         
-        return std::make_tuple(*p_out, sm.Violations(*p_best_state), sm.Objective(*p_best_state), run_time);
+        return SolverResult<Input, Output, CFtype>(*p_out, sm.CostFunctionComponents(*p_best_state), run_time);
     }
     
     template <class Input, class Output, class State, typename CFtype>
-    typename AbstractLocalSearch<Input, Output, State, CFtype>::SolverResult AbstractLocalSearch<Input, Output, State, CFtype>::Resolve(const Output& initial_solution) throw (ParameterNotSet, IncorrectParameterValue)
+    SolverResult<Input, Output, CFtype> AbstractLocalSearch<Input, Output, State, CFtype>::Resolve(const Output& initial_solution) throw (ParameterNotSet, IncorrectParameterValue)
     {
       auto start = std::chrono::high_resolution_clock::now();
       
@@ -160,13 +164,13 @@ namespace EasyLocal {
         SyncRun(std::chrono::milliseconds(static_cast<long long int>(timeout * 1000.0)));
         else
           Go();
-          p_out = std::make_shared<Output>(this->in);
-          om.OutputState(*p_best_state, *p_out);
-          TerminateSolve();
+      p_out = std::make_shared<Output>(this->in);
+      om.OutputState(*p_best_state, *p_out);
+      TerminateSolve();
           
-          double run_time = std::chrono::duration_cast<std::chrono::duration<double, std::ratio<1>>>(std::chrono::high_resolution_clock::now() - start).count();
+      double run_time = std::chrono::duration_cast<std::chrono::duration<double, std::ratio<1>>>(std::chrono::high_resolution_clock::now() - start).count();
           
-          return std::make_tuple(*p_out, sm.Violations(*p_best_state), sm.Objective(*p_best_state), run_time);
+      return SolverResult<Input, Output, CFtype>(*p_out, sm.CostFunctionComponents(*p_best_state), run_time);
     }
     
     template <class Input, class Output, class State, typename CFtype>

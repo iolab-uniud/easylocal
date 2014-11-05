@@ -6,7 +6,8 @@
 using namespace EasyLocal::Core;
 
 // Overall collection of aprameters
-std::vector<const ParameterBox*> ParameterBox::overall_parameters;
+std::list<const ParameterBox*> ParameterBox::overall_parameters;
+std::list<Parametrized*> Parametrized::overall_parametrized;
 
 IncorrectParameterValue::~IncorrectParameterValue() throw() {}
 
@@ -15,8 +16,12 @@ const char* IncorrectParameterValue::what() const throw()
   return message.c_str();
 }
 
+AbstractParameter::AbstractParameter()
+: is_set(false), is_valid(false)
+{}
+
 AbstractParameter::AbstractParameter(const std::string& cf, const std::string& d)
-: description(d), cmdline_flag(cf), is_set(false)
+: description(d), cmdline_flag(cf), is_set(false), is_valid(true)
 {}
 
 ParameterBox::ParameterBox(const std::string& p, const std::string& description) : prefix(p), cl_options(description)
@@ -39,12 +44,15 @@ namespace EasyLocal
       (("disable-" + flag).c_str(), boost::program_options::value<std::string>()->implicit_value("false")->zero_tokens()->notifier([this](const std::string & v){ this->is_set = true; this->value = false; }),
        ("[enable/disable] " + description).c_str());
     }
-  }
+  }  
 }
 
 // Parameter parsing (courtesy of Boost)
 bool CommandLineParameters::Parse(int argc, const char* argv[], bool check_unregistered, bool silent)
 {
+  for (auto pz : Parametrized::overall_parametrized)
+    pz->RegisterParameters();
+  
   boost::program_options::options_description cmdline_options(argv[0]);
   boost::program_options::variables_map vm;
   for (auto pb : ParameterBox::overall_parameters)

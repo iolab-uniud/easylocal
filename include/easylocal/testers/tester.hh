@@ -17,6 +17,8 @@ namespace EasyLocal {
   
   namespace Debug {
     
+    using namespace EasyLocal::Core;
+    
     template <class Input, class State, typename CFtype>
     class ChoiceReader
     {
@@ -41,7 +43,7 @@ namespace EasyLocal {
     }
 
     
-    template <class Input, class State, typename CFtype = int>
+    template <class Input, class State, typename CFtype>
     class AbstractTester
     {
     public:
@@ -60,7 +62,7 @@ namespace EasyLocal {
      user interface provided by the framework.
      @ingroup Testers
      */
-    template <class Input, class Output, class State, typename CFtype>
+    template <class Input, class Output, class State, typename CFtype = int>
     class Tester : public AbstractTester<Input, State, CFtype>, public ChoiceReader<Input, State, CFtype>
     {
     public:
@@ -350,7 +352,7 @@ namespace EasyLocal {
         
         os << "CURRENT SOLUTION " << std::endl << out << std::endl;
         os << "CURRENT COST : " << result << std::endl;
-        os << "ELAPSED TIME : " << std::chrono::duration_cast<std::chrono::milliseconds>(duration).count() << " ms" << std::endl;
+        os << "ELAPSED TIME : " << std::chrono::duration_cast<std::chrono::milliseconds>(duration).count() / 1000.0 << " s" << std::endl;
         os << "NUMBER OF ITERATIONS : " << r.Iteration() << std::endl;
       }
     }

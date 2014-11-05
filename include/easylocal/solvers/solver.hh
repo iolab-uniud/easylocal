@@ -11,6 +11,15 @@ namespace EasyLocal {
   
   namespace Core {
     
+    template <class Input, class Output, typename CFtype = int>
+    struct SolverResult
+    {
+      SolverResult(const Output& output, const CostStructure<CFtype>& cost, double running_time) : output(output), cost(cost), running_time(running_time) {}
+      const Output& output;
+      CostStructure<CFtype> cost;
+      double running_time;
+    };
+    
     /** A Solver represents the external layer of EasyLocal++; it
      implements the Abstract Solver interface and furthermore is
      parametrized with the Input and Output of the problem.
@@ -21,9 +30,6 @@ namespace EasyLocal {
     class Solver
     {
     public:
-      
-      typedef std::tuple<Output, CFtype, CFtype, double> SolverResult;
-      
       /** Name of the solver. */
       const std::string name;
       
@@ -32,7 +38,7 @@ namespace EasyLocal {
        @throw ParameterNotSet if one of the parameters needed by the solver or the runner (or other components) hasn't been set.
        @throw IncorrectParameterValue if one of the parameters has an incorrect value
        */
-      virtual SolverResult Solve() throw (ParameterNotSet, IncorrectParameterValue) = 0;
+      virtual SolverResult<Input, Output, CFtype> Solve() throw (ParameterNotSet, IncorrectParameterValue) = 0;
       
       /** Method to solve a problem again, starting from the a final solution of another run.
        @param initial_solution solution to start with
@@ -40,7 +46,7 @@ namespace EasyLocal {
        @throw ParameterNotSet if one of the parameters needed by the solver or the runner (or other components) hasn't been set.
        @throw IncorrectParameterValue if one of the parameters has an incorrect value
        */
-      virtual SolverResult Resolve(const Output& initial_solution) throw (ParameterNotSet, IncorrectParameterValue) = 0;
+      virtual SolverResult<Input, Output, CFtype> Resolve(const Output& initial_solution) throw (ParameterNotSet, IncorrectParameterValue) = 0;
       
       /** Virtual destructor, for inheritance. */
       virtual ~Solver() {}

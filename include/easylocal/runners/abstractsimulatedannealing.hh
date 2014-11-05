@@ -58,6 +58,7 @@ namespace EasyLocal {
       void CompleteMove();
       void CompleteIteration();
       // parameters
+      void RegisterParameters();
       Parameter<bool> compute_start_temperature;
       Parameter<double> start_temperature;
       Parameter<double> cooling_rate;
@@ -84,13 +85,18 @@ namespace EasyLocal {
                                                                                        StateManager<Input, State, CFtype>& e_sm,
                                                                                        NeighborhoodExplorer<Input, State, Move, CFtype>& e_ne,
                                                                                        std::string name)
-    : MoveRunner<Input, State, Move, CFtype>(in, e_sm, e_ne, name, "Simulated Annealing Runner"),
-    compute_start_temperature("compute_start_temperature", "Should the runner compute the initial temperature?", this->parameters),
-    start_temperature("start_temperature", "Starting temperature", this->parameters),
-    cooling_rate("cooling_rate", "Cooling rate", this->parameters),
-    max_neighbors_sampled("neighbors_sampled", "Maximum number of neighbors sampled at each temp.", this->parameters),
-    max_neighbors_accepted("neighbors_accepted", "Maximum number of neighbor accepted at each temp.", this->parameters)
+    : MoveRunner<Input, State, Move, CFtype>(in, e_sm, e_ne, name, "Simulated Annealing Runner")
+    {}
+    
+    template <class Input, class State, class Move, typename CFtype>
+    void AbstractSimulatedAnnealing<Input, State, Move, CFtype>::RegisterParameters()
     {
+      MoveRunner<Input, State, Move, CFtype>::RegisterParameters();
+      compute_start_temperature("compute_start_temperature", "Should the runner compute the initial temperature?", this->parameters);
+      start_temperature("start_temperature", "Starting temperature", this->parameters);
+      cooling_rate("cooling_rate", "Cooling rate", this->parameters);
+      max_neighbors_sampled("neighbors_sampled", "Maximum number of neighbors sampled at each temp.", this->parameters);
+      max_neighbors_accepted("neighbors_accepted", "Maximum number of neighbor accepted at each temp.", this->parameters);
       if (!compute_start_temperature.IsSet())
         compute_start_temperature = false; // FIXME!!
     }
@@ -154,8 +160,14 @@ namespace EasyLocal {
     template <class Input, class State, class Move, typename CFtype>
     void AbstractSimulatedAnnealing<Input, State, Move, CFtype>::SelectMove()
     {
-      this->SelectRandomMove();
-      neighbors_sampled++;
+      // TODO: it should become a parameter, the number of neighbors drawn at each iteration (possibly evaluated in parallel)
+      size_t sampled;
+      double t = this->temperature;
+      EvaluatedMove<Move, CFtype> em = this->ne.RandomFirst(*this->p_current_state, this->max_neighbors_sampled - neighbors_sampled, sampled, [t](const Move& mv, CostStructure<CFtype> move_cost) {
+          return move_cost < 0 || (Random::Double() < exp(-1.0 * (double)move_cost / t));
+      }, this->weights);
+      this->current_move = em;
+      neighbors_sampled += sampled;
     }
     
     /**
@@ -180,17 +192,6 @@ namespace EasyLocal {
         neighbors_sampled = 0;
         neighbors_accepted = 0;
       }
-    }
-    
-    /** A move is surely accepted if it improves the cost function
-     or with exponentially decreasing probability if it is
-     a worsening one.
-     */
-    template <class Input, class State, class Move, typename CFtype>
-    bool AbstractSimulatedAnnealing<Input, State, Move, CFtype>::AcceptableMove()
-    {
-      return LessOrEqualThan(this->current_move_cost, (CFtype)0)
-      || (Random::Double() < exp(-this->current_move_cost/temperature));
     }
   }
 }

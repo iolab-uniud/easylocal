@@ -23,19 +23,13 @@ namespace EasyLocal {
                    Core::StateManager<Input, State, CFtype>& e_sm,
                    Core::OutputManager<Input, Output, State, CFtype>& e_om,
                    Core::Kicker<Input, State, Move, CFtype>& k,
-                   std::string name, std::ostream& o = std::cout);
-      
-      KickerTester(const Input& in,
-                   Core::StateManager<Input, State, CFtype>& e_sm,
-                   Core::OutputManager<Input, Output, State, CFtype>& e_om,
-                   Core::Kicker<Input, State, Move, CFtype>& k,
                    std::string name, Tester<Input, Output, State, CFtype>& t, std::ostream& o = std::cout);
       virtual unsigned int Modality() const;
       
       void RunMainMenu(State& st);
+      void RegisterParameters();
     protected:
-      void PrintKicks(const State& st, unsigned int length, bool only_improving = true) const;
-      void PrintKick(const State& st, const std::vector<Move>& kick) const;
+      void PrintKicks(size_t length, const State& st) const;
       void ShowMenu();
       bool ExecuteChoice(State& st);
       const Input& in;
@@ -54,31 +48,21 @@ namespace EasyLocal {
      * Implementation
      *************************************************************************/
     
-    /**
-     Constructs a state tester by providing it links to
-     a state manager, an output manager, and an input object.
-     
-     @param sm a pointer to a compatible state manager
-     @param om a pointer to a compatible output manager
-     @param in a pointer to an input object
-     */
-    template <class Input, class Output, class State, class Move, typename CFtype>
-    KickerTester<Input, Output, State, Move, CFtype>::KickerTester(
-                                                                   const Input& i,
-                                                                   Core::StateManager<Input, State, CFtype>& e_sm,
-                                                                   Core::OutputManager<Input, Output, State, CFtype>& e_om,
-                                                                   Core::Kicker<Input, State, Move, CFtype>& k, std::string name, std::ostream& o)
-    :  ComponentTester<Input, Output, State, CFtype>(name), Parametrized(name, "Kicker tester parameters"), in(i), out(i), sm(e_sm), om(e_om), kicker(k), os(o), length("kick-length", "Kick length", this->parameters)
-    { length = 3; }
-    
     template <class Input, class Output, class State, class Move, typename CFtype>
     KickerTester<Input, Output, State, Move, CFtype>::KickerTester(
                                                                    const Input& i,
                                                                    Core::StateManager<Input, State, CFtype>& e_sm,
                                                                    Core::OutputManager<Input, Output, State, CFtype>& e_om,
                                                                    Core::Kicker<Input, State, Move, CFtype>& k, std::string name, Tester<Input, Output, State, CFtype>& t, std::ostream& o)
-    : ComponentTester<Input, Output, State, CFtype>(name), Parametrized(name, "Kicker tester parameters"), in(i), out(i), sm(e_sm), om(e_om), kicker(k), os(o), length("kick-length", "Kick length", this->parameters)
-    { t.AddKickerTester(*this); length = 3; }
+    : ComponentTester<Input, Output, State, CFtype>(name), Parametrized(name, "Kicker tester parameters"), in(i), out(i), sm(e_sm), om(e_om), kicker(k), os(o)
+    { t.AddKickerTester(*this); }
+    
+    template <class Input, class Output, class State, class Move, typename CFtype>
+    void KickerTester<Input, Output, State, Move, CFtype>::RegisterParameters()
+    {
+      length("kick-length", "Kick length", this->parameters);
+      length = 3;
+    }
     
     /**
      Manages the component tester menu for the given state.
@@ -87,6 +71,7 @@ namespace EasyLocal {
     template <class Input, class Output, class State, class Move, typename CFtype>
     void KickerTester<Input, Output, State, Move, CFtype>::RunMainMenu(State& st)
     {
+      ReadParameters();
       bool show_state;
       do
       {
@@ -104,7 +89,7 @@ namespace EasyLocal {
             os << "CURRENT SOLUTION " << std::endl << out << std::endl;
             os << "CURRENT COST : " << sm.CostFunction(st) << std::endl;
           }
-          os << "ELAPSED TIME : " << duration.count() / 1000.0 << 's' << std::endl;
+          os << "ELAPSED TIME : " << duration.count() / 1000.0 << " s" << std::endl;
         }
       }
       while (choice != 0);
@@ -122,7 +107,6 @@ namespace EasyLocal {
       << "    (2) Perform Best Kick" << std::endl
       << "    (3) Perform First Improving Kick" << std::endl
       << "    (4) Show All Kicks" << std::endl
-      << "    (5) Show All Improving Kicks" << std::endl
       << "    (0) Return to Main Menu" << std::endl
       << "Your choice : ";
       choice = this->ReadChoice(std::cin);
@@ -136,30 +120,29 @@ namespace EasyLocal {
     template <class Input, class Output, class State, class Move, typename CFtype>
     bool KickerTester<Input, Output, State, Move, CFtype>::ExecuteChoice(State& st)
     {
-      ReadParameters();
-      
       bool execute_kick = false;
-      std::vector<Move> kick;
+      Kick<State, Move, CFtype> kick;
+      CostStructure<CFtype> cost;
       try {
         switch(choice)
         {
           case 1:
-            kicker.RandomKick(st, kick, length);
+            std::tie(kick, cost) = kicker.SelectRandom(length, st);
+            os << kick << " " << cost << std::endl;
             execute_kick = true;
             break;
           case 2:
-            kicker.BestKick(st, kick, length);
+            std::tie(kick, cost) = kicker.SelectBest(length, st);
+            os << kick << " " << cost << std::endl;
             execute_kick = true;
             break;
           case 3:
-            kicker.FirstImprovingKick(st, kick, length);
+            std::tie(kick, cost) = kicker.SelectFirst(length, st);
+            os << kick << " " << cost << std::endl;
             execute_kick = true;
             break;
           case 4:
-            PrintKicks(st, length, false);
-            break;
-          case 5:
-            PrintKicks(st, length);
+            PrintKicks(length, st);
             break;
           default:
             os << "Invalid choice" << std::endl;
@@ -176,47 +159,10 @@ namespace EasyLocal {
     }
     
     template <class Input, class Output, class State, class Move, typename CFtype>
-    void KickerTester<Input, Output, State, Move, CFtype>::PrintKick(const State& st, const std::vector<Move>& kick) const
+    void KickerTester<Input, Output, State, Move, CFtype>::PrintKicks(size_t length, const State& st) const
     {
-      for (const Move& mv : kick)
-      {
-        os << mv << " ";
-      }
-      os << "Cost : " << kicker.DeltaCostFunction(st, kick) << std::endl;
-    }
-    
-    
-    template <class Input, class Output, class State, class Move, typename CFtype>
-    void KickerTester<Input, Output, State, Move, CFtype>::PrintKicks(const State& st, unsigned int length, bool only_improving) const
-    {
-      std::vector<Move> kick;
-      unsigned count = 0;
-      CFtype best_delta_kick_cost;
-      kicker.FirstKick(st, kick, length);
-      best_delta_kick_cost = kicker.DeltaCostFunction(st, kick);
-      PrintKick(st, kick);
-      
-      while (kicker.NextKick(st, kick))
-      {
-        if (only_improving)
-        {
-          CFtype current_delta_kick_cost = kicker.DeltaCostFunction(st, kick);
-          if (LessThan(current_delta_kick_cost, best_delta_kick_cost))
-          {
-            best_delta_kick_cost = current_delta_kick_cost;
-            os << count << ": ";
-            PrintKick(st, kick);
-            count++;
-          }
-        }
-        else
-        {
-          os << count << ": ";
-          PrintKick(st, kick);	
-          count++;
-        }
-      }
-      os << "Number of kicks : " << count << std::endl;
+      for (auto it = kicker.begin(length, st); it != kicker.end(length, st); it++)
+        os << *it << std::endl;
     }
     
     template <class Input, class Output, class State, class Move, typename CFtype>

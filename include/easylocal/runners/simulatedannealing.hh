@@ -27,6 +27,7 @@ namespace EasyLocal {
       std::string StatusString();
       
     protected:
+      void RegisterParameters();
       void InitializeRun() throw (ParameterNotSet, IncorrectParameterValue);
       bool StopCriterion();
       // parameters
@@ -50,9 +51,15 @@ namespace EasyLocal {
                                                                        StateManager<Input, State, CFtype>& e_sm,
                                                                        NeighborhoodExplorer<Input, State, Move, CFtype>& e_ne,
                                                                        std::string name)
-    : AbstractSimulatedAnnealing<Input, State, Move, CFtype>(in, e_sm, e_ne, name),
-    min_temperature("min_temperature", "Minimum temperature", this->parameters)
+    : AbstractSimulatedAnnealing<Input, State, Move, CFtype>(in, e_sm, e_ne, name)
     {}
+    
+    template <class Input, class State, class Move, typename CFtype>
+    void SimulatedAnnealing<Input, State, Move, CFtype>::RegisterParameters()
+    {
+      AbstractSimulatedAnnealing<Input, State, Move, CFtype>::RegisterParameters();
+      min_temperature("min_temperature", "Minimum temperature", this->parameters);
+    }
     
     /**
      Initializes the run by invoking the companion superclass method, and

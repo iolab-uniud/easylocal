@@ -13,6 +13,321 @@ namespace EasyLocal {
   
   namespace Core {
     
+    template <typename CFtype>
+    struct CostStructure
+    {
+      CostStructure() : total(0), violations(0), objective(0), all_components(0), weighted(0.0), is_weighted(false) {}
+      CostStructure(CFtype total, CFtype violations, CFtype objective, const std::vector<CFtype>& all_components) : total(total), violations(violations), objective(objective), all_components(all_components), weighted(total), is_weighted(false) {}
+      CostStructure(CFtype total, double weighted, CFtype violations, CFtype objective, const std::vector<CFtype>& all_components) : total(total), violations(violations), objective(objective), all_components(all_components), weighted(weighted), is_weighted(true) {}
+      
+      
+      CFtype total, violations, objective;
+      std::vector<CFtype> all_components;
+      double weighted;
+      
+      bool is_weighted;
+      
+      CostStructure& operator+=(const CostStructure& other)
+      {
+        this->total += other.total;
+        this->violations += other.violations;
+        this->objective += other.objective;
+        for (size_t i = 0; i < other.all_components.size(); i++)
+          this->all_components[i] += other.all_components[i];
+        return *this;
+      }
+      
+      CostStructure& operator-=(const CostStructure& other)
+      {
+        this->total -= other.total;
+        this->violations -= other.violations;
+        this->objective -= other.objective;
+        for (size_t i = 0; i < other.all_components.size(); i++)
+          this->all_components[i] -= other.all_components[i];
+        return *this;
+      }
+      
+      explicit operator double() const
+      {
+        if (is_weighted)
+          return weighted;
+        else
+          return (double)total;
+      }      
+    };
+    
+    template <typename CFtype>
+    CostStructure<CFtype> operator+(const CostStructure<CFtype>& cs1, const CostStructure<CFtype>& cs2)
+    {
+      CostStructure<CFtype> res = cs1;
+      res += cs2;
+      return res;
+    }
+    
+    template <typename CFtype>
+    CostStructure<CFtype> operator-(const CostStructure<CFtype>& cs1, const CostStructure<CFtype>& cs2)
+    {
+      CostStructure<CFtype> res = cs1;
+      res -= cs2;
+      return res;
+    }
+    
+    template <class CFtype>
+    bool operator<(const CostStructure<CFtype>& cs1, const CostStructure<CFtype>& cs2)
+    {
+      if (cs1.is_weighted && cs2.is_weighted)
+        return LessThan(cs1.weighted, cs2.weighted);
+      return LessThan(cs1.total, cs2.total);
+    }
+    
+    template <class CFtype>
+    bool operator<(CFtype c1, const CostStructure<CFtype>& cs2)
+    {
+      if (cs2.is_weighted)
+        return LessThan((double)c1, cs2.weighted);
+      return LessThan(c1, cs2.total);
+    }
+    
+    template <class CFtype>
+    bool operator<(const CostStructure<CFtype>& cs1, CFtype c2)
+    {
+      if (cs1.is_weighted)
+        return LessThan(cs1.weighted, (double)c2);
+      return LessThan(cs1.total, c2);
+    }
+    
+    template <class CFtype, typename OtherType>
+    bool operator<(OtherType c1, const CostStructure<CFtype>& cs2)
+    {
+      if (cs2.is_weighted)
+        return LessThan((double)c1, cs2.weighted);
+      return LessThan((CFtype)c1, cs2.total);
+    }
+    
+    template <class CFtype, typename OtherType>
+    bool operator<(const CostStructure<CFtype>& cs1, OtherType c2)
+    {
+      if (cs1.is_weighted)
+        return LessThan(cs1.weighted, (double)c2);
+      return LessThan(cs1.total, (CFtype)c2);
+    }
+    
+    template <class CFtype>
+    bool operator<=(const CostStructure<CFtype>& cs1, const CostStructure<CFtype>& cs2)
+    {
+      if (cs1.is_weighted && cs2.is_weighted)
+        return LessThanOrEqualTo(cs1.weighted, cs2.weighted);
+      return LessThanOrEqualTo(cs1.total, cs2.total);
+    }
+    
+    template <class CFtype>
+    bool operator<=(CFtype c1, const CostStructure<CFtype>& cs2)
+    {
+      if (cs2.is_weighted)
+        return LessThanOrEqualTo((double)c1, cs2.weighted);
+      return LessThanOrEqualTo(c1, cs2.total);
+    }
+    
+    template <class CFtype>
+    bool operator<=(const CostStructure<CFtype>& cs1, CFtype c2)
+    {
+      if (cs1.is_weighted)
+        return LessThanOrEqualTo(cs1.weighted, (double)c2);
+      return LessThanOrEqualTo(cs1.total, c2);
+    }
+    
+    template <class CFtype, typename OtherType>
+    bool operator<=(OtherType c1, const CostStructure<CFtype>& cs2)
+    {
+      if (cs2.is_weighted)
+        return LessThanOrEqualTo((double)c1, cs2.weighted);
+      return LessThanOrEqualTo((CFtype)c1, cs2.total);
+    }
+    
+    template <class CFtype, typename OtherType>
+    bool operator<=(const CostStructure<CFtype>& cs1, OtherType c2)
+    {
+      if (cs1.is_weighted)
+        return LessThanOrEqualTo(cs1.weighted, (double)c2);
+      return LessThanOrEqualTo(cs1.total, (CFtype)c2);
+    }
+    
+    template <class CFtype>
+    bool operator==(const CostStructure<CFtype>& cs1, const CostStructure<CFtype>& cs2)
+    {
+      if (cs1.is_weighted && cs2.is_weighted)
+        return EqualTo(cs1.weighted, cs2.weighted);
+      return EqualTo(cs1.total, cs2.total);
+    }
+    
+    template <class CFtype>
+    bool operator==(CFtype c1, const CostStructure<CFtype>& cs2)
+    {
+      if (cs2.is_weighted)
+        return EqualTo((double)c1, cs2.weighted);
+      return EqualTo(c1, cs2.total);
+    }
+    
+    template <class CFtype>
+    bool operator==(const CostStructure<CFtype>& cs1, CFtype c2)
+    {
+      if (cs1.is_weighted)
+        return EqualTo(cs1.weighted, (double)c2);
+      return EqualTo(cs1.total, c2);
+    }
+    
+    template <class CFtype, typename OtherType>
+    bool operator==(OtherType c1, const CostStructure<CFtype>& cs2)
+    {
+      if (cs2.is_weighted)
+        return EqualTo((double)c1, cs2.weighted);
+      return EqualTo((CFtype)c1, cs2.total);
+    }
+    
+    template <class CFtype, typename OtherType>
+    bool operator==(const CostStructure<CFtype>& cs1, OtherType c2)
+    {
+      if (cs1.is_weighted)
+        return EqualTo(cs1.weighted, (double)c2);
+      return EqualTo(cs1.total, (CFtype)c2);
+    }
+    
+    template <class CFtype>
+    bool operator>=(const CostStructure<CFtype>& cs1, const CostStructure<CFtype>& cs2)
+    {
+      if (cs1.is_weighted && cs2.is_weighted)
+        return GreaterThanOrEqualTo(cs1.weighted, cs2.weighted);
+      return GreaterThanOrEqualTo(cs1.total, cs2.total);
+    }
+    
+    template <class CFtype>
+    bool operator>=(CFtype c1, const CostStructure<CFtype>& cs2)
+    {
+      if (cs2.is_weighted)
+        return GreaterThanOrEqualTo((double)c1, cs2.weighted);
+      return GreaterThanOrEqualTo(c1, cs2.total);
+    }
+    
+    template <class CFtype>
+    bool operator>=(const CostStructure<CFtype>& cs1, CFtype c2)
+    {
+      if (cs1.is_weighted)
+        return GreaterThanOrEqualTo(cs1.weighted, (double)c2);
+      return GreaterThanOrEqualTo(cs1.total, c2);
+    }
+    
+    template <class CFtype, typename OtherType>
+    bool operator>=(OtherType c1, const CostStructure<CFtype>& cs2)
+    {
+      if (cs2.is_weighted)
+        return GreaterThanOrEqualTo((double)c1, cs2.weighted);
+      return GreaterThanOrEqualTo((CFtype)c1, cs2.total);
+    }
+    
+    template <class CFtype, typename OtherType>
+    bool operator>=(const CostStructure<CFtype>& cs1, OtherType c2)
+    {
+      if (cs1.is_weighted)
+        return GreaterThanOrEqualTo(cs1.weighted, (double)c2);
+      return GreaterThanOrEqualTo(cs1.total, (CFtype)c2);
+    }
+    
+    template <class CFtype>
+    bool operator>(const CostStructure<CFtype>& cs1, const CostStructure<CFtype>& cs2)
+    {
+      if (cs1.is_weighted && cs2.is_weighted)
+        return GreaterThan(cs1.weighted, cs2.weighted);
+      return GreaterThan(cs1.total, cs2.total);
+    }
+    
+    template <class CFtype>
+    bool operator>(CFtype c1, const CostStructure<CFtype>& cs2)
+    {
+      if (cs2.is_weighted)
+        return GreaterThan((double)c1, cs2.weighted);
+      return GreaterThan(c1, cs2.total);
+    }
+    
+    template <class CFtype>
+    bool operator>(const CostStructure<CFtype>& cs1, CFtype c2)
+    {
+      if (cs1.is_weighted)
+        return GreaterThan(cs1.weighted, (double)c2);
+      return GreaterThan(cs1.total, c2);
+    }
+    
+    template <class CFtype, typename OtherType>
+    bool operator>(OtherType c1, const CostStructure<CFtype>& cs2)
+    {
+      if (cs2.is_weighted)
+        return GreaterThan((double)c1, cs2.weighted);
+      return GreaterThan((CFtype)c1, cs2.total);
+    }
+    
+    template <class CFtype, typename OtherType>
+    bool operator>(const CostStructure<CFtype>& cs1, OtherType c2)
+    {
+      if (cs1.is_weighted)
+        return GreaterThan(cs1.weighted, (double)c2);
+      return GreaterThan(cs1.total, (CFtype)c2);
+    }
+    
+    template <class CFtype>
+    bool operator!=(const CostStructure<CFtype>& cs1, const CostStructure<CFtype>& cs2)
+    {
+      if (cs1.is_weighted && cs2.is_weighted)
+        return !EqualTo(cs1.weighted, cs2.weighted);
+      return !EqualTo(cs1.total, cs2.total);
+    }
+    
+    template <class CFtype>
+    bool operator!=(CFtype c1, const CostStructure<CFtype>& cs2)
+    {
+      if (cs2.is_weighted)
+        return !EqualTo((double)c1, cs2.weighted);
+      return !EqualTo(c1, cs2.total);
+    }
+    
+    template <class CFtype>
+    bool operator!=(const CostStructure<CFtype>& cs1, CFtype c2)
+    {
+      if (cs1.is_weighted)
+        return !EqualTo(cs1.weighted, (double)c2);
+      return !EqualTo(cs1.total, c2);
+    }
+    
+    template <class CFtype, typename OtherType>
+    bool operator!=(OtherType c1, const CostStructure<CFtype>& cs2)
+    {
+      if (cs2.is_weighted)
+        return !EqualTo((double)c1, cs2.weighted);
+      return !EqualTo((CFtype)c1, cs2.total);
+    }
+    
+    template <class CFtype, typename OtherType>
+    bool operator!=(const CostStructure<CFtype>& cs1, OtherType c2)
+    {
+      if (cs1.is_weighted)
+        return !EqualTo(cs1.weighted, (double)c2);
+      return !EqualTo(cs1.total, (CFtype)c2);
+    }
+    
+    template <typename CFtype>
+    std::ostream& operator<<(std::ostream& os, const CostStructure<CFtype>& cc)
+    {
+      os << cc.total << "(viol: " << cc.violations << ", obj: " << cc.objective << ", {";
+      for (size_t i = 0; i < cc.all_components.size(); i++)
+      {
+        if (i > 0)
+          os << ", ";
+        os << cc.all_components[i];
+      }
+      os << "})";
+      
+      return os;
+    }
+    
+    
     /**
      This constant multiplies the value of the Violations function in thehierarchical formulation of the Cost function (i.e., CostFunction(s) = HARD_WEIGHT * Violations(s) + Objective(s)).
      @todo The use of the global HARD_WEIGHT is a rough solution, waiting for an idea of a general mechanism for managing cost function weights.
@@ -111,14 +426,15 @@ namespace EasyLocal {
       /**
        Compute the cost function calling the cost components.
        @param st the state to be evaluated
-       @return the unaggregated components of the cost function in the given state (hard + soft costs)
+       @param an optional vector of weights for the cost components.
+       @return all the components of the cost function in the given state
        
        @remarks The normal definition computes a weighted sum of the violation
        function and the objective function.
        
        @note It is rarely needed to redefine this method.
        */
-      virtual std::vector<CFtype> CostFunctionComponents(const State& st) const;
+      virtual CostStructure<CFtype> CostFunctionComponents(const State& st, const std::vector<double>& weights = std::vector<double>(0)) const;
       
       /**
        Compute the violations by calling the hard cost components (it is rarely
@@ -166,7 +482,7 @@ namespace EasyLocal {
       /**
        Clear the cost component array.
        */
-      void ClearCostComponents();
+      void ClearCostStructure();
       
       /**
        Compute the distance of two states (e.g. the Hamming distance).
@@ -304,13 +620,32 @@ namespace EasyLocal {
     }
     
     template <class Input, class State, typename CFtype>
-    std::vector<CFtype> StateManager<Input, State, CFtype>::CostFunctionComponents(const State& st) const
+    CostStructure<CFtype> StateManager<Input, State, CFtype>::CostFunctionComponents(const State& st, const std::vector<double>& weights) const
     {
-      std::vector<CFtype> cost_function(cost_component.size());
-      for (unsigned int i = 0; i < cost_component.size(); i++)
-        cost_function[i] = cost_component[i]->Cost(st);
+      CFtype hard_cost = 0, soft_cost = 0;
+      double weighted_cost = 0.0;
+      std::vector<CFtype> cost_function(CostComponent<Input, State, CFtype>::CostComponents(), (CFtype)0);
+      for (size_t i = 0; i < cost_component.size(); i++)
+      {
+        CFtype current_cost = cost_function[cost_component[i]->Index()] = cost_component[i]->Cost(st);
+        if (cost_component[i]->IsHard())
+        {
+          hard_cost += current_cost;
+          if (!weights.empty())
+            weighted_cost += HARD_WEIGHT * weights[cost_component[i]->Index()] * current_cost;
+        }
+        else
+        {
+          soft_cost += current_cost;
+          if (!weights.empty())
+            weighted_cost += weights[cost_component[i]->Index()] * current_cost;
+        }
+      }
       
-      return cost_function;
+      if (!weights.empty())
+        return CostStructure<CFtype>(HARD_WEIGHT * hard_cost + soft_cost, weighted_cost, hard_cost, soft_cost, cost_function);
+      else
+        return CostStructure<CFtype>(HARD_WEIGHT * hard_cost + soft_cost, hard_cost, soft_cost, cost_function);
     }
     
     template <class Input, class State, typename CFtype>
@@ -352,7 +687,7 @@ namespace EasyLocal {
     }
     
     template <class Input, class State, typename CFtype>
-    void StateManager<Input, State, CFtype>::ClearCostComponents()
+    void StateManager<Input, State, CFtype>::ClearCostStructure()
     {
       cost_component.clear();
     }

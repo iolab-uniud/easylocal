@@ -10,6 +10,8 @@ namespace EasyLocal {
   
   namespace Modeling {
     
+    using namespace EasyLocal::Core;
+    
     /** Forward declaration */
     template <typename T>
     class ExpressionStore;

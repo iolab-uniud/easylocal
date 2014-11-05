@@ -61,6 +61,9 @@ namespace EasyLocal {
         return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - begin);
       }
       
+      /** Register its parameters */
+      virtual void RegisterParameters();
+      
       /** Reads the parameter from an input stream.
        @param is input stream to read from
        @param os output stream to give indication about the needed parameters
@@ -136,8 +139,8 @@ namespace EasyLocal {
       /** Encodes the criterion used to select the move at each step. */
       virtual void SelectMove() = 0;
       
-      /** Verifies whether the move selected can be performed. */
-      virtual bool AcceptableMove();
+      /** Verifies whether the current move is acceptable (i.e., it is valid) */
+      virtual bool AcceptableMoveFound() = 0;
       
       /** Actions to be performed after a move has been accepted. Redefinition intended. */
       virtual void PrepareMove() {};
@@ -156,6 +159,9 @@ namespace EasyLocal {
         };
       }
       
+      /** No acceptable move has been found in the current iteration. */
+      bool no_acceptable_move_found;
+      
       /** A reference to the input. */
       const Input& in;
       
@@ -168,16 +174,10 @@ namespace EasyLocal {
       p_best_state;
       
       /** Cost of the current state. */
-      CFtype current_state_cost;
-      
-      /** Current state violations. */
-      CFtype current_state_violations;
+      CostStructure<CFtype> current_state_cost;
       
       /** Cost of the best state. */
-      CFtype best_state_cost;
-      
-      /** Cost of the best state. */
-      CFtype best_state_violations;
+      CostStructure<CFtype> best_state_cost;
       
       /** Index of the iteration where the best has been found. */
       unsigned long int iteration_of_best;
@@ -185,11 +185,18 @@ namespace EasyLocal {
       /** Index of the current iteration. */
       unsigned long int iteration;
       
+      /** Number of cost function evaluations. */
+      unsigned long int evaluations;
+      
       /** Generic parameter of every runner: maximum number of iterations. */
       Parameter<unsigned long int> max_iterations;
       
       /** Chronometer. */
       std::chrono::high_resolution_clock::time_point begin, end;
+      
+      /** Weights of the different cost function components. 
+          If the vector is empty (default), it is assumed all weigths to be 1.0. */
+      std::vector<double> weights;
       
     private:
       
@@ -211,17 +218,21 @@ namespace EasyLocal {
     std::vector<Runner<Input, State, CFtype>*> Runner<Input, State, CFtype>::runners;
     
     template <class Input, class State, typename CFtype>
-    Runner<Input, State, CFtype>::Runner(const Input& i, StateManager<Input, State, CFtype>& sm, std::string name, std::string description)
+    Runner<Input, State, CFtype>::Runner(const Input& in, StateManager<Input, State, CFtype>& sm, std::string name, std::string description)
     : // Parameters
-    Parametrized(name, description), name(name), description(description), in(i), sm(sm),
-    max_iterations("max_iterations", "Maximum total number of iterations allowed", this->parameters)
+    Parametrized(name, description), name(name), description(description), no_acceptable_move_found(false), in(in), sm(sm), weights(0)
     {
-      // This parameter has a default value
-      max_iterations = std::numeric_limits<unsigned long int>::max();
-      
       // Add to the list of all runners
       runners.push_back(this);
       begin = end = std::chrono::high_resolution_clock::now();
+    }
+    
+    template <class Input, class State, typename CFtype>
+    void Runner<Input, State, CFtype>::RegisterParameters()
+    {
+      max_iterations("max_iterations", "Maximum total number of iterations allowed", this->parameters);
+      // This parameter has a default value
+      max_iterations = std::numeric_limits<unsigned long int>::max();
     }
     
     template <class Input, class State, typename CFtype>
@@ -234,17 +245,17 @@ namespace EasyLocal {
         try
         {
           SelectMove();
+          if (AcceptableMoveFound())
+          {
+            PrepareMove();
+            MakeMove();
+            CompleteMove();
+            UpdateBestState();
+          }
         }
-        catch (EmptyNeighborhood e)
+        catch (EmptyNeighborhood)
         {
           break;
-        }
-        if (AcceptableMove())
-        {
-          PrepareMove();
-          MakeMove();
-          CompleteMove();
-          UpdateBestState();
         }
         CompleteIteration();
       }
@@ -259,6 +270,7 @@ namespace EasyLocal {
     template <class Input, class State, typename CFtype>
     void Runner<Input, State, CFtype>::PrepareIteration()
     {
+      no_acceptable_move_found = false;
       iteration++;
     }
     
@@ -278,21 +290,15 @@ namespace EasyLocal {
     }
     
     template <class Input, class State, typename CFtype>
-    bool Runner<Input, State, CFtype>::AcceptableMove()
-    {
-      return true;
-    }
-    
-    template <class Input, class State, typename CFtype>
     void Runner<Input, State, CFtype>::InitializeRun(State& s) throw (ParameterNotSet, IncorrectParameterValue)
     {
       begin = std::chrono::high_resolution_clock::now();
       iteration = 0;
       iteration_of_best = 0;
+      evaluations = 0;
       p_best_state = std::make_shared<State>(s);    // creates the best state object by copying the content of s
       p_current_state = std::make_shared<State>(s); // creates the current state object by copying the content of s
-      best_state_cost = current_state_cost = sm.CostFunction(s);
-      best_state_violations = current_state_violations = sm.Violations(s);
+      best_state_cost = current_state_cost = sm.CostFunctionComponents(s);
       InitializeRun();
       end = std::chrono::high_resolution_clock::now();
     }
@@ -303,13 +309,13 @@ namespace EasyLocal {
       s = *p_best_state;
       TerminateRun();
       end = std::chrono::high_resolution_clock::now();
-      return best_state_cost;
+      return best_state_cost.total;
     }
     
     template <class Input, class State, typename CFtype>
     bool Runner<Input, State, CFtype>::LowerBoundReached() const
     {
-      return sm.LowerBoundReached(current_state_cost);
+      return sm.LowerBoundReached(current_state_cost.total);
     }
     
     template <class Input, class State, typename CFtype>
@@ -324,8 +330,7 @@ namespace EasyLocal {
     {
       os  << "  " << this->name << std::endl;
       Parametrized::Print(os);  
-    }
-    
+    }    
   }
 }
 

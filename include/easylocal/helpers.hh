@@ -31,9 +31,6 @@
  - DeltaCostComponent: is responsible for computing the difference of the cost function due to the application
  of a @ref Move on a given @ref State.
  
- - ProhibitionManager: is in charge for the management of the prohibition
- mechanism (e.g., the TabuListManager for the short-term memory tabu search strategy).
- 
  - ShiftingPenaltyManager: is responsible for the adaptive modification of the weights of the
  cost function, according to the @e shifting @e penalty mechanism. For each component of the
  cost function, it maintains an independent weight, which varies depending on the number of
@@ -46,8 +43,6 @@
 #include "easylocal/helpers/multimodalneighborhoodexplorer.hh"
 #include "easylocal/helpers/neighborhoodexplorer.hh"
 #include "easylocal/helpers/outputmanager.hh"
-#include "easylocal/helpers/prohibitionmanager.hh"
 #include "easylocal/helpers/statemanager.hh"
-#include "easylocal/helpers/tabulistmanager.hh"
 
 #endif // _HELPERS_HH_

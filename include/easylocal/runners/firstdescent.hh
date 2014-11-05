@@ -25,7 +25,6 @@ namespace EasyLocal {
     protected:
       void InitializeRun() throw (ParameterNotSet, IncorrectParameterValue);;
       bool StopCriterion();
-      bool AcceptableMove();
       void SelectMove();
     };
     
@@ -46,8 +45,7 @@ namespace EasyLocal {
                                                            StateManager<Input, State, CFtype>& e_sm, NeighborhoodExplorer<Input, State, Move, CFtype>& e_ne,
                                                            std::string name)
     : MoveRunner<Input, State, Move, CFtype>(in, e_sm, e_ne, name, "First Descent Runner")
-    {
-    }
+    {}
     
     /**
      Selects always the first improving move in the neighborhood.
@@ -55,8 +53,10 @@ namespace EasyLocal {
     template <class Input, class State, class Move, typename CFtype>
     void FirstDescent<Input, State, Move, CFtype>::SelectMove()
     {
-      this->current_move_cost = this->ne.FirstImprovingMove(*this->p_current_state, this->current_move);
-      this->current_move_violations = this->ne.DeltaViolations(*this->p_current_state, this->current_move); // TODO: slightly inefficient
+      EvaluatedMove<Move, CFtype> em = this->ne.SelectFirst(*this->p_current_state, [](const Move& mv, CostStructure<CFtype> move_cost) {
+        return move_cost < 0;
+      }, this->weights);
+      this->current_move = em;
     }
     
     /**
@@ -67,8 +67,7 @@ namespace EasyLocal {
     void FirstDescent<Input, State, Move, CFtype>::InitializeRun() throw (ParameterNotSet, IncorrectParameterValue)
     {
       MoveRunner<Input, State, Move, CFtype>::InitializeRun();
-      this->current_move_cost = -1; // needed for passing the first time
-                                    // the StopCriterion test
+      this->current_move.cost.total = -1; // needed for passing the first time the StopCriterion test
     }
     
     /**
@@ -76,15 +75,9 @@ namespace EasyLocal {
      */
     template <class Input, class State, class Move, typename CFtype>
     bool FirstDescent<Input, State, Move, CFtype>::StopCriterion()
-    { return GreaterOrEqualThan<CFtype>(this->current_move_cost, 0); }
-    
-    /**
-     A move is accepted if it is an improving one.
-     */
-    template <class Input, class State, class Move, typename CFtype>
-    bool FirstDescent<Input, State, Move, CFtype>::AcceptableMove()
-    { return LessThan<CFtype>(this->current_move_cost, 0); }
-    
+    {
+      return !this->current_move.is_valid;
+    }        
   }
 }
 

@@ -37,13 +37,11 @@ namespace EasyLocal {
                   std::string name);
       
     protected:
+      void RegisterParameters();
       void InitializeRun() throw (ParameterNotSet, IncorrectParameterValue);
       bool StopCriterion();
       void UpdateIterationCounter();
       void SelectMove();
-      bool AcceptableMove();
-      
-      
       
       // parameters
       Parameter<double> initial_level; /**< The initial level. */
@@ -72,13 +70,17 @@ namespace EasyLocal {
                                                          StateManager<Input, State, CFtype>& e_sm,
                                                          NeighborhoodExplorer<Input, State, Move, CFtype>& e_ne,
                                                          std::string name)
-    : MoveRunner<Input, State, Move, CFtype>(in, e_sm, e_ne, name, "Great Deluge"),
-    // parameters
-    initial_level("initial_level", "Initial water level", this->parameters),
-    min_level("min_level", "Minimum water level", this->parameters),
-    level_rate("level_rate", "Water decrease factor", this->parameters),
-    neighbors_sampled("neighbors_sampled", "Number of neighbors sampled at each water level", this->parameters)
+    : MoveRunner<Input, State, Move, CFtype>(in, e_sm, e_ne, name, "Great Deluge")
+    {}
+    
+    template <class Input, class State, class Move, typename CFtype>
+    void GreatDeluge<Input, State, Move, CFtype>::RegisterParameters()
     {
+      MoveRunner<Input, State, Move, CFtype>::RegisterParameters();
+      initial_level("initial_level", "Initial water level", this->parameters);
+      min_level("min_level", "Minimum water level", this->parameters);
+      level_rate("level_rate", "Water decrease factor", this->parameters);
+      neighbors_sampled("neighbors_sampled", "Number of neighbors sampled at each water level", this->parameters);
     }
     
     /**
@@ -88,7 +90,7 @@ namespace EasyLocal {
     template <class Input, class State, class Move, typename CFtype>
     void GreatDeluge<Input, State, Move, CFtype>::InitializeRun() throw (ParameterNotSet, IncorrectParameterValue)
     {
-      level = initial_level * this->current_state_cost;
+      level = initial_level * this->current_state_cost.total;
     }
     
     /**
@@ -97,7 +99,15 @@ namespace EasyLocal {
     template <class Input, class State, class Move, typename CFtype>
     void GreatDeluge<Input, State, Move, CFtype>::SelectMove()
     {
-      this->SelectRandomMove();
+      // TODO: it should become a parameter, the number of neighbors drawn at each iteration (possibly evaluated in parallel)
+      const size_t samples = 10;
+      size_t sampled;
+      CFtype cur_cost = this->current_state_cost.total;
+      double l = level;
+      EvaluatedMove<Move, CFtype> em = this->ne.RandomFirst(*this->p_current_state, samples, sampled, [cur_cost, l](const Move& mv, CostStructure<CFtype> move_cost) {
+        return move_cost < 0 || ((double)move_cost + cur_cost) <= l;
+      }, this->weights);
+      this->current_move = em;
     }
     
     /**
@@ -106,7 +116,7 @@ namespace EasyLocal {
     template <class Input, class State, class Move, typename CFtype>
     bool GreatDeluge<Input, State, Move, CFtype>::StopCriterion()
     {
-      return level < min_level * this->best_state_cost;
+      return level < min_level * this->best_state_cost.total;
     }
     
     /**
@@ -118,19 +128,7 @@ namespace EasyLocal {
     {
       MoveRunner<Input, State, Move, CFtype>::UpdateIterationCounter();
       if (this->number_of_iterations % neighbors_sampled == 0)
-      {
         level *= level_rate;
-      }
-    }
-    
-    /** A move is surely accepted if it improves the cost function
-     or with exponentially decreasing probability if it is
-     a worsening one.
-     */
-    template <class Input, class State, class Move, typename CFtype>
-    bool GreatDeluge<Input, State, Move, CFtype>::AcceptableMove()
-    {
-      return LessOrEqualThan(this->current_move_cost, (CFtype)0) || LessOrEqualThan((double)(this->current_move_cost + this->current_state_cost), level);
     }
   }
 }
