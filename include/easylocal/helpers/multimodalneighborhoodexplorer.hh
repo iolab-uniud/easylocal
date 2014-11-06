@@ -137,6 +137,7 @@ namespace EasyLocal {
           TRY_NEXT_MOVE_WITH_FIRST,
           IS_ACTIVE,
           DELTA_COST_FUNCTION,
+          DELTA_COST_FUNCTION_COMPONENTS,
           DELTA_VIOLATIONS,
           DELTA_OBJECTIVE
         };
@@ -205,6 +206,22 @@ namespace EasyLocal {
               break;
             case DELTA_OBJECTIVE:
               f = &DoDeltaObjective<N>;
+              break;
+            default:
+              throw std::logic_error("Function not implemented");
+          }
+          return f;
+        }
+        
+        /** Method to generate a function with @c CFtype return type. */
+        template <class N>
+        std::function<CostStructure<CFtype>(const N&, State&, ActiveMove<typename N::MoveType>&, const std::vector<double>&)> getCostStructure() const throw(std::logic_error)
+        {
+          std::function<CostStructure<CFtype>(const N&, State&, ActiveMove<typename N::MoveType>&, const std::vector<double>&)> f;
+          switch (to_call)
+          {
+            case DELTA_COST_FUNCTION_COMPONENTS:
+              f = &DoDeltaCostFunctionComponents<N>;
               break;
             default:
               throw std::logic_error("Function not implemented");
@@ -382,6 +399,42 @@ namespace EasyLocal {
 #endif
           // Just to avoid warnings from smart compilers
           return static_cast<CFtype>(0);
+        }
+        
+        /** Run a function on a specific element of the @ref Move (and @ref NeighborhoodExplorer) tuples, then return the result. Based on compile-time recursion.
+         @param st reference to the current @ref State
+         @param temp_moves tuple of references to @ref ActiveMove
+         @param temp_nhes tuple of references to associated @ref NeighborhoodExplorer
+         @param c @ref Call to execute
+         @param level tuple level at which to execute the function (0 is the last element, N - 1 is the first)
+         */
+        static CostStructure<CFtype> ComputeComponentsAt(State& st, TupleOfMoves& temp_moves, const std::vector<double>& weights, const TupleOfNHEs& temp_nhes, const Call& c, int level)
+        {
+          // If we're at the right level of the recursion
+          if (level == 0)
+          {
+            // Get right types (be nice to gcc)
+            typedef typename std::tuple_element<N, TupleOfNHEs>::type::type CurrentNHE;
+            typedef typename std::tuple_element<N, TupleOfMoves>::type::type CurrentMove;
+            CurrentNHE& this_nhe = std::get<N>(temp_nhes).get();
+            CurrentMove& this_move = std::get<N>(temp_moves).get();
+            
+            // Instantiate the function with the right template parameters
+            std::function<CostStructure<CFtype>(const CurrentNHE&, State&, CurrentMove&, const std::vector<double>&)> f =  c.template getCostStructure<CurrentNHE>();
+            
+            // Call on the last element, return result
+            return f(this_nhe, st, this_move, weights);
+          }
+          
+          // Otherwise, go down with recursion
+          else if (level > 0)
+            return TupleDispatcher<TupleOfMoves, TupleOfNHEs, N - 1>::ComputeComponentsAt(st, temp_moves, weights, temp_nhes, c, --level);
+#if defined(DEBUG)
+          else
+            throw std::logic_error("In function ComputeComponentsAt (recursive case) level is less than zero");
+#endif
+          // Just to avoid warnings from smart compilers
+          return CostStructure<CFtype>();
         }
         
         /** Run a function on all the elements of the @ref Move (and @ref NeighborhoodExplorer) tuples, then return the result. Based on compile-time recursion.
@@ -661,6 +714,36 @@ namespace EasyLocal {
           return static_cast<CFtype>(0);
         }
         
+        /** Run a function on all the elements of the @ref Move (and @ref NeighborhoodExplorer) tuples, then return the result. Based on compile-time recursion.
+         @param st reference to the current @ref State
+         @param temp_moves tuple of references to @ref ActiveMove
+         @param temp_nhes tuple of references to associated @ref NeighborhoodExplorer
+         @param c @ref Call to execute
+         @param level tuple level at which to execute the function (0 is the last element, N - 1 is the first)
+         */
+        static CostStructure<CFtype> ComputeComponentsAt(State& st, TupleOfMoves& temp_moves, const std::vector<double>& weights, const TupleOfNHEs& temp_nhes, const Call& c, int level)
+        {
+          // If we're at the right level of the recursion
+          if (level == 0)
+          {
+            // Get right types (be nice to gcc)
+            typedef typename std::tuple_element<0, TupleOfNHEs>::type::type CurrentNHE;
+            typedef typename std::tuple_element<0, TupleOfMoves>::type::type CurrentMove;
+            CurrentNHE& this_nhe = std::get<0>(temp_nhes).get();
+            CurrentMove& this_move = std::get<0>(temp_moves).get();
+            
+            // Instantiate the function with the right template parameters
+            std::function<CostStructure<CFtype>(const CurrentNHE&, State&, CurrentMove&, const std::vector<double>&)> f =  c.template getCostStructure<CurrentNHE>();
+            return f(this_nhe, st, this_move, weights);
+          }
+#if defined(DEBUG)
+          else
+            throw std::logic_error("In function ComputeAt (base case) level is not zero");
+#endif
+          // Just to avoid warnings from smart compilers
+          return CostStructure<CFtype>();
+        }
+        
         /** Run a function at all the levels of the @ref Move (and @ref NeighborhoodExplorer) tuples, then return the sum of the result. Based on compile-time recursion.
          @param st reference to the current @ref State
          @param temp_moves tuple of references to @ref ActiveMove
@@ -829,6 +912,13 @@ namespace EasyLocal {
         return TupleDispatcher<std::tuple<std::reference_wrapper<ActiveMove<typename NHEs::MoveType>>...>, std::tuple<std::reference_wrapper<NHEs>...>, sizeof...(NHEs) - 1>::ComputeAt(st, moves, nhes, c, (sizeof...(NHEs) - 1) - index);
       }
       
+      /** @copydoc TupleDispatcher::ComputeAt */
+      template <class ...NHEs>
+      static CostStructure<CFtype> ComputeComponentsAt(State& st, std::tuple<std::reference_wrapper<ActiveMove<typename NHEs::MoveType>>...>& moves, const std::vector<double>& w, const std::tuple<std::reference_wrapper<NHEs>...>& nhes, const Call& c, int index)
+      {
+        return TupleDispatcher<std::tuple<std::reference_wrapper<ActiveMove<typename NHEs::MoveType>>...>, std::tuple<std::reference_wrapper<NHEs>...>, sizeof...(NHEs) - 1>::ComputeComponentsAt(st, moves, w, nhes, c, (sizeof...(NHEs) - 1) - index);
+      }
+      
       /** @copydoc TupleDispatcher::ComputeAll */
       template <class ...NHEs>
       static CFtype ComputeAll(State& st, std::tuple<std::reference_wrapper<ActiveMove<typename NHEs::MoveType>>...>& moves, const std::tuple<std::reference_wrapper<NHEs>...>& nhes, const Call& c)
@@ -994,6 +1084,17 @@ namespace EasyLocal {
       static CFtype DoDeltaCostFunction(const N& n, State& s, ActiveMove<typename N::MoveType>& m)
       {
         return n.DeltaCostFunction(s, m);
+      }
+      
+      /** Computes the cost of making a @ref Move on a state
+       @param n a reference to the @ref Move's @ref NeighborhoodExplorer
+       @param s a reference to the current @ref State
+       @param m a reference to the  @ref ActiveMove to check
+       */
+      template<class N>
+      static CostStructure<CFtype> DoDeltaCostFunctionComponents(const N& n, State& s, ActiveMove<typename N::MoveType>& m, const std::vector<double>& w)
+      {
+        return n.DeltaCostFunctionComponents(s, m, w);
       }
       
       /** Computes the hard cost of making a @ref Move on a @ref State
@@ -1167,6 +1268,22 @@ namespace EasyLocal {
         MoveTypeRefs r_moves = to_refs(c_moves);
         // Return cost
         return SuperNeighborhoodExplorer::ComputeAt(const_cast<State&>(st), r_moves, this->nhes, delta_cost_function, selected);
+      }
+      
+      /** @copydoc NeighborhoodExplorer::DeltaCostFunctionComponents */
+      virtual CostStructure<CFtype> DeltaCostFunctionComponents(const State& st, const typename SuperNeighborhoodExplorer::MoveType& moves, const std::vector<double>& weights = std::vector<double>(0)) const
+      {
+        // Select the current active NeighborhoodExplorer
+        unsigned int selected = this->CurrentActiveMove(st, moves);
+        
+        // Compute delta cost components
+        Call delta_cost_function_components(Call::Function::DELTA_COST_FUNCTION_COMPONENTS);
+        
+        // Convert to references to non-const
+        auto c_moves = const_cast<decltype(moves)>(moves);
+        MoveTypeRefs r_moves = to_refs(c_moves);
+        // Return cost
+        return SuperNeighborhoodExplorer::ComputeComponentsAt(const_cast<State&>(st), r_moves, weights, this->nhes, delta_cost_function_components, selected);
       }
       
       /** @copydoc NeighborhoodExplorer::DeltaViolations */
@@ -1707,6 +1824,34 @@ namespace EasyLocal {
           temp_states[i] = temp_states[i - 1];
           SuperNeighborhoodExplorer::ExecuteAt(temp_states[i], r_moves, this->nhes, make_move, i - 1);
           sum += SuperNeighborhoodExplorer::ComputeAt(temp_states[i], r_moves, this->nhes, do_delta_cost_function, i);
+        }
+        
+        return sum;
+      }
+      
+      /** @copydoc NeighborhoodExplorer::DeltaCostFunctionComponents */
+      virtual CostStructure<CFtype> DeltaCostFunctionComponents(const State& st, const typename SuperNeighborhoodExplorer::MoveType& moves, const std::vector<double>& weights = std::vector<double>(0)) const
+      {
+#if defined(DEBUG)
+        VerifyAllActives(st, moves);
+        VerifyAllRelated(st, moves);
+#endif
+        
+        Call do_delta_cost_function_components(Call::Function::delta_cost_function_components);
+        Call make_move(Call::Function::MAKE_MOVE);
+        
+        CostStructure<CFtype> sum;
+        auto c_moves = const_cast<decltype(moves)>(moves);
+        MoveTypeRefs r_moves = to_refs(c_moves);
+        std::vector<State> temp_states(this->Modality(), State(this->in)); // the chain of states
+        temp_states[0] = st; // the first state is a copy of to st
+                             // create and initialize all the remaining states in the chain
+        sum = SuperNeighborhoodExplorer::ComputeComponentsAt(temp_states[0], r_moves, weights, this->nhes, do_delta_cost_function_components, 0);
+        for (unsigned int i = 1; i < this->Modality(); i++)
+        {
+          temp_states[i] = temp_states[i - 1];
+          SuperNeighborhoodExplorer::ExecuteAt(temp_states[i], r_moves, this->nhes, make_move, i - 1);
+          sum += SuperNeighborhoodExplorer::ComputeComponentsAt(temp_states[i], r_moves, weights, this->nhes, do_delta_cost_function_components, i);
         }
         
         return sum;
