@@ -35,7 +35,7 @@ namespace EasyLocal {
       CFtype aspiration = this->best_state_cost.total - this->current_state_cost.total;
       EvaluatedMove<Move, CFtype> em = this->ne.SelectFirst(*this->p_current_state, [this, aspiration](const Move& mv, CostStructure<CFtype> move_cost) {
         for (auto li : *(this->tabu_list))
-          if (this->Inverse(li.move, mv) && (move_cost.total >= aspiration))
+          if ((move_cost.total >= aspiration) && this->Inverse(li.move, mv))
             return false;
         return true;
       }, this->weights);
