@@ -1,7 +1,7 @@
 #if !defined(_MOVE_RUNNER_OBSERVER_HH_)
 #define _MOVE_RUNNER_OBSERVER_HH_
 
-#include "easylocal/runners/MoveRunner.hh"
+#include "easylocal/runners/moverunner.hh"
 #include <chrono>
 #include <iostream>
 
