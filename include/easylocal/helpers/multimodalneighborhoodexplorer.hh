@@ -1837,7 +1837,7 @@ namespace EasyLocal {
         VerifyAllRelated(st, moves);
 #endif
         
-        Call do_delta_cost_function_components(Call::Function::delta_cost_function_components);
+        Call do_delta_cost_function_components(Call::Function::DELTA_COST_FUNCTION_COMPONENTS);
         Call make_move(Call::Function::MAKE_MOVE);
         
         CostStructure<CFtype> sum;
