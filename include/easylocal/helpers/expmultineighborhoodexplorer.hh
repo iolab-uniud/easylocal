@@ -96,10 +96,10 @@ namespace EasyLocal {
     namespace Impl {
     
       template<typename T, typename return_type, typename... params>
-      ssvu::FastFunc<return_type(params...)>
+      FastFunc<return_type(params...)>
       makeFastFunc(T* obj, return_type(T::*f)(params...) const)
       {
-        return ssvu::FastFunc<return_type(params...)>(obj, f);
+        return FastFunc<return_type(params...)>(obj, f);
       }
       
       
@@ -355,7 +355,7 @@ namespace EasyLocal {
     }
     
     template <class Input, class State, class CFtype, class ... BaseNeighborhoodExplorers>
-    class ExpSetUnionNeighborhoodExplorer : public NeighborhoodExplorer<Input, State, std::tuple<ActiveMove<typename BaseNeighborhoodExplorers::MoveType> ...>, CFtype>
+    class SetUnionNeighborhoodExplorer : public NeighborhoodExplorer<Input, State, std::tuple<ActiveMove<typename BaseNeighborhoodExplorers::MoveType> ...>, CFtype>
     {
     public:
       /** Tuple type representing the combination of @c BaseNeighborhoodExplorers' @ref Move. */
@@ -376,7 +376,7 @@ namespace EasyLocal {
     public:
       
       /** Constructor, takes a variable number of base NeighborhoodExplorers.  */
-      ExpSetUnionNeighborhoodExplorer(const Input& in, StateManager<Input, State, CFtype>& sm, std::string name, BaseNeighborhoodExplorers& ... nhes)
+      SetUnionNeighborhoodExplorer(const Input& in, StateManager<Input, State, CFtype>& sm, std::string name, BaseNeighborhoodExplorers& ... nhes)
       : NeighborhoodExplorer<Input, State, MoveTypes, CFtype>(in, sm, name),
       nhes(std::make_tuple(std::reference_wrapper<BaseNeighborhoodExplorers>(nhes) ...)),
       first_move_funcs(std::make_tuple(Impl::makeFastFunc(&nhes, &BaseNeighborhoodExplorers::FirstMove)...)),
@@ -390,10 +390,10 @@ namespace EasyLocal {
       NeighborhoodExplorerTypes nhes;
       
     protected:
-      typedef std::tuple<ssvu::FastFunc<void(const State&, typename BaseNeighborhoodExplorers::MoveType&)>...> _Void_ConstState_Move;
-      typedef std::tuple<ssvu::FastFunc<bool(const State&, typename BaseNeighborhoodExplorers::MoveType&)>...> _Bool_ConstState_Move;
-      typedef std::tuple<ssvu::FastFunc<void(State&, const typename BaseNeighborhoodExplorers::MoveType&)>...> _Void_State_ConstMove;
-      typedef std::tuple<ssvu::FastFunc<CostStructure<CFtype>(const State&, const typename BaseNeighborhoodExplorers::MoveType&, const std::vector<double>& weights)>...> _CostStructure_ConstState_ConstMove;
+      typedef std::tuple<Impl::FastFunc<void(const State&, typename BaseNeighborhoodExplorers::MoveType&)>...> _Void_ConstState_Move;
+      typedef std::tuple<Impl::FastFunc<bool(const State&, typename BaseNeighborhoodExplorers::MoveType&)>...> _Bool_ConstState_Move;
+      typedef std::tuple<Impl::FastFunc<void(State&, const typename BaseNeighborhoodExplorers::MoveType&)>...> _Void_State_ConstMove;
+      typedef std::tuple<Impl::FastFunc<CostStructure<CFtype>(const State&, const typename BaseNeighborhoodExplorers::MoveType&, const std::vector<double>& weights)>...> _CostStructure_ConstState_ConstMove;
       
       _Void_ConstState_Move first_move_funcs, random_move_funcs;
       _Bool_ConstState_Move next_move_funcs;
@@ -501,7 +501,7 @@ namespace EasyLocal {
     };
     
     template <class Input, class State, class CFtype, class ... BaseNeighborhoodExplorers>
-    class ExpCartesianProductNeighborhoodExplorer : public NeighborhoodExplorer<Input, State, std::tuple<ActiveMove<typename BaseNeighborhoodExplorers::MoveType> ...>, CFtype>
+    class CartesianProductNeighborhoodExplorer : public NeighborhoodExplorer<Input, State, std::tuple<ActiveMove<typename BaseNeighborhoodExplorers::MoveType> ...>, CFtype>
     {
     public:
       /** Tuple type representing the combination of @c BaseNeighborhoodExplorers' @ref Move. */
@@ -522,7 +522,7 @@ namespace EasyLocal {
     public:
       
       /** Constructor, takes a variable number of base NeighborhoodExplorers.  */
-      ExpCartesianProductNeighborhoodExplorer(const Input& in, StateManager<Input, State, CFtype>& sm, std::string name, BaseNeighborhoodExplorers& ... nhes)
+      CartesianProductNeighborhoodExplorer(const Input& in, StateManager<Input, State, CFtype>& sm, std::string name, BaseNeighborhoodExplorers& ... nhes)
       : NeighborhoodExplorer<Input, State, MoveTypes, CFtype>(in, sm, name),
       nhes(std::make_tuple(std::reference_wrapper<BaseNeighborhoodExplorers>(nhes) ...)),
       first_move_funcs(std::make_tuple(Impl::makeFastFunc(&nhes, &BaseNeighborhoodExplorers::FirstMove)...)),
@@ -536,10 +536,10 @@ namespace EasyLocal {
       NeighborhoodExplorerTypes nhes;
       
     protected:
-      typedef std::tuple<ssvu::FastFunc<void(const State&, typename BaseNeighborhoodExplorers::MoveType&)>...> _Void_ConstState_Move;
-      typedef std::tuple<ssvu::FastFunc<bool(const State&, typename BaseNeighborhoodExplorers::MoveType&)>...> _Bool_ConstState_Move;
-      typedef std::tuple<ssvu::FastFunc<void(State&, const typename BaseNeighborhoodExplorers::MoveType&)>...> _Void_State_ConstMove;
-      typedef std::tuple<ssvu::FastFunc<CostStructure<CFtype>(const State&, const typename BaseNeighborhoodExplorers::MoveType&, const std::vector<double>& weights)>...> _CostStructure_ConstState_ConstMove;
+      typedef std::tuple<Impl::FastFunc<void(const State&, typename BaseNeighborhoodExplorers::MoveType&)>...> _Void_ConstState_Move;
+      typedef std::tuple<Impl::FastFunc<bool(const State&, typename BaseNeighborhoodExplorers::MoveType&)>...> _Bool_ConstState_Move;
+      typedef std::tuple<Impl::FastFunc<void(State&, const typename BaseNeighborhoodExplorers::MoveType&)>...> _Void_State_ConstMove;
+      typedef std::tuple<Impl::FastFunc<CostStructure<CFtype>(const State&, const typename BaseNeighborhoodExplorers::MoveType&, const std::vector<double>& weights)>...> _CostStructure_ConstState_ConstMove;
       
       _Void_ConstState_Move first_move_funcs, random_move_funcs;
       _Bool_ConstState_Move next_move_funcs;
