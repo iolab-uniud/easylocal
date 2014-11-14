@@ -24,7 +24,7 @@ namespace EasyLocal {
                    Core::OutputManager<Input, Output, State, CFtype>& e_om,
                    Core::Kicker<Input, State, Move, CFtype>& k,
                    std::string name, Tester<Input, Output, State, CFtype>& t, std::ostream& o = std::cout);
-      virtual unsigned int Modality() const;
+      virtual size_t Modality() const;
       
       void RunMainMenu(State& st);
       void RegisterParameters();
@@ -166,7 +166,7 @@ namespace EasyLocal {
     }
     
     template <class Input, class Output, class State, class Move, typename CFtype>
-    unsigned int KickerTester<Input, Output, State, Move, CFtype>::Modality() const
+    size_t KickerTester<Input, Output, State, Move, CFtype>::Modality() const
     { 
       return kicker.Modality(); 
     }

@@ -419,7 +419,7 @@ namespace EasyLocal {
       Kicker(NeighborhoodExplorer<Input, State, Move, CFtype>& ne, const MoveRelatedness& RelatedMoves = AllMovesRelated) : ne(ne), RelatedMoves(RelatedMoves) {}
       
       /** The modality of the @ref Move (warning: not the length of the @ref Move sequences) */
-      virtual unsigned int Modality() const
+      virtual size_t Modality() const
       {
         return ne.Modality();
       }

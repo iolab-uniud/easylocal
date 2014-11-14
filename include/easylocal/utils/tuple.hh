@@ -130,23 +130,21 @@ namespace EasyLocal {
       return rt;
     }
     
+    template <int... s, typename... T>
+    auto ref_tuple_impl(tuple_index<s...> seq, const std::tuple<T...>& tup)
+    -> decltype(std::make_tuple(std::ref(std::get<s>(tup))...))
+    {
+      return std::make_tuple(std::ref(std::get<s>(tup))...);
+    }
     
-    /*
-     template <class H, class S, class ...T>
-     std::tuple<std::reference_wrapper<H>, std::reference_wrapper<S>, std::reference_wrapper<T>...> to_refs(const std::tuple<H, S, T...>& original)
-     {
-     std::reference_wrapper<H> head_ref = std::ref(const_cast<H&>(std::get<0>(original)));
-     std::tuple<std::reference_wrapper<S>, std::reference_wrapper<T>...> tail_refs = to_refs(tuple_tail(original));
-     return tuple_cat(make_tuple(head_ref), tail_refs);
-     }
-     
-     template <class H>
-     std::tuple<std::reference_wrapper<H>> to_refs(const std::tuple<H>& original)
-     {
-     std::reference_wrapper<H> head_ref = std::ref(const_cast<H&>(std::get<0>(original)));
-     return make_tuple(head_ref);
-     }
-     */
+    template <typename... T>
+    auto to_crefs(const std::tuple<T...>& tup)
+    -> decltype(ref_tuple_impl(typename make_index<sizeof...(T)>::type(), tup))
+    {
+      std::tuple<std::reference_wrapper<const T>...> rt = ref_tuple_impl(typename make_index<sizeof...(T)>::type(), tup);
+      return rt;
+    }
+        
   }
 }
 

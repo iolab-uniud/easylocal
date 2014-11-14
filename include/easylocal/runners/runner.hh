@@ -101,7 +101,7 @@ namespace EasyLocal {
       virtual ~Runner() {}
       
       /** Modality of this runner. */
-      virtual unsigned int Modality() const = 0;
+      virtual size_t Modality() const = 0;
       
       /** List of all runners that have been instantiated so far. For autoloading. */
       static std::vector<Runner<Input, State, CFtype>*> runners;

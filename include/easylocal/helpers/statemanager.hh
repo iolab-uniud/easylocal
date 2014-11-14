@@ -32,6 +32,8 @@ namespace EasyLocal {
         this->total += other.total;
         this->violations += other.violations;
         this->objective += other.objective;
+        if (this->all_components.size() < other.all_components.size())
+          this->all_components.resize(other.all_components.size(), 0);
         for (size_t i = 0; i < other.all_components.size(); i++)
           this->all_components[i] += other.all_components[i];
         return *this;
@@ -42,6 +44,8 @@ namespace EasyLocal {
         this->total -= other.total;
         this->violations -= other.violations;
         this->objective -= other.objective;
+        if (this->all_components.size() < other.all_components.size())
+          this->all_components.resize(other.all_components.size(), 0);
         for (size_t i = 0; i < other.all_components.size(); i++)
           this->all_components[i] -= other.all_components[i];
         return *this;

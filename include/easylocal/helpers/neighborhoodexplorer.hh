@@ -13,7 +13,7 @@
 
 namespace EasyLocal {
   
-  namespace Core {
+  namespace Core {    
     
     /** Exception raised when the neighborhood is empty. */
     class EmptyNeighborhood : public std::logic_error
@@ -57,6 +57,7 @@ namespace EasyLocal {
     class NeighborhoodExplorer
     {
     public:
+      typedef Input InputType;
       typedef Move MoveType;
       typedef State StateType;
       typedef CFtype CostType;
@@ -93,43 +94,6 @@ namespace EasyLocal {
        */
       virtual bool NextMove(const State &st, Move& mv) const = 0;
       
-      /**
-       Generates the move that follows mv in the exploration of the neighborhood of the state st. It returns the generated move in the same variable mv.
-       Explores the neighborhood starting from an initial_move that is not the first move in the enumeration.
-       @note It is an internal fix for template instantiation in Multimodal Neighborhood Explorers.
-       @return @c false if @c mv is the last in the neighborhood of the state.
-       @note To be implemented in the application.
-       @param st the start state
-       @param mv the move
-       */
-      inline bool NextMoveWithFirst(const State &st, Move& mv, const Move& initial_mv) const
-      {
-        if (!NextMove(st, mv))
-          FirstMove(st, mv);
-        return (mv != initial_mv);
-      }
-      
-      /** @copydoc NextMoveWithFirst() */
-      inline bool NextMove(const State &st, Move& mv, const Move& initial_mv) const
-      {
-        return NextMoveWithFirst(st, mv, initial_mv);
-      }
-      
-      /** Generate the first improvingt move in the exploration of the neighborhood of a given state. It uses @ref FirstMove and @ref NextMove
-       @param st the start state
-       @param mv the generated move
-       @throws EmptyNeighborhood when the State st has no neighbor
-       */
-      virtual CFtype FirstImprovingMove(const State& st, Move& mv) const throw (EmptyNeighborhood);
-      
-      /** Generates the best move in the full exploration of the neighborhood of a given state. It uses @ref FirstMove and @ref NextMove
-       @param st the start state.
-       @param mv the generated move.
-       @return the variation of the cost due to the Move mv.
-       @throws EmptyNeighborhood when the State st has no neighbor
-       */
-      virtual CFtype BestMove(const State& st, Move& mv) const throw (EmptyNeighborhood);
-      
       /** Modifies the state passed as parameter by applying a given move upon it.
        @note To be implemented in the application (MustDef)
        @param st the state to modify
@@ -137,33 +101,12 @@ namespace EasyLocal {
        */
       virtual void MakeMove(State &st, const Move& mv) const = 0;
       
-      /** Computes the differences in the cost function obtained by applying the move @c mv to the state @c st.
-       @param st the state to modify
-       @param mv the move to be applied
-       @return the difference in the cost function
-       */
-      virtual CFtype DeltaCostFunction(const State& st, const Move& mv) const;
-      
       /** Computes the differences in the cost function obtained by applying the move @c mv to the state @c st and returns the unaggregated value as a vector of components.
        @param st the state to modify
        @param mv the move to be applied
        @return the difference in the cost function for each cost component
        */
       virtual CostStructure<CFtype> DeltaCostFunctionComponents(const State& st, const Move& mv, const std::vector<double>& weights = std::vector<double>(0)) const;
-      
-      /** Computes the differences in the objective component of the cost function obtained by applying the move @c mv to the state @c st.
-       @param st the state to modify
-       @param mv the move to be applied
-       @return the difference in the objective function
-       */
-      virtual CFtype DeltaObjective(const State& st, const Move & mv) const;
-      /** Computes the differences in the violations component (i.e., hard constraints) of the cost function obtained by applying the move @c mv to the state @c st.
-       @param st the state to modify
-       @param mv the move to be applied
-       @return the difference in the violation function
-       */
-      
-      virtual CFtype DeltaViolations(const State& st, const Move & mv) const;
       
       /** Adds a delta cost component to the neighborhood explorer, which is responsible for computing one component of the cost function. A delta cost component requires the implementation of a way to compute the difference in the cost function without simulating the move on a given state.
        @param dcc a delta cost component object
@@ -185,67 +128,17 @@ namespace EasyLocal {
         return delta_hard_cost_components.size() + delta_soft_cost_components.size();
       }
       
-      /** Returns an element of the delta cost component vector attached to the neighborhood explorer.
-       @param i the index of the required delta cost component
-       @return the delta cost component of index i
-       */
-      virtual DeltaCostComponent<Input, State, Move, CFtype>& GetDeltaCostComponent(unsigned int i)
-      {
-        if (i < delta_hard_cost_components.size())
-          return *delta_hard_cost_components[i];
-        else if (i < delta_hard_cost_components.size() + delta_soft_cost_components.size())
-          return *delta_soft_cost_components[i - delta_hard_cost_components.size()];
-        else
-          throw std::logic_error("GetDeltaCostComponent: index out of bounds");
-      }
-      
-      /** Returns the number of delta cost components attached to the neighborhood explorer which are hard cost components.
-       @return the size of the hard delta cost components vector
-       */
-      virtual size_t DeltaHardCostStructure() const
-      { return delta_hard_cost_components.size(); }
-      
-      /** Returns an element of the delta hard cost component vector attached to the neighborhood explorer.
-       @param i the index of the required delta cost component
-       @return the delta cost component of index i
-       */
-      virtual DeltaCostComponent<Input, State, Move, CFtype>& GetDeltaHardCostComponent(unsigned int i)
-      {
-        if (i < delta_hard_cost_components.size())
-          return *delta_hard_cost_components[i];
-        else
-          throw std::logic_error("GetDeltaHardCostComponent: index out of bounds");
-      }
-      
-      /** Returns the number of delta cost components attached to the neighborhood explorer which are soft cost components.
-       @return the size of the hard delta cost components vector
-       */
-      virtual size_t DeltaSoftCostStructure() const
-      { return delta_soft_cost_components.size(); }
-      
-      /** Returns an element of the delta soft cost component vector attached to the neighborhood explorer.
-       @param i the index of the required delta cost component
-       @return the delta cost component of index i
-       */
-      virtual DeltaCostComponent<Input, State, Move, CFtype>& GetDeltaSoftCostComponent(unsigned int i)
-      {
-        if (i < delta_soft_cost_components.size())
-          return *delta_soft_cost_components[i];
-        else
-          throw std::logic_error("GetDeltaSoftCostComponent: index out of bounds");
-      }
-      
       /** Retuns the modality of the neighborhood explorer, i.e., the number of different kind of moves handled by it.
        @return the modality of the neighborhood explorer
        */
-      virtual unsigned int Modality() const
+      virtual size_t Modality() const
       { return 1; }
       
       /** Returns the modality of the move passed as parameter, i.e., the number of move components in a composite move that are active.
        @param mv a move
        @return the modality of the move
        */
-      virtual unsigned int MoveModality(const Move& mv) const
+      virtual size_t MoveModality(const Move& mv) const
       { return 0; }
       
       /**
@@ -271,12 +164,17 @@ namespace EasyLocal {
        */
       virtual EvaluatedMove<Move, CFtype> SelectBest(const State& st, const MoveAcceptor& AcceptMove, const std::vector<double>& weights = std::vector<double>(0)) const throw (EmptyNeighborhood);
       
-      
       /**
        This method will select the first move in a random neighborhood exploration that
        matches with the criterion expressed by the functional object bool f(const Move& mv, CFtype cost)
        */
       virtual EvaluatedMove<Move, CFtype> RandomFirst(const State& st, size_t samples, size_t& sampled, const MoveAcceptor& AcceptMove, const std::vector<double>& weights = std::vector<double>(0)) const throw (EmptyNeighborhood);
+      
+      virtual EvaluatedMove<Move, CFtype> RandomFirst(const State& st, size_t samples, const MoveAcceptor& AcceptMove, const std::vector<double>& weights = std::vector<double>(0)) const throw (EmptyNeighborhood)
+      {
+        size_t sampled;
+        return RandomFirst(st, samples, sampled, AcceptMove, weights);
+      }
       
       /**
        This method will select the best move in a random neighborhood exploration that
@@ -315,55 +213,13 @@ namespace EasyLocal {
      @return the variation in the cost function
      */
     template <class Input, class State, class Move, typename CFtype>
-    CFtype NeighborhoodExplorer<Input, State, Move, CFtype>::DeltaCostFunction(const State& st, const Move & mv) const
-    {
-      CFtype delta_hard_cost = 0, delta_soft_cost = 0;
-      
-      // compute delta costs (of implemented delta cost components)
-      for (DeltaCostComponent<Input, State, Move, CFtype>* dcc : delta_hard_cost_components)
-        if (dcc->IsDeltaImplemented())
-          delta_hard_cost += dcc->DeltaCost(st, mv);
-      
-      for (DeltaCostComponent<Input, State, Move, CFtype>* dcc : delta_soft_cost_components)
-        if (dcc->IsDeltaImplemented())
-          delta_soft_cost += dcc->DeltaCost(st, mv);
-      
-      // only if there is at least one unimplemented delta cost component (i.e., a wrapper along a cost component)
-      if (unimplemented_hard_components || unimplemented_soft_components)
-      {
-        // compute move
-        State new_st = st;
-        MakeMove(new_st, mv);
-        
-        if (unimplemented_hard_components)
-          for (DeltaCostComponent<Input, State, Move, CFtype>* dcc : delta_hard_cost_components)
-            if (!dcc->IsDeltaImplemented())
-            {
-              // get reference to cost component
-              CostComponent<Input, State, CFtype>& cc = dcc->GetCostComponent();
-              delta_hard_cost +=  cc.Weight() * (cc.ComputeCost(new_st) - cc.ComputeCost(st));
-            }
-        if (unimplemented_soft_components)
-          for (DeltaCostComponent<Input, State, Move, CFtype>* dcc : delta_soft_cost_components)
-            if (!dcc->IsDeltaImplemented())
-            {
-              // get reference to cost component
-              CostComponent<Input, State, CFtype>& cc = dcc->GetCostComponent();
-              delta_soft_cost +=  cc.Weight() * (cc.ComputeCost(new_st) - cc.ComputeCost(st));
-            }
-      }
-      
-      return HARD_WEIGHT * delta_hard_cost + delta_soft_cost;
-    }
-    
-    template <class Input, class State, class Move, typename CFtype>
     CostStructure<CFtype> NeighborhoodExplorer<Input, State, Move, CFtype>::DeltaCostFunctionComponents(const State& st, const Move & mv, const std::vector<double>& weights) const
     {
       CFtype delta_hard_cost = 0, delta_soft_cost = 0;
       double delta_weighted_cost = 0.0;
       std::vector<CFtype> delta_cost_function(CostComponent<Input, State, CFtype>::CostComponents(), (CFtype)0);
       
-      for (unsigned int i = 0; i < delta_hard_cost_components.size(); i++)
+      for (size_t i = 0; i < delta_hard_cost_components.size(); i++)
       {
         DeltaCostComponent<Input, State, Move, CFtype>* dcc = delta_hard_cost_components[i];
         if (dcc->IsDeltaImplemented())
@@ -374,7 +230,7 @@ namespace EasyLocal {
             delta_weighted_cost += HARD_WEIGHT * weights[dcc->Index()] * current_delta_cost;
         }
       }
-      for (unsigned int i = 0; i < delta_soft_cost_components.size(); i++)
+      for (size_t i = 0; i < delta_soft_cost_components.size(); i++)
       {
         DeltaCostComponent<Input, State, Move, CFtype>* dcc = delta_soft_cost_components[i];
         if (dcc->IsDeltaImplemented())
@@ -394,7 +250,7 @@ namespace EasyLocal {
         MakeMove(new_st, mv);
         
         if (unimplemented_hard_components)
-          for (unsigned int i = 0; i < delta_hard_cost_components.size(); i++)
+          for (size_t i = 0; i < delta_hard_cost_components.size(); i++)
           {
             DeltaCostComponent<Input, State, Move, CFtype>* dcc = delta_hard_cost_components[i];
             if (!dcc->IsDeltaImplemented())
@@ -408,7 +264,7 @@ namespace EasyLocal {
             }
           }
         if (unimplemented_soft_components)
-          for (unsigned int i = 0; i < delta_soft_cost_components.size(); i++)
+          for (size_t i = 0; i < delta_soft_cost_components.size(); i++)
           {
             DeltaCostComponent<Input, State, Move, CFtype>* dcc = delta_soft_cost_components[i];
             if (!dcc->IsDeltaImplemented())
@@ -427,64 +283,6 @@ namespace EasyLocal {
         return CostStructure<CFtype>(HARD_WEIGHT * delta_hard_cost + delta_soft_cost, delta_weighted_cost, delta_hard_cost, delta_soft_cost, delta_cost_function);
       else
         return CostStructure<CFtype>(HARD_WEIGHT * delta_hard_cost + delta_soft_cost, delta_hard_cost, delta_soft_cost, delta_cost_function);
-    }
-    
-    template <class Input, class State, class Move, typename CFtype>
-    CFtype NeighborhoodExplorer<Input, State, Move, CFtype>::DeltaViolations(const State& st, const Move & mv) const
-    {
-      CFtype delta_hard_cost = 0;
-      
-      // compute delta costs (of implemented delta cost components)
-      for (DeltaCostComponent<Input, State, Move, CFtype>* dcc : delta_hard_cost_components)
-        if (dcc->IsDeltaImplemented())
-          delta_hard_cost += dcc->DeltaCost(st, mv);
-      
-      // only if there is at least one unimplemented delta cost component (i.e., a wrapper along a cost component)
-      if (unimplemented_hard_components)
-      {
-        // compute move
-        State new_st = st;
-        MakeMove(new_st, mv);
-        
-        for (DeltaCostComponent<Input, State, Move, CFtype>* dcc : delta_hard_cost_components)
-          if (!dcc->IsDeltaImplemented())
-          {
-            // get reference to cost component
-            CostComponent<Input, State, CFtype>& cc = dcc->GetCostComponent();
-            delta_hard_cost +=  cc.Weight() * (cc.ComputeCost(new_st) - cc.ComputeCost(st));
-          }
-      }
-      
-      return delta_hard_cost;
-    }
-    
-    template <class Input, class State, class Move, typename CFtype>
-    CFtype NeighborhoodExplorer<Input, State, Move, CFtype>::DeltaObjective(const State& st, const Move & mv) const
-    {
-      CFtype delta_soft_cost = 0;
-      
-      // compute delta costs (of implemented delta cost components)
-      for (DeltaCostComponent<Input, State, Move, CFtype>* dcc : delta_soft_cost_components)
-        if (dcc->IsDeltaImplemented())
-          delta_soft_cost += dcc->DeltaCost(st, mv);
-      
-      // only if there is at least one unimplemented delta cost component (i.e., a wrapper along a cost component)
-      if (unimplemented_soft_components)
-      {
-        // compute move
-        State new_st = st;
-        MakeMove(new_st, mv);
-        
-        for (DeltaCostComponent<Input, State, Move, CFtype>* dcc : delta_soft_cost_components)
-          if (!dcc->IsDeltaImplemented())
-          {
-            // get reference to cost component
-            CostComponent<Input, State, CFtype>& cc = dcc->GetCostComponent();
-            delta_soft_cost +=  cc.Weight() * (cc.ComputeCost(new_st) - cc.ComputeCost(st));
-          }
-      }
-      
-      return delta_soft_cost;
     }
     
     template <class Input, class State, class Move, typename CFtype>
@@ -512,31 +310,7 @@ namespace EasyLocal {
         delta_soft_cost_components.push_back(dcc_adapters[dcc_adapters.size() - 1].get());
       }
     }
-    
-    template <class Input, class State, class Move, typename CFtype>
-    CFtype NeighborhoodExplorer<Input, State, Move, CFtype>::BestMove(const State &st, Move& mv) const throw (EmptyNeighborhood)
-    {
-      EvaluatedMove<Move, CFtype> em = SelectBest(st, [](const Move& mv, CostStructure<CFtype> cost) { return true; });
-      if (!em.is_valid)
-      {
-        throw EmptyNeighborhood();
-      }
-      mv = em.move;
-      return em.cost.total;
-    }
-    
-    template <class Input, class State, class Move, typename CFtype>
-    CFtype NeighborhoodExplorer<Input, State, Move, CFtype>::FirstImprovingMove(const State &st, Move& mv) const throw (EmptyNeighborhood)
-    {
-      EvaluatedMove<Move, CFtype> em = SelectFirst(st, [](const Move& mv, CostStructure<CFtype> cost) { return LessThan(cost.total, (CFtype)0); });
-      if (!em.is_valid)
-      {
-        throw EmptyNeighborhood();
-      }
-      mv = em.move;
-      return em.cost.total;
-    }
-    
+        
     /**
      This method will select the first move in the exhaustive neighborhood exploration that
      matches with the criterion expressed by the functional object bool f(const Move& mv, CFtype cost)

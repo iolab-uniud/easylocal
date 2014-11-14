@@ -23,7 +23,7 @@ namespace EasyLocal {
        @param st the state */
       virtual bool ExecuteChoice(State& st) = 0;
       const std::string name;
-      virtual unsigned int Modality() const = 0;
+      virtual size_t Modality() const = 0;
     protected:
       ComponentTester(std::string name);
       /** Virtual destructor. */

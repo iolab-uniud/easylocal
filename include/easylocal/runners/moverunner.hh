@@ -47,7 +47,7 @@ namespace EasyLocal {
     public:
       
       /** Modality of this runner. */
-      virtual unsigned int Modality() const { return ne.Modality(); }
+      virtual size_t Modality() const { return ne.Modality(); }
       
       virtual std::string StatusString() { return std::string("[no status info]"); }
     protected:

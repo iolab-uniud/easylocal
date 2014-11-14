@@ -73,9 +73,14 @@ namespace EasyLocal {
       /** Name of this cost component (for debug). */
       const std::string name;
       
-      static bool ComponentIsHard(size_t i)
+      static const CostComponent<Input, State, CFtype>& Component(size_t i)
       {
-        return component_is_hard[i];
+        return *cost_components[i];
+      }
+      
+      const std::string& GetName() const
+      {
+        return name;
       }
       
     protected:
@@ -117,7 +122,7 @@ namespace EasyLocal {
       /** The overall index of this cost components */
       const size_t index;
       
-      static std::vector<bool> component_is_hard;
+      static std::vector<CostComponent*> cost_components;
     };
     
     
@@ -128,7 +133,7 @@ namespace EasyLocal {
     CostComponent<Input, State, CFtype>::CostComponent(const Input& in, const CFtype& weight, bool is_hard, std::string name)
     : name(name), in(in), weight(weight), is_hard(is_hard), index(last_index++)
     {
-      component_is_hard.push_back(is_hard);
+      cost_components.push_back(this);
     }
     
     template <class Input, class State, typename CFtype>
@@ -141,7 +146,7 @@ namespace EasyLocal {
     size_t CostComponent<Input, State, CFtype>::last_index = 0;
     
     template <class Input, class State, typename CFtype>
-    std::vector<bool> CostComponent<Input, State, CFtype>::component_is_hard;
+    std::vector<CostComponent<Input, State, CFtype>*> CostComponent<Input, State, CFtype>::cost_components;
 
   }
 }

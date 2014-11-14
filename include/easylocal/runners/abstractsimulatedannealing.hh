@@ -127,21 +127,20 @@ namespace EasyLocal {
           // according to [van Laarhoven and Aarts, 1987] (allow an acceptance ratio of approximately 80%)
           //State sampled_state(this->in);
           const unsigned int samples = 100;
-          std::vector<CFtype> cost_values(samples);
-          //		double mean = 0.0, variance = 0.0;
+          std::vector<CostStructure<CFtype>> cost_values(samples);
+          double mean = 0.0, variance = 0.0;
           for (unsigned int i = 0; i < samples; i++)
           {
             //this->sm.RandomState(sampled_state);
             Move mv;
             this->ne.RandomMove(*this->p_current_state, mv);
-            cost_values[i] = this->ne.DeltaCostFunction(*this->p_current_state, mv);
-            //mean += cost_values[i];
+            cost_values[i] = this->ne.DeltaCostFunctionComponents(*this->p_current_state, mv);
+            mean += cost_values[i].total;
           }
-          /* mean /= samples;
-           for (unsigned int i = 0; i < samples; i++)
-           variance += (cost_values[i] - mean) * (cost_values[i] - mean) / samples;
-           temperature = variance; */
-          temperature = max(cost_values);
+          mean /= samples;
+          for (unsigned int i = 0; i < samples; i++)
+            variance += (cost_values[i].total - mean) * (cost_values[i].total - mean) / samples;
+          temperature = variance;
           /*From "An improved annealing scheme for the QAP. Connoly. EJOR 46 (1990) 93-100"
            temperature = min(cost_values.begin(), cost_values.end()) + (max(cost_values.begin(), cost_values.end()) - min(cost_values.begin(), cost_values.end()))/10;*/
         }
