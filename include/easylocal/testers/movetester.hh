@@ -87,7 +87,7 @@ namespace EasyLocal {
           {
             om.OutputState(st, out);
             os << "CURRENT SOLUTION " << std::endl << out << std::endl;
-            os << "CURRENT COST : " << sm.CostFunction(st) << std::endl;
+            os << "CURRENT COST : " << sm.CostFunctionComponents(st) << std::endl;
           }
           os << "ELAPSED TIME : " << duration.count() / 1000.0 << 's' << std::endl;
         }

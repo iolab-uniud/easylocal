@@ -113,11 +113,11 @@ namespace EasyLocal {
     void AbstractLocalSearch<Input, Output, State, CFtype>::FindInitialState()
     {
       if (random_initial_state)
-        current_state_cost = sm.SampleState(*p_current_state, init_trials);
+        current_state_cost = sm.SampleState(*p_current_state, init_trials).total;
       else
       {
         sm.GreedyState(*p_current_state);
-        current_state_cost = sm.CostFunction(*p_current_state);
+        current_state_cost = sm.CostFunctionComponents(*p_current_state).total;
       }
       *p_best_state = *p_current_state;
       best_state_cost = current_state_cost;
@@ -159,7 +159,7 @@ namespace EasyLocal {
       InitializeSolve();
       om.InputState(*p_current_state, initial_solution);
       *p_best_state = *p_current_state;
-      best_state_cost = current_state_cost = sm.CostFunction(*p_current_state);
+      best_state_cost = current_state_cost = sm.CostFunctionComponents(*p_current_state).total;
       if (timeout.IsSet())
         SyncRun(std::chrono::milliseconds(static_cast<long long int>(timeout * 1000.0)));
         else

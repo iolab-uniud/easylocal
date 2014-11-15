@@ -183,7 +183,7 @@ namespace EasyLocal {
         om.ReadState(test_state, is);
         om.OutputState(test_state, out);
         os << "SOLUTION IMPORTED " << std::endl << out << std::endl;
-        os << "IMPORTED SOLUTION COST : " << sm.CostFunction(test_state) << std::endl;
+        os << "IMPORTED SOLUTION COST : " << sm.CostFunctionComponents(test_state) << std::endl;
       }
       
       do
@@ -372,7 +372,7 @@ namespace EasyLocal {
       {
         this->om.OutputState(test_state, this->out);
         os << "INITIAL SOLUTION " << std::endl << this->out << std::endl;
-        os << "INITIAL COST : " << this->sm.CostFunction(test_state) << std::endl;
+        os << "INITIAL COST : " << this->sm.CostFunctionComponents(test_state) << std::endl;
       }
       os << "ELAPSED TIME : " << duration.count() / 1000.0 << "s" << std::endl;
     }
@@ -482,7 +482,7 @@ namespace EasyLocal {
         case 6:
         {
           os  << test_state << std::endl;
-          os  << "Total cost: " << this->sm.CostFunction(test_state) << std::endl;
+          os  << "Total cost: " << this->sm.CostFunctionComponents(test_state) << std::endl;
           break;
         }
         case 7:
@@ -493,35 +493,37 @@ namespace EasyLocal {
         case 8:
         {
           os  << "Cost Components: " << std::endl;
-          for (i = 0; i < this->sm.CostComponents(); i++)
+          CostStructure<CFtype> cost = this->sm.CostFunctionComponents(test_state);
+          for (i = 0; i < CostComponent<Input, State, CFtype>::CostComponents(); i++)
           {
-            CostComponent<Input, State, CFtype>& cc = this->sm.GetCostComponent(i);
-            os  << i << ". " << cc.name << " : "
-            << cc.Cost(test_state) << (cc.IsHard() ? '*' : ' ') << std::endl;
+            const CostComponent<Input, State, CFtype>& cc = CostComponent<Input, State, CFtype>::Component(i);
+            os  << i << ". " << cc.GetName() << " : "
+            << cost.all_components[i] << (cc.IsHard() ? '*' : ' ') << std::endl;
           }
-          os << "Total Violations: " << this->sm.Violations(test_state) << std::endl;
-          os << "Total Objective:  " << this->sm.Objective(test_state) << std::endl;
-          os << "Total Cost:       " << this->sm.CostFunction(test_state) << std::endl;
+          os << "Total Violations: " << cost.violations << std::endl;
+          os << "Total Objective:  " << cost.objective << std::endl;
+          os << "Total Cost:       " << cost.total << std::endl;
           break;
         }
         case 9:
         {
           os << "Detailed Violations: " << std::endl;
-          for (i = 0; i < this->sm.CostComponents(); i++)
+          CostStructure<CFtype> cost = this->sm.CostFunctionComponents(test_state);
+          for (i = 0; i < CostComponent<Input, State, CFtype>::CostComponents(); i++)
           {
-            CostComponent<Input, State, CFtype>& cc = this->sm.GetCostComponent(i);
+            const CostComponent<Input, State, CFtype>& cc = CostComponent<Input, State, CFtype>::Component(i);
             cc.PrintViolations(test_state);
           }
           os << std::endl << "Summary of Cost Components: " << std::endl;
-          for (i = 0; i < this->sm.CostComponents(); i++)
+          for (i = 0; i < CostComponent<Input, State, CFtype>::CostComponents(); i++)
           {
-            CostComponent<Input, State, CFtype>& cc = this->sm.GetCostComponent(i);
-            os  << i << ". " << cc.name << " : "
-            << cc.Cost(test_state) << (cc.IsHard() ? '*' : ' ') << std::endl;
+            const CostComponent<Input, State, CFtype>& cc = CostComponent<Input, State, CFtype>::Component(i);
+            os  << i << ". " << cc.GetName() << " : "
+            << cost.all_components[i] << (cc.IsHard() ? '*' : ' ') << std::endl;
           }
-          os << std::endl << "Total Violations:\t" << this->sm.Violations(test_state) << std::endl;
-          os << "Total Objective:\t" << this->sm.Objective(test_state) << std::endl;
-          os << "Total Cost:  \t" << this->sm.CostFunction(test_state) << std::endl;
+          os << "Total Violations: " << cost.violations << std::endl;
+          os << "Total Objective:  " << cost.objective << std::endl;
+          os << "Total Cost:       " << cost.total << std::endl;
           break;
         }
         case 10:
@@ -568,9 +570,9 @@ namespace EasyLocal {
           {
             om.OutputState(test_state, out);
             os << "CURRENT SOLUTION " << std::endl << out << std::endl;
-            os << "CURRENT COST : " << sm.CostFunction(test_state) << std::endl;
+            os << "CURRENT COST : " << sm.CostFunctionComponents(test_state) << std::endl;
           }
-          os << "ELAPSED TIME : " << duration.count() /1000.0 << "s" << std::endl;
+          os << "ELAPSED TIME : " << duration.count() / 1000.0 << "s" << std::endl;
         }
       }
       while (sub_choice != 0);

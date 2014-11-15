@@ -376,7 +376,7 @@ namespace EasyLocal {
        @param st state to be written
        @param samples number of states sampled
        */
-      virtual CFtype SampleState(State &st, unsigned int samples);
+      virtual CostStructure<CFtype> SampleState(State &st, unsigned int samples);
       
       /**
        Generate a greedy state with a random component controlled by the
@@ -418,18 +418,6 @@ namespace EasyLocal {
       /**
        Compute the cost function calling the cost components.
        @param st the state to be evaluated
-       @return the value of the cost function in the given state (hard + soft costs)
-       
-       @remarks The normal definition computes a weighted sum of the violation
-       function and the objective function.
-       
-       @note It is rarely needed to redefine this method.
-       */
-      virtual CFtype CostFunction(const State& st) const;
-      
-      /**
-       Compute the cost function calling the cost components.
-       @param st the state to be evaluated
        @param an optional vector of weights for the cost components.
        @return all the components of the cost function in the given state
        
@@ -439,25 +427,6 @@ namespace EasyLocal {
        @note It is rarely needed to redefine this method.
        */
       virtual CostStructure<CFtype> CostFunctionComponents(const State& st, const std::vector<double>& weights = std::vector<double>(0)) const;
-      
-      /**
-       Compute the violations by calling the hard cost components (it is rarely
-       needed to redefine it).
-       @param st the state to be evaluated
-       @return the violations (hard costs)
-       
-       @note It is rarely needed to redefine this method.
-       */
-      virtual CFtype Violations(const State& st) const;
-      
-      /**
-       Compute the objective function calling the soft cost components.
-       @param st the state to be evaluated
-       @return the objective (soft costs)
-       
-       @note It is rarely needed to redefine this method.
-       */
-      virtual CFtype Objective(const State& st) const;
       
       /**
        Check whether the lower bound of the cost function has been reached. The
@@ -503,27 +472,6 @@ namespace EasyLocal {
        */
       virtual bool CheckConsistency(const State& st) const = 0;
       
-      /**
-       Access a cost component by index
-       @return the reference to a cost component
-       @param i the index of the cost component
-       */
-      CostComponent<Input, State, CFtype>& GetCostComponent(unsigned int i) const { return *(cost_component[i]); }
-      
-      /**
-       Get the number of registered cost components
-       @return the numer of cost components
-       */
-      size_t CostComponents() const { return cost_component.size(); }
-      
-      /**
-       Compute the cost relative to a specific cost component.
-       @return the cost of a specific cost component
-       @param i the index of the cost component
-       @param st the state to be evaluated
-       */
-      CFtype Cost(const State& st, unsigned int i) const { return cost_component[i]->Cost(st); }
-      
       /** Name of the state manager */
       const std::string name;
       
@@ -541,7 +489,7 @@ namespace EasyLocal {
       /**
        The set of the cost components. Hard and soft ones are all in this @c vector.
        */
-      std::vector<CostComponent<Input, State, CFtype>* > cost_component;
+      std::vector<CostComponent<Input, State, CFtype>*> cost_component;
       
       /** Input object. */
       const Input& in;
@@ -552,11 +500,9 @@ namespace EasyLocal {
      * **************************************************************************/
     
     template <class Input, class State, typename CFtype>
-    StateManager<Input, State, CFtype>::StateManager(const Input& i, std::string e_name)
-    :  name(e_name), in(i)
-    {
-      
-    }
+    StateManager<Input, State, CFtype>::StateManager(const Input& in, std::string name)
+    :  name(name), in(in)
+    {}
     
     template <class Input, class State, typename CFtype>
     void StateManager<Input, State, CFtype>::Print(std::ostream& os) const
@@ -573,19 +519,19 @@ namespace EasyLocal {
     }
     
     template <class Input, class State, typename CFtype>
-    CFtype StateManager<Input, State, CFtype>::SampleState(State &st,
+    CostStructure<CFtype> StateManager<Input, State, CFtype>::SampleState(State &st,
                                                            unsigned int samples)
     {
       unsigned int s = 1;
       RandomState(st);
-      CFtype cost = CostFunction(st);
+      CostStructure<CFtype> cost = CostFunctionComponents(st);
       State best_state(in);
       best_state = st;
-      CFtype best_cost = cost;
+      CostStructure<CFtype> best_cost = cost;
       while (s < samples)
       {
         RandomState(st);
-        cost = CostFunction(st);
+        cost = CostFunctionComponents(st);
         if (cost < best_cost)
         {
           best_state = st;
@@ -608,19 +554,6 @@ namespace EasyLocal {
     void StateManager<Input, State, CFtype>::GreedyState(State &st)
     {
       throw std::runtime_error("For using this feature GreedyState must be implemented in the concrete class!");
-    }
-    
-    template <class Input, class State, typename CFtype>
-    CFtype StateManager<Input, State, CFtype>::CostFunction(const State& st) const
-    {
-      CFtype hard_cost = 0, soft_cost = 0;
-      for (unsigned int i = 0; i < cost_component.size(); i++)
-        if (cost_component[i]->IsHard())
-          hard_cost += cost_component[i]->Cost(st);
-        else
-          soft_cost += cost_component[i]->Cost(st);
-      
-      return HARD_WEIGHT * hard_cost  + soft_cost;
     }
     
     template <class Input, class State, typename CFtype>
@@ -661,40 +594,14 @@ namespace EasyLocal {
     template <class Input, class State, typename CFtype>
     bool StateManager<Input, State, CFtype>::OptimalStateReached(const State& st) const
     {
-      return LowerBoundReached(CostFunction(st));
-    }
-    
-    template <class Input, class State, typename CFtype>
-    CFtype StateManager<Input, State, CFtype>::Violations(const State& st) const
-    {
-      CFtype cost = 0;
-      for (unsigned int i = 0; i < cost_component.size(); i++)
-        if (cost_component[i]->IsHard())
-          cost += cost_component[i]->Cost(st);
-      return cost;
-    }
-    
-    template <class Input, class State, typename CFtype>
-    CFtype StateManager<Input, State, CFtype>::Objective(const State& st) const
-    {
-      CFtype cost = 0;
-      for (unsigned int i = 0; i < cost_component.size(); i++)
-        if (cost_component[i]->IsSoft())
-          cost += cost_component[i]->Cost(st);
-      return cost;
+      return LowerBoundReached(CostFunctionComponents(st).total);
     }
     
     template <class Input, class State, typename CFtype>
     void StateManager<Input, State, CFtype>::AddCostComponent(CostComponent<Input, State, CFtype>& cc)
     {
       cost_component.push_back(&cc);
-    }
-    
-    template <class Input, class State, typename CFtype>
-    void StateManager<Input, State, CFtype>::ClearCostStructure()
-    {
-      cost_component.clear();
-    }
+    }    
     
     template <class Input, class State, typename CFtype>
     unsigned int StateManager<Input, State, CFtype>::StateDistance(const State& st1,
