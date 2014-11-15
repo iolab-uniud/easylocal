@@ -20,7 +20,7 @@ namespace EasyLocal {
     {
     public:
       EmptyNeighborhood() : std::logic_error("Empty neighborhood") {}
-    };
+    };    
     
     template <class Move, typename CFtype>
     struct EvaluatedMove
@@ -180,7 +180,7 @@ namespace EasyLocal {
        This method will select the best move in a random neighborhood exploration that
        matches with the criterion expressed by the functional object bool f(const Move& mv, CFtype cost)
        */
-      virtual EvaluatedMove<Move, CFtype> RandomBest(const State& st, size_t samples, size_t& sampled, const MoveAcceptor& AcceptMove, const std::vector<double>& weights = std::vector<double>(0)) const throw (EmptyNeighborhood);
+      virtual EvaluatedMove<Move, CFtype> RandomBest(const State& st, size_t samples, size_t& sampled, const MoveAcceptor& AcceptMove, const std::vector<double>& weights = std::vector<double>(0)) const throw (EmptyNeighborhood);            
       
     protected:
       

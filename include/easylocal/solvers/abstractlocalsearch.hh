@@ -55,7 +55,7 @@ namespace EasyLocal {
                                                         output manager. */
       std::shared_ptr<State> p_current_state, p_best_state;        /**< The internal states of the solver. */
       
-      CFtype current_state_cost, best_state_cost;  /**< The cost of the internal states. */
+      CostStructure<CFtype> current_state_cost, best_state_cost;  /**< The cost of the internal states. */
       std::shared_ptr<Output> p_out; /**< The output object of the solver. */
       // parameters
       
@@ -113,11 +113,11 @@ namespace EasyLocal {
     void AbstractLocalSearch<Input, Output, State, CFtype>::FindInitialState()
     {
       if (random_initial_state)
-        current_state_cost = sm.SampleState(*p_current_state, init_trials).total;
+        current_state_cost = sm.SampleState(*p_current_state, init_trials);
       else
       {
         sm.GreedyState(*p_current_state);
-        current_state_cost = sm.CostFunctionComponents(*p_current_state).total;
+        current_state_cost = sm.CostFunctionComponents(*p_current_state);
       }
       *p_best_state = *p_current_state;
       best_state_cost = current_state_cost;
@@ -159,7 +159,7 @@ namespace EasyLocal {
       InitializeSolve();
       om.InputState(*p_current_state, initial_solution);
       *p_best_state = *p_current_state;
-      best_state_cost = current_state_cost = sm.CostFunctionComponents(*p_current_state).total;
+      best_state_cost = current_state_cost = sm.CostFunctionComponents(*p_current_state);
       if (timeout.IsSet())
         SyncRun(std::chrono::milliseconds(static_cast<long long int>(timeout * 1000.0)));
         else

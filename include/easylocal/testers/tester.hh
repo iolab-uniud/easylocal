@@ -344,7 +344,7 @@ namespace EasyLocal {
         auto to = std::chrono::milliseconds((long long)(timeout * 1000));
         
         auto start = std::chrono::high_resolution_clock::now();
-        CFtype result = r.SyncRun(to, this->test_state);
+        CostStructure<CFtype> result = r.SyncRun(to, this->test_state);
         auto end = std::chrono::high_resolution_clock::now();
         
         auto duration = end - start;

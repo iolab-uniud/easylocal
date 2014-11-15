@@ -30,7 +30,7 @@ namespace EasyLocal {
      @ingroup Helpers
      */
     template <class Input, class State, typename CFtype = int>
-    class Runner : public Interruptible<CFtype, State&>, public Parametrized
+    class Runner : public Interruptible<CostStructure<CFtype>, State&>, public Parametrized
     {
       friend class Debug::AbstractTester<Input, State, CFtype>;
       
@@ -46,7 +46,7 @@ namespace EasyLocal {
        @throw ParameterNotSet if one of the parameters needed by the runner (or other components) hasn't been set
        @throw IncorrectParameterValue if one of the parameters has an incorrect value
        */
-      CFtype Go(State& s) throw (ParameterNotSet, IncorrectParameterValue);
+      CostStructure<CFtype> Go(State& s) throw (ParameterNotSet, IncorrectParameterValue);
       
       /** Performs a given number of steps of the search method on the passed state.
        @param s state to start with and to modify
@@ -55,7 +55,7 @@ namespace EasyLocal {
        @throw ParameterNotSet if one of the parameters needed by the runner (or other components) hasn't been set
        @throw IncorrectParameterValue if one of the parameters has an incorrect value
        */
-      CFtype Step(State& s, unsigned int n = 1) throw (ParameterNotSet, IncorrectParameterValue);
+      CostStructure<CFtype> Step(State& s, unsigned int n = 1) throw (ParameterNotSet, IncorrectParameterValue);
       
       /** Computes the duration of the last run (in milliseconds).
        @return the duration of the last run
@@ -156,11 +156,9 @@ namespace EasyLocal {
       virtual void CompleteMove() {};
       
       /** Implements Interruptible. */
-      virtual std::function<CFtype(State&)> MakeFunction()
+      virtual std::function<CostStructure<CFtype>(State&)> MakeFunction()
       {
-        return [this](State& s) -> CFtype {
-          return this->Go(s);
-        };
+        return [this](State& s) -> CostStructure<CFtype> { return this->Go(s); };
       }
       
       /** No acceptable move has been found in the current iteration. */
@@ -211,7 +209,7 @@ namespace EasyLocal {
       void InitializeRun(State&) throw (ParameterNotSet, IncorrectParameterValue);
       
       /** Actions that must be done at the end of the search. */
-      CFtype TerminateRun(State&);
+      CostStructure<CFtype> TerminateRun(State&);
     };
     
     /*************************************************************************
@@ -240,7 +238,7 @@ namespace EasyLocal {
     }
     
     template <class Input, class State, typename CFtype>
-    CFtype Runner<Input, State, CFtype>::Go(State& s) throw (ParameterNotSet, IncorrectParameterValue)
+    CostStructure<CFtype> Runner<Input, State, CFtype>::Go(State& s) throw (ParameterNotSet, IncorrectParameterValue)
     {
       InitializeRun(s);
       while (!MaxIterationExpired() && !StopCriterion() && !LowerBoundReached() && !this->TimeoutExpired())
@@ -308,12 +306,12 @@ namespace EasyLocal {
     }
     
     template <class Input, class State, typename CFtype>
-    CFtype Runner<Input, State, CFtype>::TerminateRun(State& s)
+    CostStructure<CFtype> Runner<Input, State, CFtype>::TerminateRun(State& s)
     {
       s = *p_best_state;
       TerminateRun();
       end = std::chrono::high_resolution_clock::now();
-      return best_state_cost.total;
+      return best_state_cost;
     }
     
     template <class Input, class State, typename CFtype>
