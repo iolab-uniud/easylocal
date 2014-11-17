@@ -9,7 +9,8 @@ namespace EasyLocal {
   
   namespace Core {
     
-    /** The responsibility of this class is to compute a component of cost based on the information contained in a state. It doesn't handle delta costs, as they are treated in @ref DeltaCostComponent.
+    /** The responsibility of this class is to compute a component of cost based on the information contained in a state. It doesn't handle delta costs (i.e., variations of the cost functions due to a move), as they are treated in @ref DeltaCostComponent.
+     All cost components for a given (@Input, @State) pair are statically registered in the system and they are accessible with an index.
      @brief The class CostComponent manages one single component of the cost, either hard or soft.
      @tparam Input the class representing the problem input
      @tparam State the class representing the problem's state
@@ -25,64 +26,78 @@ namespace EasyLocal {
       /** @copydoc Printable::Print() */
       virtual void Print(std::ostream& os = std::cout) const;
       
-      /** Compute this component of cost with respect to a given state and regardless of the weight.
+      /** Computes this component of cost with respect to a given state not considering its weight.
        @param st the @ref State to be evaluated
        @return the computed cost, regardless of its weight
        */
       virtual CFtype ComputeCost(const State& st) const = 0;
       
-      /** Compute this component of cost with respect to a given state.
+      /** Computes this component of cost with respect to a given state.
        @param st the @ref State to be evaluated
        @return the computed cost, multiplied by its weight
-       @remarks internally calls @ref ComputeCost and multiplies the result for the weight of the cost component.
+       @remarks internally calls @ref ComputeCost and multiplies the result by the weight of the cost component.
        */
       CFtype Cost(const State& st) const { return weight * ComputeCost(st); }
       
-      /** Print the violations relative to this cost component with respect to the specified state.
+      /** Prints the violations relative to this cost component with respect to the specified state.
        @param st the @State to be evaluated
        @param os the output stream where the description has to be printed
        */
       virtual void PrintViolations(const State& st, std::ostream& os = std::cout) const = 0;
       
-      /** Get the weight of this cost component.
+      /** Gets the weight of this cost component.
        @return the weight of this cost component
        */
       CFtype Weight() const { return weight; }
       
-      /** Set a new weight for this cost component.
+      /** Sets a new weight for this cost component.
        @param w the new weight
        */
       void SetWeight(const CFtype& w) { weight = w; }
       
-      /** Set this cost component to be hard. */
+      /** Sets this cost component to be hard. */
       void SetHard() { is_hard = true; }
       
-      /** Set this cost component to be soft. */
+      /** Sets this cost component to be soft. */
       void SetSoft() { is_hard = false; }
       
-      /** Tell if this cost component is hard.
+      /** Tells whether this cost component is a hard cost component.
        @return true if this cost component is hard, false otherwise
        */
       bool IsHard() const { return is_hard; }
       
-      /** Tell if this cost component is soft.
+      /** Tells if this cost component is soft a soft cost component.
        @return true if this cost component is soft, false otherwise
        */
       bool IsSoft() const { return !is_hard; }
       
       /** Name of this cost component (for debug). */
-      const std::string name;
+      const std::string name;      
       
+      /** Returns the index of the cost component as it has been registered in the system for the given combination (@Input, @State).
+       * @return the index of the cost component
+       */
+      size_t Index() const
+      {
+        return index;
+      }
+      
+      /** Returns the total number of cost components registered in the system for the given combination (@Input, @State).
+      @return the number of cost components
+       */
+      static const size_t CostComponents()
+      {
+        return last_index;
+      }
+
+      
+      /** Returns the i-th cost component registered in the system for the given combination (@Input, @State).
+       * @return a reference to the i-th cost copmponent
+       */
       static const CostComponent<Input, State, CFtype>& Component(size_t i)
       {
         return *cost_components[i];
       }
-      
-      const std::string& GetName() const
-      {
-        return name;
-      }
-      
     protected:
       
       /** Constructor.
@@ -106,22 +121,11 @@ namespace EasyLocal {
       bool is_hard;            
       
       
-    public:
-      
-      size_t Index() const
-      {
-        return index;
-      }
-      
-      static const size_t CostComponents()
-      {
-        return last_index;
-      }
-      
     protected:
       /** The overall index of this cost components */
       const size_t index;
       
+      /** The registered cost components */
       static std::vector<CostComponent*> cost_components;
     };
     
@@ -147,7 +151,6 @@ namespace EasyLocal {
     
     template <class Input, class State, typename CFtype>
     std::vector<CostComponent<Input, State, CFtype>*> CostComponent<Input, State, CFtype>::cost_components;
-
   }
 }
 

@@ -1,11 +1,3 @@
-//
-//  experimentalmne.hh
-//  EasyLocal
-//
-//  Created by Luca Di Gaspero on 13/11/14.
-//
-//
-
 #ifndef EasyLocal_experimentalmne_hh
 #define EasyLocal_experimentalmne_hh
 
@@ -93,8 +85,10 @@ namespace EasyLocal {
         return static_cast<Move>(mv1) < static_cast<Move>(mv2);
     }    
     
+    /* This namespace will hide impelementation components */
     namespace Impl {
     
+      /** Creates a callable fast-function with a given signature */
       template<typename T, typename return_type, typename... params>
       FastFunc<return_type(params...)>
       makeFastFunc(T* obj, return_type(T::*f)(params...) const)
@@ -102,7 +96,8 @@ namespace EasyLocal {
         return FastFunc<return_type(params...)>(obj, f);
       }
       
-      
+      /** Helper class for dispatching tuples and applying functions to tuple elements. General recursion case.
+       * This version will handle procedures (i.e., functions returning void). */
       template <class State, class FuncsTuple, class MovesTuple, size_t N>
       struct VTupleDispatcher
       {
@@ -138,6 +133,8 @@ namespace EasyLocal {
         }
       };
       
+      /** Helper class for dispatching tuples and applying functions to tuple elements. Base recursion case.
+       * This version will handle procedures (i.e., functions returning void). */
       template <class State, class FuncsTuple, class MovesTuple>
       struct VTupleDispatcher<State, FuncsTuple, MovesTuple, 0>
       {
@@ -165,6 +162,8 @@ namespace EasyLocal {
         }
       };
       
+      /** Helper class for dispatching tuples and applying functions to tuple elements. General recursion case.
+       * This version will handle functions. */
       template <class ReturnType, class State, class FuncsTuple, class MovesTuple, size_t N>
       struct TupleDispatcher
       {
@@ -214,7 +213,8 @@ namespace EasyLocal {
           }
         }
       };
-      
+      /** Helper class for dispatching tuples and applying functions to tuple elements. Base recursion case.
+       * This version will handle functions. */
       template <class ReturnType, class State, class FuncsTuple, class MovesTuple>
       struct TupleDispatcher<ReturnType, State, FuncsTuple, MovesTuple, 0>
       {
@@ -252,6 +252,8 @@ namespace EasyLocal {
         }
       };
       
+      /** Helper class for dispatching move tuples. General recursion case.
+       * This version will handle functions. */
       template <class MovesTuple, size_t N>
       struct MoveDispatcher
       {
@@ -329,6 +331,8 @@ namespace EasyLocal {
         }
       };
       
+      /** Helper class for dispatching move tuples. Base recursion case.
+       * This version will handle functions. */
       template <class MovesTuple>
       struct MoveDispatcher<MovesTuple, 0>
       {
@@ -379,17 +383,26 @@ namespace EasyLocal {
       };
     }
     
+    /** Given a set of base neighborhood explorers, this class will create a multimodal (i.e., compound) neighborhood explorer 
+     that explores the set union of all neighborhoods.
+     @brief The SetUnion MultimodalNeighborhoodExplorer manages the set union of different neighborhoods.
+     @tparam Input the class representing the problem input
+     @tparam State the class representing the problem's state
+     @tparam CFtype the type of the cost function
+     @tparam BaseNeighborhoodExplorers a sequence of base neighborhood explorer classes
+     @ingroup Helpers
+     */
     template <class Input, class State, class CFtype, class ... BaseNeighborhoodExplorers>
     class SetUnionNeighborhoodExplorer : public NeighborhoodExplorer<Input, State, std::tuple<ActiveMove<typename BaseNeighborhoodExplorers::MoveType> ...>, CFtype>
     {
-    public:
+    protected:
       /** Tuple type representing the combination of @c BaseNeighborhoodExplorers' @ref Move. */
       typedef std::tuple<ActiveMove<typename BaseNeighborhoodExplorers::MoveType> ...> MoveTypes;
       
       /** Tuple type representing references to @c BaseNeighborhoodExplorers' @ref Move (because we need to set them). */
       typedef std::tuple<std::reference_wrapper<ActiveMove<typename BaseNeighborhoodExplorers::MoveType>> ...> MoveTypeRefs;
       
-      /** Tuple type representing references to @c BaseNeighborhoodExplorers' @ref Move (because we need to set them). */
+      /** Tuple type representing const references to @c BaseNeighborhoodExplorers' @ref Move. */
       typedef std::tuple<std::reference_wrapper<const ActiveMove<typename BaseNeighborhoodExplorers::MoveType>> ...> MoveTypeCRefs;
       
       /** Tuple type representing references to @c BaseNeighborhoodExplorers. */
@@ -400,7 +413,13 @@ namespace EasyLocal {
       
     public:
       
-      /** Constructor, takes a variable number of base NeighborhoodExplorers.  */
+      /** Constructor, takes a variable number of base NeighborhoodExplorers.
+       @param in a pointer to an input object.
+       @param sm a pointer to a compatible state manager.
+       @param name the name associated to the NeighborhoodExplorer
+       @param nhes the list of basic neighborhood explorer objects (according to the template list)
+       @param bias a set of weights fo biasing the random move drawing
+       */
       SetUnionNeighborhoodExplorer(const Input& in, StateManager<Input, State, CFtype>& sm, std::string name, BaseNeighborhoodExplorers& ... nhes, const std::vector<double>& bias = std::vector<double>(0))
       : NeighborhoodExplorer<Input, State, MoveTypes, CFtype>(in, sm, name),
       nhes(std::make_tuple(std::reference_wrapper<BaseNeighborhoodExplorers>(nhes) ...)),
@@ -421,10 +440,11 @@ namespace EasyLocal {
           this->bias = bias;
       }
       
+    protected:
+      
       /** Instantiated base NeighborhoodExplorers. */
       NeighborhoodExplorerTypes nhes;
       
-    protected:
       typedef std::tuple<Impl::FastFunc<void(const State&, typename BaseNeighborhoodExplorers::MoveType&)>...> _Void_ConstState_Move;
       typedef std::tuple<Impl::FastFunc<bool(const State&, typename BaseNeighborhoodExplorers::MoveType&)>...> _Bool_ConstState_Move;
       typedef std::tuple<Impl::FastFunc<void(State&, const typename BaseNeighborhoodExplorers::MoveType&)>...> _Void_State_ConstMove;
@@ -567,17 +587,26 @@ namespace EasyLocal {
       }      
     };
     
+    /** Given a set of base neighborhood explorers, this class will create a multimodal (i.e., compound) neighborhood explorer
+     that explores the set union of all neighborhoods.
+     @brief The SetUnion MultimodalNeighborhoodExplorer manages the set union of different neighborhoods.
+     @tparam Input the class representing the problem input
+     @tparam State the class representing the problem's state
+     @tparam CFtype the type of the cost function
+     @tparam BaseNeighborhoodExplorers a sequence of base neighborhood explorer classes
+     @ingroup Helpers
+     */
     template <class Input, class State, class CFtype, class ... BaseNeighborhoodExplorers>
     class CartesianProductNeighborhoodExplorer : public NeighborhoodExplorer<Input, State, std::tuple<ActiveMove<typename BaseNeighborhoodExplorers::MoveType> ...>, CFtype>
     {
-    public:
+    protected:
       /** Tuple type representing the combination of @c BaseNeighborhoodExplorers' @ref Move. */
       typedef std::tuple<ActiveMove<typename BaseNeighborhoodExplorers::MoveType> ...> MoveTypes;
       
       /** Tuple type representing references to @c BaseNeighborhoodExplorers' @ref Move (because we need to set them). */
       typedef std::tuple<std::reference_wrapper<ActiveMove<typename BaseNeighborhoodExplorers::MoveType>> ...> MoveTypeRefs;
       
-      /** Tuple type representing references to @c BaseNeighborhoodExplorers' @ref Move (because we need to set them). */
+      /** Tuple type representing const references to @c BaseNeighborhoodExplorers' @ref Move. */
       typedef std::tuple<std::reference_wrapper<const ActiveMove<typename BaseNeighborhoodExplorers::MoveType>> ...> MoveTypeCRefs;
       
       /** Tuple type representing references to @c BaseNeighborhoodExplorers. */
@@ -588,7 +617,12 @@ namespace EasyLocal {
       
     public:
       
-      /** Constructor, takes a variable number of base NeighborhoodExplorers.  */
+      /** Constructor, takes a variable number of base NeighborhoodExplorers.
+       @param in a pointer to an input object.
+       @param sm a pointer to a compatible state manager.
+       @param name the name associated to the NeighborhoodExplorer
+       @param nhes the list of basic neighborhood explorer objects (according to the template list)
+       */
       CartesianProductNeighborhoodExplorer(const Input& in, StateManager<Input, State, CFtype>& sm, std::string name, BaseNeighborhoodExplorers& ... nhes)
       : NeighborhoodExplorer<Input, State, MoveTypes, CFtype>(in, sm, name),
       nhes(std::make_tuple(std::reference_wrapper<BaseNeighborhoodExplorers>(nhes) ...)),
@@ -599,10 +633,10 @@ namespace EasyLocal {
       delta_cost_function_funcs(std::make_tuple(Impl::makeFastFunc(dynamic_cast<NeighborhoodExplorer<Input, State, typename BaseNeighborhoodExplorers::MoveType, CFtype>*>(&nhes), &NeighborhoodExplorer<Input, State, typename BaseNeighborhoodExplorers::MoveType, CFtype>::DeltaCostFunctionComponents)...))
       {}
       
+    protected:
       /** Instantiated base NeighborhoodExplorers. */
       NeighborhoodExplorerTypes nhes;
       
-    protected:
       typedef std::tuple<Impl::FastFunc<void(const State&, typename BaseNeighborhoodExplorers::MoveType&)>...> _Void_ConstState_Move;
       typedef std::tuple<Impl::FastFunc<bool(const State&, typename BaseNeighborhoodExplorers::MoveType&)>...> _Bool_ConstState_Move;
       typedef std::tuple<Impl::FastFunc<void(State&, const typename BaseNeighborhoodExplorers::MoveType&)>...> _Void_State_ConstMove;
@@ -616,6 +650,10 @@ namespace EasyLocal {
       std::unordered_map<std::type_index, boost::any> related_funcs;
       
     public:
+      /** Adds a predicate to determine whether two moves (of different neighborhoods) are related.
+       This version wraps the moves in an ActiveMove object structure.
+       @param r a relatedness function
+       */
       template <typename Move1, typename Move2>
       void AddRelatedFunction(std::function<bool(const Move1&, const Move2&)> r)
       {
@@ -623,6 +661,10 @@ namespace EasyLocal {
         related_funcs[std::type_index(typeid(ar))] = ar;
       }
       
+      /** Adds a predicate to determine whether two moves (of different neighborhoods) are related.
+       This version requires the moves to be already wrapped in an ActiveMove object structure.
+       @param r a relatedness function
+       */
       template <typename Move1, typename Move2>
       void AddRelatedFunction(std::function<bool(const ActiveMove<Move1>&, const ActiveMove<Move2>&)> r)
       {
@@ -912,9 +954,7 @@ namespace EasyLocal {
         return result;
       }
     };
-  
-  }
-  
+  }  
 }
 
 

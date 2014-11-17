@@ -497,7 +497,7 @@ namespace EasyLocal {
           for (i = 0; i < CostComponent<Input, State, CFtype>::CostComponents(); i++)
           {
             const CostComponent<Input, State, CFtype>& cc = CostComponent<Input, State, CFtype>::Component(i);
-            os  << i << ". " << cc.GetName() << " : "
+            os  << i << ". " << cc.name << " : "
             << cost.all_components[i] << (cc.IsHard() ? '*' : ' ') << std::endl;
           }
           os << "Total Violations: " << cost.violations << std::endl;
@@ -518,7 +518,7 @@ namespace EasyLocal {
           for (i = 0; i < CostComponent<Input, State, CFtype>::CostComponents(); i++)
           {
             const CostComponent<Input, State, CFtype>& cc = CostComponent<Input, State, CFtype>::Component(i);
-            os  << i << ". " << cc.GetName() << " : "
+            os  << i << ". " << cc.name << " : "
             << cost.all_components[i] << (cc.IsHard() ? '*' : ' ') << std::endl;
           }
           os << "Total Violations: " << cost.violations << std::endl;

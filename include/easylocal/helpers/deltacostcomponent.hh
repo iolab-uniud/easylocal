@@ -32,19 +32,21 @@ namespace EasyLocal {
       /** @copydoc CostComponent::IsSoft() */
       bool IsSoft() const { return cc.IsSoft(); }
       
-      /** Returns the cost variation limited to this cost component.
+      /** Returns the variation in the cost function induced by the move according to this cost component.
        @param st state to evaluate
        @param mv move to evaluate
        */
       virtual CFtype DeltaCost(const State& st, const Move& mv) const;
       
-      /** Returns whether this delta is implemented, or the complete cost component is used. */
+      /** Returns whether the delta function is implemented, or the complete cost component is used. */
       virtual bool IsDeltaImplemented() const { return true; }
       
       /** A symbolic name of the DeltaCostComponent. */
       const std::string name;
       
-      /** The index of the (Delta)CostComponent in the overall components vector. */      
+      /** The index of the (Delta)CostComponent in the overall vector of registered cost components.
+       @return the index of the associated cost component
+       */
       size_t Index() const
       {
         return cc.Index();

@@ -15,7 +15,7 @@ namespace EasyLocal {
     struct SolverResult
     {
       SolverResult(const Output& output, const CostStructure<CFtype>& cost, double running_time) : output(output), cost(cost), running_time(running_time) {}
-      const Output& output;
+      Output output;
       CostStructure<CFtype> cost;
       double running_time;
     };

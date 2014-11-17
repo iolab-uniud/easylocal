@@ -134,13 +134,6 @@ namespace EasyLocal {
       virtual size_t Modality() const
       { return 1; }
       
-      /** Returns the modality of the move passed as parameter, i.e., the number of move components in a composite move that are active.
-       @param mv a move
-       @return the modality of the move
-       */
-      virtual size_t MoveModality(const Move& mv) const
-      { return 0; }
-      
       /**
        Constructs a neighborhood explorer passing a n input object and a state manager.
        
