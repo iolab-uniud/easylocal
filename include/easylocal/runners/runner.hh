@@ -57,14 +57,6 @@ namespace EasyLocal {
        */
       CostStructure<CFtype> Step(State& s, unsigned int n = 1) throw (ParameterNotSet, IncorrectParameterValue);
       
-      /** Computes the duration of the last run (in milliseconds).
-       @return the duration of the last run
-       */
-      virtual std::chrono::milliseconds GetTimeElapsed() const
-      {
-        return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - begin);
-      }
-      
       /** Register its parameters */
       virtual void RegisterParameters();
       
@@ -137,8 +129,8 @@ namespace EasyLocal {
       /** Tells if the runner has found a lower bound. For stopping condition. */
       virtual bool LowerBoundReached() const;
       
-      /** Tells if the maximum number of iterations allowed have been exhausted. */
-      bool MaxIterationExpired() const;
+      /** Tells if the maximum number of cot function evaluations allowed have been exhausted. */
+      bool MaxEvaluationsExpired() const;
       
       /** Encodes the criterion used to select the move at each step. */
       virtual void SelectMove() = 0;
@@ -190,11 +182,8 @@ namespace EasyLocal {
       /** Number of cost function evaluations. */
       unsigned long int evaluations;
       
-      /** Generic parameter of every runner: maximum number of iterations. */
-      Parameter<unsigned long int> max_iterations;
-      
-      /** Chronometer. */
-      std::chrono::high_resolution_clock::time_point begin, end;
+      /** Generic parameter of every runner: maximum number of cost function evaluations. */
+      Parameter<unsigned long int> max_evaluations;
       
       /** Weights of the different cost function components. 
           If the vector is empty (default), it is assumed all weigths to be 1.0. */
@@ -226,22 +215,21 @@ namespace EasyLocal {
     {
       // Add to the list of all runners
       runners.push_back(this);
-      begin = end = std::chrono::high_resolution_clock::now();
     }
     
     template <class Input, class State, typename CFtype>
     void Runner<Input, State, CFtype>::RegisterParameters()
     {
-      max_iterations("max_iterations", "Maximum total number of iterations allowed", this->parameters);
+      max_evaluations("max_evaluations", "Maximum total number of cost function evaluations allowed", this->parameters);
       // This parameter has a default value
-      max_iterations = std::numeric_limits<unsigned long int>::max();
+      max_evaluations = std::numeric_limits<unsigned long int>::max();
     }
     
     template <class Input, class State, typename CFtype>
     CostStructure<CFtype> Runner<Input, State, CFtype>::Go(State& s) throw (ParameterNotSet, IncorrectParameterValue)
     {
       InitializeRun(s);
-      while (!MaxIterationExpired() && !StopCriterion() && !LowerBoundReached() && !this->TimeoutExpired())
+      while (!MaxEvaluationsExpired() && !StopCriterion() && !LowerBoundReached() && !this->TimeoutExpired())
       {
         PrepareIteration();
         try
@@ -281,20 +269,11 @@ namespace EasyLocal {
      */
     template <class Input, class State, typename CFtype>
     void Runner<Input, State, CFtype>::CompleteIteration()
-    {
-      end = std::chrono::high_resolution_clock::now();
-    }
-    
-    template <class Input, class State, typename CFtype>
-    bool Runner<Input, State, CFtype>::MaxIterationExpired() const
-    {
-      return iteration >= max_iterations;
-    }
+    {}
     
     template <class Input, class State, typename CFtype>
     void Runner<Input, State, CFtype>::InitializeRun(State& s) throw (ParameterNotSet, IncorrectParameterValue)
     {
-      begin = std::chrono::high_resolution_clock::now();
       iteration = 0;
       iteration_of_best = 0;
       evaluations = 0;
@@ -302,7 +281,6 @@ namespace EasyLocal {
       p_current_state = std::make_shared<State>(s); // creates the current state object by copying the content of s
       best_state_cost = current_state_cost = sm.CostFunctionComponents(s);
       InitializeRun();
-      end = std::chrono::high_resolution_clock::now();
     }
     
     template <class Input, class State, typename CFtype>
@@ -310,7 +288,6 @@ namespace EasyLocal {
     {
       s = *p_best_state;
       TerminateRun();
-      end = std::chrono::high_resolution_clock::now();
       return best_state_cost;
     }
     
@@ -318,6 +295,12 @@ namespace EasyLocal {
     bool Runner<Input, State, CFtype>::LowerBoundReached() const
     {
       return sm.LowerBoundReached(current_state_cost.total);
+    }
+    
+    template <class Input, class State, typename CFtype>
+    bool Runner<Input, State, CFtype>::MaxEvaluationsExpired() const
+    {
+      return evaluations >= max_evaluations;
     }
     
     template <class Input, class State, typename CFtype>
@@ -332,7 +315,7 @@ namespace EasyLocal {
     {
       os  << "  " << this->name << std::endl;
       Parametrized::Print(os);  
-    }    
+    }
   }
 }
 

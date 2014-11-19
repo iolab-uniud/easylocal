@@ -4,9 +4,7 @@
 #include "easylocal/helpers/neighborhoodexplorer.hh"
 
 namespace EasyLocal {
-  
   namespace Core {
-    
     template <class State, class Move, typename CFtype>
     struct Kick : public std::vector<std::pair<EvaluatedMove<Move, CFtype>, State>>
     {
