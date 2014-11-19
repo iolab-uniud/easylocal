@@ -34,7 +34,8 @@ namespace EasyLocal {
     protected:
       void RegisterParameters();
       void InitializeRun() throw (ParameterNotSet, IncorrectParameterValue);
-      bool StopCriterion();      
+      bool StopCriterion();
+      void CompleteIteration();
       
       // additional parameters
       Parameter<double>  neighbors_accepted_ratio;
@@ -101,6 +102,15 @@ namespace EasyLocal {
     bool SimulatedAnnealingIterationBased<Input, State, Move, CFtype>::StopCriterion()
     {
       return false;
+    }
+    
+    template <class Input, class State, class Move, typename CFtype>
+    void SimulatedAnnealingIterationBased<Input, State, Move, CFtype>::CompleteIteration()
+    {
+      AbstractSimulatedAnnealing<Input, State, Move, CFtype>::CompleteIteration();
+      // the iteration counter was already incremented by PrepareIteration, so to make it consistent with the overall number of sampled neighbors
+      // the value should be decreased by 1
+      this->iteration += this->neighbors_sampled - 1;
     }
     
     /**

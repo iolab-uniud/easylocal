@@ -434,6 +434,7 @@ namespace EasyLocal {
           // If not otherwise specified, initialize the probabilities as 1 / Modality
           this->bias = std::vector<double>(this->Modality(), 1.0 / (double) this->Modality());
         }
+
         else if (bias.size() != this->Modality())
           throw std::logic_error("Multimodal move random distribution (i.e., bias) not matching the neighborhood modality");
         else
