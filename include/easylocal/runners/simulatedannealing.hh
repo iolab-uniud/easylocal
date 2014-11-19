@@ -18,12 +18,10 @@ namespace EasyLocal {
     public:
       
       SimulatedAnnealing(const Input& in,
-                         StateManager<Input, State, CFtype>& e_sm,
-                         NeighborhoodExplorer<Input, State, Move, CFtype>& e_ne,
+                         StateManager<Input, State, CFtype>& sm,
+                         NeighborhoodExplorer<Input, State, Move, CFtype>& ne,
                          std::string name);
       
-      void SetMinTemperature(double st)  { min_temperature = st; }
-      double MinTemperature() const { return min_temperature; }
       std::string StatusString();
       
     protected:

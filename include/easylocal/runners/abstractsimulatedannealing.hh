@@ -34,21 +34,7 @@ namespace EasyLocal {
       AbstractSimulatedAnnealing(const Input& in,
                                  StateManager<Input, State, CFtype>& e_sm,
                                  NeighborhoodExplorer<Input, State, Move, CFtype>& e_ne,
-                                 std::string name);
-      
-      void SetStartTemperature(double st)  { start_temperature = st; }
-      void SetCoolingRate(double cr)  { cooling_rate = cr; }
-      void SetMaxNeighborsSampled(unsigned int ns)  { max_neighbors_sampled = ns; }
-      void SetMaxNeighborsAccepted(unsigned int na)  { max_neighbors_accepted = na; }
-      void SetMaxIterations(unsigned long i)  { this->max_iterations = i; }
-      
-      unsigned int MaxNeighborsSampled() const { return max_neighbors_sampled; }
-      unsigned int MaxNeighborsAccepted() const { return max_neighbors_accepted; }
-      double StartTemperature() const { return start_temperature; }
-      double CoolingRate() const { return cooling_rate; }
-      double Temperature() const { return temperature; }
-      unsigned long MaxIterations() const  { return this->max_iterations; }
-      
+                                 std::string name);          
     protected:
       
       void InitializeRun() throw (ParameterNotSet, IncorrectParameterValue);
