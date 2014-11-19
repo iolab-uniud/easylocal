@@ -313,9 +313,16 @@ namespace EasyLocal {
             }
           }
           
+          double pdouble;
+          int pint;
+          long plong;
+          unsigned int puint;
+          unsigned long pulong;
+          bool pbool;
+          
           /** Gets a given parameter */
           template <typename T>
-          T GetParameter(std::string flag)
+          T GetParameter(std::string flag, T dummy)
           {
             for (auto p : this->parameters)
             {
