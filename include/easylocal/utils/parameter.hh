@@ -319,7 +319,7 @@ namespace EasyLocal {
           {
             for (auto p : this->parameters)
             {
-              if (p->cmdline_flag == flag)
+              if (p->cmdline_flag == flag || p->cmdline_flag == parameters.prefix + "::" + flag)
               {
                 Parameter<T>* p_par = dynamic_cast<Parameter<T>*>(p);
                 if (!p_par)
@@ -339,7 +339,7 @@ namespace EasyLocal {
             bool found = false;
             for (auto p : this->parameters)
             {
-              if (p->cmdline_flag == flag)
+              if (p->cmdline_flag == flag || p->cmdline_flag == parameters.prefix + "::" + flag)
               {
                 Parameter<T>* p_par = dynamic_cast<Parameter<T>*>(p);
                 if (!p_par)

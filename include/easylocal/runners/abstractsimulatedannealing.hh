@@ -186,7 +186,7 @@ namespace EasyLocal {
     template <class Input, class State, class Move, typename CFtype>
     void AbstractSimulatedAnnealing<Input, State, Move, CFtype>::CompleteIteration()
     {
-      if (neighbors_sampled == max_neighbors_sampled || neighbors_accepted == max_neighbors_accepted)
+      if (neighbors_sampled >= max_neighbors_sampled || neighbors_accepted >= max_neighbors_accepted)
       {
         temperature *= cooling_rate;
         neighbors_sampled = 0;
