@@ -106,6 +106,11 @@ namespace EasyLocal {
     bool GreaterThanOrEqualTo<double>(double value1, double value2)
     { return value1  >= value2; }
     
-    
+    std::vector<std::string> split(const std::string& input, const std::regex& regex)
+    {
+      // passing -1 as the submatch index parameter performs splitting
+      std::sregex_token_iterator first{input.begin(), input.end(), regex, -1}, last;
+      return {first, last};
+    }    
   }
 }

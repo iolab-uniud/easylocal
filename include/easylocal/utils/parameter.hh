@@ -7,6 +7,7 @@
 #include <iostream>
 #include <memory>
 #include <sstream>
+#include "easylocal/utils/types.hh"
 
 #include "boost/program_options/options_description.hpp"
 
@@ -275,7 +276,8 @@ namespace EasyLocal {
         };
         
         /** A class representing a parametrized component of EasyLocal++. */
-        class Parametrized {
+        class Parametrized
+        {
           friend bool CommandLineParameters::Parse(int argc, const char* argv[], bool check_unregistered, bool silent);
         public:
           
@@ -315,20 +317,38 @@ namespace EasyLocal {
           
           /** Gets a given parameter */
           template <typename T>
-          T GetParameter(std::string flag)
+          void GetParameterValue(std::string flag, T& value)
           {
             for (auto p : this->parameters)
             {
-              if (p->cmdline_flag == flag)
+              if (p->cmdline_flag == flag || p->cmdline_flag == parameters.prefix + "::" + flag)
               {
                 Parameter<T>* p_par = dynamic_cast<Parameter<T>*>(p);
                 if (!p_par)
                   throw std::logic_error("Parameter " + p->cmdline_flag + " value of an incorrect type");
-                return *p_par;
+                value = *p_par;
+                return;
               }
             }
             // FIXME: a more specific exception should be raised
             throw std::logic_error("Parameter " + flag + " not in the list");
+          }
+          
+          void CopyParameterValues(const Parametrized& p)
+          {
+            for (auto p1 : this->parameters)
+            {
+              std::string f1 = split(p1->cmdline_flag, std::regex("::"))[1];
+              for (auto p2 : this->parameters)
+              {
+                std::string f2 = split(p2->cmdline_flag, std::regex("::"))[1];
+                if (f1 == f2)
+                {
+                  p1 = p2;
+                  break;
+                }
+              }
+            }
           }
           
           
@@ -339,7 +359,7 @@ namespace EasyLocal {
             bool found = false;
             for (auto p : this->parameters)
             {
-              if (p->cmdline_flag == flag)
+              if (p->cmdline_flag == flag || p->cmdline_flag == parameters.prefix + "::" + flag)
               {
                 Parameter<T>* p_par = dynamic_cast<Parameter<T>*>(p);
                 if (!p_par)

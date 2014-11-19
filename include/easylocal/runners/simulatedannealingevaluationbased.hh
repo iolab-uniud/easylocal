@@ -103,7 +103,7 @@ namespace EasyLocal {
     }
     
     template <class Input, class State, class Move, typename CFtype>
-    void SimulatedAnnealingIterationBased<Input, State, Move, CFtype>::CompleteIteration()
+    void SimulatedAnnealingEvaluationBased<Input, State, Move, CFtype>::CompleteIteration()
     {
       AbstractSimulatedAnnealing<Input, State, Move, CFtype>::CompleteIteration();
       // the iteration counter was already incremented by PrepareIteration, so to make it consistent with the overall number of sampled neighbors

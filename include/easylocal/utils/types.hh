@@ -4,6 +4,7 @@
 #include <vector>
 #include <iostream>
 #include <cmath>
+#include <regex>
 
 namespace EasyLocal {
   
@@ -58,6 +59,8 @@ namespace EasyLocal {
     {
       return m1 == m2;
     }
+    
+    std::vector<std::string> split(const std::string& input, const std::regex& regex);
   }
 }
 
