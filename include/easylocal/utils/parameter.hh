@@ -56,6 +56,8 @@ namespace EasyLocal {
       
       /** True if it has been correctly instantiated. */
       bool is_valid;
+      
+      virtual void CopyValue(const AbstractParameter& ap) = 0;
     };
     
     /** Exception called whenever a needed parameter hasn't been set. */
@@ -130,23 +132,34 @@ namespace EasyLocal {
       virtual std::string ToString() const throw (ParameterNotSet, ParameterNotValid)
       {
         if (!is_valid)
+        {
           throw ParameterNotValid(*this);
-          std::stringstream ss;
+        }
+        std::stringstream ss;
         ss << this->value;
         return ss.str();
-        }
+      }
         
-        /** Implicit cast. */
-        operator T() const throw (ParameterNotSet, ParameterNotValid);
+      virtual void CopyValue(const AbstractParameter& ap)
+      {
+        const Parameter<T>& tp = dynamic_cast<const Parameter<T>&>(ap);
+        this->value = tp.value;
+        this->is_set = tp.is_set;
+        this->is_valid = tp.is_valid;
+      }
         
-        /** Assignment. */
-        const T& operator=(const T&) throw (ParameterNotValid);
+      /** Implicit cast. */
+      operator T() const throw (ParameterNotSet, ParameterNotValid);
+        
+      /** Assignment. */
+      const T& operator=(const T&) throw (ParameterNotValid);
         
       protected:
         
         /** Real value of the parameter. */
         T value;
-        };
+        
+      };
         
         class IncorrectParameterValue
         : public std::logic_error
@@ -336,15 +349,15 @@ namespace EasyLocal {
           
           void CopyParameterValues(const Parametrized& p)
           {
-            for (auto p1 : this->parameters)
+            for (auto& p1 : this->parameters)
             {
               std::string f1 = split(p1->cmdline_flag, std::regex("::"))[1];
-              for (auto p2 : this->parameters)
+              for (const auto& p2 : this->parameters)
               {
                 std::string f2 = split(p2->cmdline_flag, std::regex("::"))[1];
                 if (f1 == f2)
                 {
-                  p1 = p2;
+                  p1->CopyValue(*p2);
                   break;
                 }
               }

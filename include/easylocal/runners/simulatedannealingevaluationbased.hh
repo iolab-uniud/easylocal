@@ -25,12 +25,6 @@ namespace EasyLocal {
                                        NeighborhoodExplorer<Input, State, Move, CFtype>& e_ne,
                                        std::string name);
       std::string StatusString();
-      
-      void SetTemperatureRange(double tr) { temperature_range = tr; }
-      double TemperatureRange() const { return temperature_range; }
-      void SetNeighborsAcceptedRatio(double nar) { neighbors_accepted_ratio = nar; }
-      double NeighborsAcceptedRatio() const { return neighbors_accepted_ratio; }
-      
     protected:
       void RegisterParameters();
       void InitializeRun() throw (ParameterNotSet, IncorrectParameterValue);
