@@ -149,31 +149,25 @@ namespace EasyLocal {
        This method will select the first move in the exhaustive neighborhood exploration that
        matches with the criterion expressed by the functional object bool f(const Move& mv, CFtype cost)
        */
-      virtual EvaluatedMove<Move, CFtype> SelectFirst(const State& st, const MoveAcceptor& AcceptMove, const std::vector<double>& weights = std::vector<double>(0)) const throw (EmptyNeighborhood);
+      virtual EvaluatedMove<Move, CFtype> SelectFirst(const State& st, size_t& explored, const MoveAcceptor& AcceptMove, const std::vector<double>& weights = std::vector<double>(0)) const throw (EmptyNeighborhood);
       
       /**
        This method will select the best move in the exhaustive neighborhood exploration that
        matches with the criterion expressed by the functional object bool f(const Move& mv, CFtype cost)
        */
-      virtual EvaluatedMove<Move, CFtype> SelectBest(const State& st, const MoveAcceptor& AcceptMove, const std::vector<double>& weights = std::vector<double>(0)) const throw (EmptyNeighborhood);
+      virtual EvaluatedMove<Move, CFtype> SelectBest(const State& st, size_t& explored, const MoveAcceptor& AcceptMove, const std::vector<double>& weights = std::vector<double>(0)) const throw (EmptyNeighborhood);
       
       /**
        This method will select the first move in a random neighborhood exploration that
        matches with the criterion expressed by the functional object bool f(const Move& mv, CFtype cost)
        */
-      virtual EvaluatedMove<Move, CFtype> RandomFirst(const State& st, size_t samples, size_t& sampled, const MoveAcceptor& AcceptMove, const std::vector<double>& weights = std::vector<double>(0)) const throw (EmptyNeighborhood);
-      
-      virtual EvaluatedMove<Move, CFtype> RandomFirst(const State& st, size_t samples, const MoveAcceptor& AcceptMove, const std::vector<double>& weights = std::vector<double>(0)) const throw (EmptyNeighborhood)
-      {
-        size_t sampled;
-        return RandomFirst(st, samples, sampled, AcceptMove, weights);
-      }
+      virtual EvaluatedMove<Move, CFtype> RandomFirst(const State& st, size_t samples, size_t& explored, const MoveAcceptor& AcceptMove, const std::vector<double>& weights = std::vector<double>(0)) const throw (EmptyNeighborhood);
       
       /**
        This method will select the best move in a random neighborhood exploration that
        matches with the criterion expressed by the functional object bool f(const Move& mv, CFtype cost)
        */
-      virtual EvaluatedMove<Move, CFtype> RandomBest(const State& st, size_t samples, size_t& sampled, const MoveAcceptor& AcceptMove, const std::vector<double>& weights = std::vector<double>(0)) const throw (EmptyNeighborhood);            
+      virtual EvaluatedMove<Move, CFtype> RandomBest(const State& st, size_t samples, size_t& explored, const MoveAcceptor& AcceptMove, const std::vector<double>& weights = std::vector<double>(0)) const throw (EmptyNeighborhood);
       
     protected:
       
@@ -309,14 +303,15 @@ namespace EasyLocal {
      matches with the criterion expressed by the functional object bool f(const Move& mv, CFtype cost)
      */
     template <class Input, class State, class Move, typename CFtype>
-    EvaluatedMove<Move, CFtype> NeighborhoodExplorer<Input, State, Move, CFtype>::SelectFirst(const State& st, const MoveAcceptor& AcceptMove, const std::vector<double>& weights) const throw (EmptyNeighborhood)
+    EvaluatedMove<Move, CFtype> NeighborhoodExplorer<Input, State, Move, CFtype>::SelectFirst(const State& st, size_t& explored, const MoveAcceptor& AcceptMove, const std::vector<double>& weights) const throw (EmptyNeighborhood)
     {
+      explored = 0;
       EvaluatedMove<Move, CFtype> mv;
       FirstMove(st, mv.move);
-      
       do
       {
         mv.cost = DeltaCostFunctionComponents(st, mv.move, weights);
+        explored++;
         mv.is_valid = true;
         
         if (AcceptMove(mv.move, mv.cost))
@@ -333,15 +328,17 @@ namespace EasyLocal {
      matches with the criterion expressed by the functional object bool f(const Move& mv, CFtype cost)
      */
     template <class Input, class State, class Move, typename CFtype>
-    EvaluatedMove<Move, CFtype> NeighborhoodExplorer<Input, State, Move, CFtype>::SelectBest(const State& st, const MoveAcceptor& AcceptMove, const std::vector<double>& weights) const throw (EmptyNeighborhood)
+    EvaluatedMove<Move, CFtype> NeighborhoodExplorer<Input, State, Move, CFtype>::SelectBest(const State& st, size_t& explored, const MoveAcceptor& AcceptMove, const std::vector<double>& weights) const throw (EmptyNeighborhood)
     {
       unsigned int number_of_bests = 0; // number of moves found with the same best value
+      explored = 0;
       EvaluatedMove<Move, CFtype> mv, best_move;
       FirstMove(st, mv.move);
       
       do
       {
         mv.cost = DeltaCostFunctionComponents(st, mv.move, weights);
+        explored++;
         mv.is_valid = true;
         if (AcceptMove(mv.move, mv.cost))
         {
@@ -376,10 +373,10 @@ namespace EasyLocal {
      matches with the criterion expressed by the functional object bool f(const Move& mv, CFtype cost)
      */
     template <class Input, class State, class Move, typename CFtype>
-    EvaluatedMove<Move, CFtype> NeighborhoodExplorer<Input, State, Move, CFtype>::RandomFirst(const State& st, size_t samples, size_t& sampled, const MoveAcceptor& AcceptMove, const std::vector<double>& weights) const throw (EmptyNeighborhood)
+    EvaluatedMove<Move, CFtype> NeighborhoodExplorer<Input, State, Move, CFtype>::RandomFirst(const State& st, size_t samples, size_t& explored, const MoveAcceptor& AcceptMove, const std::vector<double>& weights) const throw (EmptyNeighborhood)
     {
       EvaluatedMove<Move, CFtype> mv;
-      for (sampled = 0; sampled < samples; sampled++)
+      for (explored = 0; explored < samples; explored++)
       {
         RandomMove(st, mv.move);
         mv.cost = DeltaCostFunctionComponents(st, mv.move, weights);
@@ -396,12 +393,12 @@ namespace EasyLocal {
      matches with the criterion expressed by the functional object bool f(const Move& mv, CFtype cost)
      */
     template <class Input, class State, class Move, typename CFtype>
-    EvaluatedMove<Move, CFtype> NeighborhoodExplorer<Input, State, Move, CFtype>::RandomBest(const State& st, size_t samples, size_t& sampled, const MoveAcceptor& AcceptMove, const std::vector<double>& weights) const throw (EmptyNeighborhood)
+    EvaluatedMove<Move, CFtype> NeighborhoodExplorer<Input, State, Move, CFtype>::RandomBest(const State& st, size_t samples, size_t& explored, const MoveAcceptor& AcceptMove, const std::vector<double>& weights) const throw (EmptyNeighborhood)
     {
       unsigned int number_of_bests = 0; // number of moves found with the same best value
       EvaluatedMove<Move, CFtype> mv, best_move;
       
-      for (sampled = 0; sampled < samples; sampled++)
+      for (explored = 0; explored < samples; explored++)
       {
         RandomMove(st, mv.move);
         mv.cost = DeltaCostFunctionComponents(st, mv.move, weights);

@@ -167,6 +167,7 @@ namespace EasyLocal {
       }, this->weights);
       this->current_move = em;
       neighbors_sampled += sampled;
+      this->evaluations += sampled;
     }
     
     /**

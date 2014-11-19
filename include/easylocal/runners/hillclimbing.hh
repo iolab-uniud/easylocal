@@ -27,7 +27,6 @@ namespace EasyLocal {
     protected:
       void RegisterParameters();
       bool MaxIdleIterationExpired() const;
-      bool MaxIterationExpired() const;
       bool StopCriterion();
       void SelectMove();
       // parameters
@@ -83,13 +82,7 @@ namespace EasyLocal {
     bool HillClimbing<Input, State, Move, CFtype>::MaxIdleIterationExpired() const
     {
       return this->iteration - this->iteration_of_best >= this->max_idle_iterations;
-    }
-    
-    template <class Input, class State, class Move, typename CFtype>
-    bool HillClimbing<Input, State, Move, CFtype>::MaxIterationExpired() const
-    {
-      return this->iteration >= this->max_iterations;
-    }
+    }          
     
     /**
      The stop criterion is based on the number of iterations elapsed from
@@ -98,7 +91,7 @@ namespace EasyLocal {
     template <class Input, class State, class Move, typename CFtype>
     bool HillClimbing<Input, State, Move, CFtype>::StopCriterion()
     {
-      return MaxIdleIterationExpired() || this->MaxIterationExpired();
+      return MaxIdleIterationExpired() || this->MaxEvaluationsExpired();
     }
   }
 }

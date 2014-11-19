@@ -32,7 +32,7 @@
 #include "easylocal/runners/hillclimbing.hh"
 #include "easylocal/runners/simulatedannealing.hh"
 #include "easylocal/runners/abstractsimulatedannealing.hh"
-#include "easylocal/runners/simulatedannealingiterationbased.hh"
+#include "easylocal/runners/simulatedannealingevaluationbased.hh"
 #include "easylocal/runners/simulatedannealingwithreheating.hh"
 #include "easylocal/runners/greatdeluge.hh"
 #include "easylocal/runners/tabusearch.hh"

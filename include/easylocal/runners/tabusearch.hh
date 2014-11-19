@@ -154,13 +154,15 @@ namespace EasyLocal {
     void TabuSearch<Input, State, Move, CFtype>::SelectMove()
     {
       CFtype aspiration = this->best_state_cost.total - this->current_state_cost.total;
-      EvaluatedMove<Move, CFtype> em = this->ne.SelectBest(*this->p_current_state, [this, aspiration](const Move& mv, CostStructure<CFtype> move_cost) {
+      size_t explored;
+      EvaluatedMove<Move, CFtype> em = this->ne.SelectBest(*this->p_current_state, explored, [this, aspiration](const Move& mv, CostStructure<CFtype> move_cost) {
         for (auto li : *(this->tabu_list))
           if ((move_cost.total >= aspiration) && this->Inverse(li.move, mv))
             return false;
         return true;
       }, this->weights);
       this->current_move = em;
+      this->evaluations += explored;
     }
     
     template <class Input, class State, class Move, typename CFtype>
@@ -176,7 +178,7 @@ namespace EasyLocal {
     template <class Input, class State, class Move, typename CFtype>
     bool TabuSearch<Input, State, Move, CFtype>::StopCriterion()
     {
-      return MaxIdleIterationExpired() || this->MaxIterationExpired();
+      return MaxIdleIterationExpired() || this->MaxEvaluationsExpired();
     }
     
     /**

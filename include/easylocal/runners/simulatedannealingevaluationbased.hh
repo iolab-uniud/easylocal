@@ -16,11 +16,11 @@ namespace EasyLocal {
      */
     
     template <class Input, class State, class Move, typename CFtype = int>
-    class SimulatedAnnealingIterationBased : public AbstractSimulatedAnnealing<Input, State, Move, CFtype>
+    class SimulatedAnnealingEvaluationBased : public AbstractSimulatedAnnealing<Input, State, Move, CFtype>
     {
     public:
       
-      SimulatedAnnealingIterationBased(const Input& in,
+      SimulatedAnnealingEvaluationBased(const Input& in,
                                        StateManager<Input, State, CFtype>& e_sm,
                                        NeighborhoodExplorer<Input, State, Move, CFtype>& e_ne,
                                        std::string name);
@@ -56,7 +56,7 @@ namespace EasyLocal {
      @param in a poiter to an input object
      */
     template <class Input, class State, class Move, typename CFtype>
-    SimulatedAnnealingIterationBased<Input, State, Move, CFtype>::SimulatedAnnealingIterationBased(const Input& in,
+    SimulatedAnnealingEvaluationBased<Input, State, Move, CFtype>::SimulatedAnnealingEvaluationBased(const Input& in,
                                                                                                    StateManager<Input, State, CFtype>& e_sm,
                                                                                                    NeighborhoodExplorer<Input, State, Move, CFtype>& e_ne,
                                                                                                    std::string name)
@@ -64,7 +64,7 @@ namespace EasyLocal {
     {}
     
     template <class Input, class State, class Move, typename CFtype>
-    void SimulatedAnnealingIterationBased<Input, State, Move, CFtype>::RegisterParameters()
+    void SimulatedAnnealingEvaluationBased<Input, State, Move, CFtype>::RegisterParameters()
     {
       AbstractSimulatedAnnealing<Input, State, Move, CFtype>::RegisterParameters();
       neighbors_accepted_ratio("neighbors_accepted_ratio", "Ratio of neighbors accepted", this->parameters);
@@ -75,30 +75,28 @@ namespace EasyLocal {
      Initializes the run by invoking the companion superclass method, and
      setting the temperature to the start value.
      */
-    // FIXME
     template <class Input, class State, class Move, typename CFtype>
-    void SimulatedAnnealingIterationBased<Input, State, Move, CFtype>::InitializeRun() throw (ParameterNotSet, IncorrectParameterValue)
-    {
-      
+    void SimulatedAnnealingEvaluationBased<Input, State, Move, CFtype>::InitializeRun() throw (ParameterNotSet, IncorrectParameterValue)
+    {      
       AbstractSimulatedAnnealing<Input, State, Move, CFtype>::InitializeRun();
-      expected_min_temperature = this->start_temperature/temperature_range;
-      expected_number_of_temperatures = - log(temperature_range)/log(this->cooling_rate);
+      expected_min_temperature = this->start_temperature / temperature_range;
+      expected_number_of_temperatures = - log(temperature_range) / log(this->cooling_rate);
       
-      this->max_neighbors_sampled = static_cast<unsigned>(this->max_iterations/expected_number_of_temperatures);
+      this->max_neighbors_sampled = static_cast<unsigned>(this->max_evaluations / expected_number_of_temperatures);
       
       // If the ratio of accepted neighbors for each temperature is not set,
       if (!neighbors_accepted_ratio.IsSet())
         this->max_neighbors_accepted = this->max_neighbors_sampled;
         else
           this->max_neighbors_accepted = static_cast<unsigned>(this->max_neighbors_sampled * neighbors_accepted_ratio);
-          }
+    }
     
     
     /**
      The search stops when the number of iterations is expired (already checked in the superclass MoveRunner)
      */
     template <class Input, class State, class Move, typename CFtype>
-    bool SimulatedAnnealingIterationBased<Input, State, Move, CFtype>::StopCriterion()
+    bool SimulatedAnnealingEvaluationBased<Input, State, Move, CFtype>::StopCriterion()
     {
       return false;
     }
@@ -107,7 +105,7 @@ namespace EasyLocal {
      Create a string containing the status of the runner
      */
     template <class Input, class State, class Move, typename CFtype>
-    std::string SimulatedAnnealingIterationBased<Input, State, Move, CFtype>::StatusString()
+    std::string SimulatedAnnealingEvaluationBased<Input, State, Move, CFtype>::StatusString()
     {
       std::stringstream status;
       status << "["

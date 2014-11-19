@@ -48,10 +48,10 @@ namespace EasyLocal {
      */
     template <class Input, class State, class Move, typename CFtype>
     SimulatedAnnealing<Input, State, Move, CFtype>::SimulatedAnnealing(const Input& in,
-                                                                       StateManager<Input, State, CFtype>& e_sm,
-                                                                       NeighborhoodExplorer<Input, State, Move, CFtype>& e_ne,
+                                                                       StateManager<Input, State, CFtype>& sm,
+                                                                       NeighborhoodExplorer<Input, State, Move, CFtype>& ne,
                                                                        std::string name)
-    : AbstractSimulatedAnnealing<Input, State, Move, CFtype>(in, e_sm, e_ne, name)
+    : AbstractSimulatedAnnealing<Input, State, Move, CFtype>(in, sm, ne, name)
     {}
     
     template <class Input, class State, class Move, typename CFtype>
@@ -65,14 +65,15 @@ namespace EasyLocal {
      Initializes the run by invoking the companion superclass method, and
      setting the temperature to the start value.
      */
-    // FIXME
     template <class Input, class State, class Move, typename CFtype>
     void SimulatedAnnealing<Input, State, Move, CFtype>::InitializeRun() throw (ParameterNotSet, IncorrectParameterValue)
     {
       if (min_temperature <= 0.0)
+      {
         throw IncorrectParameterValue(min_temperature, "should be greater than zero");
-        AbstractSimulatedAnnealing<Input, State, Move, CFtype>::InitializeRun();
-        }
+      }
+      AbstractSimulatedAnnealing<Input, State, Move, CFtype>::InitializeRun();
+    }
     
     /**
      The search stops when a low temperature has reached.
@@ -96,7 +97,6 @@ namespace EasyLocal {
       << "NA = " << this->neighbors_accepted  << " (" << this->max_neighbors_accepted << ")"
       << "]";
       return status.str();
-      
     }
   }
 }

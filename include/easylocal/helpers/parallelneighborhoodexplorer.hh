@@ -210,15 +210,17 @@ namespace EasyLocal {
         return NeighborhoodExplorerIteratorInterface<Input, State, typename NE::MoveType, CFtype>::create_sample_neighborhood_iterator(*this, st, samples, true);
       }
     public:
-      virtual EvaluatedMove<typename NE::MoveType, CFtype> SelectFirst(const State &st, const MoveAcceptor& AcceptMove, const std::vector<double>& weights = std::vector<double>(0)) const throw (EmptyNeighborhood)
+      virtual EvaluatedMove<typename NE::MoveType, CFtype> SelectFirst(const State &st, size_t& explored, const MoveAcceptor& AcceptMove, const std::vector<double>& weights = std::vector<double>(0)) const throw (EmptyNeighborhood)
       {
         EvaluatedMove<typename NE::MoveType, CFtype> first_move;
         bool first_move_found = false;
         tbb::spin_mutex mx_first_move;
-        tbb::parallel_for_each(this->begin(st), this->end(st), [this, &st, &mx_first_move, &first_move, &first_move_found, AcceptMove, &weights](EvaluatedMove<typename NE::MoveType, CFtype>& mv) {
+        explored = 0;
+        tbb::parallel_for_each(this->begin(st), this->end(st), [this, &st, &mx_first_move, &first_move, &first_move_found, AcceptMove, &weights, &explored](EvaluatedMove<typename NE::MoveType, CFtype>& mv) {
           mv.cost = this->DeltaCostFunctionComponents(st, mv.move, weights);
           mv.is_valid = true;
           tbb::spin_mutex::scoped_lock lock(mx_first_move);
+          explored++;
           if (!first_move_found)
           {
             if (AcceptMove(mv.move, mv.cost))
@@ -234,15 +236,17 @@ namespace EasyLocal {
         return first_move;
       }
       
-      virtual EvaluatedMove<typename NE::MoveType, CFtype> SelectBest(const State &st, const MoveAcceptor& AcceptMove, const std::vector<double>& weights = std::vector<double>(0)) const throw (EmptyNeighborhood)
+      virtual EvaluatedMove<typename NE::MoveType, CFtype> SelectBest(const State &st, size_t& explored, const MoveAcceptor& AcceptMove, const std::vector<double>& weights = std::vector<double>(0)) const throw (EmptyNeighborhood)
       {
         tbb::spin_mutex mx_best_move;
         EvaluatedMove<typename NE::MoveType, CFtype> best_move;
         unsigned int number_of_bests = 0;
-        tbb::parallel_for_each(this->begin(st), this->end(st), [this, &st, &mx_best_move, &best_move, &number_of_bests, AcceptMove, &weights](EvaluatedMove<typename NE::MoveType, CFtype>& mv) {
+        explored = 0;
+        tbb::parallel_for_each(this->begin(st), this->end(st), [this, &st, &mx_best_move, &best_move, &number_of_bests, AcceptMove, &weights, &explored](EvaluatedMove<typename NE::MoveType, CFtype>& mv) {
           mv.cost = this->DeltaCostFunctionComponents(st, mv.move, weights);
           mv.is_valid = true;
           tbb::spin_mutex::scoped_lock lock(mx_best_move);
+          explored++;
           if (AcceptMove(mv.move, mv.cost))
           {
             if (number_of_bests == 0)
@@ -268,17 +272,17 @@ namespace EasyLocal {
         return best_move;
       }
       
-      virtual EvaluatedMove<typename NE::MoveType, CFtype> RandomFirst(const State &st, size_t samples, size_t& sampled, const MoveAcceptor& AcceptMove, const std::vector<double>& weights = std::vector<double>(0)) const throw (EmptyNeighborhood)
+      virtual EvaluatedMove<typename NE::MoveType, CFtype> RandomFirst(const State &st, size_t samples, size_t& explored, const MoveAcceptor& AcceptMove, const std::vector<double>& weights = std::vector<double>(0)) const throw (EmptyNeighborhood)
       {
         EvaluatedMove<typename NE::MoveType, CFtype> first_move;
         bool first_move_found = false;
         tbb::spin_mutex mx_first_move;
-        tbb::atomic<size_t> c_sampled = 0;
-        tbb::parallel_for_each(this->sample_begin(st, samples), this->sample_end(st, samples), [this, &st, &mx_first_move, &first_move, &first_move_found, &c_sampled, AcceptMove, &weights](EvaluatedMove<typename NE::MoveType, CFtype>& mv) {
+        explored = 0;
+        tbb::parallel_for_each(this->sample_begin(st, samples), this->sample_end(st, samples), [this, &st, &mx_first_move, &first_move, &first_move_found, &explored, AcceptMove, &weights](EvaluatedMove<typename NE::MoveType, CFtype>& mv) {
           mv.cost = this->DeltaCostFunctionComponents(st, mv.move, weights);
           mv.is_valid = true;
-          c_sampled++;
           tbb::spin_mutex::scoped_lock lock(mx_first_move);
+          explored++;
           if (!first_move_found && AcceptMove(mv.move, mv.cost))
           {
             first_move_found = true;
@@ -288,21 +292,20 @@ namespace EasyLocal {
         });
         if (!first_move_found)
           return EvaluatedMove<typename NE::MoveType, CFtype>::empty;
-        sampled = c_sampled;
         return first_move;
       }
       
-      virtual EvaluatedMove<typename NE::MoveType, CFtype> RandomBest(const State &st, size_t samples, size_t& sampled, const MoveAcceptor& AcceptMove, const std::vector<double>& weights = std::vector<double>(0)) const throw (EmptyNeighborhood)
+      virtual EvaluatedMove<typename NE::MoveType, CFtype> RandomBest(const State &st, size_t samples, size_t& explored, const MoveAcceptor& AcceptMove, const std::vector<double>& weights = std::vector<double>(0)) const throw (EmptyNeighborhood)
       {
         tbb::spin_mutex mx_best_move;
         EvaluatedMove<typename NE::MoveType, CFtype> best_move;
         unsigned int number_of_bests = 0;
-        tbb::atomic<size_t> c_sampled = 0;
-        tbb::parallel_for_each(this->sample_begin(st, samples), this->sample_end(st, sampled), [this, &st, &mx_best_move, &best_move, &number_of_bests, &c_sampled, AcceptMove, &weights](EvaluatedMove<typename NE::MoveType, CFtype>& mv) {
+        explored = 0;
+        tbb::parallel_for_each(this->sample_begin(st, samples), this->sample_end(st, samples), [this, &st, &mx_best_move, &best_move, &number_of_bests, &explored, AcceptMove, &weights](EvaluatedMove<typename NE::MoveType, CFtype>& mv) {
           mv.cost = this->DeltaCostFunctionComponents(st, mv.move, weights);
           mv.is_valid = true;
-          c_sampled++;
           tbb::spin_mutex::scoped_lock lock(mx_best_move);
+          explored++;
           if (AcceptMove(mv.move, mv.cost))
           {
             if (number_of_bests == 0)
@@ -325,7 +328,6 @@ namespace EasyLocal {
         });
         if (number_of_bests == 0)
           return EvaluatedMove<typename NE::MoveType, CFtype>::empty;
-        sampled = c_sampled;
         return best_move;
       }
     };

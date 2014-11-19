@@ -131,16 +131,17 @@ namespace EasyLocal {
       EvaluatedMove<Move, CFtype> em;
       try
       {
+        size_t explored;
         switch(choice)
         {
           case 1:
-            em = ne.SelectBest(st, [](const Move& mv, CostStructure<CFtype> cost) { return true; });
+            em = ne.SelectBest(st, explored, [](const Move& mv, CostStructure<CFtype> cost) { return true; });
             break;
           case 2:
-            em = ne.SelectFirst(st, [](const Move& mv, CostStructure<CFtype> cost) { return cost.total < 0; });
+            em = ne.SelectFirst(st, explored, [](const Move& mv, CostStructure<CFtype> cost) { return cost.total < 0; });
             break;
           case 3:
-            em = ne.RandomFirst(st, 1, [](const Move& mv, CostStructure<CFtype> cost) { return true; });
+            em = ne.RandomFirst(st, 1, explored, [](const Move& mv, CostStructure<CFtype> cost) { return true; });
             break;
           case 4:
             os << "Input move : ";
@@ -153,7 +154,7 @@ namespace EasyLocal {
             PrintNeighborhoodStatistics(st);
             break;
           case 7:
-            em = ne.RandomFirst(st, 1, [](const Move& mv, CostStructure<CFtype> cost) { return true; });
+            em = ne.RandomFirst(st, 1, explored, [](const Move& mv, CostStructure<CFtype> cost) { return true; });
             PrintMoveCosts(st, em);
             break;
           case 8:

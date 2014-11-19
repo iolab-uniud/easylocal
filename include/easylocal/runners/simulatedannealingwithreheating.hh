@@ -1,7 +1,7 @@
 #if !defined(_SIMULATED_ANNEALING_WITH_REHEATING_HH_)
 #define _SIMULATED_ANNEALING_WITH_REHEATING_HH_
 
-#include "easylocal/runners/simulatedannealingiterationbased.hh"
+#include "easylocal/runners/simulatedannealingevaluationbased.hh"
 
 namespace EasyLocal {
   
@@ -19,18 +19,14 @@ namespace EasyLocal {
      @ingroup Runners
      */
     template <class Input, class State, class Move, typename CFtype = int>
-    class SimulatedAnnealingWithReheating : public SimulatedAnnealingIterationBased<Input, State, Move, CFtype>
+    class SimulatedAnnealingWithReheating : public SimulatedAnnealingEvaluationBased<Input, State, Move, CFtype>
     {
     public:
       
       SimulatedAnnealingWithReheating(const Input& in,
-                                      StateManager<Input, State, CFtype>& e_sm,
-                                      NeighborhoodExplorer<Input, State, Move, CFtype>& e_ne,
+                                      StateManager<Input, State, CFtype>& sm,
+                                      NeighborhoodExplorer<Input, State, Move, CFtype>& ne,
                                       std::string name);
-      
-      void SetReheat(double rst)  { reheat_ratio = rst; }
-      void SetFirstReheat(double rst)  { first_reheat_ratio = rst; } // applied only to the first round
-      void SetFirstDescentIterationsShare(double r) { first_descent_iterations_share = r; } // the percentage of max_iterations granted to the first descent
       std::string StatusString();
     protected:
       bool StopCriterion();
@@ -41,10 +37,10 @@ namespace EasyLocal {
       void RegisterParameters();
       Parameter<double> first_reheat_ratio;
       Parameter<double> reheat_ratio;
-      Parameter<double> first_descent_iterations_share;
+      Parameter<double> first_descent_evaluations_share;
       Parameter<unsigned int> max_reheats;
       unsigned int reheats;
-      unsigned int first_descent_iterations, other_descent_iterations;
+      unsigned int first_descent_evaluations, other_descents_evaluations;
     };
     /*************************************************************************
      * Implementation
@@ -60,10 +56,10 @@ namespace EasyLocal {
      */
     template <class Input, class State, class Move, typename CFtype>
     SimulatedAnnealingWithReheating<Input, State, Move, CFtype>::SimulatedAnnealingWithReheating(const Input& in,
-                                                                                                 StateManager<Input, State, CFtype>& e_sm,
-                                                                                                 NeighborhoodExplorer<Input, State, Move, CFtype>& e_ne,
+                                                                                                 StateManager<Input, State, CFtype>& sm,
+                                                                                                 NeighborhoodExplorer<Input, State, Move, CFtype>& ne,
                                                                                                  std::string name)
-    : SimulatedAnnealingIterationBased<Input, State, Move, CFtype>(in, e_sm, e_ne, name)
+    : SimulatedAnnealingEvaluationBased<Input, State, Move, CFtype>(in, sm, ne, name)
     {}
     
     template <class Input, class State, class Move, typename CFtype>
@@ -72,14 +68,14 @@ namespace EasyLocal {
       AbstractSimulatedAnnealing<Input, State, Move, CFtype>::RegisterParameters();
       first_reheat_ratio("first_reheat_ratio", "First reheat ratio", this->parameters);
       reheat_ratio("reheat_ratio", "Reheat ratio", this->parameters);
-      first_descent_iterations_share("first_descent_iterations_share", "First descent iterations share", this->parameters);
+      first_descent_evaluations_share("first_descent_evaluations_share", "First descent cost function evaluations share", this->parameters);
       max_reheats("max_reheats", "Maximum number of reheats", this->parameters);
     }
     
     template <class Input, class State, class Move, typename CFtype>
     void SimulatedAnnealingWithReheating<Input, State, Move, CFtype>::InitializeRun() throw (ParameterNotSet, IncorrectParameterValue)
     {
-      SimulatedAnnealingIterationBased<Input, State, Move, CFtype>::InitializeRun();
+      SimulatedAnnealingEvaluationBased<Input, State, Move, CFtype>::InitializeRun();
       reheats = 0;
       
       if (max_reheats > 0)
@@ -95,12 +91,12 @@ namespace EasyLocal {
         
         if (first_reheat_ratio <= 0.0)
           throw IncorrectParameterValue(first_reheat_ratio, "should be greater than zero");
-        if (first_descent_iterations_share <= 0.0 || first_descent_iterations_share > 1.0)
-          throw IncorrectParameterValue(first_descent_iterations_share, "should be a value in the interval ]0, 1]");
+        if (first_descent_evaluations_share <= 0.0 || first_descent_evaluations_share > 1.0)
+          throw IncorrectParameterValue(first_descent_evaluations_share, "should be a value in the interval ]0, 1]");
             
-        this->max_neighbors_sampled = ceil(this->max_neighbors_sampled * first_descent_iterations_share);
-        first_descent_iterations = this->max_iterations * first_descent_iterations_share;
-        other_descent_iterations = (this->max_iterations - first_descent_iterations)/max_reheats;
+        this->max_neighbors_sampled = ceil(this->max_neighbors_sampled * first_descent_evaluations_share);
+        first_descent_evaluations = this->max_evaluations * first_descent_evaluations_share;
+        other_descents_evaluations = (this->max_evaluations - first_descent_evaluations) / max_reheats;
       }
       this->max_neighbors_accepted = ceil(this->max_neighbors_sampled * this->neighbors_accepted_ratio);      
     }
@@ -111,7 +107,7 @@ namespace EasyLocal {
     template <class Input, class State, class Move, typename CFtype>
     void SimulatedAnnealingWithReheating<Input, State, Move, CFtype>::CompleteMove()
     {
-      SimulatedAnnealingIterationBased<Input, State, Move, CFtype>::CompleteMove();
+      SimulatedAnnealingEvaluationBased<Input, State, Move, CFtype>::CompleteMove();
       if (ReheatCondition() && reheats <= max_reheats)
       {
         //     if (max_reheats != 0)
@@ -124,7 +120,7 @@ namespace EasyLocal {
         //     }
         this->expected_number_of_temperatures = -log(this->start_temperature/this->expected_min_temperature) / log(this->cooling_rate);
         
-        this->max_neighbors_sampled = other_descent_iterations / this->expected_number_of_temperatures;
+        this->max_neighbors_sampled = other_descents_evaluations / this->expected_number_of_temperatures;
         this->max_neighbors_accepted = this->max_neighbors_sampled;
         reheats++;
         
@@ -138,9 +134,7 @@ namespace EasyLocal {
     {
       if (max_reheats == 0)
         return false; //true;
-      unsigned int stop_iteration;
-      stop_iteration = first_descent_iterations + other_descent_iterations * reheats;
-      return this->iteration >= stop_iteration;
+      return this->evaluations >= first_descent_evaluations + other_descents_evaluations * reheats;
     }
     
     

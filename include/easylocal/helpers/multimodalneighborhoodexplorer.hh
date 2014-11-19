@@ -579,6 +579,7 @@ namespace EasyLocal {
         Impl::VTupleDispatcher<State, _Void_State_ConstMove, MoveTypeCRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::execute_at(i, st, make_move_funcs, cr_moves);
       }
       
+      /** @copydoc NeighborhoodExplorer::DeltaCostFunctionComponents */
       virtual CostStructure<CFtype> DeltaCostFunctionComponents(const State& st, const MoveTypes& moves, const std::vector<double>& weights = std::vector<double>(0)) const
       {
         const MoveTypeCRefs cr_moves = to_crefs(moves);
@@ -937,6 +938,7 @@ namespace EasyLocal {
           Impl::VTupleDispatcher<State, _Void_State_ConstMove, MoveTypeCRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::execute_at(i, st, make_move_funcs, cr_moves);
       }
       
+      /** @copydoc NeighborhoodExplorer::DeltaCostFunctionComponents */
       virtual CostStructure<CFtype> DeltaCostFunctionComponents(const State& st, const MoveTypes& moves, const std::vector<double>& weights = std::vector<double>(0)) const
       {
         const MoveTypeCRefs cr_moves = to_crefs(moves);

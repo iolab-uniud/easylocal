@@ -48,6 +48,7 @@ namespace EasyLocal {
         return true;
       }, this->weights);
       this->current_move = em;
+      this->evaluations += sampled;
     }
   }
 }
