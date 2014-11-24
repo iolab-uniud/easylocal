@@ -101,7 +101,7 @@ namespace EasyLocal
     };
     
     template <typename T>
-    class DomainIterator;
+    class VarArray;
     
     /**
      A modeling variable to be used inside expressions.
@@ -110,7 +110,7 @@ namespace EasyLocal
     template <typename T>
     class Var : public Exp<T>
     {
-      friend class DomainIterator<T>;
+      friend class VarArray<T>;
       
       typedef boost::icl::interval_set<T> Domain;
       typedef typename boost::icl::interval_set<T>::element_const_iterator DomainIterator;
@@ -148,9 +148,10 @@ namespace EasyLocal
         return p_av->name;
       }
       
-      void setStep(T step)
+      virtual void Print(std::ostream& os) const
       {
-        this->step = step;
+        Exp<T>::Print(os);
+        os << " " << domain;
       }
       
       void setDomain(T lb, T ub) throw (EmptyDomain)
@@ -197,70 +198,6 @@ namespace EasyLocal
     protected:
       Domain domain;
     };
-    
-    /**
-     Iterator for the variable domain.
-     */
-    /* template <typename T>
-    class DomainIterator : public std::iterator<std::input_iterator_tag, T>
-    {
-      friend class Var<T>;
-    public:
-      DomainIterator operator++(int) // postfix
-      {
-        DomainIterator pi = *this;
-        if (current_interval_it == var.domain.end())
-          throw std::logic_error("Attempting to go after last move");
-        if (value + step > current_interval_it->upper())
-        {
-          ++current_interval_it;
-          if (current_interval_it != var.domain.end())
-            value = current_interval_it->lower();
-        }
-        else
-          value += step;
-        return pi;
-      }
-      DomainIterator& operator++() // prefix
-      {
-        if (current_interval_it == var.domain.end())
-          throw std::logic_error("Attempting to go after last move");
-        if (value + step > current_interval_it->upper())
-        {
-          ++current_interval_it;
-          if (current_interval_it != var.domain.end())
-            value = current_interval_it->lower();
-        }
-        else
-          value += step;
-        return *this;
-      }
-      T operator*() const
-      {
-        return value;
-      }
-      T* operator->() const
-      {
-        return &value;
-      }
-      bool operator==(const DomainIterator& it2) const
-      {
-        return current_interval_it == it2.current_interval_it && &this->var == &it2.var && value == it2.value;
-      }
-      bool operator!=(const DomainIterator& it2)
-      {
-        return current_interval_it != it2.current_interval_it || &this->var != &it2.var || (current_interval_it != var.domain.end() && value != it2.value);
-      }
-    protected:
-      DomainIterator(const Var<T>& var, T step)
-      : var(var), step(step), value(var.domain.front().lower()), current_interval_it(var.domain.begin())
-      {}
-      const Var<T>& var;
-      T step, value;
-      typename std::list<typename Var<T>::Interval>::const_iterator current_interval_it;
-    };
-     
-     */
 
     
     /**
@@ -301,14 +238,21 @@ namespace EasyLocal
       /** Forwards access to the vector */
       using std::vector<Var<T>>::operator[];
       
-      VarArray() = default;            
+      VarArray() = default;
+      
+      virtual void Print(std::ostream& os) const
+      {
+        Exp<T>::Print(os);
+        for (size_t i = 0; i < this->size(); i++)
+          os << " " << (*this)[i].domain;
+      }
     };
     
     /** The function for setting a variable domain */
     template <typename T>
     void dom(Var<T>& v, T lb, T ub)
     {
-      v.dom(lb, ub);
+      v.setDomain(lb, ub);
     }
   }
 }
