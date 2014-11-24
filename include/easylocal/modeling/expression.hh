@@ -14,7 +14,7 @@
 #include "operators.hh"
 #include <boost/icl/interval_set.hpp>
 #include <iterator>
-#include "easylocal/utils/types.hh"
+#include "easylocal/utils/random.hh"
 
 namespace EasyLocal
 {
@@ -184,6 +184,25 @@ namespace EasyLocal
       bool inDomain(T val) const
       {
         return boost::icl::contains(domain, val);
+      }
+      
+      T min() const
+      {
+        return boost::icl::lower(domain);
+      }
+      
+      T max() const
+      {
+        return boost::icl::upper(domain);
+      }
+      
+      T rand() const
+      {
+        size_t r = Core::Random::Int(0, domain.size() - 1);
+        auto it = boost::icl::elements_begin(domain);
+        for (size_t i = 0; i < r; ++i, ++it)
+          ;
+        return *it;
       }
       
       DomainIterator begin() const
