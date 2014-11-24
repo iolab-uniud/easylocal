@@ -56,7 +56,7 @@ namespace EasyLocal {
                                                std::string name)
     : AbstractLocalSearch<Input, Output, State, CFtype>(i, sm, om, name)
     {
-      runner = NULL;
+      runner = nullptr;
     }
     
     /**
@@ -99,7 +99,7 @@ namespace EasyLocal {
     {
       bool timeout_expired = false;
       unsigned t;
-      if (runner == NULL)
+      if (runner == nullptr)
         throw std::logic_error("No runner set for solver " + this->name);
       //   chrono.Reset();
       //   chrono.Start();

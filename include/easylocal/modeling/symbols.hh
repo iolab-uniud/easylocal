@@ -1,16 +1,15 @@
-#if !defined(_SYMBOLS_HH_)
-#define _SYMBOLS_HH_
+#ifndef _CEXPRESSION_HH
+#define _CEXPRESSION_HH
 
 #include <sstream>
 #include <cmath>
 #include <memory>
 #include <algorithm>
+#include <set>
 
 namespace EasyLocal {
   
   namespace Modeling {
-    
-    using namespace EasyLocal::Core;
     
     /** Forward declaration */
     template <typename T>
@@ -26,14 +25,14 @@ namespace EasyLocal {
     
     /** Template compiled Exp<T>. */
     template <typename T>
-    class Sym : public Printable
+    class Sym : public EasyLocal::Core::Printable
     {
     public:
       
       /** Constructor. 
-      @param exp_store ExpressionStore into which to register the compiled expression
-      */
-      Sym(const ExpressionStore<T>& exp_store) : exp_store(exp_store)
+       @param exp_store ExpressionStore into which to register the compiled expression
+       */
+      Sym(ExpressionStore<T>& exp_store) : exp_store(exp_store)
       {
         depth = 0;
       }
@@ -59,38 +58,48 @@ namespace EasyLocal {
       unsigned int depth;
       
       /** Computes the value of the expression within ValueStore (from scratch).
-      @param st the ValueStore to get the children values from, and store the expression data to
-      @param level level to use for the evaluation
-      */
+       @param st the ValueStore to get the children values from, and store the expression data to
+       @param level level to use for the evaluation
+       */
       virtual void compute(ValueStore<T>& st, unsigned int level = 0) const = 0;
       
       /** Computes the value of the expression within ValueStore (delta from previous value).
-      @param st the ValueStore to get the children values from, and store the expression data to
-      @param level level to use for the evaluation
-      */
+       @param st the ValueStore to get the children values from, and store the expression data to
+       @param level level to use for the evaluation
+       */
       virtual void compute_diff(ValueStore<T>& st, unsigned int level = 0) const = 0;
 
       
-      /** @copydoc Printable::print(std::ostream&) */
-      virtual void print(std::ostream& os) const
+      /** @copydoc Printable::Print(std::ostream&) */
+      virtual void Print(std::ostream& os) const
       {
-        os << "Index: " << index << " " << " {";
+        os << "Index: " << index << " " << " p{";
+        bool first = true;
         for (auto p : parents)
         {
-          os << p << " ";
+          if (first)
+            first = false;
+          else
+            os << ", ";
+          os << p;
         }
-        os << "}, {";
+        os << "}, c{";
+        first = true;
         for (auto p : children)
         {
-          os << p << " ";
+          if (first)
+            first = false;
+          else
+            os << ", ";
+          os << p;
         }
         os << "} " << exp << " [depth: " << depth << "]";
       }
     };
     
     /** Generic terminal expression.
-    @remarks Currently only variable or constant
-    */
+     @remarks Currently only variable or constant
+     */
     template <typename T>
     class TermSym : public Sym<T>
     {
@@ -107,17 +116,17 @@ namespace EasyLocal {
       
       /** @copydoc Sym<T>::compute(ValueStore<T>&, unsigned int) */
       virtual void compute(ValueStore<T>& st, unsigned int level = 0) const
-        {}
+      { }
       
       /** @copydoc Sym<T>::compute_diff(ValueStore<T>&, unsigned int) */
       virtual void compute_diff(ValueStore<T>& st, unsigned int level = 0) const
-        {}
+      { }
       
-      /** @copydoc Printable::print(std::ostream&) */
-      virtual void print(std::ostream& os) const
+      /** @copydoc Printable::Print(std::ostream&) */
+      virtual void Print(std::ostream& os) const
       {
         os << "Var: ";
-        Sym<T>::print(os);
+        Sym<T>::Print(os);
       }
     };
     
@@ -130,17 +139,17 @@ namespace EasyLocal {
       
       /** @copydoc Sym<T>::compute(ValueStore<T>&, unsigned int) */
       virtual void compute(ValueStore<T>& st, unsigned int level = 0) const
-        {}
+      { }
       
       /** @copydoc Sym<T>::compute_diff(ValueStore<T>&, unsigned int) */
       virtual void compute_diff(ValueStore<T>& st, unsigned int level = 0) const
-        {}
+      { }
       
-      /** @copydoc Printable::print(std::ostream&) */
-      virtual void print(std::ostream& os) const
+      /** @copydoc Printable::Print(std::ostream&) */
+      virtual void Print(std::ostream& os) const
       {
         os << "VarArray: ";
-        Sym<T>::print(os);
+        Sym<T>::Print(os);
       }
       
       /** Size of the variable array (relies on contiguous allocation of array elements) */
@@ -163,16 +172,16 @@ namespace EasyLocal {
       
       /** @copydoc Sym<T>::compute_diff(ValueStore<T>&, unsigned int) */
       virtual void compute_diff(ValueStore<T>& st, unsigned int level = 0) const
-        {}
+      { }
       
       /** Value of the constant */
       T value;
       
-      /** @copydoc Printable::print(std::ostream&) */
-      virtual void print(std::ostream& os) const
+      /** @copydoc Printable::Print(std::ostream&) */
+      virtual void Print(std::ostream& os) const
       {
         os << "Const: ";
-        Sym<T>::print(os);
+        Sym<T>::Print(os);
       }
     };
 
@@ -208,11 +217,11 @@ namespace EasyLocal {
         st.assign(this->index, level, value);
       }
 
-      /** @copydoc Printable::print(std::ostream&) */
-      virtual void print(std::ostream& os) const
+      /** @copydoc Printable::Print(std::ostream&) */
+      virtual void Print(std::ostream& os) const
       {
         os << "Sum: ";
-        Sym<T>::print(os);
+        Sym<T>::Print(os);
       }
     };
 
@@ -245,7 +254,7 @@ namespace EasyLocal {
       {
         T current_contribution = st(this->index);
         std::set<size_t>& changed = st.changed_children(this->index, level);
-        if (std::any_of(changed.begin(), changed.end(), [&st, &level](const size_t& i)->bool { return st(i, level) == static_cast<T>(0); }))
+        if (std::any_of(changed.begin(), changed.end(), [&st,&level](const size_t& i)->bool { return st(i, level) == static_cast<T>(0); }))
         {
           st.assign(this->index, level, static_cast<T>(0));
           changed.clear();
@@ -268,11 +277,11 @@ namespace EasyLocal {
         st.assign(this->index, level, value);
       }
 
-      /** @copydoc Printable::print(std::ostream&) */
-      virtual void print(std::ostream& os) const
+      /** @copydoc Printable::Print(std::ostream&) */
+      virtual void Print(std::ostream& os) const
       {
         os << "Mul: ";
-        Sym<T>::print(os);
+        Sym<T>::Print(os);
       }
     };
 
@@ -300,11 +309,11 @@ namespace EasyLocal {
         st.changed_children(this->index, level).clear();
       }
 
-      /** @copydoc Printable::print(std::ostream&) */
-      virtual void print(std::ostream& os) const
+      /** @copydoc Printable::Print(std::ostream&) */
+      virtual void Print(std::ostream& os) const
       {
         os << "IfElse: ";
-        Sym<T>::print(os);
+        Sym<T>::Print(os);
       }
     };
     
@@ -330,11 +339,11 @@ namespace EasyLocal {
         changed.clear();
       }
       
-      /** @copydoc Printable::print(std::ostream&) */
-      virtual void print(std::ostream& os) const
+      /** @copydoc Printable::Print(std::ostream&) */
+      virtual void Print(std::ostream& os) const
       {
         os << "Abs: ";
-        Sym<T>::print(os);
+        Sym<T>::Print(os);
       }
     };
     
@@ -369,7 +378,7 @@ namespace EasyLocal {
       {
         std::set<size_t>& changed = st.changed_children(this->index, level);
         T current_min = st(this->index);
-        std::set<size_t>::const_iterator min_it = std::min_element(changed.begin(), changed.end(), [&st, &level](const size_t& e1, const size_t& e2)->bool { return st(e1, level) < st(e2, level); });
+        std::set<size_t>::const_iterator min_it = std::min_element(changed.begin(), changed.end(), [&st,&level](const size_t& e1, const size_t& e2)->bool { return st(e1, level) < st(e2, level); });
         T changed_min = st(*min_it, level);
         if (changed_min <= current_min)
           st.assign(this->index, level, changed_min);
@@ -378,11 +387,11 @@ namespace EasyLocal {
         changed.clear();
       }
 
-      /** @copydoc Printable::print(std::ostream&) */
-      virtual void print(std::ostream& os) const
+      /** @copydoc Printable::Print(std::ostream&) */
+      virtual void Print(std::ostream& os) const
       {
         os << "Min: ";
-        Sym<T>::print(os);
+        Sym<T>::Print(os);
       }
     };
 
@@ -416,7 +425,7 @@ namespace EasyLocal {
       {
         std::set<size_t>& changed = st.changed_children(this->index, level);
         T current_min = st(this->index);
-        std::set<size_t>::const_iterator min_it = std::min_element(changed.begin(), changed.end(), [&st, &level](const size_t& e1, const size_t& e2)->bool { return st(e1, level) < st(e2, level); });
+        std::set<size_t>::const_iterator min_it = std::min_element(changed.begin(), changed.end(), [&st,&level](const size_t& e1, const size_t& e2)->bool { return st(e1, level) < st(e2, level); });
         T changed_min = st(*min_it, level);
         if (changed_min <= current_min)
         {
@@ -428,11 +437,11 @@ namespace EasyLocal {
         changed.clear();
       }
       
-      /** @copydoc Printable::print(std::ostream&) */
-      virtual void print(std::ostream& os) const
+      /** @copydoc Printable::Print(std::ostream&) */
+      virtual void Print(std::ostream& os) const
       {
         os << "ArgMin: ";
-        Sym<T>::print(os);
+        Sym<T>::Print(os);
       }
     };
 
@@ -458,7 +467,7 @@ namespace EasyLocal {
       {
         std::set<size_t>& changed = st.changed_children(this->index, level);
         T current_max = st(this->index);
-        std::set<size_t>::const_iterator max_it = std::max_element(changed.begin(), changed.end(), [&st, &level](const size_t& e1, const size_t& e2)->bool { return st(e1, level) < st(e2, level); });
+        std::set<size_t>::const_iterator max_it = std::max_element(changed.begin(), changed.end(), [&st,&level](const size_t& e1, const size_t& e2)->bool { return st(e1, level) < st(e2, level); });
         T changed_max = st(*max_it, level);
         if (changed_max >= current_max)
           st.assign(this->index, level, changed_max);
@@ -467,11 +476,11 @@ namespace EasyLocal {
         changed.clear();
       }
 
-      /** @copydoc Printable::print(std::ostream&) */
-      virtual void print(std::ostream& os) const
+      /** @copydoc Printable::Print(std::ostream&) */
+      virtual void Print(std::ostream& os) const
       {
         os << "Max: ";
-        Sym<T>::print(os);
+        Sym<T>::Print(os);
       }
     };
 
@@ -505,7 +514,7 @@ namespace EasyLocal {
       {
         std::set<size_t>& changed = st.changed_children(this->index, level);
         T current_max = st(this->index);
-        std::set<size_t>::const_iterator max_it = std::max_element(changed.begin(), changed.end(), [&st, &level](const size_t& e1, const size_t& e2)->bool { return st(e1, level) < st(e2, level); });
+        std::set<size_t>::const_iterator max_it = std::max_element(changed.begin(), changed.end(), [&st,&level](const size_t& e1, const size_t& e2)->bool { return st(e1, level) < st(e2, level); });
         T changed_max = st(*max_it, level);
         if (changed_max >= current_max)
         {
@@ -517,11 +526,11 @@ namespace EasyLocal {
         changed.clear();
       }
       
-      /** @copydoc Printable::print(std::ostream&) */
-      virtual void print(std::ostream& os) const
+      /** @copydoc Printable::Print(std::ostream&) */
+      virtual void Print(std::ostream& os) const
       {
         os << "ArgMax: ";
-        Sym<T>::print(os);
+        Sym<T>::Print(os);
       }
     };
 
@@ -547,11 +556,11 @@ namespace EasyLocal {
         st.changed_children(this->index, level).clear();
       }
       
-      /** @copydoc Printable::print(std::ostream&) */
-      virtual void print(std::ostream& os) const
+      /** @copydoc Printable::Print(std::ostream&) */
+      virtual void Print(std::ostream& os) const
       {
         os << "Element: ";
-        Sym<T>::print(os);
+        Sym<T>::Print(os);
       }
     };
 
@@ -576,11 +585,11 @@ namespace EasyLocal {
     public:
       using RelSym<T>::RelSym;
       
-      /** @copydoc Printable::print(std::ostream&) */
-      virtual void print(std::ostream& os) const
+      /** @copydoc Printable::Print(std::ostream&) */
+      virtual void Print(std::ostream& os) const
       {
         os << "Eq: ";
-        Sym<T>::print(os);
+        Sym<T>::Print(os);
       }
       
       /** @copydoc Sym<T>::compute(ValueStore<T>&, unsigned int) */
@@ -605,11 +614,11 @@ namespace EasyLocal {
         st.assign(this->index, level, value);
       }
       
-      /** @copydoc Printable::print(std::ostream&) */
-      virtual void print(std::ostream& os) const
+      /** @copydoc Printable::Print(std::ostream&) */
+      virtual void Print(std::ostream& os) const
       {
         os << "Ne: ";
-        Sym<T>::print(os);
+        Sym<T>::Print(os);
       }
     };
 
@@ -627,11 +636,11 @@ namespace EasyLocal {
         st.assign(this->index, level, value);
       }
       
-      /** @copydoc Printable::print(std::ostream&) */
-      virtual void print(std::ostream& os) const
+      /** @copydoc Printable::Print(std::ostream&) */
+      virtual void Print(std::ostream& os) const
       {
         os << "Lt: ";
-        Sym<T>::print(os);
+        Sym<T>::Print(os);
       }
     };
 
@@ -649,11 +658,11 @@ namespace EasyLocal {
         st.assign(this->index, level, value);
       }
       
-      /** @copydoc Printable::print(std::ostream&) */
-      virtual void print(std::ostream& os) const
+      /** @copydoc Printable::Print(std::ostream&) */
+      virtual void Print(std::ostream& os) const
       {
         os << "Le: ";
-        Sym<T>::print(os);
+        Sym<T>::Print(os);
       }
     };
 
@@ -671,11 +680,11 @@ namespace EasyLocal {
         st.assign(this->index, level, value);
       }
       
-      /** @copydoc Printable::print(std::ostream&) */
-      virtual void print(std::ostream& os) const
+      /** @copydoc Printable::Print(std::ostream&) */
+      virtual void Print(std::ostream& os) const
       {
         os << "Ge: ";
-        Sym<T>::print(os);
+        Sym<T>::Print(os);
       }
     };
 
@@ -693,14 +702,42 @@ namespace EasyLocal {
         st.assign(this->index, level, value);
       }
       
-      /** @copydoc Printable::print(std::ostream&) */
-      virtual void print(std::ostream& os) const
+      /** @copydoc Printable::Print(std::ostream&) */
+      virtual void Print(std::ostream& os) const
       {
         os << "Gt: ";
-        Sym<T>::print(os);
+        Sym<T>::Print(os);
       }
-    };    
+    };
+    
+    /** Alldifferent relation. */
+    template <typename T>
+    class AllDiffSym : public RelSym<T>
+    {
+    public:
+      using RelSym<T>::RelSym;
+      
+      /** @copydoc Sym<T>::compute(ValueStore<T>&, unsigned int) */
+      virtual void compute(ValueStore<T>& st, unsigned int level = 0) const
+      {
+        for (auto it = this->children.begin(); it + 1 != this->children.end(); ++it)
+          for (auto jt = it + 1; jt != this->children.end(); jt++)
+            if (st(*it, level) == st(*jt, level))
+            {
+              st.assign(this->index, level, false);
+              return;
+            }
+        st.assign(this->index, level, true);
+      }
+      
+      /** @copydoc Printable::Print(std::ostream&) */
+      virtual void Print(std::ostream& os) const
+      {
+        os << "AllDiff: ";
+        Sym<T>::Print(os);
+      }
+    };
   }
 }
 
-#endif // _SYMBOLS_HH_
+#endif

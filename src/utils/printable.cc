@@ -1,10 +1,12 @@
 #include "easylocal/utils/printable.hh"
 
-using namespace EasyLocal;
-using namespace Core;
-
-std::ostream& operator<<(std::ostream& os, const Printable& p)
-{
-  p.Print(os);
-  return os;
+namespace EasyLocal {
+  namespace Core {
+    
+    std::ostream& operator<<(std::ostream& os, const Printable& p)
+    {
+      p.Print(os);
+      return os;
+    }
+  }
 }

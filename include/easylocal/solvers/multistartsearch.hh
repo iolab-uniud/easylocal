@@ -125,7 +125,7 @@ namespace EasyLocal {
     void MultiStartSearch<Input, Output, State, CFtype>::RemoveRunner(const RunnerType& r)
     {
       typename std::vector<RunnerType*>::const_iterator it;
-      for (it = p_runners.begin(); it != p_runners.end(); it++)
+      for (it = p_runners.begin(); it != p_runners.end(); ++it)
       {
         if (*it == &r)
           break;

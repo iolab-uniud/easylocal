@@ -1,13 +1,14 @@
-#if !defined(_AST_HH_)
-#define _AST_HH_
+#ifndef _AST_HH
+#define _AST_HH
 
+#include "easylocal/utils/printable.hh"
 #include <memory>
 #include <vector>
 #include <list>
 #include <map>
+#include "symbols.hh"
 
-#include "easylocal/utils/printable.hh"
-#include "easylocal/modeling/symbols.hh"
+// TODO: perform syntactic check for subexpressions (i.e., filter out incompatible subexpressions)
 
 namespace EasyLocal {
   
@@ -17,12 +18,12 @@ namespace EasyLocal {
     class ASTVarArray;
     
     template <typename T>
-    class ASTItem : public virtual Printable, public std::enable_shared_from_this<ASTItem<T>>
+    class ASTItem : public virtual Core::Printable, public std::enable_shared_from_this<ASTItem<T>>
     {
     public:
       
-      ASTItem() : _hash_set(false), _simplified(false), _normalized(false) {}
-      
+      ASTItem() : _hash_set(false), _simplified(false), _normalized(false) { }
+            
       virtual ~ASTItem() = default;
       
       size_t hash() const
@@ -40,7 +41,7 @@ namespace EasyLocal {
         this->_simplified = true;
         return this->shared_from_this();
       }
-      
+    
       const std::type_info& type() const
       {
         return typeid(*this);
@@ -81,16 +82,12 @@ namespace EasyLocal {
       {
         auto it = exp_store.compiled_symbols.find(this->hash());
         if (it != exp_store.compiled_symbols.end())
-        {
-          exp_store[it->second]->depth = std::max(exp_store.tree_depth, exp_store[it->second]->depth);
           return std::make_pair(it->second, nullptr);
-        }
         size_t this_index = exp_store.size();
         exp_store.compiled_symbols[this->hash()] = this_index;
         std::shared_ptr<CType<T>> compiled = std::make_shared<CType<T>>(exp_store);
         exp_store.push_back(compiled);
         exp_store[this_index]->index = this_index;
-        exp_store[this_index]->depth = std::max(exp_store.tree_depth, exp_store[this_index]->depth);
         return std::make_pair(this_index, compiled);
       }
       
@@ -122,7 +119,7 @@ namespace EasyLocal {
       ASTVar(const std::string& name) : name(name)
       {}
       
-      virtual void print(std::ostream& os) const
+      virtual void Print(std::ostream& os) const
       {
         os << name;
       }
@@ -150,9 +147,9 @@ namespace EasyLocal {
     public:
       
       ASTVarArray(const std::string& name, size_t size) : name(name), size(size)
-      {}
+      { }
       
-      virtual void print(std::ostream& os) const
+      virtual void Print(std::ostream& os) const
       {
         os << this->name << "{size="<< this->size << "}";
       }
@@ -161,7 +158,7 @@ namespace EasyLocal {
       
       const std::string name;
       
-      const size_t size;
+      const size_t size;      
       
       virtual size_t compile(ExpressionStore<T>& exp_store) const
       {
@@ -174,7 +171,7 @@ namespace EasyLocal {
         }
         return compiled_pair.first;
       }
-      
+
     protected:
       virtual size_t compute_hash() const
       {
@@ -188,11 +185,9 @@ namespace EasyLocal {
     public:
       
       ASTConst(const T& value) : value(value)
-      {
-        
-      }
+      {}
       
-      virtual void print(std::ostream& os) const
+      virtual void Print(std::ostream& os) const
       {
         os << "C(" << (T)(this->value) << ")";
       }
@@ -226,20 +221,20 @@ namespace EasyLocal {
     {
       return (o1->type().hash_code() < o2->type().hash_code()) || (o1->type().hash_code() == o2->type().hash_code() && o1->hash() < o2->hash());
     }
-    
+
     
     template <typename T>
     class ASTOp : public ASTItem<T>
     {
     public:
-      virtual void print(std::ostream& os) const
+      virtual void Print(std::ostream& os) const
       {
         os << "(";
         int count = 0;
         for (auto& op : this->operands)
         {
           count++;
-          op->print(os);
+          op->Print(os);
           if (count < operands.size())
             os << " " << this->sym << " ";
         }
@@ -264,7 +259,7 @@ namespace EasyLocal {
         this->operands.sort(&_normalize<T>);
       }
       
-      
+
       const std::list<std::shared_ptr<ASTItem<T>>>& ops() const
       {
         return operands;
@@ -308,7 +303,7 @@ namespace EasyLocal {
         std::swap(this->operands, p_other->operands);
       }
       
-      ASTOp(const std::string& sym) : sym(sym) {}
+      ASTOp(const std::string& sym) : sym(sym) { }
       
       static inline size_t rol(size_t x, size_t places = 1)
       {
@@ -319,7 +314,7 @@ namespace EasyLocal {
       {
         size_t h = std::hash<std::string>()(this->sym);
         
-        for (const std::shared_ptr<ASTItem<T>>& op : operands)
+        for(const std::shared_ptr<ASTItem<T>>& op : operands)
         {
           h = rol(h);
           h ^= op->hash();
@@ -327,17 +322,15 @@ namespace EasyLocal {
         
         return h;
       }
-      
+
       void compile_operands(size_t this_index, ExpressionStore<T>& exp_store) const
       {
-        exp_store.tree_depth++;
         for (auto& op : this->operands)
         {
           size_t child_index = op->compile(exp_store);
           exp_store[this_index]->children.push_back(child_index);
           exp_store[child_index]->parents.insert(this_index);
         }
-        exp_store.tree_depth--;
       }
       
       std::string sym;
@@ -350,7 +343,7 @@ namespace EasyLocal {
     class Sum : public ASTOp<T>
     {
     public:
-      
+
       Sum(const Exp<T>& e1, const Exp<T>& e2) : ASTOp<T>("+")
       {
         this->append_operand(e1);
@@ -366,7 +359,7 @@ namespace EasyLocal {
         for (auto it = this->operands.begin(); it != this->operands.end();)
         {
           // correct way to replace element in list
-          if (!((*it)->simplified()))
+          if(!((*it)->simplified()))
           {
             auto sim = (*it)->simplify();
             
@@ -392,9 +385,8 @@ namespace EasyLocal {
           }
           else
           {
-            it++;
+            ++it;
           }
-          
         }
         
         // add
@@ -438,7 +430,7 @@ namespace EasyLocal {
         this->append_operand(e1);
         this->append_operand(e2);
       }
-      
+  
       virtual std::shared_ptr<ASTItem<T>> simplify()
       {
         // lift product of products
@@ -448,7 +440,7 @@ namespace EasyLocal {
         for (auto it = this->operands.begin(); it != this->operands.end();)
         {
           // correct way to replace element in list
-          if (!((*it)->simplified()))
+          if(!((*it)->simplified()))
           {
             auto sim = (*it)->simplify();
             
@@ -474,7 +466,7 @@ namespace EasyLocal {
           }
           else
           {
-            it++;
+            ++it;
           }
           if (prod_of_const == 0)
           {
@@ -482,11 +474,11 @@ namespace EasyLocal {
             break;
           }
         }
-        
+
         // zero (elements) product
         if (this->operands.size() == 0)
           return std::make_shared<ASTConst<T>>(prod_of_const);
-        
+
         // add new constant
         if (prod_of_const != 1)
           this->add_constant(std::make_shared<ASTConst<T>>(prod_of_const));
@@ -514,7 +506,6 @@ namespace EasyLocal {
       virtual ~Mul() = default;
     };
     
-    
     template <typename T>
     class Eq : public ASTOp<T>
     {
@@ -530,8 +521,8 @@ namespace EasyLocal {
         bool all_equal_subexp = true;
         bool first_set = false;
         size_t hash_of_first;
-        
-        for (auto it = this->operands.begin(); it != this->operands.end(); it++)
+
+        for (auto it = this->operands.begin(); it != this->operands.end(); ++it)
         {
           // correct way to replace element in list
           if (!((*it)->simplified()))
@@ -580,7 +571,266 @@ namespace EasyLocal {
       virtual ~Eq() = default;
     };
     
+    template <typename T>
+    class Ne : public ASTOp<T>
+    {
+    public:
+      Ne(const Exp<T>& e1, const Exp<T>& e2) : ASTOp<T>("!=")
+      {
+        this->append_operand(e1);
+        this->append_operand(e2);
+      }
+      
+      virtual std::shared_ptr<ASTItem<T>> simplify()
+      {
+        bool all_equal_subexp = true;
+        bool first_set = false;
+        size_t hash_of_first;
+        
+        for (auto it = this->operands.begin(); it != this->operands.end(); ++it)
+        {
+          // correct way to replace element in list
+          if (!((*it)->simplified()))
+          {
+            auto sim = (*it)->simplify();
+            if (sim != *it)
+            {
+              it = this->operands.erase(it);
+              it = this->operands.insert(it, sim);
+            }
+          }
+          
+          // for checking syntactic equality we need to normalize
+          (*it)->normalize(true);
+          if (!first_set)
+          {
+            hash_of_first = (*it)->hash();
+            first_set = true;
+          }
+          else
+          {
+            if (hash_of_first != (*it)->hash())
+              all_equal_subexp = false;
+          }
+        }
+        if (all_equal_subexp)
+          return std::make_shared<ASTConst<T>>(0);
+        
+        this->_simplified = true;
+        this->normalize(false); // all sub elements have been already normalized, so we're saving computation
+        
+        return this->shared_from_this();
+      }
+      
+      virtual size_t compile(ExpressionStore<T>& exp_store) const
+      {
+        auto compiled_pair = this->template get_or_create<NeSym>(exp_store);
+        if (compiled_pair.second != nullptr)
+        {
+          auto compiled = std::dynamic_pointer_cast<NeSym<T>>(compiled_pair.second);
+          this->compile_operands(compiled_pair.first, exp_store);
+        }
+        return compiled_pair.first;
+      }
+      
+      virtual ~Ne() = default;
+    };
+    
+    template <typename T>
+    class Le : public ASTOp<T>
+    {
+    public:
+      Le(const Exp<T>& e1, const Exp<T>& e2) : ASTOp<T>("<=")
+      {
+        this->append_operand(e1);
+        this->append_operand(e2);
+      }
+      
+      virtual std::shared_ptr<ASTItem<T>> simplify()
+      {
+        bool all_equal_subexp = true;
+        bool first_set = false;
+        size_t hash_of_first;
+        
+        for (auto it = this->operands.begin(); it != this->operands.end(); ++it)
+        {
+          // correct way to replace element in list
+          if (!((*it)->simplified()))
+          {
+            auto sim = (*it)->simplify();
+            if (sim != *it)
+            {
+              it = this->operands.erase(it);
+              it = this->operands.insert(it, sim);
+            }
+          }
+          
+          // for checking syntactic equality we need to normalize
+          (*it)->normalize(true);
+          if (!first_set)
+          {
+            hash_of_first = (*it)->hash();
+            first_set = true;
+          }
+          else
+          {
+            if (hash_of_first != (*it)->hash())
+              all_equal_subexp = false;
+          }
+        }
+        if (all_equal_subexp)
+          return std::make_shared<ASTConst<T>>(1);
+        
+        this->_simplified = true;
+        this->normalize(false); // all sub elements have been already normalized, so we're saving computation
+        
+        return this->shared_from_this();
+      }
+      
+      virtual size_t compile(ExpressionStore<T>& exp_store) const
+      {
+        auto compiled_pair = this->template get_or_create<LeSym>(exp_store);
+        if (compiled_pair.second != nullptr)
+        {
+          auto compiled = std::dynamic_pointer_cast<LeSym<T>>(compiled_pair.second);
+          this->compile_operands(compiled_pair.first, exp_store);
+        }
+        return compiled_pair.first;
+      }
+      
+      virtual ~Le() = default;
+    };
+    
+    template <typename T>
+    class Lt : public ASTOp<T>
+    {
+    public:
+      Lt(const Exp<T>& e1, const Exp<T>& e2) : ASTOp<T>("<")
+      {
+        this->append_operand(e1);
+        this->append_operand(e2);
+      }
+      
+      virtual std::shared_ptr<ASTItem<T>> simplify()
+      {
+        bool all_equal_subexp = true;
+        bool first_set = false;
+        size_t hash_of_first;
+        
+        for (auto it = this->operands.begin(); it != this->operands.end(); ++it)
+        {
+          // correct way to replace element in list
+          if (!((*it)->simplified()))
+          {
+            auto sim = (*it)->simplify();
+            if (sim != *it)
+            {
+              it = this->operands.erase(it);
+              it = this->operands.insert(it, sim);
+            }
+          }
+          
+          // for checking syntactic equality we need to normalize
+          (*it)->normalize(true);
+          if (!first_set)
+          {
+            hash_of_first = (*it)->hash();
+            first_set = true;
+          }
+          else
+          {
+            if (hash_of_first != (*it)->hash())
+              all_equal_subexp = false;
+          }
+        }
+        if (all_equal_subexp)
+          return std::make_shared<ASTConst<T>>(0);
+        
+        this->_simplified = true;
+        this->normalize(false); // all sub elements have been already normalized, so we're saving computation
+        
+        return this->shared_from_this();
+      }
+      
+      virtual size_t compile(ExpressionStore<T>& exp_store) const
+      {
+        auto compiled_pair = this->template get_or_create<LtSym>(exp_store);
+        if (compiled_pair.second != nullptr)
+        {
+          auto compiled = std::dynamic_pointer_cast<LtSym<T>>(compiled_pair.second);
+          this->compile_operands(compiled_pair.first, exp_store);
+        }
+        return compiled_pair.first;
+      }
+      
+      virtual ~Lt() = default;
+    };
+    
+    template <typename T>
+    class AllDiff : public ASTOp<T>
+    {
+    public:
+      AllDiff(const std::vector<Exp<T>>& v) : ASTOp<T>("alldifferent")
+      {
+        for (const Exp<T>& e : v)
+          this->append_operand(v);
+      }
+      
+      virtual std::shared_ptr<ASTItem<T>> simplify()
+      {
+        bool all_equal_subexp = true;
+        bool first_set = false;
+        size_t hash_of_first;
+        
+        for (auto it = this->operands.begin(); it != this->operands.end(); ++it)
+        {
+          // correct way to replace element in list
+          if (!((*it)->simplified()))
+          {
+            auto sim = (*it)->simplify();
+            if (sim != *it)
+            {
+              it = this->operands.erase(it);
+              it = this->operands.insert(it, sim);
+            }
+          }
+          
+          // for checking syntactic equality we need to normalize
+          (*it)->normalize(true);
+          if (!first_set)
+          {
+            hash_of_first = (*it)->hash();
+            first_set = true;
+          }
+          else
+          {
+            if (hash_of_first != (*it)->hash())
+              all_equal_subexp = false;
+          }
+        }
+        if (all_equal_subexp)
+          return std::make_shared<ASTConst<T>>(0);
+        
+        this->_simplified = true;
+        this->normalize(false); // all sub elements have been already normalized, so we're saving computation
+        
+        return this->shared_from_this();
+      }
+      
+      virtual size_t compile(ExpressionStore<T>& exp_store) const
+      {
+        auto compiled_pair = this->template get_or_create<AllDiffSym>(exp_store);
+        if (compiled_pair.second != nullptr)
+        {
+          auto compiled = std::dynamic_pointer_cast<AllDiffSym<T>>(compiled_pair.second);
+          this->compile_operands(compiled_pair.first, exp_store);
+        }
+        return compiled_pair.first;
+      }
+      
+      virtual ~AllDiff() = default;
+    };
   }
 }
 
-#endif // _AST_HH_
+#endif // _AST_HH

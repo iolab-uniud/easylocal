@@ -1,12 +1,12 @@
-#if !defined(_EXPRESSIONSTORE_HH_)
-#define _EXPRESSIONSTORE_HH_
+#ifndef EXPRESSIONSTORE_HH
+#define EXPRESSIONSTORE_HH
 
+#include "symbols.hh"
 #include <queue>
 
-#include "easylocal/modeling/symbols.hh"
 
 namespace EasyLocal {
-    
+  
   namespace Modeling {
     
     /** Forward declaration */
@@ -22,42 +22,45 @@ namespace EasyLocal {
     
     /** ExpressionStore, a structure to handle bottom-up evaluation of compiled Exps. */
     template <typename T>
-    class ExpressionStore : public std::vector<std::shared_ptr<Sym<T>>>, public Printable
+    class ExpressionStore : public std::vector<std::shared_ptr<Sym<T>>>, public Core::Printable
     {
       friend class ValueStore<T>;
     public:
-      
       /** Registers a subscriber for the resize event.
-      @param n the ResizeNotify object to notify
-      */
-      void subscribe(ResizeNotify* n)
+       @param n the ResizeNotify object to notify
+       */
+      void subscribe(ResizeNotify* n) const
       {
         subscribers.push_back(n);
       }
       
       /** Compile an expression into a compiled expression.
-      @param e the original expression
-      @return a pointer to the root of the compiled expression
-      */
+       @param e the original expression
+       @return a shared pointer to the root of the compiled expression
+       */
       std::shared_ptr<Sym<T>> compile(Exp<T>& e)
       {
         e.normalize();
-        tree_depth = 0;
         size_t previous_size = this->size();
         size_t root_index = e.compile(*this);
         if (this->size() != previous_size)
+        {
           for (ResizeNotify* n : subscribers)
             n->resized(this->size());
+          depth_needs_update = true;
+        }
         processed_symbols.resize(this->size());
         return (*this)[root_index];
       }
       
       /** Evaluates all the registered expressions within a given ValueStore at a given level.
-      @param st the ValueStore to use as data source and storage
-      @param level level on which to evaluate
-      */
+       @param st the ValueStore to use as data source and storage
+       @param level level on which to evaluate
+       */
       void evaluate(ValueStore<T>& st, unsigned int level = 0) const
       {
+        if (depth_needs_update)
+          compute_depth();
         const size_t n = this->size();
         std::set<size_t> all_terminal_symbols;
         for (size_t i = 0; i < n; i++)
@@ -71,12 +74,14 @@ namespace EasyLocal {
       }
       
       /** Evaluates all the registered expressions within a given ValueStore at a given level and a given set of variables that have been changed (delta).
-      @param st the ValueStore to use as data source and storage
-      @param variables a set of variables that have been changed
-      @param level level on which to evaluate
-      */
+       @param st the ValueStore to use as data source and storage
+       @param variables a set of variables that have been changed
+       @param level level on which to evaluate
+       */
       void evaluate_diff(ValueStore<T>& st, const std::set<size_t>& variables, unsigned int level) const
       {
+        if (depth_needs_update)
+          compute_depth();
         std::priority_queue<std::pair<int, size_t>> queue;
         std::fill(processed_symbols.begin(), processed_symbols.end(), false);
         for (const size_t& var : variables)
@@ -104,21 +109,23 @@ namespace EasyLocal {
           // parents are pushed to the queue only if the current expression value has changed and they have not been already queued
           if (st.changed(current_index, level))
             for (const size_t& i : current_sym->parents)
-          {
-            const std::shared_ptr<Sym<T>>& parent_sym = (*this)[i];
-            if (!processed_symbols[i])
             {
-              queue.push(std::make_pair(parent_sym->depth, i));
-              processed_symbols[i] = true;
+              const std::shared_ptr<Sym<T>>& parent_sym = (*this)[i];
+              if (!processed_symbols[i])
+              {
+                queue.push(std::make_pair(parent_sym->depth, i));
+                processed_symbols[i] = true;
+              }
+              st.changed_children(i, level).insert(current_index);
             }
-            st.changed_children(i, level).insert(current_index);
-          }
         }
       }
       
-      /** @copydoc Printable::print(std::ostream&) */
-      virtual void print(std::ostream& os) const
+      /** @copydoc Printable::Print(std::ostream&) */
+      virtual void Print(std::ostream& os) const
       {
+        if (depth_needs_update)
+          compute_depth();
         for (size_t i = 0; i < this->size(); i++)
         {
           const Sym<T>& sym = *this->operator[](i);
@@ -126,16 +133,26 @@ namespace EasyLocal {
         }
       }
       
+      void compute_depth() const
+      {
+        if (depth_needs_update)
+          for (size_t i = 0; i < this->size(); i++)
+            update_depth(i, 0);
+        depth_needs_update = false;
+      }
+      
     protected:
       
       /** Evaluates all the registered expressions within a given ValueStore at a given level and a given set of expressions whose value has changed (delta).
-      @param st the ValueStore to use as data source and storage
-      @param expressions a set of expressions that have been changed
-      @param level level on which to evaluate
-      @remarks Internally used by the public evaluate method
-      */
+       @param st the ValueStore to use as data source and storage
+       @param expressions a set of expressions that have been changed
+       @param level level on which to evaluate
+       @remarks Internally used by the public evaluate method
+       */
       void evaluate(ValueStore<T>& st, const std::set<size_t>& expressions, unsigned int level) const
       {
+        if (depth_needs_update)
+          compute_depth();
         std::queue<size_t> queue;
         for (const size_t& i : expressions)
         {
@@ -157,15 +174,22 @@ namespace EasyLocal {
         st.evaluated = true;
       }
       
+      /** Recompute the (maximum) depth of the different symbols rooted at root. **/
+      void update_depth(size_t root, unsigned int current_depth) const
+      {
+        auto& current_sym = (*this)[root];
+        current_sym->depth = std::max(current_sym->depth, current_depth);
+        for (auto& c : current_sym->children)
+          update_depth(c, current_depth + 1);
+      }
+      
       /** Resize events subscribers */
-      std::list<ResizeNotify*> subscribers;
+      mutable std::list<ResizeNotify*> subscribers;
       
     public:
-      
-      /** Maximum depth of the tree */
-      mutable unsigned int tree_depth;
-
       mutable std::vector<bool> processed_symbols;
+      
+      mutable bool depth_needs_update;
 
       std::map<size_t, size_t> compiled_symbols;
     };
@@ -174,4 +198,4 @@ namespace EasyLocal {
 }
 
 
-#endif // _EXPRESSIONSTORE_HH_
+#endif

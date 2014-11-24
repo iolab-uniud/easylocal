@@ -364,7 +364,7 @@ namespace EasyLocal {
       }
       
       // Compute the standard deviation
-      for (it = frequency.begin(); it != frequency.end(); it++)
+      for (it = frequency.begin(); it != frequency.end(); ++it)
       {
         dev += pow((double)(*it).second, 2);
       }
@@ -374,7 +374,7 @@ namespace EasyLocal {
       double error = 0;
       
       os << "Outlier moves [move frequency]:" << std::endl;
-      for (it = frequency.begin(); it != frequency.end(); it++)
+      for (it = frequency.begin(); it != frequency.end(); ++it)
       {
         if (fabs((*it).second - double(rounds)) > 3*dev || (*it).second == 0)
         {

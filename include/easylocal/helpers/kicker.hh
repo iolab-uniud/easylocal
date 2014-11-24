@@ -434,7 +434,7 @@ namespace EasyLocal {
        */
       virtual std::pair<Kick<State, Move, CFtype>, CostStructure<CFtype>> SelectFirst(size_t length, const State &st) const throw (EmptyNeighborhood)
       {
-        for (FullKickerIterator<Input, State, Move, CFtype> it = begin(length, st); it != end(length, st); it++)
+        for (FullKickerIterator<Input, State, Move, CFtype> it = begin(length, st); it != end(length, st); ++it)
         {
           CostStructure<CFtype> cost(0, 0, 0, std::vector<CFtype>(CostComponent<Input, State, CFtype>::CostComponents(), 0));
           for (int i = 0; i < it->size(); i++)
@@ -464,7 +464,7 @@ namespace EasyLocal {
         Kick<State, Move, CFtype> best_kick;
         CostStructure<CFtype> best_cost;
         unsigned int number_of_bests = 0;
-        for (FullKickerIterator<Input, State, Move, CFtype> it = begin(length, st); it != end(length, st); it++)
+        for (FullKickerIterator<Input, State, Move, CFtype> it = begin(length, st); it != end(length, st); ++it)
         {
           CostStructure<CFtype> cost(0, 0, 0, std::vector<CFtype>(CostComponent<Input, State, CFtype>::CostComponents(), 0));
           for (int i = 0; i < it->size(); i++)

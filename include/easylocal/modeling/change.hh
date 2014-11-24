@@ -1,16 +1,13 @@
-#if !defined(_CHANGE_HH_)
-#define _CHANGE_HH_
+#ifndef Change_HH
+#define Change_HH
 
-
-#include "easylocal/modeling/expression.hh"
+#include "expression.hh"
 
 namespace EasyLocal {
-    
   namespace Modeling {
-        
-    // TODO: find a more meaningful name    
+ // TODO: find a more meaningful name    
     template <typename T>
-    class Change : public Printable
+    class Change : public Core::Printable
     {
     public:
     };
@@ -21,14 +18,14 @@ namespace EasyLocal {
     {
     public:
       /** Constructor.
-      @param var the variable to modify
-      @param val the value to assign to the variable
-      */
+       @param var the variable to modify
+       @param val the value to assign to the variable
+       */
       BasicChange(const Var<T>& var, const T& val) : var(var), val(val)
-        {}
+      {}
       
       /** @copydoc Printable::print(std::ostream&) */
-      virtual void print(std::ostream& os) const
+      virtual void Print(std::ostream& os) const
       {
         os << "Change: " << var << "<<=" << val;
       }
@@ -53,18 +50,18 @@ namespace EasyLocal {
     {
     public:
       /** Constructor.
-      @param mv BasicChange on which this Composite Change is initialized */
+       @param mv BasicChange on which this Composite Change is initialized */
       CompositeChange(const BasicChange<T>& mv)
       {
         this->push_back(mv);
       }
       
-      /** @copydoc Printable::print(std::ostream&) */
+      /** @copydoc Printable::Print(std::ostream&) */
       virtual void print(std::ostream& os) const
       {
         for (const BasicChange<T>& mv : (*this))
         {
-          mv.print(os);
+          mv.Print(os);
           os << " ";
         }
       }
@@ -90,4 +87,4 @@ namespace EasyLocal {
   }
 }
 
-#endif // _CHANGE_HH_
+#endif

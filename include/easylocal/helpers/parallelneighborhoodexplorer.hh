@@ -53,7 +53,7 @@ namespace EasyLocal {
       {
         return &computed_move;
       }
-      bool operator==(FullNeighborhoodIterator<Input, State, Move, CFtype> it2) const
+      bool operator==(const FullNeighborhoodIterator<Input, State, Move, CFtype>& it2) const
       {
         if (end && it2.end)
           return true;
@@ -129,7 +129,7 @@ namespace EasyLocal {
       {
         return &computed_move;
       }
-      bool operator==(SampleNeighborhoodIterator<Input, State, Move, CFtype> it2) const
+      bool operator==(const SampleNeighborhoodIterator<Input, State, Move, CFtype>& it2) const
       {
         if (end && it2.end)
           return true;

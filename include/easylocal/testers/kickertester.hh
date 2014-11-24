@@ -161,7 +161,7 @@ namespace EasyLocal {
     template <class Input, class Output, class State, class Move, typename CFtype>
     void KickerTester<Input, Output, State, Move, CFtype>::PrintKicks(size_t length, const State& st) const
     {
-      for (auto it = kicker.begin(length, st); it != kicker.end(length, st); it++)
+      for (auto it = kicker.begin(length, st); it != kicker.end(length, st); ++it)
         os << *it << std::endl;
     }
     

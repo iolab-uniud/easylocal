@@ -1,10 +1,9 @@
-#if !defined(_OPERATORS_HH_)
-#define _OPERATORS_HH_
+#ifndef _OPERATORS_HH
+#define _OPERATORS_HH
 
-#include "easylocal/modeling/ast.hh"
+#include "ast.hh"
 
 namespace EasyLocal {
-    
   namespace Modeling {
     
     template <typename T>
@@ -19,7 +18,7 @@ namespace EasyLocal {
     }
     
     template <typename T>
-    static Exp<T>& operator+=(Exp<T>& e1, const T& v)
+    static Exp<T>& operator+=(Exp<T>& e1, T v)
     {
       e1 = Exp<T>(std::make_shared<Sum<T>>(Exp<T>(v), e1));
       e1.simplify();
@@ -35,7 +34,7 @@ namespace EasyLocal {
     }
     
     template <typename T>
-    static Exp<T> operator+(const T& v, const Exp<T>& e)
+    static Exp<T> operator+(T v, const Exp<T>& e)
     {
       if (v != 0)
         return Exp<T>(v) + e;
@@ -44,7 +43,7 @@ namespace EasyLocal {
     }
     
     template <typename T>
-    static Exp<T> operator+(const Exp<T>& e, const T& v)
+    static Exp<T> operator+(const Exp<T>& e, T v)
     {
       if (v != 0)
         return Exp<T>(v) + e;
@@ -61,7 +60,7 @@ namespace EasyLocal {
     }
     
     template <typename T>
-    static Exp<T>& operator*=(Exp<T>& e1, const T& v)
+    static Exp<T>& operator*=(Exp<T>& e1, T v)
     {
       if (v == 0)
         e1 = Exp<T>(0);
@@ -80,7 +79,7 @@ namespace EasyLocal {
     }
     
     template <typename T>
-    static Exp<T> operator*(const T& v, const Exp<T>& e)
+    static Exp<T> operator*(T v, const Exp<T>& e)
     {
       if (v == 0)
         return Exp<T>(0);
@@ -91,7 +90,7 @@ namespace EasyLocal {
     }
     
     template <typename T>
-    static Exp<T> operator*(const Exp<T>& e, const T& v)
+    static Exp<T> operator*(const Exp<T>& e, T v)
     {
       if (v == 0)
         return Exp<T>(0);
@@ -102,7 +101,7 @@ namespace EasyLocal {
     }
     
     template <typename T>
-    static Exp<T> operator==(Exp<T>& e1, Exp<T>& e2)
+    static Exp<T> operator==(const Exp<T>& e1, const Exp<T>& e2)
     {
       Exp<T> r(std::make_shared<Eq<T>>(e1, e2));
       r.simplify();
@@ -110,17 +109,123 @@ namespace EasyLocal {
     }
     
     template <typename T>
-    static Exp<T> operator==(Exp<T>& e, const T& v)
+    static Exp<T> operator==(const Exp<T>& e, T v)
     {
       return Exp<T>(v) == e;
     }
     
     template <typename T>
-    static Exp<T> operator==(const T& v, Exp<T>& e)
+    static Exp<T> operator==(T v, const Exp<T>& e)
     {
       return Exp<T>(v) == e;
     }
+    
+    template <typename T>
+    static Exp<T> operator!=(const Exp<T>& e1, const Exp<T>& e2)
+    {
+      Exp<T> r(std::make_shared<Ne<T>>(e1, e2));
+      r.simplify();
+      return r;
+    }
+    
+    template <typename T>
+    static Exp<T> operator!=(const Exp<T>& e, T v)
+    {
+      return Exp<T>(v) != e;
+    }
+    
+    template <typename T>
+    static Exp<T> operator!=(T v, const Exp<T>& e)
+    {
+      return Exp<T>(v) != e;
+    }
+    
+    template <typename T>
+    static Exp<T> operator<=(const Exp<T>& e1, const Exp<T>& e2)
+    {
+      Exp<T> r(std::make_shared<Le<T>>(e1, e2));
+      r.simplify();
+      return r;
+    }
+    
+    template <typename T>
+    static Exp<T> operator<=(const Exp<T>& e, T v)
+    {
+      return e <= Exp<T>(v);
+    }
+    
+    template <typename T>
+    static Exp<T> operator<=(T v, const Exp<T>& e)
+    {
+      return Exp<T>(v) <= e;
+    }
+    
+    template <typename T>
+    static Exp<T> operator<(const Exp<T>& e1, const Exp<T>& e2)
+    {
+      Exp<T> r(std::make_shared<Lt<T>>(e1, e2));
+      r.simplify();
+      return r;
+    }
+    
+    template <typename T>
+    static Exp<T> operator<(const Exp<T>& e, T v)
+    {
+      return e < Exp<T>(v);
+    }
+    
+    template <typename T>
+    static Exp<T> operator<(T v, const Exp<T>& e)
+    {
+      return Exp<T>(v) < e;
+    }
+    
+    template <typename T>
+    static Exp<T> operator>=(const Exp<T>& e1, const Exp<T>& e2)
+    {
+      return e2 <= e1;
+    }
+    
+    template <typename T>
+    static Exp<T> operator>=(const Exp<T>& e, T v)
+    {
+      return Exp<T>(v) <= e;
+    }
+    
+    template <typename T>
+    static Exp<T> operator>=(T v, const Exp<T>& e)
+    {
+      return e <= Exp<T>(v);
+    }
+    
+    template <typename T>
+    static Exp<T> operator>(const Exp<T>& e1, const Exp<T>& e2)
+    {
+      return e2 < e1;
+    }
+    
+    template <typename T>
+    static Exp<T> operator>(const Exp<T>& e, T v)
+    {
+      return Exp<T>(v) < e;
+    }
+    
+    template <typename T>
+    static Exp<T> operator>(T v, const Exp<T>& e)
+    {
+      return e < Exp<T>(v);
+    }
+         
+    template <typename T>
+    static Exp<T>& alldifferent(const std::vector<Exp<T>>& v)
+    {
+      Exp<T> e = Exp<T>(std::make_shared<AllDiff<T>>(v));
+      e.simplify();
+      return e;
+    }
+    
+    
   }
 }
 
-#endif // _OPERATORS_HH_
+#endif
