@@ -328,7 +328,7 @@ namespace EasyLocal {
       virtual void compute(ValueStore<T>& st, unsigned int level = 0) const
       {
         Sym<T>* exp = this->exp_store[this->children[0]].get();
-        st.assign(this->index, level, fabs(st(exp->index, level)));
+        st.assign(this->index, level, st(exp->index, level) >= 0 ? st(exp->index, level) : -st(exp->index, level));
       }
       
       /** @copydoc Sym<T>::compute_diff(ValueStore<T>&, unsigned int) */
@@ -729,6 +729,7 @@ namespace EasyLocal {
             }
         st.assign(this->index, level, true);
       }
+    
       
       /** @copydoc Printable::Print(std::ostream&) */
       virtual void Print(std::ostream& os) const
@@ -736,7 +737,7 @@ namespace EasyLocal {
         os << "AllDiff: ";
         Sym<T>::Print(os);
       }
-    };
+    };        
   }
 }
 

@@ -830,6 +830,58 @@ namespace EasyLocal {
       
       virtual ~AllDiff() = default;
     };
+    
+    template <typename T>
+    class Abs : public ASTOp<T>
+    {
+    public:
+      Abs(const Exp<T>& e) : ASTOp<T>("abs")
+      {
+        this->append_operand(e);
+      }
+      
+      virtual std::shared_ptr<ASTItem<T>> simplify()
+      {
+        auto op = *this->operands.begin();
+        
+        if (!(op->simplified()))
+        {
+          auto sim = op->simplify();
+          if (sim->type() == typeid(ASTConst<T>))
+          {
+            auto c = dynamic_cast<ASTConst<T>*>(sim.get());
+            if (c->value >= 0)
+              return sim;
+            else
+              return std::make_shared<ASTConst<T>>(-c->value);
+          }
+          if (sim != op)
+          {
+            this->operands.clear();
+            this->append_operand(sim);
+            op = sim;
+          }
+        }
+        
+        this->_simplified = true;
+        this->normalize(false);
+        
+        return this->shared_from_this();
+      }
+      
+      virtual size_t compile(ExpressionStore<T>& exp_store) const
+      {
+        auto compiled_pair = this->template get_or_create<AbsSym>(exp_store);
+        if (compiled_pair.second != nullptr)
+        {
+          auto compiled = std::dynamic_pointer_cast<AbsSym<T>>(compiled_pair.second);
+          this->compile_operands(compiled_pair.first, exp_store);
+        }
+        return compiled_pair.first;
+      }
+      
+      virtual ~Abs() = default;
+    };
   }
 }
 

@@ -19,9 +19,7 @@
 namespace EasyLocal
 {
   namespace Modeling
-  {
-    
-    
+  {        
     /** An exception in case of incorrect variable domain */
     class EmptyDomain : public std::logic_error
     {
@@ -196,8 +194,19 @@ namespace EasyLocal
         return boost::icl::upper(domain);
       }
       
+      T med() const
+      {
+        // TODO: find a more efficient way to generate the median value in the domain
+        size_t r = domain.size() / 2;
+        auto it = boost::icl::elements_begin(domain);
+        for (size_t i = 0; i < r; ++i, ++it)
+          ;
+        return *it;
+      }
+      
       T rand() const
       {
+        // TODO: find a more efficient way to generate a random value in the domain
         size_t r = Core::Random::Int(0, domain.size() - 1);
         auto it = boost::icl::elements_begin(domain);
         for (size_t i = 0; i < r; ++i, ++it)
