@@ -59,10 +59,6 @@ namespace EasyLocal {
         e.subscribe(this);
         evaluated = other.evaluated;
       }
-    protected:
-      ValueStore(ExpressionStore<T>& e) : e(e)
-      {}
-
     public:
 
       ValueStore(ValueStore<T>&& other) : ValueStore<T>(other.e)
@@ -120,8 +116,8 @@ namespace EasyLocal {
         if (!evaluated)
           e.evaluate(*this);
         std::set<size_t> vars;
-        assign(m.var, level, m.val);
-        size_t var_index = e.compiled_symbols[m.var.hash()];
+        assign(*m.var, level, m.val);
+        size_t var_index = e.compiled_symbols[m.var->hash()];
         vars.insert(var_index);
         e.evaluate_diff(*this, vars, level);
       }
@@ -242,7 +238,7 @@ namespace EasyLocal {
        */
       T& operator()(const Var<T>& v)
       {
-        return operator()(e->compiled_symbols[v.hash()]);
+        return operator()(e.compiled_symbols[v.hash()]);
       }
       
       /** Const access to the values of the variables in the ValueStore
@@ -252,7 +248,7 @@ namespace EasyLocal {
        */
       const T& operator()(const Var<T>& v, unsigned int level = 0) const
       {
-        return operator()(e->compiled_symbols[v.hash()], level);
+        return operator()(e.compiled_symbols[v.hash()], level);
       }
       
       /** Checks whether the variable of an expression at a specific level has changed
@@ -261,7 +257,7 @@ namespace EasyLocal {
        */
       bool changed(const Var<T>& v, unsigned int level = 0) const
       {
-        return changed(e->compiled_symbols[v.hash()], level);
+        return changed(e.compiled_symbols[v.hash()], level);
       }
       
       /** @copydoc Printable::Print(std::ostream&) */

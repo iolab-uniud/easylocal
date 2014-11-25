@@ -65,14 +65,19 @@ namespace EasyLocal {
     class AutoState : public virtual Core::Printable
     {
     public:
+      AutoState(size_t levels = 1) : es(std::make_shared<ExpressionStore<T>>()), st(*es, levels)
+      {}
       
       /** Constructor.
        @remarks Initializes an ExpressionStore, and a ValueStore supporting any number
        of evaluation scenarios (e.g., for simultaneous evaluation of multiple Changes
        on multiple threads).
-       @param levels how many scenarios are supported by the ValueStore
+       @param levels how many scenarios will be supported by the ValueStore
        */
-      AutoState(size_t levels = 1) : st(es, levels)
+      AutoState(std::shared_ptr<ExpressionStore<T>> es, size_t levels = 1) : es(es), st(*es, levels)
+      {}
+      
+      AutoState(std::shared_ptr<ExpressionStore<T>> es, const ValueStore<T>& st) : es(es), st(st)
       {}
       
       /** Sets (in a definitive way) the value of one of the registered decision variables. */
@@ -84,7 +89,7 @@ namespace EasyLocal {
       /** Evaluates (completely) the registered CompiledExpressions. */
       void evaluate()
       {
-        es.evaluate(st);
+        es->evaluate(st);
       }
       
       /** Gets the value of a CompiledExpression (possibly at a specific level).
@@ -180,7 +185,7 @@ namespace EasyLocal {
       }
       
       /** The AutoState's ExpressionStore */
-      ExpressionStore<T> es;
+      std::shared_ptr<ExpressionStore<T>> es;
       
       /** The AutoState's ValueStore (inner state) */
       ValueStore<T> st;
