@@ -46,7 +46,6 @@ namespace EasyLocal
       {
         swap(*this, other);
       }
-
       
       Exp<T>& operator=(Exp<T> other) // (1)
       {
@@ -60,7 +59,7 @@ namespace EasyLocal
         swap(first.p_ai, second.p_ai);
       }
       
-      Exp(const std::shared_ptr<ASTItem<T>>& p_ai) : p_ai(p_ai) { }
+      Exp(const std::shared_ptr<ASTItem<T>>& p_ai) : p_ai(p_ai) {}
       
       virtual void Print(std::ostream& os) const
       {
@@ -80,11 +79,7 @@ namespace EasyLocal
       std::shared_ptr<ASTItem<T>> p_ai;
 
       virtual ~Exp<T>()
-      {
-        //if (p_ai != nullptr)
-        //  ASTItem<T>::erase(p_ai);
-        //std::cout << "Destructing (Exp<T>) " << this << std::endl;
-      }
+      {}
       
       size_t hash() const
       {
@@ -102,8 +97,7 @@ namespace EasyLocal
     class VarArray;
     
     /**
-     A modeling variable to be used inside expressions.
-     @remarks extends Symbol
+     A modeling variable to be used inside expressions.     
      */
     template <typename T>
     class Var : public Exp<T>
@@ -154,6 +148,7 @@ namespace EasyLocal
       
       void setDomain(T lb, T ub) throw (EmptyDomain)
       {
+        domain.clear();
         domain.insert(boost::icl::interval<T>::closed(lb, ub));
         if (domain.empty())
         {

@@ -22,7 +22,7 @@ namespace EasyLocal {
     {
     public:
       
-      ASTItem() : _hash_set(false), _simplified(false), _normalized(false) { }
+      ASTItem() : _hash_set(false), _simplified(false), _normalized(false) {}
             
       virtual ~ASTItem() = default;
       
@@ -64,8 +64,8 @@ namespace EasyLocal {
       
       virtual size_t compile(ExpressionStore<T>& exp_store) const = 0;
       
-      
     protected:
+      
       virtual void check_compatibility(const std::shared_ptr<ASTItem<T>> sub_ex, size_t pos = 0) const
       {
         // In general expressions are not compatible with var array operands unless specified
@@ -88,6 +88,9 @@ namespace EasyLocal {
         std::shared_ptr<CType<T>> compiled = std::make_shared<CType<T>>(exp_store);
         exp_store.push_back(compiled);
         exp_store[this_index]->index = this_index;
+        std::ostringstream oss;
+        this->Print(oss);
+        exp_store[this_index]->exp = oss.str();
         return std::make_pair(this_index, compiled);
       }
       
@@ -147,7 +150,7 @@ namespace EasyLocal {
     public:
       
       ASTVarArray(const std::string& name, size_t size) : name(name), size(size)
-      { }
+      {}
       
       virtual void Print(std::ostream& os) const
       {
@@ -229,6 +232,8 @@ namespace EasyLocal {
     public:
       virtual void Print(std::ostream& os) const
       {
+        if (operands.size() == 1)
+          os << this->sym;
         os << "(";
         int count = 0;
         for (auto& op : this->operands)
@@ -303,7 +308,7 @@ namespace EasyLocal {
         std::swap(this->operands, p_other->operands);
       }
       
-      ASTOp(const std::string& sym) : sym(sym) { }
+      ASTOp(const std::string& sym) : sym(sym) {}
       
       static inline size_t rol(size_t x, size_t places = 1)
       {

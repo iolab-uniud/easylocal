@@ -113,8 +113,7 @@ namespace EasyLocal {
       << "     (8)  Print Input Move Cost" << std::endl
       << "     (9)  Check Neighborhood Costs" << std::endl
       << "    (10)  Check Move Independence" << std::endl
-      << "    (11)  Check Random Move Distribution" << std::endl
-      << "    (12)  Check Candidate Initial Temperature for SA" << std::endl;
+      << "    (11)  Check Random Move Distribution" << std::endl;
       os << "     (0)  Return to Main Menu" << std::endl
       << " Your choice: ";
       choice = this->ReadChoice(std::cin);
