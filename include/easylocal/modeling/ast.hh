@@ -218,14 +218,6 @@ namespace EasyLocal {
       }
     };
     
-    /** Compare function for normalization. */
-    template <typename T>
-    bool _normalize(const std::shared_ptr<ASTItem<T>>& o1, const std::shared_ptr<ASTItem<T>>& o2)
-    {
-      return (o1->type().hash_code() < o2->type().hash_code()) || (o1->type().hash_code() == o2->type().hash_code() && o1->hash() < o2->hash());
-    }
-
-    
     template <typename T>
     class ASTOp : public ASTItem<T>
     {
@@ -261,7 +253,10 @@ namespace EasyLocal {
         if (recursive)
           for (auto& op : this->operands)
             op->normalize(recursive);
-        this->operands.sort(&_normalize<T>);
+        this->operands.sort([](const std::shared_ptr<ASTItem<T>>& o1, const std::shared_ptr<ASTItem<T>>& o2)
+                            {
+                              return (o1->type().hash_code() < o2->type().hash_code()) || (o1->type().hash_code() == o2->type().hash_code() && o1->hash() < o2->hash());
+                            });
       }
       
 
@@ -310,20 +305,22 @@ namespace EasyLocal {
       
       ASTOp(const std::string& sym) : sym(sym) {}
       
-      static inline size_t rol(size_t x, size_t places = 1)
+      /* static inline size_t rol(size_t x, size_t places = 1)
       {
         return (x << places) | (x >> (sizeof(size_t) * 8 - places));
-      }
+      } */
       
       virtual size_t compute_hash() const
       {
-        size_t h = std::hash<std::string>()(this->sym);
+        std::ostringstream os;
+        this->Print(os);
+        size_t h = std::hash<std::string>()(os.str());
         
-        for(const std::shared_ptr<ASTItem<T>>& op : operands)
+        /* for(const std::shared_ptr<ASTItem<T>>& op : operands)
         {
           h = rol(h);
           h ^= op->hash();
-        }
+        } */
         
         return h;
       }

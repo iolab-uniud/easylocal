@@ -188,8 +188,6 @@ namespace EasyLocal {
     template <class Input, class State, class Move, typename CFtype>
     void TabuSearch<Input, State, Move, CFtype>::CompleteMove()
     {
-      std::cout << StatusString() << std::endl;
-      
       // remove no more tabu moves
       while (!tabu_list.empty() && tabu_list.top().tenure < this->iteration)
         tabu_list.pop();

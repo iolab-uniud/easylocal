@@ -57,7 +57,7 @@ namespace EasyLocal {
        @param st the ValueStore to use as data source and storage
        @param level level on which to evaluate
        */
-      void evaluate(ValueStore<T>& st, unsigned int level = 0) const
+      void evaluate(ValueStore<T>& st, unsigned int level = 0, bool force = false) const
       {
         if (depth_needs_update)
           compute_depth();
@@ -70,7 +70,7 @@ namespace EasyLocal {
             continue;
           all_terminal_symbols.insert(i);
         }
-        evaluate(st, all_terminal_symbols, level);
+        evaluate(st, all_terminal_symbols, level, force);
       }
       
       /** Evaluates all the registered expressions within a given ValueStore at a given level and a given set of variables that have been changed (delta).
@@ -84,12 +84,12 @@ namespace EasyLocal {
           compute_depth();
         std::priority_queue<std::pair<int, size_t>> queue;
         std::fill(processed_symbols.begin(), processed_symbols.end(), false);
-        for (const size_t& var : variables)
+        for (size_t var : variables)
         {
           if (!st.changed(var, level))
             continue;
           const std::shared_ptr<Sym<T>>& current_var = (*this)[var];
-          for (const size_t& i : current_var->parents)
+          for (size_t i : current_var->parents)
           {
             const std::shared_ptr<Sym<T>>& parent_sym = (*this)[i];
             if (!processed_symbols[i])
@@ -108,7 +108,7 @@ namespace EasyLocal {
           current_sym->compute_diff(st, level);
           // parents are pushed to the queue only if the current expression value has changed and they have not been already queued
           if (st.changed(current_index, level))
-            for (const size_t& i : current_sym->parents)
+            for (size_t i : current_sym->parents)
             {
               const std::shared_ptr<Sym<T>>& parent_sym = (*this)[i];
               if (!processed_symbols[i])
@@ -149,27 +149,35 @@ namespace EasyLocal {
        @param level level on which to evaluate
        @remarks Internally used by the public evaluate method
        */
-      void evaluate(ValueStore<T>& st, const std::set<size_t>& expressions, unsigned int level) const
+      void evaluate(ValueStore<T>& st, const std::set<size_t>& expressions, unsigned int level, bool force = false) const
       {
         if (depth_needs_update)
           compute_depth();
-        std::queue<size_t> queue;
-        for (const size_t& i : expressions)
+        //if (!force || st.evaluated)
+        //  return;
+        std::priority_queue<std::pair<int, size_t>> queue;
+        for (size_t i : expressions)
         {
-          // variables are pushed to the queue only if their value has changed
-          if (!st.evaluated || st.changed(i, level))
-            queue.push(i);
+          // symbols are pushed to the queue only if their value has changed
+          if (force || !st.evaluated || st.changed(i, level))
+          {
+            const std::shared_ptr<Sym<T>>& current_sym = (*this)[i];
+            queue.push(std::make_pair(current_sym->depth, i));
+          }
         }
         while (!queue.empty())
         {
-          size_t current_index = queue.front();
+          size_t current_index = queue.top().second;
           queue.pop();
           const std::shared_ptr<Sym<T>>& current_sym = (*this)[current_index];
           current_sym->compute(st, level);
           // parents are pushed to the queue only if the current expression value has changed
-          if (!st.evaluated || st.changed(current_index, level))
-            for (const size_t& i : current_sym->parents)
-              queue.push(i);
+          if (force || !st.evaluated || st.changed(current_index, level))
+            for (size_t i : current_sym->parents)
+            {
+              const std::shared_ptr<Sym<T>>& parent_sym = (*this)[i];
+              queue.push(std::make_pair(parent_sym->depth, i));
+            }
         }
         st.evaluated = true;
       }

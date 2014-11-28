@@ -40,7 +40,7 @@ namespace EasyLocal {
       /** Constructor.
        @param e the expression store to subscribe to (for resizing)
        @param levels how many levels are supported by this ValueStore (concurrent evaluations)
-       @remarks the "valid" and "_changed_children" variables are not meaninful for level 0, this allows for a small memory footprint improvement (TODO)
+       @remarks the "valid" and "_changed_children" variables are not meaningful for level 0, this allows for a small memory footprint improvement (TODO)
        */
       ValueStore(ExpressionStore<T>& e, size_t levels) : value(levels + 1, std::vector<T>(e.size())), valid(levels + 1, std::vector<bool>(e.size(), false)), _changed_children(levels + 1, std::vector<std::set<size_t>>(e.size())), e(e)
       {
@@ -60,6 +60,11 @@ namespace EasyLocal {
         evaluated = other.evaluated;
       }
     public:
+      
+      size_t size() const
+      {
+        return e.size();
+      }
 
       ValueStore(ValueStore<T>&& other) : ValueStore<T>(other.e)
       {
@@ -268,7 +273,11 @@ namespace EasyLocal {
           e[i]->Print(os);
           os << " (current: " << value[0][i] << ", values: ";
           for (unsigned int k = 1; k < value.size(); k++)
-            os << value[k][i] << "/" << valid[k][i] << " ";
+          {
+            os << value[k][i] << "/" << std::boolalpha << valid[k][i];
+            if (k < value.size() - 1)
+              os << " ";
+          }
           os << ")" << std::endl;
         }
       }
@@ -286,7 +295,7 @@ namespace EasyLocal {
         valid[level][i] = true;
       }
       
-      void assign(const Var<T>& v, unsigned int level, const T& val)
+      void assign(const Var<T>& v, unsigned int level, const T& val) throw (ValueOutsideDomain)
       {
         if (!v.inDomain(val))
           throw ValueOutsideDomain(v.name());

@@ -87,9 +87,9 @@ namespace EasyLocal {
       }
       
       /** Evaluates (completely) the registered CompiledExpressions. */
-      void evaluate()
+      void evaluate(bool force = false)
       {
-        es->evaluate(st);
+        es->evaluate(st, 0, force);
       }
       
       /** Gets the value of a CompiledExpression (possibly at a specific level).
@@ -103,8 +103,26 @@ namespace EasyLocal {
         return st(ce, level);
       }
       
+      /** Gets the value of a Symbol (possibly at a specific level).
+       @param s the symbol to get the value for
+       @param level level to get the values from
+       */
+      T value_of(const Sym<T>& s, size_t level = 0) const
+      {
+        return st(s, level);
+      }
+      
+      /** Gets the value of a compiled location (possibly at a specific level).
+       @param i the location to get the value for
+       @param level level to get the values from
+       */
+      T value_of(size_t i, size_t level = 0) const
+      {
+        return st(i, level);
+      }
+      
       /** Gets the value of a Variable (possibly at a specific level).
-       @param ce compiled expression to get the value for
+       @param v the variable to get the value for
        @param level level to get the values from
        */
       T value_of(const Var<T>& v, size_t level = 0) const
@@ -186,7 +204,7 @@ namespace EasyLocal {
       
       /** The AutoState's ExpressionStore */
       std::shared_ptr<ExpressionStore<T>> es;
-      
+    public:
       /** The AutoState's ValueStore (inner state) */
       ValueStore<T> st;
     };
