@@ -145,6 +145,136 @@ namespace EasyLocal {
     }
     
     template <typename T>
+    static Exp<T>& operator/=(Exp<T>& e1, const Exp<T>& e2)
+    {
+      e1 = Exp<T>(std::make_shared<Div<T>>(e1, e2));
+      e1.simplify();
+      return e1;
+    }
+    
+    template <typename T>
+    static Exp<T>& operator/=(Exp<T>& e1, T v)
+    {
+      e1 = Exp<T>(std::make_shared<Div<T>>(e1, Exp<T>(v)));
+      e1.simplify();
+      return e1;
+    }
+    
+    template <typename T>
+    static Exp<T> operator/(const Exp<T>& e1, const Exp<T>& e2)
+    {
+      Exp<T> r(std::make_shared<Div<T>>(e1, e2));
+      r.simplify();
+      return r;
+    }
+    
+    template <typename T>
+    static Exp<T> operator/(T v, const Exp<T>& e)
+    {
+      if (v != 0)
+        return Exp<T>(v) / e;
+      else
+        return Exp<T>(v);
+    }
+    
+    template <typename T>
+    static Exp<T> operator/(const Exp<T>& e, T v)
+    {
+      if (v == 1)
+        return e;
+      else if (v != 0)
+        return e / Exp<T>(v);
+      else
+        throw std::logic_error("Trying to compute division by zero");
+    }
+    
+    template <typename T>
+    static Exp<T>& operator%=(Exp<T>& e1, const Exp<T>& e2)
+    {
+      e1 = Exp<T>(std::make_shared<Mod<T>>(e1, e2));
+      e1.simplify();
+      return e1;
+    }
+    
+    template <typename T>
+    static Exp<T>& operator%=(Exp<T>& e1, T v)
+    {
+      e1 = Exp<T>(std::make_shared<Mod<T>>(e1, Exp<T>(v)));
+      e1.simplify();
+      return e1;
+    }
+    
+    template <typename T>
+    static Exp<T> operator%(const Exp<T>& e1, const Exp<T>& e2)
+    {
+      Exp<T> r(std::make_shared<Mod<T>>(e1, e2));
+      r.simplify();
+      return r;
+    }
+    
+    template <typename T>
+    static Exp<T> operator%(T v, const Exp<T>& e)
+    {
+      if (v != 0)
+        return Exp<T>(v) % e;
+      else
+        return Exp<T>(v);
+    }
+    
+    template <typename T>
+    static Exp<T> operator%(const Exp<T>& e, T v)
+    {
+      if (v == 1)
+        return Exp<T>(0);
+      else if (v != 0)
+        return e % Exp<T>(v);
+      else
+        throw std::logic_error("Trying to compute modulo operation to zero");
+    }
+    
+    template <typename T>
+    static Exp<T> min(const Exp<T>& e1, const Exp<T>& e2)
+    {
+      Exp<T> r(std::make_shared<Min<T>>(e1, e2));
+      r.simplify();
+      return r;
+    }
+    
+    template <typename T>
+    static Exp<T> min(T v, const Exp<T>& e)
+    {
+      return min(Exp<T>(v), e);
+    }
+    
+    template <typename T>
+    static Exp<T> min(const Exp<T>& e, T v)
+    {
+      return min(e, Exp<T>(v));
+    }
+    
+    template <typename T>
+    static Exp<T> max(const Exp<T>& e1, const Exp<T>& e2)
+    {
+      Exp<T> r(std::make_shared<Max<T>>(e1, e2));
+      r.simplify();
+      return r;
+    }
+    
+    template <typename T>
+    static Exp<T> max(T v, const Exp<T>& e)
+    {
+      return max(Exp<T>(v), e);
+    }
+    
+    template <typename T>
+    static Exp<T> max(const Exp<T>& e, T v)
+    {
+      return max(e, Exp<T>(v));
+    }
+    
+    /** Relational operators **/
+    
+    template <typename T>
     static Exp<T> operator==(const Exp<T>& e1, const Exp<T>& e2)
     {
       Exp<T> r(std::make_shared<Eq<T>>(e1, e2));
@@ -272,6 +402,22 @@ namespace EasyLocal {
     static Exp<T> abs(const Exp<T>& e)
     {
       Exp<T> t = Exp<T>(std::make_shared<Abs<T>>(e));
+      t.simplify();
+      return t;
+    }
+    
+    template <typename T>
+    static Exp<T> element(const Exp<T>& index, const std::vector<Exp<T>>& v)
+    {
+      Exp<T> t = Exp<T>(std::make_shared<Element<T>>(index, v));
+      t.simplify();
+      return t;
+    }
+    
+    template <typename T>
+    static Exp<T> element(const Exp<T>& index, const std::vector<T>& v)
+    {
+      Exp<T> t = Exp<T>(std::make_shared<Element<T>>(index, v));
       t.simplify();
       return t;
     }

@@ -284,6 +284,196 @@ namespace EasyLocal {
         Sym<T>::Print(os);
       }
     };
+    
+    /** Division expression. */
+    template <typename T>
+    class DivSym : public Sym<T>
+    {
+    public:
+      using Sym<T>::Sym;
+      
+      /** @copydoc Sym<T>::compute(ValueStore<T>&, unsigned int) */
+      virtual void compute(ValueStore<T>& st, unsigned int level = 0) const
+      {
+        T res = st(this->children[0]) / st(this->children[1]);
+        st.assign(this->index, level, res);
+      }
+      
+      /** @copydoc Sym<T>::compute_diff(ValueStore<T>&, unsigned int) */
+      virtual void compute_diff(ValueStore<T>& st, unsigned int level = 0) const
+      {
+        this->compute(st, level);
+        st.changed_children(this->index, level).clear();
+      }
+      
+      /** @copydoc Printable::Print(std::ostream&) */
+      virtual void Print(std::ostream& os) const
+      {
+        os << "Div: ";
+        Sym<T>::Print(os);
+      }
+    };
+    
+    /** Modulo expression. */
+    template <typename T>
+    class ModSym : public Sym<T>
+    {
+    public:
+      using Sym<T>::Sym;
+      
+      /** @copydoc Sym<T>::compute(ValueStore<T>&, unsigned int) */
+      virtual void compute(ValueStore<T>& st, unsigned int level = 0) const
+      {
+        T res = st(this->children[0]) % st(this->children[1]);
+        st.assign(this->index, level, res);
+      }
+      
+      /** @copydoc Sym<T>::compute_diff(ValueStore<T>&, unsigned int) */
+      virtual void compute_diff(ValueStore<T>& st, unsigned int level = 0) const
+      {
+        this->compute(st, level);
+        st.changed_children(this->index, level).clear();
+      }
+      
+      /** @copydoc Printable::Print(std::ostream&) */
+      virtual void Print(std::ostream& os) const
+      {
+        os << "Mod: ";
+        Sym<T>::Print(os);
+      }
+    };
+    
+    /** Minimum expression. */
+    template <typename T>
+    class MinSym : public Sym<T>
+    {
+    public:
+      using Sym<T>::Sym;
+      
+      /** @copydoc Sym<T>::compute(ValueStore<T>&, unsigned int) */
+      virtual void compute(ValueStore<T>& st, unsigned int level = 0) const
+      {
+        T min = st(this->children[0], level);
+        for (size_t i = 1; i < this->children.size(); i++)
+        {
+          size_t child = this->children[i];
+          min = std::min(min, st(child, level));
+        }
+        st.assign(this->index, level, min);
+      }
+      
+      /** @copydoc Sym<T>::compute_diff(ValueStore<T>&, unsigned int) */
+      virtual void compute_diff(ValueStore<T>& st, unsigned int level = 0) const
+      {
+        T current_min = st(this->index), new_min;
+        bool new_min_set = false;
+        for (auto child : st.changed_children(this->index, level))
+        {
+          if (!new_min_set)
+          {
+            new_min = st(child, level);
+            new_min_set = true;
+          }
+          else
+            new_min = std::min(new_min, st(child, level));
+        }
+        st.changed_children(this->index, level).clear();
+        if (new_min > current_min) // the new_min is worse than the previous one, the whole array has to be checked
+          for (size_t child : this->children)
+            new_min = std::min(new_min, st(child, level));
+        st.assign(this->index, level, new_min);
+      }
+      
+      /** @copydoc Printable::Print(std::ostream&) */
+      virtual void Print(std::ostream& os) const
+      {
+        os << "Min: ";
+        Sym<T>::Print(os);
+      }
+    };
+    
+    /** Maximum expression. */
+    template <typename T>
+    class MaxSym : public Sym<T>
+    {
+    public:
+      using Sym<T>::Sym;
+      
+      /** @copydoc Sym<T>::compute(ValueStore<T>&, unsigned int) */
+      virtual void compute(ValueStore<T>& st, unsigned int level = 0) const
+      {
+        T max = st(this->children[0], level);
+        for (size_t i = 1; i < this->children.size(); i++)
+        {
+          size_t child = this->children[i];
+          max = std::max(max, st(child, level));
+        }
+        st.assign(this->index, level, max);
+      }
+      
+      /** @copydoc Sym<T>::compute_diff(ValueStore<T>&, unsigned int) */
+      virtual void compute_diff(ValueStore<T>& st, unsigned int level = 0) const
+      {
+        T current_max = st(this->index), new_max;
+        bool new_max_set = false;
+        for (auto child : st.changed_children(this->index, level))
+        {
+          if (!new_max_set)
+          {
+            new_max = st(child, level);
+            new_max_set = true;
+          }
+          else
+            new_max = std::max(new_max, st(child, level));
+        }
+        st.changed_children(this->index, level).clear();
+        if (new_max < current_max) // the new_max is worse than the previous one, the whole array has to be checked
+          for (size_t child : this->children)
+            new_max = std::max(new_max, st(child, level));
+        st.assign(this->index, level, new_max);
+      }
+      
+      /** @copydoc Printable::Print(std::ostream&) */
+      virtual void Print(std::ostream& os) const
+      {
+        os << "Max: ";
+        Sym<T>::Print(os);
+      }
+    };
+    
+    /** 
+     Element expression (element of a list of variables, whose index is a variable).
+     @remark the first child is the index expression, whereas the remaining ones represent the list
+     */
+    template <typename T>
+    class ElementSym : public Sym<T>
+    {
+    public:
+      using Sym<T>::Sym;
+      
+      /** @copydoc Sym<T>::compute(ValueStore<T>&, unsigned int) */
+      virtual void compute(ValueStore<T>& st, unsigned int level = 0) const
+      {
+        int offset = st(this->children[0], level);
+        if (offset < 0 || offset >= this->children.size() - 1)
+          throw std::runtime_error("Error: ArrayElement expression using an invalid index (index value: " + std::to_string(offset) + ", list size: " + std::to_string(this->children.size() - 1) + ")");
+        st.assign(this->index, level, st(this->children[1 + offset], level));
+      }
+      
+      /** @copydoc Sym<T>::compute_diff(ValueStore<T>&, unsigned int) */
+      virtual void compute_diff(ValueStore<T>& st, unsigned int level = 0) const
+      {
+        this->compute(st, level);
+        st.changed_children(this->index, level).clear();
+      }
+      
+      /** @copydoc Printable::Print(std::ostream&) */
+      virtual void Print(std::ostream& os) const
+      {
+        os << "Element: ";
+        Sym<T>::Print(os);
+      }
+    };
 
     /** If-then-else expression. */
     template <typename T>
@@ -356,7 +546,7 @@ namespace EasyLocal {
 
     /** Minimum of a variable array. */
     template <typename T>
-    class MinSym : public ArraySubSym<T>
+    class ArrayMinSym : public ArraySubSym<T>
     {
     public:
       using ArraySubSym<T>::ArraySubSym;
@@ -388,7 +578,7 @@ namespace EasyLocal {
       /** @copydoc Printable::Print(std::ostream&) */
       virtual void Print(std::ostream& os) const
       {
-        os << "Min: ";
+        os << "ArrayMin: ";
         Sym<T>::Print(os);
       }
     };
@@ -445,7 +635,7 @@ namespace EasyLocal {
 
     /** Maximum of a variable array. */
     template <typename T>
-    class MaxSym : public ArraySubSym<T>
+    class ArrayMaxSym : public ArraySubSym<T>
     {
     public:
       using ArraySubSym<T>::ArraySubSym;
@@ -477,7 +667,7 @@ namespace EasyLocal {
       /** @copydoc Printable::Print(std::ostream&) */
       virtual void Print(std::ostream& os) const
       {
-        os << "Max: ";
+        os << "ArrayMax: ";
         Sym<T>::Print(os);
       }
     };
@@ -532,9 +722,11 @@ namespace EasyLocal {
       }
     };
 
-    /** Element expression (element of an array, whose index is a variable). */
+    /** Element expression (element of an array, whose index is an expression involving variables). 
+     @remark the first child is the index expression, the second one is the array
+     */
     template <typename T>
-    class ElementSym : public ArraySubSym<T>
+    class ArrayElementSym : public ArraySubSym<T>
     {
     public:
       using ArraySubSym<T>::ArraySubSym;
@@ -542,8 +734,10 @@ namespace EasyLocal {
       /** @copydoc Sym<T>::compute(ValueStore<T>&, unsigned int) */
       virtual void compute(ValueStore<T>& st, unsigned int level = 0) const
       {
-        const std::shared_ptr<VarArraySym<T>>& array = std::dynamic_pointer_cast<VarArraySym<T>>(this->exp_store[this->children[0]]);
-        size_t offset = st(this->children[1], level);
+        const std::shared_ptr<VarArraySym<T>>& array = std::dynamic_pointer_cast<VarArraySym<T>>(this->exp_store[this->children[1]]);
+        int offset = st(this->children[0], level);
+        if (offset < 0 || offset >= array->size)
+          throw std::runtime_error("Error: ArrayElement expression using an invalid index (index value: " + std::to_string(offset) + ")");
         st.assign(this->index, level, st(array->start + offset, level));
       }
       

@@ -305,22 +305,11 @@ namespace EasyLocal {
       
       ASTOp(const std::string& sym) : sym(sym) {}
       
-      /* static inline size_t rol(size_t x, size_t places = 1)
-      {
-        return (x << places) | (x >> (sizeof(size_t) * 8 - places));
-      } */
-      
       virtual size_t compute_hash() const
       {
         std::ostringstream os;
         this->Print(os);
         size_t h = std::hash<std::string>()(os.str());
-        
-        /* for(const std::shared_ptr<ASTItem<T>>& op : operands)
-        {
-          h = rol(h);
-          h ^= op->hash();
-        } */
         
         return h;
       }
@@ -387,6 +376,7 @@ namespace EasyLocal {
           }
           else
           {
+            (*it)->normalize(true);
             ++it;
           }
         }
@@ -404,6 +394,7 @@ namespace EasyLocal {
           return this->operands.front();
         
         this->_simplified = true;
+        this->normalize(false);
         
         return this->shared_from_this();
       }
@@ -468,6 +459,7 @@ namespace EasyLocal {
           }
           else
           {
+            (*it)->normalize(true);
             ++it;
           }
           if (prod_of_const == 0)
@@ -490,6 +482,7 @@ namespace EasyLocal {
           return this->operands.front();
         
         this->_simplified = true;
+        this->normalize(false);
         
         return this->shared_from_this();
       }
@@ -507,6 +500,321 @@ namespace EasyLocal {
       
       virtual ~Mul() = default;
     };
+    
+    template <typename T>
+    class ASTAsymmetricOp : public ASTOp<T>
+    {
+      using ASTOp<T>::ASTOp;
+    public:
+      virtual void normalize(bool recursive)
+      {
+        if (this->normalized())
+          return;
+        if (recursive)
+          for (auto& op : this->operands)
+            op->normalize(recursive);
+      }
+    };
+    
+    template <typename T>
+    class Div : public ASTAsymmetricOp<T>
+    {
+    public:
+      
+      Div(const Exp<T>& e1, const Exp<T>& e2) : ASTAsymmetricOp<T>("/")
+      {
+        this->append_operand(e1);
+        this->append_operand(e2);
+      }
+      
+      virtual std::shared_ptr<ASTItem<T>> simplify()
+      {
+        std::vector<T> values;
+        // ALL AT ONCE (simplify, steal and aggregate constants, inherit operands)
+        for (auto it = this->operands.begin(); it != this->operands.end(); ++it)
+        {
+          // correct way to replace element in list
+          if(!((*it)->simplified()))
+          {
+            auto sim = (*it)->simplify();
+            
+            if (sim != *it)
+            {
+              it = this->operands.erase(it);
+              it = this->operands.insert(it, sim);
+            }
+          }
+          if ((*it)->type() == typeid(ASTConst<T>))
+            values.push_back(std::dynamic_pointer_cast<ASTConst<T>>(*it)->value);
+          (*it)->normalize(true);
+        }
+        
+        // both constants
+        if (values.size() == 2)
+          return std::make_shared<ASTConst<T>>(values[0] / values[1]);      
+        
+        this->_simplified = true;
+        
+        return this->shared_from_this();
+      }
+      
+      virtual size_t compile(ExpressionStore<T>& exp_store) const
+      {
+        auto compiled_pair = this->template get_or_create<DivSym>(exp_store);
+        if (compiled_pair.second != nullptr)
+        {
+          auto compiled = std::dynamic_pointer_cast<DivSym<T>>(compiled_pair.second);
+          this->compile_operands(compiled_pair.first, exp_store);
+        }
+        return compiled_pair.first;
+      }
+      
+      virtual ~Div() = default;
+    };
+    
+    template <typename T>
+    class Mod : public ASTAsymmetricOp<T>
+    {
+    public:
+      
+      Mod(const Exp<T>& e1, const Exp<T>& e2) : ASTAsymmetricOp<T>("%")
+      {
+        this->append_operand(e1);
+        this->append_operand(e2);
+      }
+      
+      virtual std::shared_ptr<ASTItem<T>> simplify()
+      {
+        
+        std::vector<T> values;
+        // ALL AT ONCE (simplify, steal and aggregate constants, inherit operands)
+        for (auto it = this->operands.begin(); it != this->operands.end(); ++it)
+        {
+          // correct way to replace element in list
+          if(!((*it)->simplified()))
+          {
+            auto sim = (*it)->simplify();
+            
+            if (sim != *it)
+            {
+              it = this->operands.erase(it);
+              it = this->operands.insert(it, sim);
+            }
+          }
+          if ((*it)->type() == typeid(ASTConst<T>))
+            values.push_back(std::dynamic_pointer_cast<ASTConst<T>>(*it)->value);
+          (*it)->normalize(true);
+        }
+        
+        // both constants
+        if (values.size() == 2)
+          return std::make_shared<ASTConst<T>>(values[0] / values[1]);
+        
+        this->_simplified = true;
+        this->_normalized = true;
+        
+        return this->shared_from_this();
+      }
+      
+      virtual size_t compile(ExpressionStore<T>& exp_store) const
+      {
+        auto compiled_pair = this->template get_or_create<ModSym>(exp_store);
+        if (compiled_pair.second != nullptr)
+        {
+          auto compiled = std::dynamic_pointer_cast<ModSym<T>>(compiled_pair.second);
+          this->compile_operands(compiled_pair.first, exp_store);
+        }
+        return compiled_pair.first;
+      }
+      
+      virtual ~Mod() = default;
+    };
+    
+    template <typename T>
+    class Min : public ASTOp<T>
+    {
+    public:
+      
+      Min(const Exp<T>& e1, const Exp<T>& e2) : ASTOp<T>("+")
+      {
+        this->append_operand(e1);
+        this->append_operand(e2);
+      }
+      
+      virtual std::shared_ptr<ASTItem<T>> simplify()
+      {
+        // lift min of mins
+        T min_of_const;
+        bool min_of_const_set = false;
+        
+        // ALL AT ONCE (simplify, steal and aggregate constants, inherit operands)
+        for (auto it = this->operands.begin(); it != this->operands.end();)
+        {
+          // correct way to replace element in list
+          if(!((*it)->simplified()))
+          {
+            auto sim = (*it)->simplify();
+            
+            if (sim != *it)
+            {
+              it = this->operands.erase(it);
+              it = this->operands.insert(it, sim);
+            }
+          }
+          
+          // if a min is detected, add its operands to the end, then erase it
+          if ((*it)->type() == typeid(Min<T>))
+          {
+            if (!min_of_const_set)
+            {
+              min_of_const = std::dynamic_pointer_cast<ASTOp<T>>(*it)->steal_const(0);
+              min_of_const_set = true;
+            }
+            else
+              min_of_const = std::min(min_of_const, std::dynamic_pointer_cast<ASTOp<T>>(*it)->steal_const(0));
+            this->merge_operands(*it);
+            it = this->operands.erase(it);
+          }
+          // if a constant is detected, add its value to the sum, then erase it
+          else if ((*it)->type() == typeid(ASTConst<T>))
+          {
+            if (!min_of_const_set)
+            {
+              min_of_const = std::dynamic_pointer_cast<ASTConst<T>>(*it)->value;
+              min_of_const_set = true;
+            }
+            else
+              min_of_const = std::min(min_of_const, std::dynamic_pointer_cast<ASTConst<T>>(*it)->value);
+            it = this->operands.erase(it);
+          }
+          else
+          {
+            (*it)->normalize(true);
+            ++it;
+          }
+        }
+        
+        // add
+        if (min_of_const_set)
+          this->add_constant(std::make_shared<ASTConst<T>>(min_of_const));
+        
+        // one-element sum
+        if (this->operands.size() == 1)
+          return this->operands.front();
+        
+        this->_simplified = true;
+        this->normalize(false);
+        
+        return this->shared_from_this();
+      }
+      
+      virtual size_t compile(ExpressionStore<T>& exp_store) const
+      {
+        auto compiled_pair = this->template get_or_create<MinSym>(exp_store);
+        if (compiled_pair.second != nullptr)
+        {
+          auto compiled = std::dynamic_pointer_cast<MinSym<T>>(compiled_pair.second);
+          this->compile_operands(compiled_pair.first, exp_store);
+        }
+        return compiled_pair.first;
+      }
+      
+      virtual ~Min() = default;
+    };
+    
+    template <typename T>
+    class Max : public ASTOp<T>
+    {
+    public:
+      
+      Max(const Exp<T>& e1, const Exp<T>& e2) : ASTOp<T>("+")
+      {
+        this->append_operand(e1);
+        this->append_operand(e2);
+      }
+      
+      virtual std::shared_ptr<ASTItem<T>> simplify()
+      {
+        // lift max of maxs
+        T max_of_const;
+        bool max_of_const_set = false;
+        
+        // ALL AT ONCE (simplify, steal and aggregate constants, inherit operands)
+        for (auto it = this->operands.begin(); it != this->operands.end();)
+        {
+          // correct way to replace element in list
+          if(!((*it)->simplified()))
+          {
+            auto sim = (*it)->simplify();
+            
+            if (sim != *it)
+            {
+              it = this->operands.erase(it);
+              it = this->operands.insert(it, sim);
+            }
+          }
+          
+          // if a max is detected, add its operands to the end, then erase it
+          if ((*it)->type() == typeid(Max<T>))
+          {
+            if (!max_of_const_set)
+            {
+              max_of_const = std::dynamic_pointer_cast<ASTOp<T>>(*it)->steal_const(0);
+              max_of_const_set = true;
+            }
+            else
+              max_of_const = std::max(max_of_const, std::dynamic_pointer_cast<ASTOp<T>>(*it)->steal_const(0));
+            this->merge_operands(*it);
+            it = this->operands.erase(it);
+          }
+          // if a constant is detected, add its value to the sum, then erase it
+          else if ((*it)->type() == typeid(ASTConst<T>))
+          {
+            if (!max_of_const_set)
+            {
+              max_of_const = std::dynamic_pointer_cast<ASTConst<T>>(*it)->value;
+              max_of_const_set = true;
+            }
+            else
+              max_of_const = std::max(max_of_const, std::dynamic_pointer_cast<ASTConst<T>>(*it)->value);
+            it = this->operands.erase(it);
+          }
+          else
+          {
+            (*it)->normalize(true);
+            ++it;
+          }
+        }
+        
+        // add
+        if (max_of_const_set)
+          this->add_constant(std::make_shared<ASTConst<T>>(max_of_const));
+        
+        // one-element sum
+        if (this->operands.size() == 1)
+          return this->operands.front();
+        
+        this->_simplified = true;
+        this->normalize(false);
+        
+        return this->shared_from_this();
+      }
+      
+      virtual size_t compile(ExpressionStore<T>& exp_store) const
+      {
+        auto compiled_pair = this->template get_or_create<MaxSym>(exp_store);
+        if (compiled_pair.second != nullptr)
+        {
+          auto compiled = std::dynamic_pointer_cast<MaxSym<T>>(compiled_pair.second);
+          this->compile_operands(compiled_pair.first, exp_store);
+        }
+        return compiled_pair.first;
+      }
+      
+      virtual ~Max() = default;
+    };
+    
+    /** Relational operators **/
     
     template <typename T>
     class Eq : public ASTOp<T>
@@ -775,7 +1083,7 @@ namespace EasyLocal {
       AllDiff(const std::vector<Exp<T>>& v) : ASTOp<T>("alldifferent")
       {
         for (const Exp<T>& e : v)
-          this->append_operand(v);
+          this->append_operand(e);
       }
       
       virtual std::shared_ptr<ASTItem<T>> simplify()
@@ -866,7 +1174,7 @@ namespace EasyLocal {
         }
         
         this->_simplified = true;
-        this->normalize(false);
+        this->normalize(true);
         
         return this->shared_from_this();
       }
@@ -883,6 +1191,103 @@ namespace EasyLocal {
       }
       
       virtual ~Abs() = default;
+    };
+    
+    template <typename T>
+    class VarArray;
+    
+    template <typename T>
+    class Element : public ASTOp<T>
+    {
+      bool is_array;
+    public:
+      Element(const Exp<T>& index, const VarArray<T>& v) : ASTOp<T>("element"), is_array(true)
+      {
+        this->append_operand(index);
+        this->append_operand(v);
+      }
+      
+      Element(const Exp<T>& index, const std::vector<T>& v) : ASTOp<T>("element"), is_array(false)
+      {
+        this->append_operand(index);
+        for (auto val : v)
+          this->append_operand(Exp<T>(val));
+      }
+      
+      Element(const Exp<T>& index, const std::vector<Exp<T>>& v) : ASTOp<T>("element"), is_array(false)
+      {
+        this->append_operand(index);
+        for (const Exp<T>& e : v)
+          this->append_operand(e);
+      }
+      
+      virtual std::shared_ptr<ASTItem<T>> simplify()
+      {
+        for (auto it = this->operands.begin(); it != this->operands.end(); ++it)
+        {
+          // correct way to replace element in list
+          if (!((*it)->simplified()))
+          {
+            auto sim = (*it)->simplify();
+            if (sim != *it)
+            {
+              it = this->operands.erase(it);
+              it = this->operands.insert(it, sim);
+            }
+          }
+          
+          (*it)->normalize(true);
+        }
+        
+        this->_simplified = true;
+        this->normalize(false); // all sub elements have been already normalized, so we're saving computation
+        
+        return this->shared_from_this();
+      }
+      
+      virtual size_t compile(ExpressionStore<T>& exp_store) const
+      {
+        if (!is_array)
+        {
+          auto compiled_pair = this->template get_or_create<ElementSym>(exp_store);
+          if (compiled_pair.second != nullptr)
+          {
+            auto compiled = std::dynamic_pointer_cast<ElementSym<T>>(compiled_pair.second);
+            this->compile_operands(compiled_pair.first, exp_store);
+          }
+          return compiled_pair.first;
+        }
+        else
+        {
+          auto compiled_pair = this->template get_or_create<ArrayElementSym>(exp_store);
+          if (compiled_pair.second != nullptr)
+          {
+            auto compiled = std::dynamic_pointer_cast<ArrayElementSym<T>>(compiled_pair.second);
+            this->compile_operands(compiled_pair.first, exp_store);
+          }
+          return compiled_pair.first;
+        }
+      }
+      
+      virtual void normalize(bool recursive)
+      {
+        if (this->normalized())
+          return;
+        if (recursive && !is_array)
+        {
+          for (auto& op : this->operands)
+            op->normalize(recursive);
+          
+          auto& first = this->operands.front();
+          this->operands.erase(this->operands.begin());
+          this->operands.sort([](const std::shared_ptr<ASTItem<T>>& o1, const std::shared_ptr<ASTItem<T>>& o2) {
+                                return (o1->type().hash_code() < o2->type().hash_code()) || (o1->type().hash_code() == o2->type().hash_code() && o1->hash() < o2->hash());
+                              });
+          this->operands.push_front(first);
+        }
+      }
+      
+      virtual ~Element() = default;
     };
   }
 }

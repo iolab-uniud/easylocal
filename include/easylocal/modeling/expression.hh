@@ -218,6 +218,12 @@ namespace EasyLocal
       {
         return boost::icl::elements_end(domain);
       }
+      
+      bool assigned() const
+      {
+        return domain.size() == 1;
+      }
+      
     protected:
       Domain domain;
     };
@@ -262,6 +268,13 @@ namespace EasyLocal
       using std::vector<Var<T>>::operator[];
       
       VarArray() = default;
+      
+      Exp<T> operator[](const Exp<T>& index)
+      {
+        Exp<T> t = Exp<T>(std::make_shared<Element<T>>(index, *this));
+        t.simplify();
+        return t;
+      }
       
       virtual void Print(std::ostream& os) const
       {
