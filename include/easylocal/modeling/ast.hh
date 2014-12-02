@@ -1289,6 +1289,65 @@ namespace EasyLocal {
       
       virtual ~Element() = default;
     };
+    
+    template <typename T>
+    class IfElse : public ASTOp<T>
+    {
+    public:
+      
+      IfElse(const Exp<T>& cond, const Exp<T>& e1, const Exp<T>& e2) : ASTOp<T>("if-else")
+      {
+        this->append_operand(cond);
+        this->append_operand(e1);
+        this->append_operand(e2);
+      }
+      
+      virtual std::shared_ptr<ASTItem<T>> simplify()
+      {
+        // ALL AT ONCE (simplify, steal and aggregate constants, inherit operands)
+        for (auto it = this->operands.begin(); it != this->operands.end(); ++it)
+        {
+          // correct way to replace element in list
+          if(!((*it)->simplified()))
+          {
+            auto sim = (*it)->simplify();
+            
+            if (sim != *it)
+            {
+              it = this->operands.erase(it);
+              it = this->operands.insert(it, sim);
+            }
+          }
+          (*it)->normalize(true);
+        }
+        
+        if (this->operands.front()->type() == typeid(ASTConst<T>))
+        {
+          if (dynamic_cast<ASTConst<T>*>(this->operands.front().get())->value)
+            return *std::next(this->operands.begin());
+          else
+            return *std::next(std::next(this->operands.begin()));
+        }
+        
+        this->_simplified = true;
+        this->normalize(false);
+        
+        return this->shared_from_this();
+      }
+      
+      virtual size_t compile(ExpressionStore<T>& exp_store) const
+      {
+        auto compiled_pair = this->template get_or_create<IfElseSym>(exp_store);
+        if (compiled_pair.second != nullptr)
+        {
+          auto compiled = std::dynamic_pointer_cast<IfElseSym<T>>(compiled_pair.second);
+          this->compile_operands(compiled_pair.first, exp_store);
+        }
+        return compiled_pair.first;
+      }
+      
+      virtual ~IfElse() = default;
+    };
   }
 }
 

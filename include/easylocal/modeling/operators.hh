@@ -421,6 +421,32 @@ namespace EasyLocal {
       t.simplify();
       return t;
     }
+    
+    template <typename T>
+    static Exp<T> ite(const Exp<T>& cond, const Exp<T>& e_then, const Exp<T>& e_else)
+    {
+      Exp<T> t = Exp<T>(std::make_shared<IfElse<T>>(cond, e_then, e_else));
+      t.simplify();
+      return t;
+    }
+    
+    template <typename T>
+    static Exp<T> ite(const Exp<T>& cond, T v_then, const Exp<T>& e_else)
+    {
+      return ite(cond, Exp<T>(v_then), e_else);
+    }
+    
+    template <typename T>
+    static Exp<T> ite(const Exp<T>& cond, const Exp<T>& e_then, T v_else)
+    {
+      return ite(cond, e_then, Exp<T>(v_else));
+    }
+    
+    template <typename T>
+    static Exp<T> ite(const Exp<T>& cond, T v_then, T v_else)
+    {
+      return ite(cond, Exp<T>(v_then), Exp<T>(v_else));
+    }
   }
 }
 
