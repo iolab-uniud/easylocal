@@ -491,10 +491,9 @@ namespace EasyLocal {
         unsigned int selected = 0;
         
         for (size_t i = 0; i < bias.size(); i++)
-        {
           total_bias += bias[i];
-        }
         pick = Random::Double(0.0, total_bias);
+          std::cerr << "Random: " << pick;
           
         // Subtract bias until we're on the right neighborhood explorer
         while (pick > bias[selected])
@@ -502,6 +501,7 @@ namespace EasyLocal {
           pick -= bias[selected];
           selected++;
         }
+          std::cerr << " " << selected << std::endl;
         
         for (size_t i = selected; i < Modality(); i++)
         {
