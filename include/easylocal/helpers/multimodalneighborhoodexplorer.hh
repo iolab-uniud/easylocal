@@ -257,6 +257,13 @@ namespace EasyLocal {
       template <class MovesTuple, size_t N>
       struct MoveDispatcher
       {
+				static void set_all_activity(MovesTuple& moves, bool value)
+				{
+					auto& this_move = std::get<0>(moves).get();
+					this_move.active = value;
+          auto moves_tail = tuple_tail(moves);
+          MoveDispatcher<decltype(moves_tail), N - 1>::set_all_activity(moves_tail, value);
+				}				
         static void set_activity_at(long level, MovesTuple& moves, bool value)
         {
           if (level == 0)
@@ -336,6 +343,11 @@ namespace EasyLocal {
       template <class MovesTuple>
       struct MoveDispatcher<MovesTuple, 0>
       {
+        static void set_all_activity(MovesTuple& moves, bool value)
+        {
+					auto& this_move = std::get<0>(moves).get();
+          this_move.active = value;
+        }
         static void set_activity_at(long level, MovesTuple& moves, bool value)
         {
           if (level == 0)
@@ -482,8 +494,9 @@ namespace EasyLocal {
       
       /** @copydoc NeighborhoodExplorer::RandomMove */
       virtual void RandomMove(const State& st, MoveTypes& moves) const throw(EmptyNeighborhood)
-      {
+      {				
         MoveTypeRefs r_moves = to_refs(moves);
+				Impl::MoveDispatcher<MoveTypeRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::set_all_activity(r_moves, false);
         
         // Select random neighborhood explorer with bias (don't assume that they sum up to one)
         double total_bias = 0.0;
@@ -491,10 +504,9 @@ namespace EasyLocal {
         unsigned int selected = 0;
         
         for (size_t i = 0; i < bias.size(); i++)
-        {
           total_bias += bias[i];
-        }
         pick = Random::Double(0.0, total_bias);
+				std::cerr << pick << std::endl;
           
         // Subtract bias until we're on the right neighborhood explorer
         while (pick > bias[selected])
