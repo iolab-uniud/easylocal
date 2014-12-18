@@ -383,6 +383,7 @@ namespace EasyLocal {
         mv.cost = DeltaCostFunctionComponents(st, mv.move, weights);
         explored++;
         mv.is_valid = true;
+        explored++;
         if (AcceptMove(mv.move, mv.cost))
           return mv;
       }
@@ -407,6 +408,7 @@ namespace EasyLocal {
         mv.cost = DeltaCostFunctionComponents(st, mv.move, weights);
         explored++;
         mv.is_valid = true;
+        explored++;
         if (AcceptMove(mv.move, mv.cost))
         {
           if (number_of_bests == 0)
