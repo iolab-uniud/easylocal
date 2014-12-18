@@ -381,7 +381,6 @@ namespace EasyLocal {
       {
         RandomMove(st, mv.move);
         mv.cost = DeltaCostFunctionComponents(st, mv.move, weights);
-        explored++;
         mv.is_valid = true;
         explored++;
         if (AcceptMove(mv.move, mv.cost))
@@ -406,7 +405,6 @@ namespace EasyLocal {
       {
         RandomMove(st, mv.move);
         mv.cost = DeltaCostFunctionComponents(st, mv.move, weights);
-        explored++;
         mv.is_valid = true;
         explored++;
         if (AcceptMove(mv.move, mv.cost))
