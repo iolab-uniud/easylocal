@@ -27,7 +27,7 @@ namespace EasyLocal {
                                       StateManager<Input, State, CFtype>& sm,
                                       NeighborhoodExplorer<Input, State, Move, CFtype>& ne,
                                       std::string name);
-      std::string StatusString();
+      std::string StatusString() const;
     protected:
       bool StopCriterion();
       void CompleteMove();
@@ -151,7 +151,7 @@ namespace EasyLocal {
      Create a string containing the status of the runner
      */
     template <class Input, class State, class Move, typename CFtype>
-    std::string SimulatedAnnealingWithReheating<Input, State, Move, CFtype>::StatusString()
+    std::string SimulatedAnnealingWithReheating<Input, State, Move, CFtype>::StatusString() const
     {
       std::stringstream status;
       status << "["
