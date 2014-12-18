@@ -376,10 +376,12 @@ namespace EasyLocal {
     EvaluatedMove<Move, CFtype> NeighborhoodExplorer<Input, State, Move, CFtype>::RandomFirst(const State& st, size_t samples, size_t& explored, const MoveAcceptor& AcceptMove, const std::vector<double>& weights) const throw (EmptyNeighborhood)
     {
       EvaluatedMove<Move, CFtype> mv;
-      for (explored = 1; explored <= samples; explored++)
+      explored = 0;
+      while (explored < samples)
       {
         RandomMove(st, mv.move);
         mv.cost = DeltaCostFunctionComponents(st, mv.move, weights);
+        explored++;
         mv.is_valid = true;
         if (AcceptMove(mv.move, mv.cost))
           return mv;
@@ -398,10 +400,12 @@ namespace EasyLocal {
       unsigned int number_of_bests = 0; // number of moves found with the same best value
       EvaluatedMove<Move, CFtype> mv, best_move;
       
-      for (explored = 1; explored <= samples; explored++)
+      explored = 0;
+      while (explored < samples)
       {
         RandomMove(st, mv.move);
         mv.cost = DeltaCostFunctionComponents(st, mv.move, weights);
+        explored++;
         mv.is_valid = true;
         if (AcceptMove(mv.move, mv.cost))
         {

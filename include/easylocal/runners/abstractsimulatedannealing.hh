@@ -149,7 +149,7 @@ namespace EasyLocal {
       size_t sampled;
       double t = this->temperature;
       EvaluatedMove<Move, CFtype> em = this->ne.RandomFirst(*this->p_current_state, this->max_neighbors_sampled - neighbors_sampled, sampled, [t](const Move& mv, CostStructure<CFtype> move_cost) {
-          return move_cost < 0 || (Random::Double() < exp(-1.0 * (double)move_cost / t));
+          return move_cost <= 0 || (Random::Double() < exp(-1.0 * (double)move_cost / t));
       }, this->weights);
       this->current_move = em;
       neighbors_sampled += sampled;
