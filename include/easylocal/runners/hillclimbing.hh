@@ -22,6 +22,7 @@ namespace EasyLocal {
     public:
       HillClimbing(const Input& in, StateManager<Input, State, CFtype>& e_sm,
                    NeighborhoodExplorer<Input, State, Move, CFtype>& e_ne, std::string name);
+      std::string StatusString() const;
       
       Parameter<unsigned long int> max_idle_iterations;
     protected:
@@ -92,6 +93,21 @@ namespace EasyLocal {
     bool HillClimbing<Input, State, Move, CFtype>::StopCriterion()
     {
       return MaxIdleIterationExpired() || this->MaxEvaluationsExpired();
+    }
+
+    /**
+     Create a string containing the status of the runner
+     */
+    template <class Input, class State, class Move, typename CFtype>
+    std::string HillClimbing<Input, State, Move, CFtype>::StatusString() const
+    {
+      std::stringstream status;
+      status << "["
+             << "iters = " << this->iteration 
+             << ", idle iters = " << this->iteration - this->iteration_of_best
+             << ", evals = " << this->evaluations
+             << "]";
+      return status.str();
     }
   }
 }
