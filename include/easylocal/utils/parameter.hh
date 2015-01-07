@@ -98,7 +98,7 @@ namespace EasyLocal {
       static std::list<const ParameterBox*> overall_parameters;
     };
     
-    /** Concrete parameter, of generic type. */
+    /** Concrete parameter of generic type. */
     template <typename T>
     class Parameter : public AbstractParameter
     {
@@ -155,11 +155,12 @@ namespace EasyLocal {
       const T& operator=(const T&) throw (ParameterNotValid);
         
       protected:
-        
-        /** Real value of the parameter. */
+        /** Actual value of the parameter. */
         T value;
-        
       };
+			
+			template <>
+			extern Parameter<bool>::Parameter(const std::string& cmdline_flag, const std::string& description, ParameterBox& parameters);
         
         class IncorrectParameterValue
         : public std::logic_error
