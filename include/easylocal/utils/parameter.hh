@@ -100,28 +100,21 @@ namespace EasyLocal {
     
     /** Concrete parameter of generic type. */
     template <typename T>
-    class Parameter : public AbstractParameter
+    class BaseParameter : public AbstractParameter
     {
       template <typename _T>
-      friend std::istream& operator>>(std::istream& is, Parameter<_T>& p) throw (ParameterNotValid);
+      friend std::istream& operator>>(std::istream& is, BaseParameter<_T>& p) throw (ParameterNotValid);
       template <typename _T>
-      friend bool operator==(const Parameter<_T>&, const _T&) throw (ParameterNotSet, ParameterNotValid);
+      friend bool operator==(const BaseParameter<_T>&, const _T&) throw (ParameterNotSet, ParameterNotValid);
       friend class IncorrectParameterValue;
-    public:
-      /** Constructor.
-       @param cmdline_flag flag used to pass the parameter to the command line
-       @param description semantics of the parameter
-       @param parameters parameter box to which this parameter refers
-       */
-      Parameter(const std::string& cmdline_flag, const std::string& description, ParameterBox& parameters);
-      
-      /** Constructor.
-       Creates an empty parameter, to be attached later.
-       */
-      Parameter();
-      
-      virtual void operator()(const std::string& cmdline_flag, const std::string& description, ParameterBox& parameters);
-      
+		protected:
+			using AbstractParameter::AbstractParameter;
+    public:   
+     /** Constructor.
+      Creates an empty parameter, to be attached later.
+      */
+     	BaseParameter();
+			       
       /** @copydoc AbstractParameter::Read */
       virtual std::istream& Read(std::istream& is = std::cin) throw (ParameterNotValid);
       
@@ -142,7 +135,7 @@ namespace EasyLocal {
         
       virtual void CopyValue(const AbstractParameter& ap)
       {
-        const Parameter<T>& tp = dynamic_cast<const Parameter<T>&>(ap);
+        const BaseParameter<T>& tp = dynamic_cast<const BaseParameter<T>&>(ap);
         this->value = tp.value;
         this->is_set = tp.is_set;
         this->is_valid = tp.is_valid;
@@ -159,9 +152,63 @@ namespace EasyLocal {
         T value;
       };
 			
+			template <typename T>
+			class Parameter : public BaseParameter<T>
+			{
+			public:
+       /** Constructor.
+        @param cmdline_flag flag used to pass the parameter to the command line
+        @param description semantics of the parameter
+        @param parameters parameter box to which this parameter refers
+        */
+       Parameter(const std::string& cmdline_flag, const std::string& description, ParameterBox& parameters)
+				 : BaseParameter<T>(cmdline_flag, description)     
+			 {
+         std::string flag = parameters.prefix + "::" + cmdline_flag;
+         parameters.push_back(this);
+         parameters.cl_options.add_options()
+         (flag.c_str(), boost::program_options::value<T>(&this->value)->notifier([this](const T&){ this->is_set = true; }), description.c_str());
+         this->is_valid = true;
+			 }
+      
+       virtual void operator()(const std::string& cmdline_flag, const std::string& description, ParameterBox& parameters)
+			 {
+         this->cmdline_flag = parameters.prefix + "::" + cmdline_flag;
+         this->description = description;
+         parameters.push_back(this);
+         parameters.cl_options.add_options()
+         (this->cmdline_flag.c_str(), boost::program_options::value<T>(&this->value)->notifier([this](const T&){ this->is_set = true; }), description.c_str());
+         this->is_valid = true;
+			 }
+			};
+			
 			template <>
-			extern Parameter<bool>::Parameter(const std::string& cmdline_flag, const std::string& description, ParameterBox& parameters);
-        
+			class Parameter<bool> : public BaseParameter<bool>
+			{
+			public:				
+		    Parameter(const std::string& cmdline_flag, const std::string& description, ParameterBox& parameters)
+		    : BaseParameter<bool>(cmdline_flag, description)
+		    {
+		      std::string flag = parameters.prefix + "::" + cmdline_flag;
+		      parameters.cl_options.add_options()
+		      (("enable-" + flag).c_str(), boost::program_options::value<std::string>()->implicit_value("true")->zero_tokens()->notifier([this](const std::string& v){ this->is_set = true; this->value = true; }), "")
+		      (("disable-" + flag).c_str(), boost::program_options::value<std::string>()->implicit_value("false")->zero_tokens()->notifier([this](const std::string & v){ this->is_set = true; this->value = false; }),
+		       ("[enable/disable] " + description).c_str());
+		    }
+				
+        virtual void operator()(const std::string& cmdline_flag, const std::string& description, ParameterBox& parameters)
+ 			 {
+         this->cmdline_flag = parameters.prefix + "::" + cmdline_flag;
+         this->description = description;
+         parameters.push_back(this);
+         parameters.cl_options.add_options()
+		     (("enable-" + cmdline_flag).c_str(), boost::program_options::value<std::string>()->implicit_value("true")->zero_tokens()->notifier([this](const std::string& v){ this->is_set = true; this->value = true; }), "")
+		     (("disable-" + cmdline_flag).c_str(), boost::program_options::value<std::string>()->implicit_value("false")->zero_tokens()->notifier([this](const std::string & v){ this->is_set = true; this->value = false; }),
+ 		      ("[enable/disable] " + description).c_str());
+         this->is_valid = true;
+			 }
+			};
+			        
         class IncorrectParameterValue
         : public std::logic_error
         {
@@ -175,35 +222,13 @@ namespace EasyLocal {
         };
         
         template <typename T>
-        Parameter<T>::Parameter()
+        BaseParameter<T>::BaseParameter()
         {
           this->is_valid = false;
         }
         
         template <typename T>
-        Parameter<T>::Parameter(const std::string& cmdline_flag, const std::string& description, ParameterBox& parameters)
-        : AbstractParameter(cmdline_flag, description)
-        {
-          std::string flag = parameters.prefix + "::" + cmdline_flag;
-          parameters.push_back(this);
-          parameters.cl_options.add_options()
-          (flag.c_str(), boost::program_options::value<T>(&value)->notifier([this](const T&){ this->is_set = true; }), description.c_str());
-          this->is_valid = true;
-        }
-        
-        template <typename T>
-        void Parameter<T>::operator()(const std::string& cmdline_flag, const std::string& description, ParameterBox& parameters)
-        {
-          this->cmdline_flag = parameters.prefix + "::" + cmdline_flag;
-          this->description = description;
-          parameters.push_back(this);
-          parameters.cl_options.add_options()
-          (this->cmdline_flag.c_str(), boost::program_options::value<T>(&value)->notifier([this](const T&){ this->is_set = true; }), description.c_str());
-          this->is_valid = true;
-        }
-        
-        template <typename T>
-        Parameter<T>::operator T() const throw (ParameterNotSet, ParameterNotValid)
+        BaseParameter<T>::operator T() const throw (ParameterNotSet, ParameterNotValid)
         {
           if (!is_valid)
             throw ParameterNotValid(*this);
@@ -213,7 +238,7 @@ namespace EasyLocal {
         }
         
         template <typename T>
-        const T& Parameter<T>::operator=(const T& v) throw (ParameterNotValid)
+        const T& BaseParameter<T>::operator=(const T& v) throw (ParameterNotValid)
         {
           if (!is_valid)
             throw ParameterNotValid(*this);
@@ -223,7 +248,7 @@ namespace EasyLocal {
         }
         
         template <typename T>
-        std::istream& Parameter<T>::Read(std::istream& is) throw (ParameterNotValid)
+        std::istream& BaseParameter<T>::Read(std::istream& is) throw (ParameterNotValid)
         {
           if (!is_valid)
             throw ParameterNotValid(*this);
@@ -245,7 +270,7 @@ namespace EasyLocal {
         }
         
         template <typename T>
-        std::ostream& Parameter<T>::Write(std::ostream& os) const throw (ParameterNotSet, ParameterNotValid)
+        std::ostream& BaseParameter<T>::Write(std::ostream& os) const throw (ParameterNotSet, ParameterNotValid)
         {
           if (!this->is_valid)
             throw ParameterNotValid(*this);
@@ -256,7 +281,7 @@ namespace EasyLocal {
         }
         
         template <typename T>
-        std::istream& operator>>(std::istream& is, Parameter<T>& p) throw (ParameterNotValid)
+        std::istream& operator>>(std::istream& is, BaseParameter<T>& p) throw (ParameterNotValid)
         {
           if (!p.is_valid)
             throw ParameterNotValid(p);
@@ -267,12 +292,12 @@ namespace EasyLocal {
         }
         
         template <typename T>
-        bool operator==(const Parameter<T>& t1, const T& t2) throw (ParameterNotSet, ParameterNotValid)
+        bool operator==(const BaseParameter<T>& t1, const T& t2) throw (ParameterNotSet, ParameterNotValid)
         {
           return t1.value == t2;
         }
         
-        bool operator==(const Parameter<std::string>& s1, const char* s2) throw (ParameterNotSet, ParameterNotValid);
+        bool operator==(const BaseParameter<std::string>& s1, const char* s2) throw (ParameterNotSet, ParameterNotValid);
         
         template <typename T>
         IncorrectParameterValue::IncorrectParameterValue(const Parameter<T>& p, std::string desc)
