@@ -44,6 +44,8 @@ if (TBB_FOUND)
 	list(APPEND EASYLOCAL_LIBRARIES ${TBB_LIBRARIES})	
 	add_definitions(-DTBB_AVAILABLE)
 endif ()
+include (CheckCXXSymbolExists)
+check_cxx_symbol_exists(std::stoi "string" HAVE_STD_STOI)
 
 include(FindPackageHandleStandardArgs)
 # Handle the QUIETLY and REQUIRED arguments and set EASYLOCAL_FOUND to TRUE

@@ -34,7 +34,15 @@ namespace EasyLocal {
       std::cin >> c;
       try
       {
+#ifdef HAVE_STD_STOI
         return std::stoi(c);
+#else
+				int value;
+				std::istringstream iss(c);
+				iss >> value;
+				if (is.fail())
+					throw std::invalid_argument("Not an integer value");
+#endif
       }
       catch (std::invalid_argument)
       {
