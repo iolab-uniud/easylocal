@@ -109,12 +109,7 @@ namespace EasyLocal {
       friend class IncorrectParameterValue;
 		protected:
 			using AbstractParameter::AbstractParameter;
-    public:   
-     /** Constructor.
-      Creates an empty parameter, to be attached later.
-      */
-     	BaseParameter();
-			       
+    public:   			       
       /** @copydoc AbstractParameter::Read */
       virtual std::istream& Read(std::istream& is = std::cin) throw (ParameterNotValid);
       
@@ -155,7 +150,11 @@ namespace EasyLocal {
 			template <typename T>
 			class Parameter : public BaseParameter<T>
 			{
-			public:
+			public:							
+        Parameter()
+        {
+          this->is_valid = false;
+        }	
        /** Constructor.
         @param cmdline_flag flag used to pass the parameter to the command line
         @param description semantics of the parameter
@@ -180,12 +179,27 @@ namespace EasyLocal {
          (this->cmdline_flag.c_str(), boost::program_options::value<T>(&this->value)->notifier([this](const T&){ this->is_set = true; }), description.c_str());
          this->is_valid = true;
 			 }
+			 
+       const T& operator=(const T& v) throw (ParameterNotValid)
+       {
+         if (!this->is_valid)
+           throw ParameterNotValid(*this);
+         this->is_set = true;
+         this->value = v;
+         return this->value;
+       }
+			 
 			};
 			
 			template <>
 			class Parameter<bool> : public BaseParameter<bool>
 			{
-			public:				
+			public:	
+        Parameter()
+        {
+          this->is_valid = false;
+        }	
+										
 		    Parameter(const std::string& cmdline_flag, const std::string& description, ParameterBox& parameters)
 		    : BaseParameter<bool>(cmdline_flag, description)
 		    {
@@ -207,6 +221,15 @@ namespace EasyLocal {
  		      ("[enable/disable] " + description).c_str());
          this->is_valid = true;
 			 }
+			 
+       const bool& operator=(const bool& v) throw (ParameterNotValid)
+       {
+         if (!this->is_valid)
+           throw ParameterNotValid(*this);
+         this->is_set = true;
+         this->value = v;
+         return this->value;
+       }
 			};
 			        
         class IncorrectParameterValue
@@ -219,13 +242,7 @@ namespace EasyLocal {
           virtual ~IncorrectParameterValue() throw();
         protected:
           std::string message;
-        };
-        
-        template <typename T>
-        BaseParameter<T>::BaseParameter()
-        {
-          this->is_valid = false;
-        }
+        };        
         
         template <typename T>
         BaseParameter<T>::operator T() const throw (ParameterNotSet, ParameterNotValid)
@@ -235,17 +252,7 @@ namespace EasyLocal {
           if (!is_set)
             throw ParameterNotSet(*this);
           return value;
-        }
-        
-        template <typename T>
-        const T& BaseParameter<T>::operator=(const T& v) throw (ParameterNotValid)
-        {
-          if (!is_valid)
-            throw ParameterNotValid(*this);
-          is_set = true;
-          value = v;
-          return value;
-        }
+        }        
         
         template <typename T>
         std::istream& BaseParameter<T>::Read(std::istream& is) throw (ParameterNotValid)
