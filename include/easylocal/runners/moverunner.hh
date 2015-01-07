@@ -39,17 +39,17 @@ namespace EasyLocal {
       {
         for (unsigned char i = 0; i < events; i++)
           if (event & (1 << i))
-            observers[i](event, this->current_state_cost, this->current_move);
+            observers[i](event, this->current_state_cost, this->current_move, this->StatusString());
       }
       
-      std::vector<boost::signals2::signal<void(Event event, CostStructure<CFtype> current_state_cost, const EvaluatedMove<Move, CFtype>& em)>> observers;
+      std::vector<boost::signals2::signal<void(Event event, CostStructure<CFtype> current_state_cost, const EvaluatedMove<Move, CFtype>& em, const std::string& status_string)>> observers;
       
     public:
       
       /** Modality of this runner. */
       virtual size_t Modality() const { return ne.Modality(); }
       
-      virtual std::string StatusString() { return std::string("[no status info]"); }
+      virtual std::string StatusString() const { return std::string("[no status info]"); }
     protected:
       
       /** Constructor.

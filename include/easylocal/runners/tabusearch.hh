@@ -62,7 +62,7 @@ namespace EasyLocal {
                  NeighborhoodExplorer<Input, State, Move, CFtype>& ne,
                  std::string name,
                  const InverseFunction& Inverse = SameMoveAsInverse);
-      std::string StatusString();
+      std::string StatusString() const;
       
       virtual void Print(std::ostream& os = std::cout) const;
       
@@ -199,7 +199,7 @@ namespace EasyLocal {
      Create a string containing the status of the runner
      */
     template <class Input, class State, class Move, typename CFtype>
-    std::string TabuSearch<Input, State, Move, CFtype>::StatusString()
+    std::string TabuSearch<Input, State, Move, CFtype>::StatusString() const
     {
       std::stringstream status;
       status << "TL = #" << tabu_list.size() << "[";

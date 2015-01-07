@@ -10,7 +10,7 @@ namespace EasyLocal {
     /** Implements the Simulated annealing runner with a stop condition
      based on the number of iterations. In addition, the number of neighbors
      sampled at each iteration is computed in such a way that the total number
-     of iterations is fixed
+     of evaluations is fixed
      
      @ingroup Runners
      */
@@ -24,12 +24,11 @@ namespace EasyLocal {
                                        StateManager<Input, State, CFtype>& e_sm,
                                        NeighborhoodExplorer<Input, State, Move, CFtype>& e_ne,
                                        std::string name);
-      std::string StatusString();
+      std::string StatusString() const;
     protected:
       void RegisterParameters();
       void InitializeRun() throw (ParameterNotSet, IncorrectParameterValue);
       bool StopCriterion();
-      void CompleteIteration();
       
       // additional parameters
       Parameter<double>  neighbors_accepted_ratio;
@@ -64,6 +63,7 @@ namespace EasyLocal {
       AbstractSimulatedAnnealing<Input, State, Move, CFtype>::RegisterParameters();
       neighbors_accepted_ratio("neighbors_accepted_ratio", "Ratio of neighbors accepted", this->parameters);
       temperature_range("temperature_range", "Temperature_range", this->parameters);
+      this->max_neighbors_sampled = this->max_neighbors_accepted = 0;
     }        
     
     /**
@@ -88,7 +88,7 @@ namespace EasyLocal {
     
     
     /**
-     The search stops when the number of iterations is expired (already checked in the superclass MoveRunner)
+     The search stops when the number of evaluations is expired (already checked in the superclass MoveRunner)
      */
     template <class Input, class State, class Move, typename CFtype>
     bool SimulatedAnnealingEvaluationBased<Input, State, Move, CFtype>::StopCriterion()
@@ -96,26 +96,18 @@ namespace EasyLocal {
       return false;
     }
     
-    template <class Input, class State, class Move, typename CFtype>
-    void SimulatedAnnealingEvaluationBased<Input, State, Move, CFtype>::CompleteIteration()
-    {
-      AbstractSimulatedAnnealing<Input, State, Move, CFtype>::CompleteIteration();
-      // the iteration counter was already incremented by PrepareIteration, so to make it consistent with the overall number of sampled neighbors
-      // the value should be decreased by 1
-      this->iteration += this->neighbors_sampled - 1;
-    }
-    
     /**
      Create a string containing the status of the runner
      */
     template <class Input, class State, class Move, typename CFtype>
-    std::string SimulatedAnnealingEvaluationBased<Input, State, Move, CFtype>::StatusString()
+    std::string SimulatedAnnealingEvaluationBased<Input, State, Move, CFtype>::StatusString() const
     {
       std::stringstream status;
       status << "["
       << "Temp = " << this->temperature << " (" << this->start_temperature << "), "
       << "NS = " << this->neighbors_sampled << " (" << this->max_neighbors_sampled << "), "
-      << "NA = " << this->neighbors_accepted  << " (" << this->max_neighbors_accepted << ")"
+      << "NA = " << this->neighbors_accepted  << " (" << this->max_neighbors_accepted << "), "
+      << "Eval = " << this->evaluations
       << "]";
       return status.str();
     }

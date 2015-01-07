@@ -353,7 +353,7 @@ namespace EasyLocal {
             for (auto& p1 : this->parameters)
             {
               std::string f1 = split(p1->cmdline_flag, std::regex("::"))[1];
-              for (const auto& p2 : this->parameters)
+              for (const auto& p2 : p.parameters)
               {
                 std::string f2 = split(p2->cmdline_flag, std::regex("::"))[1];
                 if (f1 == f2)
