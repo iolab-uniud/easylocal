@@ -60,11 +60,8 @@ The reference papers about EasyLocal++ are:
 
 ## License
 
- Copyright (c) 2001-2015 Sara Ceschia
- 						 Luca Di Gaspero 
- 						 Andrea Schaerf
-						 Tommaso Urli 
- 						 University of Udine, Italy 
+ Copyright (c) 2001-2015 Sara Ceschia, Luca Di Gaspero, Andrea Schaerf, Tommaso Urli - 
+ University of Udine, Italy 
  
  
  Redistribution and use in source and binary forms, with or without
