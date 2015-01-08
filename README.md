@@ -97,7 +97,11 @@ The reference papers about EasyLocal++ are:
 	Software - Practice & Experience, 33(8):733-765, July 2003.
 	
 	
-	  @article{DiSc03,
+	  
+```
+#!latex
+
+@article{DiSc03,
 	    address = {Chirchester, United Kingdom},
 	    author = {Di Gaspero, Luca and Schaerf, Andrea},
 	    journal = {Software --- Practice \& Experience},
@@ -109,6 +113,8 @@ The reference papers about EasyLocal++ are:
 	    volume = {33},
 	    year = {2003}
 	  }
+```
+
 
  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
@@ -121,4 +127,3 @@ The reference papers about EasyLocal++ are:
  LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
