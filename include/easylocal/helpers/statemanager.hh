@@ -319,7 +319,7 @@ namespace EasyLocal {
     template <typename CFtype>
     std::ostream& operator<<(std::ostream& os, const CostStructure<CFtype>& cc)
     {
-      os << cc.total << "(viol: " << cc.violations << ", obj: " << cc.objective << ", {";
+      os << cc.total << " (viol: " << cc.violations << ", obj: " << cc.objective << ", comps: {";
       for (size_t i = 0; i < cc.all_components.size(); i++)
       {
         if (i > 0)

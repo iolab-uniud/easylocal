@@ -42,6 +42,7 @@ namespace EasyLocal {
 				iss >> value;
 				if (is.fail())
 					throw std::invalid_argument("Not an integer value");
+				return value;
 #endif
       }
       catch (std::invalid_argument)
@@ -307,10 +308,10 @@ namespace EasyLocal {
         os << "   (0) Return to Main Menu" << std::endl;
         os << " Your choice: ";
         this->sub_choice = this->ReadChoice(std::cin);
-        if (sub_choice == -1 || sub_choice >= runners.size())
+        if (sub_choice == -1 || sub_choice >= static_cast<int>(runners.size()))
           os << "Invalid choice" << std::endl;
       }
-      while (sub_choice == -1 || sub_choice > runners.size());
+      while (sub_choice == -1 || sub_choice > static_cast<int>(runners.size()));
     }
     
     /**
@@ -319,7 +320,7 @@ namespace EasyLocal {
     template <class Input, class Output, class State, typename CFtype>
     void Tester<Input, Output, State, CFtype>::ExecuteMovesChoice()
     {
-      if (sub_choice > 0 && sub_choice <= move_testers.size())
+      if (sub_choice > 0 && sub_choice <= static_cast<int>(move_testers.size()))
         move_testers[sub_choice-1]->RunMainMenu(test_state);
     }
     
