@@ -96,18 +96,19 @@ The reference papers about EasyLocal++ are:
 	framework for flexible design of local search algorithms. 
 	Software - Practice & Experience, 33(8):733-765, July 2003.
 	
-	@article{DiSc03,
-	  address = {Chirchester, United Kingdom},
-	  author = {Di Gaspero, Luca and Schaerf, Andrea},
-	  journal = {Software --- Practice \& Experience},
-	  month = {July},
-	  number = {8},
-	  pages = {733--765},
-	  publisher = {John Wiley \& Sons},
-	  title = {\textsc{EasyLocal++}: An object-oriented framework for flexible design of local search algorithms},
-	  volume = {33},
-	  year = {2003}
-	}
+	
+	  @article{DiSc03,
+	    address = {Chirchester, United Kingdom},
+	    author = {Di Gaspero, Luca and Schaerf, Andrea},
+	    journal = {Software --- Practice \& Experience},
+	    month = {July},
+	    number = {8},
+	    pages = {733--765},
+	    publisher = {John Wiley \& Sons},
+	    title = {\textsc{EasyLocal++}: An object-oriented framework for flexible design of local search algorithms},
+	    volume = {33},
+	    year = {2003}
+	  }
 
  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
