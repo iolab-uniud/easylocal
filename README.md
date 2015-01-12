@@ -60,10 +60,67 @@ The reference papers about EasyLocal++ are:
 
 ## License
 
-EasyLocal++ is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+ Copyright (c) 2001-2015 Sara Ceschia, Luca Di Gaspero, Andrea Schaerf, Tommaso Urli - 
+ University of Udine, Italy 
+ 
+ 
+ Redistribution and use in source and binary forms, with or without
+ modification, are permitted provided that the following conditions
+ are met:
 
-EasyLocal++ is distributed in the hope that it will be useful, but **WITHOUT ANY WARRANTY**; without even the implied warranty of
-**MERCHANTABILITY** or **FITNESS FOR A PARTICULAR PURPOSE**.  See the GNU General Public License for more details. 
+ 1. Redistributions of source code must retain the above copyright
+    notice, this list of conditions and the following disclaimer.
 
-You should have received a copy of the GNU General Public License along with EasyLocal++. If not, see [http://www.gnu.org/licenses](http://www.gnu.org/licenses).
+ 2. Redistributions in binary form must reproduce the above copyright
+    notice, this list of conditions and the following disclaimer in
+    the documentation and/or other materials provided with the
+    distribution.
 
+ 3. Neither the name of the copyright holder nor the names of its
+    contributors may be used to endorse or promote products derived
+    from this software without specific prior written permission.
+
+ 4. Redistributions of any form whatsoever must retain the following
+    acknowledgment: 'This product includes software developed by 
+	"Sara Ceschia, Luca Di Gaspero, Andrea Schaerf, Tommaso Urli,
+	University of Udine, Italy" (http://satt.diegm.uniud.it/).'
+	
+ 5. The use of the software in source or binary forms that results in
+    a scientific publication must be acknowledged by citing the 
+	following paper:
+	
+	Luca Di Gaspero and Andrea Schaerf. EasyLocal++: An object-oriented 
+	framework for flexible design of local search algorithms. 
+	Software - Practice & Experience, 33(8):733-765, July 2003.
+	
+	
+	  
+```
+#!latex
+
+@article{DiSc03,
+	    address = {Chirchester, United Kingdom},
+	    author = {Di Gaspero, Luca and Schaerf, Andrea},
+	    journal = {Software --- Practice \& Experience},
+	    month = {July},
+	    number = {8},
+	    pages = {733--765},
+	    publisher = {John Wiley \& Sons},
+	    title = {\textsc{EasyLocal++}: An object-oriented framework for flexible design of local search algorithms},
+	    volume = {33},
+	    year = {2003}
+	  }
+```
+
+
+ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
+ TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
