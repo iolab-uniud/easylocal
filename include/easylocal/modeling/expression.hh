@@ -181,12 +181,12 @@ namespace EasyLocal
       
       T min() const
       {
-        return boost::icl::lower(domain);
+        return *boost::icl::elements_begin(domain);
       }
       
       T max() const
       {
-        return boost::icl::upper(domain);
+        return *boost::icl::elements_rbegin(domain);
       }
       
       T med() const
