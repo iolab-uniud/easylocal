@@ -83,7 +83,7 @@ namespace EasyLocal {
       if (v != 0)
         return Exp<T>(v) - e;
       else
-        return e;
+        return Exp<T>(std::make_shared<Mul<T>>(e, -1));
     }
     
     template <typename T>
@@ -182,6 +182,8 @@ namespace EasyLocal {
     {
       if (v == 1)
         return e;
+      else if (v == -1)
+        return Exp<T>(std::make_shared<Mul<T>>(e, -1));
       else if (v != 0)
         return e / Exp<T>(v);
       else
