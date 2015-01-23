@@ -124,9 +124,9 @@ namespace EasyLocal {
     protected:
       /** The overall index of this cost components */
       const size_t index;
-      
+
       /** The registered cost components */
-      static std::vector<CostComponent*> cost_components;
+      static std::vector<CostComponent<Input, State, CFtype>*> cost_components;
     };
     
     

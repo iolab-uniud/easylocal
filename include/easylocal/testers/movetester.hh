@@ -238,7 +238,7 @@ namespace EasyLocal {
           if (!IsZero(error.all_components[i]) && fabs(error.all_components[i]) > tolerance)
           {
             error_found = true;
-            os << em.move << "  " << i << ". " << CostComponent<Input, State, Move>::Component(i).name << ": " << st_cost.all_components[i] << std::showpos << em.cost.all_components[i] << std::noshowpos << "!="
+            os << em.move << "  " << i << ". " <<  CostComponent<Input, State, CFtype>::Component(i).name << ": " << st_cost.all_components[i] << std::showpos << em.cost.all_components[i] << std::noshowpos << "!="
             << st1_cost.all_components[i] << " (error = " << std::showpos << error.all_components[i] << ")" << std::noshowpos << std::endl;
             os << "Press enter to continue " << std::endl;
             std::cin.get();
