@@ -91,6 +91,10 @@ namespace EasyLocal
         return p_ai->compile(exp_store);
       }
       
+      bool is_empty() const
+      {
+        return p_ai == nullptr;
+      }      
     };
     
     template <typename T>
@@ -146,6 +150,11 @@ namespace EasyLocal
         os << " " << domain;
       }
       
+      void clearDomain()
+      {
+        domain = Domain();
+      }
+      
       void setDomain(T lb, T ub) throw (EmptyDomain)
       {
         domain.clear();
@@ -154,6 +163,11 @@ namespace EasyLocal
         {
           throw EmptyDomain(this->name());
         }
+      }
+      
+      void addToDomain(T val)
+      {
+        domain.insert(boost::icl::interval<T>::closed(val, val));
       }
       
       void removeFromDomain(T val) throw (EmptyDomain)
