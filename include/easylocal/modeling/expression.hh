@@ -94,7 +94,7 @@ namespace EasyLocal
       bool is_empty() const
       {
         return p_ai == nullptr;
-      }      
+      }
     };
     
     template <typename T>
@@ -109,7 +109,7 @@ namespace EasyLocal
       friend class VarArray<T>;
       
       typedef boost::icl::interval_set<T> Domain;
-      typedef typename boost::icl::interval_set<T>::element_const_iterator DomainIterator;
+      typedef typename boost::icl::interval_set<T>::element_const_iterator DomainIterator;      
     public:
       /**
        Constructor.
