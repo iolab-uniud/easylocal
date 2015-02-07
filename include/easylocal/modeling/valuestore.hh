@@ -121,8 +121,8 @@ namespace EasyLocal {
         if (!evaluated)
           e.evaluate(*this);
         std::set<size_t> vars;
-        assign(*m.var, level, m.val);
-        size_t var_index = e.compiled_symbols[m.var->hash()];
+        assign(m.var, level, m.val);
+        size_t var_index = e.compiled_symbols[m.var.hash()];
         vars.insert(var_index);
         e.evaluate_diff(*this, vars, level);
       }

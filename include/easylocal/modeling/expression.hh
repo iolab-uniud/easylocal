@@ -236,12 +236,23 @@ namespace EasyLocal
       bool assigned() const
       {
         return domain.size() == 1;
-      }
+      }      
       
     protected:
       Domain domain;
     };
 
+    template <typename T>
+    bool operator==(const Var<T>& v1, const Var<T>& v2)
+    {
+      return v1.p_ai == v2.p_ai;
+    }
+
+    template <typename T>
+    bool operator<(const Var<T>& v1, const Var<T>& v2)
+    {
+      return v1.p_ai < v2.p_ai;
+    }
     
     /**
      A variable array to facilitate the initialization of sequences of variables.

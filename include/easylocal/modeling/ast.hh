@@ -192,7 +192,7 @@ namespace EasyLocal {
       
       virtual void Print(std::ostream& os) const
       {
-        os << "C(" << (T)(this->value) << ")";
+        os << (T)(this->value);
       }
       
       virtual ~ASTConst() = default;

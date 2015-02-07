@@ -17,24 +17,24 @@ namespace EasyLocal {
     class BasicChange
     {
     public:
-      BasicChange() : var(nullptr), val(0)
+      BasicChange() : val(0)
       {}
       
       /** Constructor.
        @param var the variable to modify
        @param val the value to assign to the variable
        */
-      BasicChange(const Var<T>& var, T val) : var(&var), val(val)
+      BasicChange(const Var<T>& var, T val) : var(var), val(val)
       {}
       
       /** @copydoc Printable::print(std::ostream&) */
       virtual void Print(std::ostream& os) const
       {
-        os << "Change: " << *var << "<<=" << val;
+        os << "Change: " << var << "<<=" << val;
       }
       
-      /** A pointer to the variable to assign */
-      const Var<T>* var;
+      /** The variable to assign */
+      Var<T> var;
       
       /** The value to assign to the variable */
       T val;
