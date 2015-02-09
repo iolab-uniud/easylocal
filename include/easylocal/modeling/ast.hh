@@ -253,10 +253,6 @@ namespace EasyLocal {
         if (recursive)
           for (auto& op : this->operands)
             op->normalize(recursive);
-        this->operands.sort([](const std::shared_ptr<ASTItem<T>>& o1, const std::shared_ptr<ASTItem<T>>& o2)
-                            {
-                              return (o1->type().hash_code() < o2->type().hash_code()) || (o1->type().hash_code() == o2->type().hash_code() && o1->hash() < o2->hash());
-                            });
       }
       
 
@@ -330,12 +326,27 @@ namespace EasyLocal {
       std::list<std::shared_ptr<ASTItem<T>>> operands;
     };
     
+    // Symmetric operations
     template <typename T>
-    class Sum : public ASTOp<T>
+    class ASTSymOp : public ASTOp<T>
+    {
+    public:
+      using ASTOp<T>::ASTOp;
+      virtual void normalize(bool recursive)
+      {
+        ASTOp<T>::normalize(recursive);
+        this->operands.sort([](const std::shared_ptr<ASTItem<T>>& o1, const std::shared_ptr<ASTItem<T>>& o2) {
+          return (o1->type().hash_code() < o2->type().hash_code()) || (o1->type().hash_code() == o2->type().hash_code() && o1->hash() < o2->hash());
+        });
+      }
+    };
+    
+    template <typename T>
+    class Sum : public ASTSymOp<T>
     {
     public:
 
-      Sum(const Exp<T>& e1, const Exp<T>& e2) : ASTOp<T>("+")
+      Sum(const Exp<T>& e1, const Exp<T>& e2) : ASTSymOp<T>("+")
       {
         this->append_operand(e1);
         this->append_operand(e2);
@@ -414,11 +425,11 @@ namespace EasyLocal {
     };
     
     template <typename T>
-    class Mul : public ASTOp<T>
+    class Mul : public ASTSymOp<T>
     {
     public:
       
-      Mul(const Exp<T>& e1, const Exp<T>& e2) : ASTOp<T>("*")
+      Mul(const Exp<T>& e1, const Exp<T>& e2) : ASTSymOp<T>("*")
       {
         this->append_operand(e1);
         this->append_operand(e2);
@@ -502,26 +513,11 @@ namespace EasyLocal {
     };
     
     template <typename T>
-    class ASTAsymmetricOp : public ASTOp<T>
-    {
-      using ASTOp<T>::ASTOp;
-    public:
-      virtual void normalize(bool recursive)
-      {
-        if (this->normalized())
-          return;
-        if (recursive)
-          for (auto& op : this->operands)
-            op->normalize(recursive);
-      }
-    };
-    
-    template <typename T>
-    class Div : public ASTAsymmetricOp<T>
+    class Div : public ASTOp<T>
     {
     public:
       
-      Div(const Exp<T>& e1, const Exp<T>& e2) : ASTAsymmetricOp<T>("/")
+      Div(const Exp<T>& e1, const Exp<T>& e2) : ASTOp<T>("/")
       {
         this->append_operand(e1);
         this->append_operand(e2);
@@ -573,11 +569,11 @@ namespace EasyLocal {
     };
     
     template <typename T>
-    class Mod : public ASTAsymmetricOp<T>
+    class Mod : public ASTOp<T>
     {
     public:
       
-      Mod(const Exp<T>& e1, const Exp<T>& e2) : ASTAsymmetricOp<T>("%")
+      Mod(const Exp<T>& e1, const Exp<T>& e2) : ASTOp<T>("%")
       {
         this->append_operand(e1);
         this->append_operand(e2);
@@ -631,11 +627,11 @@ namespace EasyLocal {
     };
     
     template <typename T>
-    class Min : public ASTOp<T>
+    class Min : public ASTSymOp<T>
     {
     public:
       
-      Min(const Exp<T>& e1, const Exp<T>& e2) : ASTOp<T>("+")
+      Min(const Exp<T>& e1, const Exp<T>& e2) : ASTSymOp<T>("+")
       {
         this->append_operand(e1);
         this->append_operand(e2);
@@ -723,11 +719,11 @@ namespace EasyLocal {
     };
     
     template <typename T>
-    class Max : public ASTOp<T>
+    class Max : public ASTSymOp<T>
     {
     public:
       
-      Max(const Exp<T>& e1, const Exp<T>& e2) : ASTOp<T>("+")
+      Max(const Exp<T>& e1, const Exp<T>& e2) : ASTSymOp<T>("+")
       {
         this->append_operand(e1);
         this->append_operand(e2);
@@ -817,10 +813,10 @@ namespace EasyLocal {
     /** Relational operators **/
     
     template <typename T>
-    class Eq : public ASTOp<T>
+    class Eq : public ASTSymOp<T>
     {
     public:
-      Eq(const Exp<T>& e1, const Exp<T>& e2) : ASTOp<T>("==")
+      Eq(const Exp<T>& e1, const Exp<T>& e2) : ASTSymOp<T>("==")
       {
         this->append_operand(e1);
         this->append_operand(e2);
@@ -882,10 +878,10 @@ namespace EasyLocal {
     };
     
     template <typename T>
-    class Ne : public ASTOp<T>
+    class Ne : public ASTSymOp<T>
     {
     public:
-      Ne(const Exp<T>& e1, const Exp<T>& e2) : ASTOp<T>("!=")
+      Ne(const Exp<T>& e1, const Exp<T>& e2) : ASTSymOp<T>("!=")
       {
         this->append_operand(e1);
         this->append_operand(e2);
@@ -1077,7 +1073,7 @@ namespace EasyLocal {
     };
     
     template <typename T>
-    class AllDiff : public ASTOp<T>
+    class AllDiff : public ASTSymOp<T>
     {
     public:
       AllDiff(const std::vector<Exp<T>>& v) : ASTOp<T>("alldifferent")
@@ -1142,10 +1138,10 @@ namespace EasyLocal {
     };
     
     template <typename T>
-    class Abs : public ASTOp<T>
+    class Abs : public ASTSymOp<T>
     {
     public:
-      Abs(const Exp<T>& e) : ASTOp<T>("abs")
+      Abs(const Exp<T>& e) : ASTSymOp<T>("abs")
       {
         this->append_operand(e);
       }
