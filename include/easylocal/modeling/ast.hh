@@ -462,7 +462,7 @@ namespace EasyLocal {
             this->merge_operands(*it);
             it = this->operands.erase(it);
           }
-          // if a constant is detected, add its value to the sum, then erase it
+          // if a constant is detected, add its value to the product, then erase it
           else if ((*it)->type() == typeid(ASTConst<T>))
           {
             prod_of_const *= std::dynamic_pointer_cast<ASTConst<T>>(*it)->value;
