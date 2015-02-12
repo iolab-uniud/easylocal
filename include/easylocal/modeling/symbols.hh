@@ -295,7 +295,7 @@ namespace EasyLocal {
       /** @copydoc Sym<T>::compute(ValueStore<T>&, unsigned int) */
       virtual void compute(ValueStore<T>& st, unsigned int level = 0) const
       {
-        T res = st(this->children[0]) / st(this->children[1]);
+        T res = st(this->children[0], level) / st(this->children[1], level);
         st.assign(this->index, level, res);
       }
       
@@ -324,7 +324,7 @@ namespace EasyLocal {
       /** @copydoc Sym<T>::compute(ValueStore<T>&, unsigned int) */
       virtual void compute(ValueStore<T>& st, unsigned int level = 0) const
       {
-        T res = st(this->children[0]) % st(this->children[1]);
+        T res = st(this->children[0], level) % st(this->children[1], level);
         st.assign(this->index, level, res);
       }
       
