@@ -236,7 +236,12 @@ namespace EasyLocal
       bool assigned() const
       {
         return domain.size() == 1;
-      }      
+      }
+      
+      size_t domainSize() const
+      {
+        return domain.size();
+      }
       
     protected:
       Domain domain;
@@ -246,6 +251,12 @@ namespace EasyLocal
     bool operator==(const Var<T>& v1, const Var<T>& v2)
     {
       return v1.p_ai == v2.p_ai;
+    }
+    
+    template <typename T>
+    bool same_var(const Var<T>& v1, const ASTVar<T>* v2)
+    {
+      return v1.p_ai.get() == v2;
     }
 
     template <typename T>
@@ -314,7 +325,7 @@ namespace EasyLocal
     void dom(Var<T>& v, T lb, T ub)
     {
       v.setDomain(lb, ub);
-    }
+    }    
   }
 }
 

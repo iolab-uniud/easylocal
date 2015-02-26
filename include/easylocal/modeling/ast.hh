@@ -1343,7 +1343,7 @@ namespace EasyLocal {
       }
       
       virtual ~IfElse() = default;
-    };
+    };    
   }
 }
 
