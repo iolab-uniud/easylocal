@@ -6,6 +6,7 @@
 #include <stdexcept>
 #include <memory>
 #include <iterator>
+#include <functional>
 
 #include "easylocal/helpers/deltacostcomponent.hh"
 #include "easylocal/helpers/statemanager.hh"
