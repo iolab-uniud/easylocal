@@ -307,7 +307,7 @@ namespace EasyLocal {
     void Runner<Input, State, CFtype>::ReadParameters(std::istream& is, std::ostream& os)
     {
       os << this->name << " -- INPUT PARAMETERS" << std::endl;
-      Parametrized::ReadParameters();
+      Parametrized::ReadParameters(is, os);
     }
     
     template <class Input, class State, typename CFtype>
