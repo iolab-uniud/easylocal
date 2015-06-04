@@ -175,7 +175,7 @@ namespace EasyLocal {
           else
             idle_restarts = 0;
           this->sm.RandomState(*this->p_current_state);
-          this->current_state_cost = this->sm.CostFunction(*this->p_current_state);
+          this->current_state_cost = this->sm.CostFunctionComponents(*this->p_current_state);
         }
       }
       while (idle_restarts < max_idle_restarts && restart < max_restarts);

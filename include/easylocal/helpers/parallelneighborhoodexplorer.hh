@@ -6,7 +6,7 @@
 //
 //
 
-#if defined(TBB_AVAILABLE)
+#if defined(TBB_FOUND)
 
 #ifndef _parallelneighborhoodexplorer_hh
 #define _parallelneighborhoodexplorer_hh
