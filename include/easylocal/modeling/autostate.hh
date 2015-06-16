@@ -181,7 +181,7 @@ namespace EasyLocal {
        */
       CompiledExpression<T> compile(Exp<T>& e)
       {
-        return CompiledExpression<T>(e, es);
+        return CompiledExpression<T>(e, *es);
       }
       
       /** Generates a scalar value, and registers it in the ExpressionStore.
@@ -198,7 +198,7 @@ namespace EasyLocal {
        */
       VarArray<T> make_array(const std::string& name, size_t size, T lb, T ub)
       {
-        VarArray<T> v(es, name, size, lb, ub);
+        VarArray<T> v(*es, name, size, lb, ub);
         return v;
       }
       

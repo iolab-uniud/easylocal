@@ -235,7 +235,7 @@ namespace EasyLocal {
         error = st1_cost - em.cost - st_cost;
         for (size_t i = 0; i < CostComponent<Input, State, CFtype>::CostComponents(); i++)
         {
-          if (!IsZero(error.all_components[i]) && fabs(error.all_components[i]) > tolerance)
+          if (!IsZero(error.all_components[i]) && std::abs(error.all_components[i]) > tolerance)
           {
             error_found = true;
             os << em.move << "  " << i << ". " <<  CostComponent<Input, State, CFtype>::Component(i).name << ": " << st_cost.all_components[i] << std::showpos << em.cost.all_components[i] << std::noshowpos << "!="
