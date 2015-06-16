@@ -7,7 +7,7 @@
 #
 #  TBB_FOUND - system has TBB
 #  TBB_INCLUDE_DIRS - the TBB include directories
-#  TBB_LIBRARIES - TBB libraries to be lined, doesn't include malloc or
+#  TBB_LIBRARIES - TBB libraries to be linked, doesn't include malloc or
 #                  malloc proxy
 #
 #  TBB_VERSION_MAJOR - Major Product Version Number

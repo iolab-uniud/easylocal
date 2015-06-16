@@ -6,7 +6,7 @@
 //
 //
 
-#if defined(TBB_FOUND)
+#if defined(TBB_AVAILABLE)
 
 #ifndef _parallelkicker_hh
 #define _parallelkicker_hh
