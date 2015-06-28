@@ -61,9 +61,21 @@ namespace EasyLocal {
       typedef Input InputType;
       typedef Move MoveType;
       typedef State StateType;
-      typedef CFtype CostType;
+      typedef CFtype CostType;      
       
       typedef typename std::function<bool(const Move& mv, CostStructure<CFtype> move_cost)> MoveAcceptor;
+      
+      /* Copies all the delta cost components from another neighborhood explorer of the same class
+       @param ne the neighborhood explorer from which the data has to be copied
+       */
+      void CopyDeltaCostComponents(const NeighborhoodExplorer<Input, State, Move, CFtype>& ne)
+      {
+        this->delta_hard_cost_components = ne.delta_hard_cost_components;
+        this->delta_soft_cost_components = ne.delta_soft_cost_components;
+        this->dcc_adapters = ne.dcc_adapters;
+        this->unimplemented_hard_components = ne.unimplemented_hard_components;
+        this->unimplemented_soft_components = ne.unimplemented_soft_components;
+      }
       
       /** Checks if a move in the neighborhood is legal.
        @note Can be implemented in the application (MayRedef)
