@@ -176,10 +176,10 @@ namespace EasyLocal {
       StateManager<Input, State, CFtype>& sm; /**< A reference to the attached state manager. */
       
       /** Lists of delta cost components (or adapters) */
-      std::vector<DeltaCostComponent<Input, State, Move, CFtype>* > delta_hard_cost_components, delta_soft_cost_components;
+      std::vector<DeltaCostComponent<Input, State, Move, CFtype>*> delta_hard_cost_components, delta_soft_cost_components;
       
       /** List of created adapters (to be automatically deleted in the destructor). */
-      std::vector<std::unique_ptr<DeltaCostComponentAdapter<Input, State, Move, CFtype>>> dcc_adapters;
+      std::vector<std::shared_ptr<DeltaCostComponentAdapter<Input, State, Move, CFtype>>> dcc_adapters;
       
       /** Name of user-defined neighborhood explorer */
       std::string name;
@@ -286,7 +286,7 @@ namespace EasyLocal {
     void NeighborhoodExplorer<Input, State, Move, CFtype>::AddCostComponent(CostComponent<Input, State, CFtype>& cc)
     {
       
-      dcc_adapters.push_back(std::unique_ptr<DeltaCostComponentAdapter<Input, State, Move, CFtype>>(new DeltaCostComponentAdapter<Input, State, Move, CFtype>(in, cc, *this)));
+      dcc_adapters.push_back(std::make_shared<DeltaCostComponentAdapter<Input, State, Move, CFtype>>(in, cc, *this));
       if (cc.IsHard())
       {
         unimplemented_hard_components = true;

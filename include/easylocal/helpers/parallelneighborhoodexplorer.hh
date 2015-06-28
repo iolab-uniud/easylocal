@@ -186,6 +186,14 @@ namespace EasyLocal {
     public:
       using NE::NE;
       using typename NE::MoveAcceptor;
+      void CopyDeltaCostComponents(NE& ne)
+      {
+        this->delta_hard_cost_components = ne.delta_hard_cost_components;
+        this->delta_soft_cost_components = ne.delta_soft_cost_components;
+        this->dcc_adapters = ne.dcc_adapters;
+        this->unimplemented_hard_components = ne.unimplemented_hard_components;
+        this->unimplemented_soft_components = ne.unimplemented_soft_components;
+      }
     protected:
       FullNeighborhoodIterator<Input, State, typename NE::MoveType, CFtype> begin(const State& st) const
       {
