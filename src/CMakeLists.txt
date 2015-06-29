@@ -18,30 +18,30 @@ FOREACH (subdir ${subdirs})
 
 	file(GLOB headers RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${PROJECT_INCLUDE_DIR}/easylocal/${subdir}/*.hh)
 	source_group("Header Files\\${subdir_cap}" FILES ${headers})
-	
+
 	file(GLOB sources RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/src/${subdir}/*.cc)
 	source_group("Source Files\\${subdir_cap}" FILES ${sources})
-		
+
 	set(subdir_sources ${subdir_sources} ${sources})
 	set(subdir_headers ${subdir_headers} ${headers})
-	
+
 ENDFOREACH(subdir)
 
 file(GLOB headers RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${PROJECT_INCLUDE_DIR}/easylocal/*.hh)
 source_group("Header Files" FILES ${headers})
 
-add_library(${PROJECT_NAME} ${headers} ${subdir_sources} ${subdir_headers})
-target_link_libraries(${PROJECT_NAME} ${Boost_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+add_library(EasyLocal ${headers} ${subdir_sources} ${subdir_headers})
+target_link_libraries(EasyLocal ${Boost_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
 
 install(
   DIRECTORY ${PROJECT_INCLUDE_DIR}/easylocal
-  DESTINATION ${CMAKE_INSTALL_PREFIX}/include 
-  PATTERN * 
-  PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ GROUP_EXECUTE GROUP_READ WORLD_EXECUTE WORLD_READ 
+  DESTINATION ${CMAKE_INSTALL_PREFIX}/include
+  PATTERN *
+  PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ GROUP_EXECUTE GROUP_READ WORLD_EXECUTE WORLD_READ
 )
 
 install(
-  TARGETS ${PROJECT_NAME} 
-  DESTINATION ${CMAKE_INSTALL_PREFIX}/lib 
-  PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ GROUP_EXECUTE GROUP_READ WORLD_EXECUTE WORLD_READ 
+  TARGETS EasyLocal
+  DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
+  PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ GROUP_EXECUTE GROUP_READ WORLD_EXECUTE WORLD_READ
 )
