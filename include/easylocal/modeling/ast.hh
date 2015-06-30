@@ -8,8 +8,6 @@
 #include <map>
 #include "symbols.hh"
 
-// TODO: perform syntactic check for subexpressions (i.e., filter out incompatible subexpressions)
-
 namespace EasyLocal {
   
   namespace Modeling {
@@ -1071,14 +1069,23 @@ namespace EasyLocal {
       
       virtual ~Lt() = default;
     };
-    
+      
+    template <typename T>
+    class Var;
+  
     template <typename T>
     class AllDiff : public ASTSymOp<T>
     {
     public:
-      AllDiff(const std::vector<Exp<T>>& v) : ASTOp<T>("alldifferent")
+      AllDiff(const std::vector<Exp<T>>& v) : ASTSymOp<T>("alldifferent")
       {
         for (const Exp<T>& e : v)
+          this->append_operand(e);
+      }
+        
+      AllDiff(const std::vector<Var<T>>& v) : ASTSymOp<T>("alldifferent")
+      {
+        for (const Var<T>& e : v)
           this->append_operand(e);
       }
       

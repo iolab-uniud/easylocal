@@ -18,14 +18,7 @@ namespace EasyLocal {
     /** Forward declaration */
     template <typename T>
     class Var;
-    
-    /** Exception that is raised when trying to assign a variable with a value out of its domain */
-    class ValueOutsideDomain : public std::logic_error
-    {
-    public:
-      ValueOutsideDomain(const std::string& what) : std::logic_error(what.c_str()) {}
-    };
-        
+      
     /** A store for the values of CompiledExpressions, used to efficiently compute
      delta changes in the expression values, and to support concurrent simulation
      of Changes. 
@@ -295,10 +288,8 @@ namespace EasyLocal {
         valid[level][i] = true;
       }
       
-      void assign(const Var<T>& v, unsigned int level, const T& val) throw (ValueOutsideDomain)
+      void assign(const Var<T>& v, unsigned int level, const T& val)
       {
-        if (!v.inDomain(val))
-          throw ValueOutsideDomain(v.name());
         value[level][e.compiled_symbols[v.hash()]] = val;
         valid[level][e.compiled_symbols[v.hash()]] = true;
       }

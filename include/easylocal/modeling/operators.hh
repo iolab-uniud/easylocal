@@ -8,6 +8,9 @@ namespace EasyLocal {
     
     template <typename T>
     class Exp;
+      
+    template <typename T>
+    class Var;
     
     template <typename T>
     static Exp<T>& operator+=(Exp<T>& e1, const Exp<T>& e2)
@@ -399,7 +402,15 @@ namespace EasyLocal {
       e.simplify();
       return e;
     }
-    
+
+    template <typename T>
+    static Exp<T> alldifferent(const std::vector<Var<T>>& v)
+    {
+        Exp<T> e = Exp<T>(std::make_shared<AllDiff<T>>(v));
+        e.simplify();
+        return e;
+    }
+      
     template <typename T>
     static Exp<T> abs(const Exp<T>& e)
     {

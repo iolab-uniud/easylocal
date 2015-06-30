@@ -23,4 +23,6 @@ if (DOXYGEN_FOUND)
 endif (DOXYGEN_FOUND)
 find_package(TBB)
 
+set(CMAKE_BUILD_TYPE "Release")
+
 add_subdirectory(src)

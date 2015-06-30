@@ -198,7 +198,7 @@ namespace EasyLocal {
        */
       VarArray<T> make_array(const std::string& name, size_t size, T lb, T ub)
       {
-        VarArray<T> v(*es, name, size, lb, ub);
+        VarArray<T> v(*es, name, size);
         return v;
       }
       
