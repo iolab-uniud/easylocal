@@ -98,6 +98,10 @@ namespace EasyLocal {
       {
         return *cost_components[i];
       }
+      
+      /** Destructor. */
+      virtual ~CostComponent() {}
+
     protected:
       
       /** Constructor.
@@ -107,9 +111,6 @@ namespace EasyLocal {
        @param name name of the cost component (for debug reasons)
        */
       CostComponent(const Input& in, const CFtype& weight, bool is_hard, std::string name);
-      
-      /** Destructor. */
-      virtual ~CostComponent() {}
       
       /** Input object. */
       const Input& in;
