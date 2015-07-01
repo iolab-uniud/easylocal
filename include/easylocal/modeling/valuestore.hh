@@ -115,7 +115,7 @@ namespace EasyLocal {
           e.evaluate(*this);
         std::set<size_t> vars;
         assign(m.var, level, m.val);
-        size_t var_index = e.compiled_symbols[m.var.hash()];
+        size_t var_index = e.compiled_exps[m.var.hash()];
         vars.insert(var_index);
         e.evaluate_diff(*this, vars, level);
       }
@@ -290,8 +290,8 @@ namespace EasyLocal {
       
       void assign(const Var<T>& v, unsigned int level, const T& val)
       {
-        value[level][e.compiled_symbols[v.hash()]] = val;
-        valid[level][e.compiled_symbols[v.hash()]] = true;
+        value[level][e.compiled_exps[v.hash()]] = val;
+        valid[level][e.compiled_exps[v.hash()]] = true;
       }
       
       /** Gets the indices of the changed children of an expression at a specific level

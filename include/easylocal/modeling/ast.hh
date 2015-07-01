@@ -6,7 +6,7 @@
 #include <vector>
 #include <list>
 #include <map>
-#include "symbols.hh"
+#include "compiledexpression.hh"
 
 namespace EasyLocal {
   
@@ -30,11 +30,11 @@ namespace EasyLocal {
     template <typename T>
     class ASTVarArray;
 
-    /** Forward declaration. */
+    /** Forward declaration (AST operation). */
     template <typename T>
     class ASTOp;
     
-    /** Forward declaration. */
+    /** Forward declaration (AST symmetric operation). */
     template <typename T>
     class ASTSymOp;
     
@@ -44,8 +44,12 @@ namespace EasyLocal {
     template <typename T>
     class ASTItem : public virtual Core::Printable, public std::enable_shared_from_this<ASTItem<T>>
     {
+      /** Needed to access type() which is protected. */
       friend class ASTOp<T>;
+      
+      /** Needed to access type() which is protected. */
       friend class ASTSymOp<T>;
+      
     public:
       
       /** Default constructor. */
@@ -106,7 +110,6 @@ namespace EasyLocal {
       
     protected:
       
-      
       /** For "type system". */
       const std::type_info& type() const
       {
@@ -125,37 +128,68 @@ namespace EasyLocal {
         }
       }
       
-      /** Avoids re-compiling an expression if it is already compiled and in the expression store. */
+      /** Checks whether an ASTItem has been compiled and added to an 
+          ExpressionStore, creates it if not.
+          @param exp_store ExpressionStore where to find or create a CExp. 
+          @return a pair containing the CExp index in the expression store and 
+          a pointer to the CExp itself.
+       */
       template <template <typename> class CType>
       std::pair<size_t, std::shared_ptr<CType<T>>> get_or_create(ExpressionStore<T>& exp_store) const
       {
-        auto it = exp_store.compiled_symbols.find(this->hash());
-        if (it != exp_store.compiled_symbols.end())
+        // If the compiled expression is found in the ExpressionStore, return index and nullptr
+        auto it = exp_store.compiled_exps.find(this->hash());
+        if (it != exp_store.compiled_exps.end())
           return std::make_pair(it->second, nullptr);
+        
+        // Otherwise, generate a new index
         size_t this_index = exp_store.size();
-        exp_store.compiled_symbols[this->hash()] = this_index;
+        
+        // Register the hash in the list of compiled expressions
+        exp_store.compiled_exps[this->hash()] = this_index;
+        
+        // Generate the correct CExp using the template parameter
         std::shared_ptr<CType<T>> compiled = std::make_shared<CType<T>>(exp_store);
+        
+        // Push the CExp on the ExpressionStore, update its index
         exp_store.push_back(compiled);
         exp_store[this_index]->index = this_index;
+        
+        // Get a string description of the expression
         std::ostringstream oss;
         this->Print(oss);
         exp_store[this_index]->exp = oss.str();
+        
+        // Return index and pointer
         return std::make_pair(this_index, compiled);
       }
       
+      /** Keeps track whether the hash has been computed already. */
       mutable bool _hash_set;
+      
+      /** Hash code. */
       mutable size_t _hash;
+      
+      /** Keep track whether the ASTItem has been simplified and normalized already. */
       bool _simplified, _normalized;
+      
+      /** Virtual function to compute the hash. */
       virtual size_t compute_hash() const = 0;
+      
     };
     
+    /** Special ASTItem which does not need to be simplified or normalized. */
     template <typename T>
     class ASTStable : public ASTItem<T>
     {
     public:
+      
+      /** Virtual destructor. */
       virtual ~ASTStable() = default;
       
     protected:
+      
+      /** Default constructor. */
       ASTStable()
       {
         this->_simplified = true;
@@ -163,23 +197,27 @@ namespace EasyLocal {
       }
     };
     
+    /** An ASTItem representing a variable. */
     template <typename T>
     class ASTVar : public ASTStable<T>
     {
     public:
       
-      ASTVar(const std::string& name) : name(name)
-      {}
+      /** Constructor. 
+          @param name name of the variable (for printing purposes). 
+       */
+      ASTVar(const std::string& name) : name(name) { }
       
+      /** @copydoc Printable::Print(std::ostream& os). */
       virtual void Print(std::ostream& os) const
       {
         os << name;
       }
       
+      /** Virtual destructor. */
       virtual ~ASTVar() = default;
       
-      const std::string name;
-      
+      /** @copydoc ASTItem::compile(ExpressionStore<T>&). */
       virtual size_t compile(ExpressionStore<T>& exp_store) const
       {
         return this->template get_or_create<CVar>(exp_store).first;
@@ -187,36 +225,48 @@ namespace EasyLocal {
       
     protected:
       
+      /** Name of the variable (for printing purposes). */
+      const std::string name;
+      
+      /** @copydoc ASTItem::compute_hash(). */
       virtual size_t compute_hash() const
       {
         return std::hash<std::string>()(this->name);
       }
+      
     };
     
+    /** An ASTItem representing a variable array. */
     template <typename T>
     class ASTVarArray : public ASTStable<T>
     {
     public:
       
-      ASTVarArray(const std::string& name, size_t size) : name(name), size(size)
-      {}
+      /** Constructor. 
+          @param name the name of the variable array (for printing purposes). 
+          @param size the size of the variable array.
+       */
+      ASTVarArray(const std::string& name, size_t size) : name(name), size(size) { }
       
+      /** @copydoc Printable::Print(std::ostream& os) */
       virtual void Print(std::ostream& os) const
       {
-        os << this->name << "{size="<< this->size << "}";
+        os << this->name << "[" << this->size << "]";
       }
       
+      /** Virtual destructor. */
       virtual ~ASTVarArray() = default;
       
-      const std::string name;
-      
-      const size_t size;      
       
       virtual size_t compile(ExpressionStore<T>& exp_store) const
       {
+        // Generate CExp (CVarArray)
         auto compiled_pair = this->template get_or_create<CVarArray>(exp_store);
+        
+        // Special handling for CVarArrays
         if (compiled_pair.second != nullptr)
         {
+          // Get newly compiled expression (set start and size if it's a new CVarArray)
           auto compiled = std::dynamic_pointer_cast<CVarArray<T>>(compiled_pair.second);
           compiled->start = 0;
           compiled->size = size;
@@ -225,19 +275,30 @@ namespace EasyLocal {
       }
 
     protected:
+      
+      /** Name of the variable array (for printing purposes). */
+      const std::string name;
+      
+      /** Size of the variable array. */
+      const size_t size;
+      
+      /** @copydoc ASTItem::compute_hash(). */
       virtual size_t compute_hash() const
       {
         return std::hash<std::string>()(this->name);
       }
     };
     
+    /** ASTItem representing constant value. */
     template <typename T>
     class ASTConst : public ASTStable<T>
     {
     public:
       
       ASTConst(const T& value) : value(value)
-      {}
+      {
+      
+      }
       
       virtual void Print(std::ostream& os) const
       {
