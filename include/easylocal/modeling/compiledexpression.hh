@@ -36,9 +36,7 @@ namespace EasyLocal {
       {
         depth = 0;
       }
-      
-    public:
-      
+        
       /** Index of the expression in the ExpressionStore */
       size_t index;
       
@@ -153,7 +151,7 @@ namespace EasyLocal {
       }
       
       /** Size of the variable array (relies on contiguous allocation of array elements) */
-      size_t start, size;
+      size_t size;
     };
 
     /** Numeric constant expression. */
@@ -555,9 +553,9 @@ namespace EasyLocal {
       virtual void compute(ValueStore<T>& st, unsigned int level = 0) const
       {
         const std::shared_ptr<CVarArray<T>>& array = std::dynamic_pointer_cast<CVarArray<T>>(this->exp_store[this->children[0]]);
-        T min = st(array->start, level);
+        T min = st(array->index, level);
         for (size_t i = 1; i < array->size; i++)
-          min = std::min(min, st(array->start + i, level));
+          min = std::min(min, st(array->index + i, level));
         st.assign(this->index, level, min);
       }
       
@@ -595,10 +593,10 @@ namespace EasyLocal {
       {
         const std::shared_ptr<CVarArray<T>>& array = std::dynamic_pointer_cast<CVarArray<T>>(this->exp_store[this->children[0]]);
         size_t min_index = 0;
-        T min = st(array->start, level);
+        T min = st(array->index, level);
         for (size_t i = 1; i < array->size; i++)
         {
-          T val = st(array->start + i, level);
+          T val = st(array->index + i, level);
           if (val < min)
           {
             min = val;
@@ -618,7 +616,7 @@ namespace EasyLocal {
         if (changed_min <= current_min)
         {
           const std::shared_ptr<CVarArray<T>>& array = std::dynamic_pointer_cast<CVarArray<T>>(this->exp_store[this->children[0]]);
-          st.assign(this->index, level, *min_it - array->start);
+          st.assign(this->index, level, *min_it - array->index);
         }
         else
           this->compute(st, level);
@@ -644,9 +642,9 @@ namespace EasyLocal {
       virtual void compute(ValueStore<T>& st, unsigned int level = 0) const
       {
         const std::shared_ptr<CVarArray<T>>& array = std::dynamic_pointer_cast<CVarArray<T>>(this->exp_store[this->children[0]]);
-        T max = st(array->start, level);
+        T max = st(array->index, level);
         for (size_t i = 1; i < array->size; i++)
-          max = std::max(max, st(array->start + i, level));
+          max = std::max(max, st(array->index + i, level));
         st.assign(this->index, level, max);
       }
       
@@ -684,10 +682,10 @@ namespace EasyLocal {
       {
         const std::shared_ptr<CVarArray<T>>& array = std::dynamic_pointer_cast<CVarArray<T>>(this->exp_store[this->children[0]]);
         size_t max_index = 0;
-        T max = st(array->start, level);
+        T max = st(array->index, level);
         for (size_t i = 1; i < array->size; i++)
         {
-          T val = st(array->start + i, level);
+          T val = st(array->index + i, level);
           if (val > max)
           {
             max = val;
@@ -707,7 +705,7 @@ namespace EasyLocal {
         if (changed_max >= current_max)
         {
           const std::shared_ptr<CVarArray<T>>& array = std::dynamic_pointer_cast<CVarArray<T>>(this->exp_store[this->children[0]]);
-          st.assign(this->index, level, *max_it - array->start);
+          st.assign(this->index, level, *max_it - array->index);
         }
         else
           this->compute(st, level);
@@ -738,7 +736,7 @@ namespace EasyLocal {
         int offset = st(this->children[0], level);
         if (offset < 0 || offset >= array->size)
           throw std::runtime_error("Error: ArrayElement expression using an invalid index (index value: " + std::to_string(offset) + ")");
-        st.assign(this->index, level, st(array->start + offset, level));
+        st.assign(this->index, level, st(array->index + offset, level));
       }
       
       /** @copydoc CExp<T>::compute_diff(ValueStore<T>&, unsigned int) */
