@@ -40,7 +40,7 @@ namespace EasyLocal {
       
       /** Const cast operator to the actual expression.
        */
-      operator const Sym<T>&() const
+      operator const CExp<T>&() const
       {
         return *compiled_exp;
       }
@@ -53,7 +53,7 @@ namespace EasyLocal {
     protected:
       
       /** Pointer to the compiled expression. */
-      std::shared_ptr<Sym<T>> compiled_exp;
+      std::shared_ptr<CExp<T>> compiled_exp;
     };
     
     
@@ -107,7 +107,7 @@ namespace EasyLocal {
        @param s the symbol to get the value for
        @param level level to get the values from
        */
-      T value_of(const Sym<T>& s, size_t level = 0) const
+      T value_of(const CExp<T>& s, size_t level = 0) const
       {
         return st(s, level);
       }

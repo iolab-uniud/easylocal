@@ -25,14 +25,14 @@ namespace EasyLocal {
     
     /** Template compiled Exp<T>. */
     template <typename T>
-    class Sym : public EasyLocal::Core::Printable
+    class CExp : public EasyLocal::Core::Printable
     {
     public:
       
       /** Constructor. 
        @param exp_store ExpressionStore into which to register the compiled expression
        */
-      Sym(ExpressionStore<T>& exp_store) : exp_store(exp_store)
+      CExp(ExpressionStore<T>& exp_store) : exp_store(exp_store)
       {
         depth = 0;
       }
@@ -101,24 +101,24 @@ namespace EasyLocal {
      @remarks Currently only variable or constant
      */
     template <typename T>
-    class TermSym : public Sym<T>
+    class CTerm : public CExp<T>
     {
     public:
-      using Sym<T>::Sym;
+      using CExp<T>::CExp;
     };
 
     /** Scalar variable expression. */
     template <typename T>
-    class VarSym : public TermSym<T>
+    class CVar : public CTerm<T>
     {
     public:
-      using TermSym<T>::TermSym;
+      using CTerm<T>::CTerm;
       
-      /** @copydoc Sym<T>::compute(ValueStore<T>&, unsigned int) */
+      /** @copydoc CExp<T>::compute(ValueStore<T>&, unsigned int) */
       virtual void compute(ValueStore<T>& st, unsigned int level = 0) const
       {}
       
-      /** @copydoc Sym<T>::compute_diff(ValueStore<T>&, unsigned int) */
+      /** @copydoc CExp<T>::compute_diff(ValueStore<T>&, unsigned int) */
       virtual void compute_diff(ValueStore<T>& st, unsigned int level = 0) const
       {}
       
@@ -126,22 +126,22 @@ namespace EasyLocal {
       virtual void Print(std::ostream& os) const
       {
         os << "Var: ";
-        Sym<T>::Print(os);
+        CExp<T>::Print(os);
       }
     };
     
     /** Array variable expression. */
     template <typename T>
-    class VarArraySym : public TermSym<T>
+    class CVarArray : public CTerm<T>
     {
     public:
-      using TermSym<T>::TermSym;
+      using CTerm<T>::CTerm;
       
-      /** @copydoc Sym<T>::compute(ValueStore<T>&, unsigned int) */
+      /** @copydoc CExp<T>::compute(ValueStore<T>&, unsigned int) */
       virtual void compute(ValueStore<T>& st, unsigned int level = 0) const
       {}
       
-      /** @copydoc Sym<T>::compute_diff(ValueStore<T>&, unsigned int) */
+      /** @copydoc CExp<T>::compute_diff(ValueStore<T>&, unsigned int) */
       virtual void compute_diff(ValueStore<T>& st, unsigned int level = 0) const
       {}
       
@@ -149,7 +149,7 @@ namespace EasyLocal {
       virtual void Print(std::ostream& os) const
       {
         os << "VarArray: ";
-        Sym<T>::Print(os);
+        CExp<T>::Print(os);
       }
       
       /** Size of the variable array (relies on contiguous allocation of array elements) */
@@ -158,19 +158,19 @@ namespace EasyLocal {
 
     /** Numeric constant expression. */
     template <typename T>
-    class ConstSym : public TermSym<T>
+    class CConst : public CTerm<T>
     {
     public:
-      using TermSym<T>::TermSym;
+      using CTerm<T>::CTerm;
       
-      /** @copydoc Sym<T>::compute(ValueStore<T>&, unsigned int) */
+      /** @copydoc CExp<T>::compute(ValueStore<T>&, unsigned int) */
       virtual void compute(ValueStore<T>& st, unsigned int level = 0) const
       {
         // Note: at first, in the value store the constant value has not been set, so we have to force it
         st.assign(this->index, 0, value);
       }
       
-      /** @copydoc Sym<T>::compute_diff(ValueStore<T>&, unsigned int) */
+      /** @copydoc CExp<T>::compute_diff(ValueStore<T>&, unsigned int) */
       virtual void compute_diff(ValueStore<T>& st, unsigned int level = 0) const
       {}
       
@@ -181,18 +181,18 @@ namespace EasyLocal {
       virtual void Print(std::ostream& os) const
       {
         os << "Const: ";
-        Sym<T>::Print(os);
+        CExp<T>::Print(os);
       }
     };
 
     /** Summation expression. */
     template <typename T>
-    class SumSym : public Sym<T>
+    class CSum : public CExp<T>
     {
     public:
-      using Sym<T>::Sym;
+      using CExp<T>::CExp;
       
-      /** @copydoc Sym<T>::compute(ValueStore<T>&, unsigned int) */
+      /** @copydoc CExp<T>::compute(ValueStore<T>&, unsigned int) */
       virtual void compute(ValueStore<T>& st, unsigned int level = 0) const
       {
         T sum = static_cast<T>(0);
@@ -203,7 +203,7 @@ namespace EasyLocal {
         st.assign(this->index, level, sum);
       }
       
-      /** @copydoc Sym<T>::compute_diff(ValueStore<T>&, unsigned int) */
+      /** @copydoc CExp<T>::compute_diff(ValueStore<T>&, unsigned int) */
       virtual void compute_diff(ValueStore<T>& st, unsigned int level = 0) const
       {
         T current_contribution = st(this->index), new_contribution = static_cast<T>(0);
@@ -221,18 +221,18 @@ namespace EasyLocal {
       virtual void Print(std::ostream& os) const
       {
         os << "Sum: ";
-        Sym<T>::Print(os);
+        CExp<T>::Print(os);
       }
     };
 
     /** Product expression. */
     template <typename T>
-    class MulSym : public Sym<T>
+    class CMul : public CExp<T>
     {
     public:
-      using Sym<T>::Sym;
+      using CExp<T>::CExp;
       
-      /** @copydoc Sym<T>::compute(ValueStore<T>&, unsigned int) */
+      /** @copydoc CExp<T>::compute(ValueStore<T>&, unsigned int) */
       virtual void compute(ValueStore<T>& st, unsigned int level = 0) const
       {
         T mul = static_cast<T>(1);
@@ -249,7 +249,7 @@ namespace EasyLocal {
         st.assign(this->index, level, mul);
       }
       
-      /** @copydoc Sym<T>::compute_diff(ValueStore<T>&, unsigned int) */
+      /** @copydoc CExp<T>::compute_diff(ValueStore<T>&, unsigned int) */
       virtual void compute_diff(ValueStore<T>& st, unsigned int level = 0) const
       {
         T current_contribution = st(this->index);
@@ -281,25 +281,25 @@ namespace EasyLocal {
       virtual void Print(std::ostream& os) const
       {
         os << "Mul: ";
-        Sym<T>::Print(os);
+        CExp<T>::Print(os);
       }
     };
     
     /** Division expression. */
     template <typename T>
-    class DivSym : public Sym<T>
+    class CDiv : public CExp<T>
     {
     public:
-      using Sym<T>::Sym;
+      using CExp<T>::CExp;
       
-      /** @copydoc Sym<T>::compute(ValueStore<T>&, unsigned int) */
+      /** @copydoc CExp<T>::compute(ValueStore<T>&, unsigned int) */
       virtual void compute(ValueStore<T>& st, unsigned int level = 0) const
       {
         T res = st(this->children[0], level) / st(this->children[1], level);
         st.assign(this->index, level, res);
       }
       
-      /** @copydoc Sym<T>::compute_diff(ValueStore<T>&, unsigned int) */
+      /** @copydoc CExp<T>::compute_diff(ValueStore<T>&, unsigned int) */
       virtual void compute_diff(ValueStore<T>& st, unsigned int level = 0) const
       {
         this->compute(st, level);
@@ -310,25 +310,25 @@ namespace EasyLocal {
       virtual void Print(std::ostream& os) const
       {
         os << "Div: ";
-        Sym<T>::Print(os);
+        CExp<T>::Print(os);
       }
     };
     
     /** Modulo expression. */
     template <typename T>
-    class ModSym : public Sym<T>
+    class CMod : public CExp<T>
     {
     public:
-      using Sym<T>::Sym;
+      using CExp<T>::CExp;
       
-      /** @copydoc Sym<T>::compute(ValueStore<T>&, unsigned int) */
+      /** @copydoc CExp<T>::compute(ValueStore<T>&, unsigned int) */
       virtual void compute(ValueStore<T>& st, unsigned int level = 0) const
       {
         T res = st(this->children[0], level) % st(this->children[1], level);
         st.assign(this->index, level, res);
       }
       
-      /** @copydoc Sym<T>::compute_diff(ValueStore<T>&, unsigned int) */
+      /** @copydoc CExp<T>::compute_diff(ValueStore<T>&, unsigned int) */
       virtual void compute_diff(ValueStore<T>& st, unsigned int level = 0) const
       {
         this->compute(st, level);
@@ -339,16 +339,16 @@ namespace EasyLocal {
       virtual void Print(std::ostream& os) const
       {
         os << "Mod: ";
-        Sym<T>::Print(os);
+        CExp<T>::Print(os);
       }
     };
     
     /** Minimum expression. */
     template <typename T>
-    class MinSym : public Sym<T>
+    class CMin : public CExp<T>
     {
     public:
-      using Sym<T>::Sym;
+      using CExp<T>::CExp;
       
       /** @copydoc Sym<T>::compute(ValueStore<T>&, unsigned int) */
       virtual void compute(ValueStore<T>& st, unsigned int level = 0) const
@@ -362,7 +362,7 @@ namespace EasyLocal {
         st.assign(this->index, level, min);
       }
       
-      /** @copydoc Sym<T>::compute_diff(ValueStore<T>&, unsigned int) */
+      /** @copydoc CExp<T>::compute_diff(ValueStore<T>&, unsigned int) */
       virtual void compute_diff(ValueStore<T>& st, unsigned int level = 0) const
       {
         T current_min = st(this->index), new_min;
@@ -388,18 +388,18 @@ namespace EasyLocal {
       virtual void Print(std::ostream& os) const
       {
         os << "Min: ";
-        Sym<T>::Print(os);
+        CExp<T>::Print(os);
       }
     };
     
     /** Maximum expression. */
     template <typename T>
-    class MaxSym : public Sym<T>
+    class CMax : public CExp<T>
     {
     public:
-      using Sym<T>::Sym;
+      using CExp<T>::CExp;
       
-      /** @copydoc Sym<T>::compute(ValueStore<T>&, unsigned int) */
+      /** @copydoc CExp<T>::compute(ValueStore<T>&, unsigned int) */
       virtual void compute(ValueStore<T>& st, unsigned int level = 0) const
       {
         T max = st(this->children[0], level);
@@ -411,7 +411,7 @@ namespace EasyLocal {
         st.assign(this->index, level, max);
       }
       
-      /** @copydoc Sym<T>::compute_diff(ValueStore<T>&, unsigned int) */
+      /** @copydoc CExp<T>::compute_diff(ValueStore<T>&, unsigned int) */
       virtual void compute_diff(ValueStore<T>& st, unsigned int level = 0) const
       {
         T current_max = st(this->index), new_max;
@@ -437,7 +437,7 @@ namespace EasyLocal {
       virtual void Print(std::ostream& os) const
       {
         os << "Max: ";
-        Sym<T>::Print(os);
+        CExp<T>::Print(os);
       }
     };
     
@@ -446,12 +446,12 @@ namespace EasyLocal {
      @remark the first child is the index expression, whereas the remaining ones represent the list
      */
     template <typename T>
-    class ElementSym : public Sym<T>
+    class CElement : public CExp<T>
     {
     public:
-      using Sym<T>::Sym;
+      using CExp<T>::CExp;
       
-      /** @copydoc Sym<T>::compute(ValueStore<T>&, unsigned int) */
+      /** @copydoc CExp<T>::compute(ValueStore<T>&, unsigned int) */
       virtual void compute(ValueStore<T>& st, unsigned int level = 0) const
       {
         int offset = st(this->children[0], level);
@@ -460,7 +460,7 @@ namespace EasyLocal {
         st.assign(this->index, level, st(this->children[1 + offset], level));
       }
       
-      /** @copydoc Sym<T>::compute_diff(ValueStore<T>&, unsigned int) */
+      /** @copydoc CExp<T>::compute_diff(ValueStore<T>&, unsigned int) */
       virtual void compute_diff(ValueStore<T>& st, unsigned int level = 0) const
       {
         this->compute(st, level);
@@ -471,18 +471,18 @@ namespace EasyLocal {
       virtual void Print(std::ostream& os) const
       {
         os << "Element: ";
-        Sym<T>::Print(os);
+        CExp<T>::Print(os);
       }
     };
 
     /** If-then-else expression. */
     template <typename T>
-    class IfElseSym : public Sym<T>
+    class CIfElse : public CExp<T>
     {
     public:
-      using Sym<T>::Sym;
+      using CExp<T>::CExp;
       
-      /** @copydoc Sym<T>::compute(ValueStore<T>&, unsigned int) */
+      /** @copydoc CExp<T>::compute(ValueStore<T>&, unsigned int) */
       virtual void compute(ValueStore<T>& st, unsigned int level = 0) const
       {
         if (st(this->children[0], level))
@@ -491,7 +491,7 @@ namespace EasyLocal {
           st.assign(this->index, level, st(this->children[2], level));
       }
       
-      /** @copydoc Sym<T>::compute_diff(ValueStore<T>&, unsigned int) */
+      /** @copydoc CExp<T>::compute_diff(ValueStore<T>&, unsigned int) */
       virtual void compute_diff(ValueStore<T>& st, unsigned int level = 0) const
       {
         // it is more efficient to directly invoke compute
@@ -503,24 +503,24 @@ namespace EasyLocal {
       virtual void Print(std::ostream& os) const
       {
         os << "IfElse: ";
-        Sym<T>::Print(os);
+        CExp<T>::Print(os);
       }
     };
     
     /** Absolute value expression. */
     template <typename T>
-    class AbsSym : public Sym<T>
+    class CAbs : public CExp<T>
     {
     public:
-      using Sym<T>::Sym;
+      using CExp<T>::CExp;
       
-      /** @copydoc Sym<T>::compute(ValueStore<T>&, unsigned int) */
+      /** @copydoc CExp<T>::compute(ValueStore<T>&, unsigned int) */
       virtual void compute(ValueStore<T>& st, unsigned int level = 0) const
       {
         st.assign(this->index, level, st(this->children[0], level) >= 0 ? st(this->children[0], level) : -st(this->children[0], level));
       }
       
-      /** @copydoc Sym<T>::compute_diff(ValueStore<T>&, unsigned int) */
+      /** @copydoc CExp<T>::compute_diff(ValueStore<T>&, unsigned int) */
       virtual void compute_diff(ValueStore<T>& st, unsigned int level = 0) const
       {
         this->compute(st, level);
@@ -531,37 +531,37 @@ namespace EasyLocal {
       virtual void Print(std::ostream& os) const
       {
         os << "Abs: ";
-        Sym<T>::Print(os);
+        CExp<T>::Print(os);
       }
     };
     
     // TODO check against CVarArrayExpression
     /** A subexpression dealing with an array **/
     template <typename T>
-    class ArraySubSym : public Sym<T>
+    class CArraySub : public CExp<T>
     {
     public:
-      using Sym<T>::Sym;
+      using CExp<T>::CExp;
     };
 
     /** Minimum of a variable array. */
     template <typename T>
-    class ArrayMinSym : public ArraySubSym<T>
+    class CArrayMin : public CArraySub<T>
     {
     public:
-      using ArraySubSym<T>::ArraySubSym;
+      using CArraySub<T>::CArraySub;
       
-      /** @copydoc Sym<T>::compute(ValueStore<T>&, unsigned int) */
+      /** @copydoc CExp<T>::compute(ValueStore<T>&, unsigned int) */
       virtual void compute(ValueStore<T>& st, unsigned int level = 0) const
       {
-        const std::shared_ptr<VarArraySym<T>>& array = std::dynamic_pointer_cast<VarArraySym<T>>(this->exp_store[this->children[0]]);
+        const std::shared_ptr<CVarArray<T>>& array = std::dynamic_pointer_cast<CVarArray<T>>(this->exp_store[this->children[0]]);
         T min = st(array->start, level);
         for (size_t i = 1; i < array->size; i++)
           min = std::min(min, st(array->start + i, level));
         st.assign(this->index, level, min);
       }
       
-      /** @copydoc Sym<T>::compute_diff(ValueStore<T>&, unsigned int) */
+      /** @copydoc CExp<T>::compute_diff(ValueStore<T>&, unsigned int) */
       virtual void compute_diff(ValueStore<T>& st, unsigned int level = 0) const
       {
         std::set<size_t>& changed = st.changed_children(this->index, level);
@@ -579,21 +579,21 @@ namespace EasyLocal {
       virtual void Print(std::ostream& os) const
       {
         os << "ArrayMin: ";
-        Sym<T>::Print(os);
+        CExp<T>::Print(os);
       }
     };
 
     /** Index of the minimum of a variable array. */
     template <typename T>
-    class ArgMinSym : public ArraySubSym<T>
+    class CArgMin : public CArraySub<T>
     {
     public:
-      using ArraySubSym<T>::ArraySubSym;
+      using CArraySub<T>::CArraySub;
       
-      /** @copydoc Sym<T>::compute(ValueStore<T>&, unsigned int) */
+      /** @copydoc CExp<T>::compute(ValueStore<T>&, unsigned int) */
       virtual void compute(ValueStore<T>& st, unsigned int level = 0) const
       {
-        const std::shared_ptr<VarArraySym<T>>& array = std::dynamic_pointer_cast<VarArraySym<T>>(this->exp_store[this->children[0]]);
+        const std::shared_ptr<CVarArray<T>>& array = std::dynamic_pointer_cast<CVarArray<T>>(this->exp_store[this->children[0]]);
         size_t min_index = 0;
         T min = st(array->start, level);
         for (size_t i = 1; i < array->size; i++)
@@ -608,7 +608,7 @@ namespace EasyLocal {
         st.assign(this->index, level, min_index);
       }
       
-      /** @copydoc Sym<T>::compute_diff(ValueStore<T>&, unsigned int) */
+      /** @copydoc CExp<T>::compute_diff(ValueStore<T>&, unsigned int) */
       virtual void compute_diff(ValueStore<T>& st, unsigned int level = 0) const
       {
         std::set<size_t>& changed = st.changed_children(this->index, level);
@@ -617,7 +617,7 @@ namespace EasyLocal {
         T changed_min = st(*min_it, level);
         if (changed_min <= current_min)
         {
-          const std::shared_ptr<VarArraySym<T>>& array = std::dynamic_pointer_cast<VarArraySym<T>>(this->exp_store[this->children[0]]);
+          const std::shared_ptr<CVarArray<T>>& array = std::dynamic_pointer_cast<CVarArray<T>>(this->exp_store[this->children[0]]);
           st.assign(this->index, level, *min_it - array->start);
         }
         else
@@ -629,28 +629,28 @@ namespace EasyLocal {
       virtual void Print(std::ostream& os) const
       {
         os << "ArgMin: ";
-        Sym<T>::Print(os);
+        CExp<T>::Print(os);
       }
     };
 
     /** Maximum of a variable array. */
     template <typename T>
-    class ArrayMaxSym : public ArraySubSym<T>
+    class CArrayMax : public CArraySub<T>
     {
     public:
-      using ArraySubSym<T>::ArraySubSym;
+      using CArraySub<T>::CArraySub;
       
-      /** @copydoc Sym<T>::compute(ValueStore<T>&, unsigned int) */
+      /** @copydoc CExp<T>::compute(ValueStore<T>&, unsigned int) */
       virtual void compute(ValueStore<T>& st, unsigned int level = 0) const
       {
-        const std::shared_ptr<VarArraySym<T>>& array = std::dynamic_pointer_cast<VarArraySym<T>>(this->exp_store[this->children[0]]);
+        const std::shared_ptr<CVarArray<T>>& array = std::dynamic_pointer_cast<CVarArray<T>>(this->exp_store[this->children[0]]);
         T max = st(array->start, level);
         for (size_t i = 1; i < array->size; i++)
           max = std::max(max, st(array->start + i, level));
         st.assign(this->index, level, max);
       }
       
-      /** @copydoc Sym<T>::compute_diff(ValueStore<T>&, unsigned int) */
+      /** @copydoc CExp<T>::compute_diff(ValueStore<T>&, unsigned int) */
       virtual void compute_diff(ValueStore<T>& st, unsigned int level = 0) const
       {
         std::set<size_t>& changed = st.changed_children(this->index, level);
@@ -668,21 +668,21 @@ namespace EasyLocal {
       virtual void Print(std::ostream& os) const
       {
         os << "ArrayMax: ";
-        Sym<T>::Print(os);
+        CExp<T>::Print(os);
       }
     };
 
     /** Index of the max of a variable array. */
     template <typename T>
-    class ArgMaxSym : public ArraySubSym<T>
+    class CArgMax : public CArraySub<T>
     {
     public:
-      using ArraySubSym<T>::ArraySubSym;
+      using CArraySub<T>::CArraySub;
       
-      /** @copydoc Sym<T>::compute(ValueStore<T>&, unsigned int) */
+      /** @copydoc CExp<T>::compute(ValueStore<T>&, unsigned int) */
       virtual void compute(ValueStore<T>& st, unsigned int level = 0) const
       {
-        const std::shared_ptr<VarArraySym<T>>& array = std::dynamic_pointer_cast<VarArraySym<T>>(this->exp_store[this->children[0]]);
+        const std::shared_ptr<CVarArray<T>>& array = std::dynamic_pointer_cast<CVarArray<T>>(this->exp_store[this->children[0]]);
         size_t max_index = 0;
         T max = st(array->start, level);
         for (size_t i = 1; i < array->size; i++)
@@ -697,7 +697,7 @@ namespace EasyLocal {
         st.assign(this->index, level, max_index);
       }
       
-      /** @copydoc Sym<T>::compute_diff(ValueStore<T>&, unsigned int) */
+      /** @copydoc CExp<T>::compute_diff(ValueStore<T>&, unsigned int) */
       virtual void compute_diff(ValueStore<T>& st, unsigned int level = 0) const
       {
         std::set<size_t>& changed = st.changed_children(this->index, level);
@@ -706,7 +706,7 @@ namespace EasyLocal {
         T changed_max = st(*max_it, level);
         if (changed_max >= current_max)
         {
-          const std::shared_ptr<VarArraySym<T>>& array = std::dynamic_pointer_cast<VarArraySym<T>>(this->exp_store[this->children[0]]);
+          const std::shared_ptr<CVarArray<T>>& array = std::dynamic_pointer_cast<CVarArray<T>>(this->exp_store[this->children[0]]);
           st.assign(this->index, level, *max_it - array->start);
         }
         else
@@ -718,7 +718,7 @@ namespace EasyLocal {
       virtual void Print(std::ostream& os) const
       {
         os << "ArgMax: ";
-        Sym<T>::Print(os);
+        CExp<T>::Print(os);
       }
     };
 
@@ -726,22 +726,22 @@ namespace EasyLocal {
      @remark the first child is the index expression, the second one is the array
      */
     template <typename T>
-    class ArrayElementSym : public ArraySubSym<T>
+    class CArrayElement : public CArraySub<T>
     {
     public:
-      using ArraySubSym<T>::ArraySubSym;
+      using CArraySub<T>::CArraySub;
       
-      /** @copydoc Sym<T>::compute(ValueStore<T>&, unsigned int) */
+      /** @copydoc CExp<T>::compute(ValueStore<T>&, unsigned int) */
       virtual void compute(ValueStore<T>& st, unsigned int level = 0) const
       {
-        const std::shared_ptr<VarArraySym<T>>& array = std::dynamic_pointer_cast<VarArraySym<T>>(this->exp_store[this->children[1]]);
+        const std::shared_ptr<CVarArray<T>>& array = std::dynamic_pointer_cast<CVarArray<T>>(this->exp_store[this->children[1]]);
         int offset = st(this->children[0], level);
         if (offset < 0 || offset >= array->size)
           throw std::runtime_error("Error: ArrayElement expression using an invalid index (index value: " + std::to_string(offset) + ")");
         st.assign(this->index, level, st(array->start + offset, level));
       }
       
-      /** @copydoc Sym<T>::compute_diff(ValueStore<T>&, unsigned int) */
+      /** @copydoc CExp<T>::compute_diff(ValueStore<T>&, unsigned int) */
       virtual void compute_diff(ValueStore<T>& st, unsigned int level = 0) const
       {
         this->compute(st, level);
@@ -752,18 +752,18 @@ namespace EasyLocal {
       virtual void Print(std::ostream& os) const
       {
         os << "Element: ";
-        Sym<T>::Print(os);
+        CExp<T>::Print(os);
       }
     };
 
     /** Generic binary relation expression */
     template <typename T>
-    class RelSym : public Sym<T>
+    class CRel : public CExp<T>
     {
     public:
-      using Sym<T>::Sym;
+      using CExp<T>::CExp;
       
-      /** @copydoc Sym<T>::compute_diff(ValueStore<T>&, unsigned int) */
+      /** @copydoc CExp<T>::compute_diff(ValueStore<T>&, unsigned int) */
       virtual void compute_diff(ValueStore<T>& st, unsigned int level = 0) const
       {
         this->compute(st, level);
@@ -773,19 +773,19 @@ namespace EasyLocal {
 
     /** Equality relation. */
     template <typename T>
-    class EqSym : public RelSym<T>
+    class CEq : public CRel<T>
     {
     public:
-      using RelSym<T>::RelSym;
+      using CRel<T>::CRel;
       
       /** @copydoc Printable::Print(std::ostream&) */
       virtual void Print(std::ostream& os) const
       {
         os << "Eq: ";
-        Sym<T>::Print(os);
+        CExp<T>::Print(os);
       }
       
-      /** @copydoc Sym<T>::compute(ValueStore<T>&, unsigned int) */
+      /** @copydoc CExp<T>::compute(ValueStore<T>&, unsigned int) */
       virtual void compute(ValueStore<T>& st, unsigned int level = 0) const
       {
         bool value = (st(this->children[0], level) == st(this->children[1], level));
@@ -795,12 +795,12 @@ namespace EasyLocal {
 
     /** Inequality relation. */
     template <typename T>
-    class NeSym : public RelSym<T>
+    class CNe : public CRel<T>
     {
     public:
-      using RelSym<T>::RelSym;
+      using CRel<T>::CRel;
       
-      /** @copydoc Sym<T>::compute(ValueStore<T>&, unsigned int) */
+      /** @copydoc CExp<T>::compute(ValueStore<T>&, unsigned int) */
       virtual void compute(ValueStore<T>& st, unsigned int level = 0) const
       {
         bool value = (st(this->children[0], level) != st(this->children[1], level));
@@ -811,18 +811,18 @@ namespace EasyLocal {
       virtual void Print(std::ostream& os) const
       {
         os << "Ne: ";
-        Sym<T>::Print(os);
+        CExp<T>::Print(os);
       }
     };
 
     /** Less than relation. */
     template <typename T>
-    class LtSym : public RelSym<T>
+    class CLt : public CRel<T>
     {
     public:
-      using RelSym<T>::RelSym;
+      using CRel<T>::CRel;
       
-      /** @copydoc Sym<T>::compute(ValueStore<T>&, unsigned int) */
+      /** @copydoc CExp<T>::compute(ValueStore<T>&, unsigned int) */
       virtual void compute(ValueStore<T>& st, unsigned int level = 0) const
       {
         bool value = (st(this->children[0], level) < st(this->children[1], level));
@@ -833,18 +833,18 @@ namespace EasyLocal {
       virtual void Print(std::ostream& os) const
       {
         os << "Lt: ";
-        Sym<T>::Print(os);
+        CExp<T>::Print(os);
       }
     };
 
     /** Less or equal relation. */
     template <typename T>
-    class LeSym : public RelSym<T>
+    class CLe : public CRel<T>
     {
     public:
-      using RelSym<T>::RelSym;
+      using CRel<T>::CRel;
       
-      /** @copydoc Sym<T>::compute(ValueStore<T>&, unsigned int) */
+      /** @copydoc CExp<T>::compute(ValueStore<T>&, unsigned int) */
       virtual void compute(ValueStore<T>& st, unsigned int level = 0) const
       {
         bool value = (st(this->children[0], level) <= st(this->children[1], level));
@@ -855,18 +855,18 @@ namespace EasyLocal {
       virtual void Print(std::ostream& os) const
       {
         os << "Le: ";
-        Sym<T>::Print(os);
+        CExp<T>::Print(os);
       }
     };
 
     /** Greater or equal relation. */
     template <typename T>
-    class GeSym : public RelSym<T>
+    class CGe : public CRel<T>
     {
     public:
-      using RelSym<T>::RelSym;
+      using CRel<T>::CRel;
       
-      /** @copydoc Sym<T>::compute(ValueStore<T>&, unsigned int) */
+      /** @copydoc CExp<T>::compute(ValueStore<T>&, unsigned int) */
       virtual void compute(ValueStore<T>& st, unsigned int level = 0) const
       {
         bool value = (st(this->children[0], level) >= st(this->children[1], level));
@@ -877,18 +877,18 @@ namespace EasyLocal {
       virtual void Print(std::ostream& os) const
       {
         os << "Ge: ";
-        Sym<T>::Print(os);
+        CExp<T>::Print(os);
       }
     };
 
     /** Greater than relation. */
     template <typename T>
-    class GtSym : public RelSym<T>
+    class CGt : public CRel<T>
     {
     public:
-      using RelSym<T>::RelSym;
+      using CRel<T>::CRel;
       
-      /** @copydoc Sym<T>::compute(ValueStore<T>&, unsigned int) */
+      /** @copydoc CExp<T>::compute(ValueStore<T>&, unsigned int) */
       virtual void compute(ValueStore<T>& st, unsigned int level = 0) const
       {
         bool value = (st(this->children[0], level) > st(this->children[1], level));
@@ -899,18 +899,18 @@ namespace EasyLocal {
       virtual void Print(std::ostream& os) const
       {
         os << "Gt: ";
-        Sym<T>::Print(os);
+        CExp<T>::Print(os);
       }
     };
     
     /** Alldifferent relation. */
     template <typename T>
-    class AllDiffSym : public RelSym<T>
+    class CAllDiff : public CRel<T>
     {
     public:
-      using RelSym<T>::RelSym;
+      using CRel<T>::CRel;
       
-      /** @copydoc Sym<T>::compute(ValueStore<T>&, unsigned int) */
+      /** @copydoc CExp<T>::compute(ValueStore<T>&, unsigned int) */
       virtual void compute(ValueStore<T>& st, unsigned int level = 0) const
       {
         for (auto it = this->children.begin(); it + 1 != this->children.end(); ++it)
@@ -928,7 +928,7 @@ namespace EasyLocal {
       virtual void Print(std::ostream& os) const
       {
         os << "AllDiff: ";
-        Sym<T>::Print(os);
+        CExp<T>::Print(os);
       }
     };        
   }

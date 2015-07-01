@@ -10,20 +10,53 @@
 
 namespace EasyLocal {
   
+  /** In the EasyLocal::Modeling layer, expressions (Exp) are built from basic
+      components (variables and constants) using operator overloading and high
+      level constructs inspired by their constraint programming (CP) 
+      counterparts, e.g., alldifferent and element. 
+          Behind the scenes, these operators build an abstract syntax tree (AST)
+      whose responsibility is to simplify the expressions (if possible) and 
+      normalize them so that it is easy to implement a hash function and 
+      recognize existing sub-expressions. Note: mostly, the normalization boils 
+      down to collapsing and sorting the operands of an ASTOp (operation) node. 
+      Moreover, the AST keeps track of the depth of each expression, so that the 
+      bottom-up evaluation (necessary to implement automatic deltas) is as 
+      efficient as possible, i.e., every time we evaluate a node, its descendants 
+      have been evaluated already.
+    */
   namespace Modeling {
-    
+  
+    /** Forward declaration. */
     template <typename T>
     class ASTVarArray;
+
+    /** Forward declaration. */
+    template <typename T>
+    class ASTOp;
     
+    /** Forward declaration. */
+    template <typename T>
+    class ASTSymOp;
+    
+    /** Template class representing a generic node in the AST. To be specialized
+        in order to implement specific types of nodes, e.g., vars and constants.
+     */
     template <typename T>
     class ASTItem : public virtual Core::Printable, public std::enable_shared_from_this<ASTItem<T>>
     {
+      friend class ASTOp<T>;
+      friend class ASTSymOp<T>;
     public:
       
-      ASTItem() : _hash_set(false), _simplified(false), _normalized(false) {}
-            
+      /** Default constructor. */
+      ASTItem() : _hash_set(false), _simplified(false), _normalized(false) { }
+      
+      /** Virtual destructor (for inheritance). */
       virtual ~ASTItem() = default;
       
+      /** Exposed hash function (caches the computation of the hash).
+          @return a unique (integer) identifier for a node.
+       */
       size_t hash() const
       {
         if (!_hash_set)
@@ -34,36 +67,53 @@ namespace EasyLocal {
         return _hash;
       }
       
+      /** Default simplify function.
+          @return a simplified subtree of the AST.
+       */
       virtual std::shared_ptr<ASTItem<T>> simplify()
       {
         this->_simplified = true;
         return this->shared_from_this();
       }
-    
-      const std::type_info& type() const
-      {
-        return typeid(*this);
-      }
       
-      bool simplified() const
-      {
-        return _simplified;
-      }
-      
-      bool normalized() const
-      {
-        return _normalized;
-      }
-      
+      /** Default normalization function. Makes sure the subtree has a specific ordering. */
       virtual void normalize(bool recursive)
       {
         this->_normalized = true;
       }
       
+      /** Simplification check.
+          @return true if the node does not need to be simplified. 
+       */
+      bool simplified() const
+      {
+        return _simplified;
+      }
+      
+      /** Normalization check.
+          @return true if the node does not need to be normalized. 
+       */
+      bool normalized() const
+      {
+        return _normalized;
+      }
+      
+      /** "Compiles" the AST node into a CExp.
+          @param exp_store ExpressionStore the CExp has to be added to.
+          @return the position of the CExp in the ExpressionStore.
+       */
       virtual size_t compile(ExpressionStore<T>& exp_store) const = 0;
       
     protected:
       
+      
+      /** For "type system". */
+      const std::type_info& type() const
+      {
+        return typeid(*this);
+      }
+      
+      /** "Type system". Checks that a given argument is suitable as a parameter in a certain position. */
       virtual void check_compatibility(const std::shared_ptr<ASTItem<T>> sub_ex, size_t pos = 0) const
       {
         // In general expressions are not compatible with var array operands unless specified
@@ -75,6 +125,7 @@ namespace EasyLocal {
         }
       }
       
+      /** Avoids re-compiling an expression if it is already compiled and in the expression store. */
       template <template <typename> class CType>
       std::pair<size_t, std::shared_ptr<CType<T>>> get_or_create(ExpressionStore<T>& exp_store) const
       {
@@ -131,7 +182,7 @@ namespace EasyLocal {
       
       virtual size_t compile(ExpressionStore<T>& exp_store) const
       {
-        return this->template get_or_create<VarSym>(exp_store).first;
+        return this->template get_or_create<CVar>(exp_store).first;
       }
       
     protected:
@@ -163,10 +214,10 @@ namespace EasyLocal {
       
       virtual size_t compile(ExpressionStore<T>& exp_store) const
       {
-        auto compiled_pair = this->template get_or_create<VarArraySym>(exp_store);
+        auto compiled_pair = this->template get_or_create<CVarArray>(exp_store);
         if (compiled_pair.second != nullptr)
         {
-          auto compiled = std::dynamic_pointer_cast<VarArraySym<T>>(compiled_pair.second);
+          auto compiled = std::dynamic_pointer_cast<CVarArray<T>>(compiled_pair.second);
           compiled->start = 0;
           compiled->size = size;
         }
@@ -199,10 +250,10 @@ namespace EasyLocal {
       
       virtual size_t compile(ExpressionStore<T>& exp_store) const
       {
-        auto compiled_pair = this->template get_or_create<ConstSym>(exp_store);
+        auto compiled_pair = this->template get_or_create<CConst>(exp_store);
         if (compiled_pair.second != nullptr)
         {
-          auto compiled = std::dynamic_pointer_cast<ConstSym<T>>(compiled_pair.second);
+          auto compiled = std::dynamic_pointer_cast<CConst<T>>(compiled_pair.second);
           compiled->value = this->value;
         }
         return compiled_pair.first;
@@ -410,10 +461,10 @@ namespace EasyLocal {
       
       virtual size_t compile(ExpressionStore<T>& exp_store) const
       {
-        auto compiled_pair = this->template get_or_create<SumSym>(exp_store);
+        auto compiled_pair = this->template get_or_create<CSum>(exp_store);
         if (compiled_pair.second != nullptr)
         {
-          auto compiled = std::dynamic_pointer_cast<SumSym<T>>(compiled_pair.second);
+          auto compiled = std::dynamic_pointer_cast<CSum<T>>(compiled_pair.second);
           this->compile_operands(compiled_pair.first, exp_store);
         }
         return compiled_pair.first;
@@ -498,10 +549,10 @@ namespace EasyLocal {
       
       virtual size_t compile(ExpressionStore<T>& exp_store) const
       {
-        auto compiled_pair = this->template get_or_create<MulSym>(exp_store);
+        auto compiled_pair = this->template get_or_create<CMul>(exp_store);
         if (compiled_pair.second != nullptr)
         {
-          auto compiled = std::dynamic_pointer_cast<MulSym<T>>(compiled_pair.second);
+          auto compiled = std::dynamic_pointer_cast<CMul<T>>(compiled_pair.second);
           this->compile_operands(compiled_pair.first, exp_store);
         }
         return compiled_pair.first;
@@ -554,10 +605,10 @@ namespace EasyLocal {
       
       virtual size_t compile(ExpressionStore<T>& exp_store) const
       {
-        auto compiled_pair = this->template get_or_create<DivSym>(exp_store);
+        auto compiled_pair = this->template get_or_create<CDiv>(exp_store);
         if (compiled_pair.second != nullptr)
         {
-          auto compiled = std::dynamic_pointer_cast<DivSym<T>>(compiled_pair.second);
+          auto compiled = std::dynamic_pointer_cast<CDiv<T>>(compiled_pair.second);
           this->compile_operands(compiled_pair.first, exp_store);
         }
         return compiled_pair.first;
@@ -612,10 +663,10 @@ namespace EasyLocal {
       
       virtual size_t compile(ExpressionStore<T>& exp_store) const
       {
-        auto compiled_pair = this->template get_or_create<ModSym>(exp_store);
+        auto compiled_pair = this->template get_or_create<CMod>(exp_store);
         if (compiled_pair.second != nullptr)
         {
-          auto compiled = std::dynamic_pointer_cast<ModSym<T>>(compiled_pair.second);
+          auto compiled = std::dynamic_pointer_cast<CMod<T>>(compiled_pair.second);
           this->compile_operands(compiled_pair.first, exp_store);
         }
         return compiled_pair.first;
@@ -704,10 +755,10 @@ namespace EasyLocal {
       
       virtual size_t compile(ExpressionStore<T>& exp_store) const
       {
-        auto compiled_pair = this->template get_or_create<MinSym>(exp_store);
+        auto compiled_pair = this->template get_or_create<CMin>(exp_store);
         if (compiled_pair.second != nullptr)
         {
-          auto compiled = std::dynamic_pointer_cast<MinSym<T>>(compiled_pair.second);
+          auto compiled = std::dynamic_pointer_cast<CMin<T>>(compiled_pair.second);
           this->compile_operands(compiled_pair.first, exp_store);
         }
         return compiled_pair.first;
@@ -796,10 +847,10 @@ namespace EasyLocal {
       
       virtual size_t compile(ExpressionStore<T>& exp_store) const
       {
-        auto compiled_pair = this->template get_or_create<MaxSym>(exp_store);
+        auto compiled_pair = this->template get_or_create<CMax>(exp_store);
         if (compiled_pair.second != nullptr)
         {
-          auto compiled = std::dynamic_pointer_cast<MaxSym<T>>(compiled_pair.second);
+          auto compiled = std::dynamic_pointer_cast<CMax<T>>(compiled_pair.second);
           this->compile_operands(compiled_pair.first, exp_store);
         }
         return compiled_pair.first;
@@ -863,10 +914,10 @@ namespace EasyLocal {
       
       virtual size_t compile(ExpressionStore<T>& exp_store) const
       {
-        auto compiled_pair = this->template get_or_create<EqSym>(exp_store);
+        auto compiled_pair = this->template get_or_create<CEq>(exp_store);
         if (compiled_pair.second != nullptr)
         {
-          auto compiled = std::dynamic_pointer_cast<EqSym<T>>(compiled_pair.second);
+          auto compiled = std::dynamic_pointer_cast<CEq<T>>(compiled_pair.second);
           this->compile_operands(compiled_pair.first, exp_store);
         }
         return compiled_pair.first;
@@ -928,10 +979,10 @@ namespace EasyLocal {
       
       virtual size_t compile(ExpressionStore<T>& exp_store) const
       {
-        auto compiled_pair = this->template get_or_create<NeSym>(exp_store);
+        auto compiled_pair = this->template get_or_create<CNe>(exp_store);
         if (compiled_pair.second != nullptr)
         {
-          auto compiled = std::dynamic_pointer_cast<NeSym<T>>(compiled_pair.second);
+          auto compiled = std::dynamic_pointer_cast<CNe<T>>(compiled_pair.second);
           this->compile_operands(compiled_pair.first, exp_store);
         }
         return compiled_pair.first;
@@ -993,10 +1044,10 @@ namespace EasyLocal {
       
       virtual size_t compile(ExpressionStore<T>& exp_store) const
       {
-        auto compiled_pair = this->template get_or_create<LeSym>(exp_store);
+        auto compiled_pair = this->template get_or_create<CLe>(exp_store);
         if (compiled_pair.second != nullptr)
         {
-          auto compiled = std::dynamic_pointer_cast<LeSym<T>>(compiled_pair.second);
+          auto compiled = std::dynamic_pointer_cast<CLe<T>>(compiled_pair.second);
           this->compile_operands(compiled_pair.first, exp_store);
         }
         return compiled_pair.first;
@@ -1058,10 +1109,10 @@ namespace EasyLocal {
       
       virtual size_t compile(ExpressionStore<T>& exp_store) const
       {
-        auto compiled_pair = this->template get_or_create<LtSym>(exp_store);
+        auto compiled_pair = this->template get_or_create<CLt>(exp_store);
         if (compiled_pair.second != nullptr)
         {
-          auto compiled = std::dynamic_pointer_cast<LtSym<T>>(compiled_pair.second);
+          auto compiled = std::dynamic_pointer_cast<CLt<T>>(compiled_pair.second);
           this->compile_operands(compiled_pair.first, exp_store);
         }
         return compiled_pair.first;
@@ -1132,10 +1183,10 @@ namespace EasyLocal {
       
       virtual size_t compile(ExpressionStore<T>& exp_store) const
       {
-        auto compiled_pair = this->template get_or_create<AllDiffSym>(exp_store);
+        auto compiled_pair = this->template get_or_create<CAllDiff>(exp_store);
         if (compiled_pair.second != nullptr)
         {
-          auto compiled = std::dynamic_pointer_cast<AllDiffSym<T>>(compiled_pair.second);
+          auto compiled = std::dynamic_pointer_cast<CAllDiff<T>>(compiled_pair.second);
           this->compile_operands(compiled_pair.first, exp_store);
         }
         return compiled_pair.first;
@@ -1184,10 +1235,10 @@ namespace EasyLocal {
       
       virtual size_t compile(ExpressionStore<T>& exp_store) const
       {
-        auto compiled_pair = this->template get_or_create<AbsSym>(exp_store);
+        auto compiled_pair = this->template get_or_create<CAbs>(exp_store);
         if (compiled_pair.second != nullptr)
         {
-          auto compiled = std::dynamic_pointer_cast<AbsSym<T>>(compiled_pair.second);
+          auto compiled = std::dynamic_pointer_cast<CAbs<T>>(compiled_pair.second);
           this->compile_operands(compiled_pair.first, exp_store);
         }
         return compiled_pair.first;
@@ -1252,20 +1303,20 @@ namespace EasyLocal {
       {
         if (!is_array)
         {
-          auto compiled_pair = this->template get_or_create<ElementSym>(exp_store);
+          auto compiled_pair = this->template get_or_create<CElement>(exp_store);
           if (compiled_pair.second != nullptr)
           {
-            auto compiled = std::dynamic_pointer_cast<ElementSym<T>>(compiled_pair.second);
+            auto compiled = std::dynamic_pointer_cast<CElement<T>>(compiled_pair.second);
             this->compile_operands(compiled_pair.first, exp_store);
           }
           return compiled_pair.first;
         }
         else
         {
-          auto compiled_pair = this->template get_or_create<ArrayElementSym>(exp_store);
+          auto compiled_pair = this->template get_or_create<CArrayElement>(exp_store);
           if (compiled_pair.second != nullptr)
           {
-            auto compiled = std::dynamic_pointer_cast<ArrayElementSym<T>>(compiled_pair.second);
+            auto compiled = std::dynamic_pointer_cast<CArrayElement<T>>(compiled_pair.second);
             this->compile_operands(compiled_pair.first, exp_store);
           }
           return compiled_pair.first;
@@ -1340,10 +1391,10 @@ namespace EasyLocal {
       
       virtual size_t compile(ExpressionStore<T>& exp_store) const
       {
-        auto compiled_pair = this->template get_or_create<IfElseSym>(exp_store);
+        auto compiled_pair = this->template get_or_create<CIfElse>(exp_store);
         if (compiled_pair.second != nullptr)
         {
-          auto compiled = std::dynamic_pointer_cast<IfElseSym<T>>(compiled_pair.second);
+          auto compiled = std::dynamic_pointer_cast<CIfElse<T>>(compiled_pair.second);
           this->compile_operands(compiled_pair.first, exp_store);
         }
         return compiled_pair.first;

@@ -4,6 +4,8 @@
 #include "ast.hh"
 
 namespace EasyLocal {
+    
+  
   namespace Modeling {
     
     template <typename T>

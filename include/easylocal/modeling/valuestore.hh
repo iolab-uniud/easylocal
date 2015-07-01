@@ -204,7 +204,7 @@ namespace EasyLocal {
        @remarks the expression itself is used to access the ValueStore, instead of the index 
        @return a reference to the value
        */
-      T& operator()(const Sym<T>& ex)
+      T& operator()(const CExp<T>& ex)
       {
         return operator()(ex.index);
       }
@@ -215,7 +215,7 @@ namespace EasyLocal {
        @remarks the expression itself is used to access the ValueStore, instead of the index
        @return a const reference to the value
        */
-      const T& operator()(const Sym<T>& ex, unsigned int level = 0) const
+      const T& operator()(const CExp<T>& ex, unsigned int level = 0) const
       {
         return operator()(ex.index, level);
       }
@@ -225,7 +225,7 @@ namespace EasyLocal {
        @param level level to check
        @remarks the expression itself is used to access the ValueStore, instead of the index
        */
-      bool changed(const Sym<T>& ex, unsigned int level = 0) const
+      bool changed(const CExp<T>& ex, unsigned int level = 0) const
       {
         return changed(ex.index, level);
       }
@@ -276,7 +276,7 @@ namespace EasyLocal {
       }
       
       // TODO: all assign are used only by Expressions, possibly Change into protected and enable friendship
-      void assign(const Sym<T>& ex, unsigned int level, const T& val)
+      void assign(const CExp<T>& ex, unsigned int level, const T& val)
       {
         value[level][ex.index] = val;
         valid[level][ex.index] = true;

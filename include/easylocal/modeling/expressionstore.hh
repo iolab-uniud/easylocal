@@ -22,7 +22,7 @@ namespace EasyLocal {
     
     /** ExpressionStore, a structure to handle bottom-up evaluation of compiled Exps. */
     template <typename T>
-    class ExpressionStore : public std::vector<std::shared_ptr<Sym<T>>>, public Core::Printable
+    class ExpressionStore : public std::vector<std::shared_ptr<CExp<T>>>, public Core::Printable
     {
       friend class ValueStore<T>;
     public:
@@ -38,7 +38,7 @@ namespace EasyLocal {
        @param e the original expression
        @return a shared pointer to the root of the compiled expression
        */
-      std::shared_ptr<Sym<T>> compile(Exp<T>& e)
+      std::shared_ptr<CExp<T>> compile(Exp<T>& e)
       {
         e.normalize();
         size_t previous_size = this->size();
@@ -65,8 +65,8 @@ namespace EasyLocal {
         std::set<size_t> all_terminal_symbols;
         for (size_t i = 0; i < n; i++)
         {
-          const std::shared_ptr<Sym<T>>& current_sym = (*this)[i];
-          if (std::dynamic_pointer_cast<TermSym<T>>(current_sym) == nullptr)
+          const std::shared_ptr<CExp<T>>& current_sym = (*this)[i];
+          if (std::dynamic_pointer_cast<CTerm<T>>(current_sym) == nullptr)
             continue;
           all_terminal_symbols.insert(i);
         }
@@ -88,10 +88,10 @@ namespace EasyLocal {
         {
           if (!st.changed(var, level))
             continue;
-          const std::shared_ptr<Sym<T>>& current_var = (*this)[var];
+          const std::shared_ptr<CExp<T>>& current_var = (*this)[var];
           for (size_t i : current_var->parents)
           {
-            const std::shared_ptr<Sym<T>>& parent_sym = (*this)[i];
+            const std::shared_ptr<CExp<T>>& parent_sym = (*this)[i];
             if (!processed_symbols[i])
             {
               queue.push(std::make_pair(parent_sym->depth, i));
@@ -104,13 +104,13 @@ namespace EasyLocal {
         {
           size_t current_index = queue.top().second;
           queue.pop();
-          const std::shared_ptr<Sym<T>>& current_sym = (*this)[current_index];
+          const std::shared_ptr<CExp<T>>& current_sym = (*this)[current_index];
           current_sym->compute_diff(st, level);
           // parents are pushed to the queue only if the current expression value has changed and they have not been already queued
           if (st.changed(current_index, level))
             for (size_t i : current_sym->parents)
             {
-              const std::shared_ptr<Sym<T>>& parent_sym = (*this)[i];
+              const std::shared_ptr<CExp<T>>& parent_sym = (*this)[i];
               if (!processed_symbols[i])
               {
                 queue.push(std::make_pair(parent_sym->depth, i));
@@ -128,7 +128,7 @@ namespace EasyLocal {
           compute_depth();
         for (size_t i = 0; i < this->size(); i++)
         {
-          const Sym<T>& sym = *this->operator[](i);
+          const CExp<T>& sym = *this->operator[](i);
           os << sym << std::endl;
         }
       }
@@ -161,7 +161,7 @@ namespace EasyLocal {
           // symbols are pushed to the queue only if their value has changed
           if (force || !st.evaluated || st.changed(i, level))
           {
-            const std::shared_ptr<Sym<T>>& current_sym = (*this)[i];
+            const std::shared_ptr<CExp<T>>& current_sym = (*this)[i];
             queue.push(std::make_pair(current_sym->depth, i));
           }
         }
@@ -169,13 +169,13 @@ namespace EasyLocal {
         {
           size_t current_index = queue.top().second;
           queue.pop();
-          const std::shared_ptr<Sym<T>>& current_sym = (*this)[current_index];
+          const std::shared_ptr<CExp<T>>& current_sym = (*this)[current_index];
           current_sym->compute(st, level);
           // parents are pushed to the queue only if the current expression value has changed
           if (force || !st.evaluated || st.changed(current_index, level))
             for (size_t i : current_sym->parents)
             {
-              const std::shared_ptr<Sym<T>>& parent_sym = (*this)[i];
+              const std::shared_ptr<CExp<T>>& parent_sym = (*this)[i];
               queue.push(std::make_pair(parent_sym->depth, i));
             }
         }
