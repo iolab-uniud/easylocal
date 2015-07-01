@@ -208,7 +208,7 @@ namespace EasyLocal {
        */
       ASTVar(const std::string& name) : name(name) { }
 
-      /** @copydoc Printable::Print(std::ostream& os). */
+      /** @copydoc Printable::Print(std::ostream& os) */
       virtual void Print(std::ostream& os) const
       {
         os << name;
@@ -217,7 +217,7 @@ namespace EasyLocal {
       /** Virtual destructor. */
       virtual ~ASTVar() = default;
 
-      /** @copydoc ASTItem::compile(ExpressionStore<T>&). */
+      /** @copydoc ASTItem::compile(ExpressionStore<T>&) */
       virtual size_t compile(ExpressionStore<T>& exp_store) const
       {
         return this->template get_or_create<CVar>(exp_store).first;
@@ -228,7 +228,7 @@ namespace EasyLocal {
       /** Name of the variable (for printing purposes). */
       const std::string name;
 
-      /** @copydoc ASTItem::compute_hash(). */
+      /** @copydoc ASTItem::compute_hash() */
       virtual size_t compute_hash() const
       {
         return std::hash<std::string>()(this->name);
@@ -281,7 +281,7 @@ namespace EasyLocal {
       /** Size of the variable array. */
       const size_t size;
 
-      /** @copydoc ASTItem::compute_hash(). */
+      /** @copydoc ASTItem::compute_hash() */
       virtual size_t compute_hash() const
       {
         return std::hash<std::string>()(this->name);
@@ -294,20 +294,21 @@ namespace EasyLocal {
     {
     public:
 
-      ASTConst(const T& value) : value(value)
-      {
+      /** Constructor. 
+          @param value value of the constant. 
+       */
+      ASTConst(const T& value) : value(value) { }
 
-      }
-
+      /** @copydoc Printable::Print(std::ostream& os) */
       virtual void Print(std::ostream& os) const
       {
         os << (T)(this->value);
       }
 
+      /** Virtual destructor. */
       virtual ~ASTConst() = default;
 
-      const T value;
-
+      /** @copydoc ASTItem::compile(ExpressionStore<T>&) */
       virtual size_t compile(ExpressionStore<T>& exp_store) const
       {
         auto compiled_pair = this->template get_or_create<CConst>(exp_store);
@@ -318,19 +319,29 @@ namespace EasyLocal {
         }
         return compiled_pair.first;
       }
+      
+      /** Value of the constant (safe to be public since it's constant). */
+      const T value;
 
     protected:
 
+      /** @copydoc ASTItem::compute_hash() */
       virtual size_t compute_hash() const
       {
         return std::hash<T>()(this->value);
       }
+      
     };
 
+    /** Generic class representing an operation. To be specialized to implement 
+        specific operators. 
+     */
     template <typename T>
     class ASTOp : public ASTItem<T>
     {
     public:
+      
+      /** @copydoc Printable::Print(std::ostream& os) */
       virtual void Print(std::ostream& os) const
       {
         if (operands.size() == 1)
@@ -347,14 +358,24 @@ namespace EasyLocal {
         os << ")";
       }
 
+      /** Append an Exp<T> as operand. 
+          @param operand Exp<T> to add.
+       */
       virtual void append_operand(const Exp<T>& operand)
       {
+        // Check that the operand can be added
         this->check_compatibility(operand.p_ai);
+        
+        // Add operand
         this->operands.push_back(operand.p_ai);
       }
 
+      /** Virtual destructor. */
       virtual ~ASTOp() = default;
 
+      /** Normalize.
+          @param recursive whether to forward the normalization to operands.
+       */
       virtual void normalize(bool recursive)
       {
         if (this->normalized())
@@ -364,51 +385,65 @@ namespace EasyLocal {
             op->normalize(recursive);
       }
 
-
+      /** Access to operands. 
+          @return list of operands.
+       */
       const std::list<std::shared_ptr<ASTItem<T>>>& ops() const
       {
         return operands;
       }
 
+      /** Gets constant from operands.
+          @param def default value (to be returned if first operand is not const).
+          @return the value of the first operand (if const) or the default value.
+       */
       virtual T steal_const(T def)
       {
         std::shared_ptr<ASTItem<T>> front = this->operands.front();
-
         if (front->type() == typeid(ASTConst<T>))
         {
           this->operands.pop_front();
           return std::dynamic_pointer_cast<ASTConst<T>>(front)->value;
         }
-
         return def;
       }
 
     protected:
 
-      virtual void add_operand(const std::shared_ptr<ASTItem<T>>& o)
+      /** Same as append_operand(const Exp<T>&), but works on ASTItems directly (for internal purpose). */
+      virtual void add_operand(const std::shared_ptr<ASTItem<T>>& operand)
       {
-        this->check_compatibility(o);
-        this->operands.push_back(o);
+        // Check that the operand can be added
+        this->check_compatibility(operand);
+        
+        // Add operand
+        this->operands.push_back(operand);
       }
 
       virtual void add_constant(const std::shared_ptr<ASTConst<T>>& o)
       {
+        // Add const operand (at the front of the vector)
         this->operands.push_front(o);
       }
 
       virtual void merge_operands(const std::shared_ptr<ASTItem<T>>& other)
       {
-        // tentative reverse implementation
+        // Check if other ASTItem is operation
         ASTOp<T>* p_other = dynamic_cast<ASTOp<T>*>(other.get());
         if (p_other == nullptr)
           return;
-
-        // reverse with swap is generally faster
+        
+        // Move operands to other's operands (generally faster because of how splice is implemented)
         p_other->operands.splice(p_other->operands.end(), this->operands);
+        
+        // Swap operands
         std::swap(this->operands, p_other->operands);
       }
 
-      ASTOp(const std::string& sym) : sym(sym) {}
+      /** Constructor. 
+          @param sym symbol of the operation (for printing purposes).
+       */
+      ASTOp(const std::string& sym) : sym(sym) { }
 
       virtual size_t compute_hash() const
       {
