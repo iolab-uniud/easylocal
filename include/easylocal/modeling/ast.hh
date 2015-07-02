@@ -849,52 +849,69 @@ namespace EasyLocal {
       virtual ~Mod() = default;
     };
 
+    /** Minimum between elements. */
     template <typename T>
     class Min : public ASTSymOp<T>
     {
     public:
 
+      /** Constructor.
+          @param e1 first operand
+          @param e2 second operand
+       */
       Min(const Exp<T>& e1, const Exp<T>& e2) : ASTSymOp<T>("+")
       {
         this->append_operand(e1);
         this->append_operand(e2);
       }
 
+      /** @copydoc ASTItem::simplify() */
       virtual std::shared_ptr<ASTItem<T>> simplify()
       {
-        // lift min of mins
         T min_of_const;
         bool min_of_const_set = false;
 
-        // ALL AT ONCE (simplify, steal and aggregate constants, inherit operands)
+        /** Scan operands, replace each operand with its simplified version,
+            handle operands of type Min by merging their operands, handle
+            constants separately.
+         */
         for (auto it = this->operands.begin(); it != this->operands.end();)
         {
-          // correct way to replace element in list
+          // Correct way to replace element in list (doable because it's a doubly linked list)
           if(!((*it)->simplified()))
           {
             auto sim = (*it)->simplify();
-
             if (sim != *it)
             {
               it = this->operands.erase(it);
               it = this->operands.insert(it, sim);
             }
           }
-
-          // if a min is detected, add its operands to the end, then erase it
+          
+          // If a min is detected, add its operands to the end, then erase it
           if ((*it)->type() == typeid(Min<T>))
           {
-            if (!min_of_const_set)
+            // Note: it's not important that we use the std::numeric_limits<T>::min(), as long as it's a "unique" value
+            T stolen_const = std::dynamic_pointer_cast<ASTOp<T>>(*it)->steal_const(std::numeric_limits<T>::max());
+
+            // Only if a constant was stolen
+            if (stolen_const != std::numeric_limits<T>::max())
             {
-              min_of_const = std::dynamic_pointer_cast<ASTOp<T>>(*it)->steal_const(0);
-              min_of_const_set = true;
+              // Handle undefined min
+              if (!min_of_const_set)
+              {
+                min_of_const = stolen_const;
+                min_of_const_set = true;
+              }
+              else
+                std::min(min_of_const, stolen_const);
             }
-            else
-              min_of_const = std::min(min_of_const, std::dynamic_pointer_cast<ASTOp<T>>(*it)->steal_const(0));
+            
             this->merge_operands(*it);
             it = this->operands.erase(it);
           }
-          // if a constant is detected, add its value to the sum, then erase it
+          
+          // If a constant is detected, check it straight away
           else if ((*it)->type() == typeid(ASTConst<T>))
           {
             if (!min_of_const_set)
@@ -904,8 +921,11 @@ namespace EasyLocal {
             }
             else
               min_of_const = std::min(min_of_const, std::dynamic_pointer_cast<ASTConst<T>>(*it)->value);
+            
             it = this->operands.erase(it);
           }
+          
+          // If a different operation is detected
           else
           {
             (*it)->normalize(true);
@@ -913,20 +933,22 @@ namespace EasyLocal {
           }
         }
 
-        // add
+        // Add constant to the operands (if necessary)
         if (min_of_const_set)
           this->add_constant(std::make_shared<ASTConst<T>>(min_of_const));
 
-        // one-element sum
+        // If we have only one operand, it must be the minimum
         if (this->operands.size() == 1)
           return this->operands.front();
 
+        // Finalize
         this->_simplified = true;
         this->normalize(false);
 
         return this->shared_from_this();
       }
 
+      /** @copydoc ASTItem::compile() */
       virtual size_t compile(ExpressionStore<T>& exp_store) const
       {
         auto compiled_pair = this->template get_or_create<CMin>(exp_store);
@@ -938,55 +960,73 @@ namespace EasyLocal {
         return compiled_pair.first;
       }
 
+      /** Virtual destructor. */
       virtual ~Min() = default;
     };
 
+    /** Maximum between elements. */
     template <typename T>
     class Max : public ASTSymOp<T>
     {
     public:
 
+      /** Constructor.
+          @param e1 first operand
+          @param e2 second operand
+       */
       Max(const Exp<T>& e1, const Exp<T>& e2) : ASTSymOp<T>("+")
       {
         this->append_operand(e1);
         this->append_operand(e2);
       }
 
+      /** @copydoc ASTItem::simplify() */
       virtual std::shared_ptr<ASTItem<T>> simplify()
       {
-        // lift max of maxs
         T max_of_const;
         bool max_of_const_set = false;
-
-        // ALL AT ONCE (simplify, steal and aggregate constants, inherit operands)
+        
+        /** Scan operands, replace each operand with its simplified version,
+         handle operands of type Max by merging their operands, handle
+         constants separately.
+         */
         for (auto it = this->operands.begin(); it != this->operands.end();)
         {
-          // correct way to replace element in list
+          // Correct way to replace element in list (doable because it's a doubly linked list)
           if(!((*it)->simplified()))
           {
             auto sim = (*it)->simplify();
-
             if (sim != *it)
             {
               it = this->operands.erase(it);
               it = this->operands.insert(it, sim);
             }
           }
-
-          // if a max is detected, add its operands to the end, then erase it
+          
+          // If a min is detected, add its operands to the end, then erase it
           if ((*it)->type() == typeid(Max<T>))
           {
-            if (!max_of_const_set)
+            // Note: it's not important that we use the std::numeric_limits<T>::min(), as long as it's a "unique" value
+            T stolen_const = std::dynamic_pointer_cast<ASTOp<T>>(*it)->steal_const(std::numeric_limits<T>::min());
+            
+            // Only if a constant was stolen
+            if (stolen_const != std::numeric_limits<T>::min())
             {
-              max_of_const = std::dynamic_pointer_cast<ASTOp<T>>(*it)->steal_const(0);
-              max_of_const_set = true;
+              // Handle undefined min
+              if (!max_of_const_set)
+              {
+                max_of_const = stolen_const;
+                max_of_const_set = true;
+              }
+              else
+                std::max(max_of_const, stolen_const);
             }
-            else
-              max_of_const = std::max(max_of_const, std::dynamic_pointer_cast<ASTOp<T>>(*it)->steal_const(0));
+            
             this->merge_operands(*it);
             it = this->operands.erase(it);
           }
-          // if a constant is detected, add its value to the sum, then erase it
+          
+          // If a constant is detected, check it straight away
           else if ((*it)->type() == typeid(ASTConst<T>))
           {
             if (!max_of_const_set)
@@ -996,26 +1036,30 @@ namespace EasyLocal {
             }
             else
               max_of_const = std::max(max_of_const, std::dynamic_pointer_cast<ASTConst<T>>(*it)->value);
+            
             it = this->operands.erase(it);
           }
+          
+          // If a different operation is detected
           else
           {
             (*it)->normalize(true);
             ++it;
           }
         }
-
-        // add
+        
+        // Add constant to the operands (if necessary)
         if (max_of_const_set)
           this->add_constant(std::make_shared<ASTConst<T>>(max_of_const));
-
-        // one-element sum
+        
+        // If we have only one operand, it must be the minimum
         if (this->operands.size() == 1)
           return this->operands.front();
-
+        
+        // Finalize
         this->_simplified = true;
         this->normalize(false);
-
+        
         return this->shared_from_this();
       }
 
