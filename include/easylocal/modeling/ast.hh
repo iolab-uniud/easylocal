@@ -1063,6 +1063,7 @@ namespace EasyLocal {
         return this->shared_from_this();
       }
 
+      /** @copydoc compile(ExpressionStore<T>&) */
       virtual size_t compile(ExpressionStore<T>& exp_store) const
       {
         auto compiled_pair = this->template get_or_create<CMax>(exp_store);
@@ -1074,21 +1075,27 @@ namespace EasyLocal {
         return compiled_pair.first;
       }
 
+      /** Virtual destructor. */
       virtual ~Max() = default;
     };
 
-    /** Relational operators **/
-
+    /** Equality operator. */
     template <typename T>
     class Eq : public ASTSymOp<T>
     {
     public:
+      
+      /** Constructor.
+          @param e1 first operand
+          @param e2 second operand
+       */
       Eq(const Exp<T>& e1, const Exp<T>& e2) : ASTSymOp<T>("==")
       {
         this->append_operand(e1);
         this->append_operand(e2);
       }
 
+      /** @copydoc ASTItem::simplify() */
       virtual std::shared_ptr<ASTItem<T>> simplify()
       {
         bool all_equal_subexp = true;
