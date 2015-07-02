@@ -83,6 +83,8 @@ namespace EasyLocal {
       /** Default normalization function. Makes sure the subtree has a specific ordering. */
       virtual void normalize(bool recursive)
       {
+        if (normalized()) // CHECK
+          return;         // CHECK
         this->_normalized = true;
       }
 
@@ -294,8 +296,8 @@ namespace EasyLocal {
     {
     public:
 
-      /** Constructor. 
-          @param value value of the constant. 
+      /** Constructor.
+          @param value value of the constant.
        */
       ASTConst(const T& value) : value(value) { }
 
@@ -319,7 +321,7 @@ namespace EasyLocal {
         }
         return compiled_pair.first;
       }
-      
+
       /** Value of the constant (safe to be public since it's constant). */
       const T value;
 
@@ -330,17 +332,17 @@ namespace EasyLocal {
       {
         return std::hash<T>()(this->value);
       }
-      
+
     };
 
-    /** Generic class representing an operation. To be specialized to implement 
-        specific operators. 
+    /** Generic class representing an operation. To be specialized to implement
+        specific operators.
      */
     template <typename T>
     class ASTOp : public ASTItem<T>
     {
     public:
-      
+
       /** @copydoc Printable::Print(std::ostream& os) */
       virtual void Print(std::ostream& os) const
       {
@@ -358,14 +360,14 @@ namespace EasyLocal {
         os << ")";
       }
 
-      /** Append an Exp<T> as operand. 
+      /** Append an Exp<T> as operand.
           @param operand Exp<T> to add.
        */
       virtual void append_operand(const Exp<T>& operand)
       {
         // Check that the operand can be added
         this->check_compatibility(operand.p_ai);
-        
+
         // Add operand
         this->operands.push_back(operand.p_ai);
       }
@@ -385,7 +387,7 @@ namespace EasyLocal {
             op->normalize(recursive);
       }
 
-      /** Access to operands. 
+      /** Access to operands.
           @return list of operands.
        */
       const std::list<std::shared_ptr<ASTItem<T>>>& ops() const
@@ -415,7 +417,7 @@ namespace EasyLocal {
       {
         // Check that the operand can be added
         this->check_compatibility(operand);
-        
+
         // Add operand
         this->operands.push_back(operand);
       }
@@ -432,19 +434,20 @@ namespace EasyLocal {
         ASTOp<T>* p_other = dynamic_cast<ASTOp<T>*>(other.get());
         if (p_other == nullptr)
           return;
-        
+
         // Move operands to other's operands (generally faster because of how splice is implemented)
         p_other->operands.splice(p_other->operands.end(), this->operands);
-        
+
         // Swap operands
         std::swap(this->operands, p_other->operands);
       }
 
-      /** Constructor. 
+      /** Constructor.
           @param sym symbol of the operation (for printing purposes).
        */
       ASTOp(const std::string& sym) : sym(sym) { }
 
+      /** @copydoc ASTItem::compute_hash() */
       virtual size_t compute_hash() const
       {
         std::ostringstream os;
@@ -454,6 +457,10 @@ namespace EasyLocal {
         return h;
       }
 
+      /** Compile each operand, add it to the expression store (recursive, used by compile).
+          @param this_index index of the operation in the ExpressionStore
+          @param exp_store ExpressionStore where to register the children
+       */
       void compile_operands(size_t this_index, ExpressionStore<T>& exp_store) const
       {
         for (auto& op : this->operands)
@@ -464,47 +471,68 @@ namespace EasyLocal {
         }
       }
 
+    public:
+      
+      /** Symbol of the operation (for printing purposes). */
       std::string sym;
 
-    public:
+      /** Operands. */
       std::list<std::shared_ptr<ASTItem<T>>> operands;
     };
 
-    // Symmetric operations
+    /** Generic class for symmetric operations. */
     template <typename T>
     class ASTSymOp : public ASTOp<T>
     {
     public:
+      
+      /** Constructor is the same as ASTOp. */
       using ASTOp<T>::ASTOp;
+      
+      /** Normalize. Sorts the operands (for hashing purposes).
+          @param recursive whether it should be called recursively.
+       */
       virtual void normalize(bool recursive)
       {
+        // Normalize operands
         ASTOp<T>::normalize(recursive);
+        
+        // Sort operands
         this->operands.sort([](const std::shared_ptr<ASTItem<T>>& o1, const std::shared_ptr<ASTItem<T>>& o2) {
           return (o1->type().hash_code() < o2->type().hash_code()) || (o1->type().hash_code() == o2->type().hash_code() && o1->hash() < o2->hash());
         });
       }
     };
 
+    /** Sum operation. */
     template <typename T>
     class Sum : public ASTSymOp<T>
     {
     public:
 
+      /** Constructor. 
+          @param e1 first operand
+          @param e2 second operand
+       */
       Sum(const Exp<T>& e1, const Exp<T>& e2) : ASTSymOp<T>("+")
       {
         this->append_operand(e1);
         this->append_operand(e2);
       }
 
+      /** @copydoc ASTItem::simplify() */
       virtual std::shared_ptr<ASTItem<T>> simplify()
       {
-        // lift sum of sums
         T sum_of_const = (T)0;
-
-        // ALL AT ONCE (simplify, steal and aggregate constants, inherit operands)
+        
+        /** Scan operands, replace each operand with its simplified version, 
+            if operand is a sum replace it with its operands, ensuring that
+            any const is added to the sum_of_conts (so that it ends up being
+            a single constant in the simplified operation.
+         */
         for (auto it = this->operands.begin(); it != this->operands.end();)
         {
-          // correct way to replace element in list
+          // Correct way to replace in list (doable because it's a doubly linked list)
           if(!((*it)->simplified()))
           {
             auto sim = (*it)->simplify();
@@ -516,14 +544,20 @@ namespace EasyLocal {
             }
           }
 
-          // if a sum is detected, add its operands to the end, then erase it
+          // If a sum is detected, add its operands to the end, then erase it
           if ((*it)->type() == typeid(Sum<T>))
           {
+            // Handle constants separately
             sum_of_const += std::dynamic_pointer_cast<ASTOp<T>>(*it)->steal_const(0);
+            
+            // Steal operands
             this->merge_operands(*it);
+            
+            // Erase sum
             it = this->operands.erase(it);
           }
-          // if a constant is detected, add its value to the sum, then erase it
+          
+          // If a constant is detected, add it to the sum_of_const
           else if ((*it)->type() == typeid(ASTConst<T>))
           {
             sum_of_const += std::dynamic_pointer_cast<ASTConst<T>>(*it)->value;
@@ -531,29 +565,31 @@ namespace EasyLocal {
           }
           else
           {
+            // Normalize operand
             (*it)->normalize(true);
             ++it;
           }
         }
 
-        // add
+        // Add constant
         if (sum_of_const != 0)
           this->add_constant(std::make_shared<ASTConst<T>>(sum_of_const));
 
-        // zero elements sum
+        // If the sum has no elements (because of constant elimination), return zero
         if (this->operands.size() == 0)
           return std::make_shared<ASTConst<T>>(0);
 
-        // one-element sum
+        // If the sum has only one element, return it
         if (this->operands.size() == 1)
           return this->operands.front();
 
+        // Finalize
         this->_simplified = true;
         this->normalize(false);
-
         return this->shared_from_this();
       }
 
+      /** @copydoc ASTItem::compile(ExpressionStore<T>&) */
       virtual size_t compile(ExpressionStore<T>& exp_store) const
       {
         auto compiled_pair = this->template get_or_create<CSum>(exp_store);
@@ -565,29 +601,38 @@ namespace EasyLocal {
         return compiled_pair.first;
       }
 
+      /** Virtual destructor. */
       virtual ~Sum() = default;
     };
 
+    /** Product operation. */
     template <typename T>
     class Mul : public ASTSymOp<T>
     {
     public:
 
+      /** Constructor.
+          @param e1 first operand
+          @param e2 second operand
+      */
       Mul(const Exp<T>& e1, const Exp<T>& e2) : ASTSymOp<T>("*")
       {
         this->append_operand(e1);
         this->append_operand(e2);
       }
 
+      /** @copydoc ASTItem::simplify() */
       virtual std::shared_ptr<ASTItem<T>> simplify()
       {
-        // lift product of products
         T prod_of_const = (T)1;
 
-        // ALL AT ONCE (simplify, steal and aggregate constants, inherit operands)
+        /** Scan operands, replace each operand with its simplified version, 
+            if an operand is a product, steal its operands ensuring that
+            every const is added to the prod_of_const, then erase it.
+         */
         for (auto it = this->operands.begin(); it != this->operands.end();)
         {
-          // correct way to replace element in list
+          // Correct way to replace in list (doable because it's a doubly linked list)
           if(!((*it)->simplified()))
           {
             auto sim = (*it)->simplify();
@@ -599,14 +644,16 @@ namespace EasyLocal {
             }
           }
 
-          // if a product is detected, add its operands to the end, then erase it
+          // If operand is a product, steal its operands
           if ((*it)->type() == typeid(Mul<T>))
           {
+            // Handle consts properly
             prod_of_const *= std::dynamic_pointer_cast<ASTOp<T>>(*it)->steal_const(1);
             this->merge_operands(*it);
             it = this->operands.erase(it);
           }
-          // if a constant is detected, add its value to the product, then erase it
+          
+          // Handle consts
           else if ((*it)->type() == typeid(ASTConst<T>))
           {
             prod_of_const *= std::dynamic_pointer_cast<ASTConst<T>>(*it)->value;
@@ -614,9 +661,12 @@ namespace EasyLocal {
           }
           else
           {
+            // Normalize operand
             (*it)->normalize(true);
             ++it;
           }
+          
+          // If product of consts erases, remove all operands
           if (prod_of_const == 0)
           {
             this->operands.clear();
@@ -624,24 +674,26 @@ namespace EasyLocal {
           }
         }
 
-        // zero (elements) product
+        // Zero (elements) product
         if (this->operands.size() == 0)
           return std::make_shared<ASTConst<T>>(prod_of_const);
 
-        // add new constant
+        // Add new constant
         if (prod_of_const != 1)
           this->add_constant(std::make_shared<ASTConst<T>>(prod_of_const));
 
-        // one-element product
+        // One-element product
         if (this->operands.size() == 1)
           return this->operands.front();
 
+        // Finalize
         this->_simplified = true;
         this->normalize(false);
-
+        
         return this->shared_from_this();
       }
 
+      /** @copydoc ASTItem::compile(ExpressionStore<T>&) */
       virtual size_t compile(ExpressionStore<T>& exp_store) const
       {
         auto compiled_pair = this->template get_or_create<CMul>(exp_store);
@@ -652,28 +704,36 @@ namespace EasyLocal {
         }
         return compiled_pair.first;
       }
-
+      
+      /** Virtual destructor. */
       virtual ~Mul() = default;
     };
 
+    /** Division operator. */
     template <typename T>
-    class Div : public ASTOp<T>
+    class Div : public ASTOp<T> // not symmetric (cannot normalize by sorting the operands)
     {
     public:
 
+      /** Constructor.
+          @param e1 first operand
+          @param e2 second operand
+       */
       Div(const Exp<T>& e1, const Exp<T>& e2) : ASTOp<T>("/")
       {
         this->append_operand(e1);
         this->append_operand(e2);
       }
 
+      /** @copydoc ASTItem::simplify() */
       virtual std::shared_ptr<ASTItem<T>> simplify()
       {
         std::vector<T> values;
-        // ALL AT ONCE (simplify, steal and aggregate constants, inherit operands)
+        
+        // Scan operands, replace them with simplified version, add consts to values
         for (auto it = this->operands.begin(); it != this->operands.end(); ++it)
         {
-          // correct way to replace element in list
+          // Correct way to replace element in list (doable because it's a doubly linked list)
           if(!((*it)->simplified()))
           {
             auto sim = (*it)->simplify();
@@ -684,20 +744,25 @@ namespace EasyLocal {
               it = this->operands.insert(it, sim);
             }
           }
+          
+          // Handle consts
           if ((*it)->type() == typeid(ASTConst<T>))
             values.push_back(std::dynamic_pointer_cast<ASTConst<T>>(*it)->value);
           (*it)->normalize(true);
         }
 
-        // both constants
+        // If both operands are constants, replace with result
         if (values.size() == 2)
           return std::make_shared<ASTConst<T>>(values[0] / values[1]);
 
+        // Finalize
         this->_simplified = true;
+        this->_normalized = true;
 
         return this->shared_from_this();
       }
 
+      /** @copydoc ASTItem::compile(ExpressionStore<T>&) */
       virtual size_t compile(ExpressionStore<T>& exp_store) const
       {
         auto compiled_pair = this->template get_or_create<CDiv>(exp_store);
@@ -709,28 +774,37 @@ namespace EasyLocal {
         return compiled_pair.first;
       }
 
+      /** Virtual destructor. */
       virtual ~Div() = default;
     };
 
+    /** Modulo operation. */
     template <typename T>
     class Mod : public ASTOp<T>
     {
     public:
 
+      /** Constructor.
+          @param e1 first operand
+          @param e2 second operand
+       */
       Mod(const Exp<T>& e1, const Exp<T>& e2) : ASTOp<T>("%")
       {
         this->append_operand(e1);
         this->append_operand(e2);
       }
 
+      /** @copydoc ASTItem::simplify() */
       virtual std::shared_ptr<ASTItem<T>> simplify()
       {
-
         std::vector<T> values;
-        // ALL AT ONCE (simplify, steal and aggregate constants, inherit operands)
+
+        /** Scan operands, replace each operand with its simplified version, 
+            collect consts in values.
+         */
         for (auto it = this->operands.begin(); it != this->operands.end(); ++it)
         {
-          // correct way to replace element in list
+          // Correct way to replace element in list (doable because it's a doubly linked list)
           if(!((*it)->simplified()))
           {
             auto sim = (*it)->simplify();
@@ -741,21 +815,25 @@ namespace EasyLocal {
               it = this->operands.insert(it, sim);
             }
           }
+          
+          // Handle consts
           if ((*it)->type() == typeid(ASTConst<T>))
             values.push_back(std::dynamic_pointer_cast<ASTConst<T>>(*it)->value);
           (*it)->normalize(true);
         }
 
-        // both constants
+        // If both operands are constants, replace operation with result
         if (values.size() == 2)
-          return std::make_shared<ASTConst<T>>(values[0] / values[1]);
+          return std::make_shared<ASTConst<T>>(values[0] % values[1]);
 
+        // Finalize
         this->_simplified = true;
         this->_normalized = true;
 
         return this->shared_from_this();
       }
 
+      /** @copydoc ASTItem::compile(ExpressionStore<T>&) */
       virtual size_t compile(ExpressionStore<T>& exp_store) const
       {
         auto compiled_pair = this->template get_or_create<CMod>(exp_store);
@@ -767,6 +845,7 @@ namespace EasyLocal {
         return compiled_pair.first;
       }
 
+      /** Virtual destructor. */
       virtual ~Mod() = default;
     };
 
