@@ -398,20 +398,20 @@ namespace EasyLocal {
     }
          
     template <typename T>
-    static Exp<T> alldifferent(const std::vector<Exp<T>>& v)
+    static Exp<T> different(const std::vector<Exp<T>>& v)
     {
-      Exp<T> e = Exp<T>(std::make_shared<AllDiff<T>>(v));
+      Exp<T> e = Exp<T>(std::make_shared<Different<T>>(v));
       e.simplify();
       return e;
     }
 
-    template <typename T>
-    static Exp<T> alldifferent(const std::vector<Var<T>>& v)
-    {
-        Exp<T> e = Exp<T>(std::make_shared<AllDiff<T>>(v));
-        e.simplify();
-        return e;
-    }
+//    template <typename T>
+//    static Exp<T> different(const VarArray<T>& v)
+//    {
+//        Exp<T> e = Exp<T>(std::make_shared<Different<T>>(v));
+//        e.simplify();
+//        return e;
+//    }
       
     template <typename T>
     static Exp<T> abs(const Exp<T>& e)

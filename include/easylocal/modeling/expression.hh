@@ -125,7 +125,7 @@ namespace EasyLocal
     
     /** Array of Vars. */
     template <typename T>
-    class VarArray;
+    class Array;
     
     /**
      A modeling variable to be used inside expressions.     
@@ -133,7 +133,7 @@ namespace EasyLocal
     template <typename T>
     class Var : public Exp<T>
     {
-      friend class VarArray<T>;
+      friend class Array<T>;
     public:
       /**
        Constructor.
@@ -142,9 +142,8 @@ namespace EasyLocal
        */
       explicit Var(ExpressionStore<T>& exp_store, const std::string& name)
       {
-        std::shared_ptr<ASTVar<T>> var = std::make_shared<ASTVar<T>>(name);
-        this->p_ai = var;
-        var->compile(exp_store);
+        this->p_ai = std::make_shared<ASTVar<T>>(name);
+        this->p_ai->compile(exp_store);
       }
       
       Var() = default;
@@ -170,45 +169,51 @@ namespace EasyLocal
       return v1.p_ai.get() == v2;
     }
     
-    /**
-     A variable array to facilitate the initialization of sequences of variables.
-     */
+    /** An Exp<T> array. */
     template <typename T>
-    class VarArray : public Exp<T>, public std::vector<Var<T>>
+    class Array : public std::vector<std::shared_ptr<Exp<T>>>, public Exp<T>
     {
     public:
-      /**
-       Constructor.
-       @param exp_store a reference to the ExpressionStore (compiled expression) where the variable will be registered
-       @param name name of the variable array
-       @param size size of the variable array to declare
-       */
-      explicit VarArray(ExpressionStore<T>& exp_store, const std::string& name, size_t size)
+      
+      Array(ExpressionStore<T>& exp_store, const std::string& name, size_t size) : Array(exp_store)
       {
-        std::shared_ptr<ASTVarArray<T>> var_array = std::make_shared<ASTVarArray<T>>(name, size);
-        this->p_ai = var_array;
-        var_array->compile(exp_store);
-        this->reserve(size);
-        for (size_t i = 0; i < size; i++)
+        // Create 'size' additional variables with the correct name
+        for (unsigned int i = 0; i < size; i++)
         {
-          std::ostringstream os;
-          os << name << "[" << i << "]";
-          this->emplace_back(exp_store, os.str());
+          std::stringstream ss;
+          ss << name << "[" << i << "]";
+          *this << std::make_shared<ASTVar<T>>(ss.str());
         }
       }
       
-      virtual ~VarArray() = default;
+      /** Constructor.
+          @param exp_store a reference to the ExpressionStore (compiled expression) where the array will be registered
+       */
+      Array(ExpressionStore<T>& exp_store)
+      {
+        this->p_ai = std::make_shared<ASTArray<T>>();
+      }
+      
+      Array<T>& operator<<(std::shared_ptr<Exp<T>> e)
+      {
+        this->push_back(e);
+        return *this;
+      }
+      
+      virtual ~Array() = default;
       
       /**
        Copy Constructor.
        @param the passed variable
        */
-      VarArray(const VarArray& v) = default;
+      Array(const Array& v) = default;
       
       /** Forwards access to the vector */
-      using std::vector<Var<T>>::operator[];
+      Exp<T>& operator[](size_t i) {
+        return this->at(i)->get();
+      }
       
-      VarArray() = default;
+      Array() = default;
       
       Exp<T> operator[](const Exp<T>& index)
       {
@@ -216,10 +221,7 @@ namespace EasyLocal
         t.simplify();
         return t;
       }
-      
     };
-    
-  
   }
 }
 
