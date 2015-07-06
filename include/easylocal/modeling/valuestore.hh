@@ -20,10 +20,10 @@ namespace EasyLocal {
     class Var;
       
     /** A store for the values of CompiledExpressions, used to efficiently compute
-     delta changes in the expression values, and to support concurrent simulation
-     of Changes. 
-     @remarks The ValueStore subscribes to an ExpressionStore, in order to update
-     its size to accomodate for changes in the size of the expression.
+        delta changes in the expression values, and to support concurrent simulation
+        of Changes.
+        @remarks The ValueStore subscribes to an ExpressionStore, in order to update
+        its size to accomodate for changes in the size of the expression.
      */
     template <typename T>
     class ValueStore : public ResizeNotify, public Core::Printable
@@ -31,35 +31,34 @@ namespace EasyLocal {
       friend class ExpressionStore<T>;
     public:
       /** Constructor.
-       @param e the expression store to subscribe to (for resizing)
-       @param levels how many levels are supported by this ValueStore (concurrent evaluations)
-       @remarks the "valid" and "_changed_children" variables are not meaningful for level 0, this allows for a small memory footprint improvement (TODO)
+          @param e the expression store to subscribe to (for resizing)
+          @param levels how many levels are supported by this ValueStore (concurrent evaluations)
        */
-      ValueStore(ExpressionStore<T>& e, size_t levels) : value(levels + 1, std::vector<T>(e.size())), valid(levels + 1, std::vector<bool>(e.size(), false)), _changed_children(levels + 1, std::vector<std::set<size_t>>(e.size())), e(e)
+      ValueStore(ExpressionStore<T>& es, size_t levels) : value(levels + 1, std::vector<T>(es.size())), valid(levels + 1, std::vector<bool>(es.size(), false)), _changed_children(levels + 1, std::vector<std::unordered_set<size_t>>(es.size())), es(es)
       {
         std::fill(valid[0].begin(), valid[0].end(), true);
-        e.subscribe(this);
+        es.subscribe(this);
         evaluated = false;
       }
       
       /** Copy constructor (avoids copy of levels above 0).
        @param other ValueStore to get data from
        */
-      ValueStore(const ValueStore& other) : value(other.value.size(), std::vector<T>(other.e.size())), valid(other.valid.size(), std::vector<bool>(other.e.size(), false)), _changed_children(other._changed_children.size(), std::vector<std::set<size_t>>(other.e.size())), e(other.e)
+      ValueStore(const ValueStore& other) : value(other.value.size(), std::vector<T>(other.es.size())), valid(other.valid.size(), std::vector<bool>(other.es.size(), false)), _changed_children(other._changed_children.size(), std::vector<std::unordered_set<size_t>>(other.es.size())), es(other.es)
       {
         std::copy(other.value[0].begin(), other.value[0].end(), value[0].begin());
         std::fill(valid[0].begin(), valid[0].end(), true);
-        e.subscribe(this);
+        es.subscribe(this);
         evaluated = other.evaluated;
       }
     public:
       
       size_t size() const
       {
-        return e.size();
+        return es.size();
       }
 
-      ValueStore(ValueStore<T>&& other) : ValueStore<T>(other.e)
+      ValueStore(ValueStore<T>&& other) : ValueStore<T>(other.es)
       {
         swap(*this, other);
       }
@@ -78,9 +77,8 @@ namespace EasyLocal {
         swap(first._changed_children, second._changed_children);
       }
       
-      /** 
-       Gets called by the subscribed ExpressionStore when a resize event is fired.
-       @param new_size new size of the ExpressionStore
+      /** Gets called by the subscribed ExpressionStore when a resize event is fired.
+          @param new_size new size of the ExpressionStore
        */
       void resized(size_t new_size)
       {
@@ -94,8 +92,10 @@ namespace EasyLocal {
       }
       
       /** Resets a specific level of the ValueStore. 
-       @param level the level to reset
-       @remark _changed_children is not updated, since it is filled and emptied during the bottom-up diff evaluation (invariant: should be always empty before and after diff evaluations)
+          @param level the level to reset
+          @remarks _changed_children is not updated, since it is filled and emptied 
+                  during the bottom-up diff evaluation (invariant: should be always 
+                  empty before and after diff evaluations).
        */
       void reset(unsigned int level)
       {
@@ -104,46 +104,46 @@ namespace EasyLocal {
       }
       
       /** Simulates the execution of a simple Change on a specific simulation level.
-       @param m the Change to simulate
-       @param level level onto which the Change must be simulated
+          @param m the Change to simulate
+          @param level level onto which the Change must be simulated
        */
       void simulate(const BasicChange<T>& m, unsigned int level = 1)
       {
         if (level > 0)
           reset(level);
         if (!evaluated)
-          e.evaluate(*this);
-        std::set<size_t> vars;
+          es.evaluate(*this);
+        std::unordered_set<size_t> vars;
         assign(m.var, level, m.val);
-        size_t var_index = e.compiled_exps[m.var.hash()];
+        size_t var_index = es.compiled_exps[m.var.hash()];
         vars.insert(var_index);
-        e.evaluate_diff(*this, vars, level);
+        es.evaluate_diff(*this, vars, level);
       }
       
       /** Simulates the execution of a composite Change on a specific simulation level.
-       @param m the Change to simulate
-       @param level level onto which the Change must be simulated
+          @param m the Change to simulate
+          @param level level onto which the Change must be simulated
        */
       void simulate(const CompositeChange<T>& cm, unsigned int level = 1)
       {
         if (level > 0)
           reset(level);
         if (!evaluated)
-          e.evaluate(*this);
-        std::set<size_t> vars;
+          es.evaluate(*this);
+        std::unordered_set<size_t> vars;
         for (const BasicChange<T>& m : cm)
         {
           assign(m.var, level, m.val);
-          size_t var_index = e.compiled_symbols[m.var.hash()];
+          size_t var_index = es.compiled_symbols[m.var.hash()];
           vars.insert(var_index);
         }        
-        e.evaluate_diff(*this, vars, level);
+        es.evaluate_diff(*this, vars, level);
       }
 
       /** Executes a simple Change.
-       @param m the Change to execute
-       @remarks it performs the Change on level 1 and then swaps level 1 with level 0
-       this means that it cannot be executed in parallel
+          @param m the Change to execute
+          @remarks it performs the Change on level 1 and then swaps level 1 with level 0
+          this means that it cannot be executed in parallel
        */
       void execute(const BasicChange<T>& m)
       {
@@ -154,9 +154,9 @@ namespace EasyLocal {
       }
 
       /** Executes a composite Change.
-       @param m the Change to execute
-       @remarks it performs the Change on level 1 and then swaps level 1 with level 0
-       this means that it cannot be executed in parallel
+          @param m the Change to execute
+          @remarks it performs the Change on level 1 and then swaps level 1 with level 0
+          this means that it cannot be executed in parallel
        */
       void execute(const CompositeChange<T>& cm)
       {
@@ -167,10 +167,11 @@ namespace EasyLocal {
       }
       
       /** Write access to the values of the expressions in this ValueStore
-       @param i the index of the expression to get the value for
-       @return the value of the ith expression in this ValueStore
-       @remarks write access is only allowed on level zero (simulation levels, i.e., above zero, are only written during Change simulation)
-       @return a reference to the value
+          @param i the index of the expression to get the value for
+          @return the value of the ith expression in this ValueStore
+          @remarks write access is only allowed on level zero (simulation levels, 
+                  i.e., above zero, are only written during Change simulation)
+          @return a reference to the value
        */
       T& operator()(const size_t i)
       {
@@ -178,9 +179,9 @@ namespace EasyLocal {
       }
       
       /** Const access to the values of the expressions in the ValueStore
-       @param i the index of the expression to get the value for
-       @param level level to get the value from
-       @return a const reference to the value
+          @param i the index of the expression to get the value for
+          @param level level to get the value from
+          @return a const reference to the value
        */
       const T& operator()(const size_t i, unsigned int level = 0) const
       {
@@ -200,9 +201,9 @@ namespace EasyLocal {
       }
       
       /** Write access to the values of the expressions in this ValueStore
-       @param e expression to get the value for
-       @remarks the expression itself is used to access the ValueStore, instead of the index 
-       @return a reference to the value
+          @param e expression to get the value for
+          @remarks the expression itself is used to access the ValueStore, instead of the index 
+          @return a reference to the value
        */
       T& operator()(const CExp<T>& ex)
       {
@@ -210,10 +211,10 @@ namespace EasyLocal {
       }
       
       /** Const access to the values of the expressions in the ValueStore
-       @param e expression to get the value for
-       @param level level to get the value from
-       @remarks the expression itself is used to access the ValueStore, instead of the index
-       @return a const reference to the value
+          @param e expression to get the value for
+          @param level level to get the value from
+          @remarks the expression itself is used to access the ValueStore, instead of the index
+          @return a const reference to the value
        */
       const T& operator()(const CExp<T>& ex, unsigned int level = 0) const
       {
@@ -221,9 +222,9 @@ namespace EasyLocal {
       }
       
       /** Checks whether the value of an expression at a specific level has changed
-       @param i index of the expression to check
-       @param level level to check
-       @remarks the expression itself is used to access the ValueStore, instead of the index
+          @param i index of the expression to check
+          @param level level to check
+          @remarks the expression itself is used to access the ValueStore, instead of the index
        */
       bool changed(const CExp<T>& ex, unsigned int level = 0) const
       {
@@ -231,39 +232,39 @@ namespace EasyLocal {
       }
       
       /** Write access to the values of the variables in this ValueStore
-       @param v the variable to get the value for
-       @return a reference to the value
+          @param v the variable to get the value for
+          @return a reference to the value
        */
       T& operator()(const Var<T>& v)
       {
-        return operator()(e.compiled_symbols[v.hash()]);
+        return operator()(es.compiled_symbols[v.hash()]);
       }
       
       /** Const access to the values of the variables in the ValueStore
-       @param v the variable to get the value for
-       @param level the level to get the value from
-       @return a const reference to the value
+          @param v the variable to get the value for
+          @param level the level to get the value from
+          @return a const reference to the value
        */
       const T& operator()(const Var<T>& v, unsigned int level = 0) const
       {
-        return operator()(e.compiled_symbols[v.hash()], level);
+        return operator()(es.compiled_symbols[v.hash()], level);
       }
       
       /** Checks whether the variable of an expression at a specific level has changed
-       @param v the variable to check
-       @param level level to check
+          @param v the variable to check
+          @param level level to check
        */
       bool changed(const Var<T>& v, unsigned int level = 0) const
       {
-        return changed(e.compiled_symbols[v.hash()], level);
+        return changed(es.compiled_symbols[v.hash()], level);
       }
       
       /** @copydoc Printable::Print(std::ostream&) */
       virtual void Print(std::ostream& os) const
       {
-        for (size_t i = 0; i < e.size(); i++)
+        for (size_t i = 0; i < es.size(); i++)
         {
-          e[i]->Print(os);
+          es[i]->Print(os);
           os << " (current: " << value[0][i] << ", values: ";
           for (unsigned int k = 1; k < value.size(); k++)
           {
@@ -290,15 +291,15 @@ namespace EasyLocal {
       
       void assign(const Var<T>& v, unsigned int level, const T& val)
       {
-        value[level][e.compiled_exps[v.hash()]] = val;
-        valid[level][e.compiled_exps[v.hash()]] = true;
+        value[level][es.compiled_exps[v.hash()]] = val;
+        valid[level][es.compiled_exps[v.hash()]] = true;
       }
       
       /** Gets the indices of the changed children of an expression at a specific level
-       @param i index of the expression to get the changed children for
-       @param level reference level
+          @param i index of the expression to get the changed children for
+          @param level reference level
       */
-      std::set<size_t>& changed_children(size_t i, unsigned int level)
+      std::unordered_set<size_t>& changed_children(size_t i, unsigned int level)
       {
         return _changed_children[level][i];
       }
@@ -307,7 +308,7 @@ namespace EasyLocal {
        @param i index of the expression to get the changed children for
        @param level reference level
        */
-      const std::set<size_t>& changed_children(size_t i, unsigned int level) const
+      const std::unordered_set<size_t>& changed_children(size_t i, unsigned int level) const
       {
         return _changed_children[level][i];
       }
@@ -321,10 +322,13 @@ namespace EasyLocal {
       std::vector<std::vector<bool>> valid;
       
       /** Keeps track of the changed children of each expression */
-      std::vector<std::vector<std::set<size_t>>> _changed_children;
+      std::vector<std::vector<std::unordered_set<size_t>>> _changed_children;
+      
+      /** Keeps track of the relevant children (the ones onto which the previous value depends more). */
+//      std::vector<std::vector<std::unordered_set<size_t>>> _relevant_children;
       
       /** ExpressionStore to which the ValueStore is subscribed for resizing */
-      ExpressionStore<T>& e;
+      ExpressionStore<T>& es;
       
       /** Whether the first complete evaluation has been already done */
       mutable bool evaluated;

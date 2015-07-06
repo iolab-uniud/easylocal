@@ -1376,31 +1376,22 @@ namespace EasyLocal {
     
     /** Forward declaration. */
     template <typename T>
-    class VarArray;
+    class Array;
 
     
     template <typename T>
     class Different : public ASTSymOp<T>
     {
     public:
-      
+
       /** Constructor. 
-          @param v vector of expressions
+          @param a array of values
        */
-      Different(const std::vector<Exp<T>>& v) : ASTSymOp<T>("#different")
+      Different(const Array<T>& a) : ASTSymOp<T>("#different")
       {
-        for (const Exp<T>& e : v)
+        for (const Exp<T>& e : a)
           this->append_operand(e);
       }
-
-//      /** Constructor. 
-//          @param v variable array
-//       */
-//      Different(const VarArray<T>& v) : ASTSymOp<T>("#different")
-//      {
-//        for (const Var<T>& e : v)
-//          this->append_operand(e);
-//      }
       
       /** @copydoc Printable::Print(std::ostream& os) */
       virtual void Print(std::ostream& os) const

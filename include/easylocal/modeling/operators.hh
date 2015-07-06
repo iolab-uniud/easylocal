@@ -396,7 +396,7 @@ namespace EasyLocal {
     {
       return e < Exp<T>(v);
     }
-         
+    
     template <typename T>
     static Exp<T> different(const std::vector<Exp<T>>& v)
     {
@@ -412,7 +412,7 @@ namespace EasyLocal {
 //        e.simplify();
 //        return e;
 //    }
-      
+    
     template <typename T>
     static Exp<T> abs(const Exp<T>& e)
     {

@@ -154,8 +154,12 @@ namespace EasyLocal
        */
       Var(const Var& v) = default;
 
+      /** Virtual destructor. */
       virtual ~Var() = default;
       
+      /** Name of the expression. 
+          @return a string representing the expression
+       */
       const std::string& name() const
       {
         ASTVar<T>* p_av = dynamic_cast<ASTVar<T>*>(this->p_ai.get());
@@ -163,6 +167,11 @@ namespace EasyLocal
       }
     };
     
+    /** Generic method to tell if two variables are the same variable. FIXME: check that equality makes sense
+        @param v1 first variable
+        @param v2 second variable
+        @return true if the variables are the same variable
+     */
     template <typename T>
     bool same_var(const Var<T>& v1, const ASTVar<T>* v2)
     {
@@ -194,33 +203,54 @@ namespace EasyLocal
         this->p_ai = std::make_shared<ASTArray<T>>();
       }
       
+      /** Operator to add expressions to the array (à la Gecode).
+          @param e expression to add
+          @return a reference to the array, for chained insertions (a << 1 << 2 << 3)
+       */
       Array<T>& operator<<(std::shared_ptr<Exp<T>> e)
       {
         this->push_back(e);
         return *this;
       }
       
+      /** Operator to add values to the array (à la Gecode). 
+          @param v value to add to the array
+       */
+      Array& operator<<(const T& v) {
+        return (*this) << std::make_shared<ASTConst<T>>(v);
+      }
+      
+      /** Virtual destructor. */
       virtual ~Array() = default;
       
       /**
        Copy Constructor.
-       @param the passed variable
+       @param the array to copy
        */
       Array(const Array& v) = default;
-      
-      /** Forwards access to the vector */
+
+      /** Default constructor. */
+      Array() = default;
+
+      /** Retrieves expression at given index.
+          @param i index of the expression to retrieve
+          @return a reference to the (existing) expression
+       */
       Exp<T>& operator[](size_t i) {
         return this->at(i)->get();
       }
       
-      Array() = default;
-      
+      /** Generates element expression. 
+          @param i index of the element to retrieve
+          @return a new Element expression
+       */
       Exp<T> operator[](const Exp<T>& index)
       {
         Exp<T> t = Exp<T>(std::make_shared<Element<T>>(index, *this));
         t.simplify();
         return t;
       }
+      
     };
   }
 }

@@ -66,7 +66,7 @@ namespace EasyLocal {
         if (depth_needs_update)
           compute_depth();
         const size_t n = this->size();
-        std::set<size_t> all_terminal_cexps;
+        std::unordered_set<size_t> all_terminal_cexps;
         for (size_t i = 0; i < n; i++)
         {
           const std::shared_ptr<CExp<T>>& current_cexp = (*this)[i];
@@ -82,7 +82,7 @@ namespace EasyLocal {
        @param variables a set of variables that have been changed
        @param level level on which to evaluate
        */
-      void evaluate_diff(ValueStore<T>& st, const std::set<size_t>& variables, unsigned int level) const
+      void evaluate_diff(ValueStore<T>& st, const std::unordered_set<size_t>& variables, unsigned int level) const
       {
         if (depth_needs_update)
           compute_depth();
@@ -153,7 +153,7 @@ namespace EasyLocal {
        @param level level on which to evaluate
        @remarks Internally used by the public evaluate method
        */
-      void evaluate(ValueStore<T>& st, const std::set<size_t>& expressions, unsigned int level, bool force = false) const
+      void evaluate(ValueStore<T>& st, const std::unordered_set<size_t>& expressions, unsigned int level, bool force = false) const
       {
         if (depth_needs_update)
           compute_depth();

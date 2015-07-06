@@ -5,7 +5,7 @@
 #include <cmath>
 #include <memory>
 #include <algorithm>
-#include <set>
+#include <unordered_set>
 
 namespace EasyLocal {
   
@@ -30,7 +30,7 @@ namespace EasyLocal {
     public:
       
       /** Constructor. 
-       @param exp_store ExpressionStore into which to register the compiled expression
+          @param exp_store ExpressionStore into which to register the compiled expression
        */
       CExp(ExpressionStore<T>& exp_store) : exp_store(exp_store)
       {
@@ -40,10 +40,13 @@ namespace EasyLocal {
       /** Index of the expression in the ExpressionStore */
       size_t index;
       
-      /** Parents of the expression in the AST (if any) */
-      std::set<size_t> parents;
+      /** Parents of the expression in the AST (if any).
+          @remarks parents don't need need to be ordered, therefore a unordered_set is appropriate. */
+      std::unordered_set<size_t> parents;
       
-      /** Children of the expression in the AST (if any) */
+      /** Children of the expression in the AST (if any).
+          @remarks these need to be ordered.
+       */
       std::vector<size_t> children;
       
       /** String representation of the AST item */
@@ -56,14 +59,14 @@ namespace EasyLocal {
       unsigned int depth;
       
       /** Computes the value of the expression within ValueStore (from scratch).
-       @param st the ValueStore to get the children values from, and store the expression data to
-       @param level level to use for the evaluation
+          @param st the ValueStore to get the children values from, and store the expression data to
+          @param level level to use for the evaluation
        */
       virtual void compute(ValueStore<T>& st, unsigned int level = 0) const = 0;
       
       /** Computes the value of the expression within ValueStore (delta from previous value).
-       @param st the ValueStore to get the children values from, and store the expression data to
-       @param level level to use for the evaluation
+          @param st the ValueStore to get the children values from, and store the expression data to
+          @param level level to use for the evaluation
        */
       virtual void compute_diff(ValueStore<T>& st, unsigned int level = 0) const = 0;
 
@@ -96,12 +99,14 @@ namespace EasyLocal {
     };
     
     /** Generic terminal expression.
-     @remarks Currently only variable or constant
+        @remarks Currently variables, constants, and arrays
      */
     template <typename T>
     class CTerm : public CExp<T>
     {
     public:
+      
+      /** Default constructor. */
       using CExp<T>::CExp;
     };
 
@@ -110,43 +115,41 @@ namespace EasyLocal {
     class CVar : public CTerm<T>
     {
     public:
+     
+      /** Default constructor. */
       using CTerm<T>::CTerm;
       
       /** @copydoc CExp<T>::compute(ValueStore<T>&, unsigned int) */
-      virtual void compute(ValueStore<T>& st, unsigned int level = 0) const
-      {}
+      virtual void compute(ValueStore<T>& st, unsigned int level = 0) const { }
       
       /** @copydoc CExp<T>::compute_diff(ValueStore<T>&, unsigned int) */
-      virtual void compute_diff(ValueStore<T>& st, unsigned int level = 0) const
-      {}
+      virtual void compute_diff(ValueStore<T>& st, unsigned int level = 0) const { }
       
       /** @copydoc Printable::Print(std::ostream&) */
       virtual void Print(std::ostream& os) const
       {
-        os << "Var: ";
+        os << "CVar: ";
         CExp<T>::Print(os);
       }
     };
     
     /** Array variable expression. */
     template <typename T>
-    class CVarArray : public CTerm<T>
+    class CArray : public CTerm<T>
     {
     public:
       using CTerm<T>::CTerm;
       
       /** @copydoc CExp<T>::compute(ValueStore<T>&, unsigned int) */
-      virtual void compute(ValueStore<T>& st, unsigned int level = 0) const
-      {}
+      virtual void compute(ValueStore<T>& st, unsigned int level = 0) const { }
       
       /** @copydoc CExp<T>::compute_diff(ValueStore<T>&, unsigned int) */
-      virtual void compute_diff(ValueStore<T>& st, unsigned int level = 0) const
-      {}
+      virtual void compute_diff(ValueStore<T>& st, unsigned int level = 0) const { }
       
       /** @copydoc Printable::Print(std::ostream&) */
       virtual void Print(std::ostream& os) const
       {
-        os << "VarArray: ";
+        os << "CArray: ";
         CExp<T>::Print(os);
       }
       
@@ -169,8 +172,7 @@ namespace EasyLocal {
       }
       
       /** @copydoc CExp<T>::compute_diff(ValueStore<T>&, unsigned int) */
-      virtual void compute_diff(ValueStore<T>& st, unsigned int level = 0) const
-      {}
+      virtual void compute_diff(ValueStore<T>& st, unsigned int level = 0) const { }
       
       /** Value of the constant */
       T value;
@@ -178,7 +180,7 @@ namespace EasyLocal {
       /** @copydoc Printable::Print(std::ostream&) */
       virtual void Print(std::ostream& os) const
       {
-        os << "Const: ";
+        os << "CConst: ";
         CExp<T>::Print(os);
       }
     };
@@ -188,30 +190,37 @@ namespace EasyLocal {
     class CSum : public CExp<T>
     {
     public:
+      
+      /** Default constructor. */
       using CExp<T>::CExp;
       
       /** @copydoc CExp<T>::compute(ValueStore<T>&, unsigned int) */
       virtual void compute(ValueStore<T>& st, unsigned int level = 0) const
       {
         T sum = static_cast<T>(0);
+        
+        // Sum all children at the same level
         for (size_t child : this->children)
-        {
           sum += st(child, level);
-        }
+        
         st.assign(this->index, level, sum);
       }
       
       /** @copydoc CExp<T>::compute_diff(ValueStore<T>&, unsigned int) */
       virtual void compute_diff(ValueStore<T>& st, unsigned int level = 0) const
       {
-        T current_contribution = st(this->index), new_contribution = static_cast<T>(0);
-        for (auto child : st.changed_children(this->index, level))
-        {
-          current_contribution -= st(child);
-          new_contribution += st(child, level);
-        }
-        st.changed_children(this->index, level).clear();
-        T value = current_contribution + new_contribution;
+        // Get old value
+        T value = st(this->index);
+        
+        // Get changed children
+        std::unordered_set<size_t>& changed = st.changed_children(this->index, level);
+        
+        // Iterate through *changed* children, replace old contribution with new one
+        for (auto child : changed)
+          value += st(child, level) - st(child);
+        
+        // Clear list of changed children
+        changed.clear();
         st.assign(this->index, level, value);
       }
 
@@ -228,14 +237,19 @@ namespace EasyLocal {
     class CMul : public CExp<T>
     {
     public:
+      
+      /** Default constructor. */
       using CExp<T>::CExp;
       
       /** @copydoc CExp<T>::compute(ValueStore<T>&, unsigned int) */
       virtual void compute(ValueStore<T>& st, unsigned int level = 0) const
       {
         T mul = static_cast<T>(1);
+        
+        // Multiply the children at the same level
         for (size_t child : this->children)
         {
+          // If value is zero, stop updating
           T value = st(child, level);
           if (value == static_cast<T>(0))
           {
@@ -250,28 +264,38 @@ namespace EasyLocal {
       /** @copydoc CExp<T>::compute_diff(ValueStore<T>&, unsigned int) */
       virtual void compute_diff(ValueStore<T>& st, unsigned int level = 0) const
       {
-        T current_contribution = st(this->index);
-        std::set<size_t>& changed = st.changed_children(this->index, level);
+        // Get old value
+        T value = st(this->index);
+        
+        // Get changed children
+        std::unordered_set<size_t>& changed = st.changed_children(this->index, level);
+        
+        // If any of the children are zero, the product is zero and we're over
         if (std::any_of(changed.begin(), changed.end(), [&st,&level](const size_t& i)->bool { return st(i, level) == static_cast<T>(0); }))
         {
           st.assign(this->index, level, static_cast<T>(0));
           changed.clear();
           return;
         }
-        if (current_contribution == 0)
-        {
-          this->compute(st, level);
+        
+        // If the previous value was zero, we need to recompute from scratch
+        if (value == 0) {
           changed.clear();
-          return;
+          return compute(st, level);
         }
-        T new_contribution = static_cast<T>(1);
+        
+        /** Compute new contribution, update old contribution. Note that this is
+            clean, as whatever we "divide" from the old value, was previously
+            multiplied, so te precision is preserved.
+         */
         for (auto child : changed)
         {
-          current_contribution /= st(child);
-          new_contribution *= st(child, level);
+          // Separated to avoid losing information
+          value /= st(child);
+          value *= st(child, level);
         }
+        
         changed.clear();
-        T value = current_contribution * new_contribution;
         st.assign(this->index, level, value);
       }
 
@@ -288,6 +312,8 @@ namespace EasyLocal {
     class CDiv : public CExp<T>
     {
     public:
+      
+      /** Default constructor. */
       using CExp<T>::CExp;
       
       /** @copydoc CExp<T>::compute(ValueStore<T>&, unsigned int) */
@@ -300,6 +326,7 @@ namespace EasyLocal {
       /** @copydoc CExp<T>::compute_diff(ValueStore<T>&, unsigned int) */
       virtual void compute_diff(ValueStore<T>& st, unsigned int level = 0) const
       {
+        // Since / is binary, it is faster to compute it straight away
         this->compute(st, level);
         st.changed_children(this->index, level).clear();
       }
@@ -322,6 +349,7 @@ namespace EasyLocal {
       /** @copydoc CExp<T>::compute(ValueStore<T>&, unsigned int) */
       virtual void compute(ValueStore<T>& st, unsigned int level = 0) const
       {
+        // Since / is binary, it is faster to compute it straight away
         T res = st(this->children[0], level) % st(this->children[1], level);
         st.assign(this->index, level, res);
       }
@@ -346,6 +374,8 @@ namespace EasyLocal {
     class CMin : public CExp<T>
     {
     public:
+      
+      /** Default constructor. */
       using CExp<T>::CExp;
       
       /** @copydoc Sym<T>::compute(ValueStore<T>&, unsigned int) */
@@ -363,7 +393,12 @@ namespace EasyLocal {
       /** @copydoc CExp<T>::compute_diff(ValueStore<T>&, unsigned int) */
       virtual void compute_diff(ValueStore<T>& st, unsigned int level = 0) const
       {
+        // TODO: add field for relevant children
+        
+        // Get previous value
         T current_min = st(this->index), new_min;
+        
+        // Iterate through changed children, identify min
         bool new_min_set = false;
         for (auto child : st.changed_children(this->index, level))
         {
@@ -376,9 +411,12 @@ namespace EasyLocal {
             new_min = std::min(new_min, st(child, level));
         }
         st.changed_children(this->index, level).clear();
-        if (new_min > current_min) // the new_min is worse than the previous one, the whole array has to be checked
+        
+        // If the min among the changed children is worse than the previous min, check all children (the previous min might have been changed)
+        if (new_min > current_min)
           for (size_t child : this->children)
             new_min = std::min(new_min, st(child, level));
+        
         st.assign(this->index, level, new_min);
       }
       
@@ -412,7 +450,12 @@ namespace EasyLocal {
       /** @copydoc CExp<T>::compute_diff(ValueStore<T>&, unsigned int) */
       virtual void compute_diff(ValueStore<T>& st, unsigned int level = 0) const
       {
+        // TODO: add field for relevant children
+        
+        // Get previous value
         T current_max = st(this->index), new_max;
+        
+        // Iterate through changed children, identify max
         bool new_max_set = false;
         for (auto child : st.changed_children(this->index, level))
         {
@@ -425,7 +468,9 @@ namespace EasyLocal {
             new_max = std::max(new_max, st(child, level));
         }
         st.changed_children(this->index, level).clear();
-        if (new_max < current_max) // the new_max is worse than the previous one, the whole array has to be checked
+        
+        // If the new max is worse than the previous, reconsider all the children (previous max might have changed)
+        if (new_max < current_max)
           for (size_t child : this->children)
             new_max = std::max(new_max, st(child, level));
         st.assign(this->index, level, new_max);
@@ -533,7 +578,7 @@ namespace EasyLocal {
       }
     };
     
-    // TODO check against CVarArrayExpression
+    // TODO check against CArrayExpression
     /** A subexpression dealing with an array **/
     template <typename T>
     class CArraySub : public CExp<T>
@@ -552,7 +597,7 @@ namespace EasyLocal {
       /** @copydoc CExp<T>::compute(ValueStore<T>&, unsigned int) */
       virtual void compute(ValueStore<T>& st, unsigned int level = 0) const
       {
-        const std::shared_ptr<CVarArray<T>>& array = std::dynamic_pointer_cast<CVarArray<T>>(this->exp_store[this->children[0]]);
+        const std::shared_ptr<CArray<T>>& array = std::dynamic_pointer_cast<CArray<T>>(this->exp_store[this->children[0]]);
         T min = st(array->index, level);
         for (size_t i = 1; i < array->size; i++)
           min = std::min(min, st(array->index + i, level));
@@ -562,9 +607,9 @@ namespace EasyLocal {
       /** @copydoc CExp<T>::compute_diff(ValueStore<T>&, unsigned int) */
       virtual void compute_diff(ValueStore<T>& st, unsigned int level = 0) const
       {
-        std::set<size_t>& changed = st.changed_children(this->index, level);
+        std::unordered_set<size_t>& changed = st.changed_children(this->index, level);
         T current_min = st(this->index);
-        std::set<size_t>::const_iterator min_it = std::min_element(changed.begin(), changed.end(), [&st,&level](const size_t& e1, const size_t& e2)->bool { return st(e1, level) < st(e2, level); });
+        std::unordered_set<size_t>::const_iterator min_it = std::min_element(changed.begin(), changed.end(), [&st,&level](const size_t& e1, const size_t& e2)->bool { return st(e1, level) < st(e2, level); });
         T changed_min = st(*min_it, level);
         if (changed_min <= current_min)
           st.assign(this->index, level, changed_min);
@@ -591,7 +636,7 @@ namespace EasyLocal {
       /** @copydoc CExp<T>::compute(ValueStore<T>&, unsigned int) */
       virtual void compute(ValueStore<T>& st, unsigned int level = 0) const
       {
-        const std::shared_ptr<CVarArray<T>>& array = std::dynamic_pointer_cast<CVarArray<T>>(this->exp_store[this->children[0]]);
+        const std::shared_ptr<CArray<T>>& array = std::dynamic_pointer_cast<CArray<T>>(this->exp_store[this->children[0]]);
         size_t min_index = 0;
         T min = st(array->index, level);
         for (size_t i = 1; i < array->size; i++)
@@ -609,13 +654,13 @@ namespace EasyLocal {
       /** @copydoc CExp<T>::compute_diff(ValueStore<T>&, unsigned int) */
       virtual void compute_diff(ValueStore<T>& st, unsigned int level = 0) const
       {
-        std::set<size_t>& changed = st.changed_children(this->index, level);
+        std::unordered_set<size_t>& changed = st.changed_children(this->index, level);
         T current_min = st(this->index);
-        std::set<size_t>::const_iterator min_it = std::min_element(changed.begin(), changed.end(), [&st,&level](const size_t& e1, const size_t& e2)->bool { return st(e1, level) < st(e2, level); });
+        std::unordered_set<size_t>::const_iterator min_it = std::min_element(changed.begin(), changed.end(), [&st,&level](const size_t& e1, const size_t& e2)->bool { return st(e1, level) < st(e2, level); });
         T changed_min = st(*min_it, level);
         if (changed_min <= current_min)
         {
-          const std::shared_ptr<CVarArray<T>>& array = std::dynamic_pointer_cast<CVarArray<T>>(this->exp_store[this->children[0]]);
+          const std::shared_ptr<CArray<T>>& array = std::dynamic_pointer_cast<CArray<T>>(this->exp_store[this->children[0]]);
           st.assign(this->index, level, *min_it - array->index);
         }
         else
@@ -641,7 +686,7 @@ namespace EasyLocal {
       /** @copydoc CExp<T>::compute(ValueStore<T>&, unsigned int) */
       virtual void compute(ValueStore<T>& st, unsigned int level = 0) const
       {
-        const std::shared_ptr<CVarArray<T>>& array = std::dynamic_pointer_cast<CVarArray<T>>(this->exp_store[this->children[0]]);
+        const std::shared_ptr<CArray<T>>& array = std::dynamic_pointer_cast<CArray<T>>(this->exp_store[this->children[0]]);
         T max = st(array->index, level);
         for (size_t i = 1; i < array->size; i++)
           max = std::max(max, st(array->index + i, level));
@@ -651,9 +696,9 @@ namespace EasyLocal {
       /** @copydoc CExp<T>::compute_diff(ValueStore<T>&, unsigned int) */
       virtual void compute_diff(ValueStore<T>& st, unsigned int level = 0) const
       {
-        std::set<size_t>& changed = st.changed_children(this->index, level);
+        std::unordered_set<size_t>& changed = st.changed_children(this->index, level);
         T current_max = st(this->index);
-        std::set<size_t>::const_iterator max_it = std::max_element(changed.begin(), changed.end(), [&st,&level](const size_t& e1, const size_t& e2)->bool { return st(e1, level) < st(e2, level); });
+        std::unordered_set<size_t>::const_iterator max_it = std::max_element(changed.begin(), changed.end(), [&st,&level](const size_t& e1, const size_t& e2)->bool { return st(e1, level) < st(e2, level); });
         T changed_max = st(*max_it, level);
         if (changed_max >= current_max)
           st.assign(this->index, level, changed_max);
@@ -680,7 +725,7 @@ namespace EasyLocal {
       /** @copydoc CExp<T>::compute(ValueStore<T>&, unsigned int) */
       virtual void compute(ValueStore<T>& st, unsigned int level = 0) const
       {
-        const std::shared_ptr<CVarArray<T>>& array = std::dynamic_pointer_cast<CVarArray<T>>(this->exp_store[this->children[0]]);
+        const std::shared_ptr<CArray<T>>& array = std::dynamic_pointer_cast<CArray<T>>(this->exp_store[this->children[0]]);
         size_t max_index = 0;
         T max = st(array->index, level);
         for (size_t i = 1; i < array->size; i++)
@@ -698,13 +743,13 @@ namespace EasyLocal {
       /** @copydoc CExp<T>::compute_diff(ValueStore<T>&, unsigned int) */
       virtual void compute_diff(ValueStore<T>& st, unsigned int level = 0) const
       {
-        std::set<size_t>& changed = st.changed_children(this->index, level);
+        std::unordered_set<size_t>& changed = st.changed_children(this->index, level);
         T current_max = st(this->index);
-        std::set<size_t>::const_iterator max_it = std::max_element(changed.begin(), changed.end(), [&st,&level](const size_t& e1, const size_t& e2)->bool { return st(e1, level) < st(e2, level); });
+        std::unordered_set<size_t>::const_iterator max_it = std::max_element(changed.begin(), changed.end(), [&st,&level](const size_t& e1, const size_t& e2)->bool { return st(e1, level) < st(e2, level); });
         T changed_max = st(*max_it, level);
         if (changed_max >= current_max)
         {
-          const std::shared_ptr<CVarArray<T>>& array = std::dynamic_pointer_cast<CVarArray<T>>(this->exp_store[this->children[0]]);
+          const std::shared_ptr<CArray<T>>& array = std::dynamic_pointer_cast<CArray<T>>(this->exp_store[this->children[0]]);
           st.assign(this->index, level, *max_it - array->index);
         }
         else
@@ -732,7 +777,7 @@ namespace EasyLocal {
       /** @copydoc CExp<T>::compute(ValueStore<T>&, unsigned int) */
       virtual void compute(ValueStore<T>& st, unsigned int level = 0) const
       {
-        const std::shared_ptr<CVarArray<T>>& array = std::dynamic_pointer_cast<CVarArray<T>>(this->exp_store[this->children[1]]);
+        const std::shared_ptr<CArray<T>>& array = std::dynamic_pointer_cast<CArray<T>>(this->exp_store[this->children[1]]);
         int offset = st(this->children[0], level);
         if (offset < 0 || offset >= array->size)
           throw std::runtime_error("Error: ArrayElement expression using an invalid index (index value: " + std::to_string(offset) + ")");
