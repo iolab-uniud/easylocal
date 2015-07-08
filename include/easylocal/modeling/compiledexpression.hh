@@ -19,10 +19,6 @@ namespace EasyLocal {
     template <typename T>
     class ValueStore;
     
-    /** Forward declaration */
-    template <typename T>
-    class Exp;
-    
     /** Template compiled Exp<T>. */
     template <typename T>
     class CExp : public EasyLocal::Core::Printable
