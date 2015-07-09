@@ -288,6 +288,7 @@ namespace EasyLocal {
     static std::shared_ptr<Exp<T>> operator==(const std::shared_ptr<Exp<T>>& e1, const std::shared_ptr<Exp<T>>& e2)
     {
       auto r = std::make_shared<Eq<T>>(e1, e2);
+      r->simplify();
       return r;
     }
     
@@ -307,6 +308,7 @@ namespace EasyLocal {
     static std::shared_ptr<Exp<T>> operator!=(const std::shared_ptr<Exp<T>>& e1, const std::shared_ptr<Exp<T>>& e2)
     {
       auto r = std::make_shared<Ne<T>>(e1, e2);
+      r->simplify();
       return r;
     }
     
@@ -441,9 +443,9 @@ namespace EasyLocal {
     }
     
     template <typename T>                        // we pass an Array, which is an Exp (Exp)
-    static std::shared_ptr<Exp<T>> different(const std::shared_ptr<Exp<T>>& v)
+    static std::shared_ptr<Exp<T>> n_values(const std::shared_ptr<Exp<T>>& v)
     {
-      auto e = std::make_shared<Different<T>>(v);
+      auto e = std::make_shared<Nvalues<T>>(v);
       e = e->simplify();
       return e;
     }

@@ -1401,14 +1401,14 @@ namespace EasyLocal {
 
     
     template <typename T>
-    class Different : public SymOp<T>
+    class Nvalues : public SymOp<T>
     {
     public:
 
       /** Constructor. 
           @param a array of values
        */
-      Different(const Array<T>& a) : SymOp<T>("#different")
+      Nvalues(const Array<T>& a) : SymOp<T>("n_values")
       {
         for (const Exp<T>& e : a)
           this->append_operand(e);
@@ -1425,7 +1425,7 @@ namespace EasyLocal {
           count++;
           op->Print(os);
           if (count < this->operands.size())
-            os << " ";
+            os << ", ";
         }
         os << ")";
       }
