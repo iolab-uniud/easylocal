@@ -1,5 +1,5 @@
-#ifndef EXPRESSIONSTORE_HH
-#define EXPRESSIONSTORE_HH
+#ifndef _EXPRESSIONSTORE_HH
+#define _EXPRESSIONSTORE_HH
 
 #include "compiledexpression.hh"
 #include <queue>
@@ -210,4 +210,4 @@ namespace EasyLocal {
 }
 
 
-#endif
+#endif // _EXPRESSIONSTORE_HH

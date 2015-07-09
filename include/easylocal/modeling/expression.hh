@@ -1,12 +1,13 @@
-#ifndef _AST_HH
-#define _AST_HH
+#ifndef _EXPRESSION_HH
+#define _EXPRESSION_HH
 
-#include "easylocal/utils/printable.hh"
 #include <memory>
 #include <vector>
 #include <list>
 #include <map>
-#include "compiledexpression.hh"
+
+#include "easylocal/utils/printable.hh"
+#include "easylocal/modeling/compiledexpression.hh"
 
 namespace EasyLocal {
 
@@ -18,7 +19,7 @@ namespace EasyLocal {
       whose responsibility is to simplify the expressions (if possible) and
       normalize them so that it is easy to implement a hash function and
       recognize existing sub-expressions. Note: mostly, the normalization boils
-      down to collapsing and sorting the operands of an ASTOp (operation) node.
+      down to collapsing and sorting the operands of an Op (operation) node.
       Moreover, the AST keeps track of the depth of each expression, so that the
       bottom-up evaluation (necessary to implement automatic deltas) is as
       efficient as possible, i.e., every time we evaluate a node, its descendants
@@ -28,6 +29,10 @@ namespace EasyLocal {
               silly because of how hash functions work. We should consider using
               a perfect hashing function plus look-up table and check for deep
               equality.
+   
+      FIXME:  indices are always size_t, it doesn't make sense for an index to be
+              an Exp<float> or other
+
     */
   namespace Modeling {
     
@@ -47,7 +52,7 @@ namespace EasyLocal {
         in order to implement specific types of nodes, e.g., vars and constants.
      */
     template <typename T>
-    class ASTItem  : public virtual Core::Printable, public std::enable_shared_from_this<Exp<T>>
+    class Exp  : public virtual Core::Printable, public std::enable_shared_from_this<Exp<T>>
     {
       /** Needed to access type() which is protected. */
       friend class Op<T>;
@@ -58,10 +63,10 @@ namespace EasyLocal {
     public:
 
       /** Default constructor. */
-      ASTItem() : _hash_set(false), _simplified(false), _normalized(false) { }
+      Exp() : _hash_set(false), _simplified(false), _normalized(false) { }
 
       /** Virtual destructor (for inheritance). */
-      virtual ~ASTItem() = default;
+      virtual ~Exp() = default;
 
       /** Exposed hash function (caches the computation of the hash).
           @return a unique (integer) identifier for a node.
@@ -79,7 +84,7 @@ namespace EasyLocal {
       /** Default simplify function.
           @return a simplified subtree of the AST.
        */
-      virtual std::shared_ptr<ASTItem<T>> simplify()
+      virtual std::shared_ptr<Exp<T>> simplify()
       {
         this->_simplified = true;
         return this->shared_from_this();
@@ -113,9 +118,7 @@ namespace EasyLocal {
           @param exp_store ExpressionStore the CExp has to be added to.
           @return the position of the CExp in the ExpressionStore.
        */
-      virtual size_t compile(ExpressionStore<T>& exp_store) const = 0;
-
-    protected:
+      virtual size_t compile(ExpressionStore<T>& exp_store) { }
 
       /** For "type system". */
       const std::type_info& type() const
@@ -123,19 +126,12 @@ namespace EasyLocal {
         return typeid(*this);
       }
 
-      /** "Type system". Checks that a given argument is suitable as a parameter in a certain position. */
-      virtual void check_compatibility(const std::shared_ptr<ASTItem<T>> sub_ex, size_t pos = 0) const
-      {
-        // In general expressions are not compatible with var array operands unless specified
-        if (sub_ex->type() == typeid(ASTArray<T>))
-        {
-          std::ostringstream os;
-          os << sub_ex << " type is incompatible with " << *this;
-          throw std::logic_error(os.str());
-        }
-      }
+      virtual void Print(std::ostream& os = std::cout) const { } // FIXME
 
-      /** Checks whether an ASTItem has been compiled and added to an
+      
+    protected:
+
+      /** Checks whether an Exp has been compiled and added to an
           ExpressionStore, creates it if not.
           @param exp_store ExpressionStore where to find or create a CExp.
           @return a pair containing the CExp index in the expression store and
@@ -177,54 +173,54 @@ namespace EasyLocal {
       /** Hash code. */
       mutable size_t _hash;
 
-      /** Keep track whether the ASTItem has been simplified and normalized already. */
+      /** Keep track whether the Exp has been simplified and normalized already. */
       bool _simplified, _normalized;
 
       /** Virtual function to compute the hash. */
-      virtual size_t compute_hash() const = 0;
+      virtual size_t compute_hash() const { }  // FIXME
 
     };
 
-    /** Special ASTItem which does not need to be simplified or normalized. */
+    /** Special Exp which does not need to be simplified or normalized. */
     template <typename T>
-    class ASTStable : public ASTItem<T>
+    class StableExp : public Exp<T>
     {
     public:
 
       /** Virtual destructor. */
-      virtual ~ASTStable() = default;
+      virtual ~StableExp() = default;
 
     protected:
 
       /** Default constructor. */
-      ASTStable()
+      StableExp()
       {
         this->_simplified = true;
         this->_normalized = true;
       }
     };
 
-    /** An ASTItem representing a variable. */
+    /** An Exp representing a variable. */
     template <typename T>
-    class ASTVar : public ASTStable<T>
+    class Var : public StableExp<T>
     {
     public:
 
       /** Constructor.
           @param name name of the variable (for printing purposes).
        */
-      ASTVar(const std::string& name) : name(name) { }
+      Var(const std::string& name, const T& lb, const T& ub) : name(name), lb(lb), ub(ub) { }
 
       /** @copydoc Printable::Print(std::ostream& os) */
       virtual void Print(std::ostream& os) const
       {
-        os << name;
+        os << name << " \u2208 {" << lb << ".." << ub << "}";
       }
 
       /** Virtual destructor. */
-      virtual ~ASTVar() = default;
+      virtual ~Var() = default;
 
-      /** @copydoc ASTItem::compile(ExpressionStore<T>&) */
+      /** @copydoc Exp::compile(ExpressionStore<T>&) */
       virtual size_t compile(ExpressionStore<T>& exp_store) const
       {
         return this->template get_or_create<CVar>(exp_store).first;
@@ -235,22 +231,25 @@ namespace EasyLocal {
       /** Name of the variable (for printing purposes). */
       const std::string name;
 
-      /** @copydoc ASTItem::compute_hash() */
+      /** @copydoc Exp::compute_hash() */
       virtual size_t compute_hash() const
       {
         return std::hash<std::string>()(this->name);
       }
+      
+      /** Lower and upper bounds. */
+      T lb, ub;
 
     };
     
-    /** An ASTItem representing a variable array. */
+    /** An Exp representing a variable array. */
     template <typename T>
-    class ASTArray : public ASTItem<T>
+    class Array : public Exp<T>
     {
     public:
 
       /** Constructor. */
-      ASTArray() { }
+      Array() { }
 
       /** @copydoc Printable::Print(std::ostream& os) */
       virtual void Print(std::ostream& os) const
@@ -259,7 +258,7 @@ namespace EasyLocal {
       }
 
       /** Virtual destructor. */
-      virtual ~ASTArray() = default;
+      virtual ~Array() = default;
 
 
       virtual size_t compile(ExpressionStore<T>& exp_store) const
@@ -270,7 +269,7 @@ namespace EasyLocal {
         // Special handling for CArrays
         if (compiled_pair.second != nullptr)
         {
-          // Get newly compiled expression (set start and size if it's a new CVarArray)
+          // Get newly compiled expression (set start and size if it's a new CArray)
           auto compiled = std::dynamic_pointer_cast<CArray<T>>(compiled_pair.second);
           compiled->size = size;
         }
@@ -285,23 +284,23 @@ namespace EasyLocal {
       /** Size of the variable array. */
       const size_t size;
 
-      /** @copydoc ASTItem::compute_hash() */
+      /** @copydoc Exp::compute_hash() */
       virtual size_t compute_hash() const
       {
         return std::hash<std::string>()(this->name);
       }
     };
 
-    /** ASTItem representing constant value. */
+    /** Exp representing constant value. */
     template <typename T>
-    class ASTConst : public ASTStable<T>
+    class Const : public StableExp<T>
     {
     public:
 
       /** Constructor.
           @param value value of the constant.
        */
-      ASTConst(const T& value) : value(value) { }
+      Const(const T& value) : value(value) { }
 
       /** @copydoc Printable::Print(std::ostream& os) */
       virtual void Print(std::ostream& os) const
@@ -310,9 +309,9 @@ namespace EasyLocal {
       }
 
       /** Virtual destructor. */
-      virtual ~ASTConst() = default;
+      virtual ~Const() = default;
 
-      /** @copydoc ASTItem::compile(ExpressionStore<T>&) */
+      /** @copydoc Exp::compile(ExpressionStore<T>&) */
       virtual size_t compile(ExpressionStore<T>& exp_store) const
       {
         auto compiled_pair = this->template get_or_create<CConst>(exp_store);
@@ -329,7 +328,7 @@ namespace EasyLocal {
 
     protected:
 
-      /** @copydoc ASTItem::compute_hash() */
+      /** @copydoc Exp::compute_hash() */
       virtual size_t compute_hash() const
       {
         return std::hash<T>()(this->value);
@@ -341,7 +340,7 @@ namespace EasyLocal {
         specific operators.
      */
     template <typename T>
-    class ASTOp : public ASTItem<T>
+    class Op : public Exp<T>
     {
     public:
 
@@ -365,17 +364,13 @@ namespace EasyLocal {
       /** Append an Exp<T> as operand.
           @param operand Exp<T> to add.
        */
-      virtual void append_operand(const Exp<T>& operand)
+      virtual void append_operand(const std::shared_ptr<Exp<T>>& operand)
       {
-        // Check that the operand can be added
-        this->check_compatibility(operand.p_ai);
-
-        // Add operand
-        this->operands.push_back(operand.p_ai);
+        this->operands.push_back(operand);
       }
 
       /** Virtual destructor. */
-      virtual ~ASTOp() = default;
+      virtual ~Op() = default;
 
       /** Normalize.
           @param recursive whether to forward the normalization to operands.
@@ -392,7 +387,7 @@ namespace EasyLocal {
       /** Access to operands.
           @return list of operands.
        */
-      const std::list<std::shared_ptr<ASTItem<T>>>& ops() const
+      const std::list<std::shared_ptr<Exp<T>>>& ops() const
       {
         return operands;
       }
@@ -403,37 +398,33 @@ namespace EasyLocal {
        */
       virtual T steal_const(T def)
       {
-        std::shared_ptr<ASTItem<T>> front = this->operands.front();
-        if (front->type() == typeid(ASTConst<T>))
+        std::shared_ptr<Exp<T>> front = this->operands.front();
+        if (front->type() == typeid(Const<T>))
         {
           this->operands.pop_front();
-          return std::dynamic_pointer_cast<ASTConst<T>>(front)->value;
+          return std::dynamic_pointer_cast<Const<T>>(front)->value;
         }
         return def;
       }
 
     protected:
 
-      /** Same as append_operand(const Exp<T>&), but works on ASTItems directly (for internal purpose). */
-      virtual void add_operand(const std::shared_ptr<ASTItem<T>>& operand)
+      /** Same as append_operand(const Exp<T>&), but works on Exps directly (for internal purpose). */
+      virtual void add_operand(const std::shared_ptr<Exp<T>>& operand)
       {
-        // Check that the operand can be added
-        this->check_compatibility(operand);
-
-        // Add operand
         this->operands.push_back(operand);
       }
 
-      virtual void add_constant(const std::shared_ptr<ASTConst<T>>& o)
+      virtual void add_constant(const std::shared_ptr<Const<T>>& o)
       {
         // Add const operand (at the front of the vector)
         this->operands.push_front(o);
       }
 
-      virtual void merge_operands(const std::shared_ptr<ASTItem<T>>& other)
+      virtual void merge_operands(const std::shared_ptr<Exp<T>>& other)
       {
-        // Check if other ASTItem is operation
-        ASTOp<T>* p_other = dynamic_cast<ASTOp<T>*>(other.get());
+        // Check if other Exp is operation
+        Op<T>* p_other = dynamic_cast<Op<T>*>(other.get());
         if (p_other == nullptr)
           return;
 
@@ -447,9 +438,9 @@ namespace EasyLocal {
       /** Constructor.
           @param sym symbol of the operation (for printing purposes).
        */
-      ASTOp(const std::string& sym) : sym(sym) { }
+      Op(const std::string& sym) : sym(sym) { }
 
-      /** @copydoc ASTItem::compute_hash() */
+      /** @copydoc Exp::compute_hash() */
       virtual size_t compute_hash() const
       {
         std::ostringstream os;
@@ -479,17 +470,17 @@ namespace EasyLocal {
       std::string sym;
 
       /** Operands. */
-      std::list<std::shared_ptr<ASTItem<T>>> operands;
+      std::list<std::shared_ptr<Exp<T>>> operands;
     };
 
     /** Generic class for symmetric operations. */
     template <typename T>
-    class ASTSymOp : public ASTOp<T>
+    class SymOp : public Op<T>
     {
     public:
       
-      /** Constructor is the same as ASTOp. */
-      using ASTOp<T>::ASTOp;
+      /** Constructor is the same as Op. */
+      using Op<T>::Op;
       
       /** Normalize. Sorts the operands (for hashing purposes).
           @param recursive whether it should be called recursively.
@@ -497,10 +488,10 @@ namespace EasyLocal {
       virtual void normalize(bool recursive)
       {
         // Normalize operands
-        ASTOp<T>::normalize(recursive);
+        Op<T>::normalize(recursive);
         
         // Sort operands
-        this->operands.sort([](const std::shared_ptr<ASTItem<T>>& o1, const std::shared_ptr<ASTItem<T>>& o2) {
+        this->operands.sort([](const std::shared_ptr<Exp<T>>& o1, const std::shared_ptr<Exp<T>>& o2) {
           return (o1->type().hash_code() < o2->type().hash_code()) || (o1->type().hash_code() == o2->type().hash_code() && o1->hash() < o2->hash());
         });
       }
@@ -508,7 +499,7 @@ namespace EasyLocal {
 
     /** Sum operation. */
     template <typename T>
-    class Sum : public ASTSymOp<T>
+    class Sum : public SymOp<T>
     {
     public:
 
@@ -516,14 +507,14 @@ namespace EasyLocal {
           @param e1 first operand
           @param e2 second operand
        */
-      Sum(const Exp<T>& e1, const Exp<T>& e2) : ASTSymOp<T>("+")
+      Sum(const std::shared_ptr<Exp<T>>& e1, const std::shared_ptr<Exp<T>>& e2) : SymOp<T>("+")
       {
         this->append_operand(e1);
         this->append_operand(e2);
       }
 
-      /** @copydoc ASTItem::simplify() */
-      virtual std::shared_ptr<ASTItem<T>> simplify()
+      /** @copydoc Exp::simplify() */
+      virtual std::shared_ptr<Exp<T>> simplify()
       {
         T sum_of_const = (T)0;
         
@@ -550,7 +541,7 @@ namespace EasyLocal {
           if ((*it)->type() == typeid(Sum<T>))
           {
             // Handle constants separately
-            sum_of_const += std::dynamic_pointer_cast<ASTOp<T>>(*it)->steal_const(0);
+            sum_of_const += std::dynamic_pointer_cast<Op<T>>(*it)->steal_const(0);
             
             // Steal operands
             this->merge_operands(*it);
@@ -560,9 +551,9 @@ namespace EasyLocal {
           }
           
           // If a constant is detected, add it to the sum_of_const
-          else if ((*it)->type() == typeid(ASTConst<T>))
+          else if ((*it)->type() == typeid(Const<T>))
           {
-            sum_of_const += std::dynamic_pointer_cast<ASTConst<T>>(*it)->value;
+            sum_of_const += std::dynamic_pointer_cast<Const<T>>(*it)->value;
             it = this->operands.erase(it);
           }
           else
@@ -575,11 +566,11 @@ namespace EasyLocal {
 
         // Add constant
         if (sum_of_const != 0)
-          this->add_constant(std::make_shared<ASTConst<T>>(sum_of_const));
+          this->add_constant(std::make_shared<Const<T>>(sum_of_const));
 
         // If the sum has no elements (because of constant elimination), return zero
         if (this->operands.size() == 0)
-          return std::make_shared<ASTConst<T>>(0);
+          return std::make_shared<Const<T>>(0);
 
         // If the sum has only one element, return it
         if (this->operands.size() == 1)
@@ -591,7 +582,7 @@ namespace EasyLocal {
         return this->shared_from_this();
       }
 
-      /** @copydoc ASTItem::compile(ExpressionStore<T>&) */
+      /** @copydoc Exp::compile(ExpressionStore<T>&) */
       virtual size_t compile(ExpressionStore<T>& exp_store) const
       {
         auto compiled_pair = this->template get_or_create<CSum>(exp_store);
@@ -609,7 +600,7 @@ namespace EasyLocal {
 
     /** Product operation. */
     template <typename T>
-    class Mul : public ASTSymOp<T>
+    class Mul : public SymOp<T>
     {
     public:
 
@@ -617,14 +608,14 @@ namespace EasyLocal {
           @param e1 first operand
           @param e2 second operand
       */
-      Mul(const Exp<T>& e1, const Exp<T>& e2) : ASTSymOp<T>("*")
+      Mul(const std::shared_ptr<Exp<T>>& e1, const std::shared_ptr<Exp<T>>& e2) : SymOp<T>("*")
       {
         this->append_operand(e1);
         this->append_operand(e2);
       }
 
-      /** @copydoc ASTItem::simplify() */
-      virtual std::shared_ptr<ASTItem<T>> simplify()
+      /** @copydoc Exp::simplify() */
+      virtual std::shared_ptr<Exp<T>> simplify()
       {
         T prod_of_const = (T)1;
 
@@ -650,15 +641,15 @@ namespace EasyLocal {
           if ((*it)->type() == typeid(Mul<T>))
           {
             // Handle consts properly
-            prod_of_const *= std::dynamic_pointer_cast<ASTOp<T>>(*it)->steal_const(1);
+            prod_of_const *= std::dynamic_pointer_cast<Op<T>>(*it)->steal_const(1);
             this->merge_operands(*it);
             it = this->operands.erase(it);
           }
           
           // Handle consts
-          else if ((*it)->type() == typeid(ASTConst<T>))
+          else if ((*it)->type() == typeid(Const<T>))
           {
-            prod_of_const *= std::dynamic_pointer_cast<ASTConst<T>>(*it)->value;
+            prod_of_const *= std::dynamic_pointer_cast<Const<T>>(*it)->value;
             it = this->operands.erase(it);
           }
           else
@@ -678,11 +669,11 @@ namespace EasyLocal {
 
         // Zero (elements) product
         if (this->operands.size() == 0)
-          return std::make_shared<ASTConst<T>>(prod_of_const);
+          return std::static_pointer_cast<Exp<T>>(std::make_shared<Const<T>>(prod_of_const));
 
         // Add new constant
         if (prod_of_const != 1)
-          this->add_constant(std::make_shared<ASTConst<T>>(prod_of_const));
+          this->add_constant(std::make_shared<Const<T>>(prod_of_const));
 
         // One-element product
         if (this->operands.size() == 1)
@@ -695,7 +686,7 @@ namespace EasyLocal {
         return this->shared_from_this();
       }
 
-      /** @copydoc ASTItem::compile(ExpressionStore<T>&) */
+      /** @copydoc Exp::compile(ExpressionStore<T>&) */
       virtual size_t compile(ExpressionStore<T>& exp_store) const
       {
         auto compiled_pair = this->template get_or_create<CMul>(exp_store);
@@ -713,7 +704,7 @@ namespace EasyLocal {
 
     /** Division operator. */
     template <typename T>
-    class Div : public ASTOp<T> // not symmetric (cannot normalize by sorting the operands)
+    class Div : public Op<T> // not symmetric (cannot normalize by sorting the operands)
     {
     public:
 
@@ -721,14 +712,14 @@ namespace EasyLocal {
           @param e1 first operand
           @param e2 second operand
        */
-      Div(const Exp<T>& e1, const Exp<T>& e2) : ASTOp<T>("/")
+      Div(const std::shared_ptr<Exp<T>>& e1, const std::shared_ptr<Exp<T>>& e2) : Op<T>("/")
       {
         this->append_operand(e1);
         this->append_operand(e2);
       }
 
-      /** @copydoc ASTItem::simplify() */
-      virtual std::shared_ptr<ASTItem<T>> simplify()
+      /** @copydoc Exp::simplify() */
+      virtual std::shared_ptr<Exp<T>> simplify()
       {
         std::vector<T> values;
         
@@ -748,14 +739,14 @@ namespace EasyLocal {
           }
           
           // Handle consts
-          if ((*it)->type() == typeid(ASTConst<T>))
-            values.push_back(std::dynamic_pointer_cast<ASTConst<T>>(*it)->value);
+          if ((*it)->type() == typeid(Const<T>))
+            values.push_back(std::dynamic_pointer_cast<Const<T>>(*it)->value);
           (*it)->normalize(true);
         }
 
         // If both operands are constants, replace with result
         if (values.size() == 2)
-          return std::make_shared<ASTConst<T>>(values[0] / values[1]);
+          return std::make_shared<Const<T>>(values[0] / values[1]);
 
         // Finalize
         this->_simplified = true;
@@ -764,7 +755,7 @@ namespace EasyLocal {
         return this->shared_from_this();
       }
 
-      /** @copydoc ASTItem::compile(ExpressionStore<T>&) */
+      /** @copydoc Exp::compile(ExpressionStore<T>&) */
       virtual size_t compile(ExpressionStore<T>& exp_store) const
       {
         auto compiled_pair = this->template get_or_create<CDiv>(exp_store);
@@ -782,7 +773,7 @@ namespace EasyLocal {
 
     /** Modulo operation. */
     template <typename T>
-    class Mod : public ASTOp<T>
+    class Mod : public Op<T>
     {
     public:
 
@@ -790,14 +781,14 @@ namespace EasyLocal {
           @param e1 first operand
           @param e2 second operand
        */
-      Mod(const Exp<T>& e1, const Exp<T>& e2) : ASTOp<T>("%")
+      Mod(const std::shared_ptr<Exp<T>>& e1, const std::shared_ptr<Exp<T>>& e2) : Op<T>("%")
       {
         this->append_operand(e1);
         this->append_operand(e2);
       }
 
-      /** @copydoc ASTItem::simplify() */
-      virtual std::shared_ptr<ASTItem<T>> simplify()
+      /** @copydoc Exp::simplify() */
+      virtual std::shared_ptr<Exp<T>> simplify()
       {
         std::vector<T> values;
 
@@ -819,14 +810,14 @@ namespace EasyLocal {
           }
           
           // Handle consts
-          if ((*it)->type() == typeid(ASTConst<T>))
-            values.push_back(std::dynamic_pointer_cast<ASTConst<T>>(*it)->value);
+          if ((*it)->type() == typeid(Const<T>))
+            values.push_back(std::dynamic_pointer_cast<Const<T>>(*it)->value);
           (*it)->normalize(true);
         }
 
         // If both operands are constants, replace operation with result
         if (values.size() == 2)
-          return std::make_shared<ASTConst<T>>(values[0] % values[1]);
+          return std::make_shared<Const<T>>(values[0] % values[1]);
 
         // Finalize
         this->_simplified = true;
@@ -835,7 +826,7 @@ namespace EasyLocal {
         return this->shared_from_this();
       }
 
-      /** @copydoc ASTItem::compile(ExpressionStore<T>&) */
+      /** @copydoc Exp::compile(ExpressionStore<T>&) */
       virtual size_t compile(ExpressionStore<T>& exp_store) const
       {
         auto compiled_pair = this->template get_or_create<CMod>(exp_store);
@@ -853,7 +844,7 @@ namespace EasyLocal {
 
     /** Minimum between elements. */
     template <typename T>
-    class Min : public ASTSymOp<T>
+    class Min : public SymOp<T>
     {
     public:
 
@@ -861,14 +852,14 @@ namespace EasyLocal {
           @param e1 first operand
           @param e2 second operand
        */
-      Min(const Exp<T>& e1, const Exp<T>& e2) : ASTSymOp<T>("+")
+      Min(const std::shared_ptr<Exp<T>>& e1, const std::shared_ptr<Exp<T>>& e2) : SymOp<T>("min")
       {
         this->append_operand(e1);
         this->append_operand(e2);
       }
 
-      /** @copydoc ASTItem::simplify() */
-      virtual std::shared_ptr<ASTItem<T>> simplify()
+      /** @copydoc Exp::simplify() */
+      virtual std::shared_ptr<Exp<T>> simplify()
       {
         T min_of_const;
         bool min_of_const_set = false;
@@ -894,7 +885,7 @@ namespace EasyLocal {
           if ((*it)->type() == typeid(Min<T>))
           {
             // Note: it's not important that we use the std::numeric_limits<T>::min(), as long as it's a "unique" value
-            T stolen_const = std::dynamic_pointer_cast<ASTOp<T>>(*it)->steal_const(std::numeric_limits<T>::max());
+            T stolen_const = std::dynamic_pointer_cast<Op<T>>(*it)->steal_const(std::numeric_limits<T>::max());
 
             // Only if a constant was stolen
             if (stolen_const != std::numeric_limits<T>::max())
@@ -914,15 +905,15 @@ namespace EasyLocal {
           }
           
           // If a constant is detected, check it straight away
-          else if ((*it)->type() == typeid(ASTConst<T>))
+          else if ((*it)->type() == typeid(Const<T>))
           {
             if (!min_of_const_set)
             {
-              min_of_const = std::dynamic_pointer_cast<ASTConst<T>>(*it)->value;
+              min_of_const = std::dynamic_pointer_cast<Const<T>>(*it)->value;
               min_of_const_set = true;
             }
             else
-              min_of_const = std::min(min_of_const, std::dynamic_pointer_cast<ASTConst<T>>(*it)->value);
+              min_of_const = std::min(min_of_const, std::dynamic_pointer_cast<Const<T>>(*it)->value);
             
             it = this->operands.erase(it);
           }
@@ -937,7 +928,7 @@ namespace EasyLocal {
 
         // Add constant to the operands (if necessary)
         if (min_of_const_set)
-          this->add_constant(std::make_shared<ASTConst<T>>(min_of_const));
+          this->add_constant(std::make_shared<Const<T>>(min_of_const));
 
         // If we have only one operand, it must be the minimum
         if (this->operands.size() == 1)
@@ -949,8 +940,24 @@ namespace EasyLocal {
 
         return this->shared_from_this();
       }
+      
+      /** @copydoc Printable::Print(std::ostream& os) */
+      virtual void Print(std::ostream& os) const
+      {
+        os << this->sym;
+        os << "(";
+        int count = 0;
+        for (auto& op : this->operands)
+        {
+          count++;
+          op->Print(os);
+          if (count < this->operands.size())
+            os << ", ";
+        }
+        os << ")";
+      }
 
-      /** @copydoc ASTItem::compile() */
+      /** @copydoc Exp::compile() */
       virtual size_t compile(ExpressionStore<T>& exp_store) const
       {
         auto compiled_pair = this->template get_or_create<CMin>(exp_store);
@@ -968,7 +975,7 @@ namespace EasyLocal {
 
     /** Maximum between elements. */
     template <typename T>
-    class Max : public ASTSymOp<T>
+    class Max : public SymOp<T>
     {
     public:
 
@@ -976,14 +983,14 @@ namespace EasyLocal {
           @param e1 first operand
           @param e2 second operand
        */
-      Max(const Exp<T>& e1, const Exp<T>& e2) : ASTSymOp<T>("+")
+      Max(const std::shared_ptr<Exp<T>>& e1, const std::shared_ptr<Exp<T>>& e2) : SymOp<T>("max")
       {
         this->append_operand(e1);
         this->append_operand(e2);
       }
 
-      /** @copydoc ASTItem::simplify() */
-      virtual std::shared_ptr<ASTItem<T>> simplify()
+      /** @copydoc Exp::simplify() */
+      virtual std::shared_ptr<Exp<T>> simplify()
       {
         T max_of_const;
         bool max_of_const_set = false;
@@ -1009,7 +1016,7 @@ namespace EasyLocal {
           if ((*it)->type() == typeid(Max<T>))
           {
             // Note: it's not important that we use the std::numeric_limits<T>::min(), as long as it's a "unique" value
-            T stolen_const = std::dynamic_pointer_cast<ASTOp<T>>(*it)->steal_const(std::numeric_limits<T>::min());
+            T stolen_const = std::dynamic_pointer_cast<Op<T>>(*it)->steal_const(std::numeric_limits<T>::min());
             
             // Only if a constant was stolen
             if (stolen_const != std::numeric_limits<T>::min())
@@ -1029,15 +1036,15 @@ namespace EasyLocal {
           }
           
           // If a constant is detected, check it straight away
-          else if ((*it)->type() == typeid(ASTConst<T>))
+          else if ((*it)->type() == typeid(Const<T>))
           {
             if (!max_of_const_set)
             {
-              max_of_const = std::dynamic_pointer_cast<ASTConst<T>>(*it)->value;
+              max_of_const = std::dynamic_pointer_cast<Const<T>>(*it)->value;
               max_of_const_set = true;
             }
             else
-              max_of_const = std::max(max_of_const, std::dynamic_pointer_cast<ASTConst<T>>(*it)->value);
+              max_of_const = std::max(max_of_const, std::dynamic_pointer_cast<Const<T>>(*it)->value);
             
             it = this->operands.erase(it);
           }
@@ -1052,7 +1059,7 @@ namespace EasyLocal {
         
         // Add constant to the operands (if necessary)
         if (max_of_const_set)
-          this->add_constant(std::make_shared<ASTConst<T>>(max_of_const));
+          this->add_constant(std::make_shared<Const<T>>(max_of_const));
         
         // If we have only one operand, it must be the minimum
         if (this->operands.size() == 1)
@@ -1079,11 +1086,27 @@ namespace EasyLocal {
 
       /** Virtual destructor. */
       virtual ~Max() = default;
+      
+      /** @copydoc Printable::Print(std::ostream& os) */
+      virtual void Print(std::ostream& os) const
+      {
+        os << this->sym;
+        os << "(";
+        int count = 0;
+        for (auto& op : this->operands)
+        {
+          count++;
+          op->Print(os);
+          if (count < this->operands.size())
+            os << ", ";
+        }
+        os << ")";
+      }
     };
 
     /** Equality operator. */
     template <typename T>
-    class Eq : public ASTSymOp<T>
+    class Eq : public SymOp<T>
     {
     public:
       
@@ -1091,14 +1114,14 @@ namespace EasyLocal {
           @param e1 first operand
           @param e2 second operand
        */
-      Eq(const Exp<T>& e1, const Exp<T>& e2) : ASTSymOp<T>("==")
+      Eq(const std::shared_ptr<Exp<T>>& e1, const std::shared_ptr<Exp<T>>& e2) : SymOp<T>("==")
       {
         this->append_operand(e1);
         this->append_operand(e2);
       }
 
-      /** @copydoc ASTItem::simplify() */
-      virtual std::shared_ptr<ASTItem<T>> simplify()
+      /** @copydoc Exp::simplify() */
+      virtual std::shared_ptr<Exp<T>> simplify()
       {
         bool all_equal = true;
         bool first_set = false;
@@ -1138,7 +1161,7 @@ namespace EasyLocal {
         
         // Return "true" if all the elements are equal
         if (all_equal)
-          return std::make_shared<ASTConst<T>>(1);
+          return std::make_shared<Const<T>>(1);
 
         // Finalize (non recursive because we have already normalized)
         this->_simplified = true;
@@ -1147,7 +1170,7 @@ namespace EasyLocal {
         return this->shared_from_this();
       }
 
-      /** @copydoc ASTItem::compile(ExpressionStore<T>&) */
+      /** @copydoc Exp::compile(ExpressionStore<T>&) */
       virtual size_t compile(ExpressionStore<T>& exp_store) const
       {
         auto compiled_pair = this->template get_or_create<CEq>(exp_store);
@@ -1165,7 +1188,7 @@ namespace EasyLocal {
 
     /** Non-equality operator. */
     template <typename T>
-    class Ne : public ASTSymOp<T>
+    class Ne : public SymOp<T>
     {
     public:
       
@@ -1173,14 +1196,14 @@ namespace EasyLocal {
           @param e1 first operand
           @param e2 second operand
        */
-      Ne(const Exp<T>& e1, const Exp<T>& e2) : ASTSymOp<T>("!=")
+      Ne(const std::shared_ptr<Exp<T>>& e1, const std::shared_ptr<Exp<T>>& e2) : SymOp<T>("!=")
       {
         this->append_operand(e1);
         this->append_operand(e2);
       }
 
-      /** @copydoc ASTItem::simplify() */
-      virtual std::shared_ptr<ASTItem<T>> simplify()
+      /** @copydoc Exp::simplify() */
+      virtual std::shared_ptr<Exp<T>> simplify()
       {
         bool all_equal = true;
         bool first_set = false;
@@ -1218,7 +1241,7 @@ namespace EasyLocal {
         
         // Return "false" only if the elements are all equal
         if (all_equal)
-          return std::make_shared<ASTConst<T>>(0);
+          return std::make_shared<Const<T>>(0);
 
         // Finalize (non recursive because we have already normalized)
         this->_simplified = true;
@@ -1227,7 +1250,7 @@ namespace EasyLocal {
         return this->shared_from_this();
       }
 
-      /** @copydoc ASTItem::compile(ExpressionStore<T>&) */
+      /** @copydoc Exp::compile(ExpressionStore<T>&) */
       virtual size_t compile(ExpressionStore<T>& exp_store) const
       {
         auto compiled_pair = this->template get_or_create<CNe>(exp_store);
@@ -1245,7 +1268,7 @@ namespace EasyLocal {
 
     /** Less-or-equal operator. */
     template <typename T>
-    class Le : public ASTOp<T>
+    class Le : public Op<T>
     {
     public:
       
@@ -1253,14 +1276,14 @@ namespace EasyLocal {
           @param e1 first operand
           @param e2 second operand
        */
-      Le(const Exp<T>& e1, const Exp<T>& e2) : ASTOp<T>("<=")
+      Le(const std::shared_ptr<Exp<T>>& e1, const std::shared_ptr<Exp<T>>& e2) : Op<T>("<=")
       {
         this->append_operand(e1);
         this->append_operand(e2);
       }
 
-      /** @copydoc ASTItem::simplify() */
-      virtual std::shared_ptr<ASTItem<T>> simplify()
+      /** @copydoc Exp::simplify() */
+      virtual std::shared_ptr<Exp<T>> simplify()
       {
         bool all_equal = true;
         bool first_set = false;
@@ -1300,7 +1323,7 @@ namespace EasyLocal {
         
         // Return "true" if all the elements are equal
         if (all_equal)
-          return std::make_shared<ASTConst<T>>(1);
+          return std::make_shared<Const<T>>(1);
         
         // Finalize (non recursive because we have already normalized)
         this->_simplified = true;
@@ -1309,7 +1332,7 @@ namespace EasyLocal {
         return this->shared_from_this();
       }
 
-      /** @copydoc ASTItem::compile(ExpressionStore<T>&) */
+      /** @copydoc Exp::compile(ExpressionStore<T>&) */
       virtual size_t compile(ExpressionStore<T>& exp_store) const
       {
         auto compiled_pair = this->template get_or_create<CLe>(exp_store);
@@ -1328,7 +1351,7 @@ namespace EasyLocal {
     
     /** Less-than operator. */
     template <typename T>
-    class Lt : public ASTOp<T>
+    class Lt : public Op<T>
     {
     public:
       
@@ -1336,14 +1359,14 @@ namespace EasyLocal {
           @param e1 first operand
           @param e2 second operand
        */
-      Lt(const Exp<T>& e1, const Exp<T>& e2) : ASTOp<T>("<")
+      Lt(const std::shared_ptr<Exp<T>>& e1, const std::shared_ptr<Exp<T>>& e2) : Op<T>("<")
       {
         this->append_operand(e1);
         this->append_operand(e2);
       }
 
-      /** @copydoc ASTItem::simplify() */
-      virtual std::shared_ptr<ASTItem<T>> simplify()
+      /** @copydoc Exp::simplify() */
+      virtual std::shared_ptr<Exp<T>> simplify()
       {
         // Finalize
         this->_simplified = true;
@@ -1352,7 +1375,7 @@ namespace EasyLocal {
         return this->shared_from_this();
       }
 
-      /** @copydoc ASTItem::compile(ExpressionStore<T>&) */
+      /** @copydoc Exp::compile(ExpressionStore<T>&) */
       virtual size_t compile(ExpressionStore<T>& exp_store) const
       {
         auto compiled_pair = this->template get_or_create<CLt>(exp_store);
@@ -1378,14 +1401,14 @@ namespace EasyLocal {
 
     
     template <typename T>
-    class Different : public ASTSymOp<T>
+    class Different : public SymOp<T>
     {
     public:
 
       /** Constructor. 
           @param a array of values
        */
-      Different(const Array<T>& a) : ASTSymOp<T>("#different")
+      Different(const Array<T>& a) : SymOp<T>("#different")
       {
         for (const Exp<T>& e : a)
           this->append_operand(e);
@@ -1407,8 +1430,8 @@ namespace EasyLocal {
         os << ")";
       }
 
-      /** @copydoc ASTItem::simplify() */
-      virtual std::shared_ptr<ASTItem<T>> simplify()
+      /** @copydoc Exp::simplify() */
+      virtual std::shared_ptr<Exp<T>> simplify()
       {
         bool all_equal_subexp = true;
         bool first_set = false;
@@ -1441,7 +1464,7 @@ namespace EasyLocal {
           }
         }
         if (all_equal_subexp)
-          return std::make_shared<ASTConst<T>>(0);
+          return std::make_shared<Const<T>>(0);
 
         this->_simplified = true;
         this->normalize(false); // all sub elements have been already normalized, so we're saving computation
@@ -1464,28 +1487,28 @@ namespace EasyLocal {
     };
 
     template <typename T>
-    class Abs : public ASTSymOp<T>
+    class Abs : public SymOp<T>
     {
     public:
-      Abs(const Exp<T>& e) : ASTSymOp<T>("abs")
+      Abs(const Exp<T>& e) : SymOp<T>("abs")
       {
         this->append_operand(e);
       }
 
-      virtual std::shared_ptr<ASTItem<T>> simplify()
+      virtual std::shared_ptr<Exp<T>> simplify()
       {
         auto op = *this->operands.begin();
 
         if (!(op->simplified()))
         {
           auto sim = op->simplify();
-          if (sim->type() == typeid(ASTConst<T>))
+          if (sim->type() == typeid(Const<T>))
           {
-            auto c = dynamic_cast<ASTConst<T>*>(sim.get());
+            auto c = dynamic_cast<Const<T>*>(sim.get());
             if (c->value >= 0)
               return sim;
             else
-              return std::make_shared<ASTConst<T>>(-c->value);
+              return std::make_shared<Const<T>>(-c->value);
           }
           if (sim != op)
           {
@@ -1516,34 +1539,31 @@ namespace EasyLocal {
     };
 
     template <typename T>
-    class VarArray;
-
-    template <typename T>
-    class Element : public ASTOp<T>
+    class Element : public Op<T>
     {
       bool is_array;
     public:
-      Element(const Exp<T>& index, const VarArray<T>& v) : ASTOp<T>("element"), is_array(true)
+      Element(const Exp<T>& index, const Exp<T>& v) : Op<T>("element"), is_array(true)
       {
         this->append_operand(index);
         this->append_operand(v);
       }
 
-      Element(const Exp<T>& index, const std::vector<T>& v) : ASTOp<T>("element"), is_array(false)
+      Element(const Exp<T>& index, const std::vector<T>& v) : Op<T>("element"), is_array(false)
       {
         this->append_operand(index);
         for (auto val : v)
           this->append_operand(Exp<T>(val));
       }
 
-      Element(const Exp<T>& index, const std::vector<Exp<T>>& v) : ASTOp<T>("element"), is_array(false)
+      Element(const Exp<T>& index, const std::vector<Exp<T>>& v) : Op<T>("element"), is_array(false)
       {
         this->append_operand(index);
         for (const Exp<T>& e : v)
           this->append_operand(e);
       }
 
-      virtual std::shared_ptr<ASTItem<T>> simplify()
+      virtual std::shared_ptr<Exp<T>> simplify()
       {
         for (auto it = this->operands.begin(); it != this->operands.end(); ++it)
         {
@@ -1602,7 +1622,7 @@ namespace EasyLocal {
 
           auto& first = this->operands.front();
           this->operands.erase(this->operands.begin());
-          this->operands.sort([](const std::shared_ptr<ASTItem<T>>& o1, const std::shared_ptr<ASTItem<T>>& o2) {
+          this->operands.sort([](const std::shared_ptr<Exp<T>>& o1, const std::shared_ptr<Exp<T>>& o2) {
                                 return (o1->type().hash_code() < o2->type().hash_code()) || (o1->type().hash_code() == o2->type().hash_code() && o1->hash() < o2->hash());
                               });
           this->operands.push_front(first);
@@ -1613,18 +1633,18 @@ namespace EasyLocal {
     };
 
     template <typename T>
-    class IfElse : public ASTOp<T>
+    class IfElse : public Op<T>
     {
     public:
 
-      IfElse(const Exp<T>& cond, const Exp<T>& e1, const Exp<T>& e2) : ASTOp<T>("if-else")
+      IfElse(const Exp<T>& cond, const Exp<T>& e1, const Exp<T>& e2) : Op<T>("if-else")
       {
         this->append_operand(cond);
         this->append_operand(e1);
         this->append_operand(e2);
       }
 
-      virtual std::shared_ptr<ASTItem<T>> simplify()
+      virtual std::shared_ptr<Exp<T>> simplify()
       {
         // ALL AT ONCE (simplify, steal and aggregate constants, inherit operands)
         for (auto it = this->operands.begin(); it != this->operands.end(); ++it)
@@ -1643,9 +1663,9 @@ namespace EasyLocal {
           (*it)->normalize(true);
         }
 
-        if (this->operands.front()->type() == typeid(ASTConst<T>))
+        if (this->operands.front()->type() == typeid(Const<T>))
         {
-          if (dynamic_cast<ASTConst<T>*>(this->operands.front().get())->value)
+          if (dynamic_cast<Const<T>*>(this->operands.front().get())->value)
             return *std::next(this->operands.begin());
           else
             return *std::next(std::next(this->operands.begin()));
@@ -1670,471 +1690,7 @@ namespace EasyLocal {
 
       virtual ~IfElse() = default;
     };
-    
-    /****************************
-     * OPERATORS                *
-     ***************************/
-    
-    template <typename T>
-    static std::shared_ptr<ASTItem<T>>& operator+=(std::shared_ptr<ASTItem<T>>& e1, const std::shared_ptr<ASTItem<T>>& e2)
-    {
-      e1 = std::make_shared<Sum<T>>(e1, e2);
-      e1->simplify();
-      return e1;
-    }
-    
-    template <typename T>
-    static std::shared_ptr<ASTItem<T>>& operator+=(std::shared_ptr<ASTItem<T>>& e1, const T& v)
-    {
-      if (v != 0)
-      {
-        e1 = std::make_shared<Sum<T>>(std::make_shared<ASTConst<T>>(v), e1);
-        e1->simplify();
-      }
-      return e1;
-    }
-    
-    template <typename T>
-    static std::shared_ptr<ASTItem<T>> operator+(const std::shared_ptr<ASTItem<T>>& e1, const std::shared_ptr<ASTItem<T>>& e2)
-    {
-      auto r = std::make_shared<ASTItem<T>>(*e1);
-      r += e2; // forward to operator+=(std::shared_ptr<ASTItem<T>>&, const std::shared_ptr<ASTItem<T>>&)
-      return r;
-    }
-    
-    template <typename T>
-    static std::shared_ptr<ASTItem<T>> operator+(const std::shared_ptr<ASTItem<T>>& e, const T& v)
-    {
-      auto r = std::make_shared<ASTItem<T>>(*e);
-      r += v; // forward to operator+=(std::shared_ptr<ASTItem<T>>&, const T&)
-      return r;
-    }
-    
-    template <typename T>
-    static std::shared_ptr<ASTItem<T>> operator+(const T& v, const std::shared_ptr<ASTItem<T>> e)
-    {
-      return e + v; // forward to operator+(const std::shared_ptr<ASTItem<T>>&, const T&) (commutative)
-    }
-    
-    template <typename T>
-    static std::shared_ptr<ASTItem<T>>& operator-=(std::shared_ptr<ASTItem<T>>& e1, const std::shared_ptr<ASTItem<T>>& e2)
-    {
-      auto _e2 = std::make_shared<Mul<T>>(std::make_shared<ASTConst<T>>(-1), e2);
-      e1 = std::make_shared<Sum<T>>(e1, _e2);
-      e1.simplify();
-      return e1;
-    }
-    
-    template <typename T>
-    static std::shared_ptr<ASTItem<T>>& operator-=(std::shared_ptr<ASTItem<T>>& e1, const T& v)
-    {
-      if (v != 0)
-      {
-        e1 = std::make_shared<Sum<T>>(std::make_shared<ASTConst<T>>(-v), e1);
-        e1.simplify();
-      }
-      return e1;
-    }
-    
-    template <typename T>
-    static std::shared_ptr<ASTItem<T>> operator-(const std::shared_ptr<ASTItem<T>>& e1, const std::shared_ptr<ASTItem<T>>& e2)
-    {
-      
-      auto r = std::shared_ptr<ASTItem<T>>(*e1);
-      r -= e2; // forward to operator-=(std::shared_ptr<ASTItem<T>>&, const std::shared_ptr<ASTItem<T>>&)
-      return r;
-    }
-    
-    template <typename T>
-    static std::shared_ptr<ASTItem<T>> operator-(const T& v, const std::shared_ptr<ASTItem<T>>& e)
-    {
-      if (v != 0)
-      {
-        auto r = std::shared_ptr<ASTConst<T>>(v);
-        r -= e; // forward to operator-=(std::shared_ptr<ASTItem<T>>&, const std::shared_ptr<ASTItem<T>>&)
-        return r;
-      }
-      else
-      {
-        auto r = std::make_shared<Mul<T>>(std::make_shared<ASTConst<T>>(-1), e); // -v == mul(-1, v) without forwarding
-        r.simplify();
-        return r;
-      }
-    }
-    
-    template <typename T>
-    static std::shared_ptr<ASTItem<T>> operator-(const std::shared_ptr<ASTItem<T>>& e, const T& v)
-    {
-      auto r = make_shared<ASTItem<T>>(*e);
-      r -= v; // forward to operator-=(std::shared_ptr<ASTItem<T>>&, T)
-      return r;
-    }
-    
-    template <typename T>
-    static std::shared_ptr<ASTItem<T>>& operator*=(std::shared_ptr<ASTItem<T>>& e1, const std::shared_ptr<ASTItem<T>>& e2)
-    {
-      e1 = std::make_shared<Mul<T>>(e1, e2);
-      e1.simplify();
-      return e1;
-    }
-    
-    template <typename T>
-    static std::shared_ptr<ASTItem<T>>& operator*=(std::shared_ptr<ASTItem<T>>& e1, const T& v)
-    {
-      if (v == 0)
-        e1 = std::make_shared<ASTConst>(0);
-      if (v != 1)
-      {
-        e1 = std::make_shared<Mul<T>>(std::shared_ptr<ASTConst<T>>(v), e1);
-        e1.simplify();
-      }
-      return e1;
-    }
-    
-    template <typename T>
-    static std::shared_ptr<ASTItem<T>> operator*(const std::shared_ptr<ASTItem<T>>& e1, const std::shared_ptr<ASTItem<T>>& e2)
-    {
-      auto r = std::shared_ptr<ASTItem<T>>(*e);
-      r *= e2; // forward to operator*=(std::shared_ptr<ASTItem<T>>&, const std::shared_ptr<ASTItem<T>>&)
-      return r;
-    }
-    
-    template <typename T>
-    static std::shared_ptr<ASTItem<T>> operator*(const std::make_shared<ASTItem<T>>& e, const T& v)
-    {
-      auto r = std::make_shared<ASTItem<T>>(*e);
-      r *= v; // forward to operator*=(std::shared_ptr<ASTItem<T>>&, const T&)
-      return r;
-    }
-    
-    template <typename T>
-    static std::shared_ptr<ASTItem<T>> operator*(const T& v, const std::shared_ptr<ASTItem<T>>& e)
-    {
-      return e + v;  // operator*(const std::make_shared<ASTItem<T>>&, const T&)
-    }
-    
-    template <typename T>
-    static std::shared_ptr<ASTItem<T>>& operator/=(std::make_shared<ASTItem<T>>& e1, const std::make_shared<ASTItem<T>>& e2)
-    {
-      e1 = std::make_shared<Div<T>>(e1, e2);
-      e1.simplify();
-      return e1;
-    }
-    
-    template <typename T>
-    static std::shared_ptr<ASTItem<T>>& operator/=(std::make_shared<ASTItem<T>>& e1, const T& v)
-    {
-      if (v != 0)
-      {
-        if (v != 1)
-        {
-          e1 = std::make_shared<Div<T>>(e1, std::make_shared<ASTConst<T>>(v));
-          e1.simplify();
-        }
-        return e1;
-      }
-      throw std::logic_error("Trying to compute division by zero");
-    }
-    
-    template <typename T>
-    static std::shared_ptr<ASTItem<T>> operator/(const std::make_shared<ASTItem<T>>& e1, const std::make_shared<ASTItem<T>>& e2)
-    {
-      auto r = std::make_shared<ASTItem<T>>(*e1);
-      r /= e2;  // forward to operator/=(std::make_shared<ASTItem<T>>&, const std::make_shared<ASTItem<T>>&)
-      return r;
-    }
-    
-    template <typename T>
-    static std::shared_ptr<ASTItem<T>> operator/(const T& v, const std::make_shared<ASTItem<T>>& e)
-    {
-      if (v != 0) {
-        auto r = std::make_shared<ASTConst<T>>(v);
-        r /= e; // forward to operator/=(std::make_shared<ASTItem<T>>&, const std::make_shared<ASTItem<T>>&)
-        return r;
-      }
-      else
-        return std::make_shared<ASTConst<T>>(0);
-    }
-    
-    template <typename T>
-    static std::shared_ptr<ASTItem<T>> operator/(const std::make_shared<ASTItem<T>>& e, const T& v)
-    {
-      auto r = std::make_shared<ASTItem<T>>(*e);
-      r /= v;
-      return r;
-    }
-    
-    template <typename T>
-    static std::shared_ptr<ASTItem<T>>& operator%=(std::make_shared<ASTItem<T>>& e1, const std::make_shared<ASTItem<T>>& e2)
-    {
-      e1 = std::make_shared<Mod<T>>(e1, e2);
-      e1.simplify();
-      return e1;
-    }
-    
-    template <typename T>
-    static std::shared_ptr<ASTItem<T>>& operator%=(std::make_shared<ASTItem<T>>& e1, const T& v)
-    {
-      if (v != 0)
-      {
-        if (v != 1)
-        {
-          e1 = std::make_shared<Mod<T>>(e1, std::make_shared<ASTConst<T>>(v));
-          e1.simplify();
-        }
-        else
-          e1 = std::make_shared<ASTConst<T>>(0);
-        return e1;
-      }
-      throw std::logic_error("Trying to compute modulo operation to zero");
-    }
-    
-    template <typename T>
-    static std::shared_ptr<ASTItem<T>> operator%(const std::make_shared<ASTItem<T>>& e1, const std::make_shared<ASTItem<T>>& e2)
-    {
-      auto r = std::make_shared<ASTItem<T>>(*e1);
-      r %= e2;
-      return r;
-    }
-    
-    template <typename T>
-    static std::shared_ptr<ASTItem<T>> operator%(const T& v, const std::make_shared<ASTItem<T>>& e)
-    {
-      auto r = std::make_shared<ASTConst<T>>(v);
-      r %= e;
-      return r;
-    }
-    
-    template <typename T>
-    static std::shared_ptr<ASTItem<T>> operator%(const std::make_shared<ASTItem<T>>& e, const T& v)
-    {
-      auto r = std::make_shared<ASTItem<T>>(*e);
-      r %= v;
-      return r;
-    }
-    
-    template <typename T>
-    static std::shared_ptr<ASTItem<T>> min(const std::make_shared<ASTItem<T>>& e1, const std::make_shared<ASTItem<T>>& e2)
-    {
-      auto r = std::make_shared<Min<T>>(e1, e2);
-      r.simplify();
-      return r;
-    }
-    
-    template <typename T>
-    static std::shared_ptr<ASTItem<T>> min(const T& v, const std::make_shared<ASTItem<T>>& e)
-    {
-      return min(std::make_shared<ASTConst<T>>(v), e);
-    }
-    
-    template <typename T>
-    static std::shared_ptr<ASTItem<T>> min(const std::make_shared<ASTItem<T>>& e, const T& v)
-    {
-      return min(e, std::make_shared<ASTConst<T>>(v));
-    }
-    
-    template <typename T>
-    static std::shared_ptr<ASTItem<T>> max(const std::make_shared<ASTItem<T>>& e1, const std::make_shared<ASTItem<T>>& e2)
-    {
-      auto r = std::make_shared<Max<T>>(e1, e2);
-      r.simplify();
-      return r;
-    }
-    
-    template <typename T>
-    static std::shared_ptr<ASTItem<T>> max(const T& v, const std::make_shared<ASTItem<T>>& e)
-    {
-      return max(std::make_shared<ASTConst<T>>(v), e);
-    }
-    
-    template <typename T>
-    static std::shared_ptr<ASTItem<T>> max(const std::shared_ptr<ASTItem<T>>& e, const T& v)
-    {
-      return max(e, std::make_shared<ASTConst<T>>(v));
-    }
-    
-    template <typename T>
-    static std::shared_ptr<ASTItem<T>> operator==(const std::shared_ptr<ASTItem<T>>& e1, const std::shared_ptr<ASTItem<T>>& e2)
-    {
-      auto r = std::make_shared<Eq<T>>(e1, e2);
-      r.simplify();
-      return r;
-    }
-    
-    template <typename T>
-    static std::shared_ptr<ASTItem<T>> operator==(const std::shared_ptr<ASTItem<T>>& e, const T& v)
-    {
-      return std::make_shared<ASTConst<T>>(v) == e;
-    }
-    
-    template <typename T>
-    static std::shared_ptr<ASTItem<T>> operator==(const T& v, const std::shared_ptr<ASTItem<T>>& e)
-    {
-      return std::make_shared<ASTConst<T>>(v) == e;
-    }
-    
-    template <typename T>
-    static std::shared_ptr<ASTItem<T>> operator!=(const std::shared_ptr<ASTItem<T>>& e1, const std::shared_ptr<ASTItem<T>>& e2)
-    {
-      auto r = std::make_shared<Ne<T>>(e1, e2);
-      r.simplify();
-      return r;
-    }
-    
-    template <typename T>
-    static std::shared_ptr<ASTItem<T>> operator!=(const std::shared_ptr<ASTItem<T>>& e, const T& v)
-    {
-      return std::make_shared<ASTConst<T>>(v) != e;
-    }
-    
-    template <typename T>
-    static std::shared_ptr<ASTItem<T>> operator!=(const T& v, const std::shared_ptr<ASTItem<T>>& e)
-    {
-      return std::make_shared<ASTConst<T>>(v) != e;
-    }
-    
-    template <typename T>
-    static std::shared_ptr<ASTItem<T>> operator<=(const std::shared_ptr<ASTItem<T>>& e1, const std::shared_ptr<ASTItem<T>>& e2)
-    {
-      auto r = std::make_shared<Le<T>>(e1, e2);
-      r.simplify();
-      return r;
-    }
-    
-    template <typename T>
-    static std::shared_ptr<ASTItem<T>> operator<=(const std::shared_ptr<ASTItem<T>>& e, const T& v)
-    {
-      return e <= std::make_shared<ASTConst<T>>(v);
-    }
-    
-    template <typename T>
-    static std::shared_ptr<ASTItem<T>> operator<=(const T& v, const std::shared_ptr<ASTItem<T>>& e)
-    {
-      return std::make_shared<ASTConst<T>>(v) <= e;
-    }
-    
-    template <typename T>
-    static std::shared_ptr<ASTItem<T>> operator<(const std::shared_ptr<ASTItem<T>>& e1, const std::shared_ptr<ASTItem<T>>& e2)
-    {
-      auto r = std::make_shared<Lt<T>>(e1, e2);
-      r.simplify();
-      return r;
-    }
-    
-    template <typename T>
-    static std::shared_ptr<ASTItem<T>> operator<(const std::shared_ptr<ASTItem<T>>& e, const T& v)
-    {
-      return e < Exp<T>(v);
-    }
-    
-    template <typename T>
-    static Exp<T> operator<(const T& v, const Exp<T>& e)
-    {
-      return Exp<T>(v) < e;
-    }
-    
-    template <typename T>
-    static Exp<T> operator>=(const Exp<T>& e1, const Exp<T>& e2)
-    {
-      return e2 <= e1;
-    }
-    
-    template <typename T>
-    static Exp<T> operator>=(const Exp<T>& e, const T& v)
-    {
-      return Exp<T>(v) <= e;
-    }
-    
-    template <typename T>
-    static Exp<T> operator>=(const T& v, const Exp<T>& e)
-    {
-      return e <= Exp<T>(v);
-    }
-    
-    template <typename T>
-    static Exp<T> operator>(const Exp<T>& e1, const Exp<T>& e2)
-    {
-      return e2 < e1;
-    }
-    
-    template <typename T>
-    static Exp<T> operator>(const Exp<T>& e, const T& v)
-    {
-      return Exp<T>(v) < e;
-    }
-    
-    template <typename T>
-    static Exp<T> operator>(const T& v, const Exp<T>& e)
-    {
-      return e < Exp<T>(v);
-    }
-    
-    template <typename T>
-    static Exp<T> different(const std::vector<Exp<T>>& v)
-    {
-      Exp<T> e = Exp<T>(std::make_shared<Different<T>>(v));
-      e.simplify();
-      return e;
-    }
-    
-    //    template <typename T>
-    //    static Exp<T> different(const VarArray<T>& v)
-    //    {
-    //        Exp<T> e = Exp<T>(std::make_shared<Different<T>>(v));
-    //        e.simplify();
-    //        return e;
-    //    }
-    
-    template <typename T>
-    static Exp<T> abs(const Exp<T>& e)
-    {
-      Exp<T> t = Exp<T>(std::make_shared<Abs<T>>(e));
-      t.simplify();
-      return t;
-    }
-    
-    template <typename T>
-    static Exp<T> element(const Exp<T>& index, const std::vector<Exp<T>>& v)
-    {
-      Exp<T> t = Exp<T>(std::make_shared<Element<T>>(index, v));
-      t.simplify();
-      return t;
-    }
-    
-    template <typename T>
-    static Exp<T> element(const Exp<T>& index, const std::vector<T>& v)
-    {
-      Exp<T> t = Exp<T>(std::make_shared<Element<T>>(index, v));
-      t.simplify();
-      return t;
-    }
-    
-    template <typename T>
-    static Exp<T> ite(const Exp<T>& cond, const Exp<T>& e_then, const Exp<T>& e_else)
-    {
-      Exp<T> t = Exp<T>(std::make_shared<IfElse<T>>(cond, e_then, e_else));
-      t.simplify();
-      return t;
-    }
-    
-    template <typename T>
-    static Exp<T> ite(const Exp<T>& cond, T v_then, const Exp<T>& e_else)
-    {
-      return ite(cond, Exp<T>(v_then), e_else);
-    }
-    
-    template <typename T>
-    static Exp<T> ite(const Exp<T>& cond, const Exp<T>& e_then, T v_else)
-    {
-      return ite(cond, e_then, Exp<T>(v_else));
-    }
-    
-    template <typename T>
-    static Exp<T> ite(const Exp<T>& cond, T v_then, T v_else)
-    {
-      return ite(cond, Exp<T>(v_then), Exp<T>(v_else));
-    }
   }
 }
 
-#endif // _AST_HH
+#endif // _EXPRESSION_HH
