@@ -35,18 +35,6 @@ namespace EasyLocal {
 
     */
   namespace Modeling {
-    
-    /** Forward declaration. */
-    template <typename T>
-    class Array;
-
-    /** Forward declaration (AST operation). */
-    template <typename T>
-    class Op;
-
-    /** Forward declaration (AST symmetric operation). */
-    template <typename T>
-    class SymOp;
 
     /** Template class representing a generic node in the AST. To be specialized
         in order to implement specific types of nodes, e.g., vars and constants.
@@ -54,12 +42,6 @@ namespace EasyLocal {
     template <typename T>
     class Exp  : public virtual Core::Printable, public std::enable_shared_from_this<Exp<T>>
     {
-      /** Needed to access type() which is protected. */
-      friend class Op<T>;
-
-      /** Needed to access type() which is protected. */
-      friend class SymOp<T>;
-
     public:
 
       /** Default constructor. */
@@ -86,16 +68,16 @@ namespace EasyLocal {
        */
       virtual std::shared_ptr<Exp<T>> simplify()
       {
-        this->_simplified = true;
+        if (!simplified())
+          this->_simplified = true;
         return this->shared_from_this();
       }
 
       /** Default normalization function. Makes sure the subtree has a specific ordering. */
       virtual void normalize(bool recursive)
       {
-        if (normalized()) // CHECK
-          return;         // CHECK
-        this->_normalized = true;
+        if (!normalized())
+            this->_normalized = true;
       }
 
       /** Simplification check.
@@ -118,7 +100,7 @@ namespace EasyLocal {
           @param exp_store ExpressionStore the CExp has to be added to.
           @return the position of the CExp in the ExpressionStore.
        */
-      virtual size_t compile(ExpressionStore<T>& exp_store)
+      virtual size_t compile(ExpressionStore<T>& exp_store) const
       {
         return 0;
       }
@@ -129,12 +111,8 @@ namespace EasyLocal {
         return typeid(*this);
       }
 
-      virtual void Print(std::ostream& os = std::cout) const
-      {
-        
-      } // FIXME
+      virtual void Print(std::ostream& os = std::cout) const { }
 
-      
     protected:
 
       /** Checks whether an Exp has been compiled and added to an
@@ -186,7 +164,7 @@ namespace EasyLocal {
       virtual size_t compute_hash() const
       {
         return 0;
-      }  // FIXME
+      }
 
     };
 
@@ -249,55 +227,6 @@ namespace EasyLocal {
       /** Lower and upper bounds. */
       T lb, ub;
 
-    };
-    
-    /** An Exp representing a variable array. */
-    template <typename T>
-    class Array : public Exp<T>
-    {
-    public:
-
-      /** Constructor. */
-      Array() { }
-
-      /** @copydoc Printable::Print(std::ostream& os) */
-      virtual void Print(std::ostream& os) const
-      {
-        os << "[" << this->size << "]";
-      }
-
-      /** Virtual destructor. */
-      virtual ~Array() = default;
-
-
-      virtual size_t compile(ExpressionStore<T>& exp_store) const
-      {
-        // Generate CExp (CArray)
-        auto compiled_pair = this->template get_or_create<CArray>(exp_store);
-
-        // Special handling for CArrays
-        if (compiled_pair.second != nullptr)
-        {
-          // Get newly compiled expression (set start and size if it's a new CArray)
-          auto compiled = std::static_pointer_cast<CArray<T>>(compiled_pair.second);
-          compiled->size = size;
-        }
-        return compiled_pair.first;
-      }
-
-    protected:
-
-      /** Name of the variable array (for printing purposes). */
-      const std::string name;
-
-      /** Size of the variable array. */
-      const size_t size;
-
-      /** @copydoc Exp::compute_hash() */
-      virtual size_t compute_hash() const
-      {
-        return std::hash<std::string>()(this->name);
-      }
     };
 
     /** Exp representing constant value. */
@@ -393,14 +322,6 @@ namespace EasyLocal {
             op->normalize(recursive);
       }
 
-      /** Access to operands.
-          @return list of operands.
-       */
-      const std::list<std::shared_ptr<Exp<T>>>& ops() const
-      {
-        return operands;
-      }
-
       /** Gets constant from operands.
           @param def default value (to be returned if first operand is not const).
           @return the value of the first operand (if const) or the default value.
@@ -418,16 +339,10 @@ namespace EasyLocal {
 
     protected:
 
-      /** Same as append_operand(const Exp<T>&), but works on Exps directly (for internal purpose). */
-      virtual void add_operand(const std::shared_ptr<Exp<T>>& operand)
-      {
-        this->operands.push_back(operand);
-      }
-
-      virtual void add_constant(const std::shared_ptr<Const<T>>& o)
+      virtual void add_constant(const T& o)
       {
         // Add const operand (at the front of the vector)
-        this->operands.push_front(o);
+        this->operands.push_front(std::make_shared<Const<T>>(o));
       }
 
       virtual void merge_operands(const std::shared_ptr<Exp<T>>& other)
@@ -455,7 +370,6 @@ namespace EasyLocal {
         std::ostringstream os;
         this->Print(os);
         size_t h = std::hash<std::string>()(os.str());
-
         return h;
       }
 
@@ -575,7 +489,7 @@ namespace EasyLocal {
 
         // Add constant
         if (sum_of_const != 0)
-          this->add_constant(std::make_shared<Const<T>>(sum_of_const));
+          this->add_constant(sum_of_const);
 
         // If the sum has no elements (because of constant elimination), return zero
         if (this->operands.size() == 0)
@@ -682,7 +596,7 @@ namespace EasyLocal {
 
         // Add new constant
         if (prod_of_const != 1)
-          this->add_constant(std::make_shared<Const<T>>(prod_of_const));
+          this->add_constant(prod_of_const);
 
         // One-element product
         if (this->operands.size() == 1)
@@ -937,7 +851,7 @@ namespace EasyLocal {
 
         // Add constant to the operands (if necessary)
         if (min_of_const_set)
-          this->add_constant(std::make_shared<Const<T>>(min_of_const));
+          this->add_constant(min_of_const);
 
         // If we have only one operand, it must be the minimum
         if (this->operands.size() == 1)
@@ -1068,7 +982,7 @@ namespace EasyLocal {
         
         // Add constant to the operands (if necessary)
         if (max_of_const_set)
-          this->add_constant(std::make_shared<Const<T>>(max_of_const));
+          this->add_constant(max_of_const);
         
         // If we have only one operand, it must be the minimum
         if (this->operands.size() == 1)
@@ -1737,7 +1651,7 @@ namespace EasyLocal {
     {
     public:
 
-      IfThenElse(const std::shared_ptr<Exp<T>>& cond, const std::shared_ptr<Exp<T>>& e1, const std::shared_ptr<Exp<T>>& e2) : Op<T>("ifthenelse")
+      IfThenElse(const std::shared_ptr<Exp<T>>& cond, const std::shared_ptr<Exp<T>>& e1, const std::shared_ptr<Exp<T>>& e2) : Op<T>("if then else")
       {
         this->append_operand(cond);
         this->append_operand(e1);
@@ -1765,7 +1679,7 @@ namespace EasyLocal {
 
         if (this->operands.front()->type() == typeid(Const<T>))
         {
-          if (dynamic_cast<Const<T>*>(this->operands.front().get())->value)
+          if (static_cast<Const<T>*>(this->operands.front().get())->value)
             return *std::next(this->operands.begin());
           else
             return *std::next(std::next(this->operands.begin()));
