@@ -270,7 +270,7 @@ namespace EasyLocal {
         if (compiled_pair.second != nullptr)
         {
           // Get newly compiled expression (set start and size if it's a new CArray)
-          auto compiled = std::dynamic_pointer_cast<CArray<T>>(compiled_pair.second);
+          auto compiled = std::static_pointer_cast<CArray<T>>(compiled_pair.second);
           compiled->size = size;
         }
         return compiled_pair.first;
@@ -317,7 +317,7 @@ namespace EasyLocal {
         auto compiled_pair = this->template get_or_create<CConst>(exp_store);
         if (compiled_pair.second != nullptr)
         {
-          auto compiled = std::dynamic_pointer_cast<CConst<T>>(compiled_pair.second);
+          auto compiled = std::static_pointer_cast<CConst<T>>(compiled_pair.second);
           compiled->value = this->value;
         }
         return compiled_pair.first;
@@ -402,7 +402,7 @@ namespace EasyLocal {
         if (front->type() == typeid(Const<T>))
         {
           this->operands.pop_front();
-          return std::dynamic_pointer_cast<Const<T>>(front)->value;
+          return std::static_pointer_cast<Const<T>>(front)->value;
         }
         return def;
       }
@@ -541,7 +541,7 @@ namespace EasyLocal {
           if ((*it)->type() == typeid(Sum<T>))
           {
             // Handle constants separately
-            sum_of_const += std::dynamic_pointer_cast<Op<T>>(*it)->steal_const(0);
+            sum_of_const += std::static_pointer_cast<Op<T>>(*it)->steal_const(0);
             
             // Steal operands
             this->merge_operands(*it);
@@ -553,7 +553,7 @@ namespace EasyLocal {
           // If a constant is detected, add it to the sum_of_const
           else if ((*it)->type() == typeid(Const<T>))
           {
-            sum_of_const += std::dynamic_pointer_cast<Const<T>>(*it)->value;
+            sum_of_const += std::static_pointer_cast<Const<T>>(*it)->value;
             it = this->operands.erase(it);
           }
           else
@@ -588,7 +588,7 @@ namespace EasyLocal {
         auto compiled_pair = this->template get_or_create<CSum>(exp_store);
         if (compiled_pair.second != nullptr)
         {
-          auto compiled = std::dynamic_pointer_cast<CSum<T>>(compiled_pair.second);
+          auto compiled = std::static_pointer_cast<CSum<T>>(compiled_pair.second);
           this->compile_operands(compiled_pair.first, exp_store);
         }
         return compiled_pair.first;
@@ -641,7 +641,7 @@ namespace EasyLocal {
           if ((*it)->type() == typeid(Mul<T>))
           {
             // Handle consts properly
-            prod_of_const *= std::dynamic_pointer_cast<Op<T>>(*it)->steal_const(1);
+            prod_of_const *= std::static_pointer_cast<Op<T>>(*it)->steal_const(1);
             this->merge_operands(*it);
             it = this->operands.erase(it);
           }
@@ -649,7 +649,7 @@ namespace EasyLocal {
           // Handle consts
           else if ((*it)->type() == typeid(Const<T>))
           {
-            prod_of_const *= std::dynamic_pointer_cast<Const<T>>(*it)->value;
+            prod_of_const *= std::static_pointer_cast<Const<T>>(*it)->value;
             it = this->operands.erase(it);
           }
           else
@@ -692,7 +692,7 @@ namespace EasyLocal {
         auto compiled_pair = this->template get_or_create<CMul>(exp_store);
         if (compiled_pair.second != nullptr)
         {
-          auto compiled = std::dynamic_pointer_cast<CMul<T>>(compiled_pair.second);
+          auto compiled = std::static_pointer_cast<CMul<T>>(compiled_pair.second);
           this->compile_operands(compiled_pair.first, exp_store);
         }
         return compiled_pair.first;
@@ -740,7 +740,7 @@ namespace EasyLocal {
           
           // Handle consts
           if ((*it)->type() == typeid(Const<T>))
-            values.push_back(std::dynamic_pointer_cast<Const<T>>(*it)->value);
+            values.push_back(std::static_pointer_cast<Const<T>>(*it)->value);
           (*it)->normalize(true);
         }
 
@@ -761,7 +761,7 @@ namespace EasyLocal {
         auto compiled_pair = this->template get_or_create<CDiv>(exp_store);
         if (compiled_pair.second != nullptr)
         {
-          auto compiled = std::dynamic_pointer_cast<CDiv<T>>(compiled_pair.second);
+          auto compiled = std::static_pointer_cast<CDiv<T>>(compiled_pair.second);
           this->compile_operands(compiled_pair.first, exp_store);
         }
         return compiled_pair.first;
@@ -811,7 +811,7 @@ namespace EasyLocal {
           
           // Handle consts
           if ((*it)->type() == typeid(Const<T>))
-            values.push_back(std::dynamic_pointer_cast<Const<T>>(*it)->value);
+            values.push_back(std::static_pointer_cast<Const<T>>(*it)->value);
           (*it)->normalize(true);
         }
 
@@ -832,7 +832,7 @@ namespace EasyLocal {
         auto compiled_pair = this->template get_or_create<CMod>(exp_store);
         if (compiled_pair.second != nullptr)
         {
-          auto compiled = std::dynamic_pointer_cast<CMod<T>>(compiled_pair.second);
+          auto compiled = std::static_pointer_cast<CMod<T>>(compiled_pair.second);
           this->compile_operands(compiled_pair.first, exp_store);
         }
         return compiled_pair.first;
@@ -885,7 +885,7 @@ namespace EasyLocal {
           if ((*it)->type() == typeid(Min<T>))
           {
             // Note: it's not important that we use the std::numeric_limits<T>::min(), as long as it's a "unique" value
-            T stolen_const = std::dynamic_pointer_cast<Op<T>>(*it)->steal_const(std::numeric_limits<T>::max());
+            T stolen_const = std::static_pointer_cast<Op<T>>(*it)->steal_const(std::numeric_limits<T>::max());
 
             // Only if a constant was stolen
             if (stolen_const != std::numeric_limits<T>::max())
@@ -909,11 +909,11 @@ namespace EasyLocal {
           {
             if (!min_of_const_set)
             {
-              min_of_const = std::dynamic_pointer_cast<Const<T>>(*it)->value;
+              min_of_const = std::static_pointer_cast<Const<T>>(*it)->value;
               min_of_const_set = true;
             }
             else
-              min_of_const = std::min(min_of_const, std::dynamic_pointer_cast<Const<T>>(*it)->value);
+              min_of_const = std::min(min_of_const, std::static_pointer_cast<Const<T>>(*it)->value);
             
             it = this->operands.erase(it);
           }
@@ -963,7 +963,7 @@ namespace EasyLocal {
         auto compiled_pair = this->template get_or_create<CMin>(exp_store);
         if (compiled_pair.second != nullptr)
         {
-          auto compiled = std::dynamic_pointer_cast<CMin<T>>(compiled_pair.second);
+          auto compiled = std::static_pointer_cast<CMin<T>>(compiled_pair.second);
           this->compile_operands(compiled_pair.first, exp_store);
         }
         return compiled_pair.first;
@@ -1016,7 +1016,7 @@ namespace EasyLocal {
           if ((*it)->type() == typeid(Max<T>))
           {
             // Note: it's not important that we use the std::numeric_limits<T>::min(), as long as it's a "unique" value
-            T stolen_const = std::dynamic_pointer_cast<Op<T>>(*it)->steal_const(std::numeric_limits<T>::min());
+            T stolen_const = std::static_pointer_cast<Op<T>>(*it)->steal_const(std::numeric_limits<T>::min());
             
             // Only if a constant was stolen
             if (stolen_const != std::numeric_limits<T>::min())
@@ -1040,11 +1040,11 @@ namespace EasyLocal {
           {
             if (!max_of_const_set)
             {
-              max_of_const = std::dynamic_pointer_cast<Const<T>>(*it)->value;
+              max_of_const = std::static_pointer_cast<Const<T>>(*it)->value;
               max_of_const_set = true;
             }
             else
-              max_of_const = std::max(max_of_const, std::dynamic_pointer_cast<Const<T>>(*it)->value);
+              max_of_const = std::max(max_of_const, std::static_pointer_cast<Const<T>>(*it)->value);
             
             it = this->operands.erase(it);
           }
@@ -1078,7 +1078,7 @@ namespace EasyLocal {
         auto compiled_pair = this->template get_or_create<CMax>(exp_store);
         if (compiled_pair.second != nullptr)
         {
-          auto compiled = std::dynamic_pointer_cast<CMax<T>>(compiled_pair.second);
+          auto compiled = std::static_pointer_cast<CMax<T>>(compiled_pair.second);
           this->compile_operands(compiled_pair.first, exp_store);
         }
         return compiled_pair.first;
@@ -1124,6 +1124,7 @@ namespace EasyLocal {
       virtual std::shared_ptr<Exp<T>> simplify()
       {
         bool all_equal = true;
+        bool all_const = true;
         bool first_set = false;
         size_t hash_of_first;
 
@@ -1147,6 +1148,10 @@ namespace EasyLocal {
               and make this operation a constant.
            */
           (*it)->normalize(true);
+          
+          // Check constness
+          all_const = (all_const && ((*it)->type() == typeid(Const<T>)));
+          
           if (!first_set)
           {
             hash_of_first = (*it)->hash();
@@ -1162,6 +1167,9 @@ namespace EasyLocal {
         // Return "true" if all the elements are equal
         if (all_equal)
           return std::make_shared<Const<T>>(1);
+        
+        if (all_const)
+          return std::make_shared<Const<T>>(0);
 
         // Finalize (non recursive because we have already normalized)
         this->_simplified = true;
@@ -1176,7 +1184,7 @@ namespace EasyLocal {
         auto compiled_pair = this->template get_or_create<CEq>(exp_store);
         if (compiled_pair.second != nullptr)
         {
-          auto compiled = std::dynamic_pointer_cast<CEq<T>>(compiled_pair.second);
+          auto compiled = std::static_pointer_cast<CEq<T>>(compiled_pair.second);
           this->compile_operands(compiled_pair.first, exp_store);
         }
         return compiled_pair.first;
@@ -1206,6 +1214,7 @@ namespace EasyLocal {
       virtual std::shared_ptr<Exp<T>> simplify()
       {
         bool all_equal = true;
+        bool all_const = true;
         bool first_set = false;
         size_t hash_of_first;
 
@@ -1227,6 +1236,10 @@ namespace EasyLocal {
 
           // Normalize so we can compare using hash value
           (*it)->normalize(true);
+          
+          // Check constness
+          all_const = (all_const && ((*it)->type() == typeid(Const<T>)));
+          
           if (!first_set)
           {
             hash_of_first = (*it)->hash();
@@ -1242,6 +1255,9 @@ namespace EasyLocal {
         // Return "false" only if the elements are all equal
         if (all_equal)
           return std::make_shared<Const<T>>(0);
+        
+        if (all_const)
+          return std::make_shared<Const<T>>(1);
 
         // Finalize (non recursive because we have already normalized)
         this->_simplified = true;
@@ -1256,7 +1272,7 @@ namespace EasyLocal {
         auto compiled_pair = this->template get_or_create<CNe>(exp_store);
         if (compiled_pair.second != nullptr)
         {
-          auto compiled = std::dynamic_pointer_cast<CNe<T>>(compiled_pair.second);
+          auto compiled = std::static_pointer_cast<CNe<T>>(compiled_pair.second);
           this->compile_operands(compiled_pair.first, exp_store);
         }
         return compiled_pair.first;
@@ -1286,6 +1302,9 @@ namespace EasyLocal {
       virtual std::shared_ptr<Exp<T>> simplify()
       {
         bool all_equal = true;
+        bool all_const = true;
+        T last = std::numeric_limits<T>::min();
+        bool sorted = true;
         bool first_set = false;
         size_t hash_of_first;
         
@@ -1305,10 +1324,21 @@ namespace EasyLocal {
             }
           }
           
-          /** We normalize each oeprand, so we can recognize equal expressions
-           and make this operation a constant.
+          /** We normalize each operand, so we can recognize equal expressions
+              and make this operation a constant.
            */
           (*it)->normalize(true);
+          
+          // Check constness
+          all_const = (all_const && ((*it)->type() == typeid(Const<T>)));
+          
+          if (all_const)
+          {
+            T curr = std::static_pointer_cast<Const<T>>(*it)->value;
+            sorted = (sorted && (curr >= last));
+            last = curr;
+          }
+          
           if (!first_set)
           {
             hash_of_first = (*it)->hash();
@@ -1325,6 +1355,9 @@ namespace EasyLocal {
         if (all_equal)
           return std::make_shared<Const<T>>(1);
         
+        if (all_const)
+          return std::make_shared<Const<T>>((T)sorted);
+
         // Finalize (non recursive because we have already normalized)
         this->_simplified = true;
         this->normalize(false);
@@ -1338,7 +1371,7 @@ namespace EasyLocal {
         auto compiled_pair = this->template get_or_create<CLe>(exp_store);
         if (compiled_pair.second != nullptr)
         {
-          auto compiled = std::dynamic_pointer_cast<CLe<T>>(compiled_pair.second);
+          auto compiled = std::static_pointer_cast<CLe<T>>(compiled_pair.second);
           this->compile_operands(compiled_pair.first, exp_store);
         }
         return compiled_pair.first;
@@ -1368,10 +1401,67 @@ namespace EasyLocal {
       /** @copydoc Exp::simplify() */
       virtual std::shared_ptr<Exp<T>> simplify()
       {
-        // Finalize
+        bool all_equal = true;
+        bool all_const = true;
+        T last = std::numeric_limits<T>::min();
+        bool sorted = true;
+        bool first_set = false;
+        size_t hash_of_first;
+        
+        /** Scan operands, replace each operand with its simplified version,
+         normalize operands so they can be compared using the hash.
+         */
+        for (auto it = this->operands.begin(); it != this->operands.end(); ++it)
+        {
+          // Correct way to replace element in list (doable because it's a doubly linked list)
+          if (!((*it)->simplified()))
+          {
+            auto sim = (*it)->simplify();
+            if (sim != *it)
+            {
+              it = this->operands.erase(it);
+              it = this->operands.insert(it, sim);
+            }
+          }
+          
+          /** We normalize each operand, so we can recognize equal expressions
+           and make this operation a constant.
+           */
+          (*it)->normalize(true);
+          
+          // Check constness
+          all_const = (all_const && ((*it)->type() == typeid(Const<T>)));
+          
+          if (all_const)
+          {
+            T curr = std::static_pointer_cast<Const<T>>(*it)->value;
+            sorted = (sorted && (curr > last));
+            last = curr;
+          }
+          
+          if (!first_set)
+          {
+            hash_of_first = (*it)->hash();
+            first_set = true;
+          }
+          else
+          {
+            if (hash_of_first != (*it)->hash())
+              all_equal = false;
+          }
+        }
+        
+        // Return "true" if all the elements are equal
+        if (all_equal)
+          return std::make_shared<Const<T>>(0);
+        
+        if (all_const)
+          return std::make_shared<Const<T>>((T)sorted);
+        
+        // Finalize (non recursive because we have already normalized)
         this->_simplified = true;
-        this->normalize(true);
-
+        this->normalize(false);
+        
         return this->shared_from_this();
       }
 
@@ -1381,7 +1471,7 @@ namespace EasyLocal {
         auto compiled_pair = this->template get_or_create<CLt>(exp_store);
         if (compiled_pair.second != nullptr)
         {
-          auto compiled = std::dynamic_pointer_cast<CLt<T>>(compiled_pair.second);
+          auto compiled = std::static_pointer_cast<CLt<T>>(compiled_pair.second);
           this->compile_operands(compiled_pair.first, exp_store);
         }
         return compiled_pair.first;
@@ -1401,14 +1491,14 @@ namespace EasyLocal {
 
     
     template <typename T>
-    class Nvalues : public SymOp<T>
+    class NValues : public SymOp<T>
     {
     public:
 
       /** Constructor. 
           @param a array of values
        */
-      Nvalues(const Array<T>& a) : SymOp<T>("n_values")
+      NValues(const Array<T>& a) : SymOp<T>("n_values")
       {
         for (const Exp<T>& e : a)
           this->append_operand(e);
@@ -1477,13 +1567,13 @@ namespace EasyLocal {
         auto compiled_pair = this->template get_or_create<CAllDiff>(exp_store);
         if (compiled_pair.second != nullptr)
         {
-          auto compiled = std::dynamic_pointer_cast<CAllDiff<T>>(compiled_pair.second);
+          auto compiled = std::static_pointer_cast<CAllDiff<T>>(compiled_pair.second);
           this->compile_operands(compiled_pair.first, exp_store);
         }
         return compiled_pair.first;
       }
 
-      virtual ~Different() = default;
+      virtual ~NValues() = default;
     };
 
     template <typename T>
@@ -1529,7 +1619,7 @@ namespace EasyLocal {
         auto compiled_pair = this->template get_or_create<CAbs>(exp_store);
         if (compiled_pair.second != nullptr)
         {
-          auto compiled = std::dynamic_pointer_cast<CAbs<T>>(compiled_pair.second);
+          auto compiled = std::static_pointer_cast<CAbs<T>>(compiled_pair.second);
           this->compile_operands(compiled_pair.first, exp_store);
         }
         return compiled_pair.first;
@@ -1594,7 +1684,7 @@ namespace EasyLocal {
           auto compiled_pair = this->template get_or_create<CElement>(exp_store);
           if (compiled_pair.second != nullptr)
           {
-            auto compiled = std::dynamic_pointer_cast<CElement<T>>(compiled_pair.second);
+            auto compiled = std::static_pointer_cast<CElement<T>>(compiled_pair.second);
             this->compile_operands(compiled_pair.first, exp_store);
           }
           return compiled_pair.first;
@@ -1604,7 +1694,7 @@ namespace EasyLocal {
           auto compiled_pair = this->template get_or_create<CArrayElement>(exp_store);
           if (compiled_pair.second != nullptr)
           {
-            auto compiled = std::dynamic_pointer_cast<CArrayElement<T>>(compiled_pair.second);
+            auto compiled = std::static_pointer_cast<CArrayElement<T>>(compiled_pair.second);
             this->compile_operands(compiled_pair.first, exp_store);
           }
           return compiled_pair.first;
@@ -1682,7 +1772,7 @@ namespace EasyLocal {
         auto compiled_pair = this->template get_or_create<CIfElse>(exp_store);
         if (compiled_pair.second != nullptr)
         {
-          auto compiled = std::dynamic_pointer_cast<CIfElse<T>>(compiled_pair.second);
+          auto compiled = std::static_pointer_cast<CIfElse<T>>(compiled_pair.second);
           this->compile_operands(compiled_pair.first, exp_store);
         }
         return compiled_pair.first;

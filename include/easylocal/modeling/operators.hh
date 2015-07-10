@@ -287,8 +287,8 @@ namespace EasyLocal {
     template <typename T>
     static std::shared_ptr<Exp<T>> operator==(const std::shared_ptr<Exp<T>>& e1, const std::shared_ptr<Exp<T>>& e2)
     {
-      auto r = std::make_shared<Eq<T>>(e1, e2);
-      r->simplify();
+      auto r = std::static_pointer_cast<Exp<T>>(std::make_shared<Eq<T>>(e1, e2));
+      r = r->simplify();
       return r;
     }
     
@@ -307,8 +307,8 @@ namespace EasyLocal {
     template <typename T>
     static std::shared_ptr<Exp<T>> operator!=(const std::shared_ptr<Exp<T>>& e1, const std::shared_ptr<Exp<T>>& e2)
     {
-      auto r = std::make_shared<Ne<T>>(e1, e2);
-      r->simplify();
+      auto r = std::static_pointer_cast<Exp<T>>(std::make_shared<Ne<T>>(e1, e2));
+      r = r->simplify();
       return r;
     }
     
@@ -327,7 +327,7 @@ namespace EasyLocal {
     template <typename T>
     static std::shared_ptr<Exp<T>> operator<=(const std::shared_ptr<Exp<T>>& e1, const std::shared_ptr<Exp<T>>& e2)
     {
-      auto r = std::make_shared<Le<T>>(e1, e2);
+      auto r = std::static_pointer_cast<Exp<T>>(std::make_shared<Le<T>>(e1, e2));
       r = r->simplify();
       return r;
     }
@@ -347,7 +347,7 @@ namespace EasyLocal {
     template <typename T>
     static std::shared_ptr<Exp<T>> operator<(const std::shared_ptr<Exp<T>>& e1, const std::shared_ptr<Exp<T>>& e2)
     {
-      auto r = std::make_shared<Lt<T>>(e1, e2);
+      auto r = std::static_pointer_cast<Exp<T>>(std::make_shared<Lt<T>>(e1, e2));
       r = r->simplify();
       return r;
     }
@@ -405,7 +405,7 @@ namespace EasyLocal {
     template <typename T>
     static std::shared_ptr<Exp<T>> min(const std::shared_ptr<Exp<T>>& e1, const std::shared_ptr<Exp<T>>& e2)
     {
-      auto r = std::make_shared<Min<T>>(e1, e2);
+      auto r = std::static_pointer_cast<Exp<T>>(std::make_shared<Min<T>>(e1, e2));
       r = r->simplify();
       return r;
     }
@@ -425,7 +425,7 @@ namespace EasyLocal {
     template <typename T>
     static std::shared_ptr<Exp<T>> max(const std::shared_ptr<Exp<T>>& e1, const std::shared_ptr<Exp<T>>& e2)
     {
-      auto r = std::make_shared<Max<T>>(e1, e2);
+      auto r = std::static_pointer_cast<Exp<T>>(std::make_shared<Max<T>>(e1, e2));
       r = r->simplify();
       return r;
     }
@@ -445,7 +445,7 @@ namespace EasyLocal {
     template <typename T>                        // we pass an Array, which is an Exp (Exp)
     static std::shared_ptr<Exp<T>> n_values(const std::shared_ptr<Exp<T>>& v)
     {
-      auto e = std::make_shared<Nvalues<T>>(v);
+      auto e = std::static_pointer_cast<Exp<T>>(std::make_shared<NValues<T>>(v));
       e = e->simplify();
       return e;
     }
@@ -453,7 +453,7 @@ namespace EasyLocal {
     template <typename T>
     static std::shared_ptr<Exp<T>> abs(const std::shared_ptr<Exp<T>>& e)
     {
-      auto t = std::make_shared<Abs<T>>(e);
+      auto t = std::static_pointer_cast<Exp<T>>(std::make_shared<Abs<T>>(e));
       t = t->simplify();
       return t;
     }
@@ -461,7 +461,7 @@ namespace EasyLocal {
     template <typename T>
     static std::shared_ptr<Exp<T>> element(const std::shared_ptr<Exp<T>>& index, const std::shared_ptr<Exp<T>>& v)
     {
-      auto t = std::make_shared<Element<T>>(index, v);
+      auto t = std::static_pointer_cast<Exp<T>>(std::make_shared<Element<T>>(index, v));
       t = t->simplify();
       return t;
     }
@@ -469,7 +469,7 @@ namespace EasyLocal {
     template <typename T>
     static std::shared_ptr<Exp<T>> element(const std::shared_ptr<Exp<T>>& index, const std::vector<T>& v)
     {
-      auto t = std::make_shared<Element<T>>(index, v);
+      auto t = std::static_pointer_cast<Exp<T>>(std::make_shared<Element<T>>(index, v));
       t = t->simplify();
       return t;
     }
@@ -477,7 +477,7 @@ namespace EasyLocal {
     template <typename T>
     static std::shared_ptr<Exp<T>> if_then_else(const std::shared_ptr<Exp<T>>& cond, const std::shared_ptr<Exp<T>>& e_then, const std::shared_ptr<Exp<T>>& e_else)
     {
-      auto t = std::make_shared<IfElse<T>>(cond, e_then, e_else);
+      auto t = std::static_pointer_cast<Exp<T>>(std::make_shared<IfElse<T>>(cond, e_then, e_else));
       t = t->simplify();
       return t;
     }

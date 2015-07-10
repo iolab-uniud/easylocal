@@ -70,7 +70,7 @@ namespace EasyLocal {
         for (size_t i = 0; i < n; i++)
         {
           const std::shared_ptr<CExp<T>>& current_cexp = (*this)[i];
-          if (std::dynamic_pointer_cast<CTerm<T>>(current_cexp) == nullptr)
+          if (std::static_pointer_cast<CTerm<T>>(current_cexp) == nullptr)
             continue;
           all_terminal_cexps.insert(i);
         }

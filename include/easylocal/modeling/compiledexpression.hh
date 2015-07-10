@@ -593,7 +593,7 @@ namespace EasyLocal {
       /** @copydoc CExp<T>::compute(ValueStore<T>&, unsigned int) */
       virtual void compute(ValueStore<T>& st, unsigned int level = 0) const
       {
-        const std::shared_ptr<CArray<T>>& array = std::dynamic_pointer_cast<CArray<T>>(this->exp_store[this->children[0]]);
+        const std::shared_ptr<CArray<T>>& array = std::static_pointer_cast<CArray<T>>(this->exp_store[this->children[0]]);
         T min = st(array->index, level);
         for (size_t i = 1; i < array->size; i++)
           min = std::min(min, st(array->index + i, level));
@@ -632,7 +632,7 @@ namespace EasyLocal {
       /** @copydoc CExp<T>::compute(ValueStore<T>&, unsigned int) */
       virtual void compute(ValueStore<T>& st, unsigned int level = 0) const
       {
-        const std::shared_ptr<CArray<T>>& array = std::dynamic_pointer_cast<CArray<T>>(this->exp_store[this->children[0]]);
+        const std::shared_ptr<CArray<T>>& array = std::static_pointer_cast<CArray<T>>(this->exp_store[this->children[0]]);
         size_t min_index = 0;
         T min = st(array->index, level);
         for (size_t i = 1; i < array->size; i++)
@@ -656,7 +656,7 @@ namespace EasyLocal {
         T changed_min = st(*min_it, level);
         if (changed_min <= current_min)
         {
-          const std::shared_ptr<CArray<T>>& array = std::dynamic_pointer_cast<CArray<T>>(this->exp_store[this->children[0]]);
+          const std::shared_ptr<CArray<T>>& array = std::static_pointer_cast<CArray<T>>(this->exp_store[this->children[0]]);
           st.assign(this->index, level, *min_it - array->index);
         }
         else
@@ -682,7 +682,7 @@ namespace EasyLocal {
       /** @copydoc CExp<T>::compute(ValueStore<T>&, unsigned int) */
       virtual void compute(ValueStore<T>& st, unsigned int level = 0) const
       {
-        const std::shared_ptr<CArray<T>>& array = std::dynamic_pointer_cast<CArray<T>>(this->exp_store[this->children[0]]);
+        const std::shared_ptr<CArray<T>>& array = std::static_pointer_cast<CArray<T>>(this->exp_store[this->children[0]]);
         T max = st(array->index, level);
         for (size_t i = 1; i < array->size; i++)
           max = std::max(max, st(array->index + i, level));
@@ -721,7 +721,7 @@ namespace EasyLocal {
       /** @copydoc CExp<T>::compute(ValueStore<T>&, unsigned int) */
       virtual void compute(ValueStore<T>& st, unsigned int level = 0) const
       {
-        const std::shared_ptr<CArray<T>>& array = std::dynamic_pointer_cast<CArray<T>>(this->exp_store[this->children[0]]);
+        const std::shared_ptr<CArray<T>>& array = std::static_pointer_cast<CArray<T>>(this->exp_store[this->children[0]]);
         size_t max_index = 0;
         T max = st(array->index, level);
         for (size_t i = 1; i < array->size; i++)
@@ -745,7 +745,7 @@ namespace EasyLocal {
         T changed_max = st(*max_it, level);
         if (changed_max >= current_max)
         {
-          const std::shared_ptr<CArray<T>>& array = std::dynamic_pointer_cast<CArray<T>>(this->exp_store[this->children[0]]);
+          const std::shared_ptr<CArray<T>>& array = std::static_pointer_cast<CArray<T>>(this->exp_store[this->children[0]]);
           st.assign(this->index, level, *max_it - array->index);
         }
         else
@@ -773,7 +773,7 @@ namespace EasyLocal {
       /** @copydoc CExp<T>::compute(ValueStore<T>&, unsigned int) */
       virtual void compute(ValueStore<T>& st, unsigned int level = 0) const
       {
-        const std::shared_ptr<CArray<T>>& array = std::dynamic_pointer_cast<CArray<T>>(this->exp_store[this->children[1]]);
+        const std::shared_ptr<CArray<T>>& array = std::static_pointer_cast<CArray<T>>(this->exp_store[this->children[1]]);
         int offset = st(this->children[0], level);
         if (offset < 0 || offset >= array->size)
           throw std::runtime_error("Error: ArrayElement expression using an invalid index (index value: " + std::to_string(offset) + ")");
