@@ -140,6 +140,22 @@ namespace EasyLocal {
     }
     
     template <typename T>
+    static std::shared_ptr<Exp<T>> operator-(const std::shared_ptr<Exp<T>>& e)
+    {
+      auto _e = std::static_pointer_cast<Exp<T>>(std::make_shared<Mul<T>>(std::make_shared<Const<T>>(-1), e));
+      _e = _e->simplify();
+      return _e;
+    }
+    
+    template <typename T>
+    static std::shared_ptr<Exp<T>>& operator-(std::shared_ptr<Exp<T>>& e)
+    {
+      e = std::make_shared<Mul<T>>(std::make_shared<Const<T>>(-1), e);
+      e = e->simplify();
+      return e;
+    }
+    
+    template <typename T>
     static std::shared_ptr<Exp<T>>& operator*=(std::shared_ptr<Exp<T>>& e1, const std::shared_ptr<Exp<T>>& e2)
     {
       e1 = std::make_shared<Mul<T>>(e1, e2);
@@ -454,6 +470,8 @@ namespace EasyLocal {
     static std::shared_ptr<Exp<T>> abs(const std::shared_ptr<Exp<T>>& e)
     {
       auto t = std::static_pointer_cast<Exp<T>>(std::make_shared<Abs<T>>(e));
+      
+      
       t = t->simplify();
       return t;
     }

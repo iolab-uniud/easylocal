@@ -118,7 +118,10 @@ namespace EasyLocal {
           @param exp_store ExpressionStore the CExp has to be added to.
           @return the position of the CExp in the ExpressionStore.
        */
-      virtual size_t compile(ExpressionStore<T>& exp_store) { }
+      virtual size_t compile(ExpressionStore<T>& exp_store)
+      {
+        return 0;
+      }
 
       /** For "type system". */
       const std::type_info& type() const
@@ -126,7 +129,10 @@ namespace EasyLocal {
         return typeid(*this);
       }
 
-      virtual void Print(std::ostream& os = std::cout) const { } // FIXME
+      virtual void Print(std::ostream& os = std::cout) const
+      {
+        
+      } // FIXME
 
       
     protected:
@@ -177,7 +183,10 @@ namespace EasyLocal {
       bool _simplified, _normalized;
 
       /** Virtual function to compute the hash. */
-      virtual size_t compute_hash() const { }  // FIXME
+      virtual size_t compute_hash() const
+      {
+        return 0;
+      }  // FIXME
 
     };
 
@@ -1554,7 +1563,7 @@ namespace EasyLocal {
           }
         }
         if (all_equal_subexp)
-          return std::make_shared<Const<T>>(0);
+          return std::make_shared<Const<T>>(1);
 
         this->_simplified = true;
         this->normalize(false); // all sub elements have been already normalized, so we're saving computation
@@ -1580,7 +1589,7 @@ namespace EasyLocal {
     class Abs : public SymOp<T>
     {
     public:
-      Abs(const Exp<T>& e) : SymOp<T>("abs")
+      Abs(const std::shared_ptr<Exp<T>>& e) : SymOp<T>("abs")
       {
         this->append_operand(e);
       }
@@ -1592,20 +1601,21 @@ namespace EasyLocal {
         if (!(op->simplified()))
         {
           auto sim = op->simplify();
-          if (sim->type() == typeid(Const<T>))
-          {
-            auto c = dynamic_cast<Const<T>*>(sim.get());
-            if (c->value >= 0)
-              return sim;
-            else
-              return std::make_shared<Const<T>>(-c->value);
-          }
           if (sim != op)
           {
             this->operands.clear();
             this->append_operand(sim);
             op = sim;
           }
+        }
+        
+        if (op->type() == typeid(Const<T>))
+        {
+          auto c = static_cast<Const<T>*>(op.get());
+          if (c->value >= 0)
+            return op;
+          else
+            return std::make_shared<Const<T>>(-c->value);
         }
 
         this->_simplified = true;
