@@ -26,17 +26,47 @@ namespace EasyLocal {
      */
     
     template <typename T>
-    static std::shared_ptr<Exp<T>> variable(const std::string& name, T lb = std::numeric_limits<T>::min(), T ub = std::numeric_limits<T>::max())
+    static std::shared_ptr<Exp<T>> make_var(const std::string& name, const T& lb = std::numeric_limits<T>::min(), const T& ub = std::numeric_limits<T>::max())
     {
       // FIXME: currently bounds are ignored
       return std::make_shared<Var<T>>(name, lb, ub);
     }
     
     template <typename T>
-    static std::shared_ptr<Exp<T>> constant(const T& val)
+    static std::shared_ptr<Exp<T>> make_const(const T& val)
     {
-      // FIXME: currently bounds are ignored
       return std::make_shared<Const<T>>(val);
+    }
+    
+    template <typename T>
+    static std::shared_ptr<Exp<T>> make_array()
+    {
+      return std::make_shared<Array<T>>();
+    }
+    
+    template <typename T>
+    static std::shared_ptr<Exp<T>> make_array(const std::vector<std::shared_ptr<Exp<T>>>& expressions)
+    {
+      return std::make_shared<Array<T>>(expressions);
+    }
+    
+    template <typename T>
+    static std::shared_ptr<Exp<T>> make_array(const std::vector<T>& constants)
+    {
+      return std::make_shared<Array<T>>(constants);
+    }
+    
+    template <typename T>
+    static std::shared_ptr<Exp<T>> make_array(const std::string& name, size_t size, const T& lb, const T& ub)
+    {
+      return std::make_shared<Array<T>>(name, size, lb, ub);
+    }
+    
+    template <typename T>
+    static std::shared_ptr<Array<T>> operator<<(std::shared_ptr<Array<T>> a, const std::shared_ptr<Exp<T>>& e)
+    {
+      a->append_operand(e);
+      return a;
     }
     
     /** Arithmetic operators. These are implemented by defining the modification

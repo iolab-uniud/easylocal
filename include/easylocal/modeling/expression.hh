@@ -35,6 +35,15 @@ namespace EasyLocal {
 
     */
   namespace Modeling {
+    
+    template <typename T>
+    class Var;
+    
+    template <typename T>
+    class Const;
+    
+    template <typename T>
+    class Array;
 
     /** Template class representing a generic node in the AST. To be specialized
         in order to implement specific types of nodes, e.g., vars and constants.
@@ -110,7 +119,27 @@ namespace EasyLocal {
       {
         return typeid(*this);
       }
+      
+      std::shared_ptr<Array<T>> as_array()
+      {
+        return std::static_pointer_cast<Array<T>>(this->shared_from_this());
+      }
 
+      std::shared_ptr<Var<T>> as_var()
+      {
+        return std::static_pointer_cast<Array<T>>(this->shared_from_this());
+      }
+      
+      std::shared_ptr<Const<T>> as_const()
+      {
+        return std::static_pointer_cast<Array<T>>(this->shared_from_this());
+      }
+      
+      std::shared_ptr<Exp<T>> as_exp()
+      {
+        return this->shared_from_this();
+      }
+      
       virtual void Print(std::ostream& os = std::cout) const { }
 
     protected:
@@ -521,6 +550,83 @@ namespace EasyLocal {
       virtual ~Sum() = default;
     };
 
+    /** An Exp representing a variable array. */
+    template <typename T>
+    class Array : public Op<T>
+    {
+    public:
+      
+      /** Constructor. */
+      Array() { }
+      
+      /** Constructor with vector of constants. */
+      Array(const std::vector<T>& constants) : Op<T>("Array")
+      {
+        for (auto& c : constants)
+          this->append_operand(std::make_shared<Const<T>>(c));
+      }
+      
+      /** Constructor for array of variables. */
+      Array(const std::string& name, size_t size, const T& lb, const T& ub) : Op<T>("Array")
+      {
+        for (size_t i = 0; i < size; i++)
+          this->append_operand(std::make_shared<Var<T>>(name, lb, ub));
+      }
+      
+      /** Constructor with vector of expressions. */
+      Array(const std::vector<std::shared_ptr<Exp<T>>>& expressions) : Op<T>("Array")
+      {
+        this->operands.insert(this->operands.end(), expressions.begin(), expressions.end());
+      }
+      
+      /** Virtual destructor. */
+      virtual ~Array() = default;
+      
+      /** @copydoc Printable::Print(std::ostream& os) */
+      virtual void Print(std::ostream& os) const
+      {
+        os << this->sym;
+        os << "[";
+        int count = 0;
+        for (auto& op : this->operands)
+        {
+          count++;
+          os << op;
+          if (count < this->operands.size())
+            os << ",";
+        }
+        os << "]";
+      }
+      
+      
+      virtual size_t compile(ExpressionStore<T>& exp_store) const
+      {
+        // Generate CExp (CArray)
+        auto compiled_pair = this->template get_or_create<CArray>(exp_store);
+        
+        // Special handling for CArrays
+        if (compiled_pair.second != nullptr)
+        {
+          // Get newly compiled expression (set start and size if it's a new CArray)
+          auto compiled = std::static_pointer_cast<CArray<T>>(compiled_pair.second);
+          compiled->size = this->operands.size();
+        }
+        return compiled_pair.first;
+      }
+      
+    protected:
+      
+      /** @copydoc Exp::compute_hash() */
+      virtual size_t compute_hash() const
+      {
+        std::stringstream ss;
+        for (auto& op : this->operands)
+          ss << op;
+        return std::hash<std::string>()(ss.str());
+      }
+    };
+
+    
     /** Product operation. */
     template <typename T>
     class Mul : public SymOp<T>
@@ -875,7 +981,7 @@ namespace EasyLocal {
           count++;
           op->Print(os);
           if (count < this->operands.size())
-            os << ", ";
+            os << ",";
         }
         os << ")";
       }
@@ -1021,7 +1127,7 @@ namespace EasyLocal {
           count++;
           op->Print(os);
           if (count < this->operands.size())
-            os << ", ";
+            os << ",";
         }
         os << ")";
       }
@@ -1403,15 +1509,6 @@ namespace EasyLocal {
       /** Virtual destructor. */
       virtual ~Lt() = default;
     };
-
-    /** Forward declaration. */
-    template <typename T>
-    class Var;
-    
-    /** Forward declaration. */
-    template <typename T>
-    class Array;
-
     
     template <typename T>
     class NValues : public SymOp<T>
@@ -1431,14 +1528,14 @@ namespace EasyLocal {
       virtual void Print(std::ostream& os) const
       {
         os << this->sym;
-        os << "( ";
+        os << "(";
         int count = 0;
         for (auto& op : this->operands)
         {
           count++;
           op->Print(os);
           if (count < this->operands.size())
-            os << ", ";
+            os << ",";
         }
         os << ")";
       }
