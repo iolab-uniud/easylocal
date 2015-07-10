@@ -5,6 +5,7 @@
 #include <vector>
 #include <list>
 #include <map>
+#include <iterator>
 
 #include "easylocal/utils/printable.hh"
 #include "easylocal/modeling/compiledexpression.hh"
@@ -138,6 +139,11 @@ namespace EasyLocal {
       std::shared_ptr<Exp<T>> as_exp()
       {
         return this->shared_from_this();
+      }
+      
+      virtual bool is_const() const
+      {
+        return false;
       }
       
       virtual void Print(std::ostream& os = std::cout) const { }
@@ -290,6 +296,10 @@ namespace EasyLocal {
         return compiled_pair.first;
       }
 
+      virtual bool is_const() const {
+        return true;
+      }
+      
       /** Value of the constant (safe to be public since it's constant). */
       const T value;
 
@@ -570,7 +580,11 @@ namespace EasyLocal {
       Array(const std::string& name, size_t size, const T& lb, const T& ub) : Op<T>("Array")
       {
         for (size_t i = 0; i < size; i++)
-          this->append_operand(std::make_shared<Var<T>>(name, lb, ub));
+        {
+          std::stringstream ss;
+          ss << name << "_" << i;
+          this->append_operand(std::make_shared<Var<T>>(ss.str(), lb, ub));
+        }
       }
       
       /** Constructor with vector of expressions. */
@@ -598,6 +612,25 @@ namespace EasyLocal {
         os << "]";
       }
       
+      virtual bool is_const() const {
+        
+        for (auto& op : this->operands)
+          if (!op->is_const())
+            return false;
+        return true;
+      }
+      
+      std::shared_ptr<Exp<T>>& at(const size_t& i)
+      {
+        auto it = this->operands.begin();
+        std::advance(it, i);
+        return *it;
+      }
+      
+//      std::shared_ptr<Exp<T>> at(const std::shared_ptr<Exp<T>>& i)
+//      {
+//        std::make_shared<Element<T>>(this->shared_from_this(), i);
+//      }
       
       virtual size_t compile(ExpressionStore<T>& exp_store) const
       {
@@ -625,7 +658,6 @@ namespace EasyLocal {
         return std::hash<std::string>()(ss.str());
       }
     };
-
     
     /** Product operation. */
     template <typename T>
@@ -1654,7 +1686,7 @@ namespace EasyLocal {
     {
       bool is_array;
     public:
-      Element(const Exp<T>& index, const Exp<T>& v) : Op<T>("element"), is_array(true)
+      Element(const std::shared_ptr<Exp<T>>& index, const std::shared_ptr<Exp<T>>& v) : Op<T>("element"), is_array(true)
       {
         this->append_operand(index);
         this->append_operand(v);
