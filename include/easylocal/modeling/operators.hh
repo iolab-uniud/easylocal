@@ -495,7 +495,7 @@ namespace EasyLocal {
     template <typename T>
     static std::shared_ptr<Exp<T>> if_then_else(const std::shared_ptr<Exp<T>>& cond, const std::shared_ptr<Exp<T>>& e_then, const std::shared_ptr<Exp<T>>& e_else)
     {
-      auto t = std::static_pointer_cast<Exp<T>>(std::make_shared<IfElse<T>>(cond, e_then, e_else));
+      auto t = std::static_pointer_cast<Exp<T>>(std::make_shared<IfThenElse<T>>(cond, e_then, e_else));
       t = t->simplify();
       return t;
     }

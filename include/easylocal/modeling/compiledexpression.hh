@@ -516,7 +516,7 @@ namespace EasyLocal {
 
     /** If-then-else expression. */
     template <typename T>
-    class CIfElse : public CExp<T>
+    class CIfThenElse : public CExp<T>
     {
     public:
       using CExp<T>::CExp;

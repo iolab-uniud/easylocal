@@ -1733,11 +1733,11 @@ namespace EasyLocal {
     };
 
     template <typename T>
-    class IfElse : public Op<T>
+    class IfThenElse : public Op<T>
     {
     public:
 
-      IfElse(const Exp<T>& cond, const Exp<T>& e1, const Exp<T>& e2) : Op<T>("if-else")
+      IfThenElse(const std::shared_ptr<Exp<T>>& cond, const std::shared_ptr<Exp<T>>& e1, const std::shared_ptr<Exp<T>>& e2) : Op<T>("ifthenelse")
       {
         this->append_operand(cond);
         this->append_operand(e1);
@@ -1779,16 +1779,24 @@ namespace EasyLocal {
 
       virtual size_t compile(ExpressionStore<T>& exp_store) const
       {
-        auto compiled_pair = this->template get_or_create<CIfElse>(exp_store);
+        auto compiled_pair = this->template get_or_create<CIfThenElse>(exp_store);
         if (compiled_pair.second != nullptr)
         {
-          auto compiled = std::static_pointer_cast<CIfElse<T>>(compiled_pair.second);
+          auto compiled = std::static_pointer_cast<CIfThenElse<T>>(compiled_pair.second);
           this->compile_operands(compiled_pair.first, exp_store);
         }
         return compiled_pair.first;
       }
 
-      virtual ~IfElse() = default;
+      /** @copydoc Printable::Print(std::ostream& os) */
+      virtual void Print(std::ostream& os) const
+      {
+        std::vector<std::shared_ptr<Exp<T>>> ops;
+        ops.insert(ops.begin(), this->operands.begin(), this->operands.end());
+        os << "if ( " << ops[0] << " ) { " << ops[1] << " } else { " << ops[2] << " }";
+      }
+      
+      virtual ~IfThenElse() = default;
     };
   }
 }
