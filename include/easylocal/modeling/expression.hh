@@ -46,6 +46,9 @@ namespace EasyLocal {
     template <typename T>
     class Array;
 
+    template <typename T>
+    class Matrix;
+    
     /** Template class representing a generic node in the AST. To be specialized
         in order to implement specific types of nodes, e.g., vars and constants.
      */
@@ -55,7 +58,7 @@ namespace EasyLocal {
     public:
 
       /** Default constructor. */
-      Exp() : _hash_set(false), _simplified(false), _normalized(false) { }
+      Exp() : _hash_computed(false), _simplified(false), _normalized(false), _const_checked(false) { }
 
       /** Virtual destructor (for inheritance). */
       virtual ~Exp() = default;
@@ -65,37 +68,34 @@ namespace EasyLocal {
        */
       size_t hash() const
       {
-        if (!_hash_set)
+        if (!_hash_computed)
         {
           this->_hash = compute_hash();
-          this->_hash_set = true;
+          this->_hash_computed = true;
         }
-        return _hash;
+        return this->_hash;
       }
-
-      /** Default simplify function.
-          @return a simplified subtree of the AST.
-       */
-      virtual std::shared_ptr<Exp<T>> simplify()
-      {
-        if (!simplified())
-          this->_simplified = true;
-        return this->shared_from_this();
-      }
-
+      
       /** Default normalization function. Makes sure the subtree has a specific ordering. */
       virtual void normalize(bool recursive)
       {
-        if (!normalized())
-            this->_normalized = true;
+        throw std::logic_error("Cannot normalize generic Exp<T>.");
       }
-
+      
+      /** Default simplify function.
+       @return a simplified subtree of the AST.
+       */
+      virtual std::shared_ptr<Exp<T>> simplify()
+      {
+        throw std::logic_error("Cannot simplify generic Exp<T>.");
+      }
+      
       /** Simplification check.
           @return true if the node does not need to be simplified.
        */
       bool simplified() const
       {
-        return _simplified;
+        return this->_simplified;
       }
 
       /** Normalization check.
@@ -103,53 +103,100 @@ namespace EasyLocal {
        */
       bool normalized() const
       {
-        return _normalized;
+        return this->_normalized;
       }
-
+      
+      /** Constness check (for compilation). 
+          @return true if expression is const.
+       */
+      virtual bool is_const() const
+      {
+        if (!_const_checked)
+        {
+          this->_const = check_const();
+          this->_const_checked = true;
+        }
+        return this->_const;
+      }
+      
       /** "Compiles" the AST node into a CExp.
           @param exp_store ExpressionStore the CExp has to be added to.
           @return the position of the CExp in the ExpressionStore.
        */
       virtual size_t compile(ExpressionStore<T>& exp_store) const
       {
-        return 0;
+        throw std::logic_error("Cannot compile generic Exp<T>.");
       }
 
-      /** For "type system". */
+      /** Type check. 
+          @return a type descriptor for this expression.
+       */
       const std::type_info& type() const
       {
         return typeid(*this);
       }
       
+      /** Explicit cast to Array<T>.
+          @return an Array shared pointer to this expression
+       */
       std::shared_ptr<Array<T>> as_array()
       {
         return std::static_pointer_cast<Array<T>>(this->shared_from_this());
       }
+      
+      /** Explicit cast to Matrix<T>.
+          @return a Matrix shared pointer to this expression
+       */
+      std::shared_ptr<Matrix<T>> as_matrix()
+      {
+        return std::static_pointer_cast<Matrix<T>>(this->shared_from_this());
+      }
 
+      /** Explicit cast to Var<T>.
+          @return a Var shared pointer to this expression
+       */
       std::shared_ptr<Var<T>> as_var()
       {
-        return std::static_pointer_cast<Array<T>>(this->shared_from_this());
+        return std::static_pointer_cast<Var<T>>(this->shared_from_this());
       }
       
+      /** Explicit cast to Const<T>.
+          @return a Const shared pointer to this expression
+       */
       std::shared_ptr<Const<T>> as_const()
       {
-        return std::static_pointer_cast<Array<T>>(this->shared_from_this());
+        return std::static_pointer_cast<Const<T>>(this->shared_from_this());
       }
       
+      /** Explicit cast to Exp<T>.
+          @return a Exp shared pointer to this expression
+       */
       std::shared_ptr<Exp<T>> as_exp()
       {
         return this->shared_from_this();
       }
       
-      virtual bool is_const() const
+      /** @copydoc Printable::Print(std::ostreamt&) */
+      virtual void Print(std::ostream& os = std::cout) const { }
+
+    protected:
+      
+      /** Virtual function to compute the hash. 
+          @return a number representing the hash of this expression
+       */
+      virtual size_t compute_hash() const
+      {
+        throw std::logic_error("Cannot hash generic Exp<T>.");
+      }
+      
+      /** Check if expression is const.
+          @return true if the expression is constant
+       */
+      virtual bool check_const() const
       {
         return false;
       }
       
-      virtual void Print(std::ostream& os = std::cout) const { }
-
-    protected:
-
       /** Checks whether an Exp has been compiled and added to an
           ExpressionStore, creates it if not.
           @param exp_store ExpressionStore where to find or create a CExp.
@@ -178,32 +225,37 @@ namespace EasyLocal {
         exp_store[this_index]->index = this_index;
 
         // Get a string description of the expression
-        std::ostringstream oss;
-        this->Print(oss);
-        exp_store[this_index]->exp = oss.str();
+        std::ostringstream os;
+        this->Print(os);
+        exp_store[this_index]->exp = os.str();
 
         // Return index and pointer
         return std::make_pair(this_index, compiled);
       }
 
       /** Keeps track whether the hash has been computed already. */
-      mutable bool _hash_set;
+      mutable bool _hash_computed;
 
+      /** Keep track whether the Exp has been simplified. */
+      bool _simplified;
+      
+      /** Keep track whether the Exp has been simplified. */
+      bool _normalized;
+
+      /** Keep track whether the Exp has been simplified. */
+      mutable bool _const_checked;
+      
       /** Hash code. */
       mutable size_t _hash;
-
-      /** Keep track whether the Exp has been simplified and normalized already. */
-      bool _simplified, _normalized;
-
-      /** Virtual function to compute the hash. */
-      virtual size_t compute_hash() const
-      {
-        return 0;
-      }
+            
+      /** Whether expression is const. */
+      mutable bool _const;
 
     };
 
-    /** Special Exp which does not need to be simplified or normalized. */
+    /** Special Exp which does not need to be simplified or normalized. Note
+     *  that this doesn't mean the expression is constant.
+     */
     template <typename T>
     class StableExp : public Exp<T>
     {
@@ -211,6 +263,12 @@ namespace EasyLocal {
 
       /** Virtual destructor. */
       virtual ~StableExp() = default;
+      
+      /** @copydoc Exp::normalize(bool). @remarks Does nothing. */
+      void normalize(bool recursive) { }
+
+      /** @copydoc Exp::simplify(). @remarks Does nothing. */
+      std::shared_ptr<Exp<T>> simplify() { return this->shared_from_this(); }
 
     protected:
 
@@ -220,6 +278,7 @@ namespace EasyLocal {
         this->_simplified = true;
         this->_normalized = true;
       }
+
     };
 
     /** An Exp representing a variable. */
@@ -236,7 +295,8 @@ namespace EasyLocal {
       /** @copydoc Printable::Print(std::ostream& os) */
       virtual void Print(std::ostream& os) const
       {
-        os << name << " \u2208 {" << lb << ".." << ub << "}";
+        //os << name << " \u2208 {" << lb << ".." << ub << "}";
+        os << name << "{" << lb << ".." << ub << "}";
       }
 
       /** Virtual destructor. */
@@ -257,6 +317,12 @@ namespace EasyLocal {
       virtual size_t compute_hash() const
       {
         return std::hash<std::string>()(this->name);
+      }
+      
+      /** A variable is not constant. */
+      virtual bool check_const() const
+      {
+        return false;
       }
       
       /** Lower and upper bounds. */
@@ -296,23 +362,25 @@ namespace EasyLocal {
         return compiled_pair.first;
       }
 
-      virtual bool is_const() const {
-        return true;
-      }
-      
       /** Value of the constant (safe to be public since it's constant). */
       const T value;
 
     protected:
+      
+      /** @copydoc Exp::check_const() */
+      virtual bool check_const() const
+      {
+        return true;
+      }
 
       /** @copydoc Exp::compute_hash() */
       virtual size_t compute_hash() const
       {
         return std::hash<T>()(this->value);
       }
-
+      
     };
-
+    
     /** Generic class representing an operation. To be specialized to implement
         specific operators.
      */
@@ -344,15 +412,39 @@ namespace EasyLocal {
       virtual void append_operand(const std::shared_ptr<Exp<T>>& operand)
       {
         this->operands.push_back(operand);
+        
+        // Adding an operand invalidates the caches
+        this->_normalized = false;
+        this->_simplified = false;
+        this->_hash_computed = false;
+        this->_const_checked = false;
       }
 
       /** Virtual destructor. */
       virtual ~Op() = default;
+      
+      /** Symbol of the operation (for printing purposes). */
+      std::string sym;
+      
+      /** Operands. */
+      std::list<std::shared_ptr<Exp<T>>> operands;
 
-      /** Normalize.
+      /** @copydoc Exp::normalize(bool) */
+      virtual void normalize(bool recursive)
+      {
+        // Normalize operands
+        this->normalize_operands(recursive);
+        
+        // Do nothing (for non symmetric operations)
+        
+        // Finally expression is normalized
+        this->_normalized = true;
+      }
+      
+      /** Normalize (ensures all operands are normalized).
           @param recursive whether to forward the normalization to operands.
        */
-      virtual void normalize(bool recursive)
+      virtual void normalize_operands(bool recursive)
       {
         if (this->normalized())
           return;
@@ -360,7 +452,7 @@ namespace EasyLocal {
           for (auto& op : this->operands)
             op->normalize(recursive);
       }
-
+      
       /** Gets constant from operands.
           @param def default value (to be returned if first operand is not const).
           @return the value of the first operand (if const) or the default value.
@@ -373,17 +465,29 @@ namespace EasyLocal {
           this->operands.pop_front();
           return std::static_pointer_cast<Const<T>>(front)->value;
         }
+        this->_hash_computed = false;
+        // this->_normalized = false;     // Removing a constant does not change
+        // this->_simplified = false;     // whether the expression is constant
+        // this->_const_checked = false;  // normalized, or simplified.
         return def;
       }
-
-    protected:
-
+      
+      /** Adds a constant to the operands. */
       virtual void add_constant(const T& o)
       {
         // Add const operand (at the front of the vector)
         this->operands.push_front(std::make_shared<Const<T>>(o));
+        this->_hash_computed = false;
+        // this->_normalized = false;     // Adding a constant does not change
+        // this->_const_checked = false;  // whether the expression is constant
+                                          // or normalized.
+        
+        this->_simplified = false;        // Might make expression unsimplified
       }
+      
+    protected:
 
+      /** Adds to itself all the operands from another op. */
       virtual void merge_operands(const std::shared_ptr<Exp<T>>& other)
       {
         // Check if other Exp is operation
@@ -396,6 +500,12 @@ namespace EasyLocal {
 
         // Swap operands
         std::swap(this->operands, p_other->operands);
+        
+        // Invalidate caches
+        this->_normalized = false;
+        this->_simplified = false;
+        this->_hash_computed = false;
+        this->_const_checked = false;
       }
 
       /** Constructor.
@@ -425,14 +535,17 @@ namespace EasyLocal {
           exp_store[child_index]->parents.insert(this_index);
         }
       }
-
-    public:
       
-      /** Symbol of the operation (for printing purposes). */
-      std::string sym;
-
-      /** Operands. */
-      std::list<std::shared_ptr<Exp<T>>> operands;
+      /** Checks whether this operation has a constant value. 
+          @return true if all operands are true
+       */
+      virtual bool check_const() const
+      {
+        for (auto& op : this->operands)
+          if (!op->is_const())
+            return false;
+        return true;
+      }
     };
 
     /** Generic class for symmetric operations. */
@@ -450,12 +563,15 @@ namespace EasyLocal {
       virtual void normalize(bool recursive)
       {
         // Normalize operands
-        Op<T>::normalize(recursive);
+        this->normalize_operands(recursive);
         
         // Sort operands
         this->operands.sort([](const std::shared_ptr<Exp<T>>& o1, const std::shared_ptr<Exp<T>>& o2) {
           return (o1->type().hash_code() < o2->type().hash_code()) || (o1->type().hash_code() == o2->type().hash_code() && o1->hash() < o2->hash());
         });
+        
+        // Finally expression is normalized
+        this->_normalized = true;
       }
     };
 
@@ -541,6 +657,11 @@ namespace EasyLocal {
         // Finalize
         this->_simplified = true;
         this->normalize(false);
+        
+        // Invalidate caches
+        this->_hash_computed = false;
+        this->_const_checked = false;
+        
         return this->shared_from_this();
       }
 
@@ -559,7 +680,80 @@ namespace EasyLocal {
       /** Virtual destructor. */
       virtual ~Sum() = default;
     };
+    
+    /** Element operator, must be defined here in order for Array to be able to
+     *  create it.
+     */
 
+    template <typename T>
+    class Element : public Exp<T>
+    {
+    public:
+      
+      /** @copydoc Printable::Print(std::ostream& os) */
+      virtual void Print(std::ostream& os) const
+      {
+        os << "element(" << what << "," << where << ")";
+      }
+
+      /** No(p)rmalization. */
+      void normalize(bool recursive) { }
+      
+      /** No simplified. */
+      std::shared_ptr<Exp<T>> simplify() { return this->shared_from_this(); }
+      
+      /** Constructor. 
+          @param v expression (array)
+          @param i expression representing index
+       */
+      Element(const std::shared_ptr<Exp<T>>& v, const std::shared_ptr<Exp<T>>& i) : const_array(false)
+      {
+        if (v->type() != typeid(Array<T>) && v->type() != typeid(Matrix<T>))
+          throw std::logic_error("Element can be applied only to Arrays and Matrices.");
+        
+        what = v;
+        where = i;
+      }
+      
+      virtual size_t compile(ExpressionStore<T>& exp_store) const
+      {
+        throw std::logic_error("Not implemented");
+        // FIXME
+//        if (!const_array)
+//        {
+//          auto compiled_pair = this->template get_or_create<CElement>(exp_store);
+//          if (compiled_pair.second != nullptr)
+//          {
+//            auto compiled = std::static_pointer_cast<CElement<T>>(compiled_pair.second);
+//            this->compile_operands(compiled_pair.first, exp_store);
+//          }
+//          return compiled_pair.first;
+//        }
+//        else
+//        {
+//          auto compiled_pair = this->template get_or_create<CArrayElement>(exp_store);
+//          if (compiled_pair.second != nullptr)
+//          {
+//            auto compiled = std::static_pointer_cast<CArrayElement<T>>(compiled_pair.second);
+//            this->compile_operands(compiled_pair.first, exp_store);
+//          }
+//          return compiled_pair.first;
+//        }
+      }
+      
+      virtual ~Element() = default;
+      
+      
+    protected:
+
+      bool const_array;
+      
+      std::shared_ptr<Exp<T>> what;
+      std::shared_ptr<Exp<T>> where;
+
+    };
+
+    
     /** An Exp representing a variable array. */
     template <typename T>
     class Array : public Op<T>
@@ -577,13 +771,13 @@ namespace EasyLocal {
       }
       
       /** Constructor for array of variables. */
-      Array(const std::string& name, size_t size, const T& lb, const T& ub) : Op<T>("Array")
+      Array(const std::string& name, size_t size, const T& lb, const T& ub) : Op<T>("Array"), name(name)
       {
         for (size_t i = 0; i < size; i++)
         {
-          std::stringstream ss;
-          ss << name << "_" << i;
-          this->append_operand(std::make_shared<Var<T>>(ss.str(), lb, ub));
+          std::ostringstream os;
+          os << name << "_" << i;
+          this->append_operand(std::make_shared<Var<T>>(os.str(), lb, ub));
         }
       }
       
@@ -599,7 +793,17 @@ namespace EasyLocal {
       /** @copydoc Printable::Print(std::ostream& os) */
       virtual void Print(std::ostream& os) const
       {
-        os << this->sym;
+        if (name.empty())
+          os << this->sym;
+        else
+          os << this->name;
+        os << "[" << this->operands.size() << "]";
+        return;
+        
+        if (name.empty())
+          os << this->sym;
+        else
+          os << this->name;
         os << "[";
         int count = 0;
         for (auto& op : this->operands)
@@ -612,25 +816,137 @@ namespace EasyLocal {
         os << "]";
       }
       
-      virtual bool is_const() const {
-        
-        for (auto& op : this->operands)
-          if (!op->is_const())
-            return false;
-        return true;
-      }
-      
-      std::shared_ptr<Exp<T>>& at(const size_t& i)
+      std::shared_ptr<Exp<T>>& at(const T& i)
       {
         auto it = this->operands.begin();
         std::advance(it, i);
         return *it;
       }
       
-//      std::shared_ptr<Exp<T>> at(const std::shared_ptr<Exp<T>>& i)
-//      {
-//        std::make_shared<Element<T>>(this->shared_from_this(), i);
-//      }
+        
+      std::shared_ptr<Exp<T>> at(const std::shared_ptr<Exp<T>>& i)
+      {
+        if (i->type() == typeid(Const<T>))
+          return this->at(std::static_pointer_cast<Const<T>>(i)->value);
+      
+        return std::make_shared<Element<T>>(this->shared_from_this(), i);
+      }
+
+      virtual size_t compile(ExpressionStore<T>& exp_store) const
+      {
+        // Generate CExp (CArray)
+        auto compiled_pair = this->template get_or_create<CArray>(exp_store);
+        
+        // Special handling for CArrays
+        if (compiled_pair.second != nullptr)
+        {
+          // Get newly compiled expression (set start and size if it's a new CArray)
+          auto compiled = std::static_pointer_cast<CArray<T>>(compiled_pair.second);
+          compiled->size = this->operands.size();
+        }
+        return compiled_pair.first;
+      }
+      
+    protected:
+      
+      /** Name of the array (only used for arrays initialized as variable arrays). */
+      std::string name;
+      
+      /** @copydoc Exp::compute_hash() */
+      virtual size_t compute_hash() const
+      {
+        std::ostringstream os;
+        os << this->sym;
+        for (auto& op : this->operands)
+          os << op;
+        return std::hash<std::string>()(os.str());
+      }
+    };
+    
+    /** An Exp representing a variable array. */
+    template <typename T>
+    class Matrix : public Op<T>
+    {
+    public:
+      
+      /** Constructor. */
+      Matrix() { }
+      
+      /** Constructor with vector of constants. */
+      Matrix(size_t rows, size_t cols, const std::vector<T>& constants) : Op<T>("Matrix"), rows(rows), cols(cols)
+      {
+        for (auto& c : constants)
+          this->append_operand(std::make_shared<Const<T>>(c));
+        this->_const = true; // optimization
+      }
+      
+      /** Constructor for array of variables. */
+      Matrix(const std::string& name, size_t rows, size_t cols, const T& lb, const T& ub) : Op<T>("Matrix"), name(name), rows(rows), cols(cols)
+      {
+        for (size_t i = 0; i < rows; i++)
+        {
+          for (size_t j = 0; j < cols; j++)
+          {
+            std::ostringstream os;
+            os << name << "_" << i << "," << j;
+            this->append_operand(std::make_shared<Var<T>>(os.str(), lb, ub));
+          }
+        }
+      }
+      
+      /** Constructor with vector of expressions. */
+      Matrix(size_t rows, size_t cols, const std::vector<std::shared_ptr<Exp<T>>>& expressions) : Op<T>("Matrix"), rows(rows), cols(cols)
+      {
+        this->operands.insert(this->operands.end(), expressions.begin(), expressions.end());
+      }
+      
+      /** Virtual destructor. */
+      virtual ~Matrix() = default;
+      
+      /** @copydoc Printable::Print(std::ostream& os) */
+      virtual void Print(std::ostream& os) const
+      {
+        if (name.empty())
+          os << this->sym;
+        else
+          os << this->name;
+        os << "[" << rows << ", " << cols << "]";
+        return;
+        
+        // FIXME: print this in a better way
+        if (name.empty())
+          os << this->sym;
+        else
+          os << this->name;
+        os << "[";
+        int count = 0;
+        for (auto& op : this->operands)
+        {
+          count++;
+          os << op;
+          if (count < this->operands.size())
+            os << ",";
+        }
+        os << "]";
+      }
+      
+      std::shared_ptr<Exp<T>>& at(const T& i, const T& j)
+      {
+        auto it = this->operands.begin();
+        std::advance(it, i * cols + j);
+        return *it;
+      }
+      
+      
+      std::shared_ptr<Exp<T>> at(const std::shared_ptr<Exp<T>>& i, const std::shared_ptr<Exp<T>>& j)
+      {
+        if (i->type() == typeid(Const<T>) && j->type() == typeid(Const<T>))
+          return this->at(std::static_pointer_cast<Const<T>>(i)->value, std::static_pointer_cast<Const<T>>(j)->value);
+
+        auto index = i * (T)(this->cols) + j;
+        
+        return std::make_shared<Element<T>>(this->shared_from_this(), index);
+      }
       
       virtual size_t compile(ExpressionStore<T>& exp_store) const
       {
@@ -649,13 +965,18 @@ namespace EasyLocal {
       
     protected:
       
+      std::string name;
+      
+      size_t rows, cols;
+      
       /** @copydoc Exp::compute_hash() */
       virtual size_t compute_hash() const
       {
-        std::stringstream ss;
+        std::ostringstream os;
+        os << this->sym;
         for (auto& op : this->operands)
-          ss << op;
-        return std::hash<std::string>()(ss.str());
+          os << op;
+        return std::hash<std::string>()(os.str());
       }
     };
     
@@ -1679,100 +2000,6 @@ namespace EasyLocal {
       }
 
       virtual ~Abs() = default;
-    };
-
-    template <typename T>
-    class Element : public Op<T>
-    {
-      bool is_array;
-    public:
-      Element(const std::shared_ptr<Exp<T>>& index, const std::shared_ptr<Exp<T>>& v) : Op<T>("element"), is_array(true)
-      {
-        this->append_operand(index);
-        this->append_operand(v);
-      }
-
-      Element(const Exp<T>& index, const std::vector<T>& v) : Op<T>("element"), is_array(false)
-      {
-        this->append_operand(index);
-        for (auto val : v)
-          this->append_operand(Exp<T>(val));
-      }
-
-      Element(const Exp<T>& index, const std::vector<Exp<T>>& v) : Op<T>("element"), is_array(false)
-      {
-        this->append_operand(index);
-        for (const Exp<T>& e : v)
-          this->append_operand(e);
-      }
-
-      virtual std::shared_ptr<Exp<T>> simplify()
-      {
-        for (auto it = this->operands.begin(); it != this->operands.end(); ++it)
-        {
-          // correct way to replace element in list
-          if (!((*it)->simplified()))
-          {
-            auto sim = (*it)->simplify();
-            if (sim != *it)
-            {
-              it = this->operands.erase(it);
-              it = this->operands.insert(it, sim);
-            }
-          }
-
-          (*it)->normalize(true);
-        }
-
-        this->_simplified = true;
-        this->normalize(false); // all sub elements have been already normalized, so we're saving computation
-
-        return this->shared_from_this();
-      }
-
-      virtual size_t compile(ExpressionStore<T>& exp_store) const
-      {
-        if (!is_array)
-        {
-          auto compiled_pair = this->template get_or_create<CElement>(exp_store);
-          if (compiled_pair.second != nullptr)
-          {
-            auto compiled = std::static_pointer_cast<CElement<T>>(compiled_pair.second);
-            this->compile_operands(compiled_pair.first, exp_store);
-          }
-          return compiled_pair.first;
-        }
-        else
-        {
-          auto compiled_pair = this->template get_or_create<CArrayElement>(exp_store);
-          if (compiled_pair.second != nullptr)
-          {
-            auto compiled = std::static_pointer_cast<CArrayElement<T>>(compiled_pair.second);
-            this->compile_operands(compiled_pair.first, exp_store);
-          }
-          return compiled_pair.first;
-        }
-      }
-
-      virtual void normalize(bool recursive)
-      {
-        if (this->normalized())
-          return;
-        if (recursive && !is_array)
-        {
-          for (auto& op : this->operands)
-            op->normalize(recursive);
-
-          auto& first = this->operands.front();
-          this->operands.erase(this->operands.begin());
-          this->operands.sort([](const std::shared_ptr<Exp<T>>& o1, const std::shared_ptr<Exp<T>>& o2) {
-                                return (o1->type().hash_code() < o2->type().hash_code()) || (o1->type().hash_code() == o2->type().hash_code() && o1->hash() < o2->hash());
-                              });
-          this->operands.push_front(first);
-        }
-      }
-
-      virtual ~Element() = default;
     };
 
     template <typename T>

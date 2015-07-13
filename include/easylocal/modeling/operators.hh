@@ -63,6 +63,30 @@ namespace EasyLocal {
     }
     
     template <typename T>
+    static std::shared_ptr<Exp<T>> make_matrix(size_t rows, size_t cols)
+    {
+      return std::make_shared<Matrix<T>>(rows, cols);
+    }
+    
+    template <typename T>
+    static std::shared_ptr<Exp<T>> make_matrix(size_t rows, size_t cols, const std::vector<std::shared_ptr<Exp<T>>>& expressions)
+    {
+      return std::make_shared<Matrix<T>>(rows, cols, expressions);
+    }
+    
+    template <typename T>
+    static std::shared_ptr<Exp<T>> make_matrix(size_t rows, size_t cols, const std::vector<T>& constants)
+    {
+      return std::make_shared<Matrix<T>>(rows, cols, constants);
+    }
+    
+    template <typename T>
+    static std::shared_ptr<Exp<T>> make_matrix(const std::string& name, size_t rows, size_t cols, const T& lb, const T& ub)
+    {
+      return std::make_shared<Matrix<T>>(name, rows, cols, lb, ub);
+    }
+
+    template <typename T>
     static std::shared_ptr<Array<T>> operator<<(std::shared_ptr<Array<T>> a, const std::shared_ptr<Exp<T>>& e)
     {
       a->append_operand(e);
