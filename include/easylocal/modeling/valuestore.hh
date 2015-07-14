@@ -115,7 +115,7 @@ namespace EasyLocal {
           es.evaluate(*this);
         std::unordered_set<size_t> vars;
         assign(m.var, level, m.val);
-        size_t var_index = es.compiled_exps[m.var.hash()];
+        size_t var_index = es.compiled_exps[m.var.hash()]; // FIXME
         vars.insert(var_index);
         es.evaluate_diff(*this, vars, level);
       }
@@ -291,8 +291,8 @@ namespace EasyLocal {
       
       void assign(const Var<T>& v, unsigned int level, const T& val)
       {
-        value[level][es.compiled_exps[v.hash()]] = val;
-        valid[level][es.compiled_exps[v.hash()]] = true;
+        value[level][es.compiled_exps[v.hash()]] = val; // FIXME
+        valid[level][es.compiled_exps[v.hash()]] = true; // FIXME
       }
       
       /** Gets the indices of the changed children of an expression at a specific level

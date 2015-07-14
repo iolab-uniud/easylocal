@@ -10,7 +10,7 @@
 namespace EasyLocal {
   
   namespace Modeling {
-    
+
     /** Forward declaration */
     template <typename T>
     class ExpressionStore;
@@ -70,7 +70,7 @@ namespace EasyLocal {
       /** @copydoc Printable::Print(std::ostream&) */
       virtual void Print(std::ostream& os) const
       {
-        os << "Index: " << index << " " << " p{";
+        os << "id: " << index << " " << " par: {";
         bool first = true;
         for (auto p : parents)
         {
@@ -80,7 +80,7 @@ namespace EasyLocal {
             os << ", ";
           os << p;
         }
-        os << "}, c{";
+        os << "}, chi: {";
         first = true;
         for (auto p : children)
         {
@@ -90,7 +90,7 @@ namespace EasyLocal {
             os << ", ";
           os << p;
         }
-        os << "} " << exp << " [depth: " << depth << "]";
+        os << "} orig: " << exp << " [depth: " << depth << "]";
       }
     };
     

@@ -513,7 +513,7 @@ namespace EasyLocal {
     }
     
     template <typename T>                        // we pass an Array, which is an Exp (Exp)
-    static std::shared_ptr<Exp<T>> n_values(const std::shared_ptr<Exp<T>>& v)
+    static std::shared_ptr<Exp<T>> n_values(const std::shared_ptr<Array<T>>& v)
     {
       auto e = std::static_pointer_cast<Exp<T>>(std::make_shared<NValues<T>>(v));
       e = e->simplify();
@@ -531,19 +531,19 @@ namespace EasyLocal {
     }
     
     template <typename T>
-    static std::shared_ptr<Exp<T>> element(const std::shared_ptr<Exp<T>>& index, const std::shared_ptr<Exp<T>>& v)
+    static std::shared_ptr<Exp<T>> element(const std::shared_ptr<Exp<T>>& i, const std::shared_ptr<Array<T>>& v)
     {
-      auto t = std::static_pointer_cast<Exp<T>>(std::make_shared<Element<T>>(index, v));
+      auto t = std::static_pointer_cast<Exp<T>>(std::make_shared<Element<T>>(i, v));
       t = t->simplify();
       return t;
     }
-    
+      
     template <typename T>
-    static std::shared_ptr<Exp<T>> element(const std::shared_ptr<Exp<T>>& index, const std::vector<T>& v)
+    static std::shared_ptr<Exp<T>> element(const std::shared_ptr<Exp<T>>& i, const std::shared_ptr<Matrix<T>>& v)
     {
-      auto t = std::static_pointer_cast<Exp<T>>(std::make_shared<Element<T>>(index, v));
-      t = t->simplify();
-      return t;
+        auto t = std::static_pointer_cast<Exp<T>>(std::make_shared<Element<T>>(i, v));
+        t = t->simplify();
+        return t;
     }
     
     template <typename T>
@@ -591,6 +591,12 @@ namespace EasyLocal {
       return os;
     }
 
+    template <typename T>
+    std::ostream& operator<<(std::ostream& os, const std::shared_ptr<CExp<T>>& ce)
+    {
+      os << *ce;
+      return os;
+    }
     
   }
 }

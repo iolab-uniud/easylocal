@@ -3,11 +3,30 @@
 
 #include "compiledexpression.hh"
 #include <queue>
+#include <unordered_map>
 
 
 namespace EasyLocal {
   
   namespace Modeling {
+  
+    /** Proxy to Exp<T>::hash() */
+    template <typename T>
+    struct ExpHash {
+      std::size_t operator()(const std::shared_ptr<const Exp<T>>& key) const
+      {
+        return key->hash();
+      }
+    };
+    
+    /** Proxy to Exp<T>::equals_to(const std::shared_ptr<Exp<T>>&) */
+    template <typename T>
+    struct ExpEquals {
+      bool operator()(const std::shared_ptr<const Exp<T>>& l_key, const std::shared_ptr<const Exp<T>>& r_key) const
+      {
+        return l_key->equals_to(r_key);
+      }
+    };
     
     /** Forward declaration */
     template <typename T>
@@ -25,7 +44,7 @@ namespace EasyLocal {
     class ExpressionStore : public std::vector<std::shared_ptr<CExp<T>>>, public Core::Printable
     {
     
-      /**  */
+      /** FIXME: find out if this is needed */
       friend class ValueStore<T>;
     
     public:
@@ -42,13 +61,16 @@ namespace EasyLocal {
           @param e the original expression
           @return a shared pointer to the root of the compiled expression
        */
-      std::shared_ptr<CExp<T>> compile(Exp<T>& e)
+      std::shared_ptr<CExp<T>> compile(std::shared_ptr<Exp<T>>& e)
       {
-        e.normalize();
+        e->normalize();
         size_t previous_size = this->size();
-        size_t root_index = e.compile(*this);
+        size_t root_index = e->compile(*this);
+          
+        // Check if a new expression has been inserted (if the expression was already there, the size might have not been changed)
         if (this->size() != previous_size)
         {
+          // Alert subscribers (a ValueStore) that the size has changed
           for (ResizeNotify* n : subscribers)
             n->resized(this->size());
           depth_needs_update = true;
@@ -199,11 +221,10 @@ namespace EasyLocal {
       mutable std::list<ResizeNotify*> subscribers;
       
     public:
+        
       mutable std::vector<bool> processed_cexps;
-      
       mutable bool depth_needs_update;
-
-      std::map<size_t, size_t> compiled_exps;
+      std::unordered_map<std::shared_ptr<const Exp<T>>, size_t, ExpHash<T>, ExpEquals<T>> compiled_exps;
     };
     
   }
