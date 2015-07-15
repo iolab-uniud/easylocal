@@ -19,6 +19,9 @@ namespace EasyLocal {
     template <typename T>
     class ValueStore;
     
+    template <typename T>
+    class Exp;
+    
     /** Template compiled Exp<T>. */
     template <typename T>
     class CExp : public EasyLocal::Core::Printable
@@ -28,7 +31,7 @@ namespace EasyLocal {
       /** Constructor. 
           @param exp_store ExpressionStore into which to register the compiled expression
        */
-      CExp(ExpressionStore<T>& exp_store) : exp_store(exp_store)
+      CExp(ExpressionStore<T>& exp_store, const std::string& sym) : sym(sym), exp_store(exp_store)
       {
         depth = 0;
       }
@@ -44,9 +47,12 @@ namespace EasyLocal {
           @remarks these need to be ordered.
        */
       std::vector<size_t> children;
-      
+
       /** String representation of the AST item */
-      std::string exp;
+      const std::string sym;
+      
+      /** Original expression (FIXME: removed once debug is over) */
+      std::shared_ptr<const Exp<T>> exp;
       
       /** Reference to the ExpressionStore where the compiled expression is registered */
       const ExpressionStore<T>& exp_store;
@@ -70,6 +76,7 @@ namespace EasyLocal {
       /** @copydoc Printable::Print(std::ostream&) */
       virtual void Print(std::ostream& os) const
       {
+        os << this->sym << " ";
         os << "id: " << index << " " << " par: {";
         bool first = true;
         for (auto p : parents)
@@ -90,20 +97,15 @@ namespace EasyLocal {
             os << ", ";
           os << p;
         }
-        os << "} orig: " << exp << " [depth: " << depth << "]";
+        os << "} orig: " << *exp << " [depth: " << depth << "]";
       }
     };
     
-    /** Generic terminal expression.
-        @remarks Currently variables, constants, and arrays
-     */
+    /** Terminal symbols. */
     template <typename T>
-    class CTerm : public CExp<T>
-    {
+    class CTerm : public CExp<T> {
     public:
-      
-      /** Default constructor. */
-      using CExp<T>::CExp;
+      CTerm(ExpressionStore<T>& exp_store, const std::string& sym) : CExp<T>(exp_store, sym) { }
     };
 
     /** Scalar variable expression. */
@@ -113,41 +115,27 @@ namespace EasyLocal {
     public:
      
       /** Default constructor. */
-      using CTerm<T>::CTerm;
+      CVar(ExpressionStore<T>& exp_store) : CTerm<T>(exp_store, "CVar") { }
       
       /** @copydoc CExp<T>::compute(ValueStore<T>&, unsigned int) */
       virtual void compute(ValueStore<T>& st, unsigned int level = 0) const { }
       
       /** @copydoc CExp<T>::compute_diff(ValueStore<T>&, unsigned int) */
       virtual void compute_diff(ValueStore<T>& st, unsigned int level = 0) const { }
-      
-      /** @copydoc Printable::Print(std::ostream&) */
-      virtual void Print(std::ostream& os) const
-      {
-        os << "CVar: ";
-        CExp<T>::Print(os);
-      }
     };
     
     /** Array variable expression. */
     template <typename T>
-    class CArray : public CTerm<T>
+    class CArray : public CExp<T>
     {
     public:
-      using CTerm<T>::CTerm;
+      CArray(ExpressionStore<T>& exp_store) : CExp<T>(exp_store, "CArray") { }
       
       /** @copydoc CExp<T>::compute(ValueStore<T>&, unsigned int) */
       virtual void compute(ValueStore<T>& st, unsigned int level = 0) const { }
       
       /** @copydoc CExp<T>::compute_diff(ValueStore<T>&, unsigned int) */
       virtual void compute_diff(ValueStore<T>& st, unsigned int level = 0) const { }
-      
-      /** @copydoc Printable::Print(std::ostream&) */
-      virtual void Print(std::ostream& os) const
-      {
-        os << "CArray: ";
-        CExp<T>::Print(os);
-      }
       
       /** Size of the variable array (relies on contiguous allocation of array elements) */
       size_t size;
@@ -158,7 +146,7 @@ namespace EasyLocal {
     class CConst : public CTerm<T>
     {
     public:
-      using CTerm<T>::CTerm;
+      CConst(ExpressionStore<T>& exp_store) : CTerm<T>(exp_store, "CConst") { }
       
       /** @copydoc CExp<T>::compute(ValueStore<T>&, unsigned int) */
       virtual void compute(ValueStore<T>& st, unsigned int level = 0) const
@@ -172,13 +160,6 @@ namespace EasyLocal {
       
       /** Value of the constant */
       T value;
-      
-      /** @copydoc Printable::Print(std::ostream&) */
-      virtual void Print(std::ostream& os) const
-      {
-        os << "CConst: ";
-        CExp<T>::Print(os);
-      }
     };
 
     /** Summation expression. */
@@ -188,7 +169,7 @@ namespace EasyLocal {
     public:
       
       /** Default constructor. */
-      using CExp<T>::CExp;
+      CSum(ExpressionStore<T>& exp_store) : CExp<T>(exp_store, "CSum") { }
       
       /** @copydoc CExp<T>::compute(ValueStore<T>&, unsigned int) */
       virtual void compute(ValueStore<T>& st, unsigned int level = 0) const
@@ -219,13 +200,6 @@ namespace EasyLocal {
         changed.clear();
         st.assign(this->index, level, value);
       }
-
-      /** @copydoc Printable::Print(std::ostream&) */
-      virtual void Print(std::ostream& os) const
-      {
-        os << "Sum: ";
-        CExp<T>::Print(os);
-      }
     };
 
     /** Product expression. */
@@ -235,7 +209,7 @@ namespace EasyLocal {
     public:
       
       /** Default constructor. */
-      using CExp<T>::CExp;
+      CMul(ExpressionStore<T>& exp_store) : CExp<T>(exp_store, "CMul") { }
       
       /** @copydoc CExp<T>::compute(ValueStore<T>&, unsigned int) */
       virtual void compute(ValueStore<T>& st, unsigned int level = 0) const
@@ -294,13 +268,6 @@ namespace EasyLocal {
         changed.clear();
         st.assign(this->index, level, value);
       }
-
-      /** @copydoc Printable::Print(std::ostream&) */
-      virtual void Print(std::ostream& os) const
-      {
-        os << "Mul: ";
-        CExp<T>::Print(os);
-      }
     };
     
     /** Division expression. */
@@ -310,7 +277,7 @@ namespace EasyLocal {
     public:
       
       /** Default constructor. */
-      using CExp<T>::CExp;
+      CDiv(ExpressionStore<T>& exp_store) : CExp<T>(exp_store, "CDiv") { }
       
       /** @copydoc CExp<T>::compute(ValueStore<T>&, unsigned int) */
       virtual void compute(ValueStore<T>& st, unsigned int level = 0) const
@@ -326,13 +293,6 @@ namespace EasyLocal {
         this->compute(st, level);
         st.changed_children(this->index, level).clear();
       }
-      
-      /** @copydoc Printable::Print(std::ostream&) */
-      virtual void Print(std::ostream& os) const
-      {
-        os << "Div: ";
-        CExp<T>::Print(os);
-      }
     };
     
     /** Modulo expression. */
@@ -340,7 +300,7 @@ namespace EasyLocal {
     class CMod : public CExp<T>
     {
     public:
-      using CExp<T>::CExp;
+      CMod(ExpressionStore<T>& exp_store) : CExp<T>(exp_store, "CMod") { }
       
       /** @copydoc CExp<T>::compute(ValueStore<T>&, unsigned int) */
       virtual void compute(ValueStore<T>& st, unsigned int level = 0) const
@@ -356,13 +316,6 @@ namespace EasyLocal {
         this->compute(st, level);
         st.changed_children(this->index, level).clear();
       }
-      
-      /** @copydoc Printable::Print(std::ostream&) */
-      virtual void Print(std::ostream& os) const
-      {
-        os << "Mod: ";
-        CExp<T>::Print(os);
-      }
     };
     
     /** Minimum expression. */
@@ -372,7 +325,7 @@ namespace EasyLocal {
     public:
       
       /** Default constructor. */
-      using CExp<T>::CExp;
+      CMin(ExpressionStore<T>& exp_store) : CExp<T>(exp_store, "CMin") { }
       
       /** @copydoc Sym<T>::compute(ValueStore<T>&, unsigned int) */
       virtual void compute(ValueStore<T>& st, unsigned int level = 0) const
@@ -415,13 +368,6 @@ namespace EasyLocal {
         
         st.assign(this->index, level, new_min);
       }
-      
-      /** @copydoc Printable::Print(std::ostream&) */
-      virtual void Print(std::ostream& os) const
-      {
-        os << "Min: ";
-        CExp<T>::Print(os);
-      }
     };
     
     /** Maximum expression. */
@@ -429,7 +375,7 @@ namespace EasyLocal {
     class CMax : public CExp<T>
     {
     public:
-      using CExp<T>::CExp;
+      CMax(ExpressionStore<T>& exp_store) : CExp<T>(exp_store, "CMax") { }
       
       /** @copydoc CExp<T>::compute(ValueStore<T>&, unsigned int) */
       virtual void compute(ValueStore<T>& st, unsigned int level = 0) const
@@ -471,13 +417,6 @@ namespace EasyLocal {
             new_max = std::max(new_max, st(child, level));
         st.assign(this->index, level, new_max);
       }
-      
-      /** @copydoc Printable::Print(std::ostream&) */
-      virtual void Print(std::ostream& os) const
-      {
-        os << "Max: ";
-        CExp<T>::Print(os);
-      }
     };
     
     /** 
@@ -488,7 +427,7 @@ namespace EasyLocal {
     class CElement : public CExp<T>
     {
     public:
-      using CExp<T>::CExp;
+      CElement(ExpressionStore<T>& exp_store) : CExp<T>(exp_store, "CElement") { }
       
       /** @copydoc CExp<T>::compute(ValueStore<T>&, unsigned int) */
       virtual void compute(ValueStore<T>& st, unsigned int level = 0) const
@@ -505,13 +444,6 @@ namespace EasyLocal {
         this->compute(st, level);
         st.changed_children(this->index, level).clear();
       }
-      
-      /** @copydoc Printable::Print(std::ostream&) */
-      virtual void Print(std::ostream& os) const
-      {
-        os << "Element: ";
-        CExp<T>::Print(os);
-      }
     };
 
     /** If-then-else expression. */
@@ -519,7 +451,7 @@ namespace EasyLocal {
     class CIfThenElse : public CExp<T>
     {
     public:
-      using CExp<T>::CExp;
+      CIfThenElse(ExpressionStore<T>& exp_store) : CExp<T>(exp_store, "IfThenElse") { }
       
       /** @copydoc CExp<T>::compute(ValueStore<T>&, unsigned int) */
       virtual void compute(ValueStore<T>& st, unsigned int level = 0) const
@@ -537,13 +469,6 @@ namespace EasyLocal {
         this->compute(st, level);
         st.changed_children(this->index, level).clear();
       }
-
-      /** @copydoc Printable::Print(std::ostream&) */
-      virtual void Print(std::ostream& os) const
-      {
-        os << "IfElse: ";
-        CExp<T>::Print(os);
-      }
     };
     
     /** Absolute value expression. */
@@ -551,7 +476,7 @@ namespace EasyLocal {
     class CAbs : public CExp<T>
     {
     public:
-      using CExp<T>::CExp;
+      CAbs(ExpressionStore<T>& exp_store) : CExp<T>(exp_store, "CAbs") { }
       
       /** @copydoc CExp<T>::compute(ValueStore<T>&, unsigned int) */
       virtual void compute(ValueStore<T>& st, unsigned int level = 0) const
@@ -565,242 +490,14 @@ namespace EasyLocal {
         this->compute(st, level);
         st.changed_children(this->index, level).clear();
       }
-      
-      /** @copydoc Printable::Print(std::ostream&) */
-      virtual void Print(std::ostream& os) const
-      {
-        os << "Abs: ";
-        CExp<T>::Print(os);
-      }
     };
-    
-    // TODO check against CArrayExpression
-    /** A subexpression dealing with an array **/
-    template <typename T>
-    class CArraySub : public CExp<T>
-    {
-    public:
-      using CExp<T>::CExp;
-    };
-
-    /** Minimum of a variable array. */
-    template <typename T>
-    class CArrayMin : public CArraySub<T>
-    {
-    public:
-      using CArraySub<T>::CArraySub;
       
-      /** @copydoc CExp<T>::compute(ValueStore<T>&, unsigned int) */
-      virtual void compute(ValueStore<T>& st, unsigned int level = 0) const
-      {
-        const std::shared_ptr<CArray<T>>& array = std::static_pointer_cast<CArray<T>>(this->exp_store[this->children[0]]);
-        T min = st(array->index, level);
-        for (size_t i = 1; i < array->size; i++)
-          min = std::min(min, st(array->index + i, level));
-        st.assign(this->index, level, min);
-      }
-      
-      /** @copydoc CExp<T>::compute_diff(ValueStore<T>&, unsigned int) */
-      virtual void compute_diff(ValueStore<T>& st, unsigned int level = 0) const
-      {
-        std::unordered_set<size_t>& changed = st.changed_children(this->index, level);
-        T current_min = st(this->index);
-        std::unordered_set<size_t>::const_iterator min_it = std::min_element(changed.begin(), changed.end(), [&st,&level](const size_t& e1, const size_t& e2)->bool { return st(e1, level) < st(e2, level); });
-        T changed_min = st(*min_it, level);
-        if (changed_min <= current_min)
-          st.assign(this->index, level, changed_min);
-        else
-          this->compute(st, level);
-        changed.clear();
-      }
-
-      /** @copydoc Printable::Print(std::ostream&) */
-      virtual void Print(std::ostream& os) const
-      {
-        os << "ArrayMin: ";
-        CExp<T>::Print(os);
-      }
-    };
-
-    /** Index of the minimum of a variable array. */
-    template <typename T>
-    class CArgMin : public CArraySub<T>
-    {
-    public:
-      using CArraySub<T>::CArraySub;
-      
-      /** @copydoc CExp<T>::compute(ValueStore<T>&, unsigned int) */
-      virtual void compute(ValueStore<T>& st, unsigned int level = 0) const
-      {
-        const std::shared_ptr<CArray<T>>& array = std::static_pointer_cast<CArray<T>>(this->exp_store[this->children[0]]);
-        size_t min_index = 0;
-        T min = st(array->index, level);
-        for (size_t i = 1; i < array->size; i++)
-        {
-          T val = st(array->index + i, level);
-          if (val < min)
-          {
-            min = val;
-            min_index = i;
-          }
-        }
-        st.assign(this->index, level, min_index);
-      }
-      
-      /** @copydoc CExp<T>::compute_diff(ValueStore<T>&, unsigned int) */
-      virtual void compute_diff(ValueStore<T>& st, unsigned int level = 0) const
-      {
-        std::unordered_set<size_t>& changed = st.changed_children(this->index, level);
-        T current_min = st(this->index);
-        std::unordered_set<size_t>::const_iterator min_it = std::min_element(changed.begin(), changed.end(), [&st,&level](const size_t& e1, const size_t& e2)->bool { return st(e1, level) < st(e2, level); });
-        T changed_min = st(*min_it, level);
-        if (changed_min <= current_min)
-        {
-          const std::shared_ptr<CArray<T>>& array = std::static_pointer_cast<CArray<T>>(this->exp_store[this->children[0]]);
-          st.assign(this->index, level, *min_it - array->index);
-        }
-        else
-          this->compute(st, level);
-        changed.clear();
-      }
-      
-      /** @copydoc Printable::Print(std::ostream&) */
-      virtual void Print(std::ostream& os) const
-      {
-        os << "ArgMin: ";
-        CExp<T>::Print(os);
-      }
-    };
-
-    /** Maximum of a variable array. */
-    template <typename T>
-    class CArrayMax : public CArraySub<T>
-    {
-    public:
-      using CArraySub<T>::CArraySub;
-      
-      /** @copydoc CExp<T>::compute(ValueStore<T>&, unsigned int) */
-      virtual void compute(ValueStore<T>& st, unsigned int level = 0) const
-      {
-        const std::shared_ptr<CArray<T>>& array = std::static_pointer_cast<CArray<T>>(this->exp_store[this->children[0]]);
-        T max = st(array->index, level);
-        for (size_t i = 1; i < array->size; i++)
-          max = std::max(max, st(array->index + i, level));
-        st.assign(this->index, level, max);
-      }
-      
-      /** @copydoc CExp<T>::compute_diff(ValueStore<T>&, unsigned int) */
-      virtual void compute_diff(ValueStore<T>& st, unsigned int level = 0) const
-      {
-        std::unordered_set<size_t>& changed = st.changed_children(this->index, level);
-        T current_max = st(this->index);
-        std::unordered_set<size_t>::const_iterator max_it = std::max_element(changed.begin(), changed.end(), [&st,&level](const size_t& e1, const size_t& e2)->bool { return st(e1, level) < st(e2, level); });
-        T changed_max = st(*max_it, level);
-        if (changed_max >= current_max)
-          st.assign(this->index, level, changed_max);
-        else
-          this->compute(st, level);
-        changed.clear();
-      }
-
-      /** @copydoc Printable::Print(std::ostream&) */
-      virtual void Print(std::ostream& os) const
-      {
-        os << "ArrayMax: ";
-        CExp<T>::Print(os);
-      }
-    };
-
-    /** Index of the max of a variable array. */
-    template <typename T>
-    class CArgMax : public CArraySub<T>
-    {
-    public:
-      using CArraySub<T>::CArraySub;
-      
-      /** @copydoc CExp<T>::compute(ValueStore<T>&, unsigned int) */
-      virtual void compute(ValueStore<T>& st, unsigned int level = 0) const
-      {
-        const std::shared_ptr<CArray<T>>& array = std::static_pointer_cast<CArray<T>>(this->exp_store[this->children[0]]);
-        size_t max_index = 0;
-        T max = st(array->index, level);
-        for (size_t i = 1; i < array->size; i++)
-        {
-          T val = st(array->index + i, level);
-          if (val > max)
-          {
-            max = val;
-            max_index = i;
-          }
-        }
-        st.assign(this->index, level, max_index);
-      }
-      
-      /** @copydoc CExp<T>::compute_diff(ValueStore<T>&, unsigned int) */
-      virtual void compute_diff(ValueStore<T>& st, unsigned int level = 0) const
-      {
-        std::unordered_set<size_t>& changed = st.changed_children(this->index, level);
-        T current_max = st(this->index);
-        std::unordered_set<size_t>::const_iterator max_it = std::max_element(changed.begin(), changed.end(), [&st,&level](const size_t& e1, const size_t& e2)->bool { return st(e1, level) < st(e2, level); });
-        T changed_max = st(*max_it, level);
-        if (changed_max >= current_max)
-        {
-          const std::shared_ptr<CArray<T>>& array = std::static_pointer_cast<CArray<T>>(this->exp_store[this->children[0]]);
-          st.assign(this->index, level, *max_it - array->index);
-        }
-        else
-          this->compute(st, level);
-        changed.clear();
-      }
-      
-      /** @copydoc Printable::Print(std::ostream&) */
-      virtual void Print(std::ostream& os) const
-      {
-        os << "ArgMax: ";
-        CExp<T>::Print(os);
-      }
-    };
-
-    /** Element expression (element of an array, whose index is an expression involving variables). 
-     @remark the first child is the index expression, the second one is the array
-     */
-    template <typename T>
-    class CArrayElement : public CArraySub<T>
-    {
-    public:
-      using CArraySub<T>::CArraySub;
-      
-      /** @copydoc CExp<T>::compute(ValueStore<T>&, unsigned int) */
-      virtual void compute(ValueStore<T>& st, unsigned int level = 0) const
-      {
-        const std::shared_ptr<CArray<T>>& array = std::static_pointer_cast<CArray<T>>(this->exp_store[this->children[1]]);
-        int offset = st(this->children[0], level);
-        if (offset < 0 || offset >= array->size)
-          throw std::runtime_error("Error: ArrayElement expression using an invalid index (index value: " + std::to_string(offset) + ")");
-        st.assign(this->index, level, st(array->index + offset, level));
-      }
-      
-      /** @copydoc CExp<T>::compute_diff(ValueStore<T>&, unsigned int) */
-      virtual void compute_diff(ValueStore<T>& st, unsigned int level = 0) const
-      {
-        this->compute(st, level);
-        st.changed_children(this->index, level).clear();
-      }
-      
-      /** @copydoc Printable::Print(std::ostream&) */
-      virtual void Print(std::ostream& os) const
-      {
-        os << "Element: ";
-        CExp<T>::Print(os);
-      }
-    };
-
     /** Generic binary relation expression */
     template <typename T>
-    class CRel : public CExp<T>
+    class CNoDelta : public CExp<T>
     {
     public:
-      using CExp<T>::CExp;
+      CNoDelta(ExpressionStore<T>& exp_store, const std::string& sym) : CExp<T>(exp_store, sym) { }
       
       /** @copydoc CExp<T>::compute_diff(ValueStore<T>&, unsigned int) */
       virtual void compute_diff(ValueStore<T>& st, unsigned int level = 0) const
@@ -812,17 +509,10 @@ namespace EasyLocal {
 
     /** Equality relation. */
     template <typename T>
-    class CEq : public CRel<T>
+    class CEq : public CNoDelta<T>
     {
     public:
-      using CRel<T>::CRel;
-      
-      /** @copydoc Printable::Print(std::ostream&) */
-      virtual void Print(std::ostream& os) const
-      {
-        os << "Eq: ";
-        CExp<T>::Print(os);
-      }
+      CEq(ExpressionStore<T>& exp_store) : CNoDelta<T>(exp_store, "CEq") { }
       
       /** @copydoc CExp<T>::compute(ValueStore<T>&, unsigned int) */
       virtual void compute(ValueStore<T>& st, unsigned int level = 0) const
@@ -834,10 +524,10 @@ namespace EasyLocal {
 
     /** Inequality relation. */
     template <typename T>
-    class CNe : public CRel<T>
+    class CNe : public CNoDelta<T>
     {
     public:
-      using CRel<T>::CRel;
+      CNe(ExpressionStore<T>& exp_store) : CNoDelta<T>(exp_store, "CNe") { }
       
       /** @copydoc CExp<T>::compute(ValueStore<T>&, unsigned int) */
       virtual void compute(ValueStore<T>& st, unsigned int level = 0) const
@@ -845,21 +535,14 @@ namespace EasyLocal {
         bool value = (st(this->children[0], level) != st(this->children[1], level));
         st.assign(this->index, level, value);
       }
-      
-      /** @copydoc Printable::Print(std::ostream&) */
-      virtual void Print(std::ostream& os) const
-      {
-        os << "Ne: ";
-        CExp<T>::Print(os);
-      }
     };
 
     /** Less than relation. */
     template <typename T>
-    class CLt : public CRel<T>
+    class CLt : public CNoDelta<T>
     {
     public:
-      using CRel<T>::CRel;
+      CLt(ExpressionStore<T>& exp_store) : CNoDelta<T>(exp_store, "CLt") { }
       
       /** @copydoc CExp<T>::compute(ValueStore<T>&, unsigned int) */
       virtual void compute(ValueStore<T>& st, unsigned int level = 0) const
@@ -867,21 +550,14 @@ namespace EasyLocal {
         bool value = (st(this->children[0], level) < st(this->children[1], level));
         st.assign(this->index, level, value);
       }
-      
-      /** @copydoc Printable::Print(std::ostream&) */
-      virtual void Print(std::ostream& os) const
-      {
-        os << "Lt: ";
-        CExp<T>::Print(os);
-      }
     };
 
     /** Less or equal relation. */
     template <typename T>
-    class CLe : public CRel<T>
+    class CLe : public CNoDelta<T>
     {
     public:
-      using CRel<T>::CRel;
+      CLe(ExpressionStore<T>& exp_store) : CNoDelta<T>(exp_store, "CLe") { }
       
       /** @copydoc CExp<T>::compute(ValueStore<T>&, unsigned int) */
       virtual void compute(ValueStore<T>& st, unsigned int level = 0) const
@@ -889,21 +565,14 @@ namespace EasyLocal {
         bool value = (st(this->children[0], level) <= st(this->children[1], level));
         st.assign(this->index, level, value);
       }
-      
-      /** @copydoc Printable::Print(std::ostream&) */
-      virtual void Print(std::ostream& os) const
-      {
-        os << "Le: ";
-        CExp<T>::Print(os);
-      }
     };
 
     /** Greater or equal relation. */
     template <typename T>
-    class CGe : public CRel<T>
+    class CGe : public CNoDelta<T>
     {
     public:
-      using CRel<T>::CRel;
+      CGe(ExpressionStore<T>& exp_store) : CNoDelta<T>(exp_store, "CGe") { }
       
       /** @copydoc CExp<T>::compute(ValueStore<T>&, unsigned int) */
       virtual void compute(ValueStore<T>& st, unsigned int level = 0) const
@@ -911,21 +580,14 @@ namespace EasyLocal {
         bool value = (st(this->children[0], level) >= st(this->children[1], level));
         st.assign(this->index, level, value);
       }
-      
-      /** @copydoc Printable::Print(std::ostream&) */
-      virtual void Print(std::ostream& os) const
-      {
-        os << "Ge: ";
-        CExp<T>::Print(os);
-      }
     };
 
     /** Greater than relation. */
     template <typename T>
-    class CGt : public CRel<T>
+    class CGt : public CNoDelta<T>
     {
     public:
-      using CRel<T>::CRel;
+      CGt(ExpressionStore<T>& exp_store) : CNoDelta<T>(exp_store, "CGt") { }
       
       /** @copydoc CExp<T>::compute(ValueStore<T>&, unsigned int) */
       virtual void compute(ValueStore<T>& st, unsigned int level = 0) const
@@ -933,21 +595,14 @@ namespace EasyLocal {
         bool value = (st(this->children[0], level) > st(this->children[1], level));
         st.assign(this->index, level, value);
       }
-      
-      /** @copydoc Printable::Print(std::ostream&) */
-      virtual void Print(std::ostream& os) const
-      {
-        os << "Gt: ";
-        CExp<T>::Print(os);
-      }
     };
     
     /** Alldifferent relation. */
     template <typename T>
-    class CAllDiff : public CRel<T>
+    class CNValues : public CNoDelta<T>
     {
     public:
-      using CRel<T>::CRel;
+      CNValues(ExpressionStore<T>& exp_store) : CNoDelta<T>(exp_store, "CNValues") { }
       
       /** @copydoc CExp<T>::compute(ValueStore<T>&, unsigned int) */
       virtual void compute(ValueStore<T>& st, unsigned int level = 0) const
@@ -960,14 +615,6 @@ namespace EasyLocal {
               return;
             }
         st.assign(this->index, level, true);
-      }
-    
-      
-      /** @copydoc Printable::Print(std::ostream&) */
-      virtual void Print(std::ostream& os) const
-      {
-        os << "AllDiff: ";
-        CExp<T>::Print(os);
       }
     };        
   }
