@@ -11,27 +11,22 @@
 #include "easylocal/modeling/compiledexpression.hh"
 
 namespace EasyLocal {
-  
-  /**
-   
-   FIXME:  indices are always size_t, it doesn't make sense for an index to be
-   an Exp<float> or other
-   
-   - fixable implementing Cast<T1,T2> operations, and
-   - supporting polymorphic expressions in ExpressionStore / ValueStore
-   - major change
-   */
+
   namespace Modeling {
     
+    /** Forward declaration. */
     template <typename T>
     class Var;
-    
+
+    /** Forward declaration. */
     template <typename T>
     class Const;
     
+    /** Forward declaration. */
     template <typename T>
     class Array;
     
+    /** Forward declaration. */
     template <typename T>
     class Matrix;
     
@@ -52,7 +47,7 @@ namespace EasyLocal {
       /** Exposed hash function (caches the computation of the hash).
        @return a unique (integer) identifier for a node.
        */
-      size_t hash() const
+      inline size_t hash() const
       {
         if (!_hash_computed)
         {
@@ -66,7 +61,7 @@ namespace EasyLocal {
        @param o other expression
        @return true if the two expressions are symbolically equal
        */
-      bool equals_to(const std::shared_ptr<const Exp<T>>& o) const
+      inline bool equals_to(const std::shared_ptr<const Exp<T>>& o) const
       {
         // If type is different, cannot be equal
         if (o->type() != this->type())
@@ -96,7 +91,7 @@ namespace EasyLocal {
       /** Simplification check.
        @return true if the node does not need to be simplified.
        */
-      bool simplified() const
+      inline bool simplified() const
       {
         return this->_simplified;
       }
@@ -104,7 +99,7 @@ namespace EasyLocal {
       /** Normalization check.
        @return true if the node does not need to be normalized.
        */
-      bool normalized() const
+      inline bool normalized() const
       {
         return this->_normalized;
       }
@@ -121,7 +116,7 @@ namespace EasyLocal {
       /** Type check.
        @return a type descriptor for this expression.
        */
-      const std::type_info& type() const
+      inline const std::type_info& type() const
       {
         return typeid(*this);
       }
@@ -129,7 +124,7 @@ namespace EasyLocal {
       /** Explicit cast to Array<T>.
        @return an Array shared pointer to this expression
        */
-      std::shared_ptr<Array<T>> as_array()
+      inline std::shared_ptr<Array<T>> as_array()
       {
         return std::static_pointer_cast<Array<T>>(this->shared_from_this());
       }
@@ -137,7 +132,7 @@ namespace EasyLocal {
       /** Explicit cast to Matrix<T>.
        @return a Matrix shared pointer to this expression
        */
-      std::shared_ptr<Matrix<T>> as_matrix()
+      inline std::shared_ptr<Matrix<T>> as_matrix()
       {
         return std::static_pointer_cast<Matrix<T>>(this->shared_from_this());
       }
@@ -145,7 +140,7 @@ namespace EasyLocal {
       /** Explicit cast to Var<T>.
        @return a Var shared pointer to this expression
        */
-      std::shared_ptr<Var<T>> as_var()
+      inline std::shared_ptr<Var<T>> as_var()
       {
         return std::static_pointer_cast<Var<T>>(this->shared_from_this());
       }
@@ -153,7 +148,7 @@ namespace EasyLocal {
       /** Explicit cast to Const<T>.
        @return a Const shared pointer to this expression
        */
-      std::shared_ptr<Const<T>> as_const()
+      inline std::shared_ptr<Const<T>> as_const()
       {
         return std::static_pointer_cast<Const<T>>(this->shared_from_this());
       }
@@ -161,7 +156,7 @@ namespace EasyLocal {
       /** Explicit cast to Exp<T>.
        @return a Exp shared pointer to this expression
        */
-      std::shared_ptr<Exp<T>> as_exp()
+      inline std::shared_ptr<Exp<T>> as_exp()
       {
         return this->shared_from_this();
       }
@@ -250,10 +245,10 @@ namespace EasyLocal {
       virtual ~StableExp() = default;
       
       /** @copydoc Exp<T>::normalize(bool). @remarks Does nothing. */
-      void normalize(bool recursive) { }
+      virtual void normalize(bool recursive) { }
       
       /** @copydoc Exp<T>::simplify(). @remarks Does nothing. */
-      std::shared_ptr<Exp<T>> simplify() { return this->shared_from_this(); }
+      virtual inline std::shared_ptr<Exp<T>> simplify() { return this->shared_from_this(); }
       
     protected:
       
@@ -263,7 +258,6 @@ namespace EasyLocal {
         this->_simplified = true;
         this->_normalized = true;
       }
-      
     };
     
     /** An Exp representing a variable. */
@@ -278,7 +272,7 @@ namespace EasyLocal {
       Var(const std::string& name, const T& lb, const T& ub) : name(name), lb(lb), ub(ub) { }
       
       /** @copydoc Printable::Print(std::ostream& os) */
-      virtual void Print(std::ostream& os) const
+      inline virtual void Print(std::ostream& os) const
       {
         //os << name << " \u2208 {" << lb << ".." << ub << "}";
         os << name << "{" << lb << ".." << ub << "}";
@@ -288,7 +282,7 @@ namespace EasyLocal {
       virtual ~Var() = default;
       
       /** @copydoc Exp<T>::compile(ExpressionStore<T>&) */
-      virtual size_t compile(ExpressionStore<T>& exp_store) const
+      inline virtual size_t compile(ExpressionStore<T>& exp_store) const
       {
         return this->template get_or_create<CVar>(exp_store).first;
       }
@@ -296,7 +290,7 @@ namespace EasyLocal {
     protected:
       
       /** @copydoc Exp<T>::_equals_to(const std::shared_ptr<Exp<T>>&) */
-      virtual bool _equals_to(const std::shared_ptr<const Exp<T>>& o) const
+      inline virtual bool _equals_to(const std::shared_ptr<const Exp<T>>& o) const
       {
         const auto& co = std::static_pointer_cast<const Var<T>>(o);
         if (name != co->name)
@@ -310,7 +304,7 @@ namespace EasyLocal {
       const std::string name;
       
       /** @copydoc Exp<T>::compute_hash() */
-      virtual size_t compute_hash() const
+      inline virtual size_t compute_hash() const
       {
         return 31 * typeid(*this).hash_code() + std::hash<std::string>()(this->name);
       }
@@ -332,7 +326,7 @@ namespace EasyLocal {
       Const(const T& value) : value(value) { }
       
       /** @copydoc Printable::Print(std::ostream& os) */
-      virtual void Print(std::ostream& os) const
+      inline virtual void Print(std::ostream& os) const
       {
         os << (T)(this->value);
       }
@@ -341,7 +335,7 @@ namespace EasyLocal {
       virtual ~Const() = default;
       
       /** @copydoc Exp<T>::compile(ExpressionStore<T>&) */
-      virtual size_t compile(ExpressionStore<T>& exp_store) const
+      inline virtual size_t compile(ExpressionStore<T>& exp_store) const
       {
         auto compiled_pair = this->template get_or_create<CConst>(exp_store);
         if (compiled_pair.second != nullptr)
@@ -358,7 +352,7 @@ namespace EasyLocal {
     protected:
       
       /** @copydoc Exp<T>::_equals_to(const std::shared_ptr<Exp<T>>&) */
-      virtual bool _equals_to(const std::shared_ptr<const Exp<T>>& o) const
+      inline virtual bool _equals_to(const std::shared_ptr<const Exp<T>>& o) const
       {
         const auto& co = std::static_pointer_cast<const Const<T>>(o);
         if (value != co->value)
@@ -367,7 +361,7 @@ namespace EasyLocal {
       }
       
       /** @copydoc Exp<T>::compute_hash() */
-      virtual size_t compute_hash() const
+      inline virtual size_t compute_hash() const
       {
         return 31 * typeid(*this).hash_code() + std::hash<T>()(this->value);
       }
@@ -383,7 +377,7 @@ namespace EasyLocal {
     public:
       
       /** @copydoc Printable::Print(std::ostream& os) */
-      virtual void Print(std::ostream& os) const
+      inline virtual void Print(std::ostream& os) const
       {
         if (operands.size() == 1)
           os << this->sym;
@@ -402,7 +396,7 @@ namespace EasyLocal {
       /** Append an Exp<T> as operand.
        @param operand Exp<T> to add.
        */
-      virtual void append_operand(const std::shared_ptr<Exp<T>>& operand)
+      inline void append_operand(const std::shared_ptr<Exp<T>>& operand)
       {
         this->operands.push_back(operand);
         
@@ -422,7 +416,7 @@ namespace EasyLocal {
       std::list<std::shared_ptr<Exp<T>>> operands;
       
       /** @copydoc Exp<T>::normalize(bool) */
-      virtual void normalize(bool recursive)
+      inline virtual void normalize(bool recursive)
       {
         // Normalize operands
         this->normalize_operands(recursive);
@@ -436,7 +430,7 @@ namespace EasyLocal {
       /** Normalize (ensures all operands are normalized).
        @param recursive whether to forward the normalization to operands.
        */
-      virtual void normalize_operands(bool recursive)
+      inline void normalize_operands(bool recursive)
       {
         if (this->normalized())
           return;
@@ -449,7 +443,7 @@ namespace EasyLocal {
        @param def default value (to be returned if first operand is not const).
        @return the value of the first operand (if const) or the default value.
        */
-      virtual T steal_const(T def)
+      inline T steal_const(T def)
       {
         std::shared_ptr<Exp<T>> front = this->operands.front();
         if (front->type() == typeid(Const<T>))
@@ -464,7 +458,7 @@ namespace EasyLocal {
       }
       
       /** Adds a constant to the operands. */
-      virtual void add_constant(const T& o)
+      inline void add_constant(const T& o)
       {
         // Add const operand (at the front of the vector)
         this->operands.push_front(std::make_shared<Const<T>>(o));
@@ -476,7 +470,7 @@ namespace EasyLocal {
     protected:
       
       /** @copydoc Exp<T>::_equals_to(const std::shared_ptr<Exp<T>>&) */
-      virtual bool _equals_to(const std::shared_ptr<const Exp<T>>& o) const
+      inline virtual bool _equals_to(const std::shared_ptr<const Exp<T>>& o) const
       {
         const auto& co = std::static_pointer_cast<const Op<T>>(o);
         
@@ -501,7 +495,7 @@ namespace EasyLocal {
       }
       
       /** Adds to itself all the operands from another op. */
-      virtual void merge_operands(const std::shared_ptr<Exp<T>>& other)
+      inline void merge_operands(const std::shared_ptr<Exp<T>>& other)
       {
         // Check if other Exp is operation
         Op<T>* p_other = dynamic_cast<Op<T>*>(other.get());
@@ -538,7 +532,7 @@ namespace EasyLocal {
        @param this_index index of the operation in the ExpressionStore
        @param exp_store ExpressionStore where to register the children
        */
-      void compile_operands(size_t this_index, ExpressionStore<T>& exp_store) const
+      inline void compile_operands(size_t this_index, ExpressionStore<T>& exp_store) const
       {
         for (auto& op : this->operands)
         {
@@ -561,7 +555,7 @@ namespace EasyLocal {
       /** Normalize. Sorts the operands (for hashing purposes).
        @param recursive whether it should be called recursively.
        */
-      virtual void normalize(bool recursive)
+      inline virtual void normalize(bool recursive)
       {
         // Normalize operands
         this->normalize_operands(recursive);
@@ -574,10 +568,7 @@ namespace EasyLocal {
             return true;
           
           // Enforce a specific ordering of types, establish hash-based ordering within objects of the same type
-          return (
-                  o1->type().hash_code() < o2->type().hash_code()) ||
-          (o1->type().hash_code() == o2->type().hash_code() && o1->hash() < o2->hash()
-           );
+          return (o1->type().hash_code() < o2->type().hash_code()) || (o1->type().hash_code() == o2->type().hash_code() && o1->hash() < o2->hash());
           
         });
         
@@ -676,7 +667,7 @@ namespace EasyLocal {
       }
       
       /** @copydoc Exp<T>::compile(ExpressionStore<T>&) */
-      virtual size_t compile(ExpressionStore<T>& exp_store) const
+      inline virtual size_t compile(ExpressionStore<T>& exp_store) const
       {
         auto compiled_pair = this->template get_or_create<CSum>(exp_store);
         if (compiled_pair.second != nullptr)
@@ -698,10 +689,10 @@ namespace EasyLocal {
     public:
       
       /** No(p)rmalization. */
-      void normalize(bool recursive) { }
+      inline virtual void normalize(bool recursive) { }
       
       /** No simplified. */
-      std::shared_ptr<Exp<T>> simplify() {
+      inline std::shared_ptr<Exp<T>> simplify() {
         return this->shared_from_this();
       }
       
@@ -726,7 +717,7 @@ namespace EasyLocal {
       }
       
       /** @copydoc Exp<T>::compile(ExpressionStore<T>&) */
-      virtual size_t compile(ExpressionStore<T>& exp_store) const
+      inline virtual size_t compile(ExpressionStore<T>& exp_store) const
       {
         auto compiled_pair = this->template get_or_create<CElement>(exp_store);
         if (compiled_pair.second != nullptr)
@@ -753,7 +744,6 @@ namespace EasyLocal {
       }
       
     };
-    
     
     /** An Exp representing a variable array. */
     template <typename T>
@@ -813,7 +803,7 @@ namespace EasyLocal {
        @param i index of the expression to retrieve
        @return the expression at index i
        */
-      std::shared_ptr<Exp<T>>& at(const T& i)
+      inline std::shared_ptr<Exp<T>>& at(const T& i)
       {
         auto it = this->operands.begin();
         std::advance(it, i);
@@ -824,7 +814,7 @@ namespace EasyLocal {
        @param i symbolic index of the expression to retrieve
        @return an element operation
        */
-      std::shared_ptr<Exp<T>> at(const std::shared_ptr<Exp<T>>& i)
+      inline std::shared_ptr<Exp<T>> at(const std::shared_ptr<Exp<T>>& i)
       {
         if (i->type() == typeid(Const<T>))
           return this->at(std::static_pointer_cast<Const<T>>(i)->value);
@@ -833,7 +823,7 @@ namespace EasyLocal {
       }
       
       /** @copydoc Exp<T>::compile(ExpressionStore<T>&) */
-      virtual size_t compile(ExpressionStore<T>& exp_store) const
+      inline virtual size_t compile(ExpressionStore<T>& exp_store) const
       {
         auto compiled_pair = this->template get_or_create<CArray>(exp_store);
         if (compiled_pair.second != nullptr)
@@ -910,7 +900,7 @@ namespace EasyLocal {
         os << "]";
       }
       
-      std::shared_ptr<Exp<T>>& at(const T& i, const T& j)
+      inline std::shared_ptr<Exp<T>>& at(const T& i, const T& j)
       {
         auto it = this->operands.begin();
         std::advance(it, i * cols + j);
@@ -918,7 +908,7 @@ namespace EasyLocal {
       }
       
       
-      std::shared_ptr<Exp<T>> at(const std::shared_ptr<Exp<T>>& i, const std::shared_ptr<Exp<T>>& j)
+      inline std::shared_ptr<Exp<T>> at(const std::shared_ptr<Exp<T>>& i, const std::shared_ptr<Exp<T>>& j)
       {
         if (i->type() == typeid(Const<T>) && j->type() == typeid(Const<T>))
           return this->at(std::static_pointer_cast<Const<T>>(i)->value, std::static_pointer_cast<Const<T>>(j)->value);
@@ -929,7 +919,7 @@ namespace EasyLocal {
       }
       
       /** @copydoc Exp<T>::compile(ExpressionStore<T>&) */
-      virtual size_t compile(ExpressionStore<T>& exp_store) const
+      inline virtual size_t compile(ExpressionStore<T>& exp_store) const
       {
         auto compiled_pair = this->template get_or_create<CArray>(exp_store);
         if (compiled_pair.second != nullptr)
@@ -1033,7 +1023,7 @@ namespace EasyLocal {
       }
       
       /** @copydoc Exp<T>::compile(ExpressionStore<T>&) */
-      virtual size_t compile(ExpressionStore<T>& exp_store) const
+      inline virtual size_t compile(ExpressionStore<T>& exp_store) const
       {
         auto compiled_pair = this->template get_or_create<CMul>(exp_store);
         if (compiled_pair.second != nullptr)
@@ -1099,7 +1089,7 @@ namespace EasyLocal {
       }
       
       /** @copydoc Exp<T>::compile(ExpressionStore<T>&) */
-      virtual size_t compile(ExpressionStore<T>& exp_store) const
+      inline virtual size_t compile(ExpressionStore<T>& exp_store) const
       {
         auto compiled_pair = this->template get_or_create<CDiv>(exp_store);
         if (compiled_pair.second != nullptr)
@@ -1167,7 +1157,7 @@ namespace EasyLocal {
       }
       
       /** @copydoc Exp<T>::compile(ExpressionStore<T>&) */
-      virtual size_t compile(ExpressionStore<T>& exp_store) const
+      inline virtual size_t compile(ExpressionStore<T>& exp_store) const
       {
         auto compiled_pair = this->template get_or_create<CMod>(exp_store);
         if (compiled_pair.second != nullptr)
@@ -1295,7 +1285,7 @@ namespace EasyLocal {
       }
       
       /** @copydoc Exp<T>::compile() */
-      virtual size_t compile(ExpressionStore<T>& exp_store) const
+      inline virtual size_t compile(ExpressionStore<T>& exp_store) const
       {
         auto compiled_pair = this->template get_or_create<CMin>(exp_store);
         if (compiled_pair.second != nullptr)
@@ -1407,7 +1397,7 @@ namespace EasyLocal {
       }
       
       /** @copydoc Exp<T>::compile(ExpressionStore<T>&) */
-      virtual size_t compile(ExpressionStore<T>& exp_store) const
+      inline virtual size_t compile(ExpressionStore<T>& exp_store) const
       {
         auto compiled_pair = this->template get_or_create<CMax>(exp_store);
         if (compiled_pair.second != nullptr)
@@ -1503,7 +1493,7 @@ namespace EasyLocal {
       }
       
       /** @copydoc Exp<T>::compile(ExpressionStore<T>&) */
-      virtual size_t compile(ExpressionStore<T>& exp_store) const
+      inline virtual size_t compile(ExpressionStore<T>& exp_store) const
       {
         auto compiled_pair = this->template get_or_create<CEq>(exp_store);
         if (compiled_pair.second != nullptr)
@@ -1581,7 +1571,7 @@ namespace EasyLocal {
       }
       
       /** @copydoc Exp<T>::compile(ExpressionStore<T>&) */
-      virtual size_t compile(ExpressionStore<T>& exp_store) const
+      inline virtual size_t compile(ExpressionStore<T>& exp_store) const
       {
         auto compiled_pair = this->template get_or_create<CNe>(exp_store);
         if (compiled_pair.second != nullptr)
@@ -1670,7 +1660,7 @@ namespace EasyLocal {
       }
       
       /** @copydoc Exp<T>::compile(ExpressionStore<T>&) */
-      virtual size_t compile(ExpressionStore<T>& exp_store) const
+      inline virtual size_t compile(ExpressionStore<T>& exp_store) const
       {
         auto compiled_pair = this->template get_or_create<CLe>(exp_store);
         if (compiled_pair.second != nullptr)
@@ -1759,7 +1749,7 @@ namespace EasyLocal {
       }
       
       /** @copydoc Exp<T>::compile(ExpressionStore<T>&) */
-      virtual size_t compile(ExpressionStore<T>& exp_store) const
+      inline virtual size_t compile(ExpressionStore<T>& exp_store) const
       {
         auto compiled_pair = this->template get_or_create<CLt>(exp_store);
         if (compiled_pair.second != nullptr)
@@ -1846,7 +1836,7 @@ namespace EasyLocal {
       }
       
       /** @copydoc Exp<T>::compile(ExpressionStore<T>&) */
-      virtual size_t compile(ExpressionStore<T>& exp_store) const
+      inline virtual size_t compile(ExpressionStore<T>& exp_store) const
       {
         auto compiled_pair = this->template get_or_create<CNValues>(exp_store);
         if (compiled_pair.second != nullptr)
@@ -1861,11 +1851,14 @@ namespace EasyLocal {
     class Abs : public SymOp<T>
     {
     public:
+      
+      /** Constructor. */
       Abs(const std::shared_ptr<Exp<T>>& e) : SymOp<T>("abs")
       {
         this->append_operand(e);
       }
-      
+
+      /** @copydoc Exp<T>::simplify() */
       virtual std::shared_ptr<Exp<T>> simplify()
       {
         auto op = *this->operands.begin();
@@ -1897,7 +1890,7 @@ namespace EasyLocal {
       }
       
       /** @copydoc Exp<T>::compile(ExpressionStore<T>&) */
-      virtual size_t compile(ExpressionStore<T>& exp_store) const
+      inline virtual size_t compile(ExpressionStore<T>& exp_store) const
       {
         auto compiled_pair = this->template get_or_create<CAbs>(exp_store);
         if (compiled_pair.second != nullptr)
@@ -1913,19 +1906,19 @@ namespace EasyLocal {
     {
     public:
       
+      /** Constructor. */
       IfThenElse(const std::shared_ptr<Exp<T>>& cond, const std::shared_ptr<Exp<T>>& e1, const std::shared_ptr<Exp<T>>& e2) : Op<T>("if then else")
       {
         this->append_operand(cond);
         this->append_operand(e1);
         this->append_operand(e2);
       }
-      
+
+      /** @copydoc Exp<T>::simplify() */
       virtual std::shared_ptr<Exp<T>> simplify()
       {
-        // ALL AT ONCE (simplify, steal and aggregate constants, inherit operands)
         for (auto it = this->operands.begin(); it != this->operands.end(); ++it)
         {
-          // correct way to replace element in list
           if(!((*it)->simplified()))
           {
             auto sim = (*it)->simplify();
@@ -1954,7 +1947,7 @@ namespace EasyLocal {
       }
       
       /** @copydoc Exp<T>::compile(ExpressionStore<T>&) */
-      virtual size_t compile(ExpressionStore<T>& exp_store) const
+      inline virtual size_t compile(ExpressionStore<T>& exp_store) const
       {
         auto compiled_pair = this->template get_or_create<CIfThenElse>(exp_store);
         if (compiled_pair.second != nullptr)

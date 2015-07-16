@@ -26,7 +26,7 @@ namespace EasyLocal {
         its size to accomodate for changes in the size of the expression.
      */
     template <typename T>
-    class ValueStore : public ResizeNotify, public Core::Printable
+    class ValueStore : public ResizeSubscriber, public Core::Printable
     {
       friend class ExpressionStore<T>;
     public:
@@ -80,8 +80,9 @@ namespace EasyLocal {
       /** Gets called by the subscribed ExpressionStore when a resize event is fired.
           @param new_size new size of the ExpressionStore
        */
-      void resized(size_t new_size)
+      void notify(const std::shared_ptr<ResizeNotifier>& notifier)
       {
+        size_t new_size = notifier->size();
         for (size_t l = 0; l < value.size(); l++)
         {
           value[l].resize(new_size);

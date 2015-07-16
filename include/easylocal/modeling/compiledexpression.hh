@@ -71,7 +71,6 @@ namespace EasyLocal {
           @param level level to use for the evaluation
        */
       virtual void compute_diff(ValueStore<T>& st, unsigned int level = 0) const = 0;
-
       
       /** @copydoc Printable::Print(std::ostream&) */
       virtual void Print(std::ostream& os) const
@@ -118,10 +117,10 @@ namespace EasyLocal {
       CVar(ExpressionStore<T>& exp_store) : CTerm<T>(exp_store, "CVar") { }
       
       /** @copydoc CExp<T>::compute(ValueStore<T>&, unsigned int) */
-      virtual void compute(ValueStore<T>& st, unsigned int level = 0) const { }
+      inline virtual void compute(ValueStore<T>& st, unsigned int level = 0) const { }
       
       /** @copydoc CExp<T>::compute_diff(ValueStore<T>&, unsigned int) */
-      virtual void compute_diff(ValueStore<T>& st, unsigned int level = 0) const { }
+      inline virtual void compute_diff(ValueStore<T>& st, unsigned int level = 0) const { }
     };
     
     /** Array variable expression. */
@@ -132,10 +131,10 @@ namespace EasyLocal {
       CArray(ExpressionStore<T>& exp_store) : CExp<T>(exp_store, "CArray") { }
       
       /** @copydoc CExp<T>::compute(ValueStore<T>&, unsigned int) */
-      virtual void compute(ValueStore<T>& st, unsigned int level = 0) const { }
+      inline virtual void compute(ValueStore<T>& st, unsigned int level = 0) const { }
       
       /** @copydoc CExp<T>::compute_diff(ValueStore<T>&, unsigned int) */
-      virtual void compute_diff(ValueStore<T>& st, unsigned int level = 0) const { }
+      inline virtual void compute_diff(ValueStore<T>& st, unsigned int level = 0) const { }
       
       /** Size of the variable array (relies on contiguous allocation of array elements) */
       size_t size;
@@ -149,14 +148,14 @@ namespace EasyLocal {
       CConst(ExpressionStore<T>& exp_store) : CTerm<T>(exp_store, "CConst") { }
       
       /** @copydoc CExp<T>::compute(ValueStore<T>&, unsigned int) */
-      virtual void compute(ValueStore<T>& st, unsigned int level = 0) const
+      inline virtual void compute(ValueStore<T>& st, unsigned int level = 0) const
       {
         // Note: at first, in the value store the constant value has not been set, so we have to force it
         st.assign(this->index, 0, value);
       }
       
       /** @copydoc CExp<T>::compute_diff(ValueStore<T>&, unsigned int) */
-      virtual void compute_diff(ValueStore<T>& st, unsigned int level = 0) const { }
+      inline virtual void compute_diff(ValueStore<T>& st, unsigned int level = 0) const { }
       
       /** Value of the constant */
       T value;
@@ -280,14 +279,14 @@ namespace EasyLocal {
       CDiv(ExpressionStore<T>& exp_store) : CExp<T>(exp_store, "CDiv") { }
       
       /** @copydoc CExp<T>::compute(ValueStore<T>&, unsigned int) */
-      virtual void compute(ValueStore<T>& st, unsigned int level = 0) const
+      inline virtual void compute(ValueStore<T>& st, unsigned int level = 0) const
       {
         T res = st(this->children[0], level) / st(this->children[1], level);
         st.assign(this->index, level, res);
       }
       
       /** @copydoc CExp<T>::compute_diff(ValueStore<T>&, unsigned int) */
-      virtual void compute_diff(ValueStore<T>& st, unsigned int level = 0) const
+      inline virtual void compute_diff(ValueStore<T>& st, unsigned int level = 0) const
       {
         // Since / is binary, it is faster to compute it straight away
         this->compute(st, level);
@@ -303,7 +302,7 @@ namespace EasyLocal {
       CMod(ExpressionStore<T>& exp_store) : CExp<T>(exp_store, "CMod") { }
       
       /** @copydoc CExp<T>::compute(ValueStore<T>&, unsigned int) */
-      virtual void compute(ValueStore<T>& st, unsigned int level = 0) const
+      inline virtual void compute(ValueStore<T>& st, unsigned int level = 0) const
       {
         // Since / is binary, it is faster to compute it straight away
         T res = st(this->children[0], level) % st(this->children[1], level);
@@ -311,7 +310,7 @@ namespace EasyLocal {
       }
       
       /** @copydoc CExp<T>::compute_diff(ValueStore<T>&, unsigned int) */
-      virtual void compute_diff(ValueStore<T>& st, unsigned int level = 0) const
+      inline virtual void compute_diff(ValueStore<T>& st, unsigned int level = 0) const
       {
         this->compute(st, level);
         st.changed_children(this->index, level).clear();
@@ -430,7 +429,7 @@ namespace EasyLocal {
       CElement(ExpressionStore<T>& exp_store) : CExp<T>(exp_store, "CElement") { }
       
       /** @copydoc CExp<T>::compute(ValueStore<T>&, unsigned int) */
-      virtual void compute(ValueStore<T>& st, unsigned int level = 0) const
+      inline virtual void compute(ValueStore<T>& st, unsigned int level = 0) const
       {
         int offset = st(this->children[0], level);
         if (offset < 0 || offset >= this->children.size() - 1)
@@ -439,7 +438,7 @@ namespace EasyLocal {
       }
       
       /** @copydoc CExp<T>::compute_diff(ValueStore<T>&, unsigned int) */
-      virtual void compute_diff(ValueStore<T>& st, unsigned int level = 0) const
+      inline virtual void compute_diff(ValueStore<T>& st, unsigned int level = 0) const
       {
         this->compute(st, level);
         st.changed_children(this->index, level).clear();
@@ -454,7 +453,7 @@ namespace EasyLocal {
       CIfThenElse(ExpressionStore<T>& exp_store) : CExp<T>(exp_store, "IfThenElse") { }
       
       /** @copydoc CExp<T>::compute(ValueStore<T>&, unsigned int) */
-      virtual void compute(ValueStore<T>& st, unsigned int level = 0) const
+      inline virtual void compute(ValueStore<T>& st, unsigned int level = 0) const
       {
         if (st(this->children[0], level))
           st.assign(this->index, level, st(this->children[1], level));
@@ -463,7 +462,7 @@ namespace EasyLocal {
       }
       
       /** @copydoc CExp<T>::compute_diff(ValueStore<T>&, unsigned int) */
-      virtual void compute_diff(ValueStore<T>& st, unsigned int level = 0) const
+      inline virtual void compute_diff(ValueStore<T>& st, unsigned int level = 0) const
       {
         // it is more efficient to directly invoke compute
         this->compute(st, level);
@@ -479,13 +478,13 @@ namespace EasyLocal {
       CAbs(ExpressionStore<T>& exp_store) : CExp<T>(exp_store, "CAbs") { }
       
       /** @copydoc CExp<T>::compute(ValueStore<T>&, unsigned int) */
-      virtual void compute(ValueStore<T>& st, unsigned int level = 0) const
+      inline virtual void compute(ValueStore<T>& st, unsigned int level = 0) const
       {
         st.assign(this->index, level, st(this->children[0], level) >= 0 ? st(this->children[0], level) : -st(this->children[0], level));
       }
       
       /** @copydoc CExp<T>::compute_diff(ValueStore<T>&, unsigned int) */
-      virtual void compute_diff(ValueStore<T>& st, unsigned int level = 0) const
+      inline virtual void compute_diff(ValueStore<T>& st, unsigned int level = 0) const
       {
         this->compute(st, level);
         st.changed_children(this->index, level).clear();
@@ -500,7 +499,7 @@ namespace EasyLocal {
       CNoDelta(ExpressionStore<T>& exp_store, const std::string& sym) : CExp<T>(exp_store, sym) { }
       
       /** @copydoc CExp<T>::compute_diff(ValueStore<T>&, unsigned int) */
-      virtual void compute_diff(ValueStore<T>& st, unsigned int level = 0) const
+      inline virtual void compute_diff(ValueStore<T>& st, unsigned int level = 0) const
       {
         this->compute(st, level);
         st.changed_children(this->index, level).clear();
@@ -515,7 +514,7 @@ namespace EasyLocal {
       CEq(ExpressionStore<T>& exp_store) : CNoDelta<T>(exp_store, "CEq") { }
       
       /** @copydoc CExp<T>::compute(ValueStore<T>&, unsigned int) */
-      virtual void compute(ValueStore<T>& st, unsigned int level = 0) const
+      inline virtual void compute(ValueStore<T>& st, unsigned int level = 0) const
       {
         bool value = (st(this->children[0], level) == st(this->children[1], level));
         st.assign(this->index, level, value);
@@ -530,7 +529,7 @@ namespace EasyLocal {
       CNe(ExpressionStore<T>& exp_store) : CNoDelta<T>(exp_store, "CNe") { }
       
       /** @copydoc CExp<T>::compute(ValueStore<T>&, unsigned int) */
-      virtual void compute(ValueStore<T>& st, unsigned int level = 0) const
+      inline virtual void compute(ValueStore<T>& st, unsigned int level = 0) const
       {
         bool value = (st(this->children[0], level) != st(this->children[1], level));
         st.assign(this->index, level, value);
@@ -545,7 +544,7 @@ namespace EasyLocal {
       CLt(ExpressionStore<T>& exp_store) : CNoDelta<T>(exp_store, "CLt") { }
       
       /** @copydoc CExp<T>::compute(ValueStore<T>&, unsigned int) */
-      virtual void compute(ValueStore<T>& st, unsigned int level = 0) const
+      inline virtual void compute(ValueStore<T>& st, unsigned int level = 0) const
       {
         bool value = (st(this->children[0], level) < st(this->children[1], level));
         st.assign(this->index, level, value);
@@ -560,7 +559,7 @@ namespace EasyLocal {
       CLe(ExpressionStore<T>& exp_store) : CNoDelta<T>(exp_store, "CLe") { }
       
       /** @copydoc CExp<T>::compute(ValueStore<T>&, unsigned int) */
-      virtual void compute(ValueStore<T>& st, unsigned int level = 0) const
+      inline virtual void compute(ValueStore<T>& st, unsigned int level = 0) const
       {
         bool value = (st(this->children[0], level) <= st(this->children[1], level));
         st.assign(this->index, level, value);
@@ -575,7 +574,7 @@ namespace EasyLocal {
       CGe(ExpressionStore<T>& exp_store) : CNoDelta<T>(exp_store, "CGe") { }
       
       /** @copydoc CExp<T>::compute(ValueStore<T>&, unsigned int) */
-      virtual void compute(ValueStore<T>& st, unsigned int level = 0) const
+      inline virtual void compute(ValueStore<T>& st, unsigned int level = 0) const
       {
         bool value = (st(this->children[0], level) >= st(this->children[1], level));
         st.assign(this->index, level, value);
@@ -590,7 +589,7 @@ namespace EasyLocal {
       CGt(ExpressionStore<T>& exp_store) : CNoDelta<T>(exp_store, "CGt") { }
       
       /** @copydoc CExp<T>::compute(ValueStore<T>&, unsigned int) */
-      virtual void compute(ValueStore<T>& st, unsigned int level = 0) const
+      inline virtual void compute(ValueStore<T>& st, unsigned int level = 0) const
       {
         bool value = (st(this->children[0], level) > st(this->children[1], level));
         st.assign(this->index, level, value);
