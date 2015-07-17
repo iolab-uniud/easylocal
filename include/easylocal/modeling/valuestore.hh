@@ -26,7 +26,7 @@ namespace EasyLocal {
         its size to accomodate for changes in the size of the expression.
      */
     template <typename T>
-    class ValueStore : public ResizeSubscriber, public Core::Printable
+      class ValueStore : public ResizeSubscriber, public Core::Printable, public std::enable_shared_from_this<ResizeSubscriber>
     {
       friend class ExpressionStore<T>;
     public:
@@ -37,7 +37,6 @@ namespace EasyLocal {
       ValueStore(ExpressionStore<T>& es, size_t levels) : value(levels + 1, std::vector<T>(es.size())), valid(levels + 1, std::vector<bool>(es.size(), false)), _changed_children(levels + 1, std::vector<std::unordered_set<size_t>>(es.size())), es(es)
       {
         std::fill(valid[0].begin(), valid[0].end(), true);
-        es.subscribe(this);
         evaluated = false;
       }
       
@@ -48,17 +47,16 @@ namespace EasyLocal {
       {
         std::copy(other.value[0].begin(), other.value[0].end(), value[0].begin());
         std::fill(valid[0].begin(), valid[0].end(), true);
-        es.subscribe(this);
         evaluated = other.evaluated;
       }
     public:
       
-      size_t size() const
+      inline size_t size() const
       {
         return es.size();
       }
 
-      ValueStore(ValueStore<T>&& other) : ValueStore<T>(other.es)
+      ValueStore(ValueStore<T>&& other) : ValueStore<T>(other.es, other.value.size())
       {
         swap(*this, other);
       }
@@ -69,7 +67,7 @@ namespace EasyLocal {
         return *this;
       }
 
-      friend void swap(ValueStore<T>& first, ValueStore<T>& second) // nothrow
+      inline friend void swap(ValueStore<T>& first, ValueStore<T>& second) // nothrow
       {
         using std::swap;
         swap(first.value, second.value);
@@ -98,7 +96,7 @@ namespace EasyLocal {
                   during the bottom-up diff evaluation (invariant: should be always 
                   empty before and after diff evaluations).
        */
-      void reset(unsigned int level)
+      inline void reset(unsigned int level)
       {
         std::fill(valid[level].begin(), valid[level].end(), false);
         std::fill(value[level].begin(), value[level].end(), 0);
@@ -108,7 +106,7 @@ namespace EasyLocal {
           @param m the Change to simulate
           @param level level onto which the Change must be simulated
        */
-      void simulate(const BasicChange<T>& m, unsigned int level = 1)
+      inline void simulate(const BasicChange<T>& m, unsigned int level = 1)
       {
         if (level > 0)
           reset(level);
@@ -125,7 +123,7 @@ namespace EasyLocal {
           @param m the Change to simulate
           @param level level onto which the Change must be simulated
        */
-      void simulate(const CompositeChange<T>& cm, unsigned int level = 1)
+      inline void simulate(const CompositeChange<T>& cm, unsigned int level = 1)
       {
         if (level > 0)
           reset(level);
@@ -146,7 +144,7 @@ namespace EasyLocal {
           @remarks it performs the Change on level 1 and then swaps level 1 with level 0
           this means that it cannot be executed in parallel
        */
-      void execute(const BasicChange<T>& m)
+      inline void execute(const BasicChange<T>& m)
       {
         simulate(m, 1);
         for (size_t i = 0; i < value[0].size(); i++)
@@ -159,7 +157,7 @@ namespace EasyLocal {
           @remarks it performs the Change on level 1 and then swaps level 1 with level 0
           this means that it cannot be executed in parallel
        */
-      void execute(const CompositeChange<T>& cm)
+      inline void execute(const CompositeChange<T>& cm)
       {
         simulate(cm, 1);
         for (size_t i = 0; i < value[0].size(); i++)
@@ -174,7 +172,7 @@ namespace EasyLocal {
                   i.e., above zero, are only written during Change simulation)
           @return a reference to the value
        */
-      T& operator()(const size_t i)
+      inline T& operator()(const size_t i)
       {
         return value[0][i];
       }
@@ -184,7 +182,7 @@ namespace EasyLocal {
           @param level level to get the value from
           @return a const reference to the value
        */
-      const T& operator()(const size_t i, unsigned int level = 0) const
+      inline const T& operator()(const size_t i, unsigned int level = 0) const
       {
         if (valid[level][i])
           return value[level][i];
@@ -206,9 +204,10 @@ namespace EasyLocal {
           @remarks the expression itself is used to access the ValueStore, instead of the index 
           @return a reference to the value
        */
-      T& operator()(const CExp<T>& ex)
+      inline T& operator()(std::shared_ptr<Exp<T>>& ex)
       {
-        return operator()(ex.index);
+        auto cex = es.compile(ex);
+        return operator()(cex->index);
       }
       
       /** Const access to the values of the expressions in the ValueStore
@@ -217,9 +216,10 @@ namespace EasyLocal {
           @remarks the expression itself is used to access the ValueStore, instead of the index
           @return a const reference to the value
        */
-      const T& operator()(const CExp<T>& ex, unsigned int level = 0) const
+      inline const T& operator()(std::shared_ptr<Exp<T>>& ex, unsigned int level = 0) const
       {
-        return operator()(ex.index, level);
+        auto cex = es.compile(ex);
+        return operator()(cex->index, level);
       }
       
       /** Checks whether the value of an expression at a specific level has changed
@@ -227,7 +227,7 @@ namespace EasyLocal {
           @param level level to check
           @remarks the expression itself is used to access the ValueStore, instead of the index
        */
-      bool changed(const CExp<T>& ex, unsigned int level = 0) const
+      inline bool changed(const CExp<T>& ex, unsigned int level = 0) const
       {
         return changed(ex.index, level);
       }
@@ -236,7 +236,7 @@ namespace EasyLocal {
           @param v the variable to get the value for
           @return a reference to the value
        */
-      T& operator()(const Var<T>& v)
+      inline T& operator()(const Var<T>& v)
       {
         return operator()(es.compiled_symbols[v.hash()]);
       }
@@ -246,7 +246,7 @@ namespace EasyLocal {
           @param level the level to get the value from
           @return a const reference to the value
        */
-      const T& operator()(const Var<T>& v, unsigned int level = 0) const
+      inline const T& operator()(const Var<T>& v, unsigned int level = 0) const
       {
         return operator()(es.compiled_symbols[v.hash()], level);
       }
@@ -255,7 +255,7 @@ namespace EasyLocal {
           @param v the variable to check
           @param level level to check
        */
-      bool changed(const Var<T>& v, unsigned int level = 0) const
+      inline bool changed(const Var<T>& v, unsigned int level = 0) const
       {
         return changed(es.compiled_symbols[v.hash()], level);
       }
@@ -277,30 +277,24 @@ namespace EasyLocal {
         }
       }
       
-      // TODO: all assign are used only by Expressions, possibly Change into protected and enable friendship
-      void assign(const CExp<T>& ex, unsigned int level, const T& val)
+      inline void assign(std::shared_ptr<Exp<T>>& ex, unsigned int level, const T& val)
       {
-        value[level][ex.index] = val;
-        valid[level][ex.index] = true;
+        auto cex = es.compile(ex);
+        assign(cex->index, level, val);
       }
       
-      void assign(size_t i, unsigned int level, const T& val)
+      inline void assign(size_t i, unsigned int level, const T& val)
       {
         value[level][i] = val;
         valid[level][i] = true;
       }
       
-      void assign(const Var<T>& v, unsigned int level, const T& val)
-      {
-        value[level][es.compiled_exps[v.hash()]] = val; // FIXME
-        valid[level][es.compiled_exps[v.hash()]] = true; // FIXME
-      }
       
       /** Gets the indices of the changed children of an expression at a specific level
           @param i index of the expression to get the changed children for
           @param level reference level
       */
-      std::unordered_set<size_t>& changed_children(size_t i, unsigned int level)
+      inline std::unordered_set<size_t>& changed_children(size_t i, unsigned int level)
       {
         return _changed_children[level][i];
       }
@@ -309,13 +303,14 @@ namespace EasyLocal {
        @param i index of the expression to get the changed children for
        @param level reference level
        */
-      const std::unordered_set<size_t>& changed_children(size_t i, unsigned int level) const
+      inline const std::unordered_set<size_t>& changed_children(size_t i, unsigned int level) const
       {
         return _changed_children[level][i];
       }
 
     protected:
       
+
       /** Keeps track of the values of the expressions / variables at the various levels */
       std::vector<std::vector<T>> value;
       
@@ -324,9 +319,6 @@ namespace EasyLocal {
       
       /** Keeps track of the changed children of each expression */
       std::vector<std::vector<std::unordered_set<size_t>>> _changed_children;
-      
-      /** Keeps track of the relevant children (the ones onto which the previous value depends more). */
-//      std::vector<std::vector<std::unordered_set<size_t>>> _relevant_children;
       
       /** ExpressionStore to which the ValueStore is subscribed for resizing */
       ExpressionStore<T>& es;

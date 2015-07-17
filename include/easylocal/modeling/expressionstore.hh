@@ -74,6 +74,10 @@ namespace EasyLocal {
        */
       std::shared_ptr<CExp<T>> compile(std::shared_ptr<Exp<T>>& e)
       {
+        auto it = this->compiled_exps.find(e);
+        if (it != this->compiled_exps.end())
+          return (*this)[it->second];
+          
         // Ensure expression is normalized
         e->normalize(true);
         
@@ -275,10 +279,10 @@ namespace EasyLocal {
           _compute_depth(c, current_depth + 1);
       }
       
+    public:
+
       /** Resize events subscribers */
       mutable std::list<std::shared_ptr<ResizeSubscriber>> subscribers;
-      
-    public:
       
       /** Marks if ExpressionStore needs to recompute the depth of the compiled expressions. */
       mutable bool _depth_needs_update;

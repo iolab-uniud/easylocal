@@ -5,26 +5,29 @@
 
 namespace EasyLocal {
   namespace Modeling {
+      
  // TODO: find a more meaningful name    
     template <typename T>
     class Change : public Core::Printable
     {
     public:
+        Change(const std::shared_ptr<Var<T>>& var, const T& val) :
     };
   
     /** A tentative Change composed by a single assignment of a decision variable. */
     template <typename T>
-    class BasicChange
+    class UnitChange
     {
     public:
-      BasicChange() : val(0)
+        
+      UnitChange() : val(0)
       {}
       
       /** Constructor.
        @param var the variable to modify
        @param val the value to assign to the variable
        */
-      BasicChange(const Var<T>& var, T val) : var(var), val(val)
+      UnitChange(const Var<T>& var, T val) : var(var), val(val)
       {}
       
       /** @copydoc Printable::print(std::ostream&) */
@@ -42,9 +45,9 @@ namespace EasyLocal {
     
     /** Assignment operator for BasicChange (generates a BasicChange from a Var and a value). */
     template <typename T>
-    BasicChange<T> operator<<=(const Var<T>& var, const T& val)
+    UnitChange<T> operator<<=(const Var<T>& var, const T& val)
     {
-      return BasicChange<T>(var, val);
+      return UnitChange<T>(var, val);
     }
     
     /** A tentative Change composed by a multiple assignments to decision variables. */

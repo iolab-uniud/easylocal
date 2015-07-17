@@ -11,52 +11,6 @@ namespace EasyLocal {
   
   namespace Modeling {
     
-    /** A class which takes care of handling the compilation of an Expression and its connection with an ExpressionStore.
-     @remarks Largely a calling convenience.
-     */
-    template <typename T>
-    class CompiledExpression
-    {
-    public:
-      
-      /** Default constructor. */
-      CompiledExpression() : compiled_exp(nullptr)
-      {}
-      
-      /** Copy constructor.
-       @param ce the compiled expression to copy
-       */
-      CompiledExpression(const CompiledExpression& ce) : compiled_exp(ce.compiled_exp)
-      {}
-      
-      /** Constructor. Takes an Expression (not compiled) and compiles it, also adding it to an ExpressionStore.
-       @param ex the expression to compile
-       @param exp_store the expression store to add the compiled expression to
-       */
-      CompiledExpression(Exp<T>& ex, ExpressionStore<T>& exp_store)
-      {
-        compiled_exp = exp_store.compile(ex);
-      }
-      
-      /** Const cast operator to the actual expression.
-       */
-      operator const CExp<T>&() const
-      {
-        return *compiled_exp;
-      }
-      
-      bool is_valid() const
-      {
-        return compiled_exp != nullptr;
-      }
-      
-    protected:
-      
-      /** Pointer to the compiled expression. */
-      std::shared_ptr<CExp<T>> compiled_exp;
-    };
-    
-    
     /** An "abstract" state whose deltas are computed based on CompiledExpressions.
      Provides methods to create "managed" decision variables and arbitrarily complex
      expressions which can be used as cost components or cost functions.
@@ -65,7 +19,7 @@ namespace EasyLocal {
     class AutoState : public virtual Core::Printable
     {
     public:
-      AutoState(size_t levels = 1) : es(std::make_shared<ExpressionStore<T>>()), st(*es, levels)
+      AutoState(size_t levels = 1) : es(std::make_shared<ExpressionStore<T>>()), vs(*es, levels)
       {}
       
       /** Constructor.
@@ -74,22 +28,22 @@ namespace EasyLocal {
        on multiple threads).
        @param levels how many scenarios will be supported by the ValueStore
        */
-      AutoState(std::shared_ptr<ExpressionStore<T>> es, size_t levels = 1) : es(es), st(*es, levels)
+      AutoState(std::shared_ptr<ExpressionStore<T>> es, size_t levels = 1) : es(es), vs(*es, levels)
       {}
       
-      AutoState(std::shared_ptr<ExpressionStore<T>> es, const ValueStore<T>& st) : es(es), st(st)
+      AutoState(std::shared_ptr<ExpressionStore<T>> es, const ValueStore<T>& vs) : es(es), vs(vs)
       {}
       
       /** Sets (in a definitive way) the value of one of the registered decision variables. */
       void set(const Var<T>& var, const T& val)
       {
-        st.assign(var, 0, val);
+        vs.assign(var, 0, val);
       }
       
       /** Evaluates (completely) the registered CompiledExpressions. */
       void evaluate(bool force = false)
       {
-        es->evaluate(st, 0, force);
+        es->evaluate(vs, 0, force);
       }
       
       /** Gets the value of a CompiledExpression (possibly at a specific level).
@@ -100,7 +54,7 @@ namespace EasyLocal {
       {
         if (!ce.is_valid())
           throw std::logic_error("Trying to access an unassigned compiled expression");
-        return st(ce, level);
+        return vs(ce, level);
       }
       
       /** Gets the value of a Symbol (possibly at a specific level).
@@ -109,7 +63,7 @@ namespace EasyLocal {
        */
       T value_of(const CExp<T>& s, size_t level = 0) const
       {
-        return st(s, level);
+        return vs(s, level);
       }
       
       /** Gets the value of a compiled location (possibly at a specific level).
@@ -118,7 +72,7 @@ namespace EasyLocal {
        */
       T value_of(size_t i, size_t level = 0) const
       {
-        return st(i, level);
+        return vs(i, level);
       }
       
       /** Gets the value of a Variable (possibly at a specific level).
@@ -127,7 +81,7 @@ namespace EasyLocal {
        */
       T value_of(const Var<T>& v, size_t level = 0) const
       {
-        return st(v, level);
+        return vs(v, level);
       }
       
       /** Simulates the execution of a simple Change on a specific simulation level.
@@ -138,7 +92,7 @@ namespace EasyLocal {
       {
         if (level == 0)
           throw std::logic_error("Cannot simulate at level 0");
-        const_cast<ValueStore<T>&>(st).simulate(m, level);
+        const_cast<ValueStore<T>&>(vs).simulate(m, level);
       }
       
       /** Simulates the execution of a composite Change on a specific simulation level.
@@ -149,7 +103,7 @@ namespace EasyLocal {
       {
         if (level == 0)
           throw std::logic_error("Cannot simulate at level 0");
-        const_cast<ValueStore<T>&>(st).simulate(m, level);
+        const_cast<ValueStore<T>&>(vs).simulate(m, level);
       }
       
       /** Executes a simple Change.
@@ -157,7 +111,7 @@ namespace EasyLocal {
        */
       void execute(const BasicChange<T>& m)
       {
-        st.execute(m);
+        vs.execute(m);
       }
       
       /** Executes a composite Change.
@@ -165,13 +119,13 @@ namespace EasyLocal {
        */
       void execute(const CompositeChange<T>& m)
       {
-        st.execute(m);
+        vs.execute(m);
       }
       
       /** @copydoc Printable::Print(std::ostream&) */
       virtual void Print(std::ostream& os = std::cout) const
       {
-        os << st;
+        os << vs;
       }
       
     protected:
@@ -204,9 +158,10 @@ namespace EasyLocal {
       
       /** The AutoState's ExpressionStore */
       std::shared_ptr<ExpressionStore<T>> es;
+        
     public:
       /** The AutoState's ValueStore (inner state) */
-      ValueStore<T> st;
+      ValueStore<T> vs;
     };
   }
 }
