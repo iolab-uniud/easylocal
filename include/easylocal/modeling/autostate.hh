@@ -8,12 +8,12 @@
 #include "change.hh"
 
 namespace EasyLocal {
-  
+
   namespace Modeling {
-    
+
     /** An "abstract" state whose deltas are computed based on CompiledExpressions.
-     Provides methods to create "managed" decision variables and arbitrarily complex
-     expressions which can be used as cost components or cost functions.
+        Provides methods to create "managed" decision variables and arbitrarily complex
+        expressions which can be used as cost components or cost functions.
      */
     template <typename T>
     class AutoState : public virtual Core::Printable
@@ -21,7 +21,7 @@ namespace EasyLocal {
     public:
       AutoState(size_t levels = 1) : es(std::make_shared<ExpressionStore<T>>()), vs(*es, levels)
       {}
-      
+
       /** Constructor.
        @remarks Initializes an ExpressionStore, and a ValueStore supporting any number
        of evaluation scenarios (e.g., for simultaneous evaluation of multiple Changes
@@ -30,22 +30,22 @@ namespace EasyLocal {
        */
       AutoState(std::shared_ptr<ExpressionStore<T>> es, size_t levels = 1) : es(es), vs(*es, levels)
       {}
-      
+
       AutoState(std::shared_ptr<ExpressionStore<T>> es, const ValueStore<T>& vs) : es(es), vs(vs)
       {}
-      
+
       /** Sets (in a definitive way) the value of one of the registered decision variables. */
       void set(const Var<T>& var, const T& val)
       {
         vs.assign(var, 0, val);
       }
-      
+
       /** Evaluates (completely) the registered CompiledExpressions. */
       void evaluate(bool force = false)
       {
         es->evaluate(vs, 0, force);
       }
-      
+
       /** Gets the value of a CompiledExpression (possibly at a specific level).
        @param ce compiled expression to get the value for
        @param level level to get the values from
@@ -56,7 +56,7 @@ namespace EasyLocal {
           throw std::logic_error("Trying to access an unassigned compiled expression");
         return vs(ce, level);
       }
-      
+
       /** Gets the value of a Symbol (possibly at a specific level).
        @param s the symbol to get the value for
        @param level level to get the values from
@@ -65,7 +65,7 @@ namespace EasyLocal {
       {
         return vs(s, level);
       }
-      
+
       /** Gets the value of a compiled location (possibly at a specific level).
        @param i the location to get the value for
        @param level level to get the values from
@@ -74,7 +74,7 @@ namespace EasyLocal {
       {
         return vs(i, level);
       }
-      
+
       /** Gets the value of a Variable (possibly at a specific level).
        @param v the variable to get the value for
        @param level level to get the values from
@@ -83,7 +83,7 @@ namespace EasyLocal {
       {
         return vs(v, level);
       }
-      
+
       /** Simulates the execution of a simple Change on a specific simulation level.
        @param m the Change to simulate
        @param level level onto which the Change must be simulated
@@ -94,7 +94,7 @@ namespace EasyLocal {
           throw std::logic_error("Cannot simulate at level 0");
         const_cast<ValueStore<T>&>(vs).simulate(m, level);
       }
-      
+
       /** Simulates the execution of a composite Change on a specific simulation level.
        @param m the Change to simulate
        @param level level onto which the Change must be simulated
@@ -105,7 +105,7 @@ namespace EasyLocal {
           throw std::logic_error("Cannot simulate at level 0");
         const_cast<ValueStore<T>&>(vs).simulate(m, level);
       }
-      
+
       /** Executes a simple Change.
        @param m the Change to execute
        */
@@ -113,7 +113,7 @@ namespace EasyLocal {
       {
         vs.execute(m);
       }
-      
+
       /** Executes a composite Change.
        @param m the Change to execute
        */
@@ -121,15 +121,15 @@ namespace EasyLocal {
       {
         vs.execute(m);
       }
-      
+
       /** @copydoc Printable::Print(std::ostream&) */
       virtual void Print(std::ostream& os = std::cout) const
       {
         os << vs;
       }
-      
+
     protected:
-      
+
       /** Takes an expression and compiles it on the AutoState's ExpressionStore.
        @param e expression to compile
        */
@@ -137,7 +137,7 @@ namespace EasyLocal {
       {
         return CompiledExpression<T>(e, *es);
       }
-      
+
       /** Generates a scalar value, and registers it in the ExpressionStore.
        @param name name of the variable to generate
        */
@@ -145,7 +145,7 @@ namespace EasyLocal {
       {
         return Var<T>(es, name, lb, ub);
       }
-      
+
       /** Generates a vector value, and registers it in the ExpressionStore.
        @param name name of the variable to generate
        @param size size of the vector of variables
@@ -155,10 +155,10 @@ namespace EasyLocal {
         VarArray<T> v(*es, name, size);
         return v;
       }
-      
+
       /** The AutoState's ExpressionStore */
       std::shared_ptr<ExpressionStore<T>> es;
-        
+
     public:
       /** The AutoState's ValueStore (inner state) */
       ValueStore<T> vs;

@@ -5,11 +5,10 @@
 #include <queue>
 #include <unordered_map>
 
-
 namespace EasyLocal {
-  
+
   namespace Modeling {
-  
+
     /** Proxy to Exp<T>::hash() */
     template <typename T>
     struct ExpHash {
@@ -18,7 +17,7 @@ namespace EasyLocal {
         return key->hash();
       }
     };
-    
+
     /** Proxy to Exp<T>::equals_to(const std::shared_ptr<Exp<T>>&) */
     template <typename T>
     struct ExpEquals {
@@ -27,31 +26,31 @@ namespace EasyLocal {
         return l_key->equals_to(r_key);
       }
     };
-    
+
     /** Forward declaration */
     template <typename T>
     class ValueStore;
-    
+
     class ResizeNotifier {
     public:
       virtual size_t size() const = 0;
     };
-    
+
     /** Interface of a class who can be notified when a resize event happens. */
     class ResizeSubscriber
     {
     public:
       virtual void notify(const std::shared_ptr<ResizeNotifier>&) = 0;
     };
-    
+
     /** ExpressionStore, a structure to handle bottom-up evaluation of compiled Exps. */
     template <typename T>
     class ExpressionStore : public std::vector<std::shared_ptr<CExp<T>>>, public Core::Printable, public ResizeNotifier, public std::enable_shared_from_this<ResizeNotifier>
     {
-      
+
       /** FIXME: find out if this is needed */
       friend class ValueStore<T>;
-    
+
     public:
 
       // using std::vector<std::shared_ptr<CExp<T>>>::size;
@@ -67,7 +66,7 @@ namespace EasyLocal {
       {
         subscribers.push_back(n);
       }
-      
+
       /** Compile an expression into a compiled expression.
           @param e the original expression
           @return a shared pointer to the root of the compiled expression
@@ -77,14 +76,14 @@ namespace EasyLocal {
         auto it = this->compiled_exps.find(e);
         if (it != this->compiled_exps.end())
           return (*this)[it->second];
-          
+
         // Ensure expression is normalized
         e->normalize(true);
-        
+
         // Compile expression
         size_t previous_size = this->size();
         size_t root_index = e->compile(*this);
-          
+
         // Check if a new expression has been inserted by compilation (or whether an old one was reused)
         if (this->size() != previous_size)
         {
@@ -95,7 +94,7 @@ namespace EasyLocal {
         }
         return (*this)[root_index];
       }
-      
+
       /** Evaluates all the registered expressions within a given ValueStore at a given level.
           @param vs the ValueStore to use as data source and storage
           @param level level on which to evaluate
@@ -105,7 +104,7 @@ namespace EasyLocal {
         // Update depth if needed
         if (_depth_needs_update)
           compute_depth();
-        
+
         // Make list of terminal expressions
         const size_t n = this->size();
         std::unordered_set<size_t> to_update;
@@ -115,11 +114,11 @@ namespace EasyLocal {
             continue;
           to_update.insert(i);
         }
-        
+
         // Call evaluate, passing list of all terminals as list of all terminals to update
         evaluate(vs, to_update, level, force);
       }
-      
+
       /** Evaluates all the registered expressions within a given ValueStore at a given level and a given set of variables that have been changed (delta).
           @param vs the ValueStore to use as data source and storage
           @param variables a set of variables that have been changed
@@ -130,27 +129,27 @@ namespace EasyLocal {
         // Update depth if needed
         if (_depth_needs_update)
           compute_depth();
-        
+
         // Initialize empty queue
         std::priority_queue<std::pair<int, size_t>> queue;
-        
+
         // Set of already processed nodes
         std::unordered_set<size_t> processed;
         processed.reserve(this->size());
-        
+
         // Go through all terminal modified symbols
         for (auto t : to_update)
         {
           // If terminal hasn't really changed, continue (a move might actually not change a variable, for some reason)
           if (!vs.changed(t, level))
             continue;
-          
+
           // Get compiled expression
           const std::shared_ptr<CExp<T>>& cur = (*this)[t];
           for (size_t i : cur->parents)
           {
             const std::shared_ptr<CExp<T>>& par = (*this)[i];
-            
+
             // If parent has not been enqueued already
             if (processed.find(i) == processed.end())
             {
@@ -160,20 +159,20 @@ namespace EasyLocal {
             vs.changed_children(i, level).insert(t);
           }
         }
-        
+
         // Processe elements until queue is empty
         while (!queue.empty())
         {
           // Dequeue expression
           size_t cur_i = queue.top().second;
           queue.pop();
-          
+
           // Get compiled expression
           const std::shared_ptr<CExp<T>>& cur = (*this)[cur_i];
-          
+
           // Compute new value (with diff)
           cur->compute_diff(vs, level);
-          
+
           // If value has changed, and parent is not enqueued already, enqueue it
           if (vs.changed(cur_i, level))
             for (size_t i : cur->parents)
@@ -184,20 +183,20 @@ namespace EasyLocal {
                 queue.push(std::make_pair(par->depth, i));
                 processed.insert(i);
               }
-              
+
               // Update list of changed children for parent
               vs.changed_children(i, level).insert(cur_i);
             }
         }
       }
-      
+
       /** @copydoc Printable::Print(std::ostream&) */
       virtual void Print(std::ostream& os) const
       {
         // Update depth if needed
         if (_depth_needs_update)
           compute_depth();
-        
+
         // Print all compiled expressions in the expression store
         for (size_t i = 0; i < this->size(); i++)
         {
@@ -205,7 +204,7 @@ namespace EasyLocal {
           os << cexp << std::endl;
         }
       }
-      
+
       /** Cached version of depth update. */
       inline void compute_depth() const
       {
@@ -214,9 +213,15 @@ namespace EasyLocal {
             _compute_depth(i, 0);
         _depth_needs_update = false;
       }
-      
+
+      /** Map of all compiled expressions, for leaner compilation (expression reuse). */
+      inline const std::unordered_map<std::shared_ptr<const Exp<T>>, size_t, ExpHash<T>, ExpEquals<T>>& compiled_expressions() const
+      {
+        return this->compiled_exps;
+      }
+
     protected:
-      
+
       /** Evaluates all the registered expressions within a given ValueStore at a given level and a given set of expressions whose value has changed (delta).
           @param vs the ValueStore to use as data source and storage
           @param expressions a set of expressions that have been changed
@@ -228,10 +233,10 @@ namespace EasyLocal {
         // Update depth, if needed
         if (_depth_needs_update)
           compute_depth();
-        
+
         // Initialize empty queue for elements that need to be updated (the queue uses depth as "priority" measure)
         std::priority_queue<std::pair<unsigned int, size_t>> queue;
-        
+
         // Enqueue symbols that really need to be updated
         for (size_t i : to_update)
         {
@@ -242,18 +247,18 @@ namespace EasyLocal {
             queue.push(std::make_pair(cur->depth, i));
           }
         }
-        
+
         // Evaluate until queue is empty
         while (!queue.empty())
         {
           // Dequeue element
           size_t cur_i = queue.top().second;
           queue.pop();
-          
+
           // Get corresponding compiled expression, evaluate it on level (no diff)
           const std::shared_ptr<CExp<T>>& cur = (*this)[cur_i];
           cur->compute(vs, level);
-          
+
           // If value changes, parents are enqueued
           if (force || !vs.evaluated || vs.changed(cur_i, level))
             for (size_t i : cur->parents)
@@ -262,11 +267,11 @@ namespace EasyLocal {
               queue.push(std::make_pair(par->depth, i));
             }
         }
-        
+
         // Mark ValueStore as evaluated at least one
         vs.evaluated = true;
       }
-      
+
       /** Recompute the (maximum) depth each expression.
           @param root index of the root element
           @param current_depth accumulator for the recursive call
@@ -278,19 +283,17 @@ namespace EasyLocal {
         for (auto& c : current_cexp->children)
           _compute_depth(c, current_depth + 1);
       }
-      
-    public:
 
       /** Resize events subscribers */
       mutable std::list<std::shared_ptr<ResizeSubscriber>> subscribers;
-      
+
       /** Marks if ExpressionStore needs to recompute the depth of the compiled expressions. */
       mutable bool _depth_needs_update;
-      
+
       /** Map of all compiled expressions, for leaner compilation (expression reuse). */
       std::unordered_map<std::shared_ptr<const Exp<T>>, size_t, ExpHash<T>, ExpEquals<T>> compiled_exps;
+
     };
-    
   }
 }
 
