@@ -190,33 +190,21 @@ namespace EasyLocal {
       template <template <typename> class CType>
       std::pair<size_t, std::shared_ptr<CType<T>>> get_or_create(ExpressionStore<T>& exp_store) const
       {
-        // If the compiled expression is found in the ExpressionStore, return index and nullptr
-        auto shared_this = this->shared_from_this();
+        // Get own shared_ptr
+        auto s_this = this->shared_from_this();
         
-        auto it = exp_store.compiled_expressions().find(shared_this);
-        if (it != exp_store.compiled_expressions().end())
-          return std::make_pair(it->second, nullptr);
+        // Check whether the expression has been compiled already
+        if (exp_store.contains(s_this))
+          return std::make_pair(exp_store.index_of(s_this), nullptr);
         
-        // Otherwise, generate a new index
-        size_t this_index = exp_store.size();
-        
-        // Register the hash in the list of compiled expressions
-        exp_store.compiled_expressions()[shared_this] = this_index;
-        
-        // Generate the correct CExp using the template parameter
-        std::shared_ptr<CType<T>> compiled = std::make_shared<CType<T>>(exp_store);
-        
-        // Push the CExp on the ExpressionStore, update its index
-        exp_store.push_back(compiled);
-        exp_store[this_index]->index = this_index;
-        exp_store[this_index]->exp = this->shared_from_this();
-        
-        // Get a string description of the expression
-        std::ostringstream os;
-        this->Print(os);
+        // Otherwise compile correct CExp accorgin to template type
+        auto compiled = std::make_shared<CType<T>>(exp_store);
+
+        // Register expression and get index back
+        size_t i = exp_store.register_as(std::static_pointer_cast<CExp<T>>(compiled), s_this);
         
         // Return index and pointer
-        return std::make_pair(this_index, compiled);
+        return std::make_pair(i, compiled);
       }
       
       /** Keeps track whether the hash has been computed already. */
@@ -820,6 +808,17 @@ namespace EasyLocal {
           return this->at(std::static_pointer_cast<Const<T>>(i)->value);
         
         return std::make_shared<Element<T>>(i, this->as_array());
+      }
+        
+      /** Subscript operator.
+       @param i index of the expression to retrieve
+       @return the expression at index i
+       */
+      inline const std::shared_ptr<Exp<T>>& operator[](const size_t& i) const
+      {
+          auto it = this->operands.begin();
+          std::advance(it, i);
+          return *it;
       }
       
       /** @copydoc Exp<T>::compile(ExpressionStore<T>&) */

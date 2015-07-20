@@ -3,7 +3,6 @@
 
 #include "easylocal/utils/printable.hh"
 #include "expression.hh"
-#include "valuestore.hh"
 #include "expressionstore.hh"
 #include "change.hh"
 

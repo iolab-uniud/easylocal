@@ -24,14 +24,15 @@ namespace EasyLocal {
 
     /** Template compiled Exp<T>. */
     template <typename T>
-    class CExp : public EasyLocal::Core::Printable
+    struct CExp : public EasyLocal::Core::Printable
     {
     public:
 
       /** Constructor.
           @param exp_store ExpressionStore into which to register the compiled expression
+          @param sym symbol of the compiled expression (for printing purposes)
        */
-      CExp(ExpressionStore<T>& exp_store, const std::string& sym) : sym(sym), exp_store(exp_store)
+      CExp(ExpressionStore<T>& es, const std::string& sym) : sym(sym), es(es)
       {
         depth = 0;
       }
@@ -50,27 +51,22 @@ namespace EasyLocal {
 
       /** String representation of the AST item */
       const std::string sym;
-
-      /** Original expression (FIXME: removed once debug is over) */
-      std::shared_ptr<const Exp<T>> exp;
-
-      /** Reference to the ExpressionStore where the compiled expression is registered */
-      const ExpressionStore<T>& exp_store;
-
+      
+      /** Reference to the expression store onto which this expression was compiled */
+      ExpressionStore<T>& es;
+        
       /** Depth of the expression in the AST */
       unsigned int depth;
 
-      /** Computes the value of the expression within ValueStore (from scratch).
-          @param st the ValueStore to get the children values from, and store the expression data to
+      /** Computes the value of the expression within ExpressionStore<T> (from scratch).
           @param level level to use for the evaluation
        */
-      virtual void compute(ValueStore<T>& vs, unsigned int level = 0) const = 0;
+      virtual void compute(unsigned int level = 0) const = 0;
 
-      /** Computes the value of the expression within ValueStore (delta from previous value).
-          @param st the ValueStore to get the children values from, and store the expression data to
+      /** Computes the value of the expression within ExpressionStore<T> (delta from previous value).
           @param level level to use for the evaluation
        */
-      virtual void compute_diff(ValueStore<T>& vs, unsigned int level = 0) const = 0;
+      virtual void compute_diff(unsigned int level = 0) const = 0;
 
       /** @copydoc Printable::Print(std::ostream&) */
       virtual void Print(std::ostream& os) const
@@ -104,7 +100,7 @@ namespace EasyLocal {
     template <typename T>
     class CTerm : public CExp<T> {
     public:
-      CTerm(ExpressionStore<T>& exp_store, const std::string& sym) : CExp<T>(exp_store, sym) { }
+      CTerm(ExpressionStore<T>& es, const std::string& sym) : CExp<T>(es, sym) { }
     };
 
     /** Scalar variable expression. */
@@ -114,13 +110,13 @@ namespace EasyLocal {
     public:
 
       /** Default constructor. */
-      CVar(ExpressionStore<T>& exp_store) : CTerm<T>(exp_store, "CVar") { }
+      CVar(ExpressionStore<T>& es) : CTerm<T>(es, "CVar") { }
 
-      /** @copydoc CExp<T>::compute(ValueStore<T>&, unsigned int) */
-      inline virtual void compute(ValueStore<T>& vs, unsigned int level = 0) const { }
+      /** @copydoc CExp<T>::compute(unsigned int) */
+      inline virtual void compute(unsigned int level = 0) const { }
 
-      /** @copydoc CExp<T>::compute_diff(ValueStore<T>&, unsigned int) */
-      inline virtual void compute_diff(ValueStore<T>& vs, unsigned int level = 0) const { }
+      /** @copydoc CExp<T>::compute_diff(unsigned int) */
+      inline virtual void compute_diff(unsigned int level = 0) const { }
     };
 
     /** Array variable expression. */
@@ -128,13 +124,13 @@ namespace EasyLocal {
     class CArray : public CExp<T>
     {
     public:
-      CArray(ExpressionStore<T>& exp_store) : CExp<T>(exp_store, "CArray") { }
+      CArray(ExpressionStore<T>& es) : CExp<T>(es, "CArray") { }
 
-      /** @copydoc CExp<T>::compute(ValueStore<T>&, unsigned int) */
-      inline virtual void compute(ValueStore<T>& vs, unsigned int level = 0) const { }
+      /** @copydoc CExp<T>::compute(unsigned int) */
+      inline virtual void compute(unsigned int level = 0) const { }
 
-      /** @copydoc CExp<T>::compute_diff(ValueStore<T>&, unsigned int) */
-      inline virtual void compute_diff(ValueStore<T>& vs, unsigned int level = 0) const { }
+      /** @copydoc CExp<T>::compute_diff(unsigned int) */
+      inline virtual void compute_diff(unsigned int level = 0) const { }
 
       /** Size of the variable array (relies on contiguous allocation of array elements) */
       size_t size;
@@ -147,15 +143,15 @@ namespace EasyLocal {
     public:
       CConst(ExpressionStore<T>& exp_store) : CTerm<T>(exp_store, "CConst") { }
 
-      /** @copydoc CExp<T>::compute(ValueStore<T>&, unsigned int) */
-      inline virtual void compute(ValueStore<T>& vs, unsigned int level = 0) const
+      /** @copydoc CExp<T>::compute(unsigned int) */
+      inline virtual void compute(unsigned int level = 0) const
       {
         // Note: at first, in the value store the constant value has not been set, so we have to force it
-        vs.assign(this->index, level, value);
+        this->es.set(this->index, level, value);
       }
 
-      /** @copydoc CExp<T>::compute_diff(ValueStore<T>&, unsigned int) */
-      inline virtual void compute_diff(ValueStore<T>& vs, unsigned int level = 0) const
+      /** @copydoc CExp<T>::compute_diff(unsigned int) */
+      inline virtual void compute_diff(unsigned int level = 0) const
       {
         // Constant can't be reassigned, therefore there is no need to compute an update
       }
@@ -171,36 +167,36 @@ namespace EasyLocal {
     public:
 
       /** Default constructor. */
-      CSum(ExpressionStore<T>& exp_store) : CExp<T>(exp_store, "CSum") { }
+      CSum(ExpressionStore<T>& es) : CExp<T>(es, "CSum") { }
 
-      /** @copydoc CExp<T>::compute(ValueStore<T>&, unsigned int) */
-      virtual void compute(ValueStore<T>& vs, unsigned int level = 0) const
+      /** @copydoc CExp<T>::compute(unsigned int) */
+      virtual void compute(unsigned int level = 0) const
       {
         T sum = static_cast<T>(0);
 
         // Sum all children at the same level
         for (size_t child : this->children)
-          sum += vs(child, level);
+          sum += this->es.get(child, level);
 
-        vs.assign(this->index, level, sum);
+        this->es.set(this->index, level, sum);
       }
 
-      /** @copydoc CExp<T>::compute_diff(ValueStore<T>&, unsigned int) */
-      virtual void compute_diff(ValueStore<T>& vs, unsigned int level = 0) const
+      /** @copydoc CExp<T>::compute_diff(unsigned int) */
+      virtual void compute_diff(unsigned int level = 0) const
       {
         // Get old value
-        T value = vs(this->index);
+        T value = this->es.get(this->index);
 
         // Get changed children
-        std::unordered_set<size_t>& changed = vs.changed_children(this->index, level);
+        std::unordered_set<size_t>& changed = this->es.changed_children(this->index, level);
 
         // Iterate through changed children, replace old contribution with new one
         for (auto child : changed)
-          value += vs(child, level) - vs(child);
+          value += this->es.get(child, level) - this->es.get(child);
 
         // Clear list of changed children
         changed.clear();
-        vs.assign(this->index, level, value);
+        this->es.set(this->index, level, value);
       }
     };
 
@@ -211,10 +207,10 @@ namespace EasyLocal {
     public:
 
       /** Default constructor. */
-      CMul(ExpressionStore<T>& exp_store) : CExp<T>(exp_store, "CMul") { }
+      CMul(ExpressionStore<T>& es) : CExp<T>(es, "CMul") { }
 
-      /** @copydoc CExp<T>::compute(ValueStore<T>&, unsigned int) */
-      virtual void compute(ValueStore<T>& vs, unsigned int level = 0) const
+      /** @copydoc CExp<T>::compute(unsigned int) */
+      virtual void compute(unsigned int level = 0) const
       {
         T mul = static_cast<T>(1);
 
@@ -222,7 +218,7 @@ namespace EasyLocal {
         for (size_t child : this->children)
         {
           // If value is zero, stop updating
-          T value = vs(child, level);
+          T value = this->es.get(child, level);
           if (value == static_cast<T>(0))
           {
             mul = static_cast<T>(0);
@@ -230,22 +226,22 @@ namespace EasyLocal {
           }
           mul *= value;
         }
-        vs.assign(this->index, level, mul);
+        this->es.set(this->index, level, mul);
       }
 
-      /** @copydoc CExp<T>::compute_diff(ValueStore<T>&, unsigned int) */
-      virtual void compute_diff(ValueStore<T>& vs, unsigned int level = 0) const
+      /** @copydoc CExp<T>::compute_diff(unsigned int) */
+      virtual void compute_diff(unsigned int level = 0) const
       {
         // Get old value
-        T value = vs(this->index);
+        T value = this->es.get(this->index);
 
         // Get changed children
-        std::unordered_set<size_t>& changed = vs.changed_children(this->index, level);
+        std::unordered_set<size_t>& changed = this->es.changed_children(this->index, level);
 
         // If any of the children are zero, the product is zero and we're over
-        if (std::any_of(changed.begin(), changed.end(), [&vs, &level](const size_t& i)->bool { return vs(i, level) == static_cast<T>(0); }))
+        if (std::any_of(changed.begin(), changed.end(), [this, &level](const size_t& i)->bool { return this->es.get(i, level) == static_cast<T>(0); }))
         {
-          vs.assign(this->index, level, static_cast<T>(0));
+          this->es.set(this->index, level, static_cast<T>(0));
           changed.clear();
           return;
         }
@@ -253,7 +249,7 @@ namespace EasyLocal {
         // If the previous value was zero, we need to recompute from scratch
         if (value == 0) {
           changed.clear();
-          compute(vs, level);
+          compute(level);
           return;
         }
 
@@ -264,12 +260,12 @@ namespace EasyLocal {
         for (auto child : changed)
         {
           // Separated to avoid losing information
-          value /= vs(child);
-          value *= vs(child, level);
+          value /= this->es.get(child);
+          value *= this->es.get(child, level);
         }
 
         changed.clear();
-        vs.assign(this->index, level, value);
+        this->es.set(this->index, level, value);
       }
     };
 
@@ -280,21 +276,21 @@ namespace EasyLocal {
     public:
 
       /** Default constructor. */
-      CDiv(ExpressionStore<T>& exp_store) : CExp<T>(exp_store, "CDiv") { }
+      CDiv(ExpressionStore<T>& es) : CExp<T>(es, "CDiv") { }
 
-      /** @copydoc CExp<T>::compute(ValueStore<T>&, unsigned int) */
-      inline virtual void compute(ValueStore<T>& vs, unsigned int level = 0) const
+      /** @copydoc CExp<T>::compute(unsigned int) */
+      inline virtual void compute(unsigned int level = 0) const
       {
-        T res = vs(this->children[0], level) / vs(this->children[1], level);
-        vs.assign(this->index, level, res);
+        T res = this->es.get(this->children[0], level) / this->es.get(this->children[1], level);
+        this->es.set(this->index, level, res);
       }
 
-      /** @copydoc CExp<T>::compute_diff(ValueStore<T>&, unsigned int) */
-      inline virtual void compute_diff(ValueStore<T>& vs, unsigned int level = 0) const
+      /** @copydoc CExp<T>::compute_diff(unsigned int) */
+      inline virtual void compute_diff(unsigned int level = 0) const
       {
         // Since / is binary, it is faster to compute it straight away
-        this->compute(vs, level);
-        vs.changed_children(this->index, level).clear();
+        compute(level);
+        this->es.changed_children(this->index, level).clear();
       }
     };
 
@@ -303,21 +299,21 @@ namespace EasyLocal {
     class CMod : public CExp<T>
     {
     public:
-      CMod(ExpressionStore<T>& exp_store) : CExp<T>(exp_store, "CMod") { }
+      CMod(ExpressionStore<T>& es) : CExp<T>(es, "CMod") { }
 
-      /** @copydoc CExp<T>::compute(ValueStore<T>&, unsigned int) */
-      inline virtual void compute(ValueStore<T>& vs, unsigned int level = 0) const
+      /** @copydoc CExp<T>::compute(unsigned int) */
+      inline virtual void compute(unsigned int level = 0) const
       {
         // Since / is binary, it is faster to compute it straight away
-        T res = vs(this->children[0], level) % vs(this->children[1], level);
-        vs.assign(this->index, level, res);
+        T res = this->es.get(this->children[0], level) % this->es.get(this->children[1], level);
+        this->es.set(this->index, level, res);
       }
 
-      /** @copydoc CExp<T>::compute_diff(ValueStore<T>&, unsigned int) */
-      inline virtual void compute_diff(ValueStore<T>& vs, unsigned int level = 0) const
+      /** @copydoc CExp<T>::compute_diff(unsigned int) */
+      inline virtual void compute_diff(unsigned int level = 0) const
       {
-        this->compute(vs, level);
-        vs.changed_children(this->index, level).clear();
+        compute(level);
+        this->es.changed_children(this->index, level).clear();
       }
     };
 
@@ -328,46 +324,46 @@ namespace EasyLocal {
     public:
 
       /** Default constructor. */
-      CMin(ExpressionStore<T>& exp_store) : CExp<T>(exp_store, "CMin") { }
+      CMin(ExpressionStore<T>& es) : CExp<T>(es, "CMin") { }
 
-      /** @copydoc Sym<T>::compute(ValueStore<T>&, unsigned int) */
-      virtual void compute(ValueStore<T>& vs, unsigned int level = 0) const
+      /** @copydoc Sym<T>::compute(unsigned int) */
+      virtual void compute(unsigned int level = 0) const
       {
-        T min = vs(this->children[0], level);
+        T min = this->es.get(this->children[0], level);
         for (size_t i = 1; i < this->children.size(); i++)
         {
           size_t child = this->children[i];
-          min = std::min(min, vs(child, level));
+          min = std::min(min, this->es.get(child, level));
         }
-        vs.assign(this->index, level, min);
+        this->es.set(this->index, level, min);
       }
 
-      /** @copydoc CExp<T>::compute_diff(ValueStore<T>&, unsigned int) */
-      virtual void compute_diff(ValueStore<T>& vs, unsigned int level = 0) const
+      /** @copydoc CExp<T>::compute_diff(unsigned int) */
+      virtual void compute_diff(unsigned int level = 0) const
       {
         // Get previous value
-        T current_min = vs(this->index), new_min;
+        T current_min = this->es.get(this->index), new_min;
 
         // Iterate through changed children, identify min
         bool new_min_set = false;
-        for (auto child : vs.changed_children(this->index, level))
+        for (auto child : this->es.changed_children(this->index, level))
         {
           if (!new_min_set)
           {
-            new_min = vs(child, level);
+            new_min = this->es.get(child, level);
             new_min_set = true;
           }
           else
-            new_min = std::min(new_min, vs(child, level));
+            new_min = std::min(new_min, this->es.get(child, level));
         }
-        vs.changed_children(this->index, level).clear();
+        this->es.changed_children(this->index, level).clear();
 
         // If the min among the changed children is worse than the previous min, check all children (the previous min might have been changed)
         if (new_min > current_min)
           for (size_t child : this->children)
-            new_min = std::min(new_min, vs(child, level));
+            new_min = std::min(new_min, this->es.get(child, level));
 
-        vs.assign(this->index, level, new_min);
+        this->es.set(this->index, level, new_min);
       }
     };
 
@@ -378,43 +374,43 @@ namespace EasyLocal {
     public:
       CMax(ExpressionStore<T>& exp_store) : CExp<T>(exp_store, "CMax") { }
 
-      /** @copydoc CExp<T>::compute(ValueStore<T>&, unsigned int) */
-      virtual void compute(ValueStore<T>& vs, unsigned int level = 0) const
+      /** @copydoc CExp<T>::compute(unsigned int) */
+      virtual void compute(unsigned int level = 0) const
       {
-        T max = vs(this->children[0], level);
+        T max = this->es.get(this->children[0], level);
         for (size_t i = 1; i < this->children.size(); i++)
         {
           size_t child = this->children[i];
-          max = std::max(max, vs(child, level));
+          max = std::max(max, this->es.get(child, level));
         }
-        vs.assign(this->index, level, max);
+        this->es.set(this->index, level, max);
       }
 
-      /** @copydoc CExp<T>::compute_diff(ValueStore<T>&, unsigned int) */
-      virtual void compute_diff(ValueStore<T>& vs, unsigned int level = 0) const
+      /** @copydoc CExp<T>::compute_diff(unsigned int) */
+      virtual void compute_diff(unsigned int level = 0) const
       {
         // Get previous value
-        T current_max = vs(this->index), new_max;
+        T current_max = this->es.get(this->index), new_max;
 
         // Iterate through changed children, identify max
         bool new_max_set = false;
-        for (auto child : vs.changed_children(this->index, level))
+        for (auto child : this->es.changed_children(this->index, level))
         {
           if (!new_max_set)
           {
-            new_max = vs(child, level);
+            new_max = this->es.get(child, level);
             new_max_set = true;
           }
           else
-            new_max = std::max(new_max, vs(child, level));
+            new_max = std::max(new_max, this->es.get(child, level));
         }
-        vs.changed_children(this->index, level).clear();
+        this->es.changed_children(this->index, level).clear();
 
         // If the new max is worse than the previous, reconsider all the children (previous max might have changed)
         if (new_max < current_max)
           for (size_t child : this->children)
-            new_max = std::max(new_max, vs(child, level));
-        vs.assign(this->index, level, new_max);
+            new_max = std::max(new_max, this->es.get(child, level));
+        this->es.set(this->index, level, new_max);
       }
     };
 
@@ -428,23 +424,23 @@ namespace EasyLocal {
     public:
       CElement(ExpressionStore<T>& exp_store) : CExp<T>(exp_store, "CElement") { }
 
-      /** @copydoc CExp<T>::compute(ValueStore<T>&, unsigned int) */
-      inline virtual void compute(ValueStore<T>& vs, unsigned int level = 0) const
+      /** @copydoc CExp<T>::compute(unsigned int) */
+      inline virtual void compute(unsigned int level = 0) const
       {
-        size_t i = (size_t)vs(this->children[0], level);
+        size_t i = (size_t)(this->es.get(this->children[0], level));
 
         if (i < 0 || i >= this->exp_store[this->children[1]]->children.size())
-          throw std::runtime_error("Index " + std::to_string(i) + "invalid for expression " + std::to_string(this->exp_store[this->children[1]]));
+          throw std::runtime_error("Index " + std::to_string(i) + "invalid for expression " + std::to_string(this->es[this->children[1]]));
 
-        T e = this->exp_store[this->children[1]]->children[i];
-        vs.assign(this->index, level, vs(e, level));
+        T e = this->es[this->children[1]]->children[i];
+        this->es.set(this->index, level, this->es.get(e, level));
       }
 
-      /** @copydoc CExp<T>::compute_diff(ValueStore<T>&, unsigned int) */
-      inline virtual void compute_diff(ValueStore<T>& vs, unsigned int level = 0) const
+      /** @copydoc CExp<T>::compute_diff(unsigned int) */
+      inline virtual void compute_diff(unsigned int level = 0) const
       {
-        this->compute(vs, level);
-        vs.changed_children(this->index, level).clear();
+        compute(level);
+        this->es.changed_children(this->index, level).clear();
       }
     };
 
@@ -455,21 +451,21 @@ namespace EasyLocal {
     public:
       CIfThenElse(ExpressionStore<T>& exp_store) : CExp<T>(exp_store, "IfThenElse") { }
 
-      /** @copydoc CExp<T>::compute(ValueStore<T>&, unsigned int) */
-      inline virtual void compute(ValueStore<T>& vs, unsigned int level = 0) const
+      /** @copydoc CExp<T>::compute(unsigned int) */
+      inline virtual void compute(unsigned int level = 0) const
       {
-        if (vs(this->children[0], level))
-          vs.assign(this->index, level, vs(this->children[1], level));
+        if (this->es.get(this->children[0], level))
+          this->es.set(this->index, level, this->es.get(this->children[1], level));
         else
-          vs.assign(this->index, level, vs(this->children[2], level));
+          this->es.set(this->index, level, this->es.get(this->children[2], level));
       }
 
-      /** @copydoc CExp<T>::compute_diff(ValueStore<T>&, unsigned int) */
-      inline virtual void compute_diff(ValueStore<T>& vs, unsigned int level = 0) const
+      /** @copydoc CExp<T>::compute_diff(unsigned int) */
+      inline virtual void compute_diff(unsigned int level = 0) const
       {
         // it is more efficient to directly invoke compute
-        this->compute(vs, level);
-        vs.changed_children(this->index, level).clear();
+        compute(level);
+        this->es.changed_children(this->index, level).clear();
       }
     };
 
@@ -480,17 +476,17 @@ namespace EasyLocal {
     public:
       CAbs(ExpressionStore<T>& exp_store) : CExp<T>(exp_store, "CAbs") { }
 
-      /** @copydoc CExp<T>::compute(ValueStore<T>&, unsigned int) */
-      inline virtual void compute(ValueStore<T>& vs, unsigned int level = 0) const
+      /** @copydoc CExp<T>::compute(unsigned int) */
+      inline virtual void compute(unsigned int level = 0) const
       {
-        vs.assign(this->index, level, vs(this->children[0], level) >= 0 ? vs(this->children[0], level) : -vs(this->children[0], level));
+        this->es.set(this->index, level, this->es.get(this->children[0], level) >= 0 ? this->es.get(this->children[0], level) : -this->es.get(this->children[0], level));
       }
 
-      /** @copydoc CExp<T>::compute_diff(ValueStore<T>&, unsigned int) */
-      inline virtual void compute_diff(ValueStore<T>& vs, unsigned int level = 0) const
+      /** @copydoc CExp<T>::compute_diff(unsigned int) */
+      inline virtual void compute_diff(unsigned int level = 0) const
       {
-        this->compute(vs, level);
-        vs.changed_children(this->index, level).clear();
+        compute(level);
+        this->es.changed_children(this->index, level).clear();
       }
     };
 
@@ -501,11 +497,11 @@ namespace EasyLocal {
     public:
       CNoDelta(ExpressionStore<T>& exp_store, const std::string& sym) : CExp<T>(exp_store, sym) { }
 
-      /** @copydoc CExp<T>::compute_diff(ValueStore<T>&, unsigned int) */
-      inline virtual void compute_diff(ValueStore<T>& vs, unsigned int level = 0) const
+      /** @copydoc CExp<T>::compute_diff(unsigned int) */
+      inline virtual void compute_diff(unsigned int level = 0) const
       {
-        this->compute(vs, level);
-        vs.changed_children(this->index, level).clear();
+        this->compute(level);
+        this->es.changed_children(this->index, level).clear();
       }
     };
 
@@ -516,11 +512,11 @@ namespace EasyLocal {
     public:
       CEq(ExpressionStore<T>& exp_store) : CNoDelta<T>(exp_store, "CEq") { }
 
-      /** @copydoc CExp<T>::compute(ValueStore<T>&, unsigned int) */
-      inline virtual void compute(ValueStore<T>& vs, unsigned int level = 0) const
+      /** @copydoc CExp<T>::compute(unsigned int) */
+      inline virtual void compute(unsigned int level = 0) const
       {
-        bool value = (vs(this->children[0], level) == vs(this->children[1], level));
-        vs.assign(this->index, level, value);
+        bool value = this->es.get(this->children[0], level) == this->es.get(this->children[1], level);
+        this->es.set(this->index, level, value);
       }
     };
 
@@ -531,11 +527,11 @@ namespace EasyLocal {
     public:
       CNe(ExpressionStore<T>& exp_store) : CNoDelta<T>(exp_store, "CNe") { }
 
-      /** @copydoc CExp<T>::compute(ValueStore<T>&, unsigned int) */
-      inline virtual void compute(ValueStore<T>& vs, unsigned int level = 0) const
+      /** @copydoc CExp<T>::compute(unsigned int) */
+      inline virtual void compute(unsigned int level = 0) const
       {
-        bool value = (vs(this->children[0], level) != vs(this->children[1], level));
-        vs.assign(this->index, level, value);
+        bool value = (this->es.get(this->children[0], level) != this->es.get(this->children[1], level));
+        this->es.set(this->index, level, value);
       }
     };
 
@@ -546,11 +542,11 @@ namespace EasyLocal {
     public:
       CLt(ExpressionStore<T>& exp_store) : CNoDelta<T>(exp_store, "CLt") { }
 
-      /** @copydoc CExp<T>::compute(ValueStore<T>&, unsigned int) */
-      inline virtual void compute(ValueStore<T>& vs, unsigned int level = 0) const
+      /** @copydoc CExp<T>::compute(unsigned int) */
+      inline virtual void compute(unsigned int level = 0) const
       {
-        bool value = (vs(this->children[0], level) < vs(this->children[1], level));
-        vs.assign(this->index, level, value);
+        bool value = (this->es.get(this->children[0], level) < this->es.get(this->children[1], level));
+        this->es.set(this->index, level, value);
       }
     };
 
@@ -561,11 +557,11 @@ namespace EasyLocal {
     public:
       CLe(ExpressionStore<T>& exp_store) : CNoDelta<T>(exp_store, "CLe") { }
 
-      /** @copydoc CExp<T>::compute(ValueStore<T>&, unsigned int) */
-      inline virtual void compute(ValueStore<T>& vs, unsigned int level = 0) const
+      /** @copydoc CExp<T>::compute(unsigned int) */
+      inline virtual void compute(unsigned int level = 0) const
       {
-        bool value = (vs(this->children[0], level) <= vs(this->children[1], level));
-        vs.assign(this->index, level, value);
+        bool value = (this->es.get(this->children[0], level) <= this->es.get(this->children[1], level));
+        this->es.set(this->index, level, value);
       }
     };
 
@@ -576,11 +572,11 @@ namespace EasyLocal {
     public:
       CGe(ExpressionStore<T>& exp_store) : CNoDelta<T>(exp_store, "CGe") { }
 
-      /** @copydoc CExp<T>::compute(ValueStore<T>&, unsigned int) */
-      inline virtual void compute(ValueStore<T>& vs, unsigned int level = 0) const
+      /** @copydoc CExp<T>::compute(unsigned int) */
+      inline virtual void compute(unsigned int level = 0) const
       {
-        bool value = (vs(this->children[0], level) >= vs(this->children[1], level));
-        vs.assign(this->index, level, value);
+        bool value = (this->es.get(this->children[0], level) >= this->es.get(this->children[1], level));
+        this->es.set(this->index, level, value);
       }
     };
 
@@ -591,11 +587,11 @@ namespace EasyLocal {
     public:
       CGt(ExpressionStore<T>& exp_store) : CNoDelta<T>(exp_store, "CGt") { }
 
-      /** @copydoc CExp<T>::compute(ValueStore<T>&, unsigned int) */
-      inline virtual void compute(ValueStore<T>& vs, unsigned int level = 0) const
+      /** @copydoc CExp<T>::compute(unsigned int) */
+      inline virtual void compute(unsigned int level = 0) const
       {
-        bool value = (vs(this->children[0], level) > vs(this->children[1], level));
-        vs.assign(this->index, level, value);
+        bool value = (this->es.get(this->children[0], level) > this->es.get(this->children[1], level));
+        this->es.set(this->index, level, value);
       }
     };
 
@@ -606,13 +602,13 @@ namespace EasyLocal {
     public:
       CNValues(ExpressionStore<T>& exp_store) : CNoDelta<T>(exp_store, "CNValues") { }
 
-      /** @copydoc CExp<T>::compute(ValueStore<T>&, unsigned int) */
-      virtual void compute(ValueStore<T>& vs, unsigned int level = 0) const
+      /** @copydoc CExp<T>::compute(unsigned int) */
+      virtual void compute(unsigned int level = 0) const
       {
         std::unordered_set<T> values;
         for (auto it = this->children.begin(); it != this->children.end(); it++)
-          values.insert(vs(*it, level));
-        vs.assign(this->index, level, values.size());
+          values.insert(this->es.get(*it, level));
+        this->es.set(this->index, level, values.size());
       }
     };
   }

@@ -13,6 +13,5 @@
 #include "easylocal/modeling/operators.hh"
 #include "easylocal/modeling/compiledexpression.hh"
 #include "easylocal/modeling/expressionstore.hh"
-#include "easylocal/modeling/valuestore.hh"
 
 #endif // _MODELING_HH_
