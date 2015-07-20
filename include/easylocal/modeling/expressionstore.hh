@@ -31,16 +31,16 @@ namespace EasyLocal {
     template <typename T>
     class ValueStore;
 
-    class ResizeNotifier {
-    public:
-      virtual size_t size() const = 0;
+    struct ResizeNotifier {
+      virtual size_t size() const noexcept = 0;
+      virtual void notify_resize() const = 0;
     };
 
     /** Interface of a class who can be notified when a resize event happens. */
-    class ResizeSubscriber
+    class ResizeSubscriber : public std::enable_shared_from_this<ResizeSubscriber>
     {
     public:
-      virtual void notify(const std::shared_ptr<ResizeNotifier>&) = 0;
+      virtual void notify(const std::shared_ptr<const ResizeNotifier>&) = 0;
     };
 
     /** ExpressionStore, a structure to handle bottom-up evaluation of compiled Exps. */
@@ -53,18 +53,36 @@ namespace EasyLocal {
 
     public:
 
-      // using std::vector<std::shared_ptr<CExp<T>>>::size;
-      inline size_t size() const
+      /** Dispatch size() calls to vector's size(). */
+      size_t size() const noexcept
       {
-        return std::vector<std::shared_ptr<CExp<T>>>::size();
+        size_t s = std::vector<std::shared_ptr<CExp<T>>>::size();
+        return s;
+      }
+      
+      /** Notify subscribers about resize event */
+      void notify_resize() const
+      {
+        // Keep track of obsolete pointers
+        std::unordered_set<std::shared_ptr<ResizeSubscriber>> to_remove;
+        
+        // Notify valid pointers
+        for (const auto& n : subscribers)
+          if (n)
+            n->notify(this->shared_from_this());
+        
+        // Delete obsolete pointers
+        for (auto& n : to_remove)
+          subscribers.erase(n);
       }
 
       /** Registers a subscriber for the resize event.
           @param n the ResizeNotify object to notify
        */
-      inline void subscribe(const std::shared_ptr<ResizeSubscriber>& n) const
+      inline void subscribe(ResizeSubscriber* subscriber) const
       {
-        subscribers.push_back(n);
+        subscribers.insert(subscriber->shared_from_this());
+        notify_resize();
       }
 
       /** Compile an expression into a compiled expression.
@@ -73,6 +91,7 @@ namespace EasyLocal {
        */
       std::shared_ptr<CExp<T>> compile(std::shared_ptr<Exp<T>>& e)
       {
+        // Return directly index if expression is compiled already
         auto it = this->compiled_exps.find(e);
         if (it != this->compiled_exps.end())
           return (*this)[it->second];
@@ -88,11 +107,19 @@ namespace EasyLocal {
         if (this->size() != previous_size)
         {
           // Alert subscribers (a ValueStore) that the size has changed
-          for (const auto& n : subscribers)
-            n->notify(this->shared_from_this());
+          notify_resize();
           _depth_needs_update = true;
         }
         return (*this)[root_index];
+      }
+      
+      const size_t& index_of(std::shared_ptr<Exp<T>>& e)
+      {
+        // Return directly index if expression is compiled already
+        auto it = this->compiled_exps.find(e);
+        if (it != this->compiled_exps.end())
+          return it->second;
+        throw std::runtime_error("Expression is not compiled!");
       }
 
       /** Evaluates all the registered expressions within a given ValueStore at a given level.
@@ -215,7 +242,7 @@ namespace EasyLocal {
       }
 
       /** Map of all compiled expressions, for leaner compilation (expression reuse). */
-      inline const std::unordered_map<std::shared_ptr<const Exp<T>>, size_t, ExpHash<T>, ExpEquals<T>>& compiled_expressions() const
+      inline std::unordered_map<std::shared_ptr<const Exp<T>>, size_t, ExpHash<T>, ExpEquals<T>>& compiled_expressions()
       {
         return this->compiled_exps;
       }
@@ -241,7 +268,7 @@ namespace EasyLocal {
         for (size_t i : to_update)
         {
           // cexps are pushed to the queue only if their value has changed
-          if (force || !vs.evaluated || vs.changed(i, level))
+          if (force || !vs.evaluated() || vs.changed(i, level))
           {
             const std::shared_ptr<CExp<T>>& cur = (*this)[i];
             queue.push(std::make_pair(cur->depth, i));
@@ -260,7 +287,7 @@ namespace EasyLocal {
           cur->compute(vs, level);
 
           // If value changes, parents are enqueued
-          if (force || !vs.evaluated || vs.changed(cur_i, level))
+          if (force || !vs.evaluated() || vs.changed(cur_i, level))
             for (size_t i : cur->parents)
             {
               const std::shared_ptr<CExp<T>>& par = (*this)[i];
@@ -269,7 +296,7 @@ namespace EasyLocal {
         }
 
         // Mark ValueStore as evaluated at least one
-        vs.evaluated = true;
+        vs.evaluated() = true;
       }
 
       /** Recompute the (maximum) depth each expression.
@@ -285,7 +312,7 @@ namespace EasyLocal {
       }
 
       /** Resize events subscribers */
-      mutable std::list<std::shared_ptr<ResizeSubscriber>> subscribers;
+      mutable std::unordered_set<std::shared_ptr<ResizeSubscriber>> subscribers;
 
       /** Marks if ExpressionStore needs to recompute the depth of the compiled expressions. */
       mutable bool _depth_needs_update;

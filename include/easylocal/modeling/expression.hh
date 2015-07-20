@@ -193,15 +193,15 @@ namespace EasyLocal {
         // If the compiled expression is found in the ExpressionStore, return index and nullptr
         auto shared_this = this->shared_from_this();
         
-        auto it = exp_store.compiled_exps.find(shared_this);
-        if (it != exp_store.compiled_exps.end())
+        auto it = exp_store.compiled_expressions().find(shared_this);
+        if (it != exp_store.compiled_expressions().end())
           return std::make_pair(it->second, nullptr);
         
         // Otherwise, generate a new index
         size_t this_index = exp_store.size();
         
         // Register the hash in the list of compiled expressions
-        exp_store.compiled_exps[shared_this] = this_index;
+        exp_store.compiled_expressions()[shared_this] = this_index;
         
         // Generate the correct CExp using the template parameter
         std::shared_ptr<CType<T>> compiled = std::make_shared<CType<T>>(exp_store);
