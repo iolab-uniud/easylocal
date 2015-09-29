@@ -12,15 +12,15 @@ namespace EasyLocal {
   
   namespace Core {
     
-    template <class Input, class State, class Move, typename CFtype = int, class Compare = std::less<CostStructure<CFtype>>>
-    class SampleTabuSearch : public TabuSearch<Input, State, Move, CFtype, Compare>
+    template <class Input, class State, class Move, typename CFtype = int>
+    class SampleTabuSearch : public TabuSearch<Input, State, Move, CFtype>
     {
     public:      
-      using TabuSearch<Input, State, Move, CFtype, Compare>::TabuSearch;
+      using TabuSearch<Input, State, Move, CFtype>::TabuSearch;
       
       void RegisterParameters()
       {
-        TabuSearch<Input, State, Move, CFtype, Compare>::RegisterParameters();
+        TabuSearch<Input, State, Move, CFtype>::RegisterParameters();
         samples("samples", "Number of neighbors sampled", this->parameters);
       }
     protected:
@@ -36,8 +36,8 @@ namespace EasyLocal {
      Selects always the best move that is non prohibited by the tabu list
      mechanism.
      */
-    template <class Input, class State, class Move, typename CFtype, class Compare>
-    void SampleTabuSearch<Input, State, Move, CFtype, Compare>::SelectMove()
+    template <class Input, class State, class Move, typename CFtype>
+    void SampleTabuSearch<Input, State, Move, CFtype>::SelectMove()
     {
       size_t sampled = 0;
       CFtype aspiration = this->best_state_cost.total - this->current_state_cost.total;

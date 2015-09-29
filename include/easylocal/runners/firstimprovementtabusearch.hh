@@ -12,11 +12,11 @@ namespace EasyLocal {
      that improves the cost function is selected.
      @ingroup Runners
      */
-    template <class Input, class State, class Move, typename CFtype = int, class Compare = std::less<CostStructure<CFtype>>>
-    class FirstImprovementTabuSearch : public TabuSearch<Input, State, Move, CFtype, Compare>
+    template <class Input, class State, class Move, typename CFtype = int>
+    class FirstImprovementTabuSearch : public TabuSearch<Input, State, Move, CFtype>
     {
     public:
-      using TabuSearch<Input, State, Move, CFtype, Compare>::TabuSearch;
+      using TabuSearch<Input, State, Move, CFtype>::TabuSearch;
     protected:
       void SelectMove();
     };
@@ -29,8 +29,8 @@ namespace EasyLocal {
      Selects always the best move that is non prohibited by the tabu list
      mechanism.
      */
-    template <class Input, class State, class Move, typename CFtype, class Compare>
-    void FirstImprovementTabuSearch<Input, State, Move, CFtype, Compare>::SelectMove()
+    template <class Input, class State, class Move, typename CFtype>
+    void FirstImprovementTabuSearch<Input, State, Move, CFtype>::SelectMove()
     {
       CFtype aspiration = this->best_state_cost.total - this->current_state_cost.total;
       size_t explored;

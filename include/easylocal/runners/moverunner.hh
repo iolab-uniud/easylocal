@@ -15,8 +15,8 @@ namespace EasyLocal {
      It is at the root of the inheritance hierarchy of actual runners.
      @ingroup Runners
      */
-    template <class Input, class State, class Move, typename CFtype = int, class Compare = std::less<CostStructure<CFtype>>>
-    class MoveRunner : public Runner<Input, State, CFtype, Compare>
+    template <class Input, class State, class Move, typename CFtype = int>
+    class MoveRunner : public Runner<Input, State, CFtype>
     {
     public:
       
@@ -88,8 +88,8 @@ namespace EasyLocal {
      *************************************************************************/
     
     
-    template <class Input, class State, class Move, typename CFtype, class Compare>
-    void MoveRunner<Input, State, Move, CFtype, Compare>::UpdateBestState()
+    template <class Input, class State, class Move, typename CFtype>
+    void MoveRunner<Input, State, Move, CFtype>::UpdateBestState()
     {
       if (LessThan(this->current_state_cost.violations, this->best_state_cost.violations)
           || (EqualTo(this->current_state_cost.violations, this->best_state_cost.violations) &&
@@ -106,8 +106,8 @@ namespace EasyLocal {
     }
     
     
-    template <class Input, class State, class Move, typename CFtype, class Compare>
-    MoveRunner<Input, State, Move, CFtype, Compare>::MoveRunner(const Input& in,
+    template <class Input, class State, class Move, typename CFtype>
+    MoveRunner<Input, State, Move, CFtype>::MoveRunner(const Input& in,
                                                        StateManager<Input, State, CFtype>& e_sm,
                                                        NeighborhoodExplorer<Input, State, Move, CFtype>& e_ne,
                                                        std::string name,
@@ -115,20 +115,20 @@ namespace EasyLocal {
     : Runner<Input, State, CFtype>(in, e_sm, name, description), observers(events), ne(e_ne)
     {}        
     
-    template <class Input, class State, class Move, typename CFtype, class Compare>
-    void MoveRunner<Input, State, Move, CFtype, Compare>::InitializeRun() throw (ParameterNotSet, IncorrectParameterValue)
+    template <class Input, class State, class Move, typename CFtype>
+    void MoveRunner<Input, State, Move, CFtype>::InitializeRun() throw (ParameterNotSet, IncorrectParameterValue)
     {
       notify(START);
     }
     
-    template <class Input, class State, class Move, typename CFtype, class Compare>
-    void MoveRunner<Input, State, Move, CFtype, Compare>::TerminateRun()
+    template <class Input, class State, class Move, typename CFtype>
+    void MoveRunner<Input, State, Move, CFtype>::TerminateRun()
     {
       notify(END);
     }
     
-    template <class Input, class State, class Move, typename CFtype, class Compare>
-    bool MoveRunner<Input, State, Move, CFtype, Compare>::AcceptableMoveFound()
+    template <class Input, class State, class Move, typename CFtype>
+    bool MoveRunner<Input, State, Move, CFtype>::AcceptableMoveFound()
     {
       this->no_acceptable_move_found = !this->current_move.is_valid;
       return this->current_move.is_valid;
@@ -137,8 +137,8 @@ namespace EasyLocal {
     /**
      Actually performs the move selected by the local search strategy.
      */
-    template <class Input, class State, class Move, typename CFtype, class Compare>
-    void MoveRunner<Input, State, Move, CFtype, Compare>::MakeMove()
+    template <class Input, class State, class Move, typename CFtype>
+    void MoveRunner<Input, State, Move, CFtype>::MakeMove()
     {
       if (current_move.is_valid)
       {

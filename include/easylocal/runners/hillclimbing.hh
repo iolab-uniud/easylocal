@@ -16,8 +16,8 @@ namespace EasyLocal {
      the value of the cost function.
      @ingroup Runners
      */
-    template <class Input, class State, class Move, typename CFtype = int, class Compare = std::less<CostStructure<CFtype>>>
-    class HillClimbing : public MoveRunner<Input, State, Move, CFtype, Compare>
+    template <class Input, class State, class Move, typename CFtype = int>
+    class HillClimbing : public MoveRunner<Input, State, Move, CFtype>
     {
     public:
       HillClimbing(const Input& in, StateManager<Input, State, CFtype>& e_sm,
@@ -46,19 +46,19 @@ namespace EasyLocal {
      @param in a pointer to an input object
      */
     
-    template <class Input, class State, class Move, typename CFtype, class Compare>
-    HillClimbing<Input, State, Move, CFtype, Compare>::HillClimbing(const Input& in,
+    template <class Input, class State, class Move, typename CFtype>
+    HillClimbing<Input, State, Move, CFtype>::HillClimbing(const Input& in,
                                                            StateManager<Input, State, CFtype>& e_sm,
                                                            NeighborhoodExplorer<Input, State, Move, CFtype>& e_ne,
                                                            std::string name)
-    : MoveRunner<Input, State, Move, CFtype, Compare>(in, e_sm, e_ne, name, "Hill Climbing Runner")
+    : MoveRunner<Input, State, Move, CFtype>(in, e_sm, e_ne, name, "Hill Climbing Runner")
     {}
     
     
-    template <class Input, class State, class Move, typename CFtype, class Compare>
-    void HillClimbing<Input, State, Move, CFtype, Compare>::RegisterParameters()
+    template <class Input, class State, class Move, typename CFtype>
+    void HillClimbing<Input, State, Move, CFtype>::RegisterParameters()
     {
-      MoveRunner<Input, State, Move, CFtype, Compare>::RegisterParameters();
+      MoveRunner<Input, State, Move, CFtype>::RegisterParameters();
       max_idle_iterations("max_idle_iterations", "Total number of allowed idle iterations", this->parameters);
     }
     
@@ -66,8 +66,8 @@ namespace EasyLocal {
      The select move strategy for the hill climbing simply looks for a
      random move that improves or leaves the cost unchanged.
      */
-    template <class Input, class State, class Move, typename CFtype, class Compare>
-    void HillClimbing<Input, State, Move, CFtype, Compare>::SelectMove()
+    template <class Input, class State, class Move, typename CFtype>
+    void HillClimbing<Input, State, Move, CFtype>::SelectMove()
     {
       // TODO: it should become a parameter, the number of neighbors drawn at each iteration (possibly evaluated in parallel)
       const size_t samples = 10;
@@ -79,8 +79,8 @@ namespace EasyLocal {
       this->evaluations += sampled;
     }
     
-    template <class Input, class State, class Move, typename CFtype, class Compare>
-    bool HillClimbing<Input, State, Move, CFtype, Compare>::MaxIdleIterationExpired() const
+    template <class Input, class State, class Move, typename CFtype>
+    bool HillClimbing<Input, State, Move, CFtype>::MaxIdleIterationExpired() const
     {
       return this->iteration - this->iteration_of_best >= this->max_idle_iterations;
     }          
@@ -89,8 +89,8 @@ namespace EasyLocal {
      The stop criterion is based on the number of iterations elapsed from
      the last strict improvement of the best state cost.
      */
-    template <class Input, class State, class Move, typename CFtype, class Compare>
-    bool HillClimbing<Input, State, Move, CFtype, Compare>::StopCriterion()
+    template <class Input, class State, class Move, typename CFtype>
+    bool HillClimbing<Input, State, Move, CFtype>::StopCriterion()
     {
       return MaxIdleIterationExpired() || this->MaxEvaluationsExpired();
     }
@@ -98,8 +98,8 @@ namespace EasyLocal {
     /**
      Create a string containing the status of the runner
      */
-    template <class Input, class State, class Move, typename CFtype, class Compare>
-    std::string HillClimbing<Input, State, Move, CFtype, Compare>::StatusString() const
+    template <class Input, class State, class Move, typename CFtype>
+    std::string HillClimbing<Input, State, Move, CFtype>::StatusString() const
     {
       std::stringstream status;
       status << "["
