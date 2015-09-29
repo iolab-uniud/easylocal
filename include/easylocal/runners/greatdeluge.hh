@@ -62,7 +62,7 @@ namespace EasyLocal {
      
      @param s a pointer to a compatible state manager
      @param ne a pointer to a compatible neighborhood explorer
-     @param in a poiter to an input object
+     @param in a pointer to an input object
      */
     
     template <class Input, class State, class Move, typename CFtype>
@@ -104,7 +104,7 @@ namespace EasyLocal {
       size_t sampled;
       CFtype cur_cost = this->current_state_cost.total;
       double l = level;
-      EvaluatedMove<Move, CFtype> em = this->ne.RandomFirst(*this->p_current_state, samples, sampled, [cur_cost, l](const Move& mv, CostStructure<CFtype> move_cost) {
+      EvaluatedMove<Move, CFtype> em = this->ne.RandomFirst(*this->p_current_state, samples, sampled, [cur_cost, l](const Move& mv, const CostStructure<CFtype>& move_cost) {
         return move_cost < 0 || ((double)move_cost + cur_cost) <= l;
       }, this->weights);
       this->current_move = em;

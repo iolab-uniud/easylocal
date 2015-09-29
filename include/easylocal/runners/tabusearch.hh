@@ -96,7 +96,7 @@ namespace EasyLocal {
      @param s a pointer to a compatible state manager
      @param ne a pointer to a compatible neighborhood explorer
      @param tlm a pointer to a compatible tabu list manager
-     @param in a poiter to an input object
+     @param in a pointer to an input object
      */
     
     template <class Input, class State, class Move, typename CFtype>
@@ -155,7 +155,7 @@ namespace EasyLocal {
     {
       CFtype aspiration = this->best_state_cost.total - this->current_state_cost.total;
       size_t explored;
-      EvaluatedMove<Move, CFtype> em = this->ne.SelectBest(*this->p_current_state, explored, [this, aspiration](const Move& mv, CostStructure<CFtype> move_cost) {
+      EvaluatedMove<Move, CFtype> em = this->ne.SelectBest(*this->p_current_state, explored, [this, aspiration](const Move& mv, const CostStructure<CFtype>& move_cost) {
         for (auto li : *(this->tabu_list))
           if ((move_cost.total >= aspiration) && this->Inverse(li.move, mv))
             return false;

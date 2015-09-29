@@ -47,7 +47,7 @@ namespace EasyLocal {
      
      @param s a pointer to a compatible state manager
      @param ne a pointer to a compatible neighborhood explorer
-     @param in a poiter to an input object
+     @param in a pointer to an input object
      */
     template <class Input, class State, class Move, typename CFtype>
     LateAcceptanceHillClimbing<Input, State, Move, CFtype>::LateAcceptanceHillClimbing(const Input& in,
@@ -92,7 +92,7 @@ namespace EasyLocal {
       size_t sampled;
       CFtype prev_step_delta_cost = previous_steps[this->iteration % steps] - this->current_state_cost.total;
       // TODO: check shifting penalty meaningfullness
-      EvaluatedMove<Move, CFtype> em = this->ne.RandomFirst(*this->p_current_state, samples, sampled, [prev_step_delta_cost](const Move& mv, CostStructure<CFtype> move_cost) {
+      EvaluatedMove<Move, CFtype> em = this->ne.RandomFirst(*this->p_current_state, samples, sampled, [prev_step_delta_cost](const Move& mv, const CostStructure<CFtype>& move_cost) {
         return move_cost <= 0 || move_cost <= prev_step_delta_cost;
       }, this->weights);
       this->current_move = em;

@@ -47,7 +47,7 @@ namespace EasyLocal {
      
      @param s a pointer to a compatible state manager
      @param ne a pointer to a compatible neighborhood explorer
-     @param in a poiter to an input object
+     @param in a pointer to an input object
      */
     template <class Input, class State, class Move, typename CFtype>
     SimulatedAnnealingEvaluationBased<Input, State, Move, CFtype>::SimulatedAnnealingEvaluationBased(const Input& in,

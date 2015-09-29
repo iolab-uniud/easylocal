@@ -63,7 +63,7 @@ namespace EasyLocal {
       typedef State StateType;
       typedef CFtype CostType;      
       
-      typedef typename std::function<bool(const Move& mv, CostStructure<CFtype> move_cost)> MoveAcceptor;
+      typedef typename std::function<bool(const Move& mv, const CostStructure<CFtype>& move_cost)> MoveAcceptor;
       
       /* Copies all the delta cost components from another neighborhood explorer of the same class
        @param ne the neighborhood explorer from which the data has to be copied

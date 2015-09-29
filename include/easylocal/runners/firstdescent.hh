@@ -37,7 +37,7 @@ namespace EasyLocal {
      
      @param s a pointer to a compatible state manager
      @param ne a pointer to a compatible neighborhood explorer
-     @param in a poiter to an input object
+     @param in a pointer to an input object
      */
     template <class Input, class State, class Move, typename CFtype>
     FirstDescent<Input, State, Move, CFtype>::FirstDescent(const Input& in,
@@ -53,7 +53,7 @@ namespace EasyLocal {
     void FirstDescent<Input, State, Move, CFtype>::SelectMove()
     {
       size_t explored;
-      EvaluatedMove<Move, CFtype> em = this->ne.SelectFirst(*this->p_current_state, explored, [](const Move& mv, CostStructure<CFtype> move_cost) {
+      EvaluatedMove<Move, CFtype> em = this->ne.SelectFirst(*this->p_current_state, explored, [](const Move& mv, const CostStructure<CFtype>& move_cost) {
         return move_cost < 0;
       }, this->weights);
       this->current_move = em;

@@ -64,7 +64,7 @@ namespace EasyLocal {
      
      @param s a pointer to a compatible state manager
      @param ne a pointer to a compatible neighborhood explorer
-     @param in a poiter to an input object
+     @param in a pointer to an input object
      */
     template <class Input, class State, class Move, typename CFtype>
     AbstractSimulatedAnnealing<Input, State, Move, CFtype>::AbstractSimulatedAnnealing(const Input& in,
@@ -148,7 +148,7 @@ namespace EasyLocal {
       // TODO: it should become a parameter, the number of neighbors drawn at each iteration (possibly evaluated in parallel)
       size_t sampled;
       double t = this->temperature;
-      EvaluatedMove<Move, CFtype> em = this->ne.RandomFirst(*this->p_current_state, this->max_neighbors_sampled - neighbors_sampled, sampled, [t](const Move& mv, CostStructure<CFtype> move_cost) {
+      EvaluatedMove<Move, CFtype> em = this->ne.RandomFirst(*this->p_current_state, this->max_neighbors_sampled - neighbors_sampled, sampled, [t](const Move& mv, const CostStructure<CFtype>& move_cost) {
           return move_cost <= 0 || (Random::Double() < exp(-1.0 * (double)move_cost / t));
       }, this->weights);
       this->current_move = em;

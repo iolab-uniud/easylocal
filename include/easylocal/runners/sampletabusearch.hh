@@ -41,7 +41,7 @@ namespace EasyLocal {
     {
       size_t sampled = 0;
       CFtype aspiration = this->best_state_cost.total - this->current_state_cost.total;
-      EvaluatedMove<Move, CFtype> em = this->ne.RandomBest(*this->p_current_state, samples, sampled, [this, aspiration](const Move& mv, CostStructure<CFtype> move_cost) {
+      EvaluatedMove<Move, CFtype> em = this->ne.RandomBest(*this->p_current_state, samples, sampled, [this, aspiration](const Move& mv, const CostStructure<CFtype>& move_cost) {
         for (auto li : *(this->tabu_list))
           if ((move_cost.total >= aspiration) && this->Inverse(li.move, mv))
             return false;
