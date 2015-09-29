@@ -1,40 +1,40 @@
-#ifndef Change_HH
-#define Change_HH
+#ifndef _CHANGE_HH
+#define _CHANGE_HH
 
 #include "expression.hh"
 
 namespace EasyLocal {
   namespace Modeling {
- // TODO: find a more meaningful name    
+    // TODO: find a more meaningful name
     template <typename T>
     class Change : public Core::Printable
     {
     public:
     };
-  
+    
     /** A tentative Change composed by a single assignment of a decision variable. */
     template <typename T>
     class BasicChange
     {
     public:
-      BasicChange() : val(0)
+      BasicChange() : var(nullptr), val(0)
       {}
       
       /** Constructor.
        @param var the variable to modify
        @param val the value to assign to the variable
        */
-      BasicChange(const Var<T>& var, T val) : var(var), val(val)
+      BasicChange(const Var<T>& var, T val) : var(&var), val(val)
       {}
       
       /** @copydoc Printable::print(std::ostream&) */
       virtual void Print(std::ostream& os) const
       {
-        os << "Change: " << var << "<<=" << val;
+        os << "Change: " << *var << "<<=" << val;
       }
       
-      /** The variable to assign */
-      Var<T> var;
+      /** A pointer to the variable to assign */
+      const Var<T>* var;
       
       /** The value to assign to the variable */
       T val;
@@ -78,7 +78,7 @@ namespace EasyLocal {
       m.push_back(mv2);
       return m;
     }
-
+    
     /** Composition operator for CompositeChange (builds a CompositeChange from two BasicChanges). */
     template <typename T>
     CompositeChange<T> operator&&(const BasicChange<T>& mv1, const BasicChange<T>& mv2)
@@ -86,7 +86,7 @@ namespace EasyLocal {
       CompositeChange<T> m(mv1);
       m.push_back(mv2);
       return m;
-    }        
+    }
   }
 }
 
