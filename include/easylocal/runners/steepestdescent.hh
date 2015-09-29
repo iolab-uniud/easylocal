@@ -17,8 +17,8 @@ namespace EasyLocal {
      nearest local minimum of a given state.
      @ingroup Runners
      */
-    template <class Input, class State, class Move, typename CFtype = int>
-    class SteepestDescent : public MoveRunner<Input, State, Move, CFtype>
+    template <class Input, class State, class Move, typename CFtype = int, class Compare = std::less<CostStructure<CFtype>>>
+    class SteepestDescent : public MoveRunner<Input, State, Move, CFtype, Compare>
     {
     public:
       
@@ -45,18 +45,18 @@ namespace EasyLocal {
      @param ne a pointer to a compatible neighborhood explorer
      @param in a pointer to an input object
      */
-    template <class Input, class State, class Move, typename CFtype>
-    SteepestDescent<Input, State, Move, CFtype>::SteepestDescent(const Input& in,
+    template <class Input, class State, class Move, typename CFtype, class Compare>
+    SteepestDescent<Input, State, Move, CFtype, Compare>::SteepestDescent(const Input& in,
                                                                  StateManager<Input, State, CFtype>& e_sm, NeighborhoodExplorer<Input, State, Move, CFtype>& e_ne,
                                                                  std::string name)
-    : MoveRunner<Input, State, Move, CFtype>(in, e_sm, e_ne, name, "Steepest Descent Runner")
+    : MoveRunner<Input, State, Move, CFtype, Compare>(in, e_sm, e_ne, name, "Steepest Descent Runner")
     {}
     
     /**
      Selects always the best move in the neighborhood.
      */
-    template <class Input, class State, class Move, typename CFtype>
-    void SteepestDescent<Input, State, Move, CFtype>::SelectMove()
+    template <class Input, class State, class Move, typename CFtype, class Compare>
+    void SteepestDescent<Input, State, Move, CFtype, Compare>::SelectMove()
     {
       size_t explored;
       EvaluatedMove<Move, CFtype> em = this->ne.SelectBest(*this->p_current_state, explored, [](const Move& mv, CostStructure<CFtype> move_cost) {
@@ -69,8 +69,8 @@ namespace EasyLocal {
     /**
      The search is stopped when no (strictly) improving move has been found.
      */
-    template <class Input, class State, class Move, typename CFtype>
-    bool SteepestDescent<Input, State, Move, CFtype>::StopCriterion()
+    template <class Input, class State, class Move, typename CFtype, class Compare>
+    bool SteepestDescent<Input, State, Move, CFtype, Compare>::StopCriterion()
     {
       return this->iteration > 0 && !this->current_move.is_valid;
     }

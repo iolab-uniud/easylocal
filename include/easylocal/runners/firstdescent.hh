@@ -14,8 +14,8 @@ namespace EasyLocal {
      solution is selected and performed.
      @ingroup Runners
      */
-    template <class Input, class State, class Move, typename CFtype = int>
-    class FirstDescent : public MoveRunner<Input, State, Move, CFtype>
+    template <class Input, class State, class Move, typename CFtype = int, class Compare = std::less<CostStructure<CFtype>>>
+    class FirstDescent : public MoveRunner<Input, State, Move, CFtype, Compare>
     {
     public:
       FirstDescent(const Input& in,
@@ -39,18 +39,18 @@ namespace EasyLocal {
      @param ne a pointer to a compatible neighborhood explorer
      @param in a poiter to an input object
      */
-    template <class Input, class State, class Move, typename CFtype>
-    FirstDescent<Input, State, Move, CFtype>::FirstDescent(const Input& in,
+    template <class Input, class State, class Move, typename CFtype, class Compare>
+    FirstDescent<Input, State, Move, CFtype, Compare>::FirstDescent(const Input& in,
                                                            StateManager<Input, State, CFtype>& e_sm, NeighborhoodExplorer<Input, State, Move, CFtype>& e_ne,
                                                            std::string name)
-    : MoveRunner<Input, State, Move, CFtype>(in, e_sm, e_ne, name, "First Descent Runner")
+    : MoveRunner<Input, State, Move, CFtype, Compare>(in, e_sm, e_ne, name, "First Descent Runner")
     {}
     
     /**
      Selects always the first improving move in the neighborhood.
      */
-    template <class Input, class State, class Move, typename CFtype>
-    void FirstDescent<Input, State, Move, CFtype>::SelectMove()
+    template <class Input, class State, class Move, typename CFtype, class Compare>
+    void FirstDescent<Input, State, Move, CFtype, Compare>::SelectMove()
     {
       size_t explored;
       EvaluatedMove<Move, CFtype> em = this->ne.SelectFirst(*this->p_current_state, explored, [](const Move& mv, CostStructure<CFtype> move_cost) {
@@ -63,8 +63,8 @@ namespace EasyLocal {
     /**
      The search is stopped when no (strictly) improving move has been found.
      */
-    template <class Input, class State, class Move, typename CFtype>
-    bool FirstDescent<Input, State, Move, CFtype>::StopCriterion()
+    template <class Input, class State, class Move, typename CFtype, class Compare>
+    bool FirstDescent<Input, State, Move, CFtype, Compare>::StopCriterion()
     {
       return this->iteration > 0 && !this->current_move.is_valid;
     }        

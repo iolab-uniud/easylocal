@@ -16,8 +16,8 @@ namespace EasyLocal {
      
      @ingroup Runners
      */
-    template <class Input, class State, class Move, typename CFtype = int>
-    class LateAcceptanceHillClimbing : public HillClimbing<Input, State, Move, CFtype>
+    template <class Input, class State, class Move, typename CFtype = int, class Compare = std::less<CostStructure<CFtype>>>
+    class LateAcceptanceHillClimbing : public HillClimbing<Input, State, Move, CFtype, Compare>
     {
     public:
       
@@ -49,18 +49,18 @@ namespace EasyLocal {
      @param ne a pointer to a compatible neighborhood explorer
      @param in a poiter to an input object
      */
-    template <class Input, class State, class Move, typename CFtype>
-    LateAcceptanceHillClimbing<Input, State, Move, CFtype>::LateAcceptanceHillClimbing(const Input& in,
+    template <class Input, class State, class Move, typename CFtype, class Compare>
+    LateAcceptanceHillClimbing<Input, State, Move, CFtype, Compare>::LateAcceptanceHillClimbing(const Input& in,
                                                                                        StateManager<Input, State, CFtype>& e_sm,
                                                                                        NeighborhoodExplorer<Input, State, Move, CFtype>& e_ne,
                                                                                        std::string name)
-    : HillClimbing<Input, State, Move, CFtype>(in, e_sm, e_ne, name)
+    : HillClimbing<Input, State, Move, CFtype, Compare>(in, e_sm, e_ne, name)
     {}
     
-    template <class Input, class State, class Move, typename CFtype>
-    void LateAcceptanceHillClimbing<Input, State, Move, CFtype>:: RegisterParameters()
+    template <class Input, class State, class Move, typename CFtype, class Compare>
+    void LateAcceptanceHillClimbing<Input, State, Move, CFtype, Compare>:: RegisterParameters()
     {
-      HillClimbing<Input, State, Move, CFtype>::RegisterParameters();
+      HillClimbing<Input, State, Move, CFtype, Compare>::RegisterParameters();
       steps("steps", "Delay (number of steps in the queue)", this->parameters);
       steps = 10;
     }
@@ -69,10 +69,10 @@ namespace EasyLocal {
      Initializes the run by invoking the companion superclass method, and
      setting the temperature to the start value.
      */
-    template <class Input, class State, class Move, typename CFtype>
-    void LateAcceptanceHillClimbing<Input, State, Move, CFtype>::InitializeRun() throw (ParameterNotSet, IncorrectParameterValue)
+    template <class Input, class State, class Move, typename CFtype, class Compare>
+    void LateAcceptanceHillClimbing<Input, State, Move, CFtype, Compare>::InitializeRun() throw (ParameterNotSet, IncorrectParameterValue)
     {
-      HillClimbing<Input, State, Move, CFtype>::InitializeRun();
+      HillClimbing<Input, State, Move, CFtype, Compare>::InitializeRun();
       
       // the queue must be filled with the initial state cost at the beginning
       previous_steps = std::vector<CFtype>(steps);
@@ -84,8 +84,8 @@ namespace EasyLocal {
      or with exponentially decreasing probability if it is
      a worsening one.
      */
-    template <class Input, class State, class Move, typename CFtype>
-    void LateAcceptanceHillClimbing<Input, State, Move, CFtype>::SelectMove()
+    template <class Input, class State, class Move, typename CFtype, class Compare>
+    void LateAcceptanceHillClimbing<Input, State, Move, CFtype, Compare>::SelectMove()
     {
       // TODO: it should become a parameter, the number of neighbors drawn at each iteration (possibly evaluated in parallel)
       const size_t samples = 10;
@@ -102,8 +102,8 @@ namespace EasyLocal {
     /**
      A move is randomly picked.
      */
-    template <class Input, class State, class Move, typename CFtype>
-    void LateAcceptanceHillClimbing<Input, State, Move, CFtype>::CompleteMove()
+    template <class Input, class State, class Move, typename CFtype, class Compare>
+    void LateAcceptanceHillClimbing<Input, State, Move, CFtype, Compare>::CompleteMove()
     {
       previous_steps[this->iteration % steps] = this->best_state_cost.total;
     }

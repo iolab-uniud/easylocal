@@ -12,8 +12,8 @@ namespace EasyLocal {
      
      @ingroup Runners
      */
-    template <class Input, class State, class Move, typename CFtype = int>
-    class SimulatedAnnealing : public AbstractSimulatedAnnealing<Input, State, Move, CFtype>
+    template <class Input, class State, class Move, typename CFtype = int, class Compare = std::less<CostStructure<CFtype>>>
+    class SimulatedAnnealing : public AbstractSimulatedAnnealing<Input, State, Move, CFtype, Compare>
     {
     public:
       
@@ -44,18 +44,18 @@ namespace EasyLocal {
      @param ne a pointer to a compatible neighborhood explorer
      @param in a poiter to an input object
      */
-    template <class Input, class State, class Move, typename CFtype>
-    SimulatedAnnealing<Input, State, Move, CFtype>::SimulatedAnnealing(const Input& in,
+    template <class Input, class State, class Move, typename CFtype, class Compare>
+    SimulatedAnnealing<Input, State, Move, CFtype, Compare>::SimulatedAnnealing(const Input& in,
                                                                        StateManager<Input, State, CFtype>& sm,
                                                                        NeighborhoodExplorer<Input, State, Move, CFtype>& ne,
                                                                        std::string name)
-    : AbstractSimulatedAnnealing<Input, State, Move, CFtype>(in, sm, ne, name)
+    : AbstractSimulatedAnnealing<Input, State, Move, CFtype, Compare>(in, sm, ne, name)
     {}
     
-    template <class Input, class State, class Move, typename CFtype>
-    void SimulatedAnnealing<Input, State, Move, CFtype>::RegisterParameters()
+    template <class Input, class State, class Move, typename CFtype, class Compare>
+    void SimulatedAnnealing<Input, State, Move, CFtype, Compare>::RegisterParameters()
     {
-      AbstractSimulatedAnnealing<Input, State, Move, CFtype>::RegisterParameters();
+      AbstractSimulatedAnnealing<Input, State, Move, CFtype, Compare>::RegisterParameters();
       min_temperature("min_temperature", "Minimum temperature", this->parameters);
     }
     
@@ -63,21 +63,21 @@ namespace EasyLocal {
      Initializes the run by invoking the companion superclass method, and
      setting the temperature to the start value.
      */
-    template <class Input, class State, class Move, typename CFtype>
-    void SimulatedAnnealing<Input, State, Move, CFtype>::InitializeRun() throw (ParameterNotSet, IncorrectParameterValue)
+    template <class Input, class State, class Move, typename CFtype, class Compare>
+    void SimulatedAnnealing<Input, State, Move, CFtype, Compare>::InitializeRun() throw (ParameterNotSet, IncorrectParameterValue)
     {
       if (min_temperature <= 0.0)
       {
         throw IncorrectParameterValue(min_temperature, "should be greater than zero");
       }
-      AbstractSimulatedAnnealing<Input, State, Move, CFtype>::InitializeRun();
+      AbstractSimulatedAnnealing<Input, State, Move, CFtype, Compare>::InitializeRun();
     }
     
     /**
      The search stops when a low temperature has reached.
      */
-    template <class Input, class State, class Move, typename CFtype>
-    bool SimulatedAnnealing<Input, State, Move, CFtype>::StopCriterion()
+    template <class Input, class State, class Move, typename CFtype, class Compare>
+    bool SimulatedAnnealing<Input, State, Move, CFtype, Compare>::StopCriterion()
     {
       return this->temperature <= min_temperature;
     }
@@ -85,8 +85,8 @@ namespace EasyLocal {
     /**
      Create a string containing the status of the runner
      */
-    template <class Input, class State, class Move, typename CFtype>
-    std::string SimulatedAnnealing<Input, State, Move, CFtype>::StatusString() const
+    template <class Input, class State, class Move, typename CFtype, class Compare>
+    std::string SimulatedAnnealing<Input, State, Move, CFtype, Compare>::StatusString() const
     {
       std::stringstream status;
       status << "["

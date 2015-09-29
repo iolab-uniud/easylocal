@@ -26,8 +26,8 @@ namespace EasyLocal {
      
      @ingroup Runners
      */
-    template <class Input, class State, class Move, typename CFtype = int>
-    class AbstractSimulatedAnnealing : public MoveRunner<Input, State, Move, CFtype>
+    template <class Input, class State, class Move, typename CFtype = int, class Compare = std::less<CostStructure<CFtype>>>
+    class AbstractSimulatedAnnealing : public MoveRunner<Input, State, Move, CFtype, Compare>
     {
     public:
       
@@ -66,18 +66,18 @@ namespace EasyLocal {
      @param ne a pointer to a compatible neighborhood explorer
      @param in a poiter to an input object
      */
-    template <class Input, class State, class Move, typename CFtype>
-    AbstractSimulatedAnnealing<Input, State, Move, CFtype>::AbstractSimulatedAnnealing(const Input& in,
+    template <class Input, class State, class Move, typename CFtype, class Compare>
+    AbstractSimulatedAnnealing<Input, State, Move, CFtype, Compare>::AbstractSimulatedAnnealing(const Input& in,
                                                                                        StateManager<Input, State, CFtype>& e_sm,
                                                                                        NeighborhoodExplorer<Input, State, Move, CFtype>& e_ne,
                                                                                        std::string name)
-    : MoveRunner<Input, State, Move, CFtype>(in, e_sm, e_ne, name, "Simulated Annealing Runner")
+    : MoveRunner<Input, State, Move, CFtype, Compare>(in, e_sm, e_ne, name, "Simulated Annealing Runner")
     {}
     
-    template <class Input, class State, class Move, typename CFtype>
-    void AbstractSimulatedAnnealing<Input, State, Move, CFtype>::RegisterParameters()
+    template <class Input, class State, class Move, typename CFtype, class Compare>
+    void AbstractSimulatedAnnealing<Input, State, Move, CFtype, Compare>::RegisterParameters()
     {
-      MoveRunner<Input, State, Move, CFtype>::RegisterParameters();
+      MoveRunner<Input, State, Move, CFtype, Compare>::RegisterParameters();
       compute_start_temperature("compute_start_temperature", "Should the runner compute the initial temperature?", this->parameters);
       start_temperature("start_temperature", "Starting temperature", this->parameters);
       cooling_rate("cooling_rate", "Cooling rate", this->parameters);
@@ -93,10 +93,10 @@ namespace EasyLocal {
      setting the temperature to the start value.
      */
     // FIXME
-    template <class Input, class State, class Move, typename CFtype>
-    void AbstractSimulatedAnnealing<Input, State, Move, CFtype>::InitializeRun() throw (ParameterNotSet, IncorrectParameterValue)
+    template <class Input, class State, class Move, typename CFtype, class Compare>
+    void AbstractSimulatedAnnealing<Input, State, Move, CFtype, Compare>::InitializeRun() throw (ParameterNotSet, IncorrectParameterValue)
     {
-      MoveRunner<Input, State, Move, CFtype>::InitializeRun();
+      MoveRunner<Input, State, Move, CFtype, Compare>::InitializeRun();
       
       if (cooling_rate <= 0.0 || cooling_rate >= 1.0)
         throw IncorrectParameterValue(cooling_rate, "should be a value in the interval ]0, 1[");
@@ -142,8 +142,8 @@ namespace EasyLocal {
     /**
      A move is randomly picked.
      */
-    template <class Input, class State, class Move, typename CFtype>
-    void AbstractSimulatedAnnealing<Input, State, Move, CFtype>::SelectMove()
+    template <class Input, class State, class Move, typename CFtype, class Compare>
+    void AbstractSimulatedAnnealing<Input, State, Move, CFtype, Compare>::SelectMove()
     {
       // TODO: it should become a parameter, the number of neighbors drawn at each iteration (possibly evaluated in parallel)
       size_t sampled;
@@ -159,8 +159,8 @@ namespace EasyLocal {
     /**
      A move is randomly picked.
      */
-    template <class Input, class State, class Move, typename CFtype>
-    void AbstractSimulatedAnnealing<Input, State, Move, CFtype>::CompleteMove()
+    template <class Input, class State, class Move, typename CFtype, class Compare>
+    void AbstractSimulatedAnnealing<Input, State, Move, CFtype, Compare>::CompleteMove()
     {
       neighbors_accepted++;
     }
@@ -169,8 +169,8 @@ namespace EasyLocal {
      At regular steps, the temperature is decreased
      multiplying it by a cooling rate.
      */
-    template <class Input, class State, class Move, typename CFtype>
-    void AbstractSimulatedAnnealing<Input, State, Move, CFtype>::CompleteIteration()
+    template <class Input, class State, class Move, typename CFtype, class Compare>
+    void AbstractSimulatedAnnealing<Input, State, Move, CFtype, Compare>::CompleteIteration()
     {
       Runner<Input, State, CFtype>::CompleteIteration();
       if (neighbors_sampled >= max_neighbors_sampled || neighbors_accepted >= max_neighbors_accepted)
