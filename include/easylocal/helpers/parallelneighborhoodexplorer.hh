@@ -185,38 +185,41 @@ namespace EasyLocal {
     {
     public:
       using NE::NE;
-      using typename NE::MoveAcceptor;      
+      using typename NE::MoveAcceptor;
+      using typename NE::MoveType;
+      using typename NE::CostType;
+      using typename NE::CostStructureType;
     protected:
-      FullNeighborhoodIterator<Input, State, typename NE::MoveType, typename NE::CostType, typename NE::CostStructureType> begin(const State& st) const
+      FullNeighborhoodIterator<Input, State, MoveType, CostType, CostStructureType> begin(const State& st) const
       {
-        return NeighborhoodExplorerIteratorInterface<Input, State, typename NE::MoveType, typename NE::CostType, typename NE::CostStructureType>::create_full_neighborhood_iterator(*this, st);
+        return NeighborhoodExplorerIteratorInterface<Input, State, MoveType, CostType, CostStructureType>::create_full_neighborhood_iterator(*this, st);
       }
       
-      FullNeighborhoodIterator<Input, State, typename NE::MoveType, typename NE::CostType, typename NE::CostStructureType> end(const State& st) const
+      FullNeighborhoodIterator<Input, State, MoveType, CostType, CostStructureType> end(const State& st) const
       {
-        return NeighborhoodExplorerIteratorInterface<Input, State, typename NE::MoveType, typename NE::CostType, typename NE::CostStructureType>::create_full_neighborhood_iterator(*this, st, true);
+        return NeighborhoodExplorerIteratorInterface<Input, State, MoveType, CostType, CostStructureType>::create_full_neighborhood_iterator(*this, st, true);
       }
       
-      SampleNeighborhoodIterator<Input, State, typename NE::MoveType, typename NE::CostType, typename NE::CostStructureType> sample_begin(const State& st, size_t samples) const
+      SampleNeighborhoodIterator<Input, State, MoveType, CostType, CostStructureType> sample_begin(const State& st, size_t samples) const
       {
         if (samples > 0)
-          return NeighborhoodExplorerIteratorInterface<Input, State, typename NE::MoveType, typename NE::CostType, typename NE::CostStructureType>::create_sample_neighborhood_iterator(*this, st, samples);
+          return NeighborhoodExplorerIteratorInterface<Input, State, MoveType, CostType, CostStructureType>::create_sample_neighborhood_iterator(*this, st, samples);
         else
           return sample_end(st, samples);
       }
       
-      SampleNeighborhoodIterator<Input, State, typename NE::MoveType, typename NE::CostType, typename NE::CostStructureType> sample_end(const State& st, size_t samples) const
+      SampleNeighborhoodIterator<Input, State, MoveType, CostType, CostStructureType> sample_end(const State& st, size_t samples) const
       {
-        return NeighborhoodExplorerIteratorInterface<Input, State, typename NE::MoveType, typename NE::CostType, typename NE::CostStructureType>::create_sample_neighborhood_iterator(*this, st, samples, true);
+        return NeighborhoodExplorerIteratorInterface<Input, State, MoveType, CostType, CostStructureType>::create_sample_neighborhood_iterator(*this, st, samples, true);
       }
     public:
-      virtual EvaluatedMove<typename NE::MoveType, typename NE::CostType, typename NE::CostStructureType> SelectFirst(const State &st, size_t& explored, const MoveAcceptor& AcceptMove, const std::vector<double>& weights = std::vector<double>(0)) const throw (EmptyNeighborhood)
+      virtual EvaluatedMove<MoveType, CostType, CostStructureType> SelectFirst(const State &st, size_t& explored, const MoveAcceptor& AcceptMove, const std::vector<double>& weights = std::vector<double>(0)) const throw (EmptyNeighborhood)
       {
-        EvaluatedMove<typename NE::MoveType, typename NE::CostType, typename NE::CostStructureType> first_move;
+        EvaluatedMove<MoveType, CostType, CostStructureType> first_move;
         bool first_move_found = false;
         tbb::spin_mutex mx_first_move;
         explored = 0;
-        tbb::parallel_for_each(this->begin(st), this->end(st), [this, &st, &mx_first_move, &first_move, &first_move_found, AcceptMove, &weights, &explored](EvaluatedMove<typename NE::MoveType, typename NE::CostType, typename NE::CostStructureType>& mv) {
+        tbb::parallel_for_each(this->begin(st), this->end(st), [this, &st, &mx_first_move, &first_move, &first_move_found, AcceptMove, &weights, &explored](EvaluatedMove<MoveType, CostType, CostStructureType>& mv) {
           mv.cost = this->DeltaCostFunctionComponents(st, mv.move, weights);
           mv.is_valid = true;
           tbb::spin_mutex::scoped_lock lock(mx_first_move);
@@ -232,17 +235,17 @@ namespace EasyLocal {
           }
         });
         if (!first_move_found)
-          return EvaluatedMove<typename NE::MoveType, typename NE::CostType, typename NE::CostStructureType>::empty;
+          return EvaluatedMove<MoveType, CostType, CostStructureType>::empty;
         return first_move;
       }
       
-      virtual EvaluatedMove<typename NE::MoveType, typename NE::CostType, typename NE::CostStructureType> SelectBest(const State &st, size_t& explored, const MoveAcceptor& AcceptMove, const std::vector<double>& weights = std::vector<double>(0)) const throw (EmptyNeighborhood)
+      virtual EvaluatedMove<MoveType, CostType, CostStructureType> SelectBest(const State &st, size_t& explored, const MoveAcceptor& AcceptMove, const std::vector<double>& weights = std::vector<double>(0)) const throw (EmptyNeighborhood)
       {
         tbb::spin_mutex mx_best_move;
-        EvaluatedMove<typename NE::MoveType, typename NE::CostType, typename NE::CostStructureType> best_move;
+        EvaluatedMove<MoveType, CostType, CostStructureType> best_move;
         unsigned int number_of_bests = 0;
         explored = 0;
-        tbb::parallel_for_each(this->begin(st), this->end(st), [this, &st, &mx_best_move, &best_move, &number_of_bests, AcceptMove, &weights, &explored](EvaluatedMove<typename NE::MoveType, typename NE::CostType, typename NE::CostStructureType>& mv) {
+        tbb::parallel_for_each(this->begin(st), this->end(st), [this, &st, &mx_best_move, &best_move, &number_of_bests, AcceptMove, &weights, &explored](EvaluatedMove<MoveType, CostType, CostStructureType>& mv) {
           mv.cost = this->DeltaCostFunctionComponents(st, mv.move, weights);
           mv.is_valid = true;
           tbb::spin_mutex::scoped_lock lock(mx_best_move);
@@ -268,17 +271,17 @@ namespace EasyLocal {
           }
         });
         if (number_of_bests == 0)
-          return EvaluatedMove<typename NE::MoveType, typename NE::CostType, typename NE::CostStructureType>::empty;
+          return EvaluatedMove<MoveType, CostType, CostStructureType>::empty;
         return best_move;
       }
       
-      virtual EvaluatedMove<typename NE::MoveType, typename NE::CostType, typename NE::CostStructureType> RandomFirst(const State &st, size_t samples, size_t& explored, const MoveAcceptor& AcceptMove, const std::vector<double>& weights = std::vector<double>(0)) const throw (EmptyNeighborhood)
+      virtual EvaluatedMove<MoveType, CostType, CostStructureType> RandomFirst(const State &st, size_t samples, size_t& explored, const MoveAcceptor& AcceptMove, const std::vector<double>& weights = std::vector<double>(0)) const throw (EmptyNeighborhood)
       {
-        EvaluatedMove<typename NE::MoveType, typename NE::CostType, typename NE::CostStructureType> first_move;
+        EvaluatedMove<MoveType, CostType, CostStructureType> first_move;
         bool first_move_found = false;
         tbb::spin_mutex mx_first_move;
         explored = 0;
-        tbb::parallel_for_each(this->sample_begin(st, samples), this->sample_end(st, samples), [this, &st, &mx_first_move, &first_move, &first_move_found, &explored, AcceptMove, &weights](EvaluatedMove<typename NE::MoveType, typename NE::CostType, typename NE::CostStructureType>& mv) {
+        tbb::parallel_for_each(this->sample_begin(st, samples), this->sample_end(st, samples), [this, &st, &mx_first_move, &first_move, &first_move_found, &explored, AcceptMove, &weights](EvaluatedMove<MoveType, CostType, CostStructureType>& mv) {
           mv.cost = this->DeltaCostFunctionComponents(st, mv.move, weights);
           mv.is_valid = true;
           tbb::spin_mutex::scoped_lock lock(mx_first_move);
@@ -291,17 +294,17 @@ namespace EasyLocal {
           }
         });
         if (!first_move_found)
-          return EvaluatedMove<typename NE::MoveType, typename NE::CostType, typename NE::CostStructureType>::empty;
+          return EvaluatedMove<MoveType, CostType, CostStructureType>::empty;
         return first_move;
       }
       
-      virtual EvaluatedMove<typename NE::MoveType, typename NE::CostType, typename NE::CostStructureType> RandomBest(const State &st, size_t samples, size_t& explored, const MoveAcceptor& AcceptMove, const std::vector<double>& weights = std::vector<double>(0)) const throw (EmptyNeighborhood)
+      virtual EvaluatedMove<MoveType, CostType, CostStructureType> RandomBest(const State &st, size_t samples, size_t& explored, const MoveAcceptor& AcceptMove, const std::vector<double>& weights = std::vector<double>(0)) const throw (EmptyNeighborhood)
       {
         tbb::spin_mutex mx_best_move;
-        EvaluatedMove<typename NE::MoveType, typename NE::CostType, typename NE::CostStructureType> best_move;
+        EvaluatedMove<MoveType, CostType, CostStructureType> best_move;
         unsigned int number_of_bests = 0;
         explored = 0;
-        tbb::parallel_for_each(this->sample_begin(st, samples), this->sample_end(st, samples), [this, &st, &mx_best_move, &best_move, &number_of_bests, &explored, AcceptMove, &weights](EvaluatedMove<typename NE::MoveType, typename NE::CostType, typename NE::CostStructureType>& mv) {
+        tbb::parallel_for_each(this->sample_begin(st, samples), this->sample_end(st, samples), [this, &st, &mx_best_move, &best_move, &number_of_bests, &explored, AcceptMove, &weights](EvaluatedMove<MoveType, CostType, CostStructureType>& mv) {
           mv.cost = this->DeltaCostFunctionComponents(st, mv.move, weights);
           mv.is_valid = true;
           tbb::spin_mutex::scoped_lock lock(mx_best_move);
@@ -327,7 +330,7 @@ namespace EasyLocal {
           }
         });
         if (number_of_bests == 0)
-          return EvaluatedMove<typename NE::MoveType, typename NE::CostType, typename NE::CostStructureType>::empty;
+          return EvaluatedMove<MoveType, CostType, CostStructureType>::empty;
         return best_move;
       }
     };
