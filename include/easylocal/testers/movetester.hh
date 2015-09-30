@@ -134,13 +134,13 @@ namespace EasyLocal {
         switch(choice)
         {
           case 1:
-            em = ne.SelectBest(st, explored, [](const Move& mv, CostStructure<CFtype> cost) { return true; });
+            em = ne.SelectBest(st, explored, [](const Move& mv, DefaultCostStructure<CFtype> cost) { return true; });
             break;
           case 2:
-            em = ne.SelectFirst(st, explored, [](const Move& mv, CostStructure<CFtype> cost) { return cost.total < 0; });
+            em = ne.SelectFirst(st, explored, [](const Move& mv, DefaultCostStructure<CFtype> cost) { return cost.total < 0; });
             break;
           case 3:
-            em = ne.RandomFirst(st, 1, explored, [](const Move& mv, CostStructure<CFtype> cost) { return true; });
+            em = ne.RandomFirst(st, 1, explored, [](const Move& mv, DefaultCostStructure<CFtype> cost) { return true; });
             break;
           case 4:
             os << "Input move : ";
@@ -153,7 +153,7 @@ namespace EasyLocal {
             PrintNeighborhoodStatistics(st);
             break;
           case 7:
-            em = ne.RandomFirst(st, 1, explored, [](const Move& mv, CostStructure<CFtype> cost) { return true; });
+            em = ne.RandomFirst(st, 1, explored, [](const Move& mv, DefaultCostStructure<CFtype> cost) { return true; });
             PrintMoveCosts(st, em);
             break;
           case 8:
@@ -220,8 +220,8 @@ namespace EasyLocal {
     {
       EvaluatedMove<Move, CFtype> em;
       unsigned int move_count = 0;
-      CostStructure<CFtype> error;
-      CostStructure<CFtype> st_cost = this->sm.CostFunctionComponents(st), st1_cost;
+      DefaultCostStructure<CFtype> error;
+      DefaultCostStructure<CFtype> st_cost = this->sm.CostFunctionComponents(st), st1_cost;
       State st1 = st;
       bool error_found = false, not_last_move = true;
       ne.FirstMove(st, em.move);

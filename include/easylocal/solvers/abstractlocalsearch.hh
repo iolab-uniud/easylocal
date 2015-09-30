@@ -55,7 +55,7 @@ namespace EasyLocal {
                                                         output manager. */
       std::shared_ptr<State> p_current_state, p_best_state;        /**< The internal states of the solver. */
       
-      CostStructure<CFtype> current_state_cost, best_state_cost;  /**< The cost of the internal states. */
+      DefaultCostStructure<CFtype> current_state_cost, best_state_cost;  /**< The cost of the internal states. */
       std::shared_ptr<Output> p_out; /**< The output object of the solver. */
       // parameters
       

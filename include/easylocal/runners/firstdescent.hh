@@ -53,7 +53,7 @@ namespace EasyLocal {
     void FirstDescent<Input, State, Move, CFtype>::SelectMove()
     {
       size_t explored;
-      EvaluatedMove<Move, CFtype> em = this->ne.SelectFirst(*this->p_current_state, explored, [](const Move& mv, const CostStructure<CFtype>& move_cost) {
+      EvaluatedMove<Move, CFtype> em = this->ne.SelectFirst(*this->p_current_state, explored, [](const Move& mv, const DefaultCostStructure<CFtype>& move_cost) {
         return move_cost < 0;
       }, this->weights);
       this->current_move = em;

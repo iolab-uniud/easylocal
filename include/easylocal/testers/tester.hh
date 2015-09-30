@@ -353,7 +353,7 @@ namespace EasyLocal {
         auto to = std::chrono::milliseconds((long long)(timeout * 1000));
         
         auto start = std::chrono::high_resolution_clock::now();
-        CostStructure<CFtype> result = r.SyncRun(to, this->test_state);
+        DefaultCostStructure<CFtype> result = r.SyncRun(to, this->test_state);
         auto end = std::chrono::high_resolution_clock::now();
         
         auto duration = end - start;
@@ -502,7 +502,7 @@ namespace EasyLocal {
         case 8:
         {
           os  << "Cost Components: " << std::endl;
-          CostStructure<CFtype> cost = this->sm.CostFunctionComponents(test_state);
+          DefaultCostStructure<CFtype> cost = this->sm.CostFunctionComponents(test_state);
           for (i = 0; i < CostComponent<Input, State, CFtype>::CostComponents(); i++)
           {
             const CostComponent<Input, State, CFtype>& cc = CostComponent<Input, State, CFtype>::Component(i);
@@ -517,7 +517,7 @@ namespace EasyLocal {
         case 9:
         {
           os << "Detailed Violations: " << std::endl;
-          CostStructure<CFtype> cost = this->sm.CostFunctionComponents(test_state);
+          DefaultCostStructure<CFtype> cost = this->sm.CostFunctionComponents(test_state);
           for (i = 0; i < CostComponent<Input, State, CFtype>::CostComponents(); i++)
           {
             const CostComponent<Input, State, CFtype>& cc = CostComponent<Input, State, CFtype>::Component(i);

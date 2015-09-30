@@ -29,11 +29,11 @@ namespace EasyLocal {
       static EvaluatedMove empty;
       EvaluatedMove() : is_valid(false) {}
       EvaluatedMove(const Move& move) : move(move), is_valid(false) {}
-      EvaluatedMove(const Move& move, CostStructure<CFtype> cost) : is_valid(true), move(move), cost(cost) {}
+      EvaluatedMove(const Move& move, DefaultCostStructure<CFtype> cost) : is_valid(true), move(move), cost(cost) {}
       
       Move move;
       bool is_valid;
-      CostStructure<CFtype> cost;
+      DefaultCostStructure<CFtype> cost;
     };
     
     template <class Move, typename CFtype>
@@ -63,7 +63,7 @@ namespace EasyLocal {
       typedef State StateType;
       typedef CFtype CostType;      
       
-      typedef typename std::function<bool(const Move& mv, const CostStructure<CFtype>& move_cost)> MoveAcceptor;
+      typedef typename std::function<bool(const Move& mv, const DefaultCostStructure<CFtype>& move_cost)> MoveAcceptor;
       
       /* Copies all the delta cost components from another neighborhood explorer of the same class
        @param ne the neighborhood explorer from which the data has to be copied
@@ -119,7 +119,7 @@ namespace EasyLocal {
        @param mv the move to be applied
        @return the difference in the cost function for each cost component
        */
-      virtual CostStructure<CFtype> DeltaCostFunctionComponents(const State& st, const Move& mv, const std::vector<double>& weights = std::vector<double>(0)) const;
+      virtual DefaultCostStructure<CFtype> DeltaCostFunctionComponents(const State& st, const Move& mv, const std::vector<double>& weights = std::vector<double>(0)) const;
       
       /** Adds a delta cost component to the neighborhood explorer, which is responsible for computing one component of the cost function. A delta cost component requires the implementation of a way to compute the difference in the cost function without simulating the move on a given state.
        @param dcc a delta cost component object
@@ -213,7 +213,7 @@ namespace EasyLocal {
      @return the variation in the cost function
      */
     template <class Input, class State, class Move, typename CFtype>
-    CostStructure<CFtype> NeighborhoodExplorer<Input, State, Move, CFtype>::DeltaCostFunctionComponents(const State& st, const Move & mv, const std::vector<double>& weights) const
+    DefaultCostStructure<CFtype> NeighborhoodExplorer<Input, State, Move, CFtype>::DeltaCostFunctionComponents(const State& st, const Move & mv, const std::vector<double>& weights) const
     {
       CFtype delta_hard_cost = 0, delta_soft_cost = 0;
       double delta_weighted_cost = 0.0;
@@ -280,9 +280,9 @@ namespace EasyLocal {
       }
       
       if (!weights.empty())
-        return CostStructure<CFtype>(HARD_WEIGHT * delta_hard_cost + delta_soft_cost, delta_weighted_cost, delta_hard_cost, delta_soft_cost, delta_cost_function);
+        return DefaultCostStructure<CFtype>(HARD_WEIGHT * delta_hard_cost + delta_soft_cost, delta_weighted_cost, delta_hard_cost, delta_soft_cost, delta_cost_function);
       else
-        return CostStructure<CFtype>(HARD_WEIGHT * delta_hard_cost + delta_soft_cost, delta_hard_cost, delta_soft_cost, delta_cost_function);
+        return DefaultCostStructure<CFtype>(HARD_WEIGHT * delta_hard_cost + delta_soft_cost, delta_hard_cost, delta_soft_cost, delta_cost_function);
     }
     
     template <class Input, class State, class Move, typename CFtype>

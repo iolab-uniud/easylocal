@@ -14,9 +14,9 @@ namespace EasyLocal {
     template <class Input, class Output, typename CFtype = int>
     struct SolverResult
     {
-      SolverResult(const Output& output, const CostStructure<CFtype>& cost, double running_time) : output(output), cost(cost), running_time(running_time) {}
+      SolverResult(const Output& output, const DefaultCostStructure<CFtype>& cost, double running_time) : output(output), cost(cost), running_time(running_time) {}
       Output output;
-      CostStructure<CFtype> cost;
+      DefaultCostStructure<CFtype> cost;
       double running_time;
     };
     

@@ -122,7 +122,7 @@ namespace EasyLocal {
     {
       bool execute_kick = false;
       Kick<State, Move, CFtype> kick;
-      CostStructure<CFtype> cost;
+      DefaultCostStructure<CFtype> cost;
       try {
         switch(choice)
         {

@@ -30,7 +30,7 @@ namespace EasyLocal {
      @ingroup Helpers
      */
     template <class Input, class State, typename CFtype = int>
-    class Runner : public Interruptible<CostStructure<CFtype>, State&>, public Parametrized
+    class Runner : public Interruptible<DefaultCostStructure<CFtype>, State&>, public Parametrized
     {
       friend class Debug::AbstractTester<Input, State, CFtype>;
       
@@ -46,7 +46,7 @@ namespace EasyLocal {
        @throw ParameterNotSet if one of the parameters needed by the runner (or other components) hasn't been set
        @throw IncorrectParameterValue if one of the parameters has an incorrect value
        */
-      CostStructure<CFtype> Go(State& s) throw (ParameterNotSet, IncorrectParameterValue);
+      DefaultCostStructure<CFtype> Go(State& s) throw (ParameterNotSet, IncorrectParameterValue);
       
       /** Performs a given number of steps of the search method on the passed state.
        @param s state to start with and to modify
@@ -55,7 +55,7 @@ namespace EasyLocal {
        @throw ParameterNotSet if one of the parameters needed by the runner (or other components) hasn't been set
        @throw IncorrectParameterValue if one of the parameters has an incorrect value
        */
-      CostStructure<CFtype> Step(State& s, unsigned int n = 1) throw (ParameterNotSet, IncorrectParameterValue);
+      DefaultCostStructure<CFtype> Step(State& s, unsigned int n = 1) throw (ParameterNotSet, IncorrectParameterValue);
       
       /** Register its parameters */
       virtual void RegisterParameters();
@@ -148,9 +148,9 @@ namespace EasyLocal {
       virtual void CompleteMove() {};
       
       /** Implements Interruptible. */
-      virtual std::function<CostStructure<CFtype>(State&)> MakeFunction()
+      virtual std::function<DefaultCostStructure<CFtype>(State&)> MakeFunction()
       {
-        return [this](State& s) -> CostStructure<CFtype> { return this->Go(s); };
+        return [this](State& s) -> DefaultCostStructure<CFtype> { return this->Go(s); };
       }
       
       /** No acceptable move has been found in the current iteration. */
@@ -168,10 +168,10 @@ namespace EasyLocal {
       p_best_state;
       
       /** Cost of the current state. */
-      CostStructure<CFtype> current_state_cost;
+      DefaultCostStructure<CFtype> current_state_cost;
       
       /** Cost of the best state. */
-      CostStructure<CFtype> best_state_cost;
+      DefaultCostStructure<CFtype> best_state_cost;
       
       /** Index of the iteration where the best has been found. */
       unsigned long int iteration_of_best;
@@ -198,7 +198,7 @@ namespace EasyLocal {
       void InitializeRun(State&) throw (ParameterNotSet, IncorrectParameterValue);
       
       /** Actions that must be done at the end of the search. */
-      CostStructure<CFtype> TerminateRun(State&);
+      DefaultCostStructure<CFtype> TerminateRun(State&);
     };
     
     /*************************************************************************
@@ -226,7 +226,7 @@ namespace EasyLocal {
     }
     
     template <class Input, class State, typename CFtype>
-    CostStructure<CFtype> Runner<Input, State, CFtype>::Go(State& s) throw (ParameterNotSet, IncorrectParameterValue)
+    DefaultCostStructure<CFtype> Runner<Input, State, CFtype>::Go(State& s) throw (ParameterNotSet, IncorrectParameterValue)
     {
       InitializeRun(s);
       while (!MaxEvaluationsExpired() && !StopCriterion() && !LowerBoundReached() && !this->TimeoutExpired())
@@ -284,7 +284,7 @@ namespace EasyLocal {
     }
     
     template <class Input, class State, typename CFtype>
-    CostStructure<CFtype> Runner<Input, State, CFtype>::TerminateRun(State& s)
+    DefaultCostStructure<CFtype> Runner<Input, State, CFtype>::TerminateRun(State& s)
     {
       s = *p_best_state;
       TerminateRun();
@@ -294,7 +294,7 @@ namespace EasyLocal {
     template <class Input, class State, typename CFtype>
     bool Runner<Input, State, CFtype>::LowerBoundReached() const
     {
-      return sm.LowerBoundReached(current_state_cost.total);
+      return sm.LowerBoundReached(current_state_cost);
     }
     
     template <class Input, class State, typename CFtype>
