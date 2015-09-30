@@ -404,8 +404,8 @@ namespace EasyLocal {
      @tparam BaseNeighborhoodExplorers a sequence of base neighborhood explorer classes
      @ingroup Helpers
      */
-    template <class Input, class State, class CFtype, class ... BaseNeighborhoodExplorers>
-    class SetUnionNeighborhoodExplorer : public NeighborhoodExplorer<Input, State, std::tuple<ActiveMove<typename BaseNeighborhoodExplorers::MoveType> ...>, CFtype>
+    template <class Input, class State, typename CFtype, class CostStructure, class ... BaseNeighborhoodExplorers>
+    class SetUnionNeighborhoodExplorer : public NeighborhoodExplorer<Input, State, std::tuple<ActiveMove<typename BaseNeighborhoodExplorers::MoveType> ...>, CFtype, CostStructure>
     {
     protected:
       /** Tuple type representing the combination of @c BaseNeighborhoodExplorers' @ref Move. */
@@ -461,7 +461,7 @@ namespace EasyLocal {
       typedef std::tuple<Impl::FastFunc<void(const State&, typename BaseNeighborhoodExplorers::MoveType&)>...> _Void_ConstState_Move;
       typedef std::tuple<Impl::FastFunc<bool(const State&, typename BaseNeighborhoodExplorers::MoveType&)>...> _Bool_ConstState_Move;
       typedef std::tuple<Impl::FastFunc<void(State&, const typename BaseNeighborhoodExplorers::MoveType&)>...> _Void_State_ConstMove;
-      typedef std::tuple<Impl::FastFunc<DefaultCostStructure<CFtype>(const State&, const typename BaseNeighborhoodExplorers::MoveType&, const std::vector<double>& weights)>...> _CostStructure_ConstState_ConstMove;
+      typedef std::tuple<Impl::FastFunc<CostStructure(const State&, const typename BaseNeighborhoodExplorers::MoveType&, const std::vector<double>& weights)>...> _CostStructure_ConstState_ConstMove;
       
       _Void_ConstState_Move first_move_funcs, random_move_funcs;
       _Bool_ConstState_Move next_move_funcs;
@@ -592,11 +592,11 @@ namespace EasyLocal {
       }
       
       /** @copydoc NeighborhoodExplorer::DeltaCostFunctionComponents */
-      virtual DefaultCostStructure<CFtype> DeltaCostFunctionComponents(const State& st, const MoveTypes& moves, const std::vector<double>& weights = std::vector<double>(0)) const
+      virtual CostStructure DeltaCostFunctionComponents(const State& st, const MoveTypes& moves, const std::vector<double>& weights = std::vector<double>(0)) const
       {
         const MoveTypeCRefs cr_moves = to_crefs(moves);
         size_t i = Impl::MoveDispatcher<MoveTypeCRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::get_first_active(cr_moves, 0);
-        return Impl::TupleDispatcher<DefaultCostStructure<CFtype>, State, _CostStructure_ConstState_ConstMove, MoveTypeCRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::execute_at(i, st, delta_cost_function_funcs, cr_moves, weights);
+        return Impl::TupleDispatcher<CostStructure, State, _CostStructure_ConstState_ConstMove, MoveTypeCRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::execute_at(i, st, delta_cost_function_funcs, cr_moves, weights);
       }      
     };
     
@@ -609,8 +609,8 @@ namespace EasyLocal {
      @tparam BaseNeighborhoodExplorers a sequence of base neighborhood explorer classes
      @ingroup Helpers
      */
-    template <class Input, class State, class CFtype, class ... BaseNeighborhoodExplorers>
-    class CartesianProductNeighborhoodExplorer : public NeighborhoodExplorer<Input, State, std::tuple<ActiveMove<typename BaseNeighborhoodExplorers::MoveType> ...>, CFtype>
+    template <class Input, class State, class CFtype, class CostStructure, class ... BaseNeighborhoodExplorers>
+    class CartesianProductNeighborhoodExplorer : public NeighborhoodExplorer<Input, State, std::tuple<ActiveMove<typename BaseNeighborhoodExplorers::MoveType> ...>, CFtype, CostStructure>
     {
     protected:
       /** Tuple type representing the combination of @c BaseNeighborhoodExplorers' @ref Move. */
@@ -653,7 +653,7 @@ namespace EasyLocal {
       typedef std::tuple<Impl::FastFunc<void(const State&, typename BaseNeighborhoodExplorers::MoveType&)>...> _Void_ConstState_Move;
       typedef std::tuple<Impl::FastFunc<bool(const State&, typename BaseNeighborhoodExplorers::MoveType&)>...> _Bool_ConstState_Move;
       typedef std::tuple<Impl::FastFunc<void(State&, const typename BaseNeighborhoodExplorers::MoveType&)>...> _Void_State_ConstMove;
-      typedef std::tuple<Impl::FastFunc<DefaultCostStructure<CFtype>(const State&, const typename BaseNeighborhoodExplorers::MoveType&, const std::vector<double>& weights)>...> _CostStructure_ConstState_ConstMove;
+      typedef std::tuple<Impl::FastFunc<CostStructure(const State&, const typename BaseNeighborhoodExplorers::MoveType&, const std::vector<double>& weights)>...> _CostStructure_ConstState_ConstMove;
       
       _Void_ConstState_Move first_move_funcs, random_move_funcs;
       _Bool_ConstState_Move next_move_funcs;
@@ -951,17 +951,17 @@ namespace EasyLocal {
       }
       
       /** @copydoc NeighborhoodExplorer::DeltaCostFunctionComponents */
-      virtual DefaultCostStructure<CFtype> DeltaCostFunctionComponents(const State& st, const MoveTypes& moves, const std::vector<double>& weights = std::vector<double>(0)) const
+      virtual CostStructure DeltaCostFunctionComponents(const State& st, const MoveTypes& moves, const std::vector<double>& weights = std::vector<double>(0)) const
       {
         const MoveTypeCRefs cr_moves = to_crefs(moves);
         
-        DefaultCostStructure<CFtype> result;
+        CostStructure result;
         const size_t length = sizeof...(BaseNeighborhoodExplorers);
         std::vector<State> states(length, st);
         for (size_t i = 0; i < Modality(); i++)
         {
           states[i] = i > 0 ? states[i - 1] : st;
-          result += Impl::TupleDispatcher<DefaultCostStructure<CFtype>, State, _CostStructure_ConstState_ConstMove, MoveTypeCRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::execute_at(i, states[i], delta_cost_function_funcs, cr_moves, weights);
+          result += Impl::TupleDispatcher<CostStructure, State, _CostStructure_ConstState_ConstMove, MoveTypeCRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::execute_at(i, states[i], delta_cost_function_funcs, cr_moves, weights);
           Impl::VTupleDispatcher<State, _Void_State_ConstMove, MoveTypeCRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::execute_at(i, states[i], make_move_funcs, cr_moves);
         }
         
