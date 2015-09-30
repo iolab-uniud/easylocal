@@ -289,7 +289,7 @@ namespace EasyLocal {
     unsigned int StateManager<Input, State, CFtype, CostStructure>::StateDistance(const State& st1,
                                                                    const State& st2) const
     {
-      throw std::runtime_error("For using this feature StateDistance must be implemented in the concrete class!");
+      throw std::runtime_error("In order to use this feature StateDistance must be implemented in the concrete class!");
       return 0;
     }
   }

@@ -23,7 +23,7 @@ namespace EasyLocal {
       EmptyNeighborhood() : std::logic_error("Empty neighborhood") {}
     };    
     
-    template <class Move, typename CFtype>
+    template <class Move, typename CFtype, class CostStructure = DefaultCostStructure<CFtype>>
     struct EvaluatedMove
     {
       static EvaluatedMove empty;
@@ -33,11 +33,11 @@ namespace EasyLocal {
       
       Move move;
       bool is_valid;
-      DefaultCostStructure<CFtype> cost;
+      CostStructure cost;
     };
     
-    template <class Move, typename CFtype>
-    std::ostream& operator<<(std::ostream& os, const EvaluatedMove<Move, CFtype>& em)
+    template <class Move, typename CFtype, class CostStructure>
+    std::ostream& operator<<(std::ostream& os, const EvaluatedMove<Move, CFtype, CostStructure>& em)
     {
       os << em.move;
       if (em.is_valid)
@@ -47,28 +47,29 @@ namespace EasyLocal {
       return os;
     }
     
-    template <class Move, typename CFtype>
-    EvaluatedMove<Move, CFtype> EvaluatedMove<Move, CFtype>::empty = EvaluatedMove<Move, CFtype>();
+    template <class Move, typename CFtype, class CostStructure>
+    EvaluatedMove<Move, CFtype, CostStructure> EvaluatedMove<Move, CFtype, CostStructure>::empty = EvaluatedMove<Move, CFtype, CostStructure>();
     
     /** The Neighborhood Explorer is responsible for the strategy exploited in the exploration of the neighborhood, and for computing the variations of the cost function due to a specific
      @ref Move.
      @ingroup Helpers
      */
-    template <class Input, class State, class Move, typename CFtype = int>
+    template <class Input, class State, class Move, typename CFtype = int, class CostStructure = DefaultCostStructure<CFtype>>
     class NeighborhoodExplorer
     {
     public:
       typedef Input InputType;
       typedef Move MoveType;
       typedef State StateType;
-      typedef CFtype CostType;      
+      typedef CFtype CostType;
+      typedef CostStructure CostStructureType;
       
-      typedef typename std::function<bool(const Move& mv, const DefaultCostStructure<CFtype>& move_cost)> MoveAcceptor;
+      typedef typename std::function<bool(const Move& mv, const CostStructure& move_cost)> MoveAcceptor;
       
       /* Copies all the delta cost components from another neighborhood explorer of the same class
        @param ne the neighborhood explorer from which the data has to be copied
        */
-      void CopyDeltaCostComponents(const NeighborhoodExplorer<Input, State, Move, CFtype>& ne)
+      void CopyDeltaCostComponents(const NeighborhoodExplorer<Input, State, Move, CFtype, CostStructure>& ne)
       {
         this->delta_hard_cost_components = ne.delta_hard_cost_components;
         this->delta_soft_cost_components = ne.delta_soft_cost_components;
@@ -119,7 +120,7 @@ namespace EasyLocal {
        @param mv the move to be applied
        @return the difference in the cost function for each cost component
        */
-      virtual DefaultCostStructure<CFtype> DeltaCostFunctionComponents(const State& st, const Move& mv, const std::vector<double>& weights = std::vector<double>(0)) const;
+      virtual CostStructure DeltaCostFunctionComponents(const State& st, const Move& mv, const std::vector<double>& weights = std::vector<double>(0)) const;
       
       /** Adds a delta cost component to the neighborhood explorer, which is responsible for computing one component of the cost function. A delta cost component requires the implementation of a way to compute the difference in the cost function without simulating the move on a given state.
        @param dcc a delta cost component object
@@ -154,7 +155,7 @@ namespace EasyLocal {
        @param sm a pointer to a compatible state manager.
        @param name the name associated to the NeighborhoodExplorer.
        */
-      NeighborhoodExplorer(const Input& in, StateManager<Input, State, CFtype>& sm, std::string name);
+      NeighborhoodExplorer(const Input& in, StateManager<Input, State, CFtype, CostStructure>& sm, std::string name);
       
       virtual ~NeighborhoodExplorer() {}
       
@@ -202,8 +203,8 @@ namespace EasyLocal {
     
     /** IMPLEMENTATION */
     
-    template <class Input, class State, class Move, typename CFtype>
-    NeighborhoodExplorer<Input, State, Move, CFtype>::NeighborhoodExplorer(const Input& i, StateManager<Input, State, CFtype>& e_sm, std::string e_name)
+    template <class Input, class State, class Move, typename CFtype, class CostStructure>
+    NeighborhoodExplorer<Input, State, Move, CFtype, CostStructure>::NeighborhoodExplorer(const Input& i, StateManager<Input, State, CFtype, CostStructure>& e_sm, std::string e_name)
     : in(i), sm(e_sm), name(e_name), unimplemented_hard_components(false), unimplemented_soft_components(false)
     {}
     
@@ -212,8 +213,8 @@ namespace EasyLocal {
      @param mv the move
      @return the variation in the cost function
      */
-    template <class Input, class State, class Move, typename CFtype>
-    DefaultCostStructure<CFtype> NeighborhoodExplorer<Input, State, Move, CFtype>::DeltaCostFunctionComponents(const State& st, const Move & mv, const std::vector<double>& weights) const
+    template <class Input, class State, class Move, typename CFtype, class CostStructure>
+    CostStructure NeighborhoodExplorer<Input, State, Move, CFtype, CostStructure>::DeltaCostFunctionComponents(const State& st, const Move & mv, const std::vector<double>& weights) const
     {
       CFtype delta_hard_cost = 0, delta_soft_cost = 0;
       double delta_weighted_cost = 0.0;
@@ -280,13 +281,13 @@ namespace EasyLocal {
       }
       
       if (!weights.empty())
-        return DefaultCostStructure<CFtype>(HARD_WEIGHT * delta_hard_cost + delta_soft_cost, delta_weighted_cost, delta_hard_cost, delta_soft_cost, delta_cost_function);
+        return CostStructure(HARD_WEIGHT * delta_hard_cost + delta_soft_cost, delta_weighted_cost, delta_hard_cost, delta_soft_cost, delta_cost_function);
       else
-        return DefaultCostStructure<CFtype>(HARD_WEIGHT * delta_hard_cost + delta_soft_cost, delta_hard_cost, delta_soft_cost, delta_cost_function);
+        return CostStructure(HARD_WEIGHT * delta_hard_cost + delta_soft_cost, delta_hard_cost, delta_soft_cost, delta_cost_function);
     }
     
-    template <class Input, class State, class Move, typename CFtype>
-    void NeighborhoodExplorer<Input, State, Move, CFtype>::AddDeltaCostComponent(DeltaCostComponent<Input, State, Move, CFtype>& dcc)
+    template <class Input, class State, class Move, typename CFtype, class CostStructure>
+    void NeighborhoodExplorer<Input, State, Move, CFtype, CostStructure>::AddDeltaCostComponent(DeltaCostComponent<Input, State, Move, CFtype>& dcc)
     {
       if (dcc.IsHard())
         delta_hard_cost_components.push_back(&dcc);
@@ -294,8 +295,8 @@ namespace EasyLocal {
         delta_soft_cost_components.push_back(&dcc);
     }
     
-    template <class Input, class State, class Move, typename CFtype>
-    void NeighborhoodExplorer<Input, State, Move, CFtype>::AddCostComponent(CostComponent<Input, State, CFtype>& cc)
+    template <class Input, class State, class Move, typename CFtype, class CostStructure>
+    void NeighborhoodExplorer<Input, State, Move, CFtype, CostStructure>::AddCostComponent(CostComponent<Input, State, CFtype>& cc)
     {
       
       dcc_adapters.push_back(std::make_shared<DeltaCostComponentAdapter<Input, State, Move, CFtype>>(in, cc, *this));
@@ -315,8 +316,8 @@ namespace EasyLocal {
      This method will select the first move in the exhaustive neighborhood exploration that
      matches with the criterion expressed by the functional object bool f(const Move& mv, CFtype cost)
      */
-    template <class Input, class State, class Move, typename CFtype>
-    EvaluatedMove<Move, CFtype> NeighborhoodExplorer<Input, State, Move, CFtype>::SelectFirst(const State& st, size_t& explored, const MoveAcceptor& AcceptMove, const std::vector<double>& weights) const throw (EmptyNeighborhood)
+    template <class Input, class State, class Move, typename CFtype, class CostStructure>
+    EvaluatedMove<Move, CFtype> NeighborhoodExplorer<Input, State, Move, CFtype, CostStructure>::SelectFirst(const State& st, size_t& explored, const MoveAcceptor& AcceptMove, const std::vector<double>& weights) const throw (EmptyNeighborhood)
     {
       explored = 0;
       EvaluatedMove<Move, CFtype> mv;
@@ -340,8 +341,8 @@ namespace EasyLocal {
      This method will select the best move in the exhaustive neighborhood exploration that
      matches with the criterion expressed by the functional object bool f(const Move& mv, CFtype cost)
      */
-    template <class Input, class State, class Move, typename CFtype>
-    EvaluatedMove<Move, CFtype> NeighborhoodExplorer<Input, State, Move, CFtype>::SelectBest(const State& st, size_t& explored, const MoveAcceptor& AcceptMove, const std::vector<double>& weights) const throw (EmptyNeighborhood)
+    template <class Input, class State, class Move, typename CFtype, class CostStructure>
+    EvaluatedMove<Move, CFtype> NeighborhoodExplorer<Input, State, Move, CFtype, CostStructure>::SelectBest(const State& st, size_t& explored, const MoveAcceptor& AcceptMove, const std::vector<double>& weights) const throw (EmptyNeighborhood)
     {
       unsigned int number_of_bests = 0; // number of moves found with the same best value
       explored = 0;
@@ -385,8 +386,8 @@ namespace EasyLocal {
      This method will select the first move in the random neighborhood exploration that
      matches with the criterion expressed by the functional object bool f(const Move& mv, CFtype cost)
      */
-    template <class Input, class State, class Move, typename CFtype>
-    EvaluatedMove<Move, CFtype> NeighborhoodExplorer<Input, State, Move, CFtype>::RandomFirst(const State& st, size_t samples, size_t& explored, const MoveAcceptor& AcceptMove, const std::vector<double>& weights) const throw (EmptyNeighborhood)
+    template <class Input, class State, class Move, typename CFtype, class CostStructure>
+    EvaluatedMove<Move, CFtype> NeighborhoodExplorer<Input, State, Move, CFtype, CostStructure>::RandomFirst(const State& st, size_t samples, size_t& explored, const MoveAcceptor& AcceptMove, const std::vector<double>& weights) const throw (EmptyNeighborhood)
     {
       EvaluatedMove<Move, CFtype> mv;
       explored = 0;
@@ -407,8 +408,8 @@ namespace EasyLocal {
      This method will select the best move in the exhaustive neighborhood exploration that
      matches with the criterion expressed by the functional object bool f(const Move& mv, CFtype cost)
      */
-    template <class Input, class State, class Move, typename CFtype>
-    EvaluatedMove<Move, CFtype> NeighborhoodExplorer<Input, State, Move, CFtype>::RandomBest(const State& st, size_t samples, size_t& explored, const MoveAcceptor& AcceptMove, const std::vector<double>& weights) const throw (EmptyNeighborhood)
+    template <class Input, class State, class Move, typename CFtype, class CostStructure>
+    EvaluatedMove<Move, CFtype> NeighborhoodExplorer<Input, State, Move, CFtype, CostStructure>::RandomBest(const State& st, size_t samples, size_t& explored, const MoveAcceptor& AcceptMove, const std::vector<double>& weights) const throw (EmptyNeighborhood)
     {
       unsigned int number_of_bests = 0; // number of moves found with the same best value
       EvaluatedMove<Move, CFtype> mv, best_move;
