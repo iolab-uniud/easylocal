@@ -14,13 +14,13 @@ namespace EasyLocal {
      solution is selected and performed.
      @ingroup Runners
      */
-    template <class Input, class State, class Move, typename CFtype = int>
-    class FirstDescent : public MoveRunner<Input, State, Move, CFtype>
+    template <class Input, class State, class Move, typename CFtype = int, class CostStructure = DefaultCostStructure<CFtype>>
+    class FirstDescent : public MoveRunner<Input, State, Move, CFtype, CostStructure>
     {
     public:
       FirstDescent(const Input& in,
-                   StateManager<Input, State, CFtype>& e_sm,
-                   NeighborhoodExplorer<Input, State, Move, CFtype>& e_ne,
+                   StateManager<Input, State, CFtype, CostStructure>& e_sm,
+                   NeighborhoodExplorer<Input, State, Move, CFtype, CostStructure>& e_ne,
                    std::string name);
     protected:
       bool StopCriterion();
@@ -39,21 +39,21 @@ namespace EasyLocal {
      @param ne a pointer to a compatible neighborhood explorer
      @param in a pointer to an input object
      */
-    template <class Input, class State, class Move, typename CFtype>
-    FirstDescent<Input, State, Move, CFtype>::FirstDescent(const Input& in,
-                                                           StateManager<Input, State, CFtype>& e_sm, NeighborhoodExplorer<Input, State, Move, CFtype>& e_ne,
+    template <class Input, class State, class Move, typename CFtype, class CostStructure>
+    FirstDescent<Input, State, Move, CFtype, CostStructure>::FirstDescent(const Input& in,
+                                                           StateManager<Input, State, CFtype, CostStructure>& e_sm, NeighborhoodExplorer<Input, State, Move, CFtype, CostStructure>& e_ne,
                                                            std::string name)
-    : MoveRunner<Input, State, Move, CFtype>(in, e_sm, e_ne, name, "First Descent Runner")
+    : MoveRunner<Input, State, Move, CFtype, CostStructure>(in, e_sm, e_ne, name, "First Descent Runner")
     {}
     
     /**
      Selects always the first improving move in the neighborhood.
      */
-    template <class Input, class State, class Move, typename CFtype>
-    void FirstDescent<Input, State, Move, CFtype>::SelectMove()
+    template <class Input, class State, class Move, typename CFtype, class CostStructure>
+    void FirstDescent<Input, State, Move, CFtype, CostStructure>::SelectMove()
     {
       size_t explored;
-      EvaluatedMove<Move, CFtype> em = this->ne.SelectFirst(*this->p_current_state, explored, [](const Move& mv, const DefaultCostStructure<CFtype>& move_cost) {
+      EvaluatedMove<Move, CFtype, CostStructure> em = this->ne.SelectFirst(*this->p_current_state, explored, [](const Move& mv, const CostStructure& move_cost) {
         return move_cost < 0;
       }, this->weights);
       this->current_move = em;
@@ -63,8 +63,8 @@ namespace EasyLocal {
     /**
      The search is stopped when no (strictly) improving move has been found.
      */
-    template <class Input, class State, class Move, typename CFtype>
-    bool FirstDescent<Input, State, Move, CFtype>::StopCriterion()
+    template <class Input, class State, class Move, typename CFtype, class CostStructure>
+    bool FirstDescent<Input, State, Move, CFtype, CostStructure>::StopCriterion()
     {
       return this->iteration > 0 && !this->current_move.is_valid;
     }        

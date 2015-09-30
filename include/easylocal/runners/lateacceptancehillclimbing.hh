@@ -16,14 +16,14 @@ namespace EasyLocal {
      
      @ingroup Runners
      */
-    template <class Input, class State, class Move, typename CFtype = int>
-    class LateAcceptanceHillClimbing : public HillClimbing<Input, State, Move, CFtype>
+    template <class Input, class State, class Move, typename CFtype = int, class CostStructure = DefaultCostStructure<CFtype>>
+    class LateAcceptanceHillClimbing : public HillClimbing<Input, State, Move, CFtype, CostStructure>
     {
     public:
       
       LateAcceptanceHillClimbing(const Input& in,
-                                 StateManager<Input, State, CFtype>& e_sm,
-                                 NeighborhoodExplorer<Input, State, Move, CFtype>& e_ne,
+                                 StateManager<Input, State, CFtype, CostStructure>& e_sm,
+                                 NeighborhoodExplorer<Input, State, Move, CFtype, CostStructure>& e_ne,
                                  std::string name);
     protected:
       void InitializeRun() throw (ParameterNotSet, IncorrectParameterValue);
@@ -33,7 +33,7 @@ namespace EasyLocal {
       // parameters
       void RegisterParameters();
       Parameter<unsigned int> steps;
-      std::vector<CFtype> previous_steps;
+      std::vector<CostStructure> previous_steps;
       
     };
     
@@ -49,18 +49,18 @@ namespace EasyLocal {
      @param ne a pointer to a compatible neighborhood explorer
      @param in a pointer to an input object
      */
-    template <class Input, class State, class Move, typename CFtype>
-    LateAcceptanceHillClimbing<Input, State, Move, CFtype>::LateAcceptanceHillClimbing(const Input& in,
-                                                                                       StateManager<Input, State, CFtype>& e_sm,
-                                                                                       NeighborhoodExplorer<Input, State, Move, CFtype>& e_ne,
+    template <class Input, class State, class Move, typename CFtype, class CostStructure>
+    LateAcceptanceHillClimbing<Input, State, Move, CFtype, CostStructure>::LateAcceptanceHillClimbing(const Input& in,
+                                                                                       StateManager<Input, State, CFtype, CostStructure>& e_sm,
+                                                                                       NeighborhoodExplorer<Input, State, Move, CFtype, CostStructure>& e_ne,
                                                                                        std::string name)
-    : HillClimbing<Input, State, Move, CFtype>(in, e_sm, e_ne, name)
+    : HillClimbing<Input, State, Move, CFtype, CostStructure>(in, e_sm, e_ne, name)
     {}
     
-    template <class Input, class State, class Move, typename CFtype>
-    void LateAcceptanceHillClimbing<Input, State, Move, CFtype>:: RegisterParameters()
+    template <class Input, class State, class Move, typename CFtype, class CostStructure>
+    void LateAcceptanceHillClimbing<Input, State, Move, CFtype, CostStructure>:: RegisterParameters()
     {
-      HillClimbing<Input, State, Move, CFtype>::RegisterParameters();
+      HillClimbing<Input, State, Move, CFtype, CostStructure>::RegisterParameters();
       steps("steps", "Delay (number of steps in the queue)", this->parameters);
       steps = 10;
     }
@@ -69,14 +69,13 @@ namespace EasyLocal {
      Initializes the run by invoking the companion superclass method, and
      setting the temperature to the start value.
      */
-    template <class Input, class State, class Move, typename CFtype>
-    void LateAcceptanceHillClimbing<Input, State, Move, CFtype>::InitializeRun() throw (ParameterNotSet, IncorrectParameterValue)
+    template <class Input, class State, class Move, typename CFtype, class CostStructure>
+    void LateAcceptanceHillClimbing<Input, State, Move, CFtype, CostStructure>::InitializeRun() throw (ParameterNotSet, IncorrectParameterValue)
     {
-      HillClimbing<Input, State, Move, CFtype>::InitializeRun();
+      HillClimbing<Input, State, Move, CFtype, CostStructure>::InitializeRun();
       
       // the queue must be filled with the initial state cost at the beginning
-      previous_steps = std::vector<CFtype>(steps);
-      std::fill(previous_steps.begin(), previous_steps.end(), this->current_state_cost.total);
+      previous_steps = std::vector<CostStructure>(steps, this->current_state_cost);
     }
     
     
@@ -84,15 +83,15 @@ namespace EasyLocal {
      or with exponentially decreasing probability if it is
      a worsening one.
      */
-    template <class Input, class State, class Move, typename CFtype>
-    void LateAcceptanceHillClimbing<Input, State, Move, CFtype>::SelectMove()
+    template <class Input, class State, class Move, typename CFtype, class CostStructure>
+    void LateAcceptanceHillClimbing<Input, State, Move, CFtype, CostStructure>::SelectMove()
     {
       // TODO: it should become a parameter, the number of neighbors drawn at each iteration (possibly evaluated in parallel)
       const size_t samples = 10;
       size_t sampled;
-      CFtype prev_step_delta_cost = previous_steps[this->iteration % steps] - this->current_state_cost.total;
+      CostStructure prev_step_delta_cost = previous_steps[this->iteration % steps] - this->current_state_cost;
       // TODO: check shifting penalty meaningfullness
-      EvaluatedMove<Move, CFtype> em = this->ne.RandomFirst(*this->p_current_state, samples, sampled, [prev_step_delta_cost](const Move& mv, const DefaultCostStructure<CFtype>& move_cost) {
+      EvaluatedMove<Move, CFtype, CostStructure> em = this->ne.RandomFirst(*this->p_current_state, samples, sampled, [prev_step_delta_cost](const Move& mv, const CostStructure& move_cost) {
         return move_cost <= 0 || move_cost <= prev_step_delta_cost;
       }, this->weights);
       this->current_move = em;
@@ -102,8 +101,8 @@ namespace EasyLocal {
     /**
      A move is randomly picked.
      */
-    template <class Input, class State, class Move, typename CFtype>
-    void LateAcceptanceHillClimbing<Input, State, Move, CFtype>::CompleteMove()
+    template <class Input, class State, class Move, typename CFtype, class CostStructure>
+    void LateAcceptanceHillClimbing<Input, State, Move, CFtype, CostStructure>::CompleteMove()
     {
       previous_steps[this->iteration % steps] = this->best_state_cost.total;
     }

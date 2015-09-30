@@ -12,11 +12,11 @@ namespace EasyLocal {
      that improves the cost function is selected.
      @ingroup Runners
      */
-    template <class Input, class State, class Move, typename CFtype = int>
-    class FirstImprovementTabuSearch : public TabuSearch<Input, State, Move, CFtype>
+    template <class Input, class State, class Move, typename CFtype = int, class CostStructure = DefaultCostStructure<CFtype>>
+    class FirstImprovementTabuSearch : public TabuSearch<Input, State, Move, CFtype, CostStructure>
     {
     public:
-      using TabuSearch<Input, State, Move, CFtype>::TabuSearch;
+      using TabuSearch<Input, State, Move, CFtype, CostStructure>::TabuSearch;
     protected:
       void SelectMove();
     };
@@ -29,12 +29,12 @@ namespace EasyLocal {
      Selects always the best move that is non prohibited by the tabu list
      mechanism.
      */
-    template <class Input, class State, class Move, typename CFtype>
-    void FirstImprovementTabuSearch<Input, State, Move, CFtype>::SelectMove()
+    template <class Input, class State, class Move, typename CFtype, class CostStructure>
+    void FirstImprovementTabuSearch<Input, State, Move, CFtype, CostStructure>::SelectMove()
     {
       CFtype aspiration = this->best_state_cost.total - this->current_state_cost.total;
       size_t explored;
-      EvaluatedMove<Move, CFtype> em = this->ne.SelectFirst(*this->p_current_state, explored, [this, aspiration](const Move& mv, const DefaultCostStructure<CFtype>& move_cost) {
+      EvaluatedMove<Move, CFtype, CostStructure> em = this->ne.SelectFirst(*this->p_current_state, explored, [this, aspiration](const Move& mv, const CostStructure& move_cost) {
         for (auto li : *(this->tabu_list))
           if ((move_cost.total >= aspiration) && this->Inverse(li.move, mv))
             return false;
