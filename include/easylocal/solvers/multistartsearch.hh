@@ -24,7 +24,7 @@ namespace EasyLocal {
       typedef Runner<Input, State, CFtype> RunnerType;
       MultiStartSearch(const Input& in,
                        StateManager<Input, State, CFtype>& e_sm,
-                       OutputManager<Input, Output, State, CFtype>& e_om,
+                       OutputManager<Input, Output, State>& e_om,
                        std::string name);
       void AddRunner(RunnerType& r);
       void RemoveRunner(const RunnerType& r);
@@ -63,7 +63,7 @@ namespace EasyLocal {
     template <class Input, class Output, class State, typename CFtype>
     MultiStartSearch<Input, Output, State, CFtype>::MultiStartSearch(const Input& in,
                                                                      StateManager<Input, State, CFtype>& e_sm,
-                                                                     OutputManager<Input, Output, State, CFtype>& e_om,
+                                                                     OutputManager<Input, Output, State>& e_om,
                                                                      std::string name)
     : AbstractLocalSearch<Input, Output, State, CFtype>(in, e_sm, e_om, name, "Multi Start Solver")
     {}

@@ -464,7 +464,7 @@ namespace EasyLocal {
       virtual std::pair<Kick<State, Move, CFtype, CostStructure>, CostStructure> SelectBest(size_t length, const State &st) const throw (EmptyNeighborhood)
       {
         Kick<State, Move, CFtype, CostStructure> best_kick;
-        DefaultCostStructure<CFtype> best_cost;
+        CostStructure best_cost;
         unsigned int number_of_bests = 0;
         for (FullKickerIterator<Input, State, Move, CFtype, CostStructure> it = begin(length, st); it != end(length, st); ++it)
         {

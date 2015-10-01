@@ -29,7 +29,7 @@ namespace EasyLocal {
       static EvaluatedMove empty;
       EvaluatedMove() : is_valid(false) {}
       EvaluatedMove(const Move& move) : move(move), is_valid(false) {}
-      EvaluatedMove(const Move& move, DefaultCostStructure<CFtype> cost) : is_valid(true), move(move), cost(cost) {}
+      EvaluatedMove(const Move& move, const CostStructure& cost) : is_valid(true), move(move), cost(cost) {}
       
       Move move;
       bool is_valid;

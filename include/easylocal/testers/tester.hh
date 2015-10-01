@@ -76,9 +76,9 @@ namespace EasyLocal {
     {
     public:
       Tester(const Input& in, StateManager<Input, State, CFtype>& e_sm,
-             Core::OutputManager<Input, Output, State, CFtype>& e_om, std::ostream& o = std::cout);
+             Core::OutputManager<Input, Output, State>& e_om, std::ostream& o = std::cout);
       Tester(const Input& in, State st, StateManager<Input, State, CFtype>& e_sm,
-             Core::OutputManager<Input, Output, State, CFtype>& e_om, std::ostream& o = std::cout);
+             Core::OutputManager<Input, Output, State>& e_om, std::ostream& o = std::cout);
       /** Virtual destructor. */
       virtual ~Tester() {}
       void RunMainMenu(std::string file_name = "");
@@ -112,7 +112,7 @@ namespace EasyLocal {
       const Input& in;
       std::ostream& os;
       Core::StateManager<Input, State, CFtype>& sm;  /**< A pointer to a state manager. */
-      Core::OutputManager<Input, Output, State, CFtype>& om; /**< A pointer to an output producer. */
+      Core::OutputManager<Input, Output, State>& om; /**< A pointer to an output producer. */
       State test_state; /**< The current state managed by the tester. */
       Output out; /**< The output object. */
       int choice, /**< The option currently chosen from the menu. */
@@ -134,7 +134,7 @@ namespace EasyLocal {
     template <class Input, class Output, class State, typename CFtype>
     Tester<Input, Output, State, CFtype>::Tester(const Input& i,
                                                  Core::StateManager<Input, State, CFtype>& e_sm,
-                                                 Core::OutputManager<Input, Output, State, CFtype>& e_om, std::ostream& o)
+                                                 Core::OutputManager<Input, Output, State>& e_om, std::ostream& o)
     :  in(i), os(o), sm(e_sm), om(e_om),
     test_state(i), out(i)
     { this->AddRunners(); }

@@ -12,7 +12,7 @@ namespace EasyLocal {
     /** The Output Manager is responsible for translating between elements of the search space and output solutions. It also delivers other output information of the search, and stores and retrieves solutions from files. This is the only helper that deals with the @c Output class. All other helpers work only on the @c State class, which represents the elements of the search space used by the algorithms.
      @ingroup Helpers
      */
-    template <class Input, class Output, class State, typename CFtype = int>
+    template <class Input, class Output, class State>
     class OutputManager : public Printable
     {
     public:
@@ -65,22 +65,22 @@ namespace EasyLocal {
     
     /** IMPLEMENTATION */
     
-    template <class Input, class Output, class State, typename CFtype>
-    void OutputManager<Input, Output, State, CFtype>::Print(std::ostream& os) const
+    template <class Input, class Output, class State>
+    void OutputManager<Input, Output, State>::Print(std::ostream& os) const
     {
       os  << "Output Manager: " << name << std::endl;
     }
     
-    template <class Input, class Output, class State, typename CFtype>
-    void OutputManager<Input, Output, State, CFtype>::ReadState(State &st, std::istream &is) const
+    template <class Input, class Output, class State>
+    void OutputManager<Input, Output, State>::ReadState(State &st, std::istream &is) const
     {
       Output out(in);
       is >> out;
       InputState(st, out);
     }
     
-    template <class Input, class Output, class State, typename CFtype>
-    void OutputManager<Input, Output, State, CFtype>::WriteState(const State &st, std::ostream &os) const
+    template <class Input, class Output, class State>
+    void OutputManager<Input, Output, State>::WriteState(const State &st, std::ostream &os) const
     {
       Output out(in);
       OutputState(st, out);

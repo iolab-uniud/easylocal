@@ -26,7 +26,7 @@ namespace EasyLocal {
     public:
       MoveTester(const Input& in,
                  Core::StateManager<Input, State, CFtype>& sm,
-                 Core::OutputManager<Input, Output, State, CFtype>& om,
+                 Core::OutputManager<Input, Output, State>& om,
                  Core::NeighborhoodExplorer<Input, State, Move, CFtype>& ne,
                  std::string name,
                  Tester<Input, Output, State, CFtype>& t,
@@ -46,7 +46,7 @@ namespace EasyLocal {
       const Input& in;
       Output out;   /**< The output object. */
       Core::StateManager<Input, State, CFtype>& sm; /**< A pointer to the attached  state manager. */
-      Core::OutputManager<Input, Output, State, CFtype>& om; /**< A pointer to the attached output manager. */
+      Core::OutputManager<Input, Output, State>& om; /**< A pointer to the attached output manager. */
       Core::NeighborhoodExplorer<Input, State, Move, CFtype>& ne; /**< A reference to the attached neighborhood explorer. */
       int choice;   /**< The option currently chosen from the menu. */
       std::ostream& os;
@@ -60,7 +60,7 @@ namespace EasyLocal {
     template <class Input, class Output, class State, class Move, typename CFtype>
     MoveTester<Input, Output, State, Move, CFtype>::MoveTester(const Input& i,
                                                                Core::StateManager<Input, State, CFtype>& sm,
-                                                               Core::OutputManager<Input, Output, State, CFtype>& om,
+                                                               Core::OutputManager<Input, Output, State>& om,
                                                                Core::NeighborhoodExplorer<Input, State, Move, CFtype>& ne,
                                                                std::string name,
                                                                Tester<Input, Output, State, CFtype>& t,

@@ -24,7 +24,7 @@ namespace EasyLocal {
       typedef Runner<Input, State, CFtype> RunnerType;
       SimpleLocalSearch(const Input& in,
                         StateManager<Input, State, CFtype>& e_sm,
-                        OutputManager<Input, Output, State, CFtype>& e_om,
+                        OutputManager<Input, Output, State>& e_om,
                         std::string name);
       void SetRunner(Runner<Input, State, CFtype>& r);
       void Print(std::ostream& os = std::cout) const;
@@ -53,7 +53,7 @@ namespace EasyLocal {
     template <class Input, class Output, class State, typename CFtype>
     SimpleLocalSearch<Input, Output, State, CFtype>::SimpleLocalSearch(const Input& in,
                                                                        StateManager<Input, State, CFtype>& e_sm,
-                                                                       OutputManager<Input, Output, State, CFtype>& e_om,
+                                                                       OutputManager<Input, Output, State>& e_om,
                                                                        std::string name)
     : AbstractLocalSearch<Input, Output, State, CFtype>(in, e_sm, e_om, name, "Simple Local Search Solver"), p_runner(nullptr)
     {}

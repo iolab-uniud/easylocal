@@ -21,7 +21,7 @@ namespace EasyLocal {
     public:
       KickerTester(const Input& in,
                    Core::StateManager<Input, State, CFtype>& e_sm,
-                   Core::OutputManager<Input, Output, State, CFtype>& e_om,
+                   Core::OutputManager<Input, Output, State>& e_om,
                    Core::Kicker<Input, State, Move, CFtype>& k,
                    std::string name, Tester<Input, Output, State, CFtype>& t, std::ostream& o = std::cout);
       virtual size_t Modality() const;
@@ -36,7 +36,7 @@ namespace EasyLocal {
       Output out;   /**< The output object. */
       Core::StateManager<Input, State, CFtype>& sm; /**< A pointer to the attached
                                                      state manager. */
-      Core::OutputManager<Input, Output, State, CFtype>& om; /**< A pointer to the attached
+      Core::OutputManager<Input, Output, State>& om; /**< A pointer to the attached
                                                               output manager. */
       int choice;   /**< The option currently chosen from the menu. */
       Core::Kicker<Input, State, Move, CFtype>& kicker;
@@ -52,7 +52,7 @@ namespace EasyLocal {
     KickerTester<Input, Output, State, Move, CFtype>::KickerTester(
                                                                    const Input& i,
                                                                    Core::StateManager<Input, State, CFtype>& e_sm,
-                                                                   Core::OutputManager<Input, Output, State, CFtype>& e_om,
+                                                                   Core::OutputManager<Input, Output, State>& e_om,
                                                                    Core::Kicker<Input, State, Move, CFtype>& k, std::string name, Tester<Input, Output, State, CFtype>& t, std::ostream& o)
     : ComponentTester<Input, Output, State, CFtype>(name), Parametrized(name, "Kicker tester parameters"), in(i), out(i), sm(e_sm), om(e_om), kicker(k), os(o)
     { t.AddKickerTester(*this); }
