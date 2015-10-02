@@ -30,16 +30,17 @@ namespace EasyLocal {
      
      @tparam Input the class representing the problem input
      @tparam Output the class representing the problem output
-     @tparam CFtype the type (codomain) of the objective function (typically int)
      @tparam CostStructure the type of the cost structure to be used (by default an aggregated cost structure with distinct violations and objectives)
      
      @remarks no @ref Move template is supplied to this class.
      @ingroup Helpers
      */
-    template <class Input, class State, typename CFtype = int, class CostStructure = DefaultCostStructure<CFtype>>
+    template <class Input, class State, class CostStructure = DefaultCostStructure<int>>
     class StateManager : public Printable
     {
     public:
+      
+      typedef typename CostStructure::CFtype CFtype;
       
       /**
        Print the configuration of the object (attached cost components)
@@ -131,7 +132,7 @@ namespace EasyLocal {
        Add a component to the cost component array.
        @param cc the cost component to be added
        */
-      void AddCostComponent(CostComponent<Input, State, CFtype>& cc);
+      void AddCostComponent(CostComponent<Input, State, CostStructure>& cc);
       
       
       /**
@@ -171,7 +172,7 @@ namespace EasyLocal {
       /**
        The set of the cost components. Hard and soft ones are all in this @c vector.
        */
-      std::vector<CostComponent<Input, State, CFtype>*> cost_component;
+      std::vector<CostComponent<Input, State, CostStructure>*> cost_component;
       
       /** Input object. */
       const Input& in;
@@ -181,13 +182,13 @@ namespace EasyLocal {
      * Implementation
      * **************************************************************************/
     
-    template <class Input, class State, typename CFtype, class CostStructure>
-    StateManager<Input, State, CFtype, CostStructure>::StateManager(const Input& in, std::string name)
+    template <class Input, class State, class CostStructure>
+    StateManager<Input, State, CostStructure>::StateManager(const Input& in, std::string name)
     :  name(name), in(in)
     {}
     
-    template <class Input, class State, typename CFtype, class CostStructure>
-    void StateManager<Input, State, CFtype, CostStructure>::Print(std::ostream& os) const
+    template <class Input, class State, class CostStructure>
+    void StateManager<Input, State, CostStructure>::Print(std::ostream& os) const
     {
       os  << "State Manager: " + name << std::endl;
       os  << "Violations:" << std::endl;
@@ -200,8 +201,8 @@ namespace EasyLocal {
           cost_component[i]->Print(os);
     }
     
-    template <class Input, class State, typename CFtype, class CostStructure>
-    CostStructure StateManager<Input, State, CFtype, CostStructure>::SampleState(State &st,
+    template <class Input, class State, class CostStructure>
+    CostStructure StateManager<Input, State, CostStructure>::SampleState(State &st,
                                                            unsigned int samples)
     {
       unsigned int s = 1;
@@ -225,25 +226,25 @@ namespace EasyLocal {
       return best_cost;
     }
     
-    template <class Input, class State, typename CFtype, class CostStructure>
-    void StateManager<Input, State, CFtype, CostStructure>::GreedyState(State &st, double alpha,
+    template <class Input, class State, class CostStructure>
+    void StateManager<Input, State, CostStructure>::GreedyState(State &st, double alpha,
                                                          unsigned int k)
     {
       GreedyState(st);
     }
     
-    template <class Input, class State, typename CFtype, class CostStructure>
-    void StateManager<Input, State, CFtype, CostStructure>::GreedyState(State &st)
+    template <class Input, class State, class CostStructure>
+    void StateManager<Input, State, CostStructure>::GreedyState(State &st)
     {
       throw std::runtime_error("For using this feature GreedyState must be implemented in the concrete class!");
     }
     
-    template <class Input, class State, typename CFtype, class CostStructure>
-    CostStructure StateManager<Input, State, CFtype, CostStructure>::CostFunctionComponents(const State& st, const std::vector<double>& weights) const
+    template <class Input, class State, class CostStructure>
+    CostStructure StateManager<Input, State, CostStructure>::CostFunctionComponents(const State& st, const std::vector<double>& weights) const
     {
       CFtype hard_cost = 0, soft_cost = 0;
       double weighted_cost = 0.0;
-      std::vector<CFtype> cost_function(CostComponent<Input, State, CFtype>::CostComponents(), (CFtype)0);
+      std::vector<CFtype> cost_function(CostComponent<Input, State, CostStructure>::CostComponents(), (CFtype)0);
       for (size_t i = 0; i < cost_component.size(); i++)
       {
         CFtype current_cost = cost_function[cost_component[i]->Index()] = cost_component[i]->Cost(st);
@@ -267,26 +268,26 @@ namespace EasyLocal {
         return CostStructure(HARD_WEIGHT * hard_cost + soft_cost, hard_cost, soft_cost, cost_function);
     }
     
-    template <class Input, class State, typename CFtype, class CostStructure>
-    bool StateManager<Input, State, CFtype, CostStructure>::LowerBoundReached(const CostStructure& costs) const
+    template <class Input, class State, class CostStructure>
+    bool StateManager<Input, State, CostStructure>::LowerBoundReached(const CostStructure& costs) const
     {
       return costs == 0;
     }
     
-    template <class Input, class State, typename CFtype, class CostStructure>
-    bool StateManager<Input, State, CFtype, CostStructure>::OptimalStateReached(const State& st) const
+    template <class Input, class State, class CostStructure>
+    bool StateManager<Input, State, CostStructure>::OptimalStateReached(const State& st) const
     {
       return LowerBoundReached(CostFunctionComponents(st));
     }
     
-    template <class Input, class State, typename CFtype, class CostStructure>
-    void StateManager<Input, State, CFtype, CostStructure>::AddCostComponent(CostComponent<Input, State, CFtype>& cc)
+    template <class Input, class State, class CostStructure>
+    void StateManager<Input, State, CostStructure>::AddCostComponent(CostComponent<Input, State, CostStructure>& cc)
     {
       cost_component.push_back(&cc);
     }    
     
-    template <class Input, class State, typename CFtype, class CostStructure>
-    unsigned int StateManager<Input, State, CFtype, CostStructure>::StateDistance(const State& st1,
+    template <class Input, class State, class CostStructure>
+    unsigned int StateManager<Input, State, CostStructure>::StateDistance(const State& st1,
                                                                    const State& st2) const
     {
       throw std::runtime_error("In order to use this feature StateDistance must be implemented in the concrete class!");

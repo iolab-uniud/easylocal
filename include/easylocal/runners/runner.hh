@@ -17,7 +17,7 @@ namespace EasyLocal {
   namespace Debug {
     
     /** Forward declaration of tester. */
-    template <class Input, class State, typename CFtype>
+    template <class Input, class State, class CostStructure>
     class AbstractTester;
   }
   
@@ -29,16 +29,16 @@ namespace EasyLocal {
      Solver::AddRunner() in order to be called correctly.
      @ingroup Helpers
      */
-    template <class Input, class State, typename CFtype = int, class CostStructure = DefaultCostStructure<CFtype>>
+    template <class Input, class State, class CostStructure = DefaultCostStructure<int>>
     class Runner : public Interruptible<CostStructure, State&>, public Parametrized
     {
-      friend class Debug::AbstractTester<Input, State, CFtype>;
+      friend class Debug::AbstractTester<Input, State, CostStructure>;
       
     public:
       
       typedef Input InputType;
       typedef State StateType;
-      typedef CFtype CostType;
+      typedef typename CostStructure::CFtype CFtype;
       typedef CostStructure CostStructureType;
       
       /** Performs a full run of the search method (possibly being interrupted before its natural ending).
@@ -97,7 +97,7 @@ namespace EasyLocal {
       virtual size_t Modality() const = 0;
       
       /** List of all runners that have been instantiated so far. For autoloading. */
-      static std::vector<Runner<Input, State, CFtype, CostStructure>*> runners;
+      static std::vector<Runner<Input, State, CostStructure>*> runners;
       
     protected:
       
@@ -107,7 +107,7 @@ namespace EasyLocal {
        @param name name of the runner
        @param desc description of the runner
        */
-      Runner(const Input& i, StateManager<Input, State, CFtype, CostStructure>&, std::string, std::string);
+      Runner(const Input& i, StateManager<Input, State, CostStructure>&, std::string, std::string);
       
       /** Actions and checks to be perfomed at the beginning of the run. Redefinition intended.
        @throw ParameterNotSet if one of the parameters needed by the runner (or other components) hasn't been set
@@ -161,7 +161,7 @@ namespace EasyLocal {
       const Input& in;
       
       /** The state manager attached to this runner. */
-      StateManager<Input, State, CFtype, CostStructure>& sm;
+      StateManager<Input, State, CostStructure>& sm;
       
       /** Current state of the search. */
       std::shared_ptr<State> p_current_state,
@@ -206,11 +206,11 @@ namespace EasyLocal {
      * Implementation
      *************************************************************************/
     
-    template <class Input, class State, typename CFtype, class CostStructure>
-    std::vector<Runner<Input, State, CFtype, CostStructure>*> Runner<Input, State, CFtype, CostStructure>::runners;
+    template <class Input, class State, class CostStructure>
+    std::vector<Runner<Input, State, CostStructure>*> Runner<Input, State, CostStructure>::runners;
     
-    template <class Input, class State, typename CFtype, class CostStructure>
-    Runner<Input, State, CFtype, CostStructure>::Runner(const Input& in, StateManager<Input, State, CFtype, CostStructure>& sm, std::string name, std::string description)
+    template <class Input, class State, class CostStructure>
+    Runner<Input, State, CostStructure>::Runner(const Input& in, StateManager<Input, State, CostStructure>& sm, std::string name, std::string description)
     : // Parameters
     Parametrized(name, description), name(name), description(description), no_acceptable_move_found(false), in(in), sm(sm), weights(0)
     {
@@ -218,16 +218,16 @@ namespace EasyLocal {
       runners.push_back(this);
     }
     
-    template <class Input, class State, typename CFtype, class CostStructure>
-    void Runner<Input, State, CFtype, CostStructure>::RegisterParameters()
+    template <class Input, class State, class CostStructure>
+    void Runner<Input, State, CostStructure>::RegisterParameters()
     {
       max_evaluations("max_evaluations", "Maximum total number of cost function evaluations allowed", this->parameters);
       // This parameter has a default value
       max_evaluations = std::numeric_limits<unsigned long int>::max();
     }
     
-    template <class Input, class State, typename CFtype, class CostStructure>
-    CostStructure Runner<Input, State, CFtype, CostStructure>::Go(State& s) throw (ParameterNotSet, IncorrectParameterValue)
+    template <class Input, class State, class CostStructure>
+    CostStructure Runner<Input, State, CostStructure>::Go(State& s) throw (ParameterNotSet, IncorrectParameterValue)
     {
       InitializeRun(s);
       while (!MaxEvaluationsExpired() && !StopCriterion() && !LowerBoundReached() && !this->TimeoutExpired())
@@ -258,8 +258,8 @@ namespace EasyLocal {
     /**
      Prepare the iteration (e.g. updates the counter that tracks the number of iterations elapsed)
      */
-    template <class Input, class State, typename CFtype, class CostStructure>
-    void Runner<Input, State, CFtype, CostStructure>::PrepareIteration()
+    template <class Input, class State, class CostStructure>
+    void Runner<Input, State, CostStructure>::PrepareIteration()
     {
       no_acceptable_move_found = false;
       iteration++;
@@ -268,12 +268,12 @@ namespace EasyLocal {
     /**
      Complete the iteration (e.g. decreate the temperature for Simulated Annealing)
      */
-    template <class Input, class State, typename CFtype, class CostStructure>
-    void Runner<Input, State, CFtype, CostStructure>::CompleteIteration()
+    template <class Input, class State, class CostStructure>
+    void Runner<Input, State, CostStructure>::CompleteIteration()
     {}
     
-    template <class Input, class State, typename CFtype, class CostStructure>
-    void Runner<Input, State, CFtype, CostStructure>::InitializeRun(State& s) throw (ParameterNotSet, IncorrectParameterValue)
+    template <class Input, class State, class CostStructure>
+    void Runner<Input, State, CostStructure>::InitializeRun(State& s) throw (ParameterNotSet, IncorrectParameterValue)
     {
       iteration = 0;
       iteration_of_best = 0;
@@ -284,35 +284,35 @@ namespace EasyLocal {
       InitializeRun();
     }
     
-    template <class Input, class State, typename CFtype, class CostStructure>
-    CostStructure Runner<Input, State, CFtype, CostStructure>::TerminateRun(State& s)
+    template <class Input, class State, class CostStructure>
+    CostStructure Runner<Input, State, CostStructure>::TerminateRun(State& s)
     {
       s = *p_best_state;
       TerminateRun();
       return best_state_cost;
     }
     
-    template <class Input, class State, typename CFtype, class CostStructure>
-    bool Runner<Input, State, CFtype, CostStructure>::LowerBoundReached() const
+    template <class Input, class State, class CostStructure>
+    bool Runner<Input, State, CostStructure>::LowerBoundReached() const
     {
       return sm.LowerBoundReached(current_state_cost);
     }
     
-    template <class Input, class State, typename CFtype, class CostStructure>
-    bool Runner<Input, State, CFtype, CostStructure>::MaxEvaluationsExpired() const
+    template <class Input, class State, class CostStructure>
+    bool Runner<Input, State, CostStructure>::MaxEvaluationsExpired() const
     {
       return evaluations >= max_evaluations;
     }
     
-    template <class Input, class State, typename CFtype, class CostStructure>
-    void Runner<Input, State, CFtype, CostStructure>::ReadParameters(std::istream& is, std::ostream& os)
+    template <class Input, class State, class CostStructure>
+    void Runner<Input, State, CostStructure>::ReadParameters(std::istream& is, std::ostream& os)
     {
       os << this->name << " -- INPUT PARAMETERS" << std::endl;
       Parametrized::ReadParameters(is, os);
     }
     
-    template <class Input, class State, typename CFtype, class CostStructure>
-    void Runner<Input, State, CFtype, CostStructure>::Print(std::ostream& os) const
+    template <class Input, class State, class CostStructure>
+    void Runner<Input, State, CostStructure>::Print(std::ostream& os) const
     {
       os  << "  " << this->name << std::endl;
       Parametrized::Print(os);  

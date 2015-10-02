@@ -9,7 +9,7 @@ namespace EasyLocal {
      moves.
      @ingroup Testers
      */
-    template <class Input, class Output, class State, typename CFtype = int>
+    template <class Input, class Output, class State, class CostStructure = DefaultCostStructure<int>>
     class ComponentTester
     {
     public:
@@ -42,8 +42,8 @@ namespace EasyLocal {
      @param om a pointer to an output manager
      @param in a pointer to an input object (nullptr for default)
      */
-    template <class Input, class Output, class State, typename CFtype>
-    ComponentTester<Input, Output, State, CFtype>::ComponentTester(std::string e_name)
+    template <class Input, class Output, class State, class CostStructure>
+    ComponentTester<Input, Output, State, CostStructure>::ComponentTester(std::string e_name)
     : name(e_name) {}       
   }
 }

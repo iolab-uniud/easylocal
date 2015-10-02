@@ -404,8 +404,8 @@ namespace EasyLocal {
      @tparam BaseNeighborhoodExplorers a sequence of base neighborhood explorer classes
      @ingroup Helpers
      */
-    template <class Input, class State, typename CFtype, class CostStructure, class ... BaseNeighborhoodExplorers>
-    class SetUnionNeighborhoodExplorer : public NeighborhoodExplorer<Input, State, std::tuple<ActiveMove<typename BaseNeighborhoodExplorers::MoveType> ...>, CFtype, CostStructure>
+    template <class Input, class State, class CostStructure, class ... BaseNeighborhoodExplorers>
+    class SetUnionNeighborhoodExplorer : public NeighborhoodExplorer<Input, State, std::tuple<ActiveMove<typename BaseNeighborhoodExplorers::MoveType> ...>, CostStructure>
     {
     protected:
       /** Tuple type representing the combination of @c BaseNeighborhoodExplorers' @ref Move. */
@@ -432,14 +432,14 @@ namespace EasyLocal {
        @param nhes the list of basic neighborhood explorer objects (according to the template list)
        @param bias a set of weights fo biasing the random move drawing
        */
-      SetUnionNeighborhoodExplorer(const Input& in, StateManager<Input, State, CFtype>& sm, std::string name, BaseNeighborhoodExplorers& ... nhes, const std::vector<double>& bias = std::vector<double>(0))
-      : NeighborhoodExplorer<Input, State, MoveTypes, CFtype>(in, sm, name),
+      SetUnionNeighborhoodExplorer(const Input& in, StateManager<Input, State, CostStructure>& sm, std::string name, BaseNeighborhoodExplorers& ... nhes, const std::vector<double>& bias = std::vector<double>(0))
+      : NeighborhoodExplorer<Input, State, MoveTypes, CostStructure>(in, sm, name),
       nhes(std::make_tuple(std::reference_wrapper<BaseNeighborhoodExplorers>(nhes) ...)),
       first_move_funcs(std::make_tuple(Impl::makeFastFunc(&nhes, &BaseNeighborhoodExplorers::FirstMove)...)),
       random_move_funcs(std::make_tuple(Impl::makeFastFunc(&nhes, &BaseNeighborhoodExplorers::RandomMove)...)),
       next_move_funcs(std::make_tuple(Impl::makeFastFunc(&nhes, &BaseNeighborhoodExplorers::NextMove)...)),
       make_move_funcs(std::make_tuple(Impl::makeFastFunc(&nhes, &BaseNeighborhoodExplorers::MakeMove)...)),
-      delta_cost_function_funcs(std::make_tuple(Impl::makeFastFunc(dynamic_cast<NeighborhoodExplorer<Input, State, typename BaseNeighborhoodExplorers::MoveType, CFtype>*>(&nhes), &NeighborhoodExplorer<Input, State, typename BaseNeighborhoodExplorers::MoveType, CFtype>::DeltaCostFunctionComponents)...))
+      delta_cost_function_funcs(std::make_tuple(Impl::makeFastFunc(dynamic_cast<NeighborhoodExplorer<Input, State, typename BaseNeighborhoodExplorers::MoveType, CostStructure>*>(&nhes), &NeighborhoodExplorer<Input, State, typename BaseNeighborhoodExplorers::MoveType, CostStructure>::DeltaCostFunctionComponents)...))
       {
         if (bias.empty())
         {
@@ -610,7 +610,7 @@ namespace EasyLocal {
      @ingroup Helpers
      */
     template <class Input, class State, class CFtype, class CostStructure, class ... BaseNeighborhoodExplorers>
-    class CartesianProductNeighborhoodExplorer : public NeighborhoodExplorer<Input, State, std::tuple<ActiveMove<typename BaseNeighborhoodExplorers::MoveType> ...>, CFtype, CostStructure>
+    class CartesianProductNeighborhoodExplorer : public NeighborhoodExplorer<Input, State, std::tuple<ActiveMove<typename BaseNeighborhoodExplorers::MoveType> ...>, CostStructure>
     {
     protected:
       /** Tuple type representing the combination of @c BaseNeighborhoodExplorers' @ref Move. */
@@ -636,14 +636,14 @@ namespace EasyLocal {
        @param name the name associated to the NeighborhoodExplorer
        @param nhes the list of basic neighborhood explorer objects (according to the template list)
        */
-      CartesianProductNeighborhoodExplorer(const Input& in, StateManager<Input, State, CFtype>& sm, std::string name, BaseNeighborhoodExplorers& ... nhes)
-      : NeighborhoodExplorer<Input, State, MoveTypes, CFtype>(in, sm, name),
+      CartesianProductNeighborhoodExplorer(const Input& in, StateManager<Input, State, CostStructure>& sm, std::string name, BaseNeighborhoodExplorers& ... nhes)
+      : NeighborhoodExplorer<Input, State, MoveTypes, CostStructure>(in, sm, name),
       nhes(std::make_tuple(std::reference_wrapper<BaseNeighborhoodExplorers>(nhes) ...)),
       first_move_funcs(std::make_tuple(Impl::makeFastFunc(&nhes, &BaseNeighborhoodExplorers::FirstMove)...)),
       random_move_funcs(std::make_tuple(Impl::makeFastFunc(&nhes, &BaseNeighborhoodExplorers::RandomMove)...)),
       next_move_funcs(std::make_tuple(Impl::makeFastFunc(&nhes, &BaseNeighborhoodExplorers::NextMove)...)),
       make_move_funcs(std::make_tuple(Impl::makeFastFunc(&nhes, &BaseNeighborhoodExplorers::MakeMove)...)),
-      delta_cost_function_funcs(std::make_tuple(Impl::makeFastFunc(dynamic_cast<NeighborhoodExplorer<Input, State, typename BaseNeighborhoodExplorers::MoveType, CFtype>*>(&nhes), &NeighborhoodExplorer<Input, State, typename BaseNeighborhoodExplorers::MoveType, CFtype>::DeltaCostFunctionComponents)...))
+      delta_cost_function_funcs(std::make_tuple(Impl::makeFastFunc(dynamic_cast<NeighborhoodExplorer<Input, State, typename BaseNeighborhoodExplorers::MoveType, CostStructure>*>(&nhes), &NeighborhoodExplorer<Input, State, typename BaseNeighborhoodExplorers::MoveType, CostStructure>::DeltaCostFunctionComponents)...))
       {}
       
     protected:

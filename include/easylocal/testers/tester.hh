@@ -19,49 +19,45 @@ namespace EasyLocal {
     
     using namespace EasyLocal::Core;
     
-    template <class Input, class State, typename CFtype>
     class ChoiceReader
     {
     protected:
       /** Reads a choice from an input stream and converts it to an integer (-1 if it was not correct) */
-      int ReadChoice(std::istream& is);
-    };
-    
-    template <class Input, class State, typename CFtype>
-    int ChoiceReader<Input, State, CFtype>::ReadChoice(std::istream& is)
-    {
-      std::string c;
-      std::cin >> c;
-      try
+      int ReadChoice(std::istream& is)
       {
+        std::string c;
+        std::cin >> c;
+        try
+        {
 #ifdef HAVE_STD_STOI
-        return std::stoi(c);
+          return std::stoi(c);
 #else
-				int value;
-				std::istringstream iss(c);
-				iss >> value;
-				if (is.fail())
-					throw std::invalid_argument("Not an integer value");
-				return value;
+          int value;
+          std::istringstream iss(c);
+          iss >> value;
+          if (is.fail())
+            throw std::invalid_argument("Not an integer value");
+          return value;
 #endif
+        }
+        catch (std::invalid_argument)
+        {
+          return -1;
+        }
       }
-      catch (std::invalid_argument)
-      {
-        return -1;
-      }
-    }
+    };
 
     
-    template <class Input, class State, typename CFtype>
+    template <class Input, class State, class CostStructure>
     class AbstractTester
     {
     public:
       virtual ~AbstractTester() {};
     protected:
-      virtual void AddRunner(Core::Runner<Input, State, CFtype>& r) {};
+      virtual void AddRunner(Core::Runner<Input, State, CostStructure>& r) {};
       void AddRunners()
       {
-        for (auto p_r : Core::Runner<Input, State, CFtype>::runners)
+        for (auto p_r : Core::Runner<Input, State, CostStructure>::runners)
           AddRunner(*p_r);
       }
     };
@@ -71,24 +67,25 @@ namespace EasyLocal {
      user interface provided by the framework.
      @ingroup Testers
      */
-    template <class Input, class Output, class State, typename CFtype = int>
-    class Tester : public AbstractTester<Input, State, CFtype>, public ChoiceReader<Input, State, CFtype>
+    template <class Input, class Output, class State, class CostStructure = DefaultCostStructure<int>>
+    class Tester : public AbstractTester<Input, State, CostStructure>, public ChoiceReader
     {
+      typedef typename CostStructure::CFtype CFtype;
     public:
-      Tester(const Input& in, StateManager<Input, State, CFtype>& e_sm,
+      Tester(const Input& in, StateManager<Input, State, CostStructure>& e_sm,
              Core::OutputManager<Input, Output, State>& e_om, std::ostream& o = std::cout);
-      Tester(const Input& in, State st, StateManager<Input, State, CFtype>& e_sm,
+      Tester(const Input& in, State st, StateManager<Input, State, CostStructure>& e_sm,
              Core::OutputManager<Input, Output, State>& e_om, std::ostream& o = std::cout);
       /** Virtual destructor. */
       virtual ~Tester() {}
       void RunMainMenu(std::string file_name = "");
-      void AddMoveTester(ComponentTester<Input, Output, State, CFtype>& amt);
-      void AddKickerTester(ComponentTester<Input, Output, State, CFtype>& kt);
+      void AddMoveTester(ComponentTester<Input, Output, State, CostStructure>& amt);
+      void AddKickerTester(ComponentTester<Input, Output, State, CostStructure>& kt);
       void RunInputMenu();
       void RunStateTestMenu();
       void SetState(const State& st){test_state = st;}
     protected:
-      void AddRunner(Core::Runner<Input, State, CFtype>& r);
+      void AddRunner(Core::Runner<Input, State, CostStructure>& r);
       void ShowStateMenu();
       void ShowReducedStateMenu();
       bool ExecuteStateChoice();
@@ -104,14 +101,14 @@ namespace EasyLocal {
       void ExecuteRunChoice();
       void ExecuteSolverChoice();
       void ExecuteDebuggingMenu();
-      std::vector<ComponentTester<Input, Output, State, CFtype>* > move_testers;
-      std::vector<ComponentTester<Input, Output, State, CFtype>* > kicker_testers;
+      std::vector<ComponentTester<Input, Output, State, CostStructure>*> move_testers;
+      std::vector<ComponentTester<Input, Output, State, CostStructure>*> kicker_testers;
       /**< The set of attached move testers. */
-      std::vector<Core::Runner<Input, State, CFtype>* > runners; /**< The set of attached
+      std::vector<Core::Runner<Input, State, CostStructure>* > runners; /**< The set of attached
                                                                   runners. */
       const Input& in;
       std::ostream& os;
-      Core::StateManager<Input, State, CFtype>& sm;  /**< A pointer to a state manager. */
+      Core::StateManager<Input, State, CostStructure>& sm;  /**< A pointer to a state manager. */
       Core::OutputManager<Input, Output, State>& om; /**< A pointer to an output producer. */
       State test_state; /**< The current state managed by the tester. */
       Output out; /**< The output object. */
@@ -131,9 +128,9 @@ namespace EasyLocal {
      @param om a pointer to a compatible output manager
      @param in a pointer to an input object
      */
-    template <class Input, class Output, class State, typename CFtype>
-    Tester<Input, Output, State, CFtype>::Tester(const Input& i,
-                                                 Core::StateManager<Input, State, CFtype>& e_sm,
+    template <class Input, class Output, class State, class CostStructure>
+    Tester<Input, Output, State, CostStructure>::Tester(const Input& i,
+                                                 Core::StateManager<Input, State, CostStructure>& e_sm,
                                                  Core::OutputManager<Input, Output, State>& e_om, std::ostream& o)
     :  in(i), os(o), sm(e_sm), om(e_om),
     test_state(i), out(i)
@@ -145,8 +142,8 @@ namespace EasyLocal {
      
      @param p_amt a pointer to a move tester
      */
-    template <class Input, class Output, class State, typename CFtype>
-    void Tester<Input, Output, State, CFtype>::AddMoveTester(ComponentTester<Input, Output, State, CFtype>& amt)
+    template <class Input, class Output, class State, class CostStructure>
+    void Tester<Input, Output, State, CostStructure>::AddMoveTester(ComponentTester<Input, Output, State, CostStructure>& amt)
     { move_testers.push_back(&amt); }
     
     /**
@@ -154,8 +151,8 @@ namespace EasyLocal {
      
      @param p_amt a pointer to a move tester
      */
-    template <class Input, class Output, class State, typename CFtype>
-    void Tester<Input, Output, State, CFtype>::AddKickerTester(ComponentTester<Input, Output, State, CFtype>& kt)
+    template <class Input, class Output, class State, class CostStructure>
+    void Tester<Input, Output, State, CostStructure>::AddKickerTester(ComponentTester<Input, Output, State, CostStructure>& kt)
     { kicker_testers.push_back(&kt); }
     
     /**
@@ -163,8 +160,8 @@ namespace EasyLocal {
      
      @param p_ru a pointer to a compatible runner
      */
-    template <class Input, class Output, class State, typename CFtype>
-    void Tester<Input, Output, State, CFtype>::AddRunner(Core::Runner<Input, State, CFtype>& r)
+    template <class Input, class Output, class State, class CostStructure>
+    void Tester<Input, Output, State, CostStructure>::AddRunner(Core::Runner<Input, State, CostStructure>& r)
     {
       runners.push_back(&r);
     }
@@ -173,8 +170,8 @@ namespace EasyLocal {
      Manages the tester main menu.
      */
     
-    template <class Input, class Output, class State, typename CFtype>
-    void Tester<Input, Output, State, CFtype>::RunMainMenu(std::string file_name)
+    template <class Input, class Output, class State, class CostStructure>
+    void Tester<Input, Output, State, CostStructure>::RunMainMenu(std::string file_name)
     {
       if (file_name == "")
       {
@@ -208,8 +205,8 @@ namespace EasyLocal {
     /**
      Outputs the main menu options.
      */
-    template <class Input, class Output, class State, typename CFtype>
-    void Tester<Input, Output, State, CFtype>::ShowMainMenu()
+    template <class Input, class Output, class State, class CostStructure>
+    void Tester<Input, Output, State, CostStructure>::ShowMainMenu()
     {
       os << "MAIN MENU:" << std::endl
       << "   (1) Move menu" << std::endl
@@ -224,8 +221,8 @@ namespace EasyLocal {
     /**
      Execute a choice made in the main menu.
      */
-    template <class Input, class Output, class State, typename CFtype>
-    void Tester<Input, Output, State, CFtype>::ExecuteMainChoice()
+    template <class Input, class Output, class State, class CostStructure>
+    void Tester<Input, Output, State, CostStructure>::ExecuteMainChoice()
     {
       switch(this->choice)
       {
@@ -254,8 +251,8 @@ namespace EasyLocal {
     /**
      Outputs the menu for the move testers.
      */
-    template <class Input, class Output, class State, typename CFtype>
-    void Tester<Input, Output, State, CFtype>::ShowMovesMenu()
+    template <class Input, class Output, class State, class CostStructure>
+    void Tester<Input, Output, State, CostStructure>::ShowMovesMenu()
     {
       unsigned int i;
       os << "MOVE MENU: " << std::endl;
@@ -267,8 +264,8 @@ namespace EasyLocal {
     }
     
     
-    template <class Input, class Output, class State, typename CFtype>
-    void Tester<Input, Output, State, CFtype>::ShowSolverMenu()
+    template <class Input, class Output, class State, class CostStructure>
+    void Tester<Input, Output, State, CostStructure>::ShowSolverMenu()
     {
       os << "SOLVER MENU: " << std::endl;
       os << "   (1) Simple solver" << std::endl;
@@ -281,8 +278,8 @@ namespace EasyLocal {
     /**
      Outputs the menu for the move testers.
      */
-    template <class Input, class Output, class State, typename CFtype>
-    void Tester<Input, Output, State, CFtype>::ShowKickersMenu()
+    template <class Input, class Output, class State, class CostStructure>
+    void Tester<Input, Output, State, CostStructure>::ShowKickersMenu()
     {
       unsigned int i;
       os << "KICK MENU: " << std::endl;
@@ -296,8 +293,8 @@ namespace EasyLocal {
     /**
      Outputs the menu for the runners.
      */
-    template <class Input, class Output, class State, typename CFtype>
-    void Tester<Input, Output, State, CFtype>::ShowRunMenu()
+    template <class Input, class Output, class State, class CostStructure>
+    void Tester<Input, Output, State, CostStructure>::ShowRunMenu()
     {
       unsigned int i;
       do
@@ -317,8 +314,8 @@ namespace EasyLocal {
     /**
      Execute a choice from the move testers menu.
      */
-    template <class Input, class Output, class State, typename CFtype>
-    void Tester<Input, Output, State, CFtype>::ExecuteMovesChoice()
+    template <class Input, class Output, class State, class CostStructure>
+    void Tester<Input, Output, State, CostStructure>::ExecuteMovesChoice()
     {
       if (sub_choice > 0 && sub_choice <= static_cast<int>(move_testers.size()))
         move_testers[sub_choice-1]->RunMainMenu(test_state);
@@ -327,8 +324,8 @@ namespace EasyLocal {
     /**
      Execute a choice from the move testers menu.
      */
-    template <class Input, class Output, class State, typename CFtype>
-    void Tester<Input, Output, State, CFtype>::ExecuteKickersChoice()
+    template <class Input, class Output, class State, class CostStructure>
+    void Tester<Input, Output, State, CostStructure>::ExecuteKickersChoice()
     {
       if (sub_choice > 0)
         kicker_testers[sub_choice-1]->RunMainMenu(test_state);
@@ -337,12 +334,12 @@ namespace EasyLocal {
     /**
      Execute a choice from the runners menu.
      */
-    template <class Input, class Output, class State, typename CFtype>
-    void Tester<Input, Output, State, CFtype>::ExecuteRunChoice()
+    template <class Input, class Output, class State, class CostStructure>
+    void Tester<Input, Output, State, CostStructure>::ExecuteRunChoice()
     {
       if (sub_choice > 0)
       {
-        Runner<Input, State, CFtype>& r = *runners[sub_choice-1];
+        Runner<Input, State, CostStructure>& r = *runners[sub_choice-1];
         r.ReadParameters();
         
         // Ask for timeout
@@ -353,7 +350,7 @@ namespace EasyLocal {
         auto to = std::chrono::milliseconds((long long)(timeout * 1000));
         
         auto start = std::chrono::high_resolution_clock::now();
-        DefaultCostStructure<CFtype> result = r.SyncRun(to, this->test_state);
+        CostStructure result = r.SyncRun(to, this->test_state);
         auto end = std::chrono::high_resolution_clock::now();
         
         auto duration = end - start;
@@ -369,8 +366,8 @@ namespace EasyLocal {
     /**
      Manages an adbridged menu for building the initial state.
      */
-    template <class Input, class Output, class State, typename CFtype>
-    void Tester<Input, Output, State, CFtype>::RunInputMenu()
+    template <class Input, class Output, class State, class CostStructure>
+    void Tester<Input, Output, State, CostStructure>::RunInputMenu()
     {
       bool show_state;
       ShowReducedStateMenu();
@@ -389,8 +386,8 @@ namespace EasyLocal {
     /**
      Outputs the menu options.
      */
-    template <class Input, class Output, class State, typename CFtype>
-    void Tester<Input, Output, State, CFtype>::ShowStateMenu()
+    template <class Input, class Output, class State, class CostStructure>
+    void Tester<Input, Output, State, CostStructure>::ShowStateMenu()
     {
       os << "STATE MENU: " << std::endl
       << "    (1) Random state " << std::endl
@@ -412,8 +409,8 @@ namespace EasyLocal {
     /**
      Outputs a reduced set of options for the initial state building.
      */
-    template <class Input, class Output, class State, typename CFtype>
-    void Tester<Input, Output, State, CFtype>::ShowReducedStateMenu()
+    template <class Input, class Output, class State, class CostStructure>
+    void Tester<Input, Output, State, CostStructure>::ShowReducedStateMenu()
     {
       os << "INITIAL STATE MENU: " << std::endl
       << "    (1) Random state " << std::endl
@@ -430,8 +427,8 @@ namespace EasyLocal {
      
      @param st the current state
      */
-    template <class Input, class Output, class State, typename CFtype>
-    bool Tester<Input, Output, State, CFtype>::ExecuteStateChoice()
+    template <class Input, class Output, class State, class CostStructure>
+    bool Tester<Input, Output, State, CostStructure>::ExecuteStateChoice()
     {
       unsigned int i;
       std::string file_name;
@@ -502,10 +499,10 @@ namespace EasyLocal {
         case 8:
         {
           os  << "Cost Components: " << std::endl;
-          DefaultCostStructure<CFtype> cost = this->sm.CostFunctionComponents(test_state);
-          for (i = 0; i < CostComponent<Input, State, CFtype>::CostComponents(); i++)
+          CostStructure cost = this->sm.CostFunctionComponents(test_state);
+          for (i = 0; i < CostComponent<Input, State, CostStructure>::CostComponents(); i++)
           {
-            const CostComponent<Input, State, CFtype>& cc = CostComponent<Input, State, CFtype>::Component(i);
+            const CostComponent<Input, State, CostStructure>& cc = CostComponent<Input, State, CostStructure>::Component(i);
             os  << i << ". " << cc.name << " : "
             << cost.all_components[i] << (cc.IsHard() ? '*' : ' ') << std::endl;
           }
@@ -517,16 +514,16 @@ namespace EasyLocal {
         case 9:
         {
           os << "Detailed Violations: " << std::endl;
-          DefaultCostStructure<CFtype> cost = this->sm.CostFunctionComponents(test_state);
-          for (i = 0; i < CostComponent<Input, State, CFtype>::CostComponents(); i++)
+          CostStructure cost = this->sm.CostFunctionComponents(test_state);
+          for (i = 0; i < CostComponent<Input, State, CostStructure>::CostComponents(); i++)
           {
-            const CostComponent<Input, State, CFtype>& cc = CostComponent<Input, State, CFtype>::Component(i);
+            const CostComponent<Input, State, CostStructure>& cc = CostComponent<Input, State, CostStructure>::Component(i);
             cc.PrintViolations(test_state);
           }
           os << std::endl << "Summary of Cost Components: " << std::endl;
-          for (i = 0; i < CostComponent<Input, State, CFtype>::CostComponents(); i++)
+          for (i = 0; i < CostComponent<Input, State, CostStructure>::CostComponents(); i++)
           {
-            const CostComponent<Input, State, CFtype>& cc = CostComponent<Input, State, CFtype>::Component(i);
+            const CostComponent<Input, State, CostStructure>& cc = CostComponent<Input, State, CostStructure>::Component(i);
             os  << i << ". " << cc.name << " : "
             << cost.all_components[i] << (cc.IsHard() ? '*' : ' ') << std::endl;
           }
@@ -563,8 +560,8 @@ namespace EasyLocal {
      Manages the component tester menu for the given state.
      @param st the state to test
      */
-    template <class Input, class Output, class State, typename CFtype>
-    void Tester<Input, Output, State, CFtype>::RunStateTestMenu()
+    template <class Input, class Output, class State, class CostStructure>
+    void Tester<Input, Output, State, CostStructure>::RunStateTestMenu()
     {
       bool show_state;
       do

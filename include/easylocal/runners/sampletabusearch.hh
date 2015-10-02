@@ -12,15 +12,15 @@ namespace EasyLocal {
   
   namespace Core {
     
-    template <class Input, class State, class Move, typename CFtype = int, class CostStructure = DefaultCostStructure<CFtype>>
-    class SampleTabuSearch : public TabuSearch<Input, State, Move, CFtype, CostStructure>
+    template <class Input, class State, class Move, class CostStructure = DefaultCostStructure<int>>
+    class SampleTabuSearch : public TabuSearch<Input, State, Move, CostStructure>
     {
     public:      
-      using TabuSearch<Input, State, Move, CFtype, CostStructure>::TabuSearch;
+      using TabuSearch<Input, State, Move, CostStructure>::TabuSearch;
       
       void RegisterParameters()
       {
-        TabuSearch<Input, State, Move, CFtype, CostStructure>::RegisterParameters();
+        TabuSearch<Input, State, Move, CostStructure>::RegisterParameters();
         samples("samples", "Number of neighbors sampled", this->parameters);
       }
     protected:
@@ -36,12 +36,12 @@ namespace EasyLocal {
      Selects always the best move that is non prohibited by the tabu list
      mechanism.
      */
-    template <class Input, class State, class Move, typename CFtype, class CostStructure>
-    void SampleTabuSearch<Input, State, Move, CFtype, CostStructure>::SelectMove()
+    template <class Input, class State, class Move, class CostStructure>
+    void SampleTabuSearch<Input, State, Move, CostStructure>::SelectMove()
     {
       size_t sampled = 0;
       CostStructure aspiration = this->best_state_cost - this->current_state_cost;
-      EvaluatedMove<Move, CFtype, CostStructure> em = this->ne.RandomBest(*this->p_current_state, samples, sampled, [this, aspiration](const Move& mv, const CostStructure& move_cost) {
+      EvaluatedMove<Move, CostStructure> em = this->ne.RandomBest(*this->p_current_state, samples, sampled, [this, aspiration](const Move& mv, const CostStructure& move_cost) {
         for (auto li : *(this->tabu_list))
           if ((move_cost >= aspiration) && this->Inverse(li.move, mv))
             return false;

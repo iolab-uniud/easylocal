@@ -18,14 +18,14 @@ namespace EasyLocal {
      
      @ingroup Runners
      */
-    template <class Input, class State, class Move, typename CFtype = int, class CostStructure = DefaultCostStructure<CFtype>>
-    class SimulatedAnnealingWithReheating : public SimulatedAnnealingEvaluationBased<Input, State, Move, CFtype, CostStructure>
+    template <class Input, class State, class Move, class CostStructure = DefaultCostStructure<int>>
+    class SimulatedAnnealingWithReheating : public SimulatedAnnealingEvaluationBased<Input, State, Move, CostStructure>
     {
     public:
       
       SimulatedAnnealingWithReheating(const Input& in,
-                                      StateManager<Input, State, CFtype, CostStructure>& sm,
-                                      NeighborhoodExplorer<Input, State, Move, CFtype, CostStructure>& ne,
+                                      StateManager<Input, State, CostStructure>& sm,
+                                      NeighborhoodExplorer<Input, State, Move, CostStructure>& ne,
                                       std::string name);
       std::string StatusString() const;
     protected:
@@ -54,28 +54,28 @@ namespace EasyLocal {
      @param ne a pointer to a compatible neighborhood explorer
      @param in a pointer to an input object
      */
-    template <class Input, class State, class Move, typename CFtype, class CostStructure>
-    SimulatedAnnealingWithReheating<Input, State, Move, CFtype, CostStructure>::SimulatedAnnealingWithReheating(const Input& in,
-                                                                                                 StateManager<Input, State, CFtype, CostStructure>& sm,
-                                                                                                 NeighborhoodExplorer<Input, State, Move, CFtype, CostStructure>& ne,
+    template <class Input, class State, class Move, class CostStructure>
+    SimulatedAnnealingWithReheating<Input, State, Move, CostStructure>::SimulatedAnnealingWithReheating(const Input& in,
+                                                                                                 StateManager<Input, State, CostStructure>& sm,
+                                                                                                 NeighborhoodExplorer<Input, State, Move, CostStructure>& ne,
                                                                                                  std::string name)
-    : SimulatedAnnealingEvaluationBased<Input, State, Move, CFtype, CostStructure>(in, sm, ne, name)
+    : SimulatedAnnealingEvaluationBased<Input, State, Move, CostStructure>(in, sm, ne, name)
     {}
     
-    template <class Input, class State, class Move, typename CFtype, class CostStructure>
-    void SimulatedAnnealingWithReheating<Input, State, Move, CFtype, CostStructure>::RegisterParameters()
+    template <class Input, class State, class Move, class CostStructure>
+    void SimulatedAnnealingWithReheating<Input, State, Move, CostStructure>::RegisterParameters()
     {
-      AbstractSimulatedAnnealing<Input, State, Move, CFtype, CostStructure>::RegisterParameters();
+      AbstractSimulatedAnnealing<Input, State, Move, CostStructure>::RegisterParameters();
       first_reheat_ratio("first_reheat_ratio", "First reheat ratio", this->parameters);
       reheat_ratio("reheat_ratio", "Reheat ratio", this->parameters);
       first_descent_evaluations_share("first_descent_evaluations_share", "First descent cost function evaluations share", this->parameters);
       max_reheats("max_reheats", "Maximum number of reheats", this->parameters);
     }
     
-    template <class Input, class State, class Move, typename CFtype, class CostStructure>
-    void SimulatedAnnealingWithReheating<Input, State, Move, CFtype, CostStructure>::InitializeRun() throw (ParameterNotSet, IncorrectParameterValue)
+    template <class Input, class State, class Move, class CostStructure>
+    void SimulatedAnnealingWithReheating<Input, State, Move, CostStructure>::InitializeRun() throw (ParameterNotSet, IncorrectParameterValue)
     {
-      SimulatedAnnealingEvaluationBased<Input, State, Move, CFtype, CostStructure>::InitializeRun();
+      SimulatedAnnealingEvaluationBased<Input, State, Move, CostStructure>::InitializeRun();
       reheats = 0;
       
       if (max_reheats > 0)
@@ -104,10 +104,10 @@ namespace EasyLocal {
     /**
      A move is randomly picked.
      */
-    template <class Input, class State, class Move, typename CFtype, class CostStructure>
-    void SimulatedAnnealingWithReheating<Input, State, Move, CFtype, CostStructure>::CompleteMove()
+    template <class Input, class State, class Move, class CostStructure>
+    void SimulatedAnnealingWithReheating<Input, State, Move, CostStructure>::CompleteMove()
     {
-      SimulatedAnnealingEvaluationBased<Input, State, Move, CFtype, CostStructure>::CompleteMove();
+      SimulatedAnnealingEvaluationBased<Input, State, Move, CostStructure>::CompleteMove();
       if (ReheatCondition() && reheats <= max_reheats)
       {
         //     if (max_reheats != 0)
@@ -129,8 +129,8 @@ namespace EasyLocal {
       }
     }
     
-    template <class Input, class State, class Move, typename CFtype, class CostStructure>
-    bool SimulatedAnnealingWithReheating<Input, State, Move, CFtype, CostStructure>::ReheatCondition()
+    template <class Input, class State, class Move, class CostStructure>
+    bool SimulatedAnnealingWithReheating<Input, State, Move, CostStructure>::ReheatCondition()
     {
       if (max_reheats == 0)
         return false; //true;
@@ -141,8 +141,8 @@ namespace EasyLocal {
     /**
      The search stops when a low temperature has reached.
      */
-    template <class Input, class State, class Move, typename CFtype, class CostStructure>
-    bool SimulatedAnnealingWithReheating<Input, State, Move, CFtype, CostStructure>::StopCriterion()
+    template <class Input, class State, class Move, class CostStructure>
+    bool SimulatedAnnealingWithReheating<Input, State, Move, CostStructure>::StopCriterion()
     {
       return reheats > max_reheats;
     }
@@ -150,8 +150,8 @@ namespace EasyLocal {
     /**
      Create a string containing the status of the runner
      */
-    template <class Input, class State, class Move, typename CFtype, class CostStructure>
-    std::string SimulatedAnnealingWithReheating<Input, State, Move, CFtype, CostStructure>::StatusString() const
+    template <class Input, class State, class Move, class CostStructure>
+    std::string SimulatedAnnealingWithReheating<Input, State, Move, CostStructure>::StatusString() const
     {
       std::stringstream status;
       status << "["

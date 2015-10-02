@@ -15,8 +15,8 @@ namespace EasyLocal {
      It is at the root of the inheritance hierarchy of actual runners.
      @ingroup Runners
      */
-    template <class Input, class State, class Move, typename CFtype = int, class CostStructure = DefaultCostStructure<CFtype>>
-    class MoveRunner : public Runner<Input, State, CFtype, CostStructure>
+    template <class Input, class State, class Move, class CostStructure = DefaultCostStructure<int>>
+    class MoveRunner : public Runner<Input, State, CostStructure>
     {
     public:
       
@@ -42,7 +42,7 @@ namespace EasyLocal {
             observers[i](event, this->current_state_cost, this->current_move, this->StatusString());
       }
       
-      std::vector<boost::signals2::signal<void(const Event& event, const CostStructure& current_state_cost, const EvaluatedMove<Move, CFtype, CostStructure>& em, const std::string& status_string)>> observers;
+      std::vector<boost::signals2::signal<void(const Event& event, const CostStructure& current_state_cost, const EvaluatedMove<Move, CostStructure>& em, const std::string& status_string)>> observers;
       
     public:
       
@@ -54,8 +54,8 @@ namespace EasyLocal {
       
       /** Constructor.
        @param e_sm */
-      MoveRunner(const Input& in, StateManager<Input, State, CFtype, CostStructure>& e_sm,
-                 NeighborhoodExplorer<Input, State, Move, CFtype, CostStructure>& e_ne,
+      MoveRunner(const Input& in, StateManager<Input, State, CostStructure>& e_sm,
+                 NeighborhoodExplorer<Input, State, Move, CostStructure>& e_ne,
                  std::string name, std::string description);
       
       
@@ -74,12 +74,12 @@ namespace EasyLocal {
       void UpdateBestState();
       void UpdateStateCost();
       
-      NeighborhoodExplorer<Input, State, Move, CFtype, CostStructure>& ne; /**< A reference to the
+      NeighborhoodExplorer<Input, State, Move, CostStructure>& ne; /**< A reference to the
                                                              attached neighborhood
                                                              explorer. */
       
       // data
-      EvaluatedMove<Move, CFtype, CostStructure> current_move;      /**< The currently selected move. */
+      EvaluatedMove<Move, CostStructure> current_move;      /**< The currently selected move. */
       
     };
     
@@ -88,8 +88,8 @@ namespace EasyLocal {
      *************************************************************************/
     
     
-    template <class Input, class State, class Move, typename CFtype, class CostStructure>
-    void MoveRunner<Input, State, Move, CFtype, CostStructure>::UpdateBestState()
+    template <class Input, class State, class Move, class CostStructure>
+    void MoveRunner<Input, State, Move, CostStructure>::UpdateBestState()
     {
       if (LessThan(this->current_state_cost.violations, this->best_state_cost.violations)
           || (EqualTo(this->current_state_cost.violations, this->best_state_cost.violations) &&
@@ -106,29 +106,29 @@ namespace EasyLocal {
     }
     
     
-    template <class Input, class State, class Move, typename CFtype, class CostStructure>
-    MoveRunner<Input, State, Move, CFtype, CostStructure>::MoveRunner(const Input& in,
-                                                       StateManager<Input, State, CFtype, CostStructure>& e_sm,
-                                                       NeighborhoodExplorer<Input, State, Move, CFtype, CostStructure>& e_ne,
+    template <class Input, class State, class Move, class CostStructure>
+    MoveRunner<Input, State, Move, CostStructure>::MoveRunner(const Input& in,
+                                                       StateManager<Input, State, CostStructure>& e_sm,
+                                                       NeighborhoodExplorer<Input, State, Move, CostStructure>& e_ne,
                                                        std::string name,
                                                        std::string description)
-    : Runner<Input, State, CFtype>(in, e_sm, name, description), observers(events), ne(e_ne)
+    : Runner<Input, State, CostStructure>(in, e_sm, name, description), observers(events), ne(e_ne)
     {}        
     
-    template <class Input, class State, class Move, typename CFtype, class CostStructure>
-    void MoveRunner<Input, State, Move, CFtype, CostStructure>::InitializeRun() throw (ParameterNotSet, IncorrectParameterValue)
+    template <class Input, class State, class Move, class CostStructure>
+    void MoveRunner<Input, State, Move, CostStructure>::InitializeRun() throw (ParameterNotSet, IncorrectParameterValue)
     {
       notify(START);
     }
     
-    template <class Input, class State, class Move, typename CFtype, class CostStructure>
-    void MoveRunner<Input, State, Move, CFtype, CostStructure>::TerminateRun()
+    template <class Input, class State, class Move, class CostStructure>
+    void MoveRunner<Input, State, Move, CostStructure>::TerminateRun()
     {
       notify(END);
     }
     
-    template <class Input, class State, class Move, typename CFtype, class CostStructure>
-    bool MoveRunner<Input, State, Move, CFtype, CostStructure>::AcceptableMoveFound()
+    template <class Input, class State, class Move, class CostStructure>
+    bool MoveRunner<Input, State, Move, CostStructure>::AcceptableMoveFound()
     {
       this->no_acceptable_move_found = !this->current_move.is_valid;
       return this->current_move.is_valid;
@@ -137,8 +137,8 @@ namespace EasyLocal {
     /**
      Actually performs the move selected by the local search strategy.
      */
-    template <class Input, class State, class Move, typename CFtype, class CostStructure>
-    void MoveRunner<Input, State, Move, CFtype, CostStructure>::MakeMove()
+    template <class Input, class State, class Move, class CostStructure>
+    void MoveRunner<Input, State, Move, CostStructure>::MakeMove()
     {
       if (current_move.is_valid)
       {

@@ -8,14 +8,14 @@
 namespace EasyLocal {
   namespace Debug {
     
-    template <class Input, class State, class Move, typename CFtype = int, class CostStructure = DefaultCostStructure<CFtype>>
+    template <class Input, class State, class Move, class CostStructure = DefaultCostStructure<int>>
     class MoveRunnerObserver
     {
     protected:
-      typedef typename EasyLocal::Core::MoveRunner<Input, State, Move, CFtype, CostStructure>::Event Event;
+      typedef typename EasyLocal::Core::MoveRunner<Input, State, Move, CostStructure>::Event Event;
     public:
       MoveRunnerObserver(std::ostream& os = std::cout);
-      void operator()(const Event& event, const CostStructure& current_state_cost, const EvaluatedMove<Move, CFtype, CostStructure>& em, const std::string& status_string) const;
+      void operator()(const Event& event, const CostStructure& current_state_cost, const EvaluatedMove<Move, CostStructure>& em, const std::string& status_string) const;
       unsigned int events() const
       {
         return Event::START | Event::NEW_BEST;
@@ -24,12 +24,12 @@ namespace EasyLocal {
       std::ostream& os;
     };
     
-    template <class Input, class State, class Move, typename CFtype, class CostStructure>
-    MoveRunnerObserver<Input, State, Move, CFtype, CostStructure>::MoveRunnerObserver(std::ostream& os) : os(os)
+    template <class Input, class State, class Move, class CostStructure>
+    MoveRunnerObserver<Input, State, Move, CostStructure>::MoveRunnerObserver(std::ostream& os) : os(os)
     {}
     
-    template <class Input, class State, class Move, typename CFtype, class CostStructure>
-    void MoveRunnerObserver<Input, State, Move, CFtype, CostStructure>::operator()(const Event& event, const CostStructure& current_state_cost, const EvaluatedMove<Move, CFtype, CostStructure>& em, const std::string& status_string) const
+    template <class Input, class State, class Move, class CostStructure>
+    void MoveRunnerObserver<Input, State, Move, CostStructure>::operator()(const Event& event, const CostStructure& current_state_cost, const EvaluatedMove<Move, CostStructure>& em, const std::string& status_string) const
     {
       switch (event)
       {
