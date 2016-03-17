@@ -24,7 +24,7 @@ namespace EasyLocal {
       typedef Runner<Input, State, CostStructure> RunnerType;
       TokenRingSearch(const Input& in,
                       StateManager<Input, State, CostStructure>& e_sm,
-                      OutputManager<Input, Output, State, CostStructure>& e_om,
+                      OutputManager<Input, Output, State>& e_om,
                       std::string name);
       void AddRunner(RunnerType& r);
       void RemoveRunner(const RunnerType& r);
@@ -63,7 +63,7 @@ namespace EasyLocal {
     template <class Input, class Output, class State, class CostStructure>
     TokenRingSearch<Input, Output, State, CostStructure>::TokenRingSearch(const Input& in,
                                                                    StateManager<Input, State, CostStructure>& e_sm,
-                                                                   OutputManager<Input, Output, State, CostStructure>& e_om,
+                                                                   OutputManager<Input, Output, State>& e_om,
                                                                    std::string name)
     : AbstractLocalSearch<Input, Output, State, CostStructure>(in, e_sm, e_om, name, "Token Ring Solver")
     {}

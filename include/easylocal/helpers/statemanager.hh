@@ -132,7 +132,7 @@ namespace EasyLocal {
        Add a component to the cost component array.
        @param cc the cost component to be added
        */
-      void AddCostComponent(CostComponent<Input, State, CostStructure>& cc);
+      void AddCostComponent(CostComponent<Input, State, CFtype>& cc);
       
       
       /**
@@ -172,7 +172,7 @@ namespace EasyLocal {
       /**
        The set of the cost components. Hard and soft ones are all in this @c vector.
        */
-      std::vector<CostComponent<Input, State, CostStructure>*> cost_component;
+      std::vector<CostComponent<Input, State, CFtype>*> cost_component;
       
       /** Input object. */
       const Input& in;
@@ -281,7 +281,7 @@ namespace EasyLocal {
     }
     
     template <class Input, class State, class CostStructure>
-    void StateManager<Input, State, CostStructure>::AddCostComponent(CostComponent<Input, State, CostStructure>& cc)
+    void StateManager<Input, State, CostStructure>::AddCostComponent(CostComponent<Input, State, CFtype>& cc)
     {
       cost_component.push_back(&cc);
     }    

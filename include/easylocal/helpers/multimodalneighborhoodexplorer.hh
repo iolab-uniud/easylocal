@@ -609,7 +609,7 @@ namespace EasyLocal {
      @tparam BaseNeighborhoodExplorers a sequence of base neighborhood explorer classes
      @ingroup Helpers
      */
-    template <class Input, class State, class CFtype, class CostStructure, class ... BaseNeighborhoodExplorers>
+    template <class Input, class State, class CostStructure, class ... BaseNeighborhoodExplorers>
     class CartesianProductNeighborhoodExplorer : public NeighborhoodExplorer<Input, State, std::tuple<ActiveMove<typename BaseNeighborhoodExplorers::MoveType> ...>, CostStructure>
     {
     protected:
@@ -629,6 +629,8 @@ namespace EasyLocal {
       virtual size_t Modality() const { return sizeof...(BaseNeighborhoodExplorers); }
       
     public:
+      
+      typedef typename CostStructure::CFtype CFtype;
       
       /** Constructor, takes a variable number of base NeighborhoodExplorers.
        @param in a pointer to an input object.

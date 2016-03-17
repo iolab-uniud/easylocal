@@ -104,7 +104,7 @@ namespace EasyLocal {
     template <class Input, class State, class Move, class CostStructure>
     void LateAcceptanceHillClimbing<Input, State, Move, CostStructure>::CompleteMove()
     {
-      previous_steps[this->iteration % steps] = this->best_state_cost.total;
+      previous_steps[this->iteration % steps] = this->best_state_cost;
     }
   }
 }
