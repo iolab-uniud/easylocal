@@ -92,12 +92,28 @@ namespace EasyLocal {
       return LessThan(static_cast<CFtype>(c1), cs2.total);
     }
     
+    template <class CFtype>
+    bool operator<(double c1, const DefaultCostStructure<CFtype>& cs2)
+    {
+      if (cs2.is_weighted)
+        return LessThan(c1, cs2.weighted);
+      return LessThan(c1, static_cast<double>(cs2.total));
+    }
+    
     template <class CFtype, typename OtherType>
     bool operator<(const DefaultCostStructure<CFtype>& cs1, OtherType c2)
     {
       if (cs1.is_weighted)
         return LessThan(cs1.weighted, (double)c2);
       return LessThan(cs1.total, static_cast<CFtype>(c2));
+    }
+    
+    template <class CFtype>
+    bool operator<(const DefaultCostStructure<CFtype>& cs1, double c2)
+    {
+      if (cs1.is_weighted)
+        return LessThan(cs1.weighted, c2);
+      return LessThan(static_cast<double>(cs1.total), c2);
     }
     
     template <class CFtype>
@@ -116,12 +132,28 @@ namespace EasyLocal {
       return LessThanOrEqualTo(static_cast<CFtype>(c1), cs2.total);
     }
     
+    template <class CFtype>
+    bool operator<=(double c1, const DefaultCostStructure<CFtype>& cs2)
+    {
+      if (cs2.is_weighted)
+        return LessThanOrEqualTo(c1, cs2.weighted);
+      return LessThanOrEqualTo(c1, static_cast<double>(cs2.total));
+    }
+    
     template <class CFtype, typename OtherType>
     bool operator<=(const DefaultCostStructure<CFtype>& cs1, OtherType c2)
     {
       if (cs1.is_weighted)
         return LessThanOrEqualTo(cs1.weighted, (double)c2);
       return LessThanOrEqualTo(cs1.total, static_cast<CFtype>(c2));
+    }
+    
+    template <class CFtype>
+    bool operator<=(const DefaultCostStructure<CFtype>& cs1, double c2)
+    {
+      if (cs1.is_weighted)
+        return LessThanOrEqualTo(cs1.weighted, c2);
+      return LessThanOrEqualTo(static_cast<double>(cs1.total), c2);
     }
     
     template <class CFtype>
@@ -140,6 +172,14 @@ namespace EasyLocal {
       return EqualTo(static_cast<CFtype>(c1), cs2.total);
     }
     
+    template <class CFtype>
+    bool operator==(double c1, const DefaultCostStructure<CFtype>& cs2)
+    {
+      if (cs2.is_weighted)
+        return EqualTo(c1, cs2.weighted);
+      return EqualTo(c1, static_cast<double>(cs2.total));
+    }
+    
     template <class CFtype, typename OtherType>
     bool operator==(const DefaultCostStructure<CFtype>& cs1, OtherType c2)
     {
@@ -148,77 +188,66 @@ namespace EasyLocal {
       return EqualTo(cs1.total, static_cast<CFtype>(c2));
     }
     
+    template <class CFtype, typename OtherType>
+    bool operator==(const DefaultCostStructure<CFtype>& cs1, double c2)
+    {
+      if (cs1.is_weighted)
+        return EqualTo(cs1.weighted, c2);
+      return EqualTo(static_cast<double>(cs1.total), c2);
+    }
+    
     template <class CFtype>
     bool operator>=(const DefaultCostStructure<CFtype>& cs1, const DefaultCostStructure<CFtype>& cs2)
     {
-      if (cs1.is_weighted && cs2.is_weighted)
-        return GreaterThanOrEqualTo(cs1.weighted, cs2.weighted);
-      return GreaterThanOrEqualTo(cs1.total, cs2.total);
+      return !(cs1 < cs2);
     }
     
-    template <class CFtype>
-    bool operator>=(CFtype c1, const DefaultCostStructure<CFtype>& cs2)
+    template <class CFtype, class OtherType>
+    bool operator>=(OtherType c1, const DefaultCostStructure<CFtype>& cs2)
     {
-      if (cs2.is_weighted)
-        return GreaterThanOrEqualTo((double)c1, cs2.weighted);
-      return GreaterThanOrEqualTo(c1, cs2.total);
+      return !(c1 < cs2);
     }
-    
     
     template <class CFtype, typename OtherType>
     bool operator>=(const DefaultCostStructure<CFtype>& cs1, OtherType c2)
     {
-      if (cs1.is_weighted)
-        return GreaterThanOrEqualTo(cs1.weighted, (double)c2);
-      return GreaterThanOrEqualTo(cs1.total, static_cast<CFtype>(c2));
+      return !(cs1 < c2);
     }
     
     template <class CFtype>
     bool operator>(const DefaultCostStructure<CFtype>& cs1, const DefaultCostStructure<CFtype>& cs2)
     {
-      if (cs1.is_weighted && cs2.is_weighted)
-        return GreaterThan(cs1.weighted, cs2.weighted);
-      return GreaterThan(cs1.total, cs2.total);
+      return !(cs1 <= cs2);
     }
     
     template <class CFtype, typename OtherType>
     bool operator>(OtherType c1, const DefaultCostStructure<CFtype>& cs2)
     {
-      if (cs2.is_weighted)
-        return GreaterThan((double)c1, cs2.weighted);
-      return GreaterThan(static_cast<CFtype>(c1), cs2.total);
+      return !(c1 <= cs2);
     }
     
     template <class CFtype, typename OtherType>
     bool operator>(const DefaultCostStructure<CFtype>& cs1, OtherType c2)
     {
-      if (cs1.is_weighted)
-        return GreaterThan(cs1.weighted, (double)c2);
-      return GreaterThan(cs1.total, static_cast<CFtype>(c2));
+      return !(cs1 <= c2);
     }
     
     template <class CFtype>
     bool operator!=(const DefaultCostStructure<CFtype>& cs1, const DefaultCostStructure<CFtype>& cs2)
     {
-      if (cs1.is_weighted && cs2.is_weighted)
-        return !EqualTo(cs1.weighted, cs2.weighted);
-      return !EqualTo(cs1.total, cs2.total);
+      return !(cs1 == cs2);
     }
     
     template <class CFtype, typename OtherType>
     bool operator!=(OtherType c1, const DefaultCostStructure<CFtype>& cs2)
     {
-      if (cs2.is_weighted)
-        return !EqualTo((double)c1, cs2.weighted);
-      return !EqualTo(static_cast<CFtype>(c1), cs2.total);
+      return !(c1 == cs2);
     }
     
     template <class CFtype, typename OtherType>
     bool operator!=(const DefaultCostStructure<CFtype>& cs1, OtherType c2)
     {
-      if (cs1.is_weighted)
-        return !EqualTo(cs1.weighted, (double)c2);
-      return !EqualTo(cs1.total, static_cast<CFtype>(c2));
+      return !(cs1 == c2);
     }
     
     template <typename CFtype>
@@ -308,9 +337,9 @@ namespace EasyLocal {
     {
       // TODO: consider also the weighted case
       for (size_t i = 0; i < cs1.size(); i++)
-        if (cs1[i] < cs2[i])
+        if (LessThan(cs1[i], cs2[i]))
           return true;
-        else if (cs1[i] > cs2[i])
+        else if (GreaterThan(cs1[i], cs2[i]))
           return false;
       return false;
     }
@@ -320,9 +349,21 @@ namespace EasyLocal {
     {
       // TODO: consider also the weighted case
       for (size_t i = 0; i < cs2.size(); i++)
-        if (static_cast<CFtype>(c1) < cs2[i])
+        if (LessThan(static_cast<CFtype>(c1), cs2[i]))
           return true;
-        else if (static_cast<CFtype>(c1) > cs2[i])
+        else if (GreaterThan(static_cast<CFtype>(c1), cs2[i]))
+          return false;
+      return false;
+    }
+    
+    template <class CFtype>
+    bool operator<(double c1, const HierarchicalCostStructure<CFtype>& cs2)
+    {
+      // TODO: consider also the weighted case
+      for (size_t i = 0; i < cs2.size(); i++)
+        if (LessThan(c1, static_cast<double>(cs2[i])))
+          return true;
+        else if (GreaterThan(c1, static_cast<double>(cs2[i])))
           return false;
       return false;
     }
@@ -332,21 +373,33 @@ namespace EasyLocal {
     {
       // TODO: consider also the weighted case
       for (size_t i = 0; i < cs1.size(); i++)
-        if (cs1[i] < static_cast<CFtype>(c2))
+        if (LessThan(cs1[i], static_cast<CFtype>(c2)))
           return true;
-        else if (cs1[i] > static_cast<CFtype>(c2))
+        else if (GreaterThan(cs1[i], static_cast<CFtype>(c2)))
           return false;
       return false;
     }
     
     template <class CFtype>
+    bool operator<(const HierarchicalCostStructure<CFtype>& cs1, double c2)
+    {
+      // TODO: consider also the weighted case
+      for (size_t i = 0; i < cs1.size(); i++)
+        if (LessThan(static_cast<double>(cs1[i]), c2))
+          return true;
+        else if (GreaterThan(static_cast<double>(cs1[i]), c2))
+          return false;
+      return false;
+    }
+
+    template <class CFtype>
     bool operator<=(const HierarchicalCostStructure<CFtype>& cs1, const HierarchicalCostStructure<CFtype>& cs2)
     {
       // TODO: consider also the weighted case
       for (size_t i = 0; i < cs1.size(); i++)
-        if (cs1[i] < cs2[i])
+        if (LessThan(cs1[i], cs2[i]))
           return true;
-        else if (cs1[i] > cs2[i])
+        else if (GreaterThan(cs1[i], cs2[i]))
           return false;
       return true;
     }
@@ -356,9 +409,21 @@ namespace EasyLocal {
     {
       // TODO: consider also the weighted case
       for (size_t i = 0; i < cs2.size(); i++)
-        if (static_cast<CFtype>(c1) < cs2[i])
+        if (LessThan(static_cast<CFtype>(c1), cs2[i]))
           return true;
-        else if (static_cast<CFtype>(c1) > cs2[i])
+        else if (GreaterThan(static_cast<CFtype>(c1), cs2[i]))
+          return false;
+      return true;
+    }
+    
+    template <class CFtype>
+    bool operator<=(double c1, const HierarchicalCostStructure<CFtype>& cs2)
+    {
+      // TODO: consider also the weighted case
+      for (size_t i = 0; i < cs2.size(); i++)
+        if (LessThan(c1, static_cast<double>(cs2[i])))
+          return true;
+        else if (GreaterThan(c1, static_cast<double>(cs2[i])))
           return false;
       return true;
     }
@@ -368,9 +433,21 @@ namespace EasyLocal {
     {
       // TODO: consider also the weighted case
       for (size_t i = 0; i < cs1.size(); i++)
-        if (cs1[i] < static_cast<CFtype>(c2))
+        if (LessThan(cs1[i], static_cast<CFtype>(c2)))
           return true;
-        else if (cs1[i] > static_cast<CFtype>(c2))
+        else if (GreaterThan(cs1[i], static_cast<CFtype>(c2)))
+          return false;
+      return true;
+    }
+    
+    template <class CFtype>
+    bool operator<=(const HierarchicalCostStructure<CFtype>& cs1, double c2)
+    {
+      // TODO: consider also the weighted case
+      for (size_t i = 0; i < cs1.size(); i++)
+        if (LessThan(static_cast<double>(cs1[i]), c2))
+          return true;
+        else if (GreaterThan(static_cast<double>(cs1[i]), c2))
           return false;
       return true;
     }
@@ -380,7 +457,7 @@ namespace EasyLocal {
     {
       // TODO: consider also the weighted case
       for (size_t i = 0; i < cs1.size(); i++)
-        if (cs1[i] != cs2[i])
+        if (!EqualTo(cs1[i], cs2[i]))
           return false;
       return true;
     }
@@ -390,7 +467,17 @@ namespace EasyLocal {
     {
       // TODO: consider also the weighted case
       for (size_t i = 0; i < cs2.size(); i++)
-        if (static_cast<CFtype>(c1) != cs2[i])
+        if (!EqualTo(static_cast<CFtype>(c1), cs2[i]))
+          return false;
+      return true;
+    }
+    
+    template <class CFtype>
+    bool operator==(double c1, const HierarchicalCostStructure<CFtype>& cs2)
+    {
+      // TODO: consider also the weighted case
+      for (size_t i = 0; i < cs2.size(); i++)
+        if (!EqualTo(c1, static_cast<double>(cs2[i])))
           return false;
       return true;
     }
@@ -400,7 +487,17 @@ namespace EasyLocal {
     {
       // TODO: consider also the weighted case
       for (size_t i = 0; i < cs1.size(); i++)
-        if (cs1[i] != static_cast<CFtype>(c2))
+        if (!EqualTo(cs1[i], static_cast<CFtype>(c2)))
+          return false;
+      return true;
+    }
+    
+    template <class CFtype>
+    bool operator==(const HierarchicalCostStructure<CFtype>& cs1, double c2)
+    {
+      // TODO: consider also the weighted case
+      for (size_t i = 0; i < cs1.size(); i++)
+        if (!EqualTo(static_cast<double>(cs1[i]), c2))
           return false;
       return true;
     }
@@ -408,73 +505,37 @@ namespace EasyLocal {
     template <class CFtype>
     bool operator>=(const HierarchicalCostStructure<CFtype>& cs1, const HierarchicalCostStructure<CFtype>& cs2)
     {
-      // TODO: consider also the weighted case
-      for (size_t i = 0; i < cs1.size(); i++)
-        if (cs1[i] > cs2[i])
-          return true;
-        else if (cs1[i] < cs2[i])
-          return false;
-      return true;
+      return !(cs1 < cs2);
     }
     
-    template <class CFtype, typename OtherType>
+    template <class CFtype, class OtherType>
     bool operator>=(OtherType c1, const HierarchicalCostStructure<CFtype>& cs2)
     {
-      // TODO: consider also the weighted case
-      for (size_t i = 0; i < cs2.size(); i++)
-        if (static_cast<CFtype>(c1) > cs2[i])
-          return true;
-        else if (static_cast<CFtype>(c1) < cs2[i])
-          return false;
-      return true;
+      return !(c1 < cs2);
     }
     
     template <class CFtype, typename OtherType>
     bool operator>=(const HierarchicalCostStructure<CFtype>& cs1, OtherType c2)
     {
-      // TODO: consider also the weighted case
-      for (size_t i = 0; i < cs1.size(); i++)
-        if (cs1[i] > static_cast<CFtype>(c2))
-          return true;
-        else if (cs1[i] < static_cast<CFtype>(c2))
-          return false;
-      return true;
+      return !(cs1 < c2);
     }
     
     template <class CFtype>
     bool operator>(const HierarchicalCostStructure<CFtype>& cs1, const HierarchicalCostStructure<CFtype>& cs2)
     {
-      // TODO: consider also the weighted case
-      for (size_t i = 0; i < cs1.size(); i++)
-        if (cs1[i] > cs2[i])
-          return true;
-        else if (cs1[i] < cs2[i])
-          return false;
-      return false;
+      return !(cs1 <= cs2);
     }
     
     template <class CFtype, typename OtherType>
     bool operator>(OtherType c1, const HierarchicalCostStructure<CFtype>& cs2)
     {
-      // TODO: consider also the weighted case
-      for (size_t i = 0; i < cs2.size(); i++)
-        if (static_cast<CFtype>(c1) > cs2[i])
-          return true;
-        else if (static_cast<CFtype>(c1) < cs2[i])
-          return false;
-      return false;
+      return !(c1 <= cs2);
     }
     
     template <class CFtype, typename OtherType>
     bool operator>(const HierarchicalCostStructure<CFtype>& cs1, OtherType c2)
     {
-      // TODO: consider also the weighted case
-      for (size_t i = 0; i < cs1.size(); i++)
-        if (cs1[i] > static_cast<CFtype>(c2))
-          return true;
-        else if (cs1[i] < static_cast<CFtype>(c2))
-          return false;
-      return false;
+      return !(cs1 <= c2);
     }
     
     template <class CFtype>
