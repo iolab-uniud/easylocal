@@ -84,22 +84,6 @@ namespace EasyLocal {
       }
     };
     
-    /* template <typename H, typename S, typename ...T>
-     void print_tuple(std::ostream& os, const std::tuple<H, S, T...>& t)
-     {
-     os << std::get<0>(t) << "-";
-     auto temp_tuple_tail = tuple_tail(t);
-     print_tuple<S, T...>(os, temp_tuple_tail);
-     } */
-    
-    /** Prints a generic tuple, base case. */
-    /* template <typename H>
-     void print_tuple(std::ostream& os, const std::tuple<H>& t)
-     {
-     os << std::get<0>(t);
-     }
-     */
-    
     /** Output operator for generic tuple. */
     template <typename ...T>
     std::ostream& operator<<(std::ostream& os, const std::tuple<T...>& t)

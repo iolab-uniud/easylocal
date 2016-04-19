@@ -11,22 +11,22 @@ namespace EasyLocal {
      implemented through a Kicker.
      @ingroup Solvers
      */
-    template <class Input, class Output, class State, typename CFtype = int>
+    template <class Input, class Output, class State, class CostStructure = DefaultCostStructure<int>>
     class VariableNeighborhoodDescent
-    : public AbstractLocalSearch<Input, Output, State, CFtype>
+    : public AbstractLocalSearch<Input, Output, State, CostStructure>
     {
     public:
       VariableNeighborhoodDescent(const Input& in,
-                                  StateManager<Input, State, CFtype>& e_sm,
-                                  OutputManager<Input, Output, State, CFtype>& e_om,
+                                  StateManager<Input, State, CostStructure>& e_sm,
+                                  OutputManager<Input, Output, State, CostStructure>& e_om,
                                   unsigned int max_k,
                                   std::string name);
       
-      // void SetKicker(Kicker<Input, State, CFtype>& k);
+      // void SetKicker(Kicker<Input, State, CostStructure>& k);
       
     protected:
       void Go();
-      // Kicker<Input, State, CFtype>* p_kicker; /**< A pointer to the managed kicker. */
+      // Kicker<Input, State, CostStructure>* p_kicker; /**< A pointer to the managed kicker. */
       unsigned int max_k;
     };
     
@@ -44,13 +44,13 @@ namespace EasyLocal {
      @param in a pointer to an input object
      @param out a pointer to an output object
      */
-    template <class Input, class Output, class State, typename CFtype>
-    VariableNeighborhoodDescent<Input, Output, State, CFtype>::VariableNeighborhoodDescent(const Input& in,
-                                                                                           StateManager<Input, State, CFtype>& e_sm,
-                                                                                           OutputManager<Input, Output, State, CFtype>& e_om,
+    template <class Input, class Output, class State, class CostStructure>
+    VariableNeighborhoodDescent<Input, Output, State, CostStructure>::VariableNeighborhoodDescent(const Input& in,
+                                                                                           StateManager<Input, State, CostStructure>& e_sm,
+                                                                                           OutputManager<Input, Output, State, CostStructure>& e_om,
                                                                                            unsigned int max_k,
                                                                                            std::string name)
-    : AbstractLocalSearch<Input, Output, State, CFtype>(in, e_sm, e_om, name, "Variable Neighborhood Descent Solver")
+    : AbstractLocalSearch<Input, Output, State, CostStructure>(in, e_sm, e_om, name, "Variable Neighborhood Descent Solver")
     {
       p_kicker = nullptr;
       this->max_k = max_k;
@@ -62,12 +62,12 @@ namespace EasyLocal {
      
      @param r the new runner to be used
      */
-    template <class Input, class Output, class State, typename CFtype>
-    void VariableNeighborhoodDescent<Input, Output, State, CFtype>::SetKicker(Kicker<Input, State, CFtype>& k)
+    template <class Input, class Output, class State, class CostStructure>
+    void VariableNeighborhoodDescent<Input, Output, State, CostStructure>::SetKicker(Kicker<Input, State, CostStructure>& k)
     { this->p_kicker = &k; }
     
-    template <class Input, class Output, class State, typename CFtype>
-    void VariableNeighborhoodDescent<Input, Output, State, CFtype>::Go()
+    template <class Input, class Output, class State, class CostStructure>
+    void VariableNeighborhoodDescent<Input, Output, State, CostStructure>::Go()
     {
       unsigned int k = 1;
       CFtype kick_cost;

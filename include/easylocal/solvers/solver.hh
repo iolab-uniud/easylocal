@@ -11,12 +11,12 @@ namespace EasyLocal {
   
   namespace Core {
     
-    template <class Input, class Output, typename CFtype = int>
+    template <class Input, class Output, class CostStructure = DefaultCostStructure<int>>
     struct SolverResult
     {
-      SolverResult(const Output& output, const CostStructure<CFtype>& cost, double running_time) : output(output), cost(cost), running_time(running_time) {}
+      SolverResult(const Output& output, const CostStructure& cost, double running_time) : output(output), cost(cost), running_time(running_time) {}
       Output output;
-      CostStructure<CFtype> cost;
+      CostStructure cost;
       double running_time;
     };
     
@@ -26,7 +26,7 @@ namespace EasyLocal {
      @ingroup
      Solvers
      */
-    template <class Input, class Output, typename CFtype = int>
+    template <class Input, class Output, class CostStructure = DefaultCostStructure<int>>
     class Solver
     {
     public:
@@ -38,7 +38,7 @@ namespace EasyLocal {
        @throw ParameterNotSet if one of the parameters needed by the solver or the runner (or other components) hasn't been set.
        @throw IncorrectParameterValue if one of the parameters has an incorrect value
        */
-      virtual SolverResult<Input, Output, CFtype> Solve() throw (ParameterNotSet, IncorrectParameterValue) = 0;
+      virtual SolverResult<Input, Output, CostStructure> Solve() throw (ParameterNotSet, IncorrectParameterValue) = 0;
       
       /** Method to solve a problem again, starting from the a final solution of another run.
        @param initial_solution solution to start with
@@ -46,13 +46,13 @@ namespace EasyLocal {
        @throw ParameterNotSet if one of the parameters needed by the solver or the runner (or other components) hasn't been set.
        @throw IncorrectParameterValue if one of the parameters has an incorrect value
        */
-      virtual SolverResult<Input, Output, CFtype> Resolve(const Output& initial_solution) throw (ParameterNotSet, IncorrectParameterValue) = 0;
+      virtual SolverResult<Input, Output, CostStructure> Resolve(const Output& initial_solution) throw (ParameterNotSet, IncorrectParameterValue) = 0;
       
       /** Virtual destructor, for inheritance. */
       virtual ~Solver() {}
       
       /** List of all solvers that have been instantiated so far. For autoloading. */
-      static std::vector<Solver<Input, Output, CFtype>*> solvers;
+      static std::vector<Solver<Input, Output, CostStructure>*> solvers;
       
     protected:
       
@@ -71,11 +71,11 @@ namespace EasyLocal {
      * Implementation
      *************************************************************************/
     
-    template <class Input, class Output, typename CFtype>
-    std::vector<Solver<Input, Output, CFtype>*> Solver<Input, Output, CFtype>::solvers;
+    template <class Input, class Output, class CostStructure>
+    std::vector<Solver<Input, Output, CostStructure>*> Solver<Input, Output, CostStructure>::solvers;
     
-    template <class Input, class Output, typename CFtype>
-    Solver<Input, Output, CFtype>::Solver(const Input& i, std::string e_name)
+    template <class Input, class Output, class CostStructure>
+    Solver<Input, Output, CostStructure>::Solver(const Input& i, std::string e_name)
     : name(e_name), in(i)
     {
       solvers.push_back(this);

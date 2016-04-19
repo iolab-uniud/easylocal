@@ -18,7 +18,7 @@
 
 #include "easylocal/core.hh"
 #include "easylocal/debug.hh"
-#include "easylocal/modeling.hh"
+//#include "easylocal/modeling.hh" // NOT INCLUDED UNTIL STABLE
 
 #endif // _EASYLOCAL_HH_
 

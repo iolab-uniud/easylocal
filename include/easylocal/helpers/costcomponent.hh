@@ -4,6 +4,7 @@
 #include <iostream>
 #include <vector>
 #include "easylocal/utils/printable.hh"
+#include "easylocal/helpers/coststructure.hh"
 
 namespace EasyLocal {
   
@@ -17,7 +18,7 @@ namespace EasyLocal {
      @tparam CFtype the type of the cost function (typically int)
      @ingroup Helpers
      */
-    template <class Input, class State, typename CFtype = int>
+    template <class Input, class State, class CFtype = int>
     class CostComponent : public Printable
     {
       static size_t last_index;
@@ -98,6 +99,10 @@ namespace EasyLocal {
       {
         return *cost_components[i];
       }
+      
+      /** Destructor. */
+      virtual ~CostComponent() {}
+
     protected:
       
       /** Constructor.
@@ -107,9 +112,6 @@ namespace EasyLocal {
        @param name name of the cost component (for debug reasons)
        */
       CostComponent(const Input& in, const CFtype& weight, bool is_hard, std::string name);
-      
-      /** Destructor. */
-      virtual ~CostComponent() {}
       
       /** Input object. */
       const Input& in;

@@ -26,14 +26,16 @@ namespace EasyLocal {
      
      @ingroup Runners
      */
-    template <class Input, class State, class Move, typename CFtype = int>
-    class GreatDeluge : public MoveRunner<Input, State, Move, CFtype>
+    template <class Input, class State, class Move, class CostStructure = DefaultCostStructure<int>>
+    class GreatDeluge : public MoveRunner<Input, State, Move, CostStructure>
     {
     public:
       
+      typedef typename CostStructure::CFtype CFtype;
+      
       GreatDeluge(const Input& in,
-                  StateManager<Input, State, CFtype>& e_sm,
-                  NeighborhoodExplorer<Input, State, Move, CFtype>& e_ne,
+                  StateManager<Input, State, CostStructure>& e_sm,
+                  NeighborhoodExplorer<Input, State, Move, CostStructure>& e_ne,
                   std::string name);
       
     protected:
@@ -62,21 +64,21 @@ namespace EasyLocal {
      
      @param s a pointer to a compatible state manager
      @param ne a pointer to a compatible neighborhood explorer
-     @param in a poiter to an input object
+     @param in a pointer to an input object
      */
     
-    template <class Input, class State, class Move, typename CFtype>
-    GreatDeluge<Input, State, Move, CFtype>::GreatDeluge(const Input& in,
-                                                         StateManager<Input, State, CFtype>& e_sm,
-                                                         NeighborhoodExplorer<Input, State, Move, CFtype>& e_ne,
+    template <class Input, class State, class Move, class CostStructure>
+    GreatDeluge<Input, State, Move, CostStructure>::GreatDeluge(const Input& in,
+                                                         StateManager<Input, State, CostStructure>& e_sm,
+                                                         NeighborhoodExplorer<Input, State, Move, CostStructure>& e_ne,
                                                          std::string name)
-    : MoveRunner<Input, State, Move, CFtype>(in, e_sm, e_ne, name, "Great Deluge")
+    : MoveRunner<Input, State, Move, CostStructure>(in, e_sm, e_ne, name, "Great Deluge")
     {}
     
-    template <class Input, class State, class Move, typename CFtype>
-    void GreatDeluge<Input, State, Move, CFtype>::RegisterParameters()
+    template <class Input, class State, class Move, class CostStructure>
+    void GreatDeluge<Input, State, Move, CostStructure>::RegisterParameters()
     {
-      MoveRunner<Input, State, Move, CFtype>::RegisterParameters();
+      MoveRunner<Input, State, Move, CostStructure>::RegisterParameters();
       initial_level("initial_level", "Initial water level", this->parameters);
       min_level("min_level", "Minimum water level", this->parameters);
       level_rate("level_rate", "Water decrease factor", this->parameters);
@@ -87,8 +89,8 @@ namespace EasyLocal {
      Initializes the run by invoking the companion superclass method, and
      setting current level to the initial one.
      */
-    template <class Input, class State, class Move, typename CFtype>
-    void GreatDeluge<Input, State, Move, CFtype>::InitializeRun() throw (ParameterNotSet, IncorrectParameterValue)
+    template <class Input, class State, class Move, class CostStructure>
+    void GreatDeluge<Input, State, Move, CostStructure>::InitializeRun() throw (ParameterNotSet, IncorrectParameterValue)
     {
       level = initial_level * this->current_state_cost.total;
     }
@@ -96,16 +98,16 @@ namespace EasyLocal {
     /**
      A move is randomly picked and its cost is stored.
      */
-    template <class Input, class State, class Move, typename CFtype>
-    void GreatDeluge<Input, State, Move, CFtype>::SelectMove()
+    template <class Input, class State, class Move, class CostStructure>
+    void GreatDeluge<Input, State, Move, CostStructure>::SelectMove()
     {
       // TODO: it should become a parameter, the number of neighbors drawn at each iteration (possibly evaluated in parallel)
       const size_t samples = 10;
       size_t sampled;
       CFtype cur_cost = this->current_state_cost.total;
       double l = level;
-      EvaluatedMove<Move, CFtype> em = this->ne.RandomFirst(*this->p_current_state, samples, sampled, [cur_cost, l](const Move& mv, CostStructure<CFtype> move_cost) {
-        return move_cost < 0 || ((double)move_cost + cur_cost) <= l;
+      EvaluatedMove<Move, CostStructure> em = this->ne.RandomFirst(*this->p_current_state, samples, sampled, [cur_cost, l](const Move& mv, const CostStructure& move_cost) {
+        return move_cost < 0.0 || move_cost <= l - cur_cost;
       }, this->weights);
       this->current_move = em;
     }
@@ -113,8 +115,8 @@ namespace EasyLocal {
     /**
      The search stops when a low temperature has reached.
      */
-    template <class Input, class State, class Move, typename CFtype>
-    bool GreatDeluge<Input, State, Move, CFtype>::StopCriterion()
+    template <class Input, class State, class Move, class CostStructure>
+    bool GreatDeluge<Input, State, Move, CostStructure>::StopCriterion()
     {
       return level < min_level * this->best_state_cost.total;
     }
@@ -123,10 +125,10 @@ namespace EasyLocal {
      At regular steps, the temperature is decreased
      multiplying it by a cooling rate.
      */
-    template <class Input, class State, class Move, typename CFtype>
-    void GreatDeluge<Input, State, Move, CFtype>::UpdateIterationCounter()
+    template <class Input, class State, class Move, class CostStructure>
+    void GreatDeluge<Input, State, Move, CostStructure>::UpdateIterationCounter()
     {
-      MoveRunner<Input, State, Move, CFtype>::UpdateIterationCounter();
+      MoveRunner<Input, State, Move, CostStructure>::UpdateIterationCounter();
       if (this->number_of_iterations % neighbors_sampled == 0)
         level *= level_rate;
     }

@@ -3,6 +3,7 @@
 
 #include <stdexcept>
 
+//#include "easylocal/helpers/coststructure.hh"
 #include "easylocal/helpers/costcomponent.hh"
 #include "easylocal/utils/printable.hh"
 
@@ -79,37 +80,38 @@ namespace EasyLocal {
     
     /** IMPLEMENTATION */
     
-    template <class Input, class State, class Move, typename CFtype>
+    template <class Input, class State, class Move, class CFtype>
     DeltaCostComponent<Input, State, Move, CFtype>::DeltaCostComponent(const Input& i, CostComponent<Input, State, CFtype>& e_cc, std::string name)
     : name(name), in(i), cc(e_cc)
     {}
     
-    template <class Input, class State, class Move, typename CFtype>
+    template <class Input, class State, class Move, class CFtype>
     void DeltaCostComponent<Input, State, Move, CFtype>::Print(std::ostream& os) const
     {
       os << "  DeltaCost Component: " + this->name << std::endl;
     }
     
-    template <class Input, class State, class Move, typename CFtype>
+    template <class Input, class State, class Move, class CFtype>
     CFtype DeltaCostComponent<Input, State, Move, CFtype>::DeltaCost(const State& st,
                                                                      const Move& mv) const
     {
       return this->cc.Weight() * ComputeDeltaCost(st, mv);
     }
     
-    template <class Input, class State, class Move, typename CFtype>
+    template <class Input, class State, class Move, class CostStructure>
     class NeighborhoodExplorer;
     
     /** An adapter class for using a (full) @ref CostComponent in place of a @ref DeltaCostComponent. It is used by the @ref NeighborhoodExplorer to wrap the unimplemented deltas.
      @ingroup Helpers
      */
-    template <class Input, class State, class Move, typename CFtype = int>
-    class DeltaCostComponentAdapter : public DeltaCostComponent<Input, State, Move, CFtype>
+    template <class Input, class State, class Move, class CostStructure>
+    class DeltaCostComponentAdapter : public DeltaCostComponent<Input, State, Move, typename CostStructure::CFtype>
     {
     public:
+      typedef typename CostStructure::CFtype CFtype;
       
       /** Constructor. */
-      DeltaCostComponentAdapter(const Input& in, CostComponent<Input, State, CFtype>& cc, NeighborhoodExplorer<Input, State, Move, CFtype>& ne);
+      DeltaCostComponentAdapter(const Input& in, CostComponent<Input, State, CFtype>& cc, const NeighborhoodExplorer<Input, State, Move, CostStructure>& ne) : DeltaCostComponent<Input, State, Move, CFtype>(in, cc, "DeltaAdapter" + cc.name), ne(ne) {}
       
       /** @copydoc DeltaCostComponent::IsDeltaImplemented() */
       virtual bool IsDeltaImplemented() const { return false; }
@@ -123,13 +125,8 @@ namespace EasyLocal {
         ne.MakeMove(new_st, mv);
         return this->cc.ComputeCost(new_st) - this->cc.ComputeCost(st);
       }
-      NeighborhoodExplorer<Input, State, Move, CFtype>& ne;
+      const NeighborhoodExplorer<Input, State, Move, CostStructure>& ne;
     };
-    
-    template <class Input, class State, class Move, typename CFtype>
-    DeltaCostComponentAdapter<Input, State, Move, CFtype>::DeltaCostComponentAdapter(const Input& in, CostComponent<Input, State, CFtype>& cc, NeighborhoodExplorer<Input, State, Move, CFtype>& ne)
-    : DeltaCostComponent<Input, State, Move, CFtype>(in, cc, "DeltaAdapter" + cc.name), ne(ne)
-    {}
   }
 }
 

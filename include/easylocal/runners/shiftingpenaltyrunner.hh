@@ -73,24 +73,24 @@ namespace EasyLocal {
         {
           throw IncorrectParameterValue(infeasible_iterations, "should be greater than zero");
         }
-        this->weights.assign(CostComponent<typename MR::InputType, typename MR::StateType, typename MR::CostFunctionType>::CostComponents(), 1.0);
-        number_of_feasible_iterations.assign(CostComponent<typename MR::InputType, typename MR::StateType, typename MR::CostFunctionType>::CostComponents(), 0);
-        number_of_infeasible_iterations.assign(CostComponent<typename MR::InputType, typename MR::StateType, typename MR::CostFunctionType>::CostComponents(), 0);
+        this->weights.assign(CostComponent<typename MR::InputType, typename MR::StateType, typename MR::CostStructureType>::CostComponents(), 1.0);
+        number_of_feasible_iterations.assign(CostComponent<typename MR::InputType, typename MR::StateType, typename MR::CostStructureType>::CostComponents(), 0);
+        number_of_infeasible_iterations.assign(CostComponent<typename MR::InputType, typename MR::StateType, typename MR::CostStructureType>::CostComponents(), 0);
       }
       
       void CompleteMove()
       {
         MR::CompleteMove();
-        for (size_t i = 0; i < CostComponent<typename MR::InputType, typename MR::StateType, typename MR::CostFunctionType>::CostComponents(); i++)
+        for (size_t i = 0; i < CostComponent<typename MR::InputType, typename MR::StateType, typename MR::CostStructureType>::CostComponents(); i++)
         {
-          if (CostComponent<typename MR::InputType, typename MR::StateType, typename MR::CostFunctionType>::Component(i).IsHard() && this->current_state_cost.all_components[i] == 0)
+          if (CostComponent<typename MR::InputType, typename MR::StateType, typename MR::CostStructureType>::Component(i).IsHard() && this->current_state_cost.all_components[i] == 0)
           {
             number_of_feasible_iterations[i]++;
             number_of_infeasible_iterations[i] = 0;
             if (number_of_feasible_iterations[i] % (unsigned int)feasible_iterations == 0)
               this->weights[i] = std::max((double)min_range, this->weights[i] / Random::Double(min_perturbation, max_perturbation));
           }
-          if (CostComponent<typename MR::InputType, typename MR::StateType, typename MR::CostFunctionType>::Component(i).IsHard() && this->current_state_cost.all_components[i] > 0)
+          if (CostComponent<typename MR::InputType, typename MR::StateType, typename MR::CostStructureType>::Component(i).IsHard() && this->current_state_cost.all_components[i] > 0)
           {
             number_of_infeasible_iterations[i]++;
             number_of_feasible_iterations[i] = 0;

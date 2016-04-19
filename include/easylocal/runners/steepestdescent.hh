@@ -17,14 +17,14 @@ namespace EasyLocal {
      nearest local minimum of a given state.
      @ingroup Runners
      */
-    template <class Input, class State, class Move, typename CFtype = int>
-    class SteepestDescent : public MoveRunner<Input, State, Move, CFtype>
+    template <class Input, class State, class Move, class CostStructure = DefaultCostStructure<int>>
+    class SteepestDescent : public MoveRunner<Input, State, Move, CostStructure>
     {
     public:
       
       SteepestDescent(const Input& in,
-                      StateManager<Input, State, CFtype>& e_sm,
-                      NeighborhoodExplorer<Input, State, Move, CFtype>& e_ne,
+                      StateManager<Input, State, CostStructure>& e_sm,
+                      NeighborhoodExplorer<Input, State, Move, CostStructure>& e_ne,
                       std::string name);
       
     protected:
@@ -45,21 +45,21 @@ namespace EasyLocal {
      @param ne a pointer to a compatible neighborhood explorer
      @param in a pointer to an input object
      */
-    template <class Input, class State, class Move, typename CFtype>
-    SteepestDescent<Input, State, Move, CFtype>::SteepestDescent(const Input& in,
-                                                                 StateManager<Input, State, CFtype>& e_sm, NeighborhoodExplorer<Input, State, Move, CFtype>& e_ne,
+    template <class Input, class State, class Move, class CostStructure>
+    SteepestDescent<Input, State, Move, CostStructure>::SteepestDescent(const Input& in,
+                                                                 StateManager<Input, State, CostStructure>& e_sm, NeighborhoodExplorer<Input, State, Move, CostStructure>& e_ne,
                                                                  std::string name)
-    : MoveRunner<Input, State, Move, CFtype>(in, e_sm, e_ne, name, "Steepest Descent Runner")
+    : MoveRunner<Input, State, Move, CostStructure>(in, e_sm, e_ne, name, "Steepest Descent Runner")
     {}
     
     /**
      Selects always the best move in the neighborhood.
      */
-    template <class Input, class State, class Move, typename CFtype>
-    void SteepestDescent<Input, State, Move, CFtype>::SelectMove()
+    template <class Input, class State, class Move, class CostStructure>
+    void SteepestDescent<Input, State, Move, CostStructure>::SelectMove()
     {
       size_t explored;
-      EvaluatedMove<Move, CFtype> em = this->ne.SelectBest(*this->p_current_state, explored, [](const Move& mv, CostStructure<CFtype> move_cost) {
+      EvaluatedMove<Move, CostStructure> em = this->ne.SelectBest(*this->p_current_state, explored, [](const Move& mv, const CostStructure& move_cost) {
         return move_cost < 0;
       }, this->weights);
       this->current_move = em;
@@ -69,8 +69,8 @@ namespace EasyLocal {
     /**
      The search is stopped when no (strictly) improving move has been found.
      */
-    template <class Input, class State, class Move, typename CFtype>
-    bool SteepestDescent<Input, State, Move, CFtype>::StopCriterion()
+    template <class Input, class State, class Move, class CostStructure>
+    bool SteepestDescent<Input, State, Move, CostStructure>::StopCriterion()
     {
       return this->iteration > 0 && !this->current_move.is_valid;
     }

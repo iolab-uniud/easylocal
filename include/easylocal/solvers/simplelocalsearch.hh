@@ -16,17 +16,17 @@ namespace EasyLocal {
      encapsulated in a runner.
      @ingroup Solvers
      */
-    template <class Input, class Output, class State, typename CFtype = int>
+    template <class Input, class Output, class State, class CostStructure = DefaultCostStructure<int>>
     class SimpleLocalSearch
-    : public AbstractLocalSearch<Input, Output, State, CFtype>
+    : public AbstractLocalSearch<Input, Output, State, CostStructure>
     {
     public:
-      typedef Runner<Input, State, CFtype> RunnerType;
+      typedef Runner<Input, State, CostStructure> RunnerType;
       SimpleLocalSearch(const Input& in,
-                        StateManager<Input, State, CFtype>& e_sm,
-                        OutputManager<Input, Output, State, CFtype>& e_om,
+                        StateManager<Input, State, CostStructure>& e_sm,
+                        OutputManager<Input, Output, State>& e_om,
                         std::string name);
-      void SetRunner(Runner<Input, State, CFtype>& r);
+      void SetRunner(Runner<Input, State, CostStructure>& r);
       void Print(std::ostream& os = std::cout) const;
       void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout);
     protected:
@@ -50,16 +50,16 @@ namespace EasyLocal {
      @param in a pointer to an input object
      @param out a pointer to an output object
      */
-    template <class Input, class Output, class State, typename CFtype>
-    SimpleLocalSearch<Input, Output, State, CFtype>::SimpleLocalSearch(const Input& in,
-                                                                       StateManager<Input, State, CFtype>& e_sm,
-                                                                       OutputManager<Input, Output, State, CFtype>& e_om,
+    template <class Input, class Output, class State, class CostStructure>
+    SimpleLocalSearch<Input, Output, State, CostStructure>::SimpleLocalSearch(const Input& in,
+                                                                       StateManager<Input, State, CostStructure>& e_sm,
+                                                                       OutputManager<Input, Output, State>& e_om,
                                                                        std::string name)
-    : AbstractLocalSearch<Input, Output, State, CFtype>(in, e_sm, e_om, name, "Simple Local Search Solver"), p_runner(nullptr)
+    : AbstractLocalSearch<Input, Output, State, CostStructure>(in, e_sm, e_om, name, "Simple Local Search Solver"), p_runner(nullptr)
     {}
     
-    template <class Input, class Output, class State, typename CFtype>
-    void SimpleLocalSearch<Input, Output, State, CFtype>::ReadParameters(std::istream& is, std::ostream& os)
+    template <class Input, class Output, class State, class CostStructure>
+    void SimpleLocalSearch<Input, Output, State, CostStructure>::ReadParameters(std::istream& is, std::ostream& os)
     {
       os << "Simple Local Search Solver: " << this->name << " parameters" << std::endl;
       os << "Runner: " << std::endl;
@@ -67,8 +67,8 @@ namespace EasyLocal {
         this->p_runner->ReadParameters(is, os);
     }
     
-    template <class Input, class Output, class State, typename CFtype>
-    void SimpleLocalSearch<Input, Output, State, CFtype>::Print(std::ostream& os) const
+    template <class Input, class Output, class State, class CostStructure>
+    void SimpleLocalSearch<Input, Output, State, CostStructure>::Print(std::ostream& os) const
     {
       os  << "Simple Local Search Solver: " << this->name << std::endl;
       if (this->p_runner)
@@ -84,13 +84,13 @@ namespace EasyLocal {
      
      @param r the new runner to be used
      */
-    template <class Input, class Output, class State, typename CFtype>
-    void SimpleLocalSearch<Input, Output, State, CFtype>::SetRunner(Runner<Input, State, CFtype>& r)
+    template <class Input, class Output, class State, class CostStructure>
+    void SimpleLocalSearch<Input, Output, State, CostStructure>::SetRunner(Runner<Input, State, CostStructure>& r)
     { this->p_runner = &r; }
     
     
-    template <class Input, class Output, class State, typename CFtype>
-    void SimpleLocalSearch<Input, Output, State, CFtype>::Go()
+    template <class Input, class Output, class State, class CostStructure>
+    void SimpleLocalSearch<Input, Output, State, CostStructure>::Go()
     {
       if (!p_runner)
         // FIXME: add a more specific exception behavior
@@ -101,8 +101,8 @@ namespace EasyLocal {
       this->best_state_cost = this->current_state_cost;
     }
     
-    template <class Input, class Output, class State, typename CFtype>
-    void SimpleLocalSearch<Input, Output, State, CFtype>::AtTimeoutExpired()
+    template <class Input, class Output, class State, class CostStructure>
+    void SimpleLocalSearch<Input, Output, State, CostStructure>::AtTimeoutExpired()
     {
       p_runner->Interrupt();
     }

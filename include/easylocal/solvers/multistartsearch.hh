@@ -16,15 +16,15 @@ namespace EasyLocal {
      encapsulated in a runner.
      @ingroup Solvers
      */
-    template <class Input, class Output, class State, typename CFtype = int>
+    template <class Input, class Output, class State, class CostStructure = DefaultCostStructure<int>>
     class MultiStartSearch
-    : public AbstractLocalSearch<Input, Output, State, CFtype>
+    : public AbstractLocalSearch<Input, Output, State, CostStructure>
     {
     public:
-      typedef Runner<Input, State, CFtype> RunnerType;
+      typedef Runner<Input, State, CostStructure> RunnerType;
       MultiStartSearch(const Input& in,
-                       StateManager<Input, State, CFtype>& e_sm,
-                       OutputManager<Input, Output, State, CFtype>& e_om,
+                       StateManager<Input, State, CostStructure>& e_sm,
+                       OutputManager<Input, Output, State>& e_om,
                        std::string name);
       void AddRunner(RunnerType& r);
       void RemoveRunner(const RunnerType& r);
@@ -60,26 +60,26 @@ namespace EasyLocal {
      @param in a pointer to an input object
      @param out a pointer to an output object
      */
-    template <class Input, class Output, class State, typename CFtype>
-    MultiStartSearch<Input, Output, State, CFtype>::MultiStartSearch(const Input& in,
-                                                                     StateManager<Input, State, CFtype>& e_sm,
-                                                                     OutputManager<Input, Output, State, CFtype>& e_om,
+    template <class Input, class Output, class State, class CostStructure>
+    MultiStartSearch<Input, Output, State, CostStructure>::MultiStartSearch(const Input& in,
+                                                                     StateManager<Input, State, CostStructure>& e_sm,
+                                                                     OutputManager<Input, Output, State>& e_om,
                                                                      std::string name)
-    : AbstractLocalSearch<Input, Output, State, CFtype>(in, e_sm, e_om, name, "Multi Start Solver")
+    : AbstractLocalSearch<Input, Output, State, CostStructure>(in, e_sm, e_om, name, "Multi Start Solver")
     {}
     
-    template <class Input, class Output, class State, typename CFtype>
-    void MultiStartSearch<Input, Output, State, CFtype>::RegisterParameters()
+    template <class Input, class Output, class State, class CostStructure>
+    void MultiStartSearch<Input, Output, State, CostStructure>::RegisterParameters()
     {
-      AbstractLocalSearch<Input, Output, State, CFtype>::RegisterParameters();
+      AbstractLocalSearch<Input, Output, State, CostStructure>::RegisterParameters();
       max_restarts("max_restarts", "Maximum number of restarts", this->parameters);
       max_idle_restarts("max_idle_restarts", "Maximum number of idle restarts", this->parameters);
       restart = 0;
       idle_restarts = 0;
     }
     
-    template <class Input, class Output, class State, typename CFtype>
-    void MultiStartSearch<Input, Output, State, CFtype>::ReadParameters(std::istream& is, std::ostream& os)
+    template <class Input, class Output, class State, class CostStructure>
+    void MultiStartSearch<Input, Output, State, CostStructure>::ReadParameters(std::istream& is, std::ostream& os)
     {
       os << "Multi Start Solver: " << this->name << " parameters" << std::endl;
       unsigned int i = 0;
@@ -90,8 +90,8 @@ namespace EasyLocal {
       }
     }
     
-    template <class Input, class Output, class State, typename CFtype>
-    void MultiStartSearch<Input, Output, State, CFtype>::Print(std::ostream& os) const
+    template <class Input, class Output, class State, class CostStructure>
+    void MultiStartSearch<Input, Output, State, CostStructure>::Print(std::ostream& os) const
     {
       os  << "Multi Start Solver: " << this->name << std::endl;
       unsigned int i = 0;
@@ -111,8 +111,8 @@ namespace EasyLocal {
      
      @param r the new runner to be used
      */
-    template <class Input, class Output, class State, typename CFtype>
-    void MultiStartSearch<Input, Output, State, CFtype>::AddRunner(RunnerType& r)
+    template <class Input, class Output, class State, class CostStructure>
+    void MultiStartSearch<Input, Output, State, CostStructure>::AddRunner(RunnerType& r)
     { p_runners.push_back(&r); }
     
     /**
@@ -121,8 +121,8 @@ namespace EasyLocal {
      
      @param r the runner to remove
      */
-    template <class Input, class Output, class State, typename CFtype>
-    void MultiStartSearch<Input, Output, State, CFtype>::RemoveRunner(const RunnerType& r)
+    template <class Input, class Output, class State, class CostStructure>
+    void MultiStartSearch<Input, Output, State, CostStructure>::RemoveRunner(const RunnerType& r)
     {
       typename std::vector<RunnerType*>::const_iterator it;
       for (it = p_runners.begin(); it != p_runners.end(); ++it)
@@ -135,10 +135,10 @@ namespace EasyLocal {
       p_runners.erase(it);
     }
     
-    template <class Input, class Output, class State, typename CFtype>
-    void MultiStartSearch<Input, Output, State, CFtype>::InitializeSolve() throw (ParameterNotSet, IncorrectParameterValue)
+    template <class Input, class Output, class State, class CostStructure>
+    void MultiStartSearch<Input, Output, State, CostStructure>::InitializeSolve() throw (ParameterNotSet, IncorrectParameterValue)
     {
-      AbstractLocalSearch<Input, Output, State, CFtype>::InitializeSolve();
+      AbstractLocalSearch<Input, Output, State, CostStructure>::InitializeSolve();
       if (max_idle_restarts.IsSet() && max_idle_restarts == 0)
         throw IncorrectParameterValue(max_idle_restarts, "It should be greater than zero");
         if (max_restarts.IsSet() && max_restarts == 0)
@@ -150,8 +150,8 @@ namespace EasyLocal {
       idle_restarts = 0;
     }
     
-    template <class Input, class Output, class State, typename CFtype>
-    void MultiStartSearch<Input, Output, State, CFtype>::Go()
+    template <class Input, class Output, class State, class CostStructure>
+    void MultiStartSearch<Input, Output, State, CostStructure>::Go()
     {
       current_runner = 0;
       bool idle = true;
@@ -175,14 +175,14 @@ namespace EasyLocal {
           else
             idle_restarts = 0;
           this->sm.RandomState(*this->p_current_state);
-          this->current_state_cost = this->sm.CostFunction(*this->p_current_state);
+          this->current_state_cost = this->sm.CostFunctionComponents(*this->p_current_state);
         }
       }
       while (idle_restarts < max_idle_restarts && restart < max_restarts);
     }
     
-    template <class Input, class Output, class State, typename CFtype>
-    void MultiStartSearch<Input, Output, State, CFtype>::AtTimeoutExpired()
+    template <class Input, class Output, class State, class CostStructure>
+    void MultiStartSearch<Input, Output, State, CostStructure>::AtTimeoutExpired()
     {
       p_runners[current_runner]->Interrupt();
     }

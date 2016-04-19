@@ -7,7 +7,6 @@
 #include "easylocal/utils/types.hh"
 #include "easylocal/utils/printable.hh"
 #include "easylocal/utils/interruptible.hh"
-#include "easylocal/utils/tuple.hh"
 #include "easylocal/utils/parameter.hh"
 
 #endif // _UTILS_HH_

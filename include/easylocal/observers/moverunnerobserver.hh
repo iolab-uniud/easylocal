@@ -8,14 +8,14 @@
 namespace EasyLocal {
   namespace Debug {
     
-    template <class Input, class State, class Move, typename CFtype = int>
+    template <class Input, class State, class Move, class CostStructure = DefaultCostStructure<int>>
     class MoveRunnerObserver
     {
     protected:
-      typedef typename EasyLocal::Core::MoveRunner<Input, State, Move, CFtype>::Event Event;
+      typedef typename EasyLocal::Core::MoveRunner<Input, State, Move, CostStructure>::Event Event;
     public:
       MoveRunnerObserver(std::ostream& os = std::cout);
-      void operator()(Event event, CostStructure<CFtype> current_state_cost, const EvaluatedMove<Move, CFtype>& em, const std::string& status_string) const;
+      void operator()(const Event& event, const CostStructure& current_state_cost, const EvaluatedMove<Move, CostStructure>& em, const std::string& status_string) const;
       unsigned int events() const
       {
         return Event::START | Event::NEW_BEST;
@@ -24,12 +24,12 @@ namespace EasyLocal {
       std::ostream& os;
     };
     
-    template <class Input, class State, class Move, typename CFtype>
-    MoveRunnerObserver<Input, State, Move, CFtype>::MoveRunnerObserver(std::ostream& os) : os(os)
+    template <class Input, class State, class Move, class CostStructure>
+    MoveRunnerObserver<Input, State, Move, CostStructure>::MoveRunnerObserver(std::ostream& os) : os(os)
     {}
     
-    template <class Input, class State, class Move, typename CFtype>
-    void MoveRunnerObserver<Input, State, Move, CFtype>::operator()(Event event, CostStructure<CFtype> current_state_cost, const EvaluatedMove<Move, CFtype>& em, const std::string& status_string) const
+    template <class Input, class State, class Move, class CostStructure>
+    void MoveRunnerObserver<Input, State, Move, CostStructure>::operator()(const Event& event, const CostStructure& current_state_cost, const EvaluatedMove<Move, CostStructure>& em, const std::string& status_string) const
     {
       switch (event)
       {
@@ -37,7 +37,7 @@ namespace EasyLocal {
           start = std::chrono::high_resolution_clock::now();
           break;
         case Event::NEW_BEST:
-          os << "--New Best " << current_state_cost << " [" << em.cost.total << "] (" << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start).count() / 1000.0 << "s)" << " " << status_string << std::endl;
+          os << "--New Best " << current_state_cost << " " << em.move << " [" << em.cost.total << "] (" << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start).count() / 1000.0 << "s)" << " " << status_string << std::endl;
           start = std::chrono::high_resolution_clock::now();
           break;
         default:
