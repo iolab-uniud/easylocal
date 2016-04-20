@@ -244,7 +244,7 @@ namespace EasyLocal {
     {
       CFtype hard_cost = 0, soft_cost = 0;
       double weighted_cost = 0.0;
-      std::vector<CFtype> cost_function(CostComponent<Input, State, CostStructure>::CostComponents(), (CFtype)0);
+      std::vector<CFtype> cost_function(CostComponent<Input, State, CFtype>::CostComponents(), (CFtype)0);
       for (size_t i = 0; i < cost_component.size(); i++)
       {
         CFtype current_cost = cost_function[cost_component[i]->Index()] = cost_component[i]->Cost(st);
