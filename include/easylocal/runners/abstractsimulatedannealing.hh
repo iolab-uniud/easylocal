@@ -51,7 +51,7 @@ namespace EasyLocal {
       Parameter<unsigned int> max_neighbors_sampled, max_neighbors_accepted;
       // state of SA
       double temperature; /**< The current temperature. */
-      unsigned int neighbors_sampled, neighbors_accepted;
+      size_t neighbors_sampled, neighbors_accepted;
     };
     
     /*************************************************************************

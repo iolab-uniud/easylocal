@@ -11,6 +11,7 @@
 #include "easylocal/helpers/neighborhoodexplorer.hh"
 #include "easylocal/utils/interruptible.hh"
 #include "easylocal/utils/parameter.hh"
+#include "easylocal/helpers/coststructure.hh"
 
 namespace EasyLocal {
   

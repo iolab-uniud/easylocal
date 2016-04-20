@@ -10,6 +10,7 @@
 #include "easylocal/testers/tester.hh"
 #include "easylocal/helpers/outputmanager.hh"
 #include "easylocal/helpers/neighborhoodexplorer.hh"
+#include "easylocal/helpers/coststructure.hh"
 
 namespace EasyLocal {
   
@@ -19,7 +20,7 @@ namespace EasyLocal {
      neighborhood explorer.
      @ingroup Testers
      */
-    template <class Input, class Output, class State, class Move, class CostStructure = DefaultCostStructure<int>>
+    template <class Input, class Output, class State, class Move, class CostStructure = Core::DefaultCostStructure<int>>
     class MoveTester
     : public ComponentTester<Input, Output, State, CostStructure>, public ChoiceReader
     {
@@ -27,8 +28,8 @@ namespace EasyLocal {
     public:
       MoveTester(const Input& in,
                  Core::StateManager<Input, State, CostStructure>& sm,
-                 Core::OutputManager<Input, Output, State>& om,
-                 Core::NeighborhoodExplorer<Input, State, Move, CostStructure>& ne,
+				 Core::OutputManager<Input, Output, State>& om,
+		         Core::NeighborhoodExplorer<Input, State, Move, CostStructure>& ne,
                  std::string name,
                  Tester<Input, Output, State, CostStructure>& t,
                  std::ostream& o = std::cout);
