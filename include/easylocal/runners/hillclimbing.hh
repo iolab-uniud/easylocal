@@ -76,7 +76,7 @@ namespace EasyLocal {
         return move_cost <= 0;
       }, this->weights);
       this->current_move = em;
-      this->evaluations += sampled;
+      this->evaluations += static_cast<unsigned long int>(sampled);
     }
     
     template <class Input, class State, class Move, class CostStructure>

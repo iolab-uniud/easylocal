@@ -75,15 +75,15 @@ namespace EasyLocal {
     {      
       AbstractSimulatedAnnealing<Input, State, Move, CostStructure>::InitializeRun();
       expected_min_temperature = this->start_temperature / temperature_range;
-      expected_number_of_temperatures = - log(temperature_range) / log(this->cooling_rate);
+      expected_number_of_temperatures = static_cast<unsigned int>(ceil(-log(temperature_range) / log(this->cooling_rate)));
       
-      this->max_neighbors_sampled = static_cast<unsigned>(this->max_evaluations / expected_number_of_temperatures);
+      this->max_neighbors_sampled = static_cast<unsigned int>(this->max_evaluations / expected_number_of_temperatures);
       
       // If the ratio of accepted neighbors for each temperature is not set,
       if (!neighbors_accepted_ratio.IsSet())
         this->max_neighbors_accepted = this->max_neighbors_sampled;
         else
-          this->max_neighbors_accepted = static_cast<unsigned>(this->max_neighbors_sampled * neighbors_accepted_ratio);
+          this->max_neighbors_accepted = static_cast<unsigned int>(this->max_neighbors_sampled * neighbors_accepted_ratio);
     }
     
     

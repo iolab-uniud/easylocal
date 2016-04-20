@@ -63,7 +63,7 @@ namespace EasyLocal {
         return move_cost < 0;
       }, this->weights);
       this->current_move = em;
-      this->evaluations += explored;
+      this->evaluations += static_cast<unsigned long int>(explored);
     }
     
     /**
