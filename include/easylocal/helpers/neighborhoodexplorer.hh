@@ -218,7 +218,7 @@ namespace EasyLocal {
     {
       CFtype delta_hard_cost = 0, delta_soft_cost = 0;
       double delta_weighted_cost = 0.0;
-      std::vector<CFtype> delta_cost_function(CostComponent<Input, State, CostStructure>::CostComponents(), static_cast<CFtype>(0));
+      std::vector<CFtype> delta_cost_function(CostComponent<Input, State, typename CostStructure::CFtype>::CostComponents(), static_cast<CFtype>(0));
       
       for (size_t i = 0; i < delta_hard_cost_components.size(); i++)
       {
