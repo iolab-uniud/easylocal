@@ -34,7 +34,7 @@ namespace EasyLocal {
       void InitializeRun() throw (ParameterNotSet, IncorrectParameterValue);
       bool ReheatCondition();
       // additional parameters
-      void RegisterParameters();
+      void InitializeParameters();
       Parameter<double> first_reheat_ratio;
       Parameter<double> reheat_ratio;
       Parameter<double> first_descent_evaluations_share;
@@ -63,9 +63,9 @@ namespace EasyLocal {
     {}
     
     template <class Input, class State, class Move, class CostStructure>
-    void SimulatedAnnealingWithReheating<Input, State, Move, CostStructure>::RegisterParameters()
+    void SimulatedAnnealingWithReheating<Input, State, Move, CostStructure>::InitializeParameters()
     {
-      AbstractSimulatedAnnealing<Input, State, Move, CostStructure>::RegisterParameters();
+      AbstractSimulatedAnnealing<Input, State, Move, CostStructure>::InitializeParameters();
       first_reheat_ratio("first_reheat_ratio", "First reheat ratio", this->parameters);
       reheat_ratio("reheat_ratio", "Reheat ratio", this->parameters);
       first_descent_evaluations_share("first_descent_evaluations_share", "First descent cost function evaluations share", this->parameters);

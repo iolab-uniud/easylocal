@@ -32,8 +32,7 @@ ParameterBox::ParameterBox(const std::string& p, const std::string& description)
 // Parameter parsing (courtesy of Boost)
 bool CommandLineParameters::Parse(int argc, const char* argv[], bool check_unregistered, bool silent)
 {
-  for (auto pz : Parametrized::overall_parametrized)
-    pz->RegisterParameters();
+  Parametrized::RegisterParameters();
   
   boost::program_options::options_description cmdline_options(argv[0]);
   boost::program_options::variables_map vm;

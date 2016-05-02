@@ -59,7 +59,7 @@ namespace EasyLocal {
       std::shared_ptr<Output> p_out; /**< The output object of the solver. */
       // parameters
       
-      void RegisterParameters();
+      void InitializeParameters();
       
       Parameter<unsigned int> init_trials;
       Parameter<bool> random_initial_state;
@@ -96,7 +96,7 @@ namespace EasyLocal {
     
     
     template <class Input, class Output, class State, class CostStructure>
-    void AbstractLocalSearch<Input, Output, State, CostStructure>::RegisterParameters()
+    void AbstractLocalSearch<Input, Output, State, CostStructure>::InitializeParameters()
     {
       init_trials("init_trials", "Number of states to be tried in the initialization phase", this->parameters);
       random_initial_state("random_state", "Random initial state", this->parameters);

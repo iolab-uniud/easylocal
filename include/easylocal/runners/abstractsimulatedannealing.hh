@@ -44,7 +44,7 @@ namespace EasyLocal {
       void CompleteMove();
       void CompleteIteration();
       // parameters
-      void RegisterParameters();
+      void InitializeParameters();
       Parameter<bool> compute_start_temperature;
       Parameter<double> start_temperature;
       Parameter<double> cooling_rate;
@@ -75,9 +75,9 @@ namespace EasyLocal {
     {}
     
     template <class Input, class State, class Move, class CostStructure>
-    void AbstractSimulatedAnnealing<Input, State, Move, CostStructure>::RegisterParameters()
+    void AbstractSimulatedAnnealing<Input, State, Move, CostStructure>::InitializeParameters()
     {
-      MoveRunner<Input, State, Move, CostStructure>::RegisterParameters();
+      MoveRunner<Input, State, Move, CostStructure>::InitializeParameters();
       compute_start_temperature("compute_start_temperature", "Should the runner compute the initial temperature?", this->parameters);
       start_temperature("start_temperature", "Starting temperature", this->parameters);
       cooling_rate("cooling_rate", "Cooling rate", this->parameters);

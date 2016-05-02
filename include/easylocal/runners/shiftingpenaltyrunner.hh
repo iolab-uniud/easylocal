@@ -21,9 +21,9 @@ namespace EasyLocal {
     public:
       using MR::MR;
       
-      void RegisterParameters()
+      void InitializeParameters()
       {
-        MR::RegisterParameters();
+        MR::InitializeParameters();
         feasible_iterations("feasible_iterations", "Number of feasible iterations before perturbing the weight", this->parameters);
         feasible_iterations = 1;
         infeasible_iterations("infeasible_iterations", "Number of infeasible iterations before perturbing the weight", this->parameters);

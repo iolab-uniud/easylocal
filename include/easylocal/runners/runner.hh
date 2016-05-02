@@ -60,7 +60,7 @@ namespace EasyLocal {
       CostStructure Step(State& s, unsigned int n = 1) throw (ParameterNotSet, IncorrectParameterValue);
       
       /** Register its parameters */
-      virtual void RegisterParameters();
+      virtual void InitializeParameters();
       
       /** Reads the parameter from an input stream.
        @param is input stream to read from
@@ -220,7 +220,7 @@ namespace EasyLocal {
     }
     
     template <class Input, class State, class CostStructure>
-    void Runner<Input, State, CostStructure>::RegisterParameters()
+    void Runner<Input, State, CostStructure>::InitializeParameters()
     {
       max_evaluations("max_evaluations", "Maximum total number of cost function evaluations allowed", this->parameters);
       // This parameter has a default value

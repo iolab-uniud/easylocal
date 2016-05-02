@@ -39,7 +39,7 @@ namespace EasyLocal {
                   std::string name);
       
     protected:
-      void RegisterParameters();
+      void InitializeParameters();
       void InitializeRun() throw (ParameterNotSet, IncorrectParameterValue);
       bool StopCriterion();
       void UpdateIterationCounter();
@@ -76,9 +76,9 @@ namespace EasyLocal {
     {}
     
     template <class Input, class State, class Move, class CostStructure>
-    void GreatDeluge<Input, State, Move, CostStructure>::RegisterParameters()
+    void GreatDeluge<Input, State, Move, CostStructure>::InitializeParameters()
     {
-      MoveRunner<Input, State, Move, CostStructure>::RegisterParameters();
+      MoveRunner<Input, State, Move, CostStructure>::InitializeParameters();
       initial_level("initial_level", "Initial water level", this->parameters);
       min_level("min_level", "Minimum water level", this->parameters);
       level_rate("level_rate", "Water decrease factor", this->parameters);

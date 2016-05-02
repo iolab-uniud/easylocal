@@ -26,7 +26,7 @@ namespace EasyLocal {
       
       Parameter<unsigned long int> max_idle_iterations;
     protected:
-      void RegisterParameters();
+      void InitializeParameters();
       bool MaxIdleIterationExpired() const;
       bool StopCriterion();
       void SelectMove();
@@ -56,9 +56,9 @@ namespace EasyLocal {
     
     
     template <class Input, class State, class Move, class CostStructure>
-    void HillClimbing<Input, State, Move, CostStructure>::RegisterParameters()
+    void HillClimbing<Input, State, Move, CostStructure>::InitializeParameters()
     {
-      MoveRunner<Input, State, Move, CostStructure>::RegisterParameters();
+      MoveRunner<Input, State, Move, CostStructure>::InitializeParameters();
       max_idle_iterations("max_idle_iterations", "Total number of allowed idle iterations", this->parameters);
     }
     

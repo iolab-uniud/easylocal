@@ -331,9 +331,15 @@ namespace EasyLocal {
            @param prefix namespace of the parameters
            @param description semantics of the parameters group
            */
-          Parametrized(const std::string& prefix, const std::string& description) : parameters(prefix, description)
-          {
+          Parametrized(const std::string& prefix, const std::string& description) : parameters(prefix, description), parameters_registered(false)
+          {            
             overall_parametrized.push_back(this);
+          }
+          
+          static void RegisterParameters()
+          {
+            for (auto p : overall_parametrized)
+              p->_RegisterParameters();
           }
           
           /** Read all parameters from an input stream (prints hints on output stream). */
@@ -396,8 +402,7 @@ namespace EasyLocal {
               }
             }
           }
-          
-          
+                    
           /** Sets a given parameter to a given value */
           template <typename T>
           void SetParameter(std::string flag, const T& value)
@@ -429,9 +434,21 @@ namespace EasyLocal {
           
         protected:
           
-          virtual void RegisterParameters() = 0;
+          void _RegisterParameters()
+          {
+            if (!parameters_registered)
+            {
+              this->InitializeParameters();
+              parameters_registered = true;
+            }
+          }
+          
+          virtual void InitializeParameters() = 0;
           
           ParameterBox parameters;
+          
+          bool parameters_registered;
+
           
           static std::list<Parametrized*> overall_parametrized;
           

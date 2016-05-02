@@ -26,7 +26,7 @@ namespace EasyLocal {
                                        std::string name);
       std::string StatusString() const;
     protected:
-      void RegisterParameters();
+      void InitializeParameters();
       void InitializeRun() throw (ParameterNotSet, IncorrectParameterValue);
       bool StopCriterion();
       
@@ -58,9 +58,9 @@ namespace EasyLocal {
     {}
     
     template <class Input, class State, class Move, class CostStructure>
-    void SimulatedAnnealingEvaluationBased<Input, State, Move, CostStructure>::RegisterParameters()
+    void SimulatedAnnealingEvaluationBased<Input, State, Move, CostStructure>::InitializeParameters()
     {
-      AbstractSimulatedAnnealing<Input, State, Move, CostStructure>::RegisterParameters();
+      AbstractSimulatedAnnealing<Input, State, Move, CostStructure>::InitializeParameters();
       neighbors_accepted_ratio("neighbors_accepted_ratio", "Ratio of neighbors accepted", this->parameters);
       temperature_range("temperature_range", "Temperature_range", this->parameters);
       this->max_neighbors_sampled = this->max_neighbors_accepted = 0;

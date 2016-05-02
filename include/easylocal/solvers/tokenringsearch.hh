@@ -39,7 +39,7 @@ namespace EasyLocal {
       
       std::vector<RunnerType*> p_runners; /**< pointers to the managed runner. */
       unsigned int current_runner;
-      void RegisterParameters();
+      void InitializeParameters();
       Parameter<unsigned int> max_rounds, max_idle_rounds;
       unsigned int round;
       unsigned int idle_rounds;
@@ -69,9 +69,9 @@ namespace EasyLocal {
     {}
     
     template <class Input, class Output, class State, class CostStructure>
-    void TokenRingSearch<Input, Output, State, CostStructure>::RegisterParameters()
+    void TokenRingSearch<Input, Output, State, CostStructure>::InitializeParameters()
     {
-      AbstractLocalSearch<Input, Output, State, CostStructure>::RegisterParameters();
+      AbstractLocalSearch<Input, Output, State, CostStructure>::InitializeParameters();
       max_rounds("max_rounds", "Maximum number of rounds", this->parameters);
       max_idle_rounds("max_idle_rounds", "Maximum number of idle rounds", this->parameters);
       round = 0;

@@ -25,7 +25,7 @@ namespace EasyLocal {
       std::string StatusString() const;
       
     protected:
-      void RegisterParameters();
+      void InitializeParameters();
       void InitializeRun() throw (ParameterNotSet, IncorrectParameterValue);
       bool StopCriterion();
       // parameters
@@ -53,9 +53,9 @@ namespace EasyLocal {
     {}
     
     template <class Input, class State, class Move, class CostStructure>
-    void SimulatedAnnealing<Input, State, Move, CostStructure>::RegisterParameters()
+    void SimulatedAnnealing<Input, State, Move, CostStructure>::InitializeParameters()
     {
-      AbstractSimulatedAnnealing<Input, State, Move, CostStructure>::RegisterParameters();
+      AbstractSimulatedAnnealing<Input, State, Move, CostStructure>::InitializeParameters();
       min_temperature("min_temperature", "Minimum temperature", this->parameters);
     }
     

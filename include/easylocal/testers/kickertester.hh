@@ -29,7 +29,7 @@ namespace EasyLocal {
       virtual size_t Modality() const;
       
       void RunMainMenu(State& st);
-      void RegisterParameters();
+      void InitializeParameters();
     protected:
       void PrintKicks(size_t length, const State& st) const;
       void ShowMenu();
@@ -60,7 +60,7 @@ namespace EasyLocal {
     { t.AddKickerTester(*this); }
     
     template <class Input, class Output, class State, class Move, class CostStructure>
-    void KickerTester<Input, Output, State, Move, CostStructure>::RegisterParameters()
+    void KickerTester<Input, Output, State, Move, CostStructure>::InitializeParameters()
     {
       length("kick-length", "Kick length", this->parameters);
       length = 3;

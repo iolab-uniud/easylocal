@@ -31,7 +31,7 @@ namespace EasyLocal {
       void SelectMove();
       
       // parameters
-      void RegisterParameters();
+      void InitializeParameters();
       Parameter<unsigned int> steps;
       std::vector<CostStructure> previous_steps;
       
@@ -58,9 +58,9 @@ namespace EasyLocal {
     {}
     
     template <class Input, class State, class Move, class CostStructure>
-    void LateAcceptanceHillClimbing<Input, State, Move, CostStructure>:: RegisterParameters()
+    void LateAcceptanceHillClimbing<Input, State, Move, CostStructure>:: InitializeParameters()
     {
-      HillClimbing<Input, State, Move, CostStructure>::RegisterParameters();
+      HillClimbing<Input, State, Move, CostStructure>::InitializeParameters();
       steps("steps", "Delay (number of steps in the queue)", this->parameters);
       steps = 10;
     }

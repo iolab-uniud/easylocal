@@ -72,7 +72,7 @@ namespace EasyLocal {
       bool StopCriterion();
       void SelectMove();
       void CompleteMove();
-      void RegisterParameters();
+      void InitializeParameters();
       const InverseFunction& Inverse;
       
       static InverseFunction SameMoveAsInverse;
@@ -110,9 +110,9 @@ namespace EasyLocal {
     
     
     template <class Input, class State, class Move, class CostStructure>
-    void TabuSearch<Input, State, Move, CostStructure>::RegisterParameters()
+    void TabuSearch<Input, State, Move, CostStructure>::InitializeParameters()
     {
-      MoveRunner<Input, State, Move, CostStructure>::RegisterParameters();
+      MoveRunner<Input, State, Move, CostStructure>::InitializeParameters();
       max_idle_iterations("max_idle_iterations", "Maximum number of idle iterations", this->parameters);
       min_tenure("min_tenure", "Minimum tabu tenure", this->parameters);
       max_tenure("max_tenure", "Maximum tabu tenure", this->parameters);

@@ -18,9 +18,9 @@ namespace EasyLocal {
     public:      
       using TabuSearch<Input, State, Move, CostStructure>::TabuSearch;
       
-      void RegisterParameters()
+      void InitializeParameters()
       {
-        TabuSearch<Input, State, Move, CostStructure>::RegisterParameters();
+        TabuSearch<Input, State, Move, CostStructure>::InitializeParameters();
         samples("samples", "Number of neighbors sampled", this->parameters);
       }
     protected:

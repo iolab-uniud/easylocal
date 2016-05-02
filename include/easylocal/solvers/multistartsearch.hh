@@ -33,7 +33,7 @@ namespace EasyLocal {
       unsigned int Restart() const { return restart; }
       unsigned int IdleRestarts() const { return idle_restarts; }
     protected:
-      void RegisterParameters();
+      void InitializeParameters();
       void InitializeSolve() throw (ParameterNotSet, IncorrectParameterValue);
       void Go();
       void AtTimeoutExpired();
@@ -69,9 +69,9 @@ namespace EasyLocal {
     {}
     
     template <class Input, class Output, class State, class CostStructure>
-    void MultiStartSearch<Input, Output, State, CostStructure>::RegisterParameters()
+    void MultiStartSearch<Input, Output, State, CostStructure>::InitializeParameters()
     {
-      AbstractLocalSearch<Input, Output, State, CostStructure>::RegisterParameters();
+      AbstractLocalSearch<Input, Output, State, CostStructure>::InitializeParameters();
       max_restarts("max_restarts", "Maximum number of restarts", this->parameters);
       max_idle_restarts("max_idle_restarts", "Maximum number of idle restarts", this->parameters);
       restart = 0;
