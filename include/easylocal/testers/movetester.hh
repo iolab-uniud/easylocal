@@ -201,9 +201,9 @@ namespace EasyLocal {
       os << "Move : " << em.move << std::endl;
       
       // process all delta cost components
-      for (size_t i = 0; i < CostComponent<Input, State, CostStructure>::CostComponents(); i++)
+      for (size_t i = 0; i < CostComponent<Input, State, typename CostStructure::CFtype>::CostComponents(); i++)
       {
-        const auto& cc = CostComponent<Input, State, CostStructure>::Component(i);
+        const auto& cc = CostComponent<Input, State, typename CostStructure::CFtype>::Component(i);
         os << "  " << i << ". " << cc.name << " : " <<  em.cost;
         
         // print * or not, add up to right variable
@@ -235,12 +235,12 @@ namespace EasyLocal {
         em.cost = ne.DeltaCostFunctionComponents(st, em.move);
         st1_cost = this->sm.CostFunctionComponents(st1);
         error = st1_cost - em.cost - st_cost;
-        for (size_t i = 0; i < CostComponent<Input, State, CostStructure>::CostComponents(); i++)
+        for (size_t i = 0; i < CostComponent<Input, State, typename CostStructure::CFtype>::CostComponents(); i++)
         {
           if (!IsZero(error.all_components[i]) && std::abs(error.all_components[i]) > tolerance)
           {
             error_found = true;
-            os << em.move << "  " << i << ". " <<  CostComponent<Input, State, CostStructure>::Component(i).name << ": " << st_cost.all_components[i] << std::showpos << em.cost.all_components[i] << std::noshowpos << "!="
+            os << em.move << "  " << i << ". " <<  CostComponent<Input, State, typename CostStructure::CFtype>::Component(i).name << ": " << st_cost.all_components[i] << std::showpos << em.cost.all_components[i] << std::noshowpos << "!="
             << st1_cost.all_components[i] << " (error = " << std::showpos << error.all_components[i] << ")" << std::noshowpos << std::endl;
             os << "Press enter to continue " << std::endl;
             std::cin.get();
@@ -275,7 +275,7 @@ namespace EasyLocal {
       double total_positive_cost = 0.0;
       
       
-      std::vector<std::pair<CFtype, CFtype>> min_max_costs(CostComponent<Input, State, CostStructure>::CostComponents());
+      std::vector<std::pair<CFtype, CFtype>> min_max_costs(CostComponent<Input, State, typename CostStructure::CFtype>::CostComponents());
       
       ne.FirstMove(st, em.move);
       
@@ -293,7 +293,7 @@ namespace EasyLocal {
         }
         else
           non_improving_neighbors++;
-        for (size_t i = 0; i < CostComponent<Input, State, CostStructure>::CostComponents(); i++)
+        for (size_t i = 0; i < CostComponent<Input, State, typename CostStructure::CFtype>::CostComponents(); i++)
         {
           if (em.cost.all_components[i] < min_max_costs[i].first)
             min_max_costs[i].first = em.cost.all_components[i];
@@ -312,8 +312,8 @@ namespace EasyLocal {
       << (100.0 * non_improving_neighbors) /neighbors << "%)" << std::endl;
       
       os << "Min and max component costs:" << std::endl;
-      for (size_t i = 0; i < CostComponent<Input, State, CostStructure>::CostComponents(); i++)
-        os << "  " << i << ". " << CostComponent<Input, State, CostStructure>::Component(i).name << " : Min = " << min_max_costs[i].first << ", Max = "  << min_max_costs[i].second << std::endl;
+      for (size_t i = 0; i < CostComponent<Input, State, typename CostStructure::CFtype>::CostComponents(); i++)
+        os << "  " << i << ". " << CostComponent<Input, State, typename CostStructure::CFtype>::Component(i).name << " : Min = " << min_max_costs[i].first << ", Max = "  << min_max_costs[i].second << std::endl;
     }
     
     template <class Input, class Output, class State, class Move, class CostStructure>

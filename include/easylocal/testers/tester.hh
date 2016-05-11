@@ -500,9 +500,9 @@ namespace EasyLocal {
         {
           os  << "Cost Components: " << std::endl;
           CostStructure cost = this->sm.CostFunctionComponents(test_state);
-          for (i = 0; i < CostComponent<Input, State, CostStructure>::CostComponents(); i++)
+          for (i = 0; i < CostComponent<Input, State, typename CostStructure::CFtype>::CostComponents(); i++)
           {
-            const CostComponent<Input, State, CostStructure>& cc = CostComponent<Input, State, CostStructure>::Component(i);
+            const CostComponent<Input, State, typename CostStructure::CFtype>& cc = CostComponent<Input, State, typename CostStructure::CFtype>::Component(i);
             os  << i << ". " << cc.name << " : "
             << cost.all_components[i] << (cc.IsHard() ? '*' : ' ') << std::endl;
           }
@@ -515,15 +515,15 @@ namespace EasyLocal {
         {
           os << "Detailed Violations: " << std::endl;
           CostStructure cost = this->sm.CostFunctionComponents(test_state);
-          for (i = 0; i < CostComponent<Input, State, CostStructure>::CostComponents(); i++)
+          for (i = 0; i < CostComponent<Input, State, typename CostStructure::CFtype>::CostComponents(); i++)
           {
-            const CostComponent<Input, State, CostStructure>& cc = CostComponent<Input, State, CostStructure>::Component(i);
+            const CostComponent<Input, State, typename CostStructure::CFtype>& cc = CostComponent<Input, State, typename CostStructure::CFtype>::Component(i);
             cc.PrintViolations(test_state);
           }
           os << std::endl << "Summary of Cost Components: " << std::endl;
-          for (i = 0; i < CostComponent<Input, State, CostStructure>::CostComponents(); i++)
+          for (i = 0; i < CostComponent<Input, State, typename CostStructure::CFtype>::CostComponents(); i++)
           {
-            const CostComponent<Input, State, CostStructure>& cc = CostComponent<Input, State, CostStructure>::Component(i);
+            const CostComponent<Input, State, typename CostStructure::CFtype>& cc = CostComponent<Input, State, typename CostStructure::CFtype>::Component(i);
             os  << i << ". " << cc.name << " : "
             << cost.all_components[i] << (cc.IsHard() ? '*' : ' ') << std::endl;
           }

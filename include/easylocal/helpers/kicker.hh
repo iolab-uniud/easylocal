@@ -438,7 +438,7 @@ namespace EasyLocal {
       {
         for (FullKickerIterator<Input, State, Move, CostStructure> it = begin(length, st); it != end(length, st); ++it)
         {
-          CostStructure cost(0, 0, 0, std::vector<CFtype>(CostComponent<Input, State, CostStructure>::CostComponents(), 0));
+          CostStructure cost(0, 0, 0, std::vector<CFtype>(CostComponent<Input, State, typename CostStructure::CFtype>::CostComponents(), 0));
           for (int i = 0; i < it->size(); i++)
           {
             if (!(*it)[i].first.is_valid)
@@ -451,7 +451,7 @@ namespace EasyLocal {
           if (cost < 0)
             return std::make_pair(*it, cost);
         }
-        return std::make_pair(Kick<State, Move, CostStructure>::empty, CostStructure(std::numeric_limits<CFtype>::infinity(), std::numeric_limits<CFtype>::infinity(), std::numeric_limits<CFtype>::infinity(), std::vector<CFtype>(CostComponent<Input, State, CostStructure>::CostComponents(), std::numeric_limits<CFtype>::infinity())));
+        return std::make_pair(Kick<State, Move, CostStructure>::empty, CostStructure(std::numeric_limits<CFtype>::infinity(), std::numeric_limits<CFtype>::infinity(), std::numeric_limits<CFtype>::infinity(), std::vector<CFtype>(CostComponent<Input, State, typename CostStructure::CFtype>::CostComponents(), std::numeric_limits<CFtype>::infinity())));
       }
       
       /** Generates the best kick.
@@ -468,7 +468,7 @@ namespace EasyLocal {
         unsigned int number_of_bests = 0;
         for (FullKickerIterator<Input, State, Move, CostStructure> it = begin(length, st); it != end(length, st); ++it)
         {
-          CostStructure cost(0, 0, 0, std::vector<CFtype>(CostComponent<Input, State, CostStructure>::CostComponents(), 0));
+          CostStructure cost(0, 0, 0, std::vector<CFtype>(CostComponent<Input, State, typename CostStructure::CFtype>::CostComponents(), 0));
           for (int i = 0; i < it->size(); i++)
           {
             if (!(*it)[i].first.is_valid)
@@ -503,7 +503,7 @@ namespace EasyLocal {
       virtual std::pair<Kick<State, Move, CostStructure>, CostStructure> SelectRandom(size_t length, const State &st) const throw (EmptyNeighborhood)
       {
         SampleKickerIterator<Input, State, Move, CostStructure> random_it = sample_begin(length, st, 1);
-        CostStructure cost(0, 0, 0, std::vector<CFtype>(CostComponent<Input, State, CostStructure>::CostComponents(), 0));
+        CostStructure cost(0, 0, 0, std::vector<CFtype>(CostComponent<Input, State, typename CostStructure::CFtype>::CostComponents(), 0));
         for (int i = 0; i < random_it->size(); i++)
         {
           if (!(*random_it)[i].first.is_valid)
