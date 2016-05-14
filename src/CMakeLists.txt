@@ -30,7 +30,11 @@ ENDFOREACH(subdir)
 file(GLOB headers RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} include/easylocal/*.hh)
 source_group("Header Files" FILES ${headers})
 
-add_library(EasyLocal ${headers} ${subdir_sources} ${subdir_headers})
+add_library(EasyLocal SHARED ${headers} ${subdir_sources} ${subdir_headers})
+set_target_properties(EasyLocal PROPERTIES POSITION_INDEPENDENT_CODE 1)
+if (APPLE)
+	set_target_properties(EasyLocal PROPERTIES MACOSX_RPATH ".")
+endif (APPLE)
 target_link_libraries(EasyLocal ${Boost_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
 set_target_properties(EasyLocal PROPERTIES LINKER_LANGUAGE CXX)
 
