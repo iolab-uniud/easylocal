@@ -1,5 +1,4 @@
-#if !defined(_SIMULATED_ANNEALING_HH_)
-#define _SIMULATED_ANNEALING_HH_
+#pragma once
 
 #include "easylocal/runners/abstractsimulatedannealing.hh"
 
@@ -17,10 +16,7 @@ namespace EasyLocal {
     {
     public:
       
-      SimulatedAnnealing(const Input& in,
-                         StateManager<Input, State, CostStructure>& sm,
-                         NeighborhoodExplorer<Input, State, Move, CostStructure>& ne,
-                         std::string name);
+      using AbstractSimulatedAnnealing<Input, State, Move, CostStructure>::AbstractSimulatedAnnealing;
       
       std::string StatusString() const;
       
@@ -34,23 +30,7 @@ namespace EasyLocal {
     
     /*************************************************************************
      * Implementation
-     *************************************************************************/
-    
-    /**
-     Constructs a simulated annealing runner by linking it to a state manager,
-     a neighborhood explorer, and an input object.
-     
-     @param s a pointer to a compatible state manager
-     @param ne a pointer to a compatible neighborhood explorer
-     @param in a pointer to an input object
-     */
-    template <class Input, class State, class Move, class CostStructure>
-    SimulatedAnnealing<Input, State, Move, CostStructure>::SimulatedAnnealing(const Input& in,
-                                                                       StateManager<Input, State, CostStructure>& sm,
-                                                                       NeighborhoodExplorer<Input, State, Move, CostStructure>& ne,
-                                                                       std::string name)
-    : AbstractSimulatedAnnealing<Input, State, Move, CostStructure>(in, sm, ne, name)
-    {}
+     *************************************************************************/    
     
     template <class Input, class State, class Move, class CostStructure>
     void SimulatedAnnealing<Input, State, Move, CostStructure>::InitializeParameters()
@@ -81,23 +61,6 @@ namespace EasyLocal {
     {
       return this->temperature <= min_temperature;
     }
-    
-    /**
-     Create a string containing the status of the runner
-     */
-    template <class Input, class State, class Move, class CostStructure>
-    std::string SimulatedAnnealing<Input, State, Move, CostStructure>::StatusString() const
-    {
-      std::stringstream status;
-      status << "["
-      << "Temp = " << this->temperature << " (" << this->start_temperature << "->" << this->min_temperature << "), "
-      << "NS = " << this->neighbors_sampled << " (" << this->max_neighbors_sampled << "), "
-      << "NA = " << this->neighbors_accepted  << " (" << this->max_neighbors_accepted << ")"
-      << "]";
-      return status.str();
-    }
   }
 }
 
-
-#endif // _SIMULATED_ANNEALING_HH_

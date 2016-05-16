@@ -1,6 +1,4 @@
-#ifndef _OPERATORS_HH
-#define _OPERATORS_HH
-
+#pragma once
 
 #include <limits>
 #include "easylocal/modeling/expression.hh"
@@ -600,5 +598,3 @@ namespace EasyLocal {
     
   }
 }
-
-#endif // _OPERATORS_HH

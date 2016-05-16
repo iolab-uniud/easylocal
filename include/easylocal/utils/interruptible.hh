@@ -1,5 +1,4 @@
-#if !defined(_INTERRUPTIBLE_HH_)
-#define _INTERRUPTIBLE_HH_
+#pragma once
 
 #include <iostream>
 #include <future>
@@ -53,8 +52,7 @@ namespace EasyLocal {
         // If timeout is greater than zero
         if (timeout.count() != 0)
         {
-          result.wait_for(timeout);
-          if (result.wait_for(std::chrono::milliseconds::zero()) != std::future_status::ready)
+          if (result.wait_for(timeout) != std::future_status::ready)
           {
             timeout_expired = true;
             AtTimeoutExpired();
@@ -95,9 +93,15 @@ namespace EasyLocal {
       }
       
       /** Interrupt execution. */
-      inline void Interrupt() {
+      inline void Interrupt()
+      {
         timeout_expired = true;
       }
+      
+      virtual void ResetTimeout()
+      {
+        timeout_expired = false;
+      };
       
     protected:
       
@@ -113,7 +117,7 @@ namespace EasyLocal {
       }
       
       /** Called when timeout is expired. */
-      inline virtual void AtTimeoutExpired() {}
+      virtual void AtTimeoutExpired() {}
       
     private:
       
@@ -123,4 +127,3 @@ namespace EasyLocal {
   }
 }
 
-#endif

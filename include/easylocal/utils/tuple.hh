@@ -1,5 +1,4 @@
-#if !defined(_TUPLE_HH_)
-#define _TUPLE_HH_
+#pragma once
 
 namespace EasyLocal {
   
@@ -132,4 +131,3 @@ namespace EasyLocal {
   }
 }
 
-#endif

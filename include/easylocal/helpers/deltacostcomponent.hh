@@ -1,5 +1,4 @@
-#if !defined(_DELTA_COST_COMPONENT_HH_)
-#define _DELTA_COST_COMPONENT_HH_
+#pragma once
 
 #include <stdexcept>
 
@@ -130,4 +129,3 @@ namespace EasyLocal {
   }
 }
 
-#endif // _DELTA_COST_COMPONENT_HH_

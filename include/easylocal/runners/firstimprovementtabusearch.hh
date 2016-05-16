@@ -1,5 +1,4 @@
-#if !defined(_FIRST_IMPROVEMENT_TABU_SEARCH_HH_)
-#define _FIRST_IMPROVEMENT_TABU_SEARCH_HH_
+#pragma once
 
 #include "easylocal/runners/tabusearch.hh"
 
@@ -48,4 +47,3 @@ namespace EasyLocal {
   }
 }
 
-#endif // _FIRST_IMPROVEMENT_TABU_SEARCH_HH_

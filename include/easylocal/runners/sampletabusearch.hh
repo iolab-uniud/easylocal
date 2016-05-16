@@ -1,5 +1,4 @@
-#if !defined(_SAMPLE_TABU_SEARCH_HH_)
-#define _SAMPLE_TABU_SEARCH_HH_
+#pragma once
 
 /** The First Improvement Tabu Search runner differs from the
  @ref TabuSearch runner only in the selection of the move. A random sampling of the neighborhood is performed.
@@ -53,4 +52,3 @@ namespace EasyLocal {
   }
 }
 
-#endif // _SAMPLE_TABU_SEARCH_HH_

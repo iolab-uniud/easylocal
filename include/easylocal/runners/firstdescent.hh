@@ -1,5 +1,4 @@
-#if !defined(_FIRST_DESCENT_HH_)
-#define _FIRST_DESCENT_HH_
+#pragma once
 
 #include "easylocal/runners/moverunner.hh"
 #include "easylocal/helpers/statemanager.hh"
@@ -18,10 +17,8 @@ namespace EasyLocal {
     class FirstDescent : public MoveRunner<Input, State, Move, CostStructure>
     {
     public:
-      FirstDescent(const Input& in,
-                   StateManager<Input, State, CostStructure>& e_sm,
-                   NeighborhoodExplorer<Input, State, Move, CostStructure>& e_ne,
-                   std::string name);
+      using MoveRunner<Input, State, Move, CostStructure>::MoveRunner;
+      
     protected:
       bool StopCriterion();
       void SelectMove();
@@ -29,22 +26,7 @@ namespace EasyLocal {
     
     /*************************************************************************
      * Implementation
-     *************************************************************************/
-    
-    /**
-     Constructs a first descent runner by linking it to a state manager,
-     a neighborhood explorer, and an input object.
-     
-     @param s a pointer to a compatible state manager
-     @param ne a pointer to a compatible neighborhood explorer
-     @param in a pointer to an input object
-     */
-    template <class Input, class State, class Move, class CostStructure>
-    FirstDescent<Input, State, Move, CostStructure>::FirstDescent(const Input& in,
-                                                           StateManager<Input, State, CostStructure>& e_sm, NeighborhoodExplorer<Input, State, Move, CostStructure>& e_ne,
-                                                           std::string name)
-    : MoveRunner<Input, State, Move, CostStructure>(in, e_sm, e_ne, name, "First Descent Runner")
-    {}
+     *************************************************************************/    
     
     /**
      Selects always the first improving move in the neighborhood.
@@ -71,4 +53,3 @@ namespace EasyLocal {
   }
 }
 
-#endif // _FIRST_DESCENT_HH_

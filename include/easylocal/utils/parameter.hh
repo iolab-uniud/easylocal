@@ -1,5 +1,4 @@
-#if !defined(_PARAMETER_HH_)
-#define _PARAMETER_HH_
+#pragma once
 
 #include <stdexcept>
 #include <list>
@@ -8,6 +7,7 @@
 #include <memory>
 #include <sstream>
 #include "easylocal/utils/types.hh"
+#include "spdlog/spdlog.h"
 
 #include "boost/program_options/options_description.hpp"
 
@@ -107,9 +107,9 @@ namespace EasyLocal {
       template <typename _T>
       friend bool operator==(const BaseParameter<_T>&, const _T&) throw (ParameterNotSet, ParameterNotValid);
       friend class IncorrectParameterValue;
-		protected:
-			using AbstractParameter::AbstractParameter;
-    public:   			       
+    protected:
+      using AbstractParameter::AbstractParameter;
+    public:
       /** @copydoc AbstractParameter::Read */
       virtual std::istream& Read(std::istream& is = std::cin) throw (ParameterNotValid);
       
@@ -126,112 +126,112 @@ namespace EasyLocal {
         std::stringstream ss;
         ss << this->value;
         return ss.str();
-      }
+        }
         
-      virtual void CopyValue(const AbstractParameter& ap)
-      {
-        const BaseParameter<T>& tp = dynamic_cast<const BaseParameter<T>&>(ap);
-        this->value = tp.value;
-        this->is_set = tp.is_set;
-        this->is_valid = tp.is_valid;
-      }
+        virtual void CopyValue(const AbstractParameter& ap)
+        {
+          const BaseParameter<T>& tp = dynamic_cast<const BaseParameter<T>&>(ap);
+          this->value = tp.value;
+          this->is_set = tp.is_set;
+          this->is_valid = tp.is_valid;
+        }
         
-      /** Implicit cast. */
-      operator T() const throw (ParameterNotSet, ParameterNotValid);
+        /** Implicit cast. */
+        operator T() const throw (ParameterNotSet, ParameterNotValid);
         
-      /** Assignment. */
-      const T& operator=(const T&) throw (ParameterNotValid);
+        /** Assignment. */
+        const T& operator=(const T&) throw (ParameterNotValid);
         
       protected:
         /** Actual value of the parameter. */
         T value;
-      };
-			
-			template <typename T>
-			class Parameter : public BaseParameter<T>
-			{
-			public:							
-        Parameter()
+        };
+        
+        template <typename T>
+        class Parameter : public BaseParameter<T>
         {
-          this->is_valid = false;
-        }	
-       /** Constructor.
-        @param cmdline_flag flag used to pass the parameter to the command line
-        @param description semantics of the parameter
-        @param parameters parameter box to which this parameter refers
-        */
-       Parameter(const std::string& cmdline_flag, const std::string& description, ParameterBox& parameters)
-				 : BaseParameter<T>(cmdline_flag, description)     
-			 {
-         std::string flag = parameters.prefix + "::" + cmdline_flag;
-         parameters.push_back(this);
-         parameters.cl_options.add_options()
-         (flag.c_str(), boost::program_options::value<T>(&this->value)->notifier([this](const T&){ this->is_set = true; }), description.c_str());
-         this->is_valid = true;
-			 }
-      
-       virtual void operator()(const std::string& cmdline_flag, const std::string& description, ParameterBox& parameters)
-			 {
-         this->cmdline_flag = parameters.prefix + "::" + cmdline_flag;
-         this->description = description;
-         parameters.push_back(this);
-         parameters.cl_options.add_options()
-         (this->cmdline_flag.c_str(), boost::program_options::value<T>(&this->value)->notifier([this](const T&){ this->is_set = true; }), description.c_str());
-         this->is_valid = true;
-			 }
-			 
-       const T& operator=(const T& v) throw (ParameterNotValid)
-       {
-         if (!this->is_valid)
-           throw ParameterNotValid(*this);
-         this->is_set = true;
-         this->value = v;
-         return this->value;
-       }
-			 
-			};
-			
-			template <>
-			class Parameter<bool> : public BaseParameter<bool>
-			{
-			public:	
-        Parameter()
+        public:
+          Parameter()
+          {
+            this->is_valid = false;
+          }
+          /** Constructor.
+           @param cmdline_flag flag used to pass the parameter to the command line
+           @param description semantics of the parameter
+           @param parameters parameter box to which this parameter refers
+           */
+          Parameter(const std::string& cmdline_flag, const std::string& description, ParameterBox& parameters)
+          : BaseParameter<T>(cmdline_flag, description)
+          {
+            std::string flag = parameters.prefix + "::" + cmdline_flag;
+            parameters.push_back(this);
+            parameters.cl_options.add_options()
+            (flag.c_str(), boost::program_options::value<T>(&this->value)->notifier([this](const T&){ this->is_set = true; }), description.c_str());
+            this->is_valid = true;
+          }
+          
+          virtual void operator()(const std::string& cmdline_flag, const std::string& description, ParameterBox& parameters)
+          {
+            this->cmdline_flag = parameters.prefix + "::" + cmdline_flag;
+            this->description = description;
+            parameters.push_back(this);
+            parameters.cl_options.add_options()
+            (this->cmdline_flag.c_str(), boost::program_options::value<T>(&this->value)->notifier([this](const T&){ this->is_set = true; }), description.c_str());
+            this->is_valid = true;
+          }
+          
+          const T& operator=(const T& v) throw (ParameterNotValid)
+          {
+            if (!this->is_valid)
+              throw ParameterNotValid(*this);
+            this->is_set = true;
+            this->value = v;
+            return this->value;
+          }
+          
+        };
+        
+        template <>
+        class Parameter<bool> : public BaseParameter<bool>
         {
-          this->is_valid = false;
-        }	
+        public:
+          Parameter()
+          {
+            this->is_valid = false;
+          }
 										
-		    Parameter(const std::string& cmdline_flag, const std::string& description, ParameterBox& parameters)
-		    : BaseParameter<bool>(cmdline_flag, description)
-		    {
-		      std::string flag = parameters.prefix + "::" + cmdline_flag;
-		      parameters.cl_options.add_options()
-		      (("enable-" + flag).c_str(), boost::program_options::value<std::string>()->implicit_value("true")->zero_tokens()->notifier([this](const std::string& v){ this->is_set = true; this->value = true; }), "")
-		      (("disable-" + flag).c_str(), boost::program_options::value<std::string>()->implicit_value("false")->zero_tokens()->notifier([this](const std::string & v){ this->is_set = true; this->value = false; }),
-		       ("[enable/disable] " + description).c_str());
-		    }
-				
-        virtual void operator()(const std::string& cmdline_flag, const std::string& description, ParameterBox& parameters)
- 			 {
-         this->cmdline_flag = parameters.prefix + "::" + cmdline_flag;
-         this->description = description;
-         parameters.push_back(this);
-         parameters.cl_options.add_options()
-		     (("enable-" + cmdline_flag).c_str(), boost::program_options::value<std::string>()->implicit_value("true")->zero_tokens()->notifier([this](const std::string& v){ this->is_set = true; this->value = true; }), "")
-		     (("disable-" + cmdline_flag).c_str(), boost::program_options::value<std::string>()->implicit_value("false")->zero_tokens()->notifier([this](const std::string & v){ this->is_set = true; this->value = false; }),
- 		      ("[enable/disable] " + description).c_str());
-         this->is_valid = true;
-			 }
-			 
-       const bool& operator=(const bool& v) throw (ParameterNotValid)
-       {
-         if (!this->is_valid)
-           throw ParameterNotValid(*this);
-         this->is_set = true;
-         this->value = v;
-         return this->value;
-       }
-			};
-			        
+          Parameter(const std::string& cmdline_flag, const std::string& description, ParameterBox& parameters)
+          : BaseParameter<bool>(cmdline_flag, description)
+          {
+            std::string flag = parameters.prefix + "::" + cmdline_flag;
+            parameters.cl_options.add_options()
+            (("enable-" + flag).c_str(), boost::program_options::value<std::string>()->implicit_value("true")->zero_tokens()->notifier([this](const std::string& v){ this->is_set = true; this->value = true; }), "")
+            (("disable-" + flag).c_str(), boost::program_options::value<std::string>()->implicit_value("false")->zero_tokens()->notifier([this](const std::string & v){ this->is_set = true; this->value = false; }),
+             ("[enable/disable] " + description).c_str());
+          }
+          
+          virtual void operator()(const std::string& cmdline_flag, const std::string& description, ParameterBox& parameters)
+          {
+            this->cmdline_flag = parameters.prefix + "::" + cmdline_flag;
+            this->description = description;
+            parameters.push_back(this);
+            parameters.cl_options.add_options()
+            (("enable-" + cmdline_flag).c_str(), boost::program_options::value<std::string>()->implicit_value("true")->zero_tokens()->notifier([this](const std::string& v){ this->is_set = true; this->value = true; }), "")
+            (("disable-" + cmdline_flag).c_str(), boost::program_options::value<std::string>()->implicit_value("false")->zero_tokens()->notifier([this](const std::string & v){ this->is_set = true; this->value = false; }),
+             ("[enable/disable] " + description).c_str());
+            this->is_valid = true;
+          }
+          
+          const bool& operator=(const bool& v) throw (ParameterNotValid)
+          {
+            if (!this->is_valid)
+              throw ParameterNotValid(*this);
+            this->is_set = true;
+            this->value = v;
+            return this->value;
+          }
+        };
+        
         class IncorrectParameterValue
         : public std::logic_error
         {
@@ -242,7 +242,7 @@ namespace EasyLocal {
           virtual ~IncorrectParameterValue() throw();
         protected:
           std::string message;
-        };        
+        };
         
         template <typename T>
         BaseParameter<T>::operator T() const throw (ParameterNotSet, ParameterNotValid)
@@ -252,7 +252,7 @@ namespace EasyLocal {
           if (!is_set)
             throw ParameterNotSet(*this);
           return value;
-        }        
+        }
         
         template <typename T>
         std::istream& BaseParameter<T>::Read(std::istream& is) throw (ParameterNotValid)
@@ -332,7 +332,7 @@ namespace EasyLocal {
            @param description semantics of the parameters group
            */
           Parametrized(const std::string& prefix, const std::string& description) : parameters(prefix, description), parameters_registered(false)
-          {            
+          {
             overall_parametrized.push_back(this);
           }
           
@@ -402,7 +402,7 @@ namespace EasyLocal {
               }
             }
           }
-                    
+          
           /** Sets a given parameter to a given value */
           template <typename T>
           void SetParameter(std::string flag, const T& value)
@@ -438,7 +438,7 @@ namespace EasyLocal {
           {
             if (!parameters_registered)
             {
-              this->InitializeParameters();
+              InitializeParameters();
               parameters_registered = true;
             }
           }
@@ -448,7 +448,18 @@ namespace EasyLocal {
           ParameterBox parameters;
           
           bool parameters_registered;
-
+          
+          ~Parametrized()
+          {
+            for (auto it = overall_parametrized.begin(); it != overall_parametrized.end(); ++it)
+            {
+              if (*it == this)
+              {
+                it = overall_parametrized.erase(it);
+                break;
+              }
+            }
+          }
           
           static std::list<Parametrized*> overall_parametrized;
           
@@ -456,5 +467,3 @@ namespace EasyLocal {
         
       }
     }
-    
-#endif // !defined(_PARAMETER_HH_)

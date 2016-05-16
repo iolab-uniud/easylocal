@@ -1,10 +1,8 @@
-#if !defined(_MOVE_RUNNER_HH_)
-#define _MOVE_RUNNER_HH_
+#pragma once
 
 #include "easylocal/runners/runner.hh"
 #include "easylocal/helpers/statemanager.hh"
 #include "easylocal/helpers/neighborhoodexplorer.hh"
-#include <boost/signals2.hpp>
 
 namespace EasyLocal {
   
@@ -19,46 +17,17 @@ namespace EasyLocal {
     class MoveRunner : public Runner<Input, State, CostStructure>
     {
     public:
-      
-      typedef Move MoveType;
-      
-      enum Event { START = 1 << 0, NEW_BEST = 1 << 1, MADE_MOVE = 1 << 2, END = 1 << 3 };
-      const size_t events = 4;
-      
-    public:
-      template <typename Observer>
-      void registerObserver(Observer&& observer)
-      {
-        for (unsigned char i = 0; i < events; i++)
-          if (observer.events() & (1 << i))
-            observers[i].connect(observer);
-      }
-      
-    protected:      
-      void notify(Event event) const
-      {
-        for (unsigned char i = 0; i < events; i++)
-          if (event & (1 << i))
-            observers[i](event, this->current_state_cost, this->current_move, this->StatusString());
-      }
-      
-      std::vector<boost::signals2::signal<void(const Event& event, const CostStructure& current_state_cost, const EvaluatedMove<Move, CostStructure>& em, const std::string& status_string)>> observers;
-      
-    public:
-      
       /** Modality of this runner. */
       virtual size_t Modality() const { return ne.Modality(); }
-      
-      virtual std::string StatusString() const { return std::string("[no status info]"); }
-    protected:
       
       /** Constructor.
        @param e_sm */
       MoveRunner(const Input& in, StateManager<Input, State, CostStructure>& e_sm,
                  NeighborhoodExplorer<Input, State, Move, CostStructure>& e_ne,
-                 std::string name, std::string description);
+                 std::string name, std::shared_ptr<spdlog::logger> logger);
       
-      
+    protected:
+            
       virtual void TerminateRun();
       
       virtual void InitializeRun() throw (ParameterNotSet, IncorrectParameterValue);
@@ -98,7 +67,7 @@ namespace EasyLocal {
         *(this->p_best_state) = *(this->p_current_state);
         this->best_state_cost = this->current_state_cost;
         
-        notify(NEW_BEST);
+        this->loginfo("Runner {}, new best cost found {} at iteration {}", this->name, this->best_state_cost, this->iteration);
         
         // so that idle iterations are printed correctly
         this->iteration_of_best = this->iteration;
@@ -108,23 +77,23 @@ namespace EasyLocal {
     
     template <class Input, class State, class Move, class CostStructure>
     MoveRunner<Input, State, Move, CostStructure>::MoveRunner(const Input& in,
-                                                       StateManager<Input, State, CostStructure>& e_sm,
-                                                       NeighborhoodExplorer<Input, State, Move, CostStructure>& e_ne,
-                                                       std::string name,
-                                                       std::string description)
-    : Runner<Input, State, CostStructure>(in, e_sm, name, description), observers(events), ne(e_ne)
+                                                              StateManager<Input, State, CostStructure>& e_sm,
+                                                              NeighborhoodExplorer<Input, State, Move, CostStructure>& e_ne,
+                                                              std::string name,
+                                                              std::shared_ptr<spdlog::logger> logger)
+    : Runner<Input, State, CostStructure>(in, e_sm, name, logger), ne(e_ne)
     {}        
     
     template <class Input, class State, class Move, class CostStructure>
     void MoveRunner<Input, State, Move, CostStructure>::InitializeRun() throw (ParameterNotSet, IncorrectParameterValue)
     {
-      notify(START);
+      this->loginfo("Runner {}, run initialized", this->name);
     }
     
     template <class Input, class State, class Move, class CostStructure>
     void MoveRunner<Input, State, Move, CostStructure>::TerminateRun()
     {
-      notify(END);
+      this->loginfo("Runner {}, run terminated", this->name);
     }
     
     template <class Input, class State, class Move, class CostStructure>
@@ -144,10 +113,9 @@ namespace EasyLocal {
       {
         ne.MakeMove(*this->p_current_state, current_move.move);
         this->current_state_cost += current_move.cost;
-        notify(MADE_MOVE);
+        this->logtrace("Runner {}, iteration {}, move {}, move cost {}, current cost {}", this->name, this->iteration, current_move.cost, this->current_state_cost);
       }
     }
   }
 }
 
-#endif /*MOVERUNNER_HH_*/

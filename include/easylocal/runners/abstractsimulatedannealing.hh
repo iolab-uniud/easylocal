@@ -1,5 +1,4 @@
-#if !defined(_ABSTRACT_SIMULATED_ANNEALING_HH_)
-#define _ABSTRACT_SIMULATED_ANNEALING_HH_
+#pragma once
 
 #include <cmath>
 #include <stdexcept>
@@ -31,10 +30,7 @@ namespace EasyLocal {
     {
     public:
       
-      AbstractSimulatedAnnealing(const Input& in,
-                                 StateManager<Input, State, CostStructure>& e_sm,
-                                 NeighborhoodExplorer<Input, State, Move, CostStructure>& e_ne,
-                                 std::string name);          
+      using MoveRunner<Input, State, Move, CostStructure>::MoveRunner;
     protected:
       
       void InitializeRun() throw (ParameterNotSet, IncorrectParameterValue);
@@ -57,22 +53,6 @@ namespace EasyLocal {
     /*************************************************************************
      * Implementation
      *************************************************************************/
-    
-    /**
-     Constructs a simulated annealing runner by linking it to a state manager,
-     a neighborhood explorer, and an input object.
-     
-     @param s a pointer to a compatible state manager
-     @param ne a pointer to a compatible neighborhood explorer
-     @param in a pointer to an input object
-     */
-    template <class Input, class State, class Move, class CostStructure>
-    AbstractSimulatedAnnealing<Input, State, Move, CostStructure>::AbstractSimulatedAnnealing(const Input& in,
-                                                                                       StateManager<Input, State, CostStructure>& e_sm,
-                                                                                       NeighborhoodExplorer<Input, State, Move, CostStructure>& e_ne,
-                                                                                       std::string name)
-    : MoveRunner<Input, State, Move, CostStructure>(in, e_sm, e_ne, name, "Simulated Annealing Runner")
-    {}
     
     template <class Input, class State, class Move, class CostStructure>
     void AbstractSimulatedAnnealing<Input, State, Move, CostStructure>::InitializeParameters()
@@ -184,4 +164,3 @@ namespace EasyLocal {
   }
 }
 
-#endif // _ABSTRACT_SIMULATED_ANNEALING_HH_

@@ -1,15 +1,6 @@
-//
-//  parallelkicker.hh
-//  EasyLocal
-//
-//  Created by Luca Di Gaspero on 29/10/14.
-//
-//
-
 #if defined(TBB_AVAILABLE)
 
-#ifndef _parallelkicker_hh
-#define _parallelkicker_hh
+#pragma once
 
 #include "easylocal/helpers/kicker.hh"
 #include <iterator>
@@ -125,7 +116,5 @@ namespace EasyLocal {
     };
   }
 }
-
-#endif
 
 #endif

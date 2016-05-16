@@ -1,5 +1,4 @@
-#if !defined(_TOKEN_RING_SEARCH_HH_)
-#define _TOKEN_RING_SEARCH_HH_
+#pragma once
 
 #include <future>
 
@@ -25,7 +24,8 @@ namespace EasyLocal {
       TokenRingSearch(const Input& in,
                       StateManager<Input, State, CostStructure>& e_sm,
                       OutputManager<Input, Output, State>& e_om,
-                      std::string name);
+                      std::string name,
+                      std::shared_ptr<spdlog::logger> logger = nullptr);
       void AddRunner(RunnerType& r);
       void RemoveRunner(const RunnerType& r);
       void Print(std::ostream& os = std::cout) const;
@@ -36,6 +36,7 @@ namespace EasyLocal {
       void InitializeSolve() throw (ParameterNotSet, IncorrectParameterValue);
       void Go();
       void AtTimeoutExpired();
+      void ResetTimeout();
       
       std::vector<RunnerType*> p_runners; /**< pointers to the managed runner. */
       unsigned int current_runner;
@@ -62,10 +63,11 @@ namespace EasyLocal {
      */
     template <class Input, class Output, class State, class CostStructure>
     TokenRingSearch<Input, Output, State, CostStructure>::TokenRingSearch(const Input& in,
-                                                                   StateManager<Input, State, CostStructure>& e_sm,
-                                                                   OutputManager<Input, Output, State>& e_om,
-                                                                   std::string name)
-    : AbstractLocalSearch<Input, Output, State, CostStructure>(in, e_sm, e_om, name, "Token Ring Solver")
+                                                                          StateManager<Input, State, CostStructure>& e_sm,
+                                                                          OutputManager<Input, Output, State>& e_om,
+                                                                          std::string name,
+                                                                          std::shared_ptr<spdlog::logger> logger)
+    : AbstractLocalSearch<Input, Output, State, CostStructure>(in, e_sm, e_om, name, "Token Ring Solver", logger)
     {}
     
     template <class Input, class Output, class State, class CostStructure>
@@ -83,10 +85,10 @@ namespace EasyLocal {
     {
       os << "Token Ring Solver: " << this->name << " parameters" << std::endl;
       unsigned int i = 0;
-      for (RunnerType* p_r : p_runners)
+      for (auto& r : p_runners)
       {
         os << "Runner [" << i++ << "]: " << std::endl;
-        p_r->ReadParameters(is, os);
+        r->ReadParameters(is, os);
       }
     }
     
@@ -177,7 +179,15 @@ namespace EasyLocal {
     {
       p_runners[current_runner]->Interrupt();
     }
+    
+    template <class Input, class Output, class State, class CostStructure>
+    void TokenRingSearch<Input, Output, State, CostStructure>::ResetTimeout()
+    {
+      Interruptible<int>::ResetTimeout();
+      for (auto& r : this->p_runners)
+        r->ResetTimeout();
+    }
   }
 }
 
-#endif // _TOKEN_RING_SEARCH_HH_
+

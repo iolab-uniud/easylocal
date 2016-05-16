@@ -1,5 +1,4 @@
-#if !defined(_RANDOM_HH_)
-#define _RANDOM_HH_
+#pragma once
 
 #include <random>
 #include <iostream>
@@ -58,4 +57,3 @@ namespace EasyLocal {
   }
 }
 
-#endif // _RANDOM_HH_

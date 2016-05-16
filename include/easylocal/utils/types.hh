@@ -1,5 +1,4 @@
-#if !defined(_TYPES_HH_)
-#define _TYPES_HH_
+#pragma once
 
 #include <vector>
 #include <iostream>
@@ -64,4 +63,3 @@ namespace EasyLocal {
    }
 }
 
-#endif // _TYPES_HH_

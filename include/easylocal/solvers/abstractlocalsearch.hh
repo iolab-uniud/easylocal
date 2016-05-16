@@ -1,9 +1,9 @@
-#if !defined(_ABSTRACT_LOCAL_SEARCH_HH_)
-#define _ABSTRACT_LOCAL_SEARCH_HH_
+#pragma once
 
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <typeinfo>
 
 #include "easylocal/solvers/solver.hh"
 #include "easylocal/helpers/statemanager.hh"
@@ -28,11 +28,12 @@ namespace EasyLocal {
       /** These methods are the unique interface of Solvers */
       virtual SolverResult<Input, Output, CostStructure> Solve() throw (ParameterNotSet, IncorrectParameterValue) final;
       virtual SolverResult<Input, Output, CostStructure> Resolve(const Output& initial_solution) throw (ParameterNotSet, IncorrectParameterValue) final;
-    protected:
+      
       AbstractLocalSearch(const Input& in,
                           StateManager<Input, State, CostStructure>& e_sm,
                           OutputManager<Input, Output, State>& e_om,
-                          std::string name, std::string description);
+                          std::string name, std::shared_ptr<spdlog::logger> logger);
+    protected:
       
       virtual ~AbstractLocalSearch()
       {}
@@ -41,6 +42,7 @@ namespace EasyLocal {
       virtual std::function<int(void)> MakeFunction()
       {
         return [this](void) -> int {
+          this->ResetTimeout();
           this->Go();
           return 1;
         };
@@ -84,12 +86,12 @@ namespace EasyLocal {
      */
     template <class Input, class Output, class State, class CostStructure>
     AbstractLocalSearch<Input, Output, State, CostStructure>::AbstractLocalSearch(const Input& in,
-                                                                           StateManager<Input, State, CostStructure>& e_sm,
-                                                                           OutputManager<Input, Output, State>& e_om,
-                                                                           std::string name,
-                                                                           std::string description)
-    : Parametrized(name, description),
-    Solver<Input, Output, CostStructure>(in, name),
+                                                                                  StateManager<Input, State, CostStructure>& e_sm,
+                                                                                  OutputManager<Input, Output, State>& e_om,
+                                                                                  std::string name,
+                                                                                  std::shared_ptr<spdlog::logger> logger)
+    : Parametrized(name, typeid(this).name()),
+    Solver<Input, Output, CostStructure>(in, name, logger),
     sm(e_sm),
     om(e_om)
     {}
@@ -137,9 +139,7 @@ namespace EasyLocal {
       InitializeSolve();
       FindInitialState();
       if (timeout.IsSet())
-      {
         SyncRun(std::chrono::milliseconds(static_cast<long long int>(timeout * 1000.0)));
-      }
       else
         Go();
       p_out = std::make_shared<Output>(this->in);
@@ -179,4 +179,3 @@ namespace EasyLocal {
   }
 }
 
-#endif // _ABSTRACT_LOCAL_SEARCH_HH_

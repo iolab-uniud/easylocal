@@ -6,9 +6,7 @@
 //
 //
 
-#ifndef EasyLocal_observers_hh
-#define EasyLocal_observers_hh
+#pragma once
 
 #include "easylocal/observers/moverunnerobserver.hh"
 
-#endif

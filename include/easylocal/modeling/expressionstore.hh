@@ -1,5 +1,4 @@
-#ifndef _EXPRESSIONSTORE_HH
-#define _EXPRESSIONSTORE_HH
+#pragma once
 
 #include <queue>
 #include <unordered_map>
@@ -587,5 +586,3 @@ namespace EasyLocal {
   }
 }
 
-
-#endif // _EXPRESSIONSTORE_HH

@@ -1,5 +1,4 @@
-#ifndef _EXPRESSION_HH
-#define _EXPRESSION_HH
+#pragma once
 
 #include <memory>
 #include <vector>
@@ -1968,4 +1967,3 @@ namespace EasyLocal {
   }
 }
 
-#endif // _EXPRESSION_HH

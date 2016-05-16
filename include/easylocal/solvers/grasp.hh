@@ -1,5 +1,4 @@
-#if !defined(_GRASP_HH_)
-#define _GRASP_HH_
+#prgama once
 
 #include <vector>
 
@@ -144,4 +143,3 @@ namespace EasyLocal {
   }
 }
 
-#endif // _GRASP_HH_

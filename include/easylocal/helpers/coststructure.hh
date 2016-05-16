@@ -1,5 +1,4 @@
-#if !defined(_COST_STRUCTURE_HH_)
-#define _COST_STRUCTURE_HH_
+#pragma once
 
 #include "easylocal/utils/types.hh"
 
@@ -573,4 +572,3 @@ namespace EasyLocal {
   }
 }
 
-#endif

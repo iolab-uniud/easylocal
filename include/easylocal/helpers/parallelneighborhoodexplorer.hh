@@ -1,15 +1,6 @@
-//
-//  parallelneighborhoodexplorer.hh
-//  EasyLocalExamples
-//
-//  Created by Luca Di Gaspero on 29/10/14.
-//
-//
-
 #if defined(TBB_AVAILABLE)
 
-#ifndef _parallelneighborhoodexplorer_hh
-#define _parallelneighborhoodexplorer_hh
+#pragma once
 
 #include "easylocal/helpers/neighborhoodexplorer.hh"
 #include <iterator>
@@ -339,4 +330,3 @@ namespace EasyLocal {
 
 #endif
 
-#endif

@@ -1,5 +1,4 @@
-#if !defined(_KICKER_HH_)
-#define _KICKER_HH_
+#pragma once
 
 #include "easylocal/helpers/neighborhoodexplorer.hh"
 
@@ -563,4 +562,3 @@ namespace EasyLocal {
   }
 }
 
-#endif // _KICKER_HH_

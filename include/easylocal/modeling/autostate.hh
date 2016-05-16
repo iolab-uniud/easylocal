@@ -1,5 +1,4 @@
-#ifndef _AUTOSTATE_HH
-#define _AUTOSTATE_HH
+#pragma once
 
 #include "easylocal/utils/printable.hh"
 #include "expression.hh"
@@ -164,5 +163,3 @@ namespace EasyLocal {
     };
   }
 }
-
-#endif

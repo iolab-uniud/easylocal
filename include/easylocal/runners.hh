@@ -24,8 +24,7 @@
  
  */
 
-#if !defined(_RUNNERS_HH_)
-#define _RUNNERS_HH_
+#pragma once
 
 #include "easylocal/runners/steepestdescent.hh"
 #include "easylocal/runners/firstdescent.hh"
@@ -40,4 +39,3 @@
 #include "easylocal/runners/sampletabusearch.hh"
 #include "easylocal/runners/lateacceptancehillclimbing.hh"
 
-#endif // _RUNNERS_HH_

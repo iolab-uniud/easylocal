@@ -1,5 +1,4 @@
-#if !defined(_NEIGHBORHOOD_EXPLORER_HH_)
-#define _NEIGHBORHOOD_EXPLORER_HH_
+#pragma once
 
 #include <typeinfo>
 #include <iostream>
@@ -450,4 +449,3 @@ namespace EasyLocal {
   }
 }
 
-#endif // _NEIGHBORHOOD_EXPLORER_HH_

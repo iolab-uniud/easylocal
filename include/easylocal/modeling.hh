@@ -1,5 +1,4 @@
-#if !defined(_MODELING_HH_)
-#define _MODELING_HH_
+#pragma once
 
 /**
 @defgroup Modeling Modeling
@@ -13,5 +12,3 @@
 #include "easylocal/modeling/operators.hh"
 #include "easylocal/modeling/compiledexpression.hh"
 #include "easylocal/modeling/expressionstore.hh"
-
-#endif // _MODELING_HH_

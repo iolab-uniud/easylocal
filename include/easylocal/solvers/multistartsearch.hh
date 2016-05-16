@@ -1,5 +1,4 @@
-#if !defined(_MULIT_START_SEARCH_HH)
-#define _MULIT_START_SEARCH_HH
+#pragma once
 
 #include <future>
 
@@ -189,4 +188,3 @@ namespace EasyLocal {
   }
 }
 
-#endif // _MULIT_START_SEARCH_HH

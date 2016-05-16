@@ -1,5 +1,4 @@
-#if !defined(_COST_COMPONENT_HH_)
-#define _COST_COMPONENT_HH_
+#pragma once
 
 #include <iostream>
 #include <vector>
@@ -156,4 +155,3 @@ namespace EasyLocal {
   }
 }
 
-#endif // _COST_COMPONENT_HH_

@@ -1,5 +1,4 @@
-#if !defined(_OUTPUT_MANAGER_HH_)
-#define _OUTPUT_MANAGER_HH_
+#pragma once
 
 #include <iostream>
 
@@ -89,4 +88,3 @@ namespace EasyLocal {
   }
 }
 
-#endif // _OUTPUT_MANAGER_HH_

@@ -1,11 +1,11 @@
-#if !defined(_SOLVER_HH_)
-#define _SOLVER_HH_
+#pragma once
 
 #include <tuple>
 
 #include "easylocal/helpers/statemanager.hh"
 #include "easylocal/helpers/outputmanager.hh"
 #include "easylocal/utils/parameter.hh"
+#include "easylocal/utils/loggable.hh"
 
 namespace EasyLocal {
   
@@ -27,7 +27,7 @@ namespace EasyLocal {
      Solvers
      */
     template <class Input, class Output, class CostStructure = DefaultCostStructure<int>>
-    class Solver
+    class Solver : public Loggable
     {
     public:
       /** Name of the solver. */
@@ -54,13 +54,13 @@ namespace EasyLocal {
       /** List of all solvers that have been instantiated so far. For autoloading. */
       static std::vector<Solver<Input, Output, CostStructure>*> solvers;
       
-    protected:
-      
       /** Constructor.
        @param in a reference to the input object
        @param name name of the constructor
        */
-      Solver(const Input& in, std::string name);
+      Solver(const Input& in, std::string name, std::shared_ptr<spdlog::logger> logger);
+      
+    protected:
       
       /** A reference to the input. */
       const Input& in;
@@ -75,12 +75,10 @@ namespace EasyLocal {
     std::vector<Solver<Input, Output, CostStructure>*> Solver<Input, Output, CostStructure>::solvers;
     
     template <class Input, class Output, class CostStructure>
-    Solver<Input, Output, CostStructure>::Solver(const Input& i, std::string e_name)
-    : name(e_name), in(i)
+    Solver<Input, Output, CostStructure>::Solver(const Input& i, std::string e_name, std::shared_ptr<spdlog::logger> logger)
+    : Loggable(logger), name(e_name), in(i)
     {
       solvers.push_back(this);
     }
   }
 }
-
-#endif // _SOLVER_HH_

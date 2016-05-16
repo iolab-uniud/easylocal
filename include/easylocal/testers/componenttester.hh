@@ -1,5 +1,4 @@
-#if !defined(_COMPONENT_TESTER_HH_)
-#define _COMPONENT_TESTER_HH_
+#pragma once
 
 namespace EasyLocal {
   
@@ -49,4 +48,3 @@ namespace EasyLocal {
 }
 
 
-#endif // _COMPONENT_TESTER_HH_

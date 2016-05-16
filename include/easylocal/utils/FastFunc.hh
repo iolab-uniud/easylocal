@@ -1,5 +1,4 @@
-#ifndef FastFunc_hh
-#define FastFunc_hh
+#pragma once
 
 /**
  The Don Clugston's fast delegate C++11 implementation is due to Vittorio Romeo <vittorio.romeo@outlook.com>
@@ -154,4 +153,3 @@ namespace EasyLocal
   }
 }
 
-#endif

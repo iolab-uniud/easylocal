@@ -1,5 +1,4 @@
-#if !defined(_LATE_ACCEPTANCE_HILL_CLIMBING_HH_)
-#define _LATE_ACCEPTANCE_HILL_CLIMBING_HH_
+#pragma once
 
 #include <stdexcept>
 
@@ -20,11 +19,9 @@ namespace EasyLocal {
     class LateAcceptanceHillClimbing : public HillClimbing<Input, State, Move, CostStructure>
     {
     public:
+     
+      using HillClimbing<Input, State, Move, CostStructure>::HillClimbing;
       
-      LateAcceptanceHillClimbing(const Input& in,
-                                 StateManager<Input, State, CostStructure>& e_sm,
-                                 NeighborhoodExplorer<Input, State, Move, CostStructure>& e_ne,
-                                 std::string name);
     protected:
       void InitializeRun() throw (ParameterNotSet, IncorrectParameterValue);
       void CompleteMove();
@@ -40,22 +37,6 @@ namespace EasyLocal {
     /*************************************************************************
      * Implementation
      *************************************************************************/
-    
-    /**
-     Constructs a simulated annealing runner by linking it to a state manager,
-     a neighborhood explorer, and an input object.
-     
-     @param s a pointer to a compatible state manager
-     @param ne a pointer to a compatible neighborhood explorer
-     @param in a pointer to an input object
-     */
-    template <class Input, class State, class Move, class CostStructure>
-    LateAcceptanceHillClimbing<Input, State, Move, CostStructure>::LateAcceptanceHillClimbing(const Input& in,
-                                                                                       StateManager<Input, State, CostStructure>& e_sm,
-                                                                                       NeighborhoodExplorer<Input, State, Move, CostStructure>& e_ne,
-                                                                                       std::string name)
-    : HillClimbing<Input, State, Move, CostStructure>(in, e_sm, e_ne, name)
-    {}
     
     template <class Input, class State, class Move, class CostStructure>
     void LateAcceptanceHillClimbing<Input, State, Move, CostStructure>:: InitializeParameters()
@@ -109,5 +90,4 @@ namespace EasyLocal {
   }
 }
 
-#endif // _LATE_ACCEPTANCE_HILL_CLIMBING_HH_
 

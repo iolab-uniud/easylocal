@@ -1,5 +1,4 @@
-#if !defined(_TESTER_HH_)
-#define _TESTER_HH_
+#pragma once
 
 #include <stdexcept>
 #include <fstream>
@@ -583,9 +582,7 @@ namespace EasyLocal {
       }
       while (sub_choice != 0);
       os << "Leaving state menu" << std::endl;
-    }
-    
+    }    
   }
 }
 
-#endif // _TESTER_HH_

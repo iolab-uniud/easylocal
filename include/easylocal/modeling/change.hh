@@ -1,5 +1,4 @@
-#ifndef _CHANGE_HH
-#define _CHANGE_HH
+#pragma once
 
 #include "expression.hh"
 
@@ -90,4 +89,3 @@ namespace EasyLocal {
   }
 }
 
-#endif

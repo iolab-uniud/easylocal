@@ -1,5 +1,4 @@
-#if !defined(_TABU_SEARCH_HH_)
-#define _TABU_SEARCH_HH_
+#pragma once
 
 #include <stdexcept>
 #include <list>
@@ -58,7 +57,8 @@ namespace EasyLocal {
     public:
       typedef std::function<bool(const Move& lm, const Move& mv)> InverseFunction;
       
-      TabuSearch(const Input& in, StateManager<Input, State, CostStructure>& sm,
+      TabuSearch(const Input& in,
+                 StateManager<Input, State, CostStructure>& sm,
                  NeighborhoodExplorer<Input, State, Move, CostStructure>& ne,
                  std::string name,
                  const InverseFunction& Inverse = SameMoveAsInverse);
@@ -220,4 +220,3 @@ namespace EasyLocal {
   }  
 }
 
-#endif // _TABU_SEARCH_HH_

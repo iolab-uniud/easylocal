@@ -1,7 +1,4 @@
-#if !defined(_DEBUG_HH_)
-#define _DEBUG_HH_
+#pragma once
 
 #include "easylocal/testers.hh"
 #include "easylocal/observers.hh"
-
-#endif // _DEBUG_HH_

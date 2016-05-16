@@ -1,29 +1,20 @@
-//
-//  shiftingpenaltyrunner.hh
-//  EasyLocalExamples
-//
-//  Created by Luca Di Gaspero on 03/11/14.
-//
-//
-
-#ifndef _shiftingpenaltyrunner_hh
-#define _shiftingpenaltyrunner_hh
+#pragma once
 
 #include "easylocal/runners/moverunner.hh"
 
 namespace EasyLocal {
   namespace Core {
     
-    template <class MR>
-    class ShiftingPenaltyRunner : public MR
+    template <class BaseMoveRunner>
+    class ShiftingPenaltyRunner : public BaseMoveRunner
     {
       // TODO: currently it performs weight adaptation at each iteration
     public:
-      using MR::MR;
+      using BaseMoveRunner::BaseMoveRunner;
       
       void InitializeParameters()
       {
-        MR::InitializeParameters();
+        BaseMoveRunner::InitializeParameters();
         feasible_iterations("feasible_iterations", "Number of feasible iterations before perturbing the weight", this->parameters);
         feasible_iterations = 1;
         infeasible_iterations("infeasible_iterations", "Number of infeasible iterations before perturbing the weight", this->parameters);
@@ -40,7 +31,7 @@ namespace EasyLocal {
       
       void InitializeRun() throw (ParameterNotSet, IncorrectParameterValue)
       {
-        MR::InitializeRun();
+        BaseMoveRunner::InitializeRun();
         if (min_perturbation <= 1.0)
         {
           throw IncorrectParameterValue(min_perturbation, "should be greater than one");
@@ -73,24 +64,24 @@ namespace EasyLocal {
         {
           throw IncorrectParameterValue(infeasible_iterations, "should be greater than zero");
         }
-        this->weights.assign(CostComponent<typename MR::InputType, typename MR::StateType, typename MR::CostStructureType>::CostComponents(), 1.0);
-        number_of_feasible_iterations.assign(CostComponent<typename MR::InputType, typename MR::StateType, typename MR::CostStructureType>::CostComponents(), 0);
-        number_of_infeasible_iterations.assign(CostComponent<typename MR::InputType, typename MR::StateType, typename MR::CostStructureType>::CostComponents(), 0);
+        this->weights.assign(CostComponent<typename BaseMoveRunner::InputType, typename BaseMoveRunner::StateType, typename BaseMoveRunner::CostStructureType>::CostComponents(), 1.0);
+        number_of_feasible_iterations.assign(CostComponent<typename BaseMoveRunner::InputType, typename BaseMoveRunner::StateType, typename BaseMoveRunner::CostStructureType>::CostComponents(), 0);
+        number_of_infeasible_iterations.assign(CostComponent<typename BaseMoveRunner::InputType, typename BaseMoveRunner::StateType, typename BaseMoveRunner::CostStructureType>::CostComponents(), 0);
       }
       
       void CompleteMove()
       {
-        MR::CompleteMove();
-        for (size_t i = 0; i < CostComponent<typename MR::InputType, typename MR::StateType, typename MR::CostStructureType>::CostComponents(); i++)
+        BaseMoveRunner::CompleteMove();
+        for (size_t i = 0; i < CostComponent<typename BaseMoveRunner::InputType, typename BaseMoveRunner::StateType, typename BaseMoveRunner::CostStructureType>::CostComponents(); i++)
         {
-          if (CostComponent<typename MR::InputType, typename MR::StateType, typename MR::CostStructureType>::Component(i).IsHard() && this->current_state_cost.all_components[i] == 0)
+          if (CostComponent<typename BaseMoveRunner::InputType, typename BaseMoveRunner::StateType, typename BaseMoveRunner::CostStructureType>::Component(i).IsHard() && this->current_state_cost.all_components[i] == 0)
           {
             number_of_feasible_iterations[i]++;
             number_of_infeasible_iterations[i] = 0;
             if (number_of_feasible_iterations[i] % (unsigned int)feasible_iterations == 0)
               this->weights[i] = std::max((double)min_range, this->weights[i] / Random::Double(min_perturbation, max_perturbation));
           }
-          if (CostComponent<typename MR::InputType, typename MR::StateType, typename MR::CostStructureType>::Component(i).IsHard() && this->current_state_cost.all_components[i] > 0)
+          if (CostComponent<typename BaseMoveRunner::InputType, typename BaseMoveRunner::StateType, typename BaseMoveRunner::CostStructureType>::Component(i).IsHard() && this->current_state_cost.all_components[i] > 0)
           {
             number_of_infeasible_iterations[i]++;
             number_of_feasible_iterations[i] = 0;
@@ -110,5 +101,3 @@ namespace EasyLocal {
   }
 }
 
-
-#endif

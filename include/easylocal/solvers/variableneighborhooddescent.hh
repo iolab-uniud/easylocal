@@ -1,5 +1,4 @@
-#if !defined(_VARIABLE_NEIGHBORHOOD_DESCENT_HH_)
-#define _VARIABLE_NEIGHBORHOOD_DESCENT_HH_
+#pragma once
 
 #include "easylocal/solvers/abstractlocalsearch.hh"
 
@@ -93,4 +92,3 @@ namespace EasyLocal {
   }
 }
 
-#endif // _VARIABLE_NEIGHBORHOOD_DESCENT_HH_

@@ -1,16 +1,17 @@
-#if !defined(RUNNER_HH_)
-#define RUNNER_HH_
+#pragma once
 
 #include <stdexcept>
 #include <climits>
 #include <chrono>
 #include <condition_variable>
 #include <atomic>
+#include <typeinfo>
 
 #include "easylocal/helpers/statemanager.hh"
 #include "easylocal/helpers/neighborhoodexplorer.hh"
 #include "easylocal/utils/interruptible.hh"
 #include "easylocal/utils/parameter.hh"
+#include "easylocal/utils/loggable.hh"
 #include "easylocal/helpers/coststructure.hh"
 
 namespace EasyLocal {
@@ -31,7 +32,7 @@ namespace EasyLocal {
      @ingroup Helpers
      */
     template <class Input, class State, class CostStructure = DefaultCostStructure<int>>
-    class Runner : public Interruptible<CostStructure, State&>, public Parametrized
+    class Runner : public Interruptible<CostStructure, State&>, public Parametrized, public Loggable
     {
       friend class Debug::AbstractTester<Input, State, CostStructure>;
       
@@ -86,10 +87,7 @@ namespace EasyLocal {
       }
       
       /** Name of the runner. */
-      const std::string name;
-      
-      /** Description of the runner. */
-      const std::string description;
+      const std::string name;      
       
       /** Destructor, for inheritance. */
       virtual ~Runner() {}
@@ -98,7 +96,7 @@ namespace EasyLocal {
       virtual size_t Modality() const = 0;
       
       /** List of all runners that have been instantiated so far. For autoloading. */
-      static std::vector<Runner<Input, State, CostStructure>*> runners;
+      static std::vector<Runner<Input, State, CostStructure>*> runners;      
       
     protected:
       
@@ -108,7 +106,7 @@ namespace EasyLocal {
        @param name name of the runner
        @param desc description of the runner
        */
-      Runner(const Input& i, StateManager<Input, State, CostStructure>&, std::string, std::string);
+      Runner(const Input&, StateManager<Input, State, CostStructure>&, std::string, std::shared_ptr<spdlog::logger> logger);
       
       /** Actions and checks to be perfomed at the beginning of the run. Redefinition intended.
        @throw ParameterNotSet if one of the parameters needed by the runner (or other components) hasn't been set
@@ -211,9 +209,9 @@ namespace EasyLocal {
     std::vector<Runner<Input, State, CostStructure>*> Runner<Input, State, CostStructure>::runners;
     
     template <class Input, class State, class CostStructure>
-    Runner<Input, State, CostStructure>::Runner(const Input& in, StateManager<Input, State, CostStructure>& sm, std::string name, std::string description)
+    Runner<Input, State, CostStructure>::Runner(const Input& in, StateManager<Input, State, CostStructure>& sm, std::string name, std::shared_ptr<spdlog::logger> logger)
     : // Parameters
-    Parametrized(name, description), name(name), description(description), no_acceptable_move_found(false), in(in), sm(sm), weights(0)
+    Parametrized(name, typeid(this).name()), Loggable(logger), name(name), no_acceptable_move_found(false), in(in), sm(sm), weights(0)
     {
       // Add to the list of all runners
       runners.push_back(this);
@@ -254,7 +252,6 @@ namespace EasyLocal {
       
       return TerminateRun(s);
     }
-    
     
     /**
      Prepare the iteration (e.g. updates the counter that tracks the number of iterations elapsed)
@@ -321,4 +318,3 @@ namespace EasyLocal {
   }
 }
 
-#endif // _RUNNER_HH_

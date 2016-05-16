@@ -1,5 +1,4 @@
-#if !defined(_KICKER_TESTER_HH_)
-#define _KICKER_TESTER_HH_
+#pragma once
 
 #include <chrono>
 
@@ -175,7 +174,3 @@ namespace EasyLocal {
   }
   
 }
-
-
-
-#endif // define _KICKER_TESTER_HH_

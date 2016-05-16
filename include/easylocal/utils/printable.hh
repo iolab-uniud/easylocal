@@ -1,5 +1,4 @@
-#if !defined(_PRINTABLE_HH_)
-#define _PRINTABLE_HH_
+#pragma once
 
 #include <iostream>
 
@@ -26,5 +25,3 @@ namespace EasyLocal {
     
   }
 }
-
-#endif

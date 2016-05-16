@@ -1,5 +1,4 @@
-#if !defined(_STATE_MANAGER_HH_)
-#define _STATE_MANAGER_HH_
+#pragma once
 
 #include <iostream>
 #include <vector>
@@ -296,4 +295,3 @@ namespace EasyLocal {
   }
 }
 
-#endif // _STATE_MANAGER_HH_

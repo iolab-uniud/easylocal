@@ -1,5 +1,4 @@
-#if !defined(_UTILS_HH_)
-#define _UTILS_HH_
+#pragma once
 
 /** @defgroup Utils Utility classes */
 
@@ -9,4 +8,3 @@
 #include "easylocal/utils/interruptible.hh"
 #include "easylocal/utils/parameter.hh"
 
-#endif // _UTILS_HH_

@@ -1,5 +1,4 @@
-#if !defined(_TESTERS_HH_)
-#define _TESTERS_HH_
+#pragma once
 
 /** @defgroup Testers Testers
     @brief Tester classes represent a simple predefined interface of the user program.   
@@ -10,4 +9,3 @@
 #include "easylocal/testers/componenttester.hh"
 #include "easylocal/testers/kickertester.hh"
 
-#endif // _TESTERS_HH_

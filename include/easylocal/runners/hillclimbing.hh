@@ -1,5 +1,4 @@
-#if !defined(_HILL_CLIMBING_HH_)
-#define _HILL_CLIMBING_HH_
+#pragma once
 
 #include <stdexcept>
 
@@ -20,12 +19,10 @@ namespace EasyLocal {
     class HillClimbing : public MoveRunner<Input, State, Move, CostStructure>
     {
     public:
-      HillClimbing(const Input& in, StateManager<Input, State, CostStructure>& e_sm,
-                   NeighborhoodExplorer<Input, State, Move, CostStructure>& e_ne, std::string name);
-      std::string StatusString() const;
+      using MoveRunner<Input, State, Move, CostStructure>::MoveRunner;
       
-      Parameter<unsigned long int> max_idle_iterations;
     protected:
+      Parameter<unsigned long int> max_idle_iterations;
       void InitializeParameters();
       bool MaxIdleIterationExpired() const;
       bool StopCriterion();
@@ -36,24 +33,6 @@ namespace EasyLocal {
     /*************************************************************************
      * Implementation
      *************************************************************************/
-    
-    /**
-     Constructs a hill climbing runner by linking it to a state manager,
-     a neighborhood explorer, and an input object.
-     
-     @param s a pointer to a compatible state manager
-     @param ne a pointer to a compatible neighborhood explorer
-     @param in a pointer to an input object
-     */
-    
-    template <class Input, class State, class Move, class CostStructure>
-    HillClimbing<Input, State, Move, CostStructure>::HillClimbing(const Input& in,
-                                                           StateManager<Input, State, CostStructure>& e_sm,
-                                                           NeighborhoodExplorer<Input, State, Move, CostStructure>& e_ne,
-                                                           std::string name)
-    : MoveRunner<Input, State, Move, CostStructure>(in, e_sm, e_ne, name, "Hill Climbing Runner")
-    {}
-    
     
     template <class Input, class State, class Move, class CostStructure>
     void HillClimbing<Input, State, Move, CostStructure>::InitializeParameters()
@@ -95,21 +74,6 @@ namespace EasyLocal {
       return MaxIdleIterationExpired() || this->MaxEvaluationsExpired();
     }
 
-    /**
-     Create a string containing the status of the runner
-     */
-    template <class Input, class State, class Move, class CostStructure>
-    std::string HillClimbing<Input, State, Move, CostStructure>::StatusString() const
-    {
-      std::stringstream status;
-      status << "["
-             << "iters = " << this->iteration 
-             << ", idle iters = " << this->iteration - this->iteration_of_best
-             << ", evals = " << this->evaluations
-             << "]";
-      return status.str();
-    }
   }
 }
 
-#endif // _HILL_CLIMBING_HH_

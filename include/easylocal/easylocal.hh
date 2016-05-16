@@ -1,5 +1,4 @@
-#if !defined(_EASYLOCAL_HH_)
-#define _EASYLOCAL_HH_
+#pragma once
 
 /**
  @file EasyLocal.hh
@@ -19,8 +18,6 @@
 #include "easylocal/core.hh"
 #include "easylocal/debug.hh"
 //#include "easylocal/modeling.hh" // NOT INCLUDED UNTIL STABLE
-
-#endif // _EASYLOCAL_HH_
 
 /**
  @mainpage EasyLocalpp: an Object-Oriented framework for Local Search algorithms.

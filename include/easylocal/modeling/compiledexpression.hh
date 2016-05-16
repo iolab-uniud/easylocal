@@ -1,5 +1,4 @@
-#ifndef _COMPILEDEXPRESSION_HH
-#define _COMPILEDEXPRESSION_HH
+#pragma once
 
 #include <sstream>
 #include <cmath>
@@ -614,4 +613,3 @@ namespace EasyLocal {
   }
 }
 
-#endif

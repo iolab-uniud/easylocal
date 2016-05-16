@@ -1,5 +1,4 @@
-#if !defined(_MOVE_TESTER_HH_)
-#define _MOVE_TESTER_HH_
+#pragma once
 
 #include <map>
 #include <iterator>
@@ -464,5 +463,3 @@ namespace EasyLocal {
     
   }
 }
-
-#endif // _MOVE_TESTER_HH_

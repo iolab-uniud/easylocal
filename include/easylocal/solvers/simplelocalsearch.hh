@@ -1,5 +1,4 @@
-#if !defined(_SIMPLE_LOCAL_SEARCH_HH_)
-#define _SIMPLE_LOCAL_SEARCH_HH_
+#pragma once
 
 #include <future>
 
@@ -7,6 +6,7 @@
 #include "easylocal/helpers/outputmanager.hh"
 #include "easylocal/solvers/abstractlocalsearch.hh"
 #include "easylocal/runners/runner.hh"
+#include "spdlog/spdlog.h"
 
 namespace EasyLocal {
   
@@ -22,41 +22,22 @@ namespace EasyLocal {
     {
     public:
       typedef Runner<Input, State, CostStructure> RunnerType;
-      SimpleLocalSearch(const Input& in,
-                        StateManager<Input, State, CostStructure>& e_sm,
-                        OutputManager<Input, Output, State>& e_om,
-                        std::string name);
+    
+      using AbstractLocalSearch<Input, Output, State, CostStructure>::AbstractLocalSearch;
+      
       void SetRunner(Runner<Input, State, CostStructure>& r);
       void Print(std::ostream& os = std::cout) const;
       void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout);
     protected:
       void Go();
       void AtTimeoutExpired();
+      void ResetTimeout();
       RunnerType* p_runner; /**< to the managed runner. */
     };
     
     /*************************************************************************
      * Implementation
      *************************************************************************/
-    
-    /**
-     Constructs a simple local search solver by providing it links to
-     a state manager, an output manager, a runner, an input,
-     and an output object.
-     
-     @param sm a pointer to a compatible state manager
-     @param om a pointer to a compatible output manager
-     @param r a pointer to a compatible runner
-     @param in a pointer to an input object
-     @param out a pointer to an output object
-     */
-    template <class Input, class Output, class State, class CostStructure>
-    SimpleLocalSearch<Input, Output, State, CostStructure>::SimpleLocalSearch(const Input& in,
-                                                                       StateManager<Input, State, CostStructure>& e_sm,
-                                                                       OutputManager<Input, Output, State>& e_om,
-                                                                       std::string name)
-    : AbstractLocalSearch<Input, Output, State, CostStructure>(in, e_sm, e_om, name, "Simple Local Search Solver"), p_runner(nullptr)
-    {}
     
     template <class Input, class Output, class State, class CostStructure>
     void SimpleLocalSearch<Input, Output, State, CostStructure>::ReadParameters(std::istream& is, std::ostream& os)
@@ -95,7 +76,9 @@ namespace EasyLocal {
       if (!p_runner)
         // FIXME: add a more specific exception behavior
         throw std::logic_error("Runner not set in object " + this->name);
+      this->loginfo("{} solver starting runner", this->name);
       this->current_state_cost = p_runner->Go(*this->p_current_state);
+      this->loginfo("{} solver ended runner", this->name);
       
       *this->p_best_state = *this->p_current_state;
       this->best_state_cost = this->current_state_cost;
@@ -105,8 +88,14 @@ namespace EasyLocal {
     void SimpleLocalSearch<Input, Output, State, CostStructure>::AtTimeoutExpired()
     {
       p_runner->Interrupt();
+      this->loginfo("{} solver timeout expired", this->name);
+    }
+    
+    template <class Input, class Output, class State, class CostStructure>
+    void SimpleLocalSearch<Input, Output, State, CostStructure>::ResetTimeout()
+    {
+      Interruptible<int>::ResetTimeout();
+      this->p_runner->ResetTimeout();
     }
   }
 }
-
-#endif // _SIMPLE_LOCAL_SEARCH_HH_

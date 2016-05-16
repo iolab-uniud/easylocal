@@ -1,5 +1,4 @@
-#if !defined(_GREAT_DELUGE_HH_)
-#define _GREAT_DELUGE_HH_
+#pragma once
 
 #include <stdexcept>
 
@@ -33,10 +32,7 @@ namespace EasyLocal {
       
       typedef typename CostStructure::CFtype CFtype;
       
-      GreatDeluge(const Input& in,
-                  StateManager<Input, State, CostStructure>& e_sm,
-                  NeighborhoodExplorer<Input, State, Move, CostStructure>& e_ne,
-                  std::string name);
+      using MoveRunner<Input, State, Move, CostStructure>::MoveRunner;
       
     protected:
       void InitializeParameters();
@@ -56,24 +52,7 @@ namespace EasyLocal {
     
     /*************************************************************************
      * Implementation
-     *************************************************************************/
-    
-    /**
-     Constructs a simulated annealing runner by linking it to a state manager,
-     a neighborhood explorer, and an input object.
-     
-     @param s a pointer to a compatible state manager
-     @param ne a pointer to a compatible neighborhood explorer
-     @param in a pointer to an input object
-     */
-    
-    template <class Input, class State, class Move, class CostStructure>
-    GreatDeluge<Input, State, Move, CostStructure>::GreatDeluge(const Input& in,
-                                                         StateManager<Input, State, CostStructure>& e_sm,
-                                                         NeighborhoodExplorer<Input, State, Move, CostStructure>& e_ne,
-                                                         std::string name)
-    : MoveRunner<Input, State, Move, CostStructure>(in, e_sm, e_ne, name, "Great Deluge")
-    {}
+     *************************************************************************/    
     
     template <class Input, class State, class Move, class CostStructure>
     void GreatDeluge<Input, State, Move, CostStructure>::InitializeParameters()
@@ -135,4 +114,3 @@ namespace EasyLocal {
   }
 }
 
-#endif // _GREAT_DELUGE_HH_

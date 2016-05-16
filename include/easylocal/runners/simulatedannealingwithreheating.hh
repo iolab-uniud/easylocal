@@ -1,5 +1,4 @@
-#if !defined(_SIMULATED_ANNEALING_WITH_REHEATING_HH_)
-#define _SIMULATED_ANNEALING_WITH_REHEATING_HH_
+#pragma once
 
 #include "easylocal/runners/simulatedannealingevaluationbased.hh"
 
@@ -23,10 +22,8 @@ namespace EasyLocal {
     {
     public:
       
-      SimulatedAnnealingWithReheating(const Input& in,
-                                      StateManager<Input, State, CostStructure>& sm,
-                                      NeighborhoodExplorer<Input, State, Move, CostStructure>& ne,
-                                      std::string name);
+      using SimulatedAnnealingEvaluationBased<Input, State, Move, CostStructure>::SimulatedAnnealingEvaluationBased;
+      
       std::string StatusString() const;
     protected:
       bool StopCriterion();
@@ -45,23 +42,7 @@ namespace EasyLocal {
     /*************************************************************************
      * Implementation
      *************************************************************************/
-    
-    /**
-     Constructs a simulated annealing runner by linking it to a state manager,
-     a neighborhood explorer, and an input object.
-     
-     @param s a pointer to a compatible state manager
-     @param ne a pointer to a compatible neighborhood explorer
-     @param in a pointer to an input object
-     */
-    template <class Input, class State, class Move, class CostStructure>
-    SimulatedAnnealingWithReheating<Input, State, Move, CostStructure>::SimulatedAnnealingWithReheating(const Input& in,
-                                                                                                 StateManager<Input, State, CostStructure>& sm,
-                                                                                                 NeighborhoodExplorer<Input, State, Move, CostStructure>& ne,
-                                                                                                 std::string name)
-    : SimulatedAnnealingEvaluationBased<Input, State, Move, CostStructure>(in, sm, ne, name)
-    {}
-    
+           
     template <class Input, class State, class Move, class CostStructure>
     void SimulatedAnnealingWithReheating<Input, State, Move, CostStructure>::InitializeParameters()
     {
@@ -165,4 +146,3 @@ namespace EasyLocal {
   }
 }
 
-#endif // _SIMULATED_ANNEALING_WITH_REHEATING_HH_

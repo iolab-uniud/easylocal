@@ -1,5 +1,4 @@
-#if !defined(_STEEPEST_DESCENT_HH_)
-#define _STEEPEST_DESCENT_HH_
+#pragma once
 
 #include "easylocal/runners/moverunner.hh"
 #include "easylocal/helpers/statemanager.hh"
@@ -22,10 +21,7 @@ namespace EasyLocal {
     {
     public:
       
-      SteepestDescent(const Input& in,
-                      StateManager<Input, State, CostStructure>& e_sm,
-                      NeighborhoodExplorer<Input, State, Move, CostStructure>& e_ne,
-                      std::string name);
+      using MoveRunner<Input, State, Move, CostStructure>::MoveRunner;
       
     protected:
       void StoreMove();
@@ -36,22 +32,7 @@ namespace EasyLocal {
     /*************************************************************************
      * Implementation
      *************************************************************************/
-    
-    /**
-     Constructs a steepest descent runner by linking it to a state manager,
-     a neighborhood explorer, and an input object.
-     
-     @param s a pointer to a compatible state manager
-     @param ne a pointer to a compatible neighborhood explorer
-     @param in a pointer to an input object
-     */
-    template <class Input, class State, class Move, class CostStructure>
-    SteepestDescent<Input, State, Move, CostStructure>::SteepestDescent(const Input& in,
-                                                                 StateManager<Input, State, CostStructure>& e_sm, NeighborhoodExplorer<Input, State, Move, CostStructure>& e_ne,
-                                                                 std::string name)
-    : MoveRunner<Input, State, Move, CostStructure>(in, e_sm, e_ne, name, "Steepest Descent Runner")
-    {}
-    
+           
     /**
      Selects always the best move in the neighborhood.
      */
@@ -77,4 +58,3 @@ namespace EasyLocal {
   }
 }
 
-#endif // _STEEPEST_DESCENT_HH_

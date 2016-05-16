@@ -1,5 +1,4 @@
-#ifndef EasyLocal_experimentalmne_hh
-#define EasyLocal_experimentalmne_hh
+#pragma once
 
 #include "easylocal/helpers/neighborhoodexplorer.hh"
 #include <functional>
@@ -973,5 +972,3 @@ namespace EasyLocal {
   }  
 }
 
-
-#endif

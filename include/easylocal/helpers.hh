@@ -1,5 +1,4 @@
-#if !defined(_HELPERS_HH_)
-#define _HELPERS_HH_
+#pragma once
 
 /**
  @defgroup Helpers Helpers
@@ -44,4 +43,3 @@
 #include "easylocal/helpers/outputmanager.hh"
 #include "easylocal/helpers/statemanager.hh"
 
-#endif // _HELPERS_HH_
