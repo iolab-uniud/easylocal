@@ -4,6 +4,7 @@
 #include <vector>
 #include "easylocal/utils/printable.hh"
 #include "easylocal/helpers/coststructure.hh"
+#include "spdlog/spdlog.h"
 
 namespace EasyLocal {
   
@@ -20,7 +21,6 @@ namespace EasyLocal {
     template <class Input, class State, class CFtype = int>
     class CostComponent : public Printable
     {
-      static size_t last_index;
     public:
       
       /** @copydoc Printable::Print() */
@@ -72,35 +72,13 @@ namespace EasyLocal {
       bool IsSoft() const { return !is_hard; }
       
       /** Name of this cost component (for debug). */
-      const std::string name;      
-      
-      /** Returns the index of the cost component as it has been registered in the system for the given combination (@Input, @State).
-       * @return the index of the cost component
-       */
-      size_t Index() const
-      {
-        return index;
-      }
-      
-      /** Returns the total number of cost components registered in the system for the given combination (@Input, @State).
-      @return the number of cost components
-       */
-      static const size_t CostComponents()
-      {
-        return last_index;
-      }
-
-      
-      /** Returns the i-th cost component registered in the system for the given combination (@Input, @State).
-       * @return a reference to the i-th cost copmponent
-       */
-      static const CostComponent<Input, State, CFtype>& Component(size_t i)
-      {
-        return *cost_components[i];
-      }
+      const std::string name;            
       
       /** Destructor. */
-      virtual ~CostComponent() {}
+      virtual ~CostComponent()
+      {}
+      
+      const size_t hash;
 
     protected:
       
@@ -119,15 +97,10 @@ namespace EasyLocal {
       CFtype weight;
       
       /** Flag that tells if the cost component is soft or hard */
-      bool is_hard;            
+      bool is_hard;
       
       
     protected:
-      /** The overall index of this cost components */
-      const size_t index;
-
-      /** The registered cost components */
-      static std::vector<CostComponent<Input, State, CFtype>*> cost_components;
     };
     
     
@@ -136,22 +109,14 @@ namespace EasyLocal {
     
     template <class Input, class State, typename CFtype>
     CostComponent<Input, State, CFtype>::CostComponent(const Input& in, const CFtype& weight, bool is_hard, std::string name)
-    : name(name), in(in), weight(weight), is_hard(is_hard), index(last_index++)
-    {
-      cost_components.push_back(this);
-    }
+    : name(name), hash(std::hash<std::string>()(typeid(this).name() + name)), in(in), weight(weight), is_hard(is_hard)
+    {}
     
     template <class Input, class State, typename CFtype>
     void CostComponent<Input, State, CFtype>::Print(std::ostream& os) const
     {
       os  << "Cost Component " << name << ": weight " << weight << (is_hard ? "*" : "") << std::endl;
     }
-    
-    template <class Input, class State, typename CFtype>
-    size_t CostComponent<Input, State, CFtype>::last_index = 0;
-    
-    template <class Input, class State, typename CFtype>
-    std::vector<CostComponent<Input, State, CFtype>*> CostComponent<Input, State, CFtype>::cost_components;
   }
 }
 

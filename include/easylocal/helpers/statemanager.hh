@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <vector>
+#include <map>
 #include <cmath>
 #include <stdexcept>
 
@@ -134,6 +135,21 @@ namespace EasyLocal {
       void AddCostComponent(CostComponent<Input, State, CFtype>& cc);
       
       
+      size_t CostComponents() const
+      {
+        return cost_component.size();
+      }
+      
+      const CostComponent<Input, State, CFtype>& GetCostComponent(size_t i)
+      {
+        return *cost_component[i];
+      }
+      
+      size_t CostComponentIndex(const CostComponent<Input, State, CFtype>& cc) const
+      {
+        return cost_component_index.at(cc.hash);
+      }
+      
       /**
        Clear the cost component array.
        */
@@ -172,6 +188,10 @@ namespace EasyLocal {
        The set of the cost components. Hard and soft ones are all in this @c vector.
        */
       std::vector<CostComponent<Input, State, CFtype>*> cost_component;
+      /**
+       The reverse map from cost component to its index.
+       */
+      std::map<size_t, size_t> cost_component_index;
       
       /** Input object. */
       const Input& in;
@@ -243,21 +263,21 @@ namespace EasyLocal {
     {
       CFtype hard_cost = 0, soft_cost = 0;
       double weighted_cost = 0.0;
-      std::vector<CFtype> cost_function(CostComponent<Input, State, CFtype>::CostComponents(), (CFtype)0);
+      std::vector<CFtype> cost_function(CostComponents(), (CFtype)0);
       for (size_t i = 0; i < cost_component.size(); i++)
       {
-        CFtype current_cost = cost_function[cost_component[i]->Index()] = cost_component[i]->Cost(st);
+        CFtype current_cost = cost_function[i] = cost_component[i]->Cost(st);
         if (cost_component[i]->IsHard())
         {
           hard_cost += current_cost;
           if (!weights.empty())
-            weighted_cost += HARD_WEIGHT * weights[cost_component[i]->Index()] * current_cost;
+            weighted_cost += HARD_WEIGHT * weights[i] * current_cost;
         }
         else
         {
           soft_cost += current_cost;
           if (!weights.empty())
-            weighted_cost += weights[cost_component[i]->Index()] * current_cost;
+            weighted_cost += weights[i] * current_cost;
         }
       }
       
@@ -282,7 +302,9 @@ namespace EasyLocal {
     template <class Input, class State, class CostStructure>
     void StateManager<Input, State, CostStructure>::AddCostComponent(CostComponent<Input, State, CFtype>& cc)
     {
+      size_t index = cost_component.size();
       cost_component.push_back(&cc);
+      cost_component_index[cc.hash] = index;
     }    
     
     template <class Input, class State, class CostStructure>

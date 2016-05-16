@@ -217,17 +217,17 @@ namespace EasyLocal {
     {
       CFtype delta_hard_cost = 0, delta_soft_cost = 0;
       double delta_weighted_cost = 0.0;
-      std::vector<CFtype> delta_cost_function(CostComponent<Input, State, typename CostStructure::CFtype>::CostComponents(), static_cast<CFtype>(0));
+      std::vector<CFtype> delta_cost_function(sm.CostComponents(), static_cast<CFtype>(0));
       
       for (size_t i = 0; i < delta_hard_cost_components.size(); i++)
       {
         auto dcc = delta_hard_cost_components[i];
         if (dcc->IsDeltaImplemented())
         {
-          CFtype current_delta_cost = delta_cost_function[dcc->Index()] = dcc->DeltaCost(st, mv);
+          CFtype current_delta_cost = delta_cost_function[sm.CostComponentIndex(dcc->cc)] = dcc->DeltaCost(st, mv);
           delta_hard_cost += current_delta_cost;
           if (!weights.empty())
-            delta_weighted_cost += HARD_WEIGHT * weights[dcc->Index()] * current_delta_cost;
+            delta_weighted_cost += HARD_WEIGHT * weights[sm.CostComponentIndex(dcc->cc)] * current_delta_cost;
         }
       }
       for (size_t i = 0; i < delta_soft_cost_components.size(); i++)
@@ -235,10 +235,10 @@ namespace EasyLocal {
         auto dcc = delta_soft_cost_components[i];
         if (dcc->IsDeltaImplemented())
         {
-          CFtype current_delta_cost = delta_cost_function[dcc->Index()] = dcc->DeltaCost(st, mv);
+          CFtype current_delta_cost = delta_cost_function[sm.CostComponentIndex(dcc->cc)] = dcc->DeltaCost(st, mv);
           delta_soft_cost += current_delta_cost;
           if (!weights.empty())
-            delta_weighted_cost += weights[dcc->Index()] * current_delta_cost;
+            delta_weighted_cost += weights[sm.CostComponentIndex(dcc->cc)] * current_delta_cost;
         }
       }
       
@@ -257,10 +257,10 @@ namespace EasyLocal {
             {
               // get reference to cost component
               auto& cc = dcc->GetCostComponent();
-              CFtype current_delta_cost = delta_cost_function[cc.Index()] =  cc.Weight() * (cc.ComputeCost(new_st) - cc.ComputeCost(st));
+              CFtype current_delta_cost = delta_cost_function[sm.CostComponentIndex(cc)] =  cc.Weight() * (cc.ComputeCost(new_st) - cc.ComputeCost(st));
               delta_hard_cost += current_delta_cost;
               if (!weights.empty())
-                delta_weighted_cost += HARD_WEIGHT * weights[cc.Index()] * current_delta_cost;
+                delta_weighted_cost += HARD_WEIGHT * weights[sm.CostComponentIndex(cc)] * current_delta_cost;
             }
           }
         if (unimplemented_soft_components)
@@ -271,10 +271,10 @@ namespace EasyLocal {
             {
               // get reference to cost component
               auto& cc = dcc->GetCostComponent();
-              CFtype current_delta_cost =  delta_cost_function[cc.Index()] =  cc.Weight() * (cc.ComputeCost(new_st) - cc.ComputeCost(st));
+              CFtype current_delta_cost =  delta_cost_function[sm.CostComponentIndex(cc)] =  cc.Weight() * (cc.ComputeCost(new_st) - cc.ComputeCost(st));
               delta_soft_cost += current_delta_cost;
               if (!weights.empty())
-                delta_weighted_cost += weights[cc.Index()] * current_delta_cost;
+                delta_weighted_cost += weights[sm.CostComponentIndex(cc)] * current_delta_cost;
             }
           }
       }

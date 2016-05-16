@@ -21,7 +21,7 @@ namespace EasyLocal {
       /** Returns the (complete) CostComponent associated with the DeltaCostComponent object.
        @return the @ref CostComponent
        */
-      CostComponent<Input, State, CFtype>& GetCostComponent() const { return cc; }
+      const CostComponent<Input, State, CFtype>& GetCostComponent() const { return cc; }
       
       /** @copydoc Printable::Print() */
       virtual void Print(std::ostream& os = std::cout) const;
@@ -42,15 +42,7 @@ namespace EasyLocal {
       virtual bool IsDeltaImplemented() const { return true; }
       
       /** A symbolic name of the DeltaCostComponent. */
-      const std::string name;
-      
-      /** The index of the (Delta)CostComponent in the overall vector of registered cost components.
-       @return the index of the associated cost component
-       */
-      size_t Index() const
-      {
-        return cc.Index();
-      }
+      const std::string name;      
       
     protected:
       
@@ -72,8 +64,9 @@ namespace EasyLocal {
       /** The @ref Input object. */
       const Input& in;
       
+    public:
       /** The @ref CostComponent associated with the DeltaCostComponent. */
-      CostComponent<Input, State, CFtype>& cc;
+      const CostComponent<Input, State, CFtype>& cc;
       
     };
     
