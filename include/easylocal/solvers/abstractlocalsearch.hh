@@ -32,7 +32,7 @@ namespace EasyLocal {
       AbstractLocalSearch(const Input& in,
                           StateManager<Input, State, CostStructure>& e_sm,
                           OutputManager<Input, Output, State>& e_om,
-                          std::string name, std::shared_ptr<spdlog::logger> logger);
+                          std::string name, std::shared_ptr<spdlog::logger> logger = nullptr);
     protected:
       
       virtual ~AbstractLocalSearch()
