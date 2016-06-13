@@ -106,7 +106,7 @@ namespace EasyLocal {
        @param name name of the runner
        @param desc description of the runner
        */
-      Runner(const Input&, StateManager<Input, State, CostStructure>&, std::string, std::shared_ptr<spdlog::logger> logger);
+      Runner(const Input&, StateManager<Input, State, CostStructure>&, std::string, std::shared_ptr<spdlog::logger> logger = nullptr);
       
       /** Actions and checks to be perfomed at the beginning of the run. Redefinition intended.
        @throw ParameterNotSet if one of the parameters needed by the runner (or other components) hasn't been set

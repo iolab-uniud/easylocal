@@ -24,7 +24,7 @@ namespace EasyLocal {
        @param e_sm */
       MoveRunner(const Input& in, StateManager<Input, State, CostStructure>& e_sm,
                  NeighborhoodExplorer<Input, State, Move, CostStructure>& e_ne,
-                 std::string name, std::shared_ptr<spdlog::logger> logger);
+                 std::string name, std::shared_ptr<spdlog::logger> logger = nullptr);
       
     protected:
             
