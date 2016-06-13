@@ -58,7 +58,7 @@ namespace EasyLocal {
        @param in a reference to the input object
        @param name name of the constructor
        */
-      Solver(const Input& in, std::string name, std::shared_ptr<spdlog::logger> logger);
+      Solver(const Input& in, std::string name, std::shared_ptr<spdlog::logger> logger = nullptr);
       
     protected:
       
