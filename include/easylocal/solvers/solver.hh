@@ -14,7 +14,7 @@ namespace EasyLocal {
     template <class Input, class Output, class CostStructure = DefaultCostStructure<int>>
     struct SolverResult
     {
-      SolverResult(const Output& output, const CostStructure& cost, double running_time) : output(output), cost(cost), running_time(running_time) {}
+      SolverResult(const Output& output, const CostStructure& cost, double running_time) : output(output), cost(cost), running_time(running_time) {}      
       Output output;
       CostStructure cost;
       double running_time;

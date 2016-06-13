@@ -140,7 +140,7 @@ namespace EasyLocal {
         return cost_component.size();
       }
       
-      const CostComponent<Input, State, CFtype>& GetCostComponent(size_t i)
+      const CostComponent<Input, State, CFtype>& GetCostComponent(size_t i) const
       {
         return *cost_component[i];
       }
