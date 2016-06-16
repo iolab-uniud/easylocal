@@ -4,6 +4,7 @@
 #include <fstream>
 #include <string>
 #include <typeinfo>
+#include <atomic>
 
 #include "easylocal/solvers/solver.hh"
 #include "easylocal/helpers/statemanager.hh"
@@ -11,6 +12,7 @@
 #include "easylocal/runners/runner.hh"
 #include "easylocal/utils/parameter.hh"
 #include "easylocal/utils/interruptible.hh"
+
 
 namespace EasyLocal {
   
@@ -33,7 +35,11 @@ namespace EasyLocal {
                           StateManager<Input, State, CostStructure>& e_sm,
                           OutputManager<Input, Output, State>& e_om,
                           std::string name, std::shared_ptr<spdlog::logger> logger = nullptr);
+      virtual std::shared_ptr<Output> GetCurrentSolution() const;
+      
     protected:
+      
+      virtual std::shared_ptr<State> GetCurrentState() const = 0;
       
       virtual ~AbstractLocalSearch()
       {}
@@ -66,6 +72,7 @@ namespace EasyLocal {
       Parameter<unsigned int> init_trials;
       Parameter<bool> random_initial_state;
       Parameter<double> timeout;
+      std::atomic<bool> is_running;
       
     private:
       void InitializeSolve() throw (ParameterNotSet, IncorrectParameterValue);
@@ -93,7 +100,8 @@ namespace EasyLocal {
     : Parametrized(name, typeid(this).name()),
     Solver<Input, Output, CostStructure>(in, name, logger),
     sm(e_sm),
-    om(e_om)
+    om(e_om),
+    is_running(false)
     {}
     
     
@@ -136,6 +144,7 @@ namespace EasyLocal {
     SolverResult<Input, Output, CostStructure> AbstractLocalSearch<Input, Output, State, CostStructure>::Solve() throw (ParameterNotSet, IncorrectParameterValue)
     {
       auto start = std::chrono::high_resolution_clock::now();
+      is_running = true;
       InitializeSolve();
       FindInitialState();
       if (timeout.IsSet())
@@ -147,6 +156,7 @@ namespace EasyLocal {
       TerminateSolve();
         
       double run_time = std::chrono::duration_cast<std::chrono::duration<double, std::ratio<1>>>(std::chrono::high_resolution_clock::now() - start).count();
+      is_running = false;
         
       return SolverResult<Input, Output, CostStructure>(*p_out, sm.CostFunctionComponents(*p_best_state), run_time);
     }
@@ -155,6 +165,7 @@ namespace EasyLocal {
     SolverResult<Input, Output, CostStructure> AbstractLocalSearch<Input, Output, State, CostStructure>::Resolve(const Output& initial_solution) throw (ParameterNotSet, IncorrectParameterValue)
     {
       auto start = std::chrono::high_resolution_clock::now();
+      is_running = true;
       
       InitializeSolve();
       om.InputState(*p_current_state, initial_solution);
@@ -167,6 +178,7 @@ namespace EasyLocal {
       p_out = std::make_shared<Output>(this->in);
       om.OutputState(*p_best_state, *p_out);
       TerminateSolve();
+      is_running = false;
           
       double run_time = std::chrono::duration_cast<std::chrono::duration<double, std::ratio<1>>>(std::chrono::high_resolution_clock::now() - start).count();
           
@@ -176,6 +188,19 @@ namespace EasyLocal {
     template <class Input, class Output, class State, class CostStructure>
     void AbstractLocalSearch<Input, Output, State, CostStructure>::TerminateSolve()
     {}
+    
+    template <class Input, class Output, class State, class CostStructure>
+    std::shared_ptr<Output> AbstractLocalSearch<Input, Output, State, CostStructure>::GetCurrentSolution() const
+    {
+      std::shared_ptr<State> current_state;
+      if (!is_running)
+        current_state = this->p_best_state;
+      else
+        current_state = GetCurrentState();
+      std::shared_ptr<Output> out = std::make_shared<Output>(this->in);
+      om.OutputState(*current_state, *out);
+      return out;
+    }
   }
 }
 

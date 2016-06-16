@@ -28,10 +28,12 @@ namespace EasyLocal {
       void SetRunner(Runner<Input, State, CostStructure>& r);
       void Print(std::ostream& os = std::cout) const;
       void ReadParameters(std::istream& is = std::cin, std::ostream& os = std::cout);
+      virtual std::shared_ptr<State> GetCurrentState() const;
     protected:
       void Go();
       void AtTimeoutExpired();
       void ResetTimeout();
+
       RunnerType* p_runner; /**< to the managed runner. */
     };
     
@@ -96,6 +98,12 @@ namespace EasyLocal {
     {
       Interruptible<int>::ResetTimeout();
       this->p_runner->ResetTimeout();
+    }
+    
+    template <class Input, class Output, class State, class CostStructure>
+    std::shared_ptr<State> SimpleLocalSearch<Input, Output, State, CostStructure>::GetCurrentState() const
+    {
+      return this->p_runner->GetCurrentBestState();
     }
   }
 }

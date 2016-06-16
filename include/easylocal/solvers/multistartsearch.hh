@@ -36,6 +36,7 @@ namespace EasyLocal {
       void InitializeSolve() throw (ParameterNotSet, IncorrectParameterValue);
       void Go();
       void AtTimeoutExpired();
+      virtual std::shared_ptr<State> GetCurrentState() const;
       
       std::vector<RunnerType*> p_runners; /**< pointers to the managed runner. */
       unsigned int current_runner;
@@ -184,6 +185,12 @@ namespace EasyLocal {
     void MultiStartSearch<Input, Output, State, CostStructure>::AtTimeoutExpired()
     {
       p_runners[current_runner]->Interrupt();
+    }
+    
+    template <class Input, class Output, class State, class CostStructure>
+    void MultiStartSearch<Input, Output, State, CostStructure>::GetCurrentState() const
+    {
+      return p_runners[current_runner]->GetCurrentBestState();
     }
   }
 }

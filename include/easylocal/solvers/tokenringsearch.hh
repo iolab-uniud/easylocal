@@ -37,6 +37,7 @@ namespace EasyLocal {
       void Go();
       void AtTimeoutExpired();
       void ResetTimeout();
+      virtual std::shared_ptr<State> GetCurrentState() const;
       
       std::vector<RunnerType*> p_runners; /**< pointers to the managed runner. */
       unsigned int current_runner;
@@ -186,6 +187,12 @@ namespace EasyLocal {
       Interruptible<int>::ResetTimeout();
       for (auto& r : this->p_runners)
         r->ResetTimeout();
+    }
+    
+    template <class Input, class Output, class State, class CostStructure>
+    std::shared_ptr<State> TokenRingSearch<Input, Output, State, CostStructure>::GetCurrentState() const
+    {
+      return p_runners[current_runner]->GetCurrentBestState();
     }
   }
 }

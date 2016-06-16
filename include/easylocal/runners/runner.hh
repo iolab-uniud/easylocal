@@ -96,7 +96,10 @@ namespace EasyLocal {
       virtual size_t Modality() const = 0;
       
       /** List of all runners that have been instantiated so far. For autoloading. */
-      static std::vector<Runner<Input, State, CostStructure>*> runners;      
+      static std::vector<Runner<Input, State, CostStructure>*> runners;
+      
+      virtual std::shared_ptr<State> GetCurrentBestState() const;
+
       
     protected:
       
@@ -166,6 +169,8 @@ namespace EasyLocal {
       std::shared_ptr<State> p_current_state,
       /** Best state found so far. */
       p_best_state;
+      
+      mutable std::mutex best_state_mutex;
       
       /** Cost of the current state. */
       CostStructure current_state_cost;
@@ -314,6 +319,13 @@ namespace EasyLocal {
     {
       os  << "  " << this->name << std::endl;
       Parametrized::Print(os);  
+    }
+    
+    template <class Input, class State, class CostStructure>
+    std::shared_ptr<State> Runner<Input, State, CostStructure>::GetCurrentBestState() const
+    {
+      std::lock_guard<std::mutex> lock(best_state_mutex);
+      return std::make_shared<State>(*p_best_state); // make a state copy
     }
   }
 }

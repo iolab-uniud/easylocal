@@ -60,6 +60,9 @@ namespace EasyLocal {
        */
       Solver(const Input& in, std::string name, std::shared_ptr<spdlog::logger> logger = nullptr);
       
+      /** Get current solution (meant to be asyncrhonous) */
+      virtual std::shared_ptr<Output> GetCurrentSolution() const = 0;
+      
     protected:
       
       /** A reference to the input. */

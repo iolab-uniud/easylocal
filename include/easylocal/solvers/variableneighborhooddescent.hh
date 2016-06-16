@@ -26,6 +26,8 @@ namespace EasyLocal {
     protected:
       void Go();
       // Kicker<Input, State, CostStructure>* p_kicker; /**< A pointer to the managed kicker. */
+      virtual std::shared_ptr<State> GetCurrentState() const;
+
       unsigned int max_k;
     };
     

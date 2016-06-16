@@ -40,7 +40,7 @@ namespace EasyLocal {
       /** Encodes the criterion used to select the move at each step. */
       virtual void MakeMove();
       
-      void UpdateBestState();
+      void UpdateBestState() final;
       void UpdateStateCost();
       
       NeighborhoodExplorer<Input, State, Move, CostStructure>& ne; /**< A reference to the
@@ -64,6 +64,7 @@ namespace EasyLocal {
           || (EqualTo(this->current_state_cost.violations, this->best_state_cost.violations) &&
               (LessThan(this->current_state_cost.total, this->best_state_cost.total))))
       {
+        std::lock_guard<std::mutex> lock(this->best_state_mutex);
         *(this->p_best_state) = *(this->p_current_state);
         this->best_state_cost = this->current_state_cost;
         
