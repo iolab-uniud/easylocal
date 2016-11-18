@@ -29,8 +29,9 @@ namespace EasyLocal {
       // additional parameters
       Parameter<double>  neighbors_accepted_ratio;
       Parameter<double> temperature_range;
+      Parameter<double> expected_min_temperature;
       unsigned int expected_number_of_temperatures;
-      double expected_min_temperature;
+      //      double expected_min_temperature;
     };
     
     /*************************************************************************
@@ -43,6 +44,7 @@ namespace EasyLocal {
       AbstractSimulatedAnnealing<Input, State, Move, CostStructure>::InitializeParameters();
       neighbors_accepted_ratio("neighbors_accepted_ratio", "Ratio of neighbors accepted", this->parameters);
       temperature_range("temperature_range", "Temperature_range", this->parameters);
+      expected_min_temperature("expected_min_temperature", "Expected minimum temperature", this->parameters);
       this->max_neighbors_sampled = this->max_neighbors_accepted = 0;
     }        
     
@@ -54,7 +56,11 @@ namespace EasyLocal {
     void SimulatedAnnealingEvaluationBased<Input, State, Move, CostStructure>::InitializeRun() throw (ParameterNotSet, IncorrectParameterValue)
     {      
       AbstractSimulatedAnnealing<Input, State, Move, CostStructure>::InitializeRun();
-      expected_min_temperature = this->start_temperature / temperature_range;
+      if (temperature_range.IsSet())
+        expected_min_temperature = this->start_temperature / temperature_range;
+      else
+        temperature_range = this->start_temperature / expected_min_temperature;
+
       expected_number_of_temperatures = static_cast<unsigned int>(ceil(-log(temperature_range) / log(this->cooling_rate)));
       
       this->max_neighbors_sampled = static_cast<unsigned int>(this->max_evaluations / expected_number_of_temperatures);
