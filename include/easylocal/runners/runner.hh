@@ -80,6 +80,12 @@ namespace EasyLocal {
         return iteration_of_best;
       }
       
+      /** Gets the ... */
+      unsigned long int MaxEvaluations() const
+      {
+        return max_evaluations;
+      }
+
       /** Gets the index of the current iteration. */
       unsigned long int Iteration() const
       {
