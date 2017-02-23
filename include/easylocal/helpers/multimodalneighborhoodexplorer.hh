@@ -453,6 +453,7 @@ namespace EasyLocal {
       : NeighborhoodExplorer<Input, State, MoveTypes, CostStructure>(in, sm, name),
       nhes(std::make_tuple(std::reference_wrapper<BaseNeighborhoodExplorers>(nhes) ...)),
 #ifndef MSVC
+// this uses fastfunc
       first_move_funcs(std::make_tuple(Impl::makeFastFunc(&nhes, &BaseNeighborhoodExplorers::FirstMove)...)),
       random_move_funcs(std::make_tuple(Impl::makeFastFunc(&nhes, &BaseNeighborhoodExplorers::RandomMove)...)),
       next_move_funcs(std::make_tuple(Impl::makeFastFunc(&nhes, &BaseNeighborhoodExplorers::NextMove)...)),
