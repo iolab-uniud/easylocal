@@ -702,56 +702,56 @@ namespace EasyLocal {
         {
           if (cur == -1)
             throw EmptyNeighborhood();
-            
-            // reset state before generating each move
-            states[cur] = cur > 0 ? states[cur - 1] : st;
-            
-            if (!backtracking)
+          
+          // reset state before generating each move
+          states[cur] = cur > 0 ? states[cur - 1] : st;
+          
+          if (!backtracking)
             {
               try
-              {
-                // ne.FirstMove(kick[cur].second, kick[cur].first.move);
-                Impl::VTupleDispatcher<State, _Void_ConstState_Move, MoveTypeRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::execute_at(cur, st, first_move_funcs, r_moves);
-
-                while (cur > 0 && !Impl::MoveDispatcher<MoveTypeRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::are_related(cur - 1, r_moves, related_funcs))
                 {
-                  //if (!ne.NextMove(kick[cur].second, kick[cur].first.move))
-                  if (!Impl::TupleDispatcher<bool, State, _Bool_ConstState_Move, MoveTypeRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::execute_at(cur, states[cur], next_move_funcs, r_moves))
-                  {
-                    backtracking = true;
-                    Impl::MoveDispatcher<MoveTypeRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::set_activity_at(cur, r_moves, false);
-                    cur--;
-                    goto loop;
-                  }
+                  // ne.FirstMove(kick[cur].second, kick[cur].first.move);
+                  Impl::VTupleDispatcher<State, _Void_ConstState_Move, MoveTypeRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::execute_at(cur, st, first_move_funcs, r_moves);
+                  
+                  while (cur > 0 && !Impl::MoveDispatcher<MoveTypeRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::are_related(cur - 1, r_moves, related_funcs))
+                    {
+                      //if (!ne.NextMove(kick[cur].second, kick[cur].first.move))
+                      if (!Impl::TupleDispatcher<bool, State, _Bool_ConstState_Move, MoveTypeRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::execute_at(cur, states[cur], next_move_funcs, r_moves))
+                        {
+                          backtracking = true;
+                          Impl::MoveDispatcher<MoveTypeRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::set_activity_at(cur, r_moves, false);
+                          cur--;
+                          goto loop;
+                        }
+                    }
+                  backtracking = false;
+                  // ne.MakeMove(kick[cur].second, kick[cur].first.move);
+                  Impl::VTupleDispatcher<State, _Void_State_ConstMove, MoveTypeCRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::execute_at(cur, states[cur], make_move_funcs, cr_moves);
+                  Impl::MoveDispatcher<MoveTypeRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::set_activity_at(cur, r_moves, true);
+                  cur++;
+                  goto loop;
                 }
-                backtracking = false;
-                // ne.MakeMove(kick[cur].second, kick[cur].first.move);
-                Impl::VTupleDispatcher<State, _Void_State_ConstMove, MoveTypeCRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::execute_at(cur, states[cur], make_move_funcs, cr_moves);
-                Impl::MoveDispatcher<MoveTypeRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::set_activity_at(cur, r_moves, true);
-                cur++;
-                goto loop;
-              }
               catch (EmptyNeighborhood e)
-              {
-                backtracking = true;
-                Impl::MoveDispatcher<MoveTypeRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::set_activity_at(cur, r_moves, false);
-                cur--;
-                goto loop;
-              }
-            }
-            else // backtracking (we only need to generate NextMoves)
-            {
-              do
-              {
-                //                if (!ne.NextMove(kick[cur].second, kick[cur].first.move))
-                if (!Impl::TupleDispatcher<bool, State, _Bool_ConstState_Move, MoveTypeRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::execute_at(cur, states[cur], next_move_funcs, r_moves))
                 {
                   backtracking = true;
                   Impl::MoveDispatcher<MoveTypeRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::set_activity_at(cur, r_moves, false);
                   cur--;
                   goto loop;
                 }
-              }
+            }
+          else // backtracking (we only need to generate NextMoves)
+            {
+              do
+                {
+                  //                if (!ne.NextMove(kick[cur].second, kick[cur].first.move))
+                  if (!Impl::TupleDispatcher<bool, State, _Bool_ConstState_Move, MoveTypeRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::execute_at(cur, states[cur], next_move_funcs, r_moves))
+                    {
+                      backtracking = true;
+                      Impl::MoveDispatcher<MoveTypeRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::set_activity_at(cur, r_moves, false);
+                      cur--;
+                      goto loop;
+                    }
+                }
               while (cur > 0 && !Impl::MoveDispatcher<MoveTypeRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::are_related(cur - 1, r_moves, related_funcs));
               backtracking = false;
               //ne.MakeMove(kick[cur].second, kick[cur].first.move);
@@ -784,75 +784,75 @@ namespace EasyLocal {
         {
           if (cur == -1)
             throw EmptyNeighborhood();
-            
-            // reset state before generating each move
-            states[cur] = cur > 0 ? states[cur - 1] : st;
-            
-            if (!backtracking)
+          
+          // reset state before generating each move
+          states[cur] = cur > 0 ? states[cur - 1] : st;
+          
+          if (!backtracking)
             {
               try
-              {
-                const State& c_cur_st = states[cur];
-                //ne.RandomMove(kick[cur].second, kick[cur].first.move);
-                Impl::VTupleDispatcher<State, _Void_ConstState_Move, MoveTypeRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::execute_at(cur, c_cur_st, random_move_funcs, r_moves);
-                
-                if (!initial_set[cur])
                 {
-                  Impl::MoveDispatcher<MoveTypeRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::copy_move_at(cur, r_initial_moves, r_moves);
-                  initial_set[cur] = true;
+                  const State& c_cur_st = states[cur];
+                  //ne.RandomMove(kick[cur].second, kick[cur].first.move);
+                  Impl::VTupleDispatcher<State, _Void_ConstState_Move, MoveTypeRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::execute_at(cur, c_cur_st, random_move_funcs, r_moves);
+                  
+                  if (!initial_set[cur])
+                    {
+                      Impl::MoveDispatcher<MoveTypeRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::copy_move_at(cur, r_initial_moves, r_moves);
+                      initial_set[cur] = true;
+                    }
+                  
+                  while (cur > 0 && !Impl::MoveDispatcher<MoveTypeRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::are_related(cur - 1, r_moves, related_funcs))
+                    {
+                      //if (!ne.NextMove(kick[cur].second, kick[cur].first.move))
+                      if (!Impl::TupleDispatcher<bool, State, _Bool_ConstState_Move, MoveTypeRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::execute_at(cur, states[cur], next_move_funcs, r_moves))
+                        {
+                          // ne.FirstMove(kick[cur].second, kick[cur].first.move);
+                          Impl::VTupleDispatcher<State, _Void_ConstState_Move, MoveTypeRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::execute_at(cur, st, first_move_funcs, r_moves);
+                        }
+                      //                  if (kick[cur].first.move == initial_kick_moves[cur])
+                      if (Impl::MoveDispatcher<MoveTypeRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::equal_at(cur, moves, initial_moves))
+                        {
+                          backtracking = true;
+                          Impl::MoveDispatcher<MoveTypeRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::set_activity_at(cur, r_moves, false);
+                          cur--;
+                          goto loop;
+                        }
+                    }
+                  backtracking = false;
+                  // ne.MakeMove(kick[cur].second, kick[cur].first.move);
+                  Impl::VTupleDispatcher<State, _Void_State_ConstMove, MoveTypeCRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::execute_at(cur, states[cur], make_move_funcs, cr_moves);
+                  Impl::MoveDispatcher<MoveTypeRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::set_activity_at(cur, r_moves, true);
+                  cur++;
+                  goto loop;
                 }
-                
-                while (cur > 0 && !Impl::MoveDispatcher<MoveTypeRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::are_related(cur - 1, r_moves, related_funcs))
-                {
-                  //if (!ne.NextMove(kick[cur].second, kick[cur].first.move))
-                  if (!Impl::TupleDispatcher<bool, State, _Bool_ConstState_Move, MoveTypeRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::execute_at(cur, states[cur], next_move_funcs, r_moves))
-                  {
-                    // ne.FirstMove(kick[cur].second, kick[cur].first.move);
-                    Impl::VTupleDispatcher<State, _Void_ConstState_Move, MoveTypeRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::execute_at(cur, st, first_move_funcs, r_moves);
-                  }
-                  //                  if (kick[cur].first.move == initial_kick_moves[cur])
-                  if (Impl::MoveDispatcher<MoveTypeRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::equal_at(cur, moves, initial_moves))
-                  {
-                    backtracking = true;
-                    Impl::MoveDispatcher<MoveTypeRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::set_activity_at(cur, r_moves, false);
-                    cur--;
-                    goto loop;
-                  }
-                }
-                backtracking = false;
-                // ne.MakeMove(kick[cur].second, kick[cur].first.move);
-                Impl::VTupleDispatcher<State, _Void_State_ConstMove, MoveTypeCRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::execute_at(cur, states[cur], make_move_funcs, cr_moves);
-                Impl::MoveDispatcher<MoveTypeRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::set_activity_at(cur, r_moves, true);
-                cur++;
-                goto loop;
-              }
               catch (EmptyNeighborhood e)
-              {
-                backtracking = true;
-                Impl::MoveDispatcher<MoveTypeRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::set_activity_at(cur, r_moves, false);
-                cur--;
-                goto loop;
-              }
-            }
-            else // backtracking (we only need to generate moves following the first)
-            {
-              do
-              {
-                //if (!ne.NextMove(kick[cur].second, kick[cur].first.move))
-                if (!Impl::TupleDispatcher<bool, State, _Bool_ConstState_Move, MoveTypeRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::execute_at(cur, states[cur], next_move_funcs, r_moves))
-                {
-                  // ne.FirstMove(kick[cur].second, kick[cur].first.move);
-                  Impl::VTupleDispatcher<State, _Void_ConstState_Move, MoveTypeRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::execute_at(cur, st, first_move_funcs, r_moves);
-                }
-                // if (kick[cur].first.move == initial_kick_moves[cur])
-                if (Impl::MoveDispatcher<MoveTypeRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::equal_at(cur, moves, initial_moves))
                 {
                   backtracking = true;
                   Impl::MoveDispatcher<MoveTypeRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::set_activity_at(cur, r_moves, false);
                   cur--;
                   goto loop;
                 }
-              }
+            }
+          else // backtracking (we only need to generate moves following the first)
+            {
+              do
+                {
+                  //if (!ne.NextMove(kick[cur].second, kick[cur].first.move))
+                  if (!Impl::TupleDispatcher<bool, State, _Bool_ConstState_Move, MoveTypeRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::execute_at(cur, states[cur], next_move_funcs, r_moves))
+                    {
+                      // ne.FirstMove(kick[cur].second, kick[cur].first.move);
+                      Impl::VTupleDispatcher<State, _Void_ConstState_Move, MoveTypeRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::execute_at(cur, st, first_move_funcs, r_moves);
+                    }
+                  // if (kick[cur].first.move == initial_kick_moves[cur])
+                  if (Impl::MoveDispatcher<MoveTypeRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::equal_at(cur, moves, initial_moves))
+                    {
+                      backtracking = true;
+                      Impl::MoveDispatcher<MoveTypeRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::set_activity_at(cur, r_moves, false);
+                      cur--;
+                      goto loop;
+                    }
+                }
               while (cur > 0 && !Impl::MoveDispatcher<MoveTypeRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::are_related(cur - 1, r_moves, related_funcs));
               backtracking = false;
               //ne.MakeMove(kick[cur].second, kick[cur].first.move);

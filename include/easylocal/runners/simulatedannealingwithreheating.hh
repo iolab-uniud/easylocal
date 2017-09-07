@@ -65,9 +65,9 @@ namespace EasyLocal {
         {
           if (reheat_ratio <= 0.0)
             throw IncorrectParameterValue(reheat_ratio, "should be greater than zero");
-            
-            if (!first_reheat_ratio.IsSet())
-              first_reheat_ratio = reheat_ratio;
+          
+          if (!first_reheat_ratio.IsSet())
+            first_reheat_ratio = reheat_ratio;
         }
         
         if (first_reheat_ratio <= 0.0)

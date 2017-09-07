@@ -98,46 +98,46 @@ namespace EasyLocal {
           if (cur == -1)
             throw EmptyNeighborhood();
             
-            // reset state before generating each move
-            kick[cur].second = cur > 0 ? kick[cur - 1].second : start_state;
-            
-            if (!backtracking)
+          // reset state before generating each move
+          kick[cur].second = cur > 0 ? kick[cur - 1].second : start_state;
+          
+          if (!backtracking)
             {
               try
-              {
-                ne.FirstMove(kick[cur].second, kick[cur].first.move);
-                while (cur > 0 && !RelatedMoves(kick[cur - 1].first.move, kick[cur].first.move))
                 {
-                  if (!ne.NextMove(kick[cur].second, kick[cur].first.move))
-                  {
-                    backtracking = true;
-                    cur--;
-                    goto loop;
-                  }
+                  ne.FirstMove(kick[cur].second, kick[cur].first.move);
+                  while (cur > 0 && !RelatedMoves(kick[cur - 1].first.move, kick[cur].first.move))
+                    {
+                      if (!ne.NextMove(kick[cur].second, kick[cur].first.move))
+                        {
+                          backtracking = true;
+                          cur--;
+                          goto loop;
+                        }
+                    }
+                  backtracking = false;
+                  ne.MakeMove(kick[cur].second, kick[cur].first.move);
+                  cur++;
+                  goto loop;
                 }
-                backtracking = false;
-                ne.MakeMove(kick[cur].second, kick[cur].first.move);
-                cur++;
-                goto loop;
-              }
               catch (EmptyNeighborhood e)
-              {
-                backtracking = true;
-                cur--;
-                goto loop;
-              }
-            }
-            else // backtracking (we only need to generate NextMoves)
-            {
-              do
-              {
-                if (!ne.NextMove(kick[cur].second, kick[cur].first.move))
                 {
                   backtracking = true;
                   cur--;
                   goto loop;
                 }
-              }
+            }
+          else // backtracking (we only need to generate NextMoves)
+            {
+              do
+                {
+                  if (!ne.NextMove(kick[cur].second, kick[cur].first.move))
+                    {
+                      backtracking = true;
+                      cur--;
+                      goto loop;
+                    }
+                }
               while (cur > 0 && !RelatedMoves(kick[cur - 1].first.move, kick[cur].first.move));
               backtracking = false;
               ne.MakeMove(kick[cur].second, kick[cur].first.move);

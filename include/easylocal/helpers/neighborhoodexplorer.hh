@@ -369,7 +369,7 @@ namespace EasyLocal {
           {
             if (Random::Int(0, number_of_bests) == 0) // accept the move with probability 1 / (1 + number_of_bests)
               best_move = mv;
-              number_of_bests++;
+            number_of_bests++;
           }
         }
       }
@@ -436,7 +436,7 @@ namespace EasyLocal {
           {
             if (Random::Int(0, number_of_bests) == 0) // accept the move with probability 1 / (1 + number_of_bests)
               best_move = mv;
-              number_of_bests++;
+            number_of_bests++;
           }
         }
       }

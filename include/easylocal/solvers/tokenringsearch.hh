@@ -144,11 +144,11 @@ namespace EasyLocal {
       AbstractLocalSearch<Input, Output, State, CostStructure>::InitializeSolve();
       if (max_idle_rounds.IsSet() && max_idle_rounds == 0)
         throw IncorrectParameterValue(max_idle_rounds, "It should be greater than zero");
-        if (max_rounds.IsSet() && max_rounds == 0)
-          throw IncorrectParameterValue(max_rounds, "It should be greater than zero");
-          if (p_runners.size() == 0)
-            // FIXME: add a more specific exception behavior
-            throw std::logic_error("No runner set in object " + this->name);
+      if (max_rounds.IsSet() && max_rounds == 0)
+        throw IncorrectParameterValue(max_rounds, "It should be greater than zero");
+      if (p_runners.size() == 0)
+        // FIXME: add a more specific exception behavior
+        throw std::logic_error("No runner set in object " + this->name);
       round = 0;
       idle_rounds = 0;
     }

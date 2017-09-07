@@ -80,14 +80,14 @@ namespace EasyLocal {
       
       if (cooling_rate <= 0.0 || cooling_rate >= 1.0)
         throw IncorrectParameterValue(cooling_rate, "should be a value in the interval ]0, 1[");
-        
-        if (!compute_start_temperature)
+      
+      if (!compute_start_temperature)
         {
           if (start_temperature <= 0.0)
             throw IncorrectParameterValue(start_temperature, "should be greater than zero");
-            temperature = start_temperature;
-            }
-        else
+          temperature = start_temperature;
+        }
+      else
         {
           // Compute a start temperature by sampling the search space and computing the variance
           // according to [van Laarhoven and Aarts, 1987] (allow an acceptance ratio of approximately 80%)
@@ -96,7 +96,7 @@ namespace EasyLocal {
           std::vector<CostStructure> cost_values(samples);
           double mean = 0.0, variance = 0.0;
           for (unsigned int i = 0; i < samples; i++)
-          {
+            {
             //this->sm.RandomState(sampled_state);
             Move mv;
             this->ne.RandomMove(*this->p_current_state, mv);
@@ -115,9 +115,9 @@ namespace EasyLocal {
       if (!max_neighbors_accepted.IsSet())
         max_neighbors_accepted = max_neighbors_sampled;
         
-        neighbors_sampled = 0;
-        neighbors_accepted = 0;
-        }
+      neighbors_sampled = 0;
+      neighbors_accepted = 0;
+    }
     
     /**
      A move is randomly picked.

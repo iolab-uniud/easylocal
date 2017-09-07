@@ -292,7 +292,7 @@ namespace EasyLocal {
         {
           if (!p.is_valid)
             throw ParameterNotValid(p);
-            is >> p.value;
+          is >> p.value;
           p.is_set = true;
           
           return is;
