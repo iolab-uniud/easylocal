@@ -105,7 +105,7 @@ namespace EasyLocal {
                                                        NeighborhoodExplorer<Input, State, Move, CostStructure>& ne,
                                                        std::string name,
                                                        const InverseFunction& Inverse)
-    : MoveRunner<Input, State, Move, CostStructure>(in, sm, ne, name, "Tabu Search Runner"), Inverse(Inverse)
+    : MoveRunner<Input, State, Move, CostStructure>(in, sm, ne, name), Inverse(Inverse)
     {}
     
     
