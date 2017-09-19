@@ -7,6 +7,7 @@
 #include "easylocal/runners/moverunner.hh"
 #include "easylocal/helpers/statemanager.hh"
 #include "easylocal/helpers/neighborhoodexplorer.hh"
+#include "easylocal/helpers/multimodalneighborhoodexplorer.hh"
 
 namespace EasyLocal {
   
@@ -61,7 +62,7 @@ namespace EasyLocal {
                  StateManager<Input, State, CostStructure>& sm,
                  NeighborhoodExplorer<Input, State, Move, CostStructure>& ne,
                  std::string name,
-                 const InverseFunction& Inverse = SameMoveAsInverse);
+                 InverseFunction Inverse = SameMoveAsInverse);
       std::string StatusString() const;
       
       virtual void Print(std::ostream& os = std::cout) const;
@@ -73,7 +74,7 @@ namespace EasyLocal {
       void SelectMove();
       void CompleteMove();
       void InitializeParameters();
-      const InverseFunction& Inverse;
+      InverseFunction Inverse;
       
       static InverseFunction SameMoveAsInverse;
       
@@ -104,7 +105,7 @@ namespace EasyLocal {
                                                        StateManager<Input, State, CostStructure>& sm,
                                                        NeighborhoodExplorer<Input, State, Move, CostStructure>& ne,
                                                        std::string name,
-                                                       const InverseFunction& Inverse)
+                                                       InverseFunction Inverse)
     : MoveRunner<Input, State, Move, CostStructure>(in, sm, ne, name), Inverse(Inverse)
     {}
     
@@ -216,7 +217,8 @@ namespace EasyLocal {
     }
     
     template <class Input, class State, class Move, class CostStructure>
-    typename TabuSearch<Input, State, Move, CostStructure>::InverseFunction TabuSearch<Input, State, Move, CostStructure>::SameMoveAsInverse = [](const Move& lm, const Move& om) { return lm == om; };
-  }  
+    typename TabuSearch<Input, State, Move, CostStructure>::InverseFunction TabuSearch<Input, State, Move, CostStructure>::SameMoveAsInverse = [](const Move& lm, const Move& om)
+    { return lm == om; };    
+  }
 }
 
