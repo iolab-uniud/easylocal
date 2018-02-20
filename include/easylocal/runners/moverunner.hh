@@ -30,7 +30,7 @@ namespace EasyLocal {
             
       virtual void TerminateRun();
       
-      virtual void InitializeRun() throw (ParameterNotSet, IncorrectParameterValue);
+      virtual void InitializeRun();
       
       virtual bool AcceptableMoveFound();
       
@@ -86,7 +86,7 @@ namespace EasyLocal {
     {}        
     
     template <class Input, class State, class Move, class CostStructure>
-    void MoveRunner<Input, State, Move, CostStructure>::InitializeRun() throw (ParameterNotSet, IncorrectParameterValue)
+    void MoveRunner<Input, State, Move, CostStructure>::InitializeRun()
     {
       this->loginfo("Runner {}, run initialized", this->name);
     }

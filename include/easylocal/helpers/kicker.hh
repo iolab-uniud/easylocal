@@ -84,7 +84,7 @@ namespace EasyLocal {
         return (end != it2.end || length != it2.length || kick_count != it2.kick_count || &start_state != &it2.start_state);
       }
     protected:
-      void FirstKick() throw (EmptyNeighborhood)
+      void FirstKick()
       {
         kick.assign(length, std::make_pair(EvaluatedMove<Move, CostStructure>(false), start_state));
         
@@ -433,7 +433,7 @@ namespace EasyLocal {
        @throws @ref EmptyNeighborhood if no kick can be found
        @return the cost of applying the kick to the @ref State
        */
-      virtual std::pair<Kick<State, Move, CostStructure>, CostStructure> SelectFirst(size_t length, const State &st) const throw (EmptyNeighborhood)
+      virtual std::pair<Kick<State, Move, CostStructure>, CostStructure> SelectFirst(size_t length, const State &st) const
       {
         for (FullKickerIterator<Input, State, Move, CostStructure> it = begin(length, st); it != end(length, st); ++it)
         {
@@ -460,7 +460,7 @@ namespace EasyLocal {
        @throws @ref EmptyNeighborhood if no kick can be found
        @return the cost of applying the kick to the @ref State
        */
-      virtual std::pair<Kick<State, Move, CostStructure>, CostStructure> SelectBest(size_t length, const State &st) const throw (EmptyNeighborhood)
+      virtual std::pair<Kick<State, Move, CostStructure>, CostStructure> SelectBest(size_t length, const State &st) const
       {
         Kick<State, Move, CostStructure> best_kick;
         CostStructure best_cost;
@@ -499,7 +499,7 @@ namespace EasyLocal {
         return std::make_pair(best_kick, best_cost);
       }
       
-      virtual std::pair<Kick<State, Move, CostStructure>, CostStructure> SelectRandom(size_t length, const State &st) const throw (EmptyNeighborhood)
+      virtual std::pair<Kick<State, Move, CostStructure>, CostStructure> SelectRandom(size_t length, const State &st) const
       {
         SampleKickerIterator<Input, State, Move, CostStructure> random_it = sample_begin(length, st, 1);
         CostStructure cost(0, 0, 0, std::vector<CFtype>(CostComponent<Input, State, typename CostStructure::CFtype>::CostComponents(), 0));

@@ -103,21 +103,21 @@ namespace EasyLocal {
     class BaseParameter : public AbstractParameter
     {
       template <typename _T>
-      friend std::istream& operator>>(std::istream& is, BaseParameter<_T>& p) throw (ParameterNotValid);
+      friend std::istream& operator>>(std::istream& is, BaseParameter<_T>& p);
       template <typename _T>
-      friend bool operator==(const BaseParameter<_T>&, const _T&) throw (ParameterNotSet, ParameterNotValid);
+      friend bool operator==(const BaseParameter<_T>&, const _T&);
       friend class IncorrectParameterValue;
     protected:
       using AbstractParameter::AbstractParameter;
     public:
       /** @copydoc AbstractParameter::Read */
-      virtual std::istream& Read(std::istream& is = std::cin) throw (ParameterNotValid);
+      virtual std::istream& Read(std::istream& is = std::cin);
       
       /** @copydoc AbstractParameter::Write */
-      virtual std::ostream& Write(std::ostream& os = std::cout) const throw (ParameterNotSet, ParameterNotValid);
+      virtual std::ostream& Write(std::ostream& os = std::cout) const;
       
       /** @copydoc AbstractParameter::ToString */
-      virtual std::string ToString() const throw (ParameterNotSet, ParameterNotValid)
+      virtual std::string ToString() const
       {
         if (!is_valid)
         {
@@ -137,10 +137,10 @@ namespace EasyLocal {
         }
         
         /** Implicit cast. */
-        operator T() const throw (ParameterNotSet, ParameterNotValid);
+        operator T() const;
         
         /** Assignment. */
-        const T& operator=(const T&) throw (ParameterNotValid);
+        const T& operator=(const T&);
         
       protected:
         /** Actual value of the parameter. */
@@ -180,7 +180,7 @@ namespace EasyLocal {
             this->is_valid = true;
           }
           
-          const T& operator=(const T& v) throw (ParameterNotValid)
+          const T& operator=(const T& v)
           {
             if (!this->is_valid)
               throw ParameterNotValid(*this);
@@ -222,7 +222,7 @@ namespace EasyLocal {
             this->is_valid = true;
           }
           
-          const bool& operator=(const bool& v) throw (ParameterNotValid)
+          const bool& operator=(const bool& v)
           {
             if (!this->is_valid)
               throw ParameterNotValid(*this);
@@ -245,7 +245,7 @@ namespace EasyLocal {
         };
         
         template <typename T>
-        BaseParameter<T>::operator T() const throw (ParameterNotSet, ParameterNotValid)
+        BaseParameter<T>::operator T() const 
         {
           if (!is_valid)
             throw ParameterNotValid(*this);
@@ -255,7 +255,7 @@ namespace EasyLocal {
         }
         
         template <typename T>
-        std::istream& BaseParameter<T>::Read(std::istream& is) throw (ParameterNotValid)
+        std::istream& BaseParameter<T>::Read(std::istream& is)
         {
           if (!is_valid)
             throw ParameterNotValid(*this);
@@ -277,7 +277,7 @@ namespace EasyLocal {
         }
         
         template <typename T>
-        std::ostream& BaseParameter<T>::Write(std::ostream& os) const throw (ParameterNotSet, ParameterNotValid)
+        std::ostream& BaseParameter<T>::Write(std::ostream& os) const
         {
           if (!this->is_valid)
             throw ParameterNotValid(*this);
@@ -288,7 +288,7 @@ namespace EasyLocal {
         }
         
         template <typename T>
-        std::istream& operator>>(std::istream& is, BaseParameter<T>& p) throw (ParameterNotValid)
+        std::istream& operator>>(std::istream& is, BaseParameter<T>& p)
         {
           if (!p.is_valid)
             throw ParameterNotValid(p);
@@ -299,12 +299,12 @@ namespace EasyLocal {
         }
         
         template <typename T>
-        bool operator==(const BaseParameter<T>& t1, const T& t2) throw (ParameterNotSet, ParameterNotValid)
+        bool operator==(const BaseParameter<T>& t1, const T& t2)
         {
           return t1.value == t2;
         }
         
-        bool operator==(const BaseParameter<std::string>& s1, const char* s2) throw (ParameterNotSet, ParameterNotValid);
+        bool operator==(const BaseParameter<std::string>& s1, const char* s2);
         
         template <typename T>
         IncorrectParameterValue::IncorrectParameterValue(const Parameter<T>& p, std::string desc)

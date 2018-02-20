@@ -23,7 +23,7 @@ namespace EasyLocal {
       
     protected:
       void InitializeParameters();
-      void InitializeRun() throw (ParameterNotSet, IncorrectParameterValue);
+      void InitializeRun();
       bool StopCriterion();
       
       // additional parameters
@@ -53,7 +53,7 @@ namespace EasyLocal {
      setting the temperature to the start value.
      */
     template <class Input, class State, class Move, class CostStructure>
-    void SimulatedAnnealingEvaluationBased<Input, State, Move, CostStructure>::InitializeRun() throw (ParameterNotSet, IncorrectParameterValue)
+    void SimulatedAnnealingEvaluationBased<Input, State, Move, CostStructure>::InitializeRun()
     {      
       AbstractSimulatedAnnealing<Input, State, Move, CostStructure>::InitializeRun();
       if (temperature_range.IsSet())

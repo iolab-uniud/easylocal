@@ -38,7 +38,7 @@ namespace EasyLocal {
        @throw ParameterNotSet if one of the parameters needed by the solver or the runner (or other components) hasn't been set.
        @throw IncorrectParameterValue if one of the parameters has an incorrect value
        */
-      virtual SolverResult<Input, Output, CostStructure> Solve() throw (ParameterNotSet, IncorrectParameterValue) = 0;
+      virtual SolverResult<Input, Output, CostStructure> Solve() = 0;
       
       /** Method to solve a problem again, starting from the a final solution of another run.
        @param initial_solution solution to start with
@@ -46,7 +46,7 @@ namespace EasyLocal {
        @throw ParameterNotSet if one of the parameters needed by the solver or the runner (or other components) hasn't been set.
        @throw IncorrectParameterValue if one of the parameters has an incorrect value
        */
-      virtual SolverResult<Input, Output, CostStructure> Resolve(const Output& initial_solution) throw (ParameterNotSet, IncorrectParameterValue) = 0;
+      virtual SolverResult<Input, Output, CostStructure> Resolve(const Output& initial_solution)  = 0;
       
       /** Virtual destructor, for inheritance. */
       virtual ~Solver() {}

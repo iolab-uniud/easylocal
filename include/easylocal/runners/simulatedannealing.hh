@@ -22,7 +22,7 @@ namespace EasyLocal {
       
     protected:
       void InitializeParameters();
-      void InitializeRun() throw (ParameterNotSet, IncorrectParameterValue);
+      void InitializeRun();
       bool StopCriterion();
       // parameters
       Parameter<double> min_temperature;
@@ -44,7 +44,7 @@ namespace EasyLocal {
      setting the temperature to the start value.
      */
     template <class Input, class State, class Move, class CostStructure>
-    void SimulatedAnnealing<Input, State, Move, CostStructure>::InitializeRun() throw (ParameterNotSet, IncorrectParameterValue)
+    void SimulatedAnnealing<Input, State, Move, CostStructure>::InitializeRun()
     {
       if (min_temperature <= 0.0)
       {

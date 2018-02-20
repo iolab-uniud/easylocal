@@ -90,14 +90,14 @@ namespace EasyLocal {
        @param st the start state
        @param mv the generated move
        */
-      virtual void RandomMove(const State &st, Move& mv) const throw (EmptyNeighborhood) = 0;
+      virtual void RandomMove(const State &st, Move& mv) const = 0;
       
       /** Generates the first move in the neighborhood (a total ordering of the neighborhood is assumed). It is always used on cooperation with @ref NextMove to generate the whole neighborhood. It returns @c void because it is assumed that at least a move exists in the neighborhood.  It writes the first move in @c mv.
        @note To be implemented in the application (MustDef)
        @param st the start state
        @param mv the move
        */
-      virtual void FirstMove(const State& st, Move& mv) const throw (EmptyNeighborhood) = 0;
+      virtual void FirstMove(const State& st, Move& mv) const = 0;
       
       /** Generates the move that follows mv in the exploration of the neighborhood of the state st. It returns the generated move in the same variable mv.
        @return @c false if @c mv is the last in the neighborhood of the state.
@@ -162,25 +162,25 @@ namespace EasyLocal {
        This method will select the first move in the exhaustive neighborhood exploration that
        matches with the criterion expressed by the functional object bool f(const Move& mv, CostStructure cost)
        */
-      virtual EvaluatedMove<Move, CostStructure> SelectFirst(const State& st, size_t& explored, const MoveAcceptor& AcceptMove, const std::vector<double>& weights = std::vector<double>(0)) const throw (EmptyNeighborhood);
+      virtual EvaluatedMove<Move, CostStructure> SelectFirst(const State& st, size_t& explored, const MoveAcceptor& AcceptMove, const std::vector<double>& weights = std::vector<double>(0)) const;
       
       /**
        This method will select the best move in the exhaustive neighborhood exploration that
        matches with the criterion expressed by the functional object bool f(const Move& mv, CostStructure cost)
        */
-      virtual EvaluatedMove<Move, CostStructure> SelectBest(const State& st, size_t& explored, const MoveAcceptor& AcceptMove, const std::vector<double>& weights = std::vector<double>(0)) const throw (EmptyNeighborhood);
+      virtual EvaluatedMove<Move, CostStructure> SelectBest(const State& st, size_t& explored, const MoveAcceptor& AcceptMove, const std::vector<double>& weights = std::vector<double>(0)) const;
       
       /**
        This method will select the first move in a random neighborhood exploration that
        matches with the criterion expressed by the functional object bool f(const Move& mv, CostStructure cost)
        */
-      virtual EvaluatedMove<Move, CostStructure> RandomFirst(const State& st, size_t samples, size_t& explored, const MoveAcceptor& AcceptMove, const std::vector<double>& weights = std::vector<double>(0)) const throw (EmptyNeighborhood);
+      virtual EvaluatedMove<Move, CostStructure> RandomFirst(const State& st, size_t samples, size_t& explored, const MoveAcceptor& AcceptMove, const std::vector<double>& weights = std::vector<double>(0)) const;
       
       /**
        This method will select the best move in a random neighborhood exploration that
        matches with the criterion expressed by the functional object bool f(const Move& mv, CostStructure cost)
        */
-      virtual EvaluatedMove<Move, CostStructure> RandomBest(const State& st, size_t samples, size_t& explored, const MoveAcceptor& AcceptMove, const std::vector<double>& weights = std::vector<double>(0)) const throw (EmptyNeighborhood);
+      virtual EvaluatedMove<Move, CostStructure> RandomBest(const State& st, size_t samples, size_t& explored, const MoveAcceptor& AcceptMove, const std::vector<double>& weights = std::vector<double>(0)) const;
       
     protected:
       
@@ -316,7 +316,7 @@ namespace EasyLocal {
      matches with the criterion expressed by the functional object bool f(const Move& mv, CostStructure cost)
      */
     template <class Input, class State, class Move, class CostStructure>
-    EvaluatedMove<Move, CostStructure> NeighborhoodExplorer<Input, State, Move, CostStructure>::SelectFirst(const State& st, size_t& explored, const MoveAcceptor& AcceptMove, const std::vector<double>& weights) const throw (EmptyNeighborhood)
+    EvaluatedMove<Move, CostStructure> NeighborhoodExplorer<Input, State, Move, CostStructure>::SelectFirst(const State& st, size_t& explored, const MoveAcceptor& AcceptMove, const std::vector<double>& weights) const
     {
       explored = 0;
       EvaluatedMove<Move, CostStructure> mv;
@@ -341,7 +341,7 @@ namespace EasyLocal {
      matches with the criterion expressed by the functional object bool f(const Move& mv, CostStructure cost)
      */
     template <class Input, class State, class Move, class CostStructure>
-    EvaluatedMove<Move, CostStructure> NeighborhoodExplorer<Input, State, Move, CostStructure>::SelectBest(const State& st, size_t& explored, const MoveAcceptor& AcceptMove, const std::vector<double>& weights) const throw (EmptyNeighborhood)
+    EvaluatedMove<Move, CostStructure> NeighborhoodExplorer<Input, State, Move, CostStructure>::SelectBest(const State& st, size_t& explored, const MoveAcceptor& AcceptMove, const std::vector<double>& weights) const
     {
       unsigned int number_of_bests = 0; // number of moves found with the same best value
       explored = 0;
@@ -386,7 +386,7 @@ namespace EasyLocal {
      matches with the criterion expressed by the functional object bool f(const Move& mv, CostStructure cost)
      */
     template <class Input, class State, class Move, class CostStructure>
-    EvaluatedMove<Move, CostStructure> NeighborhoodExplorer<Input, State, Move, CostStructure>::RandomFirst(const State& st, size_t samples, size_t& explored, const MoveAcceptor& AcceptMove, const std::vector<double>& weights) const throw (EmptyNeighborhood)
+    EvaluatedMove<Move, CostStructure> NeighborhoodExplorer<Input, State, Move, CostStructure>::RandomFirst(const State& st, size_t samples, size_t& explored, const MoveAcceptor& AcceptMove, const std::vector<double>& weights) const
     {
       EvaluatedMove<Move, CostStructure> mv;
       explored = 0;
@@ -408,7 +408,7 @@ namespace EasyLocal {
      matches with the criterion expressed by the functional object bool f(const Move& mv, CostStructure cost)
      */
     template <class Input, class State, class Move, class CostStructure>
-    EvaluatedMove<Move, CostStructure> NeighborhoodExplorer<Input, State, Move, CostStructure>::RandomBest(const State& st, size_t samples, size_t& explored, const MoveAcceptor& AcceptMove, const std::vector<double>& weights) const throw (EmptyNeighborhood)
+    EvaluatedMove<Move, CostStructure> NeighborhoodExplorer<Input, State, Move, CostStructure>::RandomBest(const State& st, size_t samples, size_t& explored, const MoveAcceptor& AcceptMove, const std::vector<double>& weights) const
     {
       unsigned int number_of_bests = 0; // number of moves found with the same best value
       EvaluatedMove<Move, CostStructure> mv, best_move;

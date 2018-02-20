@@ -36,7 +36,7 @@ namespace EasyLocal {
       
     protected:
       void InitializeParameters();
-      void InitializeRun() throw (ParameterNotSet, IncorrectParameterValue);
+      void InitializeRun();
       bool StopCriterion();
       void UpdateIterationCounter();
       void SelectMove();
@@ -69,7 +69,7 @@ namespace EasyLocal {
      setting current level to the initial one.
      */
     template <class Input, class State, class Move, class CostStructure>
-    void GreatDeluge<Input, State, Move, CostStructure>::InitializeRun() throw (ParameterNotSet, IncorrectParameterValue)
+    void GreatDeluge<Input, State, Move, CostStructure>::InitializeRun()
     {
       level = initial_level * this->current_state_cost.total;
     }

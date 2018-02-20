@@ -274,25 +274,25 @@ namespace EasyLocal {
       template <class MovesTuple, size_t N>
       struct MoveDispatcher
       {
-				static void set_all_activity(MovesTuple& moves, bool value)
-				{
-					auto& this_move = std::get<0>(moves).get();
-					this_move.active = value;
+        static void set_all_activity(MovesTuple& moves, bool value)
+        {
+          auto& this_move = std::get<0>(moves).get();
+          this_move.active = value;
           auto moves_tail = tuple_tail(moves);
           MoveDispatcher<decltype(moves_tail), N - 1>::set_all_activity(moves_tail, value);
-				}				
+        }				
         static void set_activity_at(long level, MovesTuple& moves, bool value)
         {
           if (level == 0)
-          {
-            auto& this_move = std::get<0>(moves).get();
-            this_move.active = value;
-          }
+            {
+              auto& this_move = std::get<0>(moves).get();
+              this_move.active = value;
+            }
           else
-          {
-            auto moves_tail = tuple_tail(moves);
-            MoveDispatcher<decltype(moves_tail), N - 1>::set_activity_at(--level, moves_tail, value);
-          }
+            {
+              auto moves_tail = tuple_tail(moves);
+              MoveDispatcher<decltype(moves_tail), N - 1>::set_activity_at(--level, moves_tail, value);
+            }
         }
         static void copy_move_at(long level, MovesTuple& target, const MovesTuple& source)
         {
@@ -309,7 +309,7 @@ namespace EasyLocal {
             MoveDispatcher<decltype(target_tail), N - 1>::copy_move_at(--level, target_tail, source_tail);
           }
         }
-        static bool equal_at(long level, const MovesTuple& moves_1, const MovesTuple& moves_2)
+        static bool equal_at(long level, MovesTuple moves_1, MovesTuple moves_2)
         {
           if (level == 0)
           {
@@ -386,7 +386,7 @@ namespace EasyLocal {
           else
             throw std::logic_error("End of tuple recursion");
         }
-        static bool equal_at(long level, const MovesTuple& moves_1, const MovesTuple& moves_2)
+        static bool equal_at(long level, MovesTuple moves_1, MovesTuple moves_2)
         {
           if (level == 0)
           {
@@ -507,7 +507,7 @@ namespace EasyLocal {
       
     public:
       /** @copydoc NeighborhoodExplorer::FirstMove */
-      virtual void FirstMove(const State& st, MoveTypes& moves) const throw(EmptyNeighborhood)
+      virtual void FirstMove(const State& st, MoveTypes& moves) const 
       {
         MoveTypeRefs r_moves = to_refs(moves);
         
@@ -528,7 +528,7 @@ namespace EasyLocal {
       }
       
       /** @copydoc NeighborhoodExplorer::RandomMove */
-      virtual void RandomMove(const State& st, MoveTypes& moves) const throw(EmptyNeighborhood)
+      virtual void RandomMove(const State& st, MoveTypes& moves) const 
       {				
         MoveTypeRefs r_moves = to_refs(moves);
 				Impl::MoveDispatcher<MoveTypeRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::set_all_activity(r_moves, false);
@@ -730,14 +730,14 @@ namespace EasyLocal {
       }
 
       /** @copydoc NeighborhoodExplorer::FirstMove */
-      virtual void FirstMove(const State& st, MoveTypes& moves) const throw(EmptyNeighborhood)
+      virtual void FirstMove(const State& st, MoveTypes& moves) const 
       {
         MoveTypeRefs r_moves = to_refs(moves);
         const MoveTypeCRefs cr_moves = to_crefs(moves);
         const size_t length = sizeof...(BaseNeighborhoodExplorers);
         std::vector<State> states(length, st);
         
-        int cur = 0;
+        long cur = 0;
         bool backtracking = false;
         
         // stop only when a complete kicker has been generated, or throw an @ref EmptyNeighborhood
@@ -808,7 +808,7 @@ namespace EasyLocal {
       }
       
       /** @copydoc NeighborhoodExplorer::RandomMove */
-      virtual void RandomMove(const State& st, MoveTypes& moves) const throw(EmptyNeighborhood)
+      virtual void RandomMove(const State& st, MoveTypes& moves) const 
       {
         MoveTypeRefs r_moves = to_refs(moves);
         const MoveTypeCRefs cr_moves = to_crefs(moves);
@@ -817,9 +817,10 @@ namespace EasyLocal {
         
         MoveTypes initial_moves;
         MoveTypeRefs r_initial_moves = to_refs(initial_moves);
+        //const MoveTypeCRefs cr_initial_moves = to_crefs(initial_moves);
         std::vector<bool> initial_set(length, false);
         
-        int cur = 0;
+        long cur = 0;
         bool backtracking = false;
         
         // stop only when a complete kicker has been generated, or throw an @ref EmptyNeighborhood
@@ -855,7 +856,7 @@ namespace EasyLocal {
                           Impl::VTupleDispatcher<State, _Void_ConstState_Move, MoveTypeRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::execute_at(cur, st, first_move_funcs, r_moves);
                         }
                       //                  if (kick[cur].first.move == initial_kick_moves[cur])
-                      if (Impl::MoveDispatcher<MoveTypeRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::equal_at(cur, moves, initial_moves))
+                      if (Impl::MoveDispatcher<MoveTypeRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::equal_at(cur, r_moves, r_initial_moves))
                         {
                           backtracking = true;
                           Impl::MoveDispatcher<MoveTypeRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::set_activity_at(cur, r_moves, false);
@@ -889,7 +890,7 @@ namespace EasyLocal {
                       Impl::VTupleDispatcher<State, _Void_ConstState_Move, MoveTypeRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::execute_at(cur, st, first_move_funcs, r_moves);
                     }
                   // if (kick[cur].first.move == initial_kick_moves[cur])
-                  if (Impl::MoveDispatcher<MoveTypeRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::equal_at(cur, moves, initial_moves))
+                   if (Impl::MoveDispatcher<MoveTypeRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::equal_at(cur, r_moves, r_initial_moves))
                     {
                       backtracking = true;
                       Impl::MoveDispatcher<MoveTypeRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::set_activity_at(cur, r_moves, false);
@@ -916,7 +917,7 @@ namespace EasyLocal {
         const size_t length = sizeof...(BaseNeighborhoodExplorers);
         std::vector<State> states(length, st);
         // go to last move, then start generating with backtracking
-        int cur = length - 1;
+        long cur = length - 1;
         bool backtracking = true;
         
         // stop only when a complete kicker has been generated, or throw an @ref EmptyNeighborhood

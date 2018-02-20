@@ -33,7 +33,7 @@ namespace EasyLocal {
       unsigned int Round() const { return round; }
       unsigned int IdleRounds() const { return idle_rounds; }
     protected:
-      void InitializeSolve() throw (ParameterNotSet, IncorrectParameterValue);
+      void InitializeSolve();
       void Go();
       void AtTimeoutExpired();
       void ResetTimeout();
@@ -139,7 +139,7 @@ namespace EasyLocal {
     }
     
     template <class Input, class Output, class State, class CostStructure>
-    void TokenRingSearch<Input, Output, State, CostStructure>::InitializeSolve() throw (ParameterNotSet, IncorrectParameterValue)
+    void TokenRingSearch<Input, Output, State, CostStructure>::InitializeSolve()
     {
       AbstractLocalSearch<Input, Output, State, CostStructure>::InitializeSolve();
       if (max_idle_rounds.IsSet() && max_idle_rounds == 0)

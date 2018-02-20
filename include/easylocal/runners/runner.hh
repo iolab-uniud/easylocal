@@ -49,7 +49,7 @@ namespace EasyLocal {
        @throw ParameterNotSet if one of the parameters needed by the runner (or other components) hasn't been set
        @throw IncorrectParameterValue if one of the parameters has an incorrect value
        */
-      CostStructure Go(State& s) throw (ParameterNotSet, IncorrectParameterValue);
+      CostStructure Go(State& s);
       
       /** Performs a given number of steps of the search method on the passed state.
        @param s state to start with and to modify
@@ -58,7 +58,7 @@ namespace EasyLocal {
        @throw ParameterNotSet if one of the parameters needed by the runner (or other components) hasn't been set
        @throw IncorrectParameterValue if one of the parameters has an incorrect value
        */
-      CostStructure Step(State& s, unsigned int n = 1) throw (ParameterNotSet, IncorrectParameterValue);
+      CostStructure Step(State& s, unsigned int n = 1);
       
       /** Register its parameters */
       virtual void InitializeParameters();
@@ -121,7 +121,7 @@ namespace EasyLocal {
        @throw ParameterNotSet if one of the parameters needed by the runner (or other components) hasn't been set
        @throw IncorrectParameterValue if one of the parameters has an incorrect value
        */
-      virtual void InitializeRun() throw (ParameterNotSet, IncorrectParameterValue) {}
+      virtual void InitializeRun() {}
       
       /** Actions to be performed at the end of the run. */
       virtual void TerminateRun() = 0;
@@ -206,7 +206,7 @@ namespace EasyLocal {
       virtual void UpdateBestState() = 0;
       
       /** Actions that must be done at the start of the search, and which cannot be redefined by subclasses. */
-      void InitializeRun(State&) throw (ParameterNotSet, IncorrectParameterValue);
+      void InitializeRun(State&) ;
       
       /** Actions that must be done at the end of the search. */
       CostStructure TerminateRun(State&);
@@ -237,7 +237,7 @@ namespace EasyLocal {
     }
     
     template <class Input, class State, class CostStructure>
-    CostStructure Runner<Input, State, CostStructure>::Go(State& s) throw (ParameterNotSet, IncorrectParameterValue)
+    CostStructure Runner<Input, State, CostStructure>::Go(State& s)
     {
       InitializeRun(s);
       while (!MaxEvaluationsExpired() && !StopCriterion() && !LowerBoundReached() && !this->TimeoutExpired())
@@ -282,7 +282,7 @@ namespace EasyLocal {
     {}
     
     template <class Input, class State, class CostStructure>
-    void Runner<Input, State, CostStructure>::InitializeRun(State& s) throw (ParameterNotSet, IncorrectParameterValue)
+    void Runner<Input, State, CostStructure>::InitializeRun(State& s)
     {
       iteration = 0;
       iteration_of_best = 0;

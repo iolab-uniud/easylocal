@@ -23,7 +23,7 @@ namespace EasyLocal {
       using HillClimbing<Input, State, Move, CostStructure>::HillClimbing;
       
     protected:
-      void InitializeRun() throw (ParameterNotSet, IncorrectParameterValue);
+      void InitializeRun();
       void CompleteMove();
       void SelectMove();
       
@@ -51,7 +51,7 @@ namespace EasyLocal {
      setting the temperature to the start value.
      */
     template <class Input, class State, class Move, class CostStructure>
-    void LateAcceptanceHillClimbing<Input, State, Move, CostStructure>::InitializeRun() throw (ParameterNotSet, IncorrectParameterValue)
+    void LateAcceptanceHillClimbing<Input, State, Move, CostStructure>::InitializeRun()
     {
       HillClimbing<Input, State, Move, CostStructure>::InitializeRun();
       

@@ -69,7 +69,7 @@ namespace EasyLocal {
       
     protected:
       bool MaxIdleIterationExpired() const;
-      void InitializeRun() throw (ParameterNotSet, IncorrectParameterValue);
+      void InitializeRun();
       bool StopCriterion();
       void SelectMove();
       void CompleteMove();
@@ -140,7 +140,7 @@ namespace EasyLocal {
      cleans the tabu list.
      */
     template <class Input, class State, class Move, class CostStructure>
-    void TabuSearch<Input, State, Move, CostStructure>::InitializeRun() throw (ParameterNotSet, IncorrectParameterValue)
+    void TabuSearch<Input, State, Move, CostStructure>::InitializeRun() 
     {
       MoveRunner<Input, State, Move, CostStructure>::InitializeRun();
       (*tabu_list).clear();

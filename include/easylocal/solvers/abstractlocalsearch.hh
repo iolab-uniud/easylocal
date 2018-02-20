@@ -28,8 +28,8 @@ namespace EasyLocal {
     {
     public:
       /** These methods are the unique interface of Solvers */
-      virtual SolverResult<Input, Output, CostStructure> Solve() throw (ParameterNotSet, IncorrectParameterValue) final;
-      virtual SolverResult<Input, Output, CostStructure> Resolve(const Output& initial_solution) throw (ParameterNotSet, IncorrectParameterValue) final;
+      virtual SolverResult<Input, Output, CostStructure> Solve() final;
+      virtual SolverResult<Input, Output, CostStructure> Resolve(const Output& initial_solution) final;
       
       AbstractLocalSearch(const Input& in,
                           StateManager<Input, State, CostStructure>& e_sm,
@@ -54,6 +54,7 @@ namespace EasyLocal {
         };
       }
       
+      virtual void TerminateSolve();
       virtual void FindInitialState();
       // This will be the actual solver strategy implementation
       virtual void Go() = 0;
@@ -75,8 +76,7 @@ namespace EasyLocal {
       std::atomic<bool> is_running;
       
     private:
-      void InitializeSolve() throw (ParameterNotSet, IncorrectParameterValue);
-      void TerminateSolve();
+      void InitializeSolve();
     };
     
     /*************************************************************************
@@ -134,14 +134,14 @@ namespace EasyLocal {
     }
     
     template <class Input, class Output, class State, class CostStructure>
-    void AbstractLocalSearch<Input, Output, State, CostStructure>::InitializeSolve() throw (ParameterNotSet, IncorrectParameterValue)
+    void AbstractLocalSearch<Input, Output, State, CostStructure>::InitializeSolve()
     {
       p_best_state = std::make_shared<State>(this->in);
       p_current_state = std::make_shared<State>(this->in);
     }
     
     template <class Input, class Output, class State, class CostStructure>
-    SolverResult<Input, Output, CostStructure> AbstractLocalSearch<Input, Output, State, CostStructure>::Solve() throw (ParameterNotSet, IncorrectParameterValue)
+    SolverResult<Input, Output, CostStructure> AbstractLocalSearch<Input, Output, State, CostStructure>::Solve() 
     {
       auto start = std::chrono::high_resolution_clock::now();
       is_running = true;
@@ -162,7 +162,7 @@ namespace EasyLocal {
     }
     
     template <class Input, class Output, class State, class CostStructure>
-    SolverResult<Input, Output, CostStructure> AbstractLocalSearch<Input, Output, State, CostStructure>::Resolve(const Output& initial_solution) throw (ParameterNotSet, IncorrectParameterValue)
+    SolverResult<Input, Output, CostStructure> AbstractLocalSearch<Input, Output, State, CostStructure>::Resolve(const Output& initial_solution) 
     {
       auto start = std::chrono::high_resolution_clock::now();
       is_running = true;

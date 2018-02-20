@@ -28,7 +28,7 @@ namespace EasyLocal {
     protected:
       bool StopCriterion();
       void CompleteMove();
-      void InitializeRun() throw (ParameterNotSet, IncorrectParameterValue);
+      void InitializeRun();
       bool ReheatCondition();
       // additional parameters
       void InitializeParameters();
@@ -54,7 +54,7 @@ namespace EasyLocal {
     }
     
     template <class Input, class State, class Move, class CostStructure>
-    void SimulatedAnnealingWithReheating<Input, State, Move, CostStructure>::InitializeRun() throw (ParameterNotSet, IncorrectParameterValue)
+    void SimulatedAnnealingWithReheating<Input, State, Move, CostStructure>::InitializeRun()
     {
       SimulatedAnnealingEvaluationBased<Input, State, Move, CostStructure>::InitializeRun();
       reheats = 0;

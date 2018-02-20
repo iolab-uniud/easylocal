@@ -33,7 +33,7 @@ namespace EasyLocal {
       using MoveRunner<Input, State, Move, CostStructure>::MoveRunner;
     protected:
       
-      void InitializeRun() throw (ParameterNotSet, IncorrectParameterValue);
+      void InitializeRun();
       void UpdateIterationCounter();
       void SelectMove();
       bool AcceptableMove();
@@ -74,7 +74,7 @@ namespace EasyLocal {
      */
     // FIXME
     template <class Input, class State, class Move, class CostStructure>
-    void AbstractSimulatedAnnealing<Input, State, Move, CostStructure>::InitializeRun() throw (ParameterNotSet, IncorrectParameterValue)
+    void AbstractSimulatedAnnealing<Input, State, Move, CostStructure>::InitializeRun()
     {
       MoveRunner<Input, State, Move, CostStructure>::InitializeRun();
       
