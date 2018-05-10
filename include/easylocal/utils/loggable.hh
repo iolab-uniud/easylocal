@@ -25,12 +25,6 @@ namespace EasyLocal {
       template <typename... Args> void logcritical(const char* fmt, const Args&... args)
       { if (_logger) _logger->critical(fmt, args...); }
 
-      template <typename... Args> void logalert(const char* fmt, const Args&... args)
-      { if (_logger) _logger->alert(fmt, args...); }
-
-      template <typename... Args> void logemerg(const char* fmt, const Args&... args)
-      { if (_logger) _logger->emerg(fmt, args...); }    
-
     protected:
       Loggable(std::shared_ptr<spdlog::logger> logger) : _logger(logger) {}
       Loggable() {}
