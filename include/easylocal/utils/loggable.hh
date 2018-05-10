@@ -2,12 +2,7 @@
 
 #include <spdlog/spdlog.h>
 
-#include <fmt/format.h>
-
-#if FMT_LIB_VERSION > 2
-#include <fmt/ostream.h>
-#endif
-
+#include <spdlog/fmt/ostr.h>
 
 namespace EasyLocal {
   namespace Core {
