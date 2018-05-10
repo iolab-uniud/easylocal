@@ -16,9 +16,6 @@ namespace EasyLocal {
       template <typename... Args> void loginfo(const char* fmt, const Args&... args)
       { if (_logger) _logger->info(fmt, args...); }
 
-      template <typename... Args> void lognotice(const char* fmt, const Args&... args)
-      { if (_logger) _logger->notice(fmt, args...); }
-
       template <typename... Args> void logwarn(const char* fmt, const Args&... args)
       { if (_logger) _logger->warn(fmt, args...); }
 
