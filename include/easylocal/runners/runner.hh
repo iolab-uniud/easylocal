@@ -86,6 +86,12 @@ namespace EasyLocal {
         return max_evaluations;
       }
 
+      /** Set the ... */
+      void SetMaxEvaluations(unsigned long int me)
+      {
+        max_evaluations = me;
+      }
+
       /** Gets the index of the current iteration. */
       unsigned long int Iteration() const
       {
