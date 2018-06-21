@@ -459,13 +459,14 @@ namespace EasyLocal {
         }
         case 3:
         {
-          unsigned int lenght;
-          double randomness;
-          os << "Lenght of the restricted candidate list: ";
-          std::cin >> lenght;
-          os << "Level of randomness (0 <= alpha <= 1): ";
-          std::cin >> randomness;
-          this->sm.GreedyState(test_state, randomness, lenght);
+//           unsigned int lenght;
+//           double randomness;
+//           os << "Lenght of the restricted candidate list: ";
+//           std::cin >> lenght;
+//           os << "Level of randomness (0 <= alpha <= 1): ";
+//           std::cin >> randomness;
+//           this->sm.GreedyState(test_state, randomness, lenght);
+          this->sm.GreedyState(test_state);
           break;
         }
         case 4:
