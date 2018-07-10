@@ -4,7 +4,6 @@
 
 #include "easylocal/utils/random.hh"
 #include "easylocal/utils/types.hh"
-#include "easylocal/utils/printable.hh"
 #include "easylocal/utils/interruptible.hh"
 #include "easylocal/utils/parameter.hh"
 
