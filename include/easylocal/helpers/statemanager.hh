@@ -37,11 +37,14 @@ const int HARD_WEIGHT = 1000;
      @remarks no @ref Move template is supplied to this class.
      @ingroup Helpers
      */
-template <class Input, class State, class CostStructure = DefaultCostStructure<int>>
+template <class _Input, class _State, class _CostStructure = DefaultCostStructure<int>>
 class StateManager
 {
 public:
-  typedef typename CostStructure::CFtype CFtype;
+  typedef typename _CostStructure::CFtype CFtype;
+  typedef _Input Input;
+  typedef _State State;
+  typedef _CostStructure CostStructure;
 
   /**
        Generates a random state

@@ -11,10 +11,14 @@ namespace Core
 /** The Output Manager is responsible for translating between elements of the search space and output solutions. It also delivers other output information of the search, and stores and retrieves solutions from files. This is the only helper that deals with the @c Output class. All other helpers work only on the @c State class, which represents the elements of the search space used by the algorithms.
      @ingroup Helpers
      */
-template <class Input, class Output, class State>
+template <class _Input, class _Output, class _State>
 class OutputManager 
 {
 public:
+  typedef _Input Input;
+  typedef _State State;
+  typedef _Output Output;
+  
   /** Transforms the given state in an output object.
        @param st the state to transform
        @param out the corresponding output object.

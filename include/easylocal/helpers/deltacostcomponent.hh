@@ -52,6 +52,7 @@ protected:
        @param name the name assigned to the object
        */
   DeltaCostComponent(const Input &in, CostComponent<Input, State, CFtype> &cc, std::string name);
+  virtual ~DeltaCostComponent() {}
 
   /** Computes the variation of the cost on a given @ref State due to a specific @ref Move.
        @param st the starting State upon which the variation of the cost has to be computed
