@@ -93,10 +93,10 @@ void KickerTester<Input, Output, State, Move, CostStructure>::RunMainMenu(State 
 
       if (show_state)
       {
-        om.OutputState(st, out);
+        om.OutputState(in, st, out);
         os << "CURRENT SOLUTION " << std::endl
            << out << std::endl;
-        os << "CURRENT COST : " << sm.CostFunctionComponents(st) << std::endl;
+        os << "CURRENT COST : " << sm.CostFunctionComponents(in, st) << std::endl;
       }
       os << "ELAPSED TIME : " << duration.count() / 1000.0 << " s" << std::endl;
     }
@@ -136,17 +136,17 @@ bool KickerTester<Input, Output, State, Move, CostStructure>::ExecuteChoice(Stat
     switch (choice)
     {
     case 1:
-      std::tie(kick, cost) = kicker.SelectRandom(length, st);
+      std::tie(kick, cost) = kicker.SelectRandom(length, in, st);
       os << kick << " " << cost << std::endl;
       execute_kick = true;
       break;
     case 2:
-      std::tie(kick, cost) = kicker.SelectBest(length, st);
+      std::tie(kick, cost) = kicker.SelectBest(length, in, st);
       os << kick << " " << cost << std::endl;
       execute_kick = true;
       break;
     case 3:
-      std::tie(kick, cost) = kicker.SelectFirst(length, st);
+      std::tie(kick, cost) = kicker.SelectFirst(length, in, st);
       os << kick << " " << cost << std::endl;
       execute_kick = true;
       break;
@@ -157,7 +157,7 @@ bool KickerTester<Input, Output, State, Move, CostStructure>::ExecuteChoice(Stat
       os << "Invalid choice" << std::endl;
     }
     if (execute_kick)
-      kicker.MakeKick(st, kick);
+      kicker.MakeKick(in, st, kick);
     return execute_kick;
   }
   catch (EmptyNeighborhood)
@@ -170,7 +170,7 @@ bool KickerTester<Input, Output, State, Move, CostStructure>::ExecuteChoice(Stat
 template <class Input, class Output, class State, class Move, class CostStructure>
 void KickerTester<Input, Output, State, Move, CostStructure>::PrintKicks(size_t length, const State &st) const
 {
-  for (auto it = kicker.begin(length, st); it != kicker.end(length, st); ++it)
+  for (auto it = kicker.begin(length, in, st); it != kicker.end(length, in, st); ++it)
     os << *it << std::endl;
 }
 

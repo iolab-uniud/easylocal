@@ -37,7 +37,7 @@ template <class Input, class State, class Move, class CostStructure>
 void FirstDescent<Input, State, Move, CostStructure>::SelectMove()
 {
   size_t explored;
-  EvaluatedMove<Move, CostStructure> em = this->ne.SelectFirst(*this->p_current_state, explored, [](const Move &mv, const CostStructure &move_cost) {
+  EvaluatedMove<Move, CostStructure> em = this->ne.SelectFirst(this->in, *this->p_current_state, explored, [](const Move &mv, const CostStructure &move_cost) {
     return move_cost < 0;
   },
                                                                this->weights);

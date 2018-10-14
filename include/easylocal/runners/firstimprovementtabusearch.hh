@@ -38,7 +38,7 @@ void FirstImprovementTabuSearch<Input, State, Move, CostStructure>::SelectMove()
 {
   CFtype aspiration = this->best_state_cost.total - this->current_state_cost.total;
   size_t explored;
-  EvaluatedMove<Move, CostStructure> em = this->ne.SelectFirst(*this->p_current_state, explored, [this, aspiration](const Move &mv, const CostStructure &move_cost) {
+  EvaluatedMove<Move, CostStructure> em = this->ne.SelectFirst(this->in, *this->p_current_state, explored, [this, aspiration](const Move &mv, const CostStructure &move_cost) {
     for (auto li : *(this->tabu_list))
       if ((move_cost.total >= aspiration) && this->Inverse(li.move, mv))
         return false;

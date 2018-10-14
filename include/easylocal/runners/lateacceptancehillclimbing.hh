@@ -71,7 +71,7 @@ void LateAcceptanceHillClimbing<Input, State, Move, CostStructure>::SelectMove()
   size_t sampled;
   CostStructure prev_step_delta_cost = previous_steps[this->iteration % steps] - this->current_state_cost;
   // TODO: check shifting penalty meaningfullness
-  EvaluatedMove<Move, CostStructure> em = this->ne.RandomFirst(*this->p_current_state, samples, sampled, [prev_step_delta_cost](const Move &mv, const CostStructure &move_cost) {
+  EvaluatedMove<Move, CostStructure> em = this->ne.RandomFirst(this->in, *this->p_current_state, samples, sampled, [prev_step_delta_cost](const Move &mv, const CostStructure &move_cost) {
     return move_cost <= 0 || move_cost <= prev_step_delta_cost;
   },
                                                                this->weights);

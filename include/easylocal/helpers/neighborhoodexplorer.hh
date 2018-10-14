@@ -78,15 +78,6 @@ public:
     this->unimplemented_hard_components = ne.unimplemented_hard_components;
     this->unimplemented_soft_components = ne.unimplemented_soft_components;
   }
-  
-  /** Old-style method, without the Input object
-   @deprecated
-   */
-  [[deprecated("Input object has been moved outside the NeighborhoodExplorer class")]]
-  bool FeasibleMove(const State &st, const Move &mv) const
-  {
-    throw std::runtime_error("You should update your NeighborhoodExplorer by adding a const Input& reference to the method");
-  }
 
   /** Checks if a move in the neighborhood is legal.
        @note Can be implemented in the application (MayRedef)
@@ -97,42 +88,6 @@ public:
   virtual bool FeasibleMove(const Input& in, const State &st, const Move &mv) const
   {
     return true;
-  }
-  
-  /** Old-style method, without the Input object
-   @deprecated
-   */
-  [[deprecated("Input object has been moved outside the NeighborhoodExplorer class")]]
-  void RandomMove(const State &st, Move &mv) const
-  {
-    throw std::runtime_error("You should update your NeighborhoodExplorer by adding a const Input& reference to the method");
-  }
-  
-  /** Old-style method, without the Input object
-   @deprecated
-   */
-  [[deprecated("Input object has been moved outside the NeighborhoodExplorer class")]]
-  void FirstMove(const State &st, Move &mv) const
-  {
-    throw std::runtime_error("You should update your NeighborhoodExplorer by adding a const Input& reference to the method");
-  }
-  
-  /** Old-style method, without the Input object
-   @deprecated
-   */
-  [[deprecated("Input object has been moved outside the NeighborhoodExplorer class")]]
-  bool NextMove(const State &st, Move &mv) const
-  {
-    throw std::runtime_error("You should update your NeighborhoodExplorer by adding a const Input& reference to the method");
-  }
-  
-  /** Old-style method, without the Input object
-   @deprecated
-   */
-  [[deprecated("Input object has been moved outside the NeighborhoodExplorer class")]]
-  void MakeMove(State &st, const Move &mv) const
-  {
-    throw std::runtime_error("You should update your NeighborhoodExplorer by adding a const Input& reference to the method");
   }
 
   /** Generates a random move in the neighborhood of a given state.
@@ -170,14 +125,15 @@ public:
        */
   virtual void MakeMove(const Input& in, State &st, const Move &mv) const = 0;
   
-  /** Old-style method, without the Input object
-   @deprecated
-   */
-  [[deprecated("Input object has been moved outside the NeighborhoodExplorer class")]]
-  CostStructure DeltaCostFunctionComponents(const State &st, const Move &mv, const std::vector<double> &weights = std::vector<double>(0)) const
-  {
-    throw std::runtime_error("You should update your NeighborhoodExplorer by adding a const Input& reference to the method");
-  }
+  // It can be safely removed
+//  /** Old-style method, without the Input object
+//   @deprecated
+//   */
+//  [[deprecated("Input object has been moved outside the NeighborhoodExplorer class")]]
+//  CostStructure DeltaCostFunctionComponents(const State &st, const Move &mv, const std::vector<double> &weights = std::vector<double>(0)) const
+//  {
+//    throw std::runtime_error("You should update your NeighborhoodExplorer by adding a const Input& reference to the method");
+//  }
 
 
   /** Computes the differences in the cost function obtained by applying the move @c mv to the state @c st and returns the unaggregated value as a vector of components.
@@ -214,6 +170,53 @@ public:
   virtual size_t Modality() const
   {
     return 1;
+  }
+  
+  // These methods have been deprecated
+  
+  /** Old-style method, without the Input object
+   @deprecated
+   */
+  [[deprecated("Input object has been moved outside the NeighborhoodExplorer class")]]
+  bool FeasibleMove(const State &st, const Move &mv) const
+  {
+    throw std::runtime_error("You should update your NeighborhoodExplorer by adding a const Input& reference to the method");
+  }
+  
+  /** Old-style method, without the Input object
+   @deprecated
+   */
+  [[deprecated("Input object has been moved outside the NeighborhoodExplorer class")]]
+  void RandomMove(const State &st, Move &mv) const
+  {
+    throw std::runtime_error("You should update your NeighborhoodExplorer by adding a const Input& reference to the method");
+  }
+  
+  /** Old-style method, without the Input object
+   @deprecated
+   */
+  [[deprecated("Input object has been moved outside the NeighborhoodExplorer class")]]
+  void FirstMove(const State &st, Move &mv) const
+  {
+    throw std::runtime_error("You should update your NeighborhoodExplorer by adding a const Input& reference to the method");
+  }
+  
+  /** Old-style method, without the Input object
+   @deprecated
+   */
+  [[deprecated("Input object has been moved outside the NeighborhoodExplorer class")]]
+  bool NextMove(const State &st, Move &mv) const
+  {
+    throw std::runtime_error("You should update your NeighborhoodExplorer by adding a const Input& reference to the method");
+  }
+  
+  /** Old-style method, without the Input object
+   @deprecated
+   */
+  [[deprecated("Input object has been moved outside the NeighborhoodExplorer class")]]
+  void MakeMove(State &st, const Move &mv) const
+  {
+    throw std::runtime_error("You should update your NeighborhoodExplorer by adding a const Input& reference to the method");
   }
   
   /**

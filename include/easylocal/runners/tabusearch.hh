@@ -158,7 +158,7 @@ void TabuSearch<Input, State, Move, CostStructure>::SelectMove()
 {
   CostStructure aspiration = this->best_state_cost - this->current_state_cost;
   size_t explored;
-  EvaluatedMove<Move, CostStructure> em = this->ne.SelectBest(*this->p_current_state, explored, [this, aspiration](const Move &mv, const CostStructure &move_cost) {
+  EvaluatedMove<Move, CostStructure> em = this->ne.SelectBest(this->in, *this->p_current_state, explored, [this, aspiration](const Move &mv, const CostStructure &move_cost) {
     for (auto li : *(this->tabu_list))
       if ((move_cost >= aspiration) && this->Inverse(li.move, mv))
         return false;

@@ -34,7 +34,7 @@ public:
   {
     if (end)
       throw std::logic_error("Attempting to go after last move");
-    end = !ne.NextMove(state, current_move);
+    end = !ne.NextMove(in, state, current_move);
     move_count++;
     computed_move = EvaluatedMove<Move, CostStructure>(current_move);
     return *this;
@@ -69,7 +69,7 @@ protected:
     try
     {
       ne.FirstMove(in, state, current_move);
-      computed_move = EvaluatedMove<Move, CostStructure>(in, current_move);
+      computed_move = EvaluatedMove<Move, CostStructure>(current_move);
     }
     catch (EmptyNeighborhood)
     {
@@ -100,7 +100,7 @@ public:
     end = move_count >= samples;
     if (!end)
     {
-      ne.RandomMove(state, current_move);
+      ne.RandomMove(in, state, current_move);
       computed_move = EvaluatedMove<Move, CostStructure>(current_move, 0);
     }
     return pi;
@@ -113,7 +113,7 @@ public:
     end = move_count >= samples;
     if (!end)
     {
-      ne.RandomMove(state, current_move);
+      ne.RandomMove(in, state, current_move);
       computed_move = EvaluatedMove<Move, CostStructure>(current_move);
     }
     return *this;
@@ -153,7 +153,7 @@ protected:
     {
       end = true;
     }
-    computed_move = EvaluatedMove<Move, CostStructure>(in, current_move);
+    computed_move = EvaluatedMove<Move, CostStructure>(current_move);
   }
   const NeighborhoodExplorer<Input, State, Move, CostStructure> &ne;
   const Input &in;
@@ -205,7 +205,7 @@ protected:
     if (samples > 0)
       return NeighborhoodExplorerIteratorInterface<Input, State, MoveType, CostStructureType>::create_sample_neighborhood_iterator(*this, in, st, samples);
     else
-      return sample_end(st, samples);
+      return sample_end(in, st, samples);
   }
 
   SampleNeighborhoodIterator<Input, State, MoveType, CostStructureType> sample_end(const Input& in, const State &st, size_t samples) const
@@ -220,7 +220,7 @@ public:
     bool first_move_found = false;
     tbb::spin_mutex mx_first_move;
     explored = 0;
-    tbb::parallel_for_each(this->begin(st), this->end(st), [this, &in, &st, &mx_first_move, &first_move, &first_move_found, AcceptMove, &weights, &explored](EvaluatedMove<MoveType, CostStructureType> &mv) {
+    tbb::parallel_for_each(this->begin(in, st), this->end(in, st), [this, &in, &st, &mx_first_move, &first_move, &first_move_found, AcceptMove, &weights, &explored](EvaluatedMove<MoveType, CostStructureType> &mv) {
       mv.cost = this->DeltaCostFunctionComponents(in, st, mv.move, weights);
       mv.is_valid = true;
       tbb::spin_mutex::scoped_lock lock(mx_first_move);
@@ -246,7 +246,7 @@ public:
     EvaluatedMove<MoveType, CostStructureType> best_move;
     unsigned int number_of_bests = 0;
     explored = 0;
-    tbb::parallel_for_each(this->begin(st), this->end(st), [this, &in, &st, &mx_best_move, &best_move, &number_of_bests, AcceptMove, &weights, &explored](EvaluatedMove<MoveType, CostStructureType> &mv) {
+    tbb::parallel_for_each(this->begin(in, st), this->end(in, st), [this, &in, &st, &mx_best_move, &best_move, &number_of_bests, AcceptMove, &weights, &explored](EvaluatedMove<MoveType, CostStructureType> &mv) {
       mv.cost = this->DeltaCostFunctionComponents(in, st, mv.move, weights);
       mv.is_valid = true;
       tbb::spin_mutex::scoped_lock lock(mx_best_move);
@@ -282,7 +282,7 @@ public:
     bool first_move_found = false;
     tbb::spin_mutex mx_first_move;
     explored = 0;
-    tbb::parallel_for_each(this->sample_begin(st, samples), this->sample_end(st, samples), [this, &in, &st, &mx_first_move, &first_move, &first_move_found, &explored, AcceptMove, &weights](EvaluatedMove<MoveType, CostStructureType> &mv) {
+    tbb::parallel_for_each(this->sample_begin(in, st, samples), this->sample_end(in, st, samples), [this, &in, &st, &mx_first_move, &first_move, &first_move_found, &explored, AcceptMove, &weights](EvaluatedMove<MoveType, CostStructureType> &mv) {
       mv.cost = this->DeltaCostFunctionComponents(in, st, mv.move, weights);
       mv.is_valid = true;
       tbb::spin_mutex::scoped_lock lock(mx_first_move);
@@ -305,7 +305,7 @@ public:
     EvaluatedMove<MoveType, CostStructureType> best_move;
     unsigned int number_of_bests = 0;
     explored = 0;
-    tbb::parallel_for_each(this->sample_begin(st, samples), this->sample_end(st, samples), [this, &in, &st, &mx_best_move, &best_move, &number_of_bests, &explored, AcceptMove, &weights](EvaluatedMove<MoveType, CostStructureType> &mv) {
+    tbb::parallel_for_each(this->sample_begin(in, st, samples), this->sample_end(in, st, samples), [this, &in, &st, &mx_best_move, &best_move, &number_of_bests, &explored, AcceptMove, &weights](EvaluatedMove<MoveType, CostStructureType> &mv) {
       mv.cost = this->DeltaCostFunctionComponents(in, st, mv.move, weights);
       mv.is_valid = true;
       tbb::spin_mutex::scoped_lock lock(mx_best_move);

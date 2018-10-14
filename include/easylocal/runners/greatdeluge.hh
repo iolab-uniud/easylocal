@@ -86,7 +86,7 @@ void GreatDeluge<Input, State, Move, CostStructure>::SelectMove()
   size_t sampled;
   CFtype cur_cost = this->current_state_cost.total;
   double l = level;
-  EvaluatedMove<Move, CostStructure> em = this->ne.RandomFirst(*this->p_current_state, samples, sampled, [cur_cost, l](const Move &mv, const CostStructure &move_cost) {
+  EvaluatedMove<Move, CostStructure> em = this->ne.RandomFirst(this->in, *this->p_current_state, samples, sampled, [cur_cost, l](const Move &mv, const CostStructure &move_cost) {
     return move_cost < 0.0 || move_cost <= l - cur_cost;
   },
                                                                this->weights);

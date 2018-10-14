@@ -43,7 +43,7 @@ void SampleTabuSearch<Input, State, Move, CostStructure>::SelectMove()
 {
   size_t sampled = 0;
   CostStructure aspiration = this->best_state_cost - this->current_state_cost;
-  EvaluatedMove<Move, CostStructure> em = this->ne.RandomBest(*this->p_current_state, samples, sampled, [this, aspiration](const Move &mv, const CostStructure &move_cost) {
+  EvaluatedMove<Move, CostStructure> em = this->ne.RandomBest(this->in, *this->p_current_state, samples, sampled, [this, aspiration](const Move &mv, const CostStructure &move_cost) {
     for (auto li : *(this->tabu_list))
       if ((move_cost >= aspiration) && this->Inverse(li.move, mv))
         return false;

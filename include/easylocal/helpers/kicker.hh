@@ -109,10 +109,10 @@ protected:
       {
         try
         {
-          ne.FirstMove(kick[cur].second, kick[cur].first.move);
+          ne.FirstMove(in, kick[cur].second, kick[cur].first.move);
           while (cur > 0 && !RelatedMoves(kick[cur - 1].first.move, kick[cur].first.move))
           {
-            if (!ne.NextMove(kick[cur].second, kick[cur].first.move))
+            if (!ne.NextMove(in, kick[cur].second, kick[cur].first.move))
             {
               backtracking = true;
               cur--;
@@ -120,7 +120,7 @@ protected:
             }
           }
           backtracking = false;
-          ne.MakeMove(kick[cur].second, kick[cur].first.move);
+          ne.MakeMove(in, kick[cur].second, kick[cur].first.move);
           cur++;
           goto loop;
         }
@@ -135,7 +135,7 @@ protected:
       {
         do
         {
-          if (!ne.NextMove(kick[cur].second, kick[cur].first.move))
+          if (!ne.NextMove(in, kick[cur].second, kick[cur].first.move))
           {
             backtracking = true;
             cur--;
@@ -143,7 +143,7 @@ protected:
           }
         } while (cur > 0 && !RelatedMoves(kick[cur - 1].first.move, kick[cur].first.move));
         backtracking = false;
-        ne.MakeMove(kick[cur].second, kick[cur].first.move);
+        ne.MakeMove(in, kick[cur].second, kick[cur].first.move);
         cur++;
         goto loop;
       }
@@ -170,10 +170,10 @@ protected:
       {
         try
         {
-          ne.FirstMove(kick[cur].second, kick[cur].first.move);
+          ne.FirstMove(in, kick[cur].second, kick[cur].first.move);
           while (cur > 0 && !RelatedMoves(kick[cur - 1].first.move, kick[cur].first.move))
           {
-            if (!ne.NextMove(kick[cur].second, kick[cur].first.move))
+            if (!ne.NextMove(in, kick[cur].second, kick[cur].first.move))
             {
               backtracking = true;
               kick[cur].first.is_valid = false;
@@ -182,7 +182,7 @@ protected:
             }
           }
           backtracking = false;
-          ne.MakeMove(kick[cur].second, kick[cur].first.move);
+          ne.MakeMove(in, kick[cur].second, kick[cur].first.move);
           kick[cur].first.is_valid = false;
           cur++;
           goto loop;
@@ -198,7 +198,7 @@ protected:
       {
         do
         {
-          if (!ne.NextMove(kick[cur].second, kick[cur].first.move))
+          if (!ne.NextMove(in, kick[cur].second, kick[cur].first.move))
           {
             backtracking = true;
             kick[cur].first.is_valid = false;
@@ -207,7 +207,7 @@ protected:
           }
         } while (cur > 0 && !RelatedMoves(kick[cur - 1].first.move, kick[cur].first.move));
         backtracking = false;
-        ne.MakeMove(kick[cur].second, kick[cur].first.move);
+        ne.MakeMove(in, kick[cur].second, kick[cur].first.move);
         kick[cur].first.is_valid = false;
         cur++;
         goto loop;
@@ -217,8 +217,8 @@ protected:
   }
 
 protected:
-  FullKickerIterator(size_t length, const NeighborhoodExplorer<Input, State, Move, CostStructure> &ne, const State &state, const MoveRelatedness &RelatedMoves, bool end = false)
-      : length(length), ne(ne), start_state(state), kick_count(0), end(end), RelatedMoves(RelatedMoves)
+  FullKickerIterator(size_t length, const NeighborhoodExplorer<Input, State, Move, CostStructure> &ne, const Input& in, const State &state, const MoveRelatedness &RelatedMoves, bool end = false)
+      : length(length), ne(ne), in(in), start_state(state), kick_count(0), end(end), RelatedMoves(RelatedMoves)
   {
     if (end)
       return;
@@ -233,6 +233,7 @@ protected:
   }
   const size_t length;
   const NeighborhoodExplorer<Input, State, Move, CostStructure> &ne;
+  const Input& in;
   const State &start_state;
   Kick<State, Move, CostStructure> kick;
   size_t kick_count;
@@ -326,7 +327,7 @@ protected:
       {
         try
         {
-          ne.RandomMove(kick[cur].second, kick[cur].first.move);
+          ne.RandomMove(in, kick[cur].second, kick[cur].first.move);
           kick[cur].first.is_valid = false;
 
           if (!initial_set[cur])
@@ -337,8 +338,8 @@ protected:
 
           while (cur > 0 && !RelatedMoves(kick[cur - 1].first.move, kick[cur].first.move))
           {
-            if (!ne.NextMove(kick[cur].second, kick[cur].first.move))
-              ne.FirstMove(kick[cur].second, kick[cur].first.move);
+            if (!ne.NextMove(in, kick[cur].second, kick[cur].first.move))
+              ne.FirstMove(in, kick[cur].second, kick[cur].first.move);
             if (kick[cur].first.move == initial_kick_moves[cur])
             {
               backtracking = true;
@@ -347,7 +348,7 @@ protected:
             }
           }
           backtracking = false;
-          ne.MakeMove(kick[cur].second, kick[cur].first.move);
+          ne.MakeMove(in, kick[cur].second, kick[cur].first.move);
           cur++;
           goto loop;
         }
@@ -362,8 +363,8 @@ protected:
       {
         do
         {
-          if (!ne.NextMove(kick[cur].second, kick[cur].first.move))
-            ne.FirstMove(kick[cur].second, kick[cur].first.move);
+          if (!ne.NextMove(in, kick[cur].second, kick[cur].first.move))
+            ne.FirstMove(in, kick[cur].second, kick[cur].first.move);
           if (kick[cur].first.move == initial_kick_moves[cur])
           {
             backtracking = true;
@@ -372,7 +373,7 @@ protected:
           }
         } while (cur > 0 && !RelatedMoves(kick[cur - 1].first.move, kick[cur].first.move));
         backtracking = false;
-        ne.MakeMove(kick[cur].second, kick[cur].first.move);
+        ne.MakeMove(in, kick[cur].second, kick[cur].first.move);
         kick[cur].first.is_valid = false;
         cur++;
         goto loop;
@@ -380,8 +381,8 @@ protected:
     }
   }
 
-  SampleKickerIterator(size_t length, const NeighborhoodExplorer<Input, State, Move, CostStructure> &ne, const State &state, size_t samples, const MoveRelatedness &RelatedMoves, bool end = false)
-      : length(length), ne(ne), start_state(state), kick_count(0), samples(samples), end(end), RelatedMoves(RelatedMoves)
+  SampleKickerIterator(size_t length, const NeighborhoodExplorer<Input, State, Move, CostStructure> &ne, const Input& in, const State &state, size_t samples, const MoveRelatedness &RelatedMoves, bool end = false)
+      : length(length), ne(ne), in(in), start_state(state), kick_count(0), samples(samples), end(end), RelatedMoves(RelatedMoves)
   {
     if (end)
       return;
@@ -396,6 +397,7 @@ protected:
   }
   const size_t length;
   const NeighborhoodExplorer<Input, State, Move, CostStructure> &ne;
+  const Input& in;
   const State &start_state;
   Kick<State, Move, CostStructure> kick;
   size_t kick_count, samples;
@@ -436,16 +438,16 @@ public:
        @throws @ref EmptyNeighborhood if no kick can be found
        @return the cost of applying the kick to the @ref State
        */
-  virtual std::pair<Kick<State, Move, CostStructure>, CostStructure> SelectFirst(size_t length, const State &st) const
+  virtual std::pair<Kick<State, Move, CostStructure>, CostStructure> SelectFirst(size_t length, const Input& in, const State &st) const
   {
-    for (FullKickerIterator<Input, State, Move, CostStructure> it = begin(length, st); it != end(length, st); ++it)
+    for (FullKickerIterator<Input, State, Move, CostStructure> it = begin(length, in, st); it != end(length, in, st); ++it)
     {
       CostStructure cost(0, 0, 0, std::vector<CFtype>(sm.CostComponents(), 0));
       for (int i = 0; i < it->size(); i++)
       {
         if (!(*it)[i].first.is_valid)
         {
-          (*it)[i].first.cost = this->ne.DeltaCostFunctionComponents((*it)[i].second, (*it)[i].first.move);
+          (*it)[i].first.cost = this->ne.DeltaCostFunctionComponents(in, (*it)[i].second, (*it)[i].first.move);
           (*it)[i].first.is_valid = true;
         }
         cost += (*it)[i].first.cost;
@@ -463,19 +465,19 @@ public:
        @throws @ref EmptyNeighborhood if no kick can be found
        @return the cost of applying the kick to the @ref State
        */
-  virtual std::pair<Kick<State, Move, CostStructure>, CostStructure> SelectBest(size_t length, const State &st) const
+  virtual std::pair<Kick<State, Move, CostStructure>, CostStructure> SelectBest(size_t length, const Input& in, const State &st) const
   {
     Kick<State, Move, CostStructure> best_kick;
     CostStructure best_cost;
     unsigned int number_of_bests = 0;
-    for (FullKickerIterator<Input, State, Move, CostStructure> it = begin(length, st); it != end(length, st); ++it)
+    for (FullKickerIterator<Input, State, Move, CostStructure> it = begin(length, in, st); it != end(length, in, st); ++it)
     {
       CostStructure cost(0, 0, 0, std::vector<CFtype>(sm.CostComponents(), 0));
       for (int i = 0; i < it->size(); i++)
       {
         if (!(*it)[i].first.is_valid)
         {
-          (*it)[i].first.cost = ne.DeltaCostFunctionComponents((*it)[i].second, (*it)[i].first.move);
+          (*it)[i].first.cost = ne.DeltaCostFunctionComponents(in, (*it)[i].second, (*it)[i].first.move);
           (*it)[i].first.is_valid = true;
         }
         cost += (*it)[i].first.cost;
@@ -502,15 +504,15 @@ public:
     return std::make_pair(best_kick, best_cost);
   }
 
-  virtual std::pair<Kick<State, Move, CostStructure>, CostStructure> SelectRandom(size_t length, const State &st) const
+  virtual std::pair<Kick<State, Move, CostStructure>, CostStructure> SelectRandom(size_t length, const Input& in, const State &st) const
   {
-    SampleKickerIterator<Input, State, Move, CostStructure> random_it = sample_begin(length, st, 1);
+    SampleKickerIterator<Input, State, Move, CostStructure> random_it = sample_begin(length, in, st, 1);
     CostStructure cost(0, 0, 0, std::vector<CFtype>(sm.CostComponents(), 0));
     for (int i = 0; i < random_it->size(); i++)
     {
       if (!(*random_it)[i].first.is_valid)
       {
-        (*random_it)[i].first.cost = ne.DeltaCostFunctionComponents((*random_it)[i].second, (*random_it)[i].first.move);
+        (*random_it)[i].first.cost = ne.DeltaCostFunctionComponents(in, (*random_it)[i].second, (*random_it)[i].first.move);
         (*random_it)[i].first.is_valid = true;
       }
       cost += (*random_it)[i].first.cost;
@@ -522,29 +524,29 @@ public:
        @param st the @ref State to modify
        @param kick the sequence of @ref Move to apply
        */
-  virtual void MakeKick(State &st, const Kick<State, Move, CostStructure> &kick) const
+  virtual void MakeKick(const Input& in, State &st, const Kick<State, Move, CostStructure> &kick) const
   {
     st = kick[kick.size() - 1].second;
   }
 
-  FullKickerIterator<Input, State, Move, CostStructure> begin(size_t length, const State &st) const
+  FullKickerIterator<Input, State, Move, CostStructure> begin(size_t length, const Input& in, const State &st) const
   {
-    return FullKickerIterator<Input, State, Move, CostStructure>(length, ne, st, RelatedMoves);
+    return FullKickerIterator<Input, State, Move, CostStructure>(length, ne, in, st, RelatedMoves);
   }
 
-  FullKickerIterator<Input, State, Move, CostStructure> end(size_t length, const State &st) const
+  FullKickerIterator<Input, State, Move, CostStructure> end(size_t length, const Input& in, const State &st) const
   {
-    return FullKickerIterator<Input, State, Move, CostStructure>(length, ne, st, RelatedMoves, true);
+    return FullKickerIterator<Input, State, Move, CostStructure>(length, ne, in, st, RelatedMoves, true);
   }
 
-  SampleKickerIterator<Input, State, Move, CostStructure> sample_begin(size_t length, const State &st, size_t samples) const
+  SampleKickerIterator<Input, State, Move, CostStructure> sample_begin(size_t length, const Input& in, const State &st, size_t samples) const
   {
-    return SampleKickerIterator<Input, State, Move, CostStructure>(length, ne, st, samples, RelatedMoves);
+    return SampleKickerIterator<Input, State, Move, CostStructure>(length, ne, in, st, samples, RelatedMoves);
   }
 
-  SampleKickerIterator<Input, State, Move, CostStructure> sample_end(size_t length, const State &st, size_t samples) const
+  SampleKickerIterator<Input, State, Move, CostStructure> sample_end(size_t length, const Input& in, const State &st, size_t samples) const
   {
-    return SampleKickerIterator<Input, State, Move, CostStructure>(length, ne, st, samples, RelatedMoves, true);
+    return SampleKickerIterator<Input, State, Move, CostStructure>(length, ne, in, st, samples, RelatedMoves, true);
   }
 
 protected:
@@ -558,6 +560,8 @@ protected:
   static MoveRelatedness AllMovesRelated;
 };
 
+  // TODO:  MoveRelatedness could/should include also the input (and possibly the state)
+  
 template <class Input, class State, class Move, class CostStructure>
 typename Kicker<Input, State, Move, CostStructure>::MoveRelatedness Kicker<Input, State, Move, CostStructure>::AllMovesRelated = [](const Move &, const Move &) { return true; };
 } // namespace Core
