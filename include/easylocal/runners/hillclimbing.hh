@@ -53,7 +53,7 @@ void HillClimbing<Input, State, Move, CostStructure>::SelectMove()
   // TODO: it should become a parameter, the number of neighbors drawn at each iteration (possibly evaluated in parallel)
   const size_t samples = 10;
   size_t sampled;
-  EvaluatedMove<Move, CostStructure> em = this->ne.RandomFirst(*this->p_current_state, samples, sampled, [](const Move &mv, const CostStructure &move_cost) {
+  EvaluatedMove<Move, CostStructure> em = this->ne.RandomFirst(this->in, *this->p_current_state, samples, sampled, [](const Move &mv, const CostStructure &move_cost) {
     return move_cost <= 0;
   },
                                                                this->weights);

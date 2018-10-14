@@ -99,8 +99,8 @@ void AbstractSimulatedAnnealing<Input, State, Move, CostStructure>::InitializeRu
     {
       //this->sm.RandomState(sampled_state);
       Move mv;
-      this->ne.RandomMove(*this->p_current_state, mv);
-      cost_values[i] = this->ne.DeltaCostFunctionComponents(*this->p_current_state, mv);
+      this->ne.RandomMove(this->in, *this->p_current_state, mv);
+      cost_values[i] = this->ne.DeltaCostFunctionComponents(this->in, *this->p_current_state, mv);
       mean += cost_values[i].total;
     }
     mean /= samples;
@@ -128,7 +128,7 @@ void AbstractSimulatedAnnealing<Input, State, Move, CostStructure>::SelectMove()
   // TODO: it should become a parameter, the number of neighbors drawn at each iteration (possibly evaluated in parallel)
   size_t sampled;
   double t = this->temperature;
-  EvaluatedMove<Move, CostStructure> em = this->ne.RandomFirst(*this->p_current_state, this->max_neighbors_sampled - neighbors_sampled, sampled, [t](const Move &mv, const CostStructure &move_cost) {
+  EvaluatedMove<Move, CostStructure> em = this->ne.RandomFirst(this->in, *this->p_current_state, this->max_neighbors_sampled - neighbors_sampled, sampled, [t](const Move &mv, const CostStructure &move_cost) {
     double r = std::max(Random::Double(), 1E-16);
     return move_cost <= 0 || move_cost < (-t * log(r));
   },

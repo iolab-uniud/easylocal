@@ -293,7 +293,7 @@ void Runner<Input, State, CostStructure>::InitializeRun(State &s)
   evaluations = 0;
   p_best_state = std::make_shared<State>(s);    // creates the best state object by copying the content of s
   p_current_state = std::make_shared<State>(s); // creates the current state object by copying the content of s
-  best_state_cost = current_state_cost = sm.CostFunctionComponents(s);
+  best_state_cost = current_state_cost = sm.CostFunctionComponents(in, s);
   InitializeRun();
 }
 

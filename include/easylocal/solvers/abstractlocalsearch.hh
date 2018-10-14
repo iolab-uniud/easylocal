@@ -96,13 +96,13 @@ private:
      */
 template <class Input, class Output, class State, class CostStructure>
 AbstractLocalSearch<Input, Output, State, CostStructure>::AbstractLocalSearch(const Input &in,
-                                                                              StateManager<Input, State, CostStructure> &e_sm,
-                                                                              OutputManager<Input, Output, State> &e_om,
+                                                                              StateManager<Input, State, CostStructure> &sm,
+                                                                              OutputManager<Input, Output, State> &om,
                                                                               std::string name)
     : Parametrized(name, typeid(this).name()),
       Solver<Input, Output, CostStructure>(in, name),
-      sm(e_sm),
-      om(e_om),
+      sm(sm),
+      om(om),
       is_running(false)
 {
 }
@@ -125,11 +125,11 @@ template <class Input, class Output, class State, class CostStructure>
 void AbstractLocalSearch<Input, Output, State, CostStructure>::FindInitialState()
 {
   if (random_initial_state)
-    current_state_cost = sm.SampleState(*p_current_state, init_trials);
+    current_state_cost = sm.SampleState(this->in, *p_current_state, init_trials);
   else
   {
-    sm.GreedyState(*p_current_state);
-    current_state_cost = sm.CostFunctionComponents(*p_current_state);
+    sm.GreedyState(this->in, *p_current_state);
+    current_state_cost = sm.CostFunctionComponents(this->in, *p_current_state);
   }
   *p_best_state = *p_current_state;
   best_state_cost = current_state_cost;
@@ -154,13 +154,13 @@ SolverResult<Input, Output, CostStructure> AbstractLocalSearch<Input, Output, St
   else
     Go();
   p_out = std::make_shared<Output>(this->in);
-  om.OutputState(*p_best_state, *p_out);
+  om.OutputState(this->in, *p_best_state, *p_out);
   TerminateSolve();
 
   double run_time = std::chrono::duration_cast<std::chrono::duration<double, std::ratio<1>>>(std::chrono::high_resolution_clock::now() - start).count();
   is_running = false;
 
-  return SolverResult<Input, Output, CostStructure>(*p_out, sm.CostFunctionComponents(*p_best_state), run_time);
+  return SolverResult<Input, Output, CostStructure>(*p_out, sm.CostFunctionComponents(this->in, *p_best_state), run_time);
 }
 
 template <class Input, class Output, class State, class CostStructure>
@@ -170,21 +170,21 @@ SolverResult<Input, Output, CostStructure> AbstractLocalSearch<Input, Output, St
   is_running = true;
 
   InitializeSolve();
-  om.InputState(*p_current_state, initial_solution);
+  om.InputState(this->in, *p_current_state, initial_solution);
   *p_best_state = *p_current_state;
-  best_state_cost = current_state_cost = sm.CostFunctionComponents(*p_current_state);
+  best_state_cost = current_state_cost = sm.CostFunctionComponents(this->in, *p_current_state);
   if (timeout.IsSet())
     SyncRun(std::chrono::milliseconds(static_cast<long long int>(timeout * 1000.0)));
   else
     Go();
   p_out = std::make_shared<Output>(this->in);
-  om.OutputState(*p_best_state, *p_out);
+  om.OutputState(this->in, *p_best_state, *p_out);
   TerminateSolve();
   is_running = false;
 
   double run_time = std::chrono::duration_cast<std::chrono::duration<double, std::ratio<1>>>(std::chrono::high_resolution_clock::now() - start).count();
 
-  return SolverResult<Input, Output, CostStructure>(*p_out, sm.CostFunctionComponents(*p_best_state), run_time);
+  return SolverResult<Input, Output, CostStructure>(*p_out, sm.CostFunctionComponents(this->in, *p_best_state), run_time);
 }
 
 template <class Input, class Output, class State, class CostStructure>
@@ -201,7 +201,7 @@ std::shared_ptr<Output> AbstractLocalSearch<Input, Output, State, CostStructure>
   else
     current_state = GetCurrentState();
   std::shared_ptr<Output> out = std::make_shared<Output>(this->in);
-  om.OutputState(*current_state, *out);
+  om.OutputState(this->in, *current_state, *out);
   return out;
 }
 } // namespace Core

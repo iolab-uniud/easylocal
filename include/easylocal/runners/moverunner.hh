@@ -104,7 +104,7 @@ void MoveRunner<Input, State, Move, CostStructure>::MakeMove()
 {
   if (current_move.is_valid)
   {
-    ne.MakeMove(*this->p_current_state, current_move.move);
+    ne.MakeMove(this->in, *this->p_current_state, current_move.move);
     this->current_state_cost += current_move.cost;
     //this->logtrace("Runner {}, iteration {}, move {}, move cost {}, current cost {}", this->name, this->iteration, current_move.cost, this->current_state_cost);
   }

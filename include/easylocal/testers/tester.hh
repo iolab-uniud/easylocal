@@ -187,18 +187,18 @@ void Tester<Input, Output, State, CostStructure>::RunMainMenu(std::string file_n
   }
   else if (file_name == "random")
   {
-    this->sm.RandomState(test_state);
+    this->sm.RandomState(in, test_state);
   }
   else
   {
     std::ifstream is(file_name.c_str());
     if (is.fail())
       throw std::runtime_error("Cannot open file!");
-    om.ReadState(test_state, is);
-    om.OutputState(test_state, out);
+    om.ReadState(in, test_state, is);
+    om.OutputState(in, test_state, out);
     os << "SOLUTION IMPORTED " << std::endl
        << out << std::endl;
-    os << "IMPORTED SOLUTION COST : " << sm.CostFunctionComponents(test_state) << std::endl;
+    os << "IMPORTED SOLUTION COST : " << sm.CostFunctionComponents(in, test_state) << std::endl;
   }
 
   do
@@ -360,7 +360,7 @@ void Tester<Input, Output, State, CostStructure>::ExecuteRunChoice()
     auto end = std::chrono::high_resolution_clock::now();
 
     auto duration = end - start;
-    om.OutputState(test_state, out);
+    om.OutputState(in, test_state, out);
 
     os << "CURRENT SOLUTION " << std::endl
        << out << std::endl;
@@ -383,10 +383,10 @@ void Tester<Input, Output, State, CostStructure>::RunInputMenu()
   std::chrono::milliseconds duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start);
   if (show_state)
   {
-    this->om.OutputState(test_state, this->out);
+    this->om.OutputState(in, test_state, this->out);
     os << "INITIAL SOLUTION " << std::endl
        << this->out << std::endl;
-    os << "INITIAL COST : " << this->sm.CostFunctionComponents(test_state) << std::endl;
+    os << "INITIAL COST : " << this->sm.CostFunctionComponents(in, test_state) << std::endl;
   }
   os << "ELAPSED TIME : " << duration.count() / 1000.0 << "s" << std::endl;
 }
@@ -443,7 +443,7 @@ bool Tester<Input, Output, State, CostStructure>::ExecuteStateChoice()
   switch (sub_choice)
   {
   case 1:
-    this->sm.RandomState(test_state);
+    this->sm.RandomState(in, test_state);
     break;
   case 2:
   {
@@ -462,7 +462,7 @@ bool Tester<Input, Output, State, CostStructure>::ExecuteStateChoice()
         is.clear();
       }
     } while (read_failed);
-    this->om.ReadState(test_state, is);
+    this->om.ReadState(in, test_state, is);
     break;
   }
   case 3:
@@ -474,7 +474,7 @@ bool Tester<Input, Output, State, CostStructure>::ExecuteStateChoice()
     //           os << "Level of randomness (0 <= alpha <= 1): ";
     //           std::cin >> randomness;
     //           this->sm.GreedyState(test_state, randomness, lenght);
-    this->sm.GreedyState(test_state);
+    this->sm.GreedyState(in, test_state);
     break;
   }
   case 4:
@@ -482,7 +482,7 @@ bool Tester<Input, Output, State, CostStructure>::ExecuteStateChoice()
     unsigned int samples;
     os << "How many samples : ";
     std::cin >> samples;
-    this->sm.SampleState(test_state, samples);
+    this->sm.SampleState(in, test_state, samples);
     break;
   }
   case 5:
@@ -490,13 +490,13 @@ bool Tester<Input, Output, State, CostStructure>::ExecuteStateChoice()
     os << "File name : ";
     std::cin >> file_name;
     std::ofstream os(file_name.c_str());
-    this->om.WriteState(test_state, os);
+    this->om.WriteState(in, test_state, os);
     break;
   }
   case 6:
   {
     os << test_state << std::endl;
-    os << "Total cost: " << this->sm.CostFunctionComponents(test_state) << std::endl;
+    os << "Total cost: " << this->sm.CostFunctionComponents(in, test_state) << std::endl;
     break;
   }
   case 7:
@@ -507,7 +507,7 @@ bool Tester<Input, Output, State, CostStructure>::ExecuteStateChoice()
   case 8:
   {
     os << "Cost Components: " << std::endl;
-    CostStructure cost = this->sm.CostFunctionComponents(test_state);
+    CostStructure cost = this->sm.CostFunctionComponents(in, test_state);
     for (i = 0; i < sm.CostComponents(); i++)
     {
       const CostComponent<Input, State, typename CostStructure::CFtype> &cc = sm.GetCostComponent(i);
@@ -522,11 +522,11 @@ bool Tester<Input, Output, State, CostStructure>::ExecuteStateChoice()
   case 9:
   {
     os << "Detailed Violations: " << std::endl;
-    CostStructure cost = this->sm.CostFunctionComponents(test_state);
+    CostStructure cost = this->sm.CostFunctionComponents(in, test_state);
     for (i = 0; i < sm.CostComponents(); i++)
     {
       const CostComponent<Input, State, typename CostStructure::CFtype> &cc = sm.GetCostComponent(i);
-      cc.PrintViolations(test_state);
+      cc.PrintViolations(in, test_state);
     }
     os << std::endl
        << "Summary of Cost Components: " << std::endl;
@@ -544,7 +544,7 @@ bool Tester<Input, Output, State, CostStructure>::ExecuteStateChoice()
   case 10:
   {
     os << "Checking state consistency: " << std::endl;
-    bool consistent = this->sm.CheckConsistency(test_state);
+    bool consistent = this->sm.CheckConsistency(in, test_state);
     if (consistent)
       os << "The state is consistent" << std::endl;
     else
@@ -555,7 +555,7 @@ bool Tester<Input, Output, State, CostStructure>::ExecuteStateChoice()
   {
     os << "File name : ";
     std::cin >> file_name;
-    this->om.PrettyPrintOutput(test_state, file_name);
+    this->om.PrettyPrintOutput(in, test_state, file_name);
     std::cout << "Output pretty-printed in file " << file_name << std::endl;
     break;
   }
@@ -583,10 +583,10 @@ void Tester<Input, Output, State, CostStructure>::RunStateTestMenu()
       std::chrono::milliseconds duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start);
       if (show_state)
       {
-        om.OutputState(test_state, out);
+        om.OutputState(in, test_state, out);
         os << "CURRENT SOLUTION " << std::endl
            << out << std::endl;
-        os << "CURRENT COST : " << sm.CostFunctionComponents(test_state) << std::endl;
+        os << "CURRENT COST : " << sm.CostFunctionComponents(in, test_state) << std::endl;
       }
       os << "ELAPSED TIME : " << duration.count() / 1000.0 << "s" << std::endl;
     }

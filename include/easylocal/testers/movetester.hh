@@ -90,10 +90,10 @@ void MoveTester<Input, Output, State, Move, CostStructure>::RunMainMenu(State &s
       std::chrono::milliseconds duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start);
       if (show_state)
       {
-        om.OutputState(st, out);
+        om.OutputState(in, st, out);
         os << "CURRENT SOLUTION " << std::endl
            << out << std::endl;
-        os << "CURRENT COST : " << sm.CostFunctionComponents(st) << std::endl;
+        os << "CURRENT COST : " << sm.CostFunctionComponents(in, st) << std::endl;
       }
       os << "ELAPSED TIME : " << duration.count() / 1000.0 << 's' << std::endl;
     }
@@ -139,13 +139,13 @@ bool MoveTester<Input, Output, State, Move, CostStructure>::ExecuteChoice(State 
     switch (choice)
     {
     case 1:
-      em = ne.SelectBest(st, explored, [](const Move &mv, const CostStructure &cost) { return true; });
+      em = ne.SelectBest(in, st, explored, [](const Move &mv, const CostStructure &cost) { return true; });
       break;
     case 2:
-      em = ne.SelectFirst(st, explored, [](const Move &mv, const CostStructure &cost) { return cost.total < 0; });
+      em = ne.SelectFirst(in, st, explored, [](const Move &mv, const CostStructure &cost) { return cost.total < 0; });
       break;
     case 3:
-      em = ne.RandomFirst(st, 1, explored, [](const Move &mv, const CostStructure &cost) { return true; });
+      em = ne.RandomFirst(in, st, 1, explored, [](const Move &mv, const CostStructure &cost) { return true; });
       break;
     case 4:
       os << "Input move : ";
@@ -158,13 +158,13 @@ bool MoveTester<Input, Output, State, Move, CostStructure>::ExecuteChoice(State 
       PrintNeighborhoodStatistics(st);
       break;
     case 7:
-      em = ne.RandomFirst(st, 1, explored, [](const Move &mv, const CostStructure &cost) { return true; });
+      em = ne.RandomFirst(in, st, 1, explored, [](const Move &mv, const CostStructure &cost) { return true; });
       PrintMoveCosts(st, em);
       break;
     case 8:
       os << "Input move : ";
       std::cin >> em.move;
-      em.cost = ne.DeltaCostFunctionComponents(st, em.move);
+      em.cost = ne.DeltaCostFunctionComponents(in, st, em.move);
       PrintMoveCosts(st, em);
       break;
     case 9:
@@ -182,10 +182,10 @@ bool MoveTester<Input, Output, State, Move, CostStructure>::ExecuteChoice(State 
     if (choice == 1 || choice == 2 || choice == 3 || choice == 4)
     {
       os << "Move : " << em.move << std::endl;
-      if (!ne.FeasibleMove(st, em.move))
+      if (!ne.FeasibleMove(in, st, em.move))
         os << "Move not feasible" << std::endl;
       else
-        ne.MakeMove(st, em.move);
+        ne.MakeMove(in, st, em.move);
       return true;
     }
   }
@@ -226,17 +226,17 @@ void MoveTester<Input, Output, State, Move, CostStructure>::CheckNeighborhoodCos
   EvaluatedMove<Move, CostStructure> em;
   unsigned int move_count = 0;
   CostStructure error;
-  CostStructure st_cost = this->sm.CostFunctionComponents(st), st1_cost;
+  CostStructure st_cost = this->sm.CostFunctionComponents(in, st), st1_cost;
   State st1 = st;
   bool error_found = false, not_last_move = true;
-  ne.FirstMove(st, em.move);
+  ne.FirstMove(in, st, em.move);
   do
   {
     move_count++;
 
-    ne.MakeMove(st1, em.move);
-    em.cost = ne.DeltaCostFunctionComponents(st, em.move);
-    st1_cost = this->sm.CostFunctionComponents(st1);
+    ne.MakeMove(in, st1, em.move);
+    em.cost = ne.DeltaCostFunctionComponents(in, st, em.move);
+    st1_cost = this->sm.CostFunctionComponents(in, st1);
     error = st1_cost - em.cost - st_cost;
     for (size_t i = 0; i < sm.CostComponents(); i++)
     {
@@ -252,7 +252,7 @@ void MoveTester<Input, Output, State, Move, CostStructure>::CheckNeighborhoodCos
 
     if (move_count % 100 == 0)
       std::cerr << '.'; // print dots to show that it is alive
-    not_last_move = ne.NextMove(st, em.move);
+    not_last_move = ne.NextMove(in, st, em.move);
     st1 = st;
 
   } while (not_last_move);
@@ -279,12 +279,12 @@ void MoveTester<Input, Output, State, Move, CostStructure>::PrintNeighborhoodSta
 
   std::vector<std::pair<CFtype, CFtype>> min_max_costs(sm.CostComponents());
 
-  ne.FirstMove(st, em.move);
+  ne.FirstMove(in, st, em.move);
 
   do
   {
     neighbors++;
-    em.cost = ne.DeltaCostFunctionComponents(st, em.move);
+    em.cost = ne.DeltaCostFunctionComponents(in, st, em.move);
 
     if (em.cost.total < 0)
       improving_neighbors++;
@@ -302,7 +302,7 @@ void MoveTester<Input, Output, State, Move, CostStructure>::PrintNeighborhoodSta
       else if (em.cost.all_components[i] > min_max_costs[i].second)
         min_max_costs[i].second = em.cost.all_components[i];
     }
-  } while (ne.NextMove(st, em.move));
+  } while (ne.NextMove(in, st, em.move));
 
   os << "Neighborhood size: " << neighbors << std::endl
      << "   improving moves: " << improving_neighbors << " ("
@@ -321,11 +321,11 @@ template <class Input, class Output, class State, class Move, class CostStructur
 void MoveTester<Input, Output, State, Move, CostStructure>::PrintAllNeighbors(const State &st) const
 {
   Move mv;
-  ne.FirstMove(st, mv);
+  ne.FirstMove(in, st, mv);
   do
   {
-    os << mv << " " << ne.DeltaCostFunctionComponents(st, mv) << std::endl;
-  } while (ne.NextMove(st, mv));
+    os << mv << " " << ne.DeltaCostFunctionComponents(in, st, mv) << std::endl;
+  } while (ne.NextMove(in, st, mv));
 }
 
 template <class Input, class Output, class State, class Move, class CostStructure>
@@ -338,11 +338,11 @@ void MoveTester<Input, Output, State, Move, CostStructure>::CheckRandomMoveDistr
   unsigned long int trials = 0, tot_trials, rounds;
   double dev = 0;
 
-  ne.FirstMove(st, mv);
+  ne.FirstMove(in, st, mv);
   do
   {
     frequency[mv] = 0;
-  } while (ne.NextMove(st, mv));
+  } while (ne.NextMove(in, st, mv));
 
   os << "The neighborhood has " << frequency.size() << " members." << std::endl;
   os << "How many rounds do you want to test: ";
@@ -351,7 +351,7 @@ void MoveTester<Input, Output, State, Move, CostStructure>::CheckRandomMoveDistr
   tot_trials = frequency.size() * rounds;
   while (trials < tot_trials)
   {
-    ne.RandomMove(st, mv);
+    ne.RandomMove(in, st, mv);
     if (frequency.find(mv) != frequency.end())
     {
       frequency[mv]++;
@@ -394,8 +394,8 @@ void MoveTester<Input, Output, State, Move, CostStructure>::CheckMoveIndependenc
   unsigned int repeat_states = 0, null_moves = 0, all_moves = 1, i;
   bool repeated_state;
   State st1 = st;
-  ne.FirstMove(st1, mv);
-  ne.MakeMove(st1, mv);
+  ne.FirstMove(in, st1, mv);
+  ne.MakeMove(in, st1, mv);
   if (st1 == st)
   {
     os << "Null move " << mv << std::endl;
@@ -405,10 +405,10 @@ void MoveTester<Input, Output, State, Move, CostStructure>::CheckMoveIndependenc
   {
     reached_states.push_back(std::make_pair(mv, st1));
   }
-  while (ne.NextMove(st, mv))
+  while (ne.NextMove(in, st, mv))
   {
     st1 = st;
-    ne.MakeMove(st1, mv);
+    ne.MakeMove(in, st1, mv);
     if (st1 == st)
     {
       os << "Null move " << mv << std::endl;

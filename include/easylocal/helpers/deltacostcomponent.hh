@@ -31,12 +31,22 @@ public:
 
   /** @copydoc CostComponent::IsSoft() */
   bool IsSoft() const { return cc.IsSoft(); }
+  
+  /** Old-style method, without Input
+   @deprecated
+   */
+  [[deprecated("Input object has been moved outside the CostComponent class")]]
+  CFtype DeltaCost(const State &st, const Move &mv) const
+  {
+    throw std::runtime_error("You should update your DeltaCostComponent by adding a const Input& reference to the method");
+  }
 
   /** Returns the variation in the cost function induced by the move according to this cost component.
+   @param in input object
        @param st state to evaluate
        @param mv move to evaluate
        */
-  virtual CFtype DeltaCost(const State &st, const Move &mv) const;
+  virtual CFtype DeltaCost(const Input& in, const State &st, const Move &mv) const;
 
   /** Returns whether the delta function is implemented, or the complete cost component is used. */
   virtual bool IsDeltaImplemented() const { return true; }
@@ -45,24 +55,43 @@ public:
   const std::string name;
 
 protected:
+  /** Deprecated constructor.
+   @deprecated
+   */
+  [[deprecated("Input object has been moved outside the CostComponent class")]]
+  DeltaCostComponent(const Input &in, CostComponent<Input, State, CFtype> &cc, std::string name)
+  {
+    throw std::runtime_error("You should update your DeltaCostComponent, this constructor cannot be used anymore");
+  }
+  
   /** Constructor.
        @brief Constructs a DeltaCostComponent providing an input object, the related CostComponent and a name
-       @param in an Input object
        @param cc a related CostComponent
        @param name the name assigned to the object
        */
-  DeltaCostComponent(const Input &in, CostComponent<Input, State, CFtype> &cc, std::string name);
+  DeltaCostComponent(CostComponent<Input, State, CFtype> &cc, std::string name);
+  
+  
+  /** Destructor. */
   virtual ~DeltaCostComponent() {}
+  
+  /** Old-style method, without Input
+  @deprecated
+  */
+  [[deprecated("Input object has been moved outside the CostComponent class")]]
+  CFtype ComputeDeltaCost(const State &st, const Move &mv) const
+  {
+    throw std::runtime_error("You should update your DeltaCostComponent by adding a const Input& reference to the method");
+  }
 
   /** Computes the variation of the cost on a given @ref State due to a specific @ref Move.
+   @param in the Input object
        @param st the starting State upon which the variation of the cost has to be computed
        @param mv the Move which would be applied to the State st in order to compute the variation
        @return the cost variation by applying Move mv on State st
        */
-  virtual CFtype ComputeDeltaCost(const State &st, const Move &mv) const = 0;
-
-  /** The @ref Input object. */
-  const Input &in;
+  virtual CFtype ComputeDeltaCost(const Input& in, const State &st, const Move &mv) const = 0;
+  
 
 public:
   /** The @ref CostComponent associated with the DeltaCostComponent. */
@@ -72,10 +101,9 @@ public:
 /** IMPLEMENTATION */
 
 template <class Input, class State, class Move, class CFtype>
-DeltaCostComponent<Input, State, Move, CFtype>::DeltaCostComponent(const Input &i, CostComponent<Input, State, CFtype> &e_cc, std::string name)
-    : name(name), in(i), cc(e_cc)
-{
-}
+DeltaCostComponent<Input, State, Move, CFtype>::DeltaCostComponent(CostComponent<Input, State, CFtype> &e_cc, std::string name)
+    : name(name), cc(e_cc)
+{}
 
 template <class Input, class State, class Move, class CFtype>
 void DeltaCostComponent<Input, State, Move, CFtype>::Print(std::ostream &os) const
@@ -84,10 +112,11 @@ void DeltaCostComponent<Input, State, Move, CFtype>::Print(std::ostream &os) con
 }
 
 template <class Input, class State, class Move, class CFtype>
-CFtype DeltaCostComponent<Input, State, Move, CFtype>::DeltaCost(const State &st,
+CFtype DeltaCostComponent<Input, State, Move, CFtype>::DeltaCost(const Input& in,
+                                                                 const State &st,
                                                                  const Move &mv) const
 {
-  return this->cc.Weight() * ComputeDeltaCost(st, mv);
+  return this->cc.Weight() * ComputeDeltaCost(in, st, mv);
 }
 
 template <class Input, class State, class Move, class CostStructure>
@@ -103,18 +132,18 @@ public:
   typedef typename CostStructure::CFtype CFtype;
 
   /** Constructor. */
-  DeltaCostComponentAdapter(const Input &in, CostComponent<Input, State, CFtype> &cc, const NeighborhoodExplorer<Input, State, Move, CostStructure> &ne) : DeltaCostComponent<Input, State, Move, CFtype>(in, cc, "DeltaAdapter" + cc.name), ne(ne) {}
+  DeltaCostComponentAdapter(CostComponent<Input, State, CFtype> &cc, const NeighborhoodExplorer<Input, State, Move, CostStructure> &ne) : DeltaCostComponent<Input, State, Move, CFtype>(cc, "DeltaAdapter" + cc.name), ne(ne) {}
 
   /** @copydoc DeltaCostComponent::IsDeltaImplemented() */
-  virtual bool IsDeltaImplemented() const { return false; }
+  virtual bool IsDeltaImplemented() const final { return false; }
 
 protected:
   /** @copydoc DeltaCostComponent::ComputeDeltaCost() */
-  virtual CFtype ComputeDeltaCost(const State &st, const Move &mv) const
+  virtual CFtype ComputeDeltaCost(const Input& in, const State &st, const Move &mv) const
   {
     State new_st = st;
-    ne.MakeMove(new_st, mv);
-    return this->cc.ComputeCost(new_st) - this->cc.ComputeCost(st);
+    ne.MakeMove(in, new_st, mv);
+    return this->cc.ComputeCost(in, new_st) - this->cc.ComputeCost(in, st);
   }
   const NeighborhoodExplorer<Input, State, Move, CostStructure> &ne;
 };
