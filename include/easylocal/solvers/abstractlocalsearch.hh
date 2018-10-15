@@ -36,7 +36,7 @@ namespace EasyLocal
       [[deprecated("This is the old style easylocal interface, it might still be used, however we advise to upgrade to Input-less class and Input-aware methods")]]
       SolverResult<Input, Output, CostStructure> Solve()
       {
-        return Solver<Input, Output, CostStructure>::Solve();
+        return Solver<Input, Output, CostStructure>::Solve(this->GetInput());
       }      
       /** @copydoc Solver */
       virtual SolverResult<Input, Output, CostStructure> Solve(const Input& in) final;
@@ -129,6 +129,17 @@ namespace EasyLocal
                                                                                   std::string name)
     : Parametrized(name, typeid(this).name()),
     Solver<Input, Output, CostStructure>(in, name),
+    sm(sm),
+    om(om),
+    is_running(false)
+    {}
+    
+    template <class Input, class Output, class State, class CostStructure>
+    AbstractLocalSearch<Input, Output, State, CostStructure>::AbstractLocalSearch(StateManager<Input, State, CostStructure> &sm,
+                                                                                  OutputManager<Input, Output, State> &om,
+                                                                                  std::string name)
+    : Parametrized(name, typeid(this).name()),
+    Solver<Input, Output, CostStructure>(name),
     sm(sm),
     om(om),
     is_running(false)

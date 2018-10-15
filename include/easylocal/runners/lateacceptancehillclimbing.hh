@@ -54,6 +54,8 @@ namespace EasyLocal
     void LateAcceptanceHillClimbing<Input, State, Move, CostStructure>::InitializeRun(const Input& in)
     {
       HillClimbing<Input, State, Move, CostStructure>::InitializeRun(in);
+      if (steps <= 0)
+        throw IncorrectParameterValue(steps, "should be greater than zero");
       
       // the queue must be filled with the initial state cost at the beginning
       previous_steps = std::vector<CostStructure>(steps, this->current_state_cost);
