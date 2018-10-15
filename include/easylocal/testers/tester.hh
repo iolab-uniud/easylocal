@@ -59,18 +59,19 @@ namespace EasyLocal
       }
       virtual ~AbstractTester(){};
       
+      const Input& GetInput() const
+      {
+        if (!p_in)
+          throw std::runtime_error("Error: input object not passed to tester yet");
+        return *p_in;
+      }
+      
     protected:
       virtual void AddRunner(Core::Runner<Input, State, CostStructure> &r){};
       void AddRunners()
       {
         for (auto p_r : Core::Runner<Input, State, CostStructure>::runners)
           AddRunner(*p_r);
-      }
-      const Input& GetInput() const
-      {
-        if (!p_in)
-          throw std::runtime_error("Error: input object not passed to tester yet");
-        return *p_in;
       }
       virtual void SetInput(const Input& in)
       {
@@ -101,7 +102,6 @@ namespace EasyLocal
     class Tester : public AbstractTester<Input, State, CostStructure>, public ChoiceReader
     {
       typedef typename CostStructure::CFtype CFtype;
-      
     public:
       Tester(const Input &in, StateManager<Input, State, CostStructure> &sm,
              Core::OutputManager<Input, Output, State> &om, std::ostream &o = std::cout);

@@ -39,13 +39,10 @@ namespace EasyLocal
     /**
      Constructs an abstract tester for components and assign it a name passed
      as parameter.
-     @param nm the name of the tester
-     @param sm a pointer to a state manager
-     @param om a pointer to an output manager
-     @param in a pointer to an input object (nullptr for default)
+     @param name the name of the tester
      */
     template <class Input, class Output, class State, class CostStructure>
-    ComponentTester<Input, Output, State, CostStructure>::ComponentTester(std::string e_name)
-    : name(e_name) {}
+    ComponentTester<Input, Output, State, CostStructure>::ComponentTester(std::string name)
+    : name(name) {}
   } // namespace Debug
 } // namespace EasyLocal
