@@ -115,12 +115,6 @@ namespace EasyLocal
        */
       CostComponent(const CFtype &weight, bool is_hard, std::string name);
       
-      /** Constructor, weightless (weight is set to 1)
-       @param is_hard a flag which tells if the cost component is hard or soft
-       @param name name of the cost component (for debug reasons)
-       */
-      CostComponent(bool is_hard, std::string name) : CostComponent(CFtype(1.0), is_hard, name) {}
-      
       /** Destructor. */
       virtual ~CostComponent()
       {}

@@ -24,10 +24,17 @@ namespace EasyLocal
     public:
       typedef typename CostStructure::CFtype CFtype;
       
+      [[deprecated("This is the old style way to create and pass a kicker tester to the main tester, now you should use the Tester::AddKickerTester(Kicker&, strint) method")]]
       KickerTester(Core::StateManager<Input, State, CostStructure> &sm,
                    Core::OutputManager<Input, Output, State> &om,
                    Core::Kicker<Input, State, Move, CostStructure> &k,
                    std::string name, Tester<Input, Output, State, CostStructure> &t, std::ostream &os = std::cout);
+      
+      KickerTester(Core::StateManager<Input, State, CostStructure> &sm,
+                   Core::OutputManager<Input, Output, State> &om,
+                   Core::Kicker<Input, State, Move, CostStructure> &k,
+                   std::string name, std::ostream &os = std::cout);
+      
       virtual size_t Modality() const;
       
       void RunMainMenu(const Input& in, State &st);
@@ -45,7 +52,6 @@ namespace EasyLocal
       Core::Kicker<Input, State, Move, CostStructure> &kicker;
       std::ostream &os;
       Parameter<unsigned int> length;
-      Tester<Input, Output, State, CostStructure>& parent;
     };
     
     /*************************************************************************
@@ -56,10 +62,17 @@ namespace EasyLocal
     KickerTester<Input, Output, State, Move, CostStructure>::KickerTester(Core::StateManager<Input, State, CostStructure> &sm,
                                                                           Core::OutputManager<Input, Output, State> &om,
                                                                           Core::Kicker<Input, State, Move, CostStructure> &k, std::string name, Tester<Input, Output, State, CostStructure> &t, std::ostream &os)
-    : ComponentTester<Input, Output, State, CostStructure>(name), Parametrized(name, "Kicker tester parameters"), sm(sm), om(om), kicker(k), os(os), parent(t)
+    : ComponentTester<Input, Output, State, CostStructure>(name), Parametrized(name, "Kicker tester parameters"), sm(sm), om(om), kicker(k), os(os)
     {
-      t.AddKickerTester(*this);
+      t.AddKickerTester(this);
     }
+    
+    template <class Input, class Output, class State, class Move, class CostStructure>
+    KickerTester<Input, Output, State, Move, CostStructure>::KickerTester(Core::StateManager<Input, State, CostStructure> &sm,
+                                                                          Core::OutputManager<Input, Output, State> &om,
+                                                                          Core::Kicker<Input, State, Move, CostStructure> &k, std::string name, std::ostream &os)
+    : ComponentTester<Input, Output, State, CostStructure>(name), Parametrized(name, "Kicker tester parameters"), sm(sm), om(om), kicker(k), os(os)
+    {}
     
     template <class Input, class Output, class State, class Move, class CostStructure>
     void KickerTester<Input, Output, State, Move, CostStructure>::InitializeParameters()

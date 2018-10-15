@@ -25,11 +25,10 @@ namespace EasyLocal
       virtual bool ExecuteChoice(const Input& in, State &st) = 0;
       const std::string name;
       virtual size_t Modality() const = 0;
-      
-    protected:
-      ComponentTester(std::string name);
       /** Virtual destructor. */
       virtual ~ComponentTester() {}
+    protected:
+      ComponentTester(std::string name);      
     };
     
     /*************************************************************************

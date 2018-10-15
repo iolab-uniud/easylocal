@@ -20,6 +20,12 @@ namespace EasyLocal
     
     using namespace EasyLocal::Core;
     
+    template <class Input, class Output, class State, class Move, class CostStructure>
+    class MoveTester;
+    
+    template <class Input, class Output, class State, class Move, class CostStructure>
+    class KickerTester;
+    
     class ChoiceReader
     {
     protected:
@@ -113,7 +119,12 @@ namespace EasyLocal
              Core::OutputManager<Input, Output, State> &om, std::ostream &o = std::cout);
       
       /** Virtual destructor. */
-      virtual ~Tester() {}
+      virtual ~Tester()
+      {
+        for (auto ct : created_testers)
+          delete ct;
+      }
+      
       void RunMainMenu(std::string file_name="");
       void RunMainMenu(const Input& in, std::string file_name="")
       {
@@ -121,8 +132,34 @@ namespace EasyLocal
         RunMainMenu(file_name);
       }
       
-      void AddMoveTester(ComponentTester<Input, Output, State, CostStructure> &mt);
-      void AddKickerTester(ComponentTester<Input, Output, State, CostStructure> &kt);
+      template <class Move>
+      void AddKickerTester(Kicker<Input, State, Move, CostStructure> &k, std::string name)
+      {
+        auto kt = new KickerTester<Input, Output, State, Move, CostStructure>(sm, om, k, name, os);
+        kicker_testers.push_back(kt);
+        created_testers.push_back(kt);
+      }
+      
+      template <class Move>
+      void AddKickerTester(KickerTester<Input, Output, State, Move, CostStructure>* kt)
+      {
+        kicker_testers.push_back(kt);
+      }
+      
+      template <class Move>
+      void AddMoveTester(NeighborhoodExplorer<Input, State, Move, CostStructure> &nhe, std::string name)
+      {
+        auto mt = new MoveTester<Input, Output, State, Move, CostStructure>(sm, om, nhe, name, os);
+        move_testers.push_back(mt);
+        created_testers.push_back(mt);
+      }
+      
+      template <class Move>
+      void AddMoveTester(MoveTester<Input, Output, State, Move, CostStructure>* mt)
+      {
+        move_testers.push_back(mt);
+      }
+      
       void SetInput(const Input& in)
       {
         AbstractTester<Input, State, CostStructure>::SetInput(in);
@@ -159,6 +196,7 @@ namespace EasyLocal
       int choice,                                      /**< The option currently chosen from the menu. */
       sub_choice;                                      /**< The suboption currently chosen from the menu. */
     private:
+      std::list<ComponentTester<Input, Output, State, CostStructure>*> created_testers;
       std::unique_ptr<Input> internal_input; /**< for creating an input internally to the tester. */
     };
     
@@ -197,29 +235,7 @@ namespace EasyLocal
     : os(os), sm(sm), om(om), internal_input(nullptr)
     {
       this->AddRunners();
-    }
-    
-    /**
-     Adds a move tester.
-     
-     @param mt a move tester
-     */
-    template <class Input, class Output, class State, class CostStructure>
-    void Tester<Input, Output, State, CostStructure>::AddMoveTester(ComponentTester<Input, Output, State, CostStructure> &mt)
-    {
-      move_testers.push_back(&mt);
-    }
-    
-    /**
-     Adds a kicker tester.
-     
-     @param p_amt a pointer to a move tester
-     */
-    template <class Input, class Output, class State, class CostStructure>
-    void Tester<Input, Output, State, CostStructure>::AddKickerTester(ComponentTester<Input, Output, State, CostStructure> &kt)
-    {
-      kicker_testers.push_back(&kt);
-    }
+    }    
     
     /**
      Adds a runner to the tester.
@@ -495,6 +511,7 @@ namespace EasyLocal
         sub_choice = -1;
     }
     
+    // FIXME: currently it relies on the fact that an Input constructor with a single string parameter exists
     template <class Input, class Output, class State, class CostStructure>
     void Tester<Input, Output, State, CostStructure>::ShowLoadInputMenu()
     {
@@ -513,6 +530,7 @@ namespace EasyLocal
         {
           try
           {
+            // this will destroy a previously created object, if exists
             internal_input = std::make_unique<Input>(file_name);
             SetInput(*internal_input);
             break;

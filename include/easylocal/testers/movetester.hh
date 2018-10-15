@@ -29,12 +29,18 @@ namespace EasyLocal
       typedef typename CostStructure::CFtype CFtype;
       
     public:
+      [[deprecated("This is the old style way to create and pass a move tester to the main tester, now you should use the Tester::AddMoveTester(NeighborhoodExplorer&, string) method")]]
       MoveTester(Core::StateManager<Input, State, CostStructure> &sm,
                  Core::OutputManager<Input, Output, State> &om,
                  Core::NeighborhoodExplorer<Input, State, Move, CostStructure> &ne,
                  std::string name,
                  Tester<Input, Output, State, CostStructure> &t,
-                 std::ostream &o = std::cout);
+                 std::ostream &os = std::cout);
+      MoveTester(Core::StateManager<Input, State, CostStructure> &sm,
+                 Core::OutputManager<Input, Output, State> &om,
+                 Core::NeighborhoodExplorer<Input, State, Move, CostStructure> &ne,
+                 std::string name,
+                 std::ostream &os = std::cout);
       void RunMainMenu(const Input& in, State &st);
       void PrintNeighborhoodStatistics(const Input& in, const State &st) const;
       void PrintAllNeighbors(const Input& in, const State &st) const;
@@ -54,7 +60,6 @@ namespace EasyLocal
       int choice;                                                        /**< The option currently chosen from the menu. */
       std::ostream &os;
       double tolerance;
-      Tester<Input, Output, State, CostStructure>& parent;
     };
     
     /*************************************************************************
@@ -67,11 +72,20 @@ namespace EasyLocal
                                                                       Core::NeighborhoodExplorer<Input, State, Move, CostStructure> &ne,
                                                                       std::string name,
                                                                       Tester<Input, Output, State, CostStructure> &t,
-                                                                      std::ostream &o)
-    : ComponentTester<Input, Output, State, CostStructure>(name), sm(sm), om(om), ne(ne), os(o), tolerance(std::numeric_limits<CFtype>::epsilon()), parent(t)
+                                                                      std::ostream &os)
+    : ComponentTester<Input, Output, State, CostStructure>(name), sm(sm), om(om), ne(ne), os(os), tolerance(std::numeric_limits<CFtype>::epsilon())
     {
-      t.AddMoveTester(*this);
+      t.AddMoveTester(this);
     }
+    
+    template <class Input, class Output, class State, class Move, class CostStructure>
+    MoveTester<Input, Output, State, Move, CostStructure>::MoveTester(Core::StateManager<Input, State, CostStructure> &sm,
+                                                                      Core::OutputManager<Input, Output, State> &om,
+                                                                      Core::NeighborhoodExplorer<Input, State, Move, CostStructure> &ne,
+                                                                      std::string name,
+                                                                      std::ostream &os)
+    : ComponentTester<Input, Output, State, CostStructure>(name), sm(sm), om(om), ne(ne), os(os), tolerance(std::numeric_limits<CFtype>::epsilon())
+    {}
     
     template <class Input, class Output, class State, class Move, class CostStructure>
     void MoveTester<Input, Output, State, Move, CostStructure>::RunMainMenu(const Input &in, State &st)
