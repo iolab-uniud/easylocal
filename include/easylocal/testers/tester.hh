@@ -58,14 +58,18 @@ namespace EasyLocal
     class AbstractTester
     {
     public:
-      AbstractTester() : p_in(nullptr), p_test_state(nullptr) {}
+      AbstractTester() : p_in(nullptr), p_test_state(nullptr)
+      {
+        this->AddRunners();
+      }
       AbstractTester(const Input& in) : p_in(&in)
       {
         p_test_state = std::make_shared<State>(*p_in);
+        this->AddRunners();
       }
+      void AddRunner(Core::Runner<Input, State, CostStructure> &r);
       virtual ~AbstractTester(){};
     protected:
-      virtual void AddRunner(Core::Runner<Input, State, CostStructure> &r){};
       void AddRunners()
       {
         for (auto p_r : Core::Runner<Input, State, CostStructure>::runners)
@@ -100,7 +104,19 @@ namespace EasyLocal
       
       const Input* p_in; /**< The current input managed by the tester. */
       std::shared_ptr<State> p_test_state; /**< The current state managed by the tester. */
+      std::vector<Core::Runner<Input, State, CostStructure> *> runners; /**< The set of attached runners. */
     };
+    
+    /**
+     Adds a runner to the tester.
+     
+     @param p_ru a pointer to a compatible runner
+     */
+    template <class Input, class State, class CostStructure>
+    void AbstractTester<Input, State, CostStructure>::AddRunner(Core::Runner<Input, State, CostStructure> &r)
+    {
+      runners.push_back(&r);
+    }
     
     /** A Tester collects a set of basic testers (move, state, ...) and
      allows to access them through sub-menus. It represent the external
@@ -166,7 +182,6 @@ namespace EasyLocal
         RunInputMenu();
       }
     protected:
-      void AddRunner(Core::Runner<Input, State, CostStructure> &r);
       void RunInputMenu();
       void RunStateTestMenu();
       void ShowStateMenu();
@@ -187,9 +202,6 @@ namespace EasyLocal
       void ExecuteDebuggingMenu();
       std::vector<ComponentTester<Input, Output, State, CostStructure>*> move_testers;
       std::vector<ComponentTester<Input, Output, State, CostStructure>*> kicker_testers;
-      /**< The set of attached move testers. */
-      std::vector<Core::Runner<Input, State, CostStructure> *> runners; /**< The set of attached
-                                                                         runners. */
       std::ostream &os;
       Core::StateManager<Input, State, CostStructure> &sm; /**< A pointer to a state manager. */
       Core::OutputManager<Input, Output, State> &om;       /**< A pointer to an output producer. */
@@ -217,9 +229,7 @@ namespace EasyLocal
                                                         Core::StateManager<Input, State, CostStructure> &sm,
                                                         Core::OutputManager<Input, Output, State> &om, std::ostream &os)
     : AbstractTester<Input, State, CostStructure>(this->GetInput()), os(os), sm(sm), om(om), internal_input(nullptr)
-    {
-      this->AddRunners();
-    }
+    {}
     
     /**
      Constructs a tester by providing it links to
@@ -233,20 +243,8 @@ namespace EasyLocal
     Tester<Input, Output, State, CostStructure>::Tester(Core::StateManager<Input, State, CostStructure> &sm,
                                                         Core::OutputManager<Input, Output, State> &om, std::ostream &os)
     : os(os), sm(sm), om(om), internal_input(nullptr)
-    {
-      this->AddRunners();
-    }    
+    {}
     
-    /**
-     Adds a runner to the tester.
-     
-     @param p_ru a pointer to a compatible runner
-     */
-    template <class Input, class Output, class State, class CostStructure>
-    void Tester<Input, Output, State, CostStructure>::AddRunner(Core::Runner<Input, State, CostStructure> &r)
-    {
-      runners.push_back(&r);
-    }
     
     /**
      Manages the tester main menu.
@@ -386,14 +384,14 @@ namespace EasyLocal
       do
       {
         os << "RUN MENU: " << std::endl;
-        for (i = 0; i < runners.size(); i++)
-          os << "   (" << (i + 1) << ") " << runners[i]->name << std::endl;
+        for (i = 0; i < this->runners.size(); i++)
+          os << "   (" << (i + 1) << ") " << this->runners[i]->name << std::endl;
         os << "   (0) Return to Main Menu" << std::endl;
         os << " Your choice: ";
         this->sub_choice = this->ReadChoice(std::cin);
-        if (sub_choice == -1 || sub_choice >= static_cast<int>(runners.size()))
+        if (sub_choice == -1 || sub_choice >= static_cast<int>(this->runners.size()))
           os << "Invalid choice" << std::endl;
-      } while (sub_choice == -1 || sub_choice > static_cast<int>(runners.size()));
+      } while (sub_choice == -1 || sub_choice > static_cast<int>(this->runners.size()));
     }
     
     /**
@@ -424,7 +422,7 @@ namespace EasyLocal
     {
       if (sub_choice > 0)
       {
-        Runner<Input, State, CostStructure> &r = *runners[sub_choice - 1];
+        Runner<Input, State, CostStructure> &r = *this->runners[sub_choice - 1];
         r.ReadParameters();
         
         // Ask for timeout

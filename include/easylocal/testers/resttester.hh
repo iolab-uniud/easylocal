@@ -2,6 +2,7 @@
 
 #include "easylocal/utils/crow_all.h"
 #include <memory>
+#include <map>
 #include "easylocal/testers/tester.hh"
 
 namespace EasyLocal {
@@ -30,15 +31,12 @@ namespace EasyLocal {
     public:
       RESTTester(StateManager<Input, State, CostStructure>& sm, OutputManager<Input, Output, State>& om)
       : sm(sm), om(om)
-      {}
+      {
+        this->AddRunners();
+      }
       /** Virtual destructor. */
       virtual ~RESTTester() {}
-      //  void AddMoveTester(MoveTester<Input, Output, State, CostStructure> &amt);
-      //  void AddKickerTester(KickerTester<Input, Output, State, CostStructure> &kt);
-      //  void AddRunnerTester(RunnerTester<Input, Output, State, CostStructure> &rt)
       void Run();
-      
-      
     protected:
       //  std::vector<RunnerTester<Input, Output, State, CostStructure>*> runner_testers;                                         /**< The output object. */
       StateManager<Input, State, CostStructure>& sm;
@@ -49,8 +47,23 @@ namespace EasyLocal {
     template <class Input, class Output, class State, class CostStructure>
     void RESTTester<Input, Output, State, CostStructure>::Run()
     {
-      CROW_ROUTE(app, "/")([](){
-        return "Hello world";
+      std::vector<string> runner_urls;
+      std::map<string, Runner<Input, State, CostStructure>*> runners;
+
+      for (auto r : this->runners)
+      {
+        runner_urls.push_back("/runner/" + r->name);
+        runners[r->name] = r;
+      }
+      
+      CROW_ROUTE(app, "/")([runner_urls](){
+        crow::json::wvalue services;
+        services["runners"] = runner_urls;
+        return services;
+      });
+      
+      CROW_ROUTE(app, "/runner/<string>")([runners](string name){
+        return "Hello from " + name;
       });
       
       app.port(8080).multithreaded().run();
