@@ -4,9 +4,12 @@
 #include <memory>
 #include <map>
 #include "easylocal/testers/tester.hh"
+#include "easylocal/utils/json.hpp"
 
 namespace EasyLocal {
   namespace Debug {
+    
+    using json = nlohmann::json;
     
     /** A REST Runner Tester handles a single runner
      @ingroup Testers
@@ -49,6 +52,12 @@ namespace EasyLocal {
     {
       std::vector<string> runner_urls;
       std::map<string, Runner<Input, State, CostStructure>*> runners;
+      
+      auto json_response = [](int code, const json& body) {
+        crow::response res = crow::response(code, body.dump());
+        res.set_header("Content-Type", "application/json");
+        return res;
+      };
 
       for (auto r : this->runners)
       {
@@ -56,14 +65,54 @@ namespace EasyLocal {
         runners[r->name] = r;
       }
       
-      CROW_ROUTE(app, "/")([runner_urls](){
-        crow::json::wvalue services;
-        services["runners"] = runner_urls;
-        return services;
+      // This endpoint just lists the available services
+      CROW_ROUTE(app, "/")([json_response, runner_urls]() {
+        json response;
+        response["runners"] = runner_urls;
+        return json_response(200, response);
       });
       
-      CROW_ROUTE(app, "/runner/<string>")([runners](string name){
-        return "Hello from " + name;
+      // This endpoint allows to interact with a specific runner
+      CROW_ROUTE(app, "/runner/<string>")
+      .methods("GET"_method)([json_response, runners](std::string name) {
+        json response;
+        if (runners.find(name) == runners.end())
+        {
+          response["reason"] = "Runner `" + name + "` does not exist or is not active.";
+          return json_response(404, response);
+        }
+        // FIXME: write a method to print-out all runners parameters
+        response["parameters"] = { "" };
+        return json_response(200, response);
+      });
+      
+      CROW_ROUTE(app, "/runner/<string>")
+      .methods("POST"_method)([json_response, runners](const crow::request& req, crow::response& res, std::string name) {
+        json response;
+        if (runners.find(name) == runners.end())
+        {
+          response["reason"] = "Runner `" + name + "` does not exist or is not active.";
+          res = json_response(404, response);
+          res.end();
+          return;
+        }
+        json payload = json::parse(req.body);
+        response["request"] = payload;
+        res = json_response(200, response);
+        res.end();
+      });
+      
+      // This endpoint allow to check the status of a specific runner request
+      CROW_ROUTE(app, "/runner/<string>/<int>")
+      .methods("GET"_method)([json_response, runners](std::string name, int id) {
+        json response;
+        if (runners.find(name) == runners.end())
+        {
+          response["reason"] = "Runner `" + name + "` does not exist or is not active.";
+          return json_response(404, response);
+        }
+        response["parameters"] = { id };
+        return json_response(200, response);
       });
       
       app.port(8080).multithreaded().run();

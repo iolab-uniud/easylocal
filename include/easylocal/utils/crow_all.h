@@ -1,5 +1,42 @@
 #pragma once
 
+#include <boost/algorithm/string/predicate.hpp>
+#include <boost/functional/hash.hpp>
+#include <unordered_map>
+
+namespace crow
+{
+    struct ci_hash
+    {
+        size_t operator()(const std::string& key) const
+        {
+            std::size_t seed = 0;
+            std::locale locale;
+
+            for(auto c : key)
+            {
+                boost::hash_combine(seed, std::toupper(c, locale));
+            }
+
+            return seed;
+        }
+    };
+
+    struct ci_key_eq
+    {
+        bool operator()(const std::string& l, const std::string& r) const
+        {
+            return boost::iequals(l, r);
+        }
+    };
+
+    using ci_map = std::unordered_multimap<std::string, std::string, ci_hash, ci_key_eq>;
+}
+
+
+
+#pragma once
+
 #include <stdio.h>
 #include <string.h>
 #include <string>
@@ -408,6 +445,205 @@ namespace crow
 
 
 
+/* 
+ *
+ * TinySHA1 - a header only implementation of the SHA1 algorithm in C++. Based
+ * on the implementation in boost::uuid::details.
+ * 
+ * SHA1 Wikipedia Page: http://en.wikipedia.org/wiki/SHA-1
+ * 
+ * Copyright (c) 2012-22 SAURAV MOHAPATRA <mohaps@gmail.com>
+ *
+ * Permission to use, copy, modify, and distribute this software for any
+ * purpose with or without fee is hereby granted, provided that the above
+ * copyright notice and this permission notice appear in all copies.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+ * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+ * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+ * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+ * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+ * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ */
+#ifndef _TINY_SHA1_HPP_
+#define _TINY_SHA1_HPP_
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <stdint.h>
+namespace sha1
+{
+	class SHA1
+	{
+	public:
+		typedef uint32_t digest32_t[5];
+		typedef uint8_t digest8_t[20];
+		inline static uint32_t LeftRotate(uint32_t value, size_t count) {
+			return (value << count) ^ (value >> (32-count));
+		}
+		SHA1(){ reset(); }
+		virtual ~SHA1() {}
+		SHA1(const SHA1& s) { *this = s; }
+		const SHA1& operator = (const SHA1& s) {
+			memcpy(m_digest, s.m_digest, 5 * sizeof(uint32_t));
+			memcpy(m_block, s.m_block, 64);
+			m_blockByteIndex = s.m_blockByteIndex;
+			m_byteCount = s.m_byteCount;
+			return *this;
+		}
+		SHA1& reset() {
+			m_digest[0] = 0x67452301;
+			m_digest[1] = 0xEFCDAB89;
+			m_digest[2] = 0x98BADCFE;
+			m_digest[3] = 0x10325476;
+			m_digest[4] = 0xC3D2E1F0;
+			m_blockByteIndex = 0;
+			m_byteCount = 0;
+			return *this;
+		}
+		SHA1& processByte(uint8_t octet) {
+			this->m_block[this->m_blockByteIndex++] = octet;
+			++this->m_byteCount;
+			if(m_blockByteIndex == 64) {
+				this->m_blockByteIndex = 0;
+				processBlock();
+			}
+			return *this;
+		}
+		SHA1& processBlock(const void* const start, const void* const end) {
+			const uint8_t* begin = static_cast<const uint8_t*>(start);
+			const uint8_t* finish = static_cast<const uint8_t*>(end);
+			while(begin != finish) {
+				processByte(*begin);
+				begin++;
+			}
+			return *this;
+		}
+		SHA1& processBytes(const void* const data, size_t len) {
+			const uint8_t* block = static_cast<const uint8_t*>(data);
+			processBlock(block, block + len);
+			return *this;
+		}
+		const uint32_t* getDigest(digest32_t digest) {
+			size_t bitCount = this->m_byteCount * 8;
+			processByte(0x80);
+			if (this->m_blockByteIndex > 56) {
+				while (m_blockByteIndex != 0) {
+					processByte(0);
+				}
+				while (m_blockByteIndex < 56) {
+					processByte(0);
+				}
+			} else {
+				while (m_blockByteIndex < 56) {
+					processByte(0);
+				}
+			}
+			processByte(0);
+			processByte(0);
+			processByte(0);
+			processByte(0);
+			processByte( static_cast<unsigned char>((bitCount>>24) & 0xFF));
+			processByte( static_cast<unsigned char>((bitCount>>16) & 0xFF));
+			processByte( static_cast<unsigned char>((bitCount>>8 ) & 0xFF));
+			processByte( static_cast<unsigned char>((bitCount)     & 0xFF));
+	
+			memcpy(digest, m_digest, 5 * sizeof(uint32_t));
+			return digest;
+		}
+		const uint8_t* getDigestBytes(digest8_t digest) {
+			digest32_t d32;
+			getDigest(d32);
+			size_t di = 0;
+			digest[di++] = ((d32[0] >> 24) & 0xFF);
+			digest[di++] = ((d32[0] >> 16) & 0xFF);
+			digest[di++] = ((d32[0] >> 8) & 0xFF);
+			digest[di++] = ((d32[0]) & 0xFF);
+			
+			digest[di++] = ((d32[1] >> 24) & 0xFF);
+			digest[di++] = ((d32[1] >> 16) & 0xFF);
+			digest[di++] = ((d32[1] >> 8) & 0xFF);
+			digest[di++] = ((d32[1]) & 0xFF);
+			
+			digest[di++] = ((d32[2] >> 24) & 0xFF);
+			digest[di++] = ((d32[2] >> 16) & 0xFF);
+			digest[di++] = ((d32[2] >> 8) & 0xFF);
+			digest[di++] = ((d32[2]) & 0xFF);
+			
+			digest[di++] = ((d32[3] >> 24) & 0xFF);
+			digest[di++] = ((d32[3] >> 16) & 0xFF);
+			digest[di++] = ((d32[3] >> 8) & 0xFF);
+			digest[di++] = ((d32[3]) & 0xFF);
+			
+			digest[di++] = ((d32[4] >> 24) & 0xFF);
+			digest[di++] = ((d32[4] >> 16) & 0xFF);
+			digest[di++] = ((d32[4] >> 8) & 0xFF);
+			digest[di++] = ((d32[4]) & 0xFF);
+			return digest;
+		}
+	
+	protected:
+		void processBlock() {
+			uint32_t w[80];
+			for (size_t i = 0; i < 16; i++) {
+				w[i]  = (m_block[i*4 + 0] << 24);
+				w[i] |= (m_block[i*4 + 1] << 16);
+				w[i] |= (m_block[i*4 + 2] << 8);
+				w[i] |= (m_block[i*4 + 3]);
+			}
+			for (size_t i = 16; i < 80; i++) {
+				w[i] = LeftRotate((w[i-3] ^ w[i-8] ^ w[i-14] ^ w[i-16]), 1);
+			}
+	
+			uint32_t a = m_digest[0];
+			uint32_t b = m_digest[1];
+			uint32_t c = m_digest[2];
+			uint32_t d = m_digest[3];
+			uint32_t e = m_digest[4];
+	
+			for (std::size_t i=0; i<80; ++i) {
+				uint32_t f = 0;
+				uint32_t k = 0;
+	
+				if (i<20) {
+					f = (b & c) | (~b & d);
+					k = 0x5A827999;
+				} else if (i<40) {
+					f = b ^ c ^ d;
+					k = 0x6ED9EBA1;
+				} else if (i<60) {
+					f = (b & c) | (b & d) | (c & d);
+					k = 0x8F1BBCDC;
+				} else {
+					f = b ^ c ^ d;
+					k = 0xCA62C1D6;
+				}
+				uint32_t temp = LeftRotate(a, 5) + f + e + k + w[i];
+				e = d;
+				d = c;
+				c = LeftRotate(b, 30);
+				b = a;
+				a = temp;
+			}
+	
+			m_digest[0] += a;
+			m_digest[1] += b;
+			m_digest[2] += c;
+			m_digest[3] += d;
+			m_digest[4] += e;
+		}
+	private:
+		digest32_t m_digest;
+		uint8_t m_block[64];
+		size_t m_blockByteIndex;
+		size_t m_byteCount;
+	};
+}
+#endif
+
+
+
 /* merged revision: 5b951d74bd66ec9d38448e0a85b1cf8b85d97db3 */
 /* Copyright Joyent, Inc. and other Node contributors. All rights reserved.
  *
@@ -506,28 +742,28 @@ typedef int (*http_cb) (http_parser*);
   CROW_XX(5,  CONNECT,     CONNECT)      \
   CROW_XX(6,  OPTIONS,     OPTIONS)      \
   CROW_XX(7,  TRACE,       TRACE)        \
-  /* webdav */                      \
-  CROW_XX(8,  COPY,        COPY)         \
-  CROW_XX(9,  LOCK,        LOCK)         \
-  CROW_XX(10, MKCOL,       MKCOL)        \
-  CROW_XX(11, MOVE,        MOVE)         \
-  CROW_XX(12, PROPFIND,    PROPFIND)     \
-  CROW_XX(13, PROPPATCH,   PROPPATCH)    \
-  CROW_XX(14, SEARCH,      SEARCH)       \
-  CROW_XX(15, UNLOCK,      UNLOCK)       \
-  /* subversion */                  \
-  CROW_XX(16, REPORT,      REPORT)       \
-  CROW_XX(17, MKACTIVITY,  MKACTIVITY)   \
-  CROW_XX(18, CHECKOUT,    CHECKOUT)     \
-  CROW_XX(19, MERGE,       MERGE)        \
-  /* upnp */                        \
-  CROW_XX(20, MSEARCH,     M-SEARCH)     \
-  CROW_XX(21, NOTIFY,      NOTIFY)       \
-  CROW_XX(22, SUBSCRIBE,   SUBSCRIBE)    \
-  CROW_XX(23, UNSUBSCRIBE, UNSUBSCRIBE)  \
   /* RFC-5789 */                    \
-  CROW_XX(24, PATCH,       PATCH)        \
-  CROW_XX(25, PURGE,       PURGE)        \
+  CROW_XX(8, PATCH,       PATCH)        \
+  CROW_XX(9, PURGE,       PURGE)        \
+  /* webdav */                      \
+  CROW_XX(10,  COPY,        COPY)         \
+  CROW_XX(11,  LOCK,        LOCK)         \
+  CROW_XX(12, MKCOL,       MKCOL)        \
+  CROW_XX(13, MOVE,        MOVE)         \
+  CROW_XX(14, PROPFIND,    PROPFIND)     \
+  CROW_XX(15, PROPPATCH,   PROPPATCH)    \
+  CROW_XX(16, SEARCH,      SEARCH)       \
+  CROW_XX(17, UNLOCK,      UNLOCK)       \
+  /* subversion */                  \
+  CROW_XX(18, REPORT,      REPORT)       \
+  CROW_XX(19, MKACTIVITY,  MKACTIVITY)   \
+  CROW_XX(20, CHECKOUT,    CHECKOUT)     \
+  CROW_XX(21, MERGE,       MERGE)        \
+  /* upnp */                        \
+  CROW_XX(22, MSEARCH,     M-SEARCH)     \
+  CROW_XX(23, NOTIFY,      NOTIFY)       \
+  CROW_XX(24, SUBSCRIBE,   SUBSCRIBE)    \
+  CROW_XX(25, UNSUBSCRIBE, UNSUBSCRIBE)  \
   /* CalDAV */                      \
   CROW_XX(26, MKCALENDAR,  MKCALENDAR)   \
 
@@ -3052,242 +3288,6 @@ http_parser_version(void) {
 
 
 #pragma once
-
-#include <boost/algorithm/string/predicate.hpp>
-#include <boost/functional/hash.hpp>
-#include <unordered_map>
-
-namespace crow
-{
-    struct ci_hash
-    {
-        size_t operator()(const std::string& key) const
-        {
-            std::size_t seed = 0;
-            std::locale locale;
-
-            for(auto c : key)
-            {
-                boost::hash_combine(seed, std::toupper(c, locale));
-            }
-
-            return seed;
-        }
-    };
-
-    struct ci_key_eq
-    {
-        bool operator()(const std::string& l, const std::string& r) const
-        {
-            return boost::iequals(l, r);
-        }
-    };
-
-    using ci_map = std::unordered_multimap<std::string, std::string, ci_hash, ci_key_eq>;
-}
-
-
-
-/* 
- *
- * TinySHA1 - a header only implementation of the SHA1 algorithm in C++. Based
- * on the implementation in boost::uuid::details.
- * 
- * SHA1 Wikipedia Page: http://en.wikipedia.org/wiki/SHA-1
- * 
- * Copyright (c) 2012-22 SAURAV MOHAPATRA <mohaps@gmail.com>
- *
- * Permission to use, copy, modify, and distribute this software for any
- * purpose with or without fee is hereby granted, provided that the above
- * copyright notice and this permission notice appear in all copies.
- *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
- * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
- * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
- * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
- */
-#ifndef _TINY_SHA1_HPP_
-#define _TINY_SHA1_HPP_
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
-#include <stdint.h>
-namespace sha1
-{
-	class SHA1
-	{
-	public:
-		typedef uint32_t digest32_t[5];
-		typedef uint8_t digest8_t[20];
-		inline static uint32_t LeftRotate(uint32_t value, size_t count) {
-			return (value << count) ^ (value >> (32-count));
-		}
-		SHA1(){ reset(); }
-		virtual ~SHA1() {}
-		SHA1(const SHA1& s) { *this = s; }
-		const SHA1& operator = (const SHA1& s) {
-			memcpy(m_digest, s.m_digest, 5 * sizeof(uint32_t));
-			memcpy(m_block, s.m_block, 64);
-			m_blockByteIndex = s.m_blockByteIndex;
-			m_byteCount = s.m_byteCount;
-			return *this;
-		}
-		SHA1& reset() {
-			m_digest[0] = 0x67452301;
-			m_digest[1] = 0xEFCDAB89;
-			m_digest[2] = 0x98BADCFE;
-			m_digest[3] = 0x10325476;
-			m_digest[4] = 0xC3D2E1F0;
-			m_blockByteIndex = 0;
-			m_byteCount = 0;
-			return *this;
-		}
-		SHA1& processByte(uint8_t octet) {
-			this->m_block[this->m_blockByteIndex++] = octet;
-			++this->m_byteCount;
-			if(m_blockByteIndex == 64) {
-				this->m_blockByteIndex = 0;
-				processBlock();
-			}
-			return *this;
-		}
-		SHA1& processBlock(const void* const start, const void* const end) {
-			const uint8_t* begin = static_cast<const uint8_t*>(start);
-			const uint8_t* finish = static_cast<const uint8_t*>(end);
-			while(begin != finish) {
-				processByte(*begin);
-				begin++;
-			}
-			return *this;
-		}
-		SHA1& processBytes(const void* const data, size_t len) {
-			const uint8_t* block = static_cast<const uint8_t*>(data);
-			processBlock(block, block + len);
-			return *this;
-		}
-		const uint32_t* getDigest(digest32_t digest) {
-			size_t bitCount = this->m_byteCount * 8;
-			processByte(0x80);
-			if (this->m_blockByteIndex > 56) {
-				while (m_blockByteIndex != 0) {
-					processByte(0);
-				}
-				while (m_blockByteIndex < 56) {
-					processByte(0);
-				}
-			} else {
-				while (m_blockByteIndex < 56) {
-					processByte(0);
-				}
-			}
-			processByte(0);
-			processByte(0);
-			processByte(0);
-			processByte(0);
-			processByte( static_cast<unsigned char>((bitCount>>24) & 0xFF));
-			processByte( static_cast<unsigned char>((bitCount>>16) & 0xFF));
-			processByte( static_cast<unsigned char>((bitCount>>8 ) & 0xFF));
-			processByte( static_cast<unsigned char>((bitCount)     & 0xFF));
-	
-			memcpy(digest, m_digest, 5 * sizeof(uint32_t));
-			return digest;
-		}
-		const uint8_t* getDigestBytes(digest8_t digest) {
-			digest32_t d32;
-			getDigest(d32);
-			size_t di = 0;
-			digest[di++] = ((d32[0] >> 24) & 0xFF);
-			digest[di++] = ((d32[0] >> 16) & 0xFF);
-			digest[di++] = ((d32[0] >> 8) & 0xFF);
-			digest[di++] = ((d32[0]) & 0xFF);
-			
-			digest[di++] = ((d32[1] >> 24) & 0xFF);
-			digest[di++] = ((d32[1] >> 16) & 0xFF);
-			digest[di++] = ((d32[1] >> 8) & 0xFF);
-			digest[di++] = ((d32[1]) & 0xFF);
-			
-			digest[di++] = ((d32[2] >> 24) & 0xFF);
-			digest[di++] = ((d32[2] >> 16) & 0xFF);
-			digest[di++] = ((d32[2] >> 8) & 0xFF);
-			digest[di++] = ((d32[2]) & 0xFF);
-			
-			digest[di++] = ((d32[3] >> 24) & 0xFF);
-			digest[di++] = ((d32[3] >> 16) & 0xFF);
-			digest[di++] = ((d32[3] >> 8) & 0xFF);
-			digest[di++] = ((d32[3]) & 0xFF);
-			
-			digest[di++] = ((d32[4] >> 24) & 0xFF);
-			digest[di++] = ((d32[4] >> 16) & 0xFF);
-			digest[di++] = ((d32[4] >> 8) & 0xFF);
-			digest[di++] = ((d32[4]) & 0xFF);
-			return digest;
-		}
-	
-	protected:
-		void processBlock() {
-			uint32_t w[80];
-			for (size_t i = 0; i < 16; i++) {
-				w[i]  = (m_block[i*4 + 0] << 24);
-				w[i] |= (m_block[i*4 + 1] << 16);
-				w[i] |= (m_block[i*4 + 2] << 8);
-				w[i] |= (m_block[i*4 + 3]);
-			}
-			for (size_t i = 16; i < 80; i++) {
-				w[i] = LeftRotate((w[i-3] ^ w[i-8] ^ w[i-14] ^ w[i-16]), 1);
-			}
-	
-			uint32_t a = m_digest[0];
-			uint32_t b = m_digest[1];
-			uint32_t c = m_digest[2];
-			uint32_t d = m_digest[3];
-			uint32_t e = m_digest[4];
-	
-			for (std::size_t i=0; i<80; ++i) {
-				uint32_t f = 0;
-				uint32_t k = 0;
-	
-				if (i<20) {
-					f = (b & c) | (~b & d);
-					k = 0x5A827999;
-				} else if (i<40) {
-					f = b ^ c ^ d;
-					k = 0x6ED9EBA1;
-				} else if (i<60) {
-					f = (b & c) | (b & d) | (c & d);
-					k = 0x8F1BBCDC;
-				} else {
-					f = b ^ c ^ d;
-					k = 0xCA62C1D6;
-				}
-				uint32_t temp = LeftRotate(a, 5) + f + e + k + w[i];
-				e = d;
-				d = c;
-				c = LeftRotate(b, 30);
-				b = a;
-				a = temp;
-			}
-	
-			m_digest[0] += a;
-			m_digest[1] += b;
-			m_digest[2] += c;
-			m_digest[3] += d;
-			m_digest[4] += e;
-		}
-	private:
-		digest32_t m_digest;
-		uint8_t m_block[64];
-		size_t m_blockByteIndex;
-		size_t m_byteCount;
-	};
-}
-#endif
-
-
-
-#pragma once
 // settings for crow
 // TODO - replace with runtime config. libucl?
 
@@ -3310,7 +3310,9 @@ namespace sha1
 
     default to INFO
 */
+#ifndef CROW_LOG_LEVEL
 #define CROW_LOG_LEVEL 1
+#endif
 
 
 // compiler flags
@@ -3375,7 +3377,8 @@ namespace crow
 
         void close()
         {
-            socket_.close();
+            boost::system::error_code ec;
+            socket_.close(ec);
         }
 
         template <typename F> 
@@ -3420,7 +3423,8 @@ namespace crow
 
         void close()
         {
-            raw_socket().close();
+            boost::system::error_code ec;
+            raw_socket().close(ec);
         }
 
         boost::asio::io_service& get_io_service()
@@ -3440,2289 +3444,6 @@ namespace crow
         std::unique_ptr<boost::asio::ssl::stream<tcp::socket>> ssl_socket_;
     };
 #endif
-}
-
-
-
-#pragma once
-
-//#define CROW_JSON_NO_ERROR_CHECK
-
-#include <string>
-#include <unordered_map>
-#include <iostream>
-#include <algorithm>
-#include <memory>
-#include <boost/lexical_cast.hpp>
-#include <boost/algorithm/string/predicate.hpp>
-#include <boost/operators.hpp>
-#include <vector>
-
-
-
-
-#if defined(__GNUG__) || defined(__clang__)
-#define crow_json_likely(x) __builtin_expect(x, 1)
-#define crow_json_unlikely(x) __builtin_expect(x, 0)
-#else
-#define crow_json_likely(x) x
-#define crow_json_unlikely(x) x
-#endif
-
-
-namespace crow
-{
-    namespace mustache
-    {
-        class template_t;
-    }
-
-    namespace json
-    {
-        inline void escape(const std::string& str, std::string& ret)
-        {
-            ret.reserve(ret.size() + str.size()+str.size()/4);
-            for(char c:str)
-            {
-                switch(c)
-                {
-                    case '"': ret += "\\\""; break;
-                    case '\\': ret += "\\\\"; break;
-                    case '\n': ret += "\\n"; break;
-                    case '\b': ret += "\\b"; break;
-                    case '\f': ret += "\\f"; break;
-                    case '\r': ret += "\\r"; break;
-                    case '\t': ret += "\\t"; break;
-                    default:
-                        if (0 <= c && c < 0x20)
-                        {
-                            ret += "\\u00";
-                            auto to_hex = [](char c)
-                            {
-                                c = c&0xf;
-                                if (c < 10)
-                                    return '0' + c;
-                                return 'a'+c-10;
-                            };
-                            ret += to_hex(c/16);
-                            ret += to_hex(c%16);
-                        }
-                        else
-                            ret += c;
-                        break;
-                }
-            }
-        }
-        inline std::string escape(const std::string& str)
-        {
-            std::string ret;
-            escape(str, ret);
-            return ret;
-        }
-
-        enum class type : char
-        {
-            Null,
-            False,
-            True,
-            Number,
-            String,
-            List,
-            Object,
-        };
-
-        inline const char* get_type_str(type t) {
-            switch(t){
-                case type::Number: return "Number";
-                case type::False: return "False";
-                case type::True: return "True";
-                case type::List: return "List";
-                case type::String: return "String";
-                case type::Object: return "Object";
-                default: return "Unknown";
-            }
-        }
-
-        class rvalue;
-        rvalue load(const char* data, size_t size);
-
-        namespace detail 
-        {
-
-            struct r_string 
-                : boost::less_than_comparable<r_string>,
-                boost::less_than_comparable<r_string, std::string>,
-                boost::equality_comparable<r_string>,
-                boost::equality_comparable<r_string, std::string>
-            {
-                r_string() {};
-                r_string(char* s, char* e)
-                    : s_(s), e_(e)
-                {};
-                ~r_string()
-                {
-                    if (owned_)
-                        delete[] s_;
-                }
-
-                r_string(const r_string& r)
-                {
-                    *this = r;
-                }
-
-                r_string(r_string&& r)
-                {
-                    *this = r;
-                }
-
-                r_string& operator = (r_string&& r)
-                {
-                    s_ = r.s_;
-                    e_ = r.e_;
-                    owned_ = r.owned_;
-                    if (r.owned_)
-                        r.owned_ = 0;
-                    return *this;
-                }
-
-                r_string& operator = (const r_string& r)
-                {
-                    s_ = r.s_;
-                    e_ = r.e_;
-                    owned_ = 0;
-                    return *this;
-                }
-
-                operator std::string () const
-                {
-                    return std::string(s_, e_);
-                }
-
-
-                const char* begin() const { return s_; }
-                const char* end() const { return e_; }
-                size_t size() const { return end() - begin(); }
-
-                using iterator = const char*;
-                using const_iterator = const char*;
-
-                char* s_;
-                mutable char* e_;
-                uint8_t owned_{0};
-                friend std::ostream& operator << (std::ostream& os, const r_string& s)
-                {
-                    os << (std::string)s;
-                    return os;
-                }
-            private:
-                void force(char* s, uint32_t /*length*/)
-                {
-                    s_ = s;
-                    owned_ = 1;
-                }
-                friend rvalue crow::json::load(const char* data, size_t size);
-            };
-
-            inline bool operator < (const r_string& l, const r_string& r)
-            {
-                return boost::lexicographical_compare(l,r);
-            }
-
-            inline bool operator < (const r_string& l, const std::string& r)
-            {
-                return boost::lexicographical_compare(l,r);
-            }
-
-            inline bool operator > (const r_string& l, const std::string& r)
-            {
-                return boost::lexicographical_compare(r,l);
-            }
-
-            inline bool operator == (const r_string& l, const r_string& r)
-            {
-                return boost::equals(l,r);
-            }
-
-            inline bool operator == (const r_string& l, const std::string& r)
-            {
-                return boost::equals(l,r);
-            }
-        }
-
-        class rvalue
-        {
-            static const int cached_bit = 2;
-            static const int error_bit = 4;
-        public:
-            rvalue() noexcept : option_{error_bit} 
-            {}
-            rvalue(type t) noexcept
-                : lsize_{}, lremain_{}, t_{t}
-            {}
-            rvalue(type t, char* s, char* e)  noexcept
-                : start_{s},
-                end_{e},
-                t_{t}
-            {}
-
-            rvalue(const rvalue& r)
-            : start_(r.start_),
-                end_(r.end_),
-                key_(r.key_),
-                t_(r.t_),
-                option_(r.option_)
-            {
-                copy_l(r);
-            }
-
-            rvalue(rvalue&& r) noexcept
-            {
-                *this = std::move(r);
-            }
-
-            rvalue& operator = (const rvalue& r)
-            {
-                start_ = r.start_;
-                end_ = r.end_;
-                key_ = r.key_;
-                copy_l(r);
-                t_ = r.t_;
-                option_ = r.option_;
-                return *this;
-            }
-            rvalue& operator = (rvalue&& r) noexcept
-            {
-                start_ = r.start_;
-                end_ = r.end_;
-                key_ = std::move(r.key_);
-                l_ = std::move(r.l_);
-                lsize_ = r.lsize_;
-                lremain_ = r.lremain_;
-                t_ = r.t_;
-                option_ = r.option_;
-                return *this;
-            }
-
-            explicit operator bool() const noexcept
-            {
-                return (option_ & error_bit) == 0;
-            }
-
-            explicit operator int64_t() const
-            {
-                return i();
-            }
-
-            explicit operator uint64_t() const
-            {
-                return u();
-            }
-
-            explicit operator int() const
-            {
-                return (int)i();
-            }
-
-            type t() const
-            {
-#ifndef CROW_JSON_NO_ERROR_CHECK
-                if (option_ & error_bit)
-                {
-                    throw std::runtime_error("invalid json object");
-                }
-#endif
-                return t_;
-            }
-
-            int64_t i() const
-            {
-#ifndef CROW_JSON_NO_ERROR_CHECK
-                switch (t()) {
-                    case type::Number:
-                    case type::String:
-                        return boost::lexical_cast<int64_t>(start_, end_-start_);
-                    default:
-                        const std::string msg = "expected number, got: "
-                            + std::string(get_type_str(t()));
-                        throw std::runtime_error(msg);
-                }
-#endif
-                return boost::lexical_cast<int64_t>(start_, end_-start_);
-            }
-
-            uint64_t u() const
-            {
-#ifndef CROW_JSON_NO_ERROR_CHECK
-                switch (t()) {
-                    case type::Number:
-                    case type::String:
-                        return boost::lexical_cast<uint64_t>(start_, end_-start_);
-                    default:
-                        throw std::runtime_error(std::string("expected number, got: ") + get_type_str(t()));
-                }
-#endif
-                return boost::lexical_cast<uint64_t>(start_, end_-start_);
-            }
-
-            double d() const
-            {
-#ifndef CROW_JSON_NO_ERROR_CHECK
-                if (t() != type::Number)
-                    throw std::runtime_error("value is not number");
-#endif
-                return boost::lexical_cast<double>(start_, end_-start_);
-            }
-
-            bool b() const
-            {
-#ifndef CROW_JSON_NO_ERROR_CHECK
-                if (t() != type::True && t() != type::False)
-                    throw std::runtime_error("value is not boolean");
-#endif
-                return t() == type::True;
-            }
-
-            void unescape() const
-            {
-                if (*(start_-1))
-                {
-                    char* head = start_;
-                    char* tail = start_;
-                    while(head != end_)
-                    {
-                        if (*head == '\\')
-                        {
-                            switch(*++head)
-                            {
-                                case '"':  *tail++ = '"'; break;
-                                case '\\': *tail++ = '\\'; break;
-                                case '/':  *tail++ = '/'; break;
-                                case 'b':  *tail++ = '\b'; break;
-                                case 'f':  *tail++ = '\f'; break;
-                                case 'n':  *tail++ = '\n'; break;
-                                case 'r':  *tail++ = '\r'; break;
-                                case 't':  *tail++ = '\t'; break;
-                                case 'u':
-                                    {
-                                        auto from_hex = [](char c)
-                                        {
-                                            if (c >= 'a')
-                                                return c - 'a' + 10;
-                                            if (c >= 'A')
-                                                return c - 'A' + 10;
-                                            return c - '0';
-                                        };
-                                        unsigned int code = 
-                                            (from_hex(head[1])<<12) + 
-                                            (from_hex(head[2])<< 8) + 
-                                            (from_hex(head[3])<< 4) + 
-                                            from_hex(head[4]);
-                                        if (code >= 0x800)
-                                        {
-                                            *tail++ = 0xE0 | (code >> 12);
-                                            *tail++ = 0x80 | ((code >> 6) & 0x3F);
-                                            *tail++ = 0x80 | (code & 0x3F);
-                                        }
-                                        else if (code >= 0x80)
-                                        {
-                                            *tail++ = 0xC0 | (code >> 6);
-                                            *tail++ = 0x80 | (code & 0x3F);
-                                        }
-                                        else
-                                        {
-                                            *tail++ = code;
-                                        }
-                                        head += 4;
-                                    }
-                                    break;
-                            }
-                        }
-                        else
-                            *tail++ = *head;
-                        head++;
-                    }
-                    end_ = tail;
-                    *end_ = 0;
-                    *(start_-1) = 0;
-                }
-            }
-
-            detail::r_string s() const
-            {
-#ifndef CROW_JSON_NO_ERROR_CHECK
-                if (t() != type::String)
-                    throw std::runtime_error("value is not string");
-#endif
-                unescape();
-                return detail::r_string{start_, end_};
-            }
-
-            bool has(const char* str) const
-            {
-                return has(std::string(str));
-            }
-
-            bool has(const std::string& str) const
-            {
-                struct Pred 
-                {
-                    bool operator()(const rvalue& l, const rvalue& r) const
-                    {
-                        return l.key_ < r.key_;
-                    };
-                    bool operator()(const rvalue& l, const std::string& r) const
-                    {
-                        return l.key_ < r;
-                    };
-                    bool operator()(const std::string& l, const rvalue& r) const
-                    {
-                        return l < r.key_;
-                    };
-                };
-                if (!is_cached())
-                {
-                    std::sort(begin(), end(), Pred());
-                    set_cached();
-                }
-                auto it = lower_bound(begin(), end(), str, Pred());
-                return it != end() && it->key_ == str;
-            }
-
-            int count(const std::string& str)
-            {
-                return has(str) ? 1 : 0;
-            }
-
-            rvalue* begin() const 
-            { 
-#ifndef CROW_JSON_NO_ERROR_CHECK
-                if (t() != type::Object && t() != type::List)
-                    throw std::runtime_error("value is not a container");
-#endif
-                return l_.get(); 
-            }
-            rvalue* end() const 
-            { 
-#ifndef CROW_JSON_NO_ERROR_CHECK
-                if (t() != type::Object && t() != type::List)
-                    throw std::runtime_error("value is not a container");
-#endif
-                return l_.get()+lsize_; 
-            }
-
-            const detail::r_string& key() const
-            {
-                return key_;
-            }
-
-            size_t size() const
-            {
-                if (t() == type::String)
-                    return s().size();
-#ifndef CROW_JSON_NO_ERROR_CHECK
-                if (t() != type::Object && t() != type::List)
-                    throw std::runtime_error("value is not a container");
-#endif
-                return lsize_;
-            }
-
-            const rvalue& operator[](int index) const
-            {
-#ifndef CROW_JSON_NO_ERROR_CHECK
-                if (t() != type::List)
-                    throw std::runtime_error("value is not a list");
-                if (index >= (int)lsize_ || index < 0)
-                    throw std::runtime_error("list out of bound");
-#endif
-                return l_[index];
-            }
-
-            const rvalue& operator[](size_t index) const
-            {
-#ifndef CROW_JSON_NO_ERROR_CHECK
-                if (t() != type::List)
-                    throw std::runtime_error("value is not a list");
-                if (index >= lsize_)
-                    throw std::runtime_error("list out of bound");
-#endif
-                return l_[index];
-            }
-
-            const rvalue& operator[](const char* str) const
-            {
-                return this->operator[](std::string(str));
-            }
-
-            const rvalue& operator[](const std::string& str) const
-            {
-#ifndef CROW_JSON_NO_ERROR_CHECK
-                if (t() != type::Object)
-                    throw std::runtime_error("value is not an object");
-#endif
-                struct Pred 
-                {
-                    bool operator()(const rvalue& l, const rvalue& r) const
-                    {
-                        return l.key_ < r.key_;
-                    };
-                    bool operator()(const rvalue& l, const std::string& r) const
-                    {
-                        return l.key_ < r;
-                    };
-                    bool operator()(const std::string& l, const rvalue& r) const
-                    {
-                        return l < r.key_;
-                    };
-                };
-                if (!is_cached())
-                {
-                    std::sort(begin(), end(), Pred());
-                    set_cached();
-                }
-                auto it = lower_bound(begin(), end(), str, Pred());
-                if (it != end() && it->key_ == str)
-                    return *it;
-#ifndef CROW_JSON_NO_ERROR_CHECK
-                throw std::runtime_error("cannot find key");
-#else
-                static rvalue nullValue;
-                return nullValue;
-#endif
-            }
-
-            void set_error()
-            {
-                option_|=error_bit;
-            }
-
-            bool error() const
-            {
-                return (option_&error_bit)!=0;
-            }
-        private:
-            bool is_cached() const
-            {
-                return (option_&cached_bit)!=0;
-            }
-            void set_cached() const
-            {
-                option_ |= cached_bit;
-            }
-            void copy_l(const rvalue& r)
-            {
-                if (r.t() != type::Object && r.t() != type::List)
-                    return;
-                lsize_ = r.lsize_;
-                lremain_ = 0;
-                l_.reset(new rvalue[lsize_]);
-                std::copy(r.begin(), r.end(), begin());
-            }
-
-            void emplace_back(rvalue&& v)
-            {
-                if (!lremain_)
-                {
-                    int new_size = lsize_ + lsize_;
-                    if (new_size - lsize_ > 60000)
-                        new_size = lsize_ + 60000;
-                    if (new_size < 4)
-                        new_size = 4;
-                    rvalue* p = new rvalue[new_size];
-                    rvalue* p2 = p;
-                    for(auto& x : *this)
-                        *p2++ = std::move(x);
-                    l_.reset(p);
-                    lremain_ = new_size - lsize_;
-                }
-                l_[lsize_++] = std::move(v);
-                lremain_ --;
-            }
-
-            mutable char* start_;
-            mutable char* end_;
-            detail::r_string key_;
-            std::unique_ptr<rvalue[]> l_;
-            uint32_t lsize_;
-            uint16_t lremain_;
-            type t_;
-            mutable uint8_t option_{0};
-
-            friend rvalue load_nocopy_internal(char* data, size_t size);
-            friend rvalue load(const char* data, size_t size);
-            friend std::ostream& operator <<(std::ostream& os, const rvalue& r)
-            {
-                switch(r.t_)
-                {
-
-                case type::Null: os << "null"; break;
-                case type::False: os << "false"; break;
-                case type::True: os << "true"; break;
-                case type::Number: os << r.d(); break;
-                case type::String: os << '"' << r.s() << '"'; break;
-                case type::List: 
-                    {
-                        os << '['; 
-                        bool first = true;
-                        for(auto& x : r)
-                        {
-                            if (!first)
-                                os << ',';
-                            first = false;
-                            os << x;
-                        }
-                        os << ']'; 
-                    }
-                    break;
-                case type::Object:
-                    {
-                        os << '{'; 
-                        bool first = true;
-                        for(auto& x : r)
-                        {
-                            if (!first)
-                                os << ',';
-                            os << '"' << escape(x.key_) << "\":";
-                            first = false;
-                            os << x;
-                        }
-                        os << '}'; 
-                    }
-                    break;
-                }
-                return os;
-            }
-        };
-        namespace detail {
-        }
-
-        inline bool operator == (const rvalue& l, const std::string& r)
-        {
-            return l.s() == r;
-        }
-
-        inline bool operator == (const std::string& l, const rvalue& r)
-        {
-            return l == r.s();
-        }
-
-        inline bool operator != (const rvalue& l, const std::string& r)
-        {
-            return l.s() != r;
-        }
-
-        inline bool operator != (const std::string& l, const rvalue& r)
-        {
-            return l != r.s();
-        }
-
-        inline bool operator == (const rvalue& l, double r)
-        {
-            return l.d() == r;
-        }
-
-        inline bool operator == (double l, const rvalue& r)
-        {
-            return l == r.d();
-        }
-
-        inline bool operator != (const rvalue& l, double r)
-        {
-            return l.d() != r;
-        }
-
-        inline bool operator != (double l, const rvalue& r)
-        {
-            return l != r.d();
-        }
-
-
-        inline rvalue load_nocopy_internal(char* data, size_t size)
-        {
-            //static const char* escaped = "\"\\/\b\f\n\r\t";
-            struct Parser
-            {
-                Parser(char* data, size_t /*size*/)
-                    : data(data)
-                {
-                }
-
-                bool consume(char c)
-                {
-                    if (crow_json_unlikely(*data != c))
-                        return false;
-                    data++;
-                    return true;
-                }
-
-                void ws_skip()
-                {
-                    while(*data == ' ' || *data == '\t' || *data == '\r' || *data == '\n') ++data;
-                };
-
-                rvalue decode_string()
-                {
-                    if (crow_json_unlikely(!consume('"')))
-                        return {};
-                    char* start = data;
-                    uint8_t has_escaping = 0;
-                    while(1)
-                    {
-                        if (crow_json_likely(*data != '"' && *data != '\\' && *data != '\0'))
-                        {
-                            data ++;
-                        }
-                        else if (*data == '"')
-                        {
-                            *data = 0;
-                            *(start-1) = has_escaping;
-                            data++;
-                            return {type::String, start, data-1};
-                        }
-                        else if (*data == '\\')
-                        {
-                            has_escaping = 1;
-                            data++;
-                            switch(*data)
-                            {
-                                case 'u':
-                                    {
-                                        auto check = [](char c)
-                                        {
-                                            return 
-                                                ('0' <= c && c <= '9') ||
-                                                ('a' <= c && c <= 'f') ||
-                                                ('A' <= c && c <= 'F');
-                                        };
-                                        if (!(check(*(data+1)) && 
-                                            check(*(data+2)) && 
-                                            check(*(data+3)) && 
-                                            check(*(data+4))))
-                                            return {};
-                                    }
-                                    data += 5;
-                                    break;
-                                case '"':
-                                case '\\':
-                                case '/':
-                                case 'b':
-                                case 'f':
-                                case 'n':
-                                case 'r':
-                                case 't':
-                                    data ++;
-                                    break;
-                                default:
-                                    return {};
-                            }
-                        }
-                        else
-                            return {};
-                    }
-                    return {};
-                }
-
-                rvalue decode_list()
-                {
-                    rvalue ret(type::List);
-                    if (crow_json_unlikely(!consume('[')))
-                    {
-                        ret.set_error();
-                        return ret;
-                    }
-                    ws_skip();
-                    if (crow_json_unlikely(*data == ']'))
-                    {
-                        data++;
-                        return ret;
-                    }
-
-                    while(1)
-                    {
-                        auto v = decode_value();
-                        if (crow_json_unlikely(!v))
-                        {
-                            ret.set_error();
-                            break;
-                        }
-                        ws_skip();
-                        ret.emplace_back(std::move(v));
-                        if (*data == ']')
-                        {
-                            data++;
-                            break;
-                        }
-                        if (crow_json_unlikely(!consume(',')))
-                        {
-                            ret.set_error();
-                            break;
-                        }
-                        ws_skip();
-                    }
-                    return ret;
-                }
-
-                rvalue decode_number()
-                {
-                    char* start = data;
-
-                    enum NumberParsingState
-                    {
-                        Minus,
-                        AfterMinus,
-                        ZeroFirst,
-                        Digits,
-                        DigitsAfterPoints,
-                        E,
-                        DigitsAfterE,
-                        Invalid,
-                    } state{Minus};
-                    while(crow_json_likely(state != Invalid))
-                    {
-                        switch(*data)
-                        {
-                            case '0':
-                                state = (NumberParsingState)"\2\2\7\3\4\6\6"[state];
-                                /*if (state == NumberParsingState::Minus || state == NumberParsingState::AfterMinus)
-                                {
-                                    state = NumberParsingState::ZeroFirst;
-                                }
-                                else if (state == NumberParsingState::Digits || 
-                                    state == NumberParsingState::DigitsAfterE || 
-                                    state == NumberParsingState::DigitsAfterPoints)
-                                {
-                                    // ok; pass
-                                }
-                                else if (state == NumberParsingState::E)
-                                {
-                                    state = NumberParsingState::DigitsAfterE;
-                                }
-                                else
-                                    return {};*/
-                                break;
-                            case '1': case '2': case '3': 
-                            case '4': case '5': case '6': 
-                            case '7': case '8': case '9':
-                                state = (NumberParsingState)"\3\3\7\3\4\6\6"[state];
-                                while(*(data+1) >= '0' && *(data+1) <= '9') data++;
-                                /*if (state == NumberParsingState::Minus || state == NumberParsingState::AfterMinus)
-                                {
-                                    state = NumberParsingState::Digits;
-                                }
-                                else if (state == NumberParsingState::Digits || 
-                                    state == NumberParsingState::DigitsAfterE || 
-                                    state == NumberParsingState::DigitsAfterPoints)
-                                {
-                                    // ok; pass
-                                }
-                                else if (state == NumberParsingState::E)
-                                {
-                                    state = NumberParsingState::DigitsAfterE;
-                                }
-                                else
-                                    return {};*/
-                                break;
-                            case '.':
-                                state = (NumberParsingState)"\7\7\4\4\7\7\7"[state];
-                                /*
-                                if (state == NumberParsingState::Digits || state == NumberParsingState::ZeroFirst)
-                                {
-                                    state = NumberParsingState::DigitsAfterPoints;
-                                }
-                                else
-                                    return {};
-                                */
-                                break;
-                            case '-':
-                                state = (NumberParsingState)"\1\7\7\7\7\6\7"[state];
-                                /*if (state == NumberParsingState::Minus)
-                                {
-                                    state = NumberParsingState::AfterMinus;
-                                }
-                                else if (state == NumberParsingState::E)
-                                {
-                                    state = NumberParsingState::DigitsAfterE;
-                                }
-                                else
-                                    return {};*/
-                                break;
-                            case '+':
-                                state = (NumberParsingState)"\7\7\7\7\7\6\7"[state];
-                                /*if (state == NumberParsingState::E)
-                                {
-                                    state = NumberParsingState::DigitsAfterE;
-                                }
-                                else
-                                    return {};*/
-                                break;
-                            case 'e': case 'E':
-                                state = (NumberParsingState)"\7\7\7\5\5\7\7"[state];
-                                /*if (state == NumberParsingState::Digits || 
-                                    state == NumberParsingState::DigitsAfterPoints)
-                                {
-                                    state = NumberParsingState::E;
-                                }
-                                else 
-                                    return {};*/
-                                break;
-                            default:
-                                if (crow_json_likely(state == NumberParsingState::ZeroFirst || 
-                                        state == NumberParsingState::Digits || 
-                                        state == NumberParsingState::DigitsAfterPoints || 
-                                        state == NumberParsingState::DigitsAfterE))
-                                    return {type::Number, start, data};
-                                else
-                                    return {};
-                        }
-                        data++;
-                    }
-
-                    return {};
-                }
-
-                rvalue decode_value()
-                {
-                    switch(*data)
-                    {
-                        case '[':
-                            return decode_list();
-                        case '{':
-                            return decode_object();
-                        case '"':
-                            return decode_string();
-                        case 't':
-                            if (//e-data >= 4 &&
-                                    data[1] == 'r' &&
-                                    data[2] == 'u' &&
-                                    data[3] == 'e')
-                            {
-                                data += 4;
-                                return {type::True};
-                            }
-                            else
-                                return {};
-                        case 'f':
-                            if (//e-data >= 5 &&
-                                    data[1] == 'a' &&
-                                    data[2] == 'l' &&
-                                    data[3] == 's' &&
-                                    data[4] == 'e')
-                            {
-                                data += 5;
-                                return {type::False};
-                            }
-                            else
-                                return {};
-                        case 'n':
-                            if (//e-data >= 4 &&
-                                    data[1] == 'u' &&
-                                    data[2] == 'l' &&
-                                    data[3] == 'l')
-                            {
-                                data += 4;
-                                return {type::Null};
-                            }
-                            else
-                                return {};
-                        //case '1': case '2': case '3': 
-                        //case '4': case '5': case '6': 
-                        //case '7': case '8': case '9':
-                        //case '0': case '-':
-                        default:
-                            return decode_number();
-                    }
-                    return {};
-                }
-
-                rvalue decode_object()
-                {
-                    rvalue ret(type::Object);
-                    if (crow_json_unlikely(!consume('{')))
-                    {
-                        ret.set_error();
-                        return ret;
-                    }
-
-                    ws_skip();
-
-                    if (crow_json_unlikely(*data == '}'))
-                    {
-                        data++;
-                        return ret;
-                    }
-
-                    while(1)
-                    {
-                        auto t = decode_string();
-                        if (crow_json_unlikely(!t))
-                        {
-                            ret.set_error();
-                            break;
-                        }
-
-                        ws_skip();
-                        if (crow_json_unlikely(!consume(':')))
-                        {
-                            ret.set_error();
-                            break;
-                        }
-
-                        // TODO caching key to speed up (flyweight?)
-                        auto key = t.s();
-
-                        ws_skip();
-                        auto v = decode_value();
-                        if (crow_json_unlikely(!v))
-                        {
-                            ret.set_error();
-                            break;
-                        }
-                        ws_skip();
-
-                        v.key_ = std::move(key);
-                        ret.emplace_back(std::move(v));
-                        if (crow_json_unlikely(*data == '}'))
-                        {
-                            data++;
-                            break;
-                        }
-                        if (crow_json_unlikely(!consume(',')))
-                        {
-                            ret.set_error();
-                            break;
-                        }
-                        ws_skip();
-                    }
-                    return ret;
-                }
-
-                rvalue parse()
-                {
-                    ws_skip();
-                    auto ret = decode_value(); // or decode object?
-                    ws_skip();
-                    if (ret && *data != '\0')
-                        ret.set_error();
-                    return ret;
-                }
-
-                char* data;
-            };
-            return Parser(data, size).parse();
-        }
-        inline rvalue load(const char* data, size_t size)
-        {
-            char* s = new char[size+1];
-            memcpy(s, data, size);
-            s[size] = 0;
-            auto ret = load_nocopy_internal(s, size);
-            if (ret)
-                ret.key_.force(s, size);
-            else
-                delete[] s;
-            return ret;
-        }
-
-        inline rvalue load(const char* data)
-        {
-            return load(data, strlen(data));
-        }
-
-        inline rvalue load(const std::string& str)
-        {
-            return load(str.data(), str.size());
-        }
-
-        class wvalue
-        {
-            friend class crow::mustache::template_t;
-        public:
-            type t() const { return t_; }
-        private:
-            type t_{type::Null};
-            double d {};
-            std::string s;
-            std::unique_ptr<std::vector<wvalue>> l;
-            std::unique_ptr<std::unordered_map<std::string, wvalue>> o;
-        public:
-
-            wvalue() {}
-
-            wvalue(const rvalue& r)
-            {
-                t_ = r.t();
-                switch(r.t())
-                {
-                    case type::Null:
-                    case type::False:
-                    case type::True:
-                        return;
-                    case type::Number:
-                        d = r.d();
-                        return;
-                    case type::String:
-                        s = r.s();
-                        return;
-                    case type::List:
-                        l = std::unique_ptr<std::vector<wvalue>>(new std::vector<wvalue>{});
-                        l->reserve(r.size());
-                        for(auto it = r.begin(); it != r.end(); ++it)
-                            l->emplace_back(*it);
-                        return;
-                    case type::Object:
-                        o = std::unique_ptr<
-                                    std::unordered_map<std::string, wvalue>
-                                >(
-                                new std::unordered_map<std::string, wvalue>{});
-                        for(auto it = r.begin(); it != r.end(); ++it)
-                            o->emplace(it->key(), *it);
-                        return;
-                }
-            }
-
-            wvalue(wvalue&& r)
-            {
-                *this = std::move(r);
-            }
-
-            wvalue& operator = (wvalue&& r)
-            {
-                t_ = r.t_;
-                d = r.d;
-                s = std::move(r.s);
-                l = std::move(r.l);
-                o = std::move(r.o);
-                return *this;
-            }
-
-            void clear()
-            {
-                t_ = type::Null;
-                l.reset();
-                o.reset();
-            }
-
-            void reset()
-            {
-                t_ = type::Null;
-                l.reset();
-                o.reset();
-            }
-
-            wvalue& operator = (std::nullptr_t)
-            {
-                reset();
-                return *this;
-            }
-            wvalue& operator = (bool value)
-            {
-                reset();
-                if (value)
-                    t_ = type::True;
-                else
-                    t_ = type::False;
-                return *this;
-            }
-
-            wvalue& operator = (double value)
-            {
-                reset();
-                t_ = type::Number;
-                d = value;
-                return *this;
-            }
-
-            wvalue& operator = (unsigned short value)
-            {
-                reset();
-                t_ = type::Number;
-                d = (double)value;
-                return *this;
-            }
-
-            wvalue& operator = (short value)
-            {
-                reset();
-                t_ = type::Number;
-                d = (double)value;
-                return *this;
-            }
-
-            wvalue& operator = (long long value)
-            {
-                reset();
-                t_ = type::Number;
-                d = (double)value;
-                return *this;
-            }
-
-            wvalue& operator = (long value)
-            {
-                reset();
-                t_ = type::Number;
-                d = (double)value;
-                return *this;
-            }
-
-            wvalue& operator = (int value)
-            {
-                reset();
-                t_ = type::Number;
-                d = (double)value;
-                return *this;
-            }
-
-            wvalue& operator = (unsigned long long value)
-            {
-                reset();
-                t_ = type::Number;
-                d = (double)value;
-                return *this;
-            }
-
-            wvalue& operator = (unsigned long value)
-            {
-                reset();
-                t_ = type::Number;
-                d = (double)value;
-                return *this;
-            }
-
-            wvalue& operator = (unsigned int value)
-            {
-                reset();
-                t_ = type::Number;
-                d = (double)value;
-                return *this;
-            }
-
-            wvalue& operator=(const char* str)
-            {
-                reset();
-                t_ = type::String;
-                s = str;
-                return *this;
-            }
-
-            wvalue& operator=(const std::string& str)
-            {
-                reset();
-                t_ = type::String;
-                s = str;
-                return *this;
-            }
-
-            wvalue& operator=(std::vector<wvalue>&& v)
-            {
-                if (t_ != type::List)
-                    reset();
-                t_ = type::List;
-                if (!l)
-                    l = std::unique_ptr<std::vector<wvalue>>(new std::vector<wvalue>{});
-                l->clear();
-                l->resize(v.size());
-                size_t idx = 0;
-                for(auto& x:v)
-                {
-                    (*l)[idx++] = std::move(x);
-                }
-                return *this;
-            }
-
-            template <typename T>
-            wvalue& operator=(const std::vector<T>& v)
-            {
-                if (t_ != type::List)
-                    reset();
-                t_ = type::List;
-                if (!l)
-                    l = std::unique_ptr<std::vector<wvalue>>(new std::vector<wvalue>{});
-                l->clear();
-                l->resize(v.size());
-                size_t idx = 0;
-                for(auto& x:v)
-                {
-                    (*l)[idx++] = x;
-                }
-                return *this;
-            }
-
-            wvalue& operator[](unsigned index)
-            {
-                if (t_ != type::List)
-                    reset();
-                t_ = type::List;
-                if (!l)
-                    l = std::unique_ptr<std::vector<wvalue>>(new std::vector<wvalue>{});
-                if (l->size() < index+1)
-                    l->resize(index+1);
-                return (*l)[index];
-            }
-
-            int count(const std::string& str)
-            {
-                if (t_ != type::Object)
-                    return 0;
-                if (!o)
-                    return 0;
-                return o->count(str);
-            }
-
-            wvalue& operator[](const std::string& str)
-            {
-                if (t_ != type::Object)
-                    reset();
-                t_ = type::Object;
-                if (!o)
-                    o = std::unique_ptr<
-                                std::unordered_map<std::string, wvalue>
-                            >(
-                            new std::unordered_map<std::string, wvalue>{});
-                return (*o)[str];
-            }
-
-            std::vector<std::string> keys() const 
-            {
-                if (t_ != type::Object) 
-                    return {};
-                std::vector<std::string> result;
-                for (auto& kv:*o) 
-                {
-                    result.push_back(kv.first);
-                }
-                return result;
-            }
-
-            size_t estimate_length() const
-            {
-                switch(t_)
-                {
-                    case type::Null: return 4;
-                    case type::False: return 5;
-                    case type::True: return 4;
-                    case type::Number: return 30;
-                    case type::String: return 2+s.size()+s.size()/2;
-                    case type::List: 
-                        {
-                            size_t sum{};
-                            if (l)
-                            {
-                                for(auto& x:*l)
-                                {
-                                    sum += 1;
-                                    sum += x.estimate_length();
-                                }
-                            }
-                            return sum+2;
-                        }
-                    case type::Object:
-                        {
-                            size_t sum{};
-                            if (o)
-                            {
-                                for(auto& kv:*o)
-                                {
-                                    sum += 2;
-                                    sum += 2+kv.first.size()+kv.first.size()/2;
-                                    sum += kv.second.estimate_length();
-                                }
-                            }
-                            return sum+2;
-                        }
-                }
-                return 1;
-            }
-
-            friend void dump_internal(const wvalue& v, std::string& out);
-            friend std::string dump(const wvalue& v);
-        };
-
-        inline void dump_string(const std::string& str, std::string& out)
-        {
-            out.push_back('"');
-            escape(str, out);
-            out.push_back('"');
-        }
-        inline void dump_internal(const wvalue& v, std::string& out)
-        {
-            switch(v.t_)
-            {
-                case type::Null: out += "null"; break;
-                case type::False: out += "false"; break;
-                case type::True: out += "true"; break;
-                case type::Number: 
-                    {
-                        char outbuf[128];
-#ifdef _MSC_VER
-                        sprintf_s(outbuf, 128, "%g", v.d);
-#else
-                        sprintf(outbuf, "%g", v.d);
-#endif
-
-                        out += outbuf;
-                    }
-                    break;
-                case type::String: dump_string(v.s, out); break;
-                case type::List: 
-                     {
-                         out.push_back('[');
-                         if (v.l)
-                         {
-                             bool first = true;
-                             for(auto& x:*v.l)
-                             {
-                                 if (!first)
-                                 {
-                                     out.push_back(',');
-                                 }
-                                 first = false;
-                                 dump_internal(x, out);
-                             }
-                         }
-                         out.push_back(']');
-                     }
-                     break;
-                case type::Object:
-                     {
-                         out.push_back('{');
-                         if (v.o)
-                         {
-                             bool first = true;
-                             for(auto& kv:*v.o)
-                             {
-                                 if (!first)
-                                 {
-                                     out.push_back(',');
-                                 }
-                                 first = false;
-                                 dump_string(kv.first, out);
-                                 out.push_back(':');
-                                 dump_internal(kv.second, out);
-                             }
-                         }
-                         out.push_back('}');
-                     }
-                     break;
-            }
-        }
-
-        inline std::string dump(const wvalue& v)
-        {
-            std::string ret;
-            ret.reserve(v.estimate_length());
-            dump_internal(v, ret);
-            return ret;
-        }
-
-        //std::vector<boost::asio::const_buffer> dump_ref(wvalue& v)
-        //{
-        //}
-    }
-}
-
-#undef crow_json_likely
-#undef crow_json_unlikely
-
-
-
-#pragma once
-#include <string>
-#include <vector>
-#include <fstream>
-#include <iterator>
-#include <functional>
-
-
-namespace crow
-{
-    namespace mustache
-    {
-        using context = json::wvalue;
-
-        template_t load(const std::string& filename);
-
-        class invalid_template_exception : public std::exception
-        {
-            public:
-            invalid_template_exception(const std::string& msg)
-                : msg("crow::mustache error: " + msg)
-            {
-            }
-            virtual const char* what() const throw()
-            {
-                return msg.c_str();
-            }
-            std::string msg;
-        };
-
-        enum class ActionType
-        {
-            Ignore,
-            Tag,
-            UnescapeTag,
-            OpenBlock,
-            CloseBlock,
-            ElseBlock,
-            Partial,
-        };
-
-        struct Action
-        {
-            int start;
-            int end;
-            int pos;
-            ActionType t;
-            Action(ActionType t, int start, int end, int pos = 0) 
-                : start(start), end(end), pos(pos), t(t)
-            {}
-        };
-
-        class template_t 
-        {
-        public:
-            template_t(std::string body)
-                : body_(std::move(body))
-            {
-                // {{ {{# {{/ {{^ {{! {{> {{=
-                parse();
-            }
-
-        private:
-            std::string tag_name(const Action& action)
-            {
-                return body_.substr(action.start, action.end - action.start);
-            }
-            auto find_context(const std::string& name, const std::vector<context*>& stack)->std::pair<bool, context&>
-            {
-                if (name == ".")
-                {
-                    return {true, *stack.back()};
-                }
-                int dotPosition = name.find(".");
-                if (dotPosition == (int)name.npos)
-                {
-                    for(auto it = stack.rbegin(); it != stack.rend(); ++it)
-                    {
-                        if ((*it)->t() == json::type::Object)
-                        {
-                            if ((*it)->count(name))
-                                return {true, (**it)[name]};
-                        }
-                    }
-                }
-                else
-                {
-                    std::vector<int> dotPositions;
-                    dotPositions.push_back(-1);
-                    while(dotPosition != (int)name.npos)
-                    {
-                        dotPositions.push_back(dotPosition);
-                        dotPosition = name.find(".", dotPosition+1);
-                    }
-                    dotPositions.push_back(name.size());
-                    std::vector<std::string> names;
-                    names.reserve(dotPositions.size()-1);
-                    for(int i = 1; i < (int)dotPositions.size(); i ++)
-                        names.emplace_back(name.substr(dotPositions[i-1]+1, dotPositions[i]-dotPositions[i-1]-1));
-
-                    for(auto it = stack.rbegin(); it != stack.rend(); ++it)
-                    {
-                        context* view = *it;
-                        bool found = true;
-                        for(auto jt = names.begin(); jt != names.end(); ++jt)
-                        {
-                            if (view->t() == json::type::Object &&
-                                view->count(*jt))
-                            {
-                                view = &(*view)[*jt];
-                            }
-                            else
-                            {
-                                found = false;
-                                break;
-                            }
-                        }
-                        if (found)
-                            return {true, *view};
-                    }
-
-                }
-
-                static json::wvalue empty_str;
-                empty_str = "";
-                return {false, empty_str};
-            }
-
-            void escape(const std::string& in, std::string& out)
-            {
-                out.reserve(out.size() + in.size());
-                for(auto it = in.begin(); it != in.end(); ++it)
-                {
-                    switch(*it)
-                    {
-                        case '&': out += "&amp;"; break;
-                        case '<': out += "&lt;"; break;
-                        case '>': out += "&gt;"; break;
-                        case '"': out += "&quot;"; break;
-                        case '\'': out += "&#39;"; break;
-                        case '/': out += "&#x2F;"; break;
-                        default: out += *it; break;
-                    }
-                }
-            }
-
-            void render_internal(int actionBegin, int actionEnd, std::vector<context*>& stack, std::string& out, int indent)
-            {
-                int current = actionBegin;
-
-                if (indent)
-                    out.insert(out.size(), indent, ' ');
-
-                while(current < actionEnd)
-                {
-                    auto& fragment = fragments_[current];
-                    auto& action = actions_[current];
-                    render_fragment(fragment, indent, out);
-                    switch(action.t)
-                    {
-                        case ActionType::Ignore:
-                            // do nothing
-                            break;
-                        case ActionType::Partial:
-                            {
-                                std::string partial_name = tag_name(action);
-                                auto partial_templ = load(partial_name);
-                                int partial_indent = action.pos;
-                                partial_templ.render_internal(0, partial_templ.fragments_.size()-1, stack, out, partial_indent?indent+partial_indent:0);
-                            }
-                            break;
-                        case ActionType::UnescapeTag:
-                        case ActionType::Tag:
-                            {
-                                auto optional_ctx = find_context(tag_name(action), stack);
-                                auto& ctx = optional_ctx.second;
-                                switch(ctx.t())
-                                {
-                                    case json::type::Number:
-                                        out += json::dump(ctx);
-                                        break;
-                                    case json::type::String:
-                                        if (action.t == ActionType::Tag)
-                                            escape(ctx.s, out);
-                                        else
-                                            out += ctx.s;
-                                        break;
-                                    default:
-                                        throw std::runtime_error("not implemented tag type" + boost::lexical_cast<std::string>((int)ctx.t()));
-                                }
-                            }
-                            break;
-                        case ActionType::ElseBlock:
-                            {
-                                static context nullContext;
-                                auto optional_ctx = find_context(tag_name(action), stack);
-                                if (!optional_ctx.first)
-                                {
-                                    stack.emplace_back(&nullContext);
-                                    break;
-                                }
-
-                                auto& ctx = optional_ctx.second;
-                                switch(ctx.t())
-                                {
-                                    case json::type::List:
-                                        if (ctx.l && !ctx.l->empty())
-                                            current = action.pos;
-                                        else
-                                            stack.emplace_back(&nullContext);
-                                        break;
-                                    case json::type::False:
-                                    case json::type::Null:
-                                        stack.emplace_back(&nullContext);
-                                        break;
-                                    default:
-                                        current = action.pos;
-                                        break;
-                                }
-                                break;
-                            }
-                        case ActionType::OpenBlock:
-                            {
-                                auto optional_ctx = find_context(tag_name(action), stack);
-                                if (!optional_ctx.first)
-                                {
-                                    current = action.pos;
-                                    break;
-                                }
-
-                                auto& ctx = optional_ctx.second;
-                                switch(ctx.t())
-                                {
-                                    case json::type::List:
-                                        if (ctx.l)
-                                            for(auto it = ctx.l->begin(); it != ctx.l->end(); ++it)
-                                            {
-                                                stack.push_back(&*it);
-                                                render_internal(current+1, action.pos, stack, out, indent);
-                                                stack.pop_back();
-                                            }
-                                        current = action.pos;
-                                        break;
-                                    case json::type::Number:
-                                    case json::type::String:
-                                    case json::type::Object:
-                                    case json::type::True:
-                                        stack.push_back(&ctx);
-                                        break;
-                                    case json::type::False:
-                                    case json::type::Null:
-                                        current = action.pos;
-                                        break;
-                                    default:
-                                        throw std::runtime_error("{{#: not implemented context type: " + boost::lexical_cast<std::string>((int)ctx.t()));
-                                        break;
-                                }
-                                break;
-                            }
-                        case ActionType::CloseBlock:
-                            stack.pop_back();
-                            break;
-                        default:
-                            throw std::runtime_error("not implemented " + boost::lexical_cast<std::string>((int)action.t));
-                    }
-                    current++;
-                }
-                auto& fragment = fragments_[actionEnd];
-                render_fragment(fragment, indent, out);
-            }
-            void render_fragment(const std::pair<int, int> fragment, int indent, std::string& out)
-            {
-                if (indent)
-                {
-                    for(int i = fragment.first; i < fragment.second; i ++)
-                    {
-                        out += body_[i];
-                        if (body_[i] == '\n' && i+1 != (int)body_.size())
-                            out.insert(out.size(), indent, ' ');
-                    }
-                }
-                else
-                    out.insert(out.size(), body_, fragment.first, fragment.second-fragment.first);
-            }
-        public:
-            std::string render()
-            {
-                context empty_ctx;
-                std::vector<context*> stack;
-                stack.emplace_back(&empty_ctx);
-
-                std::string ret;
-                render_internal(0, fragments_.size()-1, stack, ret, 0);
-                return ret;
-            }
-            std::string render(context& ctx)
-            {
-                std::vector<context*> stack;
-                stack.emplace_back(&ctx);
-
-                std::string ret;
-                render_internal(0, fragments_.size()-1, stack, ret, 0);
-                return ret;
-            }
-
-        private:
-
-            void parse()
-            {
-                std::string tag_open = "{{";
-                std::string tag_close = "}}";
-
-                std::vector<int> blockPositions;
-                
-                size_t current = 0;
-                while(1)
-                {
-                    size_t idx = body_.find(tag_open, current);
-                    if (idx == body_.npos)
-                    {
-                        fragments_.emplace_back(current, body_.size());
-                        actions_.emplace_back(ActionType::Ignore, 0, 0);
-                        break;
-                    }
-                    fragments_.emplace_back(current, idx);
-
-                    idx += tag_open.size();
-                    size_t endIdx = body_.find(tag_close, idx);
-                    if (endIdx == idx)
-                    {
-                        throw invalid_template_exception("empty tag is not allowed");
-                    }
-                    if (endIdx == body_.npos)
-                    {
-                        // error, no matching tag
-                        throw invalid_template_exception("not matched opening tag");
-                    }
-                    current = endIdx + tag_close.size();
-                    switch(body_[idx])
-                    {
-                        case '#':
-                            idx++;
-                            while(body_[idx] == ' ') idx++;
-                            while(body_[endIdx-1] == ' ') endIdx--;
-                            blockPositions.emplace_back(actions_.size());
-                            actions_.emplace_back(ActionType::OpenBlock, idx, endIdx);
-                            break;
-                        case '/':
-                            idx++;
-                            while(body_[idx] == ' ') idx++;
-                            while(body_[endIdx-1] == ' ') endIdx--;
-                            {
-                                auto& matched = actions_[blockPositions.back()];
-                                if (body_.compare(idx, endIdx-idx, 
-                                        body_, matched.start, matched.end - matched.start) != 0)
-                                {
-                                    throw invalid_template_exception("not matched {{# {{/ pair: " + 
-                                        body_.substr(matched.start, matched.end - matched.start) + ", " + 
-                                        body_.substr(idx, endIdx-idx));
-                                }
-                                matched.pos = actions_.size();
-                            }
-                            actions_.emplace_back(ActionType::CloseBlock, idx, endIdx, blockPositions.back());
-                            blockPositions.pop_back();
-                            break;
-                        case '^':
-                            idx++;
-                            while(body_[idx] == ' ') idx++;
-                            while(body_[endIdx-1] == ' ') endIdx--;
-                            blockPositions.emplace_back(actions_.size());
-                            actions_.emplace_back(ActionType::ElseBlock, idx, endIdx);
-                            break;
-                        case '!':
-                            // do nothing action
-                            actions_.emplace_back(ActionType::Ignore, idx+1, endIdx);
-                            break;
-                        case '>': // partial
-                            idx++;
-                            while(body_[idx] == ' ') idx++;
-                            while(body_[endIdx-1] == ' ') endIdx--;
-                            actions_.emplace_back(ActionType::Partial, idx, endIdx);
-                            break;
-                        case '{':
-                            if (tag_open != "{{" || tag_close != "}}")
-                                throw invalid_template_exception("cannot use triple mustache when delimiter changed");
-
-                            idx ++;
-                            if (body_[endIdx+2] != '}')
-                            {
-                                throw invalid_template_exception("{{{: }}} not matched");
-                            }
-                            while(body_[idx] == ' ') idx++;
-                            while(body_[endIdx-1] == ' ') endIdx--;
-                            actions_.emplace_back(ActionType::UnescapeTag, idx, endIdx);
-                            current++;
-                            break;
-                        case '&':
-                            idx ++;
-                            while(body_[idx] == ' ') idx++;
-                            while(body_[endIdx-1] == ' ') endIdx--;
-                            actions_.emplace_back(ActionType::UnescapeTag, idx, endIdx);
-                            break;
-                        case '=':
-                            // tag itself is no-op
-                            idx ++;
-                            actions_.emplace_back(ActionType::Ignore, idx, endIdx);
-                            endIdx --;
-                            if (body_[endIdx] != '=')
-                                throw invalid_template_exception("{{=: not matching = tag: "+body_.substr(idx, endIdx-idx));
-                            endIdx --;
-                            while(body_[idx] == ' ') idx++;
-                            while(body_[endIdx] == ' ') endIdx--;
-                            endIdx++;
-                            {
-                                bool succeeded = false;
-                                for(size_t i = idx; i < endIdx; i++)
-                                {
-                                    if (body_[i] == ' ')
-                                    {
-                                        tag_open = body_.substr(idx, i-idx);
-                                        while(body_[i] == ' ') i++;
-                                        tag_close = body_.substr(i, endIdx-i);
-                                        if (tag_open.empty())
-                                            throw invalid_template_exception("{{=: empty open tag");
-                                        if (tag_close.empty())
-                                            throw invalid_template_exception("{{=: empty close tag");
-
-                                        if (tag_close.find(" ") != tag_close.npos)
-                                            throw invalid_template_exception("{{=: invalid open/close tag: "+tag_open+" " + tag_close);
-                                        succeeded = true;
-                                        break;
-                                    }
-                                }
-                                if (!succeeded)
-                                    throw invalid_template_exception("{{=: cannot find space between new open/close tags");
-                            }
-                            break;
-                        default:
-                            // normal tag case;
-                            while(body_[idx] == ' ') idx++;
-                            while(body_[endIdx-1] == ' ') endIdx--;
-                            actions_.emplace_back(ActionType::Tag, idx, endIdx);
-                            break;
-                    }
-                }
-
-                // removing standalones
-                for(int i = actions_.size()-2; i >= 0; i --)
-                {
-                    if (actions_[i].t == ActionType::Tag || actions_[i].t == ActionType::UnescapeTag)
-                        continue;
-                    auto& fragment_before = fragments_[i];
-                    auto& fragment_after = fragments_[i+1];
-                    bool is_last_action = i == (int)actions_.size()-2;
-                    bool all_space_before = true;
-                    int j, k;
-                    for(j = fragment_before.second-1;j >= fragment_before.first;j--)
-                    {
-                        if (body_[j] != ' ')
-                        {
-                            all_space_before = false;
-                            break;
-                        }
-                    }
-                    if (all_space_before && i > 0)
-                        continue;
-                    if (!all_space_before && body_[j] != '\n')
-                        continue;
-                    bool all_space_after = true;
-                    for(k = fragment_after.first; k < (int)body_.size() && k < fragment_after.second; k ++)
-                    {
-                        if (body_[k] != ' ')
-                        {
-                            all_space_after = false;
-                            break;
-                        }
-                    }
-                    if (all_space_after && !is_last_action)
-                        continue;
-                    if (!all_space_after && 
-                            !(
-                                body_[k] == '\n' 
-                            || 
-                                (body_[k] == '\r' && 
-                                k + 1 < (int)body_.size() && 
-                                body_[k+1] == '\n')))
-                        continue;
-                    if (actions_[i].t == ActionType::Partial)
-                    {
-                        actions_[i].pos = fragment_before.second - j - 1;
-                    }
-                    fragment_before.second = j+1;
-                    if (!all_space_after)
-                    {
-                        if (body_[k] == '\n')
-                            k++;
-                        else 
-                            k += 2;
-                        fragment_after.first = k;
-                    }
-                }
-            }
-            
-            std::vector<std::pair<int,int>> fragments_;
-            std::vector<Action> actions_;
-            std::string body_;
-        };
-
-        inline template_t compile(const std::string& body)
-        {
-            return template_t(body);
-        }
-        namespace detail
-        {
-            inline std::string& get_template_base_directory_ref()
-            {
-                static std::string template_base_directory = "templates";
-                return template_base_directory;
-            }
-        }
-
-        inline std::string default_loader(const std::string& filename)
-        {
-            std::string path = detail::get_template_base_directory_ref();
-            if (!(path.back() == '/' || path.back() == '\\'))
-                path += '/';
-            path += filename;
-            std::ifstream inf(path);
-            if (!inf)
-                return {};
-            return {std::istreambuf_iterator<char>(inf), std::istreambuf_iterator<char>()};
-        }
-
-        namespace detail
-        {
-            inline std::function<std::string (std::string)>& get_loader_ref()
-            {
-                static std::function<std::string (std::string)> loader = default_loader;
-                return loader;
-            }
-        }
-
-        inline void set_base(const std::string& path)
-        {
-            auto& base = detail::get_template_base_directory_ref();
-            base = path;
-            if (base.back() != '\\' && 
-                base.back() != '/')
-            {
-                base += '/';
-            }
-        }
-
-        inline void set_loader(std::function<std::string(std::string)> loader)
-        {
-            detail::get_loader_ref() = std::move(loader);
-        }
-
-        inline std::string load_text(const std::string& filename)
-        {
-            return detail::get_loader_ref()(filename);
-        }
-
-        inline template_t load(const std::string& filename)
-        {
-            return compile(detail::get_loader_ref()(filename));
-        }
-    }
-}
-
-
-
-#pragma once
-
-#include <string>
-#include <cstdio>
-#include <cstdlib>
-#include <ctime>
-#include <iostream>
-#include <sstream>
-
-
-
-
-namespace crow
-{
-    enum class LogLevel
-    {
-#ifndef ERROR
-        DEBUG = 0,
-        INFO,
-        WARNING,
-        ERROR,
-        CRITICAL,
-#endif
-
-        Debug = 0,
-        Info,
-        Warning,
-        Error,
-        Critical,
-    };
-
-    class ILogHandler {
-        public:
-            virtual void log(std::string message, LogLevel level) = 0;
-    };
-
-    class CerrLogHandler : public ILogHandler {
-        public:
-            void log(std::string message, LogLevel /*level*/) override {
-                std::cerr << message;
-            }
-    };
-
-    class logger {
-
-        private:
-            //
-            static std::string timestamp()
-            {
-                char date[32];
-                time_t t = time(0);
-
-                tm my_tm;
-
-#ifdef _MSC_VER
-                gmtime_s(&my_tm, &t);
-#else
-                gmtime_r(&t, &my_tm);
-#endif
-
-                size_t sz = strftime(date, sizeof(date), "%Y-%m-%d %H:%M:%S", &my_tm);
-                return std::string(date, date+sz);
-            }
-
-        public:
-
-
-            logger(std::string prefix, LogLevel level) : level_(level) {
-    #ifdef CROW_ENABLE_LOGGING
-                    stringstream_ << "(" << timestamp() << ") [" << prefix << "] ";
-    #endif
-
-            }
-            ~logger() {
-    #ifdef CROW_ENABLE_LOGGING
-                if(level_ >= get_current_log_level()) {
-                    stringstream_ << std::endl;
-                    get_handler_ref()->log(stringstream_.str(), level_);
-                }
-    #endif
-            }
-
-            //
-            template <typename T>
-            logger& operator<<(T const &value) {
-
-    #ifdef CROW_ENABLE_LOGGING
-                if(level_ >= get_current_log_level()) {
-                    stringstream_ << value;
-                }
-    #endif
-                return *this;
-            }
-
-            //
-            static void setLogLevel(LogLevel level) {
-                get_log_level_ref() = level;
-            }
-
-            static void setHandler(ILogHandler* handler) {
-                get_handler_ref() = handler;
-            }
-
-            static LogLevel get_current_log_level() {
-                return get_log_level_ref();
-            }
-
-        private:
-            //
-            static LogLevel& get_log_level_ref()
-            {
-                static LogLevel current_level = (LogLevel)CROW_LOG_LEVEL;
-                return current_level;
-            }
-            static ILogHandler*& get_handler_ref()
-            {
-                static CerrLogHandler default_handler;
-                static ILogHandler* current_handler = &default_handler;
-                return current_handler;
-            }
-
-            //
-            std::ostringstream stringstream_;
-            LogLevel level_;
-    };
-}
-
-#define CROW_LOG_CRITICAL   \
-        if (crow::logger::get_current_log_level() <= crow::LogLevel::Critical) \
-            crow::logger("CRITICAL", crow::LogLevel::Critical)
-#define CROW_LOG_ERROR      \
-        if (crow::logger::get_current_log_level() <= crow::LogLevel::Error) \
-            crow::logger("ERROR   ", crow::LogLevel::Error)
-#define CROW_LOG_WARNING    \
-        if (crow::logger::get_current_log_level() <= crow::LogLevel::Warning) \
-            crow::logger("WARNING ", crow::LogLevel::Warning)
-#define CROW_LOG_INFO       \
-        if (crow::logger::get_current_log_level() <= crow::LogLevel::Info) \
-            crow::logger("INFO    ", crow::LogLevel::Info)
-#define CROW_LOG_DEBUG      \
-        if (crow::logger::get_current_log_level() <= crow::LogLevel::Debug) \
-            crow::logger("DEBUG   ", crow::LogLevel::Debug)
-
-
-
-
-#pragma once
-
-#include <boost/asio.hpp>
-#include <deque>
-#include <functional>
-#include <chrono>
-#include <thread>
-
-
-
-
-namespace crow
-{
-    namespace detail 
-    {
-        // fast timer queue for fixed tick value.
-        class dumb_timer_queue
-        {
-        public:
-            using key = std::pair<dumb_timer_queue*, int>;
-
-            void cancel(key& k)
-            {
-                auto self = k.first;
-                k.first = nullptr;
-                if (!self)
-                    return;
-
-                unsigned int index = (unsigned int)(k.second - self->step_);
-                if (index < self->dq_.size())
-                    self->dq_[index].second = nullptr;
-            }
-
-            key add(std::function<void()> f)
-            {
-                dq_.emplace_back(std::chrono::steady_clock::now(), std::move(f));
-                int ret = step_+dq_.size()-1;
-
-                CROW_LOG_DEBUG << "timer add inside: " << this << ' ' << ret ;
-                return {this, ret};
-            }
-
-            void process()
-            {
-                if (!io_service_)
-                    return;
-
-                auto now = std::chrono::steady_clock::now();
-                while(!dq_.empty())
-                {
-                    auto& x = dq_.front();
-                    if (now - x.first < std::chrono::seconds(tick))
-                        break;
-                    if (x.second)
-                    {
-                        CROW_LOG_DEBUG << "timer call: " << this << ' ' << step_;
-                        // we know that timer handlers are very simple currenty; call here
-                        x.second();
-                    }
-                    dq_.pop_front();
-                    step_++;
-                }
-            }
-
-            void set_io_service(boost::asio::io_service& io_service)
-            {
-                io_service_ = &io_service;
-            }
-
-            dumb_timer_queue() noexcept
-            {
-            }
-
-        private:
-
-            int tick{5};
-            boost::asio::io_service* io_service_{};
-            std::deque<std::pair<decltype(std::chrono::steady_clock::now()), std::function<void()>>> dq_;
-            int step_{};
-        };
-    }
 }
 
 
@@ -6301,6 +4022,8 @@ namespace crow
         CONNECT,
         OPTIONS,
         TRACE,
+        PATCH,
+        PURGE,
 #endif
 
         Delete = 0,
@@ -6311,6 +4034,12 @@ namespace crow
         Connect,
         Options,
         Trace,
+        Patch,
+        Purge,
+
+
+        InternalMethodCount,
+        // should not add an item below this line: used for array count
     };
 
     inline std::string method_name(HTTPMethod method)
@@ -6333,6 +4062,12 @@ namespace crow
                 return "OPTIONS";
             case HTTPMethod::Trace:
                 return "TRACE";
+            case HTTPMethod::Patch:
+                return "PATCH";
+            case HTTPMethod::Purge:
+                return "PURGE";
+            default:
+                return "invalid";
         }
         return "invalid";
     }
@@ -6414,6 +4149,8 @@ constexpr crow::HTTPMethod operator "" _method(const char* str, size_t /*len*/)
         crow::black_magic::is_equ_p(str, "OPTIONS", 7) ? crow::HTTPMethod::Options :
         crow::black_magic::is_equ_p(str, "CONNECT", 7) ? crow::HTTPMethod::Connect :
         crow::black_magic::is_equ_p(str, "TRACE", 5) ? crow::HTTPMethod::Trace :
+        crow::black_magic::is_equ_p(str, "PATCH", 5) ? crow::HTTPMethod::Patch :
+        crow::black_magic::is_equ_p(str, "PURGE", 5) ? crow::HTTPMethod::Purge :
         throw std::runtime_error("invalid http method");
 }
 #endif
@@ -6490,6 +4227,178 @@ namespace crow
             io_service->dispatch(handler);
         }
 
+    };
+}
+
+
+
+#pragma once
+
+#include <string>
+#include <unordered_map>
+#include <boost/algorithm/string.hpp>
+#include <algorithm>
+
+
+
+
+
+
+namespace crow
+{
+    template <typename Handler>
+    struct HTTPParser : public http_parser
+    {
+        static int on_message_begin(http_parser* self_)
+        {
+            HTTPParser* self = static_cast<HTTPParser*>(self_);
+            self->clear();
+            return 0;
+        }
+        static int on_url(http_parser* self_, const char* at, size_t length)
+        {
+            HTTPParser* self = static_cast<HTTPParser*>(self_);
+            self->raw_url.insert(self->raw_url.end(), at, at+length);
+            return 0;
+        }
+        static int on_header_field(http_parser* self_, const char* at, size_t length)
+        {
+            HTTPParser* self = static_cast<HTTPParser*>(self_);
+            switch (self->header_building_state)
+            {
+                case 0:
+                    if (!self->header_value.empty())
+                    {
+                        self->headers.emplace(std::move(self->header_field), std::move(self->header_value));
+                    }
+                    self->header_field.assign(at, at+length);
+                    self->header_building_state = 1;
+                    break;
+                case 1:
+                    self->header_field.insert(self->header_field.end(), at, at+length);
+                    break;
+            }
+            return 0;
+        }
+        static int on_header_value(http_parser* self_, const char* at, size_t length)
+        {
+            HTTPParser* self = static_cast<HTTPParser*>(self_);
+            switch (self->header_building_state)
+            {
+                case 0:
+                    self->header_value.insert(self->header_value.end(), at, at+length);
+                    break;
+                case 1:
+                    self->header_building_state = 0;
+                    self->header_value.assign(at, at+length);
+                    break;
+            }
+            return 0;
+        }
+        static int on_headers_complete(http_parser* self_)
+        {
+            HTTPParser* self = static_cast<HTTPParser*>(self_);
+            if (!self->header_field.empty())
+            {
+                self->headers.emplace(std::move(self->header_field), std::move(self->header_value));
+            }
+            self->process_header();
+            return 0;
+        }
+        static int on_body(http_parser* self_, const char* at, size_t length)
+        {
+            HTTPParser* self = static_cast<HTTPParser*>(self_);
+            self->body.insert(self->body.end(), at, at+length);
+            return 0;
+        }
+        static int on_message_complete(http_parser* self_)
+        {
+            HTTPParser* self = static_cast<HTTPParser*>(self_);
+
+            // url params
+            self->url = self->raw_url.substr(0, self->raw_url.find("?"));
+            self->url_params = query_string(self->raw_url);
+
+            self->process_message();
+            return 0;
+        }
+        HTTPParser(Handler* handler) :
+            handler_(handler)
+        {
+            http_parser_init(this, HTTP_REQUEST);
+        }
+
+        // return false on error
+        bool feed(const char* buffer, int length)
+        {
+            const static http_parser_settings settings_{
+                on_message_begin,
+                on_url,
+                nullptr,
+                on_header_field,
+                on_header_value,
+                on_headers_complete,
+                on_body,
+                on_message_complete,
+            };
+
+            int nparsed = http_parser_execute(this, &settings_, buffer, length);
+            return nparsed == length;
+        }
+
+        bool done()
+        {
+            return feed(nullptr, 0);
+        }
+
+        void clear()
+        {
+            url.clear();
+            raw_url.clear();
+            header_building_state = 0;
+            header_field.clear();
+            header_value.clear();
+            headers.clear();
+            url_params.clear();
+            body.clear();
+        }
+
+        void process_header()
+        {
+            handler_->handle_header();
+        }
+
+        void process_message()
+        {
+            handler_->handle();
+        }
+
+        request to_request() const
+        {
+            return request{(HTTPMethod)method, std::move(raw_url), std::move(url), std::move(url_params), std::move(headers), std::move(body)};
+        }
+
+		bool is_upgrade() const
+		{
+			return upgrade;
+		}
+
+        bool check_version(int major, int minor) const
+        {
+            return http_major == major && http_minor == minor;
+        }
+
+        std::string raw_url;
+        std::string url;
+
+        int header_building_state = 0;
+        std::string header_field;
+        std::string header_value;
+        ci_map headers;
+        query_string url_params;
+        std::string body;
+
+        Handler* handler_;
     };
 }
 
@@ -6652,7 +4561,7 @@ namespace crow
                     else
                     {
                         buf[1] += 127;
-                        *(uint64_t*)(buf+2) = ((1==htonl(1)) ? (uint64_t)size : ((uint64_t)htonl((size) & 0xFFFFFFFF) << 32) | htonl((size) >> 32));
+                        *reinterpret_cast<uint64_t*>(buf+2) = ((1==htonl(1)) ? static_cast<uint64_t>(size) : (static_cast<uint64_t>(htonl((size) & 0xFFFFFFFF)) << 32) | htonl(static_cast<uint64_t>(size) >> 32));
                         return {buf, buf+10};
                     }
                 }
@@ -6691,7 +4600,7 @@ namespace crow
 
                                     {
                                         is_reading = false;
-                                        mini_header_ = htons(mini_header_);
+                                        mini_header_ = ntohs(mini_header_);
 #ifdef CROW_ENABLE_DEBUG
                                         
                                         if (!ec && bytes_transferred != 2)
@@ -6731,9 +4640,9 @@ namespace crow
                         case WebSocketReadState::Len16:
                             {
                                 remaining_length_ = 0;
-                				uint16_t remaining_length16_ = 0;
+                                remaining_length16_ = 0;
                                 boost::asio::async_read(adaptor_.socket(), boost::asio::buffer(&remaining_length16_, 2), 
-                                    [this,&remaining_length16_](const boost::system::error_code& ec, std::size_t 
+                                    [this](const boost::system::error_code& ec, std::size_t 
 #ifdef CROW_ENABLE_DEBUG
                                         bytes_transferred
 #endif
@@ -7002,6 +4911,7 @@ namespace crow
                 std::string message_;
                 std::string fragment_;
                 WebSocketReadState state_{WebSocketReadState::MiniHeader};
+                uint16_t remaining_length16_{0};
                 uint64_t remaining_length_{0};
                 bool close_connection_{false};
                 bool is_reading{false};
@@ -7026,173 +4936,1568 @@ namespace crow
 
 #pragma once
 
+//#define CROW_JSON_NO_ERROR_CHECK
+
 #include <string>
 #include <unordered_map>
-#include <boost/algorithm/string.hpp>
+#include <iostream>
 #include <algorithm>
+#include <memory>
+#include <boost/lexical_cast.hpp>
+#include <boost/algorithm/string/predicate.hpp>
+#include <boost/operators.hpp>
+#include <vector>
 
 
 
 
+#if defined(__GNUG__) || defined(__clang__)
+#define crow_json_likely(x) __builtin_expect(x, 1)
+#define crow_json_unlikely(x) __builtin_expect(x, 0)
+#else
+#define crow_json_likely(x) x
+#define crow_json_unlikely(x) x
+#endif
 
 
 namespace crow
 {
-    template <typename Handler>
-    struct HTTPParser : public http_parser
+    namespace mustache
     {
-        static int on_message_begin(http_parser* self_)
-        {
-            HTTPParser* self = static_cast<HTTPParser*>(self_);
-            self->clear();
-            return 0;
-        }
-        static int on_url(http_parser* self_, const char* at, size_t length)
-        {
-            HTTPParser* self = static_cast<HTTPParser*>(self_);
-            self->raw_url.insert(self->raw_url.end(), at, at+length);
-            return 0;
-        }
-        static int on_header_field(http_parser* self_, const char* at, size_t length)
-        {
-            HTTPParser* self = static_cast<HTTPParser*>(self_);
-            switch (self->header_building_state)
-            {
-                case 0:
-                    if (!self->header_value.empty())
-                    {
-                        self->headers.emplace(std::move(self->header_field), std::move(self->header_value));
-                    }
-                    self->header_field.assign(at, at+length);
-                    self->header_building_state = 1;
-                    break;
-                case 1:
-                    self->header_field.insert(self->header_field.end(), at, at+length);
-                    break;
-            }
-            return 0;
-        }
-        static int on_header_value(http_parser* self_, const char* at, size_t length)
-        {
-            HTTPParser* self = static_cast<HTTPParser*>(self_);
-            switch (self->header_building_state)
-            {
-                case 0:
-                    self->header_value.insert(self->header_value.end(), at, at+length);
-                    break;
-                case 1:
-                    self->header_building_state = 0;
-                    self->header_value.assign(at, at+length);
-                    break;
-            }
-            return 0;
-        }
-        static int on_headers_complete(http_parser* self_)
-        {
-            HTTPParser* self = static_cast<HTTPParser*>(self_);
-            if (!self->header_field.empty())
-            {
-                self->headers.emplace(std::move(self->header_field), std::move(self->header_value));
-            }
-            self->process_header();
-            return 0;
-        }
-        static int on_body(http_parser* self_, const char* at, size_t length)
-        {
-            HTTPParser* self = static_cast<HTTPParser*>(self_);
-            self->body.insert(self->body.end(), at, at+length);
-            return 0;
-        }
-        static int on_message_complete(http_parser* self_)
-        {
-            HTTPParser* self = static_cast<HTTPParser*>(self_);
+        class template_t;
+    }
 
-            // url params
-            self->url = self->raw_url.substr(0, self->raw_url.find("?"));
-            self->url_params = query_string(self->raw_url);
-
-            self->process_message();
-            return 0;
-        }
-        HTTPParser(Handler* handler) :
-            handler_(handler)
+    namespace json
+    {
+        inline void escape(const std::string& str, std::string& ret)
         {
-            http_parser_init(this, HTTP_REQUEST);
+            ret.reserve(ret.size() + str.size()+str.size()/4);
+            for(char c:str)
+            {
+                switch(c)
+                {
+                    case '"': ret += "\\\""; break;
+                    case '\\': ret += "\\\\"; break;
+                    case '\n': ret += "\\n"; break;
+                    case '\b': ret += "\\b"; break;
+                    case '\f': ret += "\\f"; break;
+                    case '\r': ret += "\\r"; break;
+                    case '\t': ret += "\\t"; break;
+                    default:
+                        if (0 <= c && c < 0x20)
+                        {
+                            ret += "\\u00";
+                            auto to_hex = [](char c)
+                            {
+                                c = c&0xf;
+                                if (c < 10)
+                                    return '0' + c;
+                                return 'a'+c-10;
+                            };
+                            ret += to_hex(c/16);
+                            ret += to_hex(c%16);
+                        }
+                        else
+                            ret += c;
+                        break;
+                }
+            }
+        }
+        inline std::string escape(const std::string& str)
+        {
+            std::string ret;
+            escape(str, ret);
+            return ret;
         }
 
-        // return false on error
-        bool feed(const char* buffer, int length)
+        enum class type : char
         {
-            const static http_parser_settings settings_{
-                on_message_begin,
-                on_url,
-                nullptr,
-                on_header_field,
-                on_header_value,
-                on_headers_complete,
-                on_body,
-                on_message_complete,
+            Null,
+            False,
+            True,
+            Number,
+            String,
+            List,
+            Object,
+        };
+
+        inline const char* get_type_str(type t) {
+            switch(t){
+                case type::Number: return "Number";
+                case type::False: return "False";
+                case type::True: return "True";
+                case type::List: return "List";
+                case type::String: return "String";
+                case type::Object: return "Object";
+                default: return "Unknown";
+            }
+        }
+
+        enum class num_type : char {
+            Signed_integer,
+            Unsigned_integer,
+            Floating_point,
+            Null
+        };
+
+        class rvalue;
+        rvalue load(const char* data, size_t size);
+
+        namespace detail 
+        {
+
+            struct r_string 
+                : boost::less_than_comparable<r_string>,
+                boost::less_than_comparable<r_string, std::string>,
+                boost::equality_comparable<r_string>,
+                boost::equality_comparable<r_string, std::string>
+            {
+                r_string() {};
+                r_string(char* s, char* e)
+                    : s_(s), e_(e)
+                {};
+                ~r_string()
+                {
+                    if (owned_)
+                        delete[] s_;
+                }
+
+                r_string(const r_string& r)
+                {
+                    *this = r;
+                }
+
+                r_string(r_string&& r)
+                {
+                    *this = r;
+                }
+
+                r_string& operator = (r_string&& r)
+                {
+                    s_ = r.s_;
+                    e_ = r.e_;
+                    owned_ = r.owned_;
+                    if (r.owned_)
+                        r.owned_ = 0;
+                    return *this;
+                }
+
+                r_string& operator = (const r_string& r)
+                {
+                    s_ = r.s_;
+                    e_ = r.e_;
+                    owned_ = 0;
+                    return *this;
+                }
+
+                operator std::string () const
+                {
+                    return std::string(s_, e_);
+                }
+
+
+                const char* begin() const { return s_; }
+                const char* end() const { return e_; }
+                size_t size() const { return end() - begin(); }
+
+                using iterator = const char*;
+                using const_iterator = const char*;
+
+                char* s_;
+                mutable char* e_;
+                uint8_t owned_{0};
+                friend std::ostream& operator << (std::ostream& os, const r_string& s)
+                {
+                    os << (std::string)s;
+                    return os;
+                }
+            private:
+                void force(char* s, uint32_t length)
+                {
+                    s_ = s;
+                    e_ = s_ + length;
+                    owned_ = 1;
+                }
+                friend rvalue crow::json::load(const char* data, size_t size);
             };
 
-            int nparsed = http_parser_execute(this, &settings_, buffer, length);
-            return nparsed == length;
+            inline bool operator < (const r_string& l, const r_string& r)
+            {
+                return boost::lexicographical_compare(l,r);
+            }
+
+            inline bool operator < (const r_string& l, const std::string& r)
+            {
+                return boost::lexicographical_compare(l,r);
+            }
+
+            inline bool operator > (const r_string& l, const std::string& r)
+            {
+                return boost::lexicographical_compare(r,l);
+            }
+
+            inline bool operator == (const r_string& l, const r_string& r)
+            {
+                return boost::equals(l,r);
+            }
+
+            inline bool operator == (const r_string& l, const std::string& r)
+            {
+                return boost::equals(l,r);
+            }
         }
 
-        bool done()
+        class rvalue
         {
-            return feed(nullptr, 0);
+            static const int cached_bit = 2;
+            static const int error_bit = 4;
+        public:
+            rvalue() noexcept : option_{error_bit} 
+            {}
+            rvalue(type t) noexcept
+                : lsize_{}, lremain_{}, t_{t}
+            {}
+            rvalue(type t, char* s, char* e)  noexcept
+                : start_{s},
+                end_{e},
+                t_{t}
+            {
+                determine_num_type();
+            }
+
+            rvalue(const rvalue& r)
+            : start_(r.start_),
+                end_(r.end_),
+                key_(r.key_),
+                t_(r.t_),
+                nt_(r.nt_),
+                option_(r.option_)
+            {
+                copy_l(r);
+            }
+
+            rvalue(rvalue&& r) noexcept
+            {
+                *this = std::move(r);
+            }
+
+            rvalue& operator = (const rvalue& r)
+            {
+                start_ = r.start_;
+                end_ = r.end_;
+                key_ = r.key_;
+                t_ = r.t_;
+                nt_ = r.nt_;
+                option_ = r.option_;
+                copy_l(r);
+                return *this;
+            }
+            rvalue& operator = (rvalue&& r) noexcept
+            {
+                start_ = r.start_;
+                end_ = r.end_;
+                key_ = std::move(r.key_);
+                l_ = std::move(r.l_);
+                lsize_ = r.lsize_;
+                lremain_ = r.lremain_;
+                t_ = r.t_;
+                nt_ = r.nt_;
+                option_ = r.option_;
+                return *this;
+            }
+
+            explicit operator bool() const noexcept
+            {
+                return (option_ & error_bit) == 0;
+            }
+
+            explicit operator int64_t() const
+            {
+                return i();
+            }
+
+            explicit operator uint64_t() const
+            {
+                return u();
+            }
+
+            explicit operator int() const
+            {
+                return (int)i();
+            }
+
+            type t() const
+            {
+#ifndef CROW_JSON_NO_ERROR_CHECK
+                if (option_ & error_bit)
+                {
+                    throw std::runtime_error("invalid json object");
+                }
+#endif
+                return t_;
+            }
+
+            num_type nt() const
+            {
+#ifndef CROW_JSON_NO_ERROR_CHECK
+                if (option_ & error_bit)
+                {
+                    throw std::runtime_error("invalid json object");
+                }
+#endif
+                return nt_;
+            }
+
+            int64_t i() const
+            {
+#ifndef CROW_JSON_NO_ERROR_CHECK
+                switch (t()) {
+                    case type::Number:
+                    case type::String:
+                        return boost::lexical_cast<int64_t>(start_, end_-start_);
+                    default:
+                        const std::string msg = "expected number, got: "
+                            + std::string(get_type_str(t()));
+                        throw std::runtime_error(msg);
+                }
+#endif
+                return boost::lexical_cast<int64_t>(start_, end_-start_);
+            }
+
+            uint64_t u() const
+            {
+#ifndef CROW_JSON_NO_ERROR_CHECK
+                switch (t()) {
+                    case type::Number:
+                    case type::String:
+                        return boost::lexical_cast<uint64_t>(start_, end_-start_);
+                    default:
+                        throw std::runtime_error(std::string("expected number, got: ") + get_type_str(t()));
+                }
+#endif
+                return boost::lexical_cast<uint64_t>(start_, end_-start_);
+            }
+
+            double d() const
+            {
+#ifndef CROW_JSON_NO_ERROR_CHECK
+                if (t() != type::Number)
+                    throw std::runtime_error("value is not number");
+#endif
+                return boost::lexical_cast<double>(start_, end_-start_);
+            }
+
+            bool b() const
+            {
+#ifndef CROW_JSON_NO_ERROR_CHECK
+                if (t() != type::True && t() != type::False)
+                    throw std::runtime_error("value is not boolean");
+#endif
+                return t() == type::True;
+            }
+
+            void unescape() const
+            {
+                if (*(start_-1))
+                {
+                    char* head = start_;
+                    char* tail = start_;
+                    while(head != end_)
+                    {
+                        if (*head == '\\')
+                        {
+                            switch(*++head)
+                            {
+                                case '"':  *tail++ = '"'; break;
+                                case '\\': *tail++ = '\\'; break;
+                                case '/':  *tail++ = '/'; break;
+                                case 'b':  *tail++ = '\b'; break;
+                                case 'f':  *tail++ = '\f'; break;
+                                case 'n':  *tail++ = '\n'; break;
+                                case 'r':  *tail++ = '\r'; break;
+                                case 't':  *tail++ = '\t'; break;
+                                case 'u':
+                                    {
+                                        auto from_hex = [](char c)
+                                        {
+                                            if (c >= 'a')
+                                                return c - 'a' + 10;
+                                            if (c >= 'A')
+                                                return c - 'A' + 10;
+                                            return c - '0';
+                                        };
+                                        unsigned int code = 
+                                            (from_hex(head[1])<<12) + 
+                                            (from_hex(head[2])<< 8) + 
+                                            (from_hex(head[3])<< 4) + 
+                                            from_hex(head[4]);
+                                        if (code >= 0x800)
+                                        {
+                                            *tail++ = 0xE0 | (code >> 12);
+                                            *tail++ = 0x80 | ((code >> 6) & 0x3F);
+                                            *tail++ = 0x80 | (code & 0x3F);
+                                        }
+                                        else if (code >= 0x80)
+                                        {
+                                            *tail++ = 0xC0 | (code >> 6);
+                                            *tail++ = 0x80 | (code & 0x3F);
+                                        }
+                                        else
+                                        {
+                                            *tail++ = code;
+                                        }
+                                        head += 4;
+                                    }
+                                    break;
+                            }
+                        }
+                        else
+                            *tail++ = *head;
+                        head++;
+                    }
+                    end_ = tail;
+                    *end_ = 0;
+                    *(start_-1) = 0;
+                }
+            }
+
+            detail::r_string s() const
+            {
+#ifndef CROW_JSON_NO_ERROR_CHECK
+                if (t() != type::String)
+                    throw std::runtime_error("value is not string");
+#endif
+                unescape();
+                return detail::r_string{start_, end_};
+            }
+
+            bool has(const char* str) const
+            {
+                return has(std::string(str));
+            }
+
+            bool has(const std::string& str) const
+            {
+                struct Pred 
+                {
+                    bool operator()(const rvalue& l, const rvalue& r) const
+                    {
+                        return l.key_ < r.key_;
+                    };
+                    bool operator()(const rvalue& l, const std::string& r) const
+                    {
+                        return l.key_ < r;
+                    };
+                    bool operator()(const std::string& l, const rvalue& r) const
+                    {
+                        return l < r.key_;
+                    };
+                };
+                if (!is_cached())
+                {
+                    std::sort(begin(), end(), Pred());
+                    set_cached();
+                }
+                auto it = lower_bound(begin(), end(), str, Pred());
+                return it != end() && it->key_ == str;
+            }
+
+            int count(const std::string& str)
+            {
+                return has(str) ? 1 : 0;
+            }
+
+            rvalue* begin() const 
+            { 
+#ifndef CROW_JSON_NO_ERROR_CHECK
+                if (t() != type::Object && t() != type::List)
+                    throw std::runtime_error("value is not a container");
+#endif
+                return l_.get(); 
+            }
+            rvalue* end() const 
+            { 
+#ifndef CROW_JSON_NO_ERROR_CHECK
+                if (t() != type::Object && t() != type::List)
+                    throw std::runtime_error("value is not a container");
+#endif
+                return l_.get()+lsize_; 
+            }
+
+            const detail::r_string& key() const
+            {
+                return key_;
+            }
+
+            size_t size() const
+            {
+                if (t() == type::String)
+                    return s().size();
+#ifndef CROW_JSON_NO_ERROR_CHECK
+                if (t() != type::Object && t() != type::List)
+                    throw std::runtime_error("value is not a container");
+#endif
+                return lsize_;
+            }
+
+            const rvalue& operator[](int index) const
+            {
+#ifndef CROW_JSON_NO_ERROR_CHECK
+                if (t() != type::List)
+                    throw std::runtime_error("value is not a list");
+                if (index >= (int)lsize_ || index < 0)
+                    throw std::runtime_error("list out of bound");
+#endif
+                return l_[index];
+            }
+
+            const rvalue& operator[](size_t index) const
+            {
+#ifndef CROW_JSON_NO_ERROR_CHECK
+                if (t() != type::List)
+                    throw std::runtime_error("value is not a list");
+                if (index >= lsize_)
+                    throw std::runtime_error("list out of bound");
+#endif
+                return l_[index];
+            }
+
+            const rvalue& operator[](const char* str) const
+            {
+                return this->operator[](std::string(str));
+            }
+
+            const rvalue& operator[](const std::string& str) const
+            {
+#ifndef CROW_JSON_NO_ERROR_CHECK
+                if (t() != type::Object)
+                    throw std::runtime_error("value is not an object");
+#endif
+                struct Pred 
+                {
+                    bool operator()(const rvalue& l, const rvalue& r) const
+                    {
+                        return l.key_ < r.key_;
+                    };
+                    bool operator()(const rvalue& l, const std::string& r) const
+                    {
+                        return l.key_ < r;
+                    };
+                    bool operator()(const std::string& l, const rvalue& r) const
+                    {
+                        return l < r.key_;
+                    };
+                };
+                if (!is_cached())
+                {
+                    std::sort(begin(), end(), Pred());
+                    set_cached();
+                }
+                auto it = lower_bound(begin(), end(), str, Pred());
+                if (it != end() && it->key_ == str)
+                    return *it;
+#ifndef CROW_JSON_NO_ERROR_CHECK
+                throw std::runtime_error("cannot find key");
+#else
+                static rvalue nullValue;
+                return nullValue;
+#endif
+            }
+
+            void set_error()
+            {
+                option_|=error_bit;
+            }
+
+            bool error() const
+            {
+                return (option_&error_bit)!=0;
+            }
+        private:
+            bool is_cached() const
+            {
+                return (option_&cached_bit)!=0;
+            }
+            void set_cached() const
+            {
+                option_ |= cached_bit;
+            }
+            void copy_l(const rvalue& r)
+            {
+                if (r.t() != type::Object && r.t() != type::List)
+                    return;
+                lsize_ = r.lsize_;
+                lremain_ = 0;
+                l_.reset(new rvalue[lsize_]);
+                std::copy(r.begin(), r.end(), begin());
+            }
+
+            void emplace_back(rvalue&& v)
+            {
+                if (!lremain_)
+                {
+                    int new_size = lsize_ + lsize_;
+                    if (new_size - lsize_ > 60000)
+                        new_size = lsize_ + 60000;
+                    if (new_size < 4)
+                        new_size = 4;
+                    rvalue* p = new rvalue[new_size];
+                    rvalue* p2 = p;
+                    for(auto& x : *this)
+                        *p2++ = std::move(x);
+                    l_.reset(p);
+                    lremain_ = new_size - lsize_;
+                }
+                l_[lsize_++] = std::move(v);
+                lremain_ --;
+            }
+
+            // determines num_type from the string
+            void determine_num_type()
+            {
+                if (t_ != type::Number)
+                {
+                    nt_ = num_type::Null;
+                    return;
+                }
+
+                const std::size_t len = end_ - start_;
+                const bool has_minus = std::memchr(start_, '-', len) != nullptr;
+                const bool has_e = std::memchr(start_, 'e', len) != nullptr
+                                || std::memchr(start_, 'E', len) != nullptr;
+                const bool has_dec_sep = std::memchr(start_, '.', len) != nullptr;
+                if (has_dec_sep || has_e)
+                  nt_ = num_type::Floating_point;
+                else if (has_minus)
+                  nt_ = num_type::Signed_integer;
+                else
+                  nt_ = num_type::Unsigned_integer;
+            }
+
+            mutable char* start_;
+            mutable char* end_;
+            detail::r_string key_;
+            std::unique_ptr<rvalue[]> l_;
+            uint32_t lsize_;
+            uint16_t lremain_;
+            type t_;
+            num_type nt_{num_type::Null};
+            mutable uint8_t option_{0};
+
+            friend rvalue load_nocopy_internal(char* data, size_t size);
+            friend rvalue load(const char* data, size_t size);
+            friend std::ostream& operator <<(std::ostream& os, const rvalue& r)
+            {
+                switch(r.t_)
+                {
+
+                case type::Null: os << "null"; break;
+                case type::False: os << "false"; break;
+                case type::True: os << "true"; break;
+                case type::Number:
+                    {
+                        switch (r.nt())
+                        {
+                        case num_type::Floating_point: os << r.d(); break;
+                        case num_type::Signed_integer: os << r.i(); break;
+                        case num_type::Unsigned_integer: os << r.u(); break;
+                        case num_type::Null: throw std::runtime_error("Number with num_type Null");
+                        }
+                    }
+                    break;
+                case type::String: os << '"' << r.s() << '"'; break;
+                case type::List: 
+                    {
+                        os << '['; 
+                        bool first = true;
+                        for(auto& x : r)
+                        {
+                            if (!first)
+                                os << ',';
+                            first = false;
+                            os << x;
+                        }
+                        os << ']'; 
+                    }
+                    break;
+                case type::Object:
+                    {
+                        os << '{'; 
+                        bool first = true;
+                        for(auto& x : r)
+                        {
+                            if (!first)
+                                os << ',';
+                            os << '"' << escape(x.key_) << "\":";
+                            first = false;
+                            os << x;
+                        }
+                        os << '}'; 
+                    }
+                    break;
+                }
+                return os;
+            }
+        };
+        namespace detail {
         }
 
-        void clear()
+        inline bool operator == (const rvalue& l, const std::string& r)
         {
-            url.clear();
-            raw_url.clear();
-            header_building_state = 0;
-            header_field.clear();
-            header_value.clear();
-            headers.clear();
-            url_params.clear();
-            body.clear();
+            return l.s() == r;
         }
 
-        void process_header()
+        inline bool operator == (const std::string& l, const rvalue& r)
         {
-            handler_->handle_header();
+            return l == r.s();
         }
 
-        void process_message()
+        inline bool operator != (const rvalue& l, const std::string& r)
         {
-            handler_->handle();
+            return l.s() != r;
         }
 
-        request to_request() const
+        inline bool operator != (const std::string& l, const rvalue& r)
         {
-            return request{(HTTPMethod)method, std::move(raw_url), std::move(url), std::move(url_params), std::move(headers), std::move(body)};
+            return l != r.s();
         }
 
-		bool is_upgrade() const
-		{
-			return upgrade;
-		}
-
-        bool check_version(int major, int minor) const
+        inline bool operator == (const rvalue& l, double r)
         {
-            return http_major == major && http_minor == minor;
+            return l.d() == r;
         }
 
-        std::string raw_url;
-        std::string url;
+        inline bool operator == (double l, const rvalue& r)
+        {
+            return l == r.d();
+        }
 
-        int header_building_state = 0;
-        std::string header_field;
-        std::string header_value;
-        ci_map headers;
-        query_string url_params;
-        std::string body;
+        inline bool operator != (const rvalue& l, double r)
+        {
+            return l.d() != r;
+        }
 
-        Handler* handler_;
-    };
+        inline bool operator != (double l, const rvalue& r)
+        {
+            return l != r.d();
+        }
+
+
+        inline rvalue load_nocopy_internal(char* data, size_t size)
+        {
+            //static const char* escaped = "\"\\/\b\f\n\r\t";
+            struct Parser
+            {
+                Parser(char* data, size_t /*size*/)
+                    : data(data)
+                {
+                }
+
+                bool consume(char c)
+                {
+                    if (crow_json_unlikely(*data != c))
+                        return false;
+                    data++;
+                    return true;
+                }
+
+                void ws_skip()
+                {
+                    while(*data == ' ' || *data == '\t' || *data == '\r' || *data == '\n') ++data;
+                };
+
+                rvalue decode_string()
+                {
+                    if (crow_json_unlikely(!consume('"')))
+                        return {};
+                    char* start = data;
+                    uint8_t has_escaping = 0;
+                    while(1)
+                    {
+                        if (crow_json_likely(*data != '"' && *data != '\\' && *data != '\0'))
+                        {
+                            data ++;
+                        }
+                        else if (*data == '"')
+                        {
+                            *data = 0;
+                            *(start-1) = has_escaping;
+                            data++;
+                            return {type::String, start, data-1};
+                        }
+                        else if (*data == '\\')
+                        {
+                            has_escaping = 1;
+                            data++;
+                            switch(*data)
+                            {
+                                case 'u':
+                                    {
+                                        auto check = [](char c)
+                                        {
+                                            return 
+                                                ('0' <= c && c <= '9') ||
+                                                ('a' <= c && c <= 'f') ||
+                                                ('A' <= c && c <= 'F');
+                                        };
+                                        if (!(check(*(data+1)) && 
+                                            check(*(data+2)) && 
+                                            check(*(data+3)) && 
+                                            check(*(data+4))))
+                                            return {};
+                                    }
+                                    data += 5;
+                                    break;
+                                case '"':
+                                case '\\':
+                                case '/':
+                                case 'b':
+                                case 'f':
+                                case 'n':
+                                case 'r':
+                                case 't':
+                                    data ++;
+                                    break;
+                                default:
+                                    return {};
+                            }
+                        }
+                        else
+                            return {};
+                    }
+                    return {};
+                }
+
+                rvalue decode_list()
+                {
+                    rvalue ret(type::List);
+                    if (crow_json_unlikely(!consume('[')))
+                    {
+                        ret.set_error();
+                        return ret;
+                    }
+                    ws_skip();
+                    if (crow_json_unlikely(*data == ']'))
+                    {
+                        data++;
+                        return ret;
+                    }
+
+                    while(1)
+                    {
+                        auto v = decode_value();
+                        if (crow_json_unlikely(!v))
+                        {
+                            ret.set_error();
+                            break;
+                        }
+                        ws_skip();
+                        ret.emplace_back(std::move(v));
+                        if (*data == ']')
+                        {
+                            data++;
+                            break;
+                        }
+                        if (crow_json_unlikely(!consume(',')))
+                        {
+                            ret.set_error();
+                            break;
+                        }
+                        ws_skip();
+                    }
+                    return ret;
+                }
+
+                rvalue decode_number()
+                {
+                    char* start = data;
+
+                    enum NumberParsingState
+                    {
+                        Minus,
+                        AfterMinus,
+                        ZeroFirst,
+                        Digits,
+                        DigitsAfterPoints,
+                        E,
+                        DigitsAfterE,
+                        Invalid,
+                    } state{Minus};
+                    while(crow_json_likely(state != Invalid))
+                    {
+                        switch(*data)
+                        {
+                            case '0':
+                                state = (NumberParsingState)"\2\2\7\3\4\6\6"[state];
+                                /*if (state == NumberParsingState::Minus || state == NumberParsingState::AfterMinus)
+                                {
+                                    state = NumberParsingState::ZeroFirst;
+                                }
+                                else if (state == NumberParsingState::Digits || 
+                                    state == NumberParsingState::DigitsAfterE || 
+                                    state == NumberParsingState::DigitsAfterPoints)
+                                {
+                                    // ok; pass
+                                }
+                                else if (state == NumberParsingState::E)
+                                {
+                                    state = NumberParsingState::DigitsAfterE;
+                                }
+                                else
+                                    return {};*/
+                                break;
+                            case '1': case '2': case '3': 
+                            case '4': case '5': case '6': 
+                            case '7': case '8': case '9':
+                                state = (NumberParsingState)"\3\3\7\3\4\6\6"[state];
+                                while(*(data+1) >= '0' && *(data+1) <= '9') data++;
+                                /*if (state == NumberParsingState::Minus || state == NumberParsingState::AfterMinus)
+                                {
+                                    state = NumberParsingState::Digits;
+                                }
+                                else if (state == NumberParsingState::Digits || 
+                                    state == NumberParsingState::DigitsAfterE || 
+                                    state == NumberParsingState::DigitsAfterPoints)
+                                {
+                                    // ok; pass
+                                }
+                                else if (state == NumberParsingState::E)
+                                {
+                                    state = NumberParsingState::DigitsAfterE;
+                                }
+                                else
+                                    return {};*/
+                                break;
+                            case '.':
+                                state = (NumberParsingState)"\7\7\4\4\7\7\7"[state];
+                                /*
+                                if (state == NumberParsingState::Digits || state == NumberParsingState::ZeroFirst)
+                                {
+                                    state = NumberParsingState::DigitsAfterPoints;
+                                }
+                                else
+                                    return {};
+                                */
+                                break;
+                            case '-':
+                                state = (NumberParsingState)"\1\7\7\7\7\6\7"[state];
+                                /*if (state == NumberParsingState::Minus)
+                                {
+                                    state = NumberParsingState::AfterMinus;
+                                }
+                                else if (state == NumberParsingState::E)
+                                {
+                                    state = NumberParsingState::DigitsAfterE;
+                                }
+                                else
+                                    return {};*/
+                                break;
+                            case '+':
+                                state = (NumberParsingState)"\7\7\7\7\7\6\7"[state];
+                                /*if (state == NumberParsingState::E)
+                                {
+                                    state = NumberParsingState::DigitsAfterE;
+                                }
+                                else
+                                    return {};*/
+                                break;
+                            case 'e': case 'E':
+                                state = (NumberParsingState)"\7\7\7\5\5\7\7"[state];
+                                /*if (state == NumberParsingState::Digits || 
+                                    state == NumberParsingState::DigitsAfterPoints)
+                                {
+                                    state = NumberParsingState::E;
+                                }
+                                else 
+                                    return {};*/
+                                break;
+                            default:
+                                if (crow_json_likely(state == NumberParsingState::ZeroFirst || 
+                                        state == NumberParsingState::Digits || 
+                                        state == NumberParsingState::DigitsAfterPoints || 
+                                        state == NumberParsingState::DigitsAfterE))
+                                    return {type::Number, start, data};
+                                else
+                                    return {};
+                        }
+                        data++;
+                    }
+
+                    return {};
+                }
+
+                rvalue decode_value()
+                {
+                    switch(*data)
+                    {
+                        case '[':
+                            return decode_list();
+                        case '{':
+                            return decode_object();
+                        case '"':
+                            return decode_string();
+                        case 't':
+                            if (//e-data >= 4 &&
+                                    data[1] == 'r' &&
+                                    data[2] == 'u' &&
+                                    data[3] == 'e')
+                            {
+                                data += 4;
+                                return {type::True};
+                            }
+                            else
+                                return {};
+                        case 'f':
+                            if (//e-data >= 5 &&
+                                    data[1] == 'a' &&
+                                    data[2] == 'l' &&
+                                    data[3] == 's' &&
+                                    data[4] == 'e')
+                            {
+                                data += 5;
+                                return {type::False};
+                            }
+                            else
+                                return {};
+                        case 'n':
+                            if (//e-data >= 4 &&
+                                    data[1] == 'u' &&
+                                    data[2] == 'l' &&
+                                    data[3] == 'l')
+                            {
+                                data += 4;
+                                return {type::Null};
+                            }
+                            else
+                                return {};
+                        //case '1': case '2': case '3': 
+                        //case '4': case '5': case '6': 
+                        //case '7': case '8': case '9':
+                        //case '0': case '-':
+                        default:
+                            return decode_number();
+                    }
+                    return {};
+                }
+
+                rvalue decode_object()
+                {
+                    rvalue ret(type::Object);
+                    if (crow_json_unlikely(!consume('{')))
+                    {
+                        ret.set_error();
+                        return ret;
+                    }
+
+                    ws_skip();
+
+                    if (crow_json_unlikely(*data == '}'))
+                    {
+                        data++;
+                        return ret;
+                    }
+
+                    while(1)
+                    {
+                        auto t = decode_string();
+                        if (crow_json_unlikely(!t))
+                        {
+                            ret.set_error();
+                            break;
+                        }
+
+                        ws_skip();
+                        if (crow_json_unlikely(!consume(':')))
+                        {
+                            ret.set_error();
+                            break;
+                        }
+
+                        // TODO caching key to speed up (flyweight?)
+                        auto key = t.s();
+
+                        ws_skip();
+                        auto v = decode_value();
+                        if (crow_json_unlikely(!v))
+                        {
+                            ret.set_error();
+                            break;
+                        }
+                        ws_skip();
+
+                        v.key_ = std::move(key);
+                        ret.emplace_back(std::move(v));
+                        if (crow_json_unlikely(*data == '}'))
+                        {
+                            data++;
+                            break;
+                        }
+                        if (crow_json_unlikely(!consume(',')))
+                        {
+                            ret.set_error();
+                            break;
+                        }
+                        ws_skip();
+                    }
+                    return ret;
+                }
+
+                rvalue parse()
+                {
+                    ws_skip();
+                    auto ret = decode_value(); // or decode object?
+                    ws_skip();
+                    if (ret && *data != '\0')
+                        ret.set_error();
+                    return ret;
+                }
+
+                char* data;
+            };
+            return Parser(data, size).parse();
+        }
+        inline rvalue load(const char* data, size_t size)
+        {
+            char* s = new char[size+1];
+            memcpy(s, data, size);
+            s[size] = 0;
+            auto ret = load_nocopy_internal(s, size);
+            if (ret)
+                ret.key_.force(s, size);
+            else
+                delete[] s;
+            return ret;
+        }
+
+        inline rvalue load(const char* data)
+        {
+            return load(data, strlen(data));
+        }
+
+        inline rvalue load(const std::string& str)
+        {
+            return load(str.data(), str.size());
+        }
+
+        class wvalue
+        {
+            friend class crow::mustache::template_t;
+        public:
+            type t() const { return t_; }
+        private:
+            type t_{type::Null};
+            num_type nt{num_type::Null};
+            union {
+              double d;
+              int64_t si;
+              uint64_t ui {};
+            } num;
+            std::string s;
+            std::unique_ptr<std::vector<wvalue>> l;
+            std::unique_ptr<std::unordered_map<std::string, wvalue>> o;
+        public:
+
+            wvalue() {}
+
+            wvalue(const rvalue& r)
+            {
+                t_ = r.t();
+                switch(r.t())
+                {
+                    case type::Null:
+                    case type::False:
+                    case type::True:
+                        return;
+                    case type::Number:
+                        nt = r.nt();
+                        if (nt == num_type::Floating_point)
+                          num.d = r.d();
+                        else if (nt == num_type::Signed_integer)
+                          num.si = r.i();
+                        else
+                          num.ui = r.u();
+                        return;
+                    case type::String:
+                        s = r.s();
+                        return;
+                    case type::List:
+                        l = std::unique_ptr<std::vector<wvalue>>(new std::vector<wvalue>{});
+                        l->reserve(r.size());
+                        for(auto it = r.begin(); it != r.end(); ++it)
+                            l->emplace_back(*it);
+                        return;
+                    case type::Object:
+                        o = std::unique_ptr<
+                                    std::unordered_map<std::string, wvalue>
+                                >(
+                                new std::unordered_map<std::string, wvalue>{});
+                        for(auto it = r.begin(); it != r.end(); ++it)
+                            o->emplace(it->key(), *it);
+                        return;
+                }
+            }
+
+            wvalue(wvalue&& r)
+            {
+                *this = std::move(r);
+            }
+
+            wvalue& operator = (wvalue&& r)
+            {
+                t_ = r.t_;
+                num = r.num;
+                s = std::move(r.s);
+                l = std::move(r.l);
+                o = std::move(r.o);
+                return *this;
+            }
+
+            void clear()
+            {
+                reset();
+            }
+
+            void reset()
+            {
+                t_ = type::Null;
+                l.reset();
+                o.reset();
+            }
+
+            wvalue& operator = (std::nullptr_t)
+            {
+                reset();
+                return *this;
+            }
+            wvalue& operator = (bool value)
+            {
+                reset();
+                if (value)
+                    t_ = type::True;
+                else
+                    t_ = type::False;
+                return *this;
+            }
+
+            wvalue& operator = (double value)
+            {
+                reset();
+                t_ = type::Number;
+                num.d = value;
+                nt = num_type::Floating_point;
+                return *this;
+            }
+
+            wvalue& operator = (unsigned short value)
+            {
+                reset();
+                t_ = type::Number;
+                num.ui = value;
+                nt = num_type::Unsigned_integer;
+                return *this;
+            }
+
+            wvalue& operator = (short value)
+            {
+                reset();
+                t_ = type::Number;
+                num.si = value;
+                nt = num_type::Signed_integer;
+                return *this;
+            }
+
+            wvalue& operator = (long long value)
+            {
+                reset();
+                t_ = type::Number;
+                num.si = value;
+                nt = num_type::Signed_integer;
+                return *this;
+            }
+
+            wvalue& operator = (long value)
+            {
+                reset();
+                t_ = type::Number;
+                num.si = value;
+                nt = num_type::Signed_integer;
+                return *this;
+            }
+
+            wvalue& operator = (int value)
+            {
+                reset();
+                t_ = type::Number;
+                num.si = value;
+                nt = num_type::Signed_integer;
+                return *this;
+            }
+
+            wvalue& operator = (unsigned long long value)
+            {
+                reset();
+                t_ = type::Number;
+                num.ui = value;
+                nt = num_type::Unsigned_integer;
+                return *this;
+            }
+
+            wvalue& operator = (unsigned long value)
+            {
+                reset();
+                t_ = type::Number;
+                num.ui = value;
+                nt = num_type::Unsigned_integer;
+                return *this;
+            }
+
+            wvalue& operator = (unsigned int value)
+            {
+                reset();
+                t_ = type::Number;
+                num.ui = value;
+                nt = num_type::Unsigned_integer;
+                return *this;
+            }
+
+            wvalue& operator=(const char* str)
+            {
+                reset();
+                t_ = type::String;
+                s = str;
+                return *this;
+            }
+
+            wvalue& operator=(const std::string& str)
+            {
+                reset();
+                t_ = type::String;
+                s = str;
+                return *this;
+            }
+
+            wvalue& operator=(std::vector<wvalue>&& v)
+            {
+                if (t_ != type::List)
+                    reset();
+                t_ = type::List;
+                if (!l)
+                    l = std::unique_ptr<std::vector<wvalue>>(new std::vector<wvalue>{});
+                l->clear();
+                l->resize(v.size());
+                size_t idx = 0;
+                for(auto& x:v)
+                {
+                    (*l)[idx++] = std::move(x);
+                }
+                return *this;
+            }
+
+            template <typename T>
+            wvalue& operator=(const std::vector<T>& v)
+            {
+                if (t_ != type::List)
+                    reset();
+                t_ = type::List;
+                if (!l)
+                    l = std::unique_ptr<std::vector<wvalue>>(new std::vector<wvalue>{});
+                l->clear();
+                l->resize(v.size());
+                size_t idx = 0;
+                for(auto& x:v)
+                {
+                    (*l)[idx++] = x;
+                }
+                return *this;
+            }
+
+            wvalue& operator[](unsigned index)
+            {
+                if (t_ != type::List)
+                    reset();
+                t_ = type::List;
+                if (!l)
+                    l = std::unique_ptr<std::vector<wvalue>>(new std::vector<wvalue>{});
+                if (l->size() < index+1)
+                    l->resize(index+1);
+                return (*l)[index];
+            }
+
+            int count(const std::string& str)
+            {
+                if (t_ != type::Object)
+                    return 0;
+                if (!o)
+                    return 0;
+                return o->count(str);
+            }
+
+            wvalue& operator[](const std::string& str)
+            {
+                if (t_ != type::Object)
+                    reset();
+                t_ = type::Object;
+                if (!o)
+                    o = std::unique_ptr<
+                                std::unordered_map<std::string, wvalue>
+                            >(
+                            new std::unordered_map<std::string, wvalue>{});
+                return (*o)[str];
+            }
+
+            std::vector<std::string> keys() const 
+            {
+                if (t_ != type::Object) 
+                    return {};
+                std::vector<std::string> result;
+                for (auto& kv:*o) 
+                {
+                    result.push_back(kv.first);
+                }
+                return result;
+            }
+
+            size_t estimate_length() const
+            {
+                switch(t_)
+                {
+                    case type::Null: return 4;
+                    case type::False: return 5;
+                    case type::True: return 4;
+                    case type::Number: return 30;
+                    case type::String: return 2+s.size()+s.size()/2;
+                    case type::List: 
+                        {
+                            size_t sum{};
+                            if (l)
+                            {
+                                for(auto& x:*l)
+                                {
+                                    sum += 1;
+                                    sum += x.estimate_length();
+                                }
+                            }
+                            return sum+2;
+                        }
+                    case type::Object:
+                        {
+                            size_t sum{};
+                            if (o)
+                            {
+                                for(auto& kv:*o)
+                                {
+                                    sum += 2;
+                                    sum += 2+kv.first.size()+kv.first.size()/2;
+                                    sum += kv.second.estimate_length();
+                                }
+                            }
+                            return sum+2;
+                        }
+                }
+                return 1;
+            }
+
+            friend void dump_internal(const wvalue& v, std::string& out);
+            friend std::string dump(const wvalue& v);
+        };
+
+        inline void dump_string(const std::string& str, std::string& out)
+        {
+            out.push_back('"');
+            escape(str, out);
+            out.push_back('"');
+        }
+        inline void dump_internal(const wvalue& v, std::string& out)
+        {
+            switch(v.t_)
+            {
+                case type::Null: out += "null"; break;
+                case type::False: out += "false"; break;
+                case type::True: out += "true"; break;
+                case type::Number: 
+                    {
+                        if (v.nt == num_type::Floating_point)
+                        {
+#ifdef _MSC_VER
+#define MSC_COMPATIBLE_SPRINTF(BUFFER_PTR, FORMAT_PTR, VALUE) sprintf_s((BUFFER_PTR), 128, (FORMAT_PTR), (VALUE))
+#else
+#define MSC_COMPATIBLE_SPRINTF(BUFFER_PTR, FORMAT_PTR, VALUE) sprintf((BUFFER_PTR), (FORMAT_PTR), (VALUE))
+#endif
+                            char outbuf[128];
+                            MSC_COMPATIBLE_SPRINTF(outbuf, "%g", v.num.d);
+                            out += outbuf;
+#undef MSC_COMPATIBLE_SPRINTF
+                        }
+                        else if (v.nt == num_type::Signed_integer)
+                        {
+                            out += std::to_string(v.num.si);
+                        }
+                        else
+                        {
+                            out += std::to_string(v.num.ui);
+                        }
+                    }
+                    break;
+                case type::String: dump_string(v.s, out); break;
+                case type::List: 
+                     {
+                         out.push_back('[');
+                         if (v.l)
+                         {
+                             bool first = true;
+                             for(auto& x:*v.l)
+                             {
+                                 if (!first)
+                                 {
+                                     out.push_back(',');
+                                 }
+                                 first = false;
+                                 dump_internal(x, out);
+                             }
+                         }
+                         out.push_back(']');
+                     }
+                     break;
+                case type::Object:
+                     {
+                         out.push_back('{');
+                         if (v.o)
+                         {
+                             bool first = true;
+                             for(auto& kv:*v.o)
+                             {
+                                 if (!first)
+                                 {
+                                     out.push_back(',');
+                                 }
+                                 first = false;
+                                 dump_string(kv.first, out);
+                                 out.push_back(':');
+                                 dump_internal(kv.second, out);
+                             }
+                         }
+                         out.push_back('}');
+                     }
+                     break;
+            }
+        }
+
+        inline std::string dump(const wvalue& v)
+        {
+            std::string ret;
+            ret.reserve(v.estimate_length());
+            dump_internal(v, ret);
+            return ret;
+        }
+
+        //std::vector<boost::asio::const_buffer> dump_ref(wvalue& v)
+        //{
+        //}
+    }
 }
+
+#undef crow_json_likely
+#undef crow_json_unlikely
 
 
 
@@ -7475,6 +6780,217 @@ namespace crow
 
 #pragma once
 
+
+
+
+
+
+
+
+namespace crow
+{
+    namespace detail
+    {
+        template <typename ... Middlewares>
+        struct partial_context
+            : public black_magic::pop_back<Middlewares...>::template rebind<partial_context>
+            , public black_magic::last_element_type<Middlewares...>::type::context
+        {
+            using parent_context = typename black_magic::pop_back<Middlewares...>::template rebind<::crow::detail::partial_context>;
+            template <int N>
+            using partial = typename std::conditional<N == sizeof...(Middlewares)-1, partial_context, typename parent_context::template partial<N>>::type;
+
+            template <typename T> 
+            typename T::context& get()
+            {
+                return static_cast<typename T::context&>(*this);
+            }
+        };
+
+        template <>
+        struct partial_context<>
+        {
+            template <int>
+            using partial = partial_context;
+        };
+
+        template <int N, typename Context, typename Container, typename CurrentMW, typename ... Middlewares>
+        bool middleware_call_helper(Container& middlewares, request& req, response& res, Context& ctx);
+
+        template <typename ... Middlewares>
+        struct context : private partial_context<Middlewares...>
+        //struct context : private Middlewares::context... // simple but less type-safe
+        {
+            template <int N, typename Context, typename Container>
+            friend typename std::enable_if<(N==0)>::type after_handlers_call_helper(Container& middlewares, Context& ctx, request& req, response& res);
+            template <int N, typename Context, typename Container>
+            friend typename std::enable_if<(N>0)>::type after_handlers_call_helper(Container& middlewares, Context& ctx, request& req, response& res);
+
+            template <int N, typename Context, typename Container, typename CurrentMW, typename ... Middlewares2>
+            friend bool middleware_call_helper(Container& middlewares, request& req, response& res, Context& ctx);
+
+            template <typename T> 
+            typename T::context& get()
+            {
+                return static_cast<typename T::context&>(*this);
+            }
+
+            template <int N>
+            using partial = typename partial_context<Middlewares...>::template partial<N>;
+        };
+    }
+}
+
+
+
+#pragma once
+
+#include <string>
+#include <cstdio>
+#include <cstdlib>
+#include <ctime>
+#include <iostream>
+#include <sstream>
+
+
+
+
+namespace crow
+{
+    enum class LogLevel
+    {
+#ifndef ERROR
+        DEBUG = 0,
+        INFO,
+        WARNING,
+        ERROR,
+        CRITICAL,
+#endif
+
+        Debug = 0,
+        Info,
+        Warning,
+        Error,
+        Critical,
+    };
+
+    class ILogHandler {
+        public:
+            virtual void log(std::string message, LogLevel level) = 0;
+    };
+
+    class CerrLogHandler : public ILogHandler {
+        public:
+            void log(std::string message, LogLevel /*level*/) override {
+                std::cerr << message;
+            }
+    };
+
+    class logger {
+
+        private:
+            //
+            static std::string timestamp()
+            {
+                char date[32];
+                time_t t = time(0);
+
+                tm my_tm;
+
+#if defined(_MSC_VER) or defined(__MINGW32__)
+                gmtime_s(&my_tm, &t);
+#else
+                gmtime_r(&t, &my_tm);
+#endif
+
+                size_t sz = strftime(date, sizeof(date), "%Y-%m-%d %H:%M:%S", &my_tm);
+                return std::string(date, date+sz);
+            }
+
+        public:
+
+
+            logger(std::string prefix, LogLevel level) : level_(level) {
+    #ifdef CROW_ENABLE_LOGGING
+                    stringstream_ << "(" << timestamp() << ") [" << prefix << "] ";
+    #endif
+
+            }
+            ~logger() {
+    #ifdef CROW_ENABLE_LOGGING
+                if(level_ >= get_current_log_level()) {
+                    stringstream_ << std::endl;
+                    get_handler_ref()->log(stringstream_.str(), level_);
+                }
+    #endif
+            }
+
+            //
+            template <typename T>
+            logger& operator<<(T const &value) {
+
+    #ifdef CROW_ENABLE_LOGGING
+                if(level_ >= get_current_log_level()) {
+                    stringstream_ << value;
+                }
+    #endif
+                return *this;
+            }
+
+            //
+            static void setLogLevel(LogLevel level) {
+                get_log_level_ref() = level;
+            }
+
+            static void setHandler(ILogHandler* handler) {
+                get_handler_ref() = handler;
+            }
+
+            static LogLevel get_current_log_level() {
+                return get_log_level_ref();
+            }
+
+        private:
+            //
+            static LogLevel& get_log_level_ref()
+            {
+                static LogLevel current_level = (LogLevel)CROW_LOG_LEVEL;
+                return current_level;
+            }
+            static ILogHandler*& get_handler_ref()
+            {
+                static CerrLogHandler default_handler;
+                static ILogHandler* current_handler = &default_handler;
+                return current_handler;
+            }
+
+            //
+            std::ostringstream stringstream_;
+            LogLevel level_;
+    };
+}
+
+#define CROW_LOG_CRITICAL   \
+        if (crow::logger::get_current_log_level() <= crow::LogLevel::Critical) \
+            crow::logger("CRITICAL", crow::LogLevel::Critical)
+#define CROW_LOG_ERROR      \
+        if (crow::logger::get_current_log_level() <= crow::LogLevel::Error) \
+            crow::logger("ERROR   ", crow::LogLevel::Error)
+#define CROW_LOG_WARNING    \
+        if (crow::logger::get_current_log_level() <= crow::LogLevel::Warning) \
+            crow::logger("WARNING ", crow::LogLevel::Warning)
+#define CROW_LOG_INFO       \
+        if (crow::logger::get_current_log_level() <= crow::LogLevel::Info) \
+            crow::logger("INFO    ", crow::LogLevel::Info)
+#define CROW_LOG_DEBUG      \
+        if (crow::logger::get_current_log_level() <= crow::LogLevel::Debug) \
+            crow::logger("DEBUG   ", crow::LogLevel::Debug)
+
+
+
+
+#pragma once
+
 #include <cstdint>
 #include <utility>
 #include <tuple>
@@ -7512,24 +7028,24 @@ namespace crow
         
         virtual void validate() = 0;
         std::unique_ptr<BaseRule> upgrade()
-		{
-			if (rule_to_upgrade_)
-				return std::move(rule_to_upgrade_);
-			return {};
-		}
+        {
+            if (rule_to_upgrade_)
+                return std::move(rule_to_upgrade_);
+            return {};
+        }
 
         virtual void handle(const request&, response&, const routing_params&) = 0;
         virtual void handle_upgrade(const request&, response& res, SocketAdaptor&&) 
-		{
-			res = response(404);
-			res.end();
-		}
+        {
+            res = response(404);
+            res.end();
+        }
 #ifdef CROW_ENABLE_SSL
         virtual void handle_upgrade(const request&, response& res, SSLAdaptor&&) 
-		{
-			res = response(404);
-			res.end();
-		}
+        {
+            res = response(404);
+            res.end();
+        }
 #endif
 
         uint32_t get_methods()
@@ -7537,13 +7053,25 @@ namespace crow
             return methods_;
         }
 
+        template <typename F>
+        void foreach_method(F f)
+        {
+            for(uint32_t method = 0, method_bit = 1; method < (uint32_t)HTTPMethod::InternalMethodCount; method++, method_bit<<=1)
+            {
+                if (methods_ & method_bit)
+                    f(method);
+            }
+        }
+
+        const std::string& rule() { return rule_; }
+
     protected:
         uint32_t methods_{1<<(int)HTTPMethod::Get};
 
         std::string rule_;
         std::string name_;
 
-		std::unique_ptr<BaseRule> rule_to_upgrade_;
+        std::unique_ptr<BaseRule> rule_to_upgrade_;
 
         friend class Router;
         template <typename T>
@@ -7736,89 +7264,89 @@ namespace crow
         }
     }
 
-	class WebSocketRule : public BaseRule
-	{
+    class WebSocketRule : public BaseRule
+    {
         using self_t = WebSocketRule;
-	public:
+    public:
         WebSocketRule(std::string rule)
             : BaseRule(std::move(rule))
         {
         }
 
-		void validate() override
-		{
-		}
+        void validate() override
+        {
+        }
 
-		void handle(const request&, response& res, const routing_params&) override
-		{
-			res = response(404);
-			res.end();
-		}
+        void handle(const request&, response& res, const routing_params&) override
+        {
+            res = response(404);
+            res.end();
+        }
 
         void handle_upgrade(const request& req, response&, SocketAdaptor&& adaptor) override 
-		{
-			new crow::websocket::Connection<SocketAdaptor>(req, std::move(adaptor), open_handler_, message_handler_, close_handler_, error_handler_, accept_handler_);
-		}
+        {
+            new crow::websocket::Connection<SocketAdaptor>(req, std::move(adaptor), open_handler_, message_handler_, close_handler_, error_handler_, accept_handler_);
+        }
 #ifdef CROW_ENABLE_SSL
         void handle_upgrade(const request& req, response&, SSLAdaptor&& adaptor) override
-		{
-			new crow::websocket::Connection<SSLAdaptor>(req, std::move(adaptor), open_handler_, message_handler_, close_handler_, error_handler_, accept_handler_);
-		}
+        {
+            new crow::websocket::Connection<SSLAdaptor>(req, std::move(adaptor), open_handler_, message_handler_, close_handler_, error_handler_, accept_handler_);
+        }
 #endif
 
-		template <typename Func>
-		self_t& onopen(Func f)
-		{
-			open_handler_ = f;
-			return *this;
-		}
+        template <typename Func>
+        self_t& onopen(Func f)
+        {
+            open_handler_ = f;
+            return *this;
+        }
 
-		template <typename Func>
-		self_t& onmessage(Func f)
-		{
-			message_handler_ = f;
-			return *this;
-		}
+        template <typename Func>
+        self_t& onmessage(Func f)
+        {
+            message_handler_ = f;
+            return *this;
+        }
 
-		template <typename Func>
-		self_t& onclose(Func f)
-		{
-			close_handler_ = f;
-			return *this;
-		}
+        template <typename Func>
+        self_t& onclose(Func f)
+        {
+            close_handler_ = f;
+            return *this;
+        }
 
-		template <typename Func>
-		self_t& onerror(Func f)
-		{
-			error_handler_ = f;
-			return *this;
-		}
+        template <typename Func>
+        self_t& onerror(Func f)
+        {
+            error_handler_ = f;
+            return *this;
+        }
 
-		template <typename Func>
-		self_t& onaccept(Func f)
-		{
-		    accept_handler_ = f;
-		    return *this;
-		}
+        template <typename Func>
+        self_t& onaccept(Func f)
+        {
+            accept_handler_ = f;
+            return *this;
+        }
 
-	protected:
-		std::function<void(crow::websocket::connection&)> open_handler_;
-		std::function<void(crow::websocket::connection&, const std::string&, bool)> message_handler_;
-		std::function<void(crow::websocket::connection&, const std::string&)> close_handler_;
-		std::function<void(crow::websocket::connection&)> error_handler_;
-		std::function<bool(const crow::request&)> accept_handler_;
-	};
+    protected:
+        std::function<void(crow::websocket::connection&)> open_handler_;
+        std::function<void(crow::websocket::connection&, const std::string&, bool)> message_handler_;
+        std::function<void(crow::websocket::connection&, const std::string&)> close_handler_;
+        std::function<void(crow::websocket::connection&)> error_handler_;
+        std::function<bool(const crow::request&)> accept_handler_;
+    };
 
     template <typename T>
     struct RuleParameterTraits
     {
         using self_t = T;
-		WebSocketRule& websocket() 
-		{
-			auto p =new WebSocketRule(((self_t*)this)->rule_);
+        WebSocketRule& websocket() 
+        {
+            auto p =new WebSocketRule(((self_t*)this)->rule_);
             ((self_t*)this)->rule_to_upgrade_.reset(p);
-			return *p;
-		}
+            return *p;
+        }
 
         self_t& name(std::string name) noexcept
         {
@@ -8360,15 +7888,14 @@ public:
     class Router
     {
     public:
-        Router() : rules_(2) 
+        Router()
         {
         }
 
         DynamicRule& new_rule_dynamic(const std::string& rule)
         {
             auto ruleObject = new DynamicRule(rule);
-
-            internal_add_rule_object(rule, ruleObject);
+            all_rules_.emplace_back(ruleObject);
 
             return *ruleObject;
         }
@@ -8377,57 +7904,78 @@ public:
         typename black_magic::arguments<N>::type::template rebind<TaggedRule>& new_rule_tagged(const std::string& rule)
         {
             using RuleT = typename black_magic::arguments<N>::type::template rebind<TaggedRule>;
-            auto ruleObject = new RuleT(rule);
 
-            internal_add_rule_object(rule, ruleObject);
+            auto ruleObject = new RuleT(rule);
+            all_rules_.emplace_back(ruleObject);
 
             return *ruleObject;
         }
 
         void internal_add_rule_object(const std::string& rule, BaseRule* ruleObject)
         {
-            rules_.emplace_back(ruleObject);
-            trie_.add(rule, rules_.size() - 1);
-
-            // directory case: 
-            //   request to `/about' url matches `/about/' rule 
+            bool has_trailing_slash = false;
+            std::string rule_without_trailing_slash;
             if (rule.size() > 1 && rule.back() == '/')
             {
-                std::string rule_without_trailing_slash = rule;
+                has_trailing_slash = true;
+                rule_without_trailing_slash = rule;
                 rule_without_trailing_slash.pop_back();
-                trie_.add(rule_without_trailing_slash, RULE_SPECIAL_REDIRECT_SLASH);
             }
+
+            ruleObject->foreach_method([&](int method)
+                    {
+                        per_methods_[method].rules.emplace_back(ruleObject);
+                        per_methods_[method].trie.add(rule, per_methods_[method].rules.size() - 1);
+
+                        // directory case: 
+                        //   request to `/about' url matches `/about/' rule 
+                        if (has_trailing_slash)
+                        {
+                            per_methods_[method].trie.add(rule_without_trailing_slash, RULE_SPECIAL_REDIRECT_SLASH);
+                        }
+                    });
+
         }
 
         void validate()
         {
-            trie_.validate();
-            for(auto& rule:rules_)
+            for(auto& rule:all_rules_)
             {
                 if (rule)
-				{
-					auto upgraded = rule->upgrade();
-					if (upgraded)
-						rule = std::move(upgraded);
+                {
+                    auto upgraded = rule->upgrade();
+                    if (upgraded)
+                        rule = std::move(upgraded);
                     rule->validate();
-				}
+                    internal_add_rule_object(rule->rule(), rule.get());
+                }
+            }
+            for(auto& per_method:per_methods_)
+            {
+                per_method.trie.validate();
             }
         }
 
-		template <typename Adaptor> 
-		void handle_upgrade(const request& req, response& res, Adaptor&& adaptor)
-		{
-            auto found = trie_.find(req.url);
+        template <typename Adaptor> 
+        void handle_upgrade(const request& req, response& res, Adaptor&& adaptor)
+        {
+            if (req.method >= HTTPMethod::InternalMethodCount)
+                return;
+            auto& per_method = per_methods_[(int)req.method];
+            auto& trie = per_method.trie;
+            auto& rules = per_method.rules;
+
+            auto found = trie.find(req.url);
             unsigned rule_index = found.first;
             if (!rule_index)
             {
-                CROW_LOG_DEBUG << "Cannot match rules " << req.url;
+                CROW_LOG_DEBUG << "Cannot match rules " << req.url << ' ' << method_name(req.method);
                 res = response(404);
                 res.end();
                 return;
             }
 
-            if (rule_index >= rules_.size())
+            if (rule_index >= rules.size())
                 throw std::runtime_error("Trie internal structure corrupted!");
 
             if (rule_index == RULE_SPECIAL_REDIRECT_SLASH)
@@ -8448,20 +7996,12 @@ public:
                 return;
             }
 
-            if ((rules_[rule_index]->get_methods() & (1<<(uint32_t)req.method)) == 0)
-            {
-                CROW_LOG_DEBUG << "Rule found but method mismatch: " << req.url << " with " << method_name(req.method) << "(" << (uint32_t)req.method << ") / " << rules_[rule_index]->get_methods();
-                res = response(404);
-                res.end();
-                return;
-            }
-
-            CROW_LOG_DEBUG << "Matched rule (upgrade) '" << rules_[rule_index]->rule_ << "' " << (uint32_t)req.method << " / " << rules_[rule_index]->get_methods();
+            CROW_LOG_DEBUG << "Matched rule (upgrade) '" << rules[rule_index]->rule_ << "' " << (uint32_t)req.method << " / " << rules[rule_index]->get_methods();
 
             // any uncaught exceptions become 500s
             try
             {
-                rules_[rule_index]->handle_upgrade(req, res, std::move(adaptor));
+                rules[rule_index]->handle_upgrade(req, res, std::move(adaptor));
             }
             catch(std::exception& e)
             {
@@ -8477,23 +8017,29 @@ public:
                 res.end();
                 return;   
             }
-		}
+        }
 
         void handle(const request& req, response& res)
         {
-            auto found = trie_.find(req.url);
+            if (req.method >= HTTPMethod::InternalMethodCount)
+                return;
+            auto& per_method = per_methods_[(int)req.method];
+            auto& trie = per_method.trie;
+            auto& rules = per_method.rules;
+
+            auto found = trie.find(req.url);
 
             unsigned rule_index = found.first;
 
             if (!rule_index)
             {
-                CROW_LOG_DEBUG << "Cannot match rules " << req.url;
+                CROW_LOG_DEBUG << "Cannot match rules " << req.url << ' ' << method_name(req.method);
                 res = response(404);
                 res.end();
                 return;
             }
 
-            if (rule_index >= rules_.size())
+            if (rule_index >= rules.size())
                 throw std::runtime_error("Trie internal structure corrupted!");
 
             if (rule_index == RULE_SPECIAL_REDIRECT_SLASH)
@@ -8514,20 +8060,12 @@ public:
                 return;
             }
 
-            if ((rules_[rule_index]->get_methods() & (1<<(uint32_t)req.method)) == 0)
-            {
-                CROW_LOG_DEBUG << "Rule found but method mismatch: " << req.url << " with " << method_name(req.method) << "(" << (uint32_t)req.method << ") / " << rules_[rule_index]->get_methods();
-                res = response(404);
-                res.end();
-                return;
-            }
-
-            CROW_LOG_DEBUG << "Matched rule '" << rules_[rule_index]->rule_ << "' " << (uint32_t)req.method << " / " << rules_[rule_index]->get_methods();
+            CROW_LOG_DEBUG << "Matched rule '" << rules[rule_index]->rule_ << "' " << (uint32_t)req.method << " / " << rules[rule_index]->get_methods();
 
             // any uncaught exceptions become 500s
             try
             {
-                rules_[rule_index]->handle(req, res, found.second);
+                rules[rule_index]->handle(req, res, found.second);
             }
             catch(std::exception& e)
             {
@@ -8547,12 +8085,24 @@ public:
 
         void debug_print()
         {
-            trie_.debug_print();
+            for(int i = 0; i < (int)HTTPMethod::InternalMethodCount; i ++)
+            {
+                CROW_LOG_DEBUG << method_name((HTTPMethod)i);
+                per_methods_[i].trie.debug_print();
+            }
         }
 
     private:
-        std::vector<std::unique_ptr<BaseRule>> rules_;
-        Trie trie_;
+        struct PerMethod
+        {
+            std::vector<BaseRule*> rules;
+            Trie trie;
+
+            // rule index 0, 1 has special meaning; preallocate it to avoid duplication.
+            PerMethod() : rules(2) {}
+        };
+        std::array<PerMethod, (int)HTTPMethod::InternalMethodCount> per_methods_;
+        std::vector<std::unique_ptr<BaseRule>> all_rules_;
     };
 }
 
@@ -8560,63 +8110,83 @@ public:
 
 #pragma once
 
-
-
-
+#include <boost/asio.hpp>
+#include <deque>
+#include <functional>
+#include <chrono>
+#include <thread>
 
 
 
 
 namespace crow
 {
-    namespace detail
+    namespace detail 
     {
-        template <typename ... Middlewares>
-        struct partial_context
-            : public black_magic::pop_back<Middlewares...>::template rebind<partial_context>
-            , public black_magic::last_element_type<Middlewares...>::type::context
+        // fast timer queue for fixed tick value.
+        class dumb_timer_queue
         {
-            using parent_context = typename black_magic::pop_back<Middlewares...>::template rebind<::crow::detail::partial_context>;
-            template <int N>
-            using partial = typename std::conditional<N == sizeof...(Middlewares)-1, partial_context, typename parent_context::template partial<N>>::type;
+        public:
+            using key = std::pair<dumb_timer_queue*, int>;
 
-            template <typename T> 
-            typename T::context& get()
+            void cancel(key& k)
             {
-                return static_cast<typename T::context&>(*this);
-            }
-        };
+                auto self = k.first;
+                k.first = nullptr;
+                if (!self)
+                    return;
 
-        template <>
-        struct partial_context<>
-        {
-            template <int>
-            using partial = partial_context;
-        };
-
-        template <int N, typename Context, typename Container, typename CurrentMW, typename ... Middlewares>
-        bool middleware_call_helper(Container& middlewares, request& req, response& res, Context& ctx);
-
-        template <typename ... Middlewares>
-        struct context : private partial_context<Middlewares...>
-        //struct context : private Middlewares::context... // simple but less type-safe
-        {
-            template <int N, typename Context, typename Container>
-            friend typename std::enable_if<(N==0)>::type after_handlers_call_helper(Container& middlewares, Context& ctx, request& req, response& res);
-            template <int N, typename Context, typename Container>
-            friend typename std::enable_if<(N>0)>::type after_handlers_call_helper(Container& middlewares, Context& ctx, request& req, response& res);
-
-            template <int N, typename Context, typename Container, typename CurrentMW, typename ... Middlewares2>
-            friend bool middleware_call_helper(Container& middlewares, request& req, response& res, Context& ctx);
-
-            template <typename T> 
-            typename T::context& get()
-            {
-                return static_cast<typename T::context&>(*this);
+                unsigned int index = (unsigned int)(k.second - self->step_);
+                if (index < self->dq_.size())
+                    self->dq_[index].second = nullptr;
             }
 
-            template <int N>
-            using partial = typename partial_context<Middlewares...>::template partial<N>;
+            key add(std::function<void()> f)
+            {
+                dq_.emplace_back(std::chrono::steady_clock::now(), std::move(f));
+                int ret = step_+dq_.size()-1;
+
+                CROW_LOG_DEBUG << "timer add inside: " << this << ' ' << ret ;
+                return {this, ret};
+            }
+
+            void process()
+            {
+                if (!io_service_)
+                    return;
+
+                auto now = std::chrono::steady_clock::now();
+                while(!dq_.empty())
+                {
+                    auto& x = dq_.front();
+                    if (now - x.first < std::chrono::seconds(tick))
+                        break;
+                    if (x.second)
+                    {
+                        CROW_LOG_DEBUG << "timer call: " << this << ' ' << step_;
+                        // we know that timer handlers are very simple currenty; call here
+                        x.second();
+                    }
+                    dq_.pop_front();
+                    step_++;
+                }
+            }
+
+            void set_io_service(boost::asio::io_service& io_service)
+            {
+                io_service_ = &io_service;
+            }
+
+            dumb_timer_queue() noexcept
+            {
+            }
+
+        private:
+
+            int tick{5};
+            boost::asio::io_service* io_service_{};
+            std::deque<std::pair<decltype(std::chrono::steady_clock::now()), std::function<void()>>> dq_;
+            int step_{};
         };
     }
 }
@@ -9007,7 +8577,9 @@ namespace crow
                 {401, "HTTP/1.1 401 Unauthorized\r\n"},
                 {403, "HTTP/1.1 403 Forbidden\r\n"},
                 {404, "HTTP/1.1 404 Not Found\r\n"},
+                {413, "HTTP/1.1 413 Payload Too Large\r\n"},
                 {422, "HTTP/1.1 422 Unprocessable Entity\r\n"},
+                {429, "HTTP/1.1 429 Too Many Requests\r\n"},
 
                 {500, "HTTP/1.1 500 Internal Server Error\r\n"},
                 {501, "HTTP/1.1 501 Not Implemented\r\n"},
@@ -9321,7 +8893,7 @@ namespace crow
                                 auto last_time_t = time(0);
                                 tm my_tm;
 
-#ifdef _MSC_VER
+#if defined(_MSC_VER) or defined(__MINGW32__)
                                 gmtime_s(&my_tm, &last_time_t);
 #else
                                 gmtime_r(&last_time_t, &my_tm);
@@ -9490,6 +9062,7 @@ namespace crow
 #include <cstdint>
 #include <type_traits>
 #include <thread>
+#include <condition_variable>
 
 
 
@@ -9584,6 +9157,13 @@ namespace crow
             router_.validate();
         }
 
+        void notify_server_start()
+        {
+            std::unique_lock<std::mutex> lock(start_mutex_);
+            server_started_ = true;
+            cv_started_.notify_all();
+        }
+
         void run()
         {
             validate();
@@ -9592,6 +9172,7 @@ namespace crow
             {
                 ssl_server_ = std::move(std::unique_ptr<ssl_server_t>(new ssl_server_t(this, bindaddr_, port_, &middlewares_, concurrency_, &ssl_context_)));
                 ssl_server_->set_tick_function(tick_interval_, tick_function_);
+                notify_server_start();
                 ssl_server_->run();
             }
             else
@@ -9599,6 +9180,7 @@ namespace crow
             {
                 server_ = std::move(std::unique_ptr<server_t>(new server_t(this, bindaddr_, port_, &middlewares_, concurrency_, nullptr)));
                 server_->set_tick_function(tick_interval_, tick_function_);
+                notify_server_start();
                 server_->run();
             }
         }
@@ -9715,6 +9297,14 @@ namespace crow
             return *this;
         }
 
+        void wait_for_server_start()
+        {
+            std::unique_lock<std::mutex> lock(start_mutex_);
+            if (server_started_)
+                return;
+            cv_started_.wait(lock);
+        }
+
     private:
         uint16_t port_ = 80;
         uint16_t concurrency_ = 1;
@@ -9730,10 +9320,586 @@ namespace crow
         std::unique_ptr<ssl_server_t> ssl_server_;
 #endif
         std::unique_ptr<server_t> server_;
+
+        bool server_started_{false};
+        std::condition_variable cv_started_;
+        std::mutex start_mutex_;
     };
     template <typename ... Middlewares>
     using App = Crow<Middlewares...>;
     using SimpleApp = Crow<>;
+}
+
+
+
+#pragma once
+#include <string>
+#include <vector>
+#include <fstream>
+#include <iterator>
+#include <functional>
+
+
+namespace crow
+{
+    namespace mustache
+    {
+        using context = json::wvalue;
+
+        template_t load(const std::string& filename);
+
+        class invalid_template_exception : public std::exception
+        {
+            public:
+            invalid_template_exception(const std::string& msg)
+                : msg("crow::mustache error: " + msg)
+            {
+            }
+            virtual const char* what() const throw()
+            {
+                return msg.c_str();
+            }
+            std::string msg;
+        };
+
+        enum class ActionType
+        {
+            Ignore,
+            Tag,
+            UnescapeTag,
+            OpenBlock,
+            CloseBlock,
+            ElseBlock,
+            Partial,
+        };
+
+        struct Action
+        {
+            int start;
+            int end;
+            int pos;
+            ActionType t;
+            Action(ActionType t, int start, int end, int pos = 0) 
+                : start(start), end(end), pos(pos), t(t)
+            {}
+        };
+
+        class template_t 
+        {
+        public:
+            template_t(std::string body)
+                : body_(std::move(body))
+            {
+                // {{ {{# {{/ {{^ {{! {{> {{=
+                parse();
+            }
+
+        private:
+            std::string tag_name(const Action& action)
+            {
+                return body_.substr(action.start, action.end - action.start);
+            }
+            auto find_context(const std::string& name, const std::vector<context*>& stack)->std::pair<bool, context&>
+            {
+                if (name == ".")
+                {
+                    return {true, *stack.back()};
+                }
+                int dotPosition = name.find(".");
+                if (dotPosition == (int)name.npos)
+                {
+                    for(auto it = stack.rbegin(); it != stack.rend(); ++it)
+                    {
+                        if ((*it)->t() == json::type::Object)
+                        {
+                            if ((*it)->count(name))
+                                return {true, (**it)[name]};
+                        }
+                    }
+                }
+                else
+                {
+                    std::vector<int> dotPositions;
+                    dotPositions.push_back(-1);
+                    while(dotPosition != (int)name.npos)
+                    {
+                        dotPositions.push_back(dotPosition);
+                        dotPosition = name.find(".", dotPosition+1);
+                    }
+                    dotPositions.push_back(name.size());
+                    std::vector<std::string> names;
+                    names.reserve(dotPositions.size()-1);
+                    for(int i = 1; i < (int)dotPositions.size(); i ++)
+                        names.emplace_back(name.substr(dotPositions[i-1]+1, dotPositions[i]-dotPositions[i-1]-1));
+
+                    for(auto it = stack.rbegin(); it != stack.rend(); ++it)
+                    {
+                        context* view = *it;
+                        bool found = true;
+                        for(auto jt = names.begin(); jt != names.end(); ++jt)
+                        {
+                            if (view->t() == json::type::Object &&
+                                view->count(*jt))
+                            {
+                                view = &(*view)[*jt];
+                            }
+                            else
+                            {
+                                found = false;
+                                break;
+                            }
+                        }
+                        if (found)
+                            return {true, *view};
+                    }
+
+                }
+
+                static json::wvalue empty_str;
+                empty_str = "";
+                return {false, empty_str};
+            }
+
+            void escape(const std::string& in, std::string& out)
+            {
+                out.reserve(out.size() + in.size());
+                for(auto it = in.begin(); it != in.end(); ++it)
+                {
+                    switch(*it)
+                    {
+                        case '&': out += "&amp;"; break;
+                        case '<': out += "&lt;"; break;
+                        case '>': out += "&gt;"; break;
+                        case '"': out += "&quot;"; break;
+                        case '\'': out += "&#39;"; break;
+                        case '/': out += "&#x2F;"; break;
+                        default: out += *it; break;
+                    }
+                }
+            }
+
+            void render_internal(int actionBegin, int actionEnd, std::vector<context*>& stack, std::string& out, int indent)
+            {
+                int current = actionBegin;
+
+                if (indent)
+                    out.insert(out.size(), indent, ' ');
+
+                while(current < actionEnd)
+                {
+                    auto& fragment = fragments_[current];
+                    auto& action = actions_[current];
+                    render_fragment(fragment, indent, out);
+                    switch(action.t)
+                    {
+                        case ActionType::Ignore:
+                            // do nothing
+                            break;
+                        case ActionType::Partial:
+                            {
+                                std::string partial_name = tag_name(action);
+                                auto partial_templ = load(partial_name);
+                                int partial_indent = action.pos;
+                                partial_templ.render_internal(0, partial_templ.fragments_.size()-1, stack, out, partial_indent?indent+partial_indent:0);
+                            }
+                            break;
+                        case ActionType::UnescapeTag:
+                        case ActionType::Tag:
+                            {
+                                auto optional_ctx = find_context(tag_name(action), stack);
+                                auto& ctx = optional_ctx.second;
+                                switch(ctx.t())
+                                {
+                                    case json::type::Number:
+                                        out += json::dump(ctx);
+                                        break;
+                                    case json::type::String:
+                                        if (action.t == ActionType::Tag)
+                                            escape(ctx.s, out);
+                                        else
+                                            out += ctx.s;
+                                        break;
+                                    default:
+                                        throw std::runtime_error("not implemented tag type" + boost::lexical_cast<std::string>((int)ctx.t()));
+                                }
+                            }
+                            break;
+                        case ActionType::ElseBlock:
+                            {
+                                static context nullContext;
+                                auto optional_ctx = find_context(tag_name(action), stack);
+                                if (!optional_ctx.first)
+                                {
+                                    stack.emplace_back(&nullContext);
+                                    break;
+                                }
+
+                                auto& ctx = optional_ctx.second;
+                                switch(ctx.t())
+                                {
+                                    case json::type::List:
+                                        if (ctx.l && !ctx.l->empty())
+                                            current = action.pos;
+                                        else
+                                            stack.emplace_back(&nullContext);
+                                        break;
+                                    case json::type::False:
+                                    case json::type::Null:
+                                        stack.emplace_back(&nullContext);
+                                        break;
+                                    default:
+                                        current = action.pos;
+                                        break;
+                                }
+                                break;
+                            }
+                        case ActionType::OpenBlock:
+                            {
+                                auto optional_ctx = find_context(tag_name(action), stack);
+                                if (!optional_ctx.first)
+                                {
+                                    current = action.pos;
+                                    break;
+                                }
+
+                                auto& ctx = optional_ctx.second;
+                                switch(ctx.t())
+                                {
+                                    case json::type::List:
+                                        if (ctx.l)
+                                            for(auto it = ctx.l->begin(); it != ctx.l->end(); ++it)
+                                            {
+                                                stack.push_back(&*it);
+                                                render_internal(current+1, action.pos, stack, out, indent);
+                                                stack.pop_back();
+                                            }
+                                        current = action.pos;
+                                        break;
+                                    case json::type::Number:
+                                    case json::type::String:
+                                    case json::type::Object:
+                                    case json::type::True:
+                                        stack.push_back(&ctx);
+                                        break;
+                                    case json::type::False:
+                                    case json::type::Null:
+                                        current = action.pos;
+                                        break;
+                                    default:
+                                        throw std::runtime_error("{{#: not implemented context type: " + boost::lexical_cast<std::string>((int)ctx.t()));
+                                        break;
+                                }
+                                break;
+                            }
+                        case ActionType::CloseBlock:
+                            stack.pop_back();
+                            break;
+                        default:
+                            throw std::runtime_error("not implemented " + boost::lexical_cast<std::string>((int)action.t));
+                    }
+                    current++;
+                }
+                auto& fragment = fragments_[actionEnd];
+                render_fragment(fragment, indent, out);
+            }
+            void render_fragment(const std::pair<int, int> fragment, int indent, std::string& out)
+            {
+                if (indent)
+                {
+                    for(int i = fragment.first; i < fragment.second; i ++)
+                    {
+                        out += body_[i];
+                        if (body_[i] == '\n' && i+1 != (int)body_.size())
+                            out.insert(out.size(), indent, ' ');
+                    }
+                }
+                else
+                    out.insert(out.size(), body_, fragment.first, fragment.second-fragment.first);
+            }
+        public:
+            std::string render()
+            {
+                context empty_ctx;
+                std::vector<context*> stack;
+                stack.emplace_back(&empty_ctx);
+
+                std::string ret;
+                render_internal(0, fragments_.size()-1, stack, ret, 0);
+                return ret;
+            }
+            std::string render(context& ctx)
+            {
+                std::vector<context*> stack;
+                stack.emplace_back(&ctx);
+
+                std::string ret;
+                render_internal(0, fragments_.size()-1, stack, ret, 0);
+                return ret;
+            }
+
+        private:
+
+            void parse()
+            {
+                std::string tag_open = "{{";
+                std::string tag_close = "}}";
+
+                std::vector<int> blockPositions;
+                
+                size_t current = 0;
+                while(1)
+                {
+                    size_t idx = body_.find(tag_open, current);
+                    if (idx == body_.npos)
+                    {
+                        fragments_.emplace_back(current, body_.size());
+                        actions_.emplace_back(ActionType::Ignore, 0, 0);
+                        break;
+                    }
+                    fragments_.emplace_back(current, idx);
+
+                    idx += tag_open.size();
+                    size_t endIdx = body_.find(tag_close, idx);
+                    if (endIdx == idx)
+                    {
+                        throw invalid_template_exception("empty tag is not allowed");
+                    }
+                    if (endIdx == body_.npos)
+                    {
+                        // error, no matching tag
+                        throw invalid_template_exception("not matched opening tag");
+                    }
+                    current = endIdx + tag_close.size();
+                    switch(body_[idx])
+                    {
+                        case '#':
+                            idx++;
+                            while(body_[idx] == ' ') idx++;
+                            while(body_[endIdx-1] == ' ') endIdx--;
+                            blockPositions.emplace_back(actions_.size());
+                            actions_.emplace_back(ActionType::OpenBlock, idx, endIdx);
+                            break;
+                        case '/':
+                            idx++;
+                            while(body_[idx] == ' ') idx++;
+                            while(body_[endIdx-1] == ' ') endIdx--;
+                            {
+                                auto& matched = actions_[blockPositions.back()];
+                                if (body_.compare(idx, endIdx-idx, 
+                                        body_, matched.start, matched.end - matched.start) != 0)
+                                {
+                                    throw invalid_template_exception("not matched {{# {{/ pair: " + 
+                                        body_.substr(matched.start, matched.end - matched.start) + ", " + 
+                                        body_.substr(idx, endIdx-idx));
+                                }
+                                matched.pos = actions_.size();
+                            }
+                            actions_.emplace_back(ActionType::CloseBlock, idx, endIdx, blockPositions.back());
+                            blockPositions.pop_back();
+                            break;
+                        case '^':
+                            idx++;
+                            while(body_[idx] == ' ') idx++;
+                            while(body_[endIdx-1] == ' ') endIdx--;
+                            blockPositions.emplace_back(actions_.size());
+                            actions_.emplace_back(ActionType::ElseBlock, idx, endIdx);
+                            break;
+                        case '!':
+                            // do nothing action
+                            actions_.emplace_back(ActionType::Ignore, idx+1, endIdx);
+                            break;
+                        case '>': // partial
+                            idx++;
+                            while(body_[idx] == ' ') idx++;
+                            while(body_[endIdx-1] == ' ') endIdx--;
+                            actions_.emplace_back(ActionType::Partial, idx, endIdx);
+                            break;
+                        case '{':
+                            if (tag_open != "{{" || tag_close != "}}")
+                                throw invalid_template_exception("cannot use triple mustache when delimiter changed");
+
+                            idx ++;
+                            if (body_[endIdx+2] != '}')
+                            {
+                                throw invalid_template_exception("{{{: }}} not matched");
+                            }
+                            while(body_[idx] == ' ') idx++;
+                            while(body_[endIdx-1] == ' ') endIdx--;
+                            actions_.emplace_back(ActionType::UnescapeTag, idx, endIdx);
+                            current++;
+                            break;
+                        case '&':
+                            idx ++;
+                            while(body_[idx] == ' ') idx++;
+                            while(body_[endIdx-1] == ' ') endIdx--;
+                            actions_.emplace_back(ActionType::UnescapeTag, idx, endIdx);
+                            break;
+                        case '=':
+                            // tag itself is no-op
+                            idx ++;
+                            actions_.emplace_back(ActionType::Ignore, idx, endIdx);
+                            endIdx --;
+                            if (body_[endIdx] != '=')
+                                throw invalid_template_exception("{{=: not matching = tag: "+body_.substr(idx, endIdx-idx));
+                            endIdx --;
+                            while(body_[idx] == ' ') idx++;
+                            while(body_[endIdx] == ' ') endIdx--;
+                            endIdx++;
+                            {
+                                bool succeeded = false;
+                                for(size_t i = idx; i < endIdx; i++)
+                                {
+                                    if (body_[i] == ' ')
+                                    {
+                                        tag_open = body_.substr(idx, i-idx);
+                                        while(body_[i] == ' ') i++;
+                                        tag_close = body_.substr(i, endIdx-i);
+                                        if (tag_open.empty())
+                                            throw invalid_template_exception("{{=: empty open tag");
+                                        if (tag_close.empty())
+                                            throw invalid_template_exception("{{=: empty close tag");
+
+                                        if (tag_close.find(" ") != tag_close.npos)
+                                            throw invalid_template_exception("{{=: invalid open/close tag: "+tag_open+" " + tag_close);
+                                        succeeded = true;
+                                        break;
+                                    }
+                                }
+                                if (!succeeded)
+                                    throw invalid_template_exception("{{=: cannot find space between new open/close tags");
+                            }
+                            break;
+                        default:
+                            // normal tag case;
+                            while(body_[idx] == ' ') idx++;
+                            while(body_[endIdx-1] == ' ') endIdx--;
+                            actions_.emplace_back(ActionType::Tag, idx, endIdx);
+                            break;
+                    }
+                }
+
+                // removing standalones
+                for(int i = actions_.size()-2; i >= 0; i --)
+                {
+                    if (actions_[i].t == ActionType::Tag || actions_[i].t == ActionType::UnescapeTag)
+                        continue;
+                    auto& fragment_before = fragments_[i];
+                    auto& fragment_after = fragments_[i+1];
+                    bool is_last_action = i == (int)actions_.size()-2;
+                    bool all_space_before = true;
+                    int j, k;
+                    for(j = fragment_before.second-1;j >= fragment_before.first;j--)
+                    {
+                        if (body_[j] != ' ')
+                        {
+                            all_space_before = false;
+                            break;
+                        }
+                    }
+                    if (all_space_before && i > 0)
+                        continue;
+                    if (!all_space_before && body_[j] != '\n')
+                        continue;
+                    bool all_space_after = true;
+                    for(k = fragment_after.first; k < (int)body_.size() && k < fragment_after.second; k ++)
+                    {
+                        if (body_[k] != ' ')
+                        {
+                            all_space_after = false;
+                            break;
+                        }
+                    }
+                    if (all_space_after && !is_last_action)
+                        continue;
+                    if (!all_space_after && 
+                            !(
+                                body_[k] == '\n' 
+                            || 
+                                (body_[k] == '\r' && 
+                                k + 1 < (int)body_.size() && 
+                                body_[k+1] == '\n')))
+                        continue;
+                    if (actions_[i].t == ActionType::Partial)
+                    {
+                        actions_[i].pos = fragment_before.second - j - 1;
+                    }
+                    fragment_before.second = j+1;
+                    if (!all_space_after)
+                    {
+                        if (body_[k] == '\n')
+                            k++;
+                        else 
+                            k += 2;
+                        fragment_after.first = k;
+                    }
+                }
+            }
+            
+            std::vector<std::pair<int,int>> fragments_;
+            std::vector<Action> actions_;
+            std::string body_;
+        };
+
+        inline template_t compile(const std::string& body)
+        {
+            return template_t(body);
+        }
+        namespace detail
+        {
+            inline std::string& get_template_base_directory_ref()
+            {
+                static std::string template_base_directory = "templates";
+                return template_base_directory;
+            }
+        }
+
+        inline std::string default_loader(const std::string& filename)
+        {
+            std::string path = detail::get_template_base_directory_ref();
+            if (!(path.back() == '/' || path.back() == '\\'))
+                path += '/';
+            path += filename;
+            std::ifstream inf(path);
+            if (!inf)
+                return {};
+            return {std::istreambuf_iterator<char>(inf), std::istreambuf_iterator<char>()};
+        }
+
+        namespace detail
+        {
+            inline std::function<std::string (std::string)>& get_loader_ref()
+            {
+                static std::function<std::string (std::string)> loader = default_loader;
+                return loader;
+            }
+        }
+
+        inline void set_base(const std::string& path)
+        {
+            auto& base = detail::get_template_base_directory_ref();
+            base = path;
+            if (base.back() != '\\' && 
+                base.back() != '/')
+            {
+                base += '/';
+            }
+        }
+
+        inline void set_loader(std::function<std::string(std::string)> loader)
+        {
+            detail::get_loader_ref() = std::move(loader);
+        }
+
+        inline std::string load_text(const std::string& filename)
+        {
+            return detail::get_loader_ref()(filename);
+        }
+
+        inline template_t load(const std::string& filename)
+        {
+            return compile(detail::get_loader_ref()(filename));
+        }
+    }
 }
 
 
