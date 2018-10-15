@@ -191,7 +191,7 @@ namespace EasyLocal
       /** No acceptable move has been found in the current iteration. */
       bool no_acceptable_move_found;
       
-      /** A reference to the input. */
+     /** A reference to the input, for the old-style interface. */
       
       Input const * const p_in;
       
