@@ -19,6 +19,7 @@ protected:
     std::cerr << "WARNING:" << std::endl;
     std::cerr << "You are currently working with an old-style easylocal usage (namely passing a const reference to the Input object to all classes. This has been deprecated in favour of a functional-style passing of the input object to the relevant method." << std::endl;
     std::cerr << "While runners and solvers are still working with this old-style interface, the helpers might experience some problems, so it is adivsable to update them by removing the Input object from the constructor and adding it to the relevant methods." << std::endl;
+    std::cerr << "GO THROUGH THE DEPRECATION WARNINGS AND FIX THEM."
   }
   DeprecationHandler() : p_in(nullptr) {}
   /** A reference to the input, for the old-style interface. */
