@@ -35,19 +35,19 @@ namespace EasyLocal
                  std::string name,
                  Tester<Input, Output, State, CostStructure> &t,
                  std::ostream &o = std::cout);
-      void RunMainMenu(State &st);
-      void PrintNeighborhoodStatistics(const State &st) const;
-      void PrintAllNeighbors(const State &st) const;
-      void CheckNeighborhoodCosts(const State &st) const;
-      void PrintMoveCosts(const State &st, const EvaluatedMove<Move, CostStructure> &em) const;
-      void CheckMoveIndependence(const State &st) const;
-      void CheckRandomMoveDistribution(const State &st) const;
+      void RunMainMenu(const Input& in, State &st);
+      void PrintNeighborhoodStatistics(const Input& in, const State &st) const;
+      void PrintAllNeighbors(const Input& in, const State &st) const;
+      void CheckNeighborhoodCosts(const Input& in, const State &st) const;
+      void PrintMoveCosts(const Input& in, const State &st, const EvaluatedMove<Move, CostStructure> &em) const;
+      void CheckMoveIndependence(const Input& in, const State &st) const;
+      void CheckRandomMoveDistribution(const Input& in, const State &st) const;
       size_t Modality() const;
       void SetTolerance(double t);
       
     protected:
       void ShowMenu();
-      bool ExecuteChoice(State &st);
+      bool ExecuteChoice(const Input& in, State &st);
       Core::StateManager<Input, State, CostStructure> &sm;               /**< A pointer to the attached  state manager. */
       Core::OutputManager<Input, Output, State> &om;                     /**< A pointer to the attached output manager. */
       Core::NeighborhoodExplorer<Input, State, Move, CostStructure> &ne; /**< A reference to the attached neighborhood explorer. */
@@ -74,7 +74,7 @@ namespace EasyLocal
     }
     
     template <class Input, class Output, class State, class Move, class CostStructure>
-    void MoveTester<Input, Output, State, Move, CostStructure>::RunMainMenu(State &st)
+    void MoveTester<Input, Output, State, Move, CostStructure>::RunMainMenu(const Input &in, State &st)
     {
       bool show_state;
       do
@@ -83,17 +83,17 @@ namespace EasyLocal
         if (choice != 0)
         {
           std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
-          show_state = ExecuteChoice(st);
+          show_state = ExecuteChoice(in, st);
           std::chrono::milliseconds duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start);
           if (show_state)
           {
-            Output out(parent.GetInput());
-            om.OutputState(parent.GetInput(), st, out);
+            Output out(in);
+            om.OutputState(in, st, out);
             os << "CURRENT SOLUTION " << std::endl
             << out << std::endl;
-            os << "CURRENT COST : " << sm.CostFunctionComponents(parent.GetInput(), st) << std::endl;
+            os << "CURRENT COST: " << sm.CostFunctionComponents(in, st) << std::endl;
           }
-          os << "ELAPSED TIME : " << duration.count() / 1000.0 << 's' << std::endl;
+          os << "ELAPSED TIME: " << duration.count() / 1000.0 << 's' << std::endl;
         }
       } while (choice != 0);
       os << "Leaving " << this->name << " menu" << std::endl;
@@ -128,7 +128,7 @@ namespace EasyLocal
      @param st the current state
      */
     template <class Input, class Output, class State, class Move, class CostStructure>
-    bool MoveTester<Input, Output, State, Move, CostStructure>::ExecuteChoice(State &st)
+    bool MoveTester<Input, Output, State, Move, CostStructure>::ExecuteChoice(const Input& in, State &st)
     {
       EvaluatedMove<Move, CostStructure> em;
       try
@@ -137,53 +137,53 @@ namespace EasyLocal
         switch (choice)
         {
           case 1:
-            em = ne.SelectBest(parent.GetInput(), st, explored, [](const Move &mv, const CostStructure &cost) { return true; });
+            em = ne.SelectBest(in, st, explored, [](const Move &mv, const CostStructure &cost) { return true; });
             break;
           case 2:
-            em = ne.SelectFirst(parent.GetInput(), st, explored, [](const Move &mv, const CostStructure &cost) { return cost.total < 0; });
+            em = ne.SelectFirst(in, st, explored, [](const Move &mv, const CostStructure &cost) { return cost.total < 0; });
             break;
           case 3:
-            em = ne.RandomFirst(parent.GetInput(), st, 1, explored, [](const Move &mv, const CostStructure &cost) { return true; });
+            em = ne.RandomFirst(in, st, 1, explored, [](const Move &mv, const CostStructure &cost) { return true; });
             break;
           case 4:
-            os << "Input move : ";
+            os << "Input move: ";
             std::cin >> em.move;
             break;
           case 5:
-            PrintAllNeighbors(st);
+            PrintAllNeighbors(in, st);
             break;
           case 6:
-            PrintNeighborhoodStatistics(st);
+            PrintNeighborhoodStatistics(in, st);
             break;
           case 7:
-            em = ne.RandomFirst(parent.GetInput(), st, 1, explored, [](const Move &mv, const CostStructure &cost) { return true; });
-            PrintMoveCosts(st, em);
+            em = ne.RandomFirst(in, st, 1, explored, [](const Move &mv, const CostStructure &cost) { return true; });
+            PrintMoveCosts(in, st, em);
             break;
           case 8:
-            os << "Input move : ";
+            os << "Input move: ";
             std::cin >> em.move;
-            em.cost = ne.DeltaCostFunctionComponents(parent.GetInput(), st, em.move);
-            PrintMoveCosts(st, em);
+            em.cost = ne.DeltaCostFunctionComponents(in, st, em.move);
+            PrintMoveCosts(in, st, em);
             break;
           case 9:
-            CheckNeighborhoodCosts(st);
+            CheckNeighborhoodCosts(in, st);
             break;
           case 10:
-            CheckMoveIndependence(st);
+            CheckMoveIndependence(in, st);
             break;
           case 11:
-            CheckRandomMoveDistribution(st);
+            CheckRandomMoveDistribution(in, st);
             break;
           default:
             os << "Invalid choice" << std::endl;
         }
         if (choice == 1 || choice == 2 || choice == 3 || choice == 4)
         {
-          os << "Move : " << em.move << std::endl;
-          if (!ne.FeasibleMove(parent.GetInput(), st, em.move))
+          os << "Move: " << em.move << std::endl;
+          if (!ne.FeasibleMove(in, st, em.move))
             os << "Move not feasible" << std::endl;
           else
-            ne.MakeMove(parent.GetInput(), st, em.move);
+            ne.MakeMove(in, st, em.move);
           return true;
         }
       }
@@ -196,16 +196,16 @@ namespace EasyLocal
     }
     
     template <class Input, class Output, class State, class Move, class CostStructure>
-    void MoveTester<Input, Output, State, Move, CostStructure>::PrintMoveCosts(const State &st, const EvaluatedMove<Move, CostStructure> &em) const
+    void MoveTester<Input, Output, State, Move, CostStructure>::PrintMoveCosts(const Input& in, const State &st, const EvaluatedMove<Move, CostStructure> &em) const
     {
       // it's a tester, so we can avoid optimizations
-      os << "Move : " << em.move << std::endl;
+      os << "Move: " << em.move << std::endl;
       
       // process all delta cost components
       for (size_t i = 0; i < sm.CostComponents(); i++)
       {
         const auto &cc = sm.GetCostComponent(i);
-        os << "  " << i << ". " << cc.name << " : " << em.cost;
+        os << "  " << i << ". " << cc.name << ": " << em.cost;
         
         // print * or not, add up to right variable
         if (cc.IsHard())
@@ -213,28 +213,28 @@ namespace EasyLocal
         os << std::endl;
       }
       
-      os << "Total Delta Violations : " << em.cost.violations << std::endl;
-      os << "Total Delta Objective : " << em.cost.objective << std::endl;
-      os << "Total Delta Cost : " << em.cost.total << std::endl;
+      os << "Total Delta Violations: " << em.cost.violations << std::endl;
+      os << "Total Delta Objective: " << em.cost.objective << std::endl;
+      os << "Total Delta Cost: " << em.cost.total << std::endl;
     }
     
     template <class Input, class Output, class State, class Move, class CostStructure>
-    void MoveTester<Input, Output, State, Move, CostStructure>::CheckNeighborhoodCosts(const State &st) const
+    void MoveTester<Input, Output, State, Move, CostStructure>::CheckNeighborhoodCosts(const Input& in, const State &st) const
     {
       EvaluatedMove<Move, CostStructure> em;
       unsigned int move_count = 0;
       CostStructure error;
-      CostStructure st_cost = this->sm.CostFunctionComponents(parent.GetInput(), st), st1_cost;
+      CostStructure st_cost = this->sm.CostFunctionComponents(in, st), st1_cost;
       State st1 = st;
       bool error_found = false, not_last_move = true;
-      ne.FirstMove(parent.GetInput(), st, em.move);
+      ne.FirstMove(in, st, em.move);
       do
       {
         move_count++;
         
-        ne.MakeMove(parent.GetInput(), st1, em.move);
-        em.cost = ne.DeltaCostFunctionComponents(parent.GetInput(), st, em.move);
-        st1_cost = this->sm.CostFunctionComponents(parent.GetInput(), st1);
+        ne.MakeMove(in, st1, em.move);
+        em.cost = ne.DeltaCostFunctionComponents(in, st, em.move);
+        st1_cost = this->sm.CostFunctionComponents(in, st1);
         error = st1_cost - em.cost - st_cost;
         for (size_t i = 0; i < sm.CostComponents(); i++)
         {
@@ -250,7 +250,7 @@ namespace EasyLocal
         
         if (move_count % 100 == 0)
           std::cerr << '.'; // print dots to show that it is alive
-        not_last_move = ne.NextMove(parent.GetInput(), st, em.move);
+        not_last_move = ne.NextMove(in, st, em.move);
         st1 = st;
         
       } while (not_last_move);
@@ -268,7 +268,7 @@ namespace EasyLocal
      @param st the state to inspect
      */
     template <class Input, class Output, class State, class Move, class CostStructure>
-    void MoveTester<Input, Output, State, Move, CostStructure>::PrintNeighborhoodStatistics(const State &st) const
+    void MoveTester<Input, Output, State, Move, CostStructure>::PrintNeighborhoodStatistics(const Input& in, const State &st) const
     {
       unsigned int neighbors = 0, improving_neighbors = 0,
       worsening_neighbors = 0, non_improving_neighbors = 0;
@@ -277,12 +277,12 @@ namespace EasyLocal
       
       std::vector<std::pair<CFtype, CFtype>> min_max_costs(sm.CostComponents());
       
-      ne.FirstMove(parent.GetInput(), st, em.move);
+      ne.FirstMove(in, st, em.move);
       
       do
       {
         neighbors++;
-        em.cost = ne.DeltaCostFunctionComponents(parent.GetInput(), st, em.move);
+        em.cost = ne.DeltaCostFunctionComponents(in, st, em.move);
         
         if (em.cost.total < 0)
           improving_neighbors++;
@@ -300,7 +300,7 @@ namespace EasyLocal
           else if (em.cost.all_components[i] > min_max_costs[i].second)
             min_max_costs[i].second = em.cost.all_components[i];
         }
-      } while (ne.NextMove(parent.GetInput(), st, em.move));
+      } while (ne.NextMove(in, st, em.move));
       
       os << "Neighborhood size: " << neighbors << std::endl
       << "   improving moves: " << improving_neighbors << " ("
@@ -316,18 +316,18 @@ namespace EasyLocal
     }
     
     template <class Input, class Output, class State, class Move, class CostStructure>
-    void MoveTester<Input, Output, State, Move, CostStructure>::PrintAllNeighbors(const State &st) const
+    void MoveTester<Input, Output, State, Move, CostStructure>::PrintAllNeighbors(const Input& in, const State &st) const
     {
       Move mv;
-      ne.FirstMove(parent.GetInput(), st, mv);
+      ne.FirstMove(in, st, mv);
       do
       {
-        os << mv << " " << ne.DeltaCostFunctionComponents(parent.GetInput(), st, mv) << std::endl;
-      } while (ne.NextMove(parent.GetInput(), st, mv));
+        os << mv << " " << ne.DeltaCostFunctionComponents(in, st, mv) << std::endl;
+      } while (ne.NextMove(in, st, mv));
     }
     
     template <class Input, class Output, class State, class Move, class CostStructure>
-    void MoveTester<Input, Output, State, Move, CostStructure>::CheckRandomMoveDistribution(const State &st) const
+    void MoveTester<Input, Output, State, Move, CostStructure>::CheckRandomMoveDistribution(const Input& in, const State &st) const
     {
       Move mv;
       std::map<Move, unsigned int> frequency;
@@ -336,11 +336,11 @@ namespace EasyLocal
       unsigned long int trials = 0, tot_trials, rounds;
       double dev = 0;
       
-      ne.FirstMove(parent.GetInput(), st, mv);
+      ne.FirstMove(in, st, mv);
       do
       {
         frequency[mv] = 0;
-      } while (ne.NextMove(parent.GetInput(), st, mv));
+      } while (ne.NextMove(in, st, mv));
       
       os << "The neighborhood has " << frequency.size() << " members." << std::endl;
       os << "How many rounds do you want to test: ";
@@ -349,7 +349,7 @@ namespace EasyLocal
       tot_trials = frequency.size() * rounds;
       while (trials < tot_trials)
       {
-        ne.RandomMove(parent.GetInput(), st, mv);
+        ne.RandomMove(in, st, mv);
         if (frequency.find(mv) != frequency.end())
         {
           frequency[mv]++;
@@ -385,15 +385,15 @@ namespace EasyLocal
     }
     
     template <class Input, class Output, class State, class Move, class CostStructure>
-    void MoveTester<Input, Output, State, Move, CostStructure>::CheckMoveIndependence(const State &st) const
+    void MoveTester<Input, Output, State, Move, CostStructure>::CheckMoveIndependence(const Input& in, const State &st) const
     {
       Move mv;
       std::vector<std::pair<Move, State>> reached_states;
       unsigned int repeat_states = 0, null_moves = 0, all_moves = 1, i;
       bool repeated_state;
       State st1 = st;
-      ne.FirstMove(parent.GetInput(), st1, mv);
-      ne.MakeMove(parent.GetInput(), st1, mv);
+      ne.FirstMove(in, st1, mv);
+      ne.MakeMove(in, st1, mv);
       if (st1 == st)
       {
         os << "Null move " << mv << std::endl;
@@ -403,10 +403,10 @@ namespace EasyLocal
       {
         reached_states.push_back(std::make_pair(mv, st1));
       }
-      while (ne.NextMove(parent.GetInput(), st, mv))
+      while (ne.NextMove(in, st, mv))
       {
         st1 = st;
-        ne.MakeMove(parent.GetInput(), st1, mv);
+        ne.MakeMove(in, st1, mv);
         if (st1 == st)
         {
           os << "Null move " << mv << std::endl;

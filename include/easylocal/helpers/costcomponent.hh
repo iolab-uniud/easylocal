@@ -42,7 +42,6 @@ namespace EasyLocal
        */
       virtual CFtype ComputeCost(const Input& in, const State &st) const = 0;
       
-      
       /** Old-style method, without Input
        @deprecated
        */
@@ -109,6 +108,19 @@ namespace EasyLocal
       /** Name of this cost component (for debug). */
       const std::string name;
       
+      /** Constructor.
+       @param weight weight of the cost component
+       @param is_hard a flag which tells if the cost component is hard or soft
+       @param name name of the cost component (for debug reasons)
+       */
+      CostComponent(const CFtype &weight, bool is_hard, std::string name);
+      
+      /** Constructor, weightless (weight is set to 1)
+       @param is_hard a flag which tells if the cost component is hard or soft
+       @param name name of the cost component (for debug reasons)
+       */
+      CostComponent(bool is_hard, std::string name) : CostComponent(CFtype(1.0), is_hard, name) {}
+      
       /** Destructor. */
       virtual ~CostComponent()
       {}
@@ -120,13 +132,6 @@ namespace EasyLocal
       [[deprecated("This is the old style easylocal interface, it is mandatory to upgrade to Input-less class and Input-aware methods")]]
       CostComponent(const Input &in, const CFtype &weight, bool is_hard, std::string name) : DeprecationHandler<Input>(in), name(name), hash(std::hash<std::string>()(typeid(this).name() + name)), weight(weight), is_hard(is_hard)
       {}
-      
-      /** Constructor.
-       @param weight weight of the cost component
-       @param is_hard a flag which tells if the cost component is hard or soft
-       @param name name of the cost component (for debug reasons)
-       */
-      CostComponent(const CFtype &weight, bool is_hard, std::string name);
       
       /** Weight of the cost component. */
       CFtype weight;

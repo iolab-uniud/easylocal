@@ -16,13 +16,13 @@ namespace EasyLocal
     public:
       /** The method executes the interactions with the test menu on a given state.
        @param st the state */
-      virtual void RunMainMenu(State &st) = 0;
+      virtual void RunMainMenu(const Input& in, State &st) = 0;
       /** The method shall print the menu on a given state. */
       virtual void ShowMenu() = 0;
       /** The method shall execute the choice given by the variable choice,
        @return true if state has been changed
        @param st the state */
-      virtual bool ExecuteChoice(State &st) = 0;
+      virtual bool ExecuteChoice(const Input& in, State &st) = 0;
       const std::string name;
       virtual size_t Modality() const = 0;
       

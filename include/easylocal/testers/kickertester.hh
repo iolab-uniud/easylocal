@@ -30,13 +30,13 @@ namespace EasyLocal
                    std::string name, Tester<Input, Output, State, CostStructure> &t, std::ostream &os = std::cout);
       virtual size_t Modality() const;
       
-      void RunMainMenu(State &st);
+      void RunMainMenu(const Input& in, State &st);
       void InitializeParameters();
       
     protected:
-      void PrintKicks(size_t length, const State &st) const;
+      void PrintKicks(size_t length, const Input& in, const State &st) const;
       void ShowMenu();
-      bool ExecuteChoice(State &st);
+      bool ExecuteChoice(const Input& in, State &st);
       Core::StateManager<Input, State, CostStructure> &sm; /**< A pointer to the attached
                                                             state manager. */
       Core::OutputManager<Input, Output, State> &om;       /**< A pointer to the attached
@@ -73,7 +73,7 @@ namespace EasyLocal
      @param st the state to test
      */
     template <class Input, class Output, class State, class Move, class CostStructure>
-    void KickerTester<Input, Output, State, Move, CostStructure>::RunMainMenu(State &st)
+    void KickerTester<Input, Output, State, Move, CostStructure>::RunMainMenu(const Input& in, State &st)
     {
       ReadParameters();
       bool show_state;
@@ -89,11 +89,11 @@ namespace EasyLocal
           
           if (show_state)
           {
-            Output out(parent.GetInput());
-            om.OutputState(parent.GetInput(), st, out);
+            Output out(in);
+            om.OutputState(in, st, out);
             os << "CURRENT SOLUTION " << std::endl
             << out << std::endl;
-            os << "CURRENT COST : " << sm.CostFunctionComponents(parent.GetInput(), st) << std::endl;
+            os << "CURRENT COST : " << sm.CostFunctionComponents(in, st) << std::endl;
           }
           os << "ELAPSED TIME : " << duration.count() / 1000.0 << " s" << std::endl;
         }
@@ -123,7 +123,7 @@ namespace EasyLocal
      @param st the current state
      */
     template <class Input, class Output, class State, class Move, class CostStructure>
-    bool KickerTester<Input, Output, State, Move, CostStructure>::ExecuteChoice(State &st)
+    bool KickerTester<Input, Output, State, Move, CostStructure>::ExecuteChoice(const Input& in, State &st)
     {
       bool execute_kick = false;
       Kick<State, Move, CostStructure> kick;
@@ -133,17 +133,17 @@ namespace EasyLocal
         switch (choice)
         {
           case 1:
-            std::tie(kick, cost) = kicker.SelectRandom(length, parent.GetInput(), st);
+            std::tie(kick, cost) = kicker.SelectRandom(length, in, st);
             os << kick << " " << cost << std::endl;
             execute_kick = true;
             break;
           case 2:
-            std::tie(kick, cost) = kicker.SelectBest(length, parent.GetInput(), st);
+            std::tie(kick, cost) = kicker.SelectBest(length, in, st);
             os << kick << " " << cost << std::endl;
             execute_kick = true;
             break;
           case 3:
-            std::tie(kick, cost) = kicker.SelectFirst(length, parent.GetInput(), st);
+            std::tie(kick, cost) = kicker.SelectFirst(length, in, st);
             os << kick << " " << cost << std::endl;
             execute_kick = true;
             break;
@@ -154,7 +154,7 @@ namespace EasyLocal
             os << "Invalid choice" << std::endl;
         }
         if (execute_kick)
-          kicker.MakeKick(parent.GetInput(), st, kick);
+          kicker.MakeKick(in, st, kick);
         return execute_kick;
       }
       catch (EmptyNeighborhood)
@@ -165,9 +165,9 @@ namespace EasyLocal
     }
     
     template <class Input, class Output, class State, class Move, class CostStructure>
-    void KickerTester<Input, Output, State, Move, CostStructure>::PrintKicks(size_t length, const State &st) const
+    void KickerTester<Input, Output, State, Move, CostStructure>::PrintKicks(size_t length, const Input& in, const State &st) const
     {
-      for (auto it = kicker.begin(length, parent.GetInput(), st); it != kicker.end(length, parent.GetInput(), st); ++it)
+      for (auto it = kicker.begin(length, in, st); it != kicker.end(length, in, st); ++it)
         os << *it << std::endl;
     }
     

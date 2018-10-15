@@ -58,6 +58,19 @@ namespace EasyLocal
         p_test_state = std::make_shared<State>(*p_in);
       }
       virtual ~AbstractTester(){};
+    protected:
+      virtual void AddRunner(Core::Runner<Input, State, CostStructure> &r){};
+      void AddRunners()
+      {
+        for (auto p_r : Core::Runner<Input, State, CostStructure>::runners)
+          AddRunner(*p_r);
+      }
+      
+      virtual void SetInput(const Input& in)
+      {
+        p_in = &in;
+        p_test_state = std::make_shared<State>(*p_in);
+      }
       
       const Input& GetInput() const
       {
@@ -66,29 +79,19 @@ namespace EasyLocal
         return *p_in;
       }
       
-    protected:
-      virtual void AddRunner(Core::Runner<Input, State, CostStructure> &r){};
-      void AddRunners()
-      {
-        for (auto p_r : Core::Runner<Input, State, CostStructure>::runners)
-          AddRunner(*p_r);
-      }
-      virtual void SetInput(const Input& in)
-      {
-        p_in = &in;
-        p_test_state = std::make_shared<State>(*p_in);
-      }
       State& GetTestState() const
       {
         if (!p_test_state)
           throw std::runtime_error("Error: state object was not set in tester yet");
         return *p_test_state;
       }
+      
       void SetTestState(const State &st)
       {
         // FIXME: here the input of the passed state should be tested if it matches with the current p_in
         this->GetTestState() = std::make_shared<State>(st);
       }
+      
       const Input* p_in; /**< The current input managed by the tester. */
       std::shared_ptr<State> p_test_state; /**< The current state managed by the tester. */
     };
@@ -384,7 +387,7 @@ namespace EasyLocal
     void Tester<Input, Output, State, CostStructure>::ExecuteMovesChoice()
     {
       if (sub_choice > 0 && sub_choice <= static_cast<int>(move_testers.size()))
-        move_testers[sub_choice - 1]->RunMainMenu(this->GetTestState());
+        move_testers[sub_choice - 1]->RunMainMenu(this->GetInput(), this->GetTestState());
     }
     
     /**
@@ -394,7 +397,7 @@ namespace EasyLocal
     void Tester<Input, Output, State, CostStructure>::ExecuteKickersChoice()
     {
       if (sub_choice > 0)
-        kicker_testers[sub_choice - 1]->RunMainMenu(this->GetTestState());
+        kicker_testers[sub_choice - 1]->RunMainMenu(this->GetInput(), this->GetTestState());
     }
     
     /**
