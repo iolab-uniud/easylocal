@@ -12,6 +12,7 @@
 #include "easylocal/utils/interruptible.hh"
 #include "easylocal/utils/parameter.hh"
 #include "easylocal/helpers/coststructure.hh"
+#include "easylocal/utils/deprecationhandler.hh"
 
 namespace EasyLocal
 {
@@ -33,7 +34,7 @@ namespace EasyLocal
      @ingroup Helpers
      */
     template <class _Input, class _State, class _CostStructure = DefaultCostStructure<int>>
-    class Runner : public Interruptible<_CostStructure, const _Input&, _State &>, public Parametrized
+    class Runner : public Interruptible<_CostStructure, const _Input&, _State &>, public Parametrized, protected DeprecationHandler<_Input>
     {
       friend class Debug::AbstractTester<_Input, _State, _CostStructure>;
       
@@ -50,7 +51,7 @@ namespace EasyLocal
        @throw IncorrectParameterValue if one of the parameters has an incorrect value
        @deprecated
        */
-      [[deprecated("This is the old style runner interface, it might still be used, however we advise to upgrade to Input-less class and Input-aware methods")]]
+      [[deprecated("This is the old style easylocal interface, it might still be used, however we advise to upgrade to Input-less class and Input-aware methods")]]
       CostStructure Go(State &s);
       
       /** Performs a full run of the search method (possibly being interrupted before its natural ending).
@@ -131,7 +132,7 @@ namespace EasyLocal
        @param name name of the runner
        @deprecated
        */
-      [[deprecated("This is the old-style runner interface, featuring a constant input reference, you should use the Input-less version")]]
+      [[deprecated("This is the old style easylocal interface, it might still be used, however we advise to upgrade to Input-less class and Input-aware methods")]]
       Runner(const Input & in, StateManager<Input, State, CostStructure> & sm, std::string name);
       
       /** Constructor.
@@ -191,10 +192,6 @@ namespace EasyLocal
       /** No acceptable move has been found in the current iteration. */
       bool no_acceptable_move_found;
       
-     /** A reference to the input, for the old-style interface. */
-      
-      Input const * const p_in;
-      
       /** The state manager attached to this runner. */
       StateManager<Input, State, CostStructure> &sm;
       
@@ -248,7 +245,7 @@ namespace EasyLocal
     template <class Input, class State, class CostStructure>
     Runner<Input, State, CostStructure>::Runner(const Input &in, StateManager<Input, State, CostStructure> &sm, std::string name)
     : // Parameters
-    Parametrized(name, typeid(this).name()), name(name), no_acceptable_move_found(false), p_in(&in), sm(sm), weights(0)
+    Parametrized(name, typeid(this).name()), DeprecationHandler<Input>(in), name(name), no_acceptable_move_found(false), sm(sm), weights(0)
     {
       // Add to the list of all runners
       runners.push_back(this);
@@ -257,7 +254,7 @@ namespace EasyLocal
     template <class Input, class State, class CostStructure>
     Runner<Input, State, CostStructure>::Runner(StateManager<Input, State, CostStructure> &sm, std::string name)
     : // Parameters
-    Parametrized(name, typeid(this).name()), name(name), no_acceptable_move_found(false), p_in(nullptr), sm(sm), weights(0)
+    Parametrized(name, typeid(this).name()), name(name), no_acceptable_move_found(false), sm(sm), weights(0)
     {
       // Add to the list of all runners
       runners.push_back(this);
@@ -275,9 +272,7 @@ namespace EasyLocal
     template <class Input, class State, class CostStructure>
     CostStructure Runner<Input, State, CostStructure>::Go(State &st)
     {
-      if (!p_in)
-        throw std::runtime_error("You are currently mixing the old-style and new-style runner usage. This method could be called only with the old-style usage");
-      return Go(*p_in, st);
+      return Go(this->GetInput(), st);
     }
     
     template <class Input, class State, class CostStructure>

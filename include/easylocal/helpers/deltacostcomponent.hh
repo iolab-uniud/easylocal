@@ -4,6 +4,7 @@
 
 //#include "easylocal/helpers/coststructure.hh"
 #include "easylocal/helpers/costcomponent.hh"
+#include "easylocal/utils/deprecationhandler.hh"
 
 namespace EasyLocal
 {
@@ -15,7 +16,7 @@ namespace EasyLocal
      @ingroup Helpers
      */
     template <class Input, class State, class Move, typename CFtype = int>
-    class DeltaCostComponent 
+    class DeltaCostComponent : protected DeprecationHandler<Input>
     {
     public:
       /** Returns the (complete) CostComponent associated with the DeltaCostComponent object.
@@ -35,10 +36,10 @@ namespace EasyLocal
       /** Old-style method, without Input
        @deprecated
        */
-      [[deprecated("Input object has been moved outside the CostComponent class")]]
+      [[deprecated("This is the old style easylocal interface, it is mandatory to upgrade to Input-less class and Input-aware methods")]]
       CFtype DeltaCost(const State &st, const Move &mv) const
       {
-        throw std::runtime_error("You should update your DeltaCostComponent by adding a const Input& reference to the method");
+        return DeltaCost(this->GetInput(), st, mv);
       }
       
       /** Returns the variation in the cost function induced by the move according to this cost component.
@@ -58,11 +59,9 @@ namespace EasyLocal
       /** Deprecated constructor.
        @deprecated
        */
-      [[deprecated("Input object has been moved outside the CostComponent class")]]
-      DeltaCostComponent(const Input &in, CostComponent<Input, State, CFtype> &cc, std::string name)
-      {
-        throw std::runtime_error("You should update your DeltaCostComponent, this constructor cannot be used anymore");
-      }
+      [[deprecated("This is the old style easylocal interface, it is mandatory to upgrade to Input-less class and Input-aware methods")]]
+      DeltaCostComponent(const Input &in, CostComponent<Input, State, CFtype> &cc, std::string name) : DeprecationHandler<Input>(in), name(name)
+      {}
       
       /** Constructor.
        @brief Constructs a DeltaCostComponent providing an input object, the related CostComponent and a name
@@ -78,10 +77,10 @@ namespace EasyLocal
       /** Old-style method, without Input
        @deprecated
        */
-      [[deprecated("Input object has been moved outside the CostComponent class")]]
+      [[deprecated("This is the old style easylocal interface, it is mandatory to upgrade to Input-less class and Input-aware methods")]]
       CFtype ComputeDeltaCost(const State &st, const Move &mv) const
       {
-        throw std::runtime_error("You should update your DeltaCostComponent by adding a const Input& reference to the method");
+        return ComputeDeltaCost(this->GetInput(), st, mv);
       }
       
       /** Computes the variation of the cost on a given @ref State due to a specific @ref Move.

@@ -30,7 +30,7 @@ namespace EasyLocal
        @param name the name of the runner
        @deprecated
        */
-      [[deprecated("This is the old style runner interface, it might still be used, however we advise to upgrade to Input-less class and Input-aware methods")]]
+      [[deprecated("This is the old style easylocal interface, it might still be used, however we advise to upgrade to Input-less class and Input-aware methods")]]
       MoveRunner(const Input &in, StateManager<Input, State, CostStructure> &sm,
                  NeighborhoodExplorer<Input, State, Move, CostStructure> &ne,
                  std::string name);

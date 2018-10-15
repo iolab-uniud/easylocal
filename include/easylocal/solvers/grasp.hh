@@ -18,18 +18,26 @@ namespace EasyLocal
     : public AbstractLocalSearch<Input, Output, State, CostStructure>
     {
     public:
+      using AbstractLocalSearch<Input, Output, State, CostStructure>::AbstractLocalSearch;
+      
+      [[deprecated("This is the old style easylocal interface, it might still be used, however we advise to upgrade to Input-less class and Input-aware methods")]]
       GRASP(const Input &i,
             StateManager<Input, State, CostStructure> &sm,
-            OutputManager<Input, Output, State, CostStructure> &om,
+            OutputManager<Input, Output, State> &om,
             std::string name);
       void Print(std::ostream &os = std::cout) const;
       void SetRunner(Runner<Input, State, CostStructure> &r);
       unsigned int GetRestarts() const { return restarts; }
       void ReadParameters(std::istream &is = std::cin, std::ostream &os = std::cout);
       
-      void Solve(double alpha, unsigned int k, unsigned int restarts);
+      void Go(const Input& in);
+      
+      [[deprecated("This is the old style easylocal interface, it might still be used, however we advise to upgrade to Input-less class and Input-aware methods")]]
+      virtual std::shared_ptr<State> GetCurrentState() const;
       
     protected:
+      double alpha;
+      unsigned int k;
       unsigned int restarts;
       
       Runner<Input, State, CostStructure> *runner; /**< The linked runner. */
@@ -40,23 +48,23 @@ namespace EasyLocal
      *************************************************************************/
     
     /**
-     Constructs an iterated local search solver by providing it links to
+     Constructs a GRASP solver by providing it links to
      a state manager, an output manager, a runner, a kicker, an input,
      and an output object.
      
      @param sm a pointer to a compatible state manager
      @param om a pointer to a compatible output manager
-     @param r a pointer to a compatible runner
-     @param k a pointer to a compatible kicker
-     @param in a pointer to an input object
-     @param out a pointer to an output object
+     @deprecated
      */
     template <class Input, class Output, class State, class CostStructure>
-    GRASP<Input, Output, State, CostStructure>::GRASP(const Input &i,
+    GRASP<Input, Output, State, CostStructure>::GRASP(const Input &in,
                                                       StateManager<Input, State, CostStructure> &sm,
-                                                      OutputManager<Input, Output, State, CostStructure> &om,
+                                                      OutputManager<Input, Output, State> &om,
+                                                      double alpha,
+                                                      unsigned int k,
+                                                      unsigned int restarts,
                                                       std::string name)
-    : AbstractLocalSearch<Input, Output, State, CostStructure>(i, sm, om, name)
+    : AbstractLocalSearch<Input, Output, State, CostStructure>(in, sm, om, name), alpha(alpha), k(k), restarts(restarts)
     {
       runner = nullptr;
     }
@@ -97,19 +105,15 @@ namespace EasyLocal
      Solves using a single runner
      */
     template <class Input, class Output, class State, class CostStructure>
-    void GRASP<Input, Output, State, CostStructure>::Solve(double alpha, unsigned int k, unsigned int trials)
+    void GRASP<Input, Output, State, CostStructure>::Go(const Input& in)
     {
-      bool timeout_expired = false;
       unsigned t;
       if (runner == nullptr)
         throw std::logic_error("No runner set for solver " + this->name);
-      //   chrono.Reset();
-      //   chrono.Start();
-      for (t = 0; t < trials; t++)
+      for (t = 0; t < restarts; t++)
       {
-        this->sm.GreedyState(this->current_state, alpha, k);
-        runner->SetState(this->current_state);
-        timeout_expired = LetGo(*runner);
+        this->sm.GreedyState(in, this->current_state, alpha, k);
+        runner->SetState(in, this->current_state);
         
         this->current_state = runner->GetState();
         this->current_state_cost = runner->GetStateCost();
@@ -118,13 +122,16 @@ namespace EasyLocal
         {
           this->best_state = this->current_state;
           this->best_state_cost = this->current_state_cost;
-          if (this->sm.LowerBoundReached(this->best_state_cost))
+          if (this->sm.LowerBoundReached(in, this->best_state_cost))
             break;
         }
-        if (timeout_expired)
-          break;
       }
-      //   chrono.Stop();
+    }
+    
+    template <class Input, class Output, class State, class CostStructure>
+    void GRASP<Input, Output, State, CostStructure>::AtTimeoutExpired()
+    {
+      runner->Interrupt();
     }
     
     template <class Input, class Output, class State, class CostStructure>

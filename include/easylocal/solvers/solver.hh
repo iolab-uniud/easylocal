@@ -5,6 +5,7 @@
 #include "easylocal/helpers/statemanager.hh"
 #include "easylocal/helpers/outputmanager.hh"
 #include "easylocal/utils/parameter.hh"
+#include "easylocal/utils/deprecationhandler.hh"
 
 namespace EasyLocal
 {
@@ -29,7 +30,7 @@ namespace EasyLocal
      Solvers
      */
     template <class _Input, class _Output, class _CostStructure = DefaultCostStructure<int>>
-    class Solver
+    class Solver : protected DeprecationHandler<_Input>
     {
     public:
       typedef _Input Input;
@@ -45,12 +46,10 @@ namespace EasyLocal
        @throw IncorrectParameterValue if one of the parameters has an incorrect value
        @deprecated
        */
-      [[deprecated("This is the old style solver interface, it might still be used, however we advise to upgrade to Input-less class and Input-aware methods")]]
+      [[deprecated("This is the old style easylocal interface, it might still be used, however we advise to upgrade to Input-less class and Input-aware methods")]]
       SolverResult<Input, Output, CostStructure> Solve()
       {
-        if (!p_in)
-          throw std::runtime_error("You are currently mixing the old-style and new-style solver usage. This method could be called only with the old-style usage");
-        return Solve(*p_in);
+        return Solve(this->GetInput());
       };
       
       /** Method to solve the problem.
@@ -69,12 +68,10 @@ namespace EasyLocal
        @throw IncorrectParameterValue if one of the parameters has an incorrect value
        @deprecated
        */
-      [[deprecated("This is the old style solver interface, it might still be used, however we advise to upgrade to Input-less class and Input-aware methods")]]
+      [[deprecated("This is the old style easylocal interface, it might still be used, however we advise to upgrade to Input-less class and Input-aware methods")]]
       SolverResult<Input, Output, CostStructure> Resolve(const Output &initial_solution)
       {
-        if (!p_in)
-          throw std::runtime_error("You are currently mixing the old-style and new-style solver usage. This method could be called only with the old-style usage");
-        return Resolve(*p_in, initial_solution);
+        return Resolve(this->GetInput(), initial_solution);
       }
       
       /** Method to solve a problem again, starting from the a final solution of another run.
@@ -84,7 +81,7 @@ namespace EasyLocal
        @throw IncorrectParameterValue if one of the parameters has an incorrect value
        @deprecated
        */
-      [[deprecated("This is the old style solver interface, it might still be used, however we advise to upgrade to Input-less class and Input-aware methods")]]
+      [[deprecated("This is the old style easylocal interface, it might still be used, however we advise to upgrade to Input-less class and Input-aware methods")]]
       virtual SolverResult<Input, Output, CostStructure> Resolve(const Input& in, const Output &initial_solution) = 0;
       
       /** Virtual destructor, for inheritance. */
@@ -97,7 +94,7 @@ namespace EasyLocal
        @param in a reference to the input object
        @param name name of the solver
        */
-      [[deprecated("This is the old-style spolver interface, featuring a constant input reference, you should use the Input-less version")]]
+      [[deprecated("This is the old style easylocal interface, it might still be used, however we advise to upgrade to Input-less class and Input-aware methods")]]
       Solver(const Input &in, std::string name);
       
       /** Constructor.
@@ -107,10 +104,6 @@ namespace EasyLocal
       
       /** Get current solution (meant to be asyncrhonous) */
       virtual std::shared_ptr<Output> GetCurrentSolution() const = 0;
-      
-    protected:
-      /** A reference to the input, for the old-style interface. */
-      Input const * const p_in;
     };
     
     /*************************************************************************
@@ -121,15 +114,14 @@ namespace EasyLocal
     std::vector<Solver<Input, Output, CostStructure> *> Solver<Input, Output, CostStructure>::solvers;
     
     template <class Input, class Output, class CostStructure>
-    Solver<Input, Output, CostStructure>::Solver(const Input &in, std::string name)
-    : name(name), p_in(&in)
+    Solver<Input, Output, CostStructure>::Solver(const Input &in, std::string name) : DeprecationHandler<Input>(in), name(name)
     {
       solvers.push_back(this);
     }
     
     template <class Input, class Output, class CostStructure>
     Solver<Input, Output, CostStructure>::Solver(std::string name)
-    : name(name), p_in(nullptr)
+    : name(name)
     {
       solvers.push_back(this);
     }

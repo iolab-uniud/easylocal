@@ -33,7 +33,7 @@ namespace EasyLocal
       typedef Interruptible<bool, const Input&> InterruptibleType;
       
       
-      [[deprecated("This is the old style solver interface, it might still be used, however we advise to upgrade to Input-less class and Input-aware methods")]]
+      [[deprecated("This is the old style easylocal interface, it might still be used, however we advise to upgrade to Input-less class and Input-aware methods")]]
       SolverResult<Input, Output, CostStructure> Solve()
       {
         return Solver<Input, Output, CostStructure>::Solve();
@@ -50,7 +50,7 @@ namespace EasyLocal
        @param name a name for the solver
        @deprecated
        */
-      [[deprecated("This is the old-style spolver interface, featuring a constant input reference, you should use the Input-less version")]]
+      [[deprecated("This is the old style easylocal interface, it might still be used, however we advise to upgrade to Input-less class and Input-aware methods")]]
       AbstractLocalSearch(const Input &in,
                           StateManager<Input, State, CostStructure> &sm,
                           OutputManager<Input, Output, State> &om,
@@ -65,11 +65,11 @@ namespace EasyLocal
                           OutputManager<Input, Output, State> &om,
                           std::string name);
       
-      [[deprecated("This is the old style solver interface, it might still be used, however we advise to upgrade to Input-less class and Input-aware methods")]]
+      [[deprecated("This is the old style easylocal interface, it might still be used, however we advise to upgrade to Input-less class and Input-aware methods")]]
       virtual std::shared_ptr<Output> GetCurrentSolution() const;
       
     protected:
-      [[deprecated("This is the old style solver interface, it might still be used, however we advise to upgrade to Input-less class and Input-aware methods")]]
+      [[deprecated("This is the old style easylocal interface, it might still be used, however we advise to upgrade to Input-less class and Input-aware methods")]]
       virtual std::shared_ptr<State> GetCurrentState() const = 0;
       
       virtual ~AbstractLocalSearch()
@@ -222,15 +222,13 @@ namespace EasyLocal
     template <class Input, class Output, class State, class CostStructure>
     std::shared_ptr<Output> AbstractLocalSearch<Input, Output, State, CostStructure>::GetCurrentSolution() const
     {
-      if (!this->p_in)
-        throw std::runtime_error("You are currently mixing the old-style and new-style solver usage. This method could be called only with the old-style usage");
       std::shared_ptr<State> current_state;
       if (!is_running)
         current_state = this->p_best_state;
       else
         current_state = GetCurrentState();
-      std::shared_ptr<Output> out = std::make_shared<Output>(*this->p_in);
-      om.OutputState(*this->p_in, *current_state, *out);
+      std::shared_ptr<Output> out = std::make_shared<Output>(this->GetInput());
+      om.OutputState(this->GetInput(), *current_state, *out);
       
       return out;
     }

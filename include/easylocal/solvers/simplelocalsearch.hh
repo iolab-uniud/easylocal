@@ -26,7 +26,7 @@ namespace EasyLocal
       
       using AbstractLocalSearch<Input, Output, State, CostStructure>::AbstractLocalSearch;
       
-      [[deprecated("This is the old style solver interface, it might still be used, however we advise to upgrade to Input-less class and Input-aware methods")]]
+      [[deprecated("This is the old style easylocal interface, it might still be used, however we advise to upgrade to Input-less class and Input-aware methods")]]
       SimpleLocalSearch(const Input &in,
                         StateManager<Input, State, CostStructure> &sm,
                         OutputManager<Input, Output, State> &om,

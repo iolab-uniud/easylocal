@@ -23,9 +23,12 @@ namespace EasyLocal
     {
     public:
       typedef Runner<Input, State, CostStructure> RunnerType;
+      using AbstractLocalSearch<Input, Output, State, CostStructure>::AbstractLocalSearch;
+      
+      [[deprecated("This is the old style easylocal interface, it might still be used, however we advise to upgrade to Input-less class and Input-aware methods")]]
       MultiStartSearch(const Input &in,
-                       StateManager<Input, State, CostStructure> &e_sm,
-                       OutputManager<Input, Output, State> &e_om,
+                       StateManager<Input, State, CostStructure> &sm,
+                       OutputManager<Input, Output, State> &om,
                        std::string name);
       void AddRunner(RunnerType &r);
       void RemoveRunner(const RunnerType &r);
@@ -36,9 +39,11 @@ namespace EasyLocal
       
     protected:
       void InitializeParameters();
-      void InitializeSolve() throw(ParameterNotSet, IncorrectParameterValue);
-      void Go();
+      void InitializeSolve(const Input& in);
+      void Go(const Input& in);
       void AtTimeoutExpired();
+      
+      [[deprecated("This is the old style easylocal interface, it might still be used, however we advise to upgrade to Input-less class and Input-aware methods")]]
       virtual std::shared_ptr<State> GetCurrentState() const;
       
       std::vector<RunnerType *> p_runners; /**< pointers to the managed runner. */
@@ -65,12 +70,11 @@ namespace EasyLocal
      */
     template <class Input, class Output, class State, class CostStructure>
     MultiStartSearch<Input, Output, State, CostStructure>::MultiStartSearch(const Input &in,
-                                                                            StateManager<Input, State, CostStructure> &e_sm,
-                                                                            OutputManager<Input, Output, State> &e_om,
+                                                                            StateManager<Input, State, CostStructure> &sm,
+                                                                            OutputManager<Input, Output, State> &om,
                                                                             std::string name)
-    : AbstractLocalSearch<Input, Output, State, CostStructure>(in, e_sm, e_om, name, "Multi Start Solver")
-    {
-    }
+    : AbstractLocalSearch<Input, Output, State, CostStructure>(in, sm, om, name)
+    {}
     
     template <class Input, class Output, class State, class CostStructure>
     void MultiStartSearch<Input, Output, State, CostStructure>::InitializeParameters()
@@ -141,9 +145,9 @@ namespace EasyLocal
     }
     
     template <class Input, class Output, class State, class CostStructure>
-    void MultiStartSearch<Input, Output, State, CostStructure>::InitializeSolve() throw(ParameterNotSet, IncorrectParameterValue)
+    void MultiStartSearch<Input, Output, State, CostStructure>::InitializeSolve(const Input& in)
     {
-      AbstractLocalSearch<Input, Output, State, CostStructure>::InitializeSolve();
+      AbstractLocalSearch<Input, Output, State, CostStructure>::InitializeSolve(in);
       if (max_idle_restarts.IsSet() && max_idle_restarts == 0)
         throw IncorrectParameterValue(max_idle_restarts, "It should be greater than zero");
         if (max_restarts.IsSet() && max_restarts == 0)
@@ -156,14 +160,14 @@ namespace EasyLocal
     }
     
     template <class Input, class Output, class State, class CostStructure>
-    void MultiStartSearch<Input, Output, State, CostStructure>::Go()
+    void MultiStartSearch<Input, Output, State, CostStructure>::Go(const Input& in)
     {
       current_runner = 0;
       bool idle = true;
       do
       {
         //      std::cerr << "restarts = " << restarts << "/" << max_restarts << ", " << idle_restarts << "/" << max_idle_restarts<< std::endl;
-        this->current_state_cost = p_runners[current_runner]->Go(*this->p_current_state);
+        this->current_state_cost = p_runners[current_runner]->Go(in, *this->p_current_state);
         if (this->current_state_cost <= this->best_state_cost) // the less or equal is here for diversification purpose
         {
           if (this->current_state_cost < this->best_state_cost)
@@ -179,8 +183,8 @@ namespace EasyLocal
             idle_restarts++;
           else
             idle_restarts = 0;
-          this->sm.RandomState(*this->p_current_state);
-          this->current_state_cost = this->sm.CostFunctionComponents(*this->p_current_state);
+          this->sm.RandomState(in, *this->p_current_state);
+          this->current_state_cost = this->sm.CostFunctionComponents(in, *this->p_current_state);
         }
       } while (idle_restarts < max_idle_restarts && restart < max_restarts);
     }
@@ -192,7 +196,7 @@ namespace EasyLocal
     }
     
     template <class Input, class Output, class State, class CostStructure>
-    void MultiStartSearch<Input, Output, State, CostStructure>::GetCurrentState() const
+    std::shared_ptr<State> MultiStartSearch<Input, Output, State, CostStructure>::GetCurrentState() const
     {
       return p_runners[current_runner]->GetCurrentBestState();
     }

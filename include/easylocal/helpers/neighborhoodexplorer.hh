@@ -10,6 +10,7 @@
 #include "easylocal/helpers/deltacostcomponent.hh"
 #include "easylocal/helpers/statemanager.hh"
 #include "easylocal/utils/random.hh"
+#include "easylocal/utils/deprecationhandler.hh"
 
 namespace EasyLocal
 {
@@ -55,15 +56,15 @@ namespace EasyLocal
      @ref Move.
      @ingroup Helpers
      */
-    template <class Input, class State, class Move, class CostStructure = DefaultCostStructure<int>>
-    class NeighborhoodExplorer
+    template <class _Input, class _State, class _Move, class _CostStructure = DefaultCostStructure<int>>
+    class NeighborhoodExplorer : protected DeprecationHandler<_Input>
     {
     public:
-      typedef Input InputType;
-      typedef Move MoveType;
-      typedef State StateType;
-      typedef typename CostStructure::CFtype CFtype;
-      typedef CostStructure CostStructureType;
+      typedef _Input Input;
+      typedef _Move Move;
+      typedef _State State;
+      typedef typename _CostStructure::CFtype CFtype;
+      typedef _CostStructure CostStructure;
       
       typedef typename std::function<bool(const Move &mv, const CostStructure &move_cost)> MoveAcceptor;
       
@@ -129,7 +130,7 @@ namespace EasyLocal
       //  /** Old-style method, without the Input object
       //   @deprecated
       //   */
-      //  [[deprecated("Input object has been moved outside the NeighborhoodExplorer class")]]
+      //  [[deprecated("This is the old style easylocal interface, it is mandatory to upgrade to Input-less class and Input-aware methods")]]
       //  CostStructure DeltaCostFunctionComponents(const State &st, const Move &mv, const std::vector<double> &weights = std::vector<double>(0)) const
       //  {
       //    throw std::runtime_error("You should update your NeighborhoodExplorer by adding a const Input& reference to the method");
@@ -177,57 +178,55 @@ namespace EasyLocal
       /** Old-style method, without the Input object
        @deprecated
        */
-      [[deprecated("Input object has been moved outside the NeighborhoodExplorer class")]]
+      [[deprecated("This is the old style easylocal interface, it is mandatory to upgrade to Input-less class and Input-aware methods")]]
       bool FeasibleMove(const State &st, const Move &mv) const
       {
-        throw std::runtime_error("You should update your NeighborhoodExplorer by adding a const Input& reference to the method");
+        return FeasibleMove(this->GetInput(), st, mv);
       }
       
       /** Old-style method, without the Input object
        @deprecated
        */
-      [[deprecated("Input object has been moved outside the NeighborhoodExplorer class")]]
+      [[deprecated("This is the old style easylocal interface, it is mandatory to upgrade to Input-less class and Input-aware methods")]]
       void RandomMove(const State &st, Move &mv) const
       {
-        throw std::runtime_error("You should update your NeighborhoodExplorer by adding a const Input& reference to the method");
+        RandomMove(this->GetInput(), st, mv);
       }
       
       /** Old-style method, without the Input object
        @deprecated
        */
-      [[deprecated("Input object has been moved outside the NeighborhoodExplorer class")]]
+      [[deprecated("This is the old style easylocal interface, it is mandatory to upgrade to Input-less class and Input-aware methods")]]
       void FirstMove(const State &st, Move &mv) const
       {
-        throw std::runtime_error("You should update your NeighborhoodExplorer by adding a const Input& reference to the method");
+        FirstMove(this->GetInput(), st, mv);
       }
       
       /** Old-style method, without the Input object
        @deprecated
        */
-      [[deprecated("Input object has been moved outside the NeighborhoodExplorer class")]]
+      [[deprecated("This is the old style easylocal interface, it is mandatory to upgrade to Input-less class and Input-aware methods")]]
       bool NextMove(const State &st, Move &mv) const
       {
-        throw std::runtime_error("You should update your NeighborhoodExplorer by adding a const Input& reference to the method");
+        return NextMove(this->GetInput(), st, mv);
       }
       
       /** Old-style method, without the Input object
        @deprecated
        */
-      [[deprecated("Input object has been moved outside the NeighborhoodExplorer class")]]
+      [[deprecated("This is the old style easylocal interface, it is mandatory to upgrade to Input-less class and Input-aware methods")]]
       void MakeMove(State &st, const Move &mv) const
       {
-        throw std::runtime_error("You should update your NeighborhoodExplorer by adding a const Input& reference to the method");
+        MakeMove(this->GetInput(), st, mv);
       }
       
       /**
        Deprecated constructor.
        @deprecated
        */
-      [[deprecated("Input object has been moved outside the NeighborhoodExplorer class")]]
-      NeighborhoodExplorer(const Input &in, StateManager<Input, State, CostStructure> &sm, std::string name)
-      {
-        throw std::runtime_error("You should update your CostComponent, this constructor cannot be used anymore");
-      }
+      [[deprecated("This is the old style easylocal interface, it is mandatory to upgrade to Input-less class and Input-aware methods")]]
+      NeighborhoodExplorer(const Input &in, StateManager<Input, State, CostStructure> &sm, std::string name)  : DeprecationHandler<Input>(in), sm(sm), name(name), unimplemented_hard_components(false), unimplemented_soft_components(false)
+      {}
       
       /**
        Constructs a neighborhood explorer passing a n input object and a state manager.
@@ -236,7 +235,6 @@ namespace EasyLocal
        @param name the name associated to the NeighborhoodExplorer.
        */
       NeighborhoodExplorer(StateManager<Input, State, CostStructure> &sm, std::string name);
-      
       
       
       virtual ~NeighborhoodExplorer() {}
@@ -272,7 +270,7 @@ namespace EasyLocal
       std::vector<DeltaCostComponent<Input, State, Move, CFtype> *> delta_hard_cost_components, delta_soft_cost_components;
       
       /** List of created adapters (to be automatically deleted in the destructor). */
-      std::vector<std::shared_ptr<DeltaCostComponentAdapter<Input, State, Move, CostStructureType>>> dcc_adapters;
+      std::vector<std::shared_ptr<DeltaCostComponentAdapter<Input, State, Move, CostStructure>>> dcc_adapters;
       
       /** Name of user-defined neighborhood explorer */
       std::string name;

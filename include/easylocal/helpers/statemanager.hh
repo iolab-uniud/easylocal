@@ -8,6 +8,7 @@
 
 #include "easylocal/helpers/costcomponent.hh"
 #include "easylocal/helpers/coststructure.hh"
+#include "easylocal/utils/deprecationhandler.hh"
 
 namespace EasyLocal
 {
@@ -38,7 +39,7 @@ namespace EasyLocal
      @ingroup Helpers
      */
     template <class _Input, class _State, class _CostStructure = DefaultCostStructure<int>>
-    class StateManager
+    class StateManager : protected DeprecationHandler<_Input>
     {
     public:
       typedef typename _CostStructure::CFtype CFtype;
@@ -50,10 +51,10 @@ namespace EasyLocal
        Old style random state generator
        @deprecated
        */
-      [[deprecated("Input object has been moved outside the StateManager class")]]
+      [[deprecated("This is the old style easylocal interface, it is mandatory to upgrade to Input-less class and Input-aware methods")]]
       void RandomState(State &st)
       {
-        throw std::runtime_error("You should update your StateManager by adding a const Input& reference to the method");
+        RandomState(this->GetInput(), st);
       }
       
       /**
@@ -67,10 +68,10 @@ namespace EasyLocal
        Old style sample state generator
        @deprecated
        */
-      [[deprecated("Input object has been moved outside the StateManager class")]]
+      [[deprecated("This is the old style easylocal interface, it is mandatory to upgrade to Input-less class and Input-aware methods")]]
       CostStructure SampleState(State &st, unsigned int samples)
       {
-        throw std::runtime_error("You should update your StateManager by adding a const Input& reference to the method");
+        SampleState(this->GetInput(), st, samples);
       }
       
       /**
@@ -85,10 +86,10 @@ namespace EasyLocal
        Old style greedy state generator
        @deprecated
        */
-      [[deprecated("Input object has been moved outside the StateManager class")]]
+      [[deprecated("This is the old style easylocal interface, it is mandatory to upgrade to Input-less class and Input-aware methods")]]
       void GreedyState(State &st, double alpha, unsigned int k)
       {
-        throw std::runtime_error("You should update your StateManager by adding a const Input& reference to the method");
+        GreedyState(this->GetInput(), st, alpha, k);
       }
       
       /**
@@ -126,10 +127,10 @@ namespace EasyLocal
        Old style greedy state generator
        @deprecated
        */
-      [[deprecated("Input object has been moved outside the StateManager class")]]
+      [[deprecated("This is the old style easylocal interface, it is mandatory to upgrade to Input-less class and Input-aware methods")]]
       void GreedyState(State &st)
       {
-        throw std::runtime_error("You should update your StateManager by adding a const Input& reference to the method");
+        GreedyState(this->GetInput(), st);
       }
       
       /**
@@ -143,10 +144,10 @@ namespace EasyLocal
        Old style cost computation
        @deprecated
        */
-      [[deprecated("Input object has been moved outside the StateManager class")]]
+      [[deprecated("This is the old style easylocal interface, it is mandatory to upgrade to Input-less class and Input-aware methods")]]
       CostStructure CostFunctionComponents(const State &st, const std::vector<double> &weights = std::vector<double>(0)) const
       {
-        throw std::runtime_error("You should update your StateManager by adding a const Input& reference to the method");
+        return CostFunctionComponents(this->GetInput(), st, weights);
       }
       
       
@@ -174,10 +175,10 @@ namespace EasyLocal
       /**
        Old style checking that optimal state has been reached
        */
-      [[deprecated("Input object has been moved outside the StateManager class")]]
-      virtual bool OptimalStateReached(const State &st) const
+      [[deprecated("This is the old style easylocal interface, it is mandatory to upgrade to Input-less class and Input-aware methods")]]
+      bool OptimalStateReached(const State &st) const
       {
-        throw std::runtime_error("You should update your StateManager by adding a const Input& reference to the method");
+        return OptimalStateReached(this->GetInput(), st);
       }
       
       /**
@@ -221,18 +222,28 @@ namespace EasyLocal
        Currently used only by the @ref GeneralizedLocalSearchObserver.
        @return the distance, assumed always @c unsigned int
        */
-      [[deprecated("Input object has been moved outside the StateManager class")]]
-      virtual unsigned int StateDistance(const State &st1, const State &st2) const;
+      [[deprecated("This is the old style easylocal interface, it is mandatory to upgrade to Input-less class and Input-aware methods")]]
+      unsigned int StateDistance(const State &st1, const State &st2) const
+      {
+        return StateDistance(this->GetInput(), st1, st2);
+      }
+      
+      /**
+       Compute the distance of two states (e.g. the Hamming distance).
+       Currently used only by the @ref GeneralizedLocalSearchObserver.
+       @return the distance, assumed always @c unsigned int
+       */
+      unsigned int StateDistance(const Input& in, const State &st1, const State &st2) const;
       
       /**
        Check whether the state is consistent. In particular, should check whether
        the redundant data structures are consistent with the main ones. Used only
        for debugging purposes.
        */
-      [[deprecated("Input object has been moved outside the StateManager class")]]
+      [[deprecated("This is the old style easylocal interface, it is mandatory to upgrade to Input-less class and Input-aware methods")]]
       bool CheckConsistency(const State &st) const
       {
-        throw std::runtime_error("You should update your StateManager by adding a const Input& reference to the method");
+        return CheckConsistency(this->GetInput(), st);
       }
       
       /**
@@ -241,7 +252,6 @@ namespace EasyLocal
        for debugging purposes.
        */
       virtual bool CheckConsistency(const Input& in, const State &st) const = 0;
-      
       
       /** Name of the state manager */
       const std::string name;
@@ -252,11 +262,9 @@ namespace EasyLocal
        @param in a reference to an input object
        @param name is the name of the object
        */
-      [[deprecated("Input object has been moved outside the StateManager class")]]
-      StateManager(const Input &in, std::string name)
-      {
-        throw std::runtime_error("You should update your StateManager, this constructor cannot be used anymore");
-      }
+      [[deprecated("This is the old style easylocal interface, it is mandatory to upgrade to Input-less class and Input-aware methods")]]
+      StateManager(const Input &in, std::string name) : DeprecationHandler<Input>(in)
+      {}
       
       /** Build a StateManager object.
        @param name the name of the object
@@ -377,7 +385,8 @@ namespace EasyLocal
     }
     
     template <class Input, class State, class CostStructure>
-    unsigned int StateManager<Input, State, CostStructure>::StateDistance(const State &st1,
+    unsigned int StateManager<Input, State, CostStructure>::StateDistance(const Input& in,
+                                                                          const State &st1,
                                                                           const State &st2) const
     {
       throw std::runtime_error("In order to use this feature StateDistance must be implemented in the concrete class!");

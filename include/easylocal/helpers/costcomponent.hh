@@ -3,6 +3,7 @@
 #include <iostream>
 #include <vector>
 #include "easylocal/helpers/coststructure.hh"
+#include "easylocal/utils/deprecationhandler.hh"
 
 namespace EasyLocal
 {
@@ -19,7 +20,7 @@ namespace EasyLocal
      @ingroup Helpers
      */
     template <class Input, class State, class CFtype = int>
-    class CostComponent 
+    class CostComponent : protected DeprecationHandler<Input>
     {
     public:
       /** @copydoc Printable::Print() */
@@ -28,10 +29,10 @@ namespace EasyLocal
       /** Old-style method, without Input
        @deprecated
        */
-      [[deprecated("Input object has been moved outside the CostComponent class")]]
+      [[deprecated("This is the old style easylocal interface, it is mandatory to upgrade to Input-less class and Input-aware methods")]]
       CFtype ComputeCost(const State &st) const
       {
-        throw std::runtime_error("You should update your CostComponent by adding a const Input& reference to the method");
+        return ComputeCost(this->GetInput(), st);
       }
       
       /** Computes this component of cost with respect to a given state not considering its weight.
@@ -45,10 +46,10 @@ namespace EasyLocal
       /** Old-style method, without Input
        @deprecated
        */
-      [[deprecated("Input object has been moved outside the CostComponent class")]]
+      [[deprecated("This is the old style easylocal interface, it is mandatory to upgrade to Input-less class and Input-aware methods")]]
       CFtype Cost(const State &st) const
       {
-        throw std::runtime_error("You should update your CostComponent by adding a const Input& reference to the method");
+        return Cost(this->GetInput(), st);
       }
       
       
@@ -66,10 +67,10 @@ namespace EasyLocal
       /** Old-style method, without Input
        @deprecated
        */
-      [[deprecated("Input object has been moved outside the CostComponent class")]]
+      [[deprecated("This is the old style easylocal interface, it is mandatory to upgrade to Input-less class and Input-aware methods")]]
       void PrintViolations(const State &st, std::ostream &os = std::cout) const
       {
-        throw std::runtime_error("You should update your CostComponent by adding a const Input& reference to the method");
+        PrintViolations(this->GetInput(), st, os);
       }
       
       /** Prints the violations relative to this cost component with respect to the specified state.
@@ -116,11 +117,9 @@ namespace EasyLocal
       
     protected:
       
-      [[deprecated("Input object has been moved outside the CostComponent class")]]
-      CostComponent(const Input &in, const CFtype &weight, bool is_hard, std::string name)
-      {
-        throw std::runtime_error("You should update your CostComponent, this constructor cannot be used anymore");
-      }
+      [[deprecated("This is the old style easylocal interface, it is mandatory to upgrade to Input-less class and Input-aware methods")]]
+      CostComponent(const Input &in, const CFtype &weight, bool is_hard, std::string name) : DeprecationHandler<Input>(in), name(name), hash(std::hash<std::string>()(typeid(this).name() + name)), weight(weight), is_hard(is_hard)
+      {}
       
       /** Constructor.
        @param weight weight of the cost component
@@ -143,8 +142,7 @@ namespace EasyLocal
     template <class Input, class State, typename CFtype>
     CostComponent<Input, State, CFtype>::CostComponent(const CFtype &weight, bool is_hard, std::string name)
     : name(name), hash(std::hash<std::string>()(typeid(this).name() + name)), weight(weight), is_hard(is_hard)
-    {
-    }
+    {}
     
     template <class Input, class State, typename CFtype>
     void CostComponent<Input, State, CFtype>::Print(std::ostream &os) const

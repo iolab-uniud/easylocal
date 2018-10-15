@@ -1,6 +1,7 @@
 #pragma once
 
 #include <iostream>
+#include "easylocal/utils/deprecationhandler.hh"
 
 namespace EasyLocal
 {
@@ -12,7 +13,7 @@ namespace EasyLocal
      @ingroup Helpers
      */
     template <class _Input, class _Output, class _State>
-    class OutputManager 
+    class OutputManager : protected DeprecationHandler<_Input>
     {
     public:
       typedef _Input Input;
@@ -22,10 +23,10 @@ namespace EasyLocal
       /** Old-style deprecated method
        @deprecated
        */
-      [[deprecated("Input object has been moved outside the CostComponent class")]]
+      [[deprecated("This is the old style easylocal interface, it is mandatory to upgrade to Input-less class and Input-aware methods")]]
       void OutputState(const State &st, Output &out) const
       {
-        throw std::runtime_error("You should update your OutputManager by adding a const Input& reference to the method");
+        OutputState(this->GetInput(), st, out);
       }
       
       /** Transforms the given state in an output object.
@@ -38,10 +39,10 @@ namespace EasyLocal
       /** Old-style deprecated method
        @deprecated
        */
-      [[deprecated("Input object has been moved outside the CostComponent class")]]
+      [[deprecated("This is the old style easylocal interface, it is mandatory to upgrade to Input-less class and Input-aware methods")]]
       void InputState(State &st, const Output &out) const
       {
-        throw std::runtime_error("You should update your OutputManager by adding a const Input& reference to the method");
+        InputState(this->GetInput(), st, out);
       }
       
       /** Transforms an output object in a state object.
@@ -54,10 +55,10 @@ namespace EasyLocal
       /** Old-style deprecated method
        @deprecated
        */
-      [[deprecated("Input object has been moved outside the CostComponent class")]]
+      [[deprecated("This is the old style easylocal interface, it is mandatory to upgrade to Input-less class and Input-aware methods")]]
       void ReadState(State &st, std::istream &is) const
       {
-        throw std::runtime_error("You should update your OutputManager by adding a const Input& reference to the method");
+        ReadState(this->GetInput(), st, is);
       }
       
       /** Reads a state from an input stream.
@@ -70,10 +71,10 @@ namespace EasyLocal
       /** Old-style deprecated method
        @deprecated
        */
-      [[deprecated("Input object has been moved outside the CostComponent class")]]
+      [[deprecated("This is the old style easylocal interface, it is mandatory to upgrade to Input-less class and Input-aware methods")]]
       void WriteState(const State &st, std::ostream &os) const
       {
-        throw std::runtime_error("You should update your OutputManager by adding a const Input& reference to the method");
+        WriteState(this->GetInput(), st, os);
       }
       
       /** Writes a state on an output stream.
@@ -86,10 +87,10 @@ namespace EasyLocal
       /** Old-style deprecated method
        @deprecated
        */
-      [[deprecated("Input object has been moved outside the CostComponent class")]]
+      [[deprecated("This is the old style easylocal interface, it is mandatory to upgrade to Input-less class and Input-aware methods")]]
       void PrettyPrintOutput(const State &st, const std::string &file_name) const
       {
-        throw std::runtime_error("You should update your OutputManager by adding a const Input& reference to the method");
+        PrettyPrint(this->GetInput(), st, file_name);
       }
       
       virtual void PrettyPrintOutput(const Input& in, const State &st, const std::string &file_name) const
@@ -109,12 +110,9 @@ namespace EasyLocal
       /** Old-style constructor
        @deprecated
        */
-      [[deprecated("Input object has been moved outside the CostComponent class")]]
-      OutputManager(const Input &in, std::string name)
-      : name(name)
-      {
-        throw std::runtime_error("You should update your OutputManager, this constructor cannot be used anymore");
-      }
+      [[deprecated("This is the old style easylocal interface, it is mandatory to upgrade to Input-less class and Input-aware methods")]]
+      OutputManager(const Input &in, std::string name) : DeprecationHandler<Input>(in), name(name)
+      {}
       
       virtual ~OutputManager() {}
       
