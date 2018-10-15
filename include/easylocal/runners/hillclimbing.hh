@@ -27,8 +27,8 @@ protected:
   Parameter<unsigned long int> max_idle_iterations;
   void InitializeParameters();
   bool MaxIdleIterationExpired() const;
-  bool StopCriterion();
-  void SelectMove();
+  bool StopCriterion() const;
+  void SelectMove(const Input& in);
   // parameters
 };
 
@@ -48,12 +48,12 @@ void HillClimbing<Input, State, Move, CostStructure>::InitializeParameters()
      random move that improves or leaves the cost unchanged.
      */
 template <class Input, class State, class Move, class CostStructure>
-void HillClimbing<Input, State, Move, CostStructure>::SelectMove()
+void HillClimbing<Input, State, Move, CostStructure>::SelectMove(const Input& in)
 {
   // TODO: it should become a parameter, the number of neighbors drawn at each iteration (possibly evaluated in parallel)
   const size_t samples = 10;
   size_t sampled;
-  EvaluatedMove<Move, CostStructure> em = this->ne.RandomFirst(this->in, *this->p_current_state, samples, sampled, [](const Move &mv, const CostStructure &move_cost) {
+  EvaluatedMove<Move, CostStructure> em = this->ne.RandomFirst(in, *this->p_current_state, samples, sampled, [](const Move &mv, const CostStructure &move_cost) {
     return move_cost <= 0;
   },
                                                                this->weights);
@@ -72,7 +72,7 @@ bool HillClimbing<Input, State, Move, CostStructure>::MaxIdleIterationExpired() 
      the last strict improvement of the best state cost.
      */
 template <class Input, class State, class Move, class CostStructure>
-bool HillClimbing<Input, State, Move, CostStructure>::StopCriterion()
+bool HillClimbing<Input, State, Move, CostStructure>::StopCriterion() const
 {
   return MaxIdleIterationExpired() || this->MaxEvaluationsExpired();
 }

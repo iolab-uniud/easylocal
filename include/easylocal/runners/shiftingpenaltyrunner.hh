@@ -12,6 +12,11 @@ class ShiftingPenaltyRunner : public BaseMoveRunner
 {
   // TODO: currently it performs weight adaptation at each iteration
 public:
+  
+  typedef typename BaseMoveRunner::Input Input;
+  typedef typename BaseMoveRunner::State State;
+  typedef typename BaseMoveRunner::Move Move;
+  
   using BaseMoveRunner::BaseMoveRunner;
 
   void InitializeParameters()
@@ -31,9 +36,9 @@ public:
     max_range = 10.0;
   }
 
-  void InitializeRun() throw(ParameterNotSet, IncorrectParameterValue)
+  void InitializeRun(const Input& in)
   {
-    BaseMoveRunner::InitializeRun();
+    BaseMoveRunner::InitializeRun(in);
     if (min_perturbation <= 1.0)
     {
       throw IncorrectParameterValue(min_perturbation, "should be greater than one");
@@ -71,9 +76,9 @@ public:
     number_of_infeasible_iterations.assign(this->sm.CostComponents(), 0);
   }
 
-  void CompleteMove()
+  void CompleteMove(const Input& in)
   {
-    BaseMoveRunner::CompleteMove();
+    BaseMoveRunner::CompleteMove(in);
     for (size_t i = 0; i < this->sm.CostComponents(); i++)
     {
       if (this->sm.GetCostComponent(i).IsHard() && this->current_state_cost.all_components[i] == 0)

@@ -80,7 +80,7 @@ void SimpleLocalSearch<Input, Output, State, CostStructure>::Go()
   if (!p_runner)
     // FIXME: add a more specific exception behavior
     throw std::logic_error("Runner not set in object " + this->name);
-  this->current_state_cost = p_runner->Go(*this->p_current_state);
+  this->current_state_cost = p_runner->Go(this->in, *this->p_current_state);
 
   *this->p_best_state = *this->p_current_state;
   this->best_state_cost = this->current_state_cost;

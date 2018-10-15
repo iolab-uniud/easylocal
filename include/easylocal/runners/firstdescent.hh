@@ -22,8 +22,8 @@ public:
   using MoveRunner<Input, State, Move, CostStructure>::MoveRunner;
 
 protected:
-  bool StopCriterion();
-  void SelectMove();
+  bool StopCriterion() const;
+  void SelectMove(const Input& in);
 };
 
 /*************************************************************************
@@ -34,10 +34,10 @@ protected:
      Selects always the first improving move in the neighborhood.
      */
 template <class Input, class State, class Move, class CostStructure>
-void FirstDescent<Input, State, Move, CostStructure>::SelectMove()
+void FirstDescent<Input, State, Move, CostStructure>::SelectMove(const Input& in)
 {
   size_t explored;
-  EvaluatedMove<Move, CostStructure> em = this->ne.SelectFirst(this->in, *this->p_current_state, explored, [](const Move &mv, const CostStructure &move_cost) {
+  EvaluatedMove<Move, CostStructure> em = this->ne.SelectFirst(in, *this->p_current_state, explored, [](const Move &mv, const CostStructure &move_cost) {
     return move_cost < 0;
   },
                                                                this->weights);
@@ -49,7 +49,7 @@ void FirstDescent<Input, State, Move, CostStructure>::SelectMove()
      The search is stopped when no (strictly) improving move has been found.
      */
 template <class Input, class State, class Move, class CostStructure>
-bool FirstDescent<Input, State, Move, CostStructure>::StopCriterion()
+bool FirstDescent<Input, State, Move, CostStructure>::StopCriterion() const
 {
   return this->iteration > 0 && !this->current_move.is_valid;
 }

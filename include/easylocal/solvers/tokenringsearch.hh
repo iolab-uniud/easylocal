@@ -163,7 +163,7 @@ void TokenRingSearch<Input, Output, State, CostStructure>::Go()
   do
   {
     //      std::cerr << "Rounds = " << rounds << "/" << max_rounds << ", " << idle_rounds << "/" << max_idle_rounds<< std::endl;
-    this->current_state_cost = p_runners[current_runner]->Go(*this->p_current_state);
+    this->current_state_cost = p_runners[current_runner]->Go(this->in, *this->p_current_state);
     round++;
     idle_rounds++;
     if (this->current_state_cost <= this->best_state_cost) // the less or equal is here for diversification purpose

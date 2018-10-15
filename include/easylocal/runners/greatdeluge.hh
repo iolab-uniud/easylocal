@@ -37,10 +37,10 @@ public:
 
 protected:
   void InitializeParameters();
-  void InitializeRun();
-  bool StopCriterion();
+  void InitializeRun(const Input& in);
+  bool StopCriterion() const;
   void UpdateIterationCounter();
-  void SelectMove();
+  void SelectMove(const Input& in);
 
   // parameters
   Parameter<double> initial_level;           /**< The initial level. */
@@ -70,8 +70,9 @@ void GreatDeluge<Input, State, Move, CostStructure>::InitializeParameters()
      setting current level to the initial one.
      */
 template <class Input, class State, class Move, class CostStructure>
-void GreatDeluge<Input, State, Move, CostStructure>::InitializeRun()
+void GreatDeluge<Input, State, Move, CostStructure>::InitializeRun(const Input& in)
 {
+  MoveRunner<Input, State, Move, CostStructure>::InitializeRun(in);
   level = initial_level * this->current_state_cost.total;
 }
 
@@ -79,14 +80,14 @@ void GreatDeluge<Input, State, Move, CostStructure>::InitializeRun()
      A move is randomly picked and its cost is stored.
      */
 template <class Input, class State, class Move, class CostStructure>
-void GreatDeluge<Input, State, Move, CostStructure>::SelectMove()
+void GreatDeluge<Input, State, Move, CostStructure>::SelectMove(const Input& in)
 {
   // TODO: it should become a parameter, the number of neighbors drawn at each iteration (possibly evaluated in parallel)
   const size_t samples = 10;
   size_t sampled;
   CFtype cur_cost = this->current_state_cost.total;
   double l = level;
-  EvaluatedMove<Move, CostStructure> em = this->ne.RandomFirst(this->in, *this->p_current_state, samples, sampled, [cur_cost, l](const Move &mv, const CostStructure &move_cost) {
+  EvaluatedMove<Move, CostStructure> em = this->ne.RandomFirst(in, *this->p_current_state, samples, sampled, [cur_cost, l](const Move &mv, const CostStructure &move_cost) {
     return move_cost < 0.0 || move_cost <= l - cur_cost;
   },
                                                                this->weights);
@@ -97,7 +98,7 @@ void GreatDeluge<Input, State, Move, CostStructure>::SelectMove()
      The search stops when a low temperature has reached.
      */
 template <class Input, class State, class Move, class CostStructure>
-bool GreatDeluge<Input, State, Move, CostStructure>::StopCriterion()
+bool GreatDeluge<Input, State, Move, CostStructure>::StopCriterion() const
 {
   return level < min_level * this->best_state_cost.total;
 }

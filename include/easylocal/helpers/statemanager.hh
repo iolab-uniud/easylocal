@@ -169,7 +169,7 @@ public:
        tentative definition verifies whether the state costs are equal to zero.
        @return true if the lower bound of the cost function has been reached
        */
-  virtual bool LowerBoundReached(const CostStructure &costs) const;
+  virtual bool LowerBoundReached(const Input& in, const CostStructure &costs) const;
 
   /**
       Old style checking that optimal state has been reached
@@ -357,7 +357,7 @@ CostStructure StateManager<Input, State, CostStructure>::CostFunctionComponents(
 }
 
 template <class Input, class State, class CostStructure>
-bool StateManager<Input, State, CostStructure>::LowerBoundReached(const CostStructure &costs) const
+bool StateManager<Input, State, CostStructure>::LowerBoundReached(const Input& in, const CostStructure &costs) const
 {
   return costs == 0;
 }
@@ -365,7 +365,7 @@ bool StateManager<Input, State, CostStructure>::LowerBoundReached(const CostStru
 template <class Input, class State, class CostStructure>
 bool StateManager<Input, State, CostStructure>::OptimalStateReached(const Input& in, const State &st) const
 {
-  return LowerBoundReached(CostFunctionComponents(in, st));
+  return LowerBoundReached(in, CostFunctionComponents(in, st));
 }
 
 template <class Input, class State, class CostStructure>

@@ -356,7 +356,7 @@ void Tester<Input, Output, State, CostStructure>::ExecuteRunChoice()
     auto to = std::chrono::milliseconds((long long)(timeout * 1000));
 
     auto start = std::chrono::high_resolution_clock::now();
-    CostStructure result = r.SyncRun(to, this->test_state);
+    CostStructure result = r.SyncRun(to, this->in, this->test_state);
     auto end = std::chrono::high_resolution_clock::now();
 
     auto duration = end - start;
