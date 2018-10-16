@@ -141,6 +141,11 @@ namespace EasyLocal
        */
       Runner(StateManager<Input, State, CostStructure> &sm, std::string name);
       
+      /** Copy Constructor.
+       @param r a Runner to be copied
+       */
+      Runner(const Runner<Input, State, CostStructure>& r);
+      
       /** Actions and checks to be perfomed at the beginning of the run. Redefinition intended.
        @param in the Input object
        @throw ParameterNotSet if one of the parameters needed by the runner (or other components) hasn't been set
@@ -189,12 +194,15 @@ namespace EasyLocal
         return [this](const Input& in, State &st) -> CostStructure { return this->Go(in, st); };
       }
       
+      virtual std::unique_ptr<Runner<Input, State, CostStructure>> Clone() const = 0;
+            
       /** No acceptable move has been found in the current iteration. */
       bool no_acceptable_move_found;
       
       /** The state manager attached to this runner. */
       StateManager<Input, State, CostStructure> &sm;
       
+      // TODO: probably unique_ptr are more suitable for this case
       /** Current state of the search. */
       std::shared_ptr<State> p_current_state,
       /** Best state found so far. */
@@ -259,6 +267,13 @@ namespace EasyLocal
       // Add to the list of all runners
       runners.push_back(this);
     }
+    
+    template <class Input, class State, class CostStructure>
+    Runner<Input, State, CostStructure>::Runner(const Runner<Input, State, CostStructure>& r)
+    : // Parameters
+    Parametrized(r.name, typeid(this).name()), name(r.name), no_acceptable_move_found(r.no_acceptable_move_found), sm(r.sm),
+    max_evaluations(r.max_evaluations), weights(r.weights)
+    {}
     
     template <class Input, class State, class CostStructure>
     void Runner<Input, State, CostStructure>::InitializeParameters()

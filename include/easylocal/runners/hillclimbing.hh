@@ -22,13 +22,14 @@ namespace EasyLocal
     {
     public:
       using MoveRunner<Input, State, Move, CostStructure>::MoveRunner;
+      virtual std::unique_ptr<Runner<Input, State, CostStructure>> Clone() const override;
       
     protected:
       Parameter<unsigned long int> max_idle_iterations;
-      void InitializeParameters();
+      void InitializeParameters() override;
       bool MaxIdleIterationExpired() const;
-      bool StopCriterion() const;
-      void SelectMove(const Input& in);
+      bool StopCriterion() const override;
+      void SelectMove(const Input& in) override;
       // parameters
     };
     
@@ -75,6 +76,12 @@ namespace EasyLocal
     bool HillClimbing<Input, State, Move, CostStructure>::StopCriterion() const
     {
       return MaxIdleIterationExpired() || this->MaxEvaluationsExpired();
+    }
+    
+    template <class Input, class State, class Move, class CostStructure>
+    std::unique_ptr<Runner<Input, State, CostStructure>> HillClimbing<Input, State, Move, CostStructure>::clone() const
+    {
+      return std::make_unique<HillClimbing<Input, State, Move, CostStructure>>(*this);
     }
     
   } // namespace Core

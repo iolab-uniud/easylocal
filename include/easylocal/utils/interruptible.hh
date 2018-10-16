@@ -41,6 +41,9 @@ namespace EasyLocal
       /** Constructor, sets timeout_expired to false to avoid problems when classes are called without threads. */
       Interruptible() : timeout_expired(false) {}
       
+      /** Copy Constructor, because of timeout_expired (has a deleted copy constructor). */
+      Interruptible(const Interruptible& interrutbile) : timeout_expired(interrutbile->timeout_expired) {}
+      
       /** Runs this interruptible synchronously for a specified number of milliseconds.
        @param timeout a duration in milliseconds
        @param args the list of arguments to pass (possibly empty)

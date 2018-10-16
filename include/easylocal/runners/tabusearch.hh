@@ -90,14 +90,15 @@ namespace EasyLocal
       std::string StatusString() const;
       
       virtual void Print(std::ostream &os = std::cout) const;
+      std::unique_ptr<Runner<Input, State, CostStructure>> Clone() const override;
       
     protected:
-      bool MaxIdleIterationExpired() const;
-      void InitializeRun(const Input& in);
-      bool StopCriterion() const;
-      void SelectMove(const Input& in);
-      void CompleteMove(const Input& in);
-      void InitializeParameters();
+      bool MaxIdleIterationExpired() const override;
+      void InitializeRun(const Input& in) override;
+      bool StopCriterion() const override;
+      void SelectMove(const Input& in) override;
+      void CompleteMove(const Input& in) override;
+      void InitializeParameters() override;
       InverseFunction Inverse;
       
       static InverseFunction SameMoveAsInverse;

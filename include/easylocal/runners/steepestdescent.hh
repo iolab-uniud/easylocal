@@ -23,11 +23,12 @@ namespace EasyLocal
     {
     public:
       using MoveRunner<Input, State, Move, CostStructure>::MoveRunner;
+      std::unique_ptr<Runner<Input, State, CostStructure>> Clone() const override;
       
     protected:
       void StoreMove();
-      bool StopCriterion() const;
-      void SelectMove(const Input& in);
+      bool StopCriterion() const override;
+      void SelectMove(const Input& in) override;
     };
     
     /*************************************************************************
@@ -56,6 +57,12 @@ namespace EasyLocal
     bool SteepestDescent<Input, State, Move, CostStructure>::StopCriterion() const
     {
       return this->iteration > 0 && !this->current_move.is_valid;
+    }
+    
+    template <class Input, class State, class Move, class CostStructure>
+    std::unique_ptr<Runner<Input, State, CostStructure>> SteepestDescent<Input, State, Move, CostStructure>::Clone() const
+    {
+      return std::make_unique<SteepestDescent<Input, State, Move, CostStructure>>(*this);
     }
   } // namespace Core
 } // namespace EasyLocal

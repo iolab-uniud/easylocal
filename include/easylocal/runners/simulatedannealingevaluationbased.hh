@@ -23,9 +23,9 @@ namespace EasyLocal
       using AbstractSimulatedAnnealing<Input, State, Move, CostStructure>::AbstractSimulatedAnnealing;
       
     protected:
-      void InitializeParameters();
-      void InitializeRun(const Input& in);
-      bool StopCriterion() const;
+      void InitializeParameters() override;
+      void InitializeRun(const Input& in) override;
+      bool StopCriterion() const override;
       
       // additional parameters
       Parameter<double> neighbors_accepted_ratio;
@@ -81,5 +81,6 @@ namespace EasyLocal
     {
       return false;
     }
+  
   } // namespace Core
 } // namespace EasyLocal
