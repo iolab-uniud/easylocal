@@ -5,6 +5,7 @@
 #include <map>
 #include "easylocal/testers/tester.hh"
 #include "easylocal/utils/json.hpp"
+#include "easylocal/utils/url.hh"
 
 namespace EasyLocal {
   namespace Debug {
@@ -76,13 +77,13 @@ namespace EasyLocal {
       CROW_ROUTE(app, "/runner/<string>")
       .methods("GET"_method)([json_response, runners](std::string name) {
         json response;
-        if (runners.find(name) == runners.end())
+        auto it = runners.find(name);
+        if (it == runners.end())
         {
           response["reason"] = "Runner `" + name + "` does not exist or is not active.";
           return json_response(404, response);
         }
-        // FIXME: write a method to print-out all runners parameters
-        response["parameters"] = { "" };
+        response["parameters"] = it->second->ParametersDescriptionToJSON();
         return json_response(200, response);
       });
       
@@ -96,8 +97,9 @@ namespace EasyLocal {
           res.end();
           return;
         }
+        json parameters = json::parse(URLDecode(req.url_params.get("parameters")));
         json payload = json::parse(req.body);
-        response["request"] = payload;
+        response["you-sent"] = parameters;
         res = json_response(200, response);
         res.end();
       });
