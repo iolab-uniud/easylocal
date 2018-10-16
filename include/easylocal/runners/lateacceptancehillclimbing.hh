@@ -22,14 +22,15 @@ namespace EasyLocal
     {
     public:
       using HillClimbing<Input, State, Move, CostStructure>::HillClimbing;
+      std::unique_ptr<Runner<Input, State, CostStructure>> Clone() const override;
       
     protected:
-      void InitializeRun(const Input& in);
-      void CompleteMove(const Input& in);
-      void SelectMove(const Input& in);
+      void InitializeRun(const Input& in) override;
+      void CompleteMove(const Input& in) override;
+      void SelectMove(const Input& in) override;
       
       // parameters
-      void InitializeParameters();
+      void InitializeParameters() override;
       Parameter<unsigned int> steps;
       std::vector<CostStructure> previous_steps;
     };
@@ -88,6 +89,12 @@ namespace EasyLocal
     void LateAcceptanceHillClimbing<Input, State, Move, CostStructure>::CompleteMove(const Input& in)
     {
       previous_steps[this->iteration % steps] = this->best_state_cost;
+    }
+    
+    template <class Input, class State, class Move, class CostStructure>
+    std::unique_ptr<Runner<Input, State, CostStructure>> LateAcceptanceHillClimbing<Input, State, Move, CostStructure>::Clone() const
+    {
+      return std::make_unique<LateAcceptanceHillClimbing<Input, State, Move, CostStructure>>(*this);
     }
   } // namespace Core
 } // namespace EasyLocal

@@ -26,14 +26,15 @@ namespace EasyLocal
       using SimulatedAnnealingEvaluationBased<Input, State, Move, CostStructure>::SimulatedAnnealingEvaluationBased;
       
       std::string StatusString() const;
+      std::unique_ptr<Runner<Input, State, CostStructure>> Clone() const override;
       
     protected:
-      bool StopCriterion() const;
-      void CompleteMove(const Input& in);
-      void InitializeRun(const Input& in);
+      bool StopCriterion() const override;
+      void CompleteMove(const Input& in) override;
+      void InitializeRun(const Input& in) override;
       bool ReheatCondition();
       // additional parameters
-      void InitializeParameters();
+      void InitializeParameters() override;
       Parameter<double> first_reheat_ratio;
       Parameter<double> reheat_ratio;
       Parameter<double> first_descent_evaluations_share;
@@ -142,6 +143,12 @@ namespace EasyLocal
       << "Reheats = " << reheats << " (" << max_reheats << ")"
       << "]";
       return status.str();
+    }
+    
+    template <class Input, class State, class Move, class CostStructure>
+    std::unique_ptr<Runner<Input, State, CostStructure>> SimulatedAnnealingWithReheating<Input, State, Move, CostStructure>::Clone() const
+    {
+      return std::make_unique<SimulatedAnnealingWithReheating<Input, State, Move, CostStructure>>(*this);
     }
   } // namespace Core
 } // namespace EasyLocal

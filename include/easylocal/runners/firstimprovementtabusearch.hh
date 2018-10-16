@@ -20,9 +20,10 @@ namespace EasyLocal
       typedef typename CostStructure::CFtype CFtype;
       
       using TabuSearch<Input, State, Move, CostStructure>::TabuSearch;
+      std::unique_ptr<Runner<Input, State, CostStructure>> Clone() const override;
       
     protected:
-      void SelectMove(const Input& in);
+      void SelectMove(const Input& in) override;
     };
     
     /*************************************************************************
@@ -47,6 +48,12 @@ namespace EasyLocal
                                                                    this->weights);
       this->current_move = em;
       this->evaluations += explored;
+    }
+    
+    template <class Input, class State, class Move, class CostStructure>
+    std::unique_ptr<Runner<Input, State, CostStructure>> FirstImprovementTabuSearch<Input, State, Move, CostStructure>::Clone() const
+    {
+      return std::make_unique<FirstImprovementTabuSearch<Input, State, Move, CostStructure>>(*this);
     }
   } // namespace Core
 } // namespace EasyLocal

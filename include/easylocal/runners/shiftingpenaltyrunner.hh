@@ -16,10 +16,16 @@ namespace EasyLocal
       typedef typename BaseMoveRunner::Input Input;
       typedef typename BaseMoveRunner::State State;
       typedef typename BaseMoveRunner::Move Move;
+      typedef typename BaseMoveRunner::CostStructure CostStructure;
       
       using BaseMoveRunner::BaseMoveRunner;
       
-      void InitializeParameters()
+      std::unique_ptr<Runner<Input, State, CostStructure>> Clone() const override
+      {
+        return std::make_unique<ShiftingPenaltyRunner>(*this);
+      }
+      
+      void InitializeParameters() override
       {
         BaseMoveRunner::InitializeParameters();
         feasible_iterations("feasible_iterations", "Number of feasible iterations before perturbing the weight", this->parameters);
@@ -36,7 +42,7 @@ namespace EasyLocal
         max_range = 10.0;
       }
       
-      void InitializeRun(const Input& in)
+      void InitializeRun(const Input& in) override
       {
         BaseMoveRunner::InitializeRun(in);
         if (min_perturbation <= 1.0)
@@ -76,7 +82,7 @@ namespace EasyLocal
         number_of_infeasible_iterations.assign(this->sm.CostComponents(), 0);
       }
       
-      void CompleteMove(const Input& in)
+      void CompleteMove(const Input& in) override
       {
         BaseMoveRunner::CompleteMove(in);
         for (size_t i = 0; i < this->sm.CostComponents(); i++)

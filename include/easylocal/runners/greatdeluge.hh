@@ -34,13 +34,14 @@ namespace EasyLocal
       typedef typename CostStructure::CFtype CFtype;
       
       using MoveRunner<Input, State, Move, CostStructure>::MoveRunner;
+      std::unique_ptr<Runner<Input, State, CostStructure>> Clone() const override;
       
     protected:
-      void InitializeParameters();
-      void InitializeRun(const Input& in);
-      bool StopCriterion() const;
+      void InitializeParameters() override;
+      void InitializeRun(const Input& in) override;
+      bool StopCriterion() const override;
       void UpdateIterationCounter();
-      void SelectMove(const Input& in);
+      void SelectMove(const Input& in) override;
       
       // parameters
       Parameter<double> initial_level;           /**< The initial level. */
@@ -113,6 +114,12 @@ namespace EasyLocal
       MoveRunner<Input, State, Move, CostStructure>::UpdateIterationCounter();
       if (this->number_of_iterations % neighbors_sampled == 0)
         level *= level_rate;
+    }
+    
+    template <class Input, class State, class Move, class CostStructure>
+    std::unique_ptr<Runner<Input, State, CostStructure>> GreatDeluge<Input, State, Move, CostStructure>::Clone() const
+    {
+      return std::make_unique<GreatDeluge<Input, State, Move, CostStructure>>(*this);
     }
   } // namespace Core
 } // namespace EasyLocal

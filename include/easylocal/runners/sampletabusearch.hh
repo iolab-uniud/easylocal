@@ -19,14 +19,17 @@ namespace EasyLocal
     public:
       using TabuSearch<Input, State, Move, CostStructure>::TabuSearch;
       
-      void InitializeParameters()
+      std::unique_ptr<Runner<Input, State, CostStructure>> Clone() const override;
+
+      
+      void InitializeParameters() override
       {
         TabuSearch<Input, State, Move, CostStructure>::InitializeParameters();
         samples("samples", "Number of neighbors sampled", this->parameters);
       }
       
     protected:
-      void SelectMove(const Input& in);
+      void SelectMove(const Input& in) override;
       Parameter<unsigned int> samples;
     };
     
@@ -52,6 +55,12 @@ namespace EasyLocal
                                                                   this->weights);
       this->current_move = em;
       this->evaluations += sampled;
+    }
+    
+    template <class Input, class State, class Move, class CostStructure>
+    std::unique_ptr<Runner<Input, State, CostStructure>> SampleTabuSearch<Input, State, Move, CostStructure>::Clone() const
+    {
+      return std::make_unique<SampleTabuSearch<Input, State, Move, CostStructure>>(*this);
     }
   } // namespace Core
 } // namespace EasyLocal

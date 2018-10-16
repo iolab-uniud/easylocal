@@ -97,7 +97,7 @@ namespace EasyLocal
         {
           
           std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
-          show_state = ExecuteChoice(st);
+          show_state = ExecuteChoice(in, st);
           std::chrono::milliseconds duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start);
           
           if (show_state)
@@ -161,7 +161,7 @@ namespace EasyLocal
             execute_kick = true;
             break;
           case 4:
-            PrintKicks(length, st);
+            PrintKicks(length, in, st);
             break;
           default:
             os << "Invalid choice" << std::endl;

@@ -79,7 +79,7 @@ namespace EasyLocal
     }
     
     template <class Input, class State, class Move, class CostStructure>
-    std::unique_ptr<Runner<Input, State, CostStructure>> HillClimbing<Input, State, Move, CostStructure>::clone() const
+    std::unique_ptr<Runner<Input, State, CostStructure>> HillClimbing<Input, State, Move, CostStructure>::Clone() const
     {
       return std::make_unique<HillClimbing<Input, State, Move, CostStructure>>(*this);
     }

@@ -18,13 +18,14 @@ namespace EasyLocal
     {
     public:
       using AbstractSimulatedAnnealing<Input, State, Move, CostStructure>::AbstractSimulatedAnnealing;
+      std::unique_ptr<Runner<Input, State, CostStructure>> Clone() const override;
       
       std::string StatusString() const;
       
     protected:
-      void InitializeParameters();
-      void InitializeRun(const Input& in);
-      bool StopCriterion() const;
+      void InitializeParameters() override;
+      void InitializeRun(const Input& in) override;
+      bool StopCriterion() const override;
       // parameters
       Parameter<double> min_temperature;
     };
@@ -61,6 +62,12 @@ namespace EasyLocal
     bool SimulatedAnnealing<Input, State, Move, CostStructure>::StopCriterion() const
     {
       return this->temperature <= min_temperature;
+    }
+    
+    template <class Input, class State, class Move, class CostStructure>
+    std::unique_ptr<Runner<Input, State, CostStructure>> SimulatedAnnealing<Input, State, Move, CostStructure>::Clone() const
+    {
+      return std::make_unique<SimulatedAnnealing<Input, State, Move, CostStructure>>(*this);
     }
   } // namespace Core
 } // namespace EasyLocal

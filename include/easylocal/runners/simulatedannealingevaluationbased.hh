@@ -21,6 +21,7 @@ namespace EasyLocal
     {
     public:
       using AbstractSimulatedAnnealing<Input, State, Move, CostStructure>::AbstractSimulatedAnnealing;
+      std::unique_ptr<Runner<Input, State, CostStructure>> Clone() const override;
       
     protected:
       void InitializeParameters() override;
@@ -82,5 +83,10 @@ namespace EasyLocal
       return false;
     }
   
+    template <class Input, class State, class Move, class CostStructure>
+    std::unique_ptr<Runner<Input, State, CostStructure>> SimulatedAnnealingEvaluationBased<Input, State, Move, CostStructure>::Clone() const
+    {
+      return std::make_unique<SimulatedAnnealingEvaluationBased<Input, State, Move, CostStructure>>(*this);
+    }
   } // namespace Core
 } // namespace EasyLocal

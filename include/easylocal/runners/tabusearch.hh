@@ -89,11 +89,11 @@ namespace EasyLocal
                  InverseFunction Inverse = SameMoveAsInverse);
       std::string StatusString() const;
       
-      virtual void Print(std::ostream &os = std::cout) const;
+      virtual void Print(std::ostream &os = std::cout) const override;
       std::unique_ptr<Runner<Input, State, CostStructure>> Clone() const override;
       
     protected:
-      bool MaxIdleIterationExpired() const override;
+      bool MaxIdleIterationExpired() const;
       void InitializeRun(const Input& in) override;
       bool StopCriterion() const override;
       void SelectMove(const Input& in) override;
@@ -240,5 +240,12 @@ namespace EasyLocal
     
     template <class Input, class State, class Move, class CostStructure>
     typename TabuSearch<Input, State, Move, CostStructure>::InverseFunction TabuSearch<Input, State, Move, CostStructure>::SameMoveAsInverse = [](const Move &lm, const Move &om) { return lm == om; };
+    
+    template <class Input, class State, class Move, class CostStructure>
+    std::unique_ptr<Runner<Input, State, CostStructure>> TabuSearch<Input, State, Move, CostStructure>::Clone() const
+    {
+      return std::make_unique<TabuSearch<Input, State, Move, CostStructure>>(*this);
+    }
+    
   } // namespace Core
 } // namespace EasyLocal
