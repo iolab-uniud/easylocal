@@ -32,20 +32,6 @@ namespace EasyLocal {
       }
     };
     
-    /** A REST Runner Tester handles a single runner
-     @ingroup Testers
-     */
-    template <class Runner>
-    class RESTRunnerTester
-    {
-      typedef typename Runner::CostStructure::CFtype CFtype;
-      typedef typename Runner::Input Input;
-      typedef typename Runner::State State;
-      typedef typename Runner::Move Move;
-    public:
-      RESTRunnerTester() {}
-    };
-    
     /** A REST Tester represents the web service interface of a easylocal solver. Differently from the regular tester, this class is State-less (w.r.t. easylocal state)
      @ingroup Testers
      */
@@ -65,7 +51,9 @@ namespace EasyLocal {
       StateManager<Input, State, CostStructure>& sm;
       OutputManager<Input, Output, State>& om;
       crow::SimpleApp app;
-      std::list<std::tuple<std::unique_ptr<Input>, std::shared_future<CostStructure>, std::unique_ptr<Runner<Input, State, CostStructure>>>> running;
+      
+      unsigned long GoRunner(std::unique_ptr<Input> p_in, std::unique_ptr<Runner<Input, State, CostStructure>> p_r);
+      std::list<std::tuple<std::unique_ptr<Input>, std::unique_ptr<State>, std::shared_future<CostStructure>, std::unique_ptr<Runner<Input, State, CostStructure>>>> running;
     };
     
     template <class Input, class Output, class State, class CostStructure>
@@ -100,7 +88,7 @@ namespace EasyLocal {
       });
       
       CROW_ROUTE(app, "/runner/<string>")
-      .methods("POST"_method)([runners](const crow::request& req, crow::response& res, std::string name) {
+      .methods("POST"_method)([this, runners](const crow::request& req, crow::response& res, std::string name) {
         json response;
         auto it = runners.find(name);
         if (it == runners.end())
@@ -134,8 +122,8 @@ namespace EasyLocal {
             res.end();
             return;
           }
-          std::unique_ptr<Runner<Input, State, CostStructure>> r = it->second.clone();
-          response["ok"] = true;
+          response["run_id"] = this->GoRunner(std::move(in), it->second->Clone());
+          response["running"] = true;
           res = JSONResponse::make_response(200, response);
           res.end();
           return;
@@ -161,6 +149,16 @@ namespace EasyLocal {
       });
       
       app.port(8080).multithreaded().run();
+    }
+    
+    template <class Input, class Output, class State, class CostStructure>
+    unsigned long RESTTester<Input, Output, State, CostStructure>::GoRunner(std::unique_ptr<Input> p_in, std::unique_ptr<Runner<Input, State, CostStructure>> p_r)
+    {
+      auto timeout = std::chrono::milliseconds((long long)(10 * 1000));
+      std::unique_ptr<State> p_st = std::make_unique<State>(*p_in);
+      sm.RandomState(*p_in, *p_st);
+      running.emplace_back(std::make_tuple(std::move(p_in), std::move(p_st), std::move(p_r->AsyncRun(timeout, *p_in, *p_st)), std::move(p_r)));
+      return running.size();
     }
   }
 }

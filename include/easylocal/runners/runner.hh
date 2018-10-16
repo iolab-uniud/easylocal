@@ -120,10 +120,15 @@ namespace EasyLocal
       /** Modality of this runner. */
       virtual size_t Modality() const = 0;
       
-      /** List of all runners that have been instantiated so far. For autoloading. */
+      /** List of all runners that have been instantiated so far: for autoloading.
+       It does not include the cloned runners.
+       */
       static std::vector<Runner<Input, State, CostStructure> *> runners;
       
       virtual std::shared_ptr<State> GetCurrentBestState() const;
+      
+      virtual std::unique_ptr<Runner<Input, State, CostStructure>> Clone() const = 0;
+
       
     protected:
       /** Constructor.
@@ -193,8 +198,6 @@ namespace EasyLocal
       {
         return [this](const Input& in, State &st) -> CostStructure { return this->Go(in, st); };
       }
-      
-      virtual std::unique_ptr<Runner<Input, State, CostStructure>> Clone() const = 0;
             
       /** No acceptable move has been found in the current iteration. */
       bool no_acceptable_move_found;
