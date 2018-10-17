@@ -9,6 +9,7 @@
 #include "easylocal/helpers/costcomponent.hh"
 #include "easylocal/helpers/coststructure.hh"
 #include "easylocal/utils/deprecationhandler.hh"
+#include "easylocal/utils/json.hpp"
 
 namespace EasyLocal
 {
@@ -164,6 +165,15 @@ namespace EasyLocal
        @note It is rarely needed to redefine this method.
        */
       virtual CostStructure CostFunctionComponents(const Input& in, const State &st, const std::vector<double> &weights = std::vector<double>(0)) const;
+      
+      /** Returns a json object with all cost components.
+       @param in the input object
+       @param st the state to be evaluated
+       @param an optional vector of weights for the cost components.
+       @return all the components of the cost function in the given state embedded in a json object
+       */      
+      json JSONCostFunctionComponents(const Input& in, const State &st, const std::vector<double> &weights = std::vector<double>(0)) const;
+
       
       /**
        Check whether the lower bound of the cost function components has been reached. The
@@ -362,6 +372,20 @@ namespace EasyLocal
         return CostStructure(HARD_WEIGHT * hard_cost + soft_cost, weighted_cost, hard_cost, soft_cost, cost_function);
       else
         return CostStructure(HARD_WEIGHT * hard_cost + soft_cost, hard_cost, soft_cost, cost_function);
+    }
+    
+    template <class Input, class State, class CostStructure>
+    json StateManager<Input, State, CostStructure>::JSONCostFunctionComponents(const Input& in, const State &st, const std::vector<double> &weights) const
+    {
+      json res;
+      res["components"] = {};
+      CostStructure cost = CostFunctionComponents(in, st, weights);
+      for (size_t i = 0; i < cost_component.size(); i++)
+        res["components"][cost_component[i]->name] = cost[i];
+      res["total"] = cost.total;
+      res["violations"] = cost.violations;
+      res["objective"] = cost.objective;
+      return res;
     }
     
     template <class Input, class State, class CostStructure>

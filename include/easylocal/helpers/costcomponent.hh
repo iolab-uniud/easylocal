@@ -73,11 +73,11 @@ namespace EasyLocal
       }
       
       /** Prints the violations relative to this cost component with respect to the specified state.
+       @param in the @Input object
        @param st the @State to be evaluated
        @param os the output stream where the description has to be printed
        */
-      virtual void PrintViolations(const Input& in, const State &st, std::ostream &os = std::cout) const = 0;
-      
+      virtual void PrintViolations(const Input& in, const State &st, std::ostream &os = std::cout) const = 0;                  
       
       /** Gets the weight of this cost component.
        @return the weight of this cost component
