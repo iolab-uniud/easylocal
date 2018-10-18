@@ -99,7 +99,7 @@ bool CommandLineParameters::Parse(int argc, const char *argv[], bool check_unreg
   return true;
 }
 
-bool operator==(const Parameter<std::string> &s1, const char *s2) throw(ParameterNotSet)
+bool operator==(const Parameter<std::string> &s1, const char *s2) 
 {
   return static_cast<std::string>(s1) == std::string(s2);
 }

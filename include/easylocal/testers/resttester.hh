@@ -196,7 +196,7 @@ namespace EasyLocal {
         res.end();
       });
       
-      app.port(8080).multithreaded().run();
+      app.port(1234).multithreaded().run();
     }
     
     template <class Input, class Output, class State, class CostStructure>
