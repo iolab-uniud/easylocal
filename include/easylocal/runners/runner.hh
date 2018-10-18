@@ -6,6 +6,7 @@
 #include <condition_variable>
 #include <atomic>
 #include <typeinfo>
+#include <functional>
 
 #include "easylocal/helpers/statemanager.hh"
 #include "easylocal/helpers/neighborhoodexplorer.hh"
@@ -198,7 +199,7 @@ namespace EasyLocal
       {
         return [this](const Input& in, State &st) -> CostStructure { return this->Go(in, st); };
       }
-            
+      
       /** No acceptable move has been found in the current iteration. */
       bool no_acceptable_move_found;
       

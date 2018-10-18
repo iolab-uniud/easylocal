@@ -7,6 +7,7 @@
 #include "easylocal/utils/json.hpp"
 #include "easylocal/utils/url.hh"
 
+
 // TODO: use a task manager (or define one) for ensuring that just the right number of workers are used and the system is not overloaded
 // TODO: add a "garbage collector" task that will destroy the unneeded resources
 
@@ -15,32 +16,32 @@ namespace EasyLocal {
     
     using json = nlohmann::json;
     
-    struct JSONResponse
-    {
-      static inline crow::response make_response(int code, json body)
-      {
-        crow::response res(code, body.dump());
-        res.set_header("Content-Type", "application/json");
-        return res;
-      }
-      
-      static inline crow::response make_error(int code, std::string message, std::string additional_info="")
-      {
-        json j;
-        j["status"] = "error";
-        j["reason"] = message;
-        if (additional_info != "")
-          j["additional_info"] = additional_info;
-        return JSONResponse::make_response(code, j);
-      }
-    };
-    
     /** A REST Tester represents the web service interface of a easylocal solver. Differently from the regular tester, this class is State-less (w.r.t. easylocal state)
      @ingroup Testers
      */
     template <class Input, class Output, class State, class CostStructure = DefaultCostStructure<int>>
     class RESTTester : AbstractTester<Input, State, CostStructure>
     {
+      struct JSONResponse
+      {
+        static inline crow::response make_response(int code, json body)
+        {
+          crow::response res(code, body.dump());
+          res.set_header("Content-Type", "application/json");
+          return res;
+        }
+        
+        static inline crow::response make_error(int code, std::string message, std::string additional_info="")
+        {
+          json j;
+          j["status"] = "error";
+          j["reason"] = message;
+          if (additional_info != "")
+            j["additional_info"] = additional_info;
+          return JSONResponse::make_response(code, j);
+        }
+      };
+      
     public:
       RESTTester(StateManager<Input, State, CostStructure>& sm, OutputManager<Input, Output, State>& om)
       : sm(sm), om(om)
@@ -66,13 +67,14 @@ namespace EasyLocal {
       // endpoints management
       void RootEndpoint(const crow::request& req, crow::response& res) const;
       
-      size_t LaunchRunner(float timeout, std::unique_ptr<Input> p_in, std::unique_ptr<Runner<Input, State, CostStructure>> p_r, json parameters);
+      size_t LaunchRunner(float timeout, std::unique_ptr<Input> p_in, std::unique_ptr<Runner<Input, State, CostStructure>> p_r, json parameters, std::unique_ptr<State> p_st);
       json RunnerStatus(size_t run_id) const;
+      json Solution(size_t run_id) const;
       
       mutable std::mutex running_mutex;
       std::map<size_t, std::tuple<std::unique_ptr<Input>, std::unique_ptr<State>, std::shared_future<CostStructure>, std::unique_ptr<Runner<Input, State, CostStructure>>>> running;
     };
-    
+        
     template <class Input, class Output, class State, class CostStructure>
     void RESTTester<Input, Output, State, CostStructure>::Run()
     {
@@ -127,10 +129,27 @@ namespace EasyLocal {
             res.end();
             return;
           }
-          float timeout = 0.0;
-          if (!parameters.empty() && parameters.find("timeout") != parameters.end())
-            timeout = parameters["timeout"];
-          size_t run_id = this->LaunchRunner(timeout, std::move(in), it->second->Clone(), parameters);
+          // conventionally an initial solution, if available, is passed into a "initial_solution" field in the payload
+          std::unique_ptr<State> p_st;
+          if (payload.find("initial_solution") != payload.end())
+          {
+            try
+            {
+              Output out(*in);
+              p_st = std::make_unique<State>(*in);
+              std::istringstream is(payload["initial_solution"].dump());
+              is >> out;
+              om.InputState(*in, *p_st, out);
+            }
+            catch (std::exception & e)
+            {
+              res = JSONResponse::make_error(422, "The initial solution does not comply with the format expected by the system", e.what());
+              res.end();
+              return;
+            }
+          }
+          float timeout = req.url_params.get("timeout") ? std::atof(req.url_params.get("timeout")) : 0.0;
+          size_t run_id = this->LaunchRunner(timeout, std::move(in), it->second->Clone(), parameters, std::move(p_st));
           response["run_id"] = std::to_string(run_id);
           response["url"] = "/running/" + std::to_string(run_id);
           response["started"] = true;
@@ -146,7 +165,7 @@ namespace EasyLocal {
         }
       });
       
-      // This endpoint allow to check the status of a specific runner request
+      // This endpoint allow to check the status of a specific runner request and abort it
       CROW_ROUTE(app, "/running/<string>")
       .methods("GET"_method)([this](std::string _run_id) {
         size_t run_id = std::stoul(_run_id);
@@ -155,6 +174,26 @@ namespace EasyLocal {
           return JSONResponse::make_response(200, response);
         else
           return JSONResponse::make_error(404, response);
+      });
+      // TODO: add authorization (e.g. JWT)
+      CROW_ROUTE(app, "/running/<string>")
+      .methods("DELETE"_method)([](const crow::request& req, crow::response& res, std::string _run_id) {
+        json response;
+        response["message"] = "Currently not implemented, will be ready soon";
+        res = JSONResponse::make_response(200, response);
+        res.end();
+      });
+      
+      // This endpoint allow to access a solution, when available
+      CROW_ROUTE(app, "/solution/<string>")
+      .methods("GET"_method)([this](const crow::request& req, crow::response& res, std::string _run_id) {
+        size_t run_id = std::stoul(_run_id);
+        json response = this->Solution(run_id);
+        if (response.find("error") == response.end())
+          res = JSONResponse::make_response(200, response);
+        else
+          res = JSONResponse::make_error(404, response);
+        res.end();
       });
       
       app.port(8080).multithreaded().run();
@@ -178,7 +217,7 @@ namespace EasyLocal {
     }
     
     template <class Input, class Output, class State, class CostStructure>
-    size_t RESTTester<Input, Output, State, CostStructure>::LaunchRunner(float timeout, std::unique_ptr<Input> p_in, std::unique_ptr<Runner<Input, State, CostStructure>> p_r, json parameters)
+    size_t RESTTester<Input, Output, State, CostStructure>::LaunchRunner(float timeout, std::unique_ptr<Input> p_in, std::unique_ptr<Runner<Input, State, CostStructure>> p_r, json parameters, std::unique_ptr<State> p_st)
     {
       static unsigned long counter = 0;
       // the lock is here, because also counter has to be guarded
@@ -186,11 +225,14 @@ namespace EasyLocal {
       size_t run_id = std::hash<std::string>()(p_r->name + std::to_string(counter));
       counter++;
       auto _timeout = std::chrono::milliseconds((long long)(timeout * 1000));
-      std::unique_ptr<State> p_st = std::make_unique<State>(*p_in);
-      if (parameters.find("initial_state_strategy") != parameters.end() && parameters["initial_state_strategy"] == "greedy")
-        sm.GreedyState(*p_in, *p_st);
-      else
-        sm.RandomState(*p_in, *p_st);
+      if (!p_st)
+      {
+        p_st = std::make_unique<State>(*p_in);
+        if (parameters.find("initial_state_strategy") != parameters.end() && parameters["initial_state_strategy"] == "greedy")
+          sm.GreedyState(*p_in, *p_st);
+        else
+          sm.RandomState(*p_in, *p_st);
+      }
       // forward runner parameters to the runner itself
       if (!parameters.empty())
         p_r->ParametersFromJSON(parameters);
@@ -223,6 +265,34 @@ namespace EasyLocal {
         status["finished"] = false;
         auto st = std::get<3>(t)->GetCurrentBestState();
         status["cost"] = sm.JSONCostFunctionComponents(*std::get<0>(t), *st);
+      }
+      return status;
+    }
+    
+    template <class Input, class Output, class State, class CostStructure>
+    json RESTTester<Input, Output, State, CostStructure>::Solution(size_t run_id) const
+    {
+      std::lock_guard<std::mutex> lock(running_mutex);
+      json status;
+      status["run_id"] = run_id;
+      auto it = running.find(run_id);
+      if (it == running.end()) // run_id does not exist
+      {
+        status["error"] = "The run `" + std::to_string(run_id) + "` does not exist (or it has been removed because too old)";
+        return status;
+      }
+      const auto& t = it->second;
+      status["runner"] = std::get<3>(t)->name;
+      if (std::get<2>(t).wait_for(std::chrono::seconds(0)) == std::future_status::ready)
+      {
+        Output out(*std::get<0>(t));
+        status["finished"] = true;
+        om.OutputState(*std::get<0>(t), *std::get<1>(t), out);
+        out.ConvertToJson(status["solution"]);
+      }
+      else
+      {
+        status["error"] = "The run `" + std::to_string(run_id) + "` has not finished yet";
       }
       return status;
     }
