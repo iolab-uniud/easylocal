@@ -131,7 +131,7 @@ namespace EasyLocal {
           }
           // conventionally an initial solution, if available, is passed into a "initial_solution" field in the payload
           std::unique_ptr<State> p_st;
-          if (payload.find("initial_solution") != payload.end())
+          if (payload.find("initial_solution") != payload.end() && !payload["initial_solution"].is_null())
           {
             try
             {
@@ -196,7 +196,7 @@ namespace EasyLocal {
         res.end();
       });
       
-      app.port(8080).multithreaded().run();
+      app.port(18080).multithreaded().run();
     }
     
     template <class Input, class Output, class State, class CostStructure>
