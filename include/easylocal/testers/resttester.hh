@@ -3,9 +3,11 @@
 #include "easylocal/utils/crow_all.h"
 #include <memory>
 #include <map>
+#include <queue>
 #include "easylocal/testers/tester.hh"
 #include "easylocal/utils/json.hpp"
 #include "easylocal/utils/url.hh"
+#include "easylocal/utils/parameter.hh"
 
 
 // TODO: use a task manager (or define one) for ensuring that just the right number of workers are used and the system is not overloaded
@@ -20,7 +22,7 @@ namespace EasyLocal {
      @ingroup Testers
      */
     template <class Input, class Output, class State, class CostStructure = DefaultCostStructure<int>>
-    class RESTTester : AbstractTester<Input, State, CostStructure>
+    class RESTTester : public AbstractTester<Input, State, CostStructure>, public Parametrized
     {
       struct JSONResponse
       {
@@ -42,20 +44,95 @@ namespace EasyLocal {
         }
       };
       
-    public:
-      RESTTester(StateManager<Input, State, CostStructure>& sm, OutputManager<Input, Output, State>& om)
-      : sm(sm), om(om)
+      template <typename T>
+      class TaskQueue
       {
-        for (auto r : this->runners)
+      public:
+        ~TaskQueue()
         {
-          runner_urls.push_back("/runner/" + r->name);
-          runner_map[r->name] = r;
+          Invalidate();
         }
-      }
+        
+        bool TryDequeue(T& out)
+        {
+          std::lock_guard<std::mutex> lock(qmutex);
+          if(queue.empty() || !valid)
+            return false;
+          out = std::move(queue.front());
+          queue.pop();
+          return true;
+        }
+        
+        bool WaitDequeue(T& out)
+        {
+          std::unique_lock<std::mutex> lock(qmutex);
+          changed.wait(lock, [this]() {
+            return !queue.empty() || !valid;
+          });
+          /*
+           * Using the condition in the predicate ensures that spurious wakeups with a valid
+           * but empty queue will not proceed, so only need to check for validity before proceeding.
+           */
+          if(!valid)
+            return false;
+          out = std::move(queue.front());
+          queue.pop();
+          return true;
+        }
+        
+        void Enqueue(T value)
+        {
+          std::lock_guard<std::mutex> lock(qmutex);
+          queue.push(std::move(value));
+          changed.notify_one();
+        }
+        
+        bool Empty() const
+        {
+          std::lock_guard<std::mutex> lock(qmutex);
+          return queue.empty();
+        }
+        
+        void Clear(void)
+        {
+          std::lock_guard<std::mutex> lock(qmutex);
+          while(!queue.empty())
+            queue.pop();
+          changed.notify_all();
+        }
+        
+        bool IsValid(void) const
+        {
+          std::lock_guard<std::mutex> lock(qmutex);
+          return valid;
+        }
+        
+        void Invalidate(void)
+        {
+          std::lock_guard<std::mutex> lock(qmutex);
+          valid = false;
+          changed.notify_all();
+        }
+        
+      private:
+        std::atomic<bool> valid{true};
+        mutable std::mutex qmutex;
+        std::queue<T> queue;
+        std::condition_variable changed;
+      };
+      
+    public:
+      RESTTester(StateManager<Input, State, CostStructure>& sm, OutputManager<Input, Output, State>& om);
       /** Virtual destructor. */
-      virtual ~RESTTester() {}
+      virtual ~RESTTester() { Destroy(); }
       void Run();
-    protected:
+    private:
+      void Worker();
+      void Destroy();
+      void InitializeParameters();
+      
+      const unsigned int numThreads;
+      
       StateManager<Input, State, CostStructure>& sm;
       OutputManager<Input, Output, State>& om;
       crow::SimpleApp app;
@@ -67,13 +144,82 @@ namespace EasyLocal {
       // endpoints management
       void RootEndpoint(const crow::request& req, crow::response& res) const;
       
-      std::string LaunchRunner(float timeout, std::unique_ptr<Input> p_in, std::unique_ptr<Runner<Input, State, CostStructure>> p_r, json parameters, std::unique_ptr<State> p_st);
-      json RunnerStatus(std::string run_id) const;
+      std::string CreateTask(float timeout, std::unique_ptr<Input> p_in, std::unique_ptr<Runner<Input, State, CostStructure>> p_r, json parameters, std::unique_ptr<State> p_st);
+      json TaskStatus(std::string run_id) const;
       json Solution(std::string run_id) const;
       
-      mutable std::mutex running_mutex;
-      std::map<std::string, std::tuple<std::unique_ptr<Input>, std::unique_ptr<State>, std::shared_future<CostStructure>, std::unique_ptr<Runner<Input, State, CostStructure>>>> running;
+      typedef std::tuple<std::string, std::unique_ptr<Input>, std::unique_ptr<State>, std::unique_ptr<Runner<Input, State, CostStructure>>, std::chrono::milliseconds> Task;
+
+      TaskQueue<std::shared_ptr<Task>> task_queue;
+      mutable std::mutex task_status_mutex;
+      std::map<std::string, std::tuple<bool, std::string, std::shared_ptr<Task>>> task_status;
+      std::atomic<bool> done;
+      std::vector<std::thread> workers;
+      Parameter<unsigned int> port;
     };
+    
+    template <class Input, class Output, class State, class CostStructure>
+    RESTTester<Input, Output, State, CostStructure>::RESTTester(StateManager<Input, State, CostStructure>& sm, OutputManager<Input, Output, State>& om)
+    : Parametrized("REST", "REST tester"), numThreads(2), sm(sm), om(om)
+    {
+      for (auto r : this->runners)
+      {
+        runner_urls.push_back("/runner/" + r->name);
+        runner_map[r->name] = r;
+      }
+      done = false;
+      try
+      {
+        for (unsigned i = 0; i < numThreads; i++)
+          workers.emplace_back(&RESTTester<Input, Output, State, CostStructure>::Worker, this);
+      }
+      catch(...)
+      {
+        Destroy();
+        throw;
+      }
+    }
+    
+    template <class Input, class Output, class State, class CostStructure>
+    void RESTTester<Input, Output, State, CostStructure>::Destroy()
+    {
+      done = true;
+      task_queue.Invalidate();
+      for (auto& worker : workers)
+      {
+        if (worker.joinable())
+          worker.join();
+      }
+    }
+    
+    template <class Input, class Output, class State, class CostStructure>
+    void RESTTester<Input, Output, State, CostStructure>::InitializeParameters()
+    {
+      port("port", "TCP/IP port", this->parameters);
+      port = 18080;
+    }
+    
+    template <class Input, class Output, class State, class CostStructure>
+    void RESTTester<Input, Output, State, CostStructure>::Worker()
+    {
+      while (!done)
+      {
+        std::shared_ptr<Task> task;
+        if (task_queue.WaitDequeue(task))
+        {
+          // dispatch the task
+          auto run_id = std::get<0>(*task);
+          auto& p_in = std::get<1>(*task);
+          auto& p_st = std::get<2>(*task);
+          auto& p_r = std::get<3>(*task);
+          auto& timeout = std::get<4>(*task);
+          // run it synchronously (w already are in a different thread)
+          auto cost = p_r->SyncRun(timeout, *p_in, *p_st);
+          std::lock_guard<std::mutex> lock(task_status_mutex);
+          std::get<0>(task_status[run_id]) = true;
+        }
+      }
+    }
         
     template <class Input, class Output, class State, class CostStructure>
     void RESTTester<Input, Output, State, CostStructure>::Run()
@@ -149,7 +295,7 @@ namespace EasyLocal {
             }
           }
           float timeout = req.url_params.get("timeout") ? std::atof(req.url_params.get("timeout")) : 0.0;
-          std::string run_id = this->LaunchRunner(timeout, std::move(in), it->second->Clone(), parameters, std::move(p_st));
+          std::string run_id = this->CreateTask(timeout, std::move(in), it->second->Clone(), parameters, std::move(p_st));
           response["run_id"] = run_id;
           response["url"] = "/running/" + run_id;
           response["started"] = true;
@@ -168,7 +314,7 @@ namespace EasyLocal {
       // This endpoint allow to check the status of a specific runner request and abort it
       CROW_ROUTE(app, "/running/<string>")
       .methods("GET"_method)([this](std::string run_id) {
-        json response = this->RunnerStatus(run_id);
+        json response = this->TaskStatus(run_id);
         if (response.find("error") == response.end())
           return JSONResponse::make_response(200, response);
         else
@@ -194,7 +340,7 @@ namespace EasyLocal {
         res.end();
       });
       
-      app.port(18080).multithreaded().run();
+      app.port(port).multithreaded().run();
     }
     
     template <class Input, class Output, class State, class CostStructure>
@@ -203,23 +349,22 @@ namespace EasyLocal {
       json response;
       response["runners"] = runner_urls;
       response["tasks"] = {};
-      std::lock_guard<std::mutex> lock(running_mutex);
-      for (const auto& run_it : running)
+      std::lock_guard<std::mutex> lock(task_status_mutex);
+      for (const auto& task_it : task_status)
       {
-        const auto& t = run_it.second;
-        bool finished = std::get<2>(t).wait_for(std::chrono::seconds(0)) == std::future_status::ready;
-        response["tasks"].push_back({ { "runner", std::get<3>(t)->name }, { "run_id", run_it.first }, { "finished", finished }, { "url", "/running/" + run_it.first } });
+        const auto& t = task_it.second;
+        response["tasks"].push_back({ { "runner", std::get<1>(t) }, { "run_id", task_it.first }, { "finished", std::get<0>(t) }, { "url", "/running/" + task_it.first } });
       }
       res = JSONResponse::make_response(200, response);
       res.end();
     }
     
     template <class Input, class Output, class State, class CostStructure>
-    std::string RESTTester<Input, Output, State, CostStructure>::LaunchRunner(float timeout, std::unique_ptr<Input> p_in, std::unique_ptr<Runner<Input, State, CostStructure>> p_r, json parameters, std::unique_ptr<State> p_st)
+    std::string RESTTester<Input, Output, State, CostStructure>::CreateTask(float timeout, std::unique_ptr<Input> p_in, std::unique_ptr<Runner<Input, State, CostStructure>> p_r, json parameters, std::unique_ptr<State> p_st)
     {
       static unsigned long counter = 0;
       // the lock is here, because also counter has to be guarded
-      std::lock_guard<std::mutex> lock(running_mutex);
+      std::lock_guard<std::mutex> lock(task_status_mutex);
       std::string run_id = std::to_string(std::hash<std::string>()(p_r->name + std::to_string(counter)));
       counter++;
       auto _timeout = std::chrono::milliseconds((long long)(timeout * 1000));
@@ -234,36 +379,40 @@ namespace EasyLocal {
       // forward runner parameters to the runner itself
       if (!parameters.empty())
         p_r->ParametersFromJSON(parameters);
-      auto cost = p_r->AsyncRun(_timeout, *p_in, *p_st);
-      running[run_id] = std::make_tuple(std::move(p_in), std::move(p_st), std::move(cost), std::move(p_r));
+//      auto cost = p_r->AsyncRun(_timeout, *p_in, *p_st);
+      std::string name = p_r->name;
+      std::shared_ptr<Task> task = std::make_shared<Task>(std::make_tuple(run_id, std::move(p_in), std::move(p_st), std::move(p_r), _timeout));
+      task_queue.Enqueue(task);
+      task_status[run_id] = std::make_tuple(false, name, task);
       return run_id;
     }
     
     template <class Input, class Output, class State, class CostStructure>
-    json RESTTester<Input, Output, State, CostStructure>::RunnerStatus(std::string run_id) const
+    json RESTTester<Input, Output, State, CostStructure>::TaskStatus(std::string run_id) const
     {
-      std::lock_guard<std::mutex> lock(running_mutex);
+      std::lock_guard<std::mutex> lock(task_status_mutex);
       json status;
       status["run_id"] = run_id;
-      auto it = running.find(run_id);
-      if (it == running.end()) // run_id does not exist
+      auto it = task_status.find(run_id);
+      if (it == task_status.end()) // run_id does not exist
       {
-        status["error"] = "The run `" + run_id + "` does not exist (or it has been removed because too old)";
+        status["error"] = "The task `" + run_id + "` does not exist (or it has been removed because too old)";
         return status;
       }
       const auto& t = it->second;
-      status["runner"] = std::get<3>(t)->name;
-      if (std::get<2>(t).wait_for(std::chrono::seconds(0)) == std::future_status::ready)
+      status["runner"] = std::get<1>(t);
+      const auto& task = std::get<2>(t);
+      if (std::get<0>(t))
       {
         status["finished"] = true;
-        status["cost"] = sm.JSONCostFunctionComponents(*std::get<0>(t), *std::get<1>(t).get());
+        status["cost"] = sm.JSONCostFunctionComponents(*std::get<1>(*task), *std::get<2>(*task));
         status["solution_url"] = "/solution/" + run_id;
       }
       else
       {
         status["finished"] = false;
-        auto st = std::get<3>(t)->GetCurrentBestState();
-        status["cost"] = sm.JSONCostFunctionComponents(*std::get<0>(t), *st);
+        auto st = std::get<3>(*task)->GetCurrentBestState();
+        status["cost"] = sm.JSONCostFunctionComponents(*std::get<1>(*task), *st);
       }
       return status;
     }
@@ -271,27 +420,28 @@ namespace EasyLocal {
     template <class Input, class Output, class State, class CostStructure>
     json RESTTester<Input, Output, State, CostStructure>::Solution(std::string run_id) const
     {
-      std::lock_guard<std::mutex> lock(running_mutex);
+      std::lock_guard<std::mutex> lock(task_status_mutex);
       json status;
       status["run_id"] = run_id;
-      auto it = running.find(run_id);
-      if (it == running.end()) // run_id does not exist
+      auto it = task_status.find(run_id);
+      if (it == task_status.end()) // run_id does not exist
       {
-        status["error"] = "The run `" + run_id + "` does not exist (or it has been removed because too old)";
+        status["error"] = "The task `" + run_id + "` does not exist (or it has been removed because too old)";
         return status;
       }
       const auto& t = it->second;
-      status["runner"] = std::get<3>(t)->name;
-      if (std::get<2>(t).wait_for(std::chrono::seconds(0)) == std::future_status::ready)
+      status["runner"] = std::get<1>(t);
+      const auto& task = std::get<2>(t);
+      if (std::get<0>(t))
       {
-        Output out(*std::get<0>(t));
+        Output out(*std::get<1>(*task));
         status["finished"] = true;
-        om.OutputState(*std::get<0>(t), *std::get<1>(t), out);
+        om.OutputState(*std::get<1>(*task), *std::get<2>(*task), out);
         out.ConvertToJson(status["solution"]);
       }
       else
       {
-        status["error"] = "The run `" + run_id + "` has not finished yet";
+        status["error"] = "The task `" + run_id + "` has not finished yet";
       }
       return status;
     }
