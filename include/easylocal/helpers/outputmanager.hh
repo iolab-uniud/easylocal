@@ -1,6 +1,7 @@
 #pragma once
 
 #include <iostream>
+#include <fstream>
 #include "easylocal/utils/deprecationhandler.hh"
 
 namespace EasyLocal
@@ -93,10 +94,25 @@ namespace EasyLocal
         PrettyPrint(this->GetInput(), st, file_name);
       }
       
+      [[deprecated("The new interface accepts an output stream instead of a filename")]]
       virtual void PrettyPrintOutput(const Input& in, const State &st, const std::string &file_name) const
+      {
+        std::ofstream os(file_name.c_str());
+        PrettyPrintOutput(in, st, os);
+      }
+      
+      virtual void PrettyPrintOutput(const Input& in, const State &st, std::ostream& os) const
       {
         std::cout << "Sorry, not implemented yet" << std::endl;
       }
+      
+      virtual json ConvertToJSON(const Input& in, const State &st) const
+      {
+        json res;
+        std::cout << "Sorry, not implemented yet" << std::endl;
+        return res;
+      }
+      
       
     protected:
       

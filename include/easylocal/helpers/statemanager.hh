@@ -381,7 +381,11 @@ namespace EasyLocal
       res["components"] = {};
       CostStructure cost = CostFunctionComponents(in, st, weights);
       for (size_t i = 0; i < cost_component.size(); i++)
-        res["components"][cost_component[i]->name] = cost[i];
+      {
+        res["components"][cost_component[i]->name]["cost"] = cost[i];
+        res["components"][cost_component[i]->name]["hard"] = cost_component[i]->IsHard();
+        res["components"][cost_component[i]->name]["weight"] = cost_component[i]->Weight();
+      }
       res["total"] = cost.total;
       res["violations"] = cost.violations;
       res["objective"] = cost.objective;

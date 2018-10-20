@@ -668,7 +668,8 @@ namespace EasyLocal
         {
           os << "File name: ";
           std::cin >> file_name;
-          this->om.PrettyPrintOutput(this->GetInput(), this->GetTestState(), file_name);
+          std::ofstream os(file_name.c_str());
+          this->om.PrettyPrintOutput(this->GetInput(), this->GetTestState(), os);
           std::cout << "Output pretty-printed in file " << file_name << std::endl;
           break;
         }
