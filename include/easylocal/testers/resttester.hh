@@ -449,7 +449,7 @@ namespace EasyLocal {
             }
           }
           float timeout = req.url_params.get("timeout") ? std::atof(req.url_params.get("timeout")) : 0.0;
-          std::string callback_url = URLDecode(req.url_params.get("callback_url"));
+          std::string callback_url = req.url_params.get("callback_url") ? URLDecode(req.url_params.get("callback_url")) : "";
           CROW_LOG_INFO << callback_url;
           auto p_r = it->second->Clone();
           std::shared_ptr<Task> task = this->CreateTask(timeout, std::move(in), std::move(p_st), std::move(p_r), parameters, callback_url);
