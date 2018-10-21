@@ -299,30 +299,38 @@ namespace EasyLocal {
         std::shared_ptr<Task> task;
         if (task_queue.WaitDequeue(task))
         {
+          try
           {
-            std::lock_guard<std::mutex> lock(task_status_mutex);
-            task->running = true;
-            task->started = std::chrono::system_clock::now();
+            {
+              std::lock_guard<std::mutex> lock(task_status_mutex);
+              task->running = true;
+              task->started = std::chrono::system_clock::now();
+            }
+            CROW_LOG_INFO << "Starting execution of task_id " << task->task_id << " with runner " << task->p_r->name;
+            // run the task synchronously (already are in a different thread)
+            task->p_r->SyncRun(task->timeout, *(task->p_in), *(task->p_st));
+            CROW_LOG_INFO << "Ended execution of task_id " << task->task_id << " with runner " << task->p_r->name;
+            {
+              std::lock_guard<std::mutex> lock(task_status_mutex);
+              task->running = false;
+              task->finished = true;
+              task->completed = std::chrono::system_clock::now();
+            }
+            if (task->callback_url != "")
+            {
+              CROW_LOG_INFO << "Sending callback of task_id " << task->task_id << " to url " << task->callback_url;
+              json result = this->Solution(task->task_id);
+              uc::curl::easy curl(task->callback_url);
+              auto header = uc::curl::create_slist("Content-Type: application/json");
+              curl.header(header).postfields(result.dump()).perform();
+              CROW_LOG_INFO << "Callback of task_id " << task->task_id << " to url " << task->callback_url << " answered " <<  curl.getinfo<CURLINFO_RESPONSE_CODE>();
+            }
           }
-          CROW_LOG_INFO << "Starting execution of task_id " << task->task_id << " with runner " << task->p_r->name;
-          // run the task synchronously (already are in a different thread)
-          task->p_r->SyncRun(task->timeout, *(task->p_in), *(task->p_st));
-          CROW_LOG_INFO << "Ended execution of task_id " << task->task_id << " with runner " << task->p_r->name;
-          {
-            std::lock_guard<std::mutex> lock(task_status_mutex);
-            task->running = false;
-            task->finished = true;
-            task->completed = std::chrono::system_clock::now();
-          }
-          if (task->callback_url != "")
-          {
-            CROW_LOG_INFO << "Sending callback of task_id " << task->task_id << " to url " << task->callback_url;
-            json result = this->Solution(task->task_id);
-            uc::curl::easy curl(task->callback_url);
-            auto header = uc::curl::create_slist("Content-Type: application/json");
-            curl.header(header).postfields(result.dump()).perform();
-            CROW_LOG_INFO << "Callback of task_id " << task->task_id << " to url " << task->callback_url << " answered " <<  curl.getinfo<CURLINFO_RESPONSE_CODE>();
-          }
+        }
+        catch (exception& e)
+        {
+          // this is meant to keep the worker alive also in case of exceptions
+          CROW_LOG_ERROR << "Exception occurred in worker " << e.what();
         }
         std::this_thread::yield();
       }
