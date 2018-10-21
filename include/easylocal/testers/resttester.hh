@@ -4,6 +4,7 @@
 #include <memory>
 #include <map>
 #include <queue>
+#include <ctime>
 #include "easylocal/testers/tester.hh"
 #include "easylocal/utils/json.hpp"
 #include "easylocal/utils/url.hh"
@@ -42,6 +43,26 @@ namespace EasyLocal {
             j["additional_info"] = additional_info;
           return JSONResponse::make_response(code, j);
         }
+      };
+      
+      class Task
+      {
+      public:
+        Task(std::string task_id,
+             std::shared_ptr<Input> p_in,
+             std::shared_ptr<State> p_st,
+             std::shared_ptr<Runner<Input, State, CostStructure>> p_r,
+             std::chrono::milliseconds timeout)
+        : task_id(task_id), p_in(p_in), p_st(p_st), p_r(p_r), timeout(timeout), submitted(std::chrono::system_clock::now()), finished(false)
+        {}
+        std::string task_id;
+        std::shared_ptr<Input> p_in;
+        std::shared_ptr<State> p_st;
+        std::shared_ptr<Runner<Input, State, CostStructure>> p_r;
+        std::chrono::milliseconds timeout;
+        std::chrono::system_clock::time_point submitted;
+        bool finished;
+        std::chrono::system_clock::time_point completed;
       };
       
       template <typename T>
@@ -131,6 +152,13 @@ namespace EasyLocal {
       void Destroy();
       void InitializeParameters();
       
+      std::string convert_to_time(const std::chrono::system_clock::time_point& t) const
+      {
+        std::time_t tmp = std::chrono::system_clock::to_time_t(t);
+        return std::ctime(&tmp);
+      }
+
+      
       const unsigned int numThreads;
       
       StateManager<Input, State, CostStructure>& sm;
@@ -147,12 +175,10 @@ namespace EasyLocal {
       std::string CreateTask(float timeout, std::unique_ptr<Input> p_in, std::unique_ptr<State> p_st, std::unique_ptr<Runner<Input, State, CostStructure>> p_r, json parameters);
       json TaskStatus(std::string task_id) const;
       json Solution(std::string task_id) const;
-      
-      typedef std::tuple<std::string, std::shared_ptr<Input>, std::shared_ptr<State>, std::shared_ptr<Runner<Input, State, CostStructure>>, std::chrono::milliseconds> Task;
 
-      TaskQueue<Task> task_queue;
+      TaskQueue<std::shared_ptr<Task>> task_queue;
       mutable std::mutex task_status_mutex;
-      std::map<std::string, std::tuple<bool, std::string, Task>> task_status;
+      std::map<std::string, std::shared_ptr<Task>> task_status;
       std::atomic<bool> done;
       std::vector<std::thread> workers;
       Parameter<unsigned int> port;
@@ -204,19 +230,15 @@ namespace EasyLocal {
     {
       while (!done)
       {
-        Task task;
+        std::shared_ptr<Task> task;
         if (task_queue.WaitDequeue(task))
         {
           // dispatch the task
-          auto task_id = std::get<0>(task);
-          auto& p_in = std::get<1>(task);
-          auto& p_st = std::get<2>(task);
-          auto& p_r = std::get<3>(task);
-          auto& timeout = std::get<4>(task);
           // run it synchronously (already are in a different thread)
-          auto cost = p_r->SyncRun(timeout, *p_in, *p_st);
+          task->p_r->SyncRun(task->timeout, *(task->p_in), *(task->p_st));
           std::lock_guard<std::mutex> lock(task_status_mutex);
-          std::get<0>(task_status[task_id]) = true;
+          task_status[task->task_id]->finished = true;
+          task_status[task->task_id]->completed = std::chrono::system_clock::now();
         }
       }
     }
@@ -353,8 +375,15 @@ namespace EasyLocal {
       std::lock_guard<std::mutex> lock(task_status_mutex);
       for (const auto& task_it : task_status)
       {
-        const auto& t = task_it.second;
-        response["tasks"].push_back({ { "runner", std::get<1>(t) }, { "task_id", task_it.first }, { "finished", std::get<0>(t) }, { "url", "/running/" + task_it.first } });
+        const auto task = task_it.second;
+        response["tasks"].push_back({
+          { "runner", task->p_r->name },
+          { "task_id", task->task_id },
+          { "submitted", convert_to_time(task->submitted) },
+          { "completed", task->finished ? convert_to_time(task->completed) : std::string("") },
+          { "finished", task->finished },
+          { "url", "/running/" + task->task_id }
+        });
       }
       res = JSONResponse::make_response(200, response);
       res.end();
@@ -382,9 +411,9 @@ namespace EasyLocal {
         p_r->ParametersFromJSON(parameters);
 //      auto cost = p_r->AsyncRun(_timeout, *p_in, *p_st);
       std::string name = p_r->name;
-      Task task = std::make_tuple(task_id, std::move(p_in), std::move(p_st), std::move(p_r), _timeout);
+      std::shared_ptr<Task> task = std::make_shared<Task>(task_id, std::move(p_in), std::move(p_st), std::move(p_r), _timeout);
+      task_status[task_id] = task;
       task_queue.Enqueue(task);
-      task_status[task_id] = std::make_tuple(false, name, task);
       return task_id;
     }
     
@@ -400,22 +429,21 @@ namespace EasyLocal {
         status["error"] = "The task `" + task_id + "` does not exist (or it has been removed because too old)";
         return status;
       }
-      const auto& t = it->second;
-      status["runner"] = std::get<1>(t);
-      const auto& task = std::get<2>(t);
-      const auto p_in = std::get<1>(task);
-      const auto p_st = std::get<2>(task);
-      const auto p_r = std::get<3>(task);
-      if (std::get<0>(t))
+      const auto task = it->second;
+      status["runner"] = task->p_r->name;
+      if (task->finished)
       {
         status["finished"] = true;
-        status["cost"] = sm.JSONCostFunctionComponents(*p_in, *p_st);
-        status["solution_url"] = "/solution/" + task_id;
+        status["submitted"] = convert_to_time(task->submitted);
+        status["completed"] = convert_to_time(task->completed);
+        status["cost"] = sm.JSONCostFunctionComponents(*(task->p_in), *(task->p_st));
+        status["solution_url"] = "/solution/" + task->task_id;
       }
       else
       {
         status["finished"] = false;
-        status["cost"] = sm.JSONCostFunctionComponents(*p_in, *p_r->GetCurrentBestState());
+        status["submitted"] = convert_to_time(task->submitted);
+        status["cost"] = sm.JSONCostFunctionComponents(*(task->p_in), *(task->p_r->GetCurrentBestState()));
       }
       return status;
     }
@@ -432,16 +460,14 @@ namespace EasyLocal {
         status["error"] = "The task `" + task_id + "` does not exist (or it has been removed because too old)";
         return status;
       }
-      const auto& t = it->second;
-      status["runner"] = std::get<1>(t);
-      const auto& task = std::get<2>(t);
-      const auto p_in = std::get<1>(task);
-      const auto p_st = std::get<2>(task);
-      const auto p_r = std::get<3>(task);
-      if (std::get<0>(t))
+      const auto task = it->second;
+      status["runner"] = task->p_r->name;
+      if (task->finished)
       {
         status["finished"] = true;
-        status["solution"] = om.ConvertToJSON(*p_in, *p_st);
+        status["submitted"] = convert_to_time(task->submitted);
+        status["completed"] = convert_to_time(task->completed);
+        status["solution"] = om.ConvertToJSON(*(task->p_in), *(task->p_st));
       }
       else
       {
