@@ -10,6 +10,8 @@
 #include <deque>
 #include <ctime>
 #include <regex>
+// TODO: use it only if CURL is available
+#include "easylocal/utils/uccurl.hh"
 
 
 // TODO: use a task manager (or define one) for ensuring that just the right number of workers are used and the system is not overloaded
@@ -53,9 +55,18 @@ namespace EasyLocal {
              std::shared_ptr<Input> p_in,
              std::shared_ptr<State> p_st,
              std::shared_ptr<Runner<Input, State, CostStructure>> p_r,
-             std::chrono::milliseconds timeout)
-        : task_id(task_id), p_in(p_in), p_st(p_st), p_r(p_r), timeout(timeout), submitted(std::chrono::system_clock::now()), finished(false), running(false)
-        {}
+             std::chrono::milliseconds timeout,
+             std::string callback_url = "")
+        : task_id(task_id), p_in(p_in), p_st(p_st), p_r(p_r), timeout(timeout), submitted(std::chrono::system_clock::now()), finished(false), running(false), callback_url(callback_url)
+        {
+          // TODO: check url
+          if (callback_url != "")
+          {
+            if (!std::regex_match(callback_url, std::regex(R"(^(([^:\/?#]+):)?(//([^\/?#]*))?([^?#]*)(\?([^#]*))?(#(.*))?)", std::regex::extended)))
+              throw std::logic_error("Callback url " + callback_url + " is not a valid URL");
+            this->callback_url = callback_url;
+          }
+        }
         std::string task_id;
         std::shared_ptr<Input> p_in;
         std::shared_ptr<State> p_st;
@@ -66,6 +77,7 @@ namespace EasyLocal {
         bool running;
         std::chrono::system_clock::time_point started;
         std::chrono::system_clock::time_point completed;
+        std::string callback_url;
       };
       
       template <typename T>
@@ -216,7 +228,7 @@ namespace EasyLocal {
       // endpoints management
       void RootEndpoint(const crow::request& req, crow::response& res) const;
       
-      std::shared_ptr<Task> CreateTask(float timeout, std::unique_ptr<Input> p_in, std::unique_ptr<State> p_st, std::unique_ptr<Runner<Input, State, CostStructure>> p_r, json parameters);
+      std::shared_ptr<Task> CreateTask(float timeout, std::unique_ptr<Input> p_in, std::unique_ptr<State> p_st, std::unique_ptr<Runner<Input, State, CostStructure>> p_r, json parameters, std::string callback_url);
       json TaskStatus(std::string task_id) const;
       json Solution(std::string task_id) const;
       json RemoveTask(std::string task_id);
@@ -301,6 +313,15 @@ namespace EasyLocal {
             task->running = false;
             task->finished = true;
             task->completed = std::chrono::system_clock::now();
+          }
+          if (task->callback_url != "")
+          {
+            CROW_LOG_INFO << "Sending callback of task_id " << task->task_id << " to url " << task->callback_url;
+            json result = this->Solution(task->task_id);
+            uc::curl::easy curl(task->callback_url);
+            auto header = uc::curl::create_slist("Content-Type: application/json");
+            curl.header(header).postfields(result.dump()).perform();
+            CROW_LOG_INFO << "Callback of task_id " << task->task_id << " to url " << task->callback_url << " answered " <<  curl.getinfo<CURLINFO_RESPONSE_CODE>();
           }
         }
         std::this_thread::yield();
@@ -428,8 +449,10 @@ namespace EasyLocal {
             }
           }
           float timeout = req.url_params.get("timeout") ? std::atof(req.url_params.get("timeout")) : 0.0;
+          std::string callback_url = URLDecode(req.url_params.get("callback_url"));
+          CROW_LOG_INFO << callback_url;
           auto p_r = it->second->Clone();
-          std::shared_ptr<Task> task = this->CreateTask(timeout, std::move(in), std::move(p_st), std::move(p_r), parameters);
+          std::shared_ptr<Task> task = this->CreateTask(timeout, std::move(in), std::move(p_st), std::move(p_r), parameters, callback_url);
           {
             std::lock_guard<std::mutex> lock(task_status_mutex);
             response["task_id"] = task->task_id;
@@ -508,7 +531,7 @@ namespace EasyLocal {
     }
     
     template <class Input, class Output, class State, class CostStructure>
-    std::shared_ptr<typename RESTTester<Input, Output, State, CostStructure>::Task> RESTTester<Input, Output, State, CostStructure>::CreateTask(float timeout, std::unique_ptr<Input> p_in, std::unique_ptr<State> p_st, std::unique_ptr<Runner<Input, State, CostStructure>> p_r, json parameters)
+    std::shared_ptr<typename RESTTester<Input, Output, State, CostStructure>::Task> RESTTester<Input, Output, State, CostStructure>::CreateTask(float timeout, std::unique_ptr<Input> p_in, std::unique_ptr<State> p_st, std::unique_ptr<Runner<Input, State, CostStructure>> p_r, json parameters, std::string callback_url)
     {
       static unsigned long counter = 0;
       // the lock is here, because also counter has to be guarded
@@ -527,7 +550,7 @@ namespace EasyLocal {
       // forward runner parameters to the runner itself
       if (!parameters.empty())
         p_r->ParametersFromJSON(parameters);
-      std::shared_ptr<Task> task = std::make_shared<Task>(task_id, std::move(p_in), std::move(p_st), std::move(p_r), _timeout);
+      std::shared_ptr<Task> task = std::make_shared<Task>(task_id, std::move(p_in), std::move(p_st), std::move(p_r), _timeout, callback_url);
       task_status[task_id] = task;
       task_queue.Enqueue(task);
       return task;

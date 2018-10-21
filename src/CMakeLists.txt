@@ -1,7 +1,8 @@
 find_package(Threads REQUIRED)
 find_package(Boost 1.54.0 COMPONENTS program_options REQUIRED)
+find_package(CURL REQUIRED)
 
-include_directories(${Boost_INCLUDE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/../include)
+include_directories(${Boost_INCLUDE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/../include ${CURL_INCLUDE_DIRS})
 
 set(subdirs helpers observers runners solvers testers utils modeling)
 
@@ -42,7 +43,7 @@ set_target_properties(EasyLocal PROPERTIES POSITION_INDEPENDENT_CODE 1)
 if (APPLE)
 	set_target_properties(EasyLocal PROPERTIES MACOSX_RPATH ".")
 endif (APPLE)
-target_link_libraries(EasyLocal ${Boost_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(EasyLocal ${Boost_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT} ${CURL_LIBRARIES})
 set_target_properties(EasyLocal PROPERTIES LINKER_LANGUAGE CXX)
 
 install(
