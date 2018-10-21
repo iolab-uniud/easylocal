@@ -115,8 +115,9 @@ namespace EasyLocal
       /** Name of the runner. */
       const std::string name;
       
-      /** Destructor, for inheritance. */
-      virtual ~Runner() {}
+      /** Destructor, just for inheritance. */
+      virtual ~Runner()
+      {}
       
       /** Modality of this runner. */
       virtual size_t Modality() const = 0;
@@ -298,7 +299,7 @@ namespace EasyLocal
     CostStructure Runner<Input, State, CostStructure>::Go(const Input& in, State &st)
     {
       InitializeRun(in, st);
-      while (!MaxEvaluationsExpired() && !StopCriterion() && !LowerBoundReached(in) && !this->TimeoutExpired())
+      while (!MaxEvaluationsExpired() && !StopCriterion() && !LowerBoundReached(in) && !this->TimeoutExpired() && !this->Aborted())
       {
         PrepareIteration(in);
         try

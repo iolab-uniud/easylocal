@@ -152,7 +152,8 @@ namespace EasyLocal
         if (!is_valid)
           throw ParameterNotValid(*this);
         json p;
-        p[this->cmdline_flag] = this->value;
+        std::string flag = split(this->cmdline_flag, std::regex("::"))[1];
+        p[flag] = this->value;
         
         return p;
       }
@@ -161,7 +162,8 @@ namespace EasyLocal
       virtual json JSONDescription() const
       {
         json p;
-        p[this->cmdline_flag] = GetTypeName<T>();
+        std::string flag = split(this->cmdline_flag, std::regex("::"))[1];
+        p[flag] = GetTypeName<T>();
         
         return p;
       }
@@ -169,7 +171,8 @@ namespace EasyLocal
       /** @copydoc AbstractParameter::FromJSON */
       virtual void FromJSON(json v)
       {
-        this->value = v[this->cmdline_flag];
+        std::string flag = split(this->cmdline_flag, std::regex("::"))[1];
+        this->value = v[flag];
       }
       
       virtual void CopyValue(const AbstractParameter &ap)

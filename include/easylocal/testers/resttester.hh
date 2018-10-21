@@ -1,14 +1,15 @@
 #pragma once
 
 #include "easylocal/utils/crow_all.h"
-#include <memory>
-#include <map>
-#include <queue>
-#include <ctime>
 #include "easylocal/testers/tester.hh"
 #include "easylocal/utils/json.hpp"
 #include "easylocal/utils/url.hh"
 #include "easylocal/utils/parameter.hh"
+#include <memory>
+#include <map>
+#include <deque>
+#include <ctime>
+#include <regex>
 
 
 // TODO: use a task manager (or define one) for ensuring that just the right number of workers are used and the system is not overloaded
@@ -53,7 +54,7 @@ namespace EasyLocal {
              std::shared_ptr<State> p_st,
              std::shared_ptr<Runner<Input, State, CostStructure>> p_r,
              std::chrono::milliseconds timeout)
-        : task_id(task_id), p_in(p_in), p_st(p_st), p_r(p_r), timeout(timeout), submitted(std::chrono::system_clock::now()), finished(false)
+        : task_id(task_id), p_in(p_in), p_st(p_st), p_r(p_r), timeout(timeout), submitted(std::chrono::system_clock::now()), finished(false), running(false)
         {}
         std::string task_id;
         std::shared_ptr<Input> p_in;
@@ -62,6 +63,8 @@ namespace EasyLocal {
         std::chrono::milliseconds timeout;
         std::chrono::system_clock::time_point submitted;
         bool finished;
+        bool running;
+        std::chrono::system_clock::time_point started;
         std::chrono::system_clock::time_point completed;
       };
       
@@ -80,7 +83,7 @@ namespace EasyLocal {
           if(queue.empty() || !valid)
             return false;
           out = std::move(queue.front());
-          queue.pop();
+          queue.pop_front();
           return true;
         }
         
@@ -97,14 +100,14 @@ namespace EasyLocal {
           if(!valid)
             return false;
           out = std::move(queue.front());
-          queue.pop();
+          queue.pop_front();
           return true;
         }
         
         void Enqueue(T value)
         {
           std::lock_guard<std::mutex> lock(qmutex);
-          queue.push(std::move(value));
+          queue.push_back(std::move(value));
           changed.notify_one();
         }
         
@@ -117,8 +120,7 @@ namespace EasyLocal {
         void Clear(void)
         {
           std::lock_guard<std::mutex> lock(qmutex);
-          while(!queue.empty())
-            queue.pop();
+          std::deque<Task>().swap(queue);
           changed.notify_all();
         }
         
@@ -135,11 +137,48 @@ namespace EasyLocal {
           changed.notify_all();
         }
         
+        void Remove(std::function<bool(const T& t)> pred)
+        {
+          std::lock_guard<std::mutex> lock(qmutex);
+          std::remove_if(queue.begin(), queue.end(), pred);
+        }
+        
       private:
         std::atomic<bool> valid{true};
         mutable std::mutex qmutex;
-        std::queue<T> queue;
+        std::deque<T> queue;
         std::condition_variable changed;
+      };
+      
+      class AuthorizationMiddleware
+      {
+      public:
+        struct context
+        {};
+        
+        void before_handle(crow::request& req, crow::response& res, context& /*ctx*/)
+        {
+          if (authorization_key == "")
+            return;
+          auto auth = req.headers.find("Authorization");
+          std::regex exp("([bB]earer\\s+)?" + authorization_key);
+          if (auth == req.headers.end() || !std::regex_match(auth->second, exp))
+          {
+            res = JSONResponse::make_error(401, "You are not authorized to access this service");
+            res.end();
+            return;
+          }
+        }
+        
+        void after_handle(crow::request& /*req*/, crow::response& /*res*/, context& /*ctx*/)
+        { /* no-op */ }
+        
+        void SetAuthorization(std::string authorization_key)
+        {
+          this->authorization_key = std::move(authorization_key);
+        }
+      protected:
+        std::string authorization_key;
       };
       
     public:
@@ -152,7 +191,7 @@ namespace EasyLocal {
       void Destroy();
       void InitializeParameters();
       
-      std::string convert_to_time(const std::chrono::system_clock::time_point& t) const
+      std::string time_to_string(const std::chrono::system_clock::time_point& t) const
       {
         std::time_t tmp = std::chrono::system_clock::to_time_t(t);
         return std::ctime(&tmp);
@@ -163,7 +202,6 @@ namespace EasyLocal {
       
       StateManager<Input, State, CostStructure>& sm;
       OutputManager<Input, Output, State>& om;
-      crow::SimpleApp app;
       
       // utils
       std::vector<string> runner_urls;
@@ -172,16 +210,20 @@ namespace EasyLocal {
       // endpoints management
       void RootEndpoint(const crow::request& req, crow::response& res) const;
       
-      std::string CreateTask(float timeout, std::unique_ptr<Input> p_in, std::unique_ptr<State> p_st, std::unique_ptr<Runner<Input, State, CostStructure>> p_r, json parameters);
+      std::shared_ptr<Task> CreateTask(float timeout, std::unique_ptr<Input> p_in, std::unique_ptr<State> p_st, std::unique_ptr<Runner<Input, State, CostStructure>> p_r, json parameters);
       json TaskStatus(std::string task_id) const;
       json Solution(std::string task_id) const;
+      json RemoveTask(std::string task_id);
 
       TaskQueue<std::shared_ptr<Task>> task_queue;
       mutable std::mutex task_status_mutex;
       std::map<std::string, std::shared_ptr<Task>> task_status;
       std::atomic<bool> done;
       std::vector<std::thread> workers;
+      // the port to bind the service to
       Parameter<unsigned int> port;
+      // toward a basic authorization mechanism
+      Parameter<std::string> authorization;
     };
     
     template <class Input, class Output, class State, class CostStructure>
@@ -222,7 +264,11 @@ namespace EasyLocal {
     void RESTTester<Input, Output, State, CostStructure>::InitializeParameters()
     {
       port("port", "TCP/IP port", this->parameters);
+      // default: 18080
       port = 18080;
+      authorization("authorization", "Authorization key", this->parameters);
+      // default: no authorization
+      authorization = "";
     }
     
     template <class Input, class Output, class State, class CostStructure>
@@ -233,12 +279,19 @@ namespace EasyLocal {
         std::shared_ptr<Task> task;
         if (task_queue.WaitDequeue(task))
         {
-          // dispatch the task
-          // run it synchronously (already are in a different thread)
+          {
+            std::lock_guard<std::mutex> lock(task_status_mutex);
+            task->running = true;
+            task->started = std::chrono::system_clock::now();
+          }
+          // run the task synchronously (already are in a different thread)
           task->p_r->SyncRun(task->timeout, *(task->p_in), *(task->p_st));
-          std::lock_guard<std::mutex> lock(task_status_mutex);
-          task_status[task->task_id]->finished = true;
-          task_status[task->task_id]->completed = std::chrono::system_clock::now();
+          {
+            std::lock_guard<std::mutex> lock(task_status_mutex);
+            task->running = false;
+            task->finished = true;
+            task->completed = std::chrono::system_clock::now();
+          }
         }
       }
     }
@@ -246,23 +299,40 @@ namespace EasyLocal {
     template <class Input, class Output, class State, class CostStructure>
     void RESTTester<Input, Output, State, CostStructure>::Run()
     {
+      crow::App<AuthorizationMiddleware> app;
+      // setup authorization middleware
+      if (std::string(authorization) == "")
+        ;
+      else
+      {
+        AuthorizationMiddleware& mw = app.template get_middleware<AuthorizationMiddleware>();
+        mw.SetAuthorization(authorization);
+      }
+      
+      // NOTE: standard CROW_ROUTE dispatching seems not to work with this compiler and the Middleware enabled version of the app.
+      //       Currently it has been changed to dynamic_routes (maybe less efficient, but this is not the point here)
       
       // This endpoint just lists the available services
-      CROW_ROUTE(app, "/")([this](const crow::request& req, crow::response& res) { this->RootEndpoint(req, res); });
+      app.route_dynamic("/")([this](const crow::request& req, crow::response& res) { this->RootEndpoint(req, res); });
       
       // This endpoint allows to interact with a specific runner
-      CROW_ROUTE(app, "/runner/<string>")
-      .methods("GET"_method)([this](std::string name) {
+      app.route_dynamic("/runner/<string>")
+      .methods("GET"_method)([this](const crow::request& req, crow::response& res, std::string name) {
         json response;
         auto it = this->runner_map.find(name);
         if (it == this->runner_map.end())
-          return JSONResponse::make_error(404, "Runner `" + name + "` does not exist or is not active");
+        {
+          res = JSONResponse::make_error(404, "Runner `" + name + "` does not exist or is not active");
+          res.end();
+          return;
+        }
         response["parameters"] = it->second->ParametersDescriptionToJSON();
         // TODO: also add to the response the list of the running instances of this runner
-        return JSONResponse::make_response(200, response);
+        res = JSONResponse::make_response(200, response);
+        res.end();
       });
       
-      CROW_ROUTE(app, "/runner/<string>")
+      app.route_dynamic("/runner/<string>")
       .methods("POST"_method)([this](const crow::request& req, crow::response& res, std::string name) {
         json response;
         auto it = this->runner_map.find(name);
@@ -318,10 +388,13 @@ namespace EasyLocal {
           }
           float timeout = req.url_params.get("timeout") ? std::atof(req.url_params.get("timeout")) : 0.0;
           auto p_r = it->second->Clone();
-          std::string task_id = this->CreateTask(timeout, std::move(in), std::move(p_st), std::move(p_r), parameters);
-          response["task_id"] = task_id;
-          response["url"] = "/running/" + task_id;
-          response["started"] = true;
+          std::shared_ptr<Task> task = this->CreateTask(timeout, std::move(in), std::move(p_st), std::move(p_r), parameters);
+          {
+            std::lock_guard<std::mutex> lock(task_status_mutex);
+            response["task_id"] = task->task_id;
+            response["url"] = "/running/" + task->task_id;
+            response["submitted"] = time_to_string(task->submitted);
+          }
           res = JSONResponse::make_response(200, response);
           res.end();
           return;
@@ -335,7 +408,7 @@ namespace EasyLocal {
       });
       
       // This endpoint allow to check the status of a specific runner request and abort it
-      CROW_ROUTE(app, "/running/<string>")
+      app.route_dynamic("/running/<string>")
       .methods("GET"_method)([this](std::string task_id) {
         json response = this->TaskStatus(task_id);
         if (response.find("error") == response.end())
@@ -344,16 +417,15 @@ namespace EasyLocal {
           return JSONResponse::make_error(404, response["error"]);
       });
       // TODO: add authorization (e.g. JWT)
-      CROW_ROUTE(app, "/running/<string>")
-      .methods("DELETE"_method)([](const crow::request& req, crow::response& res, std::string _task_id) {
-        json response;
-        response["message"] = "Currently not implemented, will be ready soon";
+      app.route_dynamic("/running/<string>")
+      .methods("DELETE"_method)([this](const crow::request& req, crow::response& res, std::string task_id) {
+        json response = this->RemoveTask(task_id);
         res = JSONResponse::make_response(200, response);
         res.end();
       });
       
       // This endpoint allow to access a solution, when available
-      CROW_ROUTE(app, "/solution/<string>")
+      app.route_dynamic("/solution/<string>")
       .methods("GET"_method)([this](const crow::request& req, crow::response& res, std::string task_id) {
         json response = this->Solution(task_id);
         if (response.find("error") == response.end())
@@ -379,9 +451,11 @@ namespace EasyLocal {
         response["tasks"].push_back({
           { "runner", task->p_r->name },
           { "task_id", task->task_id },
-          { "submitted", convert_to_time(task->submitted) },
-          { "completed", task->finished ? convert_to_time(task->completed) : std::string("") },
+          { "submitted", time_to_string(task->submitted) },
+          { "started", task->running || task->finished ? time_to_string(task->started) : std::string("") },
+          { "completed", task->finished ? time_to_string(task->completed) : std::string("") },
           { "finished", task->finished },
+          { "running", task->running },
           { "url", "/running/" + task->task_id }
         });
       }
@@ -390,7 +464,7 @@ namespace EasyLocal {
     }
     
     template <class Input, class Output, class State, class CostStructure>
-    std::string RESTTester<Input, Output, State, CostStructure>::CreateTask(float timeout, std::unique_ptr<Input> p_in, std::unique_ptr<State> p_st, std::unique_ptr<Runner<Input, State, CostStructure>> p_r, json parameters)
+    std::shared_ptr<typename RESTTester<Input, Output, State, CostStructure>::Task> RESTTester<Input, Output, State, CostStructure>::CreateTask(float timeout, std::unique_ptr<Input> p_in, std::unique_ptr<State> p_st, std::unique_ptr<Runner<Input, State, CostStructure>> p_r, json parameters)
     {
       static unsigned long counter = 0;
       // the lock is here, because also counter has to be guarded
@@ -409,12 +483,10 @@ namespace EasyLocal {
       // forward runner parameters to the runner itself
       if (!parameters.empty())
         p_r->ParametersFromJSON(parameters);
-//      auto cost = p_r->AsyncRun(_timeout, *p_in, *p_st);
-      std::string name = p_r->name;
       std::shared_ptr<Task> task = std::make_shared<Task>(task_id, std::move(p_in), std::move(p_st), std::move(p_r), _timeout);
       task_status[task_id] = task;
       task_queue.Enqueue(task);
-      return task_id;
+      return task;
     }
     
     template <class Input, class Output, class State, class CostStructure>
@@ -434,16 +506,25 @@ namespace EasyLocal {
       if (task->finished)
       {
         status["finished"] = true;
-        status["submitted"] = convert_to_time(task->submitted);
-        status["completed"] = convert_to_time(task->completed);
+        status["submitted"] = time_to_string(task->submitted);
+        status["started"] = time_to_string(task->started);
+        status["completed"] = time_to_string(task->completed);
         status["cost"] = sm.JSONCostFunctionComponents(*(task->p_in), *(task->p_st));
         status["solution_url"] = "/solution/" + task->task_id;
+      }
+      else if (task->running)
+      {
+        status["finished"] = false;
+        status["running"] = true;
+        status["submitted"] = time_to_string(task->submitted);
+        status["started"] = time_to_string(task->started);
+        status["cost"] = sm.JSONCostFunctionComponents(*(task->p_in), *(task->p_r->GetCurrentBestState()));
       }
       else
       {
         status["finished"] = false;
-        status["submitted"] = convert_to_time(task->submitted);
-        status["cost"] = sm.JSONCostFunctionComponents(*(task->p_in), *(task->p_r->GetCurrentBestState()));
+        status["running"] = false;
+        status["submitted"] = time_to_string(task->submitted);
       }
       return status;
     }
@@ -465,14 +546,38 @@ namespace EasyLocal {
       if (task->finished)
       {
         status["finished"] = true;
-        status["submitted"] = convert_to_time(task->submitted);
-        status["completed"] = convert_to_time(task->completed);
+        status["submitted"] = time_to_string(task->submitted);
+        status["started"] = time_to_string(task->started);
+        status["completed"] = time_to_string(task->completed);
         status["solution"] = om.ConvertToJSON(*(task->p_in), *(task->p_st));
       }
       else
       {
         status["error"] = "The task `" + task_id + "` has not finished yet";
       }
+      return status;
+    }
+    
+    template <class Input, class Output, class State, class CostStructure>
+    json RESTTester<Input, Output, State, CostStructure>::RemoveTask(std::string task_id)
+    {
+      std::lock_guard<std::mutex> lock(task_status_mutex);
+      json status;
+      status["task_id"] = task_id;
+      auto it = task_status.find(task_id);
+      if (it == task_status.end()) // task_id does not exist
+      {
+        status["error"] = "The task `" + task_id + "` does not exist (or it has been removed because too old)";
+        return status;
+      }
+      const auto& task = it->second;
+      status["runner"] = task->p_r->name;
+      task->p_r->Abort(); // if in doubt, is better to ensure that the runner stops
+      task_status.erase(it);
+      task_queue.Remove([task_id](const std::shared_ptr<Task>& task) {
+        return task->task_id == task_id;
+      });
+      status["message"] = "Removal of task `" + task_id + "` successful";
       return status;
     }
   }

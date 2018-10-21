@@ -39,10 +39,10 @@ namespace EasyLocal
     public:
       typedef typename std::function<Rtype(Args...)> FunctionType;
       /** Constructor, sets timeout_expired to false to avoid problems when classes are called without threads. */
-      Interruptible() : timeout_expired(false) {}
+      Interruptible() : timeout_expired(false), abort(false) {}
       
       /** Copy Constructor, because of timeout_expired (has a deleted copy constructor). */
-      Interruptible(const Interruptible& interrutbile) : timeout_expired(interrutbile->timeout_expired) {}
+      Interruptible(const Interruptible& interrutbile) : timeout_expired(interrutbile->timeout_expired), abort(interrutbile->abort) {}
       
       /** Runs this interruptible synchronously for a specified number of milliseconds.
        @param timeout a duration in milliseconds
@@ -51,6 +51,7 @@ namespace EasyLocal
       Rtype SyncRun(std::chrono::milliseconds timeout, Args... args)
       {
         timeout_expired = false;
+        abort = false;
         std::future<Rtype> result = std::async(std::launch::async, this->MakeFunction(), std::ref(args)...);
         
         // If timeout is greater than zero
@@ -69,6 +70,7 @@ namespace EasyLocal
         return result.get();
       }
       
+      
       /** Runs this interruptible asynchronously for a specified number of milliseconds.
        @param timeout a duration in milliseconds
        @param args the list of arguments to pass (possibly empty)
@@ -76,6 +78,7 @@ namespace EasyLocal
       std::shared_future<Rtype> AsyncRun(std::chrono::milliseconds timeout, Args... args)
       {
         timeout_expired = false;
+        abort = false;
         std::shared_future<Rtype> result = std::async(std::launch::async, this->MakeFunction(), std::ref(args)...);
         
         // If timeout is greater than zero, launch stopper thread
@@ -101,14 +104,28 @@ namespace EasyLocal
         timeout_expired = true;
       }
       
+      inline void Abort()
+      {
+        abort = true;
+      }
+      
       virtual void ResetTimeout()
       {
         timeout_expired = false;
-      };
+      }
+      
+      virtual void ResetAbort()
+      {
+        abort = false;
+      }
+      
+      /** Checks if abort has been set. */
+      inline const std::atomic<bool>& Aborted() const { return abort; }
       
     protected:
       /** Checks if timeout has expired. */
-      inline const std::atomic<bool> &TimeoutExpired() { return timeout_expired; }
+      inline const std::atomic<bool>& TimeoutExpired() const { return timeout_expired; }
+      
       
       /** Produces a function object to be launched in a separate thread. */
       inline virtual std::function<Rtype(Args &...)> MakeFunction()
@@ -124,7 +141,7 @@ namespace EasyLocal
       
     private:
       /** Atomic flags. */
-      std::atomic<bool> timeout_expired;
+      std::atomic<bool> timeout_expired, abort;
     };
   } // namespace Core
 } // namespace EasyLocal
