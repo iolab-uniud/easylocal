@@ -166,6 +166,7 @@ namespace EasyLocal {
           {
             res = JSONResponse::make_error(401, "You are not authorized to access this service");
             res.end();
+            CROW_LOG_ERROR << "Unauthorized request";
             return;
           }
         }
@@ -291,8 +292,10 @@ namespace EasyLocal {
             task->running = true;
             task->started = std::chrono::system_clock::now();
           }
+          CROW_LOG_INFO << "Starting execution of task_id " << task->task_id << " with runner " << task->p_r->name;
           // run the task synchronously (already are in a different thread)
           task->p_r->SyncRun(task->timeout, *(task->p_in), *(task->p_st));
+          CROW_LOG_INFO << "Ended execution of task_id " << task->task_id << " with runner " << task->p_r->name;
           {
             std::lock_guard<std::mutex> lock(task_status_mutex);
             task->running = false;
@@ -313,14 +316,19 @@ namespace EasyLocal {
         {
           std::lock_guard<std::mutex> lock(task_status_mutex);
           std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
+          unsigned int count = 0;
           for (auto it = task_status.begin(); it != task_status.end(); )
           {
             const auto& task = it->second;
             if (task->finished && (now - task->completed) > interval)
+            {
               it = task_status.erase(it);
+              count++;
+            }
             else
               ++it;
           }
+          CROW_LOG_INFO << "Cleaning performed, removed " << count << " old tasks";
         }
       }
     }
@@ -383,6 +391,7 @@ namespace EasyLocal {
             // TODO: handle content negotiation
             res = JSONResponse::make_error(415, "Wrong Content-Type, only application/json is possible");
             res.end();
+            CROW_LOG_ERROR << "Wrong Content-Type";
             return;
           }
           json payload = json::parse(req.body);
@@ -395,6 +404,7 @@ namespace EasyLocal {
           {
             res = JSONResponse::make_error(422, "The input file does not comply with the format expected by the system", e.what());
             res.end();
+            CROW_LOG_ERROR << "Input file did not comply with the format expected by the system";
             return;
           }
           // conventionally an initial solution, if available, is passed into a "initial_solution" field in the payload
@@ -413,6 +423,7 @@ namespace EasyLocal {
             {
               res = JSONResponse::make_error(422, "The initial solution does not comply with the format expected by the system", e.what());
               res.end();
+              CROW_LOG_ERROR << "Initial solution did not comply with the format expected by the system";
               return;
             }
           }
@@ -427,12 +438,14 @@ namespace EasyLocal {
           }
           res = JSONResponse::make_response(200, response);
           res.end();
+          CROW_LOG_INFO << "Submitted " << task->task_id << " on runner " << task->p_r->name;
           return;
         }
         catch (std::exception& e)
         {
           res = JSONResponse::make_error(405, e.what());
           res.end();
+          CROW_LOG_ERROR << "Error: " << e.what();
           return;
         }
       });
@@ -446,12 +459,13 @@ namespace EasyLocal {
         else
           return JSONResponse::make_error(404, response["error"]);
       });
-      // TODO: add authorization (e.g. JWT)
+      // TODO: add better fine-grained authorization (e.g. JWT)
       app.route_dynamic("/running/<string>")
       .methods("DELETE"_method)([this](const crow::request& req, crow::response& res, std::string task_id) {
         json response = this->RemoveTask(task_id);
         res = JSONResponse::make_response(200, response);
         res.end();
+        CROW_LOG_INFO << "Handling removal of task_id " << task_id;
       });
       
       // This endpoint allow to access a solution, when available
