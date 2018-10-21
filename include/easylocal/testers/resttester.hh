@@ -326,11 +326,11 @@ namespace EasyLocal {
               CROW_LOG_INFO << "Callback of task_id " << task->task_id << " to url " << task->callback_url << " answered " <<  curl.getinfo<CURLINFO_RESPONSE_CODE>();
             }
           }
-        }
-        catch (exception& e)
-        {
-          // this is meant to keep the worker alive also in case of exceptions
-          CROW_LOG_ERROR << "Exception occurred in worker " << e.what();
+          catch (exception& e)
+          {
+            // this is meant to keep the worker alive also in case of exceptions
+            CROW_LOG_ERROR << "Exception occurred in worker " << e.what();
+          }
         }
         std::this_thread::yield();
       }
