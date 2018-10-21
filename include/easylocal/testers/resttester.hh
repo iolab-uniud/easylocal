@@ -187,14 +187,19 @@ namespace EasyLocal {
       virtual ~RESTTester() { Destroy(); }
       void Run();
     private:
+      // a single thread worker that takes care of the task execution
       void Worker();
+      // the garbage collector that frees the results in memory
+      void Cleaner(std::chrono::minutes interval);
       void Destroy();
       void InitializeParameters();
       
       std::string time_to_string(const std::chrono::system_clock::time_point& t) const
       {
         std::time_t tmp = std::chrono::system_clock::to_time_t(t);
-        return std::ctime(&tmp);
+        std::string res = std::ctime(&tmp);
+        res.erase(res.end() - 1);
+        return res;
       }
 
       
@@ -240,6 +245,8 @@ namespace EasyLocal {
       {
         for (unsigned i = 0; i < numThreads; i++)
           workers.emplace_back(&RESTTester<Input, Output, State, CostStructure>::Worker, this);
+        // run the solution cleaner every 15 minutes
+        workers.emplace_back(&RESTTester<Input, Output, State, CostStructure>::Cleaner, this, std::chrono::minutes(15));
       }
       catch(...)
       {
@@ -293,8 +300,31 @@ namespace EasyLocal {
             task->completed = std::chrono::system_clock::now();
           }
         }
+        std::this_thread::yield();
       }
     }
+    
+    template <class Input, class Output, class State, class CostStructure>
+    void RESTTester<Input, Output, State, CostStructure>::Cleaner(std::chrono::minutes interval)
+    {
+      while (!done)
+      {
+        std::this_thread::sleep_for(interval);
+        {
+          std::lock_guard<std::mutex> lock(task_status_mutex);
+          std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
+          for (auto it = task_status.begin(); it != task_status.end(); )
+          {
+            const auto& task = it->second;
+            if (task->finished && (now - task->completed) > interval)
+              it = task_status.erase(it);
+            else
+              ++it;
+          }
+        }
+      }
+    }
+    
         
     template <class Input, class Output, class State, class CostStructure>
     void RESTTester<Input, Output, State, CostStructure>::Run()
