@@ -253,18 +253,6 @@ namespace EasyLocal {
         runner_map[r->name] = r;
       }
       done = false;
-      try
-      {
-        for (unsigned i = 0; i < numThreads; i++)
-          workers.emplace_back(&RESTTester<Input, Output, State, CostStructure>::Worker, this);
-        // run the solution cleaner every 15 minutes
-        workers.emplace_back(&RESTTester<Input, Output, State, CostStructure>::Cleaner, this, std::chrono::minutes(15));
-      }
-      catch(...)
-      {
-        Destroy();
-        throw;
-      }
     }
     
     template <class Input, class Output, class State, class CostStructure>
@@ -366,6 +354,20 @@ namespace EasyLocal {
     template <class Input, class Output, class State, class CostStructure>
     void RESTTester<Input, Output, State, CostStructure>::Run()
     {
+      // prepare workers
+      try
+      {
+        for (unsigned i = 0; i < numThreads; i++)
+          workers.emplace_back(&RESTTester<Input, Output, State, CostStructure>::Worker, this);
+        // run the solution cleaner every 15 minutes
+        workers.emplace_back(&RESTTester<Input, Output, State, CostStructure>::Cleaner, this, std::chrono::minutes(15));
+      }
+      catch(...)
+      {
+        Destroy();
+        throw;
+      }
+
       crow::App<AuthorizationMiddleware> app;
       // setup authorization middleware
       if (std::string(authorization) == "")
