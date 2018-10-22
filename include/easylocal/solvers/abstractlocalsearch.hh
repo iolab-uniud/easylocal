@@ -65,11 +65,13 @@ namespace EasyLocal
                           OutputManager<Input, Output, State> &om,
                           std::string name);
       
-      [[deprecated("This is the old style easylocal interface, it might still be used, however we advise to upgrade to Input-less class and Input-aware methods")]]
+      // FIXME: to review
+      //[[deprecated("This is the old style easylocal interface, it might still be used, however we advise to upgrade to Input-less class and Input-aware methods")]]
       virtual std::shared_ptr<Output> GetCurrentSolution() const;
       
     protected:
-      [[deprecated("This is the old style easylocal interface, it might still be used, however we advise to upgrade to Input-less class and Input-aware methods")]]
+      // FIXME: to review
+      //[[deprecated("This is the old style easylocal interface, it might still be used, however we advise to upgrade to Input-less class and Input-aware methods")]]
       virtual std::shared_ptr<State> GetCurrentState() const = 0;
       
       virtual ~AbstractLocalSearch()
