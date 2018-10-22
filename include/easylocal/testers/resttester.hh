@@ -594,6 +594,7 @@ namespace EasyLocal {
         status["running"] = true;
         status["submitted"] = getISOTimestamp(task->submitted);
         status["started"] = getISOTimestamp(task->started);
+        // FIXME: call best_state_cost instead, however it's not jsonized yet
         status["cost"] = sm.JSONCostFunctionComponents(*(task->p_in), *(task->p_r->GetCurrentBestState()));
       }
       else
@@ -633,12 +634,13 @@ namespace EasyLocal {
       }
       else
       {
+        auto p_st = task->p_r->GetCurrentBestState();
         status["finished"] = false;
         status["running"] = true;
         status["submitted"] = getISOTimestamp(task->submitted);
         status["started"] = getISOTimestamp(task->started);
-        status["cost"] = sm.JSONCostFunctionComponents(*(task->p_in), *(task->p_r->GetCurrentBestState()));
-        status["solution"] = om.ConvertToJSON(*(task->p_in), *(task->p_r->GetCurrentBestState()));
+        status["cost"] = sm.JSONCostFunctionComponents(*(task->p_in), *(p_st));
+        status["solution"] = om.ConvertToJSON(*(task->p_in), *(p_st));
       }
       return status;
     }

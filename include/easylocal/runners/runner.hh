@@ -129,6 +129,8 @@ namespace EasyLocal
       
       virtual std::shared_ptr<State> GetCurrentBestState() const;
       
+      virtual CostStructure GetCurrentBestCost() const;
+      
       virtual std::unique_ptr<Runner<Input, State, CostStructure>> Clone() const = 0;
 
       
@@ -392,6 +394,13 @@ namespace EasyLocal
     {
       std::lock_guard<std::mutex> lock(best_state_mutex);
       return std::make_shared<State>(*p_best_state); // make a state copy
+    }
+    
+    template <class Input, class State, class CostStructure>
+    CostStructure Runner<Input, State, CostStructure>::GetCurrentBestCost() const
+    {
+      std::lock_guard<std::mutex> lock(best_state_mutex);
+      return best_state_cost; // make a state copy
     }
   } // namespace Core
 } // namespace EasyLocal
