@@ -229,7 +229,7 @@ namespace EasyLocal {
       
       std::shared_ptr<Task> CreateTask(float timeout, std::unique_ptr<Input> p_in, std::unique_ptr<State> p_st, std::unique_ptr<Runner<Input, State, CostStructure>> p_r, json parameters, std::string callback_url);
       json TaskStatus(std::string task_id) const;
-      json Solution(std::string task_id) const;
+      json Solution(std::string task_id, bool force_partial) const;
       json RemoveTask(std::string task_id);
 
       TaskQueue<std::shared_ptr<Task>> task_queue;
@@ -319,7 +319,7 @@ namespace EasyLocal {
             if (task->callback_url != "")
             {
               CROW_LOG_INFO << "Sending callback of task_id " << task->task_id << " to url " << task->callback_url;
-              json result = this->Solution(task->task_id);
+              json result = this->Solution(task->task_id, false);
               uc::curl::easy curl(task->callback_url);
               auto header = uc::curl::create_slist("Content-Type: application/json");
               curl.header(header).postfields(result.dump()).perform();
@@ -502,7 +502,8 @@ namespace EasyLocal {
       // This endpoint allow to access a solution, when available
       app.route_dynamic("/solution/<string>")
       .methods("GET"_method)([this](const crow::request& req, crow::response& res, std::string task_id) {
-        json response = this->Solution(task_id);
+        bool force_partial = req.url_params.get("partial") ? std::string(req.url_params.get("partial")) == "true" : false;
+        json response = this->Solution(task_id, force_partial);
         if (response.find("error") == response.end())
           res = JSONResponse::make_response(200, response);
         else
@@ -605,7 +606,7 @@ namespace EasyLocal {
     }
     
     template <class Input, class Output, class State, class CostStructure>
-    json RESTTester<Input, Output, State, CostStructure>::Solution(std::string task_id) const
+    json RESTTester<Input, Output, State, CostStructure>::Solution(std::string task_id, bool force_partial) const
     {
       std::lock_guard<std::mutex> lock(task_status_mutex);
       json status;
@@ -626,9 +627,18 @@ namespace EasyLocal {
         status["completed"] = getISOTimestamp(task->completed);
         status["solution"] = om.ConvertToJSON(*(task->p_in), *(task->p_st));
       }
-      else
+      else if (!force_partial)
       {
         status["error"] = "The task `" + task_id + "` has not finished yet";
+      }
+      else
+      {
+        status["finished"] = false;
+        status["running"] = true;
+        status["submitted"] = getISOTimestamp(task->submitted);
+        status["started"] = getISOTimestamp(task->started);
+        status["cost"] = sm.JSONCostFunctionComponents(*(task->p_in), *(task->p_r->GetCurrentBestState()));
+        status["solution"] = om.ConvertToJSON(*(task->p_in), *(task->p_r->GetCurrentBestState()));
       }
       return status;
     }
