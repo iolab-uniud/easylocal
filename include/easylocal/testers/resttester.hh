@@ -212,6 +212,7 @@ namespace EasyLocal {
       void Worker();
       // the garbage collector that frees the results in memory
       void Cleaner(std::chrono::minutes interval);
+      void CreateWorkers();
       void Destroy();
       void InitializeParameters();
       
@@ -235,10 +236,12 @@ namespace EasyLocal {
       TaskQueue<std::shared_ptr<Task>> task_queue;
       mutable std::mutex task_status_mutex;
       std::map<std::string, std::shared_ptr<Task>> task_status;
+      // worker syncrhonization
       std::atomic<bool> done;
       std::vector<std::thread> workers;
       // the port to bind the service to
       Parameter<unsigned int> port;
+      std::condition_variable cleaner_stop;
       // toward a basic authorization mechanism
       Parameter<std::string> authorization;
     };
@@ -256,10 +259,29 @@ namespace EasyLocal {
     }
     
     template <class Input, class Output, class State, class CostStructure>
+    void RESTTester<Input, Output, State, CostStructure>::CreateWorkers()
+    {
+      // prepare workers
+      try
+      {
+        for (unsigned i = 0; i < numThreads; i++)
+          workers.emplace_back(&RESTTester<Input, Output, State, CostStructure>::Worker, this);
+        // run the solution cleaner every 15 minutes
+        workers.emplace_back(&RESTTester<Input, Output, State, CostStructure>::Cleaner, this, std::chrono::minutes(15));
+      }
+      catch(...)
+      {
+        Destroy();
+        throw;
+      }
+    }
+    
+    template <class Input, class Output, class State, class CostStructure>
     void RESTTester<Input, Output, State, CostStructure>::Destroy()
     {
       done = true;
       task_queue.Invalidate();
+      cleaner_stop.notify_all();
       for (auto& worker : workers)
       {
         if (worker.joinable())
@@ -327,11 +349,13 @@ namespace EasyLocal {
     template <class Input, class Output, class State, class CostStructure>
     void RESTTester<Input, Output, State, CostStructure>::Cleaner(std::chrono::minutes interval)
     {
+      std::unique_lock<std::mutex> task_lock(task_status_mutex, std::defer_lock);
       while (!done)
       {
-        std::this_thread::sleep_for(interval);
+        task_lock.lock();
+        cleaner_stop.wait_for(task_lock, interval);
+        if (!done)
         {
-          std::lock_guard<std::mutex> lock(task_status_mutex);
           std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
           unsigned int count = 0;
           for (auto it = task_status.begin(); it != task_status.end(); )
@@ -347,6 +371,7 @@ namespace EasyLocal {
           }
           CROW_LOG_INFO << "Cleaning performed, removed " << count << " old tasks";
         }
+        task_lock.unlock();
       }
     }
     
@@ -354,20 +379,8 @@ namespace EasyLocal {
     template <class Input, class Output, class State, class CostStructure>
     void RESTTester<Input, Output, State, CostStructure>::Run()
     {
-      // prepare workers
-      try
-      {
-        for (unsigned i = 0; i < numThreads; i++)
-          workers.emplace_back(&RESTTester<Input, Output, State, CostStructure>::Worker, this);
-        // run the solution cleaner every 15 minutes
-        workers.emplace_back(&RESTTester<Input, Output, State, CostStructure>::Cleaner, this, std::chrono::minutes(15));
-      }
-      catch(...)
-      {
-        Destroy();
-        throw;
-      }
-
+      CreateWorkers();
+      
       crow::App<AuthorizationMiddleware> app;
       // setup authorization middleware
       if (std::string(authorization) == "")
