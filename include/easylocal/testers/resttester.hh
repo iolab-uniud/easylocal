@@ -227,12 +227,12 @@ namespace EasyLocal {
       
       // endpoints management
       void RootEndpoint(const crow::request& req, crow::response& res) const;
-      
       std::shared_ptr<Task> CreateTask(float timeout, std::unique_ptr<Input> p_in, std::unique_ptr<State> p_st, std::unique_ptr<Runner<Input, State, CostStructure>> p_r, json parameters, std::string callback_url);
       json TaskStatus(std::string task_id) const;
       json Solution(std::string task_id, bool force_partial) const;
       json RemoveTask(std::string task_id);
 
+      // data structures for handling multi-threading execution
       TaskQueue<std::shared_ptr<Task>> task_queue;
       mutable std::mutex task_status_mutex;
       std::map<std::string, std::shared_ptr<Task>> task_status;
@@ -242,8 +242,12 @@ namespace EasyLocal {
       // the port to bind the service to
       Parameter<unsigned int> port;
       std::condition_variable cleaner_stop;
+      
       // toward a basic authorization mechanism
       Parameter<std::string> authorization;
+      
+      std::chrono::system_clock::time_point started;
+      std::chrono::seconds worker_runtime{0};
     };
     
     template <class Input, class Output, class State, class CostStructure>
@@ -324,6 +328,7 @@ namespace EasyLocal {
               task->running = false;
               task->finished = true;
               task->completed = std::chrono::system_clock::now();
+              worker_runtime += std::chrono::duration_cast<std::chrono::seconds>(task->completed - task->started);
             }
             // TODO: this could also be in another async thread
             if (task->callback_url != "")
@@ -379,6 +384,7 @@ namespace EasyLocal {
     template <class Input, class Output, class State, class CostStructure>
     void RESTTester<Input, Output, State, CostStructure>::Run()
     {
+      started = std::chrono::system_clock::now();
       CreateWorkers();
       
       crow::App<AuthorizationMiddleware> app;
@@ -533,6 +539,8 @@ namespace EasyLocal {
     void RESTTester<Input, Output, State, CostStructure>::RootEndpoint(const crow::request& req, crow::response& res) const
     {
       json response;
+      response["started"] = getISOTimestamp(started);
+      response["workers"] = { { "number", numThreads }, { "solution_time", worker_runtime.count() } };
       response["runners"] = runner_urls;
       response["tasks"] = {};
       std::lock_guard<std::mutex> lock(task_status_mutex);
