@@ -48,6 +48,14 @@ namespace EasyLocal {
         }
       };
       
+      static std::string getISOTimestamp(const std::chrono::system_clock::time_point& t)
+      {
+        auto itt = std::chrono::system_clock::to_time_t(t);
+        std::ostringstream ss;
+        ss << std::put_time(gmtime(&itt), "%FT%TZ");
+        return ss.str();
+      }
+      
       class Task
       {
       public:
@@ -207,15 +215,6 @@ namespace EasyLocal {
       void Destroy();
       void InitializeParameters();
       
-      std::string time_to_string(const std::chrono::system_clock::time_point& t) const
-      {
-        std::time_t tmp = std::chrono::system_clock::to_time_t(t);
-        std::string res = std::ctime(&tmp);
-        res.erase(res.end() - 1);
-        return res;
-      }
-
-      
       const unsigned int numThreads;
       
       StateManager<Input, State, CostStructure>& sm;
@@ -316,6 +315,7 @@ namespace EasyLocal {
               task->finished = true;
               task->completed = std::chrono::system_clock::now();
             }
+            // TODO: this could also be in another async thread
             if (task->callback_url != "")
             {
               CROW_LOG_INFO << "Sending callback of task_id " << task->task_id << " to url " << task->callback_url;
@@ -465,7 +465,7 @@ namespace EasyLocal {
             std::lock_guard<std::mutex> lock(task_status_mutex);
             response["task_id"] = task->task_id;
             response["url"] = "/running/" + task->task_id;
-            response["submitted"] = time_to_string(task->submitted);
+            response["submitted"] = getISOTimestamp(task->submitted);
           }
           res = JSONResponse::make_response(200, response);
           res.end();
@@ -526,9 +526,9 @@ namespace EasyLocal {
         response["tasks"].push_back({
           { "runner", task->p_r->name },
           { "task_id", task->task_id },
-          { "submitted", time_to_string(task->submitted) },
-          { "started", task->running || task->finished ? time_to_string(task->started) : std::string("") },
-          { "completed", task->finished ? time_to_string(task->completed) : std::string("") },
+          { "submitted", getISOTimestamp(task->submitted) },
+          { "started", task->running || task->finished ? getISOTimestamp(task->started) : std::string("") },
+          { "completed", task->finished ? getISOTimestamp(task->completed) : std::string("") },
           { "finished", task->finished },
           { "running", task->running },
           { "url", "/running/" + task->task_id }
@@ -581,9 +581,9 @@ namespace EasyLocal {
       if (task->finished)
       {
         status["finished"] = true;
-        status["submitted"] = time_to_string(task->submitted);
-        status["started"] = time_to_string(task->started);
-        status["completed"] = time_to_string(task->completed);
+        status["submitted"] = getISOTimestamp(task->submitted);
+        status["started"] = getISOTimestamp(task->started);
+        status["completed"] = getISOTimestamp(task->completed);
         status["cost"] = sm.JSONCostFunctionComponents(*(task->p_in), *(task->p_st));
         status["solution_url"] = "/solution/" + task->task_id;
       }
@@ -591,15 +591,15 @@ namespace EasyLocal {
       {
         status["finished"] = false;
         status["running"] = true;
-        status["submitted"] = time_to_string(task->submitted);
-        status["started"] = time_to_string(task->started);
+        status["submitted"] = getISOTimestamp(task->submitted);
+        status["started"] = getISOTimestamp(task->started);
         status["cost"] = sm.JSONCostFunctionComponents(*(task->p_in), *(task->p_r->GetCurrentBestState()));
       }
       else
       {
         status["finished"] = false;
         status["running"] = false;
-        status["submitted"] = time_to_string(task->submitted);
+        status["submitted"] = getISOTimestamp(task->submitted);
       }
       return status;
     }
@@ -621,9 +621,9 @@ namespace EasyLocal {
       if (task->finished)
       {
         status["finished"] = true;
-        status["submitted"] = time_to_string(task->submitted);
-        status["started"] = time_to_string(task->started);
-        status["completed"] = time_to_string(task->completed);
+        status["submitted"] = getISOTimestamp(task->submitted);
+        status["started"] = getISOTimestamp(task->started);
+        status["completed"] = getISOTimestamp(task->completed);
         status["solution"] = om.ConvertToJSON(*(task->p_in), *(task->p_st));
       }
       else

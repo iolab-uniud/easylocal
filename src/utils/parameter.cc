@@ -5,7 +5,7 @@
 
 using namespace EasyLocal::Core;
 
-// Overall collection of aprameters
+// Overall collection of parameters
 std::list<const ParameterBox *> ParameterBox::overall_parameters;
 std::list<Parametrized *> Parametrized::overall_parametrized;
 
