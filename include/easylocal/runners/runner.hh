@@ -19,8 +19,7 @@ namespace EasyLocal
 {
   
   namespace Debug
-  {
-    
+  {    
     /** Forward declaration of tester. */
     template <class Input, class State, class CostStructure>
     class AbstractTester;

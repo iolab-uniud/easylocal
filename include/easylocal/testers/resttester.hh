@@ -539,6 +539,7 @@ namespace EasyLocal {
     void RESTTester<Input, Output, State, CostStructure>::RootEndpoint(const crow::request& req, crow::response& res) const
     {
       json response;
+      response["version"] = "1.0";
       response["started"] = getISOTimestamp(started);
       response["workers"] = { { "number", numThreads }, { "solution_time", worker_runtime.count() } };
       response["runners"] = runner_urls;
