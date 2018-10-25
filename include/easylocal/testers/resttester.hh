@@ -202,6 +202,26 @@ namespace EasyLocal {
         std::string authorization_key;
       };
       
+      // TODO: will be used for CORS
+//      class OptionsMiddleware
+//      {
+//      public:
+//        struct context
+//        {};
+//
+//        void before_handle(crow::request& req, crow::response& res, context& /*ctx*/)
+//        {
+//          if (req.method != crow::HTTPMethod::Options)
+//            return;
+//          res = JSONResponse::make_response(200, "Hello!");
+//          res.end();
+//        }
+//
+//        void after_handle(crow::request& /*req*/, crow::response& /*res*/, context& /*ctx*/)
+//        { /* no-op */ }
+//      };
+
+      
     public:
       RESTTester(StateManager<Input, State, CostStructure>& sm, OutputManager<Input, Output, State>& om);
       /** Virtual destructor. */
@@ -248,6 +268,7 @@ namespace EasyLocal {
       
       std::chrono::system_clock::time_point started;
       std::chrono::seconds worker_runtime{0};
+      unsigned long long tasks_created{0};
     };
     
     template <class Input, class Output, class State, class CostStructure>
@@ -541,7 +562,7 @@ namespace EasyLocal {
       json response;
       response["version"] = "1.0";
       response["started"] = getISOTimestamp(started);
-      response["workers"] = { { "number", numThreads }, { "solution_time", worker_runtime.count() } };
+      response["workers"] = { { "number", numThreads }, { "solution_time", worker_runtime.count() }, { "tasks_run", this->tasks_created } };
       response["runners"] = runner_urls;
       response["tasks"] = {};
       std::lock_guard<std::mutex> lock(task_status_mutex);
@@ -566,11 +587,10 @@ namespace EasyLocal {
     template <class Input, class Output, class State, class CostStructure>
     std::shared_ptr<typename RESTTester<Input, Output, State, CostStructure>::Task> RESTTester<Input, Output, State, CostStructure>::CreateTask(float timeout, std::unique_ptr<Input> p_in, std::unique_ptr<State> p_st, std::unique_ptr<Runner<Input, State, CostStructure>> p_r, json parameters, std::string callback_url)
     {
-      static unsigned long counter = 0;
-      // the lock is here, because also counter has to be guarded
+      // the lock is here, because also the tasks counter has to be guarded
       std::lock_guard<std::mutex> lock(task_status_mutex);
-      std::string task_id = std::to_string(std::hash<std::string>()(p_r->name + std::to_string(counter)));
-      counter++;
+      std::string task_id = std::to_string(std::hash<std::string>()(p_r->name + std::to_string(tasks_created)));
+      tasks_created++;
       auto _timeout = std::chrono::milliseconds((long long)(timeout * 1000));
       if (!p_st)
       {
