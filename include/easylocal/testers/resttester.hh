@@ -203,7 +203,7 @@ namespace EasyLocal {
       };
       
       // TODO: will be used for CORS
-//      class OptionsMiddleware
+//      class CORSMiddleware
 //      {
 //      public:
 //        struct context
@@ -211,9 +211,10 @@ namespace EasyLocal {
 //
 //        void before_handle(crow::request& req, crow::response& res, context& /*ctx*/)
 //        {
-//          if (req.method != crow::HTTPMethod::Options)
+//          // check if it's a CORS Request
+//          if (req.method != crow::HTTPMethod::Options || req.headers.find("Access-Control-Request-Method") == req.headers.end() || req.headers.find("Access-Control-Request-Headers") == req.headers.end())
 //            return;
-//          res = JSONResponse::make_response(200, "Hello!");
+//          std::string headers
 //          res.end();
 //        }
 //
