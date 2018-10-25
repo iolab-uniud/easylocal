@@ -74,6 +74,7 @@ namespace EasyLocal
                  StateManager<Input, State, CostStructure> &sm,
                  NeighborhoodExplorer<Input, State, Move, CostStructure> &ne,
                  std::string name,
+                 std::string description,
                  InverseFunction Inverse = SameMoveAsInverse);
       
       /** Constructor.
@@ -86,6 +87,7 @@ namespace EasyLocal
       TabuSearch(StateManager<Input, State, CostStructure> &sm,
                  NeighborhoodExplorer<Input, State, Move, CostStructure> &ne,
                  std::string name,
+                 std::string description,
                  InverseFunction Inverse = SameMoveAsInverse);
       std::string StatusString() const;
       
@@ -120,16 +122,18 @@ namespace EasyLocal
                                                               StateManager<Input, State, CostStructure> &sm,
                                                               NeighborhoodExplorer<Input, State, Move, CostStructure> &ne,
                                                               std::string name,
+                                                              std::string description,
                                                               InverseFunction Inverse)
-    : MoveRunner<Input, State, Move, CostStructure>(in, sm, ne, name), Inverse(Inverse)
+    : MoveRunner<Input, State, Move, CostStructure>(in, sm, ne, name, description), Inverse(Inverse)
     {}
     
     template <class Input, class State, class Move, class CostStructure>
     TabuSearch<Input, State, Move, CostStructure>::TabuSearch(StateManager<Input, State, CostStructure> &sm,
                                                               NeighborhoodExplorer<Input, State, Move, CostStructure> &ne,
                                                               std::string name,
+                                                              std::string description,
                                                               InverseFunction Inverse)
-    : MoveRunner<Input, State, Move, CostStructure>(sm, ne, name), Inverse(Inverse)
+    : MoveRunner<Input, State, Move, CostStructure>(sm, ne, name, description), Inverse(Inverse)
     {}
     
     template <class Input, class State, class Move, class CostStructure>
@@ -244,7 +248,7 @@ namespace EasyLocal
     template <class Input, class State, class Move, class CostStructure>
     std::unique_ptr<Runner<Input, State, CostStructure>> TabuSearch<Input, State, Move, CostStructure>::Clone() const
     {
-      return std::make_unique<TabuSearch<Input, State, Move, CostStructure>>(*this);
+      return Runner<Input, State, CostStructure>::MakeClone(this);
     }
     
   } // namespace Core

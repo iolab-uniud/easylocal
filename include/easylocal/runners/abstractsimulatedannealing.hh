@@ -81,6 +81,9 @@ namespace EasyLocal
       if (cooling_rate <= 0.0 || cooling_rate >= 1.0)
         throw IncorrectParameterValue(cooling_rate, "should be a value in the interval ]0, 1[");
       
+      if (max_neighbors_sampled == 0U)
+        throw IncorrectParameterValue(max_neighbors_sampled, "should be greater than zero");
+      
       if (!compute_start_temperature)
       {
         if (start_temperature <= 0.0)

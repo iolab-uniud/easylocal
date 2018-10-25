@@ -95,7 +95,7 @@ namespace EasyLocal
     };
     
     /** List of parameters, to access aggregates of parameters. */
-    class ParameterBox : public std::vector<AbstractParameter *>
+    class ParameterBox : public std::vector<AbstractParameter*>
     {
     public:
       /** Constructor.
@@ -321,10 +321,13 @@ namespace EasyLocal
     std::ostream &BaseParameter<T>::Write(std::ostream &os) const
     {
       if (!this->is_valid)
-        throw ParameterNotValid(*this);
-      if (!is_set)
-        throw ParameterNotSet(*this);
-      os << value;
+        os << "NotValid";
+        //throw ParameterNotValid(*this);
+      else if (!is_set)
+        //throw ParameterNotSet(*this);
+        os << "NotSet";
+      else
+        os << value;
       return os;
     }
     
@@ -485,7 +488,7 @@ namespace EasyLocal
       
       void ParametersFromJSON(json p)
       {
-        parameters.FromJSON(p);
+        parameters.FromJSON(std::move(p));
       }
       
     protected:

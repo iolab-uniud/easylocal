@@ -131,7 +131,12 @@ namespace EasyLocal
       virtual CostStructure GetCurrentBestCost() const;
       
       virtual std::unique_ptr<Runner<Input, State, CostStructure>> Clone() const = 0;
-
+      
+      void PrepareParameters(const Parametrized& p)
+      {
+        this->InitializeParameters();
+        this->CopyParameterValues(p);
+      }
       
     protected:
       /** Constructor.
@@ -141,13 +146,13 @@ namespace EasyLocal
        @deprecated
        */
       [[deprecated("This is the old style easylocal interface, it might still be used, however we advise to upgrade to Input-less class and Input-aware methods")]]
-      Runner(const Input & in, StateManager<Input, State, CostStructure> & sm, std::string name);
+      Runner(const Input & in, StateManager<Input, State, CostStructure> & sm, std::string name, std::string description);
       
       /** Constructor.
        @param sm a StateManager, as defined by the user
        @param name the name of the runner
        */
-      Runner(StateManager<Input, State, CostStructure> &sm, std::string name);
+      Runner(StateManager<Input, State, CostStructure> &sm, std::string name, std::string description);
       
       /** Copy Constructor.
        @param r a Runner to be copied
@@ -238,6 +243,14 @@ namespace EasyLocal
        If the vector is empty (default), it is assumed all weigths to be 1.0. */
       std::vector<double> weights;
       
+      template <typename ActualRunnerType>
+      static std::unique_ptr<Runner<Input, State, CostStructure>> MakeClone(const ActualRunnerType* r)
+      {
+        std::unique_ptr<ActualRunnerType> new_r = std::make_unique<ActualRunnerType>(*r);
+        new_r->PrepareParameters(*r);
+        return new_r;
+      }
+      
     private:
       /** Stores the move and updates the related data. */
       virtual void UpdateBestState() = 0;
@@ -257,18 +270,18 @@ namespace EasyLocal
     std::vector<Runner<Input, State, CostStructure> *> Runner<Input, State, CostStructure>::runners;
     
     template <class Input, class State, class CostStructure>
-    Runner<Input, State, CostStructure>::Runner(const Input &in, StateManager<Input, State, CostStructure> &sm, std::string name)
+    Runner<Input, State, CostStructure>::Runner(const Input &in, StateManager<Input, State, CostStructure> &sm, std::string name, std::string description)
     : // Parameters
-    Parametrized(name, typeid(this).name()), DeprecationHandler<Input>(in), name(name), no_acceptable_move_found(false), sm(sm), weights(0)
+    Parametrized(name, description), DeprecationHandler<Input>(in), name(name), no_acceptable_move_found(false), sm(sm), weights(0)
     {
       // Add to the list of all runners
       runners.push_back(this);
     }
     
     template <class Input, class State, class CostStructure>
-    Runner<Input, State, CostStructure>::Runner(StateManager<Input, State, CostStructure> &sm, std::string name)
+    Runner<Input, State, CostStructure>::Runner(StateManager<Input, State, CostStructure> &sm, std::string name, std::string description)
     : // Parameters
-    Parametrized(name, typeid(this).name()), name(name), no_acceptable_move_found(false), sm(sm), weights(0)
+    Parametrized(name, description), name(name), no_acceptable_move_found(false), sm(sm), weights(0)
     {
       // Add to the list of all runners
       runners.push_back(this);
@@ -277,8 +290,7 @@ namespace EasyLocal
     template <class Input, class State, class CostStructure>
     Runner<Input, State, CostStructure>::Runner(const Runner<Input, State, CostStructure>& r)
     : // Parameters
-    Parametrized(r.name, typeid(this).name()), name(r.name), no_acceptable_move_found(r.no_acceptable_move_found), sm(r.sm),
-    max_evaluations(r.max_evaluations), weights(r.weights)
+    Parametrized(r.name, "Copy of " + r.name), name(r.name), no_acceptable_move_found(r.no_acceptable_move_found), sm(r.sm), weights(r.weights)
     {}
     
     template <class Input, class State, class CostStructure>

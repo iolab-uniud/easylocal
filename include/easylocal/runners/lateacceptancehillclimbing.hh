@@ -94,7 +94,7 @@ namespace EasyLocal
     template <class Input, class State, class Move, class CostStructure>
     std::unique_ptr<Runner<Input, State, CostStructure>> LateAcceptanceHillClimbing<Input, State, Move, CostStructure>::Clone() const
     {
-      return std::make_unique<LateAcceptanceHillClimbing<Input, State, Move, CostStructure>>(*this);
+      return Runner<Input, State, CostStructure>::MakeClone(this);
     }
   } // namespace Core
 } // namespace EasyLocal

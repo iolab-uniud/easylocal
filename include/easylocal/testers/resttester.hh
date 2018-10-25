@@ -580,9 +580,10 @@ namespace EasyLocal {
         else
           sm.RandomState(*p_in, *p_st);
       }
+      // clone the runner
       // forward runner parameters to the runner itself
       if (!parameters.empty())
-        p_r->ParametersFromJSON(parameters);
+        p_r->ParametersFromJSON(std::move(parameters));
       std::shared_ptr<Task> task = std::make_shared<Task>(task_id, std::move(p_in), std::move(p_st), std::move(p_r), _timeout, callback_url);
       task_status[task_id] = task;
       task_queue.Enqueue(task);

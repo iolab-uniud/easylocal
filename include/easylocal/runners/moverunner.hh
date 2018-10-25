@@ -28,22 +28,23 @@ namespace EasyLocal
        @param sm the State Manager
        @param ne the Neighborhood Explorer
        @param name the name of the runner
+       @param desc a description of the runner
        @deprecated
        */
       [[deprecated("This is the old style easylocal interface, it might still be used, however we advise to upgrade to Input-less class and Input-aware methods")]]
       MoveRunner(const Input &in, StateManager<Input, State, CostStructure> &sm,
                  NeighborhoodExplorer<Input, State, Move, CostStructure> &ne,
-                 std::string name);
+                 std::string name, std::string description);
       
       /** Constructor.
        @param sm the State Manager
        @param ne the Neighborhood Explorer
        @param name the name of the runner
-       @deprecated
+       @param desc a description of the runner
        */
       MoveRunner(StateManager<Input, State, CostStructure> &sm,
                  NeighborhoodExplorer<Input, State, Move, CostStructure> &ne,
-                 std::string name);
+                 std::string name, std::string description);
       
     protected:
       virtual bool AcceptableMoveFound(const Input& in);
@@ -87,15 +88,17 @@ namespace EasyLocal
     MoveRunner<Input, State, Move, CostStructure>::MoveRunner(const Input &in,
                                                               StateManager<Input, State, CostStructure> &sm,
                                                               NeighborhoodExplorer<Input, State, Move, CostStructure> &ne,
-                                                              std::string name)
-    : Runner<Input, State, CostStructure>(in, sm, name), ne(ne)
+                                                              std::string name,
+                                                              std::string description)
+    : Runner<Input, State, CostStructure>(in, sm, name, description), ne(ne)
     {}
     
     template <class Input, class State, class Move, class CostStructure>
     MoveRunner<Input, State, Move, CostStructure>::MoveRunner(StateManager<Input, State, CostStructure> &sm,
                                                               NeighborhoodExplorer<Input, State, Move, CostStructure> &ne,
-                                                              std::string name)
-    : Runner<Input, State, CostStructure>(sm, name), ne(ne)
+                                                              std::string name,
+                                                              std::string description)
+    : Runner<Input, State, CostStructure>(sm, name, description), ne(ne)
     {}
     
     template <class Input, class State, class Move, class CostStructure>

@@ -37,11 +37,11 @@ ParameterBox::ParameterBox(const std::string &p, const std::string &description)
 // TODO: determine what to do when parameters are not available/set
 void ParameterBox::FromJSON(json parameters)
 {
-  json parameter = parameters[this->prefix];
-  for (auto p : *this)
+  for (auto it = parameters.begin(); it != parameters.end(); ++it)
   {
-    if (parameter.count(p->Flag()) > 0)
-      p->FromJSON(parameter);
+    for (auto p : *this)
+      if (p->Flag() == it.key() || p->Flag() == this->prefix + "::" + it.key())
+        p->FromJSON({{ it.key(), it.value() }});
   }
 }
 
