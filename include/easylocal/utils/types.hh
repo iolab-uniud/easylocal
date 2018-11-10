@@ -55,6 +55,7 @@ namespace EasyLocal
     template <typename CFtype, typename std::enable_if<std::is_floating_point<CFtype>::value>::type* = nullptr>
     bool GreaterThan(CFtype a, CFtype b)
     {
+      // TODO: check if meaningful
       // according to Knuth's The Art of Computer Programming definitely less than
       return (a - b) > (std::max(std::abs(a), std::abs(b)) * std::numeric_limits<CFtype>::epsilon());
     }
@@ -80,7 +81,7 @@ namespace EasyLocal
     template <typename CFtype, typename std::enable_if<std::is_floating_point<CFtype>::value>::type* = nullptr>
     bool IsZero(CFtype a)
     {
-      return std::abs(a) <= (std::abs(a) * std::numeric_limits<CFtype>::epsilon());
+      return std::abs(a) <= std::numeric_limits<CFtype>::epsilon();
     }
     
     template <typename CFtype, typename std::enable_if<std::is_integral<CFtype>::value>::type* = nullptr>
