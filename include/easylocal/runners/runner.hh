@@ -34,7 +34,7 @@ namespace EasyLocal
      @ingroup Helpers
      */
     template <class _Input, class _State, class _CostStructure = DefaultCostStructure<int>>
-    class Runner : public Interruptible<_CostStructure, const _Input&, _State &>, public Parametrized, protected DeprecationHandler<_Input>
+    class Runner : public Interruptible<_CostStructure, const _Input&, _State &>, public CommandLineParameters::Parametrized, protected DeprecationHandler<_Input>
     {
       friend class Debug::AbstractTester<_Input, _State, _CostStructure>;
       
@@ -219,7 +219,7 @@ namespace EasyLocal
       /** Best state found so far. */
       p_best_state;
       
-      mutable std::mutex best_state_mutex;
+      mutable std::mutex best_state_mutex, go_mutex;
       
       /** Cost of the current state. */
       CostStructure current_state_cost;
@@ -311,6 +311,7 @@ namespace EasyLocal
     template <class Input, class State, class CostStructure>
     CostStructure Runner<Input, State, CostStructure>::Go(const Input& in, State &st)
     {
+      std::lock_guard<std::mutex> lock(go_mutex);
       InitializeRun(in, st);
       while (!MaxEvaluationsExpired() && !StopCriterion() && !LowerBoundReached(in) && !this->TimeoutExpired() && !this->Aborted())
       {

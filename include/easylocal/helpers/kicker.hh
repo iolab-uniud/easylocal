@@ -496,7 +496,7 @@ namespace EasyLocal
           }
           else if (cost == best_cost)
           {
-            if (Random::Int(0, number_of_bests) == 0) // accept the move with probability 1 / (1 + number_of_bests)
+            if (Random::Rand(0U, number_of_bests) == 0) // accept the move with probability 1 / (1 + number_of_bests)
               best_kick = *it;
             number_of_bests++;
           }

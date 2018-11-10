@@ -25,7 +25,7 @@ namespace EasyLocal
      */
     template <class Input, class Output, class State, class CostStructure = DefaultCostStructure<int>>
     class AbstractLocalSearch
-    : public Parametrized,
+    : public CommandLineParameters::Parametrized,
     public Solver<Input, Output, CostStructure>,
     public Interruptible<bool, const Input&>
     {
@@ -108,6 +108,8 @@ namespace EasyLocal
       Parameter<double> timeout;
       std::atomic<bool> is_running;
       
+      std::mutex solve_mutex;
+      
     private:
       void InitializeSolve(const Input& in);
     };
@@ -185,6 +187,7 @@ namespace EasyLocal
     template <class Input, class Output, class State, class CostStructure>
     SolverResult<Input, Output, CostStructure> AbstractLocalSearch<Input, Output, State, CostStructure>::Solve(const Input& in)
     {
+      std::lock_guard<std::mutex> lock(solve_mutex);
       auto start = std::chrono::high_resolution_clock::now();
       is_running = true;
       InitializeSolve(in);
@@ -206,6 +209,7 @@ namespace EasyLocal
     template <class Input, class Output, class State, class CostStructure>
     SolverResult<Input, Output, CostStructure> AbstractLocalSearch<Input, Output, State, CostStructure>::Resolve(const Input& in, const Output &initial_solution)
     {
+      std::lock_guard<std::mutex> lock(solve_mutex);
       auto start = std::chrono::high_resolution_clock::now();
       is_running = true;
       

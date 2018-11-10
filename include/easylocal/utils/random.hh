@@ -5,56 +5,71 @@
 
 namespace EasyLocal
 {
-
-namespace Core
-{
-
-/** Utility static class to generate pseudo-random values according to distributions.
+  
+  namespace Core
+  {
+    
+    // TODO: Create a singleton for the Random class
+    
+    /** Utility static class to generate pseudo-random values according to distributions.
      In order to make experiments repeatable, each solver must include:
      
      Random::Seed(value);
      */
-class Random
-{
-public:
-  static std::mt19937 g;
-  static std::random_device dev;
-
-  /** Generates an uniform random integer in [a, b].
+    class Random
+    {
+    public:
+      /** Generates an uniform random integer in [a, b].
        @param a lower bound
        @param b upper bound
        */
-  static int Int(int a, int b)
-  {
-    std::uniform_int_distribution<> d(a, b);
-    return d(g);
-  }
-
-  /** Generates random int without bounds, useful to generate a random seed. */
-  static int Int()
-  {
-    std::uniform_int_distribution<> d;
-    return d(g);
-  }
-  /** Generates an uniform random double in [a, b]
+      template <typename T, typename std::enable_if<std::is_integral<T>::value>::type* = nullptr>
+      static T Rand(T a, T b)
+      {
+        std::uniform_int_distribution<T> d(a, b);
+        return d(GetInstance().g);
+      }
+      
+      /** Generates an uniform random float in [a, b].
        @param a lower bound
        @param b upper bound
-       @remarks generates an uniform random double in [0, 1] if called without arguments
        */
-  static double Double(double a = 0, double b = 1)
-  {
-    std::uniform_real_distribution<> d(a, b);
-    return d(g);
-  }
-
-  /** Sets a new seed for the random engine. */
-  static int Seed(int seed)
-  {
-    g.seed(seed);
-    return Random::seed = seed;
-  }
-
-  static int seed;
-};
-} // namespace Core
+      template <typename T, typename std::enable_if<std::is_floating_point<T>::value>::type* = nullptr>
+      static T Rand(T a, T b)
+      {
+        std::uniform_real_distribution<T> d(a, b);
+        return d(GetInstance().g);
+      }
+      
+      /** Sets a new seed for the random engine. */
+      static unsigned int SetSeed(unsigned int seed)
+      {
+        Random& r = GetInstance();
+        r.g.seed(seed);
+        return r.seed = seed;
+      }
+      
+      static unsigned int GetSeed()
+      {
+        return GetInstance().seed;
+      }
+      
+    private:
+      static Random& GetInstance() {
+        static Random instance;
+        return instance;
+      }
+      
+      Random()
+      {
+        std::random_device dev;
+        seed = dev();
+        g.seed(seed);
+      }
+      
+      std::mt19937 g;
+      
+      unsigned int seed;
+    };
+  } // namespace Core
 } // namespace EasyLocal

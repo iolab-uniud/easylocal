@@ -5,29 +5,89 @@
 #include <cmath>
 #include <regex>
 
+/* template <class T,
+typename std::enable_if<std::is_integral<T>::value,
+T>::type* = nullptr>
+void do_stuff(T& t) {
+  std::cout << "do_stuff integral\n";
+  // an implementation for integral types (int, char, unsigned, etc.)
+}
+
+template <class T,
+typename std::enable_if<std::is_class<T>::value,
+T>::type* = nullptr>
+void do_stuff(T& t) {
+  // an implementation for class types
+} */
+
 namespace EasyLocal
 {
   
   namespace Core
   {
     
-    template <typename CFtype>
-    bool IsZero(CFtype value);
+    template <typename CFtype, typename std::enable_if<std::is_floating_point<CFtype>::value>::type* = nullptr>
+    bool LessThan(CFtype a, CFtype b)
+    {
+      // according to Knuth's The Art of Computer Programming definitely less than
+      return (b - a) > (std::max(std::abs(a), std::abs(b)) * std::numeric_limits<CFtype>::epsilon());
+    }
     
-    template <typename CFtype>
-    bool EqualTo(CFtype value1, CFtype value2);
+    template <typename CFtype, typename std::enable_if<std::is_integral<CFtype>::value>::type* = nullptr>
+    bool LessThan(CFtype a, CFtype b)
+    {
+      return a < b;
+    }
     
-    template <typename CFtype>
-    bool LessThan(CFtype value1, CFtype value2);
+    template <typename CFtype, typename std::enable_if<std::is_floating_point<CFtype>::value>::type* = nullptr>
+    bool LessThanOrEqualTo(CFtype a, CFtype b)
+    {
+      // according to Knuth's The Art of Computer Programming definitely less than
+      return (b - a) >= (std::max(std::abs(a), std::abs(b)) * std::numeric_limits<CFtype>::epsilon());
+    }
     
-    template <typename CFtype>
-    bool LessThanOrEqualTo(CFtype value1, CFtype value2);
+    template <typename CFtype, typename std::enable_if<std::is_integral<CFtype>::value>::type* = nullptr>
+    bool LessThanOrEqualTo(CFtype a, CFtype b)
+    {
+      return a <= b;
+    }
     
-    template <typename CFtype>
-    bool GreaterThan(CFtype value1, CFtype value2);
+    template <typename CFtype, typename std::enable_if<std::is_floating_point<CFtype>::value>::type* = nullptr>
+    bool GreaterThan(CFtype a, CFtype b)
+    {
+      // according to Knuth's The Art of Computer Programming definitely less than
+      return (a - b) > (std::max(std::abs(a), std::abs(b)) * std::numeric_limits<CFtype>::epsilon());
+    }
     
-    template <typename CFtype>
-    bool GreaterThanOrEqualTo(CFtype value1, CFtype value2);
+    template <typename CFtype, typename std::enable_if<std::is_integral<CFtype>::value>::type* = nullptr>
+    bool GreaterThan(CFtype a, CFtype b)
+    {
+      return a > b;
+    }
+    
+    template <typename CFtype, typename std::enable_if<std::is_floating_point<CFtype>::value>::type* = nullptr>
+    bool EqualTo(CFtype a, CFtype b)
+    {
+      return std::abs(a - b) <= (std::max(std::abs(a), std::abs(b)) * std::numeric_limits<CFtype>::epsilon());
+    }
+    
+    template <typename CFtype, typename std::enable_if<std::is_integral<CFtype>::value>::type* = nullptr>
+    bool EqualTo(CFtype a, CFtype b)
+    {
+      return a == b;
+    }
+    
+    template <typename CFtype, typename std::enable_if<std::is_floating_point<CFtype>::value>::type* = nullptr>
+    bool IsZero(CFtype a)
+    {
+      return std::abs(a) <= (std::abs(a) * std::numeric_limits<CFtype>::epsilon());
+    }
+    
+    template <typename CFtype, typename std::enable_if<std::is_integral<CFtype>::value>::type* = nullptr>
+    bool IsZero(CFtype a)
+    {
+      return a == 0;
+    }
     
     template <typename CFtype>
     CFtype max(const std::vector<CFtype> &values)
@@ -61,10 +121,18 @@ namespace EasyLocal
       return m1 == m2;
     }
     
-    std::vector<std::string> split(const std::string &input, const std::regex &regex);
+    inline std::vector<std::string> split(const std::string &input, const std::regex &regex)
+    {
+      // passing -1 as the submatch index parameter performs splitting
+      std::sregex_token_iterator first{input.begin(), input.end(), regex, -1}, last;
+      return {first, last};
+    }
     
     /** returns the type name as a string */
     template <typename T>
-    std::string GetTypeName();
+    std::string GetTypeName()
+    {
+      return typeid(T).name();
+    }
   } // namespace Core
 } // namespace EasyLocal

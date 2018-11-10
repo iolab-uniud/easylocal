@@ -6,10 +6,12 @@
 #include <iostream>
 #include <memory>
 #include <sstream>
-#include "easylocal/utils/json.hpp"
+#include "easylocal/utils/third-party/json.hpp"
 #include "easylocal/utils/types.hh"
 
 #include "boost/program_options/options_description.hpp"
+#include "boost/program_options/variables_map.hpp"
+#include "boost/program_options/parsers.hpp"
 
 namespace EasyLocal
 {
@@ -22,7 +24,6 @@ namespace EasyLocal
     /** Abstract parameter type, for containers. */
     class AbstractParameter
     {
-      friend class Parametrized;
       friend class ParameterNotSet;
       friend class ParameterNotValid;
       
@@ -39,6 +40,10 @@ namespace EasyLocal
       /** Checks if the parameter is valid. */
       bool IsValid() const { return is_valid; }
       
+      std::string GetDescription() const { return description; }
+      
+      std::string GetCmdlineFlag() const { return cmdline_flag; }
+      
       /** To print out values. */
       virtual std::string ToString() const = 0;
       
@@ -51,13 +56,20 @@ namespace EasyLocal
       /** Reads a value from a json. */
       virtual void FromJSON(json v) = 0;
       
-      std::string Flag() const;
+      std::string Flag() const
+      {
+        return cmdline_flag;
+      }
       
     protected:
-      AbstractParameter();
+      AbstractParameter()
+      : is_set(false), is_valid(false)
+      {}
       
       /** Can't instantiate an AbstractParameter from the outside. */
-      AbstractParameter(const std::string &cmdline_flag, const std::string &description);
+      AbstractParameter(const std::string &cmdline_flag, const std::string &description)
+      : description(description), cmdline_flag(cmdline_flag), is_set(false), is_valid(true)
+      {}
       
       /** Description of the parameter, for documentation and Parametrized::ReadParameters(), Parametrized::PrintParameters(). */
       std::string description;
@@ -70,6 +82,8 @@ namespace EasyLocal
       
       /** True if it has been correctly instantiated. */
       bool is_valid;
+      
+    public:
       
       virtual void CopyValue(const AbstractParameter &ap) = 0;
     };
@@ -102,18 +116,50 @@ namespace EasyLocal
        @param prefix "namespace" of the parameter (e.g. specific solver or runner)
        @param description semantics of the parameter
        */
-      ParameterBox(const std::string &prefix, const std::string &description);
+      ParameterBox(const std::string &prefix, const std::string &description)
+      : prefix(prefix), cl_options(description)
+      {
+        OverallParameters().push_back(this);
+      }
       
-      void FromJSON(json p);
-      json ToJSON() const;
-      json JSONDescription() const;
+      void FromJSON(json parameters)
+      {
+        for (auto it = parameters.begin(); it != parameters.end(); ++it)
+        {
+          for (auto p : *this)
+            if (p->Flag() == it.key() || p->Flag() == this->prefix + "::" + it.key())
+              p->FromJSON({{ it.key(), it.value() }});
+        }
+      }
+      json ToJSON() const
+      {
+        json parameters;
+        parameters[this->prefix] = {};
+        for (auto p : *this)
+          parameters[this->prefix].merge_patch(p->ToJSON());
+        return parameters;
+      }
+      
+      json JSONDescription() const
+      {
+        json parameters;
+        parameters[this->prefix] = {};
+        for (auto p : *this)
+          parameters[this->prefix].merge_patch(p->JSONDescription());
+        return parameters;
+      }
       
       /** Namespace of the parameter. */
       const std::string prefix;
       /** Object to configure boost's parameter parser. */
       boost::program_options::options_description cl_options;
       /** List of all parameter boxes that have been instantiated. */
-      static std::list<const ParameterBox *> overall_parameters;
+      
+      static std::list<const ParameterBox *>& OverallParameters()
+      {
+        static std::list<const ParameterBox*> overall_parameters;
+        return overall_parameters;
+      }
     };
     
     /** Concrete parameter of generic type. */
@@ -277,10 +323,19 @@ namespace EasyLocal
     {
     public:
       template <typename T>
-      IncorrectParameterValue(const Parameter<T> &p, std::string desc);
-      virtual const char *what() const throw();
-      virtual ~IncorrectParameterValue() throw();
-      
+      IncorrectParameterValue(const Parameter<T> &p, std::string desc)
+      : std::logic_error("Incorrect parameter value")
+      {
+        std::ostringstream os;
+        os << "Parameter " << p.cmdline_flag << " set to incorrect value " << p.value << " (" << desc << ")";
+        message = os.str();
+      }
+      virtual const char *what() const throw()
+      {
+          return message.c_str();
+      }
+      virtual ~IncorrectParameterValue()
+      {}
     protected:
       std::string message;
     };
@@ -350,177 +405,212 @@ namespace EasyLocal
     
     bool operator==(const BaseParameter<std::string> &s1, const char *s2);
     
-    template <typename T>
-    IncorrectParameterValue::IncorrectParameterValue(const Parameter<T> &p, std::string desc)
-    : std::logic_error("Incorrect parameter value")
-    {
-      std::ostringstream os;
-      os << "Parameter " << p.cmdline_flag << " set to incorrect value " << p.value << " (" << desc << ")";
-      message = os.str();
-    }
-    
     class CommandLineParameters
     {
     public:
-      static bool Parse(int argc, const char *argv[], bool check_unregistered = true, bool silent = false);
-    };
-    
-    /** A class representing a parametrized component of EasyLocal++. */
-    class Parametrized
-    {
-      friend bool CommandLineParameters::Parse(int argc, const char *argv[], bool check_unregistered, bool silent);
-      
-    public:
-      /** Constructor.
-       @param prefix namespace of the parameters
-       @param description semantics of the parameters group
-       */
-      Parametrized(const std::string &prefix, const std::string &description) : parameters(prefix, description), parameters_registered(false)
+      /** A class representing a parametrized component of EasyLocal++. */
+      class Parametrized
       {
-        overall_parametrized.push_back(this);
-      }
-      
-      static void RegisterParameters()
-      {
-        for (auto p : overall_parametrized)
-          p->_RegisterParameters();
-      }
-      
-      /** Read all parameters from an input stream (prints hints on output stream). */
-      virtual void ReadParameters(std::istream &is = std::cin, std::ostream &os = std::cout)
-      {
-        is.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+        friend class CommandLineParameters;
         
-        for (auto p : this->parameters)
+      public:
+        /** Constructor.
+         @param prefix namespace of the parameters
+         @param description semantics of the parameters group
+         */
+        Parametrized(const std::string &prefix, const std::string &description) : parameters(prefix, description), parameters_registered(false)
         {
-          os << "  " << p->description << (p->IsSet() ? (std::string(" (def.: ") + p->ToString() + "): ") : ": ");
-          do
-          {
-            p->Read(is);
-          } while (!p->IsSet());
+          OverallParametrized().push_back(this);
         }
-      }
-      
-      /** Print all parameter values on an output stream. */
-      virtual void Print(std::ostream &os = std::cout) const
-      {
-        for (auto p : this->parameters)
+        
+        static void RegisterParameters()
         {
-          os << "  " << p->description << ": ";
-          p->Write(os) << std::endl;
+          for (auto p : OverallParametrized())
+            p->_RegisterParameters();
         }
-      }
-      
-      /** Gets a given parameter */
-      template <typename T>
-      void GetParameterValue(std::string flag, T &value)
-      {
-        for (auto p : this->parameters)
+        
+        /** Read all parameters from an input stream (prints hints on output stream). */
+        virtual void ReadParameters(std::istream &is = std::cin, std::ostream &os = std::cout)
         {
-          if (p->cmdline_flag == flag || p->cmdline_flag == parameters.prefix + "::" + flag)
+          is.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+          
+          for (auto p : this->parameters)
           {
-            Parameter<T> *p_par = dynamic_cast<Parameter<T> *>(p);
-            if (!p_par)
-              throw std::logic_error("Parameter " + p->cmdline_flag + " value of an incorrect type");
-            value = *p_par;
-            return;
+            os << "  " << p->GetDescription() << (p->IsSet() ? (std::string(" (def.: ") + p->ToString() + "): ") : ": ");
+            do
+            {
+              p->Read(is);
+            } while (!p->IsSet());
           }
         }
-        // FIXME: a more specific exception should be raised
-        throw std::logic_error("Parameter " + flag + " not in the list");
-      }
-      
-      void CopyParameterValues(const Parametrized &p)
-      {
-        for (auto &p1 : this->parameters)
+        
+        /** Print all parameter values on an output stream. */
+        virtual void Print(std::ostream &os = std::cout) const
         {
-          std::string f1 = split(p1->cmdline_flag, std::regex("::"))[1];
-          for (const auto &p2 : p.parameters)
+          for (auto p : this->parameters)
           {
-            std::string f2 = split(p2->cmdline_flag, std::regex("::"))[1];
-            if (f1 == f2)
+            os << "  " << p->GetDescription() << ": ";
+            p->Write(os) << std::endl;
+          }
+        }
+        
+        /** Gets a given parameter */
+        template <typename T>
+        void GetParameterValue(std::string flag, T &value)
+        {
+          for (auto p : this->parameters)
+          {
+            if (p->GetCmdlineFlag() == flag || p->GetCmdlineFlag() == parameters.prefix + "::" + flag)
             {
-              p1->CopyValue(*p2);
+              Parameter<T> *p_par = dynamic_cast<Parameter<T> *>(p);
+              if (!p_par)
+                throw std::logic_error("Parameter " + p->GetCmdlineFlag() + " value of an incorrect type");
+              value = *p_par;
+              return;
+            }
+          }
+          // FIXME: a more specific exception should be raised
+          throw std::logic_error("Parameter " + flag + " not in the list");
+        }
+        
+        void CopyParameterValues(const Parametrized &p)
+        {
+          for (auto &p1 : this->parameters)
+          {
+            std::string f1 = split(p1->GetCmdlineFlag(), std::regex("::"))[1];
+            for (const auto &p2 : p.parameters)
+            {
+              std::string f2 = split(p2->GetCmdlineFlag(), std::regex("::"))[1];
+              if (f1 == f2)
+              {
+                p1->CopyValue(*p2);
+                break;
+              }
+            }
+          }
+        }
+        
+        /** Sets a given parameter to a given value */
+        template <typename T>
+        void SetParameter(std::string flag, const T &value)
+        {
+          bool found = false;
+          for (auto p : this->parameters)
+          {
+            if (p->GetCmdlineFlag() == flag || p->GetCmdlineFlag() == parameters.prefix + "::" + flag)
+            {
+              Parameter<T> *p_par = dynamic_cast<Parameter<T> *>(p);
+              if (!p_par)
+                throw std::logic_error("Parameter " + p->GetCmdlineFlag() + " value of an incorrect type");
+              (*p_par) = value;
+              found = true;
+            }
+          }
+          // FIXME: a more specific exception should be raised
+          if (!found)
+            throw std::logic_error("Parameter " + flag + " not in the list");
+        }
+        
+        bool IsRegistered() const
+        {
+          for (auto p : parameters)
+            if (!p->IsValid())
+              return false;
+          return true;
+        }
+        
+        json ParametersToJSON() const
+        {
+          return parameters.ToJSON();
+        }
+        
+        json ParametersDescriptionToJSON() const
+        {
+          return parameters.JSONDescription();
+        }
+        
+        void ParametersFromJSON(json p)
+        {
+          parameters.FromJSON(std::move(p));
+        }
+        
+      protected:
+        void _RegisterParameters()
+        {
+          if (!parameters_registered)
+          {
+            InitializeParameters();
+            parameters_registered = true;
+          }
+        }
+        
+        virtual void InitializeParameters() = 0;
+        
+        ParameterBox parameters;
+        
+        bool parameters_registered;
+        
+        ~Parametrized()
+        {
+          std::list<Parametrized*> overall_parametrized = OverallParametrized();
+          for (auto it = overall_parametrized.begin(); it != overall_parametrized.end(); ++it)
+          {
+            if (*it == this)
+            {
+              it = overall_parametrized.erase(it);
               break;
             }
           }
         }
-      }
-      
-      /** Sets a given parameter to a given value */
-      template <typename T>
-      void SetParameter(std::string flag, const T &value)
-      {
-        bool found = false;
-        for (auto p : this->parameters)
+        
+        static std::list<Parametrized*>& OverallParametrized()
         {
-          if (p->cmdline_flag == flag || p->cmdline_flag == parameters.prefix + "::" + flag)
-          {
-            Parameter<T> *p_par = dynamic_cast<Parameter<T> *>(p);
-            if (!p_par)
-              throw std::logic_error("Parameter " + p->cmdline_flag + " value of an incorrect type");
-            (*p_par) = value;
-            found = true;
-          }
+          static std::list<Parametrized*> overall_parametrized;
+          return overall_parametrized;
         }
-        // FIXME: a more specific exception should be raised
-        if (!found)
-          throw std::logic_error("Parameter " + flag + " not in the list");
-      }
+      };
       
-      bool IsRegistered() const
+      
+      static bool Parse(int argc, const char *argv[], bool check_unregistered = true, bool silent = false)
       {
-        for (auto p : parameters)
-          if (!p->IsValid())
-            return false;
+        Parametrized::RegisterParameters();
+        
+        boost::program_options::options_description cmdline_options(argv[0]);
+        boost::program_options::variables_map vm;
+        for (auto pb : ParameterBox::OverallParameters())
+          cmdline_options.add(pb->cl_options);
+        
+        cmdline_options.add_options()("help", "Produce help message");
+        
+        boost::program_options::parsed_options parsed = boost::program_options::command_line_parser(argc, argv).options(cmdline_options).allow_unregistered().run();
+        std::vector<std::string> unrecognized_options = boost::program_options::collect_unrecognized(parsed.options, boost::program_options::include_positional);
+        
+        if (check_unregistered && unrecognized_options.size() > 0)
+        {
+          std::cout << "Unrecognized options: ";
+          for (const std::string &o : unrecognized_options)
+            std::cout << o << " ";
+          std::cout << std::endl
+          << "Run " << argv[0] << " --help for the allowed options" << std::endl;
+          return false;
+        }
+        
+        boost::program_options::store(parsed, vm);
+        boost::program_options::notify(vm);
+        
+        if (!silent && vm.count("help"))
+        {
+          std::cout << cmdline_options << std::endl;
+          return false;
+        }
         return true;
       }
-      
-      json ParametersToJSON() const
-      {
-        return parameters.ToJSON();
-      }
-      
-      json ParametersDescriptionToJSON() const
-      {
-        return parameters.JSONDescription();
-      }
-      
-      void ParametersFromJSON(json p)
-      {
-        parameters.FromJSON(std::move(p));
-      }
-      
-    protected:
-      void _RegisterParameters()
-      {
-        if (!parameters_registered)
-        {
-          InitializeParameters();
-          parameters_registered = true;
-        }
-      }
-      
-      virtual void InitializeParameters() = 0;
-      
-      ParameterBox parameters;
-      
-      bool parameters_registered;
-      
-      ~Parametrized()
-      {
-        for (auto it = overall_parametrized.begin(); it != overall_parametrized.end(); ++it)
-        {
-          if (*it == this)
-          {
-            it = overall_parametrized.erase(it);
-            break;
-          }
-        }
-      }
-      
-      static std::list<Parametrized *> overall_parametrized;
     };
     
+    
+    inline bool operator==(const Parameter<std::string> &s1, const char *s2)
+    {
+      return static_cast<std::string>(s1) == std::string(s2);
+    }    
   } // namespace Core
 } // namespace EasyLocal

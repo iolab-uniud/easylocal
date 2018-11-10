@@ -1,8 +1,8 @@
 #pragma once
 
-#include "easylocal/utils/crow_all.h"
+#include "easylocal/utils/third-party/crow_all.h"
 #include "easylocal/testers/tester.hh"
-#include "easylocal/utils/json.hpp"
+#include "easylocal/utils/third-party/json.hpp"
 #include "easylocal/utils/url.hh"
 #include "easylocal/utils/parameter.hh"
 #include <memory>
@@ -11,7 +11,7 @@
 #include <ctime>
 #include <regex>
 // TODO: use it only if CURL is available
-#include "easylocal/utils/uccurl.hh"
+#include "easylocal/utils/third-party/uccurl.hh"
 
 
 // TODO: use a task manager (or define one) for ensuring that just the right number of workers are used and the system is not overloaded
@@ -26,7 +26,7 @@ namespace EasyLocal {
      @ingroup Testers
      */
     template <class Input, class Output, class State, class CostStructure = DefaultCostStructure<int>>
-    class RESTTester : public AbstractTester<Input, State, CostStructure>, public Parametrized
+    class RESTTester : public AbstractTester<Input, State, CostStructure>, public Core::CommandLineParameters::Parametrized
     {
       struct JSONResponse
       {
