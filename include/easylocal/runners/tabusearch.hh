@@ -219,7 +219,7 @@ namespace EasyLocal
       while (!tabu_list.empty() && tabu_list.top().tenure < this->iteration)
         tabu_list.pop();
       // insert current move
-      tabu_list.emplace(this->current_move.move, this->iteration + Random::Int(min_tenure, max_tenure));
+      tabu_list.emplace(this->current_move.move, this->iteration + Random::Rand(min_tenure, max_tenure));
     }
     
     /**

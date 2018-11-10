@@ -545,7 +545,7 @@ namespace EasyLocal
         
         for (size_t i = 0; i < bias.size(); i++)
           total_bias += bias[i];
-        pick = Random::Double(0.0, total_bias);
+        pick = Random::Rand(0.0, total_bias);
         
         // Subtract bias until we're on the right neighborhood explorer
         while (pick > bias[selected])

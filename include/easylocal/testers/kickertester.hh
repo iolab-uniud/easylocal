@@ -18,7 +18,7 @@ namespace EasyLocal
     template <class Input, class Output, class State, class Move, class CostStructure = DefaultCostStructure<int>>
     class KickerTester
     : public ComponentTester<Input, Output, State, CostStructure>,
-    public Parametrized,
+    public Core::CommandLineParameters::Parametrized,
     public ChoiceReader
     {
     public:

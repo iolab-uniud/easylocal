@@ -9,7 +9,7 @@
 #include "easylocal/helpers/costcomponent.hh"
 #include "easylocal/helpers/coststructure.hh"
 #include "easylocal/utils/deprecationhandler.hh"
-#include "easylocal/utils/json.hpp"
+#include "easylocal/utils/third-party/json.hpp"
 
 namespace EasyLocal
 {
