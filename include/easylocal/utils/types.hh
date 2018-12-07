@@ -42,7 +42,7 @@ namespace EasyLocal
     template <typename CFtype, typename std::enable_if<std::is_floating_point<CFtype>::value>::type* = nullptr>
     bool LessThanOrEqualTo(CFtype a, CFtype b)
     {
-      // according to Knuth's The Art of Computer Programming definitely less than
+      // according to Knuth's The Art of Computer Programming definitely less than or equal to
       return (b - a) >= (std::max(std::abs(a), std::abs(b)) * std::numeric_limits<CFtype>::epsilon());
     }
     

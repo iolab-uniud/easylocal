@@ -20,11 +20,6 @@ namespace EasyLocal
     public:
       using AbstractLocalSearch<Input, Output, State, CostStructure>::AbstractLocalSearch;
       
-      [[deprecated("This is the old style easylocal interface, it might still be used, however we advise to upgrade to Input-less class and Input-aware methods")]]
-      GRASP(const Input &i,
-            StateManager<Input, State, CostStructure> &sm,
-            OutputManager<Input, Output, State> &om,
-            std::string name);
       void Print(std::ostream &os = std::cout) const;
       void SetRunner(Runner<Input, State, CostStructure> &r);
       unsigned int GetRestarts() const { return restarts; }

@@ -10,7 +10,7 @@ namespace EasyLocal
      moves.
      @ingroup Testers
      */
-    template <class Input, class Output, class State, class CostStructure = Core::DefaultCostStructure<int>>
+    template <class Input, class State, class CostStructure = Core::DefaultCostStructure<int>>
     class ComponentTester
     {
     public:
@@ -40,8 +40,8 @@ namespace EasyLocal
      as parameter.
      @param name the name of the tester
      */
-    template <class Input, class Output, class State, class CostStructure>
-    ComponentTester<Input, Output, State, CostStructure>::ComponentTester(std::string name)
+    template <class Input, class State, class CostStructure>
+    ComponentTester<Input, State, CostStructure>::ComponentTester(std::string name)
     : name(name) {}
   } // namespace Debug
 } // namespace EasyLocal

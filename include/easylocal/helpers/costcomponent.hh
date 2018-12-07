@@ -3,14 +3,11 @@
 #include <iostream>
 #include <vector>
 #include "easylocal/helpers/coststructure.hh"
-#include "easylocal/utils/deprecationhandler.hh"
 
 namespace EasyLocal
 {
-  
   namespace Core
-  {
-    
+  {    
     /** The responsibility of this class is to compute a component of cost based on the information contained in a state. It doesn't handle delta costs (i.e., variations of the cost functions due to a move), as they are treated in @ref DeltaCostComponent.
      All cost components for a given (@Input, @State) pair are statically registered in the system and they are accessible with an index.
      @brief The class CostComponent manages one single component of the cost, either hard or soft.
@@ -20,37 +17,19 @@ namespace EasyLocal
      @ingroup Helpers
      */
     template <class Input, class State, class CFtype = int>
-    class CostComponent : protected DeprecationHandler<Input>
+    class CostComponent
     {
     public:
       /** @copydoc Printable::Print() */
       virtual void Print(std::ostream &os = std::cout) const;
       
-      /** Old-style method, without Input
-       @deprecated
-       */
-      [[deprecated("This is the old style easylocal interface, it is mandatory to upgrade to Input-less class and Input-aware methods")]]
-      CFtype ComputeCost(const State &st) const
-      {
-        return ComputeCost(this->GetInput(), st);
-      }
       
       /** Computes this component of cost with respect to a given state not considering its weight.
        @param in the @ref Input object
        @param st the @ref State to be evaluated
        @return the computed cost, regardless of its weight
        */
-      virtual CFtype ComputeCost(const Input& in, const State &st) const = 0;
-      
-      /** Old-style method, without Input
-       @deprecated
-       */
-      [[deprecated("This is the old style easylocal interface, it is mandatory to upgrade to Input-less class and Input-aware methods")]]
-      CFtype Cost(const State &st) const
-      {
-        return Cost(this->GetInput(), st);
-      }
-      
+      virtual CFtype ComputeCost(const Input& in, const State &st) const = 0;      
       
       /** Computes this component of cost with respect to a given state.
        @param in the @ref Input object
@@ -61,15 +40,6 @@ namespace EasyLocal
       CFtype Cost(const Input& in, const State &st) const
       {
         return weight * ComputeCost(in, st);
-      }
-      
-      /** Old-style method, without Input
-       @deprecated
-       */
-      [[deprecated("This is the old style easylocal interface, it is mandatory to upgrade to Input-less class and Input-aware methods")]]
-      void PrintViolations(const State &st, std::ostream &os = std::cout) const
-      {
-        PrintViolations(this->GetInput(), st, os);
       }
       
       /** Prints the violations relative to this cost component with respect to the specified state.
@@ -122,10 +92,6 @@ namespace EasyLocal
       const size_t hash;
       
     protected:
-      
-      [[deprecated("This is the old style easylocal interface, it is mandatory to upgrade to Input-less class and Input-aware methods")]]
-      CostComponent(const Input &in, const CFtype &weight, bool is_hard, std::string name) : DeprecationHandler<Input>(in), name(name), hash(std::hash<std::string>()(typeid(this).name() + name)), weight(weight), is_hard(is_hard)
-      {}
       
       /** Weight of the cost component. */
       CFtype weight;

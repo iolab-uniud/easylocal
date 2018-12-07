@@ -8,73 +8,45 @@
 
 #include "easylocal/helpers/costcomponent.hh"
 #include "easylocal/helpers/coststructure.hh"
-#include "easylocal/utils/deprecationhandler.hh"
 #include "easylocal/utils/third-party/json.hpp"
 
 namespace EasyLocal
 {
-  
   namespace Core
   {
-    
     /**
      This constant multiplies the value of the Violations function in thehierarchical formulation of the Cost function (i.e., CostFunction(s) = HARD_WEIGHT * Violations(s) + Objective(s)).
      @todo The use of the global HARD_WEIGHT is a rough solution, waiting for an idea of a general mechanism for managing cost function weights.
-     */
-    
+     */    
 #if !defined(HARD_WEIGHT_SET)
     const int HARD_WEIGHT = 1000;
 #define HARD_WEIGHT_SET
 #endif
-    
     /**
-     @brief This component is responsible for all operations on the state which are
+     * @brief This component is responsible for all operations on the state which are
      independent of the neighborhood definition, such as generating a random state
      or computing the cost of a state.
-     
-     @tparam Input the class representing the problem input
-     @tparam Output the class representing the problem output
-     @tparam CostStructure the type of the cost structure to be used (by default an aggregated cost structure with distinct violations and objectives)
-     
-     @remarks no @ref Move template is supplied to this class.
-     @ingroup Helpers
+     * 
+     * @tparam _Input the class representing the problem input
+     * @tparam _State the class representing the problem solution
+     * @tparam DefaultCostStructure<int> the type of the cost structure to be used (by default an aggregated cost structure with distinct violations and objectives)
+     * 
+     * @ingroup Helpers
      */
-    template <class _Input, class _State, class _CostStructure = DefaultCostStructure<int>>
-    class StateManager : protected DeprecationHandler<_Input>
+    template <class _Input, class _State, class CostStructure = DefaultCostStructure<int>>
+    class StateManager
     {
     public:
-      typedef typename _CostStructure::CFtype CFtype;
+      typedef typename CostStructure::CFtype CFtype;
       typedef _Input Input;
-      typedef _State State;
-      typedef _CostStructure CostStructure;
-      
-      /**
-       Old style random state generator
-       @deprecated
-       */
-      [[deprecated("This is the old style easylocal interface, it is mandatory to upgrade to Input-less class and Input-aware methods")]]
-      void RandomState(State &st)
-      {
-        RandomState(this->GetInput(), st);
-      }
-      
+      typedef _State State;      
       /**
        Generates a random state
        @param in the input object
-       @param st the state to be written
+       @return a new random state
        */
-      virtual void RandomState(const Input& in, State &st) = 0;
-      
-      /**
-       Old style sample state generator
-       @deprecated
-       */
-      [[deprecated("This is the old style easylocal interface, it is mandatory to upgrade to Input-less class and Input-aware methods")]]
-      CostStructure SampleState(State &st, unsigned int samples)
-      {
-        SampleState(this->GetInput(), st, samples);
-      }
-      
+      virtual void RandomState(const Input& in, State& st) = 0;
+            
       /**
        Looks for the best state out of a given sample of random states.
        @param st state to be written
@@ -82,16 +54,7 @@ namespace EasyLocal
        @return a cost structure with the cost of the state @c st
        */
       virtual CostStructure SampleState(const Input& in, State &st, unsigned int samples);
-      
-      /**
-       Old style greedy state generator
-       @deprecated
-       */
-      [[deprecated("This is the old style easylocal interface, it is mandatory to upgrade to Input-less class and Input-aware methods")]]
-      void GreedyState(State &st, double alpha, unsigned int k)
-      {
-        GreedyState(this->GetInput(), st, alpha, k);
-      }
+
       
       /**
        Generate a greedy state with a random component controlled by the
@@ -125,31 +88,11 @@ namespace EasyLocal
       virtual void GreedyState(const Input& in, State &st, double alpha, unsigned int k);
       
       /**
-       Old style greedy state generator
-       @deprecated
-       */
-      [[deprecated("This is the old style easylocal interface, it is mandatory to upgrade to Input-less class and Input-aware methods")]]
-      void GreedyState(State &st)
-      {
-        GreedyState(this->GetInput(), st);
-      }
-      
-      /**
        Generate a greedy state.
        @note To be implemented in the application. Default behaviour is RandomState
        (MayRedef).
        */
       virtual void GreedyState(const Input& in, State &st);
-      
-      /**
-       Old style cost computation
-       @deprecated
-       */
-      [[deprecated("This is the old style easylocal interface, it is mandatory to upgrade to Input-less class and Input-aware methods")]]
-      CostStructure CostFunctionComponents(const State &st, const std::vector<double> &weights = std::vector<double>(0)) const
-      {
-        return CostFunctionComponents(this->GetInput(), st, weights);
-      }
       
       
       /**
@@ -181,15 +124,6 @@ namespace EasyLocal
        @return true if the lower bound of the cost function has been reached
        */
       virtual bool LowerBoundReached(const Input& in, const CostStructure &costs) const;
-      
-      /**
-       Old style checking that optimal state has been reached
-       */
-      [[deprecated("This is the old style easylocal interface, it is mandatory to upgrade to Input-less class and Input-aware methods")]]
-      bool OptimalStateReached(const State &st) const
-      {
-        return OptimalStateReached(this->GetInput(), st);
-      }
       
       /**
        Check whether the cost of the current state has reached the lower bound.
@@ -226,17 +160,7 @@ namespace EasyLocal
        Clear the cost component array.
        */
       void ClearCostStructure();
-      
-      /**
-       Compute the distance of two states (e.g. the Hamming distance).
-       Currently used only by the @ref GeneralizedLocalSearchObserver.
-       @return the distance, assumed always @c unsigned int
-       */
-      [[deprecated("This is the old style easylocal interface, it is mandatory to upgrade to Input-less class and Input-aware methods")]]
-      unsigned int StateDistance(const State &st1, const State &st2) const
-      {
-        return StateDistance(this->GetInput(), st1, st2);
-      }
+
       
       /**
        Compute the distance of two states (e.g. the Hamming distance).
@@ -244,17 +168,7 @@ namespace EasyLocal
        @return the distance, assumed always @c unsigned int
        */
       unsigned int StateDistance(const Input& in, const State &st1, const State &st2) const;
-      
-      /**
-       Check whether the state is consistent. In particular, should check whether
-       the redundant data structures are consistent with the main ones. Used only
-       for debugging purposes.
-       */
-      [[deprecated("This is the old style easylocal interface, it is mandatory to upgrade to Input-less class and Input-aware methods")]]
-      bool CheckConsistency(const State &st) const
-      {
-        return CheckConsistency(this->GetInput(), st);
-      }
+    
       
       /**
        Check whether the state is consistent. In particular, should check whether
@@ -266,15 +180,16 @@ namespace EasyLocal
       /** Name of the state manager */
       const std::string name;
       
+      virtual void DisplayDetailedState(const Input& in, const State& st, std::ostream& os) const
+      {
+        os << st;
+      }
+      
+      virtual json ToJSON(const Input& in, const State& st) const = 0;
+      
+      virtual void FromJSON(const Input& in, State& st, const json& output) const = 0;
+                  
     protected:
-      /**
-       Build a StateManager object linked to the provided input.
-       @param in a reference to an input object
-       @param name is the name of the object
-       */
-      [[deprecated("This is the old style easylocal interface, it is mandatory to upgrade to Input-less class and Input-aware methods")]]
-      StateManager(const Input &in, std::string name) : DeprecationHandler<Input>(in)
-      {}
       
       /** Build a StateManager object.
        @param name the name of the object

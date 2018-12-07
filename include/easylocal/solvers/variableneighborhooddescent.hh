@@ -25,21 +25,12 @@ namespace EasyLocal
       
       /**
        Constructs a variable neighborhood descent solver by providing it links to
-       a state manager, an output manager, a kicker, an input,
-       and an output object.
+       a state manager, an output manager, a kicker, and a maximum step size
        
-       @param in a reference to an input object
        @param sm a compatible state manager
        @param om a compatible output manager
-       @deprecated
+       @param max_k maximum step size
        */
-      [[deprecated("This is the old style easylocal interface, it might still be used, however we advise to upgrade to Input-less class and Input-aware methods")]]
-      VariableNeighborhoodDescent(const Input &in,
-                                  StateManager<Input, State, CostStructure> &sm,
-                                  OutputManager<Input, Output, State> &om,
-                                  unsigned int max_k,
-                                  std::string name);
-      
       VariableNeighborhoodDescent(StateManager<Input, State, CostStructure> &sm,
                                   OutputManager<Input, Output, State> &om,
                                   unsigned int max_k,

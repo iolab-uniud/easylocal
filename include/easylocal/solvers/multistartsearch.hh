@@ -25,11 +25,6 @@ namespace EasyLocal
       typedef Runner<Input, State, CostStructure> RunnerType;
       using AbstractLocalSearch<Input, Output, State, CostStructure>::AbstractLocalSearch;
       
-      [[deprecated("This is the old style easylocal interface, it might still be used, however we advise to upgrade to Input-less class and Input-aware methods")]]
-      MultiStartSearch(const Input &in,
-                       StateManager<Input, State, CostStructure> &sm,
-                       OutputManager<Input, Output, State> &om,
-                       std::string name);
       void AddRunner(RunnerType &r);
       void RemoveRunner(const RunnerType &r);
       void Print(std::ostream &os = std::cout) const;

@@ -13,11 +13,9 @@
 #include "easylocal/utils/interruptible.hh"
 #include "easylocal/utils/parameter.hh"
 #include "easylocal/helpers/coststructure.hh"
-#include "easylocal/utils/deprecationhandler.hh"
 
 namespace EasyLocal
 {
-  
   namespace Debug
   {    
     /** Forward declaration of tester. */
@@ -34,7 +32,7 @@ namespace EasyLocal
      @ingroup Helpers
      */
     template <class _Input, class _State, class _CostStructure = DefaultCostStructure<int>>
-    class Runner : public Interruptible<_CostStructure, const _Input&, _State &>, public CommandLineParameters::Parametrized, protected DeprecationHandler<_Input>
+    class Runner : public Interruptible<_CostStructure, const _Input&, _State &>, public CommandLineParameters::Parametrized
     {
       friend class Debug::AbstractTester<_Input, _State, _CostStructure>;
       
@@ -44,15 +42,6 @@ namespace EasyLocal
       typedef _CostStructure CostStructure;
       typedef typename _CostStructure::CFtype CFtype;
       
-      /** Performs a full run of the search method (possibly being interrupted before its natural ending).
-       @param s state to start with and to modify
-       @return the cost of the best state found
-       @throw ParameterNotSet if one of the parameters needed by the runner (or other components) hasn't been set
-       @throw IncorrectParameterValue if one of the parameters has an incorrect value
-       @deprecated
-       */
-      [[deprecated("This is the old style easylocal interface, it might still be used, however we advise to upgrade to Input-less class and Input-aware methods")]]
-      CostStructure Go(State &s);
       
       /** Performs a full run of the search method (possibly being interrupted before its natural ending).
        @param in the input object
@@ -139,14 +128,6 @@ namespace EasyLocal
       }
       
     protected:
-      /** Constructor.
-       @param in a reference to the input
-       @param sm a StateManager, as defined by the user
-       @param name name of the runner
-       @deprecated
-       */
-      [[deprecated("This is the old style easylocal interface, it might still be used, however we advise to upgrade to Input-less class and Input-aware methods")]]
-      Runner(const Input & in, StateManager<Input, State, CostStructure> & sm, std::string name, std::string description);
       
       /** Constructor.
        @param sm a StateManager, as defined by the user
@@ -269,14 +250,6 @@ namespace EasyLocal
     template <class Input, class State, class CostStructure>
     std::vector<Runner<Input, State, CostStructure> *> Runner<Input, State, CostStructure>::runners;
     
-    template <class Input, class State, class CostStructure>
-    Runner<Input, State, CostStructure>::Runner(const Input &in, StateManager<Input, State, CostStructure> &sm, std::string name, std::string description)
-    : // Parameters
-    Parametrized(name, description), DeprecationHandler<Input>(in), name(name), no_acceptable_move_found(false), sm(sm), weights(0)
-    {
-      // Add to the list of all runners
-      runners.push_back(this);
-    }
     
     template <class Input, class State, class CostStructure>
     Runner<Input, State, CostStructure>::Runner(StateManager<Input, State, CostStructure> &sm, std::string name, std::string description)
@@ -299,13 +272,6 @@ namespace EasyLocal
       max_evaluations("max_evaluations", "Maximum total number of cost function evaluations allowed", this->parameters);
       // This parameter has a default value
       max_evaluations = std::numeric_limits<unsigned long int>::max();
-    }
-    
-    // old-style
-    template <class Input, class State, class CostStructure>
-    CostStructure Runner<Input, State, CostStructure>::Go(State &st)
-    {
-      return Go(this->GetInput(), st);
     }
     
     template <class Input, class State, class CostStructure>

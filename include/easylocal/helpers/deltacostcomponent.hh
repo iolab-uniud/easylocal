@@ -4,11 +4,9 @@
 
 //#include "easylocal/helpers/coststructure.hh"
 #include "easylocal/helpers/costcomponent.hh"
-#include "easylocal/utils/deprecationhandler.hh"
 
 namespace EasyLocal
 {
-  
   namespace Core
   {
     
@@ -16,7 +14,7 @@ namespace EasyLocal
      @ingroup Helpers
      */
     template <class Input, class State, class Move, typename CFtype = int>
-    class DeltaCostComponent : protected DeprecationHandler<Input>
+    class DeltaCostComponent
     {
     public:
       /** Returns the (complete) CostComponent associated with the DeltaCostComponent object.
@@ -33,14 +31,6 @@ namespace EasyLocal
       /** @copydoc CostComponent::IsSoft() */
       bool IsSoft() const { return cc.IsSoft(); }
       
-      /** Old-style method, without Input
-       @deprecated
-       */
-      [[deprecated("This is the old style easylocal interface, it is mandatory to upgrade to Input-less class and Input-aware methods")]]
-      CFtype DeltaCost(const State &st, const Move &mv) const
-      {
-        return DeltaCost(this->GetInput(), st, mv);
-      }
       
       /** Returns the variation in the cost function induced by the move according to this cost component.
        @param in input object
@@ -56,12 +46,6 @@ namespace EasyLocal
       const std::string name;
       
     protected:
-      /** Deprecated constructor.
-       @deprecated
-       */
-      [[deprecated("This is the old style easylocal interface, it is mandatory to upgrade to Input-less class and Input-aware methods")]]
-      DeltaCostComponent(const Input &in, CostComponent<Input, State, CFtype> &cc, std::string name) : DeprecationHandler<Input>(in), name(name)
-      {}
       
       /** Constructor.
        @brief Constructs a DeltaCostComponent providing an input object, the related CostComponent and a name
@@ -73,15 +57,6 @@ namespace EasyLocal
       
       /** Destructor. */
       virtual ~DeltaCostComponent() {}
-      
-      /** Old-style method, without Input
-       @deprecated
-       */
-      [[deprecated("This is the old style easylocal interface, it is mandatory to upgrade to Input-less class and Input-aware methods")]]
-      CFtype ComputeDeltaCost(const State &st, const Move &mv) const
-      {
-        return ComputeDeltaCost(this->GetInput(), st, mv);
-      }
       
       /** Computes the variation of the cost on a given @ref State due to a specific @ref Move.
        @param in the Input object

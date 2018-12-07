@@ -25,7 +25,7 @@ namespace EasyLocal {
     /** A REST Tester represents the web service interface of a easylocal solver. Differently from the regular tester, this class is State-less (w.r.t. easylocal state)
      @ingroup Testers
      */
-    template <class Input, class Output, class State, class CostStructure = DefaultCostStructure<int>>
+    template <class Input, class State, class CostStructure = DefaultCostStructure<int>>
     class RESTTester : public AbstractTester<Input, State, CostStructure>, public Core::CommandLineParameters::Parametrized
     {
       struct JSONResponse
@@ -224,7 +224,7 @@ namespace EasyLocal {
 
       
     public:
-      RESTTester(StateManager<Input, State, CostStructure>& sm, OutputManager<Input, Output, State>& om);
+      RESTTester(StateManager<Input, State, CostStructure>& sm);
       /** Virtual destructor. */
       virtual ~RESTTester() { Destroy(); }
       void Run();
@@ -240,7 +240,6 @@ namespace EasyLocal {
       const unsigned int numThreads;
       
       StateManager<Input, State, CostStructure>& sm;
-      OutputManager<Input, Output, State>& om;
       
       // utils
       std::vector<string> runner_urls;
@@ -272,9 +271,9 @@ namespace EasyLocal {
       unsigned long long tasks_created{0};
     };
     
-    template <class Input, class Output, class State, class CostStructure>
-    RESTTester<Input, Output, State, CostStructure>::RESTTester(StateManager<Input, State, CostStructure>& sm, OutputManager<Input, Output, State>& om)
-    : Parametrized("REST", "REST tester"), numThreads(std::max(std::thread::hardware_concurrency(), 2u) - 1u), sm(sm), om(om)
+    template <class Input, class State, class CostStructure>
+    RESTTester<Input, State, CostStructure>::RESTTester(StateManager<Input, State, CostStructure>& sm)
+    : Parametrized("REST", "REST tester"), numThreads(std::max(std::thread::hardware_concurrency(), 2u) - 1u), sm(sm)
     {
       for (auto r : this->runners)
       {
@@ -284,16 +283,16 @@ namespace EasyLocal {
       done = false;
     }
     
-    template <class Input, class Output, class State, class CostStructure>
-    void RESTTester<Input, Output, State, CostStructure>::CreateWorkers()
+    template <class Input, class State, class CostStructure>
+    void RESTTester<Input, State, CostStructure>::CreateWorkers()
     {
       // prepare workers
       try
       {
         for (unsigned i = 0; i < numThreads; i++)
-          workers.emplace_back(&RESTTester<Input, Output, State, CostStructure>::Worker, this);
+          workers.emplace_back(&RESTTester<Input, State, CostStructure>::Worker, this);
         // run the solution cleaner every 15 minutes
-        workers.emplace_back(&RESTTester<Input, Output, State, CostStructure>::Cleaner, this, std::chrono::minutes(15));
+        workers.emplace_back(&RESTTester<Input, State, CostStructure>::Cleaner, this, std::chrono::minutes(15));
       }
       catch(...)
       {
@@ -302,8 +301,8 @@ namespace EasyLocal {
       }
     }
     
-    template <class Input, class Output, class State, class CostStructure>
-    void RESTTester<Input, Output, State, CostStructure>::Destroy()
+    template <class Input, class State, class CostStructure>
+    void RESTTester<Input, State, CostStructure>::Destroy()
     {
       done = true;
       task_queue.Invalidate();
@@ -315,8 +314,8 @@ namespace EasyLocal {
       }
     }
     
-    template <class Input, class Output, class State, class CostStructure>
-    void RESTTester<Input, Output, State, CostStructure>::InitializeParameters()
+    template <class Input, class State, class CostStructure>
+    void RESTTester<Input, State, CostStructure>::InitializeParameters()
     {
       port("port", "TCP/IP port", this->parameters);
       // default: 18080
@@ -326,8 +325,8 @@ namespace EasyLocal {
       authorization = "";
     }
     
-    template <class Input, class Output, class State, class CostStructure>
-    void RESTTester<Input, Output, State, CostStructure>::Worker()
+    template <class Input, class State, class CostStructure>
+    void RESTTester<Input, State, CostStructure>::Worker()
     {
       while (!done)
       {
@@ -373,8 +372,8 @@ namespace EasyLocal {
       }
     }
     
-    template <class Input, class Output, class State, class CostStructure>
-    void RESTTester<Input, Output, State, CostStructure>::Cleaner(std::chrono::minutes interval)
+    template <class Input, class State, class CostStructure>
+    void RESTTester<Input, State, CostStructure>::Cleaner(std::chrono::minutes interval)
     {
       std::unique_lock<std::mutex> task_lock(task_status_mutex, std::defer_lock);
       while (!done)
@@ -403,8 +402,8 @@ namespace EasyLocal {
     }
     
         
-    template <class Input, class Output, class State, class CostStructure>
-    void RESTTester<Input, Output, State, CostStructure>::Run()
+    template <class Input, class State, class CostStructure>
+    void RESTTester<Input, State, CostStructure>::Run()
     {
       started = std::chrono::system_clock::now();
       CreateWorkers();
@@ -485,11 +484,9 @@ namespace EasyLocal {
           {
             try
             {
-              Output out(*in);
               p_st = std::make_unique<State>(*in);
               std::istringstream is(payload["initial_solution"].dump());
-              is >> out;
-              om.InputState(*in, *p_st, out);
+              is >> *p_st;
             }
             catch (std::exception & e)
             {
@@ -557,8 +554,8 @@ namespace EasyLocal {
       app.port(port).multithreaded().run();
     }
     
-    template <class Input, class Output, class State, class CostStructure>
-    void RESTTester<Input, Output, State, CostStructure>::RootEndpoint(const crow::request& req, crow::response& res) const
+    template <class Input, class State, class CostStructure>
+    void RESTTester<Input, State, CostStructure>::RootEndpoint(const crow::request& req, crow::response& res) const
     {
       json response;
       response["version"] = "1.0";
@@ -585,8 +582,8 @@ namespace EasyLocal {
       res.end();
     }
     
-    template <class Input, class Output, class State, class CostStructure>
-    std::shared_ptr<typename RESTTester<Input, Output, State, CostStructure>::Task> RESTTester<Input, Output, State, CostStructure>::CreateTask(float timeout, std::unique_ptr<Input> p_in, std::unique_ptr<State> p_st, std::unique_ptr<Runner<Input, State, CostStructure>> p_r, json parameters, std::string callback_url)
+    template <class Input, class State, class CostStructure>
+    std::shared_ptr<typename RESTTester<Input, State, CostStructure>::Task> RESTTester<Input, State, CostStructure>::CreateTask(float timeout, std::unique_ptr<Input> p_in, std::unique_ptr<State> p_st, std::unique_ptr<Runner<Input, State, CostStructure>> p_r, json parameters, std::string callback_url)
     {
       // the lock is here, because also the tasks counter has to be guarded
       std::lock_guard<std::mutex> lock(task_status_mutex);
@@ -611,8 +608,8 @@ namespace EasyLocal {
       return task;
     }
     
-    template <class Input, class Output, class State, class CostStructure>
-    json RESTTester<Input, Output, State, CostStructure>::TaskStatus(std::string task_id) const
+    template <class Input, class State, class CostStructure>
+    json RESTTester<Input, State, CostStructure>::TaskStatus(std::string task_id) const
     {
       std::lock_guard<std::mutex> lock(task_status_mutex);
       json status;
@@ -652,8 +649,8 @@ namespace EasyLocal {
       return status;
     }
     
-    template <class Input, class Output, class State, class CostStructure>
-    json RESTTester<Input, Output, State, CostStructure>::Solution(std::string task_id, bool force_partial) const
+    template <class Input, class State, class CostStructure>
+    json RESTTester<Input, State, CostStructure>::Solution(std::string task_id, bool force_partial) const
     {
       std::lock_guard<std::mutex> lock(task_status_mutex);
       json status;
@@ -672,7 +669,7 @@ namespace EasyLocal {
         status["submitted"] = getISOTimestamp(task->submitted);
         status["started"] = getISOTimestamp(task->started);
         status["completed"] = getISOTimestamp(task->completed);
-        status["solution"] = om.ConvertToJSON(*(task->p_in), *(task->p_st));
+        status["solution"] = sm.ToJSON(*(task->p_in), *(task->p_st));
       }
       else if (!force_partial)
       {
@@ -686,13 +683,13 @@ namespace EasyLocal {
         status["submitted"] = getISOTimestamp(task->submitted);
         status["started"] = getISOTimestamp(task->started);
         status["cost"] = sm.JSONCostFunctionComponents(*(task->p_in), *(p_st));
-        status["solution"] = om.ConvertToJSON(*(task->p_in), *(p_st));
+        status["solution"] = sm.ToJSON(*(task->p_in), *(p_st));
       }
       return status;
     }
     
-    template <class Input, class Output, class State, class CostStructure>
-    json RESTTester<Input, Output, State, CostStructure>::RemoveTask(std::string task_id)
+    template <class Input, class State, class CostStructure>
+    json RESTTester<Input, State, CostStructure>::RemoveTask(std::string task_id)
     {
       std::lock_guard<std::mutex> lock(task_status_mutex);
       json status;

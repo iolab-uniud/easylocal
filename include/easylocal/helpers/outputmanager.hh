@@ -2,11 +2,9 @@
 
 #include <iostream>
 #include <fstream>
-#include "easylocal/utils/deprecationhandler.hh"
 
 namespace EasyLocal
 {
-  
   namespace Core
   {
     
@@ -14,7 +12,7 @@ namespace EasyLocal
      @ingroup Helpers
      */
     template <class _Input, class _Output, class _State>
-    class OutputManager : protected DeprecationHandler<_Input>
+    class XOutputManager
     {
     public:
       typedef _Input Input;
@@ -119,7 +117,7 @@ namespace EasyLocal
       /** Constructs an output managert.
        @param name the name of the output manager
        */
-      OutputManager(std::string name)
+      XOutputManager(std::string name)
       : name(name)
       {}
       
@@ -127,10 +125,10 @@ namespace EasyLocal
        @deprecated
        */
       [[deprecated("This is the old style easylocal interface, it is mandatory to upgrade to Input-less class and Input-aware methods")]]
-      OutputManager(const Input &in, std::string name) : DeprecationHandler<Input>(in), name(name)
+      XOutputManager(const Input &in, std::string name) :  name(name)
       {}
       
-      virtual ~OutputManager() {}
+      virtual ~XOutputManager() {}
       
       /** Name of the output manager. */
       const std::string name;
@@ -139,7 +137,7 @@ namespace EasyLocal
     /** IMPLEMENTATION */
     
     template <class Input, class Output, class State>
-    void OutputManager<Input, Output, State>::ReadState(const Input& in, State &st, std::istream &is) const
+    void XOutputManager<Input, Output, State>::ReadState(const Input& in, State &st, std::istream &is) const
     {
       Output out(in);
       is >> out;
@@ -147,7 +145,7 @@ namespace EasyLocal
     }
     
     template <class Input, class Output, class State>
-    void OutputManager<Input, Output, State>::WriteState(const Input& in, const State &st, std::ostream &os) const
+    void XOutputManager<Input, Output, State>::WriteState(const Input& in, const State &st, std::ostream &os) const
     {
       Output out(in);
       OutputState(in, st, out);

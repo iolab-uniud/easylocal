@@ -67,22 +67,6 @@ namespace EasyLocal
        @param ne the Neighborhood Explorer
        @param name the name of the runner
        @param InverseFunction the inverse function for tabu list management
-       @deprecated
-       */
-      [[deprecated("This is the old style easylocal interface, it might still be used, however we advise to upgrade to Input-less class and Input-aware methods")]]
-      TabuSearch(const Input &in,
-                 StateManager<Input, State, CostStructure> &sm,
-                 NeighborhoodExplorer<Input, State, Move, CostStructure> &ne,
-                 std::string name,
-                 std::string description,
-                 InverseFunction Inverse = SameMoveAsInverse);
-      
-      /** Constructor.
-       @param in the Input object
-       @param sm the State Manager
-       @param ne the Neighborhood Explorer
-       @param name the name of the runner
-       @param InverseFunction the inverse function for tabu list management
        */
       TabuSearch(StateManager<Input, State, CostStructure> &sm,
                  NeighborhoodExplorer<Input, State, Move, CostStructure> &ne,
@@ -116,16 +100,6 @@ namespace EasyLocal
     /*************************************************************************
      * Implementation
      *************************************************************************/
-    
-    template <class Input, class State, class Move, class CostStructure>
-    TabuSearch<Input, State, Move, CostStructure>::TabuSearch(const Input &in,
-                                                              StateManager<Input, State, CostStructure> &sm,
-                                                              NeighborhoodExplorer<Input, State, Move, CostStructure> &ne,
-                                                              std::string name,
-                                                              std::string description,
-                                                              InverseFunction Inverse)
-    : MoveRunner<Input, State, Move, CostStructure>(in, sm, ne, name, description), Inverse(Inverse)
-    {}
     
     template <class Input, class State, class Move, class CostStructure>
     TabuSearch<Input, State, Move, CostStructure>::TabuSearch(StateManager<Input, State, CostStructure> &sm,

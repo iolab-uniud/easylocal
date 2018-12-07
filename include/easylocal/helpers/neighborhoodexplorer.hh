@@ -10,7 +10,6 @@
 #include "easylocal/helpers/deltacostcomponent.hh"
 #include "easylocal/helpers/statemanager.hh"
 #include "easylocal/utils/random.hh"
-#include "easylocal/utils/deprecationhandler.hh"
 
 namespace EasyLocal
 {
@@ -57,7 +56,7 @@ namespace EasyLocal
      @ingroup Helpers
      */
     template <class _Input, class _State, class _Move, class _CostStructure = DefaultCostStructure<int>>
-    class NeighborhoodExplorer : protected DeprecationHandler<_Input>
+    class NeighborhoodExplorer
     {
     public:
       typedef _Input Input;
@@ -126,17 +125,6 @@ namespace EasyLocal
        */
       virtual void MakeMove(const Input& in, State &st, const Move &mv) const = 0;
       
-      // It can be safely removed
-      //  /** Old-style method, without the Input object
-      //   @deprecated
-      //   */
-      //  [[deprecated("This is the old style easylocal interface, it is mandatory to upgrade to Input-less class and Input-aware methods")]]
-      //  CostStructure DeltaCostFunctionComponents(const State &st, const Move &mv, const std::vector<double> &weights = std::vector<double>(0)) const
-      //  {
-      //    throw std::runtime_error("You should update your NeighborhoodExplorer by adding a const Input& reference to the method");
-      //  }
-      
-      
       /** Computes the differences in the cost function obtained by applying the move @c mv to the state @c st and returns the unaggregated value as a vector of components.
        @param in the input object
        @param st the state to modify
@@ -173,60 +161,6 @@ namespace EasyLocal
         return 1;
       }
       
-      // These methods have been deprecated
-      
-      /** Old-style method, without the Input object
-       @deprecated
-       */
-      [[deprecated("This is the old style easylocal interface, it is mandatory to upgrade to Input-less class and Input-aware methods")]]
-      bool FeasibleMove(const State &st, const Move &mv) const
-      {
-        return FeasibleMove(this->GetInput(), st, mv);
-      }
-      
-      /** Old-style method, without the Input object
-       @deprecated
-       */
-      [[deprecated("This is the old style easylocal interface, it is mandatory to upgrade to Input-less class and Input-aware methods")]]
-      void RandomMove(const State &st, Move &mv) const
-      {
-        RandomMove(this->GetInput(), st, mv);
-      }
-      
-      /** Old-style method, without the Input object
-       @deprecated
-       */
-      [[deprecated("This is the old style easylocal interface, it is mandatory to upgrade to Input-less class and Input-aware methods")]]
-      void FirstMove(const State &st, Move &mv) const
-      {
-        FirstMove(this->GetInput(), st, mv);
-      }
-      
-      /** Old-style method, without the Input object
-       @deprecated
-       */
-      [[deprecated("This is the old style easylocal interface, it is mandatory to upgrade to Input-less class and Input-aware methods")]]
-      bool NextMove(const State &st, Move &mv) const
-      {
-        return NextMove(this->GetInput(), st, mv);
-      }
-      
-      /** Old-style method, without the Input object
-       @deprecated
-       */
-      [[deprecated("This is the old style easylocal interface, it is mandatory to upgrade to Input-less class and Input-aware methods")]]
-      void MakeMove(State &st, const Move &mv) const
-      {
-        MakeMove(this->GetInput(), st, mv);
-      }
-      
-      /**
-       Deprecated constructor.
-       @deprecated
-       */
-      [[deprecated("This is the old style easylocal interface, it is mandatory to upgrade to Input-less class and Input-aware methods")]]
-      NeighborhoodExplorer(const Input &in, StateManager<Input, State, CostStructure> &sm, std::string name)  : DeprecationHandler<Input>(in), sm(sm), name(name), unimplemented_hard_components(false), unimplemented_soft_components(false)
-      {}
       
       /**
        Constructs a neighborhood explorer passing a n input object and a state manager.

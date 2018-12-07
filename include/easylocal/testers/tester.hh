@@ -7,7 +7,6 @@
 #include <iomanip>
 
 #include "easylocal/helpers/statemanager.hh"
-#include "easylocal/helpers/outputmanager.hh"
 #include "easylocal/runners/runner.hh"
 #include "easylocal/testers/componenttester.hh"
 #include "easylocal/utils/types.hh"
@@ -20,10 +19,10 @@ namespace EasyLocal
     
     using namespace EasyLocal::Core;
     
-    template <class Input, class Output, class State, class Move, class CostStructure>
+    template <class Input, class State, class Move, class CostStructure>
     class MoveTester;
     
-    template <class Input, class Output, class State, class Move, class CostStructure>
+    template <class Input, class State, class Move, class CostStructure>
     class KickerTester;
     
     class ChoiceReader
@@ -123,16 +122,15 @@ namespace EasyLocal
      user interface provided by the framework.
      @ingroup Testers
      */
-    template <class Input, class Output, class State, class CostStructure = DefaultCostStructure<int>>
+    template <class Input, class State, class CostStructure = DefaultCostStructure<int>>
     class Tester : public AbstractTester<Input, State, CostStructure>, public ChoiceReader
     {
       typedef typename CostStructure::CFtype CFtype;
     public:
-      Tester(const Input &in, StateManager<Input, State, CostStructure> &sm,
-             Core::OutputManager<Input, Output, State> &om, std::ostream &o = std::cout);
+      Tester(const Input &in, StateManager<Input, State, CostStructure> &sm, std::ostream &o = std::cout);
       // constructor
       Tester(StateManager<Input, State, CostStructure> &sm,
-             Core::OutputManager<Input, Output, State> &om, std::ostream &o = std::cout);
+             std::ostream &o = std::cout);
       
       /** Virtual destructor. */
       virtual ~Tester()
@@ -151,29 +149,15 @@ namespace EasyLocal
       template <class Move>
       void AddKickerTester(Kicker<Input, State, Move, CostStructure> &k, std::string name)
       {
-        auto kt = new KickerTester<Input, Output, State, Move, CostStructure>(sm, om, k, name, os);
-        kicker_testers.push_back(kt);
-        created_testers.push_back(kt);
-      }
-      
-      template <class Move>
-      void AddKickerTester(KickerTester<Input, Output, State, Move, CostStructure>* kt)
-      {
-        kicker_testers.push_back(kt);
+        auto kt = std::make_unique<KickerTester<Input, State, Move, CostStructure>>(sm, k, name, os);
+        kicker_testers.push_back(std::move(kt));
       }
       
       template <class Move>
       void AddMoveTester(NeighborhoodExplorer<Input, State, Move, CostStructure> &nhe, std::string name)
       {
-        auto mt = new MoveTester<Input, Output, State, Move, CostStructure>(sm, om, nhe, name, os);
-        move_testers.push_back(mt);
-        created_testers.push_back(mt);
-      }
-      
-      template <class Move>
-      void AddMoveTester(MoveTester<Input, Output, State, Move, CostStructure>* mt)
-      {
-        move_testers.push_back(mt);
+        auto mt = std::make_unique<MoveTester<Input, State, Move, CostStructure>>(sm, nhe, name, os);
+        move_testers.emplace_back(std::move(mt));
       }
       
       void SetInput(const Input& in)
@@ -200,15 +184,14 @@ namespace EasyLocal
       void ExecuteRunChoice();
       void ExecuteSolverChoice();
       void ExecuteDebuggingMenu();
-      std::vector<ComponentTester<Input, Output, State, CostStructure>*> move_testers;
-      std::vector<ComponentTester<Input, Output, State, CostStructure>*> kicker_testers;
+      std::vector<std::unique_ptr<ComponentTester<Input, State, CostStructure>>> move_testers;
+      std::vector<std::unique_ptr<ComponentTester<Input, State, CostStructure>>> kicker_testers;
       std::ostream &os;
       Core::StateManager<Input, State, CostStructure> &sm; /**< A pointer to a state manager. */
-      Core::OutputManager<Input, Output, State> &om;       /**< A pointer to an output producer. */
       int choice,                                      /**< The option currently chosen from the menu. */
       sub_choice;                                      /**< The suboption currently chosen from the menu. */
     private:
-      std::list<ComponentTester<Input, Output, State, CostStructure>*> created_testers;
+      std::list<ComponentTester<Input, State, CostStructure>*> created_testers;
       std::unique_ptr<Input> internal_input; /**< for creating an input internally to the tester. */
     };
     
@@ -224,11 +207,10 @@ namespace EasyLocal
      @param sm a compatible state manager
      @param om a compatible output manager
      */
-    template <class Input, class Output, class State, class CostStructure>
-    Tester<Input, Output, State, CostStructure>::Tester(const Input &in,
-                                                        Core::StateManager<Input, State, CostStructure> &sm,
-                                                        Core::OutputManager<Input, Output, State> &om, std::ostream &os)
-    : AbstractTester<Input, State, CostStructure>(this->GetInput()), os(os), sm(sm), om(om), internal_input(nullptr)
+    template <class Input, class State, class CostStructure>
+    Tester<Input, State, CostStructure>::Tester(const Input &in,
+                                                        Core::StateManager<Input, State, CostStructure> &sm, std::ostream &os)
+    : AbstractTester<Input, State, CostStructure>(this->GetInput()), os(os), sm(sm), internal_input(nullptr)
     {}
     
     /**
@@ -239,10 +221,9 @@ namespace EasyLocal
      @param sm a compatible state manager
      @param om a compatible output manager
      */
-    template <class Input, class Output, class State, class CostStructure>
-    Tester<Input, Output, State, CostStructure>::Tester(Core::StateManager<Input, State, CostStructure> &sm,
-                                                        Core::OutputManager<Input, Output, State> &om, std::ostream &os)
-    : os(os), sm(sm), om(om), internal_input(nullptr)
+    template <class Input, class State, class CostStructure>
+    Tester<Input, State, CostStructure>::Tester(Core::StateManager<Input, State, CostStructure> &sm, std::ostream &os)
+    : os(os), sm(sm), internal_input(nullptr)
     {}
     
     
@@ -250,8 +231,8 @@ namespace EasyLocal
      Manages the tester main menu.
      */
     
-    template <class Input, class Output, class State, class CostStructure>
-    void Tester<Input, Output, State, CostStructure>::RunMainMenu(std::string file_name)
+    template <class Input, class State, class CostStructure>
+    void Tester<Input, State, CostStructure>::RunMainMenu(std::string file_name)
     {
       if (file_name == "")
       {
@@ -266,11 +247,9 @@ namespace EasyLocal
         std::ifstream is(file_name.c_str());
         if (is.fail())
           throw std::runtime_error("Cannot open file!");
-        Output out(this->GetInput());
-        om.ReadState(this->GetInput(), this->GetTestState(), is);
-        om.OutputState(this->GetInput(), this->GetTestState(), out);
-        os << "SOLUTION IMPORTED " << std::endl
-        << out << std::endl;
+        is >> this->GetTestState();
+        os << "SOLUTION IMPORTED " << std::endl;
+        os << this->GetTestState();
         os << "IMPORTED SOLUTION COST: " << sm.CostFunctionComponents(this->GetInput(), this->GetTestState()) << std::endl;
       }
       
@@ -286,8 +265,8 @@ namespace EasyLocal
     /**
      Outputs the main menu options.
      */
-    template <class Input, class Output, class State, class CostStructure>
-    void Tester<Input, Output, State, CostStructure>::ShowMainMenu()
+    template <class Input, class State, class CostStructure>
+    void Tester<Input, State, CostStructure>::ShowMainMenu()
     {
       os << "MAIN MENU:" << std::endl
       << "   (1) Move menu" << std::endl
@@ -303,8 +282,8 @@ namespace EasyLocal
     /**
      Execute a choice made in the main menu.
      */
-    template <class Input, class Output, class State, class CostStructure>
-    void Tester<Input, Output, State, CostStructure>::ExecuteMainChoice()
+    template <class Input, class State, class CostStructure>
+    void Tester<Input, State, CostStructure>::ExecuteMainChoice()
     {
       switch (this->choice)
       {
@@ -336,8 +315,8 @@ namespace EasyLocal
     /**
      Outputs the menu for the move testers.
      */
-    template <class Input, class Output, class State, class CostStructure>
-    void Tester<Input, Output, State, CostStructure>::ShowMovesMenu()
+    template <class Input, class State, class CostStructure>
+    void Tester<Input, State, CostStructure>::ShowMovesMenu()
     {
       unsigned int i;
       os << "MOVE MENU: " << std::endl;
@@ -348,8 +327,8 @@ namespace EasyLocal
       this->sub_choice = this->ReadChoice(std::cin);
     }
     
-    template <class Input, class Output, class State, class CostStructure>
-    void Tester<Input, Output, State, CostStructure>::ShowSolverMenu()
+    template <class Input, class State, class CostStructure>
+    void Tester<Input, State, CostStructure>::ShowSolverMenu()
     {
       os << "SOLVER MENU: " << std::endl;
       os << "   (1) Simple solver" << std::endl;
@@ -362,8 +341,8 @@ namespace EasyLocal
     /**
      Outputs the menu for the move testers.
      */
-    template <class Input, class Output, class State, class CostStructure>
-    void Tester<Input, Output, State, CostStructure>::ShowKickersMenu()
+    template <class Input, class State, class CostStructure>
+    void Tester<Input, State, CostStructure>::ShowKickersMenu()
     {
       unsigned int i;
       os << "KICK MENU: " << std::endl;
@@ -377,8 +356,8 @@ namespace EasyLocal
     /**
      Outputs the menu for the runners.
      */
-    template <class Input, class Output, class State, class CostStructure>
-    void Tester<Input, Output, State, CostStructure>::ShowRunMenu()
+    template <class Input, class State, class CostStructure>
+    void Tester<Input, State, CostStructure>::ShowRunMenu()
     {
       unsigned int i;
       do
@@ -397,8 +376,8 @@ namespace EasyLocal
     /**
      Execute a choice from the move testers menu.
      */
-    template <class Input, class Output, class State, class CostStructure>
-    void Tester<Input, Output, State, CostStructure>::ExecuteMovesChoice()
+    template <class Input, class State, class CostStructure>
+    void Tester<Input, State, CostStructure>::ExecuteMovesChoice()
     {
       if (sub_choice > 0 && sub_choice <= static_cast<int>(move_testers.size()))
         move_testers[sub_choice - 1]->RunMainMenu(this->GetInput(), this->GetTestState());
@@ -407,8 +386,8 @@ namespace EasyLocal
     /**
      Execute a choice from the move testers menu.
      */
-    template <class Input, class Output, class State, class CostStructure>
-    void Tester<Input, Output, State, CostStructure>::ExecuteKickersChoice()
+    template <class Input, class State, class CostStructure>
+    void Tester<Input, State, CostStructure>::ExecuteKickersChoice()
     {
       if (sub_choice > 0)
         kicker_testers[sub_choice - 1]->RunMainMenu(this->GetInput(), this->GetTestState());
@@ -417,8 +396,8 @@ namespace EasyLocal
     /**
      Execute a choice from the runners menu.
      */
-    template <class Input, class Output, class State, class CostStructure>
-    void Tester<Input, Output, State, CostStructure>::ExecuteRunChoice()
+    template <class Input, class State, class CostStructure>
+    void Tester<Input, State, CostStructure>::ExecuteRunChoice()
     {
       if (sub_choice > 0)
       {
@@ -437,11 +416,8 @@ namespace EasyLocal
         auto end = std::chrono::high_resolution_clock::now();
         
         auto duration = end - start;
-        Output out(this->GetInput());
-        om.OutputState(this->GetInput(), this->GetTestState(), out);
-        
-        os << "CURRENT SOLUTION " << std::endl
-        << out << std::endl;
+        os << "CURRENT SOLUTION " << std::endl;
+        os << this->GetTestState();
         os << "CURRENT COST: " << result << std::endl;
         os << "ELAPSED TIME: " << std::chrono::duration_cast<std::chrono::milliseconds>(duration).count() / 1000.0 << " s" << std::endl;
         os << "NUMBER OF ITERATIONS: " << r.Iteration() << std::endl;
@@ -451,8 +427,8 @@ namespace EasyLocal
     /**
      Manages an adbridged menu for building the initial state.
      */
-    template <class Input, class Output, class State, class CostStructure>
-    void Tester<Input, Output, State, CostStructure>::RunInputMenu()
+    template <class Input, class State, class CostStructure>
+    void Tester<Input, State, CostStructure>::RunInputMenu()
     {
       bool show_state;
       ShowReducedStateMenu();
@@ -461,10 +437,8 @@ namespace EasyLocal
       std::chrono::milliseconds duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start);
       if (show_state)
       {
-        Output out(this->GetInput());
-        this->om.OutputState(this->GetInput(), this->GetTestState(), out);
-        os << "INITIAL SOLUTION " << std::endl
-        << out << std::endl;
+        os << "INITIAL SOLUTION " << std::endl;
+        os << this->GetTestState();
         os << "INITIAL COST: " << this->sm.CostFunctionComponents(this->GetInput(), this->GetTestState()) << std::endl;
       }
       os << "ELAPSED TIME: " << duration.count() / 1000.0 << "s" << std::endl;
@@ -473,8 +447,8 @@ namespace EasyLocal
     /**
      Outputs the menu options.
      */
-    template <class Input, class Output, class State, class CostStructure>
-    void Tester<Input, Output, State, CostStructure>::ShowStateMenu()
+    template <class Input, class State, class CostStructure>
+    void Tester<Input, State, CostStructure>::ShowStateMenu()
     {
       os << "STATE MENU: " << std::endl
       << "    (1) Random state " << std::endl
@@ -482,12 +456,12 @@ namespace EasyLocal
       << "    (3) Greedy state " << std::endl
       << "    (4) Sample state" << std::endl
       << "    (5) Write to file" << std::endl
-      << "    (6) Show state" << std::endl
+      << "    (6) Show detailed state" << std::endl
       << "    (7) Show input" << std::endl
       << "    (8) Show cost function components" << std::endl
       << "    (9) Show cost elements" << std::endl
       << "    (10) Check state consistency" << std::endl
-      << "    (11) Pretty print output" << std::endl
+      << "    (11) Write JSON state to file" << std::endl
       << "    (0) Return to Main Menu" << std::endl
       << "Your choice: ";
       this->sub_choice = this->ReadChoice(std::cin);
@@ -496,8 +470,8 @@ namespace EasyLocal
     /**
      Outputs a reduced set of options for the initial state building.
      */
-    template <class Input, class Output, class State, class CostStructure>
-    void Tester<Input, Output, State, CostStructure>::ShowReducedStateMenu()
+    template <class Input, class State, class CostStructure>
+    void Tester<Input, State, CostStructure>::ShowReducedStateMenu()
     {
       os << "INITIAL STATE MENU: " << std::endl
       << "    (1) Random state " << std::endl
@@ -510,8 +484,8 @@ namespace EasyLocal
     }
     
     // FIXME: currently it relies on the fact that an Input constructor with a single string parameter exists
-    template <class Input, class Output, class State, class CostStructure>
-    void Tester<Input, Output, State, CostStructure>::ShowLoadInputMenu()
+    template <class Input, class State, class CostStructure>
+    void Tester<Input, State, CostStructure>::ShowLoadInputMenu()
     {
       std::string file_name = "";
       do
@@ -548,8 +522,8 @@ namespace EasyLocal
      
      @param st the current state
      */
-    template <class Input, class Output, class State, class CostStructure>
-    bool Tester<Input, Output, State, CostStructure>::ExecuteStateChoice()
+    template <class Input, class State, class CostStructure>
+    bool Tester<Input, State, CostStructure>::ExecuteStateChoice()
     {
       unsigned int i;
       std::string file_name;
@@ -575,7 +549,7 @@ namespace EasyLocal
               is.clear();
             }
           } while (read_failed);
-          this->om.ReadState(this->GetInput(), this->GetTestState(), is);
+          is >> this->GetTestState();
           break;
         }
         case 3:
@@ -603,12 +577,12 @@ namespace EasyLocal
           os << "File name: ";
           std::cin >> file_name;
           std::ofstream os(file_name.c_str());
-          this->om.WriteState(this->GetInput(), this->GetTestState(), os);
+          os << this->GetTestState();
           break;
         }
         case 6:
         {
-          os << this->GetTestState() << std::endl;
+          os << this->GetTestState();
           os << "Total cost: " << this->sm.CostFunctionComponents(this->GetInput(), this->GetTestState()) << std::endl;
           break;
         }
@@ -669,8 +643,8 @@ namespace EasyLocal
           os << "File name: ";
           std::cin >> file_name;
           std::ofstream os(file_name.c_str());
-          this->om.PrettyPrintOutput(this->GetInput(), this->GetTestState(), os);
-          std::cout << "Output pretty-printed in file " << file_name << std::endl;
+          os << this->sm.ToJSON(this->GetInput(), this->GetTestState());
+          std::cout << "Output written as JSON in file " << file_name << std::endl;
           break;
         }
         default:
@@ -683,8 +657,8 @@ namespace EasyLocal
      Manages the component tester menu for the given state.
      @param st the state to test
      */
-    template <class Input, class Output, class State, class CostStructure>
-    void Tester<Input, Output, State, CostStructure>::RunStateTestMenu()
+    template <class Input, class State, class CostStructure>
+    void Tester<Input, State, CostStructure>::RunStateTestMenu()
     {
       bool show_state;
       do
@@ -697,10 +671,8 @@ namespace EasyLocal
           std::chrono::milliseconds duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start);
           if (show_state)
           {
-            Output out(this->GetInput());
-            om.OutputState(this->GetInput(), this->GetTestState(), out);
-            os << "CURRENT SOLUTION " << std::endl
-            << out << std::endl;
+            os << "CURRENT SOLUTION " << std::endl;
+            os << this->GetTestState();
             os << "CURRENT COST: " << sm.CostFunctionComponents(this->GetInput(), this->GetTestState()) << std::endl;
           }
           os << "ELAPSED TIME: " << duration.count() / 1000.0 << "s" << std::endl;
