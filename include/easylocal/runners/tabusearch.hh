@@ -196,7 +196,7 @@ void TabuSearch<Input, State, Move, CostStructure>::CompleteMove()
   while (!tabu_list.empty() && tabu_list.top().tenure < this->iteration)
     tabu_list.pop();
   // insert current move
-  tabu_list.emplace(this->current_move.move, this->iteration + Random::Int(min_tenure, max_tenure));
+  tabu_list.emplace(this->current_move.move, this->iteration + Random::Uniform<unsigned int>(min_tenure, max_tenure));
 }
 
 /**

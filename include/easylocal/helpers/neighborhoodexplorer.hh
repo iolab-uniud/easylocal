@@ -372,7 +372,7 @@ EvaluatedMove<Move, CostStructure> NeighborhoodExplorer<Input, State, Move, Cost
       }
       else if (mv.cost == best_move.cost)
       {
-        if (Random::Int(0, number_of_bests) == 0) // accept the move with probability 1 / (1 + number_of_bests)
+        if (Random::Uniform<unsigned int>(0, number_of_bests) == 0) // accept the move with probability 1 / (1 + number_of_bests)
           best_move = mv;
         number_of_bests++;
       }
@@ -438,7 +438,7 @@ EvaluatedMove<Move, CostStructure> NeighborhoodExplorer<Input, State, Move, Cost
       }
       else if (mv.cost == best_move.cost)
       {
-        if (Random::Int(0, number_of_bests) == 0) // accept the move with probability 1 / (1 + number_of_bests)
+        if (Random::Uniform<unsigned int>(0, number_of_bests) == 0) // accept the move with probability 1 / (1 + number_of_bests)
           best_move = mv;
         number_of_bests++;
       }

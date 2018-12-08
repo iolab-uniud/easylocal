@@ -62,6 +62,8 @@ protected:
 
   /** The @ref Input object. */
   const Input &in;
+  
+  virtual ~DeltaCostComponent() {}
 
 public:
   /** The @ref CostComponent associated with the DeltaCostComponent. */

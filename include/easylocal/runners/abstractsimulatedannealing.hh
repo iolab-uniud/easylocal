@@ -129,7 +129,7 @@ void AbstractSimulatedAnnealing<Input, State, Move, CostStructure>::SelectMove()
   size_t sampled;
   double t = this->temperature;
   EvaluatedMove<Move, CostStructure> em = this->ne.RandomFirst(*this->p_current_state, this->max_neighbors_sampled - neighbors_sampled, sampled, [t](const Move &mv, const CostStructure &move_cost) {
-    double r = std::max(Random::Double(), 1E-16);
+    double r = std::max(Random::Uniform<double>(0.0, 1.0), std::numeric_limits<double>::epsilon());
     return move_cost <= 0 || move_cost < (-t * log(r));
   },
                                                                this->weights);

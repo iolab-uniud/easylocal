@@ -16,10 +16,10 @@ FOREACH (subdir ${subdirs})
 	string(TOUPPER ${FIRST_LETTER} FIRST_LETTER)
 	string(REGEX REPLACE "^.(.*)" "${FIRST_LETTER}\\1" subdir_cap "${subdir}")
 
-        file(GLOB headers RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} include/easylocal/${subdir}/*.hh)
+  file(GLOB headers RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ../include/easylocal/${subdir}/*.hh)
 	source_group("Header Files\\${subdir_cap}" FILES ${headers})
 
-        file(GLOB sources RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${subdir}/*.cc)
+  file(GLOB sources RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ${subdir}/*.cc)
 	source_group("Source Files\\${subdir_cap}" FILES ${sources})
 
 	set(subdir_sources ${subdir_sources} ${sources})
@@ -27,7 +27,7 @@ FOREACH (subdir ${subdirs})
 
 ENDFOREACH(subdir)
 
-file(GLOB headers RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} include/easylocal/*.hh)
+file(GLOB headers RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} ../include/easylocal/*.hh)
 source_group("Header Files" FILES ${headers})
 
 
