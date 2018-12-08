@@ -1,30 +1,42 @@
-cmake_minimum_required(VERSION 3.0)
+find_package(Threads REQUIRED)
+find_package(Boost 1.58.0 COMPONENTS program_options REQUIRED)
 
-project(EasyLocal C CXX)
+include_directories(${Boost_INCLUDE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/../include)
 
-set(CMAKE_CXX_STANDARD 14)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(subdirs helpers observers runners solvers testers utils modeling)
 
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake)
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall")
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
-set(CMAKE_SHARED_LINKER_FLAGS "")
-set(CMAKE_BUILD_TYPE "Release")
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/lib)
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/lib)
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin)
+# Generate list of all files and directories to be added to the library
+set(subdir_sources)
 
-find_package(Doxygen)
-if (DOXYGEN_FOUND)
-  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/misc/doxygen.cfg ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile @ONLY)
-  add_custom_target(doc
-    ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
-    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-    COMMENT "Generating API documentation with Doxygen" VERBATIM
-  )
-endif (DOXYGEN_FOUND)
-find_package(TBB)
+# Add files from subdirectories
+FOREACH (subdir ${subdirs})
 
-set(CMAKE_BUILD_TYPE "Release")
+	string(SUBSTRING ${subdir} 0 1 FIRST_LETTER)
+	string(TOUPPER ${FIRST_LETTER} FIRST_LETTER)
+	string(REGEX REPLACE "^.(.*)" "${FIRST_LETTER}\\1" subdir_cap "${subdir}")
 
-add_subdirectory(src)
+  file(GLOB headers RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} include/${subdir}/*.hh)
+	source_group("Header Files\\${subdir_cap}" FILES ${headers})
+
+	set(subdir_sources ${subdir_sources} ${sources})
+
+ENDFOREACH(subdir)
+
+file(GLOB headers RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} include/*.hh)
+source_group("Header Files" FILES ${headers})
+
+add_library(EasyLocal INTERFACE)
+target_include_directories(EasyLocal INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_link_libraries(EasyLocal INTERFACE ${Boost_LIBRARIES})
+target_sources(EasyLocal INTERFACE ${headers})
+#set_property(TARGET EasyLocal PROPERTY CXX_STANDARD 14) 
+#set_property(TARGET EasyLocal PROPERTY CMAKE_CXX_FLAGS "-Wall -Wfatal-errors")
+#set_target_properties(EasyLocal PROPERTIES LINKER_LANGUAGE CXX)
+
+install(
+  DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include
+  DESTINATION ${CMAKE_INSTALL_PREFIX}/include/easylocal
+  PATTERN *
+  PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ GROUP_EXECUTE GROUP_READ WORLD_EXECUTE WORLD_READ
+)
+
