@@ -224,7 +224,7 @@ namespace EasyLocal {
 
       
     public:
-      RESTTester(StateManager<Input, State, CostStructure>& sm, OutputManager<Input, Output, State>& om);
+      RESTTester(StateManager<Input, State, CostStructure>& sm, OutputManager<Input, Output, State>& om, std::string tester_id="");
       /** Virtual destructor. */
       virtual ~RESTTester() { Destroy(); }
       void Run();
@@ -270,11 +270,12 @@ namespace EasyLocal {
       std::chrono::system_clock::time_point started;
       std::chrono::seconds worker_runtime{0};
       unsigned long long tasks_created{0};
+      std::string tester_id;
     };
     
     template <class Input, class Output, class State, class CostStructure>
-    RESTTester<Input, Output, State, CostStructure>::RESTTester(StateManager<Input, State, CostStructure>& sm, OutputManager<Input, Output, State>& om)
-    : Core::CommandLineParameters::Parametrized("REST", "REST tester"), numThreads(std::max(std::thread::hardware_concurrency(), 2u) - 1u), sm(sm), om(om)
+    RESTTester<Input, Output, State, CostStructure>::RESTTester(StateManager<Input, State, CostStructure>& sm, OutputManager<Input, Output, State>& om, std::string tester_id)
+    : Core::CommandLineParameters::Parametrized("REST", "REST tester"), numThreads(std::max(std::thread::hardware_concurrency(), 2u) - 1u), sm(sm), om(om), tester_id(tester_id)
     {
       for (auto r : this->runners)
       {
@@ -562,6 +563,7 @@ namespace EasyLocal {
     {
       json response;
       response["version"] = "1.0";
+      response["tester_id"] = tester_id;
       response["started"] = getISOTimestamp(started);
       response["workers"] = { { "number", numThreads }, { "solution_time", worker_runtime.count() }, { "tasks_run", this->tasks_created } };
       response["runners"] = runner_urls;
