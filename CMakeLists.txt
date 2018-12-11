@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.8)
 
 project(EasyLocal LANGUAGES CXX)
+list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
 find_package(Threads REQUIRED)
 find_package(Boost 1.58.0 COMPONENTS program_options REQUIRED)
