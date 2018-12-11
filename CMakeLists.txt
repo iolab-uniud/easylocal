@@ -25,11 +25,13 @@ file(GLOB headers ${CMAKE_CURRENT_SOURCE_DIR}/include/**/*.hh ${CMAKE_CURRENT_SO
 source_group("Header Files" FILES ${headers})
 
 add_library(EasyLocal INTERFACE)
-target_include_directories(EasyLocal INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include ${Boost_INCLUDE_DIRS} ${CURL_INCLUDE_DIRS})
+target_include_directories(EasyLocal INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+
 if (TBB_FOUND)
-  target_link_libraries(EasyLocal INTERFACE ${Boost_LIBRARIES} ${TBB_LIBRARIES} ${CURL_LIBRARIES} Threads::Threads)
+  target_compile_definitions(EasyLocal INTERFACE TBB_AVAILABLE)
+  target_link_libraries(EasyLocal INTERFACE Boost::program_options CURL::libcurl Threads::Threads TBB::tbb) 
 else (TBB_FOUND)
-  target_link_libraries(EasyLocal INTERFACE ${Boost_LIBRARIES} ${CURL_LIBRARIES} Threads::Threads)  
+  target_link_libraries(EasyLocal INTERFACE Boost::program_options CURL::libcurl Threads::Threads)
 endif (TBB_FOUND)
 target_sources(EasyLocal INTERFACE ${headers})
 target_compile_features(EasyLocal INTERFACE cxx_std_14)
