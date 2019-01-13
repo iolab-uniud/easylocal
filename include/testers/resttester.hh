@@ -12,6 +12,14 @@
 #include <regex>
 // TODO: use it only if CURL is available
 #include "utils/uccurl.hh"
+#if defined(__unix__) || defined(__unix) || \
+(defined(__APPLE__) && defined(__MACH__))
+#define _ENABLE_STATS
+#endif
+#ifdef _ENABLE_STATS
+#include <sys/time.h>
+#include <sys/resource.h>
+#endif
 
 
 // TODO: use a task manager (or define one) for ensuring that just the right number of workers are used and the system is not overloaded
@@ -233,6 +241,11 @@ namespace EasyLocal {
       void Worker();
       // the garbage collector that frees the results in memory
       void Cleaner(std::chrono::minutes interval);
+#ifdef _ENABLE_STATS
+      // another thread collecting stats at regular intervals
+      void CollectStats(const std::chrono::seconds& interval);
+#endif
+      
       void CreateWorkers();
       void Destroy();
       void InitializeParameters();
@@ -270,6 +283,31 @@ namespace EasyLocal {
       std::chrono::system_clock::time_point started;
       std::chrono::seconds worker_runtime{0};
       unsigned long long tasks_created{0};
+      
+#ifdef _ENABLE_STATS
+      struct Stat
+      {
+        std::chrono::time_point<std::chrono::system_clock> reading;
+        std::chrono::microseconds cputime;
+        long memory;
+        
+        Stat(std::chrono::time_point<std::chrono::system_clock> reading, std::chrono::microseconds cputime, long memory) :
+        reading(reading), cputime(cputime), memory(memory) {}
+        
+        json to_json() const
+        {
+          json d;
+          d["time"] = getISOTimestamp(reading);
+          d["cpu"] = cputime.count();
+          d["memory"] = memory;
+          return d;
+        }
+      };
+      
+      mutable std::mutex statistics_mutex;
+      std::deque<Stat> statistics;
+#endif
+      
       std::string tester_id;
     };
     
@@ -293,8 +331,11 @@ namespace EasyLocal {
       {
         for (unsigned i = 0; i < numThreads; i++)
           workers.emplace_back(&RESTTester<Input, Output, State, CostStructure>::Worker, this);
-        // run the solution cleaner every 15 minutes
-        workers.emplace_back(&RESTTester<Input, Output, State, CostStructure>::Cleaner, this, std::chrono::minutes(15));
+        // run the solution cleaner every 30 minutes
+        workers.emplace_back(&RESTTester<Input, Output, State, CostStructure>::Cleaner, this, std::chrono::minutes(30));
+#ifdef _ENABLE_STATS
+        workers.emplace_back(&RESTTester<Input, Output, State, CostStructure>::CollectStats, this, std::chrono::seconds(5));
+#endif
       }
       catch(...)
       {
@@ -402,6 +443,31 @@ namespace EasyLocal {
         task_lock.unlock();
       }
     }
+
+#ifdef _ENABLE_STATS
+    template <class Input, class Output, class State, class CostStructure>
+    void RESTTester<Input, Output, State, CostStructure>::CollectStats(const std::chrono::seconds& interval)
+    {
+      const size_t MAX_LENGTH = 60 / 5 * 60;
+      while (!done)
+      {
+        struct rusage ru;
+        auto wc = std::chrono::system_clock::now();
+        if (getrusage(RUSAGE_SELF, &ru) == 0)
+        {
+          //          unsigned long start = std::stoul(m1[UTIME_MATCH].str()), end = std::stoul(m2[UTIME_MATCH].str());
+          auto cpu = std::chrono::seconds(ru.ru_utime.tv_sec) + std::chrono::seconds(ru.ru_stime.tv_sec) +
+          std::chrono::microseconds(ru.ru_stime.tv_usec) + std::chrono::microseconds(ru.ru_utime.tv_usec);
+          
+          std::lock_guard<std::mutex> lock(statistics_mutex);
+          statistics.emplace_back(wc, cpu, ru.ru_maxrss);
+          if (statistics.size() > MAX_LENGTH)
+            statistics.pop_front();
+        }
+        std::this_thread::sleep_for(interval);
+      }
+    }
+#endif
     
         
     template <class Input, class Output, class State, class CostStructure>
@@ -554,6 +620,33 @@ namespace EasyLocal {
           res = JSONResponse::make_error(404, response["error"]);
         res.end();
       });
+      
+      // This endpoint allow to read cpu/memory usage statistics, if available
+      app.route_dynamic("/stats/")
+      .methods("GET"_method)([this](const crow::request& req, crow::response& res) {
+#ifdef _ENABLE_STATS
+        json response;
+        
+        std::lock_guard<std::mutex> lock(statistics_mutex);
+        if (statistics.size() == 0)
+        {
+          CROW_LOG_ERROR << "Currently no information";
+          res = JSONResponse::make_error(503, "Currently the stats are not available");
+          res.end();
+          return;
+        }
+        response["statistics"] = std::list<json>();
+        for (const auto& stat : statistics)
+        {
+          response["statistics"].push_back(stat.to_json());
+        }
+        res = JSONResponse::make_response(200, response);
+#else
+        res = JSONResponse::make_error(501, "This endpoint is not supported by the hosting operating system");
+#endif
+        res.end();
+      });
+
       
       app.port(port).multithreaded().run();
     }
