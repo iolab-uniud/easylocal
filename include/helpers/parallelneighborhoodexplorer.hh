@@ -214,7 +214,7 @@ namespace EasyLocal
       }
       
     public:
-      virtual EvaluatedMove<Move, CostStructure> SelectFirst(const Input& in, const State &st, size_t &explored, const MoveAcceptor &AcceptMove, const std::vector<double> &weights = std::vector<double>(0)) const throw(EmptyNeighborhood)
+      virtual EvaluatedMove<Move, CostStructure> SelectFirst(const Input& in, const State &st, size_t &explored, const MoveAcceptor &AcceptMove, const std::vector<double> &weights = std::vector<double>(0)) const 
       {
         EvaluatedMove<Move, CostStructure> first_move;
         bool first_move_found = false;
@@ -240,8 +240,7 @@ namespace EasyLocal
         return first_move;
       }
       
-      virtual EvaluatedMove<Move, CostStructure> SelectBest(const Input& in, const State &st, size_t &explored, const MoveAcceptor &AcceptMove, const std::vector<double> &weights = std::vector<double>(0)) const throw(EmptyNeighborhood)
-      {
+      virtual EvaluatedMove<Move, CostStructure> SelectBest(const Input& in, const State &st, size_t &explored, const MoveAcceptor &AcceptMove, const std::vector<double> &weights = std::vector<double>(0)) const 
         tbb::spin_mutex mx_best_move;
         EvaluatedMove<Move, CostStructure> best_move;
         unsigned int number_of_bests = 0;
@@ -276,7 +275,7 @@ namespace EasyLocal
         return best_move;
       }
       
-      virtual EvaluatedMove<Move, CostStructure> RandomFirst(const Input& in, const State &st, size_t samples, size_t &explored, const MoveAcceptor &AcceptMove, const std::vector<double> &weights = std::vector<double>(0)) const throw(EmptyNeighborhood)
+      virtual EvaluatedMove<Move, CostStructure> RandomFirst(const Input& in, const State &st, size_t samples, size_t &explored, const MoveAcceptor &AcceptMove, const std::vector<double> &weights = std::vector<double>(0)) const 
       {
         EvaluatedMove<Move, CostStructure> first_move;
         bool first_move_found = false;
@@ -299,7 +298,7 @@ namespace EasyLocal
         return first_move;
       }
       
-      virtual EvaluatedMove<Move, CostStructure> RandomBest(const Input& in, const State &st, size_t samples, size_t &explored, const MoveAcceptor &AcceptMove, const std::vector<double> &weights = std::vector<double>(0)) const throw(EmptyNeighborhood)
+      virtual EvaluatedMove<Move, CostStructure> RandomBest(const Input& in, const State &st, size_t samples, size_t &explored, const MoveAcceptor &AcceptMove, const std::vector<double> &weights = std::vector<double>(0)) const 
       {
         tbb::spin_mutex mx_best_move;
         EvaluatedMove<Move, CostStructure> best_move;
