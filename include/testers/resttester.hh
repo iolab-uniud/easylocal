@@ -363,9 +363,10 @@ namespace EasyLocal {
       {
         for (unsigned i = 0; i < numThreads; i++)
           workers.emplace_back(&RESTTester<Input, Output, State, CostStructure>::Worker, this);
-        // run the solution cleaner every 30 minutes
-        workers.emplace_back(&RESTTester<Input, Output, State, CostStructure>::Cleaner, this, std::chrono::minutes(30));
+        // run the solution cleaner every hour
+        workers.emplace_back(&RESTTester<Input, Output, State, CostStructure>::Cleaner, this, std::chrono::minutes(60));
 #ifdef _ENABLE_STATS
+        // collect statistics every 5 seconds
         workers.emplace_back(&RESTTester<Input, Output, State, CostStructure>::CollectStats, this, std::chrono::seconds(5));
 #endif
       }
