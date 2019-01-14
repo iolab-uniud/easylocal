@@ -211,24 +211,49 @@ namespace EasyLocal {
       };
       
       // TODO: will be used for CORS
-//      class CORSMiddleware
-//      {
-//      public:
-//        struct context
-//        {};
-//
-//        void before_handle(crow::request& req, crow::response& res, context& /*ctx*/)
-//        {
-//          // check if it's a CORS Request
-//          if (req.method != crow::HTTPMethod::Options || req.headers.find("Access-Control-Request-Method") == req.headers.end() || req.headers.find("Access-Control-Request-Headers") == req.headers.end())
-//            return;
-//          std::string headers
-//          res.end();
-//        }
-//
-//        void after_handle(crow::request& /*req*/, crow::response& /*res*/, context& /*ctx*/)
-//        { /* no-op */ }
-//      };
+      class CORSMiddleware
+      {
+      public:
+        struct context
+        {};
+
+        void before_handle(crow::request& req, crow::response& res, context& /*ctx*/)
+        {
+          if (!cors_enabled)
+            return;
+          // check if it's a CORS Options request
+          if (req.method == crow::HTTPMethod::Options)
+          {
+            res.set_header("Access-Control-Allow-Origin", "*");
+            res.set_header("Access-Control-Allow-Methods", "GET, OPTIONS, HEAD, PUT, POST");
+            res.set_header("Access-Control-Allow-Headers", "*");
+            res.end();
+          }
+        }
+
+        void after_handle(crow::request& req, crow::response& res, context& /*ctx*/)
+        {
+          if (!cors_enabled)
+            return;
+          // for regular requests (other than Options)
+          res.set_header("Access-Control-Allow-Origin", "*");
+          res.set_header("Access-Control-Allow-Methods", "GET, OPTIONS, HEAD, PUT, POST");
+          res.set_header("Access-Control-Allow-Headers", "*");
+        }
+        
+        void Enable()
+        {
+          cors_enabled = true;
+        }
+        
+        void Disable()
+        {
+          cors_enabled = false;
+        }
+        
+      protected:
+        bool cors_enabled = false;
+      };
 
       
     public:
@@ -280,6 +305,9 @@ namespace EasyLocal {
       // toward a basic authorization mechanism
       Parameter<std::string> authorization;
       
+      // cors enable/disable
+      Parameter<bool> cors;
+      
       std::chrono::system_clock::time_point started;
       std::chrono::seconds worker_runtime{0};
       unsigned long long tasks_created{0};
@@ -289,9 +317,9 @@ namespace EasyLocal {
       {
         std::chrono::time_point<std::chrono::system_clock> reading;
         std::chrono::microseconds cputime;
-        long memory;
+        unsigned long memory;
         
-        Stat(std::chrono::time_point<std::chrono::system_clock> reading, std::chrono::microseconds cputime, long memory) :
+        Stat(std::chrono::time_point<std::chrono::system_clock> reading, std::chrono::microseconds cputime, unsigned long memory) :
         reading(reading), cputime(cputime), memory(memory) {}
         
         json to_json() const
@@ -299,7 +327,11 @@ namespace EasyLocal {
           json d;
           d["time"] = getISOTimestamp(reading);
           d["cpu"] = cputime.count();
+#if defined(__APPLE__) && defined(__MACH__)
           d["memory"] = memory;
+#else
+          d["memory"] = memory * 1024;
+#endif
           return d;
         }
       };
@@ -364,8 +396,11 @@ namespace EasyLocal {
       // default: 18080
       port = 18080;
       authorization("authorization", "Authorization key", this->parameters);
+      cors("cors", "Enable CORS (WARNING: to be used only for local testing)", this->parameters);
       // default: no authorization
       authorization = "";
+      // default: no cors
+      cors = false;
     }
     
     template <class Input, class Output, class State, class CostStructure>
@@ -476,15 +511,20 @@ namespace EasyLocal {
       started = std::chrono::system_clock::now();
       CreateWorkers();
       
-      crow::App<AuthorizationMiddleware> app;
+      crow::App<AuthorizationMiddleware, CORSMiddleware> app;
       // setup authorization middleware
-      if (std::string(authorization) == "")
-        ;
-      else
+      if (std::string(authorization) != "")
       {
         AuthorizationMiddleware& mw = app.template get_middleware<AuthorizationMiddleware>();
         mw.SetAuthorization(authorization);
       }
+      // setup CORS Middleware
+      if (cors)
+      {
+        CORSMiddleware& mw = app.template get_middleware<CORSMiddleware>();
+        mw.Enable();
+        CROW_LOG_WARNING << "CORS Enabled: to be used only for local testing purposes";
+      }        
       
       // NOTE: standard CROW_ROUTE dispatching seems not to work with this compiler and the Middleware enabled version of the app.
       //       Currently it has been changed to dynamic_routes (maybe less efficient, but this is not the point here)

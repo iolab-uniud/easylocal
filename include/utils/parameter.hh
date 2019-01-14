@@ -294,7 +294,7 @@ namespace EasyLocal
       : BaseParameter<bool>(cmdline_flag, description)
       {
         std::string flag = parameters.prefix + "::" + cmdline_flag;
-        parameters.cl_options.add_options()(("enable-" + flag).c_str(), boost::program_options::value<std::string>()->implicit_value("true")->zero_tokens()->notifier([this](const std::string &v) { this->is_set = true; this->value = true; }), "")(("disable-" + flag).c_str(), boost::program_options::value<std::string>()->implicit_value("false")->zero_tokens()->notifier([this](const std::string &v) { this->is_set = true; this->value = false; }),
+        parameters.cl_options.add_options()((flag + "-enable").c_str(), boost::program_options::value<std::string>()->implicit_value("true")->zero_tokens()->notifier([this](const std::string &v) { this->is_set = true; this->value = true; }), "")((flag + "-disable").c_str(), boost::program_options::value<std::string>()->implicit_value("false")->zero_tokens()->notifier([this](const std::string &v) { this->is_set = true; this->value = false; }),
                                                                                                                                                                                                                                                       ("[enable/disable] " + description).c_str());
       }
       
@@ -303,7 +303,7 @@ namespace EasyLocal
         this->cmdline_flag = parameters.prefix + "::" + cmdline_flag;
         this->description = description;
         parameters.push_back(this);
-        parameters.cl_options.add_options()(("enable-" + cmdline_flag).c_str(), boost::program_options::value<std::string>()->implicit_value("true")->zero_tokens()->notifier([this](const std::string &v) { this->is_set = true; this->value = true; }), "")(("disable-" + cmdline_flag).c_str(), boost::program_options::value<std::string>()->implicit_value("false")->zero_tokens()->notifier([this](const std::string &v) { this->is_set = true; this->value = false; }),
+        parameters.cl_options.add_options()((this->cmdline_flag + "-enable").c_str(), boost::program_options::value<std::string>()->implicit_value("true")->zero_tokens()->notifier([this](const std::string &v) { this->is_set = true; this->value = true; }), "")((this->cmdline_flag + "-disable").c_str(), boost::program_options::value<std::string>()->implicit_value("false")->zero_tokens()->notifier([this](const std::string &v) { this->is_set = true; this->value = false; }),
                                                                                                                                                                                                                                                               ("[enable/disable] " + description).c_str());
         this->is_valid = true;
       }
