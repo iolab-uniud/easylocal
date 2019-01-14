@@ -6,6 +6,7 @@
 #include <iostream>
 #include <memory>
 #include <sstream>
+#include "utils/json.hpp"
 #include "utils/types.hh"
 
 #include "boost/program_options/options_description.hpp"
@@ -17,6 +18,8 @@ namespace EasyLocal
   
   namespace Core
   {
+    
+    using json = nlohmann::json;
     
     /** Abstract parameter type, for containers. */
     class AbstractParameter
@@ -43,6 +46,15 @@ namespace EasyLocal
       
       /** To print out values. */
       virtual std::string ToString() const = 0;
+      
+      /** To transform into json. */
+      virtual json ToJSON() const = 0;
+      
+      /** Get a json description. */
+      virtual json JSONDescription() const = 0;
+      
+      /** Reads a value from a json. */
+      virtual void FromJSON(json v) = 0;
       
       std::string Flag() const
       {
@@ -110,6 +122,33 @@ namespace EasyLocal
         OverallParameters().push_back(this);
       }
       
+      void FromJSON(json parameters)
+      {
+        for (auto it = parameters.begin(); it != parameters.end(); ++it)
+        {
+          for (auto p : *this)
+            if (p->Flag() == it.key() || p->Flag() == this->prefix + "::" + it.key())
+              p->FromJSON({{ it.key(), it.value() }});
+        }
+      }
+      json ToJSON() const
+      {
+        json parameters;
+        parameters[this->prefix] = {};
+        for (auto p : *this)
+          parameters[this->prefix].merge_patch(p->ToJSON());
+        return parameters;
+      }
+      
+      json JSONDescription() const
+      {
+        json parameters;
+        parameters[this->prefix] = {};
+        for (auto p : *this)
+          parameters[this->prefix].merge_patch(p->JSONDescription());
+        return parameters;
+      }
+      
       /** Namespace of the parameter. */
       const std::string prefix;
       /** Object to configure boost's parameter parser. */
@@ -151,6 +190,35 @@ namespace EasyLocal
         std::stringstream ss;
         ss << this->value;
         return ss.str();
+      }
+      
+      /** @copydoc AbstractParameter::ToJSON */
+      virtual json ToJSON() const
+      {
+        if (!is_valid)
+          throw ParameterNotValid(*this);
+        json p;
+        std::string flag = split(this->cmdline_flag, std::regex("::"))[1];
+        p[flag] = this->value;
+        
+        return p;
+      }
+      
+      /** @copydoc AbstractParameter::JSONDescription */
+      virtual json JSONDescription() const
+      {
+        json p;
+        std::string flag = split(this->cmdline_flag, std::regex("::"))[1];
+        p[flag] = GetTypeName<T>();
+        
+        return p;
+      }
+      
+      /** @copydoc AbstractParameter::FromJSON */
+      virtual void FromJSON(json v)
+      {
+        std::string flag = split(this->cmdline_flag, std::regex("::"))[1];
+        this->value = v[flag];
       }
       
       virtual void CopyValue(const AbstractParameter &ap)
@@ -226,7 +294,7 @@ namespace EasyLocal
       : BaseParameter<bool>(cmdline_flag, description)
       {
         std::string flag = parameters.prefix + "::" + cmdline_flag;
-        parameters.cl_options.add_options()(("enable-" + flag).c_str(), boost::program_options::value<std::string>()->implicit_value("true")->zero_tokens()->notifier([this](const std::string &v) { this->is_set = true; this->value = true; }), "")(("disable-" + flag).c_str(), boost::program_options::value<std::string>()->implicit_value("false")->zero_tokens()->notifier([this](const std::string &v) { this->is_set = true; this->value = false; }),
+        parameters.cl_options.add_options()((flag + "-enable").c_str(), boost::program_options::value<std::string>()->implicit_value("true")->zero_tokens()->notifier([this](const std::string &v) { this->is_set = true; this->value = true; }), "")((flag + "-disable").c_str(), boost::program_options::value<std::string>()->implicit_value("false")->zero_tokens()->notifier([this](const std::string &v) { this->is_set = true; this->value = false; }),
                                                                                                                                                                                                                                                       ("[enable/disable] " + description).c_str());
       }
       
@@ -235,7 +303,7 @@ namespace EasyLocal
         this->cmdline_flag = parameters.prefix + "::" + cmdline_flag;
         this->description = description;
         parameters.push_back(this);
-        parameters.cl_options.add_options()(("enable-" + cmdline_flag).c_str(), boost::program_options::value<std::string>()->implicit_value("true")->zero_tokens()->notifier([this](const std::string &v) { this->is_set = true; this->value = true; }), "")(("disable-" + cmdline_flag).c_str(), boost::program_options::value<std::string>()->implicit_value("false")->zero_tokens()->notifier([this](const std::string &v) { this->is_set = true; this->value = false; }),
+        parameters.cl_options.add_options()((this->cmdline_flag + "-enable").c_str(), boost::program_options::value<std::string>()->implicit_value("true")->zero_tokens()->notifier([this](const std::string &v) { this->is_set = true; this->value = true; }), "")((this->cmdline_flag + "-disable").c_str(), boost::program_options::value<std::string>()->implicit_value("false")->zero_tokens()->notifier([this](const std::string &v) { this->is_set = true; this->value = false; }),
                                                                                                                                                                                                                                                               ("[enable/disable] " + description).c_str());
         this->is_valid = true;
       }
@@ -264,7 +332,7 @@ namespace EasyLocal
       }
       virtual const char *what() const throw()
       {
-        return message.c_str();
+          return message.c_str();
       }
       virtual ~IncorrectParameterValue()
       {}
@@ -309,7 +377,7 @@ namespace EasyLocal
     {
       if (!this->is_valid)
         os << "NotValid";
-      //throw ParameterNotValid(*this);
+        //throw ParameterNotValid(*this);
       else if (!is_set)
         //throw ParameterNotSet(*this);
         os << "NotSet";
@@ -451,6 +519,21 @@ namespace EasyLocal
           return true;
         }
         
+        json ParametersToJSON() const
+        {
+          return parameters.ToJSON();
+        }
+        
+        json ParametersDescriptionToJSON() const
+        {
+          return parameters.JSONDescription();
+        }
+        
+        void ParametersFromJSON(json p)
+        {
+          parameters.FromJSON(std::move(p));
+        }
+        
       protected:
         void _RegisterParameters()
         {
@@ -528,6 +611,6 @@ namespace EasyLocal
     inline bool operator==(const Parameter<std::string> &s1, const char *s2)
     {
       return static_cast<std::string>(s1) == std::string(s2);
-    }
+    }    
   } // namespace Core
 } // namespace EasyLocal
