@@ -327,7 +327,7 @@ namespace EasyLocal {
           json d;
           d["time"] = getISOTimestamp(reading);
           d["cpu"] = cputime.count();
-#if defined(__APPLE__) && defined(__MACH__)
+#if (defined(__APPLE__) && defined(__MACH__))
           d["memory"] = memory;
 #else
           d["memory"] = memory * 1024;
@@ -454,27 +454,28 @@ namespace EasyLocal {
     template <class Input, class Output, class State, class CostStructure>
     void RESTTester<Input, Output, State, CostStructure>::Cleaner(std::chrono::minutes interval)
     {
+      const size_t MAX_LAST_TASKS = 5;
       std::unique_lock<std::mutex> task_lock(task_status_mutex, std::defer_lock);
       while (!done)
       {
         task_lock.lock();
         cleaner_stop.wait_for(task_lock, interval);
-        if (!done)
+        if (!done && task_status.size() > MAX_LAST_TASKS)
         {
           std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
-          unsigned int count = 0;
+          unsigned int removed = 0;
           for (auto it = task_status.begin(); it != task_status.end(); )
           {
             const auto& task = it->second;
-            if (task->finished && (now - task->completed) > interval)
+            if (task->finished && (now - task->completed) > interval && task_status.size() - removed > MAX_LAST_TASKS)
             {
               it = task_status.erase(it);
-              count++;
+              removed++;
             }
             else
               ++it;
           }
-          CROW_LOG_INFO << "Cleaning performed, removed " << count << " old tasks";
+          CROW_LOG_INFO << "Cleaning performed, removed " << removed << " old tasks";
         }
         task_lock.unlock();
       }
