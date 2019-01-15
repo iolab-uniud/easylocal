@@ -68,12 +68,13 @@ namespace EasyLocal {
       {
       public:
         Task(std::string task_id,
+             json instance,
              std::shared_ptr<Input> p_in,
              std::shared_ptr<State> p_st,
              std::shared_ptr<Runner<Input, State, CostStructure>> p_r,
              std::chrono::milliseconds timeout,
              std::string callback_url = "")
-        : task_id(task_id), p_in(p_in), p_st(p_st), p_r(p_r), timeout(timeout), submitted(std::chrono::system_clock::now()), finished(false), running(false), callback_url(callback_url)
+        : task_id(task_id), instance(instance), p_in(p_in), p_st(p_st), p_r(p_r), timeout(timeout), submitted(std::chrono::system_clock::now()), finished(false), running(false), callback_url(callback_url)
         {
           // TODO: check url
           if (callback_url != "")
@@ -84,6 +85,7 @@ namespace EasyLocal {
           }
         }
         std::string task_id;
+        json instance;
         std::shared_ptr<Input> p_in;
         std::shared_ptr<State> p_st;
         std::shared_ptr<Runner<Input, State, CostStructure>> p_r;
@@ -286,8 +288,9 @@ namespace EasyLocal {
       
       // endpoints management
       void RootEndpoint(const crow::request& req, crow::response& res) const;
-      std::shared_ptr<Task> CreateTask(float timeout, std::unique_ptr<Input> p_in, std::unique_ptr<State> p_st, std::unique_ptr<Runner<Input, State, CostStructure>> p_r, json parameters, std::string callback_url);
+      std::shared_ptr<Task> CreateTask(float timeout, json instance, std::unique_ptr<Input> p_in, std::unique_ptr<State> p_st, std::unique_ptr<Runner<Input, State, CostStructure>> p_r, json parameters, std::string callback_url);
       json TaskStatus(std::string task_id) const;
+      json Instance(std::string task_id) const;
       json Solution(std::string task_id, bool force_partial) const;
       json RemoveTask(std::string task_id);
 
@@ -612,7 +615,7 @@ namespace EasyLocal {
           std::string callback_url = req.url_params.get("callback_url") ? URLDecode(req.url_params.get("callback_url")) : "";
           CROW_LOG_INFO << callback_url;
           auto p_r = it->second->Clone();
-          std::shared_ptr<Task> task = this->CreateTask(timeout, std::move(in), std::move(p_st), std::move(p_r), parameters, callback_url);
+          std::shared_ptr<Task> task = this->CreateTask(timeout, std::move(payload), std::move(in), std::move(p_st), std::move(p_r), parameters, callback_url);
           {
             std::lock_guard<std::mutex> lock(task_status_mutex);
             response["task_id"] = task->task_id;
@@ -656,6 +659,17 @@ namespace EasyLocal {
       .methods("GET"_method)([this](const crow::request& req, crow::response& res, std::string task_id) {
         bool force_partial = req.url_params.get("partial") ? std::string(req.url_params.get("partial")) == "true" : false;
         json response = this->Solution(task_id, force_partial);
+        if (response.find("error") == response.end())
+          res = JSONResponse::make_response(200, response);
+        else
+          res = JSONResponse::make_error(404, response["error"]);
+        res.end();
+      });
+      
+      // This endpoint allow to access an instance
+      app.route_dynamic("/instance/<string>")
+      .methods("GET"_method)([this](const crow::request& req, crow::response& res, std::string task_id) {
+        json response = this->Instance(task_id);
         if (response.find("error") == response.end())
           res = JSONResponse::make_response(200, response);
         else
@@ -715,7 +729,8 @@ namespace EasyLocal {
           { "completed", task->finished ? getISOTimestamp(task->completed) : std::string("") },
           { "finished", task->finished },
           { "running", task->running },
-          { "url", "/running/" + task->task_id }
+          { "url", "/running/" + task->task_id },
+          { "instance_url", "/instance/" + task->task_id }
         });
       }
       res = JSONResponse::make_response(200, response);
@@ -723,7 +738,7 @@ namespace EasyLocal {
     }
     
     template <class Input, class Output, class State, class CostStructure>
-    std::shared_ptr<typename RESTTester<Input, Output, State, CostStructure>::Task> RESTTester<Input, Output, State, CostStructure>::CreateTask(float timeout, std::unique_ptr<Input> p_in, std::unique_ptr<State> p_st, std::unique_ptr<Runner<Input, State, CostStructure>> p_r, json parameters, std::string callback_url)
+    std::shared_ptr<typename RESTTester<Input, Output, State, CostStructure>::Task> RESTTester<Input, Output, State, CostStructure>::CreateTask(float timeout, json instance, std::unique_ptr<Input> p_in, std::unique_ptr<State> p_st, std::unique_ptr<Runner<Input, State, CostStructure>> p_r, json parameters, std::string callback_url)
     {
       // the lock is here, because also the tasks counter has to be guarded
       std::lock_guard<std::mutex> lock(task_status_mutex);
@@ -742,7 +757,7 @@ namespace EasyLocal {
       // forward runner parameters to the runner itself
       if (!parameters.empty())
         p_r->ParametersFromJSON(std::move(parameters));
-      std::shared_ptr<Task> task = std::make_shared<Task>(task_id, std::move(p_in), std::move(p_st), std::move(p_r), _timeout, callback_url);
+      std::shared_ptr<Task> task = std::make_shared<Task>(task_id, std::move(instance), std::move(p_in), std::move(p_st), std::move(p_r), _timeout, callback_url);
       task_status[task_id] = task;
       task_queue.Enqueue(task);
       return task;
@@ -770,6 +785,7 @@ namespace EasyLocal {
         status["completed"] = getISOTimestamp(task->completed);
         status["cost"] = sm.JSONCostFunctionComponents(*(task->p_in), *(task->p_st));
         status["solution_url"] = "/solution/" + task->task_id;
+        status["instance_url"] = "/instance/" + task->task_id;
       }
       else if (task->running)
       {
@@ -779,13 +795,33 @@ namespace EasyLocal {
         status["started"] = getISOTimestamp(task->started);
         // FIXME: call best_state_cost instead, however it's not jsonized yet
         status["cost"] = sm.JSONCostFunctionComponents(*(task->p_in), *(task->p_r->GetCurrentBestState()));
+        status["instance_url"] = "/instance/" + task->task_id;
+
       }
       else
       {
         status["finished"] = false;
         status["running"] = false;
         status["submitted"] = getISOTimestamp(task->submitted);
+        status["instance_url"] = "/instance/" + task->task_id;
       }
+      return status;
+    }
+    
+    template <class Input, class Output, class State, class CostStructure>
+    json RESTTester<Input, Output, State, CostStructure>::Instance(std::string task_id) const
+    {
+      std::lock_guard<std::mutex> lock(task_status_mutex);
+      json status;
+      status["task_id"] = task_id;
+      auto it = task_status.find(task_id);
+      if (it == task_status.end()) // task_id does not exist
+      {
+        status["error"] = "The task `" + task_id + "` does not exist (or it has been removed because too old)";
+        return status;
+      }
+      const auto task = it->second;
+      status["instance"] = task->instance;
       return status;
     }
     
