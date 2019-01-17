@@ -40,6 +40,5 @@
 #include "helpers/deltacostcomponent.hh"
 #include "helpers/kicker.hh"
 #include "helpers/neighborhoodexplorer.hh"
-#include "helpers/outputmanager.hh"
 #include "helpers/statemanager.hh"
 

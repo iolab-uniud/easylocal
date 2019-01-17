@@ -3,7 +3,6 @@
 #include <future>
 
 #include "helpers/statemanager.hh"
-#include "helpers/outputmanager.hh"
 #include "solvers/abstractlocalsearch.hh"
 #include "runners/runner.hh"
 
