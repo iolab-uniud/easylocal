@@ -22,6 +22,8 @@ namespace EasyLocal
     const int HARD_WEIGHT = 1000;
 #define HARD_WEIGHT_SET
 #endif
+    
+    using nlohmann::json;
     /**
      * @brief This component is responsible for all operations on the state which are
      independent of the neighborhood definition, such as generating a random state
@@ -45,7 +47,7 @@ namespace EasyLocal
        @param in the input object
        @return a new random state
        */
-      virtual void RandomState(const Input& in, State& st) = 0;
+      virtual void RandomState(const Input& in, State& st) const = 0;
             
       /**
        Looks for the best state out of a given sample of random states.
@@ -53,7 +55,7 @@ namespace EasyLocal
        @param samples number of states sampled
        @return a cost structure with the cost of the state @c st
        */
-      virtual CostStructure SampleState(const Input& in, State &st, unsigned int samples);
+      virtual CostStructure SampleState(const Input& in, State &st, unsigned int samples) const;
 
       
       /**
@@ -85,14 +87,14 @@ namespace EasyLocal
        and @k makes sense only when related to this approach.
        
        */
-      virtual void GreedyState(const Input& in, State &st, double alpha, unsigned int k);
+      virtual void GreedyState(const Input& in, State &st, double alpha, unsigned int k) const;
       
       /**
        Generate a greedy state.
        @note To be implemented in the application. Default behaviour is RandomState
        (MayRedef).
        */
-      virtual void GreedyState(const Input& in, State &st);
+      virtual void GreedyState(const Input& in, State &st) const;
       
       
       /**
@@ -185,10 +187,15 @@ namespace EasyLocal
         os << st;
       }
       
-      virtual json ToJSON(const Input& in, const State& st) const = 0;
+      virtual json ToJSON(const Input& in, const State& st) const
+      {
+        throw std::logic_error("Not implemented yet");
+      }
       
-      virtual void FromJSON(const Input& in, State& st, const json& output) const = 0;
-                  
+      virtual void FromJSON(const Input& in, State& st, const json& output) const
+      {
+        throw std::logic_error("Not implemented yet");
+      }
     protected:
       
       /** Build a StateManager object.
@@ -224,7 +231,7 @@ namespace EasyLocal
     template <class Input, class State, class CostStructure>
     CostStructure StateManager<Input, State, CostStructure>::SampleState(const Input& in,
                                                                          State &st,
-                                                                         unsigned int samples)
+                                                                         unsigned int samples) const
     {
       unsigned int s = 1;
       RandomState(in, st);
@@ -249,13 +256,13 @@ namespace EasyLocal
     
     template <class Input, class State, class CostStructure>
     void StateManager<Input, State, CostStructure>::GreedyState(const Input& in, State &st, double alpha,
-                                                                unsigned int k)
+                                                                unsigned int k) const
     {
       GreedyState(in, st);
     }
     
     template <class Input, class State, class CostStructure>
-    void StateManager<Input, State, CostStructure>::GreedyState(const Input& in, State &st)
+    void StateManager<Input, State, CostStructure>::GreedyState(const Input& in, State &st) const
     {
       throw std::runtime_error("For using this feature GreedyState must be implemented in the concrete class!");
     }

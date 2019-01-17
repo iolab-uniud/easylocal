@@ -431,6 +431,7 @@ namespace EasyLocal
      @tparam BaseNeighborhoodExplorers a sequence of base neighborhood explorer classes
      @ingroup Helpers
      */
+    // TODO: remove CostStructure dependency (infer from the NeighborhoodExplorer)
     template <class Input, class State, class CostStructure, class... BaseNeighborhoodExplorers>
     class SetUnionNeighborhoodExplorer : public NeighborhoodExplorer<Input, State, std::tuple<ActiveMove<typename BaseNeighborhoodExplorers::Move>...>, CostStructure>
     {

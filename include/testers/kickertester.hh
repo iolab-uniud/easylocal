@@ -87,7 +87,7 @@ namespace EasyLocal
           if (show_state)
           {
             os << "CURRENT SOLUTION " << std::endl;
-            sm.WriteState(in, st, os);
+            sm.DisplayDetailedState(in, st, os);
             os << "CURRENT COST : " << sm.CostFunctionComponents(in, st) << std::endl;
           }
           os << "ELAPSED TIME : " << duration.count() / 1000.0 << " s" << std::endl;

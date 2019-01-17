@@ -92,14 +92,14 @@ namespace EasyLocal
             number_of_feasible_iterations[i]++;
             number_of_infeasible_iterations[i] = 0;
             if (number_of_feasible_iterations[i] % (unsigned int)feasible_iterations == 0)
-              this->weights[i] = std::max((double)min_range, this->weights[i] / Random::Double(min_perturbation, max_perturbation));
+              this->weights[i] = std::max((double)min_range, this->weights[i] / Random::Uniform<double>(min_perturbation, max_perturbation));
           }
           if (this->sm.GetCostComponent(i).IsHard() && this->current_state_cost.all_components[i] > 0)
           {
             number_of_infeasible_iterations[i]++;
             number_of_feasible_iterations[i] = 0;
             if (number_of_infeasible_iterations[i] % (unsigned int)infeasible_iterations == 0)
-              this->weights[i] = std::min((double)max_range, this->weights[i] * Random::Double(min_perturbation, max_perturbation));
+              this->weights[i] = std::min((double)max_range, this->weights[i] * Random::Uniform<double>(min_perturbation, max_perturbation));
           }
         }
       }
