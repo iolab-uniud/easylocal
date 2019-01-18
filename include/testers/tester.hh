@@ -22,7 +22,7 @@ namespace EasyLocal
     template <class Input, class State, class Move, class CostStructure>
     class MoveTester;
     
-    template <class Input, class State, class Move, class CostStructure>
+    template <class Input, class State, class CostStructure, class Kicker>
     class KickerTester;
     
     class ChoiceReader
@@ -146,11 +146,11 @@ namespace EasyLocal
         RunMainMenu(file_name);
       }
       
-      template <class Move>
-      void AddKickerTester(Kicker<Input, State, Move, CostStructure> &k, std::string name)
+      template <class Kicker>
+      void AddKickerTester(Kicker&k, std::string name)
       {
-        auto kt = std::make_unique<KickerTester<Input, State, Move, CostStructure>>(sm, k, name, os);
-        kicker_testers.push_back(std::move(kt));
+        auto kt = std::make_unique<KickerTester<Input, State, CostStructure, Kicker>>(sm, k, name, os);
+        kicker_testers.emplace_back(std::move(kt));
       }
       
       template <class Move>
@@ -209,7 +209,8 @@ namespace EasyLocal
      */
     template <class Input, class State, class CostStructure>
     Tester<Input, State, CostStructure>::Tester(const Input &in,
-                                                        Core::StateManager<Input, State, CostStructure> &sm, std::ostream &os)
+                                                Core::StateManager<Input, State, CostStructure> &sm,
+                                                std::ostream &os)
     : AbstractTester<Input, State, CostStructure>(in), os(os), sm(sm), internal_input(nullptr)
     {}
     
@@ -389,7 +390,7 @@ namespace EasyLocal
     template <class Input, class State, class CostStructure>
     void Tester<Input, State, CostStructure>::ExecuteKickersChoice()
     {
-      if (sub_choice > 0)
+      if (sub_choice > 0 && sub_choice <= static_cast<int>(kicker_testers.size()))
         kicker_testers[sub_choice - 1]->RunMainMenu(this->GetInput(), this->GetTestState());
     }
     

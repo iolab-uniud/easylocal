@@ -10,7 +10,7 @@ namespace EasyLocal
      moves.
      @ingroup Testers
      */
-    template <class Input, class State, class CostStructure = Core::DefaultCostStructure<int>>
+    template <class Input, class State, class CostStructure>
     class ComponentTester
     {
     public:

@@ -35,13 +35,14 @@ namespace EasyLocal
      * 
      * @ingroup Helpers
      */
-    template <class _Input, class _State, class CostStructure = DefaultCostStructure<int>>
+    template <class _Input, class _State, class _CostStructure = DefaultCostStructure<int>>
     class StateManager
     {
     public:
-      typedef typename CostStructure::CFtype CFtype;
       typedef _Input Input;
-      typedef _State State;      
+      typedef _State State;
+      typedef _CostStructure CostStructure;
+      typedef typename CostStructure::CFtype CFtype;
       /**
        Generates a random state
        @param in the input object
