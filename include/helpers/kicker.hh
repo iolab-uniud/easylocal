@@ -6,7 +6,7 @@ namespace EasyLocal
 {
   namespace Core
   {
-    template <class State, class Move, class CostStructure = DefaultCostStructure<int>>
+    template <class State, class Move, class CostStructure>
     struct Kick : public std::vector<std::pair<EvaluatedMove<Move, CostStructure>, State>>
     {
     public:
@@ -30,7 +30,7 @@ namespace EasyLocal
       return os;
     }
     
-    template <class Input, class State, class Move, class CostStructure = DefaultCostStructure<int>>
+    template <class Input, class State, class Move, class CostStructure>
     class Kicker;
     
     template <class Input, class State, class Move, class CostStructure>

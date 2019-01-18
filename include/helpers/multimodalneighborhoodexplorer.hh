@@ -422,10 +422,12 @@ namespace EasyLocal
       };
       
       // TODO: check if also Input and State can be removed
-      template <class Input, class State, class FirstBaseNeighborhoodExplorer, class... BaseNeighborhoodExplorers>
-      class MultiModalNeighborhoodExplorer : public NeighborhoodExplorer<Input, State, std::tuple<ActiveMove<typename FirstBaseNeighborhoodExplorer::Move>, ActiveMove<typename BaseNeighborhoodExplorers::Move>...>, typename FirstBaseNeighborhoodExplorer::CostStructure>
+      template <class FirstBaseNeighborhoodExplorer, class... BaseNeighborhoodExplorers>
+      class MultiModalNeighborhoodExplorer : public NeighborhoodExplorer<typename FirstBaseNeighborhoodExplorer::Input, typename FirstBaseNeighborhoodExplorer::State, std::tuple<ActiveMove<typename FirstBaseNeighborhoodExplorer::Move>, ActiveMove<typename BaseNeighborhoodExplorers::Move>...>, typename FirstBaseNeighborhoodExplorer::CostStructure>
       {
       protected:
+        typedef typename FirstBaseNeighborhoodExplorer::Input Input;
+        typedef typename FirstBaseNeighborhoodExplorer::State State;
         typedef typename FirstBaseNeighborhoodExplorer::CostStructure CostStructure;
         
         /** Tuple type representing the combination of @c BaseNeighborhoodExplorers' @ref Move. */
@@ -504,11 +506,15 @@ namespace EasyLocal
      @ingroup Helpers
      */
     // TODO: remove CostStructure dependency (infer from the NeighborhoodExplorer)
-    template <class Input, class State, class FirstBaseNeighborhoodExplorer, class... BaseNeighborhoodExplorers>
-    class SetUnionNeighborhoodExplorer : public Impl::MultiModalNeighborhoodExplorer<Input, State, FirstBaseNeighborhoodExplorer, BaseNeighborhoodExplorers...>
+    template <class FirstBaseNeighborhoodExplorer, class... BaseNeighborhoodExplorers>
+    class SetUnionNeighborhoodExplorer : public Impl::MultiModalNeighborhoodExplorer<FirstBaseNeighborhoodExplorer, BaseNeighborhoodExplorers...>
     {
     protected:
-      typedef Impl::MultiModalNeighborhoodExplorer<Input, State, FirstBaseNeighborhoodExplorer, BaseNeighborhoodExplorers...> Super;
+      typedef Impl::MultiModalNeighborhoodExplorer<FirstBaseNeighborhoodExplorer, BaseNeighborhoodExplorers...> Super;
+      typedef typename Super::Input Input;
+      typedef typename Super::State State;
+      typedef typename Super::CostStructure CostStructure;
+      typedef typename Super::Moves Moves;
     public:
       /** Constructor, takes a variable number of base NeighborhoodExplorers.
        @param sm a pointer to a compatible state manager.
@@ -516,7 +522,7 @@ namespace EasyLocal
        @param nhes the list of basic neighborhood explorer objects (according to the template list)
        @param bias a set of weights fo biasing the random move drawing
        */
-      SetUnionNeighborhoodExplorer(StateManager<Input, State, typename Super::CostStructure> &sm, std::string name, FirstBaseNeighborhoodExplorer& nhe, BaseNeighborhoodExplorers &... nhes, const std::vector<double> &bias = std::vector<double>(0))
+      SetUnionNeighborhoodExplorer(StateManager<Input, State, CostStructure> &sm, std::string name, FirstBaseNeighborhoodExplorer& nhe, BaseNeighborhoodExplorers &... nhes, const std::vector<double> &bias = std::vector<double>(0))
       : Super(sm, name, nhe, nhes...)
       {
         if (bias.empty())
@@ -535,7 +541,7 @@ namespace EasyLocal
       
     public:
       /** @copydoc NeighborhoodExplorer::FirstMove */
-      virtual void FirstMove(const Input& in, const State &st, typename Super::Moves &moves) const final
+      virtual void FirstMove(const Input& in, const State &st, Moves &moves) const final
       {
         typename Super::MoveRefs r_moves = to_refs(moves);
         
@@ -556,7 +562,7 @@ namespace EasyLocal
       }
       
       /** @copydoc NeighborhoodExplorer::RandomMove */
-      virtual void RandomMove(const Input& in, const State &st, typename Super::Moves &moves) const final
+      virtual void RandomMove(const Input& in, const State &st, Moves &moves) const final
       {
         typename Super::MoveRefs r_moves = to_refs(moves);
         Impl::MoveDispatcher<typename Super::MoveRefs, sizeof...(BaseNeighborhoodExplorers) + 1>::set_all_activity(r_moves, false);
@@ -607,7 +613,7 @@ namespace EasyLocal
       }
       
       /** @copydoc NeighborhoodExplorer::NextMove */
-      virtual bool NextMove(const Input& in, const State &st, typename Super::Moves &moves) const final
+      virtual bool NextMove(const Input& in, const State &st, Moves &moves) const final
       {
         typename Super::MoveRefs r_moves = to_refs(moves);
         const typename Super::MoveCRefs cr_moves = to_crefs(moves);
@@ -646,7 +652,7 @@ namespace EasyLocal
       }
       
       /** @copydoc NeighborhoodExplorer::MakeMove */
-      virtual void MakeMove(const Input& in, State &st, const typename Super::Moves &moves) const final
+      virtual void MakeMove(const Input& in, State &st, const Moves &moves) const final
       {
         const typename Super::MoveCRefs cr_moves = to_crefs(moves);
         size_t i = Impl::MoveDispatcher<typename Super::MoveCRefs, sizeof...(BaseNeighborhoodExplorers) + 1>::get_first_active(cr_moves, 0);
@@ -655,7 +661,7 @@ namespace EasyLocal
       }
       
       /** @copydoc NeighborhoodExplorer::DeltaCostFunctionComponents */
-      virtual typename Super::CostStructure DeltaCostFunctionComponents(const Input& in, const State &st, const typename Super::Moves &moves, const std::vector<double> &weights = std::vector<double>(0)) const final
+      virtual typename Super::CostStructure DeltaCostFunctionComponents(const Input& in, const State &st, const Moves &moves, const std::vector<double> &weights = std::vector<double>(0)) const final
       {
         const typename Super::MoveCRefs cr_moves = to_crefs(moves);
         size_t i = Impl::MoveDispatcher<typename Super::MoveCRefs, sizeof...(BaseNeighborhoodExplorers) + 1>::get_first_active(cr_moves, 0);
@@ -666,17 +672,19 @@ namespace EasyLocal
     /** Given a set of base neighborhood explorers, this class will create a multimodal (i.e., compound) neighborhood explorer
      that explores the set union of all neighborhoods.
      @brief The SetUnion MultimodalNeighborhoodExplorer manages the set union of different neighborhoods.
-     @tparam Input the class representing the problem input
-     @tparam State the class representing the problem's state
-     @tparam CFtype the type of the cost function
+     @tparam FirstBaseNeighborhoodExplorer the head of a sequence of base neighborhood explorer classes
      @tparam BaseNeighborhoodExplorers a sequence of base neighborhood explorer classes
      @ingroup Helpers
      */
-    template <class Input, class State, class FirstBaseNeighborhoodExplorer, class... BaseNeighborhoodExplorers>
-    class CartesianProductNeighborhoodExplorer : public Impl::MultiModalNeighborhoodExplorer<Input, State, FirstBaseNeighborhoodExplorer, BaseNeighborhoodExplorers...>
+    template <class FirstBaseNeighborhoodExplorer, class... BaseNeighborhoodExplorers>
+    class CartesianProductNeighborhoodExplorer : public Impl::MultiModalNeighborhoodExplorer<FirstBaseNeighborhoodExplorer, BaseNeighborhoodExplorers...>
     {
     protected:
-      typedef Impl::MultiModalNeighborhoodExplorer<Input, State, FirstBaseNeighborhoodExplorer, BaseNeighborhoodExplorers...> Super;
+      typedef Impl::MultiModalNeighborhoodExplorer<FirstBaseNeighborhoodExplorer, BaseNeighborhoodExplorers...> Super;
+      typedef typename Super::Input Input;
+      typedef typename Super::State State;
+      typedef typename Super::CostStructure CostStructure;
+      typedef typename Super::Moves Moves;
     public:
       
       using Super::Super;
@@ -707,7 +715,7 @@ namespace EasyLocal
       }
       
       /** @copydoc NeighborhoodExplorer::FirstMove */
-      virtual void FirstMove(const Input& in, const State &st, typename Super::Moves &moves) const final
+      virtual void FirstMove(const Input& in, const State &st, Moves &moves) const final
       {
         typename Super::MoveRefs r_moves = to_refs(moves);
         const typename Super::MoveCRefs cr_moves = to_crefs(moves);
@@ -784,7 +792,7 @@ namespace EasyLocal
       }
       
       /** @copydoc NeighborhoodExplorer::RandomMove */
-      virtual void RandomMove(const Input& in, const State &st, typename Super::Moves &moves) const final
+      virtual void RandomMove(const Input& in, const State &st, Moves &moves) const final
       {
         typename Super::MoveRefs r_moves = to_refs(moves);
         const typename Super::MoveCRefs cr_moves = to_crefs(moves);
@@ -885,7 +893,7 @@ namespace EasyLocal
       }
       
       /** @copydoc NeighborhoodExplorer::NextMove */
-      virtual bool NextMove(const Input& in, const State &st, typename Super::Moves &moves) const final
+      virtual bool NextMove(const Input& in, const State &st, Moves &moves) const final
       {
         typename Super::MoveRefs r_moves = to_refs(moves);
         const typename Super::MoveCRefs cr_moves = to_crefs(moves);
@@ -962,7 +970,7 @@ namespace EasyLocal
       }
       
       /** @copydoc NeighborhoodExplorer::MakeMove */
-      virtual void MakeMove(const Input& in, State &st, const typename Super::Moves &moves) const final
+      virtual void MakeMove(const Input& in, State &st, const Moves &moves) const final
       {
         const typename Super::MoveCRefs cr_moves = to_crefs(moves);
         
@@ -971,7 +979,7 @@ namespace EasyLocal
       }
       
       /** @copydoc NeighborhoodExplorer::DeltaCostFunctionComponents */
-      virtual typename Super::CostStructure DeltaCostFunctionComponents(const Input& in, const State &st, const typename Super::Moves &moves, const std::vector<double> &weights = std::vector<double>(0)) const final
+      virtual typename Super::CostStructure DeltaCostFunctionComponents(const Input& in, const State &st, const Moves &moves, const std::vector<double> &weights = std::vector<double>(0)) const final
       {
         const typename Super::MoveCRefs cr_moves = to_crefs(moves);
         
