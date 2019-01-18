@@ -210,7 +210,7 @@ namespace EasyLocal
     template <class Input, class State, class CostStructure>
     Tester<Input, State, CostStructure>::Tester(const Input &in,
                                                         Core::StateManager<Input, State, CostStructure> &sm, std::ostream &os)
-    : AbstractTester<Input, State, CostStructure>(this->GetInput()), os(os), sm(sm), internal_input(nullptr)
+    : AbstractTester<Input, State, CostStructure>(in), os(os), sm(sm), internal_input(nullptr)
     {}
     
     /**
