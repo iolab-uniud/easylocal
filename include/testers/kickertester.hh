@@ -14,13 +14,17 @@ namespace EasyLocal
     /** The Kicker Tester allows to test a Kicker.
      @ingroup Testers
      */
-    template <class Input, class State, class CostStructure, class Kicker>
+    template <class Kicker>
     class KickerTester
-    : public ComponentTester<Input, State, CostStructure>,
+    : public ComponentTester<typename Kicker::Input, typename Kicker::State, typename Kicker::CostStructure>,
     public Core::CommandLineParameters::Parametrized,
     public ChoiceReader
     {
     public:
+      typedef typename Kicker::Input Input;
+      typedef typename Kicker::State State;
+      typedef typename Kicker::CostStructure CostStructure;
+      
       KickerTester(StateManager<Input, State, CostStructure> &sm,
                    Kicker&k,
                    std::string name,
@@ -35,6 +39,7 @@ namespace EasyLocal
       void PrintKicks(size_t length, const Input& in, const State &st) const;
       void ShowMenu();
       virtual bool ExecuteChoice(const Input& in, State &st);
+      // TODO: Currently must be in this form because it's a generic one
       StateManager<Input, State, CostStructure> &sm; /**< A pointer to the attached
                                                             state manager. */
       int choice;                                          /**< The option currently chosen from the menu. */
@@ -47,17 +52,17 @@ namespace EasyLocal
      * Implementation
      *************************************************************************/
     
-    template <class Input, class State, class CostStructure, class Kicker>
-    KickerTester<Input, State, CostStructure, Kicker>::KickerTester(StateManager<Input, State, CostStructure> &sm,
-                                                                    Kicker &k, std::string name,
-                                                                    std::ostream &os)
+    template <class Kicker>
+    KickerTester<Kicker>::KickerTester(StateManager<Input, State, CostStructure> &sm,
+                                       Kicker &k, std::string name,
+                                       std::ostream &os)
     : ComponentTester<Input, State, CostStructure>(name), Parametrized(name, "Kicker tester parameters"), sm(sm), kicker(k), os(os)
     {
       InitializeParameters();
     }
     
-    template <class Input, class State, class CostStructure, class Kicker>
-    void KickerTester<Input, State, CostStructure, Kicker>::InitializeParameters()
+    template <class Kicker>
+    void KickerTester<Kicker>::InitializeParameters()
     {
       length("kick-length", "Kick length", this->parameters);
       length = 3;
@@ -67,8 +72,8 @@ namespace EasyLocal
      Manages the component tester menu for the given state.
      @param st the state to test
      */
-    template <class Input, class State, class CostStructure, class Kicker>
-    void KickerTester<Input, State, CostStructure, Kicker>::RunMainMenu(const Input& in, State &st)
+    template <class Kicker>
+    void KickerTester<Kicker>::RunMainMenu(const Input& in, State &st)
     {
       ReadParameters();
       bool show_state;
@@ -97,8 +102,8 @@ namespace EasyLocal
     /**
      Outputs the menu options.
      */
-    template <class Input, class State, class CostStructure, class Kicker>
-    void KickerTester<Input, State, CostStructure, Kicker>::ShowMenu()
+    template <class Kicker>
+    void KickerTester<Kicker>::ShowMenu()
     {
       os << "Kicker \"" << this->name << "\" Menu:" << std::endl
       << "    (1) Perform Random Kick" << std::endl
@@ -115,8 +120,8 @@ namespace EasyLocal
      
      @param st the current state
      */
-    template <class Input, class State, class CostStructure, class Kicker>
-    bool KickerTester<Input, State, CostStructure, Kicker>::ExecuteChoice(const Input& in, State &st)
+    template <class Kicker>
+    bool KickerTester<Kicker>::ExecuteChoice(const Input& in, State &st)
     {
       bool execute_kick = false;
       Kick<State, typename Kicker::Move, CostStructure> kick;
@@ -157,15 +162,15 @@ namespace EasyLocal
       }
     }
     
-    template <class Input, class State, class CostStructure, class Kicker>
-    void KickerTester<Input, State, CostStructure, Kicker>::PrintKicks(size_t length, const Input& in, const State &st) const
+    template <class Kicker>
+    void KickerTester<Kicker>::PrintKicks(size_t length, const Input& in, const State &st) const
     {
       for (auto it = kicker.begin(length, in, st); it != kicker.end(length, in, st); ++it)
         os << *it << std::endl;
     }
     
-    template <class Input, class State, class CostStructure, class Kicker>
-    size_t KickerTester<Input, State, CostStructure, Kicker>::Modality() const
+    template <class Kicker>
+    size_t KickerTester<Kicker>::Modality() const
     {
       return kicker.Modality();
     }

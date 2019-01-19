@@ -19,10 +19,10 @@ namespace EasyLocal
     
     using namespace EasyLocal::Core;
     
-    template <class Input, class State, class Move, class CostStructure>
+    template <class NeighborhoodExplorer>
     class MoveTester;
     
-    template <class Input, class State, class CostStructure, class Kicker>
+    template <class Kicker>
     class KickerTester;
     
     class ChoiceReader
@@ -149,14 +149,14 @@ namespace EasyLocal
       template <class Kicker>
       void AddKickerTester(Kicker&k, std::string name)
       {
-        auto kt = std::make_unique<KickerTester<Input, State, CostStructure, Kicker>>(sm, k, name, os);
+        auto kt = std::make_unique<KickerTester<Kicker>>(sm, k, name, os);
         kicker_testers.emplace_back(std::move(kt));
       }
       
-      template <class Move>
-      void AddMoveTester(NeighborhoodExplorer<Input, State, Move, CostStructure> &nhe, std::string name)
+      template <class NeighborhoodExplorer>
+      void AddMoveTester(NeighborhoodExplorer&nhe, std::string name)
       {
-        auto mt = std::make_unique<MoveTester<Input, State, Move, CostStructure>>(sm, nhe, name, os);
+        auto mt = std::make_unique<MoveTester<NeighborhoodExplorer>>(sm, nhe, name, os);
         move_testers.emplace_back(std::move(mt));
       }
       

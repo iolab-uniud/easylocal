@@ -20,16 +20,20 @@ namespace EasyLocal
      neighborhood explorer.
      @ingroup Testers
      */
-    template <class Input, class State, class Move, class CostStructure = Core::DefaultCostStructure<int>>
+    template <class NeighborhoodExplorer>
     class MoveTester
-    : public ComponentTester<Input, State, CostStructure>,
+    : public ComponentTester<typename NeighborhoodExplorer::Input, typename NeighborhoodExplorer::State, typename NeighborhoodExplorer::CostStructure>,
     public ChoiceReader
     {
+      typedef typename NeighborhoodExplorer::Input Input;
+      typedef typename NeighborhoodExplorer::State State;
+      typedef typename NeighborhoodExplorer::Move Move;
+      typedef typename NeighborhoodExplorer::CostStructure CostStructure;
       typedef typename CostStructure::CFtype CFtype;
       
     public:
-      MoveTester(Core::StateManager<Input, State, CostStructure> &sm,
-                 Core::NeighborhoodExplorer<Input, State, Move, CostStructure> &ne,
+      MoveTester(StateManager<Input, State, CostStructure> &sm,
+                 NeighborhoodExplorer& ne,
                  std::string name,
                  std::ostream &os = std::cout);
       void RunMainMenu(const Input& in, State &st);
@@ -56,16 +60,16 @@ namespace EasyLocal
      * Implementation
      *************************************************************************/
     
-    template <class Input, class State, class Move, class CostStructure>
-    MoveTester<Input, State, Move, CostStructure>::MoveTester(Core::StateManager<Input, State, CostStructure> &sm,
-                                                                      Core::NeighborhoodExplorer<Input, State, Move, CostStructure> &ne,
+    template <class NeighborhoodExplorer>
+    MoveTester<NeighborhoodExplorer>::MoveTester(StateManager<typename NeighborhoodExplorer::Input, typename NeighborhoodExplorer::State, typename NeighborhoodExplorer::CostStructure> &sm,
+                                                                      NeighborhoodExplorer&ne,
                                                                       std::string name,
                                                                       std::ostream &os)
     : ComponentTester<Input, State, CostStructure>(name), sm(sm), ne(ne), os(os), tolerance(std::numeric_limits<CFtype>::epsilon())
     {}
     
-    template <class Input, class State, class Move, class CostStructure>
-    void MoveTester<Input, State, Move, CostStructure>::RunMainMenu(const Input &in, State &st)
+    template <class NeighborhoodExplorer>
+    void MoveTester<NeighborhoodExplorer>::RunMainMenu(const Input &in, State &st)
     {
       bool show_state;
       do
@@ -91,8 +95,8 @@ namespace EasyLocal
     /**
      Outputs the menu options.
      */
-    template <class Input, class State, class Move, class CostStructure>
-    void MoveTester<Input, State, Move, CostStructure>::ShowMenu()
+    template <class NeighborhoodExplorer>
+    void MoveTester<NeighborhoodExplorer>::ShowMenu()
     {
       os << "Move Menu: " << std::endl
       << "     (1)  Perform Best Move" << std::endl
@@ -116,8 +120,8 @@ namespace EasyLocal
      
      @param st the current state
      */
-    template <class Input, class State, class Move, class CostStructure>
-    bool MoveTester<Input, State, Move, CostStructure>::ExecuteChoice(const Input& in, State &st)
+    template <class NeighborhoodExplorer>
+    bool MoveTester<NeighborhoodExplorer>::ExecuteChoice(const Input& in, State &st)
     {
       EvaluatedMove<Move, CostStructure> em;
       try
@@ -184,8 +188,8 @@ namespace EasyLocal
       return false;
     }
     
-    template <class Input, class State, class Move, class CostStructure>
-    void MoveTester<Input, State, Move, CostStructure>::PrintMoveCosts(const Input& in, const State &st, const EvaluatedMove<Move, CostStructure> &em) const
+    template <class NeighborhoodExplorer>
+    void MoveTester<NeighborhoodExplorer>::PrintMoveCosts(const Input& in, const State &st, const EvaluatedMove<Move, CostStructure> &em) const
     {
       // it's a tester, so we can avoid optimizations
       os << "Move: " << em.move << std::endl;
@@ -207,8 +211,8 @@ namespace EasyLocal
       os << "Total Delta Cost: " << em.cost.total << std::endl;
     }
     
-    template <class Input, class State, class Move, class CostStructure>
-    void MoveTester<Input, State, Move, CostStructure>::CheckNeighborhoodCosts(const Input& in, const State &st) const
+    template <class NeighborhoodExplorer>
+    void MoveTester<NeighborhoodExplorer>::CheckNeighborhoodCosts(const Input& in, const State &st) const
     {
       EvaluatedMove<Move, CostStructure> em;
       unsigned int move_count = 0;
@@ -256,8 +260,8 @@ namespace EasyLocal
      
      @param st the state to inspect
      */
-    template <class Input, class State, class Move, class CostStructure>
-    void MoveTester<Input, State, Move, CostStructure>::PrintNeighborhoodStatistics(const Input& in, const State &st) const
+    template <class NeighborhoodExplorer>
+    void MoveTester<NeighborhoodExplorer>::PrintNeighborhoodStatistics(const Input& in, const State &st) const
     {
       unsigned int neighbors = 0, improving_neighbors = 0,
       worsening_neighbors = 0, non_improving_neighbors = 0;
@@ -304,8 +308,8 @@ namespace EasyLocal
         os << "  " << i << ". " << sm.GetCostComponent(i).name << " : Min = " << min_max_costs[i].first << ", Max = " << min_max_costs[i].second << std::endl;
     }
     
-    template <class Input, class State, class Move, class CostStructure>
-    void MoveTester<Input, State, Move, CostStructure>::PrintAllNeighbors(const Input& in, const State &st) const
+    template <class NeighborhoodExplorer>
+    void MoveTester<NeighborhoodExplorer>::PrintAllNeighbors(const Input& in, const State &st) const
     {
       Move mv;
       ne.FirstMove(in, st, mv);
@@ -315,8 +319,8 @@ namespace EasyLocal
       } while (ne.NextMove(in, st, mv));
     }
     
-    template <class Input, class State, class Move, class CostStructure>
-    void MoveTester<Input, State, Move, CostStructure>::CheckRandomMoveDistribution(const Input& in, const State &st) const
+    template <class NeighborhoodExplorer>
+    void MoveTester<NeighborhoodExplorer>::CheckRandomMoveDistribution(const Input& in, const State &st) const
     {
       Move mv;
       std::map<Move, unsigned int> frequency;
@@ -373,8 +377,8 @@ namespace EasyLocal
       std::cerr << "Percentage of outliers " << 100 * error / frequency.size() << '%' << std::endl;
     }
     
-    template <class Input, class State, class Move, class CostStructure>
-    void MoveTester<Input, State, Move, CostStructure>::CheckMoveIndependence(const Input& in, const State &st) const
+    template <class NeighborhoodExplorer>
+    void MoveTester<NeighborhoodExplorer>::CheckMoveIndependence(const Input& in, const State &st) const
     {
       Move mv;
       std::vector<std::pair<Move, State>> reached_states;
@@ -437,14 +441,14 @@ namespace EasyLocal
         os << "There are " << null_moves << " null moves" << std::endl;
     }
     
-    template <class Input, class State, class Move, class CostStructure>
-    size_t MoveTester<Input, State, Move, CostStructure>::Modality() const
+    template <class NeighborhoodExplorer>
+    size_t MoveTester<NeighborhoodExplorer>::Modality() const
     {
       return ne.Modality();
     }
     
-    template <class Input, class State, class Move, class CostStructure>
-    void MoveTester<Input, State, Move, CostStructure>::SetTolerance(double t)
+    template <class NeighborhoodExplorer>
+    void MoveTester<NeighborhoodExplorer>::SetTolerance(double t)
     {
       tolerance = t;
     }

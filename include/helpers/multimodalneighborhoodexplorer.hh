@@ -425,10 +425,12 @@ namespace EasyLocal
       template <class FirstBaseNeighborhoodExplorer, class... BaseNeighborhoodExplorers>
       class MultiModalNeighborhoodExplorer : public NeighborhoodExplorer<typename FirstBaseNeighborhoodExplorer::Input, typename FirstBaseNeighborhoodExplorer::State, std::tuple<ActiveMove<typename FirstBaseNeighborhoodExplorer::Move>, ActiveMove<typename BaseNeighborhoodExplorers::Move>...>, typename FirstBaseNeighborhoodExplorer::CostStructure>
       {
-      protected:
+      public:
         typedef typename FirstBaseNeighborhoodExplorer::Input Input;
         typedef typename FirstBaseNeighborhoodExplorer::State State;
         typedef typename FirstBaseNeighborhoodExplorer::CostStructure CostStructure;
+      protected:
+
         
         /** Tuple type representing the combination of @c BaseNeighborhoodExplorers' @ref Move. */
         typedef std::tuple<ActiveMove<typename FirstBaseNeighborhoodExplorer::Move>, ActiveMove<typename BaseNeighborhoodExplorers::Move>...> Moves;
@@ -511,11 +513,12 @@ namespace EasyLocal
     {
     protected:
       typedef Impl::MultiModalNeighborhoodExplorer<FirstBaseNeighborhoodExplorer, BaseNeighborhoodExplorers...> Super;
+    public:
       typedef typename Super::Input Input;
       typedef typename Super::State State;
       typedef typename Super::CostStructure CostStructure;
       typedef typename Super::Moves Moves;
-    public:
+      
       /** Constructor, takes a variable number of base NeighborhoodExplorers.
        @param sm a pointer to a compatible state manager.
        @param name the name associated to the NeighborhoodExplorer
@@ -681,11 +684,11 @@ namespace EasyLocal
     {
     protected:
       typedef Impl::MultiModalNeighborhoodExplorer<FirstBaseNeighborhoodExplorer, BaseNeighborhoodExplorers...> Super;
+    public:
       typedef typename Super::Input Input;
       typedef typename Super::State State;
       typedef typename Super::CostStructure CostStructure;
       typedef typename Super::Moves Moves;
-    public:
       
       using Super::Super;
       
