@@ -345,8 +345,8 @@ namespace EasyLocal
           {
             const auto &this_move = std::get<0>(moves).get();
             const auto &next_move = std::get<1>(moves).get();
-            typedef std::function<bool(const decltype(this_move)&, const decltype(next_move)&)> FuncType;
-            typedef std::function<bool(const State&, const decltype(this_move)&, const decltype(next_move)&)> StateFuncType;
+            using FuncType = std::function<bool(const decltype(this_move)&, const decltype(next_move)&)>;
+            using StateFuncType = std::function<bool(const State&, const decltype(this_move)&, const decltype(next_move)&)>;
             auto it_m = related_funcs.find(std::type_index(typeid(FuncType))), it_s =  related_funcs.find(std::type_index(typeid(StateFuncType)));
             if (it_m == related_funcs.end() && it_s == related_funcs.end())
               return true;
@@ -442,23 +442,22 @@ namespace EasyLocal
       class MultiModalNeighborhoodExplorer : public NeighborhoodExplorer<typename FirstBaseNeighborhoodExplorer::Input, typename FirstBaseNeighborhoodExplorer::State, std::tuple<ActiveMove<typename FirstBaseNeighborhoodExplorer::Move>, ActiveMove<typename BaseNeighborhoodExplorers::Move>...>, typename FirstBaseNeighborhoodExplorer::CostStructure>
       {
       public:
-        typedef typename FirstBaseNeighborhoodExplorer::Input Input;
-        typedef typename FirstBaseNeighborhoodExplorer::State State;
-        typedef typename FirstBaseNeighborhoodExplorer::CostStructure CostStructure;
+        using Input = typename FirstBaseNeighborhoodExplorer::Input;
+        using State = typename FirstBaseNeighborhoodExplorer::State;
+        using CostStructure = typename FirstBaseNeighborhoodExplorer::CostStructure ;
       protected:
-
         
         /** Tuple type representing the combination of @c BaseNeighborhoodExplorers' @ref Move. */
-        typedef std::tuple<ActiveMove<typename FirstBaseNeighborhoodExplorer::Move>, ActiveMove<typename BaseNeighborhoodExplorers::Move>...> Moves;
+        using Moves = std::tuple<ActiveMove<typename FirstBaseNeighborhoodExplorer::Move>, ActiveMove<typename BaseNeighborhoodExplorers::Move>...>;
         
         /** Tuple type representing references to @c BaseNeighborhoodExplorers' @ref Move (because we need to set them). */
-        typedef std::tuple<std::reference_wrapper<ActiveMove<typename FirstBaseNeighborhoodExplorer::Move>>, std::reference_wrapper<ActiveMove<typename BaseNeighborhoodExplorers::Move>>...> MoveRefs;
+        using MoveRefs = std::tuple<std::reference_wrapper<ActiveMove<typename FirstBaseNeighborhoodExplorer::Move>>, std::reference_wrapper<ActiveMove<typename BaseNeighborhoodExplorers::Move>>...>;
         
         /** Tuple type representing const references to @c BaseNeighborhoodExplorers' @ref Move. */
-        typedef std::tuple<std::reference_wrapper<const ActiveMove<typename FirstBaseNeighborhoodExplorer::Move>>, std::reference_wrapper<const ActiveMove<typename BaseNeighborhoodExplorers::Move>>...> MoveCRefs;
+        using MoveCRefs = std::tuple<std::reference_wrapper<const ActiveMove<typename FirstBaseNeighborhoodExplorer::Move>>, std::reference_wrapper<const ActiveMove<typename BaseNeighborhoodExplorers::Move>>...>;
         
         /** Tuple type representing references to @c BaseNeighborhoodExplorers. */
-        typedef std::tuple<std::reference_wrapper<FirstBaseNeighborhoodExplorer>, std::reference_wrapper<BaseNeighborhoodExplorers>...> NeighborhoodExplorerTypes;
+        using NeighborhoodExplorerTypes = std::tuple<std::reference_wrapper<FirstBaseNeighborhoodExplorer>, std::reference_wrapper<BaseNeighborhoodExplorers>...> ;
         
       public:
         /** Constructor, takes a variable number of base NeighborhoodExplorers.
@@ -491,16 +490,27 @@ namespace EasyLocal
         NeighborhoodExplorerTypes nhes;
         
 #ifndef MSVC
-        typedef std::tuple<Impl::FastFunc<void(const Input&, const State &, typename FirstBaseNeighborhoodExplorer::Move &)>, Impl::FastFunc<void(const Input&, const State &, typename BaseNeighborhoodExplorers::Move &)>...> _Void_ConstInput_ConstState_Move;
-        typedef std::tuple<Impl::FastFunc<bool(const Input&, const State &, typename FirstBaseNeighborhoodExplorer::Move &)>, Impl::FastFunc<bool(const Input&, const State &, typename BaseNeighborhoodExplorers::Move &)>...> _Bool_ConstInput_ConstState_Move;
-        typedef std::tuple<Impl::FastFunc<void(const Input&, State &, const typename FirstBaseNeighborhoodExplorer::Move &)>, Impl::FastFunc<void(const Input&, State &, const typename BaseNeighborhoodExplorers::Move &)>...> _Void_ConstInput_State_ConstMove;
-        typedef std::tuple<Impl::FastFunc<CostStructure(const Input&, const State &, const typename FirstBaseNeighborhoodExplorer::Move &, const std::vector<double> &weights)>, Impl::FastFunc<CostStructure(const Input&, const State &, const typename BaseNeighborhoodExplorers::Move &, const std::vector<double> &weights)>...> _CostStructure_ConstInput_ConstState_ConstMove;
+        /* using _Void_ConstInput_ConstState_Move = std::tuple<Impl::FastFunc<void(const Input&, const State &, typename FirstBaseNeighborhoodExplorer::Move &)>, Impl::FastFunc<void(const Input&, const State &, typename BaseNeighborhoodExplorers::Move &)>...>;
+        using _Bool_ConstInput_ConstState_Move = std::tuple<Impl::FastFunc<bool(const Input&, const State &, typename FirstBaseNeighborhoodExplorer::Move &)>, Impl::FastFunc<bool(const Input&, const State &, typename BaseNeighborhoodExplorers::Move &)>...>; */
+        using _Void_ConstInput_State_ConstMove = std::tuple<Impl::FastFunc<void(const Input&, State &, const typename FirstBaseNeighborhoodExplorer::Move &)>, Impl::FastFunc<void(const Input&, State &, const typename BaseNeighborhoodExplorers::Move &)>...> ;
+        using _CostStructure_ConstInput_ConstState_ConstMove = std::tuple<Impl::FastFunc<CostStructure(const Input&, const State &, const typename FirstBaseNeighborhoodExplorer::Move &, const std::vector<double> &weights)>, Impl::FastFunc<CostStructure(const Input&, const State &, const typename BaseNeighborhoodExplorers::Move &, const std::vector<double> &weights)>...>;
         
+        template <class R, class ...Args>
+        using _Function_Types = std::tuple<Impl::FastFunc<R(Args&..., typename FirstBaseNeighborhoodExplorer::Move &)>, Impl::FastFunc<R(Args&..., typename BaseNeighborhoodExplorers::Move &)>...>;
+        
+        using _Void_ConstInput_ConstState_Move = _Function_Types<void, const Input, const State>;
+        using _Bool_ConstInput_ConstState_Move = _Function_Types<bool, const Input, const State>;
 #else
-        typedef std::tuple<std::function<void(const Input&, const State &, typename FirstBaseNeighborhoodExplorer::Move &)>, std::function<void(const Input&, const State &, typename BaseNeighborhoodExplorers::Move &)>...> _Void_ConstInput_ConstState_Move;
-        typedef std::tuple<std::function<bool(const Input&, const State &, typename FirstBaseNeighborhoodExplorer::Move &)>, std::function<bool(const Input&, const State &, typename BaseNeighborhoodExplorers::Move &)>...> _Bool_ConstInput_ConstState_Move;
-        typedef std::tuple<std::function<void(const Input&, State &, const typename FirstBaseNeighborhoodExplorer::Move &)>, std::function<void(const Input&, State &, const typename BaseNeighborhoodExplorers::Move &)>...> _Void_ConstInput_State_ConstMove;
-        typedef std::tuple<std::function<CostStructure(const Input&, const State &, const typename FirstBaseNeighborhoodExplorer::Move &, const std::vector<double> &weights)>, std::function<CostStructure(const Input&, const State &, const typename BaseNeighborhoodExplorers::Move &, const std::vector<double> &weights)>...> _CostStructure_ConstInput_ConstState_ConstMove;
+        /* using _Void_ConstInput_ConstState_Move = std::tuple<std::function<void(const Input&, const State &, typename FirstBaseNeighborhoodExplorer::Move &)>, std::function<void(const Input&, const State &, typename BaseNeighborhoodExplorers::Move &)>...>;
+        using _Bool_ConstInput_ConstState_Move = std::tuple<std::function<bool(const Input&, const State &, typename FirstBaseNeighborhoodExplorer::Move &)>, std::function<bool(const Input&, const State &, typename BaseNeighborhoodExplorers::Move &)>...>; */
+        using _Void_ConstInput_State_ConstMove = std::tuple<std::function<void(const Input&, State &, const typename FirstBaseNeighborhoodExplorer::Move &)>, std::function<void(const Input&, State &, const typename BaseNeighborhoodExplorers::Move &)>...>;
+        using _CostStructure_ConstInput_ConstState_ConstMove = std::tuple<std::function<CostStructure(const Input&, const State &, const typename FirstBaseNeighborhoodExplorer::Move &, const std::vector<double> &weights)>, std::function<CostStructure(const Input&, const State &, const typename BaseNeighborhoodExplorers::Move &, const std::vector<double> &weights)>...>;
+        
+        template <class R, class ...Args>
+        using _Function_Types = std::tuple<std::function<R(Args&..., typename FirstBaseNeighborhoodExplorer::Move &)>, std::function<R(Args&..., typename BaseNeighborhoodExplorers::Move &)>...>;
+        
+        using _Void_ConstInput_ConstState_Move = _Function_Types<void, const Input, const State>;
+        using _Bool_ConstInput_ConstState_Move = _Function_Types<bool, const Input, const State>;
 #endif
         _Void_ConstInput_ConstState_Move first_move_funcs, random_move_funcs;
         _Bool_ConstInput_ConstState_Move next_move_funcs;
@@ -528,12 +538,12 @@ namespace EasyLocal
     class SetUnionNeighborhoodExplorer : public Impl::MultiModalNeighborhoodExplorer<FirstBaseNeighborhoodExplorer, BaseNeighborhoodExplorers...>
     {
     protected:
-      typedef Impl::MultiModalNeighborhoodExplorer<FirstBaseNeighborhoodExplorer, BaseNeighborhoodExplorers...> Super;
+      using Super = Impl::MultiModalNeighborhoodExplorer<FirstBaseNeighborhoodExplorer, BaseNeighborhoodExplorers...>;
     public:
-      typedef typename Super::Input Input;
-      typedef typename Super::State State;
-      typedef typename Super::CostStructure CostStructure;
-      typedef typename Super::Moves Moves;
+      using Input = typename Super::Input;
+      using State = typename Super::State;
+      using CostStructure = typename Super::CostStructure;
+      using Moves = typename Super::Moves;
       
       /** Constructor, takes a variable number of base NeighborhoodExplorers.
        @param sm a pointer to a compatible state manager.
@@ -699,20 +709,23 @@ namespace EasyLocal
     class CartesianProductNeighborhoodExplorer : public Impl::MultiModalNeighborhoodExplorer<FirstBaseNeighborhoodExplorer, BaseNeighborhoodExplorers...>
     {
     protected:
-      typedef Impl::MultiModalNeighborhoodExplorer<FirstBaseNeighborhoodExplorer, BaseNeighborhoodExplorers...> Super;
+      using Super = Impl::MultiModalNeighborhoodExplorer<FirstBaseNeighborhoodExplorer, BaseNeighborhoodExplorers...>;
     public:
-      typedef typename Super::Input Input;
-      typedef typename Super::State State;
-      typedef typename Super::CostStructure CostStructure;
-      typedef typename Super::Moves Moves;
+      using Input = typename Super::Input;
+      using State = typename Super::State;
+      using CostStructure = typename Super::CostStructure;
+      using Moves = typename Super::Moves;
       
       using Super::Super;
       
     protected:
       std::unordered_map<std::type_index, boost::any> related_funcs;
       
-      template<typename T>
-      struct function_traits;
+      template <typename Move1, typename Move2>
+      using RelatedFuncType = std::function<bool(const ActiveMove<Move1>&, const ActiveMove<Move2>&)>;
+      
+      template <typename Move1, typename Move2>
+      using RelatedStateFuncType = std::function<bool(const State&, const ActiveMove<Move1>&, const ActiveMove<Move2>&)>;
       
     public:
       /** Adds a predicate to determine whether two moves (of different neighborhoods) are related.
@@ -722,27 +735,23 @@ namespace EasyLocal
       template <typename Move1, typename Move2>
       void AddRelatedFunction(std::function<bool(const Move1&, const Move2&)>&& r)
       {
-        typedef std::function<bool(const ActiveMove<Move1>&, const ActiveMove<Move2>&)> FuncType;
-        typedef std::function<bool(const State&, const ActiveMove<Move1>&, const ActiveMove<Move2>&)> StateFuncType;
         // check that another function dealing with the same moves combination is not present
-        if (related_funcs.find(std::type_index(typeid(FuncType))) != related_funcs.end())
+        if (related_funcs.find(std::type_index(typeid(RelatedFuncType<Move1, Move2>))) != related_funcs.end())
           throw std::logic_error("An existing related function with the same move types is already present");
-        if (related_funcs.find(std::type_index(typeid(StateFuncType))) != related_funcs.end())
+        if (related_funcs.find(std::type_index(typeid(RelatedStateFuncType<Move1, Move2>))) != related_funcs.end())
           throw std::logic_error("An existing related function with the same move types but also using the state is already present");
-        related_funcs[std::type_index(typeid(FuncType))] = static_cast<FuncType>([r](const ActiveMove<Move1> &mv1, const ActiveMove<Move2> &mv2) { return r(mv1, mv2); });
+        related_funcs[std::type_index(typeid(RelatedFuncType<Move1, Move2>))] = static_cast<RelatedFuncType<Move1, Move2>>([r](const ActiveMove<Move1> &mv1, const ActiveMove<Move2> &mv2) { return r(mv1, mv2); });
       }
       
       template <typename State, typename Move1, typename Move2>
       void AddRelatedFunction(std::function<bool(const State&, const Move1&, const Move2&)>&& r)
       {
-        typedef std::function<bool(const State&, const ActiveMove<Move1>&, const ActiveMove<Move2>&)> StateFuncType;
-        typedef std::function<bool(const State&, const ActiveMove<Move1>&, const ActiveMove<Move2>&)> FuncType;
         // check that another function dealing with the same moves combination is not present
-        if (related_funcs.find(std::type_index(typeid(FuncType))) != related_funcs.end())
+        if (related_funcs.find(std::type_index(typeid(RelatedFuncType<Move1, Move2>))) != related_funcs.end())
           throw std::logic_error("An existing related function with the same move types but not using the state is already present");
-        if (related_funcs.find(std::type_index(typeid(StateFuncType))) != related_funcs.end())
+        if (related_funcs.find(std::type_index(typeid(RelatedStateFuncType<Move1, Move2>))) != related_funcs.end())
           throw std::logic_error("An existing related function with the same move types and the state is already present");
-        related_funcs[std::type_index(typeid(StateFuncType))] = static_cast<StateFuncType>([r](const State& st, const ActiveMove<Move1> &mv1, const ActiveMove<Move2> &mv2) { return r(st, mv1, mv2); });
+        related_funcs[std::type_index(typeid(RelatedStateFuncType<Move1, Move2>))] = static_cast<RelatedStateFuncType<Move1, Move2>>([r](const State& st, const ActiveMove<Move1> &mv1, const ActiveMove<Move2> &mv2) { return r(st, mv1, mv2); });
       }
       
       /** @copydoc NeighborhoodExplorer::FirstMove */

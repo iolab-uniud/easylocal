@@ -38,13 +38,13 @@ namespace EasyLocal
     class KickerIterator : public std::iterator<std::input_iterator_tag, Kick<typename Kicker::State, typename Kicker::Move, typename Kicker::CostStructure>>
     {
     protected:
-      typedef typename Kicker::Input Input;
-      typedef typename Kicker::State State;
-      typedef typename Kicker::Move Move;
-      typedef typename Kicker::CostStructure CostStructure;
-      typedef typename Kicker::RelatedMovesFunc RelatedMovesFunc;
-      typedef typename Kicker::RelatedStateFuncType RelatedStateFuncType;
-      typedef typename Kicker::RelatedFuncType RelatedFuncType;
+      using Input = typename Kicker::Input;
+      using State = typename Kicker::State;
+      using Move = typename Kicker::Move;
+      using CostStructure = typename Kicker::CostStructure;
+      using RelatedMovesFunc = typename Kicker::RelatedMovesFunc;
+      using RelatedStateFuncType = typename Kicker::RelatedStateFuncType;
+      using RelatedFuncType = typename Kicker::RelatedFuncType;
       
       KickerIterator(size_t length, const typename Kicker::NeighborhoodExplorer&ne, const Input& in, const State &state, const RelatedMovesFunc* related_moves, bool end = false)
       : length(length), ne(ne), in(in), start_state(state), kick_count(0), end(end), related_moves(related_moves)
@@ -103,12 +103,12 @@ namespace EasyLocal
     {
       friend class Kicker<typename _Kicker::NeighborhoodExplorer>;
     protected:
-      typedef _Kicker Kicker;
-      typedef typename Kicker::Input Input;
-      typedef typename Kicker::State State;
-      typedef typename Kicker::Move Move;
-      typedef typename Kicker::CostStructure CostStructure;
-      typedef typename Kicker::RelatedMovesFunc RelatedMovesFunc;
+      using Kicker = _Kicker;
+      using Input = typename Kicker::Input;
+      using State = typename Kicker::State;
+      using Move = typename Kicker::Move;
+      using CostStructure = typename Kicker::CostStructure;
+      using RelatedMovesFunc = typename Kicker::RelatedMovesFunc ;
     public:
       
       FullKickerIterator operator++(int) // postfix
@@ -295,13 +295,12 @@ namespace EasyLocal
     {
       friend class Kicker<typename _Kicker::NeighborhoodExplorer>;
     protected:
-      typedef _Kicker Kicker;
-    protected:
-      typedef typename Kicker::Input Input;
-      typedef typename Kicker::State State;
-      typedef typename Kicker::Move Move;
-      typedef typename Kicker::CostStructure CostStructure;
-      typedef typename Kicker::RelatedMovesFunc RelatedMovesFunc;
+      using Kicker = _Kicker;
+      using Input = typename Kicker::Input;
+      using State = typename Kicker::State;
+      using Move = typename Kicker::Move;
+      using CostStructure = typename Kicker::CostStructure;
+      using RelatedMovesFunc = typename Kicker::RelatedMovesFunc ;
     public:
       
       SampleKickerIterator operator++(int) // postfix
@@ -456,16 +455,16 @@ namespace EasyLocal
     class Kicker
     {
     public:
-      typedef _NeighborhoodExplorer NeighborhoodExplorer;
-      typedef typename NeighborhoodExplorer::Input Input;
-      typedef typename NeighborhoodExplorer::State State;
-      typedef typename NeighborhoodExplorer::CostStructure CostStructure;
-      typedef typename CostStructure::CFtype CFtype;
-      typedef typename NeighborhoodExplorer::Move Move;
-      typedef typename std::pair<std::type_index, boost::any> RelatedMovesFunc;
+      using NeighborhoodExplorer = _NeighborhoodExplorer;
+      using Input = typename NeighborhoodExplorer::Input;
+      using State = typename NeighborhoodExplorer::State;
+      using CostStructure = typename NeighborhoodExplorer::CostStructure;
+      using CFtype = typename CostStructure::CFtype;
+      using Move = typename NeighborhoodExplorer::Move;
+      using RelatedMovesFunc = std::pair<std::type_index, boost::any>;
       
-      typedef typename std::function<bool(const Move&, const Move&)> RelatedFuncType;
-      typedef typename std::function<bool(const State&, const Move&, const Move&)> RelatedStateFuncType;
+      using RelatedFuncType = std::function<bool(const Move&, const Move&)>;
+      using RelatedStateFuncType = std::function<bool(const State&, const Move&, const Move&)>;
       
     protected:
       std::unique_ptr<RelatedMovesFunc> related_func;

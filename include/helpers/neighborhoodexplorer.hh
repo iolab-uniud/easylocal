@@ -59,13 +59,13 @@ namespace EasyLocal
     class NeighborhoodExplorer
     {
     public:
-      typedef _Input Input;
-      typedef _Move Move;
-      typedef _State State;
-      typedef typename _CostStructure::CFtype CFtype;
-      typedef _CostStructure CostStructure;
+      using Input = _Input;
+      using Move = _Move;
+      using State = _State;
+      using CostStructure = _CostStructure;
+      using CFtype = typename CostStructure::CFtype;
       
-      typedef typename std::function<bool(const Move &mv, const CostStructure &move_cost)> MoveAcceptor;
+      using MoveAcceptor = typename std::function<bool(const Move &mv, const CostStructure &move_cost)>;
       
       /* Copies all the delta cost components from another neighborhood explorer of the same class
        @param ne the neighborhood explorer from which the data has to be copied
