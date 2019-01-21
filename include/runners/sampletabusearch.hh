@@ -26,13 +26,13 @@ namespace EasyLocal
       {
         size_t sampled = 0;
         CostStructure aspiration = this->best_state_cost - this->current_state_cost;
-        EvaluatedMove em = this->ne.RandomBest(in, *this->p_current_state, samples, sampled, [this, aspiration](const Move &mv, const CostStructure &move_cost) {
+        EvaluatedMove em = this->ne.RandomBest(in, *this->p_current_state, samples, sampled, [this, in, aspiration](const Move &mv, const CostStructure &move_cost) {
           for (auto li : *(this->tabu_list))
-            if ((move_cost >= aspiration) && this->Inverse(li.move, mv))
+            if ((move_cost >= aspiration) && this->Inverse(in, *this->p_current_state, li.move, mv))
               return false;
           return true;
         },
-                                                                    this->weights);
+                                               this->weights);
         this->current_move = em;
         this->evaluations += sampled;
       }

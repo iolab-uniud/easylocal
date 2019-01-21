@@ -24,14 +24,13 @@ namespace EasyLocal
       EmptyNeighborhood() : std::logic_error("Empty neighborhood") {}
     };
     
-    template <class Move, typename CFtype, class CostStructure>
+    template <class Move, class CostStructure>
     struct EvaluatedMove
     {
       static EvaluatedMove empty;
       EvaluatedMove() : is_valid(false) {}
       EvaluatedMove(const Move &move) : move(move), is_valid(false) {}
       EvaluatedMove(const Move &move, const CostStructure &cost) : is_valid(true), move(move), cost(cost) {}
-      static_assert(std::is_same<CFtype, typename CostStructure::CFtype>::value, "Trying to instantiate the CostStructure template with an incompatible one (not the same CFtype)");
       
       Move move;
       bool is_valid;
@@ -39,7 +38,7 @@ namespace EasyLocal
     };
     
     template <class Move, typename CFtype, class CostStructure>
-    std::ostream &operator<<(std::ostream &os, const EvaluatedMove<Move, CFtype, CostStructure> &em)
+    std::ostream &operator<<(std::ostream &os, const EvaluatedMove<Move, CostStructure> &em)
     {
       os << em.move;
       if (em.is_valid)
@@ -49,8 +48,8 @@ namespace EasyLocal
       return os;
     }
     
-    template <class Move, typename CFtype, class CostStructure>
-    EvaluatedMove<Move, CFtype, CostStructure> EvaluatedMove<Move, CFtype, CostStructure>::empty = EvaluatedMove<Move, CFtype, CostStructure>();
+    template <class Move, class CostStructure>
+    EvaluatedMove<Move, CostStructure> EvaluatedMove<Move, CostStructure>::empty = EvaluatedMove<Move, CostStructure>();
     
     /** The Neighborhood Explorer is responsible for the strategy exploited in the exploration of the neighborhood, and for computing the variations of the cost function due to a specific
      @ref Move.
@@ -65,7 +64,7 @@ namespace EasyLocal
       using State = _State;
       using CostStructure = _CostStructure;
       using CFtype = typename CostStructure::CFtype;
-      using EvaluatedMove = EvaluatedMove<Move, CFtype, CostStructure>;
+      using EvaluatedMove = EvaluatedMove<Move, CostStructure>;
       
       using MoveAcceptor = typename std::function<bool(const Move &mv, const CostStructure &move_cost)>;
       

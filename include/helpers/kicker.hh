@@ -1,13 +1,16 @@
 #pragma once
 
 #include "helpers/neighborhoodexplorer.hh"
+#include <typeinfo>
+#include <typeindex>
+#include <boost/any.hpp>
 
 namespace EasyLocal
 {
   namespace Core
   {
     template <class State, class Move, class CostStructure>
-    struct Kick : public std::vector<std::pair<EvaluatedMove<Move, typename CostStructure::CFtype, CostStructure>, State>>
+    struct Kick : public std::vector<std::pair<EvaluatedMove<Move, CostStructure>, State>>
     {
     public:
       static Kick empty;
@@ -479,22 +482,22 @@ namespace EasyLocal
        */
       Kicker(StateManager<Input, State, CostStructure>& sm, NeighborhoodExplorer& ne) : sm(sm), ne(ne) {}
       
-      void AddRelatedFunction(RelatedFuncType&& r)
+      void SetRelatedFunction(RelatedFuncType&& r)
       {
         related_func = std::make_unique<RelatedMovesFunc>(std::type_index(typeid(RelatedFuncType)), r);
       }
       
-      void AddRelatedFunction(RelatedInputStateFuncType&& r)
+      void SetRelatedFunction(RelatedInputStateFuncType&& r)
       {
         related_func = std::make_unique<RelatedMovesFunc>(std::type_index(typeid(RelatedInputStateFuncType)), r);
       }
       
-      void AddRelatedFunction(const RelatedFuncType& r)
+      void SetRelatedFunction(const RelatedFuncType& r)
       {
         related_func = std::make_unique<RelatedMovesFunc>(std::type_index(typeid(RelatedFuncType)), r);
       }
       
-      void AddRelatedFunction(const RelatedInputStateFuncType& r)
+      void SetRelatedFunction(const RelatedInputStateFuncType& r)
       {
         related_func = std::make_unique<RelatedMovesFunc>(std::type_index(typeid(RelatedInputStateFuncType)), r);
       }

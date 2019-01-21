@@ -26,9 +26,9 @@ namespace EasyLocal
       {
         CostStructure aspiration = this->best_state_cost - this->current_state_cost;
         size_t explored;
-        EvaluatedMove em = this->ne.SelectFirst(in, *this->p_current_state, explored, [this, aspiration](const Move &mv, const CostStructure &move_cost) {
+        EvaluatedMove em = this->ne.SelectFirst(in, *this->p_current_state, explored, [this, in, aspiration](const Move &mv, const CostStructure &move_cost) {
           for (auto li : *(this->tabu_list))
-            if ((move_cost >= aspiration) && this->Inverse(li.move, mv))
+            if ((move_cost >= aspiration) && this->Inverse(in, *this->p_current_state, li.move, mv))
               return false;
           return true;
         },

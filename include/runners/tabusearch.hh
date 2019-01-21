@@ -61,21 +61,17 @@ namespace EasyLocal
     public:
       UNPACK_MOVERUNNER_BASIC_TYPES()
       
-      using InverseFunction = std::function<bool(const Move &lm, const Move &mv)>;
-      
       /** Constructor.
        @param in the Input object
        @param sm the State Manager
        @param ne the Neighborhood Explorer
        @param name the name of the runner
-       @param InverseFunction the inverse function for tabu list management
        */
       TabuSearch(StateManager& sm,
                  NeighborhoodExplorer& ne,
                  const std::string& name,
-                 const std::string& description,
-                 InverseFunction Inverse = SameMoveAsInverse)
-      : MoveRunner<StateManager, NeighborhoodExplorer>(sm, ne, name, description), Inverse(Inverse)
+                 const std::string& description)
+      : MoveRunner<StateManager, NeighborhoodExplorer>(sm, ne, name, description)
       {}
       
       ENABLE_RUNNER_CLONE()
@@ -125,15 +121,30 @@ namespace EasyLocal
       {
         CostStructure aspiration = this->best_state_cost - this->current_state_cost;
         size_t explored;
-        EvaluatedMove em = this->ne.SelectBest(in, *this->p_current_state, explored, [this, aspiration](const Move &mv, const CostStructure &move_cost) {
+        EvaluatedMove em = this->ne.SelectBest(in, *this->p_current_state, explored, [this, in, aspiration](const Move &mv, const CostStructure &move_cost) {
           for (auto li : *(this->tabu_list))
-            if ((move_cost >= aspiration) && this->Inverse(li.move, mv))
+            if ((move_cost >= aspiration) && this->Inverse(in, *this->p_current_state, li.move, mv))
               return false;
           return true;
         },
                                                this->weights);
         this->current_move = em;
         this->evaluations += explored;
+      }
+      
+      bool Inverse(const Input& in, const State& state, const Move& mv1, const Move& mv2) const
+      {
+        if (inverse_func == nullptr)
+        {
+          return mv1 == mv2;
+        }
+        if (inverse_func->first == std::type_index(typeid(InverseInputStateFuncType)))
+          return boost::any_cast<InverseInputStateFuncType>(inverse_func->second)(in, state, mv1, mv2);
+        else
+        {
+          assert(inverse_func->first == std::type_index(typeid(InverseFuncType)));
+          return boost::any_cast<InverseFuncType>(inverse_func->second)(mv1, mv2);
+        }
       }
       
       /**
@@ -157,11 +168,36 @@ namespace EasyLocal
         max_tenure("max_tenure", "Maximum tabu tenure", this->parameters);
       }
       
-      // FIXME: also here, the inverse could depend on the state also, use an adaptation of the Kicker Mechanism to handle such a case too
-      InverseFunction Inverse;
+    protected:
+      using InverseMovesFunc = std::pair<std::type_index, boost::any>;
       
-      static InverseFunction SameMoveAsInverse;
+      using InverseFuncType = std::function<bool(const Move&, const Move&)>;
+      using InverseInputStateFuncType = std::function<bool(const Input&, const State&, const Move&, const Move&)>;
       
+    public:
+      void SetInverseFunction(InverseFuncType&& r)
+      {
+        inverse_func = std::make_shared<InverseMovesFunc>(std::type_index(typeid(InverseFuncType)), r);
+      }
+      
+      void SetInverseFunction(InverseInputStateFuncType&& r)
+      {
+        inverse_func = std::make_shared<InverseMovesFunc>(std::type_index(typeid(InverseInputStateFuncType)), r);
+      }
+      
+      void SetInverseFunction(const InverseFuncType& r)
+      {
+        inverse_func = std::make_shared<InverseMovesFunc>(std::type_index(typeid(InverseFuncType)), r);
+      }
+      
+      void SetInverseFunction(const InverseInputStateFuncType& r)
+      {
+        inverse_func = std::make_shared<InverseMovesFunc>(std::type_index(typeid(InverseInputStateFuncType)), r);
+      }
+      
+    protected:
+      std::shared_ptr<InverseMovesFunc> inverse_func;
+            
       typedef QueueAdapter<std::priority_queue<TabuListItem<Move>, std::vector<TabuListItem<Move>>, typename TabuListItem<Move>::Comparator>> PriorityQueue;
       
       PriorityQueue tabu_list;
@@ -169,8 +205,5 @@ namespace EasyLocal
       Parameter<unsigned long int> max_idle_iterations;
       Parameter<unsigned int> min_tenure, max_tenure;
     };
-    
-    template <class StateManager, class NeighborhoodExplorer>
-    typename TabuSearch<StateManager, NeighborhoodExplorer>::InverseFunction TabuSearch<StateManager, NeighborhoodExplorer>::SameMoveAsInverse = [](const typename NeighborhoodExplorer::Move &lm, const typename NeighborhoodExplorer::Move &om) { return lm == om; };
   } // namespace Core
 } // namespace EasyLocal
