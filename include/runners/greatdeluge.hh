@@ -8,10 +8,8 @@
 
 namespace EasyLocal
 {
-  
   namespace Core
-  {
-    
+  {    
     /** The Great Deluge runner relies on a probabilistic local
      search technique whose name comes from ... the Bible?
      
@@ -27,21 +25,57 @@ namespace EasyLocal
      
      @ingroup Runners
      */
-    template <class Input, class State, class Move, class CostStructure = DefaultCostStructure<int>>
-    class GreatDeluge : public MoveRunner<Input, State, Move, CostStructure>
+    template <class StateManager, class NeighborhoodExplorer>
+    class GreatDeluge : public MoveRunner<StateManager, NeighborhoodExplorer>
     {
     public:
-      typedef typename CostStructure::CFtype CFtype;
+      UNPACK_MOVERUNNER_BASIC_TYPES()
       
-      using MoveRunner<Input, State, Move, CostStructure>::MoveRunner;
-      std::unique_ptr<Runner<Input, State, CostStructure>> Clone() const override;
+      using MoveRunner<StateManager, NeighborhoodExplorer>::MoveRunner;
+
+      ENABLE_RUNNER_CLONE()
       
     protected:
-      void InitializeParameters() override;
-      void InitializeRun(const Input& in) override;
-      bool StopCriterion() const override;
-      void UpdateIterationCounter();
-      void SelectMove(const Input& in) override;
+      void InitializeParameters() override
+      {
+        MoveRunner<StateManager, NeighborhoodExplorer>::InitializeParameters();
+        initial_level("initial_level", "Initial water level", this->parameters);
+        min_level("min_level", "Minimum water level", this->parameters);
+        level_rate("level_rate", "Water decrease factor", this->parameters);
+        neighbors_sampled("neighbors_sampled", "Number of neighbors sampled at each water level", this->parameters);
+      }
+      
+      void InitializeRun(const Input& in) override
+      {
+        MoveRunner<StateManager, NeighborhoodExplorer>::InitializeRun(in);
+        level = initial_level * this->current_state_cost.total;
+      }
+      
+      bool StopCriterion() const override
+      {
+        return level < min_level * this->best_state_cost.total;
+      }
+      
+      void UpdateIterationCounter()
+      {
+        MoveRunner<StateManager, NeighborhoodExplorer>::UpdateIterationCounter();
+        if (this->number_of_iterations % neighbors_sampled == 0)
+          level *= level_rate;
+      }
+      
+      void SelectMove(const Input& in) override
+      {
+        // TODO: it should become a parameter, the number of neighbors drawn at each iteration (possibly evaluated in parallel)
+        const size_t samples = 10;
+        size_t sampled;
+        typename CostStructure::CFtype cur_cost = this->current_state_cost.total;
+        double l = level;
+        EvaluatedMove em = this->ne.RandomFirst(in, *this->p_current_state, samples, sampled, [cur_cost, l](const Move &mv, const CostStructure &move_cost) {
+          return move_cost < 0.0 || move_cost <= l - cur_cost;
+        },
+                                                this->weights);
+        this->current_move = em;
+      }
       
       // parameters
       Parameter<double> initial_level;           /**< The initial level. */
@@ -51,75 +85,5 @@ namespace EasyLocal
       // state
       double level; /**< The current level. */
     };
-    
-    /*************************************************************************
-     * Implementation
-     *************************************************************************/
-    
-    template <class Input, class State, class Move, class CostStructure>
-    void GreatDeluge<Input, State, Move, CostStructure>::InitializeParameters()
-    {
-      MoveRunner<Input, State, Move, CostStructure>::InitializeParameters();
-      initial_level("initial_level", "Initial water level", this->parameters);
-      min_level("min_level", "Minimum water level", this->parameters);
-      level_rate("level_rate", "Water decrease factor", this->parameters);
-      neighbors_sampled("neighbors_sampled", "Number of neighbors sampled at each water level", this->parameters);
-    }
-    
-    /**
-     Initializes the run by invoking the companion superclass method, and
-     setting current level to the initial one.
-     */
-    template <class Input, class State, class Move, class CostStructure>
-    void GreatDeluge<Input, State, Move, CostStructure>::InitializeRun(const Input& in)
-    {
-      MoveRunner<Input, State, Move, CostStructure>::InitializeRun(in);
-      level = initial_level * this->current_state_cost.total;
-    }
-    
-    /**
-     A move is randomly picked and its cost is stored.
-     */
-    template <class Input, class State, class Move, class CostStructure>
-    void GreatDeluge<Input, State, Move, CostStructure>::SelectMove(const Input& in)
-    {
-      // TODO: it should become a parameter, the number of neighbors drawn at each iteration (possibly evaluated in parallel)
-      const size_t samples = 10;
-      size_t sampled;
-      CFtype cur_cost = this->current_state_cost.total;
-      double l = level;
-      EvaluatedMove<Move, CostStructure> em = this->ne.RandomFirst(in, *this->p_current_state, samples, sampled, [cur_cost, l](const Move &mv, const CostStructure &move_cost) {
-        return move_cost < 0.0 || move_cost <= l - cur_cost;
-      },
-                                                                   this->weights);
-      this->current_move = em;
-    }
-    
-    /**
-     The search stops when a low temperature has reached.
-     */
-    template <class Input, class State, class Move, class CostStructure>
-    bool GreatDeluge<Input, State, Move, CostStructure>::StopCriterion() const
-    {
-      return level < min_level * this->best_state_cost.total;
-    }
-    
-    /**
-     At regular steps, the temperature is decreased
-     multiplying it by a cooling rate.
-     */
-    template <class Input, class State, class Move, class CostStructure>
-    void GreatDeluge<Input, State, Move, CostStructure>::UpdateIterationCounter()
-    {
-      MoveRunner<Input, State, Move, CostStructure>::UpdateIterationCounter();
-      if (this->number_of_iterations % neighbors_sampled == 0)
-        level *= level_rate;
-    }
-    
-    template <class Input, class State, class Move, class CostStructure>
-    std::unique_ptr<Runner<Input, State, CostStructure>> GreatDeluge<Input, State, Move, CostStructure>::Clone() const
-    {
-      return Runner<Input, State, CostStructure>::MakeClone(this);
-    }
   } // namespace Core
 } // namespace EasyLocal

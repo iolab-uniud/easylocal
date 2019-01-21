@@ -466,7 +466,7 @@ namespace EasyLocal
          @param nhes the list of basic neighborhood explorer objects (according to the template list)
          @param bias a set of weights fo biasing the random move drawing
          */
-        MultiModalNeighborhoodExplorer(StateManager<Input, State, CostStructure> &sm, std::string name, FirstBaseNeighborhoodExplorer& nhe, BaseNeighborhoodExplorers &... nhes)
+        MultiModalNeighborhoodExplorer(StateManager<Input, State, CostStructure> &sm, const std::string& name, FirstBaseNeighborhoodExplorer& nhe, BaseNeighborhoodExplorers &... nhes)
         : NeighborhoodExplorer<Input, State, Moves, CostStructure>(sm, name),
         nhes(std::make_tuple(std::reference_wrapper<FirstBaseNeighborhoodExplorer>(nhe), std::reference_wrapper<BaseNeighborhoodExplorers>(nhes)...)),
 #ifndef MSVC
@@ -488,35 +488,36 @@ namespace EasyLocal
         
         /** Instantiated base NeighborhoodExplorers. */
         NeighborhoodExplorerTypes nhes;
+
+        template <template <typename R, typename ...Args> typename FuncWrapper, typename R, typename ...Args>
+        using _Function_Types = std::tuple<FuncWrapper<R(Args..., typename FirstBaseNeighborhoodExplorer::Move&)>, FuncWrapper<R(Args..., typename BaseNeighborhoodExplorers::Move &)>...>;
+        
+        template <template <typename R, typename ...Args> typename FuncWrapper, typename R, typename ...Args>
+        using _CMoves_Function_Types = std::tuple<FuncWrapper<R(Args..., const typename FirstBaseNeighborhoodExplorer::Move&)>, FuncWrapper<R(Args..., const typename BaseNeighborhoodExplorers::Move&)>...>;
+        
+        template <typename Weights, template <typename R, typename ...Args> typename FuncWrapper, typename R, typename ...Args>
+        using _CMoves_Function_Weights_Types = std::tuple<FuncWrapper<R(Args..., const typename FirstBaseNeighborhoodExplorer::Move&, Weights)>, FuncWrapper<R(Args..., const typename BaseNeighborhoodExplorers::Move&, Weights)>...>;
         
 #ifndef MSVC
-        /* using _Void_ConstInput_ConstState_Move = std::tuple<Impl::FastFunc<void(const Input&, const State &, typename FirstBaseNeighborhoodExplorer::Move &)>, Impl::FastFunc<void(const Input&, const State &, typename BaseNeighborhoodExplorers::Move &)>...>;
-        using _Bool_ConstInput_ConstState_Move = std::tuple<Impl::FastFunc<bool(const Input&, const State &, typename FirstBaseNeighborhoodExplorer::Move &)>, Impl::FastFunc<bool(const Input&, const State &, typename BaseNeighborhoodExplorers::Move &)>...>; */
-        using _Void_ConstInput_State_ConstMove = std::tuple<Impl::FastFunc<void(const Input&, State &, const typename FirstBaseNeighborhoodExplorer::Move &)>, Impl::FastFunc<void(const Input&, State &, const typename BaseNeighborhoodExplorers::Move &)>...> ;
-        using _CostStructure_ConstInput_ConstState_ConstMove = std::tuple<Impl::FastFunc<CostStructure(const Input&, const State &, const typename FirstBaseNeighborhoodExplorer::Move &, const std::vector<double> &weights)>, Impl::FastFunc<CostStructure(const Input&, const State &, const typename BaseNeighborhoodExplorers::Move &, const std::vector<double> &weights)>...>;
+        _Function_Types<Impl::FastFunc, void, const Input&, const State&> first_move_funcs, random_move_funcs;
         
-        template <class R, class ...Args>
-        using _Function_Types = std::tuple<Impl::FastFunc<R(Args&..., typename FirstBaseNeighborhoodExplorer::Move &)>, Impl::FastFunc<R(Args&..., typename BaseNeighborhoodExplorers::Move &)>...>;
+        _Function_Types<Impl::FastFunc, bool, const Input&, const State&> next_move_funcs;
         
-        using _Void_ConstInput_ConstState_Move = _Function_Types<void, const Input, const State>;
-        using _Bool_ConstInput_ConstState_Move = _Function_Types<bool, const Input, const State>;
+        _CMoves_Function_Types<Impl::FastFunc, void, const Input&, State&> make_move_funcs;
+        
+        _CMoves_Function_Weights_Types<const std::vector<double>&, Impl::FastFunc, CostStructure, const Input&, const State&> delta_cost_function_funcs;
 #else
-        /* using _Void_ConstInput_ConstState_Move = std::tuple<std::function<void(const Input&, const State &, typename FirstBaseNeighborhoodExplorer::Move &)>, std::function<void(const Input&, const State &, typename BaseNeighborhoodExplorers::Move &)>...>;
-        using _Bool_ConstInput_ConstState_Move = std::tuple<std::function<bool(const Input&, const State &, typename FirstBaseNeighborhoodExplorer::Move &)>, std::function<bool(const Input&, const State &, typename BaseNeighborhoodExplorers::Move &)>...>; */
-        using _Void_ConstInput_State_ConstMove = std::tuple<std::function<void(const Input&, State &, const typename FirstBaseNeighborhoodExplorer::Move &)>, std::function<void(const Input&, State &, const typename BaseNeighborhoodExplorers::Move &)>...>;
-        using _CostStructure_ConstInput_ConstState_ConstMove = std::tuple<std::function<CostStructure(const Input&, const State &, const typename FirstBaseNeighborhoodExplorer::Move &, const std::vector<double> &weights)>, std::function<CostStructure(const Input&, const State &, const typename BaseNeighborhoodExplorers::Move &, const std::vector<double> &weights)>...>;
+        // For some reason, fast functions do not work under MSVC (TODO: to be tested with newer MSVC)
         
-        template <class R, class ...Args>
-        using _Function_Types = std::tuple<std::function<R(Args&..., typename FirstBaseNeighborhoodExplorer::Move &)>, std::function<R(Args&..., typename BaseNeighborhoodExplorers::Move &)>...>;
+        _Function_Types<std::function, void, const Input&, const State&> first_move_funcs, random_move_funcs;
         
-        using _Void_ConstInput_ConstState_Move = _Function_Types<void, const Input, const State>;
-        using _Bool_ConstInput_ConstState_Move = _Function_Types<bool, const Input, const State>;
-#endif
-        _Void_ConstInput_ConstState_Move first_move_funcs, random_move_funcs;
-        _Bool_ConstInput_ConstState_Move next_move_funcs;
-        _Void_ConstInput_State_ConstMove make_move_funcs;
-        _CostStructure_ConstInput_ConstState_ConstMove delta_cost_function_funcs;
+        _Function_Types<std::function, bool, const Input&, const State&> next_move_funcs;
         
+        _CMoves_Function_Types<std::function, void, const Input&, State&> make_move_funcs;
+        
+        _CMoves_Function_Weights_Types<const std::vector<double>&, std::function, CostStructure, const Input&, const State&> delta_cost_function_funcs;
+
+#endif      
       public:
         /** Modality of the NeighborhoodExplorer, i.e., the number of @ref NeighborhoodExplorer composing this one.  */
         virtual size_t Modality() const final { return 1 + sizeof...(BaseNeighborhoodExplorers); }
@@ -551,7 +552,7 @@ namespace EasyLocal
        @param nhes the list of basic neighborhood explorer objects (according to the template list)
        @param bias a set of weights fo biasing the random move drawing
        */
-      SetUnionNeighborhoodExplorer(StateManager<Input, State, CostStructure> &sm, std::string name, FirstBaseNeighborhoodExplorer& nhe, BaseNeighborhoodExplorers &... nhes, const std::vector<double> &bias = std::vector<double>(0))
+      SetUnionNeighborhoodExplorer(StateManager<Input, State, CostStructure> &sm, const std::string& name, FirstBaseNeighborhoodExplorer& nhe, BaseNeighborhoodExplorers &... nhes, const std::vector<double> &bias = std::vector<double>(0))
       : Super(sm, name, nhe, nhes...)
       {
         if (bias.empty())
@@ -572,19 +573,19 @@ namespace EasyLocal
       /** @copydoc NeighborhoodExplorer::FirstMove */
       virtual void FirstMove(const Input& in, const State &st, Moves &moves) const final
       {
-        typename Super::MoveRefs r_moves = to_refs(moves);
+        auto r_moves = to_refs(moves);
         
         for (size_t i = 0; i < this->Modality(); i++)
         {
           try
           {
-            Impl::VTupleDispatcher<Input, State, typename Super::_Void_ConstInput_ConstState_Move, typename Super::MoveRefs, sizeof...(BaseNeighborhoodExplorers) + 1>::execute_at(i, in, st, this->first_move_funcs, r_moves);
-            Impl::MoveDispatcher<typename Super::MoveRefs, sizeof...(BaseNeighborhoodExplorers) + 1>::set_activity_at(i, r_moves, true);
+            Impl::VTupleDispatcher<Input, State, decltype(this->first_move_funcs), decltype(r_moves), sizeof...(BaseNeighborhoodExplorers) + 1>::execute_at(i, in, st, this->first_move_funcs, r_moves);
+            Impl::MoveDispatcher<decltype(r_moves), sizeof...(BaseNeighborhoodExplorers) + 1>::set_activity_at(i, r_moves, true);
             return;
           }
           catch (EmptyNeighborhood)
           {
-            Impl::MoveDispatcher<typename Super::MoveRefs, sizeof...(BaseNeighborhoodExplorers) + 1>::set_activity_at(i, r_moves, false);
+            Impl::MoveDispatcher<decltype(r_moves), sizeof...(BaseNeighborhoodExplorers) + 1>::set_activity_at(i, r_moves, false);
           }
         }
         throw EmptyNeighborhood();
@@ -593,8 +594,8 @@ namespace EasyLocal
       /** @copydoc NeighborhoodExplorer::RandomMove */
       virtual void RandomMove(const Input& in, const State &st, Moves &moves) const final
       {
-        typename Super::MoveRefs r_moves = to_refs(moves);
-        Impl::MoveDispatcher<typename Super::MoveRefs, sizeof...(BaseNeighborhoodExplorers) + 1>::set_all_activity(r_moves, false);
+        auto r_moves = to_refs(moves);
+        Impl::MoveDispatcher<decltype(r_moves), sizeof...(BaseNeighborhoodExplorers) + 1>::set_all_activity(r_moves, false);
         
         // Select random neighborhood explorer with bias (don't assume that they sum up to one)
         double total_bias = 0.0;
@@ -616,26 +617,26 @@ namespace EasyLocal
         {
           try
           {
-            Impl::VTupleDispatcher<Input, State, typename Super::_Void_ConstInput_ConstState_Move, typename Super::MoveRefs, sizeof...(BaseNeighborhoodExplorers) + 1>::execute_at(i, in, st, this->random_move_funcs, r_moves);
-            Impl::MoveDispatcher<typename Super::MoveRefs, sizeof...(BaseNeighborhoodExplorers) + 1>::set_activity_at(i, r_moves, true);
+            Impl::VTupleDispatcher<Input, State, decltype(this->random_move_funcs), decltype(r_moves), sizeof...(BaseNeighborhoodExplorers) + 1>::execute_at(i, in, st, this->random_move_funcs, r_moves);
+            Impl::MoveDispatcher<decltype(r_moves), sizeof...(BaseNeighborhoodExplorers) + 1>::set_activity_at(i, r_moves, true);
             return;
           }
           catch (EmptyNeighborhood)
           {
-            Impl::MoveDispatcher<typename Super::MoveRefs, sizeof...(BaseNeighborhoodExplorers) + 1>::set_activity_at(i, r_moves, false);
+            Impl::MoveDispatcher<decltype(r_moves), sizeof...(BaseNeighborhoodExplorers) + 1>::set_activity_at(i, r_moves, false);
           }
         }
         for (size_t i = 0; i < selected; i++)
         {
           try
           {
-            Impl::VTupleDispatcher<Input, State, typename Super::_Void_ConstInput_ConstState_Move, typename Super::MoveRefs, sizeof...(BaseNeighborhoodExplorers) + 1>::execute_at(i, in, st, this->random_move_funcs, r_moves);
-            Impl::MoveDispatcher<typename Super::MoveRefs, sizeof...(BaseNeighborhoodExplorers) + 1>::set_activity_at(i, r_moves, true);
+            Impl::VTupleDispatcher<Input, State, decltype(this->random_move_funcs), decltype(r_moves), sizeof...(BaseNeighborhoodExplorers) + 1>::execute_at(i, in, st, this->random_move_funcs, r_moves);
+            Impl::MoveDispatcher<decltype(r_moves), sizeof...(BaseNeighborhoodExplorers) + 1>::set_activity_at(i, r_moves, true);
             return;
           }
           catch (EmptyNeighborhood)
           {
-            Impl::MoveDispatcher<typename Super::MoveRefs, sizeof...(BaseNeighborhoodExplorers) + 1>::set_activity_at(i, r_moves, false);
+            Impl::MoveDispatcher<decltype(r_moves), sizeof...(BaseNeighborhoodExplorers) + 1>::set_activity_at(i, r_moves, false);
           }
         }
         throw EmptyNeighborhood();
@@ -644,34 +645,34 @@ namespace EasyLocal
       /** @copydoc NeighborhoodExplorer::NextMove */
       virtual bool NextMove(const Input& in, const State &st, Moves &moves) const final
       {
-        typename Super::MoveRefs r_moves = to_refs(moves);
-        const typename Super::MoveCRefs cr_moves = to_crefs(moves);
+        auto r_moves = to_refs(moves);
+        const auto cr_moves = to_crefs(moves);
         
-        size_t i = Impl::MoveDispatcher<typename Super::MoveCRefs, sizeof...(BaseNeighborhoodExplorers) + 1>::get_first_active(cr_moves, 0);
+        size_t i = Impl::MoveDispatcher<decltype(cr_moves), sizeof...(BaseNeighborhoodExplorers) + 1>::get_first_active(cr_moves, 0);
         bool next_move_exists = false;
         
         while (true)
         {
-          next_move_exists = Impl::TupleDispatcher<bool, Input, State, typename Super::_Bool_ConstInput_ConstState_Move, typename Super::MoveRefs, sizeof...(BaseNeighborhoodExplorers) + 1>::execute_at(i, in, st, this->next_move_funcs, r_moves);
+          next_move_exists = Impl::TupleDispatcher<bool, Input, State, decltype(this->next_move_funcs), decltype(r_moves), sizeof...(BaseNeighborhoodExplorers) + 1>::execute_at(i, in, st, this->next_move_funcs, r_moves);
           if (next_move_exists)
           {
-            Impl::MoveDispatcher<typename Super::MoveRefs, sizeof...(BaseNeighborhoodExplorers) + 1>::set_activity_at(i, r_moves, true);
+            Impl::MoveDispatcher<decltype(r_moves), sizeof...(BaseNeighborhoodExplorers) + 1>::set_activity_at(i, r_moves, true);
             return true;
           }
           else
           {
-            Impl::MoveDispatcher<typename Super::MoveRefs, sizeof...(BaseNeighborhoodExplorers) + 1>::set_activity_at(i, r_moves, false);
+            Impl::MoveDispatcher<decltype(r_moves), sizeof...(BaseNeighborhoodExplorers) + 1>::set_activity_at(i, r_moves, false);
             for (i = i + 1; i < this->Modality(); i++)
             {
               try
               {
-                Impl::VTupleDispatcher<Input, State, typename Super::_Void_ConstInput_ConstState_Move, typename Super::MoveRefs, sizeof...(BaseNeighborhoodExplorers) + 1>::execute_at(i, in, st, this->first_move_funcs, r_moves);
-                Impl::MoveDispatcher<typename Super::MoveRefs, sizeof...(BaseNeighborhoodExplorers) + 1>::set_activity_at(i, r_moves, true);
+                Impl::VTupleDispatcher<Input, State, decltype(this->first_move_funcs), decltype(r_moves), sizeof...(BaseNeighborhoodExplorers) + 1>::execute_at(i, in, st, this->first_move_funcs, r_moves);
+                Impl::MoveDispatcher<decltype(r_moves), sizeof...(BaseNeighborhoodExplorers) + 1>::set_activity_at(i, r_moves, true);
                 return true;
               }
               catch (EmptyNeighborhood)
               {
-                Impl::MoveDispatcher<typename Super::MoveRefs, sizeof...(BaseNeighborhoodExplorers) + 1>::set_activity_at(i, r_moves, false);
+                Impl::MoveDispatcher<decltype(r_moves), sizeof...(BaseNeighborhoodExplorers) + 1>::set_activity_at(i, r_moves, false);
               }
             }
             return false;
@@ -683,18 +684,18 @@ namespace EasyLocal
       /** @copydoc NeighborhoodExplorer::MakeMove */
       virtual void MakeMove(const Input& in, State &st, const Moves &moves) const final
       {
-        const typename Super::MoveCRefs cr_moves = to_crefs(moves);
-        size_t i = Impl::MoveDispatcher<typename Super::MoveCRefs, sizeof...(BaseNeighborhoodExplorers) + 1>::get_first_active(cr_moves, 0);
+        const auto cr_moves = to_crefs(moves);
+        size_t i = Impl::MoveDispatcher<decltype(cr_moves), sizeof...(BaseNeighborhoodExplorers) + 1>::get_first_active(cr_moves, 0);
         
-        Impl::VTupleDispatcher<Input, State, typename Super::_Void_ConstInput_State_ConstMove, typename Super::MoveCRefs, sizeof...(BaseNeighborhoodExplorers) + 1>::execute_at(i, in, st, this->make_move_funcs, cr_moves);
+        Impl::VTupleDispatcher<Input, State, decltype(this->make_move_funcs), decltype(cr_moves), sizeof...(BaseNeighborhoodExplorers) + 1>::execute_at(i, in, st, this->make_move_funcs, cr_moves);
       }
       
       /** @copydoc NeighborhoodExplorer::DeltaCostFunctionComponents */
-      virtual typename Super::CostStructure DeltaCostFunctionComponents(const Input& in, const State &st, const Moves &moves, const std::vector<double> &weights = std::vector<double>(0)) const final
+      virtual CostStructure DeltaCostFunctionComponents(const Input& in, const State &st, const Moves &moves, const std::vector<double> &weights = std::vector<double>(0)) const final
       {
-        const typename Super::MoveCRefs cr_moves = to_crefs(moves);
-        size_t i = Impl::MoveDispatcher<typename Super::MoveCRefs, sizeof...(BaseNeighborhoodExplorers) + 1>::get_first_active(cr_moves, 0);
-        return Impl::TupleDispatcher<typename Super::CostStructure, Input, State, typename Super::_CostStructure_ConstInput_ConstState_ConstMove, typename Super::MoveCRefs, sizeof...(BaseNeighborhoodExplorers) + 1>::execute_at(i, in, st, this->delta_cost_function_funcs, cr_moves, weights);
+        const auto cr_moves = to_crefs(moves);
+        size_t i = Impl::MoveDispatcher<decltype(cr_moves), sizeof...(BaseNeighborhoodExplorers) + 1>::get_first_active(cr_moves, 0);
+        return Impl::TupleDispatcher<CostStructure, Input, State, decltype(this->delta_cost_function_funcs), decltype(cr_moves), sizeof...(BaseNeighborhoodExplorers) + 1>::execute_at(i, in, st, this->delta_cost_function_funcs, cr_moves, weights);
       }
     };
     
@@ -783,8 +784,8 @@ namespace EasyLocal
       /** @copydoc NeighborhoodExplorer::FirstMove */
       virtual void FirstMove(const Input& in, const State &st, Moves &moves) const final
       {
-        typename Super::MoveRefs r_moves = to_refs(moves);
-        const typename Super::MoveCRefs cr_moves = to_crefs(moves);
+        auto r_moves = to_refs(moves);
+        const auto cr_moves = to_crefs(moves);
         const size_t length = sizeof...(BaseNeighborhoodExplorers) + 1;
         std::vector<State> states(length, st);
         
@@ -806,30 +807,30 @@ namespace EasyLocal
             try
             {
               // ne.FirstMove(kick[cur].second, kick[cur].first.move);
-              Impl::VTupleDispatcher<Input, State, typename Super::_Void_ConstInput_ConstState_Move, typename Super::MoveRefs, sizeof...(BaseNeighborhoodExplorers) + 1>::execute_at(cur, in, st, this->first_move_funcs, r_moves);
+              Impl::VTupleDispatcher<Input, State, decltype(this->first_move_funcs), decltype(r_moves), sizeof...(BaseNeighborhoodExplorers) + 1>::execute_at(cur, in, st, this->first_move_funcs, r_moves);
               
-              while (cur > 0 && !Impl::MoveDispatcher<typename Super::MoveRefs, sizeof...(BaseNeighborhoodExplorers) + 1>::are_related(cur - 1, in, states[cur - 1], r_moves, related_funcs))
+              while (cur > 0 && !Impl::MoveDispatcher<decltype(r_moves), sizeof...(BaseNeighborhoodExplorers) + 1>::are_related(cur - 1, in, states[cur - 1], r_moves, related_funcs))
               {
                 //if (!ne.NextMove(kick[cur].second, kick[cur].first.move))
-                if (!Impl::TupleDispatcher<bool, Input, State, typename Super::_Bool_ConstInput_ConstState_Move, typename Super::MoveRefs, sizeof...(BaseNeighborhoodExplorers) + 1>::execute_at(cur, in, states[cur], this->next_move_funcs, r_moves))
+                if (!Impl::TupleDispatcher<bool, Input, State, decltype(this->next_move_funcs), decltype(r_moves), sizeof...(BaseNeighborhoodExplorers) + 1>::execute_at(cur, in, states[cur], this->next_move_funcs, r_moves))
                 {
                   backtracking = true;
-                  Impl::MoveDispatcher<typename Super::MoveRefs, sizeof...(BaseNeighborhoodExplorers) + 1>::set_activity_at(cur, r_moves, false);
+                  Impl::MoveDispatcher<decltype(r_moves), sizeof...(BaseNeighborhoodExplorers) + 1>::set_activity_at(cur, r_moves, false);
                   cur--;
                   goto loop;
                 }
               }
               backtracking = false;
               // ne.MakeMove(kick[cur].second, kick[cur].first.move);
-              Impl::VTupleDispatcher<Input, State, typename Super::_Void_ConstInput_State_ConstMove, typename Super::MoveCRefs, sizeof...(BaseNeighborhoodExplorers) + 1>::execute_at(cur, in, states[cur], this->make_move_funcs, cr_moves);
-              Impl::MoveDispatcher<typename Super::MoveRefs, sizeof...(BaseNeighborhoodExplorers) + 1>::set_activity_at(cur, r_moves, true);
+              Impl::VTupleDispatcher<Input, State, decltype(this->make_move_funcs), decltype(cr_moves), sizeof...(BaseNeighborhoodExplorers) + 1>::execute_at(cur, in, states[cur], this->make_move_funcs, cr_moves);
+              Impl::MoveDispatcher<decltype(r_moves), sizeof...(BaseNeighborhoodExplorers) + 1>::set_activity_at(cur, r_moves, true);
               cur++;
               goto loop;
             }
             catch (EmptyNeighborhood e)
             {
               backtracking = true;
-              Impl::MoveDispatcher<typename Super::MoveRefs, sizeof...(BaseNeighborhoodExplorers) + 1>::set_activity_at(cur, r_moves, false);
+              Impl::MoveDispatcher<decltype(r_moves), sizeof...(BaseNeighborhoodExplorers) + 1>::set_activity_at(cur, r_moves, false);
               cur--;
               goto loop;
             }
@@ -838,19 +839,18 @@ namespace EasyLocal
           {
             do
             {
-              //                if (!ne.NextMove(kick[cur].second, kick[cur].first.move))
-              if (!Impl::TupleDispatcher<bool, Input, State, typename Super::_Bool_ConstInput_ConstState_Move, typename Super::MoveRefs, sizeof...(BaseNeighborhoodExplorers) + 1>::execute_at(cur, in, states[cur], this->next_move_funcs, r_moves))
+              if (!Impl::TupleDispatcher<bool, Input, State, decltype(this->next_move_funcs), decltype(r_moves), sizeof...(BaseNeighborhoodExplorers) + 1>::execute_at(cur, in, states[cur], this->next_move_funcs, r_moves))
               {
                 backtracking = true;
-                Impl::MoveDispatcher<typename Super::MoveRefs, sizeof...(BaseNeighborhoodExplorers) + 1>::set_activity_at(cur, r_moves, false);
+                Impl::MoveDispatcher<decltype(r_moves), sizeof...(BaseNeighborhoodExplorers) + 1>::set_activity_at(cur, r_moves, false);
                 cur--;
                 goto loop;
               }
-            } while (cur > 0 && !Impl::MoveDispatcher<typename Super::MoveRefs, sizeof...(BaseNeighborhoodExplorers) + 1>::are_related(cur - 1, in, states[cur - 1], r_moves, related_funcs));
+            } while (cur > 0 && !Impl::MoveDispatcher<decltype(r_moves), sizeof...(BaseNeighborhoodExplorers) + 1>::are_related(cur - 1, in, states[cur - 1], r_moves, related_funcs));
             backtracking = false;
             //ne.MakeMove(kick[cur].second, kick[cur].first.move);
-            Impl::VTupleDispatcher<Input, State, typename Super::_Void_ConstInput_State_ConstMove, typename Super::MoveCRefs, sizeof...(BaseNeighborhoodExplorers) + 1>::execute_at(cur, in, states[cur], this->make_move_funcs, cr_moves);
-            Impl::MoveDispatcher<typename Super::MoveRefs, sizeof...(BaseNeighborhoodExplorers) + 1>::set_activity_at(cur, r_moves, true);
+            Impl::VTupleDispatcher<Input, State, decltype(this->make_move_funcs), decltype(cr_moves), sizeof...(BaseNeighborhoodExplorers) + 1>::execute_at(cur, in, states[cur], this->make_move_funcs, cr_moves);
+            Impl::MoveDispatcher<decltype(r_moves), sizeof...(BaseNeighborhoodExplorers) + 1>::set_activity_at(cur, r_moves, true);
             cur++;
             goto loop;
           }
@@ -860,20 +860,19 @@ namespace EasyLocal
       /** @copydoc NeighborhoodExplorer::RandomMove */
       virtual void RandomMove(const Input& in, const State &st, Moves &moves) const final
       {
-        typename Super::MoveRefs r_moves = to_refs(moves);
-        const typename Super::MoveCRefs cr_moves = to_crefs(moves);
+        auto r_moves = to_refs(moves);
+        const auto cr_moves = to_crefs(moves);
         const size_t length = sizeof...(BaseNeighborhoodExplorers) + 1;
         std::vector<State> states(length, st);
         
-        typename Super::Moves initial_moves;
-        typename Super::MoveRefs r_initial_moves = to_refs(initial_moves);
-        //const MoveCRefs cr_initial_moves = to_crefs(initial_moves);
+        Moves initial_moves;
+        auto r_initial_moves = to_refs(initial_moves);
         std::vector<bool> initial_set(length, false);
         
         long cur = 0;
         bool backtracking = false;
         
-        // stop only when a complete kicker has been generated, or throw an @ref EmptyNeighborhood
+        // stop only when a complete move has been generated, or throw an @ref EmptyNeighborhood
       loop:
         while (cur < (int)length)
         {
@@ -889,42 +888,41 @@ namespace EasyLocal
             {
               const State &c_cur_st = states[cur];
               //ne.RandomMove(kick[cur].second, kick[cur].first.move);
-              Impl::VTupleDispatcher<Input, State, typename Super::_Void_ConstInput_ConstState_Move, typename Super::MoveRefs, sizeof...(BaseNeighborhoodExplorers) + 1>::execute_at(cur, in, c_cur_st, this->random_move_funcs, r_moves);
+              Impl::VTupleDispatcher<Input, State, decltype(this->random_move_funcs), decltype(r_moves), sizeof...(BaseNeighborhoodExplorers) + 1>::execute_at(cur, in, c_cur_st, this->random_move_funcs, r_moves);
               
               if (!initial_set[cur])
               {
-                Impl::MoveDispatcher<typename Super::MoveRefs, sizeof...(BaseNeighborhoodExplorers) + 1>::copy_move_at(cur, r_initial_moves, r_moves);
+                Impl::MoveDispatcher<decltype(r_moves), sizeof...(BaseNeighborhoodExplorers) + 1>::copy_move_at(cur, r_initial_moves, r_moves);
                 initial_set[cur] = true;
               }
               
-              while (cur > 0 && !Impl::MoveDispatcher<typename Super::MoveRefs, sizeof...(BaseNeighborhoodExplorers) + 1>::are_related(cur - 1, in, states[cur - 1], r_moves, related_funcs))
+              while (cur > 0 && !Impl::MoveDispatcher<decltype(r_moves), sizeof...(BaseNeighborhoodExplorers) + 1>::are_related(cur - 1, in, states[cur - 1], r_moves, related_funcs))
               {
                 //if (!ne.NextMove(kick[cur].second, kick[cur].first.move))
-                if (!Impl::TupleDispatcher<bool, Input, State, typename Super::_Bool_ConstInput_ConstState_Move, typename Super::MoveRefs, sizeof...(BaseNeighborhoodExplorers) + 1>::execute_at(cur, in, states[cur], this->next_move_funcs, r_moves))
+                if (!Impl::TupleDispatcher<bool, Input, State, decltype(this->next_move_funcs), decltype(r_moves), sizeof...(BaseNeighborhoodExplorers) + 1>::execute_at(cur, in, states[cur], this->next_move_funcs, r_moves))
                 {
                   // ne.FirstMove(kick[cur].second, kick[cur].first.move);
-                  Impl::VTupleDispatcher<Input, State, typename Super::_Void_ConstInput_ConstState_Move, typename Super::MoveRefs, sizeof...(BaseNeighborhoodExplorers) + 1>::execute_at(cur, in, st, this->first_move_funcs, r_moves);
+                  Impl::VTupleDispatcher<Input, State, decltype(this->first_move_funcs), decltype(r_moves), sizeof...(BaseNeighborhoodExplorers) + 1>::execute_at(cur, in, st, this->first_move_funcs, r_moves);
                 }
                 //                  if (kick[cur].first.move == initial_kick_moves[cur])
-                if (Impl::MoveDispatcher<typename Super::MoveRefs, sizeof...(BaseNeighborhoodExplorers) + 1>::equal_at(cur, r_moves, r_initial_moves))
+                if (Impl::MoveDispatcher<decltype(r_moves), sizeof...(BaseNeighborhoodExplorers) + 1>::equal_at(cur, r_moves, r_initial_moves))
                 {
                   backtracking = true;
-                  Impl::MoveDispatcher<typename Super::MoveRefs, sizeof...(BaseNeighborhoodExplorers) + 1>::set_activity_at(cur, r_moves, false);
+                  Impl::MoveDispatcher<decltype(r_moves), sizeof...(BaseNeighborhoodExplorers) + 1>::set_activity_at(cur, r_moves, false);
                   cur--;
                   goto loop;
                 }
               }
               backtracking = false;
-              // ne.MakeMove(kick[cur].second, kick[cur].first.move);
-              Impl::VTupleDispatcher<Input, State, typename Super::_Void_ConstInput_State_ConstMove, typename Super::MoveCRefs, sizeof...(BaseNeighborhoodExplorers) + 1>::execute_at(cur, in, states[cur], this->make_move_funcs, cr_moves);
-              Impl::MoveDispatcher<typename Super::MoveRefs, sizeof...(BaseNeighborhoodExplorers) + 1>::set_activity_at(cur, r_moves, true);
+              Impl::VTupleDispatcher<Input, State, decltype(this->make_move_funcs), decltype(cr_moves), sizeof...(BaseNeighborhoodExplorers) + 1>::execute_at(cur, in, states[cur], this->make_move_funcs, cr_moves);
+              Impl::MoveDispatcher<decltype(r_moves), sizeof...(BaseNeighborhoodExplorers) + 1>::set_activity_at(cur, r_moves, true);
               cur++;
               goto loop;
             }
             catch (EmptyNeighborhood e)
             {
               backtracking = true;
-              Impl::MoveDispatcher<typename Super::MoveRefs, sizeof...(BaseNeighborhoodExplorers) + 1>::set_activity_at(cur, r_moves, false);
+              Impl::MoveDispatcher<decltype(r_moves), sizeof...(BaseNeighborhoodExplorers) + 1>::set_activity_at(cur, r_moves, false);
               cur--;
               goto loop;
             }
@@ -933,25 +931,24 @@ namespace EasyLocal
           {
             do
             {
-              //if (!ne.NextMove(kick[cur].second, kick[cur].first.move))
-              if (!Impl::TupleDispatcher<bool, Input, State, typename Super::_Bool_ConstInput_ConstState_Move, typename Super::MoveRefs, sizeof...(BaseNeighborhoodExplorers) + 1>::execute_at(cur, in, states[cur], this->next_move_funcs, r_moves))
+              if (!Impl::TupleDispatcher<bool, Input, State, decltype(this->next_move_funcs), decltype(r_moves), sizeof...(BaseNeighborhoodExplorers) + 1>::execute_at(cur, in, states[cur], this->next_move_funcs, r_moves))
               {
                 // ne.FirstMove(kick[cur].second, kick[cur].first.move);
-                Impl::VTupleDispatcher<Input, State, typename Super::_Void_ConstInput_ConstState_Move, typename Super::MoveRefs, sizeof...(BaseNeighborhoodExplorers) + 1>::execute_at(cur, in, st, this->first_move_funcs, r_moves);
+                Impl::VTupleDispatcher<Input, State, decltype(this->first_move_funcs), decltype(r_moves), sizeof...(BaseNeighborhoodExplorers) + 1>::execute_at(cur, in, st, this->first_move_funcs, r_moves);
               }
               // if (kick[cur].first.move == initial_kick_moves[cur])
-              if (Impl::MoveDispatcher<typename Super::MoveRefs, sizeof...(BaseNeighborhoodExplorers) + 1>::equal_at(cur, r_moves, r_initial_moves))
+              if (Impl::MoveDispatcher<decltype(r_moves), sizeof...(BaseNeighborhoodExplorers) + 1>::equal_at(cur, r_moves, r_initial_moves))
               {
                 backtracking = true;
-                Impl::MoveDispatcher<typename Super::MoveRefs, sizeof...(BaseNeighborhoodExplorers) + 1>::set_activity_at(cur, r_moves, false);
+                Impl::MoveDispatcher<decltype(r_moves), sizeof...(BaseNeighborhoodExplorers) + 1>::set_activity_at(cur, r_moves, false);
                 cur--;
                 goto loop;
               }
-            } while (cur > 0 && !Impl::MoveDispatcher<typename Super::MoveRefs, sizeof...(BaseNeighborhoodExplorers) + 1>::are_related(cur - 1, in, states[cur - 1], r_moves, related_funcs));
+            } while (cur > 0 && !Impl::MoveDispatcher<decltype(r_moves), sizeof...(BaseNeighborhoodExplorers) + 1>::are_related(cur - 1, in, states[cur - 1], r_moves, related_funcs));
             backtracking = false;
             //ne.MakeMove(kick[cur].second, kick[cur].first.move);
-            Impl::VTupleDispatcher<Input, State, typename Super::_Void_ConstInput_State_ConstMove, typename Super::MoveCRefs, sizeof...(BaseNeighborhoodExplorers) + 1>::execute_at(cur, in, states[cur], this->make_move_funcs, cr_moves);
-            Impl::MoveDispatcher<typename Super::MoveRefs, sizeof...(BaseNeighborhoodExplorers) + 1>::set_activity_at(cur, r_moves, true);
+            Impl::VTupleDispatcher<Input, State, decltype(this->make_move_funcs), decltype(cr_moves), sizeof...(BaseNeighborhoodExplorers) + 1>::execute_at(cur, in, states[cur], this->make_move_funcs, cr_moves);
+            Impl::MoveDispatcher<decltype(r_moves), sizeof...(BaseNeighborhoodExplorers) + 1>::set_activity_at(cur, r_moves, true);
             cur++;
             goto loop;
           }
@@ -961,8 +958,8 @@ namespace EasyLocal
       /** @copydoc NeighborhoodExplorer::NextMove */
       virtual bool NextMove(const Input& in, const State &st, Moves &moves) const final
       {
-        typename Super::MoveRefs r_moves = to_refs(moves);
-        const typename Super::MoveCRefs cr_moves = to_crefs(moves);
+        auto r_moves = to_refs(moves);
+        const auto cr_moves = to_crefs(moves);
         const size_t length = sizeof...(BaseNeighborhoodExplorers) + 1;
         std::vector<State> states(length, st);
         // go to last move, then start generating with backtracking
@@ -984,29 +981,29 @@ namespace EasyLocal
             try
             {
               //ne.FirstMove(kick[cur].second, kick[cur].first.move);
-              Impl::VTupleDispatcher<Input, State, typename Super::_Void_ConstInput_ConstState_Move, typename Super::MoveRefs, sizeof...(BaseNeighborhoodExplorers) + 1>::execute_at(cur, in, st, this->first_move_funcs, r_moves);
-              while (cur > 0 && !Impl::MoveDispatcher<typename Super::MoveRefs, sizeof...(BaseNeighborhoodExplorers) + 1>::are_related(cur - 1, in, states[cur - 1], r_moves, related_funcs)) //!RelatedMoves(kick[cur - 1].first.move, kick[cur].first.move))
+              Impl::VTupleDispatcher<Input, State, decltype(this->first_move_funcs), decltype(r_moves), sizeof...(BaseNeighborhoodExplorers) + 1>::execute_at(cur, in, st, this->first_move_funcs, r_moves);
+              while (cur > 0 && !Impl::MoveDispatcher<decltype(r_moves), sizeof...(BaseNeighborhoodExplorers) + 1>::are_related(cur - 1, in, states[cur - 1], r_moves, related_funcs)) //!RelatedMoves(kick[cur - 1].first.move, kick[cur].first.move))
               {
                 //if (!ne.NextMove(kick[cur].second, kick[cur].first.move))
-                if (!Impl::TupleDispatcher<bool, Input, State, typename Super::_Bool_ConstInput_ConstState_Move, typename Super::MoveRefs, sizeof...(BaseNeighborhoodExplorers) + 1>::execute_at(cur, in, states[cur], this->next_move_funcs, r_moves))
+                if (!Impl::TupleDispatcher<bool, Input, State, decltype(this->next_move_funcs), decltype(r_moves), sizeof...(BaseNeighborhoodExplorers) + 1>::execute_at(cur, in, states[cur], this->next_move_funcs, r_moves))
                 {
                   backtracking = true;
-                  Impl::MoveDispatcher<typename Super::MoveRefs, sizeof...(BaseNeighborhoodExplorers) + 1>::set_activity_at(cur, r_moves, false);
+                  Impl::MoveDispatcher<decltype(r_moves), sizeof...(BaseNeighborhoodExplorers) + 1>::set_activity_at(cur, r_moves, false);
                   cur--;
                   goto loop;
                 }
               }
               backtracking = false;
               //ne.MakeMove(kick[cur].second, kick[cur].first.move);
-              Impl::VTupleDispatcher<Input, State, typename Super::_Void_ConstInput_State_ConstMove, typename Super::MoveCRefs, sizeof...(BaseNeighborhoodExplorers) + 1>::execute_at(cur, in, states[cur], this->make_move_funcs, cr_moves);
-              Impl::MoveDispatcher<typename Super::MoveRefs, sizeof...(BaseNeighborhoodExplorers) + 1>::set_activity_at(cur, r_moves, true);
+              Impl::VTupleDispatcher<Input, State, decltype(this->make_move_funcs), decltype(cr_moves), sizeof...(BaseNeighborhoodExplorers) + 1>::execute_at(cur, in, states[cur], this->make_move_funcs, cr_moves);
+              Impl::MoveDispatcher<decltype(r_moves), sizeof...(BaseNeighborhoodExplorers) + 1>::set_activity_at(cur, r_moves, true);
               cur++;
               goto loop;
             }
             catch (EmptyNeighborhood e)
             {
               backtracking = true;
-              Impl::MoveDispatcher<typename Super::MoveRefs, sizeof...(BaseNeighborhoodExplorers) + 1>::set_activity_at(cur, r_moves, false);
+              Impl::MoveDispatcher<decltype(r_moves), sizeof...(BaseNeighborhoodExplorers) + 1>::set_activity_at(cur, r_moves, false);
               cur--;
               goto loop;
             }
@@ -1016,18 +1013,18 @@ namespace EasyLocal
             do
             {
               //if (!ne.NextMove(kick[cur].second, kick[cur].first.move))
-              if (!Impl::TupleDispatcher<bool, Input, State, typename Super::_Bool_ConstInput_ConstState_Move, typename Super::MoveRefs, sizeof...(BaseNeighborhoodExplorers) + 1>::execute_at(cur, in, states[cur], this->next_move_funcs, r_moves))
+              if (!Impl::TupleDispatcher<bool, Input, State, decltype(this->next_move_funcs), decltype(r_moves), sizeof...(BaseNeighborhoodExplorers) + 1>::execute_at(cur, in, states[cur], this->next_move_funcs, r_moves))
               {
                 backtracking = true;
-                Impl::MoveDispatcher<typename Super::MoveRefs, sizeof...(BaseNeighborhoodExplorers) + 1>::set_activity_at(cur, r_moves, false);
+                Impl::MoveDispatcher<decltype(r_moves), sizeof...(BaseNeighborhoodExplorers) + 1>::set_activity_at(cur, r_moves, false);
                 cur--;
                 goto loop;
               }
-            } while (cur > 0 && !Impl::MoveDispatcher<typename Super::MoveRefs, sizeof...(BaseNeighborhoodExplorers) + 1>::are_related(cur - 1, in, states[cur - 1], r_moves, related_funcs)); //!RelatedMoves(kick[cur - 1].first.move, kick[cur].first.move));
+            } while (cur > 0 && !Impl::MoveDispatcher<decltype(r_moves), sizeof...(BaseNeighborhoodExplorers) + 1>::are_related(cur - 1, in, states[cur - 1], r_moves, related_funcs)); //!RelatedMoves(kick[cur - 1].first.move, kick[cur].first.move));
             backtracking = false;
             //ne.MakeMove(kick[cur].second, kick[cur].first.move);
-            Impl::VTupleDispatcher<Input, State, typename Super::_Void_ConstInput_State_ConstMove, typename Super::MoveCRefs, sizeof...(BaseNeighborhoodExplorers) + 1>::execute_at(cur, in, states[cur], this->make_move_funcs, cr_moves);
-            Impl::MoveDispatcher<typename Super::MoveRefs, sizeof...(BaseNeighborhoodExplorers) + 1>::set_activity_at(cur, r_moves, true);
+            Impl::VTupleDispatcher<Input, State, decltype(this->make_move_funcs), decltype(cr_moves), sizeof...(BaseNeighborhoodExplorers) + 1>::execute_at(cur, in, states[cur], this->make_move_funcs, cr_moves);
+            Impl::MoveDispatcher<decltype(r_moves), sizeof...(BaseNeighborhoodExplorers) + 1>::set_activity_at(cur, r_moves, true);
             cur++;
             goto loop;
           }
@@ -1038,25 +1035,25 @@ namespace EasyLocal
       /** @copydoc NeighborhoodExplorer::MakeMove */
       virtual void MakeMove(const Input& in, State &st, const Moves &moves) const final
       {
-        const typename Super::MoveCRefs cr_moves = to_crefs(moves);
+        const auto cr_moves = to_crefs(moves);
         
         for (size_t i = 0; i < this->Modality(); i++)
-          Impl::VTupleDispatcher<Input, State, typename Super::_Void_ConstInput_State_ConstMove, typename Super::MoveCRefs, sizeof...(BaseNeighborhoodExplorers) + 1>::execute_at(i, in, st, this->make_move_funcs, cr_moves);
+          Impl::VTupleDispatcher<Input, State, decltype(this->make_move_funcs), decltype(cr_moves), sizeof...(BaseNeighborhoodExplorers) + 1>::execute_at(i, in, st, this->make_move_funcs, cr_moves);
       }
       
       /** @copydoc NeighborhoodExplorer::DeltaCostFunctionComponents */
-      virtual typename Super::CostStructure DeltaCostFunctionComponents(const Input& in, const State &st, const Moves &moves, const std::vector<double> &weights = std::vector<double>(0)) const final
+      virtual CostStructure DeltaCostFunctionComponents(const Input& in, const State &st, const Moves &moves, const std::vector<double> &weights = std::vector<double>(0)) const final
       {
-        const typename Super::MoveCRefs cr_moves = to_crefs(moves);
+        const auto cr_moves = to_crefs(moves);
         
-        typename Super::CostStructure result;
+        CostStructure result;
         const size_t length = sizeof...(BaseNeighborhoodExplorers) + 1;
         std::vector<State> states(length, st);
         for (size_t i = 0; i < this->Modality(); i++)
         {
           states[i] = i > 0 ? states[i - 1] : st;
-          result += Impl::TupleDispatcher<typename Super::CostStructure, Input, State, typename Super::_CostStructure_ConstInput_ConstState_ConstMove, typename Super::MoveCRefs, sizeof...(BaseNeighborhoodExplorers) + 1>::execute_at(i, in, states[i], this->delta_cost_function_funcs, cr_moves, weights);
-          Impl::VTupleDispatcher<Input, State, typename Super::_Void_ConstInput_State_ConstMove, typename Super::MoveCRefs, sizeof...(BaseNeighborhoodExplorers) + 1>::execute_at(i, in, states[i], this->make_move_funcs, cr_moves);
+          result += Impl::TupleDispatcher<CostStructure, Input, State, decltype(this->delta_cost_function_funcs), decltype(cr_moves), sizeof...(BaseNeighborhoodExplorers) + 1>::execute_at(i, in, states[i], this->delta_cost_function_funcs, cr_moves, weights);
+          Impl::VTupleDispatcher<Input, State, decltype(this->make_move_funcs), decltype(cr_moves), sizeof...(BaseNeighborhoodExplorers) + 1>::execute_at(i, in, states[i], this->make_move_funcs, cr_moves);
         }
         
         return result;

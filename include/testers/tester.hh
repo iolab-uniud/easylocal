@@ -122,7 +122,7 @@ namespace EasyLocal
      user interface provided by the framework.
      @ingroup Testers
      */
-    template <class Input, class State, class CostStructure = DefaultCostStructure<int>>
+    template <class Input, class State, class CostStructure>
     class Tester : public AbstractTester<Input, State, CostStructure>, public ChoiceReader
     {
       typedef typename CostStructure::CFtype CFtype;

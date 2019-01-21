@@ -118,7 +118,6 @@ namespace EasyLocal
     
     template <typename... T>
     auto to_refs(std::tuple<T...> &tup)
-    -> decltype(ref_tuple_impl(typename make_index<sizeof...(T)>::type(), tup))
     {
       std::tuple<std::reference_wrapper<T>...> rt = ref_tuple_impl(typename make_index<sizeof...(T)>::type(), tup);
       return rt;
@@ -133,7 +132,6 @@ namespace EasyLocal
     
     template <typename... T>
     auto to_crefs(const std::tuple<T...> &tup)
-    -> decltype(ref_tuple_impl(typename make_index<sizeof...(T)>::type(), tup))
     {
       std::tuple<std::reference_wrapper<const T>...> rt = ref_tuple_impl(typename make_index<sizeof...(T)>::type(), tup);
       return rt;

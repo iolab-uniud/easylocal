@@ -11,7 +11,7 @@ namespace EasyLocal
   namespace Core
   {
     
-    template <class Input, class State, class Move, class CostStructure = DefaultCostStructure<int>>
+    template <class Input, class State, class Move, typename CFtype = int, template <typename> class _CostStructure = DefaultCostStructure>
     class NeighborhoodExplorerIteratorInterface;
     
     template <class Input, class State, class Move, class CostStructure>

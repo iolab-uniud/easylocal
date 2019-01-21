@@ -4,56 +4,38 @@
 
 namespace EasyLocal
 {
-  
   namespace Core
   {
-    
     /** The First Improvement Tabu Search runner differs from the
      @ref TabuSearch runner only in the selection of the move. The first non-prohibited move
      that improves the cost function is selected.
      @ingroup Runners
      */
-    template <class Input, class State, class Move, class CostStructure = DefaultCostStructure<int>>
-    class FirstImprovementTabuSearch : public TabuSearch<Input, State, Move, CostStructure>
+    template <class StateManager, class NeighborhoodExplorer>
+    class FirstImprovementTabuSearch : public TabuSearch<StateManager, NeighborhoodExplorer>
     {
     public:
-      typedef typename CostStructure::CFtype CFtype;
+      UNPACK_MOVERUNNER_BASIC_TYPES()
+
+      using TabuSearch<StateManager, NeighborhoodExplorer>::TabuSearch;
       
-      using TabuSearch<Input, State, Move, CostStructure>::TabuSearch;
-      std::unique_ptr<Runner<Input, State, CostStructure>> Clone() const override;
+      ENABLE_RUNNER_CLONE()
       
     protected:
-      void SelectMove(const Input& in) override;
+      void SelectMove(const Input& in) override
+      {
+        CostStructure aspiration = this->best_state_cost - this->current_state_cost;
+        size_t explored;
+        EvaluatedMove em = this->ne.SelectFirst(in, *this->p_current_state, explored, [this, aspiration](const Move &mv, const CostStructure &move_cost) {
+          for (auto li : *(this->tabu_list))
+            if ((move_cost >= aspiration) && this->Inverse(li.move, mv))
+              return false;
+          return true;
+        },
+                                                this->weights);
+        this->current_move = em;
+        this->evaluations += explored;
+      }
     };
-    
-    /*************************************************************************
-     * Implementation
-     *************************************************************************/
-    
-    /**
-     Selects always the best move that is non prohibited by the tabu list
-     mechanism.
-     */
-    template <class Input, class State, class Move, class CostStructure>
-    void FirstImprovementTabuSearch<Input, State, Move, CostStructure>::SelectMove(const Input& in)
-    {
-      CFtype aspiration = this->best_state_cost.total - this->current_state_cost.total;
-      size_t explored;
-      EvaluatedMove<Move, CostStructure> em = this->ne.SelectFirst(in, *this->p_current_state, explored, [this, aspiration](const Move &mv, const CostStructure &move_cost) {
-        for (auto li : *(this->tabu_list))
-          if ((move_cost.total >= aspiration) && this->Inverse(li.move, mv))
-            return false;
-        return true;
-      },
-                                                                   this->weights);
-      this->current_move = em;
-      this->evaluations += explored;
-    }
-    
-    template <class Input, class State, class Move, class CostStructure>
-    std::unique_ptr<Runner<Input, State, CostStructure>> FirstImprovementTabuSearch<Input, State, Move, CostStructure>::Clone() const
-    {
-      return Runner<Input, State, CostStructure>::MakeClone(this);
-    }
   } // namespace Core
 } // namespace EasyLocal

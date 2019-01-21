@@ -20,29 +20,81 @@ namespace EasyLocal
      dealing with a local search algorithm.
      @ingroup Solvers
      */
-    template <class Input, class State, class CostStructure = DefaultCostStructure<int>>
+    template <class Input, class State, class CostStructure>
     class AbstractLocalSearch
     : public CommandLineParameters::Parametrized,
     public Solver<Input, State, CostStructure>,
     public Interruptible<bool, const Input&>
     {
     public:
-      typedef Interruptible<bool, const Input&> InterruptibleType;
-      
+      using InterruptibleType = Interruptible<bool, const Input&>;
+      using Result = typename Solver<Input, State, CostStructure>::Result;
       
       /** @copydoc Solver */
-      virtual SolverResult<Input, State, CostStructure> Solve(const Input& in) final;
+      virtual Result Solve(const Input& in) override final
+      {
+        std::lock_guard<std::mutex> lock(solve_mutex);
+        auto start = std::chrono::high_resolution_clock::now();
+        is_running = true;
+        InitializeSolve(in);
+        FindInitialState(in);
+        if (timeout.IsSet())
+          this->SyncRun(std::chrono::milliseconds(static_cast<long long int>(timeout * 1000.0)), in);
+          else
+            Go(in);
+            TerminateSolve();
+            
+            double run_time = std::chrono::duration_cast<std::chrono::duration<double, std::ratio<1>>>(std::chrono::high_resolution_clock::now() - start).count();
+            is_running = false;
+            
+            return Result(*p_best_state, sm.CostFunctionComponents(in, *p_best_state), run_time);
+      }
+      
       /** @copydoc Solver */
-      virtual SolverResult<Input, State, CostStructure> Resolve(const Input& in, const State &initial_solution) final;
+      virtual Result Resolve(const Input& in, const State &initial_solution) override final
+      {
+        std::lock_guard<std::mutex> lock(solve_mutex);
+        auto start = std::chrono::high_resolution_clock::now();
+        is_running = true;
+        
+        InitializeSolve(in);
+        *p_current_state = initial_solution;
+        *p_best_state = *p_current_state;
+        best_state_cost = current_state_cost = sm.CostFunctionComponents(in, *p_current_state);
+        if (timeout.IsSet())
+          this->SyncRun(std::chrono::milliseconds(static_cast<long long int>(timeout * 1000.0)), in);
+          else
+            Go(in);
+            TerminateSolve();
+            is_running = false;
+            
+            double run_time = std::chrono::duration_cast<std::chrono::duration<double, std::ratio<1>>>(std::chrono::high_resolution_clock::now() - start).count();
+            
+            return Result(*p_best_state, sm.CostFunctionComponents(in, *p_best_state), run_time);
+      }
       
       /** Constructor.
        @param sm a StateManager
        @param name a name for the solver
        */
       AbstractLocalSearch(StateManager<Input, State, CostStructure> &sm,
-                          std::string name);
+                          const std::string& name)
+      : Parametrized(name, typeid(this).name()),
+      Solver<Input, State, CostStructure>(name),
+      sm(sm),
+      is_running(false)
+      {}
       
-      virtual std::shared_ptr<State> GetCurrentState(const Input& in) const;
+      virtual std::shared_ptr<State> GetCurrentState(const Input& in) const override
+      {
+        std::shared_ptr<State> current_state;
+        if (!is_running)
+          current_state = this->p_best_state;
+        else
+          current_state = GetCurrentState();
+        
+        return current_state;
+      }
     protected:      
       virtual ~AbstractLocalSearch()
       {}
@@ -51,7 +103,7 @@ namespace EasyLocal
 
       
       /** Implements Interruptible. */
-      virtual std::function<bool(const Input& in)> MakeFunction()
+      virtual std::function<bool(const Input& in)> MakeFunction() override
       {
         return [this](const Input& in) -> bool {
           this->ResetTimeout();
@@ -60,8 +112,22 @@ namespace EasyLocal
         };
       }
       
-      virtual void TerminateSolve();
-      virtual void FindInitialState(const Input& in);
+      virtual void TerminateSolve()
+      {}
+      
+      virtual void FindInitialState(const Input& in)
+      {
+        if (random_initial_state)
+          current_state_cost = sm.SampleState(in, *p_current_state, init_trials);
+        else
+        {
+          sm.GreedyState(in, *p_current_state);
+          current_state_cost = sm.CostFunctionComponents(in, *p_current_state);
+        }
+        *p_best_state = *p_current_state;
+        best_state_cost = current_state_cost;
+      }
+      
       // This will be the actual solver strategy implementation
       virtual void Go(const Input& in) = 0;
       StateManager<Input, State, CostStructure> &sm;        /**< A reference to the attached
@@ -71,7 +137,14 @@ namespace EasyLocal
       CostStructure current_state_cost, best_state_cost; /**< The cost of the internal states. */
       // parameters
       
-      void InitializeParameters();
+      void InitializeParameters() override
+      {
+        init_trials("init_trials", "Number of states to be tried in the initialization phase", this->parameters);
+        random_initial_state("random_state", "Random initial state", this->parameters);
+        timeout("timeout", "Solver timeout (if not specified, no timeout)", this->parameters);
+        init_trials = 1;
+        random_initial_state = true;
+      }
       
       Parameter<unsigned int> init_trials;
       Parameter<bool> random_initial_state;
@@ -81,120 +154,11 @@ namespace EasyLocal
       std::mutex solve_mutex;
       
     private:
-      void InitializeSolve(const Input& in);
-    };
-    
-    /*************************************************************************
-     * Implementation
-     *************************************************************************/
-    
-    /**
-     @brief Constructs an abstract local search solver.
-     
-     @param e_sm a compatible state manager
-     @param name a descriptive name for the solver
-     */
-    template <class Input, class State, class CostStructure>
-    AbstractLocalSearch<Input, State, CostStructure>::AbstractLocalSearch(StateManager<Input, State, CostStructure> &sm,
-                                                                          std::string name)
-    : Parametrized(name, typeid(this).name()),
-    Solver<Input, State, CostStructure>(name),
-    sm(sm),
-    is_running(false)
-    {}
-    
-    template <class Input, class State, class CostStructure>
-    void AbstractLocalSearch<Input, State, CostStructure>::InitializeParameters()
-    {
-      init_trials("init_trials", "Number of states to be tried in the initialization phase", this->parameters);
-      random_initial_state("random_state", "Random initial state", this->parameters);
-      timeout("timeout", "Solver timeout (if not specified, no timeout)", this->parameters);
-      init_trials = 1;
-      random_initial_state = true;
-    }
-    
-    /**
-     The initial state is generated by delegating this task to
-     the state manager. The function invokes the SampleState function.
-     */
-    template <class Input, class State, class CostStructure>
-    void AbstractLocalSearch<Input, State, CostStructure>::FindInitialState(const Input& in)
-    {
-      if (random_initial_state)
-        current_state_cost = sm.SampleState(in, *p_current_state, init_trials);
-      else
+      void InitializeSolve(const Input& in)
       {
-        sm.GreedyState(in, *p_current_state);
-        current_state_cost = sm.CostFunctionComponents(in, *p_current_state);
+        p_best_state = std::make_shared<State>(in);
+        p_current_state = std::make_shared<State>(in);
       }
-      *p_best_state = *p_current_state;
-      best_state_cost = current_state_cost;
-    }
-    
-    template <class Input, class State, class CostStructure>
-    void AbstractLocalSearch<Input, State, CostStructure>::InitializeSolve(const Input& in)
-    {
-      p_best_state = std::make_shared<State>(in);
-      p_current_state = std::make_shared<State>(in);
-    }
-    
-    template <class Input, class State, class CostStructure>
-    SolverResult<Input, State, CostStructure> AbstractLocalSearch<Input, State, CostStructure>::Solve(const Input& in)
-    {
-      std::lock_guard<std::mutex> lock(solve_mutex);
-      auto start = std::chrono::high_resolution_clock::now();
-      is_running = true;
-      InitializeSolve(in);
-      FindInitialState(in);
-      if (timeout.IsSet())
-        this->SyncRun(std::chrono::milliseconds(static_cast<long long int>(timeout * 1000.0)), in);
-      else
-        Go(in);
-      TerminateSolve();
-      
-      double run_time = std::chrono::duration_cast<std::chrono::duration<double, std::ratio<1>>>(std::chrono::high_resolution_clock::now() - start).count();
-      is_running = false;
-      
-      return SolverResult<Input, State, CostStructure>(*p_best_state, sm.CostFunctionComponents(in, *p_best_state), run_time);
-    }
-    
-    template <class Input, class State, class CostStructure>
-    SolverResult<Input, State, CostStructure> AbstractLocalSearch<Input, State, CostStructure>::Resolve(const Input& in, const State &initial_solution)
-    {
-      std::lock_guard<std::mutex> lock(solve_mutex);
-      auto start = std::chrono::high_resolution_clock::now();
-      is_running = true;
-      
-      InitializeSolve(in);
-      *p_current_state = initial_solution;
-      *p_best_state = *p_current_state;
-      best_state_cost = current_state_cost = sm.CostFunctionComponents(in, *p_current_state);
-      if (timeout.IsSet())
-        this->SyncRun(std::chrono::milliseconds(static_cast<long long int>(timeout * 1000.0)), in);
-      else
-        Go(in);
-      TerminateSolve();
-      is_running = false;
-      
-      double run_time = std::chrono::duration_cast<std::chrono::duration<double, std::ratio<1>>>(std::chrono::high_resolution_clock::now() - start).count();
-      
-      return SolverResult<Input, State, CostStructure>(*p_best_state, sm.CostFunctionComponents(in, *p_best_state), run_time);
-    }
-    
-    template <class Input, class State, class CostStructure>
-    void AbstractLocalSearch<Input, State, CostStructure>::TerminateSolve()
-    {}
-    
-    template <class Input, class State, class CostStructure>
-    std::shared_ptr<State> AbstractLocalSearch<Input, State, CostStructure>::GetCurrentState(const Input& in) const
-    {
-      std::shared_ptr<State> current_state;
-      if (!is_running)
-        current_state = this->p_best_state;
-      else
-        current_state = GetCurrentState();
-      
-      return current_state;
-    }
+    };
   } // namespace Core
 } // namespace EasyLocal

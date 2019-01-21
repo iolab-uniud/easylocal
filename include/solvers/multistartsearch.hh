@@ -17,7 +17,7 @@ namespace EasyLocal
      encapsulated in a runner.
      @ingroup Solvers
      */
-    template <class Input, class Output, class State, class CostStructure = DefaultCostStructure<int>>
+    template <class Input, class Output, class State, typename CFtype = int, template <typename> class _CostStructure = DefaultCostStructure>
     class MultiStartSearch
     : public AbstractLocalSearch<Input, Output, State, CostStructure>
     {

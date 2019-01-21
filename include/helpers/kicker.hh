@@ -7,7 +7,7 @@ namespace EasyLocal
   namespace Core
   {
     template <class State, class Move, class CostStructure>
-    struct Kick : public std::vector<std::pair<EvaluatedMove<Move, CostStructure>, State>>
+    struct Kick : public std::vector<std::pair<EvaluatedMove<Move, typename CostStructure::CFtype, CostStructure>, State>>
     {
     public:
       static Kick empty;
@@ -107,8 +107,9 @@ namespace EasyLocal
       using Input = typename Kicker::Input;
       using State = typename Kicker::State;
       using Move = typename Kicker::Move;
+      using EvaluatedMove = typename Kicker::EvaluatedMove;
       using CostStructure = typename Kicker::CostStructure;
-      using RelatedMovesFunc = typename Kicker::RelatedMovesFunc ;
+      using RelatedMovesFunc = typename Kicker::RelatedMovesFunc;
     public:
       
       FullKickerIterator operator++(int) // postfix
@@ -146,7 +147,7 @@ namespace EasyLocal
     protected:
       void FirstKick()
       {
-        this->kick.assign(this->length, std::make_pair(EvaluatedMove<Move, CostStructure>(false), this->start_state));
+        this->kick.assign(this->length, std::make_pair(EvaluatedMove(false), this->start_state));
         
         int cur = 0;
         bool backtracking = false;
@@ -299,6 +300,7 @@ namespace EasyLocal
       using Input = typename Kicker::Input;
       using State = typename Kicker::State;
       using Move = typename Kicker::Move;
+      using EvaluatedMove = typename Kicker::EvaluatedMove;
       using CostStructure = typename Kicker::CostStructure;
       using RelatedMovesFunc = typename Kicker::RelatedMovesFunc ;
     public:
@@ -348,7 +350,7 @@ namespace EasyLocal
     protected:
       void RandomKick()
       {
-        this->kick.assign(this->length, std::make_pair(EvaluatedMove<Move, CostStructure>(false), this->start_state));
+        this->kick.assign(this->length, std::make_pair(EvaluatedMove(false), this->start_state));
         std::vector<Move> initial_kick_moves(this->length, Move());
         std::vector<bool> initial_set(this->length, false);
         
@@ -461,6 +463,7 @@ namespace EasyLocal
       using CostStructure = typename NeighborhoodExplorer::CostStructure;
       using CFtype = typename CostStructure::CFtype;
       using Move = typename NeighborhoodExplorer::Move;
+      using EvaluatedMove = typename NeighborhoodExplorer::EvaluatedMove;
       using RelatedMovesFunc = std::pair<std::type_index, boost::any>;
       
       using RelatedFuncType = std::function<bool(const Move&, const Move&)>;
@@ -497,7 +500,7 @@ namespace EasyLocal
       }
       
       /** The modality of the @ref Move (warning: not the length of the @ref Move sequences) */
-      virtual size_t Modality() const final
+      constexpr size_t Modality() const 
       {
         return ne.Modality();
       }

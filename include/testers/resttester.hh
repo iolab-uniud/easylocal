@@ -25,7 +25,7 @@ namespace EasyLocal {
     /** A REST Tester represents the web service interface of a easylocal solver. Differently from the regular tester, this class is State-less (w.r.t. easylocal state)
      @ingroup Testers
      */
-    template <class Input, class State, class CostStructure = DefaultCostStructure<int>>
+    template <class Input, class State, typename CFtype = int, template <typename> class _CostStructure = DefaultCostStructure>
     class RESTTester : public AbstractTester<Input, State, CostStructure>, public Core::CommandLineParameters::Parametrized
     {
       struct JSONResponse

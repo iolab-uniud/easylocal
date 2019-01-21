@@ -1,5 +1,6 @@
 #pragma once
 
+#include <type_traits>
 #include "utils/types.hh"
 
 namespace EasyLocal
@@ -13,7 +14,8 @@ namespace EasyLocal
     template <typename T>
     struct DefaultCostStructure
     {
-      typedef T CFtype;
+      using CFtype = T;
+      static_assert(std::is_arithmetic<T>::value, "A Cost structure can be built only upon an (integer or real) arithmetic type");
       
       DefaultCostStructure() : total(0), violations(0), objective(0), all_components(0), weighted(0.0), is_weighted(false) {}
       DefaultCostStructure(CFtype total, CFtype violations, CFtype objective, const std::vector<CFtype> &all_components) : total(total), violations(violations), objective(objective), all_components(all_components), weighted(total), is_weighted(false) {}
@@ -268,7 +270,8 @@ namespace EasyLocal
     template <typename T>
     struct HierarchicalCostStructure
     {
-      typedef T CFtype;
+      using CFtype = T;
+      static_assert(std::is_arithmetic<T>::value, "A Cost structure can be built only upon an (integer or real) arithmetic type");
       
       HierarchicalCostStructure() : total(0), violations(0), objective(0), all_components(0), weighted(0.0), is_weighted(false) {}
       HierarchicalCostStructure(CFtype total, CFtype violations, CFtype objective, const std::vector<CFtype> &all_components) : total(total), violations(violations), objective(objective), all_components(all_components), weighted(total), is_weighted(false) {}

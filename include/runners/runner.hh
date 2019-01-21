@@ -25,13 +25,12 @@ namespace EasyLocal
   
   namespace Core
   {
-    
     /** A class representing a single search strategy, e.g. hill climbing
      or simulated annealing. It must be loaded into a solver by using
      Solver::AddRunner() in order to be called correctly.
      @ingroup Helpers
      */
-    template <class _Input, class _State, class _CostStructure = DefaultCostStructure<int>>
+    template <class _Input, class _State, class _CostStructure>
     class Runner : public Interruptible<_CostStructure, const _Input&, _State &>, public CommandLineParameters::Parametrized
     {
       friend class Debug::AbstractTester<_Input, _State, _CostStructure>;
@@ -42,7 +41,6 @@ namespace EasyLocal
       typedef _CostStructure CostStructure;
       typedef typename _CostStructure::CFtype CFtype;
       
-      
       /** Performs a full run of the search method (possibly being interrupted before its natural ending).
        @param in the input object
        @param s state to start with and to modify
@@ -50,31 +48,60 @@ namespace EasyLocal
        @throw ParameterNotSet if one of the parameters needed by the runner (or other components) hasn't been set
        @throw IncorrectParameterValue if one of the parameters has an incorrect value
        */
-      CostStructure Go(const Input& in, State &s);
-      
-      
-      /** Performs a given number of steps of the search method on the passed state.
-       @param s state to start with and to modify
-       @param n the number of steps to make
-       @return the cost of the best state found
-       @throw ParameterNotSet if one of the parameters needed by the runner (or other components) hasn't been set
-       @throw IncorrectParameterValue if one of the parameters has an incorrect value
-       */
-      CostStructure Step(State &s, unsigned int n = 1);
+      CostStructure Go(const Input& in, State &st)
+      {
+        std::lock_guard<std::mutex> lock(go_mutex);
+        InitializeRun(in, st);
+        while (!MaxEvaluationsExpired() && !StopCriterion() && !LowerBoundReached(in) && !this->TimeoutExpired() && !this->Aborted())
+        {
+          PrepareIteration(in);
+          try
+          {
+            SelectMove(in);
+            if (AcceptableMoveFound(in))
+            {
+              PrepareMove(in);
+              MakeMove(in);
+              CompleteMove(in);
+              UpdateBestState();
+            }
+          }
+          catch (EmptyNeighborhood)
+          {
+            break;
+          }
+          CompleteIteration(in);
+        }
+        
+        return TerminateRun(in, st);
+      }
       
       /** Register its parameters */
-      virtual void InitializeParameters();
+      virtual void InitializeParameters()
+      {
+        max_evaluations("max_evaluations", "Maximum total number of cost function evaluations allowed", this->parameters);
+        // This parameter has a default value
+        max_evaluations = std::numeric_limits<unsigned long int>::max();
+      }
       
       /** Reads the parameter from an input stream.
        @param is input stream to read from
        @param os output stream to give indication about the needed parameters
        */
-      virtual void ReadParameters(std::istream &is = std::cin, std::ostream &os = std::cout);
+      virtual void ReadParameters(std::istream &is = std::cin, std::ostream &os = std::cout)
+      {
+        os << this->name << " -- INPUT PARAMETERS" << std::endl;
+        Parametrized::ReadParameters(is, os);
+      }
       
       /** Prints the state of the runner.
        @param os output stream to print onto
        */
-      virtual void Print(std::ostream &os = std::cout) const;
+      virtual void Print(std::ostream &os = std::cout) const
+      {
+        os << "  " << this->name << std::endl;
+        Parametrized::Print(os);
+      }
       
       /** Gets the index of the iteration at which the last best state was found. */
       unsigned int IterationOfBest() const
@@ -113,13 +140,32 @@ namespace EasyLocal
       /** List of all runners that have been instantiated so far: for autoloading.
        It does not include the cloned runners.
        */
-      static std::vector<Runner<Input, State, CostStructure> *> runners;
+      static std::vector<Runner<Input, State, CostStructure>*> runners;
       
-      virtual std::shared_ptr<State> GetCurrentBestState() const;
+      virtual std::shared_ptr<State> GetCurrentBestState() const
+      {
+        std::lock_guard<std::mutex> lock(best_state_mutex);
+        return std::make_shared<State>(*p_best_state); // make a state copy
+      }
       
-      virtual CostStructure GetCurrentBestCost() const;
+      virtual CostStructure GetCurrentBestCost() const
+      {
+        std::lock_guard<std::mutex> lock(best_state_mutex);
+        return best_state_cost; // make a state copy
+      }
       
+      // TODO: check if it can be removed with a template function properly crafted
+      // (check on StackOverflow also)
       virtual std::unique_ptr<Runner<Input, State, CostStructure>> Clone() const = 0;
+      
+      // Currently can be simply expanded in any subclass with the following macro
+#if !defined(ENABLE_RUNNER_CLONE)
+#define ENABLE_RUNNER_CLONE() \
+std::unique_ptr<Runner<Input, State, CostStructure>> Clone() const override \
+{ \
+return Runner<Input, State, CostStructure>::MakeClone(this); \
+}
+#endif
       
       void PrepareParameters(const Parametrized& p)
       {
@@ -133,12 +179,21 @@ namespace EasyLocal
        @param sm a StateManager, as defined by the user
        @param name the name of the runner
        */
-      Runner(StateManager<Input, State, CostStructure> &sm, std::string name, std::string description);
+      Runner(StateManager<Input, State, CostStructure> &sm, std::string name, std::string description)
+      : // Parameters
+      Parametrized(name, description), name(name), no_acceptable_move_found(false), sm(sm), weights(0)
+      {
+        // Add to the list of all runners
+        runners.push_back(this);
+      }
       
       /** Copy Constructor.
        @param r a Runner to be copied
        */
-      Runner(const Runner<Input, State, CostStructure>& r);
+      Runner(const Runner<Input, State, CostStructure>& r)
+      : // Parameters
+      Parametrized(r.name, "Copy of " + r.name), name(r.name), no_acceptable_move_found(r.no_acceptable_move_found), sm(r.sm), weights(r.weights)
+      {}
       
       /** Actions and checks to be perfomed at the beginning of the run. Redefinition intended.
        @param in the Input object
@@ -153,19 +208,30 @@ namespace EasyLocal
       virtual void TerminateRun(const Input& in) {};
       
       /** Actions to be performed at each iteration independently of the acceptance of the move */
-      virtual void PrepareIteration(const Input& in);
+      virtual void PrepareIteration(const Input& in)
+      {
+        no_acceptable_move_found = false;
+        iteration++;
+      }
       
       /** Actions to be performed at the end of each iteration independently of the acceptance of the move */
-      virtual void CompleteIteration(const Input& in);
+      virtual void CompleteIteration(const Input& in)
+      {}
       
       /** Encodes the criterion used to stop the search. */
       virtual bool StopCriterion() const = 0;
       
       /** Tells if the runner has found a lower bound. For stopping condition. */
-      virtual bool LowerBoundReached(const Input& in) const;
+      virtual bool LowerBoundReached(const Input& in) const
+      {
+        return sm.LowerBoundReached(in, current_state_cost);
+      }
       
       /** Tells if the maximum number of cot function evaluations allowed have been exhausted. */
-      bool MaxEvaluationsExpired() const;
+      bool MaxEvaluationsExpired() const
+      {
+        return evaluations >= max_evaluations;
+      }
       
       /** Encodes the criterion used to select the move at each step. */
       virtual void SelectMove(const Input& in) = 0;
@@ -237,148 +303,28 @@ namespace EasyLocal
       virtual void UpdateBestState() = 0;
       
       /** Actions that must be done at the start of the search, and which cannot be redefined by subclasses. */
-      void InitializeRun(const Input& in, State& st);
+      void InitializeRun(const Input& in, State& st)
+      {
+        iteration = 0;
+        iteration_of_best = 0;
+        evaluations = 0;
+        p_best_state = std::make_shared<State>(st);    // creates the best state object by copying the content of s
+        p_current_state = std::make_shared<State>(st); // creates the current state object by copying the content of s
+        best_state_cost = current_state_cost = sm.CostFunctionComponents(in, st);
+        InitializeRun(in);
+      }
       
       /** Actions that must be done at the end of the search. */
-      CostStructure TerminateRun(const Input& in, State& st);
+      CostStructure TerminateRun(const Input& in, State& st)
+      {
+        st = *p_best_state;
+        TerminateRun(in);
+        
+        return best_state_cost;
+      }
     };
-    
-    /*************************************************************************
-     * Implementation
-     *************************************************************************/
     
     template <class Input, class State, class CostStructure>
     std::vector<Runner<Input, State, CostStructure> *> Runner<Input, State, CostStructure>::runners;
-    
-    
-    template <class Input, class State, class CostStructure>
-    Runner<Input, State, CostStructure>::Runner(StateManager<Input, State, CostStructure> &sm, std::string name, std::string description)
-    : // Parameters
-    Parametrized(name, description), name(name), no_acceptable_move_found(false), sm(sm), weights(0)
-    {
-      // Add to the list of all runners
-      runners.push_back(this);
-    }
-    
-    template <class Input, class State, class CostStructure>
-    Runner<Input, State, CostStructure>::Runner(const Runner<Input, State, CostStructure>& r)
-    : // Parameters
-    Parametrized(r.name, "Copy of " + r.name), name(r.name), no_acceptable_move_found(r.no_acceptable_move_found), sm(r.sm), weights(r.weights)
-    {}
-    
-    template <class Input, class State, class CostStructure>
-    void Runner<Input, State, CostStructure>::InitializeParameters()
-    {
-      max_evaluations("max_evaluations", "Maximum total number of cost function evaluations allowed", this->parameters);
-      // This parameter has a default value
-      max_evaluations = std::numeric_limits<unsigned long int>::max();
-    }
-    
-    template <class Input, class State, class CostStructure>
-    CostStructure Runner<Input, State, CostStructure>::Go(const Input& in, State &st)
-    {
-      std::lock_guard<std::mutex> lock(go_mutex);
-      InitializeRun(in, st);
-      while (!MaxEvaluationsExpired() && !StopCriterion() && !LowerBoundReached(in) && !this->TimeoutExpired() && !this->Aborted())
-      {
-        PrepareIteration(in);
-        try
-        {
-          SelectMove(in);
-          if (AcceptableMoveFound(in))
-          {
-            PrepareMove(in);
-            MakeMove(in);
-            CompleteMove(in);
-            UpdateBestState();
-          }
-        }
-        catch (EmptyNeighborhood)
-        {
-          break;
-        }
-        CompleteIteration(in);
-      }
-      
-      return TerminateRun(in, st);
-    }
-    
-    /**
-     Prepare the iteration (e.g. updates the counter that tracks the number of iterations elapsed)
-     */
-    template <class Input, class State, class CostStructure>
-    void Runner<Input, State, CostStructure>::PrepareIteration(const Input& in)
-    {
-      no_acceptable_move_found = false;
-      iteration++;
-    }
-    
-    /**
-     Complete the iteration (e.g. decreate the temperature for Simulated Annealing)
-     */
-    template <class Input, class State, class CostStructure>
-    void Runner<Input, State, CostStructure>::CompleteIteration(const Input&)
-    {
-    }
-    
-    template <class Input, class State, class CostStructure>
-    void Runner<Input, State, CostStructure>::InitializeRun(const Input& in, State &st)
-    {
-      iteration = 0;
-      iteration_of_best = 0;
-      evaluations = 0;
-      p_best_state = std::make_shared<State>(st);    // creates the best state object by copying the content of s
-      p_current_state = std::make_shared<State>(st); // creates the current state object by copying the content of s
-      best_state_cost = current_state_cost = sm.CostFunctionComponents(in, st);
-      InitializeRun(in);
-    }
-    
-    template <class Input, class State, class CostStructure>
-    CostStructure Runner<Input, State, CostStructure>::TerminateRun(const Input& in, State &st)
-    {
-      st = *p_best_state;
-      TerminateRun(in);
-      return best_state_cost;
-    }
-    
-    template <class Input, class State, class CostStructure>
-    bool Runner<Input, State, CostStructure>::LowerBoundReached(const Input& in) const
-    {
-      return sm.LowerBoundReached(in, current_state_cost);
-    }
-    
-    template <class Input, class State, class CostStructure>
-    bool Runner<Input, State, CostStructure>::MaxEvaluationsExpired() const
-    {
-      return evaluations >= max_evaluations;
-    }
-    
-    template <class Input, class State, class CostStructure>
-    void Runner<Input, State, CostStructure>::ReadParameters(std::istream &is, std::ostream &os)
-    {
-      os << this->name << " -- INPUT PARAMETERS" << std::endl;
-      Parametrized::ReadParameters(is, os);
-    }
-    
-    template <class Input, class State, class CostStructure>
-    void Runner<Input, State, CostStructure>::Print(std::ostream &os) const
-    {
-      os << "  " << this->name << std::endl;
-      Parametrized::Print(os);
-    }
-    
-    template <class Input, class State, class CostStructure>
-    std::shared_ptr<State> Runner<Input, State, CostStructure>::GetCurrentBestState() const
-    {
-      std::lock_guard<std::mutex> lock(best_state_mutex);
-      return std::make_shared<State>(*p_best_state); // make a state copy
-    }
-    
-    template <class Input, class State, class CostStructure>
-    CostStructure Runner<Input, State, CostStructure>::GetCurrentBestCost() const
-    {
-      std::lock_guard<std::mutex> lock(best_state_mutex);
-      return best_state_cost; // make a state copy
-    }
   } // namespace Core
 } // namespace EasyLocal

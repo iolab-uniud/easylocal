@@ -103,7 +103,7 @@ namespace EasyLocal
     class DeltaCostComponentAdapter : public DeltaCostComponent<Input, State, Move, typename CostStructure::CFtype>
     {
     public:
-      typedef typename CostStructure::CFtype CFtype;
+      using CFtype = typename CostStructure::CFtype;
       
       /** Constructor. */
       DeltaCostComponentAdapter(CostComponent<Input, State, CFtype> &cc, const NeighborhoodExplorer<Input, State, Move, CostStructure> &ne) : DeltaCostComponent<Input, State, Move, CFtype>(cc, "DeltaAdapter" + cc.name), ne(ne) {}
