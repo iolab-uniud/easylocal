@@ -43,7 +43,7 @@ namespace EasyLocal
       using Move = typename Kicker::Move;
       using CostStructure = typename Kicker::CostStructure;
       using RelatedMovesFunc = typename Kicker::RelatedMovesFunc;
-      using RelatedStateFuncType = typename Kicker::RelatedStateFuncType;
+      using RelatedInputStateFuncType = typename Kicker::RelatedInputStateFuncType;
       using RelatedFuncType = typename Kicker::RelatedFuncType;
       
       KickerIterator(size_t length, const typename Kicker::NeighborhoodExplorer&ne, const Input& in, const State &state, const RelatedMovesFunc* related_moves, bool end = false)
@@ -72,12 +72,12 @@ namespace EasyLocal
       }
       
     protected:
-      bool RelatedMoves(const State& state, const Move& mv1, const Move& mv2) const
+      bool RelatedMoves(const Input& input, const State& state, const Move& mv1, const Move& mv2) const
       {
         if (related_moves != nullptr)
         {
-          if (related_moves->first == std::type_index(typeid(RelatedStateFuncType)))
-            return boost::any_cast<RelatedStateFuncType>(related_moves->second)(state, mv1, mv2);
+          if (related_moves->first == std::type_index(typeid(RelatedInputStateFuncType)))
+            return boost::any_cast<RelatedInputStateFuncType>(related_moves->second)(input, state, mv1, mv2);
           else
           {
             assert(related_moves->first == std::type_index(typeid(RelatedFuncType)));
@@ -166,7 +166,7 @@ namespace EasyLocal
             try
             {
               this->ne.FirstMove(this->in, this->kick[cur].second, this->kick[cur].first.move);
-              while (cur > 0 && !this->RelatedMoves(this->kick[cur - 1].second, this->kick[cur - 1].first.move, this->kick[cur].first.move))
+              while (cur > 0 && !this->RelatedMoves(this->in, this->kick[cur - 1].second, this->kick[cur - 1].first.move, this->kick[cur].first.move))
               {
                 if (!this->ne.NextMove(this->in, this->kick[cur].second, this->kick[cur].first.move))
                 {
@@ -197,7 +197,7 @@ namespace EasyLocal
                 cur--;
                 goto loop;
               }
-            } while (cur > 0 && !this->RelatedMoves(this->kick[cur - 1].second, this->kick[cur - 1].first.move, this->kick[cur].first.move));
+            } while (cur > 0 && !this->RelatedMoves(this->in, this->kick[cur - 1].second, this->kick[cur - 1].first.move, this->kick[cur].first.move));
             backtracking = false;
             this->ne.MakeMove(this->in, this->kick[cur].second, this->kick[cur].first.move);
             cur++;
@@ -227,7 +227,7 @@ namespace EasyLocal
             try
             {
               this->ne.FirstMove(this->in, this->kick[cur].second, this->kick[cur].first.move);
-              while (cur > 0 && !this->RelatedMoves(this->kick[cur - 1].second, this->kick[cur - 1].first.move, this->kick[cur].first.move))
+              while (cur > 0 && !this->RelatedMoves(this->in, this->kick[cur - 1].second, this->kick[cur - 1].first.move, this->kick[cur].first.move))
               {
                 if (!this->ne.NextMove(this->in, this->kick[cur].second, this->kick[cur].first.move))
                 {
@@ -261,7 +261,7 @@ namespace EasyLocal
                 cur--;
                 goto loop;
               }
-            } while (cur > 0 && !this->RelatedMoves(this->kick[cur - 1].second, this->kick[cur - 1].first.move, this->kick[cur].first.move));
+            } while (cur > 0 && !this->RelatedMoves(this->in, this->kick[cur - 1].second, this->kick[cur - 1].first.move, this->kick[cur].first.move));
             backtracking = false;
             this->ne.MakeMove(this->in, this->kick[cur].second, this->kick[cur].first.move);
             this->kick[cur].first.is_valid = false;
@@ -378,7 +378,7 @@ namespace EasyLocal
                 initial_set[cur] = true;
               }
               
-              while (cur > 0 && !this->RelatedMoves(this->kick[cur - 1].second, this->kick[cur - 1].first.move, this->kick[cur].first.move))
+              while (cur > 0 && !this->RelatedMoves(this->in, this->kick[cur - 1].second, this->kick[cur - 1].first.move, this->kick[cur].first.move))
               {
                 if (!this->ne.NextMove(this->in, this->kick[cur].second, this->kick[cur].first.move))
                   this->ne.FirstMove(this->in, this->kick[cur].second, this->kick[cur].first.move);
@@ -413,7 +413,7 @@ namespace EasyLocal
                 cur--;
                 goto loop;
               }
-            } while (cur > 0 && !this->RelatedMoves(this->kick[cur - 1].second, this->kick[cur - 1].first.move, this->kick[cur].first.move));
+            } while (cur > 0 && !this->RelatedMoves(this->in, this->kick[cur - 1].second, this->kick[cur - 1].first.move, this->kick[cur].first.move));
             backtracking = false;
             this->ne.MakeMove(this->in, this->kick[cur].second, this->kick[cur].first.move);
             this->kick[cur].first.is_valid = false;
@@ -464,7 +464,7 @@ namespace EasyLocal
       using RelatedMovesFunc = std::pair<std::type_index, boost::any>;
       
       using RelatedFuncType = std::function<bool(const Move&, const Move&)>;
-      using RelatedStateFuncType = std::function<bool(const State&, const Move&, const Move&)>;
+      using RelatedInputStateFuncType = std::function<bool(const Input&, const State&, const Move&, const Move&)>;
       
     protected:
       std::unique_ptr<RelatedMovesFunc> related_func;
@@ -481,9 +481,19 @@ namespace EasyLocal
         related_func = std::make_unique<RelatedMovesFunc>(std::type_index(typeid(RelatedFuncType)), r);
       }
       
-      void AddRelatedFunction(RelatedStateFuncType&& r)
+      void AddRelatedFunction(RelatedInputStateFuncType&& r)
       {
-        related_func = std::make_unique<RelatedMovesFunc>(std::type_index(typeid(RelatedStateFuncType)), r);
+        related_func = std::make_unique<RelatedMovesFunc>(std::type_index(typeid(RelatedInputStateFuncType)), r);
+      }
+      
+      void AddRelatedFunction(const RelatedFuncType& r)
+      {
+        related_func = std::make_unique<RelatedMovesFunc>(std::type_index(typeid(RelatedFuncType)), r);
+      }
+      
+      void AddRelatedFunction(const RelatedInputStateFuncType& r)
+      {
+        related_func = std::make_unique<RelatedMovesFunc>(std::type_index(typeid(RelatedInputStateFuncType)), r);
       }
       
       /** The modality of the @ref Move (warning: not the length of the @ref Move sequences) */

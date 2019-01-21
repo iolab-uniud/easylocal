@@ -338,27 +338,27 @@ namespace EasyLocal
           }
         }
         
-        template <class State>
-        static bool are_related(long level, const State& state, const MovesTuple &moves, const std::unordered_map<std::type_index, boost::any> &related_funcs)
+        template <class Input, class State>
+        static bool are_related(long level, const Input& input, const State& state, const MovesTuple &moves, const std::unordered_map<std::type_index, boost::any> &related_funcs)
         {
           if (level == 0)
           {
             const auto &this_move = std::get<0>(moves).get();
             const auto &next_move = std::get<1>(moves).get();
             using FuncType = std::function<bool(const decltype(this_move)&, const decltype(next_move)&)>;
-            using StateFuncType = std::function<bool(const State&, const decltype(this_move)&, const decltype(next_move)&)>;
+            using StateFuncType = std::function<bool(const Input&, const State&, const decltype(this_move)&, const decltype(next_move)&)>;
             auto it_m = related_funcs.find(std::type_index(typeid(FuncType))), it_s =  related_funcs.find(std::type_index(typeid(StateFuncType)));
             if (it_m == related_funcs.end() && it_s == related_funcs.end())
               return true;
             else if (it_m != related_funcs.end())
               return boost::any_cast<FuncType>(it_m->second)(this_move, next_move);
             else // it_s != related_funcs.end()
-              return boost::any_cast<StateFuncType>(it_s->second)(state, this_move, next_move);
+              return boost::any_cast<StateFuncType>(it_s->second)(input, state, this_move, next_move);
           }
           else
           {
             auto moves_tail = tuple_tail(moves);
-            return MoveDispatcher<decltype(moves_tail), N - 1>::are_related(--level, state, moves_tail, related_funcs);
+            return MoveDispatcher<decltype(moves_tail), N - 1>::are_related(--level, input, state, moves_tail, related_funcs);
           }
         }
         
@@ -421,8 +421,8 @@ namespace EasyLocal
             throw std::logic_error("End of tuple recursion");
         }
         
-        template <class State>
-        static bool are_related(long level, const State& state, const MovesTuple &moves, const std::unordered_map<std::type_index, boost::any> &related_funcs)
+        template <class Input, class State>
+        static bool are_related(long level, const Input& input, const State& state, const MovesTuple &moves, const std::unordered_map<std::type_index, boost::any> &related_funcs)
         {
           throw std::logic_error("End of tuple recursion");
         }
@@ -725,7 +725,7 @@ namespace EasyLocal
       using RelatedFuncType = std::function<bool(const ActiveMove<Move1>&, const ActiveMove<Move2>&)>;
       
       template <typename Move1, typename Move2>
-      using RelatedStateFuncType = std::function<bool(const State&, const ActiveMove<Move1>&, const ActiveMove<Move2>&)>;
+      using RelatedInputStateFuncType = std::function<bool(const Input&, const State&, const ActiveMove<Move1>&, const ActiveMove<Move2>&)>;
       
     public:
       /** Adds a predicate to determine whether two moves (of different neighborhoods) are related.
@@ -738,20 +738,46 @@ namespace EasyLocal
         // check that another function dealing with the same moves combination is not present
         if (related_funcs.find(std::type_index(typeid(RelatedFuncType<Move1, Move2>))) != related_funcs.end())
           throw std::logic_error("An existing related function with the same move types is already present");
-        if (related_funcs.find(std::type_index(typeid(RelatedStateFuncType<Move1, Move2>))) != related_funcs.end())
+        if (related_funcs.find(std::type_index(typeid(RelatedInputStateFuncType<Move1, Move2>))) != related_funcs.end())
           throw std::logic_error("An existing related function with the same move types but also using the state is already present");
         related_funcs[std::type_index(typeid(RelatedFuncType<Move1, Move2>))] = static_cast<RelatedFuncType<Move1, Move2>>([r](const ActiveMove<Move1> &mv1, const ActiveMove<Move2> &mv2) { return r(mv1, mv2); });
       }
       
-      template <typename State, typename Move1, typename Move2>
-      void AddRelatedFunction(std::function<bool(const State&, const Move1&, const Move2&)>&& r)
+      /** Adds a predicate to determine whether two moves (of different neighborhoods) are related.
+       This version wraps the moves in an ActiveMove object structure.
+       @param r a relatedness function
+       */
+      template <typename Move1, typename Move2>
+      void AddRelatedFunction(const std::function<bool(const Move1&, const Move2&)>& r)
+      {
+        // check that another function dealing with the same moves combination is not present
+        if (related_funcs.find(std::type_index(typeid(RelatedFuncType<Move1, Move2>))) != related_funcs.end())
+          throw std::logic_error("An existing related function with the same move types is already present");
+        if (related_funcs.find(std::type_index(typeid(RelatedInputStateFuncType<Move1, Move2>))) != related_funcs.end())
+          throw std::logic_error("An existing related function with the same move types but also using the state is already present");
+        related_funcs[std::type_index(typeid(RelatedFuncType<Move1, Move2>))] = static_cast<RelatedFuncType<Move1, Move2>>([r](const ActiveMove<Move1> &mv1, const ActiveMove<Move2> &mv2) { return r(mv1, mv2); });
+      }
+      
+      template <typename Input, typename State, typename Move1, typename Move2>
+      void AddRelatedFunction(std::function<bool(const Input&, const State&, const Move1&, const Move2&)>&& r)
       {
         // check that another function dealing with the same moves combination is not present
         if (related_funcs.find(std::type_index(typeid(RelatedFuncType<Move1, Move2>))) != related_funcs.end())
           throw std::logic_error("An existing related function with the same move types but not using the state is already present");
-        if (related_funcs.find(std::type_index(typeid(RelatedStateFuncType<Move1, Move2>))) != related_funcs.end())
+        if (related_funcs.find(std::type_index(typeid(RelatedInputStateFuncType<Move1, Move2>))) != related_funcs.end())
           throw std::logic_error("An existing related function with the same move types and the state is already present");
-        related_funcs[std::type_index(typeid(RelatedStateFuncType<Move1, Move2>))] = static_cast<RelatedStateFuncType<Move1, Move2>>([r](const State& st, const ActiveMove<Move1> &mv1, const ActiveMove<Move2> &mv2) { return r(st, mv1, mv2); });
+        related_funcs[std::type_index(typeid(RelatedInputStateFuncType<Move1, Move2>))] = static_cast<RelatedInputStateFuncType<Move1, Move2>>([r](const Input& in, const State& st, const ActiveMove<Move1> &mv1, const ActiveMove<Move2> &mv2) { return r(in, st, mv1, mv2); });
+      }
+      
+      template <typename Input, typename State, typename Move1, typename Move2>
+      void AddRelatedFunction(const std::function<bool(const Input&, const State&, const Move1&, const Move2&)>& r)
+      {
+        // check that another function dealing with the same moves combination is not present
+        if (related_funcs.find(std::type_index(typeid(RelatedFuncType<Move1, Move2>))) != related_funcs.end())
+          throw std::logic_error("An existing related function with the same move types but not using the state is already present");
+        if (related_funcs.find(std::type_index(typeid(RelatedInputStateFuncType<Move1, Move2>))) != related_funcs.end())
+          throw std::logic_error("An existing related function with the same move types and the state is already present");
+        related_funcs[std::type_index(typeid(RelatedInputStateFuncType<Move1, Move2>))] = static_cast<RelatedInputStateFuncType<Move1, Move2>>([r](const Input& in, const State& st, const ActiveMove<Move1> &mv1, const ActiveMove<Move2> &mv2) { return r(in, st, mv1, mv2); });
       }
       
       /** @copydoc NeighborhoodExplorer::FirstMove */
@@ -782,7 +808,7 @@ namespace EasyLocal
               // ne.FirstMove(kick[cur].second, kick[cur].first.move);
               Impl::VTupleDispatcher<Input, State, typename Super::_Void_ConstInput_ConstState_Move, typename Super::MoveRefs, sizeof...(BaseNeighborhoodExplorers) + 1>::execute_at(cur, in, st, this->first_move_funcs, r_moves);
               
-              while (cur > 0 && !Impl::MoveDispatcher<typename Super::MoveRefs, sizeof...(BaseNeighborhoodExplorers) + 1>::are_related(cur - 1, states[cur - 1], r_moves, related_funcs))
+              while (cur > 0 && !Impl::MoveDispatcher<typename Super::MoveRefs, sizeof...(BaseNeighborhoodExplorers) + 1>::are_related(cur - 1, in, states[cur - 1], r_moves, related_funcs))
               {
                 //if (!ne.NextMove(kick[cur].second, kick[cur].first.move))
                 if (!Impl::TupleDispatcher<bool, Input, State, typename Super::_Bool_ConstInput_ConstState_Move, typename Super::MoveRefs, sizeof...(BaseNeighborhoodExplorers) + 1>::execute_at(cur, in, states[cur], this->next_move_funcs, r_moves))
@@ -820,7 +846,7 @@ namespace EasyLocal
                 cur--;
                 goto loop;
               }
-            } while (cur > 0 && !Impl::MoveDispatcher<typename Super::MoveRefs, sizeof...(BaseNeighborhoodExplorers) + 1>::are_related(cur - 1, states[cur - 1], r_moves, related_funcs));
+            } while (cur > 0 && !Impl::MoveDispatcher<typename Super::MoveRefs, sizeof...(BaseNeighborhoodExplorers) + 1>::are_related(cur - 1, in, states[cur - 1], r_moves, related_funcs));
             backtracking = false;
             //ne.MakeMove(kick[cur].second, kick[cur].first.move);
             Impl::VTupleDispatcher<Input, State, typename Super::_Void_ConstInput_State_ConstMove, typename Super::MoveCRefs, sizeof...(BaseNeighborhoodExplorers) + 1>::execute_at(cur, in, states[cur], this->make_move_funcs, cr_moves);
@@ -871,7 +897,7 @@ namespace EasyLocal
                 initial_set[cur] = true;
               }
               
-              while (cur > 0 && !Impl::MoveDispatcher<typename Super::MoveRefs, sizeof...(BaseNeighborhoodExplorers) + 1>::are_related(cur - 1, states[cur - 1], r_moves, related_funcs))
+              while (cur > 0 && !Impl::MoveDispatcher<typename Super::MoveRefs, sizeof...(BaseNeighborhoodExplorers) + 1>::are_related(cur - 1, in, states[cur - 1], r_moves, related_funcs))
               {
                 //if (!ne.NextMove(kick[cur].second, kick[cur].first.move))
                 if (!Impl::TupleDispatcher<bool, Input, State, typename Super::_Bool_ConstInput_ConstState_Move, typename Super::MoveRefs, sizeof...(BaseNeighborhoodExplorers) + 1>::execute_at(cur, in, states[cur], this->next_move_funcs, r_moves))
@@ -921,7 +947,7 @@ namespace EasyLocal
                 cur--;
                 goto loop;
               }
-            } while (cur > 0 && !Impl::MoveDispatcher<typename Super::MoveRefs, sizeof...(BaseNeighborhoodExplorers) + 1>::are_related(cur - 1, states[cur - 1], r_moves, related_funcs));
+            } while (cur > 0 && !Impl::MoveDispatcher<typename Super::MoveRefs, sizeof...(BaseNeighborhoodExplorers) + 1>::are_related(cur - 1, in, states[cur - 1], r_moves, related_funcs));
             backtracking = false;
             //ne.MakeMove(kick[cur].second, kick[cur].first.move);
             Impl::VTupleDispatcher<Input, State, typename Super::_Void_ConstInput_State_ConstMove, typename Super::MoveCRefs, sizeof...(BaseNeighborhoodExplorers) + 1>::execute_at(cur, in, states[cur], this->make_move_funcs, cr_moves);
@@ -959,7 +985,7 @@ namespace EasyLocal
             {
               //ne.FirstMove(kick[cur].second, kick[cur].first.move);
               Impl::VTupleDispatcher<Input, State, typename Super::_Void_ConstInput_ConstState_Move, typename Super::MoveRefs, sizeof...(BaseNeighborhoodExplorers) + 1>::execute_at(cur, in, st, this->first_move_funcs, r_moves);
-              while (cur > 0 && !Impl::MoveDispatcher<typename Super::MoveRefs, sizeof...(BaseNeighborhoodExplorers) + 1>::are_related(cur - 1, states[cur - 1], r_moves, related_funcs)) //!RelatedMoves(kick[cur - 1].first.move, kick[cur].first.move))
+              while (cur > 0 && !Impl::MoveDispatcher<typename Super::MoveRefs, sizeof...(BaseNeighborhoodExplorers) + 1>::are_related(cur - 1, in, states[cur - 1], r_moves, related_funcs)) //!RelatedMoves(kick[cur - 1].first.move, kick[cur].first.move))
               {
                 //if (!ne.NextMove(kick[cur].second, kick[cur].first.move))
                 if (!Impl::TupleDispatcher<bool, Input, State, typename Super::_Bool_ConstInput_ConstState_Move, typename Super::MoveRefs, sizeof...(BaseNeighborhoodExplorers) + 1>::execute_at(cur, in, states[cur], this->next_move_funcs, r_moves))
@@ -997,7 +1023,7 @@ namespace EasyLocal
                 cur--;
                 goto loop;
               }
-            } while (cur > 0 && !Impl::MoveDispatcher<typename Super::MoveRefs, sizeof...(BaseNeighborhoodExplorers) + 1>::are_related(cur - 1, states[cur - 1], r_moves, related_funcs)); //!RelatedMoves(kick[cur - 1].first.move, kick[cur].first.move));
+            } while (cur > 0 && !Impl::MoveDispatcher<typename Super::MoveRefs, sizeof...(BaseNeighborhoodExplorers) + 1>::are_related(cur - 1, in, states[cur - 1], r_moves, related_funcs)); //!RelatedMoves(kick[cur - 1].first.move, kick[cur].first.move));
             backtracking = false;
             //ne.MakeMove(kick[cur].second, kick[cur].first.move);
             Impl::VTupleDispatcher<Input, State, typename Super::_Void_ConstInput_State_ConstMove, typename Super::MoveCRefs, sizeof...(BaseNeighborhoodExplorers) + 1>::execute_at(cur, in, states[cur], this->make_move_funcs, cr_moves);
