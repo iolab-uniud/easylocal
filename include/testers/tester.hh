@@ -364,7 +364,7 @@ namespace EasyLocal
         
         os << "CURRENT SOLUTION " << std::endl
         << out << std::endl;
-        os << "CURRENT COST : " << result << std::endl;
+        os << "CURRENT COST : " << sm.CostFunction(this->test_state) << std::endl;
         os << "ELAPSED TIME : " << std::chrono::duration_cast<std::chrono::milliseconds>(duration).count() / 1000.0 << " s" << std::endl;
         os << "NUMBER OF ITERATIONS : " << r.Iteration() << std::endl;
       }
