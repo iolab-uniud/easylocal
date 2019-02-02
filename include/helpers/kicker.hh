@@ -420,7 +420,7 @@ namespace EasyLocal
       /** Constructor.
        @param ne the @ref NeighborhoodExplorer used to generate the @ref Move
        */
-      Kicker(StateManager<Input, State, CostStructure>& sm, NeighborhoodExplorer<Input, State, Move, CostStructure> &ne, const MoveRelatedness &RelatedMoves = AllMovesRelated) : sm(sm), ne(ne), RelatedMoves(RelatedMoves) {}
+      Kicker(StateManager<Input, State, CostStructure>& sm, NeighborhoodExplorer<Input, State, Move, CostStructure> &ne, const MoveRelatedness &RelatedMoves = AllMovesRelated, bool compute_delta = true) : sm(sm), ne(ne), RelatedMoves(RelatedMoves), compute_delta(compute_delta) {}
       
       /** The modality of the @ref Move (warning: not the length of the @ref Move sequences) */
       virtual size_t Modality() const
@@ -443,15 +443,18 @@ namespace EasyLocal
         for (FullKickerIterator<Input, State, Move, CostStructure> it = begin(length, in, st); it != end(length, in, st); ++it)
         {
           CostStructure cost(0, 0, 0, std::vector<CFtype>(sm.CostComponents(), 0));
-          for (int i = 0; i < it->size(); i++)
-          {
-            if (!(*it)[i].first.is_valid)
+          if (compute_delta)
+            for (size_t i = 0; i < it->size(); i++)
             {
-              (*it)[i].first.cost = this->ne.DeltaCostFunctionComponents(in, (*it)[i].second, (*it)[i].first.move);
-              (*it)[i].first.is_valid = true;
+              if (!(*it)[i].first.is_valid)
+              {
+                (*it)[i].first.cost = this->ne.DeltaCostFunctionComponents(in, i > 0 ? (*it)[i - 1].second : st, (*it)[i].first.move);
+                (*it)[i].first.is_valid = true;
+              }
+              cost += (*it)[i].first.cost;
             }
-            cost += (*it)[i].first.cost;
-          }
+          else
+            cost = this->sm.CostFunctionComponents(in, (*it)[it->size() - 1].second) - this->sm.CostFunctionComponents(in, st);
           if (cost < 0)
             return std::make_pair(*it, cost);
         }
@@ -473,15 +476,18 @@ namespace EasyLocal
         for (FullKickerIterator<Input, State, Move, CostStructure> it = begin(length, in, st); it != end(length, in, st); ++it)
         {
           CostStructure cost(0, 0, 0, std::vector<CFtype>(sm.CostComponents(), 0));
-          for (int i = 0; i < it->size(); i++)
-          {
-            if (!(*it)[i].first.is_valid)
+          if (compute_delta)
+            for (size_t i = 0; i < it->size(); i++)
             {
-              (*it)[i].first.cost = ne.DeltaCostFunctionComponents(in, (*it)[i].second, (*it)[i].first.move);
-              (*it)[i].first.is_valid = true;
+              if (!(*it)[i].first.is_valid)
+              {
+                (*it)[i].first.cost = ne.DeltaCostFunctionComponents(in, i > 0 ? (*it)[i - 1].second : st, (*it)[i].first.move);
+                (*it)[i].first.is_valid = true;
+              }
+              cost += (*it)[i].first.cost;
             }
-            cost += (*it)[i].first.cost;
-          }
+          else
+            cost = this->sm.CostFunctionComponents(in, (*it)[it->size() - 1].second) - this->sm.CostFunctionComponents(in, st);
           if (number_of_bests == 0)
           {
             best_kick = *it;
@@ -508,15 +514,18 @@ namespace EasyLocal
       {
         SampleKickerIterator<Input, State, Move, CostStructure> random_it = sample_begin(length, in, st, 1);
         CostStructure cost(0, 0, 0, std::vector<CFtype>(sm.CostComponents(), 0));
-        for (int i = 0; i < random_it->size(); i++)
-        {
-          if (!(*random_it)[i].first.is_valid)
+        if (compute_delta)
+          for (size_t i = 0; i < random_it->size(); i++)
           {
-            (*random_it)[i].first.cost = ne.DeltaCostFunctionComponents(in, (*random_it)[i].second, (*random_it)[i].first.move);
-            (*random_it)[i].first.is_valid = true;
+            if (!(*random_it)[i].first.is_valid)
+            {
+              (*random_it)[i].first.cost = ne.DeltaCostFunctionComponents(in, i > 0 ? (*random_it)[i].second : st, (*random_it)[i].first.move);
+              (*random_it)[i].first.is_valid = true;
+            }
+            cost += (*random_it)[i].first.cost;
           }
-          cost += (*random_it)[i].first.cost;
-        }
+        else
+          cost = this->sm.CostFunctionComponents(in, (*random_it)[random_it->size() - 1].second) - this->sm.CostFunctionComponents(in, st);
         return std::make_pair(*random_it, cost);
       }
       
@@ -556,6 +565,7 @@ namespace EasyLocal
       
       /** The functor for checking for move relatedness */
       const MoveRelatedness &RelatedMoves;
+      const bool compute_delta;
       
       static MoveRelatedness AllMovesRelated;
     };
