@@ -523,11 +523,11 @@ namespace EasyLocal
         for (FullKickerIterator<Kicker<NeighborhoodExplorer>> it = begin(length, in, st); it != end(length, in, st); ++it)
         {
           CostStructure cost(0, 0, 0, std::vector<CFtype>(sm.CostComponents(), 0));
-          for (int i = 0; i < it->size(); i++)
+          for (size_t i = 0; i < it->size(); i++)
           {
             if (!(*it)[i].first.is_valid)
             {
-              (*it)[i].first.cost = this->ne.DeltaCostFunctionComponents(in, (*it)[i].second, (*it)[i].first.move);
+              (*it)[i].first.cost = this->ne.DeltaCostFunctionComponents(in, i > 0 ? (*it)[i].second : st, (*it)[i].first.move);
               (*it)[i].first.is_valid = true;
             }
             cost += (*it)[i].first.cost;
@@ -553,11 +553,11 @@ namespace EasyLocal
         for (FullKickerIterator<Kicker<NeighborhoodExplorer>> it = begin(length, in, st); it != end(length, in, st); ++it)
         {
           CostStructure cost(0, 0, 0, std::vector<CFtype>(sm.CostComponents(), 0));
-          for (int i = 0; i < it->size(); i++)
+          for (size_t i = 0; i < it->size(); i++)
           {
             if (!(*it)[i].first.is_valid)
             {
-              (*it)[i].first.cost = ne.DeltaCostFunctionComponents(in, (*it)[i].second, (*it)[i].first.move);
+              (*it)[i].first.cost = ne.DeltaCostFunctionComponents(in, i > 0 ? (*it)[i].second : st, (*it)[i].first.move);
               (*it)[i].first.is_valid = true;
             }
             cost += (*it)[i].first.cost;
@@ -588,11 +588,11 @@ namespace EasyLocal
       {
         SampleKickerIterator<Kicker<NeighborhoodExplorer>> random_it = sample_begin(length, in, st, 1);
         CostStructure cost(0, 0, 0, std::vector<CFtype>(sm.CostComponents(), 0));
-        for (int i = 0; i < random_it->size(); i++)
+        for (size_t i = 0; i < random_it->size(); i++)
         {
           if (!(*random_it)[i].first.is_valid)
           {
-            (*random_it)[i].first.cost = ne.DeltaCostFunctionComponents(in, (*random_it)[i].second, (*random_it)[i].first.move);
+            (*random_it)[i].first.cost = ne.DeltaCostFunctionComponents(in, i > 0 ? (*random_it)[i].second : st, (*random_it)[i].first.move);
             (*random_it)[i].first.is_valid = true;
           }
           cost += (*random_it)[i].first.cost;
