@@ -298,65 +298,48 @@ namespace EasyLocal
       CFtype delta_hard_cost = 0, delta_soft_cost = 0;
       double delta_weighted_cost = 0.0;
       std::vector<CFtype> delta_cost_function(sm.CostComponents(), static_cast<CFtype>(0));
+      std::unique_ptr<State> new_st; // for unimplemented components
+      
+      if (unimplemented_hard_components || unimplemented_soft_components)
+      {
+        // compute move, for unimplemented components
+        new_st = std::make_unique<State>(st);
+        MakeMove(in, *new_st, mv);
+      }
       
       for (size_t i = 0; i < delta_hard_cost_components.size(); i++)
       {
         auto dcc = delta_hard_cost_components[i];
+        CFtype current_delta_cost = 0;
+        if (dcc->GetCostComponent().Weight() == 0)
+          continue;
         if (dcc->IsDeltaImplemented())
+          current_delta_cost = delta_cost_function[sm.CostComponentIndex(dcc->cc)] = dcc->DeltaCost(in, st, mv);
+        else
         {
-          CFtype current_delta_cost = delta_cost_function[sm.CostComponentIndex(dcc->cc)] = dcc->DeltaCost(in, st, mv);
-          delta_hard_cost += current_delta_cost;
-          if (!weights.empty())
-            delta_weighted_cost += HARD_WEIGHT * weights[sm.CostComponentIndex(dcc->cc)] * current_delta_cost;
+          auto &cc = dcc->GetCostComponent();
+          current_delta_cost = delta_cost_function[sm.CostComponentIndex(cc)] = cc.Weight() * (cc.ComputeCost(in, *new_st) - cc.ComputeCost(in, st));
         }
+        delta_hard_cost += current_delta_cost;
+        if (!weights.empty())
+          delta_weighted_cost += HARD_WEIGHT * weights[sm.CostComponentIndex(dcc->cc)] * current_delta_cost;
       }
       for (size_t i = 0; i < delta_soft_cost_components.size(); i++)
       {
         auto dcc = delta_soft_cost_components[i];
+        CFtype current_delta_cost = 0;
+        if (dcc->GetCostComponent().Weight() == 0)
+          continue;
         if (dcc->IsDeltaImplemented())
+          current_delta_cost = delta_cost_function[sm.CostComponentIndex(dcc->cc)] = dcc->DeltaCost(in, st, mv);
+        else
         {
-          CFtype current_delta_cost = delta_cost_function[sm.CostComponentIndex(dcc->cc)] = dcc->DeltaCost(in, st, mv);
-          delta_soft_cost += current_delta_cost;
-          if (!weights.empty())
-            delta_weighted_cost += weights[sm.CostComponentIndex(dcc->cc)] * current_delta_cost;
+          auto &cc = dcc->GetCostComponent();
+          current_delta_cost = delta_cost_function[sm.CostComponentIndex(cc)] = cc.Weight() * (cc.ComputeCost(in, *new_st) - cc.ComputeCost(in, st));
         }
-      }
-      
-      // only if there is at least one unimplemented delta cost component (i.e., a wrapper along a cost component)
-      if (unimplemented_hard_components || unimplemented_soft_components)
-      {
-        // compute move
-        State new_st = st;
-        MakeMove(in, new_st, mv);
-        
-        if (unimplemented_hard_components)
-          for (size_t i = 0; i < delta_hard_cost_components.size(); i++)
-          {
-            auto dcc = delta_hard_cost_components[i];
-            if (!dcc->IsDeltaImplemented())
-            {
-              // get reference to cost component
-              auto &cc = dcc->GetCostComponent();
-              CFtype current_delta_cost = delta_cost_function[sm.CostComponentIndex(cc)] = cc.Weight() * (cc.ComputeCost(in, new_st) - cc.ComputeCost(in, st));
-              delta_hard_cost += current_delta_cost;
-              if (!weights.empty())
-                delta_weighted_cost += HARD_WEIGHT * weights[sm.CostComponentIndex(cc)] * current_delta_cost;
-            }
-          }
-        if (unimplemented_soft_components)
-          for (size_t i = 0; i < delta_soft_cost_components.size(); i++)
-          {
-            auto dcc = delta_soft_cost_components[i];
-            if (!dcc->IsDeltaImplemented())
-            {
-              // get reference to cost component
-              auto &cc = dcc->GetCostComponent();
-              CFtype current_delta_cost = delta_cost_function[sm.CostComponentIndex(cc)] = cc.Weight() * (cc.ComputeCost(in, new_st) - cc.ComputeCost(in, st));
-              delta_soft_cost += current_delta_cost;
-              if (!weights.empty())
-                delta_weighted_cost += weights[sm.CostComponentIndex(cc)] * current_delta_cost;
-            }
-          }
+        delta_soft_cost += current_delta_cost;
+        if (!weights.empty())
+          delta_weighted_cost += weights[sm.CostComponentIndex(dcc->cc)] * current_delta_cost;
       }
       
       if (!weights.empty())
