@@ -880,10 +880,10 @@ namespace detail
     {
         e->template clear<Option>();
         clear_all<Handle, Options...>(e);
-    };
+    }
     template <typename Handle> void clear_all(Handle* e)
     {
-    };
+    }
 
     template<CURLoption... Options> struct performer
     {

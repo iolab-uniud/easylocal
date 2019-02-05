@@ -420,7 +420,7 @@ namespace EasyLocal
       /** Constructor.
        @param ne the @ref NeighborhoodExplorer used to generate the @ref Move
        */
-      Kicker(StateManager<Input, State, CostStructure>& sm, NeighborhoodExplorer<Input, State, Move, CostStructure> &ne, const MoveRelatedness &RelatedMoves = AllMovesRelated, bool compute_delta = true) : sm(sm), ne(ne), RelatedMoves(RelatedMoves), compute_delta(compute_delta) {}
+      Kicker(StateManager<Input, State, CostStructure>& sm, NeighborhoodExplorer<Input, State, Move, CostStructure> &ne, const MoveRelatedness&& RelatedMoves = AllMovesRelated, bool compute_delta = true) : sm(sm), ne(ne), RelatedMoves(std::move(RelatedMoves)), compute_delta(compute_delta) {}
       
       /** The modality of the @ref Move (warning: not the length of the @ref Move sequences) */
       virtual size_t Modality() const
@@ -564,7 +564,7 @@ namespace EasyLocal
       NeighborhoodExplorer<Input, State, Move, CostStructure> &ne;
       
       /** The functor for checking for move relatedness */
-      const MoveRelatedness &RelatedMoves;
+      const MoveRelatedness RelatedMoves;
       const bool compute_delta;
       
       static MoveRelatedness AllMovesRelated;
