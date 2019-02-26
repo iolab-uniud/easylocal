@@ -257,7 +257,7 @@ CostStructure Runner<Input, State, CostStructure>::Go(State &s)
         UpdateBestState();
       }
     }
-    catch (EmptyNeighborhood)
+    catch (EmptyNeighborhood&)
     {
       break;
     }

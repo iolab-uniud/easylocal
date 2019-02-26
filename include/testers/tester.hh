@@ -41,7 +41,7 @@ namespace EasyLocal
           return value;
 #endif
         }
-        catch (std::invalid_argument)
+        catch (std::invalid_argument&)
         {
           return -1;
         }
