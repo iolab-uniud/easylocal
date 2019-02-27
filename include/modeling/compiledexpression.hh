@@ -426,7 +426,7 @@ namespace EasyLocal {
       /** @copydoc CExp<T>::compute(unsigned int) */
       inline virtual void compute(unsigned int level = 0) const
       {
-        size_t i = (size_t)(this->es.get(this->children[0], level));
+        size_t i = (this->es.get(this->children[0], level));
 
         if (i < 0 || i >= this->exp_store[this->children[1]]->children.size())
           throw std::runtime_error("Index " + std::to_string(i) + "invalid for expression " + std::to_string(this->es[this->children[1]]));
