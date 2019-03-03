@@ -51,7 +51,7 @@ namespace EasyLocal
     template <class Input, class State, class Move, class CostStructure>
     bool FirstDescent<Input, State, Move, CostStructure>::StopCriterion()
     {
-      return this->iteration > 0 && !this->current_move.is_valid;
+      return this->iteration > 0 && (!this->current_move.is_valid || this->current_move.cost <= 0);
     }
   } // namespace Core
 } // namespace EasyLocal
