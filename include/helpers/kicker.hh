@@ -90,7 +90,7 @@ public:
 protected:
   void FirstKick()
   {
-    kick.assign(length, std::make_pair(EvaluatedMove<Move, CostStructure>(false), start_state));
+    kick.assign(length, std::make_pair(EvaluatedMove<Move, CostStructure>(), start_state));
 
     int cur = 0;
     bool backtracking = false;
@@ -305,7 +305,7 @@ public:
 protected:
   void RandomKick()
   {
-    kick.assign(length, std::make_pair(EvaluatedMove<Move, CostStructure>(false), start_state));
+    kick.assign(length, std::make_pair(EvaluatedMove<Move, CostStructure>(), start_state));
     std::vector<Move> initial_kick_moves(length, Move());
     std::vector<bool> initial_set(length, false);
 
