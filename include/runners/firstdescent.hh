@@ -35,7 +35,7 @@ namespace EasyLocal
 
       bool StopCriterion() const override final
       {
-        return this->iteration > 0 && !this->current_move.is_valid;
+        return this->iteration > 0 && (!this->current_move.is_valid || this->current_move.cost <= 0);
       }
     };
   } // namespace Core
