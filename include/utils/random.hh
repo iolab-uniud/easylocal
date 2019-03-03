@@ -54,6 +54,12 @@ namespace EasyLocal
         return GetInstance().seed;
       }
       
+      
+      static std::mt19937& GetGenerator()
+      {
+        return GetInstance().g;
+      }
+      
     private:
       static Random& GetInstance() {
         static Random instance;

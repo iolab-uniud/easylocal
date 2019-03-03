@@ -30,7 +30,7 @@ public:
   bool IsHard() const { return cc.IsHard(); }
 
   /** @copydoc CostComponent::IsSoft() */
-  bool IsSoft() const { return cc.IsSoft(); }
+  bool IsSoft() const { return cc.isSoft(); }
 
   /** Returns the variation in the cost function induced by the move according to this cost component.
        @param st state to evaluate
