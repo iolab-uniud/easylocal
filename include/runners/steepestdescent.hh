@@ -56,7 +56,7 @@ namespace EasyLocal
     template <class Input, class State, class Move, class CostStructure>
     bool SteepestDescent<Input, State, Move, CostStructure>::StopCriterion() const
     {
-      return this->iteration > 0 && (!this->current_move.is_valid || this->current_move.cost <= 0);
+      return this->iteration > 0 && !this->current_move.is_valid;
     }
     
     template <class Input, class State, class Move, class CostStructure>
