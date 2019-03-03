@@ -480,7 +480,7 @@ namespace EasyLocal
       /** Constructor.
        @param ne the @ref NeighborhoodExplorer used to generate the @ref Move
        */
-      Kicker(StateManager<Input, State, CostStructure>& sm, NeighborhoodExplorer& ne) : sm(sm), ne(ne), compute_delta(compute_delta) {}
+      Kicker(StateManager<Input, State, CostStructure>& sm, NeighborhoodExplorer& ne, bool compute_delta = true) : sm(sm), ne(ne), compute_delta(compute_delta) {}
       
       void SetRelatedFunction(RelatedFuncType&& r)
       {
@@ -618,7 +618,8 @@ namespace EasyLocal
        */
       virtual void MakeKick(const Input& in, State &st, const Kick<State, Move, CostStructure> &kick) const
       {
-        st = kick[kick.size() - 1].second;
+        if (kick.size() > 0)
+          st = kick[kick.size() - 1].second;
       }
       
       FullKickerIterator<Kicker<NeighborhoodExplorer>> begin(size_t length, const Input& in, const State &st) const
