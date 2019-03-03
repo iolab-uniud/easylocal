@@ -1793,7 +1793,7 @@ namespace EasyLocal {
       /** @copydoc Exp<T>::simplify() */
       virtual std::shared_ptr<Exp<T>> simplify()
       {
-        std::unordered_set<T> unique;
+        std::set<T> unique;
         bool all_const = true;
         
         /** Scan operands, replace each operand with its simplified version,

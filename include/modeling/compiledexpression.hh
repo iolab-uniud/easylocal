@@ -41,7 +41,7 @@ namespace EasyLocal {
 
       /** Parents of the expression in the AST (if any).
           @remarks parents don't need need to be ordered, therefore a unordered_set is appropriate. */
-      std::unordered_set<size_t> parents;
+      std::set<size_t> parents;
 
       /** Children of the expression in the AST (if any).
           @remarks these need to be ordered.
@@ -187,7 +187,7 @@ namespace EasyLocal {
         T value = this->es.get(this->index);
 
         // Get changed children
-        std::unordered_set<size_t>& changed = this->es.changed_children(this->index, level);
+        std::set<size_t>& changed = this->es.changed_children(this->index, level);
 
         // Iterate through changed children, replace old contribution with new one
         for (auto child : changed)
@@ -235,7 +235,7 @@ namespace EasyLocal {
         T value = this->es.get(this->index);
 
         // Get changed children
-        std::unordered_set<size_t>& changed = this->es.changed_children(this->index, level);
+        std::set<size_t>& changed = this->es.changed_children(this->index, level);
 
         // If any of the children are zero, the product is zero and we're over
         if (std::any_of(changed.begin(), changed.end(), [this, &level](const size_t& i)->bool { return this->es.get(i, level) == static_cast<T>(0); }))
@@ -604,7 +604,7 @@ namespace EasyLocal {
       /** @copydoc CExp<T>::compute(unsigned int) */
       virtual void compute(unsigned int level = 0) const
       {
-        std::unordered_set<T> values;
+        std::set<T> values;
         for (auto it = this->children.begin(); it != this->children.end(); it++)
           values.insert(this->es.get(*it, level));
         this->es.set(this->index, level, values.size());

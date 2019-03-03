@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "easylocal/helpers/neighborhoodexplorer.hh"
+#include "neighborhoodexplorer.hh"
 #include <iterator>
 #include <tbb/tbb.h>
 

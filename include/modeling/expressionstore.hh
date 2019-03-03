@@ -49,7 +49,7 @@ namespace EasyLocal {
       ExpressionStore(const ExpressionStore<T>& other) : std::vector<std::shared_ptr<CExp<T>>>(other),
       _value(other.levels() + 1, std::vector<T>(other.size())),
       _valid(other.levels() + 1, std::vector<bool>(other.size(), false)),
-      _changed_children(other.levels(), std::vector<std::unordered_set<size_t>>(other.size())),
+      _changed_children(other.levels(), std::vector<std::set<size_t>>(other.size())),
       _evaluated(other._evaluated),
       _needs_update(false)
       {
@@ -92,7 +92,7 @@ namespace EasyLocal {
           _update();
         
         // Make list of terminal expressions
-        std::unordered_set<size_t> to_update;
+        std::set<size_t> to_update;
         for (size_t i = 0; i < this->size(); i++)
         {
           if (std::static_pointer_cast<CVar<T>>((*this)[i]) == nullptr)
@@ -108,7 +108,7 @@ namespace EasyLocal {
        @param i index of the expression to get the changed children for
        @param level reference level
        */
-      inline std::unordered_set<size_t>& changed_children(size_t i, unsigned int level)
+      inline std::set<size_t>& changed_children(size_t i, unsigned int level)
       {
         // Update data structures if needed
         if (_needs_update)
@@ -155,7 +155,7 @@ namespace EasyLocal {
         set(v_index, level, c.val);
         
         // Evaluate
-        evaluate_diff(std::unordered_set<size_t>({ v_index }), level);
+        evaluate_diff(std::set<size_t>({ v_index }), level);
       }
       
       /** Simulates the execution of a composite Change on a specific simulation level.
@@ -173,7 +173,7 @@ namespace EasyLocal {
           reset(level);
         
         // Create set of vars for evaluation
-        std::unordered_set<size_t> vars;
+        std::set<size_t> vars;
         for (const BasicChange<T>& c : cc)
         {
           size_t v_index = index_of(c.var);
@@ -381,7 +381,7 @@ namespace EasyLocal {
           @param variables a set of variables that have been changed
           @param level level on which to evaluate
        */
-      void evaluate_diff(const std::unordered_set<size_t>& to_update, unsigned int level) const
+      void evaluate_diff(const std::set<size_t>& to_update, unsigned int level) const
       {
         // Update depth if needed
         if (_needs_update)
@@ -391,7 +391,7 @@ namespace EasyLocal {
         std::priority_queue<std::pair<int, size_t>> queue;
 
         // Set of already processed nodes
-        std::unordered_set<size_t> processed;
+        std::set<size_t> processed;
         processed.reserve(this->size());
 
         // Go through all modified terminal symbols
@@ -499,7 +499,7 @@ namespace EasyLocal {
           @param level level on which to evaluate
           @remarks Internally used by the public evaluate method
        */
-      void _evaluate(const std::unordered_set<size_t>& to_update, unsigned int level, bool force = false) const
+      void _evaluate(const std::set<size_t>& to_update, unsigned int level, bool force = false) const
       {
         // Update depth, if needed
         if (_needs_update)
@@ -573,7 +573,7 @@ namespace EasyLocal {
       std::vector<std::vector<bool>> _valid;
       
       /** Keeps track of the changed children of each expression at each level. */
-      std::vector<std::vector<std::unordered_set<size_t>>> _changed_children;
+      std::vector<std::vector<std::set<size_t>>> _changed_children;
       
       
       /** Whether the first full evaluation has been already run. */

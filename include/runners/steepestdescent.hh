@@ -50,12 +50,12 @@ void SteepestDescent<Input, State, Move, CostStructure>::SelectMove()
 }
 
 /**
-     The search is stopped when no (strictly) improving move has been found.
-     */
+ The search is stopped when no (strictly) improving move has been found.
+ */
 template <class Input, class State, class Move, class CostStructure>
 bool SteepestDescent<Input, State, Move, CostStructure>::StopCriterion()
 {
-  return this->iteration > 0 && !this->current_move.is_valid;
+  return this->iteration > 0 && (!this->current_move.is_valid || this->current_move.cost <= 0);
 }
 } // namespace Core
 } // namespace EasyLocal

@@ -194,11 +194,15 @@ namespace EasyLocal
         std::ifstream is(file_name.c_str());
         if (is.fail())
           throw std::runtime_error("Cannot open file!");
+        auto start = std::chrono::high_resolution_clock::now();
         om.ReadState(test_state, is);
         om.OutputState(test_state, out);
         os << "SOLUTION IMPORTED " << std::endl
         << out << std::endl;
         os << "IMPORTED SOLUTION COST : " << sm.CostFunctionComponents(test_state) << std::endl;
+        auto end = std::chrono::high_resolution_clock::now();
+        auto duration = end - start;
+        os << "ELAPSED TIME : " << std::chrono::duration_cast<std::chrono::milliseconds>(duration).count() / 1000.0 << " s" << std::endl;
       }
       
       do
