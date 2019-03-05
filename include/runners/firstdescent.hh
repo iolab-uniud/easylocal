@@ -22,6 +22,7 @@ namespace EasyLocal
       using MoveRunner<Input, State, Move, CostStructure>::MoveRunner;
       
     protected:
+      void InitializeRun();
       bool StopCriterion();
       void SelectMove();
     };
@@ -30,6 +31,20 @@ namespace EasyLocal
      * Implementation
      *************************************************************************/
     
+    template <class Input, class State, class Move, class CostStructure>
+    void FirstDescent<Input, State, Move, CostStructure>::InitializeRun()
+    {
+      MoveRunner<Input, State, Move, CostStructure>::InitializeRun();
+      try
+      {
+        this->ne.FirstMove(*this->p_current_state, this->current_move.move);
+      }
+      catch (EmptyNeighborhood e)
+      {
+        // FIXME: do something smart
+      }
+    }
+    
     /**
      Selects always the first improving move in the neighborhood.
      */
@@ -37,7 +52,7 @@ namespace EasyLocal
     void FirstDescent<Input, State, Move, CostStructure>::SelectMove()
     {
       size_t explored;
-      EvaluatedMove<Move, CostStructure> em = this->ne.SelectFirst(*this->p_current_state, explored, [](const Move &mv, const CostStructure &move_cost) {
+      EvaluatedMove<Move, CostStructure> em = this->ne.SelectFirst(this->current_move.move, *this->p_current_state, explored, [](const Move &mv, const CostStructure &move_cost) {
         return move_cost < 0;
       },
                                                                    this->weights);

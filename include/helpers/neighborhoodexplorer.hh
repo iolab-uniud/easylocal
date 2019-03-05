@@ -169,6 +169,12 @@ public:
        matches with the criterion expressed by the functional object bool f(const Move& mv, CostStructure cost)
        */
   virtual EvaluatedMove<Move, CostStructure> SelectFirst(const State &st, size_t &explored, const MoveAcceptor &AcceptMove, const std::vector<double> &weights = std::vector<double>(0)) const;
+  
+  /**
+   This method will select the first move in the exhaustive neighborhood exploration that
+   matches with the criterion expressed by the functional object bool f(const Move& mv, CostStructure cost)
+   */
+  virtual EvaluatedMove<Move, CostStructure> SelectFirst(const Move& start_move, const State &st, size_t &explored, const MoveAcceptor &AcceptMove, const std::vector<double> &weights = std::vector<double>(0)) const;
 
   /**
        This method will select the best move in the exhaustive neighborhood exploration that
@@ -340,6 +346,33 @@ EvaluatedMove<Move, CostStructure> NeighborhoodExplorer<Input, State, Move, Cost
   // exiting this loop means that there is no mv passing the acceptance criterion
   return EvaluatedMove<Move, CostStructure>::empty;
 }
+  
+  template <class Input, class State, class Move, class CostStructure>
+  EvaluatedMove<Move, CostStructure> NeighborhoodExplorer<Input, State, Move, CostStructure>::SelectFirst(const Move& start_move, const State &st, size_t &explored, const MoveAcceptor &AcceptMove, const std::vector<double> &weights) const
+  {
+    explored = 0;
+    EvaluatedMove<Move, CostStructure> mv;
+    mv.move = start_move;
+    unsigned int rounds = 0;
+    do
+    {
+      while (NextMove(st, mv.move))
+      {
+        mv.cost = DeltaCostFunctionComponents(st, mv.move, weights);
+        explored++;
+        mv.is_valid = true;
+        
+        if (AcceptMove(mv.move, mv.cost))
+          return mv; // mv passes the acceptance criterion
+      }
+      rounds++;
+    }
+    while (mv.move != start_move || rounds > 1); // TODO: possibly explores some moves twice
+    
+    // exiting this loop means that there is no mv passing the acceptance criterion
+    return EvaluatedMove<Move, CostStructure>::empty;
+  }
+  
 
 /**
      This method will select the best move in the exhaustive neighborhood exploration that

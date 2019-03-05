@@ -83,6 +83,89 @@ protected:
   size_t move_count;
   bool end;
 };
+  
+  template <class Input, class State, class Move, class CostStructure>
+  class StartingNeighborhoodIterator : public std::iterator<std::input_iterator_tag, EvaluatedMove<Move, CostStructure>>
+  {
+    friend class NeighborhoodExplorerIteratorInterface<Input, State, Move, CostStructure>;
+    
+  public:
+    StartingNeighborhoodIterator operator++(int) // postfix
+    {
+      StartingNeighborhoodIterator pi = *this;
+      if (end)
+        throw std::logic_error("Attempting to go after last move");
+      if (!ne.NextMove(state, current_move))
+      {
+        ne.FirstMove(state, current_move);
+        rounds++;
+      }
+      end = (current_move == start_move) || rounds > 1;
+      move_count++;
+      computed_move = EvaluatedMove<Move, CostStructure>(current_move);
+      return pi;
+    }
+    StartingNeighborhoodIterator &operator++() // prefix
+    {
+      if (end)
+        throw std::logic_error("Attempting to go after last move");
+      if (!ne.NextMove(state, current_move))
+      {
+        ne.FirstMove(state, current_move);
+        rounds++;
+      }
+      end = (current_move == start_move) || rounds > 1;
+      move_count++;
+      computed_move = EvaluatedMove<Move, CostStructure>(current_move);
+      return *this;
+    }
+    EvaluatedMove<Move, CostStructure> operator*() const
+    {
+      return computed_move;
+    }
+    EvaluatedMove<Move, CostStructure> *operator->() const
+    {
+      return &computed_move;
+    }
+    bool operator==(const StartingNeighborhoodIterator<Input, State, Move, CostStructure> &it2) const
+    {
+      if (end && it2.end)
+        return true;
+      return (end == it2.end && move_count == it2.move_count && &state == &it2.state && start_move == it2.start_move);
+    }
+    bool operator!=(const StartingNeighborhoodIterator<Input, State, Move, CostStructure> &it2)
+    {
+      if (end && it2.end)
+        return false;
+      return (end != it2.end || move_count != it2.move_count || &state != &it2.state || start_move != it2.start_move);
+    }
+    
+  protected:
+    StartingNeighborhoodIterator(const NeighborhoodExplorer<Input, State, Move, CostStructure> &ne, const Move& start_move, const State &state, bool end = false)
+    : ne(ne), state(state), start_move(start_move), rounds(0), move_count(0), end(end)
+    {
+      if (end)
+        return;
+      try
+      {
+        ne.FirstMove(state, current_move);
+        current_move = start_move;
+        computed_move = EvaluatedMove<Move, CostStructure>(current_move);
+      }
+      catch (EmptyNeighborhood)
+      {
+        end = true;
+      }
+    }
+    const NeighborhoodExplorer<Input, State, Move, CostStructure> &ne;
+    const State &state;
+    const Move& start_move;
+    unsigned int rounds;
+    Move current_move;
+    EvaluatedMove<Move, CostStructure> computed_move;
+    size_t move_count;
+    bool end;
+  };
 
 template <class Input, class State, class Move, class CostStructure>
 class SampleNeighborhoodIterator : public std::iterator<std::input_iterator_tag, EvaluatedMove<Move, CostStructure>>
@@ -170,6 +253,11 @@ protected:
   {
     return FullNeighborhoodIterator<Input, State, Move, CostStructure>(ne, st, end);
   }
+  
+  static StartingNeighborhoodIterator<Input, State, Move, CostStructure> create_starting_neighborhood_iterator(const NeighborhoodExplorer<Input, State, Move, CostStructure> &ne, const Move& start_move, const State &st, bool end = false)
+  {
+    return StartingNeighborhoodIterator<Input, State, Move, CostStructure>(ne, start_move, st, end);
+  }
 
   static SampleNeighborhoodIterator<Input, State, Move, CostStructure> create_sample_neighborhood_iterator(const NeighborhoodExplorer<Input, State, Move, CostStructure> &ne, const State &st, size_t samples, bool end = false)
   {
@@ -197,6 +285,16 @@ protected:
   {
     return NeighborhoodExplorerIteratorInterface<Input, State, MoveType, CostStructureType>::create_full_neighborhood_iterator(*this, st, true);
   }
+  
+  StartingNeighborhoodIterator<Input, State, MoveType, CostStructureType> begin(const MoveType& start_move, const State &st) const
+  {
+    return NeighborhoodExplorerIteratorInterface<Input, State, MoveType, CostStructureType>::create_starting_neighborhood_iterator(*this, start_move, st);
+  }
+  
+  StartingNeighborhoodIterator<Input, State, MoveType, CostStructureType> end(const MoveType& start_move, const State &st) const
+  {
+    return NeighborhoodExplorerIteratorInterface<Input, State, MoveType, CostStructureType>::create_starting_neighborhood_iterator(*this, start_move, st, true);
+  }
 
   SampleNeighborhoodIterator<Input, State, MoveType, CostStructureType> sample_begin(const State &st, size_t samples) const
   {
@@ -219,6 +317,32 @@ public:
     tbb::spin_mutex mx_first_move;
     explored = 0;
     tbb::parallel_for_each(this->begin(st), this->end(st), [this, &st, &mx_first_move, &first_move, &first_move_found, AcceptMove, &weights, &explored](EvaluatedMove<MoveType, CostStructureType> &mv) {
+      mv.cost = this->DeltaCostFunctionComponents(st, mv.move, weights);
+      mv.is_valid = true;
+      tbb::spin_mutex::scoped_lock lock(mx_first_move);
+      explored++;
+      if (!first_move_found)
+      {
+        if (AcceptMove(mv.move, mv.cost))
+        {
+          first_move_found = true;
+          first_move = mv;
+          tbb::task::self().cancel_group_execution();
+        }
+      }
+    });
+    if (!first_move_found)
+      return EvaluatedMove<MoveType, CostStructureType>::empty;
+    return first_move;
+  }
+  
+  virtual EvaluatedMove<MoveType, CostStructureType> SelectFirst(const MoveType& start_move, const State &st, size_t &explored, const MoveAcceptor &AcceptMove, const std::vector<double> &weights = std::vector<double>(0)) const throw(EmptyNeighborhood)
+  {
+    EvaluatedMove<MoveType, CostStructureType> first_move;
+    bool first_move_found = false;
+    tbb::spin_mutex mx_first_move;
+    explored = 0;
+    tbb::parallel_for_each(this->begin(start_move, st), this->end(start_move, st), [this, &st, &mx_first_move, &first_move, &first_move_found, AcceptMove, &weights, &explored](EvaluatedMove<MoveType, CostStructureType> &mv) {
       mv.cost = this->DeltaCostFunctionComponents(st, mv.move, weights);
       mv.is_valid = true;
       tbb::spin_mutex::scoped_lock lock(mx_first_move);
