@@ -67,6 +67,8 @@ void MoveRunner<Input, State, Move, CostStructure>::UpdateBestState()
 
     // so that idle iterations are printed correctly
     this->iteration_of_best = this->iteration;
+    // FIXME: write out cost
+    std::cerr << this->best_state_cost << std::endl;
   }
 }
 
