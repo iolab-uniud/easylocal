@@ -311,14 +311,14 @@ namespace EasyLocal
       {
         auto dcc = delta_hard_cost_components[i];
         CFtype current_delta_cost = 0;
-        if (dcc->GetCostComponent().Weight() == 0)
+        if (dcc->GetCostComponent().Weight(in) == 0)
           continue;
         if (dcc->IsDeltaImplemented())
           current_delta_cost = delta_cost_function[sm.CostComponentIndex(dcc->cc)] = dcc->DeltaCost(in, st, mv);
         else
         {
           auto &cc = dcc->GetCostComponent();
-          current_delta_cost = delta_cost_function[sm.CostComponentIndex(cc)] = cc.Weight() * (cc.ComputeCost(in, *new_st) - cc.ComputeCost(in, st));
+          current_delta_cost = delta_cost_function[sm.CostComponentIndex(cc)] = cc.Weight(in) * (cc.ComputeCost(in, *new_st) - cc.ComputeCost(in, st));
         }
         delta_hard_cost += current_delta_cost;
         if (!weights.empty())
@@ -328,14 +328,14 @@ namespace EasyLocal
       {
         auto dcc = delta_soft_cost_components[i];
         CFtype current_delta_cost = 0;
-        if (dcc->GetCostComponent().Weight() == 0)
+        if (dcc->GetCostComponent().Weight(in) == 0)
           continue;
         if (dcc->IsDeltaImplemented())
           current_delta_cost = delta_cost_function[sm.CostComponentIndex(dcc->cc)] = dcc->DeltaCost(in, st, mv);
         else
         {
           auto &cc = dcc->GetCostComponent();
-          current_delta_cost = delta_cost_function[sm.CostComponentIndex(cc)] = cc.Weight() * (cc.ComputeCost(in, *new_st) - cc.ComputeCost(in, st));
+          current_delta_cost = delta_cost_function[sm.CostComponentIndex(cc)] = cc.Weight(in) * (cc.ComputeCost(in, *new_st) - cc.ComputeCost(in, st));
         }
         delta_soft_cost += current_delta_cost;
         if (!weights.empty())

@@ -60,7 +60,7 @@ namespace EasyLocal
        */
       CFtype Cost(const Input& in, const State &st) const
       {
-        return weight * ComputeCost(in, st);
+        return Weight(in) * ComputeCost(in, st);
       }
       
       /** Old-style method, without Input
@@ -82,12 +82,7 @@ namespace EasyLocal
       /** Gets the weight of this cost component.
        @return the weight of this cost component
        */
-      CFtype Weight() const { return weight; }
-      
-      /** Sets a new weight for this cost component.
-       @param w the new weight
-       */
-      void SetWeight(const CFtype &w) { weight = w; }
+      virtual CFtype Weight(const Input& in) const = 0;      
       
       /** Sets this cost component to be hard. */
       void SetHard() { is_hard = true; }
@@ -113,7 +108,7 @@ namespace EasyLocal
        @param is_hard a flag which tells if the cost component is hard or soft
        @param name name of the cost component (for debug reasons)
        */
-      CostComponent(const CFtype &weight, bool is_hard, std::string name);
+      CostComponent(bool is_hard, std::string name);
       
       /** Destructor. */
       virtual ~CostComponent()
@@ -124,29 +119,28 @@ namespace EasyLocal
     protected:
       
       [[deprecated("This is the old style easylocal interface, it is mandatory to upgrade to Input-less class and Input-aware methods")]]
-      CostComponent(const Input &in, const CFtype &weight, bool is_hard, std::string name) : DeprecationHandler<Input>(in), name(name), hash(std::hash<std::string>()(typeid(this).name() + name)), weight(weight), is_hard(is_hard)
+      CostComponent(const Input &in, const CFtype &weight, bool is_hard, std::string name) : DeprecationHandler<Input>(in), name(name), hash(std::hash<std::string>()(typeid(this).name() + name)), is_hard(is_hard)
       {}
-      
-      /** Weight of the cost component. */
-      CFtype weight;
       
       /** Flag that tells if the cost component is soft or hard */
       bool is_hard;
       
-    protected:
+    public:
+      
+      virtual std::unique_ptr<CostComponent> Clone() const = 0;
     };
     
     /** IMPLEMENTATION */
     
     template <class Input, class State, typename CFtype>
-    CostComponent<Input, State, CFtype>::CostComponent(const CFtype &weight, bool is_hard, std::string name)
-    : name(name), hash(std::hash<std::string>()(typeid(this).name() + name)), weight(weight), is_hard(is_hard)
+    CostComponent<Input, State, CFtype>::CostComponent(bool is_hard, std::string name)
+    : name(name), hash(std::hash<std::string>()(typeid(this).name() + name)), is_hard(is_hard)
     {}
     
     template <class Input, class State, typename CFtype>
     void CostComponent<Input, State, CFtype>::Print(std::ostream &os) const
     {
-      os << "Cost Component " << name << ": weight " << weight << (is_hard ? "*" : "") << std::endl;
+      os << "Cost Component " << name << ": " << (is_hard ? "*" : "") << std::endl;
     }
   } // namespace Core
 } // namespace EasyLocal
