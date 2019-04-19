@@ -115,7 +115,7 @@ namespace EasyLocal
                                                                      const State &st,
                                                                      const Move &mv) const
     {
-      return this->cc.Weight() * ComputeDeltaCost(in, st, mv);
+      return this->cc.Weight(in) * ComputeDeltaCost(in, st, mv);
     }
     
     template <class Input, class State, class Move, class CostStructure>

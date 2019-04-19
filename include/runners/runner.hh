@@ -146,13 +146,13 @@ namespace EasyLocal
        @deprecated
        */
       [[deprecated("This is the old style easylocal interface, it might still be used, however we advise to upgrade to Input-less class and Input-aware methods")]]
-      Runner(const Input & in, StateManager<Input, State, CostStructure> & sm, std::string name, std::string description);
+      Runner(const Input & in, const StateManager<Input, State, CostStructure> & sm, std::string name, std::string description);
       
       /** Constructor.
        @param sm a StateManager, as defined by the user
        @param name the name of the runner
        */
-      Runner(StateManager<Input, State, CostStructure> &sm, std::string name, std::string description);
+      Runner(const StateManager<Input, State, CostStructure> &sm, std::string name, std::string description);
       
       /** Copy Constructor.
        @param r a Runner to be copied
@@ -211,7 +211,7 @@ namespace EasyLocal
       bool no_acceptable_move_found;
       
       /** The state manager attached to this runner. */
-      StateManager<Input, State, CostStructure> &sm;
+      std::unique_ptr<StateManager<Input, State, CostStructure>> p_sm;
       
       // TODO: probably unique_ptr are more suitable for this case
       /** Current state of the search. */
@@ -270,18 +270,18 @@ namespace EasyLocal
     std::vector<Runner<Input, State, CostStructure> *> Runner<Input, State, CostStructure>::runners;
     
     template <class Input, class State, class CostStructure>
-    Runner<Input, State, CostStructure>::Runner(const Input &in, StateManager<Input, State, CostStructure> &sm, std::string name, std::string description)
+    Runner<Input, State, CostStructure>::Runner(const Input &in, const StateManager<Input, State, CostStructure> &sm, std::string name, std::string description)
     : // Parameters
-    CommandLineParameters::Parametrized(name, description), DeprecationHandler<Input>(in), name(name), no_acceptable_move_found(false), sm(sm), weights(0)
+    CommandLineParameters::Parametrized(name, description), DeprecationHandler<Input>(in), name(name), no_acceptable_move_found(false), p_sm(sm.Clone()), weights(0)
     {
       // Add to the list of all runners
       runners.push_back(this);
     }
     
     template <class Input, class State, class CostStructure>
-    Runner<Input, State, CostStructure>::Runner(StateManager<Input, State, CostStructure> &sm, std::string name, std::string description)
+    Runner<Input, State, CostStructure>::Runner(const StateManager<Input, State, CostStructure> &sm, std::string name, std::string description)
     : // Parameters
-    CommandLineParameters::Parametrized(name, description), name(name), no_acceptable_move_found(false), sm(sm), weights(0)
+    CommandLineParameters::Parametrized(name, description), name(name), no_acceptable_move_found(false), p_sm(sm.Clone()), weights(0)
     {
       // Add to the list of all runners
       runners.push_back(this);
@@ -290,7 +290,7 @@ namespace EasyLocal
     template <class Input, class State, class CostStructure>
     Runner<Input, State, CostStructure>::Runner(const Runner<Input, State, CostStructure>& r)
     : // Parameters
-    CommandLineParameters::Parametrized(r.name, "Copy of " + r.name), name(r.name), no_acceptable_move_found(r.no_acceptable_move_found), sm(r.sm), weights(r.weights)
+    CommandLineParameters::Parametrized(r.name, "Copy of " + r.name), name(r.name), no_acceptable_move_found(r.no_acceptable_move_found), p_sm(r.p_sm->Clone()), weights(r.weights)
     {}
     
     template <class Input, class State, class CostStructure>
@@ -362,7 +362,7 @@ namespace EasyLocal
       evaluations = 0;
       p_best_state = std::make_shared<State>(st);    // creates the best state object by copying the content of s
       p_current_state = std::make_shared<State>(st); // creates the current state object by copying the content of s
-      best_state_cost = current_state_cost = sm.CostFunctionComponents(in, st);
+      best_state_cost = current_state_cost = p_sm->CostFunctionComponents(in, st);
       InitializeRun(in);
     }
     
@@ -377,7 +377,7 @@ namespace EasyLocal
     template <class Input, class State, class CostStructure>
     bool Runner<Input, State, CostStructure>::LowerBoundReached(const Input& in) const
     {
-      return sm.LowerBoundReached(in, current_state_cost);
+      return p_sm->LowerBoundReached(in, current_state_cost);
     }
     
     template <class Input, class State, class CostStructure>

@@ -27,6 +27,9 @@ namespace EasyLocal
 #define HARD_WEIGHT_SET
 #endif
     
+    template <class Input, class State, class CostStructure>
+    class Runner;
+    
     /**
      @brief This component is responsible for all operations on the state which are
      independent of the neighborhood definition, such as generating a random state
@@ -47,6 +50,8 @@ namespace EasyLocal
       typedef _Input Input;
       typedef _State State;
       typedef _CostStructure CostStructure;
+      
+      friend class Runner<Input, State, CostStructure>;
       
       /**
        Old style random state generator
@@ -205,7 +210,7 @@ namespace EasyLocal
        Add a component to the cost component array.
        @param cc the cost component to be added
        */
-      void AddCostComponent(CostComponent<Input, State, CFtype> &cc);
+      void AddCostComponent(const CostComponent<Input, State, CFtype> &cc);
       
       size_t CostComponents() const
       {
@@ -266,6 +271,9 @@ namespace EasyLocal
       /** Name of the state manager */
       const std::string name;
       
+      /** Destructor. */
+      virtual ~StateManager() {}
+      
     protected:
       /**
        Build a StateManager object linked to the provided input.
@@ -282,14 +290,21 @@ namespace EasyLocal
       
       StateManager(std::string name);
       
-      /** Destructor. */
-      virtual ~StateManager() {}
+      StateManager(const StateManager& sm)
+      {
+        cost_component.resize(sm.cost_component.size());
+        for (size_t i = 0; i < sm.cost_component.size(); i++)
+          cost_component[i] = sm.cost_component[i]->Clone();
+        cost_component_index = sm.cost_component_index;
+      }
+      
+      virtual std::unique_ptr<StateManager<Input, State, CostStructure>> Clone() const = 0;
       
       /**
        The set of the cost components. Hard and soft ones are all in this @c vector.
        */
       // TODO: transform into a shared_ptr
-      std::vector<CostComponent<Input, State, CFtype> *> cost_component;
+      std::vector<std::unique_ptr<CostComponent<Input, State, CFtype>>> cost_component;
       /**
        The reverse map from cost component to its index.
        */
@@ -384,7 +399,7 @@ namespace EasyLocal
       {
         res["components"][cost_component[i]->name]["cost"] = cost[i];
         res["components"][cost_component[i]->name]["hard"] = cost_component[i]->IsHard();
-        res["components"][cost_component[i]->name]["weight"] = cost_component[i]->Weight();
+        res["components"][cost_component[i]->name]["weight"] = cost_component[i]->Weight(in);
       }
       res["total"] = cost.total;
       res["violations"] = cost.violations;
@@ -405,10 +420,10 @@ namespace EasyLocal
     }
     
     template <class Input, class State, class CostStructure>
-    void StateManager<Input, State, CostStructure>::AddCostComponent(CostComponent<Input, State, CFtype> &cc)
+    void StateManager<Input, State, CostStructure>::AddCostComponent(const CostComponent<Input, State, CFtype> &cc)
     {
       size_t index = cost_component.size();
-      cost_component.push_back(&cc);
+      cost_component.push_back(cc.Clone());
       cost_component_index[cc.hash] = index;
     }
     
