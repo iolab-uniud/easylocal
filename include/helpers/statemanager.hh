@@ -288,24 +288,13 @@ namespace EasyLocal
        @param name the name of the object
        */
       
-      StateManager(std::string name);
-      
-      StateManager(const StateManager& sm)
-      {
-        cost_component.resize(sm.cost_component.size());
-        for (size_t i = 0; i < sm.cost_component.size(); i++)
-          cost_component[i] = sm.cost_component[i]->Clone();
-        cost_component_index = sm.cost_component_index;
-      }
-      
-
-      virtual std::unique_ptr<StateManager<Input, State, CostStructure>> Clone() const = 0;
+      StateManager(std::string name);    
       
       /**
        The set of the cost components. Hard and soft ones are all in this @c vector.
        */
       // TODO: transform into a shared_ptr
-      std::vector<std::unique_ptr<CostComponent<Input, State, CFtype>>> cost_component;
+      std::vector<const CostComponent<Input, State, CFtype>*> cost_component;
       /**
        The reverse map from cost component to its index.
        */
@@ -424,7 +413,7 @@ namespace EasyLocal
     void StateManager<Input, State, CostStructure>::AddCostComponent(const CostComponent<Input, State, CFtype> &cc)
     {
       size_t index = cost_component.size();
-      cost_component.push_back(cc.Clone());
+      cost_component.push_back(&cc);
       cost_component_index[cc.hash] = index;
     }
     

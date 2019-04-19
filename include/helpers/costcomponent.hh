@@ -123,11 +123,7 @@ namespace EasyLocal
       {}
       
       /** Flag that tells if the cost component is soft or hard */
-      bool is_hard;
-      
-    public:
-      
-      virtual std::unique_ptr<CostComponent> Clone() const = 0;
+      bool is_hard;      
     };
     
     /** IMPLEMENTATION */
