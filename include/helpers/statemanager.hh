@@ -298,6 +298,7 @@ namespace EasyLocal
         cost_component_index = sm.cost_component_index;
       }
       
+
       virtual std::unique_ptr<StateManager<Input, State, CostStructure>> Clone() const = 0;
       
       /**
