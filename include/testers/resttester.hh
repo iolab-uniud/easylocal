@@ -821,7 +821,7 @@ namespace EasyLocal {
         return status;
       }
       const auto task = it->second;
-      status["instance"] = task->instance;
+      status["bundle"] = task->instance;
       return status;
     }
     
