@@ -69,6 +69,12 @@ namespace EasyLocal
       }
       void AddRunner(Core::Runner<Input, State, CostStructure> &r);
       virtual ~AbstractTester(){};
+      
+      void SetState(const State& st)
+      {
+        // FIXME: here the input of the passed state should be tested if it matches with the current p_in
+        this->SetTestState(st);
+      }
     protected:
       void AddRunners()
       {
@@ -99,7 +105,7 @@ namespace EasyLocal
       void SetTestState(const State &st)
       {
         // FIXME: here the input of the passed state should be tested if it matches with the current p_in
-        this->GetTestState() = std::make_shared<State>(st);
+        p_test_state = std::make_shared<State>(st);
       }
       
       const Input* p_in; /**< The current input managed by the tester. */
