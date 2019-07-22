@@ -22,9 +22,8 @@ namespace EasyLocal
      @todo The use of the global HARD_WEIGHT is a rough solution, waiting for an idea of a general mechanism for managing cost function weights.
      */
     
-#if !defined(HARD_WEIGHT_SET)
-    const int HARD_WEIGHT = 1000;
-#define HARD_WEIGHT_SET
+#if !defined(HARD_WEIGHT)
+#define HARD_WEIGHT 1000
 #endif
     
     template <class Input, class State, class CostStructure>
