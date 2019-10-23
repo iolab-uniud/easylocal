@@ -26,6 +26,8 @@ namespace EasyLocal
       template <typename T, typename std::enable_if<std::is_integral<T>::value>::type* = nullptr>
       static T Uniform(T a, T b)
       {
+        if (a > b)
+          throw std::logic_error("Trying to get a random number between " + std::to_string(a) + " and " + std::to_string(b));
         std::uniform_int_distribution<T> d(a, b);
         return d(GetInstance().g);
       }
@@ -37,6 +39,8 @@ namespace EasyLocal
       template <typename T, typename std::enable_if<std::is_floating_point<T>::value>::type* = nullptr>
       static T Uniform(T a, T b)
       {
+        if (a > b)
+          throw std::logic_error("Trying to get a random number between " + std::to_string(a) + " and " + std::to_string(b));
         std::uniform_real_distribution<T> d(a, b);
         return d(GetInstance().g);
       }
