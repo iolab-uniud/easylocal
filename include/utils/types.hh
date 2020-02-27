@@ -125,7 +125,7 @@ namespace EasyLocal
     inline std::vector<std::string> split(const std::string &input, const std::regex &regex)
     {
       // passing -1 as the submatch index parameter performs splitting
-      std::sregex_token_iterator first{input.begin(), input.end(), regex, -1}, last;
+      std::sregex_token_iterator first{begin(input), end(input), regex, -1}, last;
       return {first, last};
     }
     

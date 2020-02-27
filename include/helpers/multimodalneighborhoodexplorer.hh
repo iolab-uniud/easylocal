@@ -341,7 +341,7 @@ namespace EasyLocal
             const auto &this_move = std::get<0>(moves).get();
             const auto &next_move = std::get<1>(moves).get();
             auto it = related_funcs.find(std::type_index(typeid(std::function<bool(const decltype(this_move) &, const decltype(next_move) &)>)));
-            if (it == related_funcs.end())
+            if (it == end(related_funcs))
               return true;
             else
               return boost::any_cast<std::function<bool(const decltype(this_move) &, const decltype(next_move) &)>>(it->second)(this_move, next_move);

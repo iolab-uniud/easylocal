@@ -466,9 +466,9 @@ namespace EasyLocal {
           return false;
         
         bool all_equals = true;
-        auto top = this->operands.begin();
-        auto oop = co->operands.begin();
-        for (; top != this->operands.end() ; top++)
+        auto top = begin(this->operands);
+        auto oop = begin(co->operands);
+        for (; top != end(this->operands) ; top++)
         {
           if (!(*top)->equals_to(*oop))
           {
@@ -490,7 +490,7 @@ namespace EasyLocal {
           return;
         
         // Move operands to other's operands (generally faster because of how splice is implemented)
-        p_other->operands.splice(p_other->operands.end(), this->operands);
+        p_other->operands.splice(end(p_other->operands), this->operands);
         
         // Swap operands
         std::swap(this->operands, p_other->operands);
@@ -590,7 +590,7 @@ namespace EasyLocal {
          any const is added to the sum_of_conts (so that it ends up being
          a single constant in the simplified operation.
          */
-        for (auto it = this->operands.begin(); it != this->operands.end();)
+        for (auto it = begin(this->operands); it != end(this->operands);)
         {
           // Correct way to replace in list (doable because it's a doubly linked list)
           if(!((*it)->simplified()))
@@ -762,7 +762,7 @@ namespace EasyLocal {
       /** Constructor with vector of expressions. */
       Array(const std::vector<std::shared_ptr<Exp<T>>>& expressions) : Op<T>("Array")
       {
-        this->operands.insert(this->operands.end(), expressions.begin(), expressions.end());
+        this->operands.insert(end(this->operands), begin(expressions), end(expressions));
       }
       
       /** Virtual destructor. */
@@ -790,9 +790,9 @@ namespace EasyLocal {
        @param i index of the expression to retrieve
        @return the expression at index i
        */
-      inline std::shared_ptr<Exp<T>>& at(const T& i)
+      inline std::shared_ptr<Exp<T>>& at(const size_t& i)
       {
-        auto it = this->operands.begin();
+        auto it = begin(this->operands);
         std::advance(it, i);
         return *it;
       }
@@ -815,7 +815,7 @@ namespace EasyLocal {
        */
       inline const std::shared_ptr<Exp<T>>& operator[](const size_t& i) const
       {
-          auto it = this->operands.begin();
+          auto it = begin(this->operands);
           std::advance(it, i);
           return *it;
       }
@@ -865,7 +865,7 @@ namespace EasyLocal {
       /** Constructor with vector of expressions. */
       Matrix(size_t rows, size_t cols, const std::vector<std::shared_ptr<Exp<T>>>& expressions) : Op<T>("Matrix"), rows(rows), cols(cols)
       {
-        this->operands.insert(this->operands.end(), expressions.begin(), expressions.end());
+        this->operands.insert(end(this->operands), begin(expressions), end(expressions));
       }
       
       /** Virtual destructor. */
@@ -898,9 +898,9 @@ namespace EasyLocal {
         os << "]";
       }
       
-      inline std::shared_ptr<Exp<T>>& at(const T& i, const T& j)
+      inline std::shared_ptr<Exp<T>>& at(const size_t& i, const size_t& j)
       {
-        auto it = this->operands.begin();
+        auto it = begin(this->operands);
         std::advance(it, i * cols + j);
         return *it;
       }
@@ -957,7 +957,7 @@ namespace EasyLocal {
          if an operand is a product, steal its operands ensuring that
          every const is added to the prod_of_const, then erase it.
          */
-        for (auto it = this->operands.begin(); it != this->operands.end();)
+        for (auto it = begin(this->operands); it != end(this->operands);)
         {
           // Correct way to replace in list (doable because it's a doubly linked list)
           if(!((*it)->simplified()))
@@ -1055,7 +1055,7 @@ namespace EasyLocal {
         std::vector<T> values;
         
         // Scan operands, replace them with simplified version, add consts to values
-        for (auto it = this->operands.begin(); it != this->operands.end(); ++it)
+        for (auto it = begin(this->operands); it != end(this->operands); ++it)
         {
           // Correct way to replace element in list (doable because it's a doubly linked list)
           if(!((*it)->simplified()))
@@ -1123,7 +1123,7 @@ namespace EasyLocal {
         /** Scan operands, replace each operand with its simplified version,
          collect consts in values.
          */
-        for (auto it = this->operands.begin(); it != this->operands.end(); ++it)
+        for (auto it = begin(this->operands); it != end(this->operands); ++it)
         {
           // Correct way to replace element in list (doable because it's a doubly linked list)
           if(!((*it)->simplified()))
@@ -1193,7 +1193,7 @@ namespace EasyLocal {
          handle operands of type Min by merging their operands, handle
          constants separately.
          */
-        for (auto it = this->operands.begin(); it != this->operands.end();)
+        for (auto it = begin(this->operands); it != end(this->operands);)
         {
           // Correct way to replace element in list (doable because it's a doubly linked list)
           if(!((*it)->simplified()))
@@ -1321,7 +1321,7 @@ namespace EasyLocal {
          handle operands of type Max by merging their operands, handle
          constants separately.
          */
-        for (auto it = this->operands.begin(); it != this->operands.end();)
+        for (auto it = begin(this->operands); it != end(this->operands);)
         {
           // Correct way to replace element in list (doable because it's a doubly linked list)
           if(!((*it)->simplified()))
@@ -1444,12 +1444,12 @@ namespace EasyLocal {
       {
         bool all_equal = true;
         bool all_const = true;
-        const std::shared_ptr<Exp<T>>& first = *(this->operands.begin());
+        const std::shared_ptr<Exp<T>>& first = *begin(this->operands);
         
         /** Scan operands, replace each operand with its simplified version,
          normalize operands so they can be compared using the hash.
          */
-        for (auto it = this->operands.begin(); it != this->operands.end(); ++it)
+        for (auto it = begin(this->operands); it != end(this->operands); ++it)
         {
           // Correct way to replace element in list (doable because it's a doubly linked list)
           if (!((*it)->simplified()))
@@ -1524,12 +1524,12 @@ namespace EasyLocal {
       {
         bool all_equal = true;
         bool all_const = true;
-        const std::shared_ptr<Exp<T>>& first = *(this->operands.begin());
+        const std::shared_ptr<Exp<T>>& first = *begin(this->operands);
         
         /** Scan operands, replace each opeand with its simplified version,
          normalize operands so they can be compared using the hash.
          */
-        for (auto it = this->operands.begin(); it != this->operands.end(); ++it)
+        for (auto it = begin(this->operands); it != end(this->operands); ++it)
         {
           // Correct way to replace element in list (doable since it's a doubly linked list)
           if (!((*it)->simplified()))
@@ -1604,12 +1604,12 @@ namespace EasyLocal {
         bool all_const = true;
         T last = std::numeric_limits<T>::min();
         bool sorted = true;
-        const std::shared_ptr<Exp<T>>& first = *(this->operands.begin());
+        const std::shared_ptr<Exp<T>>& first = *begin(this->operands);
         
         /** Scan operands, replace each operand with its simplified version,
          normalize operands so they can be compared using the hash.
          */
-        for (auto it = this->operands.begin(); it != this->operands.end(); ++it)
+        for (auto it = begin(this->operands); it != end(this->operands); ++it)
         {
           // Correct way to replace element in list (doable because it's a doubly linked list)
           if (!((*it)->simplified()))
@@ -1694,12 +1694,12 @@ namespace EasyLocal {
         bool all_const = true;
         T last = std::numeric_limits<T>::min();
         bool sorted = true;
-        const std::shared_ptr<Exp<T>>& first = *(this->operands.begin());
+        const std::shared_ptr<Exp<T>>& first = *begin(this->operands);
         
         /** Scan operands, replace each operand with its simplified version,
          normalize operands so they can be compared using the hash.
          */
-        for (auto it = this->operands.begin(); it != this->operands.end(); ++it)
+        for (auto it = begin(this->operands); it != end(this->operands); ++it)
         {
           // Correct way to replace element in list (doable because it's a doubly linked list)
           if (!((*it)->simplified()))
@@ -1799,7 +1799,7 @@ namespace EasyLocal {
         /** Scan operands, replace each operand with its simplified version,
          normalize operands so they can be compared using the hash.
          */
-        for (auto it = this->operands.begin(); it != this->operands.end(); ++it)
+        for (auto it = begin(this->operands); it != end(this->operands); ++it)
         {
           // Correct way to replace element in list (doable because it's a doubly linked list)
           if (!((*it)->simplified()))
@@ -1859,7 +1859,7 @@ namespace EasyLocal {
       /** @copydoc Exp<T>::simplify() */
       virtual std::shared_ptr<Exp<T>> simplify()
       {
-        auto op = *this->operands.begin();
+        auto op = *begin(this->operands);
         
         if (!(op->simplified()))
         {
@@ -1915,7 +1915,7 @@ namespace EasyLocal {
       /** @copydoc Exp<T>::simplify() */
       virtual std::shared_ptr<Exp<T>> simplify()
       {
-        for (auto it = this->operands.begin(); it != this->operands.end(); ++it)
+        for (auto it = begin(this->operands); it != end(this->operands); ++it)
         {
           if(!((*it)->simplified()))
           {
@@ -1933,9 +1933,9 @@ namespace EasyLocal {
         if (this->operands.front()->type() == typeid(Const<T>))
         {
           if (static_cast<Const<T>*>(this->operands.front().get())->value)
-            return *std::next(this->operands.begin());
+            return *std::next(begin(this->operands.begin));
           else
-            return *std::next(std::next(this->operands.begin()));
+            return *std::next(std::next(begin(this->operands)));
         }
         
         this->_simplified = true;
@@ -1957,7 +1957,7 @@ namespace EasyLocal {
       virtual void Print(std::ostream& os) const
       {
         std::vector<std::shared_ptr<Exp<T>>> ops;
-        ops.insert(ops.begin(), this->operands.begin(), this->operands.end());
+        ops.insert(begin(ops), begin(this->operands), end(this->operands));
         os << "if ( " << ops[0] << " ) { " << ops[1] << " } else { " << ops[2] << " }";
       }
       

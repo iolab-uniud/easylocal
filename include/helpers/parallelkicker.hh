@@ -98,9 +98,9 @@ namespace EasyLocal
       {
         Kick<State, MoveType, CostStructureType> k = *this->sample_begin(length, in, st, 1);
         CostStructureType zero(0, 0, 0, std::vector<CFtype>(this->sm.CostComponents(), 0));
-        CostStructureType cost = tbb::parallel_reduce(tbb::blocked_range<typename Kick<State, MoveType, CostStructureType>::iterator>(k.begin(), k.end()), zero,
+        CostStructureType cost = tbb::parallel_reduce(tbb::blocked_range<typename Kick<State, MoveType, CostStructureType>::iterator>(begin(k), end(k)), zero,
                                                       [this, &in](const tbb::blocked_range<typename Kick<State, MoveType, CostStructureType>::iterator> &r, CostStructureType init) -> CostStructureType {
-                                                        for (typename Kick<State, MoveType, CostStructureType>::iterator it = r.begin(); it != r.end(); ++it)
+                                                        for (typename Kick<State, MoveType, CostStructureType>::iterator it = begin(r); it != end(r); ++it)
                                                         {
                                                           it->first.cost = this->ne.DeltaCostFunctionComponents(in, it->second, it->first.move);
                                                           it->first.is_valid = true;

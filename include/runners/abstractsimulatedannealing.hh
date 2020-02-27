@@ -108,7 +108,7 @@ namespace EasyLocal
           variance += (cost_values[i].total - mean) * (cost_values[i].total - mean) / samples;
         temperature = variance;
         /*From "An improved annealing scheme for the QAP. Connoly. EJOR 46 (1990) 93-100"
-         temperature = min(cost_values.begin(), cost_values.end()) + (max(cost_values.begin(), cost_values.end()) - min(cost_values.begin(), cost_values.end()))/10;*/
+         temperature = min(begin(cost_values), end(cost_values)) + (max(begin(cost_values), end(cost_values)) - min(begin(cost_values), end(cost_values)))/10;*/
       }
       
       // If the number of maximum accepted neighbors for each temperature is not set, default to all of them

@@ -364,7 +364,7 @@ namespace EasyLocal
       while (trials < tot_trials)
       {
         ne.RandomMove(in, st, mv);
-        if (frequency.find(mv) != frequency.end())
+        if (frequency.find(mv) != end(frequency))
         {
           frequency[mv]++;
         }
@@ -376,7 +376,7 @@ namespace EasyLocal
       }
       
       // Compute the standard deviation
-      for (it = frequency.begin(); it != frequency.end(); ++it)
+      for (it = begin(frequency); it != end(frequency); ++it)
       {
         dev += pow((double)(*it).second, 2);
       }
@@ -386,7 +386,7 @@ namespace EasyLocal
       double error = 0;
       
       os << "Outlier moves [move frequency]:" << std::endl;
-      for (it = frequency.begin(); it != frequency.end(); ++it)
+      for (it = begin(frequency); it != end(frequency); ++it)
       {
         if (fabs((*it).second - double(rounds)) > 3 * dev || (*it).second == 0)
         {

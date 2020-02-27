@@ -54,8 +54,8 @@ namespace EasyLocal {
       _needs_update(false)
       {
         // Copy values at level zero (maintain incumbent solution)
-        std::copy(other._value[0].begin(), other._value[0].end(), _value[0].begin());
-        std::fill(_valid[0].begin(), _valid[0].end(), true);
+        std::copy(begin(other._value[0]), end(other._value[0]), begin(_value[0]));
+        std::fill(begin(_valid[0]), end(_valid[0]), true);
       }
       
       ExpressionStore<T>& operator=(ExpressionStore<T> other) // (1) passed by value
@@ -133,7 +133,7 @@ namespace EasyLocal {
           _evaluated = false;
         
         // Invalidate all fields
-        std::fill(_valid[level].begin(), _valid[level].end(), false);
+        std::fill(begin(_valid[level]), end(_valid[level]), false);
       }
       
       /** Simulates the execution of a simple Change on a specific simulation level.
@@ -327,7 +327,7 @@ namespace EasyLocal {
       {
         // If expression is already there, return its index
         auto it = _compiled.find(exp);
-        if (it != _compiled.end())
+        if (it != end(_compiled))
           return it->second;
         
         // Register the hash in the list of compiled expressions
@@ -344,7 +344,7 @@ namespace EasyLocal {
        */
       inline bool contains(const std::shared_ptr<const Exp<T>>& exp) const
       {
-        return _compiled.find(exp) != _compiled.end();
+        return _compiled.find(exp) != end(_compiled);
       }
       
       /** Index of expression in ExpressionStore<T> 
@@ -356,7 +356,7 @@ namespace EasyLocal {
       {
         // Return directly index if expression is compiled already
         auto it = _compiled.find(e);
-        if (it != _compiled.end())
+        if (it != end(_compiled))
           return it->second;
         throw std::runtime_error("Expression is not compiled!");
       }
@@ -408,7 +408,7 @@ namespace EasyLocal {
             const std::shared_ptr<CExp<T>>& par = this->at(i);
 
             // If parent has not been enqueued already
-            if (processed.find(i) == processed.end())
+            if (processed.find(i) == end(processed))
             {
               queue.push(std::make_pair(par->depth, i));
               processed.insert(i);
@@ -435,7 +435,7 @@ namespace EasyLocal {
             for (size_t i : cur->parents)
             {
               const std::shared_ptr<CExp<T>>& par = this->at(i);
-              if (processed.find(i) == processed.end())
+              if (processed.find(i) == end(processed))
               {
                 queue.push(std::make_pair(par->depth, i));
                 processed.insert(i);

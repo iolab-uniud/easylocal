@@ -151,7 +151,7 @@ namespace EasyLocal
       Runner<Input, State, CostStructure>::Print(os);
       os << "{";
       size_t i = 0;
-      for (typename PriorityQueue::container_type::const_iterator it = (*tabu_list).begin(); it != (*tabu_list).end(); ++it)
+      for (typename PriorityQueue::container_type::const_iterator it = begin(*tabu_list); it != end(*tabu_list); ++it)
       {
         if (i > 0)
           os << ", ";

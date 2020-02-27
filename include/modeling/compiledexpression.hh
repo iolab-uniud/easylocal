@@ -238,7 +238,7 @@ namespace EasyLocal {
         std::unordered_set<size_t>& changed = this->es.changed_children(this->index, level);
 
         // If any of the children are zero, the product is zero and we're over
-        if (std::any_of(changed.begin(), changed.end(), [this, &level](const size_t& i)->bool { return this->es.get(i, level) == static_cast<T>(0); }))
+        if (std::any_of(begin(changed), end(changed), [this, &level](const size_t& i)->bool { return this->es.get(i, level) == static_cast<T>(0); }))
         {
           this->es.set(this->index, level, static_cast<T>(0));
           changed.clear();
@@ -605,7 +605,7 @@ namespace EasyLocal {
       virtual void compute(unsigned int level = 0) const
       {
         std::unordered_set<T> values;
-        for (auto it = this->children.begin(); it != this->children.end(); it++)
+        for (auto it = begin(this->children); it != end(this->children); it++)
           values.insert(this->es.get(*it, level));
         this->es.set(this->index, level, values.size());
       }

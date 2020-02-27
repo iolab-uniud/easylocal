@@ -170,7 +170,7 @@ namespace EasyLocal {
         void Remove(std::function<bool(const T& t)> pred)
         {
           std::lock_guard<std::mutex> lock(qmutex);
-          std::remove_if(queue.begin(), queue.end(), pred);
+          std::remove_if(begin(queue), end(queue), pred);
         }
         
       private:
@@ -192,7 +192,7 @@ namespace EasyLocal {
             return;
           auto auth = req.headers.find("Authorization");
           std::regex exp("([bB]earer\\s+)?" + authorization_key);
-          if (auth == req.headers.end() || !std::regex_match(auth->second, exp))
+          if (auth == end(req.headers) || !std::regex_match(auth->second, exp))
           {
             res = JSONResponse::make_error(401, "You are not authorized to access this service");
             res.end();
@@ -467,7 +467,7 @@ namespace EasyLocal {
         {
           std::chrono::system_clock::time_point now = std::chrono::system_clock::now();
           unsigned int removed = 0;
-          for (auto it = task_status.begin(); it != task_status.end(); )
+          for (auto it = begin(task_status); it != end(task_status); )
           {
             const auto& task = it->second;
             if (task->finished && (now - task->completed) > interval && task_status.size() - removed > MAX_LAST_TASKS)
@@ -542,7 +542,7 @@ namespace EasyLocal {
       .methods("GET"_method)([this](const crow::request& req, crow::response& res, std::string name) {
         json response;
         auto it = this->runner_map.find(name);
-        if (it == this->runner_map.end())
+        if (it == end(this->runner_map))
         {
           res = JSONResponse::make_error(404, "Runner `" + name + "` does not exist or is not active");
           res.end();
@@ -558,7 +558,7 @@ namespace EasyLocal {
       .methods("POST"_method)([this](const crow::request& req, crow::response& res, std::string name) {
         json response;
         auto it = this->runner_map.find(name);
-        if (it == this->runner_map.end())
+        if (it == end(this->runner_map))
         {
           res = JSONResponse::make_error(404, "Runner `" + name + "` does not exist or is not active");
           res.end();
@@ -570,7 +570,7 @@ namespace EasyLocal {
           if (req.url_params.get("parameters") != nullptr)
             parameters = json::parse(URLDecode(req.url_params.get("parameters")));
           auto ct = req.headers.find("Content-Type");
-          if (ct == req.headers.end() || ct->second != "application/json")
+          if (ct == end(req.headers) || ct->second != "application/json")
           {
             // TODO: handle content negotiation
             res = JSONResponse::make_error(415, "Wrong Content-Type, only application/json is possible");
@@ -593,7 +593,7 @@ namespace EasyLocal {
           }
           // conventionally an initial solution, if available, is passed into a "initial_solution" field in the payload
           std::unique_ptr<State> p_st;
-          if (payload.find("initial_solution") != payload.end() && !payload["initial_solution"].is_null())
+          if (payload.find("initial_solution") != end(payload) && !payload["initial_solution"].is_null())
           {
             try
             {
@@ -640,7 +640,7 @@ namespace EasyLocal {
       app.route_dynamic("/running/<string>")
       .methods("GET"_method)([this](std::string task_id) {
         json response = this->TaskStatus(task_id);
-        if (response.find("error") == response.end())
+        if (response.find("error") == end(response))
           return JSONResponse::make_response(200, response);
         else
           return JSONResponse::make_error(404, response["error"]);
@@ -659,7 +659,7 @@ namespace EasyLocal {
       .methods("GET"_method)([this](const crow::request& req, crow::response& res, std::string task_id) {
         bool force_partial = req.url_params.get("partial") ? std::string(req.url_params.get("partial")) == "true" : false;
         json response = this->Solution(task_id, force_partial);
-        if (response.find("error") == response.end())
+        if (response.find("error") == end(response))
           res = JSONResponse::make_response(200, response);
         else
           res = JSONResponse::make_error(404, response["error"]);
@@ -670,7 +670,7 @@ namespace EasyLocal {
       app.route_dynamic("/instance/<string>")
       .methods("GET"_method)([this](const crow::request& req, crow::response& res, std::string task_id) {
         json response = this->Instance(task_id);
-        if (response.find("error") == response.end())
+        if (response.find("error") == end(response))
           res = JSONResponse::make_response(200, response);
         else
           res = JSONResponse::make_error(404, response["error"]);
@@ -748,7 +748,7 @@ namespace EasyLocal {
       if (!p_st)
       {
         p_st = std::make_unique<State>(*p_in);
-        if (parameters.find("initial_state_strategy") != parameters.end() && parameters["initial_state_strategy"] == "greedy")
+        if (parameters.find("initial_state_strategy") != end(parameters) && parameters["initial_state_strategy"] == "greedy")
           sm.GreedyState(*p_in, *p_st);
         else
           sm.RandomState(*p_in, *p_st);
@@ -770,7 +770,7 @@ namespace EasyLocal {
       json status;
       status["task_id"] = task_id;
       auto it = task_status.find(task_id);
-      if (it == task_status.end()) // task_id does not exist
+      if (it == end(task_status)) // task_id does not exist
       {
         status["error"] = "The task `" + task_id + "` does not exist (or it has been removed because too old)";
         return status;
@@ -815,7 +815,7 @@ namespace EasyLocal {
       json status;
       status["task_id"] = task_id;
       auto it = task_status.find(task_id);
-      if (it == task_status.end()) // task_id does not exist
+      if (it == end(task_status)) // task_id does not exist
       {
         status["error"] = "The task `" + task_id + "` does not exist (or it has been removed because too old)";
         return status;
@@ -832,7 +832,7 @@ namespace EasyLocal {
       json status;
       status["task_id"] = task_id;
       auto it = task_status.find(task_id);
-      if (it == task_status.end()) // task_id does not exist
+      if (it == end(task_status)) // task_id does not exist
       {
         status["error"] = "The task `" + task_id + "` does not exist (or it has been removed because too old)";
         return status;
@@ -871,7 +871,7 @@ namespace EasyLocal {
       json status;
       status["task_id"] = task_id;
       auto it = task_status.find(task_id);
-      if (it == task_status.end()) // task_id does not exist
+      if (it == end(task_status)) // task_id does not exist
       {
         status["error"] = "The task `" + task_id + "` does not exist (or it has been removed because too old)";
         return status;

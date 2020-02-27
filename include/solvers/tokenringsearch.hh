@@ -144,12 +144,12 @@ namespace EasyLocal
     void TokenRingSearch<Input, Output, State, CostStructure>::RemoveRunner(const RunnerType &r)
     {
       typename std::vector<RunnerType *>::const_iterator it;
-      for (it = p_runners.begin(); it != p_runners.end(); ++it)
+      for (it = begin(p_runners); it != end(p_runners); ++it)
       {
         if (*it == &r)
           break;
       }
-      if (it == p_runners.end())
+      if (it == end(p_runners))
         throw std::logic_error("Runner " + r->name + " was not added to the Token Ring Search");
       p_runners.erase(it);
     }

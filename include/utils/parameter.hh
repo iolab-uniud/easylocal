@@ -553,7 +553,7 @@ namespace EasyLocal
         ~Parametrized()
         {
           std::list<Parametrized*> overall_parametrized = OverallParametrized();
-          for (auto it = overall_parametrized.begin(); it != overall_parametrized.end(); ++it)
+          for (auto it = begin(overall_parametrized); it != end(overall_parametrized); ++it)
           {
             if (*it == this)
             {
