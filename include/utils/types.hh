@@ -135,5 +135,37 @@ namespace EasyLocal
     {
       return typeid(T).name();
     }
+    
+    // Type trait to check if the istream operator>> exists for class T
+    template <typename T>
+    class has_istream_rshift
+    {
+      struct no {};
+      
+      template <typename T2>
+      static decltype(std::declval<std::istream&>() >> std::declval<T2>()) test(int);
+      
+      template <typename T2>
+      static no test(...);
+      
+    public:
+      enum { value = ! std::is_same<no, decltype(test<T>(0))>::value};
+    };
+    
+    // Type trait to check if the ostream operator<< exists for class T
+    template <typename T>
+    class has_ostream_lshift
+    {
+      struct no {};
+      
+      template <typename T2>
+      static decltype(std::declval<std::ostream&>() << std::declval<T2>()) test(int);
+      
+      template <typename T2>
+      static no test(...);
+      
+    public:
+      enum { value = ! std::is_same<no, decltype(test<T>(0))>::value};
+    };
   } // namespace Core
 } // namespace EasyLocal

@@ -14,10 +14,8 @@
 
 namespace EasyLocal
 {
-  
   namespace Core
-  {
-    
+  {        
     /** Exception raised when the neighborhood is empty. */
     class EmptyNeighborhood : public std::logic_error
     {
@@ -118,25 +116,34 @@ namespace EasyLocal
       
       /** Modifies the state passed as parameter by applying a given move upon it.
        @note To be implemented in the application (MustDef)
-       param in the input object
        @param in the input object
-       
        @param st the state to modify
        @param mv the move to be applied
        */
       virtual void MakeMove(const Input& in, State &st, const Move &mv) const = 0;
       
-      // It can be safely removed
-      //  /** Old-style method, without the Input object
-      //   @deprecated
-      //   */
-      //  [[deprecated("This is the old style easylocal interface, it is mandatory to upgrade to Input-less class and Input-aware methods")]]
-      //  CostStructure DeltaCostFunctionComponents(const State &st, const Move &mv, const std::vector<double> &weights = std::vector<double>(0)) const
-      //  {
-      //    throw std::runtime_error("You should update your NeighborhoodExplorer by adding a const Input& reference to the method");
-      //  }
+      /** Reads a move from an input stream and completes it with redundant information if needed.
+       @note To be implemented in the application (MustDef)
+       @param in the input object
+       @param st the state to modify
+       @param is the input stream from which the move specification has to be read
+       */
       
-      
+      virtual Move ReadMove(const Input& in, const State& st, std::istream& is) const
+      {
+        Move m;
+        if constexpr (has_istream_rshift<Move>::value)
+        {
+          // This is here only for backward compatibility
+          is >> m;
+        }
+        else
+        {
+          throw std::logic_error("The ReadMove() method should be overridden in your concrete neighborhood explorer class or, alternatively, you should provide an (old style) operator>> function for reading the move");
+        }
+        return m;
+      }
+                
       /** Computes the differences in the cost function obtained by applying the move @c mv to the state @c st and returns the unaggregated value as a vector of components.
        @param in the input object
        @param st the state to modify

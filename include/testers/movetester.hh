@@ -161,7 +161,7 @@ namespace EasyLocal
             break;
           case 4:
             os << "Input move: ";
-            std::cin >> em.move;
+            em.move = ne.ReadMove(in, st, std::cin);
             break;
           case 5:
             PrintAllNeighbors(in, st);
@@ -175,7 +175,7 @@ namespace EasyLocal
             break;
           case 8:
             os << "Input move: ";
-            std::cin >> em.move;
+            em.move = ne.ReadMove(in, st, std::cin);
             em.cost = ne.DeltaCostFunctionComponents(in, st, em.move);
             PrintMoveCosts(in, st, em);
             break;
