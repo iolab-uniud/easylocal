@@ -5,6 +5,7 @@
 #include <map>
 #include <cmath>
 #include <stdexcept>
+#include <sstream>
 
 #include "helpers/costcomponent.hh"
 #include "helpers/coststructure.hh"
@@ -173,11 +174,11 @@ namespace EasyLocal
       /** Returns a json object with all cost components.
        @param in the input object
        @param st the state to be evaluated
-       @param an optional vector of weights for the cost components.
+       @param include_explanation whether to include or not the detailed explanation of the single contribution to cost
+       @param weights an optional vector of weights for the cost components.
        @return all the components of the cost function in the given state embedded in a json object
        */      
-      json JSONCostFunctionComponents(const Input& in, const State &st, const std::vector<double> &weights = std::vector<double>(0)) const;
-
+      json CostFunctionComponentsToJSON(const Input& in, const State &st, bool include_explanation = false, const std::vector<double> &weights = std::vector<double>(0)) const;
       
       /**
        Check whether the lower bound of the cost function components has been reached. The
@@ -379,7 +380,7 @@ namespace EasyLocal
     }
     
     template <class Input, class State, class CostStructure>
-    json StateManager<Input, State, CostStructure>::JSONCostFunctionComponents(const Input& in, const State &st, const std::vector<double> &weights) const
+    json StateManager<Input, State, CostStructure>::CostFunctionComponentsToJSON(const Input& in, const State &st, bool include_explanation, const std::vector<double> &weights) const
     {
       json res;
       res["components"] = {};
@@ -389,6 +390,12 @@ namespace EasyLocal
         res["components"][cost_component[i]->name]["cost"] = cost[i];
         res["components"][cost_component[i]->name]["hard"] = cost_component[i]->IsHard();
         res["components"][cost_component[i]->name]["weight"] = cost_component[i]->Weight(in);
+        if (include_explanation)
+        {
+          std::ostringstream os;
+          cost_component[i]->PrintViolations(in, st, os);
+          res["components"][cost_component[i]->name]["explanation"] = os.str();
+        }
       }
       res["total"] = cost.total;
       res["violations"] = cost.violations;

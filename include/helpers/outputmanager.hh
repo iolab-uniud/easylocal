@@ -113,6 +113,18 @@ namespace EasyLocal
         return res;
       }
       
+      /** Reads a state from an input stream performing further checks.
+       @param in the input object
+       @param st the read state and checked
+       @param is an input stream from which the solution has to be read
+       */
+      virtual void ReadAndCheckSolution(const Input& in, State& st, std::istream& is) const
+      {
+        SP_Output out(in);
+        json res;
+        is >> out;
+        InputState(in, st, out);                  
+      }
       
     protected:
       

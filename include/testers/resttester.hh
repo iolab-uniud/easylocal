@@ -693,16 +693,71 @@ namespace EasyLocal {
         }
         response["statistics"] = std::list<json>();
         for (const auto& stat : statistics)
-        {
           response["statistics"].push_back(stat.to_json());
-        }
         res = JSONResponse::make_response(200, response);
 #else
         res = JSONResponse::make_error(501, "This endpoint is not supported by the hosting operating system");
 #endif
         res.end();
       });
-
+      
+      // This endpoint allow to make an evaluation of a solution from the solver
+      app.route_dynamic("/evaluate")
+      .methods("POST"_method)([this](const crow::request& req, crow::response& res) {
+        json response;
+        json parameters;
+        if (req.url_params.get("parameters") != nullptr)
+          parameters = json::parse(URLDecode(req.url_params.get("parameters")));
+        auto ct = req.headers.find("Content-Type");
+        if (ct == end(req.headers) || ct->second != "application/json")
+        {
+          // TODO: handle content negotiation
+          res = JSONResponse::make_error(415, "Wrong Content-Type, only application/json is possible");
+          res.end();
+          CROW_LOG_ERROR << "Wrong Content-Type";
+          return;
+        }
+        json payload = json::parse(req.body);
+        std::unique_ptr<Input> in;
+        try
+        {
+          in = std::make_unique<Input>(payload);
+        }
+        catch (std::exception& e)
+        {
+          res = JSONResponse::make_error(422, "The input file does not comply with the format expected by the system", e.what());
+          res.end();
+          CROW_LOG_ERROR << "Input file did not comply with the format expected by the system";
+          return;
+        }
+        // conventionally an initial solution, if available, is passed into a "initial_solution" field in the payload
+        std::unique_ptr<State> p_st;
+        if (payload.find("initial_solution") != end(payload) && !payload["initial_solution"].is_null())
+        {
+          try
+          {
+            p_st = std::make_unique<State>(*in);
+            std::istringstream is(payload["initial_solution"].dump());
+            om.ReadAndCheckSolution(*in, *p_st, is);
+          }
+          catch (std::exception & e)
+          {
+            res = JSONResponse::make_error(422, "The solution does not comply with the format expected by the system", e.what());
+            res.end();
+            CROW_LOG_ERROR << "The solution did not comply with the format expected by the system";
+            return;
+          }
+          response["cost"] = sm.CostFunctionComponentsToJSON(*in, *(p_st), true);
+          response["solution"] = om.ConvertToJSON(*in, *(p_st));
+          res = JSONResponse::make_response(200, response);
+          res.end();
+        }
+        else
+        {
+          res = JSONResponse::make_error(422, "No solution has been provided for evaluation");
+          res.end();
+        }
+      });
       
       app.port(port).multithreaded().run();
     }
@@ -783,7 +838,7 @@ namespace EasyLocal {
         status["submitted"] = getISOTimestamp(task->submitted);
         status["started"] = getISOTimestamp(task->started);
         status["completed"] = getISOTimestamp(task->completed);
-        status["cost"] = sm.JSONCostFunctionComponents(*(task->p_in), *(task->p_st));
+        status["cost"] = sm.CostFunctionComponentsToJSON(*(task->p_in), *(task->p_st));
         status["solution_url"] = "/solution/" + task->task_id;
         status["instance_url"] = "/instance/" + task->task_id;
       }
@@ -794,7 +849,7 @@ namespace EasyLocal {
         status["submitted"] = getISOTimestamp(task->submitted);
         status["started"] = getISOTimestamp(task->started);
         // FIXME: call best_state_cost instead, however it's not jsonized yet
-        status["cost"] = sm.JSONCostFunctionComponents(*(task->p_in), *(task->p_r->GetCurrentBestState()));
+        status["cost"] = sm.CostFunctionComponentsToJSON(*(task->p_in), *(task->p_r->GetCurrentBestState()));
         status["instance_url"] = "/instance/" + task->task_id;
 
       }
@@ -834,7 +889,7 @@ namespace EasyLocal {
       auto it = task_status.find(task_id);
       if (it == end(task_status)) // task_id does not exist
       {
-        status["error"] = "The task `" + task_id + "` does not exist (or it has been removed because too old)";
+        status["error"] = "The task `" + task_id + "` does not exist (or it has been removed because was too old)";
         return status;
       }
       const auto task = it->second;
@@ -858,7 +913,7 @@ namespace EasyLocal {
         status["running"] = true;
         status["submitted"] = getISOTimestamp(task->submitted);
         status["started"] = getISOTimestamp(task->started);
-        status["cost"] = sm.JSONCostFunctionComponents(*(task->p_in), *(p_st));
+        status["cost"] = sm.CostFunctionComponentsToJSON(*(task->p_in), *(p_st));
         status["solution"] = om.ConvertToJSON(*(task->p_in), *(p_st));
       }
       return status;
