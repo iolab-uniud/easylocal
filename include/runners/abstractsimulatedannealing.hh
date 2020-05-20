@@ -49,6 +49,7 @@ namespace EasyLocal
       // state of SA
       double temperature; /**< The current temperature. */
       size_t neighbors_sampled, neighbors_accepted;
+      int number_of_temperatures;
     };
     
     /*************************************************************************
@@ -117,6 +118,8 @@ namespace EasyLocal
       
       neighbors_sampled = 0;
       neighbors_accepted = 0;
+      
+      number_of_temperatures = 1;
     }
     
     /**
@@ -158,6 +161,7 @@ namespace EasyLocal
       if (neighbors_sampled >= max_neighbors_sampled || neighbors_accepted >= max_neighbors_accepted)
       {
         temperature *= cooling_rate;
+        number_of_temperatures++;
         neighbors_sampled = 0;
         neighbors_accepted = 0;
       }
