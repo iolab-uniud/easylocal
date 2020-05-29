@@ -74,6 +74,7 @@ namespace EasyLocal
       this->max_neighbors_sampled = static_cast<unsigned int>(this->max_evaluations / expected_number_of_temperatures);
       
       // If the ratio of accepted neighbors for each temperature is not set,
+      // FIXME: in future versions, the ratio should be definitely removed
       if (!neighbors_accepted_ratio.IsSet())
         this->max_neighbors_accepted = this->max_neighbors_sampled;
       else
