@@ -28,6 +28,7 @@ namespace EasyLocal
       void InitializeRun();
       bool StopCriterion();
       void CompleteIteration();
+      bool MaxEvaluationsExpired() const;
       
       // additional parameters
       Parameter<double> neighbors_accepted_ratio;
@@ -95,14 +96,28 @@ namespace EasyLocal
     void SimulatedAnnealingTimeBased<Input, State, Move, CostStructure>::CompleteIteration()
     {
       // it should be done before, because it might interfer with the standard SA mechanism
-      if (std::chrono::system_clock::now() > run_start + this->number_of_temperatures * time_cutoff)
+      while (std::chrono::system_clock::now() > run_start + this->number_of_temperatures * time_cutoff)
       {
         this->temperature *= this->cooling_rate;
         this->number_of_temperatures++;
         this->neighbors_sampled = 0;
         this->neighbors_accepted = 0;
       }
-      AbstractSimulatedAnnealing<Input, State, Move, CostStructure>::CompleteIteration();
+      // cut-off on accepted only
+      if (this->neighbors_accepted >= this->max_neighbors_accepted)
+      {
+        this->temperature *= this->cooling_rate;
+        this->number_of_temperatures++;
+        this->neighbors_sampled = 0;
+        this->neighbors_accepted = 0;
+      }
+    }
+    
+    template <class Input, class State, class Move, class CostStructure>
+    bool SimulatedAnnealingTimeBased<Input, State, Move, CostStructure>::MaxEvaluationsExpired() const
+    {
+      return false;
     }
   } // namespace Core
+
 } // namespace EasyLocal
