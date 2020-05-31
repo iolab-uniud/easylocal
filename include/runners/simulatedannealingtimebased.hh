@@ -35,10 +35,9 @@ namespace EasyLocal
       Parameter<double> temperature_range;
       Parameter<double> expected_min_temperature;
       unsigned int expected_number_of_temperatures;
-      //      double expected_min_temperature;
       Parameter<double> allowed_running_time;
-      std::chrono::time_point<std::chrono::system_clock> run_start;
-      std::chrono::milliseconds time_cutoff, run_duration;
+      std::chrono::time_point<std::chrono::system_clock> run_start, temperature_start_time;
+      std::chrono::milliseconds time_cutoff, run_duration,allowed_running_time_per_temperature;
     };
     
     /*************************************************************************
@@ -72,7 +71,7 @@ namespace EasyLocal
       expected_number_of_temperatures = static_cast<unsigned int>(ceil(-log(temperature_range) / log(this->cooling_rate)));
       
       this->max_neighbors_sampled = static_cast<unsigned int>(this->max_evaluations / expected_number_of_temperatures);
-      
+     
       // If the ratio of accepted neighbors for each temperature is not set,
       // FIXME: in future versions, the ratio should be definitely removed
       if (!neighbors_accepted_ratio.IsSet())
@@ -80,8 +79,10 @@ namespace EasyLocal
       else
         this->max_neighbors_accepted = static_cast<unsigned int>(this->max_neighbors_sampled * neighbors_accepted_ratio);
       run_duration = std::chrono::seconds(allowed_running_time);
+      allowed_running_time_per_temperature = run_duration / expected_number_of_temperatures;
       time_cutoff = run_duration / expected_number_of_temperatures;
       run_start = std::chrono::system_clock::now();
+	  temperature_start_time = run_start;
     }
     
     /**
@@ -96,21 +97,16 @@ namespace EasyLocal
     template <class Input, class State, class Move, class CostStructure>
     void SimulatedAnnealingTimeBased<Input, State, Move, CostStructure>::CompleteIteration()
     {
-      // it should be done before, because it might interfer with the standard SA mechanism
-      while (std::chrono::system_clock::now() > run_start + this->number_of_temperatures * time_cutoff)
+      // In this version of SA (TimeBased)temperature is decreased based on running
+      // time or cut-off (no cooling based on number of iterations)
+      if (std::chrono::system_clock::now() > temperature_start_time + allowed_running_time_per_temperature 
+	      || this->neighbors_accepted >= this->max_neighbors_accepted)
       {
         this->temperature *= this->cooling_rate;
         this->number_of_temperatures++;
         this->neighbors_sampled = 0;
         this->neighbors_accepted = 0;
-      }
-      // cut-off on accepted only
-      if (this->neighbors_accepted >= this->max_neighbors_accepted)
-      {
-        this->temperature *= this->cooling_rate;
-        this->number_of_temperatures++;
-        this->neighbors_sampled = 0;
-        this->neighbors_accepted = 0;
+   	    temperature_start_time = std::chrono::system_clock::now();
       }
     }
     
