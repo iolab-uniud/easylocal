@@ -27,6 +27,7 @@ namespace EasyLocal
       using AbstractLocalSearch<Input, Output, State, CostStructure>::AbstractLocalSearch;
       
       void SetRunner(Runner<Input, State, CostStructure> &r);
+      Runner<Input, State, CostStructure>* GetRunner() const { return p_runner; }
       void Print(std::ostream &os = std::cout) const;
       void ReadParameters(std::istream &is = std::cin, std::ostream &os = std::cout);
       virtual std::shared_ptr<State> GetCurrentState() const;
