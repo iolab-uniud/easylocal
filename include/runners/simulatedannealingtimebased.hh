@@ -28,7 +28,7 @@ namespace EasyLocal
       void InitializeRun();
       bool StopCriterion();
       void CompleteIteration();
-      bool MaxEvaluationsExpired() const;
+      bool MaxEvaluationsExpired() const override;
       
       // additional parameters
       Parameter<double> neighbors_accepted_ratio;
@@ -82,7 +82,7 @@ namespace EasyLocal
       allowed_running_time_per_temperature = run_duration / expected_number_of_temperatures;
       time_cutoff = run_duration / expected_number_of_temperatures;
       run_start = std::chrono::system_clock::now();
-	  temperature_start_time = run_start;
+      temperature_start_time = run_start;
     }
     
     /**
@@ -100,13 +100,22 @@ namespace EasyLocal
       // In this version of SA (TimeBased)temperature is decreased based on running
       // time or cut-off (no cooling based on number of iterations)
       if (std::chrono::system_clock::now() > temperature_start_time + allowed_running_time_per_temperature 
-	      || this->neighbors_accepted >= this->max_neighbors_accepted)
+          || this->neighbors_accepted >= this->max_neighbors_accepted
+          || this->neighbors_sampled >= this->max_neighbors_sampled)
       {
+//         char ch;
+//         if (this->neighbors_accepted >= this->max_neighbors_accepted) 
+//           ch = 'A';
+//         else if (this->neighbors_sampled >= this->max_neighbors_sampled) 
+//           ch = 'S';
+//         else
+//           ch = 'T';           
         this->temperature *= this->cooling_rate;
+//         cerr << ch << this->temperature << " ";
         this->number_of_temperatures++;
         this->neighbors_sampled = 0;
         this->neighbors_accepted = 0;
-   	    temperature_start_time = std::chrono::system_clock::now();
+        temperature_start_time = std::chrono::system_clock::now();
       }
     }
     

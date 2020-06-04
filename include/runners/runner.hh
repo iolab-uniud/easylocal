@@ -143,7 +143,7 @@ protected:
   virtual bool LowerBoundReached() const;
 
   /** Tells if the maximum number of cot function evaluations allowed have been exhausted. */
-  bool MaxEvaluationsExpired() const;
+  virtual bool MaxEvaluationsExpired() const;
 
   /** Encodes the criterion used to select the move at each step. */
   virtual void SelectMove() = 0;
