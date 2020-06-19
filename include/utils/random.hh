@@ -44,6 +44,15 @@ namespace EasyLocal
         std::uniform_real_distribution<T> d(a, b);
         return d(GetInstance().g);
       }
+        
+        /** Generates an uniform random boolean
+         */
+        template <typename T, typename std::enable_if<std::is_same<T, bool>::value>::type* = nullptr>
+        static T Uniform()
+        {
+          std::uniform_int_distribution<T> d(0, 1);
+          return static_cast<T>(d(GetInstance().g));
+        }
       
       /** Sets a new seed for the random engine. */
       static unsigned int SetSeed(unsigned int seed)
