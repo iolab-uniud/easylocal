@@ -50,7 +50,7 @@ public:
     template <typename T, typename std::enable_if<std::is_same<T, bool>::value>::type* = nullptr>
     static T Uniform()
     {
-        std::uniform_int_distribution<T> d(0, 1);
+        std::uniform_int_distribution<int> d(0, 1);
         return static_cast<T>(d(GetInstance().g));
     }
     
