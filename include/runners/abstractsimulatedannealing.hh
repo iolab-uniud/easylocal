@@ -33,6 +33,7 @@ namespace EasyLocal
     public:
       using MoveRunner<Input, State, Move, CostStructure>::MoveRunner;
       
+      double Temperature() const { return temperature; }
     protected:
       void InitializeRun();
       void UpdateIterationCounter();

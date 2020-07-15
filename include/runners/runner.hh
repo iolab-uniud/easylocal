@@ -97,6 +97,12 @@ public:
   {
     return iteration;
   }
+ 
+  /** Gets the index of the current iteration. */
+  unsigned long int Evaluations() const
+  {
+    return evaluations;
+  }
 
   /** Name of the runner. */
   const std::string name;
