@@ -35,14 +35,14 @@ namespace EasyLocal
       
       double Temperature() const { return temperature; }
     protected:
-      void InitializeRun();
+      void InitializeRun() override;
       void UpdateIterationCounter();
-      void SelectMove();
+      void SelectMove() override;
       bool AcceptableMove();
-      void CompleteMove();
-      void CompleteIteration();
+      void CompleteMove() override;
+      void CompleteIteration() override;
       // parameters
-      void InitializeParameters();
+      void InitializeParameters() override;
       Parameter<bool> compute_start_temperature;
       Parameter<double> start_temperature;
       Parameter<double> cooling_rate;

@@ -24,10 +24,10 @@ namespace EasyLocal
       using AbstractSimulatedAnnealing<Input, State, Move, CostStructure>::AbstractSimulatedAnnealing;
       
     protected:
-      void InitializeParameters();
-      void InitializeRun();
-      bool StopCriterion();
-      void CompleteIteration();
+      void InitializeParameters() override;
+      void InitializeRun() override;
+      bool StopCriterion() override;
+      void CompleteIteration() override;
       bool MaxEvaluationsExpired() const override;
       
       // additional parameters
