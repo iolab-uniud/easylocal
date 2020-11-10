@@ -13,11 +13,11 @@ namespace EasyLocal
      
      @ingroup Runners
      */
-    template <class Input, class State, class Move, class CostStructure = DefaultCostStructure<int>>
-    class SimulatedAnnealing : public AbstractSimulatedAnnealing<Input, State, Move, CostStructure>
+    template <class Input, class Solution, class Move, class CostStructure = DefaultCostStructure<int>>
+    class SimulatedAnnealing : public AbstractSimulatedAnnealing<Input, Solution, Move, CostStructure>
     {
     public:
-      using AbstractSimulatedAnnealing<Input, State, Move, CostStructure>::AbstractSimulatedAnnealing;
+      using AbstractSimulatedAnnealing<Input, Solution, Move, CostStructure>::AbstractSimulatedAnnealing;
       
       std::string StatusString() const;
       
@@ -33,10 +33,10 @@ namespace EasyLocal
      * Implementation
      *************************************************************************/
     
-    template <class Input, class State, class Move, class CostStructure>
-    void SimulatedAnnealing<Input, State, Move, CostStructure>::InitializeParameters()
+    template <class Input, class Solution, class Move, class CostStructure>
+    void SimulatedAnnealing<Input, Solution, Move, CostStructure>::InitializeParameters()
     {
-      AbstractSimulatedAnnealing<Input, State, Move, CostStructure>::InitializeParameters();
+      AbstractSimulatedAnnealing<Input, Solution, Move, CostStructure>::InitializeParameters();
       min_temperature("min_temperature", "Minimum temperature", this->parameters);
     }
     
@@ -44,21 +44,21 @@ namespace EasyLocal
      Initializes the run by invoking the companion superclass method, and
      setting the temperature to the start value.
      */
-    template <class Input, class State, class Move, class CostStructure>
-    void SimulatedAnnealing<Input, State, Move, CostStructure>::InitializeRun()
+    template <class Input, class Solution, class Move, class CostStructure>
+    void SimulatedAnnealing<Input, Solution, Move, CostStructure>::InitializeRun()
     {
       if (min_temperature <= 0.0)
       {
         throw IncorrectParameterValue(min_temperature, "should be greater than zero");
       }
-      AbstractSimulatedAnnealing<Input, State, Move, CostStructure>::InitializeRun();
+      AbstractSimulatedAnnealing<Input, Solution, Move, CostStructure>::InitializeRun();
     }
     
     /**
      The search stops when a low temperature has reached.
      */
-    template <class Input, class State, class Move, class CostStructure>
-    bool SimulatedAnnealing<Input, State, Move, CostStructure>::StopCriterion()
+    template <class Input, class Solution, class Move, class CostStructure>
+    bool SimulatedAnnealing<Input, Solution, Move, CostStructure>::StopCriterion()
     {
       return this->temperature <= min_temperature;
     }

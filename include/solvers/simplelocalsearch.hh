@@ -2,9 +2,8 @@
 
 #include <future>
 
-#include "helpers/statemanager.hh"
-#include "helpers/outputmanager.hh"
-#include "solvers/abstractlocalsearch.hh"
+#include "helpers/solutionmanager.hh"
+#include "solvers/localsearch.hh"
 #include "runners/runner.hh"
 
 namespace EasyLocal
@@ -17,20 +16,20 @@ namespace EasyLocal
      encapsulated in a runner.
      @ingroup Solvers
      */
-    template <class Input, class Output, class State, class CostStructure = DefaultCostStructure<int>>
+    template <class Input, class Solution, class CostStructure = DefaultCostStructure<int>>
     class SimpleLocalSearch
-    : public AbstractLocalSearch<Input, Output, State, CostStructure>
+    : public LocalSearch<Input, Solution, CostStructure>
     {
     public:
-      typedef Runner<Input, State, CostStructure> RunnerType;
+      typedef Runner<Input, Solution, CostStructure> RunnerType;
       
-      using AbstractLocalSearch<Input, Output, State, CostStructure>::AbstractLocalSearch;
+      using LocalSearch<Input, Solution, CostStructure>::LocalSearch;
       
-      void SetRunner(Runner<Input, State, CostStructure> &r);
-      Runner<Input, State, CostStructure>* GetRunner() const { return p_runner; }
+      void SetRunner(Runner<Input, Solution, CostStructure> &r);
+      Runner<Input, Solution, CostStructure>* GetRunner() const { return p_runner; }
       void Print(std::ostream &os = std::cout) const;
       void ReadParameters(std::istream &is = std::cin, std::ostream &os = std::cout);
-      virtual std::shared_ptr<State> GetCurrentState() const;
+      virtual std::shared_ptr<Solution> GetCurrentState() const;
       
     protected:
       void Go();
@@ -44,8 +43,8 @@ namespace EasyLocal
      * Implementation
      *************************************************************************/
     
-    template <class Input, class Output, class State, class CostStructure>
-    void SimpleLocalSearch<Input, Output, State, CostStructure>::ReadParameters(std::istream &is, std::ostream &os)
+    template <class Input, class Solution, class CostStructure>
+    void SimpleLocalSearch<Input, Solution, CostStructure>::ReadParameters(std::istream &is, std::ostream &os)
     {
       os << "Simple Local Search Solver: " << this->name << " parameters" << std::endl;
       os << "Runner: " << std::endl;
@@ -53,8 +52,8 @@ namespace EasyLocal
         this->p_runner->ReadParameters(is, os);
     }
     
-    template <class Input, class Output, class State, class CostStructure>
-    void SimpleLocalSearch<Input, Output, State, CostStructure>::Print(std::ostream &os) const
+    template <class Input, class Solution, class CostStructure>
+    void SimpleLocalSearch<Input, Solution, CostStructure>::Print(std::ostream &os) const
     {
       os << "Simple Local Search Solver: " << this->name << std::endl;
       if (this->p_runner)
@@ -69,14 +68,14 @@ namespace EasyLocal
      
      @param r the new runner to be used
      */
-    template <class Input, class Output, class State, class CostStructure>
-    void SimpleLocalSearch<Input, Output, State, CostStructure>::SetRunner(Runner<Input, State, CostStructure> &r)
+    template <class Input, class Solution, class CostStructure>
+    void SimpleLocalSearch<Input, Solution, CostStructure>::SetRunner(Runner<Input, Solution, CostStructure> &r)
     {
       this->p_runner = &r;
     }
     
-    template <class Input, class Output, class State, class CostStructure>
-    void SimpleLocalSearch<Input, Output, State, CostStructure>::Go()
+    template <class Input, class Solution, class CostStructure>
+    void SimpleLocalSearch<Input, Solution, CostStructure>::Go()
     {
       if (!p_runner)
         // FIXME: add a more specific exception behavior
@@ -87,21 +86,21 @@ namespace EasyLocal
       this->best_state_cost = this->current_state_cost;
     }
     
-    template <class Input, class Output, class State, class CostStructure>
-    void SimpleLocalSearch<Input, Output, State, CostStructure>::AtTimeoutExpired()
+    template <class Input, class Solution, class CostStructure>
+    void SimpleLocalSearch<Input, Solution, CostStructure>::AtTimeoutExpired()
     {
       p_runner->Interrupt();
     }
     
-    template <class Input, class Output, class State, class CostStructure>
-    void SimpleLocalSearch<Input, Output, State, CostStructure>::ResetTimeout()
+    template <class Input, class Solution, class CostStructure>
+    void SimpleLocalSearch<Input, Solution, CostStructure>::ResetTimeout()
     {
       Interruptible<int>::ResetTimeout();
       this->p_runner->ResetTimeout();
     }
     
-    template <class Input, class Output, class State, class CostStructure>
-    std::shared_ptr<State> SimpleLocalSearch<Input, Output, State, CostStructure>::GetCurrentState() const
+    template <class Input, class Solution, class CostStructure>
+    std::shared_ptr<Solution> SimpleLocalSearch<Input, Solution, CostStructure>::GetCurrentState() const
     {
       return this->p_runner->GetCurrentBestState();
     }

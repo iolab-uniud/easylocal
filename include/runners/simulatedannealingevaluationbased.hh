@@ -16,11 +16,11 @@ namespace EasyLocal
      @ingroup Runners
      */
     
-    template <class Input, class State, class Move, class CostStructure = DefaultCostStructure<int>>
-    class SimulatedAnnealingEvaluationBased : public AbstractSimulatedAnnealing<Input, State, Move, CostStructure>
+    template <class Input, class Solution, class Move, class CostStructure = DefaultCostStructure<int>>
+    class SimulatedAnnealingEvaluationBased : public AbstractSimulatedAnnealing<Input, Solution, Move, CostStructure>
     {
     public:
-      using AbstractSimulatedAnnealing<Input, State, Move, CostStructure>::AbstractSimulatedAnnealing;
+      using AbstractSimulatedAnnealing<Input, Solution, Move, CostStructure>::AbstractSimulatedAnnealing;
       
     protected:
       void InitializeParameters();
@@ -39,10 +39,10 @@ namespace EasyLocal
      * Implementation
      *************************************************************************/
     
-    template <class Input, class State, class Move, class CostStructure>
-    void SimulatedAnnealingEvaluationBased<Input, State, Move, CostStructure>::InitializeParameters()
+    template <class Input, class Solution, class Move, class CostStructure>
+    void SimulatedAnnealingEvaluationBased<Input, Solution, Move, CostStructure>::InitializeParameters()
     {
-      AbstractSimulatedAnnealing<Input, State, Move, CostStructure>::InitializeParameters();
+      AbstractSimulatedAnnealing<Input, Solution, Move, CostStructure>::InitializeParameters();
       neighbors_accepted_ratio("neighbors_accepted_ratio", "Ratio of neighbors accepted", this->parameters);
       temperature_range("temperature_range", "Temperature_range", this->parameters);
       expected_min_temperature("expected_min_temperature", "Expected minimum temperature", this->parameters);
@@ -53,10 +53,10 @@ namespace EasyLocal
      Initializes the run by invoking the companion superclass method, and
      setting the temperature to the start value.
      */
-    template <class Input, class State, class Move, class CostStructure>
-    void SimulatedAnnealingEvaluationBased<Input, State, Move, CostStructure>::InitializeRun()
+    template <class Input, class Solution, class Move, class CostStructure>
+    void SimulatedAnnealingEvaluationBased<Input, Solution, Move, CostStructure>::InitializeRun()
     {
-      AbstractSimulatedAnnealing<Input, State, Move, CostStructure>::InitializeRun();
+      AbstractSimulatedAnnealing<Input, Solution, Move, CostStructure>::InitializeRun();
       if (temperature_range.IsSet())
         expected_min_temperature = this->start_temperature / temperature_range;
       else
@@ -76,8 +76,8 @@ namespace EasyLocal
     /**
      The search stops when the number of evaluations is expired (already checked in the superclass MoveRunner)
      */
-    template <class Input, class State, class Move, class CostStructure>
-    bool SimulatedAnnealingEvaluationBased<Input, State, Move, CostStructure>::StopCriterion()
+    template <class Input, class Solution, class Move, class CostStructure>
+    bool SimulatedAnnealingEvaluationBased<Input, Solution, Move, CostStructure>::StopCriterion()
     {
       return false;
     }

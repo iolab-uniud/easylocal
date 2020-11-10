@@ -13,13 +13,13 @@ namespace EasyLocal
      that improves the cost function is selected.
      @ingroup Runners
      */
-    template <class Input, class State, class Move, class CostStructure = DefaultCostStructure<int>>
-    class FirstImprovementTabuSearch : public TabuSearch<Input, State, Move, CostStructure>
+    template <class Input, class Solution, class Move, class CostStructure = DefaultCostStructure<int>>
+    class FirstImprovementTabuSearch : public TabuSearch<Input, Solution, Move, CostStructure>
     {
     public:
       typedef typename CostStructure::CFtype CFtype;
       
-      using TabuSearch<Input, State, Move, CostStructure>::TabuSearch;
+      using TabuSearch<Input, Solution, Move, CostStructure>::TabuSearch;
       
     protected:
       void SelectMove();
@@ -33,8 +33,8 @@ namespace EasyLocal
      Selects always the best move that is non prohibited by the tabu list
      mechanism.
      */
-    template <class Input, class State, class Move, class CostStructure>
-    void FirstImprovementTabuSearch<Input, State, Move, CostStructure>::SelectMove()
+    template <class Input, class Solution, class Move, class CostStructure>
+    void FirstImprovementTabuSearch<Input, Solution, Move, CostStructure>::SelectMove()
     {
       CFtype aspiration = this->best_state_cost.total - this->current_state_cost.total;
       size_t explored;

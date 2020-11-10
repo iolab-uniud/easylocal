@@ -10,19 +10,19 @@ namespace Debug
      moves.
      @ingroup Testers
      */
-template <class Input, class Output, class State, class CostStructure = Core::DefaultCostStructure<int>>
+template <class Input, class Solution, class CostStructure = Core::DefaultCostStructure<int>>
 class ComponentTester
 {
 public:
   /** The method executes the interactions with the test menu on a given state.
        @param st the state */
-  virtual void RunMainMenu(State &st) = 0;
+  virtual void RunMainMenu(Solution&st) = 0;
   /** The method shall print the menu on a given state. */
   virtual void ShowMenu() = 0;
   /** The method shall execute the choice given by the variable choice,
        @return true if state has been changed
        @param st the state */
-  virtual bool ExecuteChoice(State &st) = 0;
+  virtual bool ExecuteChoice(Solution&st) = 0;
   const std::string name;
   virtual size_t Modality() const = 0;
 
@@ -44,8 +44,8 @@ protected:
      @param om a pointer to an output manager
      @param in a pointer to an input object (nullptr for default)
      */
-template <class Input, class Output, class State, class CostStructure>
-ComponentTester<Input, Output, State, CostStructure>::ComponentTester(std::string e_name)
-    : name(e_name) {}
+template <class Input, class Solution, class CostStructure>
+ComponentTester<Input, Solution, CostStructure>::ComponentTester(std::string name)
+    : name(name) {}
 } // namespace Debug
 } // namespace EasyLocal

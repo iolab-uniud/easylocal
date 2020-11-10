@@ -1,6 +1,6 @@
 #pragma once
 
-#include "easylocal/solvers/abstractlocalsearch.hh"
+#include "easylocal/solvers/LocalSearch.hh"
 
 namespace EasyLocal
 {
@@ -12,23 +12,23 @@ namespace Core
      implemented through a Kicker.
      @ingroup Solvers
      */
-template <class Input, class Output, class State, class CostStructure = DefaultCostStructure<int>>
+template <class Input, class Solution, class CostStructure = DefaultCostStructure<int>>
 class VariableNeighborhoodDescent
-    : public AbstractLocalSearch<Input, Output, State, CostStructure>
+    : public LocalSearch<Input, Solution, CostStructure>
 {
 public:
   VariableNeighborhoodDescent(const Input &in,
-                              StateManager<Input, State, CostStructure> &e_sm,
-                              OutputManager<Input, Output, State, CostStructure> &e_om,
+                              SolutionManager<Input, Solution, CostStructure> &e_sm,
+                              OutputManager<Input, Solution, CostStructure> &e_om,
                               unsigned int max_k,
                               std::string name);
 
-  // void SetKicker(Kicker<Input, State, CostStructure>& k);
+  // void SetKicker(Kicker<Input, Solution, CostStructure>& k);
 
 protected:
   void Go();
-  // Kicker<Input, State, CostStructure>* p_kicker; /**< A pointer to the managed kicker. */
-  virtual std::shared_ptr<State> GetCurrentState() const;
+  // Kicker<Input, Solution, CostStructure>* p_kicker; /**< A pointer to the managed kicker. */
+  virtual std::shared_ptr<Solution> GetCurrentState() const;
 
   unsigned int max_k;
 };
@@ -47,13 +47,13 @@ protected:
      @param in a pointer to an input object
      @param out a pointer to an output object
      */
-template <class Input, class Output, class State, class CostStructure>
-VariableNeighborhoodDescent<Input, Output, State, CostStructure>::VariableNeighborhoodDescent(const Input &in,
-                                                                                              StateManager<Input, State, CostStructure> &e_sm,
-                                                                                              OutputManager<Input, Output, State, CostStructure> &e_om,
+template <class Input, class Solution, class CostStructure>
+VariableNeighborhoodDescent<Input, Solution, CostStructure>::VariableNeighborhoodDescent(const Input &in,
+                                                                                              SolutionManager<Input, Solution, CostStructure> &e_sm,
+                                                                                              OutputManager<Input, Solution, CostStructure> &e_om,
                                                                                               unsigned int max_k,
                                                                                               std::string name)
-    : AbstractLocalSearch<Input, Output, State, CostStructure>(in, e_sm, e_om, name, "Variable Neighborhood Descent Solver")
+    : LocalSearch<Input, Solution, CostStructure>(in, e_sm, e_om, name, "Variable Neighborhood Descent Solver")
 {
   p_kicker = nullptr;
   this->max_k = max_k;
@@ -65,14 +65,14 @@ VariableNeighborhoodDescent<Input, Output, State, CostStructure>::VariableNeighb
      
      @param r the new runner to be used
      */
-template <class Input, class Output, class State, class CostStructure>
-void VariableNeighborhoodDescent<Input, Output, State, CostStructure>::SetKicker(Kicker<Input, State, CostStructure> &k)
+template <class Input, class Solution, class CostStructure>
+void VariableNeighborhoodDescent<Input, Solution, CostStructure>::SetKicker(Kicker<Input, Solution, CostStructure> &k)
 {
   this->p_kicker = &k;
 }
 
-template <class Input, class Output, class State, class CostStructure>
-void VariableNeighborhoodDescent<Input, Output, State, CostStructure>::Go()
+template <class Input, class Solution, class CostStructure>
+void VariableNeighborhoodDescent<Input, Solution, CostStructure>::Go()
 {
   unsigned int k = 1;
   CFtype kick_cost;

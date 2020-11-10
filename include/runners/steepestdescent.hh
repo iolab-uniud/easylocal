@@ -1,7 +1,7 @@
 #pragma once
 
 #include "runners/moverunner.hh"
-#include "helpers/statemanager.hh"
+#include "helpers/solutionmanager.hh"
 #include "helpers/neighborhoodexplorer.hh"
 #include "utils/types.hh"
 
@@ -18,11 +18,11 @@ namespace Core
      nearest local minimum of a given state.
      @ingroup Runners
      */
-template <class Input, class State, class Move, class CostStructure = DefaultCostStructure<int>>
-class SteepestDescent : public MoveRunner<Input, State, Move, CostStructure>
+template <class Input, class Solution, class Move, class CostStructure = DefaultCostStructure<int>>
+class SteepestDescent : public MoveRunner<Input, Solution, Move, CostStructure>
 {
 public:
-  using MoveRunner<Input, State, Move, CostStructure>::MoveRunner;
+  using MoveRunner<Input, Solution, Move, CostStructure>::MoveRunner;
 
 protected:
   void StoreMove();
@@ -37,8 +37,8 @@ protected:
 /**
      Selects always the best move in the neighborhood.
      */
-template <class Input, class State, class Move, class CostStructure>
-void SteepestDescent<Input, State, Move, CostStructure>::SelectMove()
+template <class Input, class Solution, class Move, class CostStructure>
+void SteepestDescent<Input, Solution, Move, CostStructure>::SelectMove()
 {
   size_t explored;
   EvaluatedMove<Move, CostStructure> em = this->ne.SelectBest(*this->p_current_state, explored, [](const Move &mv, const CostStructure &move_cost) {
@@ -52,8 +52,8 @@ void SteepestDescent<Input, State, Move, CostStructure>::SelectMove()
 /**
  The search is stopped when no (strictly) improving move has been found.
  */
-template <class Input, class State, class Move, class CostStructure>
-bool SteepestDescent<Input, State, Move, CostStructure>::StopCriterion()
+template <class Input, class Solution, class Move, class CostStructure>
+bool SteepestDescent<Input, Solution, Move, CostStructure>::StopCriterion()
 {
   return this->iteration > 0 && !this->current_move.is_valid;
 }

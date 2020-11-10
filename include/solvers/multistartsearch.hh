@@ -2,9 +2,9 @@
 
 #include <future>
 
-#include "easylocal/helpers/statemanager.hh"
+#include "easylocal/helpers/SolutionManager.hh"
 #include "easylocal/helpers/outputmanager.hh"
-#include "easylocal/solvers/abstractlocalsearch.hh"
+#include "easylocal/solvers/LocalSearch.hh"
 #include "easylocal/runners/runner.hh"
 
 namespace EasyLocal
@@ -17,14 +17,14 @@ namespace Core
      encapsulated in a runner.
      @ingroup Solvers
      */
-template <class Input, class Output, class State, class CostStructure = DefaultCostStructure<int>>
+template <class Input, class Solution, class CostStructure = DefaultCostStructure<int>>
 class MultiStartSearch
-    : public AbstractLocalSearch<Input, Output, State, CostStructure>
+    : public LocalSearch<Input, Solution, CostStructure>
 {
 public:
-  typedef Runner<Input, State, CostStructure> RunnerType;
+  typedef Runner<Input, Solution, CostStructure> RunnerType;
   MultiStartSearch(const Input &in,
-                   StateManager<Input, State, CostStructure> &e_sm,
+                   SolutionManager<Input, Solution, CostStructure> &e_sm,
                    OutputManager<Input, Output, State> &e_om,
                    std::string name);
   void AddRunner(RunnerType &r);
@@ -39,7 +39,7 @@ protected:
   void InitializeSolve() throw(ParameterNotSet, IncorrectParameterValue);
   void Go();
   void AtTimeoutExpired();
-  virtual std::shared_ptr<State> GetCurrentState() const;
+  virtual std::shared_ptr<Solution> GetCurrentState() const;
 
   std::vector<RunnerType *> p_runners; /**< pointers to the managed runner. */
   unsigned int current_runner;
@@ -63,27 +63,27 @@ protected:
      @param in a pointer to an input object
      @param out a pointer to an output object
      */
-template <class Input, class Output, class State, class CostStructure>
-MultiStartSearch<Input, Output, State, CostStructure>::MultiStartSearch(const Input &in,
-                                                                        StateManager<Input, State, CostStructure> &e_sm,
+template <class Input, class Solution, class CostStructure>
+MultiStartSearch<Input, Solution, CostStructure>::MultiStartSearch(const Input &in,
+                                                                        SolutionManager<Input, Solution, CostStructure> &e_sm,
                                                                         OutputManager<Input, Output, State> &e_om,
                                                                         std::string name)
-    : AbstractLocalSearch<Input, Output, State, CostStructure>(in, e_sm, e_om, name, "Multi Start Solver")
+    : LocalSearch<Input, Solution, CostStructure>(in, e_sm, e_om, name, "Multi Start Solver")
 {
 }
 
-template <class Input, class Output, class State, class CostStructure>
-void MultiStartSearch<Input, Output, State, CostStructure>::InitializeParameters()
+template <class Input, class Solution, class CostStructure>
+void MultiStartSearch<Input, Solution, CostStructure>::InitializeParameters()
 {
-  AbstractLocalSearch<Input, Output, State, CostStructure>::InitializeParameters();
+  LocalSearch<Input, Solution, CostStructure>::InitializeParameters();
   max_restarts("max_restarts", "Maximum number of restarts", this->parameters);
   max_idle_restarts("max_idle_restarts", "Maximum number of idle restarts", this->parameters);
   restart = 0;
   idle_restarts = 0;
 }
 
-template <class Input, class Output, class State, class CostStructure>
-void MultiStartSearch<Input, Output, State, CostStructure>::ReadParameters(std::istream &is, std::ostream &os)
+template <class Input, class Solution, class CostStructure>
+void MultiStartSearch<Input, Solution, CostStructure>::ReadParameters(std::istream &is, std::ostream &os)
 {
   os << "Multi Start Solver: " << this->name << " parameters" << std::endl;
   unsigned int i = 0;
@@ -94,8 +94,8 @@ void MultiStartSearch<Input, Output, State, CostStructure>::ReadParameters(std::
   }
 }
 
-template <class Input, class Output, class State, class CostStructure>
-void MultiStartSearch<Input, Output, State, CostStructure>::Print(std::ostream &os) const
+template <class Input, class Solution, class CostStructure>
+void MultiStartSearch<Input, Solution, CostStructure>::Print(std::ostream &os) const
 {
   os << "Multi Start Solver: " << this->name << std::endl;
   unsigned int i = 0;
@@ -114,8 +114,8 @@ void MultiStartSearch<Input, Output, State, CostStructure>::Print(std::ostream &
      
      @param r the new runner to be used
      */
-template <class Input, class Output, class State, class CostStructure>
-void MultiStartSearch<Input, Output, State, CostStructure>::AddRunner(RunnerType &r)
+template <class Input, class Solution, class CostStructure>
+void MultiStartSearch<Input, Solution, CostStructure>::AddRunner(RunnerType &r)
 {
   p_runners.push_back(&r);
 }
@@ -126,8 +126,8 @@ void MultiStartSearch<Input, Output, State, CostStructure>::AddRunner(RunnerType
      
      @param r the runner to remove
      */
-template <class Input, class Output, class State, class CostStructure>
-void MultiStartSearch<Input, Output, State, CostStructure>::RemoveRunner(const RunnerType &r)
+template <class Input, class Solution, class CostStructure>
+void MultiStartSearch<Input, Solution, CostStructure>::RemoveRunner(const RunnerType &r)
 {
   typename std::vector<RunnerType *>::const_iterator it;
   for (it = p_runners.begin(); it != p_runners.end(); ++it)
@@ -140,10 +140,10 @@ void MultiStartSearch<Input, Output, State, CostStructure>::RemoveRunner(const R
   p_runners.erase(it);
 }
 
-template <class Input, class Output, class State, class CostStructure>
-void MultiStartSearch<Input, Output, State, CostStructure>::InitializeSolve() throw(ParameterNotSet, IncorrectParameterValue)
+template <class Input, class Solution, class CostStructure>
+void MultiStartSearch<Input, Solution, CostStructure>::InitializeSolve() throw(ParameterNotSet, IncorrectParameterValue)
 {
-  AbstractLocalSearch<Input, Output, State, CostStructure>::InitializeSolve();
+  LocalSearch<Input, Solution, CostStructure>::InitializeSolve();
   if (max_idle_restarts.IsSet() && max_idle_restarts == 0)
     throw IncorrectParameterValue(max_idle_restarts, "It should be greater than zero");
   if (max_restarts.IsSet() && max_restarts == 0)
@@ -155,8 +155,8 @@ void MultiStartSearch<Input, Output, State, CostStructure>::InitializeSolve() th
   idle_restarts = 0;
 }
 
-template <class Input, class Output, class State, class CostStructure>
-void MultiStartSearch<Input, Output, State, CostStructure>::Go()
+template <class Input, class Solution, class CostStructure>
+void MultiStartSearch<Input, Solution, CostStructure>::Go()
 {
   current_runner = 0;
   bool idle = true;
@@ -185,14 +185,14 @@ void MultiStartSearch<Input, Output, State, CostStructure>::Go()
   } while (idle_restarts < max_idle_restarts && restart < max_restarts);
 }
 
-template <class Input, class Output, class State, class CostStructure>
-void MultiStartSearch<Input, Output, State, CostStructure>::AtTimeoutExpired()
+template <class Input, class Solution, class CostStructure>
+void MultiStartSearch<Input, Solution, CostStructure>::AtTimeoutExpired()
 {
   p_runners[current_runner]->Interrupt();
 }
 
-template <class Input, class Output, class State, class CostStructure>
-void MultiStartSearch<Input, Output, State, CostStructure>::GetCurrentState() const
+template <class Input, class Solution, class CostStructure>
+void MultiStartSearch<Input, Solution, CostStructure>::GetCurrentState() const
 {
   return p_runners[current_runner]->GetCurrentBestState();
 }

@@ -5,7 +5,7 @@
 #include <algorithm>
 
 #include "runners/moverunner.hh"
-#include "helpers/statemanager.hh"
+#include "helpers/solutionmanager.hh"
 #include "helpers/neighborhoodexplorer.hh"
 
 namespace EasyLocal
@@ -27,11 +27,11 @@ namespace EasyLocal
      
      @ingroup Runners
      */
-    template <class Input, class State, class Move, class CostStructure = DefaultCostStructure<int>>
-    class AbstractSimulatedAnnealing : public MoveRunner<Input, State, Move, CostStructure>
+    template <class Input, class Solution, class Move, class CostStructure = DefaultCostStructure<int>>
+    class AbstractSimulatedAnnealing : public MoveRunner<Input, Solution, Move, CostStructure>
     {
     public:
-      using MoveRunner<Input, State, Move, CostStructure>::MoveRunner;
+      using MoveRunner<Input, Solution, Move, CostStructure>::MoveRunner;
       
       double Temperature() const { return temperature; }
     protected:
@@ -57,10 +57,10 @@ namespace EasyLocal
      * Implementation
      *************************************************************************/
     
-    template <class Input, class State, class Move, class CostStructure>
-    void AbstractSimulatedAnnealing<Input, State, Move, CostStructure>::InitializeParameters()
+    template <class Input, class Solution, class Move, class CostStructure>
+    void AbstractSimulatedAnnealing<Input, Solution, Move, CostStructure>::InitializeParameters()
     {
-      MoveRunner<Input, State, Move, CostStructure>::InitializeParameters();
+      MoveRunner<Input, Solution, Move, CostStructure>::InitializeParameters();
       compute_start_temperature("compute_start_temperature", "Should the runner compute the initial temperature?", this->parameters);
       start_temperature("start_temperature", "Starting temperature", this->parameters);
       cooling_rate("cooling_rate", "Cooling rate", this->parameters);
@@ -75,10 +75,10 @@ namespace EasyLocal
      setting the temperature to the start value.
      */
     // FIXME
-    template <class Input, class State, class Move, class CostStructure>
-    void AbstractSimulatedAnnealing<Input, State, Move, CostStructure>::InitializeRun()
+    template <class Input, class Solution, class Move, class CostStructure>
+    void AbstractSimulatedAnnealing<Input, Solution, Move, CostStructure>::InitializeRun()
     {
-      MoveRunner<Input, State, Move, CostStructure>::InitializeRun();
+      MoveRunner<Input, Solution, Move, CostStructure>::InitializeRun();
       
       if (cooling_rate <= 0.0 || cooling_rate >= 1.0)
         throw IncorrectParameterValue(cooling_rate, "should be a value in the interval ]0, 1[");
@@ -126,8 +126,8 @@ namespace EasyLocal
     /**
      A move is randomly picked.
      */
-    template <class Input, class State, class Move, class CostStructure>
-    void AbstractSimulatedAnnealing<Input, State, Move, CostStructure>::SelectMove()
+    template <class Input, class Solution, class Move, class CostStructure>
+    void AbstractSimulatedAnnealing<Input, Solution, Move, CostStructure>::SelectMove()
     {
       // TODO: it should become a parameter, the number of neighbors drawn at each iteration (possibly evaluated in parallel)
       size_t sampled;
@@ -145,8 +145,8 @@ namespace EasyLocal
     /**
      A move is randomly picked.
      */
-    template <class Input, class State, class Move, class CostStructure>
-    void AbstractSimulatedAnnealing<Input, State, Move, CostStructure>::CompleteMove()
+    template <class Input, class Solution, class Move, class CostStructure>
+    void AbstractSimulatedAnnealing<Input, Solution, Move, CostStructure>::CompleteMove()
     {
       neighbors_accepted++;
     }
@@ -155,10 +155,10 @@ namespace EasyLocal
      At regular steps, the temperature is decreased
      multiplying it by a cooling rate.
      */
-    template <class Input, class State, class Move, class CostStructure>
-    void AbstractSimulatedAnnealing<Input, State, Move, CostStructure>::CompleteIteration()
+    template <class Input, class Solution, class Move, class CostStructure>
+    void AbstractSimulatedAnnealing<Input, Solution, Move, CostStructure>::CompleteIteration()
     {
-      Runner<Input, State, CostStructure>::CompleteIteration();
+      Runner<Input, Solution, CostStructure>::CompleteIteration();
       if (neighbors_sampled >= max_neighbors_sampled || neighbors_accepted >= max_neighbors_accepted)
       {
         temperature *= cooling_rate;

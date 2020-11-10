@@ -7,7 +7,7 @@
 #include <atomic>
 #include <typeinfo>
 
-#include "helpers/statemanager.hh"
+#include "helpers/solutionmanager.hh"
 #include "helpers/neighborhoodexplorer.hh"
 #include "utils/interruptible.hh"
 #include "utils/parameter.hh"
@@ -20,7 +20,7 @@ namespace Debug
 {
 
 /** Forward declaration of tester. */
-template <class Input, class State, class CostStructure>
+template <class Input, class Solution, class CostStructure>
 class AbstractTester;
 } // namespace Debug
 
@@ -32,14 +32,14 @@ namespace Core
      Solver::AddRunner() in order to be called correctly.
      @ingroup Helpers
      */
-template <class Input, class State, class CostStructure = DefaultCostStructure<int>>
-  class Runner : public Interruptible<CostStructure, State &>, public CommandLineParameters::Parametrized
+template <class Input, class Solution, class CostStructure = DefaultCostStructure<int>>
+  class Runner : public Interruptible<CostStructure, Solution&>, public CommandLineParameters::Parametrized
 {
-  friend class Debug::AbstractTester<Input, State, CostStructure>;
+  friend class Debug::AbstractTester<Input, Solution, CostStructure>;
 
 public:
   typedef Input InputType;
-  typedef State StateType;
+  typedef Solution SolutionType;
   typedef typename CostStructure::CFtype CFtype;
   typedef CostStructure CostStructureType;
 
@@ -49,7 +49,7 @@ public:
        @throw ParameterNotSet if one of the parameters needed by the runner (or other components) hasn't been set
        @throw IncorrectParameterValue if one of the parameters has an incorrect value
        */
-  CostStructure Go(State &s);
+  CostStructure Go(Solution&s);
 
   /** Performs a given number of steps of the search method on the passed state.
        @param s state to start with and to modify
@@ -58,7 +58,7 @@ public:
        @throw ParameterNotSet if one of the parameters needed by the runner (or other components) hasn't been set
        @throw IncorrectParameterValue if one of the parameters has an incorrect value
        */
-  CostStructure Step(State &s, unsigned int n = 1);
+  CostStructure Step(Solution&s, unsigned int n = 1);
 
   /** Register its parameters */
   virtual void InitializeParameters();
@@ -114,18 +114,18 @@ public:
   virtual size_t Modality() const = 0;
 
   /** List of all runners that have been instantiated so far. For autoloading. */
-  static std::vector<Runner<Input, State, CostStructure> *> runners;
+  static std::vector<Runner<Input, Solution, CostStructure> *> runners;
 
-  virtual std::shared_ptr<State> GetCurrentBestState() const;
+  virtual std::shared_ptr<Solution> GetCurrentBestState() const;
 
 protected:
   /** Constructor.
        @param i a reference to the input
-       @param sm a StateManager, as defined by the user
+       @param sm a SolutionManager, as defined by the user
        @param name name of the runner
        @param desc description of the runner
        */
-  Runner(const Input &, StateManager<Input, State, CostStructure> &, std::string);
+  Runner(const Input &, SolutionManager<Input, Solution, CostStructure> &, std::string);
 
   /** Actions and checks to be perfomed at the beginning of the run. Redefinition intended.
        @throw ParameterNotSet if one of the parameters needed by the runner (or other components) hasn't been set
@@ -167,9 +167,9 @@ protected:
   virtual void CompleteMove(){};
 
   /** Implements Interruptible. */
-  virtual std::function<CostStructure(State &)> MakeFunction()
+  virtual std::function<CostStructure(Solution&)> MakeFunction()
   {
-    return [this](State &s) -> CostStructure { return this->Go(s); };
+    return [this](Solution&s) -> CostStructure { return this->Go(s); };
   }
 
   /** No acceptable move has been found in the current iteration. */
@@ -179,10 +179,10 @@ protected:
   const Input &in;
 
   /** The state manager attached to this runner. */
-  StateManager<Input, State, CostStructure> &sm;
+  SolutionManager<Input, Solution, CostStructure> &sm;
 
   /** Current state of the search. */
-  std::shared_ptr<State> p_current_state,
+  std::shared_ptr<Solution> p_current_state,
       /** Best state found so far. */
       p_best_state;
 
@@ -215,21 +215,21 @@ private:
   virtual void UpdateBestState() = 0;
 
   /** Actions that must be done at the start of the search, and which cannot be redefined by subclasses. */
-  void InitializeRun(State &);
+  void InitializeRun(Solution&);
 
   /** Actions that must be done at the end of the search. */
-  CostStructure TerminateRun(State &);
+  CostStructure TerminateRun(Solution&);
 };
 
 /*************************************************************************
      * Implementation
      *************************************************************************/
 
-template <class Input, class State, class CostStructure>
-std::vector<Runner<Input, State, CostStructure> *> Runner<Input, State, CostStructure>::runners;
+template <class Input, class Solution, class CostStructure>
+std::vector<Runner<Input, Solution, CostStructure> *> Runner<Input, Solution, CostStructure>::runners;
 
-template <class Input, class State, class CostStructure>
-Runner<Input, State, CostStructure>::Runner(const Input &in, StateManager<Input, State, CostStructure> &sm, std::string name)
+template <class Input, class Solution, class CostStructure>
+Runner<Input, Solution, CostStructure>::Runner(const Input &in, SolutionManager<Input, Solution, CostStructure> &sm, std::string name)
     : // Parameters
   CommandLineParameters::Parametrized(name, typeid(this).name()), name(name), no_acceptable_move_found(false), in(in), sm(sm), weights(0)
 {
@@ -237,16 +237,16 @@ Runner<Input, State, CostStructure>::Runner(const Input &in, StateManager<Input,
   runners.push_back(this);
 }
 
-template <class Input, class State, class CostStructure>
-void Runner<Input, State, CostStructure>::InitializeParameters()
+template <class Input, class Solution, class CostStructure>
+void Runner<Input, Solution, CostStructure>::InitializeParameters()
 {
   max_evaluations("max_evaluations", "Maximum total number of cost function evaluations allowed", this->parameters);
   // This parameter has a default value
   max_evaluations = std::numeric_limits<unsigned long int>::max();
 }
 
-template <class Input, class State, class CostStructure>
-CostStructure Runner<Input, State, CostStructure>::Go(State &s)
+template <class Input, class Solution, class CostStructure>
+CostStructure Runner<Input, Solution, CostStructure>::Go(Solution&s)
 {
   InitializeRun(s);
   while (!MaxEvaluationsExpired() && !StopCriterion() && !LowerBoundReached() && !this->TimeoutExpired())
@@ -276,8 +276,8 @@ CostStructure Runner<Input, State, CostStructure>::Go(State &s)
 /**
      Prepare the iteration (e.g. updates the counter that tracks the number of iterations elapsed)
      */
-template <class Input, class State, class CostStructure>
-void Runner<Input, State, CostStructure>::PrepareIteration()
+template <class Input, class Solution, class CostStructure>
+void Runner<Input, Solution, CostStructure>::PrepareIteration()
 {
   no_acceptable_move_found = false;
   iteration++;
@@ -286,62 +286,62 @@ void Runner<Input, State, CostStructure>::PrepareIteration()
 /**
      Complete the iteration (e.g. decreate the temperature for Simulated Annealing)
      */
-template <class Input, class State, class CostStructure>
-void Runner<Input, State, CostStructure>::CompleteIteration()
+template <class Input, class Solution, class CostStructure>
+void Runner<Input, Solution, CostStructure>::CompleteIteration()
 {
 }
 
-template <class Input, class State, class CostStructure>
-void Runner<Input, State, CostStructure>::InitializeRun(State &s)
+template <class Input, class Solution, class CostStructure>
+void Runner<Input, Solution, CostStructure>::InitializeRun(Solution&s)
 {
   iteration = 0;
   iteration_of_best = 0;
   evaluations = 0;
-  p_best_state = std::make_shared<State>(s);    // creates the best state object by copying the content of s
-  p_current_state = std::make_shared<State>(s); // creates the current state object by copying the content of s
+  p_best_state = std::make_shared<Solution>(s);    // creates the best state object by copying the content of s
+  p_current_state = std::make_shared<Solution>(s); // creates the current state object by copying the content of s
   best_state_cost = current_state_cost = sm.CostFunctionComponents(s);
   InitializeRun();
 }
 
-template <class Input, class State, class CostStructure>
-CostStructure Runner<Input, State, CostStructure>::TerminateRun(State &s)
+template <class Input, class Solution, class CostStructure>
+CostStructure Runner<Input, Solution, CostStructure>::TerminateRun(Solution&s)
 {
   s = *p_best_state;
   TerminateRun();
   return best_state_cost;
 }
 
-template <class Input, class State, class CostStructure>
-bool Runner<Input, State, CostStructure>::LowerBoundReached() const
+template <class Input, class Solution, class CostStructure>
+bool Runner<Input, Solution, CostStructure>::LowerBoundReached() const
 {
   return sm.LowerBoundReached(current_state_cost);
 }
 
-template <class Input, class State, class CostStructure>
-bool Runner<Input, State, CostStructure>::MaxEvaluationsExpired() const
+template <class Input, class Solution, class CostStructure>
+bool Runner<Input, Solution, CostStructure>::MaxEvaluationsExpired() const
 {
   return evaluations >= max_evaluations;
 }
 
-template <class Input, class State, class CostStructure>
-void Runner<Input, State, CostStructure>::ReadParameters(std::istream &is, std::ostream &os)
+template <class Input, class Solution, class CostStructure>
+void Runner<Input, Solution, CostStructure>::ReadParameters(std::istream &is, std::ostream &os)
 {
   os << this->name << " -- INPUT PARAMETERS" << std::endl;
   CommandLineParameters::Parametrized::ReadParameters(is, os);
 }
 
-template <class Input, class State, class CostStructure>
-void Runner<Input, State, CostStructure>::Print(std::ostream &os) const
+template <class Input, class Solution, class CostStructure>
+void Runner<Input, Solution, CostStructure>::Print(std::ostream &os) const
 {
   os << "  " << this->name << std::endl;
   CommandLineParameters::Parametrized::Print(os);
 }
 
-template <class Input, class State, class CostStructure>
-std::shared_ptr<State> Runner<Input, State, CostStructure>::GetCurrentBestState() const
+template <class Input, class Solution, class CostStructure>
+std::shared_ptr<Solution> Runner<Input, Solution, CostStructure>::GetCurrentBestState() const
 {
   std::lock_guard<std::mutex> lock(best_state_mutex);
-  return std::make_shared<State>(*p_best_state); // make a state copy
+  return std::make_shared<Solution>(*p_best_state); // make a state copy
 }
 } // namespace Core
 } // namespace EasyLocal
