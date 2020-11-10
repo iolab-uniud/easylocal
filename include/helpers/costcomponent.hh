@@ -79,15 +79,16 @@ public:
   }
 
   const size_t hash;
+    
+    /** Constructor.
+         @param in @ref Input object
+         @param weight weight of the cost component
+         @param is_hard a flag which tells if the cost component is hard or soft
+         @param name name of the cost component (for debug reasons)
+         */
+    CostComponent(const Input &in, const CFtype &weight, bool is_hard, std::string name);
 
 protected:
-  /** Constructor.
-       @param in @ref Input object
-       @param weight weight of the cost component
-       @param is_hard a flag which tells if the cost component is hard or soft
-       @param name name of the cost component (for debug reasons)
-       */
-  CostComponent(const Input &in, const CFtype &weight, bool is_hard, std::string name);
 
   /** Input object. */
   const Input &in;
