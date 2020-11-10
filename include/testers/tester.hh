@@ -379,9 +379,8 @@ std::ostream &os)
       std::chrono::milliseconds duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start);
       if (show_state)
       {
-        this->om.OutputState(test_state, this->out);
         os << "INITIAL SOLUTION " << std::endl
-        << this->out << std::endl;
+        << test_state << std::endl;
         os << "INITIAL COST : " << this->sm.CostFunctionComponents(test_state) << std::endl;
       }
       os << "ELAPSED TIME : " << duration.count() / 1000.0 << "s" << std::endl;
@@ -458,7 +457,7 @@ std::ostream &os)
               is.clear();
             }
           } while (read_failed);
-          this->om.ReadState(test_state, is);
+            is >> test_state;
           break;
         }
         case 3:
@@ -485,8 +484,9 @@ std::ostream &os)
         {
           os << "File name : ";
           std::cin >> file_name;
+            // FIXME: print it better
           std::ofstream os(file_name.c_str());
-          this->om.WriteState(test_state, os);
+            os << test_state;
           break;
         }
         case 6:
@@ -551,7 +551,7 @@ std::ostream &os)
         {
           os << "File name : ";
           std::cin >> file_name;
-          this->om.PrettyPrintOutput(test_state, file_name);
+            this->sm.PrettyPrintOutput(test_state, file_name);
           std::cout << "Output pretty-printed in file " << file_name << std::endl;
           break;
         }

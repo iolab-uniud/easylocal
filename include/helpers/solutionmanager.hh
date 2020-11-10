@@ -5,6 +5,7 @@
 #include <map>
 #include <cmath>
 #include <stdexcept>
+#include <fstream>
 
 #include "helpers/costcomponent.hh"
 #include "helpers/coststructure.hh"
@@ -171,6 +172,12 @@ public:
      @param name is the name of the object
      */
     SolutionManager(const Input &in, std::string name);
+    
+    virtual void PrettyPrintOutput(const Solution& st, std::string filename) const
+    {
+        std::ofstream os(filename);
+        os << st;
+    }
     
 protected:
     
