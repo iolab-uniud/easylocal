@@ -44,7 +44,6 @@ public:
     /** A symbolic name of the DeltaCostComponent. */
     const std::string name;
     
-protected:
     /** Constructor.
      @brief Constructs a DeltaCostComponent providing an input object, the related CostComponent and a name
      @param in an Input object
@@ -52,7 +51,8 @@ protected:
      @param name the name assigned to the object
      */
     DeltaCostComponent(const Input &in, CostComponent<Input, Solution, CFtype> &cc, std::string name);
-    
+
+protected:
     /** Computes the variation of the cost on a given @ref State due to a specific @ref Move.
      @param st the starting State upon which the variation of the cost has to be computed
      @param mv the Move which would be applied to the State st in order to compute the variation
