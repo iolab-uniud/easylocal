@@ -20,10 +20,16 @@ namespace EasyLocal
     class SimulatedAnnealingEvaluationBased : public AbstractSimulatedAnnealing<Input, Solution, Move, CostStructure>
     {
     public:
-      using AbstractSimulatedAnnealing<Input, Solution, Move, CostStructure>::AbstractSimulatedAnnealing;
-      
+        SimulatedAnnealingEvaluationBased(const Input &in, SolutionManager<Input, Solution, CostStructure> &sm,
+                                          NeighborhoodExplorer<Input, Solution, Move, CostStructure> &ne,
+                                          std::string name) : AbstractSimulatedAnnealing<Input, Solution, Move, CostStructure>(in, sm, ne, name)
+        {
+            neighbors_accepted_ratio("neighbors_accepted_ratio", "Ratio of neighbors accepted", this->parameters);
+            temperature_range("temperature_range", "Temperature_range", this->parameters);
+            expected_min_temperature("expected_min_temperature", "Expected minimum temperature", this->parameters);
+            this->max_neighbors_sampled = this->max_neighbors_accepted = 0;
+        }
     protected:
-      void InitializeParameters();
       void InitializeRun();
       bool StopCriterion();
       
@@ -38,16 +44,6 @@ namespace EasyLocal
     /*************************************************************************
      * Implementation
      *************************************************************************/
-    
-    template <class Input, class Solution, class Move, class CostStructure>
-    void SimulatedAnnealingEvaluationBased<Input, Solution, Move, CostStructure>::InitializeParameters()
-    {
-      AbstractSimulatedAnnealing<Input, Solution, Move, CostStructure>::InitializeParameters();
-      neighbors_accepted_ratio("neighbors_accepted_ratio", "Ratio of neighbors accepted", this->parameters);
-      temperature_range("temperature_range", "Temperature_range", this->parameters);
-      expected_min_temperature("expected_min_temperature", "Expected minimum temperature", this->parameters);
-      this->max_neighbors_sampled = this->max_neighbors_accepted = 0;
-    }
     
     /**
      Initializes the run by invoking the companion superclass method, and

@@ -41,7 +41,6 @@ protected:
     
     std::vector<RunnerType *> p_runners; /**< pointers to the managed runner. */
     unsigned int current_runner;
-    void InitializeParameters();
     Parameter<unsigned int> max_rounds, max_idle_rounds;
     unsigned int round;
     unsigned int idle_rounds;
@@ -67,17 +66,13 @@ TokenRingSearch<Input, Solution, CostStructure>::TokenRingSearch(const Input &in
                                                                  SolutionManager<Input, Solution, CostStructure> &sm,
                                                                  std::string name)
 : LocalSearch<Input, Solution, CostStructure>(in, sm, name)
-{}
-
-template <class Input, class Solution, class CostStructure>
-void TokenRingSearch<Input, Solution, CostStructure>::InitializeParameters()
 {
-    LocalSearch<Input, Solution, CostStructure>::InitializeParameters();
     max_rounds("max_rounds", "Maximum number of rounds", this->parameters);
     max_idle_rounds("max_idle_rounds", "Maximum number of idle rounds", this->parameters);
     round = 0;
     idle_rounds = 0;
 }
+
 
 template <class Input, class Solution, class CostStructure>
 void TokenRingSearch<Input, Solution, CostStructure>::ReadParameters(std::istream &is, std::ostream &os)

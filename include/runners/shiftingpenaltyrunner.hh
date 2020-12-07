@@ -12,24 +12,21 @@ class ShiftingPenaltyRunner : public BaseMoveRunner
 {
   // TODO: currently it performs weight adaptation at each iteration
 public:
-  using BaseMoveRunner::BaseMoveRunner;
-
-  void InitializeParameters()
-  {
-    BaseMoveRunner::InitializeParameters();
-    feasible_iterations("feasible_iterations", "Number of feasible iterations before perturbing the weight", this->parameters);
-    feasible_iterations = 1;
-    infeasible_iterations("infeasible_iterations", "Number of infeasible iterations before perturbing the weight", this->parameters);
-    infeasible_iterations = 1;
-    min_perturbation("min_perturbation", "Minimum perturbation ratio applied to the weight (value > 1.0)", this->parameters);
-    min_perturbation = 1.03;
-    max_perturbation("max_perturbation", "Maximum perturbation ratio applied to the weight (value > 1.0)", this->parameters);
-    max_perturbation = 1.08;
-    min_range("min_range", "Minimum value for the weight", this->parameters);
-    min_range = 0.001;
-    max_range("min_range", "Maximum value for the weight", this->parameters);
-    max_range = 10.0;
-  }
+    ShiftingPenaltyRunner(const BaseMoveRunner& bmr) : BaseMoveRunner(bmr)
+    {
+        feasible_iterations("feasible_iterations", "Number of feasible iterations before perturbing the weight", this->parameters);
+        feasible_iterations = 1;
+        infeasible_iterations("infeasible_iterations", "Number of infeasible iterations before perturbing the weight", this->parameters);
+        infeasible_iterations = 1;
+        min_perturbation("min_perturbation", "Minimum perturbation ratio applied to the weight (value > 1.0)", this->parameters);
+        min_perturbation = 1.03;
+        max_perturbation("max_perturbation", "Maximum perturbation ratio applied to the weight (value > 1.0)", this->parameters);
+        max_perturbation = 1.08;
+        min_range("min_range", "Minimum value for the weight", this->parameters);
+        min_range = 0.001;
+        max_range("min_range", "Maximum value for the weight", this->parameters);
+        max_range = 10.0;
+    }
 
   void InitializeRun() throw(ParameterNotSet, IncorrectParameterValue)
   {

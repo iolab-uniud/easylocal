@@ -33,10 +33,17 @@ namespace EasyLocal
     public:
       typedef typename CostStructure::CFtype CFtype;
       
-      using MoveRunner<Input, Solution, Move, CostStructure>::MoveRunner;
+      GreatDeluge(const Input &in, SolutionManager<Input, Solution, CostStructure> &sm,
+                  NeighborhoodExplorer<Input, Solution, Move, CostStructure> &ne,
+                  std::string name) : MoveRunner<Input, Solution, Move, CostStructure>(in, sm, ne, name)
+        {
+            initial_level("initial_level", "Initial water level", this->parameters);
+            min_level("min_level", "Minimum water level", this->parameters);
+            level_rate("level_rate", "Water decrease factor", this->parameters);
+            neighbors_sampled("neighbors_sampled", "Number of neighbors sampled at each water level", this->parameters);
+        }
       
     protected:
-      void InitializeParameters();
       void InitializeRun();
       bool StopCriterion();
       void UpdateIterationCounter();
@@ -54,16 +61,6 @@ namespace EasyLocal
     /*************************************************************************
      * Implementation
      *************************************************************************/
-    
-    template <class Input, class Solution, class Move, class CostStructure>
-    void GreatDeluge<Input, Solution, Move, CostStructure>::InitializeParameters()
-    {
-      MoveRunner<Input, Solution, Move, CostStructure>::InitializeParameters();
-      initial_level("initial_level", "Initial water level", this->parameters);
-      min_level("min_level", "Minimum water level", this->parameters);
-      level_rate("level_rate", "Water decrease factor", this->parameters);
-      neighbors_sampled("neighbors_sampled", "Number of neighbors sampled at each water level", this->parameters);
-    }
     
     /**
      Initializes the run by invoking the companion superclass method, and

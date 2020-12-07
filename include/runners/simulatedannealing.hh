@@ -17,12 +17,17 @@ namespace EasyLocal
     class SimulatedAnnealing : public AbstractSimulatedAnnealing<Input, Solution, Move, CostStructure>
     {
     public:
-      using AbstractSimulatedAnnealing<Input, Solution, Move, CostStructure>::AbstractSimulatedAnnealing;
+      SimulatedAnnealing(const Input &in, SolutionManager<Input, Solution, CostStructure> &sm,
+                         NeighborhoodExplorer<Input, Solution, Move, CostStructure> &ne,
+                         std::string name) : AbstractSimulatedAnnealing<Input, Solution, Move, CostStructure>(in, sm, ne, name)
+        {
+            samples("samples", "Number of neighbors sampled", this->parameters);
+            min_temperature("min_temperature", "Minimum temperature", this->parameters);
+        }
       
       std::string StatusString() const;
       
     protected:
-      void InitializeParameters();
       void InitializeRun();
       bool StopCriterion();
       // parameters
@@ -32,13 +37,6 @@ namespace EasyLocal
     /*************************************************************************
      * Implementation
      *************************************************************************/
-    
-    template <class Input, class Solution, class Move, class CostStructure>
-    void SimulatedAnnealing<Input, Solution, Move, CostStructure>::InitializeParameters()
-    {
-      AbstractSimulatedAnnealing<Input, Solution, Move, CostStructure>::InitializeParameters();
-      min_temperature("min_temperature", "Minimum temperature", this->parameters);
-    }
     
     /**
      Initializes the run by invoking the companion superclass method, and

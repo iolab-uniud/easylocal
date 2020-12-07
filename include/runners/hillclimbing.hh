@@ -21,11 +21,15 @@ namespace EasyLocal
     class HillClimbing : public MoveRunner<Input, Solution, Move, CostStructure>
     {
     public:
-      using MoveRunner<Input, Solution, Move, CostStructure>::MoveRunner;
+      HillClimbing(const Input &in, SolutionManager<Input, Solution, CostStructure> &sm,
+                   NeighborhoodExplorer<Input, Solution, Move, CostStructure> &ne,
+                   std::string name) : MoveRunner<Input, Solution, Move, CostStructure>(in, sm, ne, name)
+        {
+            max_idle_iterations("max_idle_iterations", "Total number of allowed idle iterations", this->parameters);
+        }
       
     protected:
       Parameter<unsigned long int> max_idle_iterations;
-      void InitializeParameters();
       bool MaxIdleIterationExpired() const;
       bool StopCriterion();
       void SelectMove();
@@ -35,13 +39,6 @@ namespace EasyLocal
     /*************************************************************************
      * Implementation
      *************************************************************************/
-    
-    template <class Input, class Solution, class Move, class CostStructure>
-    void HillClimbing<Input, Solution, Move, CostStructure>::InitializeParameters()
-    {
-      MoveRunner<Input, Solution, Move, CostStructure>::InitializeParameters();
-      max_idle_iterations("max_idle_iterations", "Total number of allowed idle iterations", this->parameters);
-    }
     
     /**
      The select move strategy for the hill climbing simply looks for a

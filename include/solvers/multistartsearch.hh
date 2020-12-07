@@ -35,7 +35,6 @@ public:
   unsigned int IdleRestarts() const { return idle_restarts; }
 
 protected:
-  void InitializeParameters();
   void InitializeSolve() throw(ParameterNotSet, IncorrectParameterValue);
   void Go();
   void AtTimeoutExpired();
@@ -70,17 +69,12 @@ MultiStartSearch<Input, Solution, CostStructure>::MultiStartSearch(const Input &
                                                                         std::string name)
     : LocalSearch<Input, Solution, CostStructure>(in, e_sm, e_om, name, "Multi Start Solver")
 {
+    max_restarts("max_restarts", "Maximum number of restarts", this->parameters);
+    max_idle_restarts("max_idle_restarts", "Maximum number of idle restarts", this->parameters);
+    restart = 0;
+    idle_restarts = 0;
 }
 
-template <class Input, class Solution, class CostStructure>
-void MultiStartSearch<Input, Solution, CostStructure>::InitializeParameters()
-{
-  LocalSearch<Input, Solution, CostStructure>::InitializeParameters();
-  max_restarts("max_restarts", "Maximum number of restarts", this->parameters);
-  max_idle_restarts("max_idle_restarts", "Maximum number of idle restarts", this->parameters);
-  restart = 0;
-  idle_restarts = 0;
-}
 
 template <class Input, class Solution, class CostStructure>
 void MultiStartSearch<Input, Solution, CostStructure>::ReadParameters(std::istream &is, std::ostream &os)

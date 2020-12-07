@@ -26,7 +26,8 @@ public:
        @param e_sm */
   MoveRunner(const Input &in, SolutionManager<Input, Solution, CostStructure> &e_sm,
              NeighborhoodExplorer<Input, Solution, Move, CostStructure> &e_ne,
-             std::string name);
+             std::string name) : Runner<Input, Solution, CostStructure>(in, e_sm, name), ne(e_ne)
+    {}
 
 protected:
   virtual void TerminateRun();
@@ -73,23 +74,12 @@ void MoveRunner<Input, Solution, Move, CostStructure>::UpdateBestState()
 }
 
 template <class Input, class Solution, class Move, class CostStructure>
-MoveRunner<Input, Solution, Move, CostStructure>::MoveRunner(const Input &in,
-                                                          SolutionManager<Input, Solution, CostStructure> &e_sm,
-                                                          NeighborhoodExplorer<Input, Solution, Move, CostStructure> &e_ne,
-                                                          std::string name)
-    : Runner<Input, Solution, CostStructure>(in, e_sm, name), ne(e_ne)
-{
-}
-
-template <class Input, class Solution, class Move, class CostStructure>
 void MoveRunner<Input, Solution, Move, CostStructure>::InitializeRun()
-{
-}
+{}
 
 template <class Input, class Solution, class Move, class CostStructure>
 void MoveRunner<Input, Solution, Move, CostStructure>::TerminateRun()
-{
-}
+{}
 
 template <class Input, class Solution, class Move, class CostStructure>
 bool MoveRunner<Input, Solution, Move, CostStructure>::AcceptableMoveFound()

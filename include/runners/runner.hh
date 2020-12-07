@@ -33,7 +33,9 @@ namespace Core
      @ingroup Helpers
      */
 template <class Input, class Solution, class CostStructure = DefaultCostStructure<int>>
-  class Runner : public Interruptible<CostStructure, Solution&>, public CommandLineParameters::Parametrized
+  class Runner :
+public Interruptible<CostStructure, Solution&>,
+public CommandLineParameters::Parametrized
 {
   friend class Debug::AbstractTester<Input, Solution, CostStructure>;
 
@@ -59,9 +61,6 @@ public:
        @throw IncorrectParameterValue if one of the parameters has an incorrect value
        */
   CostStructure Step(Solution&s, unsigned int n = 1);
-
-  /** Register its parameters */
-  virtual void InitializeParameters();
 
   /** Reads the parameter from an input stream.
        @param is input stream to read from
@@ -234,15 +233,10 @@ Runner<Input, Solution, CostStructure>::Runner(const Input &in, SolutionManager<
   CommandLineParameters::Parametrized(name, typeid(this).name()), name(name), no_acceptable_move_found(false), in(in), sm(sm), weights(0)
 {
   // Add to the list of all runners
-  runners.push_back(this);
-}
-
-template <class Input, class Solution, class CostStructure>
-void Runner<Input, Solution, CostStructure>::InitializeParameters()
-{
-  max_evaluations("max_evaluations", "Maximum total number of cost function evaluations allowed", this->parameters);
-  // This parameter has a default value
-  max_evaluations = std::numeric_limits<unsigned long int>::max();
+    runners.push_back(this);
+    max_evaluations("max_evaluations", "Maximum total number of cost function evaluations allowed", this->parameters);
+    // This parameter has a default value
+    max_evaluations = std::numeric_limits<unsigned long int>::max();
 }
 
 template <class Input, class Solution, class CostStructure>

@@ -23,7 +23,15 @@ namespace EasyLocal
     class SimulatedAnnealingWithReheating : public SimulatedAnnealingEvaluationBased<Input, Solution, Move, CostStructure>
     {
     public:
-      using SimulatedAnnealingEvaluationBased<Input, Solution, Move, CostStructure>::SimulatedAnnealingEvaluationBased;
+        SimulatedAnnealingWithReheating(const Input &in, SolutionManager<Input, Solution, CostStructure> &sm,
+                                        NeighborhoodExplorer<Input, Solution, Move, CostStructure> &ne,
+                                        std::string name) : SimulatedAnnealingEvaluationBased<Input, Solution, Move, CostStructure>(in, sm, ne, name)
+        {
+            first_reheat_ratio("first_reheat_ratio", "First reheat ratio", this->parameters);
+            reheat_ratio("reheat_ratio", "Reheat ratio", this->parameters);
+            first_descent_evaluations_share("first_descent_evaluations_share", "First descent cost function evaluations share", this->parameters);
+            max_reheats("max_reheats", "Maximum number of reheats", this->parameters);
+        }
       
       std::string StatusString() const;
       
@@ -33,7 +41,6 @@ namespace EasyLocal
       void InitializeRun();
       bool ReheatCondition();
       // additional parameters
-      void InitializeParameters();
       Parameter<double> first_reheat_ratio;
       Parameter<double> reheat_ratio;
       Parameter<double> first_descent_evaluations_share;
@@ -43,17 +50,7 @@ namespace EasyLocal
     };
     /*************************************************************************
      * Implementation
-     *************************************************************************/
-    
-    template <class Input, class Solution, class Move, class CostStructure>
-    void SimulatedAnnealingWithReheating<Input, Solution, Move, CostStructure>::InitializeParameters()
-    {
-      AbstractSimulatedAnnealing<Input, Solution, Move, CostStructure>::InitializeParameters();
-      first_reheat_ratio("first_reheat_ratio", "First reheat ratio", this->parameters);
-      reheat_ratio("reheat_ratio", "Reheat ratio", this->parameters);
-      first_descent_evaluations_share("first_descent_evaluations_share", "First descent cost function evaluations share", this->parameters);
-      max_reheats("max_reheats", "Maximum number of reheats", this->parameters);
-    }
+     *************************************************************************/    
     
     template <class Input, class Solution, class Move, class CostStructure>
     void SimulatedAnnealingWithReheating<Input, Solution, Move, CostStructure>::InitializeRun()

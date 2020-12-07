@@ -21,7 +21,13 @@ namespace EasyLocal
     class LateAcceptanceHillClimbing : public HillClimbing<Input, Solution, Move, CostStructure>
     {
     public:
-      using HillClimbing<Input, Solution, Move, CostStructure>::HillClimbing;
+        LateAcceptanceHillClimbing(const Input &in, SolutionManager<Input, Solution, CostStructure> &sm,
+                                   NeighborhoodExplorer<Input, Solution, Move, CostStructure> &ne,
+                                   std::string name) : HillClimbing<Input, Solution, Move, CostStructure>(in, sm, ne, name)
+        {
+            steps("steps", "Delay (number of steps in the queue)", this->parameters);
+            steps = 10;
+        }
       
     protected:
       void InitializeRun();
@@ -29,22 +35,13 @@ namespace EasyLocal
       void SelectMove();
       
       // parameters
-      void InitializeParameters();
       Parameter<unsigned int> steps;
       std::vector<CostStructure> previous_steps;
     };
     
     /*************************************************************************
      * Implementation
-     *************************************************************************/
-    
-    template <class Input, class Solution, class Move, class CostStructure>
-    void LateAcceptanceHillClimbing<Input, Solution, Move, CostStructure>::InitializeParameters()
-    {
-      HillClimbing<Input, Solution, Move, CostStructure>::InitializeParameters();
-      steps("steps", "Delay (number of steps in the queue)", this->parameters);
-      steps = 10;
-    }
+     *************************************************************************/    
     
     /**
      Initializes the run by invoking the companion superclass method, and

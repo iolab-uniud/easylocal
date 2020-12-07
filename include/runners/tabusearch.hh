@@ -60,12 +60,28 @@ namespace EasyLocal
     {
     public:
       typedef std::function<bool(const Move &lm, const Move &mv)> InverseFunction;
-      
-      TabuSearch(const Input &in,
-                 SolutionManager<Input, Solution, CostStructure> &sm,
-                 NeighborhoodExplorer<Input, Solution, Move, CostStructure> &ne,
-                 std::string name,
-                 InverseFunction Inverse = SameMoveAsInverse);
+        
+        /**
+         Constructs a tabu search runner by linking it to a state manager,
+         a neighborhood explorer, a tabu list manager, and an input object.
+         
+         @param s a pointer to a compatible state manager
+         @param ne a pointer to a compatible neighborhood explorer
+         @param tlm a pointer to a compatible tabu list manager
+         @param in a pointer to an input object
+         */
+        
+        TabuSearch(const Input &in,
+                   SolutionManager<Input, Solution, CostStructure> &sm,
+                   NeighborhoodExplorer<Input, Solution, Move, CostStructure> &ne,
+                   std::string name,
+                   InverseFunction Inverse = SameMoveAsInverse)
+        : MoveRunner<Input, Solution, Move, CostStructure>(in, sm, ne, name), Inverse(Inverse)
+        {
+            max_idle_iterations("max_idle_iterations", "Maximum number of idle iterations", this->parameters);
+            min_tenure("min_tenure", "Minimum tabu tenure", this->parameters);
+            max_tenure("max_tenure", "Maximum tabu tenure", this->parameters);
+        }
       std::string StatusString() const;
       
       virtual void Print(std::ostream &os = std::cout) const;
@@ -76,7 +92,6 @@ namespace EasyLocal
       bool StopCriterion();
       void SelectMove();
       void CompleteMove();
-      void InitializeParameters();
       InverseFunction Inverse;
       
       static InverseFunction SameMoveAsInverse;
@@ -92,35 +107,7 @@ namespace EasyLocal
     /*************************************************************************
      * Implementation
      *************************************************************************/
-    
-    /**
-     Constructs a tabu search runner by linking it to a state manager,
-     a neighborhood explorer, a tabu list manager, and an input object.
-     
-     @param s a pointer to a compatible state manager
-     @param ne a pointer to a compatible neighborhood explorer
-     @param tlm a pointer to a compatible tabu list manager
-     @param in a pointer to an input object
-     */
-    
-    template <class Input, class Solution, class Move, class CostStructure>
-    TabuSearch<Input, Solution, Move, CostStructure>::TabuSearch(const Input &in,
-                                                              SolutionManager<Input, Solution, CostStructure> &sm,
-                                                              NeighborhoodExplorer<Input, Solution, Move, CostStructure> &ne,
-                                                              std::string name,
-                                                              InverseFunction Inverse)
-    : MoveRunner<Input, Solution, Move, CostStructure>(in, sm, ne, name), Inverse(Inverse)
-    {
-    }
-    
-    template <class Input, class Solution, class Move, class CostStructure>
-    void TabuSearch<Input, Solution, Move, CostStructure>::InitializeParameters()
-    {
-      MoveRunner<Input, Solution, Move, CostStructure>::InitializeParameters();
-      max_idle_iterations("max_idle_iterations", "Maximum number of idle iterations", this->parameters);
-      min_tenure("min_tenure", "Minimum tabu tenure", this->parameters);
-      max_tenure("max_tenure", "Maximum tabu tenure", this->parameters);
-    }
+
     
     template <class Input, class Solution, class Move, class CostStructure>
     void TabuSearch<Input, Solution, Move, CostStructure>::Print(std::ostream &os) const

@@ -423,12 +423,6 @@ namespace EasyLocal
           OverallParametrized().push_back(this);
         }
         
-        static void RegisterParameters()
-        {
-          for (auto p : OverallParametrized())
-            p->_RegisterParameters();
-        }
-        
         /** Read all parameters from an input stream (prints hints on output stream). */
         virtual void ReadParameters(std::istream &is = std::cin, std::ostream &os = std::cout)
         {
@@ -535,17 +529,6 @@ namespace EasyLocal
         }
         
       protected:
-        void _RegisterParameters()
-        {
-          if (!parameters_registered)
-          {
-            InitializeParameters();
-            parameters_registered = true;
-          }
-        }
-        
-        virtual void InitializeParameters() = 0;
-        
         ParameterBox parameters;
         
         bool parameters_registered;
@@ -570,11 +553,8 @@ namespace EasyLocal
         }
       };
       
-      
       static bool Parse(int argc, const char *argv[], bool check_unregistered = true, bool silent = false)
-      {
-        Parametrized::RegisterParameters();
-        
+      {        
         boost::program_options::options_description cmdline_options(argv[0]);
         boost::program_options::variables_map vm;
         for (auto pb : ParameterBox::OverallParameters())

@@ -17,13 +17,12 @@ namespace EasyLocal
     class SampleTabuSearch : public TabuSearch<Input, Solution, Move, CostStructure>
     {
     public:
-      using TabuSearch<Input, Solution, Move, CostStructure>::TabuSearch;
-      
-      void InitializeParameters()
-      {
-        TabuSearch<Input, Solution, Move, CostStructure>::InitializeParameters();
-        samples("samples", "Number of neighbors sampled", this->parameters);
-      }
+        SampleTabuSearch(const Input &in, SolutionManager<Input, Solution, CostStructure> &sm,
+                         NeighborhoodExplorer<Input, Solution, Move, CostStructure> &ne,
+                         std::string name) : TabuSearch<Input, Solution, Move, CostStructure>(in, sm, ne, name)
+        {
+            samples("samples", "Number of neighbors sampled", this->parameters);
+        }
       
     protected:
       void SelectMove();
