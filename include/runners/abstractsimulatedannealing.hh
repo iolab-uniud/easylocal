@@ -35,7 +35,8 @@ public:
     
     AbstractSimulatedAnnealing(const Input &in, SolutionManager<Input, Solution, CostStructure> &e_sm,
                                NeighborhoodExplorer<Input, Solution, Move, CostStructure> &e_ne,
-                               std::string name)
+                               std::string name) 
+      : MoveRunner<Input, Solution, Move, CostStructure>(in, e_sm, e_ne, name)
     {
         compute_start_temperature("compute_start_temperature", "Should the runner compute the initial temperature?", this->parameters);
         start_temperature("start_temperature", "Starting temperature", this->parameters);
