@@ -7,6 +7,7 @@
 #include "runners/moverunner.hh"
 #include "helpers/statemanager.hh"
 #include "helpers/neighborhoodexplorer.hh"
+#include "utils/random.hh"
 
 namespace EasyLocal
 {

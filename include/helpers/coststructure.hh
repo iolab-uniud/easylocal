@@ -1,6 +1,7 @@
 #pragma once
 
 #include "utils/types.hh"
+#include "utils/json.hpp"
 
 namespace EasyLocal
 {
@@ -8,6 +9,8 @@ namespace EasyLocal
   namespace Core
   {
     
+    using json = nlohmann::json;
+  
     // FIXME: it is likely that the semantics of equality and inequality in case of hybrid comparison (i.e., CostStructure against scalar) is not meaningful. Probably it can be safely removed.
     
     template <typename T>
@@ -58,6 +61,16 @@ namespace EasyLocal
       {
         return all_components.size();
       }
+        
+      json ToJSON() const
+      {
+          json repr;
+          repr["total"] = this->total;
+          repr["violations"] = this->violations;
+          repr["objective"] = this->objective;
+          repr["components"] = this->all_components;
+          return repr;
+      };
     };
     
     template <typename CFtype>

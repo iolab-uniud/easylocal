@@ -10,6 +10,7 @@
 #include <deque>
 #include <ctime>
 #include <regex>
+#include <cstdlib>
 // TODO: use it only if CURL is available
 #include "utils/uccurl.hh"
 #if defined(__unix__) || defined(__unix) || \
@@ -29,6 +30,47 @@ namespace EasyLocal {
   namespace Debug {
     
     using json = nlohmann::json;
+  
+  template <class Input, class Output, class State, class CostStructure = DefaultCostStructure<int>>
+  class AbstractRESTMoveTester
+  {
+  public:
+      virtual json BestMove(const Input& in, State& st) const = 0;
+      virtual json MakeMove(const Input& in, State& st, json move_repr) const = 0;
+      virtual ~AbstractRESTMoveTester() {}
+  };
+  
+    template <class Input, class Output, class State, class Move, class CostStructure = DefaultCostStructure<int>>
+    class RESTMoveTester : public AbstractRESTMoveTester<Input, Output, State, CostStructure>
+    {
+    public:
+      RESTMoveTester(Core::NeighborhoodExplorer<Input, State, Move, CostStructure> &ne,
+                     Core::OutputManager<Input, Output, State>& om,
+                     std::string name) : ne(ne), om(om), name(name) {}
+      json BestMove(const Input& in, State& st) const override
+      {
+        json result;
+        size_t explored;
+        auto em = ne.SelectBest(in, st, explored, [](const Move &mv, const CostStructure &cost) { return true; });
+        ne.MakeMove(in, st, em.move);
+        result["move_cost"] = em.cost.ToJSON();
+        result["move"] = ne.ToJSON(in, st, em.move);
+        return result;
+      }
+      json MakeMove(const Input& in, State& st, json move_repr) const override
+      {
+        json result;
+        Move mv = ne.FromJSON(in, st, move_repr);
+        CostStructure move_cost = ne.DeltaCostFunctionComponents(in, st, mv);
+        ne.MakeMove(in, st, mv);
+        result["move_cost"] = move_cost.ToJSON();
+        return result;
+      }
+    protected:
+      Core::NeighborhoodExplorer<Input, State, Move, CostStructure> &ne; /**< A reference to the attached neighborhood explorer. */
+      Core::OutputManager<Input, Output, State> &om; /**< A reference to the attached neighborhood explorer. */
+      std::string name;
+    };
         
     /** A REST Tester represents the web service interface of a easylocal solver. Differently from the regular tester, this class is State-less (w.r.t. easylocal state)
      @ingroup Testers
@@ -84,6 +126,8 @@ namespace EasyLocal {
             this->callback_url = callback_url;
           }
         }
+          
+        
         std::string task_id;
         json instance;
         std::shared_ptr<Input> p_in;
@@ -263,6 +307,14 @@ namespace EasyLocal {
       /** Virtual destructor. */
       virtual ~RESTTester() { Destroy(); }
       void Run();
+        
+      template <class Move>
+      void AddRESTMoveTester(NeighborhoodExplorer<Input, State, Move, CostStructure>& ne,
+                             OutputManager<Input, Output, State>& om, string name)
+      {
+        neighborhood_map[name] = std::unique_ptr<AbstractRESTMoveTester<Input, Output, State, CostStructure>>(new RESTMoveTester<Input, Output, State, Move, CostStructure>(ne, om, name));
+      }
+                    
     private:
       // a single thread worker that takes care of the task execution
       void Worker();
@@ -281,14 +333,14 @@ namespace EasyLocal {
       
       StateManager<Input, State, CostStructure>& sm;
       OutputManager<Input, Output, State>& om;
-      
+              
       // utils
-      std::vector<string> runner_urls;
       std::map<string, Runner<Input, State, CostStructure>*> runner_map;
+      std::map<string, std::unique_ptr<AbstractRESTMoveTester<Input, Output, State, CostStructure>>> neighborhood_map;
       
       // endpoints management
       void RootEndpoint(const crow::request& req, crow::response& res) const;
-      std::shared_ptr<Task> CreateTask(float timeout, json instance, std::unique_ptr<Input> p_in, std::unique_ptr<State> p_st, std::unique_ptr<Runner<Input, State, CostStructure>> p_r, json parameters, std::string callback_url);
+      std::shared_ptr<Task> CreateTask(float timeout, unsigned int seed, json instance, std::unique_ptr<Input> p_in, std::unique_ptr<State> p_st, std::unique_ptr<Runner<Input, State, CostStructure>> p_r, json parameters, std::string callback_url);
       json TaskStatus(std::string task_id) const;
       json Instance(std::string task_id) const;
       json Solution(std::string task_id, bool force_partial) const;
@@ -351,10 +403,7 @@ namespace EasyLocal {
     : Core::CommandLineParameters::Parametrized("REST", "REST tester"), numThreads(std::max(std::thread::hardware_concurrency(), 2u) - 1u), sm(sm), om(om), tester_id(tester_id)
     {
       for (auto r : this->runners)
-      {
-        runner_urls.push_back("/runner/" + r->name);
         runner_map[r->name] = r;
-      }
       done = false;
     }
     
@@ -529,7 +578,7 @@ namespace EasyLocal {
         CORSMiddleware& mw = app.template get_middleware<CORSMiddleware>();
         mw.Enable();
         CROW_LOG_WARNING << "CORS Enabled: to be used only for local testing purposes";
-      }        
+      }
       
       // NOTE: standard CROW_ROUTE dispatching seems not to work with this compiler and the Middleware enabled version of the app.
       //       Currently it has been changed to dynamic_routes (maybe less efficient, but this is not the point here)
@@ -593,7 +642,7 @@ namespace EasyLocal {
           }
           // conventionally an initial solution, if available, is passed into a "initial_solution" field in the payload
           std::unique_ptr<State> p_st;
-          if (payload.find("initial_solution") != end(payload) && !payload["initial_solution"].is_null())
+          if (payload.contains("initial_solution") && !payload["initial_solution"].is_null())
           {
             try
             {
@@ -612,10 +661,11 @@ namespace EasyLocal {
             }
           }
           float timeout = req.url_params.get("timeout") ? std::atof(req.url_params.get("timeout")) : 0.0;
+          unsigned int seed = req.url_params.get("seed") ? std::atoi(req.url_params.get("seed")) : rand();
           std::string callback_url = req.url_params.get("callback_url") ? URLDecode(req.url_params.get("callback_url")) : "";
           CROW_LOG_INFO << callback_url;
           auto p_r = it->second->Clone();
-          std::shared_ptr<Task> task = this->CreateTask(timeout, std::move(payload), std::move(in), std::move(p_st), std::move(p_r), parameters, callback_url);
+          std::shared_ptr<Task> task = this->CreateTask(timeout, seed, std::move(payload), std::move(in), std::move(p_st), std::move(p_r), parameters, callback_url);
           {
             std::lock_guard<std::mutex> lock(task_status_mutex);
             response["task_id"] = task->task_id;
@@ -640,7 +690,7 @@ namespace EasyLocal {
       app.route_dynamic("/running/<string>")
       .methods("GET"_method)([this](std::string task_id) {
         json response = this->TaskStatus(task_id);
-        if (response.find("error") == end(response))
+        if (!response.contains("error"))
           return JSONResponse::make_response(200, response);
         else
           return JSONResponse::make_error(404, response["error"]);
@@ -659,7 +709,7 @@ namespace EasyLocal {
       .methods("GET"_method)([this](const crow::request& req, crow::response& res, std::string task_id) {
         bool force_partial = req.url_params.get("partial") ? std::string(req.url_params.get("partial")) == "true" : false;
         json response = this->Solution(task_id, force_partial);
-        if (response.find("error") == end(response))
+        if (!response.contains("error"))
           res = JSONResponse::make_response(200, response);
         else
           res = JSONResponse::make_error(404, response["error"]);
@@ -670,7 +720,7 @@ namespace EasyLocal {
       app.route_dynamic("/instance/<string>")
       .methods("GET"_method)([this](const crow::request& req, crow::response& res, std::string task_id) {
         json response = this->Instance(task_id);
-        if (response.find("error") == end(response))
+        if (!response.contains("error"))
           res = JSONResponse::make_response(200, response);
         else
           res = JSONResponse::make_error(404, response["error"]);
@@ -732,13 +782,17 @@ namespace EasyLocal {
         }
         // conventionally an initial solution, if available, is passed into a "initial_solution" field in the payload
         std::unique_ptr<State> p_st;
-        if (payload.find("initial_solution") != end(payload) && !payload["initial_solution"].is_null())
+        if (payload.contains("initial_solution") && !payload["initial_solution"].is_null())
         {
           try
           {
             p_st = std::make_unique<State>(*in);
             std::istringstream is(payload["initial_solution"].dump());
             om.ReadAndCheckSolution(*in, *p_st, is);
+            response["cost"] = sm.CostFunctionComponentsToJSON(*in, *(p_st), true);
+            response["solution"] = om.ConvertToJSON(*in, *(p_st));
+            res = JSONResponse::make_response(200, response);
+            res.end();
           }
           catch (std::exception & e)
           {
@@ -747,10 +801,6 @@ namespace EasyLocal {
             CROW_LOG_ERROR << "The solution did not comply with the format expected by the system";
             return;
           }
-          response["cost"] = sm.CostFunctionComponentsToJSON(*in, *(p_st), true);
-          response["solution"] = om.ConvertToJSON(*in, *(p_st));
-          res = JSONResponse::make_response(200, response);
-          res.end();
         }
         else
         {
@@ -758,7 +808,91 @@ namespace EasyLocal {
           res.end();
         }
       });
-      
+        
+        // This endpoint allow to make an evaluation of a solution from the solver
+        app.route_dynamic("/neighborhood/<string>/<string>")
+        .methods("POST"_method)([this](const crow::request& req, crow::response& res, std::string name, std::string operation) {
+          std::vector<std::string> allowed_operations = { "best-move", "make-move" };
+          json response;
+          auto it = this->neighborhood_map.find(name);
+          if (it == end(this->neighborhood_map))
+          {
+            res = JSONResponse::make_error(404, "Neighborhood `" + name + "` does not exist or is not active");
+            res.end();
+            return;
+          }
+          if (std::find(begin(allowed_operations), end(allowed_operations), operation) == end(allowed_operations))
+          {
+            res = JSONResponse::make_error(404, "Operation `" + operation + "` does not exist");
+            res.end();
+            return;
+          }
+          json parameters;
+          if (req.url_params.get("parameters") != nullptr)
+            parameters = json::parse(URLDecode(req.url_params.get("parameters")));
+          auto ct = req.headers.find("Content-Type");
+          if (ct == end(req.headers) || ct->second != "application/json")
+          {
+            // TODO: handle content negotiation
+            res = JSONResponse::make_error(415, "Wrong Content-Type, only application/json is possible");
+            res.end();
+            CROW_LOG_ERROR << "Wrong Content-Type";
+            return;
+          }
+          json payload = json::parse(req.body);
+          std::unique_ptr<Input> in;
+          try
+          {
+            in = std::make_unique<Input>(payload);
+          }
+          catch (std::exception& e)
+          {
+            res = JSONResponse::make_error(422, "The input file does not comply with the format expected by the system", e.what());
+            res.end();
+            CROW_LOG_ERROR << "Input file did not comply with the format expected by the system";
+            return;
+          }
+          // conventionally an initial solution, if available, is passed into a "initial_solution" field in the payload
+          std::unique_ptr<State> p_st;
+          if (payload.contains("initial_solution") && !payload["initial_solution"].is_null())
+          {
+            try
+            {
+              Output out(*in);
+              p_st = std::make_unique<State>(*in);
+              std::istringstream is(payload["initial_solution"].dump());
+              is >> out;
+              om.InputState(*in, *p_st, out);
+              if (operation == "best-move")
+              {
+                response["move"] = it->second->BestMove(*in, *p_st);
+                response["cost"] = sm.CostFunctionComponentsToJSON(*in, *(p_st), true);
+                response["solution"] = om.ConvertToJSON(*in, *(p_st));
+              }
+              else if (operation == "make-move")
+              {
+                response["move"] = it->second->MakeMove(*in, *p_st, payload["move"]);
+                response["cost"] = sm.CostFunctionComponentsToJSON(*in, *(p_st), true);
+                response["solution"] = om.ConvertToJSON(*in, *(p_st));
+              }
+              res = JSONResponse::make_response(200, response);
+              res.end();
+            }
+            catch (std::exception & e)
+            {
+              res = JSONResponse::make_error(422, "The solution does not comply with the format expected by the system", e.what());
+              res.end();
+              CROW_LOG_ERROR << "The solution did not comply with the format expected by the system";
+              return;
+            }
+          }
+          else
+          {
+            res = JSONResponse::make_error(422, "No solution has been provided for neighborhood evaluation");
+            res.end();
+          }
+        });
+                                 
       app.port(port).multithreaded().run();
     }
     
@@ -766,11 +900,18 @@ namespace EasyLocal {
     void RESTTester<Input, Output, State, CostStructure>::RootEndpoint(const crow::request& req, crow::response& res) const
     {
       json response;
-      response["version"] = "1.0";
+      response["version"] = "1.1";
       response["tester_id"] = tester_id;
       response["started"] = getISOTimestamp(started);
       response["workers"] = { { "number", numThreads }, { "solution_time", worker_runtime.count() }, { "tasks_run", this->tasks_created } };
-      response["runners"] = runner_urls;
+        
+      std::vector<string> runner_urls;
+        std::transform(std::begin(runner_map), std::end(runner_map), std::back_inserter(runner_urls), [](const auto& map_item) { return "/runner/" + map_item.first; });
+        response["runners"] = runner_urls;
+        std::vector<string> neighborhood_urls;
+          std::transform(std::begin(neighborhood_map), std::end(neighborhood_map), std::back_inserter(neighborhood_urls), [](const auto& map_item) { return "/neighborhood/" + map_item.first; });
+          response["runners"] = runner_urls;
+      response["neighborhoods"] = neighborhood_urls;
       response["tasks"] = {};
       std::lock_guard<std::mutex> lock(task_status_mutex);
       for (const auto& task_it : task_status)
@@ -793,7 +934,7 @@ namespace EasyLocal {
     }
     
     template <class Input, class Output, class State, class CostStructure>
-    std::shared_ptr<typename RESTTester<Input, Output, State, CostStructure>::Task> RESTTester<Input, Output, State, CostStructure>::CreateTask(float timeout, json instance, std::unique_ptr<Input> p_in, std::unique_ptr<State> p_st, std::unique_ptr<Runner<Input, State, CostStructure>> p_r, json parameters, std::string callback_url)
+    std::shared_ptr<typename RESTTester<Input, Output, State, CostStructure>::Task> RESTTester<Input, Output, State, CostStructure>::CreateTask(float timeout, unsigned int seed, json instance, std::unique_ptr<Input> p_in, std::unique_ptr<State> p_st, std::unique_ptr<Runner<Input, State, CostStructure>> p_r, json parameters, std::string callback_url)
     {
       // the lock is here, because also the tasks counter has to be guarded
       std::lock_guard<std::mutex> lock(task_status_mutex);
@@ -803,7 +944,7 @@ namespace EasyLocal {
       if (!p_st)
       {
         p_st = std::make_unique<State>(*p_in);
-        if (parameters.find("initial_state_strategy") != end(parameters) && parameters["initial_state_strategy"] == "greedy")
+        if (parameters.contains("initial_state_strategy") && parameters["initial_state_strategy"] == "greedy")
           sm.GreedyState(*p_in, *p_st);
         else
           sm.RandomState(*p_in, *p_st);

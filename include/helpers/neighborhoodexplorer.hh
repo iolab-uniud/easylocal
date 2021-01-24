@@ -6,16 +6,21 @@
 #include <memory>
 #include <iterator>
 #include <functional>
+#include <sstream>
 
 #include "helpers/deltacostcomponent.hh"
 #include "helpers/statemanager.hh"
 #include "utils/random.hh"
 #include "utils/deprecationhandler.hh"
+#include "utils/json.hpp"
 
 namespace EasyLocal
 {
   namespace Core
-  {        
+  {
+  
+    using json = nlohmann::json;
+  
     /** Exception raised when the neighborhood is empty. */
     class EmptyNeighborhood : public std::logic_error
     {
@@ -269,6 +274,12 @@ namespace EasyLocal
        matches with the criterion expressed by the functional object bool f(const Move& mv, CostStructure cost)
        */
       virtual EvaluatedMove<Move, CostStructure> RandomBest(const Input& in, const State &st, size_t samples, size_t &explored, const MoveAcceptor &AcceptMove, const std::vector<double> &weights = std::vector<double>(0)) const;
+        
+      /** This method will return the json representation of a move */
+      virtual json ToJSON(const Input& in, const State& st, const Move& mv) const;
+        
+      /** This method will return a move from its json representation */
+      virtual Move FromJSON(const Input& in, const State& st, json repr) const;
       
     protected:
       StateManager<Input, State, CostStructure> &sm; /**< A reference to the attached state manager. */
@@ -513,6 +524,27 @@ namespace EasyLocal
         return EvaluatedMove<Move, CostStructure>::empty;
       
       return best_move;
+    }
+
+    /** This method will convert a move into its json representation, by default it just print out the move in an opportune field */
+    template <class Input, class State, class Move, class CostStructure>
+    json NeighborhoodExplorer<Input, State, Move, CostStructure>::ToJSON(const Input& in, const State& st, const Move& mv) const
+    {
+      json repr;
+      std::ostringstream oss;
+      oss << mv;
+      repr["repr"] = oss.str();
+      return repr;
+    }
+  
+    /** This method will convert a json representation back into a move */
+    template <class Input, class State, class Move, class CostStructure>
+    Move NeighborhoodExplorer<Input, State, Move, CostStructure>::FromJSON(const Input& in, const State& st, json repr) const
+    {
+      std::istringstream iss(repr["repr"].get<std::string>());
+      Move mv;
+      iss >> mv;
+      return mv;
     }
   } // namespace Core
 } // namespace EasyLocal
