@@ -125,6 +125,8 @@ protected:
        @param desc description of the runner
        */
   Runner(const Input &, SolutionManager<Input, Solution, CostStructure> &, std::string);
+  
+  Runner(const Runner<Input, Solution, CostStructure>& r) {}
 
   /** Actions and checks to be perfomed at the beginning of the run. Redefinition intended.
        @throw ParameterNotSet if one of the parameters needed by the runner (or other components) hasn't been set

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "easylocal/runners/moverunner.hh"
+#include "runner.hh"
 
 namespace EasyLocal
 {

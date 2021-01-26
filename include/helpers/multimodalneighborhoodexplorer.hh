@@ -432,7 +432,7 @@ namespace EasyLocal
       typedef std::tuple<ActiveMove<typename BaseNeighborhoodExplorers::MoveType>...> MoveTypes;
       
       /** Tuple type representing references to @c BaseNeighborhoodExplorers' @ref Move (because we need to set them). */
-      typedef std::tuple<std::reference_wrapper<ActiveMove<typename BaseNeighborhoodExplorers::MoveType>>...> MoveTypeRefs;
+      typedef std::tuple<std::reference_wrapper<ActiveMove<typename BaseNeighborhoodExplorers::MoveType>>...> MoveTypeRefs;            
       
       /** Tuple type representing const references to @c BaseNeighborhoodExplorers' @ref Move. */
       typedef std::tuple<std::reference_wrapper<const ActiveMove<typename BaseNeighborhoodExplorers::MoveType>>...> MoveTypeCRefs;
