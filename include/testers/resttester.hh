@@ -64,6 +64,7 @@ namespace EasyLocal {
         CostStructure move_cost = ne.DeltaCostFunctionComponents(in, st, mv);
         ne.MakeMove(in, st, mv);
         result["move_cost"] = move_cost.ToJSON();
+        result["move"] = ne.ToJSON(in, st, mv);
         return result;
       }
     protected:
@@ -809,7 +810,7 @@ namespace EasyLocal {
         }
       });
         
-        // This endpoint allow to make an evaluation of a solution from the solver
+        // This endpoint allows to make an evaluation of a solution from the solver
         app.route_dynamic("/neighborhood/<string>/<string>")
         .methods("POST"_method)([this](const crow::request& req, crow::response& res, std::string name, std::string operation) {
           std::vector<std::string> allowed_operations = { "best-move", "make-move" };
@@ -868,12 +869,14 @@ namespace EasyLocal {
                 response["move"] = it->second->BestMove(*in, *p_st);
                 response["cost"] = sm.CostFunctionComponentsToJSON(*in, *(p_st), true);
                 response["solution"] = om.ConvertToJSON(*in, *(p_st));
+                response["finished"] = true;
               }
               else if (operation == "make-move")
               {
                 response["move"] = it->second->MakeMove(*in, *p_st, payload["move"]);
                 response["cost"] = sm.CostFunctionComponentsToJSON(*in, *(p_st), true);
                 response["solution"] = om.ConvertToJSON(*in, *(p_st));
+                response["finished"] = true;
               }
               res = JSONResponse::make_response(200, response);
               res.end();
