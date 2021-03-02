@@ -754,7 +754,7 @@ namespace EasyLocal
             try
             {
               // ne.FirstMove(kick[cur].second, kick[cur].first.move);
-              Impl::VTupleDispatcher<State, _Void_ConstState_Move, MoveTypeRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::execute_at(cur, st, first_move_funcs, r_moves);
+              Impl::VTupleDispatcher<State, _Void_ConstState_Move, MoveTypeRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::execute_at(cur, states[cur], first_move_funcs, r_moves);
               
               while (cur > 0 && !Impl::MoveDispatcher<MoveTypeRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::are_related(cur - 1, r_moves, related_funcs))
               {
@@ -835,9 +835,8 @@ namespace EasyLocal
           {
             try
             {
-              const State &c_cur_st = states[cur];
               //ne.RandomMove(kick[cur].second, kick[cur].first.move);
-              Impl::VTupleDispatcher<State, _Void_ConstState_Move, MoveTypeRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::execute_at(cur, c_cur_st, random_move_funcs, r_moves);
+              Impl::VTupleDispatcher<State, _Void_ConstState_Move, MoveTypeRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::execute_at(cur, states[cur], random_move_funcs, r_moves);
               
               if (!initial_set[cur])
               {
@@ -851,7 +850,7 @@ namespace EasyLocal
                 if (!Impl::TupleDispatcher<bool, State, _Bool_ConstState_Move, MoveTypeRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::execute_at(cur, states[cur], next_move_funcs, r_moves))
                 {
                   // ne.FirstMove(kick[cur].second, kick[cur].first.move);
-                  Impl::VTupleDispatcher<State, _Void_ConstState_Move, MoveTypeRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::execute_at(cur, st, first_move_funcs, r_moves);
+                  Impl::VTupleDispatcher<State, _Void_ConstState_Move, MoveTypeRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::execute_at(cur, states[cur], first_move_funcs, r_moves);
                 }
                 //                  if (kick[cur].first.move == initial_kick_moves[cur])
                 if (Impl::MoveDispatcher<MoveTypeRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::equal_at(cur, r_moves, r_initial_moves))
@@ -885,7 +884,7 @@ namespace EasyLocal
               if (!Impl::TupleDispatcher<bool, State, _Bool_ConstState_Move, MoveTypeRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::execute_at(cur, states[cur], next_move_funcs, r_moves))
               {
                 // ne.FirstMove(kick[cur].second, kick[cur].first.move);
-                Impl::VTupleDispatcher<State, _Void_ConstState_Move, MoveTypeRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::execute_at(cur, st, first_move_funcs, r_moves);
+                Impl::VTupleDispatcher<State, _Void_ConstState_Move, MoveTypeRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::execute_at(cur, states[cur], first_move_funcs, r_moves);
               }
               // if (kick[cur].first.move == initial_kick_moves[cur])
               if (Impl::MoveDispatcher<MoveTypeRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::equal_at(cur, r_moves, r_initial_moves))
@@ -932,7 +931,7 @@ namespace EasyLocal
             try
             {
               //ne.FirstMove(kick[cur].second, kick[cur].first.move);
-              Impl::VTupleDispatcher<State, _Void_ConstState_Move, MoveTypeRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::execute_at(cur, st, first_move_funcs, r_moves);
+              Impl::VTupleDispatcher<State, _Void_ConstState_Move, MoveTypeRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::execute_at(cur, states[cur], first_move_funcs, r_moves);
               while (cur > 0 && !Impl::MoveDispatcher<MoveTypeRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::are_related(cur - 1, r_moves, related_funcs)) //!RelatedMoves(kick[cur - 1].first.move, kick[cur].first.move))
               {
                 //if (!ne.NextMove(kick[cur].second, kick[cur].first.move))
