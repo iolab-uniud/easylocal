@@ -5,7 +5,7 @@
 #include "utils/FastFunc.hh"
 #include "utils/tuple.hh"
 
-#include <boost/any.hpp>
+#include <any>
 #include <typeindex>
 #include <unordered_map>
 #include <functional>
@@ -86,7 +86,7 @@ namespace EasyLocal
       else
         return static_cast<Move>(mv1) < static_cast<Move>(mv2);
     }
-    
+      
     /* This namespace will hide impelementation components */
     namespace Impl
     {
@@ -322,12 +322,12 @@ namespace EasyLocal
           }
           else
           {
-            auto moves_1_tail = tuple_tail(moves_1);
-            auto moves_2_tail = tuple_tail(moves_2);
+            const auto& moves_1_tail = tuple_tail(moves_1);
+            const auto& moves_2_tail = tuple_tail(moves_2);
             return MoveDispatcher<decltype(moves_1_tail), N - 1>::equal_at(--level, moves_1_tail, moves_2_tail);
           }
         }
-        static bool are_related(long level, const MovesTuple &moves, const std::unordered_map<std::type_index, boost::any> &related_funcs)
+        static bool are_related(long level, const MovesTuple &moves, const std::unordered_map<std::type_index, std::any> &related_funcs)
         {
           if (level == 0)
           {
@@ -337,7 +337,7 @@ namespace EasyLocal
             if (it == related_funcs.end())
               return true;
             else
-              return boost::any_cast<std::function<bool(const decltype(this_move) &, const decltype(next_move) &)>>(it->second)(this_move, next_move);
+              return std::any_cast<std::function<bool(const decltype(this_move) &, const decltype(next_move) &)>>(it->second)(this_move, next_move);
           }
           else
           {
@@ -354,6 +354,32 @@ namespace EasyLocal
           {
             auto moves_tail = tuple_tail(moves);
             return MoveDispatcher<decltype(moves_tail), N - 1>::get_first_active(moves_tail, ++level);
+          }
+        }
+        static bool are_inverse(long level_1, long level_2, const MovesTuple &moves_1, const MovesTuple &moves_2, const std::unordered_map<std::type_index, std::any> &inverse_funcs)
+        {
+          if (level_1 == 0 && level_2 == 0)
+          {
+            const auto &this_move_1 = std::get<0>(moves_1).get(), &this_move_2 = std::get<0>(moves_2).get();
+            auto it = inverse_funcs.find(std::type_index(typeid(std::function<bool(const decltype(this_move_1) &, const decltype(this_move_2) &)>)));
+            if (it == inverse_funcs.end())
+              if (std::is_same<decltype(this_move_1), decltype(this_move_2)>::value)
+                // the default definition is that each move is inverse of itself, when of the same type
+                return this_move_1 == this_move_2;
+              else
+                return false;
+            else
+              return std::any_cast<std::function<bool(const decltype(this_move_1) &, const decltype(this_move_2) &)>>(it->second)(this_move_1, this_move_2);
+          }
+          else if (level_1 == 0)
+          {
+            auto moves_tail_2 = tuple_tail(moves_2);
+            return MoveDispatcher<decltype(moves_tail_2), N - 1>::are_related(0, --level_2, moves_1, moves_tail_2, inverse_funcs);
+          }
+          else if (level_2 == 0)
+          {
+            auto moves_tail_1 = tuple_tail(moves_1);
+            return MoveDispatcher<decltype(moves_tail_1), N - 1>::are_related(0, --level_2, moves_1, moves_tail_1, inverse_funcs);
           }
         }
       };
@@ -400,9 +426,26 @@ namespace EasyLocal
           else
             throw std::logic_error("End of tuple recursion");
         }
-        static bool are_related(long level, const MovesTuple &moves, const std::unordered_map<std::type_index, boost::any> &related_funcs)
+        static bool are_related(long level, const MovesTuple &moves, const std::unordered_map<std::type_index, std::any> &related_funcs)
         {
           throw std::logic_error("End of tuple recursion");
+        }
+        static bool are_related(long level, const MovesTuple &moves_1, const MovesTuple &moves_2, const std::unordered_map<std::type_index, std::any> &inverse_funcs)
+        {
+          if (level == 0)
+          {
+            const auto& this_move_1  = std::get<0>(moves_1).get();
+            const auto& this_move_2 = std::get<0>(moves_2).get();
+            auto it = inverse_funcs.find(std::type_index(typeid(std::function<bool(const decltype(this_move_1) &, const decltype(this_move_1) &)>)));
+            if (it == inverse_funcs.end())
+              // the default definition is that each move is inverse of itself
+              return this_move_1 == this_move_2;
+            else
+              return std::any_cast<std::function<bool(const decltype(this_move_1) &, const decltype(this_move_1) &)>>(it->second)(this_move_1, this_move_2);
+            return this_move_1 == this_move_2;
+          }
+          else
+            throw std::logic_error("End of tuple recursion");
         }
         static size_t get_first_active(const MovesTuple &moves, long level)
         {
@@ -490,7 +533,7 @@ namespace EasyLocal
       typedef std::tuple<Impl::FastFunc<bool(const Solution &, typename BaseNeighborhoodExplorers::MoveType &)>...> _Bool_ConstState_Move;
       typedef std::tuple<Impl::FastFunc<void(Solution&, const typename BaseNeighborhoodExplorers::MoveType &)>...> _Void_State_ConstMove;
       typedef std::tuple<Impl::FastFunc<CostStructure(const Solution &, const typename BaseNeighborhoodExplorers::MoveType &, const std::vector<double> &weights)>...> _CostStructure_ConstState_ConstMove;
-      
+
 #else
       typedef std::tuple<std::function<void(const Solution &, typename BaseNeighborhoodExplorers::MoveType &)>...> _Void_ConstState_Move;
       typedef std::tuple<std::function<bool(const Solution &, typename BaseNeighborhoodExplorers::MoveType &)>...> _Bool_ConstState_Move;
@@ -503,6 +546,8 @@ namespace EasyLocal
       _CostStructure_ConstState_ConstMove delta_cost_function_funcs;
       
       std::vector<double> bias;
+      
+      typedef std::function<bool(const MoveTypes &lm, const MoveTypes &mv)> InverseFunctionType;
       
     public:
       /** @copydoc NeighborhoodExplorer::FirstMove */
@@ -632,6 +677,16 @@ namespace EasyLocal
         size_t i = Impl::MoveDispatcher<MoveTypeCRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::get_first_active(cr_moves, 0);
         return Impl::TupleDispatcher<CostStructure, Solution, _CostStructure_ConstState_ConstMove, MoveTypeCRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::execute_at(i, st, delta_cost_function_funcs, cr_moves, weights);
       }
+      
+      /** Returns an inverse function for Tabu Search */
+      InverseFunctionType InverseFunction() const
+      {
+        return [this](const MoveTypes& lm, const MoveTypes& mv) -> bool {
+          size_t i = Impl::MoveDispatcher<MoveTypeCRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::get_first_active(lm, 0),
+          j = Impl::MoveDispatcher<MoveTypeCRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::get_first_active(mv, 0);
+          return Impl::MoveDispatcher<MoveTypeRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::are_inverse(i, j, mv, lm, this->inverse_funcs);
+        };
+      }
     };
     
     /** Given a set of base neighborhood explorers, this class will create a multimodal (i.e., compound) neighborhood explorer
@@ -687,8 +742,7 @@ namespace EasyLocal
       make_move_funcs(std::make_tuple(Impl::makeFunction2(&nhes, &BaseNeighborhoodExplorers::MakeMove)...)),
       delta_cost_function_funcs(std::make_tuple(Impl::makeFunction3(dynamic_cast<NeighborhoodExplorer<Input, Solution, typename BaseNeighborhoodExplorers::MoveType, CostStructure> *>(&nhes), &NeighborhoodExplorer<Input, Solution, typename BaseNeighborhoodExplorers::MoveType, CostStructure>::DeltaCostFunctionComponents)...))
 #endif
-      {
-      }
+      {}
       
     protected:
       /** Instantiated base NeighborhoodExplorers. */
@@ -704,7 +758,8 @@ namespace EasyLocal
       _Void_State_ConstMove make_move_funcs;
       _CostStructure_ConstState_ConstMove delta_cost_function_funcs;
       
-      std::unordered_map<std::type_index, boost::any> related_funcs;
+      std::unordered_map<std::type_index, std::any> related_funcs;
+      std::unordered_map<std::type_index, std::any> inverse_funcs;
       
     public:
       /** Adds a predicate to determine whether two moves (of different neighborhoods) are related.
@@ -716,6 +771,17 @@ namespace EasyLocal
       {
         std::function<bool(const ActiveMove<Move1> &, const ActiveMove<Move2> &)> ar = [r](const ActiveMove<Move1> &mv1, const ActiveMove<Move2> &mv2) { return r(mv1, mv2); };
         related_funcs[std::type_index(typeid(ar))] = ar;
+      }
+      
+      /** Adds a predicate to determine whether two moves (possibly of different neighborhoods) are one the inverse of the other.
+       This version wraps the moves in an ActiveMove object structure.
+       @param r an inverse function
+       */
+      template <typename Move1, typename Move2>
+      void AddInverseFunction(std::function<bool(const Move1 &, const Move2 &)> inverse)
+      {
+        std::function<bool(const ActiveMove<Move1> &, const ActiveMove<Move2> &)> ai = [inverse](const ActiveMove<Move1> &mv1, const ActiveMove<Move2> &mv2) { return inverse(mv1, mv2); };
+        inverse_funcs[std::type_index(typeid(ai))] = ai;
       }
       
       /** Adds a predicate to determine whether two moves (of different neighborhoods) are related.
@@ -754,7 +820,7 @@ namespace EasyLocal
             try
             {
               // ne.FirstMove(kick[cur].second, kick[cur].first.move);
-              Impl::VTupleDispatcher<Solution, _Void_ConstState_Move, MoveTypeRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::execute_at(cur, st, first_move_funcs, r_moves);
+              Impl::VTupleDispatcher<Solution, _Void_ConstState_Move, MoveTypeRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::execute_at(cur, states[cur], first_move_funcs, r_moves);
               
               while (cur > 0 && !Impl::MoveDispatcher<MoveTypeRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::are_related(cur - 1, r_moves, related_funcs))
               {
@@ -835,9 +901,8 @@ namespace EasyLocal
           {
             try
             {
-              const Solution &c_cur_st = states[cur];
               //ne.RandomMove(kick[cur].second, kick[cur].first.move);
-              Impl::VTupleDispatcher<Solution, _Void_ConstState_Move, MoveTypeRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::execute_at(cur, c_cur_st, random_move_funcs, r_moves);
+              Impl::VTupleDispatcher<Solution, _Void_ConstState_Move, MoveTypeRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::execute_at(cur, states[cur], random_move_funcs, r_moves);
               
               if (!initial_set[cur])
               {
@@ -851,7 +916,7 @@ namespace EasyLocal
                 if (!Impl::TupleDispatcher<bool, Solution, _Bool_ConstState_Move, MoveTypeRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::execute_at(cur, states[cur], next_move_funcs, r_moves))
                 {
                   // ne.FirstMove(kick[cur].second, kick[cur].first.move);
-                  Impl::VTupleDispatcher<Solution, _Void_ConstState_Move, MoveTypeRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::execute_at(cur, st, first_move_funcs, r_moves);
+                  Impl::VTupleDispatcher<Solution, _Void_ConstState_Move, MoveTypeRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::execute_at(cur, states[cur], first_move_funcs, r_moves);
                 }
                 //                  if (kick[cur].first.move == initial_kick_moves[cur])
                 if (Impl::MoveDispatcher<MoveTypeRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::equal_at(cur, r_moves, r_initial_moves))
@@ -885,7 +950,7 @@ namespace EasyLocal
               if (!Impl::TupleDispatcher<bool, Solution, _Bool_ConstState_Move, MoveTypeRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::execute_at(cur, states[cur], next_move_funcs, r_moves))
               {
                 // ne.FirstMove(kick[cur].second, kick[cur].first.move);
-                Impl::VTupleDispatcher<Solution, _Void_ConstState_Move, MoveTypeRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::execute_at(cur, st, first_move_funcs, r_moves);
+                Impl::VTupleDispatcher<Solution, _Void_ConstState_Move, MoveTypeRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::execute_at(cur, states[cur], first_move_funcs, r_moves);
               }
               // if (kick[cur].first.move == initial_kick_moves[cur])
               if (Impl::MoveDispatcher<MoveTypeRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::equal_at(cur, r_moves, r_initial_moves))
@@ -932,7 +997,7 @@ namespace EasyLocal
             try
             {
               //ne.FirstMove(kick[cur].second, kick[cur].first.move);
-              Impl::VTupleDispatcher<Solution, _Void_ConstState_Move, MoveTypeRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::execute_at(cur, st, first_move_funcs, r_moves);
+              Impl::VTupleDispatcher<Solution, _Void_ConstState_Move, MoveTypeRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::execute_at(cur, states[cur], first_move_funcs, r_moves);
               while (cur > 0 && !Impl::MoveDispatcher<MoveTypeRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::are_related(cur - 1, r_moves, related_funcs)) //!RelatedMoves(kick[cur - 1].first.move, kick[cur].first.move))
               {
                 //if (!ne.NextMove(kick[cur].second, kick[cur].first.move))

@@ -32,7 +32,7 @@ if (TBB_FOUND)
   target_link_libraries(EasyLocal INTERFACE TBB::tbb) 
 endif (TBB_FOUND)
 target_sources(EasyLocal INTERFACE ${headers})
-target_compile_features(EasyLocal INTERFACE cxx_std_14)
+target_compile_features(EasyLocal INTERFACE cxx_std_17)
 target_compile_options(EasyLocal INTERFACE "-Wall")
 
 
