@@ -41,7 +41,7 @@ public:
     void PrintMoveCosts(const Solution &st, const EvaluatedMove<Move, CostStructure> &em) const;
     void CheckMoveIndependence(const Solution &st) const;
     void CheckRandomMoveDistribution(const Solution &st) const;
-    size_t Modality() const;
+    constexpr size_t Modality() const;
     void SetTolerance(double t);
     
 protected:
@@ -446,9 +446,9 @@ void MoveTester<Input, Solution, Move, CostStructure>::CheckMoveIndependence(con
 }
 
 template <class Input, class Solution, class Move, class CostStructure>
-size_t MoveTester<Input, Solution, Move, CostStructure>::Modality() const
+constexpr size_t MoveTester<Input, Solution, Move, CostStructure>::Modality() const
 {
-    return ne.Modality();
+  return ne.Modality();
 }
 
 template <class Input, class Solution, class Move, class CostStructure>

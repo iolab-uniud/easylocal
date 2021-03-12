@@ -423,7 +423,7 @@ public:
   /** The modality of the @ref Move (warning: not the length of the @ref Move sequences) */
   virtual size_t Modality() const
   {
-    return ne.Modality();
+    return ne.modality;
   }
 
   /** Virtual destructor. */

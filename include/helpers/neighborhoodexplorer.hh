@@ -144,14 +144,10 @@ public:
     {
         return delta_hard_cost_components.size() + delta_soft_cost_components.size();
     }
-    
+
     /** Retuns the modality of the neighborhood explorer, i.e., the number of different kind of moves handled by it.
-     @return the modality of the neighborhood explorer
      */
-    virtual size_t Modality() const
-    {
-        return 1;
-    }
+    virtual size_t Modality() const { return 1; }
     
     /**
      Constructs a neighborhood explorer passing a n input object and a state manager.

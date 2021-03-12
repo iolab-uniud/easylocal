@@ -142,7 +142,7 @@ namespace EasyLocal
             VTupleDispatcher<Solution, decltype(funcs_tail), decltype(moves_tail), N - 1>::execute_at(--level, st, funcs_tail, moves_tail);
           }
         }
-        static void execute_at(long level, Solution&st, const FuncsTuple &funcs, const MovesTuple &moves)
+        static void execute_at(long level, Solution& st, const FuncsTuple &funcs, const MovesTuple &moves)
         {
           if (level == 0)
           {
@@ -462,6 +462,58 @@ namespace EasyLocal
             throw std::logic_error("End of tuple recursion");
         }
       };
+    
+      /** Helper class for dispatching tuples and applying functions to tuple elements. General recursion case.
+       * This version will apply a the function to a solution returning the array of transformed values. */
+      template <class Solution, class FuncsTuple, class MovesTuple, size_t N>
+      struct TupleApplier
+      {
+        static vector<Solution> apply_all(const Solution& st, const FuncsTuple &funcs, const MovesTuple &moves)
+        {
+          const auto &f = std::get<0>(funcs);
+          const auto &this_move = std::get<0>(moves).get();
+          Solution sol = st;
+          f(sol, this_move);
+          
+          const auto moves_tail = tuple_tail(moves);
+          const auto funcs_tail = tuple_tail(funcs);
+          std::vector<Solution> results = TupleApplier<Solution, decltype(funcs_tail), decltype(moves_tail), N - 1>::apply_all(sol, funcs_tail, moves_tail);
+          results.push_back(sol);
+          return results;
+        }
+        
+        static void apply_chain(Solution& st, const FuncsTuple &funcs, const MovesTuple &moves)
+        {
+          const auto &f = std::get<0>(funcs);
+          const auto &this_move = std::get<0>(moves).get();
+          f(st, this_move);
+          
+          const auto moves_tail = tuple_tail(moves);
+          const auto funcs_tail = tuple_tail(funcs);
+          TupleApplier<Solution, decltype(funcs_tail), decltype(moves_tail), N - 1>::apply_all(st, funcs_tail, moves_tail);
+        }
+      };
+    
+    template <class Solution, class FuncsTuple, class MovesTuple>
+    struct TupleApplier<Solution, FuncsTuple, MovesTuple, 0>
+    {
+      static vector<Solution> apply_all(const Solution& st, const FuncsTuple &funcs, const MovesTuple &moves)
+      {
+        const auto &f = std::get<0>(funcs);
+        const auto &this_move = std::get<0>(moves).get();
+        std::vector<Solution> sol(1, st);
+        f(sol[0], this_move);
+        
+        return sol;
+      }
+      
+      static void apply_chain(Solution& st, const FuncsTuple &funcs, const MovesTuple &moves)
+      {
+        const auto &f = std::get<0>(funcs);
+        const auto &this_move = std::get<0>(moves).get();
+        f(st, this_move);
+      }
+    };
     } // namespace Impl
   
     /** Creates an array of a non default-constructible type */
@@ -534,6 +586,10 @@ namespace EasyLocal
         else
           this->bias = bias;
       }
+      
+      /** Retuns the modality of the neighborhood explorer, i.e., the number of different kind of moves handled by it.
+       */
+      size_t Modality() const { return modality; }
       
     protected:
       /** Instantiated base NeighborhoodExplorers. */
@@ -754,6 +810,14 @@ namespace EasyLocal
       delta_cost_function_funcs(std::make_tuple(Impl::makeFunction3(dynamic_cast<NeighborhoodExplorer<Input, Solution, typename BaseNeighborhoodExplorers::MoveType, CostStructure> *>(&nhes), &NeighborhoodExplorer<Input, Solution, typename BaseNeighborhoodExplorers::MoveType, CostStructure>::DeltaCostFunctionComponents)...))
 #endif
       {}
+      
+      /** Retuns the modality of the neighborhood explorer, i.e., the number of different kind of moves handled by it.
+       */
+      virtual size_t Modality() const
+      {
+        auto sum = std::apply([](auto&&... args){ return ( args.get().Modality() + ... ); }, nhes);
+        return sum;
+      }
       
     protected:
       /** Instantiated base NeighborhoodExplorers. */
@@ -1070,8 +1134,9 @@ namespace EasyLocal
       {
         const MoveTypeCRefs cr_moves = to_crefs(moves);
         
-        for (size_t i = 0; i < modality; i++)
-          Impl::VTupleDispatcher<Solution, _Void_State_ConstMove, MoveTypeCRefs, modality - 1>::execute_at(i, st, make_move_funcs, cr_moves);
+//        for (size_t i = 0; i < modality; i++)
+//          Impl::VTupleDispatcher<Solution, _Void_State_ConstMove, MoveTypeCRefs, modality - 1>::execute_at(i, st, make_move_funcs, cr_moves);
+        Impl::TupleApplier<Solution, _Void_State_ConstMove, MoveTypeCRefs, modality - 1>::apply_chain(st, make_move_funcs, cr_moves);
       }
       
       /** @copydoc NeighborhoodExplorer::DeltaCostFunctionComponents */
@@ -1079,16 +1144,12 @@ namespace EasyLocal
       {
         const MoveTypeCRefs cr_moves = to_crefs(moves);
         
-        CostStructure result;
-        std::array<Solution, modality> states = make_array<modality>(st);
-        for (size_t i = 0; i < modality; i++)
-        {
-          states[i] = i > 0 ? states[i - 1] : st;
-          result += Impl::TupleDispatcher<CostStructure, Solution, _CostStructure_ConstState_ConstMove, MoveTypeCRefs, modality - 1>::execute_at(i, states[i], delta_cost_function_funcs, cr_moves, weights);
-          Impl::VTupleDispatcher<Solution, _Void_State_ConstMove, MoveTypeCRefs, modality - 1>::execute_at(i, states[i], make_move_funcs, cr_moves);
-        }
+        Solution st1 = st;
         
-        return result;
+        // TODO: probably it is faster to simulate the move and compute the difference
+        // execute the move and compute the difference
+        Impl::TupleApplier<Solution, _Void_State_ConstMove, MoveTypeCRefs, modality - 1>::apply_chain(st1, make_move_funcs, cr_moves);
+        return this->sm.CostFunctionComponents(st1) - this->sm.CostFunctionComponents(st);        
       }
     };
   } // namespace Core
