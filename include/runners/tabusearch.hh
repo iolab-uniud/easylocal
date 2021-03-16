@@ -86,6 +86,11 @@ namespace EasyLocal
       
       virtual void Print(std::ostream &os = std::cout) const;
       
+      void SetInverse(InverseFunction inverse)
+      {
+        this->Inverse = inverse;
+      }
+      
     protected:
       bool MaxIdleIterationExpired() const;
       void InitializeRun();

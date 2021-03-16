@@ -28,6 +28,11 @@ namespace EasyLocal
       {
         return *this;
       }
+      
+      const Move& RawMove() const
+      {
+        return *this;
+      }
     };
     
     /** Input operator for @ref ActiveMove, just forwards to input operator for @ref Move.
@@ -370,43 +375,8 @@ namespace EasyLocal
             return MoveDispatcher<decltype(moves_tail), N - 1>::get_first_active(moves_tail, ++level);
           }
         }
-        static bool are_inverse(long level_1, long level_2, const MovesTuple &moves_1, const MovesTuple &moves_2, const std::unordered_map<std::type_index, std::any> &inverse_funcs)
-        {
-          if (level_1 == 0 && level_2 == 0)
-          {
-            const auto &this_move_1 = std::get<0>(moves_1).get();
-            const auto &this_move_2 = std::get<0>(moves_2).get();
-            // searches whether there is an inverse for the combination of this_move_1 and this_move_2 in the registry
-            auto it = inverse_funcs.find(std::type_index(typeid(std::function<bool(const decltype(this_move_1) &, const decltype(this_move_2) &)>)));
-            if (it != inverse_funcs.end()) // the inverse for the combination this_move_1 and this_move_2 is present
-              // casts back the inverse function from the std::any type to the right one
-              return std::any_cast<std::function<bool(const decltype(this_move_1) &, const decltype(this_move_2) &)>>(it->second)(this_move_1, this_move_2);
-            else // default inverse definition: if the moves have the same type then they should not be equal, otherwise they are not inverses
-              if (std::is_same<decltype(this_move_1), decltype(this_move_2)>::value)
-                // the default definition is that each move is inverse of itself, when of the same type
-                return this_move_1 == this_move_2;
-              else
-                return false;
-          }
-          else if (level_1 == 0)
-          {
-            auto moves_tail_2 = tuple_tail(moves_2);
-            return MoveDispatcher<decltype(moves_tail_2), N - 1>::are_related(0, --level_2, moves_1, moves_tail_2, inverse_funcs);
-          }
-          else if (level_2 == 0)
-          {
-            auto moves_tail_1 = tuple_tail(moves_1);
-            return MoveDispatcher<decltype(moves_tail_1), N - 1>::are_related(--level_1, 0, moves_tail_1, moves_2, inverse_funcs);
-          }
-          else
-          {
-            auto moves_tail_1 = tuple_tail(moves_1);
-            auto moves_tail_2 = tuple_tail(moves_2);
-            return MoveDispatcher<decltype(moves_tail_1), N - 1>::are_related(--level_1, --level_2, moves_tail_1, moves_tail_2, inverse_funcs);
-          }
-        }
       };
-      
+                      
       /** Helper class for dispatching move tuples. Base recursion case.
        * This version will handle functions. */
       template <class MovesTuple>
@@ -470,27 +440,6 @@ namespace EasyLocal
           else
             throw std::logic_error("End of tuple recursion");
         }
-        static bool are_inverse(long level_1, long level_2, const MovesTuple &moves_1, const MovesTuple &moves_2, const std::unordered_map<std::type_index, std::any> &inverse_funcs)
-        {
-          if (level_1 == 0 && level_2 == 0)
-          {
-            const auto &this_move_1 = std::get<0>(moves_1).get();
-            const auto &this_move_2 = std::get<0>(moves_2).get();
-            // searches whether there is an inverse for the combination of this_move_1 and this_move_2 in the registry
-            auto it = inverse_funcs.find(std::type_index(typeid(std::function<bool(const decltype(this_move_1) &, const decltype(this_move_2) &)>)));
-            if (it != inverse_funcs.end()) // the inverse for the combination this_move_1 and this_move_2 is present
-              // casts back the inverse function from the std::any type to the right one
-              return std::any_cast<std::function<bool(const decltype(this_move_1) &, const decltype(this_move_2) &)>>(it->second)(this_move_1, this_move_2);
-            else // default inverse definition: if the moves have the same type then they should not be equal, otherwise they are not inverses
-              if (std::is_same<decltype(this_move_1), decltype(this_move_2)>::value)
-                // the default definition is that each move is inverse of itself, when of the same type
-                return this_move_1 == this_move_2;
-              else
-                return false;
-          }
-          else
-            throw std::logic_error("End of tuple recursion");
-        }
         static size_t get_first_active(const MovesTuple &moves, long level)
         {
           const auto &this_move = std::get<0>(moves).get();
@@ -550,6 +499,110 @@ namespace EasyLocal
         const auto &f = std::get<0>(funcs);
         const auto &this_move = std::get<0>(moves).get();
         f(st, this_move);
+      }
+    };
+    
+    /** Helper class for dispatching move tuples. General recursion case.
+     * This version will handle functions. */
+    template <class MovesTuple1, class MovesTuple2, size_t N1, size_t N2>
+    struct BiMoveDispatcher
+    {
+      static bool are_inverse(long level_1, long level_2, const MovesTuple1 &moves_1, const MovesTuple2 &moves_2, const std::unordered_map<std::type_index, std::any> &inverse_funcs)
+      {
+        if (level_1 == 0 && level_2 == 0)
+        {
+          const auto &this_move_1 = std::get<0>(moves_1).get();
+          const auto &this_move_2 = std::get<0>(moves_2).get();
+          // searches whether there is an inverse for the combination of this_move_1 and this_move_2 in the registry
+          auto it = inverse_funcs.find(std::type_index(typeid(std::function<bool(const decltype(this_move_1) &, const decltype(this_move_2) &)>)));
+          if (it != inverse_funcs.end()) // the inverse for the combination this_move_1 and this_move_2 is present
+            // casts back the inverse function from the std::any type to the right one
+            return std::any_cast<std::function<bool(const decltype(this_move_1) &, const decltype(this_move_2) &)>>(it->second)(this_move_1, this_move_2);
+          else
+            return false;
+        }
+        else if (level_1 == 0)
+        {
+          auto moves_tail_2 = tuple_tail(moves_2);
+          return BiMoveDispatcher<decltype(moves_1), decltype(moves_tail_2), N1, N2 - 1>::are_inverse(0, --level_2, moves_1, moves_tail_2, inverse_funcs);
+        }
+        else if (level_2 == 0)
+        {
+          auto moves_tail_1 = tuple_tail(moves_1);
+          return BiMoveDispatcher<decltype(moves_tail_1), decltype(moves_2), N1 - 1, N2>::are_inverse(--level_1, 0, moves_tail_1, moves_2, inverse_funcs);
+        }
+        else
+        {
+          auto moves_tail_1 = tuple_tail(moves_1);
+          auto moves_tail_2 = tuple_tail(moves_2);
+          return BiMoveDispatcher<decltype(moves_tail_1), decltype(moves_tail_2), N1 - 1, N2 - 1>::are_inverse(--level_1, --level_2, moves_tail_1, moves_tail_2, inverse_funcs);
+        }
+      }
+    };
+    
+    template <class MovesTuple1, class MovesTuple2, size_t N>
+    struct BiMoveDispatcher<MovesTuple1, MovesTuple2, N, 0>
+    {
+      static bool are_inverse(long level_1, long level_2, const MovesTuple1 &moves_1, const MovesTuple2 &moves_2, const std::unordered_map<std::type_index, std::any> &inverse_funcs)
+      {
+        if (level_1 == 0 && level_2 == 0)
+        {
+          const auto &this_move_1 = std::get<0>(moves_1).get();
+          const auto &this_move_2 = std::get<0>(moves_2).get();
+          // searches whether there is an inverse for the combination of this_move_1 and this_move_2 in the registry
+          auto it = inverse_funcs.find(std::type_index(typeid(std::function<bool(const decltype(this_move_1) &, const decltype(this_move_2) &)>)));
+          if (it != inverse_funcs.end()) // the inverse for the combination this_move_1 and this_move_2 is present
+            // casts back the inverse function from the std::any type to the right one
+            return std::any_cast<std::function<bool(const decltype(this_move_1) &, const decltype(this_move_2) &)>>(it->second)(this_move_1, this_move_2);
+          else // default inverse definition: if the moves have the same type then they should not be equal, otherwise they are not inverses
+              return false;
+        }
+        else
+          throw std::logic_error("End of tuple recursion");
+      }
+    };
+    
+    template <class MovesTuple1, class MovesTuple2, size_t N>
+    struct BiMoveDispatcher<MovesTuple1, MovesTuple2, 0, N>
+    {
+      static bool are_inverse(long level_1, long level_2, const MovesTuple1 &moves_1, const MovesTuple2 &moves_2, const std::unordered_map<std::type_index, std::any> &inverse_funcs)
+      {
+        if (level_1 == 0 && level_2 == 0)
+        {
+          const auto &this_move_1 = std::get<0>(moves_1).get();
+          const auto &this_move_2 = std::get<0>(moves_2).get();
+          // searches whether there is an inverse for the combination of this_move_1 and this_move_2 in the registry
+          auto it = inverse_funcs.find(std::type_index(typeid(std::function<bool(const decltype(this_move_1) &, const decltype(this_move_2) &)>)));
+          if (it != inverse_funcs.end()) // the inverse for the combination this_move_1 and this_move_2 is present
+            // casts back the inverse function from the std::any type to the right one
+            return std::any_cast<std::function<bool(const decltype(this_move_1) &, const decltype(this_move_2) &)>>(it->second)(this_move_1, this_move_2);
+          else // default inverse definition: if the moves have the same type then they should not be equal, otherwise they are not inverses
+              return false;
+        }
+        else
+          throw std::logic_error("End of tuple recursion");
+      }
+    };
+    
+    template <class MovesTuple1, class MovesTuple2>
+    struct BiMoveDispatcher<MovesTuple1, MovesTuple2, 0, 0>
+    {
+      static bool are_inverse(long level_1, long level_2, const MovesTuple1 &moves_1, const MovesTuple2 &moves_2, const std::unordered_map<std::type_index, std::any> &inverse_funcs)
+      {
+        if (level_1 == 0 && level_2 == 0)
+        {
+          const auto &this_move_1 = std::get<0>(moves_1).get();
+          const auto &this_move_2 = std::get<0>(moves_2).get();
+          // searches whether there is an inverse for the combination of this_move_1 and this_move_2 in the registry
+          auto it = inverse_funcs.find(std::type_index(typeid(std::function<bool(const decltype(this_move_1) &, const decltype(this_move_2) &)>)));
+          if (it != inverse_funcs.end()) // the inverse for the combination this_move_1 and this_move_2 is present
+            // casts back the inverse function from the std::any type to the right one
+            return std::any_cast<std::function<bool(const decltype(this_move_1) &, const decltype(this_move_2) &)>>(it->second)(this_move_1, this_move_2);
+          else // default inverse definition: if the moves have the same type then they should not be equal, otherwise they are not inverses
+              return false;
+        }
+        else
+          throw std::logic_error("End of tuple recursion");
       }
     };
     } // namespace Impl
@@ -807,7 +860,7 @@ namespace EasyLocal
         return [this](const MoveTypes& lm, const MoveTypes& mv) -> bool {
           size_t i = Impl::MoveDispatcher<MoveTypeCRefs, modality - 1>::get_first_active(lm, 0),
           j = Impl::MoveDispatcher<MoveTypeCRefs, modality - 1>::get_first_active(mv, 0);
-          return Impl::MoveDispatcher<MoveTypeRefs, modality - 1>::are_inverse(i, j, lm, mv, this->inverse_funcs);
+          return Impl::BiMoveDispatcher<MoveTypeCRefs, MoveTypeCRefs, modality - 1, modality - 1>::are_inverse(i, j, to_crefs(lm), to_crefs(mv), this->inverse_funcs);
         };
       }
     };
