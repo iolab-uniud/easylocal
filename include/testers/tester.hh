@@ -85,7 +85,8 @@ namespace EasyLocal
       virtual void SetInput(const Input& in)
       {
         p_in = &in;
-        p_test_state = std::make_shared<State>(*p_in);
+        if (!p_test_state || (&p_test_state->in != &in))
+          p_test_state = std::make_shared<State>(*p_in);
       }
       
       const Input& GetInput() const
@@ -460,11 +461,15 @@ namespace EasyLocal
     template <class Input, class Output, class State, class CostStructure>
     void Tester<Input, Output, State, CostStructure>::RunInputMenu()
     {
-      bool show_state;
-      ShowReducedStateMenu();
-      std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
-      show_state = ExecuteStateChoice();
-      std::chrono::milliseconds duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start);
+      bool show_state = true;
+      std::chrono::milliseconds duration(0);
+      if (this->p_test_state == nullptr)
+      {
+        ShowReducedStateMenu();
+        std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
+        show_state = ExecuteStateChoice();
+        duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start);
+      }
       if (show_state)
       {
         Output out(this->GetInput());
