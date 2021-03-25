@@ -24,7 +24,7 @@ public:
         max_perturbation = 1.08;
         min_range("min_range", "Minimum value for the weight", this->parameters);
         min_range = 0.001;
-        max_range("min_range", "Maximum value for the weight", this->parameters);
+        max_range("max_range", "Maximum value for the weight", this->parameters);
         max_range = 10.0;
     }
 

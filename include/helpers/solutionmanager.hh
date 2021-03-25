@@ -138,7 +138,12 @@ public:
     {
         return *cost_component[i];
     }
-    
+
+    CostComponent<Input, Solution, CFtype> &GetCostComponentForModification(size_t i) const
+    {
+        return *cost_component[i];
+    }
+
     size_t CostComponentIndex(const CostComponent<Input, Solution, CFtype> &cc) const
     {
         return cost_component_index.at(cc.hash);

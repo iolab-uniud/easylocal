@@ -97,7 +97,7 @@ public:
     return iteration;
   }
  
-  /** Gets the index of the current iteration. */
+  /** Gets the index of the current evaluation. */
   unsigned long int Evaluations() const
   {
     return evaluations;
