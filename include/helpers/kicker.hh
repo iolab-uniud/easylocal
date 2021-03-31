@@ -124,7 +124,7 @@ namespace EasyLocal
               cur++;
               goto loop;
             }
-            catch (EmptyNeighborhood e)
+            catch (EmptyNeighborhood& e)
             {
               backtracking = true;
               cur--;
@@ -187,7 +187,7 @@ namespace EasyLocal
               cur++;
               goto loop;
             }
-            catch (EmptyNeighborhood e)
+            catch (EmptyNeighborhood& e)
             {
               backtracking = true;
               cur--;
@@ -226,7 +226,7 @@ namespace EasyLocal
         {
           FirstKick();
         }
-        catch (EmptyNeighborhood)
+        catch (EmptyNeighborhood& e)
         {
           end = true;
         }
@@ -352,7 +352,7 @@ namespace EasyLocal
               cur++;
               goto loop;
             }
-            catch (EmptyNeighborhood e)
+            catch (EmptyNeighborhood& e)
             {
               backtracking = true;
               cur--;
@@ -390,7 +390,7 @@ namespace EasyLocal
         {
           RandomKick();
         }
-        catch (EmptyNeighborhood)
+        catch (EmptyNeighborhood& e)
         {
           end = true;
         }
