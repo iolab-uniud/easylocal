@@ -143,6 +143,11 @@ public:
     {
         return cost_component_index.at(cc.hash);
     }
+  
+  void SetCostComponentWeight(size_t i, CFtype w)
+  {
+    cost_component[i]->SetWeight(w);
+  }
     
     /**
      Clear the cost component array.

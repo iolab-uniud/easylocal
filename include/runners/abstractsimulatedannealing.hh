@@ -50,7 +50,6 @@ protected:
     void InitializeRun() override;
     void UpdateIterationCounter();
     void SelectMove() override;
-    bool AcceptableMove();
     void CompleteMove() override;
     void CompleteIteration() override;
     // parameters
