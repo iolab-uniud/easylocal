@@ -65,6 +65,7 @@ namespace EasyLocal {
         ne.MakeMove(in, st, mv);
         result["move_cost"] = move_cost.ToJSON();
         result["move"] = ne.ToJSON(in, st, mv);
+
         return result;
       }
     protected:
@@ -638,7 +639,7 @@ namespace EasyLocal {
           {
             res = JSONResponse::make_error(422, "The input file does not comply with the format expected by the system", e.what());
             res.end();
-            CROW_LOG_ERROR << "Input file did not comply with the format expected by the system";
+            CROW_LOG_ERROR << "Input file did not comply with the format expected by the system: " << e.what();
             return;
           }
           // conventionally an initial solution, if available, is passed into a "initial_solution" field in the payload
@@ -657,7 +658,7 @@ namespace EasyLocal {
             {
               res = JSONResponse::make_error(422, "The initial solution does not comply with the format expected by the system", e.what());
               res.end();
-              CROW_LOG_ERROR << "Initial solution did not comply with the format expected by the system";
+              CROW_LOG_ERROR << "Initial solution did not comply with the format expected by the system: " << e.what();
               return;
             }
           }
@@ -778,7 +779,7 @@ namespace EasyLocal {
         {
           res = JSONResponse::make_error(422, "The input file does not comply with the format expected by the system", e.what());
           res.end();
-          CROW_LOG_ERROR << "Input file did not comply with the format expected by the system";
+          CROW_LOG_ERROR << "Input file did not comply with the format expected by the system: " << e.what();
           return;
         }
         // conventionally an initial solution, if available, is passed into a "initial_solution" field in the payload
@@ -799,7 +800,7 @@ namespace EasyLocal {
           {
             res = JSONResponse::make_error(422, "The solution does not comply with the format expected by the system", e.what());
             res.end();
-            CROW_LOG_ERROR << "The solution did not comply with the format expected by the system";
+            CROW_LOG_ERROR << "The solution did not comply with the format expected by the system: " << e.what();
             return;
           }
         }
@@ -850,7 +851,7 @@ namespace EasyLocal {
           {
             res = JSONResponse::make_error(422, "The input file does not comply with the format expected by the system", e.what());
             res.end();
-            CROW_LOG_ERROR << "Input file did not comply with the format expected by the system";
+            CROW_LOG_ERROR << "Input file did not comply with the format expected by the system: " << e.what();
             return;
           }
           // conventionally an initial solution, if available, is passed into a "initial_solution" field in the payload
@@ -885,7 +886,7 @@ namespace EasyLocal {
             {
               res = JSONResponse::make_error(422, "The solution does not comply with the format expected by the system", e.what());
               res.end();
-              CROW_LOG_ERROR << "The solution did not comply with the format expected by the system";
+              CROW_LOG_ERROR << "The solution did not comply with the format expected by the system: " << e.what();
               return;
             }
           }
