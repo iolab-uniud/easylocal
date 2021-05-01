@@ -82,7 +82,10 @@ namespace EasyLocal
       /** Gets the weight of this cost component.
        @return the weight of this cost component
        */
-      virtual CFtype Weight(const Input& in) const = 0;      
+      virtual CFtype Weight(const Input& in) const
+      {
+        return weight;
+      }
       
       /** Sets this cost component to be hard. */
       void SetHard() { is_hard = true; }
@@ -109,12 +112,14 @@ namespace EasyLocal
        @param name name of the cost component (for debug reasons)
        */
       CostComponent(bool is_hard, std::string name);
+      CostComponent(const CFtype& weight, bool is_hard, std::string name);
       
       /** Destructor. */
       virtual ~CostComponent()
       {}
       
       const size_t hash;
+      const CFtype weight;
       
     protected:
       
@@ -129,10 +134,15 @@ namespace EasyLocal
     /** IMPLEMENTATION */
     
     template <class Input, class State, typename CFtype>
-    CostComponent<Input, State, CFtype>::CostComponent(bool is_hard, std::string name)
-    : name(name), hash(std::hash<std::string>()(typeid(this).name() + name)), is_hard(is_hard)
+  CostComponent<Input, State, CFtype>::CostComponent(const CFtype& weight, bool is_hard, std::string name)
+    : name(name), hash(std::hash<std::string>()(typeid(this).name() + name)), weight(weight), is_hard(is_hard)
     {}
-    
+  
+  template <class Input, class State, typename CFtype>
+  CostComponent<Input, State, CFtype>::CostComponent(bool is_hard, std::string name)
+  : CostComponent((CFtype)1, is_hard, name)
+  {}
+  
     template <class Input, class State, typename CFtype>
     void CostComponent<Input, State, CFtype>::Print(std::ostream &os) const
     {

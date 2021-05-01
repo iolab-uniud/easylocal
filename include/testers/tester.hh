@@ -47,7 +47,7 @@ namespace EasyLocal
           return value;
 #endif
         }
-        catch (std::invalid_argument)
+        catch (std::invalid_argument&)
         {
           return -1;
         }
@@ -544,7 +544,7 @@ namespace EasyLocal
             SetInput(*internal_input);
             break;
           }
-          catch (std::exception e)
+          catch (std::exception& e)
           {
             os << "Something went wrong " << e.what() << std::endl;
             file_name = "";

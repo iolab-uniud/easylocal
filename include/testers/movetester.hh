@@ -201,7 +201,7 @@ namespace EasyLocal
           return true;
         }
       }
-      catch (EmptyNeighborhood e)
+      catch (EmptyNeighborhood& e)
       {
         os << "Empty neighborhood" << std::endl;
       }

@@ -71,7 +71,7 @@ namespace EasyLocal
           ne.FirstMove(in, state, current_move);
           computed_move = EvaluatedMove<Move, CostStructure>(current_move);
         }
-        catch (EmptyNeighborhood)
+        catch (EmptyNeighborhood& e)
         {
           end = true;
         }
@@ -149,7 +149,7 @@ namespace EasyLocal
         {
           ne.RandomMove(in, state, current_move);
         }
-        catch (EmptyNeighborhood)
+        catch (EmptyNeighborhood& e)
         {
           end = true;
         }

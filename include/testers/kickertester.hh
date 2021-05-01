@@ -170,7 +170,7 @@ namespace EasyLocal
           kicker.MakeKick(in, st, kick);
         return execute_kick;
       }
-      catch (EmptyNeighborhood)
+      catch (EmptyNeighborhood& e)
       {
         os << "Empty neighborhood." << std::endl;
         return false;

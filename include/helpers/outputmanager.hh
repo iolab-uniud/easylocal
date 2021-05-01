@@ -120,7 +120,7 @@ namespace EasyLocal
        */
       virtual void ReadAndCheckSolution(const Input& in, State& st, std::istream& is) const
       {
-        SP_Output out(in);
+        Output out(in);
         json res;
         is >> out;
         InputState(in, st, out);                  

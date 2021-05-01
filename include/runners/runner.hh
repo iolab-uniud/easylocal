@@ -326,7 +326,7 @@ namespace EasyLocal
             UpdateBestState();
           }
         }
-        catch (EmptyNeighborhood)
+        catch (EmptyNeighborhood& e)
         {
           break;
         }

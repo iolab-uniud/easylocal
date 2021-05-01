@@ -524,7 +524,7 @@ namespace EasyLocal
             Impl::MoveDispatcher<MoveRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::set_activity_at(i, r_moves, true);
             return;
           }
-          catch (EmptyNeighborhood)
+          catch (EmptyNeighborhood& e)
           {
             Impl::MoveDispatcher<MoveRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::set_activity_at(i, r_moves, false);
           }
@@ -562,7 +562,7 @@ namespace EasyLocal
             Impl::MoveDispatcher<MoveRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::set_activity_at(i, r_moves, true);
             return;
           }
-          catch (EmptyNeighborhood)
+          catch (EmptyNeighborhood& e)
           {
             Impl::MoveDispatcher<MoveRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::set_activity_at(i, r_moves, false);
           }
@@ -575,7 +575,7 @@ namespace EasyLocal
             Impl::MoveDispatcher<MoveRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::set_activity_at(i, r_moves, true);
             return;
           }
-          catch (EmptyNeighborhood)
+          catch (EmptyNeighborhood& e)
           {
             Impl::MoveDispatcher<MoveRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::set_activity_at(i, r_moves, false);
           }
@@ -611,7 +611,7 @@ namespace EasyLocal
                 Impl::MoveDispatcher<MoveRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::set_activity_at(i, r_moves, true);
                 return true;
               }
-              catch (EmptyNeighborhood)
+              catch (EmptyNeighborhood& e)
               {
                 Impl::MoveDispatcher<MoveRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::set_activity_at(i, r_moves, false);
               }
@@ -779,7 +779,7 @@ namespace EasyLocal
               cur++;
               goto loop;
             }
-            catch (EmptyNeighborhood e)
+            catch (EmptyNeighborhood& e)
             {
               backtracking = true;
               Impl::MoveDispatcher<MoveRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::set_activity_at(cur, r_moves, false);
@@ -874,7 +874,7 @@ namespace EasyLocal
               cur++;
               goto loop;
             }
-            catch (EmptyNeighborhood e)
+            catch (EmptyNeighborhood& e)
             {
               backtracking = true;
               Impl::MoveDispatcher<MoveRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::set_activity_at(cur, r_moves, false);
@@ -956,7 +956,7 @@ namespace EasyLocal
               cur++;
               goto loop;
             }
-            catch (EmptyNeighborhood e)
+            catch (EmptyNeighborhood& e)
             {
               backtracking = true;
               Impl::MoveDispatcher<MoveRefs, sizeof...(BaseNeighborhoodExplorers) - 1>::set_activity_at(cur, r_moves, false);
