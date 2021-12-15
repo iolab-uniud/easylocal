@@ -162,6 +162,8 @@ void AbstractSimulatedAnnealing<Input, Solution, Move, CostStructure>::CompleteI
         number_of_temperatures++;
         neighbors_sampled = 0;
         neighbors_accepted = 0;
+        //std::cerr << "Current solution has cost " << this->current_state_cost << endl;
+        //std::cerr << "Current solution has cost " << (*this->p_current_state).CalculateFullCost() << endl;
     }
 }
 } // namespace Core

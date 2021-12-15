@@ -455,7 +455,7 @@ namespace EasyLocal
       template <class Solution, class FuncsTuple, class MovesTuple, size_t N>
       struct TupleApplier
       {
-        static vector<Solution> apply_all(const Solution& st, const FuncsTuple &funcs, const MovesTuple &moves)
+        static std::vector<Solution> apply_all(const Solution& st, const FuncsTuple &funcs, const MovesTuple &moves)
         {
           const auto &f = std::get<0>(funcs);
           const auto &this_move = std::get<0>(moves).get();
@@ -484,7 +484,7 @@ namespace EasyLocal
     template <class Solution, class FuncsTuple, class MovesTuple>
     struct TupleApplier<Solution, FuncsTuple, MovesTuple, 0>
     {
-      static vector<Solution> apply_all(const Solution& st, const FuncsTuple &funcs, const MovesTuple &moves)
+      static std::vector<Solution> apply_all(const Solution& st, const FuncsTuple &funcs, const MovesTuple &moves)
       {
         const auto &f = std::get<0>(funcs);
         const auto &this_move = std::get<0>(moves).get();

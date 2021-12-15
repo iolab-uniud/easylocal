@@ -31,6 +31,8 @@ namespace EasyLocal
       void ReadParameters(std::istream &is = std::cin, std::ostream &os = std::cout);
       virtual std::shared_ptr<Solution> GetCurrentState() const;
       
+      //std::shared_ptr<Solution> GetCurrentSolution() const override;
+      
     protected:
       void Go();
       void AtTimeoutExpired();
@@ -102,7 +104,9 @@ namespace EasyLocal
     template <class Input, class Solution, class CostStructure>
     std::shared_ptr<Solution> SimpleLocalSearch<Input, Solution, CostStructure>::GetCurrentState() const
     {
-      return this->p_runner->GetCurrentBestState();
+      return this->p_runner->GetCurrentState();
     }
+
+
   } // namespace Core
 } // namespace EasyLocal

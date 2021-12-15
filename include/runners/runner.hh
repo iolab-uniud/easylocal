@@ -117,6 +117,8 @@ public:
 
   virtual std::shared_ptr<Solution> GetCurrentBestState() const;
 
+  virtual std::shared_ptr<Solution> GetCurrentState() const;
+
 protected:
   /** Constructor.
        @param i a reference to the input
@@ -339,5 +341,13 @@ std::shared_ptr<Solution> Runner<Input, Solution, CostStructure>::GetCurrentBest
   std::lock_guard<std::mutex> lock(best_state_mutex);
   return std::make_shared<Solution>(*p_best_state); // make a state copy
 }
+
+template <class Input, class Solution, class CostStructure>
+std::shared_ptr<Solution> Runner<Input, Solution, CostStructure>::GetCurrentState() const
+{
+  //std::lock_guard<std::mutex> lock(current_state_mutex);
+  return std::make_shared<Solution>(*p_current_state); // make a state copy
+}
+
 } // namespace Core
 } // namespace EasyLocal

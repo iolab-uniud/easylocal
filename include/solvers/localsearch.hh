@@ -191,13 +191,14 @@ void LocalSearch<Input, Solution, CostStructure>::TerminateSolve()
 template <class Input, class Solution, class CostStructure>
 std::shared_ptr<Solution> LocalSearch<Input, Solution, CostStructure>::GetCurrentSolution() const
 {
-    std::shared_ptr<Solution> current_state;
-    if (!is_running)
-        current_state = this->p_best_state;
-    else
-        current_state = GetCurrentState();
+    //std::shared_ptr<Solution> current_state;
+    // if (!is_running)
+    //     current_state = this->p_best_state;
+    // else
+    //     current_state = GetCurrentState();
+    //current_state = this->p_current_state;
     std::shared_ptr<Solution> out = std::make_shared<Solution>(this->in);
-    *out = *current_state;
+    *out = *(GetCurrentState());
     return out;
 }
 } // namespace Core
