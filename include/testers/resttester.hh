@@ -1046,6 +1046,7 @@ namespace EasyLocal {
         status["started"] = getISOTimestamp(task->started);
         status["completed"] = getISOTimestamp(task->completed);
         status["solution"] = om.ConvertToJSON(*(task->p_in), *(task->p_st));
+        status["cost"] = sm.CostFunctionComponents(*(task->p_in), *(task->p_st)).ToJSON();
       }
       else if (!force_partial)
       {
