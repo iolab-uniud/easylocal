@@ -500,8 +500,13 @@ namespace EasyLocal
         
         else if (bias.size() != this->Modality())
           throw std::logic_error("Multimodal move random distribution (i.e., bias) not matching the neighborhood modality");
-        else
+        else 
+        {
+          if (std::any_of(bias.begin(), bias.end(), [](float b) { return b < 0.0; }))
+             throw std::logic_error("Bias values cannot be negative");
+            
           this->bias = bias;
+        }
       }
       
     protected:
