@@ -316,6 +316,19 @@ namespace EasyLocal
             MoveDispatcher<decltype(moves_tail), N - 1>::set_activity_at(--level, moves_tail, value);
           }
         }
+        static bool get_activity_at(long level, MovesTuple &moves)
+        {
+          if (level == 0)
+          {
+            auto &this_move = std::get<0>(moves).get();
+            return this_move.active;
+          }
+          else
+          {
+            auto moves_tail = tuple_tail(moves);
+            return MoveDispatcher<decltype(moves_tail), N - 1>::get_activity_at(--level, moves_tail);
+          }
+        }
         static void copy_move_at(long level, MovesTuple &target, const MovesTuple &source)
         {
           if (level == 0)
@@ -393,6 +406,16 @@ namespace EasyLocal
           {
             auto &this_move = std::get<0>(moves).get();
             this_move.active = value;
+          }
+          else
+            throw std::logic_error("End of tuple recursion");
+        }
+        static bool get_activity_at(long level, MovesTuple &moves)
+        {
+          if (level == 0)
+          {
+            auto &this_move = std::get<0>(moves).get();
+            return this_move.active;
           }
           else
             throw std::logic_error("End of tuple recursion");
@@ -862,6 +885,10 @@ namespace EasyLocal
           j = Impl::MoveDispatcher<MoveTypeCRefs, modality - 1>::get_first_active(mv, 0);
           return Impl::BiMoveDispatcher<MoveTypeCRefs, MoveTypeCRefs, modality - 1, modality - 1>::are_inverse(i, j, to_crefs(lm), to_crefs(mv), this->inverse_funcs);
         };
+      }
+      size_t GetActiveMove(const MoveTypes& mv) const override
+      {
+        return Impl::MoveDispatcher<MoveTypeCRefs, modality - 1>::get_first_active(mv, 0);
       }
     };
     
