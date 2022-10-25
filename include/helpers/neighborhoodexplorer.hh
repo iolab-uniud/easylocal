@@ -148,11 +148,8 @@ public:
     /** Retuns the modality of the neighborhood explorer, i.e., the number of different kind of moves handled by it.
      */
     virtual size_t Modality() const { return 1; }
-
-    virtual size_t GetActiveMove(const MoveType& mv) const
-      {
-        return 0;
-      }
+    virtual size_t GetActiveMove(const MoveType& mv) const { return 0;}
+    virtual double GetBias(size_t i) const {return 1.0;} 
     
     /**
      Constructs a neighborhood explorer passing a n input object and a state manager.

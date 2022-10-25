@@ -886,10 +886,15 @@ namespace EasyLocal
           return Impl::BiMoveDispatcher<MoveTypeCRefs, MoveTypeCRefs, modality - 1, modality - 1>::are_inverse(i, j, to_crefs(lm), to_crefs(mv), this->inverse_funcs);
         };
       }
+
+      /** Retuns the index of the ActiveMove (under the hypothesis that only one move is active)*/
       size_t GetActiveMove(const MoveTypes& mv) const override
       {
         return Impl::MoveDispatcher<MoveTypeCRefs, modality - 1>::get_first_active(mv, 0);
       }
+
+      /** Retuns the probability (weight/bias) of neighborhood i*/
+      double GetBias(size_t i) const override {return bias[i]; } 
     };
     
     /** Given a set of base neighborhood explorers, this class will create a multimodal (i.e., compound) neighborhood explorer
