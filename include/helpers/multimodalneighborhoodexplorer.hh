@@ -698,7 +698,11 @@ namespace EasyLocal
           this->bias = make_array<modality>(e);
         }
         else
+        {
+          if (std::any_of(bias.begin(), bias.end(), [](float b) { return b < 0.0; }))
+            throw std::logic_error("Bias values cannot be negative");
           this->bias = bias;
+        }
       }
       
       /** Retuns the modality of the neighborhood explorer, i.e., the number of different kind of moves handled by it.
