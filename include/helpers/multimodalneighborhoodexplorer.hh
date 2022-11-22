@@ -899,6 +899,7 @@ namespace EasyLocal
 
       /** Retuns the probability (weight/bias) of neighborhood i*/
       double GetBias(size_t i) const override {return bias[i]; } 
+      void SetBias(size_t i, double nb) override {bias[i] = nb;}
     };
     
     /** Given a set of base neighborhood explorers, this class will create a multimodal (i.e., compound) neighborhood explorer

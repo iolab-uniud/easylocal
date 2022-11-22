@@ -150,7 +150,7 @@ public:
     virtual size_t Modality() const { return 1; }
     virtual size_t GetActiveMove(const MoveType& mv) const { return 0;}
     virtual double GetBias(size_t i) const {return 1.0;} 
-    
+    virtual void SetBias(size_t i, double nb) {}
     /**
      Constructs a neighborhood explorer passing a n input object and a state manager.
      
