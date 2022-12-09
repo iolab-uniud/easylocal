@@ -1,6 +1,7 @@
 #pragma once
 
 #include <chrono>
+#include <cmath>
 #include "runners/simulatedannealingevaluationbased.hh"
 
 namespace EasyLocal
@@ -84,9 +85,9 @@ namespace EasyLocal
                     << learning_data[i].sideways << "/"
                     << learning_data[i].global_improvement << "] ";
     #endif
-                //cerr << "learning_data[i].accepted = " <<learning_data[i].accepted<< ", learning_data[i].global_evaluation_time.count() = " << learning_data[i].global_evaluation_time.count() << endl;
+                cerr << endl << "avg_cost["<<i<<"] = "<< static_cast<double>(learning_data[i].global_evaluation_time.count()/learning_data[i].accepted) << ", log(avg_cost["<<i<<"]) =" <<std::log10(learning_data[i].global_evaluation_time.count()/static_cast<double>(learning_data[i].accepted)) << endl;
                 if(learning_data[i].global_improvement > 0)
-                  reward[i] = (static_cast<double>(learning_data[i].global_improvement)/(this->ne.GetBias(i)*this->neighbors_sampled)) * (static_cast<double>(learning_data[i].accepted)/learning_data[i].global_evaluation_time.count());
+                  reward[i] = (static_cast<double>(learning_data[i].global_improvement)/(this->ne.GetBias(i)*this->neighbors_sampled))/std::log10(learning_data[i].global_evaluation_time.count()/static_cast<double>(learning_data[i].accepted));
                 else
                   reward[i] = 0;
                 total_reward += reward[i];
@@ -139,7 +140,6 @@ namespace EasyLocal
           }
         SimulatedAnnealingEvaluationBased<Input, Solution, Move, CostStructure>::CompleteIteration();
       }
-     #ifndef DUMMY
       void SelectMove() override 
       {
         bool accepted = false;
@@ -153,14 +153,11 @@ namespace EasyLocal
           {
             accepted = true;
             learning_data[this->ne.GetActiveMove(this->current_move.move)].global_evaluation_time+=std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()-start);
-            cout << "["<< this->ne.GetActiveMove(this->current_move.move) <<"]" << std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()-start).count() << endl;
           }
           this->neighbors_sampled++;
           this->evaluations++;
         } while(!accepted);
-     
       }
-     #endif
     protected:
       vector<LearningData> learning_data;
       double learning_rate; 
