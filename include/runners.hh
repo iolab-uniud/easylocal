@@ -34,6 +34,7 @@
 #include "runners/simulatedannealingevaluationbased.hh"
 #include "runners/simulatedannealingtimebased.hh"
 #include "runners/simulatedannealingwithreheating.hh"
+#include "runners/simulatedannealingwithlearning.hh"
 #include "runners/greatdeluge.hh"
 #include "runners/tabusearch.hh"
 #include "runners/firstimprovementtabusearch.hh"

@@ -100,15 +100,7 @@ namespace EasyLocal
           || this->neighbors_accepted >= this->max_neighbors_accepted
           || this->neighbors_sampled >= this->max_neighbors_sampled)
       {
-//         char ch;
-//         if (this->neighbors_accepted >= this->max_neighbors_accepted) 
-//           ch = 'A';
-//         else if (this->neighbors_sampled >= this->max_neighbors_sampled) 
-//           ch = 'S';
-//         else
-//           ch = 'T';           
         this->temperature *= this->cooling_rate;
-//         cerr << ch << this->temperature << " ";
         this->number_of_temperatures++;
         this->neighbors_sampled = 0;
         this->neighbors_accepted = 0;
