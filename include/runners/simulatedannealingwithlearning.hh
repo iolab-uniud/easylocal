@@ -26,11 +26,11 @@ namespace EasyLocal
         learning_data.resize(ne.Modality());
         learning_rate = 0.05;        // higher values imply faster learning
         min_threshold = 0.05;        // probabilities are lower-bounded by this value
-        timing = 3;                  // 0 = no timing, 1 = linear, 2 = sqrt, 3 = log10
+        time_reward = 3;                  // 0 = no time_reward, 1 = linear, 2 = sqrt, 3 = log10
       }
       void SetLearningRate(double r) {learning_rate = r;}
       void SetThreshold(double t) {min_threshold = t;}
-      void SetTiming(double t) {timing = t;}  //0 = no timing, 1 = linear, 2 = sqrt, 3 = log10
+      void SetTimeReward(double t) {time_reward = t;}  //0 = no time_reward, 1 = linear, 2 = sqrt, 3 = log10
       void CompleteMove() override 
       {
         SimulatedAnnealingEvaluationBased<Input, Solution, Move, CostStructure>::CompleteMove();
@@ -91,13 +91,13 @@ namespace EasyLocal
                 
                 if(learning_data[i].global_improvement > 0)
                 {
-                  if(timing == 1)                   //linear
+                  if(time_reward == 1)                   //linear
                     reward[i] = (static_cast<double>(learning_data[i].global_improvement)/(this->ne.GetBias(i)*this->neighbors_sampled))
                             /(learning_data[i].global_evaluation_time.count()/static_cast<double>(learning_data[i].accepted));
-                  else if(timing == 2)             //sqrt()
+                  else if(time_reward == 2)             //sqrt()
                     reward[i] = (static_cast<double>(learning_data[i].global_improvement)/(this->ne.GetBias(i)*this->neighbors_sampled))
                             /std::sqrt(learning_data[i].global_evaluation_time.count()/static_cast<double>(learning_data[i].accepted));
-                  else if (timing == 3)            //log10()
+                  else if (time_reward == 3)            //log10()
                     reward[i] = (static_cast<double>(learning_data[i].global_improvement)/(this->ne.GetBias(i)*this->neighbors_sampled))
                             /std::log10(learning_data[i].global_evaluation_time.count()/static_cast<double>(learning_data[i].accepted));
                   else 
@@ -177,7 +177,7 @@ namespace EasyLocal
       vector<LearningData> learning_data;
       double learning_rate; 
       double min_threshold;
-      int timing;
+      int time_reward;
       // batch size is equal to max_neighbors_sampled in this version
     };
   }
