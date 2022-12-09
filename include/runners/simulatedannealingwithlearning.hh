@@ -24,11 +24,13 @@ namespace EasyLocal
                                     std::string name) : SimulatedAnnealingEvaluationBased<Input, Solution, Move, CostStructure>(in, sm, ne, name)
       {
         learning_data.resize(ne.Modality());
-        learning_rate = 0.05;  // higher values imply faster learning
-        min_threshold = 0.05;  // probabilities are lower-bounded by this value
+        learning_rate = 0.05;        // higher values imply faster learning
+        min_threshold = 0.05;        // probabilities are lower-bounded by this value
+        timing = 3;                  // 0 = no timing, 1 = linear, 2 = sqrt, 3 = log10
       }
       void SetLearningRate(double r) {learning_rate = r;}
       void SetThreshold(double t) {min_threshold = t;}
+      void SetTiming(double t) {timing = t;}  //0 = no timing, 1 = linear, 2 = sqrt, 3 = log10
       void CompleteMove() override 
       {
         SimulatedAnnealingEvaluationBased<Input, Solution, Move, CostStructure>::CompleteMove();
@@ -71,7 +73,7 @@ namespace EasyLocal
                 sum_rates+=this->ne.GetBias(i);
               }
             std::cerr << "[" << sum_rates << "] ";
-            std::cerr << "acceptance: (";
+           std::cerr << "acceptance: (";
             for(unsigned int i = 0; i < this->ne.Modality(); i++)
               {
                 std::cerr << "" << learning_data[i].accepted/(this->ne.GetBias(i)*this->neighbors_sampled) << (i < this->ne.Modality() -1 ? "/" : ") ");
@@ -84,15 +86,23 @@ namespace EasyLocal
                     << learning_data[i].improving << "/"
                     << learning_data[i].sideways << "/"
                     << learning_data[i].global_improvement << "] ";
+
     #endif
+                
                 if(learning_data[i].global_improvement > 0)
-                  cerr << endl << "avg_cost["<<i<<"] = " << static_cast<double>(learning_data[i].global_evaluation_time.count()/learning_data[i].accepted) 
-                  << ", log(avg_cost["<<i<<"]) =" <<std::log10(learning_data[i].global_evaluation_time.count()/static_cast<double>(learning_data[i].accepted))
-                  << ", sqrt(avg_cost["<<i<<"]) =" <<std::sqrt(learning_data[i].global_evaluation_time.count()/static_cast<double>(learning_data[i].accepted)) << endl;
-                else
-                  cerr << endl << "avg_cost["<<i<<"] = 0" << endl;
-                if(learning_data[i].global_improvement > 0)
-                  reward[i] = (static_cast<double>(learning_data[i].global_improvement)/(this->ne.GetBias(i)*this->neighbors_sampled))/std::log10(learning_data[i].global_evaluation_time.count()/static_cast<double>(learning_data[i].accepted));
+                {
+                  if(timing == 1)                   //linear
+                    reward[i] = (static_cast<double>(learning_data[i].global_improvement)/(this->ne.GetBias(i)*this->neighbors_sampled))
+                            /(learning_data[i].global_evaluation_time.count()/static_cast<double>(learning_data[i].accepted));
+                  else if(timing == 2)             //sqrt()
+                    reward[i] = (static_cast<double>(learning_data[i].global_improvement)/(this->ne.GetBias(i)*this->neighbors_sampled))
+                            /std::sqrt(learning_data[i].global_evaluation_time.count()/static_cast<double>(learning_data[i].accepted));
+                  else if (timing == 3)            //log10()
+                    reward[i] = (static_cast<double>(learning_data[i].global_improvement)/(this->ne.GetBias(i)*this->neighbors_sampled))
+                            /std::log10(learning_data[i].global_evaluation_time.count()/static_cast<double>(learning_data[i].accepted));
+                  else 
+                    reward[i] = (static_cast<double>(learning_data[i].global_improvement)/(this->ne.GetBias(i)*this->neighbors_sampled));
+                  }
                 else
                   reward[i] = 0;
                 total_reward += reward[i];
@@ -167,6 +177,7 @@ namespace EasyLocal
       vector<LearningData> learning_data;
       double learning_rate; 
       double min_threshold;
+      int timing;
       // batch size is equal to max_neighbors_sampled in this version
     };
   }
