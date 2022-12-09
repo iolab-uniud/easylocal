@@ -85,7 +85,10 @@ namespace EasyLocal
                     << learning_data[i].sideways << "/"
                     << learning_data[i].global_improvement << "] ";
     #endif
-                cerr << endl << "avg_cost["<<i<<"] = "<< static_cast<double>(learning_data[i].global_evaluation_time.count()/learning_data[i].accepted) << ", log(avg_cost["<<i<<"]) =" <<std::log10(learning_data[i].global_evaluation_time.count()/static_cast<double>(learning_data[i].accepted)) << endl;
+                if(learning_data[i].global_improvement > 0)
+                  cerr << endl << "avg_cost["<<i<<"] = "<< static_cast<double>(learning_data[i].global_evaluation_time.count()/learning_data[i].accepted) << ", log(avg_cost["<<i<<"]) =" <<std::log10(learning_data[i].global_evaluation_time.count()/static_cast<double>(learning_data[i].accepted)) << endl;
+                else
+                  cerr << endl << "avg_cost["<<i<<"] = 0" << endl;
                 if(learning_data[i].global_improvement > 0)
                   reward[i] = (static_cast<double>(learning_data[i].global_improvement)/(this->ne.GetBias(i)*this->neighbors_sampled))/std::log10(learning_data[i].global_evaluation_time.count()/static_cast<double>(learning_data[i].accepted));
                 else
