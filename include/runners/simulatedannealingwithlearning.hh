@@ -16,12 +16,12 @@ namespace EasyLocal
     };
 
     template <class Input, class Solution, class Move, class CostStructure = DefaultCostStructure<int>>
-    class SimulatedAnnealingWithLearning : public SimulatedAnnealingEvaluationBased<Input, Solution, Move, CostStructure>
+    class SimulatedAnnealingWithLearning : public SimulatedAnnealingTimeBased<Input, Solution, Move, CostStructure>
     {
     public:
       SimulatedAnnealingWithLearning(const Input &in, SolutionManager<Input, Solution, CostStructure> &sm,
                                     NeighborhoodExplorer<Input, Solution, Move, CostStructure> &ne,
-                                    std::string name) : SimulatedAnnealingEvaluationBased<Input, Solution, Move, CostStructure>(in, sm, ne, name)
+                                    std::string name) : SimulatedAnnealingTimeBased<Input, Solution, Move, CostStructure>(in, sm, ne, name)
       {
         learning_data.resize(ne.Modality());
         learning_rate = 0.05;        // higher values imply faster learning
@@ -33,7 +33,7 @@ namespace EasyLocal
       void SetTimeReward(double t) {time_reward = t;}  //0 = no time_reward, 1 = linear, 2 = sqrt, 3 = log10
       void CompleteMove() override 
       {
-        SimulatedAnnealingEvaluationBased<Input, Solution, Move, CostStructure>::CompleteMove();
+        SimulatedAnnealingTimeBased<Input, Solution, Move, CostStructure>::CompleteMove();
         //size_t i = Impl::MoveDispatcher<decltype(this->current_move), this->ne.Modality() - 1>::get_first_active(this->current_move, 0);
         
         int active_move_index = this->ne.GetActiveMove(this->current_move.move);
@@ -153,7 +153,7 @@ namespace EasyLocal
             std::cerr << endl;
     #endif
           }
-        SimulatedAnnealingEvaluationBased<Input, Solution, Move, CostStructure>::CompleteIteration();
+        SimulatedAnnealingTimeBased<Input, Solution, Move, CostStructure>::CompleteIteration();
       }
       void SelectMove() override 
       {
