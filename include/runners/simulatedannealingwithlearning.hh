@@ -55,7 +55,7 @@ namespace EasyLocal
 
       void CompleteIteration() override 
       {
-        if (this->neighbors_sampled >= this->max_neighbors_sampled || this->neighbors_accepted >= this->max_neighbors_accepted)
+        if (this->CoolingNeeded())
           {  // the batch is finished -> update probabilities and reset learning data
             //vector<double> avg_improvement(this->ne.Modality(),0);
             vector<double> reward(this->ne.Modality(),0);
@@ -117,7 +117,7 @@ namespace EasyLocal
             int how_many_threshold_applied = 0;
             for(unsigned int i = 0; i < this->ne.Modality(); i++)
               {
-                if(total_reward!=0)
+                if(total_reward > 0.0)
                   reward[i] = reward[i] / total_reward;
                 else
                   reward[i] = 1.0/this->ne.Modality();
