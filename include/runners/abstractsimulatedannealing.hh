@@ -52,6 +52,7 @@ protected:
     void SelectMove() override;
     void CompleteMove() override;
     void CompleteIteration() override;
+	virtual bool CoolingNeeded() const; 
     // parameters
     Parameter<bool> compute_start_temperature;
     Parameter<double> start_temperature;
@@ -155,8 +156,7 @@ void AbstractSimulatedAnnealing<Input, Solution, Move, CostStructure>::CompleteM
 template <class Input, class Solution, class Move, class CostStructure>
 void AbstractSimulatedAnnealing<Input, Solution, Move, CostStructure>::CompleteIteration()
 {
-    Runner<Input, Solution, CostStructure>::CompleteIteration();
-    if (neighbors_sampled >= max_neighbors_sampled || neighbors_accepted >= max_neighbors_accepted)
+    if (CoolingNeeded())
     {
         temperature *= cooling_rate;
         number_of_temperatures++;
@@ -164,5 +164,12 @@ void AbstractSimulatedAnnealing<Input, Solution, Move, CostStructure>::CompleteI
         neighbors_accepted = 0;
     }
 }
+
+template <class Input, class Solution, class Move, class CostStructure>
+bool AbstractSimulatedAnnealing<Input, Solution, Move, CostStructure>::CoolingNeeded() const
+{
+	return neighbors_sampled >= max_neighbors_sampled || neighbors_accepted >= max_neighbors_accepted;
+} 
+
 } // namespace Core
 } // namespace EasyLocal
