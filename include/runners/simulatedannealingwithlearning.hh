@@ -26,11 +26,11 @@ namespace EasyLocal
         learning_data.resize(ne.Modality());
         learning_rate = 0.05;        // higher values imply faster learning
         min_threshold = 0.05;        // probabilities are lower-bounded by this value
-        time_reward = 3;                  // 0 = no time_reward, 1 = linear, 2 = sqrt, 3 = log10
+        time_smoother = 1.0;                  // 0 = no time_smoother, 1 = linear, 2 = sqrt, 3 = log10
       }
       void SetLearningRate(double r) {learning_rate = r;}
       void SetThreshold(double t) {min_threshold = t;}
-      void SetTimeReward(double t) {time_reward = t;}  //0 = no time_reward, 1 = linear, 2 = sqrt, 3 = log10
+      void SetTimeSmoother(double t) {time_smoother = t;} 
       void CompleteMove() override 
       {
         SimulatedAnnealingTimeBased<Input, Solution, Move, CostStructure>::CompleteMove();
@@ -90,19 +90,8 @@ namespace EasyLocal
     #endif
                 
                 if(learning_data[i].global_improvement > 0)
-                {
-                  if(time_reward == 1)                   //linear
-                    reward[i] = (static_cast<double>(learning_data[i].global_improvement)/(this->ne.GetBias(i)*this->neighbors_sampled))
-                            /(learning_data[i].global_evaluation_time.count()/static_cast<double>(learning_data[i].accepted));
-                  else if(time_reward == 2)             //sqrt()
-                    reward[i] = (static_cast<double>(learning_data[i].global_improvement)/(this->ne.GetBias(i)*this->neighbors_sampled))
-                            /std::sqrt(learning_data[i].global_evaluation_time.count()/static_cast<double>(learning_data[i].accepted));
-                  else if (time_reward == 3)            //log10()
-                    reward[i] = (static_cast<double>(learning_data[i].global_improvement)/(this->ne.GetBias(i)*this->neighbors_sampled))
-                            /std::log10(learning_data[i].global_evaluation_time.count()/static_cast<double>(learning_data[i].accepted));
-                  else 
-                    reward[i] = (static_cast<double>(learning_data[i].global_improvement)/(this->ne.GetBias(i)*this->neighbors_sampled));
-                  }
+                  reward[i] = (static_cast<double>(learning_data[i].global_improvement)/(this->ne.GetBias(i)*this->neighbors_sampled))
+                            /pow(learning_data[i].global_evaluation_time.count()/static_cast<double>(learning_data[i].accepted),1.0/time_smoother);
                 else
                   reward[i] = 0;
                 total_reward += reward[i];
@@ -177,7 +166,7 @@ namespace EasyLocal
       vector<LearningData> learning_data;
       double learning_rate; 
       double min_threshold;
-      int time_reward;
+      double time_smoother;
       // batch size is equal to max_neighbors_sampled in this version
     };
   }
