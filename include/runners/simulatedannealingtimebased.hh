@@ -111,8 +111,8 @@ namespace EasyLocal
       // In this version of SA (TimeBased)temperature is decreased based on running
       // time or cut-off (no cooling based on number of iterations)
       return std::chrono::system_clock::now() > temperature_start_time + allowed_running_time_per_temperature 
-          || this->neighbors_accepted >= this->max_neighbors_accepted
-          || this->neighbors_sampled >= this->max_neighbors_sampled;
+          || this->neighbors_accepted >= this->max_neighbors_accepted;
+          //|| this->neighbors_sampled >= this->max_neighbors_sampled;
     }
     template <class Input, class Solution, class Move, class CostStructure>
     bool SimulatedAnnealingTimeBased<Input, Solution, Move, CostStructure>::MaxEvaluationsExpired() const
