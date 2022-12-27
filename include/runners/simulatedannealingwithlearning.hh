@@ -10,8 +10,8 @@ namespace EasyLocal
   {
     struct LearningData
     {
-      int improving, sideways, accepted;
-      int global_improvement;
+      int improving = 0, sideways = 0, accepted = 0, evaluated = 0;
+      double global_improvement = 0.0;
       std::chrono::nanoseconds global_evaluation_time;
     };
 
@@ -43,7 +43,7 @@ namespace EasyLocal
         if(move_cost.total < 0 )
           {
             learning_data[active_move_index].improving++;
-            learning_data[active_move_index].global_improvement-=move_cost.total;
+            learning_data[active_move_index].global_improvement-=move_cost.total;  // Note: move_cost.total is negative when improving
           }
         else if(move_cost.total == 0 )
           learning_data[active_move_index].sideways++;    
@@ -63,7 +63,9 @@ namespace EasyLocal
             double total_reward = 0;
     #if VERBOSE >= 1
             std::cerr << "(" << this->number_of_temperatures << ")" 
+
                 << " T = " << this->Temperature() 
+                << " S/A/ar = [" << this->neighbors_sampled << "/" << this->neighbors_accepted << "/" << static_cast<double>(this->neighbors_accepted)/this->neighbors_sampled << "]"
                 << ", OF = [" << this->current_state_cost.total << "/" << this->best_state_cost.total << "] ";
             std::cerr << "rates: (";
             double sum_rates = 0;
@@ -82,15 +84,16 @@ namespace EasyLocal
             for(unsigned int i = 0; i < this->ne.Modality(); i++)
               {
     #if VERBOSE >= 1
-                std::cerr << i << "[" << learning_data[i].accepted << "/"
-                    << learning_data[i].improving << "/"
-                    << learning_data[i].sideways << "/"
-                    << learning_data[i].global_improvement << "] ";
-
+                std::cerr << i << "[" 
+                          << learning_data[i].evaluated << "/"
+                          << learning_data[i].accepted << "/"
+                          << learning_data[i].improving << "/"
+                          << learning_data[i].sideways << "/"
+                          << learning_data[i].global_improvement << "] ";
     #endif
                 
-                if(learning_data[i].global_improvement > 0)
-                  reward[i] = (static_cast<double>(learning_data[i].global_improvement)/(this->ne.GetBias(i)*this->neighbors_sampled))
+                if(learning_data[i].global_improvement > 0.0)
+                  reward[i] = (learning_data[i].global_improvement/learning_data[i].evaluated)
                             /pow(learning_data[i].global_evaluation_time.count()/static_cast<double>(learning_data[i].accepted),1.0/time_smoother);
                 else
                   reward[i] = 0;
@@ -127,7 +130,8 @@ namespace EasyLocal
                 learning_data[i].accepted = 0;
                 learning_data[i].improving = 0;
                 learning_data[i].sideways = 0;
-                learning_data[i].global_improvement = 0;
+                learning_data[i].evaluated = 0;
+                learning_data[i].global_improvement = 0.0;
                 learning_data[i].global_evaluation_time = std::chrono::nanoseconds(0);
               }
             //I re balance the threshold
@@ -160,6 +164,7 @@ namespace EasyLocal
           }
           this->neighbors_sampled++;
           this->evaluations++;
+          learning_data[this->ne.GetActiveMove(this->current_move.move)].evaluated++;
         } while(!accepted);
       }
     protected:

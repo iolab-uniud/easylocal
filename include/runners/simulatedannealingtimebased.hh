@@ -76,7 +76,7 @@ namespace EasyLocal
         this->max_neighbors_accepted = this->max_neighbors_sampled;
       else
         this->max_neighbors_accepted = static_cast<unsigned int>(this->max_neighbors_sampled * neighbors_accepted_ratio);
-      run_duration = std::chrono::seconds(allowed_running_time);
+      run_duration = std::chrono::milliseconds(static_cast<int>(1000.0 * allowed_running_time));
       allowed_running_time_per_temperature = run_duration / expected_number_of_temperatures;
       time_cutoff = run_duration / expected_number_of_temperatures;
       run_start = std::chrono::system_clock::now();
