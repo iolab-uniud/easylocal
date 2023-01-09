@@ -78,7 +78,7 @@ namespace EasyLocal
            std::cerr << "acceptance: (";
             for(unsigned int i = 0; i < this->ne.Modality(); i++)
               {
-                std::cerr << "" << learning_data[i].accepted/(this->ne.GetBias(i)*this->neighbors_sampled) << (i < this->ne.Modality() -1 ? "/" : ") ");
+                std::cerr << "" << static_cast<double>(learning_data[i].accepted)/learning_data[i].evaluated << (i < this->ne.Modality() -1 ? "/" : ") ");
               }
     #endif
             for(unsigned int i = 0; i < this->ne.Modality(); i++)
