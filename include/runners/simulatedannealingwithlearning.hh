@@ -27,6 +27,7 @@ namespace EasyLocal
         learning_rate = 0.05;        // higher values imply faster learning
         min_threshold = 0.05;        // probabilities are lower-bounded by this value
         time_smoother = 1.0;                  // 0 = no time_smoother, 1 = linear, 2 = sqrt, 3 = log10
+
       }
       void SetLearningRate(double r) {learning_rate = r;}
       void SetThreshold(double t) {min_threshold = t;}
@@ -61,7 +62,7 @@ namespace EasyLocal
             vector<double> reward(this->ne.Modality(),0);
             //double total_avg_improvement = 0;
             double total_reward = 0;
-    #if VERBOSE >= 1
+    #if VERBOSE == 1
             std::cerr << "(" << this->number_of_temperatures << ")" 
 
                 << " T = " << this->Temperature() 
@@ -80,16 +81,69 @@ namespace EasyLocal
               {
                 std::cerr << "" << static_cast<double>(learning_data[i].accepted)/learning_data[i].evaluated << (i < this->ne.Modality() -1 ? "/" : ") ");
               }
+    #elif VERBOSE >= 2
+          if(this->number_of_temperatures == 0) //I print the header
+          {
+            std::cerr << "n_temp,"
+                      << "temperature,"
+                      << "sampled,"
+                      << "accepted,"
+                      << "acceptance,"
+                      << "current_cost,"
+                      << "best_cost,";
+                      for(unsigned int i = 0; i < this->ne.Modality(); i++)
+                        std::cerr<< "rate["<<i<<"],"
+                      for(unsigned int i = 0; i < this->ne.Modality(); i++)
+                        std::cerr<< "acceptance["<<i<<"],"
+                      for(unsigned int i = 0; i < this->ne.Modality(); i++)
+                      {
+                        std::cerr << "evaluated["<<i<<"],"
+                                  << "accepted["<<i<<"],"
+                                  << "improving["<<i<<"],"
+                                  << "sideways["<<i<<"],"
+                                  << "global_improvement["<<i<<"],";
+                      }     
+                      for(unsigned int i = 0; i < this->ne.Modality(); i++)
+                      {
+                        std::cerr << "reward["<<i<<"]";
+                        if(i < this->ne.Modality()-1)
+                          std::cerr << ",";
+                      }                
+          }
+          std::cerr << this->number_of_temperatures << ","
+                    << this->Temperature() << ","
+                    << this->neighbors_sampled << "," 
+                    << this->neighbors_accepted << ","
+                    << static_cast<double>(this->neighbors_accepted)/this->neighbors_sampled << ","
+                    << this->current_state_cost.total << "," 
+                    << this->best_state_cost.total << ",";
+            double sum_rates = 0;
+            for(unsigned int i = 0; i < this->ne.Modality(); i++)
+              {
+                std::cerr << this->ne.GetBias(i) << ",";
+                sum_rates+=this->ne.GetBias(i);
+              }
+            std::cerr << sum_rates << ",";
+            for(unsigned int i = 0; i < this->ne.Modality(); i++)
+              {
+                std::cerr << static_cast<double>(learning_data[i].accepted)/learning_data[i].evaluated << ",";
+              }
     #endif
             for(unsigned int i = 0; i < this->ne.Modality(); i++)
               {
-    #if VERBOSE >= 1
+    #if VERBOSE == 1
                 std::cerr << i << "[" 
                           << learning_data[i].evaluated << "/"
                           << learning_data[i].accepted << "/"
                           << learning_data[i].improving << "/"
                           << learning_data[i].sideways << "/"
                           << learning_data[i].global_improvement << "] ";
+    #elif VERBOSE >= 2
+                          << learning_data[i].evaluated << ","
+                          << learning_data[i].accepted << ","
+                          << learning_data[i].improving << ","
+                          << learning_data[i].sideways << ","
+                          << learning_data[i].global_improvement << ",";
     #endif
                 
                 if(learning_data[i].global_improvement > 0.0)
@@ -101,7 +155,7 @@ namespace EasyLocal
               }
 
             //I give the reward (reinforcement rule)
-    #if VERBOSE >= 1
+    #if VERBOSE == 1
             std::cerr << "rewards: (";
     #endif
             double used_threshold = 0.0;
@@ -113,8 +167,10 @@ namespace EasyLocal
                   reward[i] = reward[i] / total_reward;
                 else
                   reward[i] = 1.0/this->ne.Modality();
-    #if VERBOSE >= 1
+    #if VERBOSE == 1
                 std::cerr << "" << reward[i] << (i < this->ne.Modality() -1 ? "/" : ") ");
+    #elif VERBOSE >= 1
+                std::cerr << reward[i] << (i < this->ne.Modality() -1 ? "," : "");
     #endif 
                 if((1-learning_rate)*this->ne.GetBias(i) + learning_rate*reward[i] < min_threshold)
                   {
