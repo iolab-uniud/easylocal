@@ -64,7 +64,7 @@ namespace EasyLocal
             double total_reward = 0;
     #if VERBOSE == 1
             std::cerr << "(" << this->number_of_temperatures << ")" 
-
+                << " t = " << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now()- this->run_start).count()/1000.0 << ","
                 << " T = " << this->Temperature() 
                 << " S/A/ar = [" << this->neighbors_sampled << "/" << this->neighbors_accepted << "/" << static_cast<double>(this->neighbors_accepted)/this->neighbors_sampled << "]"
                 << ", OF = [" << this->current_state_cost.total << "/" << this->best_state_cost.total << "] ";
@@ -82,9 +82,10 @@ namespace EasyLocal
                 std::cerr << "" << static_cast<double>(learning_data[i].accepted)/learning_data[i].evaluated << (i < this->ne.Modality() -1 ? "/" : ") ");
               }
     #elif VERBOSE >= 2
-          if(this->number_of_temperatures == 0) //I print the header
+          if(this->number_of_temperatures == 1) //I print the header
           {
             std::cerr << "n_temp,"
+                      << "time,"
                       << "temperature,"
                       << "sampled,"
                       << "accepted,"
@@ -92,25 +93,30 @@ namespace EasyLocal
                       << "current_cost,"
                       << "best_cost,";
                       for(unsigned int i = 0; i < this->ne.Modality(); i++)
-                        std::cerr<< "rate["<<i<<"],"
+                        std::cerr<< "rate_"<<i<<",";
+                      std::cerr << "check,";  
                       for(unsigned int i = 0; i < this->ne.Modality(); i++)
-                        std::cerr<< "acceptance["<<i<<"],"
+                        std::cerr<< "acceptance_"<<i<<",";
                       for(unsigned int i = 0; i < this->ne.Modality(); i++)
                       {
-                        std::cerr << "evaluated["<<i<<"],"
-                                  << "accepted["<<i<<"],"
-                                  << "improving["<<i<<"],"
-                                  << "sideways["<<i<<"],"
-                                  << "global_improvement["<<i<<"],";
+                        std::cerr << "evaluated_"<<i<<","
+                                  << "accepted_"<<i<<","
+                                  << "improving_"<<i<<","
+                                  << "sideways_"<<i<<","
+                                  << "global_improvement_"<<i<<","
+                                  << "avgtime_"<<i<<",";
                       }     
                       for(unsigned int i = 0; i < this->ne.Modality(); i++)
                       {
-                        std::cerr << "reward["<<i<<"]";
+                        std::cerr << "reward_"<<i<<"";
                         if(i < this->ne.Modality()-1)
                           std::cerr << ",";
+                        else
+                          std::cerr << endl;
                       }                
           }
           std::cerr << this->number_of_temperatures << ","
+                    << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now()- this->run_start).count()/1000.0 << ","
                     << this->Temperature() << ","
                     << this->neighbors_sampled << "," 
                     << this->neighbors_accepted << ","
@@ -137,14 +143,22 @@ namespace EasyLocal
                           << learning_data[i].accepted << "/"
                           << learning_data[i].improving << "/"
                           << learning_data[i].sideways << "/"
-                          << learning_data[i].global_improvement << "] ";
+                          << learning_data[i].global_improvement << "/";
+                          if(learning_data[i].accepted > 0)
+                            std::cerr << learning_data[i].global_evaluation_time.count()/static_cast<double>(learning_data[i].accepted) << "] ";
+                          else  
+                            std::cerr << "nan" << "] ";
     #elif VERBOSE >= 2
-                          << learning_data[i].evaluated << ","
+                std::cerr << learning_data[i].evaluated << ","
                           << learning_data[i].accepted << ","
                           << learning_data[i].improving << ","
                           << learning_data[i].sideways << ","
                           << learning_data[i].global_improvement << ",";
-    #endif
+                          if(learning_data[i].accepted > 0)
+                            std::cerr << learning_data[i].global_evaluation_time.count()/static_cast<double>(learning_data[i].accepted) << ",";
+                          else  
+                            std::cerr << "nan" << ",";
+    #endif    
                 
                 if(learning_data[i].global_improvement > 0.0)
                   reward[i] = (learning_data[i].global_improvement/learning_data[i].evaluated)
@@ -155,6 +169,7 @@ namespace EasyLocal
               }
 
             //I give the reward (reinforcement rule)
+
     #if VERBOSE == 1
             std::cerr << "rewards: (";
     #endif
@@ -169,7 +184,7 @@ namespace EasyLocal
                   reward[i] = 1.0/this->ne.Modality();
     #if VERBOSE == 1
                 std::cerr << "" << reward[i] << (i < this->ne.Modality() -1 ? "/" : ") ");
-    #elif VERBOSE >= 1
+    #elif VERBOSE >= 2
                 std::cerr << reward[i] << (i < this->ne.Modality() -1 ? "," : "");
     #endif 
                 if((1-learning_rate)*this->ne.GetBias(i) + learning_rate*reward[i] < min_threshold)
