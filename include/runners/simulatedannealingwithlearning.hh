@@ -224,13 +224,14 @@ namespace EasyLocal
         bool accepted = false;
         do
         {
-          std::chrono::time_point<std::chrono::system_clock> start = std::chrono::high_resolution_clock::now(); 
+          std::chrono::time_point<std::chrono::steady_clock> start = std::chrono::high_resolution_clock::now(); 
           this->ne.RandomMove(*this->p_current_state, this->current_move.move); //TO DO: ,this->weights);
           this->current_move.cost = this->ne.DeltaCostFunctionComponents(*this->p_current_state, this->current_move.move);
           this->current_move.is_valid = true;
           if (this->current_move.cost <= 0 || this->current_move.cost < (-this->temperature * log(std::max(Random::Uniform<double>(0.0, 1.0), std::numeric_limits<double>::epsilon()))))
           {
             accepted = true;
+            //learning_data[this->ne.GetActiveMove(this->current_move.move)].global_evaluation_time+=std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::time_point<std::chrono::steady_clock>(std::chrono::high_resolution_clock::now())-start)
             learning_data[this->ne.GetActiveMove(this->current_move.move)].global_evaluation_time+=std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()-start);
           }
           this->neighbors_sampled++;
