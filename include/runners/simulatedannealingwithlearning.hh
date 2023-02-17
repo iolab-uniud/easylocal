@@ -231,8 +231,8 @@ namespace EasyLocal
           if (this->current_move.cost <= 0 || this->current_move.cost < (-this->temperature * log(std::max(Random::Uniform<double>(0.0, 1.0), std::numeric_limits<double>::epsilon()))))
           {
             accepted = true;
-            //learning_data[this->ne.GetActiveMove(this->current_move.move)].global_evaluation_time+=std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::time_point<std::chrono::steady_clock>(std::chrono::high_resolution_clock::now())-start)
-            learning_data[this->ne.GetActiveMove(this->current_move.move)].global_evaluation_time+=std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()-start);
+            learning_data[this->ne.GetActiveMove(this->current_move.move)].global_evaluation_time+=std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::time_point<std::chrono::steady_clock>(std::chrono::high_resolution_clock::now())-start);
+            //learning_data[this->ne.GetActiveMove(this->current_move.move)].global_evaluation_time+=std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()-start);
           }
           this->neighbors_sampled++;
           this->evaluations++;
