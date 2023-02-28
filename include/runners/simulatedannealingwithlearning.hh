@@ -59,7 +59,7 @@ namespace EasyLocal
         if (this->CoolingNeeded())
           {  // the batch is finished -> update probabilities and reset learning data
             //vector<double> avg_improvement(this->ne.Modality(),0);
-            vector<double> reward(this->ne.Modality(),0);
+            std::vector<double> reward(this->ne.Modality(),0);
             //double total_avg_improvement = 0;
             double total_reward = 0;
     #if VERBOSE == 1
@@ -174,7 +174,7 @@ namespace EasyLocal
             std::cerr << "rewards: (";
     #endif
             double used_threshold = 0.0;
-            vector<bool> applied_threshold(this->ne.Modality(),false);
+            std::vector<bool> applied_threshold(this->ne.Modality(),false);
             int how_many_threshold_applied = 0;
             for(unsigned int i = 0; i < this->ne.Modality(); i++)
               {
@@ -240,7 +240,7 @@ namespace EasyLocal
         } while(!accepted);
       }
     protected:
-      vector<LearningData> learning_data;
+      std::vector<LearningData> learning_data;
       double learning_rate; 
       double min_threshold;
       double time_smoother;
