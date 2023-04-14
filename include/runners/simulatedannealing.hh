@@ -20,18 +20,13 @@ namespace EasyLocal
       SimulatedAnnealing(const Input &in, SolutionManager<Input, Solution, CostStructure> &sm,
                          NeighborhoodExplorer<Input, Solution, Move, CostStructure> &ne,
                          std::string name) : AbstractSimulatedAnnealing<Input, Solution, Move, CostStructure>(in, sm, ne, name)
-        {
-            samples("samples", "Number of neighbors sampled", this->parameters);
-            min_temperature("min_temperature", "Minimum temperature", this->parameters);
-        }
+        {}
       
       std::string StatusString() const;
       
     protected:
       void InitializeRun();
       bool StopCriterion();
-      // parameters
-      Parameter<double> min_temperature;
     };
     
     /*************************************************************************
@@ -45,9 +40,9 @@ namespace EasyLocal
     template <class Input, class Solution, class Move, class CostStructure>
     void SimulatedAnnealing<Input, Solution, Move, CostStructure>::InitializeRun()
     {
-      if (min_temperature <= 0.0)
+      if (this->min_temperature <= 0.0)
       {
-        throw IncorrectParameterValue(min_temperature, "should be greater than zero");
+        throw IncorrectParameterValue(this->min_temperature, "should be greater than zero");
       }
       AbstractSimulatedAnnealing<Input, Solution, Move, CostStructure>::InitializeRun();
     }
@@ -58,7 +53,7 @@ namespace EasyLocal
     template <class Input, class Solution, class Move, class CostStructure>
     bool SimulatedAnnealing<Input, Solution, Move, CostStructure>::StopCriterion()
     {
-      return this->temperature <= min_temperature;
+      return this->temperature <= this->min_temperature;
     }
   } // namespace Core
 } // namespace EasyLocal

@@ -120,6 +120,7 @@ public:
      @return true if the state is optimal w.r.t. the lower bound cost function
      has been reached
      @param st the state to be evaluated
+     FIXME: it is quite inefficient, now it has been removed: consider if including it or not
      */
     virtual bool OptimalStateReached(const Solution &st) const;
     
@@ -293,7 +294,7 @@ bool SolutionManager<Input, Solution, CostStructure>::LowerBoundReached(const Co
 template <class Input, class Solution, class CostStructure>
 bool SolutionManager<Input, Solution, CostStructure>::OptimalStateReached(const Solution &st) const
 {
-    return LowerBoundReached(CostFunctionComponents(st));
+  return false;
 }
 
 template <class Input, class Solution, class CostStructure>
