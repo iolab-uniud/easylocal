@@ -310,7 +310,7 @@ CostStructure Runner<Input, Solution, CostStructure>::TerminateRun(Solution&s)
 template <class Input, class Solution, class CostStructure>
 bool Runner<Input, Solution, CostStructure>::LowerBoundReached() const
 {
-  return sm.LowerBoundReached(current_state_cost) || sm.OptimalStateReached(*p_current_state);
+  return sm.LowerBoundReached(current_state_cost);
 }
 
 template <class Input, class Solution, class CostStructure>
