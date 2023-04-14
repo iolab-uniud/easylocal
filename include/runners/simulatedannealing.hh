@@ -19,7 +19,7 @@ namespace EasyLocal
     public:
       SimulatedAnnealing(const Input &in, SolutionManager<Input, Solution, CostStructure> &sm,
                          NeighborhoodExplorer<Input, Solution, Move, CostStructure> &ne,
-                         std::string name) : AbstractSimulatedAnnealing<Input, Solution, Move, CostStructure>(in, sm, ne, name)
+                         std::string name) : AbstractSimulatedAnnealing<Input, Solution, Move, CostStructure>(in, sm, ne, name) {}
       
       std::string StatusString() const;
       
