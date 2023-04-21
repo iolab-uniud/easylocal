@@ -173,6 +173,7 @@ public:
      for debugging purposes.
      */
     virtual bool CheckConsistency(const Solution &st) const = 0;
+
     
     /** Name of the state manager */
     const std::string name;
@@ -184,8 +185,21 @@ public:
      */
     SolutionManager(const Input &in, std::string name);
     
+    /**
+     Dump all data of the solution object. Used only
+     for debugging purposes.
+     */
+    virtual void DumpState(const Solution &st, std::ostream& os) const 
+	{ // if not redefined, just print the object in the standard way
+	  os << st;
+	}
+	
+    /**
+     Print the solution in a file in a requested (alternative) format. 
+     */
+	
     virtual void PrettyPrintOutput(const Solution& st, std::string filename) const
-    {
+    {// if not redefined, just print the object in the standard way
         std::ofstream os(filename);
         os << st;
     }

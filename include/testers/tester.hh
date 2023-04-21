@@ -491,8 +491,8 @@ std::ostream &os)
         }
         case 6:
         {
-          os << test_state << std::endl;
-          os << "Total cost: " << this->sm.CostFunctionComponents(test_state) << std::endl;
+		  this->sm.DumpState(test_state,os);
+          os << std::endl << "Total cost: " << this->sm.CostFunctionComponents(test_state) << std::endl;
           break;
         }
         case 7:
