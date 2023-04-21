@@ -1,5 +1,5 @@
 #pragma once
-#include "runners/abstractsimulatedannealing.hh"
+#include "runners/simulatedannealing.hh"
 
 namespace EasyLocal
 {
@@ -16,12 +16,12 @@ namespace EasyLocal
      */
     
     template <class Input, class Solution, class Move, class CostStructure = DefaultCostStructure<int>>
-    class SimulatedAnnealingEvaluationBased : public AbstractSimulatedAnnealing<Input, Solution, Move, CostStructure>
+    class SimulatedAnnealingEvaluationBased : public SimulatedAnnealing<Input, Solution, Move, CostStructure>
     {
     public:
       SimulatedAnnealingEvaluationBased(const Input &in, SolutionManager<Input, Solution, CostStructure> &sm,
                                         NeighborhoodExplorer<Input, Solution, Move, CostStructure> &ne,
-                                        std::string name) : AbstractSimulatedAnnealing<Input, Solution, Move, CostStructure>(in, sm, ne, name)
+                                        std::string name) : SimulatedAnnealing<Input, Solution, Move, CostStructure>(in, sm, ne, name)
       {  
         if (this->max_neighbors_sampled.IsSet()) 
           throw IncorrectParameterValue(this->max_neighbors_sampled, " should not be set explicitly, as it is computed");
@@ -50,7 +50,7 @@ namespace EasyLocal
     template <class Input, class Solution, class Move, class CostStructure>
     void SimulatedAnnealingEvaluationBased<Input, Solution, Move, CostStructure>::InitializeRun()
     {
-      AbstractSimulatedAnnealing<Input, Solution, Move, CostStructure>::InitializeRun();
+      SimulatedAnnealing<Input, Solution, Move, CostStructure>::InitializeRun();
 
       temperature_range = this->start_temperature / this->min_temperature;
       total_number_of_temperatures = static_cast<unsigned int>(ceil(-log(temperature_range) / log(this->cooling_rate)));
@@ -95,7 +95,7 @@ namespace EasyLocal
 //           else 
 //             cerr << "Temp = " << this->temperature << endl;
 
-          // same as father class AbstractSimulatedAnnealing
+          // same as father class SimulatedAnnealing
           this->temperature *= this->cooling_rate;
           this->number_of_temperatures++;
           this->neighbors_sampled = 0;

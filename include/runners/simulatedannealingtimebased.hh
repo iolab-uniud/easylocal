@@ -1,6 +1,6 @@
 #pragma once
 
-#include "runners/abstractsimulatedannealing.hh"
+#include "runners/simulatedannealing.hh"
 #include <chrono>
 
 namespace EasyLocal
@@ -18,12 +18,12 @@ namespace EasyLocal
      */
     
     template <class Input, class Solution, class Move, class CostStructure = DefaultCostStructure<int>>
-    class SimulatedAnnealingTimeBased : public AbstractSimulatedAnnealing<Input, Solution, Move, CostStructure>
+    class SimulatedAnnealingTimeBased : public SimulatedAnnealing<Input, Solution, Move, CostStructure>
     {
     public:
         SimulatedAnnealingTimeBased(const Input &in, SolutionManager<Input, Solution, CostStructure> &sm,
                                     NeighborhoodExplorer<Input, Solution, Move, CostStructure> &ne,
-                                    std::string name) : AbstractSimulatedAnnealing<Input, Solution, Move, CostStructure>(in, sm, ne, name)
+                                    std::string name) : SimulatedAnnealing<Input, Solution, Move, CostStructure>(in, sm, ne, name)
         {
             neighbors_accepted_ratio("neighbors_accepted_ratio", "Ratio of neighbors accepted", this->parameters);
             temperature_range("temperature_range", "Temperature range", this->parameters);
@@ -60,7 +60,7 @@ namespace EasyLocal
     template <class Input, class Solution, class Move, class CostStructure>
     void SimulatedAnnealingTimeBased<Input, Solution, Move, CostStructure>::InitializeRun()
     {
-      AbstractSimulatedAnnealing<Input, Solution, Move, CostStructure>::InitializeRun();
+      SimulatedAnnealing<Input, Solution, Move, CostStructure>::InitializeRun();
       if (temperature_range.IsSet())
         expected_min_temperature = this->start_temperature / temperature_range;
       else

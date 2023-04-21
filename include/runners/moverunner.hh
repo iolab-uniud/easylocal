@@ -30,18 +30,18 @@ public:
     {}
 
 protected:
-  virtual void TerminateRun();
+  virtual void TerminateRun() override;
 
-  virtual void InitializeRun();
+  virtual void InitializeRun() override;
 
-  virtual bool AcceptableMoveFound();
+  virtual bool AcceptableMoveFound() override;
 
   /** Actions to be perfomed at the beginning of the run. */
 
   /** Encodes the criterion used to select the move at each step. */
-  virtual void MakeMove();
+  virtual void MakeMove() override;
 
-  void UpdateBestState() final;
+  void UpdateBestState() override final;
   void UpdateStateCost();
 
   NeighborhoodExplorer<Input, Solution, Move, CostStructure> &ne; /**< A reference to the

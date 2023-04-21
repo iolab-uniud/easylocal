@@ -30,7 +30,6 @@
 #include "runners/firstdescent.hh"
 #include "runners/hillclimbing.hh"
 #include "runners/simulatedannealing.hh"
-#include "runners/abstractsimulatedannealing.hh"
 #include "runners/simulatedannealingevaluationbased.hh"
 #include "runners/simulatedannealingtimebased.hh"
 #include "runners/simulatedannealingwithreheating.hh"
