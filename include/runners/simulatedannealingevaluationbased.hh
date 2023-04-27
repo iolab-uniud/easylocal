@@ -29,7 +29,6 @@ namespace EasyLocal
       }
     protected:
       void InitializeRun() override;
-      bool StopCriterion() override;
       void CompleteIteration() override;
       
       // additional parameters
@@ -65,25 +64,15 @@ namespace EasyLocal
         this->max_neighbors_accepted = static_cast<unsigned int>(this->max_neighbors_sampled * this->neighbors_accepted_ratio);
     }
     
-    /**
-     The search stops when the number of evaluations is expired (already checked in the superclass MoveRunner)
-     */
-    template <class Input, class Solution, class Move, class CostStructure>
-    bool SimulatedAnnealingEvaluationBased<Input, Solution, Move, CostStructure>::StopCriterion()
-    {
-      return false; // the criterion max_evaluations is already tested at upper lavels
-    }
-
-
     template <class Input, class Solution, class Move, class CostStructure>
     void SimulatedAnnealingEvaluationBased<Input, Solution, Move, CostStructure>::CompleteIteration()
     {
       if (this->CoolingNeeded())
         {
+          unsigned residual_temperatures = total_number_of_temperatures - this->number_of_temperatures;          
           // additional operations, only for SimulatedAnnealingEvaluationBased
-          if (this->neighbors_sampled < this->current_max_neighbors_sampled) 
+          if (this->neighbors_sampled < this->current_max_neighbors_sampled && residual_temperatures > 0) 
             { // we have a saving
-              unsigned residual_temperatures = total_number_of_temperatures - this->number_of_temperatures;
               unsigned residual_iterations = this->max_evaluations - this->evaluations;
               this->current_max_neighbors_sampled = residual_iterations/residual_temperatures;
               this->max_neighbors_accepted = static_cast<unsigned int>(this->max_neighbors_sampled * this->neighbors_accepted_ratio);
