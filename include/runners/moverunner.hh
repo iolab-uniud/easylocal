@@ -70,7 +70,7 @@ void MoveRunner<Input, Solution, Move, CostStructure>::UpdateBestState()
     this->iteration_of_best = this->iteration;
     // FIXME: write out cost
 #if VERBOSE >= 3 
-    std::cerr << this->best_state_cost << std::endl;
+    std::cerr << "*" << this->best_state_cost << std::endl;
 #endif
   }
 }
@@ -100,6 +100,9 @@ void MoveRunner<Input, Solution, Move, CostStructure>::MakeMove()
   {
     ne.MakeMove(*this->p_current_state, current_move.move);
     this->current_state_cost += current_move.cost;
+#if VERBOSE >= 4
+    std::cerr << this->current_state_cost << std::endl;
+#endif
     //this->logtrace("Runner {}, iteration {}, move {}, move cost {}, current cost {}", this->name, this->iteration, current_move.cost, this->current_state_cost);
   }
 }

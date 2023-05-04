@@ -91,8 +91,5 @@ namespace EasyLocal
           this->neighbors_accepted = 0;
         }
     }
-
-
-
   } // namespace Core
 } // namespace EasyLocal
