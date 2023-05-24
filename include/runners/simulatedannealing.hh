@@ -149,6 +149,8 @@ void SimulatedAnnealing<Input, Solution, Move, CostStructure>::SelectMove()
     this->current_move = em;
     neighbors_sampled += sampled;
     this->evaluations += sampled;
+
+    //    std::cerr << current_max_neighbors_sampled << " " << sampled << " " << neighbors_sampled << ", "<< endl;
 }
 
 /**
