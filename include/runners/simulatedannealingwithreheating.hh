@@ -1,6 +1,6 @@
 #pragma once
 
-#include "runners/simulatedannealingevaluationbased.hh"
+#include "runners/simulatedannealing.hh"
 
 namespace EasyLocal
 {
@@ -20,12 +20,12 @@ namespace EasyLocal
      @ingroup Runners
      */
     template <class Input, class Solution, class Move, class CostStructure = DefaultCostStructure<int>>
-    class SimulatedAnnealingWithReheating : public SimulatedAnnealingEvaluationBased<Input, Solution, Move, CostStructure>
+    class SimulatedAnnealingWithReheating : public SimulatedAnnealing<Input, Solution, Move, CostStructure>
     {
     public:
         SimulatedAnnealingWithReheating(const Input &in, SolutionManager<Input, Solution, CostStructure> &sm,
                                         NeighborhoodExplorer<Input, Solution, Move, CostStructure> &ne,
-                                        std::string name) : SimulatedAnnealingEvaluationBased<Input, Solution, Move, CostStructure>(in, sm, ne, name)
+                                        std::string name) : SimulatedAnnealing<Input, Solution, Move, CostStructure>(in, sm, ne, name)
         {
             first_reheat_ratio("first_reheat_ratio", "First reheat ratio", this->parameters);
             reheat_ratio("reheat_ratio", "Reheat ratio", this->parameters);
@@ -55,7 +55,7 @@ namespace EasyLocal
     template <class Input, class Solution, class Move, class CostStructure>
     void SimulatedAnnealingWithReheating<Input, Solution, Move, CostStructure>::InitializeRun()
     {
-      SimulatedAnnealingEvaluationBased<Input, Solution, Move, CostStructure>::InitializeRun();
+      SimulatedAnnealing<Input, Solution, Move, CostStructure>::InitializeRun();
       reheats = 0;
       
       if (max_reheats > 0)
@@ -87,7 +87,7 @@ namespace EasyLocal
     template <class Input, class Solution, class Move, class CostStructure>
     void SimulatedAnnealingWithReheating<Input, Solution, Move, CostStructure>::CompleteMove()
     {
-      SimulatedAnnealingEvaluationBased<Input, Solution, Move, CostStructure>::CompleteMove();
+      SimulatedAnnealing<Input, Solution, Move, CostStructure>::CompleteMove();
       if (ReheatCondition() && reheats <= max_reheats)
       {
         //     if (max_reheats != 0)

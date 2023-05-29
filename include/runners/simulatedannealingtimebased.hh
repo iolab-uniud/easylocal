@@ -89,8 +89,11 @@ namespace EasyLocal
       {
         this->temperature *= this->cooling_rate;
         this->number_of_temperatures++;
-#if VERBOSE >= 3 
-        std::cerr << "T = " << this->temperature << ", time = " << chrono::duration_cast<chrono::milliseconds>(temperature_start_time-run_start).count()/1000.0 << ", sampled = " << this->neighbors_sampled << ", accepted = " << this->neighbors_accepted << std::endl;
+#if VERBOSE >= 1 
+      std::cerr << "V1 ";
+      this->PrintStatus(cerr);
+      std::cerr << ", time = " << chrono::duration_cast<chrono::milliseconds>(temperature_start_time-run_start).count()/1000.0;
+      std::cerr << std::endl;
 #endif        
         this->neighbors_sampled = 0;
         this->neighbors_accepted = 0;

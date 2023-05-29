@@ -10,7 +10,6 @@
 
 namespace EasyLocal
 {
-
 namespace Core
 {
 
@@ -34,27 +33,19 @@ public:
   double Temperature() const { return temperature; }
   
   SimulatedAnnealing(const Input &in, SolutionManager<Input, Solution, CostStructure> &e_sm,
-                             NeighborhoodExplorer<Input, Solution, Move, CostStructure> &e_ne,
-                             std::string name) 
-    : MoveRunner<Input, Solution, Move, CostStructure>(in, e_sm, e_ne, name)
-  {
-    compute_start_temperature("compute_start_temperature", "Should the runner compute the initial temperature?", this->parameters);
-    start_temperature("start_temperature", "Starting temperature", this->parameters);
-    min_temperature("min_temperature", "Final temperature", this->parameters);
-    cooling_rate("cooling_rate", "Cooling rate", this->parameters);
-    max_neighbors_sampled("neighbors_sampled", "Maximum number of neighbors sampled at each temp.", this->parameters);
-    neighbors_accepted_ratio("neighbors_accepted_ratio", "Ratio of neighbors accepted", this->parameters);
-    if (!compute_start_temperature.IsSet())
-      compute_start_temperature = false; // FIXME!!
-  }
+                     NeighborhoodExplorer<Input, Solution, Move, CostStructure> &e_ne,
+                     std::string name);
 protected:
   void InitializeRun() override;
   void UpdateIterationCounter();
   void SelectMove() override;
   void CompleteMove() override;
   void CompleteIteration() override;
+  bool MetropolisCriterion() const;
   virtual bool CoolingNeeded() const; 
   bool StopCriterion() override;
+  void ComputeStartTemperature();
+  void PrintStatus(ostream& os) const;
   // parameters
   Parameter<bool> compute_start_temperature;
   Parameter<double> start_temperature, min_temperature;
@@ -68,17 +59,40 @@ protected:
   
   size_t neighbors_sampled, neighbors_accepted;
   int number_of_temperatures;
+  int total_number_of_temperatures;
+  double temperature_range;
 };
-
-/*************************************************************************
+  
+  /*************************************************************************
  * Implementation
  *************************************************************************/
+
+/** Constructor
+
+*/
+template <class Input, class Solution, class Move, class CostStructure>
+SimulatedAnnealing<Input, Solution, Move, CostStructure>::SimulatedAnnealing(const Input &in, SolutionManager<Input, Solution, CostStructure> &e_sm,
+                                       NeighborhoodExplorer<Input, Solution, Move, CostStructure> &e_ne,
+                                       std::string name) 
+  : MoveRunner<Input, Solution, Move, CostStructure>(in, e_sm, e_ne, name)
+{
+  compute_start_temperature("compute_start_temperature", "Should the runner compute the initial temperature?", this->parameters);
+  start_temperature("start_temperature", "Starting temperature", this->parameters);
+  min_temperature("min_temperature", "Final temperature", this->parameters);
+  cooling_rate("cooling_rate", "Cooling rate", this->parameters);
+  max_neighbors_sampled("neighbors_sampled", "Maximum number of neighbors sampled at each temp.", this->parameters);
+  neighbors_accepted_ratio("neighbors_accepted_ratio", "Ratio of neighbors accepted", this->parameters);
+  if (!compute_start_temperature.IsSet())
+    compute_start_temperature = false; 
+  if (!neighbors_accepted_ratio.IsSet())
+    neighbors_accepted_ratio = 1.0;
+}
+
 
 /**
  Initializes the run by invoking the companion superclass method, and
  setting the temperature to the start value.
  */
-// FIXME
 template <class Input, class Solution, class Move, class CostStructure>
 void SimulatedAnnealing<Input, Solution, Move, CostStructure>::InitializeRun()
 {
@@ -87,48 +101,64 @@ void SimulatedAnnealing<Input, Solution, Move, CostStructure>::InitializeRun()
   if (cooling_rate <= 0.0 || cooling_rate >= 1.0)
     throw IncorrectParameterValue(cooling_rate, "should be a value in the interval ]0, 1[");
     
-  if (!compute_start_temperature.IsSet() || !compute_start_temperature)
+  if (max_neighbors_sampled.IsSet() && this->max_evaluations != std::numeric_limits<unsigned long int>::max()) 
+    throw IncorrectParameterValue(max_neighbors_sampled, "should not be set explicitly when max evaluations is set explicitly, as it is computed");
+
+  if (!max_neighbors_sampled.IsSet() && this->max_evaluations == std::numeric_limits<unsigned long int>::max()) 
+    throw IncorrectParameterValue(max_neighbors_sampled, "should be set if max evaluations is not set explicitly");
+
+  if (compute_start_temperature)
     {
-      if (start_temperature <= 0.0)
-        throw IncorrectParameterValue(start_temperature, "should be greater than zero");
-      if (min_temperature <= 0.0)
-        throw IncorrectParameterValue(min_temperature, "should be greater than zero");
-      temperature = start_temperature;
+      if (start_temperature.IsSet())
+         throw IncorrectParameterValue(start_temperature, "should not be assigned, as it is computed");
+      ComputeStartTemperature();
+     }
+
+  if (start_temperature < min_temperature)
+    throw IncorrectParameterValue(start_temperature, "should be greater than min temperature");
+  if (min_temperature <= 0.0)
+    throw IncorrectParameterValue(min_temperature, "should be greater than zero");
+
+  temperature = start_temperature;
+  if (this->max_evaluations.IsSet())
+    { // Compute max_neighbors_sampled from max_evaluations
+      temperature_range = start_temperature / min_temperature;
+      total_number_of_temperatures = static_cast<unsigned>(ceil(-log(temperature_range) / log(cooling_rate)));      
+      max_neighbors_sampled = static_cast<unsigned>(this->max_evaluations / total_number_of_temperatures);
     }
-  else
-    {
-      // Compute a start temperature by sampling the search space and computing the variance
-      // according to [van Laarhoven and Aarts, 1987] (allow an acceptance ratio of approximately 80%)
-      //State sampled_state(this->in);
-      const unsigned int samples = 100;
-      std::vector<CostStructure> cost_values(samples);
-      double mean = 0.0, variance = 0.0;
-      for (unsigned int i = 0; i < samples; i++)
-        {
-          //this->sm.RandomState(sampled_state);
-          Move mv;
-          this->ne.RandomMove(*this->p_current_state, mv);
-          cost_values[i] = this->ne.DeltaCostFunctionComponents(*this->p_current_state, mv);
-          mean += cost_values[i].total;
-        }
-      mean /= samples;
-      for (unsigned int i = 0; i < samples; i++)
-        variance += (cost_values[i].total - mean) * (cost_values[i].total - mean) / samples;
-      temperature = variance;
-      /*From "An improved annealing scheme for the QAP. Connoly. EJOR 46 (1990) 93-100"
-        temperature = min(cost_values.begin(), cost_values.end()) + (max(cost_values.begin(), cost_values.end()) - min(cost_values.begin(), cost_values.end()))/10;*/
-    }
-  
-  // If the number of maximum accepted neighbors for each temperature is not set, default to all of them
+
+  // max_neighbors_sampled is fixed (and used for cut-off), its current value changes due to saved iterations
   current_max_neighbors_sampled = max_neighbors_sampled;
-  if (!neighbors_accepted_ratio.IsSet())
-    max_neighbors_accepted = max_neighbors_sampled;
-  else
-    max_neighbors_accepted = static_cast<unsigned int>(neighbors_accepted_ratio * max_neighbors_sampled);
+  max_neighbors_accepted = static_cast<unsigned>(max_neighbors_sampled * neighbors_accepted_ratio);
     
+  // initialize dynamic counters
   neighbors_sampled = 0;
   neighbors_accepted = 0;
   number_of_temperatures = 1;
+}
+
+template <class Input, class Solution, class Move, class CostStructure>
+void SimulatedAnnealing<Input, Solution, Move, CostStructure>::ComputeStartTemperature()
+{
+  // TODO: test this procedure
+  // Compute a start temperature by sampling the search space and computing the variance
+  // according to [van Laarhoven and Aarts, 1987] (allow an acceptance ratio of approximately 80%)
+  const unsigned int samples = 100;
+  std::vector<CostStructure> cost_values(samples);
+  double mean = 0.0, variance = 0.0;
+  for (unsigned int i = 0; i < samples; i++)
+    {
+      Move mv;
+      this->ne.RandomMove(*this->p_current_state, mv);
+      cost_values[i] = this->ne.DeltaCostFunctionComponents(*this->p_current_state, mv);
+      mean += cost_values[i].total;
+    }
+  mean /= samples;
+  for (unsigned int i = 0; i < samples; i++)
+    variance += (cost_values[i].total - mean) * (cost_values[i].total - mean) / samples;
+  start_temperature = variance;
+  /*From "An improved annealing scheme for the QAP. Connoly. EJOR 46 (1990) 93-100"
+    temperature = min(cost_values.begin(), cost_values.end()) + (max(cost_values.begin(), cost_values.end()) - min(cost_values.begin(), cost_values.end()))/10;*/
 }
 
 /**
@@ -137,29 +167,54 @@ void SimulatedAnnealing<Input, Solution, Move, CostStructure>::InitializeRun()
 template <class Input, class Solution, class Move, class CostStructure>
 void SimulatedAnnealing<Input, Solution, Move, CostStructure>::SelectMove()
 {
-    // TODO: it should become a parameter, the number of neighbors drawn at each iteration (possibly evaluated in parallel)
-    size_t sampled;
-    double t = this->temperature;
-    EvaluatedMove<Move, CostStructure> em = this->ne.RandomFirst(*this->p_current_state, 
-                                                                 current_max_neighbors_sampled - neighbors_sampled, sampled, [t](const Move &mv, const CostStructure &move_cost) {
-                                                                   double r = std::max(Random::Uniform<double>(0.0, 1.0), std::numeric_limits<double>::epsilon());
-                                                                   return move_cost <= 0 || move_cost < (-t * log(r));
-                                                                 },
-                                                                 this->weights);
-    this->current_move = em;
-    neighbors_sampled += sampled;
-    this->evaluations += sampled;
+  do
+    {
+      this->ne.RandomMove(*this->p_current_state, this->current_move.move);
+      this->current_move.cost = this->ne.DeltaCostFunctionComponents(*this->p_current_state, this->current_move.move);
+#if VERBOSE >= 3
+      std::cerr << "V3 " << this->current_move.move << " (" << this->current_move.cost << ") ";
+      PrintStatus(cerr);
+      std::cerr << std::endl;
+#endif
+      this->neighbors_sampled++;
+      this->evaluations++;
+    } 
+  while(!MetropolisCriterion());
+  this->current_move.is_valid = true;
+}
 
-    //    std::cerr << current_max_neighbors_sampled << " " << sampled << " " << neighbors_sampled << ", "<< endl;
+template <class Input, class Solution, class Move, class CostStructure>
+void SimulatedAnnealing<Input, Solution, Move, CostStructure>::PrintStatus(ostream& os) const
+{
+  os << "Status: (" << this->number_of_temperatures << ")" 
+     << " T = " << this->Temperature() 
+     << " S/A/ar = [" << this->neighbors_sampled << "/" << this->neighbors_accepted << "/" 
+     << static_cast<double>(this->neighbors_accepted)/this->neighbors_sampled << "],"
+     << " OF = [" << this->current_state_cost.total << "/" << this->best_state_cost.total << "] ";
 }
 
 /**
- A move is randomly picked.
+ SA acceptance criterion
+ */
+template <class Input, class Solution, class Move, class CostStructure>
+bool SimulatedAnnealing<Input, Solution, Move, CostStructure>::MetropolisCriterion() const
+{
+  return this->current_move.cost <= 0 || 
+    this->current_move.cost < (-this->temperature * log(std::max(Random::Uniform<double>(0.0, 1.0), std::numeric_limits<double>::epsilon())));
+}
+
+/**
+
  */
 template <class Input, class Solution, class Move, class CostStructure>
 void SimulatedAnnealing<Input, Solution, Move, CostStructure>::CompleteMove()
 {
   neighbors_accepted++;
+#if VERBOSE >= 2
+      std::cerr << "V2 " << this->current_move.move << " (" << this->current_move.cost << ") ";
+      PrintStatus(cerr);
+      std::cerr << std::endl;
+#endif
 }
 
 /**
@@ -169,10 +224,27 @@ void SimulatedAnnealing<Input, Solution, Move, CostStructure>::CompleteMove()
 template <class Input, class Solution, class Move, class CostStructure>
 void SimulatedAnnealing<Input, Solution, Move, CostStructure>::CompleteIteration()
 {
+  unsigned residual_temperatures, residual_iterations;
   if (CoolingNeeded())
     {
+      residual_temperatures = total_number_of_temperatures - number_of_temperatures; 
+      if (neighbors_sampled < current_max_neighbors_sampled && residual_temperatures > 0) 
+        { // we have saved some iterations thanks to the cut-off: they are redistributed to the remaining temperatures
+          residual_iterations = this->max_evaluations - this->evaluations;
+          current_max_neighbors_sampled = residual_iterations/residual_temperatures;
+          max_neighbors_accepted = static_cast<unsigned int>(max_neighbors_sampled * neighbors_accepted_ratio);
+              // NOTE: the number of accepted moves depends on the initial number of sampled, NOT from the current one
+//               cerr << "Temp = " << this->temperature << ", saved iters = " << this->current_max_neighbors_sampled - this->neighbors_sampled << ", residual_temps = " << residual_temperatures 
+//                    << ", residual_it = " << residual_iterations << ", N_s = " << this->current_max_neighbors_sampled << ", N_a = " 
+//                    << this->max_neighbors_accepted << endl;
+        }
       temperature *= cooling_rate;
       number_of_temperatures++;
+#if VERBOSE >= 1
+      std::cerr << "V1 ";
+      PrintStatus(cerr);
+      std::cerr << std::endl;
+#endif
       neighbors_sampled = 0;
       neighbors_accepted = 0;
     }
