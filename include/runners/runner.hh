@@ -238,7 +238,7 @@ Runner<Input, Solution, CostStructure>::Runner(const Input &in, SolutionManager<
     runners.push_back(this);
     max_evaluations("max_evaluations", "Maximum total number of cost function evaluations allowed", this->parameters);
     // This parameter has a default value
-    max_evaluations = std::numeric_limits<unsigned long int>::max();
+    //    max_evaluations = std::numeric_limits<unsigned long int>::max();
 }
 
 template <class Input, class Solution, class CostStructure>

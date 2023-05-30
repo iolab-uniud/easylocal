@@ -26,22 +26,21 @@ namespace EasyLocal
                                     std::string name) : SimulatedAnnealing<Input, Solution, Move, CostStructure>(in, sm, ne, name)
         {
             allowed_running_time("allowed_running_time", "Allowed running time", this->parameters);
-            this->max_neighbors_sampled = this->max_neighbors_accepted = 0;
         }
       
     protected:
       void InitializeRun() override;
       bool StopCriterion() override;
-      void CompleteIteration() override;
+      //      void CompleteIteration() override;
       bool MaxEvaluationsExpired() const override;
       bool CoolingNeeded() const override;
-      
+      void ApplyCooling() override;
+      void PrintStatus(ostream& os) const override;
+
       // additional parameters
-      double temperature_ratio;
-      unsigned int expected_number_of_temperatures;
       Parameter<double> allowed_running_time;
-      std::chrono::time_point<std::chrono::system_clock> run_start, temperature_start_time;
-      std::chrono::milliseconds time_cutoff, run_duration,allowed_running_time_per_temperature;
+      std::chrono::time_point<std::chrono::system_clock> run_start, temperature_start_time, temperature_end_time;
+      std::chrono::milliseconds run_duration, residual_running_time, allowed_running_time_per_temperature;
     };
     
     /*************************************************************************
@@ -55,22 +54,14 @@ namespace EasyLocal
     template <class Input, class Solution, class Move, class CostStructure>
     void SimulatedAnnealingTimeBased<Input, Solution, Move, CostStructure>::InitializeRun()
     {
-      temperature_ratio = this->start_temperature / this->min_temperature;
-      expected_number_of_temperatures = static_cast<unsigned int>(ceil(-log(temperature_ratio) / log(this->cooling_rate)));
-      this->max_neighbors_sampled = static_cast<unsigned int>(this->max_evaluations / expected_number_of_temperatures);
-      
-      // If the ratio of accepted neighbors for each temperature is not set,
-      // FIXME: in future versions, the ratio should be definitely removed
-      if (!this->neighbors_accepted_ratio.IsSet())
-        this->max_neighbors_accepted = this->max_neighbors_sampled;
-      else
-        this->max_neighbors_accepted = static_cast<unsigned int>(this->max_neighbors_sampled * this->neighbors_accepted_ratio);
+      if (!this->max_evaluations.IsSet()) // needed set by InitializeRun of upper class SimulatedAnnealing
+        this->max_evaluations = std::numeric_limits<unsigned long int>::max();
+      SimulatedAnnealing<Input, Solution, Move, CostStructure>::InitializeRun();
+
       run_duration = std::chrono::milliseconds(static_cast<int>(1000.0 * allowed_running_time));
-      allowed_running_time_per_temperature = run_duration / expected_number_of_temperatures;
-      time_cutoff = run_duration / expected_number_of_temperatures;
+      allowed_running_time_per_temperature = run_duration / this->total_number_of_temperatures;
       run_start = std::chrono::system_clock::now();
       temperature_start_time = run_start;
-      SimulatedAnnealing<Input, Solution, Move, CostStructure>::InitializeRun();
     }
     
     /**
@@ -79,37 +70,40 @@ namespace EasyLocal
     template <class Input, class Solution, class Move, class CostStructure>
     bool SimulatedAnnealingTimeBased<Input, Solution, Move, CostStructure>::StopCriterion()
     {
-      return std::chrono::system_clock::now() > run_start + run_duration;
+      return std::chrono::system_clock::now() > run_start + run_duration 
+        || SimulatedAnnealing<Input, Solution, Move, CostStructure>::StopCriterion();
     }
     
     template <class Input, class Solution, class Move, class CostStructure>
-    void SimulatedAnnealingTimeBased<Input, Solution, Move, CostStructure>::CompleteIteration()
+    void SimulatedAnnealingTimeBased<Input, Solution, Move, CostStructure>::ApplyCooling()
     {
-      if (CoolingNeeded())
-      {
-        this->temperature *= this->cooling_rate;
-        this->number_of_temperatures++;
-#if VERBOSE >= 1 
-      std::cerr << "V1 ";
-      this->PrintStatus(cerr);
-      std::cerr << ", time = " << chrono::duration_cast<chrono::milliseconds>(temperature_start_time-run_start).count()/1000.0;
-      std::cerr << std::endl;
-#endif        
-        this->neighbors_sampled = 0;
-        this->neighbors_accepted = 0;
-        temperature_start_time = std::chrono::system_clock::now();
-      }
+      SimulatedAnnealing<Input, Solution, Move, CostStructure>::ApplyCooling();
+      temperature_end_time = std::chrono::system_clock::now();
+      
+      if (temperature_end_time - temperature_start_time < allowed_running_time_per_temperature && this->residual_temperatures > 0)
+        {
+          residual_running_time = chrono::duration_cast<chrono::milliseconds>(run_duration - (temperature_end_time - run_start));
+          allowed_running_time_per_temperature = residual_running_time/this->residual_temperatures;
+        }
+      temperature_start_time = temperature_end_time;
     }
-    
+
     template <class Input, class Solution, class Move, class CostStructure>
+    void SimulatedAnnealingTimeBased<Input, Solution, Move, CostStructure>::PrintStatus(ostream& os) const
+    {
+      SimulatedAnnealing<Input, Solution, Move, CostStructure>::PrintStatus(os);
+      os << ", t = " << chrono::duration_cast<chrono::milliseconds>(temperature_start_time - run_start).count()/1000.0;
+    }
+
+  template <class Input, class Solution, class Move, class CostStructure>
     bool SimulatedAnnealingTimeBased<Input, Solution, Move, CostStructure>::CoolingNeeded() const
     {
       // In this version of SA (TimeBased)temperature is decreased based on running
       // time or cut-off (no cooling based on number of iterations)
       return std::chrono::system_clock::now() > temperature_start_time + allowed_running_time_per_temperature 
-          || this->neighbors_accepted >= this->max_neighbors_accepted;
-          //|| this->neighbors_sampled >= this->max_neighbors_sampled;
+          || SimulatedAnnealing<Input, Solution, Move, CostStructure>::CoolingNeeded();
     }
+
     template <class Input, class Solution, class Move, class CostStructure>
     bool SimulatedAnnealingTimeBased<Input, Solution, Move, CostStructure>::MaxEvaluationsExpired() const
     {

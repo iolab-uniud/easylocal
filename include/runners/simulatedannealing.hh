@@ -43,21 +43,23 @@ protected:
   void CompleteIteration() override;
   bool MetropolisCriterion() const;
   virtual bool CoolingNeeded() const; 
+  virtual void ApplyCooling();
   bool StopCriterion() override;
   void ComputeStartTemperature();
-  void PrintStatus(ostream& os) const;
+  virtual void PrintStatus(ostream& os) const;
   // parameters
   Parameter<bool> compute_start_temperature;
   Parameter<double> start_temperature, min_temperature;
   Parameter<double> neighbors_accepted_ratio;
   Parameter<double> cooling_rate;
   Parameter<unsigned int> max_neighbors_sampled;
+  Parameter<unsigned int> max_neighbors_accepted;  
   // state of SA
   double temperature; /**< The current temperature. */
   unsigned int current_max_neighbors_sampled; // initially set to the max value, recomputed based on saved iterations by cut-off
-  unsigned int max_neighbors_accepted;  
   
-  size_t neighbors_sampled, neighbors_accepted;
+  size_t neighbors_sampled, neighbors_accepted;  
+  unsigned residual_temperatures, residual_iterations;
   int number_of_temperatures;
   int total_number_of_temperatures;
   double temperature_range;
@@ -80,14 +82,14 @@ SimulatedAnnealing<Input, Solution, Move, CostStructure>::SimulatedAnnealing(con
   start_temperature("start_temperature", "Starting temperature", this->parameters);
   min_temperature("min_temperature", "Final temperature", this->parameters);
   cooling_rate("cooling_rate", "Cooling rate", this->parameters);
-  max_neighbors_sampled("neighbors_sampled", "Maximum number of neighbors sampled at each temp.", this->parameters);
+  max_neighbors_sampled("max_neighbors_sampled", "Maximum number of neighbors sampled at each temp.", this->parameters);
+  max_neighbors_accepted("max_neighbors_accepted", "Maximum number of neighbors accepted at each temp.", this->parameters);
   neighbors_accepted_ratio("neighbors_accepted_ratio", "Ratio of neighbors accepted", this->parameters);
   if (!compute_start_temperature.IsSet())
     compute_start_temperature = false; 
-  if (!neighbors_accepted_ratio.IsSet())
-    neighbors_accepted_ratio = 1.0;
+//   if (!neighbors_accepted_ratio.IsSet() && !max_neighbors_accepted.IsSet())
+//     neighbors_accepted_ratio = 1.0;
 }
-
 
 /**
  Initializes the run by invoking the companion superclass method, and
@@ -101,11 +103,14 @@ void SimulatedAnnealing<Input, Solution, Move, CostStructure>::InitializeRun()
   if (cooling_rate <= 0.0 || cooling_rate >= 1.0)
     throw IncorrectParameterValue(cooling_rate, "should be a value in the interval ]0, 1[");
     
-  if (max_neighbors_sampled.IsSet() && this->max_evaluations != std::numeric_limits<unsigned long int>::max()) 
-    throw IncorrectParameterValue(max_neighbors_sampled, "should not be set explicitly when max evaluations is set explicitly, as it is computed");
+  if (max_neighbors_sampled.IsSet() && this->max_evaluations.IsSet()) 
+    throw IncorrectParameterValue(max_neighbors_sampled, "should not be set explicitly when max_evaluations is set explicitly, as it is computed");
 
-  if (!max_neighbors_sampled.IsSet() && this->max_evaluations == std::numeric_limits<unsigned long int>::max()) 
-    throw IncorrectParameterValue(max_neighbors_sampled, "should be set if max evaluations is not set explicitly");
+  if (max_neighbors_accepted.IsSet() && neighbors_accepted_ratio.IsSet()) 
+    throw IncorrectParameterValue(max_neighbors_accepted, "should not be set explicitly when neighbors_accepted_ratio is set explicitly, as it is computed");
+
+  if (!max_neighbors_sampled.IsSet() && !this->max_evaluations.IsSet()) 
+    throw IncorrectParameterValue(max_neighbors_sampled, "should be set if max_evaluations is not set explicitly");
 
   if (compute_start_temperature)
     {
@@ -115,21 +120,25 @@ void SimulatedAnnealing<Input, Solution, Move, CostStructure>::InitializeRun()
      }
 
   if (start_temperature < min_temperature)
-    throw IncorrectParameterValue(start_temperature, "should be greater than min temperature");
+    throw IncorrectParameterValue(start_temperature, "should be greater than min_temperature");
   if (min_temperature <= 0.0)
     throw IncorrectParameterValue(min_temperature, "should be greater than zero");
 
   temperature = start_temperature;
+  temperature_range = start_temperature / min_temperature;
+  total_number_of_temperatures = static_cast<unsigned>(ceil(-log(temperature_range) / log(cooling_rate)));      
   if (this->max_evaluations.IsSet())
     { // Compute max_neighbors_sampled from max_evaluations
-      temperature_range = start_temperature / min_temperature;
-      total_number_of_temperatures = static_cast<unsigned>(ceil(-log(temperature_range) / log(cooling_rate)));      
       max_neighbors_sampled = static_cast<unsigned>(this->max_evaluations / total_number_of_temperatures);
     }
 
   // max_neighbors_sampled is fixed (and used for cut-off), its current value changes due to saved iterations
   current_max_neighbors_sampled = max_neighbors_sampled;
-  max_neighbors_accepted = static_cast<unsigned>(max_neighbors_sampled * neighbors_accepted_ratio);
+  std::cerr << max_neighbors_accepted << " " << max_neighbors_sampled << std::endl;
+  if (!max_neighbors_accepted.IsSet())
+    max_neighbors_accepted = static_cast<unsigned>(max_neighbors_sampled * neighbors_accepted_ratio);
+
+  std::cerr << max_neighbors_accepted << " " << max_neighbors_sampled << std::endl;
     
   // initialize dynamic counters
   neighbors_sampled = 0;
@@ -188,9 +197,10 @@ void SimulatedAnnealing<Input, Solution, Move, CostStructure>::PrintStatus(ostre
 {
   os << "Status: (" << this->number_of_temperatures << ")" 
      << " T = " << this->Temperature() 
-     << " S/A/ar = [" << this->neighbors_sampled << "/" << this->neighbors_accepted << "/" 
+     << " S/A/ar = [" << this->neighbors_sampled << "/" << this->current_max_neighbors_sampled << "|" 
+     << this->neighbors_accepted << "/" << this->max_neighbors_accepted << "|" 
      << static_cast<double>(this->neighbors_accepted)/this->neighbors_sampled << "],"
-     << " OF = [" << this->current_state_cost.total << "/" << this->best_state_cost.total << "] ";
+     << " OF = [" << this->current_state_cost.total << "/" << this->best_state_cost.total << "]";
 }
 
 /**
@@ -224,30 +234,8 @@ void SimulatedAnnealing<Input, Solution, Move, CostStructure>::CompleteMove()
 template <class Input, class Solution, class Move, class CostStructure>
 void SimulatedAnnealing<Input, Solution, Move, CostStructure>::CompleteIteration()
 {
-  unsigned residual_temperatures, residual_iterations;
   if (CoolingNeeded())
-    {
-      residual_temperatures = total_number_of_temperatures - number_of_temperatures; 
-      if (neighbors_sampled < current_max_neighbors_sampled && residual_temperatures > 0) 
-        { // we have saved some iterations thanks to the cut-off: they are redistributed to the remaining temperatures
-          residual_iterations = this->max_evaluations - this->evaluations;
-          current_max_neighbors_sampled = residual_iterations/residual_temperatures;
-          max_neighbors_accepted = static_cast<unsigned int>(max_neighbors_sampled * neighbors_accepted_ratio);
-              // NOTE: the number of accepted moves depends on the initial number of sampled, NOT from the current one
-//               cerr << "Temp = " << this->temperature << ", saved iters = " << this->current_max_neighbors_sampled - this->neighbors_sampled << ", residual_temps = " << residual_temperatures 
-//                    << ", residual_it = " << residual_iterations << ", N_s = " << this->current_max_neighbors_sampled << ", N_a = " 
-//                    << this->max_neighbors_accepted << endl;
-        }
-      temperature *= cooling_rate;
-      number_of_temperatures++;
-#if VERBOSE >= 1
-      std::cerr << "V1 ";
-      PrintStatus(cerr);
-      std::cerr << std::endl;
-#endif
-      neighbors_sampled = 0;
-      neighbors_accepted = 0;
-    }
+    ApplyCooling();
 }
 
 template <class Input, class Solution, class Move, class CostStructure>
@@ -255,6 +243,31 @@ bool SimulatedAnnealing<Input, Solution, Move, CostStructure>::CoolingNeeded() c
 {
   return neighbors_sampled >= current_max_neighbors_sampled || neighbors_accepted >= max_neighbors_accepted;
 } 
+
+template <class Input, class Solution, class Move, class CostStructure>
+void SimulatedAnnealing<Input, Solution, Move, CostStructure>::ApplyCooling()
+{
+
+  residual_temperatures = total_number_of_temperatures - number_of_temperatures; 
+  if (neighbors_sampled < current_max_neighbors_sampled && residual_temperatures > 0) 
+    { // we have saved some iterations thanks to the cut-off: they are 
+      // redistributed to the remaining temperatures
+      residual_iterations = this->max_evaluations - this->evaluations;
+      current_max_neighbors_sampled = residual_iterations/residual_temperatures;
+      max_neighbors_accepted = static_cast<unsigned int>(max_neighbors_sampled * neighbors_accepted_ratio);
+      // NOTE: the number of accepted moves depends on the initial number of sampled, NOT from the current one
+        }
+  temperature *= cooling_rate;
+  number_of_temperatures++;
+#if VERBOSE >= 1
+  std::cerr << "V1 ";
+  PrintStatus(cerr);
+  std::cerr << std::endl;
+#endif
+  neighbors_sampled = 0;
+  neighbors_accepted = 0;
+} 
+
 
   /**
      The search stops when a low temperature has reached.
