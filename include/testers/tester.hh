@@ -213,12 +213,14 @@ std::ostream &os)
     void Tester<Input, Solution, CostStructure>::ShowMainMenu()
     {
       os << "MAIN MENU:" << std::endl
-      << "   (1) Move menu" << std::endl
-      << "   (2) Kicker menu" << std::endl
-      << "   (3) Run menu" << std::endl
-      << "   (4) State menu" << std::endl
-      << "   (0) Exit" << std::endl
-      << " Your choice: ";
+         << "   (1) Move menu" << std::endl;
+      if (kicker_testers.size() > 0)
+        os << "   (2) Kicker menu" << std::endl;
+      if (runners.size() > 0)
+        os << "   (3) Run menu" << std::endl;
+      os << "   (4) State menu" << std::endl
+         << "   (0) Exit" << std::endl
+         << " Your choice: ";
       this->choice = this->ReadChoice(std::cin);
     }
     
@@ -373,17 +375,21 @@ std::ostream &os)
     void Tester<Input, Solution, CostStructure>::RunInputMenu()
     {
       bool show_state;
-      ShowReducedStateMenu();
-      std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
-      show_state = ExecuteStateChoice();
-      std::chrono::milliseconds duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start);
-      if (show_state)
-      {
-        os << "INITIAL SOLUTION " << std::endl
-        << test_state << std::endl;
-        os << "INITIAL COST : " << this->sm.CostFunctionComponents(test_state) << std::endl;
-      }
-      os << "ELAPSED TIME : " << duration.count() / 1000.0 << "s" << std::endl;
+      do
+        {
+          ShowReducedStateMenu();
+          std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
+          show_state = ExecuteStateChoice();
+          std::chrono::milliseconds duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start);
+          if (show_state)
+            {
+              os << "INITIAL SOLUTION " << std::endl
+                 << test_state << std::endl;
+              os << "INITIAL COST : " << this->sm.CostFunctionComponents(test_state) << std::endl;
+            }
+          os << "ELAPSED TIME : " << duration.count() / 1000.0 << "s" << std::endl;
+        }
+      while (this->sub_choice <= 0 || sub_choice >= 4);
     }
     
     /**
@@ -394,16 +400,15 @@ std::ostream &os)
     {
       os << "STATE MENU: " << std::endl
       << "    (1) Random state " << std::endl
-      << "    (2) Read from file" << std::endl
-      << "    (3) Greedy state " << std::endl
-      << "    (4) Sample state" << std::endl
+      << "    (2) Greedy state " << std::endl
+      << "    (3) Read from file" << std::endl
+      << "    (4) Show input" << std::endl
       << "    (5) Write to file" << std::endl
       << "    (6) Show state" << std::endl
-      << "    (7) Show input" << std::endl
-      << "    (8) Show cost function components" << std::endl
-      << "    (9) Show cost elements" << std::endl
+      << "    (7) Show costs" << std::endl
+      << "    (8) Print violations" << std::endl
+      << "    (9) Pretty print output" << std::endl
       << "    (10) Check state consistency" << std::endl
-      << "    (11) Pretty print output" << std::endl
       << "    (0) Return to Main Menu" << std::endl
       << "Your choice : ";
       this->sub_choice = this->ReadChoice(std::cin);
@@ -416,13 +421,14 @@ std::ostream &os)
     void Tester<Input, Solution, CostStructure>::ShowReducedStateMenu()
     {
       os << "INITIAL STATE MENU: " << std::endl
-      << "    (1) Random state " << std::endl
-      << "    (2) Read from file" << std::endl
-      << "    (3) Greedy state " << std::endl
-      << "Your choice : ";
+         << "    (1) Random state " << std::endl
+         << "    (2) Greedy state " << std::endl
+         << "    (3) Read from file" << std::endl
+         << "    (4) Show input" << std::endl
+         << "Your choice : ";
       this->sub_choice = this->ReadChoice(std::cin);
-      if (sub_choice >= 4)
-        sub_choice = -1;
+      if (this->sub_choice >= 5)
+        this->sub_choice = -1;
     }
     
     /**
@@ -442,6 +448,11 @@ std::ostream &os)
           break;
         case 2:
         {
+          this->sm.GreedyState(test_state);
+          break;
+        }
+        case 3:
+        {
           bool read_failed;
           std::ifstream is;
           do
@@ -460,24 +471,9 @@ std::ostream &os)
             is >> test_state;
           break;
         }
-        case 3:
-        {
-          //           unsigned int lenght;
-          //           double randomness;
-          //           os << "Lenght of the restricted candidate list: ";
-          //           std::cin >> lenght;
-          //           os << "Level of randomness (0 <= alpha <= 1): ";
-          //           std::cin >> randomness;
-          //           this->sm.GreedyState(test_state, randomness, lenght);
-          this->sm.GreedyState(test_state);
-          break;
-        }
         case 4:
         {
-          unsigned int samples;
-          os << "How many samples : ";
-          std::cin >> samples;
-          this->sm.SampleState(test_state, samples);
+          os << in;
           break;
         }
         case 5:
@@ -491,16 +487,11 @@ std::ostream &os)
         }
         case 6:
         {
-		  this->sm.DumpState(test_state,os);
+          this->sm.DumpState(test_state,os);
           os << std::endl << "Total cost: " << this->sm.CostFunctionComponents(test_state) << std::endl;
           break;
         }
         case 7:
-        {
-          os << in;
-          break;
-        }
-        case 8:
         {
           os << "Cost Components: " << std::endl;
           CostStructure cost = this->sm.CostFunctionComponents(test_state);
@@ -515,7 +506,7 @@ std::ostream &os)
           os << "Total Cost:       " << cost.total << std::endl;
           break;
         }
-        case 9:
+        case 8:
         {
           os << "Detailed Violations: " << std::endl;
           CostStructure cost = this->sm.CostFunctionComponents(test_state);
@@ -537,6 +528,13 @@ std::ostream &os)
           os << "Total Cost:       " << cost.total << std::endl;
           break;
         }
+        case 9:
+        {
+          os << "File name : ";
+          std::cin >> file_name;
+            this->sm.PrettyPrintOutput(test_state, file_name);
+          std::cout << "Output pretty-printed in file " << file_name << std::endl;
+          break;
         case 10:
         {
           os << "Checking state consistency: " << std::endl;
@@ -547,18 +545,11 @@ std::ostream &os)
             os << "The state is not consistent" << std::endl;
           break;
         }
-        case 11:
-        {
-          os << "File name : ";
-          std::cin >> file_name;
-            this->sm.PrettyPrintOutput(test_state, file_name);
-          std::cout << "Output pretty-printed in file " << file_name << std::endl;
-          break;
-        }
+      }
         default:
           os << "Invalid choice" << std::endl;
       }
-      return (sub_choice >= 1 && sub_choice <= 4);
+      return (sub_choice >= 1 && sub_choice <= 3);
     }
     
     /**

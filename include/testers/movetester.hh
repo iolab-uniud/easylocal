@@ -103,17 +103,17 @@ template <class Input, class Solution, class Move, class CostStructure>
 void MoveTester<Input, Solution, Move, CostStructure>::ShowMenu()
 {
     os << "Move Menu: " << std::endl
-    << "     (1)  Perform Best Move" << std::endl
-    << "     (2)  Perform First Improving Move" << std::endl
-    << "     (3)  Perform Random Move" << std::endl
-    << "     (4)  Perform Input Move" << std::endl
-    << "     (5)  Print All Neighbors" << std::endl
-    << "     (6)  Print Neighborhood Statistics" << std::endl
-    << "     (7)  Print Random Move Cost" << std::endl
-    << "     (8)  Print Input Move Cost" << std::endl
-    << "     (9)  Check Neighborhood Costs" << std::endl
-    << "    (10)  Check Move Independence" << std::endl
-    << "    (11)  Check Random Move Distribution" << std::endl;
+       << "     (1)  Perform Best Move" << std::endl
+       << "     (2)  Perform First Improving Move" << std::endl
+       << "     (3)  Perform Random Move" << std::endl
+       << "     (4)  Perform Input Move" << std::endl
+       << "     (5)  Print All Neighbors" << std::endl
+       << "     (6)  Print Neighborhood Statistics" << std::endl
+       << "     (7)  Print Random Move Cost" << std::endl
+       << "     (8)  Print Input Move Cost" << std::endl
+       << "     (9)  Check Neighborhood Costs" << std::endl
+       << "    (10)  Check Move Independence" << std::endl
+       << "    (11)  Check Random Move Distribution" << std::endl;
     os << "     (0)  Return to Main Menu" << std::endl
     << " Your choice: ";
     choice = this->ReadChoice(std::cin);
@@ -336,7 +336,7 @@ void MoveTester<Input, Solution, Move, CostStructure>::CheckRandomMoveDistributi
     ne.FirstMove(st, mv);
     do
     {
-        frequency[mv] = 0;
+      frequency[mv] = 0;
     } while (ne.NextMove(st, mv));
     
     os << "The neighborhood has " << frequency.size() << " members." << std::endl;
@@ -361,7 +361,7 @@ void MoveTester<Input, Solution, Move, CostStructure>::CheckRandomMoveDistributi
     // Compute the standard deviation
     for (it = frequency.begin(); it != frequency.end(); ++it)
     {
-        dev += pow((double)(*it).second, 2);
+      dev += pow((double)(*it).second, 2);
     }
     
     dev = sqrt(fabs(dev / frequency.size() - pow(double(rounds), 2)));

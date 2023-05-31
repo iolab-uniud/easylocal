@@ -176,20 +176,16 @@ void SimulatedAnnealing<Input, Solution, Move, CostStructure>::ComputeStartTempe
 template <class Input, class Solution, class Move, class CostStructure>
 void SimulatedAnnealing<Input, Solution, Move, CostStructure>::SelectMove()
 {
-  do
-    {
-      this->ne.RandomMove(*this->p_current_state, this->current_move.move);
-      this->current_move.cost = this->ne.DeltaCostFunctionComponents(*this->p_current_state, this->current_move.move);
+  this->ne.RandomMove(*this->p_current_state, this->current_move.move);
+  this->current_move.cost = this->ne.DeltaCostFunctionComponents(*this->p_current_state, this->current_move.move);
 #if VERBOSE >= 3
-      std::cerr << "V3 " << this->current_move.move << " (" << this->current_move.cost << ") ";
-      PrintStatus(cerr);
-      std::cerr << std::endl;
+  std::cerr << "V3 " << this->current_move.move << " (" << this->current_move.cost << ") ";
+  PrintStatus(cerr);
+  std::cerr << std::endl;
 #endif
-      this->neighbors_sampled++;
-      this->evaluations++;
-    } 
-  while(!MetropolisCriterion());
-  this->current_move.is_valid = true;
+  this->neighbors_sampled++;
+  this->evaluations++;
+  this->current_move.is_valid = this->current_move.cost <= 0 || MetropolisCriterion();
 }
 
 template <class Input, class Solution, class Move, class CostStructure>
@@ -209,8 +205,7 @@ void SimulatedAnnealing<Input, Solution, Move, CostStructure>::PrintStatus(ostre
 template <class Input, class Solution, class Move, class CostStructure>
 bool SimulatedAnnealing<Input, Solution, Move, CostStructure>::MetropolisCriterion() const
 {
-  return this->current_move.cost <= 0 || 
-    this->current_move.cost < (-this->temperature * log(std::max(Random::Uniform<double>(0.0, 1.0), std::numeric_limits<double>::epsilon())));
+  return this->current_move.cost < (-this->temperature * log(std::max(Random::Uniform<double>(0.0, 1.0), std::numeric_limits<double>::epsilon())));
 }
 
 /**
@@ -247,7 +242,6 @@ bool SimulatedAnnealing<Input, Solution, Move, CostStructure>::CoolingNeeded() c
 template <class Input, class Solution, class Move, class CostStructure>
 void SimulatedAnnealing<Input, Solution, Move, CostStructure>::ApplyCooling()
 {
-
   residual_temperatures = total_number_of_temperatures - number_of_temperatures; 
   if (neighbors_sampled < current_max_neighbors_sampled && residual_temperatures > 0) 
     { // we have saved some iterations thanks to the cut-off: they are 
@@ -255,14 +249,14 @@ void SimulatedAnnealing<Input, Solution, Move, CostStructure>::ApplyCooling()
       residual_iterations = this->max_evaluations - this->evaluations;
       current_max_neighbors_sampled = residual_iterations/residual_temperatures;
       // NOTE: the number of accepted moves depends on the initial number of sampled, NOT from the current one
-        }
-  temperature *= cooling_rate;
-  number_of_temperatures++;
+    }
 #if VERBOSE >= 1
   std::cerr << "V1 ";
   PrintStatus(cerr);
   std::cerr << std::endl;
 #endif
+  temperature *= cooling_rate;
+  number_of_temperatures++;
   neighbors_sampled = 0;
   neighbors_accepted = 0;
 } 
