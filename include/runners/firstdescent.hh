@@ -38,7 +38,7 @@ namespace EasyLocal
       {
         this->ne.FirstMove(*this->p_current_state, this->current_move.move);
       }
-      catch (EmptyNeighborhood e)
+      catch (EmptyNeighborhood& e)
       {
         // FIXME: do something smart
       }
@@ -51,12 +51,16 @@ namespace EasyLocal
     void FirstDescent<Input, Solution, Move, CostStructure>::SelectMove()
     {
       size_t explored;
-      EvaluatedMove<Move, CostStructure> em = this->ne.SelectFirst(this->current_move.move, *this->p_current_state, explored, [](const Move &mv, const CostStructure &move_cost) {
-        return move_cost < 0;
-      },
+      EvaluatedMove<Move, CostStructure> em = this->ne.SelectRandomFirst(*this->p_current_state, explored, 
+                                                                   [](const Move &mv, const CostStructure &move_cost) {
+                                                                     return move_cost < 0;
+                                                                   },
                                                                    this->weights);
       this->current_move = em;
       this->evaluations += explored;
+#if VERBOSE >= 2
+      std::cerr << "V2 " << this->current_move.move << " (" << this->current_move.cost << ") " << std::endl;
+#endif
     }
     
     /**
