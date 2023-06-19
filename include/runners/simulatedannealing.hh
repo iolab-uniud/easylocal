@@ -46,7 +46,7 @@ protected:
   virtual void ApplyCooling();
   bool StopCriterion() override;
   void ComputeStartTemperature();
-  virtual void PrintStatus(ostream& os) const;
+  virtual void PrintStatus(std::ostream& os) const;
   // parameters
   Parameter<bool> compute_start_temperature;
   Parameter<double> start_temperature, min_temperature;
@@ -180,7 +180,7 @@ void SimulatedAnnealing<Input, Solution, Move, CostStructure>::SelectMove()
   this->current_move.cost = this->ne.DeltaCostFunctionComponents(*this->p_current_state, this->current_move.move);
 #if VERBOSE >= 3
   std::cerr << "V3 " << this->current_move.move << " (" << this->current_move.cost << ") ";
-  PrintStatus(cerr);
+  PrintStatus(std::cerr);
   std::cerr << std::endl;
 #endif
   this->neighbors_sampled++;
@@ -189,7 +189,7 @@ void SimulatedAnnealing<Input, Solution, Move, CostStructure>::SelectMove()
 }
 
 template <class Input, class Solution, class Move, class CostStructure>
-void SimulatedAnnealing<Input, Solution, Move, CostStructure>::PrintStatus(ostream& os) const
+void SimulatedAnnealing<Input, Solution, Move, CostStructure>::PrintStatus(std::ostream& os) const
 {
   os << "Status: (" << this->number_of_temperatures << "|" << this->evaluations << ")" 
      << " T = " << this->Temperature() 
@@ -217,7 +217,7 @@ void SimulatedAnnealing<Input, Solution, Move, CostStructure>::CompleteMove()
   neighbors_accepted++;
 #if VERBOSE >= 2
       std::cerr << "V2 " << this->current_move.move << " (" << this->current_move.cost << ") ";
-      PrintStatus(cerr);
+      PrintStatus(std::cerr);
       std::cerr << std::endl;
 #endif
 }
@@ -252,7 +252,7 @@ void SimulatedAnnealing<Input, Solution, Move, CostStructure>::ApplyCooling()
     }
 #if VERBOSE >= 1
   std::cerr << "V1 ";
-  PrintStatus(cerr);
+  PrintStatus(std::cerr);
   std::cerr << std::endl;
 #endif
   temperature *= cooling_rate;

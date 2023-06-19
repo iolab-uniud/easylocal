@@ -35,7 +35,7 @@ namespace EasyLocal
       bool MaxEvaluationsExpired() const override;
       bool CoolingNeeded() const override;
       void ApplyCooling() override;
-      void PrintStatus(ostream& os) const override;
+      void PrintStatus(std::ostream& os) const override;
 
       // additional parameters
       Parameter<double> allowed_running_time;
@@ -82,17 +82,17 @@ namespace EasyLocal
       
       if (temperature_end_time - temperature_start_time < allowed_running_time_per_temperature && this->residual_temperatures > 0)
         {
-          residual_running_time = chrono::duration_cast<chrono::milliseconds>(run_duration - (temperature_end_time - run_start));
+          residual_running_time = std::chrono::duration_cast<std::chrono::milliseconds>(run_duration - (temperature_end_time - run_start));
           allowed_running_time_per_temperature = residual_running_time/this->residual_temperatures;
         }
       temperature_start_time = temperature_end_time;
     }
 
     template <class Input, class Solution, class Move, class CostStructure>
-    void SimulatedAnnealingTimeBased<Input, Solution, Move, CostStructure>::PrintStatus(ostream& os) const
+    void SimulatedAnnealingTimeBased<Input, Solution, Move, CostStructure>::PrintStatus(std::ostream& os) const
     {
       SimulatedAnnealing<Input, Solution, Move, CostStructure>::PrintStatus(os);
-      os << ", t = " << chrono::duration_cast<chrono::milliseconds>(temperature_start_time - run_start).count()/1000.0;
+      os << ", t = " << std::chrono::duration_cast<std::chrono::milliseconds>(temperature_start_time - run_start).count()/1000.0;
     }
 
   template <class Input, class Solution, class Move, class CostStructure>

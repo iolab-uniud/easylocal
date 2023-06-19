@@ -97,7 +97,7 @@ namespace EasyLocal
       bool StopCriterion();
       void SelectMove();
       void CompleteMove();
-      void PrintStatus(ostream& os) const;
+      void PrintStatus(std::ostream& os) const;
       InverseFunction Inverse;
       
       static InverseFunction SameMoveAsInverse;
@@ -192,14 +192,14 @@ namespace EasyLocal
       tabu_list.emplace(this->current_move.move, this->iteration + Random::Uniform<unsigned int>(min_tenure, max_tenure));
 #if VERBOSE >= 2
       std::cerr << "V2 "; 
-      PrintStatus(cerr);
+      PrintStatus(std::cerr);
       std::cerr << this->current_move.move << " (" << this->current_move.cost << ") " << std::endl;
 #endif
 
     }
 
     template <class Input, class Solution, class Move, class CostStructure>
-    void TabuSearch<Input, Solution, Move, CostStructure>::PrintStatus(ostream& os) const
+    void TabuSearch<Input, Solution, Move, CostStructure>::PrintStatus(std::ostream& os) const
     {
       os << "Status: (" << tabu_list.size() << ", " <<  this->iteration << ", " << this->iteration_of_best << ")"
          << " OF = [" << this->current_state_cost.total << "/" << this->best_state_cost.total << "]";

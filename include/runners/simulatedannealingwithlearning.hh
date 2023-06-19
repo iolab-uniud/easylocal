@@ -64,8 +64,8 @@ namespace EasyLocal
             double total_reward = 0;
     #if VERBOSE >= 1
             std::cerr << "V1 ";
-            this->PrintStatus(cerr);
-            std::cerr << ", time = " << chrono::duration_cast<chrono::milliseconds>(this->temperature_start_time-this->run_start).count()/1000.0;
+            this->PrintStatus(std::cerr);
+            std::cerr << ", time = " << std::chrono::duration_cast<std::chrono::milliseconds>(this->temperature_start_time-this->run_start).count()/1000.0;
             std::cerr << ", rates: (";
             double sum_rates = 0;
             for(unsigned int i = 0; i < this->ne.Modality(); i++)
@@ -110,7 +110,7 @@ namespace EasyLocal
                         if(i < this->ne.Modality()-1)
                           std::cerr << ",";
                         else
-                          std::cerr << endl;
+                          std::cerr << std::endl;
                       }                
           }
           std::cerr << this->number_of_temperatures << ","
@@ -212,7 +212,7 @@ namespace EasyLocal
               }
 
     #if VERBOSE >= 1
-            std::cerr << endl;
+            std::cerr << std::endl;
     #endif
           }
         SimulatedAnnealingTimeBased<Input, Solution, Move, CostStructure>::CompleteIteration();
