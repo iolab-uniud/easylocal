@@ -34,6 +34,7 @@ struct DefaultCostStructure
       this->all_components.resize(other.all_components.size(), 0);
     for (size_t i = 0; i < other.all_components.size(); i++)
       this->all_components[i] += other.all_components[i];
+    weighted += other.weighted;
     return *this;
   }
 
@@ -46,6 +47,7 @@ struct DefaultCostStructure
       this->all_components.resize(other.all_components.size(), 0);
     for (size_t i = 0; i < other.all_components.size(); i++)
       this->all_components[i] -= other.all_components[i];
+    weighted -= other.weighted;
     return *this;
   }
 
