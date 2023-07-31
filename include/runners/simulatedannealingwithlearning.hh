@@ -158,11 +158,9 @@ namespace EasyLocal
                             std::cerr << "nan" << ",";
     #endif    
                 
-                if(learning_data[i].global_improvement > 0.0)
-                  reward[i] = (learning_data[i].global_improvement/learning_data[i].evaluated)
-                            /pow(learning_data[i].global_evaluation_time.count()/static_cast<double>(learning_data[i].accepted),1.0/time_smoother);
-                else
-                  reward[i] = 0;
+
+                reward[i] = ComputeNHReward(i);
+
                 total_reward += reward[i];
               }
 
@@ -238,6 +236,17 @@ namespace EasyLocal
           this->evaluations++;
           learning_data[this->ne.GetActiveMove(this->current_move.move)].evaluated++;
         } while(!accepted);
+      }
+
+      virtual double ComputeNHReward(unsigned int i)
+      {
+          double this_reward;
+          if(learning_data[i].global_improvement > 0.0)
+            this_reward = (learning_data[i].global_improvement/learning_data[i].evaluated)
+                      /pow(learning_data[i].global_evaluation_time.count()/static_cast<double>(learning_data[i].accepted),1.0/time_smoother);
+          else
+            this_reward = 0;
+          return this_reward;
       }
     protected:
       std::vector<LearningData> learning_data;
