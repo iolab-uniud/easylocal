@@ -177,7 +177,7 @@ template <class Input, class Solution, class Move, class CostStructure>
 void SimulatedAnnealing<Input, Solution, Move, CostStructure>::SelectMove()
 {
   this->ne.RandomMove(*this->p_current_state, this->current_move.move);
-  this->current_move.cost = this->ne.DeltaCostFunctionComponents(*this->p_current_state, this->current_move.move);
+  this->current_move.cost = this->ne.DeltaCostFunctionComponents(*this->p_current_state, this->current_move.move, this->weights);
 #if VERBOSE >= 3
   std::cerr << "V3 " << this->current_move.move << " (" << this->current_move.cost << ") ";
   PrintStatus(std::cerr);
