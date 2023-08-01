@@ -54,10 +54,8 @@ namespace EasyLocal
         //   - update the learning data of the neighborhood
       }
 
-      void CompleteIteration() override 
+      virtual void ApplyLearning()
       {
-        if (this->CoolingNeeded())
-          {  // the batch is finished -> update probabilities and reset learning data
             //vector<double> avg_improvement(this->ne.Modality(),0);
             std::vector<double> reward(this->ne.Modality(),0);
             //double total_avg_improvement = 0;
@@ -212,9 +210,18 @@ namespace EasyLocal
     #if VERBOSE >= 1
             std::cerr << std::endl;
     #endif
-          }
+          
+      }
+
+
+      void CompleteIteration() override 
+      {
+        if (this->CoolingNeeded()) // the batch is finished -> update probabilities and reset learning data
+          ApplyLearning();
         SimulatedAnnealingTimeBased<Input, Solution, Move, CostStructure>::CompleteIteration();
       }
+
+
       void SelectMove() override 
       {
         bool accepted = false;
