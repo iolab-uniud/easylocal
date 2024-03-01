@@ -249,8 +249,10 @@ namespace EasyLocal
       {
           double this_reward;
           if(learning_data[i].global_improvement > 0.0)
+            // this_reward = (learning_data[i].global_improvement/learning_data[i].evaluated)
+            //           /pow(learning_data[i].global_evaluation_time.count()/static_cast<double>(learning_data[i].accepted),1.0/time_smoother);
             this_reward = (learning_data[i].global_improvement/learning_data[i].evaluated)
-                      /pow(learning_data[i].global_evaluation_time.count()/static_cast<double>(learning_data[i].accepted),1.0/time_smoother);
+                       /pow(learning_data[i].global_evaluation_time.count()/static_cast<double>(learning_data[i].accepted),time_smoother);
           else
             this_reward = 0;
           return this_reward;

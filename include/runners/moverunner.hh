@@ -71,6 +71,12 @@ void MoveRunner<Input, Solution, Move, CostStructure>::UpdateBestState()
     // FIXME: write out cost
 #if VERBOSE >= 1 
     std::cerr << "V1" << " new best: " << this->best_state_cost << std::endl;
+    if(this->best_state_cost.violations < 0)
+    {
+      std::cerr << *(this->p_best_state) << std::endl;
+      char ch; std::cin >> ch;
+    }
+      
 #endif
   }
 }
