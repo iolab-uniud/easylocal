@@ -1,7 +1,6 @@
 #pragma once
 
 #include "runners/moverunner.hh"
-#include "helpers/statemanager.hh"
 #include "helpers/neighborhoodexplorer.hh"
 
 namespace EasyLocal
@@ -15,11 +14,11 @@ namespace EasyLocal
      solution is selected and performed.
      @ingroup Runners
      */
-    template <class Input, class State, class Move, class CostStructure = DefaultCostStructure<int>>
-    class FirstDescent : public MoveRunner<Input, State, Move, CostStructure>
+    template <class Input, class Solution, class Move, class CostStructure = DefaultCostStructure<int>>
+    class FirstDescent : public MoveRunner<Input, Solution, Move, CostStructure>
     {
     public:
-      using MoveRunner<Input, State, Move, CostStructure>::MoveRunner;
+      using MoveRunner<Input, Solution, Move, CostStructure>::MoveRunner;
       
     protected:
       void InitializeRun();
@@ -31,10 +30,10 @@ namespace EasyLocal
      * Implementation
      *************************************************************************/
     
-    template <class Input, class State, class Move, class CostStructure>
-    void FirstDescent<Input, State, Move, CostStructure>::InitializeRun()
+    template <class Input, class Solution, class Move, class CostStructure>
+    void FirstDescent<Input, Solution, Move, CostStructure>::InitializeRun()
     {
-      MoveRunner<Input, State, Move, CostStructure>::InitializeRun();
+      MoveRunner<Input, Solution, Move, CostStructure>::InitializeRun();
       try
       {
         this->ne.FirstMove(*this->p_current_state, this->current_move.move);
@@ -48,8 +47,8 @@ namespace EasyLocal
     /**
      Selects always the first improving move in the neighborhood.
      */
-    template <class Input, class State, class Move, class CostStructure>
-    void FirstDescent<Input, State, Move, CostStructure>::SelectMove()
+    template <class Input, class Solution, class Move, class CostStructure>
+    void FirstDescent<Input, Solution, Move, CostStructure>::SelectMove()
     {
       size_t explored;
       EvaluatedMove<Move, CostStructure> em = this->ne.SelectFirst(this->current_move.move, *this->p_current_state, explored, [](const Move &mv, const CostStructure &move_cost) {
@@ -63,8 +62,8 @@ namespace EasyLocal
     /**
      The search is stopped when no (strictly) improving move has been found.
      */
-    template <class Input, class State, class Move, class CostStructure>
-    bool FirstDescent<Input, State, Move, CostStructure>::StopCriterion()
+    template <class Input, class Solution, class Move, class CostStructure>
+    bool FirstDescent<Input, Solution, Move, CostStructure>::StopCriterion()
     {
       return this->iteration > 0 && !this->current_move.is_valid;
     }

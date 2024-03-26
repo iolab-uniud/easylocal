@@ -18,7 +18,7 @@ namespace Core
      @tparam CFtype the type of the cost function (typically int)
      @ingroup Helpers
      */
-template <class Input, class State, class CFtype = int>
+template <class Input, class Solution, class CFtype = int>
 class CostComponent 
 {
 public:
@@ -26,23 +26,23 @@ public:
   virtual void Print(std::ostream &os = std::cout) const;
 
   /** Computes this component of cost with respect to a given state not considering its weight.
-       @param st the @ref State to be evaluated
+       @param st the @ref Solution to be evaluated
        @return the computed cost, regardless of its weight
        */
-  virtual CFtype ComputeCost(const State &st) const = 0;
+  virtual CFtype ComputeCost(const Solution &st) const = 0;
 
   /** Computes this component of cost with respect to a given state.
-       @param st the @ref State to be evaluated
+       @param st the @ref Solution to be evaluated
        @return the computed cost, multiplied by its weight
        @remarks internally calls @ref ComputeCost and multiplies the result by the weight of the cost component.
        */
-  CFtype Cost(const State &st) const { return weight * ComputeCost(st); }
+  CFtype Cost(const Solution &st) const { return weight * ComputeCost(st); }
 
   /** Prints the violations relative to this cost component with respect to the specified state.
        @param st the @State to be evaluated
        @param os the output stream where the description has to be printed
        */
-  virtual void PrintViolations(const State &st, std::ostream &os = std::cout) const = 0;
+  virtual void PrintViolations(const Solution &st, std::ostream &os = std::cout) const = 0;
 
   /** Gets the weight of this cost component.
        @return the weight of this cost component
@@ -79,15 +79,16 @@ public:
   }
 
   const size_t hash;
+    
+    /** Constructor.
+         @param in @ref Input object
+         @param weight weight of the cost component
+         @param is_hard a flag which tells if the cost component is hard or soft
+         @param name name of the cost component (for debug reasons)
+         */
+    CostComponent(const Input &in, const CFtype &weight, bool is_hard, std::string name);
 
 protected:
-  /** Constructor.
-       @param in @ref Input object
-       @param weight weight of the cost component
-       @param is_hard a flag which tells if the cost component is hard or soft
-       @param name name of the cost component (for debug reasons)
-       */
-  CostComponent(const Input &in, const CFtype &weight, bool is_hard, std::string name);
 
   /** Input object. */
   const Input &in;
@@ -103,14 +104,14 @@ protected:
 
 /** IMPLEMENTATION */
 
-template <class Input, class State, typename CFtype>
-CostComponent<Input, State, CFtype>::CostComponent(const Input &in, const CFtype &weight, bool is_hard, std::string name)
+template <class Input, class Solution, typename CFtype>
+CostComponent<Input, Solution, CFtype>::CostComponent(const Input &in, const CFtype &weight, bool is_hard, std::string name)
     : name(name), hash(std::hash<std::string>()(typeid(this).name() + name)), in(in), weight(weight), is_hard(is_hard)
 {
 }
 
-template <class Input, class State, typename CFtype>
-void CostComponent<Input, State, CFtype>::Print(std::ostream &os) const
+template <class Input, class Solution, typename CFtype>
+void CostComponent<Input, Solution, CFtype>::Print(std::ostream &os) const
 {
   os << "Cost Component " << name << ": weight " << weight << (is_hard ? "*" : "") << std::endl;
 }

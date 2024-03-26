@@ -13,17 +13,16 @@ namespace EasyLocal
   namespace Core
   {
     
-    template <class Input, class State, class Move, class CostStructure = DefaultCostStructure<int>>
-    class SampleTabuSearch : public TabuSearch<Input, State, Move, CostStructure>
+    template <class Input, class Solution, class Move, class CostStructure = DefaultCostStructure<int>>
+    class SampleTabuSearch : public TabuSearch<Input, Solution, Move, CostStructure>
     {
     public:
-      using TabuSearch<Input, State, Move, CostStructure>::TabuSearch;
-      
-      void InitializeParameters()
-      {
-        TabuSearch<Input, State, Move, CostStructure>::InitializeParameters();
-        samples("samples", "Number of neighbors sampled", this->parameters);
-      }
+        SampleTabuSearch(const Input &in, SolutionManager<Input, Solution, CostStructure> &sm,
+                         NeighborhoodExplorer<Input, Solution, Move, CostStructure> &ne,
+                         std::string name) : TabuSearch<Input, Solution, Move, CostStructure>(in, sm, ne, name)
+        {
+            samples("samples", "Number of neighbors sampled", this->parameters);
+        }
       
     protected:
       void SelectMove();
@@ -38,8 +37,8 @@ namespace EasyLocal
      Selects always the best move that is non prohibited by the tabu list
      mechanism.
      */
-    template <class Input, class State, class Move, class CostStructure>
-    void SampleTabuSearch<Input, State, Move, CostStructure>::SelectMove()
+    template <class Input, class Solution, class Move, class CostStructure>
+    void SampleTabuSearch<Input, Solution, Move, CostStructure>::SelectMove()
     {
       size_t sampled = 0;
       CostStructure aspiration = this->best_state_cost - this->current_state_cost;

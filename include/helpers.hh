@@ -10,19 +10,12 @@
  hierarchically, but they are linked to @ref Runners, @ref Solvers, @ref Testers
  and to each other through references. The helpers are the following ones:
  
- - StateManager: is responsible for all operations on the state that are
+ - SolutionManager: is responsible for all operations on the state that are
  independent of the neighborhood definition (i.e., from the @ref Move "Moves").
  
  - CostComponent: is responsible for computing a component of the cost function
  on a given @ref State. The class is able to handle both @e hard and @e soft cost components.
  
- - OutputManager:
- is responsible for translating between elements of the search space
- and output solutions.  It also delivers other output information of
- the search, and stores and retrieves solutions from files.  This is
- the only helper that deals with the @ref Output class.  All
- other helpers work only on the @ref State class, which
- represents the elements of the search space used by the algorithms.
  
  - NeighborhoodExplorer: handles all the features concerning neighborhood exploration in an @e iterator
  fashion.
@@ -40,6 +33,5 @@
 #include "helpers/deltacostcomponent.hh"
 #include "helpers/kicker.hh"
 #include "helpers/neighborhoodexplorer.hh"
-#include "helpers/outputmanager.hh"
-#include "helpers/statemanager.hh"
+#include "helpers/solutionmanager.hh"
 

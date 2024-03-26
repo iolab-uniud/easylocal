@@ -1,5 +1,4 @@
 #pragma once
-
 #include "runners/abstractsimulatedannealing.hh"
 
 namespace EasyLocal
@@ -16,70 +15,95 @@ namespace EasyLocal
      @ingroup Runners
      */
     
-    template <class Input, class State, class Move, class CostStructure = DefaultCostStructure<int>>
-    class SimulatedAnnealingEvaluationBased : public AbstractSimulatedAnnealing<Input, State, Move, CostStructure>
+    template <class Input, class Solution, class Move, class CostStructure = DefaultCostStructure<int>>
+    class SimulatedAnnealingEvaluationBased : public AbstractSimulatedAnnealing<Input, Solution, Move, CostStructure>
     {
     public:
-      using AbstractSimulatedAnnealing<Input, State, Move, CostStructure>::AbstractSimulatedAnnealing;
-      
+      SimulatedAnnealingEvaluationBased(const Input &in, SolutionManager<Input, Solution, CostStructure> &sm,
+                                        NeighborhoodExplorer<Input, Solution, Move, CostStructure> &ne,
+                                        std::string name) : AbstractSimulatedAnnealing<Input, Solution, Move, CostStructure>(in, sm, ne, name)
+      {  
+        if (this->max_neighbors_sampled.IsSet()) 
+          throw IncorrectParameterValue(this->max_neighbors_sampled, " should not be set explicitly, as it is computed");
+        this->max_neighbors_sampled = 0; // computed later
+      }
     protected:
-      void InitializeParameters();
-      void InitializeRun();
-      bool StopCriterion();
+      void InitializeRun() override;
+      bool StopCriterion() override;
+      void CompleteIteration() override;
       
       // additional parameters
-      Parameter<double> neighbors_accepted_ratio;
-      Parameter<double> temperature_range;
-      Parameter<double> expected_min_temperature;
-      unsigned int expected_number_of_temperatures;
-      //      double expected_min_temperature;
+
+      // additional data
+      unsigned int total_number_of_temperatures;
+      double temperature_range;
     };
     
     /*************************************************************************
      * Implementation
      *************************************************************************/
     
-    template <class Input, class State, class Move, class CostStructure>
-    void SimulatedAnnealingEvaluationBased<Input, State, Move, CostStructure>::InitializeParameters()
-    {
-      AbstractSimulatedAnnealing<Input, State, Move, CostStructure>::InitializeParameters();
-      neighbors_accepted_ratio("neighbors_accepted_ratio", "Ratio of neighbors accepted", this->parameters);
-      temperature_range("temperature_range", "Temperature_range", this->parameters);
-      expected_min_temperature("expected_min_temperature", "Expected minimum temperature", this->parameters);
-      this->max_neighbors_sampled = this->max_neighbors_accepted = 0;
-    }
-    
     /**
      Initializes the run by invoking the companion superclass method, and
      setting the temperature to the start value.
      */
-    template <class Input, class State, class Move, class CostStructure>
-    void SimulatedAnnealingEvaluationBased<Input, State, Move, CostStructure>::InitializeRun()
+    template <class Input, class Solution, class Move, class CostStructure>
+    void SimulatedAnnealingEvaluationBased<Input, Solution, Move, CostStructure>::InitializeRun()
     {
-      AbstractSimulatedAnnealing<Input, State, Move, CostStructure>::InitializeRun();
-      if (temperature_range.IsSet())
-        expected_min_temperature = this->start_temperature / temperature_range;
-      else
-        temperature_range = this->start_temperature / expected_min_temperature;
+      AbstractSimulatedAnnealing<Input, Solution, Move, CostStructure>::InitializeRun();
+
+      temperature_range = this->start_temperature / this->min_temperature;
+      total_number_of_temperatures = static_cast<unsigned int>(ceil(-log(temperature_range) / log(this->cooling_rate)));
       
-      expected_number_of_temperatures = static_cast<unsigned int>(ceil(-log(temperature_range) / log(this->cooling_rate)));
-      
-      this->max_neighbors_sampled = static_cast<unsigned int>(this->max_evaluations / expected_number_of_temperatures);
-      
+      this->max_neighbors_sampled = static_cast<unsigned int>(this->max_evaluations / total_number_of_temperatures);
+      this->current_max_neighbors_sampled = this->max_neighbors_sampled;
+
       // If the ratio of accepted neighbors for each temperature is not set,
-      if (!neighbors_accepted_ratio.IsSet())
+      if (!this->neighbors_accepted_ratio.IsSet())
         this->max_neighbors_accepted = this->max_neighbors_sampled;
       else
-        this->max_neighbors_accepted = static_cast<unsigned int>(this->max_neighbors_sampled * neighbors_accepted_ratio);
+        this->max_neighbors_accepted = static_cast<unsigned int>(this->max_neighbors_sampled * this->neighbors_accepted_ratio);
     }
     
     /**
      The search stops when the number of evaluations is expired (already checked in the superclass MoveRunner)
      */
-    template <class Input, class State, class Move, class CostStructure>
-    bool SimulatedAnnealingEvaluationBased<Input, State, Move, CostStructure>::StopCriterion()
+    template <class Input, class Solution, class Move, class CostStructure>
+    bool SimulatedAnnealingEvaluationBased<Input, Solution, Move, CostStructure>::StopCriterion()
     {
-      return false;
+      return false; // the criterion max_evaluations is already tested at upper lavels
     }
+
+
+    template <class Input, class Solution, class Move, class CostStructure>
+    void SimulatedAnnealingEvaluationBased<Input, Solution, Move, CostStructure>::CompleteIteration()
+    {
+      if (this->CoolingNeeded())
+        {
+          // additional operations, only for SimulatedAnnealingEvaluationBased
+          if (this->neighbors_sampled < this->current_max_neighbors_sampled) 
+            { // we have a saving
+              unsigned residual_temperatures = total_number_of_temperatures - this->number_of_temperatures;
+              unsigned residual_iterations = this->max_evaluations - this->evaluations;
+              this->current_max_neighbors_sampled = residual_iterations/residual_temperatures;
+              this->max_neighbors_accepted = static_cast<unsigned int>(this->max_neighbors_sampled * this->neighbors_accepted_ratio);
+              // NOTE: the number of accepted moves depends on the initial number of sampled, NOT from the current one
+//               cerr << "Temp = " << this->temperature << ", saved iters = " << this->current_max_neighbors_sampled - this->neighbors_sampled << ", residual_temps = " << residual_temperatures 
+//                    << ", residual_it = " << residual_iterations << ", N_s = " << this->current_max_neighbors_sampled << ", N_a = " 
+//                    << this->max_neighbors_accepted << endl;
+            }
+//           else 
+//             cerr << "Temp = " << this->temperature << endl;
+
+          // same as father class AbstractSimulatedAnnealing
+          this->temperature *= this->cooling_rate;
+          this->number_of_temperatures++;
+          this->neighbors_sampled = 0;
+          this->neighbors_accepted = 0;
+        }
+    }
+
+
+
   } // namespace Core
 } // namespace EasyLocal

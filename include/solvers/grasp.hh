@@ -2,7 +2,7 @@
 
 #include <vector>
 
-#include "easylocal/solvers/abstractlocalsearch.hh"
+#include "easylocal/solvers/LocalSearch.hh"
 
 namespace EasyLocal
 {
@@ -13,17 +13,17 @@ namespace Core
 /** An Iterated Local Search solver handles both a runner encapsulating a local
      search algorithm and a kicker used for perturbing current solution.
      @ingroup Solvers */
-template <class Input, class Output, class State, class CostStructure = DefaultCostStructure<int>>
+template <class Input, class Solution, class CostStructure = DefaultCostStructure<int>>
 class GRASP
-    : public AbstractLocalSearch<Input, Output, State, CostStructure>
+    : public LocalSearch<Input, Solution, CostStructure>
 {
 public:
   GRASP(const Input &i,
-        StateManager<Input, State, CostStructure> &sm,
-        OutputManager<Input, Output, State, CostStructure> &om,
+        SolutionManager<Input, Solution, CostStructure> &sm,
+        OutputManager<Input, Solution, CostStructure> &om,
         std::string name);
   void Print(std::ostream &os = std::cout) const;
-  void SetRunner(Runner<Input, State, CostStructure> &r);
+  void SetRunner(Runner<Input, Solution, CostStructure> &r);
   unsigned int GetRestarts() const { return restarts; }
   void ReadParameters(std::istream &is = std::cin, std::ostream &os = std::cout);
 
@@ -32,7 +32,7 @@ public:
 protected:
   unsigned int restarts;
 
-  Runner<Input, State, CostStructure> *runner; /**< The linked runner. */
+  Runner<Input, Solution, CostStructure> *runner; /**< The linked runner. */
 };
 
 /*************************************************************************
@@ -51,12 +51,12 @@ protected:
      @param in a pointer to an input object
      @param out a pointer to an output object
      */
-template <class Input, class Output, class State, class CostStructure>
-GRASP<Input, Output, State, CostStructure>::GRASP(const Input &i,
-                                                  StateManager<Input, State, CostStructure> &sm,
-                                                  OutputManager<Input, Output, State, CostStructure> &om,
+template <class Input, class Solution, class CostStructure>
+GRASP<Input, Solution, CostStructure>::GRASP(const Input &i,
+                                                  SolutionManager<Input, Solution, CostStructure> &sm,
+                                                  OutputManager<Input, Solution, CostStructure> &om,
                                                   std::string name)
-    : AbstractLocalSearch<Input, Output, State, CostStructure>(i, sm, om, name)
+    : LocalSearch<Input, Solution, CostStructure>(i, sm, om, name)
 {
   runner = nullptr;
 }
@@ -66,14 +66,14 @@ GRASP<Input, Output, State, CostStructure>::GRASP(const Input &i,
      
      @param r a pointer to a compatible runner to add
      */
-template <class Input, class Output, class State, class CostStructure>
-void GRASP<Input, Output, State, CostStructure>::SetRunner(Runner<Input, State, CostStructure> &r)
+template <class Input, class Solution, class CostStructure>
+void GRASP<Input, Solution, CostStructure>::SetRunner(Runner<Input, Solution, CostStructure> &r)
 {
   runner = &r;
 }
 
-// template <class Input, class Output, class State, class CostStructure>
-// void GRASP<Input, Output, State, CostStructure>::Print(std::ostream& os) const
+// template <class Input, class Solution, class CostStructure>
+// void GRASP<Input, Solution, CostStructure>::Print(std::ostream& os) const
 // {
 //   os  << "Generalized Local Search Solver: " << this->name << std::endl;
 
@@ -96,8 +96,8 @@ void GRASP<Input, Output, State, CostStructure>::SetRunner(Runner<Input, State, 
 /**
      Solves using a single runner
      */
-template <class Input, class Output, class State, class CostStructure>
-void GRASP<Input, Output, State, CostStructure>::Solve(double alpha, unsigned int k, unsigned int trials)
+template <class Input, class Solution, class CostStructure>
+void GRASP<Input, Solution, CostStructure>::Solve(double alpha, unsigned int k, unsigned int trials)
 {
   bool timeout_expired = false;
   unsigned t;
@@ -127,8 +127,8 @@ void GRASP<Input, Output, State, CostStructure>::Solve(double alpha, unsigned in
   //   chrono.Stop();
 }
 
-template <class Input, class Output, class State, class CostStructure>
-void GRASP<Input, Output, State, CostStructure>::ReadParameters(std::istream &is, std::ostream &os)
+template <class Input, class Solution, class CostStructure>
+void GRASP<Input, Solution, CostStructure>::ReadParameters(std::istream &is, std::ostream &os)
 {
   os << "GRASP Solver: " << this->name << " parameters" << std::endl;
   os << "Runner: " << std::endl;

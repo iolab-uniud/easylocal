@@ -5,7 +5,7 @@
 #include <queue>
 
 #include "runners/moverunner.hh"
-#include "helpers/statemanager.hh"
+#include "helpers/solutionmanager.hh"
 #include "helpers/neighborhoodexplorer.hh"
 #include "helpers/multimodalneighborhoodexplorer.hh"
 
@@ -55,20 +55,41 @@ namespace EasyLocal
      forbidden.
      @ingroup Runners
      */
-    template <class Input, class State, class Move, class CostStructure = DefaultCostStructure<int>>
-    class TabuSearch : public MoveRunner<Input, State, Move, CostStructure>
+    template <class Input, class Solution, class Move, class CostStructure = DefaultCostStructure<int>>
+    class TabuSearch : public MoveRunner<Input, Solution, Move, CostStructure>
     {
     public:
       typedef std::function<bool(const Move &lm, const Move &mv)> InverseFunction;
-      
-      TabuSearch(const Input &in,
-                 StateManager<Input, State, CostStructure> &sm,
-                 NeighborhoodExplorer<Input, State, Move, CostStructure> &ne,
-                 std::string name,
-                 InverseFunction Inverse = SameMoveAsInverse);
+        
+        /**
+         Constructs a tabu search runner by linking it to a state manager,
+         a neighborhood explorer, a tabu list manager, and an input object.
+         
+         @param s a pointer to a compatible state manager
+         @param ne a pointer to a compatible neighborhood explorer
+         @param tlm a pointer to a compatible tabu list manager
+         @param in a pointer to an input object
+         */
+        
+        TabuSearch(const Input &in,
+                   SolutionManager<Input, Solution, CostStructure> &sm,
+                   NeighborhoodExplorer<Input, Solution, Move, CostStructure> &ne,
+                   std::string name,
+                   InverseFunction Inverse = SameMoveAsInverse)
+        : MoveRunner<Input, Solution, Move, CostStructure>(in, sm, ne, name), Inverse(Inverse)
+        {
+            max_idle_iterations("max_idle_iterations", "Maximum number of idle iterations", this->parameters);
+            min_tenure("min_tenure", "Minimum tabu tenure", this->parameters);
+            max_tenure("max_tenure", "Maximum tabu tenure", this->parameters);
+        }
       std::string StatusString() const;
       
       virtual void Print(std::ostream &os = std::cout) const;
+      
+      void SetInverse(InverseFunction inverse)
+      {
+        this->Inverse = inverse;
+      }
       
     protected:
       bool MaxIdleIterationExpired() const;
@@ -76,7 +97,6 @@ namespace EasyLocal
       bool StopCriterion();
       void SelectMove();
       void CompleteMove();
-      void InitializeParameters();
       InverseFunction Inverse;
       
       static InverseFunction SameMoveAsInverse;
@@ -92,40 +112,12 @@ namespace EasyLocal
     /*************************************************************************
      * Implementation
      *************************************************************************/
+
     
-    /**
-     Constructs a tabu search runner by linking it to a state manager,
-     a neighborhood explorer, a tabu list manager, and an input object.
-     
-     @param s a pointer to a compatible state manager
-     @param ne a pointer to a compatible neighborhood explorer
-     @param tlm a pointer to a compatible tabu list manager
-     @param in a pointer to an input object
-     */
-    
-    template <class Input, class State, class Move, class CostStructure>
-    TabuSearch<Input, State, Move, CostStructure>::TabuSearch(const Input &in,
-                                                              StateManager<Input, State, CostStructure> &sm,
-                                                              NeighborhoodExplorer<Input, State, Move, CostStructure> &ne,
-                                                              std::string name,
-                                                              InverseFunction Inverse)
-    : MoveRunner<Input, State, Move, CostStructure>(in, sm, ne, name), Inverse(Inverse)
+    template <class Input, class Solution, class Move, class CostStructure>
+    void TabuSearch<Input, Solution, Move, CostStructure>::Print(std::ostream &os) const
     {
-    }
-    
-    template <class Input, class State, class Move, class CostStructure>
-    void TabuSearch<Input, State, Move, CostStructure>::InitializeParameters()
-    {
-      MoveRunner<Input, State, Move, CostStructure>::InitializeParameters();
-      max_idle_iterations("max_idle_iterations", "Maximum number of idle iterations", this->parameters);
-      min_tenure("min_tenure", "Minimum tabu tenure", this->parameters);
-      max_tenure("max_tenure", "Maximum tabu tenure", this->parameters);
-    }
-    
-    template <class Input, class State, class Move, class CostStructure>
-    void TabuSearch<Input, State, Move, CostStructure>::Print(std::ostream &os) const
-    {
-      Runner<Input, State, CostStructure>::Print(os);
+      Runner<Input, Solution, CostStructure>::Print(os);
       os << "{";
       size_t i = 0;
       for (typename PriorityQueue::container_type::const_iterator it = (*tabu_list).begin(); it != (*tabu_list).end(); ++it)
@@ -142,10 +134,10 @@ namespace EasyLocal
      Initializes the run by invoking the companion superclass method, and
      cleans the tabu list.
      */
-    template <class Input, class State, class Move, class CostStructure>
-    void TabuSearch<Input, State, Move, CostStructure>::InitializeRun()
+    template <class Input, class Solution, class Move, class CostStructure>
+    void TabuSearch<Input, Solution, Move, CostStructure>::InitializeRun()
     {
-      MoveRunner<Input, State, Move, CostStructure>::InitializeRun();
+      MoveRunner<Input, Solution, Move, CostStructure>::InitializeRun();
       (*tabu_list).clear();
     }
     
@@ -153,8 +145,8 @@ namespace EasyLocal
      Selects always the best move that is non prohibited by the tabu list
      mechanism.
      */
-    template <class Input, class State, class Move, class CostStructure>
-    void TabuSearch<Input, State, Move, CostStructure>::SelectMove()
+    template <class Input, class Solution, class Move, class CostStructure>
+    void TabuSearch<Input, Solution, Move, CostStructure>::SelectMove()
     {
       CostStructure aspiration = this->best_state_cost - this->current_state_cost;
       size_t explored;
@@ -169,8 +161,8 @@ namespace EasyLocal
       this->evaluations += explored;
     }
     
-    template <class Input, class State, class Move, class CostStructure>
-    bool TabuSearch<Input, State, Move, CostStructure>::MaxIdleIterationExpired() const
+    template <class Input, class Solution, class Move, class CostStructure>
+    bool TabuSearch<Input, Solution, Move, CostStructure>::MaxIdleIterationExpired() const
     {
       return this->iteration - this->iteration_of_best >= this->max_idle_iterations;
     }
@@ -179,8 +171,8 @@ namespace EasyLocal
      The stop criterion is based on the number of iterations elapsed from
      the last strict improvement of the best state cost.
      */
-    template <class Input, class State, class Move, class CostStructure>
-    bool TabuSearch<Input, State, Move, CostStructure>::StopCriterion()
+    template <class Input, class Solution, class Move, class CostStructure>
+    bool TabuSearch<Input, Solution, Move, CostStructure>::StopCriterion()
     {
       return MaxIdleIterationExpired() || this->MaxEvaluationsExpired();
     }
@@ -189,8 +181,8 @@ namespace EasyLocal
      Stores the move by inserting it in the tabu list, if the state obtained
      is better than the one found so far also the best state is updated.
      */
-    template <class Input, class State, class Move, class CostStructure>
-    void TabuSearch<Input, State, Move, CostStructure>::CompleteMove()
+    template <class Input, class Solution, class Move, class CostStructure>
+    void TabuSearch<Input, Solution, Move, CostStructure>::CompleteMove()
     {
       // remove no more tabu moves
       while (!tabu_list.empty() && tabu_list.top().tenure < this->iteration)
@@ -202,8 +194,8 @@ namespace EasyLocal
     /**
      Create a string containing the status of the runner
      */
-    template <class Input, class State, class Move, class CostStructure>
-    std::string TabuSearch<Input, State, Move, CostStructure>::StatusString() const
+    template <class Input, class Solution, class Move, class CostStructure>
+    std::string TabuSearch<Input, Solution, Move, CostStructure>::StatusString() const
     {
       std::stringstream status;
       status << "TL = #" << tabu_list.size() << "[";
@@ -219,7 +211,7 @@ namespace EasyLocal
       return status.str();
     }
     
-    template <class Input, class State, class Move, class CostStructure>
-    typename TabuSearch<Input, State, Move, CostStructure>::InverseFunction TabuSearch<Input, State, Move, CostStructure>::SameMoveAsInverse = [](const Move &lm, const Move &om) { return lm == om; };
+    template <class Input, class Solution, class Move, class CostStructure>
+    typename TabuSearch<Input, Solution, Move, CostStructure>::InverseFunction TabuSearch<Input, Solution, Move, CostStructure>::SameMoveAsInverse = [](const Move &lm, const Move &om) { return lm == om; };
   } // namespace Core
 } // namespace EasyLocal

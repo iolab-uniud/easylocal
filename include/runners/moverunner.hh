@@ -1,7 +1,7 @@
 #pragma once
 
 #include "runners/runner.hh"
-#include "helpers/statemanager.hh"
+#include "helpers/solutionmanager.hh"
 #include "helpers/neighborhoodexplorer.hh"
 
 namespace EasyLocal
@@ -15,8 +15,8 @@ namespace Core
      It is at the root of the inheritance hierarchy of actual runners.
      @ingroup Runners
      */
-template <class Input, class State, class Move, class CostStructure = DefaultCostStructure<int>>
-class MoveRunner : public Runner<Input, State, CostStructure>
+template <class Input, class Solution, class Move, class CostStructure = DefaultCostStructure<int>>
+class MoveRunner : public Runner<Input, Solution, CostStructure>
 {
 public:
   /** Modality of this runner. */
@@ -24,9 +24,10 @@ public:
 
   /** Constructor.
        @param e_sm */
-  MoveRunner(const Input &in, StateManager<Input, State, CostStructure> &e_sm,
-             NeighborhoodExplorer<Input, State, Move, CostStructure> &e_ne,
-             std::string name);
+  MoveRunner(const Input &in, SolutionManager<Input, Solution, CostStructure> &e_sm,
+             NeighborhoodExplorer<Input, Solution, Move, CostStructure> &e_ne,
+             std::string name) : Runner<Input, Solution, CostStructure>(in, e_sm, name), ne(e_ne)
+    {}
 
 protected:
   virtual void TerminateRun();
@@ -43,7 +44,7 @@ protected:
   void UpdateBestState() final;
   void UpdateStateCost();
 
-  NeighborhoodExplorer<Input, State, Move, CostStructure> &ne; /**< A reference to the
+  NeighborhoodExplorer<Input, Solution, Move, CostStructure> &ne; /**< A reference to the
                                                              attached neighborhood
                                                              explorer. */
 
@@ -55,8 +56,8 @@ protected:
      * Implementation
      *************************************************************************/
 
-template <class Input, class State, class Move, class CostStructure>
-void MoveRunner<Input, State, Move, CostStructure>::UpdateBestState()
+template <class Input, class Solution, class Move, class CostStructure>
+void MoveRunner<Input, Solution, Move, CostStructure>::UpdateBestState()
 {
   if (LessThan(this->current_state_cost.violations, this->best_state_cost.violations) || (EqualTo(this->current_state_cost.violations, this->best_state_cost.violations) &&
                                                                                           (LessThan(this->current_state_cost.total, this->best_state_cost.total))))
@@ -68,31 +69,22 @@ void MoveRunner<Input, State, Move, CostStructure>::UpdateBestState()
     // so that idle iterations are printed correctly
     this->iteration_of_best = this->iteration;
     // FIXME: write out cost
-    // std::cerr << this->best_state_cost << std::endl;
+#if VERBOSE >= 3 
+    std::cerr << this->best_state_cost << std::endl;
+#endif
   }
 }
 
-template <class Input, class State, class Move, class CostStructure>
-MoveRunner<Input, State, Move, CostStructure>::MoveRunner(const Input &in,
-                                                          StateManager<Input, State, CostStructure> &e_sm,
-                                                          NeighborhoodExplorer<Input, State, Move, CostStructure> &e_ne,
-                                                          std::string name)
-    : Runner<Input, State, CostStructure>(in, e_sm, name), ne(e_ne)
-{
-}
+template <class Input, class Solution, class Move, class CostStructure>
+void MoveRunner<Input, Solution, Move, CostStructure>::InitializeRun()
+{}
 
-template <class Input, class State, class Move, class CostStructure>
-void MoveRunner<Input, State, Move, CostStructure>::InitializeRun()
-{
-}
+template <class Input, class Solution, class Move, class CostStructure>
+void MoveRunner<Input, Solution, Move, CostStructure>::TerminateRun()
+{}
 
-template <class Input, class State, class Move, class CostStructure>
-void MoveRunner<Input, State, Move, CostStructure>::TerminateRun()
-{
-}
-
-template <class Input, class State, class Move, class CostStructure>
-bool MoveRunner<Input, State, Move, CostStructure>::AcceptableMoveFound()
+template <class Input, class Solution, class Move, class CostStructure>
+bool MoveRunner<Input, Solution, Move, CostStructure>::AcceptableMoveFound()
 {
   this->no_acceptable_move_found = !this->current_move.is_valid;
   return this->current_move.is_valid;
@@ -101,8 +93,8 @@ bool MoveRunner<Input, State, Move, CostStructure>::AcceptableMoveFound()
 /**
      Actually performs the move selected by the local search strategy.
      */
-template <class Input, class State, class Move, class CostStructure>
-void MoveRunner<Input, State, Move, CostStructure>::MakeMove()
+template <class Input, class Solution, class Move, class CostStructure>
+void MoveRunner<Input, Solution, Move, CostStructure>::MakeMove()
 {
   if (current_move.is_valid)
   {
