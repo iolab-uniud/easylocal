@@ -1,6 +1,6 @@
 # EasyLocal++
 
-EasyLocal++ is a framework for modeling and solving combinatorial optimization problems through local search metaheuristics. It is entirely written in C++ and uses template metaprogramming extensively to achieve separation of concerns and performance. 
+EasyLocal++ is a framework for modeling and solving combinatorial optimization problems through local search metaheuristics. It is entirely written in C++ and extensively uses template metaprogramming to separate concerns and improve performance. 
 
 Typically, to solve a problem, it is sufficient to implement the necessary methods to compute the problem-specific **cost function** and to enumerate the problem-specific **local search moves**. The framework takes care of calling the user-defined hook methods to solve the problem using one of the implemented meta-heuristics (e.g. simulated annealing, tabu search, hill climbing, ...).
 
@@ -12,11 +12,9 @@ The build system of EasyLocal++ is based on [CMake (Cross Platform Make)](http:/
 
 In general, to avoid mixing temporary CMake files with the project sources, it is advised to create a dedicated `build` subdirectory where all the building activities happen.
 
-
-
 ## Citing EasyLocal++
 
-We have invested a lot of time and effort in creating EasyLocal++, if you find this software useful and if you use it for research purposes we would be grateful if you can cite EasyLocal++ in your publications.
+We have invested a lot of time and effort in creating EasyLocal++; if you find this software useful and if you use it for research purposes, we would be grateful if you could cite EasyLocal++ in your publications.
 
 The reference papers about EasyLocal++ are:
 
@@ -25,7 +23,7 @@ The reference papers about EasyLocal++ are:
 
 ## License
 
- Copyright (c) 2001-2015 Sara Ceschia, Luca Di Gaspero, Andrea Schaerf, Tommaso Urli - 
+ Copyright (c) 2001-2023 Sara Ceschia, Francesca Da Ros, Luca Di Gaspero, Andrea Schaerf, Tommaso Urli - 
  University of Udine, Italy 
  
  
@@ -47,8 +45,8 @@ The reference papers about EasyLocal++ are:
 
  4. Redistributions of any form whatsoever must retain the following
     acknowledgment: 'This product includes software developed by 
-	"Sara Ceschia, Luca Di Gaspero, Andrea Schaerf, Tommaso Urli,
-	University of Udine, Italy" (http://satt.diegm.uniud.it/).'
+	"Sara Ceschia, Francesca Da Ros, Luca Di Gaspero, Andrea Schaerf, Tommaso Urli,
+	University of Udine, Italy" (https://iolab.uniud.it/).'
 	
  5. The use of the software in source or binary forms that results in
     a scientific publication must be acknowledged by citing the 
