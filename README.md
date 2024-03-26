@@ -1,53 +1,18 @@
 # EasyLocal++
 
-EasyLocal++ is a framework for modeling and solving combinatorial optimization problems through local search metaheuristics. The framework is entirely written in C++ and makes broad use of template metaprogramming to achieve both separation of concerns and performance. 
+EasyLocal++ is a framework for modeling and solving combinatorial optimization problems through local search metaheuristics. It is entirely written in C++ and uses template metaprogramming extensively to achieve separation of concerns and performance. 
 
 Typically, to solve a problem, it is sufficient to implement the necessary methods to compute the problem-specific **cost function** and to enumerate the problem-specific **local search moves**. The framework takes care of calling the user-defined hook methods to solve the problem using one of the implemented meta-heuristics (e.g. simulated annealing, tabu search, hill climbing, ...).
 
-This repository contains the last iteration (currently 3.0) of the EasyLocal++ framework. A seed project to use as a starting point for EasyLocal++ projects is available at [https://bitbucket.org/satt/easylocal-seed-project/](https://bitbucket.org/satt/easylocal-seed-project/).
+This repository contains the last iteration (currently 4.0) of the EasyLocal++ framework. A seed project to use as a starting point for EasyLocal++ projects will soon be available.
 
 ## How to install EasyLocal++
 
-The build system of EasyLocal++ is based on [CMake (Cross Platform Make)](http://www.cmake.org). CMake allows one to **generate build scripts** for most platforms and development environment, including Unix Makefiles, Visual Studio, Xcode, Eclipse, etc. (see [CMake Generators](http://www.cmake.org/cmake/help/v3.0/manual/cmake-generators.7.html) for more information on the supported IDEs).
+The build system of EasyLocal++ is based on [CMake (Cross Platform Make)](http://www.cmake.org). CMake allows one to **generate build scripts** for most platforms and development environments, including Unix Makefiles, Visual Studio, Xcode, Eclipse, etc. (see [CMake Generators](http://www.cmake.org/cmake/help/v3.0/manual/cmake-generators.7.html) for more information on the supported IDEs). The framework is available in the form of a header-only library. Therefore, no compilation is needed. The `CMakeLists.txt` will provide for suitable compiler options, including coroutines and concepts.
 
 In general, to avoid mixing temporary CMake files with the project sources, it is advised to create a dedicated `build` subdirectory where all the building activities happen.
 
-### Generating Unix Makefiles
 
-If your would like CMake to generate for you a suite of Unix Makefiles to build EasyLocal++, proceed as follows
-
-	mkdir build
-	cd build
-	cmake ..
-	
-then, to build and install EasyLocal on your system, run in `build` the following commands
-
-    make
-    make install
-
-`make` will generate a `libEasyLocal.a` static library in the `lib` subdirectory, while `make install` will install both the library and the headers in the `lib` and `include/easylocal` directories under `/usr/local`, which is the recommended option. To replace `/usr/local` with something different, redefine the `CMAKE_INSTALL_PREFIX` variable by passing it to cmake in the following way
-
-	cmake -DCMAKE_INSTALL_PREFIX <prefix> ..
-
-### Generating an Xcode project
-
-If you use Xcode, the commands to generate the EasyLocal++ Xcode project are
-
-    mkdir build
-    cd build
-    cmake -G Xcode ..
-    
-this will generate a `EasyLocal.xcodeproj` file in the `build` subdirectory. This project is already configured to build EasyLocal and install it on the system.
-
-### Generating a Visual Studio solution
-
-Similarly to Xcode, CMake can generate a visual studio solution with the command
-
-	cmake -G "Visual Studio <version>"
-
-## Seed project
-
-TODO.
 
 ## Citing EasyLocal++
 
