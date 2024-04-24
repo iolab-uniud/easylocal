@@ -1,6 +1,6 @@
 # Get easylocal version from include/version.hh and put it in EASYLOCAL_VERSION
-function(easylocal_extract_version)
-    file(READ "${CMAKE_CURRENT_LIST_DIR}/include/version.hh" file_contents)
+function(easylocal_extract_version EL_SOURCE_DIR)
+    file(READ "${EL_SOURCE_DIR}/include/easylocal/version.hh" file_contents)
     string(REGEX MATCH "EASYLOCAL_VER_MAJOR ([0-9]+)" _ "${file_contents}")
     if(NOT CMAKE_MATCH_COUNT EQUAL 1)
         message(FATAL_ERROR "Could not extract major version number from version.hh")

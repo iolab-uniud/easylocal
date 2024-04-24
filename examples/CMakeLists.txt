@@ -1,11 +1,9 @@
 cmake_minimum_required(VERSION 3.22)
 project(poc-test CXX)
 
-if(NOT TARGET easylocal::easylocal)
-    # Stand-alone build
-    find_package(easylocal REQUIRED)
-    add_library(easylocal::easylocal IMPORTED INTERFACE)
-endif()
+#set(easylocal_DIR ${CMAKE_CURRENT_LIST_DIR}/..)
+
+find_package(easylocal CONFIG REQUIRED)
 
 # Add the main.cc file as an executable
 add_executable(poc-test main.cc)
