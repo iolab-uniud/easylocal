@@ -132,7 +132,7 @@ protected:
             stop_exploration.update(this);
             // To remove later
 #if !defined(NDEBUG)
-            std::ostringstream oss;
+            //std::ostringstream oss;
             // oss << best_move_value->GetMove();
             //auto values = current_solution_value->GetValues();
             //spdlog::debug("TS - move selected {} / {} {} / {} ", iteration, idle_iteration, oss.str(), spdlog::fmt_lib::join(values, ", "));

@@ -77,13 +77,13 @@ namespace easylocal {
 
   template <typename CostComponent, class Input, class Solution, typename T>
   concept CostComponentT = match_basic_classes<CostComponent, Input, Solution, T> && 
-  requires(CostComponent cc, const Solution& sol) {
+  requires(CostComponent cc, std::shared_ptr<const Solution> sol) {
     { cc.ComputeCost(sol) } -> std::same_as<T>;
   };
 
   template <typename DeltaCostComponent, class Input, class Solution, typename T, typename Move>
   concept DeltaCostComponentT = match_basic_classes<DeltaCostComponent, Input, Solution, T> && 
-  requires(DeltaCostComponent dcc, const Solution& sol, const Move& mv) {
+  requires(DeltaCostComponent dcc, std::shared_ptr<const Solution> sol, const Move& mv) {
     { dcc.ComputeDeltaCost(sol, mv) } -> std::same_as<T>;
       // TODO: check if still needed
 //    { dcc.Components() } -> std::same_as<size_t>;

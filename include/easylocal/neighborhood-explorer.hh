@@ -61,7 +61,7 @@ class NeighborhoodExplorer : public std::enable_shared_from_this<SelfClass>
     T ComputeDeltaCost(std::shared_ptr<const Solution> sol, const Move& mv, size_t i) const
     {
         assert(delta_cost_components[i] != nullptr);
-        return this->delta_cost_components[i]->ComputeDeltaCost(*sol, mv);
+        return this->delta_cost_components[i]->ComputeDeltaCost(sol, mv);
     }
 
     std::vector<std::unique_ptr<DeltaCostComponent<Input, Solution, T, Move>>> delta_cost_components;
