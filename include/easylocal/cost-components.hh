@@ -14,7 +14,7 @@ public:
     /// Indeed the solution is not acquired by the cost component, but it is used only to
     /// compute the cost (this allows to avoid shared_ptr increment/decrement count which
     /// requires atomic operations and thread syncrhonization)
-    virtual T ComputeCost(const Solution& s) const = 0;
+    virtual T ComputeCost(std::shared_ptr<const Solution> s) const = 0;
     virtual ~CostComponent() = default;
 };
 
@@ -24,7 +24,7 @@ class DeltaCostComponent
 {
 public:
     /// Solution is passed as a const reference for performance reasons (see above in @CostComponent)
-    virtual T ComputeDeltaCost(const Solution& s, const Move& mv) const = 0;
+    virtual T ComputeDeltaCost(std::shared_ptr<const Solution> s, const Move& mv) const = 0;
     virtual ~DeltaCostComponent() = default;
 };
 

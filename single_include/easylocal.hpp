@@ -8,6 +8,59 @@
 
 
 
+// begin --- tabu-search.hh --- 
+
+//
+//  tabu-search.hh
+//
+//  Created by Luca Di Gaspero on 24/07/23.
+//
+
+#pragma once
+
+// begin --- solution-manager.hh --- 
+
+//
+//  solution-manager.hh
+//  poc
+//
+//  Created by Luca Di Gaspero on 09/03/23.
+//
+
+#pragma once
+
+// begin --- concepts.hh --- 
+
+//
+//  concepts.hh
+//  easy-poc
+//
+//  Created by Luca Di Gaspero on 09/03/23.
+//
+
+// TODO: split concepts in atomic ones, consider writing your struct for template specialization (i.e., a struct with a constexpr auto value = true / false) depending on the template parameters
+// template <class T>
+// struct OddDetectorImpl {
+//   static constexpr auto value = false;
+// };
+
+// template <template <class...> class Tmpl, class... Args>
+// requires (sizeof...(Args) % 2 == 1)
+// struct OddDetectorImpl<Tmpl<Args>> {
+//   static constexpr auto value = true;
+// };
+// template class<T>
+// concept OddDetector = OddDetectorImpl<T>::value;
+
+// TODO: use concepts with static_assert(Concept<Class>) for proper testing the framework
+
+#pragma once
+
+#include <concepts>
+#include <type_traits>
+#include <string>
+#include <iostream>
+
 // begin --- utils.hh --- 
 
 //
@@ -193,6 +246,560 @@ namespace easylocal {
 
 
 // end --- utils.hh --- 
+
+
+
+namespace easylocal {
+
+  template <typename T>
+  concept Number = std::is_arithmetic_v<T>;
+
+  template <typename Input>
+  concept InputT = std::is_constructible_v<Input, std::string> || std::is_constructible_v<Input, std::istream> || std::is_constructible_v<Input, int>; 
+
+  template <typename Solution, typename Input>
+  concept SolutionT = InputT<Input> && requires(Solution s) {
+    //check that the solution class has a shared pointer to a const input object
+  { s.in } -> std::same_as<std::shared_ptr<const Input>&>;
+  };
+
+  template <typename T>
+  concept Printable = requires(std::ostream& os, const T& s) {
+    // check that the class has a << operator for output
+    { os << s };
+  };
+
+  template <typename Class, typename Input, typename Solution, typename T>
+  concept match_basic_classes = InputT<Input> && 
+    SolutionT<Solution, Input> && 
+    Number<T>;
+
+  template <typename Class>
+  concept has_basic_typedefs = requires() {
+    typename Class::Input;
+    InputT<typename Class::Input>;
+    typename Class::Solution;
+    SolutionT<typename Class::Solution, typename Class::Input>;
+    typename Class::T;
+    Number<typename Class::T>;
+  };
+
+  template <typename Class, typename Input, typename Solution, typename T>
+  concept match_basic_typedefs = match_basic_classes<Class, Input, Solution, T> && 
+  requires() {
+    typename Class::Input;
+    typename Class::Solution;
+    typename Class::T;
+    std::same_as<typename Class::Input, Input>;
+    std::same_as<typename Class::Solution, Solution>;
+    std::same_as<typename Class::T, T>;
+  };
+
+  template <typename CostComponent, class Input, class Solution, typename T>
+  concept CostComponentT = match_basic_classes<CostComponent, Input, Solution, T> && 
+  requires(CostComponent cc, std::shared_ptr<const Solution> sol) {
+    { cc.ComputeCost(sol) } -> std::same_as<T>;
+  };
+
+  template <typename DeltaCostComponent, class Input, class Solution, typename T, typename Move>
+  concept DeltaCostComponentT = match_basic_classes<DeltaCostComponent, Input, Solution, T> && 
+  requires(DeltaCostComponent dcc, std::shared_ptr<const Solution> sol, const Move& mv) {
+    { dcc.ComputeDeltaCost(sol, mv) } -> std::same_as<T>;
+      // TODO: check if still needed
+//    { dcc.Components() } -> std::same_as<size_t>;
+  };
+
+  template <typename CostStructure, typename Input, typename Solution, typename T>
+  concept CostStructureT = match_basic_typedefs<CostStructure, Input, Solution, T> && 
+  requires(CostStructure s, std::shared_ptr<const Solution> sol, size_t i)
+  {
+    { s.ComputeCost(sol, i) } -> std::same_as<T>;
+    { s.Components() } -> std::same_as<size_t>;
+  };
+
+  template <typename CostStructure>
+  concept CostStructureTd = has_basic_typedefs<CostStructure> && 
+  requires(CostStructure s, std::shared_ptr<const typename CostStructure::Solution> sol, size_t i)
+  {
+    { s.ComputeCost(sol, i) } -> std::same_as<typename CostStructure::T>;
+    { s.Components() } -> std::same_as<size_t>;
+  };
+
+  template <class SolutionValue, class Input, class Solution, class T, class CostStructure>
+  concept SolutionValueT = match_basic_typedefs<SolutionValue, Input, Solution, T> && CostStructureT<CostStructure, Input, Solution, T> && 
+  requires(size_t i, SolutionValue sv) {
+    { sv[i] } -> std::same_as<T>;
+  };
+
+  template<typename T, typename U>
+  concept same_as_unqualified = std::same_as<std::remove_cvref_t<T>, std::remove_cvref_t<U>>;
+
+  template <class SolutionManager>
+  concept SolutionManagerT = has_basic_typedefs<SolutionManager> && 
+  requires(std::shared_ptr<typename SolutionManager::Input> in, SolutionManager sm) {
+    { sm.InitialSolution(in) } -> std::same_as<std::shared_ptr<typename SolutionManager::Solution>>;
+    typename SolutionManager::CostStructure;
+  };
+
+  template <class NeighborhoodExplorer>
+  concept NeighborhoodExplorerT = has_basic_typedefs<NeighborhoodExplorer> && 
+requires(NeighborhoodExplorer ne, typename NeighborhoodExplorer::Solution& sol, std::shared_ptr<const typename NeighborhoodExplorer::Solution> cp_sol, std::shared_ptr<typename NeighborhoodExplorer::Solution> p_sol, typename NeighborhoodExplorer::Move mv) {
+    typename NeighborhoodExplorer::SolutionManager;
+    std::is_constructible_v<std::shared_ptr<const typename NeighborhoodExplorer::SolutionManager>>;
+    typename NeighborhoodExplorer::Move;
+    { ne.RandomMove(cp_sol) } -> std::same_as<typename NeighborhoodExplorer::Move>;
+    { ne.MakeMove(p_sol, mv)};
+    { ne.Neighborhood(cp_sol)} -> std::same_as<Generator<typename NeighborhoodExplorer::Move>>;
+  };
+
+  template <class NeighborhoodExplorer>
+  concept has_inverse_move = 
+requires(NeighborhoodExplorer ne, typename NeighborhoodExplorer::Solution& sol, typename NeighborhoodExplorer::Move mv1, typename NeighborhoodExplorer::Move mv2) {
+    { ne.InverseMove(sol, mv1, mv2) } -> std::same_as<bool>;
+  };
+}
+
+
+// end --- concepts.hh --- 
+
+
+
+// begin --- cost-components.hh --- 
+
+#pragma once
+#include <vector>
+#include <cassert>
+
+namespace easylocal {
+
+template <InputT Input, SolutionT<Input> Solution, Number T>
+class CostComponent
+{
+public:
+    /// Solution is passed as a const reference for performance reasons
+    /// Indeed the solution is not acquired by the cost component, but it is used only to
+    /// compute the cost (this allows to avoid shared_ptr increment/decrement count which
+    /// requires atomic operations and thread syncrhonization)
+    virtual T ComputeCost(std::shared_ptr<const Solution> s) const = 0;
+    virtual ~CostComponent() = default;
+};
+
+// TODO: specify the right type for the cost component
+template <InputT Input, SolutionT<Input> Solution, Number T, typename Move>
+class DeltaCostComponent
+{
+public:
+    /// Solution is passed as a const reference for performance reasons (see above in @CostComponent)
+    virtual T ComputeDeltaCost(std::shared_ptr<const Solution> s, const Move& mv) const = 0;
+    virtual ~DeltaCostComponent() = default;
+};
+
+template <InputT Input, SolutionT<Input> _Solution, Number _T, CostStructureTd _CostStructure, class NeighborhoodExplorer>
+class MoveValue;
+
+template <SolutionManagerT SolutionManager, class Move, class NE>
+class NeighborhoodExplorer;
+
+template <SolutionManagerT SolutionManager, class NE, class ...NHEs>
+requires (NeighborhoodExplorerT<NHEs> && ...)
+class UnionNeighborhoodExplorer;
+
+template <InputT _Input, SolutionT<_Input> _Solution, Number _T>
+class AggregatedCostStructure;
+
+template <InputT _Input, SolutionT<_Input> _Solution, Number _T, class _CostStructure>
+class SolutionValue : std::vector<std::pair<bool, _T>>
+{
+public:
+    using Input = _Input ;
+    using Solution = _Solution;
+    using T = _T;
+    using CostStructure = _CostStructure ;
+    friend CostStructure;
+    template <InputT I, SolutionT<I> S, Number T_, CostStructureTd CS, class NE> friend class MoveValue;
+    template <SolutionManagerT SM, class Move, class NE> friend class NeighborhoodExplorer;
+    template <SolutionManagerT SM, class NE, class ...NHEs> requires (NeighborhoodExplorerT<NHEs> && ...) friend class UnionNeighborhoodExplorer;
+    
+    std::shared_ptr<const Solution> GetSolution() const
+    {
+        return sol;
+    }
+    
+    // TODO: this is a bit patchy, just to access a single scalar in case of aggregated costs due to its use in TS, review in another life
+    template <typename = std::enable_if<std::same_as<CostStructure, class AggregatedCostStructure<Input, Solution, T>>>>
+    T AggregatedCost() const
+    {
+        return cs->ComputeAggregatedCost(*this);
+    }
+    
+    std::vector<T> GetValues() const
+    {
+        std::vector<T> tmp;
+        tmp.reserve(this->size());
+        for (size_t i = 0; i < this->size(); ++i)
+            tmp.push_back((*this)[i]);
+        return tmp;
+    }
+    
+    bool CheckValues() const
+    {
+        for (size_t i = 0; i < this->size(); ++i)
+            if (cs->ComputeCost(sol, i) != (*this)[i])
+                return false;
+        return true;
+    }
+    
+    T operator[](size_t i) const
+    {
+        //const std::lock_guard<std::mutex> lock(compute);
+        auto& val = const_cast<std::pair<bool, T>&>(std::vector<std::pair<bool, T>>::operator[](i));
+        if (!val.first)
+        {
+            val.second = cs->ComputeCost(sol, i);
+            val.first = true;
+        }
+        return val.second;
+    }
+    
+    using std::vector<std::pair<bool, T>>::size;
+    
+    template <SolutionValueT<Input, Solution, T, CostStructure> SV>
+    auto operator<=>(const SV& other) const
+    {
+        return cs->spaceship(*this, other);
+    }
+    
+    template <SolutionValueT<Input, Solution, T, CostStructure> SV>
+    auto operator<=>(const std::shared_ptr<SV> other) const
+    {
+        return cs->spaceship(*this, *other);
+    }
+    
+    template <SolutionValueT<Input, Solution, T, CostStructure> SV>
+    auto operator==(const SV& other) const
+    {
+        return cs->equality(*this, other);
+    }
+    
+    template <NeighborhoodExplorerT NeighborhoodExplorer>
+    SolutionValue(const MoveValue<Input, Solution, T, _CostStructure, NeighborhoodExplorer>& m) : cs(m.cs), sol(m.GetSolution())
+    {
+        auto values = m.GetValues();
+        this->reserve(m.size());
+        for (size_t i = 0; i < values.size(); ++i)
+            (*this).push_back({ true, values[i] });
+    }
+    
+    SolutionValue(const SolutionValue<Input, Solution, T, _CostStructure>& s) : cs(s.cs), sol(s.sol), std::vector<std::pair<bool, T>>(s)
+    {}
+    
+protected:
+    SolutionValue(std::shared_ptr<const CostStructure> cs, std::shared_ptr<const Solution> sol, size_t components) : cs(cs), sol(sol), std::vector<std::pair<bool, T>>(components, { false, 0 })
+    {
+        assert(cs && sol);
+    }
+    using std::vector<std::pair<bool, T>>::begin;
+    using std::vector<std::pair<bool, T>>::end;
+    using std::vector<std::pair<bool, T>>::at;
+    std::shared_ptr<const CostStructure> cs;
+    std::shared_ptr<const Solution> sol;
+};
+
+template <InputT _Input, SolutionT<_Input> _Solution, Number _T, CostStructureTd _CostStructure, class _NeighborhoodExplorer>
+class MoveValue : std::vector<std::pair<bool, _T>>
+{
+public:
+    using Input = _Input;
+    using Solution = _Solution ;
+    using T = _T;
+    using CostStructure = _CostStructure;
+protected:
+    using Move = typename _NeighborhoodExplorer::Move;
+    using SolutionValue = SolutionValue<Input, _Solution, _T, _CostStructure>;
+    friend SolutionValue;
+    using NeighborhoodExplorer = typename _NeighborhoodExplorer::ThisClass;
+    friend NeighborhoodExplorer;
+public:
+    
+    Move GetMove() const
+    {
+        return mv;
+    }
+    
+    // TODO: this is a bit patchy, just to access a single scalar in case of aggregated costs due to its use in TS, review in another life
+    template <typename = std::enable_if<std::same_as<CostStructure, class AggregatedCostStructure<Input, Solution, T>>>>
+    T AggregatedCost() const
+    {
+        return this->GetSolutionValue().AggregatedCost();
+    }
+    
+    std::vector<T> GetValues() const
+    {
+        std::vector<T> tmp;
+        tmp.reserve(this->size());
+        for (size_t i = 0; i < this->size(); ++i)
+            tmp.push_back((*this)[i]);
+        return tmp;
+    }
+    
+    T operator[](size_t i) const
+    {
+        auto& val = const_cast<std::pair<bool, T>&>(std::vector<std::pair<bool, T>>::operator[](i));
+        if (!val.first)
+        {
+            // the value has to be computed
+            if (ne->HasDeltaCostComponent(i, mv))
+            {
+                val.second = old_sv[i] + ne->ComputeDeltaCost(old_sv.GetSolution(), mv, i);
+                val.first = true;
+            }
+            else
+            {
+                if (!new_sol)
+                {
+                    // make a copy of the solution
+                    new_sol = std::make_shared<Solution>(*(old_sv.GetSolution()));
+                    // apply the move
+                    ne->MakeMove(new_sol, mv);
+                }
+                // compute the new cost directly from solution
+                val.second = cs->ComputeCost(new_sol, i);
+                val.first = true;
+            }
+        }
+        return val.second;
+    }
+    
+    template <SolutionValueT<Input, Solution, T, CostStructure> SV>
+    auto operator<=>(const SV& other) const
+    {
+        return cs->spaceship(*this, other);
+    }
+    
+    template <SolutionValueT<Input, Solution, T, CostStructure> SV2>
+    auto operator==(const SV2& other) const
+    {
+        return cs->equality(*this, other);
+    }
+    
+    std::shared_ptr<const Solution> GetSolution() const
+    {
+        // the new solution has not been determined yet
+        if (!new_sol)
+        {
+            new_sol = std::make_shared<Solution>(*(old_sv.GetSolution())); // make a copy of the solution
+            ne->MakeMove(new_sol, mv);
+        }
+        return new_sol;
+    }
+    
+    SolutionValue GetSolutionValue() const
+    {
+        return cs->CreateSolutionValue(this->GetSolution());
+    }
+    
+    using std::vector<std::pair<bool, T>>::size;
+    
+    MoveValue(const MoveValue<Input, Solution, T, _CostStructure, NeighborhoodExplorer>& m) : cs(m.cs), ne(m.ne), new_sol(m.new_sol), old_sv(m.old_sv), std::vector<std::pair<bool, T>>(m)
+    {}
+    
+protected:
+    MoveValue(std::shared_ptr<const _NeighborhoodExplorer> ne, const SolutionValue& sv, const Move& mv, size_t size) : mv(mv), old_sv(sv), cs(sv.cs), ne(ne), std::vector<std::pair<bool, T>>(size, { false, 0 })
+    {
+        assert(sv.cs && ne);
+    }
+    
+    std::shared_ptr<const CostStructure> cs;
+    std::shared_ptr<const _NeighborhoodExplorer> ne;
+    Move mv;
+    SolutionValue old_sv;
+    mutable std::shared_ptr<Solution> new_sol;
+};
+
+template <InputT _Input, SolutionT<_Input> _Solution, Number _T>
+class AggregatedCostStructure : public std::enable_shared_from_this<AggregatedCostStructure<_Input, _Solution, _T>>
+{
+public:
+    using Input = _Input;
+    using Solution = _Solution;
+    using T = _T;
+    friend class SolutionValue<Input, Solution, T, AggregatedCostStructure<Input, Solution, T>>;
+    using SolutionValue = SolutionValue<Input, Solution, T, AggregatedCostStructure>;
+protected:
+    using SelfClass = AggregatedCostStructure<Input, Solution, T>;
+    
+public:
+    template <CostComponentT<Input, Solution, T> CostComponent>
+    void AddCostComponent(std::shared_ptr<CostComponent> cc, bool hard, double weight = 1.0)
+    {
+        // make a copy of the cost component
+        cost_components.emplace_back(std::make_unique<CostComponent>(*cc));
+        hard_components.emplace_back(hard);
+        weight_components.emplace_back(weight);
+    }
+    
+    SolutionValue CreateSolutionValue(std::shared_ptr<const Solution> sol) const
+    {
+        return { this->shared_from_this(), sol, cost_components.size() };
+    }
+    
+    T ComputeCost(std::shared_ptr<const Solution> sol, size_t i) const
+    {
+        return this->cost_components[i]->ComputeCost(sol);
+    }
+    
+    template <SolutionValueT<Input, Solution, T, SelfClass> SV1, SolutionValueT<Input, Solution, T, SelfClass> SV2>
+    bool equality(const SV1& sc1, const SV2& sc2) const
+    {
+        assert(this->cost_components.size() == sc1.size() && this->cost_components.size() == sc2.size());
+        T total_cost_1 = this->ComputeAggregatedCost(sc1), total_cost_2 = this->ComputeAggregatedCost(sc2);
+        // TODO: consider floating point approximated equality at some point, use SFINAE
+        return (total_cost_1 == total_cost_2);
+    }
+    
+    template <SolutionValueT<Input, Solution, T, SelfClass> SV1, SolutionValueT<Input, Solution, T, SelfClass> SV2>
+    std::strong_ordering spaceship(const SV1& sc1, const SV2& sc2) const
+    {
+        assert(this->cost_components.size() == sc1.size() && this->cost_components.size() == sc2.size());
+        T total_cost_1 = this->ComputeAggregatedCost(sc1), total_cost_2 = this->ComputeAggregatedCost(sc2);
+        // TODO: consider floating point approximated equality at some point, use SFINAE
+        if (total_cost_1 < total_cost_2)
+            return std::strong_ordering::less;
+        else if (total_cost_1 == total_cost_2)
+            return std::strong_ordering::equal;
+        else
+            return std::strong_ordering::greater;
+    }
+    
+    size_t Components() const
+    {
+        return this->cost_components.size();
+    }
+    
+protected:
+    template <SolutionValueT<Input, Solution, T, SelfClass> SV>
+    T ComputeAggregatedCost(const SV& sv) const
+    {
+        T cost_H = 0, cost_S = 0;
+        for (size_t i = 0; i < this->cost_components.size(); ++i)
+        {
+            if (this->hard_components[i])
+                cost_H += this->weight_components[i] * sv[i];
+            else
+                cost_S += this->weight_components[i] * sv[i];
+        }
+        return this->HARD_WEIGHT * cost_H + cost_S;
+    }
+    
+    std::vector<std::unique_ptr<CostComponent<Input, Solution, T>>> cost_components;
+    std::vector<bool> hard_components;
+    std::vector<double> weight_components;
+    T HARD_WEIGHT = 1000;
+};
+
+template <InputT _Input, SolutionT<_Input> _Solution, Number _T>
+class MultiObjectiveCostStructure : public std::enable_shared_from_this<MultiObjectiveCostStructure<_Input, _Solution, _T>>
+{
+public:
+    using Input = _Input;
+    using Solution = _Solution;
+    using T = _T;
+    friend class SolutionValue<Input, Solution, T, MultiObjectiveCostStructure<Input, Solution, T>>;
+    using SolutionValue = SolutionValue<Input, Solution, T, MultiObjectiveCostStructure>;
+    using SelfClass = MultiObjectiveCostStructure<_Input, _Solution, _T>;
+    
+    template <CostComponentT<Input, Solution, T> CostComponent>
+    void AddCostComponent(std::shared_ptr<CostComponent> cc)
+    {
+        // make a copy of the cost component
+        cost_components.emplace_back(std::make_unique<CostComponent>(*cc));
+    }
+    
+    SolutionValue CreateSolutionValue(std::shared_ptr<const Solution> sol) const
+    {
+        return { this->shared_from_this(), sol, cost_components.size() };
+    }
+    
+    T ComputeCost(std::shared_ptr<const Solution> sol, size_t i) const
+    {
+        return this->cost_components[i]->ComputeCost(sol);
+    }
+    
+    template <SolutionValueT<Input, Solution, T, SelfClass> SV1, SolutionValueT<Input, Solution, T, SelfClass> SV2>
+    bool equality(const SV1& sc1, const SV2& sc2) const
+    {
+        assert(this->cost_components.size() == sc1.size() && this->cost_components.size() == sc2.size());
+        
+        // TODO: consider floating point approximated equality at some point, use SFINAE
+        for (size_t i = 0; i < this->cost_components.size(); ++i)
+        {
+            if (sc1[i] != sc2[i])
+                return false;
+        }
+        return true;
+    }
+    
+    template <SolutionValueT<Input, Solution, T, SelfClass> SV1, SolutionValueT<Input, Solution, T, SelfClass> SV2>
+    std::partial_ordering spaceship(const SV1& sc1, const SV2& sc2) const
+    {
+        assert(this->cost_components.size() == sc1.size() && this->cost_components.size() == sc2.size());
+        size_t sc1_less_than_sc2 = 0, sc1_greater_than_sc2 = 0;
+        for (size_t i = 0; i < this->cost_components.size(); ++i)
+        {
+            if (sc1[i] < sc2[i])
+            {
+                if (sc1_greater_than_sc2 > 0)
+                    return std::partial_ordering::unordered;
+                sc1_less_than_sc2++;
+            }
+            else if (sc1[i] > sc2[i])
+            {
+                sc1_greater_than_sc2++;
+                if (sc1_less_than_sc2 > 0)
+                    return std::partial_ordering::unordered;
+            }
+        }
+        if (sc1_less_than_sc2 > 0 && sc1_greater_than_sc2 == 0)
+            return std::partial_ordering::less;
+        if (sc1_greater_than_sc2 > 0 && sc1_less_than_sc2 == 0)
+            return std::partial_ordering::greater;
+        if (sc1_less_than_sc2 == 0 && sc1_greater_than_sc2 == 0)
+            return std::partial_ordering::equivalent;
+        return std::partial_ordering::unordered;
+    }
+    
+    size_t Components() const
+    {
+        return this->cost_components.size();
+    }
+    
+protected:
+    std::vector<std::unique_ptr<CostComponent<Input, Solution, T>>> cost_components;
+};
+}
+
+
+// end --- cost-components.hh --- 
+
+
+
+namespace easylocal {
+  // TODO: helper to transform a std::function (e.g., a lambda for random solution) in a SolutionManager
+  template <InputT _Input, SolutionT<_Input> _Solution, Number _T, class _CostStructure>
+  requires CostStructureT<_CostStructure, _Input, _Solution, _T>
+  class SolutionManager : public _CostStructure
+  {
+  public:
+    using Input = _Input;
+    using Solution = _Solution;
+    using T = _T;
+    using CostStructure = _CostStructure;
+    // the method InitialSolution(std::shared_ptr<Input> in) const should be defined in the actual Solution Manager subclass
+  };
+}
+
+
+// end --- solution-manager.hh --- 
 
 
 
@@ -1491,21 +2098,6 @@ protected:
 
 
 
-// begin --- version.hh --- 
-
-#pragma once
-
-#define EASYLOCAL_VER_MAJOR 4
-#define EASYLOCAL_VER_MINOR 0
-#define EASYLOCAL_VER_PATCH 0
-
-#define EASYLOCAL_TO_VERSION(major, minor, patch) (major * 10000 + minor * 100 + patch)
-#define EASYLOCAL_VERSION EASYLOCAL_TO_VERSION(EASYLOCAL_VER_MAJOR, EASYLOCAL_VER_MINOR, EASYLOCAL_VER_PATCH)
-
-// end --- version.hh --- 
-
-
-
 // begin --- runner.hh --- 
 
 //
@@ -1603,663 +2195,24 @@ public:
 // end --- runner.hh --- 
 
 
-
-// begin --- hill-climbing.hh --- 
-
-//
-//  hill-climbing.hh
-//  pfsp-ls
-//
-//  Created by Luca Di Gaspero on 24/07/23.
-//
-
-#pragma once
-
-// begin --- solution-manager.hh --- 
-
-//
-//  solution-manager.hh
-//  poc
-//
-//  Created by Luca Di Gaspero on 09/03/23.
-//
-
-#pragma once
-
-// begin --- concepts.hh --- 
-
-//
-//  concepts.hh
-//  easy-poc
-//
-//  Created by Luca Di Gaspero on 09/03/23.
-//
-
-// TODO: split concepts in atomic ones, consider writing your struct for template specialization (i.e., a struct with a constexpr auto value = true / false) depending on the template parameters
-// template <class T>
-// struct OddDetectorImpl {
-//   static constexpr auto value = false;
-// };
-
-// template <template <class...> class Tmpl, class... Args>
-// requires (sizeof...(Args) % 2 == 1)
-// struct OddDetectorImpl<Tmpl<Args>> {
-//   static constexpr auto value = true;
-// };
-// template class<T>
-// concept OddDetector = OddDetectorImpl<T>::value;
-
-// TODO: use concepts with static_assert(Concept<Class>) for proper testing the framework
-
-#pragma once
-
-#include <concepts>
-#include <type_traits>
-#include <string>
 #include <iostream>
-
-namespace easylocal {
-
-  template <typename T>
-  concept Number = std::is_arithmetic_v<T>;
-
-  template <typename Input>
-  concept InputT = std::is_constructible_v<Input, std::string> || std::is_constructible_v<Input, std::istream> || std::is_constructible_v<Input, int>; 
-
-  template <typename Solution, typename Input>
-  concept SolutionT = InputT<Input> && requires(Solution s) {
-    //check that the solution class has a shared pointer to a const input object
-  { s.in } -> std::same_as<std::shared_ptr<const Input>&>;
-  };
-
-  template <typename T>
-  concept Printable = requires(std::ostream& os, const T& s) {
-    // check that the class has a << operator for output
-    { os << s };
-  };
-
-  template <typename Class, typename Input, typename Solution, typename T>
-  concept match_basic_classes = InputT<Input> && 
-    SolutionT<Solution, Input> && 
-    Number<T>;
-
-  template <typename Class>
-  concept has_basic_typedefs = requires() {
-    typename Class::Input;
-    InputT<typename Class::Input>;
-    typename Class::Solution;
-    SolutionT<typename Class::Solution, typename Class::Input>;
-    typename Class::T;
-    Number<typename Class::T>;
-  };
-
-  template <typename Class, typename Input, typename Solution, typename T>
-  concept match_basic_typedefs = match_basic_classes<Class, Input, Solution, T> && 
-  requires() {
-    typename Class::Input;
-    typename Class::Solution;
-    typename Class::T;
-    std::same_as<typename Class::Input, Input>;
-    std::same_as<typename Class::Solution, Solution>;
-    std::same_as<typename Class::T, T>;
-  };
-
-  template <typename CostComponent, class Input, class Solution, typename T>
-  concept CostComponentT = match_basic_classes<CostComponent, Input, Solution, T> && 
-  requires(CostComponent cc, const Solution& sol) {
-    { cc.ComputeCost(sol) } -> std::same_as<T>;
-  };
-
-  template <typename DeltaCostComponent, class Input, class Solution, typename T, typename Move>
-  concept DeltaCostComponentT = match_basic_classes<DeltaCostComponent, Input, Solution, T> && 
-  requires(DeltaCostComponent dcc, const Solution& sol, const Move& mv) {
-    { dcc.ComputeDeltaCost(sol, mv) } -> std::same_as<T>;
-      // TODO: check if still needed
-//    { dcc.Components() } -> std::same_as<size_t>;
-  };
-
-  template <typename CostStructure, typename Input, typename Solution, typename T>
-  concept CostStructureT = match_basic_typedefs<CostStructure, Input, Solution, T> && 
-  requires(CostStructure s, std::shared_ptr<const Solution> sol, size_t i)
-  {
-    { s.ComputeCost(sol, i) } -> std::same_as<T>;
-    { s.Components() } -> std::same_as<size_t>;
-  };
-
-  template <typename CostStructure>
-  concept CostStructureTd = has_basic_typedefs<CostStructure> && 
-  requires(CostStructure s, std::shared_ptr<const typename CostStructure::Solution> sol, size_t i)
-  {
-    { s.ComputeCost(sol, i) } -> std::same_as<typename CostStructure::T>;
-    { s.Components() } -> std::same_as<size_t>;
-  };
-
-  template <class SolutionValue, class Input, class Solution, class T, class CostStructure>
-  concept SolutionValueT = match_basic_typedefs<SolutionValue, Input, Solution, T> && CostStructureT<CostStructure, Input, Solution, T> && 
-  requires(size_t i, SolutionValue sv) {
-    { sv[i] } -> std::same_as<T>;
-  };
-
-  template<typename T, typename U>
-  concept same_as_unqualified = std::same_as<std::remove_cvref_t<T>, std::remove_cvref_t<U>>;
-
-  template <class SolutionManager>
-  concept SolutionManagerT = has_basic_typedefs<SolutionManager> && 
-  requires(std::shared_ptr<typename SolutionManager::Input> in, SolutionManager sm) {
-    { sm.InitialSolution(in) } -> std::same_as<std::shared_ptr<typename SolutionManager::Solution>>;
-    typename SolutionManager::CostStructure;
-  };
-
-  template <class NeighborhoodExplorer>
-  concept NeighborhoodExplorerT = has_basic_typedefs<NeighborhoodExplorer> && 
-requires(NeighborhoodExplorer ne, typename NeighborhoodExplorer::Solution& sol, std::shared_ptr<const typename NeighborhoodExplorer::Solution> cp_sol, std::shared_ptr<typename NeighborhoodExplorer::Solution> p_sol, typename NeighborhoodExplorer::Move mv) {
-    typename NeighborhoodExplorer::SolutionManager;
-    std::is_constructible_v<std::shared_ptr<const typename NeighborhoodExplorer::SolutionManager>>;
-    typename NeighborhoodExplorer::Move;
-    { ne.RandomMove(cp_sol) } -> std::same_as<typename NeighborhoodExplorer::Move>;
-    { ne.MakeMove(p_sol, mv)};
-    { ne.Neighborhood(cp_sol)} -> std::same_as<Generator<typename NeighborhoodExplorer::Move>>;
-  };
-
-  template <class NeighborhoodExplorer>
-  concept has_inverse_move = 
-requires(NeighborhoodExplorer ne, typename NeighborhoodExplorer::Solution& sol, typename NeighborhoodExplorer::Move mv1, typename NeighborhoodExplorer::Move mv2) {
-    { ne.InverseMove(sol, mv1, mv2) } -> std::same_as<bool>;
-  };
-}
-
-
-// end --- concepts.hh --- 
-
-
-
-// begin --- cost-components.hh --- 
-
-#pragma once
-#include <vector>
-#include <cassert>
-
-namespace easylocal {
-
-template <InputT Input, SolutionT<Input> Solution, Number T>
-class CostComponent
-{
-public:
-    /// Solution is passed as a const reference for performance reasons
-    /// Indeed the solution is not acquired by the cost component, but it is used only to
-    /// compute the cost (this allows to avoid shared_ptr increment/decrement count which
-    /// requires atomic operations and thread syncrhonization)
-    virtual T ComputeCost(const Solution& s) const = 0;
-    virtual ~CostComponent() = default;
-};
-
-// TODO: specify the right type for the cost component
-template <InputT Input, SolutionT<Input> Solution, Number T, typename Move>
-class DeltaCostComponent
-{
-public:
-    /// Solution is passed as a const reference for performance reasons (see above in @CostComponent)
-    virtual T ComputeDeltaCost(const Solution& s, const Move& mv) const = 0;
-    virtual ~DeltaCostComponent() = default;
-};
-
-template <InputT Input, SolutionT<Input> _Solution, Number _T, CostStructureTd _CostStructure, class NeighborhoodExplorer>
-class MoveValue;
-
-template <SolutionManagerT SolutionManager, class Move, class NE>
-class NeighborhoodExplorer;
-
-template <SolutionManagerT SolutionManager, class NE, class ...NHEs>
-requires (NeighborhoodExplorerT<NHEs> && ...)
-class UnionNeighborhoodExplorer;
-
-template <InputT _Input, SolutionT<_Input> _Solution, Number _T>
-class AggregatedCostStructure;
-
-template <InputT _Input, SolutionT<_Input> _Solution, Number _T, class _CostStructure>
-class SolutionValue : std::vector<std::pair<bool, _T>>
-{
-public:
-    using Input = _Input ;
-    using Solution = _Solution;
-    using T = _T;
-    using CostStructure = _CostStructure ;
-    friend CostStructure;
-    template <InputT I, SolutionT<I> S, Number T_, CostStructureTd CS, class NE> friend class MoveValue;
-    template <SolutionManagerT SM, class Move, class NE> friend class NeighborhoodExplorer;
-    template <SolutionManagerT SM, class NE, class ...NHEs> requires (NeighborhoodExplorerT<NHEs> && ...) friend class UnionNeighborhoodExplorer;
-    
-    std::shared_ptr<const Solution> GetSolution() const
-    {
-        return sol;
-    }
-    
-    // TODO: this is a bit patchy, just to access a single scalar in case of aggregated costs due to its use in TS, review in another life
-    template <typename = std::enable_if<std::same_as<CostStructure, class AggregatedCostStructure<Input, Solution, T>>>>
-    T AggregatedCost() const
-    {
-        return cs->ComputeAggregatedCost(*this);
-    }
-    
-    std::vector<T> GetValues() const
-    {
-        std::vector<T> tmp;
-        tmp.reserve(this->size());
-        for (size_t i = 0; i < this->size(); ++i)
-            tmp.push_back((*this)[i]);
-        return tmp;
-    }
-    
-    bool CheckValues() const
-    {
-        for (size_t i = 0; i < this->size(); ++i)
-            if (cs->ComputeCost(sol, i) != (*this)[i])
-                return false;
-        return true;
-    }
-    
-    T operator[](size_t i) const
-    {
-        //const std::lock_guard<std::mutex> lock(compute);
-        auto& val = const_cast<std::pair<bool, T>&>(std::vector<std::pair<bool, T>>::operator[](i));
-        if (!val.first)
-        {
-            val.second = cs->ComputeCost(sol, i);
-            val.first = true;
-        }
-        return val.second;
-    }
-    
-    using std::vector<std::pair<bool, T>>::size;
-    
-    template <SolutionValueT<Input, Solution, T, CostStructure> SV>
-    auto operator<=>(const SV& other) const
-    {
-        return cs->spaceship(*this, other);
-    }
-    
-    template <SolutionValueT<Input, Solution, T, CostStructure> SV>
-    auto operator<=>(const std::shared_ptr<SV> other) const
-    {
-        return cs->spaceship(*this, *other);
-    }
-    
-    template <SolutionValueT<Input, Solution, T, CostStructure> SV>
-    auto operator==(const SV& other) const
-    {
-        return cs->equality(*this, other);
-    }
-    
-    template <NeighborhoodExplorerT NeighborhoodExplorer>
-    SolutionValue(const MoveValue<Input, Solution, T, _CostStructure, NeighborhoodExplorer>& m) : cs(m.cs), sol(m.GetSolution())
-    {
-        auto values = m.GetValues();
-        this->reserve(m.size());
-        for (size_t i = 0; i < values.size(); ++i)
-            (*this).push_back({ true, values[i] });
-    }
-    
-    SolutionValue(const SolutionValue<Input, Solution, T, _CostStructure>& s) : cs(s.cs), sol(s.sol), std::vector<std::pair<bool, T>>(s)
-    {}
-    
-protected:
-    SolutionValue(std::shared_ptr<const CostStructure> cs, std::shared_ptr<const Solution> sol, size_t components) : cs(cs), sol(sol), std::vector<std::pair<bool, T>>(components, { false, 0 })
-    {
-        assert(cs && sol);
-    }
-    using std::vector<std::pair<bool, T>>::begin;
-    using std::vector<std::pair<bool, T>>::end;
-    using std::vector<std::pair<bool, T>>::at;
-    std::shared_ptr<const CostStructure> cs;
-    std::shared_ptr<const Solution> sol;
-};
-
-template <InputT _Input, SolutionT<_Input> _Solution, Number _T, CostStructureTd _CostStructure, class _NeighborhoodExplorer>
-class MoveValue : std::vector<std::pair<bool, _T>>
-{
-public:
-    using Input = _Input;
-    using Solution = _Solution ;
-    using T = _T;
-    using CostStructure = _CostStructure;
-protected:
-    using Move = typename _NeighborhoodExplorer::Move;
-    using SolutionValue = SolutionValue<Input, _Solution, _T, _CostStructure>;
-    friend SolutionValue;
-    using NeighborhoodExplorer = typename _NeighborhoodExplorer::ThisClass;
-    friend NeighborhoodExplorer;
-public:
-    
-    Move GetMove() const
-    {
-        return mv;
-    }
-    
-    // TODO: this is a bit patchy, just to access a single scalar in case of aggregated costs due to its use in TS, review in another life
-    template <typename = std::enable_if<std::same_as<CostStructure, class AggregatedCostStructure<Input, Solution, T>>>>
-    T AggregatedCost() const
-    {
-        return this->GetSolutionValue().AggregatedCost();
-    }
-    
-    std::vector<T> GetValues() const
-    {
-        std::vector<T> tmp;
-        tmp.reserve(this->size());
-        for (size_t i = 0; i < this->size(); ++i)
-            tmp.push_back((*this)[i]);
-        return tmp;
-    }
-    
-    T operator[](size_t i) const
-    {
-        auto& val = const_cast<std::pair<bool, T>&>(std::vector<std::pair<bool, T>>::operator[](i));
-        if (!val.first)
-        {
-            // the value has to be computed
-            if (ne->HasDeltaCostComponent(i, mv))
-            {
-                val.second = old_sv[i] + ne->ComputeDeltaCost(old_sv.GetSolution(), mv, i);
-                val.first = true;
-            }
-            else
-            {
-                if (!new_sol)
-                {
-                    // make a copy of the solution
-                    new_sol = std::make_shared<Solution>(*(old_sv.GetSolution()));
-                    // apply the move
-                    ne->MakeMove(new_sol, mv);
-                }
-                // compute the new cost directly from solution
-                val.second = cs->ComputeCost(new_sol, i);
-                val.first = true;
-            }
-        }
-        return val.second;
-    }
-    
-    template <SolutionValueT<Input, Solution, T, CostStructure> SV>
-    auto operator<=>(const SV& other) const
-    {
-        return cs->spaceship(*this, other);
-    }
-    
-    template <SolutionValueT<Input, Solution, T, CostStructure> SV2>
-    auto operator==(const SV2& other) const
-    {
-        return cs->equality(*this, other);
-    }
-    
-    std::shared_ptr<const Solution> GetSolution() const
-    {
-        // the new solution has not been determined yet
-        if (!new_sol)
-        {
-            new_sol = std::make_shared<Solution>(*(old_sv.GetSolution())); // make a copy of the solution
-            ne->MakeMove(new_sol, mv);
-        }
-        return new_sol;
-    }
-    
-    SolutionValue GetSolutionValue() const
-    {
-        return cs->CreateSolutionValue(this->GetSolution());
-    }
-    
-    using std::vector<std::pair<bool, T>>::size;
-    
-    MoveValue(const MoveValue<Input, Solution, T, _CostStructure, NeighborhoodExplorer>& m) : cs(m.cs), ne(m.ne), new_sol(m.new_sol), old_sv(m.old_sv), std::vector<std::pair<bool, T>>(m)
-    {}
-    
-protected:
-    MoveValue(std::shared_ptr<const _NeighborhoodExplorer> ne, const SolutionValue& sv, const Move& mv, size_t size) : mv(mv), old_sv(sv), cs(sv.cs), ne(ne), std::vector<std::pair<bool, T>>(size, { false, 0 })
-    {
-        assert(sv.cs && ne);
-    }
-    
-    std::shared_ptr<const CostStructure> cs;
-    std::shared_ptr<const _NeighborhoodExplorer> ne;
-    Move mv;
-    SolutionValue old_sv;
-    mutable std::shared_ptr<Solution> new_sol;
-};
-
-template <InputT _Input, SolutionT<_Input> _Solution, Number _T>
-class AggregatedCostStructure : public std::enable_shared_from_this<AggregatedCostStructure<_Input, _Solution, _T>>
-{
-public:
-    using Input = _Input;
-    using Solution = _Solution;
-    using T = _T;
-    friend class SolutionValue<Input, Solution, T, AggregatedCostStructure<Input, Solution, T>>;
-    using SolutionValue = SolutionValue<Input, Solution, T, AggregatedCostStructure>;
-protected:
-    using SelfClass = AggregatedCostStructure<Input, Solution, T>;
-    
-public:
-    template <CostComponentT<Input, Solution, T> CostComponent>
-    void AddCostComponent(std::shared_ptr<CostComponent> cc, bool hard, double weight = 1.0)
-    {
-        // make a copy of the cost component
-        cost_components.emplace_back(std::make_unique<CostComponent>(*cc));
-        hard_components.emplace_back(hard);
-        weight_components.emplace_back(weight);
-    }
-    
-    SolutionValue CreateSolutionValue(std::shared_ptr<const Solution> sol) const
-    {
-        return { this->shared_from_this(), sol, cost_components.size() };
-    }
-    
-    T ComputeCost(std::shared_ptr<const Solution> sol, size_t i) const
-    {
-        return this->cost_components[i]->ComputeCost(sol);
-    }
-    
-    template <SolutionValueT<Input, Solution, T, SelfClass> SV1, SolutionValueT<Input, Solution, T, SelfClass> SV2>
-    bool equality(const SV1& sc1, const SV2& sc2) const
-    {
-        assert(this->cost_components.size() == sc1.size() && this->cost_components.size() == sc2.size());
-        T total_cost_1 = this->ComputeAggregatedCost(sc1), total_cost_2 = this->ComputeAggregatedCost(sc2);
-        // TODO: consider floating point approximated equality at some point, use SFINAE
-        return (total_cost_1 == total_cost_2);
-    }
-    
-    template <SolutionValueT<Input, Solution, T, SelfClass> SV1, SolutionValueT<Input, Solution, T, SelfClass> SV2>
-    std::strong_ordering spaceship(const SV1& sc1, const SV2& sc2) const
-    {
-        assert(this->cost_components.size() == sc1.size() && this->cost_components.size() == sc2.size());
-        T total_cost_1 = this->ComputeAggregatedCost(sc1), total_cost_2 = this->ComputeAggregatedCost(sc2);
-        // TODO: consider floating point approximated equality at some point, use SFINAE
-        if (total_cost_1 < total_cost_2)
-            return std::strong_ordering::less;
-        else if (total_cost_1 == total_cost_2)
-            return std::strong_ordering::equal;
-        else
-            return std::strong_ordering::greater;
-    }
-    
-    size_t Components() const
-    {
-        return this->cost_components.size();
-    }
-    
-protected:
-    template <SolutionValueT<Input, Solution, T, SelfClass> SV>
-    T ComputeAggregatedCost(const SV& sv) const
-    {
-        T cost_H = 0, cost_S = 0;
-        for (size_t i = 0; i < this->cost_components.size(); ++i)
-        {
-            if (this->hard_components[i])
-                cost_H += this->weight_components[i] * sv[i];
-            else
-                cost_S += this->weight_components[i] * sv[i];
-        }
-        return this->HARD_WEIGHT * cost_H + cost_S;
-    }
-    
-    std::vector<std::unique_ptr<CostComponent<Input, Solution, T>>> cost_components;
-    std::vector<bool> hard_components;
-    std::vector<double> weight_components;
-    T HARD_WEIGHT = 1000;
-};
-
-template <InputT _Input, SolutionT<_Input> _Solution, Number _T>
-class MultiObjectiveCostStructure : public std::enable_shared_from_this<MultiObjectiveCostStructure<_Input, _Solution, _T>>
-{
-public:
-    using Input = _Input;
-    using Solution = _Solution;
-    using T = _T;
-    friend class SolutionValue<Input, Solution, T, MultiObjectiveCostStructure<Input, Solution, T>>;
-    using SolutionValue = SolutionValue<Input, Solution, T, MultiObjectiveCostStructure>;
-    using SelfClass = MultiObjectiveCostStructure<_Input, _Solution, _T>;
-    
-    template <CostComponentT<Input, Solution, T> CostComponent>
-    void AddCostComponent(std::shared_ptr<CostComponent> cc)
-    {
-        // make a copy of the cost component
-        cost_components.emplace_back(std::make_unique<CostComponent>(*cc));
-    }
-    
-    SolutionValue CreateSolutionValue(std::shared_ptr<const Solution> sol) const
-    {
-        return { this->shared_from_this(), sol, cost_components.size() };
-    }
-    
-    T ComputeCost(std::shared_ptr<const Solution> sol, size_t i) const
-    {
-        return this->cost_components[i]->ComputeCost(sol);
-    }
-    
-    template <SolutionValueT<Input, Solution, T, SelfClass> SV1, SolutionValueT<Input, Solution, T, SelfClass> SV2>
-    bool equality(const SV1& sc1, const SV2& sc2) const
-    {
-        assert(this->cost_components.size() == sc1.size() && this->cost_components.size() == sc2.size());
-        
-        // TODO: consider floating point approximated equality at some point, use SFINAE
-        for (size_t i = 0; i < this->cost_components.size(); ++i)
-        {
-            if (sc1[i] != sc2[i])
-                return false;
-        }
-        return true;
-    }
-    
-    template <SolutionValueT<Input, Solution, T, SelfClass> SV1, SolutionValueT<Input, Solution, T, SelfClass> SV2>
-    std::partial_ordering spaceship(const SV1& sc1, const SV2& sc2) const
-    {
-        assert(this->cost_components.size() == sc1.size() && this->cost_components.size() == sc2.size());
-        size_t sc1_less_than_sc2 = 0, sc1_greater_than_sc2 = 0;
-        for (size_t i = 0; i < this->cost_components.size(); ++i)
-        {
-            if (sc1[i] < sc2[i])
-            {
-                if (sc1_greater_than_sc2 > 0)
-                    return std::partial_ordering::unordered;
-                sc1_less_than_sc2++;
-            }
-            else if (sc1[i] > sc2[i])
-            {
-                sc1_greater_than_sc2++;
-                if (sc1_less_than_sc2 > 0)
-                    return std::partial_ordering::unordered;
-            }
-        }
-        if (sc1_less_than_sc2 > 0 && sc1_greater_than_sc2 == 0)
-            return std::partial_ordering::less;
-        if (sc1_greater_than_sc2 > 0 && sc1_less_than_sc2 == 0)
-            return std::partial_ordering::greater;
-        if (sc1_less_than_sc2 == 0 && sc1_greater_than_sc2 == 0)
-            return std::partial_ordering::equivalent;
-        return std::partial_ordering::unordered;
-    }
-    
-    size_t Components() const
-    {
-        return this->cost_components.size();
-    }
-    
-protected:
-    std::vector<std::unique_ptr<CostComponent<Input, Solution, T>>> cost_components;
-};
-}
-
-
-// end --- cost-components.hh --- 
-
-
-
-namespace easylocal {
-  // TODO: helper to transform a std::function (e.g., a lambda for random solution) in a SolutionManager
-  template <InputT _Input, SolutionT<_Input> _Solution, Number _T, class _CostStructure>
-  requires CostStructureT<_CostStructure, _Input, _Solution, _T>
-  class SolutionManager : public _CostStructure
-  {
-  public:
-    using Input = _Input;
-    using Solution = _Solution;
-    using T = _T;
-    using CostStructure = _CostStructure;
-    // the method InitialSolution(std::shared_ptr<Input> in) const should be defined in the actual Solution Manager subclass
-  };
-}
-
-
-// end --- solution-manager.hh --- 
-
-
-#include <iostream>
-#include <sstream>
 #include <thread>
 #include <future>
 #include <chrono>
 #include <iterator>
 #include <memory>
+#include <functional>
+#include <boost/program_options.hpp>
+
+namespace po = boost::program_options;
+
 
 namespace easylocal {
 
-//template <class Runner>
-//concept RunnerIdleIterT = has_basic_typedefs<Runner> &&
-//requires(Runner) {
-//    { Runner::idle_iteration } -> std::same_as<size_t&>;
-//};
+// TODO: review all the names of templates / classes
 
-
-//template <RunnerIdleIterT Runner>
-//class IdleIterationsTermination
-//{
-//public:
-//    IdleIterationsTermination(size_t max_idle_iterations) : max_idle_iterations(max_idle_iterations) {}
-//    
-//    virtual bool operator()(Runner* r)
-//    {
-//        spdlog::debug("HERE in operator()");
-//        return r->idle_iteration > max_idle_iterations;
-//    }
-//protected:
-//    size_t max_idle_iterations;
-//};
-
-//template <RunnerIdleIterT Runner>
-//class TotalIterationsTermination
-//{
-//public:
-//    TotalIterationsTermination(size_t max_iterations) : max_iterations(max_iterations) {}
-//    
-//    virtual bool operator()(Runner* r)
-//    {
-//        spdlog::debug("HERE in operator() of TIT");
-//        return r->iteration > max_iterations;
-//    }
-//protected:
-//    size_t max_iterations;
-//};
-
-template <SolutionManagerT SolutionManager, NeighborhoodExplorerT NeighborhoodExplorer, template <class R> class TerminationCriterion = IdleIterationsTermination, template <class R> class SelectMove = SelectMoveRandom, template <class R> class AcceptMove = AcceptMoveImproveOrEqual>
-class HillClimbing : public Runner<SolutionManager, NeighborhoodExplorer>
+template <SolutionManagerT SolutionManager, NeighborhoodExplorerT NeighborhoodExplorer, template <class R> class TerminationCriterion, template <class R> class TabuList, template <class R> class AspirationCriterion, template <class R> class StopExplorationCriterion, template <class R> class NeighborhoodGenerator>
+class TabuSearch : public Runner<SolutionManager, NeighborhoodExplorer>
 {
 public:
     using Input = typename SolutionManager::Input;
@@ -2267,19 +2220,21 @@ public:
     using T = typename SolutionManager::T;
     using CostStructure = typename SolutionManager::CostStructure;
     using Move = typename NeighborhoodExplorer::Move;
-    using SelfClass = HillClimbing<SolutionManager, NeighborhoodExplorer, TerminationCriterion, SelectMove, AcceptMove>;
+    using SelfClass = TabuSearch<SolutionManager, NeighborhoodExplorer, TerminationCriterion, TabuList, AspirationCriterion, StopExplorationCriterion, NeighborhoodGenerator>;
     
     using SolutionValue = typename SolutionManager::SolutionValue;
     using MoveValue = typename NeighborhoodExplorer::MoveValue;
     
-    HillClimbing(std::shared_ptr<const SolutionManager> sm, std::shared_ptr<const NeighborhoodExplorer> ne, size_t random_seed) : Runner<SolutionManager, NeighborhoodExplorer>(sm, ne), random_seed(random_seed) {}
+    TabuSearch(std::shared_ptr<const SolutionManager> sm, std::shared_ptr<const NeighborhoodExplorer> ne, size_t random_seed) : Runner<SolutionManager, NeighborhoodExplorer>(sm, ne), random_seed(random_seed) {}
     
     void SetParameters(po::variables_map& vm, std::vector<std::string> to_pass_further) override
     {
-        po::options_description desc("Set of parameters associated with the required HC.");
+        po::options_description desc("Set of parameters associated with the required TS.");
         termination.add_parameter(desc);
-        select_move.add_parameter(desc);
-        accept_move.add_parameter(desc);
+        tabu_list.add_parameter(desc);
+        aspiration.add_parameter(desc);
+        stop_exploration.add_parameter(desc);
+        neighborhood_generator.add_parameter(desc);
         po::store(po::command_line_parser(to_pass_further).options(desc).run(), vm);
         po::notify(vm);
     }
@@ -2288,15 +2243,35 @@ protected:
 
     virtual void Go(std::shared_ptr<const Input> in) override
     {
-        rng.seed(random_seed);
+        tabu_list.initialize(this);
         PrintParameters();
         current_solution_value = std::make_shared<SolutionValue>(this->sm->CreateSolutionValue(this->sm->InitialSolution(in)));
-        
-        while (!termination.terminate(this) && !this->StopRun())
+        best_solution_value = std::make_shared<SolutionValue>(*current_solution_value);
+        // TODO: 1. implement aspiration plus and elite candidate plus strategies
+        while (!termination.terminate(this) && !this->StopRun()) //TODO: StopRun qui? da altre parti?
         {
+            bool best_move_value_initialized = false;
+            stop_exploration.initialize(this);
             try
             {
-                current_move_value = std::make_shared<MoveValue>(select_move.select(this));
+                for (auto _cmv : neighborhood_generator.generate_moves(this))
+                {
+                    current_move_value = _cmv;
+                    if (tabu_list.is_tabu(this) && !aspiration.is_tabu_status_overridden(this))
+                    {
+                        continue;
+                    }
+                    if (!best_move_value_initialized || *current_move_value < *best_move_value)
+                    {
+                        best_move_value = std::make_shared<MoveValue>(*current_move_value);
+                        best_move_value_initialized = true;
+                    }
+                    stop_exploration.update(this);
+                    if (stop_exploration.has_to_stop(this))
+                    {
+                        break;
+                    }
+                }
             }
             catch (EmptyNeighborhood)
             {
@@ -2306,129 +2281,107 @@ protected:
                 break;
             }
             
-            if (accept_move.accept(this))
+            if (!best_move_value_initialized)
             {
-                // make move
-                *current_solution_value = *current_move_value;
+                // spdlog::warn("HERE");
+                if (!aspiration.use_least_tabu(this))
+                {
+#if !defined(NDEBUG)
+                    spdlog::debug("best_move_value_initialized not initialized and you are not using least_tabu_move");
+#endif
+                    break;
+                }
+                else
+                {
+                    best_move_value = std::make_shared<MoveValue>(this->ne->CreateMoveValue(*current_solution_value, tabu_list.least_tabu(this)));
+                }
+            }
+            
+            current_solution_value = std::make_shared<SolutionValue>(*best_move_value);
+            std::ostringstream oss;
+            oss << (*(current_solution_value->GetSolution()));
+            // std::cout << oss.str() << std::endl;
+            spdlog::info("{} --> {}", oss.str(), current_solution_value->AggregatedCost());
+            if (*current_solution_value < *best_solution_value)
+            {
+                best_solution_value = std::make_shared<SolutionValue>(*current_solution_value);
                 idle_iteration = 0;
-                std::ostringstream oss;
-                oss << (*(current_solution_value->GetSolution()));
-                // std::cout << oss.str() << std::endl;
-                spdlog::info("{} --> {}", oss.str(), current_solution_value->AggregatedCost());
             }
             else
             {
                 idle_iteration = idle_iteration + 1;
             }
+            // update iterations
             iteration = iteration + 1;
+            tabu_list.update(this);
+            stop_exploration.update(this);
+            // To remove later
+#if !defined(NDEBUG)
+            //std::ostringstream oss;
+            // oss << best_move_value->GetMove();
+            //auto values = current_solution_value->GetValues();
+            //spdlog::debug("TS - move selected {} / {} {} / {} ", iteration, idle_iteration, oss.str(), spdlog::fmt_lib::join(values, ", "));
+#endif
         }
-        
         // post processings
-        /*spdlog::info("Post processing after {} iterations (idle: {})", iteration, idle_iteration);
-        auto values = current_solution_value->GetValues();
-        std::ostringstream oss;
-        oss << (*(current_solution_value->GetSolution()));
-        spdlog::info("{} ---> ({})", oss.str(), spdlog::fmt_lib::join(values, ", "));
-*/
+        // auto values = best_solution_value->GetValues();
+        // std::ostringstream oss;
+        // oss << (*(best_solution_value->GetSolution()));
+        // spdlog::info("{} ---> ({})", oss.str(), spdlog::fmt_lib::join(values, ", "));
+        // spdlog::info("Idle iterations: {} // Total iterations: {}", idle_iteration, iteration);
+#if !defined(NDEBUG)
+        spdlog::debug("Very end: iteration: {} // idle_iteration:{}", iteration, idle_iteration);
+        spdlog::debug("Checking current solution");
         assert(current_solution_value->CheckValues());
-        
-        this->final_solution_value = std::make_shared<SolutionValue>(*current_solution_value);
+        spdlog::debug("Checking best solution");
+#endif
+        assert(best_solution_value->CheckValues());
+        this->final_solution_value = std::make_shared<SolutionValue>(*best_solution_value);
     }
-    
+    void PrintParameters()
+    {
+        // spdlog::info("Paremeter random_seed: {}", random_seed);
+        termination.print_parameters();
+        tabu_list.print_parameters();
+        aspiration.print_parameters();
+        stop_exploration.print_parameters();
+        neighborhood_generator.print_parameters();
+    }
 public:
     // object data
     size_t iteration = 0, idle_iteration = 0;
-    std::shared_ptr<SolutionValue> current_solution_value;
-    std::shared_ptr<MoveValue> current_move_value;    
+    size_t metric_aspiration_used = 0;
+    size_t random_seed;
+    std::shared_ptr<SolutionValue> current_solution_value, best_solution_value;
+    std::shared_ptr<MoveValue> current_move_value, best_move_value;
 protected:
-    void PrintParameters()
-    {
-        termination.print_parameters();
-    }
     // parametrized criteria
     TerminationCriterion<SelfClass> termination;
-    SelectMove<SelfClass> select_move;
-    AcceptMove<SelfClass> accept_move;
-    mutable std::mt19937_64 rng;
-    size_t random_seed;
+    TabuList<SelfClass> tabu_list;
+    AspirationCriterion<SelfClass> aspiration;
+    StopExplorationCriterion<SelfClass> stop_exploration;
+    NeighborhoodGenerator<SelfClass> neighborhood_generator;
 };
+
 }
 
 
-// end --- hill-climbing.hh --- 
+// end --- tabu-search.hh --- 
 
 
 
-// begin --- neighborhood-explorer.hh --- 
+// begin --- version.hh --- 
 
-////
-////  neighborhood-explorer.hh
-////  poc
-////
-////  Created by Luca Di Gaspero on 09/03/23.
-////
-//
 #pragma once
-#include <exception>
 
-namespace easylocal {
+#define EASYLOCAL_VER_MAJOR 4
+#define EASYLOCAL_VER_MINOR 0
+#define EASYLOCAL_VER_PATCH 0
 
-class EmptyNeighborhood : public std::exception
-{};
+#define EASYLOCAL_TO_VERSION(major, minor, patch) (major * 10000 + minor * 100 + patch)
+#define EASYLOCAL_VERSION EASYLOCAL_TO_VERSION(EASYLOCAL_VER_MAJOR, EASYLOCAL_VER_MINOR, EASYLOCAL_VER_PATCH)
 
-  // TODO: add the proper concepts for solution manager
-  // TODO: the last template parameter is the neighborhood explorer itself, to be used in a CRTP (Curiously Recurring Template Pattern) for providing the make_move method below in a static fashion (therefore without overhead) in C++23 there will be P0847 feature (deducing this) that will allow to get rid of it
-  template <SolutionManagerT _SolutionManager, class _Move, class SelfClass>
-class NeighborhoodExplorer : public std::enable_shared_from_this<SelfClass>
-  {
-  public:
-    using SolutionManager = _SolutionManager ;
-    using Input = typename SolutionManager::Input;
-    using Solution = typename SolutionManager::Solution;
-    using T = typename SolutionManager::T;
-    using Move = _Move;
-    using CostStructure = typename SolutionManager::CostStructure;
-    friend class MoveValue<Input, Solution, T, CostStructure, SelfClass>;
-    using MoveValue = MoveValue<Input, Solution, T, CostStructure, SelfClass>;
-    using SolutionValue = SolutionValue<Input, Solution, T, CostStructure>;
-    using ThisClass = NeighborhoodExplorer<SolutionManager, Move, SelfClass>;
-
-    NeighborhoodExplorer(std::shared_ptr<const SolutionManager> sm) noexcept
-    {
-      delta_cost_components.resize(sm->Components());
-    }
-    
-    MoveValue CreateMoveValue(const SolutionValue& sv, const Move& mv) const
-    {
-      auto self = this->shared_from_this();
-      return { self, sv, mv, sv.size() };
-    }
-    
-    template <DeltaCostComponentT<Input, Solution, T, Move> DeltaCostComponent>
-    void AddDeltaCostComponent(DeltaCostComponent& dcc, size_t i)
-    {
-      delta_cost_components[i] = std::make_unique<DeltaCostComponent>(dcc);
-    }
-    
-//  protected:
-    
-    bool HasDeltaCostComponent(size_t i, const Move&) const
-    {
-      return delta_cost_components[i] != nullptr;
-    }
-    
-    T ComputeDeltaCost(std::shared_ptr<const Solution> sol, const Move& mv, size_t i) const
-    {
-        assert(delta_cost_components[i] != nullptr);
-        return this->delta_cost_components[i]->ComputeDeltaCost(*sol, mv);
-    }
-
-    std::vector<std::unique_ptr<DeltaCostComponent<Input, Solution, T, Move>>> delta_cost_components;
-  };
-}
-
-
-// end --- neighborhood-explorer.hh --- 
+// end --- version.hh --- 
 
 
 
@@ -2519,8 +2472,8 @@ class UnionNeighborhoodExplorer : public std::enable_shared_from_this<SelfClass>
       }
       
       // Method enabled only if all NeighborhoodExplorerss satisfy has_inverse_move
-      template <typename = std::enable_if_t<(has_inverse_move<NeighborhoodExplorers> && ...)>>
-      bool InverseMove(std::shared_ptr<const Solution> sol, const Move& mv1, const Move& mv2) const
+      // template <typename = std::enable_if_t<(has_inverse_move<NeighborhoodExplorers> && ...)>>
+      bool InverseMove(std::shared_ptr<const Solution> sol, const Move& mv1, const Move& mv2) const requires (has_inverse_move<NeighborhoodExplorers> && ...)
       {
           return false;
 //          return std::visit([&sol, this](auto&& arg1, auto&& arg2) { return this->ci.Inverse(sol, arg1, arg2); }, mv1, mv2);
@@ -2648,190 +2601,6 @@ class UnionNeighborhoodExplorer : public std::enable_shared_from_this<SelfClass>
 
 
 // end --- multi-modal-neighborhood-explorer.hh --- 
-
-
-
-// begin --- tabu-search.hh --- 
-
-//
-//  tabu-search.hh
-//
-//  Created by Luca Di Gaspero on 24/07/23.
-//
-
-#pragma once
-#include <iostream>
-#include <thread>
-#include <future>
-#include <chrono>
-#include <iterator>
-#include <memory>
-#include <functional>
-#include <boost/program_options.hpp>
-
-namespace po = boost::program_options;
-
-
-namespace easylocal {
-
-// TODO: review all the names of templates / classes
-
-template <SolutionManagerT SolutionManager, NeighborhoodExplorerT NeighborhoodExplorer, template <class R> class TerminationCriterion, template <class R> class TabuList, template <class R> class AspirationCriterion, template <class R> class StopExplorationCriterion, template <class R> class NeighborhoodGenerator>
-class TabuSearch : public Runner<SolutionManager, NeighborhoodExplorer>
-{
-public:
-    using Input = typename SolutionManager::Input;
-    using Solution = typename SolutionManager::Solution;
-    using T = typename SolutionManager::T;
-    using CostStructure = typename SolutionManager::CostStructure;
-    using Move = typename NeighborhoodExplorer::Move;
-    using SelfClass = TabuSearch<SolutionManager, NeighborhoodExplorer, TerminationCriterion, TabuList, AspirationCriterion, StopExplorationCriterion, NeighborhoodGenerator>;
-    
-    using SolutionValue = typename SolutionManager::SolutionValue;
-    using MoveValue = typename NeighborhoodExplorer::MoveValue;
-    
-    TabuSearch(std::shared_ptr<const SolutionManager> sm, std::shared_ptr<const NeighborhoodExplorer> ne, size_t random_seed) : Runner<SolutionManager, NeighborhoodExplorer>(sm, ne), random_seed(random_seed) {}
-    
-    void SetParameters(po::variables_map& vm, std::vector<std::string> to_pass_further) override
-    {
-        po::options_description desc("Set of parameters associated with the required TS.");
-        termination.add_parameter(desc);
-        tabu_list.add_parameter(desc);
-        aspiration.add_parameter(desc);
-        stop_exploration.add_parameter(desc);
-        neighborhood_generator.add_parameter(desc);
-        po::store(po::command_line_parser(to_pass_further).options(desc).run(), vm);
-        po::notify(vm);
-    }
-    
-protected:
-
-    virtual void Go(std::shared_ptr<const Input> in) override
-    {
-        tabu_list.initialize(this);
-        PrintParameters();
-        current_solution_value = std::make_shared<SolutionValue>(this->sm->CreateSolutionValue(this->sm->InitialSolution(in)));
-        best_solution_value = std::make_shared<SolutionValue>(*current_solution_value);
-        // TODO: 1. implement aspiration plus and elite candidate plus strategies
-        while (!termination.terminate(this) && !this->StopRun()) //TODO: StopRun qui? da altre parti?
-        {
-            bool best_move_value_initialized = false;
-            stop_exploration.initialize(this);
-            try
-            {
-                for (auto _cmv : neighborhood_generator.generate_moves(this))
-                {
-                    current_move_value = _cmv;
-                    if (tabu_list.is_tabu(this) && !aspiration.is_tabu_status_overridden(this))
-                    {
-                        continue;
-                    }
-                    if (!best_move_value_initialized || *current_move_value < *best_move_value)
-                    {
-                        best_move_value = std::make_shared<MoveValue>(*current_move_value);
-                        best_move_value_initialized = true;
-                    }
-                    stop_exploration.update(this);
-                    if (stop_exploration.has_to_stop(this))
-                    {
-                        break;
-                    }
-                }
-            }
-            catch (EmptyNeighborhood)
-            {
-#if !defined(NDEBUG)
-                spdlog::debug("empty neighborhood encountered while exploring");
-#endif
-                break;
-            }
-            
-            if (!best_move_value_initialized)
-            {
-                // spdlog::warn("HERE");
-                if (!aspiration.use_least_tabu(this))
-                {
-#if !defined(NDEBUG)
-                    spdlog::debug("best_move_value_initialized not initialized and you are not using least_tabu_move");
-#endif
-                    break;
-                }
-                else
-                {
-                    best_move_value = std::make_shared<MoveValue>(this->ne->CreateMoveValue(*current_solution_value, tabu_list.least_tabu(this)));
-                }
-            }
-            
-            current_solution_value = std::make_shared<SolutionValue>(*best_move_value);
-            std::ostringstream oss;
-            oss << (*(current_solution_value->GetSolution()));
-            // std::cout << oss.str() << std::endl;
-            spdlog::info("{} --> {}", oss.str(), current_solution_value->AggregatedCost());
-            if (*current_solution_value < *best_solution_value)
-            {
-                best_solution_value = std::make_shared<SolutionValue>(*current_solution_value);
-                idle_iteration = 0;
-            }
-            else
-            {
-                idle_iteration = idle_iteration + 1;
-            }
-            // update iterations
-            iteration = iteration + 1;
-            tabu_list.update(this);
-            stop_exploration.update(this);
-            // To remove later
-#if !defined(NDEBUG)
-            std::ostringstream oss;
-            // oss << best_move_value->GetMove();
-            //auto values = current_solution_value->GetValues();
-            //spdlog::debug("TS - move selected {} / {} {} / {} ", iteration, idle_iteration, oss.str(), spdlog::fmt_lib::join(values, ", "));
-#endif
-        }
-        // post processings
-        // auto values = best_solution_value->GetValues();
-        // std::ostringstream oss;
-        // oss << (*(best_solution_value->GetSolution()));
-        // spdlog::info("{} ---> ({})", oss.str(), spdlog::fmt_lib::join(values, ", "));
-        // spdlog::info("Idle iterations: {} // Total iterations: {}", idle_iteration, iteration);
-#if !defined(NDEBUG)
-        spdlog::debug("Very end: iteration: {} // idle_iteration:{}", iteration, idle_iteration);
-        spdlog::debug("Checking current solution");
-        assert(current_solution_value->CheckValues());
-        spdlog::debug("Checking best solution");
-#endif
-        assert(best_solution_value->CheckValues());
-        this->final_solution_value = std::make_shared<SolutionValue>(*best_solution_value);
-    }
-    void PrintParameters()
-    {
-        // spdlog::info("Paremeter random_seed: {}", random_seed);
-        termination.print_parameters();
-        tabu_list.print_parameters();
-        aspiration.print_parameters();
-        stop_exploration.print_parameters();
-        neighborhood_generator.print_parameters();
-    }
-public:
-    // object data
-    size_t iteration = 0, idle_iteration = 0;
-    size_t metric_aspiration_used = 0;
-    size_t random_seed;
-    std::shared_ptr<SolutionValue> current_solution_value, best_solution_value;
-    std::shared_ptr<MoveValue> current_move_value, best_move_value;
-protected:
-    // parametrized criteria
-    TerminationCriterion<SelfClass> termination;
-    TabuList<SelfClass> tabu_list;
-    AspirationCriterion<SelfClass> aspiration;
-    StopExplorationCriterion<SelfClass> stop_exploration;
-    NeighborhoodGenerator<SelfClass> neighborhood_generator;
-};
-
-}
-
-
-// end --- tabu-search.hh --- 
 
 
 
@@ -3078,4 +2847,235 @@ namespace easylocal {
 
 
 // end --- plahc-one-chance.hh --- 
+
+
+
+// begin --- hill-climbing.hh --- 
+
+//
+//  hill-climbing.hh
+//  pfsp-ls
+//
+//  Created by Luca Di Gaspero on 24/07/23.
+//
+
+#pragma once
+#include <iostream>
+#include <sstream>
+#include <thread>
+#include <future>
+#include <chrono>
+#include <iterator>
+#include <memory>
+
+namespace easylocal {
+
+//template <class Runner>
+//concept RunnerIdleIterT = has_basic_typedefs<Runner> &&
+//requires(Runner) {
+//    { Runner::idle_iteration } -> std::same_as<size_t&>;
+//};
+
+
+//template <RunnerIdleIterT Runner>
+//class IdleIterationsTermination
+//{
+//public:
+//    IdleIterationsTermination(size_t max_idle_iterations) : max_idle_iterations(max_idle_iterations) {}
+//    
+//    virtual bool operator()(Runner* r)
+//    {
+//        spdlog::debug("HERE in operator()");
+//        return r->idle_iteration > max_idle_iterations;
+//    }
+//protected:
+//    size_t max_idle_iterations;
+//};
+
+//template <RunnerIdleIterT Runner>
+//class TotalIterationsTermination
+//{
+//public:
+//    TotalIterationsTermination(size_t max_iterations) : max_iterations(max_iterations) {}
+//    
+//    virtual bool operator()(Runner* r)
+//    {
+//        spdlog::debug("HERE in operator() of TIT");
+//        return r->iteration > max_iterations;
+//    }
+//protected:
+//    size_t max_iterations;
+//};
+
+template <SolutionManagerT SolutionManager, NeighborhoodExplorerT NeighborhoodExplorer, template <class R> class TerminationCriterion = IdleIterationsTermination, template <class R> class SelectMove = SelectMoveRandom, template <class R> class AcceptMove = AcceptMoveImproveOrEqual>
+class HillClimbing : public Runner<SolutionManager, NeighborhoodExplorer>
+{
+public:
+    using Input = typename SolutionManager::Input;
+    using Solution = typename SolutionManager::Solution;
+    using T = typename SolutionManager::T;
+    using CostStructure = typename SolutionManager::CostStructure;
+    using Move = typename NeighborhoodExplorer::Move;
+    using SelfClass = HillClimbing<SolutionManager, NeighborhoodExplorer, TerminationCriterion, SelectMove, AcceptMove>;
+    
+    using SolutionValue = typename SolutionManager::SolutionValue;
+    using MoveValue = typename NeighborhoodExplorer::MoveValue;
+    
+    HillClimbing(std::shared_ptr<const SolutionManager> sm, std::shared_ptr<const NeighborhoodExplorer> ne, size_t random_seed) : Runner<SolutionManager, NeighborhoodExplorer>(sm, ne), random_seed(random_seed) {}
+    
+    void SetParameters(po::variables_map& vm, std::vector<std::string> to_pass_further) override
+    {
+        po::options_description desc("Set of parameters associated with the required HC.");
+        termination.add_parameter(desc);
+        select_move.add_parameter(desc);
+        accept_move.add_parameter(desc);
+        po::store(po::command_line_parser(to_pass_further).options(desc).run(), vm);
+        po::notify(vm);
+    }
+    
+protected:
+
+    virtual void Go(std::shared_ptr<const Input> in) override
+    {
+        rng.seed(random_seed);
+        PrintParameters();
+        current_solution_value = std::make_shared<SolutionValue>(this->sm->CreateSolutionValue(this->sm->InitialSolution(in)));
+        
+        while (!termination.terminate(this) && !this->StopRun())
+        {
+            try
+            {
+                current_move_value = std::make_shared<MoveValue>(select_move.select(this));
+            }
+            catch (EmptyNeighborhood)
+            {
+#if !defined(NDEBUG)
+                spdlog::debug("empty neighborhood encountered while exploring");
+#endif
+                break;
+            }
+            
+            if (accept_move.accept(this))
+            {
+                // make move
+                *current_solution_value = *current_move_value;
+                idle_iteration = 0;
+                std::ostringstream oss;
+                oss << (*(current_solution_value->GetSolution()));
+                // std::cout << oss.str() << std::endl;
+                spdlog::info("{} --> {}", oss.str(), current_solution_value->AggregatedCost());
+            }
+            else
+            {
+                idle_iteration = idle_iteration + 1;
+            }
+            iteration = iteration + 1;
+        }
+        
+        // post processings
+        /*spdlog::info("Post processing after {} iterations (idle: {})", iteration, idle_iteration);
+        auto values = current_solution_value->GetValues();
+        std::ostringstream oss;
+        oss << (*(current_solution_value->GetSolution()));
+        spdlog::info("{} ---> ({})", oss.str(), spdlog::fmt_lib::join(values, ", "));
+*/
+        assert(current_solution_value->CheckValues());
+        
+        this->final_solution_value = std::make_shared<SolutionValue>(*current_solution_value);
+    }
+    
+public:
+    // object data
+    size_t iteration = 0, idle_iteration = 0;
+    std::shared_ptr<SolutionValue> current_solution_value;
+    std::shared_ptr<MoveValue> current_move_value;    
+protected:
+    void PrintParameters()
+    {
+        termination.print_parameters();
+    }
+    // parametrized criteria
+    TerminationCriterion<SelfClass> termination;
+    SelectMove<SelfClass> select_move;
+    AcceptMove<SelfClass> accept_move;
+    mutable std::mt19937_64 rng;
+    size_t random_seed;
+};
+}
+
+
+// end --- hill-climbing.hh --- 
+
+
+
+// begin --- neighborhood-explorer.hh --- 
+
+////
+////  neighborhood-explorer.hh
+////  poc
+////
+////  Created by Luca Di Gaspero on 09/03/23.
+////
+//
+#pragma once
+#include <exception>
+
+namespace easylocal {
+
+class EmptyNeighborhood : public std::exception
+{};
+
+  // TODO: add the proper concepts for solution manager
+  // TODO: the last template parameter is the neighborhood explorer itself, to be used in a CRTP (Curiously Recurring Template Pattern) for providing the make_move method below in a static fashion (therefore without overhead) in C++23 there will be P0847 feature (deducing this) that will allow to get rid of it
+  template <SolutionManagerT _SolutionManager, class _Move, class SelfClass>
+class NeighborhoodExplorer : public std::enable_shared_from_this<SelfClass>
+  {
+  public:
+    using SolutionManager = _SolutionManager ;
+    using Input = typename SolutionManager::Input;
+    using Solution = typename SolutionManager::Solution;
+    using T = typename SolutionManager::T;
+    using Move = _Move;
+    using CostStructure = typename SolutionManager::CostStructure;
+    friend class MoveValue<Input, Solution, T, CostStructure, SelfClass>;
+    using MoveValue = MoveValue<Input, Solution, T, CostStructure, SelfClass>;
+    using SolutionValue = SolutionValue<Input, Solution, T, CostStructure>;
+    using ThisClass = NeighborhoodExplorer<SolutionManager, Move, SelfClass>;
+
+    NeighborhoodExplorer(std::shared_ptr<const SolutionManager> sm) noexcept
+    {
+      delta_cost_components.resize(sm->Components());
+    }
+    
+    MoveValue CreateMoveValue(const SolutionValue& sv, const Move& mv) const
+    {
+      auto self = this->shared_from_this();
+      return { self, sv, mv, sv.size() };
+    }
+    
+    template <DeltaCostComponentT<Input, Solution, T, Move> DeltaCostComponent>
+    void AddDeltaCostComponent(DeltaCostComponent& dcc, size_t i)
+    {
+      delta_cost_components[i] = std::make_unique<DeltaCostComponent>(dcc);
+    }
+    
+//  protected:
+    
+    bool HasDeltaCostComponent(size_t i, const Move&) const
+    {
+      return delta_cost_components[i] != nullptr;
+    }
+    
+    T ComputeDeltaCost(std::shared_ptr<const Solution> sol, const Move& mv, size_t i) const
+    {
+        assert(delta_cost_components[i] != nullptr);
+        return this->delta_cost_components[i]->ComputeDeltaCost(sol, mv);
+    }
+
+    std::vector<std::unique_ptr<DeltaCostComponent<Input, Solution, T, Move>>> delta_cost_components;
+  };
+}
+
+
+// end --- neighborhood-explorer.hh --- 
 
