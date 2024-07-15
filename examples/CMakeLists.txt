@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.22)
 project(poc-test CXX)
-
-#set(easylocal_DIR ${CMAKE_CURRENT_LIST_DIR}/..)
+list(APPEND CMAKE_PREFIX_PATH ${CMAKE_SOURCE_DIR}/cmake)
+set(easylocal_DIR ${CMAKE_CURRENT_LIST_DIR}/..)
 
 find_package(easylocal CONFIG REQUIRED)
 
