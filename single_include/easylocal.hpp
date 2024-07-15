@@ -8,12 +8,13 @@
 
 
 
-// begin --- tabu-search.hh --- 
+// begin --- plahc.hh --- 
 
 //
-//  tabu-search.hh
+//  lahc.hh
+//  poc
 //
-//  Created by Luca Di Gaspero on 24/07/23.
+//  Created by Luca Di Gaspero on 13/03/23.
 //
 
 #pragma once
@@ -802,6 +803,641 @@ namespace easylocal {
 // end --- solution-manager.hh --- 
 
 
+
+// begin --- runner.hh --- 
+
+//
+//  runner.hh
+//  pfsp-ls
+//
+//  Created by Luca Di Gaspero on 24/07/23.
+//
+
+#pragma once
+
+#include <thread>
+#include <future>
+#include <chrono>
+#include <atomic>
+#include <boost/program_options.hpp>
+
+namespace po = boost::program_options;
+
+namespace easylocal {
+
+template <SolutionManagerT SolutionManager>
+class AbstractRunner
+{
+public:
+    using Input = typename SolutionManager::Input;
+    using SolutionValue = typename SolutionManager::SolutionValue;
+    
+    virtual SolutionValue Run(std::shared_ptr<const Input> in, std::chrono::milliseconds timeout) = 0;
+    virtual void SetParameters(po::variables_map& /* vm */, std::vector<std::string> /* to_pass_further */) {};
+};
+
+
+template <SolutionManagerT SolutionManager, NeighborhoodExplorerT NeighborhoodExplorer>
+class Runner : public AbstractRunner<SolutionManager>
+{
+public:
+    using Input = typename SolutionManager::Input;
+    using Solution = typename SolutionManager::Solution;
+    using T = typename SolutionManager::T;
+    using CostStructure = typename SolutionManager::CostStructure ;
+    using Move = typename NeighborhoodExplorer::Move;
+    using SolutionValue = typename SolutionManager::SolutionValue;
+    
+    
+protected:
+    Runner(std::shared_ptr<const SolutionManager> sm, std::shared_ptr<const NeighborhoodExplorer> ne) : sm(sm), ne(ne) {}
+    // virtual void SetParameters(po::variables_map& vm, std::vector<std::string> to_pass_further){};
+    
+public:
+    
+    SolutionValue Run(std::shared_ptr<const Input> in, std::chrono::milliseconds timeout) override
+    {
+        std::packaged_task<void(std::shared_ptr<const Input> in)> running_task([this](std::shared_ptr<const Input> in) {
+            this->ResetStopRun();
+            this->Go(in);
+        });
+        auto future = running_task.get_future();
+        std::thread thr(std::move(running_task), in);
+        future.wait_for(timeout);
+        stop_run = true;
+        thr.join();
+        return *(final_solution_value);
+    }
+    
+    inline void Run(std::shared_ptr<const Input> in)
+    {
+        this->Go(in);
+    }
+    
+protected:
+    
+    virtual void Go(std::shared_ptr<const Input> in) = 0;
+    
+    inline void ResetStopRun()
+    {
+        stop_run = false;
+    }
+    
+    inline bool StopRun() const
+    {
+        return stop_run;
+    }
+    
+public:
+    std::shared_ptr<const SolutionManager> sm;
+    std::shared_ptr<const NeighborhoodExplorer> ne;
+    std::atomic_bool stop_run;
+    std::shared_ptr<SolutionValue> final_solution_value;
+};
+}
+
+
+
+// end --- runner.hh --- 
+
+
+#include <iostream>
+#include <iterator>
+#include <memory>
+#include <spdlog/spdlog.h>
+
+namespace easylocal {
+  template <SolutionManagerT SolutionManager, NeighborhoodExplorerT NeighborhoodExplorer>
+  class PLAHC : public Runner<SolutionManager, NeighborhoodExplorer>
+  {
+  public:
+    using Input = typename Runner<SolutionManager, NeighborhoodExplorer>::Input;
+    using Solution = typename Runner<SolutionManager, NeighborhoodExplorer>::Solution;
+    using T = typename Runner<SolutionManager, NeighborhoodExplorer>::T;
+    using CostStructure = typename Runner<SolutionManager, NeighborhoodExplorer>::CostStructure ;
+    using Move = typename Runner<SolutionManager, NeighborhoodExplorer>::Move;
+    
+    PLAHC(std::shared_ptr<const SolutionManager> sm, std::shared_ptr<const NeighborhoodExplorer> ne, size_t history_length) : Runner<SolutionManager, NeighborhoodExplorer>(sm, ne), history_length(history_length) {}  
+  protected:
+
+    virtual void Go(std::shared_ptr<const Input> in) override
+    {
+      size_t iteration = 0, idle_iteration = 0;
+      this->ResetStopRun();
+      std::vector<SolutionValue<Input, Solution, T, CostStructure>> history;
+      history.reserve(history_length);
+      for (size_t i = 0; i < history_length; ++i)
+        history.push_back(this->sm->CreateSolutionValue(this->sm->InitialSolution(in)));
+      iteration = 0;
+      idle_iteration = 0;
+      size_t index = 0;
+      auto current_solution_value = history[0];
+      while ((iteration < max_iterations || idle_iteration <= 0.02 * iteration) && !this->StopRun())
+      {
+        size_t next_index = (index + 1) % history.size();
+        auto current_move_value = this->ne->CreateMoveValue(current_solution_value, this->ne->RandomMove(current_solution_value.GetSolution()));
+        if (current_move_value < current_solution_value)
+        {
+          history[index] = current_move_value;
+          current_solution_value = history[next_index];
+          index = (index + 1) % history.size();
+          idle_iteration = 0;
+        }
+        else if (current_move_value < history[next_index])
+        {
+          current_solution_value = history[next_index];
+          history[next_index] = current_move_value;
+          index = (index + 2) % history.size();
+          idle_iteration = 0;
+        } else {
+          current_solution_value = history[next_index];
+          index = (index + 1) % history.size();
+          idle_iteration++;
+        }
+        iteration++;
+      }
+      // post process solutions to get the pareto set
+      std::vector<SolutionValue<Input, Solution, T, CostStructure>> pareto_front;
+      for (size_t i = 0; i < history.size(); ++i)
+      {
+        bool non_dominated = true, drop_equal_solutions = false;
+        for (size_t j = 0; j < history.size(); ++j)
+        {
+          if (i == j)
+            continue;
+          if (history[i] > history[j])
+          {
+            non_dominated = false;
+            break;
+          }
+          if constexpr(std::equality_comparable<Solution>)
+          {
+            if (*history[i].GetSolution() == *history[j].GetSolution() && i > j)
+            {
+              drop_equal_solutions = true;
+              break;
+            }
+          }
+        }
+        if (non_dominated && !drop_equal_solutions)
+          pareto_front.emplace_back(history[i]);
+      }
+      spdlog::info("Pareto front size: {}", pareto_front.size());
+      for (const auto& sol : pareto_front)
+      {
+        auto values = sol.GetValues();
+//        std::copy(values.begin(), values.end(), std::ostream_iterator<T>(std::cout, " "));
+//        std::cout << std::endl;
+        std::ostringstream oss;
+        oss << (*(sol.GetSolution()));
+        spdlog::info("{} ---> ({})", oss.str(), spdlog::fmt_lib::join(values, ", "));
+
+        assert(sol.CheckValues());
+      }
+      spdlog::info("Iterations: {}", iteration);
+    }
+  protected:
+    // parameters
+    size_t max_iterations = 1000000;
+    size_t history_length;
+  };
+}
+
+
+// end --- plahc.hh --- 
+
+
+
+// begin --- neighborhood-explorer.hh --- 
+
+////
+////  neighborhood-explorer.hh
+////  poc
+////
+////  Created by Luca Di Gaspero on 09/03/23.
+////
+//
+#pragma once
+#include <exception>
+
+namespace easylocal {
+
+class EmptyNeighborhood : public std::exception
+{};
+
+  // TODO: add the proper concepts for solution manager
+  // TODO: the last template parameter is the neighborhood explorer itself, to be used in a CRTP (Curiously Recurring Template Pattern) for providing the make_move method below in a static fashion (therefore without overhead) in C++23 there will be P0847 feature (deducing this) that will allow to get rid of it
+  template <SolutionManagerT _SolutionManager, class _Move, class SelfClass>
+class NeighborhoodExplorer : public std::enable_shared_from_this<SelfClass>
+  {
+  public:
+    using SolutionManager = _SolutionManager ;
+    using Input = typename SolutionManager::Input;
+    using Solution = typename SolutionManager::Solution;
+    using T = typename SolutionManager::T;
+    using Move = _Move;
+    using CostStructure = typename SolutionManager::CostStructure;
+    friend class MoveValue<Input, Solution, T, CostStructure, SelfClass>;
+    using MoveValue = MoveValue<Input, Solution, T, CostStructure, SelfClass>;
+    using SolutionValue = SolutionValue<Input, Solution, T, CostStructure>;
+    using ThisClass = NeighborhoodExplorer<SolutionManager, Move, SelfClass>;
+
+    NeighborhoodExplorer(std::shared_ptr<const SolutionManager> sm) noexcept
+    {
+      delta_cost_components.resize(sm->Components());
+    }
+    
+    MoveValue CreateMoveValue(const SolutionValue& sv, const Move& mv) const
+    {
+      auto self = this->shared_from_this();
+      return { self, sv, mv, sv.size() };
+    }
+    
+    template <DeltaCostComponentT<Input, Solution, T, Move> DeltaCostComponent>
+    void AddDeltaCostComponent(DeltaCostComponent& dcc, size_t i)
+    {
+      delta_cost_components[i] = std::make_unique<DeltaCostComponent>(dcc);
+    }
+    
+//  protected:
+    
+    bool HasDeltaCostComponent(size_t i, const Move&) const
+    {
+      return delta_cost_components[i] != nullptr;
+    }
+    
+    T ComputeDeltaCost(std::shared_ptr<const Solution> sol, const Move& mv, size_t i) const
+    {
+        assert(delta_cost_components[i] != nullptr);
+        return this->delta_cost_components[i]->ComputeDeltaCost(sol, mv);
+    }
+
+    std::vector<std::unique_ptr<DeltaCostComponent<Input, Solution, T, Move>>> delta_cost_components;
+  };
+}
+
+
+// end --- neighborhood-explorer.hh --- 
+
+
+
+// begin --- multi-modal-neighborhood-explorer.hh --- 
+
+//
+//  multi-modal-neighborhood-explorer.hh
+//  poc
+//
+//  Created by Luca Di Gaspero on 09/03/23.
+//
+
+#pragma once
+#include <random>
+#include <variant>
+
+namespace easylocal {
+  // TODO: define the neighborhood concept later and the proper parameters, in particular the same_as for the solution manager
+  // TODO: consider whether to pass also Input or not or to simplify the solution class concept having an alternative definition that is Input-less
+  // TODO: consider whether the movecoststructure-like related functions should be outsourced in a different class
+  template <SolutionManagerT _SolutionManager, class SelfClass, typename ...NeighborhoodExplorers>
+  requires (NeighborhoodExplorerT<NeighborhoodExplorers> && ...)
+class UnionNeighborhoodExplorer : public std::enable_shared_from_this<SelfClass>
+  {
+  public:
+    using SolutionManager = _SolutionManager;
+    using Input = typename SolutionManager::Input;
+    using Solution = typename SolutionManager::Solution;
+    using T = typename SolutionManager::T;
+    using Move = std::variant<typename NeighborhoodExplorers::Move...>;
+    using CostStructure = typename SolutionManager::CostStructure;
+    friend class MoveValue<Input, Solution, T, CostStructure, SelfClass>;
+    using MoveValue = MoveValue<Input, Solution, T, CostStructure, SelfClass>;
+    using SolutionValue = SolutionValue<Input, Solution, T, CostStructure>;
+    using ThisClass = UnionNeighborhoodExplorer<SolutionManager, SelfClass, NeighborhoodExplorers...>;
+
+    // Union specific    
+    using GeneratorMove = std::variant<Generator<typename NeighborhoodExplorers::Move>...> ;
+    using GeneratorIterMove = std::variant<typename Generator<typename NeighborhoodExplorers::Move>::Iter...>;
+    
+      UnionNeighborhoodExplorer(std::shared_ptr<SolutionManager> sm) : nhes{NeighborhoodExplorers(sm)...}, cmv{std::forward<NeighborhoodExplorers>(NeighborhoodExplorers(sm))...} /*,  ci{std::forward<NeighborhoodExplorers>(NeighborhoodExplorers(sm))...},
+          chm{std::forward<NeighborhoodExplorers>(NeighborhoodExplorers(sm))...} */
+    {
+//      delta_cost_components.resize(sm->Components());
+    }
+        
+    Generator<Move> Neighborhood(std::shared_ptr<const Solution> sol) const
+    {
+      for (size_t i = 0; i < sizeof...(NeighborhoodExplorers); ++i)
+      {
+        auto gen = perform(nhes, i, CaptureVariantNeighborhood{sol}).generator;
+        // since the type of gen is a variant of the move generators, the only way to obtain the iterators is by using std::visit
+        auto iterator = std::visit([](auto&& arg)->GeneratorIterMove { return arg.begin(); }, gen);
+        while (true)
+        {
+          // the use of visit allows to call the iterator operators with the right type in the variant
+          auto value = std::visit([](auto&& arg)->Move { return *arg; }, iterator);
+          co_yield value;
+          std::visit([](auto&& arg) { ++arg; }, iterator);
+          if (std::visit([](auto&& arg)->bool { return arg == std::default_sentinel_t{}; }, iterator))
+            break;
+        }
+      }
+    }
+    
+    // FIXME: capture empty neighborhood exceptions
+    Move RandomMove(std::shared_ptr<const Solution> sol) const
+    {
+        // FIXME: random seed!
+      std::random_device dev;
+      std::mt19937 rng(dev());
+      std::uniform_int_distribution<std::mt19937::result_type> dist_move(0, sizeof...(NeighborhoodExplorers) - 1);
+      size_t pos = dist_move(rng);
+      CaptureVariantRandom cv{sol, std::optional<Move>()};
+      return perform(nhes, pos, cv).move.value();
+    }
+    
+    void MakeMove(std::shared_ptr<Solution> sol, const Move& mv) const
+    {
+      std::visit([&sol, this](auto&& arg) { this->cmv.MakeMove(sol, arg); }, mv);
+    }
+            
+      // Fallback method to handle the case where the concept is not met
+      bool InverseMove(...) const
+      {
+          static_assert(sizeof...(NeighborhoodExplorers) == 0, "The Inverse method is not available because one or more neighborhood types do not have the required Inverse function.");
+          return false;
+      }
+      
+      // Method enabled only if all NeighborhoodExplorerss satisfy has_inverse_move
+      // template <typename = std::enable_if_t<(has_inverse_move<NeighborhoodExplorers> && ...)>>
+      bool InverseMove(std::shared_ptr<const Solution> sol, const Move& mv1, const Move& mv2) const requires (has_inverse_move<NeighborhoodExplorers> && ...)
+      {
+          return false;
+//          return std::visit([&sol, this](auto&& arg1, auto&& arg2) { return this->ci.Inverse(sol, arg1, arg2); }, mv1, mv2);
+      }
+//      
+//      size_t HashMove(const Move& mv) const
+//      {
+//          return std::visit([this](auto&& arg) { return this->chm.HashMove(arg); }, mv);
+//      }
+
+    
+  protected:
+    struct CaptureVariantRandom
+    {
+      template <typename T>
+      void operator()(T&& t)
+      {
+        move = Move{t.RandomMove(sol)};
+      }
+      std::shared_ptr<const Solution> sol;
+      std::optional<Move> move;
+    };
+    
+    struct CaptureVariantNeighborhood
+    {
+      template <typename T>
+      void operator()(T&& t)
+      {
+        generator = GeneratorMove{t.Neighborhood(sol)};
+      }
+      std::shared_ptr<const Solution> sol;
+      GeneratorMove generator;
+    };
+    
+    struct CaptureMakeMove : NeighborhoodExplorers...
+    {
+      using NeighborhoodExplorers::MakeMove...;
+    };
+
+// FIXME: find a suitable way to work with inverse and hash
+      
+//  struct CaptureInverse : NeighborhoodExplorers...
+//  {
+//    using NeighborhoodExplorers::Inverse...;
+//  };
+//      
+//      struct CaptureHashMove : NeighborhoodExplorers...
+//      {
+//        using NeighborhoodExplorers::HashMove...;
+//      };
+    
+    std::tuple<NeighborhoodExplorers...> nhes;
+    CaptureMakeMove cmv;
+//    CaptureInverse ci;
+//    CaptureHashMove chm;
+  public:
+    
+    MoveValue CreateMoveValue(const SolutionValue& sv, const Move& mv) const
+    {
+      return { this->shared_from_this(), sv, mv, sv.size() };
+    }
+    
+    template <class BasicMove, DeltaCostComponentT<Input, Solution, T, BasicMove> DCC>
+    inline void AddDeltaCostComponent(DCC& dcc, size_t i)
+    {
+        constexpr size_t nhe_index = variant_index<size_t(0), BasicMove, typename NeighborhoodExplorers::Move...>();
+        static_assert(nhe_index < sizeof...(NeighborhoodExplorers), "Wrong move type, it dows not belong to the set of types handled by the Union Neighborhood Explorer");
+      std::get<nhe_index>(nhes).AddDeltaCostComponent(dcc, i);
+    }
+      // FIXME: restate
+//  protected:
+
+  protected:
+    template<std::size_t... I>
+    bool callHasDeltaCostComponent(size_t i, const Move& move, std::index_sequence<I...>) const
+    {
+        bool result = false;
+        // Using fold expression to call the correct neighborhood explorer's HasDeltaCostComponent
+        (..., ([&]() -> bool {
+            if (const auto* ptr = std::get_if<std::variant_alternative_t<I, Move>>(&move))
+            {
+                result = std::get<I>(nhes).HasDeltaCostComponent(i, *ptr);
+                return true;
+            }
+            return false;
+        })());
+        return result;
+    }
+      
+      template<std::size_t... I>
+      T callDeltaCostComponent(size_t i, std::shared_ptr<const Solution> sol, const Move& move, std::index_sequence<I...>) const
+      {
+          T result = T{0};
+          // Using fold expression to call the correct neighborhood explorer's HasDeltaCostComponent
+          (..., ([&]() -> bool {
+              if (const auto* ptr = std::get_if<std::variant_alternative_t<I, Move>>(&move))
+              {
+                  result = std::get<I>(nhes).ComputeDeltaCost(sol, *ptr, i);
+                  return true;
+              }
+              return false;
+          })());
+          return result;
+      }
+      
+  public:
+    T ComputeDeltaCost(std::shared_ptr<const Solution> sol, const Move& mv, size_t i) const
+    {
+        return std::visit([&](auto&&) -> T {
+            return this->callDeltaCostComponent(i, sol, mv, std::index_sequence_for<typename NeighborhoodExplorers::Move...>{});
+        }, mv);
+    }
+    
+    // FIXME: it should go through the variant move to establish if the specific element in the tuple is nullptr or not
+    bool HasDeltaCostComponent(size_t i, const Move& mv) const
+    {
+        return std::visit([&](auto&&) -> bool {
+            return this->callHasDeltaCostComponent(i, mv, std::index_sequence_for<typename NeighborhoodExplorers::Move...>{});
+        }, mv);
+    }
+    
+    // std::vector<std::tuple<std::unique_ptr<DeltaCostComponent<Input, Solution, T, typename NeighborhoodExplorers::Move>>...>> delta_cost_components;
+  };
+}
+
+
+// end --- multi-modal-neighborhood-explorer.hh --- 
+
+
+
+// begin --- plahc-one-chance.hh --- 
+
+//
+//  lahc.hh
+//  poc
+//
+//  Created by Luca Di Gaspero on 13/03/23.
+//
+
+#pragma once
+#include <iostream>
+#include <thread>
+#include <future>
+#include <chrono>
+#include <iterator>
+#include <memory>
+
+namespace easylocal {
+  template <SolutionManagerT SolutionManager, NeighborhoodExplorerT NeighborhoodExplorer>
+  class PLAHC_ONE_CHANCE
+  {
+  public:
+    using Input = typename SolutionManager::Input;
+    using Solution = typename SolutionManager::Solution;
+    using T = typename SolutionManager::T;
+    using CostStructure = typename SolutionManager::CostStructure;
+    using Move = typename NeighborhoodExplorer::Move;
+    
+    PLAHC_ONE_CHANCE(std::shared_ptr<const SolutionManager> sm, std::shared_ptr<const NeighborhoodExplorer> ne, size_t history_length) : sm(sm), ne(ne), history_length(history_length) {}
+  
+    void Run(std::shared_ptr<const Input> in, std::chrono::milliseconds timeout)
+    {
+      std::packaged_task<void(std::shared_ptr<const Input> in)> running_task([this](std::shared_ptr<const Input> in) {
+        this->Run(in);
+      });
+      auto future = running_task.get_future();
+      std::thread thr(std::move(running_task), in);
+      future.wait_for(timeout);
+      stop_run = true;
+      thr.join();
+    }
+
+    void Run(std::shared_ptr<const Input> in)
+    {
+      stop_run = false;
+      std::vector<SolutionValue<Input, Solution, T, CostStructure>> history;
+      history.reserve(history_length);
+      for (size_t i = 0; i < history_length; ++i)
+        history.push_back(sm->CreateSolutionValue(sm->InitialSolution(in)));
+      iteration = 0;
+      idle_iteration = 0;
+      size_t index = 0;
+      auto current_solution_value = history[0];
+      while ((iteration < max_iterations || idle_iteration <= 0.02 * iteration) && !stop_run)
+      {
+        size_t next_index = (index + 1) % history.size();
+        auto current_move_value = ne->CreateMoveValue(current_solution_value, ne->RandomMove(current_solution_value.GetSolution()));
+        if (current_move_value < current_solution_value)
+        {
+          history[index] = current_move_value;
+          current_solution_value = history[next_index];
+          index = (index + 1) % history.size();
+          idle_iteration = 0;
+        }
+        // else if (current_move_value < history[next_index])
+        // {
+        //   current_solution_value = history[next_index];
+        //   history[next_index] = current_move_value;
+        //   index = (index + 2) % history.size();
+        //   idle_iteration = 0;
+        // }
+        else {
+          current_solution_value = history[next_index];
+          index = (index + 1) % history.size();
+          idle_iteration++;
+        }
+        iteration++;
+      }
+      // post process solutions to get the pareto set
+      std::vector<SolutionValue<Input, Solution, T, CostStructure>> pareto_front;
+      for (size_t i = 0; i < history.size(); ++i)
+      {
+        bool non_dominated = true, drop_equal_solutions = false;
+        for (size_t j = 0; j < history.size(); ++j)
+        {
+          if (i == j)
+            continue;
+          if (history[i] > history[j])
+          {
+            non_dominated = false;
+            break;
+          }
+          if constexpr(std::equality_comparable<Solution>)
+          {
+            if (*history[i].GetSolution() == *history[j].GetSolution() && i > j)
+            {
+              drop_equal_solutions = true;
+              break;
+            }
+          }
+        }
+        if (non_dominated && !drop_equal_solutions)
+          pareto_front.emplace_back(history[i]);
+      }
+      std::cout << "Pareto front size: " << pareto_front.size() << std::endl;
+      for (const auto& sol : pareto_front)
+      {
+        std::cout << *(sol.GetSolution()) << " ---> ";
+        auto values = sol.GetValues();
+        std::copy(values.begin(), values.end(), std::ostream_iterator<T>(std::cout, " "));
+        std::cout << std::endl;
+      }
+      std::cout << "Iterations: " << iteration << std::endl;
+    }
+  protected:
+    std::shared_ptr<const SolutionManager> sm;
+    std::shared_ptr<const NeighborhoodExplorer> ne;
+    size_t iteration = 0, idle_iteration = 0, max_iterations = 1000000;
+    // parameter
+    size_t history_length;
+    std::atomic_bool stop_run;
+  };
+}
+
+
+// end --- plahc-one-chance.hh --- 
+
+
+
+// begin --- tabu-search.hh --- 
+
+//
+//  tabu-search.hh
+//
+//  Created by Luca Di Gaspero on 24/07/23.
+//
+
+#pragma once
 
 // begin --- components.hh --- 
 
@@ -2097,104 +2733,6 @@ protected:
 // end --- components.hh --- 
 
 
-
-// begin --- runner.hh --- 
-
-//
-//  runner.hh
-//  pfsp-ls
-//
-//  Created by Luca Di Gaspero on 24/07/23.
-//
-
-#pragma once
-
-#include <thread>
-#include <future>
-#include <chrono>
-#include <atomic>
-#include <boost/program_options.hpp>
-
-namespace po = boost::program_options;
-
-namespace easylocal {
-
-template <SolutionManagerT SolutionManager>
-class AbstractRunner
-{
-public:
-    using Input = typename SolutionManager::Input;
-    using SolutionValue = typename SolutionManager::SolutionValue;
-    
-    virtual SolutionValue Run(std::shared_ptr<const Input> in, std::chrono::milliseconds timeout) = 0;
-    virtual void SetParameters(po::variables_map& /* vm */, std::vector<std::string> /* to_pass_further */) {};
-};
-
-
-template <SolutionManagerT SolutionManager, NeighborhoodExplorerT NeighborhoodExplorer>
-class Runner : public AbstractRunner<SolutionManager>
-{
-public:
-    using Input = typename SolutionManager::Input;
-    using Solution = typename SolutionManager::Solution;
-    using T = typename SolutionManager::T;
-    using CostStructure = typename SolutionManager::CostStructure ;
-    using Move = typename NeighborhoodExplorer::Move;
-    using SolutionValue = typename SolutionManager::SolutionValue;
-    
-    
-protected:
-    Runner(std::shared_ptr<const SolutionManager> sm, std::shared_ptr<const NeighborhoodExplorer> ne) : sm(sm), ne(ne) {}
-    // virtual void SetParameters(po::variables_map& vm, std::vector<std::string> to_pass_further){};
-    
-public:
-    
-    SolutionValue Run(std::shared_ptr<const Input> in, std::chrono::milliseconds timeout) override
-    {
-        std::packaged_task<void(std::shared_ptr<const Input> in)> running_task([this](std::shared_ptr<const Input> in) {
-            this->ResetStopRun();
-            this->Go(in);
-        });
-        auto future = running_task.get_future();
-        std::thread thr(std::move(running_task), in);
-        future.wait_for(timeout);
-        stop_run = true;
-        thr.join();
-        return *(final_solution_value);
-    }
-    
-    inline void Run(std::shared_ptr<const Input> in)
-    {
-        this->Go(in);
-    }
-    
-protected:
-    
-    virtual void Go(std::shared_ptr<const Input> in) = 0;
-    
-    inline void ResetStopRun()
-    {
-        stop_run = false;
-    }
-    
-    inline bool StopRun() const
-    {
-        return stop_run;
-    }
-    
-public:
-    std::shared_ptr<const SolutionManager> sm;
-    std::shared_ptr<const NeighborhoodExplorer> ne;
-    std::atomic_bool stop_run;
-    std::shared_ptr<SolutionValue> final_solution_value;
-};
-}
-
-
-
-// end --- runner.hh --- 
-
-
 #include <iostream>
 #include <thread>
 #include <future>
@@ -2370,486 +2908,6 @@ protected:
 
 
 
-// begin --- version.hh --- 
-
-#pragma once
-
-#define EASYLOCAL_VER_MAJOR 4
-#define EASYLOCAL_VER_MINOR 0
-#define EASYLOCAL_VER_PATCH 0
-
-#define EASYLOCAL_TO_VERSION(major, minor, patch) (major * 10000 + minor * 100 + patch)
-#define EASYLOCAL_VERSION EASYLOCAL_TO_VERSION(EASYLOCAL_VER_MAJOR, EASYLOCAL_VER_MINOR, EASYLOCAL_VER_PATCH)
-
-// end --- version.hh --- 
-
-
-
-// begin --- multi-modal-neighborhood-explorer.hh --- 
-
-//
-//  multi-modal-neighborhood-explorer.hh
-//  poc
-//
-//  Created by Luca Di Gaspero on 09/03/23.
-//
-
-#pragma once
-#include <random>
-#include <variant>
-
-namespace easylocal {
-  // TODO: define the neighborhood concept later and the proper parameters, in particular the same_as for the solution manager
-  // TODO: consider whether to pass also Input or not or to simplify the solution class concept having an alternative definition that is Input-less
-  // TODO: consider whether the movecoststructure-like related functions should be outsourced in a different class
-  template <SolutionManagerT _SolutionManager, class SelfClass, typename ...NeighborhoodExplorers>
-  requires (NeighborhoodExplorerT<NeighborhoodExplorers> && ...)
-class UnionNeighborhoodExplorer : public std::enable_shared_from_this<SelfClass>
-  {
-  public:
-    using SolutionManager = _SolutionManager;
-    using Input = typename SolutionManager::Input;
-    using Solution = typename SolutionManager::Solution;
-    using T = typename SolutionManager::T;
-    using Move = std::variant<typename NeighborhoodExplorers::Move...>;
-    using CostStructure = typename SolutionManager::CostStructure;
-    friend class MoveValue<Input, Solution, T, CostStructure, SelfClass>;
-    using MoveValue = MoveValue<Input, Solution, T, CostStructure, SelfClass>;
-    using SolutionValue = SolutionValue<Input, Solution, T, CostStructure>;
-    using ThisClass = UnionNeighborhoodExplorer<SolutionManager, SelfClass, NeighborhoodExplorers...>;
-
-    // Union specific    
-    using GeneratorMove = std::variant<Generator<typename NeighborhoodExplorers::Move>...> ;
-    using GeneratorIterMove = std::variant<typename Generator<typename NeighborhoodExplorers::Move>::Iter...>;
-    
-      UnionNeighborhoodExplorer(std::shared_ptr<SolutionManager> sm) : nhes{NeighborhoodExplorers(sm)...}, cmv{std::forward<NeighborhoodExplorers>(NeighborhoodExplorers(sm))...} /*,  ci{std::forward<NeighborhoodExplorers>(NeighborhoodExplorers(sm))...},
-          chm{std::forward<NeighborhoodExplorers>(NeighborhoodExplorers(sm))...} */
-    {
-//      delta_cost_components.resize(sm->Components());
-    }
-        
-    Generator<Move> Neighborhood(std::shared_ptr<const Solution> sol) const
-    {
-      for (size_t i = 0; i < sizeof...(NeighborhoodExplorers); ++i)
-      {
-        auto gen = perform(nhes, i, CaptureVariantNeighborhood{sol}).generator;
-        // since the type of gen is a variant of the move generators, the only way to obtain the iterators is by using std::visit
-        auto iterator = std::visit([](auto&& arg)->GeneratorIterMove { return arg.begin(); }, gen);
-        while (true)
-        {
-          // the use of visit allows to call the iterator operators with the right type in the variant
-          auto value = std::visit([](auto&& arg)->Move { return *arg; }, iterator);
-          co_yield value;
-          std::visit([](auto&& arg) { ++arg; }, iterator);
-          if (std::visit([](auto&& arg)->bool { return arg == std::default_sentinel_t{}; }, iterator))
-            break;
-        }
-      }
-    }
-    
-    // FIXME: capture empty neighborhood exceptions
-    Move RandomMove(std::shared_ptr<const Solution> sol) const
-    {
-        // FIXME: random seed!
-      std::random_device dev;
-      std::mt19937 rng(dev());
-      std::uniform_int_distribution<std::mt19937::result_type> dist_move(0, sizeof...(NeighborhoodExplorers) - 1);
-      size_t pos = dist_move(rng);
-      CaptureVariantRandom cv{sol, std::optional<Move>()};
-      return perform(nhes, pos, cv).move.value();
-    }
-    
-    void MakeMove(std::shared_ptr<Solution> sol, const Move& mv) const
-    {
-      std::visit([&sol, this](auto&& arg) { this->cmv.MakeMove(sol, arg); }, mv);
-    }
-            
-      // Fallback method to handle the case where the concept is not met
-      bool InverseMove(...) const
-      {
-          static_assert(sizeof...(NeighborhoodExplorers) == 0, "The Inverse method is not available because one or more neighborhood types do not have the required Inverse function.");
-          return false;
-      }
-      
-      // Method enabled only if all NeighborhoodExplorerss satisfy has_inverse_move
-      // template <typename = std::enable_if_t<(has_inverse_move<NeighborhoodExplorers> && ...)>>
-      bool InverseMove(std::shared_ptr<const Solution> sol, const Move& mv1, const Move& mv2) const requires (has_inverse_move<NeighborhoodExplorers> && ...)
-      {
-          return false;
-//          return std::visit([&sol, this](auto&& arg1, auto&& arg2) { return this->ci.Inverse(sol, arg1, arg2); }, mv1, mv2);
-      }
-//      
-//      size_t HashMove(const Move& mv) const
-//      {
-//          return std::visit([this](auto&& arg) { return this->chm.HashMove(arg); }, mv);
-//      }
-
-    
-  protected:
-    struct CaptureVariantRandom
-    {
-      template <typename T>
-      void operator()(T&& t)
-      {
-        move = Move{t.RandomMove(sol)};
-      }
-      std::shared_ptr<const Solution> sol;
-      std::optional<Move> move;
-    };
-    
-    struct CaptureVariantNeighborhood
-    {
-      template <typename T>
-      void operator()(T&& t)
-      {
-        generator = GeneratorMove{t.Neighborhood(sol)};
-      }
-      std::shared_ptr<const Solution> sol;
-      GeneratorMove generator;
-    };
-    
-    struct CaptureMakeMove : NeighborhoodExplorers...
-    {
-      using NeighborhoodExplorers::MakeMove...;
-    };
-
-// FIXME: find a suitable way to work with inverse and hash
-      
-//  struct CaptureInverse : NeighborhoodExplorers...
-//  {
-//    using NeighborhoodExplorers::Inverse...;
-//  };
-//      
-//      struct CaptureHashMove : NeighborhoodExplorers...
-//      {
-//        using NeighborhoodExplorers::HashMove...;
-//      };
-    
-    std::tuple<NeighborhoodExplorers...> nhes;
-    CaptureMakeMove cmv;
-//    CaptureInverse ci;
-//    CaptureHashMove chm;
-  public:
-    
-    MoveValue CreateMoveValue(const SolutionValue& sv, const Move& mv) const
-    {
-      return { this->shared_from_this(), sv, mv, sv.size() };
-    }
-    
-    template <class BasicMove, DeltaCostComponentT<Input, Solution, T, BasicMove> DCC>
-    inline void AddDeltaCostComponent(DCC& dcc, size_t i)
-    {
-        constexpr size_t nhe_index = variant_index<size_t(0), BasicMove, typename NeighborhoodExplorers::Move...>();
-        static_assert(nhe_index < sizeof...(NeighborhoodExplorers), "Wrong move type, it dows not belong to the set of types handled by the Union Neighborhood Explorer");
-      std::get<nhe_index>(nhes).AddDeltaCostComponent(dcc, i);
-    }
-      // FIXME: restate
-//  protected:
-
-  protected:
-    template<std::size_t... I>
-    bool callHasDeltaCostComponent(size_t i, const Move& move, std::index_sequence<I...>) const
-    {
-        bool result = false;
-        // Using fold expression to call the correct neighborhood explorer's HasDeltaCostComponent
-        (..., ([&]() -> bool {
-            if (const auto* ptr = std::get_if<std::variant_alternative_t<I, Move>>(&move))
-            {
-                result = std::get<I>(nhes).HasDeltaCostComponent(i, *ptr);
-                return true;
-            }
-            return false;
-        })());
-        return result;
-    }
-      
-      template<std::size_t... I>
-      T callDeltaCostComponent(size_t i, std::shared_ptr<const Solution> sol, const Move& move, std::index_sequence<I...>) const
-      {
-          T result = T{0};
-          // Using fold expression to call the correct neighborhood explorer's HasDeltaCostComponent
-          (..., ([&]() -> bool {
-              if (const auto* ptr = std::get_if<std::variant_alternative_t<I, Move>>(&move))
-              {
-                  result = std::get<I>(nhes).ComputeDeltaCost(sol, *ptr, i);
-                  return true;
-              }
-              return false;
-          })());
-          return result;
-      }
-      
-  public:
-    T ComputeDeltaCost(std::shared_ptr<const Solution> sol, const Move& mv, size_t i) const
-    {
-        return std::visit([&](auto&&) -> T {
-            return this->callDeltaCostComponent(i, sol, mv, std::index_sequence_for<typename NeighborhoodExplorers::Move...>{});
-        }, mv);
-    }
-    
-    // FIXME: it should go through the variant move to establish if the specific element in the tuple is nullptr or not
-    bool HasDeltaCostComponent(size_t i, const Move& mv) const
-    {
-        return std::visit([&](auto&&) -> bool {
-            return this->callHasDeltaCostComponent(i, mv, std::index_sequence_for<typename NeighborhoodExplorers::Move...>{});
-        }, mv);
-    }
-    
-    // std::vector<std::tuple<std::unique_ptr<DeltaCostComponent<Input, Solution, T, typename NeighborhoodExplorers::Move>>...>> delta_cost_components;
-  };
-}
-
-
-// end --- multi-modal-neighborhood-explorer.hh --- 
-
-
-
-// begin --- plahc.hh --- 
-
-//
-//  lahc.hh
-//  poc
-//
-//  Created by Luca Di Gaspero on 13/03/23.
-//
-
-#pragma once
-#include <iostream>
-#include <iterator>
-#include <memory>
-#include <spdlog/spdlog.h>
-
-namespace easylocal {
-  template <SolutionManagerT SolutionManager, NeighborhoodExplorerT NeighborhoodExplorer>
-  class PLAHC : public Runner<SolutionManager, NeighborhoodExplorer>
-  {
-  public:
-    using Input = typename Runner<SolutionManager, NeighborhoodExplorer>::Input;
-    using Solution = typename Runner<SolutionManager, NeighborhoodExplorer>::Solution;
-    using T = typename Runner<SolutionManager, NeighborhoodExplorer>::T;
-    using CostStructure = typename Runner<SolutionManager, NeighborhoodExplorer>::CostStructure ;
-    using Move = typename Runner<SolutionManager, NeighborhoodExplorer>::Move;
-    
-    PLAHC(std::shared_ptr<const SolutionManager> sm, std::shared_ptr<const NeighborhoodExplorer> ne, size_t history_length) : Runner<SolutionManager, NeighborhoodExplorer>(sm, ne), history_length(history_length) {}  
-  protected:
-
-    virtual void Go(std::shared_ptr<const Input> in) override
-    {
-      size_t iteration = 0, idle_iteration = 0;
-      this->ResetStopRun();
-      std::vector<SolutionValue<Input, Solution, T, CostStructure>> history;
-      history.reserve(history_length);
-      for (size_t i = 0; i < history_length; ++i)
-        history.push_back(this->sm->CreateSolutionValue(this->sm->InitialSolution(in)));
-      iteration = 0;
-      idle_iteration = 0;
-      size_t index = 0;
-      auto current_solution_value = history[0];
-      while ((iteration < max_iterations || idle_iteration <= 0.02 * iteration) && !this->StopRun())
-      {
-        size_t next_index = (index + 1) % history.size();
-        auto current_move_value = this->ne->CreateMoveValue(current_solution_value, this->ne->RandomMove(current_solution_value.GetSolution()));
-        if (current_move_value < current_solution_value)
-        {
-          history[index] = current_move_value;
-          current_solution_value = history[next_index];
-          index = (index + 1) % history.size();
-          idle_iteration = 0;
-        }
-        else if (current_move_value < history[next_index])
-        {
-          current_solution_value = history[next_index];
-          history[next_index] = current_move_value;
-          index = (index + 2) % history.size();
-          idle_iteration = 0;
-        } else {
-          current_solution_value = history[next_index];
-          index = (index + 1) % history.size();
-          idle_iteration++;
-        }
-        iteration++;
-      }
-      // post process solutions to get the pareto set
-      std::vector<SolutionValue<Input, Solution, T, CostStructure>> pareto_front;
-      for (size_t i = 0; i < history.size(); ++i)
-      {
-        bool non_dominated = true, drop_equal_solutions = false;
-        for (size_t j = 0; j < history.size(); ++j)
-        {
-          if (i == j)
-            continue;
-          if (history[i] > history[j])
-          {
-            non_dominated = false;
-            break;
-          }
-          if constexpr(std::equality_comparable<Solution>)
-          {
-            if (*history[i].GetSolution() == *history[j].GetSolution() && i > j)
-            {
-              drop_equal_solutions = true;
-              break;
-            }
-          }
-        }
-        if (non_dominated && !drop_equal_solutions)
-          pareto_front.emplace_back(history[i]);
-      }
-      spdlog::info("Pareto front size: {}", pareto_front.size());
-      for (const auto& sol : pareto_front)
-      {
-        auto values = sol.GetValues();
-//        std::copy(values.begin(), values.end(), std::ostream_iterator<T>(std::cout, " "));
-//        std::cout << std::endl;
-        std::ostringstream oss;
-        oss << (*(sol.GetSolution()));
-        spdlog::info("{} ---> ({})", oss.str(), spdlog::fmt_lib::join(values, ", "));
-
-        assert(sol.CheckValues());
-      }
-      spdlog::info("Iterations: {}", iteration);
-    }
-  protected:
-    // parameters
-    size_t max_iterations = 1000000;
-    size_t history_length;
-  };
-}
-
-
-// end --- plahc.hh --- 
-
-
-
-// begin --- plahc-one-chance.hh --- 
-
-//
-//  lahc.hh
-//  poc
-//
-//  Created by Luca Di Gaspero on 13/03/23.
-//
-
-#pragma once
-#include <iostream>
-#include <thread>
-#include <future>
-#include <chrono>
-#include <iterator>
-#include <memory>
-
-namespace easylocal {
-  template <SolutionManagerT SolutionManager, NeighborhoodExplorerT NeighborhoodExplorer>
-  class PLAHC_ONE_CHANCE
-  {
-  public:
-    using Input = typename SolutionManager::Input;
-    using Solution = typename SolutionManager::Solution;
-    using T = typename SolutionManager::T;
-    using CostStructure = typename SolutionManager::CostStructure;
-    using Move = typename NeighborhoodExplorer::Move;
-    
-    PLAHC_ONE_CHANCE(std::shared_ptr<const SolutionManager> sm, std::shared_ptr<const NeighborhoodExplorer> ne, size_t history_length) : sm(sm), ne(ne), history_length(history_length) {}
-  
-    void Run(std::shared_ptr<const Input> in, std::chrono::milliseconds timeout)
-    {
-      std::packaged_task<void(std::shared_ptr<const Input> in)> running_task([this](std::shared_ptr<const Input> in) {
-        this->Run(in);
-      });
-      auto future = running_task.get_future();
-      std::thread thr(std::move(running_task), in);
-      future.wait_for(timeout);
-      stop_run = true;
-      thr.join();
-    }
-
-    void Run(std::shared_ptr<const Input> in)
-    {
-      stop_run = false;
-      std::vector<SolutionValue<Input, Solution, T, CostStructure>> history;
-      history.reserve(history_length);
-      for (size_t i = 0; i < history_length; ++i)
-        history.push_back(sm->CreateSolutionValue(sm->InitialSolution(in)));
-      iteration = 0;
-      idle_iteration = 0;
-      size_t index = 0;
-      auto current_solution_value = history[0];
-      while ((iteration < max_iterations || idle_iteration <= 0.02 * iteration) && !stop_run)
-      {
-        size_t next_index = (index + 1) % history.size();
-        auto current_move_value = ne->CreateMoveValue(current_solution_value, ne->RandomMove(current_solution_value.GetSolution()));
-        if (current_move_value < current_solution_value)
-        {
-          history[index] = current_move_value;
-          current_solution_value = history[next_index];
-          index = (index + 1) % history.size();
-          idle_iteration = 0;
-        }
-        // else if (current_move_value < history[next_index])
-        // {
-        //   current_solution_value = history[next_index];
-        //   history[next_index] = current_move_value;
-        //   index = (index + 2) % history.size();
-        //   idle_iteration = 0;
-        // }
-        else {
-          current_solution_value = history[next_index];
-          index = (index + 1) % history.size();
-          idle_iteration++;
-        }
-        iteration++;
-      }
-      // post process solutions to get the pareto set
-      std::vector<SolutionValue<Input, Solution, T, CostStructure>> pareto_front;
-      for (size_t i = 0; i < history.size(); ++i)
-      {
-        bool non_dominated = true, drop_equal_solutions = false;
-        for (size_t j = 0; j < history.size(); ++j)
-        {
-          if (i == j)
-            continue;
-          if (history[i] > history[j])
-          {
-            non_dominated = false;
-            break;
-          }
-          if constexpr(std::equality_comparable<Solution>)
-          {
-            if (*history[i].GetSolution() == *history[j].GetSolution() && i > j)
-            {
-              drop_equal_solutions = true;
-              break;
-            }
-          }
-        }
-        if (non_dominated && !drop_equal_solutions)
-          pareto_front.emplace_back(history[i]);
-      }
-      std::cout << "Pareto front size: " << pareto_front.size() << std::endl;
-      for (const auto& sol : pareto_front)
-      {
-        std::cout << *(sol.GetSolution()) << " ---> ";
-        auto values = sol.GetValues();
-        std::copy(values.begin(), values.end(), std::ostream_iterator<T>(std::cout, " "));
-        std::cout << std::endl;
-      }
-      std::cout << "Iterations: " << iteration << std::endl;
-    }
-  protected:
-    std::shared_ptr<const SolutionManager> sm;
-    std::shared_ptr<const NeighborhoodExplorer> ne;
-    size_t iteration = 0, idle_iteration = 0, max_iterations = 1000000;
-    // parameter
-    size_t history_length;
-    std::atomic_bool stop_run;
-  };
-}
-
-
-// end --- plahc-one-chance.hh --- 
-
-
-
 // begin --- hill-climbing.hh --- 
 
 //
@@ -3008,74 +3066,16 @@ protected:
 
 
 
-// begin --- neighborhood-explorer.hh --- 
+// begin --- version.hh --- 
 
-////
-////  neighborhood-explorer.hh
-////  poc
-////
-////  Created by Luca Di Gaspero on 09/03/23.
-////
-//
 #pragma once
-#include <exception>
 
-namespace easylocal {
+#define EASYLOCAL_VER_MAJOR 4
+#define EASYLOCAL_VER_MINOR 0
+#define EASYLOCAL_VER_PATCH 0
 
-class EmptyNeighborhood : public std::exception
-{};
+#define EASYLOCAL_TO_VERSION(major, minor, patch) (major * 10000 + minor * 100 + patch)
+#define EASYLOCAL_VERSION EASYLOCAL_TO_VERSION(EASYLOCAL_VER_MAJOR, EASYLOCAL_VER_MINOR, EASYLOCAL_VER_PATCH)
 
-  // TODO: add the proper concepts for solution manager
-  // TODO: the last template parameter is the neighborhood explorer itself, to be used in a CRTP (Curiously Recurring Template Pattern) for providing the make_move method below in a static fashion (therefore without overhead) in C++23 there will be P0847 feature (deducing this) that will allow to get rid of it
-  template <SolutionManagerT _SolutionManager, class _Move, class SelfClass>
-class NeighborhoodExplorer : public std::enable_shared_from_this<SelfClass>
-  {
-  public:
-    using SolutionManager = _SolutionManager ;
-    using Input = typename SolutionManager::Input;
-    using Solution = typename SolutionManager::Solution;
-    using T = typename SolutionManager::T;
-    using Move = _Move;
-    using CostStructure = typename SolutionManager::CostStructure;
-    friend class MoveValue<Input, Solution, T, CostStructure, SelfClass>;
-    using MoveValue = MoveValue<Input, Solution, T, CostStructure, SelfClass>;
-    using SolutionValue = SolutionValue<Input, Solution, T, CostStructure>;
-    using ThisClass = NeighborhoodExplorer<SolutionManager, Move, SelfClass>;
-
-    NeighborhoodExplorer(std::shared_ptr<const SolutionManager> sm) noexcept
-    {
-      delta_cost_components.resize(sm->Components());
-    }
-    
-    MoveValue CreateMoveValue(const SolutionValue& sv, const Move& mv) const
-    {
-      auto self = this->shared_from_this();
-      return { self, sv, mv, sv.size() };
-    }
-    
-    template <DeltaCostComponentT<Input, Solution, T, Move> DeltaCostComponent>
-    void AddDeltaCostComponent(DeltaCostComponent& dcc, size_t i)
-    {
-      delta_cost_components[i] = std::make_unique<DeltaCostComponent>(dcc);
-    }
-    
-//  protected:
-    
-    bool HasDeltaCostComponent(size_t i, const Move&) const
-    {
-      return delta_cost_components[i] != nullptr;
-    }
-    
-    T ComputeDeltaCost(std::shared_ptr<const Solution> sol, const Move& mv, size_t i) const
-    {
-        assert(delta_cost_components[i] != nullptr);
-        return this->delta_cost_components[i]->ComputeDeltaCost(sol, mv);
-    }
-
-    std::vector<std::unique_ptr<DeltaCostComponent<Input, Solution, T, Move>>> delta_cost_components;
-  };
-}
-
-
-// end --- neighborhood-explorer.hh --- 
+// end --- version.hh --- 
 
