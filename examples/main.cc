@@ -40,10 +40,10 @@ public:
 class OneElements : public easylocal::CostComponent<MyInput, MySolution, int>
 {
 public:
-  int ComputeCost(const MySolution& s) const 
+  int ComputeCost(std::shared_ptr<const MySolution> s) const 
   {
     int n = 0;
-    for (auto& v : s.v)
+    for (auto& v : s->v)
       if (v == 1)
         n++;
     return n;
@@ -53,10 +53,10 @@ public:
 class ZeroElements : public easylocal::CostComponent<MyInput, MySolution, int>
 {
 public:
-  int ComputeCost(const MySolution& s) const override
+  int ComputeCost(std::shared_ptr<const MySolution> s) const override
   {
     int n = 0;
-    for (auto& v : s.v)
+    for (auto& v : s->v)
       if (v == 0)
         n++;
     return n;
@@ -165,11 +165,11 @@ public:
 class DeltaZeroElements : public easylocal::DeltaCostComponent<MyInput, MySolution, int, SetValue>
 {
 public:
-  int ComputeDeltaCost(const MySolution& s, const SetValue& mv) const override
+  int ComputeDeltaCost(std::shared_ptr<const MySolution> s, const SetValue& mv) const override
   {
-    if (s.v[mv.index] == 0 && mv.value != 0)
+    if (s->v[mv.index] == 0 && mv.value != 0)
       return -1;
-    else if (s.v[mv.index] != 0 && mv.value == 0)
+    else if (s->v[mv.index] != 0 && mv.value == 0)
       return 1;
     return 0;
   }
@@ -281,7 +281,7 @@ int main(int argc, const char * argv[])
     if (has_it)
         u_ne.ComputeDeltaCost(sol, mv, 1);
     
-    u_ne.InverseMove(sol, mv, mv);
+    //u_ne.InverseMove(sol, mv, mv);
 
 //
 ////  auto mv2 = u_ne.random(sol1);

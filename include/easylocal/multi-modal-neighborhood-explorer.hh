@@ -87,7 +87,7 @@ class UnionNeighborhoodExplorer : public std::enable_shared_from_this<SelfClass>
       }
       
       // Method enabled only if all NeighborhoodExplorerss satisfy has_inverse_move
-      // template <typename = std::enable_if_t<(has_inverse_move<NeighborhoodExplorers> && ...)>>
+      template <typename = std::enable_if<(has_inverse_move<NeighborhoodExplorers> && ...)>>
       bool InverseMove(std::shared_ptr<const Solution> sol, const Move& mv1, const Move& mv2) const requires (has_inverse_move<NeighborhoodExplorers> && ...)
       {
           return false;

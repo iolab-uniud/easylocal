@@ -12,7 +12,8 @@
 #include <iostream>
 #include <iterator>
 #include <memory>
-#include <spdlog/spdlog.h>
+// FIXME: put again spdlog in
+// #include <spdlog/spdlog.h>
 
 namespace easylocal {
   template <SolutionManagerT SolutionManager, NeighborhoodExplorerT NeighborhoodExplorer>
@@ -90,7 +91,7 @@ namespace easylocal {
         if (non_dominated && !drop_equal_solutions)
           pareto_front.emplace_back(history[i]);
       }
-      spdlog::info("Pareto front size: {}", pareto_front.size());
+      //spdlog::info("Pareto front size: {}", pareto_front.size());
       for (const auto& sol : pareto_front)
       {
         auto values = sol.GetValues();
@@ -98,11 +99,11 @@ namespace easylocal {
 //        std::cout << std::endl;
         std::ostringstream oss;
         oss << (*(sol.GetSolution()));
-        spdlog::info("{} ---> ({})", oss.str(), spdlog::fmt_lib::join(values, ", "));
+        //spdlog::info("{} ---> ({})", oss.str(), spdlog::fmt_lib::join(values, ", "));
 
         assert(sol.CheckValues());
       }
-      spdlog::info("Iterations: {}", iteration);
+      //spdlog::info("Iterations: {}", iteration);
     }
   protected:
     // parameters

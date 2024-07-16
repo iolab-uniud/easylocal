@@ -17,6 +17,7 @@ if (LLVM_VERSION)
     set(CMAKE_CXX_COMPILER "${HOMEBREW_PREFIX}/Cellar/llvm/${LLVM_VERSION}/bin/clang++")
     set(CMAKE_PREFIX_PATH
     "${HOMEBREW_PREFIX}/Cellar/llvm/${LLVM_VERSION}")    
+    set(CMAKE_AR "/usr/bin/ar")
 else()
     # alternatively search for gcc
     file(GLOB GCC_CELLAR_DIRS "${HOMEBREW_PREFIX}/Cellar/gcc/*")
@@ -34,6 +35,7 @@ else()
     set(CMAKE_CXX_COMPILER "${HOMEBREW_PREFIX}/Cellar/gcc/${GCC_VERSION}/bin/g++")
     set(CMAKE_PREFIX_PATH
     "${HOMEBREW_PREFIX}/Cellar/gcc/${GCC_VERSION}")
+    set(CMAKE_AR "/usr/bin/ar")
 endif()
 
 list(TRANSFORM CMAKE_PREFIX_PATH APPEND "/include"

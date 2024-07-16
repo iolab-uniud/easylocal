@@ -4,5 +4,5 @@ include(${CMAKE_SOURCE_DIR}/cmake/macos_modern_compiler.cmake)
 
 project(EasyLocal CXX)
 
-#add_subdirectory(examples)
+add_subdirectory(examples)
 

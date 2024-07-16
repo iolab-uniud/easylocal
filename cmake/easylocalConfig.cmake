@@ -55,18 +55,19 @@ include(ExternalProject)
 
 # Logging facilities
 
-message(STATUS "Downloading external projects")
+# message(STATUS "Downloading external projects")
 include(FetchContent)
-FetchContent_Declare(spdlog
-    GIT_REPOSITORY https://github.com/gabime/spdlog
-    GIT_TAG        v1.12.0) # replace with latest revision
-
-FetchContent_MakeAvailable(spdlog)
+# FetchContent_Declare(spdlog
+#     GIT_REPOSITORY https://github.com/gabime/spdlog
+#     GIT_TAG        v1.12.0) # replace with latest revision
+#FetchContent_MakeAvailable(spdlog)
 
 add_library(easylocal INTERFACE)
 add_library(easylocal::easylocal ALIAS easylocal)
 target_include_directories(easylocal INTERFACE $<BUILD_INTERFACE:${EASYLOCAL_SOURCE_DIRECTORY}/include/easylocal> $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/spdlog/include> $<INSTALL_INTERFACE:include/easylocal>)
-target_link_libraries(easylocal INTERFACE Boost::program_options spdlog::spdlog)
+# FIXME: currently I cannot use spdlog from here
+#target_link_libraries(easylocal INTERFACE Boost::program_options spdlog::spdlog)
+target_link_libraries(easylocal INTERFACE Boost::program_options)
 target_compile_features(easylocal INTERFACE cxx_std_23)
 target_sources(easylocal INTERFACE ${headers})
 set_property(TARGET easylocal PROPERTY CXX_STANDARD 23)
