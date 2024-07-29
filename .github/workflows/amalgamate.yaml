@@ -46,6 +46,7 @@ jobs:
                 fi         
 
             - name: Check file modification times
+              id: check_for_changes
               run: |
                   amalgamated_header_mtime=$(stat -c %Y ./include/easylocal.hh)
                   newest_include_mtime=0
@@ -57,19 +58,18 @@ jobs:
                   done
                   if [ "$amalgamated_header_mtime" -lt "$newest_include_mtime" ]; then
                     echo "Amalgamated header is outdated"
-                    exit 0
+                    echo "::set-output name=should_regenerate::true"
                   else
                     echo "Amalgamated header is up-to-date"
-                    exit 1
                   fi
 
             - name: Run Heady to merge headers
-              if: ${{ always() }}  # This step will always run if the previous step exits with 0
+              if: steps.check_for_changes.outputs.should_regenerate == 'true'
               run: |
                 Heady/build/Heady -r -s ./src/include -o include/easylocal.hh
 
             - name: Commit and push if changed
-              if: ${{ always() }}  # This step will always run if the previous step exits with 0
+              if: steps.check_for_changes.outputs.should_regenerate == 'true'
               run: |
                 git config --global user.email "action@github.com"
                 git config --global user.name "GitHub Action"
