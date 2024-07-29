@@ -50,7 +50,7 @@ jobs:
               run: |
                   amalgamated_header_mtime=$(stat -c %Y ./include/easylocal.hh)
                   newest_include_mtime=0
-                  for file in src/include/*; do
+                  for file in ./src/include/easylocal/*.hh; do
                     file_mtime=$(stat -c %Y "$file")
                     if [ "$file_mtime" -gt "$newest_include_mtime" ]; then
                       newest_include_mtime="$file_mtime"
