@@ -24,7 +24,7 @@ jobs:
               with:
                 path: |
                     Heady/build
-                key: ${{ runner.os }}-heady-build-${{ hashFiles('include/**/*.hpp') }}
+                key: ${{ runner.os }}-heady-build-${{ hashFiles('src/include/**/*.hh') }}
                 restore-keys: |
                     ${{ runner.os }}-heady-build-
 
@@ -66,6 +66,7 @@ jobs:
             - name: Run Heady to merge headers
               if: steps.check_for_changes.outputs.should_regenerate == 'true'
               run: |
+                echo "Aggregating headers"
                 Heady/build/Heady -r -s ./src/include -o include/easylocal.hh
 
             - name: Commit and push if changed
