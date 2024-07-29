@@ -1,6 +1,6 @@
 # Recall to use act --container-architecture linux/amd64 for testing the action on MacOS
 
-name: Amalgamate Headers into a single header file with Heady
+name: Amalgamate Headers into a single header file with Heady (server side)
 
 on:
     push:
@@ -45,11 +45,31 @@ jobs:
                     make -j       
                 fi         
 
+            - name: Check file modification times
+              run: |
+                  amalgamated_header_mtime=$(stat -c %Y ./include/easylocal.hh)
+                  newest_include_mtime=0
+                  for file in src/include/*; do
+                    file_mtime=$(stat -c %Y "$file")
+                    if [ "$file_mtime" -gt "$newest_include_mtime" ]; then
+                      newest_include_mtime="$file_mtime"
+                    fi
+                  done
+                  if [ "$amalgamated_header_mtime" -lt "$newest_include_mtime" ]; then
+                    echo "Amalgamated header is outdated"
+                    exit 0
+                  else
+                    echo "Amalgamated header is up-to-date"
+                    exit 1
+                  fi
+
             - name: Run Heady to merge headers
+              if: ${{ always() }}  # This step will always run if the previous step exits with 0
               run: |
                 Heady/build/Heady -r -s ./src/include -o include/easylocal.hh
 
             - name: Commit and push if changed
+              if: ${{ always() }}  # This step will always run if the previous step exits with 0
               run: |
                 git config --global user.email "action@github.com"
                 git config --global user.name "GitHub Action"
