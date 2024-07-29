@@ -48,7 +48,7 @@ jobs:
             - name: Check file modification times
               id: check_for_changes
               run: |
-                  amalgamated_header_mtime=$(stat -c %Y ./include/easylocal.hh)
+                  amalgamated_header_mtime=$(stat -c %Y include/easylocal.hh)
                   newest_include_mtime=0
                   for file in ./src/include/easylocal/*.hh; do
                     file_mtime=$(stat -c %Y "$file")
@@ -67,7 +67,7 @@ jobs:
               if: steps.check_for_changes.outputs.should_regenerate == 'true'
               run: |
                 echo "Aggregating headers"
-                Heady/build/Heady -r -s ./src/include -o include/easylocal.hh
+                Heady/build/Heady -r -s ./src/include/easylocal -o include/easylocal.hh
 
             - name: Commit and push if changed
               if: steps.check_for_changes.outputs.should_regenerate == 'true'
