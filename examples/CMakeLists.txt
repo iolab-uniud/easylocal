@@ -7,5 +7,5 @@ find_package(easylocal CONFIG REQUIRED)
 
 # Add the main.cc file as an executable
 add_executable(poc-test main.cc)
-target_link_libraries(poc-test PUBLIC easylocal::easylocal)
+target_link_libraries(poc-test PUBLIC easylocal::single)
 #target_compile_features(poc-test PUBLIC cxx_std_23)

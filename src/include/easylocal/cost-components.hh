@@ -34,7 +34,7 @@ class MoveValue;
 template <SolutionManagerT SolutionManager, class Move, class NE>
 class NeighborhoodExplorer;
 
-template <SolutionManagerT SolutionManager, class NE, class ...NHEs>
+template <SolutionManagerT SolutionManager, class ...NHEs>
 requires (NeighborhoodExplorerT<NHEs> && ...)
 class UnionNeighborhoodExplorer;
 
@@ -151,7 +151,7 @@ protected:
     using Move = typename _NeighborhoodExplorer::Move;
     using SolutionValue = SolutionValue<Input, _Solution, _T, _CostStructure>;
     friend SolutionValue;
-    using NeighborhoodExplorer = typename _NeighborhoodExplorer::ThisClass;
+    using NeighborhoodExplorer = typename _NeighborhoodExplorer::SelfClass;
     friend NeighborhoodExplorer;
 public:
     

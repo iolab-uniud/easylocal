@@ -17,21 +17,23 @@ namespace easylocal {
   // TODO: define the neighborhood concept later and the proper parameters, in particular the same_as for the solution manager
   // TODO: consider whether to pass also Input or not or to simplify the solution class concept having an alternative definition that is Input-less
   // TODO: consider whether the movecoststructure-like related functions should be outsourced in a different class
-  template <SolutionManagerT _SolutionManager, class SelfClass, typename ...NeighborhoodExplorers>
+  template <SolutionManagerT _SolutionManager, typename ...NeighborhoodExplorers>
   requires (NeighborhoodExplorerT<NeighborhoodExplorers> && ...)
-class UnionNeighborhoodExplorer : public std::enable_shared_from_this<SelfClass>
+class UnionNeighborhoodExplorer 
   {
   public:
     using SolutionManager = _SolutionManager;
+    using SelfClass = UnionNeighborhoodExplorer<SolutionManager, NeighborhoodExplorers...>;
+
     using Input = typename SolutionManager::Input;
     using Solution = typename SolutionManager::Solution;
     using T = typename SolutionManager::T;
+    
     using Move = std::variant<typename NeighborhoodExplorers::Move...>;
     using CostStructure = typename SolutionManager::CostStructure;
     friend class MoveValue<Input, Solution, T, CostStructure, SelfClass>;
     using MoveValue = MoveValue<Input, Solution, T, CostStructure, SelfClass>;
     using SolutionValue = SolutionValue<Input, Solution, T, CostStructure>;
-    using ThisClass = UnionNeighborhoodExplorer<SolutionManager, SelfClass, NeighborhoodExplorers...>;
 
     // Union specific    
     using GeneratorMove = std::variant<Generator<typename NeighborhoodExplorers::Move>...> ;

@@ -5,13 +5,16 @@
 //  Created by Luca Di Gaspero on 03/03/23.
 //
 
-#include <utils.hh>
-#include <concepts.hh>
-#include <cost-components.hh>
-#include <solution-manager.hh>
-#include <neighborhood-explorer.hh>
-#include "multi-modal-neighborhood-explorer.hh"
-#include <plahc.hh>
+// #include <utils.hh>
+// #include <concepts.hh>
+// #include <cost-components.hh>
+// #include <solution-manager.hh>
+// #include <neighborhood-explorer.hh>
+// #include "multi-modal-neighborhood-explorer.hh"
+// #include <plahc.hh>
+#include <spdlog/spdlog.h>
+
+#include <easylocal.hh>
 
 #include <iostream>
 #include <memory>
@@ -223,8 +226,8 @@ std::ostream& operator<<(std::ostream& os, const OddSetOne& so)
   return os;
 }
 
-class UnionEvenOddNeighborhoodExplorer : public easylocal::UnionNeighborhoodExplorer<MySolutionManager, UnionEvenOddNeighborhoodExplorer, SetValueNeighborhoodExplorer, EvenSetOneNeighborhoodExplorer, OddSetOneNeighborhoodExplorer> {
-    using easylocal::UnionNeighborhoodExplorer<MySolutionManager, UnionEvenOddNeighborhoodExplorer, SetValueNeighborhoodExplorer, EvenSetOneNeighborhoodExplorer, OddSetOneNeighborhoodExplorer>::UnionNeighborhoodExplorer;
+class UnionEvenOddNeighborhoodExplorer : public easylocal::UnionNeighborhoodExplorer<MySolutionManager, SetValueNeighborhoodExplorer, EvenSetOneNeighborhoodExplorer, OddSetOneNeighborhoodExplorer> {
+    using easylocal::UnionNeighborhoodExplorer<MySolutionManager,  SetValueNeighborhoodExplorer, EvenSetOneNeighborhoodExplorer, OddSetOneNeighborhoodExplorer>::UnionNeighborhoodExplorer;
 };
 
 int main(int argc, const char * argv[])

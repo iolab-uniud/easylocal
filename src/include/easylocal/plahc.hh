@@ -14,6 +14,7 @@
 #include <memory>
 // FIXME: put again spdlog in
 // #include <spdlog/spdlog.h>
+#include <random>
 
 namespace easylocal {
   template <SolutionManagerT SolutionManager, NeighborhoodExplorerT NeighborhoodExplorer>

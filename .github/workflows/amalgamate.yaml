@@ -47,13 +47,13 @@ jobs:
 
             - name: Run Heady to merge headers
               run: |
-                Heady/build/Heady -r -s ./include -o single_include/easylocal.hpp
+                Heady/build/Heady -r -s ./src/include -o include/easylocal.hh
 
             - name: Commit and push if changed
               run: |
                 git config --global user.email "action@github.com"
                 git config --global user.name "GitHub Action"
-                git add ./single_include/easylocal.hpp
+                git add ./include/easylocal.hh
                 git commit -m "Update single header file" || echo "No changes to commit"
                 git push origin ${GITHUB_REF##*/}
             

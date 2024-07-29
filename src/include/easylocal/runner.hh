@@ -12,6 +12,7 @@
 #include <chrono>
 #include <atomic>
 #include <boost/program_options.hpp>
+#include <random>
 
 namespace po = boost::program_options;
 

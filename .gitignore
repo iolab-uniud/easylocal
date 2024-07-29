@@ -1,3 +1,6 @@
+# generated header only
+include/easylocal.hh
+
 # Prerequisites
 *.d
 

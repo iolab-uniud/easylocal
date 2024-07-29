@@ -12,7 +12,7 @@ if (APPLE)
   endif()
 endif ()
 
-get_filename_component(EASYLOCAL_SOURCE_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/.. ABSOLUTE)
+get_filename_component(EASYLOCAL_SOURCE_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/../src ABSOLUTE)
 
 easylocal_extract_version(${EASYLOCAL_SOURCE_DIRECTORY})
 
@@ -55,19 +55,20 @@ include(ExternalProject)
 
 # Logging facilities
 
-# message(STATUS "Downloading external projects")
+message(STATUS "Downloading external projects")
 include(FetchContent)
-# FetchContent_Declare(spdlog
-#     GIT_REPOSITORY https://github.com/gabime/spdlog
-#     GIT_TAG        v1.12.0) # replace with latest revision
-#FetchContent_MakeAvailable(spdlog)
+FetchContent_Declare(spdlog
+    GIT_REPOSITORY https://github.com/gabime/spdlog
+    GIT_TAG        v1.12.0) # replace with latest revision
+FetchContent_GetProperties(spdlog)
+if(NOT spdlog_POPULATED)
+  FetchContent_MakeAvailable(spdlog)
+endif()
 
 add_library(easylocal INTERFACE)
 add_library(easylocal::easylocal ALIAS easylocal)
 target_include_directories(easylocal INTERFACE $<BUILD_INTERFACE:${EASYLOCAL_SOURCE_DIRECTORY}/include/easylocal> $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/spdlog/include> $<INSTALL_INTERFACE:include/easylocal>)
-# FIXME: currently I cannot use spdlog from here
-#target_link_libraries(easylocal INTERFACE Boost::program_options spdlog::spdlog)
-target_link_libraries(easylocal INTERFACE Boost::program_options)
+target_link_libraries(easylocal INTERFACE Boost::program_options spdlog::spdlog)
 target_compile_features(easylocal INTERFACE cxx_std_23)
 target_sources(easylocal INTERFACE ${headers})
 set_property(TARGET easylocal PROPERTY CXX_STANDARD 23)
@@ -100,3 +101,41 @@ include(${CMAKE_CURRENT_LIST_DIR}/check_object_from_this.cmake)
 if (NOT DEFINED easylocal_FIND_QUIETLY)
   message(STATUS "Found easylocal ${EASYLOCAL_VERSION} in ${EASYLOCAL_SOURCE_DIRECTORY}")
 endif()
+
+message(STATUS "Experimental, including single header generation through Heady")
+
+FetchContent_Declare(heady
+  GIT_REPOSITORY https://github.com/JamesBoer/Heady.git
+  GIT_TAG 876f730a30b4815ba6f657f222aaca23bfdc360f)
+
+FetchContent_GetProperties(Heady)
+if(NOT Heady_POPULATED)
+  FetchContent_Populate(Heady)
+endif()
+
+message(STATUS "Heady source directory: ${heady_BINARY_DIR}")
+
+ExternalProject_Add(
+  Heady
+  SOURCE_DIR ${heady_SOURCE_DIR}
+  BINARY_DIR ${heady_BINARY_DIR}
+  CMAKE_ARGS -DCMAKE_BUILD_TYPE:STRING=Release # Adjust build type as needed
+  STEP_TARGETS build
+  EXCLUDE_FROM_ALL TRUE
+)
+
+add_custom_command(
+  OUTPUT ${EASYLOCAL_SOURCE_DIRECTORY}/../include/easylocal.hh
+  COMMAND ${heady_BINARY_DIR}/Heady -r -s ${EASYLOCAL_SOURCE_DIRECTORY}/../src/include/easylocal -o ${EASYLOCAL_SOURCE_DIRECTORY}/../include/easylocal.hh
+  DEPENDS ${headers} ${heady_BINARY_DIR}/Heady
+)
+
+# add_custom_target(single ALL DEPENDS ${EASYLOCAL_SOURCE_DIRECTORY}/../include/easylocal.hh)
+add_library(easylocal_single_header INTERFACE)
+target_include_directories(easylocal_single_header INTERFACE ${EASYLOCAL_SOURCE_DIRECTORY}/../include $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/spdlog/include>)
+target_link_libraries(easylocal_single_header INTERFACE Boost::program_options spdlog::spdlog)
+target_compile_features(easylocal_single_header INTERFACE cxx_std_23)
+target_sources(easylocal_single_header INTERFACE ${EASYLOCAL_SOURCE_DIRECTORY}/../include/easylocal.hh)
+set_property(TARGET easylocal_single_header PROPERTY CXX_STANDARD 23)
+
+add_library(easylocal::single ALIAS easylocal_single_header)
