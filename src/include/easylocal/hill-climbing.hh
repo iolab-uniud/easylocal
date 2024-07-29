@@ -18,7 +18,7 @@
 #include <iterator>
 #include <memory>
 #include <spdlog/spdlog.h>
-#include <random> 
+#include <random>   
 
 namespace easylocal {
 
