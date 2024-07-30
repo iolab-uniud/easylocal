@@ -7,10 +7,15 @@ on:
         branches:
             - development
             - main
+        paths:
+            - 'src/include/**'
     pull_request:
         branches:
             - development
             - main
+        paths:
+            - 'src/include/**'
+    
 
 jobs:
     merge-headers:
