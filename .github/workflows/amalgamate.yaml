@@ -57,10 +57,10 @@ jobs:
                     fi
                   done
                   if [ "$amalgamated_header_mtime" -lt "$newest_include_mtime" ]; then
-                    echo "Amalgamated header is outdated"
+                    echo "Amalgamated header is outdated $amalgamated_header_mtime / $newest_include_mtime"
                     echo "::set-output name=should_regenerate::true"
                   else
-                    echo "Amalgamated header is up-to-date"
+                    echo "Amalgamated header is up-to-date $amalgamated_header_mtime / $newest_include_mtime"
                   fi
 
             - name: Run Heady to merge headers
