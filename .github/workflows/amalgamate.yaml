@@ -19,22 +19,12 @@ jobs:
         steps:
             - uses: actions/checkout@v2
 
-            - name: Check file modification times
+            - name: Check file modifications
               id: check_for_changes
               run: |
-                amalgamated_header_mtime=$(stat -c %Y include/easylocal.hh)
-                newest_include_mtime=0
-                for file in ./src/include/easylocal/*.hh; do
-                  file_mtime=$(stat -c %Y "$file")
-                  if [ "$file_mtime" -gt "$newest_include_mtime" ]; then
-                    newest_include_mtime="$file_mtime"
-                  fi
-                done
-                if [ "$amalgamated_header_mtime" -lt "$newest_include_mtime" ]; then
-                  echo "Amalgamated header is outdated"
+                git diff --name-only --diff-filter=ACMRTUXB HEAD~1..HEAD ./src/include | grep -q .
+                if [ $? -eq 0 ]; then
                   echo "::set-output name=should_regenerate::true"
-                else
-                  echo "Amalgamated header is up-to-date"
                 fi
 
             - name: Cache Heady Build
