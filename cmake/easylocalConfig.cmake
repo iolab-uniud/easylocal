@@ -102,12 +102,11 @@ if (NOT DEFINED easylocal_FIND_QUIETLY)
   message(STATUS "Found easylocal ${EASYLOCAL_VERSION} in ${EASYLOCAL_SOURCE_DIRECTORY}")
 endif()
 
-message(STATUS "Experimental, including single header generation through Heady")
-
 # Option to enable/disable the single header
 option(SINGLE_HEADER "Enable single header generation" OFF)
 
 if (SINGLE_HEADER)
+  message(STATUS "Experimental, including single header generation through Heady")
   FetchContent_Declare(heady
     GIT_REPOSITORY https://github.com/JamesBoer/Heady.git
     GIT_TAG 876f730a30b4815ba6f657f222aaca23bfdc360f)
