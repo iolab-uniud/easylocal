@@ -1,25 +1,14 @@
 
 
-// begin --- plahc.hh --- 
+// begin --- neighborhood-explorer.hh --- 
 
+////
+////  neighborhood-explorer.hh
+////  poc
+////
+////  Created by Luca Di Gaspero on 09/03/23.
+////
 //
-//  lahc.hh
-//  poc
-//
-//  Created by Luca Di Gaspero on 13/03/23.
-//
-
-#pragma once
-
-// begin --- solution-manager.hh --- 
-
-//
-//  solution-manager.hh
-//  poc
-//
-//  Created by Luca Di Gaspero on 09/03/23.
-//
-
 #pragma once
 
 // begin --- concepts.hh --- 
@@ -775,6 +764,89 @@ protected:
 // end --- cost-components.hh --- 
 
 
+#include <exception>
+
+namespace easylocal {
+
+class EmptyNeighborhood : public std::exception
+{};
+
+  // TODO: add the proper concepts for solution manager
+  // TODO: the last template parameter is the neighborhood explorer itself, to be used in a CRTP (Curiously Recurring Template Pattern) for providing the make_move method below in a static fashion (therefore without overhead) in C++23 there will be P0847 feature (deducing this) that will allow to get rid of it
+  template <SolutionManagerT _SolutionManager, class _Move, class SelfClass>
+class NeighborhoodExplorer : public std::enable_shared_from_this<SelfClass>
+  {
+  public:
+    using SolutionManager = _SolutionManager ;
+    using Input = typename SolutionManager::Input;
+    using Solution = typename SolutionManager::Solution;
+    using T = typename SolutionManager::T;
+    using Move = _Move;
+    using CostStructure = typename SolutionManager::CostStructure;
+    friend class MoveValue<Input, Solution, T, CostStructure, SelfClass>;
+    using MoveValue = MoveValue<Input, Solution, T, CostStructure, SelfClass>;
+    using SolutionValue = SolutionValue<Input, Solution, T, CostStructure>;
+    using ThisClass = NeighborhoodExplorer<SolutionManager, Move, SelfClass>;
+
+    NeighborhoodExplorer(std::shared_ptr<const SolutionManager> sm) noexcept
+    {
+      delta_cost_components.resize(sm->Components());
+    }
+    
+    MoveValue CreateMoveValue(const SolutionValue& sv, const Move& mv) const
+    {
+      auto self = this->shared_from_this();
+      return { self, sv, mv, sv.size() };
+    }
+    
+    template <DeltaCostComponentT<Input, Solution, T, Move> DeltaCostComponent>
+    void AddDeltaCostComponent(DeltaCostComponent& dcc, size_t i)
+    {
+      delta_cost_components[i] = std::make_unique<DeltaCostComponent>(dcc);
+    }
+    
+//  protected:
+    
+    bool HasDeltaCostComponent(size_t i, const Move&) const
+    {
+      return delta_cost_components[i] != nullptr;
+    }
+    
+    T ComputeDeltaCost(std::shared_ptr<const Solution> sol, const Move& mv, size_t i) const
+    {
+        assert(delta_cost_components[i] != nullptr);
+        return this->delta_cost_components[i]->ComputeDeltaCost(sol, mv);
+    }
+
+    std::vector<std::unique_ptr<DeltaCostComponent<Input, Solution, T, Move>>> delta_cost_components;
+  };
+}
+
+
+// end --- neighborhood-explorer.hh --- 
+
+
+
+// begin --- tabu-search.hh --- 
+
+//
+//  tabu-search.hh
+//
+//  Created by Luca Di Gaspero on 24/07/23.
+//
+
+#pragma once
+
+// begin --- solution-manager.hh --- 
+
+//
+//  solution-manager.hh
+//  poc
+//
+//  Created by Luca Di Gaspero on 09/03/23.
+//
+
+#pragma once
 
 namespace easylocal {
   // TODO: helper to transform a std::function (e.g., a lambda for random solution) in a SolutionManager
@@ -793,213 +865,6 @@ namespace easylocal {
 
 
 // end --- solution-manager.hh --- 
-
-
-
-// begin --- runner.hh --- 
-
-//
-//  runner.hh
-//  pfsp-ls
-//
-//  Created by Luca Di Gaspero on 24/07/23.
-//
-
-#pragma once
-
-#include <thread>
-#include <future>
-#include <chrono>
-#include <atomic>
-#include <boost/program_options.hpp>
-#include <random>
-
-namespace po = boost::program_options;
-
-namespace easylocal {
-
-template <SolutionManagerT SolutionManager>
-class AbstractRunner
-{
-public:
-    using Input = typename SolutionManager::Input;
-    using SolutionValue = typename SolutionManager::SolutionValue;
-    
-    virtual SolutionValue Run(std::shared_ptr<const Input> in, std::chrono::milliseconds timeout) = 0;
-    virtual void SetParameters(po::variables_map& /* vm */, std::vector<std::string> /* to_pass_further */) {};
-};
-
-
-template <SolutionManagerT SolutionManager, NeighborhoodExplorerT NeighborhoodExplorer>
-class Runner : public AbstractRunner<SolutionManager>
-{
-public:
-    using Input = typename SolutionManager::Input;
-    using Solution = typename SolutionManager::Solution;
-    using T = typename SolutionManager::T;
-    using CostStructure = typename SolutionManager::CostStructure ;
-    using Move = typename NeighborhoodExplorer::Move;
-    using SolutionValue = typename SolutionManager::SolutionValue;
-    
-    
-protected:
-    Runner(std::shared_ptr<const SolutionManager> sm, std::shared_ptr<const NeighborhoodExplorer> ne) : sm(sm), ne(ne) {}
-    // virtual void SetParameters(po::variables_map& vm, std::vector<std::string> to_pass_further){};
-    
-public:
-    
-    SolutionValue Run(std::shared_ptr<const Input> in, std::chrono::milliseconds timeout) override
-    {
-        std::packaged_task<void(std::shared_ptr<const Input> in)> running_task([this](std::shared_ptr<const Input> in) {
-            this->ResetStopRun();
-            this->Go(in);
-        });
-        auto future = running_task.get_future();
-        std::thread thr(std::move(running_task), in);
-        future.wait_for(timeout);
-        stop_run = true;
-        thr.join();
-        return *(final_solution_value);
-    }
-    
-    inline void Run(std::shared_ptr<const Input> in)
-    {
-        this->Go(in);
-    }
-    
-protected:
-    
-    virtual void Go(std::shared_ptr<const Input> in) = 0;
-    
-    inline void ResetStopRun()
-    {
-        stop_run = false;
-    }
-    
-    inline bool StopRun() const
-    {
-        return stop_run;
-    }
-    
-public:
-    std::shared_ptr<const SolutionManager> sm;
-    std::shared_ptr<const NeighborhoodExplorer> ne;
-    std::atomic_bool stop_run;
-    std::shared_ptr<SolutionValue> final_solution_value;
-};
-}
-
-
-
-// end --- runner.hh --- 
-
-
-#include <iostream>
-#include <iterator>
-#include <memory>
-// FIXME: put again spdlog in
-// #include <spdlog/spdlog.h>
-#include <random>
-
-namespace easylocal {
-  template <SolutionManagerT SolutionManager, NeighborhoodExplorerT NeighborhoodExplorer>
-  class PLAHC : public Runner<SolutionManager, NeighborhoodExplorer>
-  {
-  public:
-    using Input = typename Runner<SolutionManager, NeighborhoodExplorer>::Input;
-    using Solution = typename Runner<SolutionManager, NeighborhoodExplorer>::Solution;
-    using T = typename Runner<SolutionManager, NeighborhoodExplorer>::T;
-    using CostStructure = typename Runner<SolutionManager, NeighborhoodExplorer>::CostStructure ;
-    using Move = typename Runner<SolutionManager, NeighborhoodExplorer>::Move;
-    
-    PLAHC(std::shared_ptr<const SolutionManager> sm, std::shared_ptr<const NeighborhoodExplorer> ne, size_t history_length) : Runner<SolutionManager, NeighborhoodExplorer>(sm, ne), history_length(history_length) {}  
-  protected:
-
-    virtual void Go(std::shared_ptr<const Input> in) override
-    {
-      size_t iteration = 0, idle_iteration = 0;
-      this->ResetStopRun();
-      std::vector<SolutionValue<Input, Solution, T, CostStructure>> history;
-      history.reserve(history_length);
-      for (size_t i = 0; i < history_length; ++i)
-        history.push_back(this->sm->CreateSolutionValue(this->sm->InitialSolution(in)));
-      iteration = 0;
-      idle_iteration = 0;
-      size_t index = 0;
-      auto current_solution_value = history[0];
-      while ((iteration < max_iterations || idle_iteration <= 0.02 * iteration) && !this->StopRun())
-      {
-        size_t next_index = (index + 1) % history.size();
-        auto current_move_value = this->ne->CreateMoveValue(current_solution_value, this->ne->RandomMove(current_solution_value.GetSolution()));
-        if (current_move_value < current_solution_value)
-        {
-          history[index] = current_move_value;
-          current_solution_value = history[next_index];
-          index = (index + 1) % history.size();
-          idle_iteration = 0;
-        }
-        else if (current_move_value < history[next_index])
-        {
-          current_solution_value = history[next_index];
-          history[next_index] = current_move_value;
-          index = (index + 2) % history.size();
-          idle_iteration = 0;
-        } else {
-          current_solution_value = history[next_index];
-          index = (index + 1) % history.size();
-          idle_iteration++;
-        }
-        iteration++;
-      }
-      // post process solutions to get the pareto set
-      std::vector<SolutionValue<Input, Solution, T, CostStructure>> pareto_front;
-      for (size_t i = 0; i < history.size(); ++i)
-      {
-        bool non_dominated = true, drop_equal_solutions = false;
-        for (size_t j = 0; j < history.size(); ++j)
-        {
-          if (i == j)
-            continue;
-          if (history[i] > history[j])
-          {
-            non_dominated = false;
-            break;
-          }
-          if constexpr(std::equality_comparable<Solution>)
-          {
-            if (*history[i].GetSolution() == *history[j].GetSolution() && i > j)
-            {
-              drop_equal_solutions = true;
-              break;
-            }
-          }
-        }
-        if (non_dominated && !drop_equal_solutions)
-          pareto_front.emplace_back(history[i]);
-      }
-      //spdlog::info("Pareto front size: {}", pareto_front.size());
-      for (const auto& sol : pareto_front)
-      {
-        auto values = sol.GetValues();
-//        std::copy(values.begin(), values.end(), std::ostream_iterator<T>(std::cout, " "));
-//        std::cout << std::endl;
-        std::ostringstream oss;
-        oss << (*(sol.GetSolution()));
-        //spdlog::info("{} ---> ({})", oss.str(), spdlog::fmt_lib::join(values, ", "));
-
-        assert(sol.CheckValues());
-      }
-      //spdlog::info("Iterations: {}", iteration);
-    }
-  protected:
-    // parameters
-    size_t max_iterations = 1000000;
-    size_t history_length;
-  };
-}
-
-
-// end --- plahc.hh --- 
 
 
 
@@ -2301,177 +2166,104 @@ protected:
 
 
 
-// begin --- hill-climbing.hh --- 
+// begin --- runner.hh --- 
 
 //
-//  hill-climbing.hh
+//  runner.hh
 //  pfsp-ls
 //
 //  Created by Luca Di Gaspero on 24/07/23.
 //
 
 #pragma once
-#include <iostream>
-#include <sstream>
+
 #include <thread>
 #include <future>
 #include <chrono>
-#include <iterator>
-#include <memory>
-#include <spdlog/spdlog.h>
-#include <random>   
+#include <atomic>
+#include <boost/program_options.hpp>
+#include <random>
 
-// putting here just to have a newer file (even newer)
+namespace po = boost::program_options;
 
-namespace easylocal {    
+namespace easylocal {
 
-//template <class Runner>
-//concept RunnerIdleIterT = has_basic_typedefs<Runner> &&
-//requires(Runner) {
-//    { Runner::idle_iteration } -> std::same_as<size_t&>;
-//};
+template <SolutionManagerT SolutionManager>
+class AbstractRunner
+{
+public:
+    using Input = typename SolutionManager::Input;
+    using SolutionValue = typename SolutionManager::SolutionValue;
+    
+    virtual SolutionValue Run(std::shared_ptr<const Input> in, std::chrono::milliseconds timeout) = 0;
+    virtual void SetParameters(po::variables_map& /* vm */, std::vector<std::string> /* to_pass_further */) {};
+};
 
 
-//template <RunnerIdleIterT Runner>
-//class IdleIterationsTermination
-//{
-//public:
-//    IdleIterationsTermination(size_t max_idle_iterations) : max_idle_iterations(max_idle_iterations) {}
-//    
-//    virtual bool operator()(Runner* r)
-//    {
-//        spdlog::debug("HERE in operator()");
-//        return r->idle_iteration > max_idle_iterations;
-//    }
-//protected:
-//    size_t max_idle_iterations;
-//};
-
-//template <RunnerIdleIterT Runner>
-//class TotalIterationsTermination
-//{
-//public:
-//    TotalIterationsTermination(size_t max_iterations) : max_iterations(max_iterations) {}
-//    
-//    virtual bool operator()(Runner* r)
-//    {
-//        spdlog::debug("HERE in operator() of TIT");
-//        return r->iteration > max_iterations;
-//    }
-//protected:
-//    size_t max_iterations;
-//};
-
-template <SolutionManagerT SolutionManager, NeighborhoodExplorerT NeighborhoodExplorer, template <class R> class TerminationCriterion = IdleIterationsTermination, template <class R> class SelectMove = SelectMoveRandom, template <class R> class AcceptMove = AcceptMoveImproveOrEqual>
-class HillClimbing : public Runner<SolutionManager, NeighborhoodExplorer>
+template <SolutionManagerT SolutionManager, NeighborhoodExplorerT NeighborhoodExplorer>
+class Runner : public AbstractRunner<SolutionManager>
 {
 public:
     using Input = typename SolutionManager::Input;
     using Solution = typename SolutionManager::Solution;
     using T = typename SolutionManager::T;
-    using CostStructure = typename SolutionManager::CostStructure;
+    using CostStructure = typename SolutionManager::CostStructure ;
     using Move = typename NeighborhoodExplorer::Move;
-    using SelfClass = HillClimbing<SolutionManager, NeighborhoodExplorer, TerminationCriterion, SelectMove, AcceptMove>;
-    
     using SolutionValue = typename SolutionManager::SolutionValue;
-    using MoveValue = typename NeighborhoodExplorer::MoveValue;
     
-    HillClimbing(std::shared_ptr<const SolutionManager> sm, std::shared_ptr<const NeighborhoodExplorer> ne, size_t random_seed) : Runner<SolutionManager, NeighborhoodExplorer>(sm, ne), random_seed(random_seed) {}
     
-    void SetParameters(po::variables_map& vm, std::vector<std::string> to_pass_further) override
+protected:
+    Runner(std::shared_ptr<const SolutionManager> sm, std::shared_ptr<const NeighborhoodExplorer> ne) : sm(sm), ne(ne) {}
+    // virtual void SetParameters(po::variables_map& vm, std::vector<std::string> to_pass_further){};
+    
+public:
+    
+    SolutionValue Run(std::shared_ptr<const Input> in, std::chrono::milliseconds timeout) override
     {
-        po::options_description desc("Set of parameters associated with the required HC.");
-        termination.add_parameter(desc);
-        select_move.add_parameter(desc);
-        accept_move.add_parameter(desc);
-        po::store(po::command_line_parser(to_pass_further).options(desc).run(), vm);
-        po::notify(vm);
+        std::packaged_task<void(std::shared_ptr<const Input> in)> running_task([this](std::shared_ptr<const Input> in) {
+            this->ResetStopRun();
+            this->Go(in);
+        });
+        auto future = running_task.get_future();
+        std::thread thr(std::move(running_task), in);
+        future.wait_for(timeout);
+        stop_run = true;
+        thr.join();
+        return *(final_solution_value);
+    }
+    
+    inline void Run(std::shared_ptr<const Input> in)
+    {
+        this->Go(in);
     }
     
 protected:
-
-    virtual void Go(std::shared_ptr<const Input> in) override
+    
+    virtual void Go(std::shared_ptr<const Input> in) = 0;
+    
+    inline void ResetStopRun()
     {
-        rng.seed(random_seed);
-        PrintParameters();
-        current_solution_value = std::make_shared<SolutionValue>(this->sm->CreateSolutionValue(this->sm->InitialSolution(in)));
-        
-        while (!termination.terminate(this) && !this->StopRun())
-        {
-            try
-            {
-                current_move_value = std::make_shared<MoveValue>(select_move.select(this));
-            }
-            catch (EmptyNeighborhood)
-            {
-#if !defined(NDEBUG)
-                spdlog::debug("empty neighborhood encountered while exploring");
-#endif
-                break;
-            }
-            
-            if (accept_move.accept(this))
-            {
-                // make move
-                *current_solution_value = *current_move_value;
-                idle_iteration = 0;
-                std::ostringstream oss;
-                oss << (*(current_solution_value->GetSolution()));
-                // std::cout << oss.str() << std::endl;
-                spdlog::info("{} --> {}", oss.str(), current_solution_value->AggregatedCost());
-            }
-            else
-            {
-                idle_iteration = idle_iteration + 1;
-            }
-            iteration = iteration + 1;
-        }
-        
-        // post processings
-        /*spdlog::info("Post processing after {} iterations (idle: {})", iteration, idle_iteration);
-        auto values = current_solution_value->GetValues();
-        std::ostringstream oss;
-        oss << (*(current_solution_value->GetSolution()));
-        spdlog::info("{} ---> ({})", oss.str(), spdlog::fmt_lib::join(values, ", "));
-*/
-        assert(current_solution_value->CheckValues());
-        
-        this->final_solution_value = std::make_shared<SolutionValue>(*current_solution_value);
+        stop_run = false;
+    }
+    
+    inline bool StopRun() const
+    {
+        return stop_run;
     }
     
 public:
-    // object data
-    size_t iteration = 0, idle_iteration = 0;
-    std::shared_ptr<SolutionValue> current_solution_value;
-    std::shared_ptr<MoveValue> current_move_value;    
-protected:
-    void PrintParameters()
-    {
-        termination.print_parameters();
-    }
-    // parametrized criteria
-    TerminationCriterion<SelfClass> termination;
-    SelectMove<SelfClass> select_move;
-    AcceptMove<SelfClass> accept_move;
-    mutable std::mt19937_64 rng;
-    size_t random_seed;
+    std::shared_ptr<const SolutionManager> sm;
+    std::shared_ptr<const NeighborhoodExplorer> ne;
+    std::atomic_bool stop_run;
+    std::shared_ptr<SolutionValue> final_solution_value;
 };
 }
 
 
-// end --- hill-climbing.hh --- 
+
+// end --- runner.hh --- 
 
 
-
-// begin --- tabu-search.hh --- 
-
-//
-//  tabu-search.hh
-//
-//  Created by Luca Di Gaspero on 24/07/23.
-//
-
-#pragma once
 #include <iostream>
 #include <thread>
 #include <future>
@@ -2646,6 +2438,432 @@ protected:
 
 
 // end --- tabu-search.hh --- 
+
+
+
+// begin --- hill-climbing.hh --- 
+
+//
+//  hill-climbing.hh
+//  pfsp-ls
+//
+//  Created by Luca Di Gaspero on 24/07/23.
+//
+
+#pragma once
+#include <iostream>
+#include <sstream>
+#include <thread>
+#include <future>
+#include <chrono>
+#include <iterator>
+#include <memory>
+#include <spdlog/spdlog.h>
+#include <random>   
+
+// putting here just to have a newer file (even newer)
+
+namespace easylocal {    
+
+//template <class Runner>
+//concept RunnerIdleIterT = has_basic_typedefs<Runner> &&
+//requires(Runner) {
+//    { Runner::idle_iteration } -> std::same_as<size_t&>;
+//};
+
+
+//template <RunnerIdleIterT Runner>
+//class IdleIterationsTermination
+//{
+//public:
+//    IdleIterationsTermination(size_t max_idle_iterations) : max_idle_iterations(max_idle_iterations) {}
+//    
+//    virtual bool operator()(Runner* r)
+//    {
+//        spdlog::debug("HERE in operator()");
+//        return r->idle_iteration > max_idle_iterations;
+//    }
+//protected:
+//    size_t max_idle_iterations;
+//};
+
+//template <RunnerIdleIterT Runner>
+//class TotalIterationsTermination
+//{
+//public:
+//    TotalIterationsTermination(size_t max_iterations) : max_iterations(max_iterations) {}
+//    
+//    virtual bool operator()(Runner* r)
+//    {
+//        spdlog::debug("HERE in operator() of TIT");
+//        return r->iteration > max_iterations;
+//    }
+//protected:
+//    size_t max_iterations;
+//};
+
+template <SolutionManagerT SolutionManager, NeighborhoodExplorerT NeighborhoodExplorer, template <class R> class TerminationCriterion = IdleIterationsTermination, template <class R> class SelectMove = SelectMoveRandom, template <class R> class AcceptMove = AcceptMoveImproveOrEqual>
+class HillClimbing : public Runner<SolutionManager, NeighborhoodExplorer>
+{
+public:
+    using Input = typename SolutionManager::Input;
+    using Solution = typename SolutionManager::Solution;
+    using T = typename SolutionManager::T;
+    using CostStructure = typename SolutionManager::CostStructure;
+    using Move = typename NeighborhoodExplorer::Move;
+    using SelfClass = HillClimbing<SolutionManager, NeighborhoodExplorer, TerminationCriterion, SelectMove, AcceptMove>;
+    
+    using SolutionValue = typename SolutionManager::SolutionValue;
+    using MoveValue = typename NeighborhoodExplorer::MoveValue;
+    
+    HillClimbing(std::shared_ptr<const SolutionManager> sm, std::shared_ptr<const NeighborhoodExplorer> ne, size_t random_seed) : Runner<SolutionManager, NeighborhoodExplorer>(sm, ne), random_seed(random_seed) {}
+    
+    void SetParameters(po::variables_map& vm, std::vector<std::string> to_pass_further) override
+    {
+        po::options_description desc("Set of parameters associated with the required HC.");
+        termination.add_parameter(desc);
+        select_move.add_parameter(desc);
+        accept_move.add_parameter(desc);
+        po::store(po::command_line_parser(to_pass_further).options(desc).run(), vm);
+        po::notify(vm);
+    }
+    
+protected:
+
+    virtual void Go(std::shared_ptr<const Input> in) override
+    {
+        rng.seed(random_seed);
+        PrintParameters();
+        current_solution_value = std::make_shared<SolutionValue>(this->sm->CreateSolutionValue(this->sm->InitialSolution(in)));
+        
+        while (!termination.terminate(this) && !this->StopRun())
+        {
+            try
+            {
+                current_move_value = std::make_shared<MoveValue>(select_move.select(this));
+            }
+            catch (EmptyNeighborhood)
+            {
+#if !defined(NDEBUG)
+                spdlog::debug("empty neighborhood encountered while exploring");
+#endif
+                break;
+            }
+            
+            if (accept_move.accept(this))
+            {
+                // make move
+                *current_solution_value = *current_move_value;
+                idle_iteration = 0;
+                std::ostringstream oss;
+                oss << (*(current_solution_value->GetSolution()));
+                // std::cout << oss.str() << std::endl;
+                spdlog::info("{} --> {}", oss.str(), current_solution_value->AggregatedCost());
+            }
+            else
+            {
+                idle_iteration = idle_iteration + 1;
+            }
+            iteration = iteration + 1;
+        }
+        
+        // post processings
+        /*spdlog::info("Post processing after {} iterations (idle: {})", iteration, idle_iteration);
+        auto values = current_solution_value->GetValues();
+        std::ostringstream oss;
+        oss << (*(current_solution_value->GetSolution()));
+        spdlog::info("{} ---> ({})", oss.str(), spdlog::fmt_lib::join(values, ", "));
+*/
+        assert(current_solution_value->CheckValues());
+        
+        this->final_solution_value = std::make_shared<SolutionValue>(*current_solution_value);
+    }
+    
+public:
+    // object data
+    size_t iteration = 0, idle_iteration = 0;
+    std::shared_ptr<SolutionValue> current_solution_value;
+    std::shared_ptr<MoveValue> current_move_value;    
+protected:
+    void PrintParameters()
+    {
+        termination.print_parameters();
+    }
+    // parametrized criteria
+    TerminationCriterion<SelfClass> termination;
+    SelectMove<SelfClass> select_move;
+    AcceptMove<SelfClass> accept_move;
+    mutable std::mt19937_64 rng;
+    size_t random_seed;
+};
+}
+
+
+// end --- hill-climbing.hh --- 
+
+
+
+// begin --- version.hh --- 
+
+#pragma once
+
+#define EASYLOCAL_VER_MAJOR 4
+#define EASYLOCAL_VER_MINOR 0
+#define EASYLOCAL_VER_PATCH 0
+
+#define EASYLOCAL_TO_VERSION(major, minor, patch) (major * 10000 + minor * 100 + patch)
+#define EASYLOCAL_VERSION EASYLOCAL_TO_VERSION(EASYLOCAL_VER_MAJOR, EASYLOCAL_VER_MINOR, EASYLOCAL_VER_PATCH)
+
+
+// end --- version.hh --- 
+
+
+
+// begin --- plahc-one-chance.hh --- 
+
+//
+//  lahc.hh
+//  poc
+//
+//  Created by Luca Di Gaspero on 13/03/23.
+//
+
+#pragma once
+#include <iostream>
+#include <thread>
+#include <future>
+#include <chrono>
+#include <iterator>
+#include <memory>
+
+namespace easylocal {
+  template <SolutionManagerT SolutionManager, NeighborhoodExplorerT NeighborhoodExplorer>
+  class PLAHC_ONE_CHANCE
+  {
+  public:
+    using Input = typename SolutionManager::Input;
+    using Solution = typename SolutionManager::Solution;
+    using T = typename SolutionManager::T;
+    using CostStructure = typename SolutionManager::CostStructure;
+    using Move = typename NeighborhoodExplorer::Move;
+    
+    PLAHC_ONE_CHANCE(std::shared_ptr<const SolutionManager> sm, std::shared_ptr<const NeighborhoodExplorer> ne, size_t history_length) : sm(sm), ne(ne), history_length(history_length) {}
+  
+    void Run(std::shared_ptr<const Input> in, std::chrono::milliseconds timeout)
+    {
+      std::packaged_task<void(std::shared_ptr<const Input> in)> running_task([this](std::shared_ptr<const Input> in) {
+        this->Run(in);
+      });
+      auto future = running_task.get_future();
+      std::thread thr(std::move(running_task), in);
+      future.wait_for(timeout);
+      stop_run = true;
+      thr.join();
+    }
+
+    void Run(std::shared_ptr<const Input> in)
+    {
+      stop_run = false;
+      std::vector<SolutionValue<Input, Solution, T, CostStructure>> history;
+      history.reserve(history_length);
+      for (size_t i = 0; i < history_length; ++i)
+        history.push_back(sm->CreateSolutionValue(sm->InitialSolution(in)));
+      iteration = 0;
+      idle_iteration = 0;
+      size_t index = 0;
+      auto current_solution_value = history[0];
+      while ((iteration < max_iterations || idle_iteration <= 0.02 * iteration) && !stop_run)
+      {
+        size_t next_index = (index + 1) % history.size();
+        auto current_move_value = ne->CreateMoveValue(current_solution_value, ne->RandomMove(current_solution_value.GetSolution()));
+        if (current_move_value < current_solution_value)
+        {
+          history[index] = current_move_value;
+          current_solution_value = history[next_index];
+          index = (index + 1) % history.size();
+          idle_iteration = 0;
+        }
+        // else if (current_move_value < history[next_index])
+        // {
+        //   current_solution_value = history[next_index];
+        //   history[next_index] = current_move_value;
+        //   index = (index + 2) % history.size();
+        //   idle_iteration = 0;
+        // }
+        else {
+          current_solution_value = history[next_index];
+          index = (index + 1) % history.size();
+          idle_iteration++;
+        }
+        iteration++;
+      }
+      // post process solutions to get the pareto set
+      std::vector<SolutionValue<Input, Solution, T, CostStructure>> pareto_front;
+      for (size_t i = 0; i < history.size(); ++i)
+      {
+        bool non_dominated = true, drop_equal_solutions = false;
+        for (size_t j = 0; j < history.size(); ++j)
+        {
+          if (i == j)
+            continue;
+          if (history[i] > history[j])
+          {
+            non_dominated = false;
+            break;
+          }
+          if constexpr(std::equality_comparable<Solution>)
+          {
+            if (*history[i].GetSolution() == *history[j].GetSolution() && i > j)
+            {
+              drop_equal_solutions = true;
+              break;
+            }
+          }
+        }
+        if (non_dominated && !drop_equal_solutions)
+          pareto_front.emplace_back(history[i]);
+      }
+      std::cout << "Pareto front size: " << pareto_front.size() << std::endl;
+      for (const auto& sol : pareto_front)
+      {
+        std::cout << *(sol.GetSolution()) << " ---> ";
+        auto values = sol.GetValues();
+        std::copy(values.begin(), values.end(), std::ostream_iterator<T>(std::cout, " "));
+        std::cout << std::endl;
+      }
+      std::cout << "Iterations: " << iteration << std::endl;
+    }
+  protected:
+    std::shared_ptr<const SolutionManager> sm;
+    std::shared_ptr<const NeighborhoodExplorer> ne;
+    size_t iteration = 0, idle_iteration = 0, max_iterations = 1000000;
+    // parameter
+    size_t history_length;
+    std::atomic_bool stop_run;
+  };
+}
+
+
+// end --- plahc-one-chance.hh --- 
+
+
+
+// begin --- plahc.hh --- 
+
+//
+//  lahc.hh
+//  poc
+//
+//  Created by Luca Di Gaspero on 13/03/23.
+//
+
+#pragma once
+#include <iostream>
+#include <iterator>
+#include <memory>
+// FIXME: put again spdlog in
+// #include <spdlog/spdlog.h>
+#include <random>
+
+namespace easylocal {
+  template <SolutionManagerT SolutionManager, NeighborhoodExplorerT NeighborhoodExplorer>
+  class PLAHC : public Runner<SolutionManager, NeighborhoodExplorer>
+  {
+  public:
+    using Input = typename Runner<SolutionManager, NeighborhoodExplorer>::Input;
+    using Solution = typename Runner<SolutionManager, NeighborhoodExplorer>::Solution;
+    using T = typename Runner<SolutionManager, NeighborhoodExplorer>::T;
+    using CostStructure = typename Runner<SolutionManager, NeighborhoodExplorer>::CostStructure ;
+    using Move = typename Runner<SolutionManager, NeighborhoodExplorer>::Move;
+    
+    PLAHC(std::shared_ptr<const SolutionManager> sm, std::shared_ptr<const NeighborhoodExplorer> ne, size_t history_length) : Runner<SolutionManager, NeighborhoodExplorer>(sm, ne), history_length(history_length) {}  
+  protected:
+
+    virtual void Go(std::shared_ptr<const Input> in) override
+    {
+      size_t iteration = 0, idle_iteration = 0;
+      this->ResetStopRun();
+      std::vector<SolutionValue<Input, Solution, T, CostStructure>> history;
+      history.reserve(history_length);
+      for (size_t i = 0; i < history_length; ++i)
+        history.push_back(this->sm->CreateSolutionValue(this->sm->InitialSolution(in)));
+      iteration = 0;
+      idle_iteration = 0;
+      size_t index = 0;
+      auto current_solution_value = history[0];
+      while ((iteration < max_iterations || idle_iteration <= 0.02 * iteration) && !this->StopRun())
+      {
+        size_t next_index = (index + 1) % history.size();
+        auto current_move_value = this->ne->CreateMoveValue(current_solution_value, this->ne->RandomMove(current_solution_value.GetSolution()));
+        if (current_move_value < current_solution_value)
+        {
+          history[index] = current_move_value;
+          current_solution_value = history[next_index];
+          index = (index + 1) % history.size();
+          idle_iteration = 0;
+        }
+        else if (current_move_value < history[next_index])
+        {
+          current_solution_value = history[next_index];
+          history[next_index] = current_move_value;
+          index = (index + 2) % history.size();
+          idle_iteration = 0;
+        } else {
+          current_solution_value = history[next_index];
+          index = (index + 1) % history.size();
+          idle_iteration++;
+        }
+        iteration++;
+      }
+      // post process solutions to get the pareto set
+      std::vector<SolutionValue<Input, Solution, T, CostStructure>> pareto_front;
+      for (size_t i = 0; i < history.size(); ++i)
+      {
+        bool non_dominated = true, drop_equal_solutions = false;
+        for (size_t j = 0; j < history.size(); ++j)
+        {
+          if (i == j)
+            continue;
+          if (history[i] > history[j])
+          {
+            non_dominated = false;
+            break;
+          }
+          if constexpr(std::equality_comparable<Solution>)
+          {
+            if (*history[i].GetSolution() == *history[j].GetSolution() && i > j)
+            {
+              drop_equal_solutions = true;
+              break;
+            }
+          }
+        }
+        if (non_dominated && !drop_equal_solutions)
+          pareto_front.emplace_back(history[i]);
+      }
+      //spdlog::info("Pareto front size: {}", pareto_front.size());
+      for (const auto& sol : pareto_front)
+      {
+        auto values = sol.GetValues();
+//        std::copy(values.begin(), values.end(), std::ostream_iterator<T>(std::cout, " "));
+//        std::cout << std::endl;
+        std::ostringstream oss;
+        oss << (*(sol.GetSolution()));
+        //spdlog::info("{} ---> ({})", oss.str(), spdlog::fmt_lib::join(values, ", "));
+
+        assert(sol.CheckValues());
+      }
+      //spdlog::info("Iterations: {}", iteration);
+    }
+  protected:
+    // parameters
+    size_t max_iterations = 1000000;
+    size_t history_length;
+  };
+}
+
+
+// end --- plahc.hh --- 
 
 
 
@@ -2867,222 +3085,4 @@ class UnionNeighborhoodExplorer
 
 
 // end --- multi-modal-neighborhood-explorer.hh --- 
-
-
-
-// begin --- neighborhood-explorer.hh --- 
-
-////
-////  neighborhood-explorer.hh
-////  poc
-////
-////  Created by Luca Di Gaspero on 09/03/23.
-////
-//
-#pragma once
-#include <exception>
-
-namespace easylocal {
-
-class EmptyNeighborhood : public std::exception
-{};
-
-  // TODO: add the proper concepts for solution manager
-  // TODO: the last template parameter is the neighborhood explorer itself, to be used in a CRTP (Curiously Recurring Template Pattern) for providing the make_move method below in a static fashion (therefore without overhead) in C++23 there will be P0847 feature (deducing this) that will allow to get rid of it
-  template <SolutionManagerT _SolutionManager, class _Move, class SelfClass>
-class NeighborhoodExplorer : public std::enable_shared_from_this<SelfClass>
-  {
-  public:
-    using SolutionManager = _SolutionManager ;
-    using Input = typename SolutionManager::Input;
-    using Solution = typename SolutionManager::Solution;
-    using T = typename SolutionManager::T;
-    using Move = _Move;
-    using CostStructure = typename SolutionManager::CostStructure;
-    friend class MoveValue<Input, Solution, T, CostStructure, SelfClass>;
-    using MoveValue = MoveValue<Input, Solution, T, CostStructure, SelfClass>;
-    using SolutionValue = SolutionValue<Input, Solution, T, CostStructure>;
-    using ThisClass = NeighborhoodExplorer<SolutionManager, Move, SelfClass>;
-
-    NeighborhoodExplorer(std::shared_ptr<const SolutionManager> sm) noexcept
-    {
-      delta_cost_components.resize(sm->Components());
-    }
-    
-    MoveValue CreateMoveValue(const SolutionValue& sv, const Move& mv) const
-    {
-      auto self = this->shared_from_this();
-      return { self, sv, mv, sv.size() };
-    }
-    
-    template <DeltaCostComponentT<Input, Solution, T, Move> DeltaCostComponent>
-    void AddDeltaCostComponent(DeltaCostComponent& dcc, size_t i)
-    {
-      delta_cost_components[i] = std::make_unique<DeltaCostComponent>(dcc);
-    }
-    
-//  protected:
-    
-    bool HasDeltaCostComponent(size_t i, const Move&) const
-    {
-      return delta_cost_components[i] != nullptr;
-    }
-    
-    T ComputeDeltaCost(std::shared_ptr<const Solution> sol, const Move& mv, size_t i) const
-    {
-        assert(delta_cost_components[i] != nullptr);
-        return this->delta_cost_components[i]->ComputeDeltaCost(sol, mv);
-    }
-
-    std::vector<std::unique_ptr<DeltaCostComponent<Input, Solution, T, Move>>> delta_cost_components;
-  };
-}
-
-
-// end --- neighborhood-explorer.hh --- 
-
-
-
-// begin --- version.hh --- 
-
-#pragma once
-
-#define EASYLOCAL_VER_MAJOR 4
-#define EASYLOCAL_VER_MINOR 0
-#define EASYLOCAL_VER_PATCH 0
-
-#define EASYLOCAL_TO_VERSION(major, minor, patch) (major * 10000 + minor * 100 + patch)
-#define EASYLOCAL_VERSION EASYLOCAL_TO_VERSION(EASYLOCAL_VER_MAJOR, EASYLOCAL_VER_MINOR, EASYLOCAL_VER_PATCH)
-
-
-// end --- version.hh --- 
-
-
-
-// begin --- plahc-one-chance.hh --- 
-
-//
-//  lahc.hh
-//  poc
-//
-//  Created by Luca Di Gaspero on 13/03/23.
-//
-
-#pragma once
-#include <iostream>
-#include <thread>
-#include <future>
-#include <chrono>
-#include <iterator>
-#include <memory>
-
-namespace easylocal {
-  template <SolutionManagerT SolutionManager, NeighborhoodExplorerT NeighborhoodExplorer>
-  class PLAHC_ONE_CHANCE
-  {
-  public:
-    using Input = typename SolutionManager::Input;
-    using Solution = typename SolutionManager::Solution;
-    using T = typename SolutionManager::T;
-    using CostStructure = typename SolutionManager::CostStructure;
-    using Move = typename NeighborhoodExplorer::Move;
-    
-    PLAHC_ONE_CHANCE(std::shared_ptr<const SolutionManager> sm, std::shared_ptr<const NeighborhoodExplorer> ne, size_t history_length) : sm(sm), ne(ne), history_length(history_length) {}
-  
-    void Run(std::shared_ptr<const Input> in, std::chrono::milliseconds timeout)
-    {
-      std::packaged_task<void(std::shared_ptr<const Input> in)> running_task([this](std::shared_ptr<const Input> in) {
-        this->Run(in);
-      });
-      auto future = running_task.get_future();
-      std::thread thr(std::move(running_task), in);
-      future.wait_for(timeout);
-      stop_run = true;
-      thr.join();
-    }
-
-    void Run(std::shared_ptr<const Input> in)
-    {
-      stop_run = false;
-      std::vector<SolutionValue<Input, Solution, T, CostStructure>> history;
-      history.reserve(history_length);
-      for (size_t i = 0; i < history_length; ++i)
-        history.push_back(sm->CreateSolutionValue(sm->InitialSolution(in)));
-      iteration = 0;
-      idle_iteration = 0;
-      size_t index = 0;
-      auto current_solution_value = history[0];
-      while ((iteration < max_iterations || idle_iteration <= 0.02 * iteration) && !stop_run)
-      {
-        size_t next_index = (index + 1) % history.size();
-        auto current_move_value = ne->CreateMoveValue(current_solution_value, ne->RandomMove(current_solution_value.GetSolution()));
-        if (current_move_value < current_solution_value)
-        {
-          history[index] = current_move_value;
-          current_solution_value = history[next_index];
-          index = (index + 1) % history.size();
-          idle_iteration = 0;
-        }
-        // else if (current_move_value < history[next_index])
-        // {
-        //   current_solution_value = history[next_index];
-        //   history[next_index] = current_move_value;
-        //   index = (index + 2) % history.size();
-        //   idle_iteration = 0;
-        // }
-        else {
-          current_solution_value = history[next_index];
-          index = (index + 1) % history.size();
-          idle_iteration++;
-        }
-        iteration++;
-      }
-      // post process solutions to get the pareto set
-      std::vector<SolutionValue<Input, Solution, T, CostStructure>> pareto_front;
-      for (size_t i = 0; i < history.size(); ++i)
-      {
-        bool non_dominated = true, drop_equal_solutions = false;
-        for (size_t j = 0; j < history.size(); ++j)
-        {
-          if (i == j)
-            continue;
-          if (history[i] > history[j])
-          {
-            non_dominated = false;
-            break;
-          }
-          if constexpr(std::equality_comparable<Solution>)
-          {
-            if (*history[i].GetSolution() == *history[j].GetSolution() && i > j)
-            {
-              drop_equal_solutions = true;
-              break;
-            }
-          }
-        }
-        if (non_dominated && !drop_equal_solutions)
-          pareto_front.emplace_back(history[i]);
-      }
-      std::cout << "Pareto front size: " << pareto_front.size() << std::endl;
-      for (const auto& sol : pareto_front)
-      {
-        std::cout << *(sol.GetSolution()) << " ---> ";
-        auto values = sol.GetValues();
-        std::copy(values.begin(), values.end(), std::ostream_iterator<T>(std::cout, " "));
-        std::cout << std::endl;
-      }
-      std::cout << "Iterations: " << iteration << std::endl;
-    }
-  protected:
-    std::shared_ptr<const SolutionManager> sm;
-    std::shared_ptr<const NeighborhoodExplorer> ne;
-    size_t iteration = 0, idle_iteration = 0, max_iterations = 1000000;
-    // parameter
-    size_t history_length;
-    std::atomic_bool stop_run;
-  };
-}
-
-
-// end --- plahc-one-chance.hh --- 
 

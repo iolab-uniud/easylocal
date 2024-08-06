@@ -5,16 +5,19 @@
 //  Created by Luca Di Gaspero on 03/03/23.
 //
 
-// #include <utils.hh>
-// #include <concepts.hh>
-// #include <cost-components.hh>
-// #include <solution-manager.hh>
-// #include <neighborhood-explorer.hh>
-// #include "multi-modal-neighborhood-explorer.hh"
-// #include <plahc.hh>
 #include <spdlog/spdlog.h>
 
+#if defined(EASYLOCAL_SINGLE)
 #include <easylocal.hh>
+#else
+#include <utils.hh>
+#include <concepts.hh>
+#include <cost-components.hh>
+#include <solution-manager.hh>
+#include <neighborhood-explorer.hh>
+#include "multi-modal-neighborhood-explorer.hh"
+#include <plahc.hh>
+#endif
 
 #include <iostream>
 #include <memory>
