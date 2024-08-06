@@ -4,5 +4,9 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/macos_modern_compiler.cmake)
 
 project(EasyLocal CXX)
 
-add_subdirectory(examples)
+option(COMPILE_EXAMPLES "Compile also the EL basic examples" on)
+
+if (COMPILE_EXAMPLES)
+    add_subdirectory(examples)
+endif()
 

@@ -123,8 +123,8 @@ if (SINGLE_HEADER)
     SOURCE_DIR ${heady_SOURCE_DIR}
     BINARY_DIR ${heady_BINARY_DIR}
     CMAKE_ARGS -DCMAKE_BUILD_TYPE:STRING=Release # Adjust build type as needed
-    STEP_TARGETS build
-    EXCLUDE_FROM_ALL TRUE
+    STEP_TARGETS build    
+    INSTALL_COMMAND cmake -E echo "Skipping install step for Heady."
   )
 
   add_custom_command(
@@ -140,6 +140,7 @@ if (SINGLE_HEADER)
   target_compile_features(easylocal_single_header INTERFACE cxx_std_23)
   target_sources(easylocal_single_header INTERFACE ${EASYLOCAL_SOURCE_DIRECTORY}/../include/easylocal.hh)
   set_property(TARGET easylocal_single_header PROPERTY CXX_STANDARD 23)
+  target_compile_definitions(easylocal_single_header INTERFACE EASYLOCAL_SINGLE)
 
   add_library(easylocal::single ALIAS easylocal_single_header)
 
