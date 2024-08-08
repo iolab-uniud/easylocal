@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.22)
-list(APPEND CMAKE_PREFIX_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
-include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/macos_modern_compiler.cmake)
+set(EASYLOCAL_PREFIX_PATH "${CMAKE_CURRENT_SOURCE_DIR}")
+list(APPEND CMAKE_PREFIX_PATH ${EASYLOCAL_PREFIX_PATH}/cmake)
+include(${EASYLOCAL_PREFIX_PATH}/cmake/macos_modern_compiler.cmake)
 
 project(EasyLocal CXX)
 
