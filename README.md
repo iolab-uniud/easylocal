@@ -1,60 +1,160 @@
-# EasyLocal next: S0a
+# EasyLocal++
 
-Incremental rebuild of EasyLocal++. This snapshot contains **only development
-infrastructure**, not a new framework implementation.
+[![CI](https://github.com/iolab-uniud/easylocal-next/actions/workflows/ci.yml/badge.svg)](https://github.com/iolab-uniud/easylocal-next/actions/workflows/ci.yml)
+![Tests](https://img.shields.io/badge/tests-MWE%20pending-lightgrey)
 
-**Status:** files authored; configuration, compilation, CTest, act and GitHub
-Actions have not been executed for this snapshot. Run them on the developer's
-Mac and in the configured CI. There are no inherited test results from earlier
-chat-generated bootstraps.
+EasyLocal++ is an incremental redesign of EasyLocal as a modern **C++23
+header-only library** for local search and metaheuristics.
+
+The project is being rebuilt from a minimal working example, with design
+decisions, tests, and an explicit migration path from EasyLocal 3 evolving
+together with the implementation.
+
+> **Current status:** infrastructure bootstrap complete. The first framework MWE
+> has not been implemented yet.
+
+## Requirements
+
+- C++23
+- CMake >= 3.25
+- Ninja
+- GCC or Clang-family compiler
+
+The current CI exercises:
+
+- Linux: GCC 14 and Clang 18
+- macOS ARM64: AppleClang and Homebrew GCC 14
+
+macOS Intel is intentionally not part of the supported CI matrix.
 
 ## Local development on macOS
 
-Prerequisites: Apple Command Line Tools or Xcode, CMake >= 3.25, and Ninja.
-With an existing Homebrew installation, missing build tools can be installed with
-`brew install cmake ninja`. The local preset uses `/usr/bin/clang++` (AppleClang).
-It does not require Homebrew GCC, Docker or act.
+The primary development environment is macOS.
+
+Prerequisites are Apple Command Line Tools or Xcode, CMake, and Ninja. With an
+existing Homebrew installation:
+
+```sh
+brew install cmake ninja
+```
+
+Configure, build, and run the tests with:
 
 ```sh
 cmake --preset dev
-cmake --build --preset dev --parallel 2
-ctest --preset dev
+cmake --build --preset dev --parallel
+ctest --preset dev --output-on-failure
 ```
 
-For native C++20 Release, use `release` instead of `dev` in all three commands.
-Build products and reports are under `build/<preset>/`, ignored by Git.
+For a local Release build:
 
-Read [the CI guide](docs/build-ci.md) before running act or enabling remote CI.
-The workflow expects `main` for pushes, any pull request, or manual dispatch.
+```sh
+cmake --preset release
+cmake --build --preset release --parallel
+ctest --preset release --output-on-failure
+```
 
-## Scope
+Build products and reports are kept under `build/<preset>/` and are ignored by
+Git.
 
-- Linux: GCC 14 / libstdc++ 14 and Clang 18 / libstdc++ 14.
-- macOS ARM64 only: AppleClang / libc++ and Homebrew GCC 14 / libstdc++ 14.
-- Each remote toolchain: C++20 Debug and C++23 Release.
-- Local act: Linux x86_64 containers only, selected with `-j linux`.
+## Header-only library
 
-C++23 mode here is a compatibility probe for the same C++20 source; it does not
-certify complete C++23 language or library support. Compiler versions are initial
-CI samples, not a declaration of the framework's minimum supported versions.
+EasyLocal++ is designed from the beginning as a header-only library.
 
-## What the tests mean
+The public CMake target is:
 
-`infrastructure.cpp20` compiles and runs a small concepts/ranges/span smoke check
-and prints the compiler, language macro and standard-library header version.
-`infrastructure.failure-signal` uses a deliberate nonzero return and CTest's
-`WILL_FAIL` property. Its **passing** result is expected. No test relies on
-`assert`, so its checks are not removed in Release. An empty suite is an error.
+```cmake
+EasyLocal::EasyLocal
+```
 
-These are infrastructure checks, not solver tests, numerical tests or performance
-measurements. The first meaningful problem-specific tests arrive with the MWE.
+Consumers will use the public headers under:
+
+```text
+include/easylocal/
+```
+
+The test suite also checks header self-containment and multi-translation-unit
+use to catch ODR issues that are particularly relevant to header-only
+libraries.
+
+## Continuous integration
+
+The full CI matrix is intentionally small and targets C++23 directly:
+
+| Platform | Toolchain |
+| --- | --- |
+| Ubuntu 24.04 | GCC 14 |
+| Ubuntu 24.04 | Clang 18 |
+| macOS ARM64 | AppleClang |
+| macOS ARM64 | GCC 14 |
+
+GitHub Actions runs automatically for release tags of the form `vX.Y.Z` and can
+also be started manually with `workflow_dispatch`.
+
+Normal development pushes do not trigger the remote CI automatically.
+
+Linux CI jobs can be exercised locally with `act`:
+
+```sh
+./scripts/act-ci.sh
+```
+
+or for a single toolchain:
+
+```sh
+./scripts/act-ci.sh gcc14
+./scripts/act-ci.sh clang18
+```
+
+## Tests
+
+The current tests validate only the development infrastructure and the
+header-only packaging assumptions:
+
+- toolchain/C++23 smoke test;
+- public-header self-containment;
+- multi-translation-unit linking.
+
+**Framework tests:** _placeholder — the first meaningful solver, cost, move,
+delta, and numerical-policy tests will be introduced with the MWE._
+
+CTest is the common test entry point locally and in CI:
+
+```sh
+ctest --preset dev --output-on-failure
+```
+
+## Versioning and releases
+
+`VERSION` is the single source of truth for the EasyLocal++ version.
+
+Releases use semantic versioning and annotated tags of the form:
+
+```text
+vMAJOR.MINOR.PATCH
+```
+
+The release helper updates `VERSION`, prepares a `CHANGELOG.md` entry from the
+Git history, optionally asks `claude -p` to draft it, opens it for manual
+review, runs the local Release build and CTest suite, and finally creates and
+pushes the release tag:
+
+```sh
+./scripts/release.sh patch
+./scripts/release.sh minor
+./scripts/release.sh major
+```
+
+The pushed tag triggers the full GitHub Actions CI matrix.
 
 ## Project records
 
-- [Plan and proposed MWE](docs/plan.md).
-- [Accepted decisions and open proposals](docs/decisions.md).
-- [EL3 migration record](docs/migration-el3.md).
+- [Plan and proposed MWE](docs/plan.md)
+- [Accepted decisions and open proposals](docs/decisions.md)
+- [EL3 migration record](docs/migration-el3.md)
+- [Build and CI notes](docs/build-ci.md)
 
-Legacy reference: Bitbucket `satt/easylocal-3`, branch `no_output`, reviewed commit
-`b40b14c2db2bdc81574a0613c52674644f8a0101`. The unfinished GitHub design is not the
-architectural baseline. No legacy code or third-party source is bundled here.
+The legacy reference is Bitbucket `satt/easylocal-3`, branch `no_output`,
+reviewed at commit `b40b14c2db2bdc81574a0613c52674644f8a0101`.
+
+The unfinished GitHub redesign is **not** the architectural baseline.
