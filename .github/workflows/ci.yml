@@ -1,0 +1,202 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  linux:
+    name: Linux / ${{ matrix.toolchain }} / ${{ matrix.preset }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        toolchain: [gcc14, clang18]
+        preset: [ci20-debug, ci23-release]
+    env:
+      PRESET: ${{ matrix.preset }}
+      TOOLCHAIN: ${{ matrix.toolchain }}
+    steps:
+      # act already copies the local worktree into its container.
+      # Remote runs must check out the exact commit selected by GitHub.
+      - name: Checkout
+        if: ${{ !env.ACT }}
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Provision Linux toolchain
+        run: |
+          if [ "$(id -u)" -eq 0 ]; then
+            elevate=()
+          else
+            elevate=(sudo)
+          fi
+          packages=(cmake ninja-build g++-14)
+          if [ "$TOOLCHAIN" = clang18 ]; then
+            packages+=(clang-18)
+          fi
+          "${elevate[@]}" apt-get update
+          "${elevate[@]}" env DEBIAN_FRONTEND=noninteractive \
+            apt-get install -y --no-install-recommends "${packages[@]}"
+          case "$TOOLCHAIN" in
+            gcc14)
+              echo 'CXX=/usr/bin/g++-14' >> "$GITHUB_ENV"
+              echo 'CXXFLAGS=' >> "$GITHUB_ENV"
+              echo 'EL_COMPILER_ID=GNU' >> "$GITHUB_ENV"
+              echo 'EL_COMPILER_MAJOR=14' >> "$GITHUB_ENV"
+              ;;
+            clang18)
+              gcc_dir="$(dirname "$(/usr/bin/gcc-14 -print-libgcc-file-name)")"
+              echo 'CXX=/usr/bin/clang++-18' >> "$GITHUB_ENV"
+              echo "CXXFLAGS=-stdlib=libstdc++ --gcc-install-dir=$gcc_dir" >> "$GITHUB_ENV"
+              echo 'EL_COMPILER_ID=Clang' >> "$GITHUB_ENV"
+              echo 'EL_COMPILER_MAJOR=18' >> "$GITHUB_ENV"
+              ;;
+            *) echo "Unknown toolchain: $TOOLCHAIN" >&2; exit 1 ;;
+          esac
+          echo 'EL_STDLIB=libstdcxx' >> "$GITHUB_ENV"
+
+      - name: Environment
+        run: |
+          mkdir -p "build/$PRESET"
+          {
+            uname -a
+            cat /etc/os-release
+            cmake --version
+            ninja --version
+            "$CXX" --version
+            echo "CXXFLAGS=${CXXFLAGS:-}"
+          } 2>&1 | tee "build/$PRESET/environment.log"
+
+      - name: Configure
+        run: cmake --preset "$PRESET" 2>&1 | tee "build/$PRESET/configure.log"
+
+      - name: Build
+        run: cmake --build --preset "$PRESET" --parallel 2 --verbose 2>&1 | tee "build/$PRESET/build.log"
+
+      - name: Test
+        run: ctest --preset "$PRESET" --verbose 2>&1 | tee "build/$PRESET/ctest.log"
+
+      - name: Upload diagnostics
+        if: ${{ always() && !env.ACT }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: linux-${{ matrix.toolchain }}-${{ matrix.preset }}
+          retention-days: 7
+          if-no-files-found: warn
+          path: |
+            build/${{ matrix.preset }}/*.log
+            build/${{ matrix.preset }}/toolchain.txt
+            build/${{ matrix.preset }}/junit.xml
+            build/${{ matrix.preset }}/CMakeCache.txt
+            build/${{ matrix.preset }}/compile_commands.json
+            build/${{ matrix.preset }}/CMakeFiles/CMakeConfigureLog.yaml
+            build/${{ matrix.preset }}/Testing/Temporary/LastTest.log
+
+  macos:
+    name: macOS ARM64 / ${{ matrix.toolchain }} / ${{ matrix.preset }}
+    runs-on: macos-15
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        toolchain: [appleclang, gcc14]
+        preset: [ci20-debug, ci23-release]
+    env:
+      PRESET: ${{ matrix.preset }}
+      TOOLCHAIN: ${{ matrix.toolchain }}
+      HOMEBREW_NO_AUTO_UPDATE: '1'
+      HOMEBREW_NO_INSTALL_CLEANUP: '1'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Provision native ARM64 toolchain
+        run: |
+          if [ "$(uname -m)" != arm64 ]; then
+            echo 'This job requires a native ARM64 macOS runner.' >&2
+            exit 1
+          fi
+          command -v cmake >/dev/null || brew install cmake
+          command -v ninja >/dev/null || brew install ninja
+          echo "SDKROOT=$(xcrun --sdk macosx --show-sdk-path)" >> "$GITHUB_ENV"
+          echo 'CXXFLAGS=' >> "$GITHUB_ENV"
+          case "$TOOLCHAIN" in
+            appleclang)
+              echo "CXX=$(xcrun --find clang++)" >> "$GITHUB_ENV"
+              echo 'EL_COMPILER_ID=AppleClang' >> "$GITHUB_ENV"
+              # Track the image's selected Xcode; report its exact version.
+              echo 'EL_COMPILER_MAJOR=' >> "$GITHUB_ENV"
+              echo 'EL_STDLIB=libcxx' >> "$GITHUB_ENV"
+              ;;
+            gcc14)
+              if ! brew list --versions gcc@14 >/dev/null 2>&1; then
+                brew install gcc@14
+              fi
+              compiler="$(brew --prefix gcc@14)/bin/g++-14"
+              if [ ! -x "$compiler" ]; then
+                echo "Missing GCC executable: $compiler" >&2
+                exit 1
+              fi
+              echo "CXX=$compiler" >> "$GITHUB_ENV"
+              echo 'EL_COMPILER_ID=GNU' >> "$GITHUB_ENV"
+              echo 'EL_COMPILER_MAJOR=14' >> "$GITHUB_ENV"
+              echo 'EL_STDLIB=libstdcxx' >> "$GITHUB_ENV"
+              ;;
+            *) echo "Unknown toolchain: $TOOLCHAIN" >&2; exit 1 ;;
+          esac
+
+      - name: Environment
+        run: |
+          mkdir -p "build/$PRESET"
+          {
+            uname -a
+            sw_vers
+            xcodebuild -version
+            echo "SDKROOT=$SDKROOT"
+            cmake --version
+            ninja --version
+            "$CXX" --version
+          } 2>&1 | tee "build/$PRESET/environment.log"
+
+      - name: Configure
+        run: cmake --preset "$PRESET" -DCMAKE_OSX_SYSROOT="$SDKROOT" 2>&1 | tee "build/$PRESET/configure.log"
+
+      - name: Build
+        run: cmake --build --preset "$PRESET" --parallel 2 --verbose 2>&1 | tee "build/$PRESET/build.log"
+
+      - name: Test
+        run: ctest --preset "$PRESET" --verbose 2>&1 | tee "build/$PRESET/ctest.log"
+
+      - name: Upload diagnostics
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: macos-arm64-${{ matrix.toolchain }}-${{ matrix.preset }}
+          retention-days: 7
+          if-no-files-found: warn
+          path: |
+            build/${{ matrix.preset }}/*.log
+            build/${{ matrix.preset }}/toolchain.txt
+            build/${{ matrix.preset }}/junit.xml
+            build/${{ matrix.preset }}/CMakeCache.txt
+            build/${{ matrix.preset }}/compile_commands.json
+            build/${{ matrix.preset }}/CMakeFiles/CMakeConfigureLog.yaml
+            build/${{ matrix.preset }}/Testing/Temporary/LastTest.log

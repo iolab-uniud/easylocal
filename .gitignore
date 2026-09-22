@@ -1,0 +1,8 @@
+/build/
+/CMakeUserPresets.json
+/.env
+/.env.*
+/.secrets
+/.secrets.*
+/.artifacts/
+.DS_Store

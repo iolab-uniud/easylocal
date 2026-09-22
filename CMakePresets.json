@@ -1,0 +1,134 @@
+{
+  "version": 6,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 25,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "_base",
+      "hidden": true,
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "cacheVariables": {
+        "BUILD_TESTING": true,
+        "CMAKE_CXX_STANDARD": "20",
+        "CMAKE_CXX_STANDARD_REQUIRED": true,
+        "CMAKE_CXX_EXTENSIONS": false,
+        "CMAKE_EXPORT_COMPILE_COMMANDS": true
+      }
+    },
+    {
+      "name": "dev",
+      "displayName": "Local macOS / AppleClang / C++20 / Debug",
+      "inherits": "_base",
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Darwin"
+      },
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_CXX_COMPILER": "/usr/bin/clang++",
+        "EASYLOCAL_EXPECTED_COMPILER_ID": "AppleClang",
+        "EASYLOCAL_EXPECTED_STDLIB": "libcxx",
+        "EASYLOCAL_WARNINGS_AS_ERRORS": false
+      }
+    },
+    {
+      "name": "release",
+      "displayName": "Local macOS / AppleClang / C++20 / Release",
+      "inherits": "dev",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    },
+    {
+      "name": "ci20-debug",
+      "displayName": "CI / explicit compiler / C++20 / Debug",
+      "inherits": "_base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_CXX_COMPILER": "$env{CXX}",
+        "EASYLOCAL_EXPECTED_COMPILER_ID": "$env{EL_COMPILER_ID}",
+        "EASYLOCAL_EXPECTED_COMPILER_MAJOR": "$env{EL_COMPILER_MAJOR}",
+        "EASYLOCAL_EXPECTED_STDLIB": "$env{EL_STDLIB}",
+        "EASYLOCAL_WARNINGS_AS_ERRORS": true
+      }
+    },
+    {
+      "name": "ci23-release",
+      "displayName": "CI / explicit compiler / C++23 / Release",
+      "inherits": "ci20-debug",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_CXX_STANDARD": "23"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "dev",
+      "configurePreset": "dev"
+    },
+    {
+      "name": "release",
+      "configurePreset": "release"
+    },
+    {
+      "name": "ci20-debug",
+      "configurePreset": "ci20-debug"
+    },
+    {
+      "name": "ci23-release",
+      "configurePreset": "ci23-release"
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "dev",
+      "configurePreset": "dev",
+      "output": {
+        "outputOnFailure": true,
+        "outputJUnitFile": "${sourceDir}/build/${presetName}/junit.xml"
+      },
+      "execution": {
+        "noTestsAction": "error"
+      }
+    },
+    {
+      "name": "release",
+      "configurePreset": "release",
+      "output": {
+        "outputOnFailure": true,
+        "outputJUnitFile": "${sourceDir}/build/${presetName}/junit.xml"
+      },
+      "execution": {
+        "noTestsAction": "error"
+      }
+    },
+    {
+      "name": "ci20-debug",
+      "configurePreset": "ci20-debug",
+      "output": {
+        "outputOnFailure": true,
+        "outputJUnitFile": "${sourceDir}/build/${presetName}/junit.xml"
+      },
+      "execution": {
+        "noTestsAction": "error"
+      }
+    },
+    {
+      "name": "ci23-release",
+      "configurePreset": "ci23-release",
+      "output": {
+        "outputOnFailure": true,
+        "outputJUnitFile": "${sourceDir}/build/${presetName}/junit.xml"
+      },
+      "execution": {
+        "noTestsAction": "error"
+      }
+    }
+  ]
+}
