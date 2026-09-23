@@ -6,3 +6,5 @@
 /.secrets.*
 /.artifacts/
 .DS_Store
+
+docs/context.md
