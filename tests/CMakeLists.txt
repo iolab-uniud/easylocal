@@ -27,6 +27,20 @@ add_test(
 )
 
 add_executable(
+    easylocal_runner_header_self_containment
+    runner_header_self_containment.cpp
+)
+target_link_libraries(
+    easylocal_runner_header_self_containment
+    PRIVATE
+        EasyLocal::EasyLocal
+)
+add_test(
+    NAME easylocal.runner-header-self-containment
+    COMMAND easylocal_runner_header_self_containment
+)
+
+add_executable(
     easylocal_multi_tu
     odr_main.cpp
     odr_a.cpp

@@ -2,7 +2,7 @@
 #include "first_improvement.hpp"
 #include "neighborhood_explorer.hpp"
 #include "random_first_improvement.hpp"
-#include "runner.hpp"
+#include <easylocal/runner.hpp>
 #include "solution_manager.hpp"
 
 #include <concepts>
@@ -95,6 +95,9 @@ auto expect(const bool condition, const std::string_view description) -> bool
 int main()
 {
     using namespace easylocal::mwe::assignment;
+    using easylocal::Runner;
+    using easylocal::neighborhood;
+    using easylocal::solution_manager;
 
     using NakedRunner = Runner<FirstImprovement>;
     using RunnerWithSM = decltype(

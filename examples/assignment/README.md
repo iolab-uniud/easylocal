@@ -119,9 +119,10 @@ defined.
 
 ## Search runner
 
-Search algorithms are wired through a prototype recipe-based `Runner`. Service
-objects are not constructed by application code. Instead, the runner records
-the concrete service types and any constructor arguments:
+Search algorithms are wired through the public recipe-based
+`easylocal::Runner`. Service objects are not constructed by application code.
+Instead, the runner records the concrete service types and any constructor
+arguments:
 
 ```cpp
 auto runner =
@@ -139,9 +140,9 @@ auto runner =
     | neighborhood<NeighborhoodExplorer>();
 ```
 
-`bind(instance)` materializes an instance-bound graph owned by a non-movable
-`BoundRunner`: first the solution manager, then the neighborhood explorer. A
-single run then supplies only its initial solution and any algorithm-specific
+`bind(instance)` materializes an instance-bound graph owned by an internal,
+non-movable bound runner: first the solution manager, then the neighborhood
+explorer. A single run then supplies only its initial solution and any algorithm-specific
 runtime dependencies such as an RNG:
 
 ```cpp

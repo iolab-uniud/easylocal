@@ -9,7 +9,7 @@
 #include <type_traits>
 #include <utility>
 
-namespace easylocal::mwe::assignment
+namespace easylocal
 {
 
 namespace detail
@@ -144,11 +144,9 @@ concept runner_neighborhood_explorer =
 template<class Spec>
 using service_t = typename Spec::service_type;
 
-} // namespace detail
-
 template<class SM, class NHE>
-    requires detail::runner_neighborhood_explorer<NHE, SM>
-class RunnerContext
+    requires runner_neighborhood_explorer<NHE, SM>
+class runner_context
 {
 public:
     using instance_type = typename SM::instance_type;
@@ -157,7 +155,7 @@ public:
     using solution_manager_type = SM;
     using neighborhood_explorer_type = NHE;
 
-    RunnerContext(const SM& solution_manager, const NHE& neighborhood) noexcept
+    runner_context(const SM& solution_manager, const NHE& neighborhood) noexcept
         : solution_manager_{solution_manager}, neighborhood_{neighborhood}
     {
     }
@@ -180,20 +178,20 @@ private:
 };
 
 template<class Algorithm, class SMSpec, class NHESpec>
-    requires detail::is_solution_manager_spec_v<SMSpec> &&
-             detail::is_neighborhood_spec_v<NHESpec> &&
-             detail::runner_neighborhood_explorer<
-                 detail::service_t<NHESpec>,
-                 detail::service_t<SMSpec>>
-class BoundRunner
+    requires is_solution_manager_spec_v<SMSpec> &&
+             is_neighborhood_spec_v<NHESpec> &&
+             runner_neighborhood_explorer<
+                 service_t<NHESpec>,
+                 service_t<SMSpec>>
+class bound_runner
 {
 public:
-    using solution_manager_type = detail::service_t<SMSpec>;
-    using neighborhood_explorer_type = detail::service_t<NHESpec>;
+    using solution_manager_type = service_t<SMSpec>;
+    using neighborhood_explorer_type = service_t<NHESpec>;
     using instance_type = typename solution_manager_type::instance_type;
     using solution_type = typename solution_manager_type::solution_type;
 
-    BoundRunner(
+    bound_runner(
         Algorithm algorithm,
         const instance_type& instance,
         const SMSpec& solution_manager_spec,
@@ -213,17 +211,17 @@ public:
             "NeighborhoodExplorer must share the bound Instance");
     }
 
-    BoundRunner(const BoundRunner&) = delete;
-    auto operator=(const BoundRunner&) -> BoundRunner& = delete;
-    BoundRunner(BoundRunner&&) = delete;
-    auto operator=(BoundRunner&&) -> BoundRunner& = delete;
+    bound_runner(const bound_runner&) = delete;
+    auto operator=(const bound_runner&) -> bound_runner& = delete;
+    bound_runner(bound_runner&&) = delete;
+    auto operator=(bound_runner&&) -> bound_runner& = delete;
 
     template<class... RunArgs>
     [[nodiscard]]
     auto run(solution_type solution, RunArgs&&... run_args)
         requires requires(
             Algorithm& algorithm,
-            const RunnerContext<
+            const runner_context<
                 solution_manager_type,
                 neighborhood_explorer_type>& context,
             solution_type candidate,
@@ -239,7 +237,7 @@ public:
             solution_manager_.is_valid(solution) &&
             "initial Solution must be compatible with the bound Instance");
 
-        const RunnerContext<
+        const runner_context<
             solution_manager_type,
             neighborhood_explorer_type>
             context{
@@ -259,6 +257,8 @@ private:
     solution_manager_type solution_manager_;
     neighborhood_explorer_type neighborhood_;
 };
+
+} // namespace detail
 
 template<
     class Algorithm,
@@ -397,7 +397,7 @@ public:
                  (SMSpec::template constructible_from<const instance_type>) &&
                  (NHESpec::template constructible_from<solution_manager_type>)
     {
-        return BoundRunner<Algorithm, SMSpec, NHESpec>{
+        return detail::bound_runner<Algorithm, SMSpec, NHESpec>{
             algorithm_,
             instance,
             solution_manager_spec_,
@@ -410,7 +410,7 @@ public:
         requires (SMSpec::template constructible_from<const instance_type>) &&
                  (NHESpec::template constructible_from<solution_manager_type>)
     {
-        return BoundRunner<Algorithm, SMSpec, NHESpec>{
+        return detail::bound_runner<Algorithm, SMSpec, NHESpec>{
             std::move(algorithm_),
             instance,
             solution_manager_spec_,
@@ -478,4 +478,4 @@ auto operator|(
 template<class Algorithm>
 Runner(Algorithm) -> Runner<std::remove_cvref_t<Algorithm>>;
 
-} // namespace easylocal::mwe::assignment
+} // namespace easylocal

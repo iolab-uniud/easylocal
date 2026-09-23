@@ -8,8 +8,9 @@ header-only library** for local search and metaheuristics.
 The project is being rebuilt from concrete minimal working examples, with tests
 and the public API evolving incrementally from the contracts they expose.
 
-> **Current status:** infrastructure bootstrap complete; the first concrete
-> assignment MWE is in place outside the public framework API.
+> **Current status:** infrastructure bootstrap complete; the first public
+> recipe-based `Runner` facility has been extracted from the assignment MWE,
+> while domain model and search algorithms remain example-local.
 
 ## Requirements
 
