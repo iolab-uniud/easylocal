@@ -6,6 +6,7 @@
 #include "solution_manager.hpp"
 
 #include <concepts>
+#include <functional>
 #include <iostream>
 #include <random>
 #include <string_view>
@@ -18,28 +19,64 @@ namespace
 using namespace easylocal::mwe::assignment;
 
 template<class T>
-concept CanBindSolutionManager = requires(T runner, const SolutionManager& sm) {
-    std::move(runner).bind(sm);
+concept CanAddSolutionManager = requires(T runner) {
+    std::move(runner).template with_solution_manager<SolutionManager>();
 };
 
 template<class T>
-concept CanBindNeighborhood = requires(T runner, const NeighborhoodExplorer& nhe) {
-    std::move(runner).bind(nhe);
+concept CanAddNeighborhood = requires(T runner) {
+    std::move(runner).template with_neighborhood<NeighborhoodExplorer>();
 };
 
 template<class T>
-concept CanRun = requires(T runner, const Instance& instance, Solution solution) {
-    runner.run(instance, std::move(solution));
+concept CanBindInstance = requires(T runner, const Instance& instance) {
+    std::move(runner).bind(instance);
+};
+
+template<class T>
+concept CanRun = requires(T& runner, Solution solution) {
+    runner.run(std::move(solution));
 };
 
 template<class T, class RNG>
-concept CanRunWithRng = requires(
-    T runner,
-    const Instance& instance,
-    Solution solution,
-    RNG& rng)
+concept CanRunWithRng = requires(T& runner, Solution solution, RNG& rng) {
+    runner.run(std::move(solution), rng);
+};
+
+class ConfiguredNeighborhoodExplorer
 {
-    runner.run(instance, std::move(solution), rng);
+public:
+    using instance_type = Instance;
+    using solution_type = Solution;
+    using move_type = Move;
+
+    ConfiguredNeighborhoodExplorer(
+        SolutionManager& solution_manager,
+        int& construction_marker) noexcept
+        : inner_{solution_manager}
+    {
+        ++construction_marker;
+    }
+
+    [[nodiscard]]
+    auto instance() const noexcept -> const Instance&
+    {
+        return inner_.instance();
+    }
+
+    [[nodiscard]]
+    auto moves(const Solution& solution) const
+    {
+        return inner_.moves(solution);
+    }
+
+    void make_move(Solution& solution, const Move& move) const noexcept
+    {
+        inner_.make_move(solution, move);
+    }
+
+private:
+    NeighborhoodExplorer inner_;
 };
 
 auto expect(const bool condition, const std::string_view description) -> bool
@@ -60,95 +97,85 @@ int main()
     using namespace easylocal::mwe::assignment;
 
     using NakedRunner = Runner<FirstImprovement>;
-    using RunnerWithSM = Runner<FirstImprovement, SolutionManager>;
-    using EquippedRunner =
-        Runner<FirstImprovement, SolutionManager, NeighborhoodExplorer>;
+    using RunnerWithSM = decltype(
+        std::declval<NakedRunner&&>()
+            .template with_solution_manager<SolutionManager>());
+    using ConfiguredRunner = decltype(
+        std::declval<RunnerWithSM&&>()
+            .template with_neighborhood<NeighborhoodExplorer>());
+    using BoundFirstRunner = decltype(
+        std::declval<ConfiguredRunner&&>().bind(
+            std::declval<const Instance&>()));
 
-    using BoundFirstSM = decltype(
-        std::declval<NakedRunner&&>().bind(
-            std::declval<const SolutionManager&>()));
-    using BoundFirstNeighborhood = decltype(
-        std::declval<RunnerWithSM&&>().bind(
-            std::declval<const NeighborhoodExplorer&>()));
+    using PipedConfiguredRunner = decltype(
+        Runner{FirstImprovement{{.max_evaluations = 1}}}
+        | solution_manager<SolutionManager>()
+        | neighborhood<NeighborhoodExplorer>());
 
-    static_assert(std::same_as<BoundFirstSM, RunnerWithSM>);
-    static_assert(std::same_as<BoundFirstNeighborhood, EquippedRunner>);
+    static_assert(std::same_as<ConfiguredRunner, PipedConfiguredRunner>);
 
-    static_assert(CanBindSolutionManager<NakedRunner>);
-    static_assert(!CanBindNeighborhood<NakedRunner>);
+    static_assert(CanAddSolutionManager<NakedRunner>);
+    static_assert(!CanAddNeighborhood<NakedRunner>);
+    static_assert(!CanBindInstance<NakedRunner>);
     static_assert(!CanRun<NakedRunner>);
     static_assert(!CanRunWithRng<NakedRunner, std::mt19937>);
 
-    static_assert(!CanBindSolutionManager<RunnerWithSM>);
-    static_assert(CanBindNeighborhood<RunnerWithSM>);
+    static_assert(!CanAddSolutionManager<RunnerWithSM>);
+    static_assert(CanAddNeighborhood<RunnerWithSM>);
+    static_assert(!CanBindInstance<RunnerWithSM>);
     static_assert(!CanRun<RunnerWithSM>);
     static_assert(!CanRunWithRng<RunnerWithSM, std::mt19937>);
 
-    static_assert(!CanBindSolutionManager<EquippedRunner>);
-    static_assert(!CanBindNeighborhood<EquippedRunner>);
-    static_assert(CanRun<EquippedRunner>);
-    static_assert(!CanRunWithRng<EquippedRunner, std::mt19937>);
+    static_assert(!CanAddSolutionManager<ConfiguredRunner>);
+    static_assert(!CanAddNeighborhood<ConfiguredRunner>);
+    static_assert(CanBindInstance<ConfiguredRunner>);
+    static_assert(!CanRun<ConfiguredRunner>);
+    static_assert(!CanRunWithRng<ConfiguredRunner, std::mt19937>);
+
+    static_assert(std::same_as<
+        BoundFirstRunner::solution_manager_type,
+        SolutionManager>);
+    static_assert(std::same_as<
+        BoundFirstRunner::neighborhood_explorer_type,
+        NeighborhoodExplorer>);
+    static_assert(!std::copy_constructible<BoundFirstRunner>);
+    static_assert(!std::movable<BoundFirstRunner>);
+    static_assert(CanRun<BoundFirstRunner>);
+    static_assert(!CanRunWithRng<BoundFirstRunner, std::mt19937>);
 
     using NakedBestRunner = Runner<BestImprovement>;
-    using BestRunnerWithSM = Runner<BestImprovement, SolutionManager>;
-    using EquippedBestRunner =
-        Runner<BestImprovement, SolutionManager, NeighborhoodExplorer>;
+    using BestRunnerWithSM = decltype(
+        std::declval<NakedBestRunner&&>()
+            .template with_solution_manager<SolutionManager>());
+    using ConfiguredBestRunner = decltype(
+        std::declval<BestRunnerWithSM&&>()
+            .template with_neighborhood<NeighborhoodExplorer>());
+    using BoundBestRunner = decltype(
+        std::declval<ConfiguredBestRunner&&>().bind(
+            std::declval<const Instance&>()));
 
-    using BoundBestSM = decltype(
-        std::declval<NakedBestRunner&&>().bind(
-            std::declval<const SolutionManager&>()));
-    using BoundBestNeighborhood = decltype(
-        std::declval<BestRunnerWithSM&&>().bind(
-            std::declval<const NeighborhoodExplorer&>()));
-
-    static_assert(std::same_as<BoundBestSM, BestRunnerWithSM>);
-    static_assert(std::same_as<BoundBestNeighborhood, EquippedBestRunner>);
-
-    static_assert(CanBindSolutionManager<NakedBestRunner>);
-    static_assert(!CanBindNeighborhood<NakedBestRunner>);
-    static_assert(!CanRun<NakedBestRunner>);
-    static_assert(!CanRunWithRng<NakedBestRunner, std::mt19937>);
-
-    static_assert(!CanBindSolutionManager<BestRunnerWithSM>);
-    static_assert(CanBindNeighborhood<BestRunnerWithSM>);
-    static_assert(!CanRun<BestRunnerWithSM>);
-    static_assert(!CanRunWithRng<BestRunnerWithSM, std::mt19937>);
-
-    static_assert(!CanBindSolutionManager<EquippedBestRunner>);
-    static_assert(!CanBindNeighborhood<EquippedBestRunner>);
-    static_assert(CanRun<EquippedBestRunner>);
-    static_assert(!CanRunWithRng<EquippedBestRunner, std::mt19937>);
+    static_assert(CanAddSolutionManager<NakedBestRunner>);
+    static_assert(CanAddNeighborhood<BestRunnerWithSM>);
+    static_assert(CanBindInstance<ConfiguredBestRunner>);
+    static_assert(CanRun<BoundBestRunner>);
+    static_assert(!CanRunWithRng<BoundBestRunner, std::mt19937>);
 
     using NakedRandomRunner = Runner<RandomFirstImprovement>;
-    using RandomRunnerWithSM = Runner<RandomFirstImprovement, SolutionManager>;
-    using EquippedRandomRunner =
-        Runner<RandomFirstImprovement, SolutionManager, NeighborhoodExplorer>;
+    using RandomRunnerWithSM = decltype(
+        std::declval<NakedRandomRunner&&>()
+            .template with_solution_manager<SolutionManager>());
+    using ConfiguredRandomRunner = decltype(
+        std::declval<RandomRunnerWithSM&&>()
+            .template with_neighborhood<NeighborhoodExplorer>());
+    using BoundRandomRunner = decltype(
+        std::declval<ConfiguredRandomRunner&&>().bind(
+            std::declval<const Instance&>()));
 
-    using BoundRandomSM = decltype(
-        std::declval<NakedRandomRunner&&>().bind(
-            std::declval<const SolutionManager&>()));
-    using BoundRandomNeighborhood = decltype(
-        std::declval<RandomRunnerWithSM&&>().bind(
-            std::declval<const NeighborhoodExplorer&>()));
-
-    static_assert(std::same_as<BoundRandomSM, RandomRunnerWithSM>);
-    static_assert(
-        std::same_as<BoundRandomNeighborhood, EquippedRandomRunner>);
-
-    static_assert(CanBindSolutionManager<NakedRandomRunner>);
-    static_assert(!CanBindNeighborhood<NakedRandomRunner>);
-    static_assert(!CanRun<NakedRandomRunner>);
-    static_assert(!CanRunWithRng<NakedRandomRunner, std::mt19937>);
-
-    static_assert(!CanBindSolutionManager<RandomRunnerWithSM>);
-    static_assert(CanBindNeighborhood<RandomRunnerWithSM>);
-    static_assert(!CanRun<RandomRunnerWithSM>);
-    static_assert(!CanRunWithRng<RandomRunnerWithSM, std::mt19937>);
-
-    static_assert(!CanBindSolutionManager<EquippedRandomRunner>);
-    static_assert(!CanBindNeighborhood<EquippedRandomRunner>);
-    static_assert(!CanRun<EquippedRandomRunner>);
-    static_assert(CanRunWithRng<EquippedRandomRunner, std::mt19937>);
+    static_assert(CanAddSolutionManager<NakedRandomRunner>);
+    static_assert(CanAddNeighborhood<RandomRunnerWithSM>);
+    static_assert(CanBindInstance<ConfiguredRandomRunner>);
+    static_assert(!CanRun<BoundRandomRunner>);
+    static_assert(CanRunWithRng<BoundRandomRunner, std::mt19937>);
 
     bool ok = true;
 
@@ -156,21 +183,44 @@ int main()
         .demand = {4, 3, 2},
         .capacity = {5, 5},
     };
-    const SolutionManager solution_manager{instance};
-    const NeighborhoodExplorer neighborhood{solution_manager};
 
     const Solution initial{
         .assignment = {0, 0, 1},
     };
 
+    int construction_marker = 0;
+    auto configured_services =
+        Runner{FirstImprovement{{.max_evaluations = 8}}}
+            .with_solution_manager<SolutionManager>()
+            .with_neighborhood<ConfiguredNeighborhoodExplorer>(
+                std::ref(construction_marker));
+
+    ok &= expect(
+        construction_marker == 0,
+        "service recipes do not construct instance-bound services eagerly");
+
+    auto configured_bound = configured_services.bind(instance);
+
+    ok &= expect(
+        construction_marker == 1,
+        "bind(instance) materializes the configured service graph exactly once");
+
+    const auto configured_result = configured_bound.run(initial);
+
+    ok &= expect(
+        configured_result.cost == Cost{0},
+        "constructor arguments captured by the runner recipe reach the bound neighborhood");
+
     const auto run_with_budget =
         [&](const std::size_t max_evaluations, Solution solution) {
-            return Runner{FirstImprovement{{
-                              .max_evaluations = max_evaluations,
-                          }}}
-                .bind(solution_manager)
-                .bind(neighborhood)
-                .run(instance, std::move(solution));
+            auto runner =
+                Runner{FirstImprovement{{
+                    .max_evaluations = max_evaluations,
+                }}}
+                    .with_solution_manager<SolutionManager>()
+                    .with_neighborhood<NeighborhoodExplorer>();
+
+            return runner.bind(instance).run(std::move(solution));
         };
 
     const auto complete = run_with_budget(8, initial);
@@ -240,18 +290,16 @@ int main()
         .demand = {1, 2},
         .capacity = {10},
     };
-    const SolutionManager single_machine_manager{single_machine_instance};
-    const NeighborhoodExplorer single_machine_neighborhood{
-        single_machine_manager};
     const Solution single_machine_solution{
         .assignment = {0, 0},
     };
 
     const auto empty_neighborhood =
-        Runner{FirstImprovement{{.max_evaluations = 1}}}
-            .bind(single_machine_manager)
-            .bind(single_machine_neighborhood)
-            .run(single_machine_instance, single_machine_solution);
+        (Runner{FirstImprovement{{.max_evaluations = 1}}}
+         | solution_manager<SolutionManager>()
+         | neighborhood<NeighborhoodExplorer>())
+            .bind(single_machine_instance)
+            .run(single_machine_solution);
 
     ok &= expect(
         empty_neighborhood.evaluations == 1,
@@ -263,12 +311,14 @@ int main()
 
     const auto run_best_with_budget =
         [&](const std::size_t max_evaluations, Solution solution) {
-            return Runner{BestImprovement{{
-                              .max_evaluations = max_evaluations,
-                          }}}
-                .bind(solution_manager)
-                .bind(neighborhood)
-                .run(instance, std::move(solution));
+            auto runner =
+                Runner{BestImprovement{{
+                    .max_evaluations = max_evaluations,
+                }}}
+                | solution_manager<SolutionManager>()
+                | neighborhood<NeighborhoodExplorer>();
+
+            return runner.bind(instance).run(std::move(solution));
         };
 
     const auto best_complete = run_best_with_budget(7, initial);
@@ -334,10 +384,11 @@ int main()
         "accepted best move at the budget limit does not certify the next neighborhood");
 
     const auto best_empty_neighborhood =
-        Runner{BestImprovement{{.max_evaluations = 1}}}
-            .bind(single_machine_manager)
-            .bind(single_machine_neighborhood)
-            .run(single_machine_instance, single_machine_solution);
+        (Runner{BestImprovement{{.max_evaluations = 1}}}
+         | solution_manager<SolutionManager>()
+         | neighborhood<NeighborhoodExplorer>())
+            .bind(single_machine_instance)
+            .run(single_machine_solution);
 
     ok &= expect(
         best_empty_neighborhood.evaluations == 1,
@@ -349,12 +400,14 @@ int main()
 
     const auto run_random_with_budget =
         [&](const std::size_t max_evaluations, Solution solution, auto& rng) {
-            return Runner{RandomFirstImprovement{{
-                              .max_evaluations = max_evaluations,
-                          }}}
-                .bind(solution_manager)
-                .bind(neighborhood)
-                .run(instance, std::move(solution), rng);
+            auto runner =
+                Runner{RandomFirstImprovement{{
+                    .max_evaluations = max_evaluations,
+                }}}
+                    .with_solution_manager<SolutionManager>()
+                    .with_neighborhood<NeighborhoodExplorer>();
+
+            return runner.bind(instance).run(std::move(solution), rng);
         };
 
     std::mt19937 random_rng_a{12345};
@@ -397,13 +450,11 @@ int main()
 
     std::mt19937 random_empty_rng{99};
     const auto random_empty_neighborhood =
-        Runner{RandomFirstImprovement{{.max_evaluations = 1}}}
-            .bind(single_machine_manager)
-            .bind(single_machine_neighborhood)
-            .run(
-                single_machine_instance,
-                single_machine_solution,
-                random_empty_rng);
+        (Runner{RandomFirstImprovement{{.max_evaluations = 1}}}
+         | solution_manager<SolutionManager>()
+         | neighborhood<NeighborhoodExplorer>())
+            .bind(single_machine_instance)
+            .run(single_machine_solution, random_empty_rng);
 
     ok &= expect(
         random_empty_neighborhood.evaluations == 1,

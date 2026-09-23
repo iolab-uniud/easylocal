@@ -117,6 +117,41 @@ underlying `Solution` representation changes triggers an assertion. The check
 uses a debug-only solution fingerprint and is compiled out when `NDEBUG` is
 defined.
 
+## Search runner
+
+Search algorithms are wired through a prototype recipe-based `Runner`. Service
+objects are not constructed by application code. Instead, the runner records
+the concrete service types and any constructor arguments:
+
+```cpp
+auto runner =
+    Runner{FirstImprovement{params}}
+        .with_solution_manager<SolutionManager>()
+        .with_neighborhood<NeighborhoodExplorer>();
+```
+
+The equivalent pipeline syntax is also supported:
+
+```cpp
+auto runner =
+    Runner{FirstImprovement{params}}
+    | solution_manager<SolutionManager>()
+    | neighborhood<NeighborhoodExplorer>();
+```
+
+`bind(instance)` materializes an instance-bound graph owned by a non-movable
+`BoundRunner`: first the solution manager, then the neighborhood explorer. A
+single run then supplies only its initial solution and any algorithm-specific
+runtime dependencies such as an RNG:
+
+```cpp
+auto bound = runner.bind(instance);
+auto result = bound.run(initial_solution);
+```
+
+This keeps service construction state reusable before an instance is loaded,
+while ownership and graph consistency remain internal to the runner.
+
 ## Deferred
 
 The current MWE deliberately does not define:
@@ -130,6 +165,5 @@ The current MWE deliberately does not define:
 - generic cost structures;
 - delta evaluation;
 - floating-point semantics;
-- search algorithms;
 - CLI/configuration;
 - tracing/logging.
