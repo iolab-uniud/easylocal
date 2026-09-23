@@ -46,12 +46,21 @@ private:
     }
 
 public:
+    using instance_type = Instance;
+    using solution_type = Solution;
+    using move_type = Move;
     using random_sampling = sampling::without_replacement;
 
     explicit NeighborhoodExplorer(
         const SolutionManager& solution_manager) noexcept
         : solution_manager_{solution_manager}
     {
+    }
+
+    [[nodiscard]]
+    auto instance() const noexcept -> const Instance&
+    {
+        return solution_manager_.instance();
     }
 
     [[nodiscard]]

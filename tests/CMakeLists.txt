@@ -69,3 +69,17 @@ add_test(
     NAME easylocal.assignment-neighborhood
     COMMAND easylocal_assignment_neighborhood_test
 )
+
+add_executable(
+    easylocal_assignment_search_test
+    assignment_search.cpp
+)
+target_link_libraries(
+    easylocal_assignment_search_test
+    PRIVATE
+        easylocal_assignment_mwe_model
+)
+add_test(
+    NAME easylocal.assignment-search
+    COMMAND easylocal_assignment_search_test
+)

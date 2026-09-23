@@ -1,5 +1,6 @@
 #pragma once
 
+#include "cost.hpp"
 #include "instance.hpp"
 #include "solution.hpp"
 
@@ -15,7 +16,9 @@ namespace easylocal::mwe::assignment
 class SolutionManager
 {
 public:
-    using cost_type = std::int64_t;
+    using instance_type = Instance;
+    using solution_type = Solution;
+    using cost_type = Cost;
 
     explicit SolutionManager(const Instance& instance) noexcept
         : instance_{instance}
@@ -48,23 +51,25 @@ public:
     {
         assert(is_valid(solution));
 
-        std::vector<cost_type> load(instance_.capacity.size(), cost_type{0});
+        std::vector<std::int64_t> load(
+            instance_.capacity.size(),
+            std::int64_t{0});
 
         for (std::size_t job = 0; job < solution.assignment.size(); ++job)
         {
             load[solution.assignment[job]] += instance_.demand[job];
         }
 
-        cost_type total_overload = 0;
+        std::int64_t total_overload = 0;
 
         for (std::size_t machine = 0; machine < load.size(); ++machine)
         {
             total_overload += std::max(
-                cost_type{0},
+                std::int64_t{0},
                 load[machine] - instance_.capacity[machine]);
         }
 
-        return total_overload;
+        return Cost{total_overload};
     }
 
 private:

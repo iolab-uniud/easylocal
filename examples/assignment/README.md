@@ -24,7 +24,9 @@ capacity = [5, 5]
 solution = [0, 0, 1]
 ```
 
-Loads are `[7, 2]`, so the cost is `2`.
+Loads are `[7, 2]`, so the cost is `2`. The MWE represents this result as a
+small `Cost` value type whose ordering is defined with C++20/23 three-way
+comparison.
 
 Move `(job=1, destination=1)` produces:
 
@@ -45,6 +47,10 @@ cost     = 0
 `Move`
 : Plain descriptive value. It does not store a `Solution` or `Instance`
   pointer/reference.
+
+`Cost`
+: Value returned by full evaluation. It owns its ordering semantics through
+  three-way comparison.
 
 `SolutionManager`
 : Instance-bound service responsible for structural solution validation and full

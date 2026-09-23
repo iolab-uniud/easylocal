@@ -1,5 +1,6 @@
 #include "solution_manager.hpp"
 
+#include <compare>
 #include <iostream>
 #include <string_view>
 
@@ -23,6 +24,8 @@ int main()
 {
     using namespace easylocal::mwe::assignment;
 
+    static_assert(std::three_way_comparable<Cost>);
+
     bool ok = true;
 
     const Instance instance{
@@ -43,8 +46,12 @@ int main()
         "overloaded solution is structurally valid");
 
     ok &= expect(
-        solution_manager.evaluate(initial) == 2,
+        solution_manager.evaluate(initial) == Cost{2},
         "hand-computed initial overload is 2");
+
+    ok &= expect(Cost{1} < Cost{2}, "lower cost compares as better");
+    ok &= expect(Cost{2} > Cost{1}, "higher cost compares as worse");
+    ok &= expect(Cost{2} <= Cost{2}, "equal costs satisfy non-strict ordering");
 
     // Solution has ordinary value semantics.
     Solution copy = initial;
@@ -84,11 +91,11 @@ int main()
         "same representation is valid for a second instance");
 
     ok &= expect(
-        roomy_manager.evaluate(initial) == 0,
+        roomy_manager.evaluate(initial) == Cost{0},
         "same solution is evaluated relative to the manager's instance");
 
     ok &= expect(
-        solution_manager.evaluate(initial) == 2,
+        solution_manager.evaluate(initial) == Cost{2},
         "first manager remains bound to the first instance");
 
     return ok ? 0 : 1;
