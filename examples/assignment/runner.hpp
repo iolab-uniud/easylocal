@@ -205,14 +205,22 @@ public:
     {
     }
 
+    template<class... RunArgs>
     [[nodiscard]]
-    auto run(const instance_type& instance, solution_type solution)
+    auto run(
+        const instance_type& instance,
+        solution_type solution,
+        RunArgs&&... run_args)
         requires requires(
             Algorithm& algorithm,
             const RunnerContext<SM, NHE>& context,
-            solution_type candidate)
+            solution_type candidate,
+            RunArgs&&... forwarded_args)
         {
-            algorithm.run(context, std::move(candidate));
+            algorithm.run(
+                context,
+                std::move(candidate),
+                std::forward<RunArgs>(forwarded_args)...);
         }
     {
         assert(
@@ -232,7 +240,10 @@ public:
             neighborhood_,
         };
 
-        return algorithm_.run(context, std::move(solution));
+        return algorithm_.run(
+            context,
+            std::move(solution),
+            std::forward<RunArgs>(run_args)...);
     }
 
 private:
