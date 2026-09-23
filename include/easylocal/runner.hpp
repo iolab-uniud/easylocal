@@ -337,11 +337,8 @@ public:
             NHE,
             std::decay_t<Args>...>;
 
-        return Runner<Algorithm, SMSpec, spec_type>{
-            algorithm_,
-            solution_manager_spec_,
-            spec_type{std::forward<Args>(args)...},
-        };
+        return with_neighborhood(
+            spec_type{std::forward<Args>(args)...});
     }
 
     template<class NHE, class... Args>
@@ -356,10 +353,49 @@ public:
             NHE,
             std::decay_t<Args>...>;
 
+        return std::move(*this).with_neighborhood(
+            spec_type{std::forward<Args>(args)...});
+    }
+
+    template<class NHESpec>
+        requires detail::is_neighborhood_spec_v<std::remove_cvref_t<NHESpec>> &&
+                 detail::runner_neighborhood_explorer<
+                     detail::service_t<std::remove_cvref_t<NHESpec>>,
+                     solution_manager_type> &&
+                 std::copy_constructible<Algorithm> &&
+                 std::copy_constructible<SMSpec> &&
+                 std::constructible_from<
+                     std::remove_cvref_t<NHESpec>,
+                     NHESpec&&>
+    [[nodiscard]]
+    auto with_neighborhood(NHESpec&& spec) const &
+    {
+        using spec_type = std::remove_cvref_t<NHESpec>;
+
+        return Runner<Algorithm, SMSpec, spec_type>{
+            algorithm_,
+            solution_manager_spec_,
+            std::forward<NHESpec>(spec),
+        };
+    }
+
+    template<class NHESpec>
+        requires detail::is_neighborhood_spec_v<std::remove_cvref_t<NHESpec>> &&
+                 detail::runner_neighborhood_explorer<
+                     detail::service_t<std::remove_cvref_t<NHESpec>>,
+                     solution_manager_type> &&
+                 std::constructible_from<
+                     std::remove_cvref_t<NHESpec>,
+                     NHESpec&&>
+    [[nodiscard]]
+    auto with_neighborhood(NHESpec&& spec) &&
+    {
+        using spec_type = std::remove_cvref_t<NHESpec>;
+
         return Runner<Algorithm, SMSpec, spec_type>{
             std::move(algorithm_),
             std::move(solution_manager_spec_),
-            spec_type{std::forward<Args>(args)...},
+            std::forward<NHESpec>(spec),
         };
     }
 
@@ -460,19 +496,16 @@ auto operator|(
         std::move(spec).args());
 }
 
-template<class Algorithm, class SMSpec, class NHE, class... Args>
-    requires detail::is_solution_manager_spec_v<SMSpec>
+template<class Algorithm, class SMSpec, class NHESpec>
+    requires detail::is_solution_manager_spec_v<SMSpec> &&
+             detail::is_neighborhood_spec_v<std::remove_cvref_t<NHESpec>>
 [[nodiscard]]
 auto operator|(
     Runner<Algorithm, SMSpec, detail::unconfigured_t> runner,
-    detail::service_spec<detail::neighborhood_tag, NHE, Args...> spec)
+    NHESpec&& spec)
 {
-    return std::apply(
-        [&]<class... StoredArgs>(StoredArgs&&... args) {
-            return std::move(runner).template with_neighborhood<NHE>(
-                std::forward<StoredArgs>(args)...);
-        },
-        std::move(spec).args());
+    return std::move(runner).with_neighborhood(
+        std::forward<NHESpec>(spec));
 }
 
 template<class Algorithm>

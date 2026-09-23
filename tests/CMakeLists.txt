@@ -97,3 +97,31 @@ add_test(
     NAME easylocal.assignment-search
     COMMAND easylocal_assignment_search_test
 )
+
+add_executable(
+    easylocal_neighborhood_union_header_self_containment
+    neighborhood_union_header_self_containment.cpp
+)
+target_link_libraries(
+    easylocal_neighborhood_union_header_self_containment
+    PRIVATE
+        EasyLocal::EasyLocal
+)
+add_test(
+    NAME easylocal.neighborhood-union-header-self-containment
+    COMMAND easylocal_neighborhood_union_header_self_containment
+)
+
+add_executable(
+    easylocal_neighborhood_composition_test
+    neighborhood_composition.cpp
+)
+target_link_libraries(
+    easylocal_neighborhood_composition_test
+    PRIVATE
+        easylocal_assignment_mwe_model
+)
+add_test(
+    NAME easylocal.neighborhood-composition
+    COMMAND easylocal_neighborhood_composition_test
+)

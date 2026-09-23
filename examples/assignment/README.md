@@ -117,6 +117,32 @@ underlying `Solution` representation changes triggers an assertion. The check
 uses a debug-only solution fingerprint and is compiled out when `NDEBUG` is
 defined.
 
+## Neighborhood composition
+
+The public `easylocal::neighborhood_union(...)` helper composes two or more
+neighborhood recipes before an instance is bound:
+
+```cpp
+auto combined = neighborhood_union(
+    neighborhood<RelocateNeighborhood>(),
+    neighborhood<SwapNeighborhood>(),
+    neighborhood<AnotherNeighborhood>());
+```
+
+At `bind(instance)`, every child explorer is constructed from the same bound
+solution manager. The resulting composite explorer owns the children and
+behaves as one deterministic neighborhood. `moves(solution)` lazily concatenates
+child traversals in declaration order; no complete neighborhood is materialized.
+
+Child explorers may use different `move_type`s. The composite move keeps the
+originating child encoded in its type-safe tagged variant so `make_move()` can
+dispatch without virtual calls. The same mechanism also distinguishes equal C++
+move types originating from different child neighborhoods.
+
+Random traversal of a union is deliberately deferred. The accepted propagation
+rule is that a union can guarantee `without_replacement` only when every child
+does; the actual random mixing scheme is not selected yet.
+
 ## Search runner
 
 Search algorithms are wired through the public recipe-based

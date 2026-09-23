@@ -8,9 +8,10 @@ header-only library** for local search and metaheuristics.
 The project is being rebuilt from concrete minimal working examples, with tests
 and the public API evolving incrementally from the contracts they expose.
 
-> **Current status:** infrastructure bootstrap complete; the first public
-> recipe-based `Runner` facility has been extracted from the assignment MWE,
-> while domain model and search algorithms remain example-local.
+> **Current status:** infrastructure bootstrap complete; the public recipe-based
+> `Runner` and deterministic n-ary neighborhood union facilities have been
+> extracted from the assignment MWE, while domain model and search algorithms
+> remain example-local.
 
 ## Requirements
 
@@ -119,7 +120,9 @@ The current tests cover:
   validity, full evaluation, and coexistence of managers bound to different
   instances;
 - deterministic range-based neighborhood traversal, move application, and
-  composition with standard range filters.
+  composition with standard range filters;
+- deterministic n-ary neighborhood union, including heterogeneous move types
+  and transparent use through the public `Runner`.
 
 CTest is the common test entry point locally and in CI:
 
