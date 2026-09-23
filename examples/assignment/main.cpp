@@ -38,7 +38,7 @@ int main()
         return 1;
     }
 
-    neighborhood.apply(solution, move);
+    neighborhood.make_move(solution, move);
 
     std::cout << "final overload: "
               << solution_manager.evaluate(solution)

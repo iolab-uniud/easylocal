@@ -115,8 +115,10 @@ The current tests cover:
 - public-header self-containment;
 - multi-translation-unit linking;
 - the assignment MWE model contract, including value semantics, structural
-  validity, move application, full evaluation, and coexistence of managers
-  bound to different instances.
+  validity, full evaluation, and coexistence of managers bound to different
+  instances;
+- deterministic range-based neighborhood traversal, move application, and
+  composition with standard range filters.
 
 CTest is the common test entry point locally and in CI:
 
