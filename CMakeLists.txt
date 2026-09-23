@@ -38,10 +38,23 @@ target_include_directories(
 )
 
 option(
+    EASYLOCAL_BUILD_EXAMPLES
+    "Build EasyLocal examples"
+    ${PROJECT_IS_TOP_LEVEL}
+)
+
+option(
     EASYLOCAL_BUILD_TESTS
     "Build the EasyLocal test suite"
     ${PROJECT_IS_TOP_LEVEL}
 )
+
+# The concrete MWE is deliberately outside the public EasyLocal++ API.
+# Its model target is also consumed by tests, so make it available whenever
+# examples or tests are requested.
+if(EASYLOCAL_BUILD_EXAMPLES OR EASYLOCAL_BUILD_TESTS)
+    add_subdirectory(examples)
+endif()
 
 if(EASYLOCAL_BUILD_TESTS)
     include(CTest)

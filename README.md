@@ -1,17 +1,15 @@
 # EasyLocal++
 
 [![CI](https://github.com/iolab-uniud/easylocal-next/actions/workflows/ci.yml/badge.svg)](https://github.com/iolab-uniud/easylocal-next/actions/workflows/ci.yml)
-![Tests](https://img.shields.io/badge/tests-MWE%20pending-lightgrey)
 
 EasyLocal++ is an incremental redesign of EasyLocal as a modern **C++23
 header-only library** for local search and metaheuristics.
 
-The project is being rebuilt from a minimal working example, with design
-decisions, tests, and an explicit migration path from EasyLocal 3 evolving
-together with the implementation.
+The project is being rebuilt from concrete minimal working examples, with tests
+and the public API evolving incrementally from the contracts they expose.
 
-> **Current status:** infrastructure bootstrap complete. The first framework MWE
-> has not been implemented yet.
+> **Current status:** infrastructure bootstrap complete; the first concrete
+> assignment MWE is in place outside the public framework API.
 
 ## Requirements
 
@@ -77,6 +75,9 @@ The test suite also checks header self-containment and multi-translation-unit
 use to catch ODR issues that are particularly relevant to header-only
 libraries.
 
+The current assignment MWE lives under `examples/assignment/` and is
+intentionally not part of the public include tree.
+
 ## Continuous integration
 
 The full CI matrix is intentionally small and targets C++23 directly:
@@ -108,21 +109,24 @@ or for a single toolchain:
 
 ## Tests
 
-The current tests validate only the development infrastructure and the
-header-only packaging assumptions:
+The current tests cover:
 
-- toolchain/C++23 smoke test;
+- toolchain/C++23 support;
 - public-header self-containment;
-- multi-translation-unit linking.
-
-**Framework tests:** _placeholder — the first meaningful solver, cost, move,
-delta, and numerical-policy tests will be introduced with the MWE._
+- multi-translation-unit linking;
+- the assignment MWE model contract, including value semantics, structural
+  validity, move application, full evaluation, and coexistence of managers
+  bound to different instances.
 
 CTest is the common test entry point locally and in CI:
 
 ```sh
 ctest --preset dev --output-on-failure
 ```
+
+Tests are named after stable contracts/responsibilities rather than development
+iterations. They evolve with the design and are removed only when the contract
+they verify is deliberately abandoned.
 
 ## Versioning and releases
 
@@ -147,12 +151,7 @@ pushes the release tag:
 
 The pushed tag triggers the full GitHub Actions CI matrix.
 
-## Project records
-
-- [Plan and proposed MWE](docs/plan.md)
-- [Accepted decisions and open proposals](docs/decisions.md)
-- [EL3 migration record](docs/migration-el3.md)
-- [Build and CI notes](docs/build-ci.md)
+## Legacy reference
 
 The legacy reference is Bitbucket `satt/easylocal-3`, branch `no_output`,
 reviewed at commit `b40b14c2db2bdc81574a0613c52674644f8a0101`.

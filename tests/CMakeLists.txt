@@ -41,3 +41,17 @@ add_test(
     NAME easylocal.multi-tu
     COMMAND easylocal_multi_tu
 )
+
+add_executable(
+    easylocal_assignment_model_test
+    assignment_model.cpp
+)
+target_link_libraries(
+    easylocal_assignment_model_test
+    PRIVATE
+        easylocal_assignment_mwe_model
+)
+add_test(
+    NAME easylocal.assignment-model
+    COMMAND easylocal_assignment_model_test
+)

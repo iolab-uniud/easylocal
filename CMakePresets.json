@@ -13,7 +13,7 @@
       "binaryDir": "${sourceDir}/build/${presetName}",
       "cacheVariables": {
         "BUILD_TESTING": true,
-        "CMAKE_CXX_STANDARD": "20",
+        "CMAKE_CXX_STANDARD": "23",
         "CMAKE_CXX_STANDARD_REQUIRED": true,
         "CMAKE_CXX_EXTENSIONS": false,
         "CMAKE_EXPORT_COMPILE_COMMANDS": true
@@ -21,7 +21,7 @@
     },
     {
       "name": "dev",
-      "displayName": "Local macOS / AppleClang / C++20 / Debug",
+      "displayName": "Local macOS / AppleClang / C++23 / Debug",
       "inherits": "_base",
       "condition": {
         "type": "equals",
@@ -38,32 +38,23 @@
     },
     {
       "name": "release",
-      "displayName": "Local macOS / AppleClang / C++20 / Release",
+      "displayName": "Local macOS / AppleClang / C++23 / Release",
       "inherits": "dev",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release"
       }
     },
     {
-      "name": "ci20-debug",
-      "displayName": "CI / explicit compiler / C++20 / Debug",
+      "name": "ci23-release",
+      "displayName": "CI / explicit compiler / C++23 / Release",
       "inherits": "_base",
       "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_BUILD_TYPE": "Release",
         "CMAKE_CXX_COMPILER": "$env{CXX}",
         "EASYLOCAL_EXPECTED_COMPILER_ID": "$env{EL_COMPILER_ID}",
         "EASYLOCAL_EXPECTED_COMPILER_MAJOR": "$env{EL_COMPILER_MAJOR}",
         "EASYLOCAL_EXPECTED_STDLIB": "$env{EL_STDLIB}",
         "EASYLOCAL_WARNINGS_AS_ERRORS": true
-      }
-    },
-    {
-      "name": "ci23-release",
-      "displayName": "CI / explicit compiler / C++23 / Release",
-      "inherits": "ci20-debug",
-      "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Release",
-        "CMAKE_CXX_STANDARD": "23"
       }
     }
   ],
@@ -75,10 +66,6 @@
     {
       "name": "release",
       "configurePreset": "release"
-    },
-    {
-      "name": "ci20-debug",
-      "configurePreset": "ci20-debug"
     },
     {
       "name": "ci23-release",
@@ -100,17 +87,6 @@
     {
       "name": "release",
       "configurePreset": "release",
-      "output": {
-        "outputOnFailure": true,
-        "outputJUnitFile": "${sourceDir}/build/${presetName}/junit.xml"
-      },
-      "execution": {
-        "noTestsAction": "error"
-      }
-    },
-    {
-      "name": "ci20-debug",
-      "configurePreset": "ci20-debug",
       "output": {
         "outputOnFailure": true,
         "outputJUnitFile": "${sourceDir}/build/${presetName}/junit.xml"
