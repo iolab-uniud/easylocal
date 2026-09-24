@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Emit structured metadata for one neighborhood-authoring benchmark run."""
+"""Emit structured metadata for one neighborhood benchmark run."""
 
 from __future__ import annotations
 
@@ -92,7 +92,7 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--output", required=True, type=Path)
     parser.add_argument("--repo-root", required=True, type=Path)
-    parser.add_argument("--target-moves", required=True)
+    parser.add_argument("--target-work", required=True)
     parser.add_argument("--trials", required=True)
     parser.add_argument("--seed", required=True)
     args = parser.parse_args()
@@ -137,8 +137,7 @@ def main() -> int:
         ("generator", "Ninja"),
         ("build_type", "Release"),
         ("cpp_standard", "23"),
-        ("target_moves", args.target_moves),
-        ("runner_target_evaluations", args.target_moves),
+        ("target_work", args.target_work),
         ("trials", args.trials),
         ("seed", args.seed),
         ("git_commit", git_commit),

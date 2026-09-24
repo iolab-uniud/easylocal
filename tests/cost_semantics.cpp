@@ -1,5 +1,5 @@
-#include "best_improvement.hpp"
-#include "first_improvement.hpp"
+#include <easylocal/search/best_improvement.hpp>
+#include <easylocal/search/first_improvement.hpp>
 #include "search/simulated_annealing.hpp"
 
 #include <easylocal/runner.hpp>
@@ -16,10 +16,10 @@
 namespace
 {
 
-using easylocal::mwe::assignment::BestImprovement;
-using easylocal::mwe::assignment::BestImprovementParameters;
-using easylocal::mwe::assignment::FirstImprovement;
-using easylocal::mwe::assignment::FirstImprovementParameters;
+using easylocal::search::BestImprovement;
+using easylocal::search::BestImprovementParameters;
+using easylocal::search::FirstImprovement;
+using easylocal::search::FirstImprovementParameters;
 using easylocal::mwe::search::SimulatedAnnealing;
 using easylocal::mwe::search::SimulatedAnnealingParameters;
 

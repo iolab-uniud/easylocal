@@ -1,8 +1,9 @@
 #include "capacity_delta.hpp"
-#include "first_improvement.hpp"
+#include <easylocal/search/first_improvement.hpp>
 #include "neighborhood_explorer.hpp"
 #include "solution_manager.hpp"
 
+#include <easylocal/aggregation.hpp>
 #include <easylocal/detail/evaluation.hpp>
 #include <easylocal/detail/service_composition.hpp>
 #include <easylocal/runner.hpp>
@@ -22,6 +23,7 @@ namespace
 {
 
 using namespace easylocal::mwe::assignment;
+using easylocal::search::FirstImprovement;
 
 class AssignmentCardinalityComponent
 {
@@ -80,7 +82,7 @@ public:
         const CapacityValue& capacity,
         const std::size_t cardinality) const
     {
-        return easylocal::mwe::aggregation::hierarchical{}(
+        return easylocal::aggregation::hierarchical{}(
             capacity.total_overload,
             capacity.overloaded_machines,
             cardinality);
@@ -150,7 +152,7 @@ public:
         const CapacityValue& first,
         const CapacityValue& second) const
     {
-        return easylocal::mwe::aggregation::lexicographic{}(
+        return easylocal::aggregation::lexicographic{}(
             first.total_overload,
             second.total_overload);
     }

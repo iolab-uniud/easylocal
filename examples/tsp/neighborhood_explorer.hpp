@@ -1,7 +1,7 @@
 #pragma once
 
 #include "move.hpp"
-#include "sampling.hpp"
+#include <easylocal/sampling.hpp>
 #include "solution_manager.hpp"
 
 #include <easylocal/cursor_moves.hpp>
@@ -252,7 +252,7 @@ public:
     using instance_type = Instance;
     using solution_type = Solution;
     using move_type = TwoOptMove;
-    using random_sampling = sampling::with_replacement;
+    using random_sampling = easylocal::sampling::with_replacement;
 
     explicit NeighborhoodExplorer(const SolutionManager& solution_manager) noexcept
         : solution_manager_{solution_manager}

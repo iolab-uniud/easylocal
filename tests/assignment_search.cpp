@@ -1,9 +1,10 @@
-#include "best_improvement.hpp"
-#include "capacity_delta.hpp"
-#include "first_improvement.hpp"
-#include "neighborhood_explorer.hpp"
-#include "random_first_improvement.hpp"
 #include <easylocal/runner.hpp>
+#include <easylocal/search/best_improvement.hpp>
+#include <easylocal/search/first_improvement.hpp>
+#include <easylocal/search/random_first_improvement.hpp>
+
+#include "capacity_delta.hpp"
+#include "neighborhood_explorer.hpp"
 #include "solution_manager.hpp"
 
 #include <cstdint>
@@ -19,6 +20,12 @@ namespace
 {
 
 using namespace easylocal::mwe::assignment;
+using easylocal::search::BestImprovement;
+using easylocal::search::BestImprovementTermination;
+using easylocal::search::FirstImprovement;
+using easylocal::search::FirstImprovementTermination;
+using easylocal::search::RandomFirstImprovement;
+using easylocal::search::RandomFirstImprovementTermination;
 
 [[nodiscard]]
 auto default_solution_manager_recipe()

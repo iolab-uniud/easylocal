@@ -2,7 +2,7 @@
 
 #include "detail/random_ordinals_view.hpp"
 #include "move.hpp"
-#include "sampling.hpp"
+#include <easylocal/sampling.hpp>
 #include "solution_manager.hpp"
 
 #include <easylocal/cursor_moves.hpp>
@@ -53,7 +53,7 @@ public:
     using instance_type = Instance;
     using solution_type = Solution;
     using move_type = Move;
-    using random_sampling = sampling::without_replacement;
+    using random_sampling = easylocal::sampling::without_replacement;
 
     explicit NeighborhoodExplorer(
         const SolutionManager& solution_manager) noexcept

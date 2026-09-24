@@ -9,7 +9,7 @@
 #include <type_traits>
 #include <utility>
 
-namespace easylocal::spike::neighborhood_authoring
+namespace easylocal::benchmark::neighborhood_traversal
 {
 
 template<class T>
@@ -179,4 +179,4 @@ private:
     bool started_{false};
 };
 
-} // namespace easylocal::spike::neighborhood_authoring
+} // namespace easylocal::benchmark::neighborhood_traversal

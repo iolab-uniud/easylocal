@@ -101,7 +101,7 @@ int main()
 
     static_assert(std::same_as<
         NeighborhoodExplorer::random_sampling,
-        sampling::with_replacement>);
+        easylocal::sampling::with_replacement>);
 
     std::mt19937 rng{12345U};
     auto random_moves = neighborhood.random_moves(solution, rng);

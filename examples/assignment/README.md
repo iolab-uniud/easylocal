@@ -73,7 +73,7 @@ search algorithms. Each component type may occur at most once in a manager
 recipe; semantically distinct parameterizations can use distinct wrapper or
 subclass types and therefore distinct compile-time identities.
 
-The MWE prototypes three reusable aggregation categories:
+The framework provides three reusable aggregation categories:
 
 - `aggregation::weighted_sum`;
 - `aggregation::lexicographic`;
@@ -84,9 +84,10 @@ fields of the structured capacity value into the final `Cost`. Domain-specific
 projection from structured component values remains explicit for now; no
 projection DSL is introduced by this iteration.
 
-The aggregators are still MWE-local prototypes. Promotion to the public
-`include/easylocal/` API is intentionally deferred until the design has received
-further pressure testing.
+The generic aggregators are part of the public framework API in
+`<easylocal/aggregation.hpp>` under `easylocal::aggregation`. The Assignment
+example supplies only the domain-specific projection from `CapacityValue` to
+its final hierarchical `Cost`.
 
 ## Delta evaluation
 
@@ -171,10 +172,10 @@ Laziness, caching and proxy lifetime/invalidation remain postponed.
   a particular neighborhood recipe, so the same explorer and move types can be
   reused by different runners with different incremental-evaluation sets.
 
-The generic aggregation implementations remain MWE-local for now. The public
-framework composition surface introduced here is limited to attaching cost
-components to a solution-manager recipe and delta evaluators to a neighborhood
-recipe.
+Generic aggregation belongs to the framework. The Assignment-specific code
+keeps only the projection from its materialized component values into the chosen
+framework aggregation policy. Component and delta attachment remain part of the
+public recipe composition surface.
 
 ## Neighborhood traversal
 
@@ -199,7 +200,7 @@ Each `NeighborhoodExplorer` declares one random sampling semantic through its
 `random_sampling` type. The assignment MWE currently declares:
 
 ```cpp
-using random_sampling = sampling::without_replacement;
+using random_sampling = easylocal::sampling::without_replacement;
 ```
 
 Its random range is therefore finite and produces a random permutation of the
@@ -215,7 +216,7 @@ auto sample =
     | std::views::take(sample_size);
 ```
 
-A future explorer with `sampling::with_replacement` will be a distinct explorer
+A future explorer with `easylocal::sampling::with_replacement` will be a distinct explorer
 type. Such a random range may be unbounded; algorithms using it must impose the
 appropriate evaluation/sample budget.
 
@@ -260,6 +261,8 @@ does; the actual random mixing scheme is not selected yet.
 
 ## Search runner
 
+First Improvement, Best Improvement, and Random First Improvement are public framework facilities under `easylocal::search`; the Assignment example only supplies the model and services they consume.
+
 Search algorithms are wired through the public recipe-based
 `easylocal::Runner`. Service objects are not constructed by application code.
 Instead, the runner records the concrete service types and any constructor
@@ -277,7 +280,7 @@ auto nhe =
             ReassignCapacityDeltaEvaluator>();
 
 auto runner =
-    Runner{FirstImprovement{params}}
+    Runner{easylocal::search::FirstImprovement{params}}
         .with_solution_manager(manager)
         .with_neighborhood(nhe);
 ```
@@ -286,7 +289,7 @@ The equivalent pipeline syntax is also supported:
 
 ```cpp
 auto runner =
-    Runner{FirstImprovement{params}}
+    Runner{easylocal::search::FirstImprovement{params}}
     | (solution_manager<SolutionManager>()
        | component<CapacityCostComponent>())
     | (neighborhood<NeighborhoodExplorer>()

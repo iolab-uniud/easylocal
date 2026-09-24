@@ -6,7 +6,7 @@
 #include <optional>
 #include <utility>
 
-namespace easylocal::mwe::assignment
+namespace easylocal::search
 {
 
 namespace detail
@@ -125,4 +125,4 @@ private:
     BestImprovementParameters parameters_;
 };
 
-} // namespace easylocal::mwe::assignment
+} // namespace easylocal::search

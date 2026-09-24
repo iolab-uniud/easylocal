@@ -50,15 +50,15 @@ option(
 )
 
 option(
-    EASYLOCAL_BUILD_SPIKES
-    "Build opt-in experimental design spikes"
+    EASYLOCAL_BUILD_BENCHMARKS
+    "Build opt-in EasyLocal performance benchmarks"
     OFF
 )
 
 # The concrete MWE is deliberately outside the public EasyLocal++ API.
-# Its model target is also consumed by tests, so make it available whenever
-# examples or tests are requested.
-if(EASYLOCAL_BUILD_EXAMPLES OR EASYLOCAL_BUILD_TESTS OR EASYLOCAL_BUILD_SPIKES)
+# Its model targets are also consumed by tests and benchmarks, so make them
+# available whenever one of those project facilities is requested.
+if(EASYLOCAL_BUILD_EXAMPLES OR EASYLOCAL_BUILD_TESTS OR EASYLOCAL_BUILD_BENCHMARKS)
     add_subdirectory(examples)
 endif()
 
@@ -67,8 +67,8 @@ if(EASYLOCAL_BUILD_TESTS)
     add_subdirectory(tests)
 endif()
 
-if(EASYLOCAL_BUILD_SPIKES)
-    add_subdirectory(spikes/neighborhood_authoring)
+if(EASYLOCAL_BUILD_BENCHMARKS)
+    add_subdirectory(benchmarks/neighborhood_traversal)
 endif()
 
 include(GNUInstallDirs)

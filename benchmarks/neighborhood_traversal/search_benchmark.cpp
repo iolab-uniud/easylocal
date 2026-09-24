@@ -1,9 +1,9 @@
 #include "assignment_variants.hpp"
 #include "tsp_variants.hpp"
 
-#include "../../examples/assignment/best_improvement.hpp"
+#include <easylocal/search/best_improvement.hpp>
 #include "../../examples/assignment/capacity_delta.hpp"
-#include "../../examples/assignment/first_improvement.hpp"
+#include <easylocal/search/first_improvement.hpp>
 #include "../../examples/tsp/tour_length_component.hpp"
 #include "../../examples/tsp/tour_length_delta.hpp"
 
@@ -24,9 +24,10 @@
 #include <utility>
 #include <vector>
 
-namespace spike = easylocal::spike::neighborhood_authoring;
+namespace bench = easylocal::benchmark::neighborhood_traversal;
 namespace assignment = easylocal::mwe::assignment;
 namespace tsp = easylocal::mwe::tsp;
+namespace search = easylocal::search;
 
 namespace allocation_probe
 {
@@ -115,7 +116,7 @@ class RawCursorFirstImprovement
 {
 public:
     explicit RawCursorFirstImprovement(
-        const assignment::FirstImprovementParameters parameters) noexcept
+        const search::FirstImprovementParameters parameters) noexcept
         : parameters_{parameters}
     {
     }
@@ -134,7 +135,7 @@ public:
         using neighborhood_type = typename Context::neighborhood_explorer_type;
         using move_type = typename neighborhood_type::move_type;
         using result_type =
-            assignment::FirstImprovementResult<solution_type, cost_type>;
+            search::FirstImprovementResult<solution_type, cost_type>;
 
         auto current = evaluation.evaluate(solution);
         std::size_t evaluations = 1;
@@ -154,7 +155,7 @@ public:
                             .solution = std::move(solution),
                             .cost = current.cost(),
                             .evaluations = evaluations,
-                            .termination = assignment::FirstImprovementTermination::
+                            .termination = search::FirstImprovementTermination::
                                 evaluation_budget_exhausted,
                         };
                     }
@@ -183,21 +184,21 @@ public:
                     .cost = current.cost(),
                     .evaluations = evaluations,
                     .termination =
-                        assignment::FirstImprovementTermination::local_optimum,
+                        search::FirstImprovementTermination::local_optimum,
                 };
             }
         }
     }
 
 private:
-    assignment::FirstImprovementParameters parameters_;
+    search::FirstImprovementParameters parameters_;
 };
 
 class RawCursorBestImprovement
 {
 public:
     explicit RawCursorBestImprovement(
-        const assignment::BestImprovementParameters parameters) noexcept
+        const search::BestImprovementParameters parameters) noexcept
         : parameters_{parameters}
     {
     }
@@ -216,7 +217,7 @@ public:
         using neighborhood_type = typename Context::neighborhood_explorer_type;
         using move_type = typename neighborhood_type::move_type;
         using result_type =
-            assignment::BestImprovementResult<solution_type, cost_type>;
+            search::BestImprovementResult<solution_type, cost_type>;
         using candidate_type = typename decltype(evaluation)::candidate_type;
 
         auto current = evaluation.evaluate(solution);
@@ -238,7 +239,7 @@ public:
                             .solution = std::move(solution),
                             .cost = current.cost(),
                             .evaluations = evaluations,
-                            .termination = assignment::BestImprovementTermination::
+                            .termination = search::BestImprovementTermination::
                                 evaluation_budget_exhausted,
                         };
                     }
@@ -263,7 +264,7 @@ public:
                     .cost = current.cost(),
                     .evaluations = evaluations,
                     .termination =
-                        assignment::BestImprovementTermination::local_optimum,
+                        search::BestImprovementTermination::local_optimum,
                 };
             }
 
@@ -275,19 +276,19 @@ public:
     }
 
 private:
-    assignment::BestImprovementParameters parameters_;
+    search::BestImprovementParameters parameters_;
 };
 
 [[nodiscard]]
 auto termination_name(
-    const assignment::FirstImprovementTermination termination)
+    const search::FirstImprovementTermination termination)
     -> std::string_view
 {
     switch (termination)
     {
-    case assignment::FirstImprovementTermination::local_optimum:
+    case search::FirstImprovementTermination::local_optimum:
         return "local-optimum";
-    case assignment::FirstImprovementTermination::evaluation_budget_exhausted:
+    case search::FirstImprovementTermination::evaluation_budget_exhausted:
         return "budget";
     }
 
@@ -296,14 +297,14 @@ auto termination_name(
 
 [[nodiscard]]
 auto termination_name(
-    const assignment::BestImprovementTermination termination)
+    const search::BestImprovementTermination termination)
     -> std::string_view
 {
     switch (termination)
     {
-    case assignment::BestImprovementTermination::local_optimum:
+    case search::BestImprovementTermination::local_optimum:
         return "local-optimum";
-    case assignment::BestImprovementTermination::evaluation_budget_exhausted:
+    case search::BestImprovementTermination::evaluation_budget_exhausted:
         return "budget";
     }
 
@@ -501,21 +502,21 @@ void benchmark_search_case(
             << '\n';
     };
 
-    const auto first_parameters = assignment::FirstImprovementParameters{
+    const auto first_parameters = search::FirstImprovementParameters{
         .max_evaluations = algorithm_budget,
     };
-    const auto best_parameters = assignment::BestImprovementParameters{
+    const auto best_parameters = search::BestImprovementParameters{
         .max_evaluations = algorithm_budget,
     };
 
     check_algorithm(
         "first-improvement",
         RawCursorFirstImprovement{first_parameters},
-        assignment::FirstImprovement{first_parameters});
+        search::FirstImprovement{first_parameters});
     check_algorithm(
         "best-improvement",
         RawCursorBestImprovement{best_parameters},
-        assignment::BestImprovement{best_parameters});
+        search::BestImprovement{best_parameters});
 
     const auto run_algorithm = [&]<class RawAlgorithm, class RangeAlgorithm>(
         const std::string_view algorithm_name,
@@ -562,11 +563,11 @@ void benchmark_search_case(
     run_algorithm(
         "first-improvement",
         RawCursorFirstImprovement{first_parameters},
-        assignment::FirstImprovement{first_parameters});
+        search::FirstImprovement{first_parameters});
     run_algorithm(
         "best-improvement",
         RawCursorBestImprovement{best_parameters},
-        assignment::BestImprovement{best_parameters});
+        search::BestImprovement{best_parameters});
 }
 
 struct AssignmentBenchmarkCase
@@ -667,13 +668,13 @@ void benchmark_assignment(
         easylocal::solution_manager<assignment::SolutionManager>()
         | easylocal::component<assignment::CapacityCostComponent>();
     const auto cursor_recipe =
-        easylocal::neighborhood<spike::assignment::CursorNeighborhoodExplorer>()
+        easylocal::neighborhood<assignment::NeighborhoodExplorer>()
         | easylocal::delta<
               assignment::CapacityCostComponent,
               assignment::ReassignCapacityDeltaEvaluator>();
     const auto coroutine_recipe =
         easylocal::neighborhood<
-            spike::assignment::CoroutineNeighborhoodExplorer>()
+            bench::assignment::CoroutineNeighborhoodExplorer>()
         | easylocal::delta<
               assignment::CapacityCostComponent,
               assignment::ReassignCapacityDeltaEvaluator>();
@@ -721,12 +722,12 @@ void benchmark_tsp(
         easylocal::solution_manager<tsp::SolutionManager>()
         | easylocal::component<tsp::TourLengthComponent>();
     const auto cursor_recipe =
-        easylocal::neighborhood<spike::tsp::CursorNeighborhoodExplorer>()
+        easylocal::neighborhood<tsp::NeighborhoodExplorer>()
         | easylocal::delta<
               tsp::TourLengthComponent,
               tsp::TwoOptTourLengthDeltaEvaluator>();
     const auto coroutine_recipe =
-        easylocal::neighborhood<spike::tsp::CoroutineNeighborhoodExplorer>()
+        easylocal::neighborhood<bench::tsp::CoroutineNeighborhoodExplorer>()
         | easylocal::delta<
               tsp::TourLengthComponent,
               tsp::TwoOptTourLengthDeltaEvaluator>();

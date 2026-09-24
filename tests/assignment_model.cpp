@@ -1,8 +1,8 @@
-#include "aggregation.hpp"
 #include "capacity_delta.hpp"
 #include "neighborhood_explorer.hpp"
 #include "solution_manager.hpp"
 
+#include <easylocal/aggregation.hpp>
 #include <easylocal/runner.hpp>
 
 #include <compare>
@@ -43,7 +43,7 @@ public:
         const CapacityValue& capacity,
         const std::size_t cardinality) const
     {
-        return easylocal::mwe::aggregation::lexicographic{}(
+        return easylocal::aggregation::lexicographic{}(
             capacity.total_overload,
             cardinality);
     }
@@ -65,7 +65,6 @@ auto expect(const bool condition, const std::string_view description) -> bool
 int main()
 {
     using namespace easylocal::mwe::assignment;
-    namespace aggregation = easylocal::mwe::aggregation;
     using easylocal::component;
     using easylocal::solution_manager;
 
@@ -109,18 +108,6 @@ int main()
     ok &= expect(
         Cost{1, 1} < Cost{1, 2},
         "hierarchical cost compares the next level after a tie");
-
-    const auto lexicographic_a = aggregation::lexicographic{}(1, 100L);
-    const auto lexicographic_b = aggregation::lexicographic{}(2, 0L);
-
-    ok &= expect(
-        lexicographic_a < lexicographic_b,
-        "predefined lexicographic aggregation orders materialized values");
-
-    const aggregation::weighted_sum weighted{2, 3};
-    ok &= expect(
-        weighted(4, 5) == 23,
-        "predefined weighted-sum aggregation combines materialized terms");
 
     // Component attachment is compile-time compositional: adding a second
     // component changes the recipe, while the problem-side manager remains

@@ -1,23 +1,40 @@
 #pragma once
 
+#include <easylocal/sampling.hpp>
+
 #include <cassert>
 #include <concepts>
 #include <cstddef>
+#include <random>
+#include <ranges>
 #include <utility>
 
-namespace easylocal::mwe::assignment
+namespace easylocal::search
 {
 
 namespace detail
 {
 
-template<class Context>
-concept strict_improvement_context =
+template<class Context, class RNG>
+concept random_first_improvement_context =
+    std::uniform_random_bit_generator<RNG> &&
     requires(
         const Context& context,
+        const typename Context::solution_type& solution,
         const typename Context::cost_type& candidate,
-        const typename Context::cost_type& reference)
+        const typename Context::cost_type& reference,
+        RNG& rng)
     {
+        typename Context::neighborhood_explorer_type::random_sampling;
+
+        requires std::same_as<
+            typename Context::neighborhood_explorer_type::random_sampling,
+            easylocal::sampling::without_replacement>;
+
+        {
+            context.neighborhood_explorer().random_moves(solution, rng)
+        } -> std::ranges::input_range;
+
         {
             context.better(candidate, reference)
         } -> std::convertible_to<bool>;
@@ -25,49 +42,51 @@ concept strict_improvement_context =
 
 } // namespace detail
 
-enum class FirstImprovementTermination
+enum class RandomFirstImprovementTermination
 {
     local_optimum,
     evaluation_budget_exhausted,
 };
 
-struct FirstImprovementParameters
+struct RandomFirstImprovementParameters
 {
     std::size_t max_evaluations;
 };
 
 template<class Solution, class Cost>
-struct FirstImprovementResult
+struct RandomFirstImprovementResult
 {
     Solution solution;
     Cost cost;
     std::size_t evaluations;
-    FirstImprovementTermination termination;
+    RandomFirstImprovementTermination termination;
 };
 
-class FirstImprovement
+class RandomFirstImprovement
 {
 public:
-    explicit FirstImprovement(
-        const FirstImprovementParameters parameters) noexcept
+    explicit RandomFirstImprovement(
+        const RandomFirstImprovementParameters parameters) noexcept
         : parameters_{parameters}
     {
         assert(parameters_.max_evaluations >= 1);
     }
 
-    template<class Context>
-        requires detail::strict_improvement_context<Context>
+    template<class Context, std::uniform_random_bit_generator RNG>
+        requires detail::random_first_improvement_context<Context, RNG>
     [[nodiscard]]
     auto run(
         const Context& context,
-        typename Context::solution_type solution) const
+        typename Context::solution_type solution,
+        RNG& rng) const
     {
         const auto& neighborhood = context.neighborhood_explorer();
         const auto evaluation = context.evaluation();
 
         using solution_type = typename Context::solution_type;
         using cost_type = typename Context::cost_type;
-        using result_type = FirstImprovementResult<solution_type, cost_type>;
+        using result_type =
+            RandomFirstImprovementResult<solution_type, cost_type>;
 
         auto current = evaluation.evaluate(solution);
         std::size_t evaluations = 1;
@@ -76,7 +95,7 @@ public:
         {
             bool improved = false;
 
-            for (const auto move : neighborhood.moves(solution))
+            for (const auto move : neighborhood.random_moves(solution, rng))
             {
                 if (evaluations == parameters_.max_evaluations)
                 {
@@ -84,7 +103,7 @@ public:
                         .solution = std::move(solution),
                         .cost = current.cost(),
                         .evaluations = evaluations,
-                        .termination = FirstImprovementTermination::
+                        .termination = RandomFirstImprovementTermination::
                             evaluation_budget_exhausted,
                     };
                 }
@@ -110,14 +129,15 @@ public:
                     .solution = std::move(solution),
                     .cost = current.cost(),
                     .evaluations = evaluations,
-                    .termination = FirstImprovementTermination::local_optimum,
+                    .termination =
+                        RandomFirstImprovementTermination::local_optimum,
                 };
             }
         }
     }
 
 private:
-    FirstImprovementParameters parameters_;
+    RandomFirstImprovementParameters parameters_;
 };
 
-} // namespace easylocal::mwe::assignment
+} // namespace easylocal::search

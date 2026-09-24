@@ -111,14 +111,14 @@ unzip -l "$OUT" | tail -n 2
 
 echo
 echo "Handoff files:"
-if unzip -Z1 "$OUT" | grep -qx '.local/context.md'; then
-    echo "  OK  .local/context.md"
-else
-    echo "  WARN .local/context.md is missing"
-fi
-
-if unzip -Z1 "$OUT" | grep -qx '.local/next-chat-prompt.md'; then
-    echo "  OK  .local/next-chat-prompt.md"
-else
-    echo "  WARN .local/next-chat-prompt.md is missing"
-fi
+for handoff_file in \
+    '.local/context.md' \
+    '.local/decisions.md' \
+    '.local/migration-el3.md'
+do
+    if unzip -Z1 "$OUT" | grep -qx "$handoff_file"; then
+        echo "  OK  $handoff_file"
+    else
+        echo "  WARN $handoff_file is missing"
+    fi
+done

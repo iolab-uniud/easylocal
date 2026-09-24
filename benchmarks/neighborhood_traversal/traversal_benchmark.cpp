@@ -8,17 +8,108 @@
 #include <cstddef>
 #include <cstdint>
 #include <iostream>
+#include <ranges>
 #include <string>
 #include <string_view>
 #include <system_error>
 #include <vector>
 
-namespace spike = easylocal::spike::neighborhood_authoring;
+namespace bench = easylocal::benchmark::neighborhood_traversal;
 namespace assignment = easylocal::mwe::assignment;
 namespace tsp = easylocal::mwe::tsp;
 
 namespace
 {
+
+
+template<std::ranges::input_range Range, class Encode>
+[[nodiscard]]
+auto encoded_moves(Range&& moves, Encode encode) -> std::vector<std::uint64_t>
+{
+    std::vector<std::uint64_t> encoded;
+    for (const auto& move : moves)
+    {
+        encoded.push_back(encode(move));
+    }
+    return encoded;
+}
+
+[[nodiscard]]
+auto validate_assignment_variants() -> bool
+{
+    const assignment::Instance instance{
+        .demand = {2, 3, 5, 7},
+        .capacity = {10, 10, 10},
+    };
+    const assignment::Solution solution{
+        .assignment = {0, 1, 2, 0},
+    };
+    const assignment::SolutionManager manager{instance};
+
+    const bench::assignment::CoroutineNeighborhoodExplorer coroutine{manager};
+#if EASYLOCAL_BENCHMARK_HAS_STD_GENERATOR
+    const bench::assignment::StdCoroutineNeighborhoodExplorer std_coroutine{manager};
+#endif
+    const assignment::NeighborhoodExplorer cursor{manager};
+
+    const auto encode = [](const assignment::Move& move) {
+        return static_cast<std::uint64_t>(move.job) * 1024ULL +
+               static_cast<std::uint64_t>(move.destination);
+    };
+
+    const auto expected = encoded_moves(cursor.moves(solution), encode);
+    if (expected != encoded_moves(coroutine.moves(solution), encode))
+    {
+        return false;
+    }
+#if EASYLOCAL_BENCHMARK_HAS_STD_GENERATOR
+    if (expected != encoded_moves(std_coroutine.moves(solution), encode))
+    {
+        return false;
+    }
+#endif
+    return true;
+}
+
+[[nodiscard]]
+auto validate_tsp_variants() -> bool
+{
+    constexpr std::size_t city_count = 6;
+    const tsp::Instance instance{
+        .city_count = city_count,
+        .distances = std::vector<tsp::distance_type>(
+            city_count * city_count,
+            0.0),
+    };
+    const tsp::Solution solution{
+        .tour = {0, 1, 2, 3, 4, 5},
+    };
+    const tsp::SolutionManager manager{instance};
+
+    const bench::tsp::CoroutineNeighborhoodExplorer coroutine{manager};
+#if EASYLOCAL_BENCHMARK_HAS_STD_GENERATOR
+    const bench::tsp::StdCoroutineNeighborhoodExplorer std_coroutine{manager};
+#endif
+    const tsp::NeighborhoodExplorer cursor{manager};
+
+    const auto encode = [](const tsp::TwoOptMove& move) {
+        return static_cast<std::uint64_t>(move.first_edge) * 1024ULL +
+               static_cast<std::uint64_t>(move.second_edge);
+    };
+
+    const auto expected = encoded_moves(cursor.moves(solution), encode);
+    if (expected != encoded_moves(coroutine.moves(solution), encode))
+    {
+        return false;
+    }
+#if EASYLOCAL_BENCHMARK_HAS_STD_GENERATOR
+    if (expected != encoded_moves(std_coroutine.moves(solution), encode))
+    {
+        return false;
+    }
+#endif
+    return true;
+}
 
 struct ScanResult
 {
@@ -31,7 +122,7 @@ inline void observe(const std::uint64_t value) noexcept
 #if defined(__clang__) || defined(__GNUC__)
     // Keep every produced move observable to the optimizer without adding a
     // volatile memory access to the measured hot loop. GCC and Clang may still
-    // optimize the traversal machinery itself, which is exactly what this spike
+    // optimize the traversal machinery itself, which is exactly what this benchmark
     // wants to measure, but they cannot delete the per-move production entirely.
     __asm__ __volatile__("" : : "r"(value));
 #else
@@ -212,11 +303,11 @@ void benchmark_assignment(
     }
 
     const assignment::SolutionManager manager{instance};
-    const spike::assignment::CoroutineNeighborhoodExplorer coroutine_custom{manager};
-#if EASYLOCAL_SPIKE_HAS_STD_GENERATOR
-    const spike::assignment::StdCoroutineNeighborhoodExplorer coroutine_std{manager};
+    const bench::assignment::CoroutineNeighborhoodExplorer coroutine_custom{manager};
+#if EASYLOCAL_BENCHMARK_HAS_STD_GENERATOR
+    const bench::assignment::StdCoroutineNeighborhoodExplorer coroutine_std{manager};
 #endif
-    const spike::assignment::CursorNeighborhoodExplorer cursor{manager};
+    const assignment::NeighborhoodExplorer cursor{manager};
 
     const auto traversal_consumer = [](const assignment::Move& move) {
         return static_cast<std::uint64_t>(move.job) * 1'000'003ULL +
@@ -237,7 +328,7 @@ void benchmark_assignment(
         const auto domain = std::string{"assignment-"} + std::string{scale};
         run_case(domain, workload, "coroutine-custom", coroutine_custom,
                  solution, consume, target_moves, trials);
-#if EASYLOCAL_SPIKE_HAS_STD_GENERATOR
+#if EASYLOCAL_BENCHMARK_HAS_STD_GENERATOR
         run_case(domain, workload, "coroutine-std", coroutine_std, solution,
                  consume, target_moves, trials);
 #endif
@@ -286,11 +377,11 @@ void benchmark_tsp(
     }
 
     const tsp::SolutionManager manager{instance};
-    const spike::tsp::CoroutineNeighborhoodExplorer coroutine_custom{manager};
-#if EASYLOCAL_SPIKE_HAS_STD_GENERATOR
-    const spike::tsp::StdCoroutineNeighborhoodExplorer coroutine_std{manager};
+    const bench::tsp::CoroutineNeighborhoodExplorer coroutine_custom{manager};
+#if EASYLOCAL_BENCHMARK_HAS_STD_GENERATOR
+    const bench::tsp::StdCoroutineNeighborhoodExplorer coroutine_std{manager};
 #endif
-    const spike::tsp::CursorNeighborhoodExplorer cursor{manager};
+    const tsp::NeighborhoodExplorer cursor{manager};
 
     const auto traversal_consumer = [](const tsp::TwoOptMove& move) {
         return static_cast<std::uint64_t>(move.first_edge) * 1'000'003ULL +
@@ -321,7 +412,7 @@ void benchmark_tsp(
         const auto domain = std::string{"tsp-"} + std::string{scale};
         run_case(domain, workload, "coroutine-custom", coroutine_custom,
                  solution, consume, target_moves, trials);
-#if EASYLOCAL_SPIKE_HAS_STD_GENERATOR
+#if EASYLOCAL_BENCHMARK_HAS_STD_GENERATOR
         run_case(domain, workload, "coroutine-std", coroutine_std, solution,
                  consume, target_moves, trials);
 #endif
@@ -348,22 +439,21 @@ int main(const int argc, char** argv)
     const auto seed = parse_seed(argc, argv, 3, default_seed);
 
     std::cerr << "std::generator: "
-              << (spike::has_std_generator ? "available" : "unavailable")
+              << (bench::has_std_generator ? "available" : "unavailable")
               << '\n';
 
     std::cout
         << "domain,workload,variant,neighborhood_size,trial,repetitions,"
            "measured_moves,ns_per_move,checksum\n";
 
-    benchmark_assignment("tiny", 2, 2, target_moves, trials, seed);
-    benchmark_assignment("small", 16, 8, target_moves, trials, seed);
-    benchmark_assignment("medium", 256, 32, target_moves, trials, seed);
-    benchmark_assignment("large", 1024, 64, target_moves, trials, seed);
+    if (!validate_assignment_variants() || !validate_tsp_variants())
+    {
+        std::cerr << "neighborhood traversal variants disagree\n";
+        return 1;
+    }
 
-    benchmark_tsp("tiny", 5, target_moves, trials, seed);
-    benchmark_tsp("small", 16, target_moves, trials, seed);
+    benchmark_assignment("medium", 256, 32, target_moves, trials, seed);
     benchmark_tsp("medium", 256, target_moves, trials, seed);
-    benchmark_tsp("large", 1024, target_moves, trials, seed);
 
     return 0;
 }

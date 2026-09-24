@@ -7,5 +7,9 @@
 /.artifacts/
 .DS_Store
 
-.local/
+.local/*
+!.local/context.md
+!.local/decisions.md
+!.local/migration-el3.md
+!.local/versioning-release.md
 prompt.txt

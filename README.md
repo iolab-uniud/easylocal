@@ -8,10 +8,11 @@ header-only library** for local search and metaheuristics.
 The project is being rebuilt from concrete minimal working examples, with tests
 and the public API evolving incrementally from the contracts they expose.
 
-> **Current status:** infrastructure bootstrap complete; the public recipe-based
-> `Runner` and deterministic n-ary neighborhood union facilities have been
-> extracted from the assignment MWE, while domain model and search algorithms
-> remain example-local.
+> **Current status:** the public recipe-based `Runner`, deterministic n-ary
+> neighborhood union, cursor-to-range neighborhood adapter, aggregation
+> facilities, sampling vocabulary, and First/Best/Random First Improvement
+> algorithms are in place. Domain models remain example-local while additional
+> search/metaheuristic contracts are stabilized incrementally.
 
 ## Requirements
 
@@ -22,8 +23,8 @@ and the public API evolving incrementally from the contracts they expose.
 
 The current CI exercises:
 
-- Linux: GCC 14 and Clang 18
-- macOS ARM64: AppleClang and Homebrew GCC 14
+- Linux: GCC 15, GCC 16, Clang 22 + libstdc++, and Clang 22 + libc++
+- macOS ARM64: AppleClang and Homebrew GCC 16
 
 macOS Intel is intentionally not part of the supported CI matrix.
 
@@ -77,8 +78,12 @@ The test suite also checks header self-containment and multi-translation-unit
 use to catch ODR issues that are particularly relevant to header-only
 libraries.
 
-The current assignment MWE lives under `examples/assignment/` and is
-intentionally not part of the public include tree.
+The current Assignment and TSP MWEs live under `examples/assignment/` and
+`examples/tsp/` and are intentionally not part of the public include tree.
+
+Experimental search/metaheuristic work lives under `examples/search/`. Those
+headers are an incubator used to pressure-test framework contracts and are not
+public EasyLocal++ API.
 
 ## Continuous integration
 
@@ -87,12 +92,14 @@ The full CI matrix is intentionally small and targets C++23 directly:
 | Platform | Toolchain |
 | --- | --- |
 | Ubuntu 26.04 | GCC 15 |
-| Ubuntu 26.04 | Clang 22 |
+| Ubuntu 26.04 | GCC 16 |
+| Ubuntu 26.04 | Clang 22 + libstdc++ |
+| Ubuntu 26.04 | Clang 22 + libc++ |
 | macOS ARM64 | AppleClang |
 | macOS ARM64 | GCC 16 |
 
-GitHub Actions runs automatically for release tags of the form `vX.Y.Z` and can
-also be started manually with `workflow_dispatch`.
+GitHub Actions runs automatically for pull requests and release tags of the form
+`vX.Y.Z`, and can also be started manually with `workflow_dispatch`.
 
 Normal development pushes do not trigger the remote CI automatically.
 
@@ -106,8 +113,30 @@ or for a single toolchain:
 
 ```sh
 ./scripts/act-ci.sh gcc15
-./scripts/act-ci.sh clang22
+./scripts/act-ci.sh gcc16
+./scripts/act-ci.sh clang22-libstdcxx
+./scripts/act-ci.sh clang22-libcxx
 ```
+
+## Performance benchmarks
+
+A small opt-in benchmark suite under `benchmarks/neighborhood_traversal/` tracks
+performance of the neighborhood traversal abstractions that remain part of the
+design: raw First/Next as an oracle, the public cursor-to-range adapter, and
+coroutine-backed ranges. `std::generator` is included when the active standard
+library provides it.
+
+Run it locally with:
+
+```sh
+./scripts/run-neighborhood-benchmarks.sh \
+    build/neighborhood-benchmark-results \
+    5000000 5 123456789
+```
+
+The benchmark checks semantic equivalence before timing and reports diagnostic
+ratios only. It deliberately has no automatic performance pass/fail threshold.
+Authoritative cross-toolchain measurements use the manual **Neighborhood Benchmarks** GitHub Actions workflow.
 
 ## Tests
 
@@ -122,7 +151,10 @@ The current tests cover:
 - deterministic range-based neighborhood traversal, move application, and
   composition with standard range filters;
 - deterministic n-ary neighborhood union, including heterogeneous move types
-  and transparent use through the public `Runner`.
+  and transparent use through the public `Runner`;
+- static random traversal semantics (`with_replacement` / `without_replacement`)
+  and deterministic seeded random traversal;
+- public First, Best, and Random First Improvement integration through the Runner.
 
 CTest is the common test entry point locally and in CI:
 

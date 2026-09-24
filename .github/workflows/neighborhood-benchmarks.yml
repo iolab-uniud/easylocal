@@ -1,9 +1,9 @@
-name: Neighborhood Authoring Spike
+name: Neighborhood Benchmarks
 
 on:
   workflow_dispatch:
     inputs:
-      target_moves:
+      target_work:
         description: Approximate moves/evaluations measured per benchmark row/trial
         required: true
         type: string
@@ -22,18 +22,22 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 defaults:
   run:
     shell: bash
 
 env:
-  SPIKE_TARGET_MOVES: ${{ github.event.inputs.target_moves }}
-  SPIKE_TRIALS: ${{ github.event.inputs.trials }}
-  SPIKE_SEED: ${{ github.event.inputs.seed }}
+  BENCHMARK_TARGET_WORK: ${{ github.event.inputs.target_work }}
+  BENCHMARK_TRIALS: ${{ github.event.inputs.trials }}
+  BENCHMARK_SEED: ${{ github.event.inputs.seed }}
 
 jobs:
   linux:
-    name: Linux / ${{ matrix.toolchain }} / neighborhood spike
+    name: Linux / ${{ matrix.toolchain }} / neighborhood benchmark
     runs-on: ubuntu-26.04
     timeout-minutes: 30
     strategy:
@@ -101,31 +105,30 @@ jobs:
 
       - name: Run benchmark suite
         run: |
-          results_dir="build/neighborhood-authoring-results"
-          ./scripts/run-neighborhood-authoring-benchmarks.sh \
+          results_dir="build/neighborhood-benchmark-results"
+          ./scripts/run-neighborhood-benchmarks.sh \
             "$results_dir" \
-            "$SPIKE_TARGET_MOVES" \
-            "$SPIKE_TRIALS" \
-            "$SPIKE_SEED"
-          cat "$results_dir/check.log"
-          cat "$results_dir/runner-check.log"
-          cat "$results_dir/first-improvement-diagnostic.log"
+            "$BENCHMARK_TARGET_WORK" \
+            "$BENCHMARK_TRIALS" \
+            "$BENCHMARK_SEED"
+          cat "$results_dir/traversal.log"
+          cat "$results_dir/search.log"
           cat "$results_dir/summary.md"
 
-      - name: Upload spike results
+      - name: Upload benchmark results
         if: ${{ always() && !env.ACT }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: neighborhood-authoring-linux-${{ matrix.toolchain }}
+          name: neighborhood-benchmark-linux-${{ matrix.toolchain }}
           retention-days: 7
           if-no-files-found: warn
           path: |
-            build/neighborhood-authoring-results/*.log
-            build/neighborhood-authoring-results/*.csv
-            build/neighborhood-authoring-results/*.md
+            build/neighborhood-benchmark-results/*.log
+            build/neighborhood-benchmark-results/*.csv
+            build/neighborhood-benchmark-results/*.md
 
   macos:
-    name: macOS ARM64 / ${{ matrix.toolchain }} / neighborhood spike
+    name: macOS ARM64 / ${{ matrix.toolchain }} / neighborhood benchmark
     runs-on: macos-15
     timeout-minutes: 20
     strategy:
@@ -150,6 +153,7 @@ jobs:
           fi
           command -v cmake >/dev/null || brew install cmake
           command -v ninja >/dev/null || brew install ninja
+          command -v python3 >/dev/null
           echo "SDKROOT=$(xcrun --sdk macosx --show-sdk-path)" >> "$GITHUB_ENV"
           echo 'CXXFLAGS=' >> "$GITHUB_ENV"
           case "$TOOLCHAIN" in
@@ -172,26 +176,24 @@ jobs:
 
       - name: Run benchmark suite
         run: |
-          command -v python3 >/dev/null
-          results_dir="build/neighborhood-authoring-results"
-          ./scripts/run-neighborhood-authoring-benchmarks.sh \
+          results_dir="build/neighborhood-benchmark-results"
+          ./scripts/run-neighborhood-benchmarks.sh \
             "$results_dir" \
-            "$SPIKE_TARGET_MOVES" \
-            "$SPIKE_TRIALS" \
-            "$SPIKE_SEED"
-          cat "$results_dir/check.log"
-          cat "$results_dir/runner-check.log"
-          cat "$results_dir/first-improvement-diagnostic.log"
+            "$BENCHMARK_TARGET_WORK" \
+            "$BENCHMARK_TRIALS" \
+            "$BENCHMARK_SEED"
+          cat "$results_dir/traversal.log"
+          cat "$results_dir/search.log"
           cat "$results_dir/summary.md"
 
-      - name: Upload spike results
+      - name: Upload benchmark results
         if: ${{ always() && !env.ACT }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: neighborhood-authoring-macos-arm64-${{ matrix.toolchain }}
+          name: neighborhood-benchmark-macos-arm64-${{ matrix.toolchain }}
           retention-days: 7
           if-no-files-found: warn
           path: |
-            build/neighborhood-authoring-results/*.log
-            build/neighborhood-authoring-results/*.csv
-            build/neighborhood-authoring-results/*.md
+            build/neighborhood-benchmark-results/*.log
+            build/neighborhood-benchmark-results/*.csv
+            build/neighborhood-benchmark-results/*.md

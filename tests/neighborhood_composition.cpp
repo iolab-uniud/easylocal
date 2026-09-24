@@ -1,12 +1,12 @@
-#include "best_improvement.hpp"
-#include "first_improvement.hpp"
+#include <easylocal/easylocal.hpp>
+#include <easylocal/sampling.hpp>
+#include <easylocal/search/best_improvement.hpp>
+#include <easylocal/search/first_improvement.hpp>
+#include <easylocal/search/random_first_improvement.hpp>
+
 #include "move.hpp"
 #include "neighborhood_explorer.hpp"
-#include "random_first_improvement.hpp"
-#include "sampling.hpp"
 #include "solution_manager.hpp"
-
-#include <easylocal/easylocal.hpp>
 
 #include <concepts>
 #include <cstddef>
@@ -23,6 +23,9 @@ namespace
 {
 
 using namespace easylocal::mwe::assignment;
+using easylocal::search::BestImprovement;
+using easylocal::search::FirstImprovement;
+using easylocal::search::RandomFirstImprovement;
 
 [[nodiscard]]
 auto default_solution_manager_recipe()
@@ -43,7 +46,7 @@ public:
     using instance_type = Instance;
     using solution_type = Solution;
     using move_type = SwapMove;
-    using random_sampling = sampling::without_replacement;
+    using random_sampling = easylocal::sampling::without_replacement;
 
     explicit SwapNeighborhoodExplorer(
         const SolutionManager& solution_manager) noexcept
@@ -93,7 +96,7 @@ public:
     using instance_type = Instance;
     using solution_type = Solution;
     using move_type = Move;
-    using random_sampling = sampling::without_replacement;
+    using random_sampling = easylocal::sampling::without_replacement;
 
     explicit DestinationZeroNeighborhoodExplorer(
         const SolutionManager& solution_manager) noexcept

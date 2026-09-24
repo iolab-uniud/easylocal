@@ -6,7 +6,7 @@
 #include <type_traits>
 #include <utility>
 
-namespace easylocal::mwe::aggregation
+namespace easylocal::aggregation
 {
 
 namespace detail
@@ -109,4 +109,4 @@ template<class... Weights>
 weighted_sum(Weights...)
     -> weighted_sum<std::remove_cvref_t<Weights>...>;
 
-} // namespace easylocal::mwe::aggregation
+} // namespace easylocal::aggregation

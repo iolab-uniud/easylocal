@@ -1,6 +1,6 @@
 #pragma once
 
-#include "aggregation.hpp"
+#include <easylocal/aggregation.hpp>
 #include "cost_components.hpp"
 
 #include <cstdint>
@@ -8,7 +8,7 @@
 namespace easylocal::mwe::assignment
 {
 
-using Cost = aggregation::hierarchical_cost<std::int64_t, std::int64_t>;
+using Cost = easylocal::aggregation::hierarchical_cost<std::int64_t, std::int64_t>;
 
 struct AssignmentCostAggregator
 {
@@ -17,7 +17,7 @@ struct AssignmentCostAggregator
     [[nodiscard]]
     constexpr auto operator()(const CapacityValue& capacity) const -> cost_type
     {
-        return aggregation::hierarchical{}(
+        return easylocal::aggregation::hierarchical{}(
             capacity.total_overload,
             capacity.overloaded_machines);
     }

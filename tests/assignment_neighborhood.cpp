@@ -58,7 +58,7 @@ int main()
 
     static_assert(std::same_as<
                   NeighborhoodExplorer::random_sampling,
-                  sampling::without_replacement>);
+                  easylocal::sampling::without_replacement>);
 
     const Solution solution{
         .assignment = {1, 2},

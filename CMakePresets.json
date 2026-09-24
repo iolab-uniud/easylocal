@@ -30,9 +30,7 @@
       },
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
-        "CMAKE_CXX_COMPILER": "/usr/bin/clang++",
-        "EASYLOCAL_EXPECTED_COMPILER_ID": "AppleClang",
-        "EASYLOCAL_EXPECTED_STDLIB": "libcxx"
+        "CMAKE_CXX_COMPILER": "/usr/bin/clang++"
       }
     },
     {
@@ -49,10 +47,7 @@
       "inherits": "_base",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
-        "CMAKE_CXX_COMPILER": "$env{CXX}",
-        "EASYLOCAL_EXPECTED_COMPILER_ID": "$env{EL_COMPILER_ID}",
-        "EASYLOCAL_EXPECTED_COMPILER_MAJOR": "$env{EL_COMPILER_MAJOR}",
-        "EASYLOCAL_EXPECTED_STDLIB": "$env{EL_STDLIB}"
+        "CMAKE_CXX_COMPILER": "$env{CXX}"
       }
     }
   ],
