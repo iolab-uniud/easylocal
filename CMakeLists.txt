@@ -37,6 +37,9 @@ target_include_directories(
         $<INSTALL_INTERFACE:include>
 )
 
+include(GNUInstallDirs)
+include(CMakePackageConfigHelpers)
+
 option(
     EASYLOCAL_BUILD_EXAMPLES
     "Build EasyLocal examples"
@@ -70,9 +73,6 @@ endif()
 if(EASYLOCAL_BUILD_BENCHMARKS)
     add_subdirectory(benchmarks/neighborhood_traversal)
 endif()
-
-include(GNUInstallDirs)
-include(CMakePackageConfigHelpers)
 
 install(
     TARGETS easylocal

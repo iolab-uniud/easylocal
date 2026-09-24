@@ -68,15 +68,37 @@ The public CMake target is:
 EasyLocal::EasyLocal
 ```
 
-Consumers will use the public headers under:
+A configured build tree can be installed to any prefix:
+
+```sh
+cmake --install build/release --prefix /path/to/easylocal-prefix
+```
+
+An external CMake project can then consume that installation with:
+
+```cmake
+find_package(EasyLocal CONFIG REQUIRED)
+
+add_executable(my_search main.cpp)
+target_link_libraries(my_search PRIVATE EasyLocal::EasyLocal)
+```
+
+Point `CMAKE_PREFIX_PATH` at the chosen installation prefix when it is not in a
+standard CMake search location. The imported target propagates the installed
+include directory and the C++23 compile requirement; consumers do not need to
+add EasyLocal include paths manually.
+
+Consumers use the public headers under:
 
 ```text
 include/easylocal/
 ```
 
-The test suite also checks header self-containment and multi-translation-unit
-use to catch ODR issues that are particularly relevant to header-only
-libraries.
+The test suite checks header self-containment and multi-translation-unit use to
+catch ODR issues that are particularly relevant to header-only libraries. It
+also installs EasyLocal into an isolated prefix, configures a separate consumer
+with `find_package(EasyLocal)`, builds it through `EasyLocal::EasyLocal`, and
+runs the resulting executable.
 
 The current Assignment and TSP MWEs live under `examples/assignment/` and
 `examples/tsp/` and are intentionally not part of the public include tree.

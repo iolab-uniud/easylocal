@@ -409,6 +409,31 @@ add_test(
     COMMAND easylocal_neighborhood_composition_test
 )
 
+add_test(
+    NAME easylocal.installed-package-consumer
+    COMMAND
+        "${CMAKE_COMMAND}"
+        "-DEASYLOCAL_BUILD_DIR=${PROJECT_BINARY_DIR}"
+        "-DEASYLOCAL_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
+        "-DEASYLOCAL_CONFIG=$<CONFIG>"
+        "-DEASYLOCAL_CONSUMER_SOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR}/package_consumer"
+        "-DEASYLOCAL_CTEST_COMMAND=${CMAKE_CTEST_COMMAND}"
+        "-DEASYLOCAL_CXX_COMPILER=${CMAKE_CXX_COMPILER}"
+        "-DEASYLOCAL_GENERATOR=${CMAKE_GENERATOR}"
+        "-DEASYLOCAL_GENERATOR_PLATFORM=${CMAKE_GENERATOR_PLATFORM}"
+        "-DEASYLOCAL_GENERATOR_TOOLSET=${CMAKE_GENERATOR_TOOLSET}"
+        "-DEASYLOCAL_INSTALL_LIBDIR=${CMAKE_INSTALL_LIBDIR}"
+        "-DEASYLOCAL_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}"
+        "-DEASYLOCAL_VERSION=${PROJECT_VERSION}"
+        "-DEASYLOCAL_WORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/package-consumer"
+        -P "${CMAKE_CURRENT_SOURCE_DIR}/verify_installed_package.cmake"
+)
+set_tests_properties(
+    easylocal.installed-package-consumer
+    PROPERTIES
+        LABELS integration
+)
+
 function(easylocal_add_compile_failure_test name source expected_diagnostic)
     add_test(
         NAME "easylocal.compile-fail.${name}"
