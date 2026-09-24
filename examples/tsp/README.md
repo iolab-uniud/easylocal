@@ -1,0 +1,62 @@
+# TSP MWE
+
+This is the second concrete EasyLocal++ pressure-test model. It is deliberately
+outside `include/easylocal/` and does not introduce new public framework API.
+
+The model is a symmetric TSP with a dense `double` distance matrix, a `Solution`
+represented by a permutation of city ids, and a deterministic lazy 2-opt
+neighborhood. A `TwoOptMove{i, j}` cuts tour edges `(i, i+1)` and `(j, j+1)`
+and reverses the segment `[i+1, j]`.
+
+`TourLengthComponent` returns the structured materialized value
+`TourLengthValue{total}`. The problem-side `SolutionManager` aggregates that
+value to the algorithm-facing scalar `double` cost. This intentionally exercises
+a partially ordered floating-point `cost_type` without introducing an epsilon or
+approximate-comparison policy into the framework.
+
+`TwoOptTourLengthDeltaEvaluator` provides a recipe-local incremental evaluator
+for `TourLengthComponent`. Its structured `TourLengthDelta{change}` follows the
+same semantic law used by the Assignment MWE:
+
+```text
+value_after == value_before + delta
+```
+
+For a symmetric TSP, 2-opt changes only the two cut edges, so the evaluator
+computes the added edge cost minus the removed edge cost without materializing a
+candidate `Solution`. Tests compare this incremental value against full component
+evaluation for every move in the deterministic small neighborhood. Runner-level
+tests retain the no-delta fallback case and separately verify that rejected
+all-delta candidates perform no `make_move`, while accepted all-delta candidates
+perform exactly one.
+
+The current test matrices still use only values exactly representable in binary
+floating point, such as halves and quarters. Non-binary-exact values and
+approximate comparisons remain deliberately reserved for a following iteration,
+so floating-point comparison policy can be examined independently from delta
+integration.
+
+## Floating-point pressure test
+
+A separate test iteration also uses decimal distances such as `0.1`, `0.2`, and
+`0.039`, which are not generally exactly representable as binary floating-point
+values. The production MWE deliberately keeps exact `double` value semantics:
+`TourLengthValue::operator==`, aggregation, and the framework remain unchanged.
+Approximate comparison is explicit and test-local, with separately supplied
+relative and absolute tolerances rather than a framework-wide implicit epsilon.
+
+The tests exercise two distinct numerical questions. First, the delta law is
+checked over the complete deterministic five-city 2-opt neighborhood using an
+approximate comparison, while also requiring that at least one move genuinely
+fails exact equality between full and incremental evaluation. Second, a
+mathematically neutral 2-opt move demonstrates that raw `double` ordering can
+make the incremental path appear microscopically better even when full
+evaluation is unchanged. The test-local comparison must suppress that numerical
+artifact without suppressing a nearby but real improvement.
+
+The comparison helper is also tested independently for absolute and relative
+tolerance, symmetry, finite/non-finite values, adjacent representable values,
+and the deliberately non-transitive nature of approximate equality. This last
+property is important evidence for the later API discussion: approximate
+equality must not be silently treated as an ordinary equivalence relation or
+assumed suitable for a three-way ordering.

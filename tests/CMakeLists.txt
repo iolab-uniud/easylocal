@@ -99,6 +99,90 @@ add_test(
 )
 
 add_executable(
+    easylocal_tsp_model_test
+    tsp_model.cpp
+)
+target_link_libraries(
+    easylocal_tsp_model_test
+    PRIVATE
+        easylocal_tsp_mwe_model
+)
+add_test(
+    NAME easylocal.tsp-model
+    COMMAND easylocal_tsp_model_test
+)
+
+add_executable(
+    easylocal_tsp_neighborhood_test
+    tsp_neighborhood.cpp
+)
+target_link_libraries(
+    easylocal_tsp_neighborhood_test
+    PRIVATE
+        easylocal_tsp_mwe_model
+)
+add_test(
+    NAME easylocal.tsp-neighborhood
+    COMMAND easylocal_tsp_neighborhood_test
+)
+
+add_executable(
+    easylocal_tsp_evaluation_test
+    tsp_evaluation.cpp
+)
+target_link_libraries(
+    easylocal_tsp_evaluation_test
+    PRIVATE
+        easylocal_tsp_mwe_model
+)
+add_test(
+    NAME easylocal.tsp-evaluation
+    COMMAND easylocal_tsp_evaluation_test
+)
+
+add_executable(
+    easylocal_tsp_delta_test
+    tsp_delta.cpp
+)
+target_link_libraries(
+    easylocal_tsp_delta_test
+    PRIVATE
+        easylocal_tsp_mwe_model
+)
+add_test(
+    NAME easylocal.tsp-delta
+    COMMAND easylocal_tsp_delta_test
+)
+
+add_executable(
+    easylocal_approximate_comparison_test
+    approximate_comparison.cpp
+)
+target_link_libraries(
+    easylocal_approximate_comparison_test
+    PRIVATE
+        EasyLocal::EasyLocal
+)
+add_test(
+    NAME easylocal.approximate-comparison
+    COMMAND easylocal_approximate_comparison_test
+)
+
+add_executable(
+    easylocal_tsp_floating_point_test
+    tsp_floating_point.cpp
+)
+target_link_libraries(
+    easylocal_tsp_floating_point_test
+    PRIVATE
+        easylocal_tsp_mwe_model
+)
+add_test(
+    NAME easylocal.tsp-floating-point
+    COMMAND easylocal_tsp_floating_point_test
+)
+
+add_executable(
     easylocal_runner_composition_test
     runner_composition.cpp
 )
