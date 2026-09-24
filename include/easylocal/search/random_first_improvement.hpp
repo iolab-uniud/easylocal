@@ -1,6 +1,7 @@
 #pragma once
 
 #include <easylocal/sampling.hpp>
+#include <easylocal/search/detail/context_concepts.hpp>
 
 #include <cassert>
 #include <concepts>
@@ -17,12 +18,11 @@ namespace detail
 
 template<class Context, class RNG>
 concept random_first_improvement_context =
+    strict_improvement_context<Context> &&
     std::uniform_random_bit_generator<RNG> &&
     requires(
         const Context& context,
         const typename Context::solution_type& solution,
-        const typename Context::cost_type& candidate,
-        const typename Context::cost_type& reference,
         RNG& rng)
     {
         typename Context::neighborhood_explorer_type::random_sampling;
@@ -33,11 +33,8 @@ concept random_first_improvement_context =
 
         {
             context.neighborhood_explorer().random_moves(solution, rng)
-        } -> std::ranges::input_range;
-
-        {
-            context.better(candidate, reference)
-        } -> std::convertible_to<bool>;
+        } -> easylocal::detail::move_input_range_for<
+            typename Context::neighborhood_explorer_type::move_type>;
     };
 
 } // namespace detail

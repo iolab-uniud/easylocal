@@ -191,7 +191,9 @@ public:
 
     static_assert(
         unique_types_v<typename ComponentSpecs::component_type...>,
-        "a SolutionManager recipe may contain each component type at most once");
+        "a SolutionManager recipe may contain each component type at most once; "
+        "the conflicting component type is shown in the template instantiation "
+        "context");
 
     using cost_type = aggregated_cost_type_t<BaseSM, component_values_type>;
 
@@ -342,7 +344,9 @@ public:
 
     static_assert(
         unique_types_v<typename ComponentSpecs::component_type...>,
-        "a SolutionManager recipe may contain each component type at most once");
+        "a SolutionManager recipe may contain each component type at most once; "
+        "the conflicting component type is shown in the template instantiation "
+        "context");
 
     explicit solution_manager_recipe(BaseArgsTuple base_args)
         requires (sizeof...(ComponentSpecs) == 0)
@@ -364,7 +368,9 @@ public:
     {
         static_assert(
             !type_in_pack_v<Component, typename ComponentSpecs::component_type...>,
-            "a SolutionManager recipe may contain each component type at most once");
+            "a SolutionManager recipe may contain each component type at most once; "
+            "the conflicting component type is shown in the template instantiation "
+            "context");
 
         using spec_type = component_spec<Component, std::decay_t<Args>...>;
         using result_type = solution_manager_recipe<
@@ -387,7 +393,9 @@ public:
     {
         static_assert(
             !type_in_pack_v<Component, typename ComponentSpecs::component_type...>,
-            "a SolutionManager recipe may contain each component type at most once");
+            "a SolutionManager recipe may contain each component type at most once; "
+            "the conflicting component type is shown in the template instantiation "
+            "context");
 
         using spec_type = component_spec<Component, std::decay_t<Args>...>;
         using result_type = solution_manager_recipe<
@@ -453,7 +461,8 @@ public:
     static_assert(
         unique_types_v<typename DeltaSpecs::component_type...>,
         "a neighborhood recipe may attach at most one delta evaluator "
-        "to each component type");
+        "to each component type; the conflicting component type is shown in "
+        "the template instantiation context");
 
     configured_neighborhood(
         BaseNHE base,
@@ -527,7 +536,8 @@ public:
     static_assert(
         unique_types_v<typename DeltaSpecs::component_type...>,
         "a neighborhood recipe may attach at most one delta evaluator "
-        "to each component type");
+        "to each component type; the conflicting component type is shown in "
+        "the template instantiation context");
 
     explicit neighborhood_recipe(BaseArgsTuple base_args)
         requires (sizeof...(DeltaSpecs) == 0)
@@ -550,7 +560,8 @@ public:
         static_assert(
             !type_in_pack_v<Component, typename DeltaSpecs::component_type...>,
             "a neighborhood recipe may attach at most one delta evaluator "
-            "to each component type");
+            "to each component type; the conflicting component type is shown in "
+            "the template instantiation context");
 
         using spec_type = delta_spec<
             Component,
@@ -577,7 +588,8 @@ public:
         static_assert(
             !type_in_pack_v<Component, typename DeltaSpecs::component_type...>,
             "a neighborhood recipe may attach at most one delta evaluator "
-            "to each component type");
+            "to each component type; the conflicting component type is shown in "
+            "the template instantiation context");
 
         using spec_type = delta_spec<
             Component,

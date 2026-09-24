@@ -255,6 +255,58 @@ inline constexpr bool all_delta_bindings_compatible_v =
         std::make_index_sequence<
             std::tuple_size_v<neighborhood_delta_bindings_t<NHE>>>{});
 
+template<class SM, class NHE, class Binding>
+consteval auto validate_delta_binding() -> bool
+{
+    static_assert(
+        delta_component_active_v<SM, Binding>,
+        "attached delta names a component that is not active in the bound "
+        "SolutionManager recipe; the offending component and delta evaluator "
+        "types are shown in the template instantiation context");
+
+    if constexpr (delta_component_active_v<SM, Binding>)
+    {
+        static_assert(
+            delta_binding_compatible<SM, NHE, Binding>(),
+            "attached delta evaluator is incompatible with the bound component "
+            "value, Solution, or Move type; the offending component and delta "
+            "evaluator types are shown in the template instantiation context");
+    }
+
+    return true;
+}
+
+template<class SM, class NHE, std::size_t... Indices>
+consteval auto validate_delta_bindings_impl(
+    std::index_sequence<Indices...>) -> bool
+{
+    using bindings = neighborhood_delta_bindings_t<NHE>;
+    return (validate_delta_binding<
+                SM,
+                NHE,
+                std::tuple_element_t<Indices, bindings>>() &&
+            ...);
+}
+
+template<class SM, class NHE>
+consteval auto validate_delta_bindings() -> bool
+{
+    return validate_delta_bindings_impl<SM, NHE>(
+        std::make_index_sequence<
+            std::tuple_size_v<neighborhood_delta_bindings_t<NHE>>>{});
+}
+
+template<class Component, std::size_t Count>
+consteval auto has_unique_delta_binding() -> bool
+{
+    static_assert(
+        Count <= 1,
+        "at most one delta evaluator may be attached to a component type; "
+        "the offending component type is shown in the template instantiation "
+        "context");
+    return Count == 1;
+}
+
 template<class SM, class NHE>
 class evaluation_facility
 {
@@ -304,11 +356,10 @@ private:
     [[nodiscard]]
     static consteval auto has_delta() -> bool
     {
+        using component_type =
+            std::tuple_element_t<ComponentIndex, component_types>;
         constexpr auto count = matching_delta_count<ComponentIndex>();
-        static_assert(
-            count <= 1,
-            "at most one delta evaluator may be attached to a component type");
-        return count == 1;
+        return has_unique_delta_binding<component_type, count>();
     }
 
     template<std::size_t... ComponentIndices>
@@ -429,14 +480,7 @@ public:
         : solution_manager_{solution_manager},
           neighborhood_{neighborhood}
     {
-        static_assert(
-            all_delta_components_active_v<SM, NHE>,
-            "every attached delta must name a component that is active in "
-            "the bound SolutionManager recipe");
-        static_assert(
-            all_delta_bindings_compatible_v<SM, NHE>,
-            "every attached delta evaluator must be compatible with the "
-            "bound component value, Solution, and Move types");
+        static_assert(validate_delta_bindings<SM, NHE>());
     }
 
     [[nodiscard]]
@@ -505,7 +549,10 @@ public:
         }
         else
         {
-            static_assert(component_aware);
+            static_assert(
+                component_aware,
+                "an all-delta candidate requires a component-aware "
+                "SolutionManager");
 
             auto component_values = evaluate_components_for_move(
                 current_solution,

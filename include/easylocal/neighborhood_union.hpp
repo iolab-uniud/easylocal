@@ -216,7 +216,9 @@ private:
 template<class... Explorers>
 class neighborhood_union_explorer
 {
-    static_assert(sizeof...(Explorers) >= 2);
+    static_assert(
+        sizeof...(Explorers) >= 2,
+        "a neighborhood union requires at least two NeighborhoodExplorers");
 
 private:
     using explorer_tuple = std::tuple<Explorers...>;
@@ -247,12 +249,16 @@ public:
         std::index_sequence_for<Explorers...>,
         Explorers...>::type;
 
-    static_assert((std::same_as<
-                       instance_type,
-                       typename Explorers::instance_type> && ...));
-    static_assert((std::same_as<
-                       solution_type,
-                       typename Explorers::solution_type> && ...));
+    static_assert(
+        (std::same_as<
+             instance_type,
+             typename Explorers::instance_type> && ...),
+        "all NeighborhoodExplorers in a union must use the same instance_type");
+    static_assert(
+        (std::same_as<
+             solution_type,
+             typename Explorers::solution_type> && ...),
+        "all NeighborhoodExplorers in a union must use the same solution_type");
 
     explicit neighborhood_union_explorer(Explorers... explorers)
         : explorers_{std::move(explorers)...}
@@ -302,8 +308,12 @@ private:
 template<class... Specs>
 class neighborhood_union_spec
 {
-    static_assert(sizeof...(Specs) >= 2);
-    static_assert((is_neighborhood_spec_v<Specs> && ...));
+    static_assert(
+        sizeof...(Specs) >= 2,
+        "a neighborhood union requires at least two neighborhood specs");
+    static_assert(
+        (is_neighborhood_spec_v<Specs> && ...),
+        "every operand of a neighborhood union must be a neighborhood spec");
 
 public:
     using service_type = neighborhood_union_explorer<service_t<Specs>...>;

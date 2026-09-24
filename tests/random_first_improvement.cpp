@@ -19,16 +19,19 @@ struct Cost
 
 struct Candidate
 {
+    Cost value{};
+
     [[nodiscard]]
-    auto cost() const noexcept -> Cost
+    auto cost() const noexcept -> const Cost&
     {
-        return {};
+        return value;
     }
 };
 
 class Evaluation
 {
 public:
+    using evaluation_type = Candidate;
     using candidate_type = Candidate;
 
     [[nodiscard]]
@@ -55,6 +58,7 @@ template<class Sampling>
 class NeighborhoodExplorer
 {
 public:
+    using move_type = int;
     using random_sampling = Sampling;
 
     [[nodiscard]]

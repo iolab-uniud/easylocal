@@ -2,6 +2,7 @@
 
 #include <easylocal/detail/cost_semantics.hpp>
 #include <easylocal/detail/evaluation.hpp>
+#include <easylocal/detail/neighborhood_concepts.hpp>
 #include <easylocal/detail/service_composition.hpp>
 
 #include <cassert>
@@ -159,7 +160,9 @@ concept runner_neighborhood_explorer =
             neighborhood.instance()
         } -> std::same_as<const typename NHE::instance_type&>;
 
-        { neighborhood.moves(solution) } -> std::ranges::input_range;
+        {
+            neighborhood.moves(solution)
+        } -> move_input_range_for<typename NHE::move_type>;
         { neighborhood.make_move(candidate, move) } -> std::same_as<void>;
     };
 
@@ -260,18 +263,9 @@ public:
     using instance_type = typename solution_manager_type::instance_type;
     using solution_type = typename solution_manager_type::solution_type;
 
-    static_assert(
-        all_delta_components_active_v<
-            solution_manager_type,
-            neighborhood_explorer_type>,
-        "every attached delta must name a component that is active in the "
-        "bound SolutionManager recipe");
-    static_assert(
-        all_delta_bindings_compatible_v<
-            solution_manager_type,
-            neighborhood_explorer_type>,
-        "every attached delta evaluator must be compatible with the bound "
-        "component value, Solution, and Move types");
+    static_assert(validate_delta_bindings<
+                  solution_manager_type,
+                  neighborhood_explorer_type>());
 
     bound_runner(
         Algorithm algorithm,

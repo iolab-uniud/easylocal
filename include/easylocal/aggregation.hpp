@@ -81,7 +81,9 @@ template<class... Weights>
 class weighted_sum
 {
 public:
-    static_assert(sizeof...(Weights) > 0);
+    static_assert(
+        sizeof...(Weights) > 0,
+        "weighted_sum requires at least one weight");
 
     constexpr explicit weighted_sum(Weights... weights)
         : weights_{std::move(weights)...}

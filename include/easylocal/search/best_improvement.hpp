@@ -1,5 +1,7 @@
 #pragma once
 
+#include <easylocal/search/detail/context_concepts.hpp>
+
 #include <cassert>
 #include <concepts>
 #include <cstddef>
@@ -9,22 +11,6 @@
 namespace easylocal::search
 {
 
-namespace detail
-{
-
-template<class Context>
-concept best_improvement_context =
-    requires(
-        const Context& context,
-        const typename Context::cost_type& candidate,
-        const typename Context::cost_type& reference)
-    {
-        {
-            context.better(candidate, reference)
-        } -> std::convertible_to<bool>;
-    };
-
-} // namespace detail
 
 enum class BestImprovementTermination
 {
@@ -57,7 +43,7 @@ public:
     }
 
     template<class Context>
-        requires detail::best_improvement_context<Context>
+        requires detail::enumerating_strict_improvement_context<Context>
     [[nodiscard]]
     auto run(
         const Context& context,

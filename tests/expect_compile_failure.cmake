@@ -37,3 +37,14 @@ if(diagnostic_position EQUAL -1)
         "Expected substring: ${EXPECTED_DIAGNOSTIC}\n"
         "Compiler output:\n${output}")
 endif()
+
+if(DEFINED EXPECTED_CONTEXT AND NOT EXPECTED_CONTEXT STREQUAL "")
+    string(FIND "${output}" "${EXPECTED_CONTEXT}" context_position)
+    if(context_position EQUAL -1)
+        message(FATAL_ERROR
+            "Compilation failed with the expected diagnostic, but did not expose "
+            "the expected type/context information.\n"
+            "Expected context substring: ${EXPECTED_CONTEXT}\n"
+            "Compiler output:\n${output}")
+    endif()
+endif()
