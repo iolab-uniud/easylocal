@@ -1,11 +1,48 @@
+#include "aggregation.hpp"
+#include "capacity_delta.hpp"
+#include "neighborhood_explorer.hpp"
 #include "solution_manager.hpp"
 
 #include <compare>
+#include <concepts>
+#include <cstddef>
 #include <iostream>
 #include <string_view>
+#include <utility>
 
 namespace
 {
+
+using namespace easylocal::mwe::assignment;
+
+class AssignmentCardinalityComponent
+{
+public:
+    using value_type = std::size_t;
+
+    explicit AssignmentCardinalityComponent(const Instance&) noexcept
+    {
+    }
+
+    [[nodiscard]]
+    auto evaluate(const Solution& solution) const noexcept -> value_type
+    {
+        return solution.assignment.size();
+    }
+};
+
+struct CapacityThenCardinalityAggregator
+{
+    [[nodiscard]]
+    constexpr auto operator()(
+        const CapacityValue& capacity,
+        const std::size_t cardinality) const
+    {
+        return easylocal::mwe::aggregation::lexicographic{}(
+            capacity.total_overload,
+            cardinality);
+    }
+};
 
 auto expect(const bool condition, const std::string_view description) -> bool
 {
@@ -23,8 +60,10 @@ auto expect(const bool condition, const std::string_view description) -> bool
 int main()
 {
     using namespace easylocal::mwe::assignment;
+    namespace aggregation = easylocal::mwe::aggregation;
 
     static_assert(std::three_way_comparable<Cost>);
+    static_assert(std::same_as<SolutionManager::cost_type, Cost>);
 
     bool ok = true;
 
@@ -45,13 +84,81 @@ int main()
         solution_manager.is_valid(initial),
         "overloaded solution is structurally valid");
 
-    ok &= expect(
-        solution_manager.evaluate(initial) == Cost{2},
-        "hand-computed initial overload is 2");
+    const auto initial_cost = solution_manager.evaluate(initial);
 
-    ok &= expect(Cost{1} < Cost{2}, "lower cost compares as better");
-    ok &= expect(Cost{2} > Cost{1}, "higher cost compares as worse");
-    ok &= expect(Cost{2} <= Cost{2}, "equal costs satisfy non-strict ordering");
+    ok &= expect(
+        initial_cost == Cost{2, 1},
+        "structured cost keeps total overload primary and overloaded-machine count secondary");
+    ok &= expect(
+        initial_cost.get<0>() == 2 &&
+            initial_cost.get<1>() == 1,
+        "hierarchical cost keeps both materialized levels");
+
+    ok &= expect(
+        Cost{0, 100} < Cost{1, 0},
+        "hierarchical cost prioritizes the first level");
+    ok &= expect(
+        Cost{1, 1} < Cost{1, 2},
+        "hierarchical cost compares the next level after a tie");
+
+    const auto lexicographic_a = aggregation::lexicographic{}(1, 100L);
+    const auto lexicographic_b = aggregation::lexicographic{}(2, 0L);
+
+    ok &= expect(
+        lexicographic_a < lexicographic_b,
+        "predefined lexicographic aggregation orders materialized values");
+
+    const aggregation::weighted_sum weighted{2, 3};
+    ok &= expect(
+        weighted(4, 5) == 23,
+        "predefined weighted-sum aggregation combines materialized terms");
+
+    // Component attachment is compile-time compositional: adding a second
+    // component changes only the manager type and aggregator signature.
+    using TwoComponentManager = ComposedSolutionManager<
+        CapacityThenCardinalityAggregator,
+        CapacityCostComponent,
+        AssignmentCardinalityComponent>;
+
+    const TwoComponentManager two_component_manager{instance};
+    const auto two_component_cost = two_component_manager.evaluate(initial);
+
+    ok &= expect(
+        two_component_cost.get<0>() == 2 &&
+            two_component_cost.get<1>() == 3,
+        "solution manager evaluates a statically composed component pack");
+
+    // A delta is a separate, materialized value. Applying it to the current
+    // component value must match full evaluation after the move.
+    const CapacityCostComponent capacity_component{instance};
+    const ReassignCapacityDeltaEvaluator capacity_delta{instance};
+    const NeighborhoodExplorer neighborhood{solution_manager};
+
+    const auto before = capacity_component.evaluate(initial);
+
+    for (const auto move : neighborhood.moves(initial))
+    {
+        Solution candidate = initial;
+        neighborhood.make_move(candidate, move);
+
+        const auto delta = capacity_delta.delta_evaluate(initial, move);
+        const auto incrementally_updated = before + delta;
+        const auto fully_evaluated = capacity_component.evaluate(candidate);
+
+        ok &= expect(
+            incrementally_updated == fully_evaluated,
+            "structured delta agrees with full component evaluation");
+    }
+
+    const Move relieving_move{
+        .job = 1,
+        .destination = 1,
+    };
+
+    ok &= expect(
+        capacity_delta.delta_evaluate(initial, relieving_move) ==
+            CapacityDelta{-1, -2},
+        "structured delta materializes both changed capacity fields");
 
     // Solution has ordinary value semantics.
     Solution copy = initial;
@@ -91,11 +198,11 @@ int main()
         "same representation is valid for a second instance");
 
     ok &= expect(
-        roomy_manager.evaluate(initial) == Cost{0},
+        roomy_manager.evaluate(initial) == Cost{0, 0},
         "same solution is evaluated relative to the manager's instance");
 
     ok &= expect(
-        solution_manager.evaluate(initial) == Cost{2},
+        solution_manager.evaluate(initial) == Cost{2, 1},
         "first manager remains bound to the first instance");
 
     return ok ? 0 : 1;

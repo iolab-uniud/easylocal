@@ -25,7 +25,7 @@ int main()
     }
 
     std::cout << "initial overload: "
-              << solution_manager.evaluate(solution).value
+              << solution_manager.evaluate(solution).get<1>()
               << '\n';
 
     const Move move{
@@ -41,7 +41,7 @@ int main()
     neighborhood.make_move(solution, move);
 
     std::cout << "final overload: "
-              << solution_manager.evaluate(solution).value
+              << solution_manager.evaluate(solution).get<1>()
               << '\n';
 
     return 0;

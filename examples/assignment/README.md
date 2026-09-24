@@ -10,11 +10,29 @@ public framework API.
 Each job has a non-negative demand and is assigned to one machine. Each machine
 has a non-negative capacity.
 
-The current cost is total overload:
+The current capacity component is structured:
 
 ```text
-sum_m max(0, load[m] - capacity[m])
+CapacityValue {
+    overloaded_machines,
+    total_overload
+}
 ```
+
+where:
+
+```text
+total_overload = sum_m max(0, load[m] - capacity[m])
+```
+
+The algorithm-facing cost is the hierarchical pair:
+
+```text
+(total_overload, overloaded_machines)
+```
+
+so the original total-overload objective remains primary, while the number of
+overloaded machines is a deterministic secondary level.
 
 Example:
 
@@ -24,17 +42,75 @@ capacity = [5, 5]
 solution = [0, 0, 1]
 ```
 
-Loads are `[7, 2]`, so the cost is `2`. The MWE represents this result as a
-small `Cost` value type whose ordering is defined with C++20/23 three-way
-comparison.
+Loads are `[7, 2]`, so the capacity value and final cost are both represented by
+`CapacityValue{1, 2}` and `Cost{2, 1}` at their respective abstraction levels.
 
 Move `(job=1, destination=1)` produces:
 
 ```text
 solution = [0, 1, 1]
 loads    = [4, 5]
-cost     = 0
+cost     = (0, 0)
 ```
+
+## Cost composition
+
+`CapacityCostComponent` performs full eager evaluation and returns a materialized
+`CapacityValue`. Cost components are attached to `ComposedSolutionManager` as a
+compile-time parameter pack:
+
+```cpp
+using SolutionManager = ComposedSolutionManager<
+    AssignmentCostAggregator,
+    CapacityCostComponent>;
+```
+
+`ComposedSolutionManager::evaluate(solution)` eagerly evaluates every attached
+component and passes their materialized values to the configured aggregator.
+The resulting `cost_type` remains the ordinary three-way-comparable value seen
+by search algorithms.
+
+The MWE prototypes three reusable aggregation categories:
+
+- `aggregation::weighted_sum`;
+- `aggregation::lexicographic`;
+- `aggregation::hierarchical`.
+
+`AssignmentCostAggregator` uses the predefined hierarchical aggregator to map
+fields of the structured capacity value into the final `Cost`. Domain-specific
+projection from structured component values remains explicit for now; no
+projection DSL is introduced by this iteration.
+
+The aggregators are still MWE-local prototypes. Promotion to the public
+`include/easylocal/` API is intentionally deferred until the design has received
+further pressure testing.
+
+## Delta evaluation
+
+The assignment MWE also prototypes a separate delta evaluator for the pair
+`CapacityCostComponent x Move`:
+
+```cpp
+ReassignCapacityDeltaEvaluator::delta_evaluate(solution, move)
+    -> CapacityDelta
+```
+
+`CapacityDelta` is a distinct structured, materialized value containing changes
+to both `overloaded_machines` and `total_overload`. Applying it follows the
+contract:
+
+```text
+component_value_after = component_value_before + delta
+```
+
+The tests check this property against full component evaluation for every move
+in the small deterministic assignment neighborhood.
+
+Search algorithms do **not** consume delta evaluators yet. Automatic delta
+discovery, fallback to full component evaluation, laziness, caching and proxy
+lifetime/invalidation are deliberately postponed so they can later be added
+without leaking machinery into component, delta-evaluator or search-algorithm
+code.
 
 ## Responsibilities
 
@@ -48,20 +124,30 @@ cost     = 0
 : Plain descriptive value. It does not store a `Solution` or `Instance`
   pointer/reference.
 
+`CapacityCostComponent`
+: Instance-bound full evaluator for one structured cost component.
+
+`CapacityDelta`
+: Materialized structured change applicable to `CapacityValue` with `operator+`.
+
+`ReassignCapacityDeltaEvaluator`
+: Separate evaluator specialized for the capacity component and assignment
+  reassign move.
+
 `Cost`
-: Value returned by full evaluation. It owns its ordering semantics through
-  three-way comparison.
+: Materialized value returned by full aggregation. It owns its hierarchical
+  ordering semantics through three-way comparison.
 
 `SolutionManager`
-: Instance-bound service responsible for structural solution validation and full
-  solution evaluation.
+: Alias of a statically composed manager responsible for structural solution
+  validation, full component evaluation and aggregation into `cost_type`.
 
 `NeighborhoodExplorer`
 : Service responsible for neighborhood traversal, move validity and move
   application. It is bound to a `SolutionManager`, which in turn determines the
   instance.
 
-No generic EasyLocal++ concepts are extracted yet.
+No generic cost API is promoted to public EasyLocal++ headers yet.
 
 ## Neighborhood traversal
 
@@ -168,8 +254,8 @@ auto runner =
 
 `bind(instance)` materializes an instance-bound graph owned by an internal,
 non-movable bound runner: first the solution manager, then the neighborhood
-explorer. A single run then supplies only its initial solution and any algorithm-specific
-runtime dependencies such as an RNG:
+explorer. A single run then supplies only its initial solution and any
+algorithm-specific runtime dependencies such as an RNG:
 
 ```cpp
 auto bound = runner.bind(instance);
@@ -183,14 +269,17 @@ while ownership and graph consistency remain internal to the runner.
 
 The current MWE deliberately does not define:
 
-- generic framework concepts;
+- public generic cost/component/aggregation concepts;
+- automatic delta discovery and fallback;
+- lazy component or delta evaluation;
+- evaluation-state caching;
+- proxy lifetime/generation invalidation;
+- move undo/reversibility;
 - fallback/capability negotiation between random sampling strategies;
 - diagnostics for fallback from without- to with-replacement;
 - EL3 neighborhood adapters;
 - biased/adaptive sampling;
 - generic indexed/combinatorial move-space helpers;
-- generic cost structures;
-- delta evaluation;
 - floating-point semantics;
 - CLI/configuration;
 - tracing/logging.

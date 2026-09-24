@@ -4,24 +4,47 @@
 #include "instance.hpp"
 #include "solution.hpp"
 
-#include <algorithm>
 #include <cassert>
-#include <cstdint>
+#include <concepts>
+#include <functional>
 #include <ranges>
-#include <vector>
+#include <tuple>
+#include <type_traits>
+#include <utility>
 
 namespace easylocal::mwe::assignment
 {
 
-class SolutionManager
+template<class Aggregator, class... Components>
+class ComposedSolutionManager
 {
 public:
+    static_assert(sizeof...(Components) > 0);
+
     using instance_type = Instance;
     using solution_type = Solution;
-    using cost_type = Cost;
+    using cost_type = std::invoke_result_t<
+        const Aggregator&,
+        typename Components::value_type...>;
 
-    explicit SolutionManager(const Instance& instance) noexcept
-        : instance_{instance}
+    explicit ComposedSolutionManager(const Instance& instance) noexcept(
+        std::is_nothrow_default_constructible_v<Aggregator> &&
+        (std::is_nothrow_constructible_v<Components, const Instance&> && ...))
+        requires std::default_initializable<Aggregator>
+        : instance_{instance},
+          aggregator_{},
+          components_{Components{instance}...}
+    {
+    }
+
+    ComposedSolutionManager(
+        const Instance& instance,
+        Aggregator aggregator) noexcept(
+        std::is_nothrow_move_constructible_v<Aggregator> &&
+        (std::is_nothrow_constructible_v<Components, const Instance&> && ...))
+        : instance_{instance},
+          aggregator_{std::move(aggregator)},
+          components_{Components{instance}...}
     {
     }
 
@@ -51,29 +74,23 @@ public:
     {
         assert(is_valid(solution));
 
-        std::vector<std::int64_t> load(
-            instance_.capacity.size(),
-            std::int64_t{0});
-
-        for (std::size_t job = 0; job < solution.assignment.size(); ++job)
-        {
-            load[solution.assignment[job]] += instance_.demand[job];
-        }
-
-        std::int64_t total_overload = 0;
-
-        for (std::size_t machine = 0; machine < load.size(); ++machine)
-        {
-            total_overload += std::max(
-                std::int64_t{0},
-                load[machine] - instance_.capacity[machine]);
-        }
-
-        return Cost{total_overload};
+        return std::apply(
+            [&](const auto&... component) {
+                return std::invoke(
+                    aggregator_,
+                    component.evaluate(solution)...);
+            },
+            components_);
     }
 
 private:
     const Instance& instance_;
+    [[no_unique_address]] Aggregator aggregator_;
+    std::tuple<Components...> components_;
 };
+
+using SolutionManager = ComposedSolutionManager<
+    AssignmentCostAggregator,
+    CapacityCostComponent>;
 
 } // namespace easylocal::mwe::assignment

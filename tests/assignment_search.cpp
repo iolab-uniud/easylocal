@@ -211,7 +211,7 @@ int main()
     const auto configured_result = configured_bound.run(initial);
 
     ok &= expect(
-        configured_result.cost == Cost{0},
+        configured_result.cost == Cost{0, 0},
         "constructor arguments captured by the runner recipe reach the bound neighborhood");
 
     const auto run_with_budget =
@@ -233,7 +233,7 @@ int main()
             std::vector<machine_id>{1, 0, 0},
         "first improvement follows the deterministic neighborhood order");
     ok &= expect(
-        complete.cost == Cost{0},
+        complete.cost == Cost{0, 0},
         "complete search reaches the hand-computed local optimum cost");
     ok &= expect(
         complete.evaluations == 8,
@@ -248,7 +248,7 @@ int main()
         initial_only.solution.assignment == initial.assignment,
         "budget one leaves the initial solution unchanged");
     ok &= expect(
-        initial_only.cost == Cost{2},
+        initial_only.cost == Cost{2, 1},
         "budget one still evaluates the initial solution");
     ok &= expect(
         initial_only.evaluations == 1,
@@ -265,7 +265,7 @@ int main()
             std::vector<machine_id>{1, 0, 1},
         "last available evaluation may still accept an improving move");
     ok &= expect(
-        one_improvement.cost == Cost{1},
+        one_improvement.cost == Cost{1, 1},
         "accepted move updates the returned current cost");
     ok &= expect(
         one_improvement.evaluations == 2,
@@ -331,7 +331,7 @@ int main()
             std::vector<machine_id>{0, 1, 1},
         "best improvement selects the best move in the complete neighborhood");
     ok &= expect(
-        best_complete.cost == Cost{0},
+        best_complete.cost == Cost{0, 0},
         "best improvement reaches the hand-computed local optimum cost");
     ok &= expect(
         best_complete.evaluations == 7,
@@ -359,7 +359,7 @@ int main()
         best_partial_scan.solution.assignment == initial.assignment,
         "partial best-improvement scan does not accept a best-so-far move");
     ok &= expect(
-        best_partial_scan.cost == Cost{2},
+        best_partial_scan.cost == Cost{2, 1},
         "partial best-improvement scan preserves the incumbent cost");
     ok &= expect(
         best_partial_scan.evaluations == 3,
@@ -376,7 +376,7 @@ int main()
             std::vector<machine_id>{0, 1, 1},
         "a complete neighborhood scan may consume the final evaluation and accept its best move");
     ok &= expect(
-        best_one_step.cost == Cost{0},
+        best_one_step.cost == Cost{0, 0},
         "completed best-improvement step updates the incumbent cost");
     ok &= expect(
         best_one_step.evaluations == 4,
@@ -429,7 +429,7 @@ int main()
             random_complete_a.termination == random_complete_b.termination,
         "random first improvement is reproducible for identical RNG state");
     ok &= expect(
-        random_complete_a.cost == Cost{0},
+        random_complete_a.cost == Cost{0, 0},
         "random first improvement reaches a local optimum independently of random traversal order");
     ok &= expect(
         random_complete_a.termination ==
