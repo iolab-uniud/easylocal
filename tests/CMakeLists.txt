@@ -99,6 +99,20 @@ add_test(
 )
 
 add_executable(
+    easylocal_runner_composition_test
+    runner_composition.cpp
+)
+target_link_libraries(
+    easylocal_runner_composition_test
+    PRIVATE
+        easylocal_assignment_mwe_model
+)
+add_test(
+    NAME easylocal.runner-composition
+    COMMAND easylocal_runner_composition_test
+)
+
+add_executable(
     easylocal_service_composition_test
     service_composition.cpp
 )

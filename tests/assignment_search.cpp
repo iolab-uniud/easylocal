@@ -6,14 +6,12 @@
 #include <easylocal/runner.hpp>
 #include "solution_manager.hpp"
 
-#include <concepts>
 #include <cstdint>
 #include <functional>
 #include <iostream>
 #include <random>
 #include <ranges>
 #include <string_view>
-#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -37,42 +35,6 @@ auto default_neighborhood_recipe()
                CapacityCostComponent,
                ReassignCapacityDeltaEvaluator>();
 }
-
-using DefaultSolutionManagerSpec =
-    decltype(default_solution_manager_recipe());
-using DefaultNeighborhoodSpec =
-    decltype(default_neighborhood_recipe());
-using ConfiguredSolutionManager =
-    typename DefaultSolutionManagerSpec::service_type;
-using ConfiguredNeighborhood =
-    typename DefaultNeighborhoodSpec::service_type;
-
-template<class T>
-concept CanAddSolutionManager = requires(T runner) {
-    std::move(runner).with_solution_manager(
-        default_solution_manager_recipe());
-};
-
-template<class T>
-concept CanAddNeighborhood = requires(T runner) {
-    std::move(runner).with_neighborhood(
-        default_neighborhood_recipe());
-};
-
-template<class T>
-concept CanBindInstance = requires(T runner, const Instance& instance) {
-    std::move(runner).bind(instance);
-};
-
-template<class T>
-concept CanRun = requires(T& runner, Solution solution) {
-    runner.run(std::move(solution));
-};
-
-template<class T, class RNG>
-concept CanRunWithRng = requires(T& runner, Solution solution, RNG& rng) {
-    runner.run(std::move(solution), rng);
-};
 
 class AssignmentCardinalityComponent
 {
@@ -148,14 +110,14 @@ private:
     std::reference_wrapper<int> make_move_count_;
 };
 
-class ConfiguredNeighborhoodExplorer
+class ConstructionTrackingNeighborhoodExplorer
 {
 public:
     using instance_type = Instance;
     using solution_type = Solution;
     using move_type = Move;
 
-    ConfiguredNeighborhoodExplorer(
+    ConstructionTrackingNeighborhoodExplorer(
         const SolutionManager& solution_manager,
         int& construction_marker) noexcept
         : inner_{solution_manager}
@@ -206,87 +168,6 @@ int main()
 
     using easylocal::component;
     using easylocal::delta;
-
-    using NakedRunner = Runner<FirstImprovement>;
-    using RunnerWithSM = decltype(
-        std::declval<NakedRunner&&>().with_solution_manager(
-            default_solution_manager_recipe()));
-    using ConfiguredRunner = decltype(
-        std::declval<RunnerWithSM&&>().with_neighborhood(
-            default_neighborhood_recipe()));
-    using BoundFirstRunner = decltype(
-        std::declval<ConfiguredRunner&&>().bind(
-            std::declval<const Instance&>()));
-
-    using PipedConfiguredRunner = decltype(
-        Runner{FirstImprovement{{.max_evaluations = 1}}}
-        | default_solution_manager_recipe()
-        | default_neighborhood_recipe());
-
-    static_assert(std::same_as<ConfiguredRunner, PipedConfiguredRunner>);
-
-    static_assert(CanAddSolutionManager<NakedRunner>);
-    static_assert(!CanAddNeighborhood<NakedRunner>);
-    static_assert(!CanBindInstance<NakedRunner>);
-    static_assert(!CanRun<NakedRunner>);
-    static_assert(!CanRunWithRng<NakedRunner, std::mt19937>);
-
-    static_assert(!CanAddSolutionManager<RunnerWithSM>);
-    static_assert(CanAddNeighborhood<RunnerWithSM>);
-    static_assert(!CanBindInstance<RunnerWithSM>);
-    static_assert(!CanRun<RunnerWithSM>);
-    static_assert(!CanRunWithRng<RunnerWithSM, std::mt19937>);
-
-    static_assert(!CanAddSolutionManager<ConfiguredRunner>);
-    static_assert(!CanAddNeighborhood<ConfiguredRunner>);
-    static_assert(CanBindInstance<ConfiguredRunner>);
-    static_assert(!CanRun<ConfiguredRunner>);
-    static_assert(!CanRunWithRng<ConfiguredRunner, std::mt19937>);
-
-    static_assert(std::same_as<
-        BoundFirstRunner::solution_manager_type,
-        ConfiguredSolutionManager>);
-    static_assert(std::same_as<
-        BoundFirstRunner::neighborhood_explorer_type,
-        ConfiguredNeighborhood>);
-    static_assert(!std::copy_constructible<BoundFirstRunner>);
-    static_assert(!std::movable<BoundFirstRunner>);
-    static_assert(CanRun<BoundFirstRunner>);
-    static_assert(!CanRunWithRng<BoundFirstRunner, std::mt19937>);
-
-    using NakedBestRunner = Runner<BestImprovement>;
-    using BestRunnerWithSM = decltype(
-        std::declval<NakedBestRunner&&>().with_solution_manager(
-            default_solution_manager_recipe()));
-    using ConfiguredBestRunner = decltype(
-        std::declval<BestRunnerWithSM&&>().with_neighborhood(
-            default_neighborhood_recipe()));
-    using BoundBestRunner = decltype(
-        std::declval<ConfiguredBestRunner&&>().bind(
-            std::declval<const Instance&>()));
-
-    static_assert(CanAddSolutionManager<NakedBestRunner>);
-    static_assert(CanAddNeighborhood<BestRunnerWithSM>);
-    static_assert(CanBindInstance<ConfiguredBestRunner>);
-    static_assert(CanRun<BoundBestRunner>);
-    static_assert(!CanRunWithRng<BoundBestRunner, std::mt19937>);
-
-    using NakedRandomRunner = Runner<RandomFirstImprovement>;
-    using RandomRunnerWithSM = decltype(
-        std::declval<NakedRandomRunner&&>().with_solution_manager(
-            default_solution_manager_recipe()));
-    using ConfiguredRandomRunner = decltype(
-        std::declval<RandomRunnerWithSM&&>().with_neighborhood(
-            default_neighborhood_recipe()));
-    using BoundRandomRunner = decltype(
-        std::declval<ConfiguredRandomRunner&&>().bind(
-            std::declval<const Instance&>()));
-
-    static_assert(CanAddSolutionManager<NakedRandomRunner>);
-    static_assert(CanAddNeighborhood<RandomRunnerWithSM>);
-    static_assert(CanBindInstance<ConfiguredRandomRunner>);
-    static_assert(!CanRun<BoundRandomRunner>);
-    static_assert(CanRunWithRng<BoundRandomRunner, std::mt19937>);
 
     bool ok = true;
 
@@ -433,10 +314,10 @@ int main()
         "no-delta rejection still materializes the candidate exactly once for evaluation");
 
     int construction_marker = 0;
-    auto configured_services =
+    auto construction_tracked_runner =
         Runner{FirstImprovement{{.max_evaluations = 8}}}
         | default_solution_manager_recipe()
-        | (neighborhood<ConfiguredNeighborhoodExplorer>(
+        | (neighborhood<ConstructionTrackingNeighborhoodExplorer>(
                std::ref(construction_marker))
            | delta<
                  CapacityCostComponent,
@@ -446,16 +327,18 @@ int main()
         construction_marker == 0,
         "service recipes do not construct instance-bound services eagerly");
 
-    auto configured_bound = configured_services.bind(instance);
+    auto bound_construction_tracked_runner =
+        construction_tracked_runner.bind(instance);
 
     ok &= expect(
         construction_marker == 1,
         "bind(instance) materializes the configured service graph exactly once");
 
-    const auto configured_result = configured_bound.run(initial);
+    const auto construction_tracked_result =
+        bound_construction_tracked_runner.run(initial);
 
     ok &= expect(
-        configured_result.cost == Cost{0, 0},
+        construction_tracked_result.cost == Cost{0, 0},
         "constructor arguments captured by the runner recipe reach the bound neighborhood");
 
     const auto run_with_budget =
