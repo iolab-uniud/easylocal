@@ -72,7 +72,7 @@ jobs:
 
           apt_update
           "${elevate[@]}" env DEBIAN_FRONTEND=noninteractive \
-            apt-get install -y --no-install-recommends cmake ninja-build
+            apt-get install -y --no-install-recommends cmake ninja-build python3
 
           case "$TOOLCHAIN" in
             gcc15|gcc16)
@@ -99,51 +99,18 @@ jobs:
             *) echo "Unknown toolchain: $TOOLCHAIN" >&2; exit 1 ;;
           esac
 
-      - name: Environment
+      - name: Run benchmark suite
         run: |
           results_dir="build/neighborhood-authoring-results"
-          mkdir -p "$results_dir"
-          {
-            uname -a
-            cat /etc/os-release
-            cmake --version
-            ninja --version
-            "$CXX" --version
-            echo "CXXFLAGS=${CXXFLAGS:-}"
-            read -r -a cxxflags <<< "${CXXFLAGS:-}"
-            printf '#include <version>\n' | \
-              "$CXX" "${cxxflags[@]}" -std=c++23 -dM -E -x c++ - 2>/dev/null | \
-              grep -E '__GLIBCXX__|_LIBCPP_VERSION' || true
-            echo "target_moves=$SPIKE_TARGET_MOVES"
-            echo "runner_target_evaluations=$SPIKE_TARGET_MOVES"
-            echo "trials=$SPIKE_TRIALS"
-            echo "seed=$SPIKE_SEED"
-          } 2>&1 | tee "$results_dir/environment.log"
-
-      - name: Run spike
-        run: |
-          results_dir="build/neighborhood-authoring-results"
-          spike_build_dir="build/neighborhood-authoring-spike-${TOOLCHAIN}"
-          SPIKE_BUILD_DIR="$spike_build_dir" \
-          SPIKE_ALLOCATION_REPORT="$results_dir/allocations.csv" \
-            ./scripts/run-neighborhood-authoring-spike.sh \
-              "$SPIKE_TARGET_MOVES" \
-              "$SPIKE_TRIALS" \
-              "$SPIKE_SEED" \
-              > "$results_dir/benchmark.csv" \
-              2> "$results_dir/check.log"
-          SPIKE_BUILD_DIR="$spike_build_dir" \
-            ./scripts/run-neighborhood-runner-spike.sh \
-              "$SPIKE_TARGET_MOVES" \
-              "$SPIKE_TRIALS" \
-              "$SPIKE_SEED" \
-              > "$results_dir/runner-benchmark.csv" \
-              2> "$results_dir/runner-check.log"
+          ./scripts/run-neighborhood-authoring-benchmarks.sh \
+            "$results_dir" \
+            "$SPIKE_TARGET_MOVES" \
+            "$SPIKE_TRIALS" \
+            "$SPIKE_SEED"
           cat "$results_dir/check.log"
-          cat "$results_dir/allocations.csv"
-          cat "$results_dir/benchmark.csv"
           cat "$results_dir/runner-check.log"
-          cat "$results_dir/runner-benchmark.csv"
+          cat "$results_dir/first-improvement-diagnostic.log"
+          cat "$results_dir/summary.md"
 
       - name: Upload spike results
         if: ${{ always() && !env.ACT }}
@@ -155,6 +122,7 @@ jobs:
           path: |
             build/neighborhood-authoring-results/*.log
             build/neighborhood-authoring-results/*.csv
+            build/neighborhood-authoring-results/*.md
 
   macos:
     name: macOS ARM64 / ${{ matrix.toolchain }} / neighborhood spike
@@ -202,55 +170,19 @@ jobs:
             *) echo "Unknown toolchain: $TOOLCHAIN" >&2; exit 1 ;;
           esac
 
-      - name: Environment
+      - name: Run benchmark suite
         run: |
+          command -v python3 >/dev/null
           results_dir="build/neighborhood-authoring-results"
-          mkdir -p "$results_dir"
-          {
-            uname -a
-            sw_vers
-            xcodebuild -version
-            echo "SDKROOT=$SDKROOT"
-            cmake --version
-            ninja --version
-            "$CXX" --version
-            echo "CXXFLAGS=${CXXFLAGS:-}"
-            read -r -a cxxflags <<< "${CXXFLAGS:-}"
-            printf '#include <version>\n' | \
-              "$CXX" "${cxxflags[@]}" -std=c++23 -dM -E -x c++ - 2>/dev/null | \
-              grep -E '__GLIBCXX__|_LIBCPP_VERSION' || true
-            echo "target_moves=$SPIKE_TARGET_MOVES"
-            echo "runner_target_evaluations=$SPIKE_TARGET_MOVES"
-            echo "trials=$SPIKE_TRIALS"
-            echo "seed=$SPIKE_SEED"
-          } 2>&1 | tee "$results_dir/environment.log"
-
-      - name: Run spike
-        run: |
-          results_dir="build/neighborhood-authoring-results"
-          spike_build_dir="build/neighborhood-authoring-spike-${TOOLCHAIN}"
-          CMAKE_OSX_SYSROOT="$SDKROOT" \
-          SPIKE_BUILD_DIR="$spike_build_dir" \
-          SPIKE_ALLOCATION_REPORT="$results_dir/allocations.csv" \
-            ./scripts/run-neighborhood-authoring-spike.sh \
-              "$SPIKE_TARGET_MOVES" \
-              "$SPIKE_TRIALS" \
-              "$SPIKE_SEED" \
-              > "$results_dir/benchmark.csv" \
-              2> "$results_dir/check.log"
-          CMAKE_OSX_SYSROOT="$SDKROOT" \
-          SPIKE_BUILD_DIR="$spike_build_dir" \
-            ./scripts/run-neighborhood-runner-spike.sh \
-              "$SPIKE_TARGET_MOVES" \
-              "$SPIKE_TRIALS" \
-              "$SPIKE_SEED" \
-              > "$results_dir/runner-benchmark.csv" \
-              2> "$results_dir/runner-check.log"
+          ./scripts/run-neighborhood-authoring-benchmarks.sh \
+            "$results_dir" \
+            "$SPIKE_TARGET_MOVES" \
+            "$SPIKE_TRIALS" \
+            "$SPIKE_SEED"
           cat "$results_dir/check.log"
-          cat "$results_dir/allocations.csv"
-          cat "$results_dir/benchmark.csv"
           cat "$results_dir/runner-check.log"
-          cat "$results_dir/runner-benchmark.csv"
+          cat "$results_dir/first-improvement-diagnostic.log"
+          cat "$results_dir/summary.md"
 
       - name: Upload spike results
         if: ${{ always() && !env.ACT }}
@@ -262,3 +194,4 @@ jobs:
           path: |
             build/neighborhood-authoring-results/*.log
             build/neighborhood-authoring-results/*.csv
+            build/neighborhood-authoring-results/*.md

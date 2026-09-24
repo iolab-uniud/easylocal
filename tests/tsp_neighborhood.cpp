@@ -61,6 +61,7 @@ int main()
 
     auto all_moves = neighborhood.moves(solution);
     static_assert(std::ranges::input_range<decltype(all_moves)>);
+    static_assert(!std::ranges::forward_range<decltype(all_moves)>);
     static_assert(std::ranges::view<decltype(all_moves)>);
 
     const std::vector<observed_move> expected{
@@ -74,6 +75,22 @@ int main()
     ok &= expect(
         collect(all_moves) == expected,
         "2-opt moves are generated lazily in lexicographic edge order");
+
+    std::vector<observed_move> cursor_observed;
+    TwoOptMove cursor_move{};
+    if (neighborhood.first_move(solution, cursor_move))
+    {
+        do
+        {
+            cursor_observed.emplace_back(
+                cursor_move.first_edge,
+                cursor_move.second_edge);
+        } while (neighborhood.next_move(solution, cursor_move));
+    }
+
+    ok &= expect(
+        cursor_observed == expected,
+        "FirstMove/NextMove authoring protocol matches the 2-opt move range");
 
     for (const auto move : neighborhood.moves(solution))
     {
@@ -167,8 +184,9 @@ int main()
         .tour = {0, 1, 2},
     };
 
+    auto triangle_moves = triangle_neighborhood.moves(triangle);
     ok &= expect(
-        std::ranges::empty(triangle_neighborhood.moves(triangle)),
+        triangle_moves.begin() == triangle_moves.end(),
         "three-city tour has no non-degenerate 2-opt move");
 
     std::mt19937 triangle_rng{7U};

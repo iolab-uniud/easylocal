@@ -184,8 +184,10 @@ Deterministic traversal is lazy:
 auto candidates = neighborhood.moves(solution);
 ```
 
-The neighborhood is represented through ordinal positions that are decoded into
-`Move` values on demand. It is not implicitly materialized into a container.
+The deterministic neighborhood is authored through the incremental
+`first_move`/`next_move` cursor protocol and adapted to an `input_range` by
+`easylocal::cursor_moves`. It is not implicitly materialized into a container,
+and deterministic authoring does not require ordinal indexing.
 
 Random traversal uses the same range-oriented interface:
 

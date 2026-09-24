@@ -8,6 +8,11 @@ represented by a permutation of city ids, and a deterministic lazy 2-opt
 neighborhood. A `TwoOptMove{i, j}` cuts tour edges `(i, i+1)` and `(j, j+1)`
 and reverses the segment `[i+1, j]`.
 
+Deterministic 2-opt traversal is authored through `first_move`/`next_move` and
+exposed to consumers as a lazy `input_range` through `easylocal::cursor_moves`.
+Rank decoding remains an implementation detail of the random with-replacement
+traversal and is not part of deterministic neighborhood authoring.
+
 `TourLengthComponent` returns the structured materialized value
 `TourLengthValue{total}`. The problem-side `SolutionManager` aggregates that
 value to the algorithm-facing scalar `double` cost. This intentionally exercises

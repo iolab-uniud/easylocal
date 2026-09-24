@@ -1,6 +1,6 @@
 #pragma once
 
-#include "cursor_view.hpp"
+#include <easylocal/cursor_moves.hpp>
 #include "generator.hpp"
 #include "std_generator_support.hpp"
 
@@ -153,7 +153,7 @@ public:
     auto moves(const Solution& solution) const noexcept
     {
         assert(solution_manager_.is_valid(solution));
-        return cursor_moves(*this, solution);
+        return easylocal::cursor_moves(*this, solution);
     }
 
     [[nodiscard]]

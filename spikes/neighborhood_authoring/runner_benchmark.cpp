@@ -1,8 +1,9 @@
 #include "assignment_variants.hpp"
-#include "runner_prototype.hpp"
 #include "tsp_variants.hpp"
 
+#include "../../examples/assignment/best_improvement.hpp"
 #include "../../examples/assignment/capacity_delta.hpp"
+#include "../../examples/assignment/first_improvement.hpp"
 #include "../../examples/tsp/tour_length_component.hpp"
 #include "../../examples/tsp/tour_length_delta.hpp"
 
@@ -17,6 +18,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <new>
+#include <optional>
 #include <string_view>
 #include <system_error>
 #include <utility>
@@ -109,34 +111,215 @@ inline void observe(const std::uint64_t value) noexcept
 #endif
 }
 
+class RawCursorFirstImprovement
+{
+public:
+    explicit RawCursorFirstImprovement(
+        const assignment::FirstImprovementParameters parameters) noexcept
+        : parameters_{parameters}
+    {
+    }
+
+    template<class Context>
+    [[nodiscard]]
+    auto run(
+        const Context& context,
+        typename Context::solution_type solution) const
+    {
+        const auto& neighborhood = context.neighborhood_explorer();
+        const auto evaluation = context.evaluation();
+
+        using solution_type = typename Context::solution_type;
+        using cost_type = typename Context::cost_type;
+        using neighborhood_type = typename Context::neighborhood_explorer_type;
+        using move_type = typename neighborhood_type::move_type;
+        using result_type =
+            assignment::FirstImprovementResult<solution_type, cost_type>;
+
+        auto current = evaluation.evaluate(solution);
+        std::size_t evaluations = 1;
+
+        while (true)
+        {
+            bool improved = false;
+            move_type move{};
+
+            if (neighborhood.first_move(solution, move))
+            {
+                do
+                {
+                    if (evaluations == parameters_.max_evaluations)
+                    {
+                        return result_type{
+                            .solution = std::move(solution),
+                            .cost = current.cost(),
+                            .evaluations = evaluations,
+                            .termination = assignment::FirstImprovementTermination::
+                                evaluation_budget_exhausted,
+                        };
+                    }
+
+                    auto candidate =
+                        evaluation.after_move(solution, current, move);
+                    ++evaluations;
+
+                    if (context.better(candidate.cost(), current.cost()))
+                    {
+                        evaluation.accept(
+                            solution,
+                            current,
+                            std::move(candidate));
+                        improved = true;
+                        break;
+                    }
+                }
+                while (neighborhood.next_move(solution, move));
+            }
+
+            if (!improved)
+            {
+                return result_type{
+                    .solution = std::move(solution),
+                    .cost = current.cost(),
+                    .evaluations = evaluations,
+                    .termination =
+                        assignment::FirstImprovementTermination::local_optimum,
+                };
+            }
+        }
+    }
+
+private:
+    assignment::FirstImprovementParameters parameters_;
+};
+
+class RawCursorBestImprovement
+{
+public:
+    explicit RawCursorBestImprovement(
+        const assignment::BestImprovementParameters parameters) noexcept
+        : parameters_{parameters}
+    {
+    }
+
+    template<class Context>
+    [[nodiscard]]
+    auto run(
+        const Context& context,
+        typename Context::solution_type solution) const
+    {
+        const auto& neighborhood = context.neighborhood_explorer();
+        const auto evaluation = context.evaluation();
+
+        using solution_type = typename Context::solution_type;
+        using cost_type = typename Context::cost_type;
+        using neighborhood_type = typename Context::neighborhood_explorer_type;
+        using move_type = typename neighborhood_type::move_type;
+        using result_type =
+            assignment::BestImprovementResult<solution_type, cost_type>;
+        using candidate_type = typename decltype(evaluation)::candidate_type;
+
+        auto current = evaluation.evaluate(solution);
+        std::size_t evaluations = 1;
+
+        while (true)
+        {
+            std::optional<candidate_type> best_candidate;
+            auto best_cost = current.cost();
+            move_type move{};
+
+            if (neighborhood.first_move(solution, move))
+            {
+                do
+                {
+                    if (evaluations == parameters_.max_evaluations)
+                    {
+                        return result_type{
+                            .solution = std::move(solution),
+                            .cost = current.cost(),
+                            .evaluations = evaluations,
+                            .termination = assignment::BestImprovementTermination::
+                                evaluation_budget_exhausted,
+                        };
+                    }
+
+                    auto candidate =
+                        evaluation.after_move(solution, current, move);
+                    ++evaluations;
+
+                    if (context.better(candidate.cost(), best_cost))
+                    {
+                        best_cost = candidate.cost();
+                        best_candidate = std::move(candidate);
+                    }
+                }
+                while (neighborhood.next_move(solution, move));
+            }
+
+            if (!best_candidate.has_value())
+            {
+                return result_type{
+                    .solution = std::move(solution),
+                    .cost = current.cost(),
+                    .evaluations = evaluations,
+                    .termination =
+                        assignment::BestImprovementTermination::local_optimum,
+                };
+            }
+
+            evaluation.accept(
+                solution,
+                current,
+                std::move(*best_candidate));
+        }
+    }
+
+private:
+    assignment::BestImprovementParameters parameters_;
+};
+
 [[nodiscard]]
-auto termination_name(const spike::prototype_termination termination)
+auto termination_name(
+    const assignment::FirstImprovementTermination termination)
     -> std::string_view
 {
     switch (termination)
     {
-    case spike::prototype_termination::local_optimum:
+    case assignment::FirstImprovementTermination::local_optimum:
         return "local-optimum";
-    case spike::prototype_termination::evaluation_budget_exhausted:
+    case assignment::FirstImprovementTermination::evaluation_budget_exhausted:
         return "budget";
     }
 
     return "unknown";
 }
 
-template<class Result, class SameSolution>
+[[nodiscard]]
+auto termination_name(
+    const assignment::BestImprovementTermination termination)
+    -> std::string_view
+{
+    switch (termination)
+    {
+    case assignment::BestImprovementTermination::local_optimum:
+        return "local-optimum";
+    case assignment::BestImprovementTermination::evaluation_budget_exhausted:
+        return "budget";
+    }
+
+    return "unknown";
+}
+
+template<class LhsResult, class RhsResult, class SameSolution>
 [[nodiscard]]
 auto same_result(
-    const Result& lhs,
-    const Result& rhs,
+    const LhsResult& lhs,
+    const RhsResult& rhs,
     SameSolution same_solution) -> bool
 {
     return same_solution(lhs.solution, rhs.solution) &&
            lhs.cost == rhs.cost &&
            lhs.evaluations == rhs.evaluations &&
-           lhs.traversals == rhs.traversals &&
-           lhs.full_scans == rhs.full_scans &&
-           lhs.accepted_moves == rhs.accepted_moves &&
            lhs.termination == rhs.termination;
 }
 
@@ -238,13 +421,6 @@ void benchmark_variant(
             std::chrono::duration<double, std::nano>(stop - start).count();
         const auto measured_evaluations =
             repetitions * reference.evaluations;
-        const auto measured_traversals =
-            repetitions * reference.traversals;
-        const auto measured_full_scans =
-            repetitions * reference.full_scans;
-        const auto measured_accepted_moves =
-            repetitions * reference.accepted_moves;
-
         observe(checksum);
 
         std::cout
@@ -255,9 +431,6 @@ void benchmark_variant(
             << repetitions << ','
             << reference.evaluations << ','
             << measured_evaluations << ','
-            << measured_traversals << ','
-            << measured_full_scans << ','
-            << measured_accepted_moves << ','
             << allocations.allocations << ','
             << allocations.bytes << ','
             << elapsed_ns / static_cast<double>(measured_evaluations) << ','
@@ -288,22 +461,24 @@ void benchmark_search_case(
     const std::size_t target_evaluations,
     const std::size_t trials)
 {
-    const auto check_algorithm = [&]<template<class> class Algorithm>(
-        const std::string_view algorithm_name) {
+    const auto check_algorithm = [&]<class RawAlgorithm, class RangeAlgorithm>(
+        const std::string_view algorithm_name,
+        RawAlgorithm raw_algorithm,
+        RangeAlgorithm range_algorithm) {
         const auto raw = run_once(
-            Algorithm<spike::raw_cursor_traversal>{algorithm_budget},
+            raw_algorithm,
             instance,
             initial,
             manager_recipe,
             cursor_recipe);
         const auto cursor_range = run_once(
-            Algorithm<spike::range_traversal>{algorithm_budget},
+            range_algorithm,
             instance,
             initial,
             manager_recipe,
             cursor_recipe);
         const auto coroutine_range = run_once(
-            Algorithm<spike::range_traversal>{algorithm_budget},
+            range_algorithm,
             instance,
             initial,
             manager_recipe,
@@ -322,25 +497,35 @@ void benchmark_search_case(
             << "runner traversal semantics agree: "
             << domain << '/' << algorithm_name
             << " evaluations=" << raw.evaluations
-            << " traversals=" << raw.traversals
-            << " full_scans=" << raw.full_scans
-            << " accepted=" << raw.accepted_moves
             << " termination=" << termination_name(raw.termination)
             << '\n';
     };
 
-    check_algorithm.template operator()<spike::prototype_first_improvement>(
-        "first-improvement");
-    check_algorithm.template operator()<spike::prototype_best_improvement>(
-        "best-improvement");
+    const auto first_parameters = assignment::FirstImprovementParameters{
+        .max_evaluations = algorithm_budget,
+    };
+    const auto best_parameters = assignment::BestImprovementParameters{
+        .max_evaluations = algorithm_budget,
+    };
 
-    const auto run_algorithm = [&]<template<class> class Algorithm>(
-        const std::string_view algorithm_name) {
+    check_algorithm(
+        "first-improvement",
+        RawCursorFirstImprovement{first_parameters},
+        assignment::FirstImprovement{first_parameters});
+    check_algorithm(
+        "best-improvement",
+        RawCursorBestImprovement{best_parameters},
+        assignment::BestImprovement{best_parameters});
+
+    const auto run_algorithm = [&]<class RawAlgorithm, class RangeAlgorithm>(
+        const std::string_view algorithm_name,
+        RawAlgorithm raw_algorithm,
+        RangeAlgorithm range_algorithm) {
         benchmark_variant(
             domain,
             algorithm_name,
             "raw-cursor",
-            Algorithm<spike::raw_cursor_traversal>{algorithm_budget},
+            raw_algorithm,
             instance,
             initial,
             manager_recipe,
@@ -352,7 +537,7 @@ void benchmark_search_case(
             domain,
             algorithm_name,
             "cursor-range",
-            Algorithm<spike::range_traversal>{algorithm_budget},
+            range_algorithm,
             instance,
             initial,
             manager_recipe,
@@ -364,7 +549,7 @@ void benchmark_search_case(
             domain,
             algorithm_name,
             "coroutine-range",
-            Algorithm<spike::range_traversal>{algorithm_budget},
+            range_algorithm,
             instance,
             initial,
             manager_recipe,
@@ -374,10 +559,14 @@ void benchmark_search_case(
             trials);
     };
 
-    run_algorithm.template operator()<spike::prototype_first_improvement>(
-        "first-improvement");
-    run_algorithm.template operator()<spike::prototype_best_improvement>(
-        "best-improvement");
+    run_algorithm(
+        "first-improvement",
+        RawCursorFirstImprovement{first_parameters},
+        assignment::FirstImprovement{first_parameters});
+    run_algorithm(
+        "best-improvement",
+        RawCursorBestImprovement{best_parameters},
+        assignment::BestImprovement{best_parameters});
 }
 
 struct AssignmentBenchmarkCase
@@ -497,7 +686,7 @@ void benchmark_assignment(
         auto value = static_cast<std::uint64_t>(result.cost.template get<0>());
         value ^= static_cast<std::uint64_t>(result.cost.template get<1>()) << 17;
         value ^= static_cast<std::uint64_t>(result.evaluations) << 1;
-        value ^= static_cast<std::uint64_t>(result.accepted_moves) << 33;
+        value ^= static_cast<std::uint64_t>(result.termination) << 33;
         if (!result.solution.assignment.empty())
         {
             value ^= static_cast<std::uint64_t>(
@@ -549,7 +738,7 @@ void benchmark_tsp(
     const auto token = [](const auto& result) {
         auto value = std::bit_cast<std::uint64_t>(result.cost);
         value ^= static_cast<std::uint64_t>(result.evaluations) << 1;
-        value ^= static_cast<std::uint64_t>(result.accepted_moves) << 33;
+        value ^= static_cast<std::uint64_t>(result.termination) << 33;
         if (!result.solution.tour.empty())
         {
             value ^= static_cast<std::uint64_t>(
@@ -641,14 +830,13 @@ int main(int argc, char** argv)
     const auto seed = parse_seed(argc, argv, 3, 123'456'789ULL);
 
     std::cerr
-        << "runner prototype: target_evaluations=" << target_evaluations
+        << "runner benchmark: target_evaluations=" << target_evaluations
         << " trials=" << trials
         << " seed=" << seed << '\n';
 
     std::cout
         << "domain,algorithm,variant,trial,repetitions,"
-           "evaluations_per_run,measured_evaluations,measured_traversals,"
-           "measured_full_scans,measured_accepted_moves,allocations_per_run,"
+           "evaluations_per_run,measured_evaluations,allocations_per_run,"
            "allocated_bytes_per_run,ns_per_evaluation,ns_per_run,termination,"
            "checksum\n";
 

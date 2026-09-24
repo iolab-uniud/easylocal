@@ -53,7 +53,8 @@ without assuming that the spike-local generator represents `std::generator`.
 
 ### 3. EL3-style cursor adapter
 
-`cursor_view.hpp` adapts the familiar stateful protocol
+The promoted public `<easylocal/cursor_moves.hpp>` adapter maps the familiar
+stateful protocol
 
 ```cpp
 bool first_move(const Solution&, Move&) const;
@@ -65,7 +66,7 @@ into the same lazy input-range consumed by algorithms:
 ```cpp
 auto moves(const Solution& solution) const
 {
-    return cursor_moves(*this, solution);
+    return easylocal::cursor_moves(*this, solution);
 }
 ```
 
@@ -91,8 +92,9 @@ random-only algorithm such as a Simulated Annealing implementation must be able
 to consume an explorer that provides only the random traversal capability it
 needs, without forcing the problem author to implement `moves(solution)`.
 
-The spike-local cursor adapter currently assumes a default-constructible `Move`.
-That is a prototype simplification, not a proposed public requirement.
+The promoted cursor adapter requires a default-initializable `Move` because the
+EL3-style protocol writes the first value into an already existing `Move`. Native
+custom ranges are not subject to that authoring constraint.
 
 ## Correctness check
 
@@ -214,6 +216,47 @@ or for one toolchain and a longer measurement:
 `act` cannot reproduce the native macOS ARM64 jobs; those remain GitHub-hosted
 workflow runs.
 
+## Reproducible result bundle (S16d)
+
+Use the suite wrapper when the output is meant to be retained or compared:
+
+```bash
+./scripts/run-neighborhood-authoring-benchmarks.sh \
+    build/neighborhood-authoring-results \
+    5000000 5 123456789
+```
+
+The wrapper creates one self-contained result directory containing:
+
+```text
+metadata.csv
+allocations.csv
+benchmark.csv
+runner-benchmark.csv
+first-improvement-diagnostic.csv
+check.log
+runner-check.log
+first-improvement-diagnostic.log
+summary.md
+```
+
+`metadata.csv` records the selected toolchain label, OS, architecture and hardware model, exact
+compiler banner/target, standard-library family and version macro, CMake/Ninja
+versions, C++ flags, benchmark parameters, and Git commit/dirty state. The raw
+benchmark CSV schemas are treated as stable inputs by the summarizer: an
+unexpected header is an error rather than being silently accepted.
+
+`summarize-neighborhood-authoring.py` is Python-standard-library only. It
+computes per-case trial medians and min/max timing values, reports relative
+ratios against the cursor traversal or raw-cursor runner oracle, and carries the
+allocation diagnostics into `summary.md`. It deliberately applies no
+performance threshold.
+
+The lower-level `run-neighborhood-authoring-spike.sh` and
+`run-neighborhood-runner-spike.sh` scripts still emit raw benchmark CSV on
+stdout and all configure/build/check diagnostics on stderr, so they remain
+usable independently without contaminating CSV captures.
+
 ## What to inspect after the run
 
 The decision should not be based on speed alone. Review together:
@@ -234,29 +277,28 @@ The consumer-side contract remains the same in all variants: when present,
 deterministic traversal is a lazy input range of moves. The spike does not imply
 that every explorer must provide that capability.
 
-## Runner-level comparison (S15f)
+## Runner-level comparison (S15f, promoted in S16c)
 
 The traversal microbenchmark is not sufficient to choose the final authoring
-contract by itself. S15f therefore adds a second benchmark that runs the three
-relevant traversal paths inside the public `Runner`, using the real evaluation
-facility and recipe-local delta dispatch:
+contract by itself. The runner benchmark therefore measures the relevant paths
+inside the public `Runner`, using the real evaluation facility, recipe-local
+delta dispatch, and the real `FirstImprovement` / `BestImprovement` algorithms:
 
 ```text
-raw-cursor       FirstMove/NextMove consumed directly by the algorithm
-cursor-range     the same FirstMove/NextMove adapted through cursor_view
-coroutine-range  the custom coroutine range consumed by the same algorithm
+raw-cursor       small benchmark-only direct FirstMove/NextMove oracle
+cursor-range     public easylocal::cursor_moves adapter + real algorithm
+coroutine-range  custom coroutine range + the same real algorithm
 ```
 
-The prototype algorithms are spike-local versions of First Improvement and Best
-Improvement. They share the same search logic, evaluation budget semantics,
-SolutionManager recipe, delta evaluators and move application. Only the
-traversal mechanism differs.
+`raw-cursor` deliberately duplicates only the two small consumer loops needed to
+provide a semantic/performance oracle. It is not a framework API or a fast path.
+The range variants use the production search algorithms unchanged.
 
-Before timing a case, the benchmark requires all three variants to produce the
-same final solution, cost, evaluation count, traversal count, full-scan count,
-accepted-move count and termination reason. A mismatch aborts the benchmark.
-This makes the raw cursor a semantic and performance baseline rather than a
-separate algorithm.
+Before timing a case, the benchmark requires all variants to produce the same
+final solution, cost, evaluation count and termination reason. A mismatch aborts
+the benchmark. Prototype-only counters such as traversal count, full scans and
+accepted moves were removed when the benchmark switched to the real result
+types.
 
 The runner benchmark also counts allocations observed during one complete
 `BoundRunner::run()` call. Those counts intentionally include common Runner
@@ -267,7 +309,7 @@ additional traversal-specific allocation in the final execution setting.
 CSV rows have the form:
 
 ```text
-domain,algorithm,variant,trial,repetitions,evaluations_per_run,measured_evaluations,measured_traversals,measured_full_scans,measured_accepted_moves,allocations_per_run,allocated_bytes_per_run,ns_per_evaluation,ns_per_run,termination,checksum
+domain,algorithm,variant,trial,repetitions,evaluations_per_run,measured_evaluations,allocations_per_run,allocated_bytes_per_run,ns_per_evaluation,ns_per_run,termination,checksum
 ```
 
 Run it locally with:
@@ -276,24 +318,106 @@ Run it locally with:
 ./scripts/run-neighborhood-runner-spike.sh 5000000 5 123456789
 ```
 
-The GitHub Actions spike workflow runs both the original traversal benchmark and
-this runner-level benchmark and uploads `runner-check.log` and
-`runner-benchmark.csv` beside the existing artifacts. `act` remains only a
-functional/provisioning check; authoritative Linux timing comes from the native
-GitHub-hosted runner.
+The GitHub Actions spike workflow runs the complete S16d suite and uploads the
+raw CSV files, correctness logs, structured metadata, and generated
+`summary.md`. `act` remains only a functional/provisioning check; authoritative
+Linux timing comes from the native GitHub-hosted runner.
 
-The decision question for S15f is deliberately narrow: if `cursor-range` is
-consistently indistinguishable or epsilon-close to `raw-cursor`, then the
-framework can preserve the familiar EL3 FirstMove/NextMove authoring model while
-presenting a modern lazy range to algorithms. If the adapter has material hot
-loop overhead, the framework must not assume that it optimizes away and may
-need a statically recognized direct-cursor fast path.
+The S15f decision question was deliberately narrow: whether `cursor-range` was
+consistently indistinguishable or epsilon-close to `raw-cursor`. The S15g
+measurements supported promoting the cursor adapter without adding a
+framework-level raw-cursor fast path. S16c keeps the raw path only as a
+benchmark oracle for that conclusion.
+
+
+## Assignment First Improvement codegen diagnostic (S16e)
+
+One S16d AppleClang ARM64 run showed a narrow anomaly: Assignment
+First Improvement through `cursor-range` took roughly twice the time per
+evaluation of the benchmark-only raw cursor, while Assignment Best Improvement
+and both TSP algorithms remained epsilon-close. S16e does not change the public
+API or production algorithm. It adds a controlled diagnostic around exactly that
+case.
+
+The diagnostic compares six semantically equivalent implementations:
+
+```text
+raw-cursor                direct FirstMove/NextMove oracle
+range-current             production FirstImprovement unchanged
+range-reference           bind the yielded Move by const reference
+explicit-iterator         spell out begin/end/increment instead of range-for
+range-deferred-accept     destroy the range before mutating Solution
+range-reference-deferred  defer accept and bind Move by const reference
+```
+
+The last two variants test a specific lifetime/aliasing hypothesis. Best
+Improvement naturally performs `accept()` only after the neighborhood range has
+finished, whereas First Improvement accepts the improving candidate while the
+range iterator/view is still alive and then breaks. With the cursor adapter the
+iterator retains a pointer to the traversed `Solution`; a compiler may therefore
+produce more conservative code around that mutation even though the iterator is
+not used after the break. The deferred variants preserve First Improvement
+semantics but move `accept()` after the range scope ends.
+
+`range-reference` separately tests whether copying the small `Move` value from
+the input iterator matters. `explicit-iterator` checks that the range-for
+lowering itself is not responsible for the effect. All variants must match the
+raw cursor on final solution, cost, evaluation count and termination before any
+timing rows are emitted.
+
+The complete S16d/S16e suite writes the raw diagnostic rows to
+`first-improvement-diagnostic.csv` and includes their median/min/max ratios in
+`summary.md`. As with the other spike measurements, the diagnostic has no
+performance pass/fail threshold. The goal is to identify which source-level
+property changes the generated code before considering any production change.
 
 ## Future public benchmark report
 
-Once the neighborhood authoring API and benchmark methodology are stable, a
-selected and reviewed subset of these measurements should become a reproducible
-GitHub documentation report. Keep raw benchmark machinery separate from the
-public report; report compiler/library versions, hardware, workload, trial
-methodology, and relative ratios rather than presenting raw CI timing as a
+S16d establishes the machine-readable raw bundle and the per-toolchain Markdown
+summary used as the input to that future report. A selected and reviewed subset
+of measurements can later become public documentation without changing the raw
+benchmark machinery. Compiler/library versions, hardware, workload, trial
+methodology, and relative ratios should remain explicit; CI timing is not a
 portable performance guarantee.
+
+## Targeted cursor-view optimization (S15g)
+
+S15f showed that Clang generally optimizes the FirstMove/NextMove range adapter
+away, while GCC can retain a measurable runner-level penalty on some Assignment
+cases. S15g therefore changes only `cursor_view` and keeps the Runner benchmark,
+search logic, evaluation path and workloads unchanged.
+
+For the S15g same-run A/B measurement, the runner benchmark temporarily exposed
+four variants:
+
+```text
+raw-cursor          direct FirstMove/NextMove baseline
+cursor-range-s15f   the original S15f cursor_view
+cursor-range-opt    the optimized cursor_view
+coroutine-range     the custom coroutine range
+```
+
+That historical A/B path was removed in S16c after the optimized adapter was
+promoted. The current runner benchmark compares only `raw-cursor`,
+`cursor-range`, and `coroutine-range`, with `cursor-range` using the public
+adapter.
+
+The optimized cursor view keeps the same input-range semantics but:
+
+- encodes end-of-range as a null explorer pointer instead of a separate boolean;
+- removes the redundant end-state branch from `operator++`;
+- treats successful `next_move` as the overwhelmingly common branch;
+- keeps invalid-end increment checks in debug builds only;
+- force-inlines the tiny adapter operations on GCC/Clang Release builds.
+
+The Release benchmark still uses the normal CMake `Release` optimization level.
+It deliberately does not add `-march=native`: hardware-specific tuning would make
+CI comparisons less portable. The aggressive optimization is local to the hot
+adapter operations and is intended to be representative of a header-only kernel
+that expects compiler-visible, fully inlineable code.
+
+The S15g decision metric was the same runner-level comparison as S15f. For the
+historical S15g measurements, `cursor-range-opt` was compared to both
+`raw-cursor` and `cursor-range-s15f` in the same job rather than by comparing
+absolute timings from different GitHub-hosted runners. Current measurements use
+the promoted public adapter as `cursor-range`.

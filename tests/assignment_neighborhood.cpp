@@ -66,6 +66,7 @@ int main()
 
     auto all_moves = neighborhood.moves(solution);
     static_assert(std::ranges::input_range<decltype(all_moves)>);
+    static_assert(!std::ranges::forward_range<decltype(all_moves)>);
     static_assert(std::ranges::view<decltype(all_moves)>);
 
     const auto observed = collect(all_moves);
@@ -79,6 +80,22 @@ int main()
     ok &= expect(
         observed == expected,
         "moves are generated deterministically in job-major order");
+
+    std::vector<observed_move> cursor_observed;
+    Move cursor_move{};
+    if (neighborhood.first_move(solution, cursor_move))
+    {
+        do
+        {
+            cursor_observed.emplace_back(
+                cursor_move.job,
+                cursor_move.destination);
+        } while (neighborhood.next_move(solution, cursor_move));
+    }
+
+    ok &= expect(
+        cursor_observed == expected,
+        "FirstMove/NextMove authoring protocol matches the move range");
 
     for (const auto move : neighborhood.moves(solution))
     {
@@ -210,9 +227,10 @@ int main()
         .assignment = {0, 0},
     };
 
+    auto single_machine_moves =
+        single_machine_neighborhood.moves(single_machine_solution);
     ok &= expect(
-        std::ranges::empty(
-            single_machine_neighborhood.moves(single_machine_solution)),
+        single_machine_moves.begin() == single_machine_moves.end(),
         "one-machine assignment has an empty move range");
 
     std::mt19937 empty_rng{1};
@@ -233,8 +251,9 @@ int main()
         .assignment = {},
     };
 
+    auto empty_moves = empty_neighborhood.moves(empty_solution);
     ok &= expect(
-        std::ranges::empty(empty_neighborhood.moves(empty_solution)),
+        empty_moves.begin() == empty_moves.end(),
         "empty assignment has an empty move range");
 
     return ok ? 0 : 1;

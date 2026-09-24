@@ -24,12 +24,14 @@ cmake \
     -DEASYLOCAL_BUILD_EXAMPLES=OFF \
     -DEASYLOCAL_BUILD_TESTS=OFF \
     -DEASYLOCAL_BUILD_SPIKES=ON \
-    "${cmake_args[@]}"
+    "${cmake_args[@]}" \
+    >&2
 
 cmake --build "${build_dir}" --target \
     easylocal_neighborhood_authoring_check \
     easylocal_neighborhood_authoring_allocations \
-    easylocal_neighborhood_authoring_benchmark
+    easylocal_neighborhood_authoring_benchmark \
+    >&2
 
 "${build_dir}/spikes/neighborhood_authoring/easylocal_neighborhood_authoring_check" >&2
 

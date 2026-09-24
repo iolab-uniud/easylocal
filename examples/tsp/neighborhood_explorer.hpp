@@ -4,6 +4,8 @@
 #include "sampling.hpp"
 #include "solution_manager.hpp"
 
+#include <easylocal/cursor_moves.hpp>
+
 #include <algorithm>
 #include <cassert>
 #include <cstddef>
@@ -30,6 +32,8 @@ private:
                !(first_edge == 0 && second_edge + 1 == city_count);
     }
 
+    // Rank decoding is retained only for random with-replacement traversal;
+    // deterministic authoring uses first_move/next_move.
     [[nodiscard]]
     static constexpr auto move_count(const std::size_t city_count) noexcept
         -> std::size_t
@@ -37,18 +41,6 @@ private:
         return city_count >= 4
             ? city_count * (city_count - 3) / 2
             : std::size_t{0};
-    }
-
-    [[nodiscard]]
-    static constexpr auto decode_move(
-        const std::size_t city_count,
-        const std::size_t ordinal) noexcept -> TwoOptMove
-    {
-        assert(city_count != 0);
-        return TwoOptMove{
-            .first_edge = ordinal / city_count,
-            .second_edge = ordinal % city_count,
-        };
     }
 
     [[nodiscard]]
@@ -294,39 +286,44 @@ public:
     {
         assert(solution_manager_.is_valid(solution));
 
-        const auto city_count = solution.tour.size();
 #ifndef NDEBUG
         const auto expected_signature = debug_signature(solution);
-#endif
 
-        auto ordinals =
-            std::views::iota(std::size_t{0}, city_count * city_count)
-            | std::views::filter([city_count](const std::size_t ordinal) {
-                  const auto first_edge = ordinal / city_count;
-                  const auto second_edge = ordinal % city_count;
-                  return valid_edge_pair(
-                      city_count,
-                      first_edge,
-                      second_edge);
-              });
-
-#ifndef NDEBUG
-        return ordinals
+        return easylocal::cursor_moves(*this, solution)
              | std::views::transform(
-                   [&solution, city_count, expected_signature](
-                       const std::size_t ordinal) {
+                   [&solution, expected_signature](const TwoOptMove& move) {
                        assert(
                            debug_signature(solution) == expected_signature &&
                            "neighborhood range invalidated by Solution mutation");
-                       return decode_move(city_count, ordinal);
+                       return move;
                    });
 #else
-        return ordinals
-             | std::views::transform(
-                   [city_count](const std::size_t ordinal) {
-                       return decode_move(city_count, ordinal);
-                   });
+        return easylocal::cursor_moves(*this, solution);
 #endif
+    }
+
+    [[nodiscard]]
+    auto first_move(
+        const Solution& solution,
+        TwoOptMove& move) const noexcept -> bool
+    {
+        assert(solution_manager_.is_valid(solution));
+        return find_from(solution.tour.size(), 0, 1, move);
+    }
+
+    [[nodiscard]]
+    auto next_move(
+        const Solution& solution,
+        TwoOptMove& move) const noexcept -> bool
+    {
+        assert(solution_manager_.is_valid(solution));
+        assert(is_valid(solution, move));
+
+        return find_from(
+            solution.tour.size(),
+            move.first_edge,
+            move.second_edge + 1,
+            move);
     }
 
     template<std::uniform_random_bit_generator RNG>
@@ -353,6 +350,42 @@ public:
     }
 
 private:
+    [[nodiscard]]
+    static auto find_from(
+        const std::size_t city_count,
+        const std::size_t initial_first_edge,
+        const std::size_t initial_second_edge,
+        TwoOptMove& move) noexcept -> bool
+    {
+        for (auto first_edge = initial_first_edge;
+             first_edge < city_count;
+             ++first_edge)
+        {
+            const auto second_begin = first_edge == initial_first_edge
+                ? initial_second_edge
+                : first_edge + 1;
+
+            for (auto second_edge = second_begin;
+                 second_edge < city_count;
+                 ++second_edge)
+            {
+                if (valid_edge_pair(
+                        city_count,
+                        first_edge,
+                        second_edge))
+                {
+                    move = TwoOptMove{
+                        .first_edge = first_edge,
+                        .second_edge = second_edge,
+                    };
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
     const SolutionManager& solution_manager_;
 };
 

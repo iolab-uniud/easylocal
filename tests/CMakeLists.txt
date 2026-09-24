@@ -41,6 +41,34 @@ add_test(
 )
 
 add_executable(
+    easylocal_cursor_moves_header_self_containment
+    cursor_moves_header_self_containment.cpp
+)
+target_link_libraries(
+    easylocal_cursor_moves_header_self_containment
+    PRIVATE
+        EasyLocal::EasyLocal
+)
+add_test(
+    NAME easylocal.cursor-moves-header-self-containment
+    COMMAND easylocal_cursor_moves_header_self_containment
+)
+
+add_executable(
+    easylocal_cursor_moves_test
+    cursor_moves.cpp
+)
+target_link_libraries(
+    easylocal_cursor_moves_test
+    PRIVATE
+        EasyLocal::EasyLocal
+)
+add_test(
+    NAME easylocal.cursor-moves
+    COMMAND easylocal_cursor_moves_test
+)
+
+add_executable(
     easylocal_multi_tu
     odr_main.cpp
     odr_a.cpp

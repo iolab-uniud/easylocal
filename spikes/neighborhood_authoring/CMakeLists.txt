@@ -41,3 +41,13 @@ target_link_libraries(
         easylocal_assignment_mwe_model
         easylocal_tsp_mwe_model
 )
+
+add_executable(
+    easylocal_neighborhood_first_improvement_diagnostic
+    first_improvement_diagnostic.cpp
+)
+target_link_libraries(
+    easylocal_neighborhood_first_improvement_diagnostic
+    PRIVATE
+        easylocal_assignment_mwe_model
+)
