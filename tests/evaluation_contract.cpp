@@ -205,6 +205,21 @@ struct ProbeResult
     int current_cost;
 };
 
+template<class Candidate>
+concept move_backed_candidate =
+    requires(const Candidate& candidate)
+    {
+        candidate.move();
+    };
+
+template<class Candidate>
+concept solution_backed_candidate =
+    requires(Candidate& candidate)
+    {
+        candidate.solution();
+    };
+
+template<bool Materialized>
 class ProbeOneMove
 {
 public:
@@ -220,10 +235,17 @@ public:
         typename Context::solution_type solution) const -> ProbeResult
     {
         const auto evaluation = context.evaluation();
+        using candidate_type = typename decltype(evaluation)::candidate_type;
+
+        static_assert(
+            move_backed_candidate<candidate_type> == !Materialized);
+        static_assert(
+            solution_backed_candidate<candidate_type> == Materialized);
+
         auto current = evaluation.evaluate(solution);
         const auto initial_cost = current.cost();
 
-        auto candidate = evaluation.after_move(
+        auto candidate = evaluation.evaluate_move(
             solution,
             current,
             Move{.delta = 1});
@@ -231,7 +253,7 @@ public:
 
         if (accept_)
         {
-            evaluation.accept(solution, current, std::move(candidate));
+            evaluation.commit(solution, current, std::move(candidate));
         }
 
         return ProbeResult{
@@ -307,7 +329,7 @@ int main()
         Counters counters;
 
         auto runner =
-            Runner{ProbeOneMove{accepted}}
+            Runner{ProbeOneMove<false>{accepted}}
             | (solution_manager<SolutionManager>(std::ref(counters))
                | component<FirstComponent>(std::ref(counters))
                | component<SecondComponent>(std::ref(counters)))
@@ -342,7 +364,7 @@ int main()
         Counters counters;
 
         auto runner =
-            Runner{ProbeOneMove{accepted}}
+            Runner{ProbeOneMove<true>{accepted}}
             | (solution_manager<SolutionManager>(std::ref(counters))
                | component<FirstComponent>(std::ref(counters))
                | component<SecondComponent>(std::ref(counters)))
@@ -377,7 +399,7 @@ int main()
         Counters counters;
 
         auto runner =
-            Runner{ProbeOneMove{accepted}}
+            Runner{ProbeOneMove<true>{accepted}}
             | (solution_manager<SolutionManager>(std::ref(counters))
                | component<FirstComponent>(std::ref(counters))
                | component<SecondComponent>(std::ref(counters)))

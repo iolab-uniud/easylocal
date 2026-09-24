@@ -38,7 +38,7 @@ public:
     }
 
     [[nodiscard]]
-    auto after_move(
+    auto evaluate_move(
         const Solution&,
         const Candidate&,
         int) const noexcept -> Candidate
@@ -46,7 +46,7 @@ public:
         return {};
     }
 
-    void accept(Solution&, Candidate&, Candidate&&) const noexcept
+    void commit(Solution&, Candidate&, Candidate&&) const noexcept
     {
     }
 };

@@ -94,7 +94,7 @@ public:
                 }
 
                 auto candidate =
-                    evaluation.after_move(solution, current, move);
+                    evaluation.evaluate_move(solution, current, move);
                 ++evaluations;
 
                 if (context.better(candidate.cost(), best_cost))
@@ -114,7 +114,7 @@ public:
                 };
             }
 
-            evaluation.accept(
+            evaluation.commit(
                 solution,
                 current,
                 std::move(*best_candidate));

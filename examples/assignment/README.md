@@ -131,8 +131,11 @@ promotes that materialized candidate instead of applying the move again.
 
 The search algorithms see only eager materialized evaluations and `cost_type`
 values. They do not select deltas, distinguish fallback components, or manage
-candidate materialization. `after_move` is only the current working name for the
-algorithm-side operation and is intentionally not considered final terminology.
+candidate materialization. `evaluate_move` computes a candidate without changing
+the incumbent, while `commit` is the operation that promotes the accepted
+candidate. Candidate storage is specialized at compile time: an all-delta path
+keeps the `Move`, while any fallback path keeps the already materialized
+`Solution`, so neither path pays for an unused `std::optional<Solution>`.
 Laziness, caching and proxy lifetime/invalidation remain postponed.
 
 ## Responsibilities

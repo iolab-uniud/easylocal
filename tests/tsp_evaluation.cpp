@@ -46,12 +46,12 @@ public:
         const auto initial_cost = current.cost();
 
         auto candidate =
-            evaluation.after_move(solution, current, move_);
+            evaluation.evaluate_move(solution, current, move_);
         const auto candidate_cost = candidate.cost();
 
         if (accept_)
         {
-            evaluation.accept(solution, current, std::move(candidate));
+            evaluation.commit(solution, current, std::move(candidate));
         }
 
         return ProbeResult{
@@ -149,7 +149,7 @@ int main()
         "runner evaluates the initial structured component to scalar double cost");
     ok &= expect(
         fallback_result.candidate_cost == 6.0,
-        "after_move uses full component fallback for the 2-opt candidate");
+        "evaluate_move uses full component fallback for the 2-opt candidate");
     ok &= expect(
         fallback_result.current_cost == 6.0,
         "accept promotes the fallback candidate evaluation");

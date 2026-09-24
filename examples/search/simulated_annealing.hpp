@@ -103,7 +103,7 @@ public:
                 };
             }
 
-            auto candidate = evaluation.after_move(
+            auto candidate = evaluation.evaluate_move(
                 solution,
                 current,
                 *proposal);
@@ -115,7 +115,7 @@ public:
                     temperature,
                     rng))
             {
-                evaluation.accept(
+                evaluation.commit(
                     solution,
                     current,
                     std::move(candidate));

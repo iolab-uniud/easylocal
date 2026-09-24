@@ -5,7 +5,6 @@
 #include <cassert>
 #include <concepts>
 #include <cstddef>
-#include <optional>
 #include <tuple>
 #include <type_traits>
 #include <utility>
@@ -88,17 +87,16 @@ private:
     Cost cost_;
 };
 
+template<class Solution, class Move, class Evaluation, bool Materialized>
+class candidate_evaluation;
+
 template<class Solution, class Move, class Evaluation>
-class candidate_evaluation
+class candidate_evaluation<Solution, Move, Evaluation, false>
 {
 public:
-    candidate_evaluation(
-        Evaluation evaluation,
-        Move move,
-        std::optional<Solution> materialized_solution)
+    candidate_evaluation(Evaluation evaluation, Move move)
         : evaluation_{std::move(evaluation)},
-          move_{std::move(move)},
-          materialized_solution_{std::move(materialized_solution)}
+          move_{std::move(move)}
     {
     }
 
@@ -120,16 +118,42 @@ public:
         return evaluation_;
     }
 
-    [[nodiscard]]
-    auto materialized_solution() & noexcept -> std::optional<Solution>&
+private:
+    Evaluation evaluation_;
+    Move move_;
+};
+
+template<class Solution, class Move, class Evaluation>
+class candidate_evaluation<Solution, Move, Evaluation, true>
+{
+public:
+    candidate_evaluation(Evaluation evaluation, Solution solution)
+        : evaluation_{std::move(evaluation)},
+          solution_{std::move(solution)}
     {
-        return materialized_solution_;
+    }
+
+    [[nodiscard]]
+    auto cost() const noexcept -> decltype(auto)
+    {
+        return evaluation_.cost();
+    }
+
+    [[nodiscard]]
+    auto evaluation() & noexcept -> Evaluation&
+    {
+        return evaluation_;
+    }
+
+    [[nodiscard]]
+    auto solution() & noexcept -> Solution&
+    {
+        return solution_;
     }
 
 private:
     Evaluation evaluation_;
-    Move move_;
-    std::optional<Solution> materialized_solution_;
+    Solution solution_;
 };
 
 template<class NHE, class = void>
@@ -312,11 +336,11 @@ private:
 
     template<std::size_t ComponentIndex, std::size_t DeltaIndex = 0>
     [[nodiscard]]
-    auto component_after_move(
+    auto evaluate_component_for_move(
         const typename SM::solution_type& current_solution,
         const component_values_type& current_values,
         const typename NHE::move_type& move,
-        const std::optional<typename SM::solution_type>& candidate) const
+        const typename SM::solution_type* materialized_candidate) const
         -> std::tuple_element_t<ComponentIndex, component_values_type>
     {
         using component_type =
@@ -350,39 +374,39 @@ private:
             }
             else
             {
-                return component_after_move<
+                return evaluate_component_for_move<
                     ComponentIndex,
                     DeltaIndex + 1>(
                     current_solution,
                     current_values,
                     move,
-                    candidate);
+                    materialized_candidate);
             }
         }
         else
         {
-            assert(candidate.has_value());
+            assert(materialized_candidate != nullptr);
             return solution_manager_.template evaluate_component<ComponentIndex>(
-                *candidate);
+                *materialized_candidate);
         }
     }
 
     template<std::size_t... ComponentIndices>
     [[nodiscard]]
-    auto components_after_move(
+    auto evaluate_components_for_move(
         const typename SM::solution_type& current_solution,
         const component_values_type& current_values,
         const typename NHE::move_type& move,
-        const std::optional<typename SM::solution_type>& candidate,
+        const typename SM::solution_type* materialized_candidate,
         std::index_sequence<ComponentIndices...>) const
         -> component_values_type
     {
         return component_values_type{
-            component_after_move<ComponentIndices>(
+            evaluate_component_for_move<ComponentIndices>(
                 current_solution,
                 current_values,
                 move,
-                candidate)...,
+                materialized_candidate)...,
         };
     }
 
@@ -396,7 +420,8 @@ public:
     using candidate_type = candidate_evaluation<
         solution_type,
         move_type,
-        evaluation_type>;
+        evaluation_type,
+        needs_materialized_candidate()>;
 
     evaluation_facility(
         const SM& solution_manager,
@@ -438,26 +463,55 @@ public:
     }
 
     [[nodiscard]]
-    auto after_move(
+    auto evaluate_move(
         const solution_type& current_solution,
         const evaluation_type& current,
         const move_type& move) const -> candidate_type
     {
-        std::optional<solution_type> candidate;
-
         if constexpr (needs_materialized_candidate())
         {
-            candidate.emplace(current_solution);
-            neighborhood_.make_move(*candidate, move);
-        }
+            auto candidate_solution = current_solution;
+            neighborhood_.make_move(candidate_solution, move);
 
-        if constexpr (component_aware)
+            if constexpr (component_aware)
+            {
+                auto component_values = evaluate_components_for_move(
+                    current_solution,
+                    current.component_values(),
+                    move,
+                    &candidate_solution,
+                    std::make_index_sequence<
+                        std::tuple_size_v<component_types>>{});
+                auto cost = solution_manager_.aggregate(component_values);
+
+                return candidate_type{
+                    evaluation_type{
+                        std::move(component_values),
+                        std::move(cost),
+                    },
+                    std::move(candidate_solution),
+                };
+            }
+            else
+            {
+                return candidate_type{
+                    evaluation_type{
+                        {},
+                        solution_manager_.evaluate(candidate_solution),
+                    },
+                    std::move(candidate_solution),
+                };
+            }
+        }
+        else
         {
-            auto component_values = components_after_move(
+            static_assert(component_aware);
+
+            auto component_values = evaluate_components_for_move(
                 current_solution,
                 current.component_values(),
                 move,
-                candidate,
+                nullptr,
                 std::make_index_sequence<
                     std::tuple_size_v<component_types>>{});
             auto cost = solution_manager_.aggregate(component_values);
@@ -468,30 +522,18 @@ public:
                     std::move(cost),
                 },
                 move,
-                std::move(candidate),
-            };
-        }
-        else
-        {
-            return candidate_type{
-                evaluation_type{
-                    {},
-                    solution_manager_.evaluate(*candidate),
-                },
-                move,
-                std::move(candidate),
             };
         }
     }
 
-    void accept(
+    void commit(
         solution_type& solution,
         evaluation_type& current,
         candidate_type&& candidate) const
     {
-        if (candidate.materialized_solution().has_value())
+        if constexpr (needs_materialized_candidate())
         {
-            solution = std::move(*candidate.materialized_solution());
+            solution = std::move(candidate.solution());
         }
         else
         {
