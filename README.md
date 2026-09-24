@@ -100,6 +100,34 @@ also installs EasyLocal into an isolated prefix, configures a separate consumer
 with `find_package(EasyLocal)`, builds it through `EasyLocal::EasyLocal`, and
 runs the resulting executable.
 
+EasyLocal also provides optional, non-virtual convenience bases for the common
+service boilerplate:
+
+```cpp
+class MySolutionManager
+    : public easylocal::solution_manager_base<Instance, Solution>
+{
+public:
+    using solution_manager_base::solution_manager_base;
+    // domain-specific validity/evaluation behavior
+};
+
+class MyNeighborhoodExplorer
+    : public easylocal::neighborhood_explorer_base<MySolutionManager, Move>
+{
+public:
+    using neighborhood_explorer_base::neighborhood_explorer_base;
+    // domain-specific move generation/application behavior
+};
+```
+
+The bases only provide associated type aliases and reference plumbing.
+`solution_manager_base` stores the bound `Instance` reference, while
+`neighborhood_explorer_base` stores only the `SolutionManager` reference and
+derives its instance through that manager. They do not use virtual dispatch and
+are not required by the structural Runner concepts; fully custom duck-typed
+services remain supported.
+
 The current Assignment and TSP MWEs live under `examples/assignment/` and
 `examples/tsp/` and are intentionally not part of the public include tree.
 

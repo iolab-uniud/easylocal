@@ -6,6 +6,7 @@
 #include "solution_manager.hpp"
 
 #include <easylocal/cursor_moves.hpp>
+#include <easylocal/service_base.hpp>
 
 #include <cassert>
 #include <cstddef>
@@ -18,6 +19,7 @@ namespace easylocal::mwe::assignment
 {
 
 class NeighborhoodExplorer
+    : public easylocal::neighborhood_explorer_base<SolutionManager, Move>
 {
 private:
     // Ordinal decoding is retained only for random without-replacement
@@ -50,22 +52,8 @@ private:
     }
 
 public:
-    using instance_type = Instance;
-    using solution_type = Solution;
-    using move_type = Move;
+    using neighborhood_explorer_base::neighborhood_explorer_base;
     using random_sampling = easylocal::sampling::without_replacement;
-
-    explicit NeighborhoodExplorer(
-        const SolutionManager& solution_manager) noexcept
-        : solution_manager_{solution_manager}
-    {
-    }
-
-    [[nodiscard]]
-    auto instance() const noexcept -> const Instance&
-    {
-        return solution_manager_.instance();
-    }
 
     [[nodiscard]]
     auto is_valid(
@@ -256,7 +244,6 @@ private:
     }
 #endif
 
-    const SolutionManager& solution_manager_;
 };
 
 } // namespace easylocal::mwe::assignment

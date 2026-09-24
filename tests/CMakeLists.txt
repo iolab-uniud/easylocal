@@ -27,6 +27,20 @@ add_test(
 )
 
 add_executable(
+    easylocal_service_base_header_self_containment
+    service_base_header_self_containment.cpp
+)
+target_link_libraries(
+    easylocal_service_base_header_self_containment
+    PRIVATE
+        EasyLocal::EasyLocal
+)
+add_test(
+    NAME easylocal.service-base-header-self-containment
+    COMMAND easylocal_service_base_header_self_containment
+)
+
+add_executable(
     easylocal_runner_header_self_containment
     runner_header_self_containment.cpp
 )
@@ -166,6 +180,20 @@ target_link_libraries(
 add_test(
     NAME easylocal.aggregation
     COMMAND easylocal_aggregation_test
+)
+
+add_executable(
+    easylocal_service_base_test
+    service_base.cpp
+)
+target_link_libraries(
+    easylocal_service_base_test
+    PRIVATE
+        EasyLocal::EasyLocal
+)
+add_test(
+    NAME easylocal.service-base
+    COMMAND easylocal_service_base_test
 )
 
 add_executable(

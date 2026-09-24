@@ -5,6 +5,7 @@
 #include "solution_manager.hpp"
 
 #include <easylocal/cursor_moves.hpp>
+#include <easylocal/service_base.hpp>
 
 #include <algorithm>
 #include <cassert>
@@ -18,6 +19,7 @@ namespace easylocal::mwe::tsp
 {
 
 class NeighborhoodExplorer
+    : public easylocal::neighborhood_explorer_base<SolutionManager, TwoOptMove>
 {
 private:
     [[nodiscard]]
@@ -249,21 +251,8 @@ private:
     };
 
 public:
-    using instance_type = Instance;
-    using solution_type = Solution;
-    using move_type = TwoOptMove;
+    using neighborhood_explorer_base::neighborhood_explorer_base;
     using random_sampling = easylocal::sampling::with_replacement;
-
-    explicit NeighborhoodExplorer(const SolutionManager& solution_manager) noexcept
-        : solution_manager_{solution_manager}
-    {
-    }
-
-    [[nodiscard]]
-    auto instance() const noexcept -> const Instance&
-    {
-        return solution_manager_.instance();
-    }
 
     [[nodiscard]]
     auto is_valid(
@@ -386,7 +375,6 @@ private:
         return false;
     }
 
-    const SolutionManager& solution_manager_;
 };
 
 } // namespace easylocal::mwe::tsp

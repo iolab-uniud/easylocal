@@ -4,6 +4,8 @@
 #include "instance.hpp"
 #include "solution.hpp"
 
+#include <easylocal/service_base.hpp>
+
 #include <cassert>
 #include <ranges>
 
@@ -11,21 +13,10 @@ namespace easylocal::mwe::assignment
 {
 
 class SolutionManager
+    : public easylocal::solution_manager_base<Instance, Solution>
 {
 public:
-    using instance_type = Instance;
-    using solution_type = Solution;
-
-    explicit SolutionManager(const Instance& instance) noexcept
-        : instance_{instance}
-    {
-    }
-
-    [[nodiscard]]
-    auto instance() const noexcept -> const Instance&
-    {
-        return instance_;
-    }
+    using solution_manager_base::solution_manager_base;
 
     [[nodiscard]]
     auto is_valid(const Solution& solution) const noexcept -> bool
@@ -47,9 +38,6 @@ public:
     {
         return AssignmentCostAggregator{}(capacity);
     }
-
-private:
-    const Instance& instance_;
 };
 
 } // namespace easylocal::mwe::assignment

@@ -11,36 +11,33 @@ int main()
     using namespace easylocal::mwe::assignment;
     using easylocal::component;
     using easylocal::delta;
-    using easylocal::neighborhood;
-    using easylocal::solution_manager;
 
     const Instance instance{
         .demand = {4, 3, 2},
         .capacity = {5, 5},
     };
 
-    const auto manager_recipe =
-        solution_manager<SolutionManager>()
-        | component<CapacityCostComponent>();
-    const auto neighborhood_recipe =
-        neighborhood<NeighborhoodExplorer>()
-        | delta<CapacityCostComponent, ReassignCapacityDeltaEvaluator>();
+    auto solution_manager =
+        (easylocal::solution_manager<SolutionManager>()
+         | component<CapacityCostComponent>())
+            .construct(instance);
 
-    auto configured_manager = manager_recipe.construct(instance);
-    auto configured_neighborhood =
-        neighborhood_recipe.construct(configured_manager);
+    auto neighborhood_explorer =
+        (easylocal::neighborhood<NeighborhoodExplorer>()
+         | delta<CapacityCostComponent, ReassignCapacityDeltaEvaluator>())
+            .construct(solution_manager);
 
     Solution solution{
         .assignment = {0, 0, 1},
     };
 
-    if (!configured_manager.is_valid(solution))
+    if (!solution_manager.is_valid(solution))
     {
         return 1;
     }
 
     std::cout << "initial overload: "
-              << configured_manager.evaluate(solution).get<0>()
+              << solution_manager.evaluate(solution).get<0>()
               << '\n';
 
     const Move move{
@@ -48,15 +45,15 @@ int main()
         .destination = 1,
     };
 
-    if (!configured_neighborhood.is_valid(solution, move))
+    if (!neighborhood_explorer.is_valid(solution, move))
     {
         return 1;
     }
 
-    configured_neighborhood.make_move(solution, move);
+    neighborhood_explorer.make_move(solution, move);
 
     std::cout << "final overload: "
-              << configured_manager.evaluate(solution).get<0>()
+              << solution_manager.evaluate(solution).get<0>()
               << '\n';
 
     return 0;
