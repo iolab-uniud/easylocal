@@ -253,6 +253,20 @@ add_test(
 )
 
 add_executable(
+    easylocal_evaluation_contract_test
+    evaluation_contract.cpp
+)
+target_link_libraries(
+    easylocal_evaluation_contract_test
+    PRIVATE
+        EasyLocal::EasyLocal
+)
+add_test(
+    NAME easylocal.evaluation-contract
+    COMMAND easylocal_evaluation_contract_test
+)
+
+add_executable(
     easylocal_tsp_evaluation_test
     tsp_evaluation.cpp
 )
