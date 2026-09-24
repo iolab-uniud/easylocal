@@ -20,12 +20,12 @@ defaults:
 jobs:
   linux:
     name: Linux / ${{ matrix.toolchain }} / C++23
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
-        toolchain: [gcc14, clang18]
+        toolchain: [gcc15, clang22]
     env:
       PRESET: ci23-release
       TOOLCHAIN: ${{ matrix.toolchain }}
@@ -62,26 +62,26 @@ jobs:
           else
             elevate=(sudo)
           fi
-          packages=(cmake ninja-build g++-14)
-          if [ "$TOOLCHAIN" = clang18 ]; then
-            packages+=(clang-18)
-          fi
-          "${elevate[@]}" apt-get update
+
+          "${elevate[@]}" apt-get -o Acquire::Retries=3 update
           "${elevate[@]}" env DEBIAN_FRONTEND=noninteractive \
-            apt-get install -y --no-install-recommends "${packages[@]}"
+            apt-get install -y --no-install-recommends cmake ninja-build g++-15
+
           case "$TOOLCHAIN" in
-            gcc14)
-              echo 'CXX=/usr/bin/g++-14' >> "$GITHUB_ENV"
+            gcc15)
+              echo 'CXX=/usr/bin/g++-15' >> "$GITHUB_ENV"
               echo 'CXXFLAGS=' >> "$GITHUB_ENV"
               echo 'EL_COMPILER_ID=GNU' >> "$GITHUB_ENV"
-              echo 'EL_COMPILER_MAJOR=14' >> "$GITHUB_ENV"
+              echo 'EL_COMPILER_MAJOR=15' >> "$GITHUB_ENV"
               ;;
-            clang18)
-              gcc_dir="$(dirname "$(/usr/bin/gcc-14 -print-libgcc-file-name)")"
-              echo 'CXX=/usr/bin/clang++-18' >> "$GITHUB_ENV"
+            clang22)
+              "${elevate[@]}" env DEBIAN_FRONTEND=noninteractive \
+                apt-get install -y --no-install-recommends clang-22
+              gcc_dir="$(dirname "$(/usr/bin/gcc-15 -print-libgcc-file-name)")"
+              echo 'CXX=/usr/bin/clang++-22' >> "$GITHUB_ENV"
               echo "CXXFLAGS=-stdlib=libstdc++ --gcc-install-dir=$gcc_dir" >> "$GITHUB_ENV"
               echo 'EL_COMPILER_ID=Clang' >> "$GITHUB_ENV"
-              echo 'EL_COMPILER_MAJOR=18' >> "$GITHUB_ENV"
+              echo 'EL_COMPILER_MAJOR=22' >> "$GITHUB_ENV"
               ;;
             *) echo "Unknown toolchain: $TOOLCHAIN" >&2; exit 1 ;;
           esac
@@ -131,7 +131,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        toolchain: [appleclang, gcc14]
+        toolchain: [appleclang, gcc16]
     env:
       PRESET: ci23-release
       TOOLCHAIN: ${{ matrix.toolchain }}
@@ -180,18 +180,18 @@ jobs:
               echo 'EL_COMPILER_MAJOR=' >> "$GITHUB_ENV"
               echo 'EL_STDLIB=libcxx' >> "$GITHUB_ENV"
               ;;
-            gcc14)
-              if ! brew list --versions gcc@14 >/dev/null 2>&1; then
-                brew install gcc@14
+            gcc16)
+              if ! brew list --versions gcc >/dev/null 2>&1; then
+                brew install gcc
               fi
-              compiler="$(brew --prefix gcc@14)/bin/g++-14"
+              compiler="$(brew --prefix gcc)/bin/g++-16"
               if [ ! -x "$compiler" ]; then
                 echo "Missing GCC executable: $compiler" >&2
                 exit 1
               fi
               echo "CXX=$compiler" >> "$GITHUB_ENV"
               echo 'EL_COMPILER_ID=GNU' >> "$GITHUB_ENV"
-              echo 'EL_COMPILER_MAJOR=14' >> "$GITHUB_ENV"
+              echo 'EL_COMPILER_MAJOR=16' >> "$GITHUB_ENV"
               echo 'EL_STDLIB=libstdcxx' >> "$GITHUB_ENV"
               ;;
             *) echo "Unknown toolchain: $TOOLCHAIN" >&2; exit 1 ;;

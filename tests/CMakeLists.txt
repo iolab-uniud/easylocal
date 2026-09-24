@@ -183,6 +183,37 @@ add_test(
 )
 
 add_executable(
+    easylocal_simulated_annealing_test
+    simulated_annealing.cpp
+)
+target_link_libraries(
+    easylocal_simulated_annealing_test
+    PRIVATE
+        easylocal_assignment_mwe_model
+        easylocal_tsp_mwe_model
+        easylocal_mwe_search
+)
+add_test(
+    NAME easylocal.simulated-annealing
+    COMMAND easylocal_simulated_annealing_test
+)
+
+add_executable(
+    easylocal_cost_semantics_test
+    cost_semantics.cpp
+)
+target_link_libraries(
+    easylocal_cost_semantics_test
+    PRIVATE
+        easylocal_assignment_mwe_model
+        easylocal_mwe_search
+)
+add_test(
+    NAME easylocal.cost-semantics
+    COMMAND easylocal_cost_semantics_test
+)
+
+add_executable(
     easylocal_runner_composition_test
     runner_composition.cpp
 )

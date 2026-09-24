@@ -1,11 +1,29 @@
 #pragma once
 
 #include <cassert>
+#include <concepts>
 #include <cstddef>
 #include <utility>
 
 namespace easylocal::mwe::assignment
 {
+
+namespace detail
+{
+
+template<class Context>
+concept strict_improvement_context =
+    requires(
+        const Context& context,
+        const typename Context::cost_type& candidate,
+        const typename Context::cost_type& reference)
+    {
+        {
+            context.better(candidate, reference)
+        } -> std::convertible_to<bool>;
+    };
+
+} // namespace detail
 
 enum class FirstImprovementTermination
 {
@@ -38,6 +56,7 @@ public:
     }
 
     template<class Context>
+        requires detail::strict_improvement_context<Context>
     [[nodiscard]]
     auto run(
         const Context& context,
@@ -74,7 +93,7 @@ public:
                     evaluation.after_move(solution, current, move);
                 ++evaluations;
 
-                if (candidate.cost() < current.cost())
+                if (context.better(candidate.cost(), current.cost()))
                 {
                     evaluation.accept(
                         solution,

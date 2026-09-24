@@ -21,6 +21,8 @@ concept random_first_improvement_context =
     requires(
         const Context& context,
         const typename Context::solution_type& solution,
+        const typename Context::cost_type& candidate,
+        const typename Context::cost_type& reference,
         RNG& rng)
     {
         typename Context::neighborhood_explorer_type::random_sampling;
@@ -32,6 +34,10 @@ concept random_first_improvement_context =
         {
             context.neighborhood_explorer().random_moves(solution, rng)
         } -> std::ranges::input_range;
+
+        {
+            context.better(candidate, reference)
+        } -> std::convertible_to<bool>;
     };
 
 } // namespace detail
@@ -106,7 +112,7 @@ public:
                     evaluation.after_move(solution, current, move);
                 ++evaluations;
 
-                if (candidate.cost() < current.cost())
+                if (context.better(candidate.cost(), current.cost()))
                 {
                     evaluation.accept(
                         solution,

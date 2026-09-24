@@ -3,8 +3,10 @@
 #include "solution.hpp"
 #include "solution_manager.hpp"
 
+#include <concepts>
 #include <cstddef>
 #include <iostream>
+#include <random>
 #include <ranges>
 #include <string_view>
 #include <utility>
@@ -80,6 +82,33 @@ int main()
             "every generated 2-opt move is structurally valid");
     }
 
+    static_assert(std::same_as<
+        NeighborhoodExplorer::random_sampling,
+        sampling::with_replacement>);
+
+    std::mt19937 rng{12345U};
+    auto random_moves = neighborhood.random_moves(solution, rng);
+    static_assert(std::ranges::input_range<decltype(random_moves)>);
+    static_assert(!std::ranges::forward_range<decltype(random_moves)>);
+    static_assert(std::ranges::view<decltype(random_moves)>);
+
+    ok &= expect(
+        !std::ranges::empty(random_moves),
+        "random 2-opt traversal is non-empty when moves exist");
+
+    std::size_t random_samples = 0;
+    for (const auto move : random_moves | std::views::take(32))
+    {
+        ++random_samples;
+        ok &= expect(
+            neighborhood.is_valid(solution, move),
+            "with-replacement traversal yields only valid 2-opt moves");
+    }
+
+    ok &= expect(
+        random_samples == 32,
+        "with-replacement traversal remains available beyond neighborhood size");
+
     auto first_edge_zero =
         neighborhood.moves(solution)
         | std::views::filter([](const TwoOptMove move) {
@@ -141,6 +170,13 @@ int main()
     ok &= expect(
         std::ranges::empty(triangle_neighborhood.moves(triangle)),
         "three-city tour has no non-degenerate 2-opt move");
+
+    std::mt19937 triangle_rng{7U};
+    auto triangle_random_moves =
+        triangle_neighborhood.random_moves(triangle, triangle_rng);
+    ok &= expect(
+        std::ranges::empty(triangle_random_moves),
+        "random 2-opt traversal is empty when no move exists");
 
     return ok ? 0 : 1;
 }

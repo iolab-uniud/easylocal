@@ -12,11 +12,12 @@ usage() {
 Usage:
   ./scripts/act-ci.sh
   ./scripts/act-ci.sh all
-  ./scripts/act-ci.sh gcc14
-  ./scripts/act-ci.sh clang18
+  ./scripts/act-ci.sh gcc15
+  ./scripts/act-ci.sh clang22
 
-By default, runs the Linux GitHub Actions job locally with act for both
-supported toolchains, using the locally cached runner image when available.
+By default, runs the Ubuntu 26.04 Linux GitHub Actions job locally with act for
+both supported toolchains. act is a functional workflow check only; do not use
+its timings as benchmark results on hosts that require container emulation.
 USAGE
 }
 
@@ -31,22 +32,21 @@ run_toolchain() {
     local toolchain="$1"
 
     echo
-    echo "==> act: Linux / ${toolchain} / C++23"
+    echo "==> act: Ubuntu 26.04 / ${toolchain} / C++23"
     echo
 
     act workflow_dispatch \
         -W .github/workflows/ci.yml \
         -j linux \
-        --matrix "toolchain:${toolchain}" \
-        --pull=false
+        --matrix "toolchain:${toolchain}"
 }
 
 case "$TARGET" in
     all)
-        run_toolchain gcc14
-        run_toolchain clang18
+        run_toolchain gcc15
+        run_toolchain clang22
         ;;
-    gcc14|clang18)
+    gcc15|clang22)
         run_toolchain "$TARGET"
         ;;
     -h|--help)

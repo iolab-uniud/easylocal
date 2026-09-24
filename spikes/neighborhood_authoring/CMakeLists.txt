@@ -1,0 +1,43 @@
+add_executable(
+    easylocal_neighborhood_authoring_check
+    check.cpp
+)
+target_link_libraries(
+    easylocal_neighborhood_authoring_check
+    PRIVATE
+        easylocal_assignment_mwe_model
+        easylocal_tsp_mwe_model
+)
+
+add_executable(
+    easylocal_neighborhood_authoring_benchmark
+    benchmark.cpp
+)
+target_link_libraries(
+    easylocal_neighborhood_authoring_benchmark
+    PRIVATE
+        easylocal_assignment_mwe_model
+        easylocal_tsp_mwe_model
+)
+
+add_executable(
+    easylocal_neighborhood_authoring_allocations
+    allocations.cpp
+)
+target_link_libraries(
+    easylocal_neighborhood_authoring_allocations
+    PRIVATE
+        easylocal_assignment_mwe_model
+        easylocal_tsp_mwe_model
+)
+
+add_executable(
+    easylocal_neighborhood_runner_benchmark
+    runner_benchmark.cpp
+)
+target_link_libraries(
+    easylocal_neighborhood_runner_benchmark
+    PRIVATE
+        easylocal_assignment_mwe_model
+        easylocal_tsp_mwe_model
+)

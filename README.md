@@ -86,10 +86,10 @@ The full CI matrix is intentionally small and targets C++23 directly:
 
 | Platform | Toolchain |
 | --- | --- |
-| Ubuntu 24.04 | GCC 14 |
-| Ubuntu 24.04 | Clang 18 |
+| Ubuntu 26.04 | GCC 15 |
+| Ubuntu 26.04 | Clang 22 |
 | macOS ARM64 | AppleClang |
-| macOS ARM64 | GCC 14 |
+| macOS ARM64 | GCC 16 |
 
 GitHub Actions runs automatically for release tags of the form `vX.Y.Z` and can
 also be started manually with `workflow_dispatch`.
@@ -105,8 +105,8 @@ Linux CI jobs can be exercised locally with `act`:
 or for a single toolchain:
 
 ```sh
-./scripts/act-ci.sh gcc14
-./scripts/act-ci.sh clang18
+./scripts/act-ci.sh gcc15
+./scripts/act-ci.sh clang22
 ```
 
 ## Tests

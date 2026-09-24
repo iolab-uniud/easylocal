@@ -267,6 +267,46 @@ public:
         return aggregate(evaluate_components(solution));
     }
 
+    // Preserve optional problem-specific cost semantics across the
+    // configured SolutionManager wrapper. If the base manager does not provide
+    // one of these queries, runner_context can still fall back to the
+    // corresponding intrinsic operator of cost_type when available.
+    [[nodiscard]]
+    constexpr auto better(
+        const cost_type& candidate,
+        const cost_type& reference) const -> bool
+        requires requires(const BaseSM& base) {
+            { base.better(candidate, reference) } -> std::convertible_to<bool>;
+        }
+    {
+        return static_cast<bool>(base_.better(candidate, reference));
+    }
+
+    [[nodiscard]]
+    constexpr auto equivalent(
+        const cost_type& lhs,
+        const cost_type& rhs) const -> bool
+        requires requires(const BaseSM& base) {
+            { base.equivalent(lhs, rhs) } -> std::convertible_to<bool>;
+        }
+    {
+        return static_cast<bool>(base_.equivalent(lhs, rhs));
+    }
+
+    [[nodiscard]]
+    constexpr auto better_or_equivalent(
+        const cost_type& candidate,
+        const cost_type& reference) const -> bool
+        requires requires(const BaseSM& base) {
+            {
+                base.better_or_equivalent(candidate, reference)
+            } -> std::convertible_to<bool>;
+        }
+    {
+        return static_cast<bool>(
+            base_.better_or_equivalent(candidate, reference));
+    }
+
 private:
     BaseSM base_;
     std::tuple<typename ComponentSpecs::component_type...> components_;

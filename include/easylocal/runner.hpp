@@ -1,10 +1,10 @@
 #pragma once
 
+#include <easylocal/detail/cost_semantics.hpp>
 #include <easylocal/detail/evaluation.hpp>
 #include <easylocal/detail/service_composition.hpp>
 
 #include <cassert>
-#include <compare>
 #include <concepts>
 #include <memory>
 #include <ranges>
@@ -122,8 +122,6 @@ concept runner_solution_manager =
         typename SM::solution_type;
         typename SM::cost_type;
 
-        requires std::three_way_comparable<typename SM::cost_type>;
-
         {
             solution_manager.instance()
         } -> std::same_as<const typename SM::instance_type&>;
@@ -203,6 +201,44 @@ public:
             solution_manager_,
             neighborhood_,
         };
+    }
+
+    // Semantic cost queries used by search algorithms. A problem-specific
+    // SolutionManager may override the meaning of these relations; otherwise
+    // the ordinary cost operators provide the exact/default semantics.
+    //
+    // These are deliberately distinct queries. In particular,
+    // better_or_equivalent() is not defined as better() || equivalent(), so a
+    // future lazy cost model can answer <= in one pass without forcing two
+    // potentially expensive semantic comparisons.
+    [[nodiscard]]
+    constexpr auto better(
+        const cost_type& candidate,
+        const cost_type& reference) const -> bool
+        requires has_better<SM>
+    {
+        return cost_better(solution_manager_, candidate, reference);
+    }
+
+    [[nodiscard]]
+    constexpr auto equivalent(
+        const cost_type& lhs,
+        const cost_type& rhs) const -> bool
+        requires has_equivalent<SM>
+    {
+        return cost_equivalent(solution_manager_, lhs, rhs);
+    }
+
+    [[nodiscard]]
+    constexpr auto better_or_equivalent(
+        const cost_type& candidate,
+        const cost_type& reference) const -> bool
+        requires has_better_or_equivalent<SM>
+    {
+        return cost_better_or_equivalent(
+            solution_manager_,
+            candidate,
+            reference);
     }
 
 private:
