@@ -44,20 +44,22 @@ public:
         const Context& context,
         typename Context::solution_type solution) const
     {
-        const auto& solution_manager = context.solution_manager();
         const auto& neighborhood = context.neighborhood_explorer();
+        const auto evaluation = context.evaluation();
 
         using solution_type = typename Context::solution_type;
         using cost_type = typename Context::cost_type;
         using result_type = BestImprovementResult<solution_type, cost_type>;
 
-        auto current_cost = solution_manager.evaluate(solution);
+        auto current = evaluation.evaluate(solution);
         std::size_t evaluations = 1;
 
         while (true)
         {
-            std::optional<solution_type> best_solution;
-            auto best_cost = current_cost;
+            using candidate_type = typename decltype(evaluation)::candidate_type;
+
+            std::optional<candidate_type> best_candidate;
+            auto best_cost = current.cost();
 
             for (const auto move : neighborhood.moves(solution))
             {
@@ -65,39 +67,38 @@ public:
                 {
                     return result_type{
                         .solution = std::move(solution),
-                        .cost = current_cost,
+                        .cost = current.cost(),
                         .evaluations = evaluations,
                         .termination = BestImprovementTermination::
                             evaluation_budget_exhausted,
                     };
                 }
 
-                solution_type candidate = solution;
-                neighborhood.make_move(candidate, move);
-
-                const auto candidate_cost =
-                    solution_manager.evaluate(candidate);
+                auto candidate =
+                    evaluation.after_move(solution, current, move);
                 ++evaluations;
 
-                if (candidate_cost < best_cost)
+                if (candidate.cost() < best_cost)
                 {
-                    best_solution = std::move(candidate);
-                    best_cost = candidate_cost;
+                    best_cost = candidate.cost();
+                    best_candidate = std::move(candidate);
                 }
             }
 
-            if (!best_solution.has_value())
+            if (!best_candidate.has_value())
             {
                 return result_type{
                     .solution = std::move(solution),
-                    .cost = current_cost,
+                    .cost = current.cost(),
                     .evaluations = evaluations,
                     .termination = BestImprovementTermination::local_optimum,
                 };
             }
 
-            solution = std::move(*best_solution);
-            current_cost = best_cost;
+            evaluation.accept(
+                solution,
+                current,
+                std::move(*best_candidate));
         }
     }
 

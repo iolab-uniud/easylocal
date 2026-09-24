@@ -1,5 +1,8 @@
 #pragma once
 
+#include <easylocal/detail/evaluation.hpp>
+#include <easylocal/detail/service_composition.hpp>
+
 #include <cassert>
 #include <compare>
 #include <concepts>
@@ -79,6 +82,13 @@ struct is_solution_manager_spec<
 {
 };
 
+template<class BaseSM, class BaseArgsTuple, class... ComponentSpecs>
+struct is_solution_manager_spec<
+    solution_manager_recipe<BaseSM, BaseArgsTuple, ComponentSpecs...>>
+    : std::true_type
+{
+};
+
 template<class T>
 inline constexpr bool is_solution_manager_spec_v =
     is_solution_manager_spec<T>::value;
@@ -91,6 +101,13 @@ struct is_neighborhood_spec : std::false_type
 template<class Service, class... Args>
 struct is_neighborhood_spec<
     service_spec<neighborhood_tag, Service, Args...>> : std::true_type
+{
+};
+
+template<class BaseNHE, class BaseArgsTuple, class... DeltaSpecs>
+struct is_neighborhood_spec<
+    neighborhood_recipe<BaseNHE, BaseArgsTuple, DeltaSpecs...>>
+    : std::true_type
 {
 };
 
@@ -123,9 +140,15 @@ concept runner_solution_manager =
 template<class NHE, class SM>
 concept runner_neighborhood_explorer =
     runner_solution_manager<SM> &&
-    requires(const NHE& neighborhood, const typename SM::solution_type& solution) {
+    requires(
+        const NHE& neighborhood,
+        const typename SM::solution_type& solution,
+        typename SM::solution_type& candidate,
+        const typename NHE::move_type& move)
+    {
         typename NHE::instance_type;
         typename NHE::solution_type;
+        typename NHE::move_type;
 
         requires std::same_as<
             typename NHE::instance_type,
@@ -139,6 +162,7 @@ concept runner_neighborhood_explorer =
         } -> std::same_as<const typename NHE::instance_type&>;
 
         { neighborhood.moves(solution) } -> std::ranges::input_range;
+        { neighborhood.make_move(candidate, move) } -> std::same_as<void>;
     };
 
 template<class Spec>
@@ -172,6 +196,15 @@ public:
         return neighborhood_;
     }
 
+    [[nodiscard]]
+    auto evaluation() const -> evaluation_facility<SM, NHE>
+    {
+        return evaluation_facility<SM, NHE>{
+            solution_manager_,
+            neighborhood_,
+        };
+    }
+
 private:
     const SM& solution_manager_;
     const NHE& neighborhood_;
@@ -190,6 +223,19 @@ public:
     using neighborhood_explorer_type = service_t<NHESpec>;
     using instance_type = typename solution_manager_type::instance_type;
     using solution_type = typename solution_manager_type::solution_type;
+
+    static_assert(
+        all_delta_components_active_v<
+            solution_manager_type,
+            neighborhood_explorer_type>,
+        "every attached delta must name a component that is active in the "
+        "bound SolutionManager recipe");
+    static_assert(
+        all_delta_bindings_compatible_v<
+            solution_manager_type,
+            neighborhood_explorer_type>,
+        "every attached delta evaluator must be compatible with the bound "
+        "component value, Solution, and Move types");
 
     bound_runner(
         Algorithm algorithm,
@@ -303,6 +349,41 @@ public:
         return Runner<Algorithm, spec_type>{
             std::move(algorithm_),
             spec_type{std::forward<Args>(args)...},
+        };
+    }
+
+    template<class SMSpec>
+        requires detail::is_solution_manager_spec_v<std::remove_cvref_t<SMSpec>> &&
+                 detail::runner_solution_manager<
+                     detail::service_t<std::remove_cvref_t<SMSpec>>> &&
+                 std::copy_constructible<Algorithm> &&
+                 std::constructible_from<
+                     std::remove_cvref_t<SMSpec>,
+                     SMSpec&&>
+    [[nodiscard]]
+    auto with_solution_manager(SMSpec&& spec) const &
+    {
+        using spec_type = std::remove_cvref_t<SMSpec>;
+        return Runner<Algorithm, spec_type>{
+            algorithm_,
+            std::forward<SMSpec>(spec),
+        };
+    }
+
+    template<class SMSpec>
+        requires detail::is_solution_manager_spec_v<std::remove_cvref_t<SMSpec>> &&
+                 detail::runner_solution_manager<
+                     detail::service_t<std::remove_cvref_t<SMSpec>>> &&
+                 std::constructible_from<
+                     std::remove_cvref_t<SMSpec>,
+                     SMSpec&&>
+    [[nodiscard]]
+    auto with_solution_manager(SMSpec&& spec) &&
+    {
+        using spec_type = std::remove_cvref_t<SMSpec>;
+        return Runner<Algorithm, spec_type>{
+            std::move(algorithm_),
+            std::forward<SMSpec>(spec),
         };
     }
 
@@ -464,9 +545,18 @@ template<class SM, class... Args>
 [[nodiscard]]
 auto solution_manager(Args&&... args)
 {
-    return detail::service_spec<
-        detail::solution_manager_tag,
+    return detail::solution_manager_recipe<
         SM,
+        std::tuple<std::decay_t<Args>...>>{
+        std::tuple<std::decay_t<Args>...>{std::forward<Args>(args)...}};
+}
+
+template<class Component, class... Args>
+[[nodiscard]]
+auto component(Args&&... args)
+{
+    return detail::component_spec<
+        Component,
         std::decay_t<Args>...>{std::forward<Args>(args)...};
 }
 
@@ -474,26 +564,33 @@ template<class NHE, class... Args>
 [[nodiscard]]
 auto neighborhood(Args&&... args)
 {
-    return detail::service_spec<
-        detail::neighborhood_tag,
+    return detail::neighborhood_recipe<
         NHE,
+        std::tuple<std::decay_t<Args>...>>{
+        std::tuple<std::decay_t<Args>...>{std::forward<Args>(args)...}};
+}
+
+template<class Component, class DeltaEvaluator, class... Args>
+[[nodiscard]]
+auto delta(Args&&... args)
+{
+    return detail::delta_spec<
+        Component,
+        DeltaEvaluator,
         std::decay_t<Args>...>{std::forward<Args>(args)...};
 }
 
-template<class Algorithm, class SMSpec, class NHESpec, class SM, class... Args>
+template<class Algorithm, class SMSpec, class NHESpec, class Spec>
     requires std::same_as<SMSpec, detail::unconfigured_t> &&
-             std::same_as<NHESpec, detail::unconfigured_t>
+             std::same_as<NHESpec, detail::unconfigured_t> &&
+             detail::is_solution_manager_spec_v<std::remove_cvref_t<Spec>>
 [[nodiscard]]
 auto operator|(
     Runner<Algorithm, SMSpec, NHESpec> runner,
-    detail::service_spec<detail::solution_manager_tag, SM, Args...> spec)
+    Spec&& spec)
 {
-    return std::apply(
-        [&]<class... StoredArgs>(StoredArgs&&... args) {
-            return std::move(runner).template with_solution_manager<SM>(
-                std::forward<StoredArgs>(args)...);
-        },
-        std::move(spec).args());
+    return std::move(runner).with_solution_manager(
+        std::forward<Spec>(spec));
 }
 
 template<class Algorithm, class SMSpec, class NHESpec>

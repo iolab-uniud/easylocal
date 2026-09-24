@@ -32,10 +32,6 @@ constexpr auto operator+(
 class ReassignCapacityDeltaEvaluator
 {
 public:
-    using component_type = CapacityCostComponent;
-    using move_type = Move;
-    using delta_type = CapacityDelta;
-
     explicit ReassignCapacityDeltaEvaluator(const Instance& instance) noexcept
         : instance_{instance}
     {

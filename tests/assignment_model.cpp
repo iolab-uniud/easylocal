@@ -3,6 +3,8 @@
 #include "neighborhood_explorer.hpp"
 #include "solution_manager.hpp"
 
+#include <easylocal/runner.hpp>
+
 #include <compare>
 #include <concepts>
 #include <cstddef>
@@ -31,10 +33,13 @@ public:
     }
 };
 
-struct CapacityThenCardinalityAggregator
+class CapacityThenCardinalitySolutionManager : public SolutionManager
 {
+public:
+    using SolutionManager::SolutionManager;
+
     [[nodiscard]]
-    constexpr auto operator()(
+    constexpr auto aggregate(
         const CapacityValue& capacity,
         const std::size_t cardinality) const
     {
@@ -61,9 +66,10 @@ int main()
 {
     using namespace easylocal::mwe::assignment;
     namespace aggregation = easylocal::mwe::aggregation;
+    using easylocal::component;
+    using easylocal::solution_manager;
 
     static_assert(std::three_way_comparable<Cost>);
-    static_assert(std::same_as<SolutionManager::cost_type, Cost>);
 
     bool ok = true;
 
@@ -72,7 +78,10 @@ int main()
         .capacity = {5, 5},
     };
 
-    const SolutionManager solution_manager{instance};
+    const auto manager_recipe =
+        solution_manager<SolutionManager>()
+        | component<CapacityCostComponent>();
+    const auto configured_solution_manager = manager_recipe.construct(instance);
 
     const Solution initial{
         .assignment = {0, 0, 1},
@@ -81,10 +90,10 @@ int main()
     // Structural validity and feasibility are distinct: this solution is valid
     // even though it has positive overload.
     ok &= expect(
-        solution_manager.is_valid(initial),
+        configured_solution_manager.is_valid(initial),
         "overloaded solution is structurally valid");
 
-    const auto initial_cost = solution_manager.evaluate(initial);
+    const auto initial_cost = configured_solution_manager.evaluate(initial);
 
     ok &= expect(
         initial_cost == Cost{2, 1},
@@ -114,13 +123,14 @@ int main()
         "predefined weighted-sum aggregation combines materialized terms");
 
     // Component attachment is compile-time compositional: adding a second
-    // component changes only the manager type and aggregator signature.
-    using TwoComponentManager = ComposedSolutionManager<
-        CapacityThenCardinalityAggregator,
-        CapacityCostComponent,
-        AssignmentCardinalityComponent>;
+    // component changes the recipe, while the problem-side manager remains
+    // unaware of component storage and evaluation machinery.
+    const auto two_component_recipe =
+        solution_manager<CapacityThenCardinalitySolutionManager>()
+        | component<CapacityCostComponent>()
+        | component<AssignmentCardinalityComponent>();
 
-    const TwoComponentManager two_component_manager{instance};
+    const auto two_component_manager = two_component_recipe.construct(instance);
     const auto two_component_cost = two_component_manager.evaluate(initial);
 
     ok &= expect(
@@ -132,7 +142,8 @@ int main()
     // component value must match full evaluation after the move.
     const CapacityCostComponent capacity_component{instance};
     const ReassignCapacityDeltaEvaluator capacity_delta{instance};
-    const NeighborhoodExplorer neighborhood{solution_manager};
+    const SolutionManager neighborhood_manager{instance};
+    const NeighborhoodExplorer neighborhood{neighborhood_manager};
 
     const auto before = capacity_component.evaluate(initial);
 
@@ -174,7 +185,7 @@ int main()
     };
 
     ok &= expect(
-        !solution_manager.is_valid(wrong_size),
+        !configured_solution_manager.is_valid(wrong_size),
         "wrong assignment cardinality is invalid");
 
     const Solution bad_machine{
@@ -182,7 +193,7 @@ int main()
     };
 
     ok &= expect(
-        !solution_manager.is_valid(bad_machine),
+        !configured_solution_manager.is_valid(bad_machine),
         "out-of-range machine id is invalid");
 
     // Two instance-bound managers can coexist in one process.
@@ -191,7 +202,7 @@ int main()
         .capacity = {10, 10},
     };
 
-    const SolutionManager roomy_manager{roomy_instance};
+    const auto roomy_manager = manager_recipe.construct(roomy_instance);
 
     ok &= expect(
         roomy_manager.is_valid(initial),
@@ -202,7 +213,7 @@ int main()
         "same solution is evaluated relative to the manager's instance");
 
     ok &= expect(
-        solution_manager.evaluate(initial) == Cost{2, 1},
+        configured_solution_manager.evaluate(initial) == Cost{2, 1},
         "first manager remains bound to the first instance");
 
     return ok ? 0 : 1;

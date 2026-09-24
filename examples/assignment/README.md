@@ -56,19 +56,22 @@ cost     = (0, 0)
 ## Cost composition
 
 `CapacityCostComponent` performs full eager evaluation and returns a materialized
-`CapacityValue`. Cost components are attached to `ComposedSolutionManager` as a
-compile-time parameter pack:
+`CapacityValue`. The problem-side `SolutionManager` remains responsible for
+solution validity and aggregation policy, while cost components are attached to
+the runner recipe compositionally:
 
 ```cpp
-using SolutionManager = ComposedSolutionManager<
-    AssignmentCostAggregator,
-    CapacityCostComponent>;
+auto manager =
+    solution_manager<SolutionManager>()
+    | component<CapacityCostComponent>();
 ```
 
-`ComposedSolutionManager::evaluate(solution)` eagerly evaluates every attached
-component and passes their materialized values to the configured aggregator.
-The resulting `cost_type` remains the ordinary three-way-comparable value seen
-by search algorithms.
+The bound configured manager eagerly evaluates every attached component and
+passes their materialized values to the problem-side aggregation policy. The
+resulting `cost_type` remains the ordinary three-way-comparable value seen by
+search algorithms. Each component type may occur at most once in a manager
+recipe; semantically distinct parameterizations can use distinct wrapper or
+subclass types and therefore distinct compile-time identities.
 
 The MWE prototypes three reusable aggregation categories:
 
@@ -106,11 +109,30 @@ component_value_after = component_value_before + delta
 The tests check this property against full component evaluation for every move
 in the small deterministic assignment neighborhood.
 
-Search algorithms do **not** consume delta evaluators yet. Automatic delta
-discovery, fallback to full component evaluation, laziness, caching and proxy
-lifetime/invalidation are deliberately postponed so they can later be added
-without leaking machinery into component, delta-evaluator or search-algorithm
-code.
+Delta evaluators are attached to a neighborhood recipe explicitly by component
+type rather than being intrinsic metadata of the neighborhood or move type:
+
+```cpp
+auto nhe =
+    neighborhood<NeighborhoodExplorer>()
+    | delta<CapacityCostComponent, ReassignCapacityDeltaEvaluator>();
+```
+
+The runner's internal evaluation facility matches active component types against
+the deltas attached to that particular neighborhood recipe. A delta attached to
+a component that is not active in the paired solution-manager recipe is a
+compile-time error at bind. If an active component has no matching delta, the
+framework materializes the candidate `Solution` once and reuses it for every
+fallback full-component evaluation. If all components have deltas, a rejected
+candidate never requires `make_move`; an accepted candidate applies the move
+exactly once. If fallback materialization was already necessary, acceptance
+promotes that materialized candidate instead of applying the move again.
+
+The search algorithms see only eager materialized evaluations and `cost_type`
+values. They do not select deltas, distinguish fallback components, or manage
+candidate materialization. `after_move` is only the current working name for the
+algorithm-side operation and is intentionally not considered final terminology.
+Laziness, caching and proxy lifetime/invalidation remain postponed.
 
 ## Responsibilities
 
@@ -139,15 +161,20 @@ code.
   ordering semantics through three-way comparison.
 
 `SolutionManager`
-: Alias of a statically composed manager responsible for structural solution
-  validation, full component evaluation and aggregation into `cost_type`.
+: Problem-side service responsible for structural solution validation and the
+  aggregation policy. Cost-component storage/evaluation is supplied by the
+  framework from the components attached to the manager recipe.
 
 `NeighborhoodExplorer`
-: Service responsible for neighborhood traversal, move validity and move
-  application. It is bound to a `SolutionManager`, which in turn determines the
-  instance.
+: Problem-side service responsible for neighborhood traversal, move validity and
+  `make_move`. Delta evaluators are optional capabilities attached externally to
+  a particular neighborhood recipe, so the same explorer and move types can be
+  reused by different runners with different incremental-evaluation sets.
 
-No generic cost API is promoted to public EasyLocal++ headers yet.
+The generic aggregation implementations remain MWE-local for now. The public
+framework composition surface introduced here is limited to attaching cost
+components to a solution-manager recipe and delta evaluators to a neighborhood
+recipe.
 
 ## Neighborhood traversal
 
@@ -237,10 +264,20 @@ Instead, the runner records the concrete service types and any constructor
 arguments:
 
 ```cpp
+auto manager =
+    solution_manager<SolutionManager>()
+        .with_component<CapacityCostComponent>();
+
+auto nhe =
+    neighborhood<NeighborhoodExplorer>()
+        .with_delta<
+            CapacityCostComponent,
+            ReassignCapacityDeltaEvaluator>();
+
 auto runner =
     Runner{FirstImprovement{params}}
-        .with_solution_manager<SolutionManager>()
-        .with_neighborhood<NeighborhoodExplorer>();
+        .with_solution_manager(manager)
+        .with_neighborhood(nhe);
 ```
 
 The equivalent pipeline syntax is also supported:
@@ -248,8 +285,12 @@ The equivalent pipeline syntax is also supported:
 ```cpp
 auto runner =
     Runner{FirstImprovement{params}}
-    | solution_manager<SolutionManager>()
-    | neighborhood<NeighborhoodExplorer>();
+    | (solution_manager<SolutionManager>()
+       | component<CapacityCostComponent>())
+    | (neighborhood<NeighborhoodExplorer>()
+       | delta<
+             CapacityCostComponent,
+             ReassignCapacityDeltaEvaluator>());
 ```
 
 `bind(instance)` materializes an instance-bound graph owned by an internal,
@@ -270,11 +311,11 @@ while ownership and graph consistency remain internal to the runner.
 The current MWE deliberately does not define:
 
 - public generic cost/component/aggregation concepts;
-- automatic delta discovery and fallback;
 - lazy component or delta evaluation;
 - evaluation-state caching;
 - proxy lifetime/generation invalidation;
 - move undo/reversibility;
+- propagation of delta-evaluator capabilities through `neighborhood_union`;
 - fallback/capability negotiation between random sampling strategies;
 - diagnostics for fallback from without- to with-replacement;
 - EL3 neighborhood adapters;

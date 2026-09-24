@@ -5,46 +5,19 @@
 #include "solution.hpp"
 
 #include <cassert>
-#include <concepts>
-#include <functional>
 #include <ranges>
-#include <tuple>
-#include <type_traits>
-#include <utility>
 
 namespace easylocal::mwe::assignment
 {
 
-template<class Aggregator, class... Components>
-class ComposedSolutionManager
+class SolutionManager
 {
 public:
-    static_assert(sizeof...(Components) > 0);
-
     using instance_type = Instance;
     using solution_type = Solution;
-    using cost_type = std::invoke_result_t<
-        const Aggregator&,
-        typename Components::value_type...>;
 
-    explicit ComposedSolutionManager(const Instance& instance) noexcept(
-        std::is_nothrow_default_constructible_v<Aggregator> &&
-        (std::is_nothrow_constructible_v<Components, const Instance&> && ...))
-        requires std::default_initializable<Aggregator>
-        : instance_{instance},
-          aggregator_{},
-          components_{Components{instance}...}
-    {
-    }
-
-    ComposedSolutionManager(
-        const Instance& instance,
-        Aggregator aggregator) noexcept(
-        std::is_nothrow_move_constructible_v<Aggregator> &&
-        (std::is_nothrow_constructible_v<Components, const Instance&> && ...))
-        : instance_{instance},
-          aggregator_{std::move(aggregator)},
-          components_{Components{instance}...}
+    explicit SolutionManager(const Instance& instance) noexcept
+        : instance_{instance}
     {
     }
 
@@ -70,27 +43,13 @@ public:
     }
 
     [[nodiscard]]
-    auto evaluate(const Solution& solution) const -> cost_type
+    constexpr auto aggregate(const CapacityValue& capacity) const -> Cost
     {
-        assert(is_valid(solution));
-
-        return std::apply(
-            [&](const auto&... component) {
-                return std::invoke(
-                    aggregator_,
-                    component.evaluate(solution)...);
-            },
-            components_);
+        return AssignmentCostAggregator{}(capacity);
     }
 
 private:
     const Instance& instance_;
-    [[no_unique_address]] Aggregator aggregator_;
-    std::tuple<Components...> components_;
 };
-
-using SolutionManager = ComposedSolutionManager<
-    AssignmentCostAggregator,
-    CapacityCostComponent>;
 
 } // namespace easylocal::mwe::assignment

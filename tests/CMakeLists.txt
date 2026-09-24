@@ -99,6 +99,20 @@ add_test(
 )
 
 add_executable(
+    easylocal_service_composition_test
+    service_composition.cpp
+)
+target_link_libraries(
+    easylocal_service_composition_test
+    PRIVATE
+        easylocal_assignment_mwe_model
+)
+add_test(
+    NAME easylocal.service-composition
+    COMMAND easylocal_service_composition_test
+)
+
+add_executable(
     easylocal_neighborhood_union_header_self_containment
     neighborhood_union_header_self_containment.cpp
 )
@@ -124,4 +138,53 @@ target_link_libraries(
 add_test(
     NAME easylocal.neighborhood-composition
     COMMAND easylocal_neighborhood_composition_test
+)
+
+function(easylocal_add_compile_failure_test name source expected_diagnostic)
+    add_test(
+        NAME "easylocal.compile-fail.${name}"
+        COMMAND
+            "${CMAKE_COMMAND}"
+            "-DCXX=${CMAKE_CXX_COMPILER}"
+            "-DSOURCE=${CMAKE_CURRENT_SOURCE_DIR}/compile_fail/${source}"
+            "-DINCLUDE_DIR=${PROJECT_SOURCE_DIR}/include"
+            "-DEXPECTED_DIAGNOSTIC=${expected_diagnostic}"
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/expect_compile_failure.cmake"
+    )
+endfunction()
+
+easylocal_add_compile_failure_test(
+    duplicate-component
+    duplicate_component.cpp
+    "a SolutionManager recipe may contain each component type at most once"
+)
+easylocal_add_compile_failure_test(
+    duplicate-delta
+    duplicate_delta.cpp
+    "a neighborhood recipe may attach at most one delta evaluator to each component type"
+)
+easylocal_add_compile_failure_test(
+    inactive-delta
+    inactive_delta.cpp
+    "every attached delta must name a component that is active in the bound SolutionManager recipe"
+)
+easylocal_add_compile_failure_test(
+    incompatible-delta
+    incompatible_delta.cpp
+    "every attached delta evaluator must be compatible with the bound component value, Solution, and Move types"
+)
+easylocal_add_compile_failure_test(
+    missing-delta-evaluate
+    missing_delta_evaluate.cpp
+    "every attached delta evaluator must be compatible with the bound component value, Solution, and Move types"
+)
+easylocal_add_compile_failure_test(
+    delta-not-constructible
+    delta_not_constructible.cpp
+    "a delta evaluator must be constructible from the bound Instance followed by its recipe arguments"
+)
+easylocal_add_compile_failure_test(
+    component-not-constructible
+    component_not_constructible.cpp
+    "a cost component must be constructible from the bound Instance followed by its recipe arguments"
 )

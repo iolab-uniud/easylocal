@@ -1,4 +1,5 @@
 #include "best_improvement.hpp"
+#include "capacity_delta.hpp"
 #include "first_improvement.hpp"
 #include "neighborhood_explorer.hpp"
 #include "random_first_improvement.hpp"
@@ -6,10 +7,13 @@
 #include "solution_manager.hpp"
 
 #include <concepts>
+#include <cstdint>
 #include <functional>
 #include <iostream>
 #include <random>
+#include <ranges>
 #include <string_view>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -18,14 +22,41 @@ namespace
 
 using namespace easylocal::mwe::assignment;
 
+[[nodiscard]]
+auto default_solution_manager_recipe()
+{
+    return easylocal::solution_manager<SolutionManager>()
+         | easylocal::component<CapacityCostComponent>();
+}
+
+[[nodiscard]]
+auto default_neighborhood_recipe()
+{
+    return easylocal::neighborhood<NeighborhoodExplorer>()
+         | easylocal::delta<
+               CapacityCostComponent,
+               ReassignCapacityDeltaEvaluator>();
+}
+
+using DefaultSolutionManagerSpec =
+    decltype(default_solution_manager_recipe());
+using DefaultNeighborhoodSpec =
+    decltype(default_neighborhood_recipe());
+using ConfiguredSolutionManager =
+    typename DefaultSolutionManagerSpec::service_type;
+using ConfiguredNeighborhood =
+    typename DefaultNeighborhoodSpec::service_type;
+
 template<class T>
 concept CanAddSolutionManager = requires(T runner) {
-    std::move(runner).template with_solution_manager<SolutionManager>();
+    std::move(runner).with_solution_manager(
+        default_solution_manager_recipe());
 };
 
 template<class T>
 concept CanAddNeighborhood = requires(T runner) {
-    std::move(runner).template with_neighborhood<NeighborhoodExplorer>();
+    std::move(runner).with_neighborhood(
+        default_neighborhood_recipe());
 };
 
 template<class T>
@@ -43,6 +74,80 @@ concept CanRunWithRng = requires(T& runner, Solution solution, RNG& rng) {
     runner.run(std::move(solution), rng);
 };
 
+class AssignmentCardinalityComponent
+{
+public:
+    using value_type = std::size_t;
+
+    explicit AssignmentCardinalityComponent(const Instance&) noexcept
+    {
+    }
+
+    [[nodiscard]]
+    auto evaluate(const Solution& solution) const noexcept -> value_type
+    {
+        return solution.assignment.size();
+    }
+};
+
+class FallbackSolutionManager : public SolutionManager
+{
+public:
+    using SolutionManager::SolutionManager;
+
+    [[nodiscard]]
+    auto aggregate(
+        const CapacityValue& capacity,
+        const std::size_t cardinality) const -> Cost
+    {
+        return Cost{
+            capacity.total_overload,
+            static_cast<std::int64_t>(cardinality),
+        };
+    }
+};
+
+class SingleMoveNeighborhoodExplorer
+{
+public:
+    using instance_type = Instance;
+    using solution_type = Solution;
+    using move_type = Move;
+
+    SingleMoveNeighborhoodExplorer(
+        const SolutionManager& solution_manager,
+        const Move move,
+        int& make_move_count) noexcept
+        : solution_manager_{solution_manager},
+          move_{move},
+          make_move_count_{make_move_count}
+    {
+    }
+
+    [[nodiscard]]
+    auto instance() const noexcept -> const Instance&
+    {
+        return solution_manager_.instance();
+    }
+
+    [[nodiscard]]
+    auto moves(const Solution&) const
+    {
+        return std::views::single(move_);
+    }
+
+    void make_move(Solution& solution, const Move& move) const noexcept
+    {
+        ++make_move_count_.get();
+        solution.assignment[move.job] = move.destination;
+    }
+
+private:
+    const SolutionManager& solution_manager_;
+    Move move_;
+    std::reference_wrapper<int> make_move_count_;
+};
+
 class ConfiguredNeighborhoodExplorer
 {
 public:
@@ -51,7 +156,7 @@ public:
     using move_type = Move;
 
     ConfiguredNeighborhoodExplorer(
-        SolutionManager& solution_manager,
+        const SolutionManager& solution_manager,
         int& construction_marker) noexcept
         : inner_{solution_manager}
     {
@@ -99,21 +204,24 @@ int main()
     using easylocal::neighborhood;
     using easylocal::solution_manager;
 
+    using easylocal::component;
+    using easylocal::delta;
+
     using NakedRunner = Runner<FirstImprovement>;
     using RunnerWithSM = decltype(
-        std::declval<NakedRunner&&>()
-            .template with_solution_manager<SolutionManager>());
+        std::declval<NakedRunner&&>().with_solution_manager(
+            default_solution_manager_recipe()));
     using ConfiguredRunner = decltype(
-        std::declval<RunnerWithSM&&>()
-            .template with_neighborhood<NeighborhoodExplorer>());
+        std::declval<RunnerWithSM&&>().with_neighborhood(
+            default_neighborhood_recipe()));
     using BoundFirstRunner = decltype(
         std::declval<ConfiguredRunner&&>().bind(
             std::declval<const Instance&>()));
 
     using PipedConfiguredRunner = decltype(
         Runner{FirstImprovement{{.max_evaluations = 1}}}
-        | solution_manager<SolutionManager>()
-        | neighborhood<NeighborhoodExplorer>());
+        | default_solution_manager_recipe()
+        | default_neighborhood_recipe());
 
     static_assert(std::same_as<ConfiguredRunner, PipedConfiguredRunner>);
 
@@ -137,10 +245,10 @@ int main()
 
     static_assert(std::same_as<
         BoundFirstRunner::solution_manager_type,
-        SolutionManager>);
+        ConfiguredSolutionManager>);
     static_assert(std::same_as<
         BoundFirstRunner::neighborhood_explorer_type,
-        NeighborhoodExplorer>);
+        ConfiguredNeighborhood>);
     static_assert(!std::copy_constructible<BoundFirstRunner>);
     static_assert(!std::movable<BoundFirstRunner>);
     static_assert(CanRun<BoundFirstRunner>);
@@ -148,11 +256,11 @@ int main()
 
     using NakedBestRunner = Runner<BestImprovement>;
     using BestRunnerWithSM = decltype(
-        std::declval<NakedBestRunner&&>()
-            .template with_solution_manager<SolutionManager>());
+        std::declval<NakedBestRunner&&>().with_solution_manager(
+            default_solution_manager_recipe()));
     using ConfiguredBestRunner = decltype(
-        std::declval<BestRunnerWithSM&&>()
-            .template with_neighborhood<NeighborhoodExplorer>());
+        std::declval<BestRunnerWithSM&&>().with_neighborhood(
+            default_neighborhood_recipe()));
     using BoundBestRunner = decltype(
         std::declval<ConfiguredBestRunner&&>().bind(
             std::declval<const Instance&>()));
@@ -165,11 +273,11 @@ int main()
 
     using NakedRandomRunner = Runner<RandomFirstImprovement>;
     using RandomRunnerWithSM = decltype(
-        std::declval<NakedRandomRunner&&>()
-            .template with_solution_manager<SolutionManager>());
+        std::declval<NakedRandomRunner&&>().with_solution_manager(
+            default_solution_manager_recipe()));
     using ConfiguredRandomRunner = decltype(
-        std::declval<RandomRunnerWithSM&&>()
-            .template with_neighborhood<NeighborhoodExplorer>());
+        std::declval<RandomRunnerWithSM&&>().with_neighborhood(
+            default_neighborhood_recipe()));
     using BoundRandomRunner = decltype(
         std::declval<ConfiguredRandomRunner&&>().bind(
             std::declval<const Instance&>()));
@@ -191,12 +299,148 @@ int main()
         .assignment = {0, 0, 1},
     };
 
+    const Move relieving_move{
+        .job = 1,
+        .destination = 1,
+    };
+    const Move worsening_move{
+        .job = 2,
+        .destination = 0,
+    };
+
+    int delta_accept_make_moves = 0;
+    auto delta_accept_runner =
+        Runner{FirstImprovement{{.max_evaluations = 2}}}
+        | default_solution_manager_recipe()
+        | (neighborhood<SingleMoveNeighborhoodExplorer>(
+               relieving_move,
+               std::ref(delta_accept_make_moves))
+           | delta<
+                 CapacityCostComponent,
+                 ReassignCapacityDeltaEvaluator>());
+
+    const auto delta_accept_result =
+        delta_accept_runner.bind(instance).run(initial);
+
+    ok &= expect(
+        delta_accept_result.cost == Cost{0, 0},
+        "automatic delta dispatch preserves the accepted candidate cost");
+    ok &= expect(
+        delta_accept_make_moves == 1,
+        "all-delta candidate applies make_move only once, at acceptance");
+
+    int delta_reject_make_moves = 0;
+    auto delta_reject_runner =
+        Runner{FirstImprovement{{.max_evaluations = 2}}}
+        | default_solution_manager_recipe()
+        | (neighborhood<SingleMoveNeighborhoodExplorer>(
+               worsening_move,
+               std::ref(delta_reject_make_moves))
+           | delta<
+                 CapacityCostComponent,
+                 ReassignCapacityDeltaEvaluator>());
+
+    const auto delta_reject_result =
+        delta_reject_runner.bind(instance).run(initial);
+
+    ok &= expect(
+        delta_reject_result.solution.assignment == initial.assignment,
+        "rejected all-delta candidate leaves the incumbent unchanged");
+    ok &= expect(
+        delta_reject_make_moves == 0,
+        "rejected all-delta candidate never materializes a Solution");
+
+    int fallback_make_moves = 0;
+    auto fallback_runner =
+        Runner{FirstImprovement{{.max_evaluations = 2}}}
+        | (solution_manager<FallbackSolutionManager>()
+           | component<CapacityCostComponent>()
+           | component<AssignmentCardinalityComponent>())
+        | (neighborhood<SingleMoveNeighborhoodExplorer>(
+               relieving_move,
+               std::ref(fallback_make_moves))
+           | delta<
+                 CapacityCostComponent,
+                 ReassignCapacityDeltaEvaluator>());
+
+    const auto fallback_result =
+        fallback_runner.bind(instance).run(initial);
+
+    ok &= expect(
+        fallback_result.cost == Cost{0, 3},
+        "missing component delta falls back to full evaluation of that component");
+    ok &= expect(
+        fallback_make_moves == 1,
+        "fallback components share one materialized candidate and acceptance reuses it");
+
+    int fallback_reject_make_moves = 0;
+    auto fallback_reject_runner =
+        Runner{FirstImprovement{{.max_evaluations = 2}}}
+        | (solution_manager<FallbackSolutionManager>()
+           | component<CapacityCostComponent>()
+           | component<AssignmentCardinalityComponent>())
+        | (neighborhood<SingleMoveNeighborhoodExplorer>(
+               worsening_move,
+               std::ref(fallback_reject_make_moves))
+           | delta<
+                 CapacityCostComponent,
+                 ReassignCapacityDeltaEvaluator>());
+
+    const auto fallback_reject_result =
+        fallback_reject_runner.bind(instance).run(initial);
+
+    ok &= expect(
+        fallback_reject_result.solution.assignment == initial.assignment,
+        "rejected mixed delta/fallback candidate leaves the incumbent unchanged");
+    ok &= expect(
+        fallback_reject_make_moves == 1,
+        "mixed delta/fallback rejection materializes the candidate exactly once");
+
+    int no_delta_accept_make_moves = 0;
+    auto no_delta_accept_runner =
+        Runner{FirstImprovement{{.max_evaluations = 2}}}
+        | default_solution_manager_recipe()
+        | neighborhood<SingleMoveNeighborhoodExplorer>(
+              relieving_move,
+              std::ref(no_delta_accept_make_moves));
+
+    const auto no_delta_accept_result =
+        no_delta_accept_runner.bind(instance).run(initial);
+
+    ok &= expect(
+        no_delta_accept_result.cost == Cost{0, 0},
+        "no-delta configuration falls back to full component evaluation");
+    ok &= expect(
+        no_delta_accept_make_moves == 1,
+        "no-delta accepted candidate is materialized exactly once and then promoted");
+
+    int no_delta_reject_make_moves = 0;
+    auto no_delta_reject_runner =
+        Runner{FirstImprovement{{.max_evaluations = 2}}}
+        | default_solution_manager_recipe()
+        | neighborhood<SingleMoveNeighborhoodExplorer>(
+              worsening_move,
+              std::ref(no_delta_reject_make_moves));
+
+    const auto no_delta_reject_result =
+        no_delta_reject_runner.bind(instance).run(initial);
+
+    ok &= expect(
+        no_delta_reject_result.solution.assignment == initial.assignment,
+        "rejected no-delta candidate leaves the incumbent unchanged");
+    ok &= expect(
+        no_delta_reject_make_moves == 1,
+        "no-delta rejection still materializes the candidate exactly once for evaluation");
+
     int construction_marker = 0;
     auto configured_services =
         Runner{FirstImprovement{{.max_evaluations = 8}}}
-            .with_solution_manager<SolutionManager>()
-            .with_neighborhood<ConfiguredNeighborhoodExplorer>(
-                std::ref(construction_marker));
+        | default_solution_manager_recipe()
+        | (neighborhood<ConfiguredNeighborhoodExplorer>(
+               std::ref(construction_marker))
+           | delta<
+                 CapacityCostComponent,
+                 ReassignCapacityDeltaEvaluator>());
 
     ok &= expect(
         construction_marker == 0,
@@ -220,8 +464,8 @@ int main()
                 Runner{FirstImprovement{{
                     .max_evaluations = max_evaluations,
                 }}}
-                    .with_solution_manager<SolutionManager>()
-                    .with_neighborhood<NeighborhoodExplorer>();
+                | default_solution_manager_recipe()
+                | default_neighborhood_recipe();
 
             return runner.bind(instance).run(std::move(solution));
         };
@@ -299,8 +543,8 @@ int main()
 
     const auto empty_neighborhood =
         (Runner{FirstImprovement{{.max_evaluations = 1}}}
-         | solution_manager<SolutionManager>()
-         | neighborhood<NeighborhoodExplorer>())
+         | default_solution_manager_recipe()
+         | default_neighborhood_recipe())
             .bind(single_machine_instance)
             .run(single_machine_solution);
 
@@ -318,8 +562,8 @@ int main()
                 Runner{BestImprovement{{
                     .max_evaluations = max_evaluations,
                 }}}
-                | solution_manager<SolutionManager>()
-                | neighborhood<NeighborhoodExplorer>();
+                | default_solution_manager_recipe()
+                | default_neighborhood_recipe();
 
             return runner.bind(instance).run(std::move(solution));
         };
@@ -388,8 +632,8 @@ int main()
 
     const auto best_empty_neighborhood =
         (Runner{BestImprovement{{.max_evaluations = 1}}}
-         | solution_manager<SolutionManager>()
-         | neighborhood<NeighborhoodExplorer>())
+         | default_solution_manager_recipe()
+         | default_neighborhood_recipe())
             .bind(single_machine_instance)
             .run(single_machine_solution);
 
@@ -407,8 +651,10 @@ int main()
                 Runner{RandomFirstImprovement{{
                     .max_evaluations = max_evaluations,
                 }}}
-                    .with_solution_manager<SolutionManager>()
-                    .with_neighborhood<NeighborhoodExplorer>();
+                    .with_solution_manager(
+                        default_solution_manager_recipe())
+                    .with_neighborhood(
+                        default_neighborhood_recipe());
 
             return runner.bind(instance).run(std::move(solution), rng);
         };
@@ -454,8 +700,8 @@ int main()
     std::mt19937 random_empty_rng{99};
     const auto random_empty_neighborhood =
         (Runner{RandomFirstImprovement{{.max_evaluations = 1}}}
-         | solution_manager<SolutionManager>()
-         | neighborhood<NeighborhoodExplorer>())
+         | default_solution_manager_recipe()
+         | default_neighborhood_recipe())
             .bind(single_machine_instance)
             .run(single_machine_solution, random_empty_rng);
 

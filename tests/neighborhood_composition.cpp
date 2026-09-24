@@ -24,6 +24,13 @@ namespace
 
 using namespace easylocal::mwe::assignment;
 
+[[nodiscard]]
+auto default_solution_manager_recipe()
+{
+    return easylocal::solution_manager<SolutionManager>()
+         | easylocal::component<CapacityCostComponent>();
+}
+
 struct SwapMove
 {
     std::size_t first;
@@ -202,7 +209,7 @@ int main()
 
     using FluentRunner = decltype(
         Runner{FirstImprovement{{.max_evaluations = 32}}}
-            .with_solution_manager<SolutionManager>()
+            .with_solution_manager(default_solution_manager_recipe())
             .with_neighborhood(neighborhood_union(
                 neighborhood<NeighborhoodExplorer>(),
                 neighborhood<SwapNeighborhoodExplorer>(),
@@ -210,7 +217,7 @@ int main()
 
     using PipelineRunner = decltype(
         Runner{FirstImprovement{{.max_evaluations = 32}}}
-        | solution_manager<SolutionManager>()
+        | default_solution_manager_recipe()
         | neighborhood_union(
               neighborhood<NeighborhoodExplorer>(),
               neighborhood<SwapNeighborhoodExplorer>(),
@@ -220,7 +227,7 @@ int main()
 
     auto collector =
         Runner{CollectNeighborhoodEffects{}}
-        | solution_manager<SolutionManager>()
+        | default_solution_manager_recipe()
         | union_spec;
 
     auto bound_collector = collector.bind(instance);
@@ -242,7 +249,7 @@ int main()
 
     auto first_runner =
         Runner{FirstImprovement{{.max_evaluations = 32}}}
-        | solution_manager<SolutionManager>()
+        | default_solution_manager_recipe()
         | neighborhood_union(
               neighborhood<NeighborhoodExplorer>(),
               neighborhood<SwapNeighborhoodExplorer>(),
@@ -257,7 +264,7 @@ int main()
 
     auto best_runner =
         Runner{BestImprovement{{.max_evaluations = 64}}}
-        | solution_manager<SolutionManager>()
+        | default_solution_manager_recipe()
         | neighborhood_union(
               neighborhood<NeighborhoodExplorer>(),
               neighborhood<SwapNeighborhoodExplorer>(),
@@ -272,7 +279,7 @@ int main()
 
     auto random_runner =
         Runner{RandomFirstImprovement{{.max_evaluations = 32}}}
-        | solution_manager<SolutionManager>()
+        | default_solution_manager_recipe()
         | neighborhood_union(
               neighborhood<NeighborhoodExplorer>(),
               neighborhood<SwapNeighborhoodExplorer>(),

@@ -43,14 +43,14 @@ public:
         const Context& context,
         typename Context::solution_type solution) const
     {
-        const auto& solution_manager = context.solution_manager();
         const auto& neighborhood = context.neighborhood_explorer();
+        const auto evaluation = context.evaluation();
 
         using solution_type = typename Context::solution_type;
         using cost_type = typename Context::cost_type;
         using result_type = FirstImprovementResult<solution_type, cost_type>;
 
-        auto current_cost = solution_manager.evaluate(solution);
+        auto current = evaluation.evaluate(solution);
         std::size_t evaluations = 1;
 
         while (true)
@@ -63,24 +63,23 @@ public:
                 {
                     return result_type{
                         .solution = std::move(solution),
-                        .cost = current_cost,
+                        .cost = current.cost(),
                         .evaluations = evaluations,
                         .termination = FirstImprovementTermination::
                             evaluation_budget_exhausted,
                     };
                 }
 
-                solution_type candidate = solution;
-                neighborhood.make_move(candidate, move);
-
-                const auto candidate_cost =
-                    solution_manager.evaluate(candidate);
+                auto candidate =
+                    evaluation.after_move(solution, current, move);
                 ++evaluations;
 
-                if (candidate_cost < current_cost)
+                if (candidate.cost() < current.cost())
                 {
-                    solution = std::move(candidate);
-                    current_cost = candidate_cost;
+                    evaluation.accept(
+                        solution,
+                        current,
+                        std::move(candidate));
                     improved = true;
                     break;
                 }
@@ -90,7 +89,7 @@ public:
             {
                 return result_type{
                     .solution = std::move(solution),
-                    .cost = current_cost,
+                    .cost = current.cost(),
                     .evaluations = evaluations,
                     .termination = FirstImprovementTermination::local_optimum,
                 };

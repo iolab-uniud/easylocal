@@ -1,0 +1,222 @@
+#pragma once
+
+#include <easylocal/runner.hpp>
+
+#include <compare>
+#include <ranges>
+
+namespace compile_fail_fixture
+{
+
+struct Instance
+{
+};
+
+struct Solution
+{
+    int value{};
+};
+
+struct Move
+{
+    int delta{1};
+};
+
+struct Cost
+{
+    int value{};
+
+    auto operator<=>(const Cost&) const = default;
+};
+
+class BaseSolutionManager
+{
+public:
+    using instance_type = Instance;
+    using solution_type = Solution;
+
+    explicit BaseSolutionManager(const Instance& instance) noexcept
+        : instance_{instance}
+    {
+    }
+
+    [[nodiscard]]
+    auto instance() const noexcept -> const Instance&
+    {
+        return instance_;
+    }
+
+    [[nodiscard]]
+    auto is_valid(const Solution&) const noexcept -> bool
+    {
+        return true;
+    }
+
+    [[nodiscard]]
+    auto aggregate(const int first) const noexcept -> Cost
+    {
+        return Cost{first};
+    }
+
+    [[nodiscard]]
+    auto aggregate(const int first, const int second) const noexcept -> Cost
+    {
+        return Cost{first + second};
+    }
+
+private:
+    const Instance& instance_;
+};
+
+struct ComponentA
+{
+    using value_type = int;
+
+    explicit ComponentA(const Instance&) noexcept
+    {
+    }
+
+    [[nodiscard]]
+    auto evaluate(const Solution& solution) const noexcept -> int
+    {
+        return solution.value;
+    }
+};
+
+struct ComponentB
+{
+    using value_type = int;
+
+    explicit ComponentB(const Instance&) noexcept
+    {
+    }
+
+    [[nodiscard]]
+    auto evaluate(const Solution& solution) const noexcept -> int
+    {
+        return solution.value;
+    }
+};
+
+class Neighborhood
+{
+public:
+    using instance_type = Instance;
+    using solution_type = Solution;
+    using move_type = Move;
+
+    explicit Neighborhood(const BaseSolutionManager& solution_manager) noexcept
+        : solution_manager_{solution_manager}
+    {
+    }
+
+    [[nodiscard]]
+    auto instance() const noexcept -> const Instance&
+    {
+        return solution_manager_.instance();
+    }
+
+    [[nodiscard]]
+    auto moves(const Solution&) const
+    {
+        return std::views::single(Move{});
+    }
+
+    void make_move(Solution& solution, const Move& move) const noexcept
+    {
+        solution.value += move.delta;
+    }
+
+private:
+    const BaseSolutionManager& solution_manager_;
+};
+
+struct DeltaA
+{
+    explicit DeltaA(const Instance&) noexcept
+    {
+    }
+
+    [[nodiscard]]
+    auto delta_evaluate(const Solution&, const Move& move) const noexcept -> int
+    {
+        return move.delta;
+    }
+};
+
+struct AnotherDeltaA
+{
+    explicit AnotherDeltaA(const Instance&) noexcept
+    {
+    }
+
+    [[nodiscard]]
+    auto delta_evaluate(const Solution&, const Move& move) const noexcept -> int
+    {
+        return move.delta;
+    }
+};
+
+struct DeltaB
+{
+    explicit DeltaB(const Instance&) noexcept
+    {
+    }
+
+    [[nodiscard]]
+    auto delta_evaluate(const Solution&, const Move& move) const noexcept -> int
+    {
+        return move.delta;
+    }
+};
+
+struct MalformedDeltaA
+{
+    explicit MalformedDeltaA(const Instance&) noexcept
+    {
+    }
+
+    [[nodiscard]]
+    auto delta_evaluate(const Solution&, const Move&) const noexcept
+        -> const char*
+    {
+        return "not applicable";
+    }
+};
+
+struct MissingDeltaEvaluateA
+{
+    explicit MissingDeltaEvaluateA(const Instance&) noexcept
+    {
+    }
+};
+
+struct NonConstructibleDeltaA
+{
+    NonConstructibleDeltaA() = default;
+
+    [[nodiscard]]
+    auto delta_evaluate(const Solution&, const Move& move) const noexcept -> int
+    {
+        return move.delta;
+    }
+};
+
+struct NonConstructibleComponent
+{
+    using value_type = int;
+
+    NonConstructibleComponent() = default;
+
+    [[nodiscard]]
+    auto evaluate(const Solution& solution) const noexcept -> int
+    {
+        return solution.value;
+    }
+};
+
+struct Algorithm
+{
+};
+
+} // namespace compile_fail_fixture
