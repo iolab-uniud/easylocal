@@ -7,7 +7,7 @@
 namespace easylocal::mwe::tsp
 {
 
-struct Solution
+struct Tour
 {
     std::vector<city_id> tour;
 };

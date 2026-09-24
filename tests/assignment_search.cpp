@@ -30,14 +30,14 @@ using easylocal::search::RandomFirstImprovementTermination;
 [[nodiscard]]
 auto default_solution_manager_recipe()
 {
-    return easylocal::solution_manager<SolutionManager>()
+    return easylocal::solution_manager<AssignmentSolutionManager>()
          | easylocal::component<CapacityCostComponent>();
 }
 
 [[nodiscard]]
 auto default_neighborhood_recipe()
 {
-    return easylocal::neighborhood<NeighborhoodExplorer>()
+    return easylocal::neighborhood<ReassignJobNeighborhoodExplorer>()
          | easylocal::delta<
                CapacityCostComponent,
                ReassignCapacityDeltaEvaluator>();
@@ -48,21 +48,21 @@ class AssignmentCardinalityComponent
 public:
     using value_type = std::size_t;
 
-    explicit AssignmentCardinalityComponent(const Instance&) noexcept
+    explicit AssignmentCardinalityComponent(const AssignmentInstance&) noexcept
     {
     }
 
     [[nodiscard]]
-    auto evaluate(const Solution& solution) const noexcept -> value_type
+    auto evaluate(const AssignmentSolution& solution) const noexcept -> value_type
     {
         return solution.assignment.size();
     }
 };
 
-class FallbackSolutionManager : public SolutionManager
+class FallbackSolutionManager : public AssignmentSolutionManager
 {
 public:
-    using SolutionManager::SolutionManager;
+    using AssignmentSolutionManager::AssignmentSolutionManager;
 
     [[nodiscard]]
     auto aggregate(
@@ -79,13 +79,13 @@ public:
 class SingleMoveNeighborhoodExplorer
 {
 public:
-    using instance_type = Instance;
-    using solution_type = Solution;
-    using move_type = Move;
+    using instance_type = AssignmentInstance;
+    using solution_type = AssignmentSolution;
+    using move_type = ReassignJobMove;
 
     SingleMoveNeighborhoodExplorer(
-        const SolutionManager& solution_manager,
-        const Move move,
+        const AssignmentSolutionManager& solution_manager,
+        const ReassignJobMove move,
         int& make_move_count) noexcept
         : solution_manager_{solution_manager},
           move_{move},
@@ -94,38 +94,38 @@ public:
     }
 
     [[nodiscard]]
-    auto instance() const noexcept -> const Instance&
+    auto instance() const noexcept -> const AssignmentInstance&
     {
         return solution_manager_.instance();
     }
 
     [[nodiscard]]
-    auto moves(const Solution&) const
+    auto moves(const AssignmentSolution&) const
     {
         return std::views::single(move_);
     }
 
-    void make_move(Solution& solution, const Move& move) const noexcept
+    void make_move(AssignmentSolution& solution, const ReassignJobMove& move) const noexcept
     {
         ++make_move_count_.get();
         solution.assignment[move.job] = move.destination;
     }
 
 private:
-    const SolutionManager& solution_manager_;
-    Move move_;
+    const AssignmentSolutionManager& solution_manager_;
+    ReassignJobMove move_;
     std::reference_wrapper<int> make_move_count_;
 };
 
 class ConstructionTrackingNeighborhoodExplorer
 {
 public:
-    using instance_type = Instance;
-    using solution_type = Solution;
-    using move_type = Move;
+    using instance_type = AssignmentInstance;
+    using solution_type = AssignmentSolution;
+    using move_type = ReassignJobMove;
 
     ConstructionTrackingNeighborhoodExplorer(
-        const SolutionManager& solution_manager,
+        const AssignmentSolutionManager& solution_manager,
         int& construction_marker) noexcept
         : inner_{solution_manager}
     {
@@ -133,24 +133,24 @@ public:
     }
 
     [[nodiscard]]
-    auto instance() const noexcept -> const Instance&
+    auto instance() const noexcept -> const AssignmentInstance&
     {
         return inner_.instance();
     }
 
     [[nodiscard]]
-    auto moves(const Solution& solution) const
+    auto moves(const AssignmentSolution& solution) const
     {
         return inner_.moves(solution);
     }
 
-    void make_move(Solution& solution, const Move& move) const noexcept
+    void make_move(AssignmentSolution& solution, const ReassignJobMove& move) const noexcept
     {
         inner_.make_move(solution, move);
     }
 
 private:
-    NeighborhoodExplorer inner_;
+    ReassignJobNeighborhoodExplorer inner_;
 };
 
 auto expect(const bool condition, const std::string_view description) -> bool
@@ -178,20 +178,20 @@ int main()
 
     bool ok = true;
 
-    const Instance instance{
+    const AssignmentInstance instance{
         .demand = {4, 3, 2},
         .capacity = {5, 5},
     };
 
-    const Solution initial{
+    const AssignmentSolution initial{
         .assignment = {0, 0, 1},
     };
 
-    const Move relieving_move{
+    const ReassignJobMove relieving_move{
         .job = 1,
         .destination = 1,
     };
-    const Move worsening_move{
+    const ReassignJobMove worsening_move{
         .job = 2,
         .destination = 0,
     };
@@ -236,7 +236,7 @@ int main()
         "rejected all-delta candidate leaves the incumbent unchanged");
     ok &= expect(
         delta_reject_make_moves == 0,
-        "rejected all-delta candidate never materializes a Solution");
+        "rejected all-delta candidate never materializes an AssignmentSolution");
 
     int fallback_make_moves = 0;
     auto fallback_runner =
@@ -349,7 +349,7 @@ int main()
         "constructor arguments captured by the runner recipe reach the bound neighborhood");
 
     const auto run_with_budget =
-        [&](const std::size_t max_evaluations, Solution solution) {
+        [&](const std::size_t max_evaluations, AssignmentSolution solution) {
             auto runner =
                 Runner{FirstImprovement{{
                     .max_evaluations = max_evaluations,
@@ -423,11 +423,11 @@ int main()
             FirstImprovementTermination::evaluation_budget_exhausted,
         "partial neighborhood scan cannot certify local optimality");
 
-    const Instance single_machine_instance{
+    const AssignmentInstance single_machine_instance{
         .demand = {1, 2},
         .capacity = {10},
     };
-    const Solution single_machine_solution{
+    const AssignmentSolution single_machine_solution{
         .assignment = {0, 0},
     };
 
@@ -447,7 +447,7 @@ int main()
         "empty neighborhood is locally optimal even when the budget is exhausted");
 
     const auto run_best_with_budget =
-        [&](const std::size_t max_evaluations, Solution solution) {
+        [&](const std::size_t max_evaluations, AssignmentSolution solution) {
             auto runner =
                 Runner{BestImprovement{{
                     .max_evaluations = max_evaluations,
@@ -536,7 +536,7 @@ int main()
         "best improvement recognizes an empty neighborhood as locally optimal");
 
     const auto run_random_with_budget =
-        [&](const std::size_t max_evaluations, Solution solution, auto& rng) {
+        [&](const std::size_t max_evaluations, AssignmentSolution solution, auto& rng) {
             auto runner =
                 Runner{RandomFirstImprovement{{
                     .max_evaluations = max_evaluations,

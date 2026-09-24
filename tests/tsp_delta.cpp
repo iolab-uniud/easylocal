@@ -29,7 +29,7 @@ int main()
 
     bool ok = true;
 
-    const Instance instance{
+    const TspInstance instance{
         .city_count = 5,
         .distances = {
             0.0, 1.0, 2.0, 2.5, 1.5,
@@ -39,12 +39,12 @@ int main()
             1.5, 2.5, 2.0, 1.25, 0.0,
         },
     };
-    const Solution solution{
+    const Tour solution{
         .tour = {0, 2, 1, 3, 4},
     };
 
-    const SolutionManager solution_manager{instance};
-    const NeighborhoodExplorer neighborhood{solution_manager};
+    const TspSolutionManager solution_manager{instance};
+    const TwoOptNeighborhoodExplorer neighborhood{solution_manager};
     const TourLengthComponent component{instance};
     const TwoOptTourLengthDeltaEvaluator delta_evaluator{instance};
 
@@ -52,7 +52,7 @@ int main()
 
     for (const auto move : neighborhood.moves(solution))
     {
-        Solution candidate = solution;
+        Tour candidate = solution;
         neighborhood.make_move(candidate, move);
 
         const auto full_value = component.evaluate(candidate);

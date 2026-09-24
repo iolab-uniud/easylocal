@@ -25,8 +25,8 @@ namespace detail
 
 [[nodiscard]]
 inline auto machine_load(
-    const Instance& instance,
-    const Solution& solution,
+    const AssignmentInstance& instance,
+    const AssignmentSolution& solution,
     const machine_id machine) -> quantity_type
 {
     assert(solution.assignment.size() == instance.demand.size());
@@ -59,13 +59,13 @@ class CapacityCostComponent
 public:
     using value_type = CapacityValue;
 
-    explicit CapacityCostComponent(const Instance& instance) noexcept
+    explicit CapacityCostComponent(const AssignmentInstance& instance) noexcept
         : instance_{instance}
     {
     }
 
     [[nodiscard]]
-    auto evaluate(const Solution& solution) const -> value_type
+    auto evaluate(const AssignmentSolution& solution) const -> value_type
     {
         assert(solution.assignment.size() == instance_.demand.size());
 
@@ -94,7 +94,7 @@ public:
     }
 
 private:
-    const Instance& instance_;
+    const AssignmentInstance& instance_;
 };
 
 } // namespace easylocal::mwe::assignment

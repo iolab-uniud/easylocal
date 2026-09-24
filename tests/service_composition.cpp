@@ -30,12 +30,12 @@ class AssignmentCardinalityComponent
 public:
     using value_type = std::size_t;
 
-    explicit AssignmentCardinalityComponent(const Instance&) noexcept
+    explicit AssignmentCardinalityComponent(const AssignmentInstance&) noexcept
     {
     }
 
     [[nodiscard]]
-    auto evaluate(const Solution& solution) const noexcept -> value_type
+    auto evaluate(const AssignmentSolution& solution) const noexcept -> value_type
     {
         return solution.assignment.size();
     }
@@ -44,12 +44,12 @@ public:
 class AssignmentCardinalityDeltaEvaluator
 {
 public:
-    explicit AssignmentCardinalityDeltaEvaluator(const Instance&) noexcept
+    explicit AssignmentCardinalityDeltaEvaluator(const AssignmentInstance&) noexcept
     {
     }
 
     [[nodiscard]]
-    auto delta_evaluate(const Solution&, const Move&) const noexcept
+    auto delta_evaluate(const AssignmentSolution&, const ReassignJobMove&) const noexcept
         -> std::size_t
     {
         return 0;
@@ -59,23 +59,23 @@ public:
 class IncompatibleCapacityDeltaEvaluator
 {
 public:
-    explicit IncompatibleCapacityDeltaEvaluator(const Instance&) noexcept
+    explicit IncompatibleCapacityDeltaEvaluator(const AssignmentInstance&) noexcept
     {
     }
 
     [[nodiscard]]
-    auto delta_evaluate(const Solution&, const Move&) const noexcept
+    auto delta_evaluate(const AssignmentSolution&, const ReassignJobMove&) const noexcept
         -> const char*
     {
         return "not a capacity delta";
     }
 };
 
-class TwoStageSolutionManager : public SolutionManager
+class TwoStageSolutionManager : public AssignmentSolutionManager
 {
 public:
-    using SolutionManager::SolutionManager;
-    using SolutionManager::aggregate;
+    using AssignmentSolutionManager::AssignmentSolutionManager;
+    using AssignmentSolutionManager::aggregate;
 
     [[nodiscard]]
     auto aggregate(
@@ -92,13 +92,13 @@ public:
 class CountingSingleMoveNeighborhood
 {
 public:
-    using instance_type = Instance;
-    using solution_type = Solution;
-    using move_type = Move;
+    using instance_type = AssignmentInstance;
+    using solution_type = AssignmentSolution;
+    using move_type = ReassignJobMove;
 
     CountingSingleMoveNeighborhood(
-        const SolutionManager& solution_manager,
-        const Move move,
+        const AssignmentSolutionManager& solution_manager,
+        const ReassignJobMove move,
         int& make_move_count) noexcept
         : solution_manager_{solution_manager},
           move_{move},
@@ -107,26 +107,26 @@ public:
     }
 
     [[nodiscard]]
-    auto instance() const noexcept -> const Instance&
+    auto instance() const noexcept -> const AssignmentInstance&
     {
         return solution_manager_.instance();
     }
 
     [[nodiscard]]
-    auto moves(const Solution&) const
+    auto moves(const AssignmentSolution&) const
     {
         return std::views::single(move_);
     }
 
-    void make_move(Solution& solution, const Move& move) const noexcept
+    void make_move(AssignmentSolution& solution, const ReassignJobMove& move) const noexcept
     {
         ++make_move_count_.get();
         solution.assignment[move.job] = move.destination;
     }
 
 private:
-    const SolutionManager& solution_manager_;
-    Move move_;
+    const AssignmentSolutionManager& solution_manager_;
+    ReassignJobMove move_;
     std::reference_wrapper<int> make_move_count_;
 };
 
@@ -142,10 +142,10 @@ public:
     using CapacityCostComponent::CapacityCostComponent;
 };
 
-class TwoCapacitySolutionManager : public SolutionManager
+class TwoCapacitySolutionManager : public AssignmentSolutionManager
 {
 public:
-    using SolutionManager::SolutionManager;
+    using AssignmentSolutionManager::AssignmentSolutionManager;
 
     [[nodiscard]]
     auto aggregate(
@@ -181,14 +181,14 @@ int main()
 
     int type_only_make_move_count = 0;
 
-    using BareSMRecipe = decltype(solution_manager<SolutionManager>());
-    using BareNHERecipe = decltype(neighborhood<NeighborhoodExplorer>());
+    using BareSMRecipe = decltype(solution_manager<AssignmentSolutionManager>());
+    using BareNHERecipe = decltype(neighborhood<ReassignJobNeighborhoodExplorer>());
     static_assert(std::same_as<
         typename BareSMRecipe::service_type,
-        SolutionManager>);
+        AssignmentSolutionManager>);
     static_assert(std::same_as<
         typename BareNHERecipe::service_type,
-        NeighborhoodExplorer>);
+        ReassignJobNeighborhoodExplorer>);
 
     using CapacitySpec = decltype(component<CapacityCostComponent>());
     using CardinalitySpec = decltype(component<AssignmentCardinalityComponent>());
@@ -209,14 +209,14 @@ int main()
 
     using FluentNHERecipe = decltype(
         neighborhood<CountingSingleMoveNeighborhood>(
-            Move{.job = 1, .destination = 1},
+            ReassignJobMove{.job = 1, .destination = 1},
             std::ref(type_only_make_move_count))
             .with_delta<
                 CapacityCostComponent,
                 ReassignCapacityDeltaEvaluator>());
     using PipedNHERecipe = decltype(
         neighborhood<CountingSingleMoveNeighborhood>(
-            Move{.job = 1, .destination = 1},
+            ReassignJobMove{.job = 1, .destination = 1},
             std::ref(type_only_make_move_count))
         | delta<
               CapacityCostComponent,
@@ -261,7 +261,7 @@ int main()
 
     const auto hard_neighborhood_recipe =
         neighborhood<CountingSingleMoveNeighborhood>(
-            Move{.job = 1, .destination = 1},
+            ReassignJobMove{.job = 1, .destination = 1},
             std::ref(type_only_make_move_count))
         | delta<CapacityCostComponent, ReassignCapacityDeltaEvaluator>();
 
@@ -278,7 +278,7 @@ int main()
 
     const auto inactive_delta_recipe =
         neighborhood<CountingSingleMoveNeighborhood>(
-            Move{.job = 1, .destination = 1},
+            ReassignJobMove{.job = 1, .destination = 1},
             std::ref(type_only_make_move_count))
         | delta<
               AssignmentCardinalityComponent,
@@ -291,7 +291,7 @@ int main()
 
     const auto incompatible_delta_recipe =
         neighborhood<CountingSingleMoveNeighborhood>(
-            Move{.job = 1, .destination = 1},
+            ReassignJobMove{.job = 1, .destination = 1},
             std::ref(type_only_make_move_count))
         | delta<
               CapacityCostComponent,
@@ -307,14 +307,14 @@ int main()
 
     bool ok = true;
 
-    const Instance instance{
+    const AssignmentInstance instance{
         .demand = {4, 3, 2},
         .capacity = {5, 5},
     };
-    const Solution initial{
+    const AssignmentSolution initial{
         .assignment = {0, 0, 1},
     };
-    const Move relieving_move{
+    const ReassignJobMove relieving_move{
         .job = 1,
         .destination = 1,
     };
@@ -389,7 +389,7 @@ int main()
         full_result.cost.get<0>() == 0 &&
             full_result.cost.get<1>() == 0 &&
             full_result.cost.get<2>() == 3,
-        "hard+soft stage uses a distinct local delta set on the same Solution and Move types");
+        "hard+soft stage uses a distinct local delta set on the same AssignmentSolution and ReassignJobMove types");
     ok &= expect(
         full_make_moves == 1,
         "hard+soft all-delta stage applies the accepted move exactly once");

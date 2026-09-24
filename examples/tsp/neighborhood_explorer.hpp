@@ -18,8 +18,8 @@
 namespace easylocal::mwe::tsp
 {
 
-class NeighborhoodExplorer
-    : public easylocal::neighborhood_explorer_base<SolutionManager, TwoOptMove>
+class TwoOptNeighborhoodExplorer
+    : public easylocal::neighborhood_explorer_base<TspSolutionManager, TwoOptMove>
 {
 private:
     [[nodiscard]]
@@ -88,7 +88,7 @@ private:
 
 #ifndef NDEBUG
     [[nodiscard]]
-    static auto debug_signature(const Solution& solution) noexcept
+    static auto debug_signature(const Tour& solution) noexcept
         -> std::uint64_t
     {
         std::uint64_t signature = 1469598103934665603ULL;
@@ -113,12 +113,12 @@ private:
         random_moves_view() = default;
 
         random_moves_view(
-            const Solution& solution,
+            const Tour& solution,
             RNG& rng) noexcept
             : solution_{&solution},
               rng_{&rng},
               city_count_{solution.tour.size()},
-              move_count_{NeighborhoodExplorer::move_count(city_count_)}
+              move_count_{TwoOptNeighborhoodExplorer::move_count(city_count_)}
 #ifndef NDEBUG
               , expected_signature_{debug_signature(solution)}
 #endif
@@ -135,7 +135,7 @@ private:
             iterator() = default;
 
             iterator(
-                const Solution& solution,
+                const Tour& solution,
                 RNG& rng,
                 const std::size_t city_count,
                 const std::size_t move_count
@@ -163,7 +163,7 @@ private:
 #ifndef NDEBUG
                 assert(
                     debug_signature(*solution_) == expected_signature_ &&
-                    "neighborhood range invalidated by Solution mutation");
+                    "neighborhood range invalidated by Tour mutation");
 #endif
                 return current_;
             }
@@ -173,7 +173,7 @@ private:
 #ifndef NDEBUG
                 assert(
                     debug_signature(*solution_) == expected_signature_ &&
-                    "neighborhood range invalidated by Solution mutation");
+                    "neighborhood range invalidated by Tour mutation");
 #endif
                 draw();
                 return *this;
@@ -199,12 +199,12 @@ private:
                     0,
                     move_count_ - 1,
                 };
-                current_ = NeighborhoodExplorer::move_at_rank(
+                current_ = TwoOptNeighborhoodExplorer::move_at_rank(
                     city_count_,
                     distribution(*rng_));
             }
 
-            const Solution* solution_{nullptr};
+            const Tour* solution_{nullptr};
             RNG* rng_{nullptr};
             std::size_t city_count_{0};
             std::size_t move_count_{0};
@@ -241,7 +241,7 @@ private:
         }
 
     private:
-        const Solution* solution_{nullptr};
+        const Tour* solution_{nullptr};
         RNG* rng_{nullptr};
         std::size_t city_count_{0};
         std::size_t move_count_{0};
@@ -256,7 +256,7 @@ public:
 
     [[nodiscard]]
     auto is_valid(
-        const Solution& solution,
+        const Tour& solution,
         const TwoOptMove& move) const noexcept -> bool
     {
         if (!solution_manager_.is_valid(solution))
@@ -271,7 +271,7 @@ public:
     }
 
     [[nodiscard]]
-    auto moves(const Solution& solution) const
+    auto moves(const Tour& solution) const
     {
         assert(solution_manager_.is_valid(solution));
 
@@ -283,7 +283,7 @@ public:
                    [&solution, expected_signature](const TwoOptMove& move) {
                        assert(
                            debug_signature(solution) == expected_signature &&
-                           "neighborhood range invalidated by Solution mutation");
+                           "neighborhood range invalidated by Tour mutation");
                        return move;
                    });
 #else
@@ -293,7 +293,7 @@ public:
 
     [[nodiscard]]
     auto first_move(
-        const Solution& solution,
+        const Tour& solution,
         TwoOptMove& move) const noexcept -> bool
     {
         assert(solution_manager_.is_valid(solution));
@@ -302,7 +302,7 @@ public:
 
     [[nodiscard]]
     auto next_move(
-        const Solution& solution,
+        const Tour& solution,
         TwoOptMove& move) const noexcept -> bool
     {
         assert(solution_manager_.is_valid(solution));
@@ -318,7 +318,7 @@ public:
     template<std::uniform_random_bit_generator RNG>
     [[nodiscard]]
     auto random_moves(
-        const Solution& solution,
+        const Tour& solution,
         RNG& rng) const
     {
         assert(solution_manager_.is_valid(solution));
@@ -326,7 +326,7 @@ public:
     }
 
     void make_move(
-        Solution& solution,
+        Tour& solution,
         const TwoOptMove& move) const noexcept
     {
         assert(is_valid(solution, move));

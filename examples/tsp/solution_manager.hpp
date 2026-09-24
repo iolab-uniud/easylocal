@@ -11,14 +11,14 @@
 namespace easylocal::mwe::tsp
 {
 
-class SolutionManager
-    : public easylocal::solution_manager_base<Instance, Solution>
+class TspSolutionManager
+    : public easylocal::solution_manager_base<TspInstance, Tour>
 {
 public:
     using solution_manager_base::solution_manager_base;
 
     [[nodiscard]]
-    auto is_valid(const Solution& solution) const noexcept -> bool
+    auto is_valid(const Tour& solution) const noexcept -> bool
     {
         if (solution.tour.size() != instance_.city_count)
         {

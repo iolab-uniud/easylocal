@@ -10,7 +10,7 @@ namespace easylocal::mwe::tsp
 using city_id = std::size_t;
 using distance_type = double;
 
-struct Instance
+struct TspInstance
 {
     std::size_t city_count{};
     std::vector<distance_type> distances;

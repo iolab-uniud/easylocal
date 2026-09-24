@@ -20,7 +20,7 @@ using namespace easylocal::mwe::tsp;
 
 struct ProbeResult
 {
-    Solution solution;
+    Tour solution;
     distance_type initial_cost;
     distance_type candidate_cost;
     distance_type current_cost;
@@ -67,23 +67,23 @@ private:
     bool accept_;
 };
 
-class CountingNeighborhoodExplorer : public NeighborhoodExplorer
+class CountingNeighborhoodExplorer : public TwoOptNeighborhoodExplorer
 {
 public:
     CountingNeighborhoodExplorer(
-        const SolutionManager& solution_manager,
+        const TspSolutionManager& solution_manager,
         int& make_move_count) noexcept
-        : NeighborhoodExplorer{solution_manager},
+        : TwoOptNeighborhoodExplorer{solution_manager},
           make_move_count_{make_move_count}
     {
     }
 
     void make_move(
-        Solution& solution,
+        Tour& solution,
         const TwoOptMove& move) const noexcept
     {
         ++make_move_count_;
-        NeighborhoodExplorer::make_move(solution, move);
+        TwoOptNeighborhoodExplorer::make_move(solution, move);
     }
 
 private:
@@ -114,7 +114,7 @@ int main()
 
     bool ok = true;
 
-    const Instance instance{
+    const TspInstance instance{
         .city_count = 5,
         .distances = {
             0.0, 1.0, 2.0, 2.5, 1.5,
@@ -125,7 +125,7 @@ int main()
         },
     };
 
-    const Solution initial{
+    const Tour initial{
         .tour = {0, 2, 1, 3, 4},
     };
     const TwoOptMove improving_move{
@@ -134,13 +134,13 @@ int main()
     };
 
     const auto manager_recipe =
-        solution_manager<SolutionManager>()
+        solution_manager<TspSolutionManager>()
         | component<TourLengthComponent>();
 
     auto fallback_runner =
         Runner{ProbeOneMove{improving_move, true}}
         | manager_recipe
-        | neighborhood<NeighborhoodExplorer>();
+        | neighborhood<TwoOptNeighborhoodExplorer>();
 
     const auto fallback_result = fallback_runner.bind(instance).run(initial);
 

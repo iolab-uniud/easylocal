@@ -31,14 +31,14 @@ constexpr auto operator+(
 class TwoOptTourLengthDeltaEvaluator
 {
 public:
-    explicit TwoOptTourLengthDeltaEvaluator(const Instance& instance) noexcept
+    explicit TwoOptTourLengthDeltaEvaluator(const TspInstance& instance) noexcept
         : instance_{instance}
     {
     }
 
     [[nodiscard]]
     auto delta_evaluate(
-        const Solution& solution,
+        const Tour& solution,
         const TwoOptMove& move) const noexcept -> TourLengthDelta
     {
         assert(solution.tour.size() == instance_.city_count);
@@ -68,7 +68,7 @@ public:
     }
 
 private:
-    const Instance& instance_;
+    const TspInstance& instance_;
 };
 
 } // namespace easylocal::mwe::tsp

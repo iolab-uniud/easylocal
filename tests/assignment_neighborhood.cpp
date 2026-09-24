@@ -48,19 +48,19 @@ int main()
 
     bool ok = true;
 
-    const Instance instance{
+    const AssignmentInstance instance{
         .demand = {2, 2},
         .capacity = {3, 3, 3},
     };
 
-    const SolutionManager solution_manager{instance};
-    const NeighborhoodExplorer neighborhood{solution_manager};
+    const AssignmentSolutionManager solution_manager{instance};
+    const ReassignJobNeighborhoodExplorer neighborhood{solution_manager};
 
     static_assert(std::same_as<
-                  NeighborhoodExplorer::random_sampling,
+                  ReassignJobNeighborhoodExplorer::random_sampling,
                   easylocal::sampling::without_replacement>);
 
-    const Solution solution{
+    const AssignmentSolution solution{
         .assignment = {1, 2},
     };
 
@@ -82,7 +82,7 @@ int main()
         "moves are generated deterministically in job-major order");
 
     std::vector<observed_move> cursor_observed;
-    Move cursor_move{};
+    ReassignJobMove cursor_move{};
     if (neighborhood.first_move(solution, cursor_move))
     {
         do
@@ -106,7 +106,7 @@ int main()
 
     auto destination_zero =
         neighborhood.moves(solution)
-        | std::views::filter([](const Move move) {
+        | std::views::filter([](const ReassignJobMove move) {
               return move.destination == 0;
           });
 
@@ -119,8 +119,8 @@ int main()
         collect(destination_zero) == expected_filtered,
         "move range composes with std::views::filter");
 
-    Solution moved = solution;
-    const Move move{
+    AssignmentSolution moved = solution;
+    const ReassignJobMove move{
         .job = 0,
         .destination = 2,
     };
@@ -138,19 +138,19 @@ int main()
     ok &= expect(
         !neighborhood.is_valid(
             solution,
-            Move{.job = 2, .destination = 0}),
+            ReassignJobMove{.job = 2, .destination = 0}),
         "out-of-range job is invalid");
 
     ok &= expect(
         !neighborhood.is_valid(
             solution,
-            Move{.job = 0, .destination = 3}),
+            ReassignJobMove{.job = 0, .destination = 3}),
         "out-of-range destination is invalid");
 
     ok &= expect(
         !neighborhood.is_valid(
             solution,
-            Move{.job = 0, .destination = 1}),
+            ReassignJobMove{.job = 0, .destination = 1}),
         "no-op move is invalid");
 
     // The assignment explorer declares one random traversal semantics:
@@ -207,7 +207,7 @@ int main()
     std::mt19937 rng_filtered{24680};
     auto filtered_random =
         neighborhood.random_moves(solution, rng_filtered)
-        | std::views::filter([](const Move move) {
+        | std::views::filter([](const ReassignJobMove move) {
               return move.destination == 0;
           })
         | std::views::take(1);
@@ -216,14 +216,14 @@ int main()
         collect(filtered_random).size() == 1,
         "finite random traversal supports filter followed by take(1)");
 
-    const Instance single_machine_instance{
+    const AssignmentInstance single_machine_instance{
         .demand = {1, 2},
         .capacity = {10},
     };
-    const SolutionManager single_machine_manager{single_machine_instance};
-    const NeighborhoodExplorer single_machine_neighborhood{
+    const AssignmentSolutionManager single_machine_manager{single_machine_instance};
+    const ReassignJobNeighborhoodExplorer single_machine_neighborhood{
         single_machine_manager};
-    const Solution single_machine_solution{
+    const AssignmentSolution single_machine_solution{
         .assignment = {0, 0},
     };
 
@@ -241,13 +241,13 @@ int main()
                 empty_rng)),
         "random traversal of an empty neighborhood is empty");
 
-    const Instance empty_instance{
+    const AssignmentInstance empty_instance{
         .demand = {},
         .capacity = {3, 3, 3},
     };
-    const SolutionManager empty_manager{empty_instance};
-    const NeighborhoodExplorer empty_neighborhood{empty_manager};
-    const Solution empty_solution{
+    const AssignmentSolutionManager empty_manager{empty_instance};
+    const ReassignJobNeighborhoodExplorer empty_neighborhood{empty_manager};
+    const AssignmentSolution empty_solution{
         .assignment = {},
     };
 

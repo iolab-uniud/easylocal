@@ -30,7 +30,7 @@ using easylocal::search::RandomFirstImprovement;
 [[nodiscard]]
 auto default_solution_manager_recipe()
 {
-    return easylocal::solution_manager<SolutionManager>()
+    return easylocal::solution_manager<AssignmentSolutionManager>()
          | easylocal::component<CapacityCostComponent>();
 }
 
@@ -43,25 +43,25 @@ struct SwapMove
 class SwapNeighborhoodExplorer
 {
 public:
-    using instance_type = Instance;
-    using solution_type = Solution;
+    using instance_type = AssignmentInstance;
+    using solution_type = AssignmentSolution;
     using move_type = SwapMove;
     using random_sampling = easylocal::sampling::without_replacement;
 
     explicit SwapNeighborhoodExplorer(
-        const SolutionManager& solution_manager) noexcept
+        const AssignmentSolutionManager& solution_manager) noexcept
         : solution_manager_{solution_manager}
     {
     }
 
     [[nodiscard]]
-    auto instance() const noexcept -> const Instance&
+    auto instance() const noexcept -> const AssignmentInstance&
     {
         return solution_manager_.instance();
     }
 
     [[nodiscard]]
-    auto moves(const Solution& solution) const
+    auto moves(const AssignmentSolution& solution) const
     {
         const auto size = solution.assignment.size();
 
@@ -79,7 +79,7 @@ public:
                });
     }
 
-    void make_move(Solution& solution, const SwapMove move) const
+    void make_move(AssignmentSolution& solution, const SwapMove move) const
     {
         std::swap(
             solution.assignment[move.first],
@@ -87,51 +87,51 @@ public:
     }
 
 private:
-    const SolutionManager& solution_manager_;
+    const AssignmentSolutionManager& solution_manager_;
 };
 
 class DestinationZeroNeighborhoodExplorer
 {
 public:
-    using instance_type = Instance;
-    using solution_type = Solution;
-    using move_type = Move;
+    using instance_type = AssignmentInstance;
+    using solution_type = AssignmentSolution;
+    using move_type = ReassignJobMove;
     using random_sampling = easylocal::sampling::without_replacement;
 
     explicit DestinationZeroNeighborhoodExplorer(
-        const SolutionManager& solution_manager) noexcept
+        const AssignmentSolutionManager& solution_manager) noexcept
         : solution_manager_{solution_manager}
     {
     }
 
     [[nodiscard]]
-    auto instance() const noexcept -> const Instance&
+    auto instance() const noexcept -> const AssignmentInstance&
     {
         return solution_manager_.instance();
     }
 
     [[nodiscard]]
-    auto moves(const Solution& solution) const
+    auto moves(const AssignmentSolution& solution) const
     {
         return std::views::iota(std::size_t{0}, solution.assignment.size())
              | std::views::filter([&solution](const std::size_t job) {
                    return solution.assignment[job] != 0;
                })
              | std::views::transform([](const std::size_t job) {
-                   return Move{
+                   return ReassignJobMove{
                        .job = job,
                        .destination = 0,
                    };
                });
     }
 
-    void make_move(Solution& solution, const Move move) const
+    void make_move(AssignmentSolution& solution, const ReassignJobMove move) const
     {
         solution.assignment[move.job] = move.destination;
     }
 
 private:
-    const SolutionManager& solution_manager_;
+    const AssignmentSolutionManager& solution_manager_;
 };
 
 class CollectNeighborhoodEffects
@@ -160,13 +160,13 @@ public:
 
 template<class BoundRunner, class RNG>
 concept CanRunWithRng =
-    requires(BoundRunner& runner, Solution solution, RNG& rng) {
+    requires(BoundRunner& runner, AssignmentSolution solution, RNG& rng) {
         runner.run(std::move(solution), rng);
     };
 
 template<class NHE, class RNG>
 concept HasRandomMoves =
-    requires(const NHE& neighborhood, const Solution& solution, RNG& rng) {
+    requires(const NHE& neighborhood, const AssignmentSolution& solution, RNG& rng) {
         neighborhood.random_moves(solution, rng);
     };
 
@@ -192,16 +192,16 @@ int main()
 
     bool ok = true;
 
-    const Instance instance{
+    const AssignmentInstance instance{
         .demand = {4, 3, 2},
         .capacity = {5, 5},
     };
-    const Solution initial{
+    const AssignmentSolution initial{
         .assignment = {0, 0, 1},
     };
 
     auto union_spec = neighborhood_union(
-        neighborhood<NeighborhoodExplorer>(),
+        neighborhood<ReassignJobNeighborhoodExplorer>(),
         neighborhood<SwapNeighborhoodExplorer>(),
         neighborhood<DestinationZeroNeighborhoodExplorer>());
 
@@ -214,7 +214,7 @@ int main()
         Runner{FirstImprovement{{.max_evaluations = 32}}}
             .with_solution_manager(default_solution_manager_recipe())
             .with_neighborhood(neighborhood_union(
-                neighborhood<NeighborhoodExplorer>(),
+                neighborhood<ReassignJobNeighborhoodExplorer>(),
                 neighborhood<SwapNeighborhoodExplorer>(),
                 neighborhood<DestinationZeroNeighborhoodExplorer>())));
 
@@ -222,7 +222,7 @@ int main()
         Runner{FirstImprovement{{.max_evaluations = 32}}}
         | default_solution_manager_recipe()
         | neighborhood_union(
-              neighborhood<NeighborhoodExplorer>(),
+              neighborhood<ReassignJobNeighborhoodExplorer>(),
               neighborhood<SwapNeighborhoodExplorer>(),
               neighborhood<DestinationZeroNeighborhoodExplorer>()));
 
@@ -254,7 +254,7 @@ int main()
         Runner{FirstImprovement{{.max_evaluations = 32}}}
         | default_solution_manager_recipe()
         | neighborhood_union(
-              neighborhood<NeighborhoodExplorer>(),
+              neighborhood<ReassignJobNeighborhoodExplorer>(),
               neighborhood<SwapNeighborhoodExplorer>(),
               neighborhood<DestinationZeroNeighborhoodExplorer>());
 
@@ -269,7 +269,7 @@ int main()
         Runner{BestImprovement{{.max_evaluations = 64}}}
         | default_solution_manager_recipe()
         | neighborhood_union(
-              neighborhood<NeighborhoodExplorer>(),
+              neighborhood<ReassignJobNeighborhoodExplorer>(),
               neighborhood<SwapNeighborhoodExplorer>(),
               neighborhood<DestinationZeroNeighborhoodExplorer>());
 
@@ -284,7 +284,7 @@ int main()
         Runner{RandomFirstImprovement{{.max_evaluations = 32}}}
         | default_solution_manager_recipe()
         | neighborhood_union(
-              neighborhood<NeighborhoodExplorer>(),
+              neighborhood<ReassignJobNeighborhoodExplorer>(),
               neighborhood<SwapNeighborhoodExplorer>(),
               neighborhood<DestinationZeroNeighborhoodExplorer>());
 

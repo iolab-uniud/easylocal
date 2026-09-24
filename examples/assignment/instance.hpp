@@ -8,7 +8,7 @@ namespace easylocal::mwe::assignment
 
 using quantity_type = std::int64_t;
 
-struct Instance
+struct AssignmentInstance
 {
     std::vector<quantity_type> demand;
     std::vector<quantity_type> capacity;

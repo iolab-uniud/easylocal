@@ -32,15 +32,15 @@ constexpr auto operator+(
 class ReassignCapacityDeltaEvaluator
 {
 public:
-    explicit ReassignCapacityDeltaEvaluator(const Instance& instance) noexcept
+    explicit ReassignCapacityDeltaEvaluator(const AssignmentInstance& instance) noexcept
         : instance_{instance}
     {
     }
 
     [[nodiscard]]
     auto delta_evaluate(
-        const Solution& solution,
-        const Move& move) const -> CapacityDelta
+        const AssignmentSolution& solution,
+        const ReassignJobMove& move) const -> CapacityDelta
     {
         assert(solution.assignment.size() == instance_.demand.size());
         assert(move.job < solution.assignment.size());
@@ -82,7 +82,7 @@ public:
     }
 
 private:
-    const Instance& instance_;
+    const AssignmentInstance& instance_;
 };
 
 } // namespace easylocal::mwe::assignment

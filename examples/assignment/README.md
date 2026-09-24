@@ -45,7 +45,7 @@ solution = [0, 0, 1]
 Loads are `[7, 2]`, so the capacity value and final cost are both represented by
 `CapacityValue{1, 2}` and `Cost{2, 1}` at their respective abstraction levels.
 
-Move `(job=1, destination=1)` produces:
+ReassignJobMove `(job=1, destination=1)` produces:
 
 ```text
 solution = [0, 1, 1]
@@ -56,13 +56,13 @@ cost     = (0, 0)
 ## Cost composition
 
 `CapacityCostComponent` performs full eager evaluation and returns a materialized
-`CapacityValue`. The problem-side `SolutionManager` remains responsible for
-solution validity and aggregation policy, while cost components are attached to
+`CapacityValue`. The problem-side `AssignmentSolutionManager` remains responsible
+for solution validity and aggregation policy, while cost components are attached to
 the runner recipe compositionally:
 
 ```cpp
 auto manager =
-    solution_manager<SolutionManager>()
+    solution_manager<AssignmentSolutionManager>()
     | component<CapacityCostComponent>();
 ```
 
@@ -92,7 +92,7 @@ its final hierarchical `Cost`.
 ## Delta evaluation
 
 The assignment MWE also prototypes a separate delta evaluator for the pair
-`CapacityCostComponent x Move`:
+`CapacityCostComponent x ReassignJobMove`:
 
 ```cpp
 ReassignCapacityDeltaEvaluator::delta_evaluate(solution, move)
@@ -115,7 +115,7 @@ type rather than being intrinsic metadata of the neighborhood or move type:
 
 ```cpp
 auto nhe =
-    neighborhood<NeighborhoodExplorer>()
+    neighborhood<ReassignJobNeighborhoodExplorer>()
     | delta<CapacityCostComponent, ReassignCapacityDeltaEvaluator>();
 ```
 
@@ -123,8 +123,8 @@ The runner's internal evaluation facility matches active component types against
 the deltas attached to that particular neighborhood recipe. A delta attached to
 a component that is not active in the paired solution-manager recipe is a
 compile-time error at bind. If an active component has no matching delta, the
-framework materializes the candidate `Solution` once and reuses it for every
-fallback full-component evaluation. If all components have deltas, a rejected
+framework materializes the candidate `AssignmentSolution` once and reuses it
+for every fallback full-component evaluation. If all components have deltas, a rejected
 candidate never requires `make_move`; an accepted candidate applies the move
 exactly once. If fallback materialization was already necessary, acceptance
 promotes that materialized candidate instead of applying the move again.
@@ -134,24 +134,27 @@ values. They do not select deltas, distinguish fallback components, or manage
 candidate materialization. `evaluate_move` computes a candidate without changing
 the incumbent, while `commit` is the operation that promotes the accepted
 candidate. Candidate storage is specialized at compile time: an all-delta path
-keeps the `Move`, while any fallback path keeps the already materialized
-`Solution`, so neither path pays for an unused `std::optional<Solution>`.
+keeps the `ReassignJobMove`, while any fallback path keeps the already
+materialized `AssignmentSolution`, so neither path pays for an unused
+`std::optional<AssignmentSolution>`.
 Laziness, caching and proxy lifetime/invalidation remain postponed.
 
 ## Responsibilities
 
-`Instance`
+`AssignmentInstance`
 : Plain problem data. The example publishes it as a const object during use.
 
-`Solution`
-: Plain value representation. It does not store an `Instance` pointer/reference.
-
-`Move`
-: Plain descriptive value. It does not store a `Solution` or `Instance`
+`AssignmentSolution`
+: Plain value representation. It does not store an `AssignmentInstance`
   pointer/reference.
 
+`ReassignJobMove`
+: Plain descriptive value. It does not store an `AssignmentSolution` or
+  `AssignmentInstance` pointer/reference.
+
 `CapacityCostComponent`
-: Instance-bound full evaluator for one structured cost component.
+: Full evaluator for one structured cost component, bound to an
+  `AssignmentInstance`.
 
 `CapacityDelta`
 : Materialized structured change applicable to `CapacityValue` with `operator+`.
@@ -164,12 +167,12 @@ Laziness, caching and proxy lifetime/invalidation remain postponed.
 : Materialized value returned by full aggregation. It owns its hierarchical
   ordering semantics through three-way comparison.
 
-`SolutionManager`
+`AssignmentSolutionManager`
 : Problem-side service responsible for structural solution validation and the
   aggregation policy. Cost-component storage/evaluation is supplied by the
   framework from the components attached to the manager recipe.
 
-`NeighborhoodExplorer`
+`ReassignJobNeighborhoodExplorer`
 : Problem-side service responsible for neighborhood traversal, move validity and
   `make_move`. Delta evaluators are optional capabilities attached externally to
   a particular neighborhood recipe, so the same explorer and move types can be
@@ -199,8 +202,8 @@ Random traversal uses the same range-oriented interface:
 auto candidates = neighborhood.random_moves(solution, rng);
 ```
 
-Each `NeighborhoodExplorer` declares one random sampling semantic through its
-`random_sampling` type. The assignment MWE currently declares:
+Each `ReassignJobNeighborhoodExplorer` declares one random sampling semantic
+through its `random_sampling` type. The assignment MWE currently declares:
 
 ```cpp
 using random_sampling = easylocal::sampling::without_replacement;
@@ -219,8 +222,8 @@ auto sample =
     | std::views::take(sample_size);
 ```
 
-A future explorer with `easylocal::sampling::with_replacement` will be a distinct explorer
-type. Such a random range may be unbounded; algorithms using it must impose the
+A future explorer with `easylocal::sampling::with_replacement` will be a
+distinct explorer type. Such a random range may be unbounded; algorithms using it must impose the
 appropriate evaluation/sample budget.
 
 Traversal ranges compose with standard views:
@@ -232,7 +235,8 @@ auto filtered =
 ```
 
 In debug builds, dereferencing a previously-created move range after the
-underlying `Solution` representation changes triggers an assertion. The check
+underlying `AssignmentSolution` representation changes triggers an
+assertion. The check
 uses a debug-only solution fingerprint and is compiled out when `NDEBUG` is
 defined.
 
@@ -273,11 +277,11 @@ arguments:
 
 ```cpp
 auto manager =
-    solution_manager<SolutionManager>()
+    solution_manager<AssignmentSolutionManager>()
         .with_component<CapacityCostComponent>();
 
 auto nhe =
-    neighborhood<NeighborhoodExplorer>()
+    neighborhood<ReassignJobNeighborhoodExplorer>()
         .with_delta<
             CapacityCostComponent,
             ReassignCapacityDeltaEvaluator>();
@@ -293,9 +297,9 @@ The equivalent pipeline syntax is also supported:
 ```cpp
 auto runner =
     Runner{easylocal::search::FirstImprovement{params}}
-    | (solution_manager<SolutionManager>()
+    | (solution_manager<AssignmentSolutionManager>()
        | component<CapacityCostComponent>())
-    | (neighborhood<NeighborhoodExplorer>()
+    | (neighborhood<ReassignJobNeighborhoodExplorer>()
        | delta<
              CapacityCostComponent,
              ReassignCapacityDeltaEvaluator>());

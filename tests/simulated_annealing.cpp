@@ -128,23 +128,23 @@ public:
     std::size_t calls{0};
 };
 
-class CountingTspNeighborhoodExplorer : public tsp::NeighborhoodExplorer
+class CountingTspNeighborhoodExplorer : public tsp::TwoOptNeighborhoodExplorer
 {
 public:
     CountingTspNeighborhoodExplorer(
-        const tsp::SolutionManager& solution_manager,
+        const tsp::TspSolutionManager& solution_manager,
         int& make_move_count) noexcept
-        : tsp::NeighborhoodExplorer{solution_manager},
+        : tsp::TwoOptNeighborhoodExplorer{solution_manager},
           make_move_count_{make_move_count}
     {
     }
 
     void make_move(
-        tsp::Solution& solution,
+        tsp::Tour& solution,
         const tsp::TwoOptMove& move) const noexcept
     {
         ++make_move_count_;
-        tsp::NeighborhoodExplorer::make_move(solution, move);
+        tsp::TwoOptNeighborhoodExplorer::make_move(solution, move);
     }
 
 private:
@@ -152,9 +152,9 @@ private:
 };
 
 [[nodiscard]]
-auto tsp_instance() -> tsp::Instance
+auto tsp_instance() -> tsp::TspInstance
 {
-    return tsp::Instance{
+    return tsp::TspInstance{
         .city_count = 5,
         .distances = {
             0.0, 0.1, 0.1, 0.3, 0.1,
@@ -167,9 +167,9 @@ auto tsp_instance() -> tsp::Instance
 }
 
 [[nodiscard]]
-auto empty_tsp_instance() -> tsp::Instance
+auto empty_tsp_instance() -> tsp::TspInstance
 {
-    return tsp::Instance{
+    return tsp::TspInstance{
         .city_count = 3,
         .distances = {
             0.0, 1.0, 2.0,
@@ -180,9 +180,9 @@ auto empty_tsp_instance() -> tsp::Instance
 }
 
 [[nodiscard]]
-auto assignment_instance() -> assignment::Instance
+auto assignment_instance() -> assignment::AssignmentInstance
 {
-    return assignment::Instance{
+    return assignment::AssignmentInstance{
         .demand = {4, 3, 2},
         .capacity = {5, 5},
     };
@@ -212,7 +212,7 @@ int main()
     bool ok = true;
 
     const auto tsp_problem = tsp_instance();
-    const tsp::Solution tsp_initial{
+    const tsp::Tour tsp_initial{
         .tour = {0, 2, 1, 3, 4},
     };
     constexpr ApproximateTolerance tsp_tolerance{
@@ -221,7 +221,7 @@ int main()
     };
 
     const auto tsp_manager_recipe =
-        solution_manager<tsp::SolutionManager>()
+        solution_manager<tsp::TspSolutionManager>()
         | component<tsp::TourLengthComponent>();
 
     auto budget_one_runner =
@@ -233,7 +233,7 @@ int main()
             },
             AlwaysAccept{}}}
         | tsp_manager_recipe
-        | neighborhood<tsp::NeighborhoodExplorer>();
+        | neighborhood<tsp::TwoOptNeighborhoodExplorer>();
 
     CountingEngine budget_one_rng;
     const auto budget_one_result =
@@ -308,7 +308,7 @@ int main()
         "accepting the sampled 2-opt proposal changes the TSP solution");
 
     {
-        const tsp::SolutionManager manager{tsp_problem};
+        const tsp::TspSolutionManager manager{tsp_problem};
         const tsp::TourLengthComponent component{tsp_problem};
         ok &= expect(
             approximately_equal(
@@ -319,7 +319,7 @@ int main()
     }
 
     const auto empty_problem = empty_tsp_instance();
-    const tsp::Solution empty_initial{
+    const tsp::Tour empty_initial{
         .tour = {0, 1, 2},
     };
     auto empty_runner =
@@ -330,9 +330,9 @@ int main()
                 .cooling_factor = 0.9,
             },
             AlwaysAccept{}}}
-        | (solution_manager<tsp::SolutionManager>()
+        | (solution_manager<tsp::TspSolutionManager>()
            | component<tsp::TourLengthComponent>())
-        | neighborhood<tsp::NeighborhoodExplorer>();
+        | neighborhood<tsp::TwoOptNeighborhoodExplorer>();
 
     std::mt19937 empty_rng{17U};
     const auto empty_result =
@@ -381,7 +381,7 @@ int main()
             },
             tsp_metropolis}}
         | tsp_manager_recipe
-        | (neighborhood<tsp::NeighborhoodExplorer>()
+        | (neighborhood<tsp::TwoOptNeighborhoodExplorer>()
            | delta<
                  tsp::TourLengthComponent,
                  tsp::TwoOptTourLengthDeltaEvaluator>());
@@ -399,7 +399,7 @@ int main()
         "TSP SA is reproducible for the same explicit RNG state");
 
     const auto assignment_problem = assignment_instance();
-    const assignment::Solution assignment_initial{
+    const assignment::AssignmentSolution assignment_initial{
         .assignment = {0, 0, 1},
     };
     const AssignmentEnergy assignment_energy{
@@ -446,9 +446,9 @@ int main()
                 .cooling_factor = 0.9,
             },
             assignment_metropolis}}
-        | (solution_manager<assignment::SolutionManager>()
+        | (solution_manager<assignment::AssignmentSolutionManager>()
            | component<assignment::CapacityCostComponent>())
-        | (neighborhood<assignment::NeighborhoodExplorer>()
+        | (neighborhood<assignment::ReassignJobNeighborhoodExplorer>()
            | delta<
                  assignment::CapacityCostComponent,
                  assignment::ReassignCapacityDeltaEvaluator>());
@@ -469,7 +469,7 @@ int main()
         "Assignment SA is reproducible for the same explicit RNG state");
 
     {
-        const assignment::SolutionManager manager{assignment_problem};
+        const assignment::AssignmentSolutionManager manager{assignment_problem};
         const assignment::CapacityCostComponent component{assignment_problem};
         ok &= expect(
             manager.is_valid(assignment_result_a.solution),

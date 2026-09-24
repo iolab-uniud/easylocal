@@ -12,14 +12,16 @@
 namespace easylocal::mwe::assignment
 {
 
-class SolutionManager
-    : public easylocal::solution_manager_base<Instance, Solution>
+class AssignmentSolutionManager
+    : public easylocal::solution_manager_base<
+          AssignmentInstance,
+          AssignmentSolution>
 {
 public:
     using solution_manager_base::solution_manager_base;
 
     [[nodiscard]]
-    auto is_valid(const Solution& solution) const noexcept -> bool
+    auto is_valid(const AssignmentSolution& solution) const noexcept -> bool
     {
         if (solution.assignment.size() != instance_.demand.size())
         {

@@ -37,7 +37,7 @@ int main()
 
     bool ok = true;
 
-    const Instance instance{
+    const TspInstance instance{
         .city_count = 5,
         .distances = {
             0.0, 1.0, 2.0, 2.5, 1.5,
@@ -49,7 +49,7 @@ int main()
     };
 
     const auto manager_recipe =
-        solution_manager<SolutionManager>()
+        solution_manager<TspSolutionManager>()
         | component<TourLengthComponent>();
     const auto manager = manager_recipe.construct(instance);
 
@@ -59,7 +59,7 @@ int main()
                   decltype(distance_type{} <=> distance_type{}),
                   std::partial_ordering>);
 
-    const Solution initial{
+    const Tour initial{
         .tour = {0, 2, 1, 3, 4},
     };
 
@@ -78,28 +78,28 @@ int main()
         manager.evaluate(initial) == 8.0,
         "configured manager evaluates the complete tour cost");
 
-    Solution copy = initial;
+    Tour copy = initial;
     copy.tour[1] = 1;
 
     ok &= expect(
         initial.tour == std::vector<city_id>{0, 2, 1, 3, 4},
         "solution retains ordinary value semantics");
 
-    const Solution wrong_size{
+    const Tour wrong_size{
         .tour = {0, 1, 2, 3},
     };
     ok &= expect(
         !manager.is_valid(wrong_size),
         "tour with the wrong cardinality is invalid");
 
-    const Solution duplicate_city{
+    const Tour duplicate_city{
         .tour = {0, 1, 2, 2, 4},
     };
     ok &= expect(
         !manager.is_valid(duplicate_city),
         "tour containing a duplicate city is invalid");
 
-    const Solution out_of_range_city{
+    const Tour out_of_range_city{
         .tour = {0, 1, 2, 3, 5},
     };
     ok &= expect(

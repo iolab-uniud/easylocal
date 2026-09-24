@@ -49,13 +49,13 @@ int main()
 
     bool ok = true;
 
-    const Instance instance{
+    const TspInstance instance{
         .city_count = 5,
         .distances = std::vector<distance_type>(25, 0.0),
     };
-    const SolutionManager solution_manager{instance};
-    const NeighborhoodExplorer neighborhood{solution_manager};
-    const Solution solution{
+    const TspSolutionManager solution_manager{instance};
+    const TwoOptNeighborhoodExplorer neighborhood{solution_manager};
+    const Tour solution{
         .tour = {0, 2, 1, 3, 4},
     };
 
@@ -100,7 +100,7 @@ int main()
     }
 
     static_assert(std::same_as<
-        NeighborhoodExplorer::random_sampling,
+        TwoOptNeighborhoodExplorer::random_sampling,
         easylocal::sampling::with_replacement>);
 
     std::mt19937 rng{12345U};
@@ -141,7 +141,7 @@ int main()
         collect(first_edge_zero) == expected_filtered,
         "2-opt move range composes with standard views");
 
-    Solution moved = solution;
+    Tour moved = solution;
     const TwoOptMove improving_move{
         .first_edge = 0,
         .second_edge = 2,
@@ -174,13 +174,13 @@ int main()
             TwoOptMove{.first_edge = 1, .second_edge = 5}),
         "out-of-range edge index is invalid");
 
-    const Instance triangle_instance{
+    const TspInstance triangle_instance{
         .city_count = 3,
         .distances = std::vector<distance_type>(9, 0.0),
     };
-    const SolutionManager triangle_manager{triangle_instance};
-    const NeighborhoodExplorer triangle_neighborhood{triangle_manager};
-    const Solution triangle{
+    const TspSolutionManager triangle_manager{triangle_instance};
+    const TwoOptNeighborhoodExplorer triangle_neighborhood{triangle_manager};
+    const Tour triangle{
         .tour = {0, 1, 2},
     };
 

@@ -18,8 +18,10 @@
 namespace easylocal::mwe::assignment
 {
 
-class NeighborhoodExplorer
-    : public easylocal::neighborhood_explorer_base<SolutionManager, Move>
+class ReassignJobNeighborhoodExplorer
+    : public easylocal::neighborhood_explorer_base<
+          AssignmentSolutionManager,
+          ReassignJobMove>
 {
 private:
     // Ordinal decoding is retained only for random without-replacement
@@ -27,7 +29,7 @@ private:
     template<std::ranges::viewable_range Ordinals>
     [[nodiscard]]
     auto decode_moves(
-        const Solution& solution,
+        const AssignmentSolution& solution,
         Ordinals&& ordinals) const
     {
 #ifndef NDEBUG
@@ -39,7 +41,7 @@ private:
                        const std::size_t ordinal) {
                        assert(
                            debug_signature(solution) == expected_signature &&
-                           "neighborhood range invalidated by Solution mutation");
+                           "neighborhood range invalidated by AssignmentSolution mutation");
                        return move_at(solution, ordinal);
                    });
 #else
@@ -57,8 +59,8 @@ public:
 
     [[nodiscard]]
     auto is_valid(
-        const Solution& solution,
-        const Move& move) const noexcept -> bool
+        const AssignmentSolution& solution,
+        const ReassignJobMove& move) const noexcept -> bool
     {
         if (!solution_manager_.is_valid(solution))
         {
@@ -73,7 +75,7 @@ public:
     }
 
     [[nodiscard]]
-    auto moves(const Solution& solution) const
+    auto moves(const AssignmentSolution& solution) const
     {
         assert(solution_manager_.is_valid(solution));
 
@@ -82,10 +84,10 @@ public:
 
         return easylocal::cursor_moves(*this, solution)
              | std::views::transform(
-                   [&solution, expected_signature](const Move& move) {
+                   [&solution, expected_signature](const ReassignJobMove& move) {
                        assert(
                            debug_signature(solution) == expected_signature &&
-                           "neighborhood range invalidated by Solution mutation");
+                           "neighborhood range invalidated by AssignmentSolution mutation");
                        return move;
                    });
 #else
@@ -95,8 +97,8 @@ public:
 
     [[nodiscard]]
     auto first_move(
-        const Solution& solution,
-        Move& move) const noexcept -> bool
+        const AssignmentSolution& solution,
+        ReassignJobMove& move) const noexcept -> bool
     {
         assert(solution_manager_.is_valid(solution));
 
@@ -115,8 +117,8 @@ public:
 
     [[nodiscard]]
     auto next_move(
-        const Solution& solution,
-        Move& move) const noexcept -> bool
+        const AssignmentSolution& solution,
+        ReassignJobMove& move) const noexcept -> bool
     {
         assert(solution_manager_.is_valid(solution));
         assert(is_valid(solution, move));
@@ -151,7 +153,7 @@ public:
     template<std::uniform_random_bit_generator RNG>
     [[nodiscard]]
     auto random_moves(
-        const Solution& solution,
+        const AssignmentSolution& solution,
         RNG& rng) const
     {
         assert(solution_manager_.is_valid(solution));
@@ -165,8 +167,8 @@ public:
     }
 
     void make_move(
-        Solution& solution,
-        const Move& move) const noexcept
+        AssignmentSolution& solution,
+        const ReassignJobMove& move) const noexcept
     {
         assert(is_valid(solution, move));
         solution.assignment[move.job] = move.destination;
@@ -175,7 +177,7 @@ public:
 private:
     [[nodiscard]]
     auto first_destination(
-        const Solution& solution,
+        const AssignmentSolution& solution,
         const std::size_t job) const noexcept -> machine_id
     {
         const auto machine_count =
@@ -189,7 +191,8 @@ private:
     }
 
     [[nodiscard]]
-    auto move_count(const Solution& solution) const noexcept -> std::size_t
+    auto move_count(const AssignmentSolution& solution) const noexcept
+        -> std::size_t
     {
         const auto machine_count =
             solution_manager_.instance().capacity.size();
@@ -201,8 +204,8 @@ private:
 
     [[nodiscard]]
     auto move_at(
-        const Solution& solution,
-        const std::size_t ordinal) const noexcept -> Move
+        const AssignmentSolution& solution,
+        const std::size_t ordinal) const noexcept -> ReassignJobMove
     {
         const auto machine_count =
             solution_manager_.instance().capacity.size();
@@ -216,7 +219,7 @@ private:
         const auto current = solution.assignment[job];
         const auto destination = offset < current ? offset : offset + 1;
 
-        return Move{
+        return ReassignJobMove{
             .job = job,
             .destination = destination,
         };
@@ -224,7 +227,7 @@ private:
 
 #ifndef NDEBUG
     [[nodiscard]]
-    static auto debug_signature(const Solution& solution) noexcept
+    static auto debug_signature(const AssignmentSolution& solution) noexcept
         -> std::uint64_t
     {
         // Debug-only fingerprint used to catch stale neighborhood views after

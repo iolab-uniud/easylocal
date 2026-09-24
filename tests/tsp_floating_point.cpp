@@ -35,9 +35,9 @@ auto expect(const bool condition, const std::string_view description) -> bool
 }
 
 [[nodiscard]]
-auto make_delta_drift_instance() -> Instance
+auto make_delta_drift_instance() -> TspInstance
 {
-    return Instance{
+    return TspInstance{
         .city_count = 5,
         .distances = {
             0.0, 0.1, 0.1, 0.3, 0.1,
@@ -50,9 +50,9 @@ auto make_delta_drift_instance() -> Instance
 }
 
 [[nodiscard]]
-auto make_neutral_move_instance(const distance_type two_three) -> Instance
+auto make_neutral_move_instance(const distance_type two_three) -> TspInstance
 {
-    return Instance{
+    return TspInstance{
         .city_count = 5,
         .distances = {
             0.0, 0.02, 0.01, 0.07, 0.03,
@@ -73,18 +73,18 @@ struct EvaluatedMove
 
 [[nodiscard]]
 auto evaluate_move(
-    const Instance& instance,
-    const Solution& solution,
+    const TspInstance& instance,
+    const Tour& solution,
     const TwoOptMove move) -> EvaluatedMove
 {
-    const SolutionManager solution_manager{instance};
-    const NeighborhoodExplorer neighborhood{solution_manager};
+    const TspSolutionManager solution_manager{instance};
+    const TwoOptNeighborhoodExplorer neighborhood{solution_manager};
     const TourLengthComponent component{instance};
     const TwoOptTourLengthDeltaEvaluator delta_evaluator{instance};
 
     const auto current = component.evaluate(solution);
 
-    Solution candidate = solution;
+    Tour candidate = solution;
     neighborhood.make_move(candidate, move);
 
     return EvaluatedMove{
@@ -103,7 +103,7 @@ int main()
 
     bool ok = true;
 
-    const Solution solution{
+    const Tour solution{
         .tour = {0, 2, 1, 3, 4},
     };
     const TwoOptMove move{
@@ -112,8 +112,8 @@ int main()
     };
 
     const auto drift_instance = make_delta_drift_instance();
-    const SolutionManager drift_manager{drift_instance};
-    const NeighborhoodExplorer drift_neighborhood{drift_manager};
+    const TspSolutionManager drift_manager{drift_instance};
+    const TwoOptNeighborhoodExplorer drift_neighborhood{drift_manager};
     const TourLengthComponent drift_component{drift_instance};
     const TwoOptTourLengthDeltaEvaluator drift_delta{drift_instance};
     const auto drift_current = drift_component.evaluate(solution);
@@ -123,7 +123,7 @@ int main()
 
     for (const auto candidate_move : drift_neighborhood.moves(solution))
     {
-        Solution candidate = solution;
+        Tour candidate = solution;
         drift_neighborhood.make_move(candidate, candidate_move);
 
         const auto full = drift_component.evaluate(candidate);

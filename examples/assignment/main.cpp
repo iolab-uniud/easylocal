@@ -12,22 +12,22 @@ int main()
     using easylocal::component;
     using easylocal::delta;
 
-    const Instance instance{
+    const AssignmentInstance instance{
         .demand = {4, 3, 2},
         .capacity = {5, 5},
     };
 
     auto solution_manager =
-        (easylocal::solution_manager<SolutionManager>()
+        (easylocal::solution_manager<AssignmentSolutionManager>()
          | component<CapacityCostComponent>())
             .construct(instance);
 
     auto neighborhood_explorer =
-        (easylocal::neighborhood<NeighborhoodExplorer>()
+        (easylocal::neighborhood<ReassignJobNeighborhoodExplorer>()
          | delta<CapacityCostComponent, ReassignCapacityDeltaEvaluator>())
             .construct(solution_manager);
 
-    Solution solution{
+    AssignmentSolution solution{
         .assignment = {0, 0, 1},
     };
 
@@ -40,7 +40,7 @@ int main()
               << solution_manager.evaluate(solution).get<0>()
               << '\n';
 
-    const Move move{
+    const ReassignJobMove move{
         .job = 1,
         .destination = 1,
     };

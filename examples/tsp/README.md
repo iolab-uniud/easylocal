@@ -3,7 +3,7 @@
 This is the second concrete EasyLocal++ pressure-test model. It is deliberately
 outside `include/easylocal/` and does not introduce new public framework API.
 
-The model is a symmetric TSP with a dense `double` distance matrix, a `Solution`
+The model is a symmetric TSP with a dense `double` distance matrix, a `Tour`
 represented by a permutation of city ids, and a deterministic lazy 2-opt
 neighborhood. A `TwoOptMove{i, j}` cuts tour edges `(i, i+1)` and `(j, j+1)`
 and reverses the segment `[i+1, j]`.
@@ -14,7 +14,7 @@ Rank decoding remains an implementation detail of the random with-replacement
 traversal and is not part of deterministic neighborhood authoring.
 
 `TourLengthComponent` returns the structured materialized value
-`TourLengthValue{total}`. The problem-side `SolutionManager` aggregates that
+`TourLengthValue{total}`. The problem-side `TspSolutionManager` aggregates that
 value to the algorithm-facing scalar `double` cost. This intentionally exercises
 a partially ordered floating-point `cost_type` without introducing an epsilon or
 approximate-comparison policy into the framework.
@@ -29,7 +29,7 @@ value_after == value_before + delta
 
 For a symmetric TSP, 2-opt changes only the two cut edges, so the evaluator
 computes the added edge cost minus the removed edge cost without materializing a
-candidate `Solution`. Tests compare this incremental value against full component
+candidate `Tour`. Tests compare this incremental value against full component
 evaluation for every move in the deterministic small neighborhood. Runner-level
 tests retain the no-delta fallback case and separately verify that rejected
 all-delta candidates perform no `make_move`, while accepted all-delta candidates

@@ -21,13 +21,13 @@ class TourLengthComponent
 public:
     using value_type = TourLengthValue;
 
-    explicit TourLengthComponent(const Instance& instance) noexcept
+    explicit TourLengthComponent(const TspInstance& instance) noexcept
         : instance_{instance}
     {
     }
 
     [[nodiscard]]
-    auto evaluate(const Solution& solution) const -> value_type
+    auto evaluate(const Tour& solution) const -> value_type
     {
         assert(solution.tour.size() == instance_.city_count);
 
@@ -52,7 +52,7 @@ public:
     }
 
 private:
-    const Instance& instance_;
+    const TspInstance& instance_;
 };
 
 } // namespace easylocal::mwe::tsp

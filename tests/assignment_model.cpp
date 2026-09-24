@@ -22,21 +22,21 @@ class AssignmentCardinalityComponent
 public:
     using value_type = std::size_t;
 
-    explicit AssignmentCardinalityComponent(const Instance&) noexcept
+    explicit AssignmentCardinalityComponent(const AssignmentInstance&) noexcept
     {
     }
 
     [[nodiscard]]
-    auto evaluate(const Solution& solution) const noexcept -> value_type
+    auto evaluate(const AssignmentSolution& solution) const noexcept -> value_type
     {
         return solution.assignment.size();
     }
 };
 
-class CapacityThenCardinalitySolutionManager : public SolutionManager
+class CapacityThenCardinalitySolutionManager : public AssignmentSolutionManager
 {
 public:
-    using SolutionManager::SolutionManager;
+    using AssignmentSolutionManager::AssignmentSolutionManager;
 
     [[nodiscard]]
     constexpr auto aggregate(
@@ -72,17 +72,17 @@ int main()
 
     bool ok = true;
 
-    const Instance instance{
+    const AssignmentInstance instance{
         .demand = {4, 3, 2},
         .capacity = {5, 5},
     };
 
     const auto manager_recipe =
-        solution_manager<SolutionManager>()
+        solution_manager<AssignmentSolutionManager>()
         | component<CapacityCostComponent>();
     const auto configured_solution_manager = manager_recipe.construct(instance);
 
-    const Solution initial{
+    const AssignmentSolution initial{
         .assignment = {0, 0, 1},
     };
 
@@ -129,14 +129,14 @@ int main()
     // component value must match full evaluation after the move.
     const CapacityCostComponent capacity_component{instance};
     const ReassignCapacityDeltaEvaluator capacity_delta{instance};
-    const SolutionManager neighborhood_manager{instance};
-    const NeighborhoodExplorer neighborhood{neighborhood_manager};
+    const AssignmentSolutionManager neighborhood_manager{instance};
+    const ReassignJobNeighborhoodExplorer neighborhood{neighborhood_manager};
 
     const auto before = capacity_component.evaluate(initial);
 
     for (const auto move : neighborhood.moves(initial))
     {
-        Solution candidate = initial;
+        AssignmentSolution candidate = initial;
         neighborhood.make_move(candidate, move);
 
         const auto delta = capacity_delta.delta_evaluate(initial, move);
@@ -148,7 +148,7 @@ int main()
             "structured delta agrees with full component evaluation");
     }
 
-    const Move relieving_move{
+    const ReassignJobMove relieving_move{
         .job = 1,
         .destination = 1,
     };
@@ -158,8 +158,8 @@ int main()
             CapacityDelta{-1, -2},
         "structured delta materializes both changed capacity fields");
 
-    // Solution has ordinary value semantics.
-    Solution copy = initial;
+    // AssignmentSolution has ordinary value semantics.
+    AssignmentSolution copy = initial;
     copy.assignment[0] = 1;
 
     ok &= expect(
@@ -167,7 +167,7 @@ int main()
         "solution copy is independent");
 
     // Invalid solution representations are detected by the manager.
-    const Solution wrong_size{
+    const AssignmentSolution wrong_size{
         .assignment = {0, 1},
     };
 
@@ -175,7 +175,7 @@ int main()
         !configured_solution_manager.is_valid(wrong_size),
         "wrong assignment cardinality is invalid");
 
-    const Solution bad_machine{
+    const AssignmentSolution bad_machine{
         .assignment = {0, 2, 1},
     };
 
@@ -184,7 +184,7 @@ int main()
         "out-of-range machine id is invalid");
 
     // Two instance-bound managers can coexist in one process.
-    const Instance roomy_instance{
+    const AssignmentInstance roomy_instance{
         .demand = {4, 3, 2},
         .capacity = {10, 10},
     };

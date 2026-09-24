@@ -22,14 +22,14 @@ using easylocal::search::RandomFirstImprovement;
 [[nodiscard]]
 auto default_solution_manager_recipe()
 {
-    return easylocal::solution_manager<SolutionManager>()
+    return easylocal::solution_manager<AssignmentSolutionManager>()
          | easylocal::component<CapacityCostComponent>();
 }
 
 [[nodiscard]]
 auto default_neighborhood_recipe()
 {
-    return easylocal::neighborhood<NeighborhoodExplorer>()
+    return easylocal::neighborhood<ReassignJobNeighborhoodExplorer>()
          | easylocal::delta<
                CapacityCostComponent,
                ReassignCapacityDeltaEvaluator>();
@@ -48,17 +48,17 @@ concept CanConfigureNeighborhood = requires(T runner) {
 };
 
 template<class T>
-concept CanBindInstance = requires(T runner, const Instance& instance) {
+concept CanBindInstance = requires(T runner, const AssignmentInstance& instance) {
     std::move(runner).bind(instance);
 };
 
 template<class T>
-concept CanRun = requires(T& runner, Solution solution) {
+concept CanRun = requires(T& runner, AssignmentSolution solution) {
     runner.run(std::move(solution));
 };
 
 template<class T, class RNG>
-concept CanRunWithRng = requires(T& runner, Solution solution, RNG& rng) {
+concept CanRunWithRng = requires(T& runner, AssignmentSolution solution, RNG& rng) {
     runner.run(std::move(solution), rng);
 };
 
@@ -86,7 +86,7 @@ int main()
             default_neighborhood_recipe()));
     using BoundFirstRunner = decltype(
         std::declval<FullyConfiguredFirstRunner&&>().bind(
-            std::declval<const Instance&>()));
+            std::declval<const AssignmentInstance&>()));
 
     using PipelineConfiguredFirstRunner = decltype(
         Runner{FirstImprovement{{.max_evaluations = 1}}}
@@ -130,7 +130,7 @@ int main()
         (Runner{BestImprovement{{.max_evaluations = 1}}}
          | default_solution_manager_recipe()
          | default_neighborhood_recipe())
-            .bind(std::declval<const Instance&>()));
+            .bind(std::declval<const AssignmentInstance&>()));
 
     static_assert(CanRun<BoundBestRunner>);
     static_assert(!CanRunWithRng<BoundBestRunner, std::mt19937>);
@@ -139,7 +139,7 @@ int main()
         (Runner{RandomFirstImprovement{{.max_evaluations = 1}}}
          | default_solution_manager_recipe()
          | default_neighborhood_recipe())
-            .bind(std::declval<const Instance&>()));
+            .bind(std::declval<const AssignmentInstance&>()));
 
     static_assert(!CanRun<BoundRandomRunner>);
     static_assert(CanRunWithRng<BoundRandomRunner, std::mt19937>);

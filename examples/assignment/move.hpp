@@ -9,7 +9,7 @@ namespace easylocal::mwe::assignment
 
 using job_id = std::size_t;
 
-struct Move
+struct ReassignJobMove
 {
     job_id job;
     machine_id destination;
