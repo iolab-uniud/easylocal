@@ -418,6 +418,28 @@ int main()
         ok &= expect(
             saw_biases,
             "neighborhood union configuration exposes effective random biases");
+
+        const auto& endpoint =
+            easylocal::config::at<"neighborhood">(configuration);
+        auto updated = endpoint.parameters();
+        updated.random_biases = {0.0, 2.0, 0.0};
+        ok &= expect(
+            static_cast<bool>(endpoint.configure(updated)),
+            "neighborhood union accepts valid runtime recipe parameters");
+        ok &= expect(
+            endpoint.parameters().random_biases ==
+                std::array<double, 3>{0.0, 2.0, 0.0},
+            "neighborhood union configuration update changes the recipe state");
+
+        auto invalid = endpoint.parameters();
+        invalid.random_biases[0] = -1.0;
+        ok &= expect(
+            !endpoint.configure(invalid),
+            "neighborhood union rejects invalid runtime recipe parameters");
+        ok &= expect(
+            endpoint.parameters().random_biases ==
+                std::array<double, 3>{0.0, 2.0, 0.0},
+            "invalid neighborhood union update leaves the recipe unchanged");
     }
 
     using UnionExplorer = typename decltype(union_spec)::service_type;

@@ -146,6 +146,26 @@ concept parameter_block =
         { parameters.validate() } -> std::same_as<validation_result>;
     };
 
+template<class T>
+using configurable_parameters_t = std::remove_cvref_t<decltype(
+    std::declval<const std::remove_cvref_t<T>&>().parameters())>;
+
+template<class T>
+concept configurable_endpoint =
+    requires(
+        std::remove_cvref_t<T>& endpoint,
+        const std::remove_cvref_t<T>& const_endpoint,
+        configurable_parameters_t<T> parameters)
+    {
+        requires parameter_block<configurable_parameters_t<T>>;
+        {
+            const_endpoint.parameters()
+        } -> std::same_as<const configurable_parameters_t<T>&>;
+        {
+            endpoint.configure(std::move(parameters))
+        } -> std::same_as<validation_result>;
+    };
+
 template<parameter_block Parameters, class Function>
 constexpr void for_each_parameter(
     Parameters& parameters,

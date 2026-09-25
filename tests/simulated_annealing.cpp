@@ -214,7 +214,7 @@ int main()
     bool ok = true;
 
     {
-        const SimulatedAnnealing annealing{
+        SimulatedAnnealing annealing{
             temperature::FixedLength{temperature::FixedLengthParameters{
                 .initial_temperature = 8.0,
                 .final_temperature = 0.25,
@@ -243,6 +243,17 @@ int main()
         ok &= expect(
             saw_max_iterations,
             "SA configuration exposes the nested temperature policy parameters");
+
+        const auto& temperature_endpoint =
+            easylocal::config::at<"search", "temperature">(configuration);
+        auto updated = temperature_endpoint.parameters();
+        updated.max_iterations = 20;
+        ok &= expect(
+            static_cast<bool>(temperature_endpoint.configure(updated)),
+            "SA configuration can update its nested temperature policy");
+        ok &= expect(
+            temperature_endpoint.parameters().max_iterations == 20,
+            "SA nested configuration update changes the owned policy");
     }
 
     {

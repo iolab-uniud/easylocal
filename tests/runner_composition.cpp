@@ -179,6 +179,26 @@ int main()
 
     assert(saw_search_budget);
 
+    const auto& search_endpoint =
+        easylocal::config::at<"solver", "search">(configuration);
+    auto updated_search = search_endpoint.parameters();
+    updated_search.max_evaluations = 2;
+    assert(search_endpoint.configure(updated_search));
+
+    const AssignmentInstance instance{
+        .demand = {4, 3, 2},
+        .capacity = {5, 5},
+    };
+    const AssignmentSolution initial{
+        .assignment = {0, 0, 1},
+    };
+    const auto configured_result = configured.bind(instance).run(initial);
+    assert(configured_result.evaluations == 2);
+    assert(
+        configured_result.termination ==
+        easylocal::search::FirstImprovementTermination::
+            evaluation_budget_exhausted);
+
 
     return 0;
 }

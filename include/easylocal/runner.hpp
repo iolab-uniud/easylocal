@@ -553,6 +553,26 @@ public:
             config::configuration_provider<SMSpec> ||
             config::configuration_provider<NHESpec>)
     [[nodiscard]]
+    auto configuration()
+    {
+        auto children = std::tuple_cat(
+            config::detail::configuration_nodes(algorithm_),
+            config::detail::configuration_nodes(solution_manager_spec_),
+            config::detail::configuration_nodes(neighborhood_spec_));
+
+        return std::apply(
+            [](auto... nodes) {
+                return config::named<Name>(std::move(nodes)...);
+            },
+            std::move(children));
+    }
+
+    template<config::fixed_string Name>
+        requires (
+            config::configuration_provider<const Algorithm> ||
+            config::configuration_provider<const SMSpec> ||
+            config::configuration_provider<const NHESpec>)
+    [[nodiscard]]
     auto configuration() const
     {
         auto children = std::tuple_cat(

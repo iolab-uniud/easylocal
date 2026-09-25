@@ -666,17 +666,44 @@ public:
         NeighborhoodUnionParameters<sizeof...(Specs)> parameters{
             .random_biases = std::move(random_biases),
         };
+        const auto validation = configure(std::move(parameters));
         assert(
-            parameters.validate() &&
+            validation &&
             "neighborhood random biases must be finite and non-negative");
-        parameters_ = std::move(parameters);
         return std::move(*this);
+    }
+
+    [[nodiscard]]
+    auto parameters() const noexcept
+        -> const NeighborhoodUnionParameters<sizeof...(Specs)>&
+    {
+        return parameters_;
+    }
+
+    [[nodiscard]]
+    auto configure(NeighborhoodUnionParameters<sizeof...(Specs)> parameters)
+        noexcept -> config::validation_result
+    {
+        const auto validation = parameters.validate();
+        if (!validation)
+        {
+            return validation;
+        }
+
+        parameters_ = std::move(parameters);
+        return config::validation_result::success();
+    }
+
+    [[nodiscard]]
+    auto configuration() noexcept
+    {
+        return config::endpoint<"neighborhood">(*this);
     }
 
     [[nodiscard]]
     auto configuration() const noexcept
     {
-        return config::named<"neighborhood">(parameters_);
+        return config::endpoint<"neighborhood">(*this);
     }
 
     template<class Dependency>

@@ -183,7 +183,7 @@ yet.
 
 ### Named configuration tree
 
-Typed leaves can be assembled into a non-owning, read-only configuration tree
+Typed leaves can be assembled into a non-owning configuration tree
 without flattening instance identity into the parameter type. For example, two
 `FixedLengthParameters` blocks of the same C++ type can occupy distinct paths:
 
@@ -196,7 +196,7 @@ auto tree = easylocal::config::root(
         easylocal::config::named<"temperature">(slow_temperature)));
 ```
 
-`config::for_each_config_parameter` traverses the tree and exposes a compile-time
+`config::for_each_config_parameter` traverses the tree read-only and exposes a compile-time
 segmented `parameter_path`, the original field descriptor, and a typed const
 reference to the value. The tree stores references to existing parameter blocks;
 it does not own or copy configuration values. Sibling node names and field names
@@ -218,8 +218,35 @@ auto configuration = easylocal::config::root(
 its configurable policy hierarchy such as `solver.search.temperature.*`; and a
 `neighborhood_union(...)` contributes `solver.neighborhood.random_biases`.
 The caller-supplied runner name is what distinguishes multiple otherwise
-identical runner instances (`fast.*`, `slow.*`, and so on). Mutation/apply
-semantics, CLI parsing, and config-file loading remain separate follow-up layers.
+identical runner instances (`fast.*`, `slow.*`, and so on).
+
+Mutable framework/application objects additionally expose validated endpoints.
+`config::at<...>(tree)` resolves one node by compile-time path; callers take a
+typed snapshot, modify it, and commit the whole block through `configure()`:
+
+```cpp
+const auto configuration = easylocal::config::root(
+    easylocal::config::named<"application">(app),
+    runner.configuration<"solver">());
+
+const auto& temperature =
+    easylocal::config::at<"solver", "search", "temperature">(
+        configuration);
+
+auto parameters = temperature.parameters();
+parameters.max_iterations = 500;
+
+const auto validation = temperature.configure(parameters);
+```
+
+Validation occurs before the owned block is replaced. Policy endpoints can also
+rebuild derived configuration state before committing; for example,
+`FixedLength` recomputes its temperature-level schedule. A failed update leaves
+the previous configuration unchanged. Exposure through a const object remains
+read-only. Configuration currently applies to application values and unbound
+runner recipes/policies; reconfiguration of an already bound/running search is
+deliberately deferred. CLI parsing and config-file loading remain separate
+follow-up adapters.
 
 ## Continuous integration
 

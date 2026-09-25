@@ -231,9 +231,47 @@ public:
     }
 
     [[nodiscard]]
+    auto parameters() const noexcept -> const FixedLengthParameters&
+    {
+        return parameters_;
+    }
+
+    [[nodiscard]]
+    auto configure(FixedLengthParameters parameters) noexcept
+        -> config::validation_result
+    {
+        const auto validation = parameters.validate();
+        if (!validation)
+        {
+            return validation;
+        }
+
+        const auto temperature_levels = detail::temperature_level_count(
+            parameters.initial_temperature,
+            parameters.final_temperature,
+            parameters.cooling_rate);
+        const auto samples_per_temperature = detail::positive_quotient(
+            parameters.max_iterations,
+            temperature_levels);
+
+        parameters_ = parameters;
+        temperature_levels_ = temperature_levels;
+        samples_per_temperature_ = samples_per_temperature;
+        reset();
+
+        return config::validation_result::success();
+    }
+
+    [[nodiscard]]
+    auto configuration() noexcept
+    {
+        return config::endpoint<"temperature">(*this);
+    }
+
+    [[nodiscard]]
     auto configuration() const noexcept
     {
-        return config::named<"temperature">(parameters_);
+        return config::endpoint<"temperature">(*this);
     }
 
     void reset() noexcept

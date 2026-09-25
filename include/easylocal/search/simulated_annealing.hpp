@@ -93,10 +93,27 @@ public:
     }
 
     [[nodiscard]]
-    auto configuration() const
+    auto configuration()
         requires (
             config::configuration_provider<TemperaturePolicy> ||
             config::configuration_provider<Acceptance>)
+    {
+        auto children = std::tuple_cat(
+            config::detail::configuration_nodes(temperature_policy_),
+            config::detail::configuration_nodes(acceptance_));
+
+        return std::apply(
+            [](auto... nodes) {
+                return config::named<"search">(std::move(nodes)...);
+            },
+            std::move(children));
+    }
+
+    [[nodiscard]]
+    auto configuration() const
+        requires (
+            config::configuration_provider<const TemperaturePolicy> ||
+            config::configuration_provider<const Acceptance>)
     {
         auto children = std::tuple_cat(
             config::detail::configuration_nodes(temperature_policy_),

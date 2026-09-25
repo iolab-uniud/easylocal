@@ -65,9 +65,35 @@ public:
     }
 
     [[nodiscard]]
+    auto parameters() const noexcept -> const FirstImprovementParameters&
+    {
+        return parameters_;
+    }
+
+    [[nodiscard]]
+    auto configure(FirstImprovementParameters parameters) noexcept
+        -> config::validation_result
+    {
+        const auto validation = parameters.validate();
+        if (!validation)
+        {
+            return validation;
+        }
+
+        parameters_ = parameters;
+        return config::validation_result::success();
+    }
+
+    [[nodiscard]]
+    auto configuration() noexcept
+    {
+        return config::endpoint<"search">(*this);
+    }
+
+    [[nodiscard]]
     auto configuration() const noexcept
     {
-        return config::named<"search">(parameters_);
+        return config::endpoint<"search">(*this);
     }
 
     template<class Context>
