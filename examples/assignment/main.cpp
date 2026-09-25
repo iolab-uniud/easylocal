@@ -126,16 +126,6 @@ int main()
         require_valid(app_parameters);
         require_valid(search_parameters);
 
-        const auto configuration = easylocal::config::root(
-            easylocal::config::named<"application">(app_parameters),
-            easylocal::config::named<"search">(search_parameters));
-        print_configuration(configuration);
-
-        const auto instance = load_instance(app_parameters.instance_file);
-        const AssignmentSolution initial_solution{
-            .assignment = {0, 0, 1},
-        };
-
         auto runner =
             Runner{FirstImprovement{search_parameters}}
             | (solution_manager<AssignmentSolutionManager>()
@@ -144,6 +134,16 @@ int main()
                | delta<
                      CapacityCostComponent,
                      ReassignCapacityDeltaEvaluator>());
+
+        const auto configuration = easylocal::config::root(
+            easylocal::config::named<"application">(app_parameters),
+            runner.configuration<"solver">());
+        print_configuration(configuration);
+
+        const auto instance = load_instance(app_parameters.instance_file);
+        const AssignmentSolution initial_solution{
+            .assignment = {0, 0, 1},
+        };
 
         const auto result = runner.bind(instance).run(initial_solution);
 

@@ -133,6 +133,54 @@ private:
     std::tuple<Children...> children_;
 };
 
+template<fixed_string Name,
+         parameter_block Parameters,
+         named_configuration_node... Children>
+class parameter_group_node
+{
+    static_assert(
+        !Name.view().empty(),
+        "configuration node name must not be empty");
+    static_assert(sizeof...(Children) >= 1);
+    static_assert(
+        unique_node_names<Children...>(),
+        "configuration siblings must have unique names");
+
+public:
+    using configuration_node_marker = named_configuration_node_marker;
+
+    explicit constexpr parameter_group_node(
+        Parameters& parameters,
+        Children... children) noexcept(
+        (std::is_nothrow_move_constructible_v<Children> && ...))
+        : parameters_{std::addressof(parameters)},
+          children_{std::move(children)...}
+    {
+    }
+
+    [[nodiscard]]
+    static constexpr auto name() noexcept -> std::string_view
+    {
+        return Name.view();
+    }
+
+    [[nodiscard]]
+    constexpr auto parameters() const noexcept -> const Parameters&
+    {
+        return *parameters_;
+    }
+
+    [[nodiscard]]
+    constexpr auto children() const noexcept -> const std::tuple<Children...>&
+    {
+        return children_;
+    }
+
+private:
+    Parameters* parameters_;
+    std::tuple<Children...> children_;
+};
+
 template<named_configuration_node... Children>
 class root_node
 {
@@ -193,6 +241,33 @@ constexpr void visit_parameters(
         node.children());
 }
 
+template<fixed_string... Prefix,
+         fixed_string Name,
+         parameter_block Parameters,
+         named_configuration_node... Children,
+         class Function>
+constexpr void visit_parameters(
+    const parameter_group_node<Name, Parameters, Children...>& node,
+    Function& function)
+{
+    for_each_parameter(
+        node.parameters(),
+        [&function](const auto descriptor, const auto& value) {
+            using descriptor_type = std::remove_cvref_t<decltype(descriptor)>;
+            using path_type = config::parameter_path<
+                descriptor_type,
+                Prefix...,
+                Name>;
+            std::invoke(function, path_type{}, descriptor, value);
+        });
+
+    std::apply(
+        [&function](const auto&... children) {
+            (visit_parameters<Prefix..., Name>(children, function), ...);
+        },
+        node.children());
+}
+
 template<named_configuration_node... Children, class Function>
 constexpr void visit_parameters(
     const root_node<Children...>& tree,
@@ -224,6 +299,49 @@ constexpr auto named(Children... children) noexcept(
 {
     return detail::group_node<Name, Children...>{std::move(children)...};
 }
+
+template<fixed_string Name,
+         parameter_block Parameters,
+         detail::named_configuration_node... Children>
+    requires(sizeof...(Children) >= 1)
+[[nodiscard]]
+constexpr auto named(Parameters& parameters, Children... children) noexcept(
+    (std::is_nothrow_move_constructible_v<Children> && ...))
+    -> detail::parameter_group_node<Name, Parameters, Children...>
+{
+    return detail::parameter_group_node<Name, Parameters, Children...>{
+        parameters,
+        std::move(children)...,
+    };
+}
+
+template<class T>
+concept configuration_provider =
+    requires(const T& value)
+    {
+        { value.configuration() };
+        requires detail::named_configuration_node<
+            decltype(value.configuration())>;
+    };
+
+namespace detail
+{
+
+template<class T>
+[[nodiscard]]
+constexpr auto configuration_nodes(const T& value)
+{
+    if constexpr (configuration_provider<T>)
+    {
+        return std::tuple{value.configuration()};
+    }
+    else
+    {
+        return std::tuple{};
+    }
+}
+
+} // namespace detail
 
 template<detail::named_configuration_node... Children>
     requires(sizeof...(Children) >= 1)

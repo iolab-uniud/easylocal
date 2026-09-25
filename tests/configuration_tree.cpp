@@ -195,10 +195,58 @@ void tree_is_a_non_owning_view_of_parameter_blocks()
     assert(saw_updated_value);
 }
 
+void node_can_expose_local_parameters_and_children()
+{
+    NeighborhoodUnionParameters<2> neighborhood{
+        .random_biases = {3.0, 1.0},
+    };
+    FixedLengthParameters temperature{
+        .initial_temperature = 8.0,
+        .final_temperature = 0.25,
+        .cooling_rate = 0.75,
+        .max_iterations = 200,
+    };
+
+    const auto tree = root(
+        named<"solver">(
+            neighborhood,
+            named<"temperature">(temperature)));
+
+    bool saw_local_parameter = false;
+    bool saw_child_parameter = false;
+
+    for_each_config_parameter(
+        tree,
+        [&](const auto path, const auto, const auto& value) {
+            using path_type = std::remove_cvref_t<decltype(path)>;
+
+            if constexpr (path_is<path_type>(
+                              std::array<std::string_view, 2>{
+                                  "solver",
+                                  "random_biases"}))
+            {
+                saw_local_parameter =
+                    value == std::array<double, 2>{3.0, 1.0};
+            }
+            else if constexpr (path_is<path_type>(
+                                   std::array<std::string_view, 3>{
+                                       "solver",
+                                       "temperature",
+                                       "initial_temperature"}))
+            {
+                saw_child_parameter = value == 8.0;
+            }
+        });
+
+    assert(saw_local_parameter);
+    assert(saw_child_parameter);
+}
+
 } // namespace
 
 int main()
 {
     tree_distinguishes_same_typed_blocks_by_path();
     tree_is_a_non_owning_view_of_parameter_blocks();
+    node_can_expose_local_parameters_and_children();
 }

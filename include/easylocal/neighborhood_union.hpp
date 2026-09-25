@@ -1,6 +1,6 @@
 #pragma once
 
-#include <easylocal/config/parameters.hpp>
+#include <easylocal/config/tree.hpp>
 #include <easylocal/runner.hpp>
 
 #include <algorithm>
@@ -656,7 +656,6 @@ public:
     explicit neighborhood_union_spec(Specs... specs)
         : specs_{std::move(specs)...}
     {
-        random_biases_.fill(1.0);
     }
 
     [[nodiscard]]
@@ -664,11 +663,20 @@ public:
         std::array<double, sizeof...(Specs)> random_biases) &&
         -> neighborhood_union_spec
     {
+        NeighborhoodUnionParameters<sizeof...(Specs)> parameters{
+            .random_biases = std::move(random_biases),
+        };
         assert(
-            valid_random_biases(random_biases) &&
+            parameters.validate() &&
             "neighborhood random biases must be finite and non-negative");
-        random_biases_ = std::move(random_biases);
+        parameters_ = std::move(parameters);
         return std::move(*this);
+    }
+
+    [[nodiscard]]
+    auto configuration() const noexcept
+    {
+        return config::named<"neighborhood">(parameters_);
     }
 
     template<class Dependency>
@@ -699,13 +707,13 @@ private:
         std::index_sequence<Indices...>) const -> service_type
     {
         return service_type{
-            random_biases_,
+            parameters_.random_biases,
             std::get<Indices>(specs_).construct(dependency)...,
         };
     }
 
     std::tuple<Specs...> specs_;
-    std::array<double, sizeof...(Specs)> random_biases_{};
+    NeighborhoodUnionParameters<sizeof...(Specs)> parameters_{};
 };
 
 template<class... Specs>

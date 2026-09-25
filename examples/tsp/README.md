@@ -48,9 +48,10 @@ integration.
 path and RNG seed parameterize the application rather than the TSP model or an
 EasyLocal component. `FixedLengthParameters` remains beside the temperature
 policy and `NeighborhoodUnionParameters<2>` remains beside the union it
-configures. The main assembles these leaves into a read-only `config::root(...)`,
-traverses the resulting paths, loads `instances/small.tsp`, and uses the same
-blocks to construct the runner.
+configures. After constructing the runner, the main combines its automatic
+`solver.search.temperature.*` and `solver.neighborhood.random_biases` subtree
+with `application.*` in a read-only `config::root(...)`, traverses the resulting
+paths, and loads `instances/small.tsp`.
 
 This layout is intentional: concrete parameter declarations live next to the
 thing they parameterize, while `easylocal::config` contains only generic schema

@@ -8,6 +8,7 @@
 #include <cstddef>
 #include <optional>
 #include <random>
+#include <tuple>
 #include <type_traits>
 #include <utility>
 
@@ -89,6 +90,23 @@ public:
         : temperature_policy_{std::move(temperature_policy)},
           acceptance_{std::move(acceptance)}
     {
+    }
+
+    [[nodiscard]]
+    auto configuration() const
+        requires (
+            config::configuration_provider<TemperaturePolicy> ||
+            config::configuration_provider<Acceptance>)
+    {
+        auto children = std::tuple_cat(
+            config::detail::configuration_nodes(temperature_policy_),
+            config::detail::configuration_nodes(acceptance_));
+
+        return std::apply(
+            [](auto... nodes) {
+                return config::named<"search">(std::move(nodes)...);
+            },
+            std::move(children));
     }
 
     template<class Context, std::uniform_random_bit_generator RNG>

@@ -4,9 +4,10 @@
 
 `main.cpp` is the end-to-end user-facing example for the current public API. It
 defines the application-owned `AppParameters` block next to `main`, uses
-`FirstImprovementParameters` from the search-method header, assembles both into
-a read-only `config::root(...)`, and traverses that tree before execution. The
-same values are then used to load the versioned instance from
+`FirstImprovementParameters` from the search-method header, constructs the
+runner, and combines `application.*` with the runner-provided
+`solver.search.max_evaluations` subtree in a read-only `config::root(...)`.
+The same values are then used to load the versioned instance from
 `instances/small.assignment`, construct the `FirstImprovement` runner, bind the
 immutable instance, and run the search from an initial solution.
 

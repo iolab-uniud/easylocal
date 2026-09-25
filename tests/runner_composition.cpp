@@ -1,4 +1,5 @@
 #include <easylocal/runner.hpp>
+#include <easylocal/config/tree.hpp>
 #include <easylocal/search/best_improvement.hpp>
 #include <easylocal/search/first_improvement.hpp>
 
@@ -7,7 +8,11 @@
 #include "solution_manager.hpp"
 
 #include <concepts>
+#include <array>
+#include <cassert>
 #include <random>
+#include <string_view>
+#include <type_traits>
 #include <utility>
 
 namespace
@@ -59,6 +64,22 @@ template<class T, class RNG>
 concept CanRunWithRng = requires(T& runner, AssignmentSolution solution, RNG& rng) {
     runner.run(std::move(solution), rng);
 };
+
+template<class Path, std::size_t Size>
+[[nodiscard]]
+consteval auto path_is(const std::array<std::string_view, Size>& expected)
+    -> bool
+{
+    constexpr auto actual = Path::segments();
+    if constexpr (actual.size() != Size)
+    {
+        return false;
+    }
+    else
+    {
+        return actual == expected;
+    }
+}
 
 } // namespace
 
@@ -132,6 +153,31 @@ int main()
 
     static_assert(CanRun<BoundBestRunner>);
     static_assert(!CanRunWithRng<BoundBestRunner, std::mt19937>);
+
+    auto configured =
+        Runner{FirstImprovement{{.max_evaluations = 17}}}
+        | default_solution_manager_recipe()
+        | default_neighborhood_recipe();
+
+    const auto configuration = easylocal::config::root(
+        configured.template configuration<"solver">());
+
+    bool saw_search_budget = false;
+    easylocal::config::for_each_config_parameter(
+        configuration,
+        [&](const auto path, const auto, const auto& value) {
+            using path_type = std::remove_cvref_t<decltype(path)>;
+            if constexpr (path_is<path_type>(
+                              std::array<std::string_view, 3>{
+                                  "solver",
+                                  "search",
+                                  "max_evaluations"}))
+            {
+                saw_search_budget = value == 17;
+            }
+        });
+
+    assert(saw_search_budget);
 
 
     return 0;

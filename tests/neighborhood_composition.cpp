@@ -9,6 +9,7 @@
 
 #include <concepts>
 #include <cstddef>
+#include <array>
 #include <iostream>
 #include <limits>
 #include <optional>
@@ -387,6 +388,37 @@ int main()
         neighborhood<ReassignJobNeighborhoodExplorer>(),
         neighborhood<SwapNeighborhoodExplorer>(),
         neighborhood<DestinationZeroNeighborhoodExplorer>());
+
+    {
+        auto configured_union = neighborhood_union(
+            neighborhood<ReassignJobNeighborhoodExplorer>(),
+            neighborhood<SwapNeighborhoodExplorer>(),
+            neighborhood<DestinationZeroNeighborhoodExplorer>())
+            | random_biases(3.0, 1.0, 0.5);
+
+        const auto configuration = easylocal::config::root(
+            configured_union.configuration());
+
+        bool saw_biases = false;
+        easylocal::config::for_each_config_parameter(
+            configuration,
+            [&](const auto path, const auto, const auto& value) {
+                using path_type = std::remove_cvref_t<decltype(path)>;
+                constexpr auto segments = path_type::segments();
+                if constexpr (
+                    segments.size() == 2 &&
+                    segments[0] == "neighborhood" &&
+                    segments[1] == "random_biases")
+                {
+                    saw_biases =
+                        value == std::array<double, 3>{3.0, 1.0, 0.5};
+                }
+            });
+
+        ok &= expect(
+            saw_biases,
+            "neighborhood union configuration exposes effective random biases");
+    }
 
     using UnionExplorer = typename decltype(union_spec)::service_type;
 

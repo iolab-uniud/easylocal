@@ -5,16 +5,19 @@
 #include "support/approximate.hpp"
 
 #include <easylocal/runner.hpp>
+#include <easylocal/config/tree.hpp>
 #include <easylocal/search/metropolis_acceptance.hpp>
 #include <easylocal/search/simulated_annealing.hpp>
 #include <easylocal/search/temperature_policy.hpp>
 
 #include <cstddef>
 #include <cstdint>
+#include <array>
 #include <iostream>
 #include <optional>
 #include <random>
 #include <string_view>
+#include <type_traits>
 
 namespace
 {
@@ -172,6 +175,22 @@ auto expect(const bool condition, const std::string_view description) -> bool
     return true;
 }
 
+template<class Path, std::size_t Size>
+[[nodiscard]]
+consteval auto path_is(const std::array<std::string_view, Size>& expected)
+    -> bool
+{
+    constexpr auto actual = Path::segments();
+    if constexpr (actual.size() != Size)
+    {
+        return false;
+    }
+    else
+    {
+        return actual == expected;
+    }
+}
+
 [[nodiscard]]
 auto exam_instance() -> exam::ExamTimetablingInstance
 {
@@ -193,6 +212,38 @@ auto exam_instance() -> exam::ExamTimetablingInstance
 int main()
 {
     bool ok = true;
+
+    {
+        const SimulatedAnnealing annealing{
+            temperature::FixedLength{temperature::FixedLengthParameters{
+                .initial_temperature = 8.0,
+                .final_temperature = 0.25,
+                .cooling_rate = 0.75,
+                .max_iterations = 200,
+            }}};
+
+        const auto configuration = easylocal::config::root(
+            annealing.configuration());
+
+        bool saw_max_iterations = false;
+        easylocal::config::for_each_config_parameter(
+            configuration,
+            [&](const auto path, const auto, const auto& value) {
+                using path_type = std::remove_cvref_t<decltype(path)>;
+                if constexpr (path_is<path_type>(
+                                  std::array<std::string_view, 3>{
+                                      "search",
+                                      "temperature",
+                                      "max_iterations"}))
+                {
+                    saw_max_iterations = value == 200;
+                }
+            });
+
+        ok &= expect(
+            saw_max_iterations,
+            "SA configuration exposes the nested temperature policy parameters");
+    }
 
     {
         temperature::Classic policy{temperature::ClassicParameters{

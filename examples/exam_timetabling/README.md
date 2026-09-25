@@ -17,9 +17,10 @@ projection is required by the standard `MetropolisAcceptance` path.
 `main.cpp` defines application-owned parameters for the external instance path
 and RNG seed, while `FixedLengthParameters` remains beside the framework
 temperature policy that it configures. The example builds and traverses a
-`config::root(...)` with `application.*` and `search.temperature.*` paths, loads
-`instances/small.exam`, then runs a fully delta-enabled Simulated Annealing
-search with an explicit deterministic RNG.
+`config::root(...)` with `application.*` and the runner-provided
+`solver.search.temperature.*` paths, loads `instances/small.exam`, then runs a
+fully delta-enabled Simulated Annealing search with an explicit deterministic
+RNG.
 
 With the default top-level build:
 

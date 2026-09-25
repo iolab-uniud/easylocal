@@ -136,11 +136,12 @@ reference MWE for multi-component weighted costs and Simulated Annealing.
 All three MWEs now contain runnable `main` programs and load their small problem
 instances from versioned files under the corresponding `instances/` directory.
 Each `main` owns an application-level `AppParameters` block containing at least
-the instance-file path (and an RNG seed for stochastic examples), builds and
-traverses a read-only `config::root(...)`, then uses those same typed parameter
-blocks to load the instance and construct the runner. This keeps configuration
-examples at application level instead of hard-coding problem data into the
-runner examples.
+the instance-file path (and an RNG seed for stochastic examples). The runner
+then exposes its own read-only configuration subtree, so the application root
+combines `application.*` with a caller-named runner node such as `solver.*`
+without manually rebuilding the search/neighborhood hierarchy. This keeps
+application identity outside the framework types while making the effective
+runner configuration introspectable.
 
 The Assignment executable is
 `./build/<preset>/examples/assignment/easylocal_assignment_mwe`; Exam
@@ -199,9 +200,26 @@ auto tree = easylocal::config::root(
 segmented `parameter_path`, the original field descriptor, and a typed const
 reference to the value. The tree stores references to existing parameter blocks;
 it does not own or copy configuration values. Sibling node names and field names
-within a parameter block must be unique at compile time. Mutation/apply semantics,
-Runner/component exposure, CLI parsing, and config-file loading remain separate
-follow-up layers.
+within a parameter block must be unique at compile time. A named node may expose
+both local parameters and child nodes, which is required for compositional
+objects such as a neighborhood union that owns selection parameters and may also
+contain configurable children.
+
+Framework objects can expose this structure directly. A fully configured
+`Runner` offers a caller-named subtree:
+
+```cpp
+auto configuration = easylocal::config::root(
+    easylocal::config::named<"application">(app),
+    runner.configuration<"solver">());
+```
+
+`FirstImprovement` contributes `solver.search.*`; Simulated Annealing exposes
+its configurable policy hierarchy such as `solver.search.temperature.*`; and a
+`neighborhood_union(...)` contributes `solver.neighborhood.random_biases`.
+The caller-supplied runner name is what distinguishes multiple otherwise
+identical runner instances (`fast.*`, `slow.*`, and so on). Mutation/apply
+semantics, CLI parsing, and config-file loading remain separate follow-up layers.
 
 ## Continuous integration
 

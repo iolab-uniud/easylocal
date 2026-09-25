@@ -136,18 +136,6 @@ int main()
         require_valid(app_parameters);
         require_valid(temperature_parameters);
 
-        const auto configuration = easylocal::config::root(
-            easylocal::config::named<"application">(app_parameters),
-            easylocal::config::named<"search">(
-                easylocal::config::named<"temperature">(
-                    temperature_parameters)));
-        print_configuration(configuration);
-
-        const auto instance = load_instance(app_parameters.instance_file);
-        const ExamTimetable initial_solution{
-            .timeslot_by_exam = {0, 0, 1, 2},
-        };
-
         auto runner =
             Runner{SimulatedAnnealing{FixedLength{temperature_parameters}}}
             | (solution_manager<ExamTimetablingSolutionManager>()
@@ -164,6 +152,16 @@ int main()
                | delta<
                      TimeslotLoadComponent,
                      TimeslotLoadDeltaEvaluator>());
+
+        const auto configuration = easylocal::config::root(
+            easylocal::config::named<"application">(app_parameters),
+            runner.configuration<"solver">());
+        print_configuration(configuration);
+
+        const auto instance = load_instance(app_parameters.instance_file);
+        const ExamTimetable initial_solution{
+            .timeslot_by_exam = {0, 0, 1, 2},
+        };
 
         std::mt19937 rng{static_cast<std::mt19937::result_type>(
             app_parameters.seed)};

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <easylocal/config/parameters.hpp>
+#include <easylocal/config/tree.hpp>
 
 #include <algorithm>
 #include <cassert>
@@ -228,6 +228,12 @@ public:
     {
         assert(parameters_.max_iterations >= 1);
         reset();
+    }
+
+    [[nodiscard]]
+    auto configuration() const noexcept
+    {
+        return config::named<"temperature">(parameters_);
     }
 
     void reset() noexcept

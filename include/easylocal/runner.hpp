@@ -1,5 +1,6 @@
 #pragma once
 
+#include <easylocal/config/tree.hpp>
 #include <easylocal/detail/cost_semantics.hpp>
 #include <easylocal/detail/evaluation.hpp>
 #include <easylocal/detail/neighborhood_concepts.hpp>
@@ -544,6 +545,26 @@ public:
           solution_manager_spec_{std::move(solution_manager_spec)},
           neighborhood_spec_{std::move(neighborhood_spec)}
     {
+    }
+
+    template<config::fixed_string Name>
+        requires (
+            config::configuration_provider<Algorithm> ||
+            config::configuration_provider<SMSpec> ||
+            config::configuration_provider<NHESpec>)
+    [[nodiscard]]
+    auto configuration() const
+    {
+        auto children = std::tuple_cat(
+            config::detail::configuration_nodes(algorithm_),
+            config::detail::configuration_nodes(solution_manager_spec_),
+            config::detail::configuration_nodes(neighborhood_spec_));
+
+        return std::apply(
+            [](auto... nodes) {
+                return config::named<Name>(std::move(nodes)...);
+            },
+            std::move(children));
     }
 
     [[nodiscard]]

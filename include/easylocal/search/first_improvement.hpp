@@ -1,6 +1,6 @@
 #pragma once
 
-#include <easylocal/config/parameters.hpp>
+#include <easylocal/config/tree.hpp>
 #include <easylocal/search/detail/context_concepts.hpp>
 
 #include <cassert>
@@ -62,6 +62,12 @@ public:
         : parameters_{parameters}
     {
         assert(parameters_.validate());
+    }
+
+    [[nodiscard]]
+    auto configuration() const noexcept
+    {
+        return config::named<"search">(parameters_);
     }
 
     template<class Context>
