@@ -279,7 +279,15 @@ then delegates move selection to that child. A zero bias disables a child for
 random proposals without affecting deterministic `moves()` traversal. If a
 selected child has no move for the current solution, it is removed from that
 proposal attempt and the remaining biases are renormalized. The implementation
-uses fixed-size storage and no heap allocation.
+uses fixed-size storage and no heap allocation. Biases are currently recipe-time
+configuration: runtime reconfiguration is intentionally deferred to the future
+general parameter/configuration surface rather than exposed as a union-specific
+mutable API.
+
+Delta capability also composes per component. A union exposes a component delta
+only when every child exposes that component; otherwise that component uses the
+existing full-evaluation fallback. Tagged union moves dispatch the delta directly
+to the originating child without virtual calls or heap allocation.
 
 ## Search runner
 
@@ -342,12 +350,10 @@ The current MWE deliberately does not define:
 - evaluation-state caching;
 - proxy lifetime/generation invalidation;
 - move undo/reversibility;
-- propagation of delta-evaluator capabilities through `neighborhood_union`;
-- fallback/capability negotiation between random sampling strategies;
-- diagnostics for fallback from without- to with-replacement;
+- future random-traversal/replacement semantics;
 - EL3 neighborhood adapters;
-- biased/adaptive sampling;
+- runtime/adaptive neighborhood-selection parameters;
 - generic indexed/combinatorial move-space helpers;
 - floating-point semantics;
-- CLI/configuration;
+- generic parameter exposure through direct C++, CLI, and configuration files;
 - tracing/logging.

@@ -80,7 +80,7 @@ int main()
         "swap moves are generated lazily in lexicographic position order");
 
     const auto current_length = tour_length.evaluate(solution);
-    for (const auto [first, second] : expected)
+    for (const auto& [first, second] : expected)
     {
         const SwapCitiesMove move{
             .first_position = first,

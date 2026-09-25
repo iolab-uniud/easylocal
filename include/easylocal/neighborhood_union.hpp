@@ -52,10 +52,10 @@ struct neighborhood_union_move_type<
         tagged_neighborhood_move<Indices, typename Explorers::move_type>...>;
 };
 
-template<class Solution, class Move, class... Ranges>
+template<class Move, class... Ranges>
 class neighborhood_union_moves_view
     : public std::ranges::view_interface<
-          neighborhood_union_moves_view<Solution, Move, Ranges...>>
+          neighborhood_union_moves_view<Move, Ranges...>>
 {
 private:
     static constexpr std::size_t range_count = sizeof...(Ranges);
@@ -252,13 +252,6 @@ template<class Component, class... Explorers>
 inline constexpr bool all_neighborhoods_have_delta_component_v =
     (neighborhood_has_delta_component_v<Explorers, Component> && ...);
 
-template<class Component, class Explorer>
-using neighborhood_delta_binding_for_t = std::tuple_element_t<
-    tuple_type_index_v<
-        Component,
-        neighborhood_delta_component_types_t<Explorer>>,
-    neighborhood_delta_bindings_t<Explorer>>;
-
 template<class CandidateComponents, class... Explorers>
 struct common_neighborhood_delta_components;
 
@@ -362,8 +355,13 @@ class neighborhood_union_explorer
         "a neighborhood union requires at least two NeighborhoodExplorers");
 
 private:
+    static constexpr std::size_t child_count = sizeof...(Explorers);
+
     using explorer_tuple = std::tuple<Explorers...>;
     using first_explorer = std::tuple_element_t<0, explorer_tuple>;
+    using union_move_type = typename neighborhood_union_move_type<
+        std::index_sequence_for<Explorers...>,
+        Explorers...>::type;
     using common_delta_components = typename common_neighborhood_delta_components<
         neighborhood_delta_component_types_t<first_explorer>,
         Explorers...>::type;
@@ -375,10 +373,7 @@ private:
         std::index_sequence<Indices...>) const
     {
         using move_view = neighborhood_union_moves_view<
-            typename first_explorer::solution_type,
-            typename neighborhood_union_move_type<
-                std::index_sequence_for<Explorers...>,
-                Explorers...>::type,
+            union_move_type,
             decltype(std::get<Indices>(explorers_).moves(solution))...>;
 
         return move_view{
@@ -389,7 +384,7 @@ private:
     template<std::uniform_random_bit_generator RNG>
     [[nodiscard]]
     auto choose_random_child(
-        const std::array<bool, sizeof...(Explorers)>& active,
+        const std::array<bool, child_count>& active,
         RNG& rng) const -> std::optional<std::size_t>
     {
         double max_bias = 0.0;
@@ -446,15 +441,9 @@ private:
         const std::size_t selected,
         const typename first_explorer::solution_type& solution,
         RNG& rng) const
-        -> std::optional<typename neighborhood_union_move_type<
-            std::index_sequence_for<Explorers...>,
-            Explorers...>::type>
+        -> std::optional<union_move_type>
     {
-        using union_move_type = typename neighborhood_union_move_type<
-            std::index_sequence_for<Explorers...>,
-            Explorers...>::type;
-
-        if constexpr (Index < sizeof...(Explorers))
+        if constexpr (Index < child_count)
         {
             if (selected == Index)
             {
@@ -490,9 +479,7 @@ private:
 public:
     using instance_type = typename first_explorer::instance_type;
     using solution_type = typename first_explorer::solution_type;
-    using move_type = typename neighborhood_union_move_type<
-        std::index_sequence_for<Explorers...>,
-        Explorers...>::type;
+    using move_type = union_move_type;
     using delta_bindings_type = typename neighborhood_union_delta_bindings<
         common_delta_components,
         Explorers...>::type;
@@ -509,7 +496,7 @@ public:
         "all NeighborhoodExplorers in a union must use the same solution_type");
 
     explicit neighborhood_union_explorer(
-        std::array<double, sizeof...(Explorers)> random_biases,
+        std::array<double, child_count> random_biases,
         Explorers... explorers)
         : explorers_{std::move(explorers)...},
           random_biases_{std::move(random_biases)}
@@ -562,7 +549,7 @@ public:
         const solution_type& solution,
         RNG& rng) const -> std::optional<move_type>
     {
-        std::array<bool, sizeof...(Explorers)> active{};
+        std::array<bool, child_count> active{};
         for (std::size_t index = 0; index < active.size(); ++index)
         {
             active[index] = random_biases_[index] > 0.0;
@@ -610,7 +597,7 @@ private:
     }
 
     explorer_tuple explorers_;
-    std::array<double, sizeof...(Explorers)> random_biases_;
+    std::array<double, child_count> random_biases_;
 };
 
 template<class... Specs>
@@ -687,10 +674,10 @@ struct is_neighborhood_spec<neighborhood_union_spec<Specs...>>
 {
 };
 
-template<std::convertible_to<double>... Weights>
+template<std::size_t Count>
 struct random_biases_spec
 {
-    std::array<double, sizeof...(Weights)> values;
+    std::array<double, Count> values;
 };
 
 } // namespace detail
@@ -700,17 +687,17 @@ template<std::convertible_to<double>... Weights>
 [[nodiscard]]
 auto random_biases(Weights&&... weights)
 {
-    return detail::random_biases_spec<std::remove_cvref_t<Weights>...>{
+    return detail::random_biases_spec<sizeof...(Weights)>{
         .values = {static_cast<double>(std::forward<Weights>(weights))...},
     };
 }
 
-template<class... Specs, class... Weights>
-    requires (sizeof...(Specs) == sizeof...(Weights))
+template<class... Specs, std::size_t Count>
+    requires (sizeof...(Specs) == Count)
 [[nodiscard]]
 auto operator|(
     detail::neighborhood_union_spec<Specs...> spec,
-    detail::random_biases_spec<Weights...> biases)
+    detail::random_biases_spec<Count> biases)
 {
     return std::move(spec).with_random_biases(std::move(biases.values));
 }

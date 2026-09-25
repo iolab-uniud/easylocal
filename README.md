@@ -223,6 +223,8 @@ The current tests cover:
   seeded proposal behavior;
 - n-ary neighborhood-union random proposals, including explicit child-selection
   biases;
+- per-component delta propagation through neighborhood unions, including nested
+  unions and full-evaluation fallback when a child lacks a component delta;
 - public First/Best Improvement and Simulated Annealing integration through the Runner.
 
 CTest is the common test entry point locally and in CI:
