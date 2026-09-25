@@ -1,7 +1,6 @@
 #pragma once
 
 #include "move.hpp"
-#include <easylocal/sampling.hpp>
 #include "solution_manager.hpp"
 
 #include <easylocal/cursor_moves.hpp>
@@ -35,8 +34,8 @@ private:
                !(first_edge == 0 && second_edge + 1 == city_count);
     }
 
-    // Rank decoding is retained only for random with-replacement traversal;
-    // deterministic authoring uses first_move/next_move.
+    // Rank decoding supports uniform single-move proposals; deterministic
+    // authoring uses first_move/next_move.
     [[nodiscard]]
     static constexpr auto move_count(const std::size_t city_count) noexcept
         -> std::size_t
@@ -106,155 +105,9 @@ private:
     }
 #endif
 
-    template<std::uniform_random_bit_generator RNG>
-    class random_moves_view
-        : public std::ranges::view_interface<random_moves_view<RNG>>
-    {
-    public:
-        random_moves_view() = default;
-
-        random_moves_view(
-            const Tour& solution,
-            RNG& rng) noexcept
-            : solution_{&solution},
-              rng_{&rng},
-              city_count_{solution.tour.size()},
-              move_count_{TwoOptNeighborhoodExplorer::move_count(city_count_)}
-#ifndef NDEBUG
-              , expected_signature_{debug_signature(solution)}
-#endif
-        {
-        }
-
-        class iterator
-        {
-        public:
-            using iterator_concept = std::input_iterator_tag;
-            using value_type = TwoOptMove;
-            using difference_type = std::ptrdiff_t;
-
-            iterator() = default;
-
-            iterator(
-                const Tour& solution,
-                RNG& rng,
-                const std::size_t city_count,
-                const std::size_t move_count
-#ifndef NDEBUG
-                , const std::uint64_t expected_signature
-#endif
-                )
-                : solution_{&solution},
-                  rng_{&rng},
-                  city_count_{city_count},
-                  move_count_{move_count}
-#ifndef NDEBUG
-                  , expected_signature_{expected_signature}
-#endif
-            {
-                if (move_count_ != 0)
-                {
-                    draw();
-                }
-            }
-
-            [[nodiscard]]
-            auto operator*() const noexcept -> value_type
-            {
-#ifndef NDEBUG
-                assert(
-                    debug_signature(*solution_) == expected_signature_ &&
-                    "neighborhood range invalidated by Tour mutation");
-#endif
-                return current_;
-            }
-
-            auto operator++() -> iterator&
-            {
-#ifndef NDEBUG
-                assert(
-                    debug_signature(*solution_) == expected_signature_ &&
-                    "neighborhood range invalidated by Tour mutation");
-#endif
-                draw();
-                return *this;
-            }
-
-            void operator++(int)
-            {
-                ++*this;
-            }
-
-            friend auto operator==(
-                const iterator& current,
-                std::default_sentinel_t) noexcept -> bool
-            {
-                return current.move_count_ == 0;
-            }
-
-        private:
-            void draw()
-            {
-                assert(move_count_ != 0);
-                std::uniform_int_distribution<std::size_t> distribution{
-                    0,
-                    move_count_ - 1,
-                };
-                current_ = TwoOptNeighborhoodExplorer::move_at_rank(
-                    city_count_,
-                    distribution(*rng_));
-            }
-
-            const Tour* solution_{nullptr};
-            RNG* rng_{nullptr};
-            std::size_t city_count_{0};
-            std::size_t move_count_{0};
-            TwoOptMove current_{};
-#ifndef NDEBUG
-            std::uint64_t expected_signature_{0};
-#endif
-        };
-
-        [[nodiscard]]
-        auto begin() -> iterator
-        {
-            return iterator{
-                *solution_,
-                *rng_,
-                city_count_,
-                move_count_
-#ifndef NDEBUG
-                , expected_signature_
-#endif
-            };
-        }
-
-        [[nodiscard]]
-        auto end() const noexcept -> std::default_sentinel_t
-        {
-            return {};
-        }
-
-        [[nodiscard]]
-        auto empty() const noexcept -> bool
-        {
-            return move_count_ == 0;
-        }
-
-    private:
-        const Tour* solution_{nullptr};
-        RNG* rng_{nullptr};
-        std::size_t city_count_{0};
-        std::size_t move_count_{0};
-#ifndef NDEBUG
-        std::uint64_t expected_signature_{0};
-#endif
-    };
 
 public:
     using neighborhood_explorer_base::neighborhood_explorer_base;
-    using random_sampling = easylocal::sampling::with_replacement;
-
     [[nodiscard]]
     auto is_valid(
         const Tour& solution,
@@ -333,15 +186,6 @@ public:
         return move_at_rank(solution.tour.size(), draw(rng));
     }
 
-    template<std::uniform_random_bit_generator RNG>
-    [[nodiscard]]
-    auto random_moves(
-        const Tour& solution,
-        RNG& rng) const
-    {
-        assert(solution_manager_.is_valid(solution));
-        return random_moves_view<RNG>{solution, rng};
-    }
 
     void make_move(
         Tour& solution,

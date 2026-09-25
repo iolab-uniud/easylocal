@@ -196,35 +196,17 @@ The deterministic neighborhood is authored through the incremental
 `easylocal::cursor_moves`. It is not implicitly materialized into a container,
 and deterministic authoring does not require ordinal indexing.
 
-Random traversal uses the same range-oriented interface:
+Random proposals are a separate capability from deterministic traversal:
 
 ```cpp
-auto candidates = neighborhood.random_moves(solution, rng);
+auto candidate = neighborhood.random_move(solution, rng);
 ```
 
-Each `ReassignJobNeighborhoodExplorer` declares one random sampling semantic
-through its `random_sampling` type. The assignment MWE currently declares:
-
-```cpp
-using random_sampling = easylocal::sampling::without_replacement;
-```
-
-Its random range is therefore finite and produces a random permutation of the
-neighborhood. Sparse Fisher-Yates is applied to ordinal positions, so the
-complete neighborhood is never materialized.
-
-The number of random candidates consumed is a responsibility of the search
-algorithm or caller, expressed through normal range composition:
-
-```cpp
-auto sample =
-    neighborhood.random_moves(solution, rng)
-    | std::views::take(sample_size);
-```
-
-A future explorer with `easylocal::sampling::with_replacement` will be a
-distinct explorer type. Such a random range may be unbounded; algorithms using it must impose the
-appropriate evaluation/sample budget.
+`random_move()` returns `std::optional<Move>` and returns `std::nullopt` when no
+move exists. The RNG is explicit. There is currently no public random traversal
+range, replacement-policy vocabulary, or Random First Improvement search method;
+those semantics are deliberately deferred until a stronger sampling model is
+designed.
 
 Traversal ranges compose with standard views:
 
@@ -262,13 +244,28 @@ originating child encoded in its type-safe tagged variant so `make_move()` can
 dispatch without virtual calls. The same mechanism also distinguishes equal C++
 move types originating from different child neighborhoods.
 
-Random traversal of a union is deliberately deferred. The accepted propagation
-rule is that a union can guarantee `without_replacement` only when every child
-does; the actual random mixing scheme is not selected yet.
+If every child exposes `random_move(solution, rng)`, the union exposes the same
+capability. Child selection is uniform by default and may be biased explicitly:
+
+```cpp
+auto combined =
+    neighborhood_union(
+        neighborhood<RelocateNeighborhood>(),
+        neighborhood<SwapNeighborhood>(),
+        neighborhood<AnotherNeighborhood>())
+    | random_biases(1.0, 2.0, 0.5);
+```
+
+The union chooses a child with probability proportional to its enabled bias and
+then delegates move selection to that child. A zero bias disables a child for
+random proposals without affecting deterministic `moves()` traversal. If a
+selected child has no move for the current solution, it is removed from that
+proposal attempt and the remaining biases are renormalized. The implementation
+uses fixed-size storage and no heap allocation.
 
 ## Search runner
 
-First Improvement, Best Improvement, and Random First Improvement are public framework facilities under `easylocal::search`; the Assignment example only supplies the model and services they consume.
+First Improvement, Best Improvement, and Simulated Annealing are public framework facilities under `easylocal::search`; the Assignment example only supplies the model and services they consume.
 
 Search algorithms are wired through the public recipe-based
 `easylocal::Runner`. Service objects are not constructed by application code.

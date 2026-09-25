@@ -1,7 +1,5 @@
 #include <easylocal/runner.hpp>
-#include <easylocal/sampling.hpp>
 #include <easylocal/search/detail/context_concepts.hpp>
-#include <easylocal/search/random_first_improvement.hpp>
 #include <easylocal/search/simulated_annealing.hpp>
 
 #include <optional>
@@ -115,17 +113,6 @@ private:
     Instance instance_;
 };
 
-class RandomGoodNeighborhood : public GoodNeighborhood
-{
-public:
-    using random_sampling = easylocal::sampling::without_replacement;
-
-    [[nodiscard]]
-    static auto random_moves(const Solution&, std::mt19937&)
-    {
-        return std::views::single(Move{});
-    }
-};
 
 
 class RandomMoveGoodNeighborhood : public GoodNeighborhood
@@ -167,17 +154,6 @@ private:
     Instance instance_;
 };
 
-class RandomWrongMoveNeighborhood : public GoodNeighborhood
-{
-public:
-    using random_sampling = easylocal::sampling::without_replacement;
-
-    [[nodiscard]]
-    static auto random_moves(const Solution&, std::mt19937&)
-    {
-        return std::views::single(WrongMove{});
-    }
-};
 
 struct EvaluationState
 {
@@ -293,13 +269,6 @@ int main()
                   SearchContext<GoodNeighborhood>>);
     static_assert(!easylocal::search::detail::enumerating_strict_improvement_context<
                   SearchContext<WrongMoveNeighborhood>>);
-
-    static_assert(easylocal::search::detail::random_first_improvement_context<
-                  SearchContext<RandomGoodNeighborhood>,
-                  std::mt19937>);
-    static_assert(!easylocal::search::detail::random_first_improvement_context<
-                  SearchContext<RandomWrongMoveNeighborhood>,
-                  std::mt19937>);
 
     static_assert(easylocal::search::detail::random_move_context<
                   SearchContext<RandomMoveGoodNeighborhood>,

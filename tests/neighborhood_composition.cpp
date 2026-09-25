@@ -1,8 +1,6 @@
 #include <easylocal/easylocal.hpp>
-#include <easylocal/sampling.hpp>
 #include <easylocal/search/best_improvement.hpp>
 #include <easylocal/search/first_improvement.hpp>
-#include <easylocal/search/random_first_improvement.hpp>
 
 #include "move.hpp"
 #include "neighborhood_explorer.hpp"
@@ -11,6 +9,8 @@
 #include <concepts>
 #include <cstddef>
 #include <iostream>
+#include <limits>
+#include <optional>
 #include <random>
 #include <ranges>
 #include <string_view>
@@ -25,7 +25,6 @@ namespace
 using namespace easylocal::mwe::assignment;
 using easylocal::search::BestImprovement;
 using easylocal::search::FirstImprovement;
-using easylocal::search::RandomFirstImprovement;
 
 [[nodiscard]]
 auto default_solution_manager_recipe()
@@ -46,7 +45,6 @@ public:
     using instance_type = AssignmentInstance;
     using solution_type = AssignmentSolution;
     using move_type = SwapMove;
-    using random_sampling = easylocal::sampling::without_replacement;
 
     explicit SwapNeighborhoodExplorer(
         const AssignmentSolutionManager& solution_manager) noexcept
@@ -79,6 +77,43 @@ public:
                });
     }
 
+    template<std::uniform_random_bit_generator RNG>
+    [[nodiscard]]
+    auto random_move(
+        const AssignmentSolution& solution,
+        RNG& rng) const -> std::optional<SwapMove>
+    {
+        const auto size = solution.assignment.size();
+        if (size < 2)
+        {
+            return std::nullopt;
+        }
+
+        const auto count = size * (size - 1) / 2;
+        if (count == 0)
+        {
+            return std::nullopt;
+        }
+
+        std::uniform_int_distribution<std::size_t> draw{0, count - 1};
+        auto ordinal = draw(rng);
+
+        for (std::size_t first = 0; first < size; ++first)
+        {
+            const auto row = size - first - 1;
+            if (ordinal < row)
+            {
+                return SwapMove{
+                    .first = first,
+                    .second = first + 1 + ordinal,
+                };
+            }
+            ordinal -= row;
+        }
+
+        return std::nullopt;
+    }
+
     void make_move(AssignmentSolution& solution, const SwapMove move) const
     {
         std::swap(
@@ -96,7 +131,6 @@ public:
     using instance_type = AssignmentInstance;
     using solution_type = AssignmentSolution;
     using move_type = ReassignJobMove;
-    using random_sampling = easylocal::sampling::without_replacement;
 
     explicit DestinationZeroNeighborhoodExplorer(
         const AssignmentSolutionManager& solution_manager) noexcept
@@ -125,9 +159,77 @@ public:
                });
     }
 
+    template<std::uniform_random_bit_generator RNG>
+    [[nodiscard]]
+    auto random_move(
+        const AssignmentSolution& solution,
+        RNG& rng) const -> std::optional<ReassignJobMove>
+    {
+        const auto count = static_cast<std::size_t>(std::ranges::count_if(
+            solution.assignment,
+            [](const machine_id machine) { return machine != 0; }));
+
+        if (count == 0)
+        {
+            return std::nullopt;
+        }
+
+        std::uniform_int_distribution<std::size_t> draw{0, count - 1};
+        auto target = draw(rng);
+
+        for (std::size_t job = 0; job < solution.assignment.size(); ++job)
+        {
+            if (solution.assignment[job] == 0)
+            {
+                continue;
+            }
+
+            if (target == 0)
+            {
+                return ReassignJobMove{.job = job, .destination = 0};
+            }
+            --target;
+        }
+
+        return std::nullopt;
+    }
+
     void make_move(AssignmentSolution& solution, const ReassignJobMove move) const
     {
         solution.assignment[move.job] = move.destination;
+    }
+
+private:
+    const AssignmentSolutionManager& solution_manager_;
+};
+
+class DeterministicOnlyNeighborhoodExplorer
+{
+public:
+    using instance_type = AssignmentInstance;
+    using solution_type = AssignmentSolution;
+    using move_type = ReassignJobMove;
+
+    explicit DeterministicOnlyNeighborhoodExplorer(
+        const AssignmentSolutionManager& solution_manager) noexcept
+        : solution_manager_{solution_manager}
+    {
+    }
+
+    [[nodiscard]]
+    auto instance() const noexcept -> const AssignmentInstance&
+    {
+        return solution_manager_.instance();
+    }
+
+    [[nodiscard]]
+    auto moves(const AssignmentSolution&) const
+    {
+        return std::views::empty<ReassignJobMove>;
+    }
+
+    void make_move(AssignmentSolution&, const ReassignJobMove) const noexcept
+    {
     }
 
 private:
@@ -158,17 +260,29 @@ public:
     }
 };
 
-template<class BoundRunner, class RNG>
-concept CanRunWithRng =
-    requires(BoundRunner& runner, AssignmentSolution solution, RNG& rng) {
-        runner.run(std::move(solution), rng);
+template<class NHE, class RNG>
+concept HasRandomMove =
+    requires(const NHE& neighborhood, const AssignmentSolution& solution, RNG& rng) {
+        neighborhood.random_move(solution, rng);
     };
 
-template<class NHE, class RNG>
-concept HasRandomMoves =
-    requires(const NHE& neighborhood, const AssignmentSolution& solution, RNG& rng) {
-        neighborhood.random_moves(solution, rng);
-    };
+class SampleNeighborhoodIndex
+{
+public:
+    template<class Context, std::uniform_random_bit_generator RNG>
+    [[nodiscard]]
+    auto run(
+        const Context& context,
+        const typename Context::solution_type& solution,
+        RNG& rng) const -> std::size_t
+    {
+        const auto move =
+            context.neighborhood_explorer().random_move(solution, rng);
+        return move
+            ? move->index()
+            : std::numeric_limits<std::size_t>::max();
+    }
+};
 
 auto expect(const bool condition, const std::string_view description) -> bool
 {
@@ -188,6 +302,7 @@ int main()
     using easylocal::Runner;
     using easylocal::neighborhood;
     using easylocal::neighborhood_union;
+    using easylocal::random_biases;
     using easylocal::solution_manager;
 
     bool ok = true;
@@ -208,7 +323,12 @@ int main()
     using UnionExplorer = typename decltype(union_spec)::service_type;
 
     static_assert(std::variant_size_v<typename UnionExplorer::move_type> == 3);
-    static_assert(!HasRandomMoves<UnionExplorer, std::mt19937>);
+    static_assert(HasRandomMove<UnionExplorer, std::mt19937>);
+
+    using PartiallyRandomUnionExplorer = typename decltype(neighborhood_union(
+        neighborhood<ReassignJobNeighborhoodExplorer>(),
+        neighborhood<DeterministicOnlyNeighborhoodExplorer>()))::service_type;
+    static_assert(!HasRandomMove<PartiallyRandomUnionExplorer, std::mt19937>);
 
     using FluentRunner = decltype(
         Runner{FirstImprovement{{.max_evaluations = 32}}}
@@ -280,16 +400,58 @@ int main()
         best_result.cost == Cost{0, 0},
         "best improvement consumes a neighborhood union without algorithm changes");
 
-    auto random_runner =
-        Runner{RandomFirstImprovement{{.max_evaluations = 32}}}
+    auto biased_sampler =
+        Runner{SampleNeighborhoodIndex{}}
+        | default_solution_manager_recipe()
+        | (neighborhood_union(
+               neighborhood<ReassignJobNeighborhoodExplorer>(),
+               neighborhood<SwapNeighborhoodExplorer>(),
+               neighborhood<DestinationZeroNeighborhoodExplorer>())
+           | random_biases(0.0, 1.0, 0.0));
+
+    auto bound_biased_sampler = biased_sampler.bind(instance);
+    std::mt19937 biased_rng{12345};
+    for (std::size_t sample = 0; sample < 32; ++sample)
+    {
+        ok &= expect(
+            bound_biased_sampler.run(initial, biased_rng) == 1,
+            "zero random bias disables a child while a positive bias selects the enabled neighborhood");
+    }
+
+    auto disabled_sampler =
+        Runner{SampleNeighborhoodIndex{}}
+        | default_solution_manager_recipe()
+        | (neighborhood_union(
+               neighborhood<ReassignJobNeighborhoodExplorer>(),
+               neighborhood<SwapNeighborhoodExplorer>(),
+               neighborhood<DestinationZeroNeighborhoodExplorer>())
+           | random_biases(0.0, 0.0, 0.0));
+
+    auto bound_disabled_sampler = disabled_sampler.bind(instance);
+    std::mt19937 disabled_rng{1};
+    ok &= expect(
+        bound_disabled_sampler.run(initial, disabled_rng) ==
+            std::numeric_limits<std::size_t>::max(),
+        "all-zero random biases disable random proposals without changing deterministic traversal");
+
+    auto default_sampler =
+        Runner{SampleNeighborhoodIndex{}}
         | default_solution_manager_recipe()
         | neighborhood_union(
               neighborhood<ReassignJobNeighborhoodExplorer>(),
               neighborhood<SwapNeighborhoodExplorer>(),
               neighborhood<DestinationZeroNeighborhoodExplorer>());
 
-    using BoundRandomRunner = decltype(random_runner.bind(instance));
-    static_assert(!CanRunWithRng<BoundRandomRunner, std::mt19937>);
+    auto bound_default_sampler = default_sampler.bind(instance);
+    std::mt19937 default_rng_a{67890};
+    std::mt19937 default_rng_b{67890};
+    for (std::size_t sample = 0; sample < 32; ++sample)
+    {
+        ok &= expect(
+            bound_default_sampler.run(initial, default_rng_a) ==
+                bound_default_sampler.run(initial, default_rng_b),
+            "neighborhood-union random selection is reproducible for identical RNG state");
+    }
 
     return ok ? 0 : 1;
 }

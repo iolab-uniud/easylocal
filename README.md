@@ -208,9 +208,11 @@ The current tests cover:
   composition with standard range filters;
 - deterministic n-ary neighborhood union, including heterogeneous move types
   and transparent use through the public `Runner`;
-- static random traversal semantics (`with_replacement` / `without_replacement`)
-  and deterministic seeded random traversal;
-- public First, Best, and Random First Improvement integration through the Runner.
+- single random proposals through `random_move(solution, rng)` and deterministic
+  seeded proposal behavior;
+- n-ary neighborhood-union random proposals, including explicit child-selection
+  biases;
+- public First/Best Improvement and Simulated Annealing integration through the Runner.
 
 CTest is the common test entry point locally and in CI:
 

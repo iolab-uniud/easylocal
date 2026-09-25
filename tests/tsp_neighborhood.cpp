@@ -99,37 +99,11 @@ int main()
             "every generated 2-opt move is structurally valid");
     }
 
-    static_assert(std::same_as<
-        TwoOptNeighborhoodExplorer::random_sampling,
-        easylocal::sampling::with_replacement>);
-
     std::mt19937 rng{12345U};
     const auto random_move = neighborhood.random_move(solution, rng);
     ok &= expect(
         random_move.has_value() && neighborhood.is_valid(solution, *random_move),
         "single random 2-opt proposal is available and valid");
-
-    auto random_moves = neighborhood.random_moves(solution, rng);
-    static_assert(std::ranges::input_range<decltype(random_moves)>);
-    static_assert(!std::ranges::forward_range<decltype(random_moves)>);
-    static_assert(std::ranges::view<decltype(random_moves)>);
-
-    ok &= expect(
-        !std::ranges::empty(random_moves),
-        "random 2-opt traversal is non-empty when moves exist");
-
-    std::size_t random_samples = 0;
-    for (const auto move : random_moves | std::views::take(32))
-    {
-        ++random_samples;
-        ok &= expect(
-            neighborhood.is_valid(solution, move),
-            "with-replacement traversal yields only valid 2-opt moves");
-    }
-
-    ok &= expect(
-        random_samples == 32,
-        "with-replacement traversal remains available beyond neighborhood size");
 
     auto first_edge_zero =
         neighborhood.moves(solution)
@@ -198,11 +172,6 @@ int main()
     ok &= expect(
         !triangle_neighborhood.random_move(triangle, triangle_rng).has_value(),
         "single random 2-opt proposal is empty when no move exists");
-    auto triangle_random_moves =
-        triangle_neighborhood.random_moves(triangle, triangle_rng);
-    ok &= expect(
-        std::ranges::empty(triangle_random_moves),
-        "random 2-opt traversal is empty when no move exists");
 
     return ok ? 0 : 1;
 }

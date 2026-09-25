@@ -1,7 +1,6 @@
 #include <easylocal/runner.hpp>
 #include <easylocal/search/best_improvement.hpp>
 #include <easylocal/search/first_improvement.hpp>
-#include <easylocal/search/random_first_improvement.hpp>
 
 #include "capacity_delta.hpp"
 #include "neighborhood_explorer.hpp"
@@ -24,8 +23,6 @@ using easylocal::search::BestImprovement;
 using easylocal::search::BestImprovementTermination;
 using easylocal::search::FirstImprovement;
 using easylocal::search::FirstImprovementTermination;
-using easylocal::search::RandomFirstImprovement;
-using easylocal::search::RandomFirstImprovementTermination;
 
 [[nodiscard]]
 auto default_solution_manager_recipe()
@@ -535,73 +532,6 @@ int main()
             BestImprovementTermination::local_optimum,
         "best improvement recognizes an empty neighborhood as locally optimal");
 
-    const auto run_random_with_budget =
-        [&](const std::size_t max_evaluations, AssignmentSolution solution, auto& rng) {
-            auto runner =
-                Runner{RandomFirstImprovement{{
-                    .max_evaluations = max_evaluations,
-                }}}
-                    .with_solution_manager(
-                        default_solution_manager_recipe())
-                    .with_neighborhood(
-                        default_neighborhood_recipe());
-
-            return runner.bind(instance).run(std::move(solution), rng);
-        };
-
-    std::mt19937 random_rng_a{12345};
-    std::mt19937 random_rng_b{12345};
-
-    const auto random_complete_a =
-        run_random_with_budget(16, initial, random_rng_a);
-    const auto random_complete_b =
-        run_random_with_budget(16, initial, random_rng_b);
-
-    ok &= expect(
-        random_complete_a.solution.assignment ==
-            random_complete_b.solution.assignment &&
-            random_complete_a.cost == random_complete_b.cost &&
-            random_complete_a.evaluations == random_complete_b.evaluations &&
-            random_complete_a.termination == random_complete_b.termination,
-        "random first improvement is reproducible for identical RNG state");
-    ok &= expect(
-        random_complete_a.cost == Cost{0, 0},
-        "random first improvement reaches a local optimum independently of random traversal order");
-    ok &= expect(
-        random_complete_a.termination ==
-            RandomFirstImprovementTermination::local_optimum,
-        "exhausting a without-replacement random traversal certifies local optimality");
-
-    std::mt19937 random_budget_rng{7};
-    const auto random_initial_only =
-        run_random_with_budget(1, initial, random_budget_rng);
-
-    ok &= expect(
-        random_initial_only.solution.assignment == initial.assignment,
-        "random first improvement with budget one leaves the initial solution unchanged");
-    ok &= expect(
-        random_initial_only.evaluations == 1,
-        "random first improvement budget one performs only the initial evaluation");
-    ok &= expect(
-        random_initial_only.termination ==
-            RandomFirstImprovementTermination::evaluation_budget_exhausted,
-        "random first improvement is bounded by its evaluation budget");
-
-    std::mt19937 random_empty_rng{99};
-    const auto random_empty_neighborhood =
-        (Runner{RandomFirstImprovement{{.max_evaluations = 1}}}
-         | default_solution_manager_recipe()
-         | default_neighborhood_recipe())
-            .bind(single_machine_instance)
-            .run(single_machine_solution, random_empty_rng);
-
-    ok &= expect(
-        random_empty_neighborhood.evaluations == 1,
-        "random first improvement needs no candidate evaluation for an empty neighborhood");
-    ok &= expect(
-        random_empty_neighborhood.termination ==
-            RandomFirstImprovementTermination::local_optimum,
-        "empty without-replacement random traversal certifies local optimality");
 
     return ok ? 0 : 1;
 }

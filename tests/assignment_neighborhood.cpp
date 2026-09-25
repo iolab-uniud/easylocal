@@ -56,10 +56,6 @@ int main()
     const AssignmentSolutionManager solution_manager{instance};
     const ReassignJobNeighborhoodExplorer neighborhood{solution_manager};
 
-    static_assert(std::same_as<
-                  ReassignJobNeighborhoodExplorer::random_sampling,
-                  easylocal::sampling::without_replacement>);
-
     const AssignmentSolution solution{
         .assignment = {1, 2},
     };
@@ -153,73 +149,11 @@ int main()
             ReassignJobMove{.job = 0, .destination = 1}),
         "no-op move is invalid");
 
-    // The assignment explorer declares one random traversal semantics:
-    // without replacement. The complete range is therefore finite and visits
-    // each move exactly once in random order.
-    std::mt19937 rng_without{12345};
-    const auto random_move = neighborhood.random_move(solution, rng_without);
+    std::mt19937 rng{12345};
+    const auto random_move = neighborhood.random_move(solution, rng);
     ok &= expect(
         random_move.has_value() && neighborhood.is_valid(solution, *random_move),
         "single random assignment proposal is available and valid");
-
-    auto unique_random = neighborhood.random_moves(solution, rng_without);
-
-    static_assert(std::ranges::input_range<decltype(unique_random)>);
-    static_assert(std::ranges::view<decltype(unique_random)>);
-
-    const auto unique_observed = collect(unique_random);
-    const std::set<observed_move> unique_set{
-        unique_observed.begin(),
-        unique_observed.end(),
-    };
-
-    ok &= expect(
-        unique_observed.size() == expected.size(),
-        "without-replacement traversal exhausts the neighborhood");
-    ok &= expect(
-        unique_set.size() == unique_observed.size(),
-        "without-replacement traversal contains no duplicate moves");
-
-    for (const auto& sampled : unique_observed)
-    {
-        ok &= expect(
-            std::ranges::find(expected, sampled) != expected.end(),
-            "random traversal samples only neighborhood moves");
-    }
-
-    // Sampling budget belongs to the consumer, not to random_moves().
-    std::mt19937 rng_budget{67890};
-    auto budgeted_random =
-        neighborhood.random_moves(solution, rng_budget)
-        | std::views::take(2);
-
-    const auto budgeted_observed = collect(budgeted_random);
-    const std::set<observed_move> budgeted_set{
-        budgeted_observed.begin(),
-        budgeted_observed.end(),
-    };
-
-    ok &= expect(
-        budgeted_observed.size() == 2,
-        "views::take imposes the consumer sampling budget");
-    ok &= expect(
-        budgeted_set.size() == budgeted_observed.size(),
-        "budgeted without-replacement sample remains unique");
-
-    // Filtering before take(1) is safe for this explorer because its random
-    // traversal is finite. It either finds one matching move or exhausts the
-    // neighborhood.
-    std::mt19937 rng_filtered{24680};
-    auto filtered_random =
-        neighborhood.random_moves(solution, rng_filtered)
-        | std::views::filter([](const ReassignJobMove move) {
-              return move.destination == 0;
-          })
-        | std::views::take(1);
-
-    ok &= expect(
-        collect(filtered_random).size() == 1,
-        "finite random traversal supports filter followed by take(1)");
 
     const AssignmentInstance single_machine_instance{
         .demand = {1, 2},
@@ -244,12 +178,6 @@ int main()
             single_machine_solution,
             empty_rng).has_value(),
         "single random assignment proposal is empty when no move exists");
-    ok &= expect(
-        std::ranges::empty(
-            single_machine_neighborhood.random_moves(
-                single_machine_solution,
-                empty_rng)),
-        "random traversal of an empty neighborhood is empty");
 
     const AssignmentInstance empty_instance{
         .demand = {},

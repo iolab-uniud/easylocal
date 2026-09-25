@@ -2,11 +2,15 @@
 
 #include <easylocal/runner.hpp>
 
+#include <algorithm>
+#include <array>
 #include <cassert>
+#include <cmath>
 #include <concepts>
 #include <cstddef>
 #include <iterator>
 #include <memory>
+#include <random>
 #include <optional>
 #include <ranges>
 #include <tuple>
@@ -213,6 +217,34 @@ private:
     ranges_type ranges_;
 };
 
+template<class Explorer, class Solution, class RNG>
+concept random_move_neighborhood =
+    requires(
+        const Explorer& explorer,
+        const Solution& solution,
+        RNG& rng)
+    {
+        {
+            explorer.random_move(solution, rng)
+        } -> std::same_as<std::optional<typename Explorer::move_type>>;
+    };
+
+template<std::size_t Count>
+[[nodiscard]]
+auto valid_random_biases(const std::array<double, Count>& biases) noexcept
+    -> bool
+{
+    for (const auto bias : biases)
+    {
+        if (!std::isfinite(bias) || bias < 0.0)
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 template<class... Explorers>
 class neighborhood_union_explorer
 {
@@ -242,6 +274,107 @@ private:
         };
     }
 
+    template<std::uniform_random_bit_generator RNG>
+    [[nodiscard]]
+    auto choose_random_child(
+        const std::array<bool, sizeof...(Explorers)>& active,
+        RNG& rng) const -> std::optional<std::size_t>
+    {
+        double max_bias = 0.0;
+
+        for (std::size_t index = 0; index < active.size(); ++index)
+        {
+            if (active[index])
+            {
+                max_bias = std::max(max_bias, random_biases_[index]);
+            }
+        }
+
+        if (max_bias == 0.0)
+        {
+            return std::nullopt;
+        }
+
+        double total = 0.0;
+        for (std::size_t index = 0; index < active.size(); ++index)
+        {
+            if (active[index])
+            {
+                total += random_biases_[index] / max_bias;
+            }
+        }
+
+        std::uniform_real_distribution<double> draw{0.0, total};
+        const auto target = draw(rng);
+        double cumulative = 0.0;
+        std::size_t fallback = active.size();
+
+        for (std::size_t index = 0; index < active.size(); ++index)
+        {
+            if (!active[index])
+            {
+                continue;
+            }
+
+            fallback = index;
+            cumulative += random_biases_[index] / max_bias;
+            if (target < cumulative)
+            {
+                return index;
+            }
+        }
+
+        assert(fallback != active.size());
+        return fallback;
+    }
+
+    template<std::size_t Index = 0, std::uniform_random_bit_generator RNG>
+    [[nodiscard]]
+    auto random_move_from_child(
+        const std::size_t selected,
+        const typename first_explorer::solution_type& solution,
+        RNG& rng) const
+        -> std::optional<typename neighborhood_union_move_type<
+            std::index_sequence_for<Explorers...>,
+            Explorers...>::type>
+    {
+        using union_move_type = typename neighborhood_union_move_type<
+            std::index_sequence_for<Explorers...>,
+            Explorers...>::type;
+
+        if constexpr (Index < sizeof...(Explorers))
+        {
+            if (selected == Index)
+            {
+                auto child_move =
+                    std::get<Index>(explorers_).random_move(solution, rng);
+
+                if (!child_move)
+                {
+                    return std::nullopt;
+                }
+
+                using tagged_move_type =
+                    std::variant_alternative_t<Index, union_move_type>;
+
+                return union_move_type{
+                    std::in_place_index<Index>,
+                    tagged_move_type{std::move(*child_move)},
+                };
+            }
+
+            return random_move_from_child<Index + 1>(
+                selected,
+                solution,
+                rng);
+        }
+        else
+        {
+            assert(false && "selected neighborhood index must be valid");
+            return std::nullopt;
+        }
+    }
+
 public:
     using instance_type = typename first_explorer::instance_type;
     using solution_type = typename first_explorer::solution_type;
@@ -260,9 +393,15 @@ public:
              typename Explorers::solution_type> && ...),
         "all NeighborhoodExplorers in a union must use the same solution_type");
 
-    explicit neighborhood_union_explorer(Explorers... explorers)
-        : explorers_{std::move(explorers)...}
+    explicit neighborhood_union_explorer(
+        std::array<double, sizeof...(Explorers)> random_biases,
+        Explorers... explorers)
+        : explorers_{std::move(explorers)...},
+          random_biases_{std::move(random_biases)}
     {
+        assert(
+            valid_random_biases(random_biases_) &&
+            "neighborhood random biases must be finite and non-negative");
 #ifndef NDEBUG
         const auto* const expected =
             std::addressof(std::get<0>(explorers_).instance());
@@ -291,6 +430,39 @@ public:
             std::index_sequence_for<Explorers...>{});
     }
 
+    template<std::uniform_random_bit_generator RNG>
+        requires (random_move_neighborhood<
+                      Explorers,
+                      solution_type,
+                      RNG> && ...)
+    [[nodiscard]]
+    auto random_move(
+        const solution_type& solution,
+        RNG& rng) const -> std::optional<move_type>
+    {
+        std::array<bool, sizeof...(Explorers)> active{};
+        for (std::size_t index = 0; index < active.size(); ++index)
+        {
+            active[index] = random_biases_[index] > 0.0;
+        }
+
+        while (true)
+        {
+            const auto selected = choose_random_child(active, rng);
+            if (!selected)
+            {
+                return std::nullopt;
+            }
+
+            if (auto move = random_move_from_child(*selected, solution, rng))
+            {
+                return move;
+            }
+
+            active[*selected] = false;
+        }
+    }
+
     void make_move(solution_type& solution, const move_type& move) const
     {
         std::visit(
@@ -303,6 +475,7 @@ public:
 
 private:
     explorer_tuple explorers_;
+    std::array<double, sizeof...(Explorers)> random_biases_;
 };
 
 template<class... Specs>
@@ -321,6 +494,19 @@ public:
     explicit neighborhood_union_spec(Specs... specs)
         : specs_{std::move(specs)...}
     {
+        random_biases_.fill(1.0);
+    }
+
+    [[nodiscard]]
+    auto with_random_biases(
+        std::array<double, sizeof...(Specs)> random_biases) &&
+        -> neighborhood_union_spec
+    {
+        assert(
+            valid_random_biases(random_biases) &&
+            "neighborhood random biases must be finite and non-negative");
+        random_biases_ = std::move(random_biases);
+        return std::move(*this);
     }
 
     template<class Dependency>
@@ -345,11 +531,13 @@ private:
         std::index_sequence<Indices...>) const -> service_type
     {
         return service_type{
+            random_biases_,
             std::get<Indices>(specs_).construct(dependency)...,
         };
     }
 
     std::tuple<Specs...> specs_;
+    std::array<double, sizeof...(Specs)> random_biases_{};
 };
 
 template<class... Specs>
@@ -358,7 +546,33 @@ struct is_neighborhood_spec<neighborhood_union_spec<Specs...>>
 {
 };
 
+template<std::convertible_to<double>... Weights>
+struct random_biases_spec
+{
+    std::array<double, sizeof...(Weights)> values;
+};
+
 } // namespace detail
+
+template<std::convertible_to<double>... Weights>
+    requires (sizeof...(Weights) >= 2)
+[[nodiscard]]
+auto random_biases(Weights&&... weights)
+{
+    return detail::random_biases_spec<std::remove_cvref_t<Weights>...>{
+        .values = {static_cast<double>(std::forward<Weights>(weights))...},
+    };
+}
+
+template<class... Specs, class... Weights>
+    requires (sizeof...(Specs) == sizeof...(Weights))
+[[nodiscard]]
+auto operator|(
+    detail::neighborhood_union_spec<Specs...> spec,
+    detail::random_biases_spec<Weights...> biases)
+{
+    return std::move(spec).with_random_biases(std::move(biases.values));
+}
 
 template<class... Specs>
     requires (sizeof...(Specs) >= 2) &&

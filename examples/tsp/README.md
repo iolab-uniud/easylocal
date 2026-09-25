@@ -10,8 +10,9 @@ and reverses the segment `[i+1, j]`.
 
 Deterministic 2-opt traversal is authored through `first_move`/`next_move` and
 exposed to consumers as a lazy `input_range` through `easylocal::cursor_moves`.
-Rank decoding remains an implementation detail of the random with-replacement
-traversal and is not part of deterministic neighborhood authoring.
+Rank decoding remains an implementation detail used to generate a uniform
+single random 2-opt proposal and is not part of deterministic neighborhood
+authoring.
 
 `TourLengthComponent` returns the structured materialized value
 `TourLengthValue{total}`. The problem-side `TspSolutionManager` aggregates that

@@ -113,20 +113,6 @@ add_test(
 )
 
 add_executable(
-    easylocal_sampling_header_self_containment
-    sampling_header_self_containment.cpp
-)
-target_link_libraries(
-    easylocal_sampling_header_self_containment
-    PRIVATE
-        EasyLocal::EasyLocal
-)
-add_test(
-    NAME easylocal.sampling-header-self-containment
-    COMMAND easylocal_sampling_header_self_containment
-)
-
-add_executable(
     easylocal_first_improvement_header_self_containment
     first_improvement_header_self_containment.cpp
 )
@@ -138,20 +124,6 @@ target_link_libraries(
 add_test(
     NAME easylocal.first-improvement-header-self-containment
     COMMAND easylocal_first_improvement_header_self_containment
-)
-
-add_executable(
-    easylocal_random_first_improvement_header_self_containment
-    random_first_improvement_header_self_containment.cpp
-)
-target_link_libraries(
-    easylocal_random_first_improvement_header_self_containment
-    PRIVATE
-        EasyLocal::EasyLocal
-)
-add_test(
-    NAME easylocal.random-first-improvement-header-self-containment
-    COMMAND easylocal_random_first_improvement_header_self_containment
 )
 
 add_executable(
@@ -250,20 +222,6 @@ target_link_libraries(
 add_test(
     NAME easylocal.concept-contracts
     COMMAND easylocal_concept_contracts_test
-)
-
-add_executable(
-    easylocal_random_first_improvement_test
-    random_first_improvement.cpp
-)
-target_link_libraries(
-    easylocal_random_first_improvement_test
-    PRIVATE
-        EasyLocal::EasyLocal
-)
-add_test(
-    NAME easylocal.random-first-improvement
-    COMMAND easylocal_random_first_improvement_test
 )
 
 add_executable(

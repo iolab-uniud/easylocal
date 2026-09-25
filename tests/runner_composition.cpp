@@ -1,7 +1,6 @@
 #include <easylocal/runner.hpp>
 #include <easylocal/search/best_improvement.hpp>
 #include <easylocal/search/first_improvement.hpp>
-#include <easylocal/search/random_first_improvement.hpp>
 
 #include "capacity_delta.hpp"
 #include "neighborhood_explorer.hpp"
@@ -17,7 +16,6 @@ namespace
 using namespace easylocal::mwe::assignment;
 using easylocal::search::BestImprovement;
 using easylocal::search::FirstImprovement;
-using easylocal::search::RandomFirstImprovement;
 
 [[nodiscard]]
 auto default_solution_manager_recipe()
@@ -135,14 +133,6 @@ int main()
     static_assert(CanRun<BoundBestRunner>);
     static_assert(!CanRunWithRng<BoundBestRunner, std::mt19937>);
 
-    using BoundRandomRunner = decltype(
-        (Runner{RandomFirstImprovement{{.max_evaluations = 1}}}
-         | default_solution_manager_recipe()
-         | default_neighborhood_recipe())
-            .bind(std::declval<const AssignmentInstance&>()));
-
-    static_assert(!CanRun<BoundRandomRunner>);
-    static_assert(CanRunWithRng<BoundRandomRunner, std::mt19937>);
 
     return 0;
 }

@@ -1,8 +1,6 @@
 #pragma once
 
-#include "detail/random_ordinals_view.hpp"
 #include "move.hpp"
-#include <easylocal/sampling.hpp>
 #include "solution_manager.hpp"
 
 #include <easylocal/cursor_moves.hpp>
@@ -24,40 +22,8 @@ class ReassignJobNeighborhoodExplorer
           AssignmentSolutionManager,
           ReassignJobMove>
 {
-private:
-    // Ordinal decoding is retained only for random without-replacement
-    // traversal; deterministic authoring uses first_move/next_move.
-    template<std::ranges::viewable_range Ordinals>
-    [[nodiscard]]
-    auto decode_moves(
-        const AssignmentSolution& solution,
-        Ordinals&& ordinals) const
-    {
-#ifndef NDEBUG
-        const auto expected_signature = debug_signature(solution);
-
-        return std::forward<Ordinals>(ordinals)
-             | std::views::transform(
-                   [this, &solution, expected_signature](
-                       const std::size_t ordinal) {
-                       assert(
-                           debug_signature(solution) == expected_signature &&
-                           "neighborhood range invalidated by AssignmentSolution mutation");
-                       return move_at(solution, ordinal);
-                   });
-#else
-        return std::forward<Ordinals>(ordinals)
-             | std::views::transform(
-                   [this, &solution](const std::size_t ordinal) {
-                       return move_at(solution, ordinal);
-                   });
-#endif
-    }
-
 public:
     using neighborhood_explorer_base::neighborhood_explorer_base;
-    using random_sampling = easylocal::sampling::without_replacement;
-
     [[nodiscard]]
     auto is_valid(
         const AssignmentSolution& solution,
@@ -168,21 +134,6 @@ public:
         return move_at(solution, draw(rng));
     }
 
-    template<std::uniform_random_bit_generator RNG>
-    [[nodiscard]]
-    auto random_moves(
-        const AssignmentSolution& solution,
-        RNG& rng) const
-    {
-        assert(solution_manager_.is_valid(solution));
-
-        return decode_moves(
-            solution,
-            detail::random_ordinals_view<RNG>{
-                rng,
-                move_count(solution),
-            });
-    }
 
     void make_move(
         AssignmentSolution& solution,

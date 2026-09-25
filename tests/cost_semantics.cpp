@@ -219,12 +219,6 @@ public:
         };
     }
 
-    template<std::uniform_random_bit_generator RNG>
-    [[nodiscard]]
-    static constexpr auto random_moves(const Solution&, RNG&) noexcept
-    {
-        return std::array{Move{.delta = 1}};
-    }
 
     static constexpr void make_move(
         Solution& solution,
