@@ -99,6 +99,39 @@ void help_is_a_frontend_action_not_an_override()
     assert(parsed.overrides.empty());
 }
 
+void config_file_option_is_frontend_metadata()
+{
+    constexpr std::array arguments{
+        std::string_view{"--config=solver.cfg"},
+        std::string_view{"--application.seed=42"},
+    };
+
+    const auto parsed = parse_cli(
+        std::span<const std::string_view>{arguments.data(), arguments.size()});
+
+    assert(parsed);
+    assert(parsed.config_file == std::filesystem::path{"solver.cfg"});
+    assert(parsed.overrides.size() == 1);
+    assert(parsed.overrides[0].path == "application.seed");
+}
+
+void duplicate_config_file_is_reported()
+{
+    constexpr std::array arguments{
+        std::string_view{"--config"},
+        std::string_view{"first.cfg"},
+        std::string_view{"--config=second.cfg"},
+    };
+
+    const auto parsed = parse_cli(
+        std::span<const std::string_view>{arguments.data(), arguments.size()});
+
+    assert(!parsed);
+    assert(parsed.config_file == std::filesystem::path{"first.cfg"});
+    assert(parsed.diagnostics.size() == 1);
+    assert(parsed.diagnostics[0].error == cli_error::duplicate_config_file);
+}
+
 void cli_batch_reuses_transactional_textual_overrides()
 {
     AppParameters app{};
@@ -184,6 +217,7 @@ void help_is_generated_from_the_configuration_tree()
     const auto help = cli_help("solver", tree);
 
     assert(help.find("Usage: solver [options]") != std::string::npos);
+    assert(help.find("--config <file>") != std::string::npos);
     assert(help.find("--application.instance_file <value>") !=
            std::string::npos);
     assert(help.find("Problem instance file") != std::string::npos);
@@ -200,6 +234,8 @@ int main()
     equals_and_separate_value_forms_are_supported();
     parser_accumulates_syntax_diagnostics();
     help_is_a_frontend_action_not_an_override();
+    config_file_option_is_frontend_metadata();
+    duplicate_config_file_is_reported();
     cli_batch_reuses_transactional_textual_overrides();
     cli_validation_errors_leave_configuration_unchanged();
     help_is_generated_from_the_configuration_tree();

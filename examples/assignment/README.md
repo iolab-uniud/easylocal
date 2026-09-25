@@ -26,6 +26,16 @@ example:
   --solver.search.max_evaluations=25
 ```
 
+
+The same configuration can be supplied from a compact file. File values are
+applied before CLI values, so explicit CLI options win:
+
+```sh
+./build/<preset>/examples/assignment/easylocal_assignment_mwe \
+  --config examples/assignment/configs/small.cfg \
+  --solver.search.max_evaluations=25
+```
+
 The example deliberately uses the recipe/pipeline API rather than constructing
 framework services manually, so it is suitable as a minimal starting point for
 a user program.

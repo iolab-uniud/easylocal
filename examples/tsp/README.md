@@ -98,6 +98,17 @@ biases without changing the MWE source:
 `--help` lists all application and runner parameters with descriptions and
 current values.
 
+The example also accepts a compact configuration file:
+
+```sh
+./build/<preset>/examples/tsp/easylocal_tsp_sa_mwe \
+  --config examples/tsp/configs/small.cfg \
+  --solver.search.temperature.max_iterations=50
+```
+
+The precedence is C++ defaults, then file overrides, then CLI overrides. Any
+file/CLI diagnostic causes a non-zero exit before the runner is bound.
+
 ## Floating-point pressure test
 
 A separate test iteration also uses decimal distances such as `0.1`, `0.2`, and

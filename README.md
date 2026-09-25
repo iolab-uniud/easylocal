@@ -177,8 +177,9 @@ parameter blocks live beside the object they configure: search-method parameters
 in the search-method header, temperature-policy parameters beside the policy,
 and union parameters beside `neighborhood_union`. Each runnable MWE defines its
 application-owned `AppParameters` directly in its `main`, because the instance
-path and seed belong to the application rather than to EasyLocal. No concrete CLI parser or config-file frontend is part of this layer;
-textual override mapping is provided separately by the external-adapter layer.
+path and seed belong to the application rather than to EasyLocal. Concrete CLI
+and compact configuration-file frontends are layered separately on top of the
+source-neutral textual override mapper.
 
 ### Named configuration tree
 
@@ -286,11 +287,12 @@ without requiring every intermediate field assignment to be valid.
 
 ### Command-line frontend
 
-`easylocal::config::parse_cli` is the first concrete frontend. It accepts only
-explicit long options that mirror configuration paths, either as
-`--path value` or `--path=value`, plus `-h`/`--help`. Every configuration option
-carries a textual value; there are deliberately no implicit boolean flags or
-abbreviations, so the frontend remains a thin projection onto `text_override`.
+`easylocal::config::parse_cli` accepts explicit long options that mirror
+configuration paths, either as `--path value` or `--path=value`, plus
+`-h`/`--help` and the reserved `--config <file>` frontend option. Every
+configuration override carries a textual value; there are deliberately no
+implicit boolean flags or abbreviations, so the frontend remains a thin
+projection onto `text_override`.
 
 ```sh
 ./solver \
@@ -302,12 +304,39 @@ abbreviations, so the frontend remains a thin projection onto `text_override`.
 
 `config::cli_help(program, tree)` derives help directly from the same tree and
 parameter schemas, including descriptions and current values. CLI syntax errors
-are accumulated by the frontend; a syntactically valid batch is then passed
-unchanged to `apply_overrides`, which supplies unknown-path, parse, validation,
-and transactional diagnostics. CLI values therefore override the C++ defaults
-already present in the application/runner before binding. A configuration-file
-frontend and precedence between multiple external sources remain the next
-adapter-layer step.
+are accumulated by the frontend; typed parsing, unknown-path checks, validation,
+and transactional commit remain responsibilities of `apply_overrides`.
+
+### Compact configuration-file frontend
+
+`easylocal::config::load_config_file` reads the intentionally small line-based
+format used by the runnable MWEs:
+
+```text
+# Full-line comments begin with #.
+application.seed = 2026
+solver.search.temperature.cooling_rate = 0.8
+solver.neighborhood.random_biases = [3, 1]
+```
+
+Each non-comment line is exactly `path = textual-value`; the first `=` separates
+the structural path from the value, so the right-hand side is passed to the same
+S27a typed parser used by the CLI. The file frontend reports open errors, malformed
+lines, empty paths, duplicate paths, and source line numbers without modifying
+configuration.
+
+The effective precedence is:
+
+```text
+C++ construction/defaults < configuration file < CLI
+```
+
+`overlay_overrides` resolves file-vs-CLI precedence first, then one single
+`apply_overrides` call validates and commits the effective batch. Source syntax
+errors and effective typed/validation errors all cause failure with zero commits;
+the runnable MWEs return a non-zero exit status after printing diagnostics. CLI
+therefore remains a final explicit override layer rather than a second mutation
+pass.
 
 ## Continuous integration
 

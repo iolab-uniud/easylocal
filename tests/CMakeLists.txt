@@ -56,6 +56,20 @@ add_test(
 )
 
 add_executable(
+    easylocal_configuration_file_header_self_containment
+    configuration_file_header_self_containment.cpp
+)
+target_link_libraries(
+    easylocal_configuration_file_header_self_containment
+    PRIVATE
+        EasyLocal::EasyLocal
+)
+add_test(
+    NAME easylocal.configuration-file-header-self-containment
+    COMMAND easylocal_configuration_file_header_self_containment
+)
+
+add_executable(
     easylocal_configuration_cli_header_self_containment
     configuration_cli_header_self_containment.cpp
 )
@@ -549,6 +563,20 @@ add_test(
 )
 
 add_executable(
+    easylocal_configuration_file_test
+    configuration_file.cpp
+)
+target_link_libraries(
+    easylocal_configuration_file_test
+    PRIVATE
+        EasyLocal::EasyLocal
+)
+add_test(
+    NAME easylocal.configuration-file
+    COMMAND easylocal_configuration_file_test
+)
+
+add_executable(
     easylocal_configuration_cli_test
     configuration_cli.cpp
 )
@@ -721,6 +749,17 @@ if(TARGET easylocal_assignment_mwe)
         PROPERTIES
             PASS_REGULAR_EXPRESSION "evaluation budget exhausted"
     )
+
+    add_test(
+        NAME easylocal.example.assignment-config-file
+        COMMAND easylocal_assignment_mwe
+            --config ${PROJECT_SOURCE_DIR}/examples/assignment/configs/small.cfg
+    )
+    set_tests_properties(
+        easylocal.example.assignment-config-file
+        PROPERTIES
+            PASS_REGULAR_EXPRESSION "evaluation budget exhausted"
+    )
 endif()
 
 if(TARGET easylocal_exam_timetabling_mwe)
@@ -740,6 +779,17 @@ if(TARGET easylocal_exam_timetabling_mwe)
     )
     set_tests_properties(
         easylocal.example.exam-cli-override
+        PROPERTIES
+            PASS_REGULAR_EXPRESSION "iterations: 1"
+    )
+
+    add_test(
+        NAME easylocal.example.exam-config-file
+        COMMAND easylocal_exam_timetabling_mwe
+            --config ${PROJECT_SOURCE_DIR}/examples/exam_timetabling/configs/small.cfg
+    )
+    set_tests_properties(
+        easylocal.example.exam-config-file
         PROPERTIES
             PASS_REGULAR_EXPRESSION "iterations: 1"
     )
@@ -764,5 +814,50 @@ if(TARGET easylocal_tsp_sa_mwe)
         easylocal.example.tsp-cli-override
         PROPERTIES
             PASS_REGULAR_EXPRESSION "iterations: 1"
+    )
+
+    add_test(
+        NAME easylocal.example.tsp-config-file
+        COMMAND easylocal_tsp_sa_mwe
+            --config ${PROJECT_SOURCE_DIR}/examples/tsp/configs/small.cfg
+    )
+    set_tests_properties(
+        easylocal.example.tsp-config-file
+        PROPERTIES
+            PASS_REGULAR_EXPRESSION "iterations: 1"
+    )
+
+    add_test(
+        NAME easylocal.example.tsp-config-precedence
+        COMMAND easylocal_tsp_sa_mwe
+            --config ${PROJECT_SOURCE_DIR}/examples/tsp/configs/small.cfg
+            --solver.search.temperature.max_iterations=2
+    )
+    set_tests_properties(
+        easylocal.example.tsp-config-precedence
+        PROPERTIES
+            PASS_REGULAR_EXPRESSION "iterations: 2"
+    )
+
+    add_test(
+        NAME easylocal.example.tsp-config-error
+        COMMAND easylocal_tsp_sa_mwe
+            --config ${PROJECT_SOURCE_DIR}/examples/tsp/configs/invalid.cfg
+    )
+    set_tests_properties(
+        easylocal.example.tsp-config-error
+        PROPERTIES
+            WILL_FAIL TRUE
+    )
+
+    add_test(
+        NAME easylocal.example.tsp-cli-error
+        COMMAND easylocal_tsp_sa_mwe
+            --solver.search.temperature.cooling_rate=1.5
+    )
+    set_tests_properties(
+        easylocal.example.tsp-cli-error
+        PROPERTIES
+            WILL_FAIL TRUE
     )
 endif()

@@ -35,3 +35,12 @@ The same tree drives the generated CLI help and pre-bind overrides:
   --solver.search.temperature.max_iterations=10 \
   --application.seed=42
 ```
+
+A compact configuration file can provide the same dotted paths:
+
+```sh
+./build/<preset>/examples/exam_timetabling/easylocal_exam_timetabling_mwe \
+  --config examples/exam_timetabling/configs/small.cfg
+```
+
+CLI values have higher precedence than values from the file.

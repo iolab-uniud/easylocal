@@ -6,6 +6,7 @@
 #include "tour_length_delta.hpp"
 
 #include <easylocal/config/cli.hpp>
+#include <easylocal/config/file.hpp>
 #include <easylocal/config/overrides.hpp>
 #include <easylocal/config/tree.hpp>
 #include <easylocal/neighborhood_union.hpp>
@@ -179,19 +180,47 @@ int main(int argc, char* argv[])
             return 0;
         }
 
-        if (!cli)
+        easylocal::config::config_file_parse_result file_configuration{};
+        if (cli.config_file.has_value())
+        {
+            file_configuration =
+                easylocal::config::load_config_file(*cli.config_file);
+        }
+
+        if (!cli || !file_configuration)
         {
             for (const auto& diagnostic : cli.diagnostics)
             {
                 std::cerr << "error: " << diagnostic.argument << ": "
                           << diagnostic.message << '\n';
             }
+            for (const auto& diagnostic : file_configuration.diagnostics)
+            {
+                std::cerr << "error: ";
+                if (diagnostic.line != 0)
+                {
+                    std::cerr << "config line " << diagnostic.line << ": ";
+                }
+                std::cerr << diagnostic.message;
+                if (!diagnostic.text.empty())
+                {
+                    std::cerr << " ('" << diagnostic.text << "')";
+                }
+                std::cerr << '\n';
+            }
             return 2;
         }
 
+        const auto effective_overrides = easylocal::config::overlay_overrides(
+            std::span<const easylocal::config::owned_text_override>{
+                file_configuration.overrides},
+            std::span<const easylocal::config::text_override>{cli.overrides});
+        const auto effective_views = easylocal::config::override_views(
+            std::span<const easylocal::config::owned_text_override>{
+                effective_overrides});
         const auto overrides = easylocal::config::apply_overrides(
             configuration,
-            std::span<const easylocal::config::text_override>{cli.overrides});
+            std::span<const easylocal::config::text_override>{effective_views});
         if (!overrides)
         {
             for (const auto& diagnostic : overrides.diagnostics)

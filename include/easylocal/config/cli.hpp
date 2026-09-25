@@ -7,6 +7,7 @@
 #include <concepts>
 #include <cstddef>
 #include <filesystem>
+#include <optional>
 #include <sstream>
 #include <span>
 #include <string>
@@ -23,6 +24,7 @@ enum class cli_error
     unexpected_argument,
     malformed_option,
     missing_value,
+    duplicate_config_file,
 };
 
 struct cli_diagnostic
@@ -35,6 +37,7 @@ struct cli_diagnostic
 struct cli_parse_result
 {
     bool help_requested{};
+    std::optional<std::filesystem::path> config_file;
     std::vector<text_override> overrides;
     std::vector<cli_diagnostic> diagnostics;
 
@@ -125,6 +128,44 @@ inline auto parse_cli(const std::span<const std::string_view> arguments)
         if (argument == "-h" || argument == "--help")
         {
             result.help_requested = true;
+            continue;
+        }
+
+        if (argument == "--config" || argument.starts_with("--config="))
+        {
+            std::string_view value;
+            if (argument.starts_with("--config="))
+            {
+                value = argument.substr(std::string_view{"--config="}.size());
+            }
+            else if (index + 1 < arguments.size() &&
+                     !arguments[index + 1].starts_with("--") &&
+                     arguments[index + 1] != "-h")
+            {
+                value = arguments[++index];
+            }
+
+            if (value.empty())
+            {
+                result.diagnostics.push_back({
+                    .error = cli_error::missing_value,
+                    .argument = std::string{argument},
+                    .message = "missing value for --config",
+                });
+                continue;
+            }
+
+            if (result.config_file.has_value())
+            {
+                result.diagnostics.push_back({
+                    .error = cli_error::duplicate_config_file,
+                    .argument = std::string{argument},
+                    .message = "--config may be specified at most once",
+                });
+                continue;
+            }
+
+            result.config_file = std::filesystem::path{std::string{value}};
             continue;
         }
 
@@ -220,6 +261,7 @@ auto cli_help(
     output.append(program_name);
     output += " [options]\n\nOptions:\n";
     output += "  -h, --help\n      Show this help message\n";
+    output += "  --config <file>\n      Read configuration overrides from a file\n";
 
     for_each_config_parameter(
         tree,

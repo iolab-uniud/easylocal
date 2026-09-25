@@ -10,6 +10,7 @@
 #include <cstddef>
 #include <exception>
 #include <filesystem>
+#include <ranges>
 #include <span>
 #include <string>
 #include <string_view>
@@ -27,6 +28,62 @@ struct text_override
     std::string_view path;
     std::string_view value;
 };
+
+struct owned_text_override
+{
+    std::string path;
+    std::string value;
+};
+
+[[nodiscard]]
+inline auto override_views(const std::span<const owned_text_override> overrides)
+    -> std::vector<text_override>
+{
+    std::vector<text_override> result;
+    result.reserve(overrides.size());
+
+    for (const auto& candidate : overrides)
+    {
+        result.push_back({
+            .path = candidate.path,
+            .value = candidate.value,
+        });
+    }
+
+    return result;
+}
+
+[[nodiscard]]
+inline auto overlay_overrides(
+    const std::span<const owned_text_override> lower_precedence,
+    const std::span<const text_override> higher_precedence)
+    -> std::vector<owned_text_override>
+{
+    std::vector<owned_text_override> result;
+    result.reserve(lower_precedence.size() + higher_precedence.size());
+
+    for (const auto& candidate : lower_precedence)
+    {
+        const auto shadowed = std::ranges::any_of(
+            higher_precedence,
+            [&](const auto& higher) { return higher.path == candidate.path; });
+
+        if (!shadowed)
+        {
+            result.push_back(candidate);
+        }
+    }
+
+    for (const auto& candidate : higher_precedence)
+    {
+        result.push_back({
+            .path = std::string{candidate.path},
+            .value = std::string{candidate.value},
+        });
+    }
+
+    return result;
+}
 
 enum class override_error
 {
