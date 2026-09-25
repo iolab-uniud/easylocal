@@ -295,6 +295,20 @@ add_test(
 )
 
 add_executable(
+    easylocal_tsp_swap_neighborhood_test
+    tsp_swap_neighborhood.cpp
+)
+target_link_libraries(
+    easylocal_tsp_swap_neighborhood_test
+    PRIVATE
+        easylocal_tsp_mwe_model
+)
+add_test(
+    NAME easylocal.tsp-swap-neighborhood
+    COMMAND easylocal_tsp_swap_neighborhood_test
+)
+
+add_executable(
     easylocal_evaluation_contract_test
     evaluation_contract.cpp
 )

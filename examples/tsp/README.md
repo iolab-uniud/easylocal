@@ -42,6 +42,26 @@ approximate comparisons remain deliberately reserved for a following iteration,
 so floating-point comparison policy can be examined independently from delta
 integration.
 
+## Runnable composite-neighborhood SA example
+
+`sa_main.cpp` is a runnable end-to-end Simulated Annealing example using two
+heterogeneous TSP neighborhoods: the existing 2-opt explorer and a
+`SwapCitiesNeighborhoodExplorer`. The runner composes them with
+`neighborhood_union(...)` and configures child-selection weights with
+`random_biases(3.0, 1.0)`. A fixed `std::mt19937` seed makes repeated runs
+reproducible within the same standard-library implementation.
+
+The union example deliberately does not attach the 2-opt delta evaluator. Delta
+propagation through `neighborhood_union` is not part of the current contract, so
+this executable exercises the correct full-evaluation fallback rather than
+pretending that child-local deltas are visible through the composite explorer.
+
+With the default top-level build, run it as:
+
+```text
+./build/<preset>/examples/tsp/easylocal_tsp_sa_mwe
+```
+
 ## Floating-point pressure test
 
 A separate test iteration also uses decimal distances such as `0.1`, `0.2`, and

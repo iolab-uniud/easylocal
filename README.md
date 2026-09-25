@@ -136,7 +136,10 @@ reference MWE for multi-component weighted costs and Simulated Annealing.
 The Assignment MWE also contains a runnable `main.cpp` showing the complete
 user-facing path from recipe composition to `Runner::bind()` and `run()`. With
 the default top-level build it can be executed as
-`./build/<preset>/examples/assignment/easylocal_assignment_mwe`.
+`./build/<preset>/examples/assignment/easylocal_assignment_mwe`. The TSP MWE
+adds `easylocal_tsp_sa_mwe`, a runnable Simulated Annealing example that composes
+2-opt and swap neighborhoods through `neighborhood_union(...)`, applies
+`random_biases(...)`, and passes an explicit RNG to `run()`.
 
 Simulated Annealing is public under `easylocal::search`. Its hot loop is fully
 policy based and uses no virtual dispatch: the concrete temperature and

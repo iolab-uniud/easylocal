@@ -11,3 +11,16 @@ target_include_directories(
     INTERFACE
         "${CMAKE_CURRENT_SOURCE_DIR}"
 )
+
+if(EASYLOCAL_BUILD_EXAMPLES)
+    add_executable(
+        easylocal_tsp_sa_mwe
+        sa_main.cpp
+    )
+
+    target_link_libraries(
+        easylocal_tsp_sa_mwe
+        PRIVATE
+            easylocal_tsp_mwe_model
+    )
+endif()
