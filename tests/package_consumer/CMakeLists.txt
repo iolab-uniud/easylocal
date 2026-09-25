@@ -6,37 +6,60 @@ if(NOT DEFINED EASYLOCAL_EXPECTED_VERSION)
     message(FATAL_ERROR "EASYLOCAL_EXPECTED_VERSION must be provided")
 endif()
 
-find_package(
-    EasyLocal
-    "${EASYLOCAL_EXPECTED_VERSION}"
-    EXACT
-    CONFIG
-    REQUIRED
-)
-
-if(NOT TARGET EasyLocal::EasyLocal)
-    message(FATAL_ERROR "installed package did not provide EasyLocal::EasyLocal")
+if(EASYLOCAL_FIND_MISSING_COMPONENT)
+    find_package(
+        EasyLocal
+        "${EASYLOCAL_EXPECTED_VERSION}"
+        EXACT
+        CONFIG
+        REQUIRED
+        COMPONENTS ConfigTOML
+    )
+elseif(EASYLOCAL_FIND_CORE_COMPONENT)
+    find_package(
+        EasyLocal
+        "${EASYLOCAL_EXPECTED_VERSION}"
+        EXACT
+        CONFIG
+        REQUIRED
+        COMPONENTS Core
+    )
+else()
+    find_package(
+        EasyLocal
+        "${EASYLOCAL_EXPECTED_VERSION}"
+        EXACT
+        CONFIG
+        REQUIRED
+    )
 endif()
+
+foreach(_required_target IN ITEMS EasyLocal::Core EasyLocal::EasyLocal)
+    if(NOT TARGET ${_required_target})
+        message(FATAL_ERROR
+            "installed package did not provide ${_required_target}")
+    endif()
+endforeach()
 
 get_target_property(
     _easylocal_compile_features
-    EasyLocal::EasyLocal
+    EasyLocal::Core
     INTERFACE_COMPILE_FEATURES
 )
 list(FIND _easylocal_compile_features cxx_std_23 _easylocal_cxx23_index)
 if(_easylocal_cxx23_index EQUAL -1)
     message(FATAL_ERROR
-        "EasyLocal::EasyLocal does not propagate the cxx_std_23 requirement")
+        "EasyLocal::Core does not propagate the cxx_std_23 requirement")
 endif()
 
 get_target_property(
     _easylocal_include_dirs
-    EasyLocal::EasyLocal
+    EasyLocal::Core
     INTERFACE_INCLUDE_DIRECTORIES
 )
 if(NOT _easylocal_include_dirs)
     message(FATAL_ERROR
-        "EasyLocal::EasyLocal does not expose installed include directories")
+        "EasyLocal::Core does not expose installed include directories")
 endif()
 
 if(NOT DEFINED EASYLOCAL_EXPECTED_INSTALL_PREFIX)
@@ -64,6 +87,26 @@ foreach(_include_dir IN LISTS _easylocal_include_dirs)
     endif()
 endforeach()
 
+get_target_property(
+    _core_link_libraries
+    EasyLocal::Core
+    INTERFACE_LINK_LIBRARIES
+)
+if(_core_link_libraries)
+    message(FATAL_ERROR
+        "EasyLocal::Core must be dependency-free, but links: ${_core_link_libraries}")
+endif()
+
+get_target_property(
+    _compat_link_libraries
+    EasyLocal::EasyLocal
+    INTERFACE_LINK_LIBRARIES
+)
+if(NOT _compat_link_libraries STREQUAL "EasyLocal::Core")
+    message(FATAL_ERROR
+        "EasyLocal::EasyLocal must be a Core-only compatibility facade, got: ${_compat_link_libraries}")
+endif()
+
 add_executable(
     easylocal_installed_package_consumer
     main.cpp
@@ -71,7 +114,7 @@ add_executable(
 target_link_libraries(
     easylocal_installed_package_consumer
     PRIVATE
-        EasyLocal::EasyLocal
+        EasyLocal::Core
 )
 
 enable_testing()

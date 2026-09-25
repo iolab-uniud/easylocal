@@ -3,7 +3,7 @@ add_library(easylocal_assignment_mwe_model INTERFACE)
 target_link_libraries(
     easylocal_assignment_mwe_model
     INTERFACE
-        EasyLocal::EasyLocal
+        EasyLocal::Core
 )
 
 target_include_directories(

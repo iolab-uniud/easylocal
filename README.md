@@ -62,11 +62,15 @@ Git.
 
 EasyLocal++ is designed from the beginning as a header-only library.
 
-The public CMake target is:
+The canonical public CMake target is:
 
 ```cmake
-EasyLocal::EasyLocal
+EasyLocal::Core
 ```
+
+`EasyLocal::Core` is intentionally dependency-free beyond the C++ standard
+library. `EasyLocal::EasyLocal` remains available as a compatibility facade and
+links only to `EasyLocal::Core`.
 
 A configured build tree can be installed to any prefix:
 
@@ -77,10 +81,10 @@ cmake --install build/release --prefix /path/to/easylocal-prefix
 An external CMake project can then consume that installation with:
 
 ```cmake
-find_package(EasyLocal CONFIG REQUIRED)
+find_package(EasyLocal CONFIG REQUIRED COMPONENTS Core)
 
 add_executable(my_search main.cpp)
-target_link_libraries(my_search PRIVATE EasyLocal::EasyLocal)
+target_link_libraries(my_search PRIVATE EasyLocal::Core)
 ```
 
 Point `CMAKE_PREFIX_PATH` at the chosen installation prefix when it is not in a
@@ -97,8 +101,25 @@ include/easylocal/
 The test suite checks header self-containment and multi-translation-unit use to
 catch ODR issues that are particularly relevant to header-only libraries. It
 also installs EasyLocal into an isolated prefix, configures a separate consumer
-with `find_package(EasyLocal)`, builds it through `EasyLocal::EasyLocal`, and
-runs the resulting executable.
+with both legacy `find_package(EasyLocal)` discovery and explicit
+`COMPONENTS Core`, builds it through `EasyLocal::Core`, and runs the resulting
+executable. The package test also verifies that `EasyLocal::Core` exposes no
+third-party link dependency and that requesting an unavailable optional
+component fails diagnostically.
+
+### Optional dependency policy
+
+The framework core and the current std-only CLI/compact configuration frontends
+do not require external libraries. Future TOML/YAML, logging, or TUI integrations
+will be separate optional CMake components/targets and must not add transitive
+dependencies to `EasyLocal::Core`. Optional adapters first use `find_package`; a
+`FetchContent` fallback is permitted only when the top-level caller explicitly
+sets `EASYLOCAL_FETCH_DEPENDENCIES=ON` (default `OFF`). Configuring EasyLocal
+therefore never performs implicit network access.
+
+The reserved future component names are `ConfigTOML`, `ConfigYAML`, `Logging`,
+and `TUI`. Concrete libraries have deliberately not been selected yet. See
+[`docs/dependency-policy.md`](docs/dependency-policy.md) for the complete policy.
 
 EasyLocal also provides optional, non-virtual convenience bases for the common
 service boilerplate:

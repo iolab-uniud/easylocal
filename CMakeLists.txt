@@ -15,26 +15,40 @@ project(
     LANGUAGES CXX
 )
 
-add_library(easylocal INTERFACE)
-add_library(EasyLocal::EasyLocal ALIAS easylocal)
-
+# EasyLocal::Core is the canonical dependency-free public target.
+# EasyLocal::EasyLocal remains as a compatibility facade for existing users.
+add_library(easylocal_core INTERFACE)
+add_library(EasyLocal::Core ALIAS easylocal_core)
 set_target_properties(
-    easylocal
+    easylocal_core
     PROPERTIES
-        EXPORT_NAME EasyLocal
+        EXPORT_NAME Core
 )
 
 target_compile_features(
-    easylocal
+    easylocal_core
     INTERFACE
         cxx_std_23
 )
 
 target_include_directories(
-    easylocal
+    easylocal_core
     INTERFACE
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
         $<INSTALL_INTERFACE:include>
+)
+
+add_library(easylocal INTERFACE)
+add_library(EasyLocal::EasyLocal ALIAS easylocal)
+set_target_properties(
+    easylocal
+    PROPERTIES
+        EXPORT_NAME EasyLocal
+)
+target_link_libraries(
+    easylocal
+    INTERFACE
+        easylocal_core
 )
 
 include(GNUInstallDirs)
@@ -58,6 +72,12 @@ option(
     OFF
 )
 
+option(
+    EASYLOCAL_FETCH_DEPENDENCIES
+    "Allow optional EasyLocal adapters to fetch missing third-party dependencies"
+    OFF
+)
+
 # The concrete MWE is deliberately outside the public EasyLocal++ API.
 # Its model targets are also consumed by tests and benchmarks, so make them
 # available whenever one of those project facilities is requested.
@@ -75,7 +95,9 @@ if(EASYLOCAL_BUILD_BENCHMARKS)
 endif()
 
 install(
-    TARGETS easylocal
+    TARGETS
+        easylocal_core
+        easylocal
     EXPORT EasyLocalTargets
 )
 

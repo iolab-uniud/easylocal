@@ -2,4 +2,26 @@
 
 include("${CMAKE_CURRENT_LIST_DIR}/EasyLocalTargets.cmake")
 
+# Core is always installed and intentionally has no third-party dependencies.
+set(EasyLocal_Core_FOUND TRUE)
+
+# EasyLocal::EasyLocal is retained as a compatibility facade for pre-S28a
+# consumers. It resolves only to EasyLocal::Core.
+set(EasyLocal_EasyLocal_FOUND TRUE)
+
+# Optional components are exported only when their corresponding adapter was
+# built. S28a establishes the component protocol before any such adapters exist.
+foreach(_easylocal_component IN LISTS EasyLocal_FIND_COMPONENTS)
+    if(_easylocal_component STREQUAL "Core"
+            OR _easylocal_component STREQUAL "EasyLocal")
+        continue()
+    endif()
+
+    if(NOT DEFINED EasyLocal_${_easylocal_component}_FOUND)
+        set(EasyLocal_${_easylocal_component}_FOUND FALSE)
+        set(EasyLocal_NOT_FOUND_MESSAGE
+            "Requested EasyLocal component '${_easylocal_component}' is not available in this installation")
+    endif()
+endforeach()
+
 check_required_components(EasyLocal)

@@ -5,7 +5,7 @@ add_executable(
 target_link_libraries(
     easylocal_toolchain_smoke
     PRIVATE
-        EasyLocal::EasyLocal
+        EasyLocal::Core
 )
 add_test(
     NAME easylocal.toolchain
@@ -19,7 +19,7 @@ add_executable(
 target_link_libraries(
     easylocal_parameters_header_self_containment
     PRIVATE
-        EasyLocal::EasyLocal
+        EasyLocal::Core
 )
 add_test(
     NAME easylocal.parameters-header-self-containment
@@ -33,7 +33,7 @@ add_executable(
 target_link_libraries(
     easylocal_configuration_tree_header_self_containment
     PRIVATE
-        EasyLocal::EasyLocal
+        EasyLocal::Core
 )
 add_test(
     NAME easylocal.configuration-tree-header-self-containment
@@ -48,7 +48,7 @@ add_executable(
 target_link_libraries(
     easylocal_configuration_overrides_header_self_containment
     PRIVATE
-        EasyLocal::EasyLocal
+        EasyLocal::Core
 )
 add_test(
     NAME easylocal.configuration-overrides-header-self-containment
@@ -62,7 +62,7 @@ add_executable(
 target_link_libraries(
     easylocal_configuration_file_header_self_containment
     PRIVATE
-        EasyLocal::EasyLocal
+        EasyLocal::Core
 )
 add_test(
     NAME easylocal.configuration-file-header-self-containment
@@ -76,7 +76,7 @@ add_executable(
 target_link_libraries(
     easylocal_configuration_cli_header_self_containment
     PRIVATE
-        EasyLocal::EasyLocal
+        EasyLocal::Core
 )
 add_test(
     NAME easylocal.configuration-cli-header-self-containment
@@ -90,7 +90,7 @@ add_executable(
 target_link_libraries(
     easylocal_header_self_containment
     PRIVATE
-        EasyLocal::EasyLocal
+        EasyLocal::Core
 )
 add_test(
     NAME easylocal.header-self-containment
@@ -104,7 +104,7 @@ add_executable(
 target_link_libraries(
     easylocal_service_base_header_self_containment
     PRIVATE
-        EasyLocal::EasyLocal
+        EasyLocal::Core
 )
 add_test(
     NAME easylocal.service-base-header-self-containment
@@ -118,7 +118,7 @@ add_executable(
 target_link_libraries(
     easylocal_runner_header_self_containment
     PRIVATE
-        EasyLocal::EasyLocal
+        EasyLocal::Core
 )
 add_test(
     NAME easylocal.runner-header-self-containment
@@ -132,7 +132,7 @@ add_executable(
 target_link_libraries(
     easylocal_cursor_moves_header_self_containment
     PRIVATE
-        EasyLocal::EasyLocal
+        EasyLocal::Core
 )
 add_test(
     NAME easylocal.cursor-moves-header-self-containment
@@ -146,7 +146,7 @@ add_executable(
 target_link_libraries(
     easylocal_cursor_moves_test
     PRIVATE
-        EasyLocal::EasyLocal
+        EasyLocal::Core
 )
 add_test(
     NAME easylocal.cursor-moves
@@ -162,7 +162,7 @@ add_executable(
 target_link_libraries(
     easylocal_multi_tu
     PRIVATE
-        EasyLocal::EasyLocal
+        EasyLocal::Core
 )
 add_test(
     NAME easylocal.multi-tu
@@ -176,7 +176,7 @@ add_executable(
 target_link_libraries(
     easylocal_aggregation_header_self_containment
     PRIVATE
-        EasyLocal::EasyLocal
+        EasyLocal::Core
 )
 add_test(
     NAME easylocal.aggregation-header-self-containment
@@ -190,7 +190,7 @@ add_executable(
 target_link_libraries(
     easylocal_first_improvement_header_self_containment
     PRIVATE
-        EasyLocal::EasyLocal
+        EasyLocal::Core
 )
 add_test(
     NAME easylocal.first-improvement-header-self-containment
@@ -204,7 +204,7 @@ add_executable(
 target_link_libraries(
     easylocal_best_improvement_header_self_containment
     PRIVATE
-        EasyLocal::EasyLocal
+        EasyLocal::Core
 )
 add_test(
     NAME easylocal.best-improvement-header-self-containment
@@ -218,7 +218,7 @@ add_executable(
 target_link_libraries(
     easylocal_metropolis_acceptance_header_self_containment
     PRIVATE
-        EasyLocal::EasyLocal
+        EasyLocal::Core
 )
 add_test(
     NAME easylocal.metropolis-acceptance-header-self-containment
@@ -232,7 +232,7 @@ add_executable(
 target_link_libraries(
     easylocal_temperature_policy_header_self_containment
     PRIVATE
-        EasyLocal::EasyLocal
+        EasyLocal::Core
 )
 add_test(
     NAME easylocal.temperature-policy-header-self-containment
@@ -246,7 +246,7 @@ add_executable(
 target_link_libraries(
     easylocal_simulated_annealing_header_self_containment
     PRIVATE
-        EasyLocal::EasyLocal
+        EasyLocal::Core
 )
 add_test(
     NAME easylocal.simulated-annealing-header-self-containment
@@ -260,7 +260,7 @@ add_executable(
 target_link_libraries(
     easylocal_aggregation_test
     PRIVATE
-        EasyLocal::EasyLocal
+        EasyLocal::Core
 )
 add_test(
     NAME easylocal.aggregation
@@ -274,7 +274,7 @@ add_executable(
 target_link_libraries(
     easylocal_service_base_test
     PRIVATE
-        EasyLocal::EasyLocal
+        EasyLocal::Core
 )
 add_test(
     NAME easylocal.service-base
@@ -288,7 +288,7 @@ add_executable(
 target_link_libraries(
     easylocal_concept_contracts_test
     PRIVATE
-        EasyLocal::EasyLocal
+        EasyLocal::Core
 )
 add_test(
     NAME easylocal.concept-contracts
@@ -386,7 +386,7 @@ add_executable(
 target_link_libraries(
     easylocal_evaluation_contract_test
     PRIVATE
-        EasyLocal::EasyLocal
+        EasyLocal::Core
 )
 add_test(
     NAME easylocal.evaluation-contract
@@ -428,7 +428,7 @@ add_executable(
 target_link_libraries(
     easylocal_approximate_comparison_test
     PRIVATE
-        EasyLocal::EasyLocal
+        EasyLocal::Core
 )
 add_test(
     NAME easylocal.approximate-comparison
@@ -569,7 +569,7 @@ add_executable(
 target_link_libraries(
     easylocal_configuration_file_test
     PRIVATE
-        EasyLocal::EasyLocal
+        EasyLocal::Core
 )
 add_test(
     NAME easylocal.configuration-file
@@ -583,7 +583,7 @@ add_executable(
 target_link_libraries(
     easylocal_configuration_cli_test
     PRIVATE
-        EasyLocal::EasyLocal
+        EasyLocal::Core
 )
 add_test(
     NAME easylocal.configuration-cli
@@ -597,7 +597,7 @@ add_executable(
 target_link_libraries(
     easylocal_neighborhood_union_header_self_containment
     PRIVATE
-        EasyLocal::EasyLocal
+        EasyLocal::Core
 )
 add_test(
     NAME easylocal.neighborhood-union-header-self-containment
