@@ -3,6 +3,8 @@
 #include "neighborhood_explorer.hpp"
 #include "solution_manager.hpp"
 
+#include <easylocal/config/cli.hpp>
+#include <easylocal/config/overrides.hpp>
 #include <easylocal/config/tree.hpp>
 #include <easylocal/runner.hpp>
 #include <easylocal/search/first_improvement.hpp>
@@ -102,7 +104,7 @@ void print_solution(const AssignmentSolution& solution)
 
 } // namespace
 
-int main()
+int main(int argc, char* argv[])
 {
     using namespace easylocal::mwe::assignment;
     using easylocal::Runner;
@@ -138,6 +140,41 @@ int main()
         const auto configuration = easylocal::config::root(
             easylocal::config::named<"application">(app_parameters),
             runner.configuration<"solver">());
+
+        const auto cli = easylocal::config::parse_cli(argc, argv);
+        if (cli.help_requested)
+        {
+            std::cout << easylocal::config::cli_help(argv[0], configuration);
+            return 0;
+        }
+
+        if (!cli)
+        {
+            for (const auto& diagnostic : cli.diagnostics)
+            {
+                std::cerr << "error: " << diagnostic.argument << ": "
+                          << diagnostic.message << '\n';
+            }
+            return 2;
+        }
+
+        const auto overrides = easylocal::config::apply_overrides(
+            configuration,
+            std::span<const easylocal::config::text_override>{cli.overrides});
+        if (!overrides)
+        {
+            for (const auto& diagnostic : overrides.diagnostics)
+            {
+                std::cerr << "error: " << diagnostic.path;
+                if (!diagnostic.value.empty())
+                {
+                    std::cerr << " = '" << diagnostic.value << '\'';
+                }
+                std::cerr << ": " << diagnostic.message << '\n';
+            }
+            return 2;
+        }
+
         print_configuration(configuration);
 
         const auto instance = load_instance(app_parameters.instance_file);

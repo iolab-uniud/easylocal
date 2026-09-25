@@ -27,3 +27,11 @@ With the default top-level build:
 ```sh
 ./build/<preset>/examples/exam_timetabling/easylocal_exam_timetabling_mwe
 ```
+
+The same tree drives the generated CLI help and pre-bind overrides:
+
+```sh
+./build/<preset>/examples/exam_timetabling/easylocal_exam_timetabling_mwe \
+  --solver.search.temperature.max_iterations=10 \
+  --application.seed=42
+```

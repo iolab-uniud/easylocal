@@ -54,9 +54,9 @@ with `application.*` in a read-only `config::root(...)`, traverses the resulting
 paths, and loads `instances/small.tsp`.
 
 This layout is intentional: concrete parameter declarations live next to the
-thing they parameterize, while `easylocal::config` contains only generic schema
-and tree machinery. CLI/config-file loading and validated mutation remain later
-configuration-layer work.
+thing they parameterize, while `easylocal::config` contains only generic schema,
+tree, textual-override, and frontend machinery. The CLI is derived from that
+same tree; configuration-file loading remains a separate frontend.
 
 ## Runnable composite-neighborhood SA example
 
@@ -85,6 +85,18 @@ With the default top-level build, run it as:
 ```text
 ./build/<preset>/examples/tsp/easylocal_tsp_sa_mwe
 ```
+
+For example, the same executable can override both SA parameters and union
+biases without changing the MWE source:
+
+```sh
+./build/<preset>/examples/tsp/easylocal_tsp_sa_mwe \
+  --solver.search.temperature.max_iterations=50 \
+  --solver.neighborhood.random_biases='[1, 4]'
+```
+
+`--help` lists all application and runner parameters with descriptions and
+current values.
 
 ## Floating-point pressure test
 

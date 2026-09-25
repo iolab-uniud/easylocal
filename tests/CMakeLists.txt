@@ -56,6 +56,20 @@ add_test(
 )
 
 add_executable(
+    easylocal_configuration_cli_header_self_containment
+    configuration_cli_header_self_containment.cpp
+)
+target_link_libraries(
+    easylocal_configuration_cli_header_self_containment
+    PRIVATE
+        EasyLocal::EasyLocal
+)
+add_test(
+    NAME easylocal.configuration-cli-header-self-containment
+    COMMAND easylocal_configuration_cli_header_self_containment
+)
+
+add_executable(
     easylocal_header_self_containment
     header_self_containment.cpp
 )
@@ -535,6 +549,20 @@ add_test(
 )
 
 add_executable(
+    easylocal_configuration_cli_test
+    configuration_cli.cpp
+)
+target_link_libraries(
+    easylocal_configuration_cli_test
+    PRIVATE
+        EasyLocal::EasyLocal
+)
+add_test(
+    NAME easylocal.configuration-cli
+    COMMAND easylocal_configuration_cli_test
+)
+
+add_executable(
     easylocal_neighborhood_union_header_self_containment
     neighborhood_union_header_self_containment.cpp
 )
@@ -672,3 +700,69 @@ easylocal_add_compile_failure_test(
     "parameter fields must have unique names within a block"
     "duplicate"
 )
+
+if(TARGET easylocal_assignment_mwe)
+    add_test(
+        NAME easylocal.example.assignment-cli-help
+        COMMAND easylocal_assignment_mwe --help
+    )
+    set_tests_properties(
+        easylocal.example.assignment-cli-help
+        PROPERTIES
+            PASS_REGULAR_EXPRESSION "--solver.search.max_evaluations <value>"
+    )
+
+    add_test(
+        NAME easylocal.example.assignment-cli-override
+        COMMAND easylocal_assignment_mwe --solver.search.max_evaluations=1
+    )
+    set_tests_properties(
+        easylocal.example.assignment-cli-override
+        PROPERTIES
+            PASS_REGULAR_EXPRESSION "evaluation budget exhausted"
+    )
+endif()
+
+if(TARGET easylocal_exam_timetabling_mwe)
+    add_test(
+        NAME easylocal.example.exam-cli-help
+        COMMAND easylocal_exam_timetabling_mwe --help
+    )
+    set_tests_properties(
+        easylocal.example.exam-cli-help
+        PROPERTIES
+            PASS_REGULAR_EXPRESSION "--solver.search.temperature.cooling_rate <value>"
+    )
+
+    add_test(
+        NAME easylocal.example.exam-cli-override
+        COMMAND easylocal_exam_timetabling_mwe --solver.search.temperature.max_iterations=1
+    )
+    set_tests_properties(
+        easylocal.example.exam-cli-override
+        PROPERTIES
+            PASS_REGULAR_EXPRESSION "iterations: 1"
+    )
+endif()
+
+if(TARGET easylocal_tsp_sa_mwe)
+    add_test(
+        NAME easylocal.example.tsp-cli-help
+        COMMAND easylocal_tsp_sa_mwe --help
+    )
+    set_tests_properties(
+        easylocal.example.tsp-cli-help
+        PROPERTIES
+            PASS_REGULAR_EXPRESSION "--solver.neighborhood.random_biases <value>"
+    )
+
+    add_test(
+        NAME easylocal.example.tsp-cli-override
+        COMMAND easylocal_tsp_sa_mwe --solver.search.temperature.max_iterations=1
+    )
+    set_tests_properties(
+        easylocal.example.tsp-cli-override
+        PROPERTIES
+            PASS_REGULAR_EXPRESSION "iterations: 1"
+    )
+endif()

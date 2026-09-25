@@ -17,6 +17,15 @@ With examples enabled (the default for a top-level build), run it with:
 ./build/<preset>/examples/assignment/easylocal_assignment_mwe
 ```
 
+The MWE is also a minimal CLI-configured application. `--help` is generated
+from the configuration tree, and values can be overridden before binding, for
+example:
+
+```sh
+./build/<preset>/examples/assignment/easylocal_assignment_mwe \
+  --solver.search.max_evaluations=25
+```
+
 The example deliberately uses the recipe/pipeline API rather than constructing
 framework services manually, so it is suitable as a minimal starting point for
 a user program.

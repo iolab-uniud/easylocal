@@ -2,6 +2,7 @@
 
 #include <easylocal/aggregation.hpp>
 #include <easylocal/cursor_moves.hpp>
+#include <easylocal/config/cli.hpp>
 #include <easylocal/config/overrides.hpp>
 #include <easylocal/config/parameters.hpp>
 #include <easylocal/config/tree.hpp>

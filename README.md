@@ -244,8 +244,9 @@ rebuild derived configuration state before committing; for example,
 the previous configuration unchanged. Exposure through a const object remains
 read-only. Configuration currently applies to application values and unbound
 runner recipes/policies; reconfiguration of an already bound/running search is
-deliberately deferred. CLI parsing and config-file loading remain separate
-follow-up adapters.
+deliberately deferred. Concrete external frontends are layered on top of the
+same transactional textual-override adapter rather than changing runtime search
+objects directly.
 
 ### Textual override batches
 
@@ -281,9 +282,32 @@ path and textual value when one exists.
 A batch is globally transactional: if any diagnostic is produced, no parameter
 block is modified. Cross-field changes to the same block are staged together
 and validated once, so overrides can move directly between two valid states
-without requiring every intermediate field assignment to be valid. Concrete
-CLI and configuration-file syntax remains deferred to frontends that will
-produce the same `text_override` representation.
+without requiring every intermediate field assignment to be valid.
+
+### Command-line frontend
+
+`easylocal::config::parse_cli` is the first concrete frontend. It accepts only
+explicit long options that mirror configuration paths, either as
+`--path value` or `--path=value`, plus `-h`/`--help`. Every configuration option
+carries a textual value; there are deliberately no implicit boolean flags or
+abbreviations, so the frontend remains a thin projection onto `text_override`.
+
+```sh
+./solver \
+  --application.instance_file instances/sample.tsp \
+  --application.seed=2026 \
+  --solver.search.temperature.cooling_rate=0.8 \
+  --solver.neighborhood.random_biases='[3, 1]'
+```
+
+`config::cli_help(program, tree)` derives help directly from the same tree and
+parameter schemas, including descriptions and current values. CLI syntax errors
+are accumulated by the frontend; a syntactically valid batch is then passed
+unchanged to `apply_overrides`, which supplies unknown-path, parse, validation,
+and transactional diagnostics. CLI values therefore override the C++ defaults
+already present in the application/runner before binding. A configuration-file
+frontend and precedence between multiple external sources remain the next
+adapter-layer step.
 
 ## Continuous integration
 
