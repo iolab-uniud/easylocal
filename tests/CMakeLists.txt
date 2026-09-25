@@ -169,6 +169,48 @@ add_test(
 )
 
 add_executable(
+    easylocal_metropolis_acceptance_header_self_containment
+    metropolis_acceptance_header_self_containment.cpp
+)
+target_link_libraries(
+    easylocal_metropolis_acceptance_header_self_containment
+    PRIVATE
+        EasyLocal::EasyLocal
+)
+add_test(
+    NAME easylocal.metropolis-acceptance-header-self-containment
+    COMMAND easylocal_metropolis_acceptance_header_self_containment
+)
+
+add_executable(
+    easylocal_temperature_policy_header_self_containment
+    temperature_policy_header_self_containment.cpp
+)
+target_link_libraries(
+    easylocal_temperature_policy_header_self_containment
+    PRIVATE
+        EasyLocal::EasyLocal
+)
+add_test(
+    NAME easylocal.temperature-policy-header-self-containment
+    COMMAND easylocal_temperature_policy_header_self_containment
+)
+
+add_executable(
+    easylocal_simulated_annealing_header_self_containment
+    simulated_annealing_header_self_containment.cpp
+)
+target_link_libraries(
+    easylocal_simulated_annealing_header_self_containment
+    PRIVATE
+        EasyLocal::EasyLocal
+)
+add_test(
+    NAME easylocal.simulated-annealing-header-self-containment
+    COMMAND easylocal_simulated_annealing_header_self_containment
+)
+
+add_executable(
     easylocal_aggregation_test
     aggregation.cpp
 )
@@ -365,15 +407,27 @@ add_test(
 )
 
 add_executable(
+    easylocal_exam_timetabling_test
+    exam_timetabling.cpp
+)
+target_link_libraries(
+    easylocal_exam_timetabling_test
+    PRIVATE
+        easylocal_exam_timetabling_mwe_model
+)
+add_test(
+    NAME easylocal.exam-timetabling
+    COMMAND easylocal_exam_timetabling_test
+)
+
+add_executable(
     easylocal_simulated_annealing_test
     simulated_annealing.cpp
 )
 target_link_libraries(
     easylocal_simulated_annealing_test
     PRIVATE
-        easylocal_assignment_mwe_model
-        easylocal_tsp_mwe_model
-        easylocal_mwe_search
+        easylocal_exam_timetabling_mwe_model
 )
 add_test(
     NAME easylocal.simulated-annealing
@@ -388,7 +442,6 @@ target_link_libraries(
     easylocal_cost_semantics_test
     PRIVATE
         easylocal_assignment_mwe_model
-        easylocal_mwe_search
 )
 add_test(
     NAME easylocal.cost-semantics
@@ -536,4 +589,10 @@ easylocal_add_compile_failure_test(
     component_not_constructible.cpp
     "a cost component must be constructible from the bound Instance followed by its recipe arguments"
     "NonConstructibleComponent"
+)
+easylocal_add_compile_failure_test(
+    simulated-annealing-non-numeric-cost
+    simulated_annealing_non_numeric_cost.cpp
+    "SimulatedAnnealing requires a numeric cost_type"
+    "StructuredCost"
 )

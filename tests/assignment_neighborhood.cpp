@@ -157,6 +157,11 @@ int main()
     // without replacement. The complete range is therefore finite and visits
     // each move exactly once in random order.
     std::mt19937 rng_without{12345};
+    const auto random_move = neighborhood.random_move(solution, rng_without);
+    ok &= expect(
+        random_move.has_value() && neighborhood.is_valid(solution, *random_move),
+        "single random assignment proposal is available and valid");
+
     auto unique_random = neighborhood.random_moves(solution, rng_without);
 
     static_assert(std::ranges::input_range<decltype(unique_random)>);
@@ -234,6 +239,11 @@ int main()
         "one-machine assignment has an empty move range");
 
     std::mt19937 empty_rng{1};
+    ok &= expect(
+        !single_machine_neighborhood.random_move(
+            single_machine_solution,
+            empty_rng).has_value(),
+        "single random assignment proposal is empty when no move exists");
     ok &= expect(
         std::ranges::empty(
             single_machine_neighborhood.random_moves(

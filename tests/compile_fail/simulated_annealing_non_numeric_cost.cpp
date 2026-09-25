@@ -1,0 +1,93 @@
+#include <easylocal/runner.hpp>
+#include <easylocal/search/simulated_annealing.hpp>
+#include <easylocal/search/temperature_policy.hpp>
+
+#include <optional>
+#include <random>
+
+struct Instance {};
+struct Solution { int value{}; };
+struct Move { int delta{}; };
+struct StructuredCost { int hard{}; int soft{}; };
+
+class SolutionManager
+{
+public:
+    using instance_type = Instance;
+    using solution_type = Solution;
+    using cost_type = StructuredCost;
+
+    explicit SolutionManager(const Instance& instance) noexcept : instance_{instance} {}
+
+    [[nodiscard]] auto instance() const noexcept -> const Instance& { return instance_; }
+    [[nodiscard]] static auto is_valid(const Solution&) noexcept -> bool { return true; }
+    [[nodiscard]] static auto evaluate(const Solution& solution) noexcept -> cost_type
+    {
+        return {.hard = solution.value, .soft = 0};
+    }
+    [[nodiscard]] static auto better(const cost_type& lhs, const cost_type& rhs) noexcept -> bool
+    {
+        return lhs.hard < rhs.hard;
+    }
+
+private:
+    const Instance& instance_;
+};
+
+struct AlwaysAccept
+{
+    template<class Cost, class RNG>
+    [[nodiscard]]
+    static auto accept(const Cost&, const Cost&, double, RNG&) noexcept -> bool
+    {
+        return true;
+    }
+};
+
+class Neighborhood
+{
+public:
+    using instance_type = Instance;
+    using solution_type = Solution;
+    using move_type = Move;
+
+    explicit Neighborhood(const SolutionManager& manager) noexcept : instance_{manager.instance()} {}
+
+    [[nodiscard]] auto instance() const noexcept -> const Instance& { return instance_; }
+
+    template<std::uniform_random_bit_generator RNG>
+    [[nodiscard]] static auto random_move(const Solution&, RNG&) -> std::optional<Move>
+    {
+        return Move{.delta = -1};
+    }
+
+    static void make_move(Solution& solution, const Move& move) noexcept
+    {
+        solution.value += move.delta;
+    }
+
+private:
+    const Instance& instance_;
+};
+
+int main()
+{
+    using namespace easylocal;
+    using namespace easylocal::search;
+
+    const Instance instance;
+    auto runner =
+        Runner{SimulatedAnnealing{
+            temperature::FixedLength{temperature::FixedLengthParameters{
+                .initial_temperature = 2.0,
+                .final_temperature = 1.0,
+                .cooling_rate = 0.5,
+                .max_iterations = 1,
+            }},
+            AlwaysAccept{}}}
+        | solution_manager<SolutionManager>()
+        | neighborhood<Neighborhood>();
+
+    std::mt19937 rng{1U};
+    (void)runner.bind(instance).run(Solution{}, rng);
+}

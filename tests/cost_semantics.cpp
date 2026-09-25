@@ -1,6 +1,5 @@
 #include <easylocal/search/best_improvement.hpp>
 #include <easylocal/search/first_improvement.hpp>
-#include "search/simulated_annealing.hpp"
 
 #include <easylocal/runner.hpp>
 
@@ -20,8 +19,6 @@ using easylocal::search::BestImprovement;
 using easylocal::search::BestImprovementParameters;
 using easylocal::search::FirstImprovement;
 using easylocal::search::FirstImprovementParameters;
-using easylocal::mwe::search::SimulatedAnnealing;
-using easylocal::mwe::search::SimulatedAnnealingParameters;
 
 struct Instance
 {
@@ -321,20 +318,6 @@ struct MinimizingSemanticProbe
     }
 };
 
-struct AlwaysAccept
-{
-    template<class Cost, class RNG>
-    [[nodiscard]]
-    constexpr auto accept(
-        const Cost&,
-        const Cost&,
-        double,
-        RNG&) const noexcept -> bool
-    {
-        return true;
-    }
-};
-
 auto expect(const bool condition, const std::string_view description) -> bool
 {
     if (!condition)
@@ -434,25 +417,6 @@ int main()
     ok &= expect(!minimizing.worse_or_equivalent,
         "default better_or_equivalent rejects a numerically worse value");
 
-    auto opaque_sa =
-        Runner{SimulatedAnnealing{
-            SimulatedAnnealingParameters{
-                .max_evaluations = 2,
-                .initial_temperature = 1.0,
-                .cooling_factor = 0.9,
-            },
-            AlwaysAccept{}}}
-        | solution_manager<OpaqueSolutionManager>()
-        | neighborhood<NeighborhoodExplorer>();
-
-    std::mt19937 rng{17};
-    const auto opaque_result =
-        opaque_sa.bind(instance).run(Solution{.score = 0}, rng);
-
-    ok &= expect(opaque_result.solution.score == 1,
-        "SA can use a cost_type with no intrinsic comparison operators");
-    ok &= expect(opaque_result.cost.value == 1,
-        "Runner/evaluation transport an unordered opaque cost unchanged");
 
     return ok ? 0 : 1;
 }

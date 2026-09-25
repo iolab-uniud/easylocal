@@ -12,6 +12,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <iterator>
+#include <optional>
 #include <random>
 #include <ranges>
 
@@ -313,6 +314,23 @@ public:
             move.first_edge,
             move.second_edge + 1,
             move);
+    }
+
+    template<std::uniform_random_bit_generator RNG>
+    [[nodiscard]]
+    auto random_move(
+        const Tour& solution,
+        RNG& rng) const -> std::optional<TwoOptMove>
+    {
+        assert(solution_manager_.is_valid(solution));
+        const auto count = move_count(solution.tour.size());
+        if (count == 0)
+        {
+            return std::nullopt;
+        }
+
+        std::uniform_int_distribution<std::size_t> draw{0, count - 1};
+        return move_at_rank(solution.tour.size(), draw(rng));
     }
 
     template<std::uniform_random_bit_generator RNG>

@@ -2,7 +2,9 @@
 #include <easylocal/sampling.hpp>
 #include <easylocal/search/detail/context_concepts.hpp>
 #include <easylocal/search/random_first_improvement.hpp>
+#include <easylocal/search/simulated_annealing.hpp>
 
+#include <optional>
 #include <random>
 #include <ranges>
 #include <utility>
@@ -125,6 +127,46 @@ public:
     }
 };
 
+
+class RandomMoveGoodNeighborhood : public GoodNeighborhood
+{
+public:
+    [[nodiscard]]
+    static auto random_move(const Solution&, std::mt19937&)
+        -> std::optional<Move>
+    {
+        return Move{};
+    }
+};
+
+class RandomMoveOnlyNeighborhood
+{
+public:
+    using instance_type = Instance;
+    using solution_type = Solution;
+    using move_type = Move;
+
+    [[nodiscard]]
+    auto instance() const noexcept -> const Instance&
+    {
+        return instance_;
+    }
+
+    [[nodiscard]]
+    static auto random_move(const Solution&, std::mt19937&)
+        -> std::optional<Move>
+    {
+        return Move{};
+    }
+
+    static void make_move(Solution&, const Move&) noexcept
+    {
+    }
+
+private:
+    Instance instance_;
+};
+
 class RandomWrongMoveNeighborhood : public GoodNeighborhood
 {
 public:
@@ -227,8 +269,20 @@ int main()
     static_assert(easylocal::detail::runner_neighborhood_explorer<
                   GoodNeighborhood,
                   SolutionManager>);
-    static_assert(!easylocal::detail::runner_neighborhood_explorer<
+    static_assert(easylocal::detail::runner_neighborhood_explorer<
                   WrongMoveNeighborhood,
+                  SolutionManager>);
+    static_assert(easylocal::detail::enumerable_runner_neighborhood_explorer<
+                  GoodNeighborhood,
+                  SolutionManager>);
+    static_assert(!easylocal::detail::enumerable_runner_neighborhood_explorer<
+                  WrongMoveNeighborhood,
+                  SolutionManager>);
+    static_assert(easylocal::detail::runner_neighborhood_explorer<
+                  RandomMoveOnlyNeighborhood,
+                  SolutionManager>);
+    static_assert(!easylocal::detail::enumerable_runner_neighborhood_explorer<
+                  RandomMoveOnlyNeighborhood,
                   SolutionManager>);
 
     static_assert(easylocal::search::detail::strict_improvement_context<
@@ -245,6 +299,10 @@ int main()
                   std::mt19937>);
     static_assert(!easylocal::search::detail::random_first_improvement_context<
                   SearchContext<RandomWrongMoveNeighborhood>,
+                  std::mt19937>);
+
+    static_assert(easylocal::search::detail::random_move_context<
+                  SearchContext<RandomMoveGoodNeighborhood>,
                   std::mt19937>);
 
     return 0;

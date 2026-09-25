@@ -1,0 +1,53 @@
+#pragma once
+
+#include "cost_components.hpp"
+#include "instance.hpp"
+#include "solution.hpp"
+
+#include <easylocal/aggregation.hpp>
+#include <easylocal/service_base.hpp>
+
+#include <algorithm>
+#include <cstdint>
+
+namespace easylocal::mwe::exam_timetabling
+{
+
+class ExamTimetablingSolutionManager
+    : public easylocal::solution_manager_base<
+          ExamTimetablingInstance,
+          ExamTimetable>
+{
+public:
+    using solution_manager_base::solution_manager_base;
+
+    [[nodiscard]]
+    auto is_valid(const ExamTimetable& solution) const noexcept -> bool
+    {
+        return instance_.is_valid() &&
+               solution.timeslot_by_exam.size() == instance_.exam_count &&
+               std::ranges::all_of(
+                   solution.timeslot_by_exam,
+                   [this](const timeslot_id timeslot) {
+                       return timeslot < instance_.timeslot_count;
+                   });
+    }
+
+    [[nodiscard]]
+    constexpr auto aggregate(
+        const StudentConflictValue& conflicts,
+        const ConsecutiveExamValue& consecutive,
+        const TimeslotLoadValue& load) const noexcept -> penalty_type
+    {
+        return easylocal::aggregation::weighted_sum{
+            penalty_type{1000},
+            penalty_type{10},
+            penalty_type{1},
+        }(
+            conflicts.penalty,
+            consecutive.penalty,
+            load.penalty);
+    }
+};
+
+} // namespace easylocal::mwe::exam_timetabling

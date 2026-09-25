@@ -128,12 +128,18 @@ derives its instance through that manager. They do not use virtual dispatch and
 are not required by the structural Runner concepts; fully custom duck-typed
 services remain supported.
 
-The current Assignment and TSP MWEs live under `examples/assignment/` and
-`examples/tsp/` and are intentionally not part of the public include tree.
+The current Assignment, TSP, and Exam Timetabling MWEs live under
+`examples/assignment/`, `examples/tsp/`, and `examples/exam_timetabling/` and are
+intentionally not part of the public include tree. Exam Timetabling is the
+reference MWE for multi-component weighted costs and Simulated Annealing.
 
-Experimental search/metaheuristic work lives under `examples/search/`. Those
-headers are an incubator used to pressure-test framework contracts and are not
-public EasyLocal++ API.
+Simulated Annealing is public under `easylocal::search`. Its hot loop is fully
+policy based and uses no virtual dispatch: the concrete temperature and
+acceptance policy types are template parameters, while their configuration and
+run state remain ordinary runtime data stored by value. The standard
+`MetropolisAcceptance` requires an arithmetic, non-`bool` cost; for this S20
+contract that numeric cost is directly the SA energy, with no Cost-to-Energy
+adapter.
 
 ## Continuous integration
 

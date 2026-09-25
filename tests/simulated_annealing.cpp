@@ -1,44 +1,58 @@
-#include "assignment/capacity_delta.hpp"
-#include "assignment/cost_components.hpp"
-#include "assignment/neighborhood_explorer.hpp"
-#include "assignment/solution_manager.hpp"
-#include "search/metropolis_acceptance.hpp"
-#include "search/simulated_annealing.hpp"
+#include "cost_components.hpp"
+#include "cost_deltas.hpp"
+#include "neighborhood_explorer.hpp"
+#include "solution_manager.hpp"
 #include "support/approximate.hpp"
-#include "tsp/neighborhood_explorer.hpp"
-#include "tsp/solution_manager.hpp"
-#include "tsp/tour_length_component.hpp"
-#include "tsp/tour_length_delta.hpp"
 
 #include <easylocal/runner.hpp>
+#include <easylocal/search/metropolis_acceptance.hpp>
+#include <easylocal/search/simulated_annealing.hpp>
+#include <easylocal/search/temperature_policy.hpp>
 
-#include <cmath>
 #include <cstddef>
 #include <cstdint>
-#include <functional>
 #include <iostream>
-#include <limits>
+#include <optional>
 #include <random>
 #include <string_view>
-#include <utility>
 
 namespace
 {
 
-namespace assignment = easylocal::mwe::assignment;
-namespace search = easylocal::mwe::search;
-namespace tsp = easylocal::mwe::tsp;
+using namespace easylocal;
+using namespace easylocal::search;
+namespace exam = easylocal::mwe::exam_timetabling;
 
-using easylocal::test_support::ApproximateTolerance;
-using easylocal::test_support::approximately_equal;
+struct CountingEngine
+{
+    using result_type = std::uint32_t;
+
+    std::size_t calls{};
+
+    [[nodiscard]] static constexpr auto min() noexcept -> result_type
+    {
+        return 0;
+    }
+
+    [[nodiscard]] static constexpr auto max() noexcept -> result_type
+    {
+        return 0xffffffffU;
+    }
+
+    auto operator()() noexcept -> result_type
+    {
+        ++calls;
+        return max();
+    }
+};
 
 struct AlwaysAccept
 {
     template<class Cost, class RNG>
     [[nodiscard]]
     constexpr auto accept(
-        const Cost&,
-        const Cost&,
+        const Cost,
+        const Cost,
         const double,
         RNG&) const noexcept -> bool
     {
@@ -46,147 +60,107 @@ struct AlwaysAccept
     }
 };
 
-struct AlwaysReject
+struct ChainInstance
 {
-    template<class Cost, class RNG>
-    [[nodiscard]]
-    constexpr auto accept(
-        const Cost&,
-        const Cost&,
-        const double,
-        RNG&) const noexcept -> bool
-    {
-        return false;
-    }
 };
 
-struct IdentityEnergy
+struct ChainSolution
 {
-    [[nodiscard]]
-    constexpr auto operator()(const double cost) const noexcept -> double
-    {
-        return cost;
-    }
+    int value{};
 };
 
-class AssignmentEnergy
+struct ChainMove
+{
+    int delta{};
+};
+
+class ChainSolutionManager
 {
 public:
-    explicit constexpr AssignmentEnergy(
-        const std::int64_t secondary_span) noexcept
-        : secondary_span_{secondary_span}
+    using instance_type = ChainInstance;
+    using solution_type = ChainSolution;
+    using cost_type = int;
+
+    explicit ChainSolutionManager(const ChainInstance& instance) noexcept
+        : instance_{instance}
     {
     }
 
-    [[nodiscard]]
-    constexpr auto operator()(const assignment::Cost& cost) const noexcept
-        -> std::int64_t
+    [[nodiscard]] auto instance() const noexcept -> const ChainInstance&
     {
-        return cost.template get<0>() * secondary_span_ +
-               cost.template get<1>();
+        return instance_;
+    }
+
+    [[nodiscard]] static auto is_valid(const ChainSolution&) noexcept -> bool
+    {
+        return true;
+    }
+
+    [[nodiscard]] static auto evaluate(const ChainSolution& solution) noexcept -> int
+    {
+        return solution.value;
     }
 
 private:
-    std::int64_t secondary_span_;
+    const ChainInstance& instance_;
 };
 
-struct ApproximateEquivalent
-{
-    ApproximateTolerance tolerance;
-
-    [[nodiscard]]
-    auto operator()(const double lhs, const double rhs) const noexcept -> bool
-    {
-        return approximately_equal(lhs, rhs, tolerance);
-    }
-};
-
-class CountingEngine
+class RandomOnlyChainNeighborhood
 {
 public:
-    using result_type = std::uint32_t;
+    using instance_type = ChainInstance;
+    using solution_type = ChainSolution;
+    using move_type = ChainMove;
 
-    [[nodiscard]]
-    static constexpr auto min() noexcept -> result_type
-    {
-        return std::numeric_limits<result_type>::min();
-    }
-
-    [[nodiscard]]
-    static constexpr auto max() noexcept -> result_type
-    {
-        return std::numeric_limits<result_type>::max();
-    }
-
-    [[nodiscard]]
-    auto operator()() noexcept -> result_type
-    {
-        ++calls;
-        return result_type{0x80000000U};
-    }
-
-    std::size_t calls{0};
-};
-
-class CountingTspNeighborhoodExplorer : public tsp::TwoOptNeighborhoodExplorer
-{
-public:
-    CountingTspNeighborhoodExplorer(
-        const tsp::TspSolutionManager& solution_manager,
-        int& make_move_count) noexcept
-        : tsp::TwoOptNeighborhoodExplorer{solution_manager},
-          make_move_count_{make_move_count}
+    explicit RandomOnlyChainNeighborhood(
+        const ChainSolutionManager& solution_manager) noexcept
+        : instance_{solution_manager.instance()}
     {
     }
 
-    void make_move(
-        tsp::Tour& solution,
-        const tsp::TwoOptMove& move) const noexcept
+    [[nodiscard]] auto instance() const noexcept -> const ChainInstance&
     {
-        ++make_move_count_;
-        tsp::TwoOptNeighborhoodExplorer::make_move(solution, move);
+        return instance_;
+    }
+
+    template<std::uniform_random_bit_generator RNG>
+    [[nodiscard]] static auto random_move(
+        const ChainSolution& solution,
+        RNG&) noexcept -> std::optional<ChainMove>
+    {
+        if (solution.value == 0)
+        {
+            return ChainMove{.delta = -5};
+        }
+        if (solution.value == -5)
+        {
+            return ChainMove{.delta = 3};
+        }
+        return std::nullopt;
+    }
+
+    static void make_move(
+        ChainSolution& solution,
+        const ChainMove& move) noexcept
+    {
+        solution.value += move.delta;
     }
 
 private:
-    int& make_move_count_;
+    const ChainInstance& instance_;
 };
 
-[[nodiscard]]
-auto tsp_instance() -> tsp::TspInstance
-{
-    return tsp::TspInstance{
-        .city_count = 5,
-        .distances = {
-            0.0, 0.1, 0.1, 0.3, 0.1,
-            0.1, 0.0, 0.1, 0.1, 0.4,
-            0.1, 0.1, 0.0, 0.2, 0.5,
-            0.3, 0.1, 0.2, 0.0, 0.1,
-            0.1, 0.4, 0.5, 0.1, 0.0,
-        },
-    };
-}
-
-[[nodiscard]]
-auto empty_tsp_instance() -> tsp::TspInstance
-{
-    return tsp::TspInstance{
-        .city_count = 3,
-        .distances = {
-            0.0, 1.0, 2.0,
-            1.0, 0.0, 1.5,
-            2.0, 1.5, 0.0,
-        },
-    };
-}
-
-[[nodiscard]]
-auto assignment_instance() -> assignment::AssignmentInstance
-{
-    return assignment::AssignmentInstance{
-        .demand = {4, 3, 2},
-        .capacity = {5, 5},
-    };
-}
+static_assert(easylocal::detail::runner_neighborhood_explorer<
+              RandomOnlyChainNeighborhood,
+              ChainSolutionManager>);
+static_assert(!easylocal::detail::enumerable_runner_neighborhood_explorer<
+              RandomOnlyChainNeighborhood,
+              ChainSolutionManager>);
+static_assert(numeric_cost<int>);
+static_assert(numeric_cost<double>);
+static_assert(!numeric_cost<bool>);
+struct StructuredCost { int hard; int soft; };
+static_assert(!numeric_cost<StructuredCost>);
 
 auto expect(const bool condition, const std::string_view description) -> bool
 {
@@ -195,289 +169,216 @@ auto expect(const bool condition, const std::string_view description) -> bool
         std::cerr << "FAILED: " << description << '\n';
         return false;
     }
-
     return true;
+}
+
+[[nodiscard]]
+auto exam_instance() -> exam::ExamTimetablingInstance
+{
+    return {
+        .exam_count = 5,
+        .timeslot_count = 3,
+        .conflicts = {
+            {0, 1, 4},
+            {0, 2, 2},
+            {1, 3, 3},
+            {2, 3, 5},
+            {3, 4, 1},
+        },
+    };
 }
 
 } // namespace
 
 int main()
 {
-    using easylocal::Runner;
-    using easylocal::component;
-    using easylocal::delta;
-    using easylocal::neighborhood;
-    using easylocal::solution_manager;
-
     bool ok = true;
 
-    const auto tsp_problem = tsp_instance();
-    const tsp::Tour tsp_initial{
-        .tour = {0, 2, 1, 3, 4},
-    };
-    constexpr ApproximateTolerance tsp_tolerance{
-        .relative = 1.0e-12,
-        .absolute = 1.0e-12,
-    };
-
-    const auto tsp_manager_recipe =
-        solution_manager<tsp::TspSolutionManager>()
-        | component<tsp::TourLengthComponent>();
-
-    auto budget_one_runner =
-        Runner{search::SimulatedAnnealing{
-            search::SimulatedAnnealingParameters{
-                .max_evaluations = 1,
-                .initial_temperature = 1.0,
-                .cooling_factor = 0.9,
-            },
-            AlwaysAccept{}}}
-        | tsp_manager_recipe
-        | neighborhood<tsp::TwoOptNeighborhoodExplorer>();
-
-    CountingEngine budget_one_rng;
-    const auto budget_one_result =
-        budget_one_runner.bind(tsp_problem).run(tsp_initial, budget_one_rng);
-
-    ok &= expect(
-        budget_one_result.evaluations == 1,
-        "SA initial evaluation counts against the budget");
-    ok &= expect(
-        budget_one_rng.calls == 0,
-        "SA with budget one does not sample a random proposal");
-
-    int rejected_make_moves = 0;
-    auto rejected_runner =
-        Runner{search::SimulatedAnnealing{
-            search::SimulatedAnnealingParameters{
-                .max_evaluations = 2,
-                .initial_temperature = 1.0,
-                .cooling_factor = 0.9,
-            },
-            AlwaysReject{}}}
-        | tsp_manager_recipe
-        | (neighborhood<CountingTspNeighborhoodExplorer>(
-               std::ref(rejected_make_moves))
-           | delta<
-                 tsp::TourLengthComponent,
-                 tsp::TwoOptTourLengthDeltaEvaluator>());
-
-    std::mt19937 reject_rng{7U};
-    const auto rejected_result =
-        rejected_runner.bind(tsp_problem).run(tsp_initial, reject_rng);
-
-    ok &= expect(
-        rejected_result.solution.tour == tsp_initial.tour,
-        "SA rejection leaves the incumbent TSP solution unchanged");
-    ok &= expect(
-        rejected_make_moves == 0,
-        "rejected all-delta SA candidate does not materialize a Solution");
-    ok &= expect(
-        rejected_result.evaluations == 2,
-        "SA counts the initial evaluation and one rejected proposal");
-    ok &= expect(
-        rejected_result.termination ==
-            search::SimulatedAnnealingTermination::evaluation_budget_exhausted,
-        "non-empty SA run stops when the evaluation budget is exhausted");
-
-    int accepted_make_moves = 0;
-    auto accepted_runner =
-        Runner{search::SimulatedAnnealing{
-            search::SimulatedAnnealingParameters{
-                .max_evaluations = 2,
-                .initial_temperature = 1.0,
-                .cooling_factor = 0.9,
-            },
-            AlwaysAccept{}}}
-        | tsp_manager_recipe
-        | (neighborhood<CountingTspNeighborhoodExplorer>(
-               std::ref(accepted_make_moves))
-           | delta<
-                 tsp::TourLengthComponent,
-                 tsp::TwoOptTourLengthDeltaEvaluator>());
-
-    std::mt19937 accept_rng{7U};
-    const auto accepted_result =
-        accepted_runner.bind(tsp_problem).run(tsp_initial, accept_rng);
-
-    ok &= expect(
-        accepted_make_moves == 1,
-        "accepted all-delta SA candidate applies make_move exactly once");
-    ok &= expect(
-        accepted_result.solution.tour != tsp_initial.tour,
-        "accepting the sampled 2-opt proposal changes the TSP solution");
-
     {
-        const tsp::TspSolutionManager manager{tsp_problem};
-        const tsp::TourLengthComponent component{tsp_problem};
-        ok &= expect(
-            approximately_equal(
-                manager.aggregate(component.evaluate(accepted_result.solution)),
-                accepted_result.cost,
-                tsp_tolerance),
-            "accepted SA result cost agrees approximately with full TSP evaluation");
-    }
+        temperature::Classic policy{temperature::ClassicParameters{
+            .initial_temperature = 8.0,
+            .final_temperature = 1.0,
+            .cooling_rate = 0.5,
+            .samples_per_temperature = 2,
+        }};
 
-    const auto empty_problem = empty_tsp_instance();
-    const tsp::Tour empty_initial{
-        .tour = {0, 1, 2},
-    };
-    auto empty_runner =
-        Runner{search::SimulatedAnnealing{
-            search::SimulatedAnnealingParameters{
-                .max_evaluations = 10,
-                .initial_temperature = 1.0,
-                .cooling_factor = 0.9,
-            },
-            AlwaysAccept{}}}
-        | (solution_manager<tsp::TspSolutionManager>()
-           | component<tsp::TourLengthComponent>())
-        | neighborhood<tsp::TwoOptNeighborhoodExplorer>();
-
-    std::mt19937 empty_rng{17U};
-    const auto empty_result =
-        empty_runner.bind(empty_problem).run(empty_initial, empty_rng);
-
-    ok &= expect(
-        empty_result.evaluations == 1,
-        "SA does not spend candidate evaluations on an empty neighborhood");
-    ok &= expect(
-        empty_result.termination ==
-            search::SimulatedAnnealingTermination::empty_neighborhood,
-        "SA reports an empty random neighborhood explicitly");
-
-    const auto tsp_metropolis = search::MetropolisAcceptance{
-        IdentityEnergy{},
-        ApproximateEquivalent{tsp_tolerance},
-    };
-
-    CountingEngine metropolis_rng;
-    ok &= expect(
-        tsp_metropolis.accept(0.9, 1.0, 1.0, metropolis_rng),
-        "provisional Metropolis policy accepts a strict energy improvement");
-    ok &= expect(
-        metropolis_rng.calls == 0,
-        "strict Metropolis improvement does not consume random numbers");
-
-    const auto adjacent = std::nextafter(1.0, 2.0);
-    ok &= expect(
-        tsp_metropolis.accept(adjacent, 1.0, 1.0, metropolis_rng),
-        "approximate equivalence treats one-ulp energy drift as neutral");
-    ok &= expect(
-        metropolis_rng.calls == 0,
-        "approximately neutral Metropolis move avoids a stochastic draw");
-
-    (void)tsp_metropolis.accept(2.0, 1.0, 1.0, metropolis_rng);
-    ok &= expect(
-        metropolis_rng.calls > 0,
-        "a genuinely worsening Metropolis move enters the stochastic branch");
-
-    auto tsp_metropolis_runner =
-        Runner{search::SimulatedAnnealing{
-            search::SimulatedAnnealingParameters{
-                .max_evaluations = 12,
-                .initial_temperature = 2.0,
-                .cooling_factor = 0.95,
-            },
-            tsp_metropolis}}
-        | tsp_manager_recipe
-        | (neighborhood<tsp::TwoOptNeighborhoodExplorer>()
-           | delta<
-                 tsp::TourLengthComponent,
-                 tsp::TwoOptTourLengthDeltaEvaluator>());
-
-    auto tsp_bound = tsp_metropolis_runner.bind(tsp_problem);
-    std::mt19937 tsp_rng_a{2026U};
-    std::mt19937 tsp_rng_b{2026U};
-    const auto tsp_result_a = tsp_bound.run(tsp_initial, tsp_rng_a);
-    const auto tsp_result_b = tsp_bound.run(tsp_initial, tsp_rng_b);
-
-    ok &= expect(
-        tsp_result_a.solution.tour == tsp_result_b.solution.tour &&
-            tsp_result_a.cost == tsp_result_b.cost &&
-            tsp_result_a.evaluations == tsp_result_b.evaluations,
-        "TSP SA is reproducible for the same explicit RNG state");
-
-    const auto assignment_problem = assignment_instance();
-    const assignment::AssignmentSolution assignment_initial{
-        .assignment = {0, 0, 1},
-    };
-    const AssignmentEnergy assignment_energy{
-        static_cast<std::int64_t>(assignment_problem.capacity.size() + 1),
-    };
-
-    for (std::int64_t first_overload = 0; first_overload <= 4; ++first_overload)
-    {
-        for (std::int64_t first_machines = 0; first_machines <= 2; ++first_machines)
+        ok &= expect(policy.temperature() == 8.0,
+            "classic temperature starts at T0");
+        policy.on_iteration(false);
+        ok &= expect(policy.temperature() == 8.0,
+            "classic temperature stays fixed within its level");
+        policy.on_iteration(false);
+        ok &= expect(policy.temperature() == 4.0,
+            "classic temperature cools after the configured sample count");
+        for (int i = 0; i < 4; ++i)
         {
-            for (std::int64_t second_overload = 0;
-                 second_overload <= 4;
-                 ++second_overload)
-            {
-                for (std::int64_t second_machines = 0;
-                     second_machines <= 2;
-                     ++second_machines)
-                {
-                    const assignment::Cost first{
-                        first_overload,
-                        first_machines,
-                    };
-                    const assignment::Cost second{
-                        second_overload,
-                        second_machines,
-                    };
-
-                    ok &= expect(
-                        (first < second) ==
-                            (assignment_energy(first) < assignment_energy(second)),
-                        "Assignment scalar energy preserves hierarchical cost order");
-                }
-            }
+            policy.on_iteration(false);
         }
+        ok &= expect(policy.finished(),
+            "classic temperature terminates at the final temperature");
+        policy.reset();
+        ok &= expect(!policy.finished() && policy.temperature() == 8.0,
+            "classic temperature reset restores run state");
     }
 
-    const auto assignment_metropolis =
-        search::MetropolisAcceptance{assignment_energy};
-    auto assignment_runner =
-        Runner{search::SimulatedAnnealing{
-            search::SimulatedAnnealingParameters{
-                .max_evaluations = 12,
-                .initial_temperature = 4.0,
-                .cooling_factor = 0.9,
-            },
-            assignment_metropolis}}
-        | (solution_manager<assignment::AssignmentSolutionManager>()
-           | component<assignment::CapacityCostComponent>())
-        | (neighborhood<assignment::ReassignJobNeighborhoodExplorer>()
-           | delta<
-                 assignment::CapacityCostComponent,
-                 assignment::ReassignCapacityDeltaEvaluator>());
-
-    auto assignment_bound = assignment_runner.bind(assignment_problem);
-    std::mt19937 assignment_rng_a{2026U};
-    std::mt19937 assignment_rng_b{2026U};
-    const auto assignment_result_a =
-        assignment_bound.run(assignment_initial, assignment_rng_a);
-    const auto assignment_result_b =
-        assignment_bound.run(assignment_initial, assignment_rng_b);
-
-    ok &= expect(
-        assignment_result_a.solution.assignment ==
-                assignment_result_b.solution.assignment &&
-            assignment_result_a.cost == assignment_result_b.cost &&
-            assignment_result_a.evaluations == assignment_result_b.evaluations,
-        "Assignment SA is reproducible for the same explicit RNG state");
+    {
+        temperature::FixedLength policy{temperature::FixedLengthParameters{
+            .initial_temperature = 8.0,
+            .final_temperature = 1.0,
+            .cooling_rate = 0.5,
+            .max_iterations = 12,
+        }};
+        ok &= expect(policy.samples_per_temperature() == 4,
+            "fixed-length policy distributes the iteration budget over temperature levels");
+        for (int i = 0; i < 4; ++i)
+        {
+            policy.on_iteration(false);
+        }
+        ok &= expect(policy.temperature() == 4.0,
+            "fixed-length policy cools after its sampled-move quota");
+        for (int i = 0; i < 8; ++i)
+        {
+            policy.on_iteration(false);
+        }
+        ok &= expect(policy.finished(),
+            "fixed-length policy owns its iteration-budget termination");
+    }
 
     {
-        const assignment::AssignmentSolutionManager manager{assignment_problem};
-        const assignment::CapacityCostComponent component{assignment_problem};
+        temperature::Cutoff policy{temperature::CutoffParameters{
+            .initial_temperature = 8.0,
+            .final_temperature = 1.0,
+            .cooling_rate = 0.5,
+            .max_iterations = 12,
+            .accepted_ratio = 0.5,
+        }};
+        ok &= expect(policy.accepted_limit() == 2,
+            "cutoff policy derives the accepted-move cutoff from rho");
+        policy.on_iteration(false);
+        policy.on_iteration(false);
+        ok &= expect(policy.temperature() == 8.0,
+            "cutoff policy ignores rejected moves for temperature changes");
+        policy.on_iteration(true);
+        policy.on_iteration(true);
+        ok &= expect(policy.temperature() == 4.0,
+            "cutoff policy cools after the accepted-move cutoff");
+    }
+
+    {
+        temperature::Hybrid policy{temperature::HybridParameters{
+            .initial_temperature = 8.0,
+            .final_temperature = 1.0,
+            .cooling_rate = 0.5,
+            .max_iterations = 12,
+            .accepted_ratio = 0.5,
+        }};
+        ok &= expect(policy.sample_limit() == 4 && policy.accepted_limit() == 2,
+            "hybrid policy starts with sampled and accepted limits");
+        policy.on_iteration(true);
+        policy.on_iteration(true);
+        ok &= expect(policy.temperature() == 4.0,
+            "hybrid policy applies the accepted cutoff early");
+        ok &= expect(policy.sample_limit() == 5,
+            "hybrid policy redistributes unused iterations over remaining levels");
+        for (int i = 0; i < 5; ++i)
+        {
+            policy.on_iteration(false);
+        }
+        ok &= expect(policy.temperature() == 2.0,
+            "hybrid policy also cools on the sampled-move limit");
+    }
+
+    {
+        MetropolisAcceptance metropolis;
+        CountingEngine rng;
+        ok &= expect(metropolis.accept(9, 10, 2.0, rng),
+            "Metropolis accepts a strict numeric improvement");
+        ok &= expect(metropolis.accept(10, 10, 2.0, rng),
+            "Metropolis accepts equal numeric energy");
+        ok &= expect(rng.calls == 0,
+            "Metropolis improvement and equality do not consume RNG state");
+        (void)metropolis.accept(11, 10, 2.0, rng);
+        ok &= expect(rng.calls > 0,
+            "Metropolis worsening branch consumes RNG state");
+    }
+
+    {
+        const ChainInstance instance;
+        auto runner =
+            Runner{SimulatedAnnealing{
+                temperature::FixedLength{temperature::FixedLengthParameters{
+                    .initial_temperature = 4.0,
+                    .final_temperature = 1.0,
+                    .cooling_rate = 0.5,
+                    .max_iterations = 2,
+                }},
+                AlwaysAccept{}}}
+            | solution_manager<ChainSolutionManager>()
+            | neighborhood<RandomOnlyChainNeighborhood>();
+
+        std::mt19937 rng{7U};
+        const auto result = runner.bind(instance).run(ChainSolution{}, rng);
+        ok &= expect(result.solution.value == -5 && result.cost == -5,
+            "SA returns best-so-far rather than the final accepted chain state");
+        ok &= expect(result.iterations == 2 && result.evaluations == 3,
+            "SA reports proposal iterations separately from evaluations including the initial state");
+    }
+
+    {
+        const auto instance = exam_instance();
+        const exam::ExamTimetable initial{
+            .timeslot_by_exam = {0, 0, 1, 1, 2},
+        };
+
+        const auto solution_manager_recipe =
+            solution_manager<exam::ExamTimetablingSolutionManager>()
+            | component<exam::StudentConflictComponent>()
+            | component<exam::ConsecutiveExamComponent>()
+            | component<exam::TimeslotLoadComponent>();
+
+        auto runner =
+            Runner{SimulatedAnnealing{
+                temperature::FixedLength{temperature::FixedLengthParameters{
+                    .initial_temperature = 100.0,
+                    .final_temperature = 1.0,
+                    .cooling_rate = 0.5,
+                    .max_iterations = 30,
+                }}}}
+            | solution_manager_recipe
+            | (neighborhood<exam::MoveExamNeighborhoodExplorer>()
+               | delta<
+                     exam::StudentConflictComponent,
+                     exam::StudentConflictDeltaEvaluator>()
+               | delta<
+                     exam::ConsecutiveExamComponent,
+                     exam::ConsecutiveExamDeltaEvaluator>()
+               | delta<
+                     exam::TimeslotLoadComponent,
+                     exam::TimeslotLoadDeltaEvaluator>());
+
+        auto bound = runner.bind(instance);
+        std::mt19937 rng_a{2026U};
+        std::mt19937 rng_b{2026U};
+        const auto result_a = bound.run(initial, rng_a);
+        const auto result_b = bound.run(initial, rng_b);
+
         ok &= expect(
-            manager.is_valid(assignment_result_a.solution),
-            "Assignment SA returns a valid solution");
-        ok &= expect(
-            manager.aggregate(component.evaluate(assignment_result_a.solution)) ==
-                assignment_result_a.cost,
-            "Assignment SA result cost agrees with full evaluation");
+            result_a.solution == result_b.solution &&
+            result_a.cost == result_b.cost &&
+            result_a.iterations == result_b.iterations,
+            "exam timetabling SA is deterministic for the same explicit RNG state");
+
+        const exam::ExamTimetablingSolutionManager manager{instance};
+        const exam::StudentConflictComponent conflicts{instance};
+        const exam::ConsecutiveExamComponent consecutive{instance};
+        const exam::TimeslotLoadComponent load{instance};
+        const auto full_cost = manager.aggregate(
+            conflicts.evaluate(result_a.solution),
+            consecutive.evaluate(result_a.solution),
+            load.evaluate(result_a.solution));
+
+        ok &= expect(result_a.cost == full_cost,
+            "three-component weighted SA cost agrees with full evaluation");
     }
 
     return ok ? 0 : 1;

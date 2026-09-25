@@ -104,6 +104,11 @@ int main()
         easylocal::sampling::with_replacement>);
 
     std::mt19937 rng{12345U};
+    const auto random_move = neighborhood.random_move(solution, rng);
+    ok &= expect(
+        random_move.has_value() && neighborhood.is_valid(solution, *random_move),
+        "single random 2-opt proposal is available and valid");
+
     auto random_moves = neighborhood.random_moves(solution, rng);
     static_assert(std::ranges::input_range<decltype(random_moves)>);
     static_assert(!std::ranges::forward_range<decltype(random_moves)>);
@@ -190,6 +195,9 @@ int main()
         "three-city tour has no non-degenerate 2-opt move");
 
     std::mt19937 triangle_rng{7U};
+    ok &= expect(
+        !triangle_neighborhood.random_move(triangle, triangle_rng).has_value(),
+        "single random 2-opt proposal is empty when no move exists");
     auto triangle_random_moves =
         triangle_neighborhood.random_moves(triangle, triangle_rng);
     ok &= expect(

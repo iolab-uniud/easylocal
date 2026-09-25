@@ -11,6 +11,7 @@
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
+#include <optional>
 #include <random>
 #include <ranges>
 #include <utility>
@@ -148,6 +149,23 @@ public:
         }
 
         return false;
+    }
+
+    template<std::uniform_random_bit_generator RNG>
+    [[nodiscard]]
+    auto random_move(
+        const AssignmentSolution& solution,
+        RNG& rng) const -> std::optional<ReassignJobMove>
+    {
+        assert(solution_manager_.is_valid(solution));
+        const auto count = move_count(solution);
+        if (count == 0)
+        {
+            return std::nullopt;
+        }
+
+        std::uniform_int_distribution<std::size_t> draw{0, count - 1};
+        return move_at(solution, draw(rng));
     }
 
     template<std::uniform_random_bit_generator RNG>
