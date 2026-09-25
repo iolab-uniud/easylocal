@@ -23,4 +23,10 @@ if(EASYLOCAL_BUILD_EXAMPLES)
         PRIVATE
             easylocal_assignment_mwe_model
     )
+
+    target_compile_definitions(
+        easylocal_assignment_mwe
+        PRIVATE
+            EASYLOCAL_ASSIGNMENT_MWE_INSTANCE_FILE="${CMAKE_CURRENT_SOURCE_DIR}/instances/small.assignment"
+    )
 endif()

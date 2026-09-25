@@ -1,13 +1,13 @@
-#include "../examples/tsp/app_parameters.hpp"
-
 #include <easylocal/config/parameters.hpp>
 #include <easylocal/neighborhood_union.hpp>
+#include <easylocal/search/first_improvement.hpp>
 #include <easylocal/search/temperature_policy.hpp>
 
 #include <array>
 #include <cassert>
 #include <cmath>
 #include <cstddef>
+#include <cstdint>
 #include <filesystem>
 #include <limits>
 #include <string_view>
@@ -20,10 +20,38 @@ namespace
 using easylocal::NeighborhoodUnionParameters;
 using easylocal::config::for_each_parameter;
 using easylocal::config::parameter_block;
-using easylocal::mwe::tsp::AppParameters;
+using easylocal::search::FirstImprovementParameters;
 using easylocal::search::temperature::FixedLengthParameters;
 
+struct AppParameters
+{
+    std::filesystem::path instance_file{"instance.dat"};
+    std::uint64_t seed{2026U};
+
+    [[nodiscard]]
+    static consteval auto parameter_schema()
+    {
+        return easylocal::config::fields(
+            easylocal::config::field<
+                "instance_file",
+                &AppParameters::instance_file>("Problem instance file"),
+            easylocal::config::field<
+                "seed",
+                &AppParameters::seed>("Pseudo-random generator seed"));
+    }
+
+    [[nodiscard]]
+    auto validate() const noexcept -> easylocal::config::validation_result
+    {
+        return instance_file.empty()
+            ? easylocal::config::validation_result::failure(
+                  "instance_file must not be empty")
+            : easylocal::config::validation_result::success();
+    }
+};
+
 static_assert(parameter_block<AppParameters>);
+static_assert(parameter_block<FirstImprovementParameters>);
 static_assert(parameter_block<FixedLengthParameters>);
 static_assert(parameter_block<NeighborhoodUnionParameters<2>>);
 
@@ -123,6 +151,20 @@ void fixed_length_validation_checks_cross_field_invariants()
     assert(!invalid.validate());
 }
 
+void first_improvement_parameters_live_with_the_search_method()
+{
+    using schema_type = decltype(FirstImprovementParameters::parameter_schema());
+    using descriptor_type = std::tuple_element_t<0, schema_type>;
+
+    static_assert(descriptor_type::name() == "max_evaluations");
+    static_assert(std::same_as<descriptor_type::value_type, std::size_t>);
+
+    FirstImprovementParameters parameters{.max_evaluations = 100};
+    assert(parameters.validate());
+    parameters.max_evaluations = 0;
+    assert(!parameters.validate());
+}
+
 void neighborhood_union_parameter_block_describes_bias_array()
 {
     using parameters_type = NeighborhoodUnionParameters<2>;
@@ -158,5 +200,6 @@ int main()
     app_parameter_schema_is_internal_and_typed();
     iteration_exposes_names_descriptions_and_typed_references();
     fixed_length_validation_checks_cross_field_invariants();
+    first_improvement_parameters_live_with_the_search_method();
     neighborhood_union_parameter_block_describes_bias_array();
 }

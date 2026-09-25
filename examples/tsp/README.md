@@ -42,20 +42,20 @@ approximate comparisons remain deliberately reserved for a following iteration,
 so floating-point comparison policy can be examined independently from delta
 integration.
 
-## Application parameter block
+## Application configuration and external instance
 
-`app_parameters.hpp` contains the MWE-owned `AppParameters` leaf used to exercise
-the typed parameter-schema infrastructure. It exposes an `instance_file` path
-and RNG `seed` through a schema declared inside the struct itself; validation is
-also owned by the block. The file deliberately remains application code rather
-than public EasyLocal API. CLI/config-file loading and wiring the instance path
-into an input reader are later configuration-layer work.
+`sa_main.cpp` owns its `AppParameters` block directly, because the instance-file
+path and RNG seed parameterize the application rather than the TSP model or an
+EasyLocal component. `FixedLengthParameters` remains beside the temperature
+policy and `NeighborhoodUnionParameters<2>` remains beside the union it
+configures. The main assembles these leaves into a read-only `config::root(...)`,
+traverses the resulting paths, loads `instances/small.tsp`, and uses the same
+blocks to construct the runner.
 
-The configuration-tree tests also use this block as an `input` node beside two
-distinct Simulated Annealing temperature-parameter blocks. This demonstrates
-that instance identity belongs to the application tree (`fast`, `slow`, `input`)
-rather than to the parameter-block type itself. The tree remains read-only in
-this iteration; applying external values is deferred.
+This layout is intentional: concrete parameter declarations live next to the
+thing they parameterize, while `easylocal::config` contains only generic schema
+and tree machinery. CLI/config-file loading and validated mutation remain later
+configuration-layer work.
 
 ## Runnable composite-neighborhood SA example
 

@@ -133,16 +133,24 @@ The current Assignment, TSP, and Exam Timetabling MWEs live under
 intentionally not part of the public include tree. Exam Timetabling is the
 reference MWE for multi-component weighted costs and Simulated Annealing.
 
-The Assignment MWE also contains a runnable `main.cpp` showing the complete
-user-facing path from recipe composition to `Runner::bind()` and `run()`. With
-the default top-level build it can be executed as
-`./build/<preset>/examples/assignment/easylocal_assignment_mwe`. The TSP MWE
-adds `easylocal_tsp_sa_mwe`, a runnable Simulated Annealing example that composes
-2-opt and swap neighborhoods through `neighborhood_union(...)`, applies
-`random_biases(...)`, attaches child-local tour-length deltas, and passes an
-explicit RNG to `run()`. A neighborhood union propagates a component delta only
-when every child provides that component; tagged moves are then dispatched to
-the originating child's binding without virtual dispatch.
+All three MWEs now contain runnable `main` programs and load their small problem
+instances from versioned files under the corresponding `instances/` directory.
+Each `main` owns an application-level `AppParameters` block containing at least
+the instance-file path (and an RNG seed for stochastic examples), builds and
+traverses a read-only `config::root(...)`, then uses those same typed parameter
+blocks to load the instance and construct the runner. This keeps configuration
+examples at application level instead of hard-coding problem data into the
+runner examples.
+
+The Assignment executable is
+`./build/<preset>/examples/assignment/easylocal_assignment_mwe`; Exam
+Timetabling adds `easylocal_exam_timetabling_mwe`; and the TSP executable is
+`easylocal_tsp_sa_mwe`. The TSP example composes 2-opt and swap neighborhoods
+through `neighborhood_union(...)`, applies the bias values held by its
+`NeighborhoodUnionParameters<2>` block, attaches child-local tour-length deltas,
+and passes an explicit RNG to `run()`. A neighborhood union propagates a
+component delta only when every child provides that component; tagged moves are
+then dispatched to the originating child's binding without virtual dispatch.
 
 Simulated Annealing is public under `easylocal::search`. Its hot loop is fully
 policy based and uses no virtual dispatch: the concrete temperature and
@@ -162,12 +170,15 @@ blocks. A parameter block owns its ordinary C++ values, declares an internal
 registry. Defaults remain ordinary member initializers or constructor values;
 they are not duplicated in the schema.
 
-`temperature::FixedLengthParameters` and
-`NeighborhoodUnionParameters<N>` are the initial framework-side examples. The
-TSP MWE also defines application-owned `AppParameters` with an `instance_file`
-and RNG `seed`, demonstrating that configuration is not restricted to Runner
-components. No Runner configuration tree, CLI parser, config-file adapter, or
-runtime reconfiguration protocol is part of this layer yet.
+`temperature::FixedLengthParameters`, `FirstImprovementParameters`, and
+`NeighborhoodUnionParameters<N>` are current framework-side examples. Concrete
+parameter blocks live beside the object they configure: search-method parameters
+in the search-method header, temperature-policy parameters beside the policy,
+and union parameters beside `neighborhood_union`. Each runnable MWE defines its
+application-owned `AppParameters` directly in its `main`, because the instance
+path and seed belong to the application rather than to EasyLocal. No CLI parser,
+config-file adapter, or runtime reconfiguration protocol is part of this layer
+yet.
 
 ### Named configuration tree
 

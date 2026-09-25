@@ -11,3 +11,18 @@ one arithmetic cost with `easylocal::aggregation::weighted_sum`:
 All three components have matching delta evaluators for `MoveExam`. The final
 `penalty_type` is therefore already the SA energy: no Cost-to-Energy adapter or
 projection is required by the standard `MetropolisAcceptance` path.
+
+## Runnable configured SA example
+
+`main.cpp` defines application-owned parameters for the external instance path
+and RNG seed, while `FixedLengthParameters` remains beside the framework
+temperature policy that it configures. The example builds and traverses a
+`config::root(...)` with `application.*` and `search.temperature.*` paths, loads
+`instances/small.exam`, then runs a fully delta-enabled Simulated Annealing
+search with an explicit deterministic RNG.
+
+With the default top-level build:
+
+```sh
+./build/<preset>/examples/exam_timetabling/easylocal_exam_timetabling_mwe
+```

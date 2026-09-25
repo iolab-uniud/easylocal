@@ -23,4 +23,10 @@ if(EASYLOCAL_BUILD_EXAMPLES)
         PRIVATE
             easylocal_tsp_mwe_model
     )
+
+    target_compile_definitions(
+        easylocal_tsp_sa_mwe
+        PRIVATE
+            EASYLOCAL_TSP_MWE_INSTANCE_FILE="${CMAKE_CURRENT_SOURCE_DIR}/instances/small.tsp"
+    )
 endif()

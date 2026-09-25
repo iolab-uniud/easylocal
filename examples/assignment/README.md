@@ -3,10 +3,12 @@
 ## Runnable Runner example
 
 `main.cpp` is the end-to-end user-facing example for the current public API. It
-builds a `FirstImprovement` runner by composing a solution-manager recipe and a
-neighborhood recipe, binds them to an immutable problem instance, runs the
-search from an initial solution, and prints the resulting solution, cost,
-evaluation count, and termination reason.
+defines the application-owned `AppParameters` block next to `main`, uses
+`FirstImprovementParameters` from the search-method header, assembles both into
+a read-only `config::root(...)`, and traverses that tree before execution. The
+same values are then used to load the versioned instance from
+`instances/small.assignment`, construct the `FirstImprovement` runner, bind the
+immutable instance, and run the search from an initial solution.
 
 With examples enabled (the default for a top-level build), run it with:
 

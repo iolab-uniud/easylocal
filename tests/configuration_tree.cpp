@@ -1,5 +1,3 @@
-#include "../examples/tsp/app_parameters.hpp"
-
 #include <easylocal/config/tree.hpp>
 #include <easylocal/neighborhood_union.hpp>
 #include <easylocal/search/temperature_policy.hpp>
@@ -7,6 +5,7 @@
 #include <array>
 #include <cassert>
 #include <cstddef>
+#include <cstdint>
 #include <filesystem>
 #include <string_view>
 #include <type_traits>
@@ -18,8 +17,34 @@ using easylocal::NeighborhoodUnionParameters;
 using easylocal::config::for_each_config_parameter;
 using easylocal::config::named;
 using easylocal::config::root;
-using easylocal::mwe::tsp::AppParameters;
 using easylocal::search::temperature::FixedLengthParameters;
+
+struct AppParameters
+{
+    std::filesystem::path instance_file{"instance.dat"};
+    std::uint64_t seed{2026U};
+
+    [[nodiscard]]
+    static consteval auto parameter_schema()
+    {
+        return easylocal::config::fields(
+            easylocal::config::field<
+                "instance_file",
+                &AppParameters::instance_file>(),
+            easylocal::config::field<
+                "seed",
+                &AppParameters::seed>());
+    }
+
+    [[nodiscard]]
+    auto validate() const noexcept -> easylocal::config::validation_result
+    {
+        return instance_file.empty()
+            ? easylocal::config::validation_result::failure(
+                  "instance_file must not be empty")
+            : easylocal::config::validation_result::success();
+    }
+};
 
 template<class Path, std::size_t Size>
 [[nodiscard]]

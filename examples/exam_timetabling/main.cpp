@@ -1,12 +1,10 @@
+#include "cost_components.hpp"
+#include "cost_deltas.hpp"
 #include "instance_io.hpp"
 #include "neighborhood_explorer.hpp"
 #include "solution_manager.hpp"
-#include "swap_neighborhood_explorer.hpp"
-#include "swap_tour_length_delta.hpp"
-#include "tour_length_delta.hpp"
 
 #include <easylocal/config/tree.hpp>
-#include <easylocal/neighborhood_union.hpp>
 #include <easylocal/runner.hpp>
 #include <easylocal/search/simulated_annealing.hpp>
 #include <easylocal/search/temperature_policy.hpp>
@@ -20,14 +18,14 @@
 #include <string>
 #include <type_traits>
 
-#ifndef EASYLOCAL_TSP_MWE_INSTANCE_FILE
-#error "EASYLOCAL_TSP_MWE_INSTANCE_FILE must name the example instance"
+#ifndef EASYLOCAL_EXAM_MWE_INSTANCE_FILE
+#error "EASYLOCAL_EXAM_MWE_INSTANCE_FILE must name the example instance"
 #endif
 
 namespace
 {
 
-using namespace easylocal::mwe::tsp;
+using namespace easylocal::mwe::exam_timetabling;
 
 struct AppParameters
 {
@@ -41,7 +39,7 @@ struct AppParameters
             easylocal::config::field<
                 "instance_file",
                 &AppParameters::instance_file>(
-                    "TSP instance file"),
+                    "Exam-timetabling instance file"),
             easylocal::config::field<
                 "seed",
                 &AppParameters::seed>(
@@ -94,20 +92,17 @@ void print_configuration(const Tree& tree)
         });
 }
 
-void print_tour(const Tour& solution)
+void print_timetable(const ExamTimetable& solution)
 {
     std::cout << '[';
-
-    for (std::size_t position = 0; position < solution.tour.size(); ++position)
+    for (std::size_t exam = 0; exam < solution.timeslot_by_exam.size(); ++exam)
     {
-        if (position != 0)
+        if (exam != 0)
         {
             std::cout << ", ";
         }
-
-        std::cout << solution.tour[position];
+        std::cout << solution.timeslot_by_exam[exam];
     }
-
     std::cout << ']';
 }
 
@@ -115,14 +110,11 @@ void print_tour(const Tour& solution)
 
 int main()
 {
-    using namespace easylocal::mwe::tsp;
-    using easylocal::NeighborhoodUnionParameters;
+    using namespace easylocal::mwe::exam_timetabling;
     using easylocal::Runner;
     using easylocal::component;
     using easylocal::delta;
     using easylocal::neighborhood;
-    using easylocal::neighborhood_union;
-    using easylocal::random_biases;
     using easylocal::solution_manager;
     using easylocal::search::SimulatedAnnealing;
     using easylocal::search::temperature::FixedLength;
@@ -131,68 +123,60 @@ int main()
     try
     {
         AppParameters app_parameters{
-            .instance_file = EASYLOCAL_TSP_MWE_INSTANCE_FILE,
+            .instance_file = EASYLOCAL_EXAM_MWE_INSTANCE_FILE,
             .seed = 2026U,
         };
         FixedLengthParameters temperature_parameters{
-            .initial_temperature = 8.0,
-            .final_temperature = 0.25,
-            .cooling_rate = 0.75,
-            .max_iterations = 200,
-        };
-        NeighborhoodUnionParameters<2> neighborhood_parameters{
-            .random_biases = {3.0, 1.0},
+            .initial_temperature = 100.0,
+            .final_temperature = 1.0,
+            .cooling_rate = 0.5,
+            .max_iterations = 30,
         };
 
         require_valid(app_parameters);
         require_valid(temperature_parameters);
-        require_valid(neighborhood_parameters);
 
         const auto configuration = easylocal::config::root(
             easylocal::config::named<"application">(app_parameters),
             easylocal::config::named<"search">(
                 easylocal::config::named<"temperature">(
-                    temperature_parameters)),
-            easylocal::config::named<"neighborhood">(
-                neighborhood_parameters));
+                    temperature_parameters)));
         print_configuration(configuration);
 
         const auto instance = load_instance(app_parameters.instance_file);
-        const Tour initial_solution{
-            .tour = {0, 2, 4, 1, 5, 3},
+        const ExamTimetable initial_solution{
+            .timeslot_by_exam = {0, 0, 1, 2},
         };
 
         auto runner =
             Runner{SimulatedAnnealing{FixedLength{temperature_parameters}}}
-            | (solution_manager<TspSolutionManager>()
-               | component<TourLengthComponent>())
-            | (neighborhood_union(
-                   neighborhood<TwoOptNeighborhoodExplorer>()
-                       | delta<
-                             TourLengthComponent,
-                             TwoOptTourLengthDeltaEvaluator>(),
-                   neighborhood<SwapCitiesNeighborhoodExplorer>()
-                       | delta<
-                             TourLengthComponent,
-                             SwapTourLengthDeltaEvaluator>())
-               | random_biases(
-                     neighborhood_parameters.random_biases[0],
-                     neighborhood_parameters.random_biases[1]));
+            | (solution_manager<ExamTimetablingSolutionManager>()
+               | component<StudentConflictComponent>()
+               | component<ConsecutiveExamComponent>()
+               | component<TimeslotLoadComponent>())
+            | (neighborhood<MoveExamNeighborhoodExplorer>()
+               | delta<
+                     StudentConflictComponent,
+                     StudentConflictDeltaEvaluator>()
+               | delta<
+                     ConsecutiveExamComponent,
+                     ConsecutiveExamDeltaEvaluator>()
+               | delta<
+                     TimeslotLoadComponent,
+                     TimeslotLoadDeltaEvaluator>());
 
         std::mt19937 rng{static_cast<std::mt19937::result_type>(
             app_parameters.seed)};
         const auto result = runner.bind(instance).run(initial_solution, rng);
 
-        std::cout << "instance:     " << app_parameters.instance_file << '\n';
-        std::cout << "initial tour: ";
-        print_tour(initial_solution);
+        std::cout << "instance:          " << app_parameters.instance_file << '\n';
+        std::cout << "initial timetable: ";
+        print_timetable(initial_solution);
         std::cout << '\n';
-
-        std::cout << "best tour:    ";
-        print_tour(result.solution);
+        std::cout << "best timetable:    ";
+        print_timetable(result.solution);
         std::cout << '\n';
-
-        std::cout << "best length: " << result.cost << '\n';
+        std::cout << "best penalty: " << result.cost << '\n';
         std::cout << "iterations: " << result.iterations << '\n';
         std::cout << "evaluations: " << result.evaluations << '\n';
     }

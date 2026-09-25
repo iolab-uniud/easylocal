@@ -1,5 +1,6 @@
 #pragma once
 
+#include <easylocal/config/parameters.hpp>
 #include <easylocal/search/detail/context_concepts.hpp>
 
 #include <cassert>
@@ -20,6 +21,28 @@ enum class FirstImprovementTermination
 struct FirstImprovementParameters
 {
     std::size_t max_evaluations;
+
+    [[nodiscard]]
+    static consteval auto parameter_schema()
+    {
+        return config::fields(
+            config::field<
+                "max_evaluations",
+                &FirstImprovementParameters::max_evaluations>(
+                    "Maximum number of solution evaluations"));
+    }
+
+    [[nodiscard]]
+    constexpr auto validate() const noexcept -> config::validation_result
+    {
+        if (max_evaluations == 0)
+        {
+            return config::validation_result::failure(
+                "max_evaluations must be positive");
+        }
+
+        return config::validation_result::success();
+    }
 };
 
 template<class Solution, class Cost>
@@ -38,7 +61,7 @@ public:
         const FirstImprovementParameters parameters) noexcept
         : parameters_{parameters}
     {
-        assert(parameters_.max_evaluations >= 1);
+        assert(parameters_.validate());
     }
 
     template<class Context>
