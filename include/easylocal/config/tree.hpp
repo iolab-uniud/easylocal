@@ -206,6 +206,7 @@ class parameter_group_node
 
 public:
     using configuration_node_marker = named_configuration_node_marker;
+    using parameters_type = std::remove_const_t<Parameters>;
 
     explicit constexpr parameter_group_node(
         Parameters& parameters,
@@ -226,6 +227,21 @@ public:
     constexpr auto parameters() const noexcept -> const Parameters&
     {
         return *parameters_;
+    }
+
+    [[nodiscard]]
+    constexpr auto configure(parameters_type parameters) const
+        -> validation_result
+        requires (!std::is_const_v<Parameters>)
+    {
+        const auto validation = parameters.validate();
+        if (!validation)
+        {
+            return validation;
+        }
+
+        *parameters_ = std::move(parameters);
+        return validation_result::success();
     }
 
     [[nodiscard]]

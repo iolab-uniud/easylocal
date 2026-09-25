@@ -40,6 +40,21 @@ add_test(
     COMMAND easylocal_configuration_tree_header_self_containment
 )
 
+
+add_executable(
+    easylocal_configuration_overrides_header_self_containment
+    configuration_overrides_header_self_containment.cpp
+)
+target_link_libraries(
+    easylocal_configuration_overrides_header_self_containment
+    PRIVATE
+        EasyLocal::EasyLocal
+)
+add_test(
+    NAME easylocal.configuration-overrides-header-self-containment
+    COMMAND easylocal_configuration_overrides_header_self_containment
+)
+
 add_executable(
     easylocal_header_self_containment
     header_self_containment.cpp
@@ -502,6 +517,21 @@ target_link_libraries(
 add_test(
     NAME easylocal.configuration-tree
     COMMAND easylocal_configuration_tree_test
+)
+
+
+add_executable(
+    easylocal_configuration_overrides_test
+    configuration_overrides.cpp
+)
+target_link_libraries(
+    easylocal_configuration_overrides_test
+    PRIVATE
+        easylocal_tsp_mwe_model
+)
+add_test(
+    NAME easylocal.configuration-overrides
+    COMMAND easylocal_configuration_overrides_test
 )
 
 add_executable(

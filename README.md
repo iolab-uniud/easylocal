@@ -177,9 +177,8 @@ parameter blocks live beside the object they configure: search-method parameters
 in the search-method header, temperature-policy parameters beside the policy,
 and union parameters beside `neighborhood_union`. Each runnable MWE defines its
 application-owned `AppParameters` directly in its `main`, because the instance
-path and seed belong to the application rather than to EasyLocal. No CLI parser,
-config-file adapter, or runtime reconfiguration protocol is part of this layer
-yet.
+path and seed belong to the application rather than to EasyLocal. No concrete CLI parser or config-file frontend is part of this layer;
+textual override mapping is provided separately by the external-adapter layer.
 
 ### Named configuration tree
 
@@ -247,6 +246,44 @@ read-only. Configuration currently applies to application values and unbound
 runner recipes/policies; reconfiguration of an already bound/running search is
 deliberately deferred. CLI parsing and config-file loading remain separate
 follow-up adapters.
+
+### Textual override batches
+
+`easylocal::config::apply_overrides` is the shared adapter layer between
+external text sources and the typed configuration tree. A frontend supplies a
+batch of dotted paths plus textual values; the mapper resolves the paths,
+parses each value using the field's C++ type, stages all affected parameter
+blocks, validates them, and commits only when the complete batch is valid.
+
+```cpp
+constexpr std::array overrides{
+    easylocal::config::text_override{
+        "application.instance_file", "instances/sample.tsp"},
+    easylocal::config::text_override{
+        "solver.search.temperature.max_iterations", "500"},
+    easylocal::config::text_override{
+        "solver.neighborhood.random_biases", "[3, 1]"},
+};
+
+const auto result = easylocal::config::apply_overrides(
+    configuration, overrides);
+```
+
+The initial built-in textual types are `bool`, integral and floating-point
+values, `std::string`, `std::filesystem::path`, and fixed `std::array` values
+whose elements are themselves supported. Fixed arrays accept bracketed or
+comma-separated forms such as `[3, 1]` and `3,1`. Parsing and validation
+diagnostics are accumulated rather than stopping at the first error. The
+result distinguishes duplicate paths, unknown parameters, read-only targets,
+parse failures, and block-validation failures; diagnostics retain the offending
+path and textual value when one exists.
+
+A batch is globally transactional: if any diagnostic is produced, no parameter
+block is modified. Cross-field changes to the same block are staged together
+and validated once, so overrides can move directly between two valid states
+without requiring every intermediate field assignment to be valid. Concrete
+CLI and configuration-file syntax remains deferred to frontends that will
+produce the same `text_override` representation.
 
 ## Continuous integration
 
