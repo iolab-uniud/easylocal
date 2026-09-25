@@ -1,5 +1,23 @@
 # Assignment MWE
 
+## Runnable Runner example
+
+`main.cpp` is the end-to-end user-facing example for the current public API. It
+builds a `FirstImprovement` runner by composing a solution-manager recipe and a
+neighborhood recipe, binds them to an immutable problem instance, runs the
+search from an initial solution, and prints the resulting solution, cost,
+evaluation count, and termination reason.
+
+With examples enabled (the default for a top-level build), run it with:
+
+```sh
+./build/<preset>/examples/assignment/easylocal_assignment_mwe
+```
+
+The example deliberately uses the recipe/pipeline API rather than constructing
+framework services manually, so it is suitable as a minimal starting point for
+a user program.
+
 This concrete model is used to discover the EasyLocal++ API.
 
 It is deliberately **outside** `include/easylocal/` and is not part of the

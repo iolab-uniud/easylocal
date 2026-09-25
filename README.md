@@ -10,8 +10,8 @@ and the public API evolving incrementally from the contracts they expose.
 
 > **Current status:** the public recipe-based `Runner`, deterministic n-ary
 > neighborhood union, cursor-to-range neighborhood adapter, aggregation
-> facilities, sampling vocabulary, and First/Best/Random First Improvement
-> algorithms are in place. Domain models remain example-local while additional
+> facilities, single random proposals, First/Best Improvement, and Simulated
+> Annealing are in place. Domain models remain example-local while additional
 > search/metaheuristic contracts are stabilized incrementally.
 
 ## Requirements
@@ -132,6 +132,11 @@ The current Assignment, TSP, and Exam Timetabling MWEs live under
 `examples/assignment/`, `examples/tsp/`, and `examples/exam_timetabling/` and are
 intentionally not part of the public include tree. Exam Timetabling is the
 reference MWE for multi-component weighted costs and Simulated Annealing.
+
+The Assignment MWE also contains a runnable `main.cpp` showing the complete
+user-facing path from recipe composition to `Runner::bind()` and `run()`. With
+the default top-level build it can be executed as
+`./build/<preset>/examples/assignment/easylocal_assignment_mwe`.
 
 Simulated Annealing is public under `easylocal::search`. Its hot loop is fully
 policy based and uses no virtual dispatch: the concrete temperature and

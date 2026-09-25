@@ -3,57 +3,81 @@
 #include "solution_manager.hpp"
 
 #include <easylocal/runner.hpp>
+#include <easylocal/search/first_improvement.hpp>
 
+#include <cstddef>
 #include <iostream>
+
+namespace
+{
+
+using namespace easylocal::mwe::assignment;
+
+void print_solution(const AssignmentSolution& solution)
+{
+    std::cout << '[';
+
+    for (std::size_t job = 0; job < solution.assignment.size(); ++job)
+    {
+        if (job != 0)
+        {
+            std::cout << ", ";
+        }
+
+        std::cout << solution.assignment[job];
+    }
+
+    std::cout << ']';
+}
+
+} // namespace
 
 int main()
 {
     using namespace easylocal::mwe::assignment;
+    using easylocal::Runner;
     using easylocal::component;
     using easylocal::delta;
+    using easylocal::neighborhood;
+    using easylocal::solution_manager;
+    using easylocal::search::FirstImprovement;
+    using easylocal::search::FirstImprovementTermination;
 
     const AssignmentInstance instance{
         .demand = {4, 3, 2},
         .capacity = {5, 5},
     };
 
-    auto solution_manager =
-        (easylocal::solution_manager<AssignmentSolutionManager>()
-         | component<CapacityCostComponent>())
-            .construct(instance);
-
-    auto neighborhood_explorer =
-        (easylocal::neighborhood<ReassignJobNeighborhoodExplorer>()
-         | delta<CapacityCostComponent, ReassignCapacityDeltaEvaluator>())
-            .construct(solution_manager);
-
-    AssignmentSolution solution{
+    const AssignmentSolution initial_solution{
         .assignment = {0, 0, 1},
     };
 
-    if (!solution_manager.is_valid(solution))
-    {
-        return 1;
-    }
+    auto runner =
+        Runner{FirstImprovement{{.max_evaluations = 100}}}
+        | (solution_manager<AssignmentSolutionManager>()
+           | component<CapacityCostComponent>())
+        | (neighborhood<ReassignJobNeighborhoodExplorer>()
+           | delta<
+                 CapacityCostComponent,
+                 ReassignCapacityDeltaEvaluator>());
 
-    std::cout << "initial overload: "
-              << solution_manager.evaluate(solution).get<0>()
-              << '\n';
+    const auto result = runner.bind(instance).run(initial_solution);
 
-    const ReassignJobMove move{
-        .job = 1,
-        .destination = 1,
-    };
+    std::cout << "initial solution: ";
+    print_solution(initial_solution);
+    std::cout << '\n';
 
-    if (!neighborhood_explorer.is_valid(solution, move))
-    {
-        return 1;
-    }
+    std::cout << "final solution:   ";
+    print_solution(result.solution);
+    std::cout << '\n';
 
-    neighborhood_explorer.make_move(solution, move);
-
-    std::cout << "final overload: "
-              << solution_manager.evaluate(solution).get<0>()
+    std::cout << "final cost: overload=" << result.cost.get<0>()
+              << ", overloaded_machines=" << result.cost.get<1>() << '\n';
+    std::cout << "evaluations: " << result.evaluations << '\n';
+    std::cout << "termination: "
+              << (result.termination == FirstImprovementTermination::local_optimum
+                      ? "local optimum"
+                      : "evaluation budget exhausted")
               << '\n';
 
     return 0;
