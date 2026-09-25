@@ -9,11 +9,46 @@ set(EasyLocal_Core_FOUND TRUE)
 # consumers. It resolves only to EasyLocal::Core.
 set(EasyLocal_EasyLocal_FOUND TRUE)
 
-# Optional components are exported only when their corresponding adapter was
-# built. S28a establishes the component protocol before any such adapters exist.
 foreach(_easylocal_component IN LISTS EasyLocal_FIND_COMPONENTS)
     if(_easylocal_component STREQUAL "Core"
             OR _easylocal_component STREQUAL "EasyLocal")
+        continue()
+    endif()
+
+    if(_easylocal_component STREQUAL "ConfigTOML")
+        if(@EASYLOCAL_CONFIG_TOML_AVAILABLE@)
+            if(@EASYLOCAL_CONFIG_TOML_BUNDLED@)
+                set(_easylocal_config_toml_link_libraries "EasyLocal::Core")
+                set(_easylocal_config_toml_include_directories
+                    "${PACKAGE_PREFIX_DIR}/@CMAKE_INSTALL_INCLUDEDIR@;${PACKAGE_PREFIX_DIR}/@CMAKE_INSTALL_INCLUDEDIR@/easylocal/third_party/tomlplusplus")
+            else()
+                include(CMakeFindDependencyMacro)
+                find_dependency(tomlplusplus 3.4 CONFIG)
+                set(_easylocal_config_toml_link_libraries
+                    "EasyLocal::Core;tomlplusplus::tomlplusplus")
+                set(_easylocal_config_toml_include_directories
+                    "${PACKAGE_PREFIX_DIR}/@CMAKE_INSTALL_INCLUDEDIR@")
+            endif()
+
+            if(NOT TARGET EasyLocal::ConfigTOML)
+                add_library(EasyLocal::ConfigTOML INTERFACE IMPORTED)
+                set_target_properties(
+                    EasyLocal::ConfigTOML
+                    PROPERTIES
+                        INTERFACE_LINK_LIBRARIES
+                            "${_easylocal_config_toml_link_libraries}"
+                        INTERFACE_INCLUDE_DIRECTORIES
+                            "${_easylocal_config_toml_include_directories}"
+                )
+            endif()
+            unset(_easylocal_config_toml_link_libraries)
+            unset(_easylocal_config_toml_include_directories)
+            set(EasyLocal_ConfigTOML_FOUND TRUE)
+        else()
+            set(EasyLocal_ConfigTOML_FOUND FALSE)
+            set(EasyLocal_NOT_FOUND_MESSAGE
+                "Requested EasyLocal component 'ConfigTOML' is not available in this installation")
+        endif()
         continue()
     endif()
 

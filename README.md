@@ -109,16 +109,27 @@ component fails diagnostically.
 
 ### Optional dependency policy
 
-The framework core and the current std-only CLI/compact configuration frontends
-do not require external libraries. Future TOML/YAML, logging, or TUI integrations
-will be separate optional CMake components/targets and must not add transitive
-dependencies to `EasyLocal::Core`. Optional adapters first use `find_package`; a
-`FetchContent` fallback is permitted only when the top-level caller explicitly
-sets `EASYLOCAL_FETCH_DEPENDENCIES=ON` (default `OFF`). Configuring EasyLocal
-therefore never performs implicit network access.
+The framework core and the std-only CLI/compact configuration frontends do not
+require external libraries. TOML support is the first concrete optional adapter:
+`EasyLocal::ConfigTOML` uses `toml++` and is enabled with
+`EASYLOCAL_ENABLE_CONFIG_TOML=ON`. It is deliberately absent from Core-only
+installations and from `<easylocal/easylocal.hpp>`. Consumers request it
+explicitly:
 
-The reserved future component names are `ConfigTOML`, `ConfigYAML`, `Logging`,
-and `TUI`. Concrete libraries have deliberately not been selected yet. See
+```cmake
+find_package(EasyLocal CONFIG REQUIRED COMPONENTS Core ConfigTOML)
+target_link_libraries(my_solver PRIVATE EasyLocal::Core EasyLocal::ConfigTOML)
+```
+
+The adapter first uses `find_package(tomlplusplus 3.4 CONFIG)`. A pinned
+`FetchContent` fallback (`v3.4.0`) is permitted only when the top-level caller
+explicitly sets `EASYLOCAL_FETCH_DEPENDENCIES=ON` (default `OFF`), so configuring
+EasyLocal never performs implicit network access. When toml++ comes from
+FetchContent, EasyLocal installs a private copy of its headers under the
+EasyLocal include tree so an installed `ConfigTOML` component remains
+self-contained and relocatable. A system-provided toml++ remains an external
+package dependency. CI exercises both providers explicitly. `ConfigYAML`, `Logging`, and `TUI` remain reserved
+optional component names for later integrations. See
 [`docs/dependency-policy.md`](docs/dependency-policy.md) for the complete policy.
 
 EasyLocal also provides optional, non-virtual convenience bases for the common

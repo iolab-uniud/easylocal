@@ -26,7 +26,7 @@ function(easylocal_run_checked description)
     endif()
 endfunction()
 
-function(easylocal_configure_build_test_consumer name use_core_component)
+function(easylocal_configure_build_test_consumer name use_core_component use_config_toml_component)
     set(_consumer_build_dir "${EASYLOCAL_WORK_DIR}/${name}")
     set(
         _configure_command
@@ -39,7 +39,13 @@ function(easylocal_configure_build_test_consumer name use_core_component)
         "-DEASYLOCAL_EXPECTED_VERSION=${EASYLOCAL_VERSION}"
         "-DEASYLOCAL_EXPECTED_INSTALL_PREFIX=${_install_prefix}"
         "-DEASYLOCAL_FIND_CORE_COMPONENT=${use_core_component}"
+        "-DEASYLOCAL_FIND_CONFIG_TOML_COMPONENT=${use_config_toml_component}"
     )
+    if(DEFINED EASYLOCAL_DEPENDENCY_PREFIX_PATH
+            AND NOT "${EASYLOCAL_DEPENDENCY_PREFIX_PATH}" STREQUAL "")
+        list(APPEND _configure_command
+            "-DCMAKE_PREFIX_PATH=${EASYLOCAL_DEPENDENCY_PREFIX_PATH}")
+    endif()
     if(DEFINED EASYLOCAL_GENERATOR_PLATFORM
             AND NOT "${EASYLOCAL_GENERATOR_PLATFORM}" STREQUAL "")
         list(APPEND _configure_command -A "${EASYLOCAL_GENERATOR_PLATFORM}")
@@ -113,8 +119,41 @@ if(NOT EXISTS "${_package_dir}/EasyLocalConfig.cmake")
         "installed package config not found at ${_package_dir}/EasyLocalConfig.cmake")
 endif()
 
-easylocal_configure_build_test_consumer(legacy OFF)
-easylocal_configure_build_test_consumer(core-component ON)
+set(_toml_header
+    "${_install_prefix}/include/easylocal/config/toml.hpp")
+set(_bundled_toml_header
+    "${_install_prefix}/include/easylocal/third_party/tomlplusplus/toml++/toml.hpp")
+if(EASYLOCAL_CONFIG_TOML_ENABLED)
+    if(NOT EXISTS "${_toml_header}")
+        message(FATAL_ERROR
+            "ConfigTOML was enabled but its installed header is missing")
+    endif()
+    if(EASYLOCAL_CONFIG_TOML_BUNDLED)
+        if(NOT EXISTS "${_bundled_toml_header}")
+            message(FATAL_ERROR
+                "ConfigTOML fetched toml++ but its private installed headers are missing")
+        endif()
+    elseif(EXISTS "${_bundled_toml_header}")
+        message(FATAL_ERROR
+            "system ConfigTOML installation unexpectedly bundled toml++ headers")
+    endif()
+else()
+    if(EXISTS "${_toml_header}")
+        message(FATAL_ERROR
+            "ConfigTOML header leaked into a Core-only installation")
+    endif()
+    if(EXISTS "${_bundled_toml_header}")
+        message(FATAL_ERROR
+            "bundled toml++ headers leaked into a Core-only installation")
+    endif()
+endif()
+
+easylocal_configure_build_test_consumer(legacy OFF OFF)
+easylocal_configure_build_test_consumer(core-component ON OFF)
+
+if(EASYLOCAL_CONFIG_TOML_ENABLED)
+    easylocal_configure_build_test_consumer(config-toml ON ON)
+endif()
 
 set(_missing_component_build_dir "${EASYLOCAL_WORK_DIR}/missing-component")
 execute_process(
@@ -138,7 +177,7 @@ if(_missing_component_result EQUAL 0)
 endif()
 string(CONCAT _missing_component_output
     "${_missing_component_stdout}" "${_missing_component_stderr}")
-if(NOT _missing_component_output MATCHES "ConfigTOML")
+if(NOT _missing_component_output MATCHES "ConfigYAML")
     message(FATAL_ERROR
-        "missing-component diagnostic did not name ConfigTOML:\n${_missing_component_output}")
+        "missing-component diagnostic did not name ConfigYAML:\n${_missing_component_output}")
 endif()

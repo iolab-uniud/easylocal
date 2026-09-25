@@ -83,6 +83,37 @@ add_test(
     COMMAND easylocal_configuration_cli_header_self_containment
 )
 
+
+if(TARGET EasyLocal::ConfigTOML)
+    add_executable(
+        easylocal_configuration_toml_header_self_containment
+        configuration_toml_header_self_containment.cpp
+    )
+    target_link_libraries(
+        easylocal_configuration_toml_header_self_containment
+        PRIVATE
+            EasyLocal::ConfigTOML
+    )
+    add_test(
+        NAME easylocal.configuration-toml-header-self-containment
+        COMMAND easylocal_configuration_toml_header_self_containment
+    )
+
+    add_executable(
+        easylocal_configuration_toml_test
+        configuration_toml.cpp
+    )
+    target_link_libraries(
+        easylocal_configuration_toml_test
+        PRIVATE
+            EasyLocal::ConfigTOML
+    )
+    add_test(
+        NAME easylocal.configuration-toml
+        COMMAND easylocal_configuration_toml_test
+    )
+endif()
+
 add_executable(
     easylocal_header_self_containment
     header_self_containment.cpp
@@ -618,11 +649,26 @@ add_test(
     COMMAND easylocal_neighborhood_composition_test
 )
 
+if(TARGET EasyLocal::ConfigTOML)
+    set(_easylocal_config_toml_enabled ON)
+else()
+    set(_easylocal_config_toml_enabled OFF)
+endif()
+
+if(EASYLOCAL_CONFIG_TOML_BUNDLED)
+    set(_easylocal_config_toml_bundled ON)
+else()
+    set(_easylocal_config_toml_bundled OFF)
+endif()
+
 add_test(
     NAME easylocal.installed-package-consumer
     COMMAND
         "${CMAKE_COMMAND}"
         "-DEASYLOCAL_BUILD_DIR=${PROJECT_BINARY_DIR}"
+        "-DEASYLOCAL_CONFIG_TOML_ENABLED=${_easylocal_config_toml_enabled}"
+        "-DEASYLOCAL_CONFIG_TOML_BUNDLED=${_easylocal_config_toml_bundled}"
+        "-DEASYLOCAL_DEPENDENCY_PREFIX_PATH=${CMAKE_PREFIX_PATH}"
         "-DEASYLOCAL_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
         "-DEASYLOCAL_CONFIG=$<CONFIG>"
         "-DEASYLOCAL_CONSUMER_SOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR}/package_consumer"

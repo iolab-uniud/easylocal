@@ -13,7 +13,16 @@ if(EASYLOCAL_FIND_MISSING_COMPONENT)
         EXACT
         CONFIG
         REQUIRED
-        COMPONENTS ConfigTOML
+        COMPONENTS ConfigYAML
+    )
+elseif(EASYLOCAL_FIND_CONFIG_TOML_COMPONENT)
+    find_package(
+        EasyLocal
+        "${EASYLOCAL_EXPECTED_VERSION}"
+        EXACT
+        CONFIG
+        REQUIRED
+        COMPONENTS Core ConfigTOML
     )
 elseif(EASYLOCAL_FIND_CORE_COMPONENT)
     find_package(
@@ -116,6 +125,23 @@ target_link_libraries(
     PRIVATE
         EasyLocal::Core
 )
+
+if(EASYLOCAL_FIND_CONFIG_TOML_COMPONENT)
+    if(NOT TARGET EasyLocal::ConfigTOML)
+        message(FATAL_ERROR
+            "installed ConfigTOML component did not provide EasyLocal::ConfigTOML")
+    endif()
+    target_link_libraries(
+        easylocal_installed_package_consumer
+        PRIVATE
+            EasyLocal::ConfigTOML
+    )
+    target_compile_definitions(
+        easylocal_installed_package_consumer
+        PRIVATE
+            EASYLOCAL_TEST_CONFIG_TOML=1
+    )
+endif()
 
 enable_testing()
 add_test(
