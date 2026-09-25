@@ -51,10 +51,18 @@ heterogeneous TSP neighborhoods: the existing 2-opt explorer and a
 `random_biases(3.0, 1.0)`. A fixed `std::mt19937` seed makes repeated runs
 reproducible within the same standard-library implementation.
 
-The union example deliberately does not attach the 2-opt delta evaluator. Delta
-propagation through `neighborhood_union` is not part of the current contract, so
-this executable exercises the correct full-evaluation fallback rather than
-pretending that child-local deltas are visible through the composite explorer.
+Both child neighborhoods attach a `TourLengthComponent` delta evaluator. The
+union exposes that component delta because every child provides it, then
+dispatches incrementally to the evaluator belonging to the tagged child move.
+`SwapTourLengthDeltaEvaluator` covers the four tour edges potentially affected
+by a position swap, deduplicating them for adjacent and wrap-around cases. The
+resulting SA path is therefore all-delta and does not materialize rejected
+candidate tours.
+
+Delta propagation is deliberately conservative per component: if any child of
+a union lacks a delta for an active component, that component is omitted from
+the union's delta set and the existing evaluation machinery falls back to full
+evaluation for that component. Nested unions preserve the same rule.
 
 With the default top-level build, run it as:
 

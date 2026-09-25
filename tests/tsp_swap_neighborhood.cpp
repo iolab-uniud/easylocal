@@ -1,6 +1,8 @@
 #include "solution_manager.hpp"
 #include "swap_neighborhood_explorer.hpp"
 #include "swap_move.hpp"
+#include "swap_tour_length_delta.hpp"
+#include "tour_length_component.hpp"
 
 #include <cstddef>
 #include <iostream>
@@ -53,6 +55,8 @@ int main()
     };
     const TspSolutionManager solution_manager{instance};
     const SwapCitiesNeighborhoodExplorer neighborhood{solution_manager};
+    const TourLengthComponent tour_length{instance};
+    const SwapTourLengthDeltaEvaluator delta_evaluator{instance};
     const Tour solution{
         .tour = {0, 2, 1, 3},
     };
@@ -74,6 +78,22 @@ int main()
     ok &= expect(
         collect(all_moves) == expected,
         "swap moves are generated lazily in lexicographic position order");
+
+    const auto current_length = tour_length.evaluate(solution);
+    for (const auto [first, second] : expected)
+    {
+        const SwapCitiesMove move{
+            .first_position = first,
+            .second_position = second,
+        };
+        auto candidate = solution;
+        neighborhood.make_move(candidate, move);
+
+        ok &= expect(
+            current_length + delta_evaluator.delta_evaluate(solution, move) ==
+                tour_length.evaluate(candidate),
+            "swap tour-length delta agrees with full evaluation for every move");
+    }
 
     std::mt19937 rng{12345U};
     const auto random_move = neighborhood.random_move(solution, rng);

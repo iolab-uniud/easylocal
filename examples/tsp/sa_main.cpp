@@ -1,6 +1,8 @@
 #include "neighborhood_explorer.hpp"
 #include "solution_manager.hpp"
 #include "swap_neighborhood_explorer.hpp"
+#include "swap_tour_length_delta.hpp"
+#include "tour_length_delta.hpp"
 
 #include <easylocal/neighborhood_union.hpp>
 #include <easylocal/runner.hpp>
@@ -40,6 +42,7 @@ int main()
     using namespace easylocal::mwe::tsp;
     using easylocal::Runner;
     using easylocal::component;
+    using easylocal::delta;
     using easylocal::neighborhood;
     using easylocal::neighborhood_union;
     using easylocal::random_biases;
@@ -74,8 +77,14 @@ int main()
         | (solution_manager<TspSolutionManager>()
            | component<TourLengthComponent>())
         | (neighborhood_union(
-               neighborhood<TwoOptNeighborhoodExplorer>(),
-               neighborhood<SwapCitiesNeighborhoodExplorer>())
+               neighborhood<TwoOptNeighborhoodExplorer>()
+                   | delta<
+                         TourLengthComponent,
+                         TwoOptTourLengthDeltaEvaluator>(),
+               neighborhood<SwapCitiesNeighborhoodExplorer>()
+                   | delta<
+                         TourLengthComponent,
+                         SwapTourLengthDeltaEvaluator>())
            | random_biases(3.0, 1.0));
 
     std::mt19937 rng{2026U};

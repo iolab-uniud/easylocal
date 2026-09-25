@@ -229,6 +229,115 @@ concept random_move_neighborhood =
         } -> std::same_as<std::optional<typename Explorer::move_type>>;
     };
 
+template<class Bindings>
+struct delta_binding_component_types;
+
+template<class... Bindings>
+struct delta_binding_component_types<std::tuple<Bindings...>>
+{
+    using type = std::tuple<typename Bindings::component_type...>;
+};
+
+template<class Explorer>
+using neighborhood_delta_component_types_t = typename delta_binding_component_types<
+    neighborhood_delta_bindings_t<Explorer>>::type;
+
+template<class Explorer, class Component>
+inline constexpr bool neighborhood_has_delta_component_v =
+    tuple_contains_type_v<
+        Component,
+        neighborhood_delta_component_types_t<Explorer>>;
+
+template<class Component, class... Explorers>
+inline constexpr bool all_neighborhoods_have_delta_component_v =
+    (neighborhood_has_delta_component_v<Explorers, Component> && ...);
+
+template<class Component, class Explorer>
+using neighborhood_delta_binding_for_t = std::tuple_element_t<
+    tuple_type_index_v<
+        Component,
+        neighborhood_delta_component_types_t<Explorer>>,
+    neighborhood_delta_bindings_t<Explorer>>;
+
+template<class CandidateComponents, class... Explorers>
+struct common_neighborhood_delta_components;
+
+template<class... Components, class... Explorers>
+struct common_neighborhood_delta_components<
+    std::tuple<Components...>,
+    Explorers...>
+{
+    using type = decltype(std::tuple_cat(
+        std::declval<std::conditional_t<
+            all_neighborhoods_have_delta_component_v<
+                Components,
+                Explorers...>,
+            std::tuple<Components>,
+            std::tuple<>>>()...));
+};
+
+template<class Component, class... Explorers>
+class neighborhood_union_delta_binding
+{
+private:
+    using explorers_type = std::tuple<Explorers...>;
+
+    template<std::size_t Index>
+    using explorer_type = std::tuple_element_t<Index, explorers_type>;
+
+public:
+    using component_type = Component;
+
+    explicit neighborhood_union_delta_binding(
+        const explorers_type& explorers) noexcept
+        : explorers_{std::addressof(explorers)}
+    {
+    }
+
+    template<class Value, class Solution, class UnionMove>
+    [[nodiscard]]
+    auto apply(
+        const Value& value,
+        const Solution& solution,
+        const UnionMove& move) const -> Value
+    {
+        return std::visit(
+            [this, &value, &solution]<class TaggedMove>(
+                const TaggedMove& tagged) -> Value {
+                constexpr auto child_index = TaggedMove::index;
+                using child_explorer_type = explorer_type<child_index>;
+                using child_component_types =
+                    neighborhood_delta_component_types_t<child_explorer_type>;
+                constexpr auto binding_index = tuple_type_index_v<
+                    Component,
+                    child_component_types>;
+
+                const auto& child = std::get<child_index>(*explorers_);
+                auto&& child_bindings = child.delta_bindings();
+
+                return std::get<binding_index>(child_bindings)
+                    .apply(value, solution, tagged.value);
+            },
+            move);
+    }
+
+private:
+    const explorers_type* explorers_;
+};
+
+template<class Components, class... Explorers>
+struct neighborhood_union_delta_bindings;
+
+template<class... Components, class... Explorers>
+struct neighborhood_union_delta_bindings<
+    std::tuple<Components...>,
+    Explorers...>
+{
+    using type = std::tuple<neighborhood_union_delta_binding<
+        Components,
+        Explorers...>...>;
+};
+
 template<std::size_t Count>
 [[nodiscard]]
 auto valid_random_biases(const std::array<double, Count>& biases) noexcept
@@ -255,6 +364,9 @@ class neighborhood_union_explorer
 private:
     using explorer_tuple = std::tuple<Explorers...>;
     using first_explorer = std::tuple_element_t<0, explorer_tuple>;
+    using common_delta_components = typename common_neighborhood_delta_components<
+        neighborhood_delta_component_types_t<first_explorer>,
+        Explorers...>::type;
 
     template<std::size_t... Indices>
     [[nodiscard]]
@@ -381,6 +493,9 @@ public:
     using move_type = typename neighborhood_union_move_type<
         std::index_sequence_for<Explorers...>,
         Explorers...>::type;
+    using delta_bindings_type = typename neighborhood_union_delta_bindings<
+        common_delta_components,
+        Explorers...>::type;
 
     static_assert(
         (std::same_as<
@@ -430,6 +545,13 @@ public:
             std::index_sequence_for<Explorers...>{});
     }
 
+    [[nodiscard]]
+    auto delta_bindings() const noexcept -> delta_bindings_type
+    {
+        return make_delta_bindings(
+            std::type_identity<common_delta_components>{});
+    }
+
     template<std::uniform_random_bit_generator RNG>
         requires (random_move_neighborhood<
                       Explorers,
@@ -474,6 +596,19 @@ public:
     }
 
 private:
+    template<class... Components>
+    [[nodiscard]]
+    auto make_delta_bindings(
+        std::type_identity<std::tuple<Components...>>) const noexcept
+        -> delta_bindings_type
+    {
+        return delta_bindings_type{
+            neighborhood_union_delta_binding<
+                Components,
+                Explorers...>{explorers_}...,
+        };
+    }
+
     explorer_tuple explorers_;
     std::array<double, sizeof...(Explorers)> random_biases_;
 };
@@ -518,6 +653,12 @@ public:
     [[nodiscard]]
     auto construct(Dependency& dependency) const -> service_type
     {
+        static_assert(
+            (validate_delta_bindings<
+                 std::remove_cvref_t<Dependency>,
+                 service_t<Specs>>() && ...),
+            "every child neighborhood in a union must have valid delta bindings");
+
         return construct_impl(
             dependency,
             std::index_sequence_for<Specs...>{});

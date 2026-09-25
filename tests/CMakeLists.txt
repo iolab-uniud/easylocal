@@ -545,6 +545,12 @@ easylocal_add_compile_failure_test(
     "MalformedDeltaA"
 )
 easylocal_add_compile_failure_test(
+    incompatible-union-child-delta
+    incompatible_union_child_delta.cpp
+    "attached delta evaluator is incompatible with the bound component value, Solution, or Move type"
+    "MalformedDeltaA"
+)
+easylocal_add_compile_failure_test(
     missing-delta-evaluate
     missing_delta_evaluate.cpp
     "attached delta evaluator is incompatible with the bound component value, Solution, or Move type"

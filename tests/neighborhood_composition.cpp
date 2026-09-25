@@ -5,6 +5,7 @@
 #include "move.hpp"
 #include "neighborhood_explorer.hpp"
 #include "solution_manager.hpp"
+#include "capacity_delta.hpp"
 
 #include <concepts>
 #include <cstddef>
@@ -123,6 +124,62 @@ public:
 
 private:
     const AssignmentSolutionManager& solution_manager_;
+};
+
+class SwapCapacityDeltaEvaluator
+{
+public:
+    explicit SwapCapacityDeltaEvaluator(const AssignmentInstance& instance) noexcept
+        : instance_{instance}
+    {
+    }
+
+    [[nodiscard]]
+    auto delta_evaluate(
+        const AssignmentSolution& solution,
+        const SwapMove move) const -> CapacityDelta
+    {
+        const auto first_machine = solution.assignment[move.first];
+        const auto second_machine = solution.assignment[move.second];
+
+        if (first_machine == second_machine)
+        {
+            return {};
+        }
+
+        const auto first_load =
+            detail::machine_load(instance_, solution, first_machine);
+        const auto second_load =
+            detail::machine_load(instance_, solution, second_machine);
+        const auto first_before = detail::overload(
+            first_load,
+            instance_.capacity[first_machine]);
+        const auto second_before = detail::overload(
+            second_load,
+            instance_.capacity[second_machine]);
+
+        const auto first_after = detail::overload(
+            first_load - instance_.demand[move.first] +
+                instance_.demand[move.second],
+            instance_.capacity[first_machine]);
+        const auto second_after = detail::overload(
+            second_load - instance_.demand[move.second] +
+                instance_.demand[move.first],
+            instance_.capacity[second_machine]);
+
+        return CapacityDelta{
+            .overloaded_machines =
+                static_cast<std::int64_t>(first_after > 0) +
+                static_cast<std::int64_t>(second_after > 0) -
+                static_cast<std::int64_t>(first_before > 0) -
+                static_cast<std::int64_t>(second_before > 0),
+            .total_overload =
+                first_after + second_after - first_before - second_before,
+        };
+    }
+
+private:
+    const AssignmentInstance& instance_;
 };
 
 class DestinationZeroNeighborhoodExplorer
@@ -266,6 +323,16 @@ concept HasRandomMove =
         neighborhood.random_move(solution, rng);
     };
 
+template<class Candidate>
+concept StoresMove = requires(const Candidate& candidate) {
+    candidate.move();
+};
+
+template<class Candidate>
+concept StoresSolution = requires(Candidate& candidate) {
+    candidate.solution();
+};
+
 class SampleNeighborhoodIndex
 {
 public:
@@ -300,6 +367,7 @@ auto expect(const bool condition, const std::string_view description) -> bool
 int main()
 {
     using easylocal::Runner;
+    using easylocal::delta;
     using easylocal::neighborhood;
     using easylocal::neighborhood_union;
     using easylocal::random_biases;
@@ -329,6 +397,41 @@ int main()
         neighborhood<ReassignJobNeighborhoodExplorer>(),
         neighborhood<DeterministicOnlyNeighborhoodExplorer>()))::service_type;
     static_assert(!HasRandomMove<PartiallyRandomUnionExplorer, std::mt19937>);
+
+    using AllDeltaUnionExplorer = typename decltype(neighborhood_union(
+        neighborhood<ReassignJobNeighborhoodExplorer>()
+            | delta<CapacityCostComponent, ReassignCapacityDeltaEvaluator>(),
+        neighborhood<SwapNeighborhoodExplorer>()
+            | delta<CapacityCostComponent, SwapCapacityDeltaEvaluator>(),
+        neighborhood<DestinationZeroNeighborhoodExplorer>()
+            | delta<CapacityCostComponent, ReassignCapacityDeltaEvaluator>()))::service_type;
+
+    static_assert(
+        std::tuple_size_v<typename AllDeltaUnionExplorer::delta_bindings_type> == 1,
+        "a union exposes a component delta only when every child provides one");
+
+    using PartialDeltaUnionExplorer = typename decltype(neighborhood_union(
+        neighborhood<ReassignJobNeighborhoodExplorer>()
+            | delta<CapacityCostComponent, ReassignCapacityDeltaEvaluator>(),
+        neighborhood<SwapNeighborhoodExplorer>()))::service_type;
+
+    static_assert(
+        std::tuple_size_v<typename PartialDeltaUnionExplorer::delta_bindings_type> == 0,
+        "a missing child delta removes that component from the union delta intersection");
+
+    using ConfiguredSolutionManager =
+        typename decltype(default_solution_manager_recipe())::service_type;
+    using AllDeltaCandidate = typename easylocal::detail::evaluation_facility<
+        ConfiguredSolutionManager,
+        AllDeltaUnionExplorer>::candidate_type;
+    using PartialDeltaCandidate = typename easylocal::detail::evaluation_facility<
+        ConfiguredSolutionManager,
+        PartialDeltaUnionExplorer>::candidate_type;
+
+    static_assert(StoresMove<AllDeltaCandidate>);
+    static_assert(!StoresSolution<AllDeltaCandidate>);
+    static_assert(!StoresMove<PartialDeltaCandidate>);
+    static_assert(StoresSolution<PartialDeltaCandidate>);
 
     using FluentRunner = decltype(
         Runner{FirstImprovement{{.max_evaluations = 32}}}
@@ -399,6 +502,58 @@ int main()
     ok &= expect(
         best_result.cost == Cost{0, 0},
         "best improvement consumes a neighborhood union without algorithm changes");
+
+    auto all_delta_runner =
+        Runner{BestImprovement{{.max_evaluations = 64}}}
+        | default_solution_manager_recipe()
+        | neighborhood_union(
+              neighborhood<ReassignJobNeighborhoodExplorer>()
+                  | delta<
+                        CapacityCostComponent,
+                        ReassignCapacityDeltaEvaluator>(),
+              neighborhood<SwapNeighborhoodExplorer>()
+                  | delta<
+                        CapacityCostComponent,
+                        SwapCapacityDeltaEvaluator>(),
+              neighborhood<DestinationZeroNeighborhoodExplorer>()
+                  | delta<
+                        CapacityCostComponent,
+                        ReassignCapacityDeltaEvaluator>());
+
+    auto bound_all_delta = all_delta_runner.bind(instance);
+    const auto all_delta_result = bound_all_delta.run(initial);
+
+    ok &= expect(
+        all_delta_result.cost == best_result.cost &&
+            all_delta_result.solution.assignment == best_result.solution.assignment,
+        "composite delta dispatch agrees with full evaluation across heterogeneous child moves");
+
+    auto nested_all_delta_runner =
+        Runner{BestImprovement{{.max_evaluations = 64}}}
+        | default_solution_manager_recipe()
+        | neighborhood_union(
+              neighborhood_union(
+                  neighborhood<ReassignJobNeighborhoodExplorer>()
+                      | delta<
+                            CapacityCostComponent,
+                            ReassignCapacityDeltaEvaluator>(),
+                  neighborhood<SwapNeighborhoodExplorer>()
+                      | delta<
+                            CapacityCostComponent,
+                            SwapCapacityDeltaEvaluator>()),
+              neighborhood<DestinationZeroNeighborhoodExplorer>()
+                  | delta<
+                        CapacityCostComponent,
+                        ReassignCapacityDeltaEvaluator>());
+
+    auto bound_nested_all_delta = nested_all_delta_runner.bind(instance);
+    const auto nested_all_delta_result = bound_nested_all_delta.run(initial);
+
+    ok &= expect(
+        nested_all_delta_result.cost == best_result.cost &&
+            nested_all_delta_result.solution.assignment ==
+                best_result.solution.assignment,
+        "delta propagation remains compositional through nested neighborhood unions");
 
     auto biased_sampler =
         Runner{SampleNeighborhoodIndex{}}

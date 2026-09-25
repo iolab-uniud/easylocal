@@ -184,7 +184,7 @@ concept delta_binding_for =
         const Value& value)
     {
         {
-            value + binding.evaluator().delta_evaluate(solution, move)
+            binding.apply(value, solution, move)
         } -> std::same_as<Value>;
     };
 
@@ -418,10 +418,11 @@ private:
                     "attached delta evaluator is incompatible with its component, "
                     "Solution, or Move");
 
-                return std::get<ComponentIndex>(current_values) +
-                       std::get<DeltaIndex>(neighborhood_.delta_bindings())
-                           .evaluator()
-                           .delta_evaluate(current_solution, move);
+                return std::get<DeltaIndex>(neighborhood_.delta_bindings())
+                    .apply(
+                        std::get<ComponentIndex>(current_values),
+                        current_solution,
+                        move);
             }
             else
             {

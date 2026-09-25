@@ -115,6 +115,26 @@ public:
         return evaluator_;
     }
 
+    template<class Value, class Solution, class Move>
+        requires requires(
+            const Value& value,
+            const DeltaEvaluator& evaluator,
+            const Solution& solution,
+            const Move& move)
+        {
+            {
+                value + evaluator.delta_evaluate(solution, move)
+            } -> std::same_as<Value>;
+        }
+    [[nodiscard]]
+    auto apply(
+        const Value& value,
+        const Solution& solution,
+        const Move& move) const -> Value
+    {
+        return value + evaluator_.delta_evaluate(solution, move);
+    }
+
 private:
     [[no_unique_address]] DeltaEvaluator evaluator_;
 };
