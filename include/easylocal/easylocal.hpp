@@ -2,6 +2,7 @@
 
 #include <easylocal/aggregation.hpp>
 #include <easylocal/cursor_moves.hpp>
+#include <easylocal/config/parameters.hpp>
 #include <easylocal/neighborhood_union.hpp>
 #include <easylocal/runner.hpp>
 #include <easylocal/service_base.hpp>

@@ -42,6 +42,15 @@ approximate comparisons remain deliberately reserved for a following iteration,
 so floating-point comparison policy can be examined independently from delta
 integration.
 
+## Application parameter block
+
+`app_parameters.hpp` contains the MWE-owned `AppParameters` leaf used to exercise
+the typed parameter-schema infrastructure. It exposes an `instance_file` path
+and RNG `seed` through a schema declared inside the struct itself; validation is
+also owned by the block. The file deliberately remains application code rather
+than public EasyLocal API. CLI/config-file loading and wiring the instance path
+into an input reader are later configuration-layer work.
+
 ## Runnable composite-neighborhood SA example
 
 `sa_main.cpp` is a runnable end-to-end Simulated Annealing example using two

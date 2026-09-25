@@ -13,6 +13,20 @@ add_test(
 )
 
 add_executable(
+    easylocal_parameters_header_self_containment
+    parameters_header_self_containment.cpp
+)
+target_link_libraries(
+    easylocal_parameters_header_self_containment
+    PRIVATE
+        EasyLocal::EasyLocal
+)
+add_test(
+    NAME easylocal.parameters-header-self-containment
+    COMMAND easylocal_parameters_header_self_containment
+)
+
+add_executable(
     easylocal_header_self_containment
     header_self_containment.cpp
 )
@@ -446,6 +460,20 @@ target_link_libraries(
 add_test(
     NAME easylocal.service-composition
     COMMAND easylocal_service_composition_test
+)
+
+add_executable(
+    easylocal_parameters_test
+    parameters.cpp
+)
+target_link_libraries(
+    easylocal_parameters_test
+    PRIVATE
+        easylocal_tsp_mwe_model
+)
+add_test(
+    NAME easylocal.parameters
+    COMMAND easylocal_parameters_test
 )
 
 add_executable(

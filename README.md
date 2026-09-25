@@ -152,6 +152,23 @@ run state remain ordinary runtime data stored by value. The standard
 contract that numeric cost is directly the SA energy, with no Cost-to-Energy
 adapter.
 
+## Typed parameter leaves
+
+The first configuration layer is intentionally limited to typed parameter
+blocks. A parameter block owns its ordinary C++ values, declares an internal
+`parameter_schema()` next to those values, and validates its own invariants with
+`validate()`. Generic code can inspect the declared fields through
+`easylocal::config::for_each_parameter` without type erasure or a dynamic
+registry. Defaults remain ordinary member initializers or constructor values;
+they are not duplicated in the schema.
+
+`temperature::FixedLengthParameters` and
+`NeighborhoodUnionParameters<N>` are the initial framework-side examples. The
+TSP MWE also defines application-owned `AppParameters` with an `instance_file`
+and RNG `seed`, demonstrating that configuration is not restricted to Runner
+components. No Runner configuration tree, CLI parser, config-file adapter, or
+runtime reconfiguration protocol is part of this layer yet.
+
 ## Continuous integration
 
 The full CI matrix is intentionally small and targets C++23 directly:

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <easylocal/config/parameters.hpp>
 #include <easylocal/runner.hpp>
 
 #include <algorithm>
@@ -20,6 +21,45 @@
 
 namespace easylocal
 {
+
+template<std::size_t Count>
+struct NeighborhoodUnionParameters
+{
+    static_assert(
+        Count >= 2,
+        "a neighborhood union parameter block requires at least two children");
+
+    std::array<double, Count> random_biases = [] {
+        std::array<double, Count> biases{};
+        biases.fill(1.0);
+        return biases;
+    }();
+
+    [[nodiscard]]
+    static consteval auto parameter_schema()
+    {
+        return config::fields(
+            config::field<
+                "random_biases",
+                &NeighborhoodUnionParameters::random_biases>(
+                    "Relative weights for random child-neighborhood selection"));
+    }
+
+    [[nodiscard]]
+    auto validate() const noexcept -> config::validation_result
+    {
+        for (const auto bias : random_biases)
+        {
+            if (!std::isfinite(bias) || bias < 0.0)
+            {
+                return config::validation_result::failure(
+                    "random_biases must be finite and non-negative");
+            }
+        }
+
+        return config::validation_result::success();
+    }
+};
 
 namespace detail
 {

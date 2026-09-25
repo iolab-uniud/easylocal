@@ -1,5 +1,7 @@
 #pragma once
 
+#include <easylocal/config/parameters.hpp>
+
 #include <algorithm>
 #include <cassert>
 #include <cmath>
@@ -149,6 +151,65 @@ struct FixedLengthParameters
     double final_temperature;
     double cooling_rate;
     std::size_t max_iterations;
+
+    [[nodiscard]]
+    static consteval auto parameter_schema()
+    {
+        return config::fields(
+            config::field<
+                "initial_temperature",
+                &FixedLengthParameters::initial_temperature>(
+                    "Initial annealing temperature"),
+            config::field<
+                "final_temperature",
+                &FixedLengthParameters::final_temperature>(
+                    "Final annealing temperature"),
+            config::field<
+                "cooling_rate",
+                &FixedLengthParameters::cooling_rate>(
+                    "Multiplicative cooling factor"),
+            config::field<
+                "max_iterations",
+                &FixedLengthParameters::max_iterations>(
+                    "Maximum number of annealing iterations"));
+    }
+
+    [[nodiscard]]
+    auto validate() const noexcept -> config::validation_result
+    {
+        if (!std::isfinite(initial_temperature) || initial_temperature <= 0.0)
+        {
+            return config::validation_result::failure(
+                "initial_temperature must be finite and positive");
+        }
+
+        if (!std::isfinite(final_temperature) || final_temperature <= 0.0)
+        {
+            return config::validation_result::failure(
+                "final_temperature must be finite and positive");
+        }
+
+        if (final_temperature >= initial_temperature)
+        {
+            return config::validation_result::failure(
+                "final_temperature must be smaller than initial_temperature");
+        }
+
+        if (!std::isfinite(cooling_rate) ||
+            cooling_rate <= 0.0 || cooling_rate >= 1.0)
+        {
+            return config::validation_result::failure(
+                "cooling_rate must be finite and in the open interval (0, 1)");
+        }
+
+        if (max_iterations == 0)
+        {
+            return config::validation_result::failure(
+                "max_iterations must be positive");
+        }
+
+        return config::validation_result::success();
+    }
 };
 
 class FixedLength
