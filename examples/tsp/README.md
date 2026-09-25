@@ -51,6 +51,12 @@ also owned by the block. The file deliberately remains application code rather
 than public EasyLocal API. CLI/config-file loading and wiring the instance path
 into an input reader are later configuration-layer work.
 
+The configuration-tree tests also use this block as an `input` node beside two
+distinct Simulated Annealing temperature-parameter blocks. This demonstrates
+that instance identity belongs to the application tree (`fast`, `slow`, `input`)
+rather than to the parameter-block type itself. The tree remains read-only in
+this iteration; applying external values is deferred.
+
 ## Runnable composite-neighborhood SA example
 
 `sa_main.cpp` is a runnable end-to-end Simulated Annealing example using two

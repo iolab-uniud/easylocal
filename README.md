@@ -169,6 +169,29 @@ and RNG `seed`, demonstrating that configuration is not restricted to Runner
 components. No Runner configuration tree, CLI parser, config-file adapter, or
 runtime reconfiguration protocol is part of this layer yet.
 
+### Named configuration tree
+
+Typed leaves can be assembled into a non-owning, read-only configuration tree
+without flattening instance identity into the parameter type. For example, two
+`FixedLengthParameters` blocks of the same C++ type can occupy distinct paths:
+
+```cpp
+auto tree = easylocal::config::root(
+    easylocal::config::named<"input">(app),
+    easylocal::config::named<"fast">(
+        easylocal::config::named<"temperature">(fast_temperature)),
+    easylocal::config::named<"slow">(
+        easylocal::config::named<"temperature">(slow_temperature)));
+```
+
+`config::for_each_config_parameter` traverses the tree and exposes a compile-time
+segmented `parameter_path`, the original field descriptor, and a typed const
+reference to the value. The tree stores references to existing parameter blocks;
+it does not own or copy configuration values. Sibling node names and field names
+within a parameter block must be unique at compile time. Mutation/apply semantics,
+Runner/component exposure, CLI parsing, and config-file loading remain separate
+follow-up layers.
+
 ## Continuous integration
 
 The full CI matrix is intentionally small and targets C++23 directly:

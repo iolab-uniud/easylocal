@@ -73,12 +73,34 @@ struct member_pointer_traits<Value Owner::*>
     using value_type = Value;
 };
 
+template<class... Fields>
+[[nodiscard]]
+consteval auto unique_field_names() noexcept -> bool
+{
+    if constexpr (sizeof...(Fields) <= 1)
+    {
+        return true;
+    }
+    else
+    {
+        return []<class First, class... Rest>(std::type_identity<First>,
+                                              std::type_identity<Rest>...) {
+            return ((First::name() != Rest::name()) && ...) &&
+                   unique_field_names<Rest...>();
+        }(std::type_identity<Fields>{}...);
+    }
+}
+
 } // namespace detail
 
 template<fixed_string Name, auto Member>
     requires std::is_member_object_pointer_v<decltype(Member)>
 struct parameter_field
 {
+    static_assert(
+        !Name.view().empty(),
+        "parameter field name must not be empty");
+
     using member_pointer_type = decltype(Member);
     using owner_type = typename detail::member_pointer_traits<
         member_pointer_type>::owner_type;
@@ -110,6 +132,9 @@ template<class... Fields>
 constexpr auto fields(Fields... parameter_fields) noexcept
     -> std::tuple<Fields...>
 {
+    static_assert(
+        detail::unique_field_names<Fields...>(),
+        "parameter fields must have unique names within a block");
     return {std::move(parameter_fields)...};
 }
 

@@ -27,6 +27,20 @@ add_test(
 )
 
 add_executable(
+    easylocal_configuration_tree_header_self_containment
+    configuration_tree_header_self_containment.cpp
+)
+target_link_libraries(
+    easylocal_configuration_tree_header_self_containment
+    PRIVATE
+        EasyLocal::EasyLocal
+)
+add_test(
+    NAME easylocal.configuration-tree-header-self-containment
+    COMMAND easylocal_configuration_tree_header_self_containment
+)
+
+add_executable(
     easylocal_header_self_containment
     header_self_containment.cpp
 )
@@ -477,6 +491,20 @@ add_test(
 )
 
 add_executable(
+    easylocal_configuration_tree_test
+    configuration_tree.cpp
+)
+target_link_libraries(
+    easylocal_configuration_tree_test
+    PRIVATE
+        easylocal_tsp_mwe_model
+)
+add_test(
+    NAME easylocal.configuration-tree
+    COMMAND easylocal_configuration_tree_test
+)
+
+add_executable(
     easylocal_neighborhood_union_header_self_containment
     neighborhood_union_header_self_containment.cpp
 )
@@ -601,4 +629,16 @@ easylocal_add_compile_failure_test(
     simulated_annealing_non_numeric_cost.cpp
     "SimulatedAnnealing requires a numeric cost_type"
     "StructuredCost"
+)
+easylocal_add_compile_failure_test(
+    duplicate-configuration-node-name
+    duplicate_configuration_node_name.cpp
+    "configuration siblings must have unique names"
+    "duplicate"
+)
+easylocal_add_compile_failure_test(
+    duplicate-parameter-field-name
+    duplicate_parameter_field_name.cpp
+    "parameter fields must have unique names within a block"
+    "duplicate"
 )
