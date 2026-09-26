@@ -229,3 +229,37 @@ SimulatedAnnealing(TemperaturePolicy, Acceptance)
     -> SimulatedAnnealing<TemperaturePolicy, Acceptance>;
 
 } // namespace easylocal::search
+
+namespace easylocal::runner
+{
+
+template<
+    search::temperature_policy TemperaturePolicy = search::temperature::Classic,
+    class Acceptance = search::MetropolisAcceptance>
+struct SimulatedAnnealingConfig
+{
+    TemperaturePolicy temperature_policy;
+    Acceptance acceptance{};
+};
+
+struct simulated_annealing
+{
+    template<search::temperature_policy TemperaturePolicy, class Acceptance>
+    [[nodiscard]]
+    static auto make(
+        SimulatedAnnealingConfig<TemperaturePolicy, Acceptance> config)
+    {
+        return search::SimulatedAnnealing{
+            std::move(config.temperature_policy),
+            std::move(config.acceptance)};
+    }
+
+    template<search::temperature_policy TemperaturePolicy>
+    [[nodiscard]]
+    static auto make(TemperaturePolicy temperature_policy)
+    {
+        return search::SimulatedAnnealing{std::move(temperature_policy)};
+    }
+};
+
+} // namespace easylocal::runner

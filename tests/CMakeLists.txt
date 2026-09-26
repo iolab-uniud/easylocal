@@ -143,6 +143,20 @@ add_test(
 )
 
 add_executable(
+    easylocal_factory_api_test
+    factory_api.cpp
+)
+target_link_libraries(
+    easylocal_factory_api_test
+    PRIVATE
+        EasyLocal::Core
+)
+add_test(
+    NAME easylocal.factory-api
+    COMMAND easylocal_factory_api_test
+)
+
+add_executable(
     easylocal_runner_header_self_containment
     runner_header_self_containment.cpp
 )

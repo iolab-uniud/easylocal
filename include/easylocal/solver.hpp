@@ -504,3 +504,72 @@ auto make_multi_start_solver(
 }
 
 } // namespace easylocal
+
+namespace easylocal::solver
+{
+
+template<class Initialization = initialization::Random>
+struct LocalSearchConfig
+{
+    Initialization initialization{initialization::random};
+    std::uint64_t seed{0};
+};
+
+template<class Initialization = initialization::Random>
+struct MultiStartConfig
+{
+    MultiStartParameters parameters{};
+    Initialization initialization{initialization::random};
+    std::uint64_t seed{0};
+};
+
+struct local_search
+{
+    template<class RunnerType, class Initialization>
+    [[nodiscard]]
+    static auto make(
+        RunnerType runner,
+        LocalSearchConfig<Initialization> config)
+    {
+        return LocalSearchSolver<RunnerType>{
+            std::move(runner),
+            config.initialization,
+            std::mt19937_64{config.seed}};
+    }
+};
+
+struct multistart
+{
+    template<class RunnerType, class Initialization>
+    [[nodiscard]]
+    static auto make(
+        RunnerType runner,
+        MultiStartConfig<Initialization> config)
+    {
+        return MultiStartSolver<RunnerType>{
+            std::move(runner),
+            config.parameters,
+            config.initialization,
+            std::mt19937_64{config.seed}};
+    }
+};
+
+} // namespace easylocal::solver
+
+namespace easylocal
+{
+
+template<class Tag, class... Args>
+concept solver_factory_tag = requires(Args&&... args) {
+    Tag::make(std::forward<Args>(args)...);
+};
+
+template<class Tag, class... Args>
+    requires solver_factory_tag<Tag, Args...>
+[[nodiscard]]
+auto make_solver(Args&&... args)
+{
+    return Tag::make(std::forward<Args>(args)...);
+}
+
+} // namespace easylocal

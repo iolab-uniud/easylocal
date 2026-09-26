@@ -656,6 +656,13 @@ auto solution_manager(Args&&... args)
         std::tuple<std::decay_t<Args>...>{std::forward<Args>(args)...}};
 }
 
+template<class SM, class... Args>
+[[nodiscard]]
+auto make_solution_manager(Args&&... args)
+{
+    return solution_manager<SM>(std::forward<Args>(args)...);
+}
+
 template<class Component, class... Args>
 [[nodiscard]]
 auto component(Args&&... args)
@@ -673,6 +680,13 @@ auto neighborhood(Args&&... args)
         NHE,
         std::tuple<std::decay_t<Args>...>>{
         std::tuple<std::decay_t<Args>...>{std::forward<Args>(args)...}};
+}
+
+template<class NHE, class... Args>
+[[nodiscard]]
+auto make_neighborhood_explorer(Args&&... args)
+{
+    return neighborhood<NHE>(std::forward<Args>(args)...);
 }
 
 template<class Component, class DeltaEvaluator, class... Args>
@@ -712,5 +726,21 @@ auto operator|(
 
 template<class Algorithm>
 Runner(Algorithm) -> Runner<std::remove_cvref_t<Algorithm>>;
+
+// Runner tags provide a light customization protocol: a tag constructs the
+// search algorithm, while make_runner() wraps it in the framework Runner.
+// This keeps runner.hpp independent from concrete search algorithms.
+template<class Tag, class... Args>
+concept runner_factory_tag = requires(Args&&... args) {
+    Tag::make(std::forward<Args>(args)...);
+};
+
+template<class Tag, class... Args>
+    requires runner_factory_tag<Tag, Args...>
+[[nodiscard]]
+auto make_runner(Args&&... args)
+{
+    return Runner{Tag::make(std::forward<Args>(args)...)};
+}
 
 } // namespace easylocal

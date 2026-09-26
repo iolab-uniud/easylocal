@@ -162,3 +162,19 @@ private:
 };
 
 } // namespace easylocal::search
+
+namespace easylocal::runner
+{
+
+struct first_improvement
+{
+    using config_type = search::FirstImprovementParameters;
+
+    [[nodiscard]]
+    static auto make(const config_type config) -> search::FirstImprovement
+    {
+        return search::FirstImprovement{config};
+    }
+};
+
+} // namespace easylocal::runner
