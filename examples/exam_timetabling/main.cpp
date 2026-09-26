@@ -150,9 +150,7 @@ int main(int argc, char* argv[])
                | easylocal::aggregator(easylocal::aggregation::weighted_sum{
                      penalty_type{1000}, penalty_type{10}, penalty_type{1}}))
             | (neighborhood<MoveExamNeighborhoodExplorer>()
-               | delta<
-                     StudentConflictComponent,
-                     StudentConflictDeltaEvaluator>()
+               | delta<StudentConflictComponent>()
                | delta<
                      ConsecutiveExamComponent,
                      ConsecutiveExamDeltaEvaluator>()

@@ -196,7 +196,7 @@ struct MissingDeltaEvaluateA
 
 struct NonConstructibleDeltaA
 {
-    NonConstructibleDeltaA() = default;
+    NonConstructibleDeltaA() = delete;
 
     [[nodiscard]]
     auto delta_evaluate(const Solution&, const Move& move) const noexcept -> int
@@ -209,7 +209,7 @@ struct NonConstructibleComponent
 {
     using value_type = int;
 
-    NonConstructibleComponent() = default;
+    NonConstructibleComponent() = delete;
 
     [[nodiscard]]
     auto evaluate(const Solution& solution) const noexcept -> int

@@ -48,7 +48,7 @@ int main()
     const exam::StudentConflictComponent conflicts{instance};
     const exam::ConsecutiveExamComponent consecutive{instance};
     const exam::TimeslotLoadComponent load{instance};
-    const exam::StudentConflictDeltaEvaluator conflict_delta{instance};
+    const exam::StudentConflictComponent conflict_component{instance};
     const exam::ConsecutiveExamDeltaEvaluator consecutive_delta{instance};
     const exam::TimeslotLoadDeltaEvaluator load_delta{instance};
 
@@ -78,7 +78,7 @@ int main()
         neighborhood.make_move(candidate, move);
 
         ok &= expect(
-            initial_conflicts + conflict_delta.delta_evaluate(initial, move) ==
+            initial_conflicts + conflict_component.delta_evaluate(initial, move) ==
                 conflicts.evaluate(candidate),
             "student-conflict delta matches full evaluation");
         ok &= expect(

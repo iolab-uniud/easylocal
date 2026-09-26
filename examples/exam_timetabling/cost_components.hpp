@@ -1,6 +1,7 @@
 #pragma once
 
 #include "instance.hpp"
+#include "move.hpp"
 #include "solution.hpp"
 
 #include <cassert>
@@ -24,6 +25,14 @@ struct StudentConflictValue
         return weight * value.penalty;
     }
 };
+
+[[nodiscard]]
+constexpr auto operator+(
+    const StudentConflictValue value,
+    const penalty_type delta) noexcept -> StudentConflictValue
+{
+    return {.penalty = value.penalty + delta};
+}
 
 struct ConsecutiveExamValue
 {
@@ -78,6 +87,47 @@ public:
         }
 
         return {.penalty = penalty};
+    }
+
+    // A delta evaluator may be co-located with its component when that is the
+    // clearest expression. Separate evaluator types remain the primary model.
+    [[nodiscard]]
+    auto delta_evaluate(
+        const ExamTimetable& solution,
+        const MoveExam& move) const noexcept -> penalty_type
+    {
+        assert(move.exam < solution.timeslot_by_exam.size());
+        const auto source = solution.timeslot_by_exam[move.exam];
+        penalty_type change = 0;
+
+        for (const auto& conflict : instance_.conflicts)
+        {
+            exam_id other{};
+            if (conflict.first == move.exam)
+            {
+                other = conflict.second;
+            }
+            else if (conflict.second == move.exam)
+            {
+                other = conflict.first;
+            }
+            else
+            {
+                continue;
+            }
+
+            const auto other_timeslot = solution.timeslot_by_exam[other];
+            if (source == other_timeslot)
+            {
+                change -= conflict.students;
+            }
+            if (move.destination == other_timeslot)
+            {
+                change += conflict.students;
+            }
+        }
+
+        return change;
     }
 
 private:

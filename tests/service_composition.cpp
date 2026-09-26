@@ -44,6 +44,58 @@ public:
     }
 };
 
+class ColocatedCardinalityComponent
+{
+public:
+    explicit ColocatedCardinalityComponent(const AssignmentInstance&) noexcept
+    {
+    }
+
+    [[nodiscard]]
+    auto evaluate(const AssignmentSolution& solution) const noexcept -> std::size_t
+    {
+        return solution.assignment.size();
+    }
+
+    [[nodiscard]]
+    auto delta_evaluate(
+        const AssignmentSolution&,
+        const ReassignJobMove&) const noexcept -> std::size_t
+    {
+        return 0;
+    }
+};
+
+class StatelessOffsetComponent
+{
+public:
+    explicit StatelessOffsetComponent(const std::size_t offset) noexcept
+        : offset_{offset}
+    {
+    }
+
+    [[nodiscard]]
+    auto evaluate(const AssignmentSolution& solution) const noexcept -> std::size_t
+    {
+        return solution.assignment.size() + offset_;
+    }
+
+private:
+    std::size_t offset_{};
+};
+
+class StatelessCardinalityDeltaEvaluator
+{
+public:
+    [[nodiscard]]
+    auto delta_evaluate(
+        const AssignmentSolution&,
+        const ReassignJobMove&) const noexcept -> std::size_t
+    {
+        return 0;
+    }
+};
+
 class CountingSoftComponent
 {
 public:
@@ -284,6 +336,20 @@ int main()
               ReassignCapacityDeltaEvaluator>());
     static_assert(std::same_as<FluentNHERecipe, PipedNHERecipe>);
 
+    using ColocatedFluentNHERecipe = decltype(
+        neighborhood<CountingSingleMoveNeighborhood>(
+            ReassignJobMove{.job = 1, .destination = 1},
+            std::ref(type_only_make_move_count))
+            .with_delta<ColocatedCardinalityComponent>());
+    using ColocatedPipedNHERecipe = decltype(
+        neighborhood<CountingSingleMoveNeighborhood>(
+            ReassignJobMove{.job = 1, .destination = 1},
+            std::ref(type_only_make_move_count))
+        | delta<ColocatedCardinalityComponent>());
+    static_assert(std::same_as<
+        ColocatedFluentNHERecipe,
+        ColocatedPipedNHERecipe>);
+
     static_assert(easylocal::detail::unique_component_specs_v<
         CapacitySpec,
         CardinalitySpec>);
@@ -418,6 +484,15 @@ int main()
         no_aggregate_manager.evaluate(initial) == 12,
         "configured explicit aggregation is materialized without SM::aggregate");
 
+    const auto stateless_component_manager =
+        (solution_manager<NoAggregateSolutionManager>()
+         | component<StatelessOffsetComponent>(std::size_t{5})
+         | aggregator(easylocal::aggregation::weighted_sum{1}))
+            .construct(instance);
+    ok &= expect(
+        stateless_component_manager.evaluate(initial) == 8,
+        "a cost component may be constructed from recipe arguments without an Instance");
+
     const auto two_capacity_manager = two_capacity_recipe.construct(instance);
     const auto two_capacity_cost = two_capacity_manager.evaluate(initial);
 
@@ -425,6 +500,22 @@ int main()
         two_capacity_cost.get<0>() == 2 &&
             two_capacity_cost.get<1>() == 2,
         "distinct component subclasses are independently composed and evaluated");
+
+    const auto stateless_delta_manager =
+        (solution_manager<AssignmentSolutionManager>()
+         | component<AssignmentCardinalityComponent>()
+         | aggregator(easylocal::aggregation::weighted_sum{1}))
+            .construct(instance);
+    const auto stateless_delta_neighborhood =
+        (neighborhood<ReassignJobNeighborhoodExplorer>()
+         | delta<
+               AssignmentCardinalityComponent,
+               StatelessCardinalityDeltaEvaluator>())
+            .construct(stateless_delta_manager);
+    ok &= expect(
+        std::tuple_size_v<
+            typename decltype(stateless_delta_neighborhood)::delta_bindings_type> == 1,
+        "a delta evaluator may be stateless and constructed without an Instance");
 
     int variant_make_moves = 0;
     auto variant_runner =

@@ -443,9 +443,7 @@ int main()
                 }}}}
             | solution_manager_recipe
             | (neighborhood<exam::MoveExamNeighborhoodExplorer>()
-               | delta<
-                     exam::StudentConflictComponent,
-                     exam::StudentConflictDeltaEvaluator>()
+               | delta<exam::StudentConflictComponent>()
                | delta<
                      exam::ConsecutiveExamComponent,
                      exam::ConsecutiveExamDeltaEvaluator>()

@@ -9,12 +9,6 @@
 namespace easylocal::mwe::exam_timetabling
 {
 
-struct StudentConflictDelta
-{
-    penalty_type change{};
-    auto operator==(const StudentConflictDelta&) const -> bool = default;
-};
-
 struct ConsecutiveExamDelta
 {
     penalty_type change{};
@@ -26,14 +20,6 @@ struct TimeslotLoadDelta
     penalty_type change{};
     auto operator==(const TimeslotLoadDelta&) const -> bool = default;
 };
-
-[[nodiscard]]
-constexpr auto operator+(
-    const StudentConflictValue value,
-    const StudentConflictDelta delta) noexcept -> StudentConflictValue
-{
-    return {.penalty = value.penalty + delta.change};
-}
 
 [[nodiscard]]
 constexpr auto operator+(
@@ -50,58 +36,6 @@ constexpr auto operator+(
 {
     return {.penalty = value.penalty + delta.change};
 }
-
-class StudentConflictDeltaEvaluator
-{
-public:
-    explicit StudentConflictDeltaEvaluator(
-        const ExamTimetablingInstance& instance) noexcept
-        : instance_{instance}
-    {
-    }
-
-    [[nodiscard]]
-    auto delta_evaluate(
-        const ExamTimetable& solution,
-        const MoveExam& move) const noexcept -> StudentConflictDelta
-    {
-        assert(move.exam < solution.timeslot_by_exam.size());
-        const auto source = solution.timeslot_by_exam[move.exam];
-        penalty_type change = 0;
-
-        for (const auto& conflict : instance_.conflicts)
-        {
-            exam_id other{};
-            if (conflict.first == move.exam)
-            {
-                other = conflict.second;
-            }
-            else if (conflict.second == move.exam)
-            {
-                other = conflict.first;
-            }
-            else
-            {
-                continue;
-            }
-
-            const auto other_timeslot = solution.timeslot_by_exam[other];
-            if (source == other_timeslot)
-            {
-                change -= conflict.students;
-            }
-            if (move.destination == other_timeslot)
-            {
-                change += conflict.students;
-            }
-        }
-
-        return {.change = change};
-    }
-
-private:
-    const ExamTimetablingInstance& instance_;
-};
 
 class ConsecutiveExamDeltaEvaluator
 {

@@ -12,6 +12,7 @@
 namespace easylocal::mwe::assignment
 {
 
+// Typed component values are useful when the type itself carries domain meaning.
 struct CapacityValue
 {
     std::int64_t overloaded_machines{};
@@ -103,6 +104,8 @@ public:
     {
     }
 
+    // A component value does not need a wrapper: plain arithmetic types are
+    // equally valid when a distinct semantic type would add no useful signal.
     [[nodiscard]]
     auto evaluate(const AssignmentSolution& solution) const -> std::int64_t
     {

@@ -821,13 +821,13 @@ easylocal_add_compile_failure_test(
 easylocal_add_compile_failure_test(
     delta-not-constructible
     delta_not_constructible.cpp
-    "a delta evaluator must be constructible from the bound Instance followed by its recipe arguments"
+    "a delta evaluator must be constructible either from the bound Instance followed by its recipe arguments or from its recipe arguments alone"
     "NonConstructibleDeltaA"
 )
 easylocal_add_compile_failure_test(
     component-not-constructible
     component_not_constructible.cpp
-    "a cost component must be constructible from the bound Instance followed by its recipe arguments"
+    "a cost component must be constructible either from the bound Instance followed by its recipe arguments or from its recipe arguments alone"
     "NonConstructibleComponent"
 )
 easylocal_add_compile_failure_test(

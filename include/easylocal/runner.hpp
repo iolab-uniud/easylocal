@@ -958,6 +958,13 @@ auto make_neighborhood_explorer(Args&&... args)
     return neighborhood<NHE>(std::forward<Args>(args)...);
 }
 
+template<class Component>
+[[nodiscard]]
+auto delta()
+{
+    return detail::colocated_delta_spec<Component>{};
+}
+
 template<class Component, class DeltaEvaluator, class... Args>
 [[nodiscard]]
 auto delta(Args&&... args)

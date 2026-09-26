@@ -87,14 +87,24 @@ public:
     [[nodiscard]]
     auto construct(const Instance& instance) const -> Component
     {
-        static_assert(
-            std::constructible_from<Component, const Instance&, const StoredArgs&...>,
-            "a cost component must be constructible from the bound Instance "
-            "followed by its recipe arguments");
-
         return std::apply(
-            [&](const auto&... args) {
-                return Component{instance, args...};
+            [&](const auto&... args) -> Component {
+                if constexpr (std::constructible_from<
+                                  Component,
+                                  const Instance&,
+                                  const StoredArgs&...>)
+                {
+                    return Component{instance, args...};
+                }
+                else
+                {
+                    static_assert(
+                        std::constructible_from<Component, const StoredArgs&...>,
+                        "a cost component must be constructible either from the "
+                        "bound Instance followed by its recipe arguments or from "
+                        "its recipe arguments alone");
+                    return Component{args...};
+                }
             },
             args_);
     }
@@ -164,23 +174,33 @@ public:
     {
     }
 
-    template<class Instance>
+    template<class Dependency>
     [[nodiscard]]
-    auto construct(const Instance& instance) const -> binding_type
+    auto construct(Dependency& dependency) const -> binding_type
     {
-        static_assert(
-            std::constructible_from<
-                DeltaEvaluator,
-                const Instance&,
-                const StoredArgs&...>,
-            "a delta evaluator must be constructible from the bound Instance "
-            "followed by its recipe arguments");
-
         return std::apply(
-            [&](const auto&... args) {
-                return binding_type{
-                    DeltaEvaluator{instance, args...},
-                };
+            [&](const auto&... args) -> binding_type {
+                using instance_type = typename std::remove_cvref_t<Dependency>::instance_type;
+                if constexpr (std::constructible_from<
+                                  DeltaEvaluator,
+                                  const instance_type&,
+                                  const StoredArgs&...>)
+                {
+                    return binding_type{
+                        DeltaEvaluator{dependency.instance(), args...},
+                    };
+                }
+                else
+                {
+                    static_assert(
+                        std::constructible_from<
+                            DeltaEvaluator,
+                            const StoredArgs&...>,
+                        "a delta evaluator must be constructible either from the "
+                        "bound Instance followed by its recipe arguments or from "
+                        "its recipe arguments alone");
+                    return binding_type{DeltaEvaluator{args...}};
+                }
             },
             args_);
     }
@@ -193,6 +213,57 @@ public:
 
 private:
     std::tuple<StoredArgs...> args_;
+};
+
+template<class Component>
+class colocated_delta_binding
+{
+public:
+    using component_type = Component;
+
+    explicit colocated_delta_binding(const Component& component) noexcept
+        : component_{component}
+    {
+    }
+
+    template<class Value, class Solution, class Move>
+        requires requires(
+            const Value& value,
+            const Component& component,
+            const Solution& solution,
+            const Move& move)
+        {
+            {
+                value + component.delta_evaluate(solution, move)
+            } -> std::same_as<Value>;
+        }
+    [[nodiscard]]
+    auto apply(
+        const Value& value,
+        const Solution& solution,
+        const Move& move) const -> Value
+    {
+        return value + component_.get().delta_evaluate(solution, move);
+    }
+
+private:
+    std::reference_wrapper<const Component> component_;
+};
+
+template<class Component>
+class colocated_delta_spec
+{
+public:
+    using component_type = Component;
+    using evaluator_type = Component;
+    using binding_type = colocated_delta_binding<Component>;
+
+    template<class Dependency>
+    [[nodiscard]]
+    auto construct(Dependency& dependency) const -> binding_type
+    {
+        return binding_type{dependency.template component<Component>()};
+    }
 };
 
 template<class Component, class Solution>
@@ -268,6 +339,26 @@ public:
         -> std::tuple_element_t<Index, component_values_type>
     {
         return std::get<Index>(components_).evaluate(solution);
+    }
+
+    template<class Component>
+    [[nodiscard]]
+    auto component() noexcept -> Component&
+    {
+        static_assert(
+            tuple_contains_type_v<Component, component_types>,
+            "the requested cost component is not active in this SolutionManager");
+        return std::get<tuple_type_index_v<Component, component_types>>(components_);
+    }
+
+    template<class Component>
+    [[nodiscard]]
+    auto component() const noexcept -> const Component&
+    {
+        static_assert(
+            tuple_contains_type_v<Component, component_types>,
+            "the requested cost component is not active in this SolutionManager");
+        return std::get<tuple_type_index_v<Component, component_types>>(components_);
     }
 
 private:
@@ -484,6 +575,20 @@ public:
     auto evaluate(const solution_type& solution) const -> cost_type
     {
         return cost_from_components(evaluate_components(solution));
+    }
+
+    template<class Component>
+    [[nodiscard]]
+    auto component() noexcept -> Component&
+    {
+        return inner_.template component<Component>();
+    }
+
+    template<class Component>
+    [[nodiscard]]
+    auto component() const noexcept -> const Component&
+    {
+        return inner_.template component<Component>();
     }
 
     [[nodiscard]]
@@ -904,6 +1009,52 @@ public:
         };
     }
 
+    template<class Component>
+    [[nodiscard]]
+    auto with_delta() const &
+    {
+        static_assert(
+            !type_in_pack_v<Component, typename DeltaSpecs::component_type...>,
+            "a neighborhood recipe may attach at most one delta evaluator "
+            "to each component type; the conflicting component type is shown in "
+            "the template instantiation context");
+
+        using spec_type = colocated_delta_spec<Component>;
+        using result_type = neighborhood_recipe<
+            BaseNHE,
+            BaseArgsTuple,
+            DeltaSpecs...,
+            spec_type>;
+
+        return result_type{
+            base_args_,
+            std::tuple_cat(delta_specs_, std::tuple{spec_type{}}),
+        };
+    }
+
+    template<class Component>
+    [[nodiscard]]
+    auto with_delta() &&
+    {
+        static_assert(
+            !type_in_pack_v<Component, typename DeltaSpecs::component_type...>,
+            "a neighborhood recipe may attach at most one delta evaluator "
+            "to each component type; the conflicting component type is shown in "
+            "the template instantiation context");
+
+        using spec_type = colocated_delta_spec<Component>;
+        using result_type = neighborhood_recipe<
+            BaseNHE,
+            BaseArgsTuple,
+            DeltaSpecs...,
+            spec_type>;
+
+        return result_type{
+            std::move(base_args_),
+            std::tuple_cat(std::move(delta_specs_), std::tuple{spec_type{}}),
+        };
+    }
+
     template<class Dependency>
     static constexpr bool constructible_from =
         base_neighborhood_constructible_v<BaseNHE, Dependency, BaseArgsTuple>;
@@ -1045,7 +1196,7 @@ public:
                 [&](const auto&... specs) {
                     return service_type{
                         std::move(base),
-                        specs.construct(dependency.instance())...,
+                        specs.construct(dependency)...,
                     };
                 },
                 delta_specs_);
@@ -1125,6 +1276,22 @@ auto operator|(
                     std::forward<StoredArgs>(args)...);
         },
         std::move(spec).args());
+}
+
+template<
+    class BaseNHE,
+    class BaseArgsTuple,
+    class... DeltaSpecs,
+    class Component>
+[[nodiscard]]
+auto operator|(
+    neighborhood_recipe<
+        BaseNHE,
+        BaseArgsTuple,
+        DeltaSpecs...> recipe,
+    colocated_delta_spec<Component>)
+{
+    return std::move(recipe).template with_delta<Component>();
 }
 
 } // namespace easylocal::detail

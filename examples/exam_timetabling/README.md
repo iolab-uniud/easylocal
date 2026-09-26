@@ -8,9 +8,13 @@ one arithmetic cost with `easylocal::aggregation::weighted_sum`:
 - `ConsecutiveExamComponent`: students with exams in consecutive timeslots;
 - `TimeslotLoadComponent`: squared timeslot load, used as a simple balance term.
 
-All three components have matching delta evaluators for `MoveExam`. The final
-`penalty_type` is therefore already the SA energy: no Cost-to-Energy adapter or
-projection is required by the standard `MetropolisAcceptance` path.
+All three components have matching delta evaluators for `MoveExam`. The MWE
+shows both supported spellings: `StudentConflictComponent` co-locates its
+`delta_evaluate(...)` and is attached with `delta<StudentConflictComponent>()`,
+while the other two components use the primary separate-evaluator form
+`delta<Component, DeltaEvaluator>()`. The final `penalty_type` is therefore
+already the SA energy: no Cost-to-Energy adapter or projection is required by
+the standard `MetropolisAcceptance` path.
 
 ## Runnable configured SA example
 
