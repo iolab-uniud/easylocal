@@ -199,6 +199,76 @@ add_test(
 )
 
 add_executable(
+    easylocal_testing_check_header_self_containment
+    testing_check_header_self_containment.cpp
+)
+target_link_libraries(
+    easylocal_testing_check_header_self_containment
+    PRIVATE
+        EasyLocal::Core
+)
+add_test(
+    NAME easylocal.testing-check-header-self-containment
+    COMMAND easylocal_testing_check_header_self_containment
+)
+
+add_executable(
+    easylocal_testing_solution_manager_header_self_containment
+    testing_solution_manager_header_self_containment.cpp
+)
+target_link_libraries(
+    easylocal_testing_solution_manager_header_self_containment
+    PRIVATE
+        EasyLocal::Core
+)
+add_test(
+    NAME easylocal.testing-solution-manager-header-self-containment
+    COMMAND easylocal_testing_solution_manager_header_self_containment
+)
+
+add_executable(
+    easylocal_testing_cost_component_header_self_containment
+    testing_cost_component_header_self_containment.cpp
+)
+target_link_libraries(
+    easylocal_testing_cost_component_header_self_containment
+    PRIVATE
+        EasyLocal::Core
+)
+add_test(
+    NAME easylocal.testing-cost-component-header-self-containment
+    COMMAND easylocal_testing_cost_component_header_self_containment
+)
+
+add_executable(
+    easylocal_testing_delta_evaluator_header_self_containment
+    testing_delta_evaluator_header_self_containment.cpp
+)
+target_link_libraries(
+    easylocal_testing_delta_evaluator_header_self_containment
+    PRIVATE
+        EasyLocal::Core
+)
+add_test(
+    NAME easylocal.testing-delta-evaluator-header-self-containment
+    COMMAND easylocal_testing_delta_evaluator_header_self_containment
+)
+
+add_executable(
+    easylocal_testing_checks_header_self_containment
+    testing_checks_header_self_containment.cpp
+)
+target_link_libraries(
+    easylocal_testing_checks_header_self_containment
+    PRIVATE
+        EasyLocal::Core
+)
+add_test(
+    NAME easylocal.testing-checks-header-self-containment
+    COMMAND easylocal_testing_checks_header_self_containment
+)
+
+add_executable(
     easylocal_cursor_moves_header_self_containment
     cursor_moves_header_self_containment.cpp
 )
@@ -411,17 +481,17 @@ add_test(
 )
 
 add_executable(
-    easylocal_neighborhood_testing_test
-    neighborhood_testing.cpp
+    easylocal_testing_checks_test
+    testing_checks.cpp
 )
 target_link_libraries(
-    easylocal_neighborhood_testing_test
+    easylocal_testing_checks_test
     PRIVATE
         easylocal_assignment_mwe_model
 )
 add_test(
-    NAME easylocal.neighborhood-testing
-    COMMAND easylocal_neighborhood_testing_test
+    NAME easylocal.testing-checks
+    COMMAND easylocal_testing_checks_test
 )
 
 add_executable(

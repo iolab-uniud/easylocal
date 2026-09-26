@@ -445,6 +445,24 @@ The current tests cover:
   unions and full-evaluation fallback when a child lacks a component delta;
 - public First/Best Improvement and Simulated Annealing integration through the Runner.
 
+EasyLocal also provides framework-agnostic checks for user-defined services:
+
+```cpp
+#include <easylocal/testing/checks.hpp>
+
+const auto report = easylocal::testing::check_neighborhood<MyNeighborhoodCheck>();
+```
+
+The same support is available for SolutionManagers, cost components, and delta
+evaluators. Each check returns a `check_report`, so it can be integrated with a
+test framework or run directly from a small executable:
+
+```cpp
+return easylocal::testing::run_checks(
+    easylocal::testing::check_solution_manager<MySMCheck>(),
+    easylocal::testing::check_neighborhood<MyNeighborhoodCheck>());
+```
+
 CTest is the common test entry point locally and in CI:
 
 ```sh

@@ -1,4 +1,5 @@
 #include <easylocal/easylocal.hpp>
+#include <easylocal/testing/checks.hpp>
 
 #if EASYLOCAL_TEST_CONFIG_TOML
 #include <easylocal/config/toml.hpp>
