@@ -105,6 +105,13 @@ int main()
         std::array{10, 1}};
     static_assert(penalized(2, 3, 4) == 2034);
 
+    constexpr aggregation::weighted_sum_with_hard_penalty<int, 2>
+        default_penalized{};
+    static_assert(
+        default_penalized.parameters().hard_multiplier == 10'000 &&
+        default_penalized.parameters().soft_weights == std::array{1, 1});
+    static_assert(default_penalized(2, 3, 4) == 20'007);
+
     constexpr aggregation::weighted_sum mixed_weights{2, 0.5};
     ok &= expect(
         mixed_weights(3, 4.0) == 8.0,

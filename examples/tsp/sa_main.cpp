@@ -5,7 +5,6 @@
 #include "swap_tour_length_delta.hpp"
 #include "tour_length_delta.hpp"
 
-#include <easylocal/aggregation.hpp>
 #include <easylocal/config/cli.hpp>
 #include <easylocal/config/file.hpp>
 #include <easylocal/config/overrides.hpp>
@@ -156,11 +155,15 @@ int main(int argc, char* argv[])
         // Equivalent tag-based spelling:
         // auto runner = make_runner<easylocal::runner::simulated_annealing>(
         //     FixedLength{temperature_parameters}) | ...;
+        // No aggregator is needed here: with a single weightable cost
+        // component EasyLocal materializes the configurable unit-weight
+        // weighted_sum default and emits a runtime warning. The explicit
+        // spelling remains available:
+        //   | aggregator(aggregation::weighted_sum{distance_type{1}})
         auto runner =
             Runner{SimulatedAnnealing{FixedLength{temperature_parameters}}}
             | (solution_manager<TspSolutionManager>()
-               | component<TourLengthComponent>()
-               | easylocal::aggregator(easylocal::aggregation::weighted_sum{distance_type{1}}))
+               | component<TourLengthComponent>())
             | (neighborhood_union(
                    neighborhood<TwoOptNeighborhoodExplorer>()
                        | delta<

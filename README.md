@@ -165,6 +165,15 @@ The current Assignment, TSP, and Exam Timetabling MWEs live under
 intentionally not part of the public include tree. Exam Timetabling is the
 reference MWE for multi-component weighted costs and Simulated Annealing.
 
+Cost aggregation is explicit whenever domain semantics require it, but simple
+weighted costs have a convenience default. If all active component values can
+be combined as a weighted sum, omitting `aggregator(...)` materializes a
+configurable unit-weight `aggregation::weighted_sum` and emits a runtime warning.
+The weights remain exposed as `cost.weights`; if no safe weighted expression can
+be inferred, an explicit aggregator is still required. TSP demonstrates the
+implicit spelling, Exam Timetabling keeps the explicit built-in weighted sum,
+and Assignment uses a custom hierarchical aggregator.
+
 All three MWEs now contain runnable `main` programs and load their small problem
 instances from versioned files under the corresponding `instances/` directory.
 Each `main` owns an application-level `AppParameters` block containing at least

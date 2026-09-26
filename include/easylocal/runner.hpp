@@ -113,7 +113,12 @@ struct is_unaggregated_component_solution_manager_recipe : std::false_type
 template<class BaseSM, class BaseArgsTuple, class... ComponentSpecs>
 struct is_unaggregated_component_solution_manager_recipe<
     solution_manager_recipe<BaseSM, BaseArgsTuple, ComponentSpecs...>>
-    : std::bool_constant<(sizeof...(ComponentSpecs) > 0)>
+    : std::bool_constant<
+          (sizeof...(ComponentSpecs) > 0) &&
+          !solution_manager_recipe<
+              BaseSM,
+              BaseArgsTuple,
+              ComponentSpecs...>::has_implicit_aggregator>
 {
 };
 
@@ -970,7 +975,8 @@ auto operator|(
         static_assert(
             !detail::is_unaggregated_component_solution_manager_recipe_v<spec_type>,
             "a SolutionManager recipe with cost components requires an explicit "
-            "aggregator; add `| aggregator(...)` or `.with_aggregator(...)`");
+            "aggregator because no safe default aggregation can be inferred; "
+            "add `| aggregator(...)` or `.with_aggregator(...)`");
     }
     else
     {

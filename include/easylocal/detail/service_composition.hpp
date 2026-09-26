@@ -1,10 +1,12 @@
 #pragma once
 
+#include <easylocal/aggregation.hpp>
 #include <easylocal/config/tree.hpp>
 #include <easylocal/detail/solution_manager_concepts.hpp>
 
 #include <concepts>
 #include <cstddef>
+#include <cstdio>
 #include <functional>
 #include <tuple>
 #include <type_traits>
@@ -366,6 +368,65 @@ private:
     std::tuple<typename ComponentSpecs::component_type...> components_;
 };
 
+struct no_implicit_aggregator
+{
+};
+
+template<class... Values>
+using implicit_unit_weight_t = std::common_type_t<
+    decltype(int{1} * std::declval<const Values&>())...>;
+
+template<class Weight, class... Values>
+using implicit_weighted_sum_result_t = decltype(
+    (... + (std::declval<Weight>() * std::declval<const Values&>())));
+
+template<class Tuple, class = void>
+struct implicit_weighted_sum_traits
+{
+    static constexpr bool available = false;
+    using type = no_implicit_aggregator;
+};
+
+template<class... Values>
+struct implicit_weighted_sum_traits<
+    std::tuple<Values...>,
+    std::void_t<
+        implicit_unit_weight_t<Values...>,
+        implicit_weighted_sum_result_t<
+            implicit_unit_weight_t<Values...>,
+            Values...>>>
+{
+    static constexpr bool available = sizeof...(Values) > 0;
+    using weight_type = implicit_unit_weight_t<Values...>;
+    using type = aggregation::weighted_sum<weight_type, sizeof...(Values)>;
+
+    [[nodiscard]]
+    static constexpr auto make() -> type
+    {
+        return []<std::size_t... Indices>(std::index_sequence<Indices...>) {
+            return type{((void)Indices, weight_type{1})...};
+        }(std::make_index_sequence<sizeof...(Values)>{});
+    }
+};
+
+template<class Tuple>
+using implicit_aggregator_traits = implicit_weighted_sum_traits<Tuple>;
+
+template<class Aggregator>
+void warn_implicit_aggregator()
+{
+    static const bool warned = [] {
+        std::fputs(
+            "EasyLocal warning: no cost aggregator was specified; using an "
+            "implicit unit-weight weighted_sum. Override cost.weights or add "
+            "`| aggregator(...)` / `.with_aggregator(...)` to make the "
+            "aggregation explicit.\n",
+            stderr);
+        return true;
+    }();
+    (void)warned;
+}
+
 template<class Aggregator>
 class aggregator_spec
 {
@@ -675,14 +736,29 @@ public:
         "instance() -> const instance_type&, and is_valid(solution)");
 
     using base_type = BaseSM;
-    using service_type = std::conditional_t<
-        sizeof...(ComponentSpecs) == 0,
-        BaseSM,
-        component_solution_manager<BaseSM, ComponentSpecs...>>;
     using component_service_type = component_solution_manager<
         BaseSM,
         ComponentSpecs...>;
     using component_types = std::tuple<typename ComponentSpecs::component_type...>;
+    using component_values_type = typename component_service_type::component_values_type;
+    using implicit_aggregator_traits_type =
+        implicit_aggregator_traits<component_values_type>;
+    static constexpr bool has_implicit_aggregator =
+        sizeof...(ComponentSpecs) > 0 &&
+        implicit_aggregator_traits_type::available;
+    using implicit_aggregator_type = std::conditional_t<
+        has_implicit_aggregator,
+        typename implicit_aggregator_traits_type::type,
+        no_implicit_aggregator>;
+    using service_type = std::conditional_t<
+        sizeof...(ComponentSpecs) == 0,
+        BaseSM,
+        std::conditional_t<
+            has_implicit_aggregator,
+            aggregated_solution_manager<
+                component_service_type,
+                implicit_aggregator_type>,
+            component_service_type>>;
 
     static_assert(
         unique_types_v<typename ComponentSpecs::component_type...>,
@@ -692,7 +768,8 @@ public:
 
     explicit solution_manager_recipe(BaseArgsTuple base_args)
         requires (sizeof...(ComponentSpecs) == 0)
-        : base_args_{std::move(base_args)}
+        : base_args_{std::move(base_args)},
+          implicit_aggregator_{make_implicit_aggregator()}
     {
     }
 
@@ -700,7 +777,8 @@ public:
         BaseArgsTuple base_args,
         std::tuple<ComponentSpecs...> component_specs)
         : base_args_{std::move(base_args)},
-          component_specs_{std::move(component_specs)}
+          component_specs_{std::move(component_specs)},
+          implicit_aggregator_{make_implicit_aggregator()}
     {
     }
 
@@ -780,6 +858,24 @@ public:
             };
     }
 
+    [[nodiscard]]
+    auto configuration()
+        requires (
+            has_implicit_aggregator &&
+            config::configuration_provider<implicit_aggregator_type>)
+    {
+        return implicit_aggregator_.configuration();
+    }
+
+    [[nodiscard]]
+    auto configuration() const
+        requires (
+            has_implicit_aggregator &&
+            config::configuration_provider<const implicit_aggregator_type>)
+    {
+        return implicit_aggregator_.configuration();
+    }
+
     template<class Dependency>
     static constexpr bool constructible_from =
         std::same_as<
@@ -838,17 +934,44 @@ public:
         }
         else
         {
-            return std::apply(
+            auto components = std::apply(
                 [&](const auto&... specs) {
-                    return service_type{std::move(base), specs...};
+                    return component_service_type{std::move(base), specs...};
                 },
                 component_specs_);
+
+            if constexpr (has_implicit_aggregator)
+            {
+                warn_implicit_aggregator<implicit_aggregator_type>();
+                return service_type{
+                    std::move(components),
+                    implicit_aggregator_};
+            }
+            else
+            {
+                return components;
+            }
         }
     }
 
 private:
+    [[nodiscard]]
+    static constexpr auto make_implicit_aggregator()
+        -> implicit_aggregator_type
+    {
+        if constexpr (has_implicit_aggregator)
+        {
+            return implicit_aggregator_traits_type::make();
+        }
+        else
+        {
+            return {};
+        }
+    }
+
     BaseArgsTuple base_args_;
     std::tuple<ComponentSpecs...> component_specs_;
+    [[no_unique_address]] implicit_aggregator_type implicit_aggregator_;
 };
 
 template<class BaseNHE, class... DeltaSpecs>

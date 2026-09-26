@@ -898,7 +898,7 @@ easylocal_add_compile_failure_test(
     missing-aggregator
     missing_aggregator.cpp
     "a SolutionManager recipe with cost components requires an explicit aggregator"
-    "ComponentA"
+    "NonAggregatableComponent"
 )
 easylocal_add_compile_failure_test(
     duplicate-neighborhood-union-child

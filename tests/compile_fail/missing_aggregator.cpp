@@ -1,5 +1,27 @@
 #include "service_composition_fixture.hpp"
 
+namespace
+{
+
+struct NonAggregatableValue
+{
+    int value{};
+};
+
+struct NonAggregatableComponent
+{
+    explicit NonAggregatableComponent(const compile_fail_fixture::Instance&) noexcept {}
+
+    [[nodiscard]]
+    auto evaluate(const compile_fail_fixture::Solution& solution) const noexcept
+        -> NonAggregatableValue
+    {
+        return {solution.value};
+    }
+};
+
+} // namespace
+
 int main()
 {
     using namespace compile_fail_fixture;
@@ -9,5 +31,6 @@ int main()
 
     [[maybe_unused]] auto runner =
         Runner{Algorithm{}}
-        | (solution_manager<BaseSolutionManager>() | component<ComponentA>());
+        | (solution_manager<BaseSolutionManager>()
+           | component<NonAggregatableComponent>());
 }

@@ -461,6 +461,34 @@ int main()
         .destination = 1,
     };
 
+    auto implicit_aggregate_recipe =
+        solution_manager<NoAggregateSolutionManager>()
+        | component<AssignmentCardinalityComponent>();
+    static_assert(decltype(implicit_aggregate_recipe)::has_implicit_aggregator);
+
+    const auto implicit_aggregation_configuration = easylocal::config::root(
+        easylocal::config::named<"solver">(
+            implicit_aggregate_recipe.configuration()));
+    constexpr std::array implicit_aggregation_override{
+        easylocal::config::text_override{
+            "solver.cost.weights",
+            "[4]"},
+    };
+    const auto implicit_aggregation_override_result =
+        easylocal::config::apply_overrides(
+            implicit_aggregation_configuration,
+            implicit_aggregation_override);
+    ok &= expect(
+        static_cast<bool>(implicit_aggregation_override_result),
+        "implicit aggregator parameters are exposed through configuration");
+
+    const auto implicit_aggregate_manager =
+        implicit_aggregate_recipe.construct(instance);
+
+    ok &= expect(
+        implicit_aggregate_manager.evaluate(initial) == 12,
+        "an inferable implicit weighted-sum aggregator uses configurable weights");
+
     auto no_aggregate_recipe =
         solution_manager<NoAggregateSolutionManager>()
         | component<AssignmentCardinalityComponent>()

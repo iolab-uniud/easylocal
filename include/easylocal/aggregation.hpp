@@ -153,6 +153,8 @@ struct lexicographic
     }
 };
 
+inline constexpr auto default_hard_multiplier = 10'000;
+
 struct hierarchical
 {
     template<class HardCost, class SoftCost>
@@ -275,8 +277,12 @@ weighted_sum(weighted_sum_parameters<Weight, Size>)
 template<class Weight, std::size_t SoftSize>
 struct weighted_sum_with_hard_penalty_parameters
 {
-    Weight hard_multiplier{};
-    std::array<Weight, SoftSize> soft_weights{};
+    Weight hard_multiplier{static_cast<Weight>(default_hard_multiplier)};
+    std::array<Weight, SoftSize> soft_weights = [] {
+        std::array<Weight, SoftSize> result{};
+        result.fill(Weight{1});
+        return result;
+    }();
 
     [[nodiscard]]
     static consteval auto parameter_schema()
@@ -306,6 +312,8 @@ public:
     using weight_type = Weight;
     using parameters_type =
         weighted_sum_with_hard_penalty_parameters<Weight, SoftSize>;
+
+    constexpr weighted_sum_with_hard_penalty() noexcept = default;
 
     constexpr explicit weighted_sum_with_hard_penalty(
         parameters_type parameters) noexcept
