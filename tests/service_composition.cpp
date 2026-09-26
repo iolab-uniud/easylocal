@@ -41,6 +41,29 @@ public:
     }
 };
 
+class CountingSoftComponent
+{
+public:
+    using value_type = std::size_t;
+
+    CountingSoftComponent(
+        const AssignmentInstance&,
+        const std::reference_wrapper<int> evaluation_count) noexcept
+        : evaluation_count_{evaluation_count}
+    {
+    }
+
+    [[nodiscard]]
+    auto evaluate(const AssignmentSolution& solution) const noexcept -> value_type
+    {
+        ++evaluation_count_.get();
+        return solution.assignment.size();
+    }
+
+private:
+    std::reference_wrapper<int> evaluation_count_;
+};
+
 class AssignmentCardinalityDeltaEvaluator
 {
 public:
@@ -401,6 +424,43 @@ int main()
     static_assert(!easylocal::detail::all_delta_components_active_v<
         HardSM,
         FullNHE>);
+
+    // A hierarchical hard projection must not evaluate soft components and
+    // discard them afterwards. The configured manager exposes the hard
+    // component prefix at compile time, so the hard view materializes only
+    // those values.
+    int soft_evaluations = 0;
+    const auto zero_overhead_recipe =
+        easylocal::solution_manager<TwoStageSolutionManager>()
+        | component<CapacityCostComponent>()
+        | component<CountingSoftComponent>(std::ref(soft_evaluations));
+    const auto zero_overhead_full_sm = zero_overhead_recipe.construct(instance);
+    using ZeroOverheadFullSM = decltype(zero_overhead_full_sm);
+    static_assert(ZeroOverheadFullSM::has_hard_component_projection);
+    static_assert(ZeroOverheadFullSM::hard_component_count == 1);
+
+    easylocal::detail::hard_cost_solution_manager<ZeroOverheadFullSM>
+        zero_overhead_hard_sm{zero_overhead_full_sm};
+    static_assert(std::tuple_size_v<
+        typename decltype(zero_overhead_hard_sm)::component_types> == 1);
+
+    const auto projected_cost = zero_overhead_hard_sm.evaluate(initial);
+    ok &= expect(
+        projected_cost == HardCost{2, 1},
+        "hard projection preserves the hard aggregate");
+    ok &= expect(
+        soft_evaluations == 0,
+        "hard projection does not evaluate soft components");
+
+    const auto projected_component =
+        zero_overhead_hard_sm.template evaluate_component<0>(initial);
+    ok &= expect(
+        projected_component.total_overload == 2 &&
+            projected_component.overloaded_machines == 1,
+        "hard projection keeps hard component fallback evaluation available");
+    ok &= expect(
+        soft_evaluations == 0,
+        "hard component fallback does not evaluate soft components");
 
     return ok ? 0 : 1;
 }

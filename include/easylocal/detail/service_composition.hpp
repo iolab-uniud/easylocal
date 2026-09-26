@@ -62,6 +62,60 @@ struct tuple_type_index<T, std::tuple<First, Rest...>>
 template<class T, class Tuple>
 inline constexpr std::size_t tuple_type_index_v = tuple_type_index<T, Tuple>::value;
 
+template<class Tuple, std::size_t... Indices>
+[[nodiscard]]
+auto tuple_prefix_type_impl(std::index_sequence<Indices...>)
+    -> std::tuple<std::tuple_element_t<Indices, Tuple>...>;
+
+template<class Tuple, std::size_t Count>
+using tuple_prefix_t = decltype(
+    tuple_prefix_type_impl<Tuple>(std::make_index_sequence<Count>{}));
+
+template<class BaseSM, class ValuesTuple, class HardCost, std::size_t... Indices>
+[[nodiscard]]
+consteval auto aggregate_prefix_returns_hard_impl(
+    std::index_sequence<Indices...>) -> bool
+{
+    return requires(
+        const BaseSM& base,
+        const std::tuple_element_t<Indices, ValuesTuple>&... values)
+    {
+        { base.aggregate(values...) } -> std::same_as<HardCost>;
+    };
+}
+
+template<class BaseSM, class ValuesTuple, class HardCost, std::size_t Count>
+inline constexpr bool aggregate_prefix_returns_hard_v =
+    aggregate_prefix_returns_hard_impl<BaseSM, ValuesTuple, HardCost>(
+        std::make_index_sequence<Count>{});
+
+template<
+    class BaseSM,
+    class ValuesTuple,
+    class HardCost,
+    std::size_t Count = 1>
+[[nodiscard]]
+consteval auto hard_component_prefix_count() -> std::size_t
+{
+    constexpr auto component_count = std::tuple_size_v<ValuesTuple>;
+
+    if constexpr (Count >= component_count)
+    {
+        return component_count;
+    }
+    else if constexpr (
+        aggregate_prefix_returns_hard_v<
+            BaseSM, ValuesTuple, HardCost, Count>)
+    {
+        return Count;
+    }
+    else
+    {
+        return hard_component_prefix_count<
+            BaseSM, ValuesTuple, HardCost, Count + 1>();
+    }
+}
+
 template<class Component, class... StoredArgs>
 class component_spec
 {
@@ -219,6 +273,35 @@ public:
 
     using cost_type = aggregated_cost_type_t<BaseSM, component_values_type>;
 
+    static constexpr bool hierarchical_cost = requires
+    {
+        typename cost_type::hard_cost_type;
+        typename cost_type::soft_cost_type;
+    };
+
+    static constexpr std::size_t hard_component_count = [] {
+        if constexpr (hierarchical_cost)
+        {
+            return hard_component_prefix_count<
+                BaseSM,
+                component_values_type,
+                typename cost_type::hard_cost_type>();
+        }
+        else
+        {
+            return std::tuple_size_v<component_values_type>;
+        }
+    }();
+
+    static constexpr bool has_hard_component_projection =
+        hierarchical_cost &&
+        hard_component_count < std::tuple_size_v<component_values_type>;
+
+    using hard_component_types =
+        tuple_prefix_t<component_types, hard_component_count>;
+    using hard_component_values_type =
+        tuple_prefix_t<component_values_type, hard_component_count>;
+
     configured_solution_manager(
         BaseSM base,
         const ComponentSpecs&... component_specs)
@@ -287,10 +370,31 @@ public:
             components_);
     }
 
+    [[nodiscard]]
+    auto evaluate_hard_components(const solution_type& solution) const
+        -> hard_component_values_type
+        requires has_hard_component_projection
+    {
+        return [&]<std::size_t... Indices>(std::index_sequence<Indices...>) {
+            return hard_component_values_type{
+                std::get<Indices>(components_).evaluate(solution)...,
+            };
+        }(std::make_index_sequence<hard_component_count>{});
+    }
+
     template<std::size_t Index>
     [[nodiscard]]
     auto evaluate_component(const solution_type& solution) const
         -> std::tuple_element_t<Index, component_values_type>
+    {
+        return std::get<Index>(components_).evaluate(solution);
+    }
+
+    template<std::size_t Index>
+    [[nodiscard]]
+    auto evaluate_hard_component(const solution_type& solution) const
+        -> std::tuple_element_t<Index, hard_component_values_type>
+        requires (has_hard_component_projection && Index < hard_component_count)
     {
         return std::get<Index>(components_).evaluate(solution);
     }
@@ -300,6 +404,17 @@ public:
     {
         return std::apply(
             [&](const auto&... value) -> cost_type {
+                return base_.aggregate(value...);
+            },
+            values);
+    }
+
+    [[nodiscard]]
+    auto aggregate_hard(const hard_component_values_type& values) const
+        requires has_hard_component_projection
+    {
+        return std::apply(
+            [&](const auto&... value) {
                 return base_.aggregate(value...);
             },
             values);

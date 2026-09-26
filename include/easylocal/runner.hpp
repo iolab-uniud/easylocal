@@ -217,8 +217,23 @@ public:
     using base_type = hard_cost_solution_manager_base<SM>;
     using typename base_type::cost_type;
     using typename base_type::solution_type;
-    using component_types = typename SM::component_types;
-    using component_values_type = typename SM::component_values_type;
+
+    static constexpr bool projected_components = requires
+    {
+        typename SM::hard_component_types;
+        typename SM::hard_component_values_type;
+        requires SM::has_hard_component_projection;
+    };
+
+    using component_types = std::conditional_t<
+        projected_components,
+        typename SM::hard_component_types,
+        typename SM::component_types>;
+    using component_values_type = std::conditional_t<
+        projected_components,
+        typename SM::hard_component_values_type,
+        typename SM::component_values_type>;
+    using projection_source_component_types = typename SM::component_types;
 
     using base_type::base_type;
 
@@ -226,7 +241,10 @@ public:
     auto evaluate_components(const solution_type& solution) const
         -> component_values_type
     {
-        return this->solution_manager_.evaluate_components(solution);
+        if constexpr (projected_components)
+            return this->solution_manager_.evaluate_hard_components(solution);
+        else
+            return this->solution_manager_.evaluate_components(solution);
     }
 
     template<std::size_t Index>
@@ -234,13 +252,27 @@ public:
     auto evaluate_component(const solution_type& solution) const
         -> std::tuple_element_t<Index, component_values_type>
     {
-        return this->solution_manager_.template evaluate_component<Index>(solution);
+        if constexpr (projected_components)
+            return this->solution_manager_.template evaluate_hard_component<Index>(
+                solution);
+        else
+            return this->solution_manager_.template evaluate_component<Index>(
+                solution);
     }
 
     [[nodiscard]]
     auto aggregate(const component_values_type& values) const -> cost_type
     {
-        return this->solution_manager_.aggregate(values).hard();
+        if constexpr (projected_components)
+            return this->solution_manager_.aggregate_hard(values);
+        else
+            return this->solution_manager_.aggregate(values).hard();
+    }
+
+    [[nodiscard]]
+    auto evaluate(const solution_type& solution) const -> cost_type
+    {
+        return aggregate(evaluate_components(solution));
     }
 };
 
