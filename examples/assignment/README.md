@@ -1,6 +1,6 @@
 # Assignment MWE
 
-## Runnable Runner example
+## Runnable TwoStage example
 
 `main.cpp` is the end-to-end user-facing example for the current public API. It
 defines the application-owned `AppParameters` block next to `main`, uses
@@ -8,8 +8,9 @@ defines the application-owned `AppParameters` block next to `main`, uses
 runner, and combines `application.*` with the runner-provided
 `solver.search.max_evaluations` subtree in a read-only `config::root(...)`.
 The same values are then used to load the versioned instance from
-`instances/small.assignment`, construct the `FirstImprovement` runner, bind the
-immutable instance, and run the search from an initial solution.
+`instances/small.assignment`, construct a `FirstImprovement` runner, and solve
+the immutable instance through the hierarchical `TwoStageSolver`. The first
+stage optimizes only hard feasibility; the second sees the full hard/soft cost.
 
 With examples enabled (the default for a top-level build), run it with:
 
@@ -50,7 +51,7 @@ public framework API.
 Each job has a non-negative demand and is assigned to one machine. Each machine
 has a non-negative capacity.
 
-The current capacity component is structured:
+The hard capacity component is structured:
 
 ```text
 CapacityValue {
@@ -65,14 +66,23 @@ where:
 total_overload = sum_m max(0, load[m] - capacity[m])
 ```
 
-The algorithm-facing hard cost is the lexicographic pair:
+The hard cost is the lexicographic pair:
 
 ```text
 (total_overload, overloaded_machines)
 ```
 
 so the original total-overload objective remains primary, while the number of
-overloaded machines is a deterministic secondary level.
+overloaded machines is a deterministic secondary level. The soft component is
+the machine-load imbalance `max(load) - min(load)`. The complete cost is:
+
+```text
+hierarchical(
+    hard = lexicographic(total_overload, overloaded_machines),
+    soft = load_imbalance)
+```
+
+Hard improvement always dominates soft improvement.
 
 Example:
 
@@ -82,15 +92,16 @@ capacity = [5, 5]
 solution = [0, 0, 1]
 ```
 
-Loads are `[7, 2]`, so the capacity value and final cost are both represented by
-`CapacityValue{1, 2}` and `Cost{2, 1}` at their respective abstraction levels.
+Loads are `[7, 2]`, so the capacity value is `CapacityValue{1, 2}`, the hard
+cost is `HardCost{2, 1}`, and the soft load imbalance is `5`.
 
 ReassignJobMove `(job=1, destination=1)` produces:
 
 ```text
 solution = [0, 1, 1]
 loads    = [4, 5]
-cost     = (0, 0)
+hard cost = (0, 0)
+soft cost = 1
 ```
 
 ## Cost composition
@@ -119,17 +130,17 @@ The framework provides three reusable aggregation categories:
 - `aggregation::lexicographic`;
 - `aggregation::hierarchical`.
 
-`AssignmentCostAggregator` uses the predefined lexicographic aggregator to map
-fields of the structured capacity value into the final hard `Cost`. `hierarchical`
-is reserved for an explicit `hard` / `soft` composition, whose two branches may
-themselves be aggregate or lexicographic costs. Domain-specific
-projection from structured component values remains explicit for now; no
-projection DSL is introduced by this iteration.
+`AssignmentHardCostAggregator` maps the structured capacity value to the
+lexicographic `HardCost`. `AssignmentCostAggregator` then combines that branch
+with `LoadImbalanceCostComponent` through the framework `hierarchical`
+aggregator. The two branches remain independently typed and may themselves be
+aggregate or lexicographic costs. Domain-specific projection remains explicit;
+no projection DSL is introduced.
 
 The generic aggregators are part of the public framework API in
 `<easylocal/aggregation.hpp>` under `easylocal::aggregation`. The Assignment
-example supplies only the domain-specific projection from `CapacityValue` to
-its final lexicographic hard `Cost`.
+example supplies only the domain-specific projections from component values to
+its hard and full hierarchical costs.
 
 ## Delta evaluation
 
@@ -205,9 +216,11 @@ Laziness, caching and proxy lifetime/invalidation remain postponed.
 : Separate evaluator specialized for the capacity component and assignment
   reassign move.
 
+`HardCost`
+: Lexicographic materialized hard branch `(total_overload, overloaded_machines)`.
+
 `Cost`
-: Materialized value returned by full aggregation. It owns its lexicographic
-  ordering semantics through three-way comparison.
+: Hierarchical materialized value `hierarchical(HardCost, SoftCost)`.
 
 `AssignmentSolutionManager`
 : Problem-side service responsible for structural solution validation and the
@@ -334,7 +347,7 @@ auto nhe =
             ReassignCapacityDeltaEvaluator>();
 
 auto runner =
-    Runner{easylocal::search::FirstImprovement{params}}
+    make_runner<runner::first_improvement>(params)
         .with_solution_manager(manager)
         .with_neighborhood(nhe);
 ```
@@ -343,27 +356,32 @@ The equivalent pipeline syntax is also supported:
 
 ```cpp
 auto runner =
-    Runner{easylocal::search::FirstImprovement{params}}
+    make_runner<runner::first_improvement>(params)
     | (solution_manager<AssignmentSolutionManager>()
-       | component<CapacityCostComponent>())
+       | component<CapacityCostComponent>()
+       | component<LoadImbalanceCostComponent>())
     | (neighborhood<ReassignJobNeighborhoodExplorer>()
        | delta<
              CapacityCostComponent,
              ReassignCapacityDeltaEvaluator>());
+
+auto solver = make_solver<solver::two_stage>(
+    std::move(runner),
+    solver::TwoStageConfig<initialization::Initial>{
+        .initialization = initialization::initial,
+    });
+
+auto result = solver.solve(instance);
 ```
 
 `bind(instance)` materializes an instance-bound graph owned by an internal,
 non-movable bound runner: first the solution manager, then the neighborhood
-explorer. A single run then supplies only its initial solution and any
-algorithm-specific runtime dependencies such as an RNG:
-
-```cpp
-auto bound_runner = runner.bind(instance);
-auto result = bound_runner.run(initial_solution);
-```
-
-This keeps service construction state reusable before an instance is loaded,
-while ownership and graph consistency remain internal to the runner.
+explorer. For the hierarchical Assignment model, `TwoStageSolver` derives the first-stage
+hard view automatically and reuses the full runner for the second stage. When
+both stages share the same runner, the one-runner factory overload copies the
+configuration internally, keeping the user-facing construction concise.
+Service construction state remains reusable before an instance is loaded, while
+ownership and graph consistency remain internal to the runner/solver.
 
 ## Deferred
 

@@ -11,43 +11,12 @@
 #include <iostream>
 #include <string_view>
 #include <utility>
+#include <vector>
 
 namespace
 {
 
 using namespace easylocal::mwe::assignment;
-
-class AssignmentCardinalityComponent
-{
-public:
-    using value_type = std::size_t;
-
-    explicit AssignmentCardinalityComponent(const AssignmentInstance&) noexcept
-    {
-    }
-
-    [[nodiscard]]
-    auto evaluate(const AssignmentSolution& solution) const noexcept -> value_type
-    {
-        return solution.assignment.size();
-    }
-};
-
-class CapacityThenCardinalitySolutionManager : public AssignmentSolutionManager
-{
-public:
-    using AssignmentSolutionManager::AssignmentSolutionManager;
-
-    [[nodiscard]]
-    constexpr auto aggregate(
-        const CapacityValue& capacity,
-        const std::size_t cardinality) const
-    {
-        return easylocal::aggregation::lexicographic{}(
-            capacity.total_overload,
-            cardinality);
-    }
-};
 
 auto expect(const bool condition, const std::string_view description) -> bool
 {
@@ -68,6 +37,7 @@ int main()
     using easylocal::component;
     using easylocal::solution_manager;
 
+    static_assert(std::three_way_comparable<HardCost>);
     static_assert(std::three_way_comparable<Cost>);
 
     bool ok = true;
@@ -92,10 +62,15 @@ int main()
         configured_solution_manager.is_valid(initial),
         "overloaded solution is structurally valid");
 
+    const auto generated_initial = configured_solution_manager.initial_solution();
+    ok &= expect(
+        generated_initial.assignment == std::vector<machine_id>{0, 1, 0},
+        "deterministic initial solution uses round-robin assignment");
+
     const auto initial_cost = configured_solution_manager.evaluate(initial);
 
     ok &= expect(
-        initial_cost == Cost{2, 1},
+        initial_cost == HardCost{2, 1},
         "structured cost keeps total overload primary and overloaded-machine count secondary");
     ok &= expect(
         initial_cost.get<0>() == 2 &&
@@ -103,27 +78,25 @@ int main()
         "lexicographic hard cost keeps both materialized components");
 
     ok &= expect(
-        Cost{0, 100} < Cost{1, 0},
+        HardCost{0, 100} < HardCost{1, 0},
         "lexicographic hard cost prioritizes total overload");
     ok &= expect(
-        Cost{1, 1} < Cost{1, 2},
+        HardCost{1, 1} < HardCost{1, 2},
         "lexicographic hard cost compares overloaded-machine count after a tie");
 
-    // Component attachment is compile-time compositional: adding a second
-    // component changes the recipe, while the problem-side manager remains
-    // unaware of component storage and evaluation machinery.
-    const auto two_component_recipe =
-        solution_manager<CapacityThenCardinalitySolutionManager>()
+    // Adding the real soft component upgrades the cost from the hard
+    // lexicographic branch to the full hierarchical hard/soft model.
+    const auto full_recipe =
+        solution_manager<AssignmentSolutionManager>()
         | component<CapacityCostComponent>()
-        | component<AssignmentCardinalityComponent>();
+        | component<LoadImbalanceCostComponent>();
 
-    const auto two_component_manager = two_component_recipe.construct(instance);
-    const auto two_component_cost = two_component_manager.evaluate(initial);
+    const auto full_manager = full_recipe.construct(instance);
+    const auto full_cost = full_manager.evaluate(initial);
 
     ok &= expect(
-        two_component_cost.get<0>() == 2 &&
-            two_component_cost.get<1>() == 3,
-        "solution manager evaluates a statically composed component pack");
+        full_cost.hard() == HardCost{2, 1} && full_cost.soft() == 5,
+        "full assignment cost composes hard feasibility and soft load balance");
 
     // A delta is a separate, materialized value. Applying it to the current
     // component value must match full evaluation after the move.
@@ -196,11 +169,11 @@ int main()
         "same representation is valid for a second instance");
 
     ok &= expect(
-        roomy_manager.evaluate(initial) == Cost{0, 0},
+        roomy_manager.evaluate(initial) == HardCost{0, 0},
         "same solution is evaluated relative to the manager's instance");
 
     ok &= expect(
-        configured_solution_manager.evaluate(initial) == Cost{2, 1},
+        configured_solution_manager.evaluate(initial) == HardCost{2, 1},
         "first manager remains bound to the first instance");
 
     return ok ? 0 : 1;

@@ -8,6 +8,7 @@
 
 #include <cassert>
 #include <ranges>
+#include <vector>
 
 namespace easylocal::mwe::assignment
 {
@@ -36,9 +37,39 @@ public:
     }
 
     [[nodiscard]]
-    constexpr auto aggregate(const CapacityValue& capacity) const -> Cost
+    auto initial_solution() const -> AssignmentSolution
     {
-        return AssignmentCostAggregator{}(capacity);
+        assert(!instance_.capacity.empty() || instance_.demand.empty());
+
+        AssignmentSolution solution{
+            .assignment = std::vector<machine_id>(instance_.demand.size()),
+        };
+
+        if (instance_.capacity.empty())
+        {
+            return solution;
+        }
+
+        for (std::size_t job = 0; job < solution.assignment.size(); ++job)
+        {
+            solution.assignment[job] = job % instance_.capacity.size();
+        }
+
+        return solution;
+    }
+
+    [[nodiscard]]
+    constexpr auto aggregate(const CapacityValue& capacity) const -> HardCost
+    {
+        return AssignmentHardCostAggregator{}(capacity);
+    }
+
+    [[nodiscard]]
+    constexpr auto aggregate(
+        const CapacityValue& capacity,
+        const SoftCost load_imbalance) const -> Cost
+    {
+        return AssignmentCostAggregator{}(capacity, load_imbalance);
     }
 };
 

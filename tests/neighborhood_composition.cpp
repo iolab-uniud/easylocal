@@ -539,7 +539,7 @@ int main()
     const auto first_result = bound_first.run(initial);
 
     ok &= expect(
-        first_result.cost == Cost{0, 0},
+        first_result.cost == HardCost{0, 0},
         "first improvement consumes a neighborhood union without algorithm changes");
 
     auto best_runner =
@@ -554,7 +554,7 @@ int main()
     const auto best_result = bound_best.run(initial);
 
     ok &= expect(
-        best_result.cost == Cost{0, 0},
+        best_result.cost == HardCost{0, 0},
         "best improvement consumes a neighborhood union without algorithm changes");
 
     auto all_delta_runner =

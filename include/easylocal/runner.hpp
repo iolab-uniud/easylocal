@@ -229,6 +229,14 @@ public:
         return this->solution_manager_.evaluate_components(solution);
     }
 
+    template<std::size_t Index>
+    [[nodiscard]]
+    auto evaluate_component(const solution_type& solution) const
+        -> std::tuple_element_t<Index, component_values_type>
+    {
+        return this->solution_manager_.template evaluate_component<Index>(solution);
+    }
+
     [[nodiscard]]
     auto aggregate(const component_values_type& values) const -> cost_type
     {

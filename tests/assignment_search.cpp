@@ -64,9 +64,9 @@ public:
     [[nodiscard]]
     auto aggregate(
         const CapacityValue& capacity,
-        const std::size_t cardinality) const -> Cost
+        const std::size_t cardinality) const -> HardCost
     {
-        return Cost{
+        return HardCost{
             capacity.total_overload,
             static_cast<std::int64_t>(cardinality),
         };
@@ -208,7 +208,7 @@ int main()
         delta_accept_runner.bind(instance).run(initial);
 
     ok &= expect(
-        delta_accept_result.cost == Cost{0, 0},
+        delta_accept_result.cost == HardCost{0, 0},
         "automatic delta dispatch preserves the accepted candidate cost");
     ok &= expect(
         delta_accept_make_moves == 1,
@@ -252,7 +252,7 @@ int main()
         fallback_runner.bind(instance).run(initial);
 
     ok &= expect(
-        fallback_result.cost == Cost{0, 3},
+        fallback_result.cost == HardCost{0, 3},
         "missing component delta falls back to full evaluation of that component");
     ok &= expect(
         fallback_make_moves == 1,
@@ -293,7 +293,7 @@ int main()
         no_delta_accept_runner.bind(instance).run(initial);
 
     ok &= expect(
-        no_delta_accept_result.cost == Cost{0, 0},
+        no_delta_accept_result.cost == HardCost{0, 0},
         "no-delta configuration falls back to full component evaluation");
     ok &= expect(
         no_delta_accept_make_moves == 1,
@@ -342,7 +342,7 @@ int main()
         bound_construction_tracked_runner.run(initial);
 
     ok &= expect(
-        construction_tracked_result.cost == Cost{0, 0},
+        construction_tracked_result.cost == HardCost{0, 0},
         "constructor arguments captured by the runner recipe reach the bound neighborhood");
 
     const auto run_with_budget =
@@ -364,7 +364,7 @@ int main()
             std::vector<machine_id>{1, 0, 0},
         "first improvement follows the deterministic neighborhood order");
     ok &= expect(
-        complete.cost == Cost{0, 0},
+        complete.cost == HardCost{0, 0},
         "complete search reaches the hand-computed local optimum cost");
     ok &= expect(
         complete.evaluations == 8,
@@ -379,7 +379,7 @@ int main()
         initial_only.solution.assignment == initial.assignment,
         "budget one leaves the initial solution unchanged");
     ok &= expect(
-        initial_only.cost == Cost{2, 1},
+        initial_only.cost == HardCost{2, 1},
         "budget one still evaluates the initial solution");
     ok &= expect(
         initial_only.evaluations == 1,
@@ -396,7 +396,7 @@ int main()
             std::vector<machine_id>{1, 0, 1},
         "last available evaluation may still accept an improving move");
     ok &= expect(
-        one_improvement.cost == Cost{1, 1},
+        one_improvement.cost == HardCost{1, 1},
         "accepted move updates the returned current cost");
     ok &= expect(
         one_improvement.evaluations == 2,
@@ -462,7 +462,7 @@ int main()
             std::vector<machine_id>{0, 1, 1},
         "best improvement selects the best move in the complete neighborhood");
     ok &= expect(
-        best_complete.cost == Cost{0, 0},
+        best_complete.cost == HardCost{0, 0},
         "best improvement reaches the hand-computed local optimum cost");
     ok &= expect(
         best_complete.evaluations == 7,
@@ -490,7 +490,7 @@ int main()
         best_partial_scan.solution.assignment == initial.assignment,
         "partial best-improvement scan does not accept a best-so-far move");
     ok &= expect(
-        best_partial_scan.cost == Cost{2, 1},
+        best_partial_scan.cost == HardCost{2, 1},
         "partial best-improvement scan preserves the incumbent cost");
     ok &= expect(
         best_partial_scan.evaluations == 3,
@@ -507,7 +507,7 @@ int main()
             std::vector<machine_id>{0, 1, 1},
         "a complete neighborhood scan may consume the final evaluation and accept its best move");
     ok &= expect(
-        best_one_step.cost == Cost{0, 0},
+        best_one_step.cost == HardCost{0, 0},
         "completed best-improvement step updates the incumbent cost");
     ok &= expect(
         best_one_step.evaluations == 4,

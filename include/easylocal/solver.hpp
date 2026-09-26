@@ -753,6 +753,21 @@ struct multistart
 
 struct two_stage
 {
+    template<class RunnerType, class Initialization>
+        requires std::copy_constructible<RunnerType>
+    [[nodiscard]]
+    static auto make(
+        RunnerType runner,
+        TwoStageConfig<Initialization> config)
+    {
+        auto first_runner = runner;
+        return TwoStageSolver<RunnerType, RunnerType>{
+            std::move(first_runner),
+            std::move(runner),
+            config.initialization,
+            std::mt19937_64{config.seed}};
+    }
+
     template<class FirstRunnerType, class SecondRunnerType, class Initialization>
     [[nodiscard]]
     static auto make(

@@ -9,6 +9,7 @@
 #include <easylocal/config/tree.hpp>
 #include <easylocal/runner.hpp>
 #include <easylocal/search/first_improvement.hpp>
+#include <easylocal/solver.hpp>
 
 #include <cstddef>
 #include <filesystem>
@@ -108,12 +109,12 @@ void print_solution(const AssignmentSolution& solution)
 int main(int argc, char* argv[])
 {
     using namespace easylocal::mwe::assignment;
-    using easylocal::Runner;
     using easylocal::component;
     using easylocal::delta;
+    using easylocal::make_runner;
+    using easylocal::make_solver;
     using easylocal::neighborhood;
     using easylocal::solution_manager;
-    using easylocal::search::FirstImprovement;
     using easylocal::search::FirstImprovementParameters;
     using easylocal::search::FirstImprovementTermination;
 
@@ -130,9 +131,10 @@ int main(int argc, char* argv[])
         require_valid(search_parameters);
 
         auto runner =
-            Runner{FirstImprovement{search_parameters}}
+            make_runner<easylocal::runner::first_improvement>(search_parameters)
             | (solution_manager<AssignmentSolutionManager>()
-               | component<CapacityCostComponent>())
+               | component<CapacityCostComponent>()
+               | component<LoadImbalanceCostComponent>())
             | (neighborhood<ReassignJobNeighborhoodExplorer>()
                | delta<
                      CapacityCostComponent,
@@ -207,11 +209,15 @@ int main(int argc, char* argv[])
         print_configuration(configuration);
 
         const auto instance = load_instance(app_parameters.instance_file);
-        const AssignmentSolution initial_solution{
-            .assignment = {0, 0, 1},
-        };
+        const auto initial_solution = runner.bind(instance).initial_solution();
 
-        const auto result = runner.bind(instance).run(initial_solution);
+        auto solver = make_solver<easylocal::solver::two_stage>(
+            std::move(runner),
+            easylocal::solver::TwoStageConfig<easylocal::initialization::Initial>{
+                .initialization = easylocal::initialization::initial,
+                .seed = 0,
+            });
+        const auto result = solver.solve(instance);
 
         std::cout << "instance:         " << app_parameters.instance_file << '\n';
         std::cout << "initial solution: ";
@@ -222,8 +228,9 @@ int main(int argc, char* argv[])
         print_solution(result.solution);
         std::cout << '\n';
 
-        std::cout << "final cost: overload=" << result.cost.get<0>()
-                  << ", overloaded_machines=" << result.cost.get<1>() << '\n';
+        std::cout << "final hard cost: overload=" << result.cost.hard().get<0>()
+                  << ", overloaded_machines=" << result.cost.hard().get<1>() << '\n';
+        std::cout << "final soft cost: load_imbalance=" << result.cost.soft() << '\n';
         std::cout << "evaluations: " << result.evaluations << '\n';
         std::cout << "termination: "
                   << (result.termination == FirstImprovementTermination::local_optimum

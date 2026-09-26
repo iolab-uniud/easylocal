@@ -363,7 +363,7 @@ int main()
     const auto hard_result = hard_runner.bind(instance).run(initial);
 
     ok &= expect(
-        hard_result.cost == Cost{0, 0},
+        hard_result.cost == HardCost{0, 0},
         "hard-only stage uses its local capacity delta configuration");
     ok &= expect(
         hard_make_moves == 1,

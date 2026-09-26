@@ -202,6 +202,15 @@ int main()
 
     static_assert(decltype(solver)::supports_initial);
 
+    auto shared_runner = Runner{HardStage{}} | sm | nhe;
+    auto shared_solver = make_solver<solver::two_stage>(
+        std::move(shared_runner),
+        solver::TwoStageConfig<initialization::Initial>{
+            .initialization = initialization::initial,
+            .seed = 42,
+        });
+    static_assert(decltype(shared_solver)::supports_initial);
+
     const Instance instance{};
     const auto result = solver.solve(instance);
 

@@ -97,4 +97,42 @@ private:
     const AssignmentInstance& instance_;
 };
 
+class LoadImbalanceCostComponent
+{
+public:
+    using value_type = std::int64_t;
+
+    explicit LoadImbalanceCostComponent(const AssignmentInstance& instance) noexcept
+        : instance_{instance}
+    {
+    }
+
+    [[nodiscard]]
+    auto evaluate(const AssignmentSolution& solution) const -> value_type
+    {
+        assert(solution.assignment.size() == instance_.demand.size());
+
+        if (instance_.capacity.empty())
+        {
+            return 0;
+        }
+
+        std::vector<quantity_type> load(
+            instance_.capacity.size(),
+            quantity_type{0});
+
+        for (std::size_t job = 0; job < solution.assignment.size(); ++job)
+        {
+            assert(solution.assignment[job] < instance_.capacity.size());
+            load[solution.assignment[job]] += instance_.demand[job];
+        }
+
+        const auto [minimum, maximum] = std::minmax_element(load.begin(), load.end());
+        return static_cast<value_type>(*maximum - *minimum);
+    }
+
+private:
+    const AssignmentInstance& instance_;
+};
+
 } // namespace easylocal::mwe::assignment
