@@ -34,16 +34,6 @@ private:
     const Instance& instance_;
 };
 
-struct AlwaysAccept
-{
-    template<class Cost, class RNG>
-    [[nodiscard]]
-    static auto accept(const Cost&, const Cost&, double, RNG&) noexcept -> bool
-    {
-        return true;
-    }
-};
-
 class Neighborhood
 {
 public:
@@ -83,8 +73,7 @@ int main()
                 .final_temperature = 1.0,
                 .cooling_rate = 0.5,
                 .max_iterations = 1,
-            }},
-            AlwaysAccept{}}}
+            }}}}
         | solution_manager<SolutionManager>()
         | neighborhood<Neighborhood>();
 

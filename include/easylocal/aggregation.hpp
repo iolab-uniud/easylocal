@@ -1,7 +1,11 @@
 #pragma once
 
+#include <easylocal/cost.hpp>
+
 #include <compare>
+#include <concepts>
 #include <cstddef>
+#include <limits>
 #include <tuple>
 #include <type_traits>
 #include <utility>
@@ -49,6 +53,9 @@ template<class HardCost, class SoftCost>
 class hierarchical_cost
 {
 public:
+    using hard_cost_type = HardCost;
+    using soft_cost_type = SoftCost;
+
     constexpr explicit hierarchical_cost(HardCost hard, SoftCost soft)
         : hard_{std::move(hard)},
           soft_{std::move(soft)}
@@ -69,10 +76,67 @@ public:
 
     auto operator<=>(const hierarchical_cost&) const = default;
 
+    [[nodiscard]]
+    friend constexpr auto delta(
+        const hierarchical_cost& candidate,
+        const hierarchical_cost& current) -> long double
+        requires requires(const HardCost& lhs, const HardCost& rhs) {
+            { lhs < rhs } -> std::convertible_to<bool>;
+            { lhs == rhs } -> std::convertible_to<bool>;
+        } && delta_cost<SoftCost>
+    {
+        if (candidate.hard() < current.hard())
+        {
+            return -std::numeric_limits<long double>::infinity();
+        }
+        if (current.hard() < candidate.hard())
+        {
+            return std::numeric_limits<long double>::infinity();
+        }
+        if (candidate.hard() == current.hard())
+        {
+            return static_cast<long double>(
+                delta(candidate.soft(), current.soft()));
+        }
+
+        // A hierarchical cost requires a total ordering of the hard branch for
+        // a meaningful numeric delta. Conservatively make an unordered hard
+        // transition unacceptable to delta-based algorithms.
+        return std::numeric_limits<long double>::infinity();
+    }
+
+    [[nodiscard]]
+    friend constexpr auto operator-(
+        const hierarchical_cost& candidate,
+        const hierarchical_cost& current) -> long double
+        requires delta_cost<hierarchical_cost>
+    {
+        return delta(candidate, current);
+    }
+
 private:
     HardCost hard_;
     SoftCost soft_;
 };
+
+
+template<class T>
+struct is_hierarchical_cost : std::false_type
+{
+};
+
+template<class HardCost, class SoftCost>
+struct is_hierarchical_cost<hierarchical_cost<HardCost, SoftCost>>
+    : std::true_type
+{
+};
+
+template<class T>
+inline constexpr bool is_hierarchical_cost_v =
+    is_hierarchical_cost<std::remove_cvref_t<T>>::value;
+
+template<class T>
+concept hierarchical_cost_type = is_hierarchical_cost_v<T>;
 
 struct lexicographic
 {

@@ -2,11 +2,18 @@
 
 #include <compare>
 #include <concepts>
+#include <cmath>
 #include <iostream>
 #include <string_view>
 
 namespace
 {
+
+template<class Cost>
+concept subtractable_cost =
+    requires(const Cost& lhs, const Cost& rhs) {
+        lhs - rhs;
+    };
 
 auto expect(const bool condition, const std::string_view description) -> bool
 {
@@ -31,6 +38,12 @@ int main()
     static_assert(std::three_way_comparable<LexicographicCost>);
     static_assert(std::three_way_comparable<HierarchicalCost>);
     static_assert(!std::same_as<LexicographicCost, HierarchicalCost>);
+    static_assert(!subtractable_cost<LexicographicCost>);
+    static_assert(!easylocal::delta_cost<LexicographicCost>);
+    static_assert(easylocal::delta_cost<int>);
+    static_assert(easylocal::delta_cost<double>);
+    static_assert(easylocal::delta_cost<aggregation::hierarchical_cost<int, double>>);
+    static_assert(subtractable_cost<aggregation::hierarchical_cost<int, double>>);
 
     constexpr auto lexicographic_a = aggregation::lexicographic{}(1, 100L);
     constexpr auto lexicographic_b = aggregation::lexicographic{}(2, 0L);
@@ -62,6 +75,26 @@ int main()
     ok &= expect(
         hierarchical_b < hierarchical_c,
         "hierarchical aggregation gives hard cost strict priority over soft cost");
+
+    const auto numeric_a = aggregation::hierarchical{}(0, 10.0);
+    const auto numeric_b = aggregation::hierarchical{}(0, 13.5);
+    const auto hard_better = aggregation::hierarchical{}(0, 1000.0);
+    const auto hard_worse = aggregation::hierarchical{}(1, -1000.0);
+    ok &= expect(
+        easylocal::delta(13.5, 10.0) == 3.5,
+        "numeric delta is the ordinary arithmetic difference");
+    ok &= expect(
+        delta(numeric_b, numeric_a) == 3.5L &&
+            numeric_b - numeric_a == delta(numeric_b, numeric_a),
+        "hierarchical operator- is syntactic sugar for delta");
+    ok &= expect(
+        std::isinf(hard_better - hard_worse) &&
+            (hard_better - hard_worse) < 0.0L,
+        "hierarchical delta maps hard improvements to negative infinity");
+    ok &= expect(
+        std::isinf(hard_worse - hard_better) &&
+            (hard_worse - hard_better) > 0.0L,
+        "hierarchical delta maps hard worsening to positive infinity");
     ok &= expect(
         weighted(4, 5) == 23,
         "weighted-sum aggregation combines materialized terms");

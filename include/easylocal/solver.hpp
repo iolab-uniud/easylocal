@@ -503,6 +503,196 @@ auto make_multi_start_solver(
         std::mt19937_64{seed}};
 }
 
+
+
+template<class FirstResult>
+concept stage_result_with_solution =
+    requires(FirstResult& result) {
+        result.solution;
+    };
+
+// Two-stage optimization for hierarchical costs. The first runner is
+// automatically projected onto the hard branch; the second runner sees the
+// complete hierarchical cost. This keeps hard-only construction as framework
+// machinery while leaving the two search algorithms independently configurable.
+template<
+    class FirstRunnerType,
+    class SecondRunnerType,
+    std::uniform_random_bit_generator RNG = std::mt19937_64>
+class TwoStageSolver
+{
+public:
+    using first_runner_type = FirstRunnerType;
+    using second_runner_type = SecondRunnerType;
+    using rng_type = RNG;
+
+    static_assert(
+        detail::hierarchical_solution_manager<
+            typename first_runner_type::solution_manager_type>,
+        "TwoStageSolver requires a hierarchical cost on its first runner");
+    static_assert(
+        detail::hierarchical_solution_manager<
+            typename second_runner_type::solution_manager_type>,
+        "TwoStageSolver requires a hierarchical cost on its second runner");
+
+    using hard_runner_type = decltype(
+        std::declval<first_runner_type>().with_hard_cost());
+    using instance_type = typename hard_runner_type::instance_type;
+    using second_instance_type = typename second_runner_type::instance_type;
+    static_assert(std::same_as<instance_type, second_instance_type>);
+
+    using bound_first_runner_type = decltype(
+        std::declval<hard_runner_type&>().bind(
+            std::declval<const instance_type&>()));
+    using bound_second_runner_type = decltype(
+        std::declval<second_runner_type&>().bind(
+            std::declval<const instance_type&>()));
+    using solution_type = typename bound_first_runner_type::solution_type;
+    using second_solution_type = typename bound_second_runner_type::solution_type;
+    static_assert(std::same_as<solution_type, second_solution_type>);
+
+    static constexpr bool supports_initial =
+        detail::bound_runner_with_initial_solution<bound_first_runner_type>;
+    static constexpr bool supports_random =
+        detail::bound_runner_with_random_solution<bound_first_runner_type, rng_type>;
+
+    [[nodiscard]]
+    static constexpr auto supports(const initialization::Mode mode) noexcept
+        -> bool
+    {
+        switch (mode)
+        {
+        case initialization::Mode::initial:
+            return supports_initial;
+        case initialization::Mode::random:
+            return supports_random;
+        }
+        return false;
+    }
+
+    template<class Initialization>
+    TwoStageSolver(
+        FirstRunnerType first_runner,
+        SecondRunnerType second_runner,
+        Initialization initialization,
+        RNG rng)
+        requires (
+            (std::same_as<std::remove_cvref_t<Initialization>, initialization::Initial> &&
+             supports_initial) ||
+            (std::same_as<std::remove_cvref_t<Initialization>, initialization::Random> &&
+             supports_random) ||
+            std::same_as<std::remove_cvref_t<Initialization>, initialization::Mode>)
+        : hard_runner_{std::move(first_runner).with_hard_cost()},
+          second_runner_{std::move(second_runner)},
+          initialization_mode_{initialization_to_mode(initialization)},
+          rng_{std::move(rng)}
+    {
+        validate_initialization_mode(initialization_mode_);
+    }
+
+    [[nodiscard]]
+    auto initialization_mode() const noexcept -> initialization::Mode
+    {
+        return initialization_mode_;
+    }
+
+    void initialization_mode(const initialization::Mode mode)
+    {
+        validate_initialization_mode(mode);
+        initialization_mode_ = mode;
+    }
+
+    [[nodiscard]]
+    auto rng() noexcept -> RNG& { return rng_; }
+
+    [[nodiscard]]
+    auto rng() const noexcept -> const RNG& { return rng_; }
+
+    [[nodiscard]]
+    auto solve(const instance_type& instance)
+        requires detail::solver_runnable<bound_first_runner_type, RNG> &&
+                 detail::solver_runnable<bound_second_runner_type, RNG> &&
+                 (supports_initial || supports_random) &&
+                 requires(bound_first_runner_type& bound_first_runner, RNG& rng) {
+                     requires stage_result_with_solution<
+                         decltype(detail::run_with_solver_rng(
+                             bound_first_runner,
+                             std::declval<solution_type>(),
+                             rng))>;
+                 }
+    {
+        auto bound_first_runner = hard_runner_.bind(instance);
+        auto bound_second_runner = second_runner_.bind(instance);
+
+        auto first_result = detail::run_with_solver_rng(
+            bound_first_runner,
+            make_initial_solution(bound_first_runner),
+            rng_);
+
+        return detail::run_with_solver_rng(
+            bound_second_runner,
+            std::move(first_result.solution),
+            rng_);
+    }
+
+private:
+    static constexpr auto initialization_to_mode(const initialization::Initial)
+        -> initialization::Mode
+    {
+        return initialization::Mode::initial;
+    }
+
+    static constexpr auto initialization_to_mode(const initialization::Random)
+        -> initialization::Mode
+    {
+        return initialization::Mode::random;
+    }
+
+    static constexpr auto initialization_to_mode(const initialization::Mode mode)
+        -> initialization::Mode
+    {
+        return mode;
+    }
+
+    static void validate_initialization_mode(const initialization::Mode mode)
+    {
+        if (!supports(mode))
+        {
+            throw std::invalid_argument{
+                mode == initialization::Mode::initial
+                    ? "initial solution initialization is not supported by this Solver"
+                    : "random solution initialization is not supported by this Solver"};
+        }
+    }
+
+    [[nodiscard]]
+    auto make_initial_solution(const bound_first_runner_type& bound_first_runner)
+        -> solution_type
+    {
+        switch (initialization_mode_)
+        {
+        case initialization::Mode::initial:
+            if constexpr (supports_initial)
+                return bound_first_runner.initial_solution();
+            break;
+        case initialization::Mode::random:
+            if constexpr (supports_random)
+                return bound_first_runner.random_solution(rng_);
+            break;
+        }
+        throw std::logic_error{"unsupported Solver initialization mode"};
+    }
+
+    hard_runner_type hard_runner_;
+    SecondRunnerType second_runner_;
+    initialization::Mode initialization_mode_;
+    RNG rng_;
+};
+
+template<class FirstRunnerType, class SecondRunnerType, class Initialization, class RNG>
+TwoStageSolver(FirstRunnerType, SecondRunnerType, Initialization, RNG)
+    -> TwoStageSolver<FirstRunnerType, SecondRunnerType, RNG>;
+
 } // namespace easylocal
 
 namespace easylocal::solver
@@ -519,6 +709,13 @@ template<class Initialization = initialization::Random>
 struct MultiStartConfig
 {
     MultiStartParameters parameters{};
+    Initialization initialization{initialization::random};
+    std::uint64_t seed{0};
+};
+
+template<class Initialization = initialization::Random>
+struct TwoStageConfig
+{
     Initialization initialization{initialization::random};
     std::uint64_t seed{0};
 };
@@ -549,6 +746,23 @@ struct multistart
         return MultiStartSolver<RunnerType>{
             std::move(runner),
             config.parameters,
+            config.initialization,
+            std::mt19937_64{config.seed}};
+    }
+};
+
+struct two_stage
+{
+    template<class FirstRunnerType, class SecondRunnerType, class Initialization>
+    [[nodiscard]]
+    static auto make(
+        FirstRunnerType first_runner,
+        SecondRunnerType second_runner,
+        TwoStageConfig<Initialization> config)
+    {
+        return TwoStageSolver<FirstRunnerType, SecondRunnerType>{
+            std::move(first_runner),
+            std::move(second_runner),
             config.initialization,
             std::mt19937_64{config.seed}};
     }

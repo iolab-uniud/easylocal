@@ -1,8 +1,11 @@
 #pragma once
 
+#include <easylocal/cost.hpp>
+
 #include <cassert>
 #include <cmath>
 #include <concepts>
+#include <limits>
 #include <random>
 #include <type_traits>
 
@@ -15,30 +18,38 @@ concept numeric_cost =
      std::floating_point<std::remove_cv_t<Cost>>) &&
     (!std::same_as<std::remove_cv_t<Cost>, bool>);
 
+namespace detail
+{
+
+template<class Cost>
+concept metropolis_cost = delta_cost<Cost>;
+
+} // namespace detail
+
 class MetropolisAcceptance
 {
 public:
-    template<numeric_cost Cost, std::uniform_random_bit_generator RNG>
+    template<detail::metropolis_cost Cost, std::uniform_random_bit_generator RNG>
     [[nodiscard]]
     auto accept(
-        const Cost candidate,
-        const Cost current,
+        const Cost& candidate,
+        const Cost& current,
         const double temperature,
         RNG& rng) const -> bool
     {
         assert(std::isfinite(temperature));
         assert(temperature > 0.0);
 
-        const auto candidate_energy = static_cast<long double>(candidate);
-        const auto current_energy = static_cast<long double>(current);
+        const auto delta = static_cast<long double>(candidate - current);
+        assert(!std::isnan(delta));
 
-        assert(std::isfinite(candidate_energy));
-        assert(std::isfinite(current_energy));
-
-        const auto delta = candidate_energy - current_energy;
         if (delta <= 0.0L)
         {
             return true;
+        }
+        if (std::isinf(delta))
+        {
+            return false;
         }
 
         const auto probability = std::exp(

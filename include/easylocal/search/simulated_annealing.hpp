@@ -35,7 +35,6 @@ concept random_move_context =
 
 template<class Acceptance, class Cost, class RNG>
 concept acceptance_policy_for =
-    numeric_cost<Cost> &&
     std::uniform_random_bit_generator<RNG> &&
     requires(
         const Acceptance& acceptance,
@@ -53,17 +52,16 @@ template<class Context, class Acceptance, class RNG>
 concept simulated_annealing_context =
     random_move_context<Context, RNG> &&
     strict_improvement_context<Context> &&
-    numeric_cost<typename Context::cost_type> &&
     acceptance_policy_for<Acceptance, typename Context::cost_type, RNG>;
 
-template<class Cost>
-consteval auto validate_simulated_annealing_cost() -> bool
+template<class Context, class Acceptance, class RNG>
+consteval auto validate_simulated_annealing_acceptance() -> bool
 {
     static_assert(
-        numeric_cost<Cost>,
-        "SimulatedAnnealing requires a numeric cost_type; structured, "
-        "hierarchical, and lexicographic costs are not supported by the "
-        "current SA contract");
+        acceptance_policy_for<Acceptance, typename Context::cost_type, RNG>,
+        "SimulatedAnnealing acceptance policy cannot consume this cost_type; "
+        "MetropolisAcceptance requires candidate_cost - current_cost to be "
+        "convertible to a numeric delta");
     return true;
 }
 
@@ -128,7 +126,9 @@ public:
 
     template<class Context, std::uniform_random_bit_generator RNG>
         requires detail::random_move_context<Context, RNG> &&
-                 (!numeric_cost<typename Context::cost_type>)
+                 detail::strict_improvement_context<Context> &&
+                 (!detail::acceptance_policy_for<
+                     Acceptance, typename Context::cost_type, RNG>)
     [[nodiscard]]
     auto run(
         const Context&,
@@ -136,8 +136,8 @@ public:
         RNG&)
     {
         static_assert(
-            detail::validate_simulated_annealing_cost<
-                typename Context::cost_type>());
+            detail::validate_simulated_annealing_acceptance<
+                Context, Acceptance, RNG>());
     }
 
     template<class Context, std::uniform_random_bit_generator RNG>
@@ -154,12 +154,6 @@ public:
         using solution_type = typename Context::solution_type;
         using cost_type = typename Context::cost_type;
         using result_type = SimulatedAnnealingResult<solution_type, cost_type>;
-
-        static_assert(
-            numeric_cost<cost_type>,
-            "SimulatedAnnealing requires a numeric cost_type; structured, "
-            "hierarchical, and lexicographic costs are not supported by the "
-            "current SA contract");
 
         auto current = evaluation.evaluate(solution);
         auto best_solution = solution;

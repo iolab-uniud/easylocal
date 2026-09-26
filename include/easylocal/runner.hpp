@@ -1,5 +1,6 @@
 #pragma once
 
+#include <easylocal/aggregation.hpp>
 #include <easylocal/config/tree.hpp>
 #include <easylocal/detail/cost_semantics.hpp>
 #include <easylocal/detail/evaluation.hpp>
@@ -117,6 +118,171 @@ struct is_neighborhood_spec<
 template<class T>
 inline constexpr bool is_neighborhood_spec_v =
     is_neighborhood_spec<T>::value;
+
+template<class SM>
+concept hierarchical_solution_manager =
+    requires { typename SM::cost_type; } &&
+    aggregation::hierarchical_cost_type<typename SM::cost_type>;
+
+template<class SM>
+class hard_cost_solution_manager_base
+{
+public:
+    using underlying_type = SM;
+    using instance_type = typename SM::instance_type;
+    using solution_type = typename SM::solution_type;
+    using full_cost_type = typename SM::cost_type;
+    using cost_type = typename full_cost_type::hard_cost_type;
+
+    explicit hard_cost_solution_manager_base(SM solution_manager)
+        : solution_manager_{std::move(solution_manager)}
+    {
+    }
+
+    [[nodiscard]]
+    auto instance() const noexcept -> const instance_type&
+    {
+        return solution_manager_.instance();
+    }
+
+    [[nodiscard]]
+    auto is_valid(const solution_type& solution) const
+        noexcept(noexcept(solution_manager_.is_valid(solution))) -> bool
+    {
+        return solution_manager_.is_valid(solution);
+    }
+
+    [[nodiscard]]
+    auto initial_solution() const -> solution_type
+        requires has_initial_solution<SM>
+    {
+        return solution_manager_.initial_solution();
+    }
+
+    template<class RNG>
+    [[nodiscard]]
+    auto random_solution(RNG& rng) const -> solution_type
+        requires has_random_solution<SM, RNG>
+    {
+        return solution_manager_.random_solution(rng);
+    }
+
+    [[nodiscard]]
+    auto evaluate(const solution_type& solution) const -> cost_type
+    {
+        return solution_manager_.evaluate(solution).hard();
+    }
+
+    [[nodiscard]]
+    auto base() noexcept -> decltype(auto)
+    {
+        if constexpr (requires { solution_manager_.base(); })
+            return solution_manager_.base();
+        else
+            return (solution_manager_);
+    }
+
+    [[nodiscard]]
+    auto base() const noexcept -> decltype(auto)
+    {
+        if constexpr (requires { solution_manager_.base(); })
+            return solution_manager_.base();
+        else
+            return (solution_manager_);
+    }
+
+protected:
+    SM solution_manager_;
+};
+
+template<class SM, bool = requires {
+    typename SM::component_types;
+    typename SM::component_values_type;
+}>
+class hard_cost_solution_manager;
+
+template<class SM>
+class hard_cost_solution_manager<SM, false>
+    : public hard_cost_solution_manager_base<SM>
+{
+public:
+    using hard_cost_solution_manager_base<SM>::hard_cost_solution_manager_base;
+};
+
+template<class SM>
+class hard_cost_solution_manager<SM, true>
+    : public hard_cost_solution_manager_base<SM>
+{
+public:
+    using base_type = hard_cost_solution_manager_base<SM>;
+    using typename base_type::cost_type;
+    using typename base_type::solution_type;
+    using component_types = typename SM::component_types;
+    using component_values_type = typename SM::component_values_type;
+
+    using base_type::base_type;
+
+    [[nodiscard]]
+    auto evaluate_components(const solution_type& solution) const
+        -> component_values_type
+    {
+        return this->solution_manager_.evaluate_components(solution);
+    }
+
+    [[nodiscard]]
+    auto aggregate(const component_values_type& values) const -> cost_type
+    {
+        return this->solution_manager_.aggregate(values).hard();
+    }
+};
+
+template<class SMSpec>
+class hard_cost_solution_manager_spec
+{
+public:
+    using service_type = hard_cost_solution_manager<
+        typename SMSpec::service_type>;
+
+    explicit hard_cost_solution_manager_spec(SMSpec spec)
+        : spec_{std::move(spec)}
+    {
+    }
+
+    template<class Dependency>
+    static constexpr bool constructible_from =
+        SMSpec::template constructible_from<Dependency>;
+
+    template<class Dependency>
+        requires constructible_from<Dependency>
+    [[nodiscard]]
+    auto construct(Dependency& dependency) const -> service_type
+    {
+        return service_type{spec_.construct(dependency)};
+    }
+
+    [[nodiscard]]
+    auto configuration()
+        requires config::configuration_provider<SMSpec>
+    {
+        return spec_.configuration();
+    }
+
+    [[nodiscard]]
+    auto configuration() const
+        requires config::configuration_provider<const SMSpec>
+    {
+        return spec_.configuration();
+    }
+
+private:
+    SMSpec spec_;
+};
+
+template<class SMSpec>
+struct is_solution_manager_spec<hard_cost_solution_manager_spec<SMSpec>>
+    : std::true_type
+{
+};
 
 template<class SM>
 concept runner_solution_manager =
@@ -611,6 +777,37 @@ public:
                 return config::named<Name>(std::move(nodes)...);
             },
             std::move(children));
+    }
+
+    [[nodiscard]]
+    auto with_hard_cost() const &
+        requires detail::hierarchical_solution_manager<solution_manager_type> &&
+                 std::copy_constructible<Algorithm> &&
+                 std::copy_constructible<SMSpec> &&
+                 std::copy_constructible<NHESpec>
+    {
+        using hard_sm_spec_type =
+            detail::hard_cost_solution_manager_spec<SMSpec>;
+
+        return Runner<Algorithm, hard_sm_spec_type, NHESpec>{
+            algorithm_,
+            hard_sm_spec_type{solution_manager_spec_},
+            neighborhood_spec_,
+        };
+    }
+
+    [[nodiscard]]
+    auto with_hard_cost() &&
+        requires detail::hierarchical_solution_manager<solution_manager_type>
+    {
+        using hard_sm_spec_type =
+            detail::hard_cost_solution_manager_spec<SMSpec>;
+
+        return Runner<Algorithm, hard_sm_spec_type, NHESpec>{
+            std::move(algorithm_),
+            hard_sm_spec_type{std::move(solution_manager_spec_)},
+            std::move(neighborhood_spec_),
+        };
     }
 
     [[nodiscard]]

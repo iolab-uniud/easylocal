@@ -215,6 +215,20 @@ add_test(
 )
 
 add_executable(
+    easylocal_cost_header_self_containment
+    cost_header_self_containment.cpp
+)
+target_link_libraries(
+    easylocal_cost_header_self_containment
+    PRIVATE
+        EasyLocal::Core
+)
+add_test(
+    NAME easylocal.cost-header-self-containment
+    COMMAND easylocal_cost_header_self_containment
+)
+
+add_executable(
     easylocal_aggregation_header_self_containment
     aggregation_header_self_containment.cpp
 )
@@ -799,10 +813,10 @@ easylocal_add_compile_failure_test(
     "NonConstructibleComponent"
 )
 easylocal_add_compile_failure_test(
-    simulated-annealing-non-numeric-cost
+    simulated-annealing-non-difference-cost
     simulated_annealing_non_numeric_cost.cpp
-    "SimulatedAnnealing requires a numeric cost_type"
-    "StructuredCost"
+    "MetropolisAcceptance requires candidate_cost - current_cost"
+    "MetropolisAcceptance"
 )
 easylocal_add_compile_failure_test(
     duplicate-configuration-node-name
@@ -961,3 +975,7 @@ add_test(NAME easylocal.solver COMMAND easylocal_solver_test)
 add_executable(easylocal_multi_start_solver_test multi_start_solver.cpp)
 target_link_libraries(easylocal_multi_start_solver_test PRIVATE EasyLocal::Core)
 add_test(NAME easylocal.multi-start-solver COMMAND easylocal_multi_start_solver_test)
+
+add_executable(easylocal_two_stage_solver_test two_stage_solver.cpp)
+target_link_libraries(easylocal_two_stage_solver_test PRIVATE EasyLocal::Core)
+add_test(NAME easylocal.two-stage-solver COMMAND easylocal_two_stage_solver_test)

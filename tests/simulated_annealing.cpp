@@ -365,6 +365,36 @@ int main()
     }
 
     {
+        MetropolisAcceptance metropolis;
+        CountingEngine rng;
+        using easylocal::aggregation::hierarchical;
+
+        const auto current = hierarchical{}(0, 10.0);
+        const auto soft_improvement = hierarchical{}(0, 9.0);
+        const auto hard_improvement = hierarchical{}(-1, 1000.0);
+        const auto hard_worsening = hierarchical{}(1, -1000.0);
+
+        ok &= expect(
+            metropolis.accept(soft_improvement, current, 2.0, rng),
+            "Metropolis accepts a hierarchical soft improvement");
+        ok &= expect(
+            metropolis.accept(hard_improvement, current, 2.0, rng),
+            "Metropolis unconditionally accepts a hierarchical hard improvement");
+        ok &= expect(
+            !metropolis.accept(hard_worsening, current, 2.0, rng),
+            "Metropolis unconditionally rejects a hierarchical hard worsening");
+        ok &= expect(
+            rng.calls == 0,
+            "hierarchical hard boundaries and improvements do not consume RNG state");
+
+        const auto before = rng.calls;
+        (void)metropolis.accept(hierarchical{}(0, 11.0), current, 2.0, rng);
+        ok &= expect(
+            rng.calls > before,
+            "hierarchical soft worsening uses probabilistic Metropolis acceptance");
+    }
+
+    {
         const ChainInstance instance;
         auto runner =
             Runner{SimulatedAnnealing{
