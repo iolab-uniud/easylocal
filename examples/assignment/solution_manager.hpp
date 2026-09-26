@@ -58,19 +58,6 @@ public:
         return solution;
     }
 
-    [[nodiscard]]
-    constexpr auto aggregate(const CapacityValue& capacity) const -> HardCost
-    {
-        return AssignmentCostAggregator{}.hard(capacity);
-    }
-
-    [[nodiscard]]
-    constexpr auto aggregate(
-        const CapacityValue& capacity,
-        const SoftCost load_imbalance) const -> Cost
-    {
-        return AssignmentCostAggregator{}(capacity, load_imbalance);
-    }
 };
 
 } // namespace easylocal::mwe::assignment

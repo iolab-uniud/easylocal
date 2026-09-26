@@ -46,12 +46,6 @@ public:
         return true;
     }
 
-    [[nodiscard]]
-    constexpr auto aggregate(const TourLengthValue& length) const noexcept
-        -> distance_type
-    {
-        return length.total;
-    }
 };
 
 } // namespace easylocal::mwe::tsp

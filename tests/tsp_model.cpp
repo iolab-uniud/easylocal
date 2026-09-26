@@ -3,6 +3,7 @@
 #include "solution_manager.hpp"
 #include "tour_length_component.hpp"
 
+#include <easylocal/aggregation.hpp>
 #include <easylocal/runner.hpp>
 
 #include <compare>
@@ -32,6 +33,7 @@ auto expect(const bool condition, const std::string_view description) -> bool
 int main()
 {
     using namespace easylocal::mwe::tsp;
+    using easylocal::aggregator;
     using easylocal::component;
     using easylocal::solution_manager;
 
@@ -50,7 +52,8 @@ int main()
 
     const auto manager_recipe =
         solution_manager<TspSolutionManager>()
-        | component<TourLengthComponent>();
+        | component<TourLengthComponent>()
+        | aggregator(easylocal::aggregation::weighted_sum{distance_type{1}});
     const auto manager = manager_recipe.construct(instance);
 
     static_assert(std::same_as<typename decltype(manager)::cost_type, double>);
@@ -72,7 +75,7 @@ int main()
         std::get<0>(component_values) == TourLengthValue{8.0},
         "tour length is materialized as a structured component value");
     ok &= expect(
-        manager.aggregate(component_values) == 8.0,
+        manager.cost_from_components(component_values) == 8.0,
         "structured tour length aggregates to scalar double cost");
     ok &= expect(
         manager.evaluate(initial) == 8.0,

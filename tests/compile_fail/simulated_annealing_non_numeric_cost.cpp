@@ -8,7 +8,17 @@
 struct Instance {};
 struct Solution { int value{}; };
 struct Move { int delta{}; };
-struct StructuredCost { int hard{}; int soft{}; };
+struct StructuredCost
+{
+    int hard{};
+    int soft{};
+
+    friend auto operator<(const StructuredCost& lhs, const StructuredCost& rhs) noexcept
+        -> bool
+    {
+        return lhs.hard < rhs.hard;
+    }
+};
 
 class SolutionManager
 {
@@ -24,10 +34,6 @@ public:
     [[nodiscard]] static auto evaluate(const Solution& solution) noexcept -> cost_type
     {
         return {.hard = solution.value, .soft = 0};
-    }
-    [[nodiscard]] static auto better(const cost_type& lhs, const cost_type& rhs) noexcept -> bool
-    {
-        return lhs.hard < rhs.hard;
     }
 
 private:

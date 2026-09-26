@@ -42,7 +42,7 @@ concept component_evaluation_solution_manager =
         } -> std::same_as<typename SM::component_values_type>;
 
         {
-            solution_manager.aggregate(values)
+            solution_manager.cost_from_components(values)
         } -> std::same_as<typename SM::cost_type>;
     };
 
@@ -491,7 +491,7 @@ public:
         {
             auto component_values =
                 solution_manager_.evaluate_components(solution);
-            auto cost = solution_manager_.aggregate(component_values);
+            auto cost = solution_manager_.cost_from_components(component_values);
 
             return evaluation_type{
                 std::move(component_values),
@@ -527,7 +527,7 @@ public:
                     &candidate_solution,
                     std::make_index_sequence<
                         std::tuple_size_v<component_types>>{});
-                auto cost = solution_manager_.aggregate(component_values);
+                auto cost = solution_manager_.cost_from_components(component_values);
 
                 return candidate_type{
                     evaluation_type{
@@ -562,7 +562,7 @@ public:
                 nullptr,
                 std::make_index_sequence<
                     std::tuple_size_v<component_types>>{});
-            auto cost = solution_manager_.aggregate(component_values);
+            auto cost = solution_manager_.cost_from_components(component_values);
 
             return candidate_type{
                 evaluation_type{

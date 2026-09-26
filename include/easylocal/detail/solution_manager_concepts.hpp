@@ -5,8 +5,27 @@
 namespace easylocal::detail
 {
 
+
+template<class SM>
+concept base_solution_manager =
+    requires(
+        const SM& solution_manager,
+        const typename SM::solution_type& solution)
+    {
+        typename SM::instance_type;
+        typename SM::solution_type;
+
+        {
+            solution_manager.instance()
+        } -> std::same_as<const typename SM::instance_type&>;
+
+        {
+            solution_manager.is_valid(solution)
+        } -> std::convertible_to<bool>;
+    };
+
 // Optional SolutionManager construction capabilities. They deliberately do not
-// participate in the minimal runner_solution_manager contract: a Runner starts
+// participate in the minimal base_solution_manager contract: a Runner starts
 // from an existing solution, while a Solver may choose to require one of these
 // capabilities when it owns solution initialization.
 //

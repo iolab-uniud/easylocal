@@ -783,6 +783,12 @@ easylocal_add_compile_failure_test(
     "BrokenNeighborhood"
 )
 easylocal_add_compile_failure_test(
+    missing-aggregator
+    missing_aggregator.cpp
+    "a SolutionManager recipe with cost components requires an explicit aggregator"
+    "ComponentA"
+)
+easylocal_add_compile_failure_test(
     duplicate-delta
     duplicate_delta.cpp
     "a neighborhood recipe may attach at most one delta evaluator to each component type"

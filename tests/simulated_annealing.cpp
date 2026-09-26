@@ -4,6 +4,7 @@
 #include "solution_manager.hpp"
 #include "support/approximate.hpp"
 
+#include <easylocal/aggregation.hpp>
 #include <easylocal/runner.hpp>
 #include <easylocal/config/tree.hpp>
 #include <easylocal/search/metropolis_acceptance.hpp>
@@ -426,7 +427,11 @@ int main()
             solution_manager<exam::ExamTimetablingSolutionManager>()
             | component<exam::StudentConflictComponent>()
             | component<exam::ConsecutiveExamComponent>()
-            | component<exam::TimeslotLoadComponent>();
+            | component<exam::TimeslotLoadComponent>()
+            | easylocal::aggregator(easylocal::aggregation::weighted_sum{
+                  exam::penalty_type{1000},
+                  exam::penalty_type{10},
+                  exam::penalty_type{1}});
 
         auto runner =
             Runner{SimulatedAnnealing{
@@ -464,7 +469,12 @@ int main()
         const exam::StudentConflictComponent conflicts{instance};
         const exam::ConsecutiveExamComponent consecutive{instance};
         const exam::TimeslotLoadComponent load{instance};
-        const auto full_cost = manager.aggregate(
+        const auto aggregate = easylocal::aggregation::weighted_sum{
+            exam::penalty_type{1000},
+            exam::penalty_type{10},
+            exam::penalty_type{1},
+        };
+        const auto full_cost = aggregate(
             conflicts.evaluate(result_a.solution),
             consecutive.evaluate(result_a.solution),
             load.evaluate(result_a.solution));

@@ -87,8 +87,14 @@ public:
         return true;
     }
 
+private:
+    const Instance& instance_;
+};
+
+struct MaximizingAggregator
+{
     [[nodiscard]]
-    constexpr auto aggregate(const ScoreValue& value) const noexcept
+    constexpr auto operator()(const ScoreValue& value) const noexcept
         -> OpaqueCost
     {
         return OpaqueCost{.value = value.value};
@@ -117,9 +123,6 @@ public:
     {
         return candidate.value >= reference.value;
     }
-
-private:
-    const Instance& instance_;
 };
 
 class IntegerSolutionManager
@@ -145,14 +148,18 @@ public:
         return true;
     }
 
-    [[nodiscard]]
-    constexpr auto aggregate(const ScoreValue& value) const noexcept -> int
-    {
-        return value.value;
-    }
 
 private:
     const Instance& instance_;
+};
+
+struct IntegerAggregator
+{
+    [[nodiscard]]
+    constexpr auto operator()(const ScoreValue& value) const noexcept -> int
+    {
+        return value.value;
+    }
 };
 
 class OpaqueSolutionManager
@@ -328,6 +335,7 @@ auto expect(const bool condition, const std::string_view description) -> bool
 int main()
 {
     using easylocal::Runner;
+    using easylocal::aggregator;
     using easylocal::component;
     using easylocal::neighborhood;
     using easylocal::solution_manager;
@@ -337,7 +345,8 @@ int main()
 
     const auto maximizing_manager =
         solution_manager<MaximizingSolutionManager>()
-        | component<ScoreComponent>();
+        | component<ScoreComponent>()
+        | aggregator(MaximizingAggregator{});
 
     auto maximizing_probe =
         Runner{MaximizingSemanticProbe{}}
@@ -390,7 +399,8 @@ int main()
 
     const auto minimizing_manager =
         solution_manager<IntegerSolutionManager>()
-        | component<ScoreComponent>();
+        | component<ScoreComponent>()
+        | aggregator(IntegerAggregator{});
 
     auto minimizing_probe =
         Runner{MinimizingSemanticProbe{}}

@@ -15,18 +15,42 @@ struct StudentConflictValue
 {
     penalty_type penalty{};
     auto operator==(const StudentConflictValue&) const -> bool = default;
+
+    [[nodiscard]]
+    friend constexpr auto operator*(
+        const penalty_type weight,
+        const StudentConflictValue value) noexcept -> penalty_type
+    {
+        return weight * value.penalty;
+    }
 };
 
 struct ConsecutiveExamValue
 {
     penalty_type penalty{};
     auto operator==(const ConsecutiveExamValue&) const -> bool = default;
+
+    [[nodiscard]]
+    friend constexpr auto operator*(
+        const penalty_type weight,
+        const ConsecutiveExamValue value) noexcept -> penalty_type
+    {
+        return weight * value.penalty;
+    }
 };
 
 struct TimeslotLoadValue
 {
     penalty_type penalty{};
     auto operator==(const TimeslotLoadValue&) const -> bool = default;
+
+    [[nodiscard]]
+    friend constexpr auto operator*(
+        const penalty_type weight,
+        const TimeslotLoadValue value) noexcept -> penalty_type
+    {
+        return weight * value.penalty;
+    }
 };
 
 class StudentConflictComponent

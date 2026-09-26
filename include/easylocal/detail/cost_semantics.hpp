@@ -5,11 +5,10 @@
 namespace easylocal::detail
 {
 
-// Cost semantics are contextual capabilities rather than requirements on the
-// materialized cost_type itself. A SolutionManager may provide problem-specific
-// semantics (for example maximization or tolerance-aware comparison). When it
-// does not, the corresponding intrinsic cost operator is the exact/default
-// fallback.
+// Cost semantics belong to the cost layer, not to the problem's
+// SolutionManager. An explicitly configured aggregator may customize the
+// semantic relations of its resulting cost; otherwise the intrinsic cost
+// operators are the exact/default fallback.
 //
 // Keep better, equivalent, and better_or_equivalent as independent queries.
 // In particular, do not implement better_or_equivalent as better || equivalent:
@@ -24,7 +23,7 @@ concept custom_better =
         const typename SM::cost_type& reference)
     {
         {
-            solution_manager.better(candidate, reference)
+            solution_manager.aggregator().better(candidate, reference)
         } -> std::convertible_to<bool>;
     };
 
@@ -51,7 +50,7 @@ constexpr auto cost_better(
     if constexpr (custom_better<SM>)
     {
         return static_cast<bool>(
-            solution_manager.better(candidate, reference));
+            solution_manager.aggregator().better(candidate, reference));
     }
     else
     {
@@ -67,7 +66,7 @@ concept custom_equivalent =
         const typename SM::cost_type& rhs)
     {
         {
-            solution_manager.equivalent(lhs, rhs)
+            solution_manager.aggregator().equivalent(lhs, rhs)
         } -> std::convertible_to<bool>;
     };
 
@@ -93,7 +92,8 @@ constexpr auto cost_equivalent(
 {
     if constexpr (custom_equivalent<SM>)
     {
-        return static_cast<bool>(solution_manager.equivalent(lhs, rhs));
+        return static_cast<bool>(
+            solution_manager.aggregator().equivalent(lhs, rhs));
     }
     else
     {
@@ -109,7 +109,9 @@ concept custom_better_or_equivalent =
         const typename SM::cost_type& reference)
     {
         {
-            solution_manager.better_or_equivalent(candidate, reference)
+            solution_manager.aggregator().better_or_equivalent(
+                candidate,
+                reference)
         } -> std::convertible_to<bool>;
     };
 
@@ -137,7 +139,9 @@ constexpr auto cost_better_or_equivalent(
     if constexpr (custom_better_or_equivalent<SM>)
     {
         return static_cast<bool>(
-            solution_manager.better_or_equivalent(candidate, reference));
+            solution_manager.aggregator().better_or_equivalent(
+                candidate,
+                reference));
     }
     else
     {

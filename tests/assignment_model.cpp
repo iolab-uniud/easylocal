@@ -35,6 +35,7 @@ auto expect(const bool condition, const std::string_view description) -> bool
 int main()
 {
     using namespace easylocal::mwe::assignment;
+    using easylocal::aggregator;
     using easylocal::component;
     using easylocal::solution_manager;
 
@@ -50,7 +51,10 @@ int main()
 
     const auto manager_recipe =
         solution_manager<AssignmentSolutionManager>()
-        | component<CapacityCostComponent>();
+        | component<CapacityCostComponent>()
+        | aggregator([](const CapacityValue& capacity) {
+              return AssignmentCostAggregator{}.hard(capacity);
+          });
     const auto configured_solution_manager = manager_recipe.construct(instance);
 
     const AssignmentSolution initial{
@@ -90,7 +94,8 @@ int main()
     const auto full_recipe =
         solution_manager<AssignmentSolutionManager>()
         | component<CapacityCostComponent>()
-        | component<LoadImbalanceCostComponent>();
+        | component<LoadImbalanceCostComponent>()
+        | aggregator(AssignmentCostAggregator{});
 
     const auto full_manager = full_recipe.construct(instance);
     const auto full_cost = full_manager.evaluate(initial);

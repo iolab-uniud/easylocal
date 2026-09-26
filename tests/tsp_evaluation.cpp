@@ -5,6 +5,7 @@
 #include "tour_length_component.hpp"
 #include "tour_length_delta.hpp"
 
+#include <easylocal/aggregation.hpp>
 #include <easylocal/runner.hpp>
 
 #include <functional>
@@ -135,7 +136,9 @@ int main()
 
     const auto manager_recipe =
         solution_manager<TspSolutionManager>()
-        | component<TourLengthComponent>();
+        | component<TourLengthComponent>()
+        | easylocal::aggregator(
+              easylocal::aggregation::weighted_sum{distance_type{1}});
 
     auto fallback_runner =
         Runner{ProbeOneMove{improving_move, true}}

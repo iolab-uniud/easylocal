@@ -4,6 +4,7 @@ int main()
 {
     using namespace compile_fail_fixture;
     using easylocal::Runner;
+    using easylocal::aggregator;
     using easylocal::component;
     using easylocal::neighborhood;
     using easylocal::solution_manager;
@@ -13,7 +14,8 @@ int main()
     auto runner =
         Runner{Algorithm{}}
         | (solution_manager<BaseSolutionManager>()
-           | component<NonConstructibleComponent>())
+           | component<NonConstructibleComponent>()
+           | aggregator(CostAggregator{}))
         | neighborhood<Neighborhood>();
 
     [[maybe_unused]] auto bound_runner = runner.bind(instance);

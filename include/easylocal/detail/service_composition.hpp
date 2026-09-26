@@ -72,51 +72,6 @@ template<class Tuple, std::size_t Count>
 using tuple_prefix_t = decltype(
     tuple_prefix_type_impl<Tuple>(std::make_index_sequence<Count>{}));
 
-template<class BaseSM, class ValuesTuple, class HardCost, std::size_t... Indices>
-[[nodiscard]]
-consteval auto aggregate_prefix_returns_hard_impl(
-    std::index_sequence<Indices...>) -> bool
-{
-    return requires(
-        const BaseSM& base,
-        const std::tuple_element_t<Indices, ValuesTuple>&... values)
-    {
-        { base.aggregate(values...) } -> std::same_as<HardCost>;
-    };
-}
-
-template<class BaseSM, class ValuesTuple, class HardCost, std::size_t Count>
-inline constexpr bool aggregate_prefix_returns_hard_v =
-    aggregate_prefix_returns_hard_impl<BaseSM, ValuesTuple, HardCost>(
-        std::make_index_sequence<Count>{});
-
-template<
-    class BaseSM,
-    class ValuesTuple,
-    class HardCost,
-    std::size_t Count = 1>
-[[nodiscard]]
-consteval auto hard_component_prefix_count() -> std::size_t
-{
-    constexpr auto component_count = std::tuple_size_v<ValuesTuple>;
-
-    if constexpr (Count >= component_count)
-    {
-        return component_count;
-    }
-    else if constexpr (
-        aggregate_prefix_returns_hard_v<
-            BaseSM, ValuesTuple, HardCost, Count>)
-    {
-        return Count;
-    }
-    else
-    {
-        return hard_component_prefix_count<
-            BaseSM, ValuesTuple, HardCost, Count + 1>();
-    }
-}
-
 template<class Component, class... StoredArgs>
 class component_spec
 {
@@ -244,247 +199,6 @@ template<class Component, class Solution>
 using component_value_t = std::remove_cvref_t<decltype(
     std::declval<const Component&>().evaluate(
         std::declval<const Solution&>()))>;
-
-template<class BaseSM, class ValuesTuple>
-struct aggregated_cost_type;
-
-template<class BaseSM, class... Values>
-struct aggregated_cost_type<BaseSM, std::tuple<Values...>>
-{
-    using type = decltype(
-        std::declval<const BaseSM&>().aggregate(
-            std::declval<const Values&>()...));
-};
-
-template<class BaseSM, class ValuesTuple>
-using aggregated_cost_type_t =
-    typename aggregated_cost_type<BaseSM, ValuesTuple>::type;
-
-template<class BaseSM, class... ComponentSpecs>
-class configured_solution_manager
-{
-public:
-    using base_type = BaseSM;
-    using instance_type = typename BaseSM::instance_type;
-    using solution_type = typename BaseSM::solution_type;
-    using component_types = std::tuple<typename ComponentSpecs::component_type...>;
-    using component_values_type = std::tuple<
-        component_value_t<
-            typename ComponentSpecs::component_type,
-            solution_type>...>;
-
-    static_assert(
-        unique_types_v<typename ComponentSpecs::component_type...>,
-        "a SolutionManager recipe may contain each component type at most once; "
-        "the conflicting component type is shown in the template instantiation "
-        "context");
-
-    using cost_type = aggregated_cost_type_t<BaseSM, component_values_type>;
-
-    static constexpr bool hierarchical_cost = requires
-    {
-        typename cost_type::hard_cost_type;
-        typename cost_type::soft_cost_type;
-    };
-
-    static constexpr std::size_t hard_component_count = [] {
-        if constexpr (hierarchical_cost)
-        {
-            return hard_component_prefix_count<
-                BaseSM,
-                component_values_type,
-                typename cost_type::hard_cost_type>();
-        }
-        else
-        {
-            return std::tuple_size_v<component_values_type>;
-        }
-    }();
-
-    static constexpr bool has_hard_component_projection =
-        hierarchical_cost &&
-        hard_component_count < std::tuple_size_v<component_values_type>;
-
-    using hard_component_types =
-        tuple_prefix_t<component_types, hard_component_count>;
-    using hard_component_values_type =
-        tuple_prefix_t<component_values_type, hard_component_count>;
-
-    configured_solution_manager(
-        BaseSM base,
-        const ComponentSpecs&... component_specs)
-        : base_{std::move(base)},
-          components_{component_specs.construct(base_.instance())...}
-    {
-        static_assert(sizeof...(ComponentSpecs) > 0,
-            "a configured SolutionManager needs at least one cost component");
-    }
-
-    [[nodiscard]]
-    auto base() noexcept -> BaseSM&
-    {
-        return base_;
-    }
-
-    [[nodiscard]]
-    auto base() const noexcept -> const BaseSM&
-    {
-        return base_;
-    }
-
-    [[nodiscard]]
-    auto instance() const noexcept -> const instance_type&
-    {
-        return base_.instance();
-    }
-
-    [[nodiscard]]
-    auto is_valid(const solution_type& solution) const noexcept(noexcept(
-        std::declval<const BaseSM&>().is_valid(solution))) -> bool
-    {
-        return base_.is_valid(solution);
-    }
-
-    // Preserve optional solution-construction capabilities of the base
-    // SolutionManager. These remain optional: configuring cost components must
-    // neither add nor remove the ability to construct a solution.
-    [[nodiscard]]
-    auto initial_solution() const noexcept(noexcept(
-        std::declval<const BaseSM&>().initial_solution())) -> solution_type
-        requires has_initial_solution<BaseSM>
-    {
-        return base_.initial_solution();
-    }
-
-    template<class RNG>
-    [[nodiscard]]
-    auto random_solution(RNG& rng) const noexcept(noexcept(
-        std::declval<const BaseSM&>().random_solution(rng))) -> solution_type
-        requires has_random_solution<BaseSM, RNG>
-    {
-        return base_.random_solution(rng);
-    }
-
-    [[nodiscard]]
-    auto evaluate_components(const solution_type& solution) const
-        -> component_values_type
-    {
-        return std::apply(
-            [&](const auto&... component) {
-                return component_values_type{
-                    component.evaluate(solution)...,
-                };
-            },
-            components_);
-    }
-
-    [[nodiscard]]
-    auto evaluate_hard_components(const solution_type& solution) const
-        -> hard_component_values_type
-        requires has_hard_component_projection
-    {
-        return [&]<std::size_t... Indices>(std::index_sequence<Indices...>) {
-            return hard_component_values_type{
-                std::get<Indices>(components_).evaluate(solution)...,
-            };
-        }(std::make_index_sequence<hard_component_count>{});
-    }
-
-    template<std::size_t Index>
-    [[nodiscard]]
-    auto evaluate_component(const solution_type& solution) const
-        -> std::tuple_element_t<Index, component_values_type>
-    {
-        return std::get<Index>(components_).evaluate(solution);
-    }
-
-    template<std::size_t Index>
-    [[nodiscard]]
-    auto evaluate_hard_component(const solution_type& solution) const
-        -> std::tuple_element_t<Index, hard_component_values_type>
-        requires (has_hard_component_projection && Index < hard_component_count)
-    {
-        return std::get<Index>(components_).evaluate(solution);
-    }
-
-    [[nodiscard]]
-    auto aggregate(const component_values_type& values) const -> cost_type
-    {
-        return std::apply(
-            [&](const auto&... value) -> cost_type {
-                return base_.aggregate(value...);
-            },
-            values);
-    }
-
-    [[nodiscard]]
-    auto aggregate_hard(const hard_component_values_type& values) const
-        requires has_hard_component_projection
-    {
-        return std::apply(
-            [&](const auto&... value) {
-                return base_.aggregate(value...);
-            },
-            values);
-    }
-
-    [[nodiscard]]
-    auto evaluate(const solution_type& solution) const -> cost_type
-    {
-        return aggregate(evaluate_components(solution));
-    }
-
-    // Preserve optional problem-specific cost semantics across the
-    // configured SolutionManager wrapper. If the base manager does not provide
-    // one of these queries, runner_context can still fall back to the
-    // corresponding intrinsic operator of cost_type when available.
-    [[nodiscard]]
-    constexpr auto better(
-        const cost_type& candidate,
-        const cost_type& reference) const -> bool
-        requires requires(const BaseSM& base) {
-            { base.better(candidate, reference) } -> std::convertible_to<bool>;
-        }
-    {
-        return static_cast<bool>(base_.better(candidate, reference));
-    }
-
-    [[nodiscard]]
-    constexpr auto equivalent(
-        const cost_type& lhs,
-        const cost_type& rhs) const -> bool
-        requires requires(const BaseSM& base) {
-            { base.equivalent(lhs, rhs) } -> std::convertible_to<bool>;
-        }
-    {
-        return static_cast<bool>(base_.equivalent(lhs, rhs));
-    }
-
-    [[nodiscard]]
-    constexpr auto better_or_equivalent(
-        const cost_type& candidate,
-        const cost_type& reference) const -> bool
-        requires requires(const BaseSM& base) {
-            {
-                base.better_or_equivalent(candidate, reference)
-            } -> std::convertible_to<bool>;
-        }
-    {
-        return static_cast<bool>(
-            base_.better_or_equivalent(candidate, reference));
-    }
-
-private:
-    BaseSM base_;
-    std::tuple<typename ComponentSpecs::component_type...> components_;
-};
-
-template<class BaseSM, class... ComponentSpecs>
-using solution_manager_service_t = std::conditional_t<
-    sizeof...(ComponentSpecs) == 0,
-    BaseSM,
-    configured_solution_manager<BaseSM, ComponentSpecs...>>;
-
 
 template<class BaseSM, class... ComponentSpecs>
 class component_solution_manager
@@ -722,8 +436,9 @@ public:
         requires has_hard_component_projection
     {
         return [&]<std::size_t... Indices>(std::index_sequence<Indices...>) {
-            const auto all = inner_.evaluate_components(solution);
-            return hard_component_values_type{std::get<Indices>(all)...};
+            return hard_component_values_type{
+                inner_.template evaluate_component<Indices>(solution)...,
+            };
         }(std::make_index_sequence<hard_component_count>{});
     }
 
@@ -745,7 +460,7 @@ public:
     }
 
     [[nodiscard]]
-    auto aggregate(const component_values_type& values) const -> cost_type
+    auto cost_from_components(const component_values_type& values) const -> cost_type
     {
         return std::apply(
             [&](const auto&... value) -> cost_type {
@@ -755,7 +470,7 @@ public:
     }
 
     [[nodiscard]]
-    auto aggregate_hard(const hard_component_values_type& values) const
+    auto hard_cost_from_components(const hard_component_values_type& values) const
         requires has_hard_component_projection
     {
         return std::apply(
@@ -768,7 +483,7 @@ public:
     [[nodiscard]]
     auto evaluate(const solution_type& solution) const -> cost_type
     {
-        return aggregate(evaluate_components(solution));
+        return cost_from_components(evaluate_components(solution));
     }
 
     [[nodiscard]]
@@ -849,8 +564,16 @@ template<class BaseSM, class BaseArgsTuple, class... ComponentSpecs>
 class solution_manager_recipe
 {
 public:
+    static_assert(
+        base_solution_manager<BaseSM>,
+        "a SolutionManager must expose instance_type, solution_type, "
+        "instance() -> const instance_type&, and is_valid(solution)");
+
     using base_type = BaseSM;
-    using service_type = solution_manager_service_t<BaseSM, ComponentSpecs...>;
+    using service_type = std::conditional_t<
+        sizeof...(ComponentSpecs) == 0,
+        BaseSM,
+        component_solution_manager<BaseSM, ComponentSpecs...>>;
     using component_service_type = component_solution_manager<
         BaseSM,
         ComponentSpecs...>;

@@ -13,24 +13,42 @@ struct Instance {};
 struct Solution { std::uint64_t value{}; };
 struct Move {};
 
+struct MaximizingCost
+{
+    std::uint64_t value{};
+
+    friend constexpr auto operator==(
+        const MaximizingCost&,
+        const MaximizingCost&) -> bool = default;
+
+    friend constexpr auto operator<(
+        const MaximizingCost lhs,
+        const MaximizingCost rhs) noexcept -> bool
+    {
+        return lhs.value > rhs.value;
+    }
+
+    friend constexpr auto operator<=(
+        const MaximizingCost lhs,
+        const MaximizingCost rhs) noexcept -> bool
+    {
+        return lhs.value >= rhs.value;
+    }
+};
+
 class MaximizingSM
 {
 public:
     using instance_type = Instance;
     using solution_type = Solution;
-    using cost_type = std::uint64_t;
+    using cost_type = MaximizingCost;
 
     explicit MaximizingSM(const Instance& instance) : instance_{instance} {}
     auto instance() const -> const Instance& { return instance_; }
     static auto is_valid(const Solution&) -> bool { return true; }
     static auto evaluate(const Solution& solution) -> cost_type
     {
-        return solution.value;
-    }
-    static auto better(const cost_type candidate, const cost_type reference)
-        -> bool
-    {
-        return candidate > reference;
+        return MaximizingCost{solution.value};
     }
     template<class RNG>
     auto random_solution(RNG& rng) const -> Solution
@@ -61,7 +79,7 @@ private:
 struct Result
 {
     Solution solution;
-    std::uint64_t cost;
+    MaximizingCost cost;
 };
 
 struct IdentityAlgorithm
@@ -70,7 +88,7 @@ struct IdentityAlgorithm
     auto run(const Context&, typename Context::solution_type solution) const
         -> Result
     {
-        return {solution, solution.value};
+        return {solution, MaximizingCost{solution.value}};
     }
 };
 
@@ -126,15 +144,15 @@ int main()
     const Instance instance{};
     const auto result = solver.solve(instance);
     ok &= expect(
-        result.solution.value == expected_best && result.cost == expected_best,
-        "MultiStart retains the best result using SolutionManager semantics");
+        result.solution.value == expected_best && result.cost.value == expected_best,
+        "MultiStart retains the best result using cost semantics");
 
     std::uint64_t expected_second_best = 0;
     for (std::size_t start = 0; start < starts; ++start)
         expected_second_best = std::max(expected_second_best, reference() % 1000);
     const auto second = solver.solve(instance);
     ok &= expect(
-        second.cost == expected_second_best,
+        second.cost.value == expected_second_best,
         "MultiStart preserves the Solver-owned RNG stream across solve calls");
 
     return ok ? 0 : 1;

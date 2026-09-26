@@ -116,18 +116,33 @@ class TwoStageSolutionManager : public AssignmentSolutionManager
 {
 public:
     using AssignmentSolutionManager::AssignmentSolutionManager;
-    using AssignmentSolutionManager::aggregate;
+};
+
+struct TwoStageAggregator
+{
+    [[nodiscard]]
+    constexpr auto hard(const CapacityValue& capacity) const -> HardCost
+    {
+        return AssignmentCostAggregator{}.hard(capacity);
+    }
 
     [[nodiscard]]
-    auto aggregate(
+    constexpr auto operator()(
         const CapacityValue& capacity,
         const std::size_t cardinality) const
     {
         return easylocal::aggregation::hierarchical{}(
-            easylocal::aggregation::lexicographic{}(
-                capacity.total_overload,
-                capacity.overloaded_machines),
+            hard(capacity),
             cardinality);
+    }
+};
+
+struct CapacityHardAggregator
+{
+    [[nodiscard]]
+    constexpr auto operator()(const CapacityValue& capacity) const -> HardCost
+    {
+        return AssignmentCostAggregator{}.hard(capacity);
     }
 };
 
@@ -188,9 +203,12 @@ class TwoCapacitySolutionManager : public AssignmentSolutionManager
 {
 public:
     using AssignmentSolutionManager::AssignmentSolutionManager;
+};
 
+struct TwoCapacityAggregator
+{
     [[nodiscard]]
-    auto aggregate(
+    auto operator()(
         const CapacityValue& first,
         const CapacityValue& second) const
     {
@@ -298,7 +316,8 @@ int main()
     const auto two_capacity_recipe =
         solution_manager<TwoCapacitySolutionManager>()
         | component<CapacityVariantA>()
-        | component<CapacityVariantB>();
+        | component<CapacityVariantB>()
+        | aggregator(TwoCapacityAggregator{});
     using TwoCapacityConfigured =
         typename decltype(two_capacity_recipe)::service_type;
     static_assert(std::tuple_size_v<
@@ -306,11 +325,13 @@ int main()
 
     const auto hard_manager_recipe =
         solution_manager<TwoStageSolutionManager>()
-        | component<CapacityCostComponent>();
+        | component<CapacityCostComponent>()
+        | aggregator(CapacityHardAggregator{});
     const auto full_manager_recipe =
         solution_manager<TwoStageSolutionManager>()
         | component<CapacityCostComponent>()
-        | component<AssignmentCardinalityComponent>();
+        | component<AssignmentCardinalityComponent>()
+        | aggregator(TwoStageAggregator{});
 
     const auto hard_neighborhood_recipe =
         neighborhood<CountingSingleMoveNeighborhood>(
@@ -487,7 +508,8 @@ int main()
     const auto zero_overhead_recipe =
         easylocal::solution_manager<TwoStageSolutionManager>()
         | component<CapacityCostComponent>()
-        | component<CountingSoftComponent>(std::ref(soft_evaluations));
+        | component<CountingSoftComponent>(std::ref(soft_evaluations))
+        | aggregator(TwoStageAggregator{});
     const auto zero_overhead_full_sm = zero_overhead_recipe.construct(instance);
     using ZeroOverheadFullSM = decltype(zero_overhead_full_sm);
     static_assert(ZeroOverheadFullSM::has_hard_component_projection);

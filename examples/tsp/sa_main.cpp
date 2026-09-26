@@ -5,6 +5,7 @@
 #include "swap_tour_length_delta.hpp"
 #include "tour_length_delta.hpp"
 
+#include <easylocal/aggregation.hpp>
 #include <easylocal/config/cli.hpp>
 #include <easylocal/config/file.hpp>
 #include <easylocal/config/overrides.hpp>
@@ -158,7 +159,8 @@ int main(int argc, char* argv[])
         auto runner =
             Runner{SimulatedAnnealing{FixedLength{temperature_parameters}}}
             | (solution_manager<TspSolutionManager>()
-               | component<TourLengthComponent>())
+               | component<TourLengthComponent>()
+               | easylocal::aggregator(easylocal::aggregation::weighted_sum{distance_type{1}}))
             | (neighborhood_union(
                    neighborhood<TwoOptNeighborhoodExplorer>()
                        | delta<

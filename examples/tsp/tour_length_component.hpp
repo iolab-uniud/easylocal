@@ -14,6 +14,14 @@ struct TourLengthValue
     distance_type total{};
 
     auto operator==(const TourLengthValue&) const -> bool = default;
+
+    [[nodiscard]]
+    friend constexpr auto operator*(
+        const distance_type weight,
+        const TourLengthValue value) noexcept -> distance_type
+    {
+        return weight * value.total;
+    }
 };
 
 class TourLengthComponent

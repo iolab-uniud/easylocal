@@ -4,7 +4,6 @@
 #include "instance.hpp"
 #include "solution.hpp"
 
-#include <easylocal/aggregation.hpp>
 #include <easylocal/service_base.hpp>
 
 #include <algorithm>
@@ -33,21 +32,6 @@ public:
                    });
     }
 
-    [[nodiscard]]
-    constexpr auto aggregate(
-        const StudentConflictValue& conflicts,
-        const ConsecutiveExamValue& consecutive,
-        const TimeslotLoadValue& load) const noexcept -> penalty_type
-    {
-        return easylocal::aggregation::weighted_sum{
-            penalty_type{1000},
-            penalty_type{10},
-            penalty_type{1},
-        }(
-            conflicts.penalty,
-            consecutive.penalty,
-            load.penalty);
-    }
 };
 
 } // namespace easylocal::mwe::exam_timetabling

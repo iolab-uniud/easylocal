@@ -32,7 +32,10 @@ using easylocal::search::FirstImprovement;
 auto default_solution_manager_recipe()
 {
     return easylocal::solution_manager<AssignmentSolutionManager>()
-         | easylocal::component<CapacityCostComponent>();
+         | easylocal::component<CapacityCostComponent>()
+         | easylocal::aggregator([](const CapacityValue& capacity) {
+               return AssignmentCostAggregator{}.hard(capacity);
+           });
 }
 
 struct SwapMove

@@ -4,6 +4,7 @@ int main()
 {
     using namespace compile_fail_fixture;
     using easylocal::Runner;
+    using easylocal::aggregator;
     using easylocal::component;
     using easylocal::delta;
     using easylocal::neighborhood;
@@ -13,7 +14,7 @@ int main()
 
     auto runner =
         Runner{Algorithm{}}
-        | (solution_manager<BaseSolutionManager>() | component<ComponentA>())
+        | (solution_manager<BaseSolutionManager>() | component<ComponentA>() | aggregator(CostAggregator{}))
         | (neighborhood<Neighborhood>()
            | delta<ComponentA, MalformedDeltaA>());
 

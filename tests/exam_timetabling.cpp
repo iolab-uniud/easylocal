@@ -1,3 +1,4 @@
+#include <easylocal/aggregation.hpp>
 #include <easylocal/cursor_moves.hpp>
 #include "cost_components.hpp"
 #include "cost_deltas.hpp"
@@ -54,7 +55,12 @@ int main()
     const auto initial_conflicts = conflicts.evaluate(initial);
     const auto initial_consecutive = consecutive.evaluate(initial);
     const auto initial_load = load.evaluate(initial);
-    const auto initial_cost = manager.aggregate(
+    const auto aggregate = easylocal::aggregation::weighted_sum{
+        exam::penalty_type{1000},
+        exam::penalty_type{10},
+        exam::penalty_type{1},
+    };
+    const auto initial_cost = aggregate(
         initial_conflicts,
         initial_consecutive,
         initial_load);

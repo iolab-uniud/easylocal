@@ -59,15 +59,27 @@ public:
         return true;
     }
 
+private:
+    const Instance& instance_;
+    std::reference_wrapper<Counters> counters_;
+};
+
+class CountingAggregator
+{
+public:
+    explicit CountingAggregator(Counters& counters) noexcept
+        : counters_{counters}
+    {
+    }
+
     [[nodiscard]]
-    auto aggregate(const int first, const int second) const noexcept -> int
+    auto operator()(const int first, const int second) const noexcept -> int
     {
         ++counters_.get().aggregations;
         return first + second;
     }
 
 private:
-    const Instance& instance_;
     std::reference_wrapper<Counters> counters_;
 };
 
@@ -316,6 +328,7 @@ auto check_common_evaluation(
 int main()
 {
     using easylocal::Runner;
+    using easylocal::aggregator;
     using easylocal::component;
     using easylocal::delta;
     using easylocal::neighborhood;
@@ -332,7 +345,8 @@ int main()
             Runner{ProbeOneMove<false>{accepted}}
             | (solution_manager<SolutionManager>(std::ref(counters))
                | component<FirstComponent>(std::ref(counters))
-               | component<SecondComponent>(std::ref(counters)))
+               | component<SecondComponent>(std::ref(counters))
+               | aggregator(CountingAggregator{counters}))
             | (neighborhood<NeighborhoodExplorer>(std::ref(counters))
                | delta<FirstComponent, FirstDeltaEvaluator>(
                      std::ref(counters))
@@ -367,7 +381,8 @@ int main()
             Runner{ProbeOneMove<true>{accepted}}
             | (solution_manager<SolutionManager>(std::ref(counters))
                | component<FirstComponent>(std::ref(counters))
-               | component<SecondComponent>(std::ref(counters)))
+               | component<SecondComponent>(std::ref(counters))
+               | aggregator(CountingAggregator{counters}))
             | (neighborhood<NeighborhoodExplorer>(std::ref(counters))
                | delta<FirstComponent, FirstDeltaEvaluator>(
                      std::ref(counters)));
@@ -402,7 +417,8 @@ int main()
             Runner{ProbeOneMove<true>{accepted}}
             | (solution_manager<SolutionManager>(std::ref(counters))
                | component<FirstComponent>(std::ref(counters))
-               | component<SecondComponent>(std::ref(counters)))
+               | component<SecondComponent>(std::ref(counters))
+               | aggregator(CountingAggregator{counters}))
             | neighborhood<NeighborhoodExplorer>(std::ref(counters));
 
         const auto result = runner.bind(instance).run(Solution{.value = 1});

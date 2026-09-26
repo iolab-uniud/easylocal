@@ -106,6 +106,22 @@ inline constexpr bool is_solution_manager_spec_v =
     is_solution_manager_spec<T>::value;
 
 template<class T>
+struct is_unaggregated_component_solution_manager_recipe : std::false_type
+{
+};
+
+template<class BaseSM, class BaseArgsTuple, class... ComponentSpecs>
+struct is_unaggregated_component_solution_manager_recipe<
+    solution_manager_recipe<BaseSM, BaseArgsTuple, ComponentSpecs...>>
+    : std::bool_constant<(sizeof...(ComponentSpecs) > 0)>
+{
+};
+
+template<class T>
+inline constexpr bool is_unaggregated_component_solution_manager_recipe_v =
+    is_unaggregated_component_solution_manager_recipe<T>::value;
+
+template<class T>
 struct is_neighborhood_spec : std::false_type
 {
 };
@@ -269,18 +285,18 @@ public:
     }
 
     [[nodiscard]]
-    auto aggregate(const component_values_type& values) const -> cost_type
+    auto cost_from_components(const component_values_type& values) const -> cost_type
     {
         if constexpr (projected_components)
-            return this->solution_manager_.aggregate_hard(values);
+            return this->solution_manager_.hard_cost_from_components(values);
         else
-            return this->solution_manager_.aggregate(values).hard();
+            return this->solution_manager_.cost_from_components(values).hard();
     }
 
     [[nodiscard]]
     auto evaluate(const solution_type& solution) const -> cost_type
     {
-        return aggregate(evaluate_components(solution));
+        return cost_from_components(evaluate_components(solution));
     }
 };
 
@@ -430,9 +446,9 @@ public:
         };
     }
 
-    // Semantic cost queries used by search algorithms. A problem-specific
-    // SolutionManager may override the meaning of these relations; otherwise
-    // the ordinary cost operators provide the exact/default semantics.
+    // Semantic cost queries used by search algorithms. An explicit aggregator
+    // may override the meaning of these relations; otherwise the ordinary cost
+    // operators provide the exact/default semantics.
     //
     // These are deliberately distinct queries. In particular,
     // better_or_equivalent() is not defined as better() || equivalent(), so a
@@ -961,8 +977,20 @@ auto operator|(
     Runner<Algorithm, SMSpec, NHESpec> runner,
     Spec&& spec)
 {
-    return std::move(runner).with_solution_manager(
-        std::forward<Spec>(spec));
+    using spec_type = std::remove_cvref_t<Spec>;
+
+    if constexpr (detail::is_unaggregated_component_solution_manager_recipe_v<spec_type>)
+    {
+        static_assert(
+            !detail::is_unaggregated_component_solution_manager_recipe_v<spec_type>,
+            "a SolutionManager recipe with cost components requires an explicit "
+            "aggregator; add `| aggregator(...)` or `.with_aggregator(...)`");
+    }
+    else
+    {
+        return std::move(runner).with_solution_manager(
+            std::forward<Spec>(spec));
+    }
 }
 
 template<class Algorithm, class SMSpec, class NHESpec>

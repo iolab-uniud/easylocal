@@ -304,7 +304,7 @@ concept multi_start_result =
 }
 
 // Repeatedly initialize and run the same bound Runner, retaining the best
-// result according to the bound SolutionManager's cost semantics. `starts`
+// result according to the bound runner's cost semantics. `starts`
 // denotes the total number of runs (not the number of runs after a first one).
 template<
     class RunnerType,

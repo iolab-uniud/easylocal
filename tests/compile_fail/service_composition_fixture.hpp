@@ -52,20 +52,23 @@ public:
         return true;
     }
 
+private:
+    const Instance& instance_;
+};
+
+struct CostAggregator
+{
     [[nodiscard]]
-    auto aggregate(const int first) const noexcept -> Cost
+    auto operator()(const int first) const noexcept -> Cost
     {
         return Cost{first};
     }
 
     [[nodiscard]]
-    auto aggregate(const int first, const int second) const noexcept -> Cost
+    auto operator()(const int first, const int second) const noexcept -> Cost
     {
         return Cost{first + second};
     }
-
-private:
-    const Instance& instance_;
 };
 
 struct ComponentA

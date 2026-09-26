@@ -4,6 +4,7 @@
 #include "neighborhood_explorer.hpp"
 #include "solution_manager.hpp"
 
+#include <easylocal/aggregation.hpp>
 #include <easylocal/config/cli.hpp>
 #include <easylocal/config/file.hpp>
 #include <easylocal/config/overrides.hpp>
@@ -145,7 +146,9 @@ int main(int argc, char* argv[])
             | (solution_manager<ExamTimetablingSolutionManager>()
                | component<StudentConflictComponent>()
                | component<ConsecutiveExamComponent>()
-               | component<TimeslotLoadComponent>())
+               | component<TimeslotLoadComponent>()
+               | easylocal::aggregator(easylocal::aggregation::weighted_sum{
+                     penalty_type{1000}, penalty_type{10}, penalty_type{1}}))
             | (neighborhood<MoveExamNeighborhoodExplorer>()
                | delta<
                      StudentConflictComponent,

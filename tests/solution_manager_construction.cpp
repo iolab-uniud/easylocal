@@ -51,11 +51,6 @@ public:
         return solution.value;
     }
 
-    [[nodiscard]]
-    static auto aggregate(const int value) noexcept -> int
-    {
-        return value;
-    }
 
 private:
     const Instance& instance_;
