@@ -165,6 +165,26 @@ The current Assignment, TSP, and Exam Timetabling MWEs live under
 intentionally not part of the public include tree. Exam Timetabling is the
 reference MWE for multi-component weighted costs and Simulated Annealing.
 
+Runner recipes intentionally support two equivalent construction spellings. The
+pipeline vocabulary (`solution_manager<T>() | component<C>()`,
+`neighborhood<T>() | delta<C, D>()`) is the canonical compact form, while the
+factory/fluent vocabulary (`make_solution_manager<T>().with_component<C>()`,
+`make_neighborhood_explorer<T>().with_delta<C, D>()`) is useful for named or
+incrementally assembled recipes. Assignment demonstrates the pipeline form,
+Exam Timetabling the factory/fluent form, and TSP also demonstrates direct
+`Runner{Algorithm}` construction.
+
+Built-in runner tags are declared beside their algorithms. Simple custom tags can
+use `runner::algorithm_tag<Algorithm, Config>`:
+
+```cpp
+using my_search = easylocal::runner::algorithm_tag<MyAlgorithm, MyConfig>;
+auto runner = easylocal::make_runner<my_search>(MyConfig{...});
+```
+
+Tags that need multiple construction forms can instead provide their own
+`static make(...)` overloads, as the Simulated Annealing tag does.
+
 Cost aggregation is explicit whenever domain semantics require it, but simple
 weighted costs have a convenience default. If all active component values can
 be combined as a weighted sum, omitting `aggregator(...)` materializes a

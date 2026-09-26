@@ -157,6 +157,20 @@ add_test(
 )
 
 add_executable(
+    easylocal_runner_tag_header_self_containment
+    runner_tag_header_self_containment.cpp
+)
+target_link_libraries(
+    easylocal_runner_tag_header_self_containment
+    PRIVATE
+        EasyLocal::Core
+)
+add_test(
+    NAME easylocal.runner-tag-header-self-containment
+    COMMAND easylocal_runner_tag_header_self_containment
+)
+
+add_executable(
     easylocal_runner_header_self_containment
     runner_header_self_containment.cpp
 )

@@ -341,11 +341,13 @@ arguments:
 
 ```cpp
 auto manager =
-    solution_manager<AssignmentSolutionManager>()
-        .with_component<CapacityCostComponent>();
+    make_solution_manager<AssignmentSolutionManager>()
+        .with_component<CapacityCostComponent>()
+        .with_component<LoadImbalanceCostComponent>()
+        .with_aggregator(AssignmentCostAggregator{});
 
 auto nhe =
-    neighborhood<ReassignJobNeighborhoodExplorer>()
+    make_neighborhood_explorer<ReassignJobNeighborhoodExplorer>()
         .with_delta<
             CapacityCostComponent,
             ReassignCapacityDeltaEvaluator>();
@@ -363,7 +365,8 @@ auto runner =
     make_runner<runner::first_improvement>(params)
     | (solution_manager<AssignmentSolutionManager>()
        | component<CapacityCostComponent>()
-       | component<LoadImbalanceCostComponent>())
+       | component<LoadImbalanceCostComponent>()
+       | aggregator(AssignmentCostAggregator{}))
     | (neighborhood<ReassignJobNeighborhoodExplorer>()
        | delta<
              CapacityCostComponent,

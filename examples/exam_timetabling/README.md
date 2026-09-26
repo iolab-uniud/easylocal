@@ -18,6 +18,14 @@ the standard `MetropolisAcceptance` path.
 
 ## Runnable configured SA example
 
+The executable intentionally uses the factory/fluent spelling of the recipe API:
+`make_solution_manager(...).with_component(...)`,
+`make_neighborhood_explorer(...).with_delta(...)`, and
+`make_runner<runner::simulated_annealing>(...).with_solution_manager(...).with_neighborhood(...)`.
+Assignment demonstrates the equivalent pipeline spelling, while the TSP MWE
+shows direct `Runner{Algorithm}` construction for the underlying general-purpose
+algorithm API.
+
 `main.cpp` defines application-owned parameters for the external instance path
 and RNG seed, while `FixedLengthParameters` remains beside the framework
 temperature policy that it configures. The example builds and traverses a

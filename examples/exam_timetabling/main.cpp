@@ -116,12 +116,9 @@ void print_timetable(const ExamTimetable& solution)
 int main(int argc, char* argv[])
 {
     using namespace easylocal::mwe::exam_timetabling;
-    using easylocal::Runner;
-    using easylocal::component;
-    using easylocal::delta;
-    using easylocal::neighborhood;
-    using easylocal::solution_manager;
-    using easylocal::search::SimulatedAnnealing;
+    using easylocal::make_neighborhood_explorer;
+    using easylocal::make_runner;
+    using easylocal::make_solution_manager;
     using easylocal::search::temperature::FixedLength;
     using easylocal::search::temperature::FixedLengthParameters;
 
@@ -141,22 +138,29 @@ int main(int argc, char* argv[])
         require_valid(app_parameters);
         require_valid(temperature_parameters);
 
+        auto sm =
+            make_solution_manager<ExamTimetablingSolutionManager>()
+                .with_component<StudentConflictComponent>()
+                .with_component<ConsecutiveExamComponent>()
+                .with_component<TimeslotLoadComponent>()
+                .with_aggregator(easylocal::aggregation::weighted_sum{
+                    penalty_type{1000}, penalty_type{10}, penalty_type{1}});
+
+        auto nhe =
+            make_neighborhood_explorer<MoveExamNeighborhoodExplorer>()
+                .with_delta<StudentConflictComponent>()
+                .with_delta<
+                    ConsecutiveExamComponent,
+                    ConsecutiveExamDeltaEvaluator>()
+                .with_delta<
+                    TimeslotLoadComponent,
+                    TimeslotLoadDeltaEvaluator>();
+
         auto runner =
-            Runner{SimulatedAnnealing{FixedLength{temperature_parameters}}}
-            | (solution_manager<ExamTimetablingSolutionManager>()
-               | component<StudentConflictComponent>()
-               | component<ConsecutiveExamComponent>()
-               | component<TimeslotLoadComponent>()
-               | easylocal::aggregator(easylocal::aggregation::weighted_sum{
-                     penalty_type{1000}, penalty_type{10}, penalty_type{1}}))
-            | (neighborhood<MoveExamNeighborhoodExplorer>()
-               | delta<StudentConflictComponent>()
-               | delta<
-                     ConsecutiveExamComponent,
-                     ConsecutiveExamDeltaEvaluator>()
-               | delta<
-                     TimeslotLoadComponent,
-                     TimeslotLoadDeltaEvaluator>());
+            make_runner<easylocal::runner::simulated_annealing>(
+                FixedLength{temperature_parameters})
+                .with_solution_manager(sm)
+                .with_neighborhood(nhe);
 
         const auto configuration = easylocal::config::root(
             easylocal::config::named<"application">(app_parameters),

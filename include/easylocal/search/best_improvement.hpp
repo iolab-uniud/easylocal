@@ -1,5 +1,6 @@
 #pragma once
 
+#include <easylocal/runner_tag.hpp>
 #include <easylocal/search/detail/context_concepts.hpp>
 
 #include <cassert>
@@ -116,15 +117,8 @@ private:
 namespace easylocal::runner
 {
 
-struct best_improvement
-{
-    using config_type = search::BestImprovementParameters;
-
-    [[nodiscard]]
-    static auto make(const config_type config) -> search::BestImprovement
-    {
-        return search::BestImprovement{config};
-    }
-};
+using best_improvement = algorithm_tag<
+    search::BestImprovement,
+    search::BestImprovementParameters>;
 
 } // namespace easylocal::runner

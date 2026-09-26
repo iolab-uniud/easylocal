@@ -1,6 +1,7 @@
 #pragma once
 
 #include <easylocal/config/tree.hpp>
+#include <easylocal/runner_tag.hpp>
 #include <easylocal/search/detail/context_concepts.hpp>
 
 #include <cassert>
@@ -166,15 +167,8 @@ private:
 namespace easylocal::runner
 {
 
-struct first_improvement
-{
-    using config_type = search::FirstImprovementParameters;
-
-    [[nodiscard]]
-    static auto make(const config_type config) -> search::FirstImprovement
-    {
-        return search::FirstImprovement{config};
-    }
-};
+using first_improvement = algorithm_tag<
+    search::FirstImprovement,
+    search::FirstImprovementParameters>;
 
 } // namespace easylocal::runner

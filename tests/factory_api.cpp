@@ -1,4 +1,5 @@
 #include <easylocal/runner.hpp>
+#include <easylocal/runner_tag.hpp>
 #include <easylocal/solver.hpp>
 #include <easylocal/search/best_improvement.hpp>
 #include <easylocal/search/first_improvement.hpp>
@@ -63,6 +64,41 @@ private:
     const Instance& instance_;
 };
 
+
+struct CostComponent
+{
+    [[nodiscard]] static auto evaluate(const Solution& solution) noexcept -> int
+    {
+        return solution.value;
+    }
+};
+
+struct CostAggregator
+{
+    [[nodiscard]] static auto operator()(const int value) noexcept -> int
+    {
+        return value;
+    }
+};
+
+struct MoveDelta
+{
+    int value{};
+};
+
+[[nodiscard]] constexpr auto operator+(const int value, const MoveDelta delta) noexcept -> int
+{
+    return value + delta.value;
+}
+
+struct DeltaEvaluator
+{
+    [[nodiscard]] static auto delta_evaluate(const Solution&, const Move&) noexcept -> MoveDelta
+    {
+        return {};
+    }
+};
+
 struct IdentityAlgorithm
 {
     template<class Context>
@@ -82,6 +118,30 @@ struct identity_runner
     [[nodiscard]] static auto make() { return IdentityAlgorithm{}; }
 };
 
+struct ConfiguredAlgorithm
+{
+    explicit ConfiguredAlgorithm(int token) : token_{token} {}
+
+    template<class Context>
+    [[nodiscard]] auto run(const Context& context, typename Context::solution_type solution) const
+    {
+        struct Result
+        {
+            typename Context::solution_type solution;
+            typename Context::cost_type cost;
+        };
+        return Result{solution, context.evaluation().evaluate(solution).cost() + token_ - token_};
+    }
+
+private:
+    int token_{};
+};
+
+using configured_algorithm_tag = easylocal::runner::algorithm_tag<
+    ConfiguredAlgorithm,
+    int>;
+
+
 } // namespace
 
 int main()
@@ -100,6 +160,11 @@ int main()
         decltype(best),
         Runner<search::BestImprovement>>);
 
+    auto configured = make_runner<configured_algorithm_tag>(7);
+    static_assert(std::same_as<
+        decltype(configured),
+        Runner<ConfiguredAlgorithm>>);
+
     runner::SimulatedAnnealingConfig sa_config{
         .temperature_policy = search::temperature::Classic{
             search::temperature::ClassicParameters{
@@ -112,6 +177,28 @@ int main()
     static_assert(std::same_as<
         decltype(sa),
         Runner<search::SimulatedAnnealing<search::temperature::Classic>>>);
+
+    const auto sm_pipe =
+        solution_manager<SolutionManager>()
+        | component<CostComponent>()
+        | aggregator(CostAggregator{});
+    const auto sm_fluent =
+        make_solution_manager<SolutionManager>()
+            .with_component<CostComponent>()
+            .with_aggregator(CostAggregator{});
+    static_assert(std::same_as<
+        std::remove_cvref_t<decltype(sm_pipe)>,
+        std::remove_cvref_t<decltype(sm_fluent)>>);
+
+    const auto nhe_pipe =
+        neighborhood<NeighborhoodExplorer>()
+        | delta<CostComponent, DeltaEvaluator>();
+    const auto nhe_fluent =
+        make_neighborhood_explorer<NeighborhoodExplorer>()
+            .with_delta<CostComponent, DeltaEvaluator>();
+    static_assert(std::same_as<
+        std::remove_cvref_t<decltype(nhe_pipe)>,
+        std::remove_cvref_t<decltype(nhe_fluent)>>);
 
     const auto sm_recipe = make_solution_manager<SolutionManager>();
     const auto nhe_recipe = make_neighborhood_explorer<NeighborhoodExplorer>();
