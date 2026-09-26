@@ -5,6 +5,7 @@
 #include <easylocal/detail/evaluation.hpp>
 #include <easylocal/detail/neighborhood_concepts.hpp>
 #include <easylocal/detail/service_composition.hpp>
+#include <easylocal/detail/solution_manager_concepts.hpp>
 
 #include <cassert>
 #include <concepts>

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <easylocal/detail/solution_manager_concepts.hpp>
+
 #include <concepts>
 #include <cstddef>
 #include <functional>
@@ -250,6 +252,26 @@ public:
         std::declval<const BaseSM&>().is_valid(solution))) -> bool
     {
         return base_.is_valid(solution);
+    }
+
+    // Preserve optional solution-construction capabilities of the base
+    // SolutionManager. These remain optional: configuring cost components must
+    // neither add nor remove the ability to construct a solution.
+    [[nodiscard]]
+    auto initial_solution() const noexcept(noexcept(
+        std::declval<const BaseSM&>().initial_solution())) -> solution_type
+        requires has_initial_solution<BaseSM>
+    {
+        return base_.initial_solution();
+    }
+
+    template<class RNG>
+    [[nodiscard]]
+    auto random_solution(RNG& rng) const noexcept(noexcept(
+        std::declval<const BaseSM&>().random_solution(rng))) -> solution_type
+        requires has_random_solution<BaseSM, RNG>
+    {
+        return base_.random_solution(rng);
     }
 
     [[nodiscard]]

@@ -313,6 +313,34 @@ add_test(
 )
 
 add_executable(
+    easylocal_solution_manager_concepts_header_self_containment
+    solution_manager_concepts_header_self_containment.cpp
+)
+target_link_libraries(
+    easylocal_solution_manager_concepts_header_self_containment
+    PRIVATE
+        EasyLocal::Core
+)
+add_test(
+    NAME easylocal.solution-manager-concepts-header-self-containment
+    COMMAND easylocal_solution_manager_concepts_header_self_containment
+)
+
+add_executable(
+    easylocal_solution_manager_construction_test
+    solution_manager_construction.cpp
+)
+target_link_libraries(
+    easylocal_solution_manager_construction_test
+    PRIVATE
+        EasyLocal::Core
+)
+add_test(
+    NAME easylocal.solution-manager-construction
+    COMMAND easylocal_solution_manager_construction_test
+)
+
+add_executable(
     easylocal_concept_contracts_test
     concept_contracts.cpp
 )
