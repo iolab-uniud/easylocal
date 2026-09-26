@@ -272,6 +272,7 @@ public:
     using neighborhood_explorer_type = service_t<NHESpec>;
     using instance_type = typename solution_manager_type::instance_type;
     using solution_type = typename solution_manager_type::solution_type;
+    using cost_type = typename solution_manager_type::cost_type;
 
     static_assert(validate_delta_bindings<
                   solution_manager_type,
@@ -315,6 +316,15 @@ public:
         requires has_random_solution<solution_manager_type, RNG>
     {
         return solution_manager_.random_solution(rng);
+    }
+
+    [[nodiscard]]
+    constexpr auto better(
+        const cost_type& candidate,
+        const cost_type& reference) const -> bool
+        requires has_better<solution_manager_type>
+    {
+        return cost_better(solution_manager_, candidate, reference);
     }
 
     template<class... RunArgs>

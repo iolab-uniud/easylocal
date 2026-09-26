@@ -943,3 +943,7 @@ add_test(NAME easylocal.solver-header-self-containment COMMAND easylocal_solver_
 add_executable(easylocal_solver_test solver.cpp)
 target_link_libraries(easylocal_solver_test PRIVATE EasyLocal::Core)
 add_test(NAME easylocal.solver COMMAND easylocal_solver_test)
+
+add_executable(easylocal_multi_start_solver_test multi_start_solver.cpp)
+target_link_libraries(easylocal_multi_start_solver_test PRIVATE EasyLocal::Core)
+add_test(NAME easylocal.multi-start-solver COMMAND easylocal_multi_start_solver_test)
