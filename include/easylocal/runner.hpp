@@ -302,6 +302,21 @@ public:
     bound_runner(bound_runner&&) = delete;
     auto operator=(bound_runner&&) -> bound_runner& = delete;
 
+    [[nodiscard]]
+    auto initial_solution() const -> solution_type
+        requires has_initial_solution<solution_manager_type>
+    {
+        return solution_manager_.initial_solution();
+    }
+
+    template<class RNG>
+    [[nodiscard]]
+    auto random_solution(RNG& rng) const -> solution_type
+        requires has_random_solution<solution_manager_type, RNG>
+    {
+        return solution_manager_.random_solution(rng);
+    }
+
     template<class... RunArgs>
     [[nodiscard]]
     auto run(solution_type solution, RunArgs&&... run_args)

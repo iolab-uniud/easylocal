@@ -935,3 +935,11 @@ if(TARGET easylocal_tsp_sa_mwe)
             WILL_FAIL TRUE
     )
 endif()
+
+add_executable(easylocal_solver_header_self_containment solver_header_self_containment.cpp)
+target_link_libraries(easylocal_solver_header_self_containment PRIVATE EasyLocal::Core)
+add_test(NAME easylocal.solver-header-self-containment COMMAND easylocal_solver_header_self_containment)
+
+add_executable(easylocal_solver_test solver.cpp)
+target_link_libraries(easylocal_solver_test PRIVATE EasyLocal::Core)
+add_test(NAME easylocal.solver COMMAND easylocal_solver_test)

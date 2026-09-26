@@ -16,5 +16,5 @@ int main()
         | (solution_manager<BaseSolutionManager>() | component<ComponentA>())
         | (neighborhood<Neighborhood>() | delta<ComponentB, DeltaB>());
 
-    [[maybe_unused]] auto bound = runner.bind(instance);
+    [[maybe_unused]] auto bound_runner = runner.bind(instance);
 }

@@ -10,6 +10,7 @@
 #include <easylocal/neighborhood_union.hpp>
 #include <easylocal/runner.hpp>
 #include <easylocal/service_base.hpp>
+#include <easylocal/solver.hpp>
 #include <easylocal/search/best_improvement.hpp>
 #include <easylocal/search/first_improvement.hpp>
 #include <easylocal/search/metropolis_acceptance.hpp>

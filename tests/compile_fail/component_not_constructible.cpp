@@ -16,5 +16,5 @@ int main()
            | component<NonConstructibleComponent>())
         | neighborhood<Neighborhood>();
 
-    [[maybe_unused]] auto bound = runner.bind(instance);
+    [[maybe_unused]] auto bound_runner = runner.bind(instance);
 }

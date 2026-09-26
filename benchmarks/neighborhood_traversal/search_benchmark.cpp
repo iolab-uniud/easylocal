@@ -341,14 +341,14 @@ auto run_once(
     auto runner = easylocal::Runner{std::move(algorithm)}
                 | manager_recipe
                 | neighborhood_recipe;
-    auto bound = runner.bind(instance);
-    return bound.run(initial);
+    auto bound_runner = runner.bind(instance);
+    return bound_runner.run(initial);
 }
 
 template<class BoundRunner, class Solution, class Token>
 [[nodiscard]]
 auto allocations_for_run(
-    BoundRunner& bound,
+    BoundRunner& bound_runner,
     const Solution& initial,
     Token token) -> AllocationResult
 {
@@ -356,7 +356,7 @@ auto allocations_for_run(
     allocation_probe::tracking = true;
 
     {
-        const auto result = bound.run(initial);
+        const auto result = bound_runner.run(initial);
         observe(token(result));
     }
 
@@ -390,17 +390,17 @@ void benchmark_variant(
     auto runner = easylocal::Runner{std::move(algorithm)}
                 | manager_recipe
                 | neighborhood_recipe;
-    auto bound = runner.bind(instance);
+    auto bound_runner = runner.bind(instance);
 
-    const auto reference = bound.run(initial);
-    const auto allocations = allocations_for_run(bound, initial, token);
+    const auto reference = bound_runner.run(initial);
+    const auto allocations = allocations_for_run(bound_runner, initial, token);
     const auto repetitions = std::max<std::size_t>(
         1,
         target_evaluations / reference.evaluations);
 
     for (std::size_t warmup = 0; warmup < 2; ++warmup)
     {
-        const auto result = bound.run(initial);
+        const auto result = bound_runner.run(initial);
         observe(token(result));
     }
 
@@ -413,7 +413,7 @@ void benchmark_variant(
              repetition < repetitions;
              ++repetition)
         {
-            const auto result = bound.run(initial);
+            const auto result = bound_runner.run(initial);
             checksum += token(result);
         }
 

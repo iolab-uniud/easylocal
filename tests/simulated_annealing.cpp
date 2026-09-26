@@ -418,11 +418,11 @@ int main()
                      exam::TimeslotLoadComponent,
                      exam::TimeslotLoadDeltaEvaluator>());
 
-        auto bound = runner.bind(instance);
+        auto bound_runner = runner.bind(instance);
         std::mt19937 rng_a{2026U};
         std::mt19937 rng_b{2026U};
-        const auto result_a = bound.run(initial, rng_a);
-        const auto result_b = bound.run(initial, rng_b);
+        const auto result_a = bound_runner.run(initial, rng_a);
+        const auto result_b = bound_runner.run(initial, rng_b);
 
         ok &= expect(
             result_a.solution == result_b.solution &&

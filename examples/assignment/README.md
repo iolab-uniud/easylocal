@@ -356,8 +356,8 @@ explorer. A single run then supplies only its initial solution and any
 algorithm-specific runtime dependencies such as an RNG:
 
 ```cpp
-auto bound = runner.bind(instance);
-auto result = bound.run(initial_solution);
+auto bound_runner = runner.bind(instance);
+auto result = bound_runner.run(initial_solution);
 ```
 
 This keeps service construction state reusable before an instance is loaded,
