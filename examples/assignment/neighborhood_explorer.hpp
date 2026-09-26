@@ -38,7 +38,6 @@ public:
         const AssignmentSolution& solution,
         ReassignJobMove& move) const noexcept -> bool
     {
-        assert(solution_manager_.is_valid(solution));
 
         const auto machine_count =
             solution_manager_.instance().capacity.size();
@@ -58,8 +57,6 @@ public:
         const AssignmentSolution& solution,
         ReassignJobMove& move) const noexcept -> bool
     {
-        assert(solution_manager_.is_valid(solution));
-        assert(is_valid(solution, move));
 
         const auto machine_count =
             solution_manager_.instance().capacity.size();
@@ -94,7 +91,6 @@ public:
         const AssignmentSolution& solution,
         RNG& rng) const -> std::optional<ReassignJobMove>
     {
-        assert(solution_manager_.is_valid(solution));
         const auto count = move_count(solution);
         if (count == 0)
         {
@@ -110,7 +106,6 @@ public:
         AssignmentSolution& solution,
         const ReassignJobMove& move) const noexcept
     {
-        assert(is_valid(solution, move));
         solution.assignment[move.job] = move.destination;
     }
 

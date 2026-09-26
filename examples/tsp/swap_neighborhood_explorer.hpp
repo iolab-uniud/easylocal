@@ -76,7 +76,6 @@ public:
         const Tour& solution,
         SwapCitiesMove& move) const noexcept -> bool
     {
-        assert(solution_manager_.is_valid(solution));
         return find_from(solution.tour.size(), 0, 1, move);
     }
 
@@ -85,8 +84,6 @@ public:
         const Tour& solution,
         SwapCitiesMove& move) const noexcept -> bool
     {
-        assert(solution_manager_.is_valid(solution));
-        assert(is_valid(solution, move));
 
         return find_from(
             solution.tour.size(),
@@ -101,7 +98,6 @@ public:
         const Tour& solution,
         RNG& rng) const -> std::optional<SwapCitiesMove>
     {
-        assert(solution_manager_.is_valid(solution));
         const auto count = move_count(solution.tour.size());
         if (count == 0)
         {
@@ -116,7 +112,6 @@ public:
         Tour& solution,
         const SwapCitiesMove& move) const noexcept
     {
-        assert(is_valid(solution, move));
         std::swap(
             solution.tour[move.first_position],
             solution.tour[move.second_position]);

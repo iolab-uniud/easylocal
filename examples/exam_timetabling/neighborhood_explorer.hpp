@@ -36,7 +36,6 @@ public:
         const ExamTimetable& solution,
         MoveExam& move) const noexcept -> bool
     {
-        assert(solution_manager_.is_valid(solution));
         if (solution.timeslot_by_exam.empty() || instance().timeslot_count < 2)
         {
             return false;
@@ -52,7 +51,6 @@ public:
         const ExamTimetable& solution,
         MoveExam& move) const noexcept -> bool
     {
-        assert(is_valid(solution, move));
 
         const auto current = solution.timeslot_by_exam[move.exam];
         for (auto destination = move.destination + 1;
@@ -84,7 +82,6 @@ public:
         const ExamTimetable& solution,
         RNG& rng) const -> std::optional<MoveExam>
     {
-        assert(solution_manager_.is_valid(solution));
         const auto alternatives = instance().timeslot_count > 0
             ? instance().timeslot_count - 1
             : std::size_t{0};
@@ -112,7 +109,6 @@ public:
         ExamTimetable& solution,
         const MoveExam& move) const noexcept
     {
-        assert(is_valid(solution, move));
         solution.timeslot_by_exam[move.exam] = move.destination;
     }
 

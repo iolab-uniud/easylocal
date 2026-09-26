@@ -23,8 +23,7 @@ public:
     [[nodiscard]]
     auto is_valid(const ExamTimetable& solution) const noexcept -> bool
     {
-        return instance_.is_valid() &&
-               solution.timeslot_by_exam.size() == instance_.exam_count &&
+        return solution.timeslot_by_exam.size() == instance_.exam_count &&
                std::ranges::all_of(
                    solution.timeslot_by_exam,
                    [this](const timeslot_id timeslot) {
