@@ -138,7 +138,7 @@ public:
     [[nodiscard]]
     auto moves(const AssignmentSolution& solution) const
     {
-        return inner_.moves(solution);
+        return easylocal::moves(inner_, solution);
     }
 
     void make_move(AssignmentSolution& solution, const ReassignJobMove& move) const noexcept

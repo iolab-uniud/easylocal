@@ -1,3 +1,4 @@
+#include <easylocal/cursor_moves.hpp>
 #include "cost_components.hpp"
 #include "cost_deltas.hpp"
 #include "neighborhood_explorer.hpp"
@@ -64,7 +65,7 @@ int main()
         "exam timetabling uses a transparent three-component weighted sum");
 
     std::size_t move_count = 0;
-    for (const auto move : neighborhood.moves(initial))
+    for (const auto move : easylocal::moves(neighborhood, initial))
     {
         ++move_count;
         auto candidate = initial;

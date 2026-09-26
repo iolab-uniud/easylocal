@@ -3,15 +3,12 @@
 #include "move.hpp"
 #include "solution_manager.hpp"
 
-#include <easylocal/cursor_moves.hpp>
 #include <easylocal/service_base.hpp>
 
 #include <cassert>
 #include <cstddef>
-#include <cstdint>
 #include <optional>
 #include <random>
-#include <ranges>
 #include <utility>
 
 namespace easylocal::mwe::assignment
@@ -39,27 +36,6 @@ public:
         return move.job < solution.assignment.size() &&
                move.destination < instance.capacity.size() &&
                solution.assignment[move.job] != move.destination;
-    }
-
-    [[nodiscard]]
-    auto moves(const AssignmentSolution& solution) const
-    {
-        assert(solution_manager_.is_valid(solution));
-
-#ifndef NDEBUG
-        const auto expected_signature = debug_signature(solution);
-
-        return easylocal::cursor_moves(*this, solution)
-             | std::views::transform(
-                   [&solution, expected_signature](const ReassignJobMove& move) {
-                       assert(
-                           debug_signature(solution) == expected_signature &&
-                           "neighborhood range invalidated by AssignmentSolution mutation");
-                       return move;
-                   });
-#else
-        return easylocal::cursor_moves(*this, solution);
-#endif
     }
 
     [[nodiscard]]
@@ -194,27 +170,6 @@ private:
         };
     }
 
-#ifndef NDEBUG
-    [[nodiscard]]
-    static auto debug_signature(const AssignmentSolution& solution) noexcept
-        -> std::uint64_t
-    {
-        // Debug-only fingerprint used to catch stale neighborhood views after
-        // the underlying solution has been modified, including direct changes
-        // that bypass make_move().
-        std::uint64_t signature = 1469598103934665603ULL;
-
-        for (const auto machine : solution.assignment)
-        {
-            signature ^= static_cast<std::uint64_t>(machine) +
-                         0x9e3779b97f4a7c15ULL;
-            signature *= 1099511628211ULL;
-        }
-
-        signature ^= static_cast<std::uint64_t>(solution.assignment.size());
-        return signature;
-    }
-#endif
 
 };
 

@@ -117,7 +117,7 @@ public:
         {
             bool improved = false;
 
-            for (const auto move : neighborhood.moves(solution))
+            for (const auto move : easylocal::moves(neighborhood, solution))
             {
                 if (evaluations == parameters_.max_evaluations)
                 {

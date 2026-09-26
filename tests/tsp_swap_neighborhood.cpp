@@ -1,3 +1,4 @@
+#include <easylocal/cursor_moves.hpp>
 #include "solution_manager.hpp"
 #include "swap_neighborhood_explorer.hpp"
 #include "swap_move.hpp"
@@ -61,7 +62,7 @@ int main()
         .tour = {0, 2, 1, 3},
     };
 
-    auto all_moves = neighborhood.moves(solution);
+    auto all_moves = easylocal::moves(neighborhood, solution);
     static_assert(std::ranges::input_range<decltype(all_moves)>);
     static_assert(!std::ranges::forward_range<decltype(all_moves)>);
     static_assert(std::ranges::view<decltype(all_moves)>);
@@ -140,7 +141,7 @@ int main()
         .tour = {0},
     };
 
-    auto singleton_moves = singleton_neighborhood.moves(singleton);
+    auto singleton_moves = easylocal::moves(singleton_neighborhood, singleton);
     ok &= expect(
         singleton_moves.begin() == singleton_moves.end(),
         "single-city tour has no swap move");

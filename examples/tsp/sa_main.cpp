@@ -152,6 +152,9 @@ int main(int argc, char* argv[])
         require_valid(temperature_parameters);
         require_valid(neighborhood_parameters);
 
+        // Equivalent tag-based spelling:
+        // auto runner = make_runner<easylocal::runner::simulated_annealing>(
+        //     FixedLength{temperature_parameters}) | ...;
         auto runner =
             Runner{SimulatedAnnealing{FixedLength{temperature_parameters}}}
             | (solution_manager<TspSolutionManager>()

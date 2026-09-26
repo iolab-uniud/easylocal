@@ -3,17 +3,14 @@
 #include "move.hpp"
 #include "solution_manager.hpp"
 
-#include <easylocal/cursor_moves.hpp>
 #include <easylocal/service_base.hpp>
 
 #include <algorithm>
 #include <cassert>
 #include <cstddef>
-#include <cstdint>
 #include <iterator>
 #include <optional>
 #include <random>
-#include <ranges>
 
 namespace easylocal::mwe::tsp
 {
@@ -86,24 +83,6 @@ private:
         return {};
     }
 
-#ifndef NDEBUG
-    [[nodiscard]]
-    static auto debug_signature(const Tour& solution) noexcept
-        -> std::uint64_t
-    {
-        std::uint64_t signature = 1469598103934665603ULL;
-
-        for (const auto city : solution.tour)
-        {
-            signature ^= static_cast<std::uint64_t>(city) +
-                         0x9e3779b97f4a7c15ULL;
-            signature *= 1099511628211ULL;
-        }
-
-        signature ^= static_cast<std::uint64_t>(solution.tour.size());
-        return signature;
-    }
-#endif
 
 
 public:
@@ -122,27 +101,6 @@ public:
             solution.tour.size(),
             move.first_edge,
             move.second_edge);
-    }
-
-    [[nodiscard]]
-    auto moves(const Tour& solution) const
-    {
-        assert(solution_manager_.is_valid(solution));
-
-#ifndef NDEBUG
-        const auto expected_signature = debug_signature(solution);
-
-        return easylocal::cursor_moves(*this, solution)
-             | std::views::transform(
-                   [&solution, expected_signature](const TwoOptMove& move) {
-                       assert(
-                           debug_signature(solution) == expected_signature &&
-                           "neighborhood range invalidated by Tour mutation");
-                       return move;
-                   });
-#else
-        return easylocal::cursor_moves(*this, solution);
-#endif
     }
 
     [[nodiscard]]

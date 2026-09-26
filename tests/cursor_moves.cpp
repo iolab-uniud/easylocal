@@ -97,6 +97,31 @@ public:
     }
 };
 
+
+class DualProtocolExplorer
+{
+public:
+    using solution_type = Solution;
+    using move_type = Move;
+
+    [[nodiscard]] auto first_move(const Solution& solution, Move& move) const noexcept -> bool
+    {
+        if (solution.size == 0) return false;
+        move.index = 7;
+        return true;
+    }
+
+    [[nodiscard]] auto next_move(const Solution&, Move&) const noexcept -> bool
+    {
+        return false;
+    }
+
+    [[nodiscard]] auto moves(const Solution&) const
+    {
+        return std::views::single(Move{.index = 99});
+    }
+};
+
 template<class Explorer>
 concept CanAdaptCursor =
     requires(
@@ -138,6 +163,7 @@ int main()
 
     static_assert(CanAdaptCursor<CursorExplorer>);
     static_assert(!CanAdaptCursor<NonDefaultMoveExplorer>);
+    static_assert(easylocal::detail::has_ambiguous_moves_interface_v<DualProtocolExplorer>);
 
     const CursorExplorer explorer;
     const Solution solution{.size = 4};
@@ -186,6 +212,12 @@ int main()
     ok &= expect(
         collect(odd_moves) == expected_odd,
         "cursor adapter composes with standard views");
+
+    const DualProtocolExplorer dual;
+    const auto dual_moves = easylocal::moves(dual, solution);
+    ok &= expect(
+        collect(dual_moves) == std::vector<Move>{Move{.index = 7}},
+        "unified moves customization prefers the EL3 cursor protocol when both interfaces exist");
 
     const Solution empty{.size = 0};
     auto empty_moves = easylocal::cursor_moves(explorer, empty);

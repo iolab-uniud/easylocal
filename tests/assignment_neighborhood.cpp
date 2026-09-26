@@ -1,3 +1,4 @@
+#include <easylocal/cursor_moves.hpp>
 #include "neighborhood_explorer.hpp"
 #include "solution_manager.hpp"
 
@@ -60,7 +61,7 @@ int main()
         .assignment = {1, 2},
     };
 
-    auto all_moves = neighborhood.moves(solution);
+    auto all_moves = easylocal::moves(neighborhood, solution);
     static_assert(std::ranges::input_range<decltype(all_moves)>);
     static_assert(!std::ranges::forward_range<decltype(all_moves)>);
     static_assert(std::ranges::view<decltype(all_moves)>);
@@ -93,7 +94,7 @@ int main()
         cursor_observed == expected,
         "FirstMove/NextMove authoring protocol matches the move range");
 
-    for (const auto move : neighborhood.moves(solution))
+    for (const auto move : easylocal::moves(neighborhood, solution))
     {
         ok &= expect(
             neighborhood.is_valid(solution, move),
@@ -101,7 +102,7 @@ int main()
     }
 
     auto destination_zero =
-        neighborhood.moves(solution)
+        easylocal::moves(neighborhood, solution)
         | std::views::filter([](const ReassignJobMove move) {
               return move.destination == 0;
           });
@@ -167,7 +168,7 @@ int main()
     };
 
     auto single_machine_moves =
-        single_machine_neighborhood.moves(single_machine_solution);
+        easylocal::moves(single_machine_neighborhood, single_machine_solution);
     ok &= expect(
         single_machine_moves.begin() == single_machine_moves.end(),
         "one-machine assignment has an empty move range");
@@ -189,7 +190,7 @@ int main()
         .assignment = {},
     };
 
-    auto empty_moves = empty_neighborhood.moves(empty_solution);
+    auto empty_moves = easylocal::moves(empty_neighborhood, empty_solution);
     ok &= expect(
         empty_moves.begin() == empty_moves.end(),
         "empty assignment has an empty move range");

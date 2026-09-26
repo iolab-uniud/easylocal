@@ -1,3 +1,4 @@
+#include <easylocal/cursor_moves.hpp>
 #include "move.hpp"
 #include "neighborhood_explorer.hpp"
 #include "solution.hpp"
@@ -59,7 +60,7 @@ int main()
         .tour = {0, 2, 1, 3, 4},
     };
 
-    auto all_moves = neighborhood.moves(solution);
+    auto all_moves = easylocal::moves(neighborhood, solution);
     static_assert(std::ranges::input_range<decltype(all_moves)>);
     static_assert(!std::ranges::forward_range<decltype(all_moves)>);
     static_assert(std::ranges::view<decltype(all_moves)>);
@@ -92,7 +93,7 @@ int main()
         cursor_observed == expected,
         "FirstMove/NextMove authoring protocol matches the 2-opt move range");
 
-    for (const auto move : neighborhood.moves(solution))
+    for (const auto move : easylocal::moves(neighborhood, solution))
     {
         ok &= expect(
             neighborhood.is_valid(solution, move),
@@ -106,7 +107,7 @@ int main()
         "single random 2-opt proposal is available and valid");
 
     auto first_edge_zero =
-        neighborhood.moves(solution)
+        easylocal::moves(neighborhood, solution)
         | std::views::filter([](const TwoOptMove move) {
               return move.first_edge == 0;
           });
@@ -163,7 +164,7 @@ int main()
         .tour = {0, 1, 2},
     };
 
-    auto triangle_moves = triangle_neighborhood.moves(triangle);
+    auto triangle_moves = easylocal::moves(triangle_neighborhood, triangle);
     ok &= expect(
         triangle_moves.begin() == triangle_moves.end(),
         "three-city tour has no non-degenerate 2-opt move");

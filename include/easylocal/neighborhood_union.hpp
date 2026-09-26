@@ -1,5 +1,7 @@
 #pragma once
 
+#include <easylocal/cursor_moves.hpp>
+
 #include <easylocal/config/tree.hpp>
 #include <easylocal/runner.hpp>
 
@@ -414,10 +416,10 @@ private:
     {
         using move_view = neighborhood_union_moves_view<
             union_move_type,
-            decltype(std::get<Indices>(explorers_).moves(solution))...>;
+            decltype(easylocal::moves(std::get<Indices>(explorers_), solution))...>;
 
         return move_view{
-            std::get<Indices>(explorers_).moves(solution)...,
+            easylocal::moves(std::get<Indices>(explorers_), solution)...,
         };
     }
 

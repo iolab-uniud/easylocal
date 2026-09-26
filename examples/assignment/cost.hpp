@@ -12,30 +12,23 @@ using HardCost = easylocal::aggregation::lexicographic_cost<std::int64_t, std::i
 using SoftCost = std::int64_t;
 using Cost = easylocal::aggregation::hierarchical_cost<HardCost, SoftCost>;
 
-struct AssignmentHardCostAggregator
+struct AssignmentCostAggregator
 {
-    using cost_type = HardCost;
-
     [[nodiscard]]
-    constexpr auto operator()(const CapacityValue& capacity) const -> cost_type
+    constexpr auto hard(const CapacityValue& capacity) const -> HardCost
     {
         return easylocal::aggregation::lexicographic{}(
             capacity.total_overload,
             capacity.overloaded_machines);
     }
-};
-
-struct AssignmentCostAggregator
-{
-    using cost_type = Cost;
 
     [[nodiscard]]
     constexpr auto operator()(
         const CapacityValue& capacity,
-        const SoftCost load_imbalance) const -> cost_type
+        const SoftCost load_imbalance) const -> Cost
     {
         return easylocal::aggregation::hierarchical{}(
-            AssignmentHardCostAggregator{}(capacity),
+            hard(capacity),
             load_imbalance);
     }
 };

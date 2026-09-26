@@ -1,5 +1,6 @@
 #pragma once
 
+#include <easylocal/config/tree.hpp>
 #include <easylocal/detail/solution_manager_concepts.hpp>
 
 #include <concepts>
@@ -239,6 +240,11 @@ private:
     std::tuple<StoredArgs...> args_;
 };
 
+template<class Component, class Solution>
+using component_value_t = std::remove_cvref_t<decltype(
+    std::declval<const Component&>().evaluate(
+        std::declval<const Solution&>()))>;
+
 template<class BaseSM, class ValuesTuple>
 struct aggregated_cost_type;
 
@@ -263,7 +269,9 @@ public:
     using solution_type = typename BaseSM::solution_type;
     using component_types = std::tuple<typename ComponentSpecs::component_type...>;
     using component_values_type = std::tuple<
-        typename ComponentSpecs::component_type::value_type...>;
+        component_value_t<
+            typename ComponentSpecs::component_type,
+            solution_type>...>;
 
     static_assert(
         unique_types_v<typename ComponentSpecs::component_type...>,
@@ -477,6 +485,352 @@ using solution_manager_service_t = std::conditional_t<
     BaseSM,
     configured_solution_manager<BaseSM, ComponentSpecs...>>;
 
+
+template<class BaseSM, class... ComponentSpecs>
+class component_solution_manager
+{
+public:
+    using base_type = BaseSM;
+    using instance_type = typename BaseSM::instance_type;
+    using solution_type = typename BaseSM::solution_type;
+    using component_types = std::tuple<typename ComponentSpecs::component_type...>;
+    using component_values_type = std::tuple<
+        component_value_t<
+            typename ComponentSpecs::component_type,
+            solution_type>...>;
+
+    static_assert(
+        unique_types_v<typename ComponentSpecs::component_type...>,
+        "a SolutionManager recipe may contain each component type at most once; "
+        "the conflicting component type is shown in the template instantiation "
+        "context");
+
+    component_solution_manager(
+        BaseSM base,
+        const ComponentSpecs&... component_specs)
+        : base_{std::move(base)},
+          components_{component_specs.construct(base_.instance())...}
+    {
+        static_assert(sizeof...(ComponentSpecs) > 0,
+            "an aggregated SolutionManager needs at least one cost component");
+    }
+
+    [[nodiscard]] auto base() noexcept -> BaseSM& { return base_; }
+    [[nodiscard]] auto base() const noexcept -> const BaseSM& { return base_; }
+    [[nodiscard]] auto instance() const noexcept -> const instance_type& { return base_.instance(); }
+    [[nodiscard]] auto is_valid(const solution_type& solution) const noexcept(noexcept(base_.is_valid(solution))) -> bool { return base_.is_valid(solution); }
+
+    [[nodiscard]]
+    auto initial_solution() const noexcept(noexcept(base_.initial_solution()))
+        -> solution_type
+        requires has_initial_solution<BaseSM>
+    {
+        return base_.initial_solution();
+    }
+
+    template<class RNG>
+    [[nodiscard]]
+    auto random_solution(RNG& rng) const noexcept(noexcept(base_.random_solution(rng)))
+        -> solution_type
+        requires has_random_solution<BaseSM, RNG>
+    {
+        return base_.random_solution(rng);
+    }
+
+    [[nodiscard]]
+    auto evaluate_components(const solution_type& solution) const
+        -> component_values_type
+    {
+        return std::apply(
+            [&](const auto&... component) {
+                return component_values_type{component.evaluate(solution)...};
+            },
+            components_);
+    }
+
+    template<std::size_t Index>
+    [[nodiscard]]
+    auto evaluate_component(const solution_type& solution) const
+        -> std::tuple_element_t<Index, component_values_type>
+    {
+        return std::get<Index>(components_).evaluate(solution);
+    }
+
+private:
+    BaseSM base_;
+    std::tuple<typename ComponentSpecs::component_type...> components_;
+};
+
+template<class Aggregator>
+class aggregator_spec
+{
+public:
+    using aggregator_type = Aggregator;
+
+    explicit aggregator_spec(Aggregator aggregator)
+        : aggregator_{std::move(aggregator)}
+    {
+    }
+
+    [[nodiscard]]
+    auto get() & noexcept -> Aggregator&
+    {
+        return aggregator_;
+    }
+
+    [[nodiscard]]
+    auto get() const & noexcept -> const Aggregator&
+    {
+        return aggregator_;
+    }
+
+    [[nodiscard]]
+    auto get() && noexcept -> Aggregator&&
+    {
+        return std::move(aggregator_);
+    }
+
+private:
+    [[no_unique_address]] Aggregator aggregator_;
+};
+
+template<class InnerSM, class Aggregator>
+class aggregated_solution_manager
+{
+public:
+    using base_type = typename InnerSM::base_type;
+    using instance_type = typename InnerSM::instance_type;
+    using solution_type = typename InnerSM::solution_type;
+    using component_types = typename InnerSM::component_types;
+    using component_values_type = typename InnerSM::component_values_type;
+
+private:
+    template<class Tuple>
+    struct aggregate_result;
+
+    template<class... Values>
+    struct aggregate_result<std::tuple<Values...>>
+    {
+        using type = std::remove_cvref_t<decltype(
+            std::declval<const Aggregator&>()(
+                std::declval<const Values&>()...))>;
+    };
+
+public:
+    using cost_type = typename aggregate_result<component_values_type>::type;
+
+    static constexpr bool hierarchical_cost = requires
+    {
+        typename cost_type::hard_cost_type;
+        typename cost_type::soft_cost_type;
+    };
+
+private:
+    template<std::size_t... Indices>
+    [[nodiscard]]
+    static consteval auto hard_prefix_matches(std::index_sequence<Indices...>)
+        -> bool
+    {
+        if constexpr (!hierarchical_cost)
+        {
+            return false;
+        }
+        else
+        {
+            return requires(
+                const Aggregator& aggregator,
+                const std::tuple_element_t<Indices, component_values_type>&...
+                    values)
+            {
+                {
+                    aggregator.hard(values...)
+                } -> std::same_as<typename cost_type::hard_cost_type>;
+            };
+        }
+    }
+
+    template<std::size_t Count = 1>
+    [[nodiscard]]
+    static consteval auto find_hard_prefix() -> std::size_t
+    {
+        constexpr auto count = std::tuple_size_v<component_values_type>;
+        if constexpr (!hierarchical_cost || Count >= count)
+        {
+            return count;
+        }
+        else if constexpr (hard_prefix_matches(
+                               std::make_index_sequence<Count>{}))
+        {
+            return Count;
+        }
+        else
+        {
+            return find_hard_prefix<Count + 1>();
+        }
+    }
+
+public:
+    static constexpr std::size_t hard_component_count = find_hard_prefix<>();
+    static constexpr bool has_hard_component_projection =
+        hierarchical_cost &&
+        hard_component_count < std::tuple_size_v<component_values_type>;
+
+    using hard_component_types = tuple_prefix_t<
+        component_types,
+        hard_component_count>;
+    using hard_component_values_type = tuple_prefix_t<
+        component_values_type,
+        hard_component_count>;
+
+    aggregated_solution_manager(InnerSM inner, Aggregator aggregator)
+        : inner_{std::move(inner)}, aggregator_{std::move(aggregator)}
+    {
+    }
+
+    [[nodiscard]] auto base() noexcept -> base_type& { return inner_.base(); }
+    [[nodiscard]] auto base() const noexcept -> const base_type& { return inner_.base(); }
+    [[nodiscard]] auto instance() const noexcept -> const instance_type& { return inner_.instance(); }
+    [[nodiscard]] auto is_valid(const solution_type& solution) const noexcept(noexcept(inner_.is_valid(solution))) -> bool { return inner_.is_valid(solution); }
+
+    [[nodiscard]]
+    auto initial_solution() const noexcept(noexcept(inner_.initial_solution()))
+        -> solution_type
+        requires has_initial_solution<InnerSM>
+    {
+        return inner_.initial_solution();
+    }
+
+    template<class RNG>
+    [[nodiscard]]
+    auto random_solution(RNG& rng) const noexcept(noexcept(inner_.random_solution(rng)))
+        -> solution_type
+        requires has_random_solution<InnerSM, RNG>
+    {
+        return inner_.random_solution(rng);
+    }
+
+    [[nodiscard]]
+    auto evaluate_components(const solution_type& solution) const
+        -> component_values_type
+    {
+        return inner_.evaluate_components(solution);
+    }
+
+    [[nodiscard]]
+    auto evaluate_hard_components(const solution_type& solution) const
+        -> hard_component_values_type
+        requires has_hard_component_projection
+    {
+        return [&]<std::size_t... Indices>(std::index_sequence<Indices...>) {
+            const auto all = inner_.evaluate_components(solution);
+            return hard_component_values_type{std::get<Indices>(all)...};
+        }(std::make_index_sequence<hard_component_count>{});
+    }
+
+    template<std::size_t Index>
+    [[nodiscard]]
+    auto evaluate_component(const solution_type& solution) const
+        -> std::tuple_element_t<Index, component_values_type>
+    {
+        return inner_.template evaluate_component<Index>(solution);
+    }
+
+    template<std::size_t Index>
+    [[nodiscard]]
+    auto evaluate_hard_component(const solution_type& solution) const
+        -> std::tuple_element_t<Index, hard_component_values_type>
+        requires (has_hard_component_projection && Index < hard_component_count)
+    {
+        return inner_.template evaluate_component<Index>(solution);
+    }
+
+    [[nodiscard]]
+    auto aggregate(const component_values_type& values) const -> cost_type
+    {
+        return std::apply(
+            [&](const auto&... value) -> cost_type {
+                return aggregator_(value...);
+            },
+            values);
+    }
+
+    [[nodiscard]]
+    auto aggregate_hard(const hard_component_values_type& values) const
+        requires has_hard_component_projection
+    {
+        return std::apply(
+            [&](const auto&... value) {
+                return aggregator_.hard(value...);
+            },
+            values);
+    }
+
+    [[nodiscard]]
+    auto evaluate(const solution_type& solution) const -> cost_type
+    {
+        return aggregate(evaluate_components(solution));
+    }
+
+    [[nodiscard]]
+    auto aggregator() noexcept -> Aggregator& { return aggregator_; }
+    [[nodiscard]]
+    auto aggregator() const noexcept -> const Aggregator& { return aggregator_; }
+
+private:
+    InnerSM inner_;
+    [[no_unique_address]] Aggregator aggregator_;
+};
+
+template<class SMSpec, class AggregatorSpec>
+class solution_manager_with_aggregator_recipe
+{
+public:
+    using inner_spec_type = SMSpec;
+    using aggregator_spec_type = AggregatorSpec;
+    using aggregator_type = typename AggregatorSpec::aggregator_type;
+    using service_type = aggregated_solution_manager<
+        typename SMSpec::component_service_type,
+        aggregator_type>;
+
+    solution_manager_with_aggregator_recipe(
+        SMSpec inner,
+        AggregatorSpec aggregator)
+        : inner_{std::move(inner)}, aggregator_{std::move(aggregator)}
+    {
+    }
+
+    template<class Dependency>
+    static constexpr bool constructible_from =
+        SMSpec::template constructible_from<Dependency>;
+
+    template<class Dependency>
+    [[nodiscard]]
+    auto construct(Dependency& dependency) const -> service_type
+    {
+        return service_type{
+            inner_.construct_components(dependency),
+            aggregator_.get()};
+    }
+
+    [[nodiscard]]
+    auto configuration()
+        requires config::configuration_provider<aggregator_type>
+    {
+        return aggregator_.get().configuration();
+    }
+
+    [[nodiscard]]
+    auto configuration() const
+        requires config::configuration_provider<const aggregator_type>
+    {
+        return aggregator_.get().configuration();
+    }
+
+private:
+    SMSpec inner_;
+    AggregatorSpec aggregator_;
+};
+
 template<class BaseSM, class Instance, class Tuple>
 struct base_solution_manager_constructible;
 
@@ -497,6 +851,9 @@ class solution_manager_recipe
 public:
     using base_type = BaseSM;
     using service_type = solution_manager_service_t<BaseSM, ComponentSpecs...>;
+    using component_service_type = component_solution_manager<
+        BaseSM,
+        ComponentSpecs...>;
     using component_types = std::tuple<typename ComponentSpecs::component_type...>;
 
     static_assert(
@@ -569,20 +926,78 @@ public:
         };
     }
 
+    template<class Aggregator>
+    [[nodiscard]]
+    auto with_aggregator(Aggregator aggregator) const &
+    {
+        using spec_type = aggregator_spec<std::remove_cvref_t<Aggregator>>;
+        return solution_manager_with_aggregator_recipe<
+            solution_manager_recipe,
+            spec_type>{
+                *this,
+                spec_type{std::move(aggregator)},
+            };
+    }
+
+    template<class Aggregator>
+    [[nodiscard]]
+    auto with_aggregator(Aggregator aggregator) &&
+    {
+        using spec_type = aggregator_spec<std::remove_cvref_t<Aggregator>>;
+        return solution_manager_with_aggregator_recipe<
+            solution_manager_recipe,
+            spec_type>{
+                std::move(*this),
+                spec_type{std::move(aggregator)},
+            };
+    }
+
     template<class Dependency>
     static constexpr bool constructible_from =
         std::same_as<
             std::remove_cvref_t<Dependency>,
-            typename BaseSM::instance_type> &&
-        base_solution_manager_constructible_v<
-            BaseSM,
-            typename BaseSM::instance_type,
-            BaseArgsTuple>;
+            typename BaseSM::instance_type>;
+
+    [[nodiscard]]
+    auto construct_components(const typename BaseSM::instance_type& instance) const
+        -> component_service_type
+    {
+        static_assert(
+            sizeof...(ComponentSpecs) > 0,
+            "an explicit aggregator requires at least one cost component");
+        static_assert(
+            base_solution_manager_constructible_v<
+                BaseSM,
+                typename BaseSM::instance_type,
+                BaseArgsTuple>,
+            "a SolutionManager derived from solution_manager_base must inherit "
+            "the base constructors; did you forget `using solution_manager_base::solution_manager_base;`?");
+
+        auto base = std::apply(
+            [&](const auto&... args) {
+                return BaseSM{instance, args...};
+            },
+            base_args_);
+
+        return std::apply(
+            [&](const auto&... specs) {
+                return component_service_type{std::move(base), specs...};
+            },
+            component_specs_);
+    }
 
     [[nodiscard]]
     auto construct(const typename BaseSM::instance_type& instance) const
         -> service_type
     {
+        static_assert(
+            base_solution_manager_constructible_v<
+                BaseSM,
+                typename BaseSM::instance_type,
+                BaseArgsTuple>,
+            "a SolutionManager derived from solution_manager_base must inherit "
+            "the base constructors; did you forget `using solution_manager_base::solution_manager_base;`?");
+
         auto base = std::apply(
             [&](const auto&... args) {
                 return BaseSM{instance, args...};
@@ -787,27 +1202,111 @@ public:
                     }
                     else
                     {
+                        if constexpr (sizeof...(args) == 0)
+                        {
+                            if constexpr (requires { typename BaseNHE::solution_manager_type; })
+                            {
+                                if constexpr (std::same_as<
+                                    std::remove_cvref_t<decltype(dependency.base())>,
+                                    typename BaseNHE::solution_manager_type>)
+                                {
+                                    static_assert(
+                                        std::constructible_from<
+                                            BaseNHE,
+                                            decltype(dependency.base())>,
+                                        "a NeighborhoodExplorer derived from neighborhood_explorer_base "
+                                        "must inherit the base constructors; did you forget "
+                                        "`using neighborhood_explorer_base::neighborhood_explorer_base;`?");
+                                }
+                                else
+                                {
+                                    static_assert(
+                                        std::constructible_from<
+                                            BaseNHE,
+                                            Dependency&,
+                                            const decltype(args)&...>,
+                                        "a NeighborhoodExplorer must be constructible from "
+                                        "the configured SolutionManager (or its base) followed "
+                                        "by its recipe arguments");
+                                }
+                            }
+                            else
+                            {
+                                static_assert(
+                                    std::constructible_from<
+                                        BaseNHE,
+                                        Dependency&,
+                                        const decltype(args)&...>,
+                                    "a NeighborhoodExplorer must be constructible from "
+                                    "the configured SolutionManager (or its base) followed "
+                                    "by its recipe arguments");
+                            }
+                        }
+                        else
+                        {
+                            static_assert(
+                                std::constructible_from<
+                                    BaseNHE,
+                                    Dependency&,
+                                    const decltype(args)&...>,
+                                "a NeighborhoodExplorer must be constructible from "
+                                "the configured SolutionManager (or its base) followed "
+                                "by its recipe arguments");
+                        }
+                        return BaseNHE{dependency, args...};
+                    }
+                }
+                else
+                {
+                    if constexpr (sizeof...(args) == 0)
+                    {
+                        if constexpr (requires { typename BaseNHE::solution_manager_type; })
+                        {
+                            if constexpr (std::same_as<
+                                std::remove_cvref_t<Dependency>,
+                                typename BaseNHE::solution_manager_type>)
+                            {
+                                static_assert(
+                                    std::constructible_from<BaseNHE, Dependency&>,
+                                    "a NeighborhoodExplorer derived from neighborhood_explorer_base "
+                                    "must inherit the base constructors; did you forget "
+                                    "`using neighborhood_explorer_base::neighborhood_explorer_base;`?");
+                            }
+                            else
+                            {
+                                static_assert(
+                                    std::constructible_from<
+                                        BaseNHE,
+                                        Dependency&,
+                                        const decltype(args)&...>,
+                                    "a NeighborhoodExplorer must be constructible from "
+                                    "the configured SolutionManager followed by its recipe "
+                                    "arguments");
+                            }
+                        }
+                        else
+                        {
+                            static_assert(
+                                std::constructible_from<
+                                    BaseNHE,
+                                    Dependency&,
+                                    const decltype(args)&...>,
+                                "a NeighborhoodExplorer must be constructible from "
+                                "the configured SolutionManager followed by its recipe "
+                                "arguments");
+                        }
+                    }
+                    else
+                    {
                         static_assert(
                             std::constructible_from<
                                 BaseNHE,
                                 Dependency&,
                                 const decltype(args)&...>,
                             "a NeighborhoodExplorer must be constructible from "
-                            "the configured SolutionManager (or its base) followed "
-                            "by its recipe arguments");
-                        return BaseNHE{dependency, args...};
+                            "the configured SolutionManager followed by its recipe "
+                            "arguments");
                     }
-                }
-                else
-                {
-                    static_assert(
-                        std::constructible_from<
-                            BaseNHE,
-                            Dependency&,
-                            const decltype(args)&...>,
-                        "a NeighborhoodExplorer must be constructible from "
-                        "the configured SolutionManager followed by its recipe "
-                        "arguments");
                     return BaseNHE{dependency, args...};
                 }
             },
@@ -863,6 +1362,22 @@ auto operator|(
                 std::forward<StoredArgs>(args)...);
         },
         std::move(spec).args());
+}
+
+template<
+    class BaseSM,
+    class BaseArgsTuple,
+    class... ComponentSpecs,
+    class Aggregator>
+[[nodiscard]]
+auto operator|(
+    solution_manager_recipe<
+        BaseSM,
+        BaseArgsTuple,
+        ComponentSpecs...> recipe,
+    aggregator_spec<Aggregator> spec)
+{
+    return std::move(recipe).with_aggregator(std::move(spec).get());
 }
 
 template<

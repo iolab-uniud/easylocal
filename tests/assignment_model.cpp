@@ -2,6 +2,7 @@
 #include "neighborhood_explorer.hpp"
 #include "solution_manager.hpp"
 
+#include <easylocal/cursor_moves.hpp>
 #include <easylocal/aggregation.hpp>
 #include <easylocal/runner.hpp>
 
@@ -107,7 +108,7 @@ int main()
 
     const auto before = capacity_component.evaluate(initial);
 
-    for (const auto move : neighborhood.moves(initial))
+    for (const auto move : easylocal::moves(neighborhood, initial))
     {
         AssignmentSolution candidate = initial;
         neighborhood.make_move(candidate, move);

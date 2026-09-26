@@ -32,8 +32,6 @@ struct TimeslotLoadValue
 class StudentConflictComponent
 {
 public:
-    using value_type = StudentConflictValue;
-
     explicit StudentConflictComponent(
         const ExamTimetablingInstance& instance) noexcept
         : instance_{instance}
@@ -41,7 +39,7 @@ public:
     }
 
     [[nodiscard]]
-    auto evaluate(const ExamTimetable& solution) const -> value_type
+    auto evaluate(const ExamTimetable& solution) const -> StudentConflictValue
     {
         assert(solution.timeslot_by_exam.size() == instance_.exam_count);
         penalty_type penalty = 0;
@@ -65,8 +63,6 @@ private:
 class ConsecutiveExamComponent
 {
 public:
-    using value_type = ConsecutiveExamValue;
-
     explicit ConsecutiveExamComponent(
         const ExamTimetablingInstance& instance) noexcept
         : instance_{instance}
@@ -74,7 +70,7 @@ public:
     }
 
     [[nodiscard]]
-    auto evaluate(const ExamTimetable& solution) const -> value_type
+    auto evaluate(const ExamTimetable& solution) const -> ConsecutiveExamValue
     {
         assert(solution.timeslot_by_exam.size() == instance_.exam_count);
         penalty_type penalty = 0;
@@ -101,8 +97,6 @@ private:
 class TimeslotLoadComponent
 {
 public:
-    using value_type = TimeslotLoadValue;
-
     explicit TimeslotLoadComponent(
         const ExamTimetablingInstance& instance) noexcept
         : instance_{instance}
@@ -110,7 +104,7 @@ public:
     }
 
     [[nodiscard]]
-    auto evaluate(const ExamTimetable& solution) const -> value_type
+    auto evaluate(const ExamTimetable& solution) const -> TimeslotLoadValue
     {
         assert(solution.timeslot_by_exam.size() == instance_.exam_count);
         std::vector<penalty_type> load(instance_.timeslot_count, 0);

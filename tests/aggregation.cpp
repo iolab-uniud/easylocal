@@ -1,5 +1,6 @@
 #include <easylocal/aggregation.hpp>
 
+#include <array>
 #include <compare>
 #include <concepts>
 #include <cmath>
@@ -98,6 +99,11 @@ int main()
     ok &= expect(
         weighted(4, 5) == 23,
         "weighted-sum aggregation combines materialized terms");
+
+    constexpr aggregation::weighted_sum_with_hard_penalty penalized{
+        1000,
+        std::array{10, 1}};
+    static_assert(penalized(2, 3, 4) == 2034);
 
     constexpr aggregation::weighted_sum mixed_weights{2, 0.5};
     ok &= expect(

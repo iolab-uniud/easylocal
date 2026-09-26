@@ -1,3 +1,4 @@
+#include <easylocal/aggregation.hpp>
 #include <easylocal/config/overrides.hpp>
 #include <easylocal/neighborhood_union.hpp>
 #include <easylocal/search/simulated_annealing.hpp>
@@ -295,6 +296,23 @@ void diagnostics_accumulate_across_independent_failures()
     assert((neighborhood.random_biases == std::array{1.0, 1.0}));
 }
 
+
+void built_in_aggregator_weights_are_runtime_configurable()
+{
+    auto aggregate = easylocal::aggregation::weighted_sum{1, 10, 100};
+    const auto tree = easylocal::config::root(aggregate.configuration());
+
+    constexpr std::array overrides{
+        text_override{"cost.weights", "[2, 20, 200]"},
+    };
+
+    const auto result = apply_overrides(tree, overrides);
+    assert(result);
+    assert(result.applied_parameter_blocks == 1);
+    assert((aggregate.parameters().weights == std::array{2, 20, 200}));
+    assert(aggregate(1, 1, 1) == 222);
+}
+
 void const_parameter_nodes_are_reported_as_read_only()
 {
     const AppParameters app{};
@@ -326,5 +344,6 @@ int main()
     unbracketed_fixed_arrays_are_supported();
     parameter_group_local_values_can_be_overridden();
     diagnostics_accumulate_across_independent_failures();
+    built_in_aggregator_weights_are_runtime_configurable();
     const_parameter_nodes_are_reported_as_read_only();
 }

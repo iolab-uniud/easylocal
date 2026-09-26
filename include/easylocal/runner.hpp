@@ -2,6 +2,7 @@
 
 #include <easylocal/aggregation.hpp>
 #include <easylocal/config/tree.hpp>
+#include <easylocal/cursor_moves.hpp>
 #include <easylocal/detail/cost_semantics.hpp>
 #include <easylocal/detail/evaluation.hpp>
 #include <easylocal/detail/neighborhood_concepts.hpp>
@@ -89,6 +90,13 @@ struct is_solution_manager_spec<
 template<class BaseSM, class BaseArgsTuple, class... ComponentSpecs>
 struct is_solution_manager_spec<
     solution_manager_recipe<BaseSM, BaseArgsTuple, ComponentSpecs...>>
+    : std::true_type
+{
+};
+
+template<class SMSpec, class AggregatorSpec>
+struct is_solution_manager_spec<
+    solution_manager_with_aggregator_recipe<SMSpec, AggregatorSpec>>
     : std::true_type
 {
 };
@@ -378,7 +386,7 @@ concept enumerable_runner_neighborhood_explorer =
         const typename SM::solution_type& solution)
     {
         {
-            neighborhood.moves(solution)
+            easylocal::moves(neighborhood, solution)
         } -> move_input_range_for<typename NHE::move_type>;
     };
 
@@ -907,6 +915,14 @@ auto component(Args&&... args)
     return detail::component_spec<
         Component,
         std::decay_t<Args>...>{std::forward<Args>(args)...};
+}
+
+template<class Aggregator>
+[[nodiscard]]
+auto aggregator(Aggregator&& value)
+{
+    return detail::aggregator_spec<std::remove_cvref_t<Aggregator>>{
+        std::forward<Aggregator>(value)};
 }
 
 template<class NHE, class... Args>

@@ -57,15 +57,13 @@ inline auto overload(
 class CapacityCostComponent
 {
 public:
-    using value_type = CapacityValue;
-
     explicit CapacityCostComponent(const AssignmentInstance& instance) noexcept
         : instance_{instance}
     {
     }
 
     [[nodiscard]]
-    auto evaluate(const AssignmentSolution& solution) const -> value_type
+    auto evaluate(const AssignmentSolution& solution) const -> CapacityValue
     {
         assert(solution.assignment.size() == instance_.demand.size());
 
@@ -79,7 +77,7 @@ public:
             load[solution.assignment[job]] += instance_.demand[job];
         }
 
-        value_type value{};
+        CapacityValue value{};
 
         for (std::size_t machine = 0; machine < load.size(); ++machine)
         {
@@ -100,15 +98,13 @@ private:
 class LoadImbalanceCostComponent
 {
 public:
-    using value_type = std::int64_t;
-
     explicit LoadImbalanceCostComponent(const AssignmentInstance& instance) noexcept
         : instance_{instance}
     {
     }
 
     [[nodiscard]]
-    auto evaluate(const AssignmentSolution& solution) const -> value_type
+    auto evaluate(const AssignmentSolution& solution) const -> std::int64_t
     {
         assert(solution.assignment.size() == instance_.demand.size());
 
@@ -128,7 +124,7 @@ public:
         }
 
         const auto [minimum, maximum] = std::minmax_element(load.begin(), load.end());
-        return static_cast<value_type>(*maximum - *minimum);
+        return static_cast<std::int64_t>(*maximum - *minimum);
     }
 
 private:

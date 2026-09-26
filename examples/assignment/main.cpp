@@ -109,6 +109,7 @@ void print_solution(const AssignmentSolution& solution)
 int main(int argc, char* argv[])
 {
     using namespace easylocal::mwe::assignment;
+    using easylocal::aggregator;
     using easylocal::component;
     using easylocal::delta;
     using easylocal::make_runner;
@@ -130,11 +131,17 @@ int main(int argc, char* argv[])
         require_valid(app_parameters);
         require_valid(search_parameters);
 
+        // Equivalent fluent spelling for the SolutionManager recipe:
+        // auto sm = solution_manager<AssignmentSolutionManager>()
+        //     .with_component<CapacityCostComponent>()
+        //     .with_component<LoadImbalanceCostComponent>()
+        //     .with_aggregator(AssignmentCostAggregator{});
         auto runner =
             make_runner<easylocal::runner::first_improvement>(search_parameters)
             | (solution_manager<AssignmentSolutionManager>()
                | component<CapacityCostComponent>()
-               | component<LoadImbalanceCostComponent>())
+               | component<LoadImbalanceCostComponent>()
+               | aggregator(AssignmentCostAggregator{}))
             | (neighborhood<ReassignJobNeighborhoodExplorer>()
                | delta<
                      CapacityCostComponent,

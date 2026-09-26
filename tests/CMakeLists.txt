@@ -771,6 +771,18 @@ easylocal_add_compile_failure_test(
     "ComponentA"
 )
 easylocal_add_compile_failure_test(
+    missing-solution-manager-inherited-constructor
+    missing_solution_manager_inherited_constructor.cpp
+    "did you forget `using solution_manager_base::solution_manager_base;`?"
+    "BrokenSolutionManager"
+)
+easylocal_add_compile_failure_test(
+    missing-neighborhood-inherited-constructor
+    missing_neighborhood_inherited_constructor.cpp
+    "did you forget `using neighborhood_explorer_base::neighborhood_explorer_base;`?"
+    "BrokenNeighborhood"
+)
+easylocal_add_compile_failure_test(
     duplicate-delta
     duplicate_delta.cpp
     "a neighborhood recipe may attach at most one delta evaluator to each component type"

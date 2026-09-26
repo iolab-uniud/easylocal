@@ -19,15 +19,13 @@ struct TourLengthValue
 class TourLengthComponent
 {
 public:
-    using value_type = TourLengthValue;
-
     explicit TourLengthComponent(const TspInstance& instance) noexcept
         : instance_{instance}
     {
     }
 
     [[nodiscard]]
-    auto evaluate(const Tour& solution) const -> value_type
+    auto evaluate(const Tour& solution) const -> TourLengthValue
     {
         assert(solution.tour.size() == instance_.city_count);
 

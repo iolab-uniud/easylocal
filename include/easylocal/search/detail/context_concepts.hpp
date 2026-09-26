@@ -1,5 +1,7 @@
 #pragma once
 
+#include <easylocal/cursor_moves.hpp>
+
 #include <easylocal/detail/neighborhood_concepts.hpp>
 
 #include <concepts>
@@ -78,7 +80,7 @@ concept neighborhood_moves_context =
         const typename Context::solution_type& solution)
     {
         {
-            context.neighborhood_explorer().moves(solution)
+            easylocal::moves(context.neighborhood_explorer(), solution)
         } -> easylocal::detail::move_input_range_for<
             typename Context::neighborhood_explorer_type::move_type>;
     };

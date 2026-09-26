@@ -61,7 +61,7 @@ public:
     [[nodiscard]]
     constexpr auto aggregate(const CapacityValue& capacity) const -> HardCost
     {
-        return AssignmentHardCostAggregator{}(capacity);
+        return AssignmentCostAggregator{}.hard(capacity);
     }
 
     [[nodiscard]]

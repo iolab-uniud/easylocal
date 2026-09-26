@@ -1,3 +1,4 @@
+#include <easylocal/cursor_moves.hpp>
 #include "neighborhood_explorer.hpp"
 #include "solution.hpp"
 #include "solution_manager.hpp"
@@ -121,7 +122,7 @@ int main()
     bool observed_exact_delta_mismatch = false;
     std::size_t checked_moves = 0;
 
-    for (const auto candidate_move : drift_neighborhood.moves(solution))
+    for (const auto candidate_move : easylocal::moves(drift_neighborhood, solution))
     {
         Tour candidate = solution;
         drift_neighborhood.make_move(candidate, candidate_move);

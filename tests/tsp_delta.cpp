@@ -1,3 +1,4 @@
+#include <easylocal/cursor_moves.hpp>
 #include "neighborhood_explorer.hpp"
 #include "solution.hpp"
 #include "solution_manager.hpp"
@@ -50,7 +51,7 @@ int main()
 
     const auto current = component.evaluate(solution);
 
-    for (const auto move : neighborhood.moves(solution))
+    for (const auto move : easylocal::moves(neighborhood, solution))
     {
         Tour candidate = solution;
         neighborhood.make_move(candidate, move);

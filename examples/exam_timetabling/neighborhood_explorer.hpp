@@ -3,7 +3,6 @@
 #include "move.hpp"
 #include "solution_manager.hpp"
 
-#include <easylocal/cursor_moves.hpp>
 #include <easylocal/service_base.hpp>
 
 #include <cassert>
@@ -31,13 +30,6 @@ public:
                move.exam < solution.timeslot_by_exam.size() &&
                move.destination < instance().timeslot_count &&
                solution.timeslot_by_exam[move.exam] != move.destination;
-    }
-
-    [[nodiscard]]
-    auto moves(const ExamTimetable& solution) const
-    {
-        assert(solution_manager_.is_valid(solution));
-        return easylocal::cursor_moves(*this, solution);
     }
 
     [[nodiscard]]

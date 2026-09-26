@@ -4,10 +4,13 @@
 #include "solution_manager.hpp"
 
 #include <easylocal/aggregation.hpp>
+#include <easylocal/config/overrides.hpp>
+#include <easylocal/config/tree.hpp>
 #include <easylocal/detail/evaluation.hpp>
 #include <easylocal/detail/service_composition.hpp>
 #include <easylocal/runner.hpp>
 
+#include <array>
 #include <concepts>
 #include <cstddef>
 #include <cstdint>
@@ -62,6 +65,21 @@ public:
 
 private:
     std::reference_wrapper<int> evaluation_count_;
+};
+
+
+class NoAggregateSolutionManager
+    : public easylocal::solution_manager_base<
+          AssignmentInstance,
+          AssignmentSolution>
+{
+public:
+    using solution_manager_base::solution_manager_base;
+
+    [[nodiscard]] auto is_valid(const AssignmentSolution& solution) const noexcept -> bool
+    {
+        return solution.assignment.size() == instance_.demand.size();
+    }
 };
 
 class AssignmentCardinalityDeltaEvaluator
@@ -198,6 +216,7 @@ auto expect(const bool condition, const std::string_view description) -> bool
 int main()
 {
     using easylocal::Runner;
+    using easylocal::aggregator;
     using easylocal::component;
     using easylocal::delta;
     using easylocal::neighborhood;
@@ -265,6 +284,16 @@ int main()
         VariantASpec,
         VariantBSpec>);
     static_assert(!std::same_as<CapacityVariantA, CapacityVariantB>);
+
+    using FluentAggregatedRecipe = decltype(
+        solution_manager<NoAggregateSolutionManager>()
+            .with_component<AssignmentCardinalityComponent>()
+            .with_aggregator(easylocal::aggregation::weighted_sum{3}));
+    using PipedAggregatedRecipe = decltype(
+        solution_manager<NoAggregateSolutionManager>()
+        | component<AssignmentCardinalityComponent>()
+        | aggregator(easylocal::aggregation::weighted_sum{3}));
+    static_assert(std::same_as<FluentAggregatedRecipe, PipedAggregatedRecipe>);
 
     const auto two_capacity_recipe =
         solution_manager<TwoCapacitySolutionManager>()
@@ -342,6 +371,31 @@ int main()
         .job = 1,
         .destination = 1,
     };
+
+    auto no_aggregate_recipe =
+        solution_manager<NoAggregateSolutionManager>()
+        | component<AssignmentCardinalityComponent>()
+        | aggregator(easylocal::aggregation::weighted_sum{3});
+    const auto aggregation_configuration = easylocal::config::root(
+        easylocal::config::named<"solver">(
+            no_aggregate_recipe.configuration()));
+    constexpr std::array aggregation_override{
+        easylocal::config::text_override{
+            "solver.cost.weights",
+            "[4]"},
+    };
+    const auto aggregation_override_result =
+        easylocal::config::apply_overrides(
+            aggregation_configuration,
+            aggregation_override);
+    ok &= expect(
+        static_cast<bool>(aggregation_override_result),
+        "aggregator parameters are exposed through the SolutionManager recipe configuration");
+
+    const auto no_aggregate_manager = no_aggregate_recipe.construct(instance);
+    ok &= expect(
+        no_aggregate_manager.evaluate(initial) == 12,
+        "configured explicit aggregation is materialized without SM::aggregate");
 
     const auto two_capacity_manager = two_capacity_recipe.construct(instance);
     const auto two_capacity_cost = two_capacity_manager.evaluate(initial);

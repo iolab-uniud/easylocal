@@ -66,7 +66,7 @@ public:
             std::optional<candidate_type> best_candidate;
             auto best_cost = current.cost();
 
-            for (const auto move : neighborhood.moves(solution))
+            for (const auto move : easylocal::moves(neighborhood, solution))
             {
                 if (evaluations == parameters_.max_evaluations)
                 {

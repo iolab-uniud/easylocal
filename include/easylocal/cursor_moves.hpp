@@ -35,6 +35,27 @@ concept cursor_neighborhood =
         } -> std::same_as<bool>;
     };
 
+
+template<class Explorer>
+concept native_moves_neighborhood =
+    requires(
+        const Explorer& explorer,
+        const typename Explorer::solution_type& solution)
+    {
+        typename Explorer::solution_type;
+        typename Explorer::move_type;
+        {
+            explorer.moves(solution)
+        } -> std::ranges::input_range;
+        requires std::same_as<
+            std::ranges::range_value_t<decltype(explorer.moves(solution))>,
+            typename Explorer::move_type>;
+    };
+
+template<class Explorer>
+inline constexpr bool has_ambiguous_moves_interface_v =
+    cursor_neighborhood<Explorer> && native_moves_neighborhood<Explorer>;
+
 #if defined(NDEBUG) && (defined(__GNUC__) || defined(__clang__))
 #define EASYLOCAL_DETAIL_CURSOR_FORCE_INLINE inline __attribute__((always_inline))
 #else
@@ -174,6 +195,28 @@ inline auto cursor_moves(
     -> detail::cursor_moves_view<Explorer>
 {
     return detail::cursor_moves_view<Explorer>{explorer, solution};
+}
+
+
+// Unified neighborhood-enumeration customization point. EL3-style cursor
+// neighborhoods are preferred when both protocols are present; otherwise a
+// native moves(solution) input range is used directly.
+template<class Explorer>
+    requires detail::cursor_neighborhood<Explorer> ||
+             detail::native_moves_neighborhood<Explorer>
+[[nodiscard]]
+inline auto moves(
+    const Explorer& explorer,
+    const typename Explorer::solution_type& solution)
+{
+    if constexpr (detail::cursor_neighborhood<Explorer>)
+    {
+        return cursor_moves(explorer, solution);
+    }
+    else
+    {
+        return explorer.moves(solution);
+    }
 }
 
 } // namespace easylocal

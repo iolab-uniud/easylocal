@@ -130,12 +130,14 @@ The framework provides three reusable aggregation categories:
 - `aggregation::lexicographic`;
 - `aggregation::hierarchical`.
 
-`AssignmentHardCostAggregator` maps the structured capacity value to the
-lexicographic `HardCost`. `AssignmentCostAggregator` then combines that branch
-with `LoadImbalanceCostComponent` through the framework `hierarchical`
-aggregator. The two branches remain independently typed and may themselves be
-aggregate or lexicographic costs. Domain-specific projection remains explicit;
-no projection DSL is introduced.
+`AssignmentCostAggregator` maps the structured capacity value to the
+lexicographic `HardCost` through its optional `hard(...)` projection and combines
+that branch with `LoadImbalanceCostComponent` into the full `hierarchical` cost.
+The aggregator is attached explicitly to the SolutionManager recipe; the
+SolutionManager itself does not define the modern aggregation contract. The two
+branches remain independently typed and may themselves be aggregate or
+lexicographic costs. Domain-specific projection remains explicit; no projection
+DSL is introduced.
 
 The generic aggregators are part of the public framework API in
 `<easylocal/aggregation.hpp>` under `easylocal::aggregation`. The Assignment
@@ -243,13 +245,15 @@ public recipe composition surface.
 Deterministic traversal is lazy:
 
 ```cpp
-auto candidates = neighborhood.moves(solution);
+auto candidates = easylocal::moves(neighborhood, solution);
 ```
 
 The deterministic neighborhood is authored through the incremental
-`first_move`/`next_move` cursor protocol and adapted to an `input_range` by
-`easylocal::cursor_moves`. It is not implicitly materialized into a container,
-and deterministic authoring does not require ordinal indexing.
+`first_move`/`next_move` cursor protocol. The framework customization point
+`easylocal::moves(neighborhood, solution)` adapts that protocol to an
+`input_range`; a neighborhood may alternatively provide a native `moves()`
+range/generator. If both protocols are present, cursor traversal has precedence.
+No candidate container is materialized.
 
 Random proposals are a separate capability from deterministic traversal:
 
