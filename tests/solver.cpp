@@ -77,6 +77,7 @@ public:
     using move_type = Move;
     explicit EmptyNeighborhood(const SM& sm) : instance_{sm.instance()} {}
     auto instance() const -> const instance_type& { return instance_; }
+    [[nodiscard]] static auto is_valid(const solution_type&, const move_type&) noexcept -> bool { return true; }
     static void make_move(solution_type&, const move_type&) {}
 private:
     const instance_type& instance_;

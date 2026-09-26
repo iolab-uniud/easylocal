@@ -108,6 +108,8 @@ public:
         return std::views::single(move_);
     }
 
+    [[nodiscard]] static auto is_valid(const AssignmentSolution&, const ReassignJobMove&) noexcept -> bool { return true; }
+
     void make_move(AssignmentSolution& solution, const ReassignJobMove& move) const noexcept
     {
         ++make_move_count_.get();
@@ -145,6 +147,11 @@ public:
     auto moves(const AssignmentSolution& solution) const
     {
         return easylocal::moves(inner_, solution);
+    }
+
+    [[nodiscard]] auto is_valid(const AssignmentSolution& solution, const ReassignJobMove& move) const noexcept -> bool
+    {
+        return inner_.is_valid(solution, move);
     }
 
     void make_move(AssignmentSolution& solution, const ReassignJobMove& move) const noexcept

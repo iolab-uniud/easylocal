@@ -67,8 +67,7 @@ public:
         const Tour& solution,
         const SwapCitiesMove& move) const noexcept -> bool
     {
-        return solution_manager_.is_valid(solution) &&
-               move.first_position < move.second_position &&
+        return move.first_position < move.second_position &&
                move.second_position < solution.tour.size();
     }
 

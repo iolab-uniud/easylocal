@@ -371,28 +371,7 @@ concept runner_solution_manager =
 template<class NHE, class SM>
 concept runner_neighborhood_explorer =
     runner_solution_manager<SM> &&
-    requires(
-        const NHE& neighborhood,
-        typename SM::solution_type& candidate,
-        const typename NHE::move_type& move)
-    {
-        typename NHE::instance_type;
-        typename NHE::solution_type;
-        typename NHE::move_type;
-
-        requires std::same_as<
-            typename NHE::instance_type,
-            typename SM::instance_type>;
-        requires std::same_as<
-            typename NHE::solution_type,
-            typename SM::solution_type>;
-
-        {
-            neighborhood.instance()
-        } -> std::same_as<const typename NHE::instance_type&>;
-
-        { neighborhood.make_move(candidate, move) } -> std::same_as<void>;
-    };
+    easylocal::neighborhood_explorer_for<NHE, SM>;
 
 template<class NHE, class SM>
 concept enumerable_runner_neighborhood_explorer =
@@ -403,7 +382,7 @@ concept enumerable_runner_neighborhood_explorer =
     {
         {
             easylocal::moves(neighborhood, solution)
-        } -> move_input_range_for<typename NHE::move_type>;
+        } -> easylocal::move_input_range_for<typename NHE::move_type>;
     };
 
 template<class Spec>

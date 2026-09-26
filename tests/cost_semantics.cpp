@@ -227,6 +227,8 @@ public:
     }
 
 
+    [[nodiscard]] static constexpr auto is_valid(const Solution&, const Move&) noexcept -> bool { return true; }
+
     static constexpr void make_move(
         Solution& solution,
         const Move& move) noexcept

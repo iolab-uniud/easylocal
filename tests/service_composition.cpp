@@ -227,6 +227,8 @@ public:
         return std::views::single(move_);
     }
 
+    [[nodiscard]] static auto is_valid(const AssignmentSolution&, const ReassignJobMove&) noexcept -> bool { return true; }
+
     void make_move(AssignmentSolution& solution, const ReassignJobMove& move) const noexcept
     {
         ++make_move_count_.get();

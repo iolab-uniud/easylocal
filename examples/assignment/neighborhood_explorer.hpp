@@ -26,11 +26,6 @@ public:
         const AssignmentSolution& solution,
         const ReassignJobMove& move) const noexcept -> bool
     {
-        if (!solution_manager_.is_valid(solution))
-        {
-            return false;
-        }
-
         const auto& instance = solution_manager_.instance();
 
         return move.job < solution.assignment.size() &&

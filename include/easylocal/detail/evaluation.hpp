@@ -487,6 +487,8 @@ public:
     [[nodiscard]]
     auto evaluate(const solution_type& solution) const -> evaluation_type
     {
+        assert(solution_manager_.is_valid(solution));
+
         if constexpr (component_aware)
         {
             auto component_values =
@@ -513,10 +515,14 @@ public:
         const evaluation_type& current,
         const move_type& move) const -> candidate_type
     {
+        assert(solution_manager_.is_valid(current_solution));
+        assert(neighborhood_.is_valid(current_solution, move));
+
         if constexpr (needs_materialized_candidate())
         {
             auto candidate_solution = current_solution;
             neighborhood_.make_move(candidate_solution, move);
+            assert(solution_manager_.is_valid(candidate_solution));
 
             if constexpr (component_aware)
             {
@@ -585,9 +591,12 @@ public:
         }
         else
         {
+            assert(solution_manager_.is_valid(solution));
+            assert(neighborhood_.is_valid(solution, candidate.move()));
             neighborhood_.make_move(solution, candidate.move());
         }
 
+        assert(solution_manager_.is_valid(solution));
         current = std::move(candidate.evaluation());
     }
 

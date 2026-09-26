@@ -147,7 +147,7 @@ public:
                     return value_type{
                         std::in_place_index<index>,
                         child_move_type{
-                            static_cast<move_type>(*tagged.current),
+                            move_type{*tagged.current},
                         },
                     };
                 },
@@ -258,18 +258,6 @@ private:
 
     ranges_type ranges_;
 };
-
-template<class Explorer, class Solution, class RNG>
-concept random_move_neighborhood =
-    requires(
-        const Explorer& explorer,
-        const Solution& solution,
-        RNG& rng)
-    {
-        {
-            explorer.random_move(solution, rng)
-        } -> std::same_as<std::optional<typename Explorer::move_type>>;
-    };
 
 template<class Bindings>
 struct delta_binding_component_types;
@@ -389,12 +377,37 @@ auto valid_random_biases(const std::array<double, Count>& biases) noexcept
     return true;
 }
 
+template<class Explorer, class = void>
+struct logical_neighborhood_type
+{
+    using type = Explorer;
+};
+
+template<class Explorer>
+struct logical_neighborhood_type<
+    Explorer,
+    std::void_t<typename Explorer::base_type>>
+{
+    using type = std::conditional_t<
+        std::derived_from<Explorer, typename Explorer::base_type>,
+        typename Explorer::base_type,
+        Explorer>;
+};
+
+template<class Explorer>
+using logical_neighborhood_type_t =
+    typename logical_neighborhood_type<Explorer>::type;
+
 template<class... Explorers>
 class neighborhood_union_explorer
 {
     static_assert(
         sizeof...(Explorers) >= 2,
         "a neighborhood union requires at least two NeighborhoodExplorers");
+    static_assert(
+        unique_types_v<logical_neighborhood_type_t<Explorers>...>,
+        "a neighborhood union cannot contain the same NeighborhoodExplorer "
+        "type more than once");
 
 private:
     static constexpr std::size_t child_count = sizeof...(Explorers);
@@ -489,8 +502,8 @@ private:
         {
             if (selected == Index)
             {
-                auto child_move =
-                    std::get<Index>(explorers_).random_move(solution, rng);
+                auto child_move = easylocal::random_move(
+                    std::get<Index>(explorers_), solution, rng);
 
                 if (!child_move)
                 {
@@ -566,8 +579,66 @@ public:
         return std::get<0>(explorers_).instance();
     }
 
+    template<std::size_t Index>
+        requires (Index < child_count)
+    [[nodiscard]]
+    auto child() noexcept -> std::tuple_element_t<Index, explorer_tuple>&
+    {
+        return std::get<Index>(explorers_);
+    }
+
+    template<std::size_t Index>
+        requires (Index < child_count)
+    [[nodiscard]]
+    auto child() const noexcept -> const std::tuple_element_t<Index, explorer_tuple>&
+    {
+        return std::get<Index>(explorers_);
+    }
+
+    template<class Neighborhood>
+        requires tuple_contains_type_v<
+            Neighborhood,
+            std::tuple<logical_neighborhood_type_t<Explorers>...>>
+    [[nodiscard]]
+    auto child() noexcept -> decltype(auto)
+    {
+        constexpr auto index = tuple_type_index_v<
+            Neighborhood,
+            std::tuple<logical_neighborhood_type_t<Explorers>...>>;
+        return std::get<index>(explorers_);
+    }
+
+    template<class Neighborhood>
+        requires tuple_contains_type_v<
+            Neighborhood,
+            std::tuple<logical_neighborhood_type_t<Explorers>...>>
+    [[nodiscard]]
+    auto child() const noexcept -> decltype(auto)
+    {
+        constexpr auto index = tuple_type_index_v<
+            Neighborhood,
+            std::tuple<logical_neighborhood_type_t<Explorers>...>>;
+        return std::get<index>(explorers_);
+    }
+
+    [[nodiscard]]
+    auto is_valid(
+        const solution_type& solution,
+        const move_type& move) const -> bool
+    {
+        return std::visit(
+            [this, &solution]<class TaggedMove>(const TaggedMove& tagged) {
+                constexpr auto index = TaggedMove::index;
+                return static_cast<bool>(
+                    std::get<index>(explorers_).is_valid(solution, tagged.value));
+            },
+            move);
+    }
+
     [[nodiscard]]
     auto moves(const solution_type& solution) const
+        requires (deterministic_neighborhood_for<
+                      Explorers, solution_type> && ...)
     {
         return make_moves_view(
             solution,
@@ -582,7 +653,7 @@ public:
     }
 
     template<std::uniform_random_bit_generator RNG>
-        requires (random_move_neighborhood<
+        requires (random_neighborhood_for<
                       Explorers,
                       solution_type,
                       RNG> && ...)

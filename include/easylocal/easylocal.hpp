@@ -8,6 +8,7 @@
 #include <easylocal/config/overrides.hpp>
 #include <easylocal/config/parameters.hpp>
 #include <easylocal/config/tree.hpp>
+#include <easylocal/neighborhood_concepts.hpp>
 #include <easylocal/neighborhood_union.hpp>
 #include <easylocal/runner.hpp>
 #include <easylocal/service_base.hpp>

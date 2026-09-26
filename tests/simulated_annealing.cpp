@@ -143,6 +143,8 @@ public:
         return std::nullopt;
     }
 
+    [[nodiscard]] static auto is_valid(const ChainSolution&, const ChainMove&) noexcept -> bool { return true; }
+
     static void make_move(
         ChainSolution& solution,
         const ChainMove& move) noexcept

@@ -78,6 +78,8 @@ public:
         return std::views::single(Move{});
     }
 
+    [[nodiscard]] static auto is_valid(const Solution&, const Move&) noexcept -> bool { return true; }
+
     static void make_move(Solution&, const Move&) noexcept
     {
     }
@@ -104,6 +106,8 @@ public:
     {
         return std::views::single(WrongMove{});
     }
+
+    [[nodiscard]] static auto is_valid(const Solution&, const Move&) noexcept -> bool { return true; }
 
     static void make_move(Solution&, const Move&) noexcept
     {
@@ -145,6 +149,8 @@ public:
     {
         return Move{};
     }
+
+    [[nodiscard]] static auto is_valid(const Solution&, const Move&) noexcept -> bool { return true; }
 
     static void make_move(Solution&, const Move&) noexcept
     {

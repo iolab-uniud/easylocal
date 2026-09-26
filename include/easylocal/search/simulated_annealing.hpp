@@ -22,16 +22,10 @@ template<class Context, class RNG>
 concept random_move_context =
     search_context<Context> &&
     std::uniform_random_bit_generator<RNG> &&
-    requires(
-        const Context& context,
-        const typename Context::solution_type& solution,
-        RNG& rng)
-    {
-        {
-            context.neighborhood_explorer().random_move(solution, rng)
-        } -> std::same_as<std::optional<
-            typename Context::neighborhood_explorer_type::move_type>>;
-    };
+    easylocal::random_neighborhood_for<
+        typename Context::neighborhood_explorer_type,
+        typename Context::solution_type,
+        RNG>;
 
 template<class Acceptance, class Cost, class RNG>
 concept acceptance_policy_for =
@@ -165,7 +159,7 @@ public:
 
         while (!temperature_policy_.finished())
         {
-            auto move = neighborhood.random_move(solution, rng);
+            auto move = easylocal::random_move(neighborhood, solution, rng);
             if (!move.has_value())
             {
                 break;

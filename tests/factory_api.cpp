@@ -56,6 +56,7 @@ struct NeighborhoodExplorer
 
     [[nodiscard]] auto instance() const noexcept -> const Instance& { return instance_; }
     [[nodiscard]] auto moves(const Solution&) const { return std::views::empty<Move>; }
+    [[nodiscard]] static auto is_valid(const Solution&, const Move&) noexcept -> bool { return true; }
     void make_move(Solution&, const Move&) const {}
 
 private:

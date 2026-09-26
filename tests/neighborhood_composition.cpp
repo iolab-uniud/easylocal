@@ -119,6 +119,11 @@ public:
         return std::nullopt;
     }
 
+    [[nodiscard]] auto is_valid(const AssignmentSolution& solution, const SwapMove move) const noexcept -> bool
+    {
+        return move.first < move.second && move.second < solution.assignment.size();
+    }
+
     void make_move(AssignmentSolution& solution, const SwapMove move) const
     {
         std::swap(
@@ -255,6 +260,11 @@ public:
         return std::nullopt;
     }
 
+    [[nodiscard]] auto is_valid(const AssignmentSolution& solution, const ReassignJobMove move) const noexcept -> bool
+    {
+        return move.job < solution.assignment.size() && move.destination == 0 && solution.assignment[move.job] != 0;
+    }
+
     void make_move(AssignmentSolution& solution, const ReassignJobMove move) const
     {
         solution.assignment[move.job] = move.destination;
@@ -288,6 +298,8 @@ public:
     {
         return std::views::empty<ReassignJobMove>;
     }
+
+    [[nodiscard]] static auto is_valid(const AssignmentSolution&, const ReassignJobMove&) noexcept -> bool { return true; }
 
     void make_move(AssignmentSolution&, const ReassignJobMove) const noexcept
     {
@@ -449,6 +461,13 @@ int main()
 
     static_assert(std::variant_size_v<typename UnionExplorer::move_type> == 3);
     static_assert(HasRandomMove<UnionExplorer, std::mt19937>);
+    static_assert(std::same_as<
+        std::remove_cvref_t<decltype(std::declval<UnionExplorer&>().child<0>())>,
+        ReassignJobNeighborhoodExplorer>);
+    static_assert(std::same_as<
+        std::remove_cvref_t<decltype(
+            std::declval<UnionExplorer&>().child<SwapNeighborhoodExplorer>())>,
+        SwapNeighborhoodExplorer>);
 
     using PartiallyRandomUnionExplorer = typename decltype(neighborhood_union(
         neighborhood<ReassignJobNeighborhoodExplorer>(),
@@ -466,6 +485,11 @@ int main()
     static_assert(
         std::tuple_size_v<typename AllDeltaUnionExplorer::delta_bindings_type> == 1,
         "a union exposes a component delta only when every child provides one");
+    static_assert(std::derived_from<
+        std::remove_cvref_t<decltype(
+            std::declval<AllDeltaUnionExplorer&>()
+                .child<ReassignJobNeighborhoodExplorer>())>,
+        ReassignJobNeighborhoodExplorer>);
 
     using PartialDeltaUnionExplorer = typename decltype(neighborhood_union(
         neighborhood<ReassignJobNeighborhoodExplorer>()

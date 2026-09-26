@@ -125,6 +125,8 @@ public:
         return std::views::single(Move{});
     }
 
+    [[nodiscard]] static auto is_valid(const Solution&, const Move&) noexcept -> bool { return true; }
+
     void make_move(Solution& solution, const Move& move) const noexcept
     {
         solution.value += move.delta;
@@ -132,6 +134,12 @@ public:
 
 private:
     const BaseSolutionManager& solution_manager_;
+};
+
+class AnotherNeighborhood : public Neighborhood
+{
+public:
+    using Neighborhood::Neighborhood;
 };
 
 struct DeltaA

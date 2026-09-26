@@ -92,11 +92,6 @@ public:
         const Tour& solution,
         const TwoOptMove& move) const noexcept -> bool
     {
-        if (!solution_manager_.is_valid(solution))
-        {
-            return false;
-        }
-
         return valid_edge_pair(
             solution.tour.size(),
             move.first_edge,

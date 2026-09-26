@@ -60,6 +60,7 @@ public:
     explicit Neighborhood(const SolutionManager& sm) : sm_{sm} {}
 
     [[nodiscard]] auto instance() const noexcept -> const Instance& { return sm_.instance(); }
+    [[nodiscard]] static auto is_valid(const Solution&, const Move&) noexcept -> bool { return true; }
     void make_move(Solution&, const Move&) const noexcept {}
 
 private:
@@ -122,6 +123,7 @@ public:
             : std::nullopt;
     }
 
+    [[nodiscard]] static auto is_valid(const Solution&, const move_type&) noexcept -> bool { return true; }
     static void make_move(Solution& solution, const move_type&) noexcept
     {
         --solution.hard;
@@ -155,6 +157,7 @@ public:
             : std::nullopt;
     }
 
+    [[nodiscard]] static auto is_valid(const Solution&, const move_type&) noexcept -> bool { return true; }
     static void make_move(Solution& solution, const move_type&) noexcept
     {
         --solution.soft;

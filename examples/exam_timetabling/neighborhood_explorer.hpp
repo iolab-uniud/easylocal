@@ -26,8 +26,7 @@ public:
         const ExamTimetable& solution,
         const MoveExam& move) const noexcept -> bool
     {
-        return solution_manager_.is_valid(solution) &&
-               move.exam < solution.timeslot_by_exam.size() &&
+        return move.exam < solution.timeslot_by_exam.size() &&
                move.destination < instance().timeslot_count &&
                solution.timeslot_by_exam[move.exam] != move.destination;
     }

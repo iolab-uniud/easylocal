@@ -198,6 +198,8 @@ public:
         return std::views::single(Move{.delta = 1});
     }
 
+    [[nodiscard]] static auto is_valid(const Solution&, const Move&) noexcept -> bool { return true; }
+
     void make_move(Solution& solution, const Move& move) const noexcept
     {
         ++counters_.get().make_moves;

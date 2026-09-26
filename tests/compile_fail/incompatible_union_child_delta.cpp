@@ -21,7 +21,7 @@ int main()
         | neighborhood_union(
               neighborhood<Neighborhood>()
                   | delta<ComponentA, MalformedDeltaA>(),
-              neighborhood<Neighborhood>());
+              neighborhood<AnotherNeighborhood>());
 
     [[maybe_unused]] auto bound_runner = runner.bind(instance);
 }

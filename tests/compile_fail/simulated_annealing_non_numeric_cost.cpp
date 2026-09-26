@@ -57,6 +57,7 @@ public:
         return Move{.delta = -1};
     }
 
+    [[nodiscard]] static auto is_valid(const Solution&, const Move&) noexcept -> bool { return true; }
     static void make_move(Solution& solution, const Move& move) noexcept
     {
         solution.value += move.delta;

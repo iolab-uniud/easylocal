@@ -171,6 +171,34 @@ add_test(
 )
 
 add_executable(
+    easylocal_neighborhood_concepts_header_self_containment
+    neighborhood_concepts_header_self_containment.cpp
+)
+target_link_libraries(
+    easylocal_neighborhood_concepts_header_self_containment
+    PRIVATE
+        EasyLocal::Core
+)
+add_test(
+    NAME easylocal.neighborhood-concepts-header-self-containment
+    COMMAND easylocal_neighborhood_concepts_header_self_containment
+)
+
+add_executable(
+    easylocal_neighborhood_testing_header_self_containment
+    neighborhood_testing_header_self_containment.cpp
+)
+target_link_libraries(
+    easylocal_neighborhood_testing_header_self_containment
+    PRIVATE
+        EasyLocal::Core
+)
+add_test(
+    NAME easylocal.neighborhood-testing-header-self-containment
+    COMMAND easylocal_neighborhood_testing_header_self_containment
+)
+
+add_executable(
     easylocal_cursor_moves_header_self_containment
     cursor_moves_header_self_containment.cpp
 )
@@ -380,6 +408,20 @@ target_link_libraries(
 add_test(
     NAME easylocal.concept-contracts
     COMMAND easylocal_concept_contracts_test
+)
+
+add_executable(
+    easylocal_neighborhood_testing_test
+    neighborhood_testing.cpp
+)
+target_link_libraries(
+    easylocal_neighborhood_testing_test
+    PRIVATE
+        easylocal_assignment_mwe_model
+)
+add_test(
+    NAME easylocal.neighborhood-testing
+    COMMAND easylocal_neighborhood_testing_test
 )
 
 add_executable(
@@ -787,6 +829,12 @@ easylocal_add_compile_failure_test(
     missing_aggregator.cpp
     "a SolutionManager recipe with cost components requires an explicit aggregator"
     "ComponentA"
+)
+easylocal_add_compile_failure_test(
+    duplicate-neighborhood-union-child
+    duplicate_neighborhood_union_child.cpp
+    "a neighborhood union cannot contain the same NeighborhoodExplorer type more than once"
+    "NHE"
 )
 easylocal_add_compile_failure_test(
     duplicate-delta

@@ -1,11 +1,15 @@
 #pragma once
 
+#include <easylocal/neighborhood_concepts.hpp>
+
 #include <cassert>
-#include <concepts>
 #include <cstddef>
 #include <iterator>
 #include <memory>
+#include <optional>
+#include <random>
 #include <ranges>
+#include <type_traits>
 #include <utility>
 
 namespace easylocal
@@ -15,46 +19,9 @@ namespace detail
 {
 
 template<class Explorer>
-concept cursor_neighborhood =
-    requires(
-        const Explorer& explorer,
-        const typename Explorer::solution_type& solution,
-        typename Explorer::move_type& move)
-    {
-        typename Explorer::solution_type;
-        typename Explorer::move_type;
-
-        requires std::default_initializable<typename Explorer::move_type>;
-
-        {
-            explorer.first_move(solution, move)
-        } -> std::same_as<bool>;
-
-        {
-            explorer.next_move(solution, move)
-        } -> std::same_as<bool>;
-    };
-
-
-template<class Explorer>
-concept native_moves_neighborhood =
-    requires(
-        const Explorer& explorer,
-        const typename Explorer::solution_type& solution)
-    {
-        typename Explorer::solution_type;
-        typename Explorer::move_type;
-        {
-            explorer.moves(solution)
-        } -> std::ranges::input_range;
-        requires std::same_as<
-            std::ranges::range_value_t<decltype(explorer.moves(solution))>,
-            typename Explorer::move_type>;
-    };
-
-template<class Explorer>
 inline constexpr bool has_ambiguous_moves_interface_v =
-    cursor_neighborhood<Explorer> && native_moves_neighborhood<Explorer>;
+    cursor_neighborhood_for<Explorer, typename Explorer::solution_type> &&
+    native_moves_neighborhood_for<Explorer, typename Explorer::solution_type>;
 
 #if defined(NDEBUG) && (defined(__GNUC__) || defined(__clang__))
 #define EASYLOCAL_DETAIL_CURSOR_FORCE_INLINE inline __attribute__((always_inline))
@@ -62,12 +29,13 @@ inline constexpr bool has_ambiguous_moves_interface_v =
 #define EASYLOCAL_DETAIL_CURSOR_FORCE_INLINE inline
 #endif
 
-template<cursor_neighborhood Explorer>
+template<class Explorer, class Solution>
+    requires cursor_neighborhood_for<Explorer, Solution>
 class cursor_moves_view
-    : public std::ranges::view_interface<cursor_moves_view<Explorer>>
+    : public std::ranges::view_interface<cursor_moves_view<Explorer, Solution>>
 {
 public:
-    using solution_type = typename Explorer::solution_type;
+    using solution_type = Solution;
     using move_type = typename Explorer::move_type;
 
     cursor_moves_view() = default;
@@ -180,36 +148,28 @@ private:
 
 } // namespace detail
 
-// Adapt an EL3-style deterministic cursor
-//
-//   bool first_move(const Solution&, Move&) const;
-//   bool next_move (const Solution&, Move&) const;
-//
-// to the lazy input-range protocol consumed by EasyLocal++ search algorithms.
-// The returned view is non-owning: the explorer and solution must outlive it.
-template<detail::cursor_neighborhood Explorer>
+// Adapt an EL3-style deterministic cursor to the lazy input-range protocol.
+template<class Explorer, class Solution>
+    requires cursor_neighborhood_for<Explorer, Solution>
 [[nodiscard]]
 inline auto cursor_moves(
     const Explorer& explorer,
-    const typename Explorer::solution_type& solution) noexcept
-    -> detail::cursor_moves_view<Explorer>
+    const Solution& solution) noexcept
+    -> detail::cursor_moves_view<Explorer, Solution>
 {
-    return detail::cursor_moves_view<Explorer>{explorer, solution};
+    return detail::cursor_moves_view<Explorer, Solution>{explorer, solution};
 }
 
-
-// Unified neighborhood-enumeration customization point. EL3-style cursor
-// neighborhoods are preferred when both protocols are present; otherwise a
-// native moves(solution) input range is used directly.
-template<class Explorer>
-    requires detail::cursor_neighborhood<Explorer> ||
-             detail::native_moves_neighborhood<Explorer>
+// Unified deterministic-neighborhood customization point. The EL3 cursor
+// protocol wins when both cursor and native range protocols are present.
+template<class Explorer, class Solution>
+    requires deterministic_neighborhood_for<Explorer, Solution>
 [[nodiscard]]
 inline auto moves(
     const Explorer& explorer,
-    const typename Explorer::solution_type& solution)
+    const Solution& solution)
 {
-    if constexpr (detail::cursor_neighborhood<Explorer>)
+    if constexpr (cursor_neighborhood_for<Explorer, Solution>)
     {
         return cursor_moves(explorer, solution);
     }
@@ -217,6 +177,25 @@ inline auto moves(
     {
         return explorer.moves(solution);
     }
+}
+
+// Unified random-neighborhood customization point. A neighborhood may return
+// std::optional<T> for any T from which its declared move_type can be built.
+template<class Explorer, class Solution, std::uniform_random_bit_generator RNG>
+    requires random_neighborhood_for<Explorer, Solution, RNG>
+[[nodiscard]]
+inline auto random_move(
+    const Explorer& explorer,
+    const Solution& solution,
+    RNG& rng) -> std::optional<typename Explorer::move_type>
+{
+    auto result = explorer.random_move(solution, rng);
+    if (!result)
+    {
+        return std::nullopt;
+    }
+
+    return typename Explorer::move_type{*result};
 }
 
 } // namespace easylocal
