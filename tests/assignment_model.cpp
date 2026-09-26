@@ -100,14 +100,14 @@ int main()
     ok &= expect(
         initial_cost.get<0>() == 2 &&
             initial_cost.get<1>() == 1,
-        "hierarchical cost keeps both materialized levels");
+        "lexicographic hard cost keeps both materialized components");
 
     ok &= expect(
         Cost{0, 100} < Cost{1, 0},
-        "hierarchical cost prioritizes the first level");
+        "lexicographic hard cost prioritizes total overload");
     ok &= expect(
         Cost{1, 1} < Cost{1, 2},
-        "hierarchical cost compares the next level after a tie");
+        "lexicographic hard cost compares overloaded-machine count after a tie");
 
     // Component attachment is compile-time compositional: adding a second
     // component changes the recipe, while the problem-side manager remains

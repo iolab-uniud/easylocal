@@ -83,8 +83,9 @@ public:
         const std::size_t cardinality) const
     {
         return easylocal::aggregation::hierarchical{}(
-            capacity.total_overload,
-            capacity.overloaded_machines,
+            easylocal::aggregation::lexicographic{}(
+                capacity.total_overload,
+                capacity.overloaded_machines),
             cardinality);
     }
 };
@@ -386,9 +387,9 @@ int main()
     const auto full_result = full_runner.bind(instance).run(initial);
 
     ok &= expect(
-        full_result.cost.get<0>() == 0 &&
-            full_result.cost.get<1>() == 0 &&
-            full_result.cost.get<2>() == 3,
+        full_result.cost.hard().get<0>() == 0 &&
+            full_result.cost.hard().get<1>() == 0 &&
+            full_result.cost.soft() == 3,
         "hard+soft stage uses a distinct local delta set on the same AssignmentSolution and ReassignJobMove types");
     ok &= expect(
         full_make_moves == 1,

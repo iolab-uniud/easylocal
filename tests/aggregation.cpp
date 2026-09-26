@@ -26,7 +26,7 @@ int main()
     namespace aggregation = easylocal::aggregation;
 
     using LexicographicCost = aggregation::lexicographic_cost<int, long>;
-    using HierarchicalCost = aggregation::hierarchical_cost<int, long>;
+    using HierarchicalCost = aggregation::hierarchical_cost<LexicographicCost, long>;
 
     static_assert(std::three_way_comparable<LexicographicCost>);
     static_assert(std::three_way_comparable<HierarchicalCost>);
@@ -38,9 +38,15 @@ int main()
     static_assert(lexicographic_a.get<0>() == 1);
     static_assert(lexicographic_a.get<1>() == 100L);
 
-    constexpr auto hierarchical_a = aggregation::hierarchical{}(1, 100L);
-    constexpr auto hierarchical_b = aggregation::hierarchical{}(1, 101L);
+    constexpr auto hard_a = aggregation::lexicographic{}(1, 100L);
+    constexpr auto hard_b = aggregation::lexicographic{}(2, 0L);
+    constexpr auto hierarchical_a = aggregation::hierarchical{}(hard_a, 100L);
+    constexpr auto hierarchical_b = aggregation::hierarchical{}(hard_a, 101L);
+    constexpr auto hierarchical_c = aggregation::hierarchical{}(hard_b, 0L);
     static_assert(hierarchical_a < hierarchical_b);
+    static_assert(hierarchical_b < hierarchical_c);
+    static_assert(hierarchical_a.hard() == hard_a);
+    static_assert(hierarchical_a.soft() == 100L);
 
     constexpr aggregation::weighted_sum weighted{2, 3};
     static_assert(weighted(4, 5) == 23);
@@ -52,7 +58,10 @@ int main()
         "lexicographic aggregation compares values in declaration order");
     ok &= expect(
         hierarchical_a < hierarchical_b,
-        "hierarchical aggregation compares levels in declaration order");
+        "hierarchical aggregation compares soft cost after equivalent hard cost");
+    ok &= expect(
+        hierarchical_b < hierarchical_c,
+        "hierarchical aggregation gives hard cost strict priority over soft cost");
     ok &= expect(
         weighted(4, 5) == 23,
         "weighted-sum aggregation combines materialized terms");

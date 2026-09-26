@@ -16,10 +16,6 @@ struct lexicographic_tag
 {
 };
 
-struct hierarchical_tag
-{
-};
-
 template<class Tag, class... Values>
 class ordered_cost
 {
@@ -49,9 +45,34 @@ template<class... Values>
 using lexicographic_cost =
     detail::ordered_cost<detail::lexicographic_tag, Values...>;
 
-template<class... Levels>
-using hierarchical_cost =
-    detail::ordered_cost<detail::hierarchical_tag, Levels...>;
+template<class HardCost, class SoftCost>
+class hierarchical_cost
+{
+public:
+    constexpr explicit hierarchical_cost(HardCost hard, SoftCost soft)
+        : hard_{std::move(hard)},
+          soft_{std::move(soft)}
+    {
+    }
+
+    [[nodiscard]]
+    constexpr auto hard() const noexcept -> const HardCost&
+    {
+        return hard_;
+    }
+
+    [[nodiscard]]
+    constexpr auto soft() const noexcept -> const SoftCost&
+    {
+        return soft_;
+    }
+
+    auto operator<=>(const hierarchical_cost&) const = default;
+
+private:
+    HardCost hard_;
+    SoftCost soft_;
+};
 
 struct lexicographic
 {
@@ -67,12 +88,15 @@ struct lexicographic
 
 struct hierarchical
 {
-    template<class... Levels>
+    template<class HardCost, class SoftCost>
     [[nodiscard]]
-    constexpr auto operator()(Levels&&... levels) const
+    constexpr auto operator()(HardCost&& hard, SoftCost&& soft) const
     {
-        return hierarchical_cost<std::remove_cvref_t<Levels>...>{
-            std::forward<Levels>(levels)...,
+        return hierarchical_cost<
+            std::remove_cvref_t<HardCost>,
+            std::remove_cvref_t<SoftCost>>{
+            std::forward<HardCost>(hard),
+            std::forward<SoftCost>(soft),
         };
     }
 };

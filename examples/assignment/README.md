@@ -65,7 +65,7 @@ where:
 total_overload = sum_m max(0, load[m] - capacity[m])
 ```
 
-The algorithm-facing cost is the hierarchical pair:
+The algorithm-facing hard cost is the lexicographic pair:
 
 ```text
 (total_overload, overloaded_machines)
@@ -119,15 +119,17 @@ The framework provides three reusable aggregation categories:
 - `aggregation::lexicographic`;
 - `aggregation::hierarchical`.
 
-`AssignmentCostAggregator` uses the predefined hierarchical aggregator to map
-fields of the structured capacity value into the final `Cost`. Domain-specific
+`AssignmentCostAggregator` uses the predefined lexicographic aggregator to map
+fields of the structured capacity value into the final hard `Cost`. `hierarchical`
+is reserved for an explicit `hard` / `soft` composition, whose two branches may
+themselves be aggregate or lexicographic costs. Domain-specific
 projection from structured component values remains explicit for now; no
 projection DSL is introduced by this iteration.
 
 The generic aggregators are part of the public framework API in
 `<easylocal/aggregation.hpp>` under `easylocal::aggregation`. The Assignment
 example supplies only the domain-specific projection from `CapacityValue` to
-its final hierarchical `Cost`.
+its final lexicographic hard `Cost`.
 
 ## Delta evaluation
 
@@ -204,7 +206,7 @@ Laziness, caching and proxy lifetime/invalidation remain postponed.
   reassign move.
 
 `Cost`
-: Materialized value returned by full aggregation. It owns its hierarchical
+: Materialized value returned by full aggregation. It owns its lexicographic
   ordering semantics through three-way comparison.
 
 `AssignmentSolutionManager`
