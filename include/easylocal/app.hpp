@@ -1,10 +1,12 @@
 #pragma once
 
 #include <easylocal/runner.hpp>
+#include <easylocal/solver.hpp>
 
 #include <cassert>
 #include <concepts>
 #include <cstddef>
+#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <tuple>
@@ -64,6 +66,69 @@ consteval auto app_runner_index() -> std::size_t
         app_runner_count_v<Tag, Registrations...> == 1,
         "runner<Tag>() requires exactly one registration of Tag");
     return app_runner_index_impl<Tag, 0, Registrations...>();
+}
+
+template<class Tag, std::size_t Index = 0, class Tuple>
+[[nodiscard]]
+auto app_runner_registration_by_name(Tuple& registrations, const std::string_view name)
+    -> app_runner_registration<Tag>&
+{
+    if constexpr (Index == std::tuple_size_v<std::remove_reference_t<Tuple>>)
+    {
+        throw std::invalid_argument{
+            "runner '" + std::string{name} + "' is not registered for the requested tag"};
+    }
+    else
+    {
+        using registration_type = std::tuple_element_t<
+            Index,
+            std::remove_reference_t<Tuple>>;
+
+        if constexpr (std::same_as<Tag, typename registration_type::tag_type>)
+        {
+            auto& registration = std::get<Index>(registrations);
+            if (registration.name == name)
+            {
+                return registration;
+            }
+        }
+
+        return app_runner_registration_by_name<Tag, Index + 1>(
+            registrations,
+            name);
+    }
+}
+
+template<class Tag, std::size_t Index = 0, class Tuple>
+[[nodiscard]]
+auto app_runner_registration_by_name(
+    const Tuple& registrations,
+    const std::string_view name) -> const app_runner_registration<Tag>&
+{
+    if constexpr (Index == std::tuple_size_v<std::remove_reference_t<Tuple>>)
+    {
+        throw std::invalid_argument{
+            "runner '" + std::string{name} + "' is not registered for the requested tag"};
+    }
+    else
+    {
+        using registration_type = std::tuple_element_t<
+            Index,
+            std::remove_reference_t<Tuple>>;
+
+        if constexpr (std::same_as<Tag, typename registration_type::tag_type>)
+        {
+            const auto& registration = std::get<Index>(registrations);
+            if (registration.name == name)
+            {
+                return registration;
+            }
+        }
+
+        return app_runner_registration_by_name<Tag, Index + 1>(
+            registrations,
+            name);
+    }
 }
 
 template<class Algorithm, class SM, class NHE>
@@ -387,12 +452,90 @@ public:
     }
 
     template<class Tag>
+        requires (app_runner_count_v<Tag, Registrations...> > 0)
+    [[nodiscard]]
+    auto runner_config(const std::string_view name) -> typename Tag::config_type&
+    {
+        return app_runner_registration_by_name<Tag>(registrations_, name).config;
+    }
+
+    template<class Tag>
+        requires (app_runner_count_v<Tag, Registrations...> > 0)
+    [[nodiscard]]
+    auto runner_config(const std::string_view name) const -> const typename Tag::config_type&
+    {
+        return app_runner_registration_by_name<Tag>(registrations_, name).config;
+    }
+
+    template<class Tag>
         requires (app_runner_count_v<Tag, Registrations...> == 1)
     [[nodiscard]]
     auto runner_name() const noexcept -> std::string_view
     {
         constexpr auto index = app_runner_index<Tag, Registrations...>();
         return std::get<index>(registrations_).name;
+    }
+
+    template<class Tag>
+        requires (app_runner_count_v<Tag, Registrations...> == 1) &&
+                 std::copy_constructible<SMSpec> &&
+                 std::copy_constructible<NHESpec>
+    [[nodiscard]]
+    auto make_runner() const
+    {
+        constexpr auto index = app_runner_index<Tag, Registrations...>();
+        const auto& registration = std::get<index>(registrations_);
+        return Runner{Tag::make(registration.config)}
+            | solution_manager_spec_
+            | neighborhood_spec_;
+    }
+
+    template<class Tag>
+        requires (app_runner_count_v<Tag, Registrations...> > 0) &&
+                 std::copy_constructible<SMSpec> &&
+                 std::copy_constructible<NHESpec>
+    [[nodiscard]]
+    auto make_runner(const std::string_view name) const
+    {
+        const auto& registration =
+            app_runner_registration_by_name<Tag>(registrations_, name);
+        return Runner{Tag::make(registration.config)}
+            | solution_manager_spec_
+            | neighborhood_spec_;
+    }
+
+    template<class SolverTag, class RunnerTag, class SolverConfig>
+        requires (app_runner_count_v<RunnerTag, Registrations...> == 1) &&
+                 std::copy_constructible<SMSpec> &&
+                 std::copy_constructible<NHESpec> &&
+                 solver_factory_tag<
+                     SolverTag,
+                     decltype(std::declval<const app_builder&>().template make_runner<RunnerTag>()),
+                     SolverConfig>
+    [[nodiscard]]
+    auto make_solver(SolverConfig&& config) const
+    {
+        return easylocal::make_solver<SolverTag>(
+            make_runner<RunnerTag>(),
+            std::forward<SolverConfig>(config));
+    }
+
+    template<class SolverTag, class RunnerTag, class SolverConfig>
+        requires (app_runner_count_v<RunnerTag, Registrations...> > 0) &&
+                 std::copy_constructible<SMSpec> &&
+                 std::copy_constructible<NHESpec> &&
+                 solver_factory_tag<
+                     SolverTag,
+                     decltype(std::declval<const app_builder&>().template make_runner<RunnerTag>(std::declval<std::string_view>())),
+                     SolverConfig>
+    [[nodiscard]]
+    auto make_solver(
+        const std::string_view runner_name,
+        SolverConfig&& config) const
+    {
+        return easylocal::make_solver<SolverTag>(
+            make_runner<RunnerTag>(runner_name),
+            std::forward<SolverConfig>(config));
     }
 
     template<class Spec = SMSpec>
