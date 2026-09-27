@@ -203,25 +203,49 @@ void help_remains_frontend_policy()
 
 void diagnostics_have_a_uniform_rendering_surface()
 {
-    AppParameters app{};
-    SolverParameters solver{};
-    const auto tree = easylocal::config::root(
-        easylocal::config::named<"application">(app),
-        easylocal::config::named<"solver">(solver));
+    {
+        AppParameters app{};
+        SolverParameters solver{};
+        const auto tree = easylocal::config::root(
+            easylocal::config::named<"application">(app),
+            easylocal::config::named<"solver">(solver));
 
-    char program[] = "solver";
-    char invalid[] = "--solver.cooling_rate=2.0";
-    char* argv[]{program, invalid};
+        char program[] = "solver";
+        char invalid[] = "--solver.cooling_rate=2.0";
+        char* argv[]{program, invalid};
 
-    const auto result = easylocal::config::load_and_apply(2, argv, tree);
-    assert(!result);
+        const auto result = easylocal::config::load_and_apply(2, argv, tree);
+        assert(!result);
 
-    std::ostringstream output;
-    easylocal::config::print_diagnostics(output, result);
-    assert(output.str().find("solver.cooling_rate = '2.0'") !=
-           std::string::npos);
-    assert(output.str().find("cooling_rate must be in (0, 1)") !=
-           std::string::npos);
+        std::ostringstream output;
+        easylocal::config::print_diagnostics(output, result);
+        assert(output.str().find(
+                   "solver: cooling_rate must be in (0, 1)") !=
+               std::string::npos);
+    }
+
+    {
+        AppParameters app{};
+        SolverParameters solver{};
+        const auto tree = easylocal::config::root(
+            easylocal::config::named<"application">(app),
+            easylocal::config::named<"solver">(solver));
+
+        char program[] = "solver";
+        char invalid[] = "--solver.cooling_rate=not-a-number";
+        char* argv[]{program, invalid};
+
+        const auto result = easylocal::config::load_and_apply(2, argv, tree);
+        assert(!result);
+
+        std::ostringstream output;
+        easylocal::config::print_diagnostics(output, result);
+        assert(output.str().find(
+                   "solver.cooling_rate = 'not-a-number'") !=
+               std::string::npos);
+        assert(output.str().find("expected floating-point value") !=
+               std::string::npos);
+    }
 }
 
 } // namespace
