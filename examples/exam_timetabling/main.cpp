@@ -6,8 +6,7 @@
 
 #include <easylocal/aggregation.hpp>
 #include <easylocal/config/cli.hpp>
-#include <easylocal/config/file.hpp>
-#include <easylocal/config/overrides.hpp>
+#include <easylocal/config/setup.hpp>
 #include <easylocal/config/tree.hpp>
 #include <easylocal/runner.hpp>
 #include <easylocal/search/simulated_annealing.hpp>
@@ -18,9 +17,6 @@
 #include <filesystem>
 #include <iostream>
 #include <random>
-#include <span>
-#include <stdexcept>
-#include <string>
 #include <type_traits>
 
 #ifndef EASYLOCAL_EXAM_MWE_INSTANCE_FILE
@@ -63,16 +59,6 @@ struct AppParameters
         return easylocal::config::validation_result::success();
     }
 };
-
-template<class Parameters>
-void require_valid(const Parameters& parameters)
-{
-    const auto validation = parameters.validate();
-    if (!validation)
-    {
-        throw std::invalid_argument{std::string{validation.message}};
-    }
-}
 
 template<class Tree>
 void print_configuration(const Tree& tree)
@@ -135,9 +121,6 @@ int main(int argc, char* argv[])
             .max_iterations = 30,
         };
 
-        require_valid(app_parameters);
-        require_valid(temperature_parameters);
-
         auto sm =
             make_solution_manager<ExamTimetablingSolutionManager>()
                 .with_component<StudentConflictComponent>()
@@ -166,65 +149,17 @@ int main(int argc, char* argv[])
             easylocal::config::named<"application">(app_parameters),
             runner.configuration<"solver">());
 
-        const auto cli = easylocal::config::parse_cli(argc, argv);
-        if (cli.help_requested)
+        const auto configured =
+            easylocal::config::load_and_apply(argc, argv, configuration);
+        if (configured.help_requested)
         {
             std::cout << easylocal::config::cli_help(argv[0], configuration);
             return 0;
         }
 
-        easylocal::config::config_file_parse_result file_configuration{};
-        if (cli.config_file.has_value())
+        if (!configured)
         {
-            file_configuration =
-                easylocal::config::load_config_file(*cli.config_file);
-        }
-
-        if (!cli || !file_configuration)
-        {
-            for (const auto& diagnostic : cli.diagnostics)
-            {
-                std::cerr << "error: " << diagnostic.argument << ": "
-                          << diagnostic.message << '\n';
-            }
-            for (const auto& diagnostic : file_configuration.diagnostics)
-            {
-                std::cerr << "error: ";
-                if (diagnostic.line != 0)
-                {
-                    std::cerr << "config line " << diagnostic.line << ": ";
-                }
-                std::cerr << diagnostic.message;
-                if (!diagnostic.text.empty())
-                {
-                    std::cerr << " ('" << diagnostic.text << "')";
-                }
-                std::cerr << '\n';
-            }
-            return 2;
-        }
-
-        const auto effective_overrides = easylocal::config::overlay_overrides(
-            std::span<const easylocal::config::owned_text_override>{
-                file_configuration.overrides},
-            std::span<const easylocal::config::text_override>{cli.overrides});
-        const auto effective_views = easylocal::config::override_views(
-            std::span<const easylocal::config::owned_text_override>{
-                effective_overrides});
-        const auto overrides = easylocal::config::apply_overrides(
-            configuration,
-            std::span<const easylocal::config::text_override>{effective_views});
-        if (!overrides)
-        {
-            for (const auto& diagnostic : overrides.diagnostics)
-            {
-                std::cerr << "error: " << diagnostic.path;
-                if (!diagnostic.value.empty())
-                {
-                    std::cerr << " = '" << diagnostic.value << '\'';
-                }
-                std::cerr << ": " << diagnostic.message << '\n';
-            }
+            easylocal::config::print_diagnostics(std::cerr, configured);
             return 2;
         }
 
