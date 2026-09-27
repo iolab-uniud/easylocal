@@ -1234,3 +1234,31 @@ if(TARGET easylocal_tsp_two_apps_mwe)
         COMMAND easylocal_tsp_two_apps_mwe
     )
 endif()
+
+add_executable(
+    easylocal_tester_header_self_containment
+    tester_header_self_containment.cpp
+)
+target_link_libraries(
+    easylocal_tester_header_self_containment
+    PRIVATE
+        EasyLocal::Core
+)
+add_test(
+    NAME easylocal.tester-header-self-containment
+    COMMAND easylocal_tester_header_self_containment
+)
+
+add_executable(
+    easylocal_tester_test
+    tester.cpp
+)
+target_link_libraries(
+    easylocal_tester_test
+    PRIVATE
+        EasyLocal::Core
+)
+add_test(
+    NAME easylocal.tester
+    COMMAND easylocal_tester_test
+)

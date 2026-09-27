@@ -330,6 +330,12 @@ private:
 template<class SMSpec, class NHESpec, class... Registrations>
 class app_builder
 {
+    static_assert(
+        std::copy_constructible<SMSpec> &&
+        std::copy_constructible<NHESpec> &&
+        (std::copy_constructible<Registrations> && ...),
+        "app graph specifications and runner registrations must be copy constructible");
+
 public:
     static constexpr bool has_solution_manager =
         !std::same_as<SMSpec, unconfigured_t>;
