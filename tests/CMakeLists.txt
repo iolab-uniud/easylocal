@@ -1268,3 +1268,17 @@ add_test(
     NAME easylocal.tester
     COMMAND easylocal_tester_test
 )
+
+add_executable(
+    easylocal_tester_io_test
+    tester_io.cpp
+)
+target_link_libraries(
+    easylocal_tester_io_test
+    PRIVATE
+        EasyLocal::Core
+)
+add_test(
+    NAME easylocal.tester-io
+    COMMAND easylocal_tester_io_test
+)

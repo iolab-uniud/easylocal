@@ -124,6 +124,37 @@ auto make_application()
     return application;
 }
 
+[[nodiscard]]
+auto make_multi_runner_application()
+{
+    auto sm =
+        easylocal::solution_manager<AssignmentSolutionManager>()
+        | easylocal::component<CapacityCostComponent>()
+        | easylocal::component<LoadImbalanceCostComponent>()
+        | easylocal::aggregator(AssignmentCostAggregator{});
+
+    auto nhe =
+        easylocal::neighborhood<ReassignJobNeighborhoodExplorer>()
+        | easylocal::delta<
+              CapacityCostComponent,
+              ReassignCapacityDeltaEvaluator>();
+
+    auto application = easylocal::app("assignment-multi-runner")
+        .solution_manager(std::move(sm))
+        .neighborhood(std::move(nhe))
+        .runner<easylocal::runner::first_improvement>("quick")
+        .runner<easylocal::runner::first_improvement>("deep");
+
+    application
+        .runner_config<easylocal::runner::first_improvement>("quick")
+        .max_evaluations = 1;
+    application
+        .runner_config<easylocal::runner::first_improvement>("deep")
+        .max_evaluations = 100;
+
+    return application;
+}
+
 using app_type = decltype(make_application());
 
 static_assert(std::copy_constructible<app_type>);
@@ -413,6 +444,65 @@ void replacing_input_clears_the_current_solution()
     assert(!tester.has_solution());
 }
 
+void tester_lists_registered_runners_in_app_order()
+{
+    easylocal::Tester tester{make_multi_runner_application()};
+
+    const auto names = tester.runner_names();
+
+    assert(names.size() == 2);
+    assert(names[0] == std::string_view{"quick"});
+    assert(names[1] == std::string_view{"deep"});
+}
+
+void tester_runs_a_named_runner_on_the_current_solution()
+{
+    easylocal::Tester tester{make_multi_runner_application()};
+    tester.set_input(make_input(3));
+    tester.set_solution(AssignmentSolution{.assignment = {0, 0}});
+
+    const auto before = tester.evaluate();
+    assert(before.soft() == 7);
+
+    const auto ran = tester.run_runner("deep");
+
+    assert(ran);
+    assert(tester.has_solution());
+    assert(tester.is_valid());
+    assert(tester.evaluate().soft() == 1);
+    assert(tester.solution().assignment[0] == 1);
+    assert(tester.solution().assignment[1] == 0);
+}
+
+void tester_distinguishes_same_tag_runners_by_name()
+{
+    easylocal::Tester tester{make_multi_runner_application()};
+    tester.set_input(make_input(3));
+    tester.set_solution(AssignmentSolution{.assignment = {0, 0}});
+
+    const auto ran_quick = tester.run_runner("quick");
+
+    assert(ran_quick);
+    assert(tester.evaluate().soft() == 7);
+
+    const auto ran_deep = tester.run_runner("deep");
+
+    assert(ran_deep);
+    assert(tester.evaluate().soft() == 1);
+}
+
+void tester_reports_unknown_runner_without_changing_solution()
+{
+    easylocal::Tester tester{make_multi_runner_application()};
+    tester.set_input(make_input(3));
+    tester.set_solution(AssignmentSolution{.assignment = {0, 0}});
+
+    const auto ran = tester.run_runner("missing");
+
+    assert(!ran);
+    assert(tester.evaluate().soft() == 7);
+}
+
 void app_copy_preserves_graph_configuration()
 {
     auto application = make_application();
@@ -491,4 +581,8 @@ int main()
     tester_runs_app_check_on_the_current_solution();
     tester_check_reports_an_invalid_current_solution();
     replacing_input_clears_the_current_solution();
+    tester_lists_registered_runners_in_app_order();
+    tester_runs_a_named_runner_on_the_current_solution();
+    tester_distinguishes_same_tag_runners_by_name();
+    tester_reports_unknown_runner_without_changing_solution();
 }

@@ -301,11 +301,42 @@ public:
         };
     }
 
+    template<std::size_t Index>
+        requires (Index < runner_count)
+    [[nodiscard]]
+    auto runner_at()
+    {
+        using registration_type =
+            std::tuple_element_t<Index, std::tuple<Registrations...>>;
+        using algorithm_type = typename registration_type::algorithm_type;
+
+        return app_runner_ref<
+            algorithm_type,
+            solution_manager_type,
+            neighborhood_explorer_type>{
+            std::get<Index>(algorithms_),
+            solution_manager_,
+            neighborhood_,
+        };
+    }
+
     template<class Tag, class... RunArgs>
     [[nodiscard]]
     auto run(typename solution_manager_type::solution_type solution, RunArgs&&... args)
     {
         return runner<Tag>().run(
+            std::move(solution),
+            std::forward<RunArgs>(args)...);
+    }
+
+    template<std::size_t Index, class... RunArgs>
+        requires (Index < runner_count)
+    [[nodiscard]]
+    auto run_at(
+        typename solution_manager_type::solution_type solution,
+        RunArgs&&... args)
+    {
+        return runner_at<Index>().run(
             std::move(solution),
             std::forward<RunArgs>(args)...);
     }
@@ -506,6 +537,21 @@ public:
                  ...);
             },
             registrations_);
+    }
+
+    template<class Visitor>
+    void for_each_runner_registration_indexed(Visitor&& visitor) const
+    {
+        [&]<std::size_t... Index>(std::index_sequence<Index...>) {
+            (visitor.template operator()<
+                 typename std::tuple_element_t<
+                     Index,
+                     std::tuple<Registrations...>>::tag_type,
+                 Index>(
+                     std::string_view{std::get<Index>(registrations_).name},
+                     std::get<Index>(registrations_).config),
+             ...);
+        }(std::index_sequence_for<Registrations...>{});
     }
 
     template<class Tag>
