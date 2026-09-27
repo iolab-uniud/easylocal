@@ -1,4 +1,5 @@
 #pragma once
+#include <easylocal/check.hpp>
 
 #include <easylocal/aggregation.hpp>
 #include <easylocal/cursor_moves.hpp>

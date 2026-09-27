@@ -1199,3 +1199,38 @@ add_test(
     NAME easylocal.app-graph-shape
     COMMAND easylocal_app_graph_shape_test
 )
+
+add_executable(
+    easylocal_check_header_self_containment
+    check_header_self_containment.cpp
+)
+target_link_libraries(
+    easylocal_check_header_self_containment
+    PRIVATE
+        EasyLocal::Core
+)
+add_test(
+    NAME easylocal.check-header-self-containment
+    COMMAND easylocal_check_header_self_containment
+)
+
+add_executable(
+    easylocal_app_check_test
+    app_check.cpp
+)
+target_link_libraries(
+    easylocal_app_check_test
+    PRIVATE
+        EasyLocal::Core
+)
+add_test(
+    NAME easylocal.app-check
+    COMMAND easylocal_app_check_test
+)
+
+if(TARGET easylocal_tsp_two_apps_mwe)
+    add_test(
+        NAME easylocal.example.tsp-two-apps
+        COMMAND easylocal_tsp_two_apps_mwe
+    )
+endif()

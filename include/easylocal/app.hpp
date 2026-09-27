@@ -476,6 +476,20 @@ public:
         return std::get<index>(registrations_).name;
     }
 
+    template<class Visitor>
+    void for_each_runner_registration(Visitor&& visitor) const
+    {
+        std::apply(
+            [&](const auto&... registration) {
+                (visitor.template operator()<
+                     typename std::remove_cvref_t<decltype(registration)>::tag_type>(
+                         std::string_view{registration.name},
+                         registration.config),
+                 ...);
+            },
+            registrations_);
+    }
+
     template<class Tag>
         requires (app_runner_count_v<Tag, Registrations...> == 1) &&
                  std::copy_constructible<SMSpec> &&

@@ -29,4 +29,21 @@ if(EASYLOCAL_BUILD_EXAMPLES)
         PRIVATE
             EASYLOCAL_TSP_MWE_INSTANCE_FILE="${CMAKE_CURRENT_SOURCE_DIR}/instances/small.tsp"
     )
+
+    add_executable(
+        easylocal_tsp_two_apps_mwe
+        two_apps.cpp
+    )
+
+    target_link_libraries(
+        easylocal_tsp_two_apps_mwe
+        PRIVATE
+            easylocal_tsp_mwe_model
+    )
+
+    target_compile_definitions(
+        easylocal_tsp_two_apps_mwe
+        PRIVATE
+            EASYLOCAL_TSP_MWE_INSTANCE_FILE="${CMAKE_CURRENT_SOURCE_DIR}/instances/small.tsp"
+    )
 endif()
