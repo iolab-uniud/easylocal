@@ -162,6 +162,8 @@ public:
     using neighborhood_explorer_type = service_t<NHESpec>;
     using instance_type = typename solution_manager_type::instance_type;
 
+    static constexpr std::size_t runner_count = sizeof...(Registrations);
+
     app_instance(
         const instance_type& instance,
         const SMSpec& solution_manager_spec,
@@ -264,6 +266,12 @@ template<class SMSpec, class NHESpec, class... Registrations>
 class app_builder
 {
 public:
+    static constexpr bool has_solution_manager =
+        !std::same_as<SMSpec, unconfigured_t>;
+    static constexpr bool has_neighborhood =
+        !std::same_as<NHESpec, unconfigured_t>;
+    static constexpr std::size_t runner_count = sizeof...(Registrations);
+
     explicit app_builder(std::string name)
         : name_{std::move(name)}
     {

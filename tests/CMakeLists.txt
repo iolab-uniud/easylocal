@@ -1185,3 +1185,17 @@ add_test(
     NAME easylocal.app
     COMMAND easylocal_app_test
 )
+
+add_executable(
+    easylocal_app_graph_shape_test
+    app_graph_shape.cpp
+)
+target_link_libraries(
+    easylocal_app_graph_shape_test
+    PRIVATE
+        EasyLocal::Core
+)
+add_test(
+    NAME easylocal.app-graph-shape
+    COMMAND easylocal_app_graph_shape_test
+)
