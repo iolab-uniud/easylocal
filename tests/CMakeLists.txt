@@ -1157,3 +1157,31 @@ add_test(NAME easylocal.multi-start-solver COMMAND easylocal_multi_start_solver_
 add_executable(easylocal_two_stage_solver_test two_stage_solver.cpp)
 target_link_libraries(easylocal_two_stage_solver_test PRIVATE EasyLocal::Core)
 add_test(NAME easylocal.two-stage-solver COMMAND easylocal_two_stage_solver_test)
+
+add_executable(
+    easylocal_app_header_self_containment
+    app_header_self_containment.cpp
+)
+target_link_libraries(
+    easylocal_app_header_self_containment
+    PRIVATE
+        EasyLocal::Core
+)
+add_test(
+    NAME easylocal.app-header-self-containment
+    COMMAND easylocal_app_header_self_containment
+)
+
+add_executable(
+    easylocal_app_test
+    app.cpp
+)
+target_link_libraries(
+    easylocal_app_test
+    PRIVATE
+        EasyLocal::Core
+)
+add_test(
+    NAME easylocal.app
+    COMMAND easylocal_app_test
+)
