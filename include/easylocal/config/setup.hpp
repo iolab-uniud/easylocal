@@ -9,6 +9,7 @@
 #include <ostream>
 #include <span>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -56,6 +57,8 @@ inline void append_diagnostics(
         result.diagnostics.push_back({
             .source = setup_diagnostic_source::validation,
             .subject = diagnostic.path,
+            .value = {},
+            .line = 0,
             .message = diagnostic.message,
         });
     }
@@ -70,6 +73,8 @@ inline void append_diagnostics(
         result.diagnostics.push_back({
             .source = setup_diagnostic_source::command_line,
             .subject = diagnostic.argument,
+            .value = {},
+            .line = 0,
             .message = diagnostic.message,
         });
     }
@@ -84,10 +89,36 @@ inline void append_diagnostics(
         result.diagnostics.push_back({
             .source = setup_diagnostic_source::config_file,
             .subject = diagnostic.text,
+            .value = {},
             .line = diagnostic.line,
             .message = diagnostic.message,
         });
     }
+}
+
+
+inline auto block_has_direct_override(
+    const std::string_view block_path,
+    const std::span<const owned_text_override> overrides) -> bool
+{
+    for (const auto& candidate : overrides)
+    {
+        const std::string_view path{candidate.path};
+        if (!path.starts_with(block_path) ||
+            path.size() <= block_path.size() + 1 ||
+            path[block_path.size()] != '.')
+        {
+            continue;
+        }
+
+        const auto field = path.substr(block_path.size() + 1);
+        if (field.find('.') == std::string_view::npos)
+        {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 inline void append_diagnostics(
@@ -100,6 +131,7 @@ inline void append_diagnostics(
             .source = setup_diagnostic_source::override,
             .subject = diagnostic.path,
             .value = diagnostic.value,
+            .line = 0,
             .message = diagnostic.message,
         });
     }
@@ -116,19 +148,12 @@ auto load_and_apply(
 {
     setup_result result{};
 
-    const auto baseline_validation = validate(tree);
-    detail::append_diagnostics(result, baseline_validation);
-    if (!result)
-    {
-        return result;
-    }
-
     const auto cli = parse_cli(argc, argv);
     result.help_requested = cli.help_requested;
     detail::append_diagnostics(result, cli);
 
-    // Help is a frontend action. Preserve the existing CLI semantics: once
-    // requested, do not perform file I/O or mutate configuration.
+    // Help is a frontend action. It must remain available even when the
+    // program intentionally starts from incomplete/invalid defaults.
     if (result.help_requested)
     {
         return result;
@@ -149,6 +174,33 @@ auto load_and_apply(
     const auto effective_overrides = overlay_overrides(
         std::span<const owned_text_override>{file_configuration.overrides},
         std::span<const text_override>{cli.overrides});
+
+    // Invalid defaults are allowed when this batch directly overrides that
+    // parameter block: apply_overrides() will validate the staged candidate
+    // before committing anything. Invalid untouched blocks, however, make the
+    // whole transaction fail before any mutation can occur.
+    const auto baseline_validation = validate(tree);
+    for (const auto& diagnostic : baseline_validation.diagnostics)
+    {
+        if (!detail::block_has_direct_override(
+                diagnostic.path,
+                std::span<const owned_text_override>{effective_overrides}))
+        {
+            result.diagnostics.push_back({
+                .source = setup_diagnostic_source::validation,
+                .subject = diagnostic.path,
+                .value = {},
+                .line = 0,
+                .message = diagnostic.message,
+            });
+        }
+    }
+
+    if (!result)
+    {
+        return result;
+    }
+
     const auto effective_views = override_views(
         std::span<const owned_text_override>{effective_overrides});
     const auto overrides = apply_overrides(
@@ -161,9 +213,9 @@ auto load_and_apply(
         return result;
     }
 
-    // Keep the postcondition explicit even though apply_overrides validates
-    // every modified block transactionally: untouched blocks are part of the
-    // same configuration contract.
+    // At this point every untouched block was valid at baseline and every
+    // touched block was validated transactionally by apply_overrides().
+    // Keep this as a defensive check of that invariant.
     const auto final_validation = validate(tree);
     detail::append_diagnostics(result, final_validation);
     return result;

@@ -160,7 +160,7 @@ void invalid_batch_is_transactional()
     assert(solver.cooling_rate == 0.75);
 }
 
-void invalid_baseline_is_rejected_before_overrides()
+void invalid_baseline_can_be_repaired_by_overrides()
 {
     AppParameters app{.instance_file = {}, .seed = 17U};
     SolverParameters solver{};
@@ -174,16 +174,35 @@ void invalid_baseline_is_rejected_before_overrides()
 
     const auto result = easylocal::config::load_and_apply(2, argv, tree);
 
+    assert(result);
+    assert(app.instance_file == std::filesystem::path{"repaired.dat"});
+}
+
+void invalid_untouched_baseline_preserves_transactionality()
+{
+    AppParameters app{.instance_file = {}, .seed = 17U};
+    SolverParameters solver{};
+    const auto tree = easylocal::config::root(
+        easylocal::config::named<"application">(app),
+        easylocal::config::named<"solver">(solver));
+
+    char program[] = "solver";
+    char cooling[] = "--solver.cooling_rate=0.8";
+    char* argv[]{program, cooling};
+
+    const auto result = easylocal::config::load_and_apply(2, argv, tree);
+
     assert(!result);
-    assert(app.instance_file.empty());
+    assert(solver.cooling_rate == 0.75);
     assert(result.diagnostics.size() == 1);
     assert(result.diagnostics[0].source ==
            easylocal::config::setup_diagnostic_source::validation);
+    assert(result.diagnostics[0].subject == "application");
 }
 
 void help_remains_frontend_policy()
 {
-    AppParameters app{};
+    AppParameters app{.instance_file = {}, .seed = 17U};
     SolverParameters solver{};
     const auto tree = easylocal::config::root(
         easylocal::config::named<"application">(app),
@@ -256,7 +275,8 @@ int main()
     cli_overrides_are_applied();
     cli_has_precedence_over_file();
     invalid_batch_is_transactional();
-    invalid_baseline_is_rejected_before_overrides();
+    invalid_baseline_can_be_repaired_by_overrides();
+    invalid_untouched_baseline_preserves_transactionality();
     help_remains_frontend_policy();
     diagnostics_have_a_uniform_rendering_surface();
     return 0;
