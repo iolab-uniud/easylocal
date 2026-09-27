@@ -84,6 +84,12 @@ option(
     OFF
 )
 
+option(
+    EASYLOCAL_ENABLE_TUI
+    "Build the optional FTXUI terminal tester frontend"
+    OFF
+)
+
 if(EASYLOCAL_ENABLE_CONFIG_TOML)
     set(EASYLOCAL_CONFIG_TOML_BUNDLED FALSE)
     find_package(tomlplusplus 3.4 CONFIG QUIET)
@@ -123,6 +129,50 @@ if(EASYLOCAL_ENABLE_CONFIG_TOML)
     )
 endif()
 
+if(EASYLOCAL_ENABLE_TUI)
+    set(EASYLOCAL_TUI_BUNDLED FALSE)
+    find_package(ftxui 7 CONFIG QUIET)
+
+    if(NOT ftxui_FOUND)
+        if(EASYLOCAL_FETCH_DEPENDENCIES)
+            include(FetchContent)
+            set(FTXUI_BUILD_DOCS OFF CACHE BOOL "" FORCE)
+            set(FTXUI_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+            set(FTXUI_BUILD_MODULES OFF CACHE BOOL "" FORCE)
+            set(FTXUI_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+            set(FTXUI_BUILD_TESTS_FUZZER OFF CACHE BOOL "" FORCE)
+            set(FTXUI_ENABLE_INSTALL ON CACHE BOOL "" FORCE)
+            FetchContent_Declare(
+                ftxui
+                GIT_REPOSITORY https://github.com/ArthurSonzogni/FTXUI.git
+                GIT_TAG v7.0.3
+                GIT_SHALLOW TRUE
+            )
+            FetchContent_MakeAvailable(ftxui)
+            set(EASYLOCAL_TUI_BUNDLED TRUE)
+        else()
+            message(FATAL_ERROR
+                "EasyLocal TUI requires FTXUI >= 7.0. "
+                "Install FTXUI or reconfigure with "
+                "EASYLOCAL_FETCH_DEPENDENCIES=ON to allow FetchContent.")
+        endif()
+    endif()
+
+    add_library(easylocal_tui INTERFACE)
+    add_library(EasyLocal::TUI ALIAS easylocal_tui)
+    set_target_properties(
+        easylocal_tui
+        PROPERTIES
+            EXPORT_NAME TUI
+    )
+    target_link_libraries(
+        easylocal_tui
+        INTERFACE
+            easylocal_core
+            ftxui::ftxui
+    )
+endif()
+
 # The concrete MWE is deliberately outside the public EasyLocal++ API.
 # Its model targets are also consumed by tests and benchmarks, so make them
 # available whenever one of those project facilities is requested.
@@ -150,6 +200,7 @@ install(
     DIRECTORY include/
     DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
     PATTERN "easylocal/config/toml.hpp" EXCLUDE
+    PATTERN "easylocal/tui/*" EXCLUDE
 )
 
 if(EASYLOCAL_ENABLE_CONFIG_TOML)
@@ -170,11 +221,25 @@ if(EASYLOCAL_ENABLE_CONFIG_TOML)
     endif()
 endif()
 
+if(EASYLOCAL_ENABLE_TUI)
+    install(
+        DIRECTORY include/easylocal/tui/
+        DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/easylocal/tui"
+    )
+endif()
+
 if(EASYLOCAL_ENABLE_CONFIG_TOML)
     set(EASYLOCAL_CONFIG_TOML_AVAILABLE TRUE)
 else()
     set(EASYLOCAL_CONFIG_TOML_AVAILABLE FALSE)
     set(EASYLOCAL_CONFIG_TOML_BUNDLED FALSE)
+endif()
+
+if(EASYLOCAL_ENABLE_TUI)
+    set(EASYLOCAL_TUI_AVAILABLE TRUE)
+else()
+    set(EASYLOCAL_TUI_AVAILABLE FALSE)
+    set(EASYLOCAL_TUI_BUNDLED FALSE)
 endif()
 
 configure_package_config_file(

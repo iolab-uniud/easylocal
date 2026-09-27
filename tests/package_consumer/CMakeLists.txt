@@ -15,6 +15,15 @@ if(EASYLOCAL_FIND_MISSING_COMPONENT)
         REQUIRED
         COMPONENTS ConfigYAML
     )
+elseif(EASYLOCAL_FIND_TUI_COMPONENT)
+    find_package(
+        EasyLocal
+        "${EASYLOCAL_EXPECTED_VERSION}"
+        EXACT
+        CONFIG
+        REQUIRED
+        COMPONENTS Core TUI
+    )
 elseif(EASYLOCAL_FIND_CONFIG_TOML_COMPONENT)
     find_package(
         EasyLocal
@@ -125,6 +134,24 @@ target_link_libraries(
     PRIVATE
         EasyLocal::Core
 )
+
+
+if(EASYLOCAL_FIND_TUI_COMPONENT)
+    if(NOT TARGET EasyLocal::TUI)
+        message(FATAL_ERROR
+            "installed TUI component did not provide EasyLocal::TUI")
+    endif()
+    target_link_libraries(
+        easylocal_installed_package_consumer
+        PRIVATE
+            EasyLocal::TUI
+    )
+    target_compile_definitions(
+        easylocal_installed_package_consumer
+        PRIVATE
+            EASYLOCAL_TEST_TUI=1
+    )
+endif()
 
 if(EASYLOCAL_FIND_CONFIG_TOML_COMPONENT)
     if(NOT TARGET EasyLocal::ConfigTOML)

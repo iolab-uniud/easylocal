@@ -15,6 +15,40 @@ foreach(_easylocal_component IN LISTS EasyLocal_FIND_COMPONENTS)
         continue()
     endif()
 
+    if(_easylocal_component STREQUAL "TUI")
+        if(@EASYLOCAL_TUI_AVAILABLE@)
+            include(CMakeFindDependencyMacro)
+            if(@EASYLOCAL_TUI_BUNDLED@)
+                find_dependency(
+                    ftxui 7 CONFIG
+                    PATHS
+                        "${PACKAGE_PREFIX_DIR}/@CMAKE_INSTALL_LIBDIR@/cmake/ftxui"
+                    NO_DEFAULT_PATH
+                )
+            else()
+                find_dependency(ftxui 7 CONFIG)
+            endif()
+
+            if(NOT TARGET EasyLocal::TUI)
+                add_library(EasyLocal::TUI INTERFACE IMPORTED)
+                set_target_properties(
+                    EasyLocal::TUI
+                    PROPERTIES
+                        INTERFACE_LINK_LIBRARIES
+                            "EasyLocal::Core;ftxui::ftxui"
+                        INTERFACE_INCLUDE_DIRECTORIES
+                            "${PACKAGE_PREFIX_DIR}/@CMAKE_INSTALL_INCLUDEDIR@"
+                )
+            endif()
+            set(EasyLocal_TUI_FOUND TRUE)
+        else()
+            set(EasyLocal_TUI_FOUND FALSE)
+            set(EasyLocal_NOT_FOUND_MESSAGE
+                "Requested EasyLocal component 'TUI' is not available in this installation")
+        endif()
+        continue()
+    endif()
+
     if(_easylocal_component STREQUAL "ConfigTOML")
         if(@EASYLOCAL_CONFIG_TOML_AVAILABLE@)
             if(@EASYLOCAL_CONFIG_TOML_BUNDLED@)

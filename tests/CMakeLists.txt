@@ -859,6 +859,38 @@ add_test(
     COMMAND easylocal_neighborhood_composition_test
 )
 
+
+if(TARGET EasyLocal::TUI)
+    add_executable(
+        easylocal_tui_header_self_containment
+        tui_header_self_containment.cpp
+    )
+    target_link_libraries(
+        easylocal_tui_header_self_containment
+        PRIVATE
+            EasyLocal::TUI
+    )
+    add_test(
+        NAME easylocal.tui-header-self-containment
+        COMMAND easylocal_tui_header_self_containment
+    )
+
+    add_executable(
+        easylocal_tui_tester_compile_test
+        tui_tester_compile.cpp
+    )
+    target_link_libraries(
+        easylocal_tui_tester_compile_test
+        PRIVATE
+            easylocal_assignment_mwe_model
+            EasyLocal::TUI
+    )
+    add_test(
+        NAME easylocal.tui-tester-compile
+        COMMAND easylocal_tui_tester_compile_test
+    )
+endif()
+
 if(TARGET EasyLocal::ConfigTOML)
     set(_easylocal_config_toml_enabled ON)
 else()
@@ -871,6 +903,18 @@ else()
     set(_easylocal_config_toml_bundled OFF)
 endif()
 
+if(TARGET EasyLocal::TUI)
+    set(_easylocal_tui_enabled ON)
+else()
+    set(_easylocal_tui_enabled OFF)
+endif()
+
+if(EASYLOCAL_TUI_BUNDLED)
+    set(_easylocal_tui_bundled ON)
+else()
+    set(_easylocal_tui_bundled OFF)
+endif()
+
 add_test(
     NAME easylocal.installed-package-consumer
     COMMAND
@@ -878,6 +922,8 @@ add_test(
         "-DEASYLOCAL_BUILD_DIR=${PROJECT_BINARY_DIR}"
         "-DEASYLOCAL_CONFIG_TOML_ENABLED=${_easylocal_config_toml_enabled}"
         "-DEASYLOCAL_CONFIG_TOML_BUNDLED=${_easylocal_config_toml_bundled}"
+        "-DEASYLOCAL_TUI_ENABLED=${_easylocal_tui_enabled}"
+        "-DEASYLOCAL_TUI_BUNDLED=${_easylocal_tui_bundled}"
         "-DEASYLOCAL_DEPENDENCY_PREFIX_PATH=${CMAKE_PREFIX_PATH}"
         "-DEASYLOCAL_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
         "-DEASYLOCAL_CONFIG=$<CONFIG>"

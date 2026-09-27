@@ -26,7 +26,7 @@ function(easylocal_run_checked description)
     endif()
 endfunction()
 
-function(easylocal_configure_build_test_consumer name use_core_component use_config_toml_component)
+function(easylocal_configure_build_test_consumer name use_core_component use_config_toml_component use_tui_component)
     set(_consumer_build_dir "${EASYLOCAL_WORK_DIR}/${name}")
     set(
         _configure_command
@@ -40,6 +40,7 @@ function(easylocal_configure_build_test_consumer name use_core_component use_con
         "-DEASYLOCAL_EXPECTED_INSTALL_PREFIX=${_install_prefix}"
         "-DEASYLOCAL_FIND_CORE_COMPONENT=${use_core_component}"
         "-DEASYLOCAL_FIND_CONFIG_TOML_COMPONENT=${use_config_toml_component}"
+        "-DEASYLOCAL_FIND_TUI_COMPONENT=${use_tui_component}"
     )
     if(DEFINED EASYLOCAL_DEPENDENCY_PREFIX_PATH
             AND NOT "${EASYLOCAL_DEPENDENCY_PREFIX_PATH}" STREQUAL "")
@@ -119,6 +120,28 @@ if(NOT EXISTS "${_package_dir}/EasyLocalConfig.cmake")
         "installed package config not found at ${_package_dir}/EasyLocalConfig.cmake")
 endif()
 
+set(_tui_header
+    "${_install_prefix}/include/easylocal/tui/tester.hpp")
+if(EASYLOCAL_TUI_ENABLED)
+    if(NOT EXISTS "${_tui_header}")
+        message(FATAL_ERROR
+            "TUI was enabled but its installed header is missing")
+    endif()
+    if(EASYLOCAL_TUI_BUNDLED)
+        set(_bundled_ftxui_config
+            "${_install_prefix}/${EASYLOCAL_INSTALL_LIBDIR}/cmake/ftxui/ftxui-config.cmake")
+        if(NOT EXISTS "${_bundled_ftxui_config}")
+            message(FATAL_ERROR
+                "TUI fetched FTXUI but its installed package config is missing")
+        endif()
+    endif()
+else()
+    if(EXISTS "${_tui_header}")
+        message(FATAL_ERROR
+            "TUI header leaked into a Core-only installation")
+    endif()
+endif()
+
 set(_toml_header
     "${_install_prefix}/include/easylocal/config/toml.hpp")
 set(_bundled_toml_header
@@ -148,11 +171,15 @@ else()
     endif()
 endif()
 
-easylocal_configure_build_test_consumer(legacy OFF OFF)
-easylocal_configure_build_test_consumer(core-component ON OFF)
+easylocal_configure_build_test_consumer(legacy OFF OFF OFF)
+easylocal_configure_build_test_consumer(core-component ON OFF OFF)
 
 if(EASYLOCAL_CONFIG_TOML_ENABLED)
-    easylocal_configure_build_test_consumer(config-toml ON ON)
+    easylocal_configure_build_test_consumer(config-toml ON ON OFF)
+endif()
+
+if(EASYLOCAL_TUI_ENABLED)
+    easylocal_configure_build_test_consumer(tui ON OFF ON)
 endif()
 
 set(_missing_component_build_dir "${EASYLOCAL_WORK_DIR}/missing-component")
