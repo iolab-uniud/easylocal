@@ -925,6 +925,12 @@ easylocal_add_compile_failure_test(
     "ComponentA"
 )
 easylocal_add_compile_failure_test(
+    tester-missing-solution-factory
+    tester_missing_solution_factory.cpp
+    "Tester requires the SolutionManager to provide initial_solution() or random_solution(std::mt19937_64&)"
+    "SolutionManager"
+)
+easylocal_add_compile_failure_test(
     missing-solution-manager-inherited-constructor
     missing_solution_manager_inherited_constructor.cpp
     "did you forget `using solution_manager_base::solution_manager_base;`?"
