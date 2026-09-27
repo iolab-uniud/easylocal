@@ -327,8 +327,20 @@ private:
     std::tuple<typename Registrations::algorithm_type...> algorithms_;
 };
 
+template<class Spec>
+struct app_input_type
+{
+};
+
+template<class Spec>
+    requires is_solution_manager_spec_v<Spec>
+struct app_input_type<Spec>
+{
+    using input_type = typename service_t<Spec>::instance_type;
+};
+
 template<class SMSpec, class NHESpec, class... Registrations>
-class app_builder
+class app_builder : public app_input_type<SMSpec>
 {
     static_assert(
         std::copy_constructible<SMSpec> &&

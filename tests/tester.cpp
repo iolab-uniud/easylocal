@@ -33,10 +33,16 @@ auto make_application()
               CapacityCostComponent,
               ReassignCapacityDeltaEvaluator>();
 
-    return easylocal::app("assignment")
+    auto application = easylocal::app("assignment")
         .solution_manager(std::move(sm))
         .neighborhood(std::move(nhe))
         .runner<easylocal::runner::first_improvement>("fi");
+
+    application
+        .runner_config<easylocal::runner::first_improvement>()
+        .max_evaluations = 100;
+
+    return application;
 }
 
 using app_type = decltype(make_application());
@@ -46,6 +52,58 @@ static_assert(std::is_copy_assignable_v<app_type>);
 static_assert(std::move_constructible<app_type>);
 static_assert(std::is_move_assignable_v<app_type>);
 static_assert(std::constructible_from<easylocal::Tester<app_type>, app_type>);
+static_assert(std::move_constructible<easylocal::Tester<app_type>>);
+static_assert(!std::copy_constructible<easylocal::Tester<app_type>>);
+static_assert(std::same_as<
+    decltype(std::declval<easylocal::Tester<app_type>&>().input()),
+    const AssignmentInstance&>);
+
+
+[[nodiscard]]
+auto make_input(const quantity_type demand) -> AssignmentInstance
+{
+    return AssignmentInstance{
+        .demand = {demand, demand + 1},
+        .capacity = {10, 20},
+    };
+}
+
+void tester_owns_input_and_builds_instance_from_it()
+{
+    easylocal::Tester tester{make_application()};
+
+    assert(!tester.has_input());
+
+    tester.set_input(make_input(3));
+
+    assert(tester.has_input());
+    assert(tester.input().demand[0] == 3);
+    assert(std::addressof(tester.instance().instance()) == std::addressof(tester.input()));
+}
+
+void replacing_input_rebuilds_the_app_instance()
+{
+    easylocal::Tester tester{make_application()};
+    tester.set_input(make_input(3));
+
+    tester.set_input(make_input(7));
+
+    assert(tester.input().demand[0] == 7);
+    assert(tester.instance().instance().demand[0] == 7);
+    assert(std::addressof(tester.instance().instance()) == std::addressof(tester.input()));
+}
+
+void moving_tester_preserves_instance_input_binding()
+{
+    easylocal::Tester tester{make_application()};
+    tester.set_input(make_input(11));
+
+    auto moved = std::move(tester);
+
+    assert(moved.has_input());
+    assert(moved.input().demand[0] == 11);
+    assert(std::addressof(moved.instance().instance()) == std::addressof(moved.input()));
+}
 
 void app_copy_preserves_graph_configuration()
 {
@@ -108,4 +166,7 @@ int main()
     app_copy_preserves_graph_configuration();
     tester_can_copy_an_lvalue_app();
     tester_can_take_ownership_of_an_rvalue_app();
+    tester_owns_input_and_builds_instance_from_it();
+    replacing_input_rebuilds_the_app_instance();
+    moving_tester_preserves_instance_input_binding();
 }
