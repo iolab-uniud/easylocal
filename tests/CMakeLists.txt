@@ -83,6 +83,20 @@ add_test(
     COMMAND easylocal_configuration_cli_header_self_containment
 )
 
+add_executable(
+    easylocal_configuration_setup_header_self_containment
+    configuration_setup_header_self_containment.cpp
+)
+target_link_libraries(
+    easylocal_configuration_setup_header_self_containment
+    PRIVATE
+        EasyLocal::Core
+)
+add_test(
+    NAME easylocal.configuration-setup-header-self-containment
+    COMMAND easylocal_configuration_setup_header_self_containment
+)
+
 
 if(TARGET EasyLocal::ConfigTOML)
     add_executable(
@@ -801,6 +815,20 @@ target_link_libraries(
 add_test(
     NAME easylocal.configuration-cli
     COMMAND easylocal_configuration_cli_test
+)
+
+add_executable(
+    easylocal_configuration_setup_test
+    configuration_setup.cpp
+)
+target_link_libraries(
+    easylocal_configuration_setup_test
+    PRIVATE
+        EasyLocal::Core
+)
+add_test(
+    NAME easylocal.configuration-setup
+    COMMAND easylocal_configuration_setup_test
 )
 
 add_executable(
