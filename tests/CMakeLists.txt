@@ -1401,35 +1401,35 @@ add_test(
     COMMAND easylocal_tester_io_test
 )
 
-add_executable(
-    easylocal_rest_execution_header_self_containment
-    rest_execution_header_self_containment.cpp
-)
-target_link_libraries(
-    easylocal_rest_execution_header_self_containment
-    PRIVATE
-        EasyLocal::Core
-)
-add_test(
-    NAME easylocal.rest-execution-header-self-containment
-    COMMAND easylocal_rest_execution_header_self_containment
-)
-
-add_executable(
-    easylocal_rest_execution_test
-    rest_execution.cpp
-)
-target_link_libraries(
-    easylocal_rest_execution_test
-    PRIVATE
-        EasyLocal::Core
-)
-add_test(
-    NAME easylocal.rest-execution
-    COMMAND easylocal_rest_execution_test
-)
-
 if(TARGET EasyLocal::REST)
+    add_executable(
+        easylocal_rest_execution_header_self_containment
+        rest_execution_header_self_containment.cpp
+    )
+    target_link_libraries(
+        easylocal_rest_execution_header_self_containment
+        PRIVATE
+            EasyLocal::REST
+    )
+    add_test(
+        NAME easylocal.rest-execution-header-self-containment
+        COMMAND easylocal_rest_execution_header_self_containment
+    )
+
+    add_executable(
+        easylocal_rest_execution_test
+        rest_execution.cpp
+    )
+    target_link_libraries(
+        easylocal_rest_execution_test
+        PRIVATE
+            EasyLocal::REST
+    )
+    add_test(
+        NAME easylocal.rest-execution
+        COMMAND easylocal_rest_execution_test
+    )
+
     add_executable(
         easylocal_rest_blueprint_header_self_containment
         rest_blueprint_header_self_containment.cpp

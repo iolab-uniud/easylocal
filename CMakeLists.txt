@@ -233,11 +233,12 @@ if(EASYLOCAL_ENABLE_REST)
                     GIT_REPOSITORY https://github.com/chriskohlhoff/asio.git
                     GIT_TAG asio-1-38-2
                     GIT_SHALLOW TRUE
+                    # Asio is consumed as headers only.  Use a deliberately
+                    # nonexistent source subdirectory so MakeAvailable() only
+                    # performs population and never adds Asio's own project.
+                    SOURCE_SUBDIR _easylocal_headers_only
                 )
-                FetchContent_GetProperties(easylocal_asio)
-                if(NOT easylocal_asio_POPULATED)
-                    FetchContent_Populate(easylocal_asio)
-                endif()
+                FetchContent_MakeAvailable(easylocal_asio)
                 set(
                     EASYLOCAL_ASIO_INCLUDE_DIR
                     "${easylocal_asio_SOURCE_DIR}/asio/include"

@@ -189,8 +189,11 @@ else
     [[ "$TEST_REST" == on ]] && profile_label="${profile_label}+rest"
 fi
 echo "==> Profile: ${profile_label}"
-echo "==> Configure: ${PRESET}"
-cmake --preset "$PRESET"
+echo "==> Configure: ${PRESET} (Core only)"
+cmake --fresh --preset "$PRESET" \
+    -DEASYLOCAL_ENABLE_CONFIG_TOML=OFF \
+    -DEASYLOCAL_ENABLE_TUI=OFF \
+    -DEASYLOCAL_ENABLE_REST=OFF
 
 echo
 echo "==> Build: ${PRESET}"

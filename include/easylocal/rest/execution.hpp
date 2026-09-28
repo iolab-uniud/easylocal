@@ -5,6 +5,7 @@
 #include <cstddef>
 #include <deque>
 #include <functional>
+#include <future>
 #include <mutex>
 #include <thread>
 #include <utility>
@@ -25,6 +26,17 @@ namespace easylocal::rest
 
 class execution_pool
 {
+private:
+#if defined(__cpp_lib_move_only_function) && __cpp_lib_move_only_function >= 202110L
+    using queued_task = std::move_only_function<void()>;
+#else
+    // std::move_only_function is a C++23 library feature, but some otherwise
+    // C++23-capable standard libraries (notably Apple libc++ shipped with
+    // current Xcode releases) do not provide it yet. std::packaged_task gives
+    // us the same move-only, one-shot callable semantics for the queue.
+    using queued_task = std::packaged_task<void()>;
+#endif
+
 public:
     explicit execution_pool(
         std::size_t workers = default_worker_count(),
@@ -84,7 +96,7 @@ private:
     {
         while (true)
         {
-            std::move_only_function<void()> task;
+            queued_task task;
             {
                 std::unique_lock lock{mutex_};
                 ready_.wait(lock, [this] {
@@ -115,7 +127,7 @@ private:
     std::size_t queue_capacity_;
     mutable std::mutex mutex_;
     std::condition_variable ready_;
-    std::deque<std::move_only_function<void()>> queue_;
+    std::deque<queued_task> queue_;
     bool stopping_{};
     std::vector<std::jthread> workers_;
 };
