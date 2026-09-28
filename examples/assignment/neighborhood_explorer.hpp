@@ -9,6 +9,7 @@
 #include <cstddef>
 #include <optional>
 #include <random>
+#include <string_view>
 #include <utility>
 
 namespace easylocal::mwe::assignment
@@ -21,6 +22,12 @@ class ReassignJobNeighborhoodExplorer
 {
 public:
     using neighborhood_explorer_base::neighborhood_explorer_base;
+
+    [[nodiscard]]
+    static constexpr auto name() noexcept -> std::string_view
+    {
+        return "Reassign job";
+    }
     [[nodiscard]]
     auto is_valid(
         const AssignmentSolution& solution,

@@ -5,6 +5,7 @@
 #include <fstream>
 #include <ostream>
 #include <string>
+#include <string_view>
 
 namespace
 {
@@ -48,19 +49,68 @@ inline auto operator<<(std::ostream& out, const stream_only&) -> std::ostream&
     return out << "stream";
 }
 
+struct context_probe
+{
+    bool input{};
+    bool solution{};
+    bool valid{true};
+
+    [[nodiscard]] auto has_input() const noexcept -> bool { return input; }
+    [[nodiscard]] auto has_solution() const noexcept -> bool { return solution; }
+    [[nodiscard]] auto is_valid() const noexcept -> bool { return valid; }
+};
+
+struct named_value
+{
+    [[nodiscard]] static constexpr auto name() noexcept -> std::string_view
+    {
+        return "named";
+    }
+};
+
+struct unnamed_value
+{
+};
+
 } // namespace
 
 int main()
 {
     using easylocal::tui::path_display_mode;
+    using easylocal::tui::detail::page_available;
+    using easylocal::tui::detail::page_index;
+    using easylocal::tui::detail::tester_page;
+    using easylocal::tui::detail::context_pages_available;
     using easylocal::tui::detail::directory_entries;
     using easylocal::tui::detail::display_path;
     using easylocal::tui::detail::editable_path;
+    using easylocal::tui::detail::object_name;
     using easylocal::tui::detail::value_text;
 
     assert(value_text(member_described{}) == "member");
     assert(value_text(adl_case::value{}) == "adl");
     assert(value_text(stream_only{}) == "stream");
+    assert(object_name(named_value{}) == "named");
+    assert(object_name(unnamed_value{}) == "<unnamed neighborhood>");
+
+    assert(!context_pages_available(context_probe{}));
+    assert(!context_pages_available(context_probe{.input = true}));
+    assert(!context_pages_available(context_probe{.solution = true}));
+    assert(context_pages_available(context_probe{.input = true, .solution = true}));
+    assert(!context_pages_available(
+        context_probe{.input = true, .solution = true, .valid = false}));
+
+    const context_probe empty_context{};
+    const context_probe ready_context{.input = true, .solution = true};
+    assert(page_available(empty_context, tester_page::solution));
+    assert(!page_available(empty_context, tester_page::move));
+    assert(!page_available(empty_context, tester_page::run));
+    assert(page_available(ready_context, tester_page::solution));
+    assert(page_available(ready_context, tester_page::move));
+    assert(page_available(ready_context, tester_page::run));
+    assert(page_index(tester_page::solution) == 0);
+    assert(page_index(tester_page::move) == 1);
+    assert(page_index(tester_page::run) == 2);
 
     const auto fixture =
         std::filesystem::current_path() / "easylocal-tui-helpers-fixture";

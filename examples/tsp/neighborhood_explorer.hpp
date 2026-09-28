@@ -11,6 +11,7 @@
 #include <iterator>
 #include <optional>
 #include <random>
+#include <string_view>
 
 namespace easylocal::mwe::tsp
 {
@@ -87,6 +88,12 @@ private:
 
 public:
     using neighborhood_explorer_base::neighborhood_explorer_base;
+
+    [[nodiscard]]
+    static constexpr auto name() noexcept -> std::string_view
+    {
+        return "2-opt";
+    }
     [[nodiscard]]
     auto is_valid(
         const Tour& solution,
