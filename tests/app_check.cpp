@@ -47,6 +47,87 @@ using namespace easylocal::mwe::assignment;
     return application;
 }
 
+struct BrokenEqualityInput
+{
+};
+
+struct BrokenEqualitySolution
+{
+    int value{};
+
+    friend auto operator==(
+        const BrokenEqualitySolution&,
+        const BrokenEqualitySolution&) noexcept -> bool
+    {
+        return false;
+    }
+};
+
+struct BrokenEqualityMove
+{
+};
+
+class BrokenEqualitySolutionManager
+    : public easylocal::solution_manager_base<
+          BrokenEqualityInput,
+          BrokenEqualitySolution>
+{
+public:
+    using solution_manager_base::solution_manager_base;
+    using cost_type = int;
+
+    [[nodiscard]] static auto is_valid(const BrokenEqualitySolution&) noexcept
+        -> bool
+    {
+        return true;
+    }
+
+    [[nodiscard]] static auto evaluate(const BrokenEqualitySolution& solution) noexcept
+        -> cost_type
+    {
+        return solution.value;
+    }
+
+    [[nodiscard]] static auto initial_solution() noexcept -> BrokenEqualitySolution
+    {
+        return {};
+    }
+};
+
+class BrokenEqualityNeighborhood
+    : public easylocal::neighborhood_explorer_base<
+          BrokenEqualitySolutionManager,
+          BrokenEqualityMove>
+{
+public:
+    using neighborhood_explorer_base::neighborhood_explorer_base;
+
+    [[nodiscard]] static auto is_valid(
+        const BrokenEqualitySolution&,
+        const BrokenEqualityMove&) noexcept -> bool
+    {
+        return true;
+    }
+
+    [[nodiscard]] static auto first_move(
+        const BrokenEqualitySolution&,
+        BrokenEqualityMove&) noexcept -> bool
+    {
+        return false;
+    }
+
+    [[nodiscard]] static auto next_move(
+        const BrokenEqualitySolution&,
+        BrokenEqualityMove&) noexcept -> bool
+    {
+        return false;
+    }
+
+    static void make_move(BrokenEqualitySolution&, const BrokenEqualityMove&) noexcept
+    {
+    }
+};
+
 class BrokenNeighborhoodExplorer
 {
 public:
@@ -157,11 +238,39 @@ void check_fails_on_a_broken_realized_graph()
     assert(attributed_to_move_application);
 }
 
+void check_validates_solution_equality_when_available()
+{
+    auto application =
+        easylocal::app("broken-equality")
+            .solution_manager<BrokenEqualitySolutionManager>()
+            .neighborhood<BrokenEqualityNeighborhood>()
+            .runner<easylocal::runner::first_improvement>("fi");
+    application
+        .runner_config<easylocal::runner::first_improvement>()
+        .max_evaluations = 1;
+
+    const BrokenEqualityInput input{};
+    const BrokenEqualitySolution solution{};
+    const auto report = easylocal::check(application, input, solution);
+
+    assert(!report.passed());
+    bool found_equality_failure = false;
+    for (const auto& failure : report.failures())
+    {
+        if (failure.check == "solution equality reflexivity")
+        {
+            found_equality_failure = true;
+        }
+    }
+    assert(found_equality_failure);
+}
+
 } // namespace
 
 int main()
 {
     real_app_graph_is_checked_with_full_coverage();
     check_fails_on_a_broken_realized_graph();
+    check_validates_solution_equality_when_available();
     return 0;
 }

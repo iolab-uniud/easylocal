@@ -44,6 +44,7 @@ struct tester_options
     std::filesystem::path path_base;
     std::size_t max_render_chars{4096};
     std::size_t random_distribution_rounds{20};
+    std::size_t max_diagnostic_entries{256};
     std::string exit_label{"quit"};
 };
 
@@ -157,6 +158,15 @@ struct progress_snapshot
     }
     const auto bounded = std::min(progress.current, *progress.total);
     return static_cast<float>(bounded) / static_cast<float>(*progress.total);
+}
+
+[[nodiscard]] inline auto path_basename(std::string_view path) -> std::string
+{
+    if (path.empty())
+    {
+        return {};
+    }
+    return std::filesystem::path{std::string{path}}.filename().string();
 }
 
 enum class solution_stage
@@ -638,7 +648,7 @@ public:
         if constexpr (tester_type::supports_random_distribution_check)
         {
             move_diagnostics->Add(Button(
-                "U Random",
+                "U Distribution",
                 [this] { check_random_distribution(); },
                 ButtonOption::Ascii()));
         }
@@ -753,6 +763,39 @@ public:
             return false;
         });
 
+        auto diagnostic_menu_option = MenuOption::Vertical();
+        auto diagnostic_menu = Menu(
+            &diagnostic_lines_,
+            &diagnostic_selected_,
+            diagnostic_menu_option);
+        auto diagnostic_close = Button(
+            "Close",
+            [this] { diagnostic_visible_ = false; },
+            ButtonOption::Ascii());
+        auto diagnostic_controls = Container::Vertical({
+            diagnostic_menu,
+            diagnostic_close,
+        });
+        auto diagnostic_renderer = Renderer(
+            diagnostic_controls,
+            [this, diagnostic_menu, diagnostic_close] {
+                return render_diagnostic_viewer(
+                    diagnostic_menu, diagnostic_close);
+            });
+        diagnostic_renderer = CatchEvent(diagnostic_renderer, [this](Event event) {
+            if (event == Event::Escape || event == Event::q || event == Event::Q)
+            {
+                diagnostic_visible_ = false;
+                return true;
+            }
+            return false;
+        });
+
+        auto progress_controls = Container::Vertical({});
+        auto progress_renderer = Renderer(progress_controls, [this] {
+            return render_progress_modal();
+        });
+
         auto input_viewer_controls = Container::Vertical({
             Button(
                 "Close",
@@ -797,6 +840,8 @@ public:
 
         Component root = Modal(main_renderer, browser_renderer, &browser_visible_);
         root = Modal(root, help_renderer, &help_visible_);
+        root = Modal(root, diagnostic_renderer, &diagnostic_visible_);
+        root = Modal(root, progress_renderer, &progress_visible_);
         root = Modal(root, input_viewer, &input_visible_);
         root = Modal(root, solution_viewer, &solution_visible_);
         root = CatchEvent(
@@ -807,7 +852,8 @@ public:
                     help_visible_ = !help_visible_;
                     return true;
                 }
-                if (browser_visible_ || help_visible_)
+                if (browser_visible_ || help_visible_ || diagnostic_visible_ ||
+                    progress_visible_)
                 {
                     return false;
                 }
@@ -928,7 +974,15 @@ private:
                 append("X Random");
             append("A Apply");
             if constexpr (tester_type::supports_deterministic_moves)
-                append("P/T/C/D/U Diag");
+                append("P List");
+            if constexpr (tester_type::supports_improvement_selection)
+                append("T Stats");
+            if constexpr (tester_type::supports_cost_consistency_check)
+                append("C Costs");
+            if constexpr (tester_type::supports_move_independence_check)
+                append("D Indep");
+            if constexpr (tester_type::supports_random_distribution_check)
+                append("U Dist");
             break;
         case tester_page::run:
             append("G Run selected");
@@ -1206,7 +1260,6 @@ private:
             const auto path = resolve_path(input_path_);
             tester_.load_input(path);
             last_move_result_.clear();
-            last_move_diagnostic_.clear();
             last_run_result_.clear();
             refresh_page_labels();
             page_selected_ = page_index(tester_page::solution);
@@ -1300,7 +1353,6 @@ private:
     void after_solution_change()
     {
         last_move_result_.clear();
-        last_move_diagnostic_.clear();
         last_run_result_.clear();
         refresh_page_labels();
         page_selected_ = page_index(detail::page_after_solution_change(tester_));
@@ -1454,7 +1506,8 @@ private:
         if (!require_solution("List neighbors"))
             return;
         perform("List neighbors", [this] {
-            const auto result = tester_.neighborhood_preview(5);
+            const auto result = tester_.neighborhood_preview(
+                options_.max_diagnostic_entries);
             std::ostringstream out;
             out << "Neighbors: " << result.moves;
             for (const auto& entry : result.entries)
@@ -1465,7 +1518,7 @@ private:
             {
                 out << "\n... " << (result.moves - result.entries.size()) << " more";
             }
-            last_move_diagnostic_ = out.str();
+            show_diagnostic("Neighborhood list", out.str());
             set_status(status_kind::success, "Neighborhood listed");
         });
     }
@@ -1477,13 +1530,13 @@ private:
             return;
         perform("Neighborhood statistics", [this] {
             const auto result = tester_.neighborhood_statistics();
-            last_move_diagnostic_ =
-                "Statistics: " + std::to_string(result.moves) + " moves\n" +
-                "improving " + std::to_string(result.improving) +
-                "  sideways " + std::to_string(result.sideways) +
-                "  worsening " + std::to_string(result.worsening) +
-                (result.invalid == 0 ? std::string{} :
-                    "  invalid " + std::to_string(result.invalid));
+            show_diagnostic(
+                "Neighborhood statistics",
+                "Moves: " + std::to_string(result.moves) + "\n" +
+                    "Improving: " + std::to_string(result.improving) + "\n" +
+                    "Sideways: " + std::to_string(result.sideways) + "\n" +
+                    "Worsening: " + std::to_string(result.worsening) + "\n" +
+                    "Invalid: " + std::to_string(result.invalid));
             set_status(status_kind::success, "Neighborhood statistics computed");
         });
     }
@@ -1495,10 +1548,11 @@ private:
             return;
         perform("Check neighborhood costs", [this] {
             const auto result = tester_.check_neighborhood_costs();
-            last_move_diagnostic_ =
-                "Cost check: " + std::to_string(result.moves) + " moves\n" +
-                "mismatches " + std::to_string(result.mismatches) +
-                "  invalid " + std::to_string(result.invalid);
+            show_diagnostic(
+                "Neighborhood cost check",
+                "Moves: " + std::to_string(result.moves) + "\n" +
+                    "Mismatches: " + std::to_string(result.mismatches) + "\n" +
+                    "Invalid: " + std::to_string(result.invalid));
             set_status(
                 result.mismatches == 0 && result.invalid == 0
                     ? status_kind::success
@@ -1516,11 +1570,12 @@ private:
             return;
         perform("Check move independence", [this] {
             const auto result = tester_.check_move_independence();
-            last_move_diagnostic_ =
-                "Independence: " + std::to_string(result.moves) + " moves\n" +
-                "null " + std::to_string(result.null_moves) +
-                "  repeated states " + std::to_string(result.repeated_states) +
-                "  invalid " + std::to_string(result.invalid);
+            show_diagnostic(
+                "Move independence",
+                "Moves: " + std::to_string(result.moves) + "\n" +
+                    "Null moves: " + std::to_string(result.null_moves) + "\n" +
+                    "Repeated states: " + std::to_string(result.repeated_states) + "\n" +
+                    "Invalid: " + std::to_string(result.invalid));
             set_status(
                 result.null_moves == 0 && result.repeated_states == 0 && result.invalid == 0
                     ? status_kind::success
@@ -1537,13 +1592,15 @@ private:
         perform("Check random distribution", [this] {
             const auto result = tester_.check_random_move_distribution(
                 rng_, options_.random_distribution_rounds);
-            last_move_diagnostic_ =
-                "Random distribution: " + std::to_string(result.neighborhood_size) +
-                " moves, " + std::to_string(result.samples) + " samples\n" +
-                "frequency " + std::to_string(result.min_frequency) + ".." +
-                std::to_string(result.max_frequency) +
-                "  unseen " + std::to_string(result.unseen) +
-                "  outside " + std::to_string(result.out_of_neighborhood);
+            show_diagnostic(
+                "Random move distribution",
+                "Neighborhood size: " + std::to_string(result.neighborhood_size) + "\n" +
+                    "Samples: " + std::to_string(result.samples) + "\n" +
+                    "Frequency range: " + std::to_string(result.min_frequency) +
+                    ".." + std::to_string(result.max_frequency) + "\n" +
+                    "Unseen moves: " + std::to_string(result.unseen) + "\n" +
+                    "Outside neighborhood: " +
+                    std::to_string(result.out_of_neighborhood));
             set_status(
                 result.out_of_neighborhood == 0 && result.unseen == 0
                     ? status_kind::success
@@ -1567,7 +1624,6 @@ private:
             const auto before = tester_.evaluate();
             tester_.apply_move();
             const auto after = tester_.evaluate();
-            last_move_diagnostic_.clear();
             last_move_result_ =
                 "Applied: " + value_text(before) + " -> " + value_text(after);
             set_status(status_kind::success, "Move applied");
@@ -1606,7 +1662,6 @@ private:
                 return;
             }
             const auto after = tester_.evaluate();
-            last_move_diagnostic_.clear();
             last_run_result_ =
                 name + ": " + value_text(before) + " -> " + value_text(after);
             set_status(status_kind::success, "Runner completed: " + name);
@@ -1715,17 +1770,6 @@ private:
         return vbox(std::move(lines));
     }
 
-    [[nodiscard]] auto move_progress() const -> progress_snapshot
-    {
-        // Placeholder until framework components expose cooperative progress.
-        // Keeping this adapter local to the frontend avoids imposing a Core API
-        // before the reporting contract is designed.
-        return {
-            .mode = progress_mode::unavailable,
-            .label = "not reported by component",
-        };
-    }
-
     [[nodiscard]] auto render_progress(const progress_snapshot& progress) const
         -> ftxui::Element
     {
@@ -1763,11 +1807,6 @@ private:
         if (!tester_.has_move())
         {
             lines.push_back(text("No move selected") | dim);
-            if (!last_move_diagnostic_.empty())
-            {
-                lines.push_back(separator());
-                lines.push_back(text_lines(last_move_diagnostic_));
-            }
             if (!last_move_result_.empty())
             {
                 lines.push_back(separator());
@@ -1794,11 +1833,6 @@ private:
                     std::string{"Delta check: "} +
                     (tester_.move_evaluation_matches_full() ? "OK" : "FAILED")));
             }
-        }
-        if (!last_move_diagnostic_.empty())
-        {
-            lines.push_back(separator());
-            lines.push_back(text_lines(last_move_diagnostic_));
         }
         if (!last_move_result_.empty())
         {
@@ -1877,12 +1911,9 @@ private:
                                       text(" Diagnostics "),
                                       diagnostics->Render()) |
                                   size(HEIGHT, EQUAL, 3);
-        auto progress = window(text(" Progress "), render_progress(move_progress())) |
-                        size(HEIGHT, EQUAL, 3);
         return vbox({
             hbox({actions, details}) | flex,
             diagnostic_actions,
-            progress,
         }) | flex;
     }
 
@@ -1907,12 +1938,13 @@ private:
         using namespace ftxui;
 
         return vbox({
-                   text(options_.title + "  [seed=" +
-                        std::to_string(options_.seed) + "]") |
-                       bold | center,
+                   hbox({
+                       text(options_.title + "  |  " + current_instance_name() +
+                            "  [seed=" + std::to_string(options_.seed) + "]") | bold,
+                       filler(),
+                       text("COST " + current_cost_text()) | bold,
+                   }),
                    page_menu->Render() | center,
-                   separator(),
-                   text("COST  " + current_cost_text()) | bold | center,
                    separator(),
                    pages->Render() | flex,
                    separator(),
@@ -1924,6 +1956,65 @@ private:
                        center | dim,
                }) |
                border;
+    }
+
+    [[nodiscard]] auto current_instance_name() const -> std::string
+    {
+        const auto basename = path_basename(input_path_);
+        if (!basename.empty())
+        {
+            return basename;
+        }
+        return tester_.has_input() ? "<memory>" : "<no instance>";
+    }
+
+    void show_diagnostic(std::string title, std::string body)
+    {
+        diagnostic_title_ = std::move(title);
+        diagnostic_lines_.clear();
+        std::istringstream input{body};
+        for (std::string line; std::getline(input, line);)
+        {
+            diagnostic_lines_.push_back(std::move(line));
+        }
+        if (diagnostic_lines_.empty())
+        {
+            diagnostic_lines_.push_back("<no output>");
+        }
+        diagnostic_selected_ = 0;
+        diagnostic_visible_ = true;
+    }
+
+    [[nodiscard]] auto render_diagnostic_viewer(
+        const ftxui::Component& menu,
+        const ftxui::Component& close) const -> ftxui::Element
+    {
+        using namespace ftxui;
+        return window(
+                   text(" " + diagnostic_title_ + " "),
+                   vbox({
+                       text("Up/Down scroll  |  Esc/q close") | dim,
+                       separator(),
+                       menu->Render() | vscroll_indicator | frame | flex,
+                       separator(),
+                       close->Render() | center,
+                   })) |
+               size(WIDTH, EQUAL, 76) |
+               size(HEIGHT, EQUAL, 20) | border;
+    }
+
+    [[nodiscard]] auto render_progress_modal() const -> ftxui::Element
+    {
+        using namespace ftxui;
+        return window(
+                   text(" Progress "),
+                   vbox({
+                       render_progress(progress_),
+                       progress_.mode == progress_mode::indeterminate
+                           ? text("Working...") | dim
+                           : text(""),
+                   })) |
+               size(WIDTH, GREATER_THAN, 44) | border;
     }
 
     [[nodiscard]] auto render_input_viewer(
@@ -2124,7 +2215,7 @@ private:
             text("O open input   I initial   X random   L load   W save   C check"),
             text("Move page") | bold,
             text("B best   I first improving   F first   N next   X random   A apply"),
-            text("P list   T stats   C costs   D independence   U random distribution"),
+            text("P list   T stats   C costs   D independence   U distribution"),
             text("Run page") | bold,
             text("G run selected   Enter run selected"),
             separator(),
@@ -2156,7 +2247,6 @@ private:
     std::vector<std::string> runner_names_;
     int runner_selected_{};
     std::string last_move_result_;
-    std::string last_move_diagnostic_;
     std::string last_run_result_;
 
     std::vector<std::string> page_labels_{"Solution", "Move", "Run"};
@@ -2171,6 +2261,12 @@ private:
     std::string browser_error_;
 
     bool help_visible_{};
+    bool diagnostic_visible_{};
+    std::string diagnostic_title_;
+    std::vector<std::string> diagnostic_lines_;
+    int diagnostic_selected_{};
+    bool progress_visible_{};
+    progress_snapshot progress_{};
     bool input_visible_{};
     bool solution_visible_{};
 };

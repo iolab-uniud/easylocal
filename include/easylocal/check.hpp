@@ -210,6 +210,29 @@ template<class App, class Instance, class Solution>
     if (!valid_solution)
         return report;
 
+    if constexpr (requires(const Solution& lhs, const Solution& rhs) {
+                      { lhs == rhs } -> std::convertible_to<bool>;
+                  })
+    {
+        const auto copy = solution;
+        const auto second_copy = copy;
+        report.check(
+            static_cast<bool>(solution == solution),
+            "solution equality reflexivity",
+            "Solution::operator== is not reflexive");
+        report.check(
+            static_cast<bool>(solution == copy) &&
+                static_cast<bool>(copy == solution),
+            "solution equality copy symmetry",
+            "a copied Solution is not symmetrically equal to its source");
+        report.check(
+            static_cast<bool>(solution == copy) &&
+                static_cast<bool>(copy == second_copy) &&
+                static_cast<bool>(solution == second_copy),
+            "solution equality copy transitivity",
+            "Solution::operator== is not transitive across equivalent copies");
+    }
+
     if constexpr (requires { solution_manager.evaluate(solution); })
     {
         const auto first = solution_manager.evaluate(solution);

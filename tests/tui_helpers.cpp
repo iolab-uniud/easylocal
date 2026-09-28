@@ -81,6 +81,7 @@ int main()
     using easylocal::tui::detail::page_available;
     using easylocal::tui::detail::page_after_solution_change;
     using easylocal::tui::detail::page_index;
+    using easylocal::tui::detail::path_basename;
     using easylocal::tui::detail::progress_mode;
     using easylocal::tui::detail::progress_ratio;
     using easylocal::tui::detail::progress_snapshot;
@@ -139,6 +140,9 @@ int main()
     assert(page_index(tester_page::solution) == 0);
     assert(page_index(tester_page::move) == 1);
     assert(page_index(tester_page::run) == 2);
+    assert(path_basename("/tmp/instances/berlin52.tsp") == "berlin52.tsp");
+    assert(path_basename("berlin52.tsp") == "berlin52.tsp");
+    assert(path_basename("").empty());
 
     assert(progress_ratio(progress_snapshot{}) == 0.0F);
     assert(progress_ratio(progress_snapshot{
