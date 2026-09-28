@@ -81,6 +81,8 @@ int main()
     using easylocal::tui::detail::page_available;
     using easylocal::tui::detail::page_after_solution_change;
     using easylocal::tui::detail::page_index;
+    using easylocal::tui::detail::solution_stage;
+    using easylocal::tui::detail::solution_stage_of;
     using easylocal::tui::detail::tester_page;
     using easylocal::tui::detail::context_pages_available;
     using easylocal::tui::detail::directory_entries;
@@ -100,6 +102,16 @@ int main()
     assert(value_text(hierarchical) == "hard=[1, 2], soft=3");
     assert(object_name(named_value{}) == "named");
     assert(object_name(unnamed_value{}) == "<unnamed neighborhood>");
+
+    assert(solution_stage_of(context_probe{}) == solution_stage::needs_input);
+    assert(solution_stage_of(context_probe{.input = true}) ==
+           solution_stage::needs_solution);
+    assert(solution_stage_of(
+               context_probe{.input = true, .solution = true, .valid = false}) ==
+           solution_stage::invalid_solution);
+    assert(solution_stage_of(
+               context_probe{.input = true, .solution = true}) ==
+           solution_stage::ready);
 
     assert(!context_pages_available(context_probe{}));
     assert(!context_pages_available(context_probe{.input = true}));

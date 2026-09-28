@@ -130,23 +130,44 @@ enum class tester_page : int
     run = 2,
 };
 
+enum class solution_stage
+{
+    needs_input,
+    needs_solution,
+    invalid_solution,
+    ready,
+};
+
 [[nodiscard]] constexpr auto page_index(const tester_page page) noexcept -> int
 {
     return static_cast<int>(page);
 }
 
 template<class Tester>
-[[nodiscard]] auto context_pages_available(const Tester& tester) -> bool
+[[nodiscard]] auto solution_stage_of(const Tester& tester) -> solution_stage
 {
-    if (!tester.has_input() || !tester.has_solution())
+    if (!tester.has_input())
     {
-        return false;
+        return solution_stage::needs_input;
+    }
+    if (!tester.has_solution())
+    {
+        return solution_stage::needs_solution;
     }
     if constexpr (requires { tester.is_valid(); })
     {
-        return static_cast<bool>(tester.is_valid());
+        if (!static_cast<bool>(tester.is_valid()))
+        {
+            return solution_stage::invalid_solution;
+        }
     }
-    return true;
+    return solution_stage::ready;
+}
+
+template<class Tester>
+[[nodiscard]] auto context_pages_available(const Tester& tester) -> bool
+{
+    return solution_stage_of(tester) == solution_stage::ready;
 }
 
 template<class Tester>
@@ -1043,8 +1064,7 @@ private:
             page_selected_ = page_index(tester_page::solution);
             set_status(
                 status_kind::success,
-                "Loaded input: " + format_path(path) +
-                    "; choose Initial, Random, or Load solution as available");
+                "Loaded input: " + format_path(path) + "; choose a solution");
         });
     }
 
@@ -1479,17 +1499,27 @@ private:
         const ftxui::Component& controls) const -> ftxui::Element
     {
         using namespace ftxui;
-        Elements summary{
-            text(std::string{"Input: "} +
-                 (tester_.has_input() ? "loaded" : "not loaded")),
-            text(std::string{"Solution: "} +
-                 (tester_.has_solution() ?
-                      (tester_.is_valid() ? "valid" : "INVALID") :
-                      "not selected")),
-            separator(),
-            controls->Render() | flex,
-        };
-        return window(text(" Solution setup "), vbox(std::move(summary))) | flex;
+
+        Elements summary;
+        switch (detail::solution_stage_of(tester_))
+        {
+        case solution_stage::needs_input:
+            summary.push_back(text("Load an input to begin") | bold);
+            break;
+        case solution_stage::needs_solution:
+            summary.push_back(text("Input ready - choose or load a solution") | bold);
+            break;
+        case solution_stage::invalid_solution:
+            summary.push_back(text("Solution INVALID - replace it or run diagnostics") | bold);
+            break;
+        case solution_stage::ready:
+            summary.push_back(text("Setup complete - use M Move or R Run") | dim);
+            break;
+        }
+
+        summary.push_back(separator());
+        summary.push_back(controls->Render() | flex);
+        return window(text(" Solution "), vbox(std::move(summary))) | flex;
     }
 
     [[nodiscard]] auto render_move_page(
