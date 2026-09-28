@@ -1,5 +1,6 @@
 #pragma once
 
+#include <easylocal/aggregation.hpp>
 #include <easylocal/check.hpp>
 #include <easylocal/tester.hpp>
 
@@ -84,6 +85,26 @@ concept tuple_like =
     requires { typename std::tuple_size<std::remove_cvref_t<T>>::type; };
 
 template<class T>
+struct lexicographic_cost_traits
+{
+    static constexpr bool value = false;
+};
+
+template<class... Values>
+struct lexicographic_cost_traits<
+    easylocal::aggregation::detail::ordered_cost<
+        easylocal::aggregation::detail::lexicographic_tag,
+        Values...>>
+{
+    static constexpr bool value = true;
+    static constexpr std::size_t size = sizeof...(Values);
+};
+
+template<class T>
+concept lexicographic_cost =
+    lexicographic_cost_traits<std::remove_cvref_t<T>>::value;
+
+template<class T>
 concept named_object =
     requires(const T& value) {
         { value.name() } -> std::convertible_to<std::string_view>;
@@ -136,6 +157,15 @@ template<class Tester>
     return page == tester_page::solution || context_pages_available(tester);
 }
 
+template<class Tester>
+[[nodiscard]] auto page_after_solution_change(const Tester& tester)
+    -> tester_page
+{
+    return context_pages_available(tester)
+               ? tester_page::move
+               : tester_page::solution;
+}
+
 template<class T>
 [[nodiscard]] auto value_text(const T& value) -> std::string
 {
@@ -146,6 +176,24 @@ template<class T>
     else if constexpr (display_adl::has_describe<T>)
     {
         return display_adl::call_describe(value);
+    }
+    else if constexpr (easylocal::aggregation::hierarchical_cost_type<T>)
+    {
+        return "hard=" + value_text(value.hard()) +
+               ", soft=" + value_text(value.soft());
+    }
+    else if constexpr (lexicographic_cost<T>)
+    {
+        std::string result{"["};
+        [&]<std::size_t... Index>(std::index_sequence<Index...>) {
+            std::size_t emitted = 0;
+            ((result += (emitted++ == 0 ? "" : ", ") +
+                        value_text(value.template get<Index>())),
+             ...);
+        }(std::make_index_sequence<
+            lexicographic_cost_traits<std::remove_cvref_t<T>>::size>{});
+        result += ']';
+        return result;
     }
     else if constexpr (ostream_insertable<T>)
     {
@@ -369,6 +417,7 @@ public:
         {
             runner_names_.emplace_back(name);
         }
+        page_selected_ = page_index(detail::page_after_solution_change(tester_));
     }
 
     void run()
@@ -389,11 +438,11 @@ public:
         auto solution_controls = Container::Vertical({});
         if constexpr (tester_type::supports_input_loading)
         {
-            solution_controls->Add(section_label("Instance"));
+            solution_controls->Add(section_label("Input"));
             auto option = InputOption::Default();
             option.multiline = false;
             option.on_enter = [this] { load_input(); };
-            input_path_component = Input(&input_path_, "instance file", option);
+            input_path_component = Input(&input_path_, "input file", option);
             solution_controls->Add(input_path_component);
             solution_controls->Add(Container::Horizontal({
                 Button(
@@ -422,7 +471,7 @@ public:
             if constexpr (tester_type::supports_random_solution)
             {
                 source_actions.push_back(Button(
-                    "R Random",
+                    "X Random",
                     [this] { use_random_solution(); },
                     ButtonOption::Ascii()));
             }
@@ -457,7 +506,7 @@ public:
             if constexpr (tester_type::supports_solution_saving)
             {
                 file_actions.push_back(Button(
-                    "S Save",
+                    "W Save",
                     [this] { save_solution(); },
                     ButtonOption::Ascii()));
             }
@@ -486,7 +535,7 @@ public:
         if constexpr (tester_type::supports_random_moves)
         {
             move_controls->Add(Button(
-                "M Random",
+                "X Random",
                 [this] { random_move(); },
                 ButtonOption::Ascii()));
         }
@@ -602,8 +651,52 @@ public:
             return false;
         });
 
+        auto input_viewer_controls = Container::Vertical({
+            Button(
+                "Close",
+                [this] { input_visible_ = false; },
+                ButtonOption::Ascii()),
+        });
+        auto input_viewer = Renderer(
+            input_viewer_controls,
+            [this, input_viewer_controls] {
+                return render_input_viewer(input_viewer_controls);
+            });
+        input_viewer = CatchEvent(input_viewer, [this](Event event) {
+            if (event == Event::Escape || event == Event::F2 ||
+                event == Event::Character('2'))
+            {
+                input_visible_ = false;
+                return true;
+            }
+            return false;
+        });
+
+        auto solution_viewer_controls = Container::Vertical({
+            Button(
+                "Close",
+                [this] { solution_visible_ = false; },
+                ButtonOption::Ascii()),
+        });
+        auto solution_viewer = Renderer(
+            solution_viewer_controls,
+            [this, solution_viewer_controls] {
+                return render_solution_viewer(solution_viewer_controls);
+            });
+        solution_viewer = CatchEvent(solution_viewer, [this](Event event) {
+            if (event == Event::Escape || event == Event::F3 ||
+                event == Event::Character('3'))
+            {
+                solution_visible_ = false;
+                return true;
+            }
+            return false;
+        });
+
         Component root = Modal(main_renderer, browser_renderer, &browser_visible_);
         root = Modal(root, help_renderer, &help_visible_);
+        root = Modal(root, input_viewer, &input_visible_);
+        root = Modal(root, solution_viewer, &solution_visible_);
         root = CatchEvent(
             root,
             [this, &app, input_path_component, solution_path_component](Event event) {
@@ -617,9 +710,28 @@ public:
                     return false;
                 }
 
+                if (input_visible_ || solution_visible_)
+                {
+                    return false;
+                }
+
                 const bool editing_path =
                     (input_path_component && input_path_component->Focused()) ||
                     (solution_path_component && solution_path_component->Focused());
+
+                if (event == Event::F2 ||
+                    (!editing_path && event == Event::Character('2')))
+                {
+                    show_input();
+                    return true;
+                }
+                if (event == Event::F3 ||
+                    (!editing_path && event == Event::Character('3')))
+                {
+                    show_solution();
+                    return true;
+                }
+
                 if (editing_path)
                 {
                     return false;
@@ -630,17 +742,17 @@ public:
                     app.Exit();
                     return true;
                 }
-                if (event == Event::Character('1'))
+                if (event == Event::s || event == Event::S)
                 {
                     select_page(tester_page::solution);
                     return true;
                 }
-                if (event == Event::Character('2'))
+                if (event == Event::m || event == Event::M)
                 {
                     select_page(tester_page::move);
                     return true;
                 }
-                if (event == Event::Character('3'))
+                if (event == Event::r || event == Event::R)
                 {
                     select_page(tester_page::run);
                     return true;
@@ -686,11 +798,11 @@ private:
             if constexpr (tester_type::supports_initial_solution)
                 append("I Initial");
             if constexpr (tester_type::supports_random_solution)
-                append("R Random");
+                append("X Random");
             if constexpr (tester_type::supports_solution_loading)
                 append("L Load");
             if constexpr (tester_type::supports_solution_saving)
-                append("S Save");
+                append("W Save");
             append("C Check");
             break;
         case tester_page::move:
@@ -700,7 +812,7 @@ private:
                 append("N Next");
             }
             if constexpr (tester_type::supports_random_moves)
-                append("M Random");
+                append("X Random");
             append("A Apply");
             break;
         case tester_page::run:
@@ -745,7 +857,7 @@ private:
         }
         if constexpr (tester_type::supports_random_solution)
         {
-            if (event == ftxui::Event::r || event == ftxui::Event::R)
+            if (event == ftxui::Event::x || event == ftxui::Event::X)
             {
                 use_random_solution();
                 return true;
@@ -761,7 +873,7 @@ private:
         }
         if constexpr (tester_type::supports_solution_saving)
         {
-            if (event == ftxui::Event::s || event == ftxui::Event::S)
+            if (event == ftxui::Event::w || event == ftxui::Event::W)
             {
                 save_solution();
                 return true;
@@ -792,7 +904,7 @@ private:
         }
         if constexpr (tester_type::supports_random_moves)
         {
-            if (event == ftxui::Event::m || event == ftxui::Event::M)
+            if (event == ftxui::Event::x || event == ftxui::Event::X)
             {
                 random_move();
                 return true;
@@ -851,7 +963,7 @@ private:
         }
         set_status(
             status_kind::warning,
-            std::string{action} + ": load an instance first");
+            std::string{action} + ": load an input first");
         return false;
     }
 
@@ -919,16 +1031,17 @@ private:
     {
         if (input_path_.empty())
         {
-            set_status(status_kind::warning, "Open instance: enter or browse a file name");
+            set_status(status_kind::warning, "Open input: enter or browse a file name");
             return;
         }
-        perform("Open instance", [this] {
+        perform("Open input", [this] {
             const auto path = resolve_path(input_path_);
             tester_.load_input(path);
             refresh_page_labels();
+            page_selected_ = page_index(tester_page::solution);
             set_status(
                 status_kind::success,
-                "Loaded instance: " + format_path(path) +
+                "Loaded input: " + format_path(path) +
                     "; choose Initial, Random, or Load solution as available");
         });
     }
@@ -942,7 +1055,7 @@ private:
         }
         perform("Initial solution", [this] {
             tester_.use_initial_solution();
-            refresh_page_labels();
+            after_solution_change();
             set_status(status_kind::success, solution_status("Initial solution selected"));
         });
     }
@@ -956,7 +1069,7 @@ private:
         }
         perform("Random solution", [this] {
             tester_.use_random_solution(rng_);
-            refresh_page_labels();
+            after_solution_change();
             set_status(status_kind::success, solution_status("Random solution selected"));
         });
     }
@@ -976,7 +1089,7 @@ private:
         perform("Load solution", [this] {
             const auto path = resolve_path(solution_path_);
             tester_.load_solution(path);
-            refresh_page_labels();
+            after_solution_change();
             set_status(
                 status_kind::success,
                 solution_status("Loaded solution: " + format_path(path)));
@@ -1012,6 +1125,24 @@ private:
         -> std::string
     {
         return display_path(path, options_.path_display, options_.path_base);
+    }
+
+    void after_solution_change()
+    {
+        refresh_page_labels();
+        page_selected_ = page_index(detail::page_after_solution_change(tester_));
+    }
+
+    void show_input()
+    {
+        solution_visible_ = false;
+        input_visible_ = true;
+    }
+
+    void show_solution()
+    {
+        input_visible_ = false;
+        solution_visible_ = true;
     }
 
     void check()
@@ -1234,6 +1365,30 @@ private:
         return truncate_text(std::move(rendered), options_.max_render_chars);
     }
 
+    [[nodiscard]] auto input_text() const -> std::string
+    {
+        if (!tester_.has_input())
+        {
+            return "<no input loaded>";
+        }
+        return truncate_text(
+            value_text(tester_.input()),
+            options_.max_render_chars);
+    }
+
+    [[nodiscard]] auto current_cost_text() const -> std::string
+    {
+        if (!tester_.has_solution())
+        {
+            return "-";
+        }
+        if (!tester_.is_valid())
+        {
+            return "<invalid solution>";
+        }
+        return value_text(tester_.evaluate());
+    }
+
     [[nodiscard]] auto move_text() const -> std::string
     {
         if (!tester_.has_move())
@@ -1331,17 +1486,17 @@ private:
         const ftxui::Component& controls) const -> ftxui::Element
     {
         using namespace ftxui;
-        auto actions = window(text(" Actions "), controls->Render()) |
-                       size(WIDTH, LESS_THAN, 38);
-        auto summary = window(
-                           text(" Solution "),
-                           vbox({
-                               render_solution_summary(),
-                               separator(),
-                               text_lines(solution_text()) | flex,
-                           })) |
-                       flex;
-        return hbox({actions, summary}) | flex;
+        Elements summary{
+            text(std::string{"Input: "} +
+                 (tester_.has_input() ? "loaded" : "not loaded")),
+            text(std::string{"Solution: "} +
+                 (tester_.has_solution() ?
+                      (tester_.is_valid() ? "valid" : "INVALID") :
+                      "not selected")),
+            separator(),
+            controls->Render() | flex,
+        };
+        return window(text(" Solution setup "), vbox(std::move(summary))) | flex;
     }
 
     [[nodiscard]] auto render_move_page(
@@ -1354,11 +1509,7 @@ private:
                        size(WIDTH, LESS_THAN, 30);
         auto details = window(
                            text(" Move - " + neighborhood + " "),
-                           vbox({
-                               text("Current cost: " + value_text(tester_.evaluate())),
-                               separator(),
-                               render_move_summary(),
-                           })) |
+                           render_move_summary()) |
                        flex;
         return hbox({actions, details}) | flex;
     }
@@ -1367,29 +1518,7 @@ private:
         const ftxui::Component& controls) const -> ftxui::Element
     {
         using namespace ftxui;
-        Elements summary{
-            text("Registered runners: " + std::to_string(runner_names_.size())),
-        };
-        if (!runner_names_.empty())
-        {
-            summary.push_back(text(
-                "Selected: " + runner_names_.at(
-                    static_cast<std::size_t>(runner_selected_))));
-        }
-        summary.push_back(separator());
-
-        const bool valid = tester_.is_valid();
-        summary.push_back(text(std::string{"Current solution: "} +
-                               (valid ? "valid" : "INVALID")));
-        if (valid)
-        {
-            summary.push_back(text("Cost: " + value_text(tester_.evaluate())));
-        }
-
-        auto runners = window(text(" Runners "), controls->Render()) |
-                       size(WIDTH, LESS_THAN, 38);
-        auto state = window(text(" Run context "), vbox(std::move(summary))) | flex;
-        return hbox({runners, state}) | flex;
+        return window(text(" Runners "), controls->Render()) | flex;
     }
 
     [[nodiscard]] auto render_main(
@@ -1399,20 +1528,62 @@ private:
         using namespace ftxui;
 
         return vbox({
-                   text(options_.title) | bold | center,
-                   text("semantic tester  |  seed=" + std::to_string(options_.seed)) | center | dim,
-                   separator(),
+                   text(options_.title + "  [seed=" +
+                        std::to_string(options_.seed) + "]") |
+                       bold | center,
                    page_menu->Render() | center,
                    separator(),
+                   text("COST  " + current_cost_text()) | bold | center,
+                   separator(),
                    pages->Render() | flex,
-                   window(text(" Status "), render_status()) |
-                       size(HEIGHT, LESS_THAN, 4),
+                   separator(),
+                   render_status(),
                    text(current_page_shortcuts()) | center,
-                   text("1 Solution  2 Move  3 Run  |  F1 help  |  q " +
+                   text("S Solution  M Move  R Run  |  2/F2 Input  3/F3 Solution  |  F1 help  |  q " +
                         options_.exit_label +
                         "  |  Tab/Shift-Tab focus") |
                        center | dim,
                }) |
+               border;
+    }
+
+    [[nodiscard]] auto render_input_viewer(
+        const ftxui::Component& controls) const -> ftxui::Element
+    {
+        using namespace ftxui;
+        Elements body;
+        if (tester_.has_input() && !input_path_.empty())
+        {
+            body.push_back(paragraph(
+                "File: " + format_path(resolve_path(input_path_))) | dim);
+            body.push_back(separator());
+        }
+        body.push_back(text_lines(input_text()) | flex);
+        body.push_back(separator());
+        body.push_back(controls->Render());
+        return window(text(" Input  [2/F2] "), vbox(std::move(body))) |
+               size(WIDTH, GREATER_THAN, 52) |
+               border;
+    }
+
+    [[nodiscard]] auto render_solution_viewer(
+        const ftxui::Component& controls) const -> ftxui::Element
+    {
+        using namespace ftxui;
+        Elements body;
+        if (tester_.has_solution())
+        {
+            body.push_back(text(
+                std::string{"Valid: "} + (tester_.is_valid() ? "yes" : "NO")) |
+                           bold);
+            body.push_back(text("Cost: " + current_cost_text()) | bold);
+            body.push_back(separator());
+        }
+        body.push_back(text_lines(solution_text()) | flex);
+        body.push_back(separator());
+        body.push_back(controls->Render());
+        return window(text(" Solution  [3/F3] "), vbox(std::move(body))) |
+               size(WIDTH, GREATER_THAN, 52) |
                border;
     }
 
@@ -1536,7 +1707,7 @@ private:
     {
         using namespace ftxui;
         const auto title = browser_target_ == file_target::input
-                               ? " Select instance file "
+                               ? " Select input file "
                                : " Select solution file ";
         Elements body{
             text(format_path(browser_directory_)) | bold,
@@ -1563,14 +1734,16 @@ private:
         Elements lines{
             text("Pages") | bold,
             separator(),
-            text("1  Solution"),
-            text("2  Move"),
-            text("3  Run"),
+            text("S  Solution"),
+            text("M  Move"),
+            text("R  Run"),
+            text("2 / F2  show Input"),
+            text("3 / F3  show Solution"),
             separator(),
             text("Solution page") | bold,
-            text("O open instance   I initial   R random   L load   S save   C check"),
+            text("O open input   I initial   X random   L load   W save   C check"),
             text("Move page") | bold,
-            text("F first   N next   M random   A apply"),
+            text("F first   N next   X random   A apply"),
             text("Run page") | bold,
             text("G run selected   Enter run selected"),
             separator(),
@@ -1614,6 +1787,8 @@ private:
     std::string browser_error_;
 
     bool help_visible_{};
+    bool input_visible_{};
+    bool solution_visible_{};
 };
 
 } // namespace detail

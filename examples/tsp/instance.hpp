@@ -4,6 +4,7 @@
 #include <cmath>
 #include <cstddef>
 #include <istream>
+#include <string>
 #include <stdexcept>
 #include <vector>
 
@@ -49,6 +50,12 @@ struct TspInstance
         assert(from < city_count);
         assert(to < city_count);
         return distances[from * city_count + to];
+    }
+
+    [[nodiscard]] auto describe() const -> std::string
+    {
+        return "cities=" + std::to_string(city_count) +
+               ", distance_entries=" + std::to_string(distances.size());
     }
 };
 

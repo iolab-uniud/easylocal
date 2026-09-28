@@ -1,4 +1,5 @@
 #include <easylocal/tui/tester.hpp>
+#include <easylocal/aggregation.hpp>
 
 #include <cassert>
 #include <filesystem>
@@ -78,6 +79,7 @@ int main()
 {
     using easylocal::tui::path_display_mode;
     using easylocal::tui::detail::page_available;
+    using easylocal::tui::detail::page_after_solution_change;
     using easylocal::tui::detail::page_index;
     using easylocal::tui::detail::tester_page;
     using easylocal::tui::detail::context_pages_available;
@@ -90,6 +92,12 @@ int main()
     assert(value_text(member_described{}) == "member");
     assert(value_text(adl_case::value{}) == "adl");
     assert(value_text(stream_only{}) == "stream");
+    const auto lexicographic = easylocal::aggregation::lexicographic{}(1, 2);
+    assert(value_text(lexicographic) == "[1, 2]");
+    const auto hierarchical = easylocal::aggregation::hierarchical{}(
+        lexicographic,
+        3);
+    assert(value_text(hierarchical) == "hard=[1, 2], soft=3");
     assert(object_name(named_value{}) == "named");
     assert(object_name(unnamed_value{}) == "<unnamed neighborhood>");
 
@@ -108,6 +116,11 @@ int main()
     assert(page_available(ready_context, tester_page::solution));
     assert(page_available(ready_context, tester_page::move));
     assert(page_available(ready_context, tester_page::run));
+    assert(page_after_solution_change(empty_context) == tester_page::solution);
+    assert(page_after_solution_change(ready_context) == tester_page::move);
+    assert(page_after_solution_change(
+               context_probe{.input = true, .solution = true, .valid = false}) ==
+           tester_page::solution);
     assert(page_index(tester_page::solution) == 0);
     assert(page_index(tester_page::move) == 1);
     assert(page_index(tester_page::run) == 2);
