@@ -259,6 +259,8 @@ public:
         deterministic_neighborhood_for<neighborhood_type, solution_type>;
     static constexpr bool supports_random_moves =
         random_neighborhood_for<neighborhood_type, solution_type, rng_type>;
+    static constexpr bool supports_improvement_selection =
+        supports_deterministic_moves && detail::has_better<solution_manager_type>;
     static constexpr bool supports_input_loading =
         detail::tester_io::readable_input<input_type>;
     static constexpr bool supports_solution_loading =
@@ -547,6 +549,69 @@ public:
         }
 
         return select_deterministic_move(*deterministic_move_index_ + 1);
+    }
+
+    [[nodiscard]]
+    auto use_first_improving_move() -> bool
+        requires supports_improvement_selection
+    {
+        assert(instance_);
+        assert(solution_);
+
+        const auto current = evaluate();
+        std::size_t index = 0;
+        for (auto&& candidate : easylocal::moves(instance_->neighborhood(), *solution_))
+        {
+            move_.emplace(candidate);
+            deterministic_move_index_ = index;
+            if (move_is_valid() &&
+                detail::cost_better(instance_->solution_manager(), evaluate_move(), current))
+            {
+                return true;
+            }
+            ++index;
+        }
+        clear_move_state();
+        return false;
+    }
+
+    [[nodiscard]]
+    auto use_best_move() -> bool
+        requires supports_improvement_selection
+    {
+        assert(instance_);
+        assert(solution_);
+
+        std::optional<move_type> best_move;
+        std::optional<cost_type> best_cost;
+        std::optional<std::size_t> best_index;
+        std::size_t index = 0;
+        for (auto&& candidate : easylocal::moves(instance_->neighborhood(), *solution_))
+        {
+            move_.emplace(candidate);
+            deterministic_move_index_ = index;
+            if (move_is_valid())
+            {
+                auto candidate_cost = evaluate_move();
+                if (!best_cost || detail::cost_better(
+                        instance_->solution_manager(), candidate_cost, *best_cost))
+                {
+                    best_move = candidate;
+                    best_cost = std::move(candidate_cost);
+                    best_index = index;
+                }
+            }
+            ++index;
+        }
+
+        if (!best_move)
+        {
+            clear_move_state();
+            return false;
+        }
+        move_ = std::move(best_move);
+        deterministic_move_index_ = best_index;
+        return true;
     }
 
     [[nodiscard]]

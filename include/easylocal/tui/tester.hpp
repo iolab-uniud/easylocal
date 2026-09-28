@@ -570,6 +570,17 @@ public:
 
         auto move_controls = Container::Vertical({});
         move_controls->Add(section_label("Select move"));
+        if constexpr (tester_type::supports_improvement_selection)
+        {
+            move_controls->Add(Button(
+                "B Best",
+                [this] { best_move(); },
+                ButtonOption::Ascii()));
+            move_controls->Add(Button(
+                "I First improving",
+                [this] { first_improving_move(); },
+                ButtonOption::Ascii()));
+        }
         if constexpr (tester_type::supports_deterministic_moves)
         {
             move_controls->Add(Button(
@@ -692,7 +703,8 @@ public:
             return render_help(help_controls);
         });
         help_renderer = CatchEvent(help_renderer, [this](Event event) {
-            if (event == Event::Escape || event == Event::F1)
+            if (event == Event::Escape || event == Event::Character('?') ||
+                event == Event::h || event == Event::H)
             {
                 help_visible_ = false;
                 return true;
@@ -749,7 +761,7 @@ public:
         root = CatchEvent(
             root,
             [this, &app, input_path_component, solution_path_component](Event event) {
-                if (event == Event::F1)
+                if (event == Event::Character('?') || event == Event::h || event == Event::H)
                 {
                     help_visible_ = !help_visible_;
                     return true;
@@ -768,6 +780,12 @@ public:
                     (input_path_component && input_path_component->Focused()) ||
                     (solution_path_component && solution_path_component->Focused());
 
+                if (event == Event::F1 ||
+                    (!editing_path && event == Event::Character('1')))
+                {
+                    select_page(tester_page::solution);
+                    return true;
+                }
                 if (event == Event::F2 ||
                     (!editing_path && event == Event::Character('2')))
                 {
@@ -855,6 +873,11 @@ private:
             append("C Check");
             break;
         case tester_page::move:
+            if constexpr (tester_type::supports_improvement_selection)
+            {
+                append("B Best");
+                append("I Improve");
+            }
             if constexpr (tester_type::supports_deterministic_moves)
             {
                 append("F First");
@@ -938,6 +961,19 @@ private:
 
     [[nodiscard]] auto handle_move_shortcut(const ftxui::Event& event) -> bool
     {
+        if constexpr (tester_type::supports_improvement_selection)
+        {
+            if (event == ftxui::Event::b || event == ftxui::Event::B)
+            {
+                best_move();
+                return true;
+            }
+            if (event == ftxui::Event::i || event == ftxui::Event::I)
+            {
+                first_improving_move();
+                return true;
+            }
+        }
         if constexpr (tester_type::supports_deterministic_moves)
         {
             if (event == ftxui::Event::f || event == ftxui::Event::F)
@@ -1223,6 +1259,38 @@ private:
                 message += "; first: " + first.check + " - " + first.message;
             }
             set_status(status_kind::error, std::move(message));
+        });
+    }
+
+    void best_move()
+        requires tester_type::supports_improvement_selection
+    {
+        if (!require_solution("Best move"))
+            return;
+        perform("Best move", [this] {
+            if (tester_.use_best_move())
+            {
+                last_move_result_.clear();
+                set_status(status_kind::success, move_status("Selected best move"));
+            }
+            else
+                set_status(status_kind::warning, "Best move: neighborhood is empty");
+        });
+    }
+
+    void first_improving_move()
+        requires tester_type::supports_improvement_selection
+    {
+        if (!require_solution("First improving move"))
+            return;
+        perform("First improving move", [this] {
+            if (tester_.use_first_improving_move())
+            {
+                last_move_result_.clear();
+                set_status(status_kind::success, move_status("Selected first improving move"));
+            }
+            else
+                set_status(status_kind::warning, "First improving move: none found");
         });
     }
 
@@ -1640,7 +1708,7 @@ private:
                    separator(),
                    render_status(),
                    text(current_page_shortcuts()) | center,
-                   text("S Solution  M Move  R Run  |  2/F2 Input  3/F3 Solution  |  F1 help  |  q " +
+                   text("S Solution  M Move  R Run  |  1/F1 Solution  2/F2 Input  3/F3 Solution  |  ? Help  |  q " +
                         options_.exit_label +
                         "  |  Tab/Shift-Tab focus") |
                        center | dim,
@@ -1838,18 +1906,19 @@ private:
             text("S  Solution"),
             text("M  Move"),
             text("R  Run"),
+            text("1 / F1  Solution page"),
             text("2 / F2  show Input"),
             text("3 / F3  show Solution"),
             separator(),
             text("Solution page") | bold,
             text("O open input   I initial   X random   L load   W save   C check"),
             text("Move page") | bold,
-            text("F first   N next   X random   A apply"),
+            text("B best   I first improving   F first   N next   X random   A apply"),
             text("Run page") | bold,
             text("G run selected   Enter run selected"),
             separator(),
             text("Q  " + options_.exit_label),
-            text("F1 / Esc  close this help"),
+            text("? / H  help   Esc  close"),
             separator(),
             text("Page shortcuts apply only to the active page.") | dim,
             text("Move and Run unlock after a valid solution is available.") | dim,

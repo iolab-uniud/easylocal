@@ -271,6 +271,28 @@ void tester_selects_first_and_next_moves_deterministically()
     assert(tester.move().destination == 0);
 }
 
+void tester_selects_first_improving_and_best_moves()
+{
+    easylocal::Tester tester{make_application()};
+    tester.set_input(make_input(3));
+    tester.set_solution(AssignmentSolution{.assignment = {0, 0}});
+
+    static_assert(decltype(tester)::supports_improvement_selection);
+    assert(tester.evaluate().soft() == 7);
+
+    const auto improving = tester.use_first_improving_move();
+    assert(improving);
+    assert(tester.has_move());
+    assert(tester.move().job == 0);
+    assert(tester.move().destination == 1);
+    assert(tester.evaluate_move().soft() == 1);
+
+    const auto best = tester.use_best_move();
+    assert(best);
+    assert(tester.has_move());
+    assert(tester.evaluate_move().soft() == 1);
+}
+
 void tester_selects_random_moves_with_an_explicit_rng()
 {
     easylocal::Tester tester{make_application()};
@@ -570,6 +592,7 @@ int main()
     tester_exposes_random_solution_as_an_explicit_choice();
     tester_exposes_deterministic_and_random_move_capabilities();
     tester_selects_first_and_next_moves_deterministically();
+    tester_selects_first_improving_and_best_moves();
     tester_selects_random_moves_with_an_explicit_rng();
     tester_compares_move_evaluation_with_full_recomputation();
     applying_a_move_updates_the_solution_and_clears_move_state();
