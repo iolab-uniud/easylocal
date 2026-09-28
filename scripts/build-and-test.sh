@@ -20,6 +20,7 @@ Profiles:
 Optional integrations:
   --with-toml        Also build and test the ConfigTOML adapter.
   --with-tui         Also build and test the FTXUI tester frontend.
+  --with-rest        Also build and test the Crow REST adapter.
 
 TOML dependency modes:
   EASYLOCAL_TEST_SYSTEM_TOML=auto|on|off
@@ -37,6 +38,14 @@ TUI dependency modes:
                        on:   require and use system FTXUI
                        off:  force FetchContent
 
+REST dependency modes:
+  EASYLOCAL_TEST_SYSTEM_CROW=auto|on|off
+                     Controls the system-installed Crow check when REST
+                     testing is enabled. Default: auto.
+                       auto: use system Crow when available, otherwise FetchContent
+                       on:   require and use system Crow
+                       off:  force FetchContent
+
 Other options:
   --integration      Also run tests labelled integration.
   -h, --help         Show this help.
@@ -46,10 +55,12 @@ Examples:
   ./scripts/build-and-test.sh release
   ./scripts/build-and-test.sh --with-toml
   ./scripts/build-and-test.sh --with-tui
+  ./scripts/build-and-test.sh --with-rest
   ./scripts/build-and-test.sh release --all
   ./scripts/build-and-test.sh --integration
   EASYLOCAL_TEST_SYSTEM_TOML=on ./scripts/build-and-test.sh --with-toml
   EASYLOCAL_TEST_SYSTEM_FTXUI=on ./scripts/build-and-test.sh --with-tui
+  EASYLOCAL_TEST_SYSTEM_CROW=on ./scripts/build-and-test.sh --with-rest
 
 The default preset is 'dev'.
 
@@ -67,14 +78,17 @@ command -v ctest >/dev/null 2>&1 || die "'ctest' not found in PATH"
 PRESET="dev"
 TEST_TOML=off
 TEST_TUI=off
+TEST_REST=off
 SYSTEM_TOML_MODE="${EASYLOCAL_TEST_SYSTEM_TOML:-auto}"
 SYSTEM_FTXUI_MODE="${EASYLOCAL_TEST_SYSTEM_FTXUI:-auto}"
+SYSTEM_CROW_MODE="${EASYLOCAL_TEST_SYSTEM_CROW:-auto}"
 RUN_INTEGRATION=off
 preset_seen=false
 profile_seen=false
 explicit_core=false
 explicit_toml=false
 explicit_tui=false
+explicit_rest=false
 
 for arg in "$@"; do
     case "$arg" in
@@ -89,11 +103,12 @@ for arg in "$@"; do
             if [[ "$profile_seen" == true ]]; then
                 die "--core and --all are mutually exclusive"
             fi
-            if [[ "$explicit_toml" == true || "$explicit_tui" == true ]]; then
+            if [[ "$explicit_toml" == true || "$explicit_tui" == true || "$explicit_rest" == true ]]; then
                 die "--core and optional integration flags are mutually exclusive"
             fi
             TEST_TOML=off
             TEST_TUI=off
+            TEST_REST=off
             explicit_core=true
             profile_seen=true
             ;;
@@ -103,6 +118,7 @@ for arg in "$@"; do
             fi
             TEST_TOML=on
             TEST_TUI=on
+            TEST_REST=on
             profile_seen=true
             ;;
         --with-toml)
@@ -121,6 +137,13 @@ for arg in "$@"; do
             fi
             TEST_TUI=on
             explicit_tui=true
+            ;;
+        --with-rest)
+            if [[ "$explicit_core" == true ]]; then
+                die "--core and --with-rest are mutually exclusive"
+            fi
+            TEST_REST=on
+            explicit_rest=true
             ;;
         -h|--help)
             usage
@@ -149,13 +172,21 @@ case "$SYSTEM_FTXUI_MODE" in
         ;;
 esac
 
+case "$SYSTEM_CROW_MODE" in
+    auto|on|off)
+        ;;
+    *)
+        die "EASYLOCAL_TEST_SYSTEM_CROW must be one of: auto, on, off"
+        ;;
+esac
+
 profile_label="core"
-if [[ "$TEST_TOML" == on && "$TEST_TUI" == on ]]; then
+if [[ "$TEST_TOML" == on && "$TEST_TUI" == on && "$TEST_REST" == on ]]; then
     profile_label="all-enabled"
-elif [[ "$TEST_TOML" == on ]]; then
-    profile_label="core+toml"
-elif [[ "$TEST_TUI" == on ]]; then
-    profile_label="core+tui"
+else
+    [[ "$TEST_TOML" == on ]] && profile_label="${profile_label}+toml"
+    [[ "$TEST_TUI" == on ]] && profile_label="${profile_label}+tui"
+    [[ "$TEST_REST" == on ]] && profile_label="${profile_label}+rest"
 fi
 echo "==> Profile: ${profile_label}"
 echo "==> Configure: ${PRESET}"
@@ -265,6 +296,104 @@ if [[ "$TEST_TUI" == "on" ]]; then
             "build/${PRESET}-tui-fetch" \
             -DEASYLOCAL_FETCH_DEPENDENCIES=ON \
             -DCMAKE_DISABLE_FIND_PACKAGE_ftxui=TRUE
+    fi
+fi
+
+run_rest_build_and_test() {
+    local label="$1"
+    local build_dir="$2"
+    shift 2
+
+    echo
+    echo "==> Configure: ${PRESET} + REST (${label})"
+    cmake --fresh --preset "$PRESET" \
+        -B "$build_dir" \
+        -DEASYLOCAL_ENABLE_REST=ON \
+        "$@"
+
+    echo
+    echo "==> Build: ${PRESET} + REST (${label})"
+    cmake --build "$build_dir" --parallel
+
+    echo
+    echo "==> Test: ${PRESET} + REST (${label})"
+    if [[ "$RUN_INTEGRATION" == "on" ]]; then
+        ctest --test-dir "$build_dir" --output-on-failure
+    else
+        ctest --test-dir "$build_dir" --output-on-failure -LE integration
+    fi
+}
+
+if [[ "$TEST_REST" == "on" ]]; then
+    system_crow_available=false
+
+    if [[ "$SYSTEM_CROW_MODE" != "off" ]]; then
+        REST_SYSTEM_BUILD_DIR="build/${PRESET}-rest-system"
+        REST_SYSTEM_CONFIGURE_LOG="${REST_SYSTEM_BUILD_DIR}.configure.log"
+        system_crow_cmake_args=()
+        system_crow_prefix_path="${CMAKE_PREFIX_PATH:-}"
+
+        # Homebrew formulae, when present, may live outside CMake's default
+        # package search prefixes. Crow also needs standalone Asio.
+        if command -v brew >/dev/null 2>&1; then
+            for formula in crow asio; do
+                if brew --prefix "$formula" >/dev/null 2>&1; then
+                    formula_prefix="$(brew --prefix "$formula")"
+                    if [[ -n "$system_crow_prefix_path" ]]; then
+                        system_crow_prefix_path="${system_crow_prefix_path};${formula_prefix}"
+                    else
+                        system_crow_prefix_path="$formula_prefix"
+                    fi
+                fi
+            done
+        fi
+        if [[ -n "$system_crow_prefix_path" ]]; then
+            system_crow_cmake_args+=("-DCMAKE_PREFIX_PATH=${system_crow_prefix_path}")
+        fi
+
+        echo
+        echo "==> Probe: ${PRESET} + REST (system Crow)"
+        set +e
+        cmake --fresh --preset "$PRESET" \
+            -B "$REST_SYSTEM_BUILD_DIR" \
+            -DEASYLOCAL_ENABLE_REST=ON \
+            -DEASYLOCAL_FETCH_DEPENDENCIES=OFF \
+            "${system_crow_cmake_args[@]}" \
+            >"$REST_SYSTEM_CONFIGURE_LOG" 2>&1
+        system_configure_status=$?
+        set -e
+
+        cat "$REST_SYSTEM_CONFIGURE_LOG"
+
+        if [[ $system_configure_status -eq 0 ]]; then
+            system_crow_available=true
+            echo
+            echo "==> Build: ${PRESET} + REST (system Crow)"
+            cmake --build "$REST_SYSTEM_BUILD_DIR" --parallel
+
+            echo
+            echo "==> Test: ${PRESET} + REST (system Crow)"
+            if [[ "$RUN_INTEGRATION" == "on" ]]; then
+                ctest --test-dir "$REST_SYSTEM_BUILD_DIR" --output-on-failure
+            else
+                ctest --test-dir "$REST_SYSTEM_BUILD_DIR" --output-on-failure -LE integration
+            fi
+        elif grep -q "EasyLocal REST requires Crow" "$REST_SYSTEM_CONFIGURE_LOG"; then
+            if [[ "$SYSTEM_CROW_MODE" == "on" ]]; then
+                die "system Crow was required but CMake could not find it"
+            fi
+            echo "==> Fallback: system Crow not found; using FetchContent"
+        else
+            die "REST system-dependency configure failed"
+        fi
+    fi
+
+    if [[ "$SYSTEM_CROW_MODE" == "off" || "$system_crow_available" == false ]]; then
+        run_rest_build_and_test \
+            "FetchContent" \
+            "build/${PRESET}-rest-fetch" \
+            -DEASYLOCAL_FETCH_DEPENDENCIES=ON \
+            -DCMAKE_DISABLE_FIND_PACKAGE_Crow=TRUE
     fi
 fi
 

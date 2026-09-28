@@ -11,6 +11,7 @@
 
 #include <cassert>
 #include <cstddef>
+#include <future>
 #include <stdexcept>
 #include <string_view>
 #include <utility>
@@ -19,6 +20,43 @@ namespace
 {
 
 using namespace easylocal::mwe::assignment;
+
+struct StatefulRunnerConfig
+{
+};
+
+template<class Solution>
+struct StatefulRunnerResult
+{
+    Solution solution;
+    int invocation{};
+};
+
+class StatefulRunner
+{
+public:
+    explicit StatefulRunner(StatefulRunnerConfig) noexcept
+    {
+    }
+
+    template<class Context>
+    [[nodiscard]] auto run(
+        const Context&,
+        typename Context::solution_type solution)
+    {
+        return StatefulRunnerResult<typename Context::solution_type>{
+            .solution = std::move(solution),
+            .invocation = ++invocations_,
+        };
+    }
+
+private:
+    int invocations_{};
+};
+
+using stateful_runner = easylocal::runner::algorithm_tag<
+    StatefulRunner,
+    StatefulRunnerConfig>;
 
 [[nodiscard]]
 auto make_application()
@@ -145,6 +183,55 @@ void registered_runners_are_executable()
     assert(runtime.solution_manager().is_valid(bi.solution));
 }
 
+void direct_app_runs_use_fresh_runtime_state()
+{
+    const AssignmentInstance instance{
+        .demand = {4, 4, 2},
+        .capacity = {5, 5},
+    };
+
+    auto sm =
+        easylocal::solution_manager<AssignmentSolutionManager>()
+        | easylocal::component<CapacityCostComponent>()
+        | easylocal::component<LoadImbalanceCostComponent>()
+        | easylocal::aggregator(AssignmentCostAggregator{});
+
+    auto nhe =
+        easylocal::neighborhood<ReassignJobNeighborhoodExplorer>()
+        | easylocal::delta<
+              CapacityCostComponent,
+              ReassignCapacityDeltaEvaluator>();
+
+    auto application =
+        easylocal::app("stateful")
+            .solution_manager(std::move(sm))
+            .neighborhood(std::move(nhe))
+            .runner<stateful_runner>("stateful");
+
+    auto seed_runtime = application.for_input(instance);
+    const auto initial = seed_runtime.solution_manager().initial_solution();
+
+    const auto first = application.run<stateful_runner>(instance, initial);
+    const auto second = application.run<stateful_runner>(instance, initial);
+    assert(first.invocation == 1);
+    assert(second.invocation == 1);
+
+    auto concurrent_first = std::async(
+        std::launch::async,
+        [&] { return application.run<stateful_runner>(instance, initial); });
+    auto concurrent_second = std::async(
+        std::launch::async,
+        [&] { return application.run<stateful_runner>(instance, initial); });
+    assert(concurrent_first.get().invocation == 1);
+    assert(concurrent_second.get().invocation == 1);
+
+    auto shared_runtime = application.for_input(instance);
+    const auto shared_first = shared_runtime.run<stateful_runner>(initial);
+    const auto shared_second = shared_runtime.run<stateful_runner>(initial);
+    assert(shared_first.invocation == 1);
+    assert(shared_second.invocation == 2);
+}
+
 void app_can_materialize_standard_runners()
 {
     const AssignmentInstance instance{
@@ -262,6 +349,7 @@ int main()
     app_owns_runner_configuration_and_names();
     one_input_materializes_one_shared_graph_for_all_runners();
     registered_runners_are_executable();
+    direct_app_runs_use_fresh_runtime_state();
     app_can_materialize_standard_runners();
     app_can_make_and_equip_solvers();
     named_runner_registrations_can_be_selected_for_solver_creation();

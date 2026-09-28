@@ -130,18 +130,26 @@ EasyLocal include tree so an installed `ConfigTOML` component remains
 self-contained and relocatable. A system-provided toml++ remains an external
 package dependency. CI exercises both providers explicitly. TextUI is a second optional component:
 `EasyLocal::TUI` uses FTXUI 7.x and is enabled with `EASYLOCAL_ENABLE_TUI=ON`.
-Core-only consumers load neither optional target nor third-party dependency,
-even when both adapters are present in the installation. `ConfigYAML`, `Logging`,
-and `REST` remain reserved future integrations. See
-[`docs/dependency-policy.md`](docs/dependency-policy.md) for the complete policy.
+`EasyLocal::REST` is a third optional component: it exposes an `app` as a generic
+Crow Blueprint and is enabled with `EASYLOCAL_ENABLE_REST=ON`. Core-only
+consumers load none of these optional targets or third-party dependencies, even
+when the adapters are present in the installation. `ConfigYAML` and `Logging`
+remain reserved future integrations. See
+[`docs/dependency-policy.md`](docs/dependency-policy.md) for the complete policy
+and [`docs/rest.md`](docs/rest.md) for the REST/concurrency model.
 
 The Core/application boundary is intentionally frontend-agnostic.
 `<easylocal/easylocal.hpp>` contains only standard-library Core facilities,
 including `app`, `check`, and `Tester`; ConfigTOML and TextUI remain explicit
 adapters. Materialized apps and bound runners borrow an lvalue Input by
 `const&`; binding a temporary Input is rejected to prevent dangling runtimes.
-This same public boundary is the intended base for a future REST adapter, which
-will keep HTTP/JSON/server types outside `EasyLocal::Core`.
+The REST adapter uses this same public boundary: HTTP/JSON/Crow/server types stay
+outside `EasyLocal::Core`, and each asynchronous run materializes fresh mutable
+runtime state while sharing only an immutable Input. TextUI background runs use
+the same isolation rule.
+The Assignment examples include `easylocal_assignment_rest_mwe`, which mounts
+the generic Blueprint at `/assignment` while leaving Crow server configuration
+fully visible to the application.
 
 EasyLocal also provides optional, non-virtual convenience bases for the common
 service boilerplate:

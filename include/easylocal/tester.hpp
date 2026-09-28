@@ -355,7 +355,7 @@ public:
 
     void set_input(input_type input)
     {
-        auto new_input = std::make_unique<input_type>(std::move(input));
+        auto new_input = std::make_shared<const input_type>(std::move(input));
         auto new_instance = std::unique_ptr<instance_type>{
             new instance_type(app_.for_input(*new_input))};
 
@@ -390,6 +390,12 @@ public:
     {
         assert(input_);
         return *input_;
+    }
+
+    [[nodiscard]]
+    auto input_handle() const noexcept -> std::shared_ptr<const input_type>
+    {
+        return input_;
     }
 
     [[nodiscard]]
@@ -545,7 +551,7 @@ public:
                     return;
                 }
 
-                auto result = instance_->template run_at<Index>(*solution_);
+                auto result = app_.template run_at<Index>(*input_, *solution_);
                 static_assert(
                     requires {
                         { std::move(result.solution) }
@@ -1039,7 +1045,7 @@ private:
     }
 
     App app_;
-    std::unique_ptr<input_type> input_;
+    std::shared_ptr<const input_type> input_;
     std::unique_ptr<instance_type> instance_;
     std::unique_ptr<solution_type> solution_;
     std::optional<move_type> move_;

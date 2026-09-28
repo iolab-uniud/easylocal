@@ -186,6 +186,9 @@ void tester_owns_input_and_builds_instance_from_it()
 
     assert(tester.has_input());
     assert(tester.input().demand[0] == 3);
+    const auto input_handle = tester.input_handle();
+    assert(input_handle);
+    assert(input_handle.get() == std::addressof(tester.input()));
     assert(std::addressof(tester.instance().instance()) == std::addressof(tester.input()));
 }
 

@@ -657,6 +657,43 @@ public:
                  (sizeof...(Registrations) > 0)
     auto for_input(const typename service_t<Spec>::instance_type&&) const = delete;
 
+    // Execute one runner against a fresh materialized runtime.  The app graph
+    // and immutable Input may be shared across concurrent calls; mutable
+    // SolutionManager, Neighborhood and algorithm state are reconstructed for
+    // every invocation.  Adapters can therefore schedule independent runs
+    // without making app_instance itself thread-safe.
+    template<class Tag, class Spec = SMSpec, class... RunArgs>
+        requires (!std::same_as<Spec, unconfigured_t>) &&
+                 (!std::same_as<NHESpec, unconfigured_t>) &&
+                 (sizeof...(Registrations) > 0)
+    [[nodiscard]]
+    auto run(
+        const typename service_t<Spec>::instance_type& input,
+        typename service_t<Spec>::solution_type solution,
+        RunArgs&&... args) const
+    {
+        auto runtime = for_input(input);
+        return runtime.template run<Tag>(
+            std::move(solution),
+            std::forward<RunArgs>(args)...);
+    }
+
+    template<std::size_t Index, class Spec = SMSpec, class... RunArgs>
+        requires (!std::same_as<Spec, unconfigured_t>) &&
+                 (!std::same_as<NHESpec, unconfigured_t>) &&
+                 (Index < sizeof...(Registrations))
+    [[nodiscard]]
+    auto run_at(
+        const typename service_t<Spec>::instance_type& input,
+        typename service_t<Spec>::solution_type solution,
+        RunArgs&&... args) const
+    {
+        auto runtime = for_input(input);
+        return runtime.template run_at<Index>(
+            std::move(solution),
+            std::forward<RunArgs>(args)...);
+    }
+
 private:
     std::string name_;
     [[no_unique_address]] SMSpec solution_manager_spec_{};

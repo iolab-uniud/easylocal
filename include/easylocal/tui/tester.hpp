@@ -12,12 +12,14 @@
 #include <cstdint>
 #include <exception>
 #include <filesystem>
+#include <future>
 #include <optional>
 #include <ostream>
 #include <random>
 #include <sstream>
 #include <string>
 #include <string_view>
+#include <thread>
 #include <system_error>
 #include <tuple>
 #include <type_traits>
@@ -481,6 +483,14 @@ enum class file_target
     solution,
 };
 
+template<class Solution>
+struct async_runner_result
+{
+    bool found{};
+    std::optional<Solution> solution;
+    std::string error;
+};
+
 template<class App>
 class tester_frontend
 {
@@ -934,6 +944,11 @@ public:
         root = CatchEvent(
             root,
             [this, &app, input_path_component, solution_path_component](Event event) {
+                if (event == Event::Custom && run_future_.valid())
+                {
+                    finish_runner_run();
+                    return true;
+                }
                 if (event == Event::Character('?') || event == Event::h || event == Event::H)
                 {
                     help_visible_ = !help_visible_;
@@ -999,7 +1014,17 @@ public:
                 return handle_page_shortcut(event);
             });
 
+        event_app_ = &app;
         app.Loop(root);
+        event_app_ = nullptr;
+
+        // The progress modal normally keeps the frontend alive until the run
+        // completes.  Joining here also makes exceptional/event-loop exits
+        // deterministic and prevents a worker from outliving the frontend.
+        if (run_worker_.joinable())
+        {
+            run_worker_.join();
+        }
     }
 
 private:
@@ -1767,31 +1792,158 @@ private:
             set_status(status_kind::warning, "Run runner: no runner registered");
             return;
         }
-        perform("Run runner", [this] {
-            const auto& name = runner_names_.at(
+        if (run_future_.valid())
+        {
+            set_status(status_kind::warning, "A runner is already executing");
+            return;
+        }
+
+        try
+        {
+            const auto& selected_name = runner_names_.at(
                 static_cast<std::size_t>(runner_selected_));
-            const auto before = tester_.evaluate();
-            if (!tester_.run_runner(name))
+            auto application = tester_.app();
+            auto input = tester_.input_handle();
+            auto solution = tester_.solution();
+
+            if (!input)
             {
-                set_status(
-                    status_kind::error,
-                    "Run runner: runner not found: " + name);
+                set_status(status_kind::error, "Run runner: Input is not available");
                 return;
             }
-            refresh_page_labels();
-            if (!tester_.is_valid())
+
+            if (run_worker_.joinable())
             {
-                set_status(
-                    status_kind::error,
-                    "Runner completed: " + name +
-                        " produced an INVALID solution; Move and Run disabled");
-                return;
+                run_worker_.join();
             }
-            const auto after = tester_.evaluate();
-            last_run_result_ =
-                name + ": " + value_text(before) + " -> " + value_text(after);
-            set_status(status_kind::success, "Runner completed: " + name);
-        });
+
+            run_name_ = selected_name;
+            run_before_ = value_text(tester_.evaluate());
+            progress_ = progress_snapshot{
+                .mode = progress_mode::indeterminate,
+                .current = 0,
+                .total = std::nullopt,
+                .label = "Running " + run_name_,
+            };
+            progress_visible_ = true;
+            set_status(status_kind::info, "Runner executing: " + run_name_);
+
+            std::promise<async_runner_result<typename tester_type::solution_type>> promise;
+            run_future_ = promise.get_future();
+            auto* event_app = event_app_;
+            const auto name = run_name_;
+
+            run_worker_ = std::jthread(
+                [application = std::move(application),
+                 input = std::move(input),
+                 solution = std::move(solution),
+                 name,
+                 promise = std::move(promise),
+                 event_app]() mutable {
+                    async_runner_result<typename tester_type::solution_type> completion;
+                    try
+                    {
+                        application.for_each_runner_registration_indexed(
+                            [&]<class Tag, std::size_t Index>(
+                                const std::string_view registered_name,
+                                const typename Tag::config_type&) {
+                                if (completion.found || registered_name != name)
+                                {
+                                    return;
+                                }
+
+                                auto result = application.template run_at<Index>(
+                                    *input,
+                                    std::move(solution));
+                                static_assert(
+                                    requires {
+                                        { std::move(result.solution) }
+                                            -> std::convertible_to<
+                                                typename tester_type::solution_type>;
+                                    },
+                                    "TextUI requires runner results to expose a solution member");
+
+                                completion.solution.emplace(
+                                    std::move(result.solution));
+                                completion.found = true;
+                            });
+                    }
+                    catch (const std::exception& error)
+                    {
+                        completion.error = error.what();
+                    }
+                    catch (...)
+                    {
+                        completion.error = "unknown error";
+                    }
+
+                    promise.set_value(std::move(completion));
+                    if (event_app != nullptr)
+                    {
+                        event_app->PostEvent(ftxui::Event::Custom);
+                    }
+                });
+        }
+        catch (const std::exception& error)
+        {
+            progress_visible_ = false;
+            progress_ = {};
+            set_status(status_kind::error, "Run runner: " + std::string{error.what()});
+        }
+        catch (...)
+        {
+            progress_visible_ = false;
+            progress_ = {};
+            set_status(status_kind::error, "Run runner: unknown error");
+        }
+    }
+
+    void finish_runner_run()
+    {
+        if (!run_future_.valid())
+        {
+            return;
+        }
+
+        auto completion = run_future_.get();
+        if (run_worker_.joinable())
+        {
+            run_worker_.join();
+        }
+
+        progress_visible_ = false;
+        progress_ = {};
+
+        if (!completion.error.empty())
+        {
+            set_status(
+                status_kind::error,
+                "Runner failed: " + run_name_ + ": " + completion.error);
+            return;
+        }
+        if (!completion.found || !completion.solution)
+        {
+            set_status(
+                status_kind::error,
+                "Run runner: runner not found: " + run_name_);
+            return;
+        }
+
+        tester_.set_solution(std::move(*completion.solution));
+        refresh_page_labels();
+        if (!tester_.is_valid())
+        {
+            set_status(
+                status_kind::error,
+                "Runner completed: " + run_name_ +
+                    " produced an INVALID solution; Move and Run disabled");
+            return;
+        }
+
+        const auto after = tester_.evaluate();
+        last_run_result_ =
+            run_name_ + ": " + run_before_ + " -> " + value_text(after);
+        set_status(status_kind::success, "Runner completed: " + run_name_);
     }
 
     [[nodiscard]] auto solution_status(std::string prefix) const -> std::string
@@ -2407,6 +2559,11 @@ private:
     int diagnostic_selected_{};
     bool progress_visible_{};
     progress_snapshot progress_{};
+    ftxui::App* event_app_{};
+    std::jthread run_worker_{};
+    std::future<async_runner_result<typename tester_type::solution_type>> run_future_{};
+    std::string run_name_;
+    std::string run_before_;
     bool input_visible_{};
     std::vector<std::string> input_viewer_lines_{""};
     int input_viewer_selected_{};

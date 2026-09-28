@@ -26,7 +26,7 @@ function(easylocal_run_checked description)
     endif()
 endfunction()
 
-function(easylocal_configure_build_test_consumer name use_core_component use_config_toml_component use_tui_component)
+function(easylocal_configure_build_test_consumer name use_core_component use_config_toml_component use_tui_component use_rest_component)
     set(_consumer_build_dir "${EASYLOCAL_WORK_DIR}/${name}")
     set(
         _configure_command
@@ -41,6 +41,7 @@ function(easylocal_configure_build_test_consumer name use_core_component use_con
         "-DEASYLOCAL_FIND_CORE_COMPONENT=${use_core_component}"
         "-DEASYLOCAL_FIND_CONFIG_TOML_COMPONENT=${use_config_toml_component}"
         "-DEASYLOCAL_FIND_TUI_COMPONENT=${use_tui_component}"
+        "-DEASYLOCAL_FIND_REST_COMPONENT=${use_rest_component}"
     )
     if(DEFINED EASYLOCAL_DEPENDENCY_PREFIX_PATH
             AND NOT "${EASYLOCAL_DEPENDENCY_PREFIX_PATH}" STREQUAL "")
@@ -147,6 +148,17 @@ elseif(EXISTS "${_tui_targets}")
         "TUI target export leaked into a Core-only installation")
 endif()
 
+set(_rest_targets "${_package_dir}/EasyLocalRESTTargets.cmake")
+if(EASYLOCAL_REST_ENABLED)
+    if(NOT EXISTS "${_rest_targets}")
+        message(FATAL_ERROR
+            "REST was enabled but its target export is missing")
+    endif()
+elseif(EXISTS "${_rest_targets}")
+    message(FATAL_ERROR
+        "REST target export leaked into a Core-only installation")
+endif()
+
 set(_tui_header
     "${_install_prefix}/include/easylocal/tui/tester.hpp")
 if(EASYLOCAL_TUI_ENABLED)
@@ -166,6 +178,43 @@ else()
     if(EXISTS "${_tui_header}")
         message(FATAL_ERROR
             "TUI header leaked into a Core-only installation")
+    endif()
+endif()
+
+set(_rest_header
+    "${_install_prefix}/include/easylocal/rest.hpp")
+set(_bundled_asio_header
+    "${_install_prefix}/include/easylocal/third_party/asio/asio.hpp")
+if(EASYLOCAL_REST_ENABLED)
+    if(NOT EXISTS "${_rest_header}")
+        message(FATAL_ERROR
+            "REST was enabled but its installed header is missing")
+    endif()
+    if(EASYLOCAL_REST_BUNDLED)
+        set(_bundled_crow_config
+            "${_install_prefix}/${EASYLOCAL_INSTALL_LIBDIR}/cmake/Crow/CrowConfig.cmake")
+        if(NOT EXISTS "${_bundled_crow_config}")
+            message(FATAL_ERROR
+                "REST fetched Crow but its installed package config is missing")
+        endif()
+    endif()
+    if(EASYLOCAL_REST_ASIO_BUNDLED)
+        if(NOT EXISTS "${_bundled_asio_header}")
+            message(FATAL_ERROR
+                "REST fetched Asio but its private installed headers are missing")
+        endif()
+    elseif(EXISTS "${_bundled_asio_header}")
+        message(FATAL_ERROR
+            "system REST installation unexpectedly bundled Asio headers")
+    endif()
+else()
+    if(EXISTS "${_rest_header}")
+        message(FATAL_ERROR
+            "REST header leaked into a Core-only installation")
+    endif()
+    if(EXISTS "${_bundled_asio_header}")
+        message(FATAL_ERROR
+            "bundled Asio headers leaked into a Core-only installation")
     endif()
 endif()
 
@@ -198,15 +247,19 @@ else()
     endif()
 endif()
 
-easylocal_configure_build_test_consumer(legacy OFF OFF OFF)
-easylocal_configure_build_test_consumer(core-component ON OFF OFF)
+easylocal_configure_build_test_consumer(legacy OFF OFF OFF OFF)
+easylocal_configure_build_test_consumer(core-component ON OFF OFF OFF)
 
 if(EASYLOCAL_CONFIG_TOML_ENABLED)
-    easylocal_configure_build_test_consumer(config-toml ON ON OFF)
+    easylocal_configure_build_test_consumer(config-toml ON ON OFF OFF)
 endif()
 
 if(EASYLOCAL_TUI_ENABLED)
-    easylocal_configure_build_test_consumer(tui ON OFF ON)
+    easylocal_configure_build_test_consumer(tui ON OFF ON OFF)
+endif()
+
+if(EASYLOCAL_REST_ENABLED)
+    easylocal_configure_build_test_consumer(rest ON OFF OFF ON)
 endif()
 
 set(_missing_component_build_dir "${EASYLOCAL_WORK_DIR}/missing-component")

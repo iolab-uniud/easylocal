@@ -50,3 +50,18 @@ if(EASYLOCAL_BUILD_EXAMPLES AND TARGET EasyLocal::TUI)
             EASYLOCAL_ASSIGNMENT_MWE_INSTANCE_FILE="${CMAKE_CURRENT_SOURCE_DIR}/instances/small.assignment"
     )
 endif()
+
+
+if(EASYLOCAL_BUILD_EXAMPLES AND TARGET EasyLocal::REST)
+    add_executable(
+        easylocal_assignment_rest_mwe
+        rest_main.cpp
+    )
+
+    target_link_libraries(
+        easylocal_assignment_rest_mwe
+        PRIVATE
+            easylocal_assignment_mwe_model
+            EasyLocal::REST
+    )
+endif()

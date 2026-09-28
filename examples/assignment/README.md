@@ -406,3 +406,23 @@ The current MWE deliberately does not define:
 - floating-point semantics;
 - generic parameter exposure through direct C++, CLI, and configuration files;
 - tracing/logging.
+
+## REST MWE
+
+When the optional REST component is enabled, `easylocal_assignment_rest_mwe`
+mounts the generic EasyLocal Crow Blueprint at `/assignment` and listens on port
+18080. Submit an Assignment instance with:
+
+```sh
+curl -X POST http://localhost:18080/assignment/runners/fi/runs \
+  -H 'Content-Type: application/json' \
+  -d '{"demand":[4,4,2],"capacity":[5,5]}'
+```
+
+The response is `202 Accepted` with a `run_id`. Use
+`GET /assignment/runs/<id>` for status and
+`GET /assignment/runs/<id>/solution` after completion.
+
+The example deliberately leaves the Crow server visible: EasyLocal owns the
+Blueprint and solver execution pool, while the application still owns Crow
+port/concurrency/server lifecycle.

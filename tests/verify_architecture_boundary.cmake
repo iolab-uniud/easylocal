@@ -11,6 +11,8 @@ set(_core_headers)
 set(_adapter_headers)
 foreach(_header IN LISTS _all_headers)
     if(_header MATCHES "/easylocal/tui/" OR
+       _header MATCHES "/easylocal/rest/" OR
+       _header MATCHES "/easylocal/rest\.hpp$" OR
        _header MATCHES "/easylocal/config/toml\\.hpp$")
         list(APPEND _adapter_headers "${_header}")
     else()
@@ -36,6 +38,14 @@ foreach(_header IN LISTS _core_headers)
     if(_contents MATCHES "#[ \t]*include[ \t]*[<\"]toml\\+\\+/")
         message(FATAL_ERROR
             "Core header depends directly on toml++: ${_header}")
+    endif()
+    if(_contents MATCHES "#[ \t]*include[ \t]*[<\"]easylocal/rest([/>\"])")
+        message(FATAL_ERROR
+            "Core header depends on REST: ${_header}")
+    endif()
+    if(_contents MATCHES "#[ \t]*include[ \t]*[<\"]crow")
+        message(FATAL_ERROR
+            "Core header depends directly on Crow: ${_header}")
     endif()
 endforeach()
 

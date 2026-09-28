@@ -56,6 +56,36 @@ foreach(_easylocal_component IN LISTS EasyLocal_FIND_COMPONENTS)
         continue()
     endif()
 
+    if(_easylocal_component STREQUAL "REST")
+        if(@EASYLOCAL_REST_AVAILABLE@)
+            include(CMakeFindDependencyMacro)
+            if(@EASYLOCAL_REST_BUNDLED@)
+                if(@EASYLOCAL_REST_ASIO_BUNDLED@)
+                    set(
+                        ASIO_INCLUDE_DIR
+                        "${PACKAGE_PREFIX_DIR}/@CMAKE_INSTALL_INCLUDEDIR@/easylocal/third_party/asio"
+                    )
+                endif()
+                find_dependency(
+                    Crow 1.3 CONFIG
+                    PATHS
+                        "${PACKAGE_PREFIX_DIR}/@CMAKE_INSTALL_LIBDIR@/cmake/Crow"
+                    NO_DEFAULT_PATH
+                )
+            else()
+                find_dependency(Crow 1.3 CONFIG)
+            endif()
+
+            include("${CMAKE_CURRENT_LIST_DIR}/EasyLocalRESTTargets.cmake")
+            set(EasyLocal_REST_FOUND TRUE)
+        else()
+            set(EasyLocal_REST_FOUND FALSE)
+            set(EasyLocal_NOT_FOUND_MESSAGE
+                "Requested EasyLocal component 'REST' is not available in this installation")
+        endif()
+        continue()
+    endif()
+
     if(NOT DEFINED EasyLocal_${_easylocal_component}_FOUND)
         set(EasyLocal_${_easylocal_component}_FOUND FALSE)
         set(EasyLocal_NOT_FOUND_MESSAGE

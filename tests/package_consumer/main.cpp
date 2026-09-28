@@ -9,6 +9,10 @@
 #include <easylocal/tui/tester.hpp>
 #endif
 
+#if EASYLOCAL_TEST_REST
+#include <easylocal/rest.hpp>
+#endif
+
 #if __cplusplus < 202100L
 #error "EasyLocal::Core must propagate a C++23 compile requirement"
 #endif

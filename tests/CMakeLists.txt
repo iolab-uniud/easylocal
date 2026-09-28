@@ -966,6 +966,24 @@ else()
     set(_easylocal_tui_bundled OFF)
 endif()
 
+if(TARGET EasyLocal::REST)
+    set(_easylocal_rest_enabled ON)
+else()
+    set(_easylocal_rest_enabled OFF)
+endif()
+
+if(EASYLOCAL_REST_BUNDLED)
+    set(_easylocal_rest_bundled ON)
+else()
+    set(_easylocal_rest_bundled OFF)
+endif()
+
+if(EASYLOCAL_REST_ASIO_BUNDLED)
+    set(_easylocal_rest_asio_bundled ON)
+else()
+    set(_easylocal_rest_asio_bundled OFF)
+endif()
+
 add_test(
     NAME easylocal.installed-package-consumer
     COMMAND
@@ -975,6 +993,9 @@ add_test(
         "-DEASYLOCAL_CONFIG_TOML_BUNDLED=${_easylocal_config_toml_bundled}"
         "-DEASYLOCAL_TUI_ENABLED=${_easylocal_tui_enabled}"
         "-DEASYLOCAL_TUI_BUNDLED=${_easylocal_tui_bundled}"
+        "-DEASYLOCAL_REST_ENABLED=${_easylocal_rest_enabled}"
+        "-DEASYLOCAL_REST_BUNDLED=${_easylocal_rest_bundled}"
+        "-DEASYLOCAL_REST_ASIO_BUNDLED=${_easylocal_rest_asio_bundled}"
         "-DEASYLOCAL_DEPENDENCY_PREFIX_PATH=${CMAKE_PREFIX_PATH}"
         "-DEASYLOCAL_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
         "-DEASYLOCAL_CONFIG=$<CONFIG>"
@@ -1379,3 +1400,62 @@ add_test(
     NAME easylocal.tester-io
     COMMAND easylocal_tester_io_test
 )
+
+add_executable(
+    easylocal_rest_execution_header_self_containment
+    rest_execution_header_self_containment.cpp
+)
+target_link_libraries(
+    easylocal_rest_execution_header_self_containment
+    PRIVATE
+        EasyLocal::Core
+)
+add_test(
+    NAME easylocal.rest-execution-header-self-containment
+    COMMAND easylocal_rest_execution_header_self_containment
+)
+
+add_executable(
+    easylocal_rest_execution_test
+    rest_execution.cpp
+)
+target_link_libraries(
+    easylocal_rest_execution_test
+    PRIVATE
+        EasyLocal::Core
+)
+add_test(
+    NAME easylocal.rest-execution
+    COMMAND easylocal_rest_execution_test
+)
+
+if(TARGET EasyLocal::REST)
+    add_executable(
+        easylocal_rest_blueprint_header_self_containment
+        rest_blueprint_header_self_containment.cpp
+    )
+    target_link_libraries(
+        easylocal_rest_blueprint_header_self_containment
+        PRIVATE
+            EasyLocal::REST
+    )
+    add_test(
+        NAME easylocal.rest-blueprint-header-self-containment
+        COMMAND easylocal_rest_blueprint_header_self_containment
+    )
+
+    add_executable(
+        easylocal_rest_blueprint_compile_test
+        rest_blueprint_compile.cpp
+    )
+    target_link_libraries(
+        easylocal_rest_blueprint_compile_test
+        PRIVATE
+            EasyLocal::REST
+            easylocal_assignment_mwe_model
+    )
+    add_test(
+        NAME easylocal.rest-blueprint-compile
+        COMMAND easylocal_rest_blueprint_compile_test
+    )
+endif()

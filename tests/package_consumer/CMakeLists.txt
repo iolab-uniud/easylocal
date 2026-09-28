@@ -15,6 +15,15 @@ if(EASYLOCAL_FIND_MISSING_COMPONENT)
         REQUIRED
         COMPONENTS ConfigYAML
     )
+elseif(EASYLOCAL_FIND_REST_COMPONENT)
+    find_package(
+        EasyLocal
+        "${EASYLOCAL_EXPECTED_VERSION}"
+        EXACT
+        CONFIG
+        REQUIRED
+        COMPONENTS Core REST
+    )
 elseif(EASYLOCAL_FIND_TUI_COMPONENT)
     find_package(
         EasyLocal
@@ -170,6 +179,23 @@ if(EASYLOCAL_FIND_CONFIG_TOML_COMPONENT)
     )
 endif()
 
+if(EASYLOCAL_FIND_REST_COMPONENT)
+    if(NOT TARGET EasyLocal::REST)
+        message(FATAL_ERROR
+            "installed REST component did not provide EasyLocal::REST")
+    endif()
+    target_link_libraries(
+        easylocal_installed_package_consumer
+        PRIVATE
+            EasyLocal::REST
+    )
+    target_compile_definitions(
+        easylocal_installed_package_consumer
+        PRIVATE
+            EASYLOCAL_TEST_REST=1
+    )
+endif()
+
 # Optional targets are loaded only when their package component is requested.
 # This keeps a Core-only consumer independent from adapter dependencies even
 # when the producer installation happens to contain those adapters.
@@ -180,6 +206,10 @@ endif()
 if(NOT EASYLOCAL_FIND_TUI_COMPONENT AND TARGET EasyLocal::TUI)
     message(FATAL_ERROR
         "TUI target leaked into a consumer that requested only Core")
+endif()
+if(NOT EASYLOCAL_FIND_REST_COMPONENT AND TARGET EasyLocal::REST)
+    message(FATAL_ERROR
+        "REST target leaked into a consumer that requested only Core")
 endif()
 
 enable_testing()

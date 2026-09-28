@@ -5,7 +5,7 @@ All notable changes to EasyLocal++ will be documented in this file.
 The project uses semantic versioning. Release entries are prepared from the
 commits since the previous release and are reviewed manually before tagging.
 
-### Unreleased — Core/adapter boundary hardening
+### Unreleased — application adapters and isolated runs
 
 - optional ConfigTOML and TextUI components are exported as independent CMake
   target files and loaded only when requested by `find_package`;
@@ -16,6 +16,17 @@ commits since the previous release and are reviewed manually before tagging.
   reject temporary Inputs to prevent dangling references;
 - deterministic architecture tests enforce that Core never depends on optional
   adapters and adapters do not reach into `easylocal/detail/*`.
+- `app.run(...)`/`run_at(...)` execute through a freshly materialized runtime,
+  making one-run/one-mutable-runtime semantics explicit and deterministically
+  tested, including concurrent calls sharing an immutable Input;
+- TextUI runner execution is asynchronous: search runs on a background
+  `std::jthread`, while solution commit and UI mutation remain on the FTXUI
+  event thread;
+- new optional `EasyLocal::REST` component exposes an app as a generic Crow
+  Blueprint with a domain codec, asynchronous run IDs, status/solution routes,
+  and a bounded solver execution pool separate from Crow HTTP workers;
+- REST packaging is lazy and component-aware, with Crow 1.3.3 and standalone
+  Asio 1.38.2 available through the explicit dependency-fetch path.
 
 ### S20 — Simulated Annealing promotion
 

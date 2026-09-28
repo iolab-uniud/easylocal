@@ -90,6 +90,12 @@ option(
     OFF
 )
 
+option(
+    EASYLOCAL_ENABLE_REST
+    "Build the optional Crow REST application adapter"
+    OFF
+)
+
 if(EASYLOCAL_ENABLE_CONFIG_TOML)
     set(EASYLOCAL_CONFIG_TOML_BUNDLED FALSE)
     find_package(tomlplusplus 3.4 CONFIG QUIET)
@@ -209,6 +215,80 @@ if(EASYLOCAL_ENABLE_TUI)
     endif()
 endif()
 
+if(EASYLOCAL_ENABLE_REST)
+    set(EASYLOCAL_REST_BUNDLED FALSE)
+    set(EASYLOCAL_REST_ASIO_BUNDLED FALSE)
+    find_package(Crow 1.3 CONFIG QUIET)
+
+    if(NOT Crow_FOUND)
+        if(EASYLOCAL_FETCH_DEPENDENCIES)
+            include(FetchContent)
+
+            # Crow uses standalone Asio by default but does not fetch it.
+            # Keep EASYLOCAL_FETCH_DEPENDENCIES self-contained for REST too.
+            find_path(EASYLOCAL_ASIO_INCLUDE_DIR asio.hpp)
+            if(NOT EASYLOCAL_ASIO_INCLUDE_DIR)
+                FetchContent_Declare(
+                    easylocal_asio
+                    GIT_REPOSITORY https://github.com/chriskohlhoff/asio.git
+                    GIT_TAG asio-1-38-2
+                    GIT_SHALLOW TRUE
+                )
+                FetchContent_GetProperties(easylocal_asio)
+                if(NOT easylocal_asio_POPULATED)
+                    FetchContent_Populate(easylocal_asio)
+                endif()
+                set(
+                    EASYLOCAL_ASIO_INCLUDE_DIR
+                    "${easylocal_asio_SOURCE_DIR}/asio/include"
+                )
+                set(
+                    ASIO_INCLUDE_DIR
+                    "${EASYLOCAL_ASIO_INCLUDE_DIR}"
+                    CACHE PATH
+                    "Standalone Asio headers used by bundled Crow"
+                    FORCE
+                )
+                set(EASYLOCAL_REST_ASIO_BUNDLED TRUE)
+            endif()
+
+            set(CROW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+            set(CROW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+            set(CROW_BUILD_FUZZER OFF CACHE BOOL "" FORCE)
+            set(CROW_ENABLE_SSL OFF CACHE BOOL "" FORCE)
+            set(CROW_ENABLE_COMPRESSION OFF CACHE BOOL "" FORCE)
+            set(CROW_INSTALL ON CACHE BOOL "" FORCE)
+            FetchContent_Declare(
+                Crow
+                GIT_REPOSITORY https://github.com/CrowCpp/Crow.git
+                GIT_TAG v1.3.3
+                GIT_SHALLOW TRUE
+            )
+            FetchContent_MakeAvailable(Crow)
+            set(EASYLOCAL_REST_BUNDLED TRUE)
+        else()
+            message(FATAL_ERROR
+                "EasyLocal REST requires Crow >= 1.3. "
+                "Install Crow or reconfigure with "
+                "EASYLOCAL_FETCH_DEPENDENCIES=ON to allow FetchContent.")
+        endif()
+    endif()
+
+    add_library(easylocal_rest INTERFACE)
+    add_library(EasyLocal::REST ALIAS easylocal_rest)
+    set_target_properties(
+        easylocal_rest
+        PROPERTIES
+            EXPORT_NAME REST
+    )
+    target_link_libraries(
+        easylocal_rest
+        INTERFACE
+            easylocal_core
+            Crow::Crow
+    )
+endif()
+
 # The concrete MWE is deliberately outside the public EasyLocal++ API.
 # Its model targets are also consumed by tests and benchmarks, so make them
 # available whenever one of those project facilities is requested.
@@ -237,6 +317,8 @@ install(
     DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
     PATTERN "easylocal/config/toml.hpp" EXCLUDE
     PATTERN "easylocal/tui/*" EXCLUDE
+    PATTERN "easylocal/rest.hpp" EXCLUDE
+    PATTERN "easylocal/rest/*" EXCLUDE
 )
 
 if(EASYLOCAL_ENABLE_CONFIG_TOML)
@@ -284,6 +366,37 @@ if(EASYLOCAL_ENABLE_TUI)
     )
 endif()
 
+if(EASYLOCAL_ENABLE_REST)
+    install(
+        TARGETS easylocal_rest
+        EXPORT EasyLocalRESTTargets
+    )
+    install(
+        EXPORT EasyLocalRESTTargets
+        FILE EasyLocalRESTTargets.cmake
+        NAMESPACE EasyLocal::
+        DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/EasyLocal"
+    )
+    install(
+        FILES include/easylocal/rest.hpp
+        DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/easylocal"
+    )
+    install(
+        DIRECTORY include/easylocal/rest/
+        DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/easylocal/rest"
+    )
+
+    if(EASYLOCAL_REST_ASIO_BUNDLED)
+        # Crow installs its package metadata but expects standalone Asio to be
+        # discoverable. Keep a private header copy for relocatable installs.
+        install(
+            DIRECTORY "${EASYLOCAL_ASIO_INCLUDE_DIR}/"
+            DESTINATION
+                "${CMAKE_INSTALL_INCLUDEDIR}/easylocal/third_party/asio"
+        )
+    endif()
+endif()
+
 if(EASYLOCAL_ENABLE_CONFIG_TOML)
     set(EASYLOCAL_CONFIG_TOML_AVAILABLE TRUE)
 else()
@@ -296,6 +409,14 @@ if(EASYLOCAL_ENABLE_TUI)
 else()
     set(EASYLOCAL_TUI_AVAILABLE FALSE)
     set(EASYLOCAL_TUI_BUNDLED FALSE)
+endif()
+
+if(EASYLOCAL_ENABLE_REST)
+    set(EASYLOCAL_REST_AVAILABLE TRUE)
+else()
+    set(EASYLOCAL_REST_AVAILABLE FALSE)
+    set(EASYLOCAL_REST_BUNDLED FALSE)
+    set(EASYLOCAL_REST_ASIO_BUNDLED FALSE)
 endif()
 
 configure_package_config_file(
