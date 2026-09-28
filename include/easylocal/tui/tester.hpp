@@ -25,13 +25,23 @@
 namespace easylocal::tui
 {
 
+enum class path_display_mode
+{
+    relative,
+    absolute,
+    both,
+};
+
 struct tester_options
 {
     std::string title{"EasyLocal++ Tester"};
     std::uint64_t seed{};
     std::string input_path;
     std::string solution_path;
+    path_display_mode path_display{path_display_mode::relative};
+    std::filesystem::path path_base;
     std::size_t max_render_chars{4096};
+    std::string exit_label{"quit"};
 };
 
 namespace detail
@@ -150,6 +160,82 @@ struct file_entry
     bool directory{};
 };
 
+[[nodiscard]] inline auto absolute_path_from(
+    const std::filesystem::path& path,
+    const std::filesystem::path& base = {}) -> std::filesystem::path
+{
+    std::error_code error;
+    auto effective_base = base;
+    if (effective_base.empty())
+    {
+        effective_base = std::filesystem::current_path(error);
+        if (error)
+        {
+            return path.lexically_normal();
+        }
+    }
+    else if (!effective_base.is_absolute())
+    {
+        effective_base = std::filesystem::absolute(effective_base, error);
+        if (error)
+        {
+            return path.lexically_normal();
+        }
+    }
+
+    if (path.is_absolute())
+    {
+        return path.lexically_normal();
+    }
+    return (effective_base / path).lexically_normal();
+}
+
+[[nodiscard]] inline auto relative_path_from(
+    const std::filesystem::path& path,
+    const std::filesystem::path& base = {}) -> std::filesystem::path
+{
+    const auto absolute = absolute_path_from(path, base);
+    const auto absolute_base = absolute_path_from({}, base);
+    const auto relative = absolute.lexically_relative(absolute_base);
+    return relative.empty() ? absolute : relative;
+}
+
+[[nodiscard]] inline auto display_path(
+    const std::filesystem::path& path,
+    const path_display_mode mode,
+    const std::filesystem::path& base = {}) -> std::string
+{
+    if (path.empty())
+    {
+        return {};
+    }
+
+    const auto absolute = absolute_path_from(path, base);
+    const auto relative = relative_path_from(path, base);
+    switch (mode)
+    {
+    case path_display_mode::absolute:
+        return absolute.string();
+    case path_display_mode::both:
+        return relative.string() + "  [" + absolute.string() + ']';
+    case path_display_mode::relative:
+    default:
+        return relative.string();
+    }
+}
+
+[[nodiscard]] inline auto editable_path(
+    const std::filesystem::path& path,
+    const path_display_mode mode,
+    const std::filesystem::path& base = {}) -> std::string
+{
+    if (mode == path_display_mode::absolute)
+    {
+        return absolute_path_from(path, base).string();
+    }
+    return relative_path_from(path, base).string();
+}
+
 [[nodiscard]] inline auto directory_entries(const std::filesystem::path& directory)
     -> std::vector<file_entry>
 {
@@ -212,8 +298,20 @@ public:
           options_{std::move(options)},
           rng_{options_.seed}
     {
-        input_path_ = options_.input_path;
-        solution_path_ = options_.solution_path;
+        if (!options_.input_path.empty())
+        {
+            input_path_ = editable_path(
+                options_.input_path,
+                options_.path_display,
+                options_.path_base);
+        }
+        if (!options_.solution_path.empty())
+        {
+            solution_path_ = editable_path(
+                options_.solution_path,
+                options_.path_display,
+                options_.path_base);
+        }
         for (const auto name : tester_.runner_names())
         {
             runner_names_.emplace_back(name);
@@ -229,15 +327,15 @@ public:
         Component input_path_component;
         Component solution_path_component;
 
-        auto state_controls = Container::Vertical({});
+        auto solution_controls = Container::Vertical({});
         if constexpr (tester_type::supports_input_loading)
         {
             auto option = InputOption::Default();
             option.multiline = false;
             option.on_enter = [this] { load_input(); };
             input_path_component = Input(&input_path_, "instance file", option);
-            state_controls->Add(input_path_component);
-            state_controls->Add(Container::Horizontal({
+            solution_controls->Add(input_path_component);
+            solution_controls->Add(Container::Horizontal({
                 Button("[O] Open", [this] { load_input(); }),
                 Button("Browse...", [this] { open_browser(file_target::input); }),
             }));
@@ -245,13 +343,13 @@ public:
 
         if constexpr (tester_type::supports_initial_solution)
         {
-            state_controls->Add(Button("[I] Initial solution", [this] {
+            solution_controls->Add(Button("[I] Initial solution", [this] {
                 use_initial_solution();
             }));
         }
         if constexpr (tester_type::supports_random_solution)
         {
-            state_controls->Add(Button("[R] Random solution", [this] {
+            solution_controls->Add(Button("[R] Random solution", [this] {
                 use_random_solution();
             }));
         }
@@ -266,24 +364,24 @@ public:
                 option.on_enter = [this] { load_solution(); };
             }
             solution_path_component = Input(&solution_path_, "solution file", option);
-            state_controls->Add(solution_path_component);
-            state_controls->Add(Button("Browse...", [this] {
+            solution_controls->Add(solution_path_component);
+            solution_controls->Add(Button("Browse...", [this] {
                 open_browser(file_target::solution);
             }));
         }
         if constexpr (tester_type::supports_solution_loading)
         {
-            state_controls->Add(Button("[L] Load solution", [this] {
+            solution_controls->Add(Button("[L] Load solution", [this] {
                 load_solution();
             }));
         }
         if constexpr (tester_type::supports_solution_saving)
         {
-            state_controls->Add(Button("[S] Save solution", [this] {
+            solution_controls->Add(Button("[S] Save solution", [this] {
                 save_solution();
             }));
         }
-        state_controls->Add(Button("[C] Check", [this] { check(); }));
+        solution_controls->Add(Button("[C] Check", [this] { check(); }));
 
         auto move_controls = Container::Vertical({});
         if constexpr (tester_type::supports_deterministic_moves)
@@ -314,14 +412,25 @@ public:
             }));
         }
 
-        auto main_controls = Container::Horizontal({
-            state_controls,
-            move_controls,
-            run_controls,
+        auto solution_page = Renderer(solution_controls, [this, solution_controls] {
+            return render_solution_page(solution_controls);
+        });
+        auto move_page = Renderer(move_controls, [this, move_controls] {
+            return render_move_page(move_controls);
+        });
+        auto run_page = Renderer(run_controls, [this, run_controls] {
+            return render_run_page(run_controls);
         });
 
-        auto main_renderer = Renderer(main_controls, [this, state_controls, move_controls, run_controls] {
-            return render_main(state_controls, move_controls, run_controls);
+        auto pages = Container::Tab(
+            {solution_page, move_page, run_page},
+            &page_selected_);
+        auto page_menu_option = MenuOption::HorizontalAnimated();
+        auto page_menu = Menu(&page_labels_, &page_selected_, page_menu_option);
+        auto main_controls = Container::Vertical({page_menu, pages});
+
+        auto main_renderer = Renderer(main_controls, [this, page_menu, pages] {
+            return render_main(page_menu, pages);
         });
 
         auto browser_menu_option = MenuOption::Vertical();
@@ -391,6 +500,21 @@ public:
                 if (event == Event::q || event == Event::Q)
                 {
                     app.Exit();
+                    return true;
+                }
+                if (event == Event::Character('1'))
+                {
+                    page_selected_ = 0;
+                    return true;
+                }
+                if (event == Event::Character('2'))
+                {
+                    page_selected_ = 1;
+                    return true;
+                }
+                if (event == Event::Character('3'))
+                {
+                    page_selected_ = 2;
                     return true;
                 }
                 if constexpr (tester_type::supports_input_loading)
@@ -548,10 +672,12 @@ private:
             return;
         }
         perform("Open instance", [this] {
-            tester_.load_input(std::filesystem::path{input_path_});
+            const auto path = resolve_path(input_path_);
+            tester_.load_input(path);
             set_status(
                 status_kind::success,
-                "Loaded instance: " + input_path_ + " (solution state cleared)");
+                "Loaded instance: " + format_path(path) +
+                    " (solution state cleared)");
         });
     }
 
@@ -594,10 +720,11 @@ private:
             return;
         }
         perform("Load solution", [this] {
-            tester_.load_solution(std::filesystem::path{solution_path_});
+            const auto path = resolve_path(solution_path_);
+            tester_.load_solution(path);
             set_status(
                 status_kind::success,
-                solution_status("Loaded solution: " + solution_path_));
+                solution_status("Loaded solution: " + format_path(path)));
         });
     }
 
@@ -614,9 +741,22 @@ private:
             return;
         }
         perform("Save solution", [this] {
-            tester_.save_solution(std::filesystem::path{solution_path_});
-            set_status(status_kind::success, "Saved solution: " + solution_path_);
+            const auto path = resolve_path(solution_path_);
+            tester_.save_solution(path);
+            set_status(status_kind::success, "Saved solution: " + format_path(path));
         });
+    }
+
+    [[nodiscard]] auto resolve_path(std::string_view value) const
+        -> std::filesystem::path
+    {
+        return absolute_path_from(std::filesystem::path{value}, options_.path_base);
+    }
+
+    [[nodiscard]] auto format_path(const std::filesystem::path& path) const
+        -> std::string
+    {
+        return display_path(path, options_.path_display, options_.path_base);
     }
 
     void check()
@@ -808,15 +948,16 @@ private:
         return truncate_text(value_text(tester_.move()), options_.max_render_chars);
     }
 
-    [[nodiscard]] auto render_state_summary() const -> ftxui::Element
+    [[nodiscard]] auto render_solution_summary() const -> ftxui::Element
     {
         using namespace ftxui;
         Elements lines;
         lines.push_back(text(
-            std::string{"Input: "} + (tester_.has_input() ? "loaded" : "not loaded")));
+            std::string{"Instance: "} +
+            (tester_.has_input() ? "loaded" : "not loaded")));
         if (tester_.has_input() && !input_path_.empty())
         {
-            lines.push_back(text("File: " + input_path_));
+            lines.push_back(text("Instance file: " + format_path(resolve_path(input_path_))));
         }
         lines.push_back(text(
             std::string{"Solution: "} +
@@ -890,47 +1031,78 @@ private:
         });
     }
 
-    [[nodiscard]] auto render_main(
-        const ftxui::Component& state_controls,
-        const ftxui::Component& move_controls,
-        const ftxui::Component& run_controls) const -> ftxui::Element
+    [[nodiscard]] auto render_solution_page(
+        const ftxui::Component& controls) const -> ftxui::Element
     {
         using namespace ftxui;
+        auto actions = window(text(" Actions "), controls->Render()) |
+                       size(WIDTH, LESS_THAN, 38);
+        auto summary = window(
+                           text(" Solution "),
+                           vbox({
+                               render_solution_summary(),
+                               separator(),
+                               text_lines(solution_text()) | flex,
+                           })) |
+                       flex;
+        return hbox({actions, summary}) | flex;
+    }
 
-        auto state_panel = window(
-                               text(" State "),
-                               vbox({
-                                   state_controls->Render(),
-                                   separator(),
-                                   render_state_summary(),
-                               })) |
-                           flex;
-        auto move_panel = window(
-                              text(" Move "),
-                              vbox({
-                                  move_controls->Render(),
-                                  separator(),
-                                  render_move_summary(),
-                              })) |
-                          flex;
-        auto run_panel = window(
-                             text(" Run "),
-                             vbox({
-                                 run_controls->Render(),
-                                 separator(),
-                                 text("Registered: " + std::to_string(runner_names_.size())),
-                             })) |
-                         flex;
+    [[nodiscard]] auto render_move_page(
+        const ftxui::Component& controls) const -> ftxui::Element
+    {
+        using namespace ftxui;
+        auto actions = window(text(" Actions "), controls->Render()) |
+                       size(WIDTH, LESS_THAN, 34);
+        auto details = window(text(" Selected move "), render_move_summary()) | flex;
+        return hbox({actions, details}) | flex;
+    }
+
+    [[nodiscard]] auto render_run_page(
+        const ftxui::Component& controls) const -> ftxui::Element
+    {
+        using namespace ftxui;
+        Elements summary{
+            text("Registered runners: " + std::to_string(runner_names_.size())),
+            separator(),
+        };
+        if (tester_.has_solution())
+        {
+            const bool valid = tester_.is_valid();
+            summary.push_back(text(std::string{"Current solution: "} +
+                                   (valid ? "valid" : "INVALID")));
+            if (valid)
+            {
+                summary.push_back(text("Cost: " + value_text(tester_.evaluate())));
+            }
+        }
+        else
+        {
+            summary.push_back(text("Current solution: not selected") | dim);
+        }
+        auto runners = window(text(" Runners "), controls->Render()) |
+                       size(WIDTH, LESS_THAN, 42);
+        auto state = window(text(" Run context "), vbox(std::move(summary))) | flex;
+        return hbox({runners, state}) | flex;
+    }
+
+    [[nodiscard]] auto render_main(
+        const ftxui::Component& page_menu,
+        const ftxui::Component& pages) const -> ftxui::Element
+    {
+        using namespace ftxui;
 
         return vbox({
                    text(options_.title) | bold | center,
                    text("semantic tester  |  seed=" + std::to_string(options_.seed)) | center | dim,
                    separator(),
-                   hbox({state_panel, move_panel, run_panel}) | flex,
-                   window(text(" Current solution "), text_lines(solution_text())) |
-                       size(HEIGHT, LESS_THAN, 10),
+                   page_menu->Render() | center,
+                   separator(),
+                   pages->Render() | flex,
                    window(text(" Status "), render_status()),
-                   text("F1 help  |  q quit  |  Tab/Shift-Tab focus  |  shortcuts disabled while editing paths") |
+                   text("1 Solution  2 Move  3 Run  |  F1 help  |  q " +
+                        options_.exit_label +
+                        "  |  Tab/Shift-Tab focus") |
                        center | dim,
                }) |
                border;
@@ -946,7 +1118,7 @@ private:
         std::filesystem::path start;
         if (!current.empty())
         {
-            std::filesystem::path candidate{current};
+            auto candidate = resolve_path(current);
             if (std::filesystem::is_directory(candidate, error) && !error)
             {
                 start = candidate;
@@ -958,11 +1130,18 @@ private:
         }
         if (start.empty())
         {
-            start = std::filesystem::current_path(error);
-            if (error)
+            if (!options_.path_base.empty())
             {
-                set_status(status_kind::error, "Browse: cannot determine current directory");
-                return;
+                start = absolute_path_from({}, options_.path_base);
+            }
+            else
+            {
+                start = std::filesystem::current_path(error);
+                if (error)
+                {
+                    set_status(status_kind::error, "Browse: cannot determine current directory");
+                    return;
+                }
             }
         }
 
@@ -1028,7 +1207,10 @@ private:
             return;
         }
 
-        auto selected_text = selected.path.string();
+        auto selected_text = editable_path(
+            selected.path,
+            options_.path_display,
+            options_.path_base);
         if (browser_target_ == file_target::input)
         {
             input_path_ = std::move(selected_text);
@@ -1038,7 +1220,7 @@ private:
             solution_path_ = std::move(selected_text);
         }
         browser_visible_ = false;
-        set_status(status_kind::info, "Selected file: " + selected.path.string());
+        set_status(status_kind::info, "Selected file: " + format_path(selected.path));
     }
 
     [[nodiscard]] auto render_browser(const ftxui::Component& browser_menu) const
@@ -1049,7 +1231,7 @@ private:
                                ? " Select instance file "
                                : " Select solution file ";
         Elements body{
-            text(browser_directory_.string()) | bold,
+            text(format_path(browser_directory_)) | bold,
             separator(),
             browser_menu->Render() | vscroll_indicator | frame |
                 size(HEIGHT, LESS_THAN, 16),
@@ -1073,6 +1255,10 @@ private:
         Elements lines{
             text("Global shortcuts") | bold,
             separator(),
+            text("1  Solution page"),
+            text("2  Move page"),
+            text("3  Run page"),
+            separator(),
             text("O  open instance file"),
             text("I  initial solution"),
             text("R  random solution"),
@@ -1084,9 +1270,10 @@ private:
             text("M  random move"),
             text("A  apply selected move"),
             text("G  run selected runner"),
-            text("Q  quit"),
+            text("Q  " + options_.exit_label),
             separator(),
             text("F1 / Esc  close this help"),
+            text("Paths are shown relative to the configured base by default.") | dim,
             text("Shortcuts are disabled while a path field is focused.") | dim,
             separator(),
             controls->Render(),
@@ -1108,6 +1295,9 @@ private:
 
     std::vector<std::string> runner_names_;
     int runner_selected_{};
+
+    std::vector<std::string> page_labels_{"Solution", "Move", "Run"};
+    int page_selected_{};
 
     bool browser_visible_{};
     file_target browser_target_{file_target::input};

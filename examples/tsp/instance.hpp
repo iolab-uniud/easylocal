@@ -1,7 +1,10 @@
 #pragma once
 
 #include <cassert>
+#include <cmath>
 #include <cstddef>
+#include <istream>
+#include <stdexcept>
 #include <vector>
 
 namespace easylocal::mwe::tsp
@@ -14,6 +17,29 @@ struct TspInstance
 {
     std::size_t city_count{};
     std::vector<distance_type> distances;
+
+    [[nodiscard]]
+    static auto read(std::istream& input) -> TspInstance
+    {
+        std::size_t count{};
+        if (!(input >> count) || count < 2)
+        {
+            throw std::runtime_error("invalid TSP instance header");
+        }
+
+        TspInstance instance{
+            .city_count = count,
+            .distances = std::vector<distance_type>(count * count),
+        };
+        for (auto& distance : instance.distances)
+        {
+            if (!(input >> distance) || !std::isfinite(distance) || distance < 0.0)
+            {
+                throw std::runtime_error("invalid TSP distance data");
+            }
+        }
+        return instance;
+    }
 
     [[nodiscard]]
     auto distance(const city_id from, const city_id to) const noexcept

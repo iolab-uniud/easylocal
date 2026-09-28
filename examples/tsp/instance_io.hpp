@@ -2,13 +2,10 @@
 
 #include "instance.hpp"
 
-#include <cmath>
-#include <cstddef>
 #include <filesystem>
 #include <fstream>
 #include <stdexcept>
 #include <string>
-#include <vector>
 
 namespace easylocal::mwe::tsp
 {
@@ -22,27 +19,15 @@ inline auto load_instance(const std::filesystem::path& path) -> TspInstance
         throw std::runtime_error("cannot open TSP instance: " + path.string());
     }
 
-    std::size_t city_count{};
-    if (!(input >> city_count) || city_count < 2)
+    try
     {
-        throw std::runtime_error("invalid TSP instance header: " + path.string());
+        return TspInstance::read(input);
     }
-
-    TspInstance instance{
-        .city_count = city_count,
-        .distances = std::vector<distance_type>(city_count * city_count),
-    };
-
-    for (auto& distance : instance.distances)
+    catch (const std::exception& error)
     {
-        if (!(input >> distance) || !std::isfinite(distance) || distance < 0.0)
-        {
-            throw std::runtime_error(
-                "invalid TSP distance data: " + path.string());
-        }
+        throw std::runtime_error(
+            "cannot read TSP instance '" + path.string() + "': " + error.what());
     }
-
-    return instance;
 }
 
 } // namespace easylocal::mwe::tsp

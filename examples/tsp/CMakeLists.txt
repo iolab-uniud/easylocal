@@ -47,3 +47,25 @@ if(EASYLOCAL_BUILD_EXAMPLES)
             EASYLOCAL_TSP_MWE_INSTANCE_FILE="${CMAKE_CURRENT_SOURCE_DIR}/instances/small.tsp"
     )
 endif()
+
+
+if(EASYLOCAL_BUILD_EXAMPLES AND TARGET EasyLocal::TUI)
+    add_executable(
+        easylocal_tsp_tester_mwe
+        tester_main.cpp
+    )
+
+    target_link_libraries(
+        easylocal_tsp_tester_mwe
+        PRIVATE
+            easylocal_tsp_mwe_model
+            EasyLocal::TUI
+    )
+
+    target_compile_definitions(
+        easylocal_tsp_tester_mwe
+        PRIVATE
+            EASYLOCAL_TSP_MWE_INSTANCE_FILE="${CMAKE_CURRENT_SOURCE_DIR}/instances/small.tsp"
+            EASYLOCAL_TSP_MWE_SOLUTION_FILE="${CMAKE_CURRENT_SOURCE_DIR}/instances/small.sol"
+    )
+endif()

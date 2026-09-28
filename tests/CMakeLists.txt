@@ -903,6 +903,35 @@ if(TARGET EasyLocal::TUI)
         NAME easylocal.tui-helpers
         COMMAND easylocal_tui_helpers_test
     )
+
+
+    add_executable(
+        easylocal_tui_launcher_header_self_containment
+        tui_launcher_header_self_containment.cpp
+    )
+    target_link_libraries(
+        easylocal_tui_launcher_header_self_containment
+        PRIVATE
+            EasyLocal::TUI
+    )
+    add_test(
+        NAME easylocal.tui-launcher-header-self-containment
+        COMMAND easylocal_tui_launcher_header_self_containment
+    )
+
+    add_executable(
+        easylocal_tui_launcher_helpers_test
+        tui_launcher_helpers.cpp
+    )
+    target_link_libraries(
+        easylocal_tui_launcher_helpers_test
+        PRIVATE
+            EasyLocal::TUI
+    )
+    add_test(
+        NAME easylocal.tui-launcher-helpers
+        COMMAND easylocal_tui_launcher_helpers_test
+    )
 endif()
 
 if(TARGET EasyLocal::ConfigTOML)

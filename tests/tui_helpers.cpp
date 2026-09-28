@@ -52,7 +52,10 @@ inline auto operator<<(std::ostream& out, const stream_only&) -> std::ostream&
 
 int main()
 {
+    using easylocal::tui::path_display_mode;
     using easylocal::tui::detail::directory_entries;
+    using easylocal::tui::detail::display_path;
+    using easylocal::tui::detail::editable_path;
     using easylocal::tui::detail::value_text;
 
     assert(value_text(member_described{}) == "member");
@@ -77,6 +80,17 @@ int main()
     assert(entries[2].path.filename() == "a.txt");
     assert(!entries[3].directory);
     assert(entries[3].path.filename() == "z.txt");
+
+    const auto target = fixture / "a.txt";
+    assert(display_path(target, path_display_mode::relative, fixture) == "a.txt");
+    assert(display_path(target, path_display_mode::absolute, fixture) ==
+           target.lexically_normal().string());
+    assert(display_path(target, path_display_mode::both, fixture) ==
+           "a.txt  [" + target.lexically_normal().string() + "]");
+    assert(editable_path(target, path_display_mode::relative, fixture) == "a.txt");
+    assert(editable_path(target, path_display_mode::both, fixture) == "a.txt");
+    assert(editable_path(target, path_display_mode::absolute, fixture) ==
+           target.lexically_normal().string());
 
     std::filesystem::remove_all(fixture);
     return 0;

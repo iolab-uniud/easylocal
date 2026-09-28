@@ -1,0 +1,69 @@
+#include "neighborhood_explorer.hpp"
+#include "solution_manager.hpp"
+#include "swap_neighborhood_explorer.hpp"
+#include "swap_tour_length_delta.hpp"
+#include "tour_length_component.hpp"
+#include "tour_length_delta.hpp"
+
+#include <easylocal/aggregation.hpp>
+#include <easylocal/app.hpp>
+#include <easylocal/search/first_improvement.hpp>
+#include <easylocal/tui/launcher.hpp>
+
+#include <utility>
+
+#ifndef EASYLOCAL_TSP_MWE_INSTANCE_FILE
+#error "EASYLOCAL_TSP_MWE_INSTANCE_FILE must name the example instance"
+#endif
+
+#ifndef EASYLOCAL_TSP_MWE_SOLUTION_FILE
+#error "EASYLOCAL_TSP_MWE_SOLUTION_FILE must name the example solution"
+#endif
+
+int main()
+{
+    using namespace easylocal::mwe::tsp;
+
+    auto two_opt =
+        easylocal::app("tsp-two-opt")
+            .solution_manager(
+                easylocal::solution_manager<TspSolutionManager>()
+                | easylocal::component<TourLengthComponent>()
+                | easylocal::aggregator(
+                      easylocal::aggregation::weighted_sum{distance_type{1}}))
+            .neighborhood(
+                easylocal::neighborhood<TwoOptNeighborhoodExplorer>()
+                | easylocal::delta<
+                      TourLengthComponent,
+                      TwoOptTourLengthDeltaEvaluator>())
+            .runner<easylocal::runner::first_improvement>("fi");
+
+    auto swap =
+        easylocal::app("tsp-swap")
+            .solution_manager(
+                easylocal::solution_manager<TspSolutionManager>()
+                | easylocal::component<TourLengthComponent>()
+                | easylocal::aggregator(
+                      easylocal::aggregation::weighted_sum{distance_type{1}}))
+            .neighborhood(
+                easylocal::neighborhood<SwapCitiesNeighborhoodExplorer>()
+                | easylocal::delta<
+                      TourLengthComponent,
+                      SwapTourLengthDeltaEvaluator>())
+            .runner<easylocal::runner::first_improvement>("fi");
+
+    two_opt.runner_config<easylocal::runner::first_improvement>().max_evaluations = 100;
+    swap.runner_config<easylocal::runner::first_improvement>().max_evaluations = 100;
+
+    easylocal::tui::run_launcher(
+        {
+            .title = "EasyLocal++ TSP Tester",
+            .tester = {
+                .seed = 0,
+                .input_path = EASYLOCAL_TSP_MWE_INSTANCE_FILE,
+                .solution_path = EASYLOCAL_TSP_MWE_SOLUTION_FILE,
+            },
+        },
+        std::move(two_opt),
+        std::move(swap));
+}
