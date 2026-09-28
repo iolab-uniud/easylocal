@@ -81,6 +81,9 @@ int main()
     using easylocal::tui::detail::page_available;
     using easylocal::tui::detail::page_after_solution_change;
     using easylocal::tui::detail::page_index;
+    using easylocal::tui::detail::progress_mode;
+    using easylocal::tui::detail::progress_ratio;
+    using easylocal::tui::detail::progress_snapshot;
     using easylocal::tui::detail::solution_stage;
     using easylocal::tui::detail::solution_stage_of;
     using easylocal::tui::detail::tester_page;
@@ -136,6 +139,27 @@ int main()
     assert(page_index(tester_page::solution) == 0);
     assert(page_index(tester_page::move) == 1);
     assert(page_index(tester_page::run) == 2);
+
+    assert(progress_ratio(progress_snapshot{}) == 0.0F);
+    assert(progress_ratio(progress_snapshot{
+               .mode = progress_mode::indeterminate,
+               .current = 3,
+           }) == 0.0F);
+    assert(progress_ratio(progress_snapshot{
+               .mode = progress_mode::determinate,
+               .current = 3,
+               .total = 4,
+           }) == 0.75F);
+    assert(progress_ratio(progress_snapshot{
+               .mode = progress_mode::determinate,
+               .current = 8,
+               .total = 4,
+           }) == 1.0F);
+    assert(progress_ratio(progress_snapshot{
+               .mode = progress_mode::determinate,
+               .current = 1,
+               .total = 0,
+           }) == 0.0F);
 
     const auto fixture =
         std::filesystem::current_path() / "easylocal-tui-helpers-fixture";

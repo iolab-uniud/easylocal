@@ -12,6 +12,7 @@
 #include <cstdint>
 #include <exception>
 #include <filesystem>
+#include <optional>
 #include <ostream>
 #include <random>
 #include <sstream>
@@ -129,6 +130,33 @@ enum class tester_page : int
     move = 1,
     run = 2,
 };
+
+enum class progress_mode
+{
+    unavailable,
+    indeterminate,
+    determinate,
+};
+
+struct progress_snapshot
+{
+    progress_mode mode{progress_mode::unavailable};
+    std::size_t current{};
+    std::optional<std::size_t> total;
+    std::string label;
+};
+
+[[nodiscard]] inline auto progress_ratio(const progress_snapshot& progress) noexcept
+    -> float
+{
+    if (progress.mode != progress_mode::determinate ||
+        !progress.total.has_value() || *progress.total == 0)
+    {
+        return 0.0F;
+    }
+    const auto bounded = std::min(progress.current, *progress.total);
+    return static_cast<float>(bounded) / static_cast<float>(*progress.total);
+}
 
 enum class solution_stage
 {
@@ -1428,6 +1456,47 @@ private:
         return vbox(std::move(lines));
     }
 
+    [[nodiscard]] auto move_progress() const -> progress_snapshot
+    {
+        // Placeholder until framework components expose cooperative progress.
+        // Keeping this adapter local to the frontend avoids imposing a Core API
+        // before the reporting contract is designed.
+        return {
+            .mode = progress_mode::unavailable,
+            .label = "not reported by component",
+        };
+    }
+
+    [[nodiscard]] auto render_progress(const progress_snapshot& progress) const
+        -> ftxui::Element
+    {
+        using namespace ftxui;
+
+        switch (progress.mode)
+        {
+        case progress_mode::determinate:
+            if (progress.total.has_value() && *progress.total != 0)
+            {
+                const auto count = std::to_string(progress.current) + "/" +
+                                   std::to_string(*progress.total);
+                return hbox({
+                    text(progress.label.empty() ? "Progress " : progress.label + " "),
+                    gauge(progress_ratio(progress)) | flex,
+                    text(" " + count),
+                });
+            }
+            [[fallthrough]];
+        case progress_mode::indeterminate:
+            return text(
+                progress.label.empty() ? "working" : progress.label);
+        case progress_mode::unavailable:
+        default:
+            return text(
+                       progress.label.empty() ? "not reported" : progress.label) |
+                   dim;
+        }
+    }
+
     [[nodiscard]] auto render_move_summary() const -> ftxui::Element
     {
         using namespace ftxui;
@@ -1534,7 +1603,9 @@ private:
                            text(" Move - " + neighborhood + " "),
                            render_move_summary()) |
                        flex;
-        return hbox({actions, details}) | flex;
+        auto progress = window(text(" Progress "), render_progress(move_progress())) |
+                        size(HEIGHT, EQUAL, 3);
+        return vbox({hbox({actions, details}) | flex, progress}) | flex;
     }
 
     [[nodiscard]] auto render_run_page(
