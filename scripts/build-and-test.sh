@@ -244,7 +244,11 @@ if [[ "$TEST_TUI" == "on" ]]; then
 
             echo
             echo "==> Test: ${PRESET} + TUI (system FTXUI)"
-            ctest --test-dir "$TUI_SYSTEM_BUILD_DIR" --output-on-failure
+            if [[ "$RUN_INTEGRATION" == "on" ]]; then
+                ctest --test-dir "$TUI_SYSTEM_BUILD_DIR" --output-on-failure
+            else
+                ctest --test-dir "$TUI_SYSTEM_BUILD_DIR" --output-on-failure -LE integration
+            fi
         elif grep -q "EasyLocal TUI requires FTXUI" "$TUI_SYSTEM_CONFIGURE_LOG"; then
             if [[ "$SYSTEM_FTXUI_MODE" == "on" ]]; then
                 die "system FTXUI was required but CMake could not find it"
@@ -338,7 +342,11 @@ if [[ "$SYSTEM_TOML_MODE" != "off" ]]; then
 
         echo
         echo "==> Test: ${PRESET} + ConfigTOML (system toml++)"
-        ctest --test-dir "$TOML_SYSTEM_BUILD_DIR" --output-on-failure
+        if [[ "$RUN_INTEGRATION" == "on" ]]; then
+            ctest --test-dir "$TOML_SYSTEM_BUILD_DIR" --output-on-failure
+        else
+            ctest --test-dir "$TOML_SYSTEM_BUILD_DIR" --output-on-failure -LE integration
+        fi
     elif grep -q "EasyLocal ConfigTOML requires tomlplusplus" "$TOML_SYSTEM_CONFIGURE_LOG"; then
         if [[ "$SYSTEM_TOML_MODE" == "on" ]]; then
             die "system toml++ was required but CMake could not find it"
