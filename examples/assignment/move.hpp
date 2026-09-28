@@ -20,6 +20,8 @@ struct ReassignJobMove
         return "job " + std::to_string(job) + " -> machine " +
                std::to_string(destination);
     }
+
+    auto operator==(const ReassignJobMove&) const -> bool = default;
 };
 
 } // namespace easylocal::mwe::assignment

@@ -49,6 +49,8 @@ struct AssignmentSolution
         out << '\n';
     }
 
+    auto operator==(const AssignmentSolution&) const -> bool = default;
+
     [[nodiscard]] auto describe() const -> std::string
     {
         std::ostringstream out;

@@ -581,6 +581,46 @@ void tester_can_take_ownership_of_an_rvalue_app()
 
 } // namespace
 
+
+void tester_reports_neighborhood_diagnostics()
+{
+    easylocal::Tester tester{make_application()};
+    tester.set_input(make_input(3));
+    tester.set_solution(AssignmentSolution{.assignment = {0, 0}});
+
+    static_assert(decltype(tester)::supports_cost_consistency_check);
+    static_assert(decltype(tester)::supports_move_independence_check);
+    static_assert(decltype(tester)::supports_random_distribution_check);
+
+    const auto preview = tester.neighborhood_preview(1);
+    assert(preview.moves == 2);
+    assert(preview.entries.size() == 1);
+
+    const auto statistics = tester.neighborhood_statistics();
+    assert(statistics.moves == 2);
+    assert(statistics.invalid == 0);
+    assert(statistics.improving + statistics.sideways + statistics.worsening == 2);
+
+    const auto costs = tester.check_neighborhood_costs();
+    assert(costs.moves == 2);
+    assert(costs.invalid == 0);
+    assert(costs.mismatches == 0);
+
+    const auto independence = tester.check_move_independence();
+    assert(independence.moves == 2);
+    assert(independence.invalid == 0);
+    assert(independence.null_moves == 0);
+    assert(independence.repeated_states == 0);
+
+    std::mt19937_64 rng{1234};
+    const auto distribution = tester.check_random_move_distribution(rng, 8);
+    assert(distribution.neighborhood_size == 2);
+    assert(distribution.samples == 16);
+    assert(distribution.out_of_neighborhood == 0);
+    assert(distribution.unseen == 0);
+    assert(distribution.min_frequency <= distribution.max_frequency);
+}
+
 int main()
 {
     app_copy_preserves_graph_configuration();
@@ -595,6 +635,7 @@ int main()
     tester_selects_first_improving_and_best_moves();
     tester_selects_random_moves_with_an_explicit_rng();
     tester_compares_move_evaluation_with_full_recomputation();
+    tester_reports_neighborhood_diagnostics();
     applying_a_move_updates_the_solution_and_clears_move_state();
     replacing_the_solution_clears_move_state();
     tester_can_inspect_an_explicit_invalid_move();

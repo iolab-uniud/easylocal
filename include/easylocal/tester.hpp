@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <cassert>
 #include <concepts>
 #include <cstddef>
@@ -261,6 +262,59 @@ public:
         random_neighborhood_for<neighborhood_type, solution_type, rng_type>;
     static constexpr bool supports_improvement_selection =
         supports_deterministic_moves && detail::has_better<solution_manager_type>;
+    static constexpr bool supports_cost_consistency_check =
+        supports_deterministic_moves && detail::has_equivalent<solution_manager_type>;
+    static constexpr bool supports_move_independence_check =
+        supports_deterministic_moves && std::equality_comparable<solution_type>;
+    static constexpr bool supports_random_distribution_check =
+        supports_deterministic_moves && supports_random_moves &&
+        std::equality_comparable<move_type>;
+
+    struct neighborhood_statistics_result
+    {
+        std::size_t moves{};
+        std::size_t improving{};
+        std::size_t sideways{};
+        std::size_t worsening{};
+        std::size_t invalid{};
+    };
+
+    struct neighborhood_cost_check_result
+    {
+        std::size_t moves{};
+        std::size_t mismatches{};
+        std::size_t invalid{};
+    };
+
+    struct move_independence_result
+    {
+        std::size_t moves{};
+        std::size_t null_moves{};
+        std::size_t repeated_states{};
+        std::size_t invalid{};
+    };
+
+    struct random_distribution_result
+    {
+        std::size_t neighborhood_size{};
+        std::size_t samples{};
+        std::size_t out_of_neighborhood{};
+        std::size_t unseen{};
+        std::size_t min_frequency{};
+        std::size_t max_frequency{};
+    };
+
+    struct inspected_move
+    {
+        move_type move;
+        cost_type cost;
+    };
+
+    struct neighborhood_preview_result
+    {
+        std::size_t moves{};
+        std::vector<inspected_move> entries;
+    };
     static constexpr bool supports_input_loading =
         detail::tester_io::readable_input<input_type>;
     static constexpr bool supports_solution_loading =
@@ -695,6 +749,243 @@ public:
             instance_->solution_manager(),
             incremental,
             full);
+    }
+
+    [[nodiscard]]
+    auto neighborhood_preview(const std::size_t max_entries = 8) const
+        -> neighborhood_preview_result
+        requires supports_deterministic_moves
+    {
+        assert(instance_);
+        assert(solution_);
+
+        neighborhood_preview_result result;
+        const auto& solution_manager = instance_->solution_manager();
+        const auto& neighborhood = instance_->neighborhood();
+        const detail::evaluation_facility<
+            solution_manager_type,
+            neighborhood_type> evaluation{solution_manager, neighborhood};
+        const auto current = evaluation.evaluate(*solution_);
+
+        for (auto&& raw_move : easylocal::moves(neighborhood, *solution_))
+        {
+            move_type candidate{raw_move};
+            ++result.moves;
+            if (result.entries.size() == max_entries ||
+                !static_cast<bool>(neighborhood.is_valid(*solution_, candidate)))
+            {
+                continue;
+            }
+            auto evaluated = evaluation.evaluate_move(*solution_, current, candidate);
+            result.entries.push_back(inspected_move{
+                .move = std::move(candidate),
+                .cost = evaluated.cost(),
+            });
+        }
+        return result;
+    }
+
+    [[nodiscard]]
+    auto neighborhood_statistics() const -> neighborhood_statistics_result
+        requires supports_improvement_selection
+    {
+        assert(instance_);
+        assert(solution_);
+
+        neighborhood_statistics_result result;
+        const auto& solution_manager = instance_->solution_manager();
+        const auto& neighborhood = instance_->neighborhood();
+        const detail::evaluation_facility<
+            solution_manager_type,
+            neighborhood_type> evaluation{solution_manager, neighborhood};
+        const auto current = evaluation.evaluate(*solution_);
+
+        for (auto&& raw_move : easylocal::moves(neighborhood, *solution_))
+        {
+            move_type candidate{raw_move};
+            ++result.moves;
+            if (!static_cast<bool>(neighborhood.is_valid(*solution_, candidate)))
+            {
+                ++result.invalid;
+                continue;
+            }
+            const auto candidate_cost =
+                evaluation.evaluate_move(*solution_, current, candidate).cost();
+            if (detail::cost_better(solution_manager, candidate_cost, current.cost()))
+            {
+                ++result.improving;
+            }
+            else if (detail::cost_better(solution_manager, current.cost(), candidate_cost))
+            {
+                ++result.worsening;
+            }
+            else
+            {
+                ++result.sideways;
+            }
+        }
+        return result;
+    }
+
+    [[nodiscard]]
+    auto check_neighborhood_costs() const -> neighborhood_cost_check_result
+        requires supports_cost_consistency_check
+    {
+        assert(instance_);
+        assert(solution_);
+
+        neighborhood_cost_check_result result;
+        const auto& solution_manager = instance_->solution_manager();
+        const auto& neighborhood = instance_->neighborhood();
+        const detail::evaluation_facility<
+            solution_manager_type,
+            neighborhood_type> evaluation{solution_manager, neighborhood};
+        const auto current = evaluation.evaluate(*solution_);
+
+        for (auto&& raw_move : easylocal::moves(neighborhood, *solution_))
+        {
+            move_type move{raw_move};
+            ++result.moves;
+            if (!static_cast<bool>(neighborhood.is_valid(*solution_, move)))
+            {
+                ++result.invalid;
+                continue;
+            }
+
+            const auto incremental =
+                evaluation.evaluate_move(*solution_, current, move).cost();
+            auto candidate = *solution_;
+            neighborhood.make_move(candidate, move);
+            if (!static_cast<bool>(solution_manager.is_valid(candidate)))
+            {
+                ++result.invalid;
+                continue;
+            }
+            const auto full = solution_manager.evaluate(candidate);
+            if (!detail::cost_equivalent(solution_manager, incremental, full))
+            {
+                ++result.mismatches;
+            }
+        }
+        return result;
+    }
+
+    [[nodiscard]]
+    auto check_move_independence() const -> move_independence_result
+        requires supports_move_independence_check
+    {
+        assert(instance_);
+        assert(solution_);
+
+        move_independence_result result;
+        const auto& neighborhood = instance_->neighborhood();
+        std::vector<solution_type> reached;
+
+        for (auto&& raw_move : easylocal::moves(neighborhood, *solution_))
+        {
+            move_type move{raw_move};
+            ++result.moves;
+            if (!static_cast<bool>(neighborhood.is_valid(*solution_, move)))
+            {
+                ++result.invalid;
+                continue;
+            }
+
+            auto candidate = *solution_;
+            neighborhood.make_move(candidate, move);
+            if (candidate == *solution_)
+            {
+                ++result.null_moves;
+                continue;
+            }
+
+            bool repeated = false;
+            for (const auto& previous : reached)
+            {
+                if (candidate == previous)
+                {
+                    repeated = true;
+                    break;
+                }
+            }
+            if (repeated)
+            {
+                ++result.repeated_states;
+            }
+            else
+            {
+                reached.push_back(std::move(candidate));
+            }
+        }
+        return result;
+    }
+
+    [[nodiscard]]
+    auto check_random_move_distribution(
+        rng_type& rng,
+        const std::size_t rounds_per_move = 20) const
+        -> random_distribution_result
+        requires supports_random_distribution_check
+    {
+        assert(instance_);
+        assert(solution_);
+
+        random_distribution_result result;
+        const auto& neighborhood = instance_->neighborhood();
+        std::vector<move_type> moves_list;
+        for (auto&& raw_move : easylocal::moves(neighborhood, *solution_))
+        {
+            move_type move{raw_move};
+            if (static_cast<bool>(neighborhood.is_valid(*solution_, move)))
+            {
+                moves_list.push_back(std::move(move));
+            }
+        }
+
+        result.neighborhood_size = moves_list.size();
+        if (moves_list.empty() || rounds_per_move == 0)
+        {
+            return result;
+        }
+
+        std::vector<std::size_t> frequencies(moves_list.size());
+        result.samples = moves_list.size() * rounds_per_move;
+        for (std::size_t sample = 0; sample < result.samples; ++sample)
+        {
+            auto selected = easylocal::random_move(neighborhood, *solution_, rng);
+            if (!selected)
+            {
+                ++result.out_of_neighborhood;
+                continue;
+            }
+            bool matched = false;
+            for (std::size_t index = 0; index < moves_list.size(); ++index)
+            {
+                if (*selected == moves_list[index])
+                {
+                    ++frequencies[index];
+                    matched = true;
+                    break;
+                }
+            }
+            if (!matched)
+            {
+                ++result.out_of_neighborhood;
+            }
+        }
+
+        result.min_frequency = frequencies.front();
+        result.max_frequency = frequencies.front();
+        for (const auto frequency : frequencies)
+        {
+            if (frequency == 0)
+            {
+                ++result.unseen;
+            }
+            result.min_frequency = std::min(result.min_frequency, frequency);
+            result.max_frequency = std::max(result.max_frequency, frequency);
+        }
+        return result;
     }
 
     void apply_move()

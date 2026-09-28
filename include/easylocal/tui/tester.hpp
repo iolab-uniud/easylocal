@@ -43,6 +43,7 @@ struct tester_options
     path_display_mode path_display{path_display_mode::relative};
     std::filesystem::path path_base;
     std::size_t max_render_chars{4096};
+    std::size_t random_distribution_rounds{20};
     std::string exit_label{"quit"};
 };
 
@@ -605,6 +606,43 @@ public:
             [this] { apply_move(); },
             ButtonOption::Ascii()));
 
+        auto move_diagnostics = Container::Horizontal({});
+        if constexpr (tester_type::supports_deterministic_moves)
+        {
+            move_diagnostics->Add(Button(
+                "P List",
+                [this] { preview_neighbors(); },
+                ButtonOption::Ascii()));
+        }
+        if constexpr (tester_type::supports_improvement_selection)
+        {
+            move_diagnostics->Add(Button(
+                "T Stats",
+                [this] { neighborhood_statistics(); },
+                ButtonOption::Ascii()));
+        }
+        if constexpr (tester_type::supports_cost_consistency_check)
+        {
+            move_diagnostics->Add(Button(
+                "C Costs",
+                [this] { check_neighborhood_costs(); },
+                ButtonOption::Ascii()));
+        }
+        if constexpr (tester_type::supports_move_independence_check)
+        {
+            move_diagnostics->Add(Button(
+                "D Indep",
+                [this] { check_move_independence(); },
+                ButtonOption::Ascii()));
+        }
+        if constexpr (tester_type::supports_random_distribution_check)
+        {
+            move_diagnostics->Add(Button(
+                "U Random",
+                [this] { check_random_distribution(); },
+                ButtonOption::Ascii()));
+        }
+
         auto run_controls = Container::Vertical({});
         Component runner_menu;
         if (!runner_names_.empty())
@@ -630,9 +668,12 @@ public:
         auto solution_page = Renderer(solution_controls, [this, solution_controls] {
             return render_solution_page(solution_controls);
         });
-        auto move_page = Renderer(move_controls, [this, move_controls] {
-            return render_move_page(move_controls);
-        });
+        auto move_page_controls = Container::Vertical({move_controls, move_diagnostics});
+        auto move_page = Renderer(
+            move_page_controls,
+            [this, move_controls, move_diagnostics] {
+                return render_move_page(move_controls, move_diagnostics);
+            });
         auto run_page = Renderer(run_controls, [this, run_controls] {
             return render_run_page(run_controls);
         });
@@ -886,6 +927,8 @@ private:
             if constexpr (tester_type::supports_random_moves)
                 append("X Random");
             append("A Apply");
+            if constexpr (tester_type::supports_deterministic_moves)
+                append("P/T/C/D/U Diag");
             break;
         case tester_page::run:
             append("G Run selected");
@@ -992,6 +1035,46 @@ private:
             if (event == ftxui::Event::x || event == ftxui::Event::X)
             {
                 random_move();
+                return true;
+            }
+        }
+        if constexpr (tester_type::supports_deterministic_moves)
+        {
+            if (event == ftxui::Event::p || event == ftxui::Event::P)
+            {
+                preview_neighbors();
+                return true;
+            }
+        }
+        if constexpr (tester_type::supports_improvement_selection)
+        {
+            if (event == ftxui::Event::t || event == ftxui::Event::T)
+            {
+                neighborhood_statistics();
+                return true;
+            }
+        }
+        if constexpr (tester_type::supports_cost_consistency_check)
+        {
+            if (event == ftxui::Event::c || event == ftxui::Event::C)
+            {
+                check_neighborhood_costs();
+                return true;
+            }
+        }
+        if constexpr (tester_type::supports_move_independence_check)
+        {
+            if (event == ftxui::Event::d || event == ftxui::Event::D)
+            {
+                check_move_independence();
+                return true;
+            }
+        }
+        if constexpr (tester_type::supports_random_distribution_check)
+        {
+            if (event == ftxui::Event::u || event == ftxui::Event::U)
+            {
+                check_random_distribution();
                 return true;
             }
         }
@@ -1123,6 +1206,7 @@ private:
             const auto path = resolve_path(input_path_);
             tester_.load_input(path);
             last_move_result_.clear();
+            last_move_diagnostic_.clear();
             last_run_result_.clear();
             refresh_page_labels();
             page_selected_ = page_index(tester_page::solution);
@@ -1216,6 +1300,7 @@ private:
     void after_solution_change()
     {
         last_move_result_.clear();
+        last_move_diagnostic_.clear();
         last_run_result_.clear();
         refresh_page_labels();
         page_selected_ = page_index(detail::page_after_solution_change(tester_));
@@ -1363,6 +1448,110 @@ private:
         });
     }
 
+    void preview_neighbors()
+        requires tester_type::supports_deterministic_moves
+    {
+        if (!require_solution("List neighbors"))
+            return;
+        perform("List neighbors", [this] {
+            const auto result = tester_.neighborhood_preview(5);
+            std::ostringstream out;
+            out << "Neighbors: " << result.moves;
+            for (const auto& entry : result.entries)
+            {
+                out << '\n' << value_text(entry.move) << " => " << value_text(entry.cost);
+            }
+            if (result.entries.size() < result.moves)
+            {
+                out << "\n... " << (result.moves - result.entries.size()) << " more";
+            }
+            last_move_diagnostic_ = out.str();
+            set_status(status_kind::success, "Neighborhood listed");
+        });
+    }
+
+    void neighborhood_statistics()
+        requires tester_type::supports_improvement_selection
+    {
+        if (!require_solution("Neighborhood statistics"))
+            return;
+        perform("Neighborhood statistics", [this] {
+            const auto result = tester_.neighborhood_statistics();
+            last_move_diagnostic_ =
+                "Statistics: " + std::to_string(result.moves) + " moves\n" +
+                "improving " + std::to_string(result.improving) +
+                "  sideways " + std::to_string(result.sideways) +
+                "  worsening " + std::to_string(result.worsening) +
+                (result.invalid == 0 ? std::string{} :
+                    "  invalid " + std::to_string(result.invalid));
+            set_status(status_kind::success, "Neighborhood statistics computed");
+        });
+    }
+
+    void check_neighborhood_costs()
+        requires tester_type::supports_cost_consistency_check
+    {
+        if (!require_solution("Check neighborhood costs"))
+            return;
+        perform("Check neighborhood costs", [this] {
+            const auto result = tester_.check_neighborhood_costs();
+            last_move_diagnostic_ =
+                "Cost check: " + std::to_string(result.moves) + " moves\n" +
+                "mismatches " + std::to_string(result.mismatches) +
+                "  invalid " + std::to_string(result.invalid);
+            set_status(
+                result.mismatches == 0 && result.invalid == 0
+                    ? status_kind::success
+                    : status_kind::error,
+                result.mismatches == 0 && result.invalid == 0
+                    ? "Neighborhood costs consistent"
+                    : "Neighborhood cost check found errors");
+        });
+    }
+
+    void check_move_independence()
+        requires tester_type::supports_move_independence_check
+    {
+        if (!require_solution("Check move independence"))
+            return;
+        perform("Check move independence", [this] {
+            const auto result = tester_.check_move_independence();
+            last_move_diagnostic_ =
+                "Independence: " + std::to_string(result.moves) + " moves\n" +
+                "null " + std::to_string(result.null_moves) +
+                "  repeated states " + std::to_string(result.repeated_states) +
+                "  invalid " + std::to_string(result.invalid);
+            set_status(
+                result.null_moves == 0 && result.repeated_states == 0 && result.invalid == 0
+                    ? status_kind::success
+                    : status_kind::warning,
+                "Move independence check completed");
+        });
+    }
+
+    void check_random_distribution()
+        requires tester_type::supports_random_distribution_check
+    {
+        if (!require_solution("Check random distribution"))
+            return;
+        perform("Check random distribution", [this] {
+            const auto result = tester_.check_random_move_distribution(
+                rng_, options_.random_distribution_rounds);
+            last_move_diagnostic_ =
+                "Random distribution: " + std::to_string(result.neighborhood_size) +
+                " moves, " + std::to_string(result.samples) + " samples\n" +
+                "frequency " + std::to_string(result.min_frequency) + ".." +
+                std::to_string(result.max_frequency) +
+                "  unseen " + std::to_string(result.unseen) +
+                "  outside " + std::to_string(result.out_of_neighborhood);
+            set_status(
+                result.out_of_neighborhood == 0 && result.unseen == 0
+                    ? status_kind::success
+                    : status_kind::warning,
+                "Random move distribution sampled");
+        });
+    }
+
     void apply_move()
     {
         if (!require_move("Apply move"))
@@ -1378,6 +1567,7 @@ private:
             const auto before = tester_.evaluate();
             tester_.apply_move();
             const auto after = tester_.evaluate();
+            last_move_diagnostic_.clear();
             last_move_result_ =
                 "Applied: " + value_text(before) + " -> " + value_text(after);
             set_status(status_kind::success, "Move applied");
@@ -1416,6 +1606,7 @@ private:
                 return;
             }
             const auto after = tester_.evaluate();
+            last_move_diagnostic_.clear();
             last_run_result_ =
                 name + ": " + value_text(before) + " -> " + value_text(after);
             set_status(status_kind::success, "Runner completed: " + name);
@@ -1572,6 +1763,11 @@ private:
         if (!tester_.has_move())
         {
             lines.push_back(text("No move selected") | dim);
+            if (!last_move_diagnostic_.empty())
+            {
+                lines.push_back(separator());
+                lines.push_back(text_lines(last_move_diagnostic_));
+            }
             if (!last_move_result_.empty())
             {
                 lines.push_back(separator());
@@ -1598,6 +1794,11 @@ private:
                     std::string{"Delta check: "} +
                     (tester_.move_evaluation_matches_full() ? "OK" : "FAILED")));
             }
+        }
+        if (!last_move_diagnostic_.empty())
+        {
+            lines.push_back(separator());
+            lines.push_back(text_lines(last_move_diagnostic_));
         }
         if (!last_move_result_.empty())
         {
@@ -1660,7 +1861,8 @@ private:
     }
 
     [[nodiscard]] auto render_move_page(
-        const ftxui::Component& controls) const -> ftxui::Element
+        const ftxui::Component& controls,
+        const ftxui::Component& diagnostics) const -> ftxui::Element
     {
         using namespace ftxui;
         const auto neighborhood = detail::object_name(
@@ -1671,9 +1873,17 @@ private:
                            text(" Move - " + neighborhood + " "),
                            render_move_summary()) |
                        flex;
+        auto diagnostic_actions = window(
+                                      text(" Diagnostics "),
+                                      diagnostics->Render()) |
+                                  size(HEIGHT, EQUAL, 3);
         auto progress = window(text(" Progress "), render_progress(move_progress())) |
                         size(HEIGHT, EQUAL, 3);
-        return vbox({hbox({actions, details}) | flex, progress}) | flex;
+        return vbox({
+            hbox({actions, details}) | flex,
+            diagnostic_actions,
+            progress,
+        }) | flex;
     }
 
     [[nodiscard]] auto render_run_page(
@@ -1914,6 +2124,7 @@ private:
             text("O open input   I initial   X random   L load   W save   C check"),
             text("Move page") | bold,
             text("B best   I first improving   F first   N next   X random   A apply"),
+            text("P list   T stats   C costs   D independence   U random distribution"),
             text("Run page") | bold,
             text("G run selected   Enter run selected"),
             separator(),
@@ -1945,6 +2156,7 @@ private:
     std::vector<std::string> runner_names_;
     int runner_selected_{};
     std::string last_move_result_;
+    std::string last_move_diagnostic_;
     std::string last_run_result_;
 
     std::vector<std::string> page_labels_{"Solution", "Move", "Run"};

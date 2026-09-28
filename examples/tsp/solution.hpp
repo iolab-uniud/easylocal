@@ -44,6 +44,8 @@ struct Tour
         output << '\n';
     }
 
+    auto operator==(const Tour&) const -> bool = default;
+
     [[nodiscard]] auto describe() const -> std::string
     {
         std::ostringstream output;
