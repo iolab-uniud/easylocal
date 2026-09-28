@@ -465,6 +465,7 @@ public:
                 options_.input_path,
                 options_.path_display,
                 options_.path_base);
+            add_known_path(file_target::input, input_path_);
         }
         if (!options_.solution_path.empty())
         {
@@ -472,6 +473,7 @@ public:
                 options_.solution_path,
                 options_.path_display,
                 options_.path_base);
+            add_known_path(file_target::solution, solution_path_);
         }
         for (const auto name : tester_.runner_names())
         {
@@ -498,15 +500,18 @@ public:
         auto solution_controls = Container::Vertical({});
         if constexpr (tester_type::supports_input_loading)
         {
-            solution_controls->Add(section_label("Input"));
-            auto option = InputOption::Default();
-            option.multiline = false;
-            option.on_enter = [this] { load_input(); };
-            input_path_component = Input(&input_path_, "input file", option);
-            solution_controls->Add(input_path_component);
+            solution_controls->Add(section_label("Instances"));
+            auto instance_menu_option = MenuOption::Vertical();
+            instance_menu_option.on_change = [this] { select_known_input(); };
+            instance_menu_option.on_enter = [this] { load_input(); };
+            auto instance_menu = Menu(
+                &known_input_labels_,
+                &known_input_selected_,
+                instance_menu_option);
+            solution_controls->Add(instance_menu);
             solution_controls->Add(Container::Horizontal({
                 Button(
-                    "O Open",
+                    "O Open selected",
                     [this] { load_input(); },
                     ButtonOption::Ascii()),
                 Button(
@@ -541,15 +546,18 @@ public:
         if constexpr (tester_type::supports_solution_loading ||
                       tester_type::supports_solution_saving)
         {
-            solution_controls->Add(section_label("Solution file"));
-            auto option = InputOption::Default();
-            option.multiline = false;
+            solution_controls->Add(section_label("Solutions"));
+            auto solution_menu_option = MenuOption::Vertical();
+            solution_menu_option.on_change = [this] { select_known_solution(); };
             if constexpr (tester_type::supports_solution_loading)
             {
-                option.on_enter = [this] { load_solution(); };
+                solution_menu_option.on_enter = [this] { load_solution(); };
             }
-            solution_path_component = Input(&solution_path_, "solution file", option);
-            solution_controls->Add(solution_path_component);
+            auto solution_menu = Menu(
+                &known_solution_labels_,
+                &known_solution_selected_,
+                solution_menu_option);
+            solution_controls->Add(solution_menu);
 
             std::vector<Component> file_actions;
             file_actions.push_back(Button(
@@ -808,8 +816,7 @@ public:
                 return render_input_viewer(input_viewer_controls);
             });
         input_viewer = CatchEvent(input_viewer, [this](Event event) {
-            if (event == Event::Escape || event == Event::F2 ||
-                event == Event::Character('2'))
+            if (event == Event::Escape || event == Event::F1)
             {
                 input_visible_ = false;
                 return true;
@@ -829,8 +836,8 @@ public:
                 return render_solution_viewer(solution_viewer_controls);
             });
         solution_viewer = CatchEvent(solution_viewer, [this](Event event) {
-            if (event == Event::Escape || event == Event::F3 ||
-                event == Event::Character('3'))
+            if (event == Event::Escape || event == Event::F2 ||
+                event == Event::s || event == Event::S)
             {
                 solution_visible_ = false;
                 return true;
@@ -867,20 +874,12 @@ public:
                     (input_path_component && input_path_component->Focused()) ||
                     (solution_path_component && solution_path_component->Focused());
 
-                if (event == Event::F1 ||
-                    (!editing_path && event == Event::Character('1')))
-                {
-                    select_page(tester_page::solution);
-                    return true;
-                }
-                if (event == Event::F2 ||
-                    (!editing_path && event == Event::Character('2')))
+                if (event == Event::F1)
                 {
                     show_input();
                     return true;
                 }
-                if (event == Event::F3 ||
-                    (!editing_path && event == Event::Character('3')))
+                if (event == Event::F2)
                 {
                     show_solution();
                     return true;
@@ -898,7 +897,7 @@ public:
                 }
                 if (event == Event::s || event == Event::S)
                 {
-                    select_page(tester_page::solution);
+                    show_solution();
                     return true;
                 }
                 if (event == Event::m || event == Event::M)
@@ -919,6 +918,41 @@ public:
     }
 
 private:
+    void add_known_path(file_target target, const std::string& path)
+    {
+        if (path.empty())
+            return;
+        auto& paths = target == file_target::input ? known_input_paths_ : known_solution_paths_;
+        auto& labels = target == file_target::input ? known_input_labels_ : known_solution_labels_;
+        auto& selected = target == file_target::input ? known_input_selected_ : known_solution_selected_;
+        const auto found = std::find(paths.begin(), paths.end(), path);
+        if (found == paths.end())
+        {
+            paths.push_back(path);
+            const auto basename = path_basename(path);
+            labels.push_back(basename.empty() ? path : basename);
+            selected = static_cast<int>(paths.size() - 1);
+        }
+        else
+        {
+            selected = static_cast<int>(found - paths.begin());
+        }
+    }
+
+    void select_known_input()
+    {
+        if (known_input_selected_ >= 0 &&
+            static_cast<std::size_t>(known_input_selected_) < known_input_paths_.size())
+            input_path_ = known_input_paths_[static_cast<std::size_t>(known_input_selected_)];
+    }
+
+    void select_known_solution()
+    {
+        if (known_solution_selected_ >= 0 &&
+            static_cast<std::size_t>(known_solution_selected_) < known_solution_paths_.size())
+            solution_path_ = known_solution_paths_[static_cast<std::size_t>(known_solution_selected_)];
+    }
+
     [[nodiscard]] auto current_page() const noexcept -> tester_page
     {
         switch (page_selected_)
@@ -1197,7 +1231,7 @@ private:
     void refresh_page_labels()
     {
         const bool enabled = detail::page_available(tester_, tester_page::move);
-        page_labels_[0] = "Solution";
+        page_labels_[0] = "Input/Output";
         page_labels_[1] = enabled ? "Move" : "Move [disabled]";
         page_labels_[2] = enabled ? "Run" : "Run [disabled]";
         if (!enabled && page_selected_ != 0)
@@ -1891,7 +1925,7 @@ private:
 
         summary.push_back(separator());
         summary.push_back(controls->Render() | flex);
-        return window(text(" Solution "), vbox(std::move(summary))) | flex;
+        return window(text(" Input / Output "), vbox(std::move(summary))) | flex;
     }
 
     [[nodiscard]] auto render_move_page(
@@ -1950,7 +1984,7 @@ private:
                    separator(),
                    render_status(),
                    text(current_page_shortcuts()) | center,
-                   text("S Solution  M Move  R Run  |  1/F1 Solution  2/F2 Input  3/F3 Solution  |  ? Help  |  q " +
+                   text("M Move  R Run  |  F1 Input  F2 Solution  S Show solution  |  ? Help  |  q " +
                         options_.exit_label +
                         "  |  Tab/Shift-Tab focus") |
                        center | dim,
@@ -2031,7 +2065,7 @@ private:
         body.push_back(text_lines(input_text()) | flex);
         body.push_back(separator());
         body.push_back(controls->Render());
-        return window(text(" Input  [2/F2] "), vbox(std::move(body))) |
+        return window(text(" Input  [F1] "), vbox(std::move(body))) |
                size(WIDTH, GREATER_THAN, 52) |
                border;
     }
@@ -2052,7 +2086,7 @@ private:
         body.push_back(text_lines(solution_text()) | flex);
         body.push_back(separator());
         body.push_back(controls->Render());
-        return window(text(" Solution  [3/F3] "), vbox(std::move(body))) |
+        return window(text(" Solution  [F2/S] "), vbox(std::move(body))) |
                size(WIDTH, GREATER_THAN, 52) |
                border;
     }
@@ -2163,10 +2197,12 @@ private:
         if (browser_target_ == file_target::input)
         {
             input_path_ = std::move(selected_text);
+            add_known_path(file_target::input, input_path_);
         }
         else
         {
             solution_path_ = std::move(selected_text);
+            add_known_path(file_target::solution, solution_path_);
         }
         browser_visible_ = false;
         set_status(status_kind::info, "Selected file: " + format_path(selected.path));
@@ -2204,14 +2240,13 @@ private:
         Elements lines{
             text("Pages") | bold,
             separator(),
-            text("S  Solution"),
             text("M  Move"),
             text("R  Run"),
-            text("1 / F1  Solution page"),
-            text("2 / F2  show Input"),
-            text("3 / F3  show Solution"),
+            text("F1  show Input"),
+            text("F2  show Solution"),
+            text("S   show Solution"),
             separator(),
-            text("Solution page") | bold,
+            text("Input / Output page") | bold,
             text("O open input   I initial   X random   L load   W save   C check"),
             text("Move page") | bold,
             text("B best   I first improving   F first   N next   X random   A apply"),
@@ -2240,6 +2275,12 @@ private:
 
     std::string input_path_;
     std::string solution_path_;
+    std::vector<std::string> known_input_paths_;
+    std::vector<std::string> known_input_labels_;
+    int known_input_selected_{};
+    std::vector<std::string> known_solution_paths_;
+    std::vector<std::string> known_solution_labels_;
+    int known_solution_selected_{};
 
     status_kind status_kind_{status_kind::info};
     std::string status_{"Ready"};
@@ -2249,7 +2290,7 @@ private:
     std::string last_move_result_;
     std::string last_run_result_;
 
-    std::vector<std::string> page_labels_{"Solution", "Move", "Run"};
+    std::vector<std::string> page_labels_{"Input/Output", "Move", "Run"};
     int page_selected_{};
 
     bool browser_visible_{};
