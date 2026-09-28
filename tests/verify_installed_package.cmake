@@ -119,6 +119,33 @@ if(NOT EXISTS "${_package_dir}/EasyLocalConfig.cmake")
     message(FATAL_ERROR
         "installed package config not found at ${_package_dir}/EasyLocalConfig.cmake")
 endif()
+if(NOT EXISTS "${_package_dir}/EasyLocalTargets.cmake")
+    message(FATAL_ERROR
+        "installed Core target export is missing")
+endif()
+
+set(_config_toml_targets
+    "${_package_dir}/EasyLocalConfigTOMLTargets.cmake")
+if(EASYLOCAL_CONFIG_TOML_ENABLED)
+    if(NOT EXISTS "${_config_toml_targets}")
+        message(FATAL_ERROR
+            "ConfigTOML was enabled but its target export is missing")
+    endif()
+elseif(EXISTS "${_config_toml_targets}")
+    message(FATAL_ERROR
+        "ConfigTOML target export leaked into a Core-only installation")
+endif()
+
+set(_tui_targets "${_package_dir}/EasyLocalTUITargets.cmake")
+if(EASYLOCAL_TUI_ENABLED)
+    if(NOT EXISTS "${_tui_targets}")
+        message(FATAL_ERROR
+            "TUI was enabled but its target export is missing")
+    endif()
+elseif(EXISTS "${_tui_targets}")
+    message(FATAL_ERROR
+        "TUI target export leaked into a Core-only installation")
+endif()
 
 set(_tui_header
     "${_install_prefix}/include/easylocal/tui/tester.hpp")

@@ -1,3 +1,11 @@
+add_test(
+    NAME easylocal.architecture-boundary
+    COMMAND
+        "${CMAKE_COMMAND}"
+        "-DEASYLOCAL_SOURCE_DIR=${PROJECT_SOURCE_DIR}"
+        -P "${CMAKE_CURRENT_SOURCE_DIR}/verify_architecture_boundary.cmake"
+)
+
 add_executable(
     easylocal_toolchain_smoke
     toolchain_smoke.cpp

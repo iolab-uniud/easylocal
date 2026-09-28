@@ -190,7 +190,7 @@ template<class App, class Instance, class Solution>
     const auto& neighborhood = runtime.neighborhood();
 
     report.check(
-        std::addressof(runtime.instance()) == std::addressof(instance),
+        std::addressof(runtime.input()) == std::addressof(instance),
         "app input binding",
         "the materialized app does not refer to the supplied Input");
     report.check(

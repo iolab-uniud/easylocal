@@ -170,6 +170,18 @@ if(EASYLOCAL_FIND_CONFIG_TOML_COMPONENT)
     )
 endif()
 
+# Optional targets are loaded only when their package component is requested.
+# This keeps a Core-only consumer independent from adapter dependencies even
+# when the producer installation happens to contain those adapters.
+if(NOT EASYLOCAL_FIND_CONFIG_TOML_COMPONENT AND TARGET EasyLocal::ConfigTOML)
+    message(FATAL_ERROR
+        "ConfigTOML target leaked into a consumer that requested only Core")
+endif()
+if(NOT EASYLOCAL_FIND_TUI_COMPONENT AND TARGET EasyLocal::TUI)
+    message(FATAL_ERROR
+        "TUI target leaked into a consumer that requested only Core")
+endif()
+
 enable_testing()
 add_test(
     NAME easylocal.installed-package-consumer.runs

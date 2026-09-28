@@ -128,9 +128,20 @@ EasyLocal never performs implicit network access. When toml++ comes from
 FetchContent, EasyLocal installs a private copy of its headers under the
 EasyLocal include tree so an installed `ConfigTOML` component remains
 self-contained and relocatable. A system-provided toml++ remains an external
-package dependency. CI exercises both providers explicitly. `ConfigYAML`, `Logging`, and `TUI` remain reserved
-optional component names for later integrations. See
+package dependency. CI exercises both providers explicitly. TextUI is a second optional component:
+`EasyLocal::TUI` uses FTXUI 7.x and is enabled with `EASYLOCAL_ENABLE_TUI=ON`.
+Core-only consumers load neither optional target nor third-party dependency,
+even when both adapters are present in the installation. `ConfigYAML`, `Logging`,
+and `REST` remain reserved future integrations. See
 [`docs/dependency-policy.md`](docs/dependency-policy.md) for the complete policy.
+
+The Core/application boundary is intentionally frontend-agnostic.
+`<easylocal/easylocal.hpp>` contains only standard-library Core facilities,
+including `app`, `check`, and `Tester`; ConfigTOML and TextUI remain explicit
+adapters. Materialized apps and bound runners borrow an lvalue Input by
+`const&`; binding a temporary Input is rejected to prevent dangling runtimes.
+This same public boundary is the intended base for a future REST adapter, which
+will keep HTTP/JSON/server types outside `EasyLocal::Core`.
 
 EasyLocal also provides optional, non-virtual convenience bases for the common
 service boilerplate:

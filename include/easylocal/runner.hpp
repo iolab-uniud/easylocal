@@ -158,7 +158,8 @@ class hard_cost_solution_manager_base
 {
 public:
     using underlying_type = SM;
-    using instance_type = typename SM::instance_type;
+    using input_type = typename SM::instance_type;
+    using instance_type = input_type;
     using solution_type = typename SM::solution_type;
     using full_cost_type = typename SM::cost_type;
     using cost_type = typename full_cost_type::hard_cost_type;
@@ -169,9 +170,15 @@ public:
     }
 
     [[nodiscard]]
-    auto instance() const noexcept -> const instance_type&
+    auto input() const noexcept -> const input_type&
     {
         return solution_manager_.instance();
+    }
+
+    [[nodiscard]]
+    auto instance() const noexcept -> const instance_type&
+    {
+        return input();
     }
 
     [[nodiscard]]
@@ -398,7 +405,8 @@ template<class SM, class NHE>
 class runner_context
 {
 public:
-    using instance_type = typename SM::instance_type;
+    using input_type = typename SM::instance_type;
+    using instance_type = input_type;
     using solution_type = typename SM::solution_type;
     using cost_type = typename SM::cost_type;
     using solution_manager_type = SM;
@@ -419,6 +427,12 @@ public:
     auto neighborhood_explorer() const noexcept -> const NHE&
     {
         return neighborhood_;
+    }
+
+    [[nodiscard]]
+    auto input() const noexcept -> const input_type&
+    {
+        return solution_manager_.instance();
     }
 
     [[nodiscard]]
@@ -484,7 +498,8 @@ class bound_runner
 public:
     using solution_manager_type = service_t<SMSpec>;
     using neighborhood_explorer_type = service_t<NHESpec>;
-    using instance_type = typename solution_manager_type::instance_type;
+    using input_type = typename solution_manager_type::instance_type;
+    using instance_type = input_type;
     using solution_type = typename solution_manager_type::solution_type;
     using cost_type = typename solution_manager_type::cost_type;
 
@@ -516,6 +531,12 @@ public:
     auto operator=(const bound_runner&) -> bound_runner& = delete;
     bound_runner(bound_runner&&) = delete;
     auto operator=(bound_runner&&) -> bound_runner& = delete;
+
+    [[nodiscard]]
+    auto input() const noexcept -> const input_type&
+    {
+        return instance_;
+    }
 
     [[nodiscard]]
     auto initial_solution() const -> solution_type
@@ -775,7 +796,8 @@ class Runner<Algorithm, SMSpec, NHESpec>
 public:
     using solution_manager_type = detail::service_t<SMSpec>;
     using neighborhood_explorer_type = detail::service_t<NHESpec>;
-    using instance_type = typename solution_manager_type::instance_type;
+    using input_type = typename solution_manager_type::instance_type;
+    using instance_type = input_type;
 
     Runner(
         Algorithm algorithm,
@@ -884,6 +906,11 @@ public:
             neighborhood_spec_,
         };
     }
+
+    auto bind(instance_type&&) const & = delete;
+    auto bind(const instance_type&&) const & = delete;
+    auto bind(instance_type&&) && = delete;
+    auto bind(const instance_type&&) && = delete;
 
 private:
     Algorithm algorithm_;

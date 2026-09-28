@@ -13,6 +13,7 @@
 #include <cstddef>
 #include <stdexcept>
 #include <string_view>
+#include <utility>
 
 namespace
 {
@@ -51,6 +52,40 @@ auto make_application()
     return application;
 }
 
+template<class App>
+concept can_materialize_from_lvalue_input =
+    requires(const App& application, typename App::input_type& input) {
+        application.for_input(input);
+    };
+
+template<class App>
+concept can_materialize_from_rvalue_input =
+    requires(const App& application, typename App::input_type&& input) {
+        application.for_input(std::move(input));
+    };
+
+template<class RunnerType>
+concept can_bind_lvalue_input =
+    requires(const RunnerType& runner, typename RunnerType::input_type& input) {
+        runner.bind(input);
+    };
+
+template<class RunnerType>
+concept can_bind_rvalue_input =
+    requires(const RunnerType& runner, typename RunnerType::input_type&& input) {
+        runner.bind(std::move(input));
+    };
+
+using AssignmentApp = decltype(make_application());
+using AssignmentRunner = decltype(
+    std::declval<const AssignmentApp&>()
+        .template make_runner<easylocal::runner::first_improvement>());
+
+static_assert(can_materialize_from_lvalue_input<AssignmentApp>);
+static_assert(!can_materialize_from_rvalue_input<AssignmentApp>);
+static_assert(can_bind_lvalue_input<AssignmentRunner>);
+static_assert(!can_bind_rvalue_input<AssignmentRunner>);
+
 void app_owns_runner_configuration_and_names()
 {
     auto application = make_application();
@@ -78,6 +113,7 @@ void one_input_materializes_one_shared_graph_for_all_runners()
     auto application = make_application();
     auto runtime = application.for_input(instance);
 
+    assert(&runtime.input() == &instance);
     assert(&runtime.instance() == &instance);
     assert(&runtime.solution_manager().instance() == &instance);
     assert(&runtime.neighborhood().instance() == &instance);
@@ -119,6 +155,7 @@ void app_can_materialize_standard_runners()
     auto application = make_application();
     auto runner = application.make_runner<easylocal::runner::first_improvement>();
     auto bound = runner.bind(instance);
+    assert(&bound.input() == &instance);
     const auto initial = bound.initial_solution();
     const auto result = bound.run(initial);
 

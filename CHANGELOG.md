@@ -5,6 +5,18 @@ All notable changes to EasyLocal++ will be documented in this file.
 The project uses semantic versioning. Release entries are prepared from the
 commits since the previous release and are reviewed manually before tagging.
 
+### Unreleased — Core/adapter boundary hardening
+
+- optional ConfigTOML and TextUI components are exported as independent CMake
+  target files and loaded only when requested by `find_package`;
+- local `dev`/`release` presets are compiler/platform agnostic;
+- `<easylocal/easylocal.hpp>` explicitly covers the dependency-free Core API,
+  including app/check/Tester and the std-only configuration surface;
+- materialized apps and bound runners expose canonical `input()` access and
+  reject temporary Inputs to prevent dangling references;
+- deterministic architecture tests enforce that Core never depends on optional
+  adapters and adapters do not reach into `easylocal/detail/*`.
+
 ### S20 — Simulated Annealing promotion
 
 Simulated Annealing e' ora API pubblica header-only sotto `easylocal::search`.

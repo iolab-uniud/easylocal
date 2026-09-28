@@ -125,8 +125,28 @@ if(EASYLOCAL_ENABLE_CONFIG_TOML)
         easylocal_config_toml
         INTERFACE
             easylocal_core
-            tomlplusplus::tomlplusplus
     )
+
+    if(EASYLOCAL_CONFIG_TOML_BUNDLED)
+        # Keep the FetchContent target a build-tree implementation detail.
+        # The installed adapter uses the private header copy below instead.
+        target_link_libraries(
+            easylocal_config_toml
+            INTERFACE
+                $<BUILD_INTERFACE:tomlplusplus::tomlplusplus>
+        )
+        target_include_directories(
+            easylocal_config_toml
+            INTERFACE
+                $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/easylocal/third_party/tomlplusplus>
+        )
+    else()
+        target_link_libraries(
+            easylocal_config_toml
+            INTERFACE
+                tomlplusplus::tomlplusplus
+        )
+    endif()
 endif()
 
 if(EASYLOCAL_ENABLE_TUI)
@@ -169,8 +189,24 @@ if(EASYLOCAL_ENABLE_TUI)
         easylocal_tui
         INTERFACE
             easylocal_core
-            ftxui::ftxui
     )
+
+    if(EASYLOCAL_TUI_BUNDLED)
+        # The fetched FTXUI target belongs to the build tree. Its own install
+        # rules provide ftxui::ftxui to consumers of the installed TUI target.
+        target_link_libraries(
+            easylocal_tui
+            INTERFACE
+                $<BUILD_INTERFACE:ftxui::ftxui>
+                $<INSTALL_INTERFACE:ftxui::ftxui>
+        )
+    else()
+        target_link_libraries(
+            easylocal_tui
+            INTERFACE
+                ftxui::ftxui
+        )
+    endif()
 endif()
 
 # The concrete MWE is deliberately outside the public EasyLocal++ API.
@@ -205,6 +241,16 @@ install(
 
 if(EASYLOCAL_ENABLE_CONFIG_TOML)
     install(
+        TARGETS easylocal_config_toml
+        EXPORT EasyLocalConfigTOMLTargets
+    )
+    install(
+        EXPORT EasyLocalConfigTOMLTargets
+        FILE EasyLocalConfigTOMLTargets.cmake
+        NAMESPACE EasyLocal::
+        DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/EasyLocal"
+    )
+    install(
         FILES include/easylocal/config/toml.hpp
         DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/easylocal/config"
     )
@@ -222,6 +268,16 @@ if(EASYLOCAL_ENABLE_CONFIG_TOML)
 endif()
 
 if(EASYLOCAL_ENABLE_TUI)
+    install(
+        TARGETS easylocal_tui
+        EXPORT EasyLocalTUITargets
+    )
+    install(
+        EXPORT EasyLocalTUITargets
+        FILE EasyLocalTUITargets.cmake
+        NAMESPACE EasyLocal::
+        DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/EasyLocal"
+    )
     install(
         DIRECTORY include/easylocal/tui/
         DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/easylocal/tui"

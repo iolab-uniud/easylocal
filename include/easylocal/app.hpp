@@ -225,7 +225,8 @@ class app_instance
 public:
     using solution_manager_type = service_t<SMSpec>;
     using neighborhood_explorer_type = service_t<NHESpec>;
-    using instance_type = typename solution_manager_type::instance_type;
+    using input_type = typename solution_manager_type::instance_type;
+    using instance_type = input_type;
 
     static constexpr std::size_t runner_count = sizeof...(Registrations);
 
@@ -253,9 +254,17 @@ public:
     auto operator=(app_instance&&) -> app_instance& = delete;
 
     [[nodiscard]]
-    auto instance() const noexcept -> const instance_type&
+    auto input() const noexcept -> const input_type&
     {
         return instance_;
+    }
+
+    // Compatibility spelling retained while Input becomes the canonical
+    // application-boundary terminology.
+    [[nodiscard]]
+    auto instance() const noexcept -> const instance_type&
+    {
+        return input();
     }
 
     [[nodiscard]]
@@ -624,15 +633,29 @@ public:
                      const typename service_t<Spec>::instance_type> &&
                  NHESpec::template constructible_from<service_t<Spec>>
     [[nodiscard]]
-    auto for_input(const typename service_t<Spec>::instance_type& instance) const
+    auto for_input(const typename service_t<Spec>::instance_type& input) const
     {
         return app_instance<SMSpec, NHESpec, Registrations...>{
-            instance,
+            input,
             solution_manager_spec_,
             neighborhood_spec_,
             registrations_,
         };
     }
+
+    // A materialized app stores a reference to its Input. Reject temporaries at
+    // the boundary instead of permitting a runtime with a dangling reference.
+    template<class Spec = SMSpec>
+        requires (!std::same_as<Spec, unconfigured_t>) &&
+                 (!std::same_as<NHESpec, unconfigured_t>) &&
+                 (sizeof...(Registrations) > 0)
+    auto for_input(typename service_t<Spec>::instance_type&&) const = delete;
+
+    template<class Spec = SMSpec>
+        requires (!std::same_as<Spec, unconfigured_t>) &&
+                 (!std::same_as<NHESpec, unconfigured_t>) &&
+                 (sizeof...(Registrations) > 0)
+    auto for_input(const typename service_t<Spec>::instance_type&&) const = delete;
 
 private:
     std::string name_;

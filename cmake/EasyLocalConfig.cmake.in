@@ -15,6 +15,23 @@ foreach(_easylocal_component IN LISTS EasyLocal_FIND_COMPONENTS)
         continue()
     endif()
 
+    if(_easylocal_component STREQUAL "ConfigTOML")
+        if(@EASYLOCAL_CONFIG_TOML_AVAILABLE@)
+            if(NOT @EASYLOCAL_CONFIG_TOML_BUNDLED@)
+                include(CMakeFindDependencyMacro)
+                find_dependency(tomlplusplus 3.4 CONFIG)
+            endif()
+
+            include("${CMAKE_CURRENT_LIST_DIR}/EasyLocalConfigTOMLTargets.cmake")
+            set(EasyLocal_ConfigTOML_FOUND TRUE)
+        else()
+            set(EasyLocal_ConfigTOML_FOUND FALSE)
+            set(EasyLocal_NOT_FOUND_MESSAGE
+                "Requested EasyLocal component 'ConfigTOML' is not available in this installation")
+        endif()
+        continue()
+    endif()
+
     if(_easylocal_component STREQUAL "TUI")
         if(@EASYLOCAL_TUI_AVAILABLE@)
             include(CMakeFindDependencyMacro)
@@ -29,59 +46,12 @@ foreach(_easylocal_component IN LISTS EasyLocal_FIND_COMPONENTS)
                 find_dependency(ftxui 7 CONFIG)
             endif()
 
-            if(NOT TARGET EasyLocal::TUI)
-                add_library(EasyLocal::TUI INTERFACE IMPORTED)
-                set_target_properties(
-                    EasyLocal::TUI
-                    PROPERTIES
-                        INTERFACE_LINK_LIBRARIES
-                            "EasyLocal::Core;ftxui::ftxui"
-                        INTERFACE_INCLUDE_DIRECTORIES
-                            "${PACKAGE_PREFIX_DIR}/@CMAKE_INSTALL_INCLUDEDIR@"
-                )
-            endif()
+            include("${CMAKE_CURRENT_LIST_DIR}/EasyLocalTUITargets.cmake")
             set(EasyLocal_TUI_FOUND TRUE)
         else()
             set(EasyLocal_TUI_FOUND FALSE)
             set(EasyLocal_NOT_FOUND_MESSAGE
                 "Requested EasyLocal component 'TUI' is not available in this installation")
-        endif()
-        continue()
-    endif()
-
-    if(_easylocal_component STREQUAL "ConfigTOML")
-        if(@EASYLOCAL_CONFIG_TOML_AVAILABLE@)
-            if(@EASYLOCAL_CONFIG_TOML_BUNDLED@)
-                set(_easylocal_config_toml_link_libraries "EasyLocal::Core")
-                set(_easylocal_config_toml_include_directories
-                    "${PACKAGE_PREFIX_DIR}/@CMAKE_INSTALL_INCLUDEDIR@;${PACKAGE_PREFIX_DIR}/@CMAKE_INSTALL_INCLUDEDIR@/easylocal/third_party/tomlplusplus")
-            else()
-                include(CMakeFindDependencyMacro)
-                find_dependency(tomlplusplus 3.4 CONFIG)
-                set(_easylocal_config_toml_link_libraries
-                    "EasyLocal::Core;tomlplusplus::tomlplusplus")
-                set(_easylocal_config_toml_include_directories
-                    "${PACKAGE_PREFIX_DIR}/@CMAKE_INSTALL_INCLUDEDIR@")
-            endif()
-
-            if(NOT TARGET EasyLocal::ConfigTOML)
-                add_library(EasyLocal::ConfigTOML INTERFACE IMPORTED)
-                set_target_properties(
-                    EasyLocal::ConfigTOML
-                    PROPERTIES
-                        INTERFACE_LINK_LIBRARIES
-                            "${_easylocal_config_toml_link_libraries}"
-                        INTERFACE_INCLUDE_DIRECTORIES
-                            "${_easylocal_config_toml_include_directories}"
-                )
-            endif()
-            unset(_easylocal_config_toml_link_libraries)
-            unset(_easylocal_config_toml_include_directories)
-            set(EasyLocal_ConfigTOML_FOUND TRUE)
-        else()
-            set(EasyLocal_ConfigTOML_FOUND FALSE)
-            set(EasyLocal_NOT_FOUND_MESSAGE
-                "Requested EasyLocal component 'ConfigTOML' is not available in this installation")
         endif()
         continue()
     endif()

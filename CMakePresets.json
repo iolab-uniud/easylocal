@@ -21,21 +21,15 @@
     },
     {
       "name": "dev",
-      "displayName": "Local macOS / AppleClang / C++23 / Debug",
+      "displayName": "Local / default compiler / C++23 / Debug",
       "inherits": "_base",
-      "condition": {
-        "type": "equals",
-        "lhs": "${hostSystemName}",
-        "rhs": "Darwin"
-      },
       "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Debug",
-        "CMAKE_CXX_COMPILER": "/usr/bin/clang++"
+        "CMAKE_BUILD_TYPE": "Debug"
       }
     },
     {
       "name": "release",
-      "displayName": "Local macOS / AppleClang / C++23 / Release",
+      "displayName": "Local / default compiler / C++23 / Release",
       "inherits": "dev",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release"
