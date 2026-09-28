@@ -25,21 +25,17 @@ TOML dependency modes:
   EASYLOCAL_TEST_SYSTEM_TOML=auto|on|off
                      Controls the system-installed toml++ check when TOML
                      testing is enabled. Default: auto.
-                       auto: test system toml++ when available, otherwise skip
-                       on:   require and test system toml++
-                       off:  skip the system toml++ check
-                     The FetchContent fallback is always tested when TOML
-                     testing is enabled.
+                       auto: use system toml++ when available, otherwise FetchContent
+                       on:   require and use system toml++
+                       off:  force FetchContent
 
 TUI dependency modes:
   EASYLOCAL_TEST_SYSTEM_FTXUI=auto|on|off
                      Controls the system-installed FTXUI check when TUI
                      testing is enabled. Default: auto.
-                       auto: test system FTXUI when available, otherwise skip
-                       on:   require and test system FTXUI
-                       off:  skip the system FTXUI check
-                     The FetchContent fallback is always tested when TUI
-                     testing is enabled.
+                       auto: use system FTXUI when available, otherwise FetchContent
+                       on:   require and use system FTXUI
+                       off:  force FetchContent
 
 Other options:
   -h, --help         Show this help.
@@ -189,6 +185,8 @@ run_tui_build_and_test() {
 }
 
 if [[ "$TEST_TUI" == "on" ]]; then
+    system_ftxui_available=false
+
     if [[ "$SYSTEM_FTXUI_MODE" != "off" ]]; then
         TUI_SYSTEM_BUILD_DIR="build/${PRESET}-tui-system"
         TUI_SYSTEM_CONFIGURE_LOG="${TUI_SYSTEM_BUILD_DIR}.configure.log"
@@ -225,6 +223,7 @@ if [[ "$TEST_TUI" == "on" ]]; then
         cat "$TUI_SYSTEM_CONFIGURE_LOG"
 
         if [[ $system_configure_status -eq 0 ]]; then
+            system_ftxui_available=true
             echo
             echo "==> Build: ${PRESET} + TUI (system FTXUI)"
             cmake --build "$TUI_SYSTEM_BUILD_DIR" --parallel
@@ -236,17 +235,19 @@ if [[ "$TEST_TUI" == "on" ]]; then
             if [[ "$SYSTEM_FTXUI_MODE" == "on" ]]; then
                 die "system FTXUI was required but CMake could not find it"
             fi
-            echo "==> Skip: system FTXUI not found (EASYLOCAL_TEST_SYSTEM_FTXUI=auto)"
+            echo "==> Fallback: system FTXUI not found; using FetchContent"
         else
             die "TUI system-dependency configure failed"
         fi
     fi
 
-    run_tui_build_and_test \
-        "FetchContent" \
-        "build/${PRESET}-tui-fetch" \
-        -DEASYLOCAL_FETCH_DEPENDENCIES=ON \
-        -DCMAKE_DISABLE_FIND_PACKAGE_ftxui=TRUE
+    if [[ "$SYSTEM_FTXUI_MODE" == "off" || "$system_ftxui_available" == false ]]; then
+        run_tui_build_and_test \
+            "FetchContent" \
+            "build/${PRESET}-tui-fetch" \
+            -DEASYLOCAL_FETCH_DEPENDENCIES=ON \
+            -DCMAKE_DISABLE_FIND_PACKAGE_ftxui=TRUE
+    fi
 fi
 
 if [[ "$TEST_TOML" != "on" ]]; then
@@ -273,6 +274,8 @@ run_toml_build_and_test() {
     echo "==> Test: ${PRESET} + ConfigTOML (${label})"
     ctest --test-dir "$build_dir" --output-on-failure
 }
+
+system_toml_available=false
 
 if [[ "$SYSTEM_TOML_MODE" != "off" ]]; then
     TOML_SYSTEM_BUILD_DIR="build/${PRESET}-toml-system"
@@ -310,6 +313,7 @@ if [[ "$SYSTEM_TOML_MODE" != "off" ]]; then
     cat "$TOML_SYSTEM_CONFIGURE_LOG"
 
     if [[ $system_configure_status -eq 0 ]]; then
+        system_toml_available=true
         echo
         echo "==> Build: ${PRESET} + ConfigTOML (system toml++)"
         cmake --build "$TOML_SYSTEM_BUILD_DIR" --parallel
@@ -321,14 +325,16 @@ if [[ "$SYSTEM_TOML_MODE" != "off" ]]; then
         if [[ "$SYSTEM_TOML_MODE" == "on" ]]; then
             die "system toml++ was required but CMake could not find it"
         fi
-        echo "==> Skip: system toml++ not found (EASYLOCAL_TEST_SYSTEM_TOML=auto)"
+        echo "==> Fallback: system toml++ not found; using FetchContent"
     else
         die "ConfigTOML system-dependency configure failed"
     fi
 fi
 
-run_toml_build_and_test \
-    "FetchContent" \
-    "build/${PRESET}-toml-fetch" \
-    -DEASYLOCAL_FETCH_DEPENDENCIES=ON \
-    -DCMAKE_DISABLE_FIND_PACKAGE_tomlplusplus=TRUE
+if [[ "$SYSTEM_TOML_MODE" == "off" || "$system_toml_available" == false ]]; then
+    run_toml_build_and_test \
+        "FetchContent" \
+        "build/${PRESET}-toml-fetch" \
+        -DEASYLOCAL_FETCH_DEPENDENCIES=ON \
+        -DCMAKE_DISABLE_FIND_PACKAGE_tomlplusplus=TRUE
+fi
