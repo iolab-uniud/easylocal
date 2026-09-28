@@ -38,6 +38,7 @@ TUI dependency modes:
                        off:  force FetchContent
 
 Other options:
+  --integration      Also run tests labelled integration.
   -h, --help         Show this help.
 
 Examples:
@@ -46,6 +47,7 @@ Examples:
   ./scripts/build-and-test.sh --with-toml
   ./scripts/build-and-test.sh --with-tui
   ./scripts/build-and-test.sh release --all
+  ./scripts/build-and-test.sh --integration
   EASYLOCAL_TEST_SYSTEM_TOML=on ./scripts/build-and-test.sh --with-toml
   EASYLOCAL_TEST_SYSTEM_FTXUI=on ./scripts/build-and-test.sh --with-tui
 
@@ -67,6 +69,7 @@ TEST_TOML=off
 TEST_TUI=off
 SYSTEM_TOML_MODE="${EASYLOCAL_TEST_SYSTEM_TOML:-auto}"
 SYSTEM_FTXUI_MODE="${EASYLOCAL_TEST_SYSTEM_FTXUI:-auto}"
+RUN_INTEGRATION=off
 preset_seen=false
 profile_seen=false
 explicit_core=false
@@ -108,6 +111,9 @@ for arg in "$@"; do
             fi
             TEST_TOML=on
             explicit_toml=true
+            ;;
+        --integration)
+            RUN_INTEGRATION=on
             ;;
         --with-tui)
             if [[ "$explicit_core" == true ]]; then
@@ -161,7 +167,11 @@ cmake --build --preset "$PRESET" --parallel
 
 echo
 echo "==> Test: ${PRESET}"
-ctest --preset "$PRESET"
+if [[ "$RUN_INTEGRATION" == "on" ]]; then
+    ctest --preset "$PRESET"
+else
+    ctest --preset "$PRESET" -LE integration
+fi
 
 run_tui_build_and_test() {
     local label="$1"
@@ -181,7 +191,11 @@ run_tui_build_and_test() {
 
     echo
     echo "==> Test: ${PRESET} + TUI (${label})"
-    ctest --test-dir "$build_dir" --output-on-failure
+    if [[ "$RUN_INTEGRATION" == "on" ]]; then
+        ctest --test-dir "$build_dir" --output-on-failure
+    else
+        ctest --test-dir "$build_dir" --output-on-failure -LE integration
+    fi
 }
 
 if [[ "$TEST_TUI" == "on" ]]; then
@@ -272,7 +286,11 @@ run_toml_build_and_test() {
 
     echo
     echo "==> Test: ${PRESET} + ConfigTOML (${label})"
-    ctest --test-dir "$build_dir" --output-on-failure
+    if [[ "$RUN_INTEGRATION" == "on" ]]; then
+        ctest --test-dir "$build_dir" --output-on-failure
+    else
+        ctest --test-dir "$build_dir" --output-on-failure -LE integration
+    fi
 }
 
 system_toml_available=false
