@@ -3,6 +3,7 @@
 #include "solution.hpp"
 
 #include <cstddef>
+#include <string>
 
 namespace easylocal::mwe::assignment
 {
@@ -13,6 +14,12 @@ struct ReassignJobMove
 {
     job_id job;
     machine_id destination;
+
+    [[nodiscard]] auto describe() const -> std::string
+    {
+        return "job " + std::to_string(job) + " -> machine " +
+               std::to_string(destination);
+    }
 };
 
 } // namespace easylocal::mwe::assignment

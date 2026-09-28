@@ -1,5 +1,6 @@
 #include "../examples/assignment/capacity_delta.hpp"
 #include "../examples/assignment/cost_components.hpp"
+#include "../examples/assignment/instance_io.hpp"
 #include "../examples/assignment/neighborhood_explorer.hpp"
 #include "../examples/assignment/solution_manager.hpp"
 
@@ -26,6 +27,9 @@ int main()
         .runner<easylocal::runner::first_improvement>("fi");
 
     easylocal::Tester tester{std::move(application)};
+    static_assert(decltype(tester)::supports_input_loading);
+    static_assert(decltype(tester)::supports_solution_loading);
+    static_assert(decltype(tester)::supports_solution_saving);
 
     // Instantiates the complete FTXUI frontend without entering a terminal loop.
     if (false)

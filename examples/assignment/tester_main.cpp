@@ -38,5 +38,9 @@ int main()
 
     easylocal::tui::run(
         tester,
-        {.title = "EasyLocal++ Assignment Tester", .seed = 0});
+        {
+            .title = "EasyLocal++ Assignment Tester",
+            .seed = 0,
+            .input_path = EASYLOCAL_ASSIGNMENT_MWE_INSTANCE_FILE,
+        });
 }

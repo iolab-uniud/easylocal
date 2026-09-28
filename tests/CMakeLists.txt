@@ -889,6 +889,20 @@ if(TARGET EasyLocal::TUI)
         NAME easylocal.tui-tester-compile
         COMMAND easylocal_tui_tester_compile_test
     )
+
+    add_executable(
+        easylocal_tui_helpers_test
+        tui_helpers.cpp
+    )
+    target_link_libraries(
+        easylocal_tui_helpers_test
+        PRIVATE
+            EasyLocal::TUI
+    )
+    add_test(
+        NAME easylocal.tui-helpers
+        COMMAND easylocal_tui_helpers_test
+    )
 endif()
 
 if(TARGET EasyLocal::ConfigTOML)
