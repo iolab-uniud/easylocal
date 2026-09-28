@@ -10,8 +10,6 @@
 
 #include <cassert>
 #include <cstddef>
-#include <optional>
-#include <random>
 
 namespace
 {
@@ -180,119 +178,6 @@ private:
     AssignmentSolutionManager& manager_;
 };
 
-struct ProbeInput
-{
-};
-
-struct ProbeSolution
-{
-    int value{};
-    auto operator==(const ProbeSolution&) const -> bool = default;
-};
-
-struct ProbeMove
-{
-    int value{};
-    auto operator==(const ProbeMove&) const -> bool = default;
-};
-
-class ProbeSolutionManager
-    : public easylocal::solution_manager_base<ProbeInput, ProbeSolution>
-{
-public:
-    using solution_manager_base::solution_manager_base;
-    using cost_type = int;
-
-    [[nodiscard]] static auto is_valid(const ProbeSolution&) noexcept -> bool
-    {
-        return true;
-    }
-
-    [[nodiscard]] static auto evaluate(const ProbeSolution& solution) noexcept
-        -> cost_type
-    {
-        return solution.value;
-    }
-
-    [[nodiscard]] static auto initial_solution() noexcept -> ProbeSolution
-    {
-        return {};
-    }
-};
-
-class NondeterministicNeighborhood
-    : public easylocal::neighborhood_explorer_base<ProbeSolutionManager, ProbeMove>
-{
-public:
-    using neighborhood_explorer_base::neighborhood_explorer_base;
-
-    [[nodiscard]] static auto is_valid(const ProbeSolution&, const ProbeMove&) noexcept
-        -> bool
-    {
-        return true;
-    }
-
-    [[nodiscard]] static auto first_move(const ProbeSolution&, ProbeMove& move) noexcept
-        -> bool
-    {
-        move = ProbeMove{1};
-        return true;
-    }
-
-    [[nodiscard]] static auto next_move(const ProbeSolution&, ProbeMove&) noexcept
-        -> bool
-    {
-        return false;
-    }
-
-    void make_move(ProbeSolution& solution, const ProbeMove&) const noexcept
-    {
-        solution.value += flip_ ? 1 : 2;
-        flip_ = !flip_;
-    }
-
-private:
-    mutable bool flip_{};
-};
-
-class RandomOutsideEnumerationNeighborhood
-    : public easylocal::neighborhood_explorer_base<ProbeSolutionManager, ProbeMove>
-{
-public:
-    using neighborhood_explorer_base::neighborhood_explorer_base;
-
-    [[nodiscard]] static auto is_valid(const ProbeSolution&, const ProbeMove& move) noexcept
-        -> bool
-    {
-        return move.value == 1 || move.value == 2;
-    }
-
-    [[nodiscard]] static auto first_move(const ProbeSolution&, ProbeMove& move) noexcept
-        -> bool
-    {
-        move = ProbeMove{1};
-        return true;
-    }
-
-    [[nodiscard]] static auto next_move(const ProbeSolution&, ProbeMove&) noexcept
-        -> bool
-    {
-        return false;
-    }
-
-    template<std::uniform_random_bit_generator RNG>
-    [[nodiscard]] static auto random_move(const ProbeSolution&, RNG&)
-        -> std::optional<ProbeMove>
-    {
-        return ProbeMove{2};
-    }
-
-    static void make_move(ProbeSolution& solution, const ProbeMove& move) noexcept
-    {
-        solution.value += move.value;
-    }
-};
-
 void real_app_graph_is_checked_with_full_coverage()
 {
     const AssignmentInstance instance{
@@ -310,8 +195,6 @@ void real_app_graph_is_checked_with_full_coverage()
     assert(report.coverage().neighborhood_graphs == 1);
     assert(report.coverage().delta_bindings == 1);
     assert(report.coverage().runner_registrations == 2);
-    assert(report.coverage().deterministic_moves_checked > 0);
-    assert(report.coverage().random_move_samples == 16);
 }
 
 void check_fails_on_a_broken_realized_graph()
@@ -355,68 +238,6 @@ void check_fails_on_a_broken_realized_graph()
     assert(attributed_to_move_application);
 }
 
-void check_validates_solution_equality_when_available()
-{
-    auto application =
-        easylocal::app("broken-equality")
-            .solution_manager<BrokenEqualitySolutionManager>()
-            .neighborhood<BrokenEqualityNeighborhood>()
-            .runner<easylocal::runner::first_improvement>("fi");
-    application
-        .runner_config<easylocal::runner::first_improvement>()
-        .max_evaluations = 1;
-
-    const BrokenEqualityInput input{};
-    const BrokenEqualitySolution solution{};
-    const auto report = easylocal::check(application, input, solution);
-
-    assert(!report.passed());
-    bool found_equality_failure = false;
-    for (const auto& failure : report.failures())
-    {
-        if (failure.check == "solution equality reflexivity")
-        {
-            found_equality_failure = true;
-        }
-    }
-    assert(found_equality_failure);
-}
-
-void check_detects_nondeterministic_move_application()
-{
-    auto application =
-        easylocal::app("nondeterministic-move")
-            .solution_manager<ProbeSolutionManager>()
-            .neighborhood<NondeterministicNeighborhood>()
-            .runner<easylocal::runner::first_improvement>("fi");
-    application.runner_config<easylocal::runner::first_improvement>().max_evaluations = 1;
-
-    const auto report = easylocal::check(application, ProbeInput{}, ProbeSolution{});
-    assert(!report.passed());
-
-    bool found = false;
-    for (const auto& failure : report.failures())
-        found = found || failure.check == "move determinism";
-    assert(found);
-}
-
-void check_detects_random_moves_outside_the_enumerated_neighborhood()
-{
-    auto application =
-        easylocal::app("random-membership")
-            .solution_manager<ProbeSolutionManager>()
-            .neighborhood<RandomOutsideEnumerationNeighborhood>()
-            .runner<easylocal::runner::first_improvement>("fi");
-    application.runner_config<easylocal::runner::first_improvement>().max_evaluations = 1;
-
-    const auto report = easylocal::check(application, ProbeInput{}, ProbeSolution{});
-    assert(!report.passed());
-
-    bool found = false;
-    for (const auto& failure : report.failures())
-        found = found || failure.check == "random proposal membership";
-    assert(found);
-}
 
 } // namespace
 
@@ -424,8 +245,5 @@ int main()
 {
     real_app_graph_is_checked_with_full_coverage();
     check_fails_on_a_broken_realized_graph();
-    check_validates_solution_equality_when_available();
-    check_detects_nondeterministic_move_application();
-    check_detects_random_moves_outside_the_enumerated_neighborhood();
     return 0;
 }

@@ -315,6 +315,26 @@ inline auto text_lines(const std::string& value) -> ftxui::Element
     return ftxui::vbox(std::move(lines));
 }
 
+[[nodiscard]] inline auto split_text_lines(std::string_view value)
+    -> std::vector<std::string>
+{
+    std::vector<std::string> lines;
+    std::istringstream input{std::string{value}};
+    for (std::string line; std::getline(input, line);)
+    {
+        lines.push_back(std::move(line));
+    }
+    if (!value.empty() && value.back() == '\n')
+    {
+        lines.emplace_back();
+    }
+    if (lines.empty())
+    {
+        lines.emplace_back();
+    }
+    return lines;
+}
+
 struct file_entry
 {
     std::filesystem::path path;
@@ -804,16 +824,22 @@ public:
             return render_progress_modal();
         });
 
+        auto input_viewer_menu = Menu(
+            &input_viewer_lines_,
+            &input_viewer_selected_,
+            MenuOption::Vertical());
+        auto input_viewer_close = Button(
+            "Close",
+            [this] { input_visible_ = false; },
+            ButtonOption::Ascii());
         auto input_viewer_controls = Container::Vertical({
-            Button(
-                "Close",
-                [this] { input_visible_ = false; },
-                ButtonOption::Ascii()),
+            input_viewer_menu,
+            input_viewer_close,
         });
         auto input_viewer = Renderer(
             input_viewer_controls,
-            [this, input_viewer_controls] {
-                return render_input_viewer(input_viewer_controls);
+            [this, input_viewer_menu, input_viewer_close] {
+                return render_input_viewer(input_viewer_menu, input_viewer_close);
             });
         input_viewer = CatchEvent(input_viewer, [this](Event event) {
             if (event == Event::Escape || event == Event::F1)
@@ -824,16 +850,22 @@ public:
             return false;
         });
 
+        auto solution_viewer_menu = Menu(
+            &solution_viewer_lines_,
+            &solution_viewer_selected_,
+            MenuOption::Vertical());
+        auto solution_viewer_close = Button(
+            "Close",
+            [this] { solution_visible_ = false; },
+            ButtonOption::Ascii());
         auto solution_viewer_controls = Container::Vertical({
-            Button(
-                "Close",
-                [this] { solution_visible_ = false; },
-                ButtonOption::Ascii()),
+            solution_viewer_menu,
+            solution_viewer_close,
         });
         auto solution_viewer = Renderer(
             solution_viewer_controls,
-            [this, solution_viewer_controls] {
-                return render_solution_viewer(solution_viewer_controls);
+            [this, solution_viewer_menu, solution_viewer_close] {
+                return render_solution_viewer(solution_viewer_menu, solution_viewer_close);
             });
         solution_viewer = CatchEvent(solution_viewer, [this](Event event) {
             if (event == Event::Escape || event == Event::F2 ||
@@ -1399,12 +1431,16 @@ private:
 
     void show_input()
     {
+        input_viewer_lines_ = split_text_lines(input_text());
+        input_viewer_selected_ = 0;
         solution_visible_ = false;
         input_visible_ = true;
     }
 
     void show_solution()
     {
+        solution_viewer_lines_ = split_text_lines(solution_text());
+        solution_viewer_selected_ = 0;
         input_visible_ = false;
         solution_visible_ = true;
     }
@@ -2057,7 +2093,8 @@ private:
     }
 
     [[nodiscard]] auto render_input_viewer(
-        const ftxui::Component& controls) const -> ftxui::Element
+        const ftxui::Component& menu,
+        const ftxui::Component& close) const -> ftxui::Element
     {
         using namespace ftxui;
         Elements body;
@@ -2067,16 +2104,19 @@ private:
                 "File: " + format_path(resolve_path(input_path_))) | dim);
             body.push_back(separator());
         }
-        body.push_back(text_lines(input_text()) | flex);
+        body.push_back(text("Up/Down scroll  |  Esc/F1 close") | dim);
         body.push_back(separator());
-        body.push_back(controls->Render());
+        body.push_back(menu->Render() | vscroll_indicator | frame | flex);
+        body.push_back(separator());
+        body.push_back(close->Render() | center);
         return window(text(" Input  [F1] "), vbox(std::move(body))) |
                size(WIDTH, GREATER_THAN, 52) |
                border;
     }
 
     [[nodiscard]] auto render_solution_viewer(
-        const ftxui::Component& controls) const -> ftxui::Element
+        const ftxui::Component& menu,
+        const ftxui::Component& close) const -> ftxui::Element
     {
         using namespace ftxui;
         Elements body;
@@ -2088,9 +2128,11 @@ private:
             body.push_back(text("Cost: " + current_cost_text()) | bold);
             body.push_back(separator());
         }
-        body.push_back(text_lines(solution_text()) | flex);
+        body.push_back(text("Up/Down scroll  |  Esc/F2/S close") | dim);
         body.push_back(separator());
-        body.push_back(controls->Render());
+        body.push_back(menu->Render() | vscroll_indicator | frame | flex);
+        body.push_back(separator());
+        body.push_back(close->Render() | center);
         return window(text(" Solution  [F2/S] "), vbox(std::move(body))) |
                size(WIDTH, GREATER_THAN, 52) |
                border;
@@ -2315,7 +2357,11 @@ private:
     bool progress_visible_{};
     progress_snapshot progress_{};
     bool input_visible_{};
+    std::vector<std::string> input_viewer_lines_{""};
+    int input_viewer_selected_{};
     bool solution_visible_{};
+    std::vector<std::string> solution_viewer_lines_{""};
+    int solution_viewer_selected_{};
 };
 
 } // namespace detail

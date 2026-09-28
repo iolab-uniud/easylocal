@@ -87,6 +87,7 @@ int main()
     using easylocal::tui::detail::progress_snapshot;
     using easylocal::tui::detail::solution_stage;
     using easylocal::tui::detail::solution_stage_of;
+    using easylocal::tui::detail::split_text_lines;
     using easylocal::tui::detail::tester_page;
     using easylocal::tui::detail::context_pages_available;
     using easylocal::tui::detail::directory_entries;
@@ -143,6 +144,11 @@ int main()
     assert(path_basename("/tmp/instances/berlin52.tsp") == "berlin52.tsp");
     assert(path_basename("berlin52.tsp") == "berlin52.tsp");
     assert(path_basename("").empty());
+
+    assert((split_text_lines("a\nb") == std::vector<std::string>{"a", "b"}));
+    assert((split_text_lines("a\n\nb") == std::vector<std::string>{"a", "", "b"}));
+    assert((split_text_lines("a\n") == std::vector<std::string>{"a", ""}));
+    assert((split_text_lines("") == std::vector<std::string>{""}));
 
     assert(progress_ratio(progress_snapshot{}) == 0.0F);
     assert(progress_ratio(progress_snapshot{

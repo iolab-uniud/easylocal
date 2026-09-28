@@ -4,7 +4,6 @@
 #include <easylocal/aggregation.hpp>
 #include <easylocal/cursor_moves.hpp>
 #include <easylocal/cost.hpp>
-#include <easylocal/diagnostics/neighborhood.hpp>
 #include <easylocal/config/cli.hpp>
 #include <easylocal/config/file.hpp>
 #include <easylocal/config/overrides.hpp>
