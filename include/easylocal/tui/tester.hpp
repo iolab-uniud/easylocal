@@ -1037,6 +1037,8 @@ private:
         perform("Open input", [this] {
             const auto path = resolve_path(input_path_);
             tester_.load_input(path);
+            last_move_result_.clear();
+            last_run_result_.clear();
             refresh_page_labels();
             page_selected_ = page_index(tester_page::solution);
             set_status(
@@ -1129,6 +1131,8 @@ private:
 
     void after_solution_change()
     {
+        last_move_result_.clear();
+        last_run_result_.clear();
         refresh_page_labels();
         page_selected_ = page_index(detail::page_after_solution_change(tester_));
     }
@@ -1184,6 +1188,7 @@ private:
         perform("First move", [this] {
             if (tester_.use_first_move())
             {
+                last_move_result_.clear();
                 set_status(status_kind::success, move_status("Selected first move"));
             }
             else
@@ -1208,6 +1213,7 @@ private:
         perform("Next move", [this] {
             if (tester_.use_next_move())
             {
+                last_move_result_.clear();
                 set_status(status_kind::success, move_status("Selected next move"));
             }
             else
@@ -1229,6 +1235,7 @@ private:
         perform("Random move", [this] {
             if (tester_.use_random_move(rng_))
             {
+                last_move_result_.clear();
                 set_status(status_kind::success, move_status("Selected random move"));
             }
             else
@@ -1255,10 +1262,9 @@ private:
             const auto before = tester_.evaluate();
             tester_.apply_move();
             const auto after = tester_.evaluate();
-            set_status(
-                status_kind::success,
-                "Move applied: cost " + value_text(before) + " -> " +
-                    value_text(after));
+            last_move_result_ =
+                "Applied: " + value_text(before) + " -> " + value_text(after);
+            set_status(status_kind::success, "Move applied");
         });
     }
 
@@ -1294,10 +1300,9 @@ private:
                 return;
             }
             const auto after = tester_.evaluate();
-            set_status(
-                status_kind::success,
-                "Runner completed: " + name + " | cost " +
-                    value_text(before) + " -> " + value_text(after));
+            last_run_result_ =
+                name + ": " + value_text(before) + " -> " + value_text(after);
+            set_status(status_kind::success, "Runner completed: " + name);
         });
     }
 
@@ -1307,40 +1312,18 @@ private:
         {
             return prefix;
         }
-        const bool valid = tester_.is_valid();
-        prefix += valid ? " (valid" : " (INVALID";
-        if (valid)
+        if (!tester_.is_valid())
         {
-            prefix += ", cost=" + value_text(tester_.evaluate());
+            return prefix + ": INVALID; Move and Run disabled";
         }
-        prefix += ')';
-        prefix += valid ? "; Move and Run enabled" : "; Move and Run disabled";
         return prefix;
     }
 
     [[nodiscard]] auto move_status(std::string prefix) const -> std::string
     {
-        if (!tester_.has_move())
+        if (tester_.has_move() && !tester_.move_is_valid())
         {
-            return prefix;
-        }
-        const bool valid = tester_.move_is_valid();
-        prefix += valid ? " (valid)" : " (INVALID)";
-        if (!valid)
-        {
-            return prefix;
-        }
-
-        prefix += ", incremental=" + value_text(tester_.evaluate_move());
-        prefix += ", full=" + value_text(tester_.evaluate_move_fully());
-        if constexpr (requires(const tester_type& tester) {
-                          { tester.move_evaluation_matches_full() }
-                              -> std::same_as<bool>;
-                      })
-        {
-            prefix += tester_.move_evaluation_matches_full()
-                          ? ", delta=ok"
-                          : ", delta=FAILED";
+            return prefix + ": INVALID";
         }
         return prefix;
     }
@@ -1432,6 +1415,11 @@ private:
         if (!tester_.has_move())
         {
             lines.push_back(text("No move selected") | dim);
+            if (!last_move_result_.empty())
+            {
+                lines.push_back(separator());
+                lines.push_back(text(last_move_result_) | bold);
+            }
             return vbox(std::move(lines));
         }
 
@@ -1442,8 +1430,8 @@ private:
         if (valid)
         {
             lines.push_back(separator());
-            lines.push_back(text("Incremental: " + value_text(tester_.evaluate_move())));
-            lines.push_back(text("Full:        " + value_text(tester_.evaluate_move_fully())));
+            lines.push_back(text("Candidate (incremental): " + value_text(tester_.evaluate_move())));
+            lines.push_back(text("Candidate (full):        " + value_text(tester_.evaluate_move_fully())));
             if constexpr (requires(const tester_type& tester) {
                               { tester.move_evaluation_matches_full() }
                                   -> std::same_as<bool>;
@@ -1453,6 +1441,11 @@ private:
                     std::string{"Delta check: "} +
                     (tester_.move_evaluation_matches_full() ? "OK" : "FAILED")));
             }
+        }
+        if (!last_move_result_.empty())
+        {
+            lines.push_back(separator());
+            lines.push_back(text(last_move_result_) | bold);
         }
         return vbox(std::move(lines));
     }
@@ -1518,7 +1511,14 @@ private:
         const ftxui::Component& controls) const -> ftxui::Element
     {
         using namespace ftxui;
-        return window(text(" Runners "), controls->Render()) | flex;
+        Elements body{controls->Render()};
+        if (!last_run_result_.empty())
+        {
+            body.push_back(separator());
+            body.push_back(text("Last run") | bold);
+            body.push_back(paragraph(last_run_result_));
+        }
+        return window(text(" Runners "), vbox(std::move(body))) | flex;
     }
 
     [[nodiscard]] auto render_main(
@@ -1774,6 +1774,8 @@ private:
 
     std::vector<std::string> runner_names_;
     int runner_selected_{};
+    std::string last_move_result_;
+    std::string last_run_result_;
 
     std::vector<std::string> page_labels_{"Solution", "Move", "Run"};
     int page_selected_{};
