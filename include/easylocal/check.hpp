@@ -2,6 +2,7 @@
 
 #include <easylocal/app.hpp>
 #include <easylocal/cursor_moves.hpp>
+#include <easylocal/diagnostics/neighborhood.hpp>
 #include <easylocal/neighborhood_concepts.hpp>
 #include <easylocal/testing/check.hpp>
 
@@ -25,6 +26,8 @@ struct app_check_coverage
     std::size_t neighborhood_graphs{};
     std::size_t delta_bindings{};
     std::size_t runner_registrations{};
+    std::size_t deterministic_moves_checked{};
+    std::size_t random_move_samples{};
 };
 
 class app_check_report
@@ -65,7 +68,9 @@ inline void print_report(std::ostream& out, const app_check_report& report)
         << ", cost_components=" << coverage.cost_components
         << ", neighborhood_graphs=" << coverage.neighborhood_graphs
         << ", delta_bindings=" << coverage.delta_bindings
-        << ", runner_registrations=" << coverage.runner_registrations << '\n';
+        << ", runner_registrations=" << coverage.runner_registrations
+        << ", deterministic_moves_checked=" << coverage.deterministic_moves_checked
+        << ", random_move_samples=" << coverage.random_move_samples << '\n';
 }
 
 namespace detail
@@ -101,67 +106,6 @@ inline constexpr std::size_t app_delta_binding_count_v = [] {
         return std::size_t{0};
 }();
 
-template<class Report, class SM, class NHE, class Solution, class Range>
-void check_app_moves(
-    Report& report,
-    const SM& solution_manager,
-    const NHE& neighborhood,
-    const Solution& solution,
-    Range&& moves,
-    std::size_t limit)
-{
-    using move_type = typename NHE::move_type;
-    const runner_context<SM, NHE> context{solution_manager, neighborhood};
-    const auto evaluation = context.evaluation();
-    const auto current = evaluation.evaluate(solution);
-
-    std::size_t seen = 0;
-    for (auto&& raw_move : moves)
-    {
-        if (seen++ == limit)
-            break;
-
-        move_type move{raw_move};
-        const auto valid = static_cast<bool>(neighborhood.is_valid(solution, move));
-        report.check(
-            valid,
-            "neighborhood move validity",
-            "an enumerated move does not satisfy NeighborhoodExplorer::is_valid");
-        if (!valid)
-            continue;
-
-        auto candidate_solution = solution;
-        neighborhood.make_move(candidate_solution, move);
-        const auto valid_candidate =
-            static_cast<bool>(solution_manager.is_valid(candidate_solution));
-        report.check(
-            valid_candidate,
-            "neighborhood move application",
-            "make_move produced an invalid Solution");
-        if (!valid_candidate)
-            continue;
-
-        auto incremental_state = current;
-        auto committed_solution = solution;
-        auto candidate = evaluation.evaluate_move(solution, current, move);
-        evaluation.commit(
-            committed_solution,
-            incremental_state,
-            std::move(candidate));
-        const auto full = evaluation.evaluate(committed_solution);
-
-        if constexpr (requires {
-                          { incremental_state.cost() == full.cost() }
-                              -> std::convertible_to<bool>;
-                      })
-        {
-            report.check(
-                static_cast<bool>(incremental_state.cost() == full.cost()),
-                "incremental evaluation",
-                "incremental move evaluation does not match full recomputation");
-        }
-    }
-}
 
 } // namespace detail
 
@@ -251,13 +195,34 @@ template<class App, class Instance, class Solution>
     constexpr std::size_t max_moves = 128;
     if constexpr (deterministic_neighborhood_for<neighborhood_type, Solution>)
     {
-        detail::check_app_moves(
-            report,
+        const auto neighborhood_check = diagnostics::check_neighborhood(
             solution_manager,
             neighborhood,
             solution,
-            easylocal::moves(neighborhood, solution),
             max_moves);
+        report.coverage().deterministic_moves_checked = neighborhood_check.checked;
+        report.check(
+            neighborhood_check.invalid_moves == 0,
+            "neighborhood move validity",
+            "one or more enumerated moves do not satisfy NeighborhoodExplorer::is_valid");
+        report.check(
+            neighborhood_check.invalid_solutions == 0,
+            "neighborhood move application",
+            "one or more enumerated moves produce an invalid Solution");
+        if (neighborhood_check.cost_consistency_checked)
+        {
+            report.check(
+                neighborhood_check.cost_mismatches == 0,
+                "incremental evaluation",
+                "one or more incremental move evaluations do not match full recomputation");
+        }
+        if (neighborhood_check.determinism_checked)
+        {
+            report.check(
+                neighborhood_check.nondeterministic_moves == 0,
+                "move determinism",
+                "applying the same move to equivalent Solution copies produced different states");
+        }
     }
 
     if constexpr (random_neighborhood_for<
@@ -266,26 +231,27 @@ template<class App, class Instance, class Solution>
                       testing::deterministic_rng>)
     {
         testing::deterministic_rng rng;
-        for (std::size_t sample = 0; sample < 16; ++sample)
+        const auto random_check = diagnostics::check_random_moves(
+            solution_manager,
+            neighborhood,
+            solution,
+            rng,
+            16);
+        report.coverage().random_move_samples = random_check.samples;
+        report.check(
+            random_check.invalid_moves == 0,
+            "random proposal",
+            "random_move produced a move that does not satisfy is_valid");
+        report.check(
+            random_check.invalid_solutions == 0,
+            "random proposal application",
+            "random_move followed by make_move produced an invalid Solution");
+        if (random_check.membership_checked)
         {
-            auto move = easylocal::random_move(neighborhood, solution, rng);
-            if (!move)
-                continue;
-
-            const auto valid = static_cast<bool>(neighborhood.is_valid(solution, *move));
             report.check(
-                valid,
-                "random proposal",
-                "random_move produced a move that does not satisfy is_valid");
-            if (!valid)
-                continue;
-
-            auto candidate = solution;
-            neighborhood.make_move(candidate, *move);
-            report.check(
-                static_cast<bool>(solution_manager.is_valid(candidate)),
-                "random proposal application",
-                "random_move followed by make_move produced an invalid Solution");
+                random_check.out_of_neighborhood == 0,
+                "random proposal membership",
+                "random_move produced a valid move that is not part of the enumerated neighborhood");
         }
     }
 

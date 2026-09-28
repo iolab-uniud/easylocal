@@ -1296,6 +1296,20 @@ add_test(
 )
 
 add_executable(
+    easylocal_neighborhood_diagnostics_header_self_containment
+    neighborhood_diagnostics_header_self_containment.cpp
+)
+target_link_libraries(
+    easylocal_neighborhood_diagnostics_header_self_containment
+    PRIVATE
+        EasyLocal::Core
+)
+add_test(
+    NAME easylocal.neighborhood-diagnostics-header-self-containment
+    COMMAND easylocal_neighborhood_diagnostics_header_self_containment
+)
+
+add_executable(
     easylocal_check_header_self_containment
     check_header_self_containment.cpp
 )
