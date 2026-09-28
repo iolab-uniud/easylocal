@@ -536,7 +536,7 @@ public:
             if constexpr (tester_type::supports_random_solution)
             {
                 source_actions.push_back(Button(
-                    "X Random",
+                    "R Random",
                     [this] { use_random_solution(); },
                     ButtonOption::Ascii()));
             }
@@ -614,7 +614,7 @@ public:
         if constexpr (tester_type::supports_random_moves)
         {
             move_controls->Add(Button(
-                "X Random",
+                "R Random",
                 [this] { random_move(); },
                 ButtonOption::Ascii()));
         }
@@ -884,6 +884,21 @@ public:
                     show_solution();
                     return true;
                 }
+                if (event == Event::F3)
+                {
+                    select_page(tester_page::solution);
+                    return true;
+                }
+                if (event == Event::F4)
+                {
+                    select_page(tester_page::move);
+                    return true;
+                }
+                if (event == Event::F5)
+                {
+                    select_page(tester_page::run);
+                    return true;
+                }
 
                 if (editing_path)
                 {
@@ -898,16 +913,6 @@ public:
                 if (event == Event::s || event == Event::S)
                 {
                     show_solution();
-                    return true;
-                }
-                if (event == Event::m || event == Event::M)
-                {
-                    select_page(tester_page::move);
-                    return true;
-                }
-                if (event == Event::r || event == Event::R)
-                {
-                    select_page(tester_page::run);
                     return true;
                 }
 
@@ -986,7 +991,7 @@ private:
             if constexpr (tester_type::supports_initial_solution)
                 append("I Initial");
             if constexpr (tester_type::supports_random_solution)
-                append("X Random");
+                append("R Random");
             if constexpr (tester_type::supports_solution_loading)
                 append("L Load");
             if constexpr (tester_type::supports_solution_saving)
@@ -1005,7 +1010,7 @@ private:
                 append("N Next");
             }
             if constexpr (tester_type::supports_random_moves)
-                append("X Random");
+                append("R Random");
             append("A Apply");
             if constexpr (tester_type::supports_deterministic_moves)
                 append("P List");
@@ -1060,7 +1065,7 @@ private:
         }
         if constexpr (tester_type::supports_random_solution)
         {
-            if (event == ftxui::Event::x || event == ftxui::Event::X)
+            if (event == ftxui::Event::r || event == ftxui::Event::R)
             {
                 use_random_solution();
                 return true;
@@ -1120,7 +1125,7 @@ private:
         }
         if constexpr (tester_type::supports_random_moves)
         {
-            if (event == ftxui::Event::x || event == ftxui::Event::X)
+            if (event == ftxui::Event::r || event == ftxui::Event::R)
             {
                 random_move();
                 return true;
@@ -1919,7 +1924,7 @@ private:
             summary.push_back(text("Solution INVALID - replace it or run diagnostics") | bold);
             break;
         case solution_stage::ready:
-            summary.push_back(text("Setup complete - use M Move or R Run") | dim);
+            summary.push_back(text("Setup complete - use F4 Move or F5 Run") | dim);
             break;
         }
 
@@ -1984,7 +1989,7 @@ private:
                    separator(),
                    render_status(),
                    text(current_page_shortcuts()) | center,
-                   text("M Move  R Run  |  F1 Input  F2 Solution  S Show solution  |  ? Help  |  q " +
+                   text("F3 I/O  F4 Move  F5 Run  |  F1 Input  F2 Solution  S Show solution  |  ? Help  |  q " +
                         options_.exit_label +
                         "  |  Tab/Shift-Tab focus") |
                        center | dim,
@@ -2240,16 +2245,17 @@ private:
         Elements lines{
             text("Pages") | bold,
             separator(),
-            text("M  Move"),
-            text("R  Run"),
+            text("F3  Input / Output page"),
+            text("F4  Move page"),
+            text("F5  Run page"),
             text("F1  show Input"),
             text("F2  show Solution"),
             text("S   show Solution"),
             separator(),
             text("Input / Output page") | bold,
-            text("O open input   I initial   X random   L load   W save   C check"),
+            text("O open input   I initial   R random   L load   W save   C check"),
             text("Move page") | bold,
-            text("B best   I first improving   F first   N next   X random   A apply"),
+            text("B best   I first improving   F first   N next   R random   A apply"),
             text("P list   T stats   C costs   D independence   U distribution"),
             text("Run page") | bold,
             text("G run selected   Enter run selected"),
