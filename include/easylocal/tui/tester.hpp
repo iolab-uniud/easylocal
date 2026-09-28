@@ -335,6 +335,19 @@ inline auto text_lines(const std::string& value) -> ftxui::Element
     return lines;
 }
 
+[[nodiscard]] constexpr auto page_scroll_selection(
+    const int selected,
+    const std::size_t count,
+    const int delta) noexcept -> int
+{
+    if (count == 0)
+    {
+        return 0;
+    }
+    const auto last = static_cast<int>(count - 1);
+    return std::clamp(selected + delta, 0, last);
+}
+
 struct file_entry
 {
     std::filesystem::path path;
@@ -473,6 +486,8 @@ class tester_frontend
 {
 public:
     using tester_type = easylocal::Tester<App>;
+    static constexpr bool supports_neighborhood_diagnostics =
+        std::equality_comparable<typename tester_type::solution_type>;
 
     tester_frontend(tester_type& tester, tester_options options)
         : tester_{tester},
@@ -645,40 +660,49 @@ public:
             ButtonOption::Ascii()));
 
         auto move_diagnostics = Container::Horizontal({});
-        if constexpr (tester_type::supports_deterministic_moves)
+        if constexpr (supports_neighborhood_diagnostics)
         {
-            move_diagnostics->Add(Button(
-                "P List",
-                [this] { preview_neighbors(); },
-                ButtonOption::Ascii()));
+            if constexpr (tester_type::supports_deterministic_moves)
+            {
+                move_diagnostics->Add(Button(
+                    "P List",
+                    [this] { preview_neighbors(); },
+                    ButtonOption::Ascii()));
+            }
+            if constexpr (tester_type::supports_improvement_selection)
+            {
+                move_diagnostics->Add(Button(
+                    "T Stats",
+                    [this] { neighborhood_statistics(); },
+                    ButtonOption::Ascii()));
+            }
+            if constexpr (tester_type::supports_cost_consistency_check)
+            {
+                move_diagnostics->Add(Button(
+                    "C Costs",
+                    [this] { check_neighborhood_costs(); },
+                    ButtonOption::Ascii()));
+            }
+            if constexpr (tester_type::supports_move_independence_check)
+            {
+                move_diagnostics->Add(Button(
+                    "D Indep",
+                    [this] { check_move_independence(); },
+                    ButtonOption::Ascii()));
+            }
+            if constexpr (tester_type::supports_random_distribution_check)
+            {
+                move_diagnostics->Add(Button(
+                    "U Distribution",
+                    [this] { check_random_distribution(); },
+                    ButtonOption::Ascii()));
+            }
         }
-        if constexpr (tester_type::supports_improvement_selection)
+        else
         {
-            move_diagnostics->Add(Button(
-                "T Stats",
-                [this] { neighborhood_statistics(); },
-                ButtonOption::Ascii()));
-        }
-        if constexpr (tester_type::supports_cost_consistency_check)
-        {
-            move_diagnostics->Add(Button(
-                "C Costs",
-                [this] { check_neighborhood_costs(); },
-                ButtonOption::Ascii()));
-        }
-        if constexpr (tester_type::supports_move_independence_check)
-        {
-            move_diagnostics->Add(Button(
-                "D Indep",
-                [this] { check_move_independence(); },
-                ButtonOption::Ascii()));
-        }
-        if constexpr (tester_type::supports_random_distribution_check)
-        {
-            move_diagnostics->Add(Button(
-                "U Distribution",
-                [this] { check_random_distribution(); },
-                ButtonOption::Ascii()));
+            move_diagnostics->Add(Renderer([] {
+                return text("Unavailable: Solution has no operator==") | dim;
+            }));
         }
 
         auto run_controls = Container::Vertical({});
@@ -811,6 +835,14 @@ public:
                     diagnostic_menu, diagnostic_close);
             });
         diagnostic_renderer = CatchEvent(diagnostic_renderer, [this](Event event) {
+            if (event == Event::PageUp || event == Event::PageDown)
+            {
+                diagnostic_selected_ = detail::page_scroll_selection(
+                    diagnostic_selected_,
+                    diagnostic_lines_.size(),
+                    event == Event::PageUp ? -10 : 10);
+                return true;
+            }
             if (event == Event::Escape || event == Event::q || event == Event::Q)
             {
                 diagnostic_visible_ = false;
@@ -842,6 +874,14 @@ public:
                 return render_input_viewer(input_viewer_menu, input_viewer_close);
             });
         input_viewer = CatchEvent(input_viewer, [this](Event event) {
+            if (event == Event::PageUp || event == Event::PageDown)
+            {
+                input_viewer_selected_ = detail::page_scroll_selection(
+                    input_viewer_selected_,
+                    input_viewer_lines_.size(),
+                    event == Event::PageUp ? -10 : 10);
+                return true;
+            }
             if (event == Event::Escape || event == Event::F1)
             {
                 input_visible_ = false;
@@ -868,6 +908,14 @@ public:
                 return render_solution_viewer(solution_viewer_menu, solution_viewer_close);
             });
         solution_viewer = CatchEvent(solution_viewer, [this](Event event) {
+            if (event == Event::PageUp || event == Event::PageDown)
+            {
+                solution_viewer_selected_ = detail::page_scroll_selection(
+                    solution_viewer_selected_,
+                    solution_viewer_lines_.size(),
+                    event == Event::PageUp ? -10 : 10);
+                return true;
+            }
             if (event == Event::Escape || event == Event::F2 ||
                 event == Event::s || event == Event::S)
             {
@@ -1163,44 +1211,47 @@ private:
                 return true;
             }
         }
-        if constexpr (tester_type::supports_deterministic_moves)
+        if constexpr (supports_neighborhood_diagnostics)
         {
-            if (event == ftxui::Event::p || event == ftxui::Event::P)
+            if constexpr (tester_type::supports_deterministic_moves)
             {
-                preview_neighbors();
-                return true;
+                if (event == ftxui::Event::p || event == ftxui::Event::P)
+                {
+                    preview_neighbors();
+                    return true;
+                }
             }
-        }
-        if constexpr (tester_type::supports_improvement_selection)
-        {
-            if (event == ftxui::Event::t || event == ftxui::Event::T)
+            if constexpr (tester_type::supports_improvement_selection)
             {
-                neighborhood_statistics();
-                return true;
+                if (event == ftxui::Event::t || event == ftxui::Event::T)
+                {
+                    neighborhood_statistics();
+                    return true;
+                }
             }
-        }
-        if constexpr (tester_type::supports_cost_consistency_check)
-        {
-            if (event == ftxui::Event::c || event == ftxui::Event::C)
+            if constexpr (tester_type::supports_cost_consistency_check)
             {
-                check_neighborhood_costs();
-                return true;
+                if (event == ftxui::Event::c || event == ftxui::Event::C)
+                {
+                    check_neighborhood_costs();
+                    return true;
+                }
             }
-        }
-        if constexpr (tester_type::supports_move_independence_check)
-        {
-            if (event == ftxui::Event::d || event == ftxui::Event::D)
+            if constexpr (tester_type::supports_move_independence_check)
             {
-                check_move_independence();
-                return true;
+                if (event == ftxui::Event::d || event == ftxui::Event::D)
+                {
+                    check_move_independence();
+                    return true;
+                }
             }
-        }
-        if constexpr (tester_type::supports_random_distribution_check)
-        {
-            if (event == ftxui::Event::u || event == ftxui::Event::U)
+            if constexpr (tester_type::supports_random_distribution_check)
             {
-                check_random_distribution();
-                return true;
+                if (event == ftxui::Event::u || event == ftxui::Event::U)
+                {
+                    check_random_distribution();
+                    return true;
+                }
             }
         }
         if (event == ftxui::Event::a || event == ftxui::Event::A)
@@ -2068,7 +2119,7 @@ private:
         return window(
                    text(" " + diagnostic_title_ + " "),
                    vbox({
-                       text("Up/Down scroll  |  Esc/q close") | dim,
+                       text("Up/Down/PgUp/PgDn scroll  |  Esc/q close") | dim,
                        separator(),
                        menu->Render() | vscroll_indicator | frame | flex,
                        separator(),
@@ -2104,7 +2155,7 @@ private:
                 "File: " + format_path(resolve_path(input_path_))) | dim);
             body.push_back(separator());
         }
-        body.push_back(text("Up/Down scroll  |  Esc/F1 close") | dim);
+        body.push_back(text("Up/Down/PgUp/PgDn scroll  |  Esc/F1 close") | dim);
         body.push_back(separator());
         body.push_back(menu->Render() | vscroll_indicator | frame | flex);
         body.push_back(separator());
@@ -2128,7 +2179,7 @@ private:
             body.push_back(text("Cost: " + current_cost_text()) | bold);
             body.push_back(separator());
         }
-        body.push_back(text("Up/Down scroll  |  Esc/F2/S close") | dim);
+        body.push_back(text("Up/Down/PgUp/PgDn scroll  |  Esc/F2/S close") | dim);
         body.push_back(separator());
         body.push_back(menu->Render() | vscroll_indicator | frame | flex);
         body.push_back(separator());

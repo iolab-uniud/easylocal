@@ -81,6 +81,7 @@ int main()
     using easylocal::tui::detail::page_available;
     using easylocal::tui::detail::page_after_solution_change;
     using easylocal::tui::detail::page_index;
+    using easylocal::tui::detail::page_scroll_selection;
     using easylocal::tui::detail::path_basename;
     using easylocal::tui::detail::progress_mode;
     using easylocal::tui::detail::progress_ratio;
@@ -149,6 +150,13 @@ int main()
     assert((split_text_lines("a\n\nb") == std::vector<std::string>{"a", "", "b"}));
     assert((split_text_lines("a\n") == std::vector<std::string>{"a", ""}));
     assert((split_text_lines("") == std::vector<std::string>{""}));
+
+    assert(page_scroll_selection(0, 0, 10) == 0);
+    assert(page_scroll_selection(0, 25, 10) == 10);
+    assert(page_scroll_selection(10, 25, 10) == 20);
+    assert(page_scroll_selection(20, 25, 10) == 24);
+    assert(page_scroll_selection(20, 25, -10) == 10);
+    assert(page_scroll_selection(5, 25, -10) == 0);
 
     assert(progress_ratio(progress_snapshot{}) == 0.0F);
     assert(progress_ratio(progress_snapshot{
