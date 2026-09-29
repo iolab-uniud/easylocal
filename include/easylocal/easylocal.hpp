@@ -7,6 +7,7 @@
 #include <easylocal/check.hpp>
 #include <easylocal/cost.hpp>
 #include <easylocal/cursor_moves.hpp>
+#include <easylocal/logging.hpp>
 #include <easylocal/neighborhood_concepts.hpp>
 #include <easylocal/neighborhood_union.hpp>
 #include <easylocal/run_control.hpp>

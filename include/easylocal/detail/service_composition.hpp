@@ -3,10 +3,10 @@
 #include <easylocal/aggregation.hpp>
 #include <easylocal/config/tree.hpp>
 #include <easylocal/detail/solution_manager_concepts.hpp>
+#include <easylocal/logging.hpp>
 
 #include <concepts>
 #include <cstddef>
-#include <cstdio>
 #include <functional>
 #include <tuple>
 #include <type_traits>
@@ -416,12 +416,13 @@ template<class Aggregator>
 void warn_implicit_aggregator()
 {
     static const bool warned = [] {
-        std::fputs(
-            "EasyLocal warning: no cost aggregator was specified; using an "
-            "implicit unit-weight weighted_sum. Override cost.weights or add "
-            "`| aggregator(...)` / `.with_aggregator(...)` to make the "
-            "aggregation explicit.\n",
-            stderr);
+        logging::emit(
+            logging::level::warning,
+            "cost.aggregation",
+            "no cost aggregator was specified; using an implicit unit-weight "
+            "weighted_sum. Override cost.weights or add `| aggregator(...)` / "
+            "`.with_aggregator(...)` to make the aggregation explicit.",
+            logging::origin::framework);
         return true;
     }();
     (void)warned;

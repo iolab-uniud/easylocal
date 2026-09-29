@@ -215,9 +215,13 @@ Cost aggregation is explicit whenever domain semantics require it, but simple
 weighted costs have a convenience default. If all active component values can
 be combined as a weighted sum, omitting `aggregator(...)` materializes a
 configurable unit-weight `aggregation::weighted_sum` and emits a runtime warning.
-The weights remain exposed as `cost.weights`; if no safe weighted expression can
-be inferred, an explicit aggregator is still required. TSP demonstrates the
-implicit spelling, Exam Timetabling keeps the explicit built-in weighted sum,
+The warning uses the dependency-free logging boundary in
+`<easylocal/logging.hpp>`; applications may install a process-wide sink or
+disable logging without introducing a logging-library dependency into Core. See
+[`docs/logging.md`](docs/logging.md). The weights remain exposed as
+`cost.weights`; if no safe weighted expression can be inferred, an explicit
+aggregator is still required. TSP demonstrates the implicit spelling, Exam
+Timetabling keeps the explicit built-in weighted sum,
 and Assignment uses a custom hierarchical aggregator.
 
 All three MWEs now contain runnable `main` programs and load their small problem

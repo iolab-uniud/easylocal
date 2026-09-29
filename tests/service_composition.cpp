@@ -8,6 +8,7 @@
 #include <easylocal/config/tree.hpp>
 #include <easylocal/detail/evaluation.hpp>
 #include <easylocal/detail/service_composition.hpp>
+#include <easylocal/logging.hpp>
 #include <easylocal/runner.hpp>
 
 #include <array>
@@ -272,6 +273,23 @@ struct TwoCapacityAggregator
     }
 };
 
+int implicit_aggregator_warning_count = 0;
+bool implicit_aggregator_warning_shape_matches = false;
+
+void capture_implicit_aggregator_warning(
+    const easylocal::logging::record& entry) noexcept
+{
+    if (entry.source == easylocal::logging::origin::framework &&
+        entry.severity == easylocal::logging::level::warning &&
+        entry.category == "cost.aggregation")
+    {
+        ++implicit_aggregator_warning_count;
+        implicit_aggregator_warning_shape_matches =
+            entry.message.find("implicit unit-weight weighted_sum") !=
+            std::string_view::npos;
+    }
+}
+
 auto expect(const bool condition, const std::string_view description) -> bool
 {
     if (!condition)
@@ -482,12 +500,24 @@ int main()
         static_cast<bool>(implicit_aggregation_override_result),
         "implicit aggregator parameters are exposed through configuration");
 
+    const auto previous_log_sink = easylocal::logging::set_sink(
+        &capture_implicit_aggregator_warning);
     const auto implicit_aggregate_manager =
         implicit_aggregate_recipe.construct(instance);
+    const auto second_implicit_aggregate_manager =
+        implicit_aggregate_recipe.construct(instance);
+    (void)easylocal::logging::set_sink(previous_log_sink);
 
     ok &= expect(
-        implicit_aggregate_manager.evaluate(initial) == 12,
+        implicit_aggregate_manager.evaluate(initial) == 12 &&
+            second_implicit_aggregate_manager.evaluate(initial) == 12,
         "an inferable implicit weighted-sum aggregator uses configurable weights");
+    ok &= expect(
+        implicit_aggregator_warning_count == 1,
+        "implicit aggregation emits exactly one framework warning per aggregator type");
+    ok &= expect(
+        implicit_aggregator_warning_shape_matches,
+        "implicit aggregation warning is structured through the logging sink");
 
     auto no_aggregate_recipe =
         solution_manager<NoAggregateSolutionManager>()

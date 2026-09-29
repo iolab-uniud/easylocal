@@ -193,6 +193,34 @@ add_test(
 )
 
 add_executable(
+    easylocal_logging_header_self_containment
+    logging_header_self_containment.cpp
+)
+target_link_libraries(
+    easylocal_logging_header_self_containment
+    PRIVATE
+        EasyLocal::Core
+)
+add_test(
+    NAME easylocal.logging-header-self-containment
+    COMMAND easylocal_logging_header_self_containment
+)
+
+add_executable(
+    easylocal_logging_test
+    logging.cpp
+)
+target_link_libraries(
+    easylocal_logging_test
+    PRIVATE
+        EasyLocal::Core
+)
+add_test(
+    NAME easylocal.logging
+    COMMAND easylocal_logging_test
+)
+
+add_executable(
     easylocal_run_control_header_self_containment
     run_control_header_self_containment.cpp
 )
