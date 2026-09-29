@@ -4,6 +4,7 @@
 #include <easylocal/search/detail/context_concepts.hpp>
 #include <easylocal/search/metropolis_acceptance.hpp>
 #include <easylocal/search/temperature_policy.hpp>
+#include <easylocal/trace.hpp>
 
 #include <concepts>
 #include <cstddef>
@@ -160,11 +161,13 @@ public:
         typename Context::solution_type solution,
         RNG& rng)
     {
+        trace::null_tracer tracer;
         return run_impl(
             context,
             std::move(solution),
             rng,
-            easylocal::detail::no_run_control{});
+            easylocal::detail::no_run_control{},
+            tracer);
     }
 
     template<class Context, std::uniform_random_bit_generator RNG>
@@ -176,20 +179,65 @@ public:
         RNG& rng,
         const run_control& control)
     {
-        return run_impl(context, std::move(solution), rng, control);
+        trace::null_tracer tracer;
+        return run_impl(context, std::move(solution), rng, control, tracer);
+    }
+
+    template<
+        class Context,
+        std::uniform_random_bit_generator RNG,
+        class Tracer>
+        requires detail::simulated_annealing_context<Context, Acceptance, RNG> &&
+                 trace::tracer_for<
+                     Tracer,
+                     trace::event::run_started<typename Context::cost_type>>
+    [[nodiscard]]
+    auto run(
+        const Context& context,
+        typename Context::solution_type solution,
+        RNG& rng,
+        Tracer& tracer)
+    {
+        return run_impl(
+            context,
+            std::move(solution),
+            rng,
+            easylocal::detail::no_run_control{},
+            tracer);
+    }
+
+    template<
+        class Context,
+        std::uniform_random_bit_generator RNG,
+        class Tracer>
+        requires detail::simulated_annealing_context<Context, Acceptance, RNG> &&
+                 trace::tracer_for<
+                     Tracer,
+                     trace::event::run_started<typename Context::cost_type>>
+    [[nodiscard]]
+    auto run(
+        const Context& context,
+        typename Context::solution_type solution,
+        RNG& rng,
+        const run_control& control,
+        Tracer& tracer)
+    {
+        return run_impl(context, std::move(solution), rng, control, tracer);
     }
 
 private:
     template<
         class Context,
         std::uniform_random_bit_generator RNG,
-        easylocal::detail::run_control_like Control>
+        easylocal::detail::run_control_like Control,
+        class Tracer>
     [[nodiscard]]
     auto run_impl(
         const Context& context,
         typename Context::solution_type solution,
         RNG& rng,
-        const Control& control)
+        const Control& control,
+        Tracer& tracer)
     {
         const auto& neighborhood = context.neighborhood_explorer();
         const auto evaluation = context.evaluation();
@@ -205,6 +253,8 @@ private:
         auto best_cost = current.cost();
         std::size_t iterations = 0;
         std::size_t evaluations = 1;
+
+        trace::emit(tracer, trace::event::run_started<cost_type>{current.cost()});
 
         temperature_policy_.reset();
         if constexpr (controlled_run)
@@ -225,7 +275,27 @@ private:
                     break;
                 }
             }
-            auto move = easylocal::random_move(neighborhood, solution, rng);
+            auto sampling_observer = [&](const trace::event::neighborhood_selection& value) {
+                trace::emit(tracer, value);
+            };
+
+            auto move = [&]() {
+                if constexpr (
+                    trace::observes<Tracer, trace::event::neighborhood_selection> &&
+                    requires {
+                        neighborhood.random_move_traced(
+                            solution, rng, sampling_observer);
+                    })
+                {
+                    return neighborhood.random_move_traced(
+                        solution, rng, sampling_observer);
+                }
+                else
+                {
+                    return easylocal::random_move(neighborhood, solution, rng);
+                }
+            }();
+
             if (!move.has_value())
             {
                 break;
@@ -237,6 +307,16 @@ private:
                 *move);
             ++iterations;
             ++evaluations;
+
+            trace::with_move_route(*move, [&](const auto* route) {
+                trace::emit(tracer, trace::event::move_evaluated<cost_type>{
+                    .evaluations = evaluations,
+                    .iterations = iterations,
+                    .current_cost = current.cost(),
+                    .candidate_cost = candidate.cost(),
+                    .neighborhood = route,
+                });
+            });
             if constexpr (controlled_run)
             {
                 control.report(run_progress{
@@ -254,20 +334,44 @@ private:
 
             if (accepted)
             {
+                const auto previous_cost = current.cost();
                 evaluation.commit(
                     solution,
                     current,
                     std::move(candidate));
 
+                trace::with_move_route(*move, [&](const auto* route) {
+                    trace::emit(tracer, trace::event::move_accepted<cost_type>{
+                        .evaluations = evaluations,
+                        .iterations = iterations,
+                        .previous_cost = previous_cost,
+                        .cost = current.cost(),
+                        .neighborhood = route,
+                    });
+                });
+
                 if (context.better(current.cost(), best_cost))
                 {
+                    const auto previous_best = best_cost;
                     best_solution = solution;
                     best_cost = current.cost();
+                    trace::emit(tracer, trace::event::incumbent_updated<cost_type>{
+                        .evaluations = evaluations,
+                        .iterations = iterations,
+                        .previous_cost = previous_best,
+                        .cost = best_cost,
+                    });
                 }
             }
 
             temperature_policy_.on_iteration(accepted);
         }
+
+        trace::emit(tracer, trace::event::run_finished<cost_type>{
+            .evaluations = evaluations,
+            .iterations = iterations,
+            .cost = best_cost,
+        });
 
         return result_type{
             .solution = std::move(best_solution),

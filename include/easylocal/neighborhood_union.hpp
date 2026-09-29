@@ -4,6 +4,7 @@
 
 #include <easylocal/config/tree.hpp>
 #include <easylocal/runner.hpp>
+#include <easylocal/trace.hpp>
 
 #include <algorithm>
 #include <array>
@@ -490,6 +491,21 @@ private:
         return fallback;
     }
 
+    [[nodiscard]]
+    auto active_bias_total(
+        const std::array<bool, child_count>& active) const noexcept -> double
+    {
+        double total = 0.0;
+        for (std::size_t index = 0; index < active.size(); ++index)
+        {
+            if (active[index])
+            {
+                total += random_biases_[index];
+            }
+        }
+        return total;
+    }
+
     template<std::size_t Index = 0, std::uniform_random_bit_generator RNG>
     [[nodiscard]]
     auto random_move_from_child(
@@ -523,6 +539,70 @@ private:
                 selected,
                 solution,
                 rng);
+        }
+        else
+        {
+            assert(false && "selected neighborhood index must be valid");
+            return std::nullopt;
+        }
+    }
+
+    template<
+        std::size_t Index = 0,
+        std::uniform_random_bit_generator RNG,
+        class Observer>
+    [[nodiscard]]
+    auto random_move_from_child_traced(
+        const std::size_t selected,
+        const typename first_explorer::solution_type& solution,
+        RNG& rng,
+        Observer& observer,
+        const trace::neighborhood_route_node* route) const
+        -> std::optional<union_move_type>
+    {
+        if constexpr (Index < child_count)
+        {
+            if (selected == Index)
+            {
+                const auto& child = std::get<Index>(explorers_);
+                if constexpr (requires {
+                    child.random_move_traced(solution, rng, observer, route);
+                })
+                {
+                    auto child_move = child.random_move_traced(
+                        solution, rng, observer, route);
+                    if (!child_move)
+                    {
+                        return std::nullopt;
+                    }
+
+                    using tagged_move_type =
+                        std::variant_alternative_t<Index, union_move_type>;
+                    return union_move_type{
+                        std::in_place_index<Index>,
+                        tagged_move_type{std::move(*child_move)},
+                    };
+                }
+                else
+                {
+                    auto child_move = easylocal::random_move(
+                        child, solution, rng);
+                    if (!child_move)
+                    {
+                        return std::nullopt;
+                    }
+
+                    using tagged_move_type =
+                        std::variant_alternative_t<Index, union_move_type>;
+                    return union_move_type{
+                        std::in_place_index<Index>,
+                        tagged_move_type{std::move(*child_move)},
+                    };
+                }
+            }
+
+            return random_move_from_child_traced<Index + 1>(
+                selected, solution, rng, observer, route);
         }
         else
         {
@@ -677,6 +757,62 @@ public:
             }
 
             if (auto move = random_move_from_child(*selected, solution, rng))
+            {
+                return move;
+            }
+
+            active[*selected] = false;
+        }
+    }
+
+    template<std::uniform_random_bit_generator RNG, class Observer>
+        requires (random_neighborhood_for<
+                      Explorers,
+                      solution_type,
+                      RNG> && ...)
+    [[nodiscard]]
+    auto random_move_traced(
+        const solution_type& solution,
+        RNG& rng,
+        Observer& observer,
+        const trace::neighborhood_route_node* parent = nullptr) const
+        -> std::optional<move_type>
+    {
+        std::array<bool, child_count> active{};
+        for (std::size_t index = 0; index < active.size(); ++index)
+        {
+            active[index] = random_biases_[index] > 0.0;
+        }
+
+        std::size_t attempt = 0;
+        while (true)
+        {
+            const auto total = active_bias_total(active);
+            const auto selected = choose_random_child(active, rng);
+            if (!selected)
+            {
+                return std::nullopt;
+            }
+
+            const trace::neighborhood_route_node route{
+                .child = *selected,
+                .parent = parent,
+            };
+            auto move = random_move_from_child_traced(
+                *selected, solution, rng, observer, &route);
+
+            observer(trace::event::neighborhood_selection{
+                .attempt = attempt++,
+                .child = *selected,
+                .bias = random_biases_[*selected],
+                .active_bias_total = total,
+                .conditional_probability =
+                    total > 0.0 ? random_biases_[*selected] / total : 0.0,
+                .produced_move = move.has_value(),
+                .neighborhood = &route,
+            });
+
+            if (move)
             {
                 return move;
             }

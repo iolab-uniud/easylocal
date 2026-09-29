@@ -1534,3 +1534,31 @@ if(TARGET EasyLocal::REST)
         message(STATUS "curl not found: REST HTTP integration test disabled")
     endif()
 endif()
+
+add_executable(
+    easylocal_trace_header_self_containment
+    trace_header_self_containment.cpp
+)
+target_link_libraries(
+    easylocal_trace_header_self_containment
+    PRIVATE
+        EasyLocal::Core
+)
+add_test(
+    NAME easylocal.trace-header-self-containment
+    COMMAND easylocal_trace_header_self_containment
+)
+
+add_executable(
+    easylocal_trace_test
+    trace.cpp
+)
+target_link_libraries(
+    easylocal_trace_test
+    PRIVATE
+        EasyLocal::Core
+)
+add_test(
+    NAME easylocal.trace
+    COMMAND easylocal_trace_test
+)

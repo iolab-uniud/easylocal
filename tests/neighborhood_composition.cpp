@@ -367,6 +367,26 @@ public:
     }
 };
 
+class TraceRandomSelection
+{
+public:
+    template<class Context, class RNG, class Tracer>
+    [[nodiscard]]
+    auto run(
+        const Context& context,
+        const typename Context::solution_type& solution,
+        RNG& rng,
+        Tracer& tracer) const -> bool
+    {
+        auto observer = [&](const easylocal::trace::event::neighborhood_selection& event) {
+            easylocal::trace::emit(tracer, event);
+        };
+        return context.neighborhood_explorer()
+            .random_move_traced(solution, rng, observer)
+            .has_value();
+    }
+};
+
 auto expect(const bool condition, const std::string_view description) -> bool
 {
     if (!condition)
@@ -569,6 +589,21 @@ int main()
         first_result.cost == HardCost{0, 0},
         "first improvement consumes a neighborhood union without algorithm changes");
 
+    easylocal::trace::memory_recorder<HardCost> first_trace;
+    const auto traced_first_result = bound_first.run(initial, first_trace);
+    bool saw_first_route = false;
+    for (const auto& record : first_trace.records())
+    {
+        if (const auto* evaluated = std::get_if<
+                easylocal::trace::memory_recorder<HardCost>::move_evaluated_record>(&record))
+        {
+            saw_first_route = saw_first_route || !evaluated->neighborhood.empty();
+        }
+    }
+    ok &= expect(
+        traced_first_result.cost == first_result.cost && saw_first_route,
+        "first-improvement tracing records union provenance");
+
     auto best_runner =
         Runner{BestImprovement{{.max_evaluations = 64}}}
         | default_solution_manager_recipe()
@@ -635,6 +670,58 @@ int main()
             nested_all_delta_result.solution.assignment ==
                 best_result.solution.assignment,
         "delta propagation remains compositional through nested neighborhood unions");
+
+    easylocal::trace::memory_recorder<HardCost> nested_trace;
+    const auto nested_traced_result = bound_nested_all_delta.run(initial, nested_trace);
+    bool saw_nested_route = false;
+    for (const auto& record : nested_trace.records())
+    {
+        if (const auto* evaluated = std::get_if<
+                easylocal::trace::memory_recorder<HardCost>::move_evaluated_record>(&record))
+        {
+            saw_nested_route = saw_nested_route || evaluated->neighborhood.size() >= 2;
+        }
+    }
+    ok &= expect(
+        nested_traced_result.cost == nested_all_delta_result.cost && saw_nested_route,
+        "tracing preserves hierarchical union provenance");
+
+    auto traced_sampler =
+        Runner{TraceRandomSelection{}}
+        | default_solution_manager_recipe()
+        | (neighborhood_union(
+               neighborhood_union(
+                   neighborhood<ReassignJobNeighborhoodExplorer>(),
+                   neighborhood<SwapNeighborhoodExplorer>())
+                   | random_biases(0.0, 1.0),
+               neighborhood<DestinationZeroNeighborhoodExplorer>())
+           | random_biases(1.0, 0.0));
+    auto bound_traced_sampler = traced_sampler.bind(instance);
+    std::mt19937 traced_rng{4242};
+    easylocal::trace::memory_recorder<HardCost> sampling_trace;
+    ok &= expect(
+        bound_traced_sampler.run(initial, traced_rng, sampling_trace),
+        "traced nested union produces a random move");
+
+    std::size_t selection_events = 0;
+    bool saw_outer = false;
+    bool saw_inner = false;
+    for (const auto& record : sampling_trace.records())
+    {
+        if (const auto* selected = std::get_if<
+                easylocal::trace::memory_recorder<HardCost>::neighborhood_selection_record>(&record))
+        {
+            ++selection_events;
+            saw_outer = saw_outer || selected->neighborhood == std::vector<std::size_t>{0};
+            saw_inner = saw_inner || selected->neighborhood == std::vector<std::size_t>{0, 1};
+            ok &= expect(
+                selected->conditional_probability == 1.0,
+                "deterministic random bias reports probability one");
+        }
+    }
+    ok &= expect(
+        selection_events == 2 && saw_outer && saw_inner,
+        "nested random tracing records both sampling decisions");
 
     auto biased_sampler =
         Runner{SampleNeighborhoodIndex{}}

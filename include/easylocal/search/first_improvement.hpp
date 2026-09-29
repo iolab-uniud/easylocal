@@ -4,6 +4,7 @@
 #include <easylocal/run_control.hpp>
 #include <easylocal/runner_tag.hpp>
 #include <easylocal/search/detail/context_concepts.hpp>
+#include <easylocal/trace.hpp>
 
 #include <cassert>
 #include <concepts>
@@ -105,10 +106,12 @@ public:
         const Context& context,
         typename Context::solution_type solution) const
     {
+        trace::null_tracer tracer;
         return run_impl(
             context,
             std::move(solution),
-            easylocal::detail::no_run_control{});
+            easylocal::detail::no_run_control{},
+            tracer);
     }
 
     template<class Context>
@@ -119,16 +122,51 @@ public:
         typename Context::solution_type solution,
         const run_control& control) const
     {
-        return run_impl(context, std::move(solution), control);
+        trace::null_tracer tracer;
+        return run_impl(context, std::move(solution), control, tracer);
+    }
+
+    template<class Context, class Tracer>
+        requires detail::enumerating_strict_improvement_context<Context> &&
+                 trace::tracer_for<
+                     Tracer,
+                     trace::event::run_started<typename Context::cost_type>>
+    [[nodiscard]]
+    auto run(
+        const Context& context,
+        typename Context::solution_type solution,
+        Tracer& tracer) const
+    {
+        return run_impl(
+            context,
+            std::move(solution),
+            easylocal::detail::no_run_control{},
+            tracer);
+    }
+
+    template<class Context, class Tracer>
+        requires detail::enumerating_strict_improvement_context<Context> &&
+                 trace::tracer_for<
+                     Tracer,
+                     trace::event::run_started<typename Context::cost_type>>
+    [[nodiscard]]
+    auto run(
+        const Context& context,
+        typename Context::solution_type solution,
+        const run_control& control,
+        Tracer& tracer) const
+    {
+        return run_impl(context, std::move(solution), control, tracer);
     }
 
 private:
-    template<class Context, easylocal::detail::run_control_like Control>
+    template<class Context, easylocal::detail::run_control_like Control, class Tracer>
     [[nodiscard]]
     auto run_impl(
         const Context& context,
         typename Context::solution_type solution,
-        const Control& control) const
+        const Control& control,
+        Tracer& tracer) const
     {
         const auto& neighborhood = context.neighborhood_explorer();
         const auto evaluation = context.evaluation();
@@ -142,6 +180,8 @@ private:
         auto current = evaluation.evaluate(solution);
         std::size_t evaluations = 1;
         std::size_t iterations = 0;
+
+        trace::emit(tracer, trace::event::run_started<cost_type>{current.cost()});
 
         if constexpr (controlled_run)
         {
@@ -158,6 +198,11 @@ private:
             {
                 if (control.stop_requested())
                 {
+                    trace::emit(tracer, trace::event::run_finished<cost_type>{
+                        .evaluations = evaluations,
+                        .iterations = iterations,
+                        .cost = current.cost(),
+                    });
                     return result_type{
                         .solution = std::move(solution),
                         .cost = current.cost(),
@@ -175,6 +220,11 @@ private:
                 {
                     if (control.stop_requested())
                     {
+                        trace::emit(tracer, trace::event::run_finished<cost_type>{
+                            .evaluations = evaluations,
+                            .iterations = iterations,
+                            .cost = current.cost(),
+                        });
                         return result_type{
                             .solution = std::move(solution),
                             .cost = current.cost(),
@@ -186,6 +236,11 @@ private:
 
                 if (evaluations == parameters_.max_evaluations)
                 {
+                    trace::emit(tracer, trace::event::run_finished<cost_type>{
+                        .evaluations = evaluations,
+                        .iterations = iterations,
+                        .cost = current.cost(),
+                    });
                     return result_type{
                         .solution = std::move(solution),
                         .cost = current.cost(),
@@ -199,6 +254,16 @@ private:
                     evaluation.evaluate_move(solution, current, move);
                 ++evaluations;
 
+                trace::with_move_route(move, [&](const auto* route) {
+                    trace::emit(tracer, trace::event::move_evaluated<cost_type>{
+                        .evaluations = evaluations,
+                        .iterations = iterations,
+                        .current_cost = current.cost(),
+                        .candidate_cost = candidate.cost(),
+                        .neighborhood = route,
+                    });
+                });
+
                 if constexpr (controlled_run)
                 {
                     control.report(run_progress{
@@ -210,11 +275,21 @@ private:
 
                 if (context.better(candidate.cost(), current.cost()))
                 {
+                    const auto previous_cost = current.cost();
                     evaluation.commit(
                         solution,
                         current,
                         std::move(candidate));
                     ++iterations;
+                    trace::with_move_route(move, [&](const auto* route) {
+                        trace::emit(tracer, trace::event::move_accepted<cost_type>{
+                            .evaluations = evaluations,
+                            .iterations = iterations,
+                            .previous_cost = previous_cost,
+                            .cost = current.cost(),
+                            .neighborhood = route,
+                        });
+                    });
                     improved = true;
                     break;
                 }
@@ -222,6 +297,16 @@ private:
 
             if (!improved)
             {
+                trace::emit(tracer, trace::event::local_optimum<cost_type>{
+                    .evaluations = evaluations,
+                    .iterations = iterations,
+                    .cost = current.cost(),
+                });
+                trace::emit(tracer, trace::event::run_finished<cost_type>{
+                    .evaluations = evaluations,
+                    .iterations = iterations,
+                    .cost = current.cost(),
+                });
                 return result_type{
                     .solution = std::move(solution),
                     .cost = current.cost(),

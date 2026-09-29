@@ -224,6 +224,13 @@ aggregator is still required. TSP demonstrates the implicit spelling, Exam
 Timetabling keeps the explicit built-in weighted sum,
 and Assignment uses a custom hierarchical aggregator.
 
+Search instrumentation is separate from diagnostic logging.
+`<easylocal/trace.hpp>` provides compile-time removable typed search events,
+including hierarchical provenance for composite neighborhoods and random-union
+selection statistics. An owning memory recorder and post-run JSONL serialization
+are provided for trajectory/STN/LON-style analyses; see
+[`docs/tracing.md`](docs/tracing.md).
+
 All three MWEs now contain runnable `main` programs and load their small problem
 instances from versioned files under the corresponding `instances/` directory.
 Each `main` owns an application-level `AppParameters` block containing at least

@@ -19,3 +19,13 @@ target_link_libraries(
         easylocal_assignment_mwe_model
         easylocal_tsp_mwe_model
 )
+
+add_executable(
+    easylocal_trace_benchmark
+    trace_benchmark.cpp
+)
+target_link_libraries(
+    easylocal_trace_benchmark
+    PRIVATE
+        easylocal_assignment_mwe_model
+)

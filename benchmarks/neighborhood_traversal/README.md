@@ -36,3 +36,11 @@ Run the complete benchmark locally with:
 
 Performance values are diagnostic. Compare ratios within the same machine and
 toolchain; do not compare absolute timings across heterogeneous CI runners.
+
+## Search tracing overhead
+
+The opt-in build also provides `easylocal_trace_benchmark`, a focused regression
+probe for semantic tracing. It reports nanoseconds per evaluation for the ordinary
+baseline, an explicit `null_tracer`, a counter-only tracer, and the full in-memory
+recorder. The benchmark intentionally has no external benchmark-library
+dependency.

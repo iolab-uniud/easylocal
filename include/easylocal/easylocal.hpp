@@ -16,6 +16,7 @@
 #include <easylocal/service_base.hpp>
 #include <easylocal/solver.hpp>
 #include <easylocal/tester.hpp>
+#include <easylocal/trace.hpp>
 
 #include <easylocal/config/cli.hpp>
 #include <easylocal/config/file.hpp>

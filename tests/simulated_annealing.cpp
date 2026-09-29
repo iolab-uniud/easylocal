@@ -11,6 +11,7 @@
 #include <easylocal/search/metropolis_acceptance.hpp>
 #include <easylocal/search/simulated_annealing.hpp>
 #include <easylocal/search/temperature_policy.hpp>
+#include <easylocal/trace.hpp>
 
 #include <cstddef>
 #include <cstdint>
@@ -419,6 +420,22 @@ int main()
             "SA returns best-so-far rather than the final accepted chain state");
         ok &= expect(result.iterations == 2 && result.evaluations == 3,
             "SA reports proposal iterations separately from evaluations including the initial state");
+
+        std::mt19937 trace_rng{7U};
+        easylocal::trace::memory_recorder<int> trace;
+        const auto traced = runner.bind(instance).run(ChainSolution{}, trace_rng, trace);
+        bool saw_incumbent = false;
+        bool saw_accepted = false;
+        for (const auto& record : trace.records())
+        {
+            saw_incumbent = saw_incumbent || std::holds_alternative<
+                easylocal::trace::memory_recorder<int>::incumbent_updated_record>(record);
+            saw_accepted = saw_accepted || std::holds_alternative<
+                easylocal::trace::memory_recorder<int>::move_accepted_record>(record);
+        }
+        ok &= expect(
+            traced.solution.value == result.solution.value && saw_incumbent && saw_accepted,
+            "SA tracing records accepted moves and best-so-far updates without changing semantics");
 
         std::stop_source stop;
         std::size_t observations = 0;
