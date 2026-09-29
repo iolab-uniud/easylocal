@@ -40,7 +40,36 @@ toolchain; do not compare absolute timings across heterogeneous CI runners.
 ## Search tracing overhead
 
 The opt-in build also provides `easylocal_trace_benchmark`, a focused regression
-probe for semantic tracing. It reports nanoseconds per evaluation for the ordinary
-baseline, an explicit `null_tracer`, a counter-only tracer, and the full in-memory
-recorder. The benchmark intentionally has no external benchmark-library
-dependency.
+probe for semantic tracing. It reports nanoseconds per evaluation for:
+
+- the ordinary baseline;
+- an explicit `null_tracer`;
+- a counter-only tracer;
+- the full in-memory recorder;
+- incremental EasyLocal JSONL serialization into a discard stream;
+- when available, synchronous spdlog JSONL formatting into a formatting discard
+  sink.
+
+The discard sinks remove filesystem variability while retaining serialization
+and formatting work. All modes execute the same search workload and must report
+the same evaluation checksum. A small warm-up precedes each timed mode.
+
+spdlog is **benchmark-only**. EasyLocal never fetches it. A local build simply
+omits the comparison if `find_package(spdlog CONFIG)` cannot find a system
+installation; configure with `-DEASYLOCAL_BENCHMARK_REQUIRE_SPDLOG=ON` when the
+comparison is mandatory. For example:
+
+```bash
+cmake -S . -B build/trace-benchmark -G Ninja \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DEASYLOCAL_BUILD_BENCHMARKS=ON \
+  -DEASYLOCAL_BENCHMARK_REQUIRE_SPDLOG=ON
+cmake --build build/trace-benchmark --target easylocal_trace_benchmark
+./build/trace-benchmark/benchmarks/neighborhood_traversal/easylocal_trace_benchmark
+```
+
+The **Trace Microbenchmarks** GitHub Actions workflow installs spdlog explicitly
+on Linux and macOS, runs ten process-level trials for pull requests and release
+tags, writes the raw CSV into the job summary, and uploads the measurements as a
+release/CI artifact. The benchmark remains dependency-free when that comparison
+is not requested.

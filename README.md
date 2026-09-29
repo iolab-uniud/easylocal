@@ -1,6 +1,8 @@
 # EasyLocal++
 
 [![CI](https://github.com/iolab-uniud/easylocal-next/actions/workflows/ci.yml/badge.svg)](https://github.com/iolab-uniud/easylocal-next/actions/workflows/ci.yml)
+[![System Dependencies](https://github.com/iolab-uniud/easylocal-next/actions/workflows/system-dependencies.yml/badge.svg)](https://github.com/iolab-uniud/easylocal-next/actions/workflows/system-dependencies.yml)
+[![Trace Microbenchmarks](https://github.com/iolab-uniud/easylocal-next/actions/workflows/trace-microbenchmarks.yml/badge.svg)](https://github.com/iolab-uniud/easylocal-next/actions/workflows/trace-microbenchmarks.yml)
 
 EasyLocal++ is an incremental redesign of EasyLocal as a modern **C++23
 header-only library** for local search and metaheuristics.
@@ -228,7 +230,8 @@ Search instrumentation is separate from diagnostic logging.
 `<easylocal/trace.hpp>` provides compile-time removable typed search events,
 including hierarchical provenance for composite neighborhoods and random-union
 selection statistics. An owning memory recorder and post-run JSONL serialization
-are provided for trajectory/STN/LON-style analyses; see
+are provided for trajectory/STN/LON-style analyses. Long runs can instead use an
+incremental JSONL recorder that does not retain the event history; see
 [`docs/tracing.md`](docs/tracing.md).
 
 All three MWEs now contain runnable `main` programs and load their small problem
@@ -450,7 +453,12 @@ The full CI matrix is intentionally small and targets C++23 directly:
 | macOS ARM64 | GCC 16 |
 
 GitHub Actions runs automatically for pull requests and release tags of the form
-`vX.Y.Z`, and can also be started manually with `workflow_dispatch`.
+`vX.Y.Z`, and can also be started manually with `workflow_dispatch`. In addition
+to the compiler matrix, a dedicated **System Dependencies** workflow verifies
+that optional adapters can be configured and compiled with
+`EASYLOCAL_FETCH_DEPENDENCIES=OFF` and CMake FetchContent forced fully
+disconnected. ConfigTOML is checked against packaged toml++ on Linux and macOS;
+the TUI is checked against packaged FTXUI on macOS.
 
 Normal development pushes do not trigger the remote CI automatically.
 
@@ -487,7 +495,22 @@ Run it locally with:
 
 The benchmark checks semantic equivalence before timing and reports diagnostic
 ratios only. It deliberately has no automatic performance pass/fail threshold.
-Authoritative cross-toolchain measurements use the manual **Neighborhood Benchmarks** GitHub Actions workflow.
+Authoritative cross-toolchain neighborhood measurements use the manual
+**Neighborhood Benchmarks** GitHub Actions workflow.
+
+Semantic tracing has a separate `easylocal_trace_benchmark`. It compares the
+uninstrumented baseline, explicit null tracing, counter-only tracing, the memory
+recorder, incremental JSONL serialization to a discard stream, and (when a
+system `spdlog` package is available) equivalent synchronous JSONL formatting
+through spdlog to a formatting discard sink. spdlog is benchmark-only and is
+never fetched or linked by the EasyLocal library. Configure with
+`EASYLOCAL_BENCHMARK_REQUIRE_SPDLOG=ON` to make its absence an error.
+
+The **Trace Microbenchmarks** workflow runs this comparison on Linux/GCC and
+macOS/AppleClang for pull requests, release tags and manual dispatches. The CI
+VM installs spdlog explicitly (`libspdlog-dev` on Ubuntu, Homebrew `spdlog` on
+macOS), executes ten process-level trials, exposes the raw CSV in the GitHub job
+summary, and uploads the results as an artifact.
 
 ## Tests
 

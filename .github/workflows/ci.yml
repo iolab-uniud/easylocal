@@ -68,11 +68,6 @@ jobs:
           "${elevate[@]}" env DEBIAN_FRONTEND=noninteractive \
             apt-get install -y --no-install-recommends cmake ninja-build
 
-          if [ "$TOOLCHAIN" = "gcc16" ]; then
-            "${elevate[@]}" env DEBIAN_FRONTEND=noninteractive \
-              apt-get install -y --no-install-recommends libtomlplusplus-dev
-          fi
-
           case "$TOOLCHAIN" in
             gcc15|gcc16)
               version="${TOOLCHAIN#gcc}"
@@ -121,24 +116,6 @@ jobs:
 
       - name: Test integration
         run: ctest --preset "$PRESET" --verbose -L integration 2>&1 | tee "build/$PRESET/ctest-integration.log"
-
-      - name: Test ConfigTOML with system toml++
-        if: ${{ matrix.toolchain == 'gcc16' }}
-        run: |
-          build_dir="build/${PRESET}-toml-system"
-          cmake --fresh --preset "$PRESET" \
-            -B "$build_dir" \
-            -DEASYLOCAL_ENABLE_CONFIG_TOML=ON \
-            -DEASYLOCAL_FETCH_DEPENDENCIES=OFF \
-            2>&1 | tee "${build_dir}.configure.log"
-          cmake --build "$build_dir" --parallel 2 --verbose \
-            --target \
-              easylocal_configuration_toml_header_self_containment \
-              easylocal_configuration_toml_test \
-            2>&1 | tee "${build_dir}.build.log"
-          ctest --test-dir "$build_dir" --verbose \
-            -R 'easylocal\.(configuration-toml(-header-self-containment)?|installed-package-consumer)$' \
-            2>&1 | tee "${build_dir}.ctest.log"
 
       - name: Test ConfigTOML with forced FetchContent
         if: ${{ matrix.toolchain == 'gcc16' }}
@@ -197,10 +174,8 @@ jobs:
             build/ci23-release/compile_commands.json
             build/ci23-release/CMakeFiles/CMakeConfigureLog.yaml
             build/ci23-release/Testing/Temporary/LastTest.log
-            build/ci23-release-toml-system*.log
             build/ci23-release-toml-fetch*.log
             build/ci23-release-tui-fetch*.log
-            build/ci23-release-toml-system/Testing/Temporary/LastTest.log
             build/ci23-release-toml-fetch/Testing/Temporary/LastTest.log
             build/ci23-release-tui-fetch/Testing/Temporary/LastTest.log
 
@@ -251,14 +226,6 @@ jobs:
           fi
           command -v cmake >/dev/null || brew install cmake
           command -v ninja >/dev/null || brew install ninja
-          if [ "$TOOLCHAIN" = "appleclang" ]; then
-            if ! brew list --versions tomlplusplus >/dev/null 2>&1; then
-              brew install tomlplusplus
-            fi
-            if ! brew list --versions ftxui >/dev/null 2>&1; then
-              brew install ftxui
-            fi
-          fi
           echo "SDKROOT=$(xcrun --sdk macosx --show-sdk-path)" >> "$GITHUB_ENV"
           echo 'CXXFLAGS=' >> "$GITHUB_ENV"
           case "$TOOLCHAIN" in
@@ -304,26 +271,6 @@ jobs:
       - name: Test integration
         run: ctest --preset "$PRESET" --verbose -L integration 2>&1 | tee "build/$PRESET/ctest-integration.log"
 
-      - name: Test ConfigTOML with system toml++
-        if: ${{ matrix.toolchain == 'appleclang' }}
-        run: |
-          build_dir="build/${PRESET}-toml-system"
-          cmake --fresh --preset "$PRESET" \
-            -B "$build_dir" \
-            -DCMAKE_OSX_SYSROOT="$SDKROOT" \
-            -DCMAKE_PREFIX_PATH="$(brew --prefix tomlplusplus)" \
-            -DEASYLOCAL_ENABLE_CONFIG_TOML=ON \
-            -DEASYLOCAL_FETCH_DEPENDENCIES=OFF \
-            2>&1 | tee "${build_dir}.configure.log"
-          cmake --build "$build_dir" --parallel 2 --verbose \
-            --target \
-              easylocal_configuration_toml_header_self_containment \
-              easylocal_configuration_toml_test \
-            2>&1 | tee "${build_dir}.build.log"
-          ctest --test-dir "$build_dir" --verbose \
-            -R 'easylocal\.(configuration-toml(-header-self-containment)?|installed-package-consumer)$' \
-            2>&1 | tee "${build_dir}.ctest.log"
-
       - name: Test ConfigTOML with forced FetchContent
         if: ${{ matrix.toolchain == 'appleclang' }}
         run: |
@@ -343,29 +290,6 @@ jobs:
             2>&1 | tee "${build_dir}.build.log"
           ctest --test-dir "$build_dir" --verbose \
             -R 'easylocal\.(configuration-toml(-header-self-containment)?|installed-package-consumer)$' \
-            2>&1 | tee "${build_dir}.ctest.log"
-
-      - name: Test TUI with system FTXUI
-        if: ${{ matrix.toolchain == 'appleclang' }}
-        run: |
-          build_dir="build/${PRESET}-tui-system"
-          cmake --fresh --preset "$PRESET" \
-            -B "$build_dir" \
-            -DCMAKE_OSX_SYSROOT="$SDKROOT" \
-            -DCMAKE_PREFIX_PATH="$(brew --prefix ftxui)" \
-            -DEASYLOCAL_ENABLE_TUI=ON \
-            -DEASYLOCAL_FETCH_DEPENDENCIES=OFF \
-            2>&1 | tee "${build_dir}.configure.log"
-          cmake --build "$build_dir" --parallel 2 --verbose \
-            --target \
-              easylocal_tui_header_self_containment \
-              easylocal_tui_tester_compile_test \
-              easylocal_tui_helpers_test \
-              easylocal_tui_launcher_header_self_containment \
-              easylocal_tui_launcher_helpers_test \
-            2>&1 | tee "${build_dir}.build.log"
-          ctest --test-dir "$build_dir" --verbose \
-            -R 'easylocal\.(tui-.*|installed-package-consumer)$' \
             2>&1 | tee "${build_dir}.ctest.log"
 
       - name: Test TUI with forced FetchContent
@@ -406,11 +330,7 @@ jobs:
             build/ci23-release/compile_commands.json
             build/ci23-release/CMakeFiles/CMakeConfigureLog.yaml
             build/ci23-release/Testing/Temporary/LastTest.log
-            build/ci23-release-toml-system*.log
             build/ci23-release-toml-fetch*.log
-            build/ci23-release-tui-system*.log
             build/ci23-release-tui-fetch*.log
-            build/ci23-release-toml-system/Testing/Temporary/LastTest.log
             build/ci23-release-toml-fetch/Testing/Temporary/LastTest.log
-            build/ci23-release-tui-system/Testing/Temporary/LastTest.log
             build/ci23-release-tui-fetch/Testing/Temporary/LastTest.log
