@@ -11,8 +11,9 @@
 #include <crow.h>
 
 #include <cstddef>
-#include <optional>
+#include <stdexcept>
 #include <utility>
+#include <vector>
 
 namespace
 {
@@ -62,10 +63,12 @@ struct AssignmentCodec
     }
 
     [[nodiscard]] auto decode_initial_solution(
-        const AssignmentInstance&,
-        const crow::json::rvalue&) const -> std::optional<solution_type>
+        const AssignmentInstance& input,
+        const crow::json::rvalue&) const -> solution_type
     {
-        return std::nullopt;
+        return solution_type{
+            .assignment = std::vector<machine_id>(input.demand.size(), 0),
+        };
     }
 
     [[nodiscard]] auto encode_solution(
@@ -93,9 +96,29 @@ int main()
         easylocal::rest::blueprint_options{
             .workers = 1,
             .queue_capacity = 1,
+            .completed_run_capacity = 2,
         });
 
     crow::SimpleApp server;
     server.register_blueprint(api.crow_blueprint());
-    return api.prefix() == "assignment" ? 0 : 1;
+
+    bool zero_retention_rejected = false;
+    try
+    {
+        [[maybe_unused]] auto invalid = easylocal::rest::blueprint(
+            "/invalid",
+            make_application(),
+            AssignmentCodec{},
+            easylocal::rest::blueprint_options{
+                .workers = 1,
+                .queue_capacity = 1,
+                .completed_run_capacity = 0,
+            });
+    }
+    catch (const std::invalid_argument&)
+    {
+        zero_retention_rejected = true;
+    }
+
+    return api.prefix() == "assignment" && zero_retention_rejected ? 0 : 1;
 }

@@ -1500,7 +1500,7 @@ if(TARGET EasyLocal::REST)
             easylocal.rest-http
             PROPERTIES
                 LABELS "integration;rest-http"
-                TIMEOUT 30
+                TIMEOUT 60
         )
     elseif(NOT EASYLOCAL_CURL_EXECUTABLE)
         message(STATUS "curl not found: REST HTTP integration test disabled")

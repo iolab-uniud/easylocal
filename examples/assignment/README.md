@@ -429,21 +429,34 @@ The ordinary Assignment MWE continues to use `instances/small.assignment`.
 
 When the optional REST component is enabled, `easylocal_assignment_rest_mwe`
 mounts the generic EasyLocal Crow Blueprint at `/assignment` and listens on port
-18080 by default. Pass a port number as the only command-line argument to
-override it. The server registers both `fi` and the demo-only `slow-fi`. Submit
-an Assignment instance with:
+18080 by default. Optional arguments are the port and completed-run retention
+capacity, for example `easylocal_assignment_rest_mwe 18081 16`. The retention
+default is 64. The server registers both `fi` and the demo-only `slow-fi`.
+
+Run creation uses the generic REST envelope. The Assignment codec accepts either
+a structured JSON object:
 
 ```sh
 curl -X POST http://localhost:18080/assignment/runners/fi/runs \
   -H 'Content-Type: application/json' \
-  -d '{"demand":[4,4,2],"capacity":[5,5]}'
+  -d '{"input":{"demand":[4,4,2],"capacity":[5,5]}}'
 ```
 
-The response is `202 Accepted` with a `run_id`. Use
-`GET /assignment/runs/<id>` for status and
-`GET /assignment/runs/<id>/solution` after completion. The CTest
-`easylocal.rest-http` runs these requests, error cases, and a real `slow-fi`
-cancellation flow with `curl`.
+or the existing text representation as an opaque JSON string:
+
+```sh
+curl -X POST http://localhost:18080/assignment/runners/fi/runs \
+  -H 'Content-Type: application/json' \
+  -d '{"input":"3 2 4 3 2 5 5"}'
+```
+
+The response is `202 Accepted`, contains `id`, and sets `Location` to the run
+resource. Use `GET /assignment/runs/<id>` for status/progress and
+`GET /assignment/runs/<id>/solution` after completion. Cooperative cancellation
+is `POST /assignment/runs/<id>/cancel`; `DELETE /assignment/runs/<id>` is reserved
+for forgetting a terminal run and returns `204`. The CTest `easylocal.rest-http`
+exercises these semantics, error mapping, partial results, and bounded retention
+with real `curl` requests.
 
 The example deliberately leaves the Crow server visible: EasyLocal owns the
 Blueprint and solver execution pool, while the application still owns Crow

@@ -2,6 +2,7 @@
 #include "cost_components.hpp"
 #include "demo_runner.hpp"
 #include "instance.hpp"
+#include "instance_io.hpp"
 #include "neighborhood_explorer.hpp"
 #include "solution_manager.hpp"
 
@@ -13,6 +14,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <string_view>
@@ -65,18 +67,38 @@ using namespace easylocal::mwe::assignment;
             std::string{"missing JSON field '"} + key + "'"};
     }
 
-    std::vector<quantity_type> values;
     const auto& array = payload[key];
-    values.reserve(array.size());
-    for (const auto& value : array)
+    if (array.t() != crow::json::type::List)
     {
-        const auto decoded = value.i();
-        if (decoded < 0)
+        throw std::invalid_argument{
+            std::string{"JSON field '"} + key + "' must be an array"};
+    }
+
+    std::vector<quantity_type> values;
+    values.reserve(array.size());
+    try
+    {
+        for (const auto& value : array)
         {
-            throw std::invalid_argument{
-                std::string{"JSON field '"} + key + "' contains a negative value"};
+            const auto decoded = value.i();
+            if (decoded < 0)
+            {
+                throw std::invalid_argument{
+                    std::string{"JSON field '"} + key +
+                    "' contains a negative value"};
+            }
+            values.push_back(static_cast<quantity_type>(decoded));
         }
-        values.push_back(static_cast<quantity_type>(decoded));
+    }
+    catch (const std::invalid_argument&)
+    {
+        throw;
+    }
+    catch (const std::exception&)
+    {
+        throw std::invalid_argument{
+            std::string{"JSON field '"} + key +
+            "' must contain integer values"};
     }
     return values;
 }
@@ -86,6 +108,27 @@ struct AssignmentCodec
     [[nodiscard]] auto decode_input(const crow::json::rvalue& payload) const
         -> AssignmentInstance
     {
+        if (payload.t() == crow::json::type::String)
+        {
+            std::istringstream input{std::string{payload.s()}};
+            try
+            {
+                return read_assignment_instance(input);
+            }
+            catch (const std::runtime_error& error)
+            {
+                throw std::invalid_argument{
+                    "invalid textual assignment input: " +
+                    std::string{error.what()}};
+            }
+        }
+
+        if (payload.t() != crow::json::type::Object)
+        {
+            throw std::invalid_argument{
+                "assignment input must be a JSON object or a textual instance string"};
+        }
+
         auto input = AssignmentInstance{
             .demand = read_quantities(payload, "demand"),
             .capacity = read_quantities(payload, "capacity"),
@@ -121,30 +164,55 @@ struct AssignmentCodec
 
 } // namespace
 
-[[nodiscard]] auto parse_port(const int argc, char** argv) -> std::uint16_t
+struct server_options
 {
-    if (argc == 1)
+    std::uint16_t port{18080};
+    std::size_t completed_run_capacity{64};
+};
+
+[[nodiscard]] auto parse_positive_size(
+    const char* value,
+    const std::string_view label,
+    const std::size_t maximum = static_cast<std::size_t>(-1)) -> std::size_t
+{
+    std::size_t consumed = 0;
+    const auto parsed = std::stoull(value, &consumed);
+    if (consumed != std::string_view{value}.size() || parsed == 0 ||
+        parsed > maximum)
     {
-        return 18080;
+        throw std::invalid_argument{
+            std::string{label} + " must be a positive integer in range"};
     }
-    if (argc != 2)
+    return static_cast<std::size_t>(parsed);
+}
+
+[[nodiscard]] auto parse_server_options(const int argc, char** argv)
+    -> server_options
+{
+    if (argc < 1 || argc > 3)
     {
-        throw std::invalid_argument{"usage: easylocal_assignment_rest_mwe [port]"};
+        throw std::invalid_argument{
+            "usage: easylocal_assignment_rest_mwe [port [completed-run-capacity]]"};
     }
 
-    std::size_t consumed = 0;
-    const auto parsed = std::stoul(argv[1], &consumed);
-    if (consumed != std::string_view{argv[1]}.size() || parsed == 0 ||
-        parsed > 65535)
+    server_options options;
+    if (argc >= 2)
     {
-        throw std::invalid_argument{"REST port must be an integer in 1..65535"};
+        options.port = static_cast<std::uint16_t>(
+            parse_positive_size(argv[1], "REST port", 65535));
     }
-    return static_cast<std::uint16_t>(parsed);
+    if (argc == 3)
+    {
+        options.completed_run_capacity = parse_positive_size(
+            argv[2],
+            "completed-run-capacity");
+    }
+    return options;
 }
 
 int main(int argc, char** argv)
 {
-    const auto port = parse_port(argc, argv);
+    const auto options = parse_server_options(argc, argv);
 
     auto api = easylocal::rest::blueprint(
         "/assignment",
@@ -153,12 +221,13 @@ int main(int argc, char** argv)
         easylocal::rest::blueprint_options{
             .workers = 2,
             .queue_capacity = 16,
+            .completed_run_capacity = options.completed_run_capacity,
         });
 
     crow::SimpleApp server;
     server.register_blueprint(api.crow_blueprint());
 
-    server.port(port)
+    server.port(options.port)
         .multithreaded()
         .run();
 }

@@ -31,14 +31,20 @@ commits since the previous release and are reviewed manually before tagging.
 - local build/test profiles now compose optional adapters in one build by default;
   `--exhaustive` explicitly checks every feature subset of the requested profile;
 - REST adds a real HTTP integration test that starts the Assignment Crow MWE,
-  drives success/error/cancellation flows with `curl`, and verifies partial
-  solution retrieval after cooperative cancellation.
+  drives success/error/cancellation/retention flows with `curl`, verifies both
+  structured and opaque-text input decoding, and verifies partial solution
+  retrieval after cooperative cancellation.
 - Core now provides a lightweight non-owning `run_control` based on
   `std::stop_token`, with progress snapshots and no overhead on ordinary
   uncontrolled runs; first/best improvement and simulated annealing opt in;
-- TextUI exposes cooperative Stop and live evaluation/iteration progress, while
-  REST maps active-run `DELETE` to stop requests and reports progress/status,
-  preserving partial solutions when a cooperative run is cancelled.
+- TextUI exposes cooperative Stop and live evaluation/iteration progress; REST
+  reports the same progress in a stable status envelope, uses explicit
+  `POST /runs/<id>/cancel` for cooperative stop, reserves `DELETE` for terminal
+  cleanup, and preserves partial solutions after cancellation.
+- REST run creation now wraps problem-specific opaque JSON under `input` and
+  optional `initial_solution`, returns stable `id`/`Location` metadata, uses a
+  uniform structured error envelope, and retains a configurable bounded history
+  of terminal runs (default 64).
 
 ### S20 — Simulated Annealing promotion
 

@@ -4,7 +4,7 @@
 configured EasyLocal `app` as a generic Crow `Blueprint` while keeping HTTP,
 JSON, Crow, and server lifecycle completely outside `EasyLocal::Core`.
 
-The design follows one rule that is also used by the TextUI:
+The design follows the same rule used by the TextUI:
 
 > one run owns one fresh mutable EasyLocal runtime; only the immutable Input may
 > be shared across runs.
@@ -38,16 +38,34 @@ Crow/Asio.
 
 ## Generic app Blueprint
 
-The REST adapter intentionally does not own a Crow server. It produces a
-Blueprint that can be mounted into an existing Crow application, leaving port,
-concurrency, middleware, logging, and process lifecycle to normal Crow code.
-
-A codec supplies the domain-specific JSON boundary:
+The REST adapter intentionally does not own a Crow server. It produces one
+Blueprint per EasyLocal application. Multiple applications can therefore be
+mounted into the same Crow process under distinct prefixes:
 
 ```cpp
-struct AssignmentCodec
+auto assignment_api = easylocal::rest::blueprint(
+    "/assignment", assignment_app, AssignmentCodec{});
+auto tsp_api = easylocal::rest::blueprint(
+    "/tsp", tsp_app, TspCodec{});
+
+crow::SimpleApp server;
+server.register_blueprint(assignment_api.crow_blueprint());
+server.register_blueprint(tsp_api.crow_blueprint());
+
+server.port(8080)
+      .multithreaded()
+      .run();
+```
+
+Port, middleware, HTTP concurrency, logging, and process lifecycle remain normal
+Crow concerns.
+
+A codec supplies the problem-specific JSON boundary:
+
+```cpp
+struct Codec
 {
-    auto decode_input(const crow::json::rvalue& json) const -> Input;
+    auto decode_input(const crow::json::rvalue& value) const -> Input;
 
     auto encode_solution(
         const Input& input,
@@ -55,62 +73,113 @@ struct AssignmentCodec
 
     auto encode_cost(const Cost& cost) const -> crow::json::wvalue;
 
-    // Optional. If omitted, the SolutionManager initial_solution() capability
-    // is used when available.
+    // Optional. Called only when the request contains initial_solution.
     auto decode_initial_solution(
         const Input& input,
-        const crow::json::rvalue& json) const -> std::optional<Solution>;
+        const crow::json::rvalue& value) const -> Solution;
 };
 ```
 
-The generic Blueprint is then mounted explicitly:
+The framework owns only the request envelope. `input` and `initial_solution` are
+otherwise opaque JSON values passed unchanged to the codec. A codec may therefore
+accept a structured JSON object/array, a JSON string containing an existing text
+file representation, or any other JSON representation appropriate to the
+problem. If `initial_solution` is omitted, the SolutionManager
+`initial_solution()` capability is used when available.
+
+The generic Blueprint is mounted explicitly:
 
 ```cpp
 auto api = easylocal::rest::blueprint(
     "/assignment",
     application,
     AssignmentCodec{},
-    {.workers = 4, .queue_capacity = 32});
+    {
+        .workers = 4,
+        .queue_capacity = 32,
+        .completed_run_capacity = 64,
+    });
 
 crow::SimpleApp server;
 server.register_blueprint(api.crow_blueprint());
-
-server.port(8080)
-      .multithreaded()
-      .run();
 ```
-
-A complete compiling example is available as `easylocal_assignment_rest_mwe`
-under `examples/assignment`. It decodes `demand`/`capacity` arrays from Crow
-JSON and serializes the final assignment plus hierarchical cost. The example
-listens on port 18080 by default and accepts an optional port as its only
-command-line argument, which is also used by the HTTP integration test. It
-registers both the normal `fi` runner and the example-only `slow-fi` runner used
-to exercise observable progress and cooperative cancellation.
 
 `app_blueprint` is deliberately non-copyable/non-movable because its Crow route
 callbacks refer to its state. Keep it alive for at least as long as the Crow
-application uses the registered Blueprint.
+application uses the registered Blueprint. Codec calls are serialized by the
+adapter, so a codec need not provide its own synchronization.
 
-The codec is called behind an adapter-owned mutex, so the codec itself does not
-have to provide internal synchronization.
+The Assignment REST MWE demonstrates both supported input styles: a structured
+object with `demand`/`capacity` and a JSON string containing the existing textual
+assignment-instance representation.
 
-## Routes
+## Run creation envelope
 
-For a Blueprint mounted at `/assignment`, the current generic surface is:
+For a Blueprint mounted at `/assignment`, run creation is:
+
+```http
+POST /assignment/runners/fi/runs
+Content-Type: application/json
+```
+
+with a generic envelope:
+
+```json
+{
+  "input": {
+    "demand": [4, 4, 2],
+    "capacity": [5, 5]
+  }
+}
+```
+
+or, for a codec that accepts the existing text representation:
+
+```json
+{
+  "input": "3 2 4 3 2 5 5"
+}
+```
+
+An application codec may additionally support:
+
+```json
+{
+  "input": { "...": "..." },
+  "initial_solution": { "...": "..." }
+}
+```
+
+A successful submission returns `202 Accepted`, sets `Location` to the run
+resource, and uses `id` consistently:
+
+```json
+{
+  "id": "42",
+  "runner": "fi",
+  "status": "queued",
+  "stoppable": true,
+  "cancellation_requested": false,
+  "progress": {
+    "evaluations": 0,
+    "iterations": 0
+  }
+}
+```
+
+## Routes and lifecycle
+
+The generic surface under a chosen prefix is:
 
 | Method | Route | Meaning |
 | --- | --- | --- |
-| `GET` | `/assignment/` | application metadata and registered runners |
+| `GET` | `/assignment/` | application/executor metadata |
 | `GET` | `/assignment/runners` | registered runner names |
-| `POST` | `/assignment/runners/<runner>/runs` | enqueue a new run |
-| `GET` | `/assignment/runs/<id>` | inspect run state |
-| `GET` | `/assignment/runs/<id>/solution` | retrieve completed solution and cost |
-| `DELETE` | `/assignment/runs/<id>` | request cooperative stop for an active run, or discard a terminal run |
-
-A successful submission returns `202 Accepted`. A full bounded execution queue
-returns `503`. Invalid JSON returns `400`; an unknown runner returns `404`; a
-request that cannot provide/build an initial solution returns `422`.
+| `POST` | `/assignment/runners/<runner>/runs` | enqueue a run |
+| `GET` | `/assignment/runs/<id>` | inspect status/progress |
+| `GET` | `/assignment/runs/<id>/solution` | retrieve terminal solution and cost |
+| `POST` | `/assignment/runs/<id>/cancel` | request cooperative cancellation |
+| `DELETE` | `/assignment/runs/<id>` | forget a terminal run |
 
 Runs move through:
 
@@ -120,16 +189,90 @@ queued -> running -> succeeded
    +---------+------> cancelled
 ```
 
-Built-in searches support cooperative cancellation. `DELETE` on a queued or
-running cooperative run requests stop and returns `202 Accepted`; the run record
-remains queryable until explicitly deleted. If the search has already produced
-a partial solution, `/solution` remains available after cancellation. A custom
-runner that does not accept `run_control` remains fully executable but reports
+Cancellation and deletion deliberately have different semantics. `POST
+/runs/<id>/cancel` requests cooperative stop and returns `202`; the resource
+remains queryable so the client can observe `cancelled` and retrieve a partial
+solution. `DELETE /runs/<id>` is permitted only after the run is terminal and
+returns `204 No Content`. Deleting an active run returns `409`.
+
+A custom runner that does not accept `run_control` remains executable and reports
 `stoppable: false`; attempting to cancel it returns `409`.
 
-`GET /runs/<id>` also reports `evaluations`, `iterations`, optional
-`evaluation_limit`, and `stoppable`. These fields are observation state owned by
-the REST adapter, not mutable state shared with a Core runtime.
+## Status and result shape
+
+`GET /runs/<id>` has a stable generic shape:
+
+```json
+{
+  "id": "42",
+  "runner": "fi",
+  "status": "running",
+  "stoppable": true,
+  "cancellation_requested": false,
+  "progress": {
+    "evaluations": 237,
+    "iterations": 14,
+    "evaluation_limit": 2000
+  }
+}
+```
+
+`evaluation_limit` is omitted when the Runner does not report one. The `solution`
+and `cost` values remain problem-specific and are produced by the codec:
+
+```json
+{
+  "id": "42",
+  "runner": "fi",
+  "status": "succeeded",
+  "solution": { "...": "..." },
+  "cost": { "...": "..." }
+}
+```
+
+A cooperatively cancelled run may expose the same result shape with
+`"status": "cancelled"`; the solution is then the valid partial solution
+returned by the controlled Runner.
+
+## Error mapping
+
+Protocol errors use one envelope:
+
+```json
+{
+  "error": {
+    "code": "unknown_runner",
+    "message": "runner 'missing' is not registered"
+  }
+}
+```
+
+The generic mapping is:
+
+| HTTP | Meaning |
+| --- | --- |
+| `400` | syntactically invalid JSON (`invalid_json`) |
+| `404` | unknown runner or run (`unknown_runner`, `run_not_found`) |
+| `409` | valid operation in the wrong run state/capability (`result_not_ready`, `run_not_cancellable`, `run_not_terminal`, `run_not_active`) |
+| `422` | valid JSON but invalid run envelope/domain data (`invalid_run_request`) |
+| `503` | bounded solver queue full (`queue_full`) |
+| `500` | unexpected adapter/application failure (`internal_error`) |
+
+Codec/domain validation should throw `std::invalid_argument` for client-supplied
+semantic errors; those are mapped to `422`. Other unexpected exceptions while
+creating a run are treated as internal failures.
+
+## Bounded completed-run retention
+
+The waiting queue and completed-run history are independently bounded.
+`blueprint_options::completed_run_capacity` defaults to 64 and must be positive.
+Only terminal records participate in history eviction; queued/running runs are
+never evicted. Once the bound is exceeded, the oldest terminal record is removed.
+Clients may free a terminal record earlier with `DELETE /runs/<id>`.
+
+This retention is intentionally an in-memory convenience for result/status
+retrieval, not a persistent history system. Durable audit/history belongs to the
+surrounding web/infrastructure layer.
 
 ## Concurrency model
 
@@ -151,17 +294,17 @@ Crow concurrency and solver concurrency are intentionally separate:
 ```
 
 Crow request threads do not execute a CPU-bound local search to completion.
-They decode the request, create the immutable Input snapshot, enqueue work, and
-return the run identifier.
+They decode the request, materialize the immutable Input and initial Solution,
+enqueue work, and return the run identifier.
 
 Each accepted job obtains a snapshot of the configured `app` and invokes the
 Core fresh-runtime execution primitive. Mutable SolutionManager, neighborhood,
 algorithm, Runner, RNG, and Solution state therefore belongs to that run only.
 No mutex is added to those Core objects and no `Clone()` protocol is required.
 
-The execution queue is bounded so a server can apply explicit resource limits.
 The default worker count is `max(1, hardware_concurrency() - 1)` and the default
-waiting-queue capacity is 64; both are adapter options rather than Core policy.
+waiting-queue capacity is 64; both are adapter policy and configurable per
+Blueprint.
 
 ## Cooperative control and TextUI
 
@@ -173,21 +316,13 @@ auto observer = [](const easylocal::run_progress& progress) { /* observe */ };
 easylocal::run_control control{stop.get_token(), observer};
 ```
 
-The observer is non-owning and valid only for the duration of the controlled
-run. Built-in algorithms provide a separate controlled overload, so ordinary
-`run(...)` keeps its previous zero-control-overhead path. Custom algorithms may
-opt in by accepting `const easylocal::run_control&` as the final runtime
-argument; algorithms that do not opt in are executed through the legacy path.
+The observer is non-owning and valid only for the controlled run. Built-in
+algorithms provide a controlled overload, so ordinary `run(...)` keeps its
+zero-control-overhead path. Custom algorithms may opt in by accepting the
+control object; algorithms that do not opt in continue through the ordinary path.
 
-The same isolation rule is used for an interactive background run. TextUI keeps
-the FTXUI event loop on the UI thread, snapshots the app/Input/current Solution,
-and runs the search on a `std::jthread` through the fresh-runtime Core API. The
-`jthread` stop token feeds `run_control`; progress is bridged back as FTXUI custom
-events. Stop never mutates Tester/runtime state from the worker thread, and a
-cooperatively stopped partial solution is committed only on the UI thread.
-
-Thus REST and TextUI exercise the same architectural boundary without sharing a
-threading subsystem:
+TextUI and REST therefore share the same architectural contract without sharing
+a threading subsystem:
 
 ```text
 Core:     fresh isolated runtime per run
@@ -197,13 +332,13 @@ REST:     bounded pool of background runs owned by the adapter
 
 ## Security boundary
 
-`EasyLocal::REST` is not intended to be an Internet edge/security framework.
-TLS termination, authentication, authorization, request-rate limiting, reverse
-proxy policy, ingress controls, and deployment hardening belong to the network
-infrastructure around the process.
+`EasyLocal::REST` is not an Internet edge/security framework. TLS termination,
+authentication, authorization, request-rate limiting, reverse-proxy policy,
+ingress controls, and deployment hardening belong to the surrounding network
+infrastructure.
 
 The adapter still performs ordinary protocol/application validation and relies
-on maintained Crow/Asio HTTP parsing. Queue bounds are resource-control
+on maintained Crow/Asio HTTP parsing. Queue/history bounds are resource-control
 semantics, not a substitute for edge security.
 
 No Crow, Asio, HTTP, or JSON type appears in a Core signature. The architecture
@@ -211,12 +346,12 @@ test also prevents optional adapters from reaching into `easylocal/detail/*`.
 
 ## HTTP integration test
 
-When REST is enabled on a Unix-like host with `curl` available, CTest registers
-`easylocal.rest-http`. The test starts the real Assignment Crow server on a
-test-local port and exercises the public HTTP surface with `curl`: metadata and
-runner discovery, invalid JSON and unknown-runner errors, successful submission
-and solution retrieval, terminal-run cleanup, live progress, cooperative
-cancellation, and partial-solution retrieval after cancellation.
+When REST is enabled on a Unix-like host with `curl`, CTest registers
+`easylocal.rest-http`. It starts the real Assignment Crow MWE and exercises the
+public surface with HTTP requests: discovery, malformed JSON, semantic `422`
+errors, structured and opaque-text input decoding, `Location`/run IDs, status
+and nested progress, result retrieval, active-run delete rejection, cooperative
+cancel, cancelled partial result, terminal deletion, and bounded retention.
 
 The test carries both `integration` and `rest-http` labels.
 `scripts/build-and-test.sh --with-rest` runs it explicitly even in the normal

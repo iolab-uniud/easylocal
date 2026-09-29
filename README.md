@@ -152,7 +152,11 @@ unchanged but are reported as non-stoppable by the adapters. TextUI background
 runs use the same isolation and control rules.
 The Assignment examples include `easylocal_assignment_rest_mwe`, which mounts
 the generic Blueprint at `/assignment` while leaving Crow server configuration
-fully visible to the application.
+fully visible to the application. REST run creation uses a stable envelope whose
+`input` and optional `initial_solution` members are opaque JSON values interpreted
+by the application codec; status/progress, errors, cooperative cancellation,
+terminal deletion, and bounded completed-run retention are generic adapter
+semantics.
 
 EasyLocal also provides optional, non-virtual convenience bases for the common
 service boilerplate:

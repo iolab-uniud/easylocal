@@ -9,6 +9,7 @@
 #include <concepts>
 #include <cstddef>
 #include <cstdint>
+#include <deque>
 #include <memory>
 #include <mutex>
 #include <optional>
@@ -28,6 +29,7 @@ struct blueprint_options
 {
     std::size_t workers{default_worker_count()};
     std::size_t queue_capacity{64};
+    std::size_t completed_run_capacity{64};
 };
 
 namespace detail
@@ -74,7 +76,7 @@ concept decodes_initial_solution =
         const crow::json::rvalue& payload) {
         {
             codec.decode_initial_solution(input, payload)
-        } -> std::same_as<std::optional<app_solution_t<App>>>;
+        } -> std::convertible_to<app_solution_t<App>>;
     };
 
 [[nodiscard]] inline auto normalize_prefix(std::string prefix) -> std::string
@@ -103,10 +105,12 @@ concept decodes_initial_solution =
 
 [[nodiscard]] inline auto error_response(
     const int status,
+    std::string code,
     std::string message) -> crow::response
 {
     crow::json::wvalue body;
-    body["error"] = std::move(message);
+    body["error"]["code"] = std::move(code);
+    body["error"]["message"] = std::move(message);
     return json_response(status, std::move(body));
 }
 
@@ -139,6 +143,11 @@ public:
           blueprint_{prefix_},
           execution_{options_.workers, options_.queue_capacity}
     {
+        if (options_.completed_run_capacity == 0)
+        {
+            throw std::invalid_argument{
+                "REST completed_run_capacity must be greater than zero"};
+        }
         register_routes();
     }
 
@@ -222,15 +231,6 @@ private:
         return codec_.decode_input(payload);
     }
 
-    [[nodiscard]] auto decode_initial_solution(
-        const input_type& input,
-        const crow::json::rvalue& payload) const -> std::optional<solution_type>
-        requires detail::decodes_initial_solution<Codec, App>
-    {
-        const std::lock_guard lock{codec_mutex_};
-        return codec_.decode_initial_solution(input, payload);
-    }
-
     [[nodiscard]] auto encode_solution(
         const input_type& input,
         const solution_type& solution) const -> crow::json::wvalue
@@ -281,17 +281,92 @@ private:
         return found == runs_.end() ? nullptr : found->second;
     }
 
+    [[nodiscard]] auto decode_initial_solution(
+        const input_type& input,
+        const crow::json::rvalue& payload) const -> solution_type
+        requires detail::decodes_initial_solution<Codec, App>
+    {
+        const std::lock_guard lock{codec_mutex_};
+        return codec_.decode_initial_solution(input, payload);
+    }
+
+    [[nodiscard]] static auto is_terminal(const run_state state) noexcept -> bool
+    {
+        return state == run_state::succeeded ||
+               state == run_state::cancelled ||
+               state == run_state::failed;
+    }
+
+    [[nodiscard]] auto run_url(const std::string_view id) const -> std::string
+    {
+        return "/" + prefix_ + "/runs/" + std::string{id};
+    }
+
+    [[nodiscard]] auto run_body(const std::shared_ptr<run_record>& record) const
+        -> crow::json::wvalue
+    {
+        crow::json::wvalue body;
+        const std::lock_guard lock{record->mutex};
+        body["id"] = record->id;
+        body["runner"] = record->runner;
+        body["status"] = std::string{state_name(record->state)};
+        body["stoppable"] = record->supports_stop;
+        body["cancellation_requested"] = record->stop_source.stop_requested();
+        body["progress"]["evaluations"] = static_cast<std::uint64_t>(
+            record->evaluations.load(std::memory_order_relaxed));
+        body["progress"]["iterations"] = static_cast<std::uint64_t>(
+            record->iterations.load(std::memory_order_relaxed));
+        if (record->has_evaluation_limit.load(std::memory_order_relaxed))
+        {
+            body["progress"]["evaluation_limit"] = static_cast<std::uint64_t>(
+                record->evaluation_limit.load(std::memory_order_relaxed));
+        }
+        if (!record->error.empty())
+        {
+            body["error"]["code"] = "run_failed";
+            body["error"]["message"] = record->error;
+        }
+        if ((record->state == run_state::succeeded ||
+             record->state == run_state::cancelled) &&
+            record->solution.has_value())
+        {
+            body["solution_url"] = run_url(record->id) + "/solution";
+        }
+        return body;
+    }
+
+    void remember_completed(const std::string& id)
+    {
+        const std::lock_guard lock{runs_mutex_};
+        if (!runs_.contains(id))
+        {
+            return;
+        }
+
+        completed_runs_.push_back(id);
+        while (completed_runs_.size() > options_.completed_run_capacity)
+        {
+            const auto expired = std::move(completed_runs_.front());
+            completed_runs_.pop_front();
+            runs_.erase(expired);
+        }
+    }
+
     [[nodiscard]] auto make_initial_solution(
         const App& application,
         const input_type& input,
-        const crow::json::rvalue& payload) const -> solution_type
+        const crow::json::rvalue* payload) const -> solution_type
     {
-        if constexpr (detail::decodes_initial_solution<Codec, App>)
+        if (payload != nullptr)
         {
-            auto decoded = decode_initial_solution(input, payload);
-            if (decoded)
+            if constexpr (detail::decodes_initial_solution<Codec, App>)
             {
-                return std::move(*decoded);
+                return decode_initial_solution(input, *payload);
+            }
+            else
+            {
+                throw std::invalid_argument{
+                    "initial_solution is not supported by this application codec"};
             }
         }
 
@@ -305,7 +380,7 @@ private:
         else
         {
             throw std::invalid_argument{
-                "no initial solution was supplied and this application does not provide initial_solution()"};
+                "no initial_solution was supplied and this application does not provide initial_solution()"};
         }
     }
 
@@ -316,9 +391,13 @@ private:
         body["runners"] = runner_names();
         body["workers"] = static_cast<std::uint64_t>(execution_.worker_count());
         body["queue_capacity"] = static_cast<std::uint64_t>(execution_.queue_capacity());
+        body["completed_run_capacity"] = static_cast<std::uint64_t>(
+            options_.completed_run_capacity);
         {
             const std::lock_guard lock{runs_mutex_};
             body["runs"] = static_cast<std::uint64_t>(runs_.size());
+            body["completed_runs"] = static_cast<std::uint64_t>(
+                completed_runs_.size());
         }
         return detail::json_response(200, std::move(body));
     }
@@ -338,21 +417,39 @@ private:
         {
             return detail::error_response(
                 404,
+                "unknown_runner",
                 "runner '" + runner + "' is not registered");
         }
 
         auto payload = crow::json::load(request.body);
         if (!payload)
         {
-            return detail::error_response(400, "request body is not valid JSON");
+            return detail::error_response(
+                400,
+                "invalid_json",
+                "request body is not valid JSON");
+        }
+        if (payload.t() != crow::json::type::Object || !payload.has("input"))
+        {
+            return detail::error_response(
+                422,
+                "invalid_run_request",
+                "request body must be an object containing an 'input' field");
         }
 
         try
         {
             auto application = copy_application();
             auto input = std::make_shared<const input_type>(
-                decode_input(payload));
-            auto initial = make_initial_solution(application, *input, payload);
+                decode_input(payload["input"]));
+            const crow::json::rvalue* initial_payload =
+                payload.has("initial_solution")
+                    ? &payload["initial_solution"]
+                    : nullptr;
+            auto initial = make_initial_solution(
+                application,
+                *input,
+                initial_payload);
 
             const auto id = std::to_string(next_run_id_.fetch_add(1));
             auto record = std::make_shared<run_record>();
@@ -376,18 +473,28 @@ private:
             }
 
             const bool accepted = execution_.try_submit(
-                [application = std::move(application),
+                [this,
+                 application = std::move(application),
                  record,
                  initial = std::move(initial),
                  runner]() mutable {
+                    bool cancelled_before_start = false;
                     {
                         const std::lock_guard lock{record->mutex};
                         if (record->stop_source.stop_requested())
                         {
                             record->state = run_state::cancelled;
-                            return;
+                            cancelled_before_start = true;
                         }
-                        record->state = run_state::running;
+                        else
+                        {
+                            record->state = run_state::running;
+                        }
+                    }
+                    if (cancelled_before_start)
+                    {
+                        remember_completed(record->id);
+                        return;
                     }
 
                     auto observer = [record](const easylocal::run_progress& progress) {
@@ -475,6 +582,8 @@ private:
                         record->state = run_state::failed;
                         record->error = "unknown runner error";
                     }
+
+                    remember_completed(record->id);
                 });
 
             if (!accepted)
@@ -483,26 +592,42 @@ private:
                 runs_.erase(id);
                 return detail::error_response(
                     503,
+                    "queue_full",
                     "runner execution queue is full");
             }
 
             crow::json::wvalue body;
-            body["run_id"] = id;
+            body["id"] = id;
             body["runner"] = runner;
             body["status"] = "queued";
             body["stoppable"] = record->supports_stop;
-            body["url"] = "/" + prefix_ + "/runs/" + id;
-            return detail::json_response(202, std::move(body));
+            body["cancellation_requested"] = false;
+            body["progress"]["evaluations"] = std::uint64_t{0};
+            body["progress"]["iterations"] = std::uint64_t{0};
+            auto response = detail::json_response(202, std::move(body));
+            response.set_header("Location", run_url(id));
+            return response;
         }
         catch (const std::invalid_argument& error)
         {
-            return detail::error_response(422, error.what());
+            return detail::error_response(
+                422,
+                "invalid_run_request",
+                error.what());
         }
         catch (const std::exception& error)
         {
             return detail::error_response(
-                422,
+                500,
+                "internal_error",
                 "cannot create run: " + std::string{error.what()});
+        }
+        catch (...)
+        {
+            return detail::error_response(
+                500,
+                "internal_error",
+                "cannot create run: unknown error");
         }
     }
 
@@ -511,36 +636,12 @@ private:
         const auto record = find_run(id);
         if (!record)
         {
-            return detail::error_response(404, "run '" + id + "' does not exist");
+            return detail::error_response(
+                404,
+                "run_not_found",
+                "run '" + id + "' does not exist");
         }
-
-        crow::json::wvalue body;
-        const std::lock_guard lock{record->mutex};
-        body["run_id"] = record->id;
-        body["runner"] = record->runner;
-        body["status"] = std::string{state_name(record->state)};
-        body["stoppable"] = record->supports_stop;
-        body["evaluations"] = static_cast<std::uint64_t>(
-            record->evaluations.load(std::memory_order_relaxed));
-        body["iterations"] = static_cast<std::uint64_t>(
-            record->iterations.load(std::memory_order_relaxed));
-        if (record->has_evaluation_limit.load(std::memory_order_relaxed))
-        {
-            body["evaluation_limit"] = static_cast<std::uint64_t>(
-                record->evaluation_limit.load(std::memory_order_relaxed));
-        }
-        if (!record->error.empty())
-        {
-            body["error"] = record->error;
-        }
-        if ((record->state == run_state::succeeded ||
-             record->state == run_state::cancelled) &&
-            record->solution.has_value())
-        {
-            body["solution_url"] =
-                "/" + prefix_ + "/runs/" + record->id + "/solution";
-        }
-        return detail::json_response(200, std::move(body));
+        return detail::json_response(200, run_body(record));
     }
 
     [[nodiscard]] auto run_solution(const std::string& id) const -> crow::response
@@ -548,7 +649,10 @@ private:
         const auto record = find_run(id);
         if (!record)
         {
-            return detail::error_response(404, "run '" + id + "' does not exist");
+            return detail::error_response(
+                404,
+                "run_not_found",
+                "run '" + id + "' does not exist");
         }
 
         const auto application = copy_application();
@@ -557,21 +661,26 @@ private:
         {
             return detail::error_response(
                 409,
+                "run_failed",
                 record->error.empty() ? "run failed" : record->error);
         }
         if ((record->state != run_state::succeeded &&
              record->state != run_state::cancelled) ||
             !record->solution)
         {
-            return detail::error_response(409, "run has not produced a solution yet");
+            return detail::error_response(
+                409,
+                "result_not_ready",
+                "run has not produced a solution yet");
         }
 
         auto runtime = application.for_input(*record->input);
         const auto cost = runtime.solution_manager().evaluate(*record->solution);
 
         crow::json::wvalue body;
-        body["run_id"] = record->id;
+        body["id"] = record->id;
         body["runner"] = record->runner;
+        body["status"] = std::string{state_name(record->state)};
         body["cost"] = encode_cost(cost);
         body["solution"] = encode_solution(
             *record->input,
@@ -579,43 +688,74 @@ private:
         return detail::json_response(200, std::move(body));
     }
 
-    [[nodiscard]] auto remove_run(const std::string& id) -> crow::response
+    [[nodiscard]] auto cancel_run(const std::string& id) -> crow::response
     {
-        auto record = find_run(id);
+        const auto record = find_run(id);
         if (!record)
         {
-            return detail::error_response(404, "run '" + id + "' does not exist");
+            return detail::error_response(
+                404,
+                "run_not_found",
+                "run '" + id + "' does not exist");
         }
 
         {
             const std::lock_guard lock{record->mutex};
-            if (record->state == run_state::queued ||
-                record->state == run_state::running)
+            if (is_terminal(record->state))
             {
-                if (!record->supports_stop)
-                {
-                    return detail::error_response(
-                        409,
-                        "runner does not support cooperative cancellation");
-                }
+                return detail::error_response(
+                    409,
+                    "run_not_active",
+                    "run is already terminal");
+            }
+            if (!record->supports_stop)
+            {
+                return detail::error_response(
+                    409,
+                    "run_not_cancellable",
+                    "runner does not support cooperative cancellation");
+            }
+            record->stop_source.request_stop();
+        }
 
-                record->stop_source.request_stop();
-                crow::json::wvalue body;
-                body["run_id"] = id;
-                body["status"] = "cancellation_requested";
-                return detail::json_response(202, std::move(body));
+        return detail::json_response(202, run_body(record));
+    }
+
+    [[nodiscard]] auto delete_run(const std::string& id) -> crow::response
+    {
+        const auto record = find_run(id);
+        if (!record)
+        {
+            return detail::error_response(
+                404,
+                "run_not_found",
+                "run '" + id + "' does not exist");
+        }
+
+        {
+            const std::lock_guard lock{record->mutex};
+            if (!is_terminal(record->state))
+            {
+                return detail::error_response(
+                    409,
+                    "run_not_terminal",
+                    "only terminal runs can be deleted");
             }
         }
 
         {
             const std::lock_guard lock{runs_mutex_};
             runs_.erase(id);
+            for (auto it = completed_runs_.begin(); it != completed_runs_.end(); ++it)
+            {
+                if (*it == id)
+                {
+                    completed_runs_.erase(it);
+                    break;
+                }
+            }
         }
-
-        crow::json::wvalue body;
-        body["run_id"] = id;
-        body["removed"] = true;
-        return detail::json_response(200, std::move(body));
+        return crow::response{204};
     }
 
     void register_routes()
@@ -646,10 +786,16 @@ private:
             return run_solution(id);
         });
 
+        CROW_BP_ROUTE(blueprint_, "/runs/<string>/cancel")
+        .methods(crow::HTTPMethod::POST)
+        ([this](std::string id) {
+            return cancel_run(id);
+        });
+
         CROW_BP_ROUTE(blueprint_, "/runs/<string>")
         .methods(crow::HTTPMethod::DELETE)
         ([this](std::string id) {
-            return remove_run(id);
+            return delete_run(id);
         });
     }
 
@@ -663,6 +809,7 @@ private:
     mutable std::mutex codec_mutex_;
     mutable std::mutex runs_mutex_;
     std::unordered_map<std::string, std::shared_ptr<run_record>> runs_;
+    std::deque<std::string> completed_runs_;
     std::atomic<std::uint64_t> next_run_id_{1};
 
     // Keep the executor last: it is destroyed first, draining/joining worker
