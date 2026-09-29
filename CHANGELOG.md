@@ -7,6 +7,7 @@ commits since the previous release and are reviewed manually before tagging.
 
 ### Unreleased — application adapters and isolated runs
 
+- Add an Assignment TextUI stress/demo runner and a deterministic 250-job instance for visibly exercising asynchronous progress and cooperative stop.
 - optional ConfigTOML and TextUI components are exported as independent CMake
   target files and loaded only when requested by `find_package`;
 - local `dev`/`release` presets are compiler/platform agnostic;

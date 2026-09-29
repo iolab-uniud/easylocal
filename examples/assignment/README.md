@@ -407,6 +407,23 @@ The current MWE deliberately does not define:
 - generic parameter exposure through direct C++, CLI, and configuration files;
 - tracing/logging.
 
+## TextUI run-control demo
+
+When the optional TextUI component is enabled,
+`easylocal_assignment_tester_mwe` starts from
+`instances/large.assignment` (250 jobs, 16 machines) and registers two runners:
+
+- `fi`, the ordinary first-improvement runner;
+- `slow-fi`, a demo-only decorator around the same first-improvement algorithm.
+
+`slow-fi` delays each evaluation by 5 ms and uses a 2000-evaluation budget. The
+delay exists only in the Assignment Tester example; it is not framework behavior
+and does not modify the production search algorithm. Select `slow-fi`, start a
+run, and use `X Stop` to exercise asynchronous progress, cooperative stop, and
+partial-solution commit in the TextUI.
+
+The ordinary Assignment MWE continues to use `instances/small.assignment`.
+
 ## REST MWE
 
 When the optional REST component is enabled, `easylocal_assignment_rest_mwe`

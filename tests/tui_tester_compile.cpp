@@ -3,6 +3,7 @@
 #include "../examples/assignment/instance_io.hpp"
 #include "../examples/assignment/neighborhood_explorer.hpp"
 #include "../examples/assignment/solution_manager.hpp"
+#include "../examples/assignment/tui_demo_runner.hpp"
 
 #include <easylocal/app.hpp>
 #include <easylocal/search/first_improvement.hpp>
@@ -24,7 +25,11 @@ int main()
             | easylocal::delta<
                   CapacityCostComponent,
                   ReassignCapacityDeltaEvaluator>())
-        .runner<easylocal::runner::first_improvement>("fi");
+        .runner<easylocal::runner::first_improvement>("fi")
+        .runner<tui_demo::slow_first_improvement>("slow-fi");
+
+    static_assert(
+        decltype(application)::template runner_supports_run_control<1>);
 
     easylocal::Tester tester{std::move(application)};
     static_assert(decltype(tester)::supports_input_loading);

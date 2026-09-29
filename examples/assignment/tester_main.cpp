@@ -2,6 +2,7 @@
 #include "instance_io.hpp"
 #include "neighborhood_explorer.hpp"
 #include "solution_manager.hpp"
+#include "tui_demo_runner.hpp"
 
 #include <easylocal/app.hpp>
 #include <easylocal/search/first_improvement.hpp>
@@ -27,11 +28,17 @@ int main()
             | easylocal::delta<
                   CapacityCostComponent,
                   ReassignCapacityDeltaEvaluator>())
-        .runner<easylocal::runner::first_improvement>("fi");
+        .runner<easylocal::runner::first_improvement>("fi")
+        .runner<tui_demo::slow_first_improvement>("slow-fi");
 
     application
         .runner_config<easylocal::runner::first_improvement>()
         .max_evaluations = 100;
+
+    auto& slow_config =
+        application.runner_config<tui_demo::slow_first_improvement>();
+    slow_config.max_evaluations = 2000;
+    slow_config.delay_ms = 5;
 
     easylocal::Tester tester{std::move(application)};
     tester.set_input(load_instance(EASYLOCAL_ASSIGNMENT_MWE_INSTANCE_FILE));
