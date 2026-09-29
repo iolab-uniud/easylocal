@@ -178,7 +178,11 @@ int main(int argc, char* argv[])
         std::cout << "termination: "
                   << (result.termination == FirstImprovementTermination::local_optimum
                           ? "local optimum"
-                          : "evaluation budget exhausted")
+                          : result.termination ==
+                                    FirstImprovementTermination::
+                                        evaluation_budget_exhausted
+                              ? "evaluation budget exhausted"
+                              : "cancelled")
                   << '\n';
     }
     catch (const std::exception& error)

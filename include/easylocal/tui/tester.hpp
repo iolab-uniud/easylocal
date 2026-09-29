@@ -1,5 +1,6 @@
 #pragma once
 
+#include <easylocal/run_control.hpp>
 #include <easylocal/aggregation.hpp>
 #include <easylocal/check.hpp>
 #include <easylocal/tester.hpp>
@@ -7,12 +8,15 @@
 #include <ftxui/ftxui.hpp>
 
 #include <algorithm>
+#include <atomic>
+#include <chrono>
 #include <concepts>
 #include <cstddef>
 #include <cstdint>
 #include <exception>
 #include <filesystem>
 #include <future>
+#include <memory>
 #include <optional>
 #include <ostream>
 #include <random>
@@ -487,8 +491,17 @@ template<class Solution>
 struct async_runner_result
 {
     bool found{};
+    bool cancelled{};
     std::optional<Solution> solution;
     std::string error;
+};
+
+struct async_progress_state
+{
+    std::atomic<std::size_t> evaluations{};
+    std::atomic<std::size_t> iterations{};
+    std::atomic<std::size_t> evaluation_limit{};
+    std::atomic_bool has_evaluation_limit{};
 };
 
 template<class App>
@@ -729,6 +742,10 @@ public:
                 "G Run selected",
                 [this] { run_runner(); },
                 ButtonOption::Ascii()));
+            run_controls->Add(Button(
+                "X Stop running",
+                [this] { stop_runner(); },
+                ButtonOption::Ascii()));
         }
         else
         {
@@ -861,9 +878,23 @@ public:
             return false;
         });
 
-        auto progress_controls = Container::Vertical({});
-        auto progress_renderer = Renderer(progress_controls, [this] {
-            return render_progress_modal();
+        auto progress_stop = Button(
+            "X Stop",
+            [this] { stop_runner(); },
+            ButtonOption::Ascii());
+        auto progress_controls = Container::Vertical({progress_stop});
+        auto progress_renderer = Renderer(
+            progress_controls,
+            [this, progress_stop] {
+                return render_progress_modal(progress_stop);
+            });
+        progress_renderer = CatchEvent(progress_renderer, [this](Event event) {
+            if (event == Event::x || event == Event::X || event == Event::Escape)
+            {
+                stop_runner();
+                return true;
+            }
+            return false;
         });
 
         auto input_viewer_menu = Menu(
@@ -946,7 +977,12 @@ public:
             [this, &app, input_path_component, solution_path_component](Event event) {
                 if (event == Event::Custom && run_future_.valid())
                 {
-                    finish_runner_run();
+                    refresh_runner_progress();
+                    if (run_future_.wait_for(std::chrono::seconds{0}) ==
+                        std::future_status::ready)
+                    {
+                        finish_runner_run();
+                    }
                     return true;
                 }
                 if (event == Event::Character('?') || event == Event::h || event == Event::H)
@@ -1828,19 +1864,60 @@ private:
             progress_visible_ = true;
             set_status(status_kind::info, "Runner executing: " + run_name_);
 
+            run_supports_stop_ = false;
+            application.for_each_runner_registration_indexed(
+                [&]<class Tag, std::size_t Index>(
+                    const std::string_view registered_name,
+                    const typename Tag::config_type&) {
+                    if (registered_name == run_name_)
+                    {
+                        run_supports_stop_ = decltype(application)::template
+                            runner_supports_run_control<Index>;
+                    }
+                });
+            run_progress_state_ = std::make_shared<async_progress_state>();
+
             std::promise<async_runner_result<typename tester_type::solution_type>> promise;
             run_future_ = promise.get_future();
             auto* event_app = event_app_;
             const auto name = run_name_;
 
+            const auto progress_state = run_progress_state_;
             run_worker_ = std::jthread(
                 [application = std::move(application),
                  input = std::move(input),
                  solution = std::move(solution),
                  name,
                  promise = std::move(promise),
-                 event_app]() mutable {
+                 event_app,
+                 progress_state](std::stop_token stop_token) mutable {
                     async_runner_result<typename tester_type::solution_type> completion;
+                    std::size_t reports = 0;
+                    auto observer = [&](const easylocal::run_progress& progress) {
+                        progress_state->evaluations.store(
+                            progress.evaluations,
+                            std::memory_order_relaxed);
+                        progress_state->iterations.store(
+                            progress.iterations,
+                            std::memory_order_relaxed);
+                        progress_state->has_evaluation_limit.store(
+                            progress.evaluation_limit.has_value(),
+                            std::memory_order_relaxed);
+                        progress_state->evaluation_limit.store(
+                            progress.evaluation_limit.value_or(0),
+                            std::memory_order_relaxed);
+
+                        ++reports;
+                        if (event_app != nullptr &&
+                            (reports == 1 || reports % 64 == 0 ||
+                             progress.evaluations ==
+                                 progress.evaluation_limit.value_or(0)))
+                        {
+                            event_app->PostEvent(ftxui::Event::Custom);
+                        }
+                    };
+                    const easylocal::run_control control{stop_token, observer};
+
                     try
                     {
                         application.for_each_runner_registration_indexed(
@@ -1852,19 +1929,34 @@ private:
                                     return;
                                 }
 
-                                auto result = application.template run_at<Index>(
-                                    *input,
-                                    std::move(solution));
-                                static_assert(
-                                    requires {
-                                        { std::move(result.solution) }
-                                            -> std::convertible_to<
-                                                typename tester_type::solution_type>;
-                                    },
-                                    "TextUI requires runner results to expose a solution member");
+                                auto consume_result = [&](auto result) {
+                                    static_assert(
+                                        requires {
+                                            { std::move(result.solution) }
+                                                -> std::convertible_to<
+                                                    typename tester_type::solution_type>;
+                                        },
+                                        "TextUI requires runner results to expose a solution member");
+                                    completion.solution.emplace(
+                                        std::move(result.solution));
+                                };
 
-                                completion.solution.emplace(
-                                    std::move(result.solution));
+                                if constexpr (decltype(application)::template
+                                                  runner_supports_run_control<Index>)
+                                {
+                                    consume_result(
+                                        application.template run_controlled_at<Index>(
+                                            *input,
+                                            std::move(solution),
+                                            control));
+                                    completion.cancelled = stop_token.stop_requested();
+                                }
+                                else
+                                {
+                                    consume_result(application.template run_at<Index>(
+                                        *input,
+                                        std::move(solution)));
+                                }
                                 completion.found = true;
                             });
                     }
@@ -1888,13 +1980,66 @@ private:
         {
             progress_visible_ = false;
             progress_ = {};
+            run_progress_state_.reset();
+            run_supports_stop_ = false;
             set_status(status_kind::error, "Run runner: " + std::string{error.what()});
         }
         catch (...)
         {
             progress_visible_ = false;
             progress_ = {};
+            run_progress_state_.reset();
+            run_supports_stop_ = false;
             set_status(status_kind::error, "Run runner: unknown error");
+        }
+    }
+
+    void stop_runner()
+    {
+        if (!run_future_.valid() || !run_worker_.joinable())
+        {
+            set_status(status_kind::warning, "No runner is currently executing");
+            return;
+        }
+        if (!run_supports_stop_)
+        {
+            set_status(
+                status_kind::warning,
+                "This runner does not support cooperative stop");
+            return;
+        }
+
+        run_worker_.request_stop();
+        progress_.label = "Stopping " + run_name_;
+        set_status(status_kind::info, "Stop requested: " + run_name_);
+    }
+
+    void refresh_runner_progress()
+    {
+        if (!run_progress_state_)
+        {
+            return;
+        }
+
+        const auto evaluations = run_progress_state_->evaluations.load(
+            std::memory_order_relaxed);
+        const auto iterations = run_progress_state_->iterations.load(
+            std::memory_order_relaxed);
+        const bool has_limit = run_progress_state_->has_evaluation_limit.load(
+            std::memory_order_relaxed);
+        const auto limit = run_progress_state_->evaluation_limit.load(
+            std::memory_order_relaxed);
+
+        progress_.current = evaluations;
+        progress_.total = has_limit ? std::optional<std::size_t>{limit} : std::nullopt;
+        progress_.mode = has_limit
+            ? progress_mode::determinate
+            : progress_mode::indeterminate;
+        if (!run_worker_.get_stop_token().stop_requested())
+        {
+            progress_.label = "Running " + run_name_ +
+                              " [eval=" + std::to_string(evaluations) +
+                              ", iter=" + std::to_string(iterations) + "]";
         }
     }
 
@@ -1913,6 +2058,8 @@ private:
 
         progress_visible_ = false;
         progress_ = {};
+        run_progress_state_.reset();
+        run_supports_stop_ = false;
 
         if (!completion.error.empty())
         {
@@ -1937,6 +2084,15 @@ private:
                 status_kind::error,
                 "Runner completed: " + run_name_ +
                     " produced an INVALID solution; Move and Run disabled");
+            return;
+        }
+        if (completion.cancelled)
+        {
+            const auto after = tester_.evaluate();
+            last_run_result_ =
+                run_name_ + ": " + run_before_ + " -> " + value_text(after) +
+                " (stopped)";
+            set_status(status_kind::warning, "Runner stopped: " + run_name_);
             return;
         }
 
@@ -2281,7 +2437,8 @@ private:
                size(HEIGHT, EQUAL, 20) | border;
     }
 
-    [[nodiscard]] auto render_progress_modal() const -> ftxui::Element
+    [[nodiscard]] auto render_progress_modal(
+        const ftxui::Component& stop) const -> ftxui::Element
     {
         using namespace ftxui;
         return window(
@@ -2291,6 +2448,8 @@ private:
                        progress_.mode == progress_mode::indeterminate
                            ? text("Working...") | dim
                            : text(""),
+                       separator(),
+                       stop->Render() | center,
                    })) |
                size(WIDTH, GREATER_THAN, 44) | border;
     }
@@ -2503,7 +2662,7 @@ private:
             text("B best   I first improving   F first   N next   R random   A apply"),
             text("P list   T stats   C costs   D independence   U distribution"),
             text("Run page") | bold,
-            text("G run selected   Enter run selected"),
+            text("G run selected   Enter run selected   X stop running"),
             separator(),
             text("Q  " + options_.exit_label),
             text("? / H  help   Esc  close"),
@@ -2562,6 +2721,8 @@ private:
     ftxui::App* event_app_{};
     std::jthread run_worker_{};
     std::future<async_runner_result<typename tester_type::solution_type>> run_future_{};
+    std::shared_ptr<async_progress_state> run_progress_state_;
+    bool run_supports_stop_{};
     std::string run_name_;
     std::string run_before_;
     bool input_visible_{};

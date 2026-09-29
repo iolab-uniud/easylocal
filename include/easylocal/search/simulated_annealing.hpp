@@ -1,5 +1,6 @@
 #pragma once
 
+#include <easylocal/run_control.hpp>
 #include <easylocal/search/detail/context_concepts.hpp>
 #include <easylocal/search/metropolis_acceptance.hpp>
 #include <easylocal/search/temperature_policy.hpp>
@@ -135,6 +136,23 @@ public:
     }
 
     template<class Context, std::uniform_random_bit_generator RNG>
+        requires detail::random_move_context<Context, RNG> &&
+                 detail::strict_improvement_context<Context> &&
+                 (!detail::acceptance_policy_for<
+                     Acceptance, typename Context::cost_type, RNG>)
+    [[nodiscard]]
+    auto run(
+        const Context&,
+        typename Context::solution_type,
+        RNG&,
+        const run_control&)
+    {
+        static_assert(
+            detail::validate_simulated_annealing_acceptance<
+                Context, Acceptance, RNG>());
+    }
+
+    template<class Context, std::uniform_random_bit_generator RNG>
         requires detail::simulated_annealing_context<Context, Acceptance, RNG>
     [[nodiscard]]
     auto run(
@@ -142,12 +160,45 @@ public:
         typename Context::solution_type solution,
         RNG& rng)
     {
+        return run_impl(
+            context,
+            std::move(solution),
+            rng,
+            easylocal::detail::no_run_control{});
+    }
+
+    template<class Context, std::uniform_random_bit_generator RNG>
+        requires detail::simulated_annealing_context<Context, Acceptance, RNG>
+    [[nodiscard]]
+    auto run(
+        const Context& context,
+        typename Context::solution_type solution,
+        RNG& rng,
+        const run_control& control)
+    {
+        return run_impl(context, std::move(solution), rng, control);
+    }
+
+private:
+    template<
+        class Context,
+        std::uniform_random_bit_generator RNG,
+        easylocal::detail::run_control_like Control>
+    [[nodiscard]]
+    auto run_impl(
+        const Context& context,
+        typename Context::solution_type solution,
+        RNG& rng,
+        const Control& control)
+    {
         const auto& neighborhood = context.neighborhood_explorer();
         const auto evaluation = context.evaluation();
 
         using solution_type = typename Context::solution_type;
         using cost_type = typename Context::cost_type;
         using result_type = SimulatedAnnealingResult<solution_type, cost_type>;
+        constexpr bool controlled_run =
+            !std::same_as<Control, easylocal::detail::no_run_control>;
 
         auto current = evaluation.evaluate(solution);
         auto best_solution = solution;
@@ -156,9 +207,24 @@ public:
         std::size_t evaluations = 1;
 
         temperature_policy_.reset();
+        if constexpr (controlled_run)
+        {
+            control.report(run_progress{
+                .evaluations = evaluations,
+                .iterations = iterations,
+                .evaluation_limit = std::nullopt,
+            });
+        }
 
         while (!temperature_policy_.finished())
         {
+            if constexpr (controlled_run)
+            {
+                if (control.stop_requested())
+                {
+                    break;
+                }
+            }
             auto move = easylocal::random_move(neighborhood, solution, rng);
             if (!move.has_value())
             {
@@ -171,6 +237,14 @@ public:
                 *move);
             ++iterations;
             ++evaluations;
+            if constexpr (controlled_run)
+            {
+                control.report(run_progress{
+                    .evaluations = evaluations,
+                    .iterations = iterations,
+                    .evaluation_limit = std::nullopt,
+                });
+            }
 
             const auto accepted = static_cast<bool>(acceptance_.accept(
                 candidate.cost(),
@@ -203,7 +277,6 @@ public:
         };
     }
 
-private:
     [[no_unique_address]] TemperaturePolicy temperature_policy_;
     [[no_unique_address]] Acceptance acceptance_;
 };

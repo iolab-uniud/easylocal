@@ -1,5 +1,6 @@
 #pragma once
 
+#include <easylocal/run_control.hpp>
 #include <easylocal/rest/execution.hpp>
 
 #include <crow.h>
@@ -12,6 +13,7 @@
 #include <mutex>
 #include <optional>
 #include <stdexcept>
+#include <stop_token>
 #include <string>
 #include <string_view>
 #include <type_traits>
@@ -161,6 +163,7 @@ private:
         queued,
         running,
         succeeded,
+        cancelled,
         failed,
     };
 
@@ -170,9 +173,15 @@ private:
         std::string runner;
         std::shared_ptr<const input_type> input;
         mutable std::mutex mutex;
+        std::stop_source stop_source;
+        bool supports_stop{};
         run_state state{run_state::queued};
         std::optional<solution_type> solution;
         std::string error;
+        std::atomic<std::size_t> evaluations{};
+        std::atomic<std::size_t> iterations{};
+        std::atomic<std::size_t> evaluation_limit{};
+        std::atomic_bool has_evaluation_limit{};
     };
 
     [[nodiscard]] static auto state_name(const run_state state) noexcept
@@ -186,6 +195,8 @@ private:
             return "running";
         case run_state::succeeded:
             return "succeeded";
+        case run_state::cancelled:
+            return "cancelled";
         case run_state::failed:
             return "failed";
         }
@@ -348,6 +359,16 @@ private:
             record->id = id;
             record->runner = runner;
             record->input = input;
+            application.for_each_runner_registration_indexed(
+                [&]<class Tag, std::size_t Index>(
+                    const std::string_view registered_name,
+                    const typename Tag::config_type&) {
+                    if (registered_name == runner)
+                    {
+                        record->supports_stop = App::template
+                            runner_supports_run_control<Index>;
+                    }
+                });
 
             {
                 const std::lock_guard lock{runs_mutex_};
@@ -361,8 +382,31 @@ private:
                  runner]() mutable {
                     {
                         const std::lock_guard lock{record->mutex};
+                        if (record->stop_source.stop_requested())
+                        {
+                            record->state = run_state::cancelled;
+                            return;
+                        }
                         record->state = run_state::running;
                     }
+
+                    auto observer = [record](const easylocal::run_progress& progress) {
+                        record->evaluations.store(
+                            progress.evaluations,
+                            std::memory_order_relaxed);
+                        record->iterations.store(
+                            progress.iterations,
+                            std::memory_order_relaxed);
+                        record->has_evaluation_limit.store(
+                            progress.evaluation_limit.has_value(),
+                            std::memory_order_relaxed);
+                        record->evaluation_limit.store(
+                            progress.evaluation_limit.value_or(0),
+                            std::memory_order_relaxed);
+                    };
+                    const easylocal::run_control control{
+                        record->stop_source.get_token(),
+                        observer};
 
                     try
                     {
@@ -376,21 +420,38 @@ private:
                                     return;
                                 }
 
-                                auto result = application.template run_at<Index>(
-                                    *record->input,
-                                    std::move(initial));
-                                static_assert(
-                                    requires {
-                                        { std::move(result.solution) }
-                                            -> std::convertible_to<solution_type>;
-                                    },
-                                    "REST requires runner results to expose a solution member");
+                                auto consume_result = [&](auto result) {
+                                    static_assert(
+                                        requires {
+                                            { std::move(result.solution) }
+                                                -> std::convertible_to<solution_type>;
+                                        },
+                                        "REST requires runner results to expose a solution member");
 
-                                {
                                     const std::lock_guard lock{record->mutex};
                                     record->solution.emplace(
                                         std::move(result.solution));
-                                    record->state = run_state::succeeded;
+                                    record->state =
+                                        record->stop_source.stop_requested() &&
+                                                record->supports_stop
+                                            ? run_state::cancelled
+                                            : run_state::succeeded;
+                                };
+
+                                if constexpr (App::template
+                                                  runner_supports_run_control<Index>)
+                                {
+                                    consume_result(
+                                        application.template run_controlled_at<Index>(
+                                            *record->input,
+                                            std::move(initial),
+                                            control));
+                                }
+                                else
+                                {
+                                    consume_result(application.template run_at<Index>(
+                                        *record->input,
+                                        std::move(initial)));
                                 }
                                 found = true;
                             });
@@ -429,6 +490,7 @@ private:
             body["run_id"] = id;
             body["runner"] = runner;
             body["status"] = "queued";
+            body["stoppable"] = record->supports_stop;
             body["url"] = "/" + prefix_ + "/runs/" + id;
             return detail::json_response(202, std::move(body));
         }
@@ -457,11 +519,23 @@ private:
         body["run_id"] = record->id;
         body["runner"] = record->runner;
         body["status"] = std::string{state_name(record->state)};
+        body["stoppable"] = record->supports_stop;
+        body["evaluations"] = static_cast<std::uint64_t>(
+            record->evaluations.load(std::memory_order_relaxed));
+        body["iterations"] = static_cast<std::uint64_t>(
+            record->iterations.load(std::memory_order_relaxed));
+        if (record->has_evaluation_limit.load(std::memory_order_relaxed))
+        {
+            body["evaluation_limit"] = static_cast<std::uint64_t>(
+                record->evaluation_limit.load(std::memory_order_relaxed));
+        }
         if (!record->error.empty())
         {
             body["error"] = record->error;
         }
-        if (record->state == run_state::succeeded)
+        if ((record->state == run_state::succeeded ||
+             record->state == run_state::cancelled) &&
+            record->solution.has_value())
         {
             body["solution_url"] =
                 "/" + prefix_ + "/runs/" + record->id + "/solution";
@@ -485,9 +559,11 @@ private:
                 409,
                 record->error.empty() ? "run failed" : record->error);
         }
-        if (record->state != run_state::succeeded || !record->solution)
+        if ((record->state != run_state::succeeded &&
+             record->state != run_state::cancelled) ||
+            !record->solution)
         {
-            return detail::error_response(409, "run has not completed yet");
+            return detail::error_response(409, "run has not produced a solution yet");
         }
 
         auto runtime = application.for_input(*record->input);
@@ -516,9 +592,18 @@ private:
             if (record->state == run_state::queued ||
                 record->state == run_state::running)
             {
-                return detail::error_response(
-                    409,
-                    "active runs cannot be cancelled yet");
+                if (!record->supports_stop)
+                {
+                    return detail::error_response(
+                        409,
+                        "runner does not support cooperative cancellation");
+                }
+
+                record->stop_source.request_stop();
+                crow::json::wvalue body;
+                body["run_id"] = id;
+                body["status"] = "cancellation_requested";
+                return detail::json_response(202, std::move(body));
             }
         }
 

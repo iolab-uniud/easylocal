@@ -8,6 +8,7 @@
 #include <easylocal/detail/neighborhood_concepts.hpp>
 #include <easylocal/detail/service_composition.hpp>
 #include <easylocal/detail/solution_manager_concepts.hpp>
+#include <easylocal/run_control.hpp>
 
 #include <cassert>
 #include <concepts>
@@ -487,6 +488,22 @@ private:
     const NHE& neighborhood_;
 };
 
+template<class Algorithm, class SM, class NHE, class... RunArgs>
+concept algorithm_accepts_run_control =
+    requires(
+        Algorithm& algorithm,
+        const runner_context<SM, NHE>& context,
+        typename SM::solution_type solution,
+        const run_control& control,
+        RunArgs&&... run_args)
+    {
+        algorithm.run(
+            context,
+            std::move(solution),
+            std::forward<RunArgs>(run_args)...,
+            control);
+    };
+
 template<class Algorithm, class SMSpec, class NHESpec>
     requires is_solution_manager_spec_v<SMSpec> &&
              is_neighborhood_spec_v<NHESpec> &&
@@ -595,6 +612,46 @@ public:
             context,
             std::move(solution),
             std::forward<RunArgs>(run_args)...);
+    }
+
+    template<class... RunArgs>
+    static constexpr bool supports_run_control =
+        algorithm_accepts_run_control<
+            Algorithm,
+            solution_manager_type,
+            neighborhood_explorer_type,
+            RunArgs...>;
+
+    template<class... RunArgs>
+    [[nodiscard]]
+    auto run_controlled(
+        solution_type solution,
+        const run_control& control,
+        RunArgs&&... run_args)
+    {
+        if constexpr (supports_run_control<RunArgs...>)
+        {
+            assert(
+                solution_manager_.is_valid(solution) &&
+                "initial Solution must be compatible with the bound Instance");
+
+            const runner_context<
+                solution_manager_type,
+                neighborhood_explorer_type>
+                context{solution_manager_, neighborhood_};
+
+            return algorithm_.run(
+                context,
+                std::move(solution),
+                std::forward<RunArgs>(run_args)...,
+                control);
+        }
+        else
+        {
+            return run(
+                std::move(solution),
+                std::forward<RunArgs>(run_args)...);
+        }
     }
 
 private:

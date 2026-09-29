@@ -210,6 +210,38 @@ public:
             std::forward<RunArgs>(run_args)...);
     }
 
+    template<class... RunArgs>
+    static constexpr bool supports_run_control =
+        algorithm_accepts_run_control<Algorithm, SM, NHE, RunArgs...>;
+
+    template<class... RunArgs>
+    [[nodiscard]]
+    auto run_controlled(
+        solution_type solution,
+        const run_control& control,
+        RunArgs&&... run_args)
+    {
+        if constexpr (supports_run_control<RunArgs...>)
+        {
+            assert(
+                solution_manager_.is_valid(solution) &&
+                "initial Solution must be compatible with the app Input");
+
+            const runner_context<SM, NHE> context{solution_manager_, neighborhood_};
+            return algorithm_.run(
+                context,
+                std::move(solution),
+                std::forward<RunArgs>(run_args)...,
+                control);
+        }
+        else
+        {
+            return run(
+                std::move(solution),
+                std::forward<RunArgs>(run_args)...);
+        }
+    }
+
 private:
     Algorithm& algorithm_;
     SM& solution_manager_;
@@ -338,6 +370,19 @@ public:
             std::forward<RunArgs>(args)...);
     }
 
+    template<class Tag, class... RunArgs>
+    [[nodiscard]]
+    auto run_controlled(
+        typename solution_manager_type::solution_type solution,
+        const run_control& control,
+        RunArgs&&... args)
+    {
+        return runner<Tag>().run_controlled(
+            std::move(solution),
+            control,
+            std::forward<RunArgs>(args)...);
+    }
+
     template<std::size_t Index, class... RunArgs>
         requires (Index < runner_count)
     [[nodiscard]]
@@ -347,6 +392,30 @@ public:
     {
         return runner_at<Index>().run(
             std::move(solution),
+            std::forward<RunArgs>(args)...);
+    }
+
+    template<std::size_t Index, class... RunArgs>
+        requires (Index < runner_count)
+    static constexpr bool runner_supports_run_control =
+        app_runner_ref<
+            typename std::tuple_element_t<
+                Index,
+                std::tuple<Registrations...>>::algorithm_type,
+            solution_manager_type,
+            neighborhood_explorer_type>::template supports_run_control<RunArgs...>;
+
+    template<std::size_t Index, class... RunArgs>
+        requires (Index < runner_count)
+    [[nodiscard]]
+    auto run_controlled_at(
+        typename solution_manager_type::solution_type solution,
+        const run_control& control,
+        RunArgs&&... args)
+    {
+        return runner_at<Index>().run_controlled(
+            std::move(solution),
+            control,
             std::forward<RunArgs>(args)...);
     }
 
@@ -678,6 +747,24 @@ public:
             std::forward<RunArgs>(args)...);
     }
 
+    template<class Tag, class Spec = SMSpec, class... RunArgs>
+        requires (!std::same_as<Spec, unconfigured_t>) &&
+                 (!std::same_as<NHESpec, unconfigured_t>) &&
+                 (sizeof...(Registrations) > 0)
+    [[nodiscard]]
+    auto run_controlled(
+        const typename service_t<Spec>::instance_type& input,
+        typename service_t<Spec>::solution_type solution,
+        const run_control& control,
+        RunArgs&&... args) const
+    {
+        auto runtime = for_input(input);
+        return runtime.template run_controlled<Tag>(
+            std::move(solution),
+            control,
+            std::forward<RunArgs>(args)...);
+    }
+
     template<std::size_t Index, class Spec = SMSpec, class... RunArgs>
         requires (!std::same_as<Spec, unconfigured_t>) &&
                  (!std::same_as<NHESpec, unconfigured_t>) &&
@@ -691,6 +778,32 @@ public:
         auto runtime = for_input(input);
         return runtime.template run_at<Index>(
             std::move(solution),
+            std::forward<RunArgs>(args)...);
+    }
+
+    template<std::size_t Index, class... RunArgs>
+        requires (Index < sizeof...(Registrations)) &&
+                 (!std::same_as<SMSpec, unconfigured_t>) &&
+                 (!std::same_as<NHESpec, unconfigured_t>)
+    static constexpr bool runner_supports_run_control =
+        app_instance<SMSpec, NHESpec, Registrations...>::template
+            runner_supports_run_control<Index, RunArgs...>;
+
+    template<std::size_t Index, class Spec = SMSpec, class... RunArgs>
+        requires (!std::same_as<Spec, unconfigured_t>) &&
+                 (!std::same_as<NHESpec, unconfigured_t>) &&
+                 (Index < sizeof...(Registrations))
+    [[nodiscard]]
+    auto run_controlled_at(
+        const typename service_t<Spec>::instance_type& input,
+        typename service_t<Spec>::solution_type solution,
+        const run_control& control,
+        RunArgs&&... args) const
+    {
+        auto runtime = for_input(input);
+        return runtime.template run_controlled_at<Index>(
+            std::move(solution),
+            control,
             std::forward<RunArgs>(args)...);
     }
 

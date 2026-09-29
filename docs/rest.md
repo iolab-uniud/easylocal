@@ -102,22 +102,30 @@ For a Blueprint mounted at `/assignment`, the current generic surface is:
 | `POST` | `/assignment/runners/<runner>/runs` | enqueue a new run |
 | `GET` | `/assignment/runs/<id>` | inspect run state |
 | `GET` | `/assignment/runs/<id>/solution` | retrieve completed solution and cost |
-| `DELETE` | `/assignment/runs/<id>` | discard a completed/failed run |
+| `DELETE` | `/assignment/runs/<id>` | request cooperative stop for an active run, or discard a terminal run |
 
 A successful submission returns `202 Accepted`. A full bounded execution queue
 returns `503`. Invalid JSON returns `400`; an unknown runner returns `404`; a
 request that cannot provide/build an initial solution returns `422`.
 
-Runs currently move through:
+Runs move through:
 
 ```text
 queued -> running -> succeeded
-                   -> failed
+   |         |      -> failed
+   +---------+------> cancelled
 ```
 
-Active cancellation is intentionally not part of this first concurrency block.
-Deleting an active run returns `409`; cooperative cancellation can later be
-added with `std::stop_token` without changing the HTTP/Core boundary.
+Built-in searches support cooperative cancellation. `DELETE` on a queued or
+running cooperative run requests stop and returns `202 Accepted`; the run record
+remains queryable until explicitly deleted. If the search has already produced
+a partial solution, `/solution` remains available after cancellation. A custom
+runner that does not accept `run_control` remains fully executable but reports
+`stoppable: false`; attempting to cancel it returns `409`.
+
+`GET /runs/<id>` also reports `evaluations`, `iterations`, optional
+`evaluation_limit`, and `stoppable`. These fields are observation state owned by
+the REST adapter, not mutable state shared with a Core runtime.
 
 ## Concurrency model
 
@@ -151,13 +159,28 @@ The execution queue is bounded so a server can apply explicit resource limits.
 The default worker count is `max(1, hardware_concurrency() - 1)` and the default
 waiting-queue capacity is 64; both are adapter options rather than Core policy.
 
-## Relationship with TextUI
+## Cooperative control and TextUI
+
+Core exposes a small std-only control object:
+
+```cpp
+std::stop_source stop;
+auto observer = [](const easylocal::run_progress& progress) { /* observe */ };
+easylocal::run_control control{stop.get_token(), observer};
+```
+
+The observer is non-owning and valid only for the duration of the controlled
+run. Built-in algorithms provide a separate controlled overload, so ordinary
+`run(...)` keeps its previous zero-control-overhead path. Custom algorithms may
+opt in by accepting `const easylocal::run_control&` as the final runtime
+argument; algorithms that do not opt in are executed through the legacy path.
 
 The same isolation rule is used for an interactive background run. TextUI keeps
 the FTXUI event loop on the UI thread, snapshots the app/Input/current Solution,
-and runs the search on a `std::jthread` through the fresh-runtime Core API. On
-completion it posts an FTXUI custom event and commits the resulting Solution on
-the UI thread.
+and runs the search on a `std::jthread` through the fresh-runtime Core API. The
+`jthread` stop token feeds `run_control`; progress is bridged back as FTXUI custom
+events. Stop never mutates Tester/runtime state from the worker thread, and a
+cooperatively stopped partial solution is committed only on the UI thread.
 
 Thus REST and TextUI exercise the same architectural boundary without sharing a
 threading subsystem:

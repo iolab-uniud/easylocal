@@ -290,6 +290,8 @@ auto termination_name(
         return "local-optimum";
     case search::FirstImprovementTermination::evaluation_budget_exhausted:
         return "budget";
+    case search::FirstImprovementTermination::cancelled:
+        return "cancelled";
     }
 
     return "unknown";
@@ -306,6 +308,8 @@ auto termination_name(
         return "local-optimum";
     case search::BestImprovementTermination::evaluation_budget_exhausted:
         return "budget";
+    case search::BestImprovementTermination::cancelled:
+        return "cancelled";
     }
 
     return "unknown";

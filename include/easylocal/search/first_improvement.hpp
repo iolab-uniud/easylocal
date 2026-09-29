@@ -1,6 +1,7 @@
 #pragma once
 
 #include <easylocal/config/tree.hpp>
+#include <easylocal/run_control.hpp>
 #include <easylocal/runner_tag.hpp>
 #include <easylocal/search/detail/context_concepts.hpp>
 
@@ -12,11 +13,11 @@
 namespace easylocal::search
 {
 
-
 enum class FirstImprovementTermination
 {
     local_optimum,
     evaluation_budget_exhausted,
+    cancelled,
 };
 
 struct FirstImprovementParameters
@@ -104,22 +105,85 @@ public:
         const Context& context,
         typename Context::solution_type solution) const
     {
+        return run_impl(
+            context,
+            std::move(solution),
+            easylocal::detail::no_run_control{});
+    }
+
+    template<class Context>
+        requires detail::enumerating_strict_improvement_context<Context>
+    [[nodiscard]]
+    auto run(
+        const Context& context,
+        typename Context::solution_type solution,
+        const run_control& control) const
+    {
+        return run_impl(context, std::move(solution), control);
+    }
+
+private:
+    template<class Context, easylocal::detail::run_control_like Control>
+    [[nodiscard]]
+    auto run_impl(
+        const Context& context,
+        typename Context::solution_type solution,
+        const Control& control) const
+    {
         const auto& neighborhood = context.neighborhood_explorer();
         const auto evaluation = context.evaluation();
 
         using solution_type = typename Context::solution_type;
         using cost_type = typename Context::cost_type;
         using result_type = FirstImprovementResult<solution_type, cost_type>;
+        constexpr bool controlled_run =
+            !std::same_as<Control, easylocal::detail::no_run_control>;
 
         auto current = evaluation.evaluate(solution);
         std::size_t evaluations = 1;
+        std::size_t iterations = 0;
+
+        if constexpr (controlled_run)
+        {
+            control.report(run_progress{
+                .evaluations = evaluations,
+                .iterations = iterations,
+                .evaluation_limit = parameters_.max_evaluations,
+            });
+        }
 
         while (true)
         {
+            if constexpr (controlled_run)
+            {
+                if (control.stop_requested())
+                {
+                    return result_type{
+                        .solution = std::move(solution),
+                        .cost = current.cost(),
+                        .evaluations = evaluations,
+                        .termination = FirstImprovementTermination::cancelled,
+                    };
+                }
+            }
+
             bool improved = false;
 
             for (const auto move : easylocal::moves(neighborhood, solution))
             {
+                if constexpr (controlled_run)
+                {
+                    if (control.stop_requested())
+                    {
+                        return result_type{
+                            .solution = std::move(solution),
+                            .cost = current.cost(),
+                            .evaluations = evaluations,
+                            .termination = FirstImprovementTermination::cancelled,
+                        };
+                    }
+                }
+
                 if (evaluations == parameters_.max_evaluations)
                 {
                     return result_type{
@@ -135,12 +199,22 @@ public:
                     evaluation.evaluate_move(solution, current, move);
                 ++evaluations;
 
+                if constexpr (controlled_run)
+                {
+                    control.report(run_progress{
+                        .evaluations = evaluations,
+                        .iterations = iterations,
+                        .evaluation_limit = parameters_.max_evaluations,
+                    });
+                }
+
                 if (context.better(candidate.cost(), current.cost()))
                 {
                     evaluation.commit(
                         solution,
                         current,
                         std::move(candidate));
+                    ++iterations;
                     improved = true;
                     break;
                 }
@@ -158,7 +232,6 @@ public:
         }
     }
 
-private:
     FirstImprovementParameters parameters_;
 };
 

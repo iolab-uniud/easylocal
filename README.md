@@ -145,8 +145,11 @@ adapters. Materialized apps and bound runners borrow an lvalue Input by
 `const&`; binding a temporary Input is rejected to prevent dangling runtimes.
 The REST adapter uses this same public boundary: HTTP/JSON/Crow/server types stay
 outside `EasyLocal::Core`, and each asynchronous run materializes fresh mutable
-runtime state while sharing only an immutable Input. TextUI background runs use
-the same isolation rule.
+runtime state while sharing only an immutable Input. Cooperative stop/progress
+uses the std-only `easylocal::run_control` capability: built-in searches opt in,
+while custom runners that keep the original `run(...)` signature continue to work
+unchanged but are reported as non-stoppable by the adapters. TextUI background
+runs use the same isolation and control rules.
 The Assignment examples include `easylocal_assignment_rest_mwe`, which mounts
 the generic Blueprint at `/assignment` while leaving Crow server configuration
 fully visible to the application.

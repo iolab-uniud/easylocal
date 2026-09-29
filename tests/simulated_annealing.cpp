@@ -5,6 +5,7 @@
 #include "support/approximate.hpp"
 
 #include <easylocal/aggregation.hpp>
+#include <easylocal/run_control.hpp>
 #include <easylocal/runner.hpp>
 #include <easylocal/config/tree.hpp>
 #include <easylocal/search/metropolis_acceptance.hpp>
@@ -17,6 +18,7 @@
 #include <iostream>
 #include <optional>
 #include <random>
+#include <stop_token>
 #include <string_view>
 #include <type_traits>
 
@@ -417,6 +419,24 @@ int main()
             "SA returns best-so-far rather than the final accepted chain state");
         ok &= expect(result.iterations == 2 && result.evaluations == 3,
             "SA reports proposal iterations separately from evaluations including the initial state");
+
+        std::stop_source stop;
+        std::size_t observations = 0;
+        auto observer = [&](const easylocal::run_progress& progress) {
+            ++observations;
+            if (progress.evaluations >= 2)
+            {
+                stop.request_stop();
+            }
+        };
+        const easylocal::run_control control{stop.get_token(), observer};
+        std::mt19937 controlled_rng{7U};
+        const auto controlled =
+            runner.bind(instance).run_controlled(ChainSolution{}, control, controlled_rng);
+        ok &= expect(
+            observations == 2 && controlled.iterations == 1 &&
+                controlled.evaluations == 2,
+            "SA controlled execution reports progress and cooperatively stops");
     }
 
     {

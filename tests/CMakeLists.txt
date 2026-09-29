@@ -193,6 +193,34 @@ add_test(
 )
 
 add_executable(
+    easylocal_run_control_header_self_containment
+    run_control_header_self_containment.cpp
+)
+target_link_libraries(
+    easylocal_run_control_header_self_containment
+    PRIVATE
+        EasyLocal::Core
+)
+add_test(
+    NAME easylocal.run-control-header-self-containment
+    COMMAND easylocal_run_control_header_self_containment
+)
+
+add_executable(
+    easylocal_run_control_test
+    run_control.cpp
+)
+target_link_libraries(
+    easylocal_run_control_test
+    PRIVATE
+        easylocal_assignment_mwe_model
+)
+add_test(
+    NAME easylocal.run-control
+    COMMAND easylocal_run_control_test
+)
+
+add_executable(
     easylocal_runner_header_self_containment
     runner_header_self_containment.cpp
 )

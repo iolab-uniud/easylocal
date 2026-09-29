@@ -9,6 +9,7 @@
 #include <easylocal/cursor_moves.hpp>
 #include <easylocal/neighborhood_concepts.hpp>
 #include <easylocal/neighborhood_union.hpp>
+#include <easylocal/run_control.hpp>
 #include <easylocal/runner.hpp>
 #include <easylocal/runner_tag.hpp>
 #include <easylocal/service_base.hpp>

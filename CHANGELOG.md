@@ -27,6 +27,12 @@ commits since the previous release and are reviewed manually before tagging.
   and a bounded solver execution pool separate from Crow HTTP workers;
 - REST packaging is lazy and component-aware, with Crow 1.3.3 and standalone
   Asio 1.38.2 available through the explicit dependency-fetch path.
+- Core now provides a lightweight non-owning `run_control` based on
+  `std::stop_token`, with progress snapshots and no overhead on ordinary
+  uncontrolled runs; first/best improvement and simulated annealing opt in;
+- TextUI exposes cooperative Stop and live evaluation/iteration progress, while
+  REST maps active-run `DELETE` to stop requests and reports progress/status,
+  preserving partial solutions when a cooperative run is cancelled.
 
 ### S20 — Simulated Annealing promotion
 
