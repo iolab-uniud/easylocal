@@ -1,5 +1,6 @@
 #include <easylocal/trace.hpp>
 
+#include <cstdint>
 #include <iostream>
 #include <sstream>
 #include <streambuf>
@@ -31,6 +32,41 @@ struct structured_cost_writer
         out << "{\"hard\":" << cost.hard << ",\"soft\":" << cost.soft << '}';
     }
 };
+
+struct structured_binary_cost_writer
+{
+    void operator()(
+        easylocal::trace::binary_record_writer& out,
+        const structured_cost& cost) const
+    {
+        out.i32(cost.hard);
+        out.i32(cost.soft);
+    }
+};
+
+namespace polli_extension
+{
+
+struct temperature_changed
+{
+    std::uint64_t iteration{};
+    double temperature{};
+};
+
+constexpr auto binary_event_tag(const temperature_changed&) noexcept -> std::uint8_t
+{
+    return easylocal::trace::user_binary_event_tag<0>();
+}
+
+inline void encode_binary_event(
+    easylocal::trace::binary_record_writer& out,
+    const temperature_changed& value)
+{
+    out.u64(value.iteration);
+    out.f64(value.temperature);
+}
+
+} // namespace polli_extension
 
 class sync_counting_streambuf : public std::stringbuf
 {
@@ -165,6 +201,112 @@ int main()
         structured_stream.str().find(
             "\"cost\":{\"hard\":1,\"soft\":5}") != std::string::npos,
         "streaming JSONL accepts a custom structured cost writer");
+
+    std::ostringstream binary_stream;
+    easylocal::trace::binary_recorder<int> binary{binary_stream};
+    easylocal::trace::emit(
+        binary,
+        easylocal::trace::event::move_evaluated<int>{
+            .evaluations = 3,
+            .iterations = 1,
+            .current_cost = 7,
+            .candidate_cost = 6,
+            .neighborhood = &inner,
+        });
+    binary.flush();
+    const auto binary_data = binary_stream.str();
+    ok &= expect(
+        binary_data.size() == 8 + 5 + 44,
+        "binary recorder writes versioned header and compact event payload");
+    ok &= expect(
+        binary_data.size() >= 8 && binary_data.substr(0, 4) == "ELTR" &&
+            static_cast<unsigned char>(binary_data[4]) == 1,
+        "binary recorder writes ELTR format version 1");
+    ok &= expect(
+        binary_data.size() > 8 && static_cast<unsigned char>(binary_data[8]) == 2,
+        "binary recorder preserves the event type tag");
+
+    sync_counting_streambuf binary_buffered_storage;
+    std::ostream binary_buffered_output{&binary_buffered_storage};
+    easylocal::trace::binary_recorder<int> binary_buffered{binary_buffered_output};
+    easylocal::trace::emit(
+        binary_buffered,
+        easylocal::trace::event::run_started<int>{4});
+    ok &= expect(
+        binary_buffered_storage.sync_calls == 0,
+        "binary recorder does not flush per event");
+    binary_buffered.flush();
+    ok &= expect(
+        binary_buffered_storage.sync_calls == 1,
+        "binary recorder flush is explicit");
+
+    std::ostringstream structured_binary_stream;
+    easylocal::trace::binary_recorder<structured_cost, structured_binary_cost_writer>
+        structured_binary{structured_binary_stream, structured_binary_cost_writer{}};
+    easylocal::trace::emit(
+        structured_binary,
+        easylocal::trace::event::run_finished<structured_cost>{
+            .evaluations = 9,
+            .iterations = 2,
+            .cost = {1, 5},
+        });
+    structured_binary.flush();
+    ok &= expect(
+        structured_binary_stream.str().size() == 8 + 5 + 24,
+        "binary recorder accepts a custom structured cost writer");
+
+    std::ostringstream custom_event_stream;
+    easylocal::trace::binary_recorder<int> custom_event_recorder{custom_event_stream};
+    easylocal::trace::emit(
+        custom_event_recorder,
+        polli_extension::temperature_changed{.iteration = 42, .temperature = 0.75});
+    custom_event_recorder.flush();
+    const auto custom_event_data = custom_event_stream.str();
+    ok &= expect(
+        custom_event_data.size() == 8 + 5 + 16 &&
+            static_cast<unsigned char>(custom_event_data[8]) ==
+                easylocal::trace::user_binary_event_tag<0>(),
+        "application events extend ELTR via ADL without touching EasyLocal");
+
+    std::ostringstream sync_equivalent_stream;
+    easylocal::trace::buffered_binary_recorder<int> sync_equivalent{
+        sync_equivalent_stream,
+        easylocal::trace::binary_buffer_options{.block_size = 17}};
+    easylocal::trace::emit(
+        sync_equivalent,
+        easylocal::trace::event::move_evaluated<int>{
+            .evaluations = 3,
+            .iterations = 1,
+            .current_cost = 7,
+            .candidate_cost = 6,
+            .neighborhood = &inner,
+        });
+    sync_equivalent.flush();
+
+    std::ostringstream async_equivalent_stream;
+    {
+        easylocal::trace::async_binary_recorder<int> async_equivalent{
+            async_equivalent_stream,
+            easylocal::trace::binary_buffer_options{
+                .block_size = 17,
+                .async_queue_blocks = 2,
+            }};
+        easylocal::trace::emit(
+            async_equivalent,
+            easylocal::trace::event::move_evaluated<int>{
+                .evaluations = 3,
+                .iterations = 1,
+                .current_cost = 7,
+                .candidate_cost = 6,
+                .neighborhood = &inner,
+            });
+        async_equivalent.flush();
+        ok &= expect(async_equivalent.good(), "async binary recorder reports writer health");
+    }
+    ok &= expect(
+        sync_equivalent_stream.str() == async_equivalent_stream.str() &&
+            sync_equivalent_stream.str() == binary_data,
+        "buffered and asynchronous recorders preserve identical ELTR bytes");
 
     return ok ? 0 : 1;
 }

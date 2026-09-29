@@ -47,12 +47,19 @@ probe for semantic tracing. It reports nanoseconds per evaluation for:
 - a counter-only tracer;
 - the full in-memory recorder;
 - incremental EasyLocal JSONL serialization into a discard stream;
+- block-buffered ELTR binary recording;
+- asynchronous ELTR recording, with producer and total drain timings separated;
+- synchronous and asynchronous ELTR recording to temporary files;
 - when available, synchronous spdlog JSONL formatting into a formatting discard
   sink.
 
 The discard sinks remove filesystem variability while retaining serialization
-and formatting work. All modes execute the same search workload and must report
-the same evaluation checksum. A small warm-up precedes each timed mode.
+and formatting work. The file modes use temporary binary files and report
+producer and total drain time for the asynchronous path; they intentionally do
+not request `fsync`, so they measure application-visible persistence overhead
+rather than physical-media durability. All modes execute the same search workload
+and must report the same evaluation checksum. A small warm-up precedes each timed
+mode.
 
 spdlog is **benchmark-only**. EasyLocal never fetches it. A local build simply
 omits the comparison if `find_package(spdlog CONFIG)` cannot find a system
@@ -73,3 +80,10 @@ on Linux and macOS, runs ten process-level trials for pull requests and release
 tags, writes the raw CSV into the job summary, and uploads the measurements as a
 release/CI artifact. The benchmark remains dependency-free when that comparison
 is not requested.
+
+The trace microbenchmark additionally compares constant-memory JSONL, block-buffered
+ELTR, and asynchronous ELTR recording against in-memory tracing and, when installed,
+spdlog JSONL formatting.  Async output has separate producer and total timings so a
+background writer cannot hide drain cost. The benchmark reports serialized
+bytes/event and also exercises temporary-file output, while the discard modes
+remain the serialization-only comparison.

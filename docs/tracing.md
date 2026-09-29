@@ -48,24 +48,111 @@ routes are copied only when tracing is active. `trace::write_jsonl(out, recorder
 serializes the completed trace as one JSON object per line, leaving file naming,
 directory layout and stream ownership to the application.
 
-For long runs, `trace::jsonl_recorder<Cost>` writes the same JSONL representation
-incrementally to an application-owned `std::ostream` and does not retain the
-event history. The recorder never flushes per event; an `std::ofstream` therefore
-uses the normal buffering of its stream buffer and recorder-owned memory remains
-constant. `flush()` is available when the application needs an explicit
-durability boundary.
+For long runs, EasyLocal provides constant-memory streaming recorders.
+`trace::jsonl_recorder<Cost>` writes a human-readable JSONL representation.
+The canonical experimental format is the versioned `ELTR` binary stream.  Its
+records are tagged and length-prefixed, so readers can skip event types they do
+not understand.
+
+`trace::binary_recorder<Cost>` is an alias for the synchronous
+`trace::buffered_binary_recorder<Cost>`.  It encodes events directly into a
+contiguous block (256 KiB by default) and writes a block at a time instead of
+calling `std::ostream` for each field.  `trace::async_binary_recorder<Cost>` uses
+the same encoder and byte format, but hands completed blocks to one background
+writer thread.  The producer owns one block while a bounded pool of preallocated
+blocks connects it to the writer; if the writer falls behind, the producer
+blocks rather than losing events.  Event order is therefore deterministic and
+tracing is lossless.
 
 ```cpp
-std::ofstream out{"run-0042.trace.jsonl"};
-easylocal::trace::jsonl_recorder<cost_type> trace{out};
+std::ofstream out{"run-0042.eltrace", std::ios::binary};
+easylocal::trace::async_binary_recorder<cost_type> trace{out};
 auto result = bound_runner.run(initial_solution, trace);
-trace.flush();
+trace.flush();              // drain the writer and expose I/O failures
+if (!trace.good()) { /* handle output failure */ }
 ```
 
-The memory recorder is intended for tests, short traces and in-process analysis;
-the streaming recorder is the appropriate default when a run may emit millions
-of events. Core does not choose a trace path and does not depend on a JSON or
+Block size and the number of queued blocks are explicit policy knobs, not global
+state:
+
+```cpp
+easylocal::trace::binary_buffer_options options{
+    .block_size = 256 * 1024,
+    .async_queue_blocks = 4,
+};
+easylocal::trace::async_binary_recorder<cost_type> trace{out, options};
+```
+
+The async recorder is deliberately single-producer: it is designed to observe
+one search trajectory.  Synchronization happens at block boundaries, not for
+every event.  The writer thread may reduce search-thread stalls when persistence
+is slower than encoding, but it does not make I/O free; benchmarks therefore
+report producer time separately from total drain time.
+
+The memory recorder is intended for tests, short traces and in-process analysis.
+JSONL is convenient for inspection and interchange, while `ELTR` is preferred
+when a run may emit millions of events and trace volume matters.  Core does not
+choose a trace path and does not depend on a JSON, binary-serialization or
 logging library.
+
+### Extending ELTR without touching EasyLocal
+
+The binary encoder is intentionally small enough to customize in application
+code.  A structured cost writer receives a `binary_record_writer`, whose
+primitive operations (`u8`, `u32`, `u64`, `i32`, `i64`, `f64`, `boolean`,
+`bytes`, `string`, and `route`) always use the ELTR representation.  The writer
+does not calculate payload sizes and does not know about block or thread
+management:
+
+```cpp
+struct cost_binary
+{
+    void operator()(
+        easylocal::trace::binary_record_writer& out,
+        const Cost& cost) const
+    {
+        out.i64(cost.hard_value());
+        out.i64(cost.soft_value());
+    }
+};
+
+easylocal::trace::binary_recorder<Cost, cost_binary> trace{out, cost_binary{}};
+```
+
+Applications can also add their own semantic event types through ADL.  Tags
+1..127 are reserved by EasyLocal; `user_binary_event_tag<N>()` maps application
+indices 0..127 onto tags 128..255:
+
+```cpp
+namespace my_problem
+{
+struct temperature_changed
+{
+    std::uint64_t iteration;
+    double temperature;
+};
+
+constexpr auto binary_event_tag(const temperature_changed&) -> std::uint8_t
+{
+    return easylocal::trace::user_binary_event_tag<0>();
+}
+
+void encode_binary_event(
+    easylocal::trace::binary_record_writer& out,
+    const temperature_changed& value)
+{
+    out.u64(value.iteration);
+    out.f64(value.temperature);
+}
+} // namespace my_problem
+```
+
+No EasyLocal specialization is required.  A binary recorder automatically
+advertises `observes<my_problem::temperature_changed>` and the ordinary
+`trace::emit(...)` path can emit it.  This keeps problem-specific instrumentation
+close to the problem code while the recorder owns buffering and persistence.
+Tag ownership is application-level metadata; independent extensions should
+coordinate their user-tag assignments when they share a trace schema.
 
 By default, JSONL persistence accepts costs that can be inserted into an
 `std::ostream`. Domain-specific or structured costs can instead provide a small
@@ -99,6 +186,10 @@ compares the following modes on the same First Improvement workload:
 - the full in-memory recorder;
 - incremental EasyLocal JSONL serialization into a discard stream, isolating
   serialization overhead from filesystem I/O;
+- block-buffered EasyLocal binary serialization into the same kind of discard stream;
+- asynchronous binary recording, reporting both producer time and total drain time;
+- synchronous and asynchronous binary recording to temporary files, again keeping
+  async producer and total drain timings distinct;
 - when a system spdlog installation is found, equivalent synchronous spdlog JSONL
   formatting into a formatting discard sink.
 
@@ -109,9 +200,14 @@ installs it explicitly on Linux and macOS, runs ten process-level Release trials
 for pull requests and release tags, and publishes the raw CSV as both a job
 summary and artifact.
 
-This benchmark is a regression probe, not a promise about a particular machine.
-The important contract is that the disabled path does not construct events or
-dispatch through a runtime logging interface.
+The benchmark also reports JSONL and binary bytes per emitted event on stderr, so
+CPU overhead and trace volume can be considered together. Temporary-file modes
+flush the C++ stream but deliberately do not call `fsync`; they measure the cost
+visible to the search process, including OS page-cache interaction, rather than a
+durability guarantee. It is a regression probe, not a promise about a particular
+machine. The important contract is that
+the disabled path does not construct events or dispatch through a runtime logging
+interface.
 
 ## Deferred extensions
 

@@ -18,6 +18,8 @@
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
+#include <filesystem>
+#include <fstream>
 #include <iostream>
 #include <memory>
 #include <streambuf>
@@ -48,16 +50,31 @@ struct counting_tracer
 
 class discard_streambuf : public std::streambuf
 {
+public:
+    [[nodiscard]]
+    auto bytes() const noexcept -> std::uint64_t
+    {
+        return bytes_;
+    }
+
 protected:
     auto xsputn(const char*, std::streamsize count) -> std::streamsize override
     {
+        bytes_ += static_cast<std::uint64_t>(count);
         return count;
     }
 
     auto overflow(int_type character) -> int_type override
     {
+        if (!traits_type::eq_int_type(character, traits_type::eof()))
+        {
+            ++bytes_;
+        }
         return traits_type::not_eof(character);
     }
+
+private:
+    std::uint64_t bytes_{};
 };
 
 #if defined(EASYLOCAL_TRACE_BENCHMARK_HAS_SPDLOG)
@@ -239,6 +256,45 @@ auto measure(Function&& function, std::size_t repetitions)
     return std::pair{ns, checksum};
 }
 
+struct async_measurement
+{
+    double producer_ns{};
+    double total_ns{};
+    std::uint64_t checksum{};
+};
+
+template<class Function, class Flush>
+auto measure_async(
+    Function&& function,
+    Flush&& flush,
+    std::size_t repetitions) -> async_measurement
+{
+    constexpr std::size_t warmup_repetitions = 8;
+    for (std::size_t repetition = 0; repetition < warmup_repetitions; ++repetition)
+    {
+        (void)function();
+    }
+    flush();
+
+    const auto start = std::chrono::steady_clock::now();
+    std::uint64_t checksum = 0;
+    for (std::size_t repetition = 0; repetition < repetitions; ++repetition)
+    {
+        checksum += static_cast<std::uint64_t>(function());
+    }
+    const auto producer_stop = std::chrono::steady_clock::now();
+    flush();
+    const auto total_stop = std::chrono::steady_clock::now();
+
+    return {
+        .producer_ns = std::chrono::duration<double, std::nano>(
+            producer_stop - start).count(),
+        .total_ns = std::chrono::duration<double, std::nano>(
+            total_stop - start).count(),
+        .checksum = checksum,
+    };
+}
+
 } // namespace
 
 int main()
@@ -299,13 +355,82 @@ int main()
         return result.evaluations;
     }, repetitions);
 
-    discard_streambuf discarded;
-    std::ostream discarded_output{&discarded};
-    easylocal::trace::jsonl_recorder<cost_type> jsonl{discarded_output};
+    discard_streambuf jsonl_discarded;
+    std::ostream jsonl_discarded_output{&jsonl_discarded};
+    easylocal::trace::jsonl_recorder<cost_type> jsonl{jsonl_discarded_output};
     const auto streaming = measure([&] {
         const auto result = bound.run(initial, jsonl);
         return result.evaluations;
     }, repetitions);
+
+    discard_streambuf binary_discarded;
+    std::ostream binary_discarded_output{&binary_discarded};
+    easylocal::trace::buffered_binary_recorder<cost_type> binary{
+        binary_discarded_output};
+    const auto binary_streaming = measure([&] {
+        const auto result = bound.run(initial, binary);
+        return result.evaluations;
+    }, repetitions);
+    binary.flush();
+
+    discard_streambuf async_binary_discarded;
+    std::ostream async_binary_discarded_output{&async_binary_discarded};
+    easylocal::trace::async_binary_recorder<cost_type> async_binary{
+        async_binary_discarded_output};
+    const auto async_binary_streaming = measure_async(
+        [&] {
+            const auto result = bound.run(initial, async_binary);
+            return result.evaluations;
+        },
+        [&] { async_binary.flush(); },
+        repetitions);
+
+    const auto temp_directory = std::filesystem::temp_directory_path();
+    const auto buffered_file_path =
+        temp_directory / "easylocal-trace-benchmark-buffered.eltrace";
+    const auto async_file_path =
+        temp_directory / "easylocal-trace-benchmark-async.eltrace";
+
+    std::error_code remove_error;
+    std::filesystem::remove(buffered_file_path, remove_error);
+    std::filesystem::remove(async_file_path, remove_error);
+
+    std::pair<double, std::uint64_t> binary_file;
+    std::uintmax_t binary_file_bytes{};
+    {
+        std::ofstream output{buffered_file_path, std::ios::binary | std::ios::trunc};
+        {
+            easylocal::trace::buffered_binary_recorder<cost_type> recorder{output};
+            binary_file = measure([&] {
+                const auto result = bound.run(initial, recorder);
+                return result.evaluations;
+            }, repetitions);
+            recorder.flush();
+        }
+        output.close();
+        binary_file_bytes = std::filesystem::file_size(buffered_file_path);
+    }
+
+    async_measurement async_binary_file;
+    std::uintmax_t async_binary_file_bytes{};
+    {
+        std::ofstream output{async_file_path, std::ios::binary | std::ios::trunc};
+        {
+            easylocal::trace::async_binary_recorder<cost_type> recorder{output};
+            async_binary_file = measure_async(
+                [&] {
+                    const auto result = bound.run(initial, recorder);
+                    return result.evaluations;
+                },
+                [&] { recorder.flush(); },
+                repetitions);
+        }
+        output.close();
+        async_binary_file_bytes = std::filesystem::file_size(async_file_path);
+    }
+
+    std::filesystem::remove(buffered_file_path, remove_error);
+    std::filesystem::remove(async_file_path, remove_error);
 
 #if defined(EASYLOCAL_TRACE_BENCHMARK_HAS_SPDLOG)
     auto spdlog_sink = std::make_shared<formatting_discard_sink>();
@@ -325,6 +450,22 @@ int main()
     std::cout << "counting," << counting.first / evaluations << ',' << counting.second << '\n';
     std::cout << "memory," << memory.first / evaluations << ',' << memory.second << '\n';
     std::cout << "jsonl-discard," << streaming.first / evaluations << ',' << streaming.second << '\n';
+    std::cout << "binary-buffered-discard," << binary_streaming.first / evaluations << ','
+              << binary_streaming.second << '\n';
+    std::cout << "binary-async-producer-discard,"
+              << async_binary_streaming.producer_ns / evaluations << ','
+              << async_binary_streaming.checksum << '\n';
+    std::cout << "binary-async-total-discard,"
+              << async_binary_streaming.total_ns / evaluations << ','
+              << async_binary_streaming.checksum << '\n';
+    std::cout << "binary-buffered-file," << binary_file.first / evaluations << ','
+              << binary_file.second << '\n';
+    std::cout << "binary-async-producer-file,"
+              << async_binary_file.producer_ns / evaluations << ','
+              << async_binary_file.checksum << '\n';
+    std::cout << "binary-async-total-file,"
+              << async_binary_file.total_ns / evaluations << ','
+              << async_binary_file.checksum << '\n';
 #if defined(EASYLOCAL_TRACE_BENCHMARK_HAS_SPDLOG)
     std::cout << "spdlog-jsonl-discard," << spdlog_streaming.first / evaluations << ','
               << spdlog_streaming.second << '\n';
@@ -333,11 +474,28 @@ int main()
     std::cerr << "spdlog=unavailable\n";
 #endif
     std::cerr << "counted_events=" << counter.events << '\n';
+    if (counter.events != 0)
+    {
+        const auto events = static_cast<double>(counter.events);
+        std::cerr << "jsonl_bytes=" << jsonl_discarded.bytes()
+                  << ",jsonl_bytes_per_event=" << jsonl_discarded.bytes() / events << '\n';
+        std::cerr << "binary_bytes=" << binary_discarded.bytes()
+                  << ",binary_bytes_per_event=" << binary_discarded.bytes() / events << '\n';
+        std::cerr << "async_binary_bytes=" << async_binary_discarded.bytes()
+                  << ",async_binary_bytes_per_event="
+                  << async_binary_discarded.bytes() / events << '\n';
+        std::cerr << "binary_file_bytes=" << binary_file_bytes
+                  << ",async_binary_file_bytes=" << async_binary_file_bytes << '\n';
+    }
 
     const auto checksum = baseline.second;
     const bool checksums_match =
         explicit_null.second == checksum && counting.second == checksum &&
-        memory.second == checksum && streaming.second == checksum
+        memory.second == checksum && streaming.second == checksum &&
+        binary_streaming.second == checksum &&
+        async_binary_streaming.checksum == checksum &&
+        binary_file.second == checksum &&
+        async_binary_file.checksum == checksum
 #if defined(EASYLOCAL_TRACE_BENCHMARK_HAS_SPDLOG)
         && spdlog_streaming.second == checksum
 #endif
