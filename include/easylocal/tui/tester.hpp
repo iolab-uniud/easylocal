@@ -6,6 +6,7 @@
 #include <easylocal/tester.hpp>
 
 #include <ftxui/ftxui.hpp>
+#include <ftxui/screen/string.hpp>
 
 #include <algorithm>
 #include <atomic>
@@ -341,6 +342,108 @@ inline auto text_lines(const std::string& value) -> ftxui::Element
     return lines;
 }
 
+[[nodiscard]] inline auto wrap_text_lines(
+    std::string_view value,
+    const std::size_t width) -> std::vector<std::string>
+{
+    const auto effective_width = static_cast<int>(
+        std::max<std::size_t>(1, width));
+    std::vector<std::string> wrapped;
+
+    const auto trim_left = [](std::string& text) {
+        while (!text.empty() &&
+               (text.front() == ' ' || text.front() == '\t'))
+        {
+            text.erase(text.begin());
+        }
+    };
+    const auto trim_right = [](std::string& text) {
+        while (!text.empty() &&
+               (text.back() == ' ' || text.back() == '\t'))
+        {
+            text.pop_back();
+        }
+    };
+
+    for (auto logical_line : split_text_lines(value))
+    {
+        if (logical_line.empty())
+        {
+            wrapped.emplace_back();
+            continue;
+        }
+
+        std::string current;
+        std::size_t last_break{};
+        for (const auto& glyph : ftxui::Utf8ToGlyphs(logical_line))
+        {
+            if (current.empty() && (glyph == " " || glyph == "\t"))
+            {
+                continue;
+            }
+            while (!current.empty() &&
+                   ftxui::string_width(current + glyph) > effective_width)
+            {
+                if (last_break != 0)
+                {
+                    auto line = current.substr(0, last_break);
+                    trim_right(line);
+                    wrapped.push_back(std::move(line));
+                    current.erase(0, last_break);
+                    trim_left(current);
+                }
+                else
+                {
+                    wrapped.push_back(std::move(current));
+                    current.clear();
+                }
+                last_break = 0;
+            }
+
+            // The overflow above may have emitted the whole current line.
+            // In that case a whitespace glyph that triggered the wrap belongs
+            // to the separator, not to the beginning of the next visual line.
+            if (current.empty() && (glyph == " " || glyph == "\t"))
+            {
+                continue;
+            }
+
+            current += glyph;
+            if (glyph == " " || glyph == "\t" || glyph == "," ||
+                glyph == ";")
+            {
+                last_break = current.size();
+            }
+        }
+
+        if (!current.empty())
+        {
+            trim_right(current);
+            wrapped.push_back(std::move(current));
+        }
+    }
+
+    if (wrapped.empty())
+    {
+        wrapped.emplace_back();
+    }
+    return wrapped;
+}
+
+[[nodiscard]] inline auto terminal_available_width(const int margin = 4) noexcept
+    -> int
+{
+    const auto dimensions = ftxui::Terminal::Size();
+    return std::max(1, dimensions.dimx - margin);
+}
+
+[[nodiscard]] inline auto terminal_available_height(const int margin = 2) noexcept
+    -> int
+{
+    const auto dimensions = ftxui::Terminal::Size();
+    return std::max(1, dimensions.dimy - margin);
+}
+
 [[nodiscard]] constexpr auto page_scroll_selection(
     const int selected,
     const std::size_t count,
@@ -544,7 +647,7 @@ public:
     {
         using namespace ftxui;
 
-        auto app = ftxui::App::TerminalOutput();
+        auto app = ftxui::App::Fullscreen();
 
         Component input_path_component;
         Component solution_path_component;
@@ -569,7 +672,7 @@ public:
             solution_controls->Add(instance_menu);
             solution_controls->Add(Container::Horizontal({
                 Button(
-                    "O Open selected",
+                    "L Load selected",
                     [this] { load_input(); },
                     ButtonOption::Ascii()),
                 Button(
@@ -625,7 +728,7 @@ public:
             if constexpr (tester_type::supports_solution_loading)
             {
                 file_actions.push_back(Button(
-                    "L Load",
+                    "Shift-L Load",
                     [this] { load_solution(); },
                     ButtonOption::Ascii()));
             }
@@ -912,6 +1015,7 @@ public:
         auto input_viewer = Renderer(
             input_viewer_controls,
             [this, input_viewer_menu, input_viewer_close] {
+                refresh_input_viewer_layout();
                 return render_input_viewer(input_viewer_menu, input_viewer_close);
             });
         input_viewer = CatchEvent(input_viewer, [this](Event event) {
@@ -946,6 +1050,7 @@ public:
         auto solution_viewer = Renderer(
             solution_viewer_controls,
             [this, solution_viewer_menu, solution_viewer_close] {
+                refresh_solution_viewer_layout();
                 return render_solution_viewer(solution_viewer_menu, solution_viewer_close);
             });
         solution_viewer = CatchEvent(solution_viewer, [this](Event event) {
@@ -1128,13 +1233,13 @@ private:
         {
         case tester_page::solution:
             if constexpr (tester_type::supports_input_loading)
-                append("O Open");
+                append("L Load input");
             if constexpr (tester_type::supports_initial_solution)
                 append("I Initial");
             if constexpr (tester_type::supports_random_solution)
                 append("R Random");
             if constexpr (tester_type::supports_solution_loading)
-                append("L Load");
+                append("Shift-L Load solution");
             if constexpr (tester_type::supports_solution_saving)
                 append("W Save");
             append("C Check");
@@ -1190,7 +1295,7 @@ private:
     {
         if constexpr (tester_type::supports_input_loading)
         {
-            if (event == ftxui::Event::o || event == ftxui::Event::O)
+            if (event == ftxui::Event::l)
             {
                 load_input();
                 return true;
@@ -1214,7 +1319,7 @@ private:
         }
         if constexpr (tester_type::supports_solution_loading)
         {
-            if (event == ftxui::Event::l || event == ftxui::Event::L)
+            if (event == ftxui::Event::L)
             {
                 load_solution();
                 return true;
@@ -1436,10 +1541,10 @@ private:
     {
         if (input_path_.empty())
         {
-            set_status(status_kind::warning, "Open input: enter or browse a file name");
+            set_status(status_kind::warning, "Load input: enter or browse a file name");
             return;
         }
-        perform("Open input", [this] {
+        perform("Load input", [this] {
             const auto path = resolve_path(input_path_);
             tester_.load_input(path);
             last_move_result_.clear();
@@ -1543,7 +1648,9 @@ private:
 
     void show_input()
     {
-        input_viewer_lines_ = split_text_lines(input_text());
+        input_viewer_text_ = input_text();
+        input_viewer_wrap_width_ = 0;
+        refresh_input_viewer_layout();
         input_viewer_selected_ = 0;
         solution_visible_ = false;
         input_visible_ = true;
@@ -1551,10 +1658,51 @@ private:
 
     void show_solution()
     {
-        solution_viewer_lines_ = split_text_lines(solution_text());
+        solution_viewer_text_ = solution_text();
+        solution_viewer_wrap_width_ = 0;
+        refresh_solution_viewer_layout();
         solution_viewer_selected_ = 0;
         input_visible_ = false;
         solution_visible_ = true;
+    }
+
+    [[nodiscard]] auto viewer_wrap_width() const noexcept -> std::size_t
+    {
+        // Reserve room for the modal borders, menu selection marker, and the
+        // vertical scroll indicator.  The value is recomputed on every redraw
+        // after a terminal resize.
+        const auto available = detail::terminal_available_width();
+        return static_cast<std::size_t>(std::max(1, available - 8));
+    }
+
+    void refresh_input_viewer_layout()
+    {
+        const auto width = viewer_wrap_width();
+        if (input_viewer_wrap_width_ == width)
+        {
+            return;
+        }
+        input_viewer_wrap_width_ = width;
+        input_viewer_lines_ = wrap_text_lines(input_viewer_text_, width);
+        input_viewer_selected_ = page_scroll_selection(
+            input_viewer_selected_,
+            input_viewer_lines_.size(),
+            0);
+    }
+
+    void refresh_solution_viewer_layout()
+    {
+        const auto width = viewer_wrap_width();
+        if (solution_viewer_wrap_width_ == width)
+        {
+            return;
+        }
+        solution_viewer_wrap_width_ = width;
+        solution_viewer_lines_ = wrap_text_lines(solution_viewer_text_, width);
+        solution_viewer_selected_ = page_scroll_selection(
+            solution_viewer_selected_,
+            solution_viewer_lines_.size(),
+            0);
     }
 
     void check()
@@ -2345,6 +2493,14 @@ private:
                                       text(" Diagnostics "),
                                       diagnostics->Render()) |
                                   size(HEIGHT, EQUAL, 3);
+        if (ftxui::Terminal::Size().dimx < 90)
+        {
+            return vbox({
+                actions,
+                details | flex,
+                diagnostic_actions,
+            }) | flex;
+        }
         return vbox({
             hbox({actions, details}) | flex,
             diagnostic_actions,
@@ -2371,24 +2527,27 @@ private:
     {
         using namespace ftxui;
 
+        const auto title = options_.title + "  |  " + current_instance_name() +
+                           "  [seed=" + std::to_string(options_.seed) + "]";
+        const auto cost = "COST " + current_cost_text();
+        const auto header = ftxui::Terminal::Size().dimx < 80
+            ? vbox({paragraph(title) | bold, text(cost) | bold})
+            : hbox({text(title) | bold, filler(), text(cost) | bold});
+
         return vbox({
-                   hbox({
-                       text(options_.title + "  |  " + current_instance_name() +
-                            "  [seed=" + std::to_string(options_.seed) + "]") | bold,
-                       filler(),
-                       text("COST " + current_cost_text()) | bold,
-                   }),
+                   header,
                    page_menu->Render() | center,
                    separator(),
                    pages->Render() | flex,
                    separator(),
                    render_status(),
-                   text(current_page_shortcuts()) | center,
-                   text("F3 I/O  F4 Move  F5 Run  |  F1 Input  F2 Solution  S Show solution  |  ? Help  |  q " +
-                        options_.exit_label +
-                        "  |  Tab/Shift-Tab focus") |
-                       center | dim,
+                   paragraphAlignCenter(current_page_shortcuts()),
+                   paragraphAlignCenter(
+                       "F3 I/O  F4 Move  F5 Run  |  F1 Input  F2 Solution  S Show solution  |  ? Help  |  q " +
+                       options_.exit_label +
+                       "  |  Tab/Shift-Tab focus") | dim,
                }) |
+               size(HEIGHT, EQUAL, detail::terminal_available_height()) |
                border;
     }
 
@@ -2424,23 +2583,26 @@ private:
         const ftxui::Component& close) const -> ftxui::Element
     {
         using namespace ftxui;
+        const auto width = std::min(76, detail::terminal_available_width());
+        const auto height = std::min(20, detail::terminal_available_height());
         return window(
                    text(" " + diagnostic_title_ + " "),
                    vbox({
-                       text("Up/Down/PgUp/PgDn scroll  |  Esc/q close") | dim,
+                       paragraph("Up/Down/PgUp/PgDn scroll  |  Esc/q close") | dim,
                        separator(),
                        menu->Render() | vscroll_indicator | frame | flex,
                        separator(),
                        close->Render() | center,
                    })) |
-               size(WIDTH, EQUAL, 76) |
-               size(HEIGHT, EQUAL, 20) | border;
+               size(WIDTH, EQUAL, width) |
+               size(HEIGHT, EQUAL, height) | border;
     }
 
     [[nodiscard]] auto render_progress_modal(
         const ftxui::Component& stop) const -> ftxui::Element
     {
         using namespace ftxui;
+        const auto width = std::min(60, detail::terminal_available_width());
         return window(
                    text(" Progress "),
                    vbox({
@@ -2451,7 +2613,7 @@ private:
                        separator(),
                        stop->Render() | center,
                    })) |
-               size(WIDTH, GREATER_THAN, 44) | border;
+               size(WIDTH, EQUAL, width) | border;
     }
 
     [[nodiscard]] auto render_input_viewer(
@@ -2466,13 +2628,14 @@ private:
                 "File: " + format_path(resolve_path(input_path_))) | dim);
             body.push_back(separator());
         }
-        body.push_back(text("Up/Down/PgUp/PgDn scroll  |  Esc/F1 close") | dim);
+        body.push_back(paragraph("Up/Down/PgUp/PgDn scroll  |  Esc/F1 close") | dim);
         body.push_back(separator());
         body.push_back(menu->Render() | vscroll_indicator | frame | flex);
         body.push_back(separator());
         body.push_back(close->Render() | center);
         return window(text(" Input  [F1] "), vbox(std::move(body))) |
-               size(WIDTH, GREATER_THAN, 52) |
+               size(WIDTH, EQUAL, detail::terminal_available_width()) |
+               size(HEIGHT, EQUAL, detail::terminal_available_height()) |
                border;
     }
 
@@ -2490,13 +2653,14 @@ private:
             body.push_back(text("Cost: " + current_cost_text()) | bold);
             body.push_back(separator());
         }
-        body.push_back(text("Up/Down/PgUp/PgDn scroll  |  Esc/F2/S close") | dim);
+        body.push_back(paragraph("Up/Down/PgUp/PgDn scroll  |  Esc/F2/S close") | dim);
         body.push_back(separator());
         body.push_back(menu->Render() | vscroll_indicator | frame | flex);
         body.push_back(separator());
         body.push_back(close->Render() | center);
         return window(text(" Solution  [F2/S] "), vbox(std::move(body))) |
-               size(WIDTH, GREATER_THAN, 52) |
+               size(WIDTH, EQUAL, detail::terminal_available_width()) |
+               size(HEIGHT, EQUAL, detail::terminal_available_height()) |
                border;
     }
 
@@ -2627,8 +2791,7 @@ private:
         Elements body{
             text(format_path(browser_directory_)) | bold,
             separator(),
-            browser_menu->Render() | vscroll_indicator | frame |
-                size(HEIGHT, LESS_THAN, 16),
+            browser_menu->Render() | vscroll_indicator | frame | flex,
         };
         if (!browser_error_.empty())
         {
@@ -2638,7 +2801,8 @@ private:
         body.push_back(separator());
         body.push_back(text("Enter/Open: open file or directory  |  Esc: cancel") | dim);
         return window(text(title), vbox(std::move(body))) |
-               size(WIDTH, GREATER_THAN, 60) |
+               size(WIDTH, EQUAL, detail::terminal_available_width()) |
+               size(HEIGHT, EQUAL, detail::terminal_available_height()) |
                border;
     }
 
@@ -2657,7 +2821,7 @@ private:
             text("S   show Solution"),
             separator(),
             text("Input / Output page") | bold,
-            text("O open input   I initial   R random   L load   W save   C check"),
+            text("L load input   I initial   R random   Shift-L load solution   W save   C check"),
             text("Move page") | bold,
             text("B best   I first improving   F first   N next   R random   A apply"),
             text("P list   T stats   C costs   D independence   U distribution"),
@@ -2675,7 +2839,8 @@ private:
             controls->Render(),
         };
         return window(text(" Keyboard help "), vbox(std::move(lines))) |
-               size(WIDTH, GREATER_THAN, 52) |
+               size(WIDTH, EQUAL, detail::terminal_available_width()) |
+               size(HEIGHT, EQUAL, detail::terminal_available_height()) |
                border;
     }
 
@@ -2726,10 +2891,14 @@ private:
     std::string run_name_;
     std::string run_before_;
     bool input_visible_{};
+    std::string input_viewer_text_;
     std::vector<std::string> input_viewer_lines_{""};
+    std::size_t input_viewer_wrap_width_{};
     int input_viewer_selected_{};
     bool solution_visible_{};
+    std::string solution_viewer_text_;
     std::vector<std::string> solution_viewer_lines_{""};
+    std::size_t solution_viewer_wrap_width_{};
     int solution_viewer_selected_{};
 };
 

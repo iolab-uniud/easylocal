@@ -89,6 +89,7 @@ int main()
     using easylocal::tui::detail::solution_stage;
     using easylocal::tui::detail::solution_stage_of;
     using easylocal::tui::detail::split_text_lines;
+    using easylocal::tui::detail::wrap_text_lines;
     using easylocal::tui::detail::tester_page;
     using easylocal::tui::detail::context_pages_available;
     using easylocal::tui::detail::directory_entries;
@@ -150,6 +151,15 @@ int main()
     assert((split_text_lines("a\n\nb") == std::vector<std::string>{"a", "", "b"}));
     assert((split_text_lines("a\n") == std::vector<std::string>{"a", ""}));
     assert((split_text_lines("") == std::vector<std::string>{""}));
+
+    assert((wrap_text_lines("0, 1, 2, 3", 5) ==
+            std::vector<std::string>{"0, 1,", "2, 3"}));
+    assert((wrap_text_lines("hello world", 7) ==
+            std::vector<std::string>{"hello", "world"}));
+    assert((wrap_text_lines("abc\ndef", 80) ==
+            std::vector<std::string>{"abc", "def"}));
+    assert((wrap_text_lines("测试测试", 4) ==
+            std::vector<std::string>{"测试", "测试"}));
 
     assert(page_scroll_selection(0, 0, 10) == 0);
     assert(page_scroll_selection(0, 25, 10) == 10);
