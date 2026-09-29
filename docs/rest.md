@@ -82,7 +82,11 @@ server.port(8080)
 
 A complete compiling example is available as `easylocal_assignment_rest_mwe`
 under `examples/assignment`. It decodes `demand`/`capacity` arrays from Crow
-JSON and serializes the final assignment plus hierarchical cost.
+JSON and serializes the final assignment plus hierarchical cost. The example
+listens on port 18080 by default and accepts an optional port as its only
+command-line argument, which is also used by the HTTP integration test. It
+registers both the normal `fi` runner and the example-only `slow-fi` runner used
+to exercise observable progress and cooperative cancellation.
 
 `app_blueprint` is deliberately non-copyable/non-movable because its Crow route
 callbacks refer to its state. Keep it alive for at least as long as the Crow
@@ -204,3 +208,17 @@ semantics, not a substitute for edge security.
 
 No Crow, Asio, HTTP, or JSON type appears in a Core signature. The architecture
 test also prevents optional adapters from reaching into `easylocal/detail/*`.
+
+## HTTP integration test
+
+When REST is enabled on a Unix-like host with `curl` available, CTest registers
+`easylocal.rest-http`. The test starts the real Assignment Crow server on a
+test-local port and exercises the public HTTP surface with `curl`: metadata and
+runner discovery, invalid JSON and unknown-runner errors, successful submission
+and solution retrieval, terminal-run cleanup, live progress, cooperative
+cancellation, and partial-solution retrieval after cancellation.
+
+The test carries both `integration` and `rest-http` labels.
+`scripts/build-and-test.sh --with-rest` runs it explicitly even in the normal
+fast profile; `--integration` additionally enables the remaining integration
+tests such as the installed-package consumer.

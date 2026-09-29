@@ -22,6 +22,14 @@ Optional integrations:
   --with-tui         Also build and test the FTXUI tester frontend.
   --with-rest        Also build and test the Crow REST adapter.
 
+Execution modes:
+  (default)          Configure/build/test the requested combination once.
+                     For example, --with-tui --with-rest produces one build
+                     containing Core + TUI + REST.
+  --exhaustive       Test every feature subset of the requested combination.
+                     For TUI + REST this checks Core, TUI, REST, and TUI+REST.
+                     With --all this checks the complete 8-profile matrix.
+
 TOML dependency modes:
   EASYLOCAL_TEST_SYSTEM_TOML=auto|on|off
                      Controls the system-installed toml++ check when TOML
@@ -47,16 +55,19 @@ REST dependency modes:
                        off:  force FetchContent
 
 Other options:
-  --integration      Also run tests labelled integration.
+  --integration      Also run all tests labelled integration. REST HTTP/curl
+                     integration is always exercised by --with-rest; this flag
+                     additionally enables the other integration tests.
   -h, --help         Show this help.
 
 Examples:
   ./scripts/build-and-test.sh
   ./scripts/build-and-test.sh release
   ./scripts/build-and-test.sh --with-toml
-  ./scripts/build-and-test.sh --with-tui
-  ./scripts/build-and-test.sh --with-rest
-  ./scripts/build-and-test.sh release --all
+  ./scripts/build-and-test.sh --with-tui --with-rest
+  ./scripts/build-and-test.sh --all
+  ./scripts/build-and-test.sh --all --exhaustive
+  ./scripts/build-and-test.sh --with-tui --with-rest --exhaustive
   ./scripts/build-and-test.sh --integration
   EASYLOCAL_TEST_SYSTEM_TOML=on ./scripts/build-and-test.sh --with-toml
   EASYLOCAL_TEST_SYSTEM_FTXUI=on ./scripts/build-and-test.sh --with-tui
@@ -83,6 +94,7 @@ SYSTEM_TOML_MODE="${EASYLOCAL_TEST_SYSTEM_TOML:-auto}"
 SYSTEM_FTXUI_MODE="${EASYLOCAL_TEST_SYSTEM_FTXUI:-auto}"
 SYSTEM_CROW_MODE="${EASYLOCAL_TEST_SYSTEM_CROW:-auto}"
 RUN_INTEGRATION=off
+EXHAUSTIVE=off
 preset_seen=false
 profile_seen=false
 explicit_core=false
@@ -128,9 +140,6 @@ for arg in "$@"; do
             TEST_TOML=on
             explicit_toml=true
             ;;
-        --integration)
-            RUN_INTEGRATION=on
-            ;;
         --with-tui)
             if [[ "$explicit_core" == true ]]; then
                 die "--core and --with-tui are mutually exclusive"
@@ -145,6 +154,12 @@ for arg in "$@"; do
             TEST_REST=on
             explicit_rest=true
             ;;
+        --integration)
+            RUN_INTEGRATION=on
+            ;;
+        --exhaustive)
+            EXHAUSTIVE=on
+            ;;
         -h|--help)
             usage
             exit 0
@@ -156,343 +171,271 @@ for arg in "$@"; do
     esac
 done
 
-case "$SYSTEM_TOML_MODE" in
-    auto|on|off)
-        ;;
-    *)
-        die "EASYLOCAL_TEST_SYSTEM_TOML must be one of: auto, on, off"
-        ;;
-esac
+validate_dependency_mode() {
+    local variable="$1"
+    local value="$2"
+    case "$value" in
+        auto|on|off)
+            ;;
+        *)
+            die "$variable must be one of: auto, on, off"
+            ;;
+    esac
+}
 
-case "$SYSTEM_FTXUI_MODE" in
-    auto|on|off)
-        ;;
-    *)
-        die "EASYLOCAL_TEST_SYSTEM_FTXUI must be one of: auto, on, off"
-        ;;
-esac
+validate_dependency_mode EASYLOCAL_TEST_SYSTEM_TOML "$SYSTEM_TOML_MODE"
+validate_dependency_mode EASYLOCAL_TEST_SYSTEM_FTXUI "$SYSTEM_FTXUI_MODE"
+validate_dependency_mode EASYLOCAL_TEST_SYSTEM_CROW "$SYSTEM_CROW_MODE"
 
-case "$SYSTEM_CROW_MODE" in
-    auto|on|off)
-        ;;
-    *)
-        die "EASYLOCAL_TEST_SYSTEM_CROW must be one of: auto, on, off"
-        ;;
-esac
-
-profile_label="core"
-if [[ "$TEST_TOML" == on && "$TEST_TUI" == on && "$TEST_REST" == on ]]; then
-    profile_label="all-enabled"
-else
-    [[ "$TEST_TOML" == on ]] && profile_label="${profile_label}+toml"
-    [[ "$TEST_TUI" == on ]] && profile_label="${profile_label}+tui"
-    [[ "$TEST_REST" == on ]] && profile_label="${profile_label}+rest"
-fi
-echo "==> Profile: ${profile_label}"
-echo "==> Configure: ${PRESET} (Core only)"
-cmake --fresh --preset "$PRESET" \
-    -DEASYLOCAL_ENABLE_CONFIG_TOML=OFF \
-    -DEASYLOCAL_ENABLE_TUI=OFF \
-    -DEASYLOCAL_ENABLE_REST=OFF
-
-echo
-echo "==> Build: ${PRESET}"
-cmake --build --preset "$PRESET" --parallel
-
-echo
-echo "==> Test: ${PRESET}"
-if [[ "$RUN_INTEGRATION" == "on" ]]; then
-    ctest --preset "$PRESET"
-else
-    ctest --preset "$PRESET" -LE integration
-fi
-
-run_tui_build_and_test() {
-    local label="$1"
-    local build_dir="$2"
-    shift 2
-
-    echo
-    echo "==> Configure: ${PRESET} + TUI (${label})"
-    cmake --fresh --preset "$PRESET" \
-        -B "$build_dir" \
-        -DEASYLOCAL_ENABLE_TUI=ON \
-        "$@"
-
-    echo
-    echo "==> Build: ${PRESET} + TUI (${label})"
-    cmake --build "$build_dir" --parallel
-
-    echo
-    echo "==> Test: ${PRESET} + TUI (${label})"
-    if [[ "$RUN_INTEGRATION" == "on" ]]; then
-        ctest --test-dir "$build_dir" --output-on-failure
+system_prefix_path="${CMAKE_PREFIX_PATH:-}"
+append_system_prefix() {
+    local prefix="$1"
+    [[ -n "$prefix" ]] || return
+    if [[ -n "$system_prefix_path" ]]; then
+        system_prefix_path="${system_prefix_path};${prefix}"
     else
-        ctest --test-dir "$build_dir" --output-on-failure -LE integration
+        system_prefix_path="$prefix"
     fi
 }
 
-if [[ "$TEST_TUI" == "on" ]]; then
-    system_ftxui_available=false
-
-    if [[ "$SYSTEM_FTXUI_MODE" != "off" ]]; then
-        TUI_SYSTEM_BUILD_DIR="build/${PRESET}-tui-system"
-        TUI_SYSTEM_CONFIGURE_LOG="${TUI_SYSTEM_BUILD_DIR}.configure.log"
-        system_ftxui_cmake_args=()
-        system_ftxui_prefix_path="${CMAKE_PREFIX_PATH:-}"
-
-        # Homebrew config packages are not guaranteed to be on CMake's
-        # default system prefix search path.
-        if command -v brew >/dev/null 2>&1 \
-                && brew --prefix ftxui >/dev/null 2>&1; then
-            brew_ftxui_prefix="$(brew --prefix ftxui)"
-            if [[ -n "$system_ftxui_prefix_path" ]]; then
-                system_ftxui_prefix_path="${system_ftxui_prefix_path};${brew_ftxui_prefix}"
-            else
-                system_ftxui_prefix_path="$brew_ftxui_prefix"
-            fi
+# Homebrew config packages are not guaranteed to be on CMake's default
+# system prefix search path. Add known optional dependency prefixes once so
+# combined profiles can discover all of them in a single configure.
+if command -v brew >/dev/null 2>&1; then
+    for formula in tomlplusplus ftxui crow asio; do
+        if brew --prefix "$formula" >/dev/null 2>&1; then
+            append_system_prefix "$(brew --prefix "$formula")"
         fi
-        if [[ -n "$system_ftxui_prefix_path" ]]; then
-            system_ftxui_cmake_args+=("-DCMAKE_PREFIX_PATH=${system_ftxui_prefix_path}")
-        fi
-
-        echo
-        echo "==> Probe: ${PRESET} + TUI (system FTXUI)"
-        set +e
-        cmake --fresh --preset "$PRESET" \
-            -B "$TUI_SYSTEM_BUILD_DIR" \
-            -DEASYLOCAL_ENABLE_TUI=ON \
-            -DEASYLOCAL_FETCH_DEPENDENCIES=OFF \
-            "${system_ftxui_cmake_args[@]}" \
-            >"$TUI_SYSTEM_CONFIGURE_LOG" 2>&1
-        system_configure_status=$?
-        set -e
-
-        cat "$TUI_SYSTEM_CONFIGURE_LOG"
-
-        if [[ $system_configure_status -eq 0 ]]; then
-            system_ftxui_available=true
-            echo
-            echo "==> Build: ${PRESET} + TUI (system FTXUI)"
-            cmake --build "$TUI_SYSTEM_BUILD_DIR" --parallel
-
-            echo
-            echo "==> Test: ${PRESET} + TUI (system FTXUI)"
-            if [[ "$RUN_INTEGRATION" == "on" ]]; then
-                ctest --test-dir "$TUI_SYSTEM_BUILD_DIR" --output-on-failure
-            else
-                ctest --test-dir "$TUI_SYSTEM_BUILD_DIR" --output-on-failure -LE integration
-            fi
-        elif grep -q "EasyLocal TUI requires FTXUI" "$TUI_SYSTEM_CONFIGURE_LOG"; then
-            if [[ "$SYSTEM_FTXUI_MODE" == "on" ]]; then
-                die "system FTXUI was required but CMake could not find it"
-            fi
-            echo "==> Fallback: system FTXUI not found; using FetchContent"
-        else
-            die "TUI system-dependency configure failed"
-        fi
-    fi
-
-    if [[ "$SYSTEM_FTXUI_MODE" == "off" || "$system_ftxui_available" == false ]]; then
-        run_tui_build_and_test \
-            "FetchContent" \
-            "build/${PRESET}-tui-fetch" \
-            -DEASYLOCAL_FETCH_DEPENDENCIES=ON \
-            -DCMAKE_DISABLE_FIND_PACKAGE_ftxui=TRUE
-    fi
+    done
 fi
 
-run_rest_build_and_test() {
-    local label="$1"
-    local build_dir="$2"
-    shift 2
+system_prefix_args=()
+if [[ -n "$system_prefix_path" ]]; then
+    system_prefix_args+=("-DCMAKE_PREFIX_PATH=${system_prefix_path}")
+fi
+
+RESOLVED_TOML=off
+RESOLVED_TUI=off
+RESOLVED_REST=off
+
+resolve_dependency() {
+    local mode="$1"
+    local label="$2"
+    local enable_variable="$3"
+    local missing_marker="$4"
+    local output_variable="$5"
+    local slug="$6"
+
+    if [[ "$mode" == off ]]; then
+        printf -v "$output_variable" '%s' fetch
+        return
+    fi
+
+    local probe_dir="build/.easylocal-probes/${PRESET}-${slug}-system"
+    local probe_log="${probe_dir}.configure.log"
+    mkdir -p "$(dirname "$probe_dir")"
 
     echo
-    echo "==> Configure: ${PRESET} + REST (${label})"
+    echo "==> Probe: ${label} (system dependency)"
+    set +e
+    cmake --fresh --preset "$PRESET" \
+        -B "$probe_dir" \
+        -DEASYLOCAL_BUILD_TESTS=OFF \
+        -DEASYLOCAL_BUILD_EXAMPLES=OFF \
+        -DEASYLOCAL_ENABLE_CONFIG_TOML=OFF \
+        -DEASYLOCAL_ENABLE_TUI=OFF \
+        -DEASYLOCAL_ENABLE_REST=OFF \
+        "-D${enable_variable}=ON" \
+        -DEASYLOCAL_FETCH_DEPENDENCIES=OFF \
+        "${system_prefix_args[@]}" \
+        >"$probe_log" 2>&1
+    local probe_status=$?
+    set -e
+
+    if [[ $probe_status -eq 0 ]]; then
+        printf -v "$output_variable" '%s' system
+        echo "==> Found: ${label} system dependency"
+        return
+    fi
+
+    if grep -q "$missing_marker" "$probe_log"; then
+        if [[ "$mode" == on ]]; then
+            cat "$probe_log"
+            die "system dependency required for ${label}, but CMake could not find it"
+        fi
+        printf -v "$output_variable" '%s' fetch
+        echo "==> Fallback: ${label} system dependency not found; using FetchContent"
+        return
+    fi
+
+    cat "$probe_log"
+    die "${label} system-dependency probe failed"
+}
+
+if [[ "$TEST_TOML" == on ]]; then
+    resolve_dependency \
+        "$SYSTEM_TOML_MODE" \
+        "ConfigTOML / toml++" \
+        EASYLOCAL_ENABLE_CONFIG_TOML \
+        "EasyLocal ConfigTOML requires tomlplusplus" \
+        RESOLVED_TOML \
+        toml
+fi
+
+if [[ "$TEST_TUI" == on ]]; then
+    resolve_dependency \
+        "$SYSTEM_FTXUI_MODE" \
+        "TUI / FTXUI" \
+        EASYLOCAL_ENABLE_TUI \
+        "EasyLocal TUI requires FTXUI" \
+        RESOLVED_TUI \
+        tui
+fi
+
+if [[ "$TEST_REST" == on ]]; then
+    resolve_dependency \
+        "$SYSTEM_CROW_MODE" \
+        "REST / Crow" \
+        EASYLOCAL_ENABLE_REST \
+        "EasyLocal REST requires Crow" \
+        RESOLVED_REST \
+        rest
+fi
+
+profile_name() {
+    local toml="$1"
+    local tui="$2"
+    local rest="$3"
+    local parts=()
+    [[ "$toml" == on ]] && parts+=(toml)
+    [[ "$tui" == on ]] && parts+=(tui)
+    [[ "$rest" == on ]] && parts+=(rest)
+    if [[ ${#parts[@]} -eq 0 ]]; then
+        printf '%s' core
+        return
+    fi
+    local IFS=-
+    printf '%s' "${parts[*]}"
+}
+
+dependency_profile_name() {
+    local toml="$1"
+    local tui="$2"
+    local rest="$3"
+    local modes=()
+    [[ "$toml" == on ]] && modes+=("$RESOLVED_TOML")
+    [[ "$tui" == on ]] && modes+=("$RESOLVED_TUI")
+    [[ "$rest" == on ]] && modes+=("$RESOLVED_REST")
+
+    if [[ ${#modes[@]} -eq 0 ]]; then
+        printf '%s' none
+        return
+    fi
+
+    local first="${modes[0]}"
+    local mode
+    for mode in "${modes[@]}"; do
+        if [[ "$mode" != "$first" ]]; then
+            printf '%s' mixed
+            return
+        fi
+    done
+    printf '%s' "$first"
+}
+
+run_profile() {
+    local toml="$1"
+    local tui="$2"
+    local rest="$3"
+    local profile
+    local dependency_profile
+    profile="$(profile_name "$toml" "$tui" "$rest")"
+    dependency_profile="$(dependency_profile_name "$toml" "$tui" "$rest")"
+
+    local build_dir
+    if [[ "$profile" == core ]]; then
+        build_dir="build/${PRESET}"
+    else
+        build_dir="build/${PRESET}-${profile}-${dependency_profile}"
+    fi
+
+    local enable_toml=OFF
+    local enable_tui=OFF
+    local enable_rest=OFF
+    [[ "$toml" == on ]] && enable_toml=ON
+    [[ "$tui" == on ]] && enable_tui=ON
+    [[ "$rest" == on ]] && enable_rest=ON
+
+    local fetch_dependencies=OFF
+    local dependency_args=()
+    if [[ "$toml" == on && "$RESOLVED_TOML" == fetch ]]; then
+        fetch_dependencies=ON
+        dependency_args+=("-DCMAKE_DISABLE_FIND_PACKAGE_tomlplusplus=TRUE")
+    fi
+    if [[ "$tui" == on && "$RESOLVED_TUI" == fetch ]]; then
+        fetch_dependencies=ON
+        dependency_args+=("-DCMAKE_DISABLE_FIND_PACKAGE_ftxui=TRUE")
+    fi
+    if [[ "$rest" == on && "$RESOLVED_REST" == fetch ]]; then
+        fetch_dependencies=ON
+        dependency_args+=("-DCMAKE_DISABLE_FIND_PACKAGE_Crow=TRUE")
+    fi
+
+    echo
+    echo "==> Profile: ${profile} (${dependency_profile})"
+    echo "==> Configure: ${build_dir}"
     cmake --fresh --preset "$PRESET" \
         -B "$build_dir" \
-        -DEASYLOCAL_ENABLE_REST=ON \
-        "$@"
+        "-DEASYLOCAL_ENABLE_CONFIG_TOML=${enable_toml}" \
+        "-DEASYLOCAL_ENABLE_TUI=${enable_tui}" \
+        "-DEASYLOCAL_ENABLE_REST=${enable_rest}" \
+        "-DEASYLOCAL_FETCH_DEPENDENCIES=${fetch_dependencies}" \
+        "${system_prefix_args[@]}" \
+        "${dependency_args[@]}"
 
     echo
-    echo "==> Build: ${PRESET} + REST (${label})"
+    echo "==> Build: ${build_dir}"
     cmake --build "$build_dir" --parallel
 
     echo
-    echo "==> Test: ${PRESET} + REST (${label})"
-    if [[ "$RUN_INTEGRATION" == "on" ]]; then
+    echo "==> Test: ${build_dir}"
+    if [[ "$RUN_INTEGRATION" == on ]]; then
         ctest --test-dir "$build_dir" --output-on-failure
     else
         ctest --test-dir "$build_dir" --output-on-failure -LE integration
+        if [[ "$rest" == on ]]; then
+            echo
+            echo "==> REST HTTP integration: ${build_dir}"
+            ctest --test-dir "$build_dir" \
+                --output-on-failure \
+                --no-tests=ignore \
+                -L rest-http
+        fi
     fi
 }
 
-if [[ "$TEST_REST" == "on" ]]; then
-    system_crow_available=false
+requested_mask=0
+[[ "$TEST_TOML" == on ]] && requested_mask=$((requested_mask | 1))
+[[ "$TEST_TUI" == on ]] && requested_mask=$((requested_mask | 2))
+[[ "$TEST_REST" == on ]] && requested_mask=$((requested_mask | 4))
 
-    if [[ "$SYSTEM_CROW_MODE" != "off" ]]; then
-        REST_SYSTEM_BUILD_DIR="build/${PRESET}-rest-system"
-        REST_SYSTEM_CONFIGURE_LOG="${REST_SYSTEM_BUILD_DIR}.configure.log"
-        system_crow_cmake_args=()
-        system_crow_prefix_path="${CMAKE_PREFIX_PATH:-}"
-
-        # Homebrew formulae, when present, may live outside CMake's default
-        # package search prefixes. Crow also needs standalone Asio.
-        if command -v brew >/dev/null 2>&1; then
-            for formula in crow asio; do
-                if brew --prefix "$formula" >/dev/null 2>&1; then
-                    formula_prefix="$(brew --prefix "$formula")"
-                    if [[ -n "$system_crow_prefix_path" ]]; then
-                        system_crow_prefix_path="${system_crow_prefix_path};${formula_prefix}"
-                    else
-                        system_crow_prefix_path="$formula_prefix"
-                    fi
-                fi
-            done
-        fi
-        if [[ -n "$system_crow_prefix_path" ]]; then
-            system_crow_cmake_args+=("-DCMAKE_PREFIX_PATH=${system_crow_prefix_path}")
-        fi
-
-        echo
-        echo "==> Probe: ${PRESET} + REST (system Crow)"
-        set +e
-        cmake --fresh --preset "$PRESET" \
-            -B "$REST_SYSTEM_BUILD_DIR" \
-            -DEASYLOCAL_ENABLE_REST=ON \
-            -DEASYLOCAL_FETCH_DEPENDENCIES=OFF \
-            "${system_crow_cmake_args[@]}" \
-            >"$REST_SYSTEM_CONFIGURE_LOG" 2>&1
-        system_configure_status=$?
-        set -e
-
-        cat "$REST_SYSTEM_CONFIGURE_LOG"
-
-        if [[ $system_configure_status -eq 0 ]]; then
-            system_crow_available=true
-            echo
-            echo "==> Build: ${PRESET} + REST (system Crow)"
-            cmake --build "$REST_SYSTEM_BUILD_DIR" --parallel
-
-            echo
-            echo "==> Test: ${PRESET} + REST (system Crow)"
-            if [[ "$RUN_INTEGRATION" == "on" ]]; then
-                ctest --test-dir "$REST_SYSTEM_BUILD_DIR" --output-on-failure
-            else
-                ctest --test-dir "$REST_SYSTEM_BUILD_DIR" --output-on-failure -LE integration
-            fi
-        elif grep -q "EasyLocal REST requires Crow" "$REST_SYSTEM_CONFIGURE_LOG"; then
-            if [[ "$SYSTEM_CROW_MODE" == "on" ]]; then
-                die "system Crow was required but CMake could not find it"
-            fi
-            echo "==> Fallback: system Crow not found; using FetchContent"
-        else
-            die "REST system-dependency configure failed"
-        fi
-    fi
-
-    if [[ "$SYSTEM_CROW_MODE" == "off" || "$system_crow_available" == false ]]; then
-        run_rest_build_and_test \
-            "FetchContent" \
-            "build/${PRESET}-rest-fetch" \
-            -DEASYLOCAL_FETCH_DEPENDENCIES=ON \
-            -DCMAKE_DISABLE_FIND_PACKAGE_Crow=TRUE
-    fi
-fi
-
-if [[ "$TEST_TOML" != "on" ]]; then
+if [[ "$EXHAUSTIVE" == off ]]; then
+    run_profile "$TEST_TOML" "$TEST_TUI" "$TEST_REST"
     exit 0
 fi
 
-run_toml_build_and_test() {
-    local label="$1"
-    local build_dir="$2"
-    shift 2
-
-    echo
-    echo "==> Configure: ${PRESET} + ConfigTOML (${label})"
-    cmake --fresh --preset "$PRESET" \
-        -B "$build_dir" \
-        -DEASYLOCAL_ENABLE_CONFIG_TOML=ON \
-        "$@"
-
-    echo
-    echo "==> Build: ${PRESET} + ConfigTOML (${label})"
-    cmake --build "$build_dir" --parallel
-
-    echo
-    echo "==> Test: ${PRESET} + ConfigTOML (${label})"
-    if [[ "$RUN_INTEGRATION" == "on" ]]; then
-        ctest --test-dir "$build_dir" --output-on-failure
-    else
-        ctest --test-dir "$build_dir" --output-on-failure -LE integration
-    fi
-}
-
-system_toml_available=false
-
-if [[ "$SYSTEM_TOML_MODE" != "off" ]]; then
-    TOML_SYSTEM_BUILD_DIR="build/${PRESET}-toml-system"
-    TOML_SYSTEM_CONFIGURE_LOG="${TOML_SYSTEM_BUILD_DIR}.configure.log"
-    system_toml_cmake_args=()
-    system_toml_prefix_path="${CMAKE_PREFIX_PATH:-}"
-
-    # Homebrew installs config packages below its own prefix, which is not
-    # guaranteed to be part of CMake's default system prefix search path.
-    if command -v brew >/dev/null 2>&1 \
-            && brew --prefix tomlplusplus >/dev/null 2>&1; then
-        brew_toml_prefix="$(brew --prefix tomlplusplus)"
-        if [[ -n "$system_toml_prefix_path" ]]; then
-            system_toml_prefix_path="${system_toml_prefix_path};${brew_toml_prefix}"
-        else
-            system_toml_prefix_path="$brew_toml_prefix"
-        fi
-    fi
-    if [[ -n "$system_toml_prefix_path" ]]; then
-        system_toml_cmake_args+=("-DCMAKE_PREFIX_PATH=${system_toml_prefix_path}")
+echo
+echo "==> Exhaustive feature-subset matrix"
+for mask in 0 1 2 3 4 5 6 7; do
+    if (( (mask & ~requested_mask) != 0 )); then
+        continue
     fi
 
-    echo
-    echo "==> Probe: ${PRESET} + ConfigTOML (system toml++)"
-    set +e
-    cmake --fresh --preset "$PRESET" \
-        -B "$TOML_SYSTEM_BUILD_DIR" \
-        -DEASYLOCAL_ENABLE_CONFIG_TOML=ON \
-        -DEASYLOCAL_FETCH_DEPENDENCIES=OFF \
-        "${system_toml_cmake_args[@]}" \
-        >"$TOML_SYSTEM_CONFIGURE_LOG" 2>&1
-    system_configure_status=$?
-    set -e
-
-    cat "$TOML_SYSTEM_CONFIGURE_LOG"
-
-    if [[ $system_configure_status -eq 0 ]]; then
-        system_toml_available=true
-        echo
-        echo "==> Build: ${PRESET} + ConfigTOML (system toml++)"
-        cmake --build "$TOML_SYSTEM_BUILD_DIR" --parallel
-
-        echo
-        echo "==> Test: ${PRESET} + ConfigTOML (system toml++)"
-        if [[ "$RUN_INTEGRATION" == "on" ]]; then
-            ctest --test-dir "$TOML_SYSTEM_BUILD_DIR" --output-on-failure
-        else
-            ctest --test-dir "$TOML_SYSTEM_BUILD_DIR" --output-on-failure -LE integration
-        fi
-    elif grep -q "EasyLocal ConfigTOML requires tomlplusplus" "$TOML_SYSTEM_CONFIGURE_LOG"; then
-        if [[ "$SYSTEM_TOML_MODE" == "on" ]]; then
-            die "system toml++ was required but CMake could not find it"
-        fi
-        echo "==> Fallback: system toml++ not found; using FetchContent"
-    else
-        die "ConfigTOML system-dependency configure failed"
-    fi
-fi
-
-if [[ "$SYSTEM_TOML_MODE" == "off" || "$system_toml_available" == false ]]; then
-    run_toml_build_and_test \
-        "FetchContent" \
-        "build/${PRESET}-toml-fetch" \
-        -DEASYLOCAL_FETCH_DEPENDENCIES=ON \
-        -DCMAKE_DISABLE_FIND_PACKAGE_tomlplusplus=TRUE
-fi
+    toml=off
+    tui=off
+    rest=off
+    (( (mask & 1) != 0 )) && toml=on
+    (( (mask & 2) != 0 )) && tui=on
+    (( (mask & 4) != 0 )) && rest=on
+    run_profile "$toml" "$tui" "$rest"
+done

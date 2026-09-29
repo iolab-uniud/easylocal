@@ -28,6 +28,11 @@ commits since the previous release and are reviewed manually before tagging.
   and a bounded solver execution pool separate from Crow HTTP workers;
 - REST packaging is lazy and component-aware, with Crow 1.3.3 and standalone
   Asio 1.38.2 available through the explicit dependency-fetch path.
+- local build/test profiles now compose optional adapters in one build by default;
+  `--exhaustive` explicitly checks every feature subset of the requested profile;
+- REST adds a real HTTP integration test that starts the Assignment Crow MWE,
+  drives success/error/cancellation flows with `curl`, and verifies partial
+  solution retrieval after cooperative cancellation.
 - Core now provides a lightweight non-owning `run_control` based on
   `std::stop_token`, with progress snapshots and no overhead on ordinary
   uncontrolled runs; first/best improvement and simulated annealing opt in;

@@ -9,7 +9,7 @@
 #include <type_traits>
 #include <utility>
 
-namespace easylocal::mwe::assignment::tui_demo
+namespace easylocal::mwe::assignment::demo
 {
 
 struct SlowFirstImprovementParameters
@@ -181,4 +181,4 @@ using slow_first_improvement = easylocal::runner::algorithm_tag<
     SlowFirstImprovement,
     SlowFirstImprovementParameters>;
 
-} // namespace easylocal::mwe::assignment::tui_demo
+} // namespace easylocal::mwe::assignment::demo

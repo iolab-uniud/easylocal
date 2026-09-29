@@ -417,10 +417,11 @@ When the optional TextUI component is enabled,
 - `slow-fi`, a demo-only decorator around the same first-improvement algorithm.
 
 `slow-fi` delays each evaluation by 5 ms and uses a 2000-evaluation budget. The
-delay exists only in the Assignment Tester example; it is not framework behavior
-and does not modify the production search algorithm. Select `slow-fi`, start a
-run, and use `X Stop` to exercise asynchronous progress, cooperative stop, and
-partial-solution commit in the TextUI.
+delay exists only in Assignment demo/test code; it is not framework behavior and
+does not modify the production search algorithm. The same decorator is shared by
+the TextUI demo and REST HTTP integration test. In the TextUI, select `slow-fi`,
+start a run, and use `X Stop` to exercise asynchronous progress, cooperative stop,
+and partial-solution commit.
 
 The ordinary Assignment MWE continues to use `instances/small.assignment`.
 
@@ -428,7 +429,9 @@ The ordinary Assignment MWE continues to use `instances/small.assignment`.
 
 When the optional REST component is enabled, `easylocal_assignment_rest_mwe`
 mounts the generic EasyLocal Crow Blueprint at `/assignment` and listens on port
-18080. Submit an Assignment instance with:
+18080 by default. Pass a port number as the only command-line argument to
+override it. The server registers both `fi` and the demo-only `slow-fi`. Submit
+an Assignment instance with:
 
 ```sh
 curl -X POST http://localhost:18080/assignment/runners/fi/runs \
@@ -438,7 +441,9 @@ curl -X POST http://localhost:18080/assignment/runners/fi/runs \
 
 The response is `202 Accepted` with a `run_id`. Use
 `GET /assignment/runs/<id>` for status and
-`GET /assignment/runs/<id>/solution` after completion.
+`GET /assignment/runs/<id>/solution` after completion. The CTest
+`easylocal.rest-http` runs these requests, error cases, and a real `slow-fi`
+cancellation flow with `curl`.
 
 The example deliberately leaves the Crow server visible: EasyLocal owns the
 Blueprint and solver execution pool, while the application still owns Crow

@@ -1486,4 +1486,23 @@ if(TARGET EasyLocal::REST)
         NAME easylocal.rest-blueprint-compile
         COMMAND easylocal_rest_blueprint_compile_test
     )
+
+    find_program(EASYLOCAL_CURL_EXECUTABLE NAMES curl)
+    if(UNIX AND EASYLOCAL_CURL_EXECUTABLE AND TARGET easylocal_assignment_rest_mwe)
+        add_test(
+            NAME easylocal.rest-http
+            COMMAND
+                "${CMAKE_CURRENT_SOURCE_DIR}/rest_http_integration.sh"
+                "$<TARGET_FILE:easylocal_assignment_rest_mwe>"
+                "${EASYLOCAL_CURL_EXECUTABLE}"
+        )
+        set_tests_properties(
+            easylocal.rest-http
+            PROPERTIES
+                LABELS "integration;rest-http"
+                TIMEOUT 30
+        )
+    elseif(NOT EASYLOCAL_CURL_EXECUTABLE)
+        message(STATUS "curl not found: REST HTTP integration test disabled")
+    endif()
 endif()
