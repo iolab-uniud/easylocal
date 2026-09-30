@@ -6,6 +6,7 @@
 #include <easylocal/app.hpp>
 #include <easylocal/check.hpp>
 #include <easylocal/cost.hpp>
+#include <easylocal/cost_semantics.hpp>
 #include <easylocal/cursor_moves.hpp>
 #include <easylocal/logging.hpp>
 #include <easylocal/neighborhood_concepts.hpp>

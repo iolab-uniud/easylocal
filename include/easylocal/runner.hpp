@@ -3,7 +3,7 @@
 #include <easylocal/aggregation.hpp>
 #include <easylocal/config/tree.hpp>
 #include <easylocal/cursor_moves.hpp>
-#include <easylocal/detail/cost_semantics.hpp>
+#include <easylocal/cost_semantics.hpp>
 #include <easylocal/detail/evaluation.hpp>
 #include <easylocal/detail/service_composition.hpp>
 #include <easylocal/solution_manager_concepts.hpp>
@@ -360,29 +360,9 @@ struct is_solution_manager_spec<hard_cost_solution_manager_spec<SMSpec>>
 {
 };
 
-template<class SM>
-concept runner_solution_manager =
-    requires(const SM& solution_manager, const typename SM::solution_type& solution) {
-        typename SM::instance_type;
-        typename SM::solution_type;
-        typename SM::cost_type;
-
-        {
-            solution_manager.instance()
-        } -> std::same_as<const typename SM::instance_type&>;
-
-        {
-            solution_manager.is_valid(solution)
-        } -> std::convertible_to<bool>;
-
-        {
-            solution_manager.evaluate(solution)
-        } -> std::same_as<typename SM::cost_type>;
-    };
-
 template<class NHE, class SM>
 concept runner_neighborhood_explorer =
-    runner_solution_manager<SM> &&
+    easylocal::evaluable_solution_manager<SM> &&
     easylocal::neighborhood_explorer_for<NHE, SM>;
 
 template<class NHE, class SM>
@@ -456,27 +436,30 @@ public:
     constexpr auto better(
         const cost_type& candidate,
         const cost_type& reference) const -> bool
-        requires has_better<SM>
+        requires easylocal::cost_semantics::has_better<SM>
     {
-        return cost_better(solution_manager_, candidate, reference);
+        return easylocal::cost_semantics::better(
+            solution_manager_,
+            candidate,
+            reference);
     }
 
     [[nodiscard]]
     constexpr auto equivalent(
         const cost_type& lhs,
         const cost_type& rhs) const -> bool
-        requires has_equivalent<SM>
+        requires easylocal::cost_semantics::has_equivalent<SM>
     {
-        return cost_equivalent(solution_manager_, lhs, rhs);
+        return easylocal::cost_semantics::equivalent(solution_manager_, lhs, rhs);
     }
 
     [[nodiscard]]
     constexpr auto better_or_equivalent(
         const cost_type& candidate,
         const cost_type& reference) const -> bool
-        requires has_better_or_equivalent<SM>
+        requires easylocal::cost_semantics::has_better_or_equivalent<SM>
     {
-        return cost_better_or_equivalent(
+        return easylocal::cost_semantics::better_or_equivalent(
             solution_manager_,
             candidate,
             reference);
@@ -573,9 +556,12 @@ public:
     constexpr auto better(
         const cost_type& candidate,
         const cost_type& reference) const -> bool
-        requires has_better<solution_manager_type>
+        requires easylocal::cost_semantics::has_better<solution_manager_type>
     {
-        return cost_better(solution_manager_, candidate, reference);
+        return easylocal::cost_semantics::better(
+            solution_manager_,
+            candidate,
+            reference);
     }
 
     template<class... RunArgs>
@@ -677,7 +663,7 @@ public:
     {
     }
 
-    template<detail::runner_solution_manager SM, class... Args>
+    template<evaluable_solution_manager SM, class... Args>
         requires std::copy_constructible<Algorithm>
     [[nodiscard]]
     auto with_solution_manager(Args&&... args) const &
@@ -693,7 +679,7 @@ public:
         };
     }
 
-    template<detail::runner_solution_manager SM, class... Args>
+    template<evaluable_solution_manager SM, class... Args>
     [[nodiscard]]
     auto with_solution_manager(Args&&... args) &&
     {
@@ -710,7 +696,7 @@ public:
 
     template<class SMSpec>
         requires detail::is_solution_manager_spec_v<std::remove_cvref_t<SMSpec>> &&
-                 detail::runner_solution_manager<
+                 evaluable_solution_manager<
                      detail::service_t<std::remove_cvref_t<SMSpec>>> &&
                  std::copy_constructible<Algorithm> &&
                  std::constructible_from<
@@ -728,7 +714,7 @@ public:
 
     template<class SMSpec>
         requires detail::is_solution_manager_spec_v<std::remove_cvref_t<SMSpec>> &&
-                 detail::runner_solution_manager<
+                 evaluable_solution_manager<
                      detail::service_t<std::remove_cvref_t<SMSpec>>> &&
                  std::constructible_from<
                      std::remove_cvref_t<SMSpec>,

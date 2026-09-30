@@ -247,7 +247,7 @@ private:
 
 int main()
 {
-    static_assert(easylocal::detail::runner_solution_manager<SolutionManager>);
+    static_assert(easylocal::evaluable_solution_manager<SolutionManager>);
     static_assert(easylocal::detail::runner_neighborhood_explorer<
                   GoodNeighborhood,
                   SolutionManager>);

@@ -79,6 +79,7 @@ using plain_runner = easylocal::runner::algorithm_tag<
 
 int main()
 {
+    static_assert(easylocal::run_control_like<easylocal::run_control>);
     const AssignmentInstance input{
         .demand = {4, 4, 2},
         .capacity = {5, 5},

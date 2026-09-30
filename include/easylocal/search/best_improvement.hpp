@@ -106,7 +106,7 @@ public:
     }
 
 private:
-    template<class Context, easylocal::detail::run_control_like Control, class Tracer>
+    template<class Context, easylocal::run_control_like Control, class Tracer>
     [[nodiscard]]
     auto run_impl(
         const Context& context,

@@ -20,7 +20,7 @@
 
 #include <easylocal/check.hpp>
 #include <easylocal/cursor_moves.hpp>
-#include <easylocal/detail/cost_semantics.hpp>
+#include <easylocal/cost_semantics.hpp>
 #include <easylocal/detail/evaluation.hpp>
 #include <easylocal/solution_manager_concepts.hpp>
 
@@ -261,9 +261,9 @@ public:
     static constexpr bool supports_random_moves =
         random_neighborhood_for<neighborhood_type, solution_type, rng_type>;
     static constexpr bool supports_improvement_selection =
-        supports_deterministic_moves && detail::has_better<solution_manager_type>;
+        supports_deterministic_moves && cost_semantics::has_better<solution_manager_type>;
     static constexpr bool supports_cost_consistency_check =
-        supports_deterministic_moves && detail::has_equivalent<solution_manager_type>;
+        supports_deterministic_moves && cost_semantics::has_equivalent<solution_manager_type>;
     static constexpr bool supports_move_independence_check =
         supports_deterministic_moves && std::equality_comparable<solution_type>;
     static constexpr bool supports_random_distribution_check =
@@ -625,7 +625,7 @@ public:
             move_.emplace(candidate);
             deterministic_move_index_ = index;
             if (move_is_valid() &&
-                detail::cost_better(instance_->solution_manager(), evaluate_move(), current))
+                cost_semantics::better(instance_->solution_manager(), evaluate_move(), current))
             {
                 return true;
             }
@@ -653,7 +653,7 @@ public:
             if (move_is_valid())
             {
                 auto candidate_cost = evaluate_move();
-                if (!best_cost || detail::cost_better(
+                if (!best_cost || cost_semantics::better(
                         instance_->solution_manager(), candidate_cost, *best_cost))
                 {
                     best_move = candidate;
@@ -747,11 +747,11 @@ public:
 
     [[nodiscard]]
     auto move_evaluation_matches_full() const -> bool
-        requires detail::has_equivalent<solution_manager_type>
+        requires cost_semantics::has_equivalent<solution_manager_type>
     {
         const auto incremental = evaluate_move();
         const auto full = evaluate_move_fully();
-        return detail::cost_equivalent(
+        return cost_semantics::equivalent(
             instance_->solution_manager(),
             incremental,
             full);
@@ -817,11 +817,11 @@ public:
             }
             const auto candidate_cost =
                 evaluation.evaluate_move(*solution_, current, candidate).cost();
-            if (detail::cost_better(solution_manager, candidate_cost, current.cost()))
+            if (cost_semantics::better(solution_manager, candidate_cost, current.cost()))
             {
                 ++result.improving;
             }
-            else if (detail::cost_better(solution_manager, current.cost(), candidate_cost))
+            else if (cost_semantics::better(solution_manager, current.cost(), candidate_cost))
             {
                 ++result.worsening;
             }
@@ -868,7 +868,7 @@ public:
                 continue;
             }
             const auto full = solution_manager.evaluate(candidate);
-            if (!detail::cost_equivalent(solution_manager, incremental, full))
+            if (!cost_semantics::equivalent(solution_manager, incremental, full))
             {
                 ++result.mismatches;
             }

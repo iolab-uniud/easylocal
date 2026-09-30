@@ -251,7 +251,10 @@ private:
 template<class SMSpec, class NHESpec, class... Registrations>
     requires is_solution_manager_spec_v<SMSpec> &&
              is_neighborhood_spec_v<NHESpec> &&
-             runner_neighborhood_explorer<service_t<NHESpec>, service_t<SMSpec>>
+             easylocal::evaluable_solution_manager<service_t<SMSpec>> &&
+             easylocal::neighborhood_explorer_for<
+                 service_t<NHESpec>,
+                 service_t<SMSpec>>
 class app_instance
 {
 public:

@@ -229,7 +229,7 @@ private:
     template<
         class Context,
         std::uniform_random_bit_generator RNG,
-        easylocal::detail::run_control_like Control,
+        easylocal::run_control_like Control,
         class Tracer>
     [[nodiscard]]
     auto run_impl(

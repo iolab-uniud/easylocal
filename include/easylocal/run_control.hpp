@@ -71,6 +71,13 @@ private:
     observer_type observer_{};
 };
 
+template<class Control>
+concept run_control_like =
+    requires(const Control& control, const run_progress& progress) {
+        { control.stop_requested() } -> std::convertible_to<bool>;
+        control.report(progress);
+    };
+
 namespace detail
 {
 
@@ -85,13 +92,6 @@ struct no_run_control
     {
     }
 };
-
-template<class Control>
-concept run_control_like =
-    requires(const Control& control, const run_progress& progress) {
-        { control.stop_requested() } -> std::convertible_to<bool>;
-        control.report(progress);
-    };
 
 } // namespace detail
 

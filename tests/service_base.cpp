@@ -86,7 +86,7 @@ static_assert(std::same_as<NeighborhoodExplorer::solution_type, Solution>);
 static_assert(std::same_as<NeighborhoodExplorer::move_type, Move>);
 static_assert(!std::is_polymorphic_v<SolutionManager>);
 static_assert(!std::is_polymorphic_v<NeighborhoodExplorer>);
-static_assert(easylocal::detail::runner_solution_manager<SolutionManager>);
+static_assert(easylocal::evaluable_solution_manager<SolutionManager>);
 static_assert(easylocal::detail::runner_neighborhood_explorer<
               NeighborhoodExplorer,
               SolutionManager>);

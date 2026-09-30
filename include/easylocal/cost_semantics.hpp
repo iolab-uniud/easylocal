@@ -2,7 +2,10 @@
 
 #include <concepts>
 
-namespace easylocal::detail
+namespace easylocal::cost_semantics
+{
+
+namespace detail
 {
 
 // Cost semantics belong to the cost layer, not to the problem's
@@ -37,28 +40,6 @@ concept intrinsic_better =
     };
 
 template<class SM>
-concept has_better = custom_better<SM> || intrinsic_better<SM>;
-
-template<class SM>
-    requires has_better<SM>
-[[nodiscard]]
-constexpr auto cost_better(
-    const SM& solution_manager,
-    const typename SM::cost_type& candidate,
-    const typename SM::cost_type& reference) -> bool
-{
-    if constexpr (custom_better<SM>)
-    {
-        return static_cast<bool>(
-            solution_manager.aggregator().better(candidate, reference));
-    }
-    else
-    {
-        return static_cast<bool>(candidate < reference);
-    }
-}
-
-template<class SM>
 concept custom_equivalent =
     requires(
         const SM& solution_manager,
@@ -78,28 +59,6 @@ concept intrinsic_equivalent =
     {
         { lhs == rhs } -> std::convertible_to<bool>;
     };
-
-template<class SM>
-concept has_equivalent = custom_equivalent<SM> || intrinsic_equivalent<SM>;
-
-template<class SM>
-    requires has_equivalent<SM>
-[[nodiscard]]
-constexpr auto cost_equivalent(
-    const SM& solution_manager,
-    const typename SM::cost_type& lhs,
-    const typename SM::cost_type& rhs) -> bool
-{
-    if constexpr (custom_equivalent<SM>)
-    {
-        return static_cast<bool>(
-            solution_manager.aggregator().equivalent(lhs, rhs));
-    }
-    else
-    {
-        return static_cast<bool>(lhs == rhs);
-    }
-}
 
 template<class SM>
 concept custom_better_or_equivalent =
@@ -124,19 +83,67 @@ concept intrinsic_better_or_equivalent =
         { candidate <= reference } -> std::convertible_to<bool>;
     };
 
-template<class SM>
-concept has_better_or_equivalent =
-    custom_better_or_equivalent<SM> || intrinsic_better_or_equivalent<SM>;
+} // namespace detail
 
 template<class SM>
-    requires has_better_or_equivalent<SM>
+concept has_better = detail::custom_better<SM> || detail::intrinsic_better<SM>;
+
+template<class SM>
+    requires has_better<SM>
 [[nodiscard]]
-constexpr auto cost_better_or_equivalent(
+constexpr auto better(
     const SM& solution_manager,
     const typename SM::cost_type& candidate,
     const typename SM::cost_type& reference) -> bool
 {
-    if constexpr (custom_better_or_equivalent<SM>)
+    if constexpr (detail::custom_better<SM>)
+    {
+        return static_cast<bool>(
+            solution_manager.aggregator().better(candidate, reference));
+    }
+    else
+    {
+        return static_cast<bool>(candidate < reference);
+    }
+}
+
+template<class SM>
+concept has_equivalent =
+    detail::custom_equivalent<SM> || detail::intrinsic_equivalent<SM>;
+
+template<class SM>
+    requires has_equivalent<SM>
+[[nodiscard]]
+constexpr auto equivalent(
+    const SM& solution_manager,
+    const typename SM::cost_type& lhs,
+    const typename SM::cost_type& rhs) -> bool
+{
+    if constexpr (detail::custom_equivalent<SM>)
+    {
+        return static_cast<bool>(
+            solution_manager.aggregator().equivalent(lhs, rhs));
+    }
+    else
+    {
+        return static_cast<bool>(lhs == rhs);
+    }
+}
+
+template<class SM>
+concept has_better_or_equivalent =
+    detail::custom_better_or_equivalent<SM> ||
+    detail::intrinsic_better_or_equivalent<SM>;
+
+template<class SM>
+    requires has_better_or_equivalent<SM>
+[[nodiscard]]
+constexpr auto better_or_equivalent(
+    const SM& solution_manager,
+    const typename SM::cost_type& candidate,
+    const typename SM::cost_type& reference) -> bool
+{
+    if constexpr (detail::custom_better_or_equivalent<SM>)
     {
         return static_cast<bool>(
             solution_manager.aggregator().better_or_equivalent(
@@ -149,4 +156,4 @@ constexpr auto cost_better_or_equivalent(
     }
 }
 
-} // namespace easylocal::detail
+} // namespace easylocal::cost_semantics
