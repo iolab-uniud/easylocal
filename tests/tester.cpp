@@ -189,7 +189,7 @@ void tester_owns_input_and_builds_instance_from_it()
     const auto input_handle = tester.input_handle();
     assert(input_handle);
     assert(input_handle.get() == std::addressof(tester.input()));
-    assert(std::addressof(tester.instance().instance()) == std::addressof(tester.input()));
+    assert(std::addressof(tester.instance().input()) == std::addressof(tester.input()));
 }
 
 void replacing_input_rebuilds_the_app_instance()
@@ -200,8 +200,8 @@ void replacing_input_rebuilds_the_app_instance()
     tester.set_input(make_input(7));
 
     assert(tester.input().demand[0] == 7);
-    assert(tester.instance().instance().demand[0] == 7);
-    assert(std::addressof(tester.instance().instance()) == std::addressof(tester.input()));
+    assert(tester.instance().input().demand[0] == 7);
+    assert(std::addressof(tester.instance().input()) == std::addressof(tester.input()));
 }
 
 void tester_exposes_initial_solution_as_an_explicit_choice()
