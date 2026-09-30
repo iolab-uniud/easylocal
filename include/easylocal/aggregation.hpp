@@ -52,6 +52,27 @@ template<class... Values>
 using lexicographic_cost =
     detail::ordered_cost<detail::lexicographic_tag, Values...>;
 
+template<class T>
+struct lexicographic_cost_traits
+{
+    static constexpr bool value = false;
+    static constexpr std::size_t size = 0;
+};
+
+template<class... Values>
+struct lexicographic_cost_traits<lexicographic_cost<Values...>>
+{
+    static constexpr bool value = true;
+    static constexpr std::size_t size = sizeof...(Values);
+};
+
+template<class T>
+inline constexpr bool is_lexicographic_cost_v =
+    lexicographic_cost_traits<std::remove_cvref_t<T>>::value;
+
+template<class T>
+concept lexicographic_cost_type = is_lexicographic_cost_v<T>;
+
 template<class HardCost, class SoftCost>
 class hierarchical_cost
 {

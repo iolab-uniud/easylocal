@@ -37,6 +37,9 @@ int main()
     using HierarchicalCost = aggregation::hierarchical_cost<LexicographicCost, long>;
 
     static_assert(std::three_way_comparable<LexicographicCost>);
+    static_assert(aggregation::lexicographic_cost_type<LexicographicCost>);
+    static_assert(!aggregation::lexicographic_cost_type<int>);
+    static_assert(aggregation::lexicographic_cost_traits<LexicographicCost>::size == 2);
     static_assert(std::three_way_comparable<HierarchicalCost>);
     static_assert(!std::same_as<LexicographicCost, HierarchicalCost>);
     static_assert(!subtractable_cost<LexicographicCost>);

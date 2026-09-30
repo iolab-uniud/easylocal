@@ -95,26 +95,6 @@ concept tuple_like =
     requires { typename std::tuple_size<std::remove_cvref_t<T>>::type; };
 
 template<class T>
-struct lexicographic_cost_traits
-{
-    static constexpr bool value = false;
-};
-
-template<class... Values>
-struct lexicographic_cost_traits<
-    easylocal::aggregation::detail::ordered_cost<
-        easylocal::aggregation::detail::lexicographic_tag,
-        Values...>>
-{
-    static constexpr bool value = true;
-    static constexpr std::size_t size = sizeof...(Values);
-};
-
-template<class T>
-concept lexicographic_cost =
-    lexicographic_cost_traits<std::remove_cvref_t<T>>::value;
-
-template<class T>
 concept named_object =
     requires(const T& value) {
         { value.name() } -> std::convertible_to<std::string_view>;
@@ -249,7 +229,7 @@ template<class T>
         return "hard=" + value_text(value.hard()) +
                ", soft=" + value_text(value.soft());
     }
-    else if constexpr (lexicographic_cost<T>)
+    else if constexpr (easylocal::aggregation::lexicographic_cost_type<T>)
     {
         std::string result{"["};
         [&]<std::size_t... Index>(std::index_sequence<Index...>) {
@@ -258,7 +238,8 @@ template<class T>
                         value_text(value.template get<Index>())),
              ...);
         }(std::make_index_sequence<
-            lexicographic_cost_traits<std::remove_cvref_t<T>>::size>{});
+            easylocal::aggregation::lexicographic_cost_traits<
+                std::remove_cvref_t<T>>::size>{});
         result += ']';
         return result;
     }
