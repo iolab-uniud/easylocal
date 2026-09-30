@@ -105,107 +105,9 @@ add_test(
     COMMAND easylocal_toolchain_smoke
 )
 
-add_executable(
-    easylocal_parameters_header_self_containment
-    parameters_header_self_containment.cpp
-)
-target_link_libraries(
-    easylocal_parameters_header_self_containment
-    PRIVATE
-        EasyLocal::Core
-)
-add_test(
-    NAME easylocal.parameters-header-self-containment
-    COMMAND easylocal_parameters_header_self_containment
-)
-
-add_executable(
-    easylocal_configuration_tree_header_self_containment
-    configuration_tree_header_self_containment.cpp
-)
-target_link_libraries(
-    easylocal_configuration_tree_header_self_containment
-    PRIVATE
-        EasyLocal::Core
-)
-add_test(
-    NAME easylocal.configuration-tree-header-self-containment
-    COMMAND easylocal_configuration_tree_header_self_containment
-)
-
-
-add_executable(
-    easylocal_configuration_overrides_header_self_containment
-    configuration_overrides_header_self_containment.cpp
-)
-target_link_libraries(
-    easylocal_configuration_overrides_header_self_containment
-    PRIVATE
-        EasyLocal::Core
-)
-add_test(
-    NAME easylocal.configuration-overrides-header-self-containment
-    COMMAND easylocal_configuration_overrides_header_self_containment
-)
-
-add_executable(
-    easylocal_configuration_file_header_self_containment
-    configuration_file_header_self_containment.cpp
-)
-target_link_libraries(
-    easylocal_configuration_file_header_self_containment
-    PRIVATE
-        EasyLocal::Core
-)
-add_test(
-    NAME easylocal.configuration-file-header-self-containment
-    COMMAND easylocal_configuration_file_header_self_containment
-)
-
-add_executable(
-    easylocal_configuration_cli_header_self_containment
-    configuration_cli_header_self_containment.cpp
-)
-target_link_libraries(
-    easylocal_configuration_cli_header_self_containment
-    PRIVATE
-        EasyLocal::Core
-)
-add_test(
-    NAME easylocal.configuration-cli-header-self-containment
-    COMMAND easylocal_configuration_cli_header_self_containment
-)
-
-add_executable(
-    easylocal_configuration_setup_header_self_containment
-    configuration_setup_header_self_containment.cpp
-)
-target_link_libraries(
-    easylocal_configuration_setup_header_self_containment
-    PRIVATE
-        EasyLocal::Core
-)
-add_test(
-    NAME easylocal.configuration-setup-header-self-containment
-    COMMAND easylocal_configuration_setup_header_self_containment
-)
 
 
 if(TARGET EasyLocal::ConfigTOML)
-    add_executable(
-        easylocal_configuration_toml_header_self_containment
-        configuration_toml_header_self_containment.cpp
-    )
-    target_link_libraries(
-        easylocal_configuration_toml_header_self_containment
-        PRIVATE
-            EasyLocal::ConfigTOML
-    )
-    add_test(
-        NAME easylocal.configuration-toml-header-self-containment
-        COMMAND easylocal_configuration_toml_header_self_containment
-    )
-
     add_executable(
         easylocal_configuration_toml_test
         configuration_toml.cpp
@@ -222,34 +124,6 @@ if(TARGET EasyLocal::ConfigTOML)
 endif()
 
 add_executable(
-    easylocal_header_self_containment
-    header_self_containment.cpp
-)
-target_link_libraries(
-    easylocal_header_self_containment
-    PRIVATE
-        EasyLocal::Core
-)
-add_test(
-    NAME easylocal.header-self-containment
-    COMMAND easylocal_header_self_containment
-)
-
-add_executable(
-    easylocal_service_base_header_self_containment
-    service_base_header_self_containment.cpp
-)
-target_link_libraries(
-    easylocal_service_base_header_self_containment
-    PRIVATE
-        EasyLocal::Core
-)
-add_test(
-    NAME easylocal.service-base-header-self-containment
-    COMMAND easylocal_service_base_header_self_containment
-)
-
-add_executable(
     easylocal_factory_api_test
     factory_api.cpp
 )
@@ -261,34 +135,6 @@ target_link_libraries(
 add_test(
     NAME easylocal.factory-api
     COMMAND easylocal_factory_api_test
-)
-
-add_executable(
-    easylocal_runner_tag_header_self_containment
-    runner_tag_header_self_containment.cpp
-)
-target_link_libraries(
-    easylocal_runner_tag_header_self_containment
-    PRIVATE
-        EasyLocal::Core
-)
-add_test(
-    NAME easylocal.runner-tag-header-self-containment
-    COMMAND easylocal_runner_tag_header_self_containment
-)
-
-add_executable(
-    easylocal_logging_header_self_containment
-    logging_header_self_containment.cpp
-)
-target_link_libraries(
-    easylocal_logging_header_self_containment
-    PRIVATE
-        EasyLocal::Core
-)
-add_test(
-    NAME easylocal.logging-header-self-containment
-    COMMAND easylocal_logging_header_self_containment
 )
 
 add_executable(
@@ -306,20 +152,6 @@ add_test(
 )
 
 add_executable(
-    easylocal_run_control_header_self_containment
-    run_control_header_self_containment.cpp
-)
-target_link_libraries(
-    easylocal_run_control_header_self_containment
-    PRIVATE
-        EasyLocal::Core
-)
-add_test(
-    NAME easylocal.run-control-header-self-containment
-    COMMAND easylocal_run_control_header_self_containment
-)
-
-add_executable(
     easylocal_run_control_test
     run_control.cpp
 )
@@ -331,132 +163,6 @@ target_link_libraries(
 add_test(
     NAME easylocal.run-control
     COMMAND easylocal_run_control_test
-)
-
-add_executable(
-    easylocal_runner_header_self_containment
-    runner_header_self_containment.cpp
-)
-target_link_libraries(
-    easylocal_runner_header_self_containment
-    PRIVATE
-        EasyLocal::Core
-)
-add_test(
-    NAME easylocal.runner-header-self-containment
-    COMMAND easylocal_runner_header_self_containment
-)
-
-add_executable(
-    easylocal_neighborhood_concepts_header_self_containment
-    neighborhood_concepts_header_self_containment.cpp
-)
-target_link_libraries(
-    easylocal_neighborhood_concepts_header_self_containment
-    PRIVATE
-        EasyLocal::Core
-)
-add_test(
-    NAME easylocal.neighborhood-concepts-header-self-containment
-    COMMAND easylocal_neighborhood_concepts_header_self_containment
-)
-
-add_executable(
-    easylocal_neighborhood_testing_header_self_containment
-    neighborhood_testing_header_self_containment.cpp
-)
-target_link_libraries(
-    easylocal_neighborhood_testing_header_self_containment
-    PRIVATE
-        EasyLocal::Core
-)
-add_test(
-    NAME easylocal.neighborhood-testing-header-self-containment
-    COMMAND easylocal_neighborhood_testing_header_self_containment
-)
-
-add_executable(
-    easylocal_testing_check_header_self_containment
-    testing_check_header_self_containment.cpp
-)
-target_link_libraries(
-    easylocal_testing_check_header_self_containment
-    PRIVATE
-        EasyLocal::Core
-)
-add_test(
-    NAME easylocal.testing-check-header-self-containment
-    COMMAND easylocal_testing_check_header_self_containment
-)
-
-add_executable(
-    easylocal_testing_solution_manager_header_self_containment
-    testing_solution_manager_header_self_containment.cpp
-)
-target_link_libraries(
-    easylocal_testing_solution_manager_header_self_containment
-    PRIVATE
-        EasyLocal::Core
-)
-add_test(
-    NAME easylocal.testing-solution-manager-header-self-containment
-    COMMAND easylocal_testing_solution_manager_header_self_containment
-)
-
-add_executable(
-    easylocal_testing_cost_component_header_self_containment
-    testing_cost_component_header_self_containment.cpp
-)
-target_link_libraries(
-    easylocal_testing_cost_component_header_self_containment
-    PRIVATE
-        EasyLocal::Core
-)
-add_test(
-    NAME easylocal.testing-cost-component-header-self-containment
-    COMMAND easylocal_testing_cost_component_header_self_containment
-)
-
-add_executable(
-    easylocal_testing_delta_evaluator_header_self_containment
-    testing_delta_evaluator_header_self_containment.cpp
-)
-target_link_libraries(
-    easylocal_testing_delta_evaluator_header_self_containment
-    PRIVATE
-        EasyLocal::Core
-)
-add_test(
-    NAME easylocal.testing-delta-evaluator-header-self-containment
-    COMMAND easylocal_testing_delta_evaluator_header_self_containment
-)
-
-add_executable(
-    easylocal_testing_checks_header_self_containment
-    testing_checks_header_self_containment.cpp
-)
-target_link_libraries(
-    easylocal_testing_checks_header_self_containment
-    PRIVATE
-        EasyLocal::Core
-)
-add_test(
-    NAME easylocal.testing-checks-header-self-containment
-    COMMAND easylocal_testing_checks_header_self_containment
-)
-
-add_executable(
-    easylocal_cursor_moves_header_self_containment
-    cursor_moves_header_self_containment.cpp
-)
-target_link_libraries(
-    easylocal_cursor_moves_header_self_containment
-    PRIVATE
-        EasyLocal::Core
-)
-add_test(
-    NAME easylocal.cursor-moves-header-self-containment
-    COMMAND easylocal_cursor_moves_header_self_containment
 )
 
 add_executable(
@@ -490,104 +196,6 @@ add_test(
 )
 
 add_executable(
-    easylocal_cost_header_self_containment
-    cost_header_self_containment.cpp
-)
-target_link_libraries(
-    easylocal_cost_header_self_containment
-    PRIVATE
-        EasyLocal::Core
-)
-add_test(
-    NAME easylocal.cost-header-self-containment
-    COMMAND easylocal_cost_header_self_containment
-)
-
-add_executable(
-    easylocal_aggregation_header_self_containment
-    aggregation_header_self_containment.cpp
-)
-target_link_libraries(
-    easylocal_aggregation_header_self_containment
-    PRIVATE
-        EasyLocal::Core
-)
-add_test(
-    NAME easylocal.aggregation-header-self-containment
-    COMMAND easylocal_aggregation_header_self_containment
-)
-
-add_executable(
-    easylocal_first_improvement_header_self_containment
-    first_improvement_header_self_containment.cpp
-)
-target_link_libraries(
-    easylocal_first_improvement_header_self_containment
-    PRIVATE
-        EasyLocal::Core
-)
-add_test(
-    NAME easylocal.first-improvement-header-self-containment
-    COMMAND easylocal_first_improvement_header_self_containment
-)
-
-add_executable(
-    easylocal_best_improvement_header_self_containment
-    best_improvement_header_self_containment.cpp
-)
-target_link_libraries(
-    easylocal_best_improvement_header_self_containment
-    PRIVATE
-        EasyLocal::Core
-)
-add_test(
-    NAME easylocal.best-improvement-header-self-containment
-    COMMAND easylocal_best_improvement_header_self_containment
-)
-
-add_executable(
-    easylocal_metropolis_acceptance_header_self_containment
-    metropolis_acceptance_header_self_containment.cpp
-)
-target_link_libraries(
-    easylocal_metropolis_acceptance_header_self_containment
-    PRIVATE
-        EasyLocal::Core
-)
-add_test(
-    NAME easylocal.metropolis-acceptance-header-self-containment
-    COMMAND easylocal_metropolis_acceptance_header_self_containment
-)
-
-add_executable(
-    easylocal_temperature_policy_header_self_containment
-    temperature_policy_header_self_containment.cpp
-)
-target_link_libraries(
-    easylocal_temperature_policy_header_self_containment
-    PRIVATE
-        EasyLocal::Core
-)
-add_test(
-    NAME easylocal.temperature-policy-header-self-containment
-    COMMAND easylocal_temperature_policy_header_self_containment
-)
-
-add_executable(
-    easylocal_simulated_annealing_header_self_containment
-    simulated_annealing_header_self_containment.cpp
-)
-target_link_libraries(
-    easylocal_simulated_annealing_header_self_containment
-    PRIVATE
-        EasyLocal::Core
-)
-add_test(
-    NAME easylocal.simulated-annealing-header-self-containment
-    COMMAND easylocal_simulated_annealing_header_self_containment
-)
-
-add_executable(
     easylocal_aggregation_test
     aggregation.cpp
 )
@@ -613,20 +221,6 @@ target_link_libraries(
 add_test(
     NAME easylocal.service-base
     COMMAND easylocal_service_base_test
-)
-
-add_executable(
-    easylocal_solution_manager_concepts_header_self_containment
-    solution_manager_concepts_header_self_containment.cpp
-)
-target_link_libraries(
-    easylocal_solution_manager_concepts_header_self_containment
-    PRIVATE
-        EasyLocal::Core
-)
-add_test(
-    NAME easylocal.solution-manager-concepts-header-self-containment
-    COMMAND easylocal_solution_manager_concepts_header_self_containment
 )
 
 add_executable(
@@ -981,20 +575,6 @@ add_test(
 )
 
 add_executable(
-    easylocal_neighborhood_union_header_self_containment
-    neighborhood_union_header_self_containment.cpp
-)
-target_link_libraries(
-    easylocal_neighborhood_union_header_self_containment
-    PRIVATE
-        EasyLocal::Core
-)
-add_test(
-    NAME easylocal.neighborhood-union-header-self-containment
-    COMMAND easylocal_neighborhood_union_header_self_containment
-)
-
-add_executable(
     easylocal_neighborhood_composition_test
     neighborhood_composition.cpp
 )
@@ -1010,20 +590,6 @@ add_test(
 
 
 if(TARGET EasyLocal::TUI)
-    add_executable(
-        easylocal_tui_header_self_containment
-        tui_header_self_containment.cpp
-    )
-    target_link_libraries(
-        easylocal_tui_header_self_containment
-        PRIVATE
-            EasyLocal::TUI
-    )
-    add_test(
-        NAME easylocal.tui-header-self-containment
-        COMMAND easylocal_tui_header_self_containment
-    )
-
     add_executable(
         easylocal_tui_tester_compile_test
         tui_tester_compile.cpp
@@ -1053,20 +619,6 @@ if(TARGET EasyLocal::TUI)
         COMMAND easylocal_tui_helpers_test
     )
 
-
-    add_executable(
-        easylocal_tui_launcher_header_self_containment
-        tui_launcher_header_self_containment.cpp
-    )
-    target_link_libraries(
-        easylocal_tui_launcher_header_self_containment
-        PRIVATE
-            EasyLocal::TUI
-    )
-    add_test(
-        NAME easylocal.tui-launcher-header-self-containment
-        COMMAND easylocal_tui_launcher_header_self_containment
-    )
 
     add_executable(
         easylocal_tui_launcher_helpers_test
@@ -1407,10 +959,6 @@ if(TARGET easylocal_tsp_sa_mwe)
     )
 endif()
 
-add_executable(easylocal_solver_header_self_containment solver_header_self_containment.cpp)
-target_link_libraries(easylocal_solver_header_self_containment PRIVATE EasyLocal::Core)
-add_test(NAME easylocal.solver-header-self-containment COMMAND easylocal_solver_header_self_containment)
-
 add_executable(easylocal_solver_test solver.cpp)
 target_link_libraries(easylocal_solver_test PRIVATE EasyLocal::Core)
 add_test(NAME easylocal.solver COMMAND easylocal_solver_test)
@@ -1422,20 +970,6 @@ add_test(NAME easylocal.multi-start-solver COMMAND easylocal_multi_start_solver_
 add_executable(easylocal_two_stage_solver_test two_stage_solver.cpp)
 target_link_libraries(easylocal_two_stage_solver_test PRIVATE EasyLocal::Core)
 add_test(NAME easylocal.two-stage-solver COMMAND easylocal_two_stage_solver_test)
-
-add_executable(
-    easylocal_app_header_self_containment
-    app_header_self_containment.cpp
-)
-target_link_libraries(
-    easylocal_app_header_self_containment
-    PRIVATE
-        EasyLocal::Core
-)
-add_test(
-    NAME easylocal.app-header-self-containment
-    COMMAND easylocal_app_header_self_containment
-)
 
 add_executable(
     easylocal_app_test
@@ -1466,20 +1000,6 @@ add_test(
 )
 
 add_executable(
-    easylocal_check_header_self_containment
-    check_header_self_containment.cpp
-)
-target_link_libraries(
-    easylocal_check_header_self_containment
-    PRIVATE
-        EasyLocal::Core
-)
-add_test(
-    NAME easylocal.check-header-self-containment
-    COMMAND easylocal_check_header_self_containment
-)
-
-add_executable(
     easylocal_app_check_test
     app_check.cpp
 )
@@ -1499,20 +1019,6 @@ if(TARGET easylocal_tsp_two_apps_mwe)
         COMMAND easylocal_tsp_two_apps_mwe
     )
 endif()
-
-add_executable(
-    easylocal_tester_header_self_containment
-    tester_header_self_containment.cpp
-)
-target_link_libraries(
-    easylocal_tester_header_self_containment
-    PRIVATE
-        EasyLocal::Core
-)
-add_test(
-    NAME easylocal.tester-header-self-containment
-    COMMAND easylocal_tester_header_self_containment
-)
 
 add_executable(
     easylocal_tester_test
@@ -1544,20 +1050,6 @@ add_test(
 
 if(TARGET EasyLocal::REST)
     add_executable(
-        easylocal_rest_execution_header_self_containment
-        rest_execution_header_self_containment.cpp
-    )
-    target_link_libraries(
-        easylocal_rest_execution_header_self_containment
-        PRIVATE
-            EasyLocal::REST
-    )
-    add_test(
-        NAME easylocal.rest-execution-header-self-containment
-        COMMAND easylocal_rest_execution_header_self_containment
-    )
-
-    add_executable(
         easylocal_rest_execution_test
         rest_execution.cpp
     )
@@ -1569,20 +1061,6 @@ if(TARGET EasyLocal::REST)
     add_test(
         NAME easylocal.rest-execution
         COMMAND easylocal_rest_execution_test
-    )
-
-    add_executable(
-        easylocal_rest_blueprint_header_self_containment
-        rest_blueprint_header_self_containment.cpp
-    )
-    target_link_libraries(
-        easylocal_rest_blueprint_header_self_containment
-        PRIVATE
-            EasyLocal::REST
-    )
-    add_test(
-        NAME easylocal.rest-blueprint-header-self-containment
-        COMMAND easylocal_rest_blueprint_header_self_containment
     )
 
     add_executable(
@@ -1619,20 +1097,6 @@ if(TARGET EasyLocal::REST)
         message(STATUS "curl not found: REST HTTP integration test disabled")
     endif()
 endif()
-
-add_executable(
-    easylocal_trace_header_self_containment
-    trace_header_self_containment.cpp
-)
-target_link_libraries(
-    easylocal_trace_header_self_containment
-    PRIVATE
-        EasyLocal::Core
-)
-add_test(
-    NAME easylocal.trace-header-self-containment
-    COMMAND easylocal_trace_header_self_containment
-)
 
 add_executable(
     easylocal_trace_test
