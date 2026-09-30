@@ -93,7 +93,7 @@ public:
     {
     }
 
-    [[nodiscard]] auto instance() const noexcept -> const ChainInstance&
+    [[nodiscard]] auto input() const noexcept -> const ChainInstance&
     {
         return instance_;
     }
@@ -125,7 +125,7 @@ public:
     {
     }
 
-    [[nodiscard]] auto instance() const noexcept -> const ChainInstance&
+    [[nodiscard]] auto input() const noexcept -> const ChainInstance&
     {
         return instance_;
     }

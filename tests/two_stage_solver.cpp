@@ -34,7 +34,7 @@ public:
 
     explicit SolutionManager(const Instance& instance) : instance_{instance} {}
 
-    [[nodiscard]] auto instance() const noexcept -> const Instance& { return instance_; }
+    [[nodiscard]] auto input() const noexcept -> const Instance& { return instance_; }
     [[nodiscard]] auto is_valid(const Solution&) const noexcept -> bool { return true; }
     [[nodiscard]] auto initial_solution() const -> Solution { return {5, 9}; }
     [[nodiscard]] auto evaluate(const Solution& solution) const -> cost_type
@@ -59,7 +59,7 @@ public:
 
     explicit Neighborhood(const SolutionManager& sm) : sm_{sm} {}
 
-    [[nodiscard]] auto instance() const noexcept -> const Instance& { return sm_.input(); }
+    [[nodiscard]] auto input() const noexcept -> const Instance& { return sm_.input(); }
     [[nodiscard]] static auto is_valid(const Solution&, const Move&) noexcept -> bool { return true; }
     void make_move(Solution&, const Move&) const noexcept {}
 
@@ -112,7 +112,7 @@ public:
 
     explicit HardNeighborhood(const SolutionManager& sm) : sm_{sm} {}
 
-    [[nodiscard]] auto instance() const noexcept -> const Instance& { return sm_.input(); }
+    [[nodiscard]] auto input() const noexcept -> const Instance& { return sm_.input(); }
 
     template<std::uniform_random_bit_generator RNG>
     [[nodiscard]] static auto random_move(const Solution& solution, RNG&)
@@ -146,7 +146,7 @@ public:
 
     explicit SoftNeighborhood(const SolutionManager& sm) : sm_{sm} {}
 
-    [[nodiscard]] auto instance() const noexcept -> const Instance& { return sm_.input(); }
+    [[nodiscard]] auto input() const noexcept -> const Instance& { return sm_.input(); }
 
     template<std::uniform_random_bit_generator RNG>
     [[nodiscard]] static auto random_move(const Solution& solution, RNG&)

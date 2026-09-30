@@ -27,7 +27,7 @@ public:
         const MoveExam& move) const noexcept -> bool
     {
         return move.exam < solution.timeslot_by_exam.size() &&
-               move.destination < instance().timeslot_count &&
+               move.destination < input().timeslot_count &&
                solution.timeslot_by_exam[move.exam] != move.destination;
     }
 
@@ -36,7 +36,7 @@ public:
         const ExamTimetable& solution,
         MoveExam& move) const noexcept -> bool
     {
-        if (solution.timeslot_by_exam.empty() || instance().timeslot_count < 2)
+        if (solution.timeslot_by_exam.empty() || input().timeslot_count < 2)
         {
             return false;
         }
@@ -54,7 +54,7 @@ public:
 
         const auto current = solution.timeslot_by_exam[move.exam];
         for (auto destination = move.destination + 1;
-             destination < instance().timeslot_count;
+             destination < input().timeslot_count;
              ++destination)
         {
             if (destination != current)
@@ -82,8 +82,8 @@ public:
         const ExamTimetable& solution,
         RNG& rng) const -> std::optional<MoveExam>
     {
-        const auto alternatives = instance().timeslot_count > 0
-            ? instance().timeslot_count - 1
+        const auto alternatives = input().timeslot_count > 0
+            ? input().timeslot_count - 1
             : std::size_t{0};
         const auto count = solution.timeslot_by_exam.size() * alternatives;
 

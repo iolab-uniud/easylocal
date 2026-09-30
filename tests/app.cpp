@@ -120,20 +120,20 @@ using AssignmentRunner = decltype(
         .template make_runner<easylocal::runner::first_improvement>());
 
 template<class Runtime>
-concept has_legacy_input_type = requires {
-    typename Runtime::input_type;
+concept has_legacy_instance_type = requires {
+    typename Runtime::instance_type;
 };
 
 template<class Runtime>
 concept has_legacy_instance_accessor = requires(const Runtime& runtime) {
-    runtime.input();
+    runtime.instance();
 };
 
 using AssignmentRuntime = decltype(
     std::declval<const AssignmentApp&>().for_input(
         std::declval<const AssignmentApp::input_type&>()));
 
-static_assert(!has_legacy_input_type<AssignmentRuntime>);
+static_assert(!has_legacy_instance_type<AssignmentRuntime>);
 static_assert(!has_legacy_instance_accessor<AssignmentRuntime>);
 
 static_assert(can_materialize_from_lvalue_input<AssignmentApp>);

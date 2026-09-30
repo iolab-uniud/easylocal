@@ -44,7 +44,7 @@ public:
     using cost_type = MaximizingCost;
 
     explicit MaximizingSM(const Instance& instance) : instance_{instance} {}
-    auto instance() const -> const Instance& { return instance_; }
+    auto input() const -> const Instance& { return instance_; }
     static auto is_valid(const Solution&) -> bool { return true; }
     static auto evaluate(const Solution& solution) -> cost_type
     {
@@ -69,7 +69,7 @@ public:
     using move_type = Move;
 
     explicit EmptyNeighborhood(const SM& sm) : instance_{sm.input()} {}
-    auto instance() const -> const input_type& { return instance_; }
+    auto input() const -> const input_type& { return instance_; }
     [[nodiscard]] static auto is_valid(const solution_type&, const move_type&) noexcept -> bool { return true; }
     static void make_move(solution_type&, const move_type&) {}
 

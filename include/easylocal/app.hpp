@@ -658,10 +658,11 @@ public:
         requires (app_runner_count_v<RunnerTag, Registrations...> == 1) &&
                  std::copy_constructible<SMSpec> &&
                  std::copy_constructible<NHESpec> &&
-                 detail::solver_factory_tag<
-                     SolverTag,
-                     decltype(std::declval<const app_builder&>().template make_runner<RunnerTag>()),
-                     SolverConfig>
+                 requires {
+                     SolverTag::make(
+                         std::declval<const app_builder&>().template make_runner<RunnerTag>(),
+                         std::declval<SolverConfig>());
+                 }
     [[nodiscard]]
     auto make_solver(SolverConfig&& config) const
     {
@@ -674,10 +675,11 @@ public:
         requires (app_runner_count_v<RunnerTag, Registrations...> > 0) &&
                  std::copy_constructible<SMSpec> &&
                  std::copy_constructible<NHESpec> &&
-                 detail::solver_factory_tag<
-                     SolverTag,
-                     decltype(std::declval<const app_builder&>().template make_runner<RunnerTag>(std::declval<std::string_view>())),
-                     SolverConfig>
+                 requires {
+                     SolverTag::make(
+                         std::declval<const app_builder&>().template make_runner<RunnerTag>(std::declval<std::string_view>()),
+                         std::declval<SolverConfig>());
+                 }
     [[nodiscard]]
     auto make_solver(
         const std::string_view runner_name,

@@ -304,7 +304,7 @@ public:
 
     [[nodiscard]] auto base() noexcept -> BaseSM& { return base_; }
     [[nodiscard]] auto base() const noexcept -> const BaseSM& { return base_; }
-    [[nodiscard]] auto instance() const noexcept -> const input_type& { return base_.input(); }
+    [[nodiscard]] auto input() const noexcept -> const input_type& { return base_.input(); }
     [[nodiscard]] auto is_valid(const solution_type& solution) const noexcept(noexcept(base_.is_valid(solution))) -> bool { return base_.is_valid(solution); }
 
     [[nodiscard]]
@@ -556,7 +556,7 @@ public:
 
     [[nodiscard]] auto base() noexcept -> base_type& { return inner_.base(); }
     [[nodiscard]] auto base() const noexcept -> const base_type& { return inner_.base(); }
-    [[nodiscard]] auto instance() const noexcept -> const input_type& { return inner_.input(); }
+    [[nodiscard]] auto input() const noexcept -> const input_type& { return inner_.input(); }
     [[nodiscard]] auto is_valid(const solution_type& solution) const noexcept(noexcept(inner_.is_valid(solution))) -> bool { return inner_.is_valid(solution); }
 
     [[nodiscard]]
@@ -734,7 +734,7 @@ public:
     static_assert(
         base_solution_manager<BaseSM>,
         "a SolutionManager must expose input_type, solution_type, "
-        "instance() -> const input_type&, and is_valid(solution)");
+        "input() -> const input_type&, and is_valid(solution)");
 
     using base_type = BaseSM;
     using component_service_type = component_solution_manager<

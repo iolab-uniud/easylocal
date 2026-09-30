@@ -31,7 +31,7 @@ constexpr auto valid_edge_pair(
 class CoroutineNeighborhoodExplorer
 {
 public:
-    using instance_type = typename TspSolutionManager::instance_type;
+    using input_type = typename TspSolutionManager::input_type;
     using solution_type = Tour;
     using move_type = TwoOptMove;
 
@@ -42,9 +42,9 @@ public:
     }
 
     [[nodiscard]]
-    auto instance() const noexcept -> const instance_type&
+    auto input() const noexcept -> const input_type&
     {
-        return solution_manager_.instance();
+        return solution_manager_.input();
     }
 
     [[nodiscard]]
@@ -103,7 +103,7 @@ private:
 class StdCoroutineNeighborhoodExplorer
 {
 public:
-    using instance_type = typename TspSolutionManager::instance_type;
+    using input_type = typename TspSolutionManager::input_type;
     using solution_type = Tour;
     using move_type = TwoOptMove;
 
@@ -114,9 +114,9 @@ public:
     }
 
     [[nodiscard]]
-    auto instance() const noexcept -> const instance_type&
+    auto input() const noexcept -> const input_type&
     {
-        return solution_manager_.instance();
+        return solution_manager_.input();
     }
 
     [[nodiscard]]

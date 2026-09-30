@@ -24,7 +24,7 @@ public:
     auto initial_solution() const -> Tour
     {
         Tour solution;
-        solution.tour.resize(instance_.city_count);
+        solution.tour.resize(input_.city_count);
         std::iota(solution.tour.begin(), solution.tour.end(), city_id{0});
         return solution;
     }
@@ -41,14 +41,14 @@ public:
     [[nodiscard]]
     auto is_valid(const Tour& solution) const noexcept -> bool
     {
-        if (solution.tour.size() != instance_.city_count)
+        if (solution.tour.size() != input_.city_count)
         {
             return false;
         }
 
         for (std::size_t first = 0; first < solution.tour.size(); ++first)
         {
-            if (solution.tour[first] >= instance_.city_count)
+            if (solution.tour[first] >= input_.city_count)
             {
                 return false;
             }

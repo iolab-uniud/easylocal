@@ -1,5 +1,9 @@
 #include <easylocal/easylocal.hpp>
-#include <easylocal/testing/checks.hpp>
+#include <easylocal/testing/check.hpp>
+#include <easylocal/testing/cost_component.hpp>
+#include <easylocal/testing/delta_evaluator.hpp>
+#include <easylocal/testing/neighborhood.hpp>
+#include <easylocal/testing/solution_manager.hpp>
 
 #if EASYLOCAL_TEST_CONFIG_TOML
 #include <easylocal/config/toml.hpp>

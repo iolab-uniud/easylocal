@@ -536,7 +536,7 @@ The current tests cover:
 EasyLocal also provides framework-agnostic checks for user-defined services:
 
 ```cpp
-#include <easylocal/testing/checks.hpp>
+#include <easylocal/testing/neighborhood.hpp>
 
 const auto report = easylocal::testing::check_neighborhood<MyNeighborhoodCheck>();
 ```

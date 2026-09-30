@@ -38,7 +38,7 @@ public:
     using cost_type = Cost;
 
     [[nodiscard]]
-    auto instance() const noexcept -> const Instance&
+    auto input() const noexcept -> const Instance&
     {
         return instance_;
     }
@@ -67,7 +67,7 @@ public:
     using move_type = Move;
 
     [[nodiscard]]
-    auto instance() const noexcept -> const Instance&
+    auto input() const noexcept -> const Instance&
     {
         return instance_;
     }
@@ -96,7 +96,7 @@ public:
     using move_type = Move;
 
     [[nodiscard]]
-    auto instance() const noexcept -> const Instance&
+    auto input() const noexcept -> const Instance&
     {
         return instance_;
     }
@@ -138,7 +138,7 @@ public:
     using move_type = Move;
 
     [[nodiscard]]
-    auto instance() const noexcept -> const Instance&
+    auto input() const noexcept -> const Instance&
     {
         return instance_;
     }

@@ -109,10 +109,8 @@ headers may not include `easylocal/detail/*`. This keeps
 standard-library consumer regardless of which optional integrations exist.
 
 Materialized apps and bound runners borrow an Input by `const&`. Input is the
-canonical application-boundary term (`input_type`, `input()`); the older
-`instance_type`/`instance()` spelling remains available where needed for
-compatibility. Binding a temporary Input is rejected at compile time so an
-adapter cannot accidentally create a runtime that outlives its Input.
+application-boundary term (`input_type`, `input()`). Binding a temporary Input
+is rejected at compile time so an adapter cannot accidentally create a runtime that outlives its Input.
 
 ## ConfigTOML
 

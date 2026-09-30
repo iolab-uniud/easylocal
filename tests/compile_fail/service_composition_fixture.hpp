@@ -41,7 +41,7 @@ public:
     }
 
     [[nodiscard]]
-    auto instance() const noexcept -> const Instance&
+    auto input() const noexcept -> const Instance&
     {
         return instance_;
     }
@@ -114,7 +114,7 @@ public:
     }
 
     [[nodiscard]]
-    auto instance() const noexcept -> const Instance&
+    auto input() const noexcept -> const Instance&
     {
         return solution_manager_.input();
     }

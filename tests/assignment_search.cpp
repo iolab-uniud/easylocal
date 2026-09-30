@@ -97,7 +97,7 @@ public:
     }
 
     [[nodiscard]]
-    auto instance() const noexcept -> const AssignmentInstance&
+    auto input() const noexcept -> const AssignmentInstance&
     {
         return solution_manager_.input();
     }
@@ -138,7 +138,7 @@ public:
     }
 
     [[nodiscard]]
-    auto instance() const noexcept -> const AssignmentInstance&
+    auto input() const noexcept -> const AssignmentInstance&
     {
         return inner_.input();
     }

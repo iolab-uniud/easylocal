@@ -131,7 +131,7 @@ public:
 
     [[nodiscard]] auto is_valid(const AssignmentSolution& solution) const noexcept -> bool
     {
-        return solution.assignment.size() == instance_.demand.size();
+        return solution.assignment.size() == input_.demand.size();
     }
 };
 
@@ -217,7 +217,7 @@ public:
     }
 
     [[nodiscard]]
-    auto instance() const noexcept -> const AssignmentInstance&
+    auto input() const noexcept -> const AssignmentInstance&
     {
         return solution_manager_.input();
     }

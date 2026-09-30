@@ -34,7 +34,7 @@ struct SolutionManager
 
     explicit SolutionManager(const Instance& instance) : instance_{instance} {}
 
-    [[nodiscard]] auto instance() const noexcept -> const Instance& { return instance_; }
+    [[nodiscard]] auto input() const noexcept -> const Instance& { return instance_; }
     [[nodiscard]] auto is_valid(const Solution&) const noexcept -> bool { return true; }
     [[nodiscard]] auto evaluate(const Solution& solution) const noexcept -> int { return solution.value; }
     [[nodiscard]] auto initial_solution() const -> Solution { return {}; }
@@ -55,7 +55,7 @@ struct NeighborhoodExplorer
 
     explicit NeighborhoodExplorer(SolutionManager& sm) : instance_{sm.input()} {}
 
-    [[nodiscard]] auto instance() const noexcept -> const Instance& { return instance_; }
+    [[nodiscard]] auto input() const noexcept -> const Instance& { return instance_; }
     [[nodiscard]] auto moves(const Solution&) const { return std::views::empty<Move>; }
     [[nodiscard]] static auto is_valid(const Solution&, const Move&) noexcept -> bool { return true; }
     void make_move(Solution&, const Move&) const {}

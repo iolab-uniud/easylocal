@@ -159,7 +159,6 @@ class hard_cost_solution_manager_base
 public:
     using underlying_type = SM;
     using input_type = typename SM::input_type;
-    using input_type = input_type;
     using solution_type = typename SM::solution_type;
     using full_cost_type = typename SM::cost_type;
     using cost_type = typename full_cost_type::hard_cost_type;
@@ -173,12 +172,6 @@ public:
     auto input() const noexcept -> const input_type&
     {
         return solution_manager_.input();
-    }
-
-    [[nodiscard]]
-    auto instance() const noexcept -> const input_type&
-    {
-        return input();
     }
 
     [[nodiscard]]
@@ -386,7 +379,6 @@ class runner_context
 {
 public:
     using input_type = typename SM::input_type;
-    using input_type = input_type;
     using solution_type = typename SM::solution_type;
     using cost_type = typename SM::cost_type;
     using solution_manager_type = SM;
@@ -498,7 +490,6 @@ public:
     using solution_manager_type = service_t<SMSpec>;
     using neighborhood_explorer_type = service_t<NHESpec>;
     using input_type = typename solution_manager_type::input_type;
-    using input_type = input_type;
     using solution_type = typename solution_manager_type::solution_type;
     using cost_type = typename solution_manager_type::cost_type;
 
@@ -508,12 +499,12 @@ public:
 
     bound_runner(
         Algorithm algorithm,
-        const input_type& instance,
+        const input_type& input,
         const SMSpec& solution_manager_spec,
         const NHESpec& neighborhood_spec)
         : algorithm_{std::move(algorithm)},
           input_{input},
-          solution_manager_{solution_manager_spec.construct(instance_)},
+          solution_manager_{solution_manager_spec.construct(input_)},
           neighborhood_{neighborhood_spec.construct(solution_manager_)}
     {
         assert(
@@ -641,7 +632,7 @@ public:
 
 private:
     Algorithm algorithm_;
-    const input_type& instance_;
+    const input_type& input_;
     solution_manager_type solution_manager_;
     neighborhood_explorer_type neighborhood_;
 };
@@ -839,7 +830,6 @@ public:
     using solution_manager_type = detail::service_t<SMSpec>;
     using neighborhood_explorer_type = detail::service_t<NHESpec>;
     using input_type = typename solution_manager_type::input_type;
-    using input_type = input_type;
 
     Runner(
         Algorithm algorithm,
@@ -930,7 +920,7 @@ public:
     {
         return detail::bound_runner<Algorithm, SMSpec, NHESpec>{
             algorithm_,
-            instance,
+            input,
             solution_manager_spec_,
             neighborhood_spec_,
         };
@@ -943,7 +933,7 @@ public:
     {
         return detail::bound_runner<Algorithm, SMSpec, NHESpec>{
             std::move(algorithm_),
-            instance,
+            input,
             solution_manager_spec_,
             neighborhood_spec_,
         };
@@ -1072,13 +1062,6 @@ Runner(Algorithm) -> Runner<std::remove_cvref_t<Algorithm>>;
 // Runner tags provide a light customization protocol: a tag constructs the
 // search algorithm, while make_runner() wraps it in the framework Runner.
 // This keeps runner.hpp independent from concrete search algorithms.
-namespace detail
-{
-
-// runner_factory_tag inlined into make_runner requires clause
-
-} // namespace detail
-
 template<class Tag, class... Args>
     requires requires(Args&&... args) { Tag::make(std::forward<Args>(args)...); }
 [[nodiscard]]

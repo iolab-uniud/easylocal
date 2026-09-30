@@ -43,9 +43,9 @@ public:
     }
 
     [[nodiscard]]
-    auto protected_instance_address() const noexcept -> const Instance*
+    auto protected_input_address() const noexcept -> const Instance*
     {
-        return &instance_;
+        return &input_;
     }
 };
 
@@ -101,7 +101,7 @@ int main()
 
     assert(&solution_manager.input() == &instance);
     assert(&solution_manager.input() == &instance);
-    assert(solution_manager.protected_instance_address() == &instance);
+    assert(solution_manager.protected_input_address() == &instance);
 
     assert(neighborhood.protected_solution_manager_address() == &solution_manager);
     assert(&neighborhood.input() == &instance);

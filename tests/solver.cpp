@@ -21,7 +21,7 @@ public:
     using solution_type = Solution;
     using cost_type = std::uint64_t;
     explicit DeterministicSM(const Instance& instance) : instance_{instance} {}
-    auto instance() const -> const Instance& { return instance_; }
+    auto input() const -> const Instance& { return instance_; }
     static auto is_valid(const Solution&) -> bool { return true; }
     static auto evaluate(const Solution& s) -> cost_type { return s.value; }
     auto initial_solution() const -> Solution
@@ -39,7 +39,7 @@ public:
     using solution_type = Solution;
     using cost_type = std::uint64_t;
     explicit RandomSM(const Instance& instance) : instance_{instance} {}
-    auto instance() const -> const Instance& { return instance_; }
+    auto input() const -> const Instance& { return instance_; }
     static auto is_valid(const Solution&) -> bool { return true; }
     static auto evaluate(const Solution& s) -> cost_type { return s.value; }
     template<class RNG>
@@ -55,7 +55,7 @@ public:
     using solution_type = Solution;
     using cost_type = std::uint64_t;
     explicit SelectableSM(const Instance& instance) : instance_{instance} {}
-    auto instance() const -> const Instance& { return instance_; }
+    auto input() const -> const Instance& { return instance_; }
     static auto is_valid(const Solution&) -> bool { return true; }
     static auto evaluate(const Solution& s) -> cost_type { return s.value; }
     auto initial_solution() const -> Solution
@@ -76,7 +76,7 @@ public:
     using solution_type = typename SM::solution_type;
     using move_type = Move;
     explicit EmptyNeighborhood(const SM& sm) : instance_{sm.input()} {}
-    auto instance() const -> const input_type& { return instance_; }
+    auto input() const -> const input_type& { return instance_; }
     [[nodiscard]] static auto is_valid(const solution_type&, const move_type&) noexcept -> bool { return true; }
     static void make_move(solution_type&, const move_type&) {}
 private:

@@ -1,4 +1,8 @@
-#include <easylocal/testing/checks.hpp>
+#include <easylocal/testing/check.hpp>
+#include <easylocal/testing/cost_component.hpp>
+#include <easylocal/testing/delta_evaluator.hpp>
+#include <easylocal/testing/neighborhood.hpp>
+#include <easylocal/testing/solution_manager.hpp>
 
 #include "capacity_delta.hpp"
 #include "cost_components.hpp"

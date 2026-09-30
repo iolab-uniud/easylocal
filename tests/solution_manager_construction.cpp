@@ -34,7 +34,7 @@ public:
     }
 
     [[nodiscard]]
-    auto instance() const noexcept -> const Instance&
+    auto input() const noexcept -> const Instance&
     {
         return instance_;
     }
@@ -64,7 +64,7 @@ public:
     [[nodiscard]]
     auto initial_solution() const noexcept -> Solution
     {
-        return Solution{.value = instance().deterministic_value};
+        return Solution{.value = input().deterministic_value};
     }
 };
 
@@ -90,7 +90,7 @@ public:
     [[nodiscard]]
     auto initial_solution() const noexcept -> Solution
     {
-        return Solution{.value = instance().deterministic_value};
+        return Solution{.value = input().deterministic_value};
     }
 
     template<class RNG>

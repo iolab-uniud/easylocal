@@ -9,7 +9,7 @@ struct SM
     using input_type = Instance;
     using solution_type = Solution;
     explicit SM(const Instance& instance) : instance_{instance} {}
-    auto instance() const -> const Instance& { return instance_; }
+    auto input() const -> const Instance& { return instance_; }
     static auto is_valid(const Solution&) -> bool { return true; }
 private:
     const Instance& instance_;

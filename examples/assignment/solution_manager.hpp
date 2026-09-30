@@ -24,7 +24,7 @@ public:
     [[nodiscard]]
     auto is_valid(const AssignmentSolution& solution) const noexcept -> bool
     {
-        if (solution.assignment.size() != instance_.demand.size())
+        if (solution.assignment.size() != input_.demand.size())
         {
             return false;
         }
@@ -32,27 +32,27 @@ public:
         return std::ranges::all_of(
             solution.assignment,
             [this](const machine_id machine) {
-                return machine < instance_.capacity.size();
+                return machine < input_.capacity.size();
             });
     }
 
     [[nodiscard]]
     auto initial_solution() const -> AssignmentSolution
     {
-        assert(!instance_.capacity.empty() || instance_.demand.empty());
+        assert(!input_.capacity.empty() || input_.demand.empty());
 
         AssignmentSolution solution{
-            .assignment = std::vector<machine_id>(instance_.demand.size()),
+            .assignment = std::vector<machine_id>(input_.demand.size()),
         };
 
-        if (instance_.capacity.empty())
+        if (input_.capacity.empty())
         {
             return solution;
         }
 
         for (std::size_t job = 0; job < solution.assignment.size(); ++job)
         {
-            solution.assignment[job] = job % instance_.capacity.size();
+            solution.assignment[job] = job % input_.capacity.size();
         }
 
         return solution;

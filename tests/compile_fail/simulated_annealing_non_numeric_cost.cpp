@@ -29,7 +29,7 @@ public:
 
     explicit SolutionManager(const Instance& instance) noexcept : instance_{instance} {}
 
-    [[nodiscard]] auto instance() const noexcept -> const Instance& { return instance_; }
+    [[nodiscard]] auto input() const noexcept -> const Instance& { return instance_; }
     [[nodiscard]] static auto is_valid(const Solution&) noexcept -> bool { return true; }
     [[nodiscard]] static auto evaluate(const Solution& solution) noexcept -> cost_type
     {
@@ -49,7 +49,7 @@ public:
 
     explicit Neighborhood(const SolutionManager& manager) noexcept : instance_{manager.input()} {}
 
-    [[nodiscard]] auto instance() const noexcept -> const Instance& { return instance_; }
+    [[nodiscard]] auto input() const noexcept -> const Instance& { return instance_; }
 
     template<std::uniform_random_bit_generator RNG>
     [[nodiscard]] static auto random_move(const Solution&, RNG&) -> std::optional<Move>

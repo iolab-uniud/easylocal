@@ -140,7 +140,7 @@ public:
     {
     }
 
-    [[nodiscard]] auto instance() const noexcept -> const input_type&
+    [[nodiscard]] auto input() const noexcept -> const input_type&
     {
         return manager_.input();
     }

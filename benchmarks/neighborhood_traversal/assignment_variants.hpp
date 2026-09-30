@@ -18,7 +18,7 @@ using mwe::assignment::AssignmentSolutionManager;
 class CoroutineNeighborhoodExplorer
 {
 public:
-    using instance_type = typename AssignmentSolutionManager::instance_type;
+    using input_type = typename AssignmentSolutionManager::input_type;
     using solution_type = AssignmentSolution;
     using move_type = ReassignJobMove;
 
@@ -29,9 +29,9 @@ public:
     }
 
     [[nodiscard]]
-    auto instance() const noexcept -> const instance_type&
+    auto input() const noexcept -> const input_type&
     {
-        return solution_manager_.instance();
+        return solution_manager_.input();
     }
 
     [[nodiscard]]
@@ -40,7 +40,7 @@ public:
         const ReassignJobMove& move) const noexcept -> bool
     {
         return move.job < solution.assignment.size() &&
-               move.destination < solution_manager_.instance().capacity.size() &&
+               move.destination < solution_manager_.input().capacity.size() &&
                solution.assignment[move.job] != move.destination;
     }
 
@@ -55,7 +55,7 @@ public:
         assert(solution_manager_.is_valid(solution));
 
         const auto machine_count =
-            solution_manager_.instance().capacity.size();
+            solution_manager_.input().capacity.size();
 
         for (std::size_t job = 0; job < solution.assignment.size(); ++job)
         {
@@ -82,7 +82,7 @@ private:
 class StdCoroutineNeighborhoodExplorer
 {
 public:
-    using instance_type = typename AssignmentSolutionManager::instance_type;
+    using input_type = typename AssignmentSolutionManager::input_type;
     using solution_type = AssignmentSolution;
     using move_type = ReassignJobMove;
 
@@ -93,9 +93,9 @@ public:
     }
 
     [[nodiscard]]
-    auto instance() const noexcept -> const instance_type&
+    auto input() const noexcept -> const input_type&
     {
-        return solution_manager_.instance();
+        return solution_manager_.input();
     }
 
     [[nodiscard]]
@@ -104,7 +104,7 @@ public:
         const ReassignJobMove& move) const noexcept -> bool
     {
         return move.job < solution.assignment.size() &&
-               move.destination < solution_manager_.instance().capacity.size() &&
+               move.destination < solution_manager_.input().capacity.size() &&
                solution.assignment[move.job] != move.destination;
     }
 
@@ -119,7 +119,7 @@ public:
         assert(solution_manager_.is_valid(solution));
 
         const auto machine_count =
-            solution_manager_.instance().capacity.size();
+            solution_manager_.input().capacity.size();
 
         for (std::size_t job = 0; job < solution.assignment.size(); ++job)
         {
