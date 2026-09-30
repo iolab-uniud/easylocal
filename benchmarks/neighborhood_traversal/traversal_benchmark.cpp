@@ -1,6 +1,8 @@
 #include "assignment_variants.hpp"
 #include "tsp_variants.hpp"
 
+#include <easylocal/cursor_moves.hpp>
+
 #include <algorithm>
 #include <bit>
 #include <charconv>
@@ -37,27 +39,27 @@ auto encoded_moves(Range&& moves, Encode encode) -> std::vector<std::uint64_t>
 [[nodiscard]]
 auto validate_assignment_variants() -> bool
 {
-    const assignment::Instance instance{
+    const assignment::AssignmentInstance instance{
         .demand = {2, 3, 5, 7},
         .capacity = {10, 10, 10},
     };
-    const assignment::Solution solution{
+    const assignment::AssignmentSolution solution{
         .assignment = {0, 1, 2, 0},
     };
-    const assignment::SolutionManager manager{instance};
+    const assignment::AssignmentSolutionManager manager{instance};
 
     const bench::assignment::CoroutineNeighborhoodExplorer coroutine{manager};
 #if EASYLOCAL_BENCHMARK_HAS_STD_GENERATOR
     const bench::assignment::StdCoroutineNeighborhoodExplorer std_coroutine{manager};
 #endif
-    const assignment::NeighborhoodExplorer cursor{manager};
+    const assignment::ReassignJobNeighborhoodExplorer cursor{manager};
 
-    const auto encode = [](const assignment::Move& move) {
+    const auto encode = [](const assignment::ReassignJobMove& move) {
         return static_cast<std::uint64_t>(move.job) * 1024ULL +
                static_cast<std::uint64_t>(move.destination);
     };
 
-    const auto expected = encoded_moves(cursor.moves(solution), encode);
+    const auto expected = encoded_moves(easylocal::moves(cursor, solution), encode);
     if (expected != encoded_moves(coroutine.moves(solution), encode))
     {
         return false;
@@ -75,29 +77,29 @@ auto validate_assignment_variants() -> bool
 auto validate_tsp_variants() -> bool
 {
     constexpr std::size_t city_count = 6;
-    const tsp::Instance instance{
+    const tsp::TspInstance instance{
         .city_count = city_count,
         .distances = std::vector<tsp::distance_type>(
             city_count * city_count,
             0.0),
     };
-    const tsp::Solution solution{
+    const tsp::Tour solution{
         .tour = {0, 1, 2, 3, 4, 5},
     };
-    const tsp::SolutionManager manager{instance};
+    const tsp::TspSolutionManager manager{instance};
 
     const bench::tsp::CoroutineNeighborhoodExplorer coroutine{manager};
 #if EASYLOCAL_BENCHMARK_HAS_STD_GENERATOR
     const bench::tsp::StdCoroutineNeighborhoodExplorer std_coroutine{manager};
 #endif
-    const tsp::NeighborhoodExplorer cursor{manager};
+    const tsp::TwoOptNeighborhoodExplorer cursor{manager};
 
     const auto encode = [](const tsp::TwoOptMove& move) {
         return static_cast<std::uint64_t>(move.first_edge) * 1024ULL +
                static_cast<std::uint64_t>(move.second_edge);
     };
 
-    const auto expected = encoded_moves(cursor.moves(solution), encode);
+    const auto expected = encoded_moves(easylocal::moves(cursor, solution), encode);
     if (expected != encoded_moves(coroutine.moves(solution), encode))
     {
         return false;
@@ -140,7 +142,7 @@ auto scan_once(
 {
     ScanResult result;
 
-    for (const auto& move : explorer.moves(solution))
+    for (const auto& move : easylocal::moves(explorer, solution))
     {
         const auto token = static_cast<std::uint64_t>(consume(move));
         observe(token);
@@ -281,11 +283,11 @@ void benchmark_assignment(
     const std::size_t trials,
     const std::uint64_t seed)
 {
-    assignment::Instance instance{
+    assignment::AssignmentInstance instance{
         .demand = std::vector<assignment::quantity_type>(jobs),
         .capacity = std::vector<assignment::quantity_type>(machines),
     };
-    assignment::Solution solution{
+    assignment::AssignmentSolution solution{
         .assignment = std::vector<assignment::machine_id>(jobs),
     };
 
@@ -302,19 +304,19 @@ void benchmark_assignment(
             10'000 + ((machine * 131ULL + seed) % 4096ULL));
     }
 
-    const assignment::SolutionManager manager{instance};
+    const assignment::AssignmentSolutionManager manager{instance};
     const bench::assignment::CoroutineNeighborhoodExplorer coroutine_custom{manager};
 #if EASYLOCAL_BENCHMARK_HAS_STD_GENERATOR
     const bench::assignment::StdCoroutineNeighborhoodExplorer coroutine_std{manager};
 #endif
-    const assignment::NeighborhoodExplorer cursor{manager};
+    const assignment::ReassignJobNeighborhoodExplorer cursor{manager};
 
-    const auto traversal_consumer = [](const assignment::Move& move) {
+    const auto traversal_consumer = [](const assignment::ReassignJobMove& move) {
         return static_cast<std::uint64_t>(move.job) * 1'000'003ULL +
                static_cast<std::uint64_t>(move.destination);
     };
 
-    const auto light_consumer = [&](const assignment::Move& move) {
+    const auto light_consumer = [&](const assignment::ReassignJobMove& move) {
         const auto source = solution.assignment[move.job];
         auto token = traversal_consumer(move);
         token ^= (static_cast<std::uint64_t>(source) + 1ULL) * 65'537ULL;
@@ -347,13 +349,13 @@ void benchmark_tsp(
     const std::size_t trials,
     const std::uint64_t seed)
 {
-    tsp::Instance instance{
+    tsp::TspInstance instance{
         .city_count = city_count,
         .distances = std::vector<tsp::distance_type>(
             city_count * city_count,
             0.0),
     };
-    tsp::Solution solution{
+    tsp::Tour solution{
         .tour = std::vector<tsp::city_id>(city_count),
     };
 
@@ -376,12 +378,12 @@ void benchmark_tsp(
         }
     }
 
-    const tsp::SolutionManager manager{instance};
+    const tsp::TspSolutionManager manager{instance};
     const bench::tsp::CoroutineNeighborhoodExplorer coroutine_custom{manager};
 #if EASYLOCAL_BENCHMARK_HAS_STD_GENERATOR
     const bench::tsp::StdCoroutineNeighborhoodExplorer coroutine_std{manager};
 #endif
-    const tsp::NeighborhoodExplorer cursor{manager};
+    const tsp::TwoOptNeighborhoodExplorer cursor{manager};
 
     const auto traversal_consumer = [](const tsp::TwoOptMove& move) {
         return static_cast<std::uint64_t>(move.first_edge) * 1'000'003ULL +

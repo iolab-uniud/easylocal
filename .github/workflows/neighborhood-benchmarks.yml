@@ -114,6 +114,7 @@ jobs:
           cat "$results_dir/traversal.log"
           cat "$results_dir/search.log"
           cat "$results_dir/summary.md"
+          cat "$results_dir/summary.md" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload benchmark results
         if: ${{ always() && !env.ACT }}
@@ -185,6 +186,7 @@ jobs:
           cat "$results_dir/traversal.log"
           cat "$results_dir/search.log"
           cat "$results_dir/summary.md"
+          cat "$results_dir/summary.md" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload benchmark results
         if: ${{ always() && !env.ACT }}

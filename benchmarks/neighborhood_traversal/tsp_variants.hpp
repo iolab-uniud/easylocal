@@ -12,8 +12,8 @@
 namespace easylocal::benchmark::neighborhood_traversal::tsp
 {
 
-using mwe::tsp::Solution;
-using mwe::tsp::SolutionManager;
+using mwe::tsp::Tour;
+using mwe::tsp::TspSolutionManager;
 using mwe::tsp::TwoOptMove;
 
 [[nodiscard]]
@@ -31,12 +31,12 @@ constexpr auto valid_edge_pair(
 class CoroutineNeighborhoodExplorer
 {
 public:
-    using instance_type = typename SolutionManager::instance_type;
-    using solution_type = Solution;
+    using instance_type = typename TspSolutionManager::instance_type;
+    using solution_type = Tour;
     using move_type = TwoOptMove;
 
     explicit CoroutineNeighborhoodExplorer(
-        const SolutionManager& solution_manager) noexcept
+        const TspSolutionManager& solution_manager) noexcept
         : solution_manager_{solution_manager}
     {
     }
@@ -47,7 +47,18 @@ public:
         return solution_manager_.instance();
     }
 
-    void make_move(Solution& solution, const TwoOptMove& move) const noexcept
+    [[nodiscard]]
+    auto is_valid(
+        const Tour& solution,
+        const TwoOptMove& move) const noexcept -> bool
+    {
+        return valid_edge_pair(
+            solution.tour.size(),
+            move.first_edge,
+            move.second_edge);
+    }
+
+    void make_move(Tour& solution, const TwoOptMove& move) const noexcept
     {
         const auto first = static_cast<std::ptrdiff_t>(move.first_edge + 1);
         const auto last = static_cast<std::ptrdiff_t>(move.second_edge + 1);
@@ -57,7 +68,7 @@ public:
     }
 
     [[nodiscard]]
-    auto moves(const Solution& solution) const -> generator<TwoOptMove>
+    auto moves(const Tour& solution) const -> generator<TwoOptMove>
     {
         assert(solution_manager_.is_valid(solution));
         const auto city_count = solution.tour.size();
@@ -85,19 +96,19 @@ public:
     }
 
 private:
-    const SolutionManager& solution_manager_;
+    const TspSolutionManager& solution_manager_;
 };
 
 #if EASYLOCAL_BENCHMARK_HAS_STD_GENERATOR
 class StdCoroutineNeighborhoodExplorer
 {
 public:
-    using instance_type = typename SolutionManager::instance_type;
-    using solution_type = Solution;
+    using instance_type = typename TspSolutionManager::instance_type;
+    using solution_type = Tour;
     using move_type = TwoOptMove;
 
     explicit StdCoroutineNeighborhoodExplorer(
-        const SolutionManager& solution_manager) noexcept
+        const TspSolutionManager& solution_manager) noexcept
         : solution_manager_{solution_manager}
     {
     }
@@ -108,7 +119,18 @@ public:
         return solution_manager_.instance();
     }
 
-    void make_move(Solution& solution, const TwoOptMove& move) const noexcept
+    [[nodiscard]]
+    auto is_valid(
+        const Tour& solution,
+        const TwoOptMove& move) const noexcept -> bool
+    {
+        return valid_edge_pair(
+            solution.tour.size(),
+            move.first_edge,
+            move.second_edge);
+    }
+
+    void make_move(Tour& solution, const TwoOptMove& move) const noexcept
     {
         const auto first = static_cast<std::ptrdiff_t>(move.first_edge + 1);
         const auto last = static_cast<std::ptrdiff_t>(move.second_edge + 1);
@@ -118,7 +140,7 @@ public:
     }
 
     [[nodiscard]]
-    auto moves(const Solution& solution) const -> std::generator<TwoOptMove>
+    auto moves(const Tour& solution) const -> std::generator<TwoOptMove>
     {
         assert(solution_manager_.is_valid(solution));
         const auto city_count = solution.tour.size();
@@ -146,7 +168,7 @@ public:
     }
 
 private:
-    const SolutionManager& solution_manager_;
+    const TspSolutionManager& solution_manager_;
 };
 #endif
 

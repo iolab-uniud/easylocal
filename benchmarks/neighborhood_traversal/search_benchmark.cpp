@@ -576,8 +576,8 @@ void benchmark_search_case(
 
 struct AssignmentBenchmarkCase
 {
-    assignment::Instance instance;
-    assignment::Solution initial;
+    assignment::AssignmentInstance instance;
+    assignment::AssignmentSolution initial;
 };
 
 [[nodiscard]]
@@ -587,11 +587,11 @@ auto make_assignment_case(const std::uint64_t seed) -> AssignmentBenchmarkCase
     constexpr std::size_t machines = 8;
 
     AssignmentBenchmarkCase result{
-        .instance = assignment::Instance{
+        .instance = assignment::AssignmentInstance{
             .demand = std::vector<assignment::quantity_type>(jobs),
             .capacity = std::vector<assignment::quantity_type>(machines),
         },
-        .initial = assignment::Solution{
+        .initial = assignment::AssignmentSolution{
             .assignment = std::vector<assignment::machine_id>(jobs, 0),
         },
     };
@@ -618,8 +618,8 @@ auto make_assignment_case(const std::uint64_t seed) -> AssignmentBenchmarkCase
 
 struct TspBenchmarkCase
 {
-    tsp::Instance instance;
-    tsp::Solution initial;
+    tsp::TspInstance instance;
+    tsp::Tour initial;
 };
 
 [[nodiscard]]
@@ -628,13 +628,13 @@ auto make_tsp_case() -> TspBenchmarkCase
     constexpr std::size_t city_count = 64;
 
     TspBenchmarkCase result{
-        .instance = tsp::Instance{
+        .instance = tsp::TspInstance{
             .city_count = city_count,
             .distances = std::vector<tsp::distance_type>(
                 city_count * city_count,
                 0.0),
         },
-        .initial = tsp::Solution{
+        .initial = tsp::Tour{
             .tour = std::vector<tsp::city_id>(city_count),
         },
     };
@@ -669,10 +669,15 @@ void benchmark_assignment(
     const auto benchmark_case = make_assignment_case(seed);
 
     const auto manager_recipe =
-        easylocal::solution_manager<assignment::SolutionManager>()
-        | easylocal::component<assignment::CapacityCostComponent>();
+        easylocal::solution_manager<assignment::AssignmentSolutionManager>()
+        | easylocal::component<assignment::CapacityCostComponent>()
+        | easylocal::aggregator([](const assignment::CapacityValue& capacity) {
+              return easylocal::aggregation::lexicographic{}(
+                  capacity.total_overload,
+                  capacity.overloaded_machines);
+          });
     const auto cursor_recipe =
-        easylocal::neighborhood<assignment::NeighborhoodExplorer>()
+        easylocal::neighborhood<assignment::ReassignJobNeighborhoodExplorer>()
         | easylocal::delta<
               assignment::CapacityCostComponent,
               assignment::ReassignCapacityDeltaEvaluator>();
@@ -683,8 +688,8 @@ void benchmark_assignment(
               assignment::CapacityCostComponent,
               assignment::ReassignCapacityDeltaEvaluator>();
 
-    const auto same_solution = [](const assignment::Solution& lhs,
-                                  const assignment::Solution& rhs) {
+    const auto same_solution = [](const assignment::AssignmentSolution& lhs,
+                                  const assignment::AssignmentSolution& rhs) {
         return lhs.assignment == rhs.assignment;
     };
     const auto token = [](const auto& result) {
@@ -723,10 +728,13 @@ void benchmark_tsp(
     const auto benchmark_case = make_tsp_case();
 
     const auto manager_recipe =
-        easylocal::solution_manager<tsp::SolutionManager>()
-        | easylocal::component<tsp::TourLengthComponent>();
+        easylocal::solution_manager<tsp::TspSolutionManager>()
+        | easylocal::component<tsp::TourLengthComponent>()
+        | easylocal::aggregator([](const tsp::TourLengthValue& value) {
+              return value.total;
+          });
     const auto cursor_recipe =
-        easylocal::neighborhood<tsp::NeighborhoodExplorer>()
+        easylocal::neighborhood<tsp::TwoOptNeighborhoodExplorer>()
         | easylocal::delta<
               tsp::TourLengthComponent,
               tsp::TwoOptTourLengthDeltaEvaluator>();
@@ -736,8 +744,8 @@ void benchmark_tsp(
               tsp::TourLengthComponent,
               tsp::TwoOptTourLengthDeltaEvaluator>();
 
-    const auto same_solution = [](const tsp::Solution& lhs,
-                                  const tsp::Solution& rhs) {
+    const auto same_solution = [](const tsp::Tour& lhs,
+                                  const tsp::Tour& rhs) {
         return lhs.tour == rhs.tour;
     };
     const auto token = [](const auto& result) {

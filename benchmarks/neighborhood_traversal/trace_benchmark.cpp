@@ -8,12 +8,7 @@
 #include <easylocal/search/first_improvement.hpp>
 #include <easylocal/trace.hpp>
 
-#if defined(EASYLOCAL_TRACE_BENCHMARK_HAS_SPDLOG)
-#include <spdlog/details/log_msg.h>
-#include <spdlog/details/null_mutex.h>
-#include <spdlog/logger.h>
-#include <spdlog/sinks/base_sink.h>
-#endif
+
 
 #include <chrono>
 #include <cstddef>
@@ -48,6 +43,21 @@ struct counting_tracer
     std::uint64_t events{};
 };
 
+
+[[nodiscard]]
+auto result_token(const auto& result) noexcept -> std::uint64_t
+{
+    auto value = static_cast<std::uint64_t>(result.cost);
+    value ^= static_cast<std::uint64_t>(result.evaluations) * 0x9e3779b97f4a7c15ULL;
+    value ^= static_cast<std::uint64_t>(result.termination) << 57U;
+    for (std::size_t index = 0; index < result.solution.assignment.size(); ++index)
+    {
+        value ^= (static_cast<std::uint64_t>(result.solution.assignment[index]) + 1U)
+            * (0x100000001b3ULL + static_cast<std::uint64_t>(index));
+    }
+    return value;
+}
+
 class discard_streambuf : public std::streambuf
 {
 public:
@@ -77,164 +87,7 @@ private:
     std::uint64_t bytes_{};
 };
 
-#if defined(EASYLOCAL_TRACE_BENCHMARK_HAS_SPDLOG)
 
-class formatting_discard_sink final
-    : public spdlog::sinks::base_sink<spdlog::details::null_mutex>
-{
-public:
-    [[nodiscard]]
-    auto bytes() const noexcept -> std::uint64_t
-    {
-        return bytes_;
-    }
-
-protected:
-    void sink_it_(const spdlog::details::log_msg& message) override
-    {
-        spdlog::memory_buf_t formatted;
-        formatter_->format(message, formatted);
-        bytes_ += formatted.size();
-    }
-
-    void flush_() override
-    {
-    }
-
-private:
-    std::uint64_t bytes_{};
-};
-
-inline void append_route_json(
-    std::string& result,
-    const easylocal::trace::neighborhood_route_node* node)
-{
-    if (node == nullptr)
-    {
-        return;
-    }
-    append_route_json(result, node->parent);
-    if (result.size() > 1)
-    {
-        result += ',';
-    }
-    result += std::to_string(node->child);
-}
-
-inline auto route_json(const easylocal::trace::neighborhood_route_node* node)
-    -> std::string
-{
-    std::string result{"["};
-    append_route_json(result, node);
-    result += ']';
-    return result;
-}
-
-template<class Function>
-void with_route_json(
-    const easylocal::trace::neighborhood_route_node* node,
-    Function&& function)
-{
-    if (node == nullptr)
-    {
-        function(std::string_view{"[]"});
-        return;
-    }
-    const auto route = route_json(node);
-    function(std::string_view{route});
-}
-
-template<class Cost>
-class spdlog_jsonl_tracer
-{
-public:
-    explicit spdlog_jsonl_tracer(spdlog::logger& logger) noexcept
-        : logger_{logger}
-    {
-    }
-
-    template<class Event>
-    static constexpr bool observes = true;
-
-    void emit(const easylocal::trace::event::run_started<Cost>& value)
-    {
-        logger_.info(R"({{"event":"run_started","cost":{}}})", value.cost);
-    }
-
-    void emit(const easylocal::trace::event::move_evaluated<Cost>& value)
-    {
-        with_route_json(value.neighborhood, [&](const std::string_view route) {
-            logger_.info(
-                R"({{"event":"move_evaluated","evaluations":{},"iterations":{},"current_cost":{},"candidate_cost":{},"neighborhood":{}}})",
-                value.evaluations,
-                value.iterations,
-                value.current_cost,
-                value.candidate_cost,
-                route);
-        });
-    }
-
-    void emit(const easylocal::trace::event::move_accepted<Cost>& value)
-    {
-        with_route_json(value.neighborhood, [&](const std::string_view route) {
-            logger_.info(
-                R"({{"event":"move_accepted","evaluations":{},"iterations":{},"previous_cost":{},"cost":{},"neighborhood":{}}})",
-                value.evaluations,
-                value.iterations,
-                value.previous_cost,
-                value.cost,
-                route);
-        });
-    }
-
-    void emit(const easylocal::trace::event::incumbent_updated<Cost>& value)
-    {
-        logger_.info(
-            R"({{"event":"incumbent_updated","evaluations":{},"iterations":{},"previous_cost":{},"cost":{}}})",
-            value.evaluations,
-            value.iterations,
-            value.previous_cost,
-            value.cost);
-    }
-
-    void emit(const easylocal::trace::event::local_optimum<Cost>& value)
-    {
-        logger_.info(
-            R"({{"event":"local_optimum","evaluations":{},"iterations":{},"cost":{}}})",
-            value.evaluations,
-            value.iterations,
-            value.cost);
-    }
-
-    void emit(const easylocal::trace::event::neighborhood_selection& value)
-    {
-        with_route_json(value.neighborhood, [&](const std::string_view route) {
-            logger_.info(
-                R"({{"event":"neighborhood_selection","attempt":{},"child":{},"bias":{},"active_bias_total":{},"conditional_probability":{},"produced_move":{},"neighborhood":{}}})",
-                value.attempt,
-                value.child,
-                value.bias,
-                value.active_bias_total,
-                value.conditional_probability,
-                value.produced_move,
-                route);
-        });
-    }
-
-    void emit(const easylocal::trace::event::run_finished<Cost>& value)
-    {
-        logger_.info(
-            R"({{"event":"run_finished","evaluations":{},"iterations":{},"cost":{}}})",
-            value.evaluations,
-            value.iterations,
-            value.cost);
-    }
-
-private:
-    spdlog::logger& logger_;
-};
-
-#endif
 
 template<class Function>
 auto measure(Function&& function, std::size_t repetitions)
@@ -334,33 +187,25 @@ int main()
 
     const auto baseline = measure([&] {
         const auto result = bound.run(initial);
-        return result.evaluations;
+        return result_token(result);
     }, repetitions);
 
     easylocal::trace::null_tracer null;
     const auto explicit_null = measure([&] {
         const auto result = bound.run(initial, null);
-        return result.evaluations;
+        return result_token(result);
     }, repetitions);
 
     counting_tracer counter;
     const auto counting = measure([&] {
         const auto result = bound.run(initial, counter);
-        return result.evaluations;
+        return result_token(result);
     }, repetitions);
 
     const auto memory = measure([&] {
         easylocal::trace::memory_recorder<cost_type> recorder;
         const auto result = bound.run(initial, recorder);
-        return result.evaluations;
-    }, repetitions);
-
-    discard_streambuf jsonl_discarded;
-    std::ostream jsonl_discarded_output{&jsonl_discarded};
-    easylocal::trace::jsonl_recorder<cost_type> jsonl{jsonl_discarded_output};
-    const auto streaming = measure([&] {
-        const auto result = bound.run(initial, jsonl);
-        return result.evaluations;
+        return result_token(result);
     }, repetitions);
 
     discard_streambuf binary_discarded;
@@ -369,7 +214,7 @@ int main()
         binary_discarded_output};
     const auto binary_streaming = measure([&] {
         const auto result = bound.run(initial, binary);
-        return result.evaluations;
+        return result_token(result);
     }, repetitions);
     binary.flush();
 
@@ -380,7 +225,7 @@ int main()
     const auto async_binary_streaming = measure_async(
         [&] {
             const auto result = bound.run(initial, async_binary);
-            return result.evaluations;
+            return result_token(result);
         },
         [&] { async_binary.flush(); },
         repetitions);
@@ -403,7 +248,7 @@ int main()
             easylocal::trace::buffered_binary_recorder<cost_type> recorder{output};
             binary_file = measure([&] {
                 const auto result = bound.run(initial, recorder);
-                return result.evaluations;
+                return result_token(result);
             }, repetitions);
             recorder.flush();
         }
@@ -420,7 +265,7 @@ int main()
             async_binary_file = measure_async(
                 [&] {
                     const auto result = bound.run(initial, recorder);
-                    return result.evaluations;
+                    return result_token(result);
                 },
                 [&] { recorder.flush(); },
                 repetitions);
@@ -432,16 +277,7 @@ int main()
     std::filesystem::remove(buffered_file_path, remove_error);
     std::filesystem::remove(async_file_path, remove_error);
 
-#if defined(EASYLOCAL_TRACE_BENCHMARK_HAS_SPDLOG)
-    auto spdlog_sink = std::make_shared<formatting_discard_sink>();
-    spdlog::logger spdlog_logger{"easylocal-trace-benchmark", spdlog_sink};
-    spdlog_logger.set_pattern("%v");
-    spdlog_jsonl_tracer<cost_type> spdlog_trace{spdlog_logger};
-    const auto spdlog_streaming = measure([&] {
-        const auto result = bound.run(initial, spdlog_trace);
-        return result.evaluations;
-    }, repetitions);
-#endif
+
 
     const auto evaluations = static_cast<double>(reference.evaluations * repetitions);
     std::cout << "mode,ns_per_evaluation,checksum\n";
@@ -449,7 +285,6 @@ int main()
     std::cout << "explicit-null," << explicit_null.first / evaluations << ',' << explicit_null.second << '\n';
     std::cout << "counting," << counting.first / evaluations << ',' << counting.second << '\n';
     std::cout << "memory," << memory.first / evaluations << ',' << memory.second << '\n';
-    std::cout << "jsonl-discard," << streaming.first / evaluations << ',' << streaming.second << '\n';
     std::cout << "binary-buffered-discard," << binary_streaming.first / evaluations << ','
               << binary_streaming.second << '\n';
     std::cout << "binary-async-producer-discard,"
@@ -466,19 +301,11 @@ int main()
     std::cout << "binary-async-total-file,"
               << async_binary_file.total_ns / evaluations << ','
               << async_binary_file.checksum << '\n';
-#if defined(EASYLOCAL_TRACE_BENCHMARK_HAS_SPDLOG)
-    std::cout << "spdlog-jsonl-discard," << spdlog_streaming.first / evaluations << ','
-              << spdlog_streaming.second << '\n';
-    std::cerr << "spdlog_formatted_bytes=" << spdlog_sink->bytes() << '\n';
-#else
-    std::cerr << "spdlog=unavailable\n";
-#endif
+
     std::cerr << "counted_events=" << counter.events << '\n';
     if (counter.events != 0)
     {
         const auto events = static_cast<double>(counter.events);
-        std::cerr << "jsonl_bytes=" << jsonl_discarded.bytes()
-                  << ",jsonl_bytes_per_event=" << jsonl_discarded.bytes() / events << '\n';
         std::cerr << "binary_bytes=" << binary_discarded.bytes()
                   << ",binary_bytes_per_event=" << binary_discarded.bytes() / events << '\n';
         std::cerr << "async_binary_bytes=" << async_binary_discarded.bytes()
@@ -491,14 +318,11 @@ int main()
     const auto checksum = baseline.second;
     const bool checksums_match =
         explicit_null.second == checksum && counting.second == checksum &&
-        memory.second == checksum && streaming.second == checksum &&
-        binary_streaming.second == checksum &&
+        memory.second == checksum && binary_streaming.second == checksum &&
         async_binary_streaming.checksum == checksum &&
         binary_file.second == checksum &&
         async_binary_file.checksum == checksum
-#if defined(EASYLOCAL_TRACE_BENCHMARK_HAS_SPDLOG)
-        && spdlog_streaming.second == checksum
-#endif
+
         ;
     return checksums_match ? 0 : 2;
 }

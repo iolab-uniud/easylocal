@@ -12,7 +12,7 @@ The benchmark keeps the implementations that are architecturally relevant:
 - `raw-cursor`: direct `first_move` / `next_move`, used only as a performance
   oracle in the search benchmark;
 - `cursor`: the real Assignment/TSP production explorers, using the public
-  `easylocal::cursor_moves` adapter for deterministic neighborhood authoring;
+  `easylocal::moves` adapter for deterministic neighborhood authoring;
 - `coroutine-custom`: a coroutine-backed input range, representing coroutine
   neighborhood authoring as an allowed alternative;
 - `coroutine-std`: `std::generator`, when the active standard library provides
@@ -39,51 +39,43 @@ toolchain; do not compare absolute timings across heterogeneous CI runners.
 
 ## Search tracing overhead
 
-The opt-in build also provides `easylocal_trace_benchmark`, a focused regression
-probe for semantic tracing. It reports nanoseconds per evaluation for:
+The opt-in build provides two tracing probes:
 
-- the ordinary baseline;
-- an explicit `null_tracer`;
-- a counter-only tracer;
-- the full in-memory recorder;
-- incremental EasyLocal JSONL serialization into a discard stream;
-- block-buffered ELTR binary recording;
-- asynchronous ELTR recording, with producer and total drain timings separated;
-- synchronous and asynchronous ELTR recording to temporary files;
-- when available, synchronous spdlog JSONL formatting into a formatting discard
-  sink.
+- `easylocal_trace_benchmark`, an end-to-end First Improvement benchmark that
+  compares the uninstrumented baseline, explicit `null_tracer`, counter-only
+  tracing, in-memory tracing, block-buffered ELTR recording, asynchronous ELTR
+  recording, and buffered/asynchronous temporary-file output;
+- `easylocal_trace_cost_encoding_benchmark`, a focused ELTR encoding benchmark
+  for scalar, lexicographic, and hierarchical cost payloads.
 
-The discard sinks remove filesystem variability while retaining serialization
-and formatting work. The file modes use temporary binary files and report
-producer and total drain time for the asynchronous path; they intentionally do
-not request `fsync`, so they measure application-visible persistence overhead
-rather than physical-media durability. All modes execute the same search workload
-and must report the same evaluation checksum. A small warm-up precedes each timed
-mode.
+JSONL is deliberately excluded from the performance comparison: text formatting
+mostly measures serialization policy rather than the tracing boundary itself.
+JSONL remains a supported trace format and is covered by correctness tests.
 
-spdlog is **benchmark-only**. EasyLocal never fetches it. A local build simply
-omits the comparison if `find_package(spdlog CONFIG)` cannot find a system
-installation; configure with `-DEASYLOCAL_BENCHMARK_REQUIRE_SPDLOG=ON` when the
-comparison is mandatory. For example:
+The discard sinks remove filesystem variability while retaining binary encoding
+and buffering work. File modes intentionally do not request `fsync`, so they
+measure application-visible persistence overhead rather than physical-media
+durability. All end-to-end modes execute the same search workload and must
+produce the same checksum. That checksum consumes the final cost, termination,
+evaluation count, and solution contents so the optimizer cannot discard
+semantically relevant search work differently for different tracer types.
+
+Run both probes with a Release build:
 
 ```bash
 cmake -S . -B build/trace-benchmark -G Ninja \
   -DCMAKE_BUILD_TYPE=Release \
-  -DEASYLOCAL_BUILD_BENCHMARKS=ON \
-  -DEASYLOCAL_BENCHMARK_REQUIRE_SPDLOG=ON
-cmake --build build/trace-benchmark --target easylocal_trace_benchmark
+  -DEASYLOCAL_BUILD_BENCHMARKS=ON
+cmake --build build/trace-benchmark --target \
+  easylocal_trace_benchmark \
+  easylocal_trace_cost_encoding_benchmark
 ./build/trace-benchmark/benchmarks/neighborhood_traversal/easylocal_trace_benchmark
+./build/trace-benchmark/benchmarks/neighborhood_traversal/easylocal_trace_cost_encoding_benchmark
 ```
 
-The **Trace Microbenchmarks** GitHub Actions workflow installs spdlog explicitly
-on Linux and macOS, runs ten process-level trials for pull requests and release
-tags, writes the raw CSV into the job summary, and uploads the measurements as a
-release/CI artifact. The benchmark remains dependency-free when that comparison
-is not requested.
-
-The trace microbenchmark additionally compares constant-memory JSONL, block-buffered
-ELTR, and asynchronous ELTR recording against in-memory tracing and, when installed,
-spdlog JSONL formatting.  Async output has separate producer and total timings so a
-background writer cannot hide drain cost. The benchmark reports serialized
-bytes/event and also exercises temporary-file output, while the discard modes
-remain the serialization-only comparison.
+The **Trace Microbenchmarks** GitHub Actions workflow runs ten process-level
+end-to-end trials on Linux/GCC and macOS/AppleClang, runs the cost-encoding probe,
+adds both CSV outputs to the job summary, and uploads the raw measurements as CI
+artifacts. Performance values remain diagnostic: compare distributions and ratios
+within one machine/toolchain rather than absolute timings across heterogeneous
+runners.

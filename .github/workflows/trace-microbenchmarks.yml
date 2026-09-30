@@ -20,7 +20,7 @@ defaults:
 
 jobs:
   trace:
-    name: ${{ matrix.name }} / trace + spdlog
+    name: ${{ matrix.name }} / trace
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15
     strategy:
@@ -53,7 +53,7 @@ jobs:
           "${elevate[@]}" apt-get -o Acquire::Retries=3 update
           "${elevate[@]}" env DEBIAN_FRONTEND=noninteractive \
             apt-get install -y --no-install-recommends \
-              cmake ninja-build g++-16 libspdlog-dev
+              cmake ninja-build g++-16
           echo 'CXX=/usr/bin/g++-16' >> "$GITHUB_ENV"
 
       - name: Provision macOS benchmark dependencies
@@ -65,7 +65,6 @@ jobs:
           fi
           command -v cmake >/dev/null || brew install cmake
           command -v ninja >/dev/null || brew install ninja
-          brew list --versions spdlog >/dev/null 2>&1 || brew install spdlog
           echo "SDKROOT=$(xcrun --sdk macosx --show-sdk-path)" >> "$GITHUB_ENV"
           echo "CXX=$(xcrun --find clang++)" >> "$GITHUB_ENV"
 
@@ -78,12 +77,9 @@ jobs:
             cmake --version
             ninja --version
             "$CXX" --version
-            if [ "${{ matrix.platform }}" = linux ]; then
-              dpkg-query -W -f='spdlog ${Version}\n' libspdlog-dev
-            else
+            if [ "${{ matrix.platform }}" = macos ]; then
               sw_vers
               xcodebuild -version
-              brew list --versions spdlog
             fi
           } 2>&1 | tee "$results_dir/environment.txt"
 
@@ -99,13 +95,11 @@ jobs:
             -DEASYLOCAL_BUILD_EXAMPLES=OFF
             -DEASYLOCAL_BUILD_TESTS=OFF
             -DEASYLOCAL_BUILD_BENCHMARKS=ON
-            -DEASYLOCAL_BENCHMARK_REQUIRE_SPDLOG=ON
             -DEASYLOCAL_FETCH_DEPENDENCIES=OFF
           )
           if [ "${{ matrix.platform }}" = macos ]; then
             args+=(
               -DCMAKE_OSX_SYSROOT="$SDKROOT"
-              -DCMAKE_PREFIX_PATH="$(brew --prefix spdlog)"
             )
           fi
           cmake "${args[@]}" 2>&1 | tee build/trace-microbenchmark-results/configure.log
@@ -113,7 +107,7 @@ jobs:
       - name: Build benchmark
         run: |
           cmake --build build/trace-microbenchmark --parallel 2 --verbose \
-            --target easylocal_trace_benchmark \
+            --target easylocal_trace_benchmark easylocal_trace_cost_encoding_benchmark \
             2>&1 | tee build/trace-microbenchmark-results/build.log
 
       - name: Run benchmark trials
@@ -128,21 +122,26 @@ jobs:
           for trial in 1 2 3 4 5 6 7 8 9 10; do
             trial_csv="$results_dir/trial-${trial}.csv"
             "$executable" > "$trial_csv" 2>> "$diagnostics"
-            grep -q '^spdlog-jsonl-discard,' "$trial_csv"
             tail -n +2 "$trial_csv" | while IFS= read -r row; do
               printf '%s,%s\n' "$trial" "$row"
             done >> "$combined"
           done
 
+          cost_csv="$results_dir/cost-encoding.csv"
+          "build/trace-microbenchmark/benchmarks/neighborhood_traversal/easylocal_trace_cost_encoding_benchmark" \
+            > "$cost_csv"
+
+          summary="$results_dir/summary.md"
+          python3 scripts/summarize-trace-benchmarks.py \
+            "$combined" "$cost_csv" --output "$summary"
+
           cat "$combined"
+          cat "$cost_csv"
+          cat "$summary"
           {
-            echo '### Trace microbenchmark'
+            echo '### ${{ matrix.name }}'
             echo
-            echo '${{ matrix.name }}; Release build; 10 process-level trials.'
-            echo
-            echo '```csv'
-            cat "$combined"
-            echo '```'
+            cat "$summary"
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload benchmark results
@@ -156,3 +155,4 @@ jobs:
             build/trace-microbenchmark-results/*.csv
             build/trace-microbenchmark-results/*.log
             build/trace-microbenchmark-results/*.txt
+            build/trace-microbenchmark-results/*.md

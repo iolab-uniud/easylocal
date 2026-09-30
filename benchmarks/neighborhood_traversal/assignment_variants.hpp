@@ -11,19 +11,19 @@
 namespace easylocal::benchmark::neighborhood_traversal::assignment
 {
 
-using mwe::assignment::Move;
-using mwe::assignment::Solution;
-using mwe::assignment::SolutionManager;
+using mwe::assignment::ReassignJobMove;
+using mwe::assignment::AssignmentSolution;
+using mwe::assignment::AssignmentSolutionManager;
 
 class CoroutineNeighborhoodExplorer
 {
 public:
-    using instance_type = typename SolutionManager::instance_type;
-    using solution_type = Solution;
-    using move_type = Move;
+    using instance_type = typename AssignmentSolutionManager::instance_type;
+    using solution_type = AssignmentSolution;
+    using move_type = ReassignJobMove;
 
     explicit CoroutineNeighborhoodExplorer(
-        const SolutionManager& solution_manager) noexcept
+        const AssignmentSolutionManager& solution_manager) noexcept
         : solution_manager_{solution_manager}
     {
     }
@@ -34,13 +34,23 @@ public:
         return solution_manager_.instance();
     }
 
-    void make_move(Solution& solution, const Move& move) const noexcept
+    [[nodiscard]]
+    auto is_valid(
+        const AssignmentSolution& solution,
+        const ReassignJobMove& move) const noexcept -> bool
+    {
+        return move.job < solution.assignment.size() &&
+               move.destination < solution_manager_.instance().capacity.size() &&
+               solution.assignment[move.job] != move.destination;
+    }
+
+    void make_move(AssignmentSolution& solution, const ReassignJobMove& move) const noexcept
     {
         solution.assignment[move.job] = move.destination;
     }
 
     [[nodiscard]]
-    auto moves(const Solution& solution) const -> generator<Move>
+    auto moves(const AssignmentSolution& solution) const -> generator<ReassignJobMove>
     {
         assert(solution_manager_.is_valid(solution));
 
@@ -55,7 +65,7 @@ public:
             {
                 if (destination != solution.assignment[job])
                 {
-                    co_yield Move{
+                    co_yield ReassignJobMove{
                         .job = job,
                         .destination = destination,
                     };
@@ -65,19 +75,19 @@ public:
     }
 
 private:
-    const SolutionManager& solution_manager_;
+    const AssignmentSolutionManager& solution_manager_;
 };
 
 #if EASYLOCAL_BENCHMARK_HAS_STD_GENERATOR
 class StdCoroutineNeighborhoodExplorer
 {
 public:
-    using instance_type = typename SolutionManager::instance_type;
-    using solution_type = Solution;
-    using move_type = Move;
+    using instance_type = typename AssignmentSolutionManager::instance_type;
+    using solution_type = AssignmentSolution;
+    using move_type = ReassignJobMove;
 
     explicit StdCoroutineNeighborhoodExplorer(
-        const SolutionManager& solution_manager) noexcept
+        const AssignmentSolutionManager& solution_manager) noexcept
         : solution_manager_{solution_manager}
     {
     }
@@ -88,13 +98,23 @@ public:
         return solution_manager_.instance();
     }
 
-    void make_move(Solution& solution, const Move& move) const noexcept
+    [[nodiscard]]
+    auto is_valid(
+        const AssignmentSolution& solution,
+        const ReassignJobMove& move) const noexcept -> bool
+    {
+        return move.job < solution.assignment.size() &&
+               move.destination < solution_manager_.instance().capacity.size() &&
+               solution.assignment[move.job] != move.destination;
+    }
+
+    void make_move(AssignmentSolution& solution, const ReassignJobMove& move) const noexcept
     {
         solution.assignment[move.job] = move.destination;
     }
 
     [[nodiscard]]
-    auto moves(const Solution& solution) const -> std::generator<Move>
+    auto moves(const AssignmentSolution& solution) const -> std::generator<ReassignJobMove>
     {
         assert(solution_manager_.is_valid(solution));
 
@@ -109,7 +129,7 @@ public:
             {
                 if (destination != solution.assignment[job])
                 {
-                    co_yield Move{
+                    co_yield ReassignJobMove{
                         .job = job,
                         .destination = destination,
                     };
@@ -119,7 +139,7 @@ public:
     }
 
 private:
-    const SolutionManager& solution_manager_;
+    const AssignmentSolutionManager& solution_manager_;
 };
 #endif
 

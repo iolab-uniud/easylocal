@@ -498,19 +498,18 @@ ratios only. It deliberately has no automatic performance pass/fail threshold.
 Authoritative cross-toolchain neighborhood measurements use the manual
 **Neighborhood Benchmarks** GitHub Actions workflow.
 
-Semantic tracing has a separate `easylocal_trace_benchmark`. It compares the
-uninstrumented baseline, explicit null tracing, counter-only tracing, the memory
-recorder, incremental JSONL serialization to a discard stream, and (when a
-system `spdlog` package is available) equivalent synchronous JSONL formatting
-through spdlog to a formatting discard sink. spdlog is benchmark-only and is
-never fetched or linked by the EasyLocal library. Configure with
-`EASYLOCAL_BENCHMARK_REQUIRE_SPDLOG=ON` to make its absence an error.
+Semantic tracing has two benchmark targets. `easylocal_trace_benchmark`
+measures end-to-end search overhead for disabled/null tracing, counter-only
+tracing, the memory recorder, and synchronous/asynchronous ELTR binary recording
+to discard streams and temporary files. JSONL is intentionally omitted from the
+performance comparison because text formatting dominates that path; JSONL remains
+covered by tracing correctness tests.
 
-The **Trace Microbenchmarks** workflow runs this comparison on Linux/GCC and
-macOS/AppleClang for pull requests, release tags and manual dispatches. The CI
-VM installs spdlog explicitly (`libspdlog-dev` on Ubuntu, Homebrew `spdlog` on
-macOS), executes ten process-level trials, exposes the raw CSV in the GitHub job
-summary, and uploads the results as an artifact.
+`easylocal_trace_cost_encoding_benchmark` isolates binary cost encoding for
+scalar, lexicographic, and hierarchical cost models using the same
+`move_evaluated` event shape. The **Trace Microbenchmarks** workflow runs both
+probes in Release on Linux/GCC and macOS/AppleClang, publishes their CSV output in
+the GitHub job summary, and uploads the raw results as artifacts.
 
 ## Tests
 

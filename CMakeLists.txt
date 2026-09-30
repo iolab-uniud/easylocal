@@ -73,12 +73,6 @@ option(
 )
 
 option(
-    EASYLOCAL_BENCHMARK_REQUIRE_SPDLOG
-    "Require system spdlog for the optional trace benchmark comparison"
-    OFF
-)
-
-option(
     EASYLOCAL_FETCH_DEPENDENCIES
     "Allow optional EasyLocal adapters to fetch missing third-party dependencies"
     OFF

@@ -177,37 +177,39 @@ The same writer can be passed as the third argument to `write_jsonl(...)` when a
 
 ## Overhead benchmark
 
-With `EASYLOCAL_BUILD_BENCHMARKS=ON`, the `easylocal_trace_benchmark` target
-compares the following modes on the same First Improvement workload:
+With `EASYLOCAL_BUILD_BENCHMARKS=ON`, `easylocal_trace_benchmark` compares the
+same First Improvement workload under:
 
-- ordinary baseline run;
+- ordinary baseline execution;
 - explicit `null_tracer`;
-- a counter-only tracer;
+- counter-only tracing;
 - the full in-memory recorder;
-- incremental EasyLocal JSONL serialization into a discard stream, isolating
-  serialization overhead from filesystem I/O;
-- block-buffered EasyLocal binary serialization into the same kind of discard stream;
-- asynchronous binary recording, reporting both producer time and total drain time;
-- synchronous and asynchronous binary recording to temporary files, again keeping
-  async producer and total drain timings distinct;
-- when a system spdlog installation is found, equivalent synchronous spdlog JSONL
-  formatting into a formatting discard sink.
+- block-buffered ELTR binary recording to a discard stream;
+- asynchronous ELTR recording, with producer and total drain time reported
+  separately;
+- synchronous and asynchronous ELTR recording to temporary files.
 
-spdlog is used only by this benchmark. It is discovered with `find_package` and
-is never fetched by EasyLocal; `EASYLOCAL_BENCHMARK_REQUIRE_SPDLOG=ON` makes it a
-required benchmark dependency. The Trace Microbenchmarks GitHub Actions workflow
-installs it explicitly on Linux and macOS, runs ten process-level Release trials
-for pull requests and release tags, and publishes the raw CSV as both a job
-summary and artifact.
+JSONL is intentionally not part of the timing comparison. Its formatting cost is
+a property of the textual serialization policy and obscures the lower-level trace
+boundary that this regression probe is intended to track. JSONL functionality is
+still covered by deterministic correctness tests.
 
-The benchmark also reports JSONL and binary bytes per emitted event on stderr, so
-CPU overhead and trace volume can be considered together. Temporary-file modes
-flush the C++ stream but deliberately do not call `fsync`; they measure the cost
-visible to the search process, including OS page-cache interaction, rather than a
-durability guarantee. It is a regression probe, not a promise about a particular
-machine. The important contract is that
-the disabled path does not construct events or dispatch through a runtime logging
-interface.
+The benchmark checksum consumes the final cost, termination reason, evaluation
+count, and solution contents. This prevents optimizer dead-code elimination from
+making tracer specializations incomparable. Temporary-file modes flush the C++
+stream but deliberately do not call `fsync`; they measure cost visible to the
+search process, including OS page-cache interaction, rather than a durability
+guarantee.
+
+A second target, `easylocal_trace_cost_encoding_benchmark`, isolates ELTR cost
+encoding using equivalent `move_evaluated` events for three representative cost
+shapes: scalar `int64`, a two-component lexicographic cost, and a hierarchical
+cost containing that hard lexicographic branch plus one soft component. It
+reports nanoseconds and serialized bytes per event.
+
+The Trace Microbenchmarks GitHub Actions workflow runs both targets in Release on
+Linux/GCC and macOS/AppleClang and publishes raw CSV results. These numbers are
+regression diagnostics, not cross-machine performance promises.
 
 ## Deferred extensions
 
