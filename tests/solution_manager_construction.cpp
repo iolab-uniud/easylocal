@@ -1,5 +1,5 @@
 #include <easylocal/runner.hpp>
-#include <easylocal/detail/solution_manager_concepts.hpp>
+#include <easylocal/solution_manager_concepts.hpp>
 
 #include <cstdint>
 #include <iostream>
@@ -185,8 +185,8 @@ int main()
 {
     using easylocal::component;
     using easylocal::solution_manager;
-    using easylocal::detail::has_initial_solution;
-    using easylocal::detail::has_random_solution;
+    using easylocal::has_initial_solution;
+    using easylocal::has_random_solution;
 
     static_assert(!has_initial_solution<MinimalSolutionManager>);
     static_assert(!has_random_solution<MinimalSolutionManager, std::mt19937>);

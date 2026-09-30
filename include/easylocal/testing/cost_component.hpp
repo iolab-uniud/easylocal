@@ -1,6 +1,6 @@
 #pragma once
 
-#include <easylocal/detail/solution_manager_concepts.hpp>
+#include <easylocal/solution_manager_concepts.hpp>
 #include <easylocal/testing/check.hpp>
 
 #include <concepts>
@@ -18,7 +18,7 @@ template<class Test>
     using solution_type = typename solution_manager_type::solution_type;
 
     static_assert(
-        easylocal::detail::base_solution_manager<solution_manager_type>,
+        easylocal::base_solution_manager<solution_manager_type>,
         "the check fixture does not name a valid SolutionManager");
 
     static_assert(

@@ -2,7 +2,7 @@
 
 #include <concepts>
 
-namespace easylocal::detail
+namespace easylocal
 {
 
 
@@ -52,4 +52,4 @@ concept has_random_solution =
         } -> std::same_as<typename SM::solution_type>;
     };
 
-} // namespace easylocal::detail
+} // namespace easylocal

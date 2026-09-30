@@ -22,7 +22,7 @@
 #include <easylocal/cursor_moves.hpp>
 #include <easylocal/detail/cost_semantics.hpp>
 #include <easylocal/detail/evaluation.hpp>
-#include <easylocal/detail/solution_manager_concepts.hpp>
+#include <easylocal/solution_manager_concepts.hpp>
 
 namespace easylocal
 {
@@ -253,9 +253,9 @@ public:
     using rng_type = std::mt19937_64;
 
     static constexpr bool supports_initial_solution =
-        detail::has_initial_solution<solution_manager_type>;
+        has_initial_solution<solution_manager_type>;
     static constexpr bool supports_random_solution =
-        detail::has_random_solution<solution_manager_type, rng_type>;
+        has_random_solution<solution_manager_type, rng_type>;
     static constexpr bool supports_deterministic_moves =
         deterministic_neighborhood_for<neighborhood_type, solution_type>;
     static constexpr bool supports_random_moves =

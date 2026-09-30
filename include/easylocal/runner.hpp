@@ -6,7 +6,7 @@
 #include <easylocal/detail/cost_semantics.hpp>
 #include <easylocal/detail/evaluation.hpp>
 #include <easylocal/detail/service_composition.hpp>
-#include <easylocal/detail/solution_manager_concepts.hpp>
+#include <easylocal/solution_manager_concepts.hpp>
 #include <easylocal/run_control.hpp>
 
 #include <cassert>

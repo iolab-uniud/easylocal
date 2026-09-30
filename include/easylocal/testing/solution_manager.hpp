@@ -1,6 +1,6 @@
 #pragma once
 
-#include <easylocal/detail/solution_manager_concepts.hpp>
+#include <easylocal/solution_manager_concepts.hpp>
 #include <easylocal/testing/check.hpp>
 
 #include <cstddef>
@@ -18,7 +18,7 @@ template<class Test>
     using solution_type = typename solution_manager_type::solution_type;
 
     static_assert(
-        easylocal::detail::base_solution_manager<solution_manager_type>,
+        easylocal::base_solution_manager<solution_manager_type>,
         "Test::solution_manager does not satisfy the EasyLocal SolutionManager core contract");
 
     auto instance = Test::instance();
@@ -46,7 +46,7 @@ template<class Test>
         "fixture solution",
         "Test::solution(instance) must return a valid Solution");
 
-    if constexpr (easylocal::detail::has_initial_solution<solution_manager_type>)
+    if constexpr (easylocal::has_initial_solution<solution_manager_type>)
     {
         const auto initial = solution_manager.initial_solution();
         report.check(
@@ -55,7 +55,7 @@ template<class Test>
             "initial_solution() returned an invalid Solution");
     }
 
-    if constexpr (easylocal::detail::has_random_solution<
+    if constexpr (easylocal::has_random_solution<
                       solution_manager_type,
                       deterministic_rng>)
     {

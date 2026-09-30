@@ -14,6 +14,7 @@
 #include <easylocal/runner.hpp>
 #include <easylocal/runner_tag.hpp>
 #include <easylocal/service_base.hpp>
+#include <easylocal/solution_manager_concepts.hpp>
 #include <easylocal/solver.hpp>
 #include <easylocal/tester.hpp>
 #include <easylocal/trace.hpp>
