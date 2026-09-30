@@ -1087,13 +1087,18 @@ Runner(Algorithm) -> Runner<std::remove_cvref_t<Algorithm>>;
 // Runner tags provide a light customization protocol: a tag constructs the
 // search algorithm, while make_runner() wraps it in the framework Runner.
 // This keeps runner.hpp independent from concrete search algorithms.
+namespace detail
+{
+
 template<class Tag, class... Args>
 concept runner_factory_tag = requires(Args&&... args) {
     Tag::make(std::forward<Args>(args)...);
 };
 
+} // namespace detail
+
 template<class Tag, class... Args>
-    requires runner_factory_tag<Tag, Args...>
+    requires detail::runner_factory_tag<Tag, Args...>
 [[nodiscard]]
 auto make_runner(Args&&... args)
 {

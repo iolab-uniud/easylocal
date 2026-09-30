@@ -788,13 +788,18 @@ struct two_stage
 namespace easylocal
 {
 
+namespace detail
+{
+
 template<class Tag, class... Args>
 concept solver_factory_tag = requires(Args&&... args) {
     Tag::make(std::forward<Args>(args)...);
 };
 
+} // namespace detail
+
 template<class Tag, class... Args>
-    requires solver_factory_tag<Tag, Args...>
+    requires detail::solver_factory_tag<Tag, Args...>
 [[nodiscard]]
 auto make_solver(Args&&... args)
 {

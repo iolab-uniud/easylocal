@@ -655,7 +655,7 @@ public:
         requires (app_runner_count_v<RunnerTag, Registrations...> == 1) &&
                  std::copy_constructible<SMSpec> &&
                  std::copy_constructible<NHESpec> &&
-                 solver_factory_tag<
+                 detail::solver_factory_tag<
                      SolverTag,
                      decltype(std::declval<const app_builder&>().template make_runner<RunnerTag>()),
                      SolverConfig>
@@ -671,7 +671,7 @@ public:
         requires (app_runner_count_v<RunnerTag, Registrations...> > 0) &&
                  std::copy_constructible<SMSpec> &&
                  std::copy_constructible<NHESpec> &&
-                 solver_factory_tag<
+                 detail::solver_factory_tag<
                      SolverTag,
                      decltype(std::declval<const app_builder&>().template make_runner<RunnerTag>(std::declval<std::string_view>())),
                      SolverConfig>
