@@ -12,12 +12,12 @@ concept base_solution_manager =
         const SM& solution_manager,
         const typename SM::solution_type& solution)
     {
-        typename SM::instance_type;
+        typename SM::input_type;
         typename SM::solution_type;
 
         {
-            solution_manager.instance()
-        } -> std::same_as<const typename SM::instance_type&>;
+            solution_manager.input()
+        } -> std::same_as<const typename SM::input_type&>;
 
         {
             solution_manager.is_valid(solution)

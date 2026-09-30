@@ -23,7 +23,7 @@ struct StructuredCost
 class SolutionManager
 {
 public:
-    using instance_type = Instance;
+    using input_type = Instance;
     using solution_type = Solution;
     using cost_type = StructuredCost;
 
@@ -43,11 +43,11 @@ private:
 class Neighborhood
 {
 public:
-    using instance_type = Instance;
+    using input_type = Instance;
     using solution_type = Solution;
     using move_type = Move;
 
-    explicit Neighborhood(const SolutionManager& manager) noexcept : instance_{manager.instance()} {}
+    explicit Neighborhood(const SolutionManager& manager) noexcept : instance_{manager.input()} {}
 
     [[nodiscard]] auto instance() const noexcept -> const Instance& { return instance_; }
 

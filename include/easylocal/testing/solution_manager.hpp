@@ -14,7 +14,7 @@ template<class Test>
 [[nodiscard]] auto check_solution_manager() -> check_report
 {
     using solution_manager_type = typename Test::solution_manager;
-    using instance_type = typename solution_manager_type::instance_type;
+    using input_type = typename solution_manager_type::input_type;
     using solution_type = typename solution_manager_type::solution_type;
 
     static_assert(
@@ -24,10 +24,10 @@ template<class Test>
     auto instance = Test::instance();
     static_assert(std::same_as<
         std::remove_cvref_t<decltype(instance)>,
-        instance_type>);
+        input_type>);
 
     auto solution_manager = detail::make_solution_manager<
-        Test, instance_type, solution_manager_type>(instance);
+        Test, input_type, solution_manager_type>(instance);
 
     auto solution = Test::solution(instance);
     static_assert(std::same_as<
@@ -37,7 +37,7 @@ template<class Test>
     check_report report{"SolutionManager"};
 
     report.check(
-        std::addressof(solution_manager.instance()) == std::addressof(instance),
+        std::addressof(solution_manager.input()) == std::addressof(instance),
         "instance binding",
         "SolutionManager::instance() must refer to the Instance used to construct the manager");
 

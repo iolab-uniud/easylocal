@@ -158,8 +158,8 @@ class hard_cost_solution_manager_base
 {
 public:
     using underlying_type = SM;
-    using input_type = typename SM::instance_type;
-    using instance_type = input_type;
+    using input_type = typename SM::input_type;
+    using input_type = input_type;
     using solution_type = typename SM::solution_type;
     using full_cost_type = typename SM::cost_type;
     using cost_type = typename full_cost_type::hard_cost_type;
@@ -172,11 +172,11 @@ public:
     [[nodiscard]]
     auto input() const noexcept -> const input_type&
     {
-        return solution_manager_.instance();
+        return solution_manager_.input();
     }
 
     [[nodiscard]]
-    auto instance() const noexcept -> const instance_type&
+    auto instance() const noexcept -> const input_type&
     {
         return input();
     }
@@ -385,8 +385,8 @@ template<class SM, class NHE>
 class runner_context
 {
 public:
-    using input_type = typename SM::instance_type;
-    using instance_type = input_type;
+    using input_type = typename SM::input_type;
+    using input_type = input_type;
     using solution_type = typename SM::solution_type;
     using cost_type = typename SM::cost_type;
     using solution_manager_type = SM;
@@ -412,7 +412,7 @@ public:
     [[nodiscard]]
     auto input() const noexcept -> const input_type&
     {
-        return solution_manager_.instance();
+        return solution_manager_.input();
     }
 
     [[nodiscard]]
@@ -497,8 +497,8 @@ class bound_runner
 public:
     using solution_manager_type = service_t<SMSpec>;
     using neighborhood_explorer_type = service_t<NHESpec>;
-    using input_type = typename solution_manager_type::instance_type;
-    using instance_type = input_type;
+    using input_type = typename solution_manager_type::input_type;
+    using input_type = input_type;
     using solution_type = typename solution_manager_type::solution_type;
     using cost_type = typename solution_manager_type::cost_type;
 
@@ -508,21 +508,21 @@ public:
 
     bound_runner(
         Algorithm algorithm,
-        const instance_type& instance,
+        const input_type& instance,
         const SMSpec& solution_manager_spec,
         const NHESpec& neighborhood_spec)
         : algorithm_{std::move(algorithm)},
-          instance_{instance},
+          input_{input},
           solution_manager_{solution_manager_spec.construct(instance_)},
           neighborhood_{neighborhood_spec.construct(solution_manager_)}
     {
         assert(
-            std::addressof(solution_manager_.instance()) ==
-                std::addressof(instance_) &&
+            std::addressof(solution_manager_.input()) ==
+                std::addressof(input_) &&
             "SolutionManager must bind to the requested Instance");
         assert(
-            std::addressof(neighborhood_.instance()) ==
-                std::addressof(instance_) &&
+            std::addressof(neighborhood_.input()) ==
+                std::addressof(input_) &&
             "NeighborhoodExplorer must share the bound Instance");
     }
 
@@ -534,7 +534,7 @@ public:
     [[nodiscard]]
     auto input() const noexcept -> const input_type&
     {
-        return instance_;
+        return input_;
     }
 
     [[nodiscard]]
@@ -641,7 +641,7 @@ public:
 
 private:
     Algorithm algorithm_;
-    const instance_type& instance_;
+    const input_type& instance_;
     solution_manager_type solution_manager_;
     neighborhood_explorer_type neighborhood_;
 };
@@ -838,8 +838,8 @@ class Runner<Algorithm, SMSpec, NHESpec>
 public:
     using solution_manager_type = detail::service_t<SMSpec>;
     using neighborhood_explorer_type = detail::service_t<NHESpec>;
-    using input_type = typename solution_manager_type::instance_type;
-    using instance_type = input_type;
+    using input_type = typename solution_manager_type::input_type;
+    using input_type = input_type;
 
     Runner(
         Algorithm algorithm,
@@ -923,9 +923,9 @@ public:
     }
 
     [[nodiscard]]
-    auto bind(const instance_type& instance) const &
+    auto bind(const input_type& input) const &
         requires std::copy_constructible<Algorithm> &&
-                 (SMSpec::template constructible_from<const instance_type>) &&
+                 (SMSpec::template constructible_from<const input_type>) &&
                  (NHESpec::template constructible_from<solution_manager_type>)
     {
         return detail::bound_runner<Algorithm, SMSpec, NHESpec>{
@@ -937,8 +937,8 @@ public:
     }
 
     [[nodiscard]]
-    auto bind(const instance_type& instance) &&
-        requires (SMSpec::template constructible_from<const instance_type>) &&
+    auto bind(const input_type& input) &&
+        requires (SMSpec::template constructible_from<const input_type>) &&
                  (NHESpec::template constructible_from<solution_manager_type>)
     {
         return detail::bound_runner<Algorithm, SMSpec, NHESpec>{
@@ -949,10 +949,10 @@ public:
         };
     }
 
-    auto bind(instance_type&&) const & = delete;
-    auto bind(const instance_type&&) const & = delete;
-    auto bind(instance_type&&) && = delete;
-    auto bind(const instance_type&&) && = delete;
+    auto bind(input_type&&) const & = delete;
+    auto bind(const input_type&&) const & = delete;
+    auto bind(input_type&&) && = delete;
+    auto bind(const input_type&&) && = delete;
 
 private:
     Algorithm algorithm_;
@@ -1075,15 +1075,12 @@ Runner(Algorithm) -> Runner<std::remove_cvref_t<Algorithm>>;
 namespace detail
 {
 
-template<class Tag, class... Args>
-concept runner_factory_tag = requires(Args&&... args) {
-    Tag::make(std::forward<Args>(args)...);
-};
+// runner_factory_tag inlined into make_runner requires clause
 
 } // namespace detail
 
 template<class Tag, class... Args>
-    requires detail::runner_factory_tag<Tag, Args...>
+    requires requires(Args&&... args) { Tag::make(std::forward<Args>(args)...); }
 [[nodiscard]]
 auto make_runner(Args&&... args)
 {

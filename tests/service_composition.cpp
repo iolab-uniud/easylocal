@@ -202,7 +202,7 @@ struct CapacityHardAggregator
 class CountingSingleMoveNeighborhood
 {
 public:
-    using instance_type = AssignmentInstance;
+    using input_type = AssignmentInstance;
     using solution_type = AssignmentSolution;
     using move_type = ReassignJobMove;
 
@@ -219,7 +219,7 @@ public:
     [[nodiscard]]
     auto instance() const noexcept -> const AssignmentInstance&
     {
-        return solution_manager_.instance();
+        return solution_manager_.input();
     }
 
     [[nodiscard]]

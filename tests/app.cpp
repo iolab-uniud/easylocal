@@ -120,20 +120,20 @@ using AssignmentRunner = decltype(
         .template make_runner<easylocal::runner::first_improvement>());
 
 template<class Runtime>
-concept has_legacy_instance_type = requires {
-    typename Runtime::instance_type;
+concept has_legacy_input_type = requires {
+    typename Runtime::input_type;
 };
 
 template<class Runtime>
 concept has_legacy_instance_accessor = requires(const Runtime& runtime) {
-    runtime.instance();
+    runtime.input();
 };
 
 using AssignmentRuntime = decltype(
     std::declval<const AssignmentApp&>().for_input(
         std::declval<const AssignmentApp::input_type&>()));
 
-static_assert(!has_legacy_instance_type<AssignmentRuntime>);
+static_assert(!has_legacy_input_type<AssignmentRuntime>);
 static_assert(!has_legacy_instance_accessor<AssignmentRuntime>);
 
 static_assert(can_materialize_from_lvalue_input<AssignmentApp>);
@@ -169,8 +169,8 @@ void one_input_materializes_one_shared_graph_for_all_runners()
     auto runtime = application.for_input(instance);
 
     assert(&runtime.input() == &instance);
-    assert(&runtime.solution_manager().instance() == &instance);
-    assert(&runtime.neighborhood().instance() == &instance);
+    assert(&runtime.solution_manager().input() == &instance);
+    assert(&runtime.neighborhood().input() == &instance);
 
     auto fi = runtime.runner<easylocal::runner::first_improvement>();
     auto bi = runtime.runner<easylocal::runner::best_improvement>();

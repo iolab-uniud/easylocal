@@ -65,7 +65,7 @@ template<class Test>
 {
     using neighborhood_type = typename Test::neighborhood;
     using solution_manager_type = detail::test_solution_manager_t<Test>;
-    using instance_type = typename solution_manager_type::instance_type;
+    using input_type = typename solution_manager_type::input_type;
     using solution_type = typename solution_manager_type::solution_type;
 
     static_assert(
@@ -75,10 +75,10 @@ template<class Test>
     auto instance = Test::instance();
     static_assert(std::same_as<
         std::remove_cvref_t<decltype(instance)>,
-        instance_type>);
+        input_type>);
 
     auto solution_manager = detail::make_solution_manager<
-        Test, instance_type, solution_manager_type>(instance);
+        Test, input_type, solution_manager_type>(instance);
     auto neighborhood = detail::make_neighborhood<
         Test, solution_manager_type, neighborhood_type>(solution_manager);
     auto solution = Test::solution(instance);

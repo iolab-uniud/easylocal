@@ -32,7 +32,7 @@ struct Cost
 class BaseSolutionManager
 {
 public:
-    using instance_type = Instance;
+    using input_type = Instance;
     using solution_type = Solution;
 
     explicit BaseSolutionManager(const Instance& instance) noexcept
@@ -104,7 +104,7 @@ struct ComponentB
 class Neighborhood
 {
 public:
-    using instance_type = Instance;
+    using input_type = Instance;
     using solution_type = Solution;
     using move_type = Move;
 
@@ -116,7 +116,7 @@ public:
     [[nodiscard]]
     auto instance() const noexcept -> const Instance&
     {
-        return solution_manager_.instance();
+        return solution_manager_.input();
     }
 
     [[nodiscard]]

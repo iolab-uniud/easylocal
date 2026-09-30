@@ -47,7 +47,7 @@ struct SwapMove
 class SwapNeighborhoodExplorer
 {
 public:
-    using instance_type = AssignmentInstance;
+    using input_type = AssignmentInstance;
     using solution_type = AssignmentSolution;
     using move_type = SwapMove;
 
@@ -60,7 +60,7 @@ public:
     [[nodiscard]]
     auto instance() const noexcept -> const AssignmentInstance&
     {
-        return solution_manager_.instance();
+        return solution_manager_.input();
     }
 
     [[nodiscard]]
@@ -194,7 +194,7 @@ private:
 class DestinationZeroNeighborhoodExplorer
 {
 public:
-    using instance_type = AssignmentInstance;
+    using input_type = AssignmentInstance;
     using solution_type = AssignmentSolution;
     using move_type = ReassignJobMove;
 
@@ -207,7 +207,7 @@ public:
     [[nodiscard]]
     auto instance() const noexcept -> const AssignmentInstance&
     {
-        return solution_manager_.instance();
+        return solution_manager_.input();
     }
 
     [[nodiscard]]
@@ -277,7 +277,7 @@ private:
 class DeterministicOnlyNeighborhoodExplorer
 {
 public:
-    using instance_type = AssignmentInstance;
+    using input_type = AssignmentInstance;
     using solution_type = AssignmentSolution;
     using move_type = ReassignJobMove;
 
@@ -290,7 +290,7 @@ public:
     [[nodiscard]]
     auto instance() const noexcept -> const AssignmentInstance&
     {
-        return solution_manager_.instance();
+        return solution_manager_.input();
     }
 
     [[nodiscard]]

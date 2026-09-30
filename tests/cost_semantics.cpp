@@ -67,7 +67,7 @@ public:
 class MaximizingSolutionManager
 {
 public:
-    using instance_type = Instance;
+    using input_type = Instance;
     using solution_type = Solution;
 
     explicit MaximizingSolutionManager(const Instance& instance) noexcept
@@ -128,7 +128,7 @@ struct MaximizingAggregator
 class IntegerSolutionManager
 {
 public:
-    using instance_type = Instance;
+    using input_type = Instance;
     using solution_type = Solution;
 
     explicit IntegerSolutionManager(const Instance& instance) noexcept
@@ -165,7 +165,7 @@ struct IntegerAggregator
 class OpaqueSolutionManager
 {
 public:
-    using instance_type = Instance;
+    using input_type = Instance;
     using solution_type = Solution;
     using cost_type = OpaqueCost;
 
@@ -200,13 +200,13 @@ private:
 class NeighborhoodExplorer
 {
 public:
-    using instance_type = Instance;
+    using input_type = Instance;
     using solution_type = Solution;
     using move_type = Move;
 
     template<class SolutionManager>
     explicit NeighborhoodExplorer(const SolutionManager& solution_manager) noexcept
-        : instance_{solution_manager.instance()}
+        : instance_{solution_manager.input()}
     {
     }
 

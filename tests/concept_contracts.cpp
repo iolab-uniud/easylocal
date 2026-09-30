@@ -33,7 +33,7 @@ struct Cost
 class SolutionManager
 {
 public:
-    using instance_type = Instance;
+    using input_type = Instance;
     using solution_type = Solution;
     using cost_type = Cost;
 
@@ -62,7 +62,7 @@ private:
 class GoodNeighborhood
 {
 public:
-    using instance_type = Instance;
+    using input_type = Instance;
     using solution_type = Solution;
     using move_type = Move;
 
@@ -91,7 +91,7 @@ private:
 class WrongMoveNeighborhood
 {
 public:
-    using instance_type = Instance;
+    using input_type = Instance;
     using solution_type = Solution;
     using move_type = Move;
 
@@ -133,7 +133,7 @@ public:
 class RandomMoveOnlyNeighborhood
 {
 public:
-    using instance_type = Instance;
+    using input_type = Instance;
     using solution_type = Solution;
     using move_type = Move;
 

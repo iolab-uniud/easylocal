@@ -116,10 +116,10 @@ class LocalSearchSolver
 public:
     using runner_type = RunnerType;
     using rng_type = RNG;
-    using instance_type = typename runner_type::instance_type;
+    using input_type = typename runner_type::input_type;
     using bound_runner_type = decltype(
         std::declval<runner_type&>().bind(
-            std::declval<const instance_type&>()));
+            std::declval<const input_type&>()));
     using solution_type = typename bound_runner_type::solution_type;
 
     static constexpr bool supports_initial =
@@ -217,11 +217,11 @@ public:
     }
 
     [[nodiscard]]
-    auto solve(const instance_type& instance)
+    auto solve(const input_type& input)
         requires detail::solver_runnable<bound_runner_type, RNG> &&
                  (supports_initial || supports_random)
     {
-        auto bound_runner = runner_.bind(instance);
+        auto bound_runner = runner_.bind(input);
         auto solution = make_initial_solution(bound_runner);
         return detail::run_with_solver_rng(
             bound_runner,
@@ -314,10 +314,10 @@ class MultiStartSolver
 public:
     using runner_type = RunnerType;
     using rng_type = RNG;
-    using instance_type = typename runner_type::instance_type;
+    using input_type = typename runner_type::input_type;
     using bound_runner_type = decltype(
         std::declval<runner_type&>().bind(
-            std::declval<const instance_type&>()));
+            std::declval<const input_type&>()));
     using solution_type = typename bound_runner_type::solution_type;
     using cost_type = typename bound_runner_type::cost_type;
 
@@ -401,7 +401,7 @@ public:
     auto rng() const noexcept -> const RNG& { return rng_; }
 
     [[nodiscard]]
-    auto solve(const instance_type& instance)
+    auto solve(const input_type& input)
         requires detail::solver_runnable<bound_runner_type, RNG> &&
                  (supports_initial || supports_random) &&
                  requires(bound_runner_type& bound_runner, RNG& rng) {
@@ -417,7 +417,7 @@ public:
                          cost_type>;
                  }
     {
-        auto bound_runner = runner_.bind(instance);
+        auto bound_runner = runner_.bind(input);
 
         auto best = run_once(bound_runner);
         for (std::size_t start = 1; start < parameters_.starts; ++start)
@@ -537,16 +537,16 @@ public:
 
     using hard_runner_type = decltype(
         std::declval<first_runner_type>().with_hard_cost());
-    using instance_type = typename hard_runner_type::instance_type;
-    using second_instance_type = typename second_runner_type::instance_type;
-    static_assert(std::same_as<instance_type, second_instance_type>);
+    using input_type = typename hard_runner_type::input_type;
+    using second_input_type = typename second_runner_type::input_type;
+    static_assert(std::same_as<input_type, second_input_type>);
 
     using bound_first_runner_type = decltype(
         std::declval<hard_runner_type&>().bind(
-            std::declval<const instance_type&>()));
+            std::declval<const input_type&>()));
     using bound_second_runner_type = decltype(
         std::declval<second_runner_type&>().bind(
-            std::declval<const instance_type&>()));
+            std::declval<const input_type&>()));
     using solution_type = typename bound_first_runner_type::solution_type;
     using second_solution_type = typename bound_second_runner_type::solution_type;
     static_assert(std::same_as<solution_type, second_solution_type>);
@@ -609,7 +609,7 @@ public:
     auto rng() const noexcept -> const RNG& { return rng_; }
 
     [[nodiscard]]
-    auto solve(const instance_type& instance)
+    auto solve(const input_type& input)
         requires detail::solver_runnable<bound_first_runner_type, RNG> &&
                  detail::solver_runnable<bound_second_runner_type, RNG> &&
                  (supports_initial || supports_random) &&
@@ -621,8 +621,8 @@ public:
                              rng))>;
                  }
     {
-        auto bound_first_runner = hard_runner_.bind(instance);
-        auto bound_second_runner = second_runner_.bind(instance);
+        auto bound_first_runner = hard_runner_.bind(input);
+        auto bound_second_runner = second_runner_.bind(input);
 
         auto first_result = detail::run_with_solver_rng(
             bound_first_runner,
@@ -791,15 +791,12 @@ namespace easylocal
 namespace detail
 {
 
-template<class Tag, class... Args>
-concept solver_factory_tag = requires(Args&&... args) {
-    Tag::make(std::forward<Args>(args)...);
-};
+// solver_factory_tag inlined into make_solver requires clause
 
 } // namespace detail
 
 template<class Tag, class... Args>
-    requires detail::solver_factory_tag<Tag, Args...>
+    requires requires(Args&&... args) { Tag::make(std::forward<Args>(args)...); }
 [[nodiscard]]
 auto make_solver(Args&&... args)
 {

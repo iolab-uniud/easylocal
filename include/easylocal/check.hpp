@@ -194,11 +194,11 @@ template<class App, class Instance, class Solution>
         "app input binding",
         "the materialized app does not refer to the supplied Input");
     report.check(
-        std::addressof(solution_manager.instance()) == std::addressof(instance),
+        std::addressof(solution_manager.input()) == std::addressof(instance),
         "solution manager input binding",
         "SolutionManager::instance() does not refer to the app Input");
     report.check(
-        std::addressof(neighborhood.instance()) == std::addressof(instance),
+        std::addressof(neighborhood.input()) == std::addressof(instance),
         "neighborhood input binding",
         "NeighborhoodExplorer::instance() does not refer to the app Input");
 

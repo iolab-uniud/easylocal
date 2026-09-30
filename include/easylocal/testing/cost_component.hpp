@@ -14,7 +14,7 @@ template<class Test>
 {
     using solution_manager_type = detail::test_solution_manager_t<Test>;
     using component_type = typename Test::component;
-    using instance_type = typename solution_manager_type::instance_type;
+    using input_type = typename solution_manager_type::input_type;
     using solution_type = typename solution_manager_type::solution_type;
 
     static_assert(
@@ -30,12 +30,12 @@ template<class Test>
     auto instance = Test::instance();
     static_assert(std::same_as<
         std::remove_cvref_t<decltype(instance)>,
-        instance_type>);
+        input_type>);
 
     auto solution_manager = detail::make_solution_manager<
-        Test, instance_type, solution_manager_type>(instance);
+        Test, input_type, solution_manager_type>(instance);
     auto component = detail::make_component<
-        Test, instance_type, component_type>(instance);
+        Test, input_type, component_type>(instance);
     auto solution = Test::solution(instance);
     static_assert(std::same_as<
         std::remove_cvref_t<decltype(solution)>,

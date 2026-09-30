@@ -6,7 +6,7 @@ struct Move {};
 
 struct SM
 {
-    using instance_type = Instance;
+    using input_type = Instance;
     using solution_type = Solution;
     explicit SM(const Instance& instance) : instance_{instance} {}
     auto instance() const -> const Instance& { return instance_; }

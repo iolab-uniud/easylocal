@@ -19,7 +19,7 @@ concept component_evaluation_solution_manager =
         const typename SM::solution_type& solution,
         const typename SM::component_values_type& values)
     {
-        typename SM::instance_type;
+        typename SM::input_type;
         typename SM::solution_type;
         typename SM::cost_type;
         typename SM::component_types;
@@ -30,8 +30,8 @@ concept component_evaluation_solution_manager =
             std::tuple_size_v<typename SM::component_values_type>);
 
         {
-            solution_manager.instance()
-        } -> std::same_as<const typename SM::instance_type&>;
+            solution_manager.input()
+        } -> std::same_as<const typename SM::input_type&>;
 
         {
             solution_manager.evaluate(solution)

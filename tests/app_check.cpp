@@ -131,7 +131,7 @@ public:
 class BrokenNeighborhoodExplorer
 {
 public:
-    using instance_type = AssignmentInstance;
+    using input_type = AssignmentInstance;
     using solution_type = AssignmentSolution;
     using move_type = ReassignJobMove;
 
@@ -140,9 +140,9 @@ public:
     {
     }
 
-    [[nodiscard]] auto instance() const noexcept -> const instance_type&
+    [[nodiscard]] auto instance() const noexcept -> const input_type&
     {
-        return manager_.instance();
+        return manager_.input();
     }
 
     [[nodiscard]] static auto is_valid(

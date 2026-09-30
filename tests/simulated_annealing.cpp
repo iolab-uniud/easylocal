@@ -84,7 +84,7 @@ struct ChainMove
 class ChainSolutionManager
 {
 public:
-    using instance_type = ChainInstance;
+    using input_type = ChainInstance;
     using solution_type = ChainSolution;
     using cost_type = int;
 
@@ -115,13 +115,13 @@ private:
 class RandomOnlyChainNeighborhood
 {
 public:
-    using instance_type = ChainInstance;
+    using input_type = ChainInstance;
     using solution_type = ChainSolution;
     using move_type = ChainMove;
 
     explicit RandomOnlyChainNeighborhood(
         const ChainSolutionManager& solution_manager) noexcept
-        : instance_{solution_manager.instance()}
+        : instance_{solution_manager.input()}
     {
     }
 

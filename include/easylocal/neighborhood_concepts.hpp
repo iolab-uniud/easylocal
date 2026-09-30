@@ -47,7 +47,7 @@ concept neighborhood_explorer_for =
         typename SM::solution_type& mutable_solution,
         const typename NHE::move_type& move)
     {
-        typename SM::instance_type;
+        typename SM::input_type;
         typename SM::solution_type;
         typename NHE::move_type;
 

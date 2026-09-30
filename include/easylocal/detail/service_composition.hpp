@@ -182,14 +182,14 @@ public:
     {
         return std::apply(
             [&](const auto&... args) -> binding_type {
-                using instance_type = typename std::remove_cvref_t<Dependency>::instance_type;
+                using input_type = typename std::remove_cvref_t<Dependency>::input_type;
                 if constexpr (std::constructible_from<
                                   DeltaEvaluator,
-                                  const instance_type&,
+                                  const input_type&,
                                   const StoredArgs&...>)
                 {
                     return binding_type{
-                        DeltaEvaluator{dependency.instance(), args...},
+                        DeltaEvaluator{dependency.input(), args...},
                     };
                 }
                 else
@@ -278,7 +278,7 @@ class component_solution_manager
 {
 public:
     using base_type = BaseSM;
-    using instance_type = typename BaseSM::instance_type;
+    using input_type = typename BaseSM::input_type;
     using solution_type = typename BaseSM::solution_type;
     using component_types = std::tuple<typename ComponentSpecs::component_type...>;
     using component_values_type = std::tuple<
@@ -296,7 +296,7 @@ public:
         BaseSM base,
         const ComponentSpecs&... component_specs)
         : base_{std::move(base)},
-          components_{component_specs.construct(base_.instance())...}
+          components_{component_specs.construct(base_.input())...}
     {
         static_assert(sizeof...(ComponentSpecs) > 0,
             "an aggregated SolutionManager needs at least one cost component");
@@ -304,7 +304,7 @@ public:
 
     [[nodiscard]] auto base() noexcept -> BaseSM& { return base_; }
     [[nodiscard]] auto base() const noexcept -> const BaseSM& { return base_; }
-    [[nodiscard]] auto instance() const noexcept -> const instance_type& { return base_.instance(); }
+    [[nodiscard]] auto instance() const noexcept -> const input_type& { return base_.input(); }
     [[nodiscard]] auto is_valid(const solution_type& solution) const noexcept(noexcept(base_.is_valid(solution))) -> bool { return base_.is_valid(solution); }
 
     [[nodiscard]]
@@ -415,7 +415,9 @@ using implicit_aggregator_traits = implicit_weighted_sum_traits<Tuple>;
 template<class Aggregator>
 void warn_implicit_aggregator()
 {
-    static const bool warned = [] {
+    static bool warned = false;
+    if (!warned) {
+        warned = true;
         logging::emit(
             logging::level::warning,
             "cost.aggregation",
@@ -423,9 +425,7 @@ void warn_implicit_aggregator()
             "weighted_sum. Override cost.weights or add `| aggregator(...)` / "
             "`.with_aggregator(...)` to make the aggregation explicit.",
             logging::origin::framework);
-        return true;
-    }();
-    (void)warned;
+    }
 }
 
 template<class Aggregator>
@@ -466,7 +466,7 @@ class aggregated_solution_manager
 {
 public:
     using base_type = typename InnerSM::base_type;
-    using instance_type = typename InnerSM::instance_type;
+    using input_type = typename InnerSM::input_type;
     using solution_type = typename InnerSM::solution_type;
     using component_types = typename InnerSM::component_types;
     using component_values_type = typename InnerSM::component_values_type;
@@ -556,7 +556,7 @@ public:
 
     [[nodiscard]] auto base() noexcept -> base_type& { return inner_.base(); }
     [[nodiscard]] auto base() const noexcept -> const base_type& { return inner_.base(); }
-    [[nodiscard]] auto instance() const noexcept -> const instance_type& { return inner_.instance(); }
+    [[nodiscard]] auto instance() const noexcept -> const input_type& { return inner_.input(); }
     [[nodiscard]] auto is_valid(const solution_type& solution) const noexcept(noexcept(inner_.is_valid(solution))) -> bool { return inner_.is_valid(solution); }
 
     [[nodiscard]]
@@ -733,8 +733,8 @@ class solution_manager_recipe
 public:
     static_assert(
         base_solution_manager<BaseSM>,
-        "a SolutionManager must expose instance_type, solution_type, "
-        "instance() -> const instance_type&, and is_valid(solution)");
+        "a SolutionManager must expose input_type, solution_type, "
+        "instance() -> const input_type&, and is_valid(solution)");
 
     using base_type = BaseSM;
     using component_service_type = component_solution_manager<
@@ -881,10 +881,10 @@ public:
     static constexpr bool constructible_from =
         std::same_as<
             std::remove_cvref_t<Dependency>,
-            typename BaseSM::instance_type>;
+            typename BaseSM::input_type>;
 
     [[nodiscard]]
-    auto construct_components(const typename BaseSM::instance_type& instance) const
+    auto construct_components(const typename BaseSM::input_type& instance) const
         -> component_service_type
     {
         static_assert(
@@ -893,7 +893,7 @@ public:
         static_assert(
             base_solution_manager_constructible_v<
                 BaseSM,
-                typename BaseSM::instance_type,
+                typename BaseSM::input_type,
                 BaseArgsTuple>,
             "a SolutionManager derived from solution_manager_base must inherit "
             "the base constructors; did you forget `using solution_manager_base::solution_manager_base;`?");
@@ -912,13 +912,13 @@ public:
     }
 
     [[nodiscard]]
-    auto construct(const typename BaseSM::instance_type& instance) const
+    auto construct(const typename BaseSM::input_type& instance) const
         -> service_type
     {
         static_assert(
             base_solution_manager_constructible_v<
                 BaseSM,
-                typename BaseSM::instance_type,
+                typename BaseSM::input_type,
                 BaseArgsTuple>,
             "a SolutionManager derived from solution_manager_base must inherit "
             "the base constructors; did you forget `using solution_manager_base::solution_manager_base;`?");

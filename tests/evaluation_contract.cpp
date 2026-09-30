@@ -36,7 +36,7 @@ struct Move
 class SolutionManager
 {
 public:
-    using instance_type = Instance;
+    using input_type = Instance;
     using solution_type = Solution;
 
     SolutionManager(
@@ -174,14 +174,14 @@ private:
 class NeighborhoodExplorer
 {
 public:
-    using instance_type = Instance;
+    using input_type = Instance;
     using solution_type = Solution;
     using move_type = Move;
 
     NeighborhoodExplorer(
         const SolutionManager& solution_manager,
         Counters& counters) noexcept
-        : instance_{solution_manager.instance()},
+        : instance_{solution_manager.input()},
           counters_{counters}
     {
     }

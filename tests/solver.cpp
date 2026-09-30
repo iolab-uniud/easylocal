@@ -17,7 +17,7 @@ struct Move {};
 class DeterministicSM
 {
 public:
-    using instance_type = Instance;
+    using input_type = Instance;
     using solution_type = Solution;
     using cost_type = std::uint64_t;
     explicit DeterministicSM(const Instance& instance) : instance_{instance} {}
@@ -35,7 +35,7 @@ private:
 class RandomSM
 {
 public:
-    using instance_type = Instance;
+    using input_type = Instance;
     using solution_type = Solution;
     using cost_type = std::uint64_t;
     explicit RandomSM(const Instance& instance) : instance_{instance} {}
@@ -51,7 +51,7 @@ private:
 class SelectableSM
 {
 public:
-    using instance_type = Instance;
+    using input_type = Instance;
     using solution_type = Solution;
     using cost_type = std::uint64_t;
     explicit SelectableSM(const Instance& instance) : instance_{instance} {}
@@ -72,15 +72,15 @@ template<class SM>
 class EmptyNeighborhood
 {
 public:
-    using instance_type = typename SM::instance_type;
+    using input_type = typename SM::input_type;
     using solution_type = typename SM::solution_type;
     using move_type = Move;
-    explicit EmptyNeighborhood(const SM& sm) : instance_{sm.instance()} {}
-    auto instance() const -> const instance_type& { return instance_; }
+    explicit EmptyNeighborhood(const SM& sm) : instance_{sm.input()} {}
+    auto instance() const -> const input_type& { return instance_; }
     [[nodiscard]] static auto is_valid(const solution_type&, const move_type&) noexcept -> bool { return true; }
     static void make_move(solution_type&, const move_type&) {}
 private:
-    const instance_type& instance_;
+    const input_type& instance_;
 };
 
 struct PlainResult { Solution solution; };

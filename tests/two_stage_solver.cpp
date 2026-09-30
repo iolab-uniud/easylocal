@@ -28,7 +28,7 @@ struct Solution
 class SolutionManager
 {
 public:
-    using instance_type = Instance;
+    using input_type = Instance;
     using solution_type = Solution;
     using cost_type = easylocal::aggregation::hierarchical_cost<int, int>;
 
@@ -53,13 +53,13 @@ struct Move
 class Neighborhood
 {
 public:
-    using instance_type = Instance;
+    using input_type = Instance;
     using solution_type = Solution;
     using move_type = Move;
 
     explicit Neighborhood(const SolutionManager& sm) : sm_{sm} {}
 
-    [[nodiscard]] auto instance() const noexcept -> const Instance& { return sm_.instance(); }
+    [[nodiscard]] auto instance() const noexcept -> const Instance& { return sm_.input(); }
     [[nodiscard]] static auto is_valid(const Solution&, const Move&) noexcept -> bool { return true; }
     void make_move(Solution&, const Move&) const noexcept {}
 
@@ -106,13 +106,13 @@ struct HardMove
 class HardNeighborhood
 {
 public:
-    using instance_type = Instance;
+    using input_type = Instance;
     using solution_type = Solution;
     using move_type = HardMove;
 
     explicit HardNeighborhood(const SolutionManager& sm) : sm_{sm} {}
 
-    [[nodiscard]] auto instance() const noexcept -> const Instance& { return sm_.instance(); }
+    [[nodiscard]] auto instance() const noexcept -> const Instance& { return sm_.input(); }
 
     template<std::uniform_random_bit_generator RNG>
     [[nodiscard]] static auto random_move(const Solution& solution, RNG&)
@@ -140,13 +140,13 @@ struct SoftMove
 class SoftNeighborhood
 {
 public:
-    using instance_type = Instance;
+    using input_type = Instance;
     using solution_type = Solution;
     using move_type = SoftMove;
 
     explicit SoftNeighborhood(const SolutionManager& sm) : sm_{sm} {}
 
-    [[nodiscard]] auto instance() const noexcept -> const Instance& { return sm_.instance(); }
+    [[nodiscard]] auto instance() const noexcept -> const Instance& { return sm_.input(); }
 
     template<std::uniform_random_bit_generator RNG>
     [[nodiscard]] static auto random_move(const Solution& solution, RNG&)

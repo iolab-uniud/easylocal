@@ -33,7 +33,7 @@ public:
         const AssignmentSolution& solution,
         const ReassignJobMove& move) const noexcept -> bool
     {
-        const auto& instance = solution_manager_.instance();
+        const auto& instance = solution_manager_.input();
 
         return move.job < solution.assignment.size() &&
                move.destination < instance.capacity.size() &&
@@ -47,7 +47,7 @@ public:
     {
 
         const auto machine_count =
-            solution_manager_.instance().capacity.size();
+            solution_manager_.input().capacity.size();
 
         if (solution.assignment.empty() || machine_count < 2)
         {
@@ -66,7 +66,7 @@ public:
     {
 
         const auto machine_count =
-            solution_manager_.instance().capacity.size();
+            solution_manager_.input().capacity.size();
         const auto current_machine = solution.assignment[move.job];
 
         for (auto destination = move.destination + 1;
@@ -123,7 +123,7 @@ private:
         const std::size_t job) const noexcept -> machine_id
     {
         const auto machine_count =
-            solution_manager_.instance().capacity.size();
+            solution_manager_.input().capacity.size();
         assert(machine_count >= 2);
         assert(job < solution.assignment.size());
 
@@ -137,7 +137,7 @@ private:
         -> std::size_t
     {
         const auto machine_count =
-            solution_manager_.instance().capacity.size();
+            solution_manager_.input().capacity.size();
         const auto alternatives_per_job =
             machine_count > 0 ? machine_count - 1 : std::size_t{0};
 
@@ -150,7 +150,7 @@ private:
         const std::size_t ordinal) const noexcept -> ReassignJobMove
     {
         const auto machine_count =
-            solution_manager_.instance().capacity.size();
+            solution_manager_.input().capacity.size();
         const auto alternatives_per_job = machine_count - 1;
 
         assert(alternatives_per_job != 0);

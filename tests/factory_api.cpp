@@ -28,7 +28,7 @@ struct Solution
 
 struct SolutionManager
 {
-    using instance_type = Instance;
+    using input_type = Instance;
     using solution_type = Solution;
     using cost_type = int;
 
@@ -49,11 +49,11 @@ struct Move
 
 struct NeighborhoodExplorer
 {
-    using instance_type = Instance;
+    using input_type = Instance;
     using solution_type = Solution;
     using move_type = Move;
 
-    explicit NeighborhoodExplorer(SolutionManager& sm) : instance_{sm.instance()} {}
+    explicit NeighborhoodExplorer(SolutionManager& sm) : instance_{sm.input()} {}
 
     [[nodiscard]] auto instance() const noexcept -> const Instance& { return instance_; }
     [[nodiscard]] auto moves(const Solution&) const { return std::views::empty<Move>; }

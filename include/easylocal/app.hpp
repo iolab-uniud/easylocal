@@ -260,7 +260,7 @@ class app_instance
 public:
     using solution_manager_type = service_t<SMSpec>;
     using neighborhood_explorer_type = service_t<NHESpec>;
-    using input_type = typename solution_manager_type::instance_type;
+    using input_type = typename solution_manager_type::input_type;
 
     static constexpr std::size_t runner_count = sizeof...(Registrations);
 
@@ -275,10 +275,10 @@ public:
           algorithms_{make_algorithms(registrations)}
     {
         assert(
-            std::addressof(solution_manager_.instance()) ==
+            std::addressof(solution_manager_.input()) ==
                 std::addressof(input_));
         assert(
-            std::addressof(neighborhood_.instance()) ==
+            std::addressof(neighborhood_.input()) ==
                 std::addressof(input_));
     }
 
@@ -439,7 +439,7 @@ template<class Spec>
     requires is_solution_manager_spec_v<Spec>
 struct app_input_type<Spec>
 {
-    using input_type = typename service_t<Spec>::instance_type;
+    using input_type = typename service_t<Spec>::input_type;
 };
 
 template<class SMSpec, class NHESpec, class... Registrations>
@@ -693,10 +693,10 @@ public:
                  (!std::same_as<NHESpec, unconfigured_t>) &&
                  (sizeof...(Registrations) > 0) &&
                  Spec::template constructible_from<
-                     const typename service_t<Spec>::instance_type> &&
+                     const typename service_t<Spec>::input_type> &&
                  NHESpec::template constructible_from<service_t<Spec>>
     [[nodiscard]]
-    auto for_input(const typename service_t<Spec>::instance_type& input) const
+    auto for_input(const typename service_t<Spec>::input_type& input) const
     {
         return app_instance<SMSpec, NHESpec, Registrations...>{
             input,
@@ -712,13 +712,13 @@ public:
         requires (!std::same_as<Spec, unconfigured_t>) &&
                  (!std::same_as<NHESpec, unconfigured_t>) &&
                  (sizeof...(Registrations) > 0)
-    auto for_input(typename service_t<Spec>::instance_type&&) const = delete;
+    auto for_input(typename service_t<Spec>::input_type&&) const = delete;
 
     template<class Spec = SMSpec>
         requires (!std::same_as<Spec, unconfigured_t>) &&
                  (!std::same_as<NHESpec, unconfigured_t>) &&
                  (sizeof...(Registrations) > 0)
-    auto for_input(const typename service_t<Spec>::instance_type&&) const = delete;
+    auto for_input(const typename service_t<Spec>::input_type&&) const = delete;
 
     // Execute one runner against a fresh materialized runtime.  The app graph
     // and immutable Input may be shared across concurrent calls; mutable
@@ -731,7 +731,7 @@ public:
                  (sizeof...(Registrations) > 0)
     [[nodiscard]]
     auto run(
-        const typename service_t<Spec>::instance_type& input,
+        const typename service_t<Spec>::input_type& input,
         typename service_t<Spec>::solution_type solution,
         RunArgs&&... args) const
     {
@@ -747,7 +747,7 @@ public:
                  (sizeof...(Registrations) > 0)
     [[nodiscard]]
     auto run_controlled(
-        const typename service_t<Spec>::instance_type& input,
+        const typename service_t<Spec>::input_type& input,
         typename service_t<Spec>::solution_type solution,
         const run_control& control,
         RunArgs&&... args) const
@@ -765,7 +765,7 @@ public:
                  (Index < sizeof...(Registrations))
     [[nodiscard]]
     auto run_at(
-        const typename service_t<Spec>::instance_type& input,
+        const typename service_t<Spec>::input_type& input,
         typename service_t<Spec>::solution_type solution,
         RunArgs&&... args) const
     {
@@ -789,7 +789,7 @@ public:
                  (Index < sizeof...(Registrations))
     [[nodiscard]]
     auto run_controlled_at(
-        const typename service_t<Spec>::instance_type& input,
+        const typename service_t<Spec>::input_type& input,
         typename service_t<Spec>::solution_type solution,
         const run_control& control,
         RunArgs&&... args) const

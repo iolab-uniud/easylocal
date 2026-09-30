@@ -77,11 +77,11 @@ public:
 };
 
 static_assert(std::same_as<SolutionManager::input_type, Instance>);
-static_assert(std::same_as<SolutionManager::instance_type, Instance>);
+static_assert(std::same_as<SolutionManager::input_type, Instance>);
 static_assert(std::same_as<SolutionManager::solution_type, Solution>);
 static_assert(std::same_as<NeighborhoodExplorer::solution_manager_type, SolutionManager>);
 static_assert(std::same_as<NeighborhoodExplorer::input_type, Instance>);
-static_assert(std::same_as<NeighborhoodExplorer::instance_type, Instance>);
+static_assert(std::same_as<NeighborhoodExplorer::input_type, Instance>);
 static_assert(std::same_as<NeighborhoodExplorer::solution_type, Solution>);
 static_assert(std::same_as<NeighborhoodExplorer::move_type, Move>);
 static_assert(!std::is_polymorphic_v<SolutionManager>);
@@ -100,12 +100,12 @@ int main()
     const NeighborhoodExplorer neighborhood{solution_manager};
 
     assert(&solution_manager.input() == &instance);
-    assert(&solution_manager.instance() == &instance);
+    assert(&solution_manager.input() == &instance);
     assert(solution_manager.protected_instance_address() == &instance);
 
     assert(neighborhood.protected_solution_manager_address() == &solution_manager);
     assert(&neighborhood.input() == &instance);
-    assert(&neighborhood.instance() == &instance);
+    assert(&neighborhood.input() == &instance);
 
     return 0;
 }

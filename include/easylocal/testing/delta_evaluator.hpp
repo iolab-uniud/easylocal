@@ -111,7 +111,7 @@ template<class Test>
     using neighborhood_type = typename Test::neighborhood;
     using solution_manager_type = detail::test_solution_manager_t<Test>;
     using component_type = typename Test::component;
-    using instance_type = typename solution_manager_type::instance_type;
+    using input_type = typename solution_manager_type::input_type;
     using solution_type = typename solution_manager_type::solution_type;
     using move_type = typename neighborhood_type::move_type;
 
@@ -130,14 +130,14 @@ template<class Test>
     auto instance = Test::instance();
     static_assert(std::same_as<
         std::remove_cvref_t<decltype(instance)>,
-        instance_type>);
+        input_type>);
 
     auto solution_manager = detail::make_solution_manager<
-        Test, instance_type, solution_manager_type>(instance);
+        Test, input_type, solution_manager_type>(instance);
     auto neighborhood = detail::make_neighborhood<
         Test, solution_manager_type, neighborhood_type>(solution_manager);
     auto component = detail::make_component<
-        Test, instance_type, component_type>(instance);
+        Test, input_type, component_type>(instance);
     auto solution = Test::solution(instance);
     static_assert(std::same_as<
         std::remove_cvref_t<decltype(solution)>,
@@ -188,7 +188,7 @@ template<class Test>
         {
             using delta_evaluator_type = typename Test::delta_evaluator;
             auto evaluator = detail::make_delta_evaluator<
-                Test, instance_type, delta_evaluator_type>(instance);
+                Test, input_type, delta_evaluator_type>(instance);
             return detail::separate_updated_value<Test>(
                 evaluator,
                 current,

@@ -24,7 +24,7 @@ struct Solution
 class MinimalSolutionManager
 {
 public:
-    using instance_type = Instance;
+    using input_type = Instance;
     using solution_type = Solution;
     using cost_type = int;
 

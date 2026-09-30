@@ -612,7 +612,7 @@ private:
     }
 
 public:
-    using instance_type = typename first_explorer::instance_type;
+    using input_type = typename first_explorer::input_type;
     using solution_type = typename first_explorer::solution_type;
     using move_type = union_move_type;
     using delta_bindings_type = typename neighborhood_union_delta_bindings<
@@ -621,9 +621,9 @@ public:
 
     static_assert(
         (std::same_as<
-             instance_type,
-             typename Explorers::instance_type> && ...),
-        "all NeighborhoodExplorers in a union must use the same instance_type");
+             input_type,
+             typename Explorers::input_type> && ...),
+        "all NeighborhoodExplorers in a union must use the same input_type");
     static_assert(
         (std::same_as<
              solution_type,
@@ -641,12 +641,12 @@ public:
             "neighborhood random biases must be finite and non-negative");
 #ifndef NDEBUG
         const auto* const expected =
-            std::addressof(std::get<0>(explorers_).instance());
+            std::addressof(std::get<0>(explorers_).input());
 
         std::apply(
             [expected](const auto&... explorer) {
                 assert(
-                    ((std::addressof(explorer.instance()) == expected) && ...) &&
+                    ((std::addressof(explorer.input()) == expected) && ...) &&
                     "all child NeighborhoodExplorers in a union must share the same Instance");
             },
             explorers_);
@@ -654,9 +654,9 @@ public:
     }
 
     [[nodiscard]]
-    auto instance() const noexcept -> const instance_type&
+    auto input() const noexcept -> const input_type&
     {
-        return std::get<0>(explorers_).instance();
+        return std::get<0>(explorers_).input();
     }
 
     template<std::size_t Index>
