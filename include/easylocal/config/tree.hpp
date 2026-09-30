@@ -433,9 +433,6 @@ concept configuration_provider =
             decltype(value.configuration())>;
     };
 
-namespace detail
-{
-
 template<class T>
 [[nodiscard]]
 constexpr auto configuration_nodes(T& value)
@@ -449,6 +446,9 @@ constexpr auto configuration_nodes(T& value)
         return std::tuple{};
     }
 }
+
+namespace detail
+{
 
 template<fixed_string Name, std::size_t Index = 0, class Tuple>
 [[nodiscard]]

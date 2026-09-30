@@ -93,8 +93,8 @@ public:
             config::configuration_provider<Acceptance>)
     {
         auto children = std::tuple_cat(
-            config::detail::configuration_nodes(temperature_policy_),
-            config::detail::configuration_nodes(acceptance_));
+            config::configuration_nodes(temperature_policy_),
+            config::configuration_nodes(acceptance_));
 
         return std::apply(
             [](auto... nodes) {
@@ -110,8 +110,8 @@ public:
             config::configuration_provider<const Acceptance>)
     {
         auto children = std::tuple_cat(
-            config::detail::configuration_nodes(temperature_policy_),
-            config::detail::configuration_nodes(acceptance_));
+            config::configuration_nodes(temperature_policy_),
+            config::configuration_nodes(acceptance_));
 
         return std::apply(
             [](auto... nodes) {

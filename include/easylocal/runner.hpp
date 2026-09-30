@@ -874,9 +874,9 @@ public:
     auto configuration()
     {
         auto children = std::tuple_cat(
-            config::detail::configuration_nodes(algorithm_),
-            config::detail::configuration_nodes(solution_manager_spec_),
-            config::detail::configuration_nodes(neighborhood_spec_));
+            config::configuration_nodes(algorithm_),
+            config::configuration_nodes(solution_manager_spec_),
+            config::configuration_nodes(neighborhood_spec_));
 
         return std::apply(
             [](auto... nodes) {
@@ -894,9 +894,9 @@ public:
     auto configuration() const
     {
         auto children = std::tuple_cat(
-            config::detail::configuration_nodes(algorithm_),
-            config::detail::configuration_nodes(solution_manager_spec_),
-            config::detail::configuration_nodes(neighborhood_spec_));
+            config::configuration_nodes(algorithm_),
+            config::configuration_nodes(solution_manager_spec_),
+            config::configuration_nodes(neighborhood_spec_));
 
         return std::apply(
             [](auto... nodes) {
