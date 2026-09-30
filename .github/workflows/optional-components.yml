@@ -1,0 +1,246 @@
+name: Optional Components
+
+on:
+  pull_request:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  linux-fetchcontent:
+    name: Linux / all optional components / forced FetchContent
+    runs-on: ubuntu-26.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install build tools
+        run: |
+          if [ "$(id -u)" -eq 0 ]; then
+            elevate=()
+          else
+            elevate=(sudo)
+          fi
+          "${elevate[@]}" apt-get -o Acquire::Retries=3 update
+          "${elevate[@]}" env DEBIAN_FRONTEND=noninteractive \
+            apt-get install -y --no-install-recommends \
+              cmake ninja-build g++-16 curl
+          echo 'CXX=/usr/bin/g++-16' >> "$GITHUB_ENV"
+
+      - name: Configure with forced FetchContent
+        run: |
+          build_dir="build/optional-fetch"
+          cmake -S . -B "$build_dir" -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_CXX_COMPILER="$CXX" \
+            -DEASYLOCAL_BUILD_EXAMPLES=ON \
+            -DEASYLOCAL_BUILD_TESTS=ON \
+            -DEASYLOCAL_ENABLE_CONFIG_TOML=ON \
+            -DEASYLOCAL_ENABLE_TUI=ON \
+            -DEASYLOCAL_ENABLE_REST=ON \
+            -DEASYLOCAL_FETCH_DEPENDENCIES=ON \
+            -DCMAKE_DISABLE_FIND_PACKAGE_tomlplusplus=TRUE \
+            -DCMAKE_DISABLE_FIND_PACKAGE_ftxui=TRUE \
+            -DCMAKE_DISABLE_FIND_PACKAGE_Crow=TRUE \
+            -DEASYLOCAL_ASIO_INCLUDE_DIR= \
+            2>&1 | tee "${build_dir}.configure.log"
+
+          test -d "$build_dir/_deps/tomlplusplus-src"
+          test -d "$build_dir/_deps/ftxui-src"
+          test -d "$build_dir/_deps/crow-src"
+          test -d "$build_dir/_deps/easylocal_asio-src"
+
+      - name: Build and test optional components
+        run: |
+          build_dir="build/optional-fetch"
+          cmake --build "$build_dir" --parallel 2 --verbose \
+            --target \
+              easylocal_configuration_toml_header_self_containment \
+              easylocal_configuration_toml_test \
+              easylocal_tui_header_self_containment \
+              easylocal_tui_tester_compile_test \
+              easylocal_tui_helpers_test \
+              easylocal_tui_launcher_header_self_containment \
+              easylocal_tui_launcher_helpers_test \
+              easylocal_rest_execution_header_self_containment \
+              easylocal_rest_execution_test \
+              easylocal_rest_blueprint_header_self_containment \
+              easylocal_rest_blueprint_compile_test \
+              easylocal_assignment_rest_mwe \
+            2>&1 | tee "${build_dir}.build.log"
+
+          ctest --test-dir "$build_dir" --verbose \
+            -R 'easylocal\.(configuration-toml(-header-self-containment)?|tui-.*|rest-.*|installed-package-consumer)$' \
+            2>&1 | tee "${build_dir}.ctest.log"
+
+      - name: Upload diagnostics
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: optional-components-linux-fetchcontent
+          retention-days: 7
+          if-no-files-found: warn
+          path: |
+            build/optional-fetch*.log
+            build/optional-fetch/CMakeCache.txt
+            build/optional-fetch/CMakeFiles/CMakeConfigureLog.yaml
+            build/optional-fetch/Testing/Temporary/LastTest.log
+
+  linux-system-config-toml:
+    name: Linux / ConfigTOML / system dependency
+    runs-on: ubuntu-26.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install system dependencies
+        run: |
+          if [ "$(id -u)" -eq 0 ]; then
+            elevate=()
+          else
+            elevate=(sudo)
+          fi
+          "${elevate[@]}" apt-get -o Acquire::Retries=3 update
+          "${elevate[@]}" env DEBIAN_FRONTEND=noninteractive \
+            apt-get install -y --no-install-recommends \
+              cmake ninja-build g++-16 libtomlplusplus-dev
+          echo 'CXX=/usr/bin/g++-16' >> "$GITHUB_ENV"
+
+      - name: Configure without FetchContent
+        run: |
+          build_dir="build/system-config-toml"
+          cmake -S . -B "$build_dir" -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_CXX_COMPILER="$CXX" \
+            -DEASYLOCAL_BUILD_EXAMPLES=OFF \
+            -DEASYLOCAL_BUILD_TESTS=ON \
+            -DEASYLOCAL_ENABLE_CONFIG_TOML=ON \
+            -DEASYLOCAL_FETCH_DEPENDENCIES=OFF \
+            -DFETCHCONTENT_FULLY_DISCONNECTED=ON \
+            2>&1 | tee "${build_dir}.configure.log"
+          test ! -e "$build_dir/_deps"
+
+      - name: Build and test ConfigTOML
+        run: |
+          build_dir="build/system-config-toml"
+          cmake --build "$build_dir" --parallel 2 --verbose \
+            --target \
+              easylocal_configuration_toml_header_self_containment \
+              easylocal_configuration_toml_test \
+            2>&1 | tee "${build_dir}.build.log"
+          ctest --test-dir "$build_dir" --verbose \
+            -R 'easylocal\.(configuration-toml(-header-self-containment)?|installed-package-consumer)$' \
+            2>&1 | tee "${build_dir}.ctest.log"
+
+      - name: Upload diagnostics
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: optional-components-linux-system-config-toml
+          retention-days: 7
+          if-no-files-found: warn
+          path: |
+            build/system-config-toml*.log
+            build/system-config-toml/CMakeCache.txt
+            build/system-config-toml/CMakeFiles/CMakeConfigureLog.yaml
+            build/system-config-toml/Testing/Temporary/LastTest.log
+
+  macos-system:
+    name: macOS ARM64 / all optional components / system dependencies
+    runs-on: macos-15
+    timeout-minutes: 20
+    env:
+      HOMEBREW_NO_AUTO_UPDATE: '1'
+      HOMEBREW_NO_INSTALL_CLEANUP: '1'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install system dependencies
+        run: |
+          if [ "$(uname -m)" != arm64 ]; then
+            echo 'This job requires a native ARM64 macOS runner.' >&2
+            exit 1
+          fi
+          command -v cmake >/dev/null || brew install cmake
+          command -v ninja >/dev/null || brew install ninja
+          brew list --versions tomlplusplus >/dev/null 2>&1 || brew install tomlplusplus
+          brew list --versions ftxui >/dev/null 2>&1 || brew install ftxui
+          brew list --versions crow >/dev/null 2>&1 || brew install crow
+          brew list --versions asio >/dev/null 2>&1 || brew install asio
+          echo "SDKROOT=$(xcrun --sdk macosx --show-sdk-path)" >> "$GITHUB_ENV"
+          echo "CXX=$(xcrun --find clang++)" >> "$GITHUB_ENV"
+
+      - name: Configure without FetchContent
+        run: |
+          build_dir="build/system-optional"
+          prefix_path="$(brew --prefix tomlplusplus);$(brew --prefix ftxui);$(brew --prefix crow);$(brew --prefix asio)"
+          cmake -S . -B "$build_dir" -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_CXX_COMPILER="$CXX" \
+            -DCMAKE_OSX_SYSROOT="$SDKROOT" \
+            -DCMAKE_PREFIX_PATH="$prefix_path" \
+            -DEASYLOCAL_BUILD_EXAMPLES=ON \
+            -DEASYLOCAL_BUILD_TESTS=ON \
+            -DEASYLOCAL_ENABLE_CONFIG_TOML=ON \
+            -DEASYLOCAL_ENABLE_TUI=ON \
+            -DEASYLOCAL_ENABLE_REST=ON \
+            -DEASYLOCAL_FETCH_DEPENDENCIES=OFF \
+            -DFETCHCONTENT_FULLY_DISCONNECTED=ON \
+            2>&1 | tee "${build_dir}.configure.log"
+          test ! -e "$build_dir/_deps"
+
+      - name: Build and test optional components
+        run: |
+          build_dir="build/system-optional"
+          cmake --build "$build_dir" --parallel 2 --verbose \
+            --target \
+              easylocal_configuration_toml_header_self_containment \
+              easylocal_configuration_toml_test \
+              easylocal_tui_header_self_containment \
+              easylocal_tui_tester_compile_test \
+              easylocal_tui_helpers_test \
+              easylocal_tui_launcher_header_self_containment \
+              easylocal_tui_launcher_helpers_test \
+              easylocal_rest_execution_header_self_containment \
+              easylocal_rest_execution_test \
+              easylocal_rest_blueprint_header_self_containment \
+              easylocal_rest_blueprint_compile_test \
+              easylocal_assignment_rest_mwe \
+            2>&1 | tee "${build_dir}.build.log"
+          ctest --test-dir "$build_dir" --verbose \
+            -R 'easylocal\.(configuration-toml(-header-self-containment)?|tui-.*|rest-.*|installed-package-consumer)$' \
+            2>&1 | tee "${build_dir}.ctest.log"
+
+      - name: Upload diagnostics
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: optional-components-macos-system
+          retention-days: 7
+          if-no-files-found: warn
+          path: |
+            build/system-optional*.log
+            build/system-optional/CMakeCache.txt
+            build/system-optional/CMakeFiles/CMakeConfigureLog.yaml
+            build/system-optional/Testing/Temporary/LastTest.log

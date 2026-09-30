@@ -7,6 +7,11 @@ commits since the previous release and are reviewed manually before tagging.
 
 ### Unreleased — application adapters and isolated runs
 
+- CI now keeps the compiler matrix focused on dependency-free Core, while a
+  dedicated optional-components workflow covers forced FetchContent on Linux
+  and installed system dependencies on Linux/macOS, including REST/Crow/Asio
+  and the real REST HTTP integration test; timed trace microbenchmarks run only
+  on release tags or explicit dispatch.
 - Add an Assignment TextUI stress/demo runner and a deterministic 250-job instance for visibly exercising asynchronous progress and cooperative stop.
 - optional ConfigTOML and TextUI components are exported as independent CMake
   target files and loaded only when requested by `find_package`;

@@ -1,7 +1,6 @@
 name: Trace Microbenchmarks
 
 on:
-  pull_request:
   push:
     tags:
       - 'v[0-9]+.[0-9]+.[0-9]+'
