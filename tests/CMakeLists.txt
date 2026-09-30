@@ -1,3 +1,88 @@
+# Compile every installed header in its own translation unit.  Keeping the
+# probes generated from the include tree makes self-containment coverage follow
+# the public surface automatically instead of relying on one hand-written test
+# source per header.
+function(easylocal_add_header_self_containment_test name dependency)
+    set(headers ${ARGN})
+    set(probe_dir "${CMAKE_CURRENT_BINARY_DIR}/header-self-containment/${name}")
+    file(MAKE_DIRECTORY "${probe_dir}")
+
+    set(sources)
+    foreach(header IN LISTS headers)
+        string(MAKE_C_IDENTIFIER "${header}" probe_id)
+        set(source "${probe_dir}/${probe_id}.cpp")
+        file(WRITE "${source}"
+            "#include <${header}>\n\n"
+            "void easylocal_header_probe_${probe_id}() {}\n")
+        list(APPEND sources "${source}")
+    endforeach()
+
+    set(main_source "${probe_dir}/main.cpp")
+    file(WRITE "${main_source}" "int main() { return 0; }\n")
+    list(APPEND sources "${main_source}")
+
+    set(target "easylocal_${name}_headers_self_containment")
+    add_executable("${target}" ${sources})
+    target_link_libraries("${target}" PRIVATE "${dependency}")
+    add_test(
+        NAME "easylocal.${name}-headers-self-containment"
+        COMMAND "${target}"
+    )
+endfunction()
+
+file(
+    GLOB_RECURSE EASYLOCAL_CORE_HEADERS
+    CONFIGURE_DEPENDS
+    RELATIVE "${PROJECT_SOURCE_DIR}/include"
+    "${PROJECT_SOURCE_DIR}/include/easylocal/*.hpp"
+)
+list(FILTER EASYLOCAL_CORE_HEADERS EXCLUDE REGEX "^easylocal/config/toml\\.hpp$")
+list(FILTER EASYLOCAL_CORE_HEADERS EXCLUDE REGEX "^easylocal/tui/")
+list(FILTER EASYLOCAL_CORE_HEADERS EXCLUDE REGEX "^easylocal/rest($|\\.hpp|/)")
+
+easylocal_add_header_self_containment_test(
+    core
+    EasyLocal::Core
+    ${EASYLOCAL_CORE_HEADERS}
+)
+
+if(TARGET EasyLocal::ConfigTOML)
+    easylocal_add_header_self_containment_test(
+        config-toml
+        EasyLocal::ConfigTOML
+        easylocal/config/toml.hpp
+    )
+endif()
+
+if(TARGET EasyLocal::TUI)
+    file(
+        GLOB EASYLOCAL_TUI_HEADERS
+        CONFIGURE_DEPENDS
+        RELATIVE "${PROJECT_SOURCE_DIR}/include"
+        "${PROJECT_SOURCE_DIR}/include/easylocal/tui/*.hpp"
+    )
+    easylocal_add_header_self_containment_test(
+        tui
+        EasyLocal::TUI
+        ${EASYLOCAL_TUI_HEADERS}
+    )
+endif()
+
+if(TARGET EasyLocal::REST)
+    file(
+        GLOB EASYLOCAL_REST_HEADERS
+        CONFIGURE_DEPENDS
+        RELATIVE "${PROJECT_SOURCE_DIR}/include"
+        "${PROJECT_SOURCE_DIR}/include/easylocal/rest/*.hpp"
+    )
+    list(APPEND EASYLOCAL_REST_HEADERS easylocal/rest.hpp)
+    easylocal_add_header_self_containment_test(
+        rest
+        EasyLocal::REST
+        ${EASYLOCAL_REST_HEADERS}
+    )
+endif()
+
 add_test(
     NAME easylocal.architecture-boundary
     COMMAND
