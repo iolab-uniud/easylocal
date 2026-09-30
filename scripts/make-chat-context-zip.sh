@@ -70,6 +70,7 @@ zip -rq "$TMP_ZIP" . \
        '*/cmake_install.cmake' \
        '*/CTestTestfile.cmake' \
        '*/compile_commands.json' \
+       '*/install_manifest.txt' \
        '*/Testing/*' \
        '*.o' \
        '*.obj' \
@@ -86,14 +87,27 @@ zip -rq "$TMP_ZIP" . \
        '*.gcov' \
        '*.profraw' \
        '*.profdata' \
+       'coverage/*' \
+       'coverage-*/*' \
        '*.dSYM/*' \
        '*.tmp' \
+       '*.bak' \
+       '*.orig' \
+       '*.rej' \
+       '*.patch' \
+       '*.diff' \
        '*.swp' \
+       '*.swo' \
+       '*.pyc' \
+       '*.pyo' \
        '*~' \
        'artifacts/*' \
        'benchmark-artifacts/*' \
        'benchmark-results/*' \
        'results/benchmarks/*' \
+       '*.eltrace' \
+       '*.jsonl' \
+       '*/junit.xml' \
        '*.zip' \
        '*.tar' \
        '*.tar.gz' \
@@ -111,12 +125,14 @@ unzip -l "$OUT" | tail -n 2
 
 echo
 echo "Handoff files:"
+ARCHIVE_FILE_LIST="$TMPDIR_ROOT/archive-files.txt"
+unzip -Z1 "$OUT" > "$ARCHIVE_FILE_LIST"
 for handoff_file in \
     '.local/context.md' \
     '.local/decisions.md' \
     '.local/migration-el3.md'
 do
-    if unzip -Z1 "$OUT" | grep -qx "$handoff_file"; then
+    if grep -qx "$handoff_file" "$ARCHIVE_FILE_LIST"; then
         echo "  OK  $handoff_file"
     else
         echo "  WARN $handoff_file is missing"

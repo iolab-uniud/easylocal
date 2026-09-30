@@ -1,12 +1,84 @@
+# Build trees and CMake-generated files.
 /build/
-/CMakeUserPresets.json
+/build-*/
+/build_*/
+/cmake-build-*/
+/out/
+/_build/
+**/CMakeFiles/
+**/CMakeCache.txt
+**/cmake_install.cmake
+**/CTestTestfile.cmake
+**/compile_commands.json
+**/install_manifest.txt
+**/Testing/
+CMakeUserPresets.json
+
+# Compiler and linker outputs.
+*.o
+*.obj
+*.lo
+*.a
+*.so
+*.so.*
+*.dylib
+*.dll
+*.exe
+*.out
+*.dSYM/
+
+# Coverage and profiling outputs.
+*.gcda
+*.gcno
+*.gcov
+*.profraw
+*.profdata
+coverage/
+coverage-*/
+
+# EasyLocal generated/runtime artifacts.
+/.artifacts/
+/artifacts/
+/benchmark-artifacts/
+/benchmark-results/
+/results/benchmarks/
+*.eltrace
+*.jsonl
+junit.xml
+
+# Local environment and secrets.
 /.env
 /.env.*
 /.secrets
 /.secrets.*
-/.artifacts/
-.DS_Store
 
+# Editor, OS and language caches.
+.DS_Store
+.idea/
+.vscode/
+.cache/
+.pytest_cache/
+__pycache__/
+*.pyc
+*.pyo
+*.swp
+*.swo
+*~
+
+# Temporary/patch/archive files.
+*.tmp
+*.bak
+*.orig
+*.rej
+*.patch
+*.diff
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.tar.xz
+
+# Local project handoff material. Keep only canonical durable project notes.
 .local/*
 !.local/context.md
 !.local/decisions.md
