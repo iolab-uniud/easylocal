@@ -5,7 +5,6 @@
 #include <easylocal/cursor_moves.hpp>
 #include <easylocal/detail/cost_semantics.hpp>
 #include <easylocal/detail/evaluation.hpp>
-#include <easylocal/detail/neighborhood_concepts.hpp>
 #include <easylocal/detail/service_composition.hpp>
 #include <easylocal/detail/solution_manager_concepts.hpp>
 #include <easylocal/run_control.hpp>

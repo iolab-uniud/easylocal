@@ -2,7 +2,7 @@
 
 #include <easylocal/cursor_moves.hpp>
 
-#include <easylocal/detail/neighborhood_concepts.hpp>
+#include <easylocal/neighborhood_concepts.hpp>
 
 #include <concepts>
 #include <type_traits>
@@ -81,7 +81,7 @@ concept neighborhood_moves_context =
     {
         {
             easylocal::moves(context.neighborhood_explorer(), solution)
-        } -> easylocal::detail::move_input_range_for<
+        } -> easylocal::move_input_range_for<
             typename Context::neighborhood_explorer_type::move_type>;
     };
 
