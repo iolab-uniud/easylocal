@@ -40,10 +40,25 @@ list(FILTER EASYLOCAL_CORE_HEADERS EXCLUDE REGEX "^easylocal/config/toml\\.hpp$"
 list(FILTER EASYLOCAL_CORE_HEADERS EXCLUDE REGEX "^easylocal/tui/")
 list(FILTER EASYLOCAL_CORE_HEADERS EXCLUDE REGEX "^easylocal/rest($|\\.hpp|/)")
 
+# Headers under detail/ are installed because public templates include them, but
+# they are implementation headers rather than supported direct-entry API.  Keep
+# their self-containment checked without counting them as the public surface.
+set(EASYLOCAL_CORE_PUBLIC_HEADERS ${EASYLOCAL_CORE_HEADERS})
+list(FILTER EASYLOCAL_CORE_PUBLIC_HEADERS EXCLUDE REGEX "(^|/)detail/")
+
+set(EASYLOCAL_CORE_DETAIL_HEADERS ${EASYLOCAL_CORE_HEADERS})
+list(FILTER EASYLOCAL_CORE_DETAIL_HEADERS INCLUDE REGEX "(^|/)detail/")
+
 easylocal_add_header_self_containment_test(
-    core
+    core-public
     EasyLocal::Core
-    ${EASYLOCAL_CORE_HEADERS}
+    ${EASYLOCAL_CORE_PUBLIC_HEADERS}
+)
+
+easylocal_add_header_self_containment_test(
+    core-detail
+    EasyLocal::Core
+    ${EASYLOCAL_CORE_DETAIL_HEADERS}
 )
 
 if(TARGET EasyLocal::ConfigTOML)
