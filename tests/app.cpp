@@ -119,6 +119,23 @@ using AssignmentRunner = decltype(
     std::declval<const AssignmentApp&>()
         .template make_runner<easylocal::runner::first_improvement>());
 
+template<class Runtime>
+concept has_legacy_instance_type = requires {
+    typename Runtime::instance_type;
+};
+
+template<class Runtime>
+concept has_legacy_instance_accessor = requires(const Runtime& runtime) {
+    runtime.instance();
+};
+
+using AssignmentRuntime = decltype(
+    std::declval<const AssignmentApp&>().for_input(
+        std::declval<const AssignmentApp::input_type&>()));
+
+static_assert(!has_legacy_instance_type<AssignmentRuntime>);
+static_assert(!has_legacy_instance_accessor<AssignmentRuntime>);
+
 static_assert(can_materialize_from_lvalue_input<AssignmentApp>);
 static_assert(!can_materialize_from_rvalue_input<AssignmentApp>);
 static_assert(can_bind_lvalue_input<AssignmentRunner>);
@@ -152,7 +169,6 @@ void one_input_materializes_one_shared_graph_for_all_runners()
     auto runtime = application.for_input(instance);
 
     assert(&runtime.input() == &instance);
-    assert(&runtime.instance() == &instance);
     assert(&runtime.solution_manager().instance() == &instance);
     assert(&runtime.neighborhood().instance() == &instance);
 

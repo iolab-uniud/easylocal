@@ -258,26 +258,25 @@ public:
     using solution_manager_type = service_t<SMSpec>;
     using neighborhood_explorer_type = service_t<NHESpec>;
     using input_type = typename solution_manager_type::instance_type;
-    using instance_type = input_type;
 
     static constexpr std::size_t runner_count = sizeof...(Registrations);
 
     app_instance(
-        const instance_type& instance,
+        const input_type& input,
         const SMSpec& solution_manager_spec,
         const NHESpec& neighborhood_spec,
         const std::tuple<Registrations...>& registrations)
-        : instance_{instance},
-          solution_manager_{solution_manager_spec.construct(instance_)},
+        : input_{input},
+          solution_manager_{solution_manager_spec.construct(input_)},
           neighborhood_{neighborhood_spec.construct(solution_manager_)},
           algorithms_{make_algorithms(registrations)}
     {
         assert(
             std::addressof(solution_manager_.instance()) ==
-                std::addressof(instance_));
+                std::addressof(input_));
         assert(
             std::addressof(neighborhood_.instance()) ==
-                std::addressof(instance_));
+                std::addressof(input_));
     }
 
     app_instance(const app_instance&) = delete;
@@ -288,15 +287,7 @@ public:
     [[nodiscard]]
     auto input() const noexcept -> const input_type&
     {
-        return instance_;
-    }
-
-    // Compatibility spelling retained while Input becomes the canonical
-    // application-boundary terminology.
-    [[nodiscard]]
-    auto instance() const noexcept -> const instance_type&
-    {
-        return input();
+        return input_;
     }
 
     [[nodiscard]]
@@ -430,7 +421,7 @@ private:
             registrations);
     }
 
-    const instance_type& instance_;
+    const input_type& input_;
     solution_manager_type solution_manager_;
     neighborhood_explorer_type neighborhood_;
     std::tuple<typename Registrations::algorithm_type...> algorithms_;
