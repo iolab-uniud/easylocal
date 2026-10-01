@@ -133,13 +133,13 @@ public:
         const run_control& control,
         Tracer& tracer,
         const std::size_t evaluation_limit = no_limit,
-        std::optional<cost_type> target = std::nullopt)
+        const cost_type* target = nullptr)
         : context_{context},
           evaluation_{context.evaluation()},
           control_{control},
           tracer_{tracer},
           evaluation_limit_{evaluation_limit},
-          target_{std::move(target)}
+          target_{target}
     {
     }
 
@@ -249,9 +249,9 @@ public:
         evaluation_limit_ = max_evaluations;
     }
 
-    // The target cost given by the caller, if any.
+    // The target cost given by the caller, or nullptr.
     [[nodiscard]]
-    auto target() const noexcept -> const std::optional<cost_type>&
+    auto target() const noexcept -> const cost_type*
     {
         return target_;
     }
@@ -270,11 +270,9 @@ public:
         auto current = evaluation_.evaluate(solution);
         evaluations_ = 1;
         iterations_ = 0;
-        stop_reason_.reset();
-        if (target_)
-        {
-            best_cost_ = current.cost();
-        }
+        stop_reason_ = termination_reason::completed;
+        target_reached_ = false;
+        observe_cost(current.cost());
 
         emit(trace::event::run_started<cost_type>{current.cost()});
         report();
@@ -370,7 +368,7 @@ public:
     {
         const auto previous_cost = current.cost();
         evaluation_.commit(solution, current, std::move(candidate));
-        record_best(current.cost());
+        observe_cost(current.cost());
 
         trace::with_move_route(move, [&](const auto* route) {
             emit(trace::event::move_accepted<cost_type>{
@@ -387,7 +385,7 @@ public:
         const cost_type& previous_cost,
         const cost_type& cost)
     {
-        record_best(cost);
+        observe_cost(cost);
         emit(trace::event::incumbent_updated<cost_type>{
             .evaluations = evaluations_,
             .iterations = iterations_,
@@ -404,7 +402,7 @@ public:
         return finish(
             std::move(solution),
             std::move(cost),
-            stop_reason_.value_or(termination_reason::completed));
+            stop_reason_);
     }
 
     [[nodiscard]]
@@ -445,61 +443,46 @@ public:
     }
 
     // A run over a decorated context sharing this run's control, tracer,
-    // budget and target, e.g. for algorithms that delegate to another
-    // algorithm.
+    // budget and (for the same cost type) target, e.g. for algorithms that
+    // delegate to another algorithm.
     template<class OtherContext>
     [[nodiscard]]
     auto with_context(const OtherContext& context) -> search_run<OtherContext, Tracer>
     {
-        using other_cost_type = typename OtherContext::cost_type;
-        std::optional<other_cost_type> target;
-        if constexpr (std::constructible_from<other_cost_type, const cost_type&>)
+        const typename OtherContext::cost_type* target = nullptr;
+        if constexpr (std::same_as<typename OtherContext::cost_type, cost_type>)
         {
-            if (target_)
-            {
-                target.emplace(*target_);
-            }
+            target = target_;
         }
         return search_run<OtherContext, Tracer>{
             context,
             control_,
             tracer_,
             evaluation_limit_,
-            std::move(target),
+            target,
         };
     }
 
 private:
     [[nodiscard]]
-    auto target_reached() const -> bool
+    auto target_reached() const noexcept -> bool
     {
-        if constexpr (requires(const Context& context, const cost_type& cost) {
-                          { context.better_or_equivalent(cost, cost) } ->
+        return target_reached_;
+    }
+
+    // The best cost of a run is at least as good as every cost it reaches, so
+    // the target is reached once any of them is at least as good as it.
+    void observe_cost(const cost_type& cost)
+    {
+        if constexpr (requires(const Context& context, const cost_type& value) {
+                          { context.better_or_equivalent(value, value) } ->
                               std::convertible_to<bool>;
                       })
         {
-            return target_ && best_cost_ &&
-                   context_.better_or_equivalent(*best_cost_, *target_);
-        }
-        else
-        {
-            return false;
-        }
-    }
-
-    void record_best(const cost_type& cost)
-    {
-        if (!target_)
-        {
-            return;
-        }
-        if constexpr (requires(const Context& context, const cost_type& value) {
-                          { context.better(value, value) } -> std::convertible_to<bool>;
-                      })
-        {
-            if (!best_cost_ || context_.better(cost, *best_cost_))
+            if (target_ != nullptr && !target_reached_ &&
+                context_.better_or_equivalent(cost, *target_))
             {
-                best_cost_ = cost;
+                target_reached_ = true;
             }
         }
     }
@@ -524,9 +507,10 @@ private:
     std::size_t evaluations_{};
     std::size_t iterations_{};
     std::size_t evaluation_limit_{no_limit};
-    std::optional<termination_reason> stop_reason_;
-    std::optional<cost_type> target_;
-    std::optional<cost_type> best_cost_;
+    // Recorded by should_stop(); completed while the run goes on.
+    termination_reason stop_reason_{termination_reason::completed};
+    const cost_type* target_{};
+    bool target_reached_{};
 };
 
 } // namespace easylocal

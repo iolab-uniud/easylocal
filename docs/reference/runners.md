@@ -89,7 +89,7 @@ Extra `run` arguments (an RNG, for instance) are passed through
 | `evaluate_move(solution, current, move) -> candidate` | counts, `move_evaluated`, progress |
 | `commit(solution, current, candidate, move)` | applies, `move_accepted` |
 | `next_iteration()` | advances the iteration counter |
-| `incumbent_updated(previous, cost)` | `incumbent_updated` event; the best cost checked against the target |
+| `incumbent_updated(previous, cost)` | `incumbent_updated` event; the cost checked against the target |
 | `finish(solution, cost[, reason]) -> search_result` | `local_optimum` (if that is the reason), `run_finished` |
 | `better`, `equivalent`, `better_or_equivalent` | cost semantics |
 | `evaluations()`, `iterations()`, `target()` | counters, the caller's target cost |
@@ -113,7 +113,7 @@ one recorded by `should_stop()`, or `completed`.
 `evaluations`, `iterations` and `evaluation_limit`.
 
 The target converts to the runner's cost type and is compared with its cost
-semantics (`better_or_equivalent`). `search_run` keeps the best cost from
+semantics (`better_or_equivalent`). `search_run` checks the costs reached in
 `start`, `commit` and `incumbent_updated`, so every algorithm that checks
 `should_stop()` honours a target without further code. The same options are
 accepted by every solver's `solve(input, options)`.

@@ -299,6 +299,8 @@ auto termination_name(const easylocal::termination_reason termination)
         return "budget";
     case easylocal::termination_reason::cancelled:
         return "cancelled";
+    case easylocal::termination_reason::target_reached:
+        return "target";
     }
 
     return "unknown";

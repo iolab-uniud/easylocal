@@ -241,8 +241,13 @@ auto run_algorithm(
         }
     }
 
+    // The run refers to the target, which outlives it.
     search_run<Context, tracer_type> run{
-        context, *control, *tracer, search_run<Context, tracer_type>::no_evaluation_limit, std::move(target)};
+        context,
+        *control,
+        *tracer,
+        search_run<Context, tracer_type>::no_evaluation_limit,
+        target ? &*target : nullptr};
     return [&]<std::size_t... Index>(std::index_sequence<Index...>) {
         return algorithm.run(
             run,
