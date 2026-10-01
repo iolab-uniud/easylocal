@@ -8,7 +8,7 @@ set -euo pipefail
 #
 # Usage:
 #   ./scripts/make-chat-context-zip.sh
-#   ./scripts/make-chat-context-zip.sh /path/to/easylocal-next-chat.zip
+#   ./scripts/make-chat-context-zip.sh /path/to/easylocal-chat.zip
 #
 # Run this script from anywhere inside the repository.
 

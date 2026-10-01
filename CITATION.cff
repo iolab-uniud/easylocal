@@ -8,7 +8,7 @@ abstract: >-
   EasyLocal++.
 type: software
 version: 4.0.0
-repository-code: "https://github.com/iolab-uniud/easylocal-next"
+repository-code: "https://github.com/iolab-uniud/easylocal"
 keywords:
   - local search
   - metaheuristics

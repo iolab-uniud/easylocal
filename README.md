@@ -1,8 +1,8 @@
 # EasyLocal
 
-[![CI](https://github.com/iolab-uniud/easylocal-next/actions/workflows/ci.yml/badge.svg)](https://github.com/iolab-uniud/easylocal-next/actions/workflows/ci.yml)
-[![Optional Components](https://github.com/iolab-uniud/easylocal-next/actions/workflows/optional-components.yml/badge.svg)](https://github.com/iolab-uniud/easylocal-next/actions/workflows/optional-components.yml)
-[![Trace Microbenchmarks](https://github.com/iolab-uniud/easylocal-next/actions/workflows/trace-microbenchmarks.yml/badge.svg)](https://github.com/iolab-uniud/easylocal-next/actions/workflows/trace-microbenchmarks.yml)
+[![CI](https://github.com/iolab-uniud/easylocal/actions/workflows/ci.yml/badge.svg)](https://github.com/iolab-uniud/easylocal/actions/workflows/ci.yml)
+[![Optional Components](https://github.com/iolab-uniud/easylocal/actions/workflows/optional-components.yml/badge.svg)](https://github.com/iolab-uniud/easylocal/actions/workflows/optional-components.yml)
+[![Trace Microbenchmarks](https://github.com/iolab-uniud/easylocal/actions/workflows/trace-microbenchmarks.yml/badge.svg)](https://github.com/iolab-uniud/easylocal/actions/workflows/trace-microbenchmarks.yml)
 
 EasyLocal is a **C++23 header-only framework** for local search and
 metaheuristics. Version 4 is a complete redesign of EasyLocal++, the
