@@ -239,9 +239,13 @@ if(EASYLOCAL_ENABLE_REST)
                     SOURCE_SUBDIR _easylocal_headers_only
                 )
                 FetchContent_MakeAvailable(easylocal_asio)
-                set(
-                    EASYLOCAL_ASIO_INCLUDE_DIR
+                # asio/include is a symlink to the top-level include/ since
+                # Asio 1.38; resolve it so install(DIRECTORY) copies headers
+                # rather than a dangling relative link.
+                file(
+                    REAL_PATH
                     "${easylocal_asio_SOURCE_DIR}/asio/include"
+                    EASYLOCAL_ASIO_INCLUDE_DIR
                 )
                 set(
                     ASIO_INCLUDE_DIR
