@@ -553,11 +553,10 @@ public:
 
                 auto result = app_.template run_at<Index>(*input_, *solution_);
                 static_assert(
-                    requires {
-                        { std::move(result.solution) }
-                            -> std::convertible_to<solution_type>;
-                    },
-                    "Tester requires runner results to expose a solution member");
+                    easylocal::search_result_for<
+                        decltype(result), solution_type, cost_type>,
+                    "Tester requires runner results to provide the solution "
+                    "and its cost (see easylocal::search_result_for)");
 
                 solution_ = std::make_unique<solution_type>(
                     std::move(result.solution));

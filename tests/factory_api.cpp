@@ -137,6 +137,13 @@ int main()
 {
     using namespace easylocal;
 
+    struct SolutionOnly
+    {
+        Solution solution;
+    };
+    static_assert(search_result_for<search_result<Solution, int>, Solution, int>);
+    static_assert(!search_result_for<SolutionOnly, Solution, int>);
+
     auto first = make_runner<runners::FirstImprovement>(
         runners::FirstImprovementParameters{.max_evaluations = 10});
     static_assert(std::same_as<

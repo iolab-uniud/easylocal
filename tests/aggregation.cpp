@@ -29,6 +29,26 @@ auto expect(const bool condition, const std::string_view description) -> bool
 
 } // namespace
 
+struct ProjectingAggregator
+{
+    [[nodiscard]] auto hard(const int overload) const -> int { return overload; }
+    [[nodiscard]] auto operator()(const int overload, const double soft) const
+    {
+        return easylocal::cost::hierarchical{hard(overload), soft};
+    }
+};
+
+struct PlainAggregator
+{
+    [[nodiscard]] auto operator()(const int overload, const double soft) const
+    {
+        return easylocal::cost::hierarchical{overload, soft};
+    }
+};
+
+static_assert(easylocal::cost::hard_projection<ProjectingAggregator, int, int>);
+static_assert(!easylocal::cost::hard_projection<PlainAggregator, int, int>);
+
 int main()
 {
     namespace cost = easylocal::cost;

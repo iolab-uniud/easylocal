@@ -27,16 +27,6 @@ struct MultiStartConfig
     std::uint64_t seed{0};
 };
 
-namespace detail
-{
-
-template<class Result, class Cost>
-concept multi_start_result =
-    requires(const Result& result) {
-        { result.cost } -> std::convertible_to<const Cost&>;
-    };
-}
-
 // Repeatedly initialize and run the same bound Runner, retaining the best
 // result according to the bound runner's cost semantics. `starts`
 // denotes the total number of runs (not the number of runs after a first one).
@@ -156,11 +146,12 @@ public:
                          std::declval<const cost_type&>(),
                          std::declval<const cost_type&>()) } ->
                          std::convertible_to<bool>;
-                     requires detail::multi_start_result<
+                     requires easylocal::search_result_for<
                          decltype(easylocal::detail::run_with_solver_rng(
                              bound_runner,
                              std::declval<solution_type>(),
                              rng)),
+                         solution_type,
                          cost_type>;
                  }
     {

@@ -308,15 +308,10 @@ private:
         }
         else
         {
-            return requires(
-                const Aggregator& aggregator,
-                const std::tuple_element_t<Indices, component_values_type>&...
-                    values)
-            {
-                {
-                    aggregator.hard(values...)
-                } -> std::same_as<typename cost_type::hard_cost_type>;
-            };
+            return cost::hard_projection<
+                Aggregator,
+                typename cost_type::hard_cost_type,
+                std::tuple_element_t<Indices, component_values_type>...>;
         }
     }
 

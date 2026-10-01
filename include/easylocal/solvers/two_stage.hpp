@@ -21,12 +21,6 @@ struct TwoStageConfig
     std::uint64_t seed{0};
 };
 
-template<class FirstResult>
-concept stage_result_with_solution =
-    requires(FirstResult& result) {
-        result.solution;
-    };
-
 // Two-stage optimization for hierarchical costs. The first runner is
 // automatically projected onto the hard branch; the second runner sees the
 // complete hierarchical cost. This keeps hard-only construction as framework
@@ -157,11 +151,13 @@ public:
                  easylocal::detail::solver_runnable<bound_second_runner_type, RNG> &&
                  (supports_initial || supports_random) &&
                  requires(bound_first_runner_type& bound_first_runner, RNG& rng) {
-                     requires stage_result_with_solution<
+                     requires easylocal::search_result_for<
                          decltype(easylocal::detail::run_with_solver_rng(
                              bound_first_runner,
                              std::declval<solution_type>(),
-                             rng))>;
+                             rng)),
+                         solution_type,
+                         typename bound_first_runner_type::cost_type>;
                  }
     {
         auto bound_first_runner = hard_runner_.bind(input);

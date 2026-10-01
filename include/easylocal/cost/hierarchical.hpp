@@ -16,9 +16,8 @@
 // hard equivalent -> soft delta. This lets delta-based acceptance work on the
 // full cost without ever accepting a hard degradation.
 //
-// Hard projection (used by TwoStage): an aggregator producing a hierarchical
-// cost may expose hard(hard_components...) -> HardCost over a prefix of the
-// component values; the hard stage then evaluates only that prefix.
+// Aggregators producing a hierarchical cost may model cost::hard_projection
+// (below), which TwoStage relies on.
 namespace easylocal::cost
 {
 
@@ -112,5 +111,15 @@ inline constexpr bool is_hierarchical_v =
 
 template<class T>
 concept hierarchical_type = is_hierarchical_v<T>;
+
+// Hard projection: an aggregator producing a hierarchical cost may provide
+// hard(values...) -> HardCost over a prefix of the component values (the hard
+// components, declared first). TwoStage relies on it to evaluate only the hard
+// prefix in its first stage.
+template<class Aggregator, class HardCost, class... HardValues>
+concept hard_projection =
+    requires(const Aggregator& aggregator, const HardValues&... values) {
+        { aggregator.hard(values...) } -> std::same_as<HardCost>;
+    };
 
 } // namespace easylocal::cost

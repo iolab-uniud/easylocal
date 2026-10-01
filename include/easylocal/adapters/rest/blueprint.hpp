@@ -517,11 +517,10 @@ private:
 
                                 auto consume_result = [&](auto result) {
                                     static_assert(
-                                        requires {
-                                            { std::move(result.solution) }
-                                                -> std::convertible_to<solution_type>;
-                                        },
-                                        "REST requires runner results to expose a solution member");
+                                        easylocal::search_result_for<
+                                            decltype(result), solution_type, cost_type>,
+                                        "REST requires runner results to provide the "
+                                        "solution and its cost (see easylocal::search_result_for)");
 
                                     const std::lock_guard lock{record->mutex};
                                     record->solution.emplace(

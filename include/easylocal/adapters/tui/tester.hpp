@@ -2050,12 +2050,12 @@ private:
 
                                 auto consume_result = [&](auto result) {
                                     static_assert(
-                                        requires {
-                                            { std::move(result.solution) }
-                                                -> std::convertible_to<
-                                                    typename tester_type::solution_type>;
-                                        },
-                                        "TextUI requires runner results to expose a solution member");
+                                        easylocal::search_result_for<
+                                            decltype(result),
+                                            typename tester_type::solution_type,
+                                            typename tester_type::cost_type>,
+                                        "TextUI requires runner results to provide the "
+                                        "solution and its cost (see easylocal::search_result_for)");
                                     completion.solution.emplace(
                                         std::move(result.solution));
                                 };

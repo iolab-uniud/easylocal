@@ -23,6 +23,16 @@ enum class termination_reason
     cancelled,
 };
 
+// The result contract consumed by solvers, the Tester and the adapters: the
+// final solution and its cost. search_result models it; custom runners may
+// return richer types.
+template<class Result, class Solution, class Cost>
+concept search_result_for =
+    requires(Result& result, const Result& const_result) {
+        { std::move(result.solution) } -> std::convertible_to<Solution>;
+        { const_result.cost } -> std::convertible_to<const Cost&>;
+    };
+
 template<class Solution, class Cost>
 struct search_result
 {
