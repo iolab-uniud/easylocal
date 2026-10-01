@@ -1,6 +1,7 @@
 #pragma once
 
-#include <easylocal/helpers/detail/service_composition.hpp>
+#include <easylocal/helpers/detail/neighborhood_recipe.hpp>
+#include <easylocal/helpers/detail/solution_manager_recipe.hpp>
 
 #include <cassert>
 #include <concepts>

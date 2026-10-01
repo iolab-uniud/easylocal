@@ -596,7 +596,7 @@ public:
                  std::copy_constructible<NHESpec>
     {
         using hard_sm_spec_type =
-            detail::hard_cost_solution_manager_spec<SMSpec>;
+            detail::hard_cost_layer_spec<SMSpec>;
 
         return Runner<Algorithm, hard_sm_spec_type, NHESpec>{
             algorithm_,
@@ -610,7 +610,7 @@ public:
         requires detail::hierarchical_solution_manager<solution_manager_type>
     {
         using hard_sm_spec_type =
-            detail::hard_cost_solution_manager_spec<SMSpec>;
+            detail::hard_cost_layer_spec<SMSpec>;
 
         return Runner<Algorithm, hard_sm_spec_type, NHESpec>{
             std::move(algorithm_),

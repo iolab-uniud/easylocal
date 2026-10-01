@@ -7,7 +7,8 @@
 #include <easylocal/config/overrides.hpp>
 #include <easylocal/config/tree.hpp>
 #include <easylocal/helpers/detail/evaluation.hpp>
-#include <easylocal/helpers/detail/service_composition.hpp>
+#include <easylocal/helpers/detail/neighborhood_recipe.hpp>
+#include <easylocal/helpers/detail/solution_manager_recipe.hpp>
 #include <easylocal/utils/logging.hpp>
 #include <easylocal/runners/runner.hpp>
 
@@ -666,7 +667,7 @@ int main()
     static_assert(ZeroOverheadFullSM::has_hard_component_projection);
     static_assert(ZeroOverheadFullSM::hard_component_count == 1);
 
-    easylocal::detail::hard_cost_solution_manager<ZeroOverheadFullSM>
+    easylocal::detail::hard_cost_layer<ZeroOverheadFullSM>
         zero_overhead_hard_sm{zero_overhead_full_sm};
     static_assert(std::tuple_size_v<
         typename decltype(zero_overhead_hard_sm)::component_types> == 1);
