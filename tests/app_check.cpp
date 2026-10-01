@@ -32,10 +32,10 @@ using namespace easylocal::mwe::assignment;
 
     auto application =
         easylocal::app("assignment")
-            .solution_manager(std::move(sm))
-            .neighborhood(std::move(nhe))
-            .runner<easylocal::runners::FirstImprovement>("fi")
-            .runner<easylocal::runners::BestImprovement>("bi");
+            .with_solution_manager(std::move(sm))
+            .with_neighborhood(std::move(nhe))
+            .with_runner<easylocal::runners::FirstImprovement>("fi")
+            .with_runner<easylocal::runners::BestImprovement>("bi");
 
     application
         .runner_config<easylocal::runners::FirstImprovement>()
@@ -201,9 +201,9 @@ void check_fails_on_a_broken_realized_graph()
 
     auto application =
         easylocal::app("broken-assignment")
-            .solution_manager(std::move(sm))
-            .neighborhood<BrokenNeighborhoodExplorer>()
-            .runner<easylocal::runners::FirstImprovement>("fi");
+            .with_solution_manager(std::move(sm))
+            .with_neighborhood(easylocal::neighborhood<BrokenNeighborhoodExplorer>())
+            .with_runner<easylocal::runners::FirstImprovement>("fi");
 
     application
         .runner_config<easylocal::runners::FirstImprovement>()

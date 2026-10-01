@@ -221,14 +221,17 @@ The current Assignment, TSP, and Exam Timetabling MWEs live under
 intentionally not part of the public include tree. Exam Timetabling is the
 reference MWE for multi-component weighted costs and Simulated Annealing.
 
-Runner recipes intentionally support two equivalent construction spellings. The
-pipeline vocabulary (`solution_manager<T>() | component<C>()`,
-`neighborhood<T>() | delta<C, D>()`) is the canonical compact form, while the
-factory/fluent vocabulary (`make_solution_manager<T>().with_component<C>()`,
-`make_neighborhood_explorer<T>().with_delta<C, D>()`) is useful for named or
-incrementally assembled recipes. Assignment demonstrates the pipeline form,
-Exam Timetabling the factory/fluent form, and TSP also demonstrates direct
-`Runner{Algorithm}` construction.
+Runners and solvers are built with `make_runner<Algorithm>(parameters)` and
+`make_solver<Solver>(runner, config)`. Composition has two equivalent
+spellings: pipes (`make_runner<A>(p) | sm | nhe`,
+`solution_manager<T>() | component<C>() | aggregator(a)`,
+`neighborhood<T>() | delta<C, D>()`) and explicit `with_*` calls
+(`.with_solution_manager(sm).with_neighborhood(nhe)`, `.with_component<C>()`,
+`.with_aggregator(a)`, `.with_delta<C, D>()`), which document each step. Apps
+use the same grammar: `app("name").with_solution_manager(sm)
+.with_neighborhood(nhe).with_runner<A>("fi", parameters)`, or
+`app("name") | sm | nhe | runner<A>("fi", parameters)`. Assignment
+demonstrates the pipes and Exam Timetabling the `with_*` form.
 
 A search algorithm is a class exposing a single `run()` member. The framework
 calls it with an `easylocal::search_run`, which gives access to the search
@@ -271,7 +274,7 @@ public:
 `finish()` returns an `easylocal::search_result` carrying the solution, cost,
 counters and `termination_reason`. The algorithm class is also its own
 registration key: `make_runner<MySearch>(MyParameters{...})`,
-`app(...).runner<MySearch>("name")` and `runner_config<MySearch>()`.
+`app(...).with_runner<MySearch>("name")` and `runner_config<MySearch>()`.
 
 Callers pass the optional control and tracer as a trailing argument:
 `bound.run(initial, rng, easylocal::with(control, tracer))`.

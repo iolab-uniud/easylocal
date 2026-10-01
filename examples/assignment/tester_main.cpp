@@ -18,18 +18,18 @@ int main()
     using namespace easylocal::mwe::assignment;
 
     auto application = easylocal::app("assignment-tester")
-        .solution_manager(
+        .with_solution_manager(
             easylocal::solution_manager<AssignmentSolutionManager>()
             | easylocal::component<CapacityCostComponent>()
             | easylocal::component<LoadImbalanceCostComponent>()
             | easylocal::aggregator(AssignmentCostAggregator{}))
-        .neighborhood(
+        .with_neighborhood(
             easylocal::neighborhood<ReassignJobNeighborhoodExplorer>()
             | easylocal::delta<
                   CapacityCostComponent,
                   ReassignCapacityDeltaEvaluator>())
-        .runner<easylocal::runners::FirstImprovement>("fi")
-        .runner<demo::SlowFirstImprovement>("slow-fi");
+        .with_runner<easylocal::runners::FirstImprovement>("fi")
+        .with_runner<demo::SlowFirstImprovement>("slow-fi");
 
     application
         .runner_config<easylocal::runners::FirstImprovement>()

@@ -341,13 +341,13 @@ arguments:
 
 ```cpp
 auto manager =
-    make_solution_manager<AssignmentSolutionManager>()
+    solution_manager<AssignmentSolutionManager>()
         .with_component<CapacityCostComponent>()
         .with_component<LoadImbalanceCostComponent>()
         .with_aggregator(AssignmentCostAggregator{});
 
 auto nhe =
-    make_neighborhood_explorer<ReassignJobNeighborhoodExplorer>()
+    neighborhood<ReassignJobNeighborhoodExplorer>()
         .with_delta<
             CapacityCostComponent,
             ReassignCapacityDeltaEvaluator>();

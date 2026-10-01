@@ -74,11 +74,11 @@ auto make_io_application(const char* name)
     using neighborhood_type = IoNeighborhood<solution_manager_type>;
 
     auto application = easylocal::app(name)
-        .solution_manager(
+        .with_solution_manager(
             easylocal::solution_manager<solution_manager_type>()
             | easylocal::component<IoValue>())
-        .template neighborhood<neighborhood_type>()
-        .template runner<easylocal::runners::FirstImprovement>("fi");
+        .with_neighborhood(easylocal::neighborhood<neighborhood_type>())
+        .template with_runner<easylocal::runners::FirstImprovement>("fi");
 
     application
         .template runner_config<easylocal::runners::FirstImprovement>()

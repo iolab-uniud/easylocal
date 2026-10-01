@@ -88,11 +88,11 @@ public:
 auto make_random_only_application()
 {
     auto application = easylocal::app("random-only")
-        .solution_manager(
+        .with_solution_manager(
             easylocal::solution_manager<RandomOnlySolutionManager>()
             | easylocal::component<RandomOnlyValue>())
-        .neighborhood<RandomOnlyNeighborhood>()
-        .runner<easylocal::runners::FirstImprovement>("fi");
+        .with_neighborhood(easylocal::neighborhood<RandomOnlyNeighborhood>())
+        .with_runner<easylocal::runners::FirstImprovement>("fi");
 
     application
         .runner_config<easylocal::runners::FirstImprovement>()
@@ -117,9 +117,9 @@ auto make_application()
               ReassignCapacityDeltaEvaluator>();
 
     auto application = easylocal::app("assignment")
-        .solution_manager(std::move(sm))
-        .neighborhood(std::move(nhe))
-        .runner<easylocal::runners::FirstImprovement>("fi");
+        .with_solution_manager(std::move(sm))
+        .with_neighborhood(std::move(nhe))
+        .with_runner<easylocal::runners::FirstImprovement>("fi");
 
     application
         .runner_config<easylocal::runners::FirstImprovement>()
@@ -144,10 +144,10 @@ auto make_multi_runner_application()
               ReassignCapacityDeltaEvaluator>();
 
     auto application = easylocal::app("assignment-multi-runner")
-        .solution_manager(std::move(sm))
-        .neighborhood(std::move(nhe))
-        .runner<easylocal::runners::FirstImprovement>("quick")
-        .runner<easylocal::runners::FirstImprovement>("deep");
+        .with_solution_manager(std::move(sm))
+        .with_neighborhood(std::move(nhe))
+        .with_runner<easylocal::runners::FirstImprovement>("quick")
+        .with_runner<easylocal::runners::FirstImprovement>("deep");
 
     application
         .runner_config<easylocal::runners::FirstImprovement>("quick")

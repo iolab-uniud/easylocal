@@ -174,7 +174,7 @@ int main()
         | component<CostComponent>()
         | aggregator(CostAggregator{});
     const auto sm_fluent =
-        make_solution_manager<SolutionManager>()
+        solution_manager<SolutionManager>()
             .with_component<CostComponent>()
             .with_aggregator(CostAggregator{});
     static_assert(std::same_as<
@@ -185,21 +185,21 @@ int main()
         neighborhood<NeighborhoodExplorer>()
         | delta<CostComponent, DeltaEvaluator>();
     const auto nhe_fluent =
-        make_neighborhood_explorer<NeighborhoodExplorer>()
+        neighborhood<NeighborhoodExplorer>()
             .with_delta<CostComponent, DeltaEvaluator>();
     static_assert(std::same_as<
         std::remove_cvref_t<decltype(nhe_pipe)>,
         std::remove_cvref_t<decltype(nhe_fluent)>>);
 
-    const auto sm_recipe = make_solution_manager<SolutionManager>();
-    const auto nhe_recipe = make_neighborhood_explorer<NeighborhoodExplorer>();
+    const auto sm_recipe = solution_manager<SolutionManager>();
+    const auto nhe_recipe = neighborhood<NeighborhoodExplorer>();
     static_assert(detail::is_solution_manager_spec_v<std::remove_cvref_t<decltype(sm_recipe)>>);
     static_assert(detail::is_neighborhood_spec_v<std::remove_cvref_t<decltype(nhe_recipe)>>);
 
     auto configured_runner =
         make_runner<IdentityAlgorithm>()
-        | (make_solution_manager<SolutionManager>() | component<CostComponent>())
-        | make_neighborhood_explorer<NeighborhoodExplorer>();
+        | (solution_manager<SolutionManager>() | component<CostComponent>())
+        | neighborhood<NeighborhoodExplorer>();
 
     auto local_solver = make_solver<solvers::LocalSearch>(
         configured_runner,

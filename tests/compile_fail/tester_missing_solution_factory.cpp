@@ -50,11 +50,11 @@ public:
 int main()
 {
     auto application = easylocal::app("missing-solution-factory")
-        .solution_manager(
+        .with_solution_manager(
             easylocal::solution_manager<SolutionManager>()
             | easylocal::component<ZeroCost>())
-        .neighborhood<Neighborhood>()
-        .runner<easylocal::runners::FirstImprovement>("fi");
+        .with_neighborhood(easylocal::neighborhood<Neighborhood>())
+        .with_runner<easylocal::runners::FirstImprovement>("fi");
 
     easylocal::Tester tester{std::move(application)};
     (void)tester;

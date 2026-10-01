@@ -34,9 +34,9 @@ using namespace easylocal::mwe::assignment;
               ReassignCapacityDeltaEvaluator>();
 
     auto application = easylocal::app("assignment")
-        .solution_manager(std::move(sm))
-        .neighborhood(std::move(nhe))
-        .runner<easylocal::runners::FirstImprovement>("fi");
+        .with_solution_manager(std::move(sm))
+        .with_neighborhood(std::move(nhe))
+        .with_runner<easylocal::runners::FirstImprovement>("fi");
 
     application
         .runner_config<easylocal::runners::FirstImprovement>()

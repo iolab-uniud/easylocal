@@ -10,6 +10,7 @@
 #include <easylocal/runners/first_improvement.hpp>
 
 #include <cassert>
+#include <concepts>
 #include <cstddef>
 #include <future>
 #include <stdexcept>
@@ -73,10 +74,10 @@ auto make_application()
 
     auto application =
         easylocal::app("assignment")
-            .solution_manager(std::move(sm))
-            .neighborhood(std::move(nhe))
-            .runner<easylocal::runners::FirstImprovement>("fi")
-            .runner<easylocal::runners::BestImprovement>("bi");
+            .with_solution_manager(std::move(sm))
+            .with_neighborhood(std::move(nhe))
+            .with_runner<easylocal::runners::FirstImprovement>("fi")
+            .with_runner<easylocal::runners::BestImprovement>("bi");
 
     application
         .runner_config<easylocal::runners::FirstImprovement>()
@@ -218,9 +219,9 @@ void direct_app_runs_use_fresh_runtime_state()
 
     auto application =
         easylocal::app("stateful")
-            .solution_manager(std::move(sm))
-            .neighborhood(std::move(nhe))
-            .runner<StatefulRunner>("stateful");
+            .with_solution_manager(std::move(sm))
+            .with_neighborhood(std::move(nhe))
+            .with_runner<StatefulRunner>("stateful");
 
     auto seed_runtime = application.for_input(instance);
     const auto initial = seed_runtime.solution_manager().initial_solution();
@@ -301,10 +302,10 @@ void named_runner_registrations_can_be_selected_for_solver_creation()
 
     auto application =
         easylocal::app("assignment")
-            .solution_manager(std::move(sm))
-            .neighborhood(std::move(nhe))
-            .runner<easylocal::runners::FirstImprovement>("quick")
-            .runner<easylocal::runners::FirstImprovement>("deep");
+            .with_solution_manager(std::move(sm))
+            .with_neighborhood(std::move(nhe))
+            .with_runner<easylocal::runners::FirstImprovement>("quick")
+            .with_runner<easylocal::runners::FirstImprovement>("deep");
 
     application
         .runner_config<easylocal::runners::FirstImprovement>("quick")
@@ -358,8 +359,43 @@ void named_runner_registrations_can_be_selected_for_solver_creation()
 
 } // namespace
 
+void app_builder_pipes_and_registration_parameters()
+{
+    auto sm =
+        easylocal::solution_manager<AssignmentSolutionManager>()
+        | easylocal::component<CapacityCostComponent>()
+        | easylocal::component<LoadImbalanceCostComponent>()
+        | easylocal::aggregator(AssignmentCostAggregator{});
+    auto nhe =
+        easylocal::neighborhood<ReassignJobNeighborhoodExplorer>()
+        | easylocal::delta<
+              CapacityCostComponent,
+              ReassignCapacityDeltaEvaluator>();
+
+    const auto fluent =
+        easylocal::app("fluent")
+            .with_solution_manager(sm)
+            .with_neighborhood(nhe)
+            .with_runner<easylocal::runners::FirstImprovement>(
+                "fi", {.max_evaluations = 5});
+    const auto piped =
+        easylocal::app("piped")
+        | sm
+        | nhe
+        | easylocal::runner<easylocal::runners::FirstImprovement>(
+              "fi", {.max_evaluations = 5});
+
+    static_assert(std::same_as<decltype(fluent), decltype(piped)>);
+    assert(fluent.runner_config<easylocal::runners::FirstImprovement>()
+               .max_evaluations == 5);
+    assert(piped.runner_config<easylocal::runners::FirstImprovement>()
+               .max_evaluations == 5);
+    assert(piped.runner_name<easylocal::runners::FirstImprovement>() == "fi");
+}
+
 int main()
 {
+    app_builder_pipes_and_registration_parameters();
     app_owns_runner_configuration_and_names();
     one_input_materializes_one_shared_graph_for_all_runners();
     registered_runners_are_executable();

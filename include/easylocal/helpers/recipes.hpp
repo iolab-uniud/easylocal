@@ -21,63 +21,8 @@ namespace easylocal
 namespace detail
 {
 
-struct solution_manager_tag
-{
-};
-
-struct neighborhood_tag
-{
-};
-
-template<class Tag, class Service, class... StoredArgs>
-class service_spec
-{
-public:
-    using tag_type = Tag;
-    using service_type = Service;
-
-    explicit service_spec(StoredArgs... args)
-        : args_{std::move(args)...}
-    {
-    }
-
-    template<class Dependency>
-    static constexpr bool constructible_from =
-        std::constructible_from<
-            Service,
-            Dependency&,
-            const StoredArgs&...>;
-
-    template<class Dependency>
-        requires constructible_from<Dependency>
-    [[nodiscard]]
-    auto construct(Dependency& dependency) const -> Service
-    {
-        return std::apply(
-            [&](const auto&... args) {
-                return Service{dependency, args...};
-            },
-            args_);
-    }
-
-    [[nodiscard]]
-    auto args() && noexcept -> std::tuple<StoredArgs...>&&
-    {
-        return std::move(args_);
-    }
-
-private:
-    std::tuple<StoredArgs...> args_;
-};
-
 template<class T>
 struct is_solution_manager_spec : std::false_type
-{
-};
-
-template<class Service, class... Args>
-struct is_solution_manager_spec<
-    service_spec<solution_manager_tag, Service, Args...>> : std::true_type
 {
 };
 
@@ -154,12 +99,6 @@ struct is_neighborhood_spec : std::false_type
 {
 };
 
-template<class Service, class... Args>
-struct is_neighborhood_spec<
-    service_spec<neighborhood_tag, Service, Args...>> : std::true_type
-{
-};
-
 template<class BaseNHE, class BaseArgsTuple, class... DeltaSpecs>
 struct is_neighborhood_spec<
     neighborhood_recipe<BaseNHE, BaseArgsTuple, DeltaSpecs...>>
@@ -192,13 +131,6 @@ auto solution_manager(Args&&... args)
         std::tuple<std::decay_t<Args>...>{std::forward<Args>(args)...}};
 }
 
-template<class SM, class... Args>
-[[nodiscard]]
-auto make_solution_manager(Args&&... args)
-{
-    return solution_manager<SM>(std::forward<Args>(args)...);
-}
-
 template<class Component, class... Args>
 [[nodiscard]]
 auto component(Args&&... args)
@@ -224,13 +156,6 @@ auto neighborhood(Args&&... args)
         NHE,
         std::tuple<std::decay_t<Args>...>>{
         std::tuple<std::decay_t<Args>...>{std::forward<Args>(args)...}};
-}
-
-template<class NHE, class... Args>
-[[nodiscard]]
-auto make_neighborhood_explorer(Args&&... args)
-{
-    return neighborhood<NHE>(std::forward<Args>(args)...);
 }
 
 template<class Component>

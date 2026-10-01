@@ -107,7 +107,6 @@ int main(int argc, char* argv[])
 {
     using namespace easylocal::mwe::tsp;
     using easylocal::NeighborhoodUnionParameters;
-    using easylocal::Runner;
     using easylocal::component;
     using easylocal::delta;
     using easylocal::neighborhood;
@@ -134,13 +133,11 @@ int main(int argc, char* argv[])
             .random_biases = {3.0, 1.0},
         };
 
-        // Equivalent factory spelling:
-        // auto runner = make_runner<SimulatedAnnealing<FixedLength>>(
-        //     FixedLength{temperature_parameters}) | ...;
         // TourLengthValue is a domain value: TourLengthCost maps it to the
         // scalar cost explicitly.
         auto runner =
-            Runner{SimulatedAnnealing{FixedLength{temperature_parameters}}}
+            easylocal::make_runner<SimulatedAnnealing<FixedLength>>(
+                FixedLength{temperature_parameters})
             | (solution_manager<TspSolutionManager>()
                | component<TourLengthComponent>()
                | easylocal::aggregator(TourLengthCost{}))

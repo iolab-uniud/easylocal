@@ -18,13 +18,11 @@ the standard `MetropolisAcceptance` path.
 
 ## Runnable configured SA example
 
-The executable intentionally uses the factory/fluent spelling of the recipe API:
-`make_solution_manager(...).with_component(...)`,
-`make_neighborhood_explorer(...).with_delta(...)`, and
-`Runner{SimulatedAnnealing{...}}.with_solution_manager(...).with_neighborhood(...)`.
-Assignment demonstrates the equivalent pipeline spelling, while the TSP MWE
-shows direct `Runner{Algorithm}` construction for the underlying general-purpose
-algorithm API.
+The executable intentionally uses the explicit `with_*` spelling of the
+composition API: `solution_manager<SM>().with_component<C>()...`,
+`neighborhood<NHE>().with_delta<C, D>()...` and
+`make_runner<SimulatedAnnealing<...>>(...).with_solution_manager(...).with_neighborhood(...)`.
+Assignment demonstrates the equivalent pipe spelling.
 
 `main.cpp` defines application-owned parameters for the external instance path
 and RNG seed, while `FixedLengthParameters` remains beside the framework

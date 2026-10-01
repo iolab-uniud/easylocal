@@ -187,8 +187,8 @@ int main()
 {
     using namespace easylocal;
 
-    const auto sm = make_solution_manager<SolutionManager>() | component<HierarchicalValue>();
-    const auto nhe = make_neighborhood_explorer<Neighborhood>();
+    const auto sm = solution_manager<SolutionManager>() | component<HierarchicalValue>();
+    const auto nhe = neighborhood<Neighborhood>();
 
     auto first_runner = Runner{HardStage{}} | sm | nhe;
     auto second_runner = Runner{FullStage{}} | sm | nhe;
@@ -237,7 +237,7 @@ int main()
                     .max_iterations = 32,
                 }}}}
         | sm
-        | make_neighborhood_explorer<HardNeighborhood>();
+        | neighborhood<HardNeighborhood>();
 
     auto full_sa_runner =
         Runner{runners::SimulatedAnnealing{
@@ -249,7 +249,7 @@ int main()
                     .max_iterations = 32,
                 }}}}
         | sm
-        | make_neighborhood_explorer<SoftNeighborhood>();
+        | neighborhood<SoftNeighborhood>();
 
     auto sa_solver = make_solver<solvers::TwoStage>(
         std::move(hard_sa_runner),

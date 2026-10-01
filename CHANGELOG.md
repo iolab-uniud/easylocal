@@ -58,6 +58,15 @@ commits since the previous release and are reviewed manually before tagging.
   `weighted_sum` with a warning for several arithmetic components; several
   domain values require an explicit aggregator. TSP uses the explicit
   `TourLengthCost` and `TourLengthValue` no longer defines `operator*`.
+- **Breaking:** one construction and two composition spellings. Runners and
+  solvers are built with `make_runner` / `make_solver` and composed with pipes
+  or equivalent `with_*` calls; `make_solution_manager` /
+  `make_neighborhood_explorer` and `Runner::with_neighborhood<NHE>(...)` are
+  removed. The app builder follows the same grammar:
+  `.with_solution_manager(sm).with_neighborhood(nhe).with_runner<A>("name",
+  parameters)` (formerly `.solution_manager` / `.neighborhood` / `.runner`), or
+  `app("name") | sm | nhe | runner<A>("name", parameters)`; registration accepts
+  the runner parameters, and `.neighborhood<NHE>(...)` is removed.
 - **Breaking:** search algorithms define a single `run(Run&, solution, ...)`
   against the framework-owned `easylocal::search_run`, which owns counters,
   evaluation budget, cancellation, progress reporting and core trace events.

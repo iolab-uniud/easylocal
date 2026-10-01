@@ -406,7 +406,7 @@ public:
         requires std::same_as<SMSpec, unconfigured_t> &&
                  is_solution_manager_spec_v<std::remove_cvref_t<Spec>>
     [[nodiscard]]
-    auto solution_manager(Spec&& spec) &&
+    auto with_solution_manager(Spec&& spec) &&
     {
         using spec_type = std::remove_cvref_t<Spec>;
         static_assert(validate_solution_manager_spec<spec_type>());
@@ -423,7 +423,7 @@ public:
                  std::same_as<NHESpec, unconfigured_t> &&
                  is_neighborhood_spec_v<std::remove_cvref_t<Spec>>
     [[nodiscard]]
-    auto neighborhood(Spec&& spec) &&
+    auto with_neighborhood(Spec&& spec) &&
     {
         using spec_type = std::remove_cvref_t<Spec>;
         return app_builder<SMSpec, spec_type, Registrations...>{
@@ -434,26 +434,30 @@ public:
         };
     }
 
-    template<class NHE, class... Args>
+    template<configurable_app_algorithm Algorithm>
         requires (!std::same_as<SMSpec, unconfigured_t>) &&
-                 std::same_as<NHESpec, unconfigured_t>
+                 (!std::same_as<NHESpec, unconfigured_t>)
     [[nodiscard]]
-    auto neighborhood(Args&&... args) &&
+    auto with_runner(
+        std::string name,
+        typename Algorithm::parameters_type parameters = {}) &&
     {
-        return std::move(*this).neighborhood(
-            easylocal::neighborhood<NHE>(std::forward<Args>(args)...));
+        return std::move(*this).with_runner(app_runner_registration<Algorithm>{
+            .name = std::move(name),
+            .config = std::move(parameters),
+        });
     }
 
     template<configurable_app_algorithm Algorithm>
         requires (!std::same_as<SMSpec, unconfigured_t>) &&
                  (!std::same_as<NHESpec, unconfigured_t>)
     [[nodiscard]]
-    auto runner(std::string name) &&
+    auto with_runner(app_runner_registration<Algorithm> registration) &&
     {
         using registration_type = app_runner_registration<Algorithm>;
         auto registrations = std::tuple_cat(
             std::move(registrations_),
-            std::tuple{registration_type{.name = std::move(name)}});
+            std::tuple{std::move(registration)});
 
         return app_builder<
             SMSpec,
@@ -687,6 +691,53 @@ inline auto app(std::string name)
     return detail::app_builder<
         detail::unconfigured_t,
         detail::unconfigured_t>{std::move(name)};
+}
+
+// A named runner registration for an app, e.g.
+// app("tsp") | sm | nhe | runner<runners::FirstImprovement>("fi", {...}).
+template<detail::configurable_app_algorithm Algorithm>
+[[nodiscard]]
+auto runner(
+    std::string name,
+    typename Algorithm::parameters_type parameters = {})
+    -> detail::app_runner_registration<Algorithm>
+{
+    return {.name = std::move(name), .config = std::move(parameters)};
+}
+
+// Pipe spellings of with_solution_manager, with_neighborhood and with_runner.
+template<class SMSpec, class NHESpec, class... Registrations, class Spec>
+    requires requires(detail::app_builder<SMSpec, NHESpec, Registrations...> builder, Spec&& spec) {
+        std::move(builder).with_solution_manager(std::forward<Spec>(spec));
+    }
+[[nodiscard]]
+auto operator|(detail::app_builder<SMSpec, NHESpec, Registrations...> builder, Spec&& spec)
+{
+    return std::move(builder).with_solution_manager(std::forward<Spec>(spec));
+}
+
+template<class SMSpec, class NHESpec, class... Registrations, class Spec>
+    requires requires(detail::app_builder<SMSpec, NHESpec, Registrations...> builder, Spec&& spec) {
+        std::move(builder).with_neighborhood(std::forward<Spec>(spec));
+    }
+[[nodiscard]]
+auto operator|(detail::app_builder<SMSpec, NHESpec, Registrations...> builder, Spec&& spec)
+{
+    return std::move(builder).with_neighborhood(std::forward<Spec>(spec));
+}
+
+template<class SMSpec, class NHESpec, class... Registrations, class Algorithm>
+    requires requires(
+        detail::app_builder<SMSpec, NHESpec, Registrations...> builder,
+        detail::app_runner_registration<Algorithm> registration) {
+        std::move(builder).with_runner(std::move(registration));
+    }
+[[nodiscard]]
+auto operator|(
+    detail::app_builder<SMSpec, NHESpec, Registrations...> builder,
+    detail::app_runner_registration<Algorithm> registration)
+{
+    return std::move(builder).with_runner(std::move(registration));
 }
 
 } // namespace easylocal

@@ -24,18 +24,18 @@ using namespace easylocal::mwe::assignment;
 [[nodiscard]] auto make_application()
 {
     auto application = easylocal::app("controlled")
-        .solution_manager(
+        .with_solution_manager(
             easylocal::solution_manager<AssignmentSolutionManager>()
             | easylocal::component<CapacityCostComponent>()
             | easylocal::component<LoadImbalanceCostComponent>()
             | easylocal::aggregator(AssignmentCostAggregator{}))
-        .neighborhood(
+        .with_neighborhood(
             easylocal::neighborhood<ReassignJobNeighborhoodExplorer>()
             | easylocal::delta<
                   CapacityCostComponent,
                   ReassignCapacityDeltaEvaluator>())
-        .runner<easylocal::runners::FirstImprovement>("fi")
-        .runner<easylocal::runners::BestImprovement>("bi");
+        .with_runner<easylocal::runners::FirstImprovement>("fi")
+        .with_runner<easylocal::runners::BestImprovement>("bi");
 
     application
         .runner_config<easylocal::runners::FirstImprovement>()

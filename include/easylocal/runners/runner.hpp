@@ -411,40 +411,6 @@ public:
     {
     }
 
-    template<class NHE, class... Args>
-        requires detail::runner_neighborhood_explorer<
-                     NHE,
-                     solution_manager_type> &&
-                 std::copy_constructible<Algorithm> &&
-                 std::copy_constructible<SMSpec>
-    [[nodiscard]]
-    auto with_neighborhood(Args&&... args) const &
-    {
-        using spec_type = detail::service_spec<
-            detail::neighborhood_tag,
-            NHE,
-            std::decay_t<Args>...>;
-
-        return with_neighborhood(
-            spec_type{std::forward<Args>(args)...});
-    }
-
-    template<class NHE, class... Args>
-        requires detail::runner_neighborhood_explorer<
-            NHE,
-            solution_manager_type>
-    [[nodiscard]]
-    auto with_neighborhood(Args&&... args) &&
-    {
-        using spec_type = detail::service_spec<
-            detail::neighborhood_tag,
-            NHE,
-            std::decay_t<Args>...>;
-
-        return std::move(*this).with_neighborhood(
-            spec_type{std::forward<Args>(args)...});
-    }
-
     template<class NHESpec>
         requires detail::is_neighborhood_spec_v<std::remove_cvref_t<NHESpec>> &&
                  detail::runner_neighborhood_explorer<

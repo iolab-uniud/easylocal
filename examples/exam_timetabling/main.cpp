@@ -101,8 +101,6 @@ void print_timetable(const ExamTimetable& solution)
 int main(int argc, char* argv[])
 {
     using namespace easylocal::mwe::exam_timetabling;
-    using easylocal::make_neighborhood_explorer;
-    using easylocal::make_solution_manager;
     using easylocal::runners::temperature::FixedLength;
     using easylocal::runners::temperature::FixedLengthParameters;
 
@@ -120,7 +118,7 @@ int main(int argc, char* argv[])
         };
 
         auto sm =
-            make_solution_manager<ExamTimetablingSolutionManager>()
+            easylocal::solution_manager<ExamTimetablingSolutionManager>()
                 .with_component<StudentConflictComponent>()
                 .with_component<ConsecutiveExamComponent>()
                 .with_component<TimeslotLoadComponent>()
@@ -128,7 +126,7 @@ int main(int argc, char* argv[])
                     penalty_type{1000}, penalty_type{10}, penalty_type{1}});
 
         auto nhe =
-            make_neighborhood_explorer<MoveExamNeighborhoodExplorer>()
+            easylocal::neighborhood<MoveExamNeighborhoodExplorer>()
                 .with_delta<StudentConflictComponent>()
                 .with_delta<
                     ConsecutiveExamComponent,
@@ -138,8 +136,9 @@ int main(int argc, char* argv[])
                     TimeslotLoadDeltaEvaluator>();
 
         auto runner =
-            easylocal::Runner{easylocal::runners::SimulatedAnnealing{
-                FixedLength{temperature_parameters}}}
+            easylocal::make_runner<
+                easylocal::runners::SimulatedAnnealing<FixedLength>>(
+                FixedLength{temperature_parameters})
                 .with_solution_manager(sm)
                 .with_neighborhood(nhe);
 

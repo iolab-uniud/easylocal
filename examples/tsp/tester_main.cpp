@@ -26,29 +26,29 @@ int main()
 
     auto two_opt =
         easylocal::app("tsp-two-opt")
-            .solution_manager(
+            .with_solution_manager(
                 easylocal::solution_manager<TspSolutionManager>()
                 | easylocal::component<TourLengthComponent>()
                 | easylocal::aggregator(TourLengthCost{}))
-            .neighborhood(
+            .with_neighborhood(
                 easylocal::neighborhood<TwoOptNeighborhoodExplorer>()
                 | easylocal::delta<
                       TourLengthComponent,
                       TwoOptTourLengthDeltaEvaluator>())
-            .runner<easylocal::runners::FirstImprovement>("fi");
+            .with_runner<easylocal::runners::FirstImprovement>("fi");
 
     auto swap =
         easylocal::app("tsp-swap")
-            .solution_manager(
+            .with_solution_manager(
                 easylocal::solution_manager<TspSolutionManager>()
                 | easylocal::component<TourLengthComponent>()
                 | easylocal::aggregator(TourLengthCost{}))
-            .neighborhood(
+            .with_neighborhood(
                 easylocal::neighborhood<SwapCitiesNeighborhoodExplorer>()
                 | easylocal::delta<
                       TourLengthComponent,
                       SwapTourLengthDeltaEvaluator>())
-            .runner<easylocal::runners::FirstImprovement>("fi");
+            .with_runner<easylocal::runners::FirstImprovement>("fi");
 
     two_opt.runner_config<easylocal::runners::FirstImprovement>().max_evaluations = 100;
     swap.runner_config<easylocal::runners::FirstImprovement>().max_evaluations = 100;

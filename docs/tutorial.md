@@ -473,15 +473,19 @@ Search algorithms live in `easylocal::runners`, one header each:
 | `BestImprovement` | `runners/best_improvement.hpp` | `moves` or cursor | `max_evaluations` (0: until a local optimum) |
 | `SimulatedAnnealing<Temperature, Acceptance>` | `runners/simulated_annealing.hpp` | `random_move` | a temperature policy |
 
-A `Runner` couples an algorithm with the recipes. Two equivalent spellings:
+A `Runner` couples an algorithm with the recipes. Pipes and explicit `with_*`
+calls are equivalent; the latter spell out each step:
 
 ```cpp
 auto a = easylocal::make_runner<easylocal::runners::FirstImprovement>(parameters) | sm | nhe;
-auto b = easylocal::Runner{easylocal::runners::FirstImprovement{parameters}} | sm | nhe;
+auto b = easylocal::make_runner<easylocal::runners::FirstImprovement>(parameters)
+             .with_solution_manager(sm)
+             .with_neighborhood(nhe);
 ```
 
-The fluent form `.with_solution_manager(sm).with_neighborhood(nhe)` is
-equivalent to the pipes.
+The same holds for recipes: `solution_manager<SM>() | component<C>()` is
+`solution_manager<SM>().with_component<C>()`, `| aggregator(a)` is
+`.with_aggregator(a)` and `| delta<C, D>()` is `.with_delta<C, D>()`.
 
 Simulated Annealing takes its temperature policy as a value; the policies live
 in `runners::temperature` (`Classic`, `FixedLength`, `Cutoff`, `Hybrid`), and
@@ -490,10 +494,12 @@ acceptance defaults to `runners::MetropolisAcceptance`:
 ```cpp
 namespace runners = easylocal::runners;
 
-auto sa = easylocal::Runner{runners::SimulatedAnnealing{runners::temperature::Classic{
-              runners::temperature::ClassicParameters{
+using Classic = runners::temperature::Classic;
+
+auto sa = easylocal::make_runner<runners::SimulatedAnnealing<Classic>>(
+              Classic{runners::temperature::ClassicParameters{
                   .initial_temperature = 10.0, .final_temperature = 0.1,
-                  .cooling_rate = 0.95, .samples_per_temperature = 50}}}}
+                  .cooling_rate = 0.95, .samples_per_temperature = 50}})
           | sm | nhe;
 
 std::mt19937_64 rng{42};
@@ -740,18 +746,21 @@ An **app** names a problem graph and the runners available on it:
 
 ```cpp
 auto application = easylocal::app("tsp")
-    .solution_manager(sm)
-    .neighborhood(nhe)
-    .runner<easylocal::runners::FirstImprovement>("fi");
+    .with_solution_manager(sm)
+    .with_neighborhood(nhe)
+    .with_runner<easylocal::runners::FirstImprovement>("fi", {.max_evaluations = 1000});
 
-application.runner_config<easylocal::runners::FirstImprovement>().max_evaluations = 1000;
+// equivalently:
+// auto application = easylocal::app("tsp") | sm | nhe
+//     | easylocal::runner<easylocal::runners::FirstImprovement>("fi", {.max_evaluations = 1000});
 
 const auto result = application.run<easylocal::runners::FirstImprovement>(tsp, initial);
 ```
 
-- A runner is registered by its algorithm class and a name; its parameters
-  (`parameters_type`) are stored in the app and editable with
-  `runner_config<Algorithm>()` or `runner_config<Algorithm>("name")`.
+- A runner is registered by its algorithm class and a name, optionally with its
+  parameters (`parameters_type`). They are stored in the app and can be changed
+  later, for instance from the command line, with `runner_config<Algorithm>()`
+  or `runner_config<Algorithm>("name")`.
 - Every `app.run(...)` materializes fresh services for that run, so concurrent
   runs only share the immutable Input. `app.for_input(input)` gives a reusable
   runtime when you want to keep the services.
