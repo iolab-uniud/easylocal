@@ -20,6 +20,13 @@ commits since the previous release and are reviewed manually before tagging.
   `runners/simulated_annealing.hpp` (`runners::temperature`,
   `runners::MetropolisAcceptance`); `trace.hpp` is split into `trace/`.
   Directory layering is enforced by the architecture test.
+- **Breaking:** solvers use class-as-key like runners: `solver::local_search`,
+  `solver::multistart`, `solver::two_stage`, `make_local_search_solver` and
+  `make_multi_start_solver` are removed in favour of
+  `make_solver<solvers::LocalSearch|MultiStart|TwoStage>(runner, config)` (or
+  direct construction with CTAD); `LocalSearchSolver`, `MultiStartSolver` and
+  `TwoStageSolver` become `easylocal::solvers::LocalSearch`, `MultiStart` and
+  `TwoStage`, with their configs in `easylocal::solvers`.
 - **Breaking:** search algorithms define a single `run(Run&, solution, ...)`
   against the framework-owned `easylocal::search_run`, which owns counters,
   evaluation budget, cancellation, progress reporting and core trace events.

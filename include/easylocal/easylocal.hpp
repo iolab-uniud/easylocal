@@ -17,7 +17,7 @@
 
 #include <easylocal/helpers.hpp>
 #include <easylocal/runners.hpp>
-#include <easylocal/solvers/solver.hpp>
+#include <easylocal/solvers.hpp>
 #include <easylocal/trace.hpp>
 
 #include <easylocal/app/app.hpp>

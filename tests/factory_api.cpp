@@ -1,5 +1,5 @@
 #include <easylocal/runners/runner.hpp>
-#include <easylocal/solvers/solver.hpp>
+#include <easylocal/solvers.hpp>
 #include <easylocal/runners/best_improvement.hpp>
 #include <easylocal/runners/first_improvement.hpp>
 #include <easylocal/runners/simulated_annealing.hpp>
@@ -196,9 +196,9 @@ int main()
         | make_solution_manager<SolutionManager>()
         | make_neighborhood_explorer<NeighborhoodExplorer>();
 
-    auto local_solver = make_solver<solver::local_search>(
+    auto local_solver = make_solver<solvers::LocalSearch>(
         configured_runner,
-        solver::LocalSearchConfig<initialization::Initial>{
+        solvers::LocalSearchConfig<initialization::Initial>{
             .initialization = initialization::initial,
             .seed = 17});
 
@@ -207,9 +207,9 @@ int main()
     assert(local_result.solution.value == 0);
     assert(local_result.cost == 0);
 
-    auto multistart_solver = make_solver<solver::multistart>(
+    auto multistart_solver = make_solver<solvers::MultiStart>(
         configured_runner,
-        solver::MultiStartConfig<initialization::Initial>{
+        solvers::MultiStartConfig<initialization::Initial>{
             .parameters = {.starts = 3},
             .initialization = initialization::initial,
             .seed = 17});

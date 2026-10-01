@@ -8,7 +8,7 @@
 #include <easylocal/config/tree.hpp>
 #include <easylocal/runners/runner.hpp>
 #include <easylocal/runners/first_improvement.hpp>
-#include <easylocal/solvers/solver.hpp>
+#include <easylocal/solvers.hpp>
 
 #include <cstddef>
 #include <filesystem>
@@ -153,9 +153,9 @@ int main(int argc, char* argv[])
         const auto instance = load_instance(app_parameters.instance_file);
         const auto initial_solution = runner.bind(instance).initial_solution();
 
-        auto solver = make_solver<easylocal::solver::two_stage>(
+        auto solver = make_solver<easylocal::solvers::TwoStage>(
             std::move(runner),
-            easylocal::solver::TwoStageConfig<easylocal::initialization::Initial>{
+            easylocal::solvers::TwoStageConfig<easylocal::initialization::Initial>{
                 .initialization = easylocal::initialization::initial,
                 .seed = 0,
             });

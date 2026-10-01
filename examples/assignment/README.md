@@ -9,7 +9,7 @@ runner, and combines `application.*` with the runner-provided
 `solver.search.max_evaluations` subtree in a read-only `config::root(...)`.
 The same values are then used to load the versioned instance from
 `instances/small.assignment`, construct a `FirstImprovement` runner, and solve
-the immutable instance through the hierarchical `TwoStageSolver`. The first
+the immutable instance through the hierarchical `solvers::TwoStage`. The first
 stage optimizes only hard feasibility; the second sees the full hard/soft cost.
 
 With examples enabled (the default for a top-level build), run it with:
@@ -372,9 +372,9 @@ auto runner =
              CapacityCostComponent,
              ReassignCapacityDeltaEvaluator>());
 
-auto solver = make_solver<solver::two_stage>(
+auto solver = make_solver<solvers::TwoStage>(
     std::move(runner),
-    solver::TwoStageConfig<initialization::Initial>{
+    solvers::TwoStageConfig<initialization::Initial>{
         .initialization = initialization::initial,
     });
 
@@ -383,7 +383,7 @@ auto result = solver.solve(instance);
 
 `bind(instance)` materializes an instance-bound graph owned by an internal,
 non-movable bound runner: first the solution manager, then the neighborhood
-explorer. For the hierarchical Assignment model, `TwoStageSolver` derives the first-stage
+explorer. For the hierarchical Assignment model, `solvers::TwoStage` derives the first-stage
 hard view automatically and reuses the full runner for the second stage. When
 both stages share the same runner, the one-runner factory overload copies the
 configuration internally, keeping the user-facing construction concise.

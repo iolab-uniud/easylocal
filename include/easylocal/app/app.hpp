@@ -1,7 +1,7 @@
 #pragma once
 
 #include <easylocal/runners/runner.hpp>
-#include <easylocal/solvers/solver.hpp>
+#include <easylocal/solvers.hpp>
 
 #include <cassert>
 #include <concepts>
@@ -575,38 +575,38 @@ public:
             | neighborhood_spec_;
     }
 
-    template<class SolverTag, class RunnerAlgorithm, class SolverConfig>
+    template<template<class...> class Solver, class RunnerAlgorithm, class SolverConfig>
         requires (app_runner_count_v<RunnerAlgorithm, Registrations...> == 1) &&
                  std::copy_constructible<SMSpec> &&
                  std::copy_constructible<NHESpec> &&
                  requires {
-                     SolverTag::make(
+                     Solver{
                          std::declval<const app_builder&>().template make_runner<RunnerAlgorithm>(),
-                         std::declval<SolverConfig>());
+                         std::declval<SolverConfig>()};
                  }
     [[nodiscard]]
     auto make_solver(SolverConfig&& config) const
     {
-        return easylocal::make_solver<SolverTag>(
+        return easylocal::make_solver<Solver>(
             make_runner<RunnerAlgorithm>(),
             std::forward<SolverConfig>(config));
     }
 
-    template<class SolverTag, class RunnerAlgorithm, class SolverConfig>
+    template<template<class...> class Solver, class RunnerAlgorithm, class SolverConfig>
         requires (app_runner_count_v<RunnerAlgorithm, Registrations...> > 0) &&
                  std::copy_constructible<SMSpec> &&
                  std::copy_constructible<NHESpec> &&
                  requires {
-                     SolverTag::make(
+                     Solver{
                          std::declval<const app_builder&>().template make_runner<RunnerAlgorithm>(std::declval<std::string_view>()),
-                         std::declval<SolverConfig>());
+                         std::declval<SolverConfig>()};
                  }
     [[nodiscard]]
     auto make_solver(
         const std::string_view runner_name,
         SolverConfig&& config) const
     {
-        return easylocal::make_solver<SolverTag>(
+        return easylocal::make_solver<Solver>(
             make_runner<RunnerAlgorithm>(runner_name),
             std::forward<SolverConfig>(config));
     }

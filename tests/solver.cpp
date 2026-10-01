@@ -1,4 +1,4 @@
-#include <easylocal/solvers/solver.hpp>
+#include <easylocal/solvers.hpp>
 
 #include <concepts>
 #include <cstdint>
@@ -124,7 +124,7 @@ int main()
         | solution_manager<DeterministicSM>()
         | neighborhood<EmptyNeighborhood<DeterministicSM>>();
     using DeterministicRunner = decltype(deterministic_runner);
-    using DeterministicSolver = LocalSearchSolver<DeterministicRunner>;
+    using DeterministicSolver = solvers::LocalSearch<DeterministicRunner>;
     static_assert(DeterministicSolver::supports_initial);
     static_assert(!DeterministicSolver::supports_random);
     static_assert(DeterministicSolver::supports(initialization::Mode::initial));
@@ -140,10 +140,11 @@ int main()
         initialization::Random,
         std::mt19937_64>);
 
-    auto deterministic_solver = make_local_search_solver(
+    auto deterministic_solver = make_solver<solvers::LocalSearch>(
         deterministic_runner,
-        initialization::initial,
-        42);
+        solvers::LocalSearchConfig<initialization::Initial>{
+            .initialization = initialization::initial,
+            .seed = 42});
     const auto deterministic = deterministic_solver.solve(instance);
     ok &= expect(
         deterministic.solution.value == 11,
@@ -152,7 +153,7 @@ int main()
     bool rejected_unsupported_runtime_mode = false;
     try
     {
-        [[maybe_unused]] LocalSearchSolver runtime_selected{
+        [[maybe_unused]] solvers::LocalSearch runtime_selected{
             deterministic_runner,
             initialization::Mode::random,
             std::mt19937_64{42}};
@@ -189,14 +190,15 @@ int main()
         | solution_manager<RandomSM>()
         | neighborhood<EmptyNeighborhood<RandomSM>>();
     using RandomRunner = decltype(random_runner);
-    using RandomSolver = LocalSearchSolver<RandomRunner>;
+    using RandomSolver = solvers::LocalSearch<RandomRunner>;
     static_assert(!RandomSolver::supports_initial);
     static_assert(RandomSolver::supports_random);
 
-    auto random_solver = make_local_search_solver(
+    auto random_solver = make_solver<solvers::LocalSearch>(
         random_runner,
-        initialization::random,
-        1234);
+        solvers::LocalSearchConfig<initialization::Random>{
+            .initialization = initialization::random,
+            .seed = 1234});
 
     std::mt19937_64 reference{1234};
     const auto expected_initial = reference();
@@ -218,11 +220,11 @@ int main()
         | solution_manager<SelectableSM>()
         | neighborhood<EmptyNeighborhood<SelectableSM>>();
     using SelectableRunner = decltype(selectable_runner);
-    using SelectableSolver = LocalSearchSolver<SelectableRunner>;
+    using SelectableSolver = solvers::LocalSearch<SelectableRunner>;
     static_assert(SelectableSolver::supports_initial);
     static_assert(SelectableSolver::supports_random);
 
-    LocalSearchSolver selectable_solver{
+    solvers::LocalSearch selectable_solver{
         selectable_runner,
         initialization::Mode::initial,
         std::mt19937_64{7}};

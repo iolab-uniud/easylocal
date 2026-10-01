@@ -273,9 +273,9 @@ void app_can_make_and_equip_solvers()
 
     auto application = make_application();
     auto solver = application.make_solver<
-        easylocal::solver::local_search,
+        easylocal::solvers::LocalSearch,
         easylocal::runners::FirstImprovement>(
-        easylocal::solver::LocalSearchConfig<easylocal::initialization::Initial>{
+        easylocal::solvers::LocalSearchConfig<easylocal::initialization::Initial>{
             .initialization = easylocal::initialization::initial,
             .seed = 17,
         });
@@ -332,10 +332,10 @@ void named_runner_registrations_can_be_selected_for_solver_creation()
     assert(deep_result.evaluations >= quick_result.evaluations);
 
     auto solver = application.make_solver<
-        easylocal::solver::local_search,
+        easylocal::solvers::LocalSearch,
         easylocal::runners::FirstImprovement>(
         "deep",
-        easylocal::solver::LocalSearchConfig<easylocal::initialization::Initial>{
+        easylocal::solvers::LocalSearchConfig<easylocal::initialization::Initial>{
             .initialization = easylocal::initialization::initial,
             .seed = 23,
         });

@@ -1,6 +1,6 @@
 #include <easylocal/core/aggregation.hpp>
 #include <easylocal/runners/runner.hpp>
-#include <easylocal/solvers/solver.hpp>
+#include <easylocal/solvers.hpp>
 #include <easylocal/runners/simulated_annealing.hpp>
 
 #include <concepts>
@@ -194,10 +194,10 @@ int main()
     static_assert(detail::hierarchical_solution_manager<
         typename decltype(second_runner)::solution_manager_type>);
 
-    auto solver = make_solver<solver::two_stage>(
+    auto solver = make_solver<solvers::TwoStage>(
         std::move(first_runner),
         std::move(second_runner),
-        solver::TwoStageConfig<initialization::Initial>{
+        solvers::TwoStageConfig<initialization::Initial>{
             .initialization = initialization::initial,
             .seed = 42,
         });
@@ -205,9 +205,9 @@ int main()
     static_assert(decltype(solver)::supports_initial);
 
     auto shared_runner = Runner{HardStage{}} | sm | nhe;
-    auto shared_solver = make_solver<solver::two_stage>(
+    auto shared_solver = make_solver<solvers::TwoStage>(
         std::move(shared_runner),
-        solver::TwoStageConfig<initialization::Initial>{
+        solvers::TwoStageConfig<initialization::Initial>{
             .initialization = initialization::initial,
             .seed = 42,
         });
@@ -246,10 +246,10 @@ int main()
         | sm
         | make_neighborhood_explorer<SoftNeighborhood>();
 
-    auto sa_solver = make_solver<solver::two_stage>(
+    auto sa_solver = make_solver<solvers::TwoStage>(
         std::move(hard_sa_runner),
         std::move(full_sa_runner),
-        solver::TwoStageConfig<initialization::Initial>{
+        solvers::TwoStageConfig<initialization::Initial>{
             .initialization = initialization::initial,
             .seed = 17,
         });
