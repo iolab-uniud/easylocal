@@ -36,6 +36,18 @@ commits since the previous release and are reviewed manually before tagging.
   `cost::arithmetic` and `cost::has_delta`; `delta(...)` becomes `cost::delta`
   and Metropolis acceptance now uses it instead of `operator-`;
   `runners::numeric_cost` is removed. Logging moves to `utils/logging.hpp`.
+- **Breaking:** `max_evaluations` of First/Best Improvement defaults to 0 (no
+  budget: run until a local optimum); Best Improvement is configurable like
+  First Improvement.
+- **Breaking:** the materialized app is the *runtime*: `app_instance` becomes
+  `app_runtime` and the Tester exposes `runtime()` / `runtime_type`.
+- `easylocal::search_result_for` formalizes the result contract consumed by
+  solvers and tools; `cost::hard_projection` formalizes the aggregator's
+  `hard(...)` projection used by TwoStage.
+- `<easylocal/testing.hpp>` aggregates the component contract checks.
+- EasyLocal's own targets build with strict warnings, as errors in the presets
+  and CI.
+- Add `docs/tutorial.md`, a step-by-step guide from a quick start to tooling.
 - **Breaking:** search algorithms define a single `run(Run&, solution, ...)`
   against the framework-owned `easylocal::search_run`, which owns counters,
   evaluation budget, cancellation, progress reporting and core trace events.

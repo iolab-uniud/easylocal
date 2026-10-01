@@ -16,6 +16,9 @@ and the public API evolving incrementally from the contracts they expose.
 > Annealing are in place. Domain models remain example-local while additional
 > search/metaheuristic contracts are stabilized incrementally.
 
+New to the library? Start with the step-by-step
+[tutorial](docs/tutorial.md): a quick start followed by one capability per step.
+
 ## Requirements
 
 - C++23
