@@ -1,5 +1,0 @@
-# Map the GitHub runner label to a native multi-arch Ubuntu 26.04 act image.
-# Do not force a container architecture: Docker should select the host-native
-# variant (ARM64 on Apple Silicon). act remains a functional workflow check;
-# authoritative Linux x86_64 benchmarks run on GitHub-hosted runners.
--P ubuntu-26.04=ghcr.io/harryzcy/ubuntu:26.04

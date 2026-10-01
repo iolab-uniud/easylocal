@@ -74,7 +74,7 @@ Built-in algorithms return an `easylocal::search_result`:
 | `cost` | its cost |
 | `evaluations` | evaluations performed, including the initial one |
 | `iterations` | committed moves (First/Best Improvement), proposed moves (Simulated Annealing) |
-| `termination` | `local_optimum`, `evaluation_budget_exhausted`, `cancelled` or `completed` |
+| `termination` | `local_optimum`, `evaluation_budget_exhausted`, `cancelled`, `target_reached` or `completed` |
 
 Solvers and tools only rely on `solution` and `cost`, the
 `easylocal::search_result_for` concept.

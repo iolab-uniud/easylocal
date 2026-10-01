@@ -21,6 +21,7 @@ enum class termination_reason
     local_optimum,
     evaluation_budget_exhausted,
     cancelled,
+    target_reached,
 };
 
 // The result contract consumed by solvers, the Tester and the adapters: the
@@ -43,15 +44,32 @@ struct search_result
     termination_reason termination{};
 };
 
-// Caller-side run options: optional cancellation/progress control and an
-// optional semantic tracer, passed as the trailing argument of Runner::run().
-template<class Tracer>
+// The target of run options without a target cost.
+struct no_target
+{
+};
+
+// Caller-side run options: optional cancellation/progress control, an
+// optional semantic tracer and an optional target cost, passed as the trailing
+// argument of Runner::run() and Solver::solve(). A run stops, with
+// termination_reason::target_reached, as soon as its best cost is at least as
+// good as the target.
+template<class Tracer, class Target = no_target>
 struct run_options
 {
     using tracer_type = Tracer;
+    using target_type = Target;
 
     const run_control* control{};
     Tracer* tracer{};
+    std::optional<Target> target{};
+
+    template<class Cost>
+    [[nodiscard]]
+    auto stop_at(Cost cost) const -> run_options<Tracer, Cost>
+    {
+        return {.control = control, .tracer = tracer, .target = std::move(cost)};
+    }
 };
 
 [[nodiscard]]
@@ -77,6 +95,14 @@ auto with(const run_control& control, Tracer& tracer) noexcept
     return {.control = &control, .tracer = &tracer};
 }
 
+// Run options with only a target cost: run(solution, easylocal::stop_at(0)).
+template<class Cost>
+[[nodiscard]]
+auto stop_at(Cost cost) -> run_options<trace::null_tracer, Cost>
+{
+    return {.control = nullptr, .tracer = nullptr, .target = std::move(cost)};
+}
+
 // One execution of a search algorithm. search_run exposes the search context
 // (neighborhood, evaluation, cost semantics) and owns everything that is common
 // to every search: evaluation/iteration counters, the evaluation budget,
@@ -99,16 +125,21 @@ public:
     using candidate_type = typename evaluation_facility_type::candidate_type;
     using result_type = search_result<solution_type, cost_type>;
 
+    static constexpr std::size_t no_evaluation_limit =
+        std::numeric_limits<std::size_t>::max();
+
     search_run(
         const Context& context,
         const run_control& control,
         Tracer& tracer,
-        const std::size_t evaluation_limit = no_limit)
+        const std::size_t evaluation_limit = no_limit,
+        std::optional<cost_type> target = std::nullopt)
         : context_{context},
           evaluation_{context.evaluation()},
           control_{control},
           tracer_{tracer},
-          evaluation_limit_{evaluation_limit}
+          evaluation_limit_{evaluation_limit},
+          target_{std::move(target)}
     {
     }
 
@@ -218,6 +249,13 @@ public:
         evaluation_limit_ = max_evaluations;
     }
 
+    // The target cost given by the caller, if any.
+    [[nodiscard]]
+    auto target() const noexcept -> const std::optional<cost_type>&
+    {
+        return target_;
+    }
+
     template<class Event>
     void emit(const Event& event)
     {
@@ -233,20 +271,31 @@ public:
         evaluations_ = 1;
         iterations_ = 0;
         stop_reason_.reset();
+        if (target_)
+        {
+            best_cost_ = current.cost();
+        }
 
         emit(trace::event::run_started<cost_type>{current.cost()});
         report();
         return current;
     }
 
-    // True when the run must end: external cancellation or exhausted
-    // evaluation budget. The reason is recorded for finish().
+    // True when the run must end: external cancellation, a reached target
+    // cost or an exhausted evaluation budget. The reason is recorded for
+    // finish().
     [[nodiscard]]
     auto should_stop() -> bool
     {
         if (control_.stop_requested())
         {
             stop_reason_ = termination_reason::cancelled;
+            return true;
+        }
+
+        if (target_reached())
+        {
+            stop_reason_ = termination_reason::target_reached;
             return true;
         }
 
@@ -321,6 +370,7 @@ public:
     {
         const auto previous_cost = current.cost();
         evaluation_.commit(solution, current, std::move(candidate));
+        record_best(current.cost());
 
         trace::with_move_route(move, [&](const auto* route) {
             emit(trace::event::move_accepted<cost_type>{
@@ -337,6 +387,7 @@ public:
         const cost_type& previous_cost,
         const cost_type& cost)
     {
+        record_best(cost);
         emit(trace::event::incumbent_updated<cost_type>{
             .evaluations = evaluations_,
             .iterations = iterations_,
@@ -376,30 +427,83 @@ public:
             .cost = cost,
         });
 
+        // A reached target is the reason a run ends, unless it was cancelled,
+        // also when it coincides with a local optimum or the end of the
+        // algorithm.
+        const auto termination =
+            reason != termination_reason::cancelled && target_reached()
+                ? termination_reason::target_reached
+                : reason;
+
         return result_type{
             .solution = std::move(solution),
             .cost = std::move(cost),
             .evaluations = evaluations_,
             .iterations = iterations_,
-            .termination = reason,
+            .termination = termination,
         };
     }
 
-    // A run over a decorated context sharing this run's control, tracer and
-    // budget, e.g. for algorithms that delegate to another algorithm.
+    // A run over a decorated context sharing this run's control, tracer,
+    // budget and target, e.g. for algorithms that delegate to another
+    // algorithm.
     template<class OtherContext>
     [[nodiscard]]
     auto with_context(const OtherContext& context) -> search_run<OtherContext, Tracer>
     {
+        using other_cost_type = typename OtherContext::cost_type;
+        std::optional<other_cost_type> target;
+        if constexpr (std::constructible_from<other_cost_type, const cost_type&>)
+        {
+            if (target_)
+            {
+                target.emplace(*target_);
+            }
+        }
         return search_run<OtherContext, Tracer>{
             context,
             control_,
             tracer_,
             evaluation_limit_,
+            std::move(target),
         };
     }
 
 private:
+    [[nodiscard]]
+    auto target_reached() const -> bool
+    {
+        if constexpr (requires(const Context& context, const cost_type& cost) {
+                          { context.better_or_equivalent(cost, cost) } ->
+                              std::convertible_to<bool>;
+                      })
+        {
+            return target_ && best_cost_ &&
+                   context_.better_or_equivalent(*best_cost_, *target_);
+        }
+        else
+        {
+            return false;
+        }
+    }
+
+    void record_best(const cost_type& cost)
+    {
+        if (!target_)
+        {
+            return;
+        }
+        if constexpr (requires(const Context& context, const cost_type& value) {
+                          { context.better(value, value) } -> std::convertible_to<bool>;
+                      })
+        {
+            if (!best_cost_ || context_.better(cost, *best_cost_))
+            {
+                best_cost_ = cost;
+            }
+        }
+    }
+
     void report() const
     {
         control_.report(run_progress{
@@ -411,7 +515,7 @@ private:
         });
     }
 
-    static constexpr std::size_t no_limit = std::numeric_limits<std::size_t>::max();
+    static constexpr std::size_t no_limit = no_evaluation_limit;
 
     const Context& context_;
     evaluation_facility_type evaluation_;
@@ -421,6 +525,8 @@ private:
     std::size_t iterations_{};
     std::size_t evaluation_limit_{no_limit};
     std::optional<termination_reason> stop_reason_;
+    std::optional<cost_type> target_;
+    std::optional<cost_type> best_cost_;
 };
 
 } // namespace easylocal

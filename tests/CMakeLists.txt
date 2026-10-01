@@ -1027,6 +1027,10 @@ add_executable(easylocal_two_stage_solver_test two_stage_solver.cpp)
 target_link_libraries(easylocal_two_stage_solver_test PRIVATE EasyLocal::Core)
 add_test(NAME easylocal.two-stage-solver COMMAND easylocal_two_stage_solver_test)
 
+add_executable(easylocal_run_target_test run_target.cpp)
+target_link_libraries(easylocal_run_target_test PRIVATE EasyLocal::Core)
+add_test(NAME easylocal.run-target COMMAND easylocal_run_target_test)
+
 add_executable(
     easylocal_app_test
     app.cpp

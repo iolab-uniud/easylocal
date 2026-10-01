@@ -1,5 +1,7 @@
 #pragma once
 
+#include <easylocal/cost/concepts.hpp>
+
 #include <compare>
 #include <cstddef>
 #include <tuple>
@@ -32,6 +34,17 @@ public:
 
 private:
     std::tuple<Values...> values_;
+};
+
+template<class... Values>
+    requires (has_zero<Values> && ...)
+struct zero_cost<lexicographic<Values...>>
+{
+    [[nodiscard]]
+    static constexpr auto value() -> lexicographic<Values...>
+    {
+        return lexicographic<Values...>{zero<Values>()...};
+    }
 };
 
 template<class T>

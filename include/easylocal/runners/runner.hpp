@@ -16,6 +16,7 @@
 #include <concepts>
 #include <cstddef>
 #include <memory>
+#include <optional>
 #include <ranges>
 #include <tuple>
 #include <type_traits>
@@ -140,8 +141,8 @@ private:
 template<class T>
 inline constexpr bool is_run_options_v = false;
 
-template<class Tracer>
-inline constexpr bool is_run_options_v<run_options<Tracer>> = true;
+template<class Tracer, class Target>
+inline constexpr bool is_run_options_v<run_options<Tracer, Target>> = true;
 
 // Splits Runner::run() arguments into the algorithm arguments and an optional
 // trailing run_options.
@@ -222,7 +223,26 @@ auto run_algorithm(
     }
     assert(tracer != nullptr);
 
-    search_run<Context, tracer_type> run{context, *control, *tracer};
+    using cost_type = typename Context::cost_type;
+    std::optional<cost_type> target;
+    if constexpr (arguments::has_options)
+    {
+        const auto& options = std::get<sizeof...(Args) - 1>(forwarded);
+        using options_type = std::remove_cvref_t<decltype(options)>;
+        if constexpr (!std::same_as<typename options_type::target_type, no_target>)
+        {
+            static_assert(
+                std::constructible_from<cost_type, const typename options_type::target_type&>,
+                "the target cost of the run options must convert to the runner's cost type");
+            if (options.target)
+            {
+                target.emplace(*options.target);
+            }
+        }
+    }
+
+    search_run<Context, tracer_type> run{
+        context, *control, *tracer, search_run<Context, tracer_type>::no_evaluation_limit, std::move(target)};
     return [&]<std::size_t... Index>(std::index_sequence<Index...>) {
         return algorithm.run(
             run,

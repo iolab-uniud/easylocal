@@ -94,6 +94,17 @@ constexpr auto delta(
     return std::numeric_limits<long double>::infinity();
 }
 
+template<class HardCost, class SoftCost>
+    requires has_zero<HardCost> && has_zero<SoftCost>
+struct zero_cost<hierarchical<HardCost, SoftCost>>
+{
+    [[nodiscard]]
+    static constexpr auto value() -> hierarchical<HardCost, SoftCost>
+    {
+        return hierarchical<HardCost, SoftCost>{zero<HardCost>(), zero<SoftCost>()};
+    }
+};
+
 template<class T>
 struct is_hierarchical : std::false_type
 {

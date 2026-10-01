@@ -27,6 +27,11 @@ const auto observed = descent_bound.run(
   construction is removed at compile time.
 - `easylocal::with(control)`, `easylocal::with(tracer)` and
   `easylocal::with(control, tracer)` are all accepted.
+- A target cost ends the run as soon as the best cost is at least as good:
+  `el::stop_at(cost)` alone, or `el::with(control, tracer).stop_at(cost)`. The
+  result reports `termination_reason::target_reached`.
+- Solvers take the same options, `solver.solve(input, el::with(control))`, and
+  pass them to every run they make.
 
 Recorders include `trace::memory_recorder`, `trace::jsonl_recorder` and the
 binary `buffered_binary_recorder` and `async_binary_recorder`.

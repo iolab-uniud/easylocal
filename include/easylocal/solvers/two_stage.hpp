@@ -22,7 +22,8 @@ struct TwoStageConfig
 };
 
 // Two-stage optimization for hierarchical costs. The first runner is
-// automatically projected onto the hard branch; the second runner sees the
+// automatically projected onto the hard branch and stops as soon as the hard
+// cost reaches zero; the second runner continues from its solution on the
 // complete hierarchical cost. This keeps hard-only construction as framework
 // machinery while leaving the two search algorithms independently configurable.
 template<
@@ -145,19 +146,38 @@ public:
     [[nodiscard]]
     auto rng() const noexcept -> const RNG& { return rng_; }
 
+    using hard_cost_type = typename bound_first_runner_type::cost_type;
+
+    // Stage 1 runs on the hard cost until it reaches cost::zero<hard_cost_type>();
+    // stage 2 continues from its solution on the full cost. The optional
+    // trailing run options (easylocal::with(control, tracer), .stop_at(target))
+    // go to both stages, except the target, which applies to stage 2. After a
+    // cancellation in stage 1, stage 2 only evaluates the solution and stops.
+    // The result is stage 2's, with the effort of both stages.
+    template<class... Options>
+        requires easylocal::detail::solve_options<Options...>
     [[nodiscard]]
-    auto solve(const input_type& input)
-        requires easylocal::detail::solver_runnable<bound_first_runner_type, RNG> &&
-                 easylocal::detail::solver_runnable<bound_second_runner_type, RNG> &&
+    auto solve(const input_type& input, const Options&... options)
+        requires easylocal::cost::has_zero<hard_cost_type> &&
+                 easylocal::detail::solver_runnable<
+                     bound_first_runner_type,
+                     RNG,
+                     decltype(easylocal::detail::with_target(
+                         std::declval<hard_cost_type>(),
+                         std::declval<const Options&>()...))> &&
+                 easylocal::detail::solver_runnable<bound_second_runner_type, RNG, Options...> &&
                  (supports_initial || supports_random) &&
                  requires(bound_first_runner_type& bound_first_runner, RNG& rng) {
                      requires easylocal::search_result_for<
                          decltype(easylocal::detail::run_with_solver_rng(
                              bound_first_runner,
                              std::declval<solution_type>(),
-                             rng)),
+                             rng,
+                             easylocal::detail::with_target(
+                                 std::declval<hard_cost_type>(),
+                                 std::declval<const Options&>()...))),
                          solution_type,
-                         typename bound_first_runner_type::cost_type>;
+                         hard_cost_type>;
                  }
     {
         auto bound_first_runner = hard_runner_.bind(input);
@@ -166,12 +186,21 @@ public:
         auto first_result = easylocal::detail::run_with_solver_rng(
             bound_first_runner,
             make_initial_solution(bound_first_runner),
-            rng_);
+            rng_,
+            easylocal::detail::with_target(easylocal::cost::zero<hard_cost_type>(), options...));
 
-        return easylocal::detail::run_with_solver_rng(
+        easylocal::detail::search_effort effort;
+        effort.add(first_result);
+
+        auto result = easylocal::detail::run_with_solver_rng(
             bound_second_runner,
             std::move(first_result.solution),
-            rng_);
+            rng_,
+            options...);
+
+        effort.add(result);
+        effort.assign_to(result);
+        return result;
     }
 
 private:

@@ -67,6 +67,13 @@ delta-based acceptance; user cost types provide it as a free function found by
 ADL (call it as `using cost::delta; delta(a, b)`). The concept
 `cost::has_delta<Cost>` tells whether it exists.
 
+`cost::zero<Cost>()` is the cost of no violation and no penalty: `Cost{}` for
+value-initializable types (0 for arithmetic costs) and the zero of every level
+for `lexicographic` and `hierarchical` costs. Other cost types provide it by
+specializing `cost::zero_cost<Cost>` with a static `value()`;
+`cost::has_zero<Cost>` tells whether it exists. TwoStage stops its first stage
+at the zero of the hard cost.
+
 ## Cost semantics
 
 `cost::better(sm, a, b)`, `cost::equivalent(sm, a, b)` and

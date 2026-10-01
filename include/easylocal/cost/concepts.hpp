@@ -29,4 +29,36 @@ concept has_delta =
         { delta(candidate, current) } -> std::convertible_to<long double>;
     };
 
+// The zero of a cost type: no violation, no penalty. It is Cost{} for types
+// that can be value-initialized (0 for arithmetic costs), the zero of every
+// level for lexicographic and hierarchical costs, and can be given for other
+// types by specializing zero_cost with a static value().
+template<class Cost>
+struct zero_cost
+{
+};
+
+template<std::default_initializable Cost>
+struct zero_cost<Cost>
+{
+    [[nodiscard]]
+    static constexpr auto value() -> Cost
+    {
+        return Cost{};
+    }
+};
+
+template<class Cost>
+concept has_zero =
+    requires {
+        { zero_cost<Cost>::value() } -> std::convertible_to<Cost>;
+    };
+
+template<has_zero Cost>
+[[nodiscard]]
+constexpr auto zero() -> Cost
+{
+    return zero_cost<Cost>::value();
+}
+
 } // namespace easylocal::cost

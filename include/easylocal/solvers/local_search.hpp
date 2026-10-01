@@ -149,9 +149,13 @@ public:
         return rng_;
     }
 
+    // Solves from one initial solution. The optional trailing run options
+    // (easylocal::with(control, tracer), .stop_at(target)) go to the run.
+    template<class... Options>
+        requires easylocal::detail::solve_options<Options...>
     [[nodiscard]]
-    auto solve(const input_type& input)
-        requires easylocal::detail::solver_runnable<bound_runner_type, RNG> &&
+    auto solve(const input_type& input, const Options&... options)
+        requires easylocal::detail::solver_runnable<bound_runner_type, RNG, Options...> &&
                  (supports_initial || supports_random)
     {
         auto bound_runner = runner_.bind(input);
@@ -159,7 +163,8 @@ public:
         return easylocal::detail::run_with_solver_rng(
             bound_runner,
             std::move(solution),
-            rng_);
+            rng_,
+            options...);
     }
 
 private:

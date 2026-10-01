@@ -22,12 +22,15 @@ The built-in solvers live in `easylocal::solvers`:
 | --- | --- | --- |
 | `LocalSearch` | builds an initial solution, runs once | the chosen initialization |
 | `MultiStart` | `starts` independent runs, keeps the best | the chosen initialization |
-| `TwoStage` | first stage on the hard cost, second on the full cost | a `cost::hierarchical` cost, an aggregator modelling `cost::hard_projection` |
+| `TwoStage` | first stage on the hard cost until it is zero, second on the full cost | a `cost::hierarchical` cost, an aggregator modelling `cost::hard_projection` |
 
 - The initialization is chosen statically, with `initialization::initial` or
   `initialization::random` checked at compile time against the
   SolutionManager, or at runtime with `initialization::Mode`.
 - `make_solver<Solver>(runner, config)` deduces the solver type from the runner.
+- `solver.solve(input, el::with(control, tracer))` cancels and traces a solve
+  like a run ([chapter 15](15-observing-and-controlling.md)); the result counts
+  the evaluations and iterations of all the runs.
 
 ## See also
 

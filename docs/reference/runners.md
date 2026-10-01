@@ -54,7 +54,9 @@ apps; the parameter blocks have defaults that pass validation.
 
 Built-in algorithms return `search_result<Solution, Cost>`: `solution`, `cost`,
 `evaluations`, `iterations`, `termination` (`termination_reason::completed`,
-`local_optimum`, `evaluation_budget_exhausted`, `cancelled`). Solvers and tools
+`local_optimum`, `evaluation_budget_exhausted`, `cancelled`, `target_reached`).
+A reached target is the termination reason also when it coincides with a local
+optimum or the end of the algorithm; a cancellation takes precedence. Solvers and tools
 require only `search_result_for<Result, Solution, Cost>`: `solution` and `cost`.
 
 ## Writing an algorithm
@@ -82,18 +84,18 @@ Extra `run` arguments (an RNG, for instance) are passed through
 | --- | --- |
 | `limit_evaluations(n)` | evaluation budget, including the initial evaluation |
 | `start(solution) -> evaluation` | first evaluation, `run_started`, progress |
-| `should_stop() -> bool` | cancellation or exhausted budget; the reason is recorded |
+| `should_stop() -> bool` | cancellation, reached target or exhausted budget; the reason is recorded |
 | `moves(solution)`, `random_move(solution, rng)` | neighborhood access; unions emit selection events |
 | `evaluate_move(solution, current, move) -> candidate` | counts, `move_evaluated`, progress |
 | `commit(solution, current, candidate, move)` | applies, `move_accepted` |
 | `next_iteration()` | advances the iteration counter |
-| `incumbent_updated(previous, cost)` | `incumbent_updated` event |
+| `incumbent_updated(previous, cost)` | `incumbent_updated` event; the best cost checked against the target |
 | `finish(solution, cost[, reason]) -> search_result` | `local_optimum` (if that is the reason), `run_finished` |
 | `better`, `equivalent`, `better_or_equivalent` | cost semantics |
-| `evaluations()`, `iterations()` | counters |
+| `evaluations()`, `iterations()`, `target()` | counters, the caller's target cost |
 | `context()`, `neighborhood_explorer()`, `input()`, `solution_manager()` | the search context |
 | `evaluation()`, `emit(event)`, `tracer()`, `control()` | escape hatches (bypass counters and events) |
-| `with_context(ctx)` | a run over a decorated context sharing control, tracer and budget |
+| `with_context(ctx)` | a run over a decorated context sharing control, tracer, budget and target |
 
 `evaluation` / `candidate` expose `cost()`; `finish` without a reason uses the
 one recorded by `should_stop()`, or `completed`.
@@ -105,9 +107,16 @@ one recorded by `should_stop()`, or `completed`.
 | `with(control)` | cancellation (`std::stop_token`) and progress observer |
 | `with(tracer)` | semantic trace events |
 | `with(control, tracer)` | both |
+| `stop_at(target)`, `with(...).stop_at(target)` | stop as soon as the best cost is at least as good as `target` |
 
 `run_control{stop_token, observer}` calls `observer(const run_progress&)` with
 `evaluations`, `iterations` and `evaluation_limit`.
+
+The target converts to the runner's cost type and is compared with its cost
+semantics (`better_or_equivalent`). `search_run` keeps the best cost from
+`start`, `commit` and `incumbent_updated`, so every algorithm that checks
+`should_stop()` honours a target without further code. The same options are
+accepted by every solver's `solve(input, options)`.
 
 ## Design choices
 

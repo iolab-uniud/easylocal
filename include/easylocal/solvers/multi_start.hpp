@@ -6,6 +6,7 @@
 #include <concepts>
 #include <cstddef>
 #include <cstdint>
+#include <optional>
 #include <random>
 #include <stdexcept>
 #include <type_traits>
@@ -137,9 +138,15 @@ public:
     [[nodiscard]]
     auto rng() const noexcept -> const RNG& { return rng_; }
 
+    // Runs up to `starts` times from fresh solutions and returns the best
+    // result, with the effort of every start. The optional trailing run
+    // options go to every run; cancellation, or a run that reaches the target,
+    // ends the solve (termination cancelled / target_reached, else completed).
+    template<class... Options>
+        requires easylocal::detail::solve_options<Options...>
     [[nodiscard]]
-    auto solve(const input_type& input)
-        requires easylocal::detail::solver_runnable<bound_runner_type, RNG> &&
+    auto solve(const input_type& input, const Options&... options)
+        requires easylocal::detail::solver_runnable<bound_runner_type, RNG, Options...> &&
                  (supports_initial || supports_random) &&
                  requires(bound_runner_type& bound_runner, RNG& rng) {
                      { bound_runner.better(
@@ -150,22 +157,35 @@ public:
                          decltype(easylocal::detail::run_with_solver_rng(
                              bound_runner,
                              std::declval<solution_type>(),
-                             rng)),
+                             rng,
+                             std::declval<const Options&>()...)),
                          solution_type,
                          cost_type>;
                  }
     {
         auto bound_runner = runner_.bind(input);
 
-        auto best = run_once(bound_runner);
-        for (std::size_t start = 1; start < parameters_.starts; ++start)
+        auto best = run_once(bound_runner, options...);
+        auto termination = ended_by(best);
+        easylocal::detail::search_effort effort;
+        effort.add(best);
+        for (std::size_t start = 1;
+             start < parameters_.starts && !termination.has_value();
+             ++start)
         {
-            auto candidate = run_once(bound_runner);
+            auto candidate = run_once(bound_runner, options...);
+            termination = ended_by(candidate);
+            effort.add(candidate);
             if (bound_runner.better(candidate.cost, best.cost))
             {
                 best = std::move(candidate);
             }
         }
+
+        effort.assign_to(best);
+        easylocal::detail::set_termination(
+            best,
+            termination.value_or(termination_reason::completed));
         return best;
     }
 
@@ -207,13 +227,29 @@ private:
         throw std::logic_error{"unsupported Solver initialization mode"};
     }
 
+    template<class... Options>
     [[nodiscard]]
-    auto run_once(bound_runner_type& bound_runner)
+    auto run_once(bound_runner_type& bound_runner, const Options&... options)
     {
         return easylocal::detail::run_with_solver_rng(
             bound_runner,
             make_initial_solution(bound_runner),
-            rng_);
+            rng_,
+            options...);
+    }
+
+    // Why a start ends the whole solve, if it does.
+    template<class Result>
+    [[nodiscard]]
+    static auto ended_by(const Result& result) -> std::optional<termination_reason>
+    {
+        const auto termination = easylocal::detail::termination_of(result);
+        if (termination == termination_reason::cancelled ||
+            termination == termination_reason::target_reached)
+        {
+            return termination;
+        }
+        return std::nullopt;
     }
 
     RunnerType runner_;
