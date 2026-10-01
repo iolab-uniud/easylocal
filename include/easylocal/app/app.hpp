@@ -213,7 +213,7 @@ template<class SMSpec, class NHESpec, class... Registrations>
              easylocal::neighborhood_explorer_for<
                  service_t<NHESpec>,
                  service_t<SMSpec>>
-class app_instance
+class app_runtime
 {
 public:
     using solution_manager_type = service_t<SMSpec>;
@@ -222,7 +222,7 @@ public:
 
     static constexpr std::size_t runner_count = sizeof...(Registrations);
 
-    app_instance(
+    app_runtime(
         const input_type& input,
         const SMSpec& solution_manager_spec,
         const NHESpec& neighborhood_spec,
@@ -240,10 +240,10 @@ public:
                 std::addressof(input_));
     }
 
-    app_instance(const app_instance&) = delete;
-    auto operator=(const app_instance&) -> app_instance& = delete;
-    app_instance(app_instance&&) = delete;
-    auto operator=(app_instance&&) -> app_instance& = delete;
+    app_runtime(const app_runtime&) = delete;
+    auto operator=(const app_runtime&) -> app_runtime& = delete;
+    app_runtime(app_runtime&&) = delete;
+    auto operator=(app_runtime&&) -> app_runtime& = delete;
 
     [[nodiscard]]
     auto input() const noexcept -> const input_type&
@@ -621,7 +621,7 @@ public:
     [[nodiscard]]
     auto for_input(const typename service_t<Spec>::input_type& input) const
     {
-        return app_instance<SMSpec, NHESpec, Registrations...>{
+        return app_runtime<SMSpec, NHESpec, Registrations...>{
             input,
             solution_manager_spec_,
             neighborhood_spec_,
@@ -647,7 +647,7 @@ public:
     // and immutable Input may be shared across concurrent calls; mutable
     // SolutionManager, Neighborhood and algorithm state are reconstructed for
     // every invocation.  Adapters can therefore schedule independent runs
-    // without making app_instance itself thread-safe.
+    // without making app_runtime itself thread-safe.
     template<class Algorithm, class Spec = SMSpec, class... RunArgs>
         requires (!std::same_as<Spec, unconfigured_t>) &&
                  (!std::same_as<NHESpec, unconfigured_t>) &&

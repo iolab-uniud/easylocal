@@ -189,10 +189,10 @@ void tester_owns_input_and_builds_instance_from_it()
     const auto input_handle = tester.input_handle();
     assert(input_handle);
     assert(input_handle.get() == std::addressof(tester.input()));
-    assert(std::addressof(tester.instance().input()) == std::addressof(tester.input()));
+    assert(std::addressof(tester.runtime().input()) == std::addressof(tester.input()));
 }
 
-void replacing_input_rebuilds_the_app_instance()
+void replacing_input_rebuilds_the_app_runtime()
 {
     easylocal::Tester tester{make_application()};
     tester.set_input(make_input(3));
@@ -200,8 +200,8 @@ void replacing_input_rebuilds_the_app_instance()
     tester.set_input(make_input(7));
 
     assert(tester.input().demand[0] == 7);
-    assert(tester.instance().input().demand[0] == 7);
-    assert(std::addressof(tester.instance().input()) == std::addressof(tester.input()));
+    assert(tester.runtime().input().demand[0] == 7);
+    assert(std::addressof(tester.runtime().input()) == std::addressof(tester.input()));
 }
 
 void tester_exposes_initial_solution_as_an_explicit_choice()
@@ -305,7 +305,7 @@ void tester_selects_random_moves_with_an_explicit_rng()
     std::mt19937_64 rng{1234};
     std::mt19937_64 reference_rng{1234};
     const auto expected = easylocal::random_move(
-        tester.instance().neighborhood(),
+        tester.runtime().neighborhood(),
         tester.solution(),
         reference_rng);
 
@@ -630,7 +630,7 @@ int main()
     tester_can_copy_an_lvalue_app();
     tester_can_take_ownership_of_an_rvalue_app();
     tester_owns_input_and_builds_instance_from_it();
-    replacing_input_rebuilds_the_app_instance();
+    replacing_input_rebuilds_the_app_runtime();
     tester_exposes_initial_solution_as_an_explicit_choice();
     tester_exposes_random_solution_as_an_explicit_choice();
     tester_exposes_deterministic_and_random_move_capabilities();

@@ -242,11 +242,11 @@ class Tester
 public:
     using app_type = App;
     using input_type = typename App::input_type;
-    using instance_type = decltype(
+    using runtime_type = decltype(
         std::declval<const App&>().for_input(
             std::declval<const input_type&>()));
-    using solution_manager_type = typename instance_type::solution_manager_type;
-    using neighborhood_type = typename instance_type::neighborhood_explorer_type;
+    using solution_manager_type = typename runtime_type::solution_manager_type;
+    using neighborhood_type = typename runtime_type::neighborhood_explorer_type;
     using solution_type = typename solution_manager_type::solution_type;
     using cost_type = typename solution_manager_type::cost_type;
     using move_type = typename neighborhood_type::move_type;
@@ -356,13 +356,13 @@ public:
     void set_input(input_type input)
     {
         auto new_input = std::make_shared<const input_type>(std::move(input));
-        auto new_instance = std::unique_ptr<instance_type>{
-            new instance_type(app_.for_input(*new_input))};
+        auto new_runtime = std::unique_ptr<runtime_type>{
+            new runtime_type(app_.for_input(*new_input))};
 
         clear_solution_state();
-        instance_.reset();
+        runtime_.reset();
         input_ = std::move(new_input);
-        instance_ = std::move(new_instance);
+        runtime_ = std::move(new_runtime);
     }
 
     void load_input(std::istream& in)
@@ -399,17 +399,17 @@ public:
     }
 
     [[nodiscard]]
-    auto instance() noexcept -> instance_type&
+    auto runtime() noexcept -> runtime_type&
     {
-        assert(instance_);
-        return *instance_;
+        assert(runtime_);
+        return *runtime_;
     }
 
     [[nodiscard]]
-    auto instance() const noexcept -> const instance_type&
+    auto runtime() const noexcept -> const runtime_type&
     {
-        assert(instance_);
-        return *instance_;
+        assert(runtime_);
+        return *runtime_;
     }
 
     [[nodiscard]]
@@ -421,24 +421,24 @@ public:
     void use_initial_solution()
         requires supports_initial_solution
     {
-        assert(instance_);
+        assert(runtime_);
         solution_ = std::make_unique<solution_type>(
-            instance_->solution_manager().initial_solution());
+            runtime_->solution_manager().initial_solution());
         clear_move_state();
     }
 
     void use_random_solution(rng_type& rng)
         requires supports_random_solution
     {
-        assert(instance_);
+        assert(runtime_);
         solution_ = std::make_unique<solution_type>(
-            instance_->solution_manager().random_solution(rng));
+            runtime_->solution_manager().random_solution(rng));
         clear_move_state();
     }
 
     void set_solution(solution_type solution)
     {
-        assert(instance_);
+        assert(runtime_);
         solution_ = std::make_unique<solution_type>(std::move(solution));
         clear_move_state();
     }
@@ -497,19 +497,19 @@ public:
     [[nodiscard]]
     auto is_valid() const -> bool
     {
-        assert(instance_);
+        assert(runtime_);
         assert(solution_);
         return static_cast<bool>(
-            instance_->solution_manager().is_valid(*solution_));
+            runtime_->solution_manager().is_valid(*solution_));
     }
 
     [[nodiscard]]
     auto evaluate() const -> cost_type
     {
-        assert(instance_);
+        assert(runtime_);
         assert(solution_);
         assert(is_valid());
-        return instance_->solution_manager().evaluate(*solution_);
+        return runtime_->solution_manager().evaluate(*solution_);
     }
 
     [[nodiscard]]
@@ -537,7 +537,7 @@ public:
     [[nodiscard]]
     auto run_runner(const std::string_view name) -> bool
     {
-        assert(instance_);
+        assert(runtime_);
         assert(solution_);
         assert(is_valid());
 
@@ -591,7 +591,7 @@ public:
     auto use_first_move() -> bool
         requires supports_deterministic_moves
     {
-        assert(instance_);
+        assert(runtime_);
         assert(solution_);
         return select_deterministic_move(0);
     }
@@ -600,7 +600,7 @@ public:
     auto use_next_move() -> bool
         requires supports_deterministic_moves
     {
-        assert(instance_);
+        assert(runtime_);
         assert(solution_);
 
         if (!deterministic_move_index_)
@@ -615,17 +615,17 @@ public:
     auto use_first_improving_move() -> bool
         requires supports_improvement_selection
     {
-        assert(instance_);
+        assert(runtime_);
         assert(solution_);
 
         const auto current = evaluate();
         std::size_t index = 0;
-        for (auto&& candidate : easylocal::moves(instance_->neighborhood(), *solution_))
+        for (auto&& candidate : easylocal::moves(runtime_->neighborhood(), *solution_))
         {
             move_.emplace(candidate);
             deterministic_move_index_ = index;
             if (move_is_valid() &&
-                cost::better(instance_->solution_manager(), evaluate_move(), current))
+                cost::better(runtime_->solution_manager(), evaluate_move(), current))
             {
                 return true;
             }
@@ -639,14 +639,14 @@ public:
     auto use_best_move() -> bool
         requires supports_improvement_selection
     {
-        assert(instance_);
+        assert(runtime_);
         assert(solution_);
 
         std::optional<move_type> best_move;
         std::optional<cost_type> best_cost;
         std::optional<std::size_t> best_index;
         std::size_t index = 0;
-        for (auto&& candidate : easylocal::moves(instance_->neighborhood(), *solution_))
+        for (auto&& candidate : easylocal::moves(runtime_->neighborhood(), *solution_))
         {
             move_.emplace(candidate);
             deterministic_move_index_ = index;
@@ -654,7 +654,7 @@ public:
             {
                 auto candidate_cost = evaluate_move();
                 if (!best_cost || cost::better(
-                        instance_->solution_manager(), candidate_cost, *best_cost))
+                        runtime_->solution_manager(), candidate_cost, *best_cost))
                 {
                     best_move = candidate;
                     best_cost = std::move(candidate_cost);
@@ -678,11 +678,11 @@ public:
     auto use_random_move(rng_type& rng) -> bool
         requires supports_random_moves
     {
-        assert(instance_);
+        assert(runtime_);
         assert(solution_);
 
         auto selected = easylocal::random_move(
-            instance_->neighborhood(),
+            runtime_->neighborhood(),
             *solution_,
             rng);
 
@@ -700,23 +700,23 @@ public:
     [[nodiscard]]
     auto move_is_valid() const -> bool
     {
-        assert(instance_);
+        assert(runtime_);
         assert(solution_);
         assert(move_);
         return static_cast<bool>(
-            instance_->neighborhood().is_valid(*solution_, *move_));
+            runtime_->neighborhood().is_valid(*solution_, *move_));
     }
 
     [[nodiscard]]
     auto evaluate_move() const -> cost_type
     {
-        assert(instance_);
+        assert(runtime_);
         assert(solution_);
         assert(move_);
         assert(move_is_valid());
 
-        const auto& solution_manager = instance_->solution_manager();
-        const auto& neighborhood = instance_->neighborhood();
+        const auto& solution_manager = runtime_->solution_manager();
+        const auto& neighborhood = runtime_->neighborhood();
         const detail::evaluation_facility<
             solution_manager_type,
             neighborhood_type> evaluation{
@@ -734,15 +734,15 @@ public:
     [[nodiscard]]
     auto evaluate_move_fully() const -> cost_type
     {
-        assert(instance_);
+        assert(runtime_);
         assert(solution_);
         assert(move_);
         assert(move_is_valid());
 
         auto candidate = *solution_;
-        instance_->neighborhood().make_move(candidate, *move_);
-        assert(instance_->solution_manager().is_valid(candidate));
-        return instance_->solution_manager().evaluate(candidate);
+        runtime_->neighborhood().make_move(candidate, *move_);
+        assert(runtime_->solution_manager().is_valid(candidate));
+        return runtime_->solution_manager().evaluate(candidate);
     }
 
     [[nodiscard]]
@@ -752,7 +752,7 @@ public:
         const auto incremental = evaluate_move();
         const auto full = evaluate_move_fully();
         return cost::equivalent(
-            instance_->solution_manager(),
+            runtime_->solution_manager(),
             incremental,
             full);
     }
@@ -762,12 +762,12 @@ public:
         -> neighborhood_preview_result
         requires supports_deterministic_moves
     {
-        assert(instance_);
+        assert(runtime_);
         assert(solution_);
 
         neighborhood_preview_result result;
-        const auto& solution_manager = instance_->solution_manager();
-        const auto& neighborhood = instance_->neighborhood();
+        const auto& solution_manager = runtime_->solution_manager();
+        const auto& neighborhood = runtime_->neighborhood();
         const detail::evaluation_facility<
             solution_manager_type,
             neighborhood_type> evaluation{solution_manager, neighborhood};
@@ -795,12 +795,12 @@ public:
     auto neighborhood_statistics() const -> neighborhood_statistics_result
         requires supports_improvement_selection
     {
-        assert(instance_);
+        assert(runtime_);
         assert(solution_);
 
         neighborhood_statistics_result result;
-        const auto& solution_manager = instance_->solution_manager();
-        const auto& neighborhood = instance_->neighborhood();
+        const auto& solution_manager = runtime_->solution_manager();
+        const auto& neighborhood = runtime_->neighborhood();
         const detail::evaluation_facility<
             solution_manager_type,
             neighborhood_type> evaluation{solution_manager, neighborhood};
@@ -837,12 +837,12 @@ public:
     auto check_neighborhood_costs() const -> neighborhood_cost_check_result
         requires supports_cost_consistency_check
     {
-        assert(instance_);
+        assert(runtime_);
         assert(solution_);
 
         neighborhood_cost_check_result result;
-        const auto& solution_manager = instance_->solution_manager();
-        const auto& neighborhood = instance_->neighborhood();
+        const auto& solution_manager = runtime_->solution_manager();
+        const auto& neighborhood = runtime_->neighborhood();
         const detail::evaluation_facility<
             solution_manager_type,
             neighborhood_type> evaluation{solution_manager, neighborhood};
@@ -880,11 +880,11 @@ public:
     auto check_move_independence() const -> move_independence_result
         requires supports_move_independence_check
     {
-        assert(instance_);
+        assert(runtime_);
         assert(solution_);
 
         move_independence_result result;
-        const auto& neighborhood = instance_->neighborhood();
+        const auto& neighborhood = runtime_->neighborhood();
         std::vector<solution_type> reached;
 
         for (auto&& raw_move : easylocal::moves(neighborhood, *solution_))
@@ -933,11 +933,11 @@ public:
         -> random_distribution_result
         requires supports_random_distribution_check
     {
-        assert(instance_);
+        assert(runtime_);
         assert(solution_);
 
         random_distribution_result result;
-        const auto& neighborhood = instance_->neighborhood();
+        const auto& neighborhood = runtime_->neighborhood();
         std::vector<move_type> moves_list;
         for (auto&& raw_move : easylocal::moves(neighborhood, *solution_))
         {
@@ -996,13 +996,13 @@ public:
 
     void apply_move()
     {
-        assert(instance_);
+        assert(runtime_);
         assert(solution_);
         assert(move_);
         assert(move_is_valid());
 
-        instance_->neighborhood().make_move(*solution_, *move_);
-        assert(instance_->solution_manager().is_valid(*solution_));
+        runtime_->neighborhood().make_move(*solution_, *move_);
+        assert(runtime_->solution_manager().is_valid(*solution_));
         clear_move_state();
     }
 
@@ -1025,7 +1025,7 @@ private:
     {
         std::size_t index = 0;
         for (auto&& candidate : easylocal::moves(
-                 instance_->neighborhood(),
+                 runtime_->neighborhood(),
                  *solution_))
         {
             if (index == target)
@@ -1046,7 +1046,7 @@ private:
 
     App app_;
     std::shared_ptr<const input_type> input_;
-    std::unique_ptr<instance_type> instance_;
+    std::unique_ptr<runtime_type> runtime_;
     std::unique_ptr<solution_type> solution_;
     std::optional<move_type> move_;
     std::optional<std::size_t> deterministic_move_index_;

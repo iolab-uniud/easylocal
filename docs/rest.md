@@ -10,7 +10,7 @@ The design follows the same rule used by the TextUI:
 > be shared across runs.
 
 This keeps concurrency at the application boundary instead of making
-`app_instance`, SolutionManager, neighborhoods, algorithms, or Runner state
+`app_runtime`, SolutionManager, neighborhoods, algorithms, or Runner state
 internally synchronized.
 
 ## Enabling the component

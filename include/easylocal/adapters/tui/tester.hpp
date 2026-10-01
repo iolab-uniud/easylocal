@@ -2431,7 +2431,7 @@ private:
     {
         using namespace ftxui;
         const auto neighborhood = detail::object_name(
-            tester_.instance().neighborhood());
+            tester_.runtime().neighborhood());
         auto actions = window(text(" Actions "), controls->Render()) |
                        size(WIDTH, LESS_THAN, 30);
         auto details = window(
