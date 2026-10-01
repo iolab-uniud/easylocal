@@ -16,6 +16,7 @@
 #include <random>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 #include <type_traits>
 #include <utility>
 #include <vector>
@@ -187,6 +188,8 @@ class TwoOptExplorer
 {
 public:
     using neighborhood_explorer_base::neighborhood_explorer_base;
+
+    [[nodiscard]] static auto name() -> std::string_view { return "2-opt"; }
 
     [[nodiscard]] auto moves(const Tour& tour) const -> std::vector<TwoOpt>
     {

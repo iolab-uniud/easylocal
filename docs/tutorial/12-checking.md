@@ -60,8 +60,9 @@ if (costs.mismatches != 0 || costs.invalid != 0 || sampling.out_of_neighborhood 
 
 The last one compares sampling with enumeration: a sampled move outside the
 enumerated neighborhood is an error, never-sampled moves (`unseen`) hint at a
-biased `random_move`. The interactive tester (next chapter) shows the same
-checks on its pages.
+biased `random_move`. The interactive tester (next chapter) runs the same checks
+from its pages: `C` on the Input/Output page, and `C`, `D` and `U` on the Move
+page.
 
 ## See also
 

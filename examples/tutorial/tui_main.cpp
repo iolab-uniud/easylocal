@@ -6,6 +6,10 @@
 
 #include <utility>
 
+#ifndef EASYLOCAL_TUTORIAL_INSTANCE
+#define EASYLOCAL_TUTORIAL_INSTANCE "five.tsp"
+#endif
+
 int main()
 {
     using namespace tutorial;
@@ -21,13 +25,14 @@ int main()
         | el::runner<runners::SimulatedAnnealing<Classic>>("sa");
 
     el::Tester tester{std::move(application)};
-    tester.set_input(five_cities());
+    tester.load_input(EASYLOCAL_TUTORIAL_INSTANCE); // through the read_input hook
 
     el::tui::run(
         tester,
         {
             .title = "TSP tester",
             .seed = 2026, // the RNG for random solutions, moves and stochastic runners
+            .input_path = EASYLOCAL_TUTORIAL_INSTANCE,
         });
     // [tui] ----------------------------------------------------------------
 }

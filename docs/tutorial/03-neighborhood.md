@@ -11,6 +11,8 @@ class TwoOptExplorer
 public:
     using neighborhood_explorer_base::neighborhood_explorer_base;
 
+    [[nodiscard]] static auto name() -> std::string_view { return "2-opt"; }
+
     [[nodiscard]] auto moves(const Tour& tour) const -> std::vector<TwoOpt>
     {
         std::vector<TwoOpt> result;
@@ -60,6 +62,7 @@ public:
 - `random_move(solution, rng)` samples one move for *stochastic* algorithms
   such as Simulated Annealing, returning `std::nullopt` when there is none. It
   need not be uniform.
+- `name()` is optional: it names the neighborhood in the interactive tester.
 
 `easylocal::neighborhood_explorer_base<SolutionManager, Move>` provides the
 aliases and the SolutionManager reference; like the SolutionManager base, it is

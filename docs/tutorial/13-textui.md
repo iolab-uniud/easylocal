@@ -19,18 +19,42 @@ auto application = el::app("tsp")
     | el::runner<runners::SimulatedAnnealing<Classic>>("sa");
 
 el::Tester tester{std::move(application)};
-tester.set_input(five_cities());
+tester.load_input(EASYLOCAL_TUTORIAL_INSTANCE); // through the read_input hook
 
 el::tui::run(
     tester,
     {
         .title = "TSP tester",
         .seed = 2026, // the RNG for random solutions, moves and stochastic runners
+        .input_path = EASYLOCAL_TUTORIAL_INSTANCE,
     });
 ```
 
 The program is `examples/tutorial/tui_main.cpp`, built when the TUI component
 is enabled (`-DEASYLOCAL_ENABLE_TUI=ON`).
+
+## A session
+
+The tester has three pages, switched with F3, F4 and F5; the header shows the
+instance, the current seed and the cost of the current solution.
+
+On the **Input/Output** page, `I` creates the initial solution and `C` runs the
+app check of chapter 12:
+
+![The Input/Output page after creating the initial solution and running the check](images/tui-check.svg)
+
+On the **Move** page, `B` selects the best move; the panel shows its incremental
+and full evaluation, and `A` would apply it:
+
+![The Move page with the best 2-opt move and its delta check](images/tui-moves.svg)
+
+On the **Run** page, a runner runs in the background with live progress and can
+be stopped with `X`; here Simulated Annealing improves the tour from 29 to 26:
+
+![The Run page after a Simulated Annealing run](images/tui-run.svg)
+
+The screenshots are generated from the real program by
+`scripts/tui-snapshots.py`, which drives it in a pseudo-terminal.
 
 ## Loading, saving and displaying
 

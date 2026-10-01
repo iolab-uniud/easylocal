@@ -55,6 +55,8 @@ commits since the previous release and are reviewed manually before tagging.
   identical to them. Dedicated chapters cover checking a composed problem
   (`check`, Tester checks), the TextUI and a REST service; their programs are
   built with the optional components, and the REST one is exercised over HTTP.
+  The TextUI chapter shows screenshots generated from the real program by
+  `scripts/tui-snapshots.py` (needs `pyte`).
 - Tools give stochastic runners an RNG they own, from a configurable seed:
   `Tester{app, seed}` / `set_seed`, the TextUI `seed` option (also editable on
   its Run page), and REST's per-run
