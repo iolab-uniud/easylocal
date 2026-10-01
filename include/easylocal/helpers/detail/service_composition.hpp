@@ -2,7 +2,7 @@
 
 #include <easylocal/core/aggregation.hpp>
 #include <easylocal/config/tree.hpp>
-#include <easylocal/helpers/solution_manager_concepts.hpp>
+#include <easylocal/helpers/solution_manager.hpp>
 #include <easylocal/core/logging.hpp>
 
 #include <concepts>

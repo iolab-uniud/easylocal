@@ -1,5 +1,5 @@
 #include <easylocal/config/file.hpp>
-#include <easylocal/runners/temperature_policy.hpp>
+#include <easylocal/runners/simulated_annealing.hpp>
 
 #include <array>
 #include <cassert>

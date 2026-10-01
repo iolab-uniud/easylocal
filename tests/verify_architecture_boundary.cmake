@@ -47,4 +47,49 @@ foreach(_header IN LISTS _adapter_headers)
     endif()
 endforeach()
 
-message(STATUS "EasyLocal Core/adapter header boundary is clean")
+# Component layering: a header may include only headers of its own or of a
+# lower layer.
+#   0 config, trace   1 core   2 helpers   3 runners, testing
+#   4 solvers         5 app    6 adapters
+# Root umbrella headers take the layer of the directory they aggregate.
+function(easylocal_header_layer relative out_var)
+    if(relative MATCHES "^(config|trace)(/|\\.hpp$)")
+        set(_layer 0)
+    elseif(relative MATCHES "^core(/|\\.hpp$)")
+        set(_layer 1)
+    elseif(relative MATCHES "^helpers(/|\\.hpp$)")
+        set(_layer 2)
+    elseif(relative MATCHES "^(runners|testing)(/|\\.hpp$)")
+        set(_layer 3)
+    elseif(relative MATCHES "^solvers(/|\\.hpp$)")
+        set(_layer 4)
+    elseif(relative MATCHES "^app(/|\\.hpp$)" OR relative STREQUAL "easylocal.hpp")
+        set(_layer 5)
+    elseif(relative MATCHES "^adapters(/|\\.hpp$)")
+        set(_layer 6)
+    else()
+        message(FATAL_ERROR "Header outside the component layout: easylocal/${relative}")
+    endif()
+    set(${out_var} ${_layer} PARENT_SCOPE)
+endfunction()
+
+foreach(_header IN LISTS _all_headers)
+    file(RELATIVE_PATH _relative "${_include_root}" "${_header}")
+    easylocal_header_layer("${_relative}" _own_layer)
+
+    file(STRINGS "${_header}" _includes REGEX "^[ \t]*#[ \t]*include[ \t]*<easylocal/")
+    foreach(_include IN LISTS _includes)
+        string(REGEX REPLACE "^[^<]*<easylocal/([^>]+)>.*$" "\\1" _target "${_include}")
+        if(_target MATCHES "^third_party/")
+            continue()
+        endif()
+        easylocal_header_layer("${_target}" _target_layer)
+        if(_target_layer GREATER _own_layer)
+            message(FATAL_ERROR
+                "Layering violation: easylocal/${_relative} (layer ${_own_layer}) "
+                "includes easylocal/${_target} (layer ${_target_layer})")
+        endif()
+    endforeach()
+endforeach()
+
+message(STATUS "EasyLocal Core/adapter header boundary and layering are clean")

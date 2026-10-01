@@ -3,7 +3,8 @@
 #include "solution_manager.hpp"
 #include "swap_move.hpp"
 
-#include <easylocal/helpers/service_base.hpp>
+#include <easylocal/helpers/solution_manager.hpp>
+#include <easylocal/helpers/neighborhood_explorer.hpp>
 
 #include <algorithm>
 #include <cassert>

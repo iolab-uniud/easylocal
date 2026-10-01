@@ -1,5 +1,5 @@
 #include <easylocal/runners/runner.hpp>
-#include <easylocal/helpers/solution_manager_concepts.hpp>
+#include <easylocal/helpers/solution_manager.hpp>
 
 #include <cstdint>
 #include <iostream>

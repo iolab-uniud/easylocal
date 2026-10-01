@@ -1,6 +1,5 @@
 #include <easylocal/runners/runner.hpp>
 #include <easylocal/runners/simulated_annealing.hpp>
-#include <easylocal/runners/temperature_policy.hpp>
 
 #include <optional>
 #include <random>

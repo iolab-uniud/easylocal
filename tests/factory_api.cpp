@@ -3,7 +3,6 @@
 #include <easylocal/runners/best_improvement.hpp>
 #include <easylocal/runners/first_improvement.hpp>
 #include <easylocal/runners/simulated_annealing.hpp>
-#include <easylocal/runners/temperature_policy.hpp>
 
 #include <cassert>
 #include <concepts>

@@ -13,6 +13,13 @@ commits since the previous release and are reviewed manually before tagging.
   `solvers/`, `app/` (app, check, Tester), `trace`, `config/`, `testing/`, and
   optional `adapters/` (`toml.hpp`, `tui/`, `rest/`). Search algorithms move
   from `easylocal::search` to `easylocal::runners`.
+  Composition recipes move out of the runner into `helpers/recipes.hpp`;
+  SolutionManager/NeighborhoodExplorer concepts, customization points and
+  convenience bases are consolidated in `helpers/solution_manager.hpp` and
+  `helpers/neighborhood_explorer.hpp`; Simulated Annealing policies live in
+  `runners/simulated_annealing.hpp` (`runners::temperature`,
+  `runners::MetropolisAcceptance`); `trace.hpp` is split into `trace/`.
+  Directory layering is enforced by the architecture test.
 - **Breaking:** search algorithms define a single `run(Run&, solution, ...)`
   against the framework-owned `easylocal::search_run`, which owns counters,
   evaluation budget, cancellation, progress reporting and core trace events.

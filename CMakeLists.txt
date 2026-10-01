@@ -364,6 +364,10 @@ if(EASYLOCAL_ENABLE_TUI)
         DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/EasyLocal"
     )
     install(
+        FILES include/easylocal/adapters/tui.hpp
+        DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/easylocal/adapters"
+    )
+    install(
         DIRECTORY include/easylocal/adapters/tui/
         DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/easylocal/adapters/tui"
     )

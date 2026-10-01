@@ -1,6 +1,6 @@
 #pragma once
 
-#include <easylocal/helpers/solution_manager_concepts.hpp>
+#include <easylocal/helpers/solution_manager.hpp>
 #include <easylocal/testing/check.hpp>
 
 #include <concepts>

@@ -74,6 +74,7 @@ if(TARGET EasyLocal::TUI)
         RELATIVE "${PROJECT_SOURCE_DIR}/include"
         "${PROJECT_SOURCE_DIR}/include/easylocal/adapters/tui/*.hpp"
     )
+    list(APPEND EASYLOCAL_TUI_HEADERS easylocal/adapters/tui.hpp)
     easylocal_add_header_self_containment_test(
         tui
         EasyLocal::TUI

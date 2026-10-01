@@ -2,7 +2,7 @@
 #include "neighborhood_explorer.hpp"
 #include "solution_manager.hpp"
 
-#include <easylocal/helpers/cursor_moves.hpp>
+#include <easylocal/helpers/neighborhood_explorer.hpp>
 #include <easylocal/core/aggregation.hpp>
 #include <easylocal/runners/runner.hpp>
 

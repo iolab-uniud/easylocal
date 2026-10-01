@@ -1,4 +1,4 @@
-#include <easylocal/helpers/cursor_moves.hpp>
+#include <easylocal/helpers/neighborhood_explorer.hpp>
 #include "neighborhood_explorer.hpp"
 #include "solution_manager.hpp"
 

@@ -2,7 +2,6 @@
 #include <easylocal/config/overrides.hpp>
 #include <easylocal/helpers/neighborhood_union.hpp>
 #include <easylocal/runners/simulated_annealing.hpp>
-#include <easylocal/runners/temperature_policy.hpp>
 
 #include <array>
 #include <cassert>

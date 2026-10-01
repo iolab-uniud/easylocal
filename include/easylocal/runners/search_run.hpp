@@ -1,8 +1,9 @@
 #pragma once
 
-#include <easylocal/helpers/cursor_moves.hpp>
+#include <easylocal/helpers/neighborhood_explorer.hpp>
 #include <easylocal/runners/run_control.hpp>
-#include <easylocal/trace.hpp>
+#include <easylocal/trace/events.hpp>
+#include <easylocal/trace/tracer.hpp>
 
 #include <concepts>
 #include <cstddef>

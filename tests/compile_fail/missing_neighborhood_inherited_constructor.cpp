@@ -1,5 +1,6 @@
 #include <easylocal/runners/runner.hpp>
-#include <easylocal/helpers/service_base.hpp>
+#include <easylocal/helpers/solution_manager.hpp>
+#include <easylocal/helpers/neighborhood_explorer.hpp>
 
 struct Instance {};
 struct Solution {};

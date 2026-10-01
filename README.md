@@ -94,11 +94,30 @@ standard CMake search location. The imported target propagates the installed
 include directory and the C++23 compile requirement; consumers do not need to
 add EasyLocal include paths manually.
 
-Consumers use the public headers under:
+Consumers use the public headers under `include/easylocal/`, organized by
+component specialization:
 
 ```text
-include/easylocal/
+easylocal/
+  easylocal.hpp   Core umbrella (everything except adapters/)
+  config/         typed parameters, configuration tree, CLI/file frontends
+  trace/          semantic search events, tracer protocol, recorders
+  core/           cost model, cost semantics, aggregation, logging
+  helpers/        problem-side components: SolutionManager,
+                  NeighborhoodExplorer, neighborhood_union, recipes
+  runners/        Runner, search_run, run_control and the search
+                  algorithms (easylocal::runners)
+  solvers/        orchestration from an Input to a final solution
+  testing/        unit-test checks for user components
+  app/            app graph, app check, Tester
+  adapters/       optional components: toml.hpp, tui/, rest/
 ```
+
+Each directory may include only directories listed above it (`testing/` sits
+beside `runners/`); `helpers.hpp`, `runners.hpp` and `trace.hpp` aggregate
+their directories. The architecture test enforces this layering and keeps Core
+free of any adapter dependency. `detail/` subdirectories are implementation
+headers, installed but not supported as direct entry points.
 
 The test suite checks header self-containment and multi-translation-unit use to
 catch ODR issues that are particularly relevant to header-only libraries. It

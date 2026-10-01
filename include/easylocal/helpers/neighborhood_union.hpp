@@ -1,10 +1,12 @@
 #pragma once
 
-#include <easylocal/helpers/cursor_moves.hpp>
+#include <easylocal/helpers/neighborhood_explorer.hpp>
 
 #include <easylocal/config/tree.hpp>
-#include <easylocal/runners/runner.hpp>
-#include <easylocal/trace.hpp>
+#include <easylocal/helpers/detail/evaluation.hpp>
+#include <easylocal/helpers/recipes.hpp>
+#include <easylocal/trace/events.hpp>
+#include <easylocal/trace/tracer.hpp>
 
 #include <algorithm>
 #include <array>

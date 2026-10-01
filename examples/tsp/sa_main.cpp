@@ -11,7 +11,6 @@
 #include <easylocal/helpers/neighborhood_union.hpp>
 #include <easylocal/runners/runner.hpp>
 #include <easylocal/runners/simulated_annealing.hpp>
-#include <easylocal/runners/temperature_policy.hpp>
 
 #include <cstddef>
 #include <cstdint>

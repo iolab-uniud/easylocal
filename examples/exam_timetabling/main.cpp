@@ -10,7 +10,6 @@
 #include <easylocal/config/tree.hpp>
 #include <easylocal/runners/runner.hpp>
 #include <easylocal/runners/simulated_annealing.hpp>
-#include <easylocal/runners/temperature_policy.hpp>
 
 #include <cstddef>
 #include <cstdint>

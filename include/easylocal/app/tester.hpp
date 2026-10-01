@@ -19,10 +19,10 @@
 #include <vector>
 
 #include <easylocal/app/check.hpp>
-#include <easylocal/helpers/cursor_moves.hpp>
+#include <easylocal/helpers/neighborhood_explorer.hpp>
 #include <easylocal/core/cost_semantics.hpp>
 #include <easylocal/helpers/detail/evaluation.hpp>
-#include <easylocal/helpers/solution_manager_concepts.hpp>
+#include <easylocal/helpers/solution_manager.hpp>
 
 namespace easylocal
 {

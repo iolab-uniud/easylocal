@@ -8,9 +8,7 @@
 #include <easylocal/runners/run_control.hpp>
 #include <easylocal/runners/runner.hpp>
 #include <easylocal/config/tree.hpp>
-#include <easylocal/runners/metropolis_acceptance.hpp>
 #include <easylocal/runners/simulated_annealing.hpp>
-#include <easylocal/runners/temperature_policy.hpp>
 #include <easylocal/trace.hpp>
 
 #include <cstddef>

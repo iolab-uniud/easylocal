@@ -1,8 +1,7 @@
 #pragma once
 
-#include <easylocal/helpers/cursor_moves.hpp>
+#include <easylocal/helpers/neighborhood_explorer.hpp>
 
-#include <easylocal/helpers/neighborhood_concepts.hpp>
 
 #include <concepts>
 #include <type_traits>

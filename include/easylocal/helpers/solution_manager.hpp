@@ -2,9 +2,10 @@
 
 #include <concepts>
 
+// SolutionManager: problem-side solution semantics (validity, evaluation,
+// optional construction capabilities).
 namespace easylocal
 {
-
 
 template<class SM>
 concept base_solution_manager =
@@ -65,5 +66,29 @@ concept has_random_solution =
             solution_manager.random_solution(rng)
         } -> std::same_as<typename SM::solution_type>;
     };
+
+// Optional non-virtual convenience base: associated types and the bound
+// Input reference. Not required by the structural concepts above.
+template<class Input, class Solution>
+class solution_manager_base
+{
+public:
+    using input_type = Input;
+    using solution_type = Solution;
+
+    explicit solution_manager_base(const input_type& input) noexcept
+        : input_{input}
+    {
+    }
+
+    [[nodiscard]]
+    auto input() const noexcept -> const input_type&
+    {
+        return input_;
+    }
+
+protected:
+    const input_type& input_;
+};
 
 } // namespace easylocal
