@@ -526,9 +526,9 @@ public:
         std::vector<std::string_view> names;
         names.reserve(App::runner_count);
         app_.for_each_runner_registration(
-            [&]<class Tag>(
+            [&]<class Algorithm>(
                 const std::string_view name,
-                const typename Tag::config_type&) {
+                const typename Algorithm::parameters_type&) {
                 names.push_back(name);
             });
         return names;
@@ -543,9 +543,9 @@ public:
 
         bool found = false;
         app_.for_each_runner_registration_indexed(
-            [&]<class Tag, std::size_t Index>(
+            [&]<class Algorithm, std::size_t Index>(
                 const std::string_view registered_name,
-                const typename Tag::config_type&) {
+                const typename Algorithm::parameters_type&) {
                 if (found || registered_name != name)
                 {
                     return;

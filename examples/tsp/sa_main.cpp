@@ -135,8 +135,8 @@ int main(int argc, char* argv[])
             .random_biases = {3.0, 1.0},
         };
 
-        // Equivalent tag-based spelling:
-        // auto runner = make_runner<easylocal::runner::simulated_annealing>(
+        // Equivalent factory spelling:
+        // auto runner = make_runner<SimulatedAnnealing<FixedLength>>(
         //     FixedLength{temperature_parameters}) | ...;
         // No aggregator is needed here: with a single weightable cost
         // component EasyLocal materializes the configurable unit-weight

@@ -36,7 +36,7 @@ int main()
                 | easylocal::delta<
                       TourLengthComponent,
                       TwoOptTourLengthDeltaEvaluator>())
-            .runner<easylocal::runner::first_improvement>("fi");
+            .runner<easylocal::search::FirstImprovement>("fi");
 
     auto swap =
         easylocal::app("tsp-swap")
@@ -50,10 +50,10 @@ int main()
                 | easylocal::delta<
                       TourLengthComponent,
                       SwapTourLengthDeltaEvaluator>())
-            .runner<easylocal::runner::first_improvement>("fi");
+            .runner<easylocal::search::FirstImprovement>("fi");
 
-    two_opt.runner_config<easylocal::runner::first_improvement>().max_evaluations = 100;
-    swap.runner_config<easylocal::runner::first_improvement>().max_evaluations = 100;
+    two_opt.runner_config<easylocal::search::FirstImprovement>().max_evaluations = 100;
+    swap.runner_config<easylocal::search::FirstImprovement>().max_evaluations = 100;
 
     easylocal::tui::run_launcher(
         {

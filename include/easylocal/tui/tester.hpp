@@ -1,6 +1,7 @@
 #pragma once
 
 #include <easylocal/run_control.hpp>
+#include <easylocal/search_run.hpp>
 #include <easylocal/aggregation.hpp>
 #include <easylocal/check.hpp>
 #include <easylocal/tester.hpp>
@@ -1993,17 +1994,6 @@ private:
             progress_visible_ = true;
             set_status(status_kind::info, "Runner executing: " + run_name_);
 
-            run_supports_stop_ = false;
-            application.for_each_runner_registration_indexed(
-                [&]<class Tag, std::size_t Index>(
-                    const std::string_view registered_name,
-                    const typename Tag::config_type&) {
-                    if (registered_name == run_name_)
-                    {
-                        run_supports_stop_ = decltype(application)::template
-                            runner_supports_run_control<Index>;
-                    }
-                });
             run_progress_state_ = std::make_shared<async_progress_state>();
 
             std::promise<async_runner_result<typename tester_type::solution_type>> promise;
@@ -2050,9 +2040,9 @@ private:
                     try
                     {
                         application.for_each_runner_registration_indexed(
-                            [&]<class Tag, std::size_t Index>(
+                            [&]<class Algorithm, std::size_t Index>(
                                 const std::string_view registered_name,
-                                const typename Tag::config_type&) {
+                                const typename Algorithm::parameters_type&) {
                                 if (completion.found || registered_name != name)
                                 {
                                     return;
@@ -2070,22 +2060,11 @@ private:
                                         std::move(result.solution));
                                 };
 
-                                if constexpr (decltype(application)::template
-                                                  runner_supports_run_control<Index>)
-                                {
-                                    consume_result(
-                                        application.template run_controlled_at<Index>(
-                                            *input,
-                                            std::move(solution),
-                                            control));
-                                    completion.cancelled = stop_token.stop_requested();
-                                }
-                                else
-                                {
-                                    consume_result(application.template run_at<Index>(
-                                        *input,
-                                        std::move(solution)));
-                                }
+                                consume_result(application.template run_at<Index>(
+                                    *input,
+                                    std::move(solution),
+                                    easylocal::with(control)));
+                                completion.cancelled = stop_token.stop_requested();
                                 completion.found = true;
                             });
                     }
@@ -2110,7 +2089,6 @@ private:
             progress_visible_ = false;
             progress_ = {};
             run_progress_state_.reset();
-            run_supports_stop_ = false;
             set_status(status_kind::error, "Run runner: " + std::string{error.what()});
         }
         catch (...)
@@ -2118,7 +2096,6 @@ private:
             progress_visible_ = false;
             progress_ = {};
             run_progress_state_.reset();
-            run_supports_stop_ = false;
             set_status(status_kind::error, "Run runner: unknown error");
         }
     }
@@ -2130,14 +2107,6 @@ private:
             set_status(status_kind::warning, "No runner is currently executing");
             return;
         }
-        if (!run_supports_stop_)
-        {
-            set_status(
-                status_kind::warning,
-                "This runner does not support cooperative stop");
-            return;
-        }
-
         run_worker_.request_stop();
         progress_.label = "Stopping " + run_name_;
         set_status(status_kind::info, "Stop requested: " + run_name_);
@@ -2188,7 +2157,6 @@ private:
         progress_visible_ = false;
         progress_ = {};
         run_progress_state_.reset();
-        run_supports_stop_ = false;
 
         if (!completion.error.empty())
         {
@@ -2868,7 +2836,6 @@ private:
     std::jthread run_worker_{};
     std::future<async_runner_result<typename tester_type::solution_type>> run_future_{};
     std::shared_ptr<async_progress_state> run_progress_state_;
-    bool run_supports_stop_{};
     std::string run_name_;
     std::string run_before_;
     bool input_visible_{};

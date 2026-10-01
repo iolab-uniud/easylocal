@@ -72,10 +72,10 @@ auto make_io_application(const char* name)
     auto application = easylocal::app(name)
         .template solution_manager<solution_manager_type>()
         .template neighborhood<neighborhood_type>()
-        .template runner<easylocal::runner::first_improvement>("fi");
+        .template runner<easylocal::search::FirstImprovement>("fi");
 
     application
-        .template runner_config<easylocal::runner::first_improvement>()
+        .template runner_config<easylocal::search::FirstImprovement>()
         .max_evaluations = 1;
 
     return application;

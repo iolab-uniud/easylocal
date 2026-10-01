@@ -4,18 +4,24 @@ EasyLocal separates framework diagnostics (`<easylocal/logging.hpp>`) from
 search instrumentation (`<easylocal/trace.hpp>`). Tracing produces typed search
 events suitable for trajectory analysis; it is not a progress-log facility.
 
-The ordinary `run(...)` overload instantiates a `trace::null_tracer`. Its
+An ordinary `run(...)` call instantiates a `trace::null_tracer`. Its
 `observes<Event>` value is `false`, so event construction and emission are
-removed with `if constexpr`. Applications that need data pass a tracer explicitly:
+removed with `if constexpr`. Applications that need data pass a tracer explicitly
+as the trailing run option:
 
 ```cpp
 using cost_type = /* runner cost type */;
 easylocal::trace::memory_recorder<cost_type> trace;
-auto result = bound_runner.run(initial_solution, trace);
+auto result = bound_runner.run(initial_solution, easylocal::with(trace));
 ```
 
-First/Best Improvement emit run lifecycle, move evaluation/acceptance and local
-optimum events. Simulated Annealing additionally emits incumbent updates.
+Core events are emitted by the framework-owned `easylocal::search_run`, not by
+the individual algorithms: `start()` emits `run_started`, `evaluate_move()`
+emits `move_evaluated`, `commit()` emits `move_accepted`, `finish()` emits
+`run_finished` (preceded by `local_optimum` when that is the termination reason)
+and `random_move()` forwards `neighborhood_selection` events. Algorithms that
+track a best-so-far solution, such as Simulated Annealing, call
+`incumbent_updated()`; custom events can be sent with `run.emit(event)`.
 
 ## Composite-neighborhood provenance
 

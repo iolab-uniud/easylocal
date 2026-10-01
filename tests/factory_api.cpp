@@ -1,5 +1,4 @@
 #include <easylocal/runner.hpp>
-#include <easylocal/runner_tag.hpp>
 #include <easylocal/solver.hpp>
 #include <easylocal/search/best_improvement.hpp>
 #include <easylocal/search/first_improvement.hpp>
@@ -113,11 +112,6 @@ struct IdentityAlgorithm
     }
 };
 
-struct identity_runner
-{
-    [[nodiscard]] static auto make() { return IdentityAlgorithm{}; }
-};
-
 struct ConfiguredAlgorithm
 {
     explicit ConfiguredAlgorithm(int token) : token_{token} {}
@@ -137,10 +131,6 @@ private:
     int token_{};
 };
 
-using configured_algorithm_tag = easylocal::runner::algorithm_tag<
-    ConfiguredAlgorithm,
-    int>;
-
 
 } // namespace
 
@@ -148,32 +138,29 @@ int main()
 {
     using namespace easylocal;
 
-    auto first = make_runner<runner::first_improvement>(
+    auto first = make_runner<search::FirstImprovement>(
         search::FirstImprovementParameters{.max_evaluations = 10});
     static_assert(std::same_as<
         decltype(first),
         Runner<search::FirstImprovement>>);
 
-    auto best = make_runner<runner::best_improvement>(
+    auto best = make_runner<search::BestImprovement>(
         search::BestImprovementParameters{.max_evaluations = 10});
     static_assert(std::same_as<
         decltype(best),
         Runner<search::BestImprovement>>);
 
-    auto configured = make_runner<configured_algorithm_tag>(7);
+    auto configured = make_runner<ConfiguredAlgorithm>(7);
     static_assert(std::same_as<
         decltype(configured),
         Runner<ConfiguredAlgorithm>>);
 
-    runner::SimulatedAnnealingConfig sa_config{
-        .temperature_policy = search::temperature::Classic{
-            search::temperature::ClassicParameters{
-                .initial_temperature = 10.0,
-                .final_temperature = 1.0,
-                .cooling_rate = 0.9,
-                .samples_per_temperature = 4}},
-    };
-    auto sa = make_runner<runner::simulated_annealing>(std::move(sa_config));
+    auto sa = Runner{search::SimulatedAnnealing{search::temperature::Classic{
+        search::temperature::ClassicParameters{
+            .initial_temperature = 10.0,
+            .final_temperature = 1.0,
+            .cooling_rate = 0.9,
+            .samples_per_temperature = 4}}}};
     static_assert(std::same_as<
         decltype(sa),
         Runner<search::SimulatedAnnealing<search::temperature::Classic>>>);
@@ -206,7 +193,7 @@ int main()
     static_assert(detail::is_neighborhood_spec_v<std::remove_cvref_t<decltype(nhe_recipe)>>);
 
     auto configured_runner =
-        make_runner<identity_runner>()
+        make_runner<IdentityAlgorithm>()
         | make_solution_manager<SolutionManager>()
         | make_neighborhood_explorer<NeighborhoodExplorer>();
 

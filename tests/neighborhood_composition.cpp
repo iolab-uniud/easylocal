@@ -370,20 +370,14 @@ public:
 class TraceRandomSelection
 {
 public:
-    template<class Context, class RNG, class Tracer>
+    template<class Run, class RNG>
     [[nodiscard]]
     auto run(
-        const Context& context,
-        const typename Context::solution_type& solution,
-        RNG& rng,
-        Tracer& tracer) const -> bool
+        Run& run,
+        const typename Run::solution_type& solution,
+        RNG& rng) const -> bool
     {
-        auto observer = [&](const easylocal::trace::event::neighborhood_selection& event) {
-            easylocal::trace::emit(tracer, event);
-        };
-        return context.neighborhood_explorer()
-            .random_move_traced(solution, rng, observer)
-            .has_value();
+        return run.random_move(solution, rng).has_value();
     }
 };
 
@@ -590,7 +584,7 @@ int main()
         "first improvement consumes a neighborhood union without algorithm changes");
 
     easylocal::trace::memory_recorder<HardCost> first_trace;
-    const auto traced_first_result = bound_first.run(initial, first_trace);
+    const auto traced_first_result = bound_first.run(initial, easylocal::with(first_trace));
     bool saw_first_route = false;
     for (const auto& record : first_trace.records())
     {
@@ -672,7 +666,7 @@ int main()
         "delta propagation remains compositional through nested neighborhood unions");
 
     easylocal::trace::memory_recorder<HardCost> nested_trace;
-    const auto nested_traced_result = bound_nested_all_delta.run(initial, nested_trace);
+    const auto nested_traced_result = bound_nested_all_delta.run(initial, easylocal::with(nested_trace));
     bool saw_nested_route = false;
     for (const auto& record : nested_trace.records())
     {
@@ -700,7 +694,7 @@ int main()
     std::mt19937 traced_rng{4242};
     easylocal::trace::memory_recorder<HardCost> sampling_trace;
     ok &= expect(
-        bound_traced_sampler.run(initial, traced_rng, sampling_trace),
+        bound_traced_sampler.run(initial, traced_rng, easylocal::with(sampling_trace)),
         "traced nested union produces a random move");
 
     std::size_t selection_events = 0;

@@ -19,64 +19,63 @@ namespace easylocal
 namespace detail
 {
 
-template<class Tag>
-concept configurable_app_runner_tag =
+// A runner algorithm registered in an app is identified by its own class and
+// is constructed from its default-initializable parameters_type.
+template<class Algorithm>
+concept configurable_app_algorithm =
     requires {
-        typename Tag::config_type;
+        typename Algorithm::parameters_type;
     } &&
-    std::default_initializable<typename Tag::config_type> &&
-    requires(typename Tag::config_type config) {
-        Tag::make(std::move(config));
-    };
+    std::default_initializable<typename Algorithm::parameters_type> &&
+    std::constructible_from<Algorithm, typename Algorithm::parameters_type>;
 
-template<configurable_app_runner_tag Tag>
+template<configurable_app_algorithm Algorithm>
 struct app_runner_registration
 {
-    using tag_type = Tag;
-    using config_type = typename Tag::config_type;
-    using algorithm_type = decltype(Tag::make(std::declval<config_type>()));
+    using algorithm_type = Algorithm;
+    using config_type = typename Algorithm::parameters_type;
 
     std::string name;
     config_type config{};
 };
 
-template<class Tag, class... Registrations>
+template<class Algorithm, class... Registrations>
 inline constexpr std::size_t app_runner_count_v =
     (std::size_t{0} + ... +
-     (std::same_as<Tag, typename Registrations::tag_type> ? 1U : 0U));
+     (std::same_as<Algorithm, typename Registrations::algorithm_type> ? 1U : 0U));
 
-template<class Tag, std::size_t Index, class First, class... Rest>
+template<class Algorithm, std::size_t Index, class First, class... Rest>
 consteval auto app_runner_index_impl() -> std::size_t
 {
-    if constexpr (std::same_as<Tag, typename First::tag_type>)
+    if constexpr (std::same_as<Algorithm, typename First::algorithm_type>)
     {
         return Index;
     }
     else
     {
-        static_assert(sizeof...(Rest) != 0, "runner tag is not registered in app");
-        return app_runner_index_impl<Tag, Index + 1, Rest...>();
+        static_assert(sizeof...(Rest) != 0, "runner algorithm is not registered in app");
+        return app_runner_index_impl<Algorithm, Index + 1, Rest...>();
     }
 }
 
-template<class Tag, class... Registrations>
+template<class Algorithm, class... Registrations>
 consteval auto app_runner_index() -> std::size_t
 {
     static_assert(
-        app_runner_count_v<Tag, Registrations...> == 1,
-        "runner<Tag>() requires exactly one registration of Tag");
-    return app_runner_index_impl<Tag, 0, Registrations...>();
+        app_runner_count_v<Algorithm, Registrations...> == 1,
+        "runner<Algorithm>() requires exactly one registration of Algorithm");
+    return app_runner_index_impl<Algorithm, 0, Registrations...>();
 }
 
-template<class Tag, std::size_t Index = 0, class Tuple>
+template<class Algorithm, std::size_t Index = 0, class Tuple>
 [[nodiscard]]
 auto app_runner_registration_by_name(Tuple& registrations, const std::string_view name)
-    -> app_runner_registration<Tag>&
+    -> app_runner_registration<Algorithm>&
 {
     if constexpr (Index == std::tuple_size_v<std::remove_reference_t<Tuple>>)
     {
         throw std::invalid_argument{
-            "runner '" + std::string{name} + "' is not registered for the requested tag"};
+            "runner '" + std::string{name} + "' is not registered for the requested algorithm"};
     }
     else
     {
@@ -84,7 +83,7 @@ auto app_runner_registration_by_name(Tuple& registrations, const std::string_vie
             Index,
             std::remove_reference_t<Tuple>>;
 
-        if constexpr (std::same_as<Tag, typename registration_type::tag_type>)
+        if constexpr (std::same_as<Algorithm, typename registration_type::algorithm_type>)
         {
             auto& registration = std::get<Index>(registrations);
             if (registration.name == name)
@@ -93,22 +92,22 @@ auto app_runner_registration_by_name(Tuple& registrations, const std::string_vie
             }
         }
 
-        return app_runner_registration_by_name<Tag, Index + 1>(
+        return app_runner_registration_by_name<Algorithm, Index + 1>(
             registrations,
             name);
     }
 }
 
-template<class Tag, std::size_t Index = 0, class Tuple>
+template<class Algorithm, std::size_t Index = 0, class Tuple>
 [[nodiscard]]
 auto app_runner_registration_by_name(
     const Tuple& registrations,
-    const std::string_view name) -> const app_runner_registration<Tag>&
+    const std::string_view name) -> const app_runner_registration<Algorithm>&
 {
     if constexpr (Index == std::tuple_size_v<std::remove_reference_t<Tuple>>)
     {
         throw std::invalid_argument{
-            "runner '" + std::string{name} + "' is not registered for the requested tag"};
+            "runner '" + std::string{name} + "' is not registered for the requested algorithm"};
     }
     else
     {
@@ -116,7 +115,7 @@ auto app_runner_registration_by_name(
             Index,
             std::remove_reference_t<Tuple>>;
 
-        if constexpr (std::same_as<Tag, typename registration_type::tag_type>)
+        if constexpr (std::same_as<Algorithm, typename registration_type::algorithm_type>)
         {
             const auto& registration = std::get<Index>(registrations);
             if (registration.name == name)
@@ -125,7 +124,7 @@ auto app_runner_registration_by_name(
             }
         }
 
-        return app_runner_registration_by_name<Tag, Index + 1>(
+        return app_runner_registration_by_name<Algorithm, Index + 1>(
             registrations,
             name);
     }
@@ -183,17 +182,7 @@ public:
     template<class... RunArgs>
     [[nodiscard]]
     auto run(solution_type solution, RunArgs&&... run_args)
-        requires requires(
-            Algorithm& algorithm,
-            const runner_context<SM, NHE>& context,
-            solution_type candidate,
-            RunArgs&&... forwarded_args)
-        {
-            algorithm.run(
-                context,
-                std::move(candidate),
-                std::forward<RunArgs>(forwarded_args)...);
-        }
+        requires algorithm_runnable<Algorithm, runner_context<SM, NHE>, RunArgs...>
     {
         assert(
             solution_manager_.is_valid(solution) &&
@@ -204,42 +193,11 @@ public:
             neighborhood_,
         };
 
-        return algorithm_.run(
+        return run_algorithm(
+            algorithm_,
             context,
             std::move(solution),
             std::forward<RunArgs>(run_args)...);
-    }
-
-    template<class... RunArgs>
-    static constexpr bool supports_run_control =
-        algorithm_accepts_run_control<Algorithm, SM, NHE, RunArgs...>;
-
-    template<class... RunArgs>
-    [[nodiscard]]
-    auto run_controlled(
-        solution_type solution,
-        const run_control& control,
-        RunArgs&&... run_args)
-    {
-        if constexpr (supports_run_control<RunArgs...>)
-        {
-            assert(
-                solution_manager_.is_valid(solution) &&
-                "initial Solution must be compatible with the app Input");
-
-            const runner_context<SM, NHE> context{solution_manager_, neighborhood_};
-            return algorithm_.run(
-                context,
-                std::move(solution),
-                std::forward<RunArgs>(run_args)...,
-                control);
-        }
-        else
-        {
-            return run(
-                std::move(solution),
-                std::forward<RunArgs>(run_args)...);
-        }
     }
 
 private:
@@ -317,11 +275,11 @@ public:
         return neighborhood_;
     }
 
-    template<class Tag>
+    template<class Algorithm>
     [[nodiscard]]
     auto runner()
     {
-        constexpr auto index = app_runner_index<Tag, Registrations...>();
+        constexpr auto index = app_runner_index<Algorithm, Registrations...>();
         using registration_type =
             std::tuple_element_t<index, std::tuple<Registrations...>>;
         using algorithm_type = typename registration_type::algorithm_type;
@@ -355,25 +313,12 @@ public:
         };
     }
 
-    template<class Tag, class... RunArgs>
+    template<class Algorithm, class... RunArgs>
     [[nodiscard]]
     auto run(typename solution_manager_type::solution_type solution, RunArgs&&... args)
     {
-        return runner<Tag>().run(
+        return runner<Algorithm>().run(
             std::move(solution),
-            std::forward<RunArgs>(args)...);
-    }
-
-    template<class Tag, class... RunArgs>
-    [[nodiscard]]
-    auto run_controlled(
-        typename solution_manager_type::solution_type solution,
-        const run_control& control,
-        RunArgs&&... args)
-    {
-        return runner<Tag>().run_controlled(
-            std::move(solution),
-            control,
             std::forward<RunArgs>(args)...);
     }
 
@@ -389,37 +334,13 @@ public:
             std::forward<RunArgs>(args)...);
     }
 
-    template<std::size_t Index, class... RunArgs>
-        requires (Index < runner_count)
-    static constexpr bool runner_supports_run_control =
-        app_runner_ref<
-            typename std::tuple_element_t<
-                Index,
-                std::tuple<Registrations...>>::algorithm_type,
-            solution_manager_type,
-            neighborhood_explorer_type>::template supports_run_control<RunArgs...>;
-
-    template<std::size_t Index, class... RunArgs>
-        requires (Index < runner_count)
-    [[nodiscard]]
-    auto run_controlled_at(
-        typename solution_manager_type::solution_type solution,
-        const run_control& control,
-        RunArgs&&... args)
-    {
-        return runner_at<Index>().run_controlled(
-            std::move(solution),
-            control,
-            std::forward<RunArgs>(args)...);
-    }
-
 private:
     static auto make_algorithms(const std::tuple<Registrations...>& registrations)
     {
         return std::apply(
             [](const auto&... registration) {
                 return std::tuple{
-                    Registrations::tag_type::make(registration.config)...};
+                    typename Registrations::algorithm_type{registration.config}...};
             },
             registrations);
     }
@@ -531,13 +452,13 @@ public:
             easylocal::neighborhood<NHE>(std::forward<Args>(args)...));
     }
 
-    template<configurable_app_runner_tag Tag>
+    template<configurable_app_algorithm Algorithm>
         requires (!std::same_as<SMSpec, unconfigured_t>) &&
                  (!std::same_as<NHESpec, unconfigured_t>)
     [[nodiscard]]
     auto runner(std::string name) &&
     {
-        using registration_type = app_runner_registration<Tag>;
+        using registration_type = app_runner_registration<Algorithm>;
         auto registrations = std::tuple_cat(
             std::move(registrations_),
             std::tuple{registration_type{.name = std::move(name)}});
@@ -554,46 +475,46 @@ public:
         };
     }
 
-    template<class Tag>
-        requires (app_runner_count_v<Tag, Registrations...> == 1)
+    template<class Algorithm>
+        requires (app_runner_count_v<Algorithm, Registrations...> == 1)
     [[nodiscard]]
-    auto runner_config() noexcept -> typename Tag::config_type&
+    auto runner_config() noexcept -> typename Algorithm::parameters_type&
     {
-        constexpr auto index = app_runner_index<Tag, Registrations...>();
+        constexpr auto index = app_runner_index<Algorithm, Registrations...>();
         return std::get<index>(registrations_).config;
     }
 
-    template<class Tag>
-        requires (app_runner_count_v<Tag, Registrations...> == 1)
+    template<class Algorithm>
+        requires (app_runner_count_v<Algorithm, Registrations...> == 1)
     [[nodiscard]]
-    auto runner_config() const noexcept -> const typename Tag::config_type&
+    auto runner_config() const noexcept -> const typename Algorithm::parameters_type&
     {
-        constexpr auto index = app_runner_index<Tag, Registrations...>();
+        constexpr auto index = app_runner_index<Algorithm, Registrations...>();
         return std::get<index>(registrations_).config;
     }
 
-    template<class Tag>
-        requires (app_runner_count_v<Tag, Registrations...> > 0)
+    template<class Algorithm>
+        requires (app_runner_count_v<Algorithm, Registrations...> > 0)
     [[nodiscard]]
-    auto runner_config(const std::string_view name) -> typename Tag::config_type&
+    auto runner_config(const std::string_view name) -> typename Algorithm::parameters_type&
     {
-        return app_runner_registration_by_name<Tag>(registrations_, name).config;
+        return app_runner_registration_by_name<Algorithm>(registrations_, name).config;
     }
 
-    template<class Tag>
-        requires (app_runner_count_v<Tag, Registrations...> > 0)
+    template<class Algorithm>
+        requires (app_runner_count_v<Algorithm, Registrations...> > 0)
     [[nodiscard]]
-    auto runner_config(const std::string_view name) const -> const typename Tag::config_type&
+    auto runner_config(const std::string_view name) const -> const typename Algorithm::parameters_type&
     {
-        return app_runner_registration_by_name<Tag>(registrations_, name).config;
+        return app_runner_registration_by_name<Algorithm>(registrations_, name).config;
     }
 
-    template<class Tag>
-        requires (app_runner_count_v<Tag, Registrations...> == 1)
+    template<class Algorithm>
+        requires (app_runner_count_v<Algorithm, Registrations...> == 1)
     [[nodiscard]]
     auto runner_name() const noexcept -> std::string_view
     {
-        constexpr auto index = app_runner_index<Tag, Registrations...>();
+        constexpr auto index = app_runner_index<Algorithm, Registrations...>();
         return std::get<index>(registrations_).name;
     }
 
@@ -603,7 +524,7 @@ public:
         std::apply(
             [&](const auto&... registration) {
                 (visitor.template operator()<
-                     typename std::remove_cvref_t<decltype(registration)>::tag_type>(
+                     typename std::remove_cvref_t<decltype(registration)>::algorithm_type>(
                          std::string_view{registration.name},
                          registration.config),
                  ...);
@@ -618,7 +539,7 @@ public:
             (visitor.template operator()<
                  typename std::tuple_element_t<
                      Index,
-                     std::tuple<Registrations...>>::tag_type,
+                     std::tuple<Registrations...>>::algorithm_type,
                  Index>(
                      std::string_view{std::get<Index>(registrations_).name},
                      std::get<Index>(registrations_).config),
@@ -626,58 +547,58 @@ public:
         }(std::index_sequence_for<Registrations...>{});
     }
 
-    template<class Tag>
-        requires (app_runner_count_v<Tag, Registrations...> == 1) &&
+    template<class Algorithm>
+        requires (app_runner_count_v<Algorithm, Registrations...> == 1) &&
                  std::copy_constructible<SMSpec> &&
                  std::copy_constructible<NHESpec>
     [[nodiscard]]
     auto make_runner() const
     {
-        constexpr auto index = app_runner_index<Tag, Registrations...>();
+        constexpr auto index = app_runner_index<Algorithm, Registrations...>();
         const auto& registration = std::get<index>(registrations_);
-        return Runner{Tag::make(registration.config)}
+        return Runner{Algorithm{registration.config}}
             | solution_manager_spec_
             | neighborhood_spec_;
     }
 
-    template<class Tag>
-        requires (app_runner_count_v<Tag, Registrations...> > 0) &&
+    template<class Algorithm>
+        requires (app_runner_count_v<Algorithm, Registrations...> > 0) &&
                  std::copy_constructible<SMSpec> &&
                  std::copy_constructible<NHESpec>
     [[nodiscard]]
     auto make_runner(const std::string_view name) const
     {
         const auto& registration =
-            app_runner_registration_by_name<Tag>(registrations_, name);
-        return Runner{Tag::make(registration.config)}
+            app_runner_registration_by_name<Algorithm>(registrations_, name);
+        return Runner{Algorithm{registration.config}}
             | solution_manager_spec_
             | neighborhood_spec_;
     }
 
-    template<class SolverTag, class RunnerTag, class SolverConfig>
-        requires (app_runner_count_v<RunnerTag, Registrations...> == 1) &&
+    template<class SolverTag, class RunnerAlgorithm, class SolverConfig>
+        requires (app_runner_count_v<RunnerAlgorithm, Registrations...> == 1) &&
                  std::copy_constructible<SMSpec> &&
                  std::copy_constructible<NHESpec> &&
                  requires {
                      SolverTag::make(
-                         std::declval<const app_builder&>().template make_runner<RunnerTag>(),
+                         std::declval<const app_builder&>().template make_runner<RunnerAlgorithm>(),
                          std::declval<SolverConfig>());
                  }
     [[nodiscard]]
     auto make_solver(SolverConfig&& config) const
     {
         return easylocal::make_solver<SolverTag>(
-            make_runner<RunnerTag>(),
+            make_runner<RunnerAlgorithm>(),
             std::forward<SolverConfig>(config));
     }
 
-    template<class SolverTag, class RunnerTag, class SolverConfig>
-        requires (app_runner_count_v<RunnerTag, Registrations...> > 0) &&
+    template<class SolverTag, class RunnerAlgorithm, class SolverConfig>
+        requires (app_runner_count_v<RunnerAlgorithm, Registrations...> > 0) &&
                  std::copy_constructible<SMSpec> &&
                  std::copy_constructible<NHESpec> &&
                  requires {
                      SolverTag::make(
-                         std::declval<const app_builder&>().template make_runner<RunnerTag>(std::declval<std::string_view>()),
+                         std::declval<const app_builder&>().template make_runner<RunnerAlgorithm>(std::declval<std::string_view>()),
                          std::declval<SolverConfig>());
                  }
     [[nodiscard]]
@@ -686,7 +607,7 @@ public:
         SolverConfig&& config) const
     {
         return easylocal::make_solver<SolverTag>(
-            make_runner<RunnerTag>(runner_name),
+            make_runner<RunnerAlgorithm>(runner_name),
             std::forward<SolverConfig>(config));
     }
 
@@ -727,7 +648,7 @@ public:
     // SolutionManager, Neighborhood and algorithm state are reconstructed for
     // every invocation.  Adapters can therefore schedule independent runs
     // without making app_instance itself thread-safe.
-    template<class Tag, class Spec = SMSpec, class... RunArgs>
+    template<class Algorithm, class Spec = SMSpec, class... RunArgs>
         requires (!std::same_as<Spec, unconfigured_t>) &&
                  (!std::same_as<NHESpec, unconfigured_t>) &&
                  (sizeof...(Registrations) > 0)
@@ -738,26 +659,8 @@ public:
         RunArgs&&... args) const
     {
         auto runtime = for_input(input);
-        return runtime.template run<Tag>(
+        return runtime.template run<Algorithm>(
             std::move(solution),
-            std::forward<RunArgs>(args)...);
-    }
-
-    template<class Tag, class Spec = SMSpec, class... RunArgs>
-        requires (!std::same_as<Spec, unconfigured_t>) &&
-                 (!std::same_as<NHESpec, unconfigured_t>) &&
-                 (sizeof...(Registrations) > 0)
-    [[nodiscard]]
-    auto run_controlled(
-        const typename service_t<Spec>::input_type& input,
-        typename service_t<Spec>::solution_type solution,
-        const run_control& control,
-        RunArgs&&... args) const
-    {
-        auto runtime = for_input(input);
-        return runtime.template run_controlled<Tag>(
-            std::move(solution),
-            control,
             std::forward<RunArgs>(args)...);
     }
 
@@ -774,32 +677,6 @@ public:
         auto runtime = for_input(input);
         return runtime.template run_at<Index>(
             std::move(solution),
-            std::forward<RunArgs>(args)...);
-    }
-
-    template<std::size_t Index, class... RunArgs>
-        requires (Index < sizeof...(Registrations)) &&
-                 (!std::same_as<SMSpec, unconfigured_t>) &&
-                 (!std::same_as<NHESpec, unconfigured_t>)
-    static constexpr bool runner_supports_run_control =
-        app_instance<SMSpec, NHESpec, Registrations...>::template
-            runner_supports_run_control<Index, RunArgs...>;
-
-    template<std::size_t Index, class Spec = SMSpec, class... RunArgs>
-        requires (!std::same_as<Spec, unconfigured_t>) &&
-                 (!std::same_as<NHESpec, unconfigured_t>) &&
-                 (Index < sizeof...(Registrations))
-    [[nodiscard]]
-    auto run_controlled_at(
-        const typename service_t<Spec>::input_type& input,
-        typename service_t<Spec>::solution_type solution,
-        const run_control& control,
-        RunArgs&&... args) const
-    {
-        auto runtime = for_input(input);
-        return runtime.template run_controlled_at<Index>(
-            std::move(solution),
-            control,
             std::forward<RunArgs>(args)...);
     }
 

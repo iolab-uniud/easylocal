@@ -7,6 +7,18 @@ commits since the previous release and are reviewed manually before tagging.
 
 ### Unreleased — application adapters and isolated runs
 
+- **Breaking:** search algorithms define a single `run(Run&, solution, ...)`
+  against the framework-owned `easylocal::search_run`, which owns counters,
+  evaluation budget, cancellation, progress reporting and core trace events.
+  Every runner is cancellable; `run_controlled*`, `supports_run_control` and the
+  REST `stoppable` field/`run_not_cancellable` error are removed. Control and
+  tracer are passed as `run(..., easylocal::with(control, tracer))`. Built-in
+  algorithms return `easylocal::search_result` with `termination_reason`.
+- **Breaking:** runner tags (`runner_tag.hpp`, `runner::algorithm_tag`,
+  `runner::first_improvement`, ...) are removed; the algorithm class is its own
+  key (`make_runner<search::FirstImprovement>(...)`,
+  `app(...).runner<search::FirstImprovement>("fi")`) and exposes
+  `parameters_type`.
 - CI now keeps the compiler matrix focused on dependency-free Core, while a
   dedicated optional-components workflow covers forced FetchContent on Linux
   and installed system dependencies on Linux/macOS, including REST/Crow/Asio

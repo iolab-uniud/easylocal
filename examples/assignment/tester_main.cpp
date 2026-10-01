@@ -28,15 +28,15 @@ int main()
             | easylocal::delta<
                   CapacityCostComponent,
                   ReassignCapacityDeltaEvaluator>())
-        .runner<easylocal::runner::first_improvement>("fi")
-        .runner<demo::slow_first_improvement>("slow-fi");
+        .runner<easylocal::search::FirstImprovement>("fi")
+        .runner<demo::SlowFirstImprovement>("slow-fi");
 
     application
-        .runner_config<easylocal::runner::first_improvement>()
+        .runner_config<easylocal::search::FirstImprovement>()
         .max_evaluations = 100;
 
     auto& slow_config =
-        application.runner_config<demo::slow_first_improvement>();
+        application.runner_config<demo::SlowFirstImprovement>();
     slow_config.max_evaluations = 2000;
     slow_config.delay_ms = 5;
 

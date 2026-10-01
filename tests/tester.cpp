@@ -88,10 +88,10 @@ auto make_random_only_application()
     auto application = easylocal::app("random-only")
         .solution_manager<RandomOnlySolutionManager>()
         .neighborhood<RandomOnlyNeighborhood>()
-        .runner<easylocal::runner::first_improvement>("fi");
+        .runner<easylocal::search::FirstImprovement>("fi");
 
     application
-        .runner_config<easylocal::runner::first_improvement>()
+        .runner_config<easylocal::search::FirstImprovement>()
         .max_evaluations = 100;
 
     return application;
@@ -115,10 +115,10 @@ auto make_application()
     auto application = easylocal::app("assignment")
         .solution_manager(std::move(sm))
         .neighborhood(std::move(nhe))
-        .runner<easylocal::runner::first_improvement>("fi");
+        .runner<easylocal::search::FirstImprovement>("fi");
 
     application
-        .runner_config<easylocal::runner::first_improvement>()
+        .runner_config<easylocal::search::FirstImprovement>()
         .max_evaluations = 100;
 
     return application;
@@ -142,14 +142,14 @@ auto make_multi_runner_application()
     auto application = easylocal::app("assignment-multi-runner")
         .solution_manager(std::move(sm))
         .neighborhood(std::move(nhe))
-        .runner<easylocal::runner::first_improvement>("quick")
-        .runner<easylocal::runner::first_improvement>("deep");
+        .runner<easylocal::search::FirstImprovement>("quick")
+        .runner<easylocal::search::FirstImprovement>("deep");
 
     application
-        .runner_config<easylocal::runner::first_improvement>("quick")
+        .runner_config<easylocal::search::FirstImprovement>("quick")
         .max_evaluations = 1;
     application
-        .runner_config<easylocal::runner::first_improvement>("deep")
+        .runner_config<easylocal::search::FirstImprovement>("deep")
         .max_evaluations = 100;
 
     return application;
@@ -532,17 +532,17 @@ void app_copy_preserves_graph_configuration()
 {
     auto application = make_application();
     application
-        .runner_config<easylocal::runner::first_improvement>()
+        .runner_config<easylocal::search::FirstImprovement>()
         .max_evaluations = 17;
 
     const auto copy = application;
 
     assert(copy.name() == std::string_view{"assignment"});
     assert(
-        copy.runner_name<easylocal::runner::first_improvement>() ==
+        copy.runner_name<easylocal::search::FirstImprovement>() ==
         std::string_view{"fi"});
     assert(
-        copy.runner_config<easylocal::runner::first_improvement>()
+        copy.runner_config<easylocal::search::FirstImprovement>()
             .max_evaluations == 17);
 }
 
@@ -556,12 +556,12 @@ void tester_can_copy_an_lvalue_app()
 
     tester
         .app()
-        .runner_config<easylocal::runner::first_improvement>()
+        .runner_config<easylocal::search::FirstImprovement>()
         .max_evaluations = 3;
 
     assert(
         application
-            .runner_config<easylocal::runner::first_improvement>()
+            .runner_config<easylocal::search::FirstImprovement>()
             .max_evaluations != 3);
 }
 
@@ -569,7 +569,7 @@ void tester_can_take_ownership_of_an_rvalue_app()
 {
     auto application = make_application();
     application
-        .runner_config<easylocal::runner::first_improvement>()
+        .runner_config<easylocal::search::FirstImprovement>()
         .max_evaluations = 29;
 
     easylocal::Tester tester{std::move(application)};
@@ -578,7 +578,7 @@ void tester_can_take_ownership_of_an_rvalue_app()
     assert(
         tester
             .app()
-            .runner_config<easylocal::runner::first_improvement>()
+            .runner_config<easylocal::search::FirstImprovement>()
             .max_evaluations == 29);
 }
 

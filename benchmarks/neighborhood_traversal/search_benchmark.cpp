@@ -135,7 +135,7 @@ public:
         using neighborhood_type = typename Context::neighborhood_explorer_type;
         using move_type = typename neighborhood_type::move_type;
         using result_type =
-            search::FirstImprovementResult<solution_type, cost_type>;
+            easylocal::search_result<solution_type, cost_type>;
 
         auto current = evaluation.evaluate(solution);
         std::size_t evaluations = 1;
@@ -155,7 +155,7 @@ public:
                             .solution = std::move(solution),
                             .cost = current.cost(),
                             .evaluations = evaluations,
-                            .termination = search::FirstImprovementTermination::
+                            .termination = easylocal::termination_reason::
                                 evaluation_budget_exhausted,
                         };
                     }
@@ -184,7 +184,7 @@ public:
                     .cost = current.cost(),
                     .evaluations = evaluations,
                     .termination =
-                        search::FirstImprovementTermination::local_optimum,
+                        easylocal::termination_reason::local_optimum,
                 };
             }
         }
@@ -217,7 +217,7 @@ public:
         using neighborhood_type = typename Context::neighborhood_explorer_type;
         using move_type = typename neighborhood_type::move_type;
         using result_type =
-            search::BestImprovementResult<solution_type, cost_type>;
+            easylocal::search_result<solution_type, cost_type>;
         using candidate_type = typename decltype(evaluation)::candidate_type;
 
         auto current = evaluation.evaluate(solution);
@@ -239,7 +239,7 @@ public:
                             .solution = std::move(solution),
                             .cost = current.cost(),
                             .evaluations = evaluations,
-                            .termination = search::BestImprovementTermination::
+                            .termination = easylocal::termination_reason::
                                 evaluation_budget_exhausted,
                         };
                     }
@@ -264,7 +264,7 @@ public:
                     .cost = current.cost(),
                     .evaluations = evaluations,
                     .termination =
-                        search::BestImprovementTermination::local_optimum,
+                        easylocal::termination_reason::local_optimum,
                 };
             }
 
@@ -280,35 +280,18 @@ private:
 };
 
 [[nodiscard]]
-auto termination_name(
-    const search::FirstImprovementTermination termination)
+auto termination_name(const easylocal::termination_reason termination)
     -> std::string_view
 {
     switch (termination)
     {
-    case search::FirstImprovementTermination::local_optimum:
+    case easylocal::termination_reason::completed:
+        return "completed";
+    case easylocal::termination_reason::local_optimum:
         return "local-optimum";
-    case search::FirstImprovementTermination::evaluation_budget_exhausted:
+    case easylocal::termination_reason::evaluation_budget_exhausted:
         return "budget";
-    case search::FirstImprovementTermination::cancelled:
-        return "cancelled";
-    }
-
-    return "unknown";
-}
-
-[[nodiscard]]
-auto termination_name(
-    const search::BestImprovementTermination termination)
-    -> std::string_view
-{
-    switch (termination)
-    {
-    case search::BestImprovementTermination::local_optimum:
-        return "local-optimum";
-    case search::BestImprovementTermination::evaluation_budget_exhausted:
-        return "budget";
-    case search::BestImprovementTermination::cancelled:
+    case easylocal::termination_reason::cancelled:
         return "cancelled";
     }
 

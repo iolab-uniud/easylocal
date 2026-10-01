@@ -28,7 +28,7 @@ using CompleteGraphApp = decltype(
     easylocal::app("shape")
         .solution_manager<AssignmentSolutionManager>()
         .neighborhood<ReassignJobNeighborhoodExplorer>()
-        .runner<easylocal::runner::first_improvement>("fi"));
+        .runner<easylocal::search::FirstImprovement>("fi"));
 
 static_assert(!EmptyApp::has_solution_manager);
 static_assert(!EmptyApp::has_neighborhood);

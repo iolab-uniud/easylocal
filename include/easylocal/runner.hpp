@@ -8,9 +8,12 @@
 #include <easylocal/detail/service_composition.hpp>
 #include <easylocal/solution_manager_concepts.hpp>
 #include <easylocal/run_control.hpp>
+#include <easylocal/search_run.hpp>
+#include <easylocal/trace.hpp>
 
 #include <cassert>
 #include <concepts>
+#include <cstddef>
 #include <memory>
 #include <ranges>
 #include <tuple>
@@ -462,21 +465,99 @@ private:
     const NHE& neighborhood_;
 };
 
-template<class Algorithm, class SM, class NHE, class... RunArgs>
-concept algorithm_accepts_run_control =
-    requires(
-        Algorithm& algorithm,
-        const runner_context<SM, NHE>& context,
-        typename SM::solution_type solution,
-        const run_control& control,
-        RunArgs&&... run_args)
-    {
+template<class T>
+inline constexpr bool is_run_options_v = false;
+
+template<class Tracer>
+inline constexpr bool is_run_options_v<run_options<Tracer>> = true;
+
+// Splits Runner::run() arguments into the algorithm arguments and an optional
+// trailing run_options.
+template<class... Args>
+struct run_arguments
+{
+    static constexpr bool has_options = false;
+    static constexpr std::size_t forwarded_count = sizeof...(Args);
+    using tracer_type = trace::null_tracer;
+};
+
+template<class First, class... Rest>
+    requires is_run_options_v<std::remove_cvref_t<
+        std::tuple_element_t<sizeof...(Rest), std::tuple<First, Rest...>>>>
+struct run_arguments<First, Rest...>
+{
+    static constexpr bool has_options = true;
+    static constexpr std::size_t forwarded_count = sizeof...(Rest);
+    using tracer_type = typename std::remove_cvref_t<
+        std::tuple_element_t<sizeof...(Rest), std::tuple<First, Rest...>>>::tracer_type;
+};
+
+template<class Algorithm, class Run, class Solution, class ArgsTuple, class Sequence>
+inline constexpr bool algorithm_runnable_impl = false;
+
+template<class Algorithm, class Run, class Solution, class ArgsTuple, std::size_t... Index>
+inline constexpr bool algorithm_runnable_impl<
+    Algorithm,
+    Run,
+    Solution,
+    ArgsTuple,
+    std::index_sequence<Index...>> =
+    requires(Algorithm& algorithm, Run& run, Solution solution) {
         algorithm.run(
-            context,
+            run,
             std::move(solution),
-            std::forward<RunArgs>(run_args)...,
-            control);
+            std::declval<std::tuple_element_t<Index, ArgsTuple>>()...);
     };
+
+template<class Algorithm, class Context, class... Args>
+concept algorithm_runnable = algorithm_runnable_impl<
+    Algorithm,
+    search_run<Context, typename run_arguments<Args...>::tracer_type>,
+    typename Context::solution_type,
+    std::tuple<Args&&...>,
+    std::make_index_sequence<run_arguments<Args...>::forwarded_count>>;
+
+template<class Algorithm, class Context, class... Args>
+    requires algorithm_runnable<Algorithm, Context, Args...>
+[[nodiscard]]
+auto run_algorithm(
+    Algorithm& algorithm,
+    const Context& context,
+    typename Context::solution_type solution,
+    Args&&... args)
+{
+    using arguments = run_arguments<Args...>;
+    using tracer_type = typename arguments::tracer_type;
+
+    auto forwarded = std::forward_as_tuple(std::forward<Args>(args)...);
+    const run_control default_control{};
+    trace::null_tracer null_tracer;
+
+    const run_control* control = &default_control;
+    tracer_type* tracer = nullptr;
+    if constexpr (arguments::has_options)
+    {
+        const auto& options = std::get<sizeof...(Args) - 1>(forwarded);
+        if (options.control != nullptr)
+        {
+            control = options.control;
+        }
+        tracer = options.tracer;
+    }
+    if constexpr (std::same_as<tracer_type, trace::null_tracer>)
+    {
+        tracer = &null_tracer;
+    }
+    assert(tracer != nullptr);
+
+    search_run<Context, tracer_type> run{context, *control, *tracer};
+    return [&]<std::size_t... Index>(std::index_sequence<Index...>) {
+        return algorithm.run(
+            run,
+            std::move(solution),
+            std::get<Index>(std::move(forwarded))...);
+    }(std::make_index_sequence<arguments::forwarded_count>{});
+}
 
 template<class Algorithm, class SMSpec, class NHESpec>
     requires is_solution_manager_spec_v<SMSpec> &&
@@ -555,22 +636,15 @@ public:
             reference);
     }
 
+    // Runs the algorithm from the given solution. Algorithm arguments (e.g.
+    // an RNG) may be followed by easylocal::with(control, tracer).
     template<class... RunArgs>
     [[nodiscard]]
     auto run(solution_type solution, RunArgs&&... run_args)
-        requires requires(
-            Algorithm& algorithm,
-            const runner_context<
-                solution_manager_type,
-                neighborhood_explorer_type>& context,
-            solution_type candidate,
-            RunArgs&&... forwarded_args)
-        {
-            algorithm.run(
-                context,
-                std::move(candidate),
-                std::forward<RunArgs>(forwarded_args)...);
-        }
+        requires algorithm_runnable<
+            Algorithm,
+            runner_context<solution_manager_type, neighborhood_explorer_type>,
+            RunArgs...>
     {
         assert(
             solution_manager_.is_valid(solution) &&
@@ -584,50 +658,11 @@ public:
                 neighborhood_,
             };
 
-        return algorithm_.run(
+        return run_algorithm(
+            algorithm_,
             context,
             std::move(solution),
             std::forward<RunArgs>(run_args)...);
-    }
-
-    template<class... RunArgs>
-    static constexpr bool supports_run_control =
-        algorithm_accepts_run_control<
-            Algorithm,
-            solution_manager_type,
-            neighborhood_explorer_type,
-            RunArgs...>;
-
-    template<class... RunArgs>
-    [[nodiscard]]
-    auto run_controlled(
-        solution_type solution,
-        const run_control& control,
-        RunArgs&&... run_args)
-    {
-        if constexpr (supports_run_control<RunArgs...>)
-        {
-            assert(
-                solution_manager_.is_valid(solution) &&
-                "initial Solution must be compatible with the bound Instance");
-
-            const runner_context<
-                solution_manager_type,
-                neighborhood_explorer_type>
-                context{solution_manager_, neighborhood_};
-
-            return algorithm_.run(
-                context,
-                std::move(solution),
-                std::forward<RunArgs>(run_args)...,
-                control);
-        }
-        else
-        {
-            return run(
-                std::move(solution),
-                std::forward<RunArgs>(run_args)...);
-        }
     }
 
 private:
@@ -1059,15 +1094,13 @@ auto operator|(
 template<class Algorithm>
 Runner(Algorithm) -> Runner<std::remove_cvref_t<Algorithm>>;
 
-// Runner tags provide a light customization protocol: a tag constructs the
-// search algorithm, while make_runner() wraps it in the framework Runner.
-// This keeps runner.hpp independent from concrete search algorithms.
-template<class Tag, class... Args>
-    requires requires(Args&&... args) { Tag::make(std::forward<Args>(args)...); }
+// Constructs a search algorithm from its arguments and wraps it in a Runner.
+template<class Algorithm, class... Args>
+    requires std::constructible_from<Algorithm, Args&&...>
 [[nodiscard]]
 auto make_runner(Args&&... args)
 {
-    return Runner{Tag::make(std::forward<Args>(args)...)};
+    return Runner<Algorithm>{Algorithm{std::forward<Args>(args)...}};
 }
 
 } // namespace easylocal

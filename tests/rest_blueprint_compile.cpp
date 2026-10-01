@@ -36,10 +36,10 @@ using namespace easylocal::mwe::assignment;
     auto application = easylocal::app("assignment")
         .solution_manager(std::move(sm))
         .neighborhood(std::move(nhe))
-        .runner<easylocal::runner::first_improvement>("fi");
+        .runner<easylocal::search::FirstImprovement>("fi");
 
     application
-        .runner_config<easylocal::runner::first_improvement>()
+        .runner_config<easylocal::search::FirstImprovement>()
         .max_evaluations = 100;
     return application;
 }

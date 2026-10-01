@@ -104,7 +104,6 @@ int main(int argc, char* argv[])
     using easylocal::neighborhood;
     using easylocal::solution_manager;
     using easylocal::search::FirstImprovementParameters;
-    using easylocal::search::FirstImprovementTermination;
 
     try
     {
@@ -121,7 +120,7 @@ int main(int argc, char* argv[])
         //     .with_component<LoadImbalanceCostComponent>()
         //     .with_aggregator(AssignmentCostAggregator{});
         auto runner =
-            make_runner<easylocal::runner::first_improvement>(search_parameters)
+            make_runner<easylocal::search::FirstImprovement>(search_parameters)
             | (solution_manager<AssignmentSolutionManager>()
                | component<CapacityCostComponent>()
                | component<LoadImbalanceCostComponent>()
@@ -176,10 +175,10 @@ int main(int argc, char* argv[])
         std::cout << "final soft cost: load_imbalance=" << result.cost.soft() << '\n';
         std::cout << "evaluations: " << result.evaluations << '\n';
         std::cout << "termination: "
-                  << (result.termination == FirstImprovementTermination::local_optimum
+                  << (result.termination == easylocal::termination_reason::local_optimum
                           ? "local optimum"
                           : result.termination ==
-                                    FirstImprovementTermination::
+                                    easylocal::termination_reason::
                                         evaluation_budget_exhausted
                               ? "evaluation budget exhausted"
                               : "cancelled")

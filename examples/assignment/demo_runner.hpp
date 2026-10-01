@@ -1,6 +1,5 @@
 #pragma once
 
-#include <easylocal/run_control.hpp>
 #include <easylocal/search/first_improvement.hpp>
 
 #include <chrono>
@@ -123,33 +122,20 @@ private:
 class SlowFirstImprovement
 {
 public:
+    using parameters_type = SlowFirstImprovementParameters;
+
     explicit SlowFirstImprovement(SlowFirstImprovementParameters parameters)
         : parameters_{parameters}
     {
     }
 
-    template<class Context>
+    template<class Run>
     [[nodiscard]]
-    auto run(
-        const Context& context,
-        typename Context::solution_type solution) const
+    auto run(Run& run, typename Run::solution_type solution) const
     {
-        return algorithm().run(
-            delayed(context),
-            std::move(solution));
-    }
-
-    template<class Context>
-    [[nodiscard]]
-    auto run(
-        const Context& context,
-        typename Context::solution_type solution,
-        const easylocal::run_control& control) const
-    {
-        return algorithm().run(
-            delayed(context),
-            std::move(solution),
-            control);
+        const auto context = delayed(run.context());
+        auto delayed_run = run.with_context(context);
+        return algorithm().run(delayed_run, std::move(solution));
     }
 
 private:
@@ -176,9 +162,5 @@ private:
 
     SlowFirstImprovementParameters parameters_;
 };
-
-using slow_first_improvement = easylocal::runner::algorithm_tag<
-    SlowFirstImprovement,
-    SlowFirstImprovementParameters>;
 
 } // namespace easylocal::mwe::assignment::demo

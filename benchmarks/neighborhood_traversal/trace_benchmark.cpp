@@ -192,19 +192,19 @@ int main()
 
     easylocal::trace::null_tracer null;
     const auto explicit_null = measure([&] {
-        const auto result = bound.run(initial, null);
+        const auto result = bound.run(initial, easylocal::with(null));
         return result_token(result);
     }, repetitions);
 
     counting_tracer counter;
     const auto counting = measure([&] {
-        const auto result = bound.run(initial, counter);
+        const auto result = bound.run(initial, easylocal::with(counter));
         return result_token(result);
     }, repetitions);
 
     const auto memory = measure([&] {
         easylocal::trace::memory_recorder<cost_type> recorder;
-        const auto result = bound.run(initial, recorder);
+        const auto result = bound.run(initial, easylocal::with(recorder));
         return result_token(result);
     }, repetitions);
 
@@ -213,7 +213,7 @@ int main()
     easylocal::trace::buffered_binary_recorder<cost_type> binary{
         binary_discarded_output};
     const auto binary_streaming = measure([&] {
-        const auto result = bound.run(initial, binary);
+        const auto result = bound.run(initial, easylocal::with(binary));
         return result_token(result);
     }, repetitions);
     binary.flush();
@@ -224,7 +224,7 @@ int main()
         async_binary_discarded_output};
     const auto async_binary_streaming = measure_async(
         [&] {
-            const auto result = bound.run(initial, async_binary);
+            const auto result = bound.run(initial, easylocal::with(async_binary));
             return result_token(result);
         },
         [&] { async_binary.flush(); },
@@ -247,7 +247,7 @@ int main()
         {
             easylocal::trace::buffered_binary_recorder<cost_type> recorder{output};
             binary_file = measure([&] {
-                const auto result = bound.run(initial, recorder);
+                const auto result = bound.run(initial, easylocal::with(recorder));
                 return result_token(result);
             }, repetitions);
             recorder.flush();
@@ -264,7 +264,7 @@ int main()
             easylocal::trace::async_binary_recorder<cost_type> recorder{output};
             async_binary_file = measure_async(
                 [&] {
-                    const auto result = bound.run(initial, recorder);
+                    const auto result = bound.run(initial, easylocal::with(recorder));
                     return result_token(result);
                 },
                 [&] { recorder.flush(); },

@@ -21,7 +21,7 @@ the standard `MetropolisAcceptance` path.
 The executable intentionally uses the factory/fluent spelling of the recipe API:
 `make_solution_manager(...).with_component(...)`,
 `make_neighborhood_explorer(...).with_delta(...)`, and
-`make_runner<runner::simulated_annealing>(...).with_solution_manager(...).with_neighborhood(...)`.
+`Runner{SimulatedAnnealing{...}}.with_solution_manager(...).with_neighborhood(...)`.
 Assignment demonstrates the equivalent pipeline spelling, while the TSP MWE
 shows direct `Runner{Algorithm}` construction for the underlying general-purpose
 algorithm API.

@@ -148,10 +148,11 @@ adapters. Materialized apps and bound runners borrow an lvalue Input by
 The REST adapter uses this same public boundary: HTTP/JSON/Crow/server types stay
 outside `EasyLocal::Core`, and each asynchronous run materializes fresh mutable
 runtime state while sharing only an immutable Input. Cooperative stop/progress
-uses the std-only `easylocal::run_control` capability: built-in searches opt in,
-while custom runners that keep the original `run(...)` signature continue to work
-unchanged but are reported as non-stoppable by the adapters. TextUI background
-runs use the same isolation and control rules.
+uses the std-only `easylocal::run_control` capability, passed as
+`run(solution, ..., easylocal::with(control))`. Every runner is cancellable by
+contract: the framework-owned `search_run` checks the control and reports
+progress, so adapters can stop any registered runner. TextUI background runs use
+the same isolation and control rules.
 The Assignment examples include `easylocal_assignment_rest_mwe`, which mounts
 the generic Blueprint at `/assignment` while leaving Crow server configuration
 fully visible to the application. REST run creation uses a stable envelope whose
@@ -202,16 +203,51 @@ incrementally assembled recipes. Assignment demonstrates the pipeline form,
 Exam Timetabling the factory/fluent form, and TSP also demonstrates direct
 `Runner{Algorithm}` construction.
 
-Built-in runner tags are declared beside their algorithms. Simple custom tags can
-use `runner::algorithm_tag<Algorithm, Config>`:
+A search algorithm is a class exposing a single `run()` member. The framework
+calls it with an `easylocal::search_run`, which gives access to the search
+context (neighborhood, evaluation, cost semantics) and owns what every search
+shares: evaluation/iteration counters, the evaluation budget, cancellation,
+progress reporting and the core trace events. The algorithm only describes its
+search logic:
 
 ```cpp
-using my_search = easylocal::runner::algorithm_tag<MyAlgorithm, MyConfig>;
-auto runner = easylocal::make_runner<my_search>(MyConfig{...});
+class MySearch
+{
+public:
+    using parameters_type = MyParameters; // needed only for app registration
+
+    explicit MySearch(MyParameters parameters);
+
+    template<class Run>
+    auto run(Run& run, typename Run::solution_type solution) const
+    {
+        run.limit_evaluations(parameters_.max_evaluations);
+        auto current = run.start(solution);            // run_started
+
+        for (const auto move : run.moves(solution))
+        {
+            if (run.should_stop())                     // cancelled or budget
+            {
+                return run.finish(std::move(solution), current.cost());
+            }
+            auto candidate = run.evaluate_move(solution, current, move);
+            // ... run.next_iteration(); run.commit(solution, current, ...);
+        }
+        return run.finish(
+            std::move(solution),
+            current.cost(),
+            easylocal::termination_reason::local_optimum);
+    }
+};
 ```
 
-Tags that need multiple construction forms can instead provide their own
-`static make(...)` overloads, as the Simulated Annealing tag does.
+`finish()` returns an `easylocal::search_result` carrying the solution, cost,
+counters and `termination_reason`. The algorithm class is also its own
+registration key: `make_runner<MySearch>(MyParameters{...})`,
+`app(...).runner<MySearch>("name")` and `runner_config<MySearch>()`.
+
+Callers pass the optional control and tracer as a trailing argument:
+`bound.run(initial, rng, easylocal::with(control, tracer))`.
 
 Cost aggregation is explicit whenever domain semantics require it, but simple
 weighted costs have a convenience default. If all active component values can

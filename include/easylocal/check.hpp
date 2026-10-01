@@ -267,7 +267,7 @@ template<class App, class Instance, class Solution>
     }
 
     application.for_each_runner_registration(
-        [&]<class Tag>(std::string_view name, const auto& config) {
+        [&]<class Algorithm>(std::string_view name, const auto& config) {
             if constexpr (requires { config.validate(); })
             {
                 const auto validation = config.validate();
@@ -279,7 +279,7 @@ template<class App, class Instance, class Solution>
 
             try
             {
-                [[maybe_unused]] auto algorithm = Tag::make(config);
+                [[maybe_unused]] Algorithm algorithm{config};
                 report.check(
                     true,
                     "runner construction",

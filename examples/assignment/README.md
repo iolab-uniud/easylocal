@@ -353,7 +353,7 @@ auto nhe =
             ReassignCapacityDeltaEvaluator>();
 
 auto runner =
-    make_runner<runner::first_improvement>(params)
+    make_runner<search::FirstImprovement>(params)
         .with_solution_manager(manager)
         .with_neighborhood(nhe);
 ```
@@ -362,7 +362,7 @@ The equivalent pipeline syntax is also supported:
 
 ```cpp
 auto runner =
-    make_runner<runner::first_improvement>(params)
+    make_runner<search::FirstImprovement>(params)
     | (solution_manager<AssignmentSolutionManager>()
        | component<CapacityCostComponent>()
        | component<LoadImbalanceCostComponent>()

@@ -33,7 +33,7 @@ int main()
                 | easylocal::delta<
                       TourLengthComponent,
                       TwoOptTourLengthDeltaEvaluator>())
-            .runner<easylocal::runner::first_improvement>("fi");
+            .runner<easylocal::search::FirstImprovement>("fi");
 
     auto swap =
         easylocal::app("tsp-swap")
@@ -48,10 +48,10 @@ int main()
                 | easylocal::delta<
                       TourLengthComponent,
                       SwapTourLengthDeltaEvaluator>())
-            .runner<easylocal::runner::first_improvement>("fi");
+            .runner<easylocal::search::FirstImprovement>("fi");
 
-    two_opt.runner_config<easylocal::runner::first_improvement>().max_evaluations = 100;
-    swap.runner_config<easylocal::runner::first_improvement>().max_evaluations = 100;
+    two_opt.runner_config<easylocal::search::FirstImprovement>().max_evaluations = 100;
+    swap.runner_config<easylocal::search::FirstImprovement>().max_evaluations = 100;
 
     const auto instance = load_instance(EASYLOCAL_TSP_MWE_INSTANCE_FILE);
     const Tour initial{
@@ -60,11 +60,11 @@ int main()
 
     auto two_opt_runtime = two_opt.for_input(instance);
     const auto first =
-        two_opt_runtime.run<easylocal::runner::first_improvement>(initial);
+        two_opt_runtime.run<easylocal::search::FirstImprovement>(initial);
 
     auto swap_runtime = swap.for_input(instance);
     const auto second =
-        swap_runtime.run<easylocal::runner::first_improvement>(first.solution);
+        swap_runtime.run<easylocal::search::FirstImprovement>(first.solution);
 
     std::cout << "two-opt cost: " << first.cost << '\n';
     std::cout << "swap cost:    " << second.cost << '\n';

@@ -103,7 +103,6 @@ int main(int argc, char* argv[])
 {
     using namespace easylocal::mwe::exam_timetabling;
     using easylocal::make_neighborhood_explorer;
-    using easylocal::make_runner;
     using easylocal::make_solution_manager;
     using easylocal::search::temperature::FixedLength;
     using easylocal::search::temperature::FixedLengthParameters;
@@ -140,8 +139,8 @@ int main(int argc, char* argv[])
                     TimeslotLoadDeltaEvaluator>();
 
         auto runner =
-            make_runner<easylocal::runner::simulated_annealing>(
-                FixedLength{temperature_parameters})
+            easylocal::Runner{easylocal::search::SimulatedAnnealing{
+                FixedLength{temperature_parameters}}}
                 .with_solution_manager(sm)
                 .with_neighborhood(nhe);
 

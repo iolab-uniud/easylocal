@@ -199,7 +199,7 @@ int main()
     assert(configured_result.evaluations == 2);
     assert(
         configured_result.termination ==
-        easylocal::search::FirstImprovementTermination::
+        easylocal::termination_reason::
             evaluation_budget_exhausted);
 
 

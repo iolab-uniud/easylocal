@@ -20,9 +20,7 @@ namespace
 
 using namespace easylocal::mwe::assignment;
 using easylocal::search::BestImprovement;
-using easylocal::search::BestImprovementTermination;
 using easylocal::search::FirstImprovement;
-using easylocal::search::FirstImprovementTermination;
 
 [[nodiscard]]
 auto default_solution_manager_recipe()
@@ -385,7 +383,7 @@ int main()
         complete.evaluations == 8,
         "evaluation count includes the initial full evaluation");
     ok &= expect(
-        complete.termination == FirstImprovementTermination::local_optimum,
+        complete.termination == easylocal::termination_reason::local_optimum,
         "complete neighborhood scan certifies local optimality");
 
     const auto initial_only = run_with_budget(1, initial);
@@ -401,7 +399,7 @@ int main()
         "budget one performs exactly one full evaluation");
     ok &= expect(
         initial_only.termination ==
-            FirstImprovementTermination::evaluation_budget_exhausted,
+            easylocal::termination_reason::evaluation_budget_exhausted,
         "non-empty neighborhood cannot be certified with exhausted budget");
 
     const auto one_improvement = run_with_budget(2, initial);
@@ -418,7 +416,7 @@ int main()
         "accepted move consumes the final evaluation");
     ok &= expect(
         one_improvement.termination ==
-            FirstImprovementTermination::evaluation_budget_exhausted,
+            easylocal::termination_reason::evaluation_budget_exhausted,
         "improvement at the budget limit does not imply local optimality");
 
     const auto partial_scan = run_with_budget(4, initial);
@@ -432,7 +430,7 @@ int main()
         "partial neighborhood scan stops exactly at the evaluation budget");
     ok &= expect(
         partial_scan.termination ==
-            FirstImprovementTermination::evaluation_budget_exhausted,
+            easylocal::termination_reason::evaluation_budget_exhausted,
         "partial neighborhood scan cannot certify local optimality");
 
     const AssignmentInstance single_machine_instance{
@@ -455,7 +453,7 @@ int main()
         "empty neighborhood needs no candidate evaluation");
     ok &= expect(
         empty_neighborhood.termination ==
-            FirstImprovementTermination::local_optimum,
+            easylocal::termination_reason::local_optimum,
         "empty neighborhood is locally optimal even when the budget is exhausted");
 
     const auto run_best_with_budget =
@@ -483,7 +481,7 @@ int main()
         best_complete.evaluations == 7,
         "best improvement evaluates every move before accepting a step");
     ok &= expect(
-        best_complete.termination == BestImprovementTermination::local_optimum,
+        best_complete.termination == easylocal::termination_reason::local_optimum,
         "complete best-improvement scan certifies local optimality");
 
     const auto best_initial_only = run_best_with_budget(1, initial);
@@ -496,7 +494,7 @@ int main()
         "best improvement budget one performs only the initial evaluation");
     ok &= expect(
         best_initial_only.termination ==
-            BestImprovementTermination::evaluation_budget_exhausted,
+            easylocal::termination_reason::evaluation_budget_exhausted,
         "best improvement cannot scan a non-empty neighborhood with budget one");
 
     const auto best_partial_scan = run_best_with_budget(3, initial);
@@ -512,7 +510,7 @@ int main()
         "partial best-improvement scan stops exactly at the budget");
     ok &= expect(
         best_partial_scan.termination ==
-            BestImprovementTermination::evaluation_budget_exhausted,
+            easylocal::termination_reason::evaluation_budget_exhausted,
         "partial scan cannot certify a best-improvement step");
 
     const auto best_one_step = run_best_with_budget(4, initial);
@@ -529,7 +527,7 @@ int main()
         "one complete best-improvement step uses the initial plus three candidate evaluations");
     ok &= expect(
         best_one_step.termination ==
-            BestImprovementTermination::evaluation_budget_exhausted,
+            easylocal::termination_reason::evaluation_budget_exhausted,
         "accepted best move at the budget limit does not certify the next neighborhood");
 
     const auto best_empty_neighborhood =
@@ -544,7 +542,7 @@ int main()
         "best improvement needs no candidate evaluation for an empty neighborhood");
     ok &= expect(
         best_empty_neighborhood.termination ==
-            BestImprovementTermination::local_optimum,
+            easylocal::termination_reason::local_optimum,
         "best improvement recognizes an empty neighborhood as locally optimal");
 
 

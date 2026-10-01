@@ -25,11 +25,8 @@ int main()
             | easylocal::delta<
                   CapacityCostComponent,
                   ReassignCapacityDeltaEvaluator>())
-        .runner<easylocal::runner::first_improvement>("fi")
-        .runner<demo::slow_first_improvement>("slow-fi");
-
-    static_assert(
-        decltype(application)::template runner_supports_run_control<1>);
+        .runner<easylocal::search::FirstImprovement>("fi")
+        .runner<demo::SlowFirstImprovement>("slow-fi");
 
     easylocal::Tester tester{std::move(application)};
     static_assert(decltype(tester)::supports_input_loading);

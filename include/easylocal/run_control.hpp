@@ -71,28 +71,4 @@ private:
     observer_type observer_{};
 };
 
-template<class Control>
-concept run_control_like =
-    requires(const Control& control, const run_progress& progress) {
-        { control.stop_requested() } -> std::convertible_to<bool>;
-        control.report(progress);
-    };
-
-namespace detail
-{
-
-struct no_run_control
-{
-    [[nodiscard]] static constexpr auto stop_requested() noexcept -> bool
-    {
-        return false;
-    }
-
-    static constexpr void report(const run_progress&) noexcept
-    {
-    }
-};
-
-} // namespace detail
-
 } // namespace easylocal

@@ -423,7 +423,7 @@ int main()
 
         std::mt19937 trace_rng{7U};
         easylocal::trace::memory_recorder<int> trace;
-        const auto traced = runner.bind(instance).run(ChainSolution{}, trace_rng, trace);
+        const auto traced = runner.bind(instance).run(ChainSolution{}, trace_rng, easylocal::with(trace));
         bool saw_incumbent = false;
         bool saw_accepted = false;
         for (const auto& record : trace.records())
@@ -449,10 +449,12 @@ int main()
         const easylocal::run_control control{stop.get_token(), observer};
         std::mt19937 controlled_rng{7U};
         const auto controlled =
-            runner.bind(instance).run_controlled(ChainSolution{}, control, controlled_rng);
+            runner.bind(instance).run(
+                ChainSolution{}, controlled_rng, easylocal::with(control));
         ok &= expect(
             observations == 2 && controlled.iterations == 1 &&
-                controlled.evaluations == 2,
+                controlled.evaluations == 2 &&
+                controlled.termination == easylocal::termination_reason::cancelled,
             "SA controlled execution reports progress and cooperatively stops");
     }
 

@@ -49,7 +49,7 @@ int main()
     auto application = easylocal::app("missing-solution-factory")
         .solution_manager<SolutionManager>()
         .neighborhood<Neighborhood>()
-        .runner<easylocal::runner::first_improvement>("fi");
+        .runner<easylocal::search::FirstImprovement>("fi");
 
     easylocal::Tester tester{std::move(application)};
     (void)tester;

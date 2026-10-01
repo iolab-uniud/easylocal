@@ -158,7 +158,6 @@ resource, and uses `id` consistently:
   "id": "42",
   "runner": "fi",
   "status": "queued",
-  "stoppable": true,
   "cancellation_requested": false,
   "progress": {
     "evaluations": 0,
@@ -195,8 +194,8 @@ remains queryable so the client can observe `cancelled` and retrieve a partial
 solution. `DELETE /runs/<id>` is permitted only after the run is terminal and
 returns `204 No Content`. Deleting an active run returns `409`.
 
-A custom runner that does not accept `run_control` remains executable and reports
-`stoppable: false`; attempting to cancel it returns `409`.
+Every runner is cancellable: the control is carried by the framework-owned
+`search_run`, so no per-runner capability is advertised.
 
 ## Status and result shape
 
@@ -207,7 +206,6 @@ A custom runner that does not accept `run_control` remains executable and report
   "id": "42",
   "runner": "fi",
   "status": "running",
-  "stoppable": true,
   "cancellation_requested": false,
   "progress": {
     "evaluations": 237,
@@ -253,7 +251,7 @@ The generic mapping is:
 | --- | --- |
 | `400` | syntactically invalid JSON (`invalid_json`) |
 | `404` | unknown runner or run (`unknown_runner`, `run_not_found`) |
-| `409` | valid operation in the wrong run state/capability (`result_not_ready`, `run_not_cancellable`, `run_not_terminal`, `run_not_active`) |
+| `409` | valid operation in the wrong run state/capability (`result_not_ready`, `run_not_terminal`, `run_not_active`) |
 | `422` | valid JSON but invalid run envelope/domain data (`invalid_run_request`) |
 | `503` | bounded solver queue full (`queue_full`) |
 | `500` | unexpected adapter/application failure (`internal_error`) |
@@ -316,10 +314,12 @@ auto observer = [](const easylocal::run_progress& progress) { /* observe */ };
 easylocal::run_control control{stop.get_token(), observer};
 ```
 
-The observer is non-owning and valid only for the controlled run. Built-in
-algorithms provide a controlled overload, so ordinary `run(...)` keeps its
-zero-control-overhead path. Custom algorithms may opt in by accepting the
-control object; algorithms that do not opt in continue through the ordinary path.
+The observer is non-owning and valid only for the controlled run. It is passed
+as the trailing run option, `run(solution, ..., easylocal::with(control))`.
+Algorithms never see the control directly: `search_run::should_stop()` checks it
+and the `search_run` primitives report progress, so every runner honours
+cancellation through the same contract. A run without an explicit control uses
+an empty `run_control`, whose checks reduce to null tests.
 
 TextUI and REST therefore share the same architectural contract without sharing
 a threading subsystem:

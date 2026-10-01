@@ -1,6 +1,7 @@
 #pragma once
 
 #include <easylocal/run_control.hpp>
+#include <easylocal/search_run.hpp>
 #include <easylocal/rest/execution.hpp>
 
 #include <crow.h>
@@ -183,7 +184,6 @@ private:
         std::shared_ptr<const input_type> input;
         mutable std::mutex mutex;
         std::stop_source stop_source;
-        bool supports_stop{};
         run_state state{run_state::queued};
         std::optional<solution_type> solution;
         std::string error;
@@ -251,9 +251,9 @@ private:
         bool found = false;
         const std::lock_guard lock{application_mutex_};
         application_.for_each_runner_registration(
-            [&]<class Tag>(
+            [&]<class Algorithm>(
                 const std::string_view name,
-                const typename Tag::config_type&) {
+                const typename Algorithm::parameters_type&) {
                 found = found || name == requested;
             });
         return found;
@@ -265,9 +265,9 @@ private:
         const std::lock_guard lock{application_mutex_};
         names.reserve(App::runner_count);
         application_.for_each_runner_registration(
-            [&]<class Tag>(
+            [&]<class Algorithm>(
                 const std::string_view name,
-                const typename Tag::config_type&) {
+                const typename Algorithm::parameters_type&) {
                 names.emplace_back(name);
             });
         return names;
@@ -310,7 +310,6 @@ private:
         body["id"] = record->id;
         body["runner"] = record->runner;
         body["status"] = std::string{state_name(record->state)};
-        body["stoppable"] = record->supports_stop;
         body["cancellation_requested"] = record->stop_source.stop_requested();
         body["progress"]["evaluations"] = static_cast<std::uint64_t>(
             record->evaluations.load(std::memory_order_relaxed));
@@ -456,17 +455,6 @@ private:
             record->id = id;
             record->runner = runner;
             record->input = input;
-            application.for_each_runner_registration_indexed(
-                [&]<class Tag, std::size_t Index>(
-                    const std::string_view registered_name,
-                    const typename Tag::config_type&) {
-                    if (registered_name == runner)
-                    {
-                        record->supports_stop = App::template
-                            runner_supports_run_control<Index>;
-                    }
-                });
-
             {
                 const std::lock_guard lock{runs_mutex_};
                 runs_.emplace(id, record);
@@ -519,9 +507,9 @@ private:
                     {
                         bool found = false;
                         application.for_each_runner_registration_indexed(
-                            [&]<class Tag, std::size_t Index>(
+                            [&]<class Algorithm, std::size_t Index>(
                                 const std::string_view registered_name,
-                                const typename Tag::config_type&) {
+                                const typename Algorithm::parameters_type&) {
                                 if (found || registered_name != runner)
                                 {
                                     return;
@@ -539,27 +527,15 @@ private:
                                     record->solution.emplace(
                                         std::move(result.solution));
                                     record->state =
-                                        record->stop_source.stop_requested() &&
-                                                record->supports_stop
+                                        record->stop_source.stop_requested()
                                             ? run_state::cancelled
                                             : run_state::succeeded;
                                 };
 
-                                if constexpr (App::template
-                                                  runner_supports_run_control<Index>)
-                                {
-                                    consume_result(
-                                        application.template run_controlled_at<Index>(
-                                            *record->input,
-                                            std::move(initial),
-                                            control));
-                                }
-                                else
-                                {
-                                    consume_result(application.template run_at<Index>(
-                                        *record->input,
-                                        std::move(initial)));
-                                }
+                                consume_result(application.template run_at<Index>(
+                                    *record->input,
+                                    std::move(initial),
+                                    easylocal::with(control)));
                                 found = true;
                             });
 
@@ -600,8 +576,7 @@ private:
             body["id"] = id;
             body["runner"] = runner;
             body["status"] = "queued";
-            body["stoppable"] = record->supports_stop;
-            body["cancellation_requested"] = false;
+                body["cancellation_requested"] = false;
             body["progress"]["evaluations"] = std::uint64_t{0};
             body["progress"]["iterations"] = std::uint64_t{0};
             auto response = detail::json_response(202, std::move(body));
@@ -707,13 +682,6 @@ private:
                     409,
                     "run_not_active",
                     "run is already terminal");
-            }
-            if (!record->supports_stop)
-            {
-                return detail::error_response(
-                    409,
-                    "run_not_cancellable",
-                    "runner does not support cooperative cancellation");
             }
             record->stop_source.request_stop();
         }

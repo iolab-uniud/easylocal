@@ -212,7 +212,6 @@ grep -Eiq "^Location:[[:space:]]*/assignment/runs/${run_id}[[:space:]]*$" "$subm
 
 status_body="${tmp_dir}/status.json"
 wait_for_status "$run_id" succeeded "$status_body"
-grep -Eq '"stoppable"[[:space:]]*:[[:space:]]*true' "$status_body" || fail "fi should advertise cooperative stop"
 grep -Eq '"progress"[[:space:]]*:' "$status_body" || fail "status response has no progress object"
 
 solution_body="${tmp_dir}/solution.json"
@@ -247,7 +246,6 @@ slow_run_id="$(json_string "$slow_submit_body" id)"
 
 slow_status_body="${tmp_dir}/slow-status.json"
 wait_for_progress "$slow_run_id" "$slow_status_body"
-grep -Eq '"stoppable"[[:space:]]*:[[:space:]]*true' "$slow_status_body" || fail "slow-fi should advertise cooperative stop"
 
 not_ready_body="${tmp_dir}/not-ready.json"
 request GET "${base_url}/runs/${slow_run_id}/solution" 409 "$not_ready_body"

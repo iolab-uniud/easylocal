@@ -6,6 +6,7 @@
 
 #include <easylocal/app.hpp>
 #include <easylocal/run_control.hpp>
+#include <easylocal/search_run.hpp>
 #include <easylocal/search/best_improvement.hpp>
 #include <easylocal/search/first_improvement.hpp>
 
@@ -20,36 +21,6 @@ namespace
 using namespace easylocal::mwe::assignment;
 
 
-struct PlainRunnerConfig
-{
-};
-
-template<class Solution>
-struct PlainRunnerResult
-{
-    Solution solution;
-};
-
-class PlainRunner
-{
-public:
-    explicit PlainRunner(PlainRunnerConfig) noexcept {}
-
-    template<class Context>
-    [[nodiscard]] auto run(
-        const Context&,
-        typename Context::solution_type solution) const
-    {
-        return PlainRunnerResult<typename Context::solution_type>{
-            .solution = std::move(solution),
-        };
-    }
-};
-
-using plain_runner = easylocal::runner::algorithm_tag<
-    PlainRunner,
-    PlainRunnerConfig>;
-
 [[nodiscard]] auto make_application()
 {
     auto application = easylocal::app("controlled")
@@ -63,14 +34,14 @@ using plain_runner = easylocal::runner::algorithm_tag<
             | easylocal::delta<
                   CapacityCostComponent,
                   ReassignCapacityDeltaEvaluator>())
-        .runner<easylocal::runner::first_improvement>("fi")
-        .runner<easylocal::runner::best_improvement>("bi");
+        .runner<easylocal::search::FirstImprovement>("fi")
+        .runner<easylocal::search::BestImprovement>("bi");
 
     application
-        .runner_config<easylocal::runner::first_improvement>()
+        .runner_config<easylocal::search::FirstImprovement>()
         .max_evaluations = 100;
     application
-        .runner_config<easylocal::runner::best_improvement>()
+        .runner_config<easylocal::search::BestImprovement>()
         .max_evaluations = 100;
     return application;
 }
@@ -79,15 +50,12 @@ using plain_runner = easylocal::runner::algorithm_tag<
 
 int main()
 {
-    static_assert(easylocal::run_control_like<easylocal::run_control>);
     const AssignmentInstance input{
         .demand = {4, 4, 2},
         .capacity = {5, 5},
     };
 
     auto application = make_application();
-    static_assert(decltype(application)::template runner_supports_run_control<0>);
-    static_assert(decltype(application)::template runner_supports_run_control<1>);
 
     auto runtime = application.for_input(input);
     auto initial = runtime.solution_manager().initial_solution();
@@ -106,18 +74,17 @@ int main()
     };
     const easylocal::run_control control{stop.get_token(), observer};
 
-    const auto result = application.run_controlled<
-        easylocal::runner::first_improvement>(
-            input,
-            std::move(initial),
-            control);
+    const auto result = application.run<easylocal::search::FirstImprovement>(
+        input,
+        std::move(initial),
+        easylocal::with(control));
 
     assert(observations >= 3);
     assert(last_evaluations == result.evaluations);
     assert(result.evaluations == 3);
     assert(
         result.termination ==
-        easylocal::search::FirstImprovementTermination::cancelled);
+        easylocal::termination_reason::cancelled);
 
     auto best_initial = runtime.solution_manager().initial_solution();
     std::stop_source best_stop;
@@ -132,41 +99,30 @@ int main()
     const easylocal::run_control best_control{
         best_stop.get_token(),
         best_observer};
-    const auto best_result = application.run_controlled_at<1>(
+    const auto best_result = application.run_at<1>(
         input,
         std::move(best_initial),
-        best_control);
+        easylocal::with(best_control));
     assert(best_observations >= 3);
     assert(best_result.evaluations == 3);
     assert(
         best_result.termination ==
-        easylocal::search::BestImprovementTermination::cancelled);
+        easylocal::termination_reason::cancelled);
 
-    auto plain_application = easylocal::app("plain")
-        .solution_manager(
-            easylocal::solution_manager<AssignmentSolutionManager>()
-            | easylocal::component<CapacityCostComponent>()
-            | easylocal::component<LoadImbalanceCostComponent>()
-            | easylocal::aggregator(AssignmentCostAggregator{}))
-        .neighborhood(
-            easylocal::neighborhood<ReassignJobNeighborhoodExplorer>()
-            | easylocal::delta<
-                  CapacityCostComponent,
-                  ReassignCapacityDeltaEvaluator>())
-        .runner<plain_runner>("plain");
-
-    static_assert(
-        !decltype(plain_application)::template runner_supports_run_control<0>);
-    auto plain_runtime = plain_application.for_input(input);
-    auto plain_initial = plain_runtime.solution_manager().initial_solution();
+    // Every run is cancellable: a stop requested before the run starts ends
+    // it right after the initial evaluation.
     std::stop_source already_stopped;
     already_stopped.request_stop();
-    const easylocal::run_control ignored_control{already_stopped.get_token()};
-    const auto plain_result = plain_application.run_controlled_at<0>(
+    const easylocal::run_control stopped_control{already_stopped.get_token()};
+    const auto stopped_result = application.run_at<1>(
         input,
-        std::move(plain_initial),
-        ignored_control);
-    assert(plain_runtime.solution_manager().is_valid(plain_result.solution));
+        runtime.solution_manager().initial_solution(),
+        easylocal::with(stopped_control));
+    assert(stopped_result.evaluations == 1);
+    assert(
+        stopped_result.termination ==
+        easylocal::termination_reason::cancelled);
+    assert(runtime.solution_manager().is_valid(stopped_result.solution));
 
     return 0;
 }
