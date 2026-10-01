@@ -4,10 +4,10 @@
 #include "solution_manager.hpp"
 #include "demo_runner.hpp"
 
-#include <easylocal/app.hpp>
-#include <easylocal/search/first_improvement.hpp>
-#include <easylocal/tester.hpp>
-#include <easylocal/tui/tester.hpp>
+#include <easylocal/app/app.hpp>
+#include <easylocal/runners/first_improvement.hpp>
+#include <easylocal/app/tester.hpp>
+#include <easylocal/adapters/tui/tester.hpp>
 
 #ifndef EASYLOCAL_ASSIGNMENT_MWE_INSTANCE_FILE
 #error "EASYLOCAL_ASSIGNMENT_MWE_INSTANCE_FILE must name the example instance"
@@ -28,11 +28,11 @@ int main()
             | easylocal::delta<
                   CapacityCostComponent,
                   ReassignCapacityDeltaEvaluator>())
-        .runner<easylocal::search::FirstImprovement>("fi")
+        .runner<easylocal::runners::FirstImprovement>("fi")
         .runner<demo::SlowFirstImprovement>("slow-fi");
 
     application
-        .runner_config<easylocal::search::FirstImprovement>()
+        .runner_config<easylocal::runners::FirstImprovement>()
         .max_evaluations = 100;
 
     auto& slow_config =

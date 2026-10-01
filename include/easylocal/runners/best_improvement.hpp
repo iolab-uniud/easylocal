@@ -1,14 +1,14 @@
 #pragma once
 
-#include <easylocal/search/detail/context_concepts.hpp>
-#include <easylocal/search_run.hpp>
+#include <easylocal/runners/detail/context_concepts.hpp>
+#include <easylocal/runners/search_run.hpp>
 
 #include <cassert>
 #include <cstddef>
 #include <optional>
 #include <utility>
 
-namespace easylocal::search
+namespace easylocal::runners
 {
 
 struct BestImprovementParameters
@@ -80,4 +80,4 @@ private:
     BestImprovementParameters parameters_;
 };
 
-} // namespace easylocal::search
+} // namespace easylocal::runners

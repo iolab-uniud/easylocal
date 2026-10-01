@@ -1,9 +1,9 @@
 #pragma once
 
-#include <easylocal/search/detail/context_concepts.hpp>
-#include <easylocal/search/metropolis_acceptance.hpp>
-#include <easylocal/search/temperature_policy.hpp>
-#include <easylocal/search_run.hpp>
+#include <easylocal/runners/detail/context_concepts.hpp>
+#include <easylocal/runners/metropolis_acceptance.hpp>
+#include <easylocal/runners/temperature_policy.hpp>
+#include <easylocal/runners/search_run.hpp>
 
 #include <concepts>
 #include <cstddef>
@@ -13,7 +13,7 @@
 #include <type_traits>
 #include <utility>
 
-namespace easylocal::search
+namespace easylocal::runners
 {
 
 namespace detail
@@ -185,4 +185,4 @@ template<temperature_policy TemperaturePolicy, class Acceptance>
 SimulatedAnnealing(TemperaturePolicy, Acceptance)
     -> SimulatedAnnealing<TemperaturePolicy, Acceptance>;
 
-} // namespace easylocal::search
+} // namespace easylocal::runners

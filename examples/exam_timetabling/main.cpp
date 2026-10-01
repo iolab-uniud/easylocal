@@ -4,13 +4,13 @@
 #include "neighborhood_explorer.hpp"
 #include "solution_manager.hpp"
 
-#include <easylocal/aggregation.hpp>
+#include <easylocal/core/aggregation.hpp>
 #include <easylocal/config/cli.hpp>
 #include <easylocal/config/setup.hpp>
 #include <easylocal/config/tree.hpp>
-#include <easylocal/runner.hpp>
-#include <easylocal/search/simulated_annealing.hpp>
-#include <easylocal/search/temperature_policy.hpp>
+#include <easylocal/runners/runner.hpp>
+#include <easylocal/runners/simulated_annealing.hpp>
+#include <easylocal/runners/temperature_policy.hpp>
 
 #include <cstddef>
 #include <cstdint>
@@ -104,8 +104,8 @@ int main(int argc, char* argv[])
     using namespace easylocal::mwe::exam_timetabling;
     using easylocal::make_neighborhood_explorer;
     using easylocal::make_solution_manager;
-    using easylocal::search::temperature::FixedLength;
-    using easylocal::search::temperature::FixedLengthParameters;
+    using easylocal::runners::temperature::FixedLength;
+    using easylocal::runners::temperature::FixedLengthParameters;
 
     try
     {
@@ -139,7 +139,7 @@ int main(int argc, char* argv[])
                     TimeslotLoadDeltaEvaluator>();
 
         auto runner =
-            easylocal::Runner{easylocal::search::SimulatedAnnealing{
+            easylocal::Runner{easylocal::runners::SimulatedAnnealing{
                 FixedLength{temperature_parameters}}}
                 .with_solution_manager(sm)
                 .with_neighborhood(nhe);

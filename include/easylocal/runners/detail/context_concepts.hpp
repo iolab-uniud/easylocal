@@ -1,14 +1,14 @@
 #pragma once
 
-#include <easylocal/cursor_moves.hpp>
+#include <easylocal/helpers/cursor_moves.hpp>
 
-#include <easylocal/neighborhood_concepts.hpp>
+#include <easylocal/helpers/neighborhood_concepts.hpp>
 
 #include <concepts>
 #include <type_traits>
 #include <utility>
 
-namespace easylocal::search::detail
+namespace easylocal::runners::detail
 {
 
 template<class Context>
@@ -103,4 +103,4 @@ concept enumerating_strict_improvement_context =
     strict_improvement_context<Context> &&
     neighborhood_moves_context<Context>;
 
-} // namespace easylocal::search::detail
+} // namespace easylocal::runners::detail

@@ -3,9 +3,9 @@
 #include "neighborhood_explorer.hpp"
 #include "solution_manager.hpp"
 
-#include <easylocal/aggregation.hpp>
-#include <easylocal/runner.hpp>
-#include <easylocal/search/first_improvement.hpp>
+#include <easylocal/core/aggregation.hpp>
+#include <easylocal/runners/runner.hpp>
+#include <easylocal/runners/first_improvement.hpp>
 #include <easylocal/trace.hpp>
 
 
@@ -169,7 +169,7 @@ int main()
     }
 
     auto runner = easylocal::Runner{
-        easylocal::search::FirstImprovement{{.max_evaluations = 500'000}}}
+        easylocal::runners::FirstImprovement{{.max_evaluations = 500'000}}}
         | (easylocal::solution_manager<assignment::AssignmentSolutionManager>()
            | easylocal::component<assignment::CapacityCostComponent>()
            | easylocal::aggregator([](const assignment::CapacityValue& capacity) {

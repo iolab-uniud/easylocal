@@ -3,7 +3,7 @@
 #include "solution_manager.hpp"
 #include "swap_move.hpp"
 
-#include <easylocal/service_base.hpp>
+#include <easylocal/helpers/service_base.hpp>
 
 #include <algorithm>
 #include <cassert>

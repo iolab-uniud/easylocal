@@ -1,7 +1,7 @@
-#include <easylocal/app.hpp>
-#include <easylocal/search/first_improvement.hpp>
-#include <easylocal/service_base.hpp>
-#include <easylocal/tester.hpp>
+#include <easylocal/app/app.hpp>
+#include <easylocal/runners/first_improvement.hpp>
+#include <easylocal/helpers/service_base.hpp>
+#include <easylocal/app/tester.hpp>
 
 struct Input {};
 struct Solution {};
@@ -49,7 +49,7 @@ int main()
     auto application = easylocal::app("missing-solution-factory")
         .solution_manager<SolutionManager>()
         .neighborhood<Neighborhood>()
-        .runner<easylocal::search::FirstImprovement>("fi");
+        .runner<easylocal::runners::FirstImprovement>("fi");
 
     easylocal::Tester tester{std::move(application)};
     (void)tester;

@@ -1,8 +1,8 @@
-#include <easylocal/aggregation.hpp>
-#include <easylocal/runner.hpp>
-#include <easylocal/solver.hpp>
-#include <easylocal/search/simulated_annealing.hpp>
-#include <easylocal/search/temperature_policy.hpp>
+#include <easylocal/core/aggregation.hpp>
+#include <easylocal/runners/runner.hpp>
+#include <easylocal/solvers/solver.hpp>
+#include <easylocal/runners/simulated_annealing.hpp>
+#include <easylocal/runners/temperature_policy.hpp>
 
 #include <concepts>
 #include <cstdint>
@@ -224,9 +224,9 @@ int main()
     ok &= expect(result.cost.soft() == 1, "final result keeps hierarchical soft cost");
 
     auto hard_sa_runner =
-        Runner{search::SimulatedAnnealing{
-            search::temperature::FixedLength{
-                search::temperature::FixedLengthParameters{
+        Runner{runners::SimulatedAnnealing{
+            runners::temperature::FixedLength{
+                runners::temperature::FixedLengthParameters{
                     .initial_temperature = 2.0,
                     .final_temperature = 0.5,
                     .cooling_rate = 0.5,
@@ -236,9 +236,9 @@ int main()
         | make_neighborhood_explorer<HardNeighborhood>();
 
     auto full_sa_runner =
-        Runner{search::SimulatedAnnealing{
-            search::temperature::FixedLength{
-                search::temperature::FixedLengthParameters{
+        Runner{runners::SimulatedAnnealing{
+            runners::temperature::FixedLength{
+                runners::temperature::FixedLengthParameters{
                     .initial_temperature = 2.0,
                     .final_temperature = 0.5,
                     .cooling_rate = 0.5,

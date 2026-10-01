@@ -1,6 +1,6 @@
-#include <easylocal/runner.hpp>
-#include <easylocal/search/detail/context_concepts.hpp>
-#include <easylocal/search/simulated_annealing.hpp>
+#include <easylocal/runners/runner.hpp>
+#include <easylocal/runners/detail/context_concepts.hpp>
+#include <easylocal/runners/simulated_annealing.hpp>
 
 #include <optional>
 #include <random>
@@ -267,16 +267,16 @@ int main()
                   RandomMoveOnlyNeighborhood,
                   SolutionManager>);
 
-    static_assert(easylocal::search::detail::strict_improvement_context<
+    static_assert(easylocal::runners::detail::strict_improvement_context<
                   SearchContext<GoodNeighborhood>>);
-    static_assert(easylocal::search::detail::strict_improvement_context<
+    static_assert(easylocal::runners::detail::strict_improvement_context<
                   SearchContext<WrongMoveNeighborhood>>);
-    static_assert(easylocal::search::detail::enumerating_strict_improvement_context<
+    static_assert(easylocal::runners::detail::enumerating_strict_improvement_context<
                   SearchContext<GoodNeighborhood>>);
-    static_assert(!easylocal::search::detail::enumerating_strict_improvement_context<
+    static_assert(!easylocal::runners::detail::enumerating_strict_improvement_context<
                   SearchContext<WrongMoveNeighborhood>>);
 
-    static_assert(easylocal::search::detail::random_move_context<
+    static_assert(easylocal::runners::detail::random_move_context<
                   SearchContext<RandomMoveGoodNeighborhood>,
                   std::mt19937>);
 

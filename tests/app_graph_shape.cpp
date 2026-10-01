@@ -1,5 +1,5 @@
-#include "easylocal/app.hpp"
-#include "easylocal/search/first_improvement.hpp"
+#include "easylocal/app/app.hpp"
+#include "easylocal/runners/first_improvement.hpp"
 #include "../examples/assignment/cost_components.hpp"
 #include "../examples/assignment/neighborhood_explorer.hpp"
 #include "../examples/assignment/solution_manager.hpp"
@@ -28,7 +28,7 @@ using CompleteGraphApp = decltype(
     easylocal::app("shape")
         .solution_manager<AssignmentSolutionManager>()
         .neighborhood<ReassignJobNeighborhoodExplorer>()
-        .runner<easylocal::search::FirstImprovement>("fi"));
+        .runner<easylocal::runners::FirstImprovement>("fi"));
 
 static_assert(!EmptyApp::has_solution_manager);
 static_assert(!EmptyApp::has_neighborhood);

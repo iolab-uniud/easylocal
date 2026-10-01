@@ -1,6 +1,6 @@
 #include <easylocal/config/overrides.hpp>
 #include <easylocal/config/parameters.hpp>
-#include <easylocal/config/toml.hpp>
+#include <easylocal/adapters/toml.hpp>
 #include <easylocal/config/tree.hpp>
 
 #include <array>

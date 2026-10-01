@@ -320,10 +320,8 @@ install(
 install(
     DIRECTORY include/
     DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
-    PATTERN "easylocal/config/toml.hpp" EXCLUDE
-    PATTERN "easylocal/tui/*" EXCLUDE
-    PATTERN "easylocal/rest.hpp" EXCLUDE
-    PATTERN "easylocal/rest/*" EXCLUDE
+    # Optional adapters are installed by their own components below.
+    PATTERN "easylocal/adapters" EXCLUDE
 )
 
 if(EASYLOCAL_ENABLE_CONFIG_TOML)
@@ -338,8 +336,8 @@ if(EASYLOCAL_ENABLE_CONFIG_TOML)
         DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/EasyLocal"
     )
     install(
-        FILES include/easylocal/config/toml.hpp
-        DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/easylocal/config"
+        FILES include/easylocal/adapters/toml.hpp
+        DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/easylocal/adapters"
     )
 
     if(EASYLOCAL_CONFIG_TOML_BUNDLED)
@@ -366,8 +364,8 @@ if(EASYLOCAL_ENABLE_TUI)
         DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/EasyLocal"
     )
     install(
-        DIRECTORY include/easylocal/tui/
-        DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/easylocal/tui"
+        DIRECTORY include/easylocal/adapters/tui/
+        DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/easylocal/adapters/tui"
     )
 endif()
 
@@ -383,12 +381,12 @@ if(EASYLOCAL_ENABLE_REST)
         DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/EasyLocal"
     )
     install(
-        FILES include/easylocal/rest.hpp
-        DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/easylocal"
+        FILES include/easylocal/adapters/rest.hpp
+        DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/easylocal/adapters"
     )
     install(
-        DIRECTORY include/easylocal/rest/
-        DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/easylocal/rest"
+        DIRECTORY include/easylocal/adapters/rest/
+        DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/easylocal/adapters/rest"
     )
 
     if(EASYLOCAL_REST_ASIO_BUNDLED)

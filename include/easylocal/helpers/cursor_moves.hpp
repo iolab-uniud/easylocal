@@ -1,6 +1,6 @@
 #pragma once
 
-#include <easylocal/neighborhood_concepts.hpp>
+#include <easylocal/helpers/neighborhood_concepts.hpp>
 
 #include <cassert>
 #include <cstddef>

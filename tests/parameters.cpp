@@ -1,7 +1,7 @@
 #include <easylocal/config/parameters.hpp>
-#include <easylocal/neighborhood_union.hpp>
-#include <easylocal/search/first_improvement.hpp>
-#include <easylocal/search/temperature_policy.hpp>
+#include <easylocal/helpers/neighborhood_union.hpp>
+#include <easylocal/runners/first_improvement.hpp>
+#include <easylocal/runners/temperature_policy.hpp>
 
 #include <array>
 #include <cassert>
@@ -20,8 +20,8 @@ namespace
 using easylocal::NeighborhoodUnionParameters;
 using easylocal::config::for_each_parameter;
 using easylocal::config::parameter_block;
-using easylocal::search::FirstImprovementParameters;
-using easylocal::search::temperature::FixedLengthParameters;
+using easylocal::runners::FirstImprovementParameters;
+using easylocal::runners::temperature::FixedLengthParameters;
 
 struct AppParameters
 {

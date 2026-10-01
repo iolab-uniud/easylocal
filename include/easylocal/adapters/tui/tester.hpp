@@ -1,10 +1,10 @@
 #pragma once
 
-#include <easylocal/run_control.hpp>
-#include <easylocal/search_run.hpp>
-#include <easylocal/aggregation.hpp>
-#include <easylocal/check.hpp>
-#include <easylocal/tester.hpp>
+#include <easylocal/runners/run_control.hpp>
+#include <easylocal/runners/search_run.hpp>
+#include <easylocal/core/aggregation.hpp>
+#include <easylocal/app/check.hpp>
+#include <easylocal/app/tester.hpp>
 
 #include <ftxui/ftxui.hpp>
 #include <ftxui/screen/string.hpp>

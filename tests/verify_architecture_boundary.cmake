@@ -10,10 +10,7 @@ file(GLOB_RECURSE _all_headers "${_include_root}/*.hpp")
 set(_core_headers)
 set(_adapter_headers)
 foreach(_header IN LISTS _all_headers)
-    if(_header MATCHES "/easylocal/tui/" OR
-       _header MATCHES "/easylocal/rest/" OR
-       _header MATCHES "/easylocal/rest\.hpp$" OR
-       _header MATCHES "/easylocal/config/toml\\.hpp$")
+    if(_header MATCHES "/easylocal/adapters/")
         list(APPEND _adapter_headers "${_header}")
     else()
         list(APPEND _core_headers "${_header}")
@@ -23,13 +20,9 @@ endforeach()
 foreach(_header IN LISTS _core_headers)
     file(READ "${_header}" _contents)
 
-    if(_contents MATCHES "#[ \t]*include[ \t]*[<\"]easylocal/tui/")
+    if(_contents MATCHES "#[ \t]*include[ \t]*[<\"]easylocal/adapters/")
         message(FATAL_ERROR
-            "Core header depends on TextUI: ${_header}")
-    endif()
-    if(_contents MATCHES "#[ \t]*include[ \t]*[<\"]easylocal/config/toml\\.hpp[>\"]")
-        message(FATAL_ERROR
-            "Core header depends on ConfigTOML: ${_header}")
+            "Core header depends on an optional adapter: ${_header}")
     endif()
     if(_contents MATCHES "#[ \t]*include[ \t]*[<\"]ftxui/")
         message(FATAL_ERROR
@@ -38,10 +31,6 @@ foreach(_header IN LISTS _core_headers)
     if(_contents MATCHES "#[ \t]*include[ \t]*[<\"]toml\\+\\+/")
         message(FATAL_ERROR
             "Core header depends directly on toml++: ${_header}")
-    endif()
-    if(_contents MATCHES "#[ \t]*include[ \t]*[<\"]easylocal/rest([/>\"])")
-        message(FATAL_ERROR
-            "Core header depends on REST: ${_header}")
     endif()
     if(_contents MATCHES "#[ \t]*include[ \t]*[<\"]crow")
         message(FATAL_ERROR
@@ -52,7 +41,7 @@ endforeach()
 foreach(_header IN LISTS _adapter_headers)
     file(READ "${_header}" _contents)
 
-    if(_contents MATCHES "#[ \t]*include[ \t]*[<\"]easylocal/detail/")
+    if(_contents MATCHES "#[ \t]*include[ \t]*[<\"]easylocal/([a-z_]+/)*detail/")
         message(FATAL_ERROR
             "Optional adapter reaches into EasyLocal detail headers: ${_header}")
     endif()

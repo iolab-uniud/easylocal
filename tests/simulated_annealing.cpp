@@ -4,13 +4,13 @@
 #include "solution_manager.hpp"
 #include "support/approximate.hpp"
 
-#include <easylocal/aggregation.hpp>
-#include <easylocal/run_control.hpp>
-#include <easylocal/runner.hpp>
+#include <easylocal/core/aggregation.hpp>
+#include <easylocal/runners/run_control.hpp>
+#include <easylocal/runners/runner.hpp>
 #include <easylocal/config/tree.hpp>
-#include <easylocal/search/metropolis_acceptance.hpp>
-#include <easylocal/search/simulated_annealing.hpp>
-#include <easylocal/search/temperature_policy.hpp>
+#include <easylocal/runners/metropolis_acceptance.hpp>
+#include <easylocal/runners/simulated_annealing.hpp>
+#include <easylocal/runners/temperature_policy.hpp>
 #include <easylocal/trace.hpp>
 
 #include <cstddef>
@@ -27,7 +27,7 @@ namespace
 {
 
 using namespace easylocal;
-using namespace easylocal::search;
+using namespace easylocal::runners;
 namespace exam = easylocal::mwe::exam_timetabling;
 
 struct CountingEngine

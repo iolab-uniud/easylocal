@@ -1,9 +1,9 @@
 #pragma once
 
-#include <easylocal/cursor_moves.hpp>
+#include <easylocal/helpers/cursor_moves.hpp>
 
 #include <easylocal/config/tree.hpp>
-#include <easylocal/runner.hpp>
+#include <easylocal/runners/runner.hpp>
 #include <easylocal/trace.hpp>
 
 #include <algorithm>

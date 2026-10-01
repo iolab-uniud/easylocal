@@ -36,9 +36,7 @@ file(
     RELATIVE "${PROJECT_SOURCE_DIR}/include"
     "${PROJECT_SOURCE_DIR}/include/easylocal/*.hpp"
 )
-list(FILTER EASYLOCAL_CORE_HEADERS EXCLUDE REGEX "^easylocal/config/toml\\.hpp$")
-list(FILTER EASYLOCAL_CORE_HEADERS EXCLUDE REGEX "^easylocal/tui/")
-list(FILTER EASYLOCAL_CORE_HEADERS EXCLUDE REGEX "^easylocal/rest($|\\.hpp|/)")
+list(FILTER EASYLOCAL_CORE_HEADERS EXCLUDE REGEX "^easylocal/adapters/")
 
 # Headers under detail/ are installed because public templates include them, but
 # they are implementation headers rather than supported direct-entry API.  Keep
@@ -65,7 +63,7 @@ if(TARGET EasyLocal::ConfigTOML)
     easylocal_add_header_self_containment_test(
         config-toml
         EasyLocal::ConfigTOML
-        easylocal/config/toml.hpp
+        easylocal/adapters/toml.hpp
     )
 endif()
 
@@ -74,7 +72,7 @@ if(TARGET EasyLocal::TUI)
         GLOB EASYLOCAL_TUI_HEADERS
         CONFIGURE_DEPENDS
         RELATIVE "${PROJECT_SOURCE_DIR}/include"
-        "${PROJECT_SOURCE_DIR}/include/easylocal/tui/*.hpp"
+        "${PROJECT_SOURCE_DIR}/include/easylocal/adapters/tui/*.hpp"
     )
     easylocal_add_header_self_containment_test(
         tui
@@ -88,9 +86,9 @@ if(TARGET EasyLocal::REST)
         GLOB EASYLOCAL_REST_HEADERS
         CONFIGURE_DEPENDS
         RELATIVE "${PROJECT_SOURCE_DIR}/include"
-        "${PROJECT_SOURCE_DIR}/include/easylocal/rest/*.hpp"
+        "${PROJECT_SOURCE_DIR}/include/easylocal/adapters/rest/*.hpp"
     )
-    list(APPEND EASYLOCAL_REST_HEADERS easylocal/rest.hpp)
+    list(APPEND EASYLOCAL_REST_HEADERS easylocal/adapters/rest.hpp)
     easylocal_add_header_self_containment_test(
         rest
         EasyLocal::REST

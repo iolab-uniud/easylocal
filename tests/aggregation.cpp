@@ -1,4 +1,4 @@
-#include <easylocal/aggregation.hpp>
+#include <easylocal/core/aggregation.hpp>
 
 #include <array>
 #include <compare>

@@ -8,7 +8,7 @@
 #include <concepts>
 #include <cstddef>
 
-namespace easylocal::search
+namespace easylocal::runners
 {
 
 template<class Policy>
@@ -518,4 +518,4 @@ static_assert(temperature_policy<temperature::FixedLength>);
 static_assert(temperature_policy<temperature::Cutoff>);
 static_assert(temperature_policy<temperature::Hybrid>);
 
-} // namespace easylocal::search
+} // namespace easylocal::runners

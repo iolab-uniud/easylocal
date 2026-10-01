@@ -1,6 +1,6 @@
 #include <easylocal/config/tree.hpp>
-#include <easylocal/neighborhood_union.hpp>
-#include <easylocal/search/temperature_policy.hpp>
+#include <easylocal/helpers/neighborhood_union.hpp>
+#include <easylocal/runners/temperature_policy.hpp>
 
 #include <array>
 #include <cassert>
@@ -19,8 +19,8 @@ using easylocal::config::for_each_config_parameter;
 using easylocal::config::at;
 using easylocal::config::named;
 using easylocal::config::root;
-using easylocal::search::temperature::FixedLength;
-using easylocal::search::temperature::FixedLengthParameters;
+using easylocal::runners::temperature::FixedLength;
+using easylocal::runners::temperature::FixedLengthParameters;
 
 struct AppParameters
 {

@@ -1,8 +1,8 @@
 #pragma once
 
-#include <easylocal/run_control.hpp>
-#include <easylocal/search_run.hpp>
-#include <easylocal/rest/execution.hpp>
+#include <easylocal/runners/run_control.hpp>
+#include <easylocal/runners/search_run.hpp>
+#include <easylocal/adapters/rest/execution.hpp>
 
 #include <crow.h>
 

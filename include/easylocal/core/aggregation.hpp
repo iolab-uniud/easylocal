@@ -2,7 +2,7 @@
 
 #include <easylocal/config/parameters.hpp>
 #include <easylocal/config/tree.hpp>
-#include <easylocal/cost.hpp>
+#include <easylocal/core/cost.hpp>
 
 #include <array>
 #include <compare>

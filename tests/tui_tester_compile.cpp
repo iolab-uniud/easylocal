@@ -5,10 +5,10 @@
 #include "../examples/assignment/solution_manager.hpp"
 #include "../examples/assignment/demo_runner.hpp"
 
-#include <easylocal/app.hpp>
-#include <easylocal/search/first_improvement.hpp>
-#include <easylocal/tester.hpp>
-#include <easylocal/tui/tester.hpp>
+#include <easylocal/app/app.hpp>
+#include <easylocal/runners/first_improvement.hpp>
+#include <easylocal/app/tester.hpp>
+#include <easylocal/adapters/tui/tester.hpp>
 
 int main()
 {
@@ -25,7 +25,7 @@ int main()
             | easylocal::delta<
                   CapacityCostComponent,
                   ReassignCapacityDeltaEvaluator>())
-        .runner<easylocal::search::FirstImprovement>("fi")
+        .runner<easylocal::runners::FirstImprovement>("fi")
         .runner<demo::SlowFirstImprovement>("slow-fi");
 
     easylocal::Tester tester{std::move(application)};

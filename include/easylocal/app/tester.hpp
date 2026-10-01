@@ -18,11 +18,11 @@
 #include <utility>
 #include <vector>
 
-#include <easylocal/check.hpp>
-#include <easylocal/cursor_moves.hpp>
-#include <easylocal/cost_semantics.hpp>
-#include <easylocal/detail/evaluation.hpp>
-#include <easylocal/solution_manager_concepts.hpp>
+#include <easylocal/app/check.hpp>
+#include <easylocal/helpers/cursor_moves.hpp>
+#include <easylocal/core/cost_semantics.hpp>
+#include <easylocal/helpers/detail/evaluation.hpp>
+#include <easylocal/helpers/solution_manager_concepts.hpp>
 
 namespace easylocal
 {

@@ -6,9 +6,9 @@
 #include "tour_length_component.hpp"
 #include "tour_length_delta.hpp"
 
-#include <easylocal/aggregation.hpp>
-#include <easylocal/app.hpp>
-#include <easylocal/search/first_improvement.hpp>
+#include <easylocal/core/aggregation.hpp>
+#include <easylocal/app/app.hpp>
+#include <easylocal/runners/first_improvement.hpp>
 
 #include <iostream>
 
@@ -33,7 +33,7 @@ int main()
                 | easylocal::delta<
                       TourLengthComponent,
                       TwoOptTourLengthDeltaEvaluator>())
-            .runner<easylocal::search::FirstImprovement>("fi");
+            .runner<easylocal::runners::FirstImprovement>("fi");
 
     auto swap =
         easylocal::app("tsp-swap")
@@ -48,10 +48,10 @@ int main()
                 | easylocal::delta<
                       TourLengthComponent,
                       SwapTourLengthDeltaEvaluator>())
-            .runner<easylocal::search::FirstImprovement>("fi");
+            .runner<easylocal::runners::FirstImprovement>("fi");
 
-    two_opt.runner_config<easylocal::search::FirstImprovement>().max_evaluations = 100;
-    swap.runner_config<easylocal::search::FirstImprovement>().max_evaluations = 100;
+    two_opt.runner_config<easylocal::runners::FirstImprovement>().max_evaluations = 100;
+    swap.runner_config<easylocal::runners::FirstImprovement>().max_evaluations = 100;
 
     const auto instance = load_instance(EASYLOCAL_TSP_MWE_INSTANCE_FILE);
     const Tour initial{
@@ -60,11 +60,11 @@ int main()
 
     auto two_opt_runtime = two_opt.for_input(instance);
     const auto first =
-        two_opt_runtime.run<easylocal::search::FirstImprovement>(initial);
+        two_opt_runtime.run<easylocal::runners::FirstImprovement>(initial);
 
     auto swap_runtime = swap.for_input(instance);
     const auto second =
-        swap_runtime.run<easylocal::search::FirstImprovement>(first.solution);
+        swap_runtime.run<easylocal::runners::FirstImprovement>(first.solution);
 
     std::cout << "two-opt cost: " << first.cost << '\n';
     std::cout << "swap cost:    " << second.cost << '\n';

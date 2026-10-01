@@ -1,7 +1,7 @@
-#include <easylocal/search/best_improvement.hpp>
-#include <easylocal/search/first_improvement.hpp>
+#include <easylocal/runners/best_improvement.hpp>
+#include <easylocal/runners/first_improvement.hpp>
 
-#include <easylocal/runner.hpp>
+#include <easylocal/runners/runner.hpp>
 
 #include <array>
 #include <compare>
@@ -15,10 +15,10 @@
 namespace
 {
 
-using easylocal::search::BestImprovement;
-using easylocal::search::BestImprovementParameters;
-using easylocal::search::FirstImprovement;
-using easylocal::search::FirstImprovementParameters;
+using easylocal::runners::BestImprovement;
+using easylocal::runners::BestImprovementParameters;
+using easylocal::runners::FirstImprovement;
+using easylocal::runners::FirstImprovementParameters;
 
 struct Instance
 {

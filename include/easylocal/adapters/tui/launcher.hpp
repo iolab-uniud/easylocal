@@ -1,7 +1,7 @@
 #pragma once
 
-#include <easylocal/tester.hpp>
-#include <easylocal/tui/tester.hpp>
+#include <easylocal/app/tester.hpp>
+#include <easylocal/adapters/tui/tester.hpp>
 
 #include <ftxui/ftxui.hpp>
 

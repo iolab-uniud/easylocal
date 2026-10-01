@@ -5,10 +5,10 @@
 #include "tour_length_component.hpp"
 #include "tour_length_delta.hpp"
 
-#include <easylocal/aggregation.hpp>
-#include <easylocal/app.hpp>
-#include <easylocal/search/first_improvement.hpp>
-#include <easylocal/tui/launcher.hpp>
+#include <easylocal/core/aggregation.hpp>
+#include <easylocal/app/app.hpp>
+#include <easylocal/runners/first_improvement.hpp>
+#include <easylocal/adapters/tui/launcher.hpp>
 
 #include <utility>
 
@@ -36,7 +36,7 @@ int main()
                 | easylocal::delta<
                       TourLengthComponent,
                       TwoOptTourLengthDeltaEvaluator>())
-            .runner<easylocal::search::FirstImprovement>("fi");
+            .runner<easylocal::runners::FirstImprovement>("fi");
 
     auto swap =
         easylocal::app("tsp-swap")
@@ -50,10 +50,10 @@ int main()
                 | easylocal::delta<
                       TourLengthComponent,
                       SwapTourLengthDeltaEvaluator>())
-            .runner<easylocal::search::FirstImprovement>("fi");
+            .runner<easylocal::runners::FirstImprovement>("fi");
 
-    two_opt.runner_config<easylocal::search::FirstImprovement>().max_evaluations = 100;
-    swap.runner_config<easylocal::search::FirstImprovement>().max_evaluations = 100;
+    two_opt.runner_config<easylocal::runners::FirstImprovement>().max_evaluations = 100;
+    swap.runner_config<easylocal::runners::FirstImprovement>().max_evaluations = 100;
 
     easylocal::tui::run_launcher(
         {

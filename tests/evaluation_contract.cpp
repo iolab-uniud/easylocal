@@ -1,4 +1,4 @@
-#include <easylocal/runner.hpp>
+#include <easylocal/runners/runner.hpp>
 
 #include <functional>
 #include <iostream>

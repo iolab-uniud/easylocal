@@ -1,4 +1,4 @@
-#include <easylocal/cursor_moves.hpp>
+#include <easylocal/helpers/cursor_moves.hpp>
 
 #include <concepts>
 #include <cstddef>

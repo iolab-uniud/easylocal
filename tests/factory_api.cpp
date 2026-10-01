@@ -1,9 +1,9 @@
-#include <easylocal/runner.hpp>
-#include <easylocal/solver.hpp>
-#include <easylocal/search/best_improvement.hpp>
-#include <easylocal/search/first_improvement.hpp>
-#include <easylocal/search/simulated_annealing.hpp>
-#include <easylocal/search/temperature_policy.hpp>
+#include <easylocal/runners/runner.hpp>
+#include <easylocal/solvers/solver.hpp>
+#include <easylocal/runners/best_improvement.hpp>
+#include <easylocal/runners/first_improvement.hpp>
+#include <easylocal/runners/simulated_annealing.hpp>
+#include <easylocal/runners/temperature_policy.hpp>
 
 #include <cassert>
 #include <concepts>
@@ -138,32 +138,32 @@ int main()
 {
     using namespace easylocal;
 
-    auto first = make_runner<search::FirstImprovement>(
-        search::FirstImprovementParameters{.max_evaluations = 10});
+    auto first = make_runner<runners::FirstImprovement>(
+        runners::FirstImprovementParameters{.max_evaluations = 10});
     static_assert(std::same_as<
         decltype(first),
-        Runner<search::FirstImprovement>>);
+        Runner<runners::FirstImprovement>>);
 
-    auto best = make_runner<search::BestImprovement>(
-        search::BestImprovementParameters{.max_evaluations = 10});
+    auto best = make_runner<runners::BestImprovement>(
+        runners::BestImprovementParameters{.max_evaluations = 10});
     static_assert(std::same_as<
         decltype(best),
-        Runner<search::BestImprovement>>);
+        Runner<runners::BestImprovement>>);
 
     auto configured = make_runner<ConfiguredAlgorithm>(7);
     static_assert(std::same_as<
         decltype(configured),
         Runner<ConfiguredAlgorithm>>);
 
-    auto sa = Runner{search::SimulatedAnnealing{search::temperature::Classic{
-        search::temperature::ClassicParameters{
+    auto sa = Runner{runners::SimulatedAnnealing{runners::temperature::Classic{
+        runners::temperature::ClassicParameters{
             .initial_temperature = 10.0,
             .final_temperature = 1.0,
             .cooling_rate = 0.9,
             .samples_per_temperature = 4}}}};
     static_assert(std::same_as<
         decltype(sa),
-        Runner<search::SimulatedAnnealing<search::temperature::Classic>>>);
+        Runner<runners::SimulatedAnnealing<runners::temperature::Classic>>>);
 
     const auto sm_pipe =
         solution_manager<SolutionManager>()

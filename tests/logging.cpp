@@ -1,4 +1,4 @@
-#include <easylocal/logging.hpp>
+#include <easylocal/core/logging.hpp>
 
 #include <iostream>
 #include <string_view>

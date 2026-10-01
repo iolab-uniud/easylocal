@@ -1,6 +1,6 @@
 #include <easylocal/easylocal.hpp>
-#include <easylocal/search/best_improvement.hpp>
-#include <easylocal/search/first_improvement.hpp>
+#include <easylocal/runners/best_improvement.hpp>
+#include <easylocal/runners/first_improvement.hpp>
 
 #include "move.hpp"
 #include "neighborhood_explorer.hpp"
@@ -25,8 +25,8 @@ namespace
 {
 
 using namespace easylocal::mwe::assignment;
-using easylocal::search::BestImprovement;
-using easylocal::search::FirstImprovement;
+using easylocal::runners::BestImprovement;
+using easylocal::runners::FirstImprovement;
 
 [[nodiscard]]
 auto default_solution_manager_recipe()

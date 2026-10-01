@@ -1,7 +1,7 @@
 #pragma once
 
-#include <easylocal/cursor_moves.hpp>
-#include <easylocal/run_control.hpp>
+#include <easylocal/helpers/cursor_moves.hpp>
+#include <easylocal/runners/run_control.hpp>
 #include <easylocal/trace.hpp>
 
 #include <concepts>

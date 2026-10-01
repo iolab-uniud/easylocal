@@ -1,4 +1,4 @@
-#include <easylocal/solver.hpp>
+#include <easylocal/solvers/solver.hpp>
 
 #include <algorithm>
 #include <cstdint>

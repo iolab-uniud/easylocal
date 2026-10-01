@@ -1,6 +1,6 @@
-#include <easylocal/runner.hpp>
-#include <easylocal/search/simulated_annealing.hpp>
-#include <easylocal/search/temperature_policy.hpp>
+#include <easylocal/runners/runner.hpp>
+#include <easylocal/runners/simulated_annealing.hpp>
+#include <easylocal/runners/temperature_policy.hpp>
 
 #include <optional>
 #include <random>
@@ -70,7 +70,7 @@ private:
 int main()
 {
     using namespace easylocal;
-    using namespace easylocal::search;
+    using namespace easylocal::runners;
 
     const Instance instance;
     auto runner =

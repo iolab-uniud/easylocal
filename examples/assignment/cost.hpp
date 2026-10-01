@@ -1,6 +1,6 @@
 #pragma once
 
-#include <easylocal/aggregation.hpp>
+#include <easylocal/core/aggregation.hpp>
 #include "cost_components.hpp"
 
 #include <cstdint>

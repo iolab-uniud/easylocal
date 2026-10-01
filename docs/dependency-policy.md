@@ -119,7 +119,7 @@ is rejected at compile time so an adapter cannot accidentally create a runtime t
 does not exist. The adapter header is installed only when the feature is built:
 
 ```cpp
-#include <easylocal/config/toml.hpp>
+#include <easylocal/adapters/toml.hpp>
 
 auto source = easylocal::config::load_toml_file("solver.toml");
 ```

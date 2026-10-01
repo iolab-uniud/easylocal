@@ -1,4 +1,4 @@
-#include <easylocal/aggregation.hpp>
+#include <easylocal/core/aggregation.hpp>
 #include <easylocal/trace.hpp>
 
 #include <chrono>

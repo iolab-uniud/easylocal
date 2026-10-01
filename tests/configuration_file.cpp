@@ -1,5 +1,5 @@
 #include <easylocal/config/file.hpp>
-#include <easylocal/search/temperature_policy.hpp>
+#include <easylocal/runners/temperature_policy.hpp>
 
 #include <array>
 #include <cassert>
@@ -18,8 +18,8 @@ using easylocal::config::overlay_overrides;
 using easylocal::config::override_views;
 using easylocal::config::parse_config_text;
 using easylocal::config::text_override;
-using easylocal::search::temperature::FixedLength;
-using easylocal::search::temperature::FixedLengthParameters;
+using easylocal::runners::temperature::FixedLength;
+using easylocal::runners::temperature::FixedLengthParameters;
 
 struct AppParameters
 {

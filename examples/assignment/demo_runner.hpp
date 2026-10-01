@@ -1,6 +1,6 @@
 #pragma once
 
-#include <easylocal/search/first_improvement.hpp>
+#include <easylocal/runners/first_improvement.hpp>
 
 #include <chrono>
 #include <cstddef>
@@ -140,10 +140,10 @@ public:
 
 private:
     [[nodiscard]]
-    auto algorithm() const -> easylocal::search::FirstImprovement
+    auto algorithm() const -> easylocal::runners::FirstImprovement
     {
-        return easylocal::search::FirstImprovement{
-            easylocal::search::FirstImprovementParameters{
+        return easylocal::runners::FirstImprovement{
+            easylocal::runners::FirstImprovementParameters{
                 .max_evaluations = parameters_.max_evaluations,
             }};
     }

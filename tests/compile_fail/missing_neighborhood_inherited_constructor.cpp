@@ -1,5 +1,5 @@
-#include <easylocal/runner.hpp>
-#include <easylocal/service_base.hpp>
+#include <easylocal/runners/runner.hpp>
+#include <easylocal/helpers/service_base.hpp>
 
 struct Instance {};
 struct Solution {};

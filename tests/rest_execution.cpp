@@ -1,4 +1,4 @@
-#include <easylocal/rest/execution.hpp>
+#include <easylocal/adapters/rest/execution.hpp>
 
 #include <cassert>
 #include <chrono>

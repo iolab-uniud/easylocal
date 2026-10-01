@@ -4,11 +4,11 @@
 #include "../examples/assignment/neighborhood_explorer.hpp"
 #include "../examples/assignment/solution_manager.hpp"
 
-#include <easylocal/app.hpp>
-#include <easylocal/run_control.hpp>
-#include <easylocal/search_run.hpp>
-#include <easylocal/search/best_improvement.hpp>
-#include <easylocal/search/first_improvement.hpp>
+#include <easylocal/app/app.hpp>
+#include <easylocal/runners/run_control.hpp>
+#include <easylocal/runners/search_run.hpp>
+#include <easylocal/runners/best_improvement.hpp>
+#include <easylocal/runners/first_improvement.hpp>
 
 #include <cassert>
 #include <cstddef>
@@ -34,14 +34,14 @@ using namespace easylocal::mwe::assignment;
             | easylocal::delta<
                   CapacityCostComponent,
                   ReassignCapacityDeltaEvaluator>())
-        .runner<easylocal::search::FirstImprovement>("fi")
-        .runner<easylocal::search::BestImprovement>("bi");
+        .runner<easylocal::runners::FirstImprovement>("fi")
+        .runner<easylocal::runners::BestImprovement>("bi");
 
     application
-        .runner_config<easylocal::search::FirstImprovement>()
+        .runner_config<easylocal::runners::FirstImprovement>()
         .max_evaluations = 100;
     application
-        .runner_config<easylocal::search::BestImprovement>()
+        .runner_config<easylocal::runners::BestImprovement>()
         .max_evaluations = 100;
     return application;
 }
@@ -74,7 +74,7 @@ int main()
     };
     const easylocal::run_control control{stop.get_token(), observer};
 
-    const auto result = application.run<easylocal::search::FirstImprovement>(
+    const auto result = application.run<easylocal::runners::FirstImprovement>(
         input,
         std::move(initial),
         easylocal::with(control));

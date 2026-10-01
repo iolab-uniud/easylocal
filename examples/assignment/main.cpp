@@ -6,9 +6,9 @@
 #include <easylocal/config/cli.hpp>
 #include <easylocal/config/setup.hpp>
 #include <easylocal/config/tree.hpp>
-#include <easylocal/runner.hpp>
-#include <easylocal/search/first_improvement.hpp>
-#include <easylocal/solver.hpp>
+#include <easylocal/runners/runner.hpp>
+#include <easylocal/runners/first_improvement.hpp>
+#include <easylocal/solvers/solver.hpp>
 
 #include <cstddef>
 #include <filesystem>
@@ -103,7 +103,7 @@ int main(int argc, char* argv[])
     using easylocal::make_solver;
     using easylocal::neighborhood;
     using easylocal::solution_manager;
-    using easylocal::search::FirstImprovementParameters;
+    using easylocal::runners::FirstImprovementParameters;
 
     try
     {
@@ -120,7 +120,7 @@ int main(int argc, char* argv[])
         //     .with_component<LoadImbalanceCostComponent>()
         //     .with_aggregator(AssignmentCostAggregator{});
         auto runner =
-            make_runner<easylocal::search::FirstImprovement>(search_parameters)
+            make_runner<easylocal::runners::FirstImprovement>(search_parameters)
             | (solution_manager<AssignmentSolutionManager>()
                | component<CapacityCostComponent>()
                | component<LoadImbalanceCostComponent>()

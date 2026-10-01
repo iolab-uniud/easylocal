@@ -7,6 +7,12 @@ commits since the previous release and are reviewed manually before tagging.
 
 ### Unreleased — application adapters and isolated runs
 
+- **Breaking:** headers are organized by component specialization (EL3 style):
+  `core/` (cost, cost semantics, aggregation, logging), `helpers/` (problem
+  components and recipes), `runners/` (runner framework and algorithms),
+  `solvers/`, `app/` (app, check, Tester), `trace`, `config/`, `testing/`, and
+  optional `adapters/` (`toml.hpp`, `tui/`, `rest/`). Search algorithms move
+  from `easylocal::search` to `easylocal::runners`.
 - **Breaking:** search algorithms define a single `run(Run&, solution, ...)`
   against the framework-owned `easylocal::search_run`, which owns counters,
   evaluation budget, cancellation, progress reporting and core trace events.

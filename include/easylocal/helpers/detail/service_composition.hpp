@@ -1,9 +1,9 @@
 #pragma once
 
-#include <easylocal/aggregation.hpp>
+#include <easylocal/core/aggregation.hpp>
 #include <easylocal/config/tree.hpp>
-#include <easylocal/solution_manager_concepts.hpp>
-#include <easylocal/logging.hpp>
+#include <easylocal/helpers/solution_manager_concepts.hpp>
+#include <easylocal/core/logging.hpp>
 
 #include <concepts>
 #include <cstddef>

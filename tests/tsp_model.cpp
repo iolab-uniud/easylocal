@@ -3,8 +3,8 @@
 #include "solution_manager.hpp"
 #include "tour_length_component.hpp"
 
-#include <easylocal/aggregation.hpp>
-#include <easylocal/runner.hpp>
+#include <easylocal/core/aggregation.hpp>
+#include <easylocal/runners/runner.hpp>
 
 #include <compare>
 #include <concepts>

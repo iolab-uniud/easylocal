@@ -1,6 +1,6 @@
 #pragma once
 
-#include <easylocal/detail/service_composition.hpp>
+#include <easylocal/helpers/detail/service_composition.hpp>
 
 #include <cassert>
 #include <concepts>

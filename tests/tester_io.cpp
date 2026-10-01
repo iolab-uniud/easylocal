@@ -1,7 +1,7 @@
-#include <easylocal/app.hpp>
-#include <easylocal/search/first_improvement.hpp>
-#include <easylocal/service_base.hpp>
-#include <easylocal/tester.hpp>
+#include <easylocal/app/app.hpp>
+#include <easylocal/runners/first_improvement.hpp>
+#include <easylocal/helpers/service_base.hpp>
+#include <easylocal/app/tester.hpp>
 
 #include <cassert>
 #include <filesystem>
@@ -72,10 +72,10 @@ auto make_io_application(const char* name)
     auto application = easylocal::app(name)
         .template solution_manager<solution_manager_type>()
         .template neighborhood<neighborhood_type>()
-        .template runner<easylocal::search::FirstImprovement>("fi");
+        .template runner<easylocal::runners::FirstImprovement>("fi");
 
     application
-        .template runner_config<easylocal::search::FirstImprovement>()
+        .template runner_config<easylocal::runners::FirstImprovement>()
         .max_evaluations = 1;
 
     return application;

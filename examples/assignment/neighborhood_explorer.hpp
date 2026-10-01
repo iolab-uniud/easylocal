@@ -3,7 +3,7 @@
 #include "move.hpp"
 #include "solution_manager.hpp"
 
-#include <easylocal/service_base.hpp>
+#include <easylocal/helpers/service_base.hpp>
 
 #include <cassert>
 #include <cstddef>

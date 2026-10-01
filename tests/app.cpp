@@ -4,10 +4,10 @@
 #include "../examples/assignment/neighborhood_explorer.hpp"
 #include "../examples/assignment/solution_manager.hpp"
 
-#include <easylocal/app.hpp>
-#include <easylocal/runner.hpp>
-#include <easylocal/search/best_improvement.hpp>
-#include <easylocal/search/first_improvement.hpp>
+#include <easylocal/app/app.hpp>
+#include <easylocal/runners/runner.hpp>
+#include <easylocal/runners/best_improvement.hpp>
+#include <easylocal/runners/first_improvement.hpp>
 
 #include <cassert>
 #include <cstddef>
@@ -75,14 +75,14 @@ auto make_application()
         easylocal::app("assignment")
             .solution_manager(std::move(sm))
             .neighborhood(std::move(nhe))
-            .runner<easylocal::search::FirstImprovement>("fi")
-            .runner<easylocal::search::BestImprovement>("bi");
+            .runner<easylocal::runners::FirstImprovement>("fi")
+            .runner<easylocal::runners::BestImprovement>("bi");
 
     application
-        .runner_config<easylocal::search::FirstImprovement>()
+        .runner_config<easylocal::runners::FirstImprovement>()
         .max_evaluations = 100;
     application
-        .runner_config<easylocal::search::BestImprovement>()
+        .runner_config<easylocal::runners::BestImprovement>()
         .max_evaluations = 100;
 
     return application;
@@ -115,7 +115,7 @@ concept can_bind_rvalue_input =
 using AssignmentApp = decltype(make_application());
 using AssignmentRunner = decltype(
     std::declval<const AssignmentApp&>()
-        .template make_runner<easylocal::search::FirstImprovement>());
+        .template make_runner<easylocal::runners::FirstImprovement>());
 
 template<class Runtime>
 concept has_legacy_instance_type = requires {
@@ -145,14 +145,14 @@ void app_owns_runner_configuration_and_names()
 
     assert(application.name() == "assignment");
     assert(
-        application.runner_name<easylocal::search::FirstImprovement>() ==
+        application.runner_name<easylocal::runners::FirstImprovement>() ==
         std::string_view{"fi"});
     assert(
-        application.runner_name<easylocal::search::BestImprovement>() ==
+        application.runner_name<easylocal::runners::BestImprovement>() ==
         std::string_view{"bi"});
     assert(
         application
-            .runner_config<easylocal::search::FirstImprovement>()
+            .runner_config<easylocal::runners::FirstImprovement>()
             .max_evaluations == 100);
 }
 
@@ -170,8 +170,8 @@ void one_input_materializes_one_shared_graph_for_all_runners()
     assert(&runtime.solution_manager().input() == &instance);
     assert(&runtime.neighborhood().input() == &instance);
 
-    auto fi = runtime.runner<easylocal::search::FirstImprovement>();
-    auto bi = runtime.runner<easylocal::search::BestImprovement>();
+    auto fi = runtime.runner<easylocal::runners::FirstImprovement>();
+    auto bi = runtime.runner<easylocal::runners::BestImprovement>();
 
     assert(&fi.solution_manager() == &runtime.solution_manager());
     assert(&bi.solution_manager() == &runtime.solution_manager());
@@ -190,10 +190,10 @@ void registered_runners_are_executable()
     auto runtime = application.for_input(instance);
     const auto initial = runtime.solution_manager().initial_solution();
 
-    const auto fi = runtime.run<easylocal::search::FirstImprovement>(initial);
+    const auto fi = runtime.run<easylocal::runners::FirstImprovement>(initial);
     assert(runtime.solution_manager().is_valid(fi.solution));
 
-    const auto bi = runtime.run<easylocal::search::BestImprovement>(initial);
+    const auto bi = runtime.run<easylocal::runners::BestImprovement>(initial);
     assert(runtime.solution_manager().is_valid(bi.solution));
 }
 
@@ -254,7 +254,7 @@ void app_can_materialize_standard_runners()
     };
 
     auto application = make_application();
-    auto runner = application.make_runner<easylocal::search::FirstImprovement>();
+    auto runner = application.make_runner<easylocal::runners::FirstImprovement>();
     auto bound = runner.bind(instance);
     assert(&bound.input() == &instance);
     const auto initial = bound.initial_solution();
@@ -274,7 +274,7 @@ void app_can_make_and_equip_solvers()
     auto application = make_application();
     auto solver = application.make_solver<
         easylocal::solver::local_search,
-        easylocal::search::FirstImprovement>(
+        easylocal::runners::FirstImprovement>(
         easylocal::solver::LocalSearchConfig<easylocal::initialization::Initial>{
             .initialization = easylocal::initialization::initial,
             .seed = 17,
@@ -303,20 +303,20 @@ void named_runner_registrations_can_be_selected_for_solver_creation()
         easylocal::app("assignment")
             .solution_manager(std::move(sm))
             .neighborhood(std::move(nhe))
-            .runner<easylocal::search::FirstImprovement>("quick")
-            .runner<easylocal::search::FirstImprovement>("deep");
+            .runner<easylocal::runners::FirstImprovement>("quick")
+            .runner<easylocal::runners::FirstImprovement>("deep");
 
     application
-        .runner_config<easylocal::search::FirstImprovement>("quick")
+        .runner_config<easylocal::runners::FirstImprovement>("quick")
         .max_evaluations = 1;
     application
-        .runner_config<easylocal::search::FirstImprovement>("deep")
+        .runner_config<easylocal::runners::FirstImprovement>("deep")
         .max_evaluations = 100;
 
     const auto quick_runner =
-        application.make_runner<easylocal::search::FirstImprovement>("quick");
+        application.make_runner<easylocal::runners::FirstImprovement>("quick");
     const auto deep_runner =
-        application.make_runner<easylocal::search::FirstImprovement>("deep");
+        application.make_runner<easylocal::runners::FirstImprovement>("deep");
 
     const AssignmentInstance instance{
         .demand = {4, 4, 2},
@@ -333,7 +333,7 @@ void named_runner_registrations_can_be_selected_for_solver_creation()
 
     auto solver = application.make_solver<
         easylocal::solver::local_search,
-        easylocal::search::FirstImprovement>(
+        easylocal::runners::FirstImprovement>(
         "deep",
         easylocal::solver::LocalSearchConfig<easylocal::initialization::Initial>{
             .initialization = easylocal::initialization::initial,
@@ -346,7 +346,7 @@ void named_runner_registrations_can_be_selected_for_solver_creation()
     try
     {
         [[maybe_unused]] auto missing =
-            application.make_runner<easylocal::search::FirstImprovement>(
+            application.make_runner<easylocal::runners::FirstImprovement>(
                 "missing");
     }
     catch (const std::invalid_argument&)

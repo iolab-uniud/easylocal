@@ -140,7 +140,7 @@ lexicographic costs. Domain-specific projection remains explicit; no projection
 DSL is introduced.
 
 The generic aggregators are part of the public framework API in
-`<easylocal/aggregation.hpp>` under `easylocal::aggregation`. The Assignment
+`<easylocal/core/aggregation.hpp>` under `easylocal::aggregation`. The Assignment
 example supplies only the domain-specific projections from component values to
 its hard and full hierarchical costs.
 
@@ -332,7 +332,7 @@ to the originating child without virtual calls or heap allocation.
 
 ## Search runner
 
-First Improvement, Best Improvement, and Simulated Annealing are public framework facilities under `easylocal::search`; the Assignment example only supplies the model and services they consume.
+First Improvement, Best Improvement, and Simulated Annealing are public framework facilities under `easylocal::runners`; the Assignment example only supplies the model and services they consume.
 
 Search algorithms are wired through the public recipe-based
 `easylocal::Runner`. Service objects are not constructed by application code.
@@ -353,7 +353,7 @@ auto nhe =
             ReassignCapacityDeltaEvaluator>();
 
 auto runner =
-    make_runner<search::FirstImprovement>(params)
+    make_runner<runners::FirstImprovement>(params)
         .with_solution_manager(manager)
         .with_neighborhood(nhe);
 ```
@@ -362,7 +362,7 @@ The equivalent pipeline syntax is also supported:
 
 ```cpp
 auto runner =
-    make_runner<search::FirstImprovement>(params)
+    make_runner<runners::FirstImprovement>(params)
     | (solution_manager<AssignmentSolutionManager>()
        | component<CapacityCostComponent>()
        | component<LoadImbalanceCostComponent>()

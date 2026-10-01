@@ -1,6 +1,6 @@
 #pragma once
 
-#include <easylocal/runner.hpp>
+#include <easylocal/runners/runner.hpp>
 
 #include <concepts>
 #include <cstddef>

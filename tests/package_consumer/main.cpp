@@ -6,15 +6,15 @@
 #include <easylocal/testing/solution_manager.hpp>
 
 #if EASYLOCAL_TEST_CONFIG_TOML
-#include <easylocal/config/toml.hpp>
+#include <easylocal/adapters/toml.hpp>
 #endif
 
 #if EASYLOCAL_TEST_TUI
-#include <easylocal/tui/tester.hpp>
+#include <easylocal/adapters/tui/tester.hpp>
 #endif
 
 #if EASYLOCAL_TEST_REST
-#include <easylocal/rest.hpp>
+#include <easylocal/adapters/rest.hpp>
 #endif
 
 #if __cplusplus < 202100L

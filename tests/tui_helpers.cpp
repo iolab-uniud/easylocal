@@ -1,5 +1,5 @@
-#include <easylocal/tui/tester.hpp>
-#include <easylocal/aggregation.hpp>
+#include <easylocal/adapters/tui/tester.hpp>
+#include <easylocal/core/aggregation.hpp>
 
 #include <cassert>
 #include <filesystem>

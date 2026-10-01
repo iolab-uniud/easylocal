@@ -1,4 +1,4 @@
-#include <easylocal/cursor_moves.hpp>
+#include <easylocal/helpers/cursor_moves.hpp>
 #include "solution_manager.hpp"
 #include "swap_neighborhood_explorer.hpp"
 #include "swap_move.hpp"

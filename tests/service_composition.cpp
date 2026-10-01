@@ -1,15 +1,15 @@
 #include "capacity_delta.hpp"
-#include <easylocal/search/first_improvement.hpp>
+#include <easylocal/runners/first_improvement.hpp>
 #include "neighborhood_explorer.hpp"
 #include "solution_manager.hpp"
 
-#include <easylocal/aggregation.hpp>
+#include <easylocal/core/aggregation.hpp>
 #include <easylocal/config/overrides.hpp>
 #include <easylocal/config/tree.hpp>
-#include <easylocal/detail/evaluation.hpp>
-#include <easylocal/detail/service_composition.hpp>
-#include <easylocal/logging.hpp>
-#include <easylocal/runner.hpp>
+#include <easylocal/helpers/detail/evaluation.hpp>
+#include <easylocal/helpers/detail/service_composition.hpp>
+#include <easylocal/core/logging.hpp>
+#include <easylocal/runners/runner.hpp>
 
 #include <array>
 #include <concepts>
@@ -27,7 +27,7 @@ namespace
 {
 
 using namespace easylocal::mwe::assignment;
-using easylocal::search::FirstImprovement;
+using easylocal::runners::FirstImprovement;
 
 class AssignmentCardinalityComponent
 {

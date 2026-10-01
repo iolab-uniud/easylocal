@@ -5,8 +5,8 @@
 #include "tour_length_component.hpp"
 #include "tour_length_delta.hpp"
 
-#include <easylocal/aggregation.hpp>
-#include <easylocal/runner.hpp>
+#include <easylocal/core/aggregation.hpp>
+#include <easylocal/runners/runner.hpp>
 
 #include <functional>
 #include <iostream>

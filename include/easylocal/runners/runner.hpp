@@ -1,14 +1,14 @@
 #pragma once
 
-#include <easylocal/aggregation.hpp>
+#include <easylocal/core/aggregation.hpp>
 #include <easylocal/config/tree.hpp>
-#include <easylocal/cursor_moves.hpp>
-#include <easylocal/cost_semantics.hpp>
-#include <easylocal/detail/evaluation.hpp>
-#include <easylocal/detail/service_composition.hpp>
-#include <easylocal/solution_manager_concepts.hpp>
-#include <easylocal/run_control.hpp>
-#include <easylocal/search_run.hpp>
+#include <easylocal/helpers/cursor_moves.hpp>
+#include <easylocal/core/cost_semantics.hpp>
+#include <easylocal/helpers/detail/evaluation.hpp>
+#include <easylocal/helpers/detail/service_composition.hpp>
+#include <easylocal/helpers/solution_manager_concepts.hpp>
+#include <easylocal/runners/run_control.hpp>
+#include <easylocal/runners/search_run.hpp>
 #include <easylocal/trace.hpp>
 
 #include <cassert>

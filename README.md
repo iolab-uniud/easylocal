@@ -254,7 +254,7 @@ weighted costs have a convenience default. If all active component values can
 be combined as a weighted sum, omitting `aggregator(...)` materializes a
 configurable unit-weight `aggregation::weighted_sum` and emits a runtime warning.
 The warning uses the dependency-free logging boundary in
-`<easylocal/logging.hpp>`; applications may install a process-wide sink or
+`<easylocal/core/logging.hpp>`; applications may install a process-wide sink or
 disable logging without introducing a logging-library dependency into Core. See
 [`docs/logging.md`](docs/logging.md). The weights remain exposed as
 `cost.weights`; if no safe weighted expression can be inferred, an explicit
@@ -290,7 +290,7 @@ and passes an explicit RNG to `run()`. A neighborhood union propagates a
 component delta only when every child provides that component; tagged moves are
 then dispatched to the originating child's binding without virtual dispatch.
 
-Simulated Annealing is public under `easylocal::search`. Its hot loop is fully
+Simulated Annealing is public under `easylocal::runners`. Its hot loop is fully
 policy based and uses no virtual dispatch: the concrete temperature and
 acceptance policy types are template parameters, while their configuration and
 run state remain ordinary runtime data stored by value. The standard

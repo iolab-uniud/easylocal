@@ -8,10 +8,10 @@
 #include <easylocal/config/cli.hpp>
 #include <easylocal/config/setup.hpp>
 #include <easylocal/config/tree.hpp>
-#include <easylocal/neighborhood_union.hpp>
-#include <easylocal/runner.hpp>
-#include <easylocal/search/simulated_annealing.hpp>
-#include <easylocal/search/temperature_policy.hpp>
+#include <easylocal/helpers/neighborhood_union.hpp>
+#include <easylocal/runners/runner.hpp>
+#include <easylocal/runners/simulated_annealing.hpp>
+#include <easylocal/runners/temperature_policy.hpp>
 
 #include <cstddef>
 #include <cstdint>
@@ -115,9 +115,9 @@ int main(int argc, char* argv[])
     using easylocal::neighborhood_union;
     using easylocal::random_biases;
     using easylocal::solution_manager;
-    using easylocal::search::SimulatedAnnealing;
-    using easylocal::search::temperature::FixedLength;
-    using easylocal::search::temperature::FixedLengthParameters;
+    using easylocal::runners::SimulatedAnnealing;
+    using easylocal::runners::temperature::FixedLength;
+    using easylocal::runners::temperature::FixedLengthParameters;
 
     try
     {

@@ -160,7 +160,7 @@ elseif(EXISTS "${_rest_targets}")
 endif()
 
 set(_tui_header
-    "${_install_prefix}/include/easylocal/tui/tester.hpp")
+    "${_install_prefix}/include/easylocal/adapters/tui/tester.hpp")
 if(EASYLOCAL_TUI_ENABLED)
     if(NOT EXISTS "${_tui_header}")
         message(FATAL_ERROR
@@ -182,7 +182,7 @@ else()
 endif()
 
 set(_rest_header
-    "${_install_prefix}/include/easylocal/rest.hpp")
+    "${_install_prefix}/include/easylocal/adapters/rest.hpp")
 set(_bundled_asio_header
     "${_install_prefix}/include/easylocal/third_party/asio/asio.hpp")
 if(EASYLOCAL_REST_ENABLED)
@@ -219,7 +219,7 @@ else()
 endif()
 
 set(_toml_header
-    "${_install_prefix}/include/easylocal/config/toml.hpp")
+    "${_install_prefix}/include/easylocal/adapters/toml.hpp")
 set(_bundled_toml_header
     "${_install_prefix}/include/easylocal/third_party/tomlplusplus/toml++/toml.hpp")
 if(EASYLOCAL_CONFIG_TOML_ENABLED)

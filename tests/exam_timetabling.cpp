@@ -1,5 +1,5 @@
-#include <easylocal/aggregation.hpp>
-#include <easylocal/cursor_moves.hpp>
+#include <easylocal/core/aggregation.hpp>
+#include <easylocal/helpers/cursor_moves.hpp>
 #include "cost_components.hpp"
 #include "cost_deltas.hpp"
 #include "neighborhood_explorer.hpp"

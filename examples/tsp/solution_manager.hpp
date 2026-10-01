@@ -4,7 +4,7 @@
 #include "solution.hpp"
 #include "tour_length_component.hpp"
 
-#include <easylocal/service_base.hpp>
+#include <easylocal/helpers/service_base.hpp>
 
 #include <algorithm>
 #include <cstddef>

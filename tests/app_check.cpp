@@ -4,9 +4,9 @@
 #include "../examples/assignment/neighborhood_explorer.hpp"
 #include "../examples/assignment/solution_manager.hpp"
 
-#include <easylocal/check.hpp>
-#include <easylocal/search/best_improvement.hpp>
-#include <easylocal/search/first_improvement.hpp>
+#include <easylocal/app/check.hpp>
+#include <easylocal/runners/best_improvement.hpp>
+#include <easylocal/runners/first_improvement.hpp>
 
 #include <cassert>
 #include <cstddef>
@@ -34,14 +34,14 @@ using namespace easylocal::mwe::assignment;
         easylocal::app("assignment")
             .solution_manager(std::move(sm))
             .neighborhood(std::move(nhe))
-            .runner<easylocal::search::FirstImprovement>("fi")
-            .runner<easylocal::search::BestImprovement>("bi");
+            .runner<easylocal::runners::FirstImprovement>("fi")
+            .runner<easylocal::runners::BestImprovement>("bi");
 
     application
-        .runner_config<easylocal::search::FirstImprovement>()
+        .runner_config<easylocal::runners::FirstImprovement>()
         .max_evaluations = 100;
     application
-        .runner_config<easylocal::search::BestImprovement>()
+        .runner_config<easylocal::runners::BestImprovement>()
         .max_evaluations = 100;
 
     return application;
@@ -210,10 +210,10 @@ void check_fails_on_a_broken_realized_graph()
         easylocal::app("broken-assignment")
             .solution_manager(std::move(sm))
             .neighborhood<BrokenNeighborhoodExplorer>()
-            .runner<easylocal::search::FirstImprovement>("fi");
+            .runner<easylocal::runners::FirstImprovement>("fi");
 
     application
-        .runner_config<easylocal::search::FirstImprovement>()
+        .runner_config<easylocal::runners::FirstImprovement>()
         .max_evaluations = 10;
 
     const AssignmentInstance instance{

@@ -1,7 +1,7 @@
 #pragma once
 
-#include <easylocal/runner.hpp>
-#include <easylocal/solver.hpp>
+#include <easylocal/runners/runner.hpp>
+#include <easylocal/solvers/solver.hpp>
 
 #include <cassert>
 #include <concepts>

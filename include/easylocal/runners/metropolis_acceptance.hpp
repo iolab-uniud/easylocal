@@ -1,6 +1,6 @@
 #pragma once
 
-#include <easylocal/cost.hpp>
+#include <easylocal/core/cost.hpp>
 
 #include <cassert>
 #include <cmath>
@@ -9,7 +9,7 @@
 #include <random>
 #include <type_traits>
 
-namespace easylocal::search
+namespace easylocal::runners
 {
 
 template<class Cost>
@@ -59,4 +59,4 @@ public:
     }
 };
 
-} // namespace easylocal::search
+} // namespace easylocal::runners

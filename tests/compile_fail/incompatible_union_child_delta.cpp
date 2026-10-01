@@ -1,6 +1,6 @@
 #include "service_composition_fixture.hpp"
 
-#include <easylocal/neighborhood_union.hpp>
+#include <easylocal/helpers/neighborhood_union.hpp>
 
 int main()
 {

@@ -6,9 +6,9 @@
 #include "neighborhood_explorer.hpp"
 #include "solution_manager.hpp"
 
-#include <easylocal/app.hpp>
-#include <easylocal/rest.hpp>
-#include <easylocal/search/first_improvement.hpp>
+#include <easylocal/app/app.hpp>
+#include <easylocal/adapters/rest.hpp>
+#include <easylocal/runners/first_improvement.hpp>
 
 #include <crow.h>
 
@@ -43,11 +43,11 @@ using namespace easylocal::mwe::assignment;
     auto application = easylocal::app("assignment")
         .solution_manager(std::move(sm))
         .neighborhood(std::move(nhe))
-        .runner<easylocal::search::FirstImprovement>("fi")
+        .runner<easylocal::runners::FirstImprovement>("fi")
         .runner<demo::SlowFirstImprovement>("slow-fi");
 
     application
-        .runner_config<easylocal::search::FirstImprovement>()
+        .runner_config<easylocal::runners::FirstImprovement>()
         .max_evaluations = 100;
 
     auto& slow_config =

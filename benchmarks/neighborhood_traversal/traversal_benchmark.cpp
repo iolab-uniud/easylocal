@@ -1,7 +1,7 @@
 #include "assignment_variants.hpp"
 #include "tsp_variants.hpp"
 
-#include <easylocal/cursor_moves.hpp>
+#include <easylocal/helpers/cursor_moves.hpp>
 
 #include <algorithm>
 #include <bit>

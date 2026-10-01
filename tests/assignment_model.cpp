@@ -2,9 +2,9 @@
 #include "neighborhood_explorer.hpp"
 #include "solution_manager.hpp"
 
-#include <easylocal/cursor_moves.hpp>
-#include <easylocal/aggregation.hpp>
-#include <easylocal/runner.hpp>
+#include <easylocal/helpers/cursor_moves.hpp>
+#include <easylocal/core/aggregation.hpp>
+#include <easylocal/runners/runner.hpp>
 
 #include <compare>
 #include <concepts>

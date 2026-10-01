@@ -4,7 +4,7 @@
 #include "instance.hpp"
 #include "solution.hpp"
 
-#include <easylocal/service_base.hpp>
+#include <easylocal/helpers/service_base.hpp>
 
 #include <algorithm>
 #include <cstdint>

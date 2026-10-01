@@ -1,15 +1,15 @@
 #pragma once
 
 #include <easylocal/config/tree.hpp>
-#include <easylocal/search/detail/context_concepts.hpp>
-#include <easylocal/search_run.hpp>
+#include <easylocal/runners/detail/context_concepts.hpp>
+#include <easylocal/runners/search_run.hpp>
 
 #include <cassert>
 #include <concepts>
 #include <cstddef>
 #include <utility>
 
-namespace easylocal::search
+namespace easylocal::runners
 {
 
 struct FirstImprovementParameters
@@ -127,4 +127,4 @@ private:
     FirstImprovementParameters parameters_;
 };
 
-} // namespace easylocal::search
+} // namespace easylocal::runners

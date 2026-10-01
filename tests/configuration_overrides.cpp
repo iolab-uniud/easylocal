@@ -1,8 +1,8 @@
-#include <easylocal/aggregation.hpp>
+#include <easylocal/core/aggregation.hpp>
 #include <easylocal/config/overrides.hpp>
-#include <easylocal/neighborhood_union.hpp>
-#include <easylocal/search/simulated_annealing.hpp>
-#include <easylocal/search/temperature_policy.hpp>
+#include <easylocal/helpers/neighborhood_union.hpp>
+#include <easylocal/runners/simulated_annealing.hpp>
+#include <easylocal/runners/temperature_policy.hpp>
 
 #include <array>
 #include <cassert>
@@ -17,9 +17,9 @@ using easylocal::NeighborhoodUnionParameters;
 using easylocal::config::apply_overrides;
 using easylocal::config::override_error;
 using easylocal::config::text_override;
-using easylocal::search::SimulatedAnnealing;
-using easylocal::search::temperature::FixedLength;
-using easylocal::search::temperature::FixedLengthParameters;
+using easylocal::runners::SimulatedAnnealing;
+using easylocal::runners::temperature::FixedLength;
+using easylocal::runners::temperature::FixedLengthParameters;
 
 struct AppParameters
 {

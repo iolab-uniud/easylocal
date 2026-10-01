@@ -1,4 +1,4 @@
-#include <easylocal/tui/launcher.hpp>
+#include <easylocal/adapters/tui/launcher.hpp>
 
 #include <cassert>
 #include <cstddef>

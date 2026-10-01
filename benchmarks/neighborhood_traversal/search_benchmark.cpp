@@ -1,13 +1,13 @@
 #include "assignment_variants.hpp"
 #include "tsp_variants.hpp"
 
-#include <easylocal/search/best_improvement.hpp>
+#include <easylocal/runners/best_improvement.hpp>
 #include "../../examples/assignment/capacity_delta.hpp"
-#include <easylocal/search/first_improvement.hpp>
+#include <easylocal/runners/first_improvement.hpp>
 #include "../../examples/tsp/tour_length_component.hpp"
 #include "../../examples/tsp/tour_length_delta.hpp"
 
-#include <easylocal/runner.hpp>
+#include <easylocal/runners/runner.hpp>
 
 #include <algorithm>
 #include <bit>
@@ -27,7 +27,7 @@
 namespace bench = easylocal::benchmark::neighborhood_traversal;
 namespace assignment = easylocal::mwe::assignment;
 namespace tsp = easylocal::mwe::tsp;
-namespace search = easylocal::search;
+namespace runners = easylocal::runners;
 
 namespace allocation_probe
 {
@@ -116,7 +116,7 @@ class RawCursorFirstImprovement
 {
 public:
     explicit RawCursorFirstImprovement(
-        const search::FirstImprovementParameters parameters) noexcept
+        const runners::FirstImprovementParameters parameters) noexcept
         : parameters_{parameters}
     {
     }
@@ -191,14 +191,14 @@ public:
     }
 
 private:
-    search::FirstImprovementParameters parameters_;
+    runners::FirstImprovementParameters parameters_;
 };
 
 class RawCursorBestImprovement
 {
 public:
     explicit RawCursorBestImprovement(
-        const search::BestImprovementParameters parameters) noexcept
+        const runners::BestImprovementParameters parameters) noexcept
         : parameters_{parameters}
     {
     }
@@ -276,7 +276,7 @@ public:
     }
 
 private:
-    search::BestImprovementParameters parameters_;
+    runners::BestImprovementParameters parameters_;
 };
 
 [[nodiscard]]
@@ -489,21 +489,21 @@ void benchmark_search_case(
             << '\n';
     };
 
-    const auto first_parameters = search::FirstImprovementParameters{
+    const auto first_parameters = runners::FirstImprovementParameters{
         .max_evaluations = algorithm_budget,
     };
-    const auto best_parameters = search::BestImprovementParameters{
+    const auto best_parameters = runners::BestImprovementParameters{
         .max_evaluations = algorithm_budget,
     };
 
     check_algorithm(
         "first-improvement",
         RawCursorFirstImprovement{first_parameters},
-        search::FirstImprovement{first_parameters});
+        runners::FirstImprovement{first_parameters});
     check_algorithm(
         "best-improvement",
         RawCursorBestImprovement{best_parameters},
-        search::BestImprovement{best_parameters});
+        runners::BestImprovement{best_parameters});
 
     const auto run_algorithm = [&]<class RawAlgorithm, class RangeAlgorithm>(
         const std::string_view algorithm_name,
@@ -550,11 +550,11 @@ void benchmark_search_case(
     run_algorithm(
         "first-improvement",
         RawCursorFirstImprovement{first_parameters},
-        search::FirstImprovement{first_parameters});
+        runners::FirstImprovement{first_parameters});
     run_algorithm(
         "best-improvement",
         RawCursorBestImprovement{best_parameters},
-        search::BestImprovement{best_parameters});
+        runners::BestImprovement{best_parameters});
 }
 
 struct AssignmentBenchmarkCase
