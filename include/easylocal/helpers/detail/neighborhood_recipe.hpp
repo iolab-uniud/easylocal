@@ -1,7 +1,7 @@
 #pragma once
 
 #include <easylocal/config/tree.hpp>
-#include <easylocal/helpers/detail/delta_layer.hpp>
+#include <easylocal/helpers/detail/delta_cost_layer.hpp>
 #include <easylocal/utils/detail/meta.hpp>
 
 #include <concepts>

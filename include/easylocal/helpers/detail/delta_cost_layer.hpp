@@ -11,8 +11,10 @@
 #include <type_traits>
 #include <utility>
 
-// NeighborhoodExplorer composition: the user NeighborhoodExplorer plus its
-// delta evaluator bindings (separate or co-located with the cost component).
+// NeighborhoodExplorer composition, the delta cost layer (symmetric to the
+// SolutionManager cost layer): the user NeighborhoodExplorer plus the delta
+// evaluator bound to each cost component (separate or co-located). Deltas are
+// per component; the move cost is always re-aggregated by the cost layer.
 namespace easylocal::detail
 {
 
@@ -164,7 +166,7 @@ public:
 };
 
 template<class BaseNHE, class... DeltaSpecs>
-class delta_layer : public BaseNHE
+class delta_cost_layer : public BaseNHE
 {
 public:
     using base_type = BaseNHE;
@@ -176,7 +178,7 @@ public:
         "to each component type; the conflicting component type is shown in "
         "the template instantiation context");
 
-    delta_layer(
+    delta_cost_layer(
         BaseNHE base,
         typename DeltaSpecs::binding_type... bindings)
         : BaseNHE{std::move(base)},
@@ -198,7 +200,7 @@ template<class BaseNHE, class... DeltaSpecs>
 using neighborhood_service_t = std::conditional_t<
     sizeof...(DeltaSpecs) == 0,
     BaseNHE,
-    delta_layer<BaseNHE, DeltaSpecs...>>;
+    delta_cost_layer<BaseNHE, DeltaSpecs...>>;
 
 template<class BaseNHE, class Dependency, class... Args>
 consteval auto base_neighborhood_constructible_from_args() -> bool

@@ -14,7 +14,7 @@
 #include <utility>
 
 // SolutionManager composition: the cost layer, symmetric to the
-// NeighborhoodExplorer delta layer.
+// NeighborhoodExplorer delta cost layer (EL3 CostComponent / DeltaCostComponent).
 //
 // cost_layer adds the cost components to the user SolutionManager and
 // evaluates them into a tuple of component values; cost_layer_with_aggregator
