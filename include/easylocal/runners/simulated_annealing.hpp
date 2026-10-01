@@ -96,6 +96,51 @@ inline auto accepted_limit(
             static_cast<double>(sample_limit) * accepted_ratio));
 }
 
+[[nodiscard]]
+inline auto validate_cooling_schedule(
+    const double initial_temperature,
+    const double final_temperature,
+    const double cooling_rate) noexcept -> config::validation_result
+{
+    if (!std::isfinite(initial_temperature) || initial_temperature <= 0.0)
+    {
+        return config::validation_result::failure(
+            "initial_temperature must be finite and positive");
+    }
+    if (!std::isfinite(final_temperature) || final_temperature <= 0.0)
+    {
+        return config::validation_result::failure(
+            "final_temperature must be finite and positive");
+    }
+    if (final_temperature >= initial_temperature)
+    {
+        return config::validation_result::failure(
+            "final_temperature must be smaller than initial_temperature");
+    }
+    if (!std::isfinite(cooling_rate) || cooling_rate <= 0.0 || cooling_rate >= 1.0)
+    {
+        return config::validation_result::failure(
+            "cooling_rate must be finite and in the open interval (0, 1)");
+    }
+    return config::validation_result::success();
+}
+
+// configure() for policies whose derived state is computed by the
+// constructor: validate, then rebuild from the new parameters.
+template<class Policy, class Parameters>
+[[nodiscard]]
+auto reconfigure(Policy& policy, const Parameters& parameters) noexcept
+    -> config::validation_result
+{
+    const auto validation = parameters.validate();
+    if (!validation)
+    {
+        return validation;
+    }
+    policy = Policy{parameters};
+    return config::validation_result::success();
+}
+
 } // namespace detail
 
 namespace temperature
@@ -107,6 +152,37 @@ struct ClassicParameters
     double final_temperature;
     double cooling_rate;
     std::size_t samples_per_temperature;
+
+    [[nodiscard]]
+    static consteval auto parameter_schema()
+    {
+        return config::fields(
+            config::field<"initial_temperature", &ClassicParameters::initial_temperature>(
+                "Initial annealing temperature"),
+            config::field<"final_temperature", &ClassicParameters::final_temperature>(
+                "Final annealing temperature"),
+            config::field<"cooling_rate", &ClassicParameters::cooling_rate>(
+                "Multiplicative cooling factor"),
+            config::field<"samples_per_temperature", &ClassicParameters::samples_per_temperature>(
+                "Proposals evaluated at each temperature"));
+    }
+
+    [[nodiscard]]
+    auto validate() const noexcept -> config::validation_result
+    {
+        const auto schedule = detail::validate_cooling_schedule(
+            initial_temperature, final_temperature, cooling_rate);
+        if (!schedule)
+        {
+            return schedule;
+        }
+        if (samples_per_temperature == 0)
+        {
+            return config::validation_result::failure(
+                "samples_per_temperature must be positive");
+        }
+        return config::validation_result::success();
+    }
 };
 
 class Classic
@@ -122,6 +198,30 @@ public:
             parameters_.cooling_rate);
         assert(parameters_.samples_per_temperature >= 1);
         reset();
+    }
+
+    [[nodiscard]]
+    auto parameters() const noexcept -> const ClassicParameters&
+    {
+        return parameters_;
+    }
+
+    [[nodiscard]]
+    auto configure(ClassicParameters parameters) noexcept -> config::validation_result
+    {
+        return detail::reconfigure(*this, parameters);
+    }
+
+    [[nodiscard]]
+    auto configuration() noexcept
+    {
+        return config::endpoint<"temperature">(*this);
+    }
+
+    [[nodiscard]]
+    auto configuration() const noexcept
+    {
+        return config::endpoint<"temperature">(*this);
     }
 
     void reset() noexcept
@@ -341,6 +441,44 @@ struct CutoffParameters
     double cooling_rate;
     std::size_t max_iterations;
     double accepted_ratio;
+
+    [[nodiscard]]
+    static consteval auto parameter_schema()
+    {
+        return config::fields(
+            config::field<"initial_temperature", &CutoffParameters::initial_temperature>(
+                "Initial annealing temperature"),
+            config::field<"final_temperature", &CutoffParameters::final_temperature>(
+                "Final annealing temperature"),
+            config::field<"cooling_rate", &CutoffParameters::cooling_rate>(
+                "Multiplicative cooling factor"),
+            config::field<"max_iterations", &CutoffParameters::max_iterations>(
+                "Maximum number of annealing iterations"),
+            config::field<"accepted_ratio", &CutoffParameters::accepted_ratio>(
+                "Fraction of accepted proposals that triggers cooling"));
+    }
+
+    [[nodiscard]]
+    auto validate() const noexcept -> config::validation_result
+    {
+        const auto schedule = detail::validate_cooling_schedule(
+            initial_temperature, final_temperature, cooling_rate);
+        if (!schedule)
+        {
+            return schedule;
+        }
+        if (max_iterations == 0)
+        {
+            return config::validation_result::failure(
+                "max_iterations must be positive");
+        }
+        if (!std::isfinite(accepted_ratio) || accepted_ratio <= 0.0 || accepted_ratio > 1.0)
+        {
+            return config::validation_result::failure(
+                "accepted_ratio must be finite and in the interval (0, 1]");
+        }
+        return config::validation_result::success();
+    }
 };
 
 class Cutoff
@@ -362,6 +500,30 @@ public:
     {
         assert(parameters_.max_iterations >= 1);
         reset();
+    }
+
+    [[nodiscard]]
+    auto parameters() const noexcept -> const CutoffParameters&
+    {
+        return parameters_;
+    }
+
+    [[nodiscard]]
+    auto configure(CutoffParameters parameters) noexcept -> config::validation_result
+    {
+        return detail::reconfigure(*this, parameters);
+    }
+
+    [[nodiscard]]
+    auto configuration() noexcept
+    {
+        return config::endpoint<"temperature">(*this);
+    }
+
+    [[nodiscard]]
+    auto configuration() const noexcept
+    {
+        return config::endpoint<"temperature">(*this);
     }
 
     void reset() noexcept
@@ -433,6 +595,30 @@ public:
     {
         assert(parameters_.max_iterations >= 1);
         reset();
+    }
+
+    [[nodiscard]]
+    auto parameters() const noexcept -> const HybridParameters&
+    {
+        return parameters_;
+    }
+
+    [[nodiscard]]
+    auto configure(HybridParameters parameters) noexcept -> config::validation_result
+    {
+        return detail::reconfigure(*this, parameters);
+    }
+
+    [[nodiscard]]
+    auto configuration() noexcept
+    {
+        return config::endpoint<"temperature">(*this);
+    }
+
+    [[nodiscard]]
+    auto configuration() const noexcept
+    {
+        return config::endpoint<"temperature">(*this);
     }
 
     void reset() noexcept
