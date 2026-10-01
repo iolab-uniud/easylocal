@@ -38,9 +38,9 @@ namespace detail
 {
 
 inline void validate_temperature_parameters(
-    const double initial_temperature,
-    const double final_temperature,
-    const double cooling_rate)
+    [[maybe_unused]] const double initial_temperature,
+    [[maybe_unused]] const double final_temperature,
+    [[maybe_unused]] const double cooling_rate)
 {
     assert(std::isfinite(initial_temperature));
     assert(std::isfinite(final_temperature));

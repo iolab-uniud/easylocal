@@ -877,7 +877,7 @@ public:
         NeighborhoodUnionParameters<sizeof...(Specs)> parameters{
             .random_biases = std::move(random_biases),
         };
-        const auto validation = configure(std::move(parameters));
+        [[maybe_unused]] const auto validation = configure(std::move(parameters));
         assert(
             validation &&
             "neighborhood random biases must be finite and non-negative");

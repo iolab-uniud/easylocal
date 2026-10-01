@@ -1,5 +1,13 @@
 easylocal_enable_strict_warnings()
 
+# The tests check with assert(): keep it active in every configuration, so a
+# Release build still verifies something.
+if(MSVC)
+    add_compile_options(/UNDEBUG)
+else()
+    add_compile_options(-UNDEBUG)
+endif()
+
 # Compile every installed header in its own translation unit.  Keeping the
 # probes generated from the include tree makes self-containment coverage follow
 # the public surface automatically instead of relying on one hand-written test

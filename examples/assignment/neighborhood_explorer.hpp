@@ -122,9 +122,7 @@ private:
         const AssignmentSolution& solution,
         const std::size_t job) const noexcept -> machine_id
     {
-        const auto machine_count =
-            solution_manager_.input().capacity.size();
-        assert(machine_count >= 2);
+        assert(solution_manager_.input().capacity.size() >= 2);
         assert(job < solution.assignment.size());
 
         return solution.assignment[job] == 0
