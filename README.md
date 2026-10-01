@@ -10,19 +10,18 @@ metaheuristics. Version 4 is a complete redesign of EasyLocal++, the
 object-oriented framework first described in 2003 (see
 [Citing EasyLocal](#citing-easylocal)).
 
-The project is being rebuilt from concrete minimal working examples, with tests
-and the public API evolving incrementally from the contracts they expose.
-
-> **Current status:** the public recipe-based `Runner`, deterministic n-ary
-> neighborhood union, cursor-to-range neighborhood adapter, aggregation
-> facilities, single random proposals, First/Best Improvement, and Simulated
-> Annealing are in place. Domain models remain example-local while additional
-> search/metaheuristic contracts are stabilized incrementally.
+A problem is described by a few components — a solution manager, cost
+components, neighborhood explorers and their delta costs — and generic runners
+(First and Best Improvement, Simulated Annealing) and solvers (LocalSearch,
+MultiStart, TwoStage) search it. Optional components add an interactive
+terminal tester, a REST service and TOML configuration.
 
 New to the library? Start with the [quick start](docs/quick-start.md), then
 follow the [tutorial](docs/tutorial/README.md), which builds a TSP solver one
 chapter at a time. The [reference](docs/reference/README.md) describes the
-contract, API and design choices of each component.
+contract, API and design choices of each component, and
+[API stability](docs/stability.md) what 4.x promises. The documentation is
+also published at <https://iolab-uniud.github.io/easylocal/>.
 
 ## Requirements
 
@@ -79,6 +78,7 @@ uv sync                                       # creates .venv
 uv run scripts/sync-doc-snippets.py           # refresh the docs' code snippets
 uv run scripts/tui-snapshots.py build/<preset>/examples/tutorial/easylocal_tutorial_tui
 ./scripts/coverage.sh                         # coverage of include/easylocal (build/coverage/)
+uv run mkdocs serve                           # preview the documentation site
 ```
 
 Scripts that only use the standard library also run with a plain `python3`,

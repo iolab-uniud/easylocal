@@ -1,0 +1,88 @@
+# The documentation site (GitHub Pages), built from docs/ with MkDocs Material:
+#
+#     uv run mkdocs serve      # preview on http://127.0.0.1:8000
+#     uv run mkdocs build --strict
+#
+# .github/workflows/docs.yml publishes it.
+site_name: EasyLocal
+site_description: A C++23 header-only framework for local search and metaheuristics
+site_url: https://iolab-uniud.github.io/easylocal/
+repo_url: https://github.com/iolab-uniud/easylocal
+repo_name: iolab-uniud/easylocal
+edit_uri: edit/main/docs/
+copyright: Copyright &copy; 2001-2026 the EasyLocal authors, University of Udine. MIT License.
+
+docs_dir: docs
+site_dir: build/site
+
+theme:
+  name: material
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.indexes
+    - navigation.footer
+    - navigation.top
+    - content.code.copy
+    - search.highlight
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      toggle:
+        icon: material/weather-night
+        name: Dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      toggle:
+        icon: material/weather-sunny
+        name: Light mode
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.highlight
+  - pymdownx.superfences
+
+nav:
+  - Home: index.md
+  - Quick start: quick-start.md
+  - Tutorial:
+      - tutorial/README.md
+      - tutorial/01-problem-model.md
+      - tutorial/02-cost.md
+      - tutorial/03-neighborhood.md
+      - tutorial/04-delta-evaluation.md
+      - tutorial/05-running-a-search.md
+      - tutorial/06-combining-neighborhoods.md
+      - tutorial/07-custom-runner.md
+      - tutorial/08-solvers.md
+      - tutorial/09-configuration.md
+      - tutorial/10-testing.md
+      - tutorial/11-apps-and-tools.md
+      - tutorial/12-checking.md
+      - tutorial/13-textui.md
+      - tutorial/14-rest.md
+      - tutorial/15-observing-and-controlling.md
+      - tutorial/16-from-easylocal-3.md
+  - Reference:
+      - reference/README.md
+      - reference/problem-model.md
+      - reference/solution-manager.md
+      - reference/cost.md
+      - reference/neighborhood-explorer.md
+      - reference/runners.md
+      - reference/solvers.md
+      - reference/configuration.md
+      - reference/app-and-tools.md
+      - reference/testing.md
+  - Guides:
+      - REST service: rest.md
+      - Tracing: tracing.md
+      - Logging: logging.md
+      - Dependencies: dependency-policy.md
+      - API stability: stability.md

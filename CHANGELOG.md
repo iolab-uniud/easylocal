@@ -49,10 +49,13 @@ old concepts onto the new ones.
   and `Hybrid` and Metropolis acceptance. Writing a new runner means writing one
   `run(...)` function against `easylocal::search_run`, which owns counters,
   evaluation budget, cancellation, progress and trace events.
-- Every runner is cancellable through a `std::stop_token`, reports progress and
-  returns a `search_result` with its `termination_reason`.
+- Every runner is cancellable through a `std::stop_token`, reports progress,
+  can stop at a target cost (`stop_at(cost)`) and returns a `search_result`
+  with its `termination_reason`.
 - Solvers: **LocalSearch**, **MultiStart** and **TwoStage** (hard constraints
-  first, then the full cost), with pluggable initialization.
+  first, until the hard cost is zero, then the full cost), with pluggable
+  initialization. Solvers take the same run options as runners —
+  cancellation, tracer, target — and report the effort of all their runs.
 - Runners and solvers are built with `make_runner<Algorithm>(...)` /
   `make_solver<Solver>(...)`, where the algorithm class is its own key, and
   composed either with pipes or with the equivalent `with_*` calls.
@@ -93,6 +96,8 @@ old concepts onto the new ones.
   design choices). Their code is compiled and run as tests.
 - Examples: TSP, Assignment and Exam Timetabling, each with its TUI or REST
   front-end where useful.
+- [API stability](docs/stability.md): what is stable, extensible, experimental
+  or internal in 4.x.
 
 ### Platforms
 

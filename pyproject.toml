@@ -3,6 +3,7 @@
 #     uv sync                                  # create .venv from uv.lock
 #     uv run scripts/tui-snapshots.py <tui>    # run a script in that environment
 #     uv run pytest tests/tui                  # TUI end-to-end tests
+#     uv run mkdocs serve                      # documentation site preview
 #
 # The library itself is C++ and does not depend on any of this.
 [project]
@@ -14,6 +15,8 @@ dependencies = [
     "gcovr>=8",  # coverage reports (scripts/coverage.sh)
     "pyte>=0.8",  # TUI driver (scripts/tui_driver.py): screenshots and e2e tests
     "pytest>=8",  # TUI end-to-end tests (tests/tui)
+    "mkdocs>=1.6,<2",  # documentation site (mkdocs.yml); 2.0 drops the plugin and theme systems
+    "mkdocs-material>=9.5",
 ]
 
 [tool.uv]

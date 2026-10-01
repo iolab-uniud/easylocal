@@ -81,6 +81,9 @@ __pycache__/
 # Private project notes and the shared memory of assistant sessions.
 /.local/
 /CLAUDE.local.md
+
+# Local configuration of act (scripts/act-ci.sh passes the runner image).
+/.actrc
 prompt.txt
 
 # Python environment of the scripts (uv).

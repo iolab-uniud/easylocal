@@ -37,7 +37,11 @@ run_toolchain() {
     echo "==> act: Ubuntu 26.04 / ${toolchain} / C++23"
     echo
 
+    # A native multi-arch Ubuntu 26.04 image for the GitHub runner label; no
+    # forced container architecture, so Docker picks the host's (ARM64 on
+    # Apple Silicon).
     act workflow_dispatch \
+        -P ubuntu-26.04=ghcr.io/harryzcy/ubuntu:26.04 \
         -W .github/workflows/ci.yml \
         -j linux \
         --matrix "toolchain:${toolchain}"
