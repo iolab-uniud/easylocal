@@ -87,7 +87,7 @@ auto union_sa = el::make_runner<runners::SimulatedAnnealing<Classic>>(
   child; a child that cannot produce a move is excluded and another one is
   drawn. The biases are configurable through `NeighborhoodUnionParameters`.
 - Unions nest, and traces report the route of every move through the nesting
-  (chapter 12).
+  (chapter 15).
 
 Algorithms need no change to use a union: it is just another neighborhood.
 

@@ -1,4 +1,4 @@
-# 12. Observing and controlling a run
+# 15. Observing and controlling a run
 
 A run accepts a control and a tracer as its trailing argument:
 
@@ -40,5 +40,5 @@ Diagnostic logging (`<easylocal/utils/logging.hpp>`) is separate from tracing.
 
 ## Next steps
 
-[Chapter 13](13-from-easylocal-3.md) maps EasyLocal 3 concepts to this
+[Chapter 16](16-from-easylocal-3.md) maps EasyLocal 3 concepts to this
 framework, or go to the [reference](../reference/README.md).

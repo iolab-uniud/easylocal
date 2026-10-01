@@ -38,7 +38,7 @@ several names.
 | Tool | Purpose |
 | --- | --- |
 | `check(app, input[, solution]) -> app_check_report` | contract checks of the composed problem; `print_report` |
-| `Tester{app, seed}` | headless driver: `set_input` / `load_input`, `use_initial_solution` / `use_random_solution`, `set_solution` / `load_solution` / `save_solution`, `evaluate`, `check`, moves (`use_first_move`, `use_next_move`, `use_first_improving_move`, `use_best_move`, `use_random_move`), `run_runner(name)` |
+| `Tester{app, seed}` | headless driver: `set_input` / `load_input`, `use_initial_solution` / `use_random_solution`, `set_solution` / `load_solution` / `save_solution`, `evaluate`, `check`, moves (`use_first_move`, `use_next_move`, `use_first_improving_move`, `use_best_move`, `use_random_move`), `run_runner(name)`; checks `check_neighborhood_costs()`, `check_move_independence()` (needs `Solution::operator==`), `check_random_move_distribution(rng)` (needs `Move::operator==`) |
 | `tui::run(tester, options)`, `tui::run_launcher(options, apps...)` | interactive terminal tester (TUI component, FTXUI) |
 | `rest::blueprint(prefix, app, codec, options)` | Crow blueprint: asynchronous runs, status, cancellation, solutions (REST component); see [REST](../rest.md) |
 

@@ -52,7 +52,9 @@ commits since the previous release and are reviewed manually before tagging.
   (contract, API, design choices) in `docs/reference/`. The quick start and the
   tutorial example are built and run as tests, and
   `scripts/sync-doc-snippets.py --check` keeps the snippets in the pages
-  identical to them.
+  identical to them. Dedicated chapters cover checking a composed problem
+  (`check`, Tester checks), the TextUI and a REST service; their programs are
+  built with the optional components, and the REST one is exercised over HTTP.
 - Tools give stochastic runners an RNG they own, from a configurable seed:
   `Tester{app, seed}` / `set_seed`, the TextUI `seed` option, and REST's per-run
   `seed` (default `blueprint_options::seed + run id`, reported in run status).

@@ -60,7 +60,7 @@ for tolerance-based comparisons. `testing.hpp` is not part of the Core umbrella:
 include it from your test executables.
 
 For a whole composed problem, `easylocal::check(app, input)` runs the same
-checks against an app (chapter 11).
+checks against an app ([chapter 12](12-checking.md)).
 
 ## See also
 

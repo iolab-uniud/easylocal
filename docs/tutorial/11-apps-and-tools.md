@@ -1,6 +1,8 @@
-# 11. Applications and tools
+# 11. Applications
 
-An **app** names a problem and the runners available on it. Tools work on apps.
+An **app** names a problem and the runners available on it. The tools of the
+next chapters (checking, the interactive tester, the REST service) all work on
+apps.
 
 <!-- snippet: tutorial/main.cpp:app -->
 ```cpp
@@ -23,28 +25,19 @@ const auto app_result =
 - A runner is registered by its algorithm class and a name, optionally with its
   parameters (`parameters_type`). They are stored in the app and can be changed
   later with `runner_config<Algorithm>()` or `runner_config<Algorithm>("name")`.
+- Simulated Annealing is registered with its temperature policy's parameters:
+  `runners::SimulatedAnnealing<Classic>` takes `ClassicParameters`.
 - Every `app.run(...)` builds fresh services for that run, so concurrent runs
   only share the immutable Input; `app.for_input(input)` returns a reusable
   *runtime* when you want to keep them.
 - `app.make_runner<Algorithm>()` and `app.make_solver<Solver, Algorithm>(config)`
   build standalone runners and solvers from a registration.
 
-- Tools give stochastic runners an RNG they own, seeded from a configurable
-  seed: the `Tester` takes it as a constructor argument (`Tester{app, seed}`,
-  `set_seed`), the TextUI from its options, REST from the run request or the
-  blueprint options. Deterministic runners ignore it. Your own code does the
-  same with `app.run_at_with_rng<Index>(input, solution, rng)`.
-- Simulated Annealing is registered with its temperature policy's parameters
-  (`runners::SimulatedAnnealing<Classic>` takes `ClassicParameters`).
+## The Tester
 
-## Tools
-
-| Tool | Header | Purpose |
-| --- | --- | --- |
-| `easylocal::check(app, input)` | `app/check.hpp` | contract checks of the composed problem |
-| `easylocal::Tester` | `app/tester.hpp` | headless driver: load Input and Solution, inspect moves, run runners |
-| `easylocal::tui::run(tester, options)` | `adapters/tui.hpp` | interactive terminal tester (FTXUI) |
-| `easylocal::rest::blueprint(prefix, app, codec, options)` | `adapters/rest.hpp` | HTTP API with asynchronous, cancellable runs (Crow) |
+The `Tester` drives an app without a user interface: it holds an Input and a
+current Solution, inspects moves and runs the registered runners on the
+current solution.
 
 <!-- snippet: tutorial/main.cpp:tester -->
 ```cpp
@@ -56,14 +49,32 @@ tester.use_initial_solution();
 (void)tester.run_runner("fi");
 ```
 
-The TextUI and REST adapters are optional CMake components (`TUI`, `REST`), kept
-outside Core. The Assignment example (`examples/assignment/`) uses both.
+- Input and Solution come from `set_input` / `set_solution`, from
+  `use_initial_solution()` / `use_random_solution(rng)`, or from files with
+  `load_input` / `load_solution` when the problem provides the I/O hooks
+  (chapter 13); `save_solution` writes the current one.
+- Moves: `use_first_move`, `use_next_move`, `use_first_improving_move`,
+  `use_best_move`, `use_random_move`; `evaluate()` gives the current cost.
+- `run_runner(name)` replaces the current solution with the runner's result.
+
+## Randomness in tools
+
+Tools own an RNG and give it to stochastic runners; deterministic runners
+ignore it. The seed is configurable everywhere:
+
+| Tool | Seed |
+| --- | --- |
+| `Tester` | `Tester{app, seed}`, `set_seed(seed)`, `rng()` |
+| TextUI | the `seed` option |
+| REST | the `seed` of a run request, or `blueprint_options::seed + run id` |
+
+Your own code does the same with
+`app.run_at_with_rng<Index>(input, solution, rng)`.
 
 ## See also
 
 - [Apps and tools](../reference/app-and-tools.md).
-- [REST adapter](../rest.md).
 
 ## Next steps
 
-[Chapter 12](12-observing-and-controlling.md) watches a run while it happens.
+[Chapter 12](12-checking.md) checks the composed problem.

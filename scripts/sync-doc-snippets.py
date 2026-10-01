@@ -21,10 +21,12 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 DOCS = ROOT / "docs"
 EXAMPLES = ROOT / "examples"
 MARKER = re.compile(r"\s*//\s*\[[\w-]+\]")
+# The block body runs up to the first line that starts with ``` (an empty block
+# included).
 SNIPPET = re.compile(
     r"(<!-- snippet: (?P<ref>[\w/.-]+(?::[\w-]+)?) -->\n```(?P<lang>\w*)\n)"
-    r"(?P<body>.*?)(\n```)",
-    re.S,
+    r"(?P<body>(?:(?!```).*\n)*?)(?P<close>```)",
+    re.M,
 )
 
 
@@ -47,7 +49,8 @@ def main() -> int:
     for page in sorted(DOCS.rglob("*.md")):
         text = page.read_text()
         synced = SNIPPET.sub(
-            lambda m: m.group(1) + extract(m.group("ref")) + m.group(5), text)
+            lambda m: m.group(1) + extract(m.group("ref")) + "\n" + m.group("close"),
+            text)
         if synced != text:
             stale.append(page.relative_to(ROOT))
             if not check:

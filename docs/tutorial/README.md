@@ -82,7 +82,10 @@ Services borrow the Input by `const&` and never mutate it.
 9. [Configuration](09-configuration.md): parameters from the command line and
    files.
 10. [Testing your components](10-testing.md): contract checks.
-11. [Applications and tools](11-apps-and-tools.md): app, Tester, TextUI, REST.
-12. [Observing and controlling a run](12-observing-and-controlling.md):
+11. [Applications](11-apps-and-tools.md): the app and the headless Tester.
+12. [Checking a composed problem](12-checking.md): `check`, Tester checks.
+13. [The interactive tester](13-textui.md): the TextUI.
+14. [A REST service](14-rest.md): searches over HTTP.
+15. [Observing and controlling a run](15-observing-and-controlling.md):
     progress, cancellation, tracing.
-13. [Coming from EasyLocal 3](13-from-easylocal-3.md).
+16. [Coming from EasyLocal 3](16-from-easylocal-3.md).

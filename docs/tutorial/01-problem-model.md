@@ -20,12 +20,16 @@ struct Tsp
 struct Tour
 {
     std::vector<std::size_t> order;
+
+    auto operator==(const Tour&) const -> bool = default; // used by Tester checks
 };
 
 struct TwoOpt
 {
     std::size_t i; // reverse the segment order[i + 1 .. j]
     std::size_t j;
+
+    auto operator==(const TwoOpt&) const -> bool = default; // used by Tester checks
 };
 ```
 

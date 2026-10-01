@@ -1163,6 +1163,21 @@ if(TARGET EasyLocal::REST)
                 LABELS "integration;rest-http"
                 TIMEOUT 60
         )
+        if(TARGET easylocal_tutorial_rest)
+            add_test(
+                NAME easylocal.example.tutorial-rest
+                COMMAND
+                    "${CMAKE_CURRENT_SOURCE_DIR}/tutorial_rest_integration.sh"
+                    "$<TARGET_FILE:easylocal_tutorial_rest>"
+                    "${EASYLOCAL_CURL_EXECUTABLE}"
+            )
+            set_tests_properties(
+                easylocal.example.tutorial-rest
+                PROPERTIES
+                    LABELS "integration;rest-http"
+                    TIMEOUT 60
+            )
+        endif()
     elseif(NOT EASYLOCAL_CURL_EXECUTABLE)
         message(STATUS "curl not found: REST HTTP integration test disabled")
     endif()

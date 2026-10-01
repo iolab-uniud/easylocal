@@ -9,9 +9,14 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <istream>
 #include <numeric>
 #include <optional>
+#include <ostream>
 #include <random>
+#include <stdexcept>
+#include <string>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -33,14 +38,76 @@ struct Tsp
 struct Tour
 {
     std::vector<std::size_t> order;
+
+    auto operator==(const Tour&) const -> bool = default; // used by Tester checks
 };
 
 struct TwoOpt
 {
     std::size_t i; // reverse the segment order[i + 1 .. j]
     std::size_t j;
+
+    auto operator==(const TwoOpt&) const -> bool = default; // used by Tester checks
 };
 // [model] ------------------------------------------------------------------
+
+// [io] ---------------------------------------------------------------------
+// Optional hooks, found by ADL, that let the tools load, save and display.
+[[nodiscard]] inline auto read_input(std::type_identity<Tsp>, std::istream& in) -> Tsp
+{
+    Tsp tsp; // "n d00 d01 ... d(n-1)(n-1)"
+    if (!(in >> tsp.cities))
+    {
+        throw std::runtime_error{"invalid TSP header"};
+    }
+    tsp.distance.resize(tsp.cities * tsp.cities);
+    for (auto& value : tsp.distance)
+    {
+        if (!(in >> value))
+        {
+            throw std::runtime_error{"invalid TSP distances"};
+        }
+    }
+    return tsp;
+}
+
+[[nodiscard]] inline auto read_solution(const Tsp& tsp, std::istream& in) -> Tour
+{
+    Tour tour{std::vector<std::size_t>(tsp.cities)};
+    for (auto& city : tour.order)
+    {
+        if (!(in >> city))
+        {
+            throw std::runtime_error{"invalid tour"};
+        }
+    }
+    return tour;
+}
+
+inline void write_solution(const Tsp&, const Tour& tour, std::ostream& out)
+{
+    for (const auto city : tour.order)
+    {
+        out << city << ' ';
+    }
+    out << '\n';
+}
+
+[[nodiscard]] inline auto describe(const Tour& tour) -> std::string
+{
+    std::string text;
+    for (const auto city : tour.order)
+    {
+        text += std::to_string(city) + ' ';
+    }
+    return text;
+}
+
+[[nodiscard]] inline auto describe(const TwoOpt& move) -> std::string
+{
+    return "2-opt(" + std::to_string(move.i) + ", " + std::to_string(move.j) + ")";
+}
+// [io] ---------------------------------------------------------------------
 
 // [solution-manager] -------------------------------------------------------
 class TourManager : public easylocal::solution_manager_base<Tsp, Tour>

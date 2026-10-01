@@ -131,6 +131,15 @@ int main(int argc, char* argv[])
         application.run<runners::FirstImprovement>(tsp, Tour{{0, 1, 2, 3, 4}});
     // [app] ----------------------------------------------------------------
 
+    // [check] --------------------------------------------------------------
+    const auto report = el::check(application, tsp); // also: check(app, input, solution)
+    el::print_report(std::cout, report);
+    if (!report)
+    {
+        return 1;
+    }
+    // [check] --------------------------------------------------------------
+
     // [tester] -------------------------------------------------------------
     el::Tester tester{application, /* seed */ 2026};
     tester.set_input(tsp);
@@ -139,6 +148,16 @@ int main(int argc, char* argv[])
     (void)tester.run_runner("sa"); // receives the Tester's RNG
     (void)tester.run_runner("fi");
     // [tester] -------------------------------------------------------------
+
+    // [tester-checks] ------------------------------------------------------
+    const auto costs = tester.check_neighborhood_costs();     // delta vs full evaluation
+    const auto independence = tester.check_move_independence(); // null and repeated moves
+    const auto sampling = tester.check_random_move_distribution(tester.rng());
+    if (costs.mismatches != 0 || costs.invalid != 0 || sampling.out_of_neighborhood != 0)
+    {
+        return 1;
+    }
+    // [tester-checks] ------------------------------------------------------
 
     // [control] ------------------------------------------------------------
     std::stop_source stop;
@@ -169,6 +188,9 @@ int main(int argc, char* argv[])
               << "\nmulti-start " << best.cost
               << "\napp " << app_result.cost
               << "\ntester " << tester.evaluate()
+              << " (" << costs.moves << " moves checked, "
+              << independence.null_moves << " null moves, "
+              << sampling.unseen << " moves never sampled)"
               << "\ndescent " << observed.cost << " with " << trace.records().size()
               << " trace events\n";
     (void)piped_application;
