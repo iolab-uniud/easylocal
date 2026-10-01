@@ -148,10 +148,10 @@ namespace temperature
 
 struct ClassicParameters
 {
-    double initial_temperature;
-    double final_temperature;
-    double cooling_rate;
-    std::size_t samples_per_temperature;
+    double initial_temperature{10.0};
+    double final_temperature{0.01};
+    double cooling_rate{0.95};
+    std::size_t samples_per_temperature{100};
 
     [[nodiscard]]
     static consteval auto parameter_schema()
@@ -188,6 +188,8 @@ struct ClassicParameters
 class Classic
 {
 public:
+    using parameters_type = ClassicParameters;
+
     explicit Classic(
         const ClassicParameters parameters) noexcept
         : parameters_{parameters}
@@ -260,10 +262,10 @@ private:
 
 struct FixedLengthParameters
 {
-    double initial_temperature;
-    double final_temperature;
-    double cooling_rate;
-    std::size_t max_iterations;
+    double initial_temperature{10.0};
+    double final_temperature{0.01};
+    double cooling_rate{0.95};
+    std::size_t max_iterations{100'000};
 
     [[nodiscard]]
     static consteval auto parameter_schema()
@@ -328,6 +330,8 @@ struct FixedLengthParameters
 class FixedLength
 {
 public:
+    using parameters_type = FixedLengthParameters;
+
     explicit FixedLength(
         const FixedLengthParameters parameters) noexcept
         : parameters_{parameters},
@@ -436,11 +440,11 @@ private:
 
 struct CutoffParameters
 {
-    double initial_temperature;
-    double final_temperature;
-    double cooling_rate;
-    std::size_t max_iterations;
-    double accepted_ratio;
+    double initial_temperature{10.0};
+    double final_temperature{0.01};
+    double cooling_rate{0.95};
+    std::size_t max_iterations{100'000};
+    double accepted_ratio{0.1};
 
     [[nodiscard]]
     static consteval auto parameter_schema()
@@ -484,6 +488,8 @@ struct CutoffParameters
 class Cutoff
 {
 public:
+    using parameters_type = CutoffParameters;
+
     explicit Cutoff(
         const CutoffParameters parameters) noexcept
         : parameters_{parameters},
@@ -579,6 +585,8 @@ using HybridParameters = CutoffParameters;
 class Hybrid
 {
 public:
+    using parameters_type = HybridParameters;
+
     explicit Hybrid(
         const HybridParameters parameters) noexcept
         : parameters_{parameters},
@@ -767,6 +775,19 @@ public:
 namespace detail
 {
 
+// Exposes the temperature policy's parameters_type, when it has one.
+template<class Policy>
+struct policy_parameters
+{
+};
+
+template<class Policy>
+    requires requires { typename Policy::parameters_type; }
+struct policy_parameters<Policy>
+{
+    using parameters_type = typename Policy::parameters_type;
+};
+
 template<class Context, class RNG>
 concept random_move_context =
     search_context<Context> &&
@@ -814,12 +835,25 @@ template<
     temperature_policy TemperaturePolicy = temperature::Classic,
     class Acceptance = MetropolisAcceptance>
 class SimulatedAnnealing
+    : public detail::policy_parameters<TemperaturePolicy>
 {
 public:
     explicit SimulatedAnnealing(
         TemperaturePolicy temperature_policy,
         Acceptance acceptance = {})
         : temperature_policy_{std::move(temperature_policy)},
+          acceptance_{std::move(acceptance)}
+    {
+    }
+
+    // From the temperature policy's parameters: this makes Simulated
+    // Annealing registrable in apps (parameters_type is the policy's).
+    template<class Policy = TemperaturePolicy>
+        requires requires { typename Policy::parameters_type; }
+    explicit SimulatedAnnealing(
+        const typename Policy::parameters_type& parameters,
+        Acceptance acceptance = {})
+        : temperature_policy_{parameters},
           acceptance_{std::move(acceptance)}
     {
     }

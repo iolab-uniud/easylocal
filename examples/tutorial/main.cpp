@@ -119,21 +119,24 @@ int main(int argc, char* argv[])
         .with_solution_manager(sm)
         .with_neighborhood(nhe)
         .with_runner<runners::FirstImprovement>("fi")
-        .with_runner<runners::BestImprovement>("bi", {.max_evaluations = 500});
+        .with_runner<runners::SimulatedAnnealing<Classic>>(
+            "sa", {.samples_per_temperature = 50});
 
     auto piped_application = el::app("tsp") | sm | nhe
         | el::runner<runners::FirstImprovement>("fi")
-        | el::runner<runners::BestImprovement>("bi", {.max_evaluations = 500});
+        | el::runner<runners::SimulatedAnnealing<Classic>>(
+              "sa", {.samples_per_temperature = 50});
 
     const auto app_result =
         application.run<runners::FirstImprovement>(tsp, Tour{{0, 1, 2, 3, 4}});
     // [app] ----------------------------------------------------------------
 
     // [tester] -------------------------------------------------------------
-    el::Tester tester{application};
+    el::Tester tester{application, /* seed */ 2026};
     tester.set_input(tsp);
     tester.use_initial_solution();
     (void)tester.use_first_improving_move();
+    (void)tester.run_runner("sa"); // receives the Tester's RNG
     (void)tester.run_runner("fi");
     // [tester] -------------------------------------------------------------
 

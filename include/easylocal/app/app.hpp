@@ -6,6 +6,7 @@
 #include <cassert>
 #include <concepts>
 #include <cstddef>
+#include <random>
 #include <stdexcept>
 #include <string>
 #include <string_view>
@@ -200,6 +201,29 @@ public:
             std::forward<RunArgs>(run_args)...);
     }
 
+    // Whether the algorithm takes an RNG as its run argument.
+    template<class RNG, class... Options>
+    static constexpr bool takes_rng =
+        algorithm_runnable<Algorithm, runner_context<SM, NHE>, RNG&, Options...>;
+
+    // The run used by tools: the tool's RNG is passed to stochastic algorithms
+    // and ignored by deterministic ones; options are with(control, tracer).
+    template<std::uniform_random_bit_generator RNG, class... Options>
+    [[nodiscard]]
+    auto run_with_rng(solution_type solution, RNG& rng, Options&&... options)
+        requires takes_rng<RNG, Options...> ||
+                 algorithm_runnable<Algorithm, runner_context<SM, NHE>, Options...>
+    {
+        if constexpr (takes_rng<RNG, Options...>)
+        {
+            return run(std::move(solution), rng, std::forward<Options>(options)...);
+        }
+        else
+        {
+            return run(std::move(solution), std::forward<Options>(options)...);
+        }
+    }
+
 private:
     Algorithm& algorithm_;
     SM& solution_manager_;
@@ -332,6 +356,20 @@ public:
         return runner_at<Index>().run(
             std::move(solution),
             std::forward<RunArgs>(args)...);
+    }
+
+    template<std::size_t Index, std::uniform_random_bit_generator RNG, class... Options>
+        requires (Index < runner_count)
+    [[nodiscard]]
+    auto run_at_with_rng(
+        typename solution_manager_type::solution_type solution,
+        RNG& rng,
+        Options&&... options)
+    {
+        return runner_at<Index>().run_with_rng(
+            std::move(solution),
+            rng,
+            std::forward<Options>(options)...);
     }
 
 private:
@@ -674,6 +712,30 @@ public:
         return runtime.template run_at<Index>(
             std::move(solution),
             std::forward<RunArgs>(args)...);
+    }
+
+    // Runs registration Index on a fresh runtime, giving rng to the algorithm
+    // if it takes one. This is how tools run every registered runner.
+    template<
+        std::size_t Index,
+        std::uniform_random_bit_generator RNG,
+        class Spec = SMSpec,
+        class... Options>
+        requires (!std::same_as<Spec, unconfigured_t>) &&
+                 (!std::same_as<NHESpec, unconfigured_t>) &&
+                 (Index < sizeof...(Registrations))
+    [[nodiscard]]
+    auto run_at_with_rng(
+        const typename service_t<Spec>::input_type& input,
+        typename service_t<Spec>::solution_type solution,
+        RNG& rng,
+        Options&&... options) const
+    {
+        auto runtime = for_input(input);
+        return runtime.template run_at_with_rng<Index>(
+            std::move(solution),
+            rng,
+            std::forward<Options>(options)...);
     }
 
 private:

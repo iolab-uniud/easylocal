@@ -28,6 +28,7 @@ several names.
 | `runner_config<A>()`, `runner_config<A>("name")` | the stored parameters |
 | `runner_name<A>()` | the registered name |
 | `run<A>(input, solution, args...)`, `run_at<I>(...)` | run on fresh services |
+| `run_at_with_rng<I>(input, solution, rng, options...)` | the tools' run: `rng` goes to stochastic algorithms only |
 | `for_input(input)` | a reusable *runtime*: services built once |
 | `make_runner<A>([name])`, `make_solver<Solver, A>([name,] config)` | standalone runner or solver |
 | `for_each_runner_registration[_indexed](visitor)` | iterate registrations (adapters) |
@@ -37,12 +38,15 @@ several names.
 | Tool | Purpose |
 | --- | --- |
 | `check(app, input[, solution]) -> app_check_report` | contract checks of the composed problem; `print_report` |
-| `Tester{app}` | headless driver: `set_input` / `load_input`, `use_initial_solution` / `use_random_solution`, `set_solution` / `load_solution` / `save_solution`, `evaluate`, `check`, moves (`use_first_move`, `use_next_move`, `use_first_improving_move`, `use_best_move`, `use_random_move`), `run_runner(name)` |
+| `Tester{app, seed}` | headless driver: `set_input` / `load_input`, `use_initial_solution` / `use_random_solution`, `set_solution` / `load_solution` / `save_solution`, `evaluate`, `check`, moves (`use_first_move`, `use_next_move`, `use_first_improving_move`, `use_best_move`, `use_random_move`), `run_runner(name)` |
 | `tui::run(tester, options)`, `tui::run_launcher(options, apps...)` | interactive terminal tester (TUI component, FTXUI) |
 | `rest::blueprint(prefix, app, codec, options)` | Crow blueprint: asynchronous runs, status, cancellation, solutions (REST component); see [REST](../rest.md) |
 
-The tools run registered runners without extra arguments, hence without an
-RNG: only deterministic runners can be used through them for now.
+Tools give stochastic runners an RNG they own, from a configurable seed:
+`Tester{app, seed}` (and `set_seed`, `rng()`), the TextUI `seed` option, and
+REST's per-run `seed` (default `blueprint_options::seed + run id`).
+`run_at_with_rng<Index>(input, solution, rng, options...)` passes the RNG to
+the algorithm only if it takes one, so deterministic runners ignore it.
 
 ## Design choices
 

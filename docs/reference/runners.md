@@ -46,7 +46,9 @@ Simulated Annealing returns the best solution found. Temperature policies in
 | `Hybrid` | as Cutoff | max iterations; cools on samples or acceptances |
 
 `runners::MetropolisAcceptance` (the default) requires `cost::delta` (see
-[Cost](cost.md)).
+[Cost](cost.md)). `SimulatedAnnealing<Policy>` exposes the policy's
+`parameters_type` and is constructible from it, so it can be registered in
+apps; the parameter blocks have defaults that pass validation.
 
 ## Results
 

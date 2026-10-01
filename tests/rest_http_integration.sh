@@ -195,6 +195,16 @@ request POST "${base_url}/runners/fi/runs" 422 "$initial_solution_body" \
     '{"input":{"demand":[4,4,2],"capacity":[5,5]},"initial_solution":[0,1,0]}'
 assert_error_code "$initial_solution_body" invalid_run_request
 
+negative_seed_body="${tmp_dir}/negative-seed.json"
+request POST "${base_url}/runners/fi/runs" 422 "$negative_seed_body" \
+    '{"input":{"demand":[4,4,2],"capacity":[5,5]},"seed":-1}'
+assert_error_code "$negative_seed_body" invalid_run_request
+
+seeded_body="${tmp_dir}/seeded.json"
+request POST "${base_url}/runners/fi/runs" 202 "$seeded_body" \
+    '{"input":{"demand":[4,4,2],"capacity":[5,5]},"seed":12345}'
+grep -Eq '"seed"[[:space:]]*:[[:space:]]*12345' "$seeded_body" || fail "explicit run seed is not reported"
+
 unknown_body="${tmp_dir}/unknown.json"
 request POST "${base_url}/runners/missing/runs" 404 "$unknown_body" "$structured_input"
 assert_error_code "$unknown_body" unknown_runner
@@ -208,6 +218,7 @@ submit_headers="${tmp_dir}/submit.headers"
 request POST "${base_url}/runners/fi/runs" 202 "$submit_body" "$structured_input" "$submit_headers"
 run_id="$(json_string "$submit_body" id)"
 [[ -n "$run_id" ]] || fail "successful submission has no id"
+grep -Eq '"seed"[[:space:]]*:[[:space:]]*[0-9]+' "$submit_body" || fail "run status does not report its seed"
 grep -Eiq "^Location:[[:space:]]*/assignment/runs/${run_id}[[:space:]]*$" "$submit_headers" || fail "submission has no correct Location header"
 
 status_body="${tmp_dir}/status.json"

@@ -150,6 +150,18 @@ An application codec may additionally support:
 }
 ```
 
+The envelope may also carry a `seed`, a non-negative integer. Stochastic
+runners receive an RNG seeded with it; deterministic runners ignore it. Without
+an explicit seed a run uses `blueprint_options::seed + <run id>`, so runs differ
+but stay reproducible. Status responses report the seed used.
+
+```json
+{
+  "input": { "...": "..." },
+  "seed": 12345
+}
+```
+
 A successful submission returns `202 Accepted`, sets `Location` to the run
 resource, and uses `id` consistently:
 
@@ -157,6 +169,7 @@ resource, and uses `id` consistently:
 {
   "id": "42",
   "runner": "fi",
+  "seed": 42,
   "status": "queued",
   "cancellation_requested": false,
   "progress": {
@@ -205,6 +218,7 @@ Every runner is cancellable: the control is carried by the framework-owned
 {
   "id": "42",
   "runner": "fi",
+  "seed": 42,
   "status": "running",
   "cancellation_requested": false,
   "progress": {

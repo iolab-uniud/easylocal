@@ -16,6 +16,7 @@
 #include <optional>
 #include <stdexcept>
 #include <stop_token>
+#include <random>
 #include <string>
 #include <string_view>
 #include <type_traits>
@@ -31,6 +32,10 @@ struct blueprint_options
     std::size_t workers{default_worker_count()};
     std::size_t queue_capacity{64};
     std::size_t completed_run_capacity{64};
+    // Base seed of the RNG given to stochastic runners: a run without an
+    // explicit "seed" uses seed + its run id, so runs differ but are
+    // reproducible.
+    std::uint64_t seed{0};
 };
 
 namespace detail
@@ -182,6 +187,7 @@ private:
         std::string id;
         std::string runner;
         std::shared_ptr<const input_type> input;
+        std::uint64_t seed{};
         mutable std::mutex mutex;
         std::stop_source stop_source;
         run_state state{run_state::queued};
@@ -309,6 +315,7 @@ private:
         const std::lock_guard lock{record->mutex};
         body["id"] = record->id;
         body["runner"] = record->runner;
+        body["seed"] = record->seed;
         body["status"] = std::string{state_name(record->state)};
         body["cancellation_requested"] = record->stop_source.stop_requested();
         body["progress"]["evaluations"] = static_cast<std::uint64_t>(
@@ -450,9 +457,26 @@ private:
                 *input,
                 initial_payload);
 
-            const auto id = std::to_string(next_run_id_.fetch_add(1));
+            if (payload.has("seed") &&
+                (payload["seed"].t() != crow::json::type::Number ||
+                 (payload["seed"].nt() != crow::json::num_type::Unsigned_integer &&
+                  payload["seed"].nt() != crow::json::num_type::Signed_integer) ||
+                 (payload["seed"].nt() == crow::json::num_type::Signed_integer &&
+                  payload["seed"].i() < 0)))
+            {
+                return detail::error_response(
+                    422,
+                    "invalid_run_request",
+                    "'seed' must be a non-negative integer");
+            }
+
+            const auto run_number = next_run_id_.fetch_add(1);
+            const auto id = std::to_string(run_number);
             auto record = std::make_shared<run_record>();
             record->id = id;
+            record->seed = payload.has("seed")
+                ? static_cast<std::uint64_t>(payload["seed"].u())
+                : options_.seed + static_cast<std::uint64_t>(run_number);
             record->runner = runner;
             record->input = input;
             {
@@ -531,9 +555,11 @@ private:
                                             : run_state::succeeded;
                                 };
 
-                                consume_result(application.template run_at<Index>(
+                                std::mt19937_64 rng{record->seed};
+                                consume_result(application.template run_at_with_rng<Index>(
                                     *record->input,
                                     std::move(initial),
+                                    rng,
                                     easylocal::with(control)));
                                 found = true;
                             });
@@ -574,6 +600,7 @@ private:
             crow::json::wvalue body;
             body["id"] = id;
             body["runner"] = runner;
+            body["seed"] = record->seed;
             body["status"] = "queued";
                 body["cancellation_requested"] = false;
             body["progress"]["evaluations"] = std::uint64_t{0};
@@ -654,6 +681,7 @@ private:
         crow::json::wvalue body;
         body["id"] = record->id;
         body["runner"] = record->runner;
+        body["seed"] = record->seed;
         body["status"] = std::string{state_name(record->state)};
         body["cost"] = encode_cost(cost);
         body["solution"] = encode_solution(

@@ -4,6 +4,7 @@
 #include <cassert>
 #include <concepts>
 #include <cstddef>
+#include <cstdint>
 #include <filesystem>
 #include <fstream>
 #include <istream>
@@ -330,9 +331,22 @@ public:
         "or random_solution(std::mt19937_64&) or solution stream loading "
         "to be available");
 
-    explicit Tester(App application)
-        : app_{std::move(application)}
+    // The seed initializes the RNG the Tester gives to stochastic runners.
+    explicit Tester(App application, const std::uint64_t seed = 0)
+        : app_{std::move(application)},
+          rng_{seed}
     {
+    }
+
+    void set_seed(const std::uint64_t seed)
+    {
+        rng_.seed(seed);
+    }
+
+    [[nodiscard]]
+    auto rng() noexcept -> rng_type&
+    {
+        return rng_;
     }
 
     [[nodiscard]]
@@ -551,7 +565,8 @@ public:
                     return;
                 }
 
-                auto result = app_.template run_at<Index>(*input_, *solution_);
+                auto result =
+                    app_.template run_at_with_rng<Index>(*input_, *solution_, rng_);
                 static_assert(
                     easylocal::search_result_for<
                         decltype(result), solution_type, cost_type>,
@@ -1049,6 +1064,7 @@ private:
     std::unique_ptr<solution_type> solution_;
     std::optional<move_type> move_;
     std::optional<std::size_t> deterministic_move_index_;
+    rng_type rng_;
 };
 
 } // namespace easylocal

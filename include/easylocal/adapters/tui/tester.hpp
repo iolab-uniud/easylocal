@@ -2002,10 +2002,15 @@ private:
             const auto name = run_name_;
 
             const auto progress_state = run_progress_state_;
+            // Each background run gets its own generator, seeded from the
+            // frontend RNG (itself seeded by options.seed), so runs are
+            // reproducible and never share state with the UI thread.
+            typename tester_type::rng_type run_rng{rng_()};
             run_worker_ = std::jthread(
                 [application = std::move(application),
                  input = std::move(input),
                  solution = std::move(solution),
+                 run_rng,
                  name,
                  promise = std::move(promise),
                  event_app,
@@ -2060,9 +2065,10 @@ private:
                                         std::move(result.solution));
                                 };
 
-                                consume_result(application.template run_at<Index>(
+                                consume_result(application.template run_at_with_rng<Index>(
                                     *input,
                                     std::move(solution),
+                                    run_rng,
                                     easylocal::with(control)));
                                 completion.cancelled = stop_token.stop_requested();
                                 completion.found = true;

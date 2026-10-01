@@ -1077,6 +1077,20 @@ if(TARGET easylocal_tsp_two_apps_mwe)
 endif()
 
 add_executable(
+    easylocal_stochastic_tools_test
+    stochastic_tools.cpp
+)
+target_link_libraries(
+    easylocal_stochastic_tools_test
+    PRIVATE
+        EasyLocal::Core
+)
+add_test(
+    NAME easylocal.stochastic-tools
+    COMMAND easylocal_stochastic_tools_test
+)
+
+add_executable(
     easylocal_tester_test
     tester.cpp
 )
