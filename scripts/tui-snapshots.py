@@ -12,25 +12,17 @@ by the uv environment of the repository (pyproject.toml):
     uv run scripts/tui-snapshots.py <binary> --text     # print the screens instead
 """
 
-import fcntl
 import html
-import os
 import pathlib
-import pty
-import select
-import struct
 import sys
-import termios
-import time
 
 import pyte
+
+from tui_driver import DOWN, F3, F4, F5, Tui
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 OUTPUT = ROOT / "docs" / "tutorial" / "images"
 COLUMNS, LINES = 100, 30
-
-F3, F4, F5 = "\x1bOR", "\x1bOS", "\x1b[15~"
-DOWN, ESCAPE = "\x1b[B", "\x1b"
 
 # (image name, actions before the snapshot); actions accumulate. An action is a
 # key sequence, or ("until", key, text): press key until the screen shows text.
@@ -58,24 +50,6 @@ def color(value: str, default: str) -> str:
     if len(value) == 6 and all(c in "0123456789abcdefABCDEF" for c in value):
         return "#" + value
     return default
-
-
-def drain(fd: int, stream: pyte.ByteStream, settle: float = 0.6, limit: float = 8.0) -> None:
-    """Feed output until the screen has been quiet for `settle` seconds."""
-    start = last = time.time()
-    while time.time() - start < limit:
-        ready, _, _ = select.select([fd], [], [], 0.05)
-        if ready:
-            try:
-                data = os.read(fd, 65536)
-            except OSError:
-                return
-            if not data:
-                return
-            stream.feed(data)
-            last = time.time()
-        elif time.time() - last > settle:
-            return
 
 
 def to_text(screen: pyte.Screen) -> str:
@@ -137,42 +111,22 @@ def main() -> int:
     binary = sys.argv[1]
     as_text = "--text" in sys.argv[2:]
 
-    screen = pyte.Screen(COLUMNS, LINES)
-    stream = pyte.ByteStream(screen)
-    pid, fd = pty.fork()
-    if pid == 0:
-        os.environ["TERM"] = "xterm-256color"
-        os.execv(binary, [binary])
-    fcntl.ioctl(fd, termios.TIOCSWINSZ, struct.pack("HHHH", LINES, COLUMNS, 0, 0))
-    try:
-        drain(fd, stream, settle=1.0)
-        OUTPUT.mkdir(parents=True, exist_ok=True)
+    OUTPUT.mkdir(parents=True, exist_ok=True)
+    with Tui(binary, COLUMNS, LINES) as tui:
         for name, actions in SCENARIO:
             for action in actions:
                 if isinstance(action, tuple):
                     _, key, text = action
-                    for _ in range(20):
-                        if text in to_text(screen):
-                            break
-                        os.write(fd, key.encode())
-                        drain(fd, stream, settle=0.3)
-                    else:
-                        raise SystemExit(f"{name}: '{text}' never appeared")
+                    tui.select(text.removeprefix("> "), key)
                 else:
-                    os.write(fd, action.encode())
-                    drain(fd, stream)
+                    tui.press(action)
+                    tui.settle(quiet=0.6)
             if as_text:
-                print(f"=== {name}\n{to_text(screen)}\n")
+                print(f"=== {name}\n{to_text(tui.screen_buffer)}\n")
             else:
-                (OUTPUT / f"{name}.svg").write_text(to_svg(screen))
+                (OUTPUT / f"{name}.svg").write_text(to_svg(tui.screen_buffer))
                 print(f"wrote {(OUTPUT / name).relative_to(ROOT)}.svg")
-        os.write(fd, b"q")
-        drain(fd, stream, settle=0.3, limit=1.0)
-    finally:
-        try:
-            os.kill(pid, 9)
-        except ProcessLookupError:
-            pass
+        tui.press("q")
     return 0
 
 

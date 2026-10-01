@@ -2,6 +2,7 @@
 #
 #     uv sync                                  # create .venv from uv.lock
 #     uv run scripts/tui-snapshots.py <tui>    # run a script in that environment
+#     uv run pytest tests/tui                  # TUI end-to-end tests
 #
 # The library itself is C++ and does not depend on any of this.
 [project]
@@ -11,7 +12,8 @@ description = "Development scripts of EasyLocal (docs snippets, TUI screenshots,
 requires-python = ">=3.10"
 dependencies = [
     "gcovr>=8",  # coverage reports (scripts/coverage.sh)
-    "pyte>=0.8",  # TUI screenshots (scripts/tui-snapshots.py)
+    "pyte>=0.8",  # TUI driver (scripts/tui_driver.py): screenshots and e2e tests
+    "pytest>=8",  # TUI end-to-end tests (tests/tui)
 ]
 
 [tool.uv]

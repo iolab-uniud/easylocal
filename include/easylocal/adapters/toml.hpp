@@ -5,12 +5,15 @@
 #include <toml++/toml.hpp>
 
 #include <cstdint>
+#include <exception>
 #include <filesystem>
 #include <iomanip>
 #include <limits>
+#include <optional>
 #include <sstream>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 namespace easylocal::config
@@ -159,14 +162,47 @@ inline void flatten_toml_table(
 
 inline void append_toml_parse_error(
     toml_config_parse_result& result,
-    const toml::parse_error& error)
+    const std::string_view message)
 {
     result.diagnostics.push_back({
         .error = toml_config_error::parse_error,
         .path = {},
-        .message = std::string{error.description()},
+        .message = std::string{message},
     });
 }
+
+inline void append_toml_parse_error(
+    toml_config_parse_result& result,
+    const toml::parse_error& error)
+{
+    append_toml_parse_error(result, error.description());
+}
+
+#if TOML_EXCEPTIONS
+// Parse with toml++ in exception mode. A toml++ built as a shared library
+// (Homebrew's, TOML_HEADER_ONLY=0) throws parse_error from the library, where
+// macOS may not match it against the parse_error of this binary: the
+// std::exception base still matches, and is reported as a parse error.
+template<class Parse>
+[[nodiscard]]
+auto parse_toml_table(toml_config_parse_result& result, Parse&& parse)
+    -> std::optional<toml::table>
+{
+    try
+    {
+        return std::forward<Parse>(parse)();
+    }
+    catch (const toml::parse_error& error)
+    {
+        append_toml_parse_error(result, error);
+    }
+    catch (const std::exception& error)
+    {
+        append_toml_parse_error(result, error.what());
+    }
+    return std::nullopt;
+}
+#endif
 
 } // namespace detail
 
@@ -178,14 +214,11 @@ inline auto parse_toml_text(
     toml_config_parse_result result{};
 
 #if TOML_EXCEPTIONS
-    try
+    const auto table = detail::parse_toml_table(
+        result, [&] { return toml::parse(text, source_path); });
+    if (table)
     {
-        const auto table = toml::parse(text, source_path);
-        detail::flatten_toml_table(table, {}, result);
-    }
-    catch (const toml::parse_error& error)
-    {
-        detail::append_toml_parse_error(result, error);
+        detail::flatten_toml_table(*table, {}, result);
     }
 #else
     const auto parsed = toml::parse(text, source_path);
@@ -206,14 +239,11 @@ inline auto load_toml_file(const std::filesystem::path& path)
 {
 #if TOML_EXCEPTIONS
     toml_config_parse_result result{};
-    try
+    const auto table = detail::parse_toml_table(
+        result, [&] { return toml::parse_file(path.string()); });
+    if (table)
     {
-        const auto table = toml::parse_file(path.string());
-        detail::flatten_toml_table(table, {}, result);
-    }
-    catch (const toml::parse_error& error)
-    {
-        detail::append_toml_parse_error(result, error);
+        detail::flatten_toml_table(*table, {}, result);
     }
     return result;
 #else

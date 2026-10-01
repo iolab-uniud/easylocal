@@ -53,6 +53,12 @@ void record(const std::size_t bytes) noexcept
 
 } // namespace allocation_probe
 
+// GCC flags the free() of the replaced deletes as mismatched with new, although
+// the replaced news allocate with malloc().
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic ignored "-Wmismatched-new-delete"
+#endif
+
 void* operator new(const std::size_t size)
 {
     allocation_probe::record(size);

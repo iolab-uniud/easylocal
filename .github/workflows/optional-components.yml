@@ -39,7 +39,7 @@ jobs:
           "${elevate[@]}" apt-get -o Acquire::Retries=3 update
           "${elevate[@]}" env DEBIAN_FRONTEND=noninteractive \
             apt-get install -y --no-install-recommends \
-              cmake ninja-build g++-16 curl
+              cmake ninja-build g++-16 curl python3-pyte python3-pytest
           echo 'CXX=/usr/bin/g++-16' >> "$GITHUB_ENV"
 
       - name: Configure with forced FetchContent
@@ -179,6 +179,7 @@ jobs:
           brew list --versions ftxui >/dev/null 2>&1 || brew install ftxui
           brew list --versions crow >/dev/null 2>&1 || brew install crow
           brew list --versions asio >/dev/null 2>&1 || brew install asio
+          command -v uv >/dev/null || brew install uv  # TUI end-to-end tests
           # The newest installed Xcode: EasyLocal needs a libc++ with
           # std::stop_token and floating-point std::from_chars.
           xcode="$(ls -d /Applications/Xcode*.app | sort -V | tail -1)"

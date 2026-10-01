@@ -68,18 +68,23 @@ Build products and reports are kept under `build/<preset>/` and are ignored by
 Git.
 
 The Python scripts under `scripts/` (documentation snippets, TUI screenshots,
-benchmark summaries) run in a [uv](https://docs.astral.sh/uv/) environment
-described by `pyproject.toml` and `uv.lock`:
+coverage, benchmark summaries) and the TUI end-to-end tests run in a
+[uv](https://docs.astral.sh/uv/) environment described by `pyproject.toml` and
+`uv.lock`:
 
 ```sh
 brew install uv
 uv sync                                       # creates .venv
 uv run scripts/sync-doc-snippets.py           # refresh the docs' code snippets
 uv run scripts/tui-snapshots.py build/<preset>/examples/tutorial/easylocal_tutorial_tui
+./scripts/coverage.sh                         # coverage of include/easylocal (build/coverage/)
 ```
 
 Scripts that only use the standard library also run with a plain `python3`,
-which is how the test suite runs the snippet check.
+which is how the test suite runs the snippet check. With the TUI component, the
+suite also runs `easylocal.tui-e2e` (label `tui-e2e`): `tests/tui` drives the
+tutorial's tester in a pseudo-terminal through `scripts/tui_driver.py` and
+checks its user flows on the screen it shows.
 
 ## Header-only library
 

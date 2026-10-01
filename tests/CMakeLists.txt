@@ -1183,6 +1183,42 @@ if(TARGET EasyLocal::REST)
     endif()
 endif()
 
+# End-to-end tests of the tutorial's TextUI in a pseudo-terminal (tests/tui),
+# with pytest and pyte from the uv environment, or from the Python found.
+if(UNIX AND TARGET easylocal_tutorial_tui)
+    find_program(EASYLOCAL_UV_EXECUTABLE NAMES uv)
+    set(easylocal_tui_e2e_python "")
+    if(EASYLOCAL_UV_EXECUTABLE)
+        set(easylocal_tui_e2e_python
+            "${EASYLOCAL_UV_EXECUTABLE}" run --project "${PROJECT_SOURCE_DIR}" --frozen python)
+    elseif(Python3_Interpreter_FOUND)
+        execute_process(
+            COMMAND "${Python3_EXECUTABLE}" -c "import pyte, pytest"
+            RESULT_VARIABLE easylocal_tui_e2e_modules
+            OUTPUT_QUIET ERROR_QUIET)
+        if(easylocal_tui_e2e_modules EQUAL 0)
+            set(easylocal_tui_e2e_python "${Python3_EXECUTABLE}")
+        endif()
+    endif()
+
+    if(easylocal_tui_e2e_python)
+        add_test(
+            NAME easylocal.tui-e2e
+            COMMAND ${easylocal_tui_e2e_python} -m pytest -q -p no:cacheprovider
+                "${PROJECT_SOURCE_DIR}/tests/tui"
+        )
+        set_tests_properties(
+            easylocal.tui-e2e
+            PROPERTIES
+                LABELS "integration;tui-e2e"
+                ENVIRONMENT "EASYLOCAL_TUTORIAL_TUI=$<TARGET_FILE:easylocal_tutorial_tui>"
+                TIMEOUT 300
+        )
+    else()
+        message(STATUS "neither uv nor Python with pyte and pytest: TUI end-to-end tests disabled")
+    endif()
+endif()
+
 add_executable(
     easylocal_trace_test
     trace.cpp

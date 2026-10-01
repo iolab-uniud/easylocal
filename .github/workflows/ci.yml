@@ -257,16 +257,18 @@ jobs:
           persist-credentials: false
 
       - name: Install build tools
+        timeout-minutes: 10
         run: |
           if [ "$(id -u)" -eq 0 ]; then
             elevate=()
           else
             elevate=(sudo)
           fi
-          "${elevate[@]}" apt-get -o Acquire::Retries=3 update
+          apt_options=(-o Acquire::Retries=3 -o Acquire::http::Timeout=30)
+          "${elevate[@]}" apt-get "${apt_options[@]}" update
           "${elevate[@]}" env DEBIAN_FRONTEND=noninteractive \
-            apt-get install -y --no-install-recommends \
-              cmake ninja-build g++-16 curl gcovr
+            apt-get "${apt_options[@]}" install -y --no-install-recommends \
+              cmake ninja-build g++-16 curl gcovr python3-pyte python3-pytest
 
       - name: Measure coverage
         run: |
