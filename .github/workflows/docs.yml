@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'docs/**'
+      - 'include/**'
       - 'mkdocs.yml'
       - 'pyproject.toml'
       - 'uv.lock'
@@ -12,6 +13,7 @@ on:
   pull_request:
     paths:
       - 'docs/**'
+      - 'include/**'
       - 'mkdocs.yml'
   workflow_dispatch:
 
@@ -40,8 +42,22 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
 
+      - name: Install Doxygen
+        run: |
+          sudo apt-get -o Acquire::Retries=3 update
+          sudo env DEBIAN_FRONTEND=noninteractive \
+            apt-get install -y --no-install-recommends doxygen
+
       - name: Build
-        run: uv run --frozen mkdocs build --strict
+        run: |
+          uv run --frozen mkdocs build --strict
+          mkdir -p build/site-api
+          doxygen docs/Doxyfile
+          if [ -s build/site-api/warnings.log ]; then
+            cat build/site-api/warnings.log >&2
+            exit 1
+          fi
+          cp -R build/site-api/html build/site/api
 
       - name: Upload the site
         if: ${{ github.event_name != 'pull_request' }}

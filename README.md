@@ -3,6 +3,8 @@
 [![CI](https://github.com/iolab-uniud/easylocal/actions/workflows/ci.yml/badge.svg)](https://github.com/iolab-uniud/easylocal/actions/workflows/ci.yml)
 [![Optional Components](https://github.com/iolab-uniud/easylocal/actions/workflows/optional-components.yml/badge.svg)](https://github.com/iolab-uniud/easylocal/actions/workflows/optional-components.yml)
 [![Trace Microbenchmarks](https://github.com/iolab-uniud/easylocal/actions/workflows/trace-microbenchmarks.yml/badge.svg)](https://github.com/iolab-uniud/easylocal/actions/workflows/trace-microbenchmarks.yml)
+[![Coverage](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fiolab-uniud%2Feasylocal%2Fbadges%2Fcoverage.json)](https://github.com/iolab-uniud/easylocal/actions/workflows/ci.yml)
+[![Documentation](https://github.com/iolab-uniud/easylocal/actions/workflows/docs.yml/badge.svg)](https://iolab-uniud.github.io/easylocal/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 EasyLocal is a **C++23 header-only framework** for local search and

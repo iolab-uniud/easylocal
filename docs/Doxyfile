@@ -1,0 +1,40 @@
+# The API reference generated from the headers, published under /api/ of the
+# documentation site (.github/workflows/docs.yml). From the repository root:
+#
+#     doxygen docs/Doxyfile        # writes build/site-api/html
+#
+# Only the public API is documented: detail namespaces and headers are left out.
+PROJECT_NAME           = EasyLocal
+PROJECT_BRIEF          = "A C++23 header-only framework for local search and metaheuristics"
+OUTPUT_DIRECTORY       = build/site-api
+INPUT                  = include/easylocal
+RECURSIVE              = YES
+FILE_PATTERNS          = *.hpp
+EXCLUDE_PATTERNS       = */detail/* */third_party/*
+EXCLUDE_SYMBOLS        = detail *::detail *::detail::* display_adl
+STRIP_FROM_PATH        = include
+STRIP_FROM_INC_PATH    = include
+FULL_PATH_NAMES        = YES
+EXTRACT_ALL            = YES
+EXTRACT_PRIVATE        = NO
+EXTRACT_STATIC         = YES
+HIDE_UNDOC_RELATIONS   = YES
+SHOW_INCLUDE_FILES     = YES
+SORT_MEMBER_DOCS       = NO
+JAVADOC_AUTOBRIEF      = YES
+QT_AUTOBRIEF           = YES
+MARKDOWN_SUPPORT       = YES
+BUILTIN_STL_SUPPORT    = YES
+ENABLE_PREPROCESSING   = YES
+MACRO_EXPANSION        = YES
+PREDEFINED             = EASYLOCAL_DETAIL_CURSOR_FORCE_INLINE= TOML_EXCEPTIONS=1
+GENERATE_HTML          = YES
+HTML_OUTPUT            = html
+GENERATE_TREEVIEW      = YES
+HTML_COLORSTYLE        = AUTO_LIGHT
+GENERATE_LATEX         = NO
+HAVE_DOT               = NO
+QUIET                  = YES
+WARNINGS               = YES
+WARN_IF_UNDOCUMENTED   = NO
+WARN_LOGFILE           = build/site-api/warnings.log

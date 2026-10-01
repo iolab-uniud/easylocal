@@ -3,6 +3,8 @@
 One page per component: its contract (what is required, what is optional and
 who uses it), its API, and the design choices behind it. The
 [tutorial](../tutorial/README.md) introduces the same components by example.
+The [generated API reference](https://iolab-uniud.github.io/easylocal/api/)
+lists every public class and function, from the headers.
 
 | Page | Header(s) | Namespace |
 | --- | --- | --- |

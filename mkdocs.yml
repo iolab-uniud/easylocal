@@ -2,6 +2,7 @@
 #
 #     uv run mkdocs serve      # preview on http://127.0.0.1:8000
 #     uv run mkdocs build --strict
+#     doxygen docs/Doxyfile    # the generated API reference, served under api/
 #
 # .github/workflows/docs.yml publishes it.
 site_name: EasyLocal
@@ -14,6 +15,8 @@ copyright: Copyright &copy; 2001-2026 the EasyLocal authors, University of Udine
 
 docs_dir: docs
 site_dir: build/site
+exclude_docs: |
+  Doxyfile
 
 theme:
   name: material
@@ -80,6 +83,7 @@ nav:
       - reference/configuration.md
       - reference/app-and-tools.md
       - reference/testing.md
+      - API (generated): https://iolab-uniud.github.io/easylocal/api/
   - Guides:
       - REST service: rest.md
       - Tracing: tracing.md

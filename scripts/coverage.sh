@@ -62,6 +62,7 @@ mkdir -p "$build_dir/html"
     --txt "$build_dir/coverage.txt" \
     --txt-summary \
     --html-details "$build_dir/html/index.html" \
-    --cobertura "$build_dir/coverage.xml"
+    --cobertura "$build_dir/coverage.xml" \
+    --json-summary "$build_dir/summary.json"
 
-echo "reports: $build_dir/coverage.txt, $build_dir/html/index.html, $build_dir/coverage.xml"
+echo "reports: $build_dir/coverage.txt, $build_dir/html/index.html, $build_dir/coverage.xml, $build_dir/summary.json"

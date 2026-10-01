@@ -246,6 +246,8 @@ jobs:
 
   coverage:
     name: Linux / GCC 16 / Debug coverage, all optional components
+    permissions:
+      contents: write  # the coverage badge on the badges branch
     runs-on: ubuntu-26.04
     timeout-minutes: 45
     env:
@@ -289,6 +291,29 @@ jobs:
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 
+      - name: Publish the coverage badge
+        # The README badge reads badges/coverage.json (a shields.io endpoint)
+        # from the badges branch; only runs on main update it.
+        if: ${{ github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && !env.ACT }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          percent="$(python3 -c "import json; print(round(json.load(open('build/coverage/summary.json'))['line_percent'], 1))")"
+          color="$(python3 -c "p=$percent; print('brightgreen' if p >= 90 else 'green' if p >= 80 else 'yellowgreen' if p >= 70 else 'yellow' if p >= 60 else 'orange')")"
+          badge_dir="$(mktemp -d)"
+          cd "$badge_dir"
+          git init -q -b badges
+          printf '{"schemaVersion": 1, "label": "coverage", "message": "%s%%", "color": "%s"}\n' \
+            "$percent" "$color" > coverage.json
+          git add coverage.json
+          git -c user.name="github-actions[bot]" \
+              -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+              commit -q -m "coverage: ${percent}% of include/easylocal lines (${GITHUB_SHA::7})"
+          git push -q --force \
+            "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" \
+            badges:badges
+          echo "Coverage badge: ${percent}%" >> "$GITHUB_STEP_SUMMARY"
+
       - name: Upload coverage reports
         if: ${{ always() && !env.ACT }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -300,4 +325,5 @@ jobs:
             coverage.log
             build/coverage/coverage.txt
             build/coverage/coverage.xml
+            build/coverage/summary.json
             build/coverage/html/
