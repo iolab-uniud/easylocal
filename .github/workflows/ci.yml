@@ -238,3 +238,59 @@ jobs:
             build/ci23-release/compile_commands.json
             build/ci23-release/CMakeFiles/CMakeConfigureLog.yaml
             build/ci23-release/Testing/Temporary/LastTest.log
+
+  coverage:
+    name: Linux / GCC 16 / Debug coverage, all optional components
+    runs-on: ubuntu-26.04
+    timeout-minutes: 45
+    env:
+      CXX: /usr/bin/g++-16
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install build tools
+        run: |
+          if [ "$(id -u)" -eq 0 ]; then
+            elevate=()
+          else
+            elevate=(sudo)
+          fi
+          "${elevate[@]}" apt-get -o Acquire::Retries=3 update
+          "${elevate[@]}" env DEBIAN_FRONTEND=noninteractive \
+            apt-get install -y --no-install-recommends \
+              cmake ninja-build g++-16 curl gcovr
+
+      - name: Measure coverage
+        run: |
+          ./scripts/coverage.sh \
+            -DCMAKE_CXX_COMPILER="$CXX" \
+            -DEASYLOCAL_ENABLE_CONFIG_TOML=ON \
+            -DEASYLOCAL_ENABLE_TUI=ON \
+            -DEASYLOCAL_ENABLE_REST=ON \
+            -DEASYLOCAL_FETCH_DEPENDENCIES=ON \
+            -DCMAKE_DISABLE_FIND_PACKAGE_tomlplusplus=TRUE \
+            -DCMAKE_DISABLE_FIND_PACKAGE_ftxui=TRUE \
+            -DCMAKE_DISABLE_FIND_PACKAGE_Crow=TRUE \
+            2>&1 | tee coverage.log
+          {
+            echo '## Coverage of include/easylocal'
+            echo '```'
+            sed -n '/^lines:/,/^branches:/p' coverage.log
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload coverage reports
+        if: ${{ always() && !env.ACT }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: coverage-linux-gcc16
+          retention-days: 14
+          if-no-files-found: warn
+          path: |
+            coverage.log
+            build/coverage/coverage.txt
+            build/coverage/coverage.xml
+            build/coverage/html/

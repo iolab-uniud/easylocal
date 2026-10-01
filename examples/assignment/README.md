@@ -41,7 +41,7 @@ The example deliberately uses the recipe/pipeline API rather than constructing
 framework services manually, so it is suitable as a minimal starting point for
 a user program.
 
-This concrete model is used to discover the EasyLocal++ API.
+This concrete model is used to discover the EasyLocal API.
 
 It is deliberately **outside** `include/easylocal/` and is not part of the
 public framework API.

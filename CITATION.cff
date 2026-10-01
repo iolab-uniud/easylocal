@@ -1,0 +1,78 @@
+cff-version: 1.2.0
+message: >-
+  If you use EasyLocal in your research, please cite it as below.
+title: EasyLocal
+abstract: >-
+  EasyLocal is a C++23 header-only framework for the design of local search
+  algorithms and metaheuristics. Version 4 is a complete redesign of
+  EasyLocal++.
+type: software
+version: 4.0.0
+repository-code: "https://github.com/iolab-uniud/easylocal-next"
+keywords:
+  - local search
+  - metaheuristics
+  - software tools
+  - algorithm engineering
+  - C++
+authors:
+  - family-names: Ceschia
+    given-names: Sara
+  - family-names: Da Ros
+    given-names: Francesca
+  - family-names: Di Gaspero
+    given-names: Luca
+    email: luca.digaspero@uniud.it
+  - family-names: Schaerf
+    given-names: Andrea
+preferred-citation:
+  type: conference-paper
+  title: >-
+    EasyLocal++ a 25-year Perspective on Local Search Frameworks: The
+    Evolution of a Tool for the Design of Local Search Algorithm
+  authors:
+    - family-names: Ceschia
+      given-names: Sara
+    - family-names: Da Ros
+      given-names: Francesca
+    - family-names: Di Gaspero
+      given-names: Luca
+    - family-names: Schaerf
+      given-names: Andrea
+  collection-title: >-
+    Proceedings of the Genetic and Evolutionary Computation Conference
+    Companion (GECCO '24 Companion)
+  collection-type: proceedings
+  conference:
+    name: Genetic and Evolutionary Computation Conference (GECCO '24)
+    location: Melbourne, VIC, Australia
+  publisher:
+    name: Association for Computing Machinery
+    city: New York, NY, USA
+  start: 1658
+  end: 1667
+  year: 2024
+  isbn: "9798400704956"
+  doi: 10.1145/3638530.3664140
+  url: "https://doi.org/10.1145/3638530.3664140"
+references:
+  - type: article
+    title: >-
+      EasyLocal++: An object-oriented framework for flexible design of local
+      search algorithms
+    authors:
+      - family-names: Di Gaspero
+        given-names: Luca
+      - family-names: Schaerf
+        given-names: Andrea
+    journal: "Software: Practice and Experience"
+    volume: 33
+    issue: 8
+    start: 733
+    end: 765
+    month: 7
+    year: 2003
+    issn: 0038-0644
+    doi: 10.1002/spe.524
+    publisher:
+      name: John Wiley & Sons

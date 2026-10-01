@@ -44,6 +44,15 @@
         "CMAKE_BUILD_TYPE": "Release",
         "CMAKE_CXX_COMPILER": "$env{CXX}"
       }
+    },
+    {
+      "name": "coverage",
+      "displayName": "Local or CI / C++23 / Debug with coverage instrumentation",
+      "inherits": "_base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "EASYLOCAL_ENABLE_COVERAGE": true
+      }
     }
   ],
   "buildPresets": [
@@ -58,6 +67,10 @@
     {
       "name": "ci23-release",
       "configurePreset": "ci23-release"
+    },
+    {
+      "name": "coverage",
+      "configurePreset": "coverage"
     }
   ],
   "testPresets": [
@@ -86,6 +99,17 @@
     {
       "name": "ci23-release",
       "configurePreset": "ci23-release",
+      "output": {
+        "outputOnFailure": true,
+        "outputJUnitFile": "${sourceDir}/build/${presetName}/junit.xml"
+      },
+      "execution": {
+        "noTestsAction": "error"
+      }
+    },
+    {
+      "name": "coverage",
+      "configurePreset": "coverage",
       "output": {
         "outputOnFailure": true,
         "outputJUnitFile": "${sourceDir}/build/${presetName}/junit.xml"

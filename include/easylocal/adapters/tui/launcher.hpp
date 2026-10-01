@@ -18,7 +18,7 @@ namespace easylocal::tui
 
 struct launcher_options
 {
-    std::string title{"EasyLocal++ Tester"};
+    std::string title{"EasyLocal Tester"};
     tester_options tester{};
 };
 

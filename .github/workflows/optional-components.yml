@@ -20,9 +20,9 @@ defaults:
 
 jobs:
   linux-fetchcontent:
-    name: Linux / all optional components / forced FetchContent
+    name: Linux / all optional components and benchmarks / forced FetchContent
     runs-on: ubuntu-26.04
-    timeout-minutes: 20
+    timeout-minutes: 45
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -54,6 +54,7 @@ jobs:
             -DEASYLOCAL_ENABLE_CONFIG_TOML=ON \
             -DEASYLOCAL_ENABLE_TUI=ON \
             -DEASYLOCAL_ENABLE_REST=ON \
+            -DEASYLOCAL_BUILD_BENCHMARKS=ON \
             -DEASYLOCAL_FETCH_DEPENDENCIES=ON \
             -DCMAKE_DISABLE_FIND_PACKAGE_tomlplusplus=TRUE \
             -DCMAKE_DISABLE_FIND_PACKAGE_ftxui=TRUE \
@@ -66,27 +67,14 @@ jobs:
           test -d "$build_dir/_deps/crow-src"
           test -d "$build_dir/_deps/easylocal_asio-src"
 
-      - name: Build and test optional components
+      - name: Build and test everything
         run: |
           build_dir="build/optional-fetch"
           cmake --build "$build_dir" --parallel 2 --verbose \
-            --target \
-              easylocal_configuration_toml_header_self_containment \
-              easylocal_configuration_toml_test \
-              easylocal_tui_header_self_containment \
-              easylocal_tui_tester_compile_test \
-              easylocal_tui_helpers_test \
-              easylocal_tui_launcher_header_self_containment \
-              easylocal_tui_launcher_helpers_test \
-              easylocal_rest_execution_header_self_containment \
-              easylocal_rest_execution_test \
-              easylocal_rest_blueprint_header_self_containment \
-              easylocal_rest_blueprint_compile_test \
-              easylocal_assignment_rest_mwe \
             2>&1 | tee "${build_dir}.build.log"
 
-          ctest --test-dir "$build_dir" --verbose \
-            -R 'easylocal\.(configuration-toml(-header-self-containment)?|tui-.*|rest-.*|installed-package-consumer)$' \
+          ctest --test-dir "$build_dir" --output-on-failure \
+            --output-junit "$PWD/${build_dir}.junit.xml" \
             2>&1 | tee "${build_dir}.ctest.log"
 
       - name: Upload diagnostics
@@ -98,6 +86,7 @@ jobs:
           if-no-files-found: warn
           path: |
             build/optional-fetch*.log
+            build/optional-fetch*.junit.xml
             build/optional-fetch/CMakeCache.txt
             build/optional-fetch/CMakeFiles/CMakeConfigureLog.yaml
             build/optional-fetch/Testing/Temporary/LastTest.log
@@ -105,7 +94,7 @@ jobs:
   linux-system-config-toml:
     name: Linux / ConfigTOML / system dependency
     runs-on: ubuntu-26.04
-    timeout-minutes: 15
+    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -140,16 +129,13 @@ jobs:
             2>&1 | tee "${build_dir}.configure.log"
           test ! -e "$build_dir/_deps"
 
-      - name: Build and test ConfigTOML
+      - name: Build and test everything
         run: |
           build_dir="build/system-config-toml"
           cmake --build "$build_dir" --parallel 2 --verbose \
-            --target \
-              easylocal_configuration_toml_header_self_containment \
-              easylocal_configuration_toml_test \
             2>&1 | tee "${build_dir}.build.log"
-          ctest --test-dir "$build_dir" --verbose \
-            -R 'easylocal\.(configuration-toml(-header-self-containment)?|installed-package-consumer)$' \
+          ctest --test-dir "$build_dir" --output-on-failure \
+            --output-junit "$PWD/${build_dir}.junit.xml" \
             2>&1 | tee "${build_dir}.ctest.log"
 
       - name: Upload diagnostics
@@ -161,6 +147,7 @@ jobs:
           if-no-files-found: warn
           path: |
             build/system-config-toml*.log
+            build/system-config-toml*.junit.xml
             build/system-config-toml/CMakeCache.txt
             build/system-config-toml/CMakeFiles/CMakeConfigureLog.yaml
             build/system-config-toml/Testing/Temporary/LastTest.log
@@ -168,7 +155,7 @@ jobs:
   macos-system:
     name: macOS ARM64 / all optional components / system dependencies
     runs-on: macos-15
-    timeout-minutes: 20
+    timeout-minutes: 45
     env:
       HOMEBREW_NO_AUTO_UPDATE: '1'
       HOMEBREW_NO_INSTALL_CLEANUP: '1'
@@ -213,26 +200,13 @@ jobs:
             2>&1 | tee "${build_dir}.configure.log"
           test ! -e "$build_dir/_deps"
 
-      - name: Build and test optional components
+      - name: Build and test everything
         run: |
           build_dir="build/system-optional"
           cmake --build "$build_dir" --parallel 2 --verbose \
-            --target \
-              easylocal_configuration_toml_header_self_containment \
-              easylocal_configuration_toml_test \
-              easylocal_tui_header_self_containment \
-              easylocal_tui_tester_compile_test \
-              easylocal_tui_helpers_test \
-              easylocal_tui_launcher_header_self_containment \
-              easylocal_tui_launcher_helpers_test \
-              easylocal_rest_execution_header_self_containment \
-              easylocal_rest_execution_test \
-              easylocal_rest_blueprint_header_self_containment \
-              easylocal_rest_blueprint_compile_test \
-              easylocal_assignment_rest_mwe \
             2>&1 | tee "${build_dir}.build.log"
-          ctest --test-dir "$build_dir" --verbose \
-            -R 'easylocal\.(configuration-toml(-header-self-containment)?|tui-.*|rest-.*|installed-package-consumer)$' \
+          ctest --test-dir "$build_dir" --output-on-failure \
+            --output-junit "$PWD/${build_dir}.junit.xml" \
             2>&1 | tee "${build_dir}.ctest.log"
 
       - name: Upload diagnostics
@@ -244,6 +218,7 @@ jobs:
           if-no-files-found: warn
           path: |
             build/system-optional*.log
+            build/system-optional*.junit.xml
             build/system-optional/CMakeCache.txt
             build/system-optional/CMakeFiles/CMakeConfigureLog.yaml
             build/system-optional/Testing/Temporary/LastTest.log

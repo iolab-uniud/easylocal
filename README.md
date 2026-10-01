@@ -1,11 +1,13 @@
-# EasyLocal++
+# EasyLocal
 
 [![CI](https://github.com/iolab-uniud/easylocal-next/actions/workflows/ci.yml/badge.svg)](https://github.com/iolab-uniud/easylocal-next/actions/workflows/ci.yml)
-[![System Dependencies](https://github.com/iolab-uniud/easylocal-next/actions/workflows/system-dependencies.yml/badge.svg)](https://github.com/iolab-uniud/easylocal-next/actions/workflows/system-dependencies.yml)
+[![Optional Components](https://github.com/iolab-uniud/easylocal-next/actions/workflows/optional-components.yml/badge.svg)](https://github.com/iolab-uniud/easylocal-next/actions/workflows/optional-components.yml)
 [![Trace Microbenchmarks](https://github.com/iolab-uniud/easylocal-next/actions/workflows/trace-microbenchmarks.yml/badge.svg)](https://github.com/iolab-uniud/easylocal-next/actions/workflows/trace-microbenchmarks.yml)
 
-EasyLocal++ is an incremental redesign of EasyLocal as a modern **C++23
-header-only library** for local search and metaheuristics.
+EasyLocal is a **C++23 header-only framework** for local search and
+metaheuristics. Version 4 is a complete redesign of EasyLocal++, the
+object-oriented framework first described in 2003 (see
+[Citing EasyLocal](#citing-easylocal)).
 
 The project is being rebuilt from concrete minimal working examples, with tests
 and the public API evolving incrementally from the contracts they expose.
@@ -81,7 +83,7 @@ which is how the test suite runs the snippet check.
 
 ## Header-only library
 
-EasyLocal++ is designed from the beginning as a header-only library.
+EasyLocal is designed from the beginning as a header-only library.
 
 The canonical public CMake target is:
 
@@ -645,7 +647,7 @@ they verify is deliberately abandoned.
 
 ## Versioning and releases
 
-`VERSION` is the single source of truth for the EasyLocal++ version.
+`VERSION` is the single source of truth for the EasyLocal version.
 
 Releases use semantic versioning and annotated tags of the form:
 
@@ -665,6 +667,37 @@ pushes the release tag:
 ```
 
 The pushed tag triggers the full GitHub Actions CI matrix.
+
+## Citing EasyLocal
+
+If you use EasyLocal in your research, please cite the 2024 overview paper; the
+2003 article describes the original design. `CITATION.cff` carries the same
+information for GitHub's "Cite this repository".
+
+```bibtex
+@inproceedings{CeschiaDaRosDiGasperoSchaerf2024,
+  author    = {Ceschia, Sara and Da Ros, Francesca and Di Gaspero, Luca and Schaerf, Andrea},
+  title     = {{EasyLocal++} a 25-year Perspective on Local Search Frameworks: The Evolution of a Tool for the Design of Local Search Algorithm},
+  booktitle = {Proceedings of the Genetic and Evolutionary Computation Conference Companion},
+  series    = {GECCO '24 Companion},
+  pages     = {1658--1667},
+  year      = {2024},
+  publisher = {Association for Computing Machinery},
+  address   = {New York, NY, USA},
+  doi       = {10.1145/3638530.3664140},
+}
+
+@article{DiGasperoSchaerf2003,
+  author  = {Di Gaspero, Luca and Schaerf, Andrea},
+  title   = {{EasyLocal++}: An object-oriented framework for flexible design of local search algorithms},
+  journal = {Software: Practice and Experience},
+  volume  = {33},
+  number  = {8},
+  pages   = {733--765},
+  year    = {2003},
+  doi     = {10.1002/spe.524},
+}
+```
 
 ## Legacy reference
 

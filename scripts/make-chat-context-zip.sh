@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Create a compact EasyLocal++ source snapshot for handing the repository to a
+# Create a compact EasyLocal source snapshot for handing the repository to a
 # new ChatGPT conversation. The archive intentionally excludes build trees,
 # compiler outputs, CMake caches, benchmark/result artifacts, VCS internals,
 # editor caches and previously generated archives.

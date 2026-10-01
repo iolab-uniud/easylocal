@@ -1,6 +1,6 @@
 # External dependency policy
 
-EasyLocal++ keeps its algorithmic and configuration core independent from
+EasyLocal keeps its algorithmic and configuration core independent from
 third-party libraries. External packages may be used only by optional adapter
 targets whose dependencies are visible to consumers through those targets.
 

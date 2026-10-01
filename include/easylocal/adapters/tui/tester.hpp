@@ -45,7 +45,7 @@ enum class path_display_mode
 
 struct tester_options
 {
-    std::string title{"EasyLocal++ Tester"};
+    std::string title{"EasyLocal Tester"};
     std::uint64_t seed{};
     std::string input_path;
     std::string solution_path;

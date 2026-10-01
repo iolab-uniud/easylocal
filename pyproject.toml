@@ -7,10 +7,11 @@
 [project]
 name = "easylocal-scripts"
 version = "0.0.0"
-description = "Development scripts of EasyLocal (docs snippets, TUI screenshots, benchmark summaries)"
+description = "Development scripts of EasyLocal (docs snippets, TUI screenshots, coverage, benchmark summaries)"
 requires-python = ">=3.10"
 dependencies = [
-    "pyte>=0.8",
+    "gcovr>=8",  # coverage reports (scripts/coverage.sh)
+    "pyte>=0.8",  # TUI screenshots (scripts/tui-snapshots.py)
 ]
 
 [tool.uv]

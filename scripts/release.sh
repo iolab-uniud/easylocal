@@ -94,7 +94,7 @@ esac
 NEW_TAG="v${NEW_VERSION}"
 
 echo
-echo "EasyLocal++ release"
+echo "EasyLocal release"
 echo "-------------------"
 echo "Current version : $OLD_VERSION"
 echo "New version     : $NEW_VERSION"
@@ -171,9 +171,9 @@ if [[ "$USE_LLM" -eq 1 && -n "$COMMITS" ]]; then
     if [[ -n "$LLM_CMD" ]]; then
         echo "Drafting changelog entry with: $LLM_CMD"
 
-        PROMPT="Write the CHANGELOG entry for EasyLocal++ version $NEW_VERSION.
+        PROMPT="Write the CHANGELOG entry for EasyLocal version $NEW_VERSION.
 
-EasyLocal++ is a modern C++23 header-only framework for local search and
+EasyLocal is a modern C++23 header-only framework for local search and
 metaheuristics.
 
 Rules:
@@ -212,7 +212,7 @@ fi
 if [[ "$ASSUME_YES" -eq 0 && "$EDIT_CHANGELOG" -eq 1 && -t 1 ]]; then
     {
         echo
-        printf '# EasyLocal++ %s (%s)\n' "$NEW_VERSION" "$TODAY"
+        printf '# EasyLocal %s (%s)\n' "$NEW_VERSION" "$TODAY"
         printf '# Review the entry carefully before tagging the release.\n'
         printf '# Lines beginning with # are ignored.\n'
         printf '# Save and quit to continue; empty the entry to cancel.\n'
@@ -238,7 +238,7 @@ TMP_CHANGELOG="$(mktemp)"
 
 {
     printf '# Changelog\n\n'
-    printf 'All notable changes to EasyLocal++ will be documented in this file.\n\n'
+    printf 'All notable changes to EasyLocal will be documented in this file.\n\n'
     printf 'The project uses semantic versioning. Release entries are prepared from the\n'
     printf 'commits since the previous release and are reviewed manually before tagging.\n\n'
     printf '## %s - %s\n\n' "$NEW_VERSION" "$TODAY"
@@ -289,7 +289,7 @@ git add VERSION CHANGELOG.md
 
 git commit -m "Release $NEW_TAG"
 
-git tag -a "$NEW_TAG" -m "EasyLocal++ $NEW_VERSION"
+git tag -a "$NEW_TAG" -m "EasyLocal $NEW_VERSION"
 
 CURRENT_BRANCH="$(git branch --show-current)"
 [[ -n "$CURRENT_BRANCH" ]] || die "cannot determine current branch"

@@ -84,9 +84,21 @@ option(
     OFF
 )
 
-# Strict warnings apply only to EasyLocal's own targets in the calling
-# directory; consumers of the header-only library are never affected.
+option(
+    EASYLOCAL_ENABLE_COVERAGE
+    "Instrument EasyLocal's own tests and examples for code coverage (GCC/Clang)"
+    OFF
+)
+
+# Strict warnings and coverage instrumentation apply only to EasyLocal's own
+# targets in the calling directory; consumers of the header-only library are
+# never affected. Coverage of the headers comes from the translation units
+# that instantiate them.
 function(easylocal_enable_strict_warnings)
+    if(EASYLOCAL_ENABLE_COVERAGE AND NOT MSVC)
+        add_compile_options(--coverage -O0)
+        add_link_options(--coverage)
+    endif()
     if(NOT EASYLOCAL_STRICT_WARNINGS)
         return()
     endif()
@@ -325,7 +337,7 @@ if(EASYLOCAL_ENABLE_REST)
     )
 endif()
 
-# The concrete MWE is deliberately outside the public EasyLocal++ API.
+# The concrete MWE is deliberately outside the public EasyLocal API.
 # Its model targets are also consumed by tests and benchmarks, so make them
 # available whenever one of those project facilities is requested.
 if(EASYLOCAL_BUILD_EXAMPLES OR EASYLOCAL_BUILD_TESTS OR EASYLOCAL_BUILD_BENCHMARKS)

@@ -55,7 +55,7 @@ int main()
 
     easylocal::tui::run_launcher(
         {
-            .title = "EasyLocal++ TSP Tester",
+            .title = "EasyLocal TSP Tester",
             .tester = {
                 .seed = 0,
                 .input_path = EASYLOCAL_TSP_MWE_INSTANCE_FILE,

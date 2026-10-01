@@ -1,6 +1,6 @@
 # TSP MWE
 
-This is the second concrete EasyLocal++ pressure-test model. It is deliberately
+This is the second concrete EasyLocal pressure-test model. It is deliberately
 outside `include/easylocal/` and does not introduce new public framework API.
 
 The model is a symmetric TSP with a dense `double` distance matrix, a `Tour`
