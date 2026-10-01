@@ -22,9 +22,8 @@ The benchmark deliberately does not duplicate production cursor explorers: raw-c
 and cursor-range measurements instantiate the real Assignment/TSP explorers directly.
 Only coroutine alternatives remain benchmark-local.
 
-Historical S15/S16 source-shape diagnostics and experimental workaround
-variants are deliberately not retained here. Their conclusions are recorded in
-`.local/context.md`.
+Historical source-shape diagnostics and experimental workaround variants are
+deliberately not retained here.
 
 Run the complete benchmark locally with:
 

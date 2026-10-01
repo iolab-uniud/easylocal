@@ -78,12 +78,9 @@ __pycache__/
 *.tgz
 *.tar.xz
 
-# Local project handoff material. Keep only canonical durable project notes.
-.local/*
-!.local/context.md
-!.local/decisions.md
-!.local/migration-el3.md
-!.local/versioning-release.md
+# Private project notes and the shared memory of assistant sessions.
+/.local/
+/CLAUDE.local.md
 prompt.txt
 
 # Python environment of the scripts (uv).
