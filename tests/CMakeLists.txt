@@ -848,6 +848,23 @@ easylocal_add_compile_failure_test(
     "duplicate"
 )
 
+# The code of docs/quick-start.md and docs/tutorial is built and run here, so
+# the documentation cannot drift from the library.
+if(TARGET easylocal_quickstart)
+    add_test(NAME easylocal.example.quickstart COMMAND easylocal_quickstart)
+    set_tests_properties(
+        easylocal.example.quickstart
+        PROPERTIES PASS_REGULAR_EXPRESSION "length 26 after 9 evaluations")
+endif()
+
+if(TARGET easylocal_tutorial)
+    add_test(NAME easylocal.example.tutorial COMMAND easylocal_tutorial)
+    set_tests_properties(
+        easylocal.example.tutorial
+        PROPERTIES PASS_REGULAR_EXPRESSION "first improvement 26\n")
+    add_test(NAME easylocal.example.tutorial-checks COMMAND easylocal_tutorial_checks)
+endif()
+
 if(TARGET easylocal_assignment_mwe)
     add_test(
         NAME easylocal.example.assignment-cli-help
