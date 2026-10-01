@@ -655,9 +655,9 @@ void benchmark_assignment(
         easylocal::solution_manager<assignment::AssignmentSolutionManager>()
         | easylocal::component<assignment::CapacityCostComponent>()
         | easylocal::aggregator([](const assignment::CapacityValue& capacity) {
-              return easylocal::aggregation::lexicographic{}(
+              return easylocal::cost::lexicographic{
                   capacity.total_overload,
-                  capacity.overloaded_machines);
+                  capacity.overloaded_machines};
           });
     const auto cursor_recipe =
         easylocal::neighborhood<assignment::ReassignJobNeighborhoodExplorer>()

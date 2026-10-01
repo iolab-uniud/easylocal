@@ -6,7 +6,7 @@
 #include "tour_length_component.hpp"
 #include "tour_length_delta.hpp"
 
-#include <easylocal/core/aggregation.hpp>
+#include <easylocal/cost.hpp>
 #include <easylocal/app/app.hpp>
 #include <easylocal/runners/first_improvement.hpp>
 
@@ -26,7 +26,7 @@ int main()
                 easylocal::solution_manager<TspSolutionManager>()
                 | easylocal::component<TourLengthComponent>()
                 | easylocal::aggregator(
-                      easylocal::aggregation::weighted_sum{
+                      easylocal::cost::weighted_sum{
                           distance_type{1}}))
             .neighborhood(
                 easylocal::neighborhood<TwoOptNeighborhoodExplorer>()
@@ -41,7 +41,7 @@ int main()
                 easylocal::solution_manager<TspSolutionManager>()
                 | easylocal::component<TourLengthComponent>()
                 | easylocal::aggregator(
-                      easylocal::aggregation::weighted_sum{
+                      easylocal::cost::weighted_sum{
                           distance_type{1}}))
             .neighborhood(
                 easylocal::neighborhood<SwapCitiesNeighborhoodExplorer>()

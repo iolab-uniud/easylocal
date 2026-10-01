@@ -3,7 +3,7 @@
 #include "neighborhood_explorer.hpp"
 #include "solution_manager.hpp"
 
-#include <easylocal/core/aggregation.hpp>
+#include <easylocal/cost.hpp>
 #include <easylocal/runners/runner.hpp>
 #include <easylocal/runners/first_improvement.hpp>
 #include <easylocal/trace.hpp>

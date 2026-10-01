@@ -2,7 +2,7 @@
 
 #include <easylocal/runners/run_control.hpp>
 #include <easylocal/runners/search_run.hpp>
-#include <easylocal/core/aggregation.hpp>
+#include <easylocal/cost.hpp>
 #include <easylocal/app/check.hpp>
 #include <easylocal/app/tester.hpp>
 
@@ -225,12 +225,12 @@ template<class T>
     {
         return display_adl::call_describe(value);
     }
-    else if constexpr (easylocal::aggregation::hierarchical_cost_type<T>)
+    else if constexpr (easylocal::cost::hierarchical_type<T>)
     {
         return "hard=" + value_text(value.hard()) +
                ", soft=" + value_text(value.soft());
     }
-    else if constexpr (easylocal::aggregation::lexicographic_cost_type<T>)
+    else if constexpr (easylocal::cost::lexicographic_type<T>)
     {
         std::string result{"["};
         [&]<std::size_t... Index>(std::index_sequence<Index...>) {
@@ -239,7 +239,7 @@ template<class T>
                         value_text(value.template get<Index>())),
              ...);
         }(std::make_index_sequence<
-            easylocal::aggregation::lexicographic_cost_traits<
+            easylocal::cost::lexicographic_traits<
                 std::remove_cvref_t<T>>::size>{});
         result += ']';
         return result;

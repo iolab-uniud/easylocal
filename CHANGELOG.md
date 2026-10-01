@@ -27,6 +27,15 @@ commits since the previous release and are reviewed manually before tagging.
   direct construction with CTAD); `LocalSearchSolver`, `MultiStartSolver` and
   `TwoStageSolver` become `easylocal::solvers::LocalSearch`, `MultiStart` and
   `TwoStage`, with their configs in `easylocal::solvers`.
+- **Breaking:** cost models move to `cost/` and `easylocal::cost`, replacing
+  `easylocal::aggregation`, `easylocal::cost_semantics` and the cost concepts
+  in `easylocal`: `aggregation::lexicographic_cost`/`hierarchical_cost` become
+  `cost::lexicographic`/`cost::hierarchical`, constructed directly with CTAD
+  (`cost::hierarchical{hard, soft}`) instead of the `lexicographic{}(...)` /
+  `hierarchical{}(...)` builders; `arithmetic_cost` and `delta_cost` become
+  `cost::arithmetic` and `cost::has_delta`; `delta(...)` becomes `cost::delta`
+  and Metropolis acceptance now uses it instead of `operator-`;
+  `runners::numeric_cost` is removed. Logging moves to `utils/logging.hpp`.
 - **Breaking:** search algorithms define a single `run(Run&, solution, ...)`
   against the framework-owned `easylocal::search_run`, which owns counters,
   evaluation budget, cancellation, progress reporting and core trace events.

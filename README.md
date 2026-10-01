@@ -100,9 +100,12 @@ component specialization:
 ```text
 easylocal/
   easylocal.hpp   Core umbrella (everything except adapters/)
+  utils/          logging; internal type-level utilities
   config/         typed parameters, configuration tree, CLI/file frontends
   trace/          semantic search events, tracer protocol, recorders
-  core/           cost model, cost semantics, aggregation, logging
+  cost/           cost models (easylocal::cost): value contract and delta,
+                  semantic relations, lexicographic and hierarchical costs,
+                  weighted-sum aggregators
   helpers/        problem-side components: SolutionManager,
                   NeighborhoodExplorer, neighborhood_union, recipes
   runners/        Runner, search_run, run_control and the search
@@ -113,11 +116,13 @@ easylocal/
   adapters/       optional components: toml.hpp, tui/, rest/
 ```
 
-Each directory may include only directories listed above it (`testing/` sits
-beside `runners/`); `helpers.hpp`, `runners.hpp` and `trace.hpp` aggregate
-their directories. The architecture test enforces this layering and keeps Core
-free of any adapter dependency. `detail/` subdirectories are implementation
-headers, installed but not supported as direct entry points.
+Each directory may include only directories listed above it (`utils/`,
+`config/` and `trace/` share the lowest layer; `testing/` sits beside
+`runners/`). `cost.hpp`, `helpers.hpp`, `runners.hpp`, `solvers.hpp` and
+`trace.hpp` aggregate their directories. The architecture test enforces this
+layering and keeps Core free of any adapter dependency. `detail/`
+subdirectories are implementation headers, installed but not supported as
+direct entry points.
 
 The test suite checks header self-containment and multi-translation-unit use to
 catch ODR issues that are particularly relevant to header-only libraries. It
@@ -271,9 +276,9 @@ Callers pass the optional control and tracer as a trailing argument:
 Cost aggregation is explicit whenever domain semantics require it, but simple
 weighted costs have a convenience default. If all active component values can
 be combined as a weighted sum, omitting `aggregator(...)` materializes a
-configurable unit-weight `aggregation::weighted_sum` and emits a runtime warning.
+configurable unit-weight `cost::weighted_sum` and emits a runtime warning.
 The warning uses the dependency-free logging boundary in
-`<easylocal/core/logging.hpp>`; applications may install a process-wide sink or
+`<easylocal/utils/logging.hpp>`; applications may install a process-wide sink or
 disable logging without introducing a logging-library dependency into Core. See
 [`docs/logging.md`](docs/logging.md). The weights remain exposed as
 `cost.weights`; if no safe weighted expression can be inferred, an explicit

@@ -3,7 +3,7 @@
 #include "solution_manager.hpp"
 #include "tour_length_component.hpp"
 
-#include <easylocal/core/aggregation.hpp>
+#include <easylocal/cost.hpp>
 #include <easylocal/runners/runner.hpp>
 
 #include <compare>
@@ -53,7 +53,7 @@ int main()
     const auto manager_recipe =
         solution_manager<TspSolutionManager>()
         | component<TourLengthComponent>()
-        | aggregator(easylocal::aggregation::weighted_sum{distance_type{1}});
+        | aggregator(easylocal::cost::weighted_sum{distance_type{1}});
     const auto manager = manager_recipe.construct(instance);
 
     static_assert(std::same_as<typename decltype(manager)::cost_type, double>);

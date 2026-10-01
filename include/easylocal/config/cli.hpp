@@ -1,5 +1,6 @@
 #pragma once
 
+#include <easylocal/utils/detail/meta.hpp>
 #include <easylocal/config/overrides.hpp>
 #include <easylocal/config/tree.hpp>
 
@@ -93,7 +94,7 @@ auto format_cli_value(const Value& value) -> std::string
     else
     {
         static_assert(
-            always_false_v<value_type>,
+            easylocal::detail::always_false_v<value_type>,
             "parameter type has no built-in CLI formatter");
     }
 }

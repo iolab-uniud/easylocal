@@ -1,4 +1,4 @@
-#include <easylocal/core/aggregation.hpp>
+#include <easylocal/cost.hpp>
 #include <easylocal/trace.hpp>
 
 #include <chrono>
@@ -43,9 +43,9 @@ private:
 
 using scalar_cost = std::int64_t;
 using lexicographic_cost =
-    easylocal::aggregation::lexicographic_cost<std::int64_t, std::int64_t>;
+    easylocal::cost::lexicographic<std::int64_t, std::int64_t>;
 using hierarchical_cost =
-    easylocal::aggregation::hierarchical_cost<lexicographic_cost, std::int64_t>;
+    easylocal::cost::hierarchical<lexicographic_cost, std::int64_t>;
 
 struct lexicographic_binary_cost_writer
 {
@@ -124,15 +124,15 @@ void run_case(
 int main()
 {
     const auto lexicographic_current =
-        easylocal::aggregation::lexicographic{}(std::int64_t{12}, std::int64_t{3});
+        easylocal::cost::lexicographic{std::int64_t{12}, std::int64_t{3}};
     const auto lexicographic_candidate =
-        easylocal::aggregation::lexicographic{}(std::int64_t{10}, std::int64_t{2});
-    const auto hierarchical_current = easylocal::aggregation::hierarchical{}(
+        easylocal::cost::lexicographic{std::int64_t{10}, std::int64_t{2}};
+    const auto hierarchical_current = easylocal::cost::hierarchical{
         lexicographic_current,
-        std::int64_t{84});
-    const auto hierarchical_candidate = easylocal::aggregation::hierarchical{}(
+        std::int64_t{84}};
+    const auto hierarchical_candidate = easylocal::cost::hierarchical{
         lexicographic_candidate,
-        std::int64_t{79});
+        std::int64_t{79}};
 
     std::cout << "cost_model,ns_per_event,bytes_per_event,event_count\n";
     run_case<scalar_cost>(

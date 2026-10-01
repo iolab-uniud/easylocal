@@ -3,16 +3,19 @@
 #include <concepts>
 #include <type_traits>
 
-namespace easylocal
+// The cost value contract. Algorithms that need a numeric difference between
+// two already-computed costs use cost::delta(candidate, current); operator- is
+// convenience syntax only and cost types may provide delta via ADL.
+namespace easylocal::cost
 {
 
 template<class Cost>
-concept arithmetic_cost =
+concept arithmetic =
     (std::integral<std::remove_cv_t<Cost>> ||
      std::floating_point<std::remove_cv_t<Cost>>) &&
     (!std::same_as<std::remove_cv_t<Cost>, bool>);
 
-template<arithmetic_cost Cost>
+template<arithmetic Cost>
 [[nodiscard]]
 constexpr auto delta(const Cost& candidate, const Cost& current)
     noexcept(noexcept(candidate - current))
@@ -21,9 +24,9 @@ constexpr auto delta(const Cost& candidate, const Cost& current)
 }
 
 template<class Cost>
-concept delta_cost =
+concept has_delta =
     requires(const Cost& candidate, const Cost& current) {
         { delta(candidate, current) } -> std::convertible_to<long double>;
     };
 
-} // namespace easylocal
+} // namespace easylocal::cost

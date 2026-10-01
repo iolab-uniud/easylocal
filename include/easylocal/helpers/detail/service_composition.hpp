@@ -1,9 +1,10 @@
 #pragma once
 
-#include <easylocal/core/aggregation.hpp>
+#include <easylocal/utils/detail/meta.hpp>
+#include <easylocal/cost.hpp>
 #include <easylocal/config/tree.hpp>
 #include <easylocal/helpers/solution_manager.hpp>
-#include <easylocal/core/logging.hpp>
+#include <easylocal/utils/logging.hpp>
 
 #include <concepts>
 #include <cstddef>
@@ -14,65 +15,6 @@
 
 namespace easylocal::detail
 {
-
-template<class T, class... Ts>
-inline constexpr bool type_in_pack_v = (std::same_as<T, Ts> || ...);
-
-template<class... Ts>
-struct unique_types : std::true_type
-{
-};
-
-template<class T, class... Rest>
-struct unique_types<T, Rest...>
-    : std::bool_constant<
-          !type_in_pack_v<T, Rest...> && unique_types<Rest...>::value>
-{
-};
-
-template<class... Ts>
-inline constexpr bool unique_types_v = unique_types<Ts...>::value;
-
-template<class T, class Tuple>
-struct tuple_contains_type;
-
-template<class T, class... Ts>
-struct tuple_contains_type<T, std::tuple<Ts...>>
-    : std::bool_constant<type_in_pack_v<T, Ts...>>
-{
-};
-
-template<class T, class Tuple>
-inline constexpr bool tuple_contains_type_v = tuple_contains_type<T, Tuple>::value;
-
-template<class T, class Tuple>
-struct tuple_type_index;
-
-template<class T, class... Rest>
-struct tuple_type_index<T, std::tuple<T, Rest...>>
-    : std::integral_constant<std::size_t, 0>
-{
-};
-
-template<class T, class First, class... Rest>
-struct tuple_type_index<T, std::tuple<First, Rest...>>
-    : std::integral_constant<
-          std::size_t,
-          1 + tuple_type_index<T, std::tuple<Rest...>>::value>
-{
-};
-
-template<class T, class Tuple>
-inline constexpr std::size_t tuple_type_index_v = tuple_type_index<T, Tuple>::value;
-
-template<class Tuple, std::size_t... Indices>
-[[nodiscard]]
-auto tuple_prefix_type_impl(std::index_sequence<Indices...>)
-    -> std::tuple<std::tuple_element_t<Indices, Tuple>...>;
-
-template<class Tuple, std::size_t Count>
-using tuple_prefix_t = decltype(
-    tuple_prefix_type_impl<Tuple>(std::make_index_sequence<Count>{}));
 
 template<class Component, class... StoredArgs>
 class component_spec
@@ -398,7 +340,7 @@ struct implicit_weighted_sum_traits<
 {
     static constexpr bool available = sizeof...(Values) > 0;
     using weight_type = implicit_unit_weight_t<Values...>;
-    using type = aggregation::weighted_sum<weight_type, sizeof...(Values)>;
+    using type = cost::weighted_sum<weight_type, sizeof...(Values)>;
 
     [[nodiscard]]
     static constexpr auto make() -> type

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <easylocal/utils/detail/meta.hpp>
 #include <cassert>
 #include <concepts>
 #include <cstddef>
@@ -18,18 +19,6 @@ namespace easylocal
 
 namespace detail
 {
-
-template<class T>
-struct optional_value;
-
-template<class T>
-struct optional_value<std::optional<T>>
-{
-    using type = T;
-};
-
-template<class T>
-using optional_value_t = typename optional_value<std::remove_cvref_t<T>>::type;
 
 template<class Result, class Move>
 concept move_optional_for_impl =

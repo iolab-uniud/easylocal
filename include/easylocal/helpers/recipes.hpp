@@ -1,7 +1,7 @@
 #pragma once
 
 #include <easylocal/config/tree.hpp>
-#include <easylocal/core/aggregation.hpp>
+#include <easylocal/cost.hpp>
 #include <easylocal/helpers/detail/service_composition.hpp>
 #include <easylocal/helpers/solution_manager.hpp>
 
@@ -144,7 +144,7 @@ inline constexpr bool is_neighborhood_spec_v =
 template<class SM>
 concept hierarchical_solution_manager =
     requires { typename SM::cost_type; } &&
-    aggregation::hierarchical_cost_type<typename SM::cost_type>;
+    cost::hierarchical_type<typename SM::cost_type>;
 
 template<class SM>
 class hard_cost_solution_manager_base

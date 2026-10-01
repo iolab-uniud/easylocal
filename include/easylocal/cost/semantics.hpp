@@ -2,7 +2,11 @@
 
 #include <concepts>
 
-namespace easylocal::cost_semantics
+// Semantic cost relations used by search algorithms. They are resolved through
+// the SolutionManager: an explicitly configured aggregator may customize them
+// (aggregator().better(...), .equivalent(...), .better_or_equivalent(...));
+// otherwise the cost type's own operators <, ==, <= are the exact default.
+namespace easylocal::cost
 {
 
 namespace detail
@@ -156,4 +160,4 @@ constexpr auto better_or_equivalent(
     }
 }
 
-} // namespace easylocal::cost_semantics
+} // namespace easylocal::cost

@@ -2,7 +2,7 @@
 
 This MWE is the reference model for the standard Simulated Annealing cost path.
 It deliberately uses three independent cost components and aggregates them into
-one arithmetic cost with `easylocal::aggregation::weighted_sum`:
+one arithmetic cost with `easylocal::cost::weighted_sum`:
 
 - `StudentConflictComponent`: students with two exams in the same timeslot;
 - `ConsecutiveExamComponent`: students with exams in consecutive timeslots;

@@ -2,10 +2,9 @@
 
 // Dependency-free EasyLocal Core umbrella. Optional adapters under
 // easylocal/adapters/ deliberately remain opt-in headers/components.
-#include <easylocal/core/aggregation.hpp>
-#include <easylocal/core/cost.hpp>
-#include <easylocal/core/cost_semantics.hpp>
-#include <easylocal/core/logging.hpp>
+#include <easylocal/utils/logging.hpp>
+
+#include <easylocal/cost.hpp>
 
 #include <easylocal/config/cli.hpp>
 #include <easylocal/config/file.hpp>

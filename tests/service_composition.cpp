@@ -3,12 +3,12 @@
 #include "neighborhood_explorer.hpp"
 #include "solution_manager.hpp"
 
-#include <easylocal/core/aggregation.hpp>
+#include <easylocal/cost.hpp>
 #include <easylocal/config/overrides.hpp>
 #include <easylocal/config/tree.hpp>
 #include <easylocal/helpers/detail/evaluation.hpp>
 #include <easylocal/helpers/detail/service_composition.hpp>
-#include <easylocal/core/logging.hpp>
+#include <easylocal/utils/logging.hpp>
 #include <easylocal/runners/runner.hpp>
 
 #include <array>
@@ -184,9 +184,9 @@ struct TwoStageAggregator
         const CapacityValue& capacity,
         const std::size_t cardinality) const
     {
-        return easylocal::aggregation::hierarchical{}(
+        return easylocal::cost::hierarchical{
             hard(capacity),
-            cardinality);
+            cardinality};
     }
 };
 
@@ -267,9 +267,9 @@ struct TwoCapacityAggregator
         const CapacityValue& first,
         const CapacityValue& second) const
     {
-        return easylocal::aggregation::lexicographic{}(
+        return easylocal::cost::lexicographic{
             first.total_overload,
-            second.total_overload);
+            second.total_overload};
     }
 };
 
@@ -392,11 +392,11 @@ int main()
     using FluentAggregatedRecipe = decltype(
         solution_manager<NoAggregateSolutionManager>()
             .with_component<AssignmentCardinalityComponent>()
-            .with_aggregator(easylocal::aggregation::weighted_sum{3}));
+            .with_aggregator(easylocal::cost::weighted_sum{3}));
     using PipedAggregatedRecipe = decltype(
         solution_manager<NoAggregateSolutionManager>()
         | component<AssignmentCardinalityComponent>()
-        | aggregator(easylocal::aggregation::weighted_sum{3}));
+        | aggregator(easylocal::cost::weighted_sum{3}));
     static_assert(std::same_as<FluentAggregatedRecipe, PipedAggregatedRecipe>);
 
     const auto two_capacity_recipe =
@@ -522,7 +522,7 @@ int main()
     auto no_aggregate_recipe =
         solution_manager<NoAggregateSolutionManager>()
         | component<AssignmentCardinalityComponent>()
-        | aggregator(easylocal::aggregation::weighted_sum{3});
+        | aggregator(easylocal::cost::weighted_sum{3});
     const auto aggregation_configuration = easylocal::config::root(
         easylocal::config::named<"solver">(
             no_aggregate_recipe.configuration()));
@@ -547,7 +547,7 @@ int main()
     const auto stateless_component_manager =
         (solution_manager<NoAggregateSolutionManager>()
          | component<StatelessOffsetComponent>(std::size_t{5})
-         | aggregator(easylocal::aggregation::weighted_sum{1}))
+         | aggregator(easylocal::cost::weighted_sum{1}))
             .construct(instance);
     ok &= expect(
         stateless_component_manager.evaluate(initial) == 8,
@@ -564,7 +564,7 @@ int main()
     const auto stateless_delta_manager =
         (solution_manager<AssignmentSolutionManager>()
          | component<AssignmentCardinalityComponent>()
-         | aggregator(easylocal::aggregation::weighted_sum{1}))
+         | aggregator(easylocal::cost::weighted_sum{1}))
             .construct(instance);
     const auto stateless_delta_neighborhood =
         (neighborhood<ReassignJobNeighborhoodExplorer>()

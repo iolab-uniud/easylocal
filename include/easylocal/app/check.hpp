@@ -1,5 +1,6 @@
 #pragma once
 
+#include <easylocal/utils/detail/meta.hpp>
 #include <easylocal/app/app.hpp>
 #include <easylocal/helpers/neighborhood_explorer.hpp>
 #include <easylocal/testing/check.hpp>
@@ -69,20 +70,6 @@ inline void print_report(std::ostream& out, const app_check_report& report)
 
 namespace detail
 {
-
-template<class T, class = void>
-struct tuple_size_or_zero : std::integral_constant<std::size_t, 0>
-{
-};
-
-template<class T>
-struct tuple_size_or_zero<T, std::void_t<decltype(std::tuple_size<T>::value)>>
-    : std::integral_constant<std::size_t, std::tuple_size_v<T>>
-{
-};
-
-template<class T>
-inline constexpr std::size_t tuple_size_or_zero_v = tuple_size_or_zero<T>::value;
 
 template<class SM>
 inline constexpr std::size_t app_cost_component_count_v = [] {

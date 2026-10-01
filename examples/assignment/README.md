@@ -124,11 +124,11 @@ search algorithms. Each component type may occur at most once in a manager
 recipe; semantically distinct parameterizations can use distinct wrapper or
 subclass types and therefore distinct compile-time identities.
 
-The framework provides three reusable aggregation categories:
+The framework cost models (`easylocal::cost`) provide:
 
-- `aggregation::weighted_sum`;
-- `aggregation::lexicographic`;
-- `aggregation::hierarchical`.
+- `cost::weighted_sum`, a configurable aggregator;
+- `cost::lexicographic`, a lexicographically ordered cost;
+- `cost::hierarchical`, a hard/soft cost.
 
 `AssignmentCostAggregator` maps the structured capacity value to the
 lexicographic `HardCost` through its optional `hard(...)` projection and combines
@@ -139,8 +139,8 @@ branches remain independently typed and may themselves be aggregate or
 lexicographic costs. Domain-specific projection remains explicit; no projection
 DSL is introduced.
 
-The generic aggregators are part of the public framework API in
-`<easylocal/core/aggregation.hpp>` under `easylocal::aggregation`. The Assignment
+The generic cost models are part of the public framework API in
+`<easylocal/cost.hpp>` under `easylocal::cost`. The Assignment
 example supplies only the domain-specific projections from component values to
 its hard and full hierarchical costs.
 

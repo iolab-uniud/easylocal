@@ -1,4 +1,4 @@
-#include <easylocal/core/aggregation.hpp>
+#include <easylocal/cost.hpp>
 #include <easylocal/config/overrides.hpp>
 #include <easylocal/helpers/neighborhood_union.hpp>
 #include <easylocal/runners/simulated_annealing.hpp>
@@ -298,7 +298,7 @@ void diagnostics_accumulate_across_independent_failures()
 
 void built_in_aggregator_weights_are_runtime_configurable()
 {
-    auto aggregate = easylocal::aggregation::weighted_sum{1, 10, 100};
+    auto aggregate = easylocal::cost::weighted_sum{1, 10, 100};
     const auto tree = easylocal::config::root(aggregate.configuration());
 
     constexpr std::array overrides{

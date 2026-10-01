@@ -1,5 +1,6 @@
 #pragma once
 
+#include <easylocal/utils/detail/meta.hpp>
 #include <easylocal/config/tree.hpp>
 
 #include <algorithm>
@@ -288,7 +289,7 @@ auto parse_text_value(const std::string_view text, Value& value)
     else
     {
         static_assert(
-            always_false_v<value_type>,
+            easylocal::detail::always_false_v<value_type>,
             "parameter type has no built-in textual parser");
     }
 }

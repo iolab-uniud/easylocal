@@ -1,5 +1,6 @@
 #pragma once
 
+#include <easylocal/utils/detail/meta.hpp>
 #include <easylocal/config/parameters.hpp>
 
 #include <array>
@@ -65,9 +66,6 @@ consteval auto unique_node_names() noexcept -> bool
         }(std::type_identity<Nodes>{}...);
     }
 }
-
-template<class>
-inline constexpr bool always_false_v = false;
 
 template<fixed_string Name, parameter_block Parameters>
 class parameter_node
@@ -459,7 +457,7 @@ constexpr decltype(auto) named_child(const Tuple& children)
     if constexpr (Index == std::tuple_size_v<tuple_type>)
     {
         static_assert(
-            always_false_v<tuple_type>,
+            easylocal::detail::always_false_v<tuple_type>,
             "configuration path segment does not name a child node");
     }
     else
@@ -494,7 +492,7 @@ constexpr decltype(auto) config_node_at(const Node& node)
     else
     {
         static_assert(
-            always_false_v<std::remove_cvref_t<decltype(child)>>,
+            easylocal::detail::always_false_v<std::remove_cvref_t<decltype(child)>>,
             "configuration path continues through a leaf node");
     }
 }

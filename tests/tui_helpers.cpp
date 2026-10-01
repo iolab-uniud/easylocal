@@ -1,5 +1,5 @@
 #include <easylocal/adapters/tui/tester.hpp>
-#include <easylocal/core/aggregation.hpp>
+#include <easylocal/cost.hpp>
 
 #include <cassert>
 #include <filesystem>
@@ -101,11 +101,11 @@ int main()
     assert(value_text(member_described{}) == "member");
     assert(value_text(adl_case::value{}) == "adl");
     assert(value_text(stream_only{}) == "stream");
-    const auto lexicographic = easylocal::aggregation::lexicographic{}(1, 2);
+    const auto lexicographic = easylocal::cost::lexicographic{1, 2};
     assert(value_text(lexicographic) == "[1, 2]");
-    const auto hierarchical = easylocal::aggregation::hierarchical{}(
+    const auto hierarchical = easylocal::cost::hierarchical{
         lexicographic,
-        3);
+        3};
     assert(value_text(hierarchical) == "hard=[1, 2], soft=3");
     assert(object_name(named_value{}) == "named");
     assert(object_name(unnamed_value{}) == "<unnamed neighborhood>");

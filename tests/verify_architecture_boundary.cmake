@@ -49,13 +49,13 @@ endforeach()
 
 # Component layering: a header may include only headers of its own or of a
 # lower layer.
-#   0 config, trace   1 core   2 helpers   3 runners, testing
+#   0 utils, config, trace   1 cost   2 helpers   3 runners, testing
 #   4 solvers         5 app    6 adapters
 # Root umbrella headers take the layer of the directory they aggregate.
 function(easylocal_header_layer relative out_var)
-    if(relative MATCHES "^(config|trace)(/|\\.hpp$)")
+    if(relative MATCHES "^(utils|config|trace)(/|\\.hpp$)")
         set(_layer 0)
-    elseif(relative MATCHES "^core(/|\\.hpp$)")
+    elseif(relative MATCHES "^cost(/|\\.hpp$)")
         set(_layer 1)
     elseif(relative MATCHES "^helpers(/|\\.hpp$)")
         set(_layer 2)

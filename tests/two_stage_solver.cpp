@@ -1,4 +1,4 @@
-#include <easylocal/core/aggregation.hpp>
+#include <easylocal/cost.hpp>
 #include <easylocal/runners/runner.hpp>
 #include <easylocal/solvers.hpp>
 #include <easylocal/runners/simulated_annealing.hpp>
@@ -29,7 +29,7 @@ class SolutionManager
 public:
     using input_type = Instance;
     using solution_type = Solution;
-    using cost_type = easylocal::aggregation::hierarchical_cost<int, int>;
+    using cost_type = easylocal::cost::hierarchical<int, int>;
 
     explicit SolutionManager(const Instance& instance) : instance_{instance} {}
 
@@ -38,7 +38,7 @@ public:
     [[nodiscard]] auto initial_solution() const -> Solution { return {5, 9}; }
     [[nodiscard]] auto evaluate(const Solution& solution) const -> cost_type
     {
-        return easylocal::aggregation::hierarchical{}(solution.hard, solution.soft);
+        return easylocal::cost::hierarchical{solution.hard, solution.soft};
     }
 
 private:
@@ -89,7 +89,7 @@ struct FullStage
     template<class Context>
     [[nodiscard]] auto run(const Context& context, Solution solution) const
     {
-        static_assert(easylocal::aggregation::hierarchical_cost_type<
+        static_assert(easylocal::cost::hierarchical_type<
             typename Context::cost_type>);
         solution.soft = 1;
         return Result<typename Context::cost_type>{

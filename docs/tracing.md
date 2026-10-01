@@ -1,6 +1,6 @@
 # Semantic search tracing
 
-EasyLocal separates framework diagnostics (`<easylocal/core/logging.hpp>`) from
+EasyLocal separates framework diagnostics (`<easylocal/utils/logging.hpp>`) from
 search instrumentation (`<easylocal/trace.hpp>`). Tracing produces typed search
 events suitable for trajectory analysis; it is not a progress-log facility.
 

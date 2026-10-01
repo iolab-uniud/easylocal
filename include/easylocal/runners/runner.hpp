@@ -1,9 +1,9 @@
 #pragma once
 
-#include <easylocal/core/aggregation.hpp>
+#include <easylocal/cost.hpp>
 #include <easylocal/config/tree.hpp>
 #include <easylocal/helpers/neighborhood_explorer.hpp>
-#include <easylocal/core/cost_semantics.hpp>
+#include <easylocal/cost/semantics.hpp>
 #include <easylocal/helpers/detail/evaluation.hpp>
 #include <easylocal/helpers/recipes.hpp>
 #include <easylocal/helpers/solution_manager.hpp>
@@ -103,9 +103,9 @@ public:
     constexpr auto better(
         const cost_type& candidate,
         const cost_type& reference) const -> bool
-        requires easylocal::cost_semantics::has_better<SM>
+        requires easylocal::cost::has_better<SM>
     {
-        return easylocal::cost_semantics::better(
+        return easylocal::cost::better(
             solution_manager_,
             candidate,
             reference);
@@ -115,18 +115,18 @@ public:
     constexpr auto equivalent(
         const cost_type& lhs,
         const cost_type& rhs) const -> bool
-        requires easylocal::cost_semantics::has_equivalent<SM>
+        requires easylocal::cost::has_equivalent<SM>
     {
-        return easylocal::cost_semantics::equivalent(solution_manager_, lhs, rhs);
+        return easylocal::cost::equivalent(solution_manager_, lhs, rhs);
     }
 
     [[nodiscard]]
     constexpr auto better_or_equivalent(
         const cost_type& candidate,
         const cost_type& reference) const -> bool
-        requires easylocal::cost_semantics::has_better_or_equivalent<SM>
+        requires easylocal::cost::has_better_or_equivalent<SM>
     {
-        return easylocal::cost_semantics::better_or_equivalent(
+        return easylocal::cost::better_or_equivalent(
             solution_manager_,
             candidate,
             reference);
@@ -300,9 +300,9 @@ public:
     constexpr auto better(
         const cost_type& candidate,
         const cost_type& reference) const -> bool
-        requires easylocal::cost_semantics::has_better<solution_manager_type>
+        requires easylocal::cost::has_better<solution_manager_type>
     {
-        return easylocal::cost_semantics::better(
+        return easylocal::cost::better(
             solution_manager_,
             candidate,
             reference);

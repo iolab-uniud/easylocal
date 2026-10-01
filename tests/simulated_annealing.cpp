@@ -4,7 +4,7 @@
 #include "solution_manager.hpp"
 #include "support/approximate.hpp"
 
-#include <easylocal/core/aggregation.hpp>
+#include <easylocal/cost.hpp>
 #include <easylocal/runners/run_control.hpp>
 #include <easylocal/runners/runner.hpp>
 #include <easylocal/config/tree.hpp>
@@ -163,11 +163,11 @@ static_assert(easylocal::detail::runner_neighborhood_explorer<
 static_assert(!easylocal::detail::enumerable_runner_neighborhood_explorer<
               RandomOnlyChainNeighborhood,
               ChainSolutionManager>);
-static_assert(numeric_cost<int>);
-static_assert(numeric_cost<double>);
-static_assert(!numeric_cost<bool>);
+static_assert(easylocal::cost::arithmetic<int>);
+static_assert(easylocal::cost::arithmetic<double>);
+static_assert(!easylocal::cost::arithmetic<bool>);
 struct StructuredCost { int hard; int soft; };
-static_assert(!numeric_cost<StructuredCost>);
+static_assert(!easylocal::cost::arithmetic<StructuredCost>);
 
 auto expect(const bool condition, const std::string_view description) -> bool
 {
@@ -371,12 +371,12 @@ int main()
     {
         MetropolisAcceptance metropolis;
         CountingEngine rng;
-        using easylocal::aggregation::hierarchical;
+        using easylocal::cost::hierarchical;
 
-        const auto current = hierarchical{}(0, 10.0);
-        const auto soft_improvement = hierarchical{}(0, 9.0);
-        const auto hard_improvement = hierarchical{}(-1, 1000.0);
-        const auto hard_worsening = hierarchical{}(1, -1000.0);
+        const auto current = hierarchical{0, 10.0};
+        const auto soft_improvement = hierarchical{0, 9.0};
+        const auto hard_improvement = hierarchical{-1, 1000.0};
+        const auto hard_worsening = hierarchical{1, -1000.0};
 
         ok &= expect(
             metropolis.accept(soft_improvement, current, 2.0, rng),
@@ -392,7 +392,7 @@ int main()
             "hierarchical hard boundaries and improvements do not consume RNG state");
 
         const auto before = rng.calls;
-        (void)metropolis.accept(hierarchical{}(0, 11.0), current, 2.0, rng);
+        (void)metropolis.accept(hierarchical{0, 11.0}, current, 2.0, rng);
         ok &= expect(
             rng.calls > before,
             "hierarchical soft worsening uses probabilistic Metropolis acceptance");
@@ -467,7 +467,7 @@ int main()
             | component<exam::StudentConflictComponent>()
             | component<exam::ConsecutiveExamComponent>()
             | component<exam::TimeslotLoadComponent>()
-            | easylocal::aggregator(easylocal::aggregation::weighted_sum{
+            | easylocal::aggregator(easylocal::cost::weighted_sum{
                   exam::penalty_type{1000},
                   exam::penalty_type{10},
                   exam::penalty_type{1}});
@@ -506,7 +506,7 @@ int main()
         const exam::StudentConflictComponent conflicts{instance};
         const exam::ConsecutiveExamComponent consecutive{instance};
         const exam::TimeslotLoadComponent load{instance};
-        const auto aggregate = easylocal::aggregation::weighted_sum{
+        const auto aggregate = easylocal::cost::weighted_sum{
             exam::penalty_type{1000},
             exam::penalty_type{10},
             exam::penalty_type{1},

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <easylocal/utils/detail/meta.hpp>
 #include <easylocal/trace/events.hpp>
 
 #include <concepts>
@@ -48,26 +49,13 @@ constexpr void emit(Tracer& tracer, const Event& value)
 namespace detail
 {
 
-template<class T>
-struct is_variant : std::false_type
-{
-};
-
-template<class... Ts>
-struct is_variant<std::variant<Ts...>> : std::true_type
-{
-};
-
-template<class T>
-inline constexpr bool is_variant_v = is_variant<std::remove_cvref_t<T>>::value;
-
 template<class Move>
 void build_move_route(
     const Move& move,
     const neighborhood_route_node* parent,
     auto&& callback)
 {
-    if constexpr (is_variant_v<Move>)
+    if constexpr (easylocal::detail::is_variant_v<Move>)
     {
         std::visit(
             [&](const auto& tagged) {

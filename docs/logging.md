@@ -1,7 +1,7 @@
 # Logging
 
 EasyLocal Core provides a deliberately small, dependency-free logging boundary in
-`<easylocal/core/logging.hpp>`. It is intended for framework diagnostics and for
+`<easylocal/utils/logging.hpp>`. It is intended for framework diagnostics and for
 applications that want to route EasyLocal messages into their own logging
 system without making Core depend on a logging library.
 
@@ -19,7 +19,7 @@ in the dispatch path. The default sink writes warnings and errors to `stderr`;
 installing `nullptr` disables dispatch completely.
 
 ```cpp
-#include <easylocal/core/logging.hpp>
+#include <easylocal/utils/logging.hpp>
 
 void my_sink(const easylocal::logging::record& entry) noexcept
 {

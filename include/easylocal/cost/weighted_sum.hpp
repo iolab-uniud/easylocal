@@ -2,194 +2,18 @@
 
 #include <easylocal/config/parameters.hpp>
 #include <easylocal/config/tree.hpp>
-#include <easylocal/core/cost.hpp>
 
 #include <array>
-#include <compare>
-#include <concepts>
 #include <cstddef>
-#include <limits>
-#include <tuple>
 #include <type_traits>
 #include <utility>
 
-namespace easylocal::aggregation
+// Weighted-sum aggregators: configurable function objects mapping component
+// values to a scalar cost.
+namespace easylocal::cost
 {
-
-namespace detail
-{
-
-struct lexicographic_tag
-{
-};
-
-template<class Tag, class... Values>
-class ordered_cost
-{
-public:
-    constexpr explicit ordered_cost(Values... values)
-        : values_{std::move(values)...}
-    {
-    }
-
-    template<std::size_t Index>
-    [[nodiscard]]
-    constexpr auto get() const noexcept
-        -> const std::tuple_element_t<Index, std::tuple<Values...>>&
-    {
-        return std::get<Index>(values_);
-    }
-
-    auto operator<=>(const ordered_cost&) const = default;
-
-private:
-    std::tuple<Values...> values_;
-};
-
-} // namespace detail
-
-template<class... Values>
-using lexicographic_cost =
-    detail::ordered_cost<detail::lexicographic_tag, Values...>;
-
-template<class T>
-struct lexicographic_cost_traits
-{
-    static constexpr bool value = false;
-    static constexpr std::size_t size = 0;
-};
-
-template<class... Values>
-struct lexicographic_cost_traits<lexicographic_cost<Values...>>
-{
-    static constexpr bool value = true;
-    static constexpr std::size_t size = sizeof...(Values);
-};
-
-template<class T>
-inline constexpr bool is_lexicographic_cost_v =
-    lexicographic_cost_traits<std::remove_cvref_t<T>>::value;
-
-template<class T>
-concept lexicographic_cost_type = is_lexicographic_cost_v<T>;
-
-template<class HardCost, class SoftCost>
-class hierarchical_cost
-{
-public:
-    using hard_cost_type = HardCost;
-    using soft_cost_type = SoftCost;
-
-    constexpr explicit hierarchical_cost(HardCost hard, SoftCost soft)
-        : hard_{std::move(hard)},
-          soft_{std::move(soft)}
-    {
-    }
-
-    [[nodiscard]]
-    constexpr auto hard() const noexcept -> const HardCost&
-    {
-        return hard_;
-    }
-
-    [[nodiscard]]
-    constexpr auto soft() const noexcept -> const SoftCost&
-    {
-        return soft_;
-    }
-
-    auto operator<=>(const hierarchical_cost&) const = default;
-
-    [[nodiscard]]
-    friend constexpr auto delta(
-        const hierarchical_cost& candidate,
-        const hierarchical_cost& current) -> long double
-        requires requires(const HardCost& lhs, const HardCost& rhs) {
-            { lhs < rhs } -> std::convertible_to<bool>;
-            { lhs == rhs } -> std::convertible_to<bool>;
-        } && delta_cost<SoftCost>
-    {
-        if (candidate.hard() < current.hard())
-        {
-            return -std::numeric_limits<long double>::infinity();
-        }
-        if (current.hard() < candidate.hard())
-        {
-            return std::numeric_limits<long double>::infinity();
-        }
-        if (candidate.hard() == current.hard())
-        {
-            return static_cast<long double>(
-                delta(candidate.soft(), current.soft()));
-        }
-
-        // A hierarchical cost requires a total ordering of the hard branch for
-        // a meaningful numeric delta. Conservatively make an unordered hard
-        // transition unacceptable to delta-based algorithms.
-        return std::numeric_limits<long double>::infinity();
-    }
-
-    [[nodiscard]]
-    friend constexpr auto operator-(
-        const hierarchical_cost& candidate,
-        const hierarchical_cost& current) -> long double
-        requires delta_cost<hierarchical_cost>
-    {
-        return delta(candidate, current);
-    }
-
-private:
-    HardCost hard_;
-    SoftCost soft_;
-};
-
-
-template<class T>
-struct is_hierarchical_cost : std::false_type
-{
-};
-
-template<class HardCost, class SoftCost>
-struct is_hierarchical_cost<hierarchical_cost<HardCost, SoftCost>>
-    : std::true_type
-{
-};
-
-template<class T>
-inline constexpr bool is_hierarchical_cost_v =
-    is_hierarchical_cost<std::remove_cvref_t<T>>::value;
-
-template<class T>
-concept hierarchical_cost_type = is_hierarchical_cost_v<T>;
-
-struct lexicographic
-{
-    template<class... Values>
-    [[nodiscard]]
-    constexpr auto operator()(Values&&... values) const
-    {
-        return lexicographic_cost<std::remove_cvref_t<Values>...>{
-            std::forward<Values>(values)...,
-        };
-    }
-};
 
 inline constexpr auto default_hard_multiplier = 10'000;
-
-struct hierarchical
-{
-    template<class HardCost, class SoftCost>
-    [[nodiscard]]
-    constexpr auto operator()(HardCost&& hard, SoftCost&& soft) const
-    {
-        return hierarchical_cost<
-            std::remove_cvref_t<HardCost>,
-            std::remove_cvref_t<SoftCost>>{
-            std::forward<HardCost>(hard),
-            std::forward<SoftCost>(soft),
-        };
-    }
-};
 
 template<class Weight, std::size_t Size>
 struct weighted_sum_parameters
@@ -421,4 +245,4 @@ template<class Weight, std::size_t SoftSize>
 weighted_sum_with_hard_penalty(Weight, std::array<Weight, SoftSize>)
     -> weighted_sum_with_hard_penalty<Weight, SoftSize>;
 
-} // namespace easylocal::aggregation
+} // namespace easylocal::cost

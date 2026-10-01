@@ -141,7 +141,7 @@ int main(int argc, char* argv[])
         // component EasyLocal materializes the configurable unit-weight
         // weighted_sum default and emits a runtime warning. The explicit
         // spelling remains available:
-        //   | aggregator(aggregation::weighted_sum{distance_type{1}})
+        //   | aggregator(cost::weighted_sum{distance_type{1}})
         auto runner =
             Runner{SimulatedAnnealing{FixedLength{temperature_parameters}}}
             | (solution_manager<TspSolutionManager>()

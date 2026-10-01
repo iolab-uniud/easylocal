@@ -4,7 +4,7 @@
 #include "neighborhood_explorer.hpp"
 #include "solution_manager.hpp"
 
-#include <easylocal/core/aggregation.hpp>
+#include <easylocal/cost.hpp>
 #include <easylocal/config/cli.hpp>
 #include <easylocal/config/setup.hpp>
 #include <easylocal/config/tree.hpp>
@@ -124,7 +124,7 @@ int main(int argc, char* argv[])
                 .with_component<StudentConflictComponent>()
                 .with_component<ConsecutiveExamComponent>()
                 .with_component<TimeslotLoadComponent>()
-                .with_aggregator(easylocal::aggregation::weighted_sum{
+                .with_aggregator(easylocal::cost::weighted_sum{
                     penalty_type{1000}, penalty_type{10}, penalty_type{1}});
 
         auto nhe =

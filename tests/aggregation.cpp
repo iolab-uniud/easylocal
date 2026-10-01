@@ -1,4 +1,4 @@
-#include <easylocal/core/aggregation.hpp>
+#include <easylocal/cost.hpp>
 
 #include <array>
 #include <compare>
@@ -31,41 +31,41 @@ auto expect(const bool condition, const std::string_view description) -> bool
 
 int main()
 {
-    namespace aggregation = easylocal::aggregation;
+    namespace cost = easylocal::cost;
 
-    using LexicographicCost = aggregation::lexicographic_cost<int, long>;
-    using HierarchicalCost = aggregation::hierarchical_cost<LexicographicCost, long>;
+    using LexicographicCost = cost::lexicographic<int, long>;
+    using HierarchicalCost = cost::hierarchical<LexicographicCost, long>;
 
     static_assert(std::three_way_comparable<LexicographicCost>);
-    static_assert(aggregation::lexicographic_cost_type<LexicographicCost>);
-    static_assert(!aggregation::lexicographic_cost_type<int>);
-    static_assert(aggregation::lexicographic_cost_traits<LexicographicCost>::size == 2);
+    static_assert(cost::lexicographic_type<LexicographicCost>);
+    static_assert(!cost::lexicographic_type<int>);
+    static_assert(cost::lexicographic_traits<LexicographicCost>::size == 2);
     static_assert(std::three_way_comparable<HierarchicalCost>);
     static_assert(!std::same_as<LexicographicCost, HierarchicalCost>);
     static_assert(!subtractable_cost<LexicographicCost>);
-    static_assert(!easylocal::delta_cost<LexicographicCost>);
-    static_assert(easylocal::delta_cost<int>);
-    static_assert(easylocal::delta_cost<double>);
-    static_assert(easylocal::delta_cost<aggregation::hierarchical_cost<int, double>>);
-    static_assert(subtractable_cost<aggregation::hierarchical_cost<int, double>>);
+    static_assert(!easylocal::cost::has_delta<LexicographicCost>);
+    static_assert(easylocal::cost::has_delta<int>);
+    static_assert(easylocal::cost::has_delta<double>);
+    static_assert(easylocal::cost::has_delta<cost::hierarchical<int, double>>);
+    static_assert(subtractable_cost<cost::hierarchical<int, double>>);
 
-    constexpr auto lexicographic_a = aggregation::lexicographic{}(1, 100L);
-    constexpr auto lexicographic_b = aggregation::lexicographic{}(2, 0L);
+    constexpr auto lexicographic_a = cost::lexicographic{1, 100L};
+    constexpr auto lexicographic_b = cost::lexicographic{2, 0L};
     static_assert(lexicographic_a < lexicographic_b);
     static_assert(lexicographic_a.get<0>() == 1);
     static_assert(lexicographic_a.get<1>() == 100L);
 
-    constexpr auto hard_a = aggregation::lexicographic{}(1, 100L);
-    constexpr auto hard_b = aggregation::lexicographic{}(2, 0L);
-    constexpr auto hierarchical_a = aggregation::hierarchical{}(hard_a, 100L);
-    constexpr auto hierarchical_b = aggregation::hierarchical{}(hard_a, 101L);
-    constexpr auto hierarchical_c = aggregation::hierarchical{}(hard_b, 0L);
+    constexpr auto hard_a = cost::lexicographic{1, 100L};
+    constexpr auto hard_b = cost::lexicographic{2, 0L};
+    constexpr auto hierarchical_a = cost::hierarchical{hard_a, 100L};
+    constexpr auto hierarchical_b = cost::hierarchical{hard_a, 101L};
+    constexpr auto hierarchical_c = cost::hierarchical{hard_b, 0L};
     static_assert(hierarchical_a < hierarchical_b);
     static_assert(hierarchical_b < hierarchical_c);
     static_assert(hierarchical_a.hard() == hard_a);
     static_assert(hierarchical_a.soft() == 100L);
 
-    constexpr aggregation::weighted_sum weighted{2, 3};
+    constexpr cost::weighted_sum weighted{2, 3};
     static_assert(weighted(4, 5) == 23);
 
     bool ok = true;
@@ -80,12 +80,12 @@ int main()
         hierarchical_b < hierarchical_c,
         "hierarchical aggregation gives hard cost strict priority over soft cost");
 
-    const auto numeric_a = aggregation::hierarchical{}(0, 10.0);
-    const auto numeric_b = aggregation::hierarchical{}(0, 13.5);
-    const auto hard_better = aggregation::hierarchical{}(0, 1000.0);
-    const auto hard_worse = aggregation::hierarchical{}(1, -1000.0);
+    const auto numeric_a = cost::hierarchical{0, 10.0};
+    const auto numeric_b = cost::hierarchical{0, 13.5};
+    const auto hard_better = cost::hierarchical{0, 1000.0};
+    const auto hard_worse = cost::hierarchical{1, -1000.0};
     ok &= expect(
-        easylocal::delta(13.5, 10.0) == 3.5,
+        easylocal::cost::delta(13.5, 10.0) == 3.5,
         "numeric delta is the ordinary arithmetic difference");
     ok &= expect(
         delta(numeric_b, numeric_a) == 3.5L &&
@@ -103,19 +103,19 @@ int main()
         weighted(4, 5) == 23,
         "weighted-sum aggregation combines materialized terms");
 
-    constexpr aggregation::weighted_sum_with_hard_penalty penalized{
+    constexpr cost::weighted_sum_with_hard_penalty penalized{
         1000,
         std::array{10, 1}};
     static_assert(penalized(2, 3, 4) == 2034);
 
-    constexpr aggregation::weighted_sum_with_hard_penalty<int, 2>
+    constexpr cost::weighted_sum_with_hard_penalty<int, 2>
         default_penalized{};
     static_assert(
         default_penalized.parameters().hard_multiplier == 10'000 &&
         default_penalized.parameters().soft_weights == std::array{1, 1});
     static_assert(default_penalized(2, 3, 4) == 20'007);
 
-    constexpr aggregation::weighted_sum mixed_weights{2, 0.5};
+    constexpr cost::weighted_sum mixed_weights{2, 0.5};
     ok &= expect(
         mixed_weights(3, 4.0) == 8.0,
         "weighted-sum aggregation supports heterogeneous arithmetic weights");

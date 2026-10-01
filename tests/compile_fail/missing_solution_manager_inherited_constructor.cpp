@@ -1,4 +1,4 @@
-#include <easylocal/core/aggregation.hpp>
+#include <easylocal/cost.hpp>
 #include <easylocal/runners/runner.hpp>
 #include <easylocal/helpers/solution_manager.hpp>
 #include <easylocal/helpers/neighborhood_explorer.hpp>
@@ -28,6 +28,6 @@ int main()
     const auto recipe =
         easylocal::solution_manager<BrokenSolutionManager>()
         | easylocal::component<Component>()
-        | easylocal::aggregator(easylocal::aggregation::weighted_sum{1});
+        | easylocal::aggregator(easylocal::cost::weighted_sum{1});
     (void)recipe.construct(instance);
 }

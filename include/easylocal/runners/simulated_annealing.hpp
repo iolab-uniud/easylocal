@@ -1,7 +1,7 @@
 #pragma once
 
 #include <easylocal/config/tree.hpp>
-#include <easylocal/core/cost.hpp>
+#include <easylocal/cost/concepts.hpp>
 #include <easylocal/runners/detail/context_concepts.hpp>
 #include <easylocal/runners/search_run.hpp>
 
@@ -533,17 +533,11 @@ static_assert(temperature_policy<temperature::Hybrid>);
 
 // Acceptance policies.
 
-template<class Cost>
-concept numeric_cost =
-    (std::integral<std::remove_cv_t<Cost>> ||
-     std::floating_point<std::remove_cv_t<Cost>>) &&
-    (!std::same_as<std::remove_cv_t<Cost>, bool>);
-
 namespace detail
 {
 
 template<class Cost>
-concept metropolis_cost = delta_cost<Cost>;
+concept metropolis_cost = cost::has_delta<Cost>;
 
 } // namespace detail
 
@@ -561,20 +555,22 @@ public:
         assert(std::isfinite(temperature));
         assert(temperature > 0.0);
 
-        const auto delta = static_cast<long double>(candidate - current);
-        assert(!std::isnan(delta));
+        using cost::delta;
+        const auto difference =
+            static_cast<long double>(delta(candidate, current));
+        assert(!std::isnan(difference));
 
-        if (delta <= 0.0L)
+        if (difference <= 0.0L)
         {
             return true;
         }
-        if (std::isinf(delta))
+        if (std::isinf(difference))
         {
             return false;
         }
 
         const auto probability = std::exp(
-            -delta / static_cast<long double>(temperature));
+            -difference / static_cast<long double>(temperature));
         std::uniform_real_distribution<double> draw{0.0, 1.0};
         return draw(rng) < static_cast<double>(probability);
     }

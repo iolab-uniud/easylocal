@@ -3,7 +3,7 @@
 #include "solution_manager.hpp"
 
 #include <easylocal/helpers/neighborhood_explorer.hpp>
-#include <easylocal/core/aggregation.hpp>
+#include <easylocal/cost.hpp>
 #include <easylocal/runners/runner.hpp>
 
 #include <compare>
