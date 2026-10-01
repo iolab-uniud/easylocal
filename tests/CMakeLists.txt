@@ -770,9 +770,15 @@ easylocal_add_compile_failure_test(
     "BrokenNeighborhood"
 )
 easylocal_add_compile_failure_test(
+    componentless-solution-manager
+    componentless_solution_manager.cpp
+    "a SolutionManager recipe needs at least one cost component"
+    "BaseSolutionManager"
+)
+easylocal_add_compile_failure_test(
     missing-aggregator
     missing_aggregator.cpp
-    "a SolutionManager recipe with cost components requires an explicit aggregator"
+    "these cost components require an explicit aggregator"
     "NonAggregatableComponent"
 )
 easylocal_add_compile_failure_test(

@@ -295,7 +295,10 @@ public:
 
             if constexpr (has_implicit_aggregator)
             {
-                warn_implicit_aggregator<implicit_aggregator_type>();
+                if constexpr (implicit_aggregator_traits_type::warns)
+                {
+                    warn_implicit_aggregator<implicit_aggregator_type>();
+                }
                 return service_type{
                     std::move(components),
                     implicit_aggregator_};

@@ -25,9 +25,7 @@ int main()
             .solution_manager(
                 easylocal::solution_manager<TspSolutionManager>()
                 | easylocal::component<TourLengthComponent>()
-                | easylocal::aggregator(
-                      easylocal::cost::weighted_sum{
-                          distance_type{1}}))
+                | easylocal::aggregator(TourLengthCost{}))
             .neighborhood(
                 easylocal::neighborhood<TwoOptNeighborhoodExplorer>()
                 | easylocal::delta<
@@ -40,9 +38,7 @@ int main()
             .solution_manager(
                 easylocal::solution_manager<TspSolutionManager>()
                 | easylocal::component<TourLengthComponent>()
-                | easylocal::aggregator(
-                      easylocal::cost::weighted_sum{
-                          distance_type{1}}))
+                | easylocal::aggregator(TourLengthCost{}))
             .neighborhood(
                 easylocal::neighborhood<SwapCitiesNeighborhoodExplorer>()
                 | easylocal::delta<

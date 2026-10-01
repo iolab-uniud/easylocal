@@ -276,18 +276,18 @@ registration key: `make_runner<MySearch>(MyParameters{...})`,
 Callers pass the optional control and tracer as a trailing argument:
 `bound.run(initial, rng, easylocal::with(control, tracer))`.
 
-Cost aggregation is explicit whenever domain semantics require it, but simple
-weighted costs have a convenience default. If all active component values can
-be combined as a weighted sum, omitting `aggregator(...)` materializes a
-configurable unit-weight `cost::weighted_sum` and emits a runtime warning.
-The warning uses the dependency-free logging boundary in
-`<easylocal/utils/logging.hpp>`; applications may install a process-wide sink or
-disable logging without introducing a logging-library dependency into Core. See
-[`docs/logging.md`](docs/logging.md). The weights remain exposed as
-`cost.weights`; if no safe weighted expression can be inferred, an explicit
-aggregator is still required. TSP demonstrates the implicit spelling, Exam
-Timetabling keeps the explicit built-in weighted sum,
-and Assignment uses a custom hierarchical aggregator.
+The cost always comes from cost components; a SolutionManager only defines
+solution semantics. Cost aggregation is explicit whenever it involves a choice.
+Omitting `aggregator(...)` is allowed in two cases: with a single component its
+value is the cost (identity), and with several arithmetic components EasyLocal
+materializes a configurable unit-weight `cost::weighted_sum` (weights exposed as
+`cost.weights`) and emits a runtime warning. Several components with domain
+values always require an explicit aggregator, so domain value types never need
+arithmetic operators just to be aggregated. The warning uses the
+dependency-free logging boundary in `<easylocal/utils/logging.hpp>`; see
+[`docs/logging.md`](docs/logging.md). TSP maps its domain value with a small
+explicit aggregator, Exam Timetabling uses the built-in weighted sum, and
+Assignment a custom hierarchical aggregator.
 
 Search instrumentation is separate from diagnostic logging.
 `<easylocal/trace.hpp>` provides compile-time removable typed search events,

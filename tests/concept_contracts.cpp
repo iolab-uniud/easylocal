@@ -30,7 +30,9 @@ struct Cost
 {
 };
 
-class SolutionManager
+// Stands for the composed SolutionManager (the cost layer) the runner
+// concepts are written against; user SolutionManagers do not evaluate.
+class ComposedSolutionManager
 {
 public:
     using input_type = Instance;
@@ -247,25 +249,25 @@ private:
 
 int main()
 {
-    static_assert(easylocal::evaluable_solution_manager<SolutionManager>);
+    static_assert(easylocal::detail::evaluable_solution_manager<ComposedSolutionManager>);
     static_assert(easylocal::detail::runner_neighborhood_explorer<
                   GoodNeighborhood,
-                  SolutionManager>);
+                  ComposedSolutionManager>);
     static_assert(easylocal::detail::runner_neighborhood_explorer<
                   WrongMoveNeighborhood,
-                  SolutionManager>);
+                  ComposedSolutionManager>);
     static_assert(easylocal::detail::enumerable_runner_neighborhood_explorer<
                   GoodNeighborhood,
-                  SolutionManager>);
+                  ComposedSolutionManager>);
     static_assert(!easylocal::detail::enumerable_runner_neighborhood_explorer<
                   WrongMoveNeighborhood,
-                  SolutionManager>);
+                  ComposedSolutionManager>);
     static_assert(easylocal::detail::runner_neighborhood_explorer<
                   RandomMoveOnlyNeighborhood,
-                  SolutionManager>);
+                  ComposedSolutionManager>);
     static_assert(!easylocal::detail::enumerable_runner_neighborhood_explorer<
                   RandomMoveOnlyNeighborhood,
-                  SolutionManager>);
+                  ComposedSolutionManager>);
 
     static_assert(easylocal::runners::detail::strict_improvement_context<
                   SearchContext<GoodNeighborhood>>);

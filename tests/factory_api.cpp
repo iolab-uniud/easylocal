@@ -28,13 +28,11 @@ struct SolutionManager
 {
     using input_type = Instance;
     using solution_type = Solution;
-    using cost_type = int;
 
     explicit SolutionManager(const Instance& instance) : instance_{instance} {}
 
     [[nodiscard]] auto input() const noexcept -> const Instance& { return instance_; }
     [[nodiscard]] auto is_valid(const Solution&) const noexcept -> bool { return true; }
-    [[nodiscard]] auto evaluate(const Solution& solution) const noexcept -> int { return solution.value; }
     [[nodiscard]] auto initial_solution() const -> Solution { return {}; }
 
 private:
@@ -200,7 +198,7 @@ int main()
 
     auto configured_runner =
         make_runner<IdentityAlgorithm>()
-        | make_solution_manager<SolutionManager>()
+        | (make_solution_manager<SolutionManager>() | component<CostComponent>())
         | make_neighborhood_explorer<NeighborhoodExplorer>();
 
     auto local_solver = make_solver<solvers::LocalSearch>(

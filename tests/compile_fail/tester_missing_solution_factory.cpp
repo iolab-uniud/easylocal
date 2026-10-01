@@ -13,16 +13,18 @@ class SolutionManager
 {
 public:
     using solution_manager_base::solution_manager_base;
-    using cost_type = int;
 
     [[nodiscard]]
     static auto is_valid(const Solution&) noexcept -> bool
     {
         return true;
     }
+};
 
+struct ZeroCost
+{
     [[nodiscard]]
-    static auto evaluate(const Solution&) noexcept -> cost_type
+    static auto evaluate(const Solution&) noexcept -> int
     {
         return 0;
     }
@@ -48,7 +50,9 @@ public:
 int main()
 {
     auto application = easylocal::app("missing-solution-factory")
-        .solution_manager<SolutionManager>()
+        .solution_manager(
+            easylocal::solution_manager<SolutionManager>()
+            | easylocal::component<ZeroCost>())
         .neighborhood<Neighborhood>()
         .runner<easylocal::runners::FirstImprovement>("fi");
 

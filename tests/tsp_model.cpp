@@ -53,7 +53,7 @@ int main()
     const auto manager_recipe =
         solution_manager<TspSolutionManager>()
         | component<TourLengthComponent>()
-        | aggregator(easylocal::cost::weighted_sum{distance_type{1}});
+        | aggregator(TourLengthCost{});
     const auto manager = manager_recipe.construct(instance);
 
     static_assert(std::same_as<typename decltype(manager)::cost_type, double>);

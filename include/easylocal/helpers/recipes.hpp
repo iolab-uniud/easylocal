@@ -121,6 +121,35 @@ inline constexpr bool is_unaggregated_component_solution_manager_recipe_v =
     is_unaggregated_component_solution_manager_recipe<T>::value;
 
 template<class T>
+struct is_componentless_solution_manager_recipe : std::false_type
+{
+};
+
+template<class BaseSM, class BaseArgsTuple>
+struct is_componentless_solution_manager_recipe<
+    solution_manager_recipe<BaseSM, BaseArgsTuple>> : std::true_type
+{
+};
+
+// Checks a SolutionManager recipe before a runner or an app accepts it, so that
+// a malformed recipe fails with a direct diagnostic.
+template<class Spec>
+consteval auto validate_solution_manager_spec() -> bool
+{
+    static_assert(
+        !is_componentless_solution_manager_recipe<Spec>::value,
+        "a SolutionManager recipe needs at least one cost component: the cost "
+        "is always computed by cost components, add `| component<C>()` or "
+        "`.with_component<C>()`");
+    static_assert(
+        !is_unaggregated_component_solution_manager_recipe_v<Spec>,
+        "these cost components require an explicit aggregator because no safe "
+        "default aggregation can be inferred; add `| aggregator(...)` or "
+        "`.with_aggregator(...)`");
+    return true;
+}
+
+template<class T>
 struct is_neighborhood_spec : std::false_type
 {
 };

@@ -33,7 +33,7 @@ struct unconfigured_t
 
 template<class NHE, class SM>
 concept runner_neighborhood_explorer =
-    easylocal::evaluable_solution_manager<SM> &&
+    detail::evaluable_solution_manager<SM> &&
     easylocal::neighborhood_explorer_for<NHE, SM>;
 
 template<class NHE, class SM>
@@ -361,41 +361,8 @@ public:
     {
     }
 
-    template<evaluable_solution_manager SM, class... Args>
-        requires std::copy_constructible<Algorithm>
-    [[nodiscard]]
-    auto with_solution_manager(Args&&... args) const &
-    {
-        using spec_type = detail::service_spec<
-            detail::solution_manager_tag,
-            SM,
-            std::decay_t<Args>...>;
-
-        return Runner<Algorithm, spec_type>{
-            algorithm_,
-            spec_type{std::forward<Args>(args)...},
-        };
-    }
-
-    template<evaluable_solution_manager SM, class... Args>
-    [[nodiscard]]
-    auto with_solution_manager(Args&&... args) &&
-    {
-        using spec_type = detail::service_spec<
-            detail::solution_manager_tag,
-            SM,
-            std::decay_t<Args>...>;
-
-        return Runner<Algorithm, spec_type>{
-            std::move(algorithm_),
-            spec_type{std::forward<Args>(args)...},
-        };
-    }
-
     template<class SMSpec>
         requires detail::is_solution_manager_spec_v<std::remove_cvref_t<SMSpec>> &&
-                 evaluable_solution_manager<
-                     detail::service_t<std::remove_cvref_t<SMSpec>>> &&
                  std::copy_constructible<Algorithm> &&
                  std::constructible_from<
                      std::remove_cvref_t<SMSpec>,
@@ -404,6 +371,7 @@ public:
     auto with_solution_manager(SMSpec&& spec) const &
     {
         using spec_type = std::remove_cvref_t<SMSpec>;
+        static_assert(detail::validate_solution_manager_spec<spec_type>());
         return Runner<Algorithm, spec_type>{
             algorithm_,
             std::forward<SMSpec>(spec),
@@ -412,8 +380,6 @@ public:
 
     template<class SMSpec>
         requires detail::is_solution_manager_spec_v<std::remove_cvref_t<SMSpec>> &&
-                 evaluable_solution_manager<
-                     detail::service_t<std::remove_cvref_t<SMSpec>>> &&
                  std::constructible_from<
                      std::remove_cvref_t<SMSpec>,
                      SMSpec&&>
@@ -421,6 +387,7 @@ public:
     auto with_solution_manager(SMSpec&& spec) &&
     {
         using spec_type = std::remove_cvref_t<SMSpec>;
+        static_assert(detail::validate_solution_manager_spec<spec_type>());
         return Runner<Algorithm, spec_type>{
             std::move(algorithm_),
             std::forward<SMSpec>(spec),
@@ -666,21 +633,7 @@ auto operator|(
     Runner<Algorithm, SMSpec, NHESpec> runner,
     Spec&& spec)
 {
-    using spec_type = std::remove_cvref_t<Spec>;
-
-    if constexpr (detail::is_unaggregated_component_solution_manager_recipe_v<spec_type>)
-    {
-        static_assert(
-            !detail::is_unaggregated_component_solution_manager_recipe_v<spec_type>,
-            "a SolutionManager recipe with cost components requires an explicit "
-            "aggregator because no safe default aggregation can be inferred; "
-            "add `| aggregator(...)` or `.with_aggregator(...)`");
-    }
-    else
-    {
-        return std::move(runner).with_solution_manager(
-            std::forward<Spec>(spec));
-    }
+    return std::move(runner).with_solution_manager(std::forward<Spec>(spec));
 }
 
 template<class Algorithm, class SMSpec, class NHESpec>

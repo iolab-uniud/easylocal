@@ -34,23 +34,25 @@ struct RandomOnlyMove
 {
 };
 
+struct RandomOnlyValue
+{
+    [[nodiscard]]
+    static auto evaluate(const RandomOnlySolution& solution) noexcept -> std::uint64_t
+    {
+        return solution.value;
+    }
+};
+
 class RandomOnlySolutionManager
     : public easylocal::solution_manager_base<RandomOnlyInput, RandomOnlySolution>
 {
 public:
     using solution_manager_base::solution_manager_base;
-    using cost_type = std::uint64_t;
 
     [[nodiscard]]
     static auto is_valid(const RandomOnlySolution&) noexcept -> bool
     {
         return true;
-    }
-
-    [[nodiscard]]
-    static auto evaluate(const RandomOnlySolution& solution) noexcept -> cost_type
-    {
-        return solution.value;
     }
 
     template<class RNG>
@@ -86,7 +88,9 @@ public:
 auto make_random_only_application()
 {
     auto application = easylocal::app("random-only")
-        .solution_manager<RandomOnlySolutionManager>()
+        .solution_manager(
+            easylocal::solution_manager<RandomOnlySolutionManager>()
+            | easylocal::component<RandomOnlyValue>())
         .neighborhood<RandomOnlyNeighborhood>()
         .runner<easylocal::runners::FirstImprovement>("fi");
 

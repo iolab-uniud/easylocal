@@ -25,20 +25,6 @@ concept base_solution_manager =
         } -> std::convertible_to<bool>;
     };
 
-template<class SM>
-concept evaluable_solution_manager =
-    base_solution_manager<SM> &&
-    requires(
-        const SM& solution_manager,
-        const typename SM::solution_type& solution)
-    {
-        typename SM::cost_type;
-
-        {
-            solution_manager.evaluate(solution)
-        } -> std::same_as<typename SM::cost_type>;
-    };
-
 // Optional SolutionManager construction capabilities. They deliberately do not
 // participate in the minimal base_solution_manager contract: a Runner starts
 // from an existing solution, while a Solver may choose to require one of these

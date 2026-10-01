@@ -24,19 +24,21 @@ class SolutionManager
 public:
     using input_type = Instance;
     using solution_type = Solution;
-    using cost_type = StructuredCost;
 
     explicit SolutionManager(const Instance& instance) noexcept : instance_{instance} {}
 
     [[nodiscard]] auto input() const noexcept -> const Instance& { return instance_; }
     [[nodiscard]] static auto is_valid(const Solution&) noexcept -> bool { return true; }
-    [[nodiscard]] static auto evaluate(const Solution& solution) noexcept -> cost_type
+private:
+    const Instance& instance_;
+};
+
+struct StructuredValue
+{
+    [[nodiscard]] static auto evaluate(const Solution& solution) noexcept -> StructuredCost
     {
         return {.hard = solution.value, .soft = 0};
     }
-
-private:
-    const Instance& instance_;
 };
 
 class Neighborhood
@@ -80,7 +82,7 @@ int main()
                 .cooling_rate = 0.5,
                 .max_iterations = 1,
             }}}}
-        | solution_manager<SolutionManager>()
+        | (solution_manager<SolutionManager>() | component<StructuredValue>())
         | neighborhood<Neighborhood>();
 
     std::mt19937 rng{1U};

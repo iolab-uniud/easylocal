@@ -167,7 +167,6 @@ class OpaqueSolutionManager
 public:
     using input_type = Instance;
     using solution_type = Solution;
-    using cost_type = OpaqueCost;
 
     explicit OpaqueSolutionManager(const Instance& instance) noexcept
         : instance_{instance}
@@ -184,13 +183,6 @@ public:
     constexpr auto is_valid(const Solution&) const noexcept -> bool
     {
         return true;
-    }
-
-    [[nodiscard]]
-    constexpr auto evaluate(const Solution& solution) const noexcept
-        -> cost_type
-    {
-        return cost_type{.value = solution.score};
     }
 
 private:

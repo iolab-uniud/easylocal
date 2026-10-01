@@ -86,7 +86,6 @@ class ChainSolutionManager
 public:
     using input_type = ChainInstance;
     using solution_type = ChainSolution;
-    using cost_type = int;
 
     explicit ChainSolutionManager(const ChainInstance& instance) noexcept
         : instance_{instance}
@@ -103,13 +102,16 @@ public:
         return true;
     }
 
+private:
+    const ChainInstance& instance_;
+};
+
+struct ChainValue
+{
     [[nodiscard]] static auto evaluate(const ChainSolution& solution) noexcept -> int
     {
         return solution.value;
     }
-
-private:
-    const ChainInstance& instance_;
 };
 
 class RandomOnlyChainNeighborhood
@@ -159,12 +161,12 @@ private:
     const ChainInstance& instance_;
 };
 
-static_assert(easylocal::detail::runner_neighborhood_explorer<
+static_assert(easylocal::neighborhood_explorer_for<
               RandomOnlyChainNeighborhood,
               ChainSolutionManager>);
-static_assert(!easylocal::detail::enumerable_runner_neighborhood_explorer<
+static_assert(!easylocal::deterministic_neighborhood_for<
               RandomOnlyChainNeighborhood,
-              ChainSolutionManager>);
+              ChainSolution>);
 static_assert(easylocal::cost::arithmetic<int>);
 static_assert(easylocal::cost::arithmetic<double>);
 static_assert(!easylocal::cost::arithmetic<bool>);
@@ -411,7 +413,7 @@ int main()
                     .max_iterations = 2,
                 }},
                 AlwaysAccept{}}}
-            | solution_manager<ChainSolutionManager>()
+            | (solution_manager<ChainSolutionManager>() | component<ChainValue>())
             | neighborhood<RandomOnlyChainNeighborhood>();
 
         std::mt19937 rng{7U};

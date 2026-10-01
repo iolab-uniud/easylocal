@@ -14,14 +14,6 @@ struct TourLengthValue
     distance_type total{};
 
     auto operator==(const TourLengthValue&) const -> bool = default;
-
-    [[nodiscard]]
-    friend constexpr auto operator*(
-        const distance_type weight,
-        const TourLengthValue value) noexcept -> distance_type
-    {
-        return weight * value.total;
-    }
 };
 
 class TourLengthComponent
@@ -59,6 +51,18 @@ public:
 
 private:
     const TspInstance& instance_;
+};
+
+// TourLengthValue is a domain value, so the cost is obtained through an
+// explicit aggregator: the tour length itself.
+struct TourLengthCost
+{
+    [[nodiscard]]
+    constexpr auto operator()(const TourLengthValue value) const noexcept
+        -> distance_type
+    {
+        return value.total;
+    }
 };
 
 } // namespace easylocal::mwe::tsp

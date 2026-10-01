@@ -187,12 +187,12 @@ int main()
     };
 
     // Compose a runner: algorithm | SolutionManager recipe | neighborhood recipe.
+    // With a single cost component, its value is the cost.
     auto runner =
         easylocal::make_runner<easylocal::runners::FirstImprovement>(
-            easylocal::runners::FirstImprovementParameters{.max_evaluations = 10'000})
+            easylocal::runners::FirstImprovementParameters{})
         | (easylocal::solution_manager<TourManager>()
-           | easylocal::component<TourLength>()
-           | easylocal::aggregator(easylocal::cost::weighted_sum{1.0}))
+           | easylocal::component<TourLength>())
         | easylocal::neighborhood<TwoOptExplorer>();
 
     // Bind it to an Input and run it from a solution.
@@ -266,11 +266,10 @@ Construction is caller-owned: `random_solution` receives the RNG explicitly, so
 seeding and replay are controlled by whoever runs the search (usually a
 Solver).
 
-> **Choice — cost in the SolutionManager.** A SolutionManager may also define
-> `cost_type` and `evaluate(solution) -> cost_type` directly. Recipes without
-> cost components then use it as is. This is convenient for very small problems,
-> but cost components are the recommended route: they enable delta evaluation,
-> weighting, hierarchical costs and per-component diagnostics.
+The SolutionManager never computes the cost: the cost always comes from cost
+components (Step 3), even when the whole objective is a single function. This
+gives every problem the same evaluation path, so delta evaluation, weighting,
+hierarchical costs and per-component diagnostics are always available.
 
 ## Step 3 — Cost components and aggregation
 
@@ -295,13 +294,14 @@ public:
   recipe: `component<C>(args...)`.
 - No base class is required.
 
-Attach components to the SolutionManager recipe, then say how their values
-become the cost with an **aggregator**:
+Attach components to the SolutionManager recipe. With several components, say
+how their values become the cost with an **aggregator**:
 
 ```cpp
 auto sm = easylocal::solution_manager<TourManager>()
         | easylocal::component<TourLength>()
-        | easylocal::aggregator(easylocal::cost::weighted_sum{1.0});
+        | easylocal::component<MaxEdge>()
+        | easylocal::aggregator(easylocal::cost::weighted_sum{1.0, 10.0});
 ```
 
 An aggregator is a function object called with the component values in
@@ -313,9 +313,17 @@ declaration order. EasyLocal provides:
 | `cost::weighted_sum_with_hard_penalty` | scalar | `hard_multiplier * hard + sum(w_i * soft_i)` |
 | your own function object | any cost type | e.g. a hierarchical cost (below) |
 
-If you omit the aggregator and every component value can be multiplied by a
-weight and summed, EasyLocal materializes a unit-weight `weighted_sum` and logs
-a warning. An explicit aggregator is required whenever no safe default exists.
+You may omit the aggregator in two cases:
+
+| Components | Implicit aggregator |
+| --- | --- |
+| a single component, any value type | identity: its value is the cost |
+| several components, all arithmetic | unit-weight `cost::weighted_sum`, with a warning (weights configurable as `cost.weights`) |
+| several components with domain values | none: attach an aggregator explicitly |
+
+So a problem whose objective is one function needs a single component and no
+aggregator, and a domain value type never needs arithmetic operators just to be
+aggregated.
 
 ### Structured costs
 

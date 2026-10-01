@@ -713,9 +713,7 @@ void benchmark_tsp(
     const auto manager_recipe =
         easylocal::solution_manager<tsp::TspSolutionManager>()
         | easylocal::component<tsp::TourLengthComponent>()
-        | easylocal::aggregator([](const tsp::TourLengthValue& value) {
-              return value.total;
-          });
+        | easylocal::aggregator(tsp::TourLengthCost{});
     const auto cursor_recipe =
         easylocal::neighborhood<tsp::TwoOptNeighborhoodExplorer>()
         | easylocal::delta<

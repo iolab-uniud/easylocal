@@ -14,16 +14,19 @@ struct Instance { int initial{11}; };
 struct Solution { std::uint64_t value{}; };
 struct Move {};
 
+struct ValueCost
+{
+    static auto evaluate(const Solution& s) -> std::uint64_t { return s.value; }
+};
+
 class DeterministicSM
 {
 public:
     using input_type = Instance;
     using solution_type = Solution;
-    using cost_type = std::uint64_t;
     explicit DeterministicSM(const Instance& instance) : instance_{instance} {}
     auto input() const -> const Instance& { return instance_; }
     static auto is_valid(const Solution&) -> bool { return true; }
-    static auto evaluate(const Solution& s) -> cost_type { return s.value; }
     auto initial_solution() const -> Solution
     {
         return {static_cast<std::uint64_t>(instance_.initial)};
@@ -37,11 +40,9 @@ class RandomSM
 public:
     using input_type = Instance;
     using solution_type = Solution;
-    using cost_type = std::uint64_t;
     explicit RandomSM(const Instance& instance) : instance_{instance} {}
     auto input() const -> const Instance& { return instance_; }
     static auto is_valid(const Solution&) -> bool { return true; }
-    static auto evaluate(const Solution& s) -> cost_type { return s.value; }
     template<class RNG>
     auto random_solution(RNG& rng) const -> Solution { return {rng()}; }
 private:
@@ -53,11 +54,9 @@ class SelectableSM
 public:
     using input_type = Instance;
     using solution_type = Solution;
-    using cost_type = std::uint64_t;
     explicit SelectableSM(const Instance& instance) : instance_{instance} {}
     auto input() const -> const Instance& { return instance_; }
     static auto is_valid(const Solution&) -> bool { return true; }
-    static auto evaluate(const Solution& s) -> cost_type { return s.value; }
     auto initial_solution() const -> Solution
     {
         return {static_cast<std::uint64_t>(instance_.initial)};
@@ -121,7 +120,7 @@ int main()
     const Instance instance{};
 
     auto deterministic_runner = Runner{PlainAlgorithm{}}
-        | solution_manager<DeterministicSM>()
+        | (solution_manager<DeterministicSM>() | component<ValueCost>())
         | neighborhood<EmptyNeighborhood<DeterministicSM>>();
     using DeterministicRunner = decltype(deterministic_runner);
     using DeterministicSolver = solvers::LocalSearch<DeterministicRunner>;
@@ -187,7 +186,7 @@ int main()
         "runtime initialization setter rejects unsupported modes without changing state");
 
     auto random_runner = Runner{RandomAlgorithm{}}
-        | solution_manager<RandomSM>()
+        | (solution_manager<RandomSM>() | component<ValueCost>())
         | neighborhood<EmptyNeighborhood<RandomSM>>();
     using RandomRunner = decltype(random_runner);
     using RandomSolver = solvers::LocalSearch<RandomRunner>;
@@ -217,7 +216,7 @@ int main()
         "Solver RNG state persists across solve calls");
 
     auto selectable_runner = Runner{PlainAlgorithm{}}
-        | solution_manager<SelectableSM>()
+        | (solution_manager<SelectableSM>() | component<ValueCost>())
         | neighborhood<EmptyNeighborhood<SelectableSM>>();
     using SelectableRunner = decltype(selectable_runner);
     using SelectableSolver = solvers::LocalSearch<SelectableRunner>;

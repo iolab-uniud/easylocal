@@ -29,20 +29,25 @@ class SolutionManager
 public:
     using input_type = Instance;
     using solution_type = Solution;
-    using cost_type = easylocal::cost::hierarchical<int, int>;
 
     explicit SolutionManager(const Instance& instance) : instance_{instance} {}
 
     [[nodiscard]] auto input() const noexcept -> const Instance& { return instance_; }
     [[nodiscard]] auto is_valid(const Solution&) const noexcept -> bool { return true; }
     [[nodiscard]] auto initial_solution() const -> Solution { return {5, 9}; }
-    [[nodiscard]] auto evaluate(const Solution& solution) const -> cost_type
+private:
+    const Instance& instance_;
+};
+
+// A single component with a structured value: the implicit identity aggregator
+// makes its hierarchical value the cost.
+struct HierarchicalValue
+{
+    [[nodiscard]] static auto evaluate(const Solution& solution)
+        -> easylocal::cost::hierarchical<int, int>
     {
         return easylocal::cost::hierarchical{solution.hard, solution.soft};
     }
-
-private:
-    const Instance& instance_;
 };
 
 struct Move
@@ -182,7 +187,7 @@ int main()
 {
     using namespace easylocal;
 
-    const auto sm = make_solution_manager<SolutionManager>();
+    const auto sm = make_solution_manager<SolutionManager>() | component<HierarchicalValue>();
     const auto nhe = make_neighborhood_explorer<Neighborhood>();
 
     auto first_runner = Runner{HardStage{}} | sm | nhe;

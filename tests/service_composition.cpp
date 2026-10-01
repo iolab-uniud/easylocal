@@ -480,9 +480,30 @@ int main()
         .destination = 1,
     };
 
-    auto implicit_aggregate_recipe =
+    // A single component: its value is the cost (identity), with no warning
+    // and no weights to configure.
+    auto single_component_recipe =
         solution_manager<NoAggregateSolutionManager>()
         | component<AssignmentCardinalityComponent>();
+    static_assert(decltype(single_component_recipe)::has_implicit_aggregator);
+    static_assert(!easylocal::config::configuration_provider<
+                  decltype(single_component_recipe)>);
+    const auto single_component_previous_sink = easylocal::logging::set_sink(
+        &capture_implicit_aggregator_warning);
+    const auto single_component_manager =
+        single_component_recipe.construct(instance);
+    (void)easylocal::logging::set_sink(single_component_previous_sink);
+    ok &= expect(
+        single_component_manager.evaluate(initial) == 3 &&
+            implicit_aggregator_warning_count == 0,
+        "a single component is aggregated implicitly by identity, silently");
+
+    // Several arithmetic components: an implicit unit-weight weighted sum with
+    // configurable weights and a warning.
+    auto implicit_aggregate_recipe =
+        solution_manager<NoAggregateSolutionManager>()
+        | component<AssignmentCardinalityComponent>()
+        | component<ColocatedCardinalityComponent>();
     static_assert(decltype(implicit_aggregate_recipe)::has_implicit_aggregator);
 
     const auto implicit_aggregation_configuration = easylocal::config::root(
@@ -491,7 +512,7 @@ int main()
     constexpr std::array implicit_aggregation_override{
         easylocal::config::text_override{
             "solver.cost.weights",
-            "[4]"},
+            "[4, 2]"},
     };
     const auto implicit_aggregation_override_result =
         easylocal::config::apply_overrides(
@@ -510,8 +531,8 @@ int main()
     (void)easylocal::logging::set_sink(previous_log_sink);
 
     ok &= expect(
-        implicit_aggregate_manager.evaluate(initial) == 12 &&
-            second_implicit_aggregate_manager.evaluate(initial) == 12,
+        implicit_aggregate_manager.evaluate(initial) == 18 &&
+            second_implicit_aggregate_manager.evaluate(initial) == 18,
         "an inferable implicit weighted-sum aggregator uses configurable weights");
     ok &= expect(
         implicit_aggregator_warning_count == 1,

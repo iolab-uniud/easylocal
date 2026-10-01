@@ -74,18 +74,11 @@ class BrokenEqualitySolutionManager
 {
 public:
     using solution_manager_base::solution_manager_base;
-    using cost_type = int;
 
     [[nodiscard]] static auto is_valid(const BrokenEqualitySolution&) noexcept
         -> bool
     {
         return true;
-    }
-
-    [[nodiscard]] static auto evaluate(const BrokenEqualitySolution& solution) noexcept
-        -> cost_type
-    {
-        return solution.value;
     }
 
     [[nodiscard]] static auto initial_solution() noexcept -> BrokenEqualitySolution

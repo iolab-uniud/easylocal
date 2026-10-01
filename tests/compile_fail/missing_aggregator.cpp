@@ -20,8 +20,22 @@ struct NonAggregatableComponent
     }
 };
 
+struct SecondNonAggregatableComponent
+{
+    explicit SecondNonAggregatableComponent(const compile_fail_fixture::Instance&) noexcept {}
+
+    [[nodiscard]]
+    auto evaluate(const compile_fail_fixture::Solution& solution) const noexcept
+        -> NonAggregatableValue
+    {
+        return {solution.value};
+    }
+};
+
 } // namespace
 
+// Several components with domain values: no implicit aggregator exists (a
+// single component would be aggregated by identity).
 int main()
 {
     using namespace compile_fail_fixture;
@@ -32,5 +46,6 @@ int main()
     [[maybe_unused]] auto runner =
         Runner{Algorithm{}}
         | (solution_manager<BaseSolutionManager>()
-           | component<NonAggregatableComponent>());
+           | component<NonAggregatableComponent>()
+           | component<SecondNonAggregatableComponent>());
 }

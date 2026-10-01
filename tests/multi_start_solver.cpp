@@ -41,15 +41,10 @@ class MaximizingSM
 public:
     using input_type = Instance;
     using solution_type = Solution;
-    using cost_type = MaximizingCost;
 
     explicit MaximizingSM(const Instance& instance) : instance_{instance} {}
     auto input() const -> const Instance& { return instance_; }
     static auto is_valid(const Solution&) -> bool { return true; }
-    static auto evaluate(const Solution& solution) -> cost_type
-    {
-        return MaximizingCost{solution.value};
-    }
     template<class RNG>
     auto random_solution(RNG& rng) const -> Solution
     {
@@ -58,6 +53,14 @@ public:
 
 private:
     const Instance& instance_;
+};
+
+struct MaximizingComponent
+{
+    static auto evaluate(const Solution& solution) -> MaximizingCost
+    {
+        return MaximizingCost{solution.value};
+    }
 };
 
 template<class SM>
@@ -106,7 +109,7 @@ int main()
     bool ok = true;
 
     auto runner = Runner{IdentityAlgorithm{}}
-        | solution_manager<MaximizingSM>()
+        | (solution_manager<MaximizingSM>() | component<MaximizingComponent>())
         | neighborhood<EmptyNeighborhood<MaximizingSM>>();
     using RunnerType = decltype(runner);
     using Solver = solvers::MultiStart<RunnerType>;

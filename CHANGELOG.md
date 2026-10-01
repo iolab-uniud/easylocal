@@ -48,6 +48,16 @@ commits since the previous release and are reviewed manually before tagging.
 - EasyLocal's own targets build with strict warnings, as errors in the presets
   and CI.
 - Add `docs/tutorial.md`, a step-by-step guide from a quick start to tooling.
+- **Breaking:** the cost always comes from cost components. A SolutionManager
+  only defines solution semantics (its `evaluate()` is no longer used), a
+  recipe without components is rejected, and the `Runner::with_solution_manager<SM>(...)`
+  / `app(...).solution_manager<SM>(...)` overloads for bare SolutionManagers
+  are removed. `evaluable_solution_manager` becomes an internal concept.
+- **Breaking:** the implicit aggregator is used only when unambiguous: identity
+  for a single component (any value type, no warning), a unit-weight
+  `weighted_sum` with a warning for several arithmetic components; several
+  domain values require an explicit aggregator. TSP uses the explicit
+  `TourLengthCost` and `TourLengthValue` no longer defines `operator*`.
 - **Breaking:** search algorithms define a single `run(Run&, solution, ...)`
   against the framework-owned `easylocal::search_run`, which owns counters,
   evaluation budget, cancellation, progress reporting and core trace events.

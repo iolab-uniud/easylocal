@@ -26,7 +26,6 @@ class MinimalSolutionManager
 public:
     using input_type = Instance;
     using solution_type = Solution;
-    using cost_type = int;
 
     explicit MinimalSolutionManager(const Instance& instance) noexcept
         : instance_{instance}
@@ -44,13 +43,6 @@ public:
     {
         return true;
     }
-
-    [[nodiscard]]
-    static auto evaluate(const Solution& solution) noexcept -> int
-    {
-        return solution.value;
-    }
-
 
 private:
     const Instance& instance_;

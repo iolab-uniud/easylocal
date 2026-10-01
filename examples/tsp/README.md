@@ -16,10 +16,9 @@ single random 2-opt proposal and is not part of deterministic neighborhood
 authoring.
 
 `TourLengthComponent` returns the structured materialized value
-`TourLengthValue{total}`. The runner deliberately omits an explicit aggregator:
-EasyLocal infers the configurable unit-weight `weighted_sum` default, which maps
-the component value to the algorithm-facing scalar `double` cost and emits the
-standard runtime warning. This intentionally exercises a partially ordered
+`TourLengthValue{total}`. Because it is a domain value, the recipes attach the
+explicit `TourLengthCost` aggregator, which maps it to the algorithm-facing
+scalar `double` cost. This intentionally exercises a partially ordered
 floating-point `cost_type` without introducing an epsilon or approximate-
 comparison policy into the framework.
 

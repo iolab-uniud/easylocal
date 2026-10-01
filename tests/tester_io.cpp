@@ -24,16 +24,19 @@ class IoSolutionManager
 {
 public:
     using easylocal::solution_manager_base<Input, Solution>::solution_manager_base;
-    using cost_type = int;
 
     [[nodiscard]]
     static auto is_valid(const Solution&) noexcept -> bool
     {
         return true;
     }
+};
 
+struct IoValue
+{
+    template<class Solution>
     [[nodiscard]]
-    static auto evaluate(const Solution& solution) noexcept -> cost_type
+    static auto evaluate(const Solution& solution) noexcept -> int
     {
         return solution.value;
     }
@@ -71,7 +74,9 @@ auto make_io_application(const char* name)
     using neighborhood_type = IoNeighborhood<solution_manager_type>;
 
     auto application = easylocal::app(name)
-        .template solution_manager<solution_manager_type>()
+        .solution_manager(
+            easylocal::solution_manager<solution_manager_type>()
+            | easylocal::component<IoValue>())
         .template neighborhood<neighborhood_type>()
         .template runner<easylocal::runners::FirstImprovement>("fi");
 

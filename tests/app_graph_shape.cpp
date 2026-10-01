@@ -12,7 +12,9 @@ using namespace easylocal::mwe::assignment;
 
 template<class Builder>
 concept can_add_assignment_solution_manager = requires(Builder builder) {
-    std::move(builder).template solution_manager<AssignmentSolutionManager>();
+    std::move(builder).solution_manager(
+        easylocal::solution_manager<AssignmentSolutionManager>()
+        | easylocal::component<LoadImbalanceCostComponent>());
 };
 
 template<class Builder>
@@ -23,10 +25,14 @@ concept can_add_reassign_neighborhood = requires(Builder builder) {
 using EmptyApp = decltype(easylocal::app("shape"));
 using AppWithSolutionManager = decltype(
     easylocal::app("shape")
-        .solution_manager<AssignmentSolutionManager>());
+        .solution_manager(
+            easylocal::solution_manager<AssignmentSolutionManager>()
+            | easylocal::component<LoadImbalanceCostComponent>()));
 using CompleteGraphApp = decltype(
     easylocal::app("shape")
-        .solution_manager<AssignmentSolutionManager>()
+        .solution_manager(
+            easylocal::solution_manager<AssignmentSolutionManager>()
+            | easylocal::component<LoadImbalanceCostComponent>())
         .neighborhood<ReassignJobNeighborhoodExplorer>()
         .runner<easylocal::runners::FirstImprovement>("fi"));
 

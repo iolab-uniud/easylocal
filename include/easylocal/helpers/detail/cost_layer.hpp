@@ -25,6 +25,22 @@
 namespace easylocal::detail
 {
 
+// The composed SolutionManager (cost layer): solution semantics plus the
+// cost. User SolutionManagers only model base_solution_manager.
+template<class SM>
+concept evaluable_solution_manager =
+    easylocal::base_solution_manager<SM> &&
+    requires(
+        const SM& solution_manager,
+        const typename SM::solution_type& solution)
+    {
+        typename SM::cost_type;
+
+        {
+            solution_manager.evaluate(solution)
+        } -> std::same_as<typename SM::cost_type>;
+    };
+
 template<class Component, class... StoredArgs>
 class component_spec
 {
@@ -176,45 +192,62 @@ struct no_implicit_aggregator
 {
 };
 
-template<class... Values>
-using implicit_unit_weight_t = std::common_type_t<
-    decltype(int{1} * std::declval<const Values&>())...>;
+// The aggregator used when a recipe does not attach one explicitly:
+// - a single component: its value is the cost (identity), silently;
+// - several arithmetic components: a unit-weight weighted_sum, with a warning
+//   because the weights are a guess (they stay configurable as cost.weights);
+// - otherwise none: an explicit aggregator is required, so domain value types
+//   never need to support weighting just to be aggregated.
+struct identity_aggregator
+{
+    template<class Value>
+    [[nodiscard]]
+    constexpr auto operator()(const Value& value) const -> Value
+    {
+        return value;
+    }
+};
 
-template<class Weight, class... Values>
-using implicit_weighted_sum_result_t = decltype(
-    (... + (std::declval<Weight>() * std::declval<const Values&>())));
-
-template<class Tuple, class = void>
-struct implicit_weighted_sum_traits
+template<class Tuple>
+struct implicit_aggregator_traits
 {
     static constexpr bool available = false;
+    static constexpr bool warns = false;
     using type = no_implicit_aggregator;
 };
 
-template<class... Values>
-struct implicit_weighted_sum_traits<
-    std::tuple<Values...>,
-    std::void_t<
-        implicit_unit_weight_t<Values...>,
-        implicit_weighted_sum_result_t<
-            implicit_unit_weight_t<Values...>,
-            Values...>>>
+template<class Value>
+struct implicit_aggregator_traits<std::tuple<Value>>
 {
-    static constexpr bool available = sizeof...(Values) > 0;
-    using weight_type = implicit_unit_weight_t<Values...>;
-    using type = cost::weighted_sum<weight_type, sizeof...(Values)>;
+    static constexpr bool available = true;
+    static constexpr bool warns = false;
+    using type = identity_aggregator;
+
+    [[nodiscard]]
+    static constexpr auto make() -> type
+    {
+        return {};
+    }
+};
+
+template<class First, class Second, class... Rest>
+    requires cost::arithmetic<First> && cost::arithmetic<Second> &&
+             (cost::arithmetic<Rest> && ...)
+struct implicit_aggregator_traits<std::tuple<First, Second, Rest...>>
+{
+    static constexpr bool available = true;
+    static constexpr bool warns = true;
+    using weight_type = std::common_type_t<First, Second, Rest...>;
+    using type = cost::weighted_sum<weight_type, 2 + sizeof...(Rest)>;
 
     [[nodiscard]]
     static constexpr auto make() -> type
     {
         return []<std::size_t... Indices>(std::index_sequence<Indices...>) {
             return type{((void)Indices, weight_type{1})...};
-        }(std::make_index_sequence<sizeof...(Values)>{});
+        }(std::make_index_sequence<2 + sizeof...(Rest)>{});
     }
 };
-
-template<class Tuple>
-using implicit_aggregator_traits = implicit_weighted_sum_traits<Tuple>;
 
 template<class Aggregator>
 void warn_implicit_aggregator()
@@ -225,9 +258,10 @@ void warn_implicit_aggregator()
         logging::emit(
             logging::level::warning,
             "cost.aggregation",
-            "no cost aggregator was specified; using an implicit unit-weight "
-            "weighted_sum. Override cost.weights or add `| aggregator(...)` / "
-            "`.with_aggregator(...)` to make the aggregation explicit.",
+            "no cost aggregator was specified for several cost components; "
+            "using an implicit unit-weight weighted_sum. Override cost.weights "
+            "or add `| aggregator(...)` / `.with_aggregator(...)` to make the "
+            "aggregation explicit.",
             logging::origin::framework);
     }
 }

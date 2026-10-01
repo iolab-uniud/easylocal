@@ -209,7 +209,7 @@ private:
 template<class SMSpec, class NHESpec, class... Registrations>
     requires is_solution_manager_spec_v<SMSpec> &&
              is_neighborhood_spec_v<NHESpec> &&
-             easylocal::evaluable_solution_manager<service_t<SMSpec>> &&
+             detail::evaluable_solution_manager<service_t<SMSpec>> &&
              easylocal::neighborhood_explorer_for<
                  service_t<NHESpec>,
                  service_t<SMSpec>>
@@ -409,21 +409,13 @@ public:
     auto solution_manager(Spec&& spec) &&
     {
         using spec_type = std::remove_cvref_t<Spec>;
+        static_assert(validate_solution_manager_spec<spec_type>());
         return app_builder<spec_type, NHESpec, Registrations...>{
             std::move(name_),
             std::forward<Spec>(spec),
             std::move(neighborhood_spec_),
             std::move(registrations_),
         };
-    }
-
-    template<class SM, class... Args>
-        requires std::same_as<SMSpec, unconfigured_t>
-    [[nodiscard]]
-    auto solution_manager(Args&&... args) &&
-    {
-        return std::move(*this).solution_manager(
-            easylocal::solution_manager<SM>(std::forward<Args>(args)...));
     }
 
     template<class Spec>

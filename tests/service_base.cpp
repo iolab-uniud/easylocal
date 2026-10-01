@@ -29,18 +29,11 @@ class SolutionManager
 {
 public:
     using solution_manager_base::solution_manager_base;
-    using cost_type = int;
 
     [[nodiscard]]
     static auto is_valid(const Solution&) noexcept -> bool
     {
         return true;
-    }
-
-    [[nodiscard]]
-    static auto evaluate(const Solution& solution) noexcept -> cost_type
-    {
-        return solution.value;
     }
 
     [[nodiscard]]
@@ -87,8 +80,8 @@ static_assert(std::same_as<NeighborhoodExplorer::solution_type, Solution>);
 static_assert(std::same_as<NeighborhoodExplorer::move_type, Move>);
 static_assert(!std::is_polymorphic_v<SolutionManager>);
 static_assert(!std::is_polymorphic_v<NeighborhoodExplorer>);
-static_assert(easylocal::evaluable_solution_manager<SolutionManager>);
-static_assert(easylocal::detail::runner_neighborhood_explorer<
+static_assert(easylocal::base_solution_manager<SolutionManager>);
+static_assert(easylocal::neighborhood_explorer_for<
               NeighborhoodExplorer,
               SolutionManager>);
 

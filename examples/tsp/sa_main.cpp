@@ -137,15 +137,13 @@ int main(int argc, char* argv[])
         // Equivalent factory spelling:
         // auto runner = make_runner<SimulatedAnnealing<FixedLength>>(
         //     FixedLength{temperature_parameters}) | ...;
-        // No aggregator is needed here: with a single weightable cost
-        // component EasyLocal materializes the configurable unit-weight
-        // weighted_sum default and emits a runtime warning. The explicit
-        // spelling remains available:
-        //   | aggregator(cost::weighted_sum{distance_type{1}})
+        // TourLengthValue is a domain value: TourLengthCost maps it to the
+        // scalar cost explicitly.
         auto runner =
             Runner{SimulatedAnnealing{FixedLength{temperature_parameters}}}
             | (solution_manager<TspSolutionManager>()
-               | component<TourLengthComponent>())
+               | component<TourLengthComponent>()
+               | easylocal::aggregator(TourLengthCost{}))
             | (neighborhood_union(
                    neighborhood<TwoOptNeighborhoodExplorer>()
                        | delta<
