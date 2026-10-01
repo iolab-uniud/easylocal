@@ -161,8 +161,9 @@ void first_improvement_parameters_live_with_the_search_method()
 
     FirstImprovementParameters parameters{.max_evaluations = 100};
     assert(parameters.validate());
-    parameters.max_evaluations = 0;
-    assert(!parameters.validate());
+    parameters.max_evaluations = 0; // no budget: until a local optimum
+    assert(parameters.validate());
+    assert(FirstImprovementParameters{}.max_evaluations == 0);
 }
 
 void neighborhood_union_parameter_block_describes_bias_array()

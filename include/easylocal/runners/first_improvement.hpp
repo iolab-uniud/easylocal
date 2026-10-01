@@ -14,7 +14,9 @@ namespace easylocal::runners
 
 struct FirstImprovementParameters
 {
-    std::size_t max_evaluations;
+    // Evaluation budget, including the initial evaluation; 0 means no budget:
+    // the search runs until a local optimum.
+    std::size_t max_evaluations{0};
 
     [[nodiscard]]
     static consteval auto parameter_schema()
@@ -23,18 +25,13 @@ struct FirstImprovementParameters
             config::field<
                 "max_evaluations",
                 &FirstImprovementParameters::max_evaluations>(
-                    "Maximum number of solution evaluations"));
+                    "Maximum number of solution evaluations "
+                    "(0: until a local optimum)"));
     }
 
     [[nodiscard]]
     constexpr auto validate() const noexcept -> config::validation_result
     {
-        if (max_evaluations == 0)
-        {
-            return config::validation_result::failure(
-                "max_evaluations must be positive");
-        }
-
         return config::validation_result::success();
     }
 };
@@ -89,7 +86,10 @@ public:
     [[nodiscard]]
     auto run(Run& run, typename Run::solution_type solution) const
     {
-        run.limit_evaluations(parameters_.max_evaluations);
+        if (parameters_.max_evaluations != 0)
+        {
+            run.limit_evaluations(parameters_.max_evaluations);
+        }
         auto current = run.start(solution);
 
         while (true)

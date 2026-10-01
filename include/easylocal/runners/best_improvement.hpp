@@ -1,9 +1,9 @@
 #pragma once
 
+#include <easylocal/config/tree.hpp>
 #include <easylocal/runners/detail/context_concepts.hpp>
 #include <easylocal/runners/search_run.hpp>
 
-#include <cassert>
 #include <cstddef>
 #include <optional>
 #include <utility>
@@ -13,7 +13,26 @@ namespace easylocal::runners
 
 struct BestImprovementParameters
 {
-    std::size_t max_evaluations;
+    // Evaluation budget, including the initial evaluation; 0 means no budget:
+    // the search runs until a local optimum.
+    std::size_t max_evaluations{0};
+
+    [[nodiscard]]
+    static consteval auto parameter_schema()
+    {
+        return config::fields(
+            config::field<
+                "max_evaluations",
+                &BestImprovementParameters::max_evaluations>(
+                    "Maximum number of solution evaluations "
+                    "(0: until a local optimum)"));
+    }
+
+    [[nodiscard]]
+    constexpr auto validate() const noexcept -> config::validation_result
+    {
+        return config::validation_result::success();
+    }
 };
 
 class BestImprovement
@@ -25,7 +44,38 @@ public:
         const BestImprovementParameters parameters) noexcept
         : parameters_{parameters}
     {
-        assert(parameters_.max_evaluations >= 1);
+    }
+
+    [[nodiscard]]
+    auto parameters() const noexcept -> const BestImprovementParameters&
+    {
+        return parameters_;
+    }
+
+    [[nodiscard]]
+    auto configure(BestImprovementParameters parameters) noexcept
+        -> config::validation_result
+    {
+        const auto validation = parameters.validate();
+        if (!validation)
+        {
+            return validation;
+        }
+
+        parameters_ = parameters;
+        return config::validation_result::success();
+    }
+
+    [[nodiscard]]
+    auto configuration() noexcept
+    {
+        return config::endpoint<"search">(*this);
+    }
+
+    [[nodiscard]]
+    auto configuration() const noexcept
+    {
+        return config::endpoint<"search">(*this);
     }
 
     template<class Run>
@@ -34,7 +84,10 @@ public:
     [[nodiscard]]
     auto run(Run& run, typename Run::solution_type solution) const
     {
-        run.limit_evaluations(parameters_.max_evaluations);
+        if (parameters_.max_evaluations != 0)
+        {
+            run.limit_evaluations(parameters_.max_evaluations);
+        }
         auto current = run.start(solution);
 
         while (true)

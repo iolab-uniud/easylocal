@@ -546,5 +546,24 @@ int main()
         "best improvement recognizes an empty neighborhood as locally optimal");
 
 
+    const auto unbounded = run_with_budget(0, initial);
+    ok &= expect(
+        unbounded.termination == easylocal::termination_reason::local_optimum &&
+            unbounded.cost == complete.cost &&
+            unbounded.evaluations == complete.evaluations,
+        "first improvement without a budget runs to a local optimum");
+
+    const auto best_unbounded = run_best_with_budget(0, initial);
+    ok &= expect(
+        best_unbounded.termination == easylocal::termination_reason::local_optimum &&
+            best_unbounded.cost == best_complete.cost,
+        "best improvement without a budget runs to a local optimum");
+
+    BestImprovement configurable{{}};
+    ok &= expect(
+        configurable.configure({.max_evaluations = 5}) &&
+            configurable.parameters().max_evaluations == 5,
+        "best improvement parameters are configurable like first improvement");
+
     return ok ? 0 : 1;
 }
