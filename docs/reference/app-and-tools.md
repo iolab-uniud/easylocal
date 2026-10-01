@@ -43,7 +43,8 @@ several names.
 | `rest::blueprint(prefix, app, codec, options)` | Crow blueprint: asynchronous runs, status, cancellation, solutions (REST component); see [REST](../rest.md) |
 
 Tools give stochastic runners an RNG they own, from a configurable seed:
-`Tester{app, seed}` (and `set_seed`, `rng()`), the TextUI `seed` option, and
+`Tester{app, seed}` (and `set_seed`, `rng()`), the TextUI `seed` option (also
+editable on its Run page), and
 REST's per-run `seed` (default `blueprint_options::seed + run id`).
 `run_at_with_rng<Index>(input, solution, rng, options...)` passes the RNG to
 the algorithm only if it takes one, so deterministic runners ignore it.

@@ -65,7 +65,7 @@ ignore it. The seed is configurable everywhere:
 | Tool | Seed |
 | --- | --- |
 | `Tester` | `Tester{app, seed}`, `set_seed(seed)`, `rng()` |
-| TextUI | the `seed` option |
+| TextUI | the `seed` option, changeable on the Run page |
 | REST | the `seed` of a run request, or `blueprint_options::seed + run id` |
 
 Your own code does the same with

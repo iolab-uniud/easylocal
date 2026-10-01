@@ -56,7 +56,8 @@ commits since the previous release and are reviewed manually before tagging.
   (`check`, Tester checks), the TextUI and a REST service; their programs are
   built with the optional components, and the REST one is exercised over HTTP.
 - Tools give stochastic runners an RNG they own, from a configurable seed:
-  `Tester{app, seed}` / `set_seed`, the TextUI `seed` option, and REST's per-run
+  `Tester{app, seed}` / `set_seed`, the TextUI `seed` option (also editable on
+  its Run page), and REST's per-run
   `seed` (default `blueprint_options::seed + run id`, reported in run status).
   `app.run_at_with_rng<Index>(input, solution, rng, options...)` passes the RNG
   only to algorithms that take one. Simulated Annealing is registrable in apps

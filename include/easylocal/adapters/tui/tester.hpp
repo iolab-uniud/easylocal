@@ -23,6 +23,7 @@
 #include <ostream>
 #include <random>
 #include <sstream>
+#include <charconv>
 #include <string>
 #include <string_view>
 #include <thread>
@@ -600,6 +601,8 @@ public:
     tester_frontend(tester_type& tester, tester_options options)
         : tester_{tester},
           options_{std::move(options)},
+          seed_{options_.seed},
+          seed_text_{std::to_string(options_.seed)},
           rng_{options_.seed}
     {
         if (!options_.input_path.empty())
@@ -633,6 +636,7 @@ public:
 
         Component input_path_component;
         Component solution_path_component;
+        Component seed_input_component;
 
         const auto section_label = [](std::string label) {
             return Renderer([label = std::move(label)] {
@@ -838,6 +842,20 @@ public:
                 return text("No runner registered");
             }));
         }
+        // The seed restarts the RNG used for random solutions, random moves
+        // and stochastic runners.
+        run_controls->Add(section_label("Random seed"));
+        auto seed_input_option = InputOption::Default();
+        seed_input_option.multiline = false;
+        seed_input_option.on_enter = [this] { apply_seed(); };
+        seed_input_component = Input(&seed_text_, "seed", seed_input_option);
+        run_controls->Add(Container::Horizontal({
+            seed_input_component,
+            Button(
+                "Apply seed",
+                [this] { apply_seed(); },
+                ButtonOption::Ascii()),
+        }));
 
         auto solution_page = Renderer(solution_controls, [this, solution_controls] {
             return render_solution_page(solution_controls);
@@ -1061,7 +1079,7 @@ public:
         root = Modal(root, solution_viewer, &solution_visible_);
         root = CatchEvent(
             root,
-            [this, &app, input_path_component, solution_path_component](Event event) {
+            [this, &app, input_path_component, solution_path_component, seed_input_component](Event event) {
                 if (event == Event::Custom && run_future_.valid())
                 {
                     refresh_runner_progress();
@@ -1090,7 +1108,8 @@ public:
 
                 const bool editing_path =
                     (input_path_component && input_path_component->Focused()) ||
-                    (solution_path_component && solution_path_component->Focused());
+                    (solution_path_component && solution_path_component->Focused()) ||
+                    (seed_input_component && seed_input_component->Focused());
 
                 if (event == Event::F1)
                 {
@@ -2106,6 +2125,29 @@ private:
         }
     }
 
+    void apply_seed()
+    {
+        std::uint64_t seed{};
+        const auto* first = seed_text_.data();
+        const auto* last = first + seed_text_.size();
+        const auto [end, error] = std::from_chars(first, last, seed);
+        if (error != std::errc{} || end != last)
+        {
+            set_status(
+                status_kind::error,
+                "Seed must be a non-negative integer: " + seed_text_);
+            seed_text_ = std::to_string(seed_);
+            return;
+        }
+
+        seed_ = seed;
+        rng_.seed(seed);
+        set_status(
+            status_kind::info,
+            "Seed set to " + std::to_string(seed) +
+                "; random solutions, moves and runs restart from it");
+    }
+
     void stop_runner()
     {
         if (!run_future_.valid() || !run_worker_.joinable())
@@ -2483,7 +2525,7 @@ private:
         using namespace ftxui;
 
         const auto title = options_.title + "  |  " + current_instance_name() +
-                           "  [seed=" + std::to_string(options_.seed) + "]";
+                           "  [seed=" + std::to_string(seed_) + "]";
         const auto cost = "COST " + current_cost_text();
         const auto header = ftxui::Terminal::Size().dimx < 80
             ? vbox({paragraph(title) | bold, text(cost) | bold})
@@ -2801,6 +2843,8 @@ private:
 
     tester_type& tester_;
     tester_options options_;
+    std::uint64_t seed_{};
+    std::string seed_text_;
     typename tester_type::rng_type rng_;
 
     std::string input_path_;

@@ -110,9 +110,11 @@ The same hooks serve the headless `Tester` (`load_input`, `load_solution`,
 
 ## Options
 
-`tui::tester_options` sets the `title`, the `seed` of the RNG used for random
-solutions, random moves and stochastic runners, and the initial `input_path` and
-`solution_path`. `tui::run_launcher(options, apps...)` starts a launcher that
+`tui::tester_options` sets the `title`, the initial `seed` of the RNG used for
+random solutions, random moves and stochastic runners, and the initial
+`input_path` and `solution_path`. The seed can also be changed on the Run page
+("Random seed", then Enter or *Apply seed*): the RNG restarts from it, and the
+header shows the current seed. `tui::run_launcher(options, apps...)` starts a launcher that
 lets the user choose among several apps.
 
 ## See also
