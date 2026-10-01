@@ -75,7 +75,11 @@ foreach(_easylocal_component IN LISTS EasyLocal_FIND_COMPONENTS)
                     NO_DEFAULT_PATH
                 )
             else()
-                find_dependency(Crow 1.3 CONFIG)
+                # Crow 1.3 packages ship no version file (see CMakeLists.txt).
+                find_package(Crow 1.3 CONFIG QUIET)
+                if(NOT Crow_FOUND)
+                    find_dependency(Crow CONFIG)
+                endif()
             endif()
 
             include("${CMAKE_CURRENT_LIST_DIR}/EasyLocalRESTTargets.cmake")

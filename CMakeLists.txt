@@ -262,6 +262,14 @@ if(EASYLOCAL_ENABLE_REST)
     set(EASYLOCAL_REST_BUNDLED FALSE)
     set(EASYLOCAL_REST_ASIO_BUNDLED FALSE)
     find_package(Crow 1.3 CONFIG QUIET)
+    if(NOT Crow_FOUND)
+        # Crow 1.3 packages (Homebrew, a plain `cmake --install`) ship no
+        # CrowConfigVersion.cmake, so a versioned request rejects them.
+        find_package(Crow CONFIG QUIET)
+        if(Crow_FOUND)
+            message(STATUS "EasyLocal REST: Crow found without version information; assuming >= 1.3")
+        endif()
+    endif()
 
     if(NOT Crow_FOUND)
         if(EASYLOCAL_FETCH_DEPENDENCIES)

@@ -45,6 +45,7 @@ jobs:
       - name: Configure with forced FetchContent
         run: |
           build_dir="build/optional-fetch"
+          mkdir -p build
           cmake -S . -B "$build_dir" -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_CXX_COMPILER="$CXX" \
@@ -117,6 +118,7 @@ jobs:
       - name: Configure without FetchContent
         run: |
           build_dir="build/system-config-toml"
+          mkdir -p build
           cmake -S . -B "$build_dir" -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_CXX_COMPILER="$CXX" \
@@ -188,6 +190,7 @@ jobs:
       - name: Configure without FetchContent
         run: |
           build_dir="build/system-optional"
+          mkdir -p build
           prefix_path="$(brew --prefix tomlplusplus);$(brew --prefix ftxui);$(brew --prefix crow);$(brew --prefix asio)"
           cmake -S . -B "$build_dir" -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
