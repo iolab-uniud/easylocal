@@ -1,0 +1,88 @@
+# Tutorial
+
+This tutorial builds a local search solver for the symmetric Travelling
+Salesperson Problem (TSP), one capability per chapter. Each chapter builds on
+the previous one and ends with links to the [reference](../reference/README.md)
+pages that describe the components in full.
+
+If you have not done so yet, start with the [quick start](../quick-start.md):
+it is the complete program of the first chapters, in one file.
+
+## The running example
+
+A TSP instance gives the distance between every pair of cities; a solution is
+a tour visiting every city once; the cost is the tour length. The example
+instance has five cities:
+
+<!-- snippet: tutorial/tsp.hpp:instance -->
+```cpp
+[[nodiscard]] inline auto five_cities() -> Tsp
+{
+    return Tsp{
+        .cities = 5,
+        .distance = {
+            0, 2, 9, 10, 7,
+            2, 0, 6, 4, 3,
+            9, 6, 0, 8, 5,
+            10, 4, 8, 0, 6,
+            7, 3, 5, 6, 0,
+        },
+    };
+}
+```
+
+Its optimal tour has length 26.
+
+All the code of the tutorial lives in `examples/tutorial/`: `tsp.hpp` holds the
+problem components, `main.cpp` the searches and `checks.cpp` the component
+tests. They are built and run with the test suite, and every snippet marked
+`<!-- snippet: ... -->` in these pages is checked against them
+(`scripts/sync-doc-snippets.py`), so the code you read here is the code that
+runs.
+
+## The workflow
+
+Every EasyLocal program follows the same three steps:
+
+```text
+model     values      Input (immutable), Solution, Move
+          services    SolutionManager       valid solutions, construction
+                      cost components       one term of the objective each
+                      aggregator            the cost from the component values
+                      NeighborhoodExplorer  moves: enumeration, sampling, application
+                      delta evaluators      the change of a component under a move
+
+compose   a runner    an algorithm plus the recipes of the services
+                      (and, optionally, a solver or an app around it)
+
+run       bind the runner to an Input, run it from a solution, read the result
+```
+
+The SolutionManager with its cost components and aggregator forms the *cost
+layer*; the NeighborhoodExplorer with its delta evaluators forms the *delta
+cost layer*. You describe these compositions with recipes, and the framework
+materializes them when the runner is bound to an Input.
+
+Components are specified incrementally: you write only what the algorithms and
+tools you use need, and the compiler tells you when a capability is missing.
+Services borrow the Input by `const&` and never mutate it.
+
+## Chapters
+
+1. [Modelling the problem](01-problem-model.md): Input, Solution, Move and the
+   SolutionManager.
+2. [The cost](02-cost.md): cost components, aggregation, structured costs.
+3. [Moves](03-neighborhood.md): the NeighborhoodExplorer.
+4. [Delta evaluation](04-delta-evaluation.md): evaluating moves incrementally.
+5. [Running a search](05-running-a-search.md): runners, built-in algorithms,
+   results.
+6. [Combining neighborhoods](06-combining-neighborhoods.md): `neighborhood_union`.
+7. [Writing your own runner](07-custom-runner.md): `search_run`.
+8. [Solvers](08-solvers.md): from an Input to a final solution.
+9. [Configuration](09-configuration.md): parameters from the command line and
+   files.
+10. [Testing your components](10-testing.md): contract checks.
+11. [Applications and tools](11-apps-and-tools.md): app, Tester, TextUI, REST.
+12. [Observing and controlling a run](12-observing-and-controlling.md):
+    progress, cancellation, tracing.
+13. [Coming from EasyLocal 3](13-from-easylocal-3.md).

@@ -857,6 +857,15 @@ if(TARGET easylocal_quickstart)
         PROPERTIES PASS_REGULAR_EXPRESSION "length 26 after 9 evaluations")
 endif()
 
+# The documentation's snippets must match the examples they are taken from.
+find_package(Python3 COMPONENTS Interpreter QUIET)
+if(Python3_Interpreter_FOUND)
+    add_test(
+        NAME easylocal.docs.snippets
+        COMMAND Python3::Interpreter
+            ${PROJECT_SOURCE_DIR}/scripts/sync-doc-snippets.py --check)
+endif()
+
 if(TARGET easylocal_tutorial)
     add_test(NAME easylocal.example.tutorial COMMAND easylocal_tutorial)
     set_tests_properties(

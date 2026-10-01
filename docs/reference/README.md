@@ -1,0 +1,45 @@
+# Reference
+
+One page per component: its contract (what is required, what is optional and
+who uses it), its API, and the design choices behind it. The
+[tutorial](../tutorial/README.md) introduces the same components by example.
+
+| Page | Header(s) | Namespace |
+| --- | --- | --- |
+| [Problem model](problem-model.md) | — | your code |
+| [SolutionManager](solution-manager.md) | `helpers/solution_manager.hpp` | `easylocal` |
+| [Cost](cost.md) | `cost.hpp`, `helpers/recipes.hpp` | `easylocal::cost`, `easylocal` |
+| [NeighborhoodExplorer](neighborhood-explorer.md) | `helpers/neighborhood_explorer.hpp`, `helpers/neighborhood_union.hpp` | `easylocal` |
+| [Runners](runners.md) | `runners.hpp`, `runners/*.hpp` | `easylocal`, `easylocal::runners` |
+| [Solvers](solvers.md) | `solvers.hpp`, `solvers/*.hpp` | `easylocal::solvers`, `easylocal::initialization` |
+| [Configuration](configuration.md) | `config/*.hpp`, `adapters/toml.hpp` | `easylocal::config` |
+| [Testing](testing.md) | `testing.hpp` | `easylocal::testing` |
+| [Apps and tools](app-and-tools.md) | `app/*.hpp`, `adapters/tui.hpp`, `adapters/rest.hpp` | `easylocal`, `easylocal::tui`, `easylocal::rest` |
+
+Topic guides: [tracing](../tracing.md), [logging](../logging.md),
+[REST](../rest.md), [dependency policy](../dependency-policy.md).
+
+## Header layout
+
+```text
+easylocal/
+  easylocal.hpp   Core umbrella (everything except adapters/ and testing.hpp)
+  utils/          logging; internal type-level utilities
+  config/         typed parameters, configuration tree, CLI/file frontends
+  trace/          semantic search events, tracer protocol, recorders
+  cost/           cost models
+  helpers/        SolutionManager, NeighborhoodExplorer, neighborhood_union, recipes
+  runners/        Runner, search_run, run_control, search algorithms
+  solvers/        solvers
+  testing/        component contract checks
+  app/            app, check, Tester
+  adapters/       optional components: toml.hpp, tui/, rest/
+```
+
+A directory includes only directories listed above it (`utils/`, `config/` and
+`trace/` share the lowest layer; `testing/` sits beside `runners/`); the
+architecture test enforces it. `detail/` subdirectories are implementation
+headers. Catalogs of interchangeable implementations have a namespace
+(`runners`, `solvers`, `cost`, `trace`, `config`, `testing`); the vocabulary
+used everywhere (`Runner`, `make_runner`, `solution_manager`, `component`,
+`neighborhood`, `delta`, `app`, ...) is in `easylocal`.

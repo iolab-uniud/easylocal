@@ -16,8 +16,10 @@ and the public API evolving incrementally from the contracts they expose.
 > Annealing are in place. Domain models remain example-local while additional
 > search/metaheuristic contracts are stabilized incrementally.
 
-New to the library? Start with the step-by-step
-[tutorial](docs/tutorial.md): a quick start followed by one capability per step.
+New to the library? Start with the [quick start](docs/quick-start.md), then
+follow the [tutorial](docs/tutorial/README.md), which builds a TSP solver one
+chapter at a time. The [reference](docs/reference/README.md) describes the
+contract, API and design choices of each component.
 
 ## Requirements
 

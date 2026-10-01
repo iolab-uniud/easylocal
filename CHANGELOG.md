@@ -47,7 +47,14 @@ commits since the previous release and are reviewed manually before tagging.
 - `<easylocal/testing.hpp>` aggregates the component contract checks.
 - EasyLocal's own targets build with strict warnings, as errors in the presets
   and CI.
-- Add `docs/tutorial.md`, a step-by-step guide from a quick start to tooling.
+- Documentation: `docs/quick-start.md`, a chapter-per-page tutorial in
+  `docs/tutorial/` with a running TSP example, and per-component reference pages
+  (contract, API, design choices) in `docs/reference/`. The quick start and the
+  tutorial example are built and run as tests, and
+  `scripts/sync-doc-snippets.py --check` keeps the snippets in the pages
+  identical to them.
+- Every Simulated Annealing temperature policy (`Classic`, `FixedLength`,
+  `Cutoff`, `Hybrid`) is configurable.
 - **Breaking:** the cost always comes from cost components. A SolutionManager
   only defines solution semantics (its `evaluate()` is no longer used), a
   recipe without components is rejected, and the `Runner::with_solution_manager<SM>(...)`
