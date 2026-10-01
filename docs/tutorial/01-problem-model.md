@@ -9,7 +9,7 @@ A problem is described by three plain value types and a SolutionManager.
 struct Tsp
 {
     std::size_t cities{};
-    std::vector<double> distance; // cities x cities, row-major
+    std::vector<double> distance{}; // cities x cities, row-major
 
     [[nodiscard]] auto d(std::size_t from, std::size_t to) const -> double
     {

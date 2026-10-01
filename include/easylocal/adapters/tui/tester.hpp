@@ -47,10 +47,10 @@ struct tester_options
 {
     std::string title{"EasyLocal Tester"};
     std::uint64_t seed{};
-    std::string input_path;
-    std::string solution_path;
+    std::string input_path{};
+    std::string solution_path{};
     path_display_mode path_display{path_display_mode::relative};
-    std::filesystem::path path_base;
+    std::filesystem::path path_base{};
     std::size_t max_render_chars{4096};
     std::size_t random_distribution_rounds{20};
     std::size_t max_diagnostic_entries{256};
@@ -133,8 +133,8 @@ struct progress_snapshot
 {
     progress_mode mode{progress_mode::unavailable};
     std::size_t current{};
-    std::optional<std::size_t> total;
-    std::string label;
+    std::optional<std::size_t> total{};
+    std::string label{};
 };
 
 [[nodiscard]] inline auto progress_ratio(const progress_snapshot& progress) noexcept

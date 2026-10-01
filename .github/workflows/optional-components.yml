@@ -154,7 +154,7 @@ jobs:
 
   macos-system:
     name: macOS ARM64 / all optional components / system dependencies
-    runs-on: macos-15
+    runs-on: macos-26
     timeout-minutes: 45
     env:
       HOMEBREW_NO_AUTO_UPDATE: '1'
@@ -177,6 +177,11 @@ jobs:
           brew list --versions ftxui >/dev/null 2>&1 || brew install ftxui
           brew list --versions crow >/dev/null 2>&1 || brew install crow
           brew list --versions asio >/dev/null 2>&1 || brew install asio
+          # The newest installed Xcode: EasyLocal needs a libc++ with
+          # std::stop_token and floating-point std::from_chars.
+          xcode="$(ls -d /Applications/Xcode*.app | sort -V | tail -1)"
+          sudo xcode-select --switch "$xcode/Contents/Developer"
+          xcodebuild -version
           echo "SDKROOT=$(xcrun --sdk macosx --show-sdk-path)" >> "$GITHUB_ENV"
           echo "CXX=$(xcrun --find clang++)" >> "$GITHUB_ENV"
 

@@ -130,7 +130,7 @@ jobs:
 
   macos:
     name: macOS ARM64 / ${{ matrix.toolchain }} / neighborhood benchmark
-    runs-on: macos-15
+    runs-on: macos-26
     timeout-minutes: 20
     strategy:
       fail-fast: false
@@ -155,6 +155,11 @@ jobs:
           command -v cmake >/dev/null || brew install cmake
           command -v ninja >/dev/null || brew install ninja
           command -v python3 >/dev/null
+          # The newest installed Xcode: EasyLocal needs a libc++ with
+          # std::stop_token and floating-point std::from_chars.
+          xcode="$(ls -d /Applications/Xcode*.app | sort -V | tail -1)"
+          sudo xcode-select --switch "$xcode/Contents/Developer"
+          xcodebuild -version
           echo "SDKROOT=$(xcrun --sdk macosx --show-sdk-path)" >> "$GITHUB_ENV"
           echo 'CXXFLAGS=' >> "$GITHUB_ENV"
           case "$TOOLCHAIN" in
