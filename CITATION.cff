@@ -8,6 +8,7 @@ abstract: >-
   EasyLocal++.
 type: software
 version: 4.0.0
+license: MIT
 repository-code: "https://github.com/iolab-uniud/easylocal"
 keywords:
   - local search

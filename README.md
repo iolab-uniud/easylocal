@@ -3,6 +3,7 @@
 [![CI](https://github.com/iolab-uniud/easylocal/actions/workflows/ci.yml/badge.svg)](https://github.com/iolab-uniud/easylocal/actions/workflows/ci.yml)
 [![Optional Components](https://github.com/iolab-uniud/easylocal/actions/workflows/optional-components.yml/badge.svg)](https://github.com/iolab-uniud/easylocal/actions/workflows/optional-components.yml)
 [![Trace Microbenchmarks](https://github.com/iolab-uniud/easylocal/actions/workflows/trace-microbenchmarks.yml/badge.svg)](https://github.com/iolab-uniud/easylocal/actions/workflows/trace-microbenchmarks.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 EasyLocal is a **C++23 header-only framework** for local search and
 metaheuristics. Version 4 is a complete redesign of EasyLocal++, the
@@ -704,9 +705,17 @@ information for GitHub's "Cite this repository".
 }
 ```
 
+## License
+
+EasyLocal is released under the [MIT License](LICENSE), as EasyLocal++ was.
+The optional components use permissively licensed dependencies: toml++ and
+FTXUI (MIT), Crow (BSD-3-Clause) and Asio (Boost Software License 1.0).
+
 ## Legacy reference
 
 The legacy reference is Bitbucket `satt/easylocal-3`, branch `no_output`,
 reviewed at commit `b40b14c2db2bdc81574a0613c52674644f8a0101`.
 
-The unfinished GitHub redesign is **not** the architectural baseline.
+The unfinished redesign in
+[iolab-uniud/easylocal-legacy](https://github.com/iolab-uniud/easylocal-legacy)
+is **not** the architectural baseline.

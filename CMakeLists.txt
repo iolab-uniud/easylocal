@@ -12,6 +12,7 @@ project(
     EasyLocal
     VERSION "${EASYLOCAL_VERSION}"
     DESCRIPTION "A modern header-only C++ framework for local search"
+    HOMEPAGE_URL "https://github.com/iolab-uniud/easylocal"
     LANGUAGES CXX
 )
 
@@ -369,6 +370,11 @@ install(
 )
 
 install(
+    FILES LICENSE
+    DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/doc/easylocal"
+)
+
+install(
     DIRECTORY include/
     DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
     # Optional adapters are installed by their own components below.
@@ -502,3 +508,18 @@ install(
         "${CMAKE_CURRENT_BINARY_DIR}/EasyLocalConfigVersion.cmake"
     DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/EasyLocal"
 )
+
+# ── Python bindings (opt-in) ─────────────────────────────────────────────────
+# Enable with:  cmake -DEASYLOCAL_BUILD_PYTHON=ON ..
+# The nanobind module is built and installed alongside the C++ headers.
+# Requires nanobind to be installed (pip/uv install nanobind, or via vcpkg/conan).
+option(
+    EASYLOCAL_BUILD_PYTHON
+    "Build the EasyLocal nanobind Python extension (requires nanobind)"
+    OFF
+)
+
+if(EASYLOCAL_BUILD_PYTHON)
+    find_package(nanobind CONFIG REQUIRED)
+    add_subdirectory(python)
+endif()
