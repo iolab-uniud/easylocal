@@ -112,7 +112,6 @@ template<class Test>
     using component_type = typename Test::component;
     using input_type = typename solution_manager_type::input_type;
     using solution_type = typename solution_manager_type::solution_type;
-    using move_type = typename neighborhood_type::move_type;
 
     static_assert(
         easylocal::neighborhood_explorer_for<

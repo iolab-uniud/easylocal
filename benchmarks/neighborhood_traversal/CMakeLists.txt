@@ -1,3 +1,5 @@
+easylocal_enable_strict_warnings()
+
 add_executable(
     easylocal_neighborhood_traversal_benchmark
     traversal_benchmark.cpp

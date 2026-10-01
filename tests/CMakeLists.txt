@@ -1,3 +1,5 @@
+easylocal_enable_strict_warnings()
+
 # Compile every installed header in its own translation unit.  Keeping the
 # probes generated from the include tree makes self-containment coverage follow
 # the public surface automatically instead of relying on one hand-written test

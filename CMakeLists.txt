@@ -73,6 +73,37 @@ option(
 )
 
 option(
+    EASYLOCAL_STRICT_WARNINGS
+    "Compile EasyLocal's own tests, examples and benchmarks with strict warnings"
+    ${PROJECT_IS_TOP_LEVEL}
+)
+
+option(
+    EASYLOCAL_WARNINGS_AS_ERRORS
+    "Treat warnings in EasyLocal's own tests, examples and benchmarks as errors"
+    OFF
+)
+
+# Strict warnings apply only to EasyLocal's own targets in the calling
+# directory; consumers of the header-only library are never affected.
+function(easylocal_enable_strict_warnings)
+    if(NOT EASYLOCAL_STRICT_WARNINGS)
+        return()
+    endif()
+    if(MSVC)
+        add_compile_options(/W4 /permissive-)
+        if(EASYLOCAL_WARNINGS_AS_ERRORS)
+            add_compile_options(/WX)
+        endif()
+    else()
+        add_compile_options(-Wall -Wextra -Wpedantic)
+        if(EASYLOCAL_WARNINGS_AS_ERRORS)
+            add_compile_options(-Werror)
+        endif()
+    endif()
+endfunction()
+
+option(
     EASYLOCAL_FETCH_DEPENDENCIES
     "Allow optional EasyLocal adapters to fetch missing third-party dependencies"
     OFF

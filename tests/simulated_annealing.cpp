@@ -44,10 +44,12 @@ struct CountingEngine
         return 0xffffffffU;
     }
 
+    // A varying value: a constant max() makes libstdc++'s generate_canonical
+    // (GCC 16, P0952) reject and redraw forever.
     auto operator()() noexcept -> result_type
     {
         ++calls;
-        return max();
+        return static_cast<result_type>(calls * 0x9e3779b9U);
     }
 };
 

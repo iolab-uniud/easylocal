@@ -17,7 +17,7 @@ struct MaximizingCost
 {
     std::uint64_t value{};
 
-    friend constexpr auto operator==(
+    [[maybe_unused]] friend constexpr auto operator==(
         const MaximizingCost&,
         const MaximizingCost&) -> bool = default;
 
@@ -28,7 +28,7 @@ struct MaximizingCost
         return lhs.value > rhs.value;
     }
 
-    friend constexpr auto operator<=(
+    [[maybe_unused]] friend constexpr auto operator<=(
         const MaximizingCost lhs,
         const MaximizingCost rhs) noexcept -> bool
     {

@@ -1,7 +1,6 @@
 #include <easylocal/cost.hpp>
 #include <easylocal/runners/runner.hpp>
 #include <easylocal/helpers/solution_manager.hpp>
-#include <easylocal/helpers/neighborhood_explorer.hpp>
 
 struct Instance {};
 struct Solution { int value{}; };

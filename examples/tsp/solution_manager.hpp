@@ -5,7 +5,6 @@
 #include "tour_length_component.hpp"
 
 #include <easylocal/helpers/solution_manager.hpp>
-#include <easylocal/helpers/neighborhood_explorer.hpp>
 
 #include <algorithm>
 #include <cstddef>

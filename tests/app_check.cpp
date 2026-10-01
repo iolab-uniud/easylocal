@@ -55,7 +55,7 @@ struct BrokenEqualitySolution
 {
     int value{};
 
-    friend auto operator==(
+    [[maybe_unused]] friend auto operator==(
         const BrokenEqualitySolution&,
         const BrokenEqualitySolution&) noexcept -> bool
     {

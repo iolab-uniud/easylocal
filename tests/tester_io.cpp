@@ -100,7 +100,7 @@ struct Input
     }
 };
 
-inline auto operator>>(std::istream& in, Input& input) -> std::istream&
+[[maybe_unused]] inline auto operator>>(std::istream& in, Input& input) -> std::istream&
 {
     in >> input.value;
     input.source = 3;
@@ -136,14 +136,14 @@ struct Solution
     }
 };
 
-inline auto operator>>(std::istream& in, Solution& solution) -> std::istream&
+[[maybe_unused]] inline auto operator>>(std::istream& in, Solution& solution) -> std::istream&
 {
     in >> solution.value;
     solution.source = 3;
     return in;
 }
 
-inline auto operator<<(std::ostream& out, const Solution& solution) -> std::ostream&
+[[maybe_unused]] inline auto operator<<(std::ostream& out, const Solution& solution) -> std::ostream&
 {
     out << "stream:" << solution.value;
     return out;
@@ -169,7 +169,7 @@ inline auto read_input(std::type_identity<Input>, std::istream& in) -> Input
     return input;
 }
 
-inline auto operator>>(std::istream& in, Input& input) -> std::istream&
+[[maybe_unused]] inline auto operator>>(std::istream& in, Input& input) -> std::istream&
 {
     in >> input.value;
     input.source = 3;
@@ -206,14 +206,14 @@ inline void write_solution(
     out << "adl:" << input.value << ':' << solution.value;
 }
 
-inline auto operator>>(std::istream& in, Solution& solution) -> std::istream&
+[[maybe_unused]] inline auto operator>>(std::istream& in, Solution& solution) -> std::istream&
 {
     in >> solution.value;
     solution.source = 3;
     return in;
 }
 
-inline auto operator<<(std::ostream& out, const Solution& solution) -> std::ostream&
+[[maybe_unused]] inline auto operator<<(std::ostream& out, const Solution& solution) -> std::ostream&
 {
     out << "stream:" << solution.value;
     return out;

@@ -19,7 +19,7 @@ struct member_described
     }
 };
 
-inline auto operator<<(std::ostream& out, const member_described&) -> std::ostream&
+[[maybe_unused]] inline auto operator<<(std::ostream& out, const member_described&) -> std::ostream&
 {
     return out << "stream";
 }
@@ -35,7 +35,7 @@ struct value
     return "adl";
 }
 
-inline auto operator<<(std::ostream& out, const value&) -> std::ostream&
+[[maybe_unused]] inline auto operator<<(std::ostream& out, const value&) -> std::ostream&
 {
     return out << "stream";
 }

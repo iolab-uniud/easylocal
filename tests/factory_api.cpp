@@ -84,7 +84,7 @@ struct MoveDelta
     int value{};
 };
 
-[[nodiscard]] constexpr auto operator+(const int value, const MoveDelta delta) noexcept -> int
+[[maybe_unused]] [[nodiscard]] constexpr auto operator+(const int value, const MoveDelta delta) noexcept -> int
 {
     return value + delta.value;
 }
