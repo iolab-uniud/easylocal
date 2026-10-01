@@ -65,6 +65,20 @@ ctest --preset release --output-on-failure
 Build products and reports are kept under `build/<preset>/` and are ignored by
 Git.
 
+The Python scripts under `scripts/` (documentation snippets, TUI screenshots,
+benchmark summaries) run in a [uv](https://docs.astral.sh/uv/) environment
+described by `pyproject.toml` and `uv.lock`:
+
+```sh
+brew install uv
+uv sync                                       # creates .venv
+uv run scripts/sync-doc-snippets.py           # refresh the docs' code snippets
+uv run scripts/tui-snapshots.py build/<preset>/examples/tutorial/easylocal_tutorial_tui
+```
+
+Scripts that only use the standard library also run with a plain `python3`,
+which is how the test suite runs the snippet check.
+
 ## Header-only library
 
 EasyLocal++ is designed from the beginning as a header-only library.

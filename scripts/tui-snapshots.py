@@ -5,11 +5,11 @@ Drives the tutorial's interactive tester (examples/tutorial/tui_main.cpp) in a
 pseudo-terminal with a fixed size and a fixed key sequence, reconstructs each
 screen with a VT100 emulator and writes it as an SVG image.
 
-Requirements: a build with the TUI component, and the `pyte` package
-(`pip install pyte`), used only by this script.
+Requirements: a build with the TUI component, and the `pyte` package, provided
+by the uv environment of the repository (pyproject.toml):
 
-    scripts/tui-snapshots.py build/<preset>/examples/tutorial/easylocal_tutorial_tui
-    scripts/tui-snapshots.py <binary> --text     # print the screens instead
+    uv run scripts/tui-snapshots.py build/<preset>/examples/tutorial/easylocal_tutorial_tui
+    uv run scripts/tui-snapshots.py <binary> --text     # print the screens instead
 """
 
 import fcntl

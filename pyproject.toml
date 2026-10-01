@@ -1,0 +1,17 @@
+# Python tooling for the scripts/ directory, managed with uv:
+#
+#     uv sync                                  # create .venv from uv.lock
+#     uv run scripts/tui-snapshots.py <tui>    # run a script in that environment
+#
+# The library itself is C++ and does not depend on any of this.
+[project]
+name = "easylocal-scripts"
+version = "0.0.0"
+description = "Development scripts of EasyLocal (docs snippets, TUI screenshots, benchmark summaries)"
+requires-python = ">=3.10"
+dependencies = [
+    "pyte>=0.8",
+]
+
+[tool.uv]
+package = false

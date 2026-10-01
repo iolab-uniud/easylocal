@@ -10,6 +10,8 @@ examples/tutorial/tsp.hpp (dedented, nested marker lines removed); without a
 ":section" suffix it is the whole file. Running the script rewrites those blocks
 from the sources; with --check it only reports blocks that differ and exits
 with status 1, which is how the test suite uses it.
+
+Standard library only: `uv run scripts/sync-doc-snippets.py` or `python3`.
 """
 
 import pathlib

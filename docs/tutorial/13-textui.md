@@ -54,7 +54,7 @@ be stopped with `X`; here Simulated Annealing improves the tour from 29 to 26:
 ![The Run page after a Simulated Annealing run](images/tui-run.svg)
 
 The screenshots are generated from the real program by
-`scripts/tui-snapshots.py`, which drives it in a pseudo-terminal.
+`uv run scripts/tui-snapshots.py`, which drives it in a pseudo-terminal.
 
 ## Loading, saving and displaying
 

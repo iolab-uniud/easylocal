@@ -85,3 +85,6 @@ __pycache__/
 !.local/migration-el3.md
 !.local/versioning-release.md
 prompt.txt
+
+# Python environment of the scripts (uv).
+/.venv/
