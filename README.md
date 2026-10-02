@@ -705,6 +705,11 @@ information for GitHub's "Cite this repository".
 }
 ```
 
+## Authors
+
+EasyLocal is developed at the University of Udine by Sara Ceschia, Francesca
+Da Ros, Luca Di Gaspero and Andrea Schaerf.
+
 ## License
 
 EasyLocal is released under the [MIT License](LICENSE), as EasyLocal++ was.
