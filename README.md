@@ -1,4 +1,9 @@
-# EasyLocal
+<h1>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/branding/easylocal-logo-dark.svg">
+    <img alt="EasyLocal" src="docs/assets/branding/easylocal-logo.svg" height="64">
+  </picture>
+</h1>
 
 [![CI](https://github.com/iolab-uniud/easylocal/actions/workflows/ci.yml/badge.svg)](https://github.com/iolab-uniud/easylocal/actions/workflows/ci.yml)
 [![Optional Components](https://github.com/iolab-uniud/easylocal/actions/workflows/optional-components.yml/badge.svg)](https://github.com/iolab-uniud/easylocal/actions/workflows/optional-components.yml)

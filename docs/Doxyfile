@@ -6,6 +6,8 @@
 # Only the public API is documented: detail namespaces and headers are left out.
 PROJECT_NAME           = EasyLocal
 PROJECT_BRIEF          = "A C++23 header-only framework for local search and metaheuristics"
+PROJECT_LOGO           = docs/assets/branding/easylocal-symbol.svg
+PROJECT_ICON           = docs/assets/branding/favicon.svg
 OUTPUT_DIRECTORY       = build/site-api
 INPUT                  = include/easylocal
 RECURSIVE              = YES

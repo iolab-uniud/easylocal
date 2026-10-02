@@ -1,4 +1,9 @@
-# EasyLocal
+---
+title: EasyLocal
+---
+
+![EasyLocal](assets/branding/easylocal-logo.svg#only-light){ width="360" }
+![EasyLocal](assets/branding/easylocal-logo-dark.svg#only-dark){ width="360" }
 
 EasyLocal is a **C++23 header-only framework** for local search and
 metaheuristics. Version 4 is a complete redesign of EasyLocal++, the

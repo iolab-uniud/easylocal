@@ -17,9 +17,13 @@ docs_dir: docs
 site_dir: build/site
 exclude_docs: |
   Doxyfile
+  assets/branding/README.md
+  assets/branding/generate.py
 
 theme:
   name: material
+  logo: assets/branding/easylocal-symbol-dark.svg
+  favicon: assets/branding/favicon.svg
   features:
     - navigation.tabs
     - navigation.sections
