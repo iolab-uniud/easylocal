@@ -11,12 +11,20 @@ if(NOT DEFINED EXPECTED_DIAGNOSTIC)
     message(FATAL_ERROR "EXPECTED_DIAGNOSTIC is required")
 endif()
 
+# Syntax-only C++23 compilation, spelled for the compiler's command-line
+# frontend: GNU (g++, clang++) or MSVC (cl, clang-cl).
+if(FRONTEND STREQUAL "MSVC" AND CXX_ID STREQUAL "Clang")
+    set(flags /clang:-std=c++23 /Zs /EHsc "/I${INCLUDE_DIR}")
+elseif(FRONTEND STREQUAL "MSVC")
+    set(flags /std:c++latest /permissive- /Zs /EHsc "/I${INCLUDE_DIR}")
+else()
+    set(flags -std=c++23 -fsyntax-only "-I${INCLUDE_DIR}")
+endif()
+
 execute_process(
     COMMAND
         "${CXX}"
-        -std=c++23
-        -fsyntax-only
-        "-I${INCLUDE_DIR}"
+        ${flags}
         "${SOURCE}"
     RESULT_VARIABLE result
     OUTPUT_VARIABLE stdout

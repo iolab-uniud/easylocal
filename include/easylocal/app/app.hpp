@@ -2,6 +2,7 @@
 
 #include <easylocal/runners/runner.hpp>
 #include <easylocal/solvers.hpp>
+#include <easylocal/utils/detail/attributes.hpp>
 
 #include <cassert>
 #include <concepts>
@@ -740,8 +741,8 @@ public:
 
 private:
     std::string name_;
-    [[no_unique_address]] SMSpec solution_manager_spec_{};
-    [[no_unique_address]] NHESpec neighborhood_spec_{};
+    EASYLOCAL_NO_UNIQUE_ADDRESS SMSpec solution_manager_spec_{};
+    EASYLOCAL_NO_UNIQUE_ADDRESS NHESpec neighborhood_spec_{};
     std::tuple<Registrations...> registrations_{};
 };
 

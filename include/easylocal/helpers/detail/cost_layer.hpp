@@ -4,6 +4,7 @@
 #include <easylocal/cost.hpp>
 #include <easylocal/helpers/detail/cost_expression.hpp>
 #include <easylocal/helpers/solution_manager.hpp>
+#include <easylocal/utils/detail/attributes.hpp>
 #include <easylocal/utils/detail/meta.hpp>
 
 #include <concepts>
@@ -274,7 +275,7 @@ public:
 
 private:
     InnerSM inner_;
-    [[no_unique_address]] Expression expression_;
+    EASYLOCAL_NO_UNIQUE_ADDRESS Expression expression_;
 };
 template<class SM>
 concept hierarchical_solution_manager =

@@ -2,6 +2,7 @@
 
 #include <easylocal/config/tree.hpp>
 #include <easylocal/helpers/neighborhood_explorer.hpp>
+#include <easylocal/utils/detail/attributes.hpp>
 #include <easylocal/utils/detail/meta.hpp>
 
 #include <concepts>
@@ -57,7 +58,7 @@ public:
     }
 
 private:
-    [[no_unique_address]] DeltaEvaluator evaluator_;
+    EASYLOCAL_NO_UNIQUE_ADDRESS DeltaEvaluator evaluator_;
 };
 
 template<class Component, class DeltaEvaluator, class... StoredArgs>
@@ -193,7 +194,7 @@ public:
     }
 
 private:
-    [[no_unique_address]] delta_bindings_type delta_bindings_;
+    EASYLOCAL_NO_UNIQUE_ADDRESS delta_bindings_type delta_bindings_;
 };
 
 template<class BaseNHE, class... DeltaSpecs>

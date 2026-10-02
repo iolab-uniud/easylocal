@@ -2,6 +2,7 @@
 
 #include <easylocal/config/tree.hpp>
 #include <easylocal/cost.hpp>
+#include <easylocal/utils/detail/attributes.hpp>
 
 #include <array>
 #include <concepts>
@@ -223,7 +224,7 @@ public:
     }
 
 private:
-    [[no_unique_address]] spec_type spec_;
+    EASYLOCAL_NO_UNIQUE_ADDRESS spec_type spec_;
 };
 
 template<class Term>
@@ -419,7 +420,7 @@ private:
     }
 
     parameters_type parameters_;
-    [[no_unique_address]] children_type children_;
+    EASYLOCAL_NO_UNIQUE_ADDRESS children_type children_;
 };
 
 // Positional children of in_order and apply.
@@ -485,7 +486,7 @@ private:
     static constexpr auto offsets =
         child_offsets<cost_node<Children, Solution>...>;
 
-    [[no_unique_address]] children_type children_;
+    EASYLOCAL_NO_UNIQUE_ADDRESS children_type children_;
 };
 
 // Lexicographic: the children's costs, compared in order.
@@ -539,7 +540,7 @@ public:
     }
 
 private:
-    [[no_unique_address]] children_type children_;
+    EASYLOCAL_NO_UNIQUE_ADDRESS children_type children_;
 };
 
 // Hierarchical: the hard branch has strict priority. Its components are the
@@ -621,8 +622,8 @@ private:
             node_configuration<"soft">(self.soft_)));
     }
 
-    [[no_unique_address]] hard_node hard_;
-    [[no_unique_address]] soft_node soft_;
+    EASYLOCAL_NO_UNIQUE_ADDRESS hard_node hard_;
+    EASYLOCAL_NO_UNIQUE_ADDRESS soft_node soft_;
 };
 
 // User function over the children's costs. At the root, it may also define
@@ -738,8 +739,8 @@ private:
             self.children_.configurations()));
     }
 
-    [[no_unique_address]] Function function_;
-    [[no_unique_address]] children_type children_;
+    EASYLOCAL_NO_UNIQUE_ADDRESS Function function_;
+    EASYLOCAL_NO_UNIQUE_ADDRESS children_type children_;
 };
 
 } // namespace easylocal::detail

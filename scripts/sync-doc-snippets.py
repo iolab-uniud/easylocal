@@ -34,7 +34,7 @@ SNIPPET = re.compile(
 
 def extract(ref: str) -> str:
     path, _, section = ref.partition(":")
-    lines = (EXAMPLES / path).read_text().split("\n")
+    lines = (EXAMPLES / path).read_text(encoding="utf-8").split("\n")
     if not section:
         return "\n".join(lines).rstrip("\n")
     marks = [i for i, line in enumerate(lines)
@@ -49,14 +49,14 @@ def main() -> int:
     check = "--check" in sys.argv[1:]
     stale = []
     for page in sorted(DOCS.rglob("*.md")):
-        text = page.read_text()
+        text = page.read_text(encoding="utf-8")
         synced = SNIPPET.sub(
             lambda m: m.group(1) + extract(m.group("ref")) + "\n" + m.group("close"),
             text)
         if synced != text:
             stale.append(page.relative_to(ROOT))
             if not check:
-                page.write_text(synced)
+                page.write_text(synced, encoding="utf-8")
     if check and stale:
         for page in stale:
             print(f"{page}: snippets differ from examples/; run scripts/sync-doc-snippets.py")

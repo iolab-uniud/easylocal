@@ -244,6 +244,75 @@ jobs:
             build/ci23-release/CMakeFiles/CMakeConfigureLog.yaml
             build/ci23-release/Testing/Temporary/LastTest.log
 
+  windows:
+    name: Windows / clang-cl / C++23
+    runs-on: windows-2025
+    timeout-minutes: 30
+    env:
+      PRESET: ci23-release
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Provision clang-cl and the MSVC environment
+        shell: pwsh
+        run: |
+          # The newest LLVM (clang-cl) and Ninja; the Microsoft STL, Windows
+          # SDK and linker come from the Visual Studio developer environment.
+          choco upgrade llvm ninja -y --no-progress
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          $vs = & $vswhere -latest -products * `
+            -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 `
+            -property installationPath
+          $vcvars = Join-Path $vs 'VC\Auxiliary\Build\vcvars64.bat'
+          cmd /c "`"$vcvars`" >nul && set" | ForEach-Object {
+            if ($_ -match '^([^=]+)=(.*)$') {
+              "$($Matches[1])=$($Matches[2])" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
+            }
+          }
+          "CXX=C:/Program Files/LLVM/bin/clang-cl.exe" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
+          "CXXFLAGS=" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
+
+      - name: Environment
+        run: |
+          mkdir -p "build/$PRESET"
+          {
+            uname -a
+            cmake --version
+            ninja --version
+            "$CXX" --version
+          } 2>&1 | tee "build/$PRESET/environment.log"
+
+      - name: Configure
+        run: cmake --preset "$PRESET" 2>&1 | tee "build/$PRESET/configure.log"
+
+      - name: Build
+        run: cmake --build --preset "$PRESET" --parallel 4 --verbose 2>&1 | tee "build/$PRESET/build.log"
+
+      - name: Test (fast)
+        run: ctest --preset "$PRESET" --verbose -LE integration 2>&1 | tee "build/$PRESET/ctest.log"
+
+      - name: Test integration
+        run: ctest --preset "$PRESET" --verbose -L integration 2>&1 | tee "build/$PRESET/ctest-integration.log"
+
+      - name: Upload diagnostics
+        if: ${{ always() && !env.ACT }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: windows-clang-cl-cxx23
+          retention-days: 7
+          if-no-files-found: warn
+          path: |
+            build/ci23-release/*.log
+            build/ci23-release/junit.xml
+            build/ci23-release/CMakeCache.txt
+            build/ci23-release/compile_commands.json
+            build/ci23-release/CMakeFiles/CMakeConfigureLog.yaml
+            build/ci23-release/Testing/Temporary/LastTest.log
+
   coverage:
     name: Linux / GCC 16 / Debug coverage, all optional components
     permissions:

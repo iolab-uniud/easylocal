@@ -4,6 +4,7 @@
 #include <easylocal/cost/concepts.hpp>
 #include <easylocal/runners/detail/context_concepts.hpp>
 #include <easylocal/runners/search_run.hpp>
+#include <easylocal/utils/detail/attributes.hpp>
 
 #include <algorithm>
 #include <cassert>
@@ -955,8 +956,8 @@ public:
     }
 
 private:
-    [[no_unique_address]] TemperaturePolicy temperature_policy_;
-    [[no_unique_address]] Acceptance acceptance_;
+    EASYLOCAL_NO_UNIQUE_ADDRESS TemperaturePolicy temperature_policy_;
+    EASYLOCAL_NO_UNIQUE_ADDRESS Acceptance acceptance_;
 };
 
 template<temperature_policy TemperaturePolicy>

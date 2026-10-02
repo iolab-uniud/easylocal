@@ -16,16 +16,38 @@
 namespace easylocal::config
 {
 
-template<class Descriptor, fixed_string... Nodes>
+namespace detail
+{
+
+// The names of the nodes above a parameter block. They are expanded once,
+// as values: clang-cl (Microsoft ABI) mis-substitutes a pack of fixed_strings
+// of different sizes re-expanded into another template's argument list.
+template<fixed_string... Nodes>
+struct path_prefix
+{
+    static constexpr std::array<std::string_view, sizeof...(Nodes)> names{
+        Nodes.view()...};
+};
+
+} // namespace detail
+
+// The path of a parameter: the names of the nodes above it, then its own.
+template<class Descriptor, class Prefix>
 struct parameter_path
 {
-    static constexpr std::size_t size = sizeof...(Nodes) + 1;
+    static constexpr std::size_t size = Prefix::names.size() + 1;
 
     [[nodiscard]]
     static constexpr auto segments() noexcept
         -> std::array<std::string_view, size>
     {
-        return {Nodes.view()..., Descriptor::name()};
+        std::array<std::string_view, size> result{};
+        for (std::size_t index = 0; index + 1 < size; ++index)
+        {
+            result[index] = Prefix::names[index];
+        }
+        result[size - 1] = Descriptor::name();
+        return result;
     }
 };
 
@@ -286,14 +308,13 @@ constexpr void visit_parameters(
     const parameter_node<Name, Parameters>& node,
     Function& function)
 {
+    using prefix_type = path_prefix<Prefix..., Name>;
     for_each_parameter(
         node.parameters(),
         [&function](const auto descriptor, const auto& value) {
             using descriptor_type = std::remove_cvref_t<decltype(descriptor)>;
-            using path_type = config::parameter_path<
-                descriptor_type,
-                Prefix...,
-                Name>;
+            using path_type =
+                config::parameter_path<descriptor_type, prefix_type>;
             std::invoke(function, path_type{}, descriptor, value);
         });
 }
@@ -306,14 +327,13 @@ constexpr void visit_parameters(
     const configurable_node<Name, Endpoint>& node,
     Function& function)
 {
+    using prefix_type = path_prefix<Prefix..., Name>;
     for_each_parameter(
         node.parameters(),
         [&function](const auto descriptor, const auto& value) {
             using descriptor_type = std::remove_cvref_t<decltype(descriptor)>;
-            using path_type = config::parameter_path<
-                descriptor_type,
-                Prefix...,
-                Name>;
+            using path_type =
+                config::parameter_path<descriptor_type, prefix_type>;
             std::invoke(function, path_type{}, descriptor, value);
         });
 }
@@ -342,14 +362,13 @@ constexpr void visit_parameters(
     const parameter_group_node<Name, Parameters, Children...>& node,
     Function& function)
 {
+    using prefix_type = path_prefix<Prefix..., Name>;
     for_each_parameter(
         node.parameters(),
         [&function](const auto descriptor, const auto& value) {
             using descriptor_type = std::remove_cvref_t<decltype(descriptor)>;
-            using path_type = config::parameter_path<
-                descriptor_type,
-                Prefix...,
-                Name>;
+            using path_type =
+                config::parameter_path<descriptor_type, prefix_type>;
             std::invoke(function, path_type{}, descriptor, value);
         });
 

@@ -3,6 +3,7 @@
 #include <easylocal/trace/events.hpp>
 #include <easylocal/trace/memory_recorder.hpp>
 #include <easylocal/trace/tracer.hpp>
+#include <easylocal/utils/detail/attributes.hpp>
 
 #include <concepts>
 #include <cstddef>
@@ -195,7 +196,7 @@ public:
 
 private:
     std::ostream& out_;
-    [[no_unique_address]] CostWriter cost_writer_{};
+    EASYLOCAL_NO_UNIQUE_ADDRESS CostWriter cost_writer_{};
 };
 
 template<class Cost, class CostWriter>

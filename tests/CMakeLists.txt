@@ -745,6 +745,8 @@ function(easylocal_add_compile_failure_test name source expected_diagnostic)
         COMMAND
             "${CMAKE_COMMAND}"
             "-DCXX=${CMAKE_CXX_COMPILER}"
+            "-DCXX_ID=${CMAKE_CXX_COMPILER_ID}"
+            "-DFRONTEND=${CMAKE_CXX_COMPILER_FRONTEND_VARIANT}"
             "-DSOURCE=${CMAKE_CURRENT_SOURCE_DIR}/compile_fail/${source}"
             "-DINCLUDE_DIR=${PROJECT_SOURCE_DIR}/include"
             "-DEXPECTED_DIAGNOSTIC=${expected_diagnostic}"

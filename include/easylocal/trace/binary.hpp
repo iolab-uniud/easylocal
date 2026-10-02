@@ -2,6 +2,7 @@
 
 #include <easylocal/trace/events.hpp>
 #include <easylocal/trace/tracer.hpp>
+#include <easylocal/utils/detail/attributes.hpp>
 
 #include <algorithm>
 #include <atomic>
@@ -451,7 +452,7 @@ public:
     }
 
 private:
-    [[no_unique_address]] CostWriter cost_writer_{};
+    EASYLOCAL_NO_UNIQUE_ADDRESS CostWriter cost_writer_{};
 };
 
 class async_ostream_block_sink

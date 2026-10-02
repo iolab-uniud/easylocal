@@ -358,11 +358,12 @@ void stage_parameter_block(
     bool& touched,
     bool& parse_failed)
 {
+    using prefix_type = path_prefix<Prefix...>;
     for_each_parameter(
         staged,
         [&](const auto descriptor, auto& value) {
             using descriptor_type = std::remove_cvref_t<decltype(descriptor)>;
-            using path_type = parameter_path<descriptor_type, Prefix...>;
+            using path_type = parameter_path<descriptor_type, prefix_type>;
 
             for (std::size_t index = 0; index < context.overrides.size(); ++index)
             {

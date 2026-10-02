@@ -371,9 +371,13 @@ void file_overloads_delegate_to_the_same_protocol()
     tester.load_solution(solution_path);
     tester.save_solution(output_path);
 
-    std::ifstream saved{output_path};
     std::string contents;
-    std::getline(saved, contents);
+    {
+        // Closed before the removal below, which fails on an open file on
+        // Windows.
+        std::ifstream saved{output_path};
+        std::getline(saved, contents);
+    }
     assert(contents == "stream:25");
 
     std::filesystem::remove(input_path);
