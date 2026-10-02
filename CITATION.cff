@@ -19,13 +19,17 @@ keywords:
 authors:
   - family-names: Ceschia
     given-names: Sara
+    affiliation: University of Udine
   - family-names: Da Ros
     given-names: Francesca
+    affiliation: University of Udine
   - family-names: Di Gaspero
     given-names: Luca
+    affiliation: University of Udine
     email: luca.digaspero@uniud.it
   - family-names: Schaerf
     given-names: Andrea
+    affiliation: University of Udine
     email: schaerf@uniud.it
 preferred-citation:
   type: conference-paper
