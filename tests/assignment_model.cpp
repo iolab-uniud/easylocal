@@ -35,7 +35,6 @@ auto expect(const bool condition, const std::string_view description) -> bool
 int main()
 {
     using namespace easylocal::mwe::assignment;
-    using easylocal::aggregator;
     using easylocal::component;
     using easylocal::solution_manager;
 
@@ -51,10 +50,9 @@ int main()
 
     const auto manager_recipe =
         solution_manager<AssignmentSolutionManager>()
-        | component<CapacityCostComponent>()
-        | aggregator([](const CapacityValue& capacity) {
-              return AssignmentCostAggregator{}.hard(capacity);
-          });
+        | easylocal::cost::apply(
+              easylocal::mwe::assignment::CapacityHardCost{},
+              easylocal::component<CapacityCostComponent>());
     const auto configured_solution_manager = manager_recipe.construct(instance);
 
     const AssignmentSolution initial{
@@ -93,9 +91,7 @@ int main()
     // lexicographic branch to the full hierarchical hard/soft model.
     const auto full_recipe =
         solution_manager<AssignmentSolutionManager>()
-        | component<CapacityCostComponent>()
-        | component<LoadImbalanceCostComponent>()
-        | aggregator(AssignmentCostAggregator{});
+        | easylocal::mwe::assignment::assignment_cost();
 
     const auto full_manager = full_recipe.construct(instance);
     const auto full_cost = full_manager.evaluate(initial);

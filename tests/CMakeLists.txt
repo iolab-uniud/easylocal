@@ -220,17 +220,17 @@ add_test(
 )
 
 add_executable(
-    easylocal_aggregation_test
-    aggregation.cpp
+    easylocal_cost_expression_test
+    cost_expression.cpp
 )
 target_link_libraries(
-    easylocal_aggregation_test
+    easylocal_cost_expression_test
     PRIVATE
         EasyLocal::Core
 )
 add_test(
-    NAME easylocal.aggregation
-    COMMAND easylocal_aggregation_test
+    NAME easylocal.cost_expression
+    COMMAND easylocal_cost_expression_test
 )
 
 add_executable(
@@ -780,14 +780,26 @@ easylocal_add_compile_failure_test(
 easylocal_add_compile_failure_test(
     componentless-solution-manager
     componentless_solution_manager.cpp
-    "a SolutionManager recipe needs at least one cost component"
+    "a SolutionManager recipe needs a cost"
     "BaseSolutionManager"
 )
 easylocal_add_compile_failure_test(
-    missing-aggregator
-    missing_aggregator.cpp
-    "these cost components require an explicit aggregator"
-    "NonAggregatableComponent"
+    several-cost-expressions
+    several_cost_expressions.cpp
+    "a SolutionManager recipe has one cost expression"
+    "ComponentB"
+)
+easylocal_add_compile_failure_test(
+    sum-of-domain-values
+    sum_of_domain_values.cpp
+    "cost::sum adds arithmetic costs"
+    "DomainComponent"
+)
+easylocal_add_compile_failure_test(
+    weighted-outside-sum
+    weighted_outside_sum.cpp
+    "cost::weighted(child, weight) weighs a term of cost::sum"
+    "ComponentA"
 )
 easylocal_add_compile_failure_test(
     duplicate-neighborhood-union-child

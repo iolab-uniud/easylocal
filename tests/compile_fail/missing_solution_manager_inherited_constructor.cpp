@@ -26,7 +26,6 @@ int main()
     const Instance instance{};
     const auto recipe =
         easylocal::solution_manager<BrokenSolutionManager>()
-        | easylocal::component<Component>()
-        | easylocal::aggregator(easylocal::cost::weighted_sum{1});
+        | easylocal::component<Component>();
     (void)recipe.construct(instance);
 }

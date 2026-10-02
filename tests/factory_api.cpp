@@ -69,14 +69,6 @@ struct CostComponent
     }
 };
 
-struct CostAggregator
-{
-    [[nodiscard]] static auto operator()(const int value) noexcept -> int
-    {
-        return value;
-    }
-};
-
 struct MoveDelta
 {
     int value{};
@@ -171,12 +163,10 @@ int main()
 
     const auto sm_pipe =
         solution_manager<SolutionManager>()
-        | component<CostComponent>()
-        | aggregator(CostAggregator{});
+        | easylocal::cost::sum(component<CostComponent>());
     const auto sm_fluent =
         solution_manager<SolutionManager>()
-            .with_component<CostComponent>()
-            .with_aggregator(CostAggregator{});
+            .with_cost(easylocal::cost::sum(component<CostComponent>()));
     static_assert(std::same_as<
         std::remove_cvref_t<decltype(sm_pipe)>,
         std::remove_cvref_t<decltype(sm_fluent)>>);

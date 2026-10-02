@@ -108,41 +108,44 @@ soft cost = 1
 
 `CapacityCostComponent` performs full eager evaluation and returns a materialized
 `CapacityValue`. The problem-side `AssignmentSolutionManager` remains responsible
-for solution validity and aggregation policy, while cost components are attached to
-the runner recipe compositionally:
+for solution validity, while the cost is described in the recipe by a cost
+expression over the components:
 
 ```cpp
 auto manager =
     solution_manager<AssignmentSolutionManager>()
-    | component<CapacityCostComponent>();
+    | cost::hard_soft(
+          cost::apply(CapacityHardCost{}, component<CapacityCostComponent>()),
+          component<LoadImbalanceCostComponent>());
 ```
 
-The bound configured manager eagerly evaluates every attached component and
-passes their materialized values to the problem-side aggregation policy. The
-resulting `cost_type` remains the ordinary three-way-comparable value seen by
-search algorithms. Each component type may occur at most once in a manager
+The bound configured manager eagerly evaluates every component and computes the
+cost from their materialized values through the expression. The resulting
+`cost_type` remains the ordinary three-way-comparable value seen by search
+algorithms. Each component type may occur at most once in a manager
 recipe; semantically distinct parameterizations can use distinct wrapper or
 subclass types and therefore distinct compile-time identities.
 
 The framework cost models (`easylocal::cost`) provide:
 
-- `cost::weighted_sum`, a configurable aggregator;
 - `cost::lexicographic`, a lexicographically ordered cost;
-- `cost::hierarchical`, a hard/soft cost.
+- `cost::hierarchical`, a hard/soft cost;
+- the cost expressions `cost::sum`, `cost::in_order`, `cost::hard_soft` and
+  `cost::apply`.
 
-`AssignmentCostAggregator` maps the structured capacity value to the
-lexicographic `HardCost` through its optional `hard(...)` projection and combines
-that branch with `LoadImbalanceCostComponent` into the full `hierarchical` cost.
-The aggregator is attached explicitly to the SolutionManager recipe; the
-SolutionManager itself does not define the modern aggregation contract. The two
-branches remain independently typed and may themselves be aggregate or
-lexicographic costs. Domain-specific projection remains explicit; no projection
-DSL is introduced.
+`CapacityHardCost` maps the structured capacity value to the lexicographic
+`HardCost`; `cost::apply` applies it to the capacity component, and
+`cost::hard_soft` puts that branch above `LoadImbalanceCostComponent` in the
+full `hierarchical` cost. Because the hard branch is written in the
+expression, TwoStage evaluates only the capacity component in its first stage.
+The two branches remain independently typed and may themselves be sums or
+lexicographic costs. `assignment_cost()` in `cost.hpp` returns this expression
+for the tests.
 
 The generic cost models are part of the public framework API in
 `<easylocal/cost.hpp>` under `easylocal::cost`. The Assignment
-example supplies only the domain-specific projections from component values to
-its hard and full hierarchical costs.
+example supplies only the domain-specific mapping from the capacity value to
+its hard cost.
 
 ## Delta evaluation
 
@@ -225,9 +228,9 @@ Laziness, caching and proxy lifetime/invalidation remain postponed.
 : Hierarchical materialized value `hierarchical(HardCost, SoftCost)`.
 
 `AssignmentSolutionManager`
-: Problem-side service responsible for structural solution validation and the
-  aggregation policy. Cost-component storage/evaluation is supplied by the
-  framework from the components attached to the manager recipe.
+: Problem-side service responsible for structural solution validation.
+  Cost-component storage/evaluation is supplied by the framework from the
+  cost expression of the manager recipe.
 
 `ReassignJobNeighborhoodExplorer`
 : Problem-side service responsible for neighborhood traversal, move validity and
@@ -235,9 +238,8 @@ Laziness, caching and proxy lifetime/invalidation remain postponed.
   a particular neighborhood recipe, so the same explorer and move types can be
   reused by different runners with different incremental-evaluation sets.
 
-Generic aggregation belongs to the framework. The Assignment-specific code
-keeps only the projection from its materialized component values into the chosen
-framework aggregation policy. Component and delta attachment remain part of the
+Generic cost composition belongs to the framework. The Assignment-specific code
+keeps only the mapping from its capacity value to its hard cost. Component and delta attachment remain part of the
 public recipe composition surface.
 
 ## Neighborhood traversal
@@ -342,9 +344,9 @@ arguments:
 ```cpp
 auto manager =
     solution_manager<AssignmentSolutionManager>()
-        .with_component<CapacityCostComponent>()
-        .with_component<LoadImbalanceCostComponent>()
-        .with_aggregator(AssignmentCostAggregator{});
+        .with_cost(cost::hard_soft(
+            cost::apply(CapacityHardCost{}, component<CapacityCostComponent>()),
+            component<LoadImbalanceCostComponent>()));
 
 auto nhe =
     neighborhood<ReassignJobNeighborhoodExplorer>()
@@ -364,9 +366,9 @@ The equivalent pipeline syntax is also supported:
 auto runner =
     make_runner<runners::FirstImprovement>(params)
     | (solution_manager<AssignmentSolutionManager>()
-       | component<CapacityCostComponent>()
-       | component<LoadImbalanceCostComponent>()
-       | aggregator(AssignmentCostAggregator{}))
+       | cost::hard_soft(
+             cost::apply(CapacityHardCost{}, component<CapacityCostComponent>()),
+             component<LoadImbalanceCostComponent>()))
     | (neighborhood<ReassignJobNeighborhoodExplorer>()
        | delta<
              CapacityCostComponent,
@@ -394,7 +396,7 @@ ownership and graph consistency remain internal to the runner/solver.
 
 The current MWE deliberately does not define:
 
-- public generic cost/component/aggregation concepts;
+- public generic cost/component concepts;
 - lazy component or delta evaluation;
 - evaluation-state caching;
 - proxy lifetime/generation invalidation;

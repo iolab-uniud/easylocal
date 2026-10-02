@@ -1,8 +1,10 @@
 # Exam timetabling MWE
 
 This MWE is the reference model for the standard Simulated Annealing cost path.
-It deliberately uses three independent cost components and aggregates them into
-one arithmetic cost with `easylocal::cost::weighted_sum`:
+It deliberately uses three independent cost components, each with a plain
+`penalty_type` value, and combines them into one arithmetic cost with the cost
+expression
+`cost::sum(component<StudentConflictComponent>() * 1000, component<ConsecutiveExamComponent>() * 10, component<TimeslotLoadComponent>())`:
 
 - `StudentConflictComponent`: students with two exams in the same timeslot;
 - `ConsecutiveExamComponent`: students with exams in consecutive timeslots;
@@ -19,7 +21,7 @@ the standard `MetropolisAcceptance` path.
 ## Runnable configured SA example
 
 The executable intentionally uses the explicit `with_*` spelling of the
-composition API: `solution_manager<SM>().with_component<C>()...`,
+composition API: `solution_manager<SM>().with_cost(...)`,
 `neighborhood<NHE>().with_delta<C, D>()...` and
 `make_runner<SimulatedAnnealing<...>>(...).with_solution_manager(...).with_neighborhood(...)`.
 Assignment demonstrates the equivalent pipe spelling.

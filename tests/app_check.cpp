@@ -20,9 +20,7 @@ using namespace easylocal::mwe::assignment;
 {
     auto sm =
         easylocal::solution_manager<AssignmentSolutionManager>()
-        | easylocal::component<CapacityCostComponent>()
-        | easylocal::component<LoadImbalanceCostComponent>()
-        | easylocal::aggregator(AssignmentCostAggregator{});
+        | easylocal::mwe::assignment::assignment_cost();
 
     auto nhe =
         easylocal::neighborhood<ReassignJobNeighborhoodExplorer>()
@@ -194,10 +192,9 @@ void check_fails_on_a_broken_realized_graph()
 {
     auto sm =
         easylocal::solution_manager<AssignmentSolutionManager>()
-        | easylocal::component<CapacityCostComponent>()
-        | easylocal::aggregator([](const CapacityValue& capacity) {
-              return AssignmentCostAggregator{}.hard(capacity);
-          });
+        | easylocal::cost::apply(
+              easylocal::mwe::assignment::CapacityHardCost{},
+              easylocal::component<CapacityCostComponent>());
 
     auto application =
         easylocal::app("broken-assignment")

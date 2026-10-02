@@ -56,7 +56,7 @@ private:
     const Instance& instance_;
 };
 
-struct CostAggregator
+struct CostFunction
 {
     [[nodiscard]]
     auto operator()(const int first) const noexcept -> Cost

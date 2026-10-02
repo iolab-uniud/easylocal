@@ -38,17 +38,16 @@ int main(int argc, char* argv[])
     auto same_runner =
         el::make_runner<runners::FirstImprovement>(runners::FirstImprovementParameters{})
             .with_solution_manager(
-                el::solution_manager<TourManager>().with_component<TourLength>())
+                el::solution_manager<TourManager>().with_cost(el::component<TourLength>()))
             .with_neighborhood(
                 el::neighborhood<TwoOptExplorer>().with_delta<TourLength, TwoOptLengthDelta>());
     // [with-spelling] ------------------------------------------------------
 
-    // [aggregation] --------------------------------------------------------
+    // [cost-expression] --------------------------------------------------------
     auto weighted_sm = el::solution_manager<TourManager>()
-                     | el::component<TourLength>()
-                     | el::component<MaxEdge>()
-                     | el::aggregator(el::cost::weighted_sum{1.0, 10.0});
-    // [aggregation] --------------------------------------------------------
+                     | el::cost::sum(el::component<TourLength>(),
+                                     el::component<MaxEdge>() * 10.0);
+    // [cost-expression] --------------------------------------------------------
 
     // [annealing] ----------------------------------------------------------
     using Classic = runners::temperature::Classic;

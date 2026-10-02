@@ -14,7 +14,7 @@
 // NeighborhoodExplorer composition, the delta cost layer (symmetric to the
 // SolutionManager cost layer): the user NeighborhoodExplorer plus the delta
 // evaluator bound to each cost component (separate or co-located). Deltas are
-// per component; the move cost is always re-aggregated by the cost layer.
+// per component; the move cost is always recomputed by the cost expression.
 namespace easylocal::detail
 {
 

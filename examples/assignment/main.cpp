@@ -96,7 +96,7 @@ void print_solution(const AssignmentSolution& solution)
 int main(int argc, char* argv[])
 {
     using namespace easylocal::mwe::assignment;
-    using easylocal::aggregator;
+    namespace cost = easylocal::cost;
     using easylocal::component;
     using easylocal::delta;
     using easylocal::make_runner;
@@ -114,17 +114,17 @@ int main(int argc, char* argv[])
             .max_evaluations = 100,
         };
 
-        // Equivalent fluent spelling for the SolutionManager recipe:
-        // auto sm = solution_manager<AssignmentSolutionManager>()
-        //     .with_component<CapacityCostComponent>()
-        //     .with_component<LoadImbalanceCostComponent>()
-        //     .with_aggregator(AssignmentCostAggregator{});
+        // The cost is hierarchical: the capacity violation (lexicographic)
+        // has strict priority over the load imbalance. Equivalent fluent
+        // spelling: solution_manager<AssignmentSolutionManager>().with_cost(...).
         auto runner =
             make_runner<easylocal::runners::FirstImprovement>(search_parameters)
             | (solution_manager<AssignmentSolutionManager>()
-               | component<CapacityCostComponent>()
-               | component<LoadImbalanceCostComponent>()
-               | aggregator(AssignmentCostAggregator{}))
+               | cost::hard_soft(
+                     cost::apply(
+                         CapacityHardCost{},
+                         component<CapacityCostComponent>()),
+                     component<LoadImbalanceCostComponent>()))
             | (neighborhood<ReassignJobNeighborhoodExplorer>()
                | delta<
                      CapacityCostComponent,

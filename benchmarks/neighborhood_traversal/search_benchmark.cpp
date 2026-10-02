@@ -661,12 +661,13 @@ void benchmark_assignment(
 
     const auto manager_recipe =
         easylocal::solution_manager<assignment::AssignmentSolutionManager>()
-        | easylocal::component<assignment::CapacityCostComponent>()
-        | easylocal::aggregator([](const assignment::CapacityValue& capacity) {
-              return easylocal::cost::lexicographic{
-                  capacity.total_overload,
-                  capacity.overloaded_machines};
-          });
+        | easylocal::cost::apply(
+              [](const assignment::CapacityValue& capacity) {
+                  return easylocal::cost::lexicographic{
+                      capacity.total_overload,
+                      capacity.overloaded_machines};
+              },
+              easylocal::component<assignment::CapacityCostComponent>());
     const auto cursor_recipe =
         easylocal::neighborhood<assignment::ReassignJobNeighborhoodExplorer>()
         | easylocal::delta<
@@ -720,8 +721,9 @@ void benchmark_tsp(
 
     const auto manager_recipe =
         easylocal::solution_manager<tsp::TspSolutionManager>()
-        | easylocal::component<tsp::TourLengthComponent>()
-        | easylocal::aggregator(tsp::TourLengthCost{});
+        | easylocal::cost::apply(
+              tsp::TourLengthCost{},
+              easylocal::component<tsp::TourLengthComponent>());
     const auto cursor_recipe =
         easylocal::neighborhood<tsp::TwoOptNeighborhoodExplorer>()
         | easylocal::delta<

@@ -12,8 +12,8 @@
 #include <utility>
 
 // Composition vocabulary for problem-side components: SolutionManager recipes
-// (solution_manager<SM>() | component<C>() | aggregator(A)) and neighborhood
-// recipes (neighborhood<NHE>() | delta<C, D>()). Recipes are constructed
+// (solution_manager<SM>() | component<C>(), or a cost expression over several
+// components, see <easylocal/cost/expression.hpp>) and neighborhood recipes (neighborhood<NHE>() | delta<C, D>()). Recipes are constructed
 // lazily from the bound Input by runners and apps.
 namespace easylocal
 {
@@ -26,16 +26,15 @@ struct is_solution_manager_spec : std::false_type
 {
 };
 
-template<class BaseSM, class BaseArgsTuple, class... ComponentSpecs>
-struct is_solution_manager_spec<
-    solution_manager_recipe<BaseSM, BaseArgsTuple, ComponentSpecs...>>
+template<class BaseSM, class BaseArgsTuple>
+struct is_solution_manager_spec<solution_manager_recipe<BaseSM, BaseArgsTuple>>
     : std::true_type
 {
 };
 
-template<class SMSpec, class AggregatorSpec>
+template<class BaseSM, class BaseArgsTuple, class Expression>
 struct is_solution_manager_spec<
-    solution_manager_with_aggregator_recipe<SMSpec, AggregatorSpec>>
+    solution_manager_with_cost_recipe<BaseSM, BaseArgsTuple, Expression>>
     : std::true_type
 {
 };
@@ -45,33 +44,12 @@ inline constexpr bool is_solution_manager_spec_v =
     is_solution_manager_spec<T>::value;
 
 template<class T>
-struct is_unaggregated_component_solution_manager_recipe : std::false_type
-{
-};
-
-template<class BaseSM, class BaseArgsTuple, class... ComponentSpecs>
-struct is_unaggregated_component_solution_manager_recipe<
-    solution_manager_recipe<BaseSM, BaseArgsTuple, ComponentSpecs...>>
-    : std::bool_constant<
-          (sizeof...(ComponentSpecs) > 0) &&
-          !solution_manager_recipe<
-              BaseSM,
-              BaseArgsTuple,
-              ComponentSpecs...>::has_implicit_aggregator>
-{
-};
-
-template<class T>
-inline constexpr bool is_unaggregated_component_solution_manager_recipe_v =
-    is_unaggregated_component_solution_manager_recipe<T>::value;
-
-template<class T>
-struct is_componentless_solution_manager_recipe : std::false_type
+struct is_costless_solution_manager_recipe : std::false_type
 {
 };
 
 template<class BaseSM, class BaseArgsTuple>
-struct is_componentless_solution_manager_recipe<
+struct is_costless_solution_manager_recipe<
     solution_manager_recipe<BaseSM, BaseArgsTuple>> : std::true_type
 {
 };
@@ -82,15 +60,10 @@ template<class Spec>
 consteval auto validate_solution_manager_spec() -> bool
 {
     static_assert(
-        !is_componentless_solution_manager_recipe<Spec>::value,
-        "a SolutionManager recipe needs at least one cost component: the cost "
-        "is always computed by cost components, add `| component<C>()` or "
-        "`.with_component<C>()`");
-    static_assert(
-        !is_unaggregated_component_solution_manager_recipe_v<Spec>,
-        "these cost components require an explicit aggregator because no safe "
-        "default aggregation can be inferred; add `| aggregator(...)` or "
-        "`.with_aggregator(...)`");
+        !is_costless_solution_manager_recipe<Spec>::value,
+        "a SolutionManager recipe needs a cost: the cost is always computed by "
+        "cost components, add `| component<C>()` or a cost expression such as "
+        "`| cost::sum(component<A>(), component<B>())`");
     return true;
 }
 
@@ -138,14 +111,6 @@ auto component(Args&&... args)
     return detail::component_spec<
         Component,
         std::decay_t<Args>...>{std::forward<Args>(args)...};
-}
-
-template<class Aggregator>
-[[nodiscard]]
-auto aggregator(Aggregator&& value)
-{
-    return detail::aggregator_spec<std::remove_cvref_t<Aggregator>>{
-        std::forward<Aggregator>(value)};
 }
 
 template<class NHE, class... Args>

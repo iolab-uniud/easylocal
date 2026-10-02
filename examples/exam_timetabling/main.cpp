@@ -101,6 +101,7 @@ void print_timetable(const ExamTimetable& solution)
 int main(int argc, char* argv[])
 {
     using namespace easylocal::mwe::exam_timetabling;
+    using easylocal::component;
     using easylocal::runners::temperature::FixedLength;
     using easylocal::runners::temperature::FixedLengthParameters;
 
@@ -119,11 +120,10 @@ int main(int argc, char* argv[])
 
         auto sm =
             easylocal::solution_manager<ExamTimetablingSolutionManager>()
-                .with_component<StudentConflictComponent>()
-                .with_component<ConsecutiveExamComponent>()
-                .with_component<TimeslotLoadComponent>()
-                .with_aggregator(easylocal::cost::weighted_sum{
-                    penalty_type{1000}, penalty_type{10}, penalty_type{1}});
+                .with_cost(easylocal::cost::sum(
+                    component<StudentConflictComponent>() * 1000,
+                    component<ConsecutiveExamComponent>() * 10,
+                    component<TimeslotLoadComponent>()));
 
         auto nhe =
             easylocal::neighborhood<MoveExamNeighborhoodExplorer>()

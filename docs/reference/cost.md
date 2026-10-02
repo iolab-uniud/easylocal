@@ -1,10 +1,10 @@
 # Cost
 
-`<easylocal/cost.hpp>` (cost models, `easylocal::cost`) and
-`<easylocal/helpers/recipes.hpp>` (`component`, `aggregator`, `delta`)
+`<easylocal/cost.hpp>` (cost models and cost expressions, `easylocal::cost`)
+and `<easylocal/helpers/recipes.hpp>` (`component`, `delta`)
 
-The cost of a solution is computed by **cost components**, combined by an
-**aggregator** into a value of a **cost type**. Moves are evaluated
+The cost of a solution is computed by **cost components**, combined by a
+**cost expression** into a value of a **cost type**. Moves are evaluated
 incrementally by **delta evaluators**. Together with the SolutionManager they
 form the *cost layer*; the delta evaluators bound to a NeighborhoodExplorer
 form the *delta cost layer*.
@@ -19,34 +19,41 @@ form the *delta cost layer*.
 - `Value` is deduced from `evaluate` and may be arithmetic or a domain type.
 - Construction: `Component{const Input&, args...}` is preferred,
   `Component{args...}` is accepted; `args` come from `component<C>(args...)`.
-- A component type may appear only once in a recipe.
+- A component type may appear only once in a cost expression.
 
-## Aggregators
+## Cost expressions
 
-An aggregator is a function object called with the component values in
-declaration order and returning the cost.
+A SolutionManager recipe has exactly one cost expression:
+`solution_manager<SM>() | expression`, or `.with_cost(expression)`. Its leaves
+are cost components; its nodes combine the costs of their children.
 
-| Aggregator | Result | Configuration |
+| Expression | Cost | Configuration |
 | --- | --- | --- |
-| `cost::weighted_sum{w1, ..., wn}` | scalar | `cost.weights` |
-| `cost::weighted_sum_with_hard_penalty` | `hard_multiplier * hard + Σ wᵢ * softᵢ` | `cost.hard_multiplier`, `cost.soft_weights` |
-| any function object | any cost type | none, unless it provides `configuration()` |
+| `component<C>(args...)` | the value of the component | none |
+| `cost::sum(t1, ..., tn)` | `Σ wᵢ · costᵢ`, in the common type of the costs and the weights | `weights` |
+| `cost::weighted(child, w)`, or `child * w`, `w * child` | a term of `cost::sum` with weight `w` (default 1) | |
+| `cost::in_order(c1, ..., cn)` | `cost::lexicographic` of the children's costs | children's |
+| `cost::hard_soft(hard, soft)` | `cost::hierarchical` of the two costs | `hard`, `soft` |
+| `cost::apply(f, c1, ..., cn)` | `f(cost₁, ..., costₙ)` | `f.configuration()`, if any, and children's |
 
-Implicit aggregator, when `aggregator(...)` is omitted:
+```cpp
+solution_manager<SM>()
+    | cost::hard_soft(
+          cost::sum(component<A>(), component<B>() * 10),
+          cost::in_order(component<C>(), cost::apply(f, component<D>())))
+```
 
-| Components | Aggregator |
-| --- | --- |
-| one, any value type | identity, silently |
-| several, all arithmetic | unit-weight `cost::weighted_sum`, with a warning |
-| several, with domain values | none: compile-time error asking for an aggregator |
-
-Optional aggregator members:
-
-| Member | Effect |
-| --- | --- |
-| `better(a, b)`, `equivalent(a, b)`, `better_or_equivalent(a, b)` | redefine the cost semantics |
-| `hard(hard_values...) -> HardCost` over the leading components | models `cost::hard_projection`, used by TwoStage |
-| `configuration()` | exposes parameters to the configuration tree |
+- `cost::sum` adds arithmetic costs only; a domain value is turned into a
+  number with `cost::apply`. A weighted term, `cost::weighted(child, w)` or its
+  shorthand `child * w`, is allowed only directly inside a `cost::sum`.
+- The components of the `hard` branch of a `cost::hard_soft` at the root come
+  first: TwoStage evaluates only them in its first stage.
+- At the root, the function of a `cost::apply` may define `better`,
+  `equivalent` and `better_or_equivalent` (see Cost semantics).
+- Configuration: the expression is exposed under `cost`. A `sum` has its
+  `weights` (one per term), a `hard_soft` names its children `hard` and
+  `soft`, `in_order` and `apply` name them by position (`0`, `1`, ...); only
+  configurable children appear. In the example above: `cost.hard.weights`.
 
 ## Cost models
 
@@ -77,8 +84,8 @@ at the zero of the hard cost.
 ## Cost semantics
 
 `cost::better(sm, a, b)`, `cost::equivalent(sm, a, b)` and
-`cost::better_or_equivalent(sm, a, b)` ask the aggregator first and fall back
-to `<`, `==` and `<=`. Algorithms reach them through `run.better(...)`; the
+`cost::better_or_equivalent(sm, a, b)` ask the function of a root
+`cost::apply` first and fall back to `<`, `==` and `<=`. Algorithms reach them through `run.better(...)`; the
 three relations are deliberately independent queries.
 
 ## Delta evaluators
@@ -98,14 +105,22 @@ three relations are deliberately independent queries.
 
 - **Cost comes only from components.** One evaluation path for every problem;
   the SolutionManager stays about solutions.
-- **Aggregation is explicit when it involves a choice.** Identity and a unit
-  weighted sum of numbers involve none; weighting domain values does, so it is
-  never inferred and domain types never carry arithmetic operators just to be
-  aggregated.
-- **Semantics belong to the cost layer.** The aggregator may redefine ordering
-  and equivalence (tolerances, lazy comparisons) without touching the cost type.
+- **The structure of the cost is written in the recipe.** Which components
+  are hard and which soft, their order and their weights are read where the
+  components are listed, not deduced from a declaration order and a separate
+  list of weights. TwoStage reads the hard components from the expression.
+- **Weights sit beside their term.** `component<C>() * w` cannot drift out of
+  line with the components, as positional weights can. The `*` only marks a
+  term of a `cost::sum`: it never multiplies component values, so domain types
+  need no `operator*`.
+- **`cost::sum` adds numbers.** Domain values are mapped explicitly with
+  `cost::apply`, so domain types never carry arithmetic operators just to be
+  summed.
+- **Semantics belong to the cost layer.** The root of the expression may
+  redefine ordering and equivalence (tolerances, lazy comparisons) without
+  touching the cost type.
 - **Deltas never see weights or structure.** They are per component; the move
-  cost is always re-aggregated, so a delta stays valid whatever aggregator is
-  used.
+  cost is always recomputed by the expression, so a delta stays valid whatever
+  the expression is.
 - **`delta` is the contract, `operator-` is syntax.** Acceptance criteria rely on
   `cost::delta`; `cost::lexicographic` has none on purpose.

@@ -172,34 +172,6 @@ public:
     using AssignmentSolutionManager::AssignmentSolutionManager;
 };
 
-struct TwoStageAggregator
-{
-    [[nodiscard]]
-    constexpr auto hard(const CapacityValue& capacity) const -> HardCost
-    {
-        return AssignmentCostAggregator{}.hard(capacity);
-    }
-
-    [[nodiscard]]
-    constexpr auto operator()(
-        const CapacityValue& capacity,
-        const std::size_t cardinality) const
-    {
-        return easylocal::cost::hierarchical{
-            hard(capacity),
-            cardinality};
-    }
-};
-
-struct CapacityHardAggregator
-{
-    [[nodiscard]]
-    constexpr auto operator()(const CapacityValue& capacity) const -> HardCost
-    {
-        return AssignmentCostAggregator{}.hard(capacity);
-    }
-};
-
 class CountingSingleMoveNeighborhood
 {
 public:
@@ -274,23 +246,6 @@ struct TwoCapacityAggregator
     }
 };
 
-int implicit_aggregator_warning_count = 0;
-bool implicit_aggregator_warning_shape_matches = false;
-
-void capture_implicit_aggregator_warning(
-    const easylocal::logging::record& entry) noexcept
-{
-    if (entry.source == easylocal::logging::origin::framework &&
-        entry.severity == easylocal::logging::level::warning &&
-        entry.category == "cost.aggregation")
-    {
-        ++implicit_aggregator_warning_count;
-        implicit_aggregator_warning_shape_matches =
-            entry.message.find("implicit unit-weight weighted_sum") !=
-            std::string_view::npos;
-    }
-}
-
 auto expect(const bool condition, const std::string_view description) -> bool
 {
     if (!condition)
@@ -307,7 +262,6 @@ auto expect(const bool condition, const std::string_view description) -> bool
 int main()
 {
     using easylocal::Runner;
-    using easylocal::aggregator;
     using easylocal::component;
     using easylocal::delta;
     using easylocal::neighborhood;
@@ -335,7 +289,7 @@ int main()
 
     using FluentSMRecipe = decltype(
         solution_manager<TwoStageSolutionManager>()
-            .with_component<CapacityCostComponent>());
+            .with_cost(component<CapacityCostComponent>()));
     using PipedSMRecipe = decltype(
         solution_manager<TwoStageSolutionManager>()
         | component<CapacityCostComponent>());
@@ -371,12 +325,12 @@ int main()
         ColocatedFluentNHERecipe,
         ColocatedPipedNHERecipe>);
 
-    static_assert(easylocal::detail::unique_component_specs_v<
-        CapacitySpec,
-        CardinalitySpec>);
-    static_assert(!easylocal::detail::unique_component_specs_v<
-        CapacitySpec,
-        CapacitySpec>);
+    static_assert(easylocal::detail::unique_types_v<
+        typename CapacitySpec::component_type,
+        typename CardinalitySpec::component_type>);
+    static_assert(!easylocal::detail::unique_types_v<
+        typename CapacitySpec::component_type,
+        typename CapacitySpec::component_type>);
     static_assert(!easylocal::detail::unique_delta_component_specs_v<
         CapacityDeltaSpec,
         SecondCapacityDeltaSpec>);
@@ -385,26 +339,27 @@ int main()
     // reuse the same implementation and value_type.
     using VariantASpec = decltype(component<CapacityVariantA>());
     using VariantBSpec = decltype(component<CapacityVariantB>());
-    static_assert(easylocal::detail::unique_component_specs_v<
-        VariantASpec,
-        VariantBSpec>);
+    static_assert(easylocal::detail::unique_types_v<
+        typename VariantASpec::component_type,
+        typename VariantBSpec::component_type>);
     static_assert(!std::same_as<CapacityVariantA, CapacityVariantB>);
 
     using FluentAggregatedRecipe = decltype(
         solution_manager<NoAggregateSolutionManager>()
-            .with_component<AssignmentCardinalityComponent>()
-            .with_aggregator(easylocal::cost::weighted_sum{3}));
+            .with_cost(easylocal::cost::sum(easylocal::cost::weighted(
+                component<AssignmentCardinalityComponent>(), 3))));
     using PipedAggregatedRecipe = decltype(
         solution_manager<NoAggregateSolutionManager>()
-        | component<AssignmentCardinalityComponent>()
-        | aggregator(easylocal::cost::weighted_sum{3}));
+        | easylocal::cost::sum(easylocal::cost::weighted(
+              component<AssignmentCardinalityComponent>(), 3)));
     static_assert(std::same_as<FluentAggregatedRecipe, PipedAggregatedRecipe>);
 
     const auto two_capacity_recipe =
         solution_manager<TwoCapacitySolutionManager>()
-        | component<CapacityVariantA>()
-        | component<CapacityVariantB>()
-        | aggregator(TwoCapacityAggregator{});
+        | easylocal::cost::apply(
+              TwoCapacityAggregator{},
+              component<CapacityVariantA>(),
+              component<CapacityVariantB>());
     using TwoCapacityConfigured =
         typename decltype(two_capacity_recipe)::service_type;
     static_assert(std::tuple_size_v<
@@ -412,13 +367,16 @@ int main()
 
     const auto hard_manager_recipe =
         solution_manager<TwoStageSolutionManager>()
-        | component<CapacityCostComponent>()
-        | aggregator(CapacityHardAggregator{});
+        | easylocal::cost::apply(
+              CapacityHardCost{},
+              component<CapacityCostComponent>());
     const auto full_manager_recipe =
         solution_manager<TwoStageSolutionManager>()
-        | component<CapacityCostComponent>()
-        | component<AssignmentCardinalityComponent>()
-        | aggregator(TwoStageAggregator{});
+        | easylocal::cost::hard_soft(
+              easylocal::cost::apply(
+                  CapacityHardCost{},
+                  component<CapacityCostComponent>()),
+              component<AssignmentCardinalityComponent>());
 
     const auto hard_neighborhood_recipe =
         neighborhood<CountingSingleMoveNeighborhood>(
@@ -480,71 +438,49 @@ int main()
         .destination = 1,
     };
 
-    // A single component: its value is the cost (identity), with no warning
-    // and no weights to configure.
+    // A single component: its value is the cost, with no weights to
+    // configure.
     auto single_component_recipe =
         solution_manager<NoAggregateSolutionManager>()
         | component<AssignmentCardinalityComponent>();
-    static_assert(decltype(single_component_recipe)::has_implicit_aggregator);
     static_assert(!easylocal::config::configuration_provider<
                   decltype(single_component_recipe)>);
-    const auto single_component_previous_sink = easylocal::logging::set_sink(
-        &capture_implicit_aggregator_warning);
     const auto single_component_manager =
         single_component_recipe.construct(instance);
-    (void)easylocal::logging::set_sink(single_component_previous_sink);
     ok &= expect(
-        single_component_manager.evaluate(initial) == 3 &&
-            implicit_aggregator_warning_count == 0,
-        "a single component is aggregated implicitly by identity, silently");
+        single_component_manager.evaluate(initial) == 3,
+        "a single component is the cost");
 
-    // Several arithmetic components: an implicit unit-weight weighted sum with
-    // configurable weights and a warning.
-    auto implicit_aggregate_recipe =
+    // A sum of arithmetic components: unit weights unless given, configurable
+    // as cost.weights.
+    auto sum_recipe =
         solution_manager<NoAggregateSolutionManager>()
-        | component<AssignmentCardinalityComponent>()
-        | component<ColocatedCardinalityComponent>();
-    static_assert(decltype(implicit_aggregate_recipe)::has_implicit_aggregator);
+        | easylocal::cost::sum(
+              component<AssignmentCardinalityComponent>(),
+              component<ColocatedCardinalityComponent>());
 
-    const auto implicit_aggregation_configuration = easylocal::config::root(
-        easylocal::config::named<"solver">(
-            implicit_aggregate_recipe.configuration()));
-    constexpr std::array implicit_aggregation_override{
+    const auto sum_configuration = easylocal::config::root(
+        easylocal::config::named<"solver">(sum_recipe.configuration()));
+    constexpr std::array sum_override{
         easylocal::config::text_override{
             "solver.cost.weights",
             "[4, 2]"},
     };
-    const auto implicit_aggregation_override_result =
-        easylocal::config::apply_overrides(
-            implicit_aggregation_configuration,
-            implicit_aggregation_override);
+    const auto sum_override_result =
+        easylocal::config::apply_overrides(sum_configuration, sum_override);
     ok &= expect(
-        static_cast<bool>(implicit_aggregation_override_result),
-        "implicit aggregator parameters are exposed through configuration");
+        static_cast<bool>(sum_override_result),
+        "the weights of a sum are exposed through configuration");
 
-    const auto previous_log_sink = easylocal::logging::set_sink(
-        &capture_implicit_aggregator_warning);
-    const auto implicit_aggregate_manager =
-        implicit_aggregate_recipe.construct(instance);
-    const auto second_implicit_aggregate_manager =
-        implicit_aggregate_recipe.construct(instance);
-    (void)easylocal::logging::set_sink(previous_log_sink);
-
+    const auto sum_manager = sum_recipe.construct(instance);
     ok &= expect(
-        implicit_aggregate_manager.evaluate(initial) == 18 &&
-            second_implicit_aggregate_manager.evaluate(initial) == 18,
-        "an inferable implicit weighted-sum aggregator uses configurable weights");
-    ok &= expect(
-        implicit_aggregator_warning_count == 1,
-        "implicit aggregation emits exactly one framework warning per aggregator type");
-    ok &= expect(
-        implicit_aggregator_warning_shape_matches,
-        "implicit aggregation warning is structured through the logging sink");
+        sum_manager.evaluate(initial) == 18,
+        "a sum uses its configured weights");
 
     auto no_aggregate_recipe =
         solution_manager<NoAggregateSolutionManager>()
-        | component<AssignmentCardinalityComponent>()
-        | aggregator(easylocal::cost::weighted_sum{3});
+        | easylocal::cost::sum(easylocal::cost::weighted(
+              component<AssignmentCardinalityComponent>(), 3));
     const auto aggregation_configuration = easylocal::config::root(
         easylocal::config::named<"solver">(
             no_aggregate_recipe.configuration()));
@@ -559,17 +495,16 @@ int main()
             aggregation_override);
     ok &= expect(
         static_cast<bool>(aggregation_override_result),
-        "aggregator parameters are exposed through the SolutionManager recipe configuration");
+        "the weights of a sum are exposed through the SolutionManager recipe configuration");
 
     const auto no_aggregate_manager = no_aggregate_recipe.construct(instance);
     ok &= expect(
         no_aggregate_manager.evaluate(initial) == 12,
-        "configured explicit aggregation is materialized without SM::aggregate");
+        "a configured weighted sum is materialized without SM::aggregate");
 
     const auto stateless_component_manager =
         (solution_manager<NoAggregateSolutionManager>()
-         | component<StatelessOffsetComponent>(std::size_t{5})
-         | aggregator(easylocal::cost::weighted_sum{1}))
+         | component<StatelessOffsetComponent>(std::size_t{5}))
             .construct(instance);
     ok &= expect(
         stateless_component_manager.evaluate(initial) == 8,
@@ -585,8 +520,7 @@ int main()
 
     const auto stateless_delta_manager =
         (solution_manager<AssignmentSolutionManager>()
-         | component<AssignmentCardinalityComponent>()
-         | aggregator(easylocal::cost::weighted_sum{1}))
+         | component<AssignmentCardinalityComponent>())
             .construct(instance);
     const auto stateless_delta_neighborhood =
         (neighborhood<ReassignJobNeighborhoodExplorer>()
@@ -680,9 +614,11 @@ int main()
     int soft_evaluations = 0;
     const auto zero_overhead_recipe =
         easylocal::solution_manager<TwoStageSolutionManager>()
-        | component<CapacityCostComponent>()
-        | component<CountingSoftComponent>(std::ref(soft_evaluations))
-        | aggregator(TwoStageAggregator{});
+        | easylocal::cost::hard_soft(
+              easylocal::cost::apply(
+                  CapacityHardCost{},
+                  component<CapacityCostComponent>()),
+              component<CountingSoftComponent>(std::ref(soft_evaluations)));
     const auto zero_overhead_full_sm = zero_overhead_recipe.construct(instance);
     using ZeroOverheadFullSM = decltype(zero_overhead_full_sm);
     static_assert(ZeroOverheadFullSM::has_hard_component_projection);

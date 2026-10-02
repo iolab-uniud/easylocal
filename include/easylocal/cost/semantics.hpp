@@ -3,9 +3,10 @@
 #include <concepts>
 
 // Semantic cost relations used by search algorithms. They are resolved through
-// the SolutionManager: an explicitly configured aggregator may customize them
-// (aggregator().better(...), .equivalent(...), .better_or_equivalent(...));
-// otherwise the cost type's own operators <, ==, <= are the exact default.
+// the SolutionManager: the function of a cost::apply at the root of the cost
+// expression may customize them (better(...), equivalent(...),
+// better_or_equivalent(...)); otherwise the cost type's own operators <, ==,
+// <= are the exact default.
 namespace easylocal::cost
 {
 
@@ -13,9 +14,9 @@ namespace detail
 {
 
 // Cost semantics belong to the cost layer, not to the problem's
-// SolutionManager. An explicitly configured aggregator may customize the
-// semantic relations of its resulting cost; otherwise the intrinsic cost
-// operators are the exact/default fallback.
+// SolutionManager. The root of the cost expression may customize the semantic
+// relations of its cost; otherwise the intrinsic cost operators are the
+// exact/default fallback.
 //
 // Keep better, equivalent, and better_or_equivalent as independent queries.
 // In particular, do not implement better_or_equivalent as better || equivalent:
@@ -30,7 +31,7 @@ concept custom_better =
         const typename SM::cost_type& reference)
     {
         {
-            solution_manager.aggregator().better(candidate, reference)
+            solution_manager.cost_expression().better(candidate, reference)
         } -> std::convertible_to<bool>;
     };
 
@@ -51,7 +52,7 @@ concept custom_equivalent =
         const typename SM::cost_type& rhs)
     {
         {
-            solution_manager.aggregator().equivalent(lhs, rhs)
+            solution_manager.cost_expression().equivalent(lhs, rhs)
         } -> std::convertible_to<bool>;
     };
 
@@ -72,7 +73,7 @@ concept custom_better_or_equivalent =
         const typename SM::cost_type& reference)
     {
         {
-            solution_manager.aggregator().better_or_equivalent(
+            solution_manager.cost_expression().better_or_equivalent(
                 candidate,
                 reference)
         } -> std::convertible_to<bool>;
@@ -103,7 +104,7 @@ constexpr auto better(
     if constexpr (detail::custom_better<SM>)
     {
         return static_cast<bool>(
-            solution_manager.aggregator().better(candidate, reference));
+            solution_manager.cost_expression().better(candidate, reference));
     }
     else
     {
@@ -126,7 +127,7 @@ constexpr auto equivalent(
     if constexpr (detail::custom_equivalent<SM>)
     {
         return static_cast<bool>(
-            solution_manager.aggregator().equivalent(lhs, rhs));
+            solution_manager.cost_expression().equivalent(lhs, rhs));
     }
     else
     {
@@ -150,7 +151,7 @@ constexpr auto better_or_equivalent(
     if constexpr (detail::custom_better_or_equivalent<SM>)
     {
         return static_cast<bool>(
-            solution_manager.aggregator().better_or_equivalent(
+            solution_manager.cost_expression().better_or_equivalent(
                 candidate,
                 reference));
     }

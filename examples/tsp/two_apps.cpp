@@ -24,8 +24,9 @@ int main()
         easylocal::app("tsp-two-opt")
             .with_solution_manager(
                 easylocal::solution_manager<TspSolutionManager>()
-                | easylocal::component<TourLengthComponent>()
-                | easylocal::aggregator(TourLengthCost{}))
+                | easylocal::cost::apply(
+                      TourLengthCost{},
+                      easylocal::component<TourLengthComponent>()))
             .with_neighborhood(
                 easylocal::neighborhood<TwoOptNeighborhoodExplorer>()
                 | easylocal::delta<
@@ -37,8 +38,9 @@ int main()
         easylocal::app("tsp-swap")
             .with_solution_manager(
                 easylocal::solution_manager<TspSolutionManager>()
-                | easylocal::component<TourLengthComponent>()
-                | easylocal::aggregator(TourLengthCost{}))
+                | easylocal::cost::apply(
+                      TourLengthCost{},
+                      easylocal::component<TourLengthComponent>()))
             .with_neighborhood(
                 easylocal::neighborhood<SwapCitiesNeighborhoodExplorer>()
                 | easylocal::delta<

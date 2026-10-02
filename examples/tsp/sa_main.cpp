@@ -139,8 +139,8 @@ int main(int argc, char* argv[])
             easylocal::make_runner<SimulatedAnnealing<FixedLength>>(
                 FixedLength{temperature_parameters})
             | (solution_manager<TspSolutionManager>()
-               | component<TourLengthComponent>()
-               | easylocal::aggregator(TourLengthCost{}))
+               | easylocal::cost::apply(
+                     TourLengthCost{}, component<TourLengthComponent>()))
             | (neighborhood_union(
                    neighborhood<TwoOptNeighborhoodExplorer>()
                        | delta<

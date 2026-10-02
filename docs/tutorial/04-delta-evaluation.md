@@ -37,8 +37,8 @@ auto nhe = el::neighborhood<TwoOptExplorer>()
   the delta can have the same type; with a domain value, define
   `operator+(Value, Delta)`.
 - Deltas are **per component and per neighborhood**. The cost of a move is
-  always recomputed by the aggregator from the updated component values, so a
-  delta never deals with weights or hierarchical structure.
+  always recomputed by the cost expression from the updated component values,
+  so a delta never deals with weights or hierarchical structure.
 - Coverage can be partial: components without a delta for a neighborhood are
   re-evaluated on a candidate solution. When every component has one, no
   candidate solution is built.

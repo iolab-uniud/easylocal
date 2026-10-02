@@ -36,7 +36,7 @@ use `config::endpoint<"name">(*this)` together with `parameters()` and
 | --- | --- |
 | `FirstImprovement`, `BestImprovement`, `SimulatedAnnealing` | `search` |
 | temperature policies | `search.temperature` |
-| `cost::weighted_sum`, `weighted_sum_with_hard_penalty`, implicit weighted sum | `cost` |
+| the cost expression of a SolutionManager recipe (`cost::sum` weights, `cost::apply` functions) | `cost` |
 | `neighborhood_union` with `random_biases` | the union's biases |
 | `runner.configuration<"name">()` | a named node over the algorithm and recipes |
 

@@ -36,13 +36,13 @@ It is non-virtual and optional.
 
 ```cpp
 solution_manager<SM>(args...)           // the SolutionManager
-  | component<C>(args...)               // one or more cost components
-  | aggregator(a)                       // optional, see Cost
-// equivalently: solution_manager<SM>(args...).with_component<C>(args...).with_aggregator(a)
+  | component<C>(args...)               // its cost: one component, or a cost
+                                        // expression over several, see Cost
+// equivalently: solution_manager<SM>(args...).with_cost(component<C>(args...))
 ```
 
-A recipe without components is rejected: the cost always comes from cost
-components.
+A recipe without a cost is rejected: the cost always comes from cost
+components. A recipe has exactly one cost expression.
 
 ## Design choices
 

@@ -9,34 +9,6 @@
 namespace easylocal::mwe::exam_timetabling
 {
 
-struct ConsecutiveExamDelta
-{
-    penalty_type change{};
-    auto operator==(const ConsecutiveExamDelta&) const -> bool = default;
-};
-
-struct TimeslotLoadDelta
-{
-    penalty_type change{};
-    auto operator==(const TimeslotLoadDelta&) const -> bool = default;
-};
-
-[[nodiscard]]
-constexpr auto operator+(
-    const ConsecutiveExamValue value,
-    const ConsecutiveExamDelta delta) noexcept -> ConsecutiveExamValue
-{
-    return {.penalty = value.penalty + delta.change};
-}
-
-[[nodiscard]]
-constexpr auto operator+(
-    const TimeslotLoadValue value,
-    const TimeslotLoadDelta delta) noexcept -> TimeslotLoadValue
-{
-    return {.penalty = value.penalty + delta.change};
-}
-
 class ConsecutiveExamDeltaEvaluator
 {
 public:
@@ -49,7 +21,7 @@ public:
     [[nodiscard]]
     auto delta_evaluate(
         const ExamTimetable& solution,
-        const MoveExam& move) const noexcept -> ConsecutiveExamDelta
+        const MoveExam& move) const noexcept -> penalty_type
     {
         assert(move.exam < solution.timeslot_by_exam.size());
         const auto source = solution.timeslot_by_exam[move.exam];
@@ -89,7 +61,7 @@ public:
             }
         }
 
-        return {.change = change};
+        return change;
     }
 
 private:
@@ -108,7 +80,7 @@ public:
     [[nodiscard]]
     auto delta_evaluate(
         const ExamTimetable& solution,
-        const MoveExam& move) const -> TimeslotLoadDelta
+        const MoveExam& move) const -> penalty_type
     {
         assert(move.exam < solution.timeslot_by_exam.size());
         const auto source = solution.timeslot_by_exam[move.exam];
@@ -130,7 +102,7 @@ public:
             (source_load - 1) * (source_load - 1) +
             (destination_load + 1) * (destination_load + 1);
 
-        return {.change = after - before};
+        return after - before;
     }
 
 private:

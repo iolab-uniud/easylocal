@@ -1,4 +1,5 @@
 #include <easylocal/cost.hpp>
+#include <easylocal/helpers/recipes.hpp>
 #include <easylocal/config/overrides.hpp>
 #include <easylocal/helpers/neighborhood_union.hpp>
 #include <easylocal/runners/simulated_annealing.hpp>
@@ -296,20 +297,66 @@ void diagnostics_accumulate_across_independent_failures()
 }
 
 
-void built_in_aggregator_weights_are_runtime_configurable()
+struct CostInstance
 {
-    auto aggregate = easylocal::cost::weighted_sum{1, 10, 100};
-    const auto tree = easylocal::config::root(aggregate.configuration());
+};
+
+struct CostSolution
+{
+    int value{1};
+};
+
+class CostSolutionManager
+    : public easylocal::solution_manager_base<CostInstance, CostSolution>
+{
+public:
+    using solution_manager_base::solution_manager_base;
+
+    [[nodiscard]]
+    static auto is_valid(const CostSolution&) noexcept -> bool
+    {
+        return true;
+    }
+};
+
+template<int Scale>
+struct ScaledValue
+{
+    [[nodiscard]]
+    static auto evaluate(const CostSolution& solution) noexcept -> int
+    {
+        return Scale * solution.value;
+    }
+};
+
+void cost_expression_weights_are_runtime_configurable()
+{
+    auto recipe =
+        easylocal::solution_manager<CostSolutionManager>()
+        | easylocal::cost::hard_soft(
+              easylocal::cost::sum(
+                  easylocal::component<ScaledValue<1>>(),
+                  easylocal::cost::weighted(
+                      easylocal::component<ScaledValue<2>>(), 10)),
+              easylocal::cost::in_order(
+                  easylocal::component<ScaledValue<3>>(),
+                  easylocal::cost::sum(easylocal::component<ScaledValue<4>>())));
+    const auto tree = easylocal::config::root(recipe.configuration());
 
     constexpr std::array overrides{
-        text_override{"cost.weights", "[2, 20, 200]"},
+        text_override{"cost.hard.weights", "[2, 20]"},
+        text_override{"cost.soft.1.weights", "[5]"},
     };
 
     const auto result = apply_overrides(tree, overrides);
     assert(result);
-    assert(result.applied_parameter_blocks == 1);
-    assert((aggregate.parameters().weights == std::array{2, 20, 200}));
-    assert(aggregate(1, 1, 1) == 222);
+    assert(result.applied_parameter_blocks == 2);
+
+    const CostInstance instance{};
+    const auto cost = recipe.construct(instance).evaluate(CostSolution{});
+    assert(cost.hard() == 42);
+    assert(cost.soft().get<0>() == 3);
+    assert(cost.soft().get<1>() == 20);
 }
 
 void const_parameter_nodes_are_reported_as_read_only()
@@ -343,6 +390,6 @@ int main()
     unbracketed_fixed_arrays_are_supported();
     parameter_group_local_values_can_be_overridden();
     diagnostics_accumulate_across_independent_failures();
-    built_in_aggregator_weights_are_runtime_configurable();
+    cost_expression_weights_are_runtime_configurable();
     const_parameter_nodes_are_reported_as_read_only();
 }

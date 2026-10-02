@@ -1,6 +1,6 @@
 # 9. Configuration
 
-Runners, temperature policies, aggregators and neighborhood unions expose their
+Runners, temperature policies, cost expressions and neighborhood unions expose their
 parameters as a **configuration tree**. Combine it with your own parameters and
 apply the command line and configuration files to it:
 
@@ -33,6 +33,18 @@ error: solver.search.temperature: cooling_rate must be finite and in the open in
 
 Values are applied in place and validated, so the runner sees them when it is
 bound.
+
+The weights of the cost expression are parameters too, under `cost`. For the
+weighted sum of [chapter 2](02-cost.md#cost-expressions) in a runner configured
+as `solver`:
+
+```text
+$ ./program '--solver.cost.weights=[1, 20]'
+```
+
+A `cost::hard_soft` names its branches, so its sums are
+`solver.cost.hard.weights` and `solver.cost.soft.weights`; children of
+`cost::in_order` and `cost::apply` are named by position (`0`, `1`, ...).
 
 Your own parameters take part by describing themselves with a schema:
 

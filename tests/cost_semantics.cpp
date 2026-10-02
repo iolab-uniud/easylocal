@@ -329,7 +329,6 @@ auto expect(const bool condition, const std::string_view description) -> bool
 int main()
 {
     using easylocal::Runner;
-    using easylocal::aggregator;
     using easylocal::component;
     using easylocal::neighborhood;
     using easylocal::solution_manager;
@@ -339,8 +338,9 @@ int main()
 
     const auto maximizing_manager =
         solution_manager<MaximizingSolutionManager>()
-        | component<ScoreComponent>()
-        | aggregator(MaximizingAggregator{});
+        | easylocal::cost::apply(
+              MaximizingAggregator{},
+              component<ScoreComponent>());
 
     auto maximizing_probe =
         Runner{MaximizingSemanticProbe{}}
@@ -393,8 +393,9 @@ int main()
 
     const auto minimizing_manager =
         solution_manager<IntegerSolutionManager>()
-        | component<ScoreComponent>()
-        | aggregator(IntegerAggregator{});
+        | easylocal::cost::apply(
+              IntegerAggregator{},
+              component<ScoreComponent>());
 
     auto minimizing_probe =
         Runner{MinimizingSemanticProbe{}}

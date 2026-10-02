@@ -26,10 +26,9 @@ using easylocal::runners::FirstImprovement;
 auto default_solution_manager_recipe()
 {
     return easylocal::solution_manager<AssignmentSolutionManager>()
-         | easylocal::component<CapacityCostComponent>()
-         | easylocal::aggregator([](const CapacityValue& capacity) {
-               return AssignmentCostAggregator{}.hard(capacity);
-           });
+         | easylocal::cost::apply(
+              easylocal::mwe::assignment::CapacityHardCost{},
+              easylocal::component<CapacityCostComponent>());
 }
 
 [[nodiscard]]
@@ -250,9 +249,10 @@ int main()
     auto fallback_runner =
         Runner{FirstImprovement{{.max_evaluations = 2}}}
         | (solution_manager<FallbackSolutionManager>()
-           | component<CapacityCostComponent>()
-           | component<AssignmentCardinalityComponent>()
-           | easylocal::aggregator(FallbackAggregator{}))
+           | easylocal::cost::apply(
+                 FallbackAggregator{},
+                 component<CapacityCostComponent>(),
+                 component<AssignmentCardinalityComponent>()))
         | (neighborhood<SingleMoveNeighborhoodExplorer>(
                relieving_move,
                std::ref(fallback_make_moves))
@@ -274,9 +274,10 @@ int main()
     auto fallback_reject_runner =
         Runner{FirstImprovement{{.max_evaluations = 2}}}
         | (solution_manager<FallbackSolutionManager>()
-           | component<CapacityCostComponent>()
-           | component<AssignmentCardinalityComponent>()
-           | easylocal::aggregator(FallbackAggregator{}))
+           | easylocal::cost::apply(
+                 FallbackAggregator{},
+                 component<CapacityCostComponent>(),
+                 component<AssignmentCardinalityComponent>()))
         | (neighborhood<SingleMoveNeighborhoodExplorer>(
                worsening_move,
                std::ref(fallback_reject_make_moves))

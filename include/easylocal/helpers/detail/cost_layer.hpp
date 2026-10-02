@@ -2,9 +2,9 @@
 
 #include <easylocal/config/tree.hpp>
 #include <easylocal/cost.hpp>
+#include <easylocal/helpers/detail/cost_expression.hpp>
 #include <easylocal/helpers/solution_manager.hpp>
 #include <easylocal/utils/detail/meta.hpp>
-#include <easylocal/utils/logging.hpp>
 
 #include <concepts>
 #include <cstddef>
@@ -17,11 +17,11 @@
 // NeighborhoodExplorer delta cost layer (EL3 CostComponent / DeltaCostComponent).
 //
 // cost_layer adds the cost components to the user SolutionManager and
-// evaluates them into a tuple of component values; cost_layer_with_aggregator
-// computes the cost from those values through the attached aggregator (or an
-// implicit unit-weight weighted_sum). hard_cost_layer projects a hierarchical
-// cost onto its hard branch for TwoStage, evaluating only the hard component
-// prefix.
+// evaluates them into a tuple of component values; cost_layer_with_expression
+// computes the cost from those values through the cost expression of the
+// recipe. hard_cost_layer projects a hierarchical cost onto its hard branch for
+// TwoStage, evaluating only the hard components when the expression has a
+// hard_soft root.
 namespace easylocal::detail
 {
 
@@ -40,58 +40,6 @@ concept evaluable_solution_manager =
             solution_manager.evaluate(solution)
         } -> std::same_as<typename SM::cost_type>;
     };
-
-template<class Component, class... StoredArgs>
-class component_spec
-{
-public:
-    using component_type = Component;
-
-    explicit component_spec(StoredArgs... args)
-        : args_{std::move(args)...}
-    {
-    }
-
-    template<class Instance>
-    [[nodiscard]]
-    auto construct(const Instance& instance) const -> Component
-    {
-        return std::apply(
-            [&](const auto&... args) -> Component {
-                if constexpr (std::constructible_from<
-                                  Component,
-                                  const Instance&,
-                                  const StoredArgs&...>)
-                {
-                    return Component{instance, args...};
-                }
-                else
-                {
-                    static_assert(
-                        std::constructible_from<Component, const StoredArgs&...>,
-                        "a cost component must be constructible either from the "
-                        "bound Instance followed by its recipe arguments or from "
-                        "its recipe arguments alone");
-                    return Component{args...};
-                }
-            },
-            args_);
-    }
-
-    [[nodiscard]]
-    auto args() && noexcept -> std::tuple<StoredArgs...>&&
-    {
-        return std::move(args_);
-    }
-
-private:
-    std::tuple<StoredArgs...> args_;
-};
-
-template<class Component, class Solution>
-using component_value_t = std::remove_cvref_t<decltype(
-    std::declval<const Component&>().evaluate(
-        std::declval<const Solution&>()))>;
 
 template<class BaseSM, class... ComponentSpecs>
 class cost_layer
@@ -119,7 +67,7 @@ public:
           components_{component_specs.construct(base_.input())...}
     {
         static_assert(sizeof...(ComponentSpecs) > 0,
-            "an aggregated SolutionManager needs at least one cost component");
+            "a SolutionManager needs at least one cost component");
     }
 
     [[nodiscard]] auto base() noexcept -> BaseSM& { return base_; }
@@ -188,119 +136,11 @@ private:
     std::tuple<typename ComponentSpecs::component_type...> components_;
 };
 
-struct no_implicit_aggregator
-{
-};
-
-// The aggregator used when a recipe does not attach one explicitly:
-// - a single component: its value is the cost (identity), silently;
-// - several arithmetic components: a unit-weight weighted_sum, with a warning
-//   because the weights are a guess (they stay configurable as cost.weights);
-// - otherwise none: an explicit aggregator is required, so domain value types
-//   never need to support weighting just to be aggregated.
-struct identity_aggregator
-{
-    template<class Value>
-    [[nodiscard]]
-    constexpr auto operator()(const Value& value) const -> Value
-    {
-        return value;
-    }
-};
-
-template<class Tuple>
-struct implicit_aggregator_traits
-{
-    static constexpr bool available = false;
-    static constexpr bool warns = false;
-    using type = no_implicit_aggregator;
-};
-
-template<class Value>
-struct implicit_aggregator_traits<std::tuple<Value>>
-{
-    static constexpr bool available = true;
-    static constexpr bool warns = false;
-    using type = identity_aggregator;
-
-    [[nodiscard]]
-    static constexpr auto make() -> type
-    {
-        return {};
-    }
-};
-
-template<class First, class Second, class... Rest>
-    requires cost::arithmetic<First> && cost::arithmetic<Second> &&
-             (cost::arithmetic<Rest> && ...)
-struct implicit_aggregator_traits<std::tuple<First, Second, Rest...>>
-{
-    static constexpr bool available = true;
-    static constexpr bool warns = true;
-    using weight_type = std::common_type_t<First, Second, Rest...>;
-    using type = cost::weighted_sum<weight_type, 2 + sizeof...(Rest)>;
-
-    [[nodiscard]]
-    static constexpr auto make() -> type
-    {
-        return []<std::size_t... Indices>(std::index_sequence<Indices...>) {
-            return type{((void)Indices, weight_type{1})...};
-        }(std::make_index_sequence<2 + sizeof...(Rest)>{});
-    }
-};
-
-template<class Aggregator>
-void warn_implicit_aggregator()
-{
-    static bool warned = false;
-    if (!warned) {
-        warned = true;
-        logging::emit(
-            logging::level::warning,
-            "cost.aggregation",
-            "no cost aggregator was specified for several cost components; "
-            "using an implicit unit-weight weighted_sum. Override cost.weights "
-            "or add `| aggregator(...)` / `.with_aggregator(...)` to make the "
-            "aggregation explicit.",
-            logging::origin::framework);
-    }
-}
-
-template<class Aggregator>
-class aggregator_spec
-{
-public:
-    using aggregator_type = Aggregator;
-
-    explicit aggregator_spec(Aggregator aggregator)
-        : aggregator_{std::move(aggregator)}
-    {
-    }
-
-    [[nodiscard]]
-    auto get() & noexcept -> Aggregator&
-    {
-        return aggregator_;
-    }
-
-    [[nodiscard]]
-    auto get() const & noexcept -> const Aggregator&
-    {
-        return aggregator_;
-    }
-
-    [[nodiscard]]
-    auto get() && noexcept -> Aggregator&&
-    {
-        return std::move(aggregator_);
-    }
-
-private:
-    [[no_unique_address]] Aggregator aggregator_;
-};
-
-template<class InnerSM, class Aggregator>
-class cost_layer_with_aggregator
+// The cost layer with its cost expression: the cost is computed from the
+// component values by the expression tree, whose leaves are exactly the
+// components of the inner layer, in the same order.
+template<class InnerSM, class Expression>
+class cost_layer_with_expression
 {
 public:
     using base_type = typename InnerSM::base_type;
@@ -308,72 +148,20 @@ public:
     using solution_type = typename InnerSM::solution_type;
     using component_types = typename InnerSM::component_types;
     using component_values_type = typename InnerSM::component_values_type;
+    using cost_type = typename Expression::cost_type;
 
-private:
-    template<class Tuple>
-    struct aggregate_result;
-
-    template<class... Values>
-    struct aggregate_result<std::tuple<Values...>>
+    // A hard_soft root exposes its hard components, the leading ones.
+    static constexpr bool has_hard_component_projection = requires
     {
-        using type = std::remove_cvref_t<decltype(
-            std::declval<const Aggregator&>()(
-                std::declval<const Values&>()...))>;
+        Expression::hard_leaf_count;
     };
-
-public:
-    using cost_type = typename aggregate_result<component_values_type>::type;
-
-    static constexpr bool hierarchical_cost = requires
+    static constexpr std::size_t hard_component_count = []
     {
-        typename cost_type::hard_cost_type;
-        typename cost_type::soft_cost_type;
-    };
-
-private:
-    template<std::size_t... Indices>
-    [[nodiscard]]
-    static consteval auto hard_prefix_matches(std::index_sequence<Indices...>)
-        -> bool
-    {
-        if constexpr (!hierarchical_cost)
-        {
-            return false;
-        }
+        if constexpr (has_hard_component_projection)
+            return Expression::hard_leaf_count;
         else
-        {
-            return cost::hard_projection<
-                Aggregator,
-                typename cost_type::hard_cost_type,
-                std::tuple_element_t<Indices, component_values_type>...>;
-        }
-    }
-
-    template<std::size_t Count = 1>
-    [[nodiscard]]
-    static consteval auto find_hard_prefix() -> std::size_t
-    {
-        constexpr auto count = std::tuple_size_v<component_values_type>;
-        if constexpr (!hierarchical_cost || Count >= count)
-        {
-            return count;
-        }
-        else if constexpr (hard_prefix_matches(
-                               std::make_index_sequence<Count>{}))
-        {
-            return Count;
-        }
-        else
-        {
-            return find_hard_prefix<Count + 1>();
-        }
-    }
-
-public:
-    static constexpr std::size_t hard_component_count = find_hard_prefix<>();
-    static constexpr bool has_hard_component_projection =
-        hierarchical_cost &&
-        hard_component_count < std::tuple_size_v<component_values_type>;
+            return std::tuple_size_v<component_values_type>;
+    }();
 
     using hard_component_types = tuple_prefix_t<
         component_types,
@@ -382,8 +170,8 @@ public:
         component_values_type,
         hard_component_count>;
 
-    cost_layer_with_aggregator(InnerSM inner, Aggregator aggregator)
-        : inner_{std::move(inner)}, aggregator_{std::move(aggregator)}
+    cost_layer_with_expression(InnerSM inner, Expression expression)
+        : inner_{std::move(inner)}, expression_{std::move(expression)}
     {
     }
 
@@ -448,22 +236,14 @@ public:
     [[nodiscard]]
     auto cost_from_components(const component_values_type& values) const -> cost_type
     {
-        return std::apply(
-            [&](const auto&... value) -> cost_type {
-                return aggregator_(value...);
-            },
-            values);
+        return expression_.template evaluate<0>(values);
     }
 
     [[nodiscard]]
     auto hard_cost_from_components(const hard_component_values_type& values) const
         requires has_hard_component_projection
     {
-        return std::apply(
-            [&](const auto&... value) {
-                return aggregator_.hard(value...);
-            },
-            values);
+        return expression_.hard_cost(values);
     }
 
     [[nodiscard]]
@@ -487,15 +267,15 @@ public:
     }
 
     [[nodiscard]]
-    auto aggregator() noexcept -> Aggregator& { return aggregator_; }
-    [[nodiscard]]
-    auto aggregator() const noexcept -> const Aggregator& { return aggregator_; }
+    auto cost_expression() const noexcept -> const Expression&
+    {
+        return expression_;
+    }
 
 private:
     InnerSM inner_;
-    [[no_unique_address]] Aggregator aggregator_;
+    [[no_unique_address]] Expression expression_;
 };
-
 template<class SM>
 concept hierarchical_solution_manager =
     requires { typename SM::cost_type; } &&

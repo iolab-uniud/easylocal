@@ -134,7 +134,7 @@ easylocal/
   trace/          semantic search events, tracer protocol, recorders
   cost/           cost models (easylocal::cost): value contract and delta,
                   semantic relations, lexicographic and hierarchical costs,
-                  weighted-sum aggregators
+                  cost expressions (sum, in_order, hard_soft, apply)
   helpers/        problem-side components: SolutionManager,
                   NeighborhoodExplorer, neighborhood_union, recipes
   runners/        Runner, search_run, run_control and the search
@@ -250,10 +250,10 @@ reference MWE for multi-component weighted costs and Simulated Annealing.
 Runners and solvers are built with `make_runner<Algorithm>(parameters)` and
 `make_solver<Solver>(runner, config)`. Composition has two equivalent
 spellings: pipes (`make_runner<A>(p) | sm | nhe`,
-`solution_manager<T>() | component<C>() | aggregator(a)`,
+`solution_manager<T>() | cost::sum(component<A>(), component<B>())`,
 `neighborhood<T>() | delta<C, D>()`) and explicit `with_*` calls
-(`.with_solution_manager(sm).with_neighborhood(nhe)`, `.with_component<C>()`,
-`.with_aggregator(a)`, `.with_delta<C, D>()`), which document each step. Apps
+(`.with_solution_manager(sm).with_neighborhood(nhe)`, `.with_cost(expression)`,
+`.with_delta<C, D>()`), which document each step. Apps
 use the same grammar: `app("name").with_solution_manager(sm)
 .with_neighborhood(nhe).with_runner<A>("fi", parameters)`, or
 `app("name") | sm | nhe | runner<A>("fi", parameters)`. Assignment
@@ -306,17 +306,15 @@ Callers pass the optional control and tracer as a trailing argument:
 `bound.run(initial, rng, easylocal::with(control, tracer))`.
 
 The cost always comes from cost components; a SolutionManager only defines
-solution semantics. Cost aggregation is explicit whenever it involves a choice.
-Omitting `aggregator(...)` is allowed in two cases: with a single component its
-value is the cost (identity), and with several arithmetic components EasyLocal
-materializes a configurable unit-weight `cost::weighted_sum` (weights exposed as
-`cost.weights`) and emits a runtime warning. Several components with domain
-values always require an explicit aggregator, so domain value types never need
-arithmetic operators just to be aggregated. The warning uses the
-dependency-free logging boundary in `<easylocal/utils/logging.hpp>`; see
-[`docs/logging.md`](docs/logging.md). TSP maps its domain value with a small
-explicit aggregator, Exam Timetabling uses the built-in weighted sum, and
-Assignment a custom hierarchical aggregator.
+solution semantics. The recipe holds one **cost expression** whose leaves are
+the components: a single `component<C>()` is the cost, and several are combined
+by `cost::sum` (with weighted terms `component<C>() * w`, weights configurable
+as `cost.weights`), `cost::in_order` (lexicographic), `cost::hard_soft`
+(hierarchical, the hard components evaluated alone by TwoStage) and
+`cost::apply` (any function), nested freely. `cost::sum` adds numbers only, so
+domain value types never need arithmetic operators just to be summed. TSP
+maps its domain value with `cost::apply`, Exam Timetabling uses a weighted
+sum, and Assignment a `cost::hard_soft` with a lexicographic hard branch.
 
 Search instrumentation is separate from diagnostic logging.
 `<easylocal/trace.hpp>` provides compile-time removable typed search events,

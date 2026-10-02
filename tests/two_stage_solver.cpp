@@ -41,8 +41,8 @@ private:
     const Instance& instance_;
 };
 
-// A single component with a structured value: the implicit identity aggregator
-// makes its hierarchical value the cost.
+// A single component with a structured value: its hierarchical value is the
+// cost.
 struct HierarchicalValue
 {
     [[nodiscard]] static auto evaluate(const Solution& solution)

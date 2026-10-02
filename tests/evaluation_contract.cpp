@@ -330,7 +330,6 @@ auto check_common_evaluation(
 int main()
 {
     using easylocal::Runner;
-    using easylocal::aggregator;
     using easylocal::component;
     using easylocal::delta;
     using easylocal::neighborhood;
@@ -346,9 +345,10 @@ int main()
         auto runner =
             Runner{ProbeOneMove<false>{accepted}}
             | (solution_manager<SolutionManager>(std::ref(counters))
-               | component<FirstComponent>(std::ref(counters))
-               | component<SecondComponent>(std::ref(counters))
-               | aggregator(CountingAggregator{counters}))
+               | easylocal::cost::apply(
+                     CountingAggregator{counters},
+                     component<FirstComponent>(std::ref(counters)),
+                     component<SecondComponent>(std::ref(counters))))
             | (neighborhood<NeighborhoodExplorer>(std::ref(counters))
                | delta<FirstComponent, FirstDeltaEvaluator>(
                      std::ref(counters))
@@ -382,9 +382,10 @@ int main()
         auto runner =
             Runner{ProbeOneMove<true>{accepted}}
             | (solution_manager<SolutionManager>(std::ref(counters))
-               | component<FirstComponent>(std::ref(counters))
-               | component<SecondComponent>(std::ref(counters))
-               | aggregator(CountingAggregator{counters}))
+               | easylocal::cost::apply(
+                     CountingAggregator{counters},
+                     component<FirstComponent>(std::ref(counters)),
+                     component<SecondComponent>(std::ref(counters))))
             | (neighborhood<NeighborhoodExplorer>(std::ref(counters))
                | delta<FirstComponent, FirstDeltaEvaluator>(
                      std::ref(counters)));
@@ -418,9 +419,10 @@ int main()
         auto runner =
             Runner{ProbeOneMove<true>{accepted}}
             | (solution_manager<SolutionManager>(std::ref(counters))
-               | component<FirstComponent>(std::ref(counters))
-               | component<SecondComponent>(std::ref(counters))
-               | aggregator(CountingAggregator{counters}))
+               | easylocal::cost::apply(
+                     CountingAggregator{counters},
+                     component<FirstComponent>(std::ref(counters)),
+                     component<SecondComponent>(std::ref(counters))))
             | neighborhood<NeighborhoodExplorer>(std::ref(counters));
 
         const auto result = runner.bind(instance).run(Solution{.value = 1});

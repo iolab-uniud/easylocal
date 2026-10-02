@@ -26,9 +26,7 @@ using namespace easylocal::mwe::assignment;
     auto application = easylocal::app("controlled")
         .with_solution_manager(
             easylocal::solution_manager<AssignmentSolutionManager>()
-            | easylocal::component<CapacityCostComponent>()
-            | easylocal::component<LoadImbalanceCostComponent>()
-            | easylocal::aggregator(AssignmentCostAggregator{}))
+            | easylocal::mwe::assignment::assignment_cost())
         .with_neighborhood(
             easylocal::neighborhood<ReassignJobNeighborhoodExplorer>()
             | easylocal::delta<

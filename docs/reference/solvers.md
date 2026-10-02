@@ -36,8 +36,10 @@ add up over MultiStart's starts and TwoStage's stages.
 termination is then `cancelled` or `target_reached`, otherwise `completed`.
 
 `TwoStage` takes one runner (used for both stages) or two. It requires a
-`cost::hierarchical` cost and an aggregator modelling `cost::hard_projection`,
-so the first stage evaluates only the hard components. Stage 1 always stops
+`cost::hierarchical` cost. With a `cost::hard_soft` cost expression the first
+stage evaluates only the components of the hard branch; with another
+expression producing a hierarchical cost it evaluates them all and keeps the
+hard part. Stage 1 always stops
 at `cost::zero` of the hard cost — a feasible solution — and a caller's target
 applies to stage 2. After a cancellation in stage 1, stage 2 only evaluates
 the solution, so the result still has its full cost.

@@ -171,10 +171,11 @@ int main()
     auto runner = easylocal::Runner{
         easylocal::runners::FirstImprovement{{.max_evaluations = 500'000}}}
         | (easylocal::solution_manager<assignment::AssignmentSolutionManager>()
-           | easylocal::component<assignment::CapacityCostComponent>()
-           | easylocal::aggregator([](const assignment::CapacityValue& capacity) {
-                 return capacity.total_overload;
-             }))
+           | easylocal::cost::apply(
+                 [](const assignment::CapacityValue& capacity) {
+                     return capacity.total_overload;
+                 },
+                 easylocal::component<assignment::CapacityCostComponent>()))
         | (easylocal::neighborhood<assignment::ReassignJobNeighborhoodExplorer>()
            | easylocal::delta<
                  assignment::CapacityCostComponent,

@@ -26,10 +26,9 @@ using easylocal::runners::FirstImprovement;
 auto default_solution_manager_recipe()
 {
     return easylocal::solution_manager<AssignmentSolutionManager>()
-         | easylocal::component<CapacityCostComponent>()
-         | easylocal::aggregator([](const CapacityValue& capacity) {
-               return AssignmentCostAggregator{}.hard(capacity);
-           });
+         | easylocal::cost::apply(
+              easylocal::mwe::assignment::CapacityHardCost{},
+              easylocal::component<CapacityCostComponent>());
 }
 
 [[nodiscard]]

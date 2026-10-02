@@ -36,11 +36,15 @@ old concepts onto the new ones.
 - The cost always comes from **cost components**, and moves are evaluated
   incrementally by **delta cost components**, mirroring EasyLocal++'s
   CostComponent / DeltaCostComponent.
-- Cost models in `easylocal::cost`: plain arithmetic costs, `weighted_sum`,
+- Cost models in `easylocal::cost`: plain arithmetic costs,
   `lexicographic<...>` and `hierarchical<Hard, Soft>`, with explicit
-  better/equivalent semantics; a single component is its own cost, several
-  arithmetic ones default to a unit-weight sum, anything else asks for an
-  explicit aggregator.
+  better/equivalent semantics.
+- Cost expressions written in the recipe over the components:
+  `cost::sum` with weighted terms (`component<C>() * w`, or
+  `cost::weighted(component<C>(), w)`), `cost::in_order`,
+  `cost::hard_soft` and `cost::apply`, nested freely; their weights are
+  configuration parameters, and TwoStage reads the hard components from a
+  `cost::hard_soft` expression.
 
 ### Runners and solvers
 

@@ -46,6 +46,4 @@ library that may throw should catch exceptions inside the bridge.
 
 EasyLocal does not instrument search hot loops merely because a logging facility
 exists. Framework log sites are kept on cold diagnostic/configuration paths, so
-an application that never calls `emit` pays no search-loop cost. The implicit
-cost-aggregator warning is the first framework diagnostic migrated to this
-boundary and remains emitted once per implicit aggregator type.
+an application that never calls `emit` pays no search-loop cost.

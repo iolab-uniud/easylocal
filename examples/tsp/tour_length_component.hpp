@@ -54,7 +54,8 @@ private:
 };
 
 // TourLengthValue is a domain value, so the cost is obtained through an
-// explicit aggregator: the tour length itself.
+// explicit function, cost::apply(TourLengthCost{}, component<...>()): the tour
+// length itself.
 struct TourLengthCost
 {
     [[nodiscard]]

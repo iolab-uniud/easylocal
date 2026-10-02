@@ -23,7 +23,7 @@ be written with explicit `with_*` calls, which spell out each step:
 auto same_runner =
     el::make_runner<runners::FirstImprovement>(runners::FirstImprovementParameters{})
         .with_solution_manager(
-            el::solution_manager<TourManager>().with_component<TourLength>())
+            el::solution_manager<TourManager>().with_cost(el::component<TourLength>()))
         .with_neighborhood(
             el::neighborhood<TwoOptExplorer>().with_delta<TourLength, TwoOptLengthDelta>());
 ```

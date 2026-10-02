@@ -1,5 +1,6 @@
 #include <easylocal/cost.hpp>
 #include <easylocal/helpers/neighborhood_explorer.hpp>
+#include <easylocal/helpers/recipes.hpp>
 #include "cost_components.hpp"
 #include "cost_deltas.hpp"
 #include "neighborhood_explorer.hpp"
@@ -55,19 +56,20 @@ int main()
     const auto initial_conflicts = conflicts.evaluate(initial);
     const auto initial_consecutive = consecutive.evaluate(initial);
     const auto initial_load = load.evaluate(initial);
-    const auto aggregate = easylocal::cost::weighted_sum{
-        exam::penalty_type{1000},
-        exam::penalty_type{10},
-        exam::penalty_type{1},
-    };
-    const auto initial_cost = aggregate(
-        initial_conflicts,
-        initial_consecutive,
-        initial_load);
+    const auto cost_manager =
+        (easylocal::solution_manager<exam::ExamTimetablingSolutionManager>()
+         | easylocal::cost::sum(
+               easylocal::cost::weighted(
+                   easylocal::component<exam::StudentConflictComponent>(), 1000),
+               easylocal::cost::weighted(
+                   easylocal::component<exam::ConsecutiveExamComponent>(), 10),
+               easylocal::component<exam::TimeslotLoadComponent>()))
+            .construct(instance);
+    const auto initial_cost = cost_manager.evaluate(initial);
 
-    ok &= expect(initial_cost == 1000 * initial_conflicts.penalty +
-                                10 * initial_consecutive.penalty +
-                                initial_load.penalty,
+    ok &= expect(initial_cost == 1000 * initial_conflicts +
+                                10 * initial_consecutive +
+                                initial_load,
         "exam timetabling uses a transparent three-component weighted sum");
 
     std::size_t move_count = 0;

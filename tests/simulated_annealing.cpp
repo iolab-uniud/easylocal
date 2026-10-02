@@ -468,13 +468,12 @@ int main()
 
         const auto solution_manager_recipe =
             solution_manager<exam::ExamTimetablingSolutionManager>()
-            | component<exam::StudentConflictComponent>()
-            | component<exam::ConsecutiveExamComponent>()
-            | component<exam::TimeslotLoadComponent>()
-            | easylocal::aggregator(easylocal::cost::weighted_sum{
-                  exam::penalty_type{1000},
-                  exam::penalty_type{10},
-                  exam::penalty_type{1}});
+            | easylocal::cost::sum(
+                  easylocal::cost::weighted(
+                      component<exam::StudentConflictComponent>(), 1000),
+                  easylocal::cost::weighted(
+                      component<exam::ConsecutiveExamComponent>(), 10),
+                  component<exam::TimeslotLoadComponent>());
 
         auto runner =
             Runner{SimulatedAnnealing{
@@ -510,15 +509,10 @@ int main()
         const exam::StudentConflictComponent conflicts{instance};
         const exam::ConsecutiveExamComponent consecutive{instance};
         const exam::TimeslotLoadComponent load{instance};
-        const auto aggregate = easylocal::cost::weighted_sum{
-            exam::penalty_type{1000},
-            exam::penalty_type{10},
-            exam::penalty_type{1},
-        };
-        const auto full_cost = aggregate(
-            conflicts.evaluate(result_a.solution),
-            consecutive.evaluate(result_a.solution),
-            load.evaluate(result_a.solution));
+        const auto full_cost =
+            1000 * conflicts.evaluate(result_a.solution) +
+            10 * consecutive.evaluate(result_a.solution) +
+            load.evaluate(result_a.solution);
 
         ok &= expect(result_a.cost == full_cost,
             "three-component weighted SA cost agrees with full evaluation");

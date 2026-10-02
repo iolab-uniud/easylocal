@@ -22,7 +22,7 @@ The built-in solvers live in `easylocal::solvers`:
 | --- | --- | --- |
 | `LocalSearch` | builds an initial solution, runs once | the chosen initialization |
 | `MultiStart` | `starts` independent runs, keeps the best | the chosen initialization |
-| `TwoStage` | first stage on the hard cost until it is zero, second on the full cost | a `cost::hierarchical` cost, an aggregator modelling `cost::hard_projection` |
+| `TwoStage` | first stage on the hard cost until it is zero, second on the full cost | a `cost::hierarchical` cost, best from a `cost::hard_soft` expression |
 
 - The initialization is chosen statically, with `initialization::initial` or
   `initialization::random` checked at compile time against the
@@ -31,6 +31,34 @@ The built-in solvers live in `easylocal::solvers`:
 - `solver.solve(input, el::with(control, tracer))` cancels and traces a solve
   like a run ([chapter 15](15-observing-and-controlling.md)); the result counts
   the evaluations and iterations of all the runs.
+
+## Hard and soft costs
+
+`TwoStage` is for problems whose cost is written with `cost::hard_soft`
+([chapter 2](02-cost.md#cost-expressions)): it first removes the violations,
+then optimizes the full cost from the feasible solution it found.
+
+```cpp
+auto sm = el::solution_manager<TimetableManager>()
+        | el::cost::hard_soft(
+              el::cost::sum(el::component<Conflicts>(),
+                            el::component<Unavailability>()),
+              el::component<Compactness>() * 2);
+
+auto solver = el::make_solver<el::solvers::TwoStage>(
+    el::make_runner<runners::FirstImprovement>(runners::FirstImprovementParameters{})
+        | sm | nhe,
+    el::solvers::TwoStageConfig<el::initialization::Initial>{
+        .initialization = el::initialization::initial,
+    });
+```
+
+- The first stage evaluates only the components of the `hard` branch, read
+  from the expression, and stops as soon as the hard cost is zero.
+- The second stage starts from that solution with the full hierarchical cost,
+  where a hard degradation is never accepted.
+- The Assignment example (`examples/assignment/main.cpp`) is a complete
+  program.
 
 ## See also
 

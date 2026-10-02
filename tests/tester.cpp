@@ -106,9 +106,7 @@ auto make_application()
 {
     auto sm =
         easylocal::solution_manager<AssignmentSolutionManager>()
-        | easylocal::component<CapacityCostComponent>()
-        | easylocal::component<LoadImbalanceCostComponent>()
-        | easylocal::aggregator(AssignmentCostAggregator{});
+        | easylocal::mwe::assignment::assignment_cost();
 
     auto nhe =
         easylocal::neighborhood<ReassignJobNeighborhoodExplorer>()
@@ -133,9 +131,7 @@ auto make_multi_runner_application()
 {
     auto sm =
         easylocal::solution_manager<AssignmentSolutionManager>()
-        | easylocal::component<CapacityCostComponent>()
-        | easylocal::component<LoadImbalanceCostComponent>()
-        | easylocal::aggregator(AssignmentCostAggregator{});
+        | easylocal::mwe::assignment::assignment_cost();
 
     auto nhe =
         easylocal::neighborhood<ReassignJobNeighborhoodExplorer>()

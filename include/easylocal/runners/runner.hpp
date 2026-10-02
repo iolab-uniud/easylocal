@@ -92,8 +92,8 @@ public:
         };
     }
 
-    // Semantic cost queries used by search algorithms. An explicit aggregator
-    // may override the meaning of these relations; otherwise the ordinary cost
+    // Semantic cost queries used by search algorithms. A cost::apply at the
+    // root of the cost expression may override the meaning of these relations; otherwise the ordinary cost
     // operators provide the exact/default semantics.
     //
     // These are deliberately distinct queries. In particular,

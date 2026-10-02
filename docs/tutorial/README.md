@@ -48,7 +48,7 @@ Every EasyLocal program follows the same three steps:
 model     values      Input (immutable), Solution, Move
           services    SolutionManager       valid solutions, construction
                       cost components       one term of the objective each
-                      aggregator            the cost from the component values
+                      cost expression       the cost from the component values
                       NeighborhoodExplorer  moves: enumeration, sampling, application
                       delta evaluators      the change of a component under a move
 
@@ -58,8 +58,8 @@ compose   a runner    an algorithm plus the recipes of the services
 run       bind the runner to an Input, run it from a solution, read the result
 ```
 
-The SolutionManager with its cost components and aggregator forms the *cost
-layer*; the NeighborhoodExplorer with its delta evaluators forms the *delta
+The SolutionManager with its cost components and cost expression forms the
+*cost layer*; the NeighborhoodExplorer with its delta evaluators forms the *delta
 cost layer*. You describe these compositions with recipes, and the framework
 materializes them when the runner is bound to an Input.
 
@@ -71,7 +71,7 @@ Services borrow the Input by `const&` and never mutate it.
 
 1. [Modelling the problem](01-problem-model.md): Input, Solution, Move and the
    SolutionManager.
-2. [The cost](02-cost.md): cost components, aggregation, structured costs.
+2. [The cost](02-cost.md): cost components, cost expressions, structured costs.
 3. [Moves](03-neighborhood.md): the NeighborhoodExplorer.
 4. [Delta evaluation](04-delta-evaluation.md): evaluating moves incrementally.
 5. [Running a search](05-running-a-search.md): runners, built-in algorithms,

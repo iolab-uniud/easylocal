@@ -12,56 +12,6 @@
 namespace easylocal::mwe::exam_timetabling
 {
 
-struct StudentConflictValue
-{
-    penalty_type penalty{};
-    auto operator==(const StudentConflictValue&) const -> bool = default;
-
-    [[nodiscard]]
-    friend constexpr auto operator*(
-        const penalty_type weight,
-        const StudentConflictValue value) noexcept -> penalty_type
-    {
-        return weight * value.penalty;
-    }
-};
-
-[[nodiscard]]
-constexpr auto operator+(
-    const StudentConflictValue value,
-    const penalty_type delta) noexcept -> StudentConflictValue
-{
-    return {.penalty = value.penalty + delta};
-}
-
-struct ConsecutiveExamValue
-{
-    penalty_type penalty{};
-    auto operator==(const ConsecutiveExamValue&) const -> bool = default;
-
-    [[nodiscard]]
-    friend constexpr auto operator*(
-        const penalty_type weight,
-        const ConsecutiveExamValue value) noexcept -> penalty_type
-    {
-        return weight * value.penalty;
-    }
-};
-
-struct TimeslotLoadValue
-{
-    penalty_type penalty{};
-    auto operator==(const TimeslotLoadValue&) const -> bool = default;
-
-    [[nodiscard]]
-    friend constexpr auto operator*(
-        const penalty_type weight,
-        const TimeslotLoadValue value) noexcept -> penalty_type
-    {
-        return weight * value.penalty;
-    }
-};
-
 class StudentConflictComponent
 {
 public:
@@ -72,7 +22,7 @@ public:
     }
 
     [[nodiscard]]
-    auto evaluate(const ExamTimetable& solution) const -> StudentConflictValue
+    auto evaluate(const ExamTimetable& solution) const -> penalty_type
     {
         assert(solution.timeslot_by_exam.size() == instance_.exam_count);
         penalty_type penalty = 0;
@@ -86,7 +36,7 @@ public:
             }
         }
 
-        return {.penalty = penalty};
+        return penalty;
     }
 
     // A delta evaluator may be co-located with its component when that is the
@@ -144,7 +94,7 @@ public:
     }
 
     [[nodiscard]]
-    auto evaluate(const ExamTimetable& solution) const -> ConsecutiveExamValue
+    auto evaluate(const ExamTimetable& solution) const -> penalty_type
     {
         assert(solution.timeslot_by_exam.size() == instance_.exam_count);
         penalty_type penalty = 0;
@@ -161,7 +111,7 @@ public:
             }
         }
 
-        return {.penalty = penalty};
+        return penalty;
     }
 
 private:
@@ -178,7 +128,7 @@ public:
     }
 
     [[nodiscard]]
-    auto evaluate(const ExamTimetable& solution) const -> TimeslotLoadValue
+    auto evaluate(const ExamTimetable& solution) const -> penalty_type
     {
         assert(solution.timeslot_by_exam.size() == instance_.exam_count);
         std::vector<penalty_type> load(instance_.timeslot_count, 0);
@@ -195,7 +145,7 @@ public:
             penalty += count * count;
         }
 
-        return {.penalty = penalty};
+        return penalty;
     }
 
 private:

@@ -136,8 +136,8 @@ int main()
 
     const auto manager_recipe =
         solution_manager<TspSolutionManager>()
-        | component<TourLengthComponent>()
-        | easylocal::aggregator(TourLengthCost{});
+        | easylocal::cost::apply(
+              TourLengthCost{}, component<TourLengthComponent>());
 
     auto fallback_runner =
         Runner{ProbeOneMove{improving_move, true}}

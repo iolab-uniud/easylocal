@@ -33,7 +33,6 @@ auto expect(const bool condition, const std::string_view description) -> bool
 int main()
 {
     using namespace easylocal::mwe::tsp;
-    using easylocal::aggregator;
     using easylocal::component;
     using easylocal::solution_manager;
 
@@ -52,8 +51,8 @@ int main()
 
     const auto manager_recipe =
         solution_manager<TspSolutionManager>()
-        | component<TourLengthComponent>()
-        | aggregator(TourLengthCost{});
+        | easylocal::cost::apply(
+              TourLengthCost{}, component<TourLengthComponent>());
     const auto manager = manager_recipe.construct(instance);
 
     static_assert(std::same_as<typename decltype(manager)::cost_type, double>);

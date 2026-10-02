@@ -23,9 +23,7 @@ using namespace easylocal::mwe::assignment;
 {
     auto sm =
         easylocal::solution_manager<AssignmentSolutionManager>()
-        | easylocal::component<CapacityCostComponent>()
-        | easylocal::component<LoadImbalanceCostComponent>()
-        | easylocal::aggregator(AssignmentCostAggregator{});
+        | easylocal::mwe::assignment::assignment_cost();
 
     auto nhe =
         easylocal::neighborhood<ReassignJobNeighborhoodExplorer>()

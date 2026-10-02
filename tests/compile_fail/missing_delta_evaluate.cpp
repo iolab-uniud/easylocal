@@ -4,7 +4,6 @@ int main()
 {
     using namespace compile_fail_fixture;
     using easylocal::Runner;
-    using easylocal::aggregator;
     using easylocal::component;
     using easylocal::delta;
     using easylocal::neighborhood;
@@ -14,7 +13,7 @@ int main()
 
     auto runner =
         Runner{Algorithm{}}
-        | (solution_manager<BaseSolutionManager>() | component<ComponentA>() | aggregator(CostAggregator{}))
+        | (solution_manager<BaseSolutionManager>() | easylocal::cost::apply(CostFunction{}, component<ComponentA>()))
         | (neighborhood<Neighborhood>()
            | delta<ComponentA, MissingDeltaEvaluateA>());
 
