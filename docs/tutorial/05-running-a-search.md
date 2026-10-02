@@ -10,12 +10,13 @@ auto fi = el::make_runner<runners::FirstImprovement>(
               runners::FirstImprovementParameters{})
           | sm | nhe;
 
-auto bound = fi.bind(tsp);
-const auto result = bound.run(bound.initial_solution());
+auto search = fi.bind(tsp);
+const auto result = search.run(search.initial_solution());
 ```
 
 `make_runner` builds the algorithm from its parameters; `bind` materializes the
-services for an Input, and `run` searches from a solution. Composition can also
+services for an Input and returns the bound runner (`search`), and `run`
+searches from a solution. Composition can also
 be written with explicit `with_*` calls, which spell out each step:
 
 <!-- snippet: tutorial/main.cpp:with-spelling -->
@@ -56,8 +57,8 @@ auto sa = el::make_runner<runners::SimulatedAnnealing<Classic>>(
           | sm | nhe;
 
 std::mt19937_64 rng{42};
-auto sa_bound = sa.bind(tsp);
-const auto annealed = sa_bound.run(sa_bound.initial_solution(), rng);
+auto sa_search = sa.bind(tsp);
+const auto annealed = sa_search.run(sa_search.initial_solution(), rng);
 ```
 
 Metropolis acceptance needs the numeric difference of two costs,

@@ -83,8 +83,8 @@ public:
   well formed. A solution that violates problem constraints is still valid; such
   violations are expressed as cost.
 - `initial_solution()` and `random_solution(rng)` are optional. Write them when
-  something needs to build solutions: a solver, the Tester, or you through
-  `bound.initial_solution()`. The RNG is always passed in, so whoever runs the
+  something needs to build solutions: a solver, the Tester, or you through the
+  bound runner's `initial_solution()`. The RNG is always passed in, so whoever runs the
   search controls seeding.
 
 The SolutionManager never computes the cost: the cost always comes from cost

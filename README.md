@@ -302,7 +302,7 @@ registration key: `make_runner<MySearch>(MyParameters{...})`,
 `app(...).with_runner<MySearch>("name")` and `runner_config<MySearch>()`.
 
 Callers pass the optional control and tracer as a trailing argument:
-`bound.run(initial, rng, easylocal::with(control, tracer))`.
+`search.run(initial, rng, easylocal::with(control, tracer))`.
 
 The cost always comes from cost components; a SolutionManager only defines
 solution semantics. The recipe holds one **cost expression** whose leaves are

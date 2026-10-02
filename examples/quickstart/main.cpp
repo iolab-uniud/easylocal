@@ -10,22 +10,28 @@
 #include <vector>
 
 // 1. The problem: Input, Solution and Move are plain values.
+
+// Input: the instance, immutable during the search.
 struct Tsp
 {
     std::size_t cities{};
     std::vector<double> distance{}; // cities x cities, row-major
 
+    // [[nodiscard]]: discarding the result of a query is a compiler warning,
+    // since calling it without using the value is certainly a mistake.
     [[nodiscard]] auto d(std::size_t from, std::size_t to) const -> double
     {
         return distance[from * cities + to];
     }
 };
 
+// Solution: the state the search modifies.
 struct Tour
 {
     std::vector<std::size_t> order;
 };
 
+// Move: a local change of a Tour.
 struct TwoOpt
 {
     std::size_t i; // reverse the segment order[i + 1 .. j]
@@ -127,8 +133,8 @@ int main()
         | easylocal::neighborhood<TwoOptExplorer>();
 
     // 6. Bind it to an Input and run it from a solution.
-    auto bound = runner.bind(tsp);
-    const auto result = bound.run(bound.initial_solution());
+    auto search = runner.bind(tsp);
+    const auto result = search.run(search.initial_solution());
 
     std::cout << "length " << result.cost << " after " << result.evaluations
               << " evaluations\n";

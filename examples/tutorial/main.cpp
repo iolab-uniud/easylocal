@@ -30,8 +30,8 @@ int main(int argc, char* argv[])
                   runners::FirstImprovementParameters{})
               | sm | nhe;
 
-    auto bound = fi.bind(tsp);
-    const auto result = bound.run(bound.initial_solution());
+    auto search = fi.bind(tsp);
+    const auto result = search.run(search.initial_solution());
     // [first-improvement] --------------------------------------------------
 
     // [with-spelling] ------------------------------------------------------
@@ -61,8 +61,8 @@ int main(int argc, char* argv[])
               | sm | nhe;
 
     std::mt19937_64 rng{42};
-    auto sa_bound = sa.bind(tsp);
-    const auto annealed = sa_bound.run(sa_bound.initial_solution(), rng);
+    auto sa_search = sa.bind(tsp);
+    const auto annealed = sa_search.run(sa_search.initial_solution(), rng);
     // [annealing] ----------------------------------------------------------
 
     // [union] --------------------------------------------------------------
@@ -166,24 +166,24 @@ int main(int argc, char* argv[])
     el::run_control control{stop.get_token(), observer};
     el::trace::memory_recorder<double> trace;
 
-    auto descent_bound = descent.bind(tsp);
-    const auto observed = descent_bound.run(
-        descent_bound.initial_solution(), rng, el::with(control, trace));
+    auto descent_search = descent.bind(tsp);
+    const auto observed = descent_search.run(
+        descent_search.initial_solution(), rng, el::with(control, trace));
     // [control] ------------------------------------------------------------
 
-    auto same_bound = same_runner.bind(tsp);
+    auto same_search = same_runner.bind(tsp);
     auto weighted = (el::make_runner<runners::FirstImprovement>(
                          runners::FirstImprovementParameters{})
                      | weighted_sm | el::neighborhood<TwoOptExplorer>())
                         .bind(tsp);
-    auto union_bound = union_sa.bind(tsp);
+    auto union_search = union_sa.bind(tsp);
     std::mt19937_64 union_rng{7};
 
     std::cout << "first improvement " << result.cost
-              << "\nwith spelling " << same_bound.run(same_bound.initial_solution()).cost
+              << "\nwith spelling " << same_search.run(same_search.initial_solution()).cost
               << "\nweighted " << weighted.run(weighted.initial_solution()).cost
               << "\nannealing " << annealed.cost
-              << "\nunion " << union_bound.run(union_bound.initial_solution(), union_rng).cost
+              << "\nunion " << union_search.run(union_search.initial_solution(), union_rng).cost
               << "\nmulti-start " << best.cost
               << "\napp " << app_result.cost
               << "\ntester " << tester.evaluate()

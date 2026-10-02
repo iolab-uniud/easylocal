@@ -12,7 +12,7 @@ as the trailing run option:
 ```cpp
 using cost_type = /* runner cost type */;
 easylocal::trace::memory_recorder<cost_type> trace;
-auto result = bound_runner.run(initial_solution, easylocal::with(trace));
+auto result = search.run(initial_solution, easylocal::with(trace));
 ```
 
 Core events are emitted by the framework-owned `easylocal::search_run`, not by
@@ -73,7 +73,7 @@ tracing is lossless.
 ```cpp
 std::ofstream out{"run-0042.eltrace", std::ios::binary};
 easylocal::trace::async_binary_recorder<cost_type> trace{out};
-auto result = bound_runner.run(initial_solution, trace);
+auto result = search.run(initial_solution, trace);
 trace.flush();              // drain the writer and expose I/O failures
 if (!trace.good()) { /* handle output failure */ }
 ```

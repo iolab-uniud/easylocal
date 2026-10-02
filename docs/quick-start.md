@@ -32,22 +32,28 @@ library.
 #include <vector>
 
 // 1. The problem: Input, Solution and Move are plain values.
+
+// Input: the instance, immutable during the search.
 struct Tsp
 {
     std::size_t cities{};
     std::vector<double> distance{}; // cities x cities, row-major
 
+    // [[nodiscard]]: discarding the result of a query is a compiler warning,
+    // since calling it without using the value is certainly a mistake.
     [[nodiscard]] auto d(std::size_t from, std::size_t to) const -> double
     {
         return distance[from * cities + to];
     }
 };
 
+// Solution: the state the search modifies.
 struct Tour
 {
     std::vector<std::size_t> order;
 };
 
+// Move: a local change of a Tour.
 struct TwoOpt
 {
     std::size_t i; // reverse the segment order[i + 1 .. j]
@@ -149,8 +155,8 @@ int main()
         | easylocal::neighborhood<TwoOptExplorer>();
 
     // 6. Bind it to an Input and run it from a solution.
-    auto bound = runner.bind(tsp);
-    const auto result = bound.run(bound.initial_solution());
+    auto search = runner.bind(tsp);
+    const auto result = search.run(search.initial_solution());
 
     std::cout << "length " << result.cost << " after " << result.evaluations
               << " evaluations\n";
@@ -193,8 +199,15 @@ length 26 after 9 evaluations
 4. `TwoOptExplorer` lists the 2-opt moves of a tour and applies them.
 5. `make_runner<FirstImprovement>(...) | sm | nhe` composes the algorithm with
    the recipes of the services.
-6. `bind(tsp)` materializes the services for this Input; `run` searches from
-   the initial tour until a local optimum, since no evaluation budget was set.
+6. `bind(tsp)` materializes the services for this Input and returns the bound
+   runner, here `search`; `run` searches from the initial tour until a local
+   optimum, since no evaluation budget was set.
+
+Every member that only computes a value is marked `[[nodiscard]]`: calling
+`tour_manager.is_valid(tour);` and ignoring the answer compiles, but is
+certainly a bug, and the attribute turns it into a compiler warning. The
+annotation is optional and changes nothing at run time; the examples use it
+because EasyLocal's own build treats warnings as errors.
 
 ## Next steps
 

@@ -11,9 +11,9 @@ auto observer = [](const el::run_progress& progress) {
 el::run_control control{stop.get_token(), observer};
 el::trace::memory_recorder<double> trace;
 
-auto descent_bound = descent.bind(tsp);
-const auto observed = descent_bound.run(
-    descent_bound.initial_solution(), rng, el::with(control, trace));
+auto descent_search = descent.bind(tsp);
+const auto observed = descent_search.run(
+    descent_search.initial_solution(), rng, el::with(control, trace));
 ```
 
 - `stop.request_stop()`, from any thread, ends the run cooperatively; the result

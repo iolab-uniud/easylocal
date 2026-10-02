@@ -12,7 +12,7 @@ how to build them. It does not compute the cost; see [Cost](cost.md).
 | `input_type`, `solution_type` | yes | everything |
 | `input() const -> const input_type&` | yes | everything |
 | `is_valid(const solution_type&) const -> bool` | yes | debug assertions, checks, Tester |
-| `initial_solution() const -> solution_type` | no | `initialization::initial`, `bound.initial_solution()`, Tester |
+| `initial_solution() const -> solution_type` | no | `initialization::initial`, bound runner's `initial_solution()`, Tester |
 | `random_solution(RNG&) const -> solution_type` | no | `initialization::random`, MultiStart, Tester |
 
 Concepts: `base_solution_manager<SM>` (the required members),

@@ -12,8 +12,8 @@ algorithm describes the search; the framework owns its execution.
 auto runner = make_runner<Algorithm>(parameters...)   // the documented construction
             | sm_recipe | nhe_recipe;                  // or .with_solution_manager(sm).with_neighborhood(nhe)
 
-auto bound = runner.bind(input);                       // materializes the services
-auto result = bound.run(solution, algorithm_args..., with(control, tracer));
+auto search = runner.bind(input);                      // materializes the services
+auto result = search.run(solution, algorithm_args..., with(control, tracer));
 ```
 
 | Member | Purpose |
@@ -21,8 +21,8 @@ auto result = bound.run(solution, algorithm_args..., with(control, tracer));
 | `bind(const Input&)` | build the services for an Input (temporaries are rejected) |
 | `configuration<"name">()` | configuration tree of the algorithm and recipes |
 | `with_hard_cost()` | the same runner on the hard branch of a hierarchical cost |
-| bound: `run(solution, args..., [with(...)])` | run the algorithm |
-| bound: `initial_solution()`, `random_solution(rng)`, `input()`, `better(a, b)` | helpers |
+| bound runner: `run(solution, args..., [with(...)])` | run the algorithm |
+| bound runner: `initial_solution()`, `random_solution(rng)`, `input()`, `better(a, b)` | helpers |
 
 ## Built-in algorithms
 
@@ -76,7 +76,7 @@ public:
 ```
 
 Extra `run` arguments (an RNG, for instance) are passed through
-`bound.run(solution, extra...)`.
+`search.run(solution, extra...)`.
 
 ### search_run
 
