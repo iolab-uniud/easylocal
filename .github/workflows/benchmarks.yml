@@ -1,0 +1,43 @@
+name: Benchmarks
+
+# Starts the benchmarks of iolab-uniud/easylocal-benchmarks (EasyLocal 4
+# against EasyLocal 3, and the infrastructure benchmarks) on a release; they
+# publish their results and rebuild the documentation, whose Benchmarks page
+# shows them.
+#
+# Secrets: BENCHMARKS_TOKEN, a token allowed to send a repository_dispatch to
+# iolab-uniud/easylocal-benchmarks (fine-grained: Contents read and write).
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'EasyLocal tag, branch or commit to measure'
+        type: string
+        default: main
+
+permissions:
+  contents: read
+
+jobs:
+  dispatch:
+    name: Start the benchmarks
+    runs-on: ubuntu-26.04
+    timeout-minutes: 5
+    steps:
+      - name: Dispatch to easylocal-benchmarks
+        env:
+          GH_TOKEN: ${{ secrets.BENCHMARKS_TOKEN }}
+          REF: ${{ inputs.ref || github.ref_name }}
+        run: |
+          if [ -z "$GH_TOKEN" ]; then
+            echo '::warning::BENCHMARKS_TOKEN is not set: the benchmarks were not started.'
+            exit 0
+          fi
+          gh api repos/iolab-uniud/easylocal-benchmarks/dispatches \
+            -f event_type=easylocal-release \
+            -f "client_payload[ref]=$REF"
+          echo "Benchmarks started for EasyLocal $REF" >> "$GITHUB_STEP_SUMMARY"

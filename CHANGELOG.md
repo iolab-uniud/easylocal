@@ -102,12 +102,18 @@ old concepts onto the new ones.
   front-end where useful.
 - [API stability](docs/stability.md): what is stable, extensible, experimental
   or internal in 4.x.
+- [Benchmarks](docs/benchmarks.md) against EasyLocal 3 (`easylocal-legacy`
+  v3.3.1) on the examples, ported to both frameworks, and of the infrastructure:
+  every release starts them in
+  [easylocal-benchmarks](https://github.com/iolab-uniud/easylocal-benchmarks),
+  EasyLocal 3 is measured once per benchmark matrix.
 
 ### Platforms
 
 - C++23 with GCC 15 and 16, Clang 22 (libstdc++ and libc++) on Linux, and
-  AppleClang (tested with Xcode 26.6 and 27) and GCC 16 on macOS ARM64;
-  CMake 3.25+ and Ninja. CI covers the matrix, every optional component with
+  AppleClang (tested with Xcode 26.6 and 27) and GCC 16 on macOS ARM64,
+  clang-cl with the Microsoft STL on Windows; CMake 3.25+ and Ninja. CI
+  covers the matrix, every optional component with
   installed and fetched dependencies, and reports test coverage.
 
 [Unreleased]: https://github.com/iolab-uniud/easylocal/compare/v4.0.0...HEAD

@@ -183,8 +183,11 @@ The same writer can be passed as the third argument to `write_jsonl(...)` when a
 
 ## Overhead benchmark
 
-With `EASYLOCAL_BUILD_BENCHMARKS=ON`, `easylocal_trace_benchmark` compares the
-same First Improvement workload under:
+The tracing overhead is measured in
+[easylocal-benchmarks](https://github.com/iolab-uniud/easylocal-benchmarks)
+(`infrastructure/`) at every release, and shown on the
+[Benchmarks](benchmarks.md) page. `easylocal_trace_benchmark` compares the same
+First Improvement workload under:
 
 - ordinary baseline execution;
 - explicit `null_tracer`;
@@ -213,9 +216,8 @@ shapes: scalar `int64`, a two-component lexicographic cost, and a hierarchical
 cost containing that hard lexicographic branch plus one soft component. It
 reports nanoseconds and serialized bytes per event.
 
-The Trace Microbenchmarks GitHub Actions workflow runs both targets in Release on
-Linux/GCC and macOS/AppleClang and publishes raw CSV results. These numbers are
-regression diagnostics, not cross-machine performance promises.
+These numbers are regression diagnostics, not cross-machine performance
+promises.
 
 ## Deferred extensions
 

@@ -68,20 +68,14 @@ option(
 )
 
 option(
-    EASYLOCAL_BUILD_BENCHMARKS
-    "Build opt-in EasyLocal performance benchmarks"
-    OFF
-)
-
-option(
     EASYLOCAL_STRICT_WARNINGS
-    "Compile EasyLocal's own tests, examples and benchmarks with strict warnings"
+    "Compile EasyLocal's own tests and examples with strict warnings"
     ${PROJECT_IS_TOP_LEVEL}
 )
 
 option(
     EASYLOCAL_WARNINGS_AS_ERRORS
-    "Treat warnings in EasyLocal's own tests, examples and benchmarks as errors"
+    "Treat warnings in EasyLocal's own tests and examples as errors"
     OFF
 )
 
@@ -347,19 +341,16 @@ if(EASYLOCAL_ENABLE_REST)
 endif()
 
 # The concrete MWE is deliberately outside the public EasyLocal API.
-# Its model targets are also consumed by tests and benchmarks, so make them
+# Its model targets are also consumed by the tests (and by easylocal-benchmarks,
+# which compiles the examples from a checkout), so make them
 # available whenever one of those project facilities is requested.
-if(EASYLOCAL_BUILD_EXAMPLES OR EASYLOCAL_BUILD_TESTS OR EASYLOCAL_BUILD_BENCHMARKS)
+if(EASYLOCAL_BUILD_EXAMPLES OR EASYLOCAL_BUILD_TESTS)
     add_subdirectory(examples)
 endif()
 
 if(EASYLOCAL_BUILD_TESTS)
     include(CTest)
     add_subdirectory(tests)
-endif()
-
-if(EASYLOCAL_BUILD_BENCHMARKS)
-    add_subdirectory(benchmarks/neighborhood_traversal)
 endif()
 
 install(

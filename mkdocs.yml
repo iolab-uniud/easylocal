@@ -90,3 +90,4 @@ nav:
       - Logging: logging.md
       - Dependencies: dependency-policy.md
       - API stability: stability.md
+  - Benchmarks: benchmarks.md

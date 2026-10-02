@@ -2,7 +2,6 @@
 
 [![CI](https://github.com/iolab-uniud/easylocal/actions/workflows/ci.yml/badge.svg)](https://github.com/iolab-uniud/easylocal/actions/workflows/ci.yml)
 [![Optional Components](https://github.com/iolab-uniud/easylocal/actions/workflows/optional-components.yml/badge.svg)](https://github.com/iolab-uniud/easylocal/actions/workflows/optional-components.yml)
-[![Trace Microbenchmarks](https://github.com/iolab-uniud/easylocal/actions/workflows/trace-microbenchmarks.yml/badge.svg)](https://github.com/iolab-uniud/easylocal/actions/workflows/trace-microbenchmarks.yml)
 [![Coverage](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fiolab-uniud%2Feasylocal%2Fbadges%2Fcoverage.json)](https://github.com/iolab-uniud/easylocal/actions/workflows/ci.yml)
 [![Documentation](https://github.com/iolab-uniud/easylocal/actions/workflows/docs.yml/badge.svg)](https://iolab-uniud.github.io/easylocal/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
@@ -569,37 +568,20 @@ or for a single toolchain:
 
 ## Performance benchmarks
 
-A small opt-in benchmark suite under `benchmarks/neighborhood_traversal/` tracks
-performance of the neighborhood traversal abstractions that remain part of the
-design: raw First/Next as an oracle, the public cursor-to-range adapter, and
-coroutine-backed ranges. `std::generator` is included when the active standard
-library provides it.
+The benchmarks live in
+[easylocal-benchmarks](https://github.com/iolab-uniud/easylocal-benchmarks),
+which compiles them from an EasyLocal checkout:
 
-Run it locally with:
+- EasyLocal 4 against EasyLocal 3 (`easylocal-legacy` v3.3.1) on the three
+  example problems, ported to both frameworks; EasyLocal 3 is measured once
+  per benchmark matrix;
+- the infrastructure: neighborhood traversal (cursors, cursor ranges,
+  coroutine ranges), runner-level search and tracing overhead.
 
-```sh
-./scripts/run-neighborhood-benchmarks.sh \
-    build/neighborhood-benchmark-results \
-    5000000 5 123456789
-```
-
-The benchmark checks semantic equivalence before timing and reports diagnostic
-ratios only. It deliberately has no automatic performance pass/fail threshold.
-Authoritative cross-toolchain neighborhood measurements use the manual
-**Neighborhood Benchmarks** GitHub Actions workflow.
-
-Semantic tracing has two benchmark targets. `easylocal_trace_benchmark`
-measures end-to-end search overhead for disabled/null tracing, counter-only
-tracing, the memory recorder, and synchronous/asynchronous ELTR binary recording
-to discard streams and temporary files. JSONL is intentionally omitted from the
-performance comparison because text formatting dominates that path; JSONL remains
-covered by tracing correctness tests.
-
-`easylocal_trace_cost_encoding_benchmark` isolates binary cost encoding for
-scalar, lexicographic, and hierarchical cost models using the same
-`move_evaluated` event shape. The **Trace Microbenchmarks** workflow runs both
-probes in Release on Linux/GCC and macOS/AppleClang, publishes their CSV output in
-the GitHub job summary, and uploads the raw results as artifacts.
+Every release tag starts them (the **Benchmarks** workflow sends a
+`repository_dispatch`); the results are rendered on the
+[Benchmarks](https://iolab-uniud.github.io/easylocal/benchmarks/) page of the
+documentation. They are regression diagnostics, with no pass/fail threshold.
 
 ## Tests
 

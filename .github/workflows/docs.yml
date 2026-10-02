@@ -48,6 +48,16 @@ jobs:
           sudo env DEBIAN_FRONTEND=noninteractive \
             apt-get install -y --no-install-recommends doxygen
 
+      # The Benchmarks page is rendered from the results of
+      # iolab-uniud/easylocal-benchmarks, which starts this workflow after
+      # publishing new ones.
+      - name: Benchmark results
+        run: |
+          git clone -q --depth=1 https://github.com/iolab-uniud/easylocal-benchmarks.git \
+            build/easylocal-benchmarks
+          python3 build/easylocal-benchmarks/scripts/summarize.py \
+            build/easylocal-benchmarks/results --output docs/benchmarks.md
+
       - name: Build
         run: |
           uv run --frozen mkdocs build --strict
