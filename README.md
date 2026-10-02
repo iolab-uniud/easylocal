@@ -573,8 +573,8 @@ The benchmarks live in
 which compiles them from an EasyLocal checkout:
 
 - EasyLocal 4 against EasyLocal 3 (`easylocal-legacy` v3.3.1) on the three
-  example problems, ported to both frameworks; EasyLocal 3 is measured once
-  per benchmark matrix;
+  example problems, ported to both frameworks, both measured at every release
+  on the same machine;
 - the infrastructure: neighborhood traversal (cursors, cursor ranges,
   coroutine ranges), runner-level search and tracing overhead.
 

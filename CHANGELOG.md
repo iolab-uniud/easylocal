@@ -106,7 +106,7 @@ old concepts onto the new ones.
   v3.3.1) on the examples, ported to both frameworks, and of the infrastructure:
   every release starts them in
   [easylocal-benchmarks](https://github.com/iolab-uniud/easylocal-benchmarks),
-  EasyLocal 3 is measured once per benchmark matrix.
+  which measures both frameworks on the same machine.
 
 ### Platforms
 
