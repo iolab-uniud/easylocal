@@ -1,5 +1,8 @@
 // Optional solution identity: a hash and an equality from the SolutionManager
 // or from the solution type, and the helpers to write a hash.
+#include <easylocal/cost.hpp>
+#include <easylocal/helpers/detail/cost_layer.hpp>
+#include <easylocal/helpers/recipes.hpp>
 #include <easylocal/helpers/solution_manager.hpp>
 #include <easylocal/utils/hash.hpp>
 
@@ -10,6 +13,7 @@
 #include <iostream>
 #include <ranges>
 #include <string_view>
+#include <type_traits>
 #include <vector>
 
 namespace
@@ -70,6 +74,22 @@ public:
     {
         return lhs.order == rhs.order
             || std::ranges::equal(lhs.order, rhs.order | std::views::reverse);
+    }
+};
+
+struct CachedLength
+{
+    [[nodiscard]] static auto evaluate(const Tour& tour) noexcept -> int
+    {
+        return tour.cached_length;
+    }
+};
+
+struct TourSize
+{
+    [[nodiscard]] static auto evaluate(const Tour& tour) noexcept -> int
+    {
+        return static_cast<int>(tour.order.size());
     }
 };
 
@@ -135,6 +155,37 @@ int main()
             && easylocal::hash_range(std::array{1, 2})
                 != easylocal::hash_range(std::array{2, 1}),
         "hash_combine tells values apart and hash_range depends on the order");
+
+    // A SolutionManager in a recipe, with its cost layers, keeps its identity.
+    const auto recipe =
+        easylocal::solution_manager<TourManager>() | easylocal::component<CachedLength>();
+    const auto service = recipe.construct(instance);
+    using service_type = std::remove_const_t<decltype(service)>;
+    static_assert(easylocal::has_solution_hash_member<service_type>);
+    static_assert(easylocal::has_solution_equality_member<service_type>);
+    const auto hard_soft_recipe = easylocal::solution_manager<TourManager>()
+        | easylocal::cost::hard_soft(
+            easylocal::component<TourSize>(),
+            easylocal::component<CachedLength>());
+    using hard_soft_type = decltype(hard_soft_recipe.construct(instance));
+    const easylocal::detail::hard_cost_layer<hard_soft_type> hard{
+        hard_soft_recipe.construct(instance)};
+    static_assert(easylocal::has_solution_hash_member<decltype(hard)>);
+    ok &= expect(
+        easylocal::solutions_equal(service, tour, reversed)
+            && easylocal::solution_hash(service, tour)
+                == easylocal::solution_hash(tours, tour)
+            && easylocal::solutions_equal(hard, tour, reversed),
+        "the cost layers forward the SolutionManager's identity");
+
+    const auto plain_recipe = easylocal::solution_manager<PlainManager<Tour>>()
+        | easylocal::component<CachedLength>();
+    const auto plain_service = plain_recipe.construct(instance);
+    static_assert(!easylocal::has_solution_equality_member<
+        std::remove_const_t<decltype(plain_service)>>);
+    ok &= expect(
+        !easylocal::solutions_equal(plain_service, tour, stale),
+        "without members the cost layers leave the solution type's identity");
 
     const PlainManager<Opaque> opaques{instance};
     ok &= expect(

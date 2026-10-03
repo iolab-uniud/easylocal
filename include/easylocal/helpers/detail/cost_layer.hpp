@@ -9,6 +9,7 @@
 
 #include <concepts>
 #include <cstddef>
+#include <cstdint>
 #include <functional>
 #include <tuple>
 #include <type_traits>
@@ -94,6 +95,22 @@ public:
         requires has_initial_solution<BaseSM>
     {
         return base_.initial_solution();
+    }
+
+    // The problem's solution identity, when it defines one (see
+    // has_solution_hash); otherwise the solution type's own applies.
+    [[nodiscard]]
+    std::uint64_t hash(const solution_type& solution) const
+        requires has_solution_hash_member<BaseSM>
+    {
+        return base_.hash(solution);
+    }
+
+    [[nodiscard]]
+    bool equal(const solution_type& lhs, const solution_type& rhs) const
+        requires has_solution_equality_member<BaseSM>
+    {
+        return base_.equal(lhs, rhs);
     }
 
     template<class RNG>
@@ -210,6 +227,22 @@ public:
         requires has_initial_solution<InnerSM>
     {
         return inner_.initial_solution();
+    }
+
+    // The problem's solution identity, when it defines one (see
+    // has_solution_hash); otherwise the solution type's own applies.
+    [[nodiscard]]
+    std::uint64_t hash(const solution_type& solution) const
+        requires has_solution_hash_member<InnerSM>
+    {
+        return inner_.hash(solution);
+    }
+
+    [[nodiscard]]
+    bool equal(const solution_type& lhs, const solution_type& rhs) const
+        requires has_solution_equality_member<InnerSM>
+    {
+        return inner_.equal(lhs, rhs);
     }
 
     template<class RNG>
@@ -337,6 +370,22 @@ public:
         requires has_initial_solution<SM>
     {
         return solution_manager_.initial_solution();
+    }
+
+    // The problem's solution identity, when it defines one (see
+    // has_solution_hash); otherwise the solution type's own applies.
+    [[nodiscard]]
+    std::uint64_t hash(const solution_type& solution) const
+        requires has_solution_hash_member<SM>
+    {
+        return solution_manager_.hash(solution);
+    }
+
+    [[nodiscard]]
+    bool equal(const solution_type& lhs, const solution_type& rhs) const
+        requires has_solution_equality_member<SM>
+    {
+        return solution_manager_.equal(lhs, rhs);
     }
 
     template<class RNG>
