@@ -621,53 +621,13 @@ int main(int argc, const char* argv[])
 }
 ```
 
-The same program in EasyLocal 4 is `examples/tutorial/migrated_main.cpp`. Its
-three parts follow.
+The same program in EasyLocal 4 is `examples/tutorial/cli_main.cpp`. The
+objects and their links become an app: one description that names the
+services and registers each runner under the name the command line uses.
+`cli::run` does the rest of `main`:
 
-The parameters of `main` become a parameter block, with a schema in place of
-the `Parameter<T>` members:
-
-<!-- snippet: tutorial/migrated_main.cpp:migrated-parameters -->
+<!-- snippet: tutorial/cli_main.cpp:cli -->
 ```cpp
-// EasyLocal 3's ParameterBox "main" and its Parameter<T> members, as a
-// parameter block: --main.instance, --main.seed, --main.method, ...
-struct MainParameters
-{
-    std::filesystem::path instance;
-    std::uint64_t seed{0};
-    std::string method{"sa"};
-    std::filesystem::path output_file;
-
-    static consteval auto parameter_schema()
-    {
-        namespace config = easylocal::config;
-        return config::fields(
-            config::field<"instance", &MainParameters::instance>("Input instance"),
-            config::field<"seed", &MainParameters::seed>("Random seed"),
-            config::field<"method", &MainParameters::method>("Runner: fi or sa"),
-            config::field<"output_file", &MainParameters::output_file>(
-                "Solution file (empty: standard output)"));
-    }
-
-    // EasyLocal 3 checked IsSet() in main; a block checks its own values.
-    easylocal::config::validation_result validate() const
-    {
-        if (instance.empty())
-            return easylocal::config::validation_result::failure("instance must be set");
-        return easylocal::config::validation_result::success();
-    }
-};
-```
-
-The objects and their links become an app: one description that names the
-services and registers each runner under the name the command line uses. The
-runner parameters that EasyLocal 3 read as `--SA::cooling_rate` are now
-`--runners.sa.temperature.cooling_rate`, and `--help` lists them all:
-
-<!-- snippet: tutorial/migrated_main.cpp:migrated-app -->
-```cpp
-// The objects EasyLocal 3 built and linked in main (sm.AddCostComponent,
-// nhe.AddDeltaCostComponent, one runner object each), as one description.
 auto application = el::app("tsp")
     | (el::solution_manager<TourManager>() | el::component<TourLength>())
     | (el::neighborhood<TwoOptExplorer>()
@@ -676,58 +636,33 @@ auto application = el::app("tsp")
     | el::runner<runners::SimulatedAnnealing<Classic>>(
         "sa",
         {.temperature = {.samples_per_temperature = 50}});
+
+return el::cli::run(application, argc, argv);
 ```
 
-<!-- snippet: tutorial/migrated_main.cpp:migrated-command-line -->
-```cpp
-MainParameters main_parameters{.instance = EASYLOCAL_TUTORIAL_INSTANCE};
-el::config::parameter_set configuration;
-configuration.add("main", main_parameters);
-configuration.add(application.configuration()); // --runners.sa.temperature.*
+| EasyLocal 3 | `cli::run` |
+| --- | --- |
+| `ParameterBox main_parameters`, `Parameter<T>`, `CommandLineParameters::Parse` | `--instance`, `--seed`, `--runner`, `--start`, `--solution`, `--output`, `--target`, and `--config <file>` |
+| `--main::method` and `SetRunner` | `--runner fi`: a runner registered in the app, by name |
+| the runners' parameters, `--SA::cooling_rate` | `--runners.sa.temperature.cooling_rate`; `--help` lists them all |
+| `Random::SetSeed(seed)` | `--seed`, the seed of the run's random generator |
+| `--main::init_state` | `--solution <file>`, or `--start initial` / `random` |
+| `solver.Solve()`, printing `result.cost` and `result.output` | the run, then `cost`, `time` and the solution, or `--output <file>` |
+| `IsSet()` checks | the parameters' own validation, with an exit status of 2 |
 
-const auto configured = el::config::load_and_apply(argc, argv, configuration);
-if (configured.help_requested)
-{
-    std::cout << el::config::cli_help(argv[0], configuration);
-    return 0;
-}
-if (!configured)
-{
-    el::config::print_diagnostics(std::cerr, configured);
-    return 2;
-}
-```
-
-The solver and `SetRunner` become a Session, which runs a registered runner
-by name; the seed goes to the Session's RNG instead of `Random::SetSeed`:
-
-<!-- snippet: tutorial/migrated_main.cpp:migrated-run -->
-```cpp
-// SimpleLocalSearch with SetRunner and Solve: a Session on the Input,
-// which runs a registered runner by name from a random solution.
-const auto tsp = el::load_input<Tsp>(main_parameters.instance);
-el::Session session{application, tsp, main_parameters.seed};
-session.use_random_solution(session.rng());
-if (!session.run(main_parameters.method))
-{
-    std::cerr << "unknown method " << main_parameters.method << '\n';
-    return 2;
-}
-
-std::cout << "cost " << session.evaluate() << '\n';
-if (main_parameters.output_file.empty())
-    el::write_solution(tsp, session.solution(), std::cout);
-else
-    el::save_solution(tsp, session.solution(), main_parameters.output_file);
-```
-
-The program runs as before, with dots in place of `::`:
+The program runs as before, with plain switches in place of `--main::`:
 
 ```text
-$ easylocal_tutorial_migrated --main.instance five.tsp --main.method fi --main.seed 1
+$ easylocal_tutorial_cli --instance five.tsp --runner fi --seed 1
 cost 26
+time 4.0375e-05
 0 1 3 4 2
 ```
+
+Parameters of the program's own, such as the biases of EasyLocal 3 programs
+that were not runner parameters, are given to `cli::run` as a parameter set,
+`el::cli::run(application, argc, argv, {.parameters = own})`, and parsed with
+the others ([chapter 11](tutorial/11-apps-and-tools.md)).
 
 The tester takes the same app, so the branch that opened `RunMainMenu` becomes
 a call to the TextUI, in a program linked with the optional `TUI` component
@@ -816,7 +751,7 @@ it:
 // length is the objective (soft). EasyLocal 3 needed a SolutionManager
 // for each set of components (all, hard only); with_hard_cost() derives
 // the hard-only runner from this one.
-auto cost = el::solution_manager<TourManager>()
+auto sm = el::solution_manager<TourManager>()
     | el::cost::hard_soft(
         el::cost::apply(
             [](double longest) { return std::max(0.0, longest - 8.0); },
@@ -827,13 +762,14 @@ auto cost = el::solution_manager<TourManager>()
 // ignores the delta of the soft TourLength.
 auto descent =
     el::make_runner<runners::FirstImprovement>(runners::FirstImprovementParameters{})
-    | cost
+    | sm
     | (el::neighborhood<TwoOptExplorer>()
         | el::delta<TourLength, TwoOptLengthDelta>());
 ```
 
-The parameters are declared and read as in the previous step. Those that
-depend on the instance are set on the runner once the Input is loaded, before
+`cli::run` runs runners by name, not solvers, so this program still reads its
+parameters itself, as `load_and_apply` does
+([chapter 9](tutorial/09-configuration.md)). Those that depend on the instance are set on the runner once the Input is loaded, before
 the solver copies it:
 
 <!-- snippet: tutorial/staged_main.cpp:staged-instance -->

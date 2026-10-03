@@ -155,26 +155,59 @@ if (!session.run("sa", el::stop_at(session.read_cost("26"))))
   stop at the first solution that reaches it, a known optimum or a lower
   bound for example.
 
-A program that takes these from the command line adds the app's parameters to
-its set before building the Session, which copies the app, and the run's
-target as `el::RunParameters`:
+## A command-line program
 
+`el::cli::run` turns an app into a complete program: it reads the instance,
+the seed, the runner and the app's parameters from the command line, runs the
+runner on a Session and prints the result. The whole `main` of
+`examples/tutorial/cli_main.cpp` is:
+
+<!-- snippet: tutorial/cli_main.cpp:cli -->
 ```cpp
-el::RunParameters run;
-el::config::parameter_set configuration;
-configuration.add(application.configuration()); // --runners.sa.temperature.*
-configuration.add("run", run);                   // --run.target
-// load_and_apply(argc, argv, configuration), then:
-el::Session session{application, tsp, /* seed */ 2026};
-session.use_initial_solution();
-const bool ran = run.target.empty()
-    ? session.run("sa")
-    : session.run("sa", el::stop_at(session.read_cost(run.target)));
+auto application = el::app("tsp")
+    | (el::solution_manager<TourManager>() | el::component<TourLength>())
+    | (el::neighborhood<TwoOptExplorer>()
+        | el::delta<TourLength, TwoOptLengthDelta>())
+    | el::runner<runners::FirstImprovement>("fi")
+    | el::runner<runners::SimulatedAnnealing<Classic>>(
+        "sa",
+        {.temperature = {.samples_per_temperature = 50}});
+
+return el::cli::run(application, argc, argv);
 ```
 
-The target stays text until the Input is loaded, since the problem may read
-its costs in its own way. The TextUI (chapter 12) and the REST service
-(chapter 14) take the same paths and targets.
+```text
+$ easylocal_tutorial_cli --instance five.tsp --runner sa --seed 7
+cost 26
+time 0.00998033
+2 3 1 0 4
+```
+
+| Switch | |
+| --- | --- |
+| `--instance <file>` | the Input, read with the `read_input` hook (chapter 5); required |
+| `--seed <n>` | the seed of the random generator given to random solutions and stochastic runners |
+| `--runner <name>` | a registered runner; the first one when empty |
+| `--start random`, `--start initial` | the starting solution; random by default when the problem has `random_solution` |
+| `--solution <file>` | the starting solution read from a file, with `read_solution` |
+| `--output <file>` | where the solution goes, with `write_solution`; standard output by default |
+| `--target <cost>` | stop at the first solution that reaches this cost, as `session.read_cost` reads it |
+| `--runners.<name>.*`, `--cost.*`, `--neighborhood.*` | the app's parameters, as `configuration()` lists them |
+| `--config <file>` | the same settings from a file (chapter 9); `--help` lists them all |
+
+- It prints `cost`, `time` (the seconds of the run) and the solution. The exit
+  status is 0 after a run, 2 for an invalid command line (an unknown runner,
+  a missing instance) and 1 when the run fails, for example on an unreadable
+  file.
+- Parameters of the program's own take part as a parameter set, parsed with
+  the others: `el::cli::run(application, argc, argv, {.parameters = own})`,
+  where `own` holds blocks that outlive the call (chapter 9).
+- A program that needs more, such as several runs or a solver, builds the same
+  steps from `el::config::load_and_apply` and a Session; see the
+  [reference](../reference/app-and-tools.md).
+
+The TextUI (chapter 12) and the REST service (chapter 14) take the same
+parameter paths and targets.
 
 ## See also
 

@@ -55,7 +55,7 @@ int main(int argc, char* argv[])
     // length is the objective (soft). EasyLocal 3 needed a SolutionManager
     // for each set of components (all, hard only); with_hard_cost() derives
     // the hard-only runner from this one.
-    auto cost = el::solution_manager<TourManager>()
+    auto sm = el::solution_manager<TourManager>()
         | el::cost::hard_soft(
             el::cost::apply(
                 [](double longest) { return std::max(0.0, longest - 8.0); },
@@ -66,7 +66,7 @@ int main(int argc, char* argv[])
     // ignores the delta of the soft TourLength.
     auto descent =
         el::make_runner<runners::FirstImprovement>(runners::FirstImprovementParameters{})
-        | cost
+        | sm
         | (el::neighborhood<TwoOptExplorer>()
             | el::delta<TourLength, TwoOptLengthDelta>());
     // [staged-recipes] -----------------------------------------------------

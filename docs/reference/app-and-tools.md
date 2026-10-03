@@ -50,6 +50,7 @@ or your own, each with its own result type.
 | Tool | Purpose |
 | --- | --- |
 | `check(app, input[, solution]) -> app_check_report` | contract checks of the composed problem; `print_report` |
+| `cli::run(app, argc, argv[, options]) -> int` | the app as a command-line program (`<easylocal/app/cli.hpp>`): see below |
 | `tui::run(app, options)`, `tui::run_launcher(options, apps...)` | interactive terminal tester (TUI component, FTXUI); `tui::options` |
 | `rest::blueprint(prefix, app, codec, options)` | Crow blueprint: asynchronous runs, status, cancellation, solutions (REST component); see [REST](../rest.md) |
 
@@ -65,7 +66,20 @@ changes and stay for the rest of the session. Its *Target cost* field, when
 filled, stops each run at the first solution that reaches it; below it, the
 current cost is shown in the same syntax.
 
-A program that reads its configuration from the command line adds
+`cli::run` parses the command line and a `--config` file with
+`config::load_and_apply`: its own block `cli::parameters` at the root
+(`instance`, `seed`, `runner`, `start`, `solution`, `output`, `target`), the
+app's `configuration()`, and `options.parameters`, the program's own set. It
+then builds a `Session` with the seed, loads the Input, takes the starting
+solution (`--solution`, else `--start`: `random` by default when the problem
+has `random_solution`, `initial` otherwise), runs the runner by name, with
+`stop_at` when `--target` is set, and writes `cost`, `time` and the solution
+(or saves it to `--output`) to `options.out`; errors go to `options.err`. It
+returns 0, 2 for an invalid command line or an unknown runner, 1 when the run
+throws. It requires the `read_input` hook, and the solution hooks only when the
+corresponding switches are used.
+
+A program that reads its configuration from the command line itself adds
 `easylocal::RunParameters` for the target, under a prefix of its choice:
 
 ```cpp
