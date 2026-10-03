@@ -312,9 +312,14 @@ jobs:
             build/ci23-release/Testing/Temporary/LastTest.log
 
   windows:
-    name: Windows / clang-cl / C++23
+    name: Windows / ${{ matrix.toolchain }} / C++23
     runs-on: windows-2025
     timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        toolchain:
+          - clang-cl
     env:
       PRESET: ci23-release
     steps:
@@ -369,7 +374,7 @@ jobs:
         if: ${{ always() && !env.ACT }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: windows-clang-cl-cxx23
+          name: windows-${{ matrix.toolchain }}-cxx23
           retention-days: 7
           if-no-files-found: warn
           path: |
