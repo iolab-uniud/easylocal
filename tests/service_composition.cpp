@@ -10,7 +10,6 @@
 #include <easylocal/helpers/detail/solution_manager_recipe.hpp>
 #include <easylocal/runners/first_improvement.hpp>
 #include <easylocal/runners/runner.hpp>
-#include <easylocal/utils/logging.hpp>
 
 #include <array>
 #include <concepts>

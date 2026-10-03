@@ -1,7 +1,7 @@
 """Drive an EasyLocal TextUI in a pseudo-terminal, for tests and screenshots.
 
 The binary runs in a pty of fixed size; its output is fed to a VT100 emulator
-(pyte), so `screen()` is what a user would see. Interactions wait for the
+(pyte), so `text()` is what a user would see. Interactions wait for the
 screen instead of sleeping, in the spirit of Playwright's auto-waiting:
 
     with Tui(binary) as tui:
@@ -151,8 +151,6 @@ class Tui:
 
     def text(self) -> str:
         return "\n".join(line.rstrip() for line in self.screen_buffer.display)
-
-    screen = text
 
     # -- input ----------------------------------------------------------------
 

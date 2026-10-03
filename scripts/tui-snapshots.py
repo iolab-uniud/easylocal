@@ -53,10 +53,6 @@ def color(value: str, default: str) -> str:
     return default
 
 
-def to_text(screen: pyte.Screen) -> str:
-    return "\n".join(line.rstrip() for line in screen.display)
-
-
 def to_svg(screen: pyte.Screen) -> str:
     cell_w, cell_h, font = 8.4, 17, 14
     width, height = COLUMNS * cell_w + 16, LINES * cell_h + 16
@@ -123,7 +119,7 @@ def main() -> int:
                     tui.press(action)
                     tui.settle(quiet=0.6)
             if as_text:
-                print(f"=== {name}\n{to_text(tui.screen_buffer)}\n")
+                print(f"=== {name}\n{tui.text()}\n")
             else:
                 (OUTPUT / f"{name}.svg").write_text(to_svg(tui.screen_buffer))
                 print(f"wrote {(OUTPUT / name).relative_to(ROOT)}.svg")

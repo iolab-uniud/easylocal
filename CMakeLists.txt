@@ -343,7 +343,7 @@ if(EASYLOCAL_ENABLE_REST)
     )
 endif()
 
-# The concrete MWE is deliberately outside the public EasyLocal API.
+# The examples are deliberately outside the public EasyLocal API.
 # Its model targets are also consumed by the tests (and by easylocal-benchmarks,
 # which compiles the examples from a checkout), so make them
 # available whenever one of those project facilities is requested.

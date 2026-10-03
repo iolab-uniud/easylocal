@@ -1093,6 +1093,15 @@ if(TARGET easylocal_tutorial)
         PROPERTIES PASS_REGULAR_EXPRESSION "violations 0, length [0-9]+\n")
 endif()
 
+if(TARGET easylocal_pfsp_tabu)
+    add_test(
+        NAME easylocal.example.pfsp-tabu
+        COMMAND easylocal_pfsp_tabu --solver.search.max_iterations=50)
+    set_tests_properties(
+        easylocal.example.pfsp-tabu
+        PROPERTIES PASS_REGULAR_EXPRESSION "makespan: +[0-9]+\n")
+endif()
+
 if(TARGET easylocal_assignment_mwe)
     add_test(
         NAME easylocal.example.assignment-cli-help

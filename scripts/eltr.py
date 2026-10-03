@@ -67,7 +67,6 @@ TYPES = {
     14: ("route", None),
     15: ("cost", None),
 }
-COST = 15
 
 
 class FormatError(Exception):
