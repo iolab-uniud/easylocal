@@ -1,0 +1,318 @@
+// Tabu Search on a line of positions 0..10, whose moves step left or right; a
+// step forbids the opposite step while it is in the tabu list.
+#include <easylocal/config/parameter_set.hpp>
+#include <easylocal/cost.hpp>
+#include <easylocal/runners/runner.hpp>
+#include <easylocal/runners/tabu_search.hpp>
+#include <easylocal/trace.hpp>
+
+#include <algorithm>
+#include <array>
+#include <cstddef>
+#include <iostream>
+#include <random>
+#include <string_view>
+#include <variant>
+#include <vector>
+
+namespace
+{
+
+using namespace easylocal;
+using namespace easylocal::runners;
+
+struct LineInstance
+{
+};
+
+struct Position
+{
+    int value{};
+};
+
+struct Step
+{
+    int delta{};
+};
+
+class LineManager
+{
+public:
+    using input_type = LineInstance;
+    using solution_type = Position;
+
+    explicit LineManager(const LineInstance& instance) noexcept : instance_{instance} {}
+
+    [[nodiscard]] auto input() const noexcept -> const LineInstance&
+    {
+        return instance_;
+    }
+
+    [[nodiscard]] static auto is_valid(const Position& position) noexcept -> bool
+    {
+        return position.value >= 0 && position.value <= 10;
+    }
+
+private:
+    const LineInstance& instance_;
+};
+
+// The left step first, then the right one. With every_move_tabu, every move
+// is forbidden by any move in the list.
+class LineExplorer
+{
+public:
+    using input_type = LineInstance;
+    using solution_type = Position;
+    using move_type = Step;
+
+    explicit LineExplorer(const LineManager& manager, const bool every_move_tabu = false)
+        : instance_{manager.input()}, every_move_tabu_{every_move_tabu}
+    {
+    }
+
+    [[nodiscard]] auto input() const noexcept -> const LineInstance&
+    {
+        return instance_;
+    }
+
+    [[nodiscard]] static auto is_valid(
+        const Position& position,
+        const Step& step) noexcept -> bool
+    {
+        return LineManager::is_valid(Position{position.value + step.delta});
+    }
+
+    static void make_move(Position& position, const Step& step) noexcept
+    {
+        position.value += step.delta;
+    }
+
+    [[nodiscard]] static auto moves(const Position& position) -> std::vector<Step>
+    {
+        std::vector<Step> steps;
+        for (const auto delta : {-1, +1})
+            if (is_valid(position, Step{delta}))
+                steps.push_back(Step{delta});
+        return steps;
+    }
+
+    [[nodiscard]] auto inverse(const Position&, const Step& move, const Step& tabu_move)
+        const -> bool
+    {
+        return every_move_tabu_ || move.delta == -tabu_move.delta;
+    }
+
+private:
+    const LineInstance& instance_;
+    bool every_move_tabu_;
+};
+
+// The cost of each position, 0..10.
+template<int... Costs>
+struct Profile
+{
+    [[nodiscard]] static auto evaluate(const Position& position) noexcept -> int
+    {
+        constexpr std::array<int, sizeof...(Costs)> costs{Costs...};
+        return costs[static_cast<std::size_t>(position.value)];
+    }
+};
+
+// 1 is a local minimum (3, between 5 and 4); past the hill at 3, 5 has cost 0.
+using Valley = Profile<5, 3, 4, 6, 2, 0, 7, 8, 9, 9, 9>;
+
+template<class Algorithm, class Cost>
+[[nodiscard]]
+auto line_runner(
+    const typename Algorithm::parameters_type& parameters,
+    const bool every_move_tabu = false)
+{
+    return easylocal::make_runner<Algorithm>(parameters)
+        | (solution_manager<LineManager>() | component<Cost>())
+        | neighborhood<LineExplorer>(every_move_tabu);
+}
+
+auto expect(const bool condition, const std::string_view description) -> bool
+{
+    if (!condition)
+    {
+        std::cerr << "FAILED: " << description << '\n';
+        return false;
+    }
+    return true;
+}
+
+} // namespace
+
+int main()
+{
+    bool ok = true;
+    const LineInstance instance;
+
+    {
+        ok &= expect(
+            static_cast<bool>(
+                TabuSearchParameters<tabu::FixedLengthParameters>{}.validate())
+                && !tabu::FixedLengthParameters{.tenure = 0}.validate()
+                && !TabuSearchParameters<
+                    tabu::FixedLengthParameters>{.max_idle_iterations = 0}
+                    .validate(),
+            "tabu search validates its parameters");
+
+        TabuSearch<>::parameters_type parameters;
+        easylocal::config::parameter_set configuration;
+        configuration.add(parameters);
+        ok &= expect(
+            std::ranges::any_of(
+                configuration.parameters(),
+                [](const easylocal::config::parameter_info& parameter) {
+                    return parameter.path == "tabu_list.tenure"
+                        && parameter.value == "10";
+                }),
+            "the tabu list's parameters are the group tabu_list");
+        const std::array invalid{
+            easylocal::config::text_override{"tabu_list.tenure", "0"}};
+        ok &= expect(
+            !configuration.apply(invalid),
+            "the tabu list's parameters are validated with the search's");
+        const std::array valid{easylocal::config::text_override{"tabu_list.tenure", "3"}};
+        ok &= expect(
+            static_cast<bool>(configuration.apply(valid))
+                && parameters.tabu_list.tenure == 3,
+            "the tabu list's parameters can be changed");
+    }
+
+    {
+        // From 1: up to 2 (the best move, though worse), 3 (the way back is
+        // tabu), 4 and 5 (cost 0); then 6, 7 and 8 without improving.
+        auto runner = line_runner<TabuSearch<>, Valley>(
+            {.max_idle_iterations = 3, .tabu_list = {.tenure = 2}});
+        std::mt19937 rng{7U};
+        const auto result = runner.bind(instance).run(Position{1}, rng);
+        ok &= expect(
+            result.solution.value == 5 && result.cost == 0,
+            "tabu search leaves a local minimum and returns the best solution");
+        ok &= expect(
+            result.termination == termination_reason::idle_limit_reached
+                && result.iterations == 7,
+            "tabu search stops after max_idle_iterations without improving");
+
+        auto bounded = line_runner<TabuSearch<>, Valley>(
+            {.max_idle_iterations = 3, .max_iterations = 2, .tabu_list = {.tenure = 2}});
+        const auto stopped = bounded.bind(instance).run(Position{1}, rng);
+        ok &= expect(
+            stopped.iterations == 2 && stopped.cost == 3
+                && stopped.termination == termination_reason::completed,
+            "tabu search stops after max_iterations");
+    }
+
+    {
+        // Every move is tabu after the first: with aspiration by objective the
+        // tabu moves are evaluated, and only improvements of the best are
+        // admitted; without aspiration they are not evaluated, and the least
+        // tabu move is applied.
+        using Slope = Profile<10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0>;
+        auto aspired =
+            line_runner<TabuSearch<tabu::FixedLength, aspiration::ByObjective>, Slope>(
+                {.max_idle_iterations = 2,
+                    .max_iterations = 4,
+                    .tabu_list = {.tenure = 3}},
+                true);
+        std::mt19937 rng{7U};
+        const auto by_objective = aspired.bind(instance).run(Position{2}, rng);
+        ok &= expect(
+            by_objective.solution.value == 6 && by_objective.cost == 4,
+            "aspiration admits tabu moves that improve the best cost");
+
+        auto strict = line_runner<TabuSearch<tabu::FixedLength, aspiration::None>, Slope>(
+            {.max_idle_iterations = 10, .max_iterations = 4, .tabu_list = {.tenure = 3}},
+            true);
+        const auto none = strict.bind(instance).run(Position{2}, rng);
+        ok &= expect(
+            none.iterations == 4 && none.evaluations < by_objective.evaluations,
+            "without aspiration tabu moves are not evaluated, the least tabu is applied");
+    }
+
+    {
+        // From 5 both steps reach cost 1: over several seeds both are chosen.
+        using Twin = Profile<9, 9, 9, 9, 1, 3, 1, 9, 9, 9, 9>;
+        bool left = false;
+        bool right = false;
+        for (unsigned seed = 0; seed < 32; ++seed)
+        {
+            auto runner = line_runner<TabuSearch<>, Twin>(
+                {.max_iterations = 1, .tabu_list = {.tenure = 2}});
+            std::mt19937 rng{seed};
+            const auto result = runner.bind(instance).run(Position{5}, rng);
+            left = left || result.solution.value == 4;
+            right = right || result.solution.value == 6;
+        }
+        ok &= expect(left && right, "ties between the best moves are broken at random");
+    }
+
+    {
+        // From 5, the left step improves (2) and comes first, the right one
+        // improves more (0).
+        using Uneven = Profile<9, 9, 9, 9, 2, 3, 0, 9, 9, 9, 9>;
+        std::mt19937 rng{7U};
+        const auto best =
+            line_runner<TabuSearch<>, Uneven>(
+                {.max_iterations = 1, .tabu_list = {.tenure = 2}})
+                .bind(instance)
+                .run(Position{5}, rng);
+        const auto first =
+            line_runner<FirstImprovementTabuSearch<>, Uneven>(
+                {.max_iterations = 1, .tabu_list = {.tenure = 2}})
+                .bind(instance)
+                .run(Position{5}, rng);
+        const auto on_best = line_runner<FirstImprovementTabuSearch<>, Uneven>(
+            {.max_iterations = 1, .improve_on_best = true, .tabu_list = {.tenure = 2}})
+                                 .bind(instance)
+                                 .run(Position{5}, rng);
+        ok &= expect(
+            best.solution.value == 6 && first.solution.value == 4
+                && first.evaluations == 2 && on_best.solution.value == 4,
+            "first improvement stops the scan at the first improving move");
+
+        // From 1 nothing improves: the best admissible move is applied.
+        const auto worse =
+            line_runner<FirstImprovementTabuSearch<>, Valley>(
+                {.max_iterations = 1, .tabu_list = {.tenure = 2}})
+                .bind(instance)
+                .run(Position{1}, rng);
+        ok &= expect(
+            worse.iterations == 1 && worse.evaluations == 3,
+            "without an improving move first improvement scans the whole neighborhood");
+    }
+
+    {
+        auto runner = line_runner<TabuSearch<>, Valley>(
+            {.max_idle_iterations = 3, .tabu_list = {.tenure = 2}});
+        std::mt19937 rng{7U};
+        easylocal::trace::memory_recorder<int> trace;
+        const auto result =
+            runner.bind(instance).run(Position{1}, rng, easylocal::with(trace));
+        std::size_t accepted = 0;
+        std::size_t incumbents = 0;
+        for (const auto& record : trace.records())
+        {
+            using recorder = easylocal::trace::memory_recorder<int>;
+            accepted += std::holds_alternative<recorder::move_accepted_record>(record);
+            incumbents +=
+                std::holds_alternative<recorder::incumbent_updated_record>(record);
+        }
+        ok &= expect(
+            accepted == result.iterations && incumbents == 2,
+            "tabu search traces every applied move and the best-cost updates");
+
+        const auto targeted =
+            runner.bind(instance).run(Position{1}, rng, easylocal::stop_at(2));
+        ok &= expect(
+            targeted.termination == termination_reason::target_reached
+                && targeted.cost == 2,
+            "tabu search stops at a reached target");
+    }
+
+    return ok ? 0 : 1;
+}

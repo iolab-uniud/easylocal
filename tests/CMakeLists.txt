@@ -542,6 +542,20 @@ add_test(
 )
 
 add_executable(
+    easylocal_tabu_search_test
+    tabu_search.cpp
+)
+target_link_libraries(
+    easylocal_tabu_search_test
+    PRIVATE
+        EasyLocal::Core
+)
+add_test(
+    NAME easylocal.tabu-search
+    COMMAND easylocal_tabu_search_test
+)
+
+add_executable(
     easylocal_cost_semantics_test
     cost_semantics.cpp
 )

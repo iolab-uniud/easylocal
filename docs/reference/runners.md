@@ -40,6 +40,8 @@ held as an object: `make_runner<Algorithm>(args...)` or `Runner{Algorithm{...}}`
 | `runners::HillClimbing` | `random_move`, `better`, `better_or_equivalent` | `max_idle_iterations`, `max_evaluations` (0: no budget) | proposed moves |
 | `runners::LateAcceptanceHillClimbing` | `random_move`, `better`, `better_or_equivalent` | `history_length`, `max_idle_iterations`, `max_evaluations` (0: no budget) | proposed moves |
 | `runners::GreatDeluge` | `random_move`, `better`, an arithmetic cost | `initial_level`, `min_level`, `level_rate`, `neighbors_sampled`, `max_evaluations` (0: no budget) | proposed moves |
+| `runners::TabuSearch<List, Aspiration>` | `moves` or cursor, `better`, `inverse` | `max_idle_iterations`, `max_iterations`, `max_evaluations`, `tabu_list`: the list's | committed moves |
+| `runners::FirstImprovementTabuSearch<List, Aspiration>` | as TabuSearch | as TabuSearch, plus `improve_on_best` | committed moves |
 | `runners::SimulatedAnnealing<Temperature, Acceptance>` | `random_move`, `better`, an acceptance-compatible cost | a temperature policy, an acceptance policy | proposed moves |
 
 The budget is checked only before evaluating a move, so an empty neighborhood
@@ -58,6 +60,33 @@ cost, and with `history_length` 1 it accepts the moves Hill Climbing accepts.
 Its idle count runs from the last improvement of the best cost, and it returns
 the best solution found. EasyLocal 3 recorded the best cost in the history;
 EasyLocal 4 records the current cost, as in the original algorithm.
+
+Tabu Search applies at each iteration the best admissible move of the whole
+neighborhood, even a worsening one, ties broken uniformly at random. A move is
+admissible unless the tabu list forbids it, through the neighborhood's
+`inverse` (see [NeighborhoodExplorer](neighborhood-explorer.md)), and the
+aspiration criterion does not lift the prohibition:
+`aspiration::ByObjective` (the default) admits a tabu move that would improve
+the best cost, `aspiration::None` never does and then skips evaluating tabu
+moves. When every move is tabu, the least tabu one (the shortest remaining
+tenure) is applied. The search ends with `idle_limit_reached` after
+`max_idle_iterations` iterations without improving the best cost, and returns
+the best solution found. `FirstImprovementTabuSearch` stops the scan at the
+first admissible move that improves the current cost (with `improve_on_best`,
+the best cost); without one it applies the best admissible move. Both take the
+RNG as a `run` argument, for the ties.
+
+Tabu lists in `runners::tabu`; their parameters are the group `tabu_list`:
+
+| List | Parameters | A move stays tabu |
+| --- | --- | --- |
+| `FixedLength` | `tenure` | for `tenure` iterations after the move it would undo |
+
+A tabu list is a value with its parameters that makes, for each run, a state
+for the move type: `tabu_tenure(is_inverse)` gives the iterations left before
+a move is admissible (nothing when it is), `update(step, rng)` records an
+applied move (`tabu_step`: the move, the solution, its cost, the iteration,
+whether the best improved). `tabu_list_for` checks a custom list.
 
 Great Deluge accepts a move that improves the current cost or whose cost does
 not exceed the water level. The level starts at `initial_level` times the

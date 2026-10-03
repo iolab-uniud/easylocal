@@ -65,7 +65,9 @@ old concepts onto the new ones.
   Annealing**, with the temperature policies `Classic`, `FixedLength`,
   `Cutoff`, `Hybrid`, `FixedTemperature`, `TimeBased` (cooling spread over a
   running time) and `Reheating`, each able to estimate its initial
-  temperature from sampled moves, and Metropolis acceptance. Writing a new
+  temperature from sampled moves, and Metropolis acceptance; **Tabu Search**
+  and **First Improvement Tabu Search**, with pluggable tabu lists (fixed
+  length) and aspiration criteria (by objective, none). Writing a new
   runner means writing one `run(...)` function against
   `easylocal::search_run`, which owns counters, evaluation budget,
   cancellation, progress and trace events.

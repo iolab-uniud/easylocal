@@ -11,4 +11,5 @@
 #include <easylocal/runners/runner.hpp>
 #include <easylocal/runners/search_run.hpp>
 #include <easylocal/runners/simulated_annealing.hpp>
+#include <easylocal/runners/tabu_search.hpp>
 // IWYU pragma: end_exports
