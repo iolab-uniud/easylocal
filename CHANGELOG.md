@@ -108,6 +108,11 @@ old concepts onto the new ones.
   `tui::run(app, options)`, is a view on a Session, and every REST run has a
   Session of its own.
   Tools give stochastic runners an RNG they own, seeded reproducibly.
+- **Command-line programs**: `cli::run(app, argc, argv)`
+  (`<easylocal/app/cli.hpp>`) runs an app from the command line: the instance,
+  the seed, the runner by name, the starting solution, the output file and a
+  target cost, with the app's parameters and the program's own, then prints
+  the cost, the running time and the solution.
 - **Reading and writing**: optional hooks on the problem's types read an
   Input, read and write a Solution and describe a value; `load_input`,
   `load_solution`, `save_solution` and `describe` (`<easylocal/app/io.hpp>`)
