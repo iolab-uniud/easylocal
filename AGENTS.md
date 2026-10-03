@@ -82,6 +82,9 @@ hook (`git config core.hooksPath .githooks`) checks the staged lines;
   `examples/tutorial`: change the example, then run
   `scripts/sync-doc-snippets.py` (the test `easylocal.docs.snippets` checks
   they agree). Edit the prose in `docs/` directly.
+- Where a page shows code of both versions, as `docs/from-easylocal-3.md`
+  does, each block carries a caption: ```` ```cpp title="EasyLocal 3" ```` or
+  ```` ```cpp title="EasyLocal 4" ````.
 - When the TextUI changes, regenerate its screenshots with
   `uv run scripts/tui-snapshots.py build/<preset>/examples/tutorial/easylocal_tutorial_tui`.
 - Every user-visible change goes in `CHANGELOG.md`, and in the reference page

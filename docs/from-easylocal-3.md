@@ -41,7 +41,7 @@ the tutorial. Beyond the names:
 - In place of `using namespace EasyLocal::Core;`, give the namespace a short
   alias, as the code of this page does:
 
-  ```cpp
+  ```cpp title="EasyLocal 4"
   namespace el = easylocal;               // el::app, el::component, ...
   namespace runners = easylocal::runners; // runners::FirstImprovement, ...
   ```
@@ -66,8 +66,7 @@ EasyLocal 4 code is the tutorial's, which is compiled and tested.
 
 An EasyLocal 3 Input was a class that read its own file in the constructor:
 
-```cpp
-// EasyLocal 3
+```cpp title="EasyLocal 3"
 class Input
 {
 public:
@@ -90,7 +89,7 @@ Now the Input is a plain value, and reading it is a separate hook, so that an
 Input can also be built in code (as in the tests) or received over HTTP:
 
 <!-- snippet: tutorial/tsp.hpp:model -->
-```cpp
+```cpp title="EasyLocal 4"
 // Input: the instance, immutable during the search.
 struct Tsp
 {
@@ -130,8 +129,7 @@ struct SwapCities
 An EasyLocal 3 State was constructed from the Input and often kept a
 reference to it:
 
-```cpp
-// EasyLocal 3
+```cpp title="EasyLocal 3"
 class Tour
 {
 public:
@@ -154,8 +152,7 @@ and assigned.
 
 ### 3. The Move
 
-```cpp
-// EasyLocal 3
+```cpp title="EasyLocal 3"
 class TwoOpt
 {
 public:
@@ -177,8 +174,7 @@ none of these operators is required any more:
 
 ### 4. The SolutionManager
 
-```cpp
-// EasyLocal 3
+```cpp title="EasyLocal 3"
 class TspSolutionManager : public SolutionManager<Input, Tour, CostStructure>
 {
 public:
@@ -200,7 +196,7 @@ public:
 ```
 
 <!-- snippet: tutorial/tsp.hpp:solution-manager -->
-```cpp
+```cpp title="EasyLocal 4"
 class TourManager : public easylocal::solution_manager_base<Tsp, Tour>
 {
 public:
@@ -253,8 +249,7 @@ the generator as a parameter: replace `Random::GetGenerator()` and
 
 ### 5. The cost components
 
-```cpp
-// EasyLocal 3
+```cpp title="EasyLocal 3"
 class TourLength : public CostComponent<Input, Tour, double>
 {
 public:
@@ -275,7 +270,7 @@ public:
 ```
 
 <!-- snippet: tutorial/tsp.hpp:cost-component -->
-```cpp
+```cpp title="EasyLocal 4"
 class TourLength
 {
 public:
@@ -306,7 +301,7 @@ private:
   expression of the recipe. A program with hard components `H1`, `H2` and soft
   components `S1` (weight 1) and `S2` (weight 5) becomes:
 
-  ```cpp
+  ```cpp title="EasyLocal 4"
   el::solution_manager<Manager>()
       | el::cost::hard_soft(
           el::cost::sum(el::component<H1>(), el::component<H2>()),
@@ -324,8 +319,7 @@ private:
 
 ### 6. The delta cost components
 
-```cpp
-// EasyLocal 3
+```cpp title="EasyLocal 3"
 class TwoOptTourLengthDelta : public DeltaCostComponent<Input, Tour, TwoOpt, double>
 {
 public:
@@ -346,7 +340,7 @@ public:
 ```
 
 <!-- snippet: tutorial/tsp.hpp:delta -->
-```cpp
+```cpp title="EasyLocal 4"
 class TwoOptLengthDelta
 {
 public:
@@ -382,7 +376,7 @@ To check a delta against the full evaluation, as the `MoveTester`'s "check
 neighborhood costs" did, use the Session ([chapter 13](tutorial/13-checking.md)):
 
 <!-- snippet: tutorial/main.cpp:session-checks -->
-```cpp
+```cpp title="EasyLocal 4"
 const auto costs = session.check_neighborhood_costs(); // delta vs full evaluation
 const auto independence =
     session.check_move_independence(); // null and repeated moves
@@ -393,8 +387,7 @@ if (costs.mismatches != 0 || costs.invalid != 0 || sampling.out_of_neighborhood 
 
 ### 7. The NeighborhoodExplorer
 
-```cpp
-// EasyLocal 3
+```cpp title="EasyLocal 3"
 class TwoOptNeighborhoodExplorer
     : public NeighborhoodExplorer<Input, Tour, TwoOpt, CostStructure>
 {
@@ -424,7 +417,7 @@ public:
 ```
 
 <!-- snippet: tutorial/tsp.hpp:two-opt -->
-```cpp
+```cpp title="EasyLocal 4"
 // Move: reverse the part of the tour between positions i + 1 and j.
 struct TwoOpt
 {
@@ -528,7 +521,7 @@ library uses them when the dedicated hooks are missing. The hooks are more
 precise, since reading a solution may need the Input:
 
 <!-- snippet: tutorial/tsp.hpp:io -->
-```cpp
+```cpp title="EasyLocal 4"
 // Optional hooks, found by ADL, that read, write and describe the values
 // (chapter 5).
 inline Tsp read_input(std::type_identity<Tsp>, std::istream& in)
@@ -580,8 +573,7 @@ A typical EasyLocal 3 `main` declared the parameters, built every object and
 linked them, then either opened the tester or solved with the method named on
 the command line:
 
-```cpp
-// EasyLocal 3
+```cpp title="EasyLocal 3"
 int main(int argc, const char* argv[])
 {
     ParameterBox main_parameters("main", "Main Program options");
@@ -638,7 +630,7 @@ services and registers each runner under the name the command line uses.
 `cli::run` does the rest of `main`:
 
 <!-- snippet: tutorial/cli_main.cpp:cli -->
-```cpp
+```cpp title="EasyLocal 4"
 auto application = el::app("tsp")
     | (el::solution_manager<TourManager>() | el::component<TourLength>())
     | (el::neighborhood<TwoOptExplorer>()
@@ -663,7 +655,7 @@ return el::cli::run(application, argc, argv);
 
 The program runs as before, with plain switches in place of `--main::`:
 
-```text
+```text title="EasyLocal 4 — output"
 $ easylocal_tutorial_cli --instance five.tsp --runner fi --seed 1
 cost 26
 time 4.0375e-05
@@ -680,7 +672,7 @@ a call to the TextUI, in a program linked with the optional `TUI` component
 ([chapter 12](tutorial/12-tester.md)):
 
 <!-- snippet: tutorial/tui_main.cpp:tui -->
-```cpp
+```cpp title="EasyLocal 4"
 auto application = el::app("tsp")
     | (el::solution_manager<TourManager>() | el::component<TourLength>())
     | (el::neighborhood<TwoOptExplorer>()
@@ -714,8 +706,7 @@ final report printed the value of each component. On the TSP, with the edges
 longer than 8 as violations (a component `MaxEdgeExcess`), the result looked
 like this:
 
-```cpp
-// EasyLocal 3
+```cpp title="EasyLocal 3"
 Input in(instance);
 MaxEdgeExcess cc1(in, 1, true);   // hard
 TourLength cc2(in, 1, false);     // soft
@@ -757,7 +748,7 @@ neighborhood, and one runner, and the solver derives the hard-only stage from
 it:
 
 <!-- snippet: tutorial/staged_main.cpp:staged-recipes -->
-```cpp
+```cpp title="EasyLocal 4"
 // One hierarchical cost: edges longer than 8 are violations (hard), the
 // length is the objective (soft). EasyLocal 3 needed a SolutionManager
 // for each set of components (all, hard only); with_hard_cost() derives
@@ -784,7 +775,7 @@ parameters itself, as `load_and_apply` does
 the solver copies it:
 
 <!-- snippet: tutorial/staged_main.cpp:staged-instance -->
-```cpp
+```cpp title="EasyLocal 4"
 // Parameters that depend on the instance, set once it is read, as
 // EasyLocal 3's SetParameter("max_evaluations", ...) after the parsing.
 const auto tsp = el::load_input<Tsp>(main_parameters.instance);
@@ -797,7 +788,7 @@ if (main_parameters.evaluations_per_city != 0)
 solution from one to the other:
 
 <!-- snippet: tutorial/staged_main.cpp:staged-run -->
-```cpp
+```cpp title="EasyLocal 4"
 // EasyLocal 3's two solvers, one per SolutionManager, and the Resolve that
 // passed the solution from one to the other: the descent on the hard cost
 // from a random tour until it is feasible, then on the whole cost.
@@ -823,7 +814,7 @@ The report reads the cost by branch and evaluates each component directly:
 components are plain classes, constructed from the Input:
 
 <!-- snippet: tutorial/staged_main.cpp:staged-report -->
-```cpp
+```cpp title="EasyLocal 4"
 std::cout << "violations " << result.cost.hard() << ", length " << result.cost.soft()
           << '\n'
           << "iterations " << result.iterations // of both stages
@@ -835,7 +826,7 @@ std::cout << "TourLength " << TourLength{tsp}.evaluate(result.solution)
 el::write_solution(tsp, result.solution, std::cout);
 ```
 
-```text
+```text title="EasyLocal 4 — output"
 $ easylocal_tutorial_staged --main.instance five.tsp --main.seed 1
 violations 0, length 26
 iterations 3, termination local optimum
@@ -855,7 +846,7 @@ A `MultimodalNeighborhoodExplorer` (set union with biases) becomes a
 `neighborhood_union` of the explorers' recipes, each with its own deltas:
 
 <!-- snippet: tutorial/main.cpp:union -->
-```cpp
+```cpp title="EasyLocal 4"
 auto both =
     el::neighborhood_union(
         el::neighborhood<TwoOptExplorer>()

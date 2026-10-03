@@ -10,6 +10,8 @@ examples/tutorial/tsp.hpp (dedented, nested marker lines removed); without a
 ":section" suffix it is the whole file, marker lines removed. A section may
 leave out nested sections, "tutorial/tsp.hpp:solution-manager!random-solution",
 so that a chapter can show a class without a member a later chapter adds.
+The fence may carry attributes after the language, such as a caption:
+```cpp title="EasyLocal 4"; they are kept.
 Running the script rewrites those blocks from the sources; with --check it only
 reports blocks that differ and exits with status 1, which is how the test suite
 uses it.
@@ -29,7 +31,7 @@ MARKER = re.compile(r"\s*//\s*\[[\w-]+\]")
 # The block body runs up to the first line that starts with ``` (an empty block
 # included).
 SNIPPET = re.compile(
-    r"(<!-- snippet: (?P<ref>[\w/.-]+(?::[\w-]+(?:![\w-]+)*)?) -->\n```(?P<lang>\w*)\n)"
+    r"(<!-- snippet: (?P<ref>[\w/.-]+(?::[\w-]+(?:![\w-]+)*)?) -->\n```(?P<lang>\w*)[^\n]*\n)"
     r"(?P<body>(?:(?!```).*\n)*?)(?P<close>```)",
     re.M,
 )
