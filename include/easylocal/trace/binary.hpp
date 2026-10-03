@@ -203,6 +203,9 @@ enum class core_binary_event_tag : std::uint8_t
     local_optimum = 5,
     neighborhood_selection = 6,
     run_finished = 7,
+    solution_visited = 8,
+    aspiration_applied = 9,
+    tabu_escape = 10,
 };
 
 inline void append_u32_le(std::vector<char>& buffer, const std::uint32_t value)
@@ -280,6 +283,59 @@ template<class Cost>
 constexpr std::uint8_t core_event_tag(const event::run_finished<Cost>&) noexcept
 {
     return static_cast<std::uint8_t>(core_binary_event_tag::run_finished);
+}
+
+template<class Cost>
+constexpr std::uint8_t core_event_tag(const event::solution_visited<Cost>&) noexcept
+{
+    return static_cast<std::uint8_t>(core_binary_event_tag::solution_visited);
+}
+
+template<class Cost>
+constexpr std::uint8_t core_event_tag(const event::aspiration_applied<Cost>&) noexcept
+{
+    return static_cast<std::uint8_t>(core_binary_event_tag::aspiration_applied);
+}
+
+constexpr std::uint8_t core_event_tag(const event::tabu_escape&) noexcept
+{
+    return static_cast<std::uint8_t>(core_binary_event_tag::tabu_escape);
+}
+
+template<class Cost, class CostWriter>
+    requires binary_cost_writer_for<CostWriter, Cost>
+void encode_core_event(
+    binary_record_writer& out,
+    const event::solution_visited<Cost>& value,
+    CostWriter& cost_writer)
+{
+    out.u64(value.evaluations);
+    out.u64(value.iterations);
+    out.u64(value.hash);
+    cost_writer(out, value.cost);
+}
+
+template<class Cost, class CostWriter>
+    requires binary_cost_writer_for<CostWriter, Cost>
+void encode_core_event(
+    binary_record_writer& out,
+    const event::aspiration_applied<Cost>& value,
+    CostWriter& cost_writer)
+{
+    out.u64(value.evaluations);
+    out.u64(value.iterations);
+    cost_writer(out, value.cost);
+}
+
+template<class CostWriter>
+void encode_core_event(
+    binary_record_writer& out,
+    const event::tabu_escape& value,
+    CostWriter&)
+{
+    out.u64(value.evaluations);
+    out.u64(value.iterations);
+    out.u64(value.moves);
 }
 
 template<class Cost, class CostWriter>

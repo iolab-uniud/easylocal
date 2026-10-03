@@ -4,6 +4,7 @@
 #include <easylocal/trace/tracer.hpp>
 
 #include <cstddef>
+#include <cstdint>
 #include <type_traits>
 #include <utility>
 #include <variant>
@@ -66,6 +67,28 @@ public:
         std::vector<std::size_t> neighborhood;
     };
 
+    struct solution_visited_record
+    {
+        std::size_t evaluations{};
+        std::size_t iterations{};
+        std::uint64_t hash{};
+        Cost cost;
+    };
+
+    struct aspiration_applied_record
+    {
+        std::size_t evaluations{};
+        std::size_t iterations{};
+        Cost cost;
+    };
+
+    struct tabu_escape_record
+    {
+        std::size_t evaluations{};
+        std::size_t iterations{};
+        std::size_t moves{};
+    };
+
     struct run_finished_record
     {
         std::size_t evaluations{};
@@ -80,6 +103,9 @@ public:
         incumbent_updated_record,
         local_optimum_record,
         neighborhood_selection_record,
+        solution_visited_record,
+        aspiration_applied_record,
+        tabu_escape_record,
         run_finished_record>;
 
     template<class Event>
@@ -142,6 +168,37 @@ public:
             value.produced_move,
             copy_route(value.neighborhood),
         });
+    }
+
+    void emit(const event::solution_visited<Cost>& value)
+    {
+        records_.emplace_back(
+            solution_visited_record{
+                .evaluations = value.evaluations,
+                .iterations = value.iterations,
+                .hash = value.hash,
+                .cost = value.cost,
+            });
+    }
+
+    void emit(const event::aspiration_applied<Cost>& value)
+    {
+        records_.emplace_back(
+            aspiration_applied_record{
+                .evaluations = value.evaluations,
+                .iterations = value.iterations,
+                .cost = value.cost,
+            });
+    }
+
+    void emit(const event::tabu_escape& value)
+    {
+        records_.emplace_back(
+            tabu_escape_record{
+                .evaluations = value.evaluations,
+                .iterations = value.iterations,
+                .moves = value.moves,
+            });
     }
 
     void emit(const event::run_finished<Cost>& value)

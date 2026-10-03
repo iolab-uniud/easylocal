@@ -23,6 +23,15 @@ and `random_move()` forwards `neighborhood_selection` events. Algorithms that
 track a best-so-far solution, such as Simulated Annealing, call
 `incumbent_updated()`; custom events can be sent with `run.emit(event)`.
 
+`start()` and `commit()` also emit `solution_visited`, with the hash of the
+solution reached (`solution_hash`, see
+[SolutionManager](reference/solution-manager.md)) and its cost: the nodes of
+Search Trajectory Networks and Local Optima Networks. It is emitted only when
+the problem has a solution hash, and the hash is computed only when the tracer
+observes the event. Tabu search adds `aspiration_applied`, when the move just
+applied was tabu and admitted by the aspiration criterion, and `tabu_escape`,
+before the random moves of a reactive list's escape.
+
 ## Composite-neighborhood provenance
 
 Moves produced by `neighborhood_union` already carry the originating child in
@@ -100,6 +109,28 @@ JSONL is convenient for inspection and interchange, while `ELTR` is preferred
 when a run may emit millions of events and trace volume matters.  Core does not
 choose a trace path and does not depend on a JSON, binary-serialization or
 logging library.
+
+### ELTR records
+
+A stream starts with `ELTR` and the format version as a little-endian `u32`
+(1). Each record is a tag (`u8`), the payload size (`u32`) and the payload; all
+integers are little-endian, a route is a `u32` count followed by one `u32` per
+level, and a cost is written by the recorder's cost writer (the default writes
+an arithmetic cost as `i64`, `u64` or `f64`).
+
+| Tag | Event | Payload |
+| --- | --- | --- |
+| 1 | `run_started` | cost |
+| 2 | `move_evaluated` | evaluations `u64`, iterations `u64`, current cost, candidate cost, route |
+| 3 | `move_accepted` | evaluations `u64`, iterations `u64`, previous cost, cost, route |
+| 4 | `incumbent_updated` | evaluations `u64`, iterations `u64`, previous cost, cost |
+| 5 | `local_optimum` | evaluations `u64`, iterations `u64`, cost |
+| 6 | `neighborhood_selection` | attempt `u64`, child `u64`, bias `f64`, active bias total `f64`, conditional probability `f64`, produced move `u8`, route |
+| 7 | `run_finished` | evaluations `u64`, iterations `u64`, cost |
+| 8 | `solution_visited` | evaluations `u64`, iterations `u64`, hash `u64`, cost |
+| 9 | `aspiration_applied` | evaluations `u64`, iterations `u64`, cost |
+| 10 | `tabu_escape` | evaluations `u64`, iterations `u64`, moves `u64` |
+| 128–255 | application events | as their encoder writes them |
 
 ### Extending ELTR without touching EasyLocal
 

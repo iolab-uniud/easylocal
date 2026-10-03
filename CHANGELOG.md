@@ -121,7 +121,9 @@ old concepts onto the new ones.
   written back (`cost::to_text`) for targets on the command line
   (`RunParameters`, `--run.target`), in the TextUI and in REST requests.
 - **Tracing**: core search events to JSONL, binary or in-memory recorders, with
-  no overhead when unused; leveled logging.
+  no overhead when unused, including the solutions visited, by their hash,
+  for search trajectory and local optima networks, and tabu search's
+  aspirations and escapes; leveled logging.
 
 ### Optional components
 

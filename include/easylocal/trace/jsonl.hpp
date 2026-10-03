@@ -174,6 +174,30 @@ public:
         out_ << "}\n";
     }
 
+    void emit(const event::solution_visited<Cost>& value)
+    {
+        out_ << "{\"event\":\"solution_visited\",\"evaluations\":" << value.evaluations
+             << ",\"iterations\":" << value.iterations << ",\"hash\":" << value.hash
+             << ",\"cost\":";
+        cost_writer_(out_, value.cost);
+        out_ << "}\n";
+    }
+
+    void emit(const event::aspiration_applied<Cost>& value)
+    {
+        out_ << "{\"event\":\"aspiration_applied\",\"evaluations\":" << value.evaluations
+             << ",\"iterations\":" << value.iterations << ",\"cost\":";
+        cost_writer_(out_, value.cost);
+        out_ << "}\n";
+    }
+
+    void emit(const event::tabu_escape& value)
+    {
+        out_ << "{\"event\":\"tabu_escape\",\"evaluations\":" << value.evaluations
+             << ",\"iterations\":" << value.iterations << ",\"moves\":" << value.moves
+             << "}\n";
+    }
+
     void emit(const event::run_finished<Cost>& value)
     {
         out_ << "{\"event\":\"run_finished\",\"evaluations\":" << value.evaluations
@@ -272,6 +296,33 @@ void write_jsonl(
                         << ",\"neighborhood\":";
                     detail::write_route_json(out, record.neighborhood);
                     out << '}';
+                }
+                else if constexpr (std::same_as<
+                                       record_type,
+                                       typename recorder_type::solution_visited_record>)
+                {
+                    out << "{\"event\":\"solution_visited\",\"evaluations\":"
+                        << record.evaluations << ",\"iterations\":" << record.iterations
+                        << ",\"hash\":" << record.hash << ",\"cost\":";
+                    cost_writer(out, record.cost);
+                    out << '}';
+                }
+                else if constexpr (std::same_as<
+                                       record_type,
+                                       typename recorder_type::aspiration_applied_record>)
+                {
+                    out << "{\"event\":\"aspiration_applied\",\"evaluations\":"
+                        << record.evaluations << ",\"iterations\":" << record.iterations
+                        << ",\"cost\":";
+                    cost_writer(out, record.cost);
+                    out << '}';
+                }
+                else if constexpr (
+                    std::same_as<record_type, typename recorder_type::tabu_escape_record>)
+                {
+                    out << "{\"event\":\"tabu_escape\",\"evaluations\":"
+                        << record.evaluations << ",\"iterations\":" << record.iterations
+                        << ",\"moves\":" << record.moves << '}';
                 }
                 else if constexpr (std::same_as<record_type, typename recorder_type::run_finished_record>)
                 {

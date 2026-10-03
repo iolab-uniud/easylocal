@@ -287,6 +287,24 @@ int main()
         ok &= expect(
             none.iterations == 4 && none.evaluations < by_objective.evaluations,
             "without aspiration tabu moves are not evaluated, the least tabu is applied");
+
+        // The three moves after the first were tabu and admitted by aspiration.
+        std::mt19937 traced_rng{7U};
+        easylocal::trace::memory_recorder<int> trace;
+        const auto traced =
+            aspired.bind(instance).run(Position{2}, traced_rng, easylocal::with(trace));
+        std::size_t aspired_moves = 0;
+        std::size_t visited = 0;
+        for (const auto& record : trace.records())
+        {
+            using recorder = easylocal::trace::memory_recorder<int>;
+            aspired_moves +=
+                std::holds_alternative<recorder::aspiration_applied_record>(record);
+            visited += std::holds_alternative<recorder::solution_visited_record>(record);
+        }
+        ok &= expect(
+            aspired_moves == 3 && visited == traced.iterations + 1,
+            "the trace records aspirated moves and every solution visited");
     }
 
     {
@@ -484,10 +502,12 @@ int main()
         const auto result =
             runner.bind(instance).run(Position{5}, rng, easylocal::with(trace));
         std::size_t accepted = 0;
+        std::size_t escapes = 0;
         for (const auto& record : trace.records())
         {
-            accepted += std::holds_alternative<
-                easylocal::trace::memory_recorder<int>::move_accepted_record>(record);
+            using recorder = easylocal::trace::memory_recorder<int>;
+            accepted += std::holds_alternative<recorder::move_accepted_record>(record);
+            escapes += std::holds_alternative<recorder::tabu_escape_record>(record);
         }
         auto calm = line_runner<TabuSearch<tabu::Reactive>, Bowl>(
             {.max_idle_iterations = 100,
@@ -496,7 +516,7 @@ int main()
         std::mt19937 calm_rng{7U};
         const auto without_escape = calm.bind(instance).run(Position{5}, calm_rng);
         ok &= expect(
-            result.iterations == 40 && accepted == 40
+            result.iterations == 40 && accepted == 40 && escapes > 0
                 && result.evaluations < without_escape.evaluations && result.cost == 0,
             "the reactive list escapes with random moves, counted as iterations");
     }

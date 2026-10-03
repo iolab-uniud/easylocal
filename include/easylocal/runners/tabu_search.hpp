@@ -6,6 +6,7 @@
 #include <easylocal/helpers/solution_manager.hpp>
 #include <easylocal/runners/detail/context_concepts.hpp>
 #include <easylocal/runners/search_run.hpp>
+#include <easylocal/trace/events.hpp>
 #include <easylocal/utils/detail/attributes.hpp>
 
 #include <algorithm>
@@ -1495,6 +1496,8 @@ struct tabu_scan
     std::optional<typename Run::candidate_type> chosen;
     std::optional<typename Run::move_type> chosen_move;
     std::size_t chosen_position{};
+    // The chosen move was tabu, admitted by the aspiration criterion.
+    bool chosen_aspirated{false};
     std::optional<typename Run::move_type> least_tabu;
     bool empty{true};
     bool interrupted{false};
@@ -1633,6 +1636,7 @@ public:
                 result.chosen = std::move(candidate);
                 result.chosen_move = move;
                 result.chosen_position = here;
+                result.chosen_aspirated = tenure.has_value();
                 ties = 1;
             }
             else if (!run.better(result.chosen->cost(), candidate.cost())
@@ -1641,6 +1645,7 @@ public:
                 result.chosen = std::move(candidate);
                 result.chosen_move = move;
                 result.chosen_position = here;
+                result.chosen_aspirated = tenure.has_value();
             }
             if (stop)
                 break;
@@ -1665,6 +1670,15 @@ public:
         }
 
         commit(run, state, std::move(*scan.chosen), *scan.chosen_move);
+        if (scan.chosen_aspirated)
+        {
+            run.emit(
+                trace::event::aspiration_applied<typename Run::cost_type>{
+                    .evaluations = run.evaluations(),
+                    .iterations = run.iterations(),
+                    .cost = state.current.cost(),
+                });
+        }
         state.list.update(
             tabu_step<Run>{
                 run,
@@ -1678,7 +1692,17 @@ public:
         // cost and not recorded in the list.
         if constexpr (requires { state.list.escape_moves(); })
         {
-            for (auto escape = state.list.escape_moves(); escape > 0; --escape)
+            const auto escape_moves = state.list.escape_moves();
+            if (escape_moves > 0)
+            {
+                run.emit(
+                    trace::event::tabu_escape{
+                        .evaluations = run.evaluations(),
+                        .iterations = run.iterations(),
+                        .moves = escape_moves,
+                    });
+            }
+            for (auto escape = escape_moves; escape > 0; --escape)
             {
                 if (run.should_stop()
                     || (max_iterations_ != 0 && run.iterations() >= max_iterations_))

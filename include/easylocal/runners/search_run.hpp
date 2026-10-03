@@ -1,6 +1,7 @@
 #pragma once
 
 #include <easylocal/helpers/neighborhood_explorer.hpp>
+#include <easylocal/helpers/solution_manager.hpp>
 #include <easylocal/runners/run_control.hpp>
 #include <easylocal/trace/events.hpp>
 #include <easylocal/trace/tracer.hpp>
@@ -292,6 +293,7 @@ public:
         observe_cost(current.cost());
 
         emit(trace::event::run_started<cost_type>{current.cost()});
+        visited(solution, current.cost());
         report();
         return current;
     }
@@ -396,6 +398,7 @@ public:
                 .neighborhood = route,
             });
         });
+        visited(solution, current.cost());
     }
 
     void incumbent_updated(
@@ -481,6 +484,27 @@ public:
     }
 
 private:
+    // The solution_visited event, when the tracer observes it and the problem
+    // has a solution hash.
+    void visited(const solution_type& solution, const cost_type& cost)
+    {
+        if constexpr (trace::observes<Tracer, trace::event::solution_visited<cost_type>>
+            && requires(const Context& context) {
+                   requires has_solution_hash<
+                       std::remove_cvref_t<decltype(context.solution_manager())>>;
+               })
+        {
+            emit(
+                trace::event::solution_visited<cost_type>{
+                    .evaluations = evaluations_,
+                    .iterations = iterations_,
+                    .hash =
+                        easylocal::solution_hash(context_.solution_manager(), solution),
+                    .cost = cost,
+                });
+        }
+    }
+
     [[nodiscard]]
     bool target_reached() const noexcept
     {

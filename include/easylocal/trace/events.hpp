@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <cstdint>
 #include <vector>
 
 // Typed semantic search events and hierarchical neighborhood provenance.
@@ -80,6 +81,35 @@ struct neighborhood_selection
     double conditional_probability{};
     bool produced_move{};
     const neighborhood_route_node* neighborhood{};
+};
+
+// The solution reached at the start of a run and after each applied move,
+// identified by its hash (solution_hash): the nodes of search trajectory and
+// local optima networks. Emitted only when the problem has a solution hash.
+template<class Cost>
+struct solution_visited
+{
+    std::size_t evaluations{};
+    std::size_t iterations{};
+    std::uint64_t hash{};
+    Cost cost;
+};
+
+// The move just applied was tabu, admitted by the aspiration criterion.
+template<class Cost>
+struct aspiration_applied
+{
+    std::size_t evaluations{};
+    std::size_t iterations{};
+    Cost cost;
+};
+
+// A reactive tabu list's escape: moves random moves follow.
+struct tabu_escape
+{
+    std::size_t evaluations{};
+    std::size_t iterations{};
+    std::size_t moves{};
 };
 
 template<class Cost>
