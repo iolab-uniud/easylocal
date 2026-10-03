@@ -17,16 +17,23 @@ move is valid and how it changes a solution.
 | `first_move(const Solution&, Move&)`, `next_move(const Solution&, Move&)` → `bool` | | |
 | `random_move(const Solution&, RNG&) const -> std::optional<Move>` | for stochastic algorithms | Simulated Annealing, Session and TextUI |
 | `name() -> std::string_view` | no | TextUI display |
+| `inverse(const Solution&, const Move& move, const Move& tabu_move) const -> bool` | for tabu search | whether `move` is forbidden by `tabu_move`, applied earlier |
+| `tabu_attribute(const Move&) const` → value with `std::hash` and `==` | no (default: the move, if hashable) | frequency-based tabu memory |
 
 Concepts: `neighborhood_explorer_for<NHE, SM>`, `cursor_neighborhood_for`,
 `native_moves_neighborhood_for`, `deterministic_neighborhood_for`,
-`random_neighborhood_for`. Customization points: `easylocal::moves(nhe,
-solution)` and `easylocal::random_move(nhe, solution, rng)`.
+`random_neighborhood_for`, `inverse_neighborhood_for`, `has_tabu_attribute`.
+Customization points: `easylocal::moves(nhe, solution)`,
+`easylocal::random_move(nhe, solution, rng)`, `easylocal::inverse(nhe,
+solution, move, tabu_move)` and `easylocal::tabu_attribute(nhe, move)`.
 
 - `moves` may return any input range whose elements convert to `move_type`.
 - When both `moves` and the cursor exist, the cursor is used.
 - `random_move` may return `std::optional<T>` for any `T` convertible to
   `move_type`; no distribution is required.
+- `inverse` has no default: which moves a tabu move forbids (the same pair of
+  jobs, or any move of either job) is a modelling choice of the neighborhood,
+  and can be one of its parameters.
 - The explorer is constructed from the SolutionManager:
   `NHE{const SM&, args...}`, `args` from `neighborhood<NHE>(args...)`.
 
@@ -62,6 +69,11 @@ neighborhood_union(child_recipe_1, child_recipe_2, ...)
 - Unions nest; traces record each move's route through the nesting and the
   selection statistics.
 - A neighborhood type may appear once per union.
+- `inverse`: moves of different children never forbid each other; between
+  moves of the same child, the child decides. The union has it when every
+  child has it.
+- `tabu_attribute`: the child's attribute, tagged with the child (a
+  `std::variant` by index), so equal attributes of two children stay distinct.
 
 ## Design choices
 

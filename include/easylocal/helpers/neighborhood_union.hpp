@@ -705,6 +705,46 @@ public:
             move);
     }
 
+    // Moves of different children never forbid each other; between moves of
+    // the same child, the child decides.
+    [[nodiscard]]
+    bool inverse(
+        const solution_type& solution,
+        const move_type& move,
+        const move_type& tabu_move) const
+        requires(inverse_neighborhood_for<Explorers, solution_type> && ...)
+    {
+        if (move.index() != tabu_move.index())
+            return false;
+        return std::visit(
+            [this, &solution, &tabu_move]<class TaggedMove>(const TaggedMove& tagged) {
+                constexpr auto index = TaggedMove::index;
+                return easylocal::inverse(
+                    std::get<index>(explorers_),
+                    solution,
+                    tagged.value,
+                    std::get<index>(tabu_move).value);
+            },
+            move);
+    }
+
+    // The child's attribute, tagged with the child: equal attributes of two
+    // children stay distinct.
+    [[nodiscard]]
+    auto tabu_attribute(const move_type& move) const
+        requires(has_tabu_attribute<Explorers> && ...)
+    {
+        using attribute_type = std::variant<tabu_attribute_t<Explorers>...>;
+        return std::visit(
+            [this]<class TaggedMove>(const TaggedMove& tagged) {
+                constexpr auto index = TaggedMove::index;
+                return attribute_type{
+                    std::in_place_index<index>,
+                    easylocal::tabu_attribute(std::get<index>(explorers_), tagged.value)};
+            },
+            move);
+    }
+
     [[nodiscard]]
     auto moves(const solution_type& solution) const
         requires (deterministic_neighborhood_for<

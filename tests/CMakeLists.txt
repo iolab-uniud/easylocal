@@ -276,6 +276,20 @@ add_test(
 )
 
 add_executable(
+    easylocal_tabu_customization_test
+    tabu_customization.cpp
+)
+target_link_libraries(
+    easylocal_tabu_customization_test
+    PRIVATE
+        EasyLocal::Core
+)
+add_test(
+    NAME easylocal.tabu-customization
+    COMMAND easylocal_tabu_customization_test
+)
+
+add_executable(
     easylocal_concept_contracts_test
     concept_contracts.cpp
 )

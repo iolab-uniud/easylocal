@@ -36,6 +36,11 @@ old concepts onto the new ones.
   the SolutionManager (`hash`, `equal`) or from the solution type
   (`std::hash`, `operator==`), with `hash_combine` and `hash_range` to write
   one.
+- Optional **tabu customization points** of a neighborhood: `inverse`
+  (whether a move is forbidden by an earlier one; its definition, such as the
+  same pair of jobs or either job, belongs to the explorer) and
+  `tabu_attribute` (the attribute frequency memory counts, by default the move
+  itself); a neighborhood union dispatches both to its children.
 
 ### Cost
 

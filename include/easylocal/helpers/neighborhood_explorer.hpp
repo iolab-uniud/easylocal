@@ -2,6 +2,7 @@
 
 #include <easylocal/utils/detail/meta.hpp>
 #include <easylocal/utils/generator.hpp> // IWYU pragma: export
+#include <easylocal/utils/hash.hpp>
 
 #include <cassert>
 #include <concepts>
@@ -282,6 +283,74 @@ inline std::optional<typename Explorer::move_type> random_move(
 
     return typename Explorer::move_type{*result};
 }
+
+// Optional tabu customization points, used by tabu search.
+//
+// inverse(solution, move, tabu_move): whether move, proposed at solution, is
+// forbidden by tabu_move, a move applied earlier, typically because it would
+// undo it. There is no default: what forbids what (the same pair of jobs, or
+// any move of either job) is a modelling choice of the neighborhood, and may
+// be one of its parameters.
+template<class NHE, class Solution>
+concept inverse_neighborhood_for = requires(
+    const NHE& neighborhood,
+    const Solution& solution,
+    const typename NHE::move_type& move,
+    const typename NHE::move_type& tabu_move) {
+    { neighborhood.inverse(solution, move, tabu_move) } -> std::convertible_to<bool>;
+};
+
+template<class Explorer, class Solution>
+    requires inverse_neighborhood_for<Explorer, Solution>
+[[nodiscard]]
+inline bool inverse(
+    const Explorer& explorer,
+    const Solution& solution,
+    const typename Explorer::move_type& move,
+    const typename Explorer::move_type& tabu_move)
+{
+    return static_cast<bool>(explorer.inverse(solution, move, tabu_move));
+}
+
+// tabu_attribute(move): the attribute of a move that frequency-based memory
+// counts, a value with std::hash and ==. A tabu_attribute member chooses it
+// (the pair of jobs of a swap, ignoring their positions); without one, the
+// move itself is the attribute when it has std::hash and ==.
+template<class NHE>
+concept has_tabu_attribute_member =
+    requires(const NHE& neighborhood, const typename NHE::move_type& move) {
+        requires std_hashable<
+            std::remove_cvref_t<decltype(neighborhood.tabu_attribute(move))>>;
+        requires std::equality_comparable<
+            std::remove_cvref_t<decltype(neighborhood.tabu_attribute(move))>>;
+    };
+
+template<class NHE>
+concept has_tabu_attribute = has_tabu_attribute_member<NHE>
+    || (std_hashable<typename NHE::move_type>
+        && std::equality_comparable<typename NHE::move_type>);
+
+template<has_tabu_attribute Explorer>
+[[nodiscard]]
+inline auto tabu_attribute(
+    const Explorer& explorer,
+    const typename Explorer::move_type& move)
+{
+    if constexpr (has_tabu_attribute_member<Explorer>)
+    {
+        return std::remove_cvref_t<decltype(explorer.tabu_attribute(move))>{
+            explorer.tabu_attribute(move)};
+    }
+    else
+    {
+        return typename Explorer::move_type{move};
+    }
+}
+
+template<has_tabu_attribute Explorer>
+using tabu_attribute_t = decltype(easylocal::tabu_attribute(
+    std::declval<const Explorer&>(),
+    std::declval<const typename Explorer::move_type&>()));
 
 // Optional non-virtual convenience base: associated types and the
 // SolutionManager reference. Not required by the structural concepts above.
