@@ -54,10 +54,12 @@ also in the opposite direction): 0 → 1 → 3 → 2 → 4 → 0 (2 + 4 + 8 + 5 
 
 The chapters build the solver in this order:
 
-- chapters 1–3 model a tour as a sequence of cities, give it a cost and change
-  it by swapping two cities, as in the quick start;
-- chapter 4 introduces a second move, 2-opt, which reverses a part of the tour
-  and whose effect on the length can be computed from four distances only;
+- chapters 1 and 2 model a tour as a sequence of cities and give it a cost;
+- chapter 3 defines two kinds of moves, swapping two cities, as in the quick
+  start, and 2-opt, which reverses a part of the tour; they show the two ways
+  of listing moves, a generator and a cursor;
+- chapter 4 computes the effect of a 2-opt move on the length from four
+  distances only;
 - chapter 5 runs both First Improvement and Simulated Annealing, and chapter 6
   lets a search use both moves;
 - the remaining chapters build on these pieces: new algorithms, solvers,
@@ -95,6 +97,9 @@ materializes them when the runner is bound to an Input.
 
 Components are specified incrementally: you write only what the algorithms and
 tools you use need, and the compiler tells you when a capability is missing.
+The early chapters write the essential version of each component; the
+*advanced components*, such as solvers, the Tester checks and the interactive
+tester, need a few more features, added in the chapters that introduce them.
 Services borrow the Input by `const&` and never mutate it.
 
 ## Chapters

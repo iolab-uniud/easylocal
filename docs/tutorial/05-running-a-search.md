@@ -2,7 +2,10 @@
 
 ## A runner
 
-A **runner** couples a search algorithm with the recipes:
+A **runner** couples a search algorithm with the recipes of the services it
+uses. Here First Improvement is combined with the recipes `sm` (the
+SolutionManager with `TourLength`, chapter 2) and `nhe` (the 2-opt neighborhood
+with its delta evaluator, chapter 4), then run on the five cities:
 
 <!-- snippet: tutorial/main.cpp:first-improvement -->
 ```cpp
@@ -14,10 +17,34 @@ auto search = fi.bind(tsp);
 const auto result = search.run(search.initial_solution());
 ```
 
-`make_runner` builds the algorithm from its parameters; `bind` materializes the
-services for an Input and returns the bound runner (`search`), and `run`
-searches from a solution. Composition can also
-be written with explicit `with_*` calls, which spell out each step:
+Step by step:
+
+1. `make_runner<runners::FirstImprovement>(parameters)` creates the algorithm
+   object. `FirstImprovementParameters{}` keeps the defaults: no budget on the
+   evaluations, so the search runs until a local optimum.
+2. `| sm` gives the runner its SolutionManager, and with it the cost: the
+   runner will build tours with `TourManager` and evaluate them with
+   `TourLength`.
+3. `| nhe` gives it the neighborhood: the moves come from `TwoOptExplorer`,
+   and their cost from `TwoOptLengthDelta`.
+4. The result, `fi`, is still a description: it holds the algorithm and the
+   recipes, but no `TourManager` or `TourLength` exists yet, because they need
+   an Input. Nothing has been evaluated.
+5. `fi.bind(tsp)` builds the services for this Input: a `TourManager`, a
+   `TourLength` and a `TwoOptLengthDelta` that refer to `tsp`, and a
+   `TwoOptExplorer` that refers to the `TourManager`. It returns them, with the
+   algorithm, as the *bound runner* `search`. `tsp` must outlive `search`,
+   which only refers to it; `bind` does not accept a temporary Input for this
+   reason. The same `fi` can be bound to other Inputs.
+6. `search.initial_solution()` asks the bound `TourManager` for the initial
+   tour, and `search.run(tour)` runs First Improvement from it: evaluate the
+   tour, scan the 2-opt moves, apply the first that lowers the length, repeat
+   until no move improves it.
+7. `run` returns the result, described under [Results](#results) below: the
+   final tour, its cost and the counters of the search.
+
+Composition can also be written with explicit `with_*` calls, which spell out
+each step:
 
 <!-- snippet: tutorial/main.cpp:with-spelling -->
 ```cpp

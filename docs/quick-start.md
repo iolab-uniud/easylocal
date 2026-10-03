@@ -70,7 +70,7 @@ twice, city 2 never) and `[0, 1, 2]` (too short) are not tours.
 at the moves of the current solution and applies one. Here the move is
 `SwapCities{i, j}`: exchange the cities visited at positions `i` and `j`. A swap
 of two cities always yields another permutation, so it turns a valid tour into
-a valid tour. For instance, `SwapCities{2, 3}` exchanges the third and fourth
+a valid tour. For example, `SwapCities{2, 3}` exchanges the third and fourth
 city of `[0, 1, 2, 3, 4]`:
 
 ```mermaid
@@ -255,6 +255,10 @@ public:
   where the standard library provides it.
 - `is_valid(tour, move)` says whether a move can be applied to a tour.
 - `make_move(tour, move)` applies it: one `std::swap`.
+
+The explorer has only what First Improvement uses. Other algorithms need other
+members, for example `random_move` for Simulated Annealing; the
+[tutorial](tutorial/03-neighborhood.md) adds them.
 
 ### The instance
 

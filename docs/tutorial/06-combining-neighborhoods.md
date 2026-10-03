@@ -1,9 +1,10 @@
 # 6. Combining neighborhoods
 
-The tour now has two neighborhoods: the swap moves of chapter 3, which have no
-delta evaluator, and the 2-opt moves of chapter 4, which have one. A search can
-use both. When it evaluates a swap, `TourLength` is re-evaluated on a candidate
-tour; when it evaluates a 2-opt move, `TwoOptLengthDelta` is used.
+The tour has two neighborhoods, both from chapter 3: the swap moves, listed by
+a generator and without a delta evaluator, and the 2-opt moves, listed by a
+cursor and with the delta evaluator of chapter 4. A search can use both. When
+it evaluates a swap, `TourLength` is re-evaluated on a candidate tour; when it
+evaluates a 2-opt move, `TwoOptLengthDelta` is used.
 
 `neighborhood_union` combines the two explorers into one; each child keeps its
 own move type and delta bindings:
@@ -27,7 +28,8 @@ auto union_sa =
     | sm | both;
 ```
 
-- Deterministic algorithms enumerate the children in order.
+- Deterministic algorithms enumerate the children in order, each in its own
+  way: the swap moves from the generator, the 2-opt moves from the cursor.
 - Random sampling picks a child according to the biases (here three 2-opt
   proposals for every swap), then asks it for a move. A zero bias disables a
   child; a child that cannot produce a move is excluded and another one is

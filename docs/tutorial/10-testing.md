@@ -44,6 +44,13 @@ struct TwoOptDeltaCheck : TspCheckData
     using component = tutorial::TourLength;
     using delta_evaluator = tutorial::TwoOptLengthDelta;
 };
+
+// No delta_evaluator: the check uses the component's own delta_evaluate.
+struct TourLengthWithDeltaCheck : TspCheckData
+{
+    using neighborhood = tutorial::TwoOptExplorer;
+    using component = tutorial::TourLengthWithDelta;
+};
 ```
 
 <!-- snippet: tutorial/checks.cpp:run-checks -->
@@ -53,7 +60,8 @@ return easylocal::testing::run_checks(
     easylocal::testing::check_cost_component<TourLengthCheck>(),
     easylocal::testing::check_neighborhood<SwapCheck>(),
     easylocal::testing::check_neighborhood<TwoOptCheck>(),
-    easylocal::testing::check_delta_evaluator<TwoOptDeltaCheck>());
+    easylocal::testing::check_delta_evaluator<TwoOptDeltaCheck>(),
+    easylocal::testing::check_delta_evaluator<TourLengthWithDeltaCheck>());
 ```
 
 | Check | Verifies |
@@ -62,6 +70,10 @@ return easylocal::testing::run_checks(
 | `check_cost_component<T>` | evaluating the same solution twice gives equivalent values |
 | `check_neighborhood<T>` | enumerated and sampled moves are valid and keep the solution valid |
 | `check_delta_evaluator<T>` | `value + delta` equals the full re-evaluation after the move, for a sample move (`T::move` or one taken from the neighborhood) |
+
+For a co-located delta (chapter 4) the fixture names no `delta_evaluator`, as
+`TourLengthWithDeltaCheck` above: the check then uses the component's own
+`delta_evaluate`.
 
 Fixtures may also set `random_samples` and `max_enumerated_moves`, provide
 `make_*` factories for non-default construction, and an `equivalent` function

@@ -19,6 +19,9 @@ The main differences:
 
 - **No virtual dispatch and no required base classes.** Capabilities are
   checked by concepts at compile time; the bases are optional conveniences.
+- **Only what is used is written.** A component implements the members the
+  composed algorithms and tools call, not a whole interface: an explorer used
+  only by Simulated Annealing has `random_move` and no enumeration.
 - **Services are bound to an immutable Input** instead of being reconfigured,
   so concurrent runs only share the Input.
 - **The cost always comes from cost components**, and their composition (the

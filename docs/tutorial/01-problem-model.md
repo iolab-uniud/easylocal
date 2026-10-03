@@ -20,8 +20,8 @@ Not every sequence is a tour. A tour of n cities is a *permutation* of 0, 1,
 ..., n − 1: n positions, every city exactly once. `[0, 1, 1, 3, 4]` visits
 city 1 twice and city 2 never; `[0, 1, 2]` forgets two cities.
 
-**A move** turns a tour into a nearby one. The first move of the tutorial is
-`SwapCities{i, j}`, which exchanges the cities at positions `i` and `j`. On
+**A move** turns a tour into a nearby one. The first move of the tutorial
+(chapter 3 adds a second one) is `SwapCities{i, j}`, which exchanges the cities at positions `i` and `j`. On
 `[0, 1, 2, 3, 4]`, `SwapCities{1, 3}` gives `[0, 3, 2, 1, 4]`: the edges 0–1
 and 3–4 (dashed) leave the tour, the edges 0–3 and 1–4 (red) enter it, and the
 length goes from 29 to 34.
@@ -79,7 +79,7 @@ struct SwapCities
 };
 ```
 
-- The **Input** is built once, for instance by your parser, and treated as
+- The **Input** is built once, for example by your parser, and treated as
   immutable while services are bound to it. The distance matrix is a vector of
   rows: the distance between `a` and `b` is `distance[a][b]`.
 - A **Solution** does not own or reference the Input.
@@ -87,8 +87,7 @@ struct SwapCities
   applies it to one (chapter 3).
 
 None of them derives from a framework class or needs any operator: plain
-structs are enough. Some tools need more, for instance equality to compare
-tours; chapter 12 adds it when it is needed.
+structs are enough.
 
 ## The SolutionManager
 
@@ -138,6 +137,16 @@ public:
   solutions: here you, through the bound runner's `initial_solution()`
   (chapter 5); later a solver or the Tester. Chapter 8 adds a second way to
   build one, at random.
+
+> **Essential and advanced.** These types and this SolutionManager are the
+> essential version: what a local search needs to run. Some *advanced
+> components*, the tools of the later chapters, need a few more features, each
+> added in the chapter that introduces it: solvers that start from random
+> solutions need `random_solution` (chapter 8), the Tester checks compare
+> tours and moves with `==` (chapter 12), the interactive tester loads and
+> displays them (chapter 13). Until you use one of them, you need not write
+> anything for it. When you do, a missing feature is a compile error that names
+> it, or, in the interactive tester, a command that is not offered.
 
 The SolutionManager never computes the cost: the cost always comes from cost
 components, the subject of the next chapter.

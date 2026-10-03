@@ -3,6 +3,7 @@
 
 #include <easylocal/easylocal.hpp>
 
+#include <algorithm>
 #include <iostream>
 #include <random>
 #include <stop_token>
@@ -24,6 +25,13 @@ int main(int argc, char* argv[])
         el::neighborhood<TwoOptExplorer>() | el::delta<TourLength, TwoOptLengthDelta>();
     // [nhe-recipe] ---------------------------------------------------------
 
+    // [co-located-recipe] --------------------------------------------------
+    auto colocated_sm =
+        el::solution_manager<TourManager>() | el::component<TourLengthWithDelta>();
+    auto colocated_nhe =
+        el::neighborhood<TwoOptExplorer>() | el::delta<TourLengthWithDelta>();
+    // [co-located-recipe] --------------------------------------------------
+
     // [first-improvement] --------------------------------------------------
     auto fi =
         el::make_runner<runners::FirstImprovement>(runners::FirstImprovementParameters{})
@@ -44,10 +52,59 @@ int main(int argc, char* argv[])
                     .with_delta<TourLength, TwoOptLengthDelta>());
     // [with-spelling] ------------------------------------------------------
 
-    // [cost-expression] --------------------------------------------------------
+    // [cost-expression] ----------------------------------------------------
     auto weighted_sm = el::solution_manager<TourManager>()
         | el::cost::sum(el::component<TourLength>(), el::component<MaxEdge>() * 10.0);
-    // [cost-expression] --------------------------------------------------------
+    // [cost-expression] ----------------------------------------------------
+
+    // [domain-value-recipe] ------------------------------------------------
+    // The struct is the cost: it is compared with its operator<=>.
+    auto long_edges_sm =
+        el::solution_manager<TourManager>() | el::component<LongEdgesComponent>();
+
+    // A function turns it into a number: here the excess is a hard cost.
+    auto excess_sm = el::solution_manager<TourManager>()
+        | el::cost::hard_soft(
+            el::cost::apply(
+                [](const LongEdges& value) { return value.excess; },
+                el::component<LongEdgesComponent>()),
+            el::component<TourLength>());
+    // [domain-value-recipe] ------------------------------------------------
+
+    // [structured-costs] ---------------------------------------------------
+    // Lexicographic: the longest edge first; between tours with the same
+    // longest edge, the shorter one.
+    auto bottleneck_sm = el::solution_manager<TourManager>()
+        | el::cost::in_order(el::component<MaxEdge>(), el::component<TourLength>());
+
+    // Hierarchical: edges longer than 8 are a violation, measured by how much
+    // the longest edge exceeds 8 (hard); the tour length is the objective (soft).
+    auto bounded_sm = el::solution_manager<TourManager>()
+        | el::cost::hard_soft(
+            el::cost::apply(
+                [](double longest) { return std::max(0.0, longest - 8.0); },
+                el::component<MaxEdge>()),
+            el::component<TourLength>());
+    // [structured-costs] ---------------------------------------------------
+
+    // [structured-costs-read] ----------------------------------------------
+    auto bottleneck =
+        (el::make_runner<runners::FirstImprovement>(runners::FirstImprovementParameters{})
+            | bottleneck_sm | nhe)
+            .bind(tsp);
+    const auto by_edge = bottleneck.run(bottleneck.initial_solution());
+    // A lexicographic cost is read by position, a hierarchical one by branch.
+    const double longest_edge = by_edge.cost.get<0>();
+    const double length_after_edge = by_edge.cost.get<1>();
+
+    auto bounded =
+        (el::make_runner<runners::FirstImprovement>(runners::FirstImprovementParameters{})
+            | bounded_sm | nhe)
+            .bind(tsp);
+    const auto within_bound = bounded.run(bounded.initial_solution());
+    const double excess = within_bound.cost.hard();
+    const double length_within_bound = within_bound.cost.soft();
+    // [structured-costs-read] ----------------------------------------------
 
     // [annealing] ----------------------------------------------------------
     using Classic = runners::temperature::Classic;
@@ -181,14 +238,33 @@ int main(int argc, char* argv[])
         (el::make_runner<runners::FirstImprovement>(runners::FirstImprovementParameters{})
             | weighted_sm | el::neighborhood<TwoOptExplorer>())
             .bind(tsp);
+    auto long_edges =
+        (el::make_runner<runners::FirstImprovement>(runners::FirstImprovementParameters{})
+            | long_edges_sm | el::neighborhood<TwoOptExplorer>())
+            .bind(tsp);
+    const LongEdges fewest = long_edges.run(long_edges.initial_solution()).cost;
+    auto excess_search =
+        (el::make_runner<runners::FirstImprovement>(runners::FirstImprovementParameters{})
+            | excess_sm | nhe)
+            .bind(tsp);
+    const auto excess_cost = excess_search.run(excess_search.initial_solution()).cost;
+
+    auto colocated =
+        (el::make_runner<runners::FirstImprovement>(runners::FirstImprovementParameters{})
+            | colocated_sm | colocated_nhe)
+            .bind(tsp);
     auto union_search = union_sa.bind(tsp);
     std::mt19937_64 union_rng{7};
 
     std::cout
         << "first improvement " << result.cost << "\nwith spelling "
         << same_search.run(same_search.initial_solution()).cost << "\nweighted "
-        << weighted.run(weighted.initial_solution()).cost << "\nannealing "
-        << annealed.cost << "\nunion "
+        << weighted.run(weighted.initial_solution()).cost << "\nlexicographic "
+        << longest_edge << ", " << length_after_edge << "\nhierarchical " << excess
+        << ", " << length_within_bound << "\nlong edges " << fewest.excess << " in "
+        << fewest.count << "\nexcess " << excess_cost.hard() << ", " << excess_cost.soft()
+        << "\nco-located " << colocated.run(colocated.initial_solution()).cost
+        << "\nannealing " << annealed.cost << "\nunion "
         << union_search.run(union_search.initial_solution(), union_rng).cost
         << "\nmulti-start " << best.cost << "\napp " << app_result.cost << "\ntester "
         << tester.evaluate() << " (" << costs.moves << " moves checked, "

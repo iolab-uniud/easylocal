@@ -46,6 +46,13 @@ struct TwoOptDeltaCheck : TspCheckData
     using component = tutorial::TourLength;
     using delta_evaluator = tutorial::TwoOptLengthDelta;
 };
+
+// No delta_evaluator: the check uses the component's own delta_evaluate.
+struct TourLengthWithDeltaCheck : TspCheckData
+{
+    using neighborhood = tutorial::TwoOptExplorer;
+    using component = tutorial::TourLengthWithDelta;
+};
 // [fixtures] ---------------------------------------------------------------
 
 } // namespace
@@ -58,6 +65,7 @@ int main()
         easylocal::testing::check_cost_component<TourLengthCheck>(),
         easylocal::testing::check_neighborhood<SwapCheck>(),
         easylocal::testing::check_neighborhood<TwoOptCheck>(),
-        easylocal::testing::check_delta_evaluator<TwoOptDeltaCheck>());
+        easylocal::testing::check_delta_evaluator<TwoOptDeltaCheck>(),
+        easylocal::testing::check_delta_evaluator<TourLengthWithDeltaCheck>());
     // [run-checks]
 }

@@ -75,7 +75,7 @@ public:
 };
 ```
 
-Extra `run` arguments (an RNG, for instance) are passed through
+Extra `run` arguments (an RNG, for example) are passed through
 `search.run(solution, extra...)`.
 
 ### search_run

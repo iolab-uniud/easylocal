@@ -139,6 +139,44 @@ private:
 };
 // [second-component] -------------------------------------------------------
 
+// [domain-value] -----------------------------------------------------------
+// A domain value: the edges longer than 6, as a total excess and a count.
+struct LongEdges
+{
+    double excess{};     // the total length beyond 6 of the long edges
+    std::size_t count{}; // how many edges are longer than 6
+
+    // Needed only when LongEdges is itself the cost: tours are then compared
+    // by excess first and by count between equal excesses.
+    auto operator<=>(const LongEdges&) const = default;
+};
+
+class LongEdgesComponent
+{
+public:
+    explicit LongEdgesComponent(const Tsp& input) : input_{input} {}
+
+    LongEdges evaluate(const Tour& tour) const
+    {
+        const auto n = tour.order.size();
+        LongEdges value;
+        for (std::size_t k = 0; k < n; ++k)
+        {
+            const auto edge = input_.distance[tour.order[k]][tour.order[(k + 1) % n]];
+            if (edge > 6.0)
+            {
+                value.excess += edge - 6.0;
+                ++value.count;
+            }
+        }
+        return value;
+    }
+
+private:
+    const Tsp& input_;
+};
+// [domain-value] -----------------------------------------------------------
+
 // [neighborhood] -----------------------------------------------------------
 class SwapExplorer : public easylocal::neighborhood_explorer_base<TourManager, SwapCities>
 {
@@ -204,14 +242,33 @@ public:
     }
     // [two-opt-name]
 
-    // Pairs i + 2 <= j: shorter segments would change nothing. With i = 0 and
-    // j = n - 1 the two removed edges are the same one, so that pair is skipped.
-    easylocal::generator<TwoOpt> moves(const Tour& tour) const
+    // The moves are the pairs i + 2 <= j < n, by i and then by j: with
+    // j = i + 1 the segment would be one city, and with i = 0, j = n - 1 the
+    // two removed edges would be the same one, so that pair is skipped.
+    // A cursor enumerates them in place: first_move writes the first move into
+    // `move`, next_move turns `move` into the following one, and both return
+    // false when there is none.
+    bool first_move(const Tour& tour, TwoOpt& move) const
+    {
+        move = TwoOpt{0, 1}; // just before the first move, TwoOpt{0, 2}
+        return next_move(tour, move);
+    }
+
+    bool next_move(const Tour& tour, TwoOpt& move) const
     {
         const auto n = tour.order.size();
-        for (std::size_t i = 0; i + 2 < n; ++i)
-            for (std::size_t j = i + 2; j < n && !(i == 0 && j + 1 == n); ++j)
-                co_yield TwoOpt{i, j};
+        do
+        {
+            if (++move.j == n) // the last j for this i: on to the next i
+            {
+                ++move.i;
+                move.j = move.i + 2;
+            }
+            if (move.j >= n) // no i left
+                return false;
+        }
+        while (move.i == 0 && move.j + 1 == n);
+        return true;
     }
 
     // Uniform by rejection: two positions drawn independently, ordered, and
@@ -316,6 +373,40 @@ private:
     const Tsp& input_;
 };
 // [delta] ------------------------------------------------------------------
+
+// [co-located] -------------------------------------------------------------
+// The tour length with its 2-opt delta in the same class: a co-located delta.
+// The component is attached as usual, with component<TourLengthWithDelta>(),
+// and its delta with delta<TourLengthWithDelta>().
+class TourLengthWithDelta
+{
+public:
+    explicit TourLengthWithDelta(const Tsp& input) : input_{input} {}
+
+    double evaluate(const Tour& tour) const
+    {
+        const auto n = tour.order.size();
+        double length = 0.0;
+        for (std::size_t k = 0; k < n; ++k)
+            length += input_.distance[tour.order[k]][tour.order[(k + 1) % n]];
+        return length;
+    }
+
+    double delta_evaluate(const Tour& tour, const TwoOpt& move) const
+    {
+        const auto n = tour.order.size();
+        const auto a = tour.order[move.i];
+        const auto b = tour.order[move.i + 1];
+        const auto c = tour.order[move.j];
+        const auto d = tour.order[(move.j + 1) % n];
+        const auto& distance = input_.distance;
+        return distance[a][c] + distance[b][d] - distance[a][b] - distance[c][d];
+    }
+
+private:
+    const Tsp& input_;
+};
+// [co-located] -------------------------------------------------------------
 
 // [equality] ---------------------------------------------------------------
 // Equality of solutions and moves, for the Tester checks of chapter 12.

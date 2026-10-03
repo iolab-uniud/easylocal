@@ -31,8 +31,9 @@ private:
 ```
 
 - The only requirement is `evaluate(const Solution&) const -> Value`.
-- `Value` may be an arithmetic type, as here, or a domain type (a struct with a
-  total and a count, for instance).
+- `Value` is usually a number, as here. It may also be a struct of your own, a
+  *domain value*: an advanced use, described in [Domain values](#domain-values)
+  below.
 - The component keeps a reference to the Input, `input_`, received in its
   constructor: the framework constructs the component when the runner is
   bound, as `Component{const Input&, args...}` (preferred) or
@@ -116,30 +117,171 @@ auto sm = el::solution_manager<TimetableManager>()
 - The weights are parameters: here `cost.hard.weights` and
   `cost.soft.weights` (see [Configuration](09-configuration.md)).
 - `cost::sum` adds numbers. A component with a domain value is turned into one
-  with `cost::apply`, for instance
+  with `cost::apply`, for example
   `cost::apply([](const Load& l) { return l.overload; }, component<Capacity>())`.
 - `TwoStage` (see [Solvers](08-solvers.md)) evaluates only the components of
   the `hard` branch in its first stage.
 
 ## Structured costs
 
-`<easylocal/cost.hpp>` provides cost types beyond scalars:
+Not every objective is one number. `<easylocal/cost.hpp>` provides two cost
+types made of several values:
 
-- `cost::lexicographic<Ts...>` compares its values in order;
+- `cost::lexicographic<Ts...>` compares its values in order: the second one
+  matters only between costs whose first one is equal, and so on;
 - `cost::hierarchical<Hard, Soft>` gives the hard branch strict priority over
-  the soft one.
+  the soft one: no improvement of the soft cost can make up for a worse hard
+  cost.
 
-`cost::in_order` and `cost::hard_soft` build them; a `cost::apply` function may
-also build them directly, `cost::hierarchical{hard, soft}`. The Assignment
-example (`examples/assignment/main.cpp`) uses a lexicographic hard cost,
-computed from one component by `cost::apply`, inside a `cost::hard_soft`.
+You rarely write these types: the cost expressions `cost::in_order` and
+`cost::hard_soft` build them from the component values. Two examples on the
+TSP, with the components `MaxEdge` and `TourLength`:
+
+<!-- snippet: tutorial/main.cpp:structured-costs -->
+```cpp
+// Lexicographic: the longest edge first; between tours with the same
+// longest edge, the shorter one.
+auto bottleneck_sm = el::solution_manager<TourManager>()
+    | el::cost::in_order(el::component<MaxEdge>(), el::component<TourLength>());
+
+// Hierarchical: edges longer than 8 are a violation, measured by how much
+// the longest edge exceeds 8 (hard); the tour length is the objective (soft).
+auto bounded_sm = el::solution_manager<TourManager>()
+    | el::cost::hard_soft(
+        el::cost::apply(
+            [](double longest) { return std::max(0.0, longest - 8.0); },
+            el::component<MaxEdge>()),
+        el::component<TourLength>());
+```
+
+- `bottleneck_sm` has a `cost::lexicographic<double, double>` cost: a tour is
+  better if its longest edge is shorter, and between two tours with the same
+  longest edge, the shorter tour is better. The order of the children is the
+  order of comparison.
+- `bounded_sm` treats edges longer than 8 as a constraint. Its hard cost
+  measures the violation: `cost::apply` turns the value of `MaxEdge` into the
+  excess over 8, zero when every edge is short enough. Its soft cost is the
+  length. The result is a `cost::hierarchical<double, double>`: a tour with
+  a smaller excess is always better, whatever its length.
+
+They are run like any other SolutionManager, with a runner (chapter 5) and
+the 2-opt neighborhood (chapters 3 and 4). The cost of the result is then read
+by position for a lexicographic cost, by branch for a hierarchical one:
+
+<!-- snippet: tutorial/main.cpp:structured-costs-read -->
+```cpp
+auto bottleneck =
+    (el::make_runner<runners::FirstImprovement>(runners::FirstImprovementParameters{})
+        | bottleneck_sm | nhe)
+        .bind(tsp);
+const auto by_edge = bottleneck.run(bottleneck.initial_solution());
+// A lexicographic cost is read by position, a hierarchical one by branch.
+const double longest_edge = by_edge.cost.get<0>();
+const double length_after_edge = by_edge.cost.get<1>();
+
+auto bounded =
+    (el::make_runner<runners::FirstImprovement>(runners::FirstImprovementParameters{})
+        | bounded_sm | nhe)
+        .bind(tsp);
+const auto within_bound = bounded.run(bounded.initial_solution());
+const double excess = within_bound.cost.hard();
+const double length_within_bound = within_bound.cost.soft();
+```
+
+On the five cities both give a longest edge of 8 and a length of 26: here the
+shortest tour also has the shortest possible longest edge, so the constraint
+costs nothing. The Assignment example (`examples/assignment/main.cpp`) nests
+the two: a lexicographic hard cost, computed from one component by
+`cost::apply`, inside a `cost::hard_soft`.
+
+## Domain values
+
+Sometimes a component measures more than one number at once. `LongEdges`
+counts the edges longer than 6 and adds up how much they exceed 6, in a single
+pass over the tour:
+
+<!-- snippet: tutorial/tsp.hpp:domain-value -->
+```cpp
+// A domain value: the edges longer than 6, as a total excess and a count.
+struct LongEdges
+{
+    double excess{};     // the total length beyond 6 of the long edges
+    std::size_t count{}; // how many edges are longer than 6
+
+    // Needed only when LongEdges is itself the cost: tours are then compared
+    // by excess first and by count between equal excesses.
+    auto operator<=>(const LongEdges&) const = default;
+};
+
+class LongEdgesComponent
+{
+public:
+    explicit LongEdgesComponent(const Tsp& input) : input_{input} {}
+
+    LongEdges evaluate(const Tour& tour) const
+    {
+        const auto n = tour.order.size();
+        LongEdges value;
+        for (std::size_t k = 0; k < n; ++k)
+        {
+            const auto edge = input_.distance[tour.order[k]][tour.order[(k + 1) % n]];
+            if (edge > 6.0)
+            {
+                value.excess += edge - 6.0;
+                ++value.count;
+            }
+        }
+        return value;
+    }
+
+private:
+    const Tsp& input_;
+};
+```
+
+The component returns the struct, and the framework stores it like any other
+value. What the struct needs depends on how the cost expression uses it:
+
+<!-- snippet: tutorial/main.cpp:domain-value-recipe -->
+```cpp
+// The struct is the cost: it is compared with its operator<=>.
+auto long_edges_sm =
+    el::solution_manager<TourManager>() | el::component<LongEdgesComponent>();
+
+// A function turns it into a number: here the excess is a hard cost.
+auto excess_sm = el::solution_manager<TourManager>()
+    | el::cost::hard_soft(
+        el::cost::apply(
+            [](const LongEdges& value) { return value.excess; },
+            el::component<LongEdgesComponent>()),
+        el::component<TourLength>());
+```
+
+- **The struct is the cost** (`long_edges_sm`). Algorithms compare costs, so
+  the struct must be ordered: `better` and `equivalent` default to `<` and
+  `==` (see [Cost semantics](#cost-semantics) below). The defaulted
+  `operator<=>` provides both, comparing the members in declaration order:
+  first `excess`, then `count`. Without it, the runner does not compile.
+- **A function turns it into a number** (`excess_sm`). `cost::apply` maps the
+  struct to its `excess`, a number that is then the hard cost. Here the
+  struct needs no operators: the algorithms compare the numbers `cost::apply`
+  returns. `cost::apply` is also how a domain value enters a `cost::sum`,
+  which adds numbers only.
+- **With a delta evaluator** (chapter 4), the delta is added to the value, so
+  the struct also needs `operator+(Value, Delta)`.
+
+With First Improvement and the 2-opt moves, `long_edges_sm` stops at an
+excess of 3 over two edges. That is a local optimum: no 2-opt move improves
+it, although a tour with the same excess on a single edge exists.
+`excess_sm` finds the minimum excess, 3, and then the shortest tour with it,
+of length 26.
 
 ## Cost semantics
 
 Algorithms never compare costs with operators: they ask whether a cost is
 `better`, `equivalent` or `better_or_equivalent` than another. These default to
 `<`, `==` and `<=` of the cost type; the function of a `cost::apply` at the
-root of the expression may redefine them, for instance to compare
+root of the expression may redefine them, for example to compare
 floating-point costs with a tolerance.
 
 ## See also
