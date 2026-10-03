@@ -201,6 +201,25 @@ inline constexpr bool delta_component_active_v =
         typename Binding::component_type,
         typename SM::component_types>;
 
+// A component of the recipe that a projection leaves out, such as a soft
+// component in the hard-cost projection of TwoStage's first stage: its delta
+// belongs to the recipe but is not used by the projected SolutionManager.
+template<class SM, class Binding>
+consteval bool delta_component_projected_out()
+{
+    if constexpr (requires { typename SM::projection_source_component_types; })
+    {
+        return !delta_component_active_v<SM, Binding>
+            && tuple_contains_type_v<
+                typename Binding::component_type,
+                typename SM::projection_source_component_types>;
+    }
+    else
+    {
+        return false;
+    }
+}
+
 template<class SM, class NHE, class Binding>
 consteval bool delta_binding_compatible()
 {
@@ -263,7 +282,8 @@ template<class SM, class NHE, class Binding>
 consteval bool validate_delta_binding()
 {
     static_assert(
-        delta_component_active_v<SM, Binding>,
+        delta_component_active_v<SM, Binding>
+            || delta_component_projected_out<SM, Binding>(),
         "attached delta names a component that is not active in the bound "
         "SolutionManager recipe; the offending component and delta evaluator "
         "types are shown in the template instantiation context");

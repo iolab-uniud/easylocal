@@ -173,6 +173,87 @@ private:
     const SolutionManager& sm_;
 };
 
+// The hard and soft parts as two components, each with a delta under the
+// same neighborhood: in the hard-only first stage the soft delta belongs to a
+// component the projection leaves out, and is ignored.
+struct HardPart
+{
+    [[nodiscard]] static auto evaluate(const Solution& solution) -> int
+    {
+        return solution.hard;
+    }
+};
+
+struct SoftPart
+{
+    [[nodiscard]] static auto evaluate(const Solution& solution) -> int
+    {
+        return solution.soft;
+    }
+};
+
+struct StepMove
+{
+    bool hard{};
+};
+
+class StepNeighborhood
+{
+public:
+    using input_type = Instance;
+    using solution_type = Solution;
+    using move_type = StepMove;
+
+    explicit StepNeighborhood(const SolutionManager& sm) : sm_{sm} {}
+
+    [[nodiscard]] auto input() const noexcept -> const Instance&
+    {
+        return sm_.input();
+    }
+
+    // The hard part first, then the soft one.
+    template<std::uniform_random_bit_generator RNG>
+    [[nodiscard]] static auto random_move(const Solution& solution, RNG&)
+        -> std::optional<move_type>
+    {
+        if (solution.hard > 0)
+            return move_type{.hard = true};
+        if (solution.soft > 0)
+            return move_type{.hard = false};
+        return std::nullopt;
+    }
+
+    [[nodiscard]] static auto is_valid(const Solution&, const move_type&) noexcept -> bool
+    {
+        return true;
+    }
+    static void make_move(Solution& solution, const move_type& move) noexcept
+    {
+        --(move.hard ? solution.hard : solution.soft);
+    }
+
+private:
+    const SolutionManager& sm_;
+};
+
+struct HardPartDelta
+{
+    explicit HardPartDelta(const Instance&) {}
+    [[nodiscard]] static auto delta_evaluate(const Solution&, const StepMove& move) -> int
+    {
+        return move.hard ? -1 : 0;
+    }
+};
+
+struct SoftPartDelta
+{
+    explicit SoftPartDelta(const Instance&) {}
+    [[nodiscard]] static auto delta_evaluate(const Solution&, const StepMove& move) -> int
+    {
+        return move.hard ? 0 : -1;
+    }
+};
+
 // Always proposes a move, also once the hard cost is zero: only the stage-1
 // target stops a Simulated Annealing on it before its schedule ends.
 class EndlessHardNeighborhood
@@ -318,6 +399,31 @@ int main()
     ok &= expect(
         sa_result.cost.hard() == 0 && sa_result.cost.soft() == 0,
         "second-stage SA returns the full hierarchical cost");
+
+    auto two_part_runner =
+        easylocal::make_runner<
+            runners::SimulatedAnnealing<runners::temperature::FixedLength>>(
+            {.temperature =
+                    runners::temperature::FixedLengthParameters{
+                        .initial_temperature = 2.0,
+                        .final_temperature = 0.5,
+                        .cooling_rate = 0.5,
+                        .max_iterations = 32,
+                    }})
+        | (solution_manager<SolutionManager>()
+            | cost::hard_soft(component<HardPart>(), component<SoftPart>()))
+        | (neighborhood<StepNeighborhood>() | delta<HardPart, HardPartDelta>()
+            | delta<SoftPart, SoftPartDelta>());
+    auto two_part_solver = make_solver<solvers::TwoStage>(
+        std::move(two_part_runner),
+        solvers::TwoStageConfig<initialization::Initial>{
+            .initialization = initialization::initial,
+            .seed = 5,
+        });
+    const auto two_part_result = two_part_solver.solve(instance);
+    ok &= expect(
+        two_part_result.cost.hard() == 0 && two_part_result.cost.soft() == 0,
+        "a soft delta is ignored by the hard-only stage and used by the full one");
 
     // Stage 1 stops as soon as the hard cost is zero, and the result reports
     // the effort of both stages.
