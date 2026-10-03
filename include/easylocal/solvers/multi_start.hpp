@@ -14,7 +14,6 @@
 #include <random>
 #include <stdexcept>
 #include <string>
-#include <type_traits>
 #include <utility>
 
 namespace easylocal::solvers
@@ -52,79 +51,44 @@ struct MultiStartConfig
 // Repeatedly initialize and run the same bound Runner, retaining the best
 // result according to the bound runner's cost semantics. `starts`
 // denotes the total number of runs (not the number of runs after a first one).
-template<
-    class RunnerType,
-    std::uniform_random_bit_generator RNG = std::mt19937_64>
+template<class RunnerType, std::uniform_random_bit_generator RNG = std::mt19937_64>
 class MultiStart
+    : public easylocal::detail::InitializationSupport<
+          easylocal::detail::bound_runner_t<RunnerType>,
+          RNG>
 {
+    using initialization_support = easylocal::detail::InitializationSupport<
+        easylocal::detail::bound_runner_t<RunnerType>,
+        RNG>;
+
 public:
     using runner_type = RunnerType;
     using rng_type = RNG;
     using input_type = typename runner_type::input_type;
-    using bound_runner_type = decltype(
-        std::declval<runner_type&>().bind(
-            std::declval<const input_type&>()));
+    using bound_runner_type = easylocal::detail::bound_runner_t<RunnerType>;
     using solution_type = typename bound_runner_type::solution_type;
     using cost_type = typename bound_runner_type::cost_type;
 
-    static constexpr bool supports_initial =
-        easylocal::detail::bound_runner_with_initial_solution<bound_runner_type>;
-    static constexpr bool supports_random =
-        easylocal::detail::bound_runner_with_random_solution<bound_runner_type, rng_type>;
+    using initialization_support::supports_initial;
+    using initialization_support::supports_random;
 
-    [[nodiscard]]
-    static constexpr bool supports(const initialization::Mode mode) noexcept
-    {
-        switch (mode)
-        {
-        case initialization::Mode::initial:
-            return supports_initial;
-        case initialization::Mode::random:
-            return supports_random;
-        }
-        return false;
-    }
-
+    // initialization: initialization::initial or random, rejected at compile
+    // time when the runner does not support it, or a Mode, checked here before
+    // the parameters.
+    template<class Initialization>
+        requires easylocal::detail::
+                     accepted_initialization<Initialization, bound_runner_type, RNG>
     MultiStart(
         RunnerType runner,
         MultiStartParameters parameters,
-        const initialization::Initial,
+        Initialization initialization,
         RNG rng)
-        requires supports_initial
-        : runner_{std::move(runner)},
+        : initialization_support{initialization},
+          runner_{std::move(runner)},
           parameters_{parameters},
-          initialization_mode_{initialization::Mode::initial},
           rng_{std::move(rng)}
     {
         validate_parameters();
-    }
-
-    MultiStart(
-        RunnerType runner,
-        MultiStartParameters parameters,
-        const initialization::Random,
-        RNG rng)
-        requires supports_random
-        : runner_{std::move(runner)},
-          parameters_{parameters},
-          initialization_mode_{initialization::Mode::random},
-          rng_{std::move(rng)}
-    {
-        validate_parameters();
-    }
-
-    MultiStart(
-        RunnerType runner,
-        MultiStartParameters parameters,
-        const initialization::Mode initialization_mode,
-        RNG rng)
-        : runner_{std::move(runner)},
-          parameters_{parameters},
-          initialization_mode_{initialization_mode},
-          rng_{std::move(rng)}
-    {
-        validate_parameters();
-        validate_initialization_mode(initialization_mode_);
     }
 
     template<class Initialization>
@@ -138,18 +102,6 @@ public:
               config.initialization,
               RNG{config.seed})
     {
-    }
-
-    [[nodiscard]]
-    initialization::Mode initialization_mode() const noexcept
-    {
-        return initialization_mode_;
-    }
-
-    void initialization_mode(const initialization::Mode mode)
-    {
-        validate_initialization_mode(mode);
-        initialization_mode_ = mode;
     }
 
     [[nodiscard]]
@@ -227,17 +179,6 @@ public:
     }
 
 private:
-    static void validate_initialization_mode(const initialization::Mode mode)
-    {
-        if (!supports(mode))
-        {
-            throw std::invalid_argument{
-                mode == initialization::Mode::initial
-                    ? "initial solution initialization is not supported by this Solver"
-                    : "random solution initialization is not supported by this Solver"};
-        }
-    }
-
     void validate_parameters() const
     {
         if (const auto validation = parameters_.validate(); !validation)
@@ -246,30 +187,13 @@ private:
         }
     }
 
-    [[nodiscard]]
-    solution_type make_initial_solution(const bound_runner_type& bound_runner)
-    {
-        switch (initialization_mode_)
-        {
-        case initialization::Mode::initial:
-            if constexpr (supports_initial)
-                return bound_runner.initial_solution();
-            break;
-        case initialization::Mode::random:
-            if constexpr (supports_random)
-                return bound_runner.random_solution(rng_);
-            break;
-        }
-        throw std::logic_error{"unsupported Solver initialization mode"};
-    }
-
     template<class... Options>
     [[nodiscard]]
     auto run_once(bound_runner_type& bound_runner, const Options&... options)
     {
         return easylocal::detail::run_with_solver_rng(
             bound_runner,
-            make_initial_solution(bound_runner),
+            this->make_initial_solution(bound_runner, rng_),
             rng_,
             options...);
     }
@@ -290,7 +214,6 @@ private:
 
     RunnerType runner_;
     MultiStartParameters parameters_;
-    initialization::Mode initialization_mode_;
     RNG rng_;
 };
 

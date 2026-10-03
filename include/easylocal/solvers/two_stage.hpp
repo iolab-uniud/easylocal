@@ -11,8 +11,6 @@
 #include <cstddef>
 #include <cstdint>
 #include <random>
-#include <stdexcept>
-#include <type_traits>
 #include <utility>
 
 namespace easylocal::solvers
@@ -30,12 +28,43 @@ struct TwoStageConfig
 // cost reaches zero; the second runner continues from its solution on the
 // complete hierarchical cost. This keeps hard-only construction as framework
 // machinery while leaving the two search algorithms independently configurable.
+namespace detail
+{
+
+// The first stage's bound runner: the first runner projected onto the hard
+// cost. Without a hierarchical cost the first runner itself, so that
+// TwoStage's static_assert reports the problem.
+template<
+    class FirstRunner,
+    bool = easylocal::detail::hierarchical_solution_manager<
+        typename FirstRunner::solution_manager_type>>
+struct two_stage_first_bound
+{
+    using type = easylocal::detail::bound_runner_t<
+        decltype(std::declval<FirstRunner>().with_hard_cost())>;
+};
+
+template<class FirstRunner>
+struct two_stage_first_bound<FirstRunner, false>
+{
+    using type = easylocal::detail::bound_runner_t<FirstRunner>;
+};
+
+} // namespace detail
+
 template<
     class FirstRunnerType,
     class SecondRunnerType,
     std::uniform_random_bit_generator RNG = std::mt19937_64>
 class TwoStage
+    : public easylocal::detail::InitializationSupport<
+          typename detail::two_stage_first_bound<FirstRunnerType>::type,
+          RNG>
 {
+    using initialization_support = easylocal::detail::InitializationSupport<
+        typename detail::two_stage_first_bound<FirstRunnerType>::type,
+        RNG>;
+
 public:
     using first_runner_type = FirstRunnerType;
     using second_runner_type = SecondRunnerType;
@@ -56,52 +85,31 @@ public:
     using second_input_type = typename second_runner_type::input_type;
     static_assert(std::same_as<input_type, second_input_type>);
 
-    using bound_first_runner_type = decltype(
-        std::declval<hard_runner_type&>().bind(
-            std::declval<const input_type&>()));
-    using bound_second_runner_type = decltype(
-        std::declval<second_runner_type&>().bind(
-            std::declval<const input_type&>()));
+    using bound_first_runner_type = easylocal::detail::bound_runner_t<hard_runner_type>;
+    using bound_second_runner_type =
+        easylocal::detail::bound_runner_t<second_runner_type>;
     using solution_type = typename bound_first_runner_type::solution_type;
     using second_solution_type = typename bound_second_runner_type::solution_type;
     static_assert(std::same_as<solution_type, second_solution_type>);
 
-    static constexpr bool supports_initial =
-        easylocal::detail::bound_runner_with_initial_solution<bound_first_runner_type>;
-    static constexpr bool supports_random =
-        easylocal::detail::bound_runner_with_random_solution<bound_first_runner_type, rng_type>;
+    using initialization_support::supports_initial;
+    using initialization_support::supports_random;
 
-    [[nodiscard]]
-    static constexpr bool supports(const initialization::Mode mode) noexcept
-    {
-        switch (mode)
-        {
-        case initialization::Mode::initial:
-            return supports_initial;
-        case initialization::Mode::random:
-            return supports_random;
-        }
-        return false;
-    }
-
+    // initialization: initialization::initial or random, rejected at compile
+    // time when the first runner does not support it, or a Mode, checked here.
     template<class Initialization>
+        requires easylocal::detail::
+                     accepted_initialization<Initialization, bound_first_runner_type, RNG>
     TwoStage(
         FirstRunnerType first_runner,
         SecondRunnerType second_runner,
         Initialization initialization,
         RNG rng)
-        requires (
-            (std::same_as<std::remove_cvref_t<Initialization>, initialization::Initial> &&
-             supports_initial) ||
-            (std::same_as<std::remove_cvref_t<Initialization>, initialization::Random> &&
-             supports_random) ||
-            std::same_as<std::remove_cvref_t<Initialization>, initialization::Mode>)
-        : hard_runner_{std::move(first_runner).with_hard_cost()},
+        : initialization_support{initialization},
+          hard_runner_{std::move(first_runner).with_hard_cost()},
           second_runner_{std::move(second_runner)},
-          initialization_mode_{initialization_to_mode(initialization)},
           rng_{std::move(rng)}
     {
-        validate_initialization_mode(initialization_mode_);
     }
 
     template<class Initialization>
@@ -129,18 +137,6 @@ public:
         TwoStageConfig<Initialization> config)
         : TwoStage(runner, runner, config)
     {
-    }
-
-    [[nodiscard]]
-    initialization::Mode initialization_mode() const noexcept
-    {
-        return initialization_mode_;
-    }
-
-    void initialization_mode(const initialization::Mode mode)
-    {
-        validate_initialization_mode(mode);
-        initialization_mode_ = mode;
     }
 
     [[nodiscard]]
@@ -194,9 +190,11 @@ public:
 
         auto first_result = easylocal::detail::run_with_solver_rng(
             bound_first_runner,
-            make_initial_solution(bound_first_runner),
+            this->make_initial_solution(bound_first_runner, rng_),
             rng_,
-            easylocal::detail::with_target(easylocal::cost::zero<hard_cost_type>(), options...));
+            easylocal::detail::with_target(
+                easylocal::cost::zero<hard_cost_type>(),
+                options...));
 
         easylocal::detail::search_effort effort;
         effort.add(first_result);
@@ -223,55 +221,8 @@ public:
     }
 
 private:
-    static constexpr initialization::Mode initialization_to_mode(
-        const initialization::Initial)
-    {
-        return initialization::Mode::initial;
-    }
-
-    static constexpr initialization::Mode initialization_to_mode(
-        const initialization::Random)
-    {
-        return initialization::Mode::random;
-    }
-
-    static constexpr initialization::Mode initialization_to_mode(
-        const initialization::Mode mode)
-    {
-        return mode;
-    }
-
-    static void validate_initialization_mode(const initialization::Mode mode)
-    {
-        if (!supports(mode))
-        {
-            throw std::invalid_argument{
-                mode == initialization::Mode::initial
-                    ? "initial solution initialization is not supported by this Solver"
-                    : "random solution initialization is not supported by this Solver"};
-        }
-    }
-
-    [[nodiscard]]
-    solution_type make_initial_solution(const bound_first_runner_type& bound_first_runner)
-    {
-        switch (initialization_mode_)
-        {
-        case initialization::Mode::initial:
-            if constexpr (supports_initial)
-                return bound_first_runner.initial_solution();
-            break;
-        case initialization::Mode::random:
-            if constexpr (supports_random)
-                return bound_first_runner.random_solution(rng_);
-            break;
-        }
-        throw std::logic_error{"unsupported Solver initialization mode"};
-    }
-
     hard_runner_type hard_runner_;
     SecondRunnerType second_runner_;
-    initialization::Mode initialization_mode_;
     RNG rng_;
 };
 

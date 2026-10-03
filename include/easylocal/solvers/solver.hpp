@@ -17,6 +17,11 @@ namespace easylocal
 namespace detail
 {
 
+// The runner bound to an Input, as a solver binds it.
+template<class Runner>
+using bound_runner_t = decltype(std::declval<Runner&>().bind(
+    std::declval<const typename Runner::input_type&>()));
+
 template<class BoundRunner>
 concept bound_runner_with_initial_solution =
     requires(const BoundRunner& bound_runner) {
