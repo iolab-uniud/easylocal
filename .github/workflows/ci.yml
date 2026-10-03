@@ -26,7 +26,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        toolchain: [gcc15, gcc16, clang22-libstdcxx, clang22-libcxx]
+        toolchain:
+          - gcc15
+          - gcc16
+          - clang22-libstdcxx
+          - clang22-libcxx
+          - clang23-libstdcxx
+          - clang23-libcxx
     env:
       PRESET: ci23-release
       TOOLCHAIN: ${{ matrix.toolchain }}
@@ -89,6 +95,30 @@ jobs:
                   clang-22 libc++-22-dev libc++abi-22-dev
               echo 'CXX=/usr/bin/clang++-22' >> "$GITHUB_ENV"
               echo 'CXXFLAGS=-stdlib=libc++' >> "$GITHUB_ENV"
+              ;;
+            clang23-libstdcxx|clang23-libcxx)
+              # Clang 23 is not in Ubuntu 26.04: it comes from the LLVM
+              # project's own repository, apt.llvm.org.
+              "${elevate[@]}" env DEBIAN_FRONTEND=noninteractive \
+                apt-get install -y --no-install-recommends ca-certificates curl
+              "${elevate[@]}" install -d -m 0755 /etc/apt/keyrings
+              curl -fsSL --retry 3 https://apt.llvm.org/llvm-snapshot.gpg.key \
+                | "${elevate[@]}" tee /etc/apt/keyrings/apt.llvm.org.asc > /dev/null
+              echo "deb [signed-by=/etc/apt/keyrings/apt.llvm.org.asc] https://apt.llvm.org/resolute/ llvm-toolchain-resolute-23 main" \
+                | "${elevate[@]}" tee /etc/apt/sources.list.d/llvm-23.list > /dev/null
+              "${elevate[@]}" apt-get -o Acquire::Retries=3 update
+              if [ "$TOOLCHAIN" = clang23-libstdcxx ]; then
+                "${elevate[@]}" env DEBIAN_FRONTEND=noninteractive \
+                  apt-get install -y --no-install-recommends g++-16 clang-23
+                gcc_dir="$(dirname "$(/usr/bin/gcc-16 -print-libgcc-file-name)")"
+                echo "CXXFLAGS=-stdlib=libstdc++ --gcc-install-dir=$gcc_dir" >> "$GITHUB_ENV"
+              else
+                "${elevate[@]}" env DEBIAN_FRONTEND=noninteractive \
+                  apt-get install -y --no-install-recommends \
+                    clang-23 libc++-23-dev libc++abi-23-dev
+                echo 'CXXFLAGS=-stdlib=libc++' >> "$GITHUB_ENV"
+              fi
+              echo 'CXX=/usr/bin/clang++-23' >> "$GITHUB_ENV"
               ;;
             *) echo "Unknown toolchain: $TOOLCHAIN" >&2; exit 1 ;;
           esac

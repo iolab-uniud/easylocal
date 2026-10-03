@@ -16,6 +16,8 @@ Usage:
   ./scripts/act-ci.sh gcc16
   ./scripts/act-ci.sh clang22-libstdcxx
   ./scripts/act-ci.sh clang22-libcxx
+  ./scripts/act-ci.sh clang23-libstdcxx
+  ./scripts/act-ci.sh clang23-libcxx
 
 By default, runs the Ubuntu 26.04 Linux GitHub Actions job locally with act for
 all supported Linux toolchains. act is a functional workflow check only; do not
@@ -53,8 +55,10 @@ case "$TARGET" in
         run_toolchain gcc16
         run_toolchain clang22-libstdcxx
         run_toolchain clang22-libcxx
+        run_toolchain clang23-libstdcxx
+        run_toolchain clang23-libcxx
         ;;
-    gcc15|gcc16|clang22-libstdcxx|clang22-libcxx)
+    gcc15|gcc16|clang22-libstdcxx|clang22-libcxx|clang23-libstdcxx|clang23-libcxx)
         run_toolchain "$TARGET"
         ;;
     -h|--help)

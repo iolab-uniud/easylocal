@@ -38,7 +38,8 @@ also published at <https://iolab-uniud.github.io/easylocal/>.
 
 The current CI exercises:
 
-- Linux: GCC 15, GCC 16, Clang 22 + libstdc++, and Clang 22 + libc++
+- Linux: GCC 15, GCC 16, Clang 22 and Clang 23, each with libstdc++ and with
+  libc++ (Clang 23 from apt.llvm.org)
 - macOS ARM64: AppleClang and Homebrew GCC 16
 
 macOS Intel is intentionally not part of the supported CI matrix.
@@ -566,6 +567,8 @@ The full CI matrix is intentionally small and targets C++23 directly:
 | Ubuntu 26.04 | GCC 16 |
 | Ubuntu 26.04 | Clang 22 + libstdc++ |
 | Ubuntu 26.04 | Clang 22 + libc++ |
+| Ubuntu 26.04 | Clang 23 + libstdc++ (apt.llvm.org) |
+| Ubuntu 26.04 | Clang 23 + libc++ (apt.llvm.org) |
 | macOS ARM64 | AppleClang |
 | macOS ARM64 | GCC 16 |
 
@@ -592,6 +595,8 @@ or for a single toolchain:
 ./scripts/act-ci.sh gcc16
 ./scripts/act-ci.sh clang22-libstdcxx
 ./scripts/act-ci.sh clang22-libcxx
+./scripts/act-ci.sh clang23-libstdcxx
+./scripts/act-ci.sh clang23-libcxx
 ```
 
 ## Performance benchmarks
