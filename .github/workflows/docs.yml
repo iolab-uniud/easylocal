@@ -7,6 +7,8 @@ on:
       - 'docs/**'
       - 'include/**'
       - 'mkdocs.yml'
+      - 'examples/quickstart/**' # served as downloads (scripts/mkdocs_downloads.py)
+      - 'scripts/mkdocs_downloads.py'
       - 'pyproject.toml'
       - 'uv.lock'
       - '.github/workflows/docs.yml'
@@ -15,6 +17,8 @@ on:
       - 'docs/**'
       - 'include/**'
       - 'mkdocs.yml'
+      - 'examples/quickstart/**'
+      - 'scripts/mkdocs_downloads.py'
   workflow_dispatch:
 
 permissions:

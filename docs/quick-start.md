@@ -52,7 +52,9 @@ city `a` to city `b`:
 | **3** | 10 | 4 | 8 | 0  | 6 |
 | **4** | 7  | 3 | 5 | 6  | 0 |
 
-The shortest round trip has length 26.
+The shortest round trip has length 26, reached by two tours (each
+also in the opposite direction): 0 → 1 → 3 → 2 → 4 → 0 (2 + 4 + 8 + 5 + 7) and
+0 → 1 → 3 → 4 → 2 → 0 (2 + 4 + 6 + 5 + 9).
 
 ## Solutions and moves
 
@@ -317,6 +319,11 @@ const auto result = search.run(search.initial_solution());
 
 ## The whole program
 
+Download it, with the `CMakeLists.txt` of the next section:
+[main.cpp](downloads/quickstart/main.cpp){: download="main.cpp" },
+[CMakeLists.txt](downloads/quickstart/CMakeLists.txt){: download="CMakeLists.txt" }, or both in
+[quickstart.zip](downloads/quickstart/quickstart.zip){: download="quickstart.zip" }.
+
 <!-- snippet: quickstart/main.cpp -->
 ```cpp
 // Quick start: a swap-move First Improvement for the symmetric TSP.
@@ -479,6 +486,7 @@ the test suite.
 Create a folder with two files: `main.cpp`, containing the program above, and
 `CMakeLists.txt`, containing:
 
+<!-- snippet: quickstart/standalone/CMakeLists.txt -->
 ```cmake
 cmake_minimum_required(VERSION 3.25)
 project(tsp LANGUAGES CXX)

@@ -48,7 +48,9 @@ inline Tsp five_cities()
 }
 ```
 
-Its optimal tour has length 26.
+The shortest round trip has length 26, reached by two tours (each
+also in the opposite direction): 0 → 1 → 3 → 2 → 4 → 0 (2 + 4 + 8 + 5 + 7) and
+0 → 1 → 3 → 4 → 2 → 0 (2 + 4 + 6 + 5 + 9).
 
 The chapters build the solver in this order:
 

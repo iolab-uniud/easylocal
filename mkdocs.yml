@@ -15,6 +15,10 @@ copyright: Copyright &copy; 2001-2026 the EasyLocal authors, University of Udine
 
 docs_dir: docs
 site_dir: build/site
+# Example sources served as downloads (downloads/...).
+hooks:
+  - scripts/mkdocs_downloads.py
+
 exclude_docs: |
   Doxyfile
   assets/branding/README.md
