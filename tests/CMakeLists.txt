@@ -1455,3 +1455,22 @@ add_test(
     NAME easylocal.trace
     COMMAND easylocal_trace_test
 )
+
+# The ELTR decoder (scripts/eltr.py) reads what the binary recorder writes as
+# the JSONL recorder writes it.
+add_executable(
+    easylocal_eltr_fixture
+    eltr_fixture.cpp
+)
+target_link_libraries(
+    easylocal_eltr_fixture
+    PRIVATE
+        EasyLocal::Core
+)
+if(Python3_Interpreter_FOUND)
+    add_test(
+        NAME easylocal.trace.eltr-decode
+        COMMAND Python3::Interpreter
+            ${CMAKE_CURRENT_SOURCE_DIR}/eltr_decode.py
+            $<TARGET_FILE:easylocal_eltr_fixture>)
+endif()

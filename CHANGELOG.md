@@ -123,7 +123,8 @@ old concepts onto the new ones.
 - **Tracing**: core search events to JSONL, binary or in-memory recorders, with
   no overhead when unused, including the solutions visited, by their hash,
   for search trajectory and local optima networks, and tabu search's
-  aspirations and escapes; leveled logging.
+  aspirations and escapes; `scripts/eltr.py` decodes binary traces to JSONL,
+  a summary or a search trajectory network; leveled logging.
 
 ### Optional components
 

@@ -132,6 +132,33 @@ an arithmetic cost as `i64`, `u64` or `f64`).
 | 10 | `tabu_escape` | evaluations `u64`, iterations `u64`, moves `u64` |
 | 128–255 | application events | as their encoder writes them |
 
+### Decoding ELTR
+
+`scripts/eltr.py` decodes a trace (standard-library Python, `python3` or
+`uv run`). By default it writes JSON Lines with the field names of
+`jsonl_recorder`, so a decoded binary trace feeds the same tools as a JSONL one:
+
+```sh
+scripts/eltr.py run-0042.eltrace > run-0042.jsonl
+scripts/eltr.py run-0042.eltrace --events incumbent_updated,run_finished
+scripts/eltr.py run-0042.eltrace --format summary   # event counts, costs per run
+scripts/eltr.py run-0042.eltrace --format stn       # search trajectory network
+```
+
+The trace does not record how its costs are encoded. `--cost` gives the layout
+written by the recorder's cost writer: `i64` (the default, a signed integral
+cost), `u64`, `f64`, or the fields of a structured writer in order, for example
+`--cost hard:i32,soft:i32` for the writer below, which decodes each cost to an
+object. A record whose payload does not fit the layout is an error, but a
+layout of the right size with the wrong types is not detected. An application
+event is kept as its tag and the hexadecimal payload, and a run interrupted
+mid-record is read up to its last whole record with `--allow-truncated`.
+
+The `stn` format builds the network from the `solution_visited` events, which
+are recorded when the problem has a [solution hash](reference/solution-manager.md):
+one node per distinct hash, with its cost and number of visits, and one edge per
+consecutive pair of visits within a run.
+
 ### Extending ELTR without touching EasyLocal
 
 The binary encoder is intentionally small enough to customize in application
