@@ -93,7 +93,6 @@ class neighborhood_recipe
 public:
     using base_type = BaseNHE;
     using service_type = neighborhood_service_t<BaseNHE, DeltaSpecs...>;
-    using delta_component_types = std::tuple<typename DeltaSpecs::component_type...>;
 
     static_assert(
         unique_types_v<typename DeltaSpecs::component_type...>,

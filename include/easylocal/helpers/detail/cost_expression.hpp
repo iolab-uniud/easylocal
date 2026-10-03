@@ -219,7 +219,6 @@ template<class Child, class Weight>
 struct sum_term<cost::weighted_term<Child, Weight>>
 {
     using child_type = Child;
-    using weight_type = Weight;
     static constexpr bool weighted = true;
 
     template<class Target>

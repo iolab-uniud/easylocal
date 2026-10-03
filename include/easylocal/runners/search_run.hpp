@@ -9,6 +9,7 @@
 #include <easylocal/cost/pareto.hpp>
 #include <easylocal/helpers/neighborhood_explorer.hpp>
 #include <easylocal/helpers/solution_manager.hpp>
+#include <easylocal/runners/detail/context_concepts.hpp>
 #include <easylocal/runners/pareto_archive.hpp>
 #include <easylocal/runners/run_control.hpp>
 #include <easylocal/trace/events.hpp>
@@ -171,8 +172,7 @@ run_options<trace::null_tracer, Cost> stop_at(Cost cost)
 template<class Context, class Tracer = trace::null_tracer>
 class search_run
 {
-    using evaluation_facility_type =
-        std::remove_cvref_t<decltype(std::declval<const Context&>().evaluation())>;
+    using evaluation_facility_type = runners::detail::context_evaluation_type<Context>;
 
 public:
     using context_type = Context;
@@ -196,7 +196,7 @@ public:
         const Context& context,
         const run_control& control,
         Tracer& tracer,
-        const std::size_t evaluation_limit = no_limit,
+        const std::size_t evaluation_limit = no_evaluation_limit,
         const cost_type* target = nullptr)
         : context_{context},
           evaluation_{context.evaluation()},
@@ -638,16 +638,16 @@ private:
 
     void report() const
     {
-        control_.report(run_progress{
-            .evaluations = evaluations_,
-            .iterations = iterations_,
-            .evaluation_limit = evaluation_limit_ == no_limit
-                ? std::nullopt
-                : std::optional<std::size_t>{evaluation_limit_},
-        });
+        control_.report(
+            run_progress{
+                .evaluations = evaluations_,
+                .iterations = iterations_,
+                .evaluation_limit = evaluation_limit_ == no_evaluation_limit
+                    ? std::nullopt
+                    : std::optional<std::size_t>{evaluation_limit_},
+            });
     }
 
-    static constexpr std::size_t no_limit = no_evaluation_limit;
 
     const Context& context_;
     evaluation_facility_type evaluation_;
@@ -655,7 +655,7 @@ private:
     Tracer& tracer_;
     std::size_t evaluations_{};
     std::size_t iterations_{};
-    std::size_t evaluation_limit_{no_limit};
+    std::size_t evaluation_limit_{no_evaluation_limit};
     // Recorded by should_stop(); completed while the run goes on.
     termination_reason stop_reason_{termination_reason::completed};
     const cost_type* target_{};

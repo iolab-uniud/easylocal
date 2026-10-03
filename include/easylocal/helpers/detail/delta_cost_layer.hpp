@@ -25,17 +25,10 @@ class delta_binding
 {
 public:
     using component_type = Component;
-    using evaluator_type = DeltaEvaluator;
 
     explicit delta_binding(DeltaEvaluator evaluator)
         : evaluator_{std::move(evaluator)}
     {
-    }
-
-    [[nodiscard]]
-    const DeltaEvaluator& evaluator() const noexcept
-    {
-        return evaluator_;
     }
 
     template<class Value, class Solution, class Move>
@@ -63,7 +56,6 @@ class delta_spec
 {
 public:
     using component_type = Component;
-    using evaluator_type = DeltaEvaluator;
     using binding_type = delta_binding<Component, DeltaEvaluator>;
 
     explicit delta_spec(StoredArgs... args)
@@ -148,7 +140,6 @@ class colocated_delta_spec
 {
 public:
     using component_type = Component;
-    using evaluator_type = Component;
     using binding_type = colocated_delta_binding<Component>;
 
     template<class Dependency>

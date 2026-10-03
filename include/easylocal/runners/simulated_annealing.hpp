@@ -374,30 +374,12 @@ struct FixedLengthParameters
         const auto calibration = detail::validate_calibration(initial_acceptance);
         if (!calibration)
             return calibration;
-        if (!std::isfinite(initial_temperature) || initial_temperature <= 0.0)
-        {
-            return config::validation_result::failure(
-                "initial_temperature must be finite and positive");
-        }
-
-        if (!std::isfinite(final_temperature) || final_temperature <= 0.0)
-        {
-            return config::validation_result::failure(
-                "final_temperature must be finite and positive");
-        }
-
-        if (final_temperature >= initial_temperature)
-        {
-            return config::validation_result::failure(
-                "final_temperature must be smaller than initial_temperature");
-        }
-
-        if (!std::isfinite(cooling_rate) ||
-            cooling_rate <= 0.0 || cooling_rate >= 1.0)
-        {
-            return config::validation_result::failure(
-                "cooling_rate must be finite and in the open interval (0, 1)");
-        }
+        const auto schedule = detail::validate_cooling_schedule(
+            initial_temperature,
+            final_temperature,
+            cooling_rate);
+        if (!schedule)
+            return schedule;
 
         if (max_iterations == 0)
         {

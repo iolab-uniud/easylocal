@@ -342,7 +342,6 @@ template<class SM>
 class hard_cost_layer_base
 {
 public:
-    using underlying_type = SM;
     using input_type = typename SM::input_type;
     using solution_type = typename SM::solution_type;
     using full_cost_type = typename SM::cost_type;
@@ -444,9 +443,11 @@ class hard_cost_layer<SM, true>
     : public hard_cost_layer_base<SM>
 {
 public:
-    using base_type = hard_cost_layer_base<SM>;
-    using typename base_type::cost_type;
-    using typename base_type::solution_type;
+    // The C++ base class; base_type in the other layers is the user's
+    // SolutionManager.
+    using layer_base = hard_cost_layer_base<SM>;
+    using typename layer_base::cost_type;
+    using typename layer_base::solution_type;
 
     static constexpr bool projected_components = requires
     {
@@ -465,7 +466,7 @@ public:
         typename SM::component_values_type>;
     using projection_source_component_types = typename SM::component_types;
 
-    using base_type::base_type;
+    using layer_base::layer_base;
 
     [[nodiscard]]
     component_values_type evaluate_components(const solution_type& solution) const
