@@ -13,9 +13,9 @@ move is valid and how it changes a solution.
 | `input_type`, `solution_type`, `move_type` | yes | everything |
 | `is_valid(const Solution&, const Move&) const -> bool` | yes | debug assertions, checks |
 | `make_move(Solution&, const Move&) const` | yes | every runner |
-| `moves(const Solution&) const` → input range of moves | one of the two, for deterministic algorithms | First/Best Improvement, Tester |
+| `moves(const Solution&) const` → input range of moves | one of the two, for deterministic algorithms | First/Best Improvement, Session and TextUI |
 | `first_move(const Solution&, Move&)`, `next_move(const Solution&, Move&)` → `bool` | | |
-| `random_move(const Solution&, RNG&) const -> std::optional<Move>` | for stochastic algorithms | Simulated Annealing, Tester |
+| `random_move(const Solution&, RNG&) const -> std::optional<Move>` | for stochastic algorithms | Simulated Annealing, Session and TextUI |
 | `name() -> std::string_view` | no | TextUI display |
 
 Concepts: `neighborhood_explorer_for<NHE, SM>`, `cursor_neighborhood_for`,

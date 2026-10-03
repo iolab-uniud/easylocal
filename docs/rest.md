@@ -6,12 +6,12 @@ JSON, Crow, and server lifecycle completely outside `EasyLocal::Core`.
 
 The design follows the same rule used by the TextUI:
 
-> one run owns one fresh mutable EasyLocal runtime; only the immutable Input may
-> be shared across runs.
+> one run owns freshly bound, mutable EasyLocal services; only the immutable
+> Input may be shared across runs.
 
-This keeps concurrency at the application boundary instead of making
-`app_runtime`, SolutionManager, neighborhoods, algorithms, or Runner state
-internally synchronized.
+This keeps concurrency at the application boundary instead of making the bound
+app, SolutionManager, neighborhoods, algorithms, or Runner state internally
+synchronized.
 
 ## Enabling the component
 
@@ -296,7 +296,7 @@ Crow concurrency and solver concurrency are intentionally separate:
            |         |         |
          run A     run B     run C
            |         |         |
-      fresh runtime fresh runtime fresh runtime
+       services  services  services   (fresh, one set per run)
            \         |         /
              immutable Input
 ```
@@ -305,8 +305,9 @@ Crow request threads do not execute a CPU-bound local search to completion.
 They decode the request, materialize the immutable Input and initial Solution,
 enqueue work, and return the run identifier.
 
-Each accepted job obtains a snapshot of the configured `app` and invokes the
-Core fresh-runtime execution primitive. Mutable SolutionManager, neighborhood,
+Each accepted job obtains a snapshot of the configured `app` and runs the
+requested runner with `app.run("name", input, solution, rng, with(control))`,
+which binds fresh services for that run. Mutable SolutionManager, neighborhood,
 algorithm, Runner, RNG, and Solution state therefore belongs to that run only.
 No mutex is added to those Core objects and no `Clone()` protocol is required.
 
@@ -335,7 +336,7 @@ TextUI and REST therefore share the same architectural contract without sharing
 a threading subsystem:
 
 ```text
-Core:     fresh isolated runtime per run
+Core:     fresh services per run, app.run("name", ...)
 TextUI:   one background run owned by the frontend
 REST:     bounded pool of background runs owned by the adapter
 ```

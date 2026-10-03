@@ -11,7 +11,7 @@
 | `MultimodalNeighborhoodExplorer` | `neighborhood_union` |
 | `Runner` subclasses (hill climbing, SA, ...) | algorithm classes in `easylocal::runners` with one `run` member |
 | `Solver` (`SimpleLocalSearch`, token ring, ...) | `easylocal::solvers` |
-| `Tester` | `easylocal::Tester` and the TextUI adapter |
+| `Tester` | the interactive tester: `tui::run(app, options)` (TextUI adapter) |
 | observers | `easylocal::trace` |
 | `ParameterBox` | parameter schemas and the configuration tree |
 

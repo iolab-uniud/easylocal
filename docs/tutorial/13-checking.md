@@ -35,35 +35,42 @@ The report converts to `bool`, lists the failures (`failures()`), and its
 `coverage()` says how many components, delta bindings and registrations were
 exercised. `print_report` prints both.
 
-## Tester checks: the neighborhood on a solution
+## Session checks: the neighborhood of a solution
 
-The Tester adds checks of the neighborhood around its current solution:
+`check` looks at one solution and a sample of moves. A Session (chapter 11)
+checks the whole neighborhood of its current solution:
 
-<!-- snippet: tutorial/main.cpp:tester-checks -->
+<!-- snippet: tutorial/main.cpp:session-checks -->
 ```cpp
-const auto costs = tester.check_neighborhood_costs(); // delta vs full evaluation
-const auto independence = tester.check_move_independence(); // null and repeated moves
-const auto sampling = tester.check_random_move_distribution(tester.rng());
+const auto costs = session.check_neighborhood_costs(); // delta vs full evaluation
+const auto independence =
+    session.check_move_independence(); // null and repeated moves
+const auto sampling = session.check_random_move_distribution(session.rng());
 if (costs.mismatches != 0 || costs.invalid != 0 || sampling.out_of_neighborhood != 0)
     return 1;
 ```
 
-| Check | Result | Needs |
+| Check | Result | What fails it |
 | --- | --- | --- |
-| `check_neighborhood_costs()` | `moves`, `mismatches` (delta vs full evaluation), `invalid` | enumerable moves, `equivalent` costs |
-| `check_move_independence()` | `moves`, `null_moves` (moves that change nothing), `repeated_states`, `invalid` | enumerable moves, `Solution::operator==` |
-| `check_random_move_distribution(rng)` | `samples`, `out_of_neighborhood`, `unseen`, `min_frequency`, `max_frequency` | enumerable and random moves, `Move::operator==` |
+| `check_neighborhood_costs()` | `moves`, `mismatches`, `invalid` | a move whose delta evaluation disagrees with the full evaluation, or an invalid enumerated move |
+| `check_move_independence()` | `moves`, `null_moves`, `repeated_states`, `invalid` | moves that change nothing (*null moves*), and different moves that lead to the same solution |
+| `check_random_move_distribution(rng)` | `samples`, `out_of_neighborhood`, `unseen`, `min_frequency`, `max_frequency` | a sampled move that is not in the enumerated neighborhood; moves never sampled (`unseen`) hint at a biased `random_move` |
+
+All three need the moves to be enumerable; the last one also needs
+`random_move`. The interactive tester of chapter 12 runs the same checks from
+its Move page: `C`, `D` and `U`.
 
 The last two compare values: `check_move_independence` compares the solution
-after each move with the solution before it and with the other neighbors,
-`check_random_move_distribution` compares sampled moves with enumerated ones.
-So far the tutorial's types had no equality: to use these two checks, add it.
-Without it, everything else works: calling one of the two checks does not
-compile, and the interactive tester of chapter 12 hides them.
+after each move with the others, `check_random_move_distribution` compares
+sampled moves with enumerated ones. So far the tutorial's types had no
+equality: to use these two checks, add it. Without it, everything else works:
+calling one of the two does not compile, and the interactive tester does not
+offer its neighborhood checks.
 
 <!-- snippet: tutorial/tsp.hpp:equality -->
 ```cpp
-// Equality of solutions and moves, for the Tester checks of chapter 13.
+// Equality of solutions and moves, for the neighborhood checks of a Session
+// (chapter 13).
 inline bool operator==(const Tour& a, const Tour& b)
 {
     return a.order == b.order;
@@ -83,12 +90,6 @@ inline bool operator==(const TwoOpt& a, const TwoOpt& b)
 A member `bool operator==(const Tour&) const = default;` inside each struct is
 equivalent and shorter, when you can change the type; free functions, as here,
 also work for types you cannot change. C++20 derives `!=` from `==`.
-
-The last check compares sampling with enumeration: a sampled move outside the
-enumerated neighborhood is an error, never-sampled moves (`unseen`) hint at a
-biased `random_move`. The interactive tester (chapter 12) runs the same checks
-from its pages: `C` on the Input/Output page, and `C`, `D` and `U` on the Move
-page.
 
 ## See also
 

@@ -87,17 +87,17 @@ optional component is exported through its own target file.
 ## Architectural boundary
 
 Third-party types must not leak into Core Runner, neighborhood, search, app,
-check, Tester, parameter, or configuration-tree contracts. An adapter translates
+check, Session, parameter, or configuration-tree contracts. An adapter translates
 between its external library and stable public EasyLocal APIs. In particular:
 
 - optional adapters may include public `easylocal/...` headers, but must not
   reach into `easylocal/detail/...`;
 - TOML/YAML adapters produce the same textual overrides used by the std-only
   configuration frontends;
-- TextUI consumes `app`/`Tester`/`check` facilities rather than becoming part
+- TextUI consumes `app`/`Session`/`check` facilities rather than becoming part
   of Runner or search algorithms;
 - REST owns all Crow/HTTP/JSON/server concerns outside Core and translates
-  requests into public app/runtime operations; no Crow, HTTP, or JSON type may
+  requests into public app operations (`bind`, `run`); no Crow, HTTP, or JSON type may
   enter a Core signature;
 - a logging integration must not make Core depend on the selected logging or
   formatting library.
@@ -108,9 +108,10 @@ headers may not include `easylocal/detail/*`. This keeps
 `#include <easylocal/easylocal.hpp>` and `EasyLocal::Core` usable in a pure
 standard-library consumer regardless of which optional integrations exist.
 
-Materialized apps and bound runners borrow an Input by `const&`. Input is the
+Bound apps and bound runners borrow an Input by `const&`. Input is the
 application-boundary term (`input_type`, `input()`). Binding a temporary Input
-is rejected at compile time so an adapter cannot accidentally create a runtime that outlives its Input.
+is rejected at compile time so an adapter cannot accidentally create a bound app
+that outlives its Input.
 
 ## ConfigTOML
 

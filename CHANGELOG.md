@@ -70,11 +70,17 @@ old concepts onto the new ones.
 
 - An **app** names a composed problem and its runners
   (`app("tsp") | solution_manager | neighborhood | runner<A>("name", params)`),
-  and every run uses a fresh runtime over a shared immutable Input.
+  and every run binds fresh services over a shared immutable Input. Runners
+  are run by name with `app.run("name", input, solution, rng, options...)`, the
+  single entry point of the TextUI and the REST service; `app.bind(input)`
+  keeps the services of one Input.
 - `check(app)` and `<easylocal/testing.hpp>` verify the components' contracts:
   solution semantics, cost/delta consistency and neighborhood properties.
-- The **Tester** drives an app programmatically. Tools give stochastic runners
-  an RNG they own, seeded reproducibly.
+- A **Session**, `Session{app, input, seed}`, runs an app on one Input: a
+  current solution changed by hand, move by move, or by a runner chosen by
+  name, and checks of its neighborhood. The interactive tester,
+  `tui::run(app, options)`, is a view on a Session.
+  Tools give stochastic runners an RNG they own, seeded reproducibly.
 - **Configuration**: typed runner and solver parameters with validation,
   command-line overrides, and TOML files (optional `ConfigTOML` component).
 - **Tracing**: core search events to JSONL, binary or in-memory recorders, with

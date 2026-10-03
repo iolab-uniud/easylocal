@@ -98,8 +98,8 @@ materializes them when the runner is bound to an Input.
 Components are specified incrementally: you write only what the algorithms and
 tools you use need, and the compiler tells you when a capability is missing.
 The early chapters write the essential version of each component; the
-*advanced components*, such as solvers, the Tester checks and the interactive
-tester, need a few more features, added in the chapters that introduce them.
+*advanced components*, such as solvers, the Session checks and the
+interactive tester, need a few more features, added in the chapters that introduce them.
 Services borrow the Input by `const&` and never mutate it.
 
 ## Chapters
@@ -117,9 +117,11 @@ Services borrow the Input by `const&` and never mutate it.
 9. [Configuration](09-configuration.md): parameters from the command line and
    files.
 10. [Testing your components](10-testing.md): contract checks.
-11. [Applications](11-apps-and-tools.md): the app, used in your program.
-12. [The Tester](12-tester.md): the headless Tester and the interactive TextUI.
-13. [Checking a composed problem](13-checking.md): `check`, Tester checks.
+11. [Applications](11-apps-and-tools.md): the app, a problem and its runners,
+    and the Session that runs it on an Input.
+12. [The interactive tester](12-tester.md): the TextUI.
+13. [Checking a composed problem](13-checking.md): `check`, and the
+    neighborhood checks of a Session.
 14. [A REST service](14-rest.md): searches over HTTP.
 15. [Observing and controlling a run](15-observing-and-controlling.md):
     progress, cancellation, tracing.

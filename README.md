@@ -145,7 +145,7 @@ easylocal/
                   algorithms (easylocal::runners)
   solvers/        orchestration from an Input to a final solution
   testing/        unit-test checks for user components
-  app/            app graph, app check, Tester
+  app/            app graph, app check, Session
   adapters/       optional components: toml.hpp, tui/, rest/
 ```
 
@@ -199,12 +199,13 @@ and [`docs/rest.md`](docs/rest.md) for the REST/concurrency model.
 
 The Core/application boundary is intentionally frontend-agnostic.
 `<easylocal/easylocal.hpp>` contains only standard-library Core facilities,
-including `app`, `check`, and `Tester`; ConfigTOML and TextUI remain explicit
-adapters. Materialized apps and bound runners borrow an lvalue Input by
-`const&`; binding a temporary Input is rejected to prevent dangling runtimes.
+including `app`, `check`, and `Session`; ConfigTOML and TextUI remain explicit
+adapters. Bound apps and bound runners borrow an lvalue
+Input by `const&`; binding a temporary Input is rejected to prevent dangling
+references.
 The REST adapter uses this same public boundary: HTTP/JSON/Crow/server types stay
-outside `EasyLocal::Core`, and each asynchronous run materializes fresh mutable
-runtime state while sharing only an immutable Input. Cooperative stop/progress
+outside `EasyLocal::Core`, and each asynchronous run binds fresh mutable
+services while sharing only an immutable Input. Cooperative stop/progress
 uses the std-only `easylocal::run_control` capability, passed as
 `run(solution, ..., easylocal::with(control))`. Every runner is cancellable by
 contract: the framework-owned `search_run` checks the control and reports

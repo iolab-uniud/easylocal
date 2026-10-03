@@ -34,7 +34,7 @@ easylocal/
   runners/        Runner, search_run, run_control, search algorithms
   solvers/        solvers
   testing/        component contract checks
-  app/            app, check, Tester
+  app/            app, check, Session
   adapters/       optional components: toml.hpp, tui/, rest/
 ```
 

@@ -16,11 +16,11 @@ them; the hooks below are optional and used only by the tools.
 
 | Hook | Used by |
 | --- | --- |
-| `static Input::read(std::istream&) -> Input`, or `operator>>` | Tester, TextUI: load an Input |
-| `static Solution::read(const Input&, std::istream&) -> Solution` | Tester, TextUI: load a Solution |
-| `Solution::write(const Input&, std::ostream&) const`, or `operator<<` | Tester, TextUI: save a Solution |
+| `static Input::read(std::istream&) -> Input`, or `operator>>` | Session, TextUI: load an Input |
+| `static Solution::read(const Input&, std::istream&) -> Solution` | Session, TextUI: load a Solution |
+| `Solution::write(const Input&, std::ostream&) const`, or `operator<<` | Session, TextUI: save a Solution |
 | `describe() const -> std::string` on Input, Solution or Move | TextUI: display |
-| `operator==` on Move | tests, Tester |
+| `operator==` on Move | tests, Session and TextUI |
 
 Free functions found by ADL are accepted instead of the member hooks:
 

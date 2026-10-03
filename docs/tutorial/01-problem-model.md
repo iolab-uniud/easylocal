@@ -135,16 +135,16 @@ public:
   violations are expressed as cost (chapter 2).
 - `initial_solution()` is optional. Write it when something needs to build
   solutions: here you, through the bound runner's `initial_solution()`
-  (chapter 5); later a solver or the Tester. Chapter 8 adds a second way to
+  (chapter 5); later a solver or the interactive tester. Chapter 8 adds a second way to
   build one, at random.
 
 > **Essential and advanced.** These types and this SolutionManager are the
 > essential version: what a local search needs to run. Some *advanced
 > components*, the tools of the later chapters, need a few more features, each
 > added in the chapter that introduces it: solvers that start from random
-> solutions need `random_solution` (chapter 8), the Tester checks compare
-> tours and moves with `==` (chapter 13), the interactive tester loads and
-> displays them (chapter 12). Until you use one of them, you need not write
+> solutions need `random_solution` (chapter 8), the interactive tester loads
+> and displays tours and moves (chapter 12), and the neighborhood checks
+> compare them with `==` (chapter 13). Until you use one of them, you need not write
 > anything for it. When you do, a missing feature is a compile error that names
 > it, or, in the interactive tester, a command that is not offered.
 

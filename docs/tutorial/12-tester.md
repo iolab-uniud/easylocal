@@ -1,52 +1,9 @@
-# 12. The Tester
+# 12. The interactive tester
 
-The **Tester** drives an app one step at a time: it holds an Input and a
-current Solution, inspects and applies moves, and runs the registered runners
-on the current solution. It has no user interface of its own; the **TextUI**
-puts an interactive one on top of it.
-
-## The headless Tester
-
-Without an interface, the Tester is a class you drive from code, for example
-in a test or to reproduce a situation step by step:
-
-<!-- snippet: tutorial/main.cpp:tester -->
-```cpp
-el::Tester tester{application, /* seed */ 2026};
-tester.set_input(tsp);
-tester.use_initial_solution();
-
-// Select the first improving move, if there is one, and apply it.
-if (tester.use_first_improving_move())
-    tester.apply_move();
-
-// Run registered runners by name; false means no runner has that name.
-if (!tester.run_runner("sa")) // receives the Tester's RNG
-    return 1;
-if (!tester.run_runner("fi"))
-    return 1;
-```
-
-- Input and Solution come from `set_input` / `set_solution`, from
-  `use_initial_solution()` / `use_random_solution(rng)`, or from files with
-  `load_input` / `load_solution` when the problem provides the I/O hooks
-  (below); `save_solution` writes the current one.
-- Moves are handled in two steps: `use_first_move`, `use_next_move`,
-  `use_first_improving_move`, `use_best_move` and `use_random_move` *select* a
-  move, and `apply_move()` applies the selected one. The selection returns
-  `false` when there is no such move: `use_first_improving_move` on a local
-  optimum, for example. `evaluate()` gives the current cost.
-- `run_runner(name)` replaces the current solution with the runner's result,
-  and returns `false` when no runner has that name.
-- These results are marked `[[nodiscard]]`: the compiler warns when one is
-  ignored, since a misspelt runner name would otherwise run nothing, silently.
-
-## The interactive tester
-
-The **TextUI** is a terminal user interface around the `Tester`: load an Input
-and a Solution, browse and apply moves, run the registered runners in the
-background with live progress and cancellation, and run the checks of
-chapter 13. It is the optional `TUI` component (FTXUI):
+The **interactive tester** (the TextUI) is a Session with a terminal interface:
+load an Input and a Solution, browse, evaluate and apply moves, run the
+registered runners in the background with live progress and cancellation, and
+run the checks of chapter 13. It is the optional `TUI` component (FTXUI):
 
 ```cmake
 find_package(EasyLocal CONFIG REQUIRED COMPONENTS Core TUI)
@@ -62,22 +19,24 @@ auto application = el::app("tsp")
     | el::runner<runners::FirstImprovement>("fi")
     | el::runner<runners::SimulatedAnnealing<Classic>>("sa");
 
-el::Tester tester{std::move(application)};
-tester.load_input(EASYLOCAL_TUTORIAL_INSTANCE); // through the read_input hook
-
 el::tui::run(
-    tester,
+    application,
     {
         .title = "TSP tester",
         .seed = 2026, // the RNG for random solutions, moves and stochastic runners
-        .input_path = EASYLOCAL_TUTORIAL_INSTANCE,
+        .input_path = EASYLOCAL_TUTORIAL_INSTANCE, // loaded with the read_input hook
     });
 ```
+
+`tui::run(application, options)` opens the tester on the app and returns when
+the user quits. It loads the Input from `input_path` first, through the
+`read_input` hook described below; without one, the user loads it from the
+Input/Output page.
 
 The program is `examples/tutorial/tui_main.cpp`, built when the TUI component
 is enabled (`-DEASYLOCAL_ENABLE_TUI=ON`).
 
-### A session
+## A tour of the pages
 
 The tester has three pages, switched with F3, F4 and F5; the header shows the
 instance, the current seed and the cost of the current solution.
@@ -102,7 +61,7 @@ The screenshots are generated from the real program by
 same driver (`scripts/tui_driver.py`) runs the end-to-end tests in `tests/tui`:
 keys are sent, and each step waits for what the screen should show.
 
-### Loading, saving and displaying
+## Loading, saving and displaying
 
 To load and save files and to display values, the TextUI uses optional hooks.
 The tutorial provides them as free functions, found by argument-dependent
@@ -163,9 +122,6 @@ inline std::string describe(const TwoOpt& move)
 | `describe(value)` (or a `describe()` member, or `operator<<`) | displaying Input, Solution and Move |
 | `name()` on a NeighborhoodExplorer | naming neighborhoods |
 
-The same hooks serve the headless `Tester` (`load_input`, `load_solution`,
-`save_solution`).
-
 The page title of the Move page, *Move - 2-opt*, comes from a static `name()`
 member of `TwoOptExplorer`:
 
@@ -178,27 +134,13 @@ static std::string_view name()
 }
 ```
 
-### Options
+## Options
 
-`tui::tester_options` sets the `title`, the initial `seed` of the RNG used for
-random solutions, random moves and stochastic runners, and the initial
-`input_path` and `solution_path`. The seed can also be changed on the Run page
-("Random seed", then Enter or *Apply seed*): the RNG restarts from it, and the
-header shows the current seed. `tui::run_launcher(options, apps...)` starts a launcher that
-lets the user choose among several apps.
-
-## Randomness in tools
-
-Tools own an RNG and give it to stochastic runners; deterministic runners
-ignore it. The seed is configurable everywhere:
-
-| Tool | Seed |
-| --- | --- |
-| `Tester` | `Tester{app, seed}`, `set_seed(seed)`, `rng()` |
-| TextUI | the `seed` option, changeable on the Run page |
-| REST | the `seed` of a run request, or `blueprint_options::seed + run id` |
-
-Your own code passes its RNG to the runners itself (chapter 11).
+`tui::options` sets the `title`, the `seed` of the RNG used for random
+solutions, random moves and stochastic runners, and the initial `input_path`
+and `solution_path`. The seed can also be changed on the Run page ("Random
+seed", then Enter or *Apply seed*): the RNG restarts from it, and the header
+shows the current seed.
 
 ## See also
 
@@ -206,5 +148,5 @@ Your own code passes its RNG to the runners itself (chapter 11).
 
 ## Next steps
 
-[Chapter 13](13-checking.md) checks the composed problem, also from the
-Tester.
+[Chapter 13](13-checking.md) checks the composed problem, from code and from
+the tester.

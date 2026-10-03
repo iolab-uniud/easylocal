@@ -11,9 +11,9 @@ how to build them. It does not compute the cost; see [Cost](cost.md).
 | --- | --- | --- |
 | `input_type`, `solution_type` | yes | everything |
 | `input() const -> const input_type&` | yes | everything |
-| `is_valid(const solution_type&) const -> bool` | yes | debug assertions, checks, Tester |
-| `initial_solution() const -> solution_type` | no | `initialization::initial`, bound runner's `initial_solution()`, Tester |
-| `random_solution(RNG&) const -> solution_type` | no | `initialization::random`, MultiStart, Tester |
+| `is_valid(const solution_type&) const -> bool` | yes | debug assertions, checks, Session and TextUI |
+| `initial_solution() const -> solution_type` | no | `initialization::initial`, bound runner's `initial_solution()`, Session and TextUI |
+| `random_solution(RNG&) const -> solution_type` | no | `initialization::random`, MultiStart, Session and TextUI |
 
 Concepts: `base_solution_manager<SM>` (the required members),
 `has_initial_solution<SM>`, `has_random_solution<SM, RNG>`.
