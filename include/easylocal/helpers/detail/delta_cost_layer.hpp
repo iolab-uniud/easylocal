@@ -32,7 +32,7 @@ public:
     }
 
     [[nodiscard]]
-    auto evaluator() const noexcept -> const DeltaEvaluator&
+    const DeltaEvaluator& evaluator() const noexcept
     {
         return evaluator_;
     }
@@ -42,17 +42,13 @@ public:
             const Value& value,
             const DeltaEvaluator& evaluator,
             const Solution& solution,
-            const Move& move)
-        {
+            const Move& move) {
             {
                 value + evaluator.delta_evaluate(solution, move)
             } -> std::same_as<Value>;
         }
     [[nodiscard]]
-    auto apply(
-        const Value& value,
-        const Solution& solution,
-        const Move& move) const -> Value
+    Value apply(const Value& value, const Solution& solution, const Move& move) const
     {
         return value + evaluator_.delta_evaluate(solution, move);
     }
@@ -76,7 +72,7 @@ public:
 
     template<class Dependency>
     [[nodiscard]]
-    auto construct(Dependency& dependency) const -> binding_type
+    binding_type construct(Dependency& dependency) const
     {
         return std::apply(
             [&](const auto&... args) -> binding_type {
@@ -106,7 +102,7 @@ public:
     }
 
     [[nodiscard]]
-    auto args() && noexcept -> std::tuple<StoredArgs...>&&
+    std::tuple<StoredArgs...>&& args() && noexcept
     {
         return std::move(args_);
     }
@@ -131,17 +127,13 @@ public:
             const Value& value,
             const Component& component,
             const Solution& solution,
-            const Move& move)
-        {
+            const Move& move) {
             {
                 value + component.delta_evaluate(solution, move)
             } -> std::same_as<Value>;
         }
     [[nodiscard]]
-    auto apply(
-        const Value& value,
-        const Solution& solution,
-        const Move& move) const -> Value
+    Value apply(const Value& value, const Solution& solution, const Move& move) const
     {
         return value + component_.get().delta_evaluate(solution, move);
     }
@@ -160,7 +152,7 @@ public:
 
     template<class Dependency>
     [[nodiscard]]
-    auto construct(Dependency& dependency) const -> binding_type
+    binding_type construct(Dependency& dependency) const
     {
         return binding_type{dependency.template component<Component>()};
     }
@@ -188,7 +180,7 @@ public:
     }
 
     [[nodiscard]]
-    auto delta_bindings() const noexcept -> const delta_bindings_type&
+    const delta_bindings_type& delta_bindings() const noexcept
     {
         return delta_bindings_;
     }
@@ -204,7 +196,7 @@ using neighborhood_service_t = std::conditional_t<
     delta_cost_layer<BaseNHE, DeltaSpecs...>>;
 
 template<class BaseNHE, class Dependency, class... Args>
-consteval auto base_neighborhood_constructible_from_args() -> bool
+consteval bool base_neighborhood_constructible_from_args()
 {
     if constexpr (requires(Dependency& dependency) { dependency.base(); })
     {

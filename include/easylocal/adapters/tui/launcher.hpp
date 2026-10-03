@@ -26,8 +26,8 @@ namespace detail
 {
 
 template<class... Apps>
-[[nodiscard]] auto application_names(const std::tuple<Apps...>& applications)
-    -> std::vector<std::string>
+[[nodiscard]] std::vector<std::string> application_names(
+    const std::tuple<Apps...>& applications)
 {
     std::vector<std::string> names;
     names.reserve(sizeof...(Apps));
@@ -40,10 +40,10 @@ template<class... Apps>
 }
 
 template<std::size_t Index = 0, class Tuple, class Function>
-auto visit_application_at(
+bool visit_application_at(
     Tuple& applications,
     const std::size_t selected,
-    Function&& function) -> bool
+    Function&& function)
 {
     if constexpr (Index == std::tuple_size_v<std::remove_reference_t<Tuple>>)
     {
@@ -94,7 +94,7 @@ public:
     }
 
 private:
-    [[nodiscard]] auto choose_application() -> std::optional<std::size_t>
+    [[nodiscard]] std::optional<std::size_t> choose_application()
     {
         using namespace ftxui;
 

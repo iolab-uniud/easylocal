@@ -189,7 +189,7 @@ public:
     }
 
     [[nodiscard]]
-    auto good() const -> bool
+    bool good() const
     {
         return out_.good();
     }

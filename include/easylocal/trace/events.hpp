@@ -14,8 +14,7 @@ struct neighborhood_route_node
     const neighborhood_route_node* parent{};
 };
 
-inline auto copy_route(const neighborhood_route_node* node)
-    -> std::vector<std::size_t>
+inline std::vector<std::size_t> copy_route(const neighborhood_route_node* node)
 {
     std::vector<std::size_t> route;
     for (auto* current = node; current != nullptr; current = current->parent)

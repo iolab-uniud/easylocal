@@ -38,8 +38,7 @@ struct parameter_path
     static constexpr std::size_t size = Prefix::names.size() + 1;
 
     [[nodiscard]]
-    static constexpr auto segments() noexcept
-        -> std::array<std::string_view, size>
+    static constexpr std::array<std::string_view, size> segments() noexcept
     {
         std::array<std::string_view, size> result{};
         for (std::size_t index = 0; index + 1 < size; ++index)
@@ -73,7 +72,7 @@ concept named_configuration_node =
 
 template<class... Nodes>
 [[nodiscard]]
-consteval auto unique_node_names() noexcept -> bool
+consteval bool unique_node_names() noexcept
 {
     if constexpr (sizeof...(Nodes) <= 1)
     {
@@ -106,21 +105,20 @@ public:
     }
 
     [[nodiscard]]
-    static constexpr auto name() noexcept -> std::string_view
+    static constexpr std::string_view name() noexcept
     {
         return Name.view();
     }
 
     [[nodiscard]]
-    constexpr auto parameters() const noexcept -> const Parameters&
+    constexpr const Parameters& parameters() const noexcept
     {
         return *parameters_;
     }
 
     [[nodiscard]]
-    constexpr auto configure(parameters_type parameters) const
-        -> validation_result
-        requires (!std::is_const_v<Parameters>)
+    constexpr validation_result configure(parameters_type parameters) const
+        requires(!std::is_const_v<Parameters>)
     {
         const auto validation = parameters.validate();
         if (!validation)
@@ -153,20 +151,19 @@ public:
     }
 
     [[nodiscard]]
-    static constexpr auto name() noexcept -> std::string_view
+    static constexpr std::string_view name() noexcept
     {
         return Name.view();
     }
 
     [[nodiscard]]
-    constexpr auto parameters() const noexcept -> const parameters_type&
+    constexpr const parameters_type& parameters() const noexcept
     {
         return endpoint_->parameters();
     }
 
     [[nodiscard]]
-    constexpr auto configure(parameters_type parameters) const
-        -> validation_result
+    constexpr validation_result configure(parameters_type parameters) const
     {
         return endpoint_->configure(std::move(parameters));
     }
@@ -196,13 +193,13 @@ public:
     }
 
     [[nodiscard]]
-    static constexpr auto name() noexcept -> std::string_view
+    static constexpr std::string_view name() noexcept
     {
         return Name.view();
     }
 
     [[nodiscard]]
-    constexpr auto children() const noexcept -> const std::tuple<Children...>&
+    constexpr const std::tuple<Children...>& children() const noexcept
     {
         return children_;
     }
@@ -238,21 +235,20 @@ public:
     }
 
     [[nodiscard]]
-    static constexpr auto name() noexcept -> std::string_view
+    static constexpr std::string_view name() noexcept
     {
         return Name.view();
     }
 
     [[nodiscard]]
-    constexpr auto parameters() const noexcept -> const Parameters&
+    constexpr const Parameters& parameters() const noexcept
     {
         return *parameters_;
     }
 
     [[nodiscard]]
-    constexpr auto configure(parameters_type parameters) const
-        -> validation_result
-        requires (!std::is_const_v<Parameters>)
+    constexpr validation_result configure(parameters_type parameters) const
+        requires(!std::is_const_v<Parameters>)
     {
         const auto validation = parameters.validate();
         if (!validation)
@@ -265,7 +261,7 @@ public:
     }
 
     [[nodiscard]]
-    constexpr auto children() const noexcept -> const std::tuple<Children...>&
+    constexpr const std::tuple<Children...>& children() const noexcept
     {
         return children_;
     }
@@ -291,7 +287,7 @@ public:
     }
 
     [[nodiscard]]
-    constexpr auto children() const noexcept -> const std::tuple<Children...>&
+    constexpr const std::tuple<Children...>& children() const noexcept
     {
         return children_;
     }
@@ -395,16 +391,14 @@ constexpr void visit_parameters(
 
 template<fixed_string Name, parameter_block Parameters>
 [[nodiscard]]
-constexpr auto named(Parameters& parameters) noexcept
-    -> detail::parameter_node<Name, Parameters>
+constexpr detail::parameter_node<Name, Parameters> named(Parameters& parameters) noexcept
 {
     return detail::parameter_node<Name, Parameters>{parameters};
 }
 
 template<fixed_string Name, configurable_endpoint Endpoint>
 [[nodiscard]]
-constexpr auto endpoint(Endpoint& value) noexcept
-    -> detail::configurable_node<Name, Endpoint>
+constexpr detail::configurable_node<Name, Endpoint> endpoint(Endpoint& value) noexcept
 {
     return detail::configurable_node<Name, Endpoint>{value};
 }
@@ -419,21 +413,21 @@ constexpr auto endpoint(const Endpoint& value) noexcept
 template<fixed_string Name, detail::named_configuration_node... Children>
     requires(sizeof...(Children) >= 1)
 [[nodiscard]]
-constexpr auto named(Children... children) noexcept(
+constexpr detail::group_node<Name, Children...> named(Children... children) noexcept(
     (std::is_nothrow_move_constructible_v<Children> && ...))
-    -> detail::group_node<Name, Children...>
 {
     return detail::group_node<Name, Children...>{std::move(children)...};
 }
 
-template<fixed_string Name,
-         parameter_block Parameters,
-         detail::named_configuration_node... Children>
+template<
+    fixed_string Name,
+    parameter_block Parameters,
+    detail::named_configuration_node... Children>
     requires(sizeof...(Children) >= 1)
 [[nodiscard]]
-constexpr auto named(Parameters& parameters, Children... children) noexcept(
+constexpr detail::parameter_group_node<Name, Parameters, Children...>
+named(Parameters& parameters, Children... children) noexcept(
     (std::is_nothrow_move_constructible_v<Children> && ...))
-    -> detail::parameter_group_node<Name, Parameters, Children...>
 {
     return detail::parameter_group_node<Name, Parameters, Children...>{
         parameters,
@@ -521,9 +515,8 @@ constexpr decltype(auto) config_node_at(const Node& node)
 template<detail::named_configuration_node... Children>
     requires(sizeof...(Children) >= 1)
 [[nodiscard]]
-constexpr auto root(Children... children) noexcept(
+constexpr detail::root_node<Children...> root(Children... children) noexcept(
     (std::is_nothrow_move_constructible_v<Children> && ...))
-    -> detail::root_node<Children...>
 {
     return detail::root_node<Children...>{std::move(children)...};
 }

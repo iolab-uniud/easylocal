@@ -69,42 +69,40 @@ struct apply_expression
 
 template<class Child, arithmetic Weight>
 [[nodiscard]]
-constexpr auto weighted(Child child, Weight weight)
-    -> weighted_term<Child, Weight>
+constexpr weighted_term<Child, Weight> weighted(Child child, Weight weight)
 {
     return {std::move(child), weight};
 }
 
 template<class... Terms>
-    requires (sizeof...(Terms) > 0)
+    requires(sizeof...(Terms) > 0)
 [[nodiscard]]
-constexpr auto sum(Terms... terms) -> sum_expression<Terms...>
+constexpr sum_expression<Terms...> sum(Terms... terms)
 {
     return {std::tuple<Terms...>{std::move(terms)...}};
 }
 
 template<class... Children>
-    requires (sizeof...(Children) > 0)
+    requires(sizeof...(Children) > 0)
 [[nodiscard]]
-constexpr auto in_order(Children... children)
-    -> in_order_expression<Children...>
+constexpr in_order_expression<Children...> in_order(Children... children)
 {
     return {std::tuple<Children...>{std::move(children)...}};
 }
 
 template<class Hard, class Soft>
 [[nodiscard]]
-constexpr auto hard_soft(Hard hard, Soft soft)
-    -> hard_soft_expression<Hard, Soft>
+constexpr hard_soft_expression<Hard, Soft> hard_soft(Hard hard, Soft soft)
 {
     return {std::move(hard), std::move(soft)};
 }
 
 template<class Function, class... Children>
-    requires (sizeof...(Children) > 0)
+    requires(sizeof...(Children) > 0)
 [[nodiscard]]
-constexpr auto apply(Function function, Children... children)
-    -> apply_expression<Function, Children...>
+constexpr apply_expression<Function, Children...> apply(
+    Function function,
+    Children... children)
 {
     return {
         std::move(function),
@@ -145,8 +143,7 @@ inline constexpr bool is_expression_v =
 template<class Child, arithmetic Weight>
     requires is_expression_v<Child>
 [[nodiscard]]
-constexpr auto operator*(Child child, Weight weight)
-    -> weighted_term<Child, Weight>
+constexpr weighted_term<Child, Weight> operator*(Child child, Weight weight)
 {
     return weighted(std::move(child), weight);
 }
@@ -154,8 +151,7 @@ constexpr auto operator*(Child child, Weight weight)
 template<arithmetic Weight, class Child>
     requires is_expression_v<Child>
 [[nodiscard]]
-constexpr auto operator*(Weight weight, Child child)
-    -> weighted_term<Child, Weight>
+constexpr weighted_term<Child, Weight> operator*(Weight weight, Child child)
 {
     return weighted(std::move(child), weight);
 }

@@ -47,8 +47,7 @@ namespace detail
 {
 
 [[nodiscard]]
-constexpr auto trim_config_space(std::string_view text) noexcept
-    -> std::string_view
+constexpr std::string_view trim_config_space(std::string_view text) noexcept
 {
     while (!text.empty() &&
            (text.front() == ' ' || text.front() == '\t' ||
@@ -70,8 +69,7 @@ constexpr auto trim_config_space(std::string_view text) noexcept
 } // namespace detail
 
 [[nodiscard]]
-inline auto parse_config_text(const std::string_view text)
-    -> config_file_parse_result
+inline config_file_parse_result parse_config_text(const std::string_view text)
 {
     config_file_parse_result result{};
     std::unordered_map<std::string, std::size_t> first_definition;
@@ -149,8 +147,7 @@ inline auto parse_config_text(const std::string_view text)
 }
 
 [[nodiscard]]
-inline auto load_config_file(const std::filesystem::path& path)
-    -> config_file_parse_result
+inline config_file_parse_result load_config_file(const std::filesystem::path& path)
 {
     std::ifstream input{path};
     if (!input)

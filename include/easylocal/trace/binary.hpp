@@ -126,7 +126,7 @@ private:
     }
 
     [[nodiscard]]
-    static auto route_size(const neighborhood_route_node* node) noexcept -> std::size_t
+    static std::size_t route_size(const neighborhood_route_node* node) noexcept
     {
         std::size_t result = 0;
         for (auto* current = node; current != nullptr; current = current->parent)
@@ -179,7 +179,7 @@ struct arithmetic_binary_cost_writer
 };
 
 template<std::uint8_t Index>
-consteval auto user_binary_event_tag() -> std::uint8_t
+consteval std::uint8_t user_binary_event_tag()
 {
     static_assert(Index < 128, "EasyLocal user binary event tags have indices 0..127");
     return static_cast<std::uint8_t>(128U + Index);
@@ -218,9 +218,7 @@ inline void append_trace_header(std::vector<char>& buffer)
     append_u32_le(buffer, 1U);
 }
 
-inline auto begin_record(
-    std::vector<char>& buffer,
-    const std::uint8_t tag) -> std::size_t
+inline std::size_t begin_record(std::vector<char>& buffer, const std::uint8_t tag)
 {
     binary_record_writer out{buffer};
     out.u8(tag);
@@ -244,42 +242,42 @@ inline void finish_record(
 }
 
 template<class Cost>
-constexpr auto core_event_tag(const event::run_started<Cost>&) noexcept -> std::uint8_t
+constexpr std::uint8_t core_event_tag(const event::run_started<Cost>&) noexcept
 {
     return static_cast<std::uint8_t>(core_binary_event_tag::run_started);
 }
 
 template<class Cost>
-constexpr auto core_event_tag(const event::move_evaluated<Cost>&) noexcept -> std::uint8_t
+constexpr std::uint8_t core_event_tag(const event::move_evaluated<Cost>&) noexcept
 {
     return static_cast<std::uint8_t>(core_binary_event_tag::move_evaluated);
 }
 
 template<class Cost>
-constexpr auto core_event_tag(const event::move_accepted<Cost>&) noexcept -> std::uint8_t
+constexpr std::uint8_t core_event_tag(const event::move_accepted<Cost>&) noexcept
 {
     return static_cast<std::uint8_t>(core_binary_event_tag::move_accepted);
 }
 
 template<class Cost>
-constexpr auto core_event_tag(const event::incumbent_updated<Cost>&) noexcept -> std::uint8_t
+constexpr std::uint8_t core_event_tag(const event::incumbent_updated<Cost>&) noexcept
 {
     return static_cast<std::uint8_t>(core_binary_event_tag::incumbent_updated);
 }
 
 template<class Cost>
-constexpr auto core_event_tag(const event::local_optimum<Cost>&) noexcept -> std::uint8_t
+constexpr std::uint8_t core_event_tag(const event::local_optimum<Cost>&) noexcept
 {
     return static_cast<std::uint8_t>(core_binary_event_tag::local_optimum);
 }
 
-constexpr auto core_event_tag(const event::neighborhood_selection&) noexcept -> std::uint8_t
+constexpr std::uint8_t core_event_tag(const event::neighborhood_selection&) noexcept
 {
     return static_cast<std::uint8_t>(core_binary_event_tag::neighborhood_selection);
 }
 
 template<class Cost>
-constexpr auto core_event_tag(const event::run_finished<Cost>&) noexcept -> std::uint8_t
+constexpr std::uint8_t core_event_tag(const event::run_finished<Cost>&) noexcept
 {
     return static_cast<std::uint8_t>(core_binary_event_tag::run_finished);
 }
@@ -396,7 +394,7 @@ inline constexpr bool binary_event_encodable_v =
     core_binary_event_for<Event, CostWriter> || custom_binary_event<Event>;
 
 template<class Event, class CostWriter>
-auto event_tag(const Event& value, CostWriter&) -> std::uint8_t
+std::uint8_t event_tag(const Event& value, CostWriter&)
 {
     if constexpr (core_binary_event_for<Event, CostWriter>)
     {
@@ -475,15 +473,14 @@ public:
     }
 
     async_ostream_block_sink(const async_ostream_block_sink&) = delete;
-    auto operator=(const async_ostream_block_sink&)
-        -> async_ostream_block_sink& = delete;
+    async_ostream_block_sink& operator=(const async_ostream_block_sink&) = delete;
 
     ~async_ostream_block_sink()
     {
         stop();
     }
 
-    auto acquire() -> std::vector<char>
+    std::vector<char> acquire()
     {
         std::unique_lock lock{mutex_};
         free_cv_.wait(lock, [this] {
@@ -546,7 +543,7 @@ public:
     }
 
     [[nodiscard]]
-    auto good() const noexcept -> bool
+    bool good() const noexcept
     {
         return !failed_.load(std::memory_order_relaxed);
     }
@@ -668,8 +665,7 @@ public:
     }
 
     buffered_binary_recorder(const buffered_binary_recorder&) = delete;
-    auto operator=(const buffered_binary_recorder&)
-        -> buffered_binary_recorder& = delete;
+    buffered_binary_recorder& operator=(const buffered_binary_recorder&) = delete;
 
     ~buffered_binary_recorder()
     {
@@ -703,7 +699,7 @@ public:
     }
 
     [[nodiscard]]
-    auto good() const -> bool
+    bool good() const
     {
         return out_.good();
     }
@@ -762,7 +758,7 @@ public:
     }
 
     async_binary_recorder(const async_binary_recorder&) = delete;
-    auto operator=(const async_binary_recorder&) -> async_binary_recorder& = delete;
+    async_binary_recorder& operator=(const async_binary_recorder&) = delete;
 
     ~async_binary_recorder()
     {
@@ -796,14 +792,13 @@ public:
     }
 
     [[nodiscard]]
-    auto good() const noexcept -> bool
+    bool good() const noexcept
     {
         return sink_.good();
     }
 
 private:
-    static auto normalized_block_size(const binary_buffer_options& options)
-        -> std::size_t
+    static std::size_t normalized_block_size(const binary_buffer_options& options)
     {
         return std::max<std::size_t>(options.block_size, 1U);
     }

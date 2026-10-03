@@ -96,10 +96,9 @@ inline void append_diagnostics(
     }
 }
 
-
-inline auto block_has_direct_override(
+inline bool block_has_direct_override(
     const std::string_view block_path,
-    const std::span<const owned_text_override> overrides) -> bool
+    const std::span<const owned_text_override> overrides)
 {
     for (const auto& candidate : overrides)
     {
@@ -141,10 +140,10 @@ inline void append_diagnostics(
 
 template<class... Children>
 [[nodiscard]]
-auto load_and_apply(
+setup_result load_and_apply(
     const int argc,
     char* const argv[],
-    const detail::root_node<Children...>& tree) -> setup_result
+    const detail::root_node<Children...>& tree)
 {
     setup_result result{};
 

@@ -40,17 +40,17 @@ public:
     {
     }
 
-    [[nodiscard]] auto stop_requested() const noexcept -> bool
+    [[nodiscard]] bool stop_requested() const noexcept
     {
         return stop_token_.stop_requested();
     }
 
-    [[nodiscard]] auto stop_possible() const noexcept -> bool
+    [[nodiscard]] bool stop_possible() const noexcept
     {
         return stop_token_.stop_possible();
     }
 
-    [[nodiscard]] auto observes_progress() const noexcept -> bool
+    [[nodiscard]] bool observes_progress() const noexcept
     {
         return observer_ != nullptr;
     }

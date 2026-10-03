@@ -72,13 +72,13 @@ public:
     }
 
     [[nodiscard]]
-    auto cost() const noexcept -> const Cost&
+    const Cost& cost() const noexcept
     {
         return cost_;
     }
 
     [[nodiscard]]
-    auto component_values() const noexcept -> const ComponentValues&
+    const ComponentValues& component_values() const noexcept
     {
         return component_values_;
     }
@@ -102,19 +102,19 @@ public:
     }
 
     [[nodiscard]]
-    auto cost() const noexcept -> decltype(auto)
+    decltype(auto) cost() const noexcept
     {
         return evaluation_.cost();
     }
 
     [[nodiscard]]
-    auto move() const noexcept -> const Move&
+    const Move& move() const noexcept
     {
         return move_;
     }
 
     [[nodiscard]]
-    auto evaluation() & noexcept -> Evaluation&
+    Evaluation& evaluation() & noexcept
     {
         return evaluation_;
     }
@@ -135,19 +135,19 @@ public:
     }
 
     [[nodiscard]]
-    auto cost() const noexcept -> decltype(auto)
+    decltype(auto) cost() const noexcept
     {
         return evaluation_.cost();
     }
 
     [[nodiscard]]
-    auto evaluation() & noexcept -> Evaluation&
+    Evaluation& evaluation() & noexcept
     {
         return evaluation_;
     }
 
     [[nodiscard]]
-    auto solution() & noexcept -> Solution&
+    Solution& solution() & noexcept
     {
         return solution_;
     }
@@ -197,7 +197,7 @@ inline constexpr bool delta_component_active_v =
         typename SM::component_types>;
 
 template<class SM, class NHE, class Binding>
-consteval auto delta_binding_compatible() -> bool
+consteval bool delta_binding_compatible()
 {
     if constexpr (!delta_component_active_v<SM, Binding>)
     {
@@ -222,8 +222,7 @@ consteval auto delta_binding_compatible() -> bool
 }
 
 template<class SM, class NHE, std::size_t... Indices>
-consteval auto all_delta_components_active_impl(
-    std::index_sequence<Indices...>) -> bool
+consteval bool all_delta_components_active_impl(std::index_sequence<Indices...>)
 {
     using bindings = neighborhood_delta_bindings_t<NHE>;
     return (
@@ -238,8 +237,7 @@ inline constexpr bool all_delta_components_active_v =
             std::tuple_size_v<neighborhood_delta_bindings_t<NHE>>>{});
 
 template<class SM, class NHE, std::size_t... Indices>
-consteval auto all_delta_bindings_compatible_impl(
-    std::index_sequence<Indices...>) -> bool
+consteval bool all_delta_bindings_compatible_impl(std::index_sequence<Indices...>)
 {
     using bindings = neighborhood_delta_bindings_t<NHE>;
     return (
@@ -257,7 +255,7 @@ inline constexpr bool all_delta_bindings_compatible_v =
             std::tuple_size_v<neighborhood_delta_bindings_t<NHE>>>{});
 
 template<class SM, class NHE, class Binding>
-consteval auto validate_delta_binding() -> bool
+consteval bool validate_delta_binding()
 {
     static_assert(
         delta_component_active_v<SM, Binding>,
@@ -278,8 +276,7 @@ consteval auto validate_delta_binding() -> bool
 }
 
 template<class SM, class NHE, std::size_t... Indices>
-consteval auto validate_delta_bindings_impl(
-    std::index_sequence<Indices...>) -> bool
+consteval bool validate_delta_bindings_impl(std::index_sequence<Indices...>)
 {
     using bindings = neighborhood_delta_bindings_t<NHE>;
     return (validate_delta_binding<
@@ -290,7 +287,7 @@ consteval auto validate_delta_bindings_impl(
 }
 
 template<class SM, class NHE>
-consteval auto validate_delta_bindings() -> bool
+consteval bool validate_delta_bindings()
 {
     return validate_delta_bindings_impl<SM, NHE>(
         std::make_index_sequence<
@@ -298,7 +295,7 @@ consteval auto validate_delta_bindings() -> bool
 }
 
 template<class Component, std::size_t Count>
-consteval auto has_unique_delta_binding() -> bool
+consteval bool has_unique_delta_binding()
 {
     static_assert(
         Count <= 1,
@@ -322,8 +319,8 @@ private:
 
     template<std::size_t ComponentIndex, std::size_t... DeltaIndices>
     [[nodiscard]]
-    static consteval auto matching_delta_count_impl(
-        std::index_sequence<DeltaIndices...>) -> std::size_t
+    static consteval std::size_t matching_delta_count_impl(
+        std::index_sequence<DeltaIndices...>)
     {
         using component_type =
             std::tuple_element_t<ComponentIndex, component_types>;
@@ -339,7 +336,7 @@ private:
 
     template<std::size_t ComponentIndex>
     [[nodiscard]]
-    static consteval auto matching_delta_count() -> std::size_t
+    static consteval std::size_t matching_delta_count()
     {
         if constexpr (!component_aware)
         {
@@ -355,7 +352,7 @@ private:
 
     template<std::size_t ComponentIndex>
     [[nodiscard]]
-    static consteval auto has_delta() -> bool
+    static consteval bool has_delta()
     {
         using component_type =
             std::tuple_element_t<ComponentIndex, component_types>;
@@ -365,14 +362,14 @@ private:
 
     template<std::size_t... ComponentIndices>
     [[nodiscard]]
-    static consteval auto needs_materialized_candidate_impl(
-        std::index_sequence<ComponentIndices...>) -> bool
+    static consteval bool needs_materialized_candidate_impl(
+        std::index_sequence<ComponentIndices...>)
     {
         return ((!has_delta<ComponentIndices>()) || ...);
     }
 
     [[nodiscard]]
-    static consteval auto needs_materialized_candidate() -> bool
+    static consteval bool needs_materialized_candidate()
     {
         if constexpr (!component_aware)
         {
@@ -388,12 +385,12 @@ private:
 
     template<std::size_t ComponentIndex, std::size_t DeltaIndex = 0>
     [[nodiscard]]
-    auto evaluate_component_for_move(
+    std::tuple_element_t<ComponentIndex, component_values_type>
+    evaluate_component_for_move(
         const typename SM::solution_type& current_solution,
         const component_values_type& current_values,
         const typename NHE::move_type& move,
         const typename SM::solution_type* materialized_candidate) const
-        -> std::tuple_element_t<ComponentIndex, component_values_type>
     {
         using component_type =
             std::tuple_element_t<ComponentIndex, component_types>;
@@ -446,13 +443,12 @@ private:
 
     template<std::size_t... ComponentIndices>
     [[nodiscard]]
-    auto evaluate_components_for_move(
+    component_values_type evaluate_components_for_move(
         const typename SM::solution_type& current_solution,
         const component_values_type& current_values,
         const typename NHE::move_type& move,
         const typename SM::solution_type* materialized_candidate,
         std::index_sequence<ComponentIndices...>) const
-        -> component_values_type
     {
         return component_values_type{
             evaluate_component_for_move<ComponentIndices>(
@@ -486,7 +482,7 @@ public:
     }
 
     [[nodiscard]]
-    auto evaluate(const solution_type& solution) const -> evaluation_type
+    evaluation_type evaluate(const solution_type& solution) const
     {
         assert(solution_manager_.is_valid(solution));
 
@@ -511,10 +507,10 @@ public:
     }
 
     [[nodiscard]]
-    auto evaluate_move(
+    candidate_type evaluate_move(
         const solution_type& current_solution,
         const evaluation_type& current,
-        const move_type& move) const -> candidate_type
+        const move_type& move) const
     {
         assert(solution_manager_.is_valid(current_solution));
         assert(neighborhood_.is_valid(current_solution, move));

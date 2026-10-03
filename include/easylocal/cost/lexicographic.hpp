@@ -24,8 +24,8 @@ public:
 
     template<std::size_t Index>
     [[nodiscard]]
-    constexpr auto get() const noexcept
-        -> const std::tuple_element_t<Index, std::tuple<Values...>>&
+    constexpr const std::tuple_element_t<Index, std::tuple<Values...>>& get()
+        const noexcept
     {
         return std::get<Index>(values_);
     }
@@ -41,7 +41,7 @@ template<class... Values>
 struct zero_cost<lexicographic<Values...>>
 {
     [[nodiscard]]
-    static constexpr auto value() -> lexicographic<Values...>
+    static constexpr lexicographic<Values...> value()
     {
         return lexicographic<Values...>{zero<Values>()...};
     }

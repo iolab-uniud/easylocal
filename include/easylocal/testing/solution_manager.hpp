@@ -11,7 +11,7 @@ namespace easylocal::testing
 {
 
 template<class Test>
-[[nodiscard]] auto check_solution_manager() -> check_report
+[[nodiscard]] check_report check_solution_manager()
 {
     using solution_manager_type = typename Test::solution_manager;
     using input_type = typename solution_manager_type::input_type;

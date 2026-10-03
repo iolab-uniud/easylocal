@@ -1,5 +1,5 @@
 # EasyLocal static analysis. CI runs it on the examples (scripts/tidy.sh); the
-# library keeps its current style for now and is not checked yet.
+# library is not checked yet.
 ---
 Checks: >
   -*,

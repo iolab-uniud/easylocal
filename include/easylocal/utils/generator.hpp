@@ -49,23 +49,23 @@ public:
     class promise_type
     {
     public:
-        auto get_return_object() noexcept -> generator
+        generator get_return_object() noexcept
         {
             return generator{handle_type::from_promise(*this)};
         }
 
-        static auto initial_suspend() noexcept -> std::suspend_always
+        static std::suspend_always initial_suspend() noexcept
         {
             return {};
         }
 
-        static auto final_suspend() noexcept -> std::suspend_always
+        static std::suspend_always final_suspend() noexcept
         {
             return {};
         }
 
-        auto yield_value(T value) noexcept(std::is_nothrow_move_constructible_v<T>)
-            -> std::suspend_always
+        std::suspend_always yield_value(T value) noexcept(
+            std::is_nothrow_move_constructible_v<T>)
         {
             value_.emplace(std::move(value));
             return {};
@@ -73,7 +73,7 @@ public:
 
         // A generator only yields: co_await is not allowed in its body.
         template<class Awaitable>
-        auto await_transform(Awaitable&&) -> std::suspend_never = delete;
+        std::suspend_never await_transform(Awaitable&&) = delete;
 
         static void return_void() noexcept {}
 
@@ -100,12 +100,12 @@ public:
 
         iterator() = default;
 
-        auto operator*() const -> T&&
+        T&& operator*() const
         {
             return std::move(*coroutine_.promise().value_);
         }
 
-        auto operator++() -> iterator&
+        iterator& operator++()
         {
             advance(coroutine_);
             return *this;
@@ -116,8 +116,7 @@ public:
             ++*this;
         }
 
-        friend auto operator==(const iterator& current, std::default_sentinel_t) noexcept
-            -> bool
+        friend bool operator==(const iterator& current, std::default_sentinel_t) noexcept
         {
             return current.coroutine_.done();
         }
@@ -135,7 +134,7 @@ public:
     {
     }
 
-    auto operator=(generator other) noexcept -> generator&
+    generator& operator=(generator other) noexcept
     {
         std::swap(coroutine_, other.coroutine_);
         return *this;
@@ -150,13 +149,13 @@ public:
     }
 
     // Starts the coroutine: like std::generator, begin() may be called once.
-    auto begin() -> iterator
+    iterator begin()
     {
         advance(coroutine_);
         return iterator{coroutine_};
     }
 
-    static auto end() noexcept -> std::default_sentinel_t
+    static std::default_sentinel_t end() noexcept
     {
         return {};
     }

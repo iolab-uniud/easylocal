@@ -35,12 +35,24 @@ public:
     {
     }
 
-    [[nodiscard]] auto passed() const noexcept -> bool { return report_.passed(); }
+    [[nodiscard]] bool passed() const noexcept
+    {
+        return report_.passed();
+    }
     [[nodiscard]] explicit operator bool() const noexcept { return passed(); }
-    [[nodiscard]] auto checks() const noexcept -> std::size_t { return report_.checks(); }
+    [[nodiscard]] std::size_t checks() const noexcept
+    {
+        return report_.checks();
+    }
     [[nodiscard]] auto failures() const noexcept { return report_.failures(); }
-    [[nodiscard]] auto coverage() noexcept -> app_check_coverage& { return coverage_; }
-    [[nodiscard]] auto coverage() const noexcept -> const app_check_coverage& { return coverage_; }
+    [[nodiscard]] app_check_coverage& coverage() noexcept
+    {
+        return coverage_;
+    }
+    [[nodiscard]] const app_check_coverage& coverage() const noexcept
+    {
+        return coverage_;
+    }
 
     void check(bool condition, std::string_view name, std::string_view message)
     {
@@ -49,7 +61,7 @@ public:
 
 private:
     template<class App, class Instance, class Solution>
-    friend auto check(const App&, const Instance&, Solution) -> app_check_report;
+    friend app_check_report check(const App&, const Instance&, Solution);
 
     friend void print_report(std::ostream&, const app_check_report&);
 
@@ -152,10 +164,10 @@ void check_app_moves(
 } // namespace detail
 
 template<class App, class Instance, class Solution>
-[[nodiscard]] auto check(
+[[nodiscard]] app_check_report check(
     const App& application,
     const Instance& instance,
-    Solution solution) -> app_check_report
+    Solution solution)
     requires requires { application.for_input(instance); }
 {
     auto runtime = application.for_input(instance);

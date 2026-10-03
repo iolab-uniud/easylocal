@@ -67,8 +67,8 @@ inline constexpr std::size_t tuple_type_index_v = tuple_type_index<T, Tuple>::va
 
 template<class Tuple, std::size_t... Indices>
 [[nodiscard]]
-auto tuple_prefix_type_impl(std::index_sequence<Indices...>)
-    -> std::tuple<std::tuple_element_t<Indices, Tuple>...>;
+std::tuple<std::tuple_element_t<Indices, Tuple>...>
+    tuple_prefix_type_impl(std::index_sequence<Indices...>);
 
 template<class Tuple, std::size_t Count>
 using tuple_prefix_t = decltype(

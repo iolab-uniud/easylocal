@@ -57,7 +57,7 @@ struct is_costless_solution_manager_recipe<
 // Checks a SolutionManager recipe before a runner or an app accepts it, so that
 // a malformed recipe fails with a direct diagnostic.
 template<class Spec>
-consteval auto validate_solution_manager_spec() -> bool
+consteval bool validate_solution_manager_spec()
 {
     static_assert(
         !is_costless_solution_manager_recipe<Spec>::value,

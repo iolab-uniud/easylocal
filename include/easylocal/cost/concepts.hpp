@@ -42,7 +42,7 @@ template<std::default_initializable Cost>
 struct zero_cost<Cost>
 {
     [[nodiscard]]
-    static constexpr auto value() -> Cost
+    static constexpr Cost value()
     {
         return Cost{};
     }
@@ -56,7 +56,7 @@ concept has_zero =
 
 template<has_zero Cost>
 [[nodiscard]]
-constexpr auto zero() -> Cost
+constexpr Cost zero()
 {
     return zero_cost<Cost>::value();
 }

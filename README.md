@@ -549,10 +549,11 @@ first (`double evaluate(const Tour& tour) const`), and `auto f()` without a
 written type is used only when the type cannot reasonably be spelled, such as a
 recipe or an app, with a comment saying so. A control statement whose body is a single
 one-line statement takes no braces. They are fully formatted and pass
-clang-tidy, which CI checks. The library keeps its own style for now (trailing
-return types, `[[nodiscard]]`, `noexcept`); outside `examples/` only the lines a
-change touches are formatted, by the hook and in CI, so the code converges as it
-is edited rather than in one sweeping reformat.
+clang-tidy, which CI checks. The library writes return types first as well
+(trailing ones remain only in deduction guides and lambdas), and keeps
+`[[nodiscard]]` and `noexcept`; outside `examples/` only the lines a change
+touches are formatted, by the hook and in CI, so the code converges as it is
+edited rather than in one sweeping reformat.
 
 ## Continuous integration
 

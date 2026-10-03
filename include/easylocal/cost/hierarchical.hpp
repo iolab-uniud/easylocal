@@ -32,13 +32,13 @@ public:
     }
 
     [[nodiscard]]
-    constexpr auto hard() const noexcept -> const HardCost&
+    constexpr const HardCost& hard() const noexcept
     {
         return hard_;
     }
 
     [[nodiscard]]
-    constexpr auto soft() const noexcept -> const SoftCost&
+    constexpr const SoftCost& soft() const noexcept
     {
         return soft_;
     }
@@ -46,9 +46,9 @@ public:
     auto operator<=>(const hierarchical&) const = default;
 
     [[nodiscard]]
-    friend constexpr auto operator-(
+    friend constexpr long double operator-(
         const hierarchical& candidate,
-        const hierarchical& current) -> long double
+        const hierarchical& current)
         requires has_delta<hierarchical>
     {
         return delta(candidate, current);
@@ -67,9 +67,9 @@ template<class HardCost, class SoftCost>
         { lhs == rhs } -> std::convertible_to<bool>;
     } && has_delta<SoftCost>
 [[nodiscard]]
-constexpr auto delta(
+constexpr long double delta(
     const hierarchical<HardCost, SoftCost>& candidate,
-    const hierarchical<HardCost, SoftCost>& current) -> long double
+    const hierarchical<HardCost, SoftCost>& current)
 {
     if (candidate.hard() < current.hard())
     {
@@ -96,7 +96,7 @@ template<class HardCost, class SoftCost>
 struct zero_cost<hierarchical<HardCost, SoftCost>>
 {
     [[nodiscard]]
-    static constexpr auto value() -> hierarchical<HardCost, SoftCost>
+    static constexpr hierarchical<HardCost, SoftCost> value()
     {
         return hierarchical<HardCost, SoftCost>{zero<HardCost>(), zero<SoftCost>()};
     }

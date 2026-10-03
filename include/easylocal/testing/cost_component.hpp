@@ -10,7 +10,7 @@ namespace easylocal::testing
 {
 
 template<class Test>
-[[nodiscard]] auto check_cost_component() -> check_report
+[[nodiscard]] check_report check_cost_component()
 {
     using solution_manager_type = detail::test_solution_manager_t<Test>;
     using component_type = typename Test::component;

@@ -83,8 +83,7 @@ void validate_configuration_node(
 
 template<class... Children>
 [[nodiscard]]
-auto validate(const detail::root_node<Children...>& tree)
-    -> configuration_validation_result
+configuration_validation_result validate(const detail::root_node<Children...>& tree)
 {
     configuration_validation_result result{};
     detail::validate_configuration_node(tree, {}, result);

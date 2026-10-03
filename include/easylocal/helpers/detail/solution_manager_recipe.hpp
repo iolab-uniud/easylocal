@@ -33,9 +33,9 @@ inline constexpr bool base_solution_manager_constructible_v =
 
 template<class BaseSM, class BaseArgsTuple>
 [[nodiscard]]
-auto construct_base_solution_manager(
+BaseSM construct_base_solution_manager(
     const typename BaseSM::input_type& instance,
-    const BaseArgsTuple& base_args) -> BaseSM
+    const BaseArgsTuple& base_args)
 {
     static_assert(
         base_solution_manager_constructible_v<
@@ -88,8 +88,7 @@ public:
             typename BaseSM::input_type>;
 
     [[nodiscard]]
-    auto construct(const typename BaseSM::input_type& instance) const
-        -> service_type
+    service_type construct(const typename BaseSM::input_type& instance) const
     {
         auto components = std::apply(
             [&](const auto&... specs) {
@@ -170,8 +169,7 @@ public:
             typename BaseSM::input_type>;
 
     [[nodiscard]]
-    auto construct(const typename BaseSM::input_type& instance) const
-        -> service_type
+    service_type construct(const typename BaseSM::input_type& instance) const
     {
         return construct_base_solution_manager<BaseSM>(instance, base_args_);
     }

@@ -68,7 +68,7 @@ public:
     }
 
     [[nodiscard]]
-    auto input() const noexcept -> const input_type&
+    const input_type& input() const noexcept
     {
         return input_;
     }

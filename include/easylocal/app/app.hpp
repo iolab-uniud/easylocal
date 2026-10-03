@@ -47,7 +47,7 @@ inline constexpr std::size_t app_runner_count_v =
      (std::same_as<Algorithm, typename Registrations::algorithm_type> ? 1U : 0U));
 
 template<class Algorithm, std::size_t Index, class First, class... Rest>
-consteval auto app_runner_index_impl() -> std::size_t
+consteval std::size_t app_runner_index_impl()
 {
     if constexpr (std::same_as<Algorithm, typename First::algorithm_type>)
     {
@@ -61,7 +61,7 @@ consteval auto app_runner_index_impl() -> std::size_t
 }
 
 template<class Algorithm, class... Registrations>
-consteval auto app_runner_index() -> std::size_t
+consteval std::size_t app_runner_index()
 {
     static_assert(
         app_runner_count_v<Algorithm, Registrations...> == 1,
@@ -71,8 +71,9 @@ consteval auto app_runner_index() -> std::size_t
 
 template<class Algorithm, std::size_t Index = 0, class Tuple>
 [[nodiscard]]
-auto app_runner_registration_by_name(Tuple& registrations, const std::string_view name)
-    -> app_runner_registration<Algorithm>&
+app_runner_registration<Algorithm>& app_runner_registration_by_name(
+    Tuple& registrations,
+    const std::string_view name)
 {
     if constexpr (Index == std::tuple_size_v<std::remove_reference_t<Tuple>>)
     {
@@ -102,9 +103,9 @@ auto app_runner_registration_by_name(Tuple& registrations, const std::string_vie
 
 template<class Algorithm, std::size_t Index = 0, class Tuple>
 [[nodiscard]]
-auto app_runner_registration_by_name(
+const app_runner_registration<Algorithm>& app_runner_registration_by_name(
     const Tuple& registrations,
-    const std::string_view name) -> const app_runner_registration<Algorithm>&
+    const std::string_view name)
 {
     if constexpr (Index == std::tuple_size_v<std::remove_reference_t<Tuple>>)
     {
@@ -149,25 +150,25 @@ public:
     }
 
     [[nodiscard]]
-    auto solution_manager() const noexcept -> const SM&
+    const SM& solution_manager() const noexcept
     {
         return solution_manager_;
     }
 
     [[nodiscard]]
-    auto neighborhood_explorer() const noexcept -> const NHE&
+    const NHE& neighborhood_explorer() const noexcept
     {
         return neighborhood_;
     }
 
     [[nodiscard]]
-    auto algorithm() noexcept -> Algorithm&
+    Algorithm& algorithm() noexcept
     {
         return algorithm_;
     }
 
     [[nodiscard]]
-    auto initial_solution() const -> solution_type
+    solution_type initial_solution() const
         requires has_initial_solution<SM>
     {
         return solution_manager_.initial_solution();
@@ -175,7 +176,7 @@ public:
 
     template<class RNG>
     [[nodiscard]]
-    auto random_solution(RNG& rng) const -> solution_type
+    solution_type random_solution(RNG& rng) const
         requires has_random_solution<SM, RNG>
     {
         return solution_manager_.random_solution(rng);
@@ -266,36 +267,36 @@ public:
     }
 
     app_runtime(const app_runtime&) = delete;
-    auto operator=(const app_runtime&) -> app_runtime& = delete;
+    app_runtime& operator=(const app_runtime&) = delete;
     app_runtime(app_runtime&&) = delete;
-    auto operator=(app_runtime&&) -> app_runtime& = delete;
+    app_runtime& operator=(app_runtime&&) = delete;
 
     [[nodiscard]]
-    auto input() const noexcept -> const input_type&
+    const input_type& input() const noexcept
     {
         return input_;
     }
 
     [[nodiscard]]
-    auto solution_manager() noexcept -> solution_manager_type&
+    solution_manager_type& solution_manager() noexcept
     {
         return solution_manager_;
     }
 
     [[nodiscard]]
-    auto solution_manager() const noexcept -> const solution_manager_type&
+    const solution_manager_type& solution_manager() const noexcept
     {
         return solution_manager_;
     }
 
     [[nodiscard]]
-    auto neighborhood() noexcept -> neighborhood_explorer_type&
+    neighborhood_explorer_type& neighborhood() noexcept
     {
         return neighborhood_;
     }
 
     [[nodiscard]]
-    auto neighborhood() const noexcept -> const neighborhood_explorer_type&
+    const neighborhood_explorer_type& neighborhood() const noexcept
     {
         return neighborhood_;
     }
@@ -436,7 +437,7 @@ public:
     }
 
     [[nodiscard]]
-    auto name() const noexcept -> std::string_view
+    std::string_view name() const noexcept
     {
         return name_;
     }
@@ -511,43 +512,44 @@ public:
     }
 
     template<class Algorithm>
-        requires (app_runner_count_v<Algorithm, Registrations...> == 1)
+        requires(app_runner_count_v<Algorithm, Registrations...> == 1)
     [[nodiscard]]
-    auto runner_config() noexcept -> typename Algorithm::parameters_type&
+    typename Algorithm::parameters_type& runner_config() noexcept
     {
         constexpr auto index = app_runner_index<Algorithm, Registrations...>();
         return std::get<index>(registrations_).config;
     }
 
     template<class Algorithm>
-        requires (app_runner_count_v<Algorithm, Registrations...> == 1)
+        requires(app_runner_count_v<Algorithm, Registrations...> == 1)
     [[nodiscard]]
-    auto runner_config() const noexcept -> const typename Algorithm::parameters_type&
+    const typename Algorithm::parameters_type& runner_config() const noexcept
     {
         constexpr auto index = app_runner_index<Algorithm, Registrations...>();
         return std::get<index>(registrations_).config;
     }
 
     template<class Algorithm>
-        requires (app_runner_count_v<Algorithm, Registrations...> > 0)
+        requires(app_runner_count_v<Algorithm, Registrations...> > 0)
     [[nodiscard]]
-    auto runner_config(const std::string_view name) -> typename Algorithm::parameters_type&
+    typename Algorithm::parameters_type& runner_config(const std::string_view name)
     {
         return app_runner_registration_by_name<Algorithm>(registrations_, name).config;
     }
 
     template<class Algorithm>
-        requires (app_runner_count_v<Algorithm, Registrations...> > 0)
+        requires(app_runner_count_v<Algorithm, Registrations...> > 0)
     [[nodiscard]]
-    auto runner_config(const std::string_view name) const -> const typename Algorithm::parameters_type&
+    const typename Algorithm::parameters_type& runner_config(
+        const std::string_view name) const
     {
         return app_runner_registration_by_name<Algorithm>(registrations_, name).config;
     }
 
     template<class Algorithm>
-        requires (app_runner_count_v<Algorithm, Registrations...> == 1)
+        requires(app_runner_count_v<Algorithm, Registrations...> == 1)
     [[nodiscard]]
-    auto runner_name() const noexcept -> std::string_view
+    std::string_view runner_name() const noexcept
     {
         constexpr auto index = app_runner_index<Algorithm, Registrations...>();
         return std::get<index>(registrations_).name;
@@ -760,10 +762,9 @@ inline auto app(std::string name)
 // app("tsp") | sm | nhe | runner<runners::FirstImprovement>("fi", {...}).
 template<detail::configurable_app_algorithm Algorithm>
 [[nodiscard]]
-auto runner(
+detail::app_runner_registration<Algorithm> runner(
     std::string name,
     typename Algorithm::parameters_type parameters = {})
-    -> detail::app_runner_registration<Algorithm>
 {
     return {.name = std::move(name), .config = std::move(parameters)};
 }

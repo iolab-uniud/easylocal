@@ -66,25 +66,25 @@ public:
     }
 
     [[nodiscard]]
-    auto solution_manager() const noexcept -> const SM&
+    const SM& solution_manager() const noexcept
     {
         return solution_manager_;
     }
 
     [[nodiscard]]
-    auto neighborhood_explorer() const noexcept -> const NHE&
+    const NHE& neighborhood_explorer() const noexcept
     {
         return neighborhood_;
     }
 
     [[nodiscard]]
-    auto input() const noexcept -> const input_type&
+    const input_type& input() const noexcept
     {
         return solution_manager_.input();
     }
 
     [[nodiscard]]
-    auto evaluation() const -> evaluation_facility<SM, NHE>
+    evaluation_facility<SM, NHE> evaluation() const
     {
         return evaluation_facility<SM, NHE>{
             solution_manager_,
@@ -101,9 +101,7 @@ public:
     // future lazy cost model can answer <= in one pass without forcing two
     // potentially expensive semantic comparisons.
     [[nodiscard]]
-    constexpr auto better(
-        const cost_type& candidate,
-        const cost_type& reference) const -> bool
+    constexpr bool better(const cost_type& candidate, const cost_type& reference) const
         requires easylocal::cost::has_better<SM>
     {
         return easylocal::cost::better(
@@ -113,18 +111,16 @@ public:
     }
 
     [[nodiscard]]
-    constexpr auto equivalent(
-        const cost_type& lhs,
-        const cost_type& rhs) const -> bool
+    constexpr bool equivalent(const cost_type& lhs, const cost_type& rhs) const
         requires easylocal::cost::has_equivalent<SM>
     {
         return easylocal::cost::equivalent(solution_manager_, lhs, rhs);
     }
 
     [[nodiscard]]
-    constexpr auto better_or_equivalent(
+    constexpr bool better_or_equivalent(
         const cost_type& candidate,
-        const cost_type& reference) const -> bool
+        const cost_type& reference) const
         requires easylocal::cost::has_better_or_equivalent<SM>
     {
         return easylocal::cost::better_or_equivalent(
@@ -296,18 +292,18 @@ public:
     }
 
     bound_runner(const bound_runner&) = delete;
-    auto operator=(const bound_runner&) -> bound_runner& = delete;
+    bound_runner& operator=(const bound_runner&) = delete;
     bound_runner(bound_runner&&) = delete;
-    auto operator=(bound_runner&&) -> bound_runner& = delete;
+    bound_runner& operator=(bound_runner&&) = delete;
 
     [[nodiscard]]
-    auto input() const noexcept -> const input_type&
+    const input_type& input() const noexcept
     {
         return input_;
     }
 
     [[nodiscard]]
-    auto initial_solution() const -> solution_type
+    solution_type initial_solution() const
         requires has_initial_solution<solution_manager_type>
     {
         return solution_manager_.initial_solution();
@@ -315,16 +311,14 @@ public:
 
     template<class RNG>
     [[nodiscard]]
-    auto random_solution(RNG& rng) const -> solution_type
+    solution_type random_solution(RNG& rng) const
         requires has_random_solution<solution_manager_type, RNG>
     {
         return solution_manager_.random_solution(rng);
     }
 
     [[nodiscard]]
-    constexpr auto better(
-        const cost_type& candidate,
-        const cost_type& reference) const -> bool
+    constexpr bool better(const cost_type& candidate, const cost_type& reference) const
         requires easylocal::cost::has_better<solution_manager_type>
     {
         return easylocal::cost::better(

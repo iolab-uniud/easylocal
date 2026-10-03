@@ -33,7 +33,7 @@ public:
 
     template<class Instance>
     [[nodiscard]]
-    auto construct(const Instance& instance) const -> Component
+    Component construct(const Instance& instance) const
     {
         return std::apply(
             [&](const auto&... args) -> Component {
@@ -64,16 +64,18 @@ private:
 // component<C>() * w and w * component<C>() are cost::weighted(component, w).
 template<class Component, class... StoredArgs, cost::arithmetic Weight>
 [[nodiscard]]
-auto operator*(component_spec<Component, StoredArgs...> spec, Weight weight)
-    -> cost::weighted_term<component_spec<Component, StoredArgs...>, Weight>
+cost::weighted_term<component_spec<Component, StoredArgs...>, Weight> operator*(
+    component_spec<Component, StoredArgs...> spec,
+    Weight weight)
 {
     return cost::weighted(std::move(spec), weight);
 }
 
 template<cost::arithmetic Weight, class Component, class... StoredArgs>
 [[nodiscard]]
-auto operator*(Weight weight, component_spec<Component, StoredArgs...> spec)
-    -> cost::weighted_term<component_spec<Component, StoredArgs...>, Weight>
+cost::weighted_term<component_spec<Component, StoredArgs...>, Weight> operator*(
+    Weight weight,
+    component_spec<Component, StoredArgs...> spec)
 {
     return cost::weighted(std::move(spec), weight);
 }
@@ -104,7 +106,7 @@ using tuple_cat_t = decltype(std::tuple_cat(std::declval<Tuples>()...));
 
 // Configuration names of positional children: "0", "1", ...
 [[nodiscard]]
-consteval auto decimal_digits(std::size_t value) -> std::size_t
+consteval std::size_t decimal_digits(std::size_t value)
 {
     return value < 10 ? 1 : 1 + decimal_digits(value / 10);
 }
@@ -211,14 +213,14 @@ public:
     }
 
     [[nodiscard]]
-    auto leaves() const -> leaf_specs
+    leaf_specs leaves() const
     {
         return leaf_specs{spec_};
     }
 
     template<std::size_t Offset, class Values>
     [[nodiscard]]
-    auto evaluate(const Values& values) const -> cost_type
+    cost_type evaluate(const Values& values) const
     {
         return std::get<Offset>(values);
     }
@@ -235,13 +237,13 @@ struct sum_term
 
     template<class Weight>
     [[nodiscard]]
-    static constexpr auto weight(const Term&) -> Weight
+    static constexpr Weight weight(const Term&)
     {
         return Weight{1};
     }
 
     [[nodiscard]]
-    static auto child(Term term) -> Term
+    static Term child(Term term)
     {
         return term;
     }
@@ -256,14 +258,13 @@ struct sum_term<cost::weighted_term<Child, Weight>>
 
     template<class Target>
     [[nodiscard]]
-    static constexpr auto weight(
-        const cost::weighted_term<Child, Weight>& term) -> Target
+    static constexpr Target weight(const cost::weighted_term<Child, Weight>& term)
     {
         return static_cast<Target>(term.weight);
     }
 
     [[nodiscard]]
-    static auto child(cost::weighted_term<Child, Weight> term) -> Child
+    static Child child(cost::weighted_term<Child, Weight> term)
     {
         return std::move(term.child);
     }
@@ -295,7 +296,7 @@ struct sum_parameters
     }
 
     [[nodiscard]]
-    constexpr auto validate() const noexcept -> config::validation_result
+    constexpr config::validation_result validate() const noexcept
     {
         return config::validation_result::success();
     }
@@ -353,13 +354,13 @@ public:
     }
 
     [[nodiscard]]
-    auto parameters() const noexcept -> const parameters_type&
+    const parameters_type& parameters() const noexcept
     {
         return parameters_;
     }
 
     [[nodiscard]]
-    auto leaves() const -> leaf_specs
+    leaf_specs leaves() const
     {
         return std::apply(
             [](const auto&... child) { return std::tuple_cat(child.leaves()...); },
@@ -368,7 +369,7 @@ public:
 
     template<std::size_t Offset, class Values>
     [[nodiscard]]
-    auto evaluate(const Values& values) const -> cost_type
+    cost_type evaluate(const Values& values) const
     {
         return [&]<std::size_t... Indices>(std::index_sequence<Indices...>) {
             return static_cast<cost_type>(
@@ -401,8 +402,7 @@ private:
 
     template<class Term>
     [[nodiscard]]
-    static auto make_child(Term term)
-        -> cost_node<typename sum_term<Term>::child_type, Solution>
+    static cost_node<typename sum_term<Term>::child_type, Solution> make_child(Term term)
     {
         return cost_node<typename sum_term<Term>::child_type, Solution>{
             sum_term<Term>::child(std::move(term))};
@@ -450,7 +450,7 @@ public:
     }
 
     [[nodiscard]]
-    auto leaves() const -> leaf_specs
+    leaf_specs leaves() const
     {
         return std::apply(
             [](const auto&... child) { return std::tuple_cat(child.leaves()...); },
@@ -459,8 +459,7 @@ public:
 
     template<std::size_t Offset, class Function, class Values>
     [[nodiscard]]
-    auto evaluate_with(const Function& function, const Values& values) const
-        -> decltype(auto)
+    decltype(auto) evaluate_with(const Function& function, const Values& values) const
     {
         return [&]<std::size_t... Indices>(std::index_sequence<Indices...>)
             -> decltype(auto) {
@@ -509,14 +508,14 @@ public:
     }
 
     [[nodiscard]]
-    auto leaves() const -> leaf_specs
+    leaf_specs leaves() const
     {
         return children_.leaves();
     }
 
     template<std::size_t Offset, class Values>
     [[nodiscard]]
-    auto evaluate(const Values& values) const -> cost_type
+    cost_type evaluate(const Values& values) const
     {
         return children_.template evaluate_with<Offset>(
             [](auto... cost) { return cost_type{std::move(cost)...}; },
@@ -573,14 +572,14 @@ public:
     }
 
     [[nodiscard]]
-    auto leaves() const -> leaf_specs
+    leaf_specs leaves() const
     {
         return std::tuple_cat(hard_.leaves(), soft_.leaves());
     }
 
     template<std::size_t Offset, class Values>
     [[nodiscard]]
-    auto evaluate(const Values& values) const -> cost_type
+    cost_type evaluate(const Values& values) const
     {
         return cost_type{
             hard_.template evaluate<Offset>(values),
@@ -591,7 +590,7 @@ public:
     // The hard cost from the values of the hard components only.
     template<class HardValues>
     [[nodiscard]]
-    auto hard_cost(const HardValues& values) const -> hard_cost_type
+    hard_cost_type hard_cost(const HardValues& values) const
     {
         return hard_.template evaluate<0>(values);
     }
@@ -658,20 +657,20 @@ public:
     }
 
     [[nodiscard]]
-    auto function() const noexcept -> const Function&
+    const Function& function() const noexcept
     {
         return function_;
     }
 
     [[nodiscard]]
-    auto leaves() const -> leaf_specs
+    leaf_specs leaves() const
     {
         return children_.leaves();
     }
 
     template<std::size_t Offset, class Values>
     [[nodiscard]]
-    auto evaluate(const Values& values) const -> cost_type
+    cost_type evaluate(const Values& values) const
     {
         return children_.template evaluate_with<Offset>(
             [&](const auto&... cost) -> cost_type {
@@ -681,8 +680,7 @@ public:
     }
 
     [[nodiscard]]
-    auto better(const cost_type& candidate, const cost_type& reference) const
-        -> bool
+    bool better(const cost_type& candidate, const cost_type& reference) const
         requires requires(const Function& function) {
             { function.better(candidate, reference) } -> std::convertible_to<bool>;
         }
@@ -691,7 +689,7 @@ public:
     }
 
     [[nodiscard]]
-    auto equivalent(const cost_type& lhs, const cost_type& rhs) const -> bool
+    bool equivalent(const cost_type& lhs, const cost_type& rhs) const
         requires requires(const Function& function) {
             { function.equivalent(lhs, rhs) } -> std::convertible_to<bool>;
         }
@@ -700,9 +698,8 @@ public:
     }
 
     [[nodiscard]]
-    auto better_or_equivalent(
-        const cost_type& candidate,
-        const cost_type& reference) const -> bool
+    bool better_or_equivalent(const cost_type& candidate, const cost_type& reference)
+        const
         requires requires(const Function& function) {
             {
                 function.better_or_equivalent(candidate, reference)

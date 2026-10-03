@@ -154,7 +154,7 @@ public:
     }
 
     [[nodiscard]]
-    auto records() const noexcept -> const std::vector<record>&
+    const std::vector<record>& records() const noexcept
     {
         return records_;
     }

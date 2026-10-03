@@ -14,7 +14,7 @@
 namespace easylocal::rest
 {
 
-[[nodiscard]] inline auto default_worker_count() noexcept -> std::size_t
+[[nodiscard]] inline std::size_t default_worker_count() noexcept
 {
     const auto available = std::thread::hardware_concurrency();
     if (available <= 1)
@@ -52,9 +52,9 @@ public:
     }
 
     execution_pool(const execution_pool&) = delete;
-    auto operator=(const execution_pool&) -> execution_pool& = delete;
+    execution_pool& operator=(const execution_pool&) = delete;
     execution_pool(execution_pool&&) = delete;
-    auto operator=(execution_pool&&) -> execution_pool& = delete;
+    execution_pool& operator=(execution_pool&&) = delete;
 
     ~execution_pool()
     {
@@ -67,7 +67,7 @@ public:
 
     template<class Function>
         requires std::invocable<Function&>
-    [[nodiscard]] auto try_submit(Function&& function) -> bool
+    [[nodiscard]] bool try_submit(Function&& function)
     {
         {
             const std::lock_guard lock{mutex_};
@@ -81,12 +81,12 @@ public:
         return true;
     }
 
-    [[nodiscard]] auto worker_count() const noexcept -> std::size_t
+    [[nodiscard]] std::size_t worker_count() const noexcept
     {
         return workers_.size();
     }
 
-    [[nodiscard]] auto queue_capacity() const noexcept -> std::size_t
+    [[nodiscard]] std::size_t queue_capacity() const noexcept
     {
         return queue_capacity_;
     }

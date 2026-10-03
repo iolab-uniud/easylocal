@@ -49,7 +49,7 @@ concept has_read_input =
 template<class Input>
     requires has_read_input<Input>
 [[nodiscard]]
-auto call_read_input(std::istream& in) -> Input
+Input call_read_input(std::istream& in)
 {
     return read_input(std::type_identity<Input>{}, in);
 }
@@ -65,7 +65,7 @@ concept has_read_solution =
 template<class Input, class Solution>
     requires has_read_solution<Input, Solution>
 [[nodiscard]]
-auto call_read_solution(const Input& input, std::istream& in) -> Solution
+Solution call_read_solution(const Input& input, std::istream& in)
 {
     return read_solution(input, in);
 }
@@ -115,7 +115,7 @@ concept readable_input =
 template<class Input>
     requires readable_input<Input>
 [[nodiscard]]
-auto read_input(std::istream& in) -> Input
+Input read_input(std::istream& in)
 {
     if constexpr (has_static_input_read<Input>)
     {
@@ -157,7 +157,7 @@ concept readable_solution =
 template<class Solution, class Input>
     requires readable_solution<Input, Solution>
 [[nodiscard]]
-auto read_solution(const Input& input, std::istream& in) -> Solution
+Solution read_solution(const Input& input, std::istream& in)
 {
     if constexpr (has_static_solution_read<Input, Solution>)
     {
@@ -344,25 +344,25 @@ public:
     }
 
     [[nodiscard]]
-    auto rng() noexcept -> rng_type&
+    rng_type& rng() noexcept
     {
         return rng_;
     }
 
     [[nodiscard]]
-    auto app() noexcept -> App&
+    App& app() noexcept
     {
         return app_;
     }
 
     [[nodiscard]]
-    auto app() const noexcept -> const App&
+    const App& app() const noexcept
     {
         return app_;
     }
 
     [[nodiscard]]
-    auto has_input() const noexcept -> bool
+    bool has_input() const noexcept
     {
         return static_cast<bool>(input_);
     }
@@ -400,34 +400,34 @@ public:
     }
 
     [[nodiscard]]
-    auto input() const noexcept -> const input_type&
+    const input_type& input() const noexcept
     {
         assert(input_);
         return *input_;
     }
 
     [[nodiscard]]
-    auto input_handle() const noexcept -> std::shared_ptr<const input_type>
+    std::shared_ptr<const input_type> input_handle() const noexcept
     {
         return input_;
     }
 
     [[nodiscard]]
-    auto runtime() noexcept -> runtime_type&
+    runtime_type& runtime() noexcept
     {
         assert(runtime_);
         return *runtime_;
     }
 
     [[nodiscard]]
-    auto runtime() const noexcept -> const runtime_type&
+    const runtime_type& runtime() const noexcept
     {
         assert(runtime_);
         return *runtime_;
     }
 
     [[nodiscard]]
-    auto has_solution() const noexcept -> bool
+    bool has_solution() const noexcept
     {
         return static_cast<bool>(solution_);
     }
@@ -502,14 +502,14 @@ public:
     }
 
     [[nodiscard]]
-    auto solution() const noexcept -> const solution_type&
+    const solution_type& solution() const noexcept
     {
         assert(solution_);
         return *solution_;
     }
 
     [[nodiscard]]
-    auto is_valid() const -> bool
+    bool is_valid() const
     {
         assert(runtime_);
         assert(solution_);
@@ -518,7 +518,7 @@ public:
     }
 
     [[nodiscard]]
-    auto evaluate() const -> cost_type
+    cost_type evaluate() const
     {
         assert(runtime_);
         assert(solution_);
@@ -527,7 +527,7 @@ public:
     }
 
     [[nodiscard]]
-    auto check() const -> app_check_report
+    app_check_report check() const
     {
         assert(input_);
         assert(solution_);
@@ -535,7 +535,7 @@ public:
     }
 
     [[nodiscard]]
-    auto runner_names() const -> std::vector<std::string_view>
+    std::vector<std::string_view> runner_names() const
     {
         std::vector<std::string_view> names;
         names.reserve(App::runner_count);
@@ -549,7 +549,7 @@ public:
     }
 
     [[nodiscard]]
-    auto run_runner(const std::string_view name) -> bool
+    bool run_runner(const std::string_view name)
     {
         assert(runtime_);
         assert(solution_);
@@ -582,13 +582,13 @@ public:
     }
 
     [[nodiscard]]
-    auto has_move() const noexcept -> bool
+    bool has_move() const noexcept
     {
         return move_.has_value();
     }
 
     [[nodiscard]]
-    auto move() const noexcept -> const move_type&
+    const move_type& move() const noexcept
     {
         assert(move_);
         return *move_;
@@ -602,7 +602,7 @@ public:
     }
 
     [[nodiscard]]
-    auto use_first_move() -> bool
+    bool use_first_move()
         requires supports_deterministic_moves
     {
         assert(runtime_);
@@ -611,7 +611,7 @@ public:
     }
 
     [[nodiscard]]
-    auto use_next_move() -> bool
+    bool use_next_move()
         requires supports_deterministic_moves
     {
         assert(runtime_);
@@ -626,7 +626,7 @@ public:
     }
 
     [[nodiscard]]
-    auto use_first_improving_move() -> bool
+    bool use_first_improving_move()
         requires supports_improvement_selection
     {
         assert(runtime_);
@@ -650,7 +650,7 @@ public:
     }
 
     [[nodiscard]]
-    auto use_best_move() -> bool
+    bool use_best_move()
         requires supports_improvement_selection
     {
         assert(runtime_);
@@ -689,7 +689,7 @@ public:
     }
 
     [[nodiscard]]
-    auto use_random_move(rng_type& rng) -> bool
+    bool use_random_move(rng_type& rng)
         requires supports_random_moves
     {
         assert(runtime_);
@@ -712,7 +712,7 @@ public:
     }
 
     [[nodiscard]]
-    auto move_is_valid() const -> bool
+    bool move_is_valid() const
     {
         assert(runtime_);
         assert(solution_);
@@ -722,7 +722,7 @@ public:
     }
 
     [[nodiscard]]
-    auto evaluate_move() const -> cost_type
+    cost_type evaluate_move() const
     {
         assert(runtime_);
         assert(solution_);
@@ -746,7 +746,7 @@ public:
     }
 
     [[nodiscard]]
-    auto evaluate_move_fully() const -> cost_type
+    cost_type evaluate_move_fully() const
     {
         assert(runtime_);
         assert(solution_);
@@ -760,7 +760,7 @@ public:
     }
 
     [[nodiscard]]
-    auto move_evaluation_matches_full() const -> bool
+    bool move_evaluation_matches_full() const
         requires cost::has_equivalent<solution_manager_type>
     {
         const auto incremental = evaluate_move();
@@ -772,8 +772,8 @@ public:
     }
 
     [[nodiscard]]
-    auto neighborhood_preview(const std::size_t max_entries = 8) const
-        -> neighborhood_preview_result
+    neighborhood_preview_result neighborhood_preview(
+        const std::size_t max_entries = 8) const
         requires supports_deterministic_moves
     {
         assert(runtime_);
@@ -806,7 +806,7 @@ public:
     }
 
     [[nodiscard]]
-    auto neighborhood_statistics() const -> neighborhood_statistics_result
+    neighborhood_statistics_result neighborhood_statistics() const
         requires supports_improvement_selection
     {
         assert(runtime_);
@@ -848,7 +848,7 @@ public:
     }
 
     [[nodiscard]]
-    auto check_neighborhood_costs() const -> neighborhood_cost_check_result
+    neighborhood_cost_check_result check_neighborhood_costs() const
         requires supports_cost_consistency_check
     {
         assert(runtime_);
@@ -891,7 +891,7 @@ public:
     }
 
     [[nodiscard]]
-    auto check_move_independence() const -> move_independence_result
+    move_independence_result check_move_independence() const
         requires supports_move_independence_check
     {
         assert(runtime_);
@@ -941,10 +941,9 @@ public:
     }
 
     [[nodiscard]]
-    auto check_random_move_distribution(
+    random_distribution_result check_random_move_distribution(
         rng_type& rng,
         const std::size_t rounds_per_move = 20) const
-        -> random_distribution_result
         requires supports_random_distribution_check
     {
         assert(runtime_);
@@ -1034,7 +1033,7 @@ private:
     }
 
     [[nodiscard]]
-    auto select_deterministic_move(const std::size_t target) -> bool
+    bool select_deterministic_move(const std::size_t target)
         requires supports_deterministic_moves
     {
         std::size_t index = 0;

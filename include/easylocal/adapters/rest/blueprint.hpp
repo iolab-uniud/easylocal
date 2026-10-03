@@ -85,7 +85,7 @@ concept decodes_initial_solution =
         } -> std::convertible_to<app_solution_t<App>>;
     };
 
-[[nodiscard]] inline auto normalize_prefix(std::string prefix) -> std::string
+[[nodiscard]] inline std::string normalize_prefix(std::string prefix)
 {
     while (!prefix.empty() && prefix.front() == '/')
     {
@@ -102,17 +102,17 @@ concept decodes_initial_solution =
     return prefix;
 }
 
-[[nodiscard]] inline auto json_response(
+[[nodiscard]] inline crow::response json_response(
     const int status,
-    crow::json::wvalue body) -> crow::response
+    crow::json::wvalue body)
 {
     return crow::response{status, std::move(body)};
 }
 
-[[nodiscard]] inline auto error_response(
+[[nodiscard]] inline crow::response error_response(
     const int status,
     std::string code,
-    std::string message) -> crow::response
+    std::string message)
 {
     crow::json::wvalue body;
     body["error"]["code"] = std::move(code);
@@ -158,16 +158,16 @@ public:
     }
 
     app_blueprint(const app_blueprint&) = delete;
-    auto operator=(const app_blueprint&) -> app_blueprint& = delete;
+    app_blueprint& operator=(const app_blueprint&) = delete;
     app_blueprint(app_blueprint&&) = delete;
-    auto operator=(app_blueprint&&) -> app_blueprint& = delete;
+    app_blueprint& operator=(app_blueprint&&) = delete;
 
-    [[nodiscard]] auto crow_blueprint() noexcept -> crow::Blueprint&
+    [[nodiscard]] crow::Blueprint& crow_blueprint() noexcept
     {
         return blueprint_;
     }
 
-    [[nodiscard]] auto prefix() const noexcept -> std::string_view
+    [[nodiscard]] std::string_view prefix() const noexcept
     {
         return prefix_;
     }
@@ -199,8 +199,7 @@ private:
         std::atomic_bool has_evaluation_limit{};
     };
 
-    [[nodiscard]] static auto state_name(const run_state state) noexcept
-        -> std::string_view
+    [[nodiscard]] static std::string_view state_name(const run_state state) noexcept
     {
         switch (state)
         {
@@ -218,41 +217,39 @@ private:
         return "unknown";
     }
 
-    [[nodiscard]] auto copy_application() const -> App
+    [[nodiscard]] App copy_application() const
     {
         const std::lock_guard lock{application_mutex_};
         return application_;
     }
 
-    [[nodiscard]] auto application_name() const -> std::string
+    [[nodiscard]] std::string application_name() const
     {
         const std::lock_guard lock{application_mutex_};
         return std::string{application_.name()};
     }
 
-    [[nodiscard]] auto decode_input(const crow::json::rvalue& payload) const
-        -> input_type
+    [[nodiscard]] input_type decode_input(const crow::json::rvalue& payload) const
     {
         const std::lock_guard lock{codec_mutex_};
         return codec_.decode_input(payload);
     }
 
-    [[nodiscard]] auto encode_solution(
+    [[nodiscard]] crow::json::wvalue encode_solution(
         const input_type& input,
-        const solution_type& solution) const -> crow::json::wvalue
+        const solution_type& solution) const
     {
         const std::lock_guard lock{codec_mutex_};
         return codec_.encode_solution(input, solution);
     }
 
-    [[nodiscard]] auto encode_cost(const cost_type& cost) const
-        -> crow::json::wvalue
+    [[nodiscard]] crow::json::wvalue encode_cost(const cost_type& cost) const
     {
         const std::lock_guard lock{codec_mutex_};
         return codec_.encode_cost(cost);
     }
 
-    [[nodiscard]] auto runner_exists(const std::string_view requested) const -> bool
+    [[nodiscard]] bool runner_exists(const std::string_view requested) const
     {
         bool found = false;
         const std::lock_guard lock{application_mutex_};
@@ -265,7 +262,7 @@ private:
         return found;
     }
 
-    [[nodiscard]] auto runner_names() const -> std::vector<std::string>
+    [[nodiscard]] std::vector<std::string> runner_names() const
     {
         std::vector<std::string> names;
         const std::lock_guard lock{application_mutex_};
@@ -279,37 +276,36 @@ private:
         return names;
     }
 
-    [[nodiscard]] auto find_run(const std::string& id) const
-        -> std::shared_ptr<run_record>
+    [[nodiscard]] std::shared_ptr<run_record> find_run(const std::string& id) const
     {
         const std::lock_guard lock{runs_mutex_};
         const auto found = runs_.find(id);
         return found == runs_.end() ? nullptr : found->second;
     }
 
-    [[nodiscard]] auto decode_initial_solution(
+    [[nodiscard]] solution_type decode_initial_solution(
         const input_type& input,
-        const crow::json::rvalue& payload) const -> solution_type
+        const crow::json::rvalue& payload) const
         requires detail::decodes_initial_solution<Codec, App>
     {
         const std::lock_guard lock{codec_mutex_};
         return codec_.decode_initial_solution(input, payload);
     }
 
-    [[nodiscard]] static auto is_terminal(const run_state state) noexcept -> bool
+    [[nodiscard]] static bool is_terminal(const run_state state) noexcept
     {
         return state == run_state::succeeded ||
                state == run_state::cancelled ||
                state == run_state::failed;
     }
 
-    [[nodiscard]] auto run_url(const std::string_view id) const -> std::string
+    [[nodiscard]] std::string run_url(const std::string_view id) const
     {
         return "/" + prefix_ + "/runs/" + std::string{id};
     }
 
-    [[nodiscard]] auto run_body(const std::shared_ptr<run_record>& record) const
-        -> crow::json::wvalue
+    [[nodiscard]] crow::json::wvalue run_body(
+        const std::shared_ptr<run_record>& record) const
     {
         crow::json::wvalue body;
         const std::lock_guard lock{record->mutex};
@@ -358,10 +354,10 @@ private:
         }
     }
 
-    [[nodiscard]] auto make_initial_solution(
+    [[nodiscard]] solution_type make_initial_solution(
         const App& application,
         const input_type& input,
-        const crow::json::rvalue* payload) const -> solution_type
+        const crow::json::rvalue* payload) const
     {
         if (payload != nullptr)
         {
@@ -390,7 +386,7 @@ private:
         }
     }
 
-    [[nodiscard]] auto root_response() const -> crow::response
+    [[nodiscard]] crow::response root_response() const
     {
         crow::json::wvalue body;
         body["application"] = application_name();
@@ -408,16 +404,16 @@ private:
         return detail::json_response(200, std::move(body));
     }
 
-    [[nodiscard]] auto runners_response() const -> crow::response
+    [[nodiscard]] crow::response runners_response() const
     {
         crow::json::wvalue body;
         body["runners"] = runner_names();
         return detail::json_response(200, std::move(body));
     }
 
-    [[nodiscard]] auto submit_run(
+    [[nodiscard]] crow::response submit_run(
         const crow::request& request,
-        const std::string& runner) -> crow::response
+        const std::string& runner)
     {
         if (!runner_exists(runner))
         {
@@ -632,7 +628,7 @@ private:
         }
     }
 
-    [[nodiscard]] auto run_status(const std::string& id) const -> crow::response
+    [[nodiscard]] crow::response run_status(const std::string& id) const
     {
         const auto record = find_run(id);
         if (!record)
@@ -645,7 +641,7 @@ private:
         return detail::json_response(200, run_body(record));
     }
 
-    [[nodiscard]] auto run_solution(const std::string& id) const -> crow::response
+    [[nodiscard]] crow::response run_solution(const std::string& id) const
     {
         const auto record = find_run(id);
         if (!record)
@@ -690,7 +686,7 @@ private:
         return detail::json_response(200, std::move(body));
     }
 
-    [[nodiscard]] auto cancel_run(const std::string& id) -> crow::response
+    [[nodiscard]] crow::response cancel_run(const std::string& id)
     {
         const auto record = find_run(id);
         if (!record)
@@ -716,7 +712,7 @@ private:
         return detail::json_response(202, run_body(record));
     }
 
-    [[nodiscard]] auto delete_run(const std::string& id) -> crow::response
+    [[nodiscard]] crow::response delete_run(const std::string& id)
     {
         const auto record = find_run(id);
         if (!record)

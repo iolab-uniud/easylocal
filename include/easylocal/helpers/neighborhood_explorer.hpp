@@ -166,19 +166,17 @@ public:
         }
 
         [[nodiscard]]
-        EASYLOCAL_DETAIL_CURSOR_FORCE_INLINE
-        auto operator*() const noexcept -> const move_type&
+        EASYLOCAL_DETAIL_CURSOR_FORCE_INLINE const move_type& operator*() const noexcept
         {
             assert(explorer_ != nullptr);
             return current_;
         }
 
         EASYLOCAL_DETAIL_CURSOR_FORCE_INLINE
-        auto operator++()
-            noexcept(noexcept(
-                std::declval<const Explorer&>().next_move(
-                    std::declval<const solution_type&>(),
-                    std::declval<move_type&>()))) -> iterator&
+        iterator& operator++() noexcept(
+            noexcept(std::declval<const Explorer&>().next_move(
+                std::declval<const solution_type&>(),
+                std::declval<move_type&>())))
         {
             assert(explorer_ != nullptr);
 
@@ -198,10 +196,9 @@ public:
             ++*this;
         }
 
-        friend EASYLOCAL_DETAIL_CURSOR_FORCE_INLINE
-        auto operator==(
+        friend EASYLOCAL_DETAIL_CURSOR_FORCE_INLINE bool operator==(
             const iterator& current,
-            std::default_sentinel_t) noexcept -> bool
+            std::default_sentinel_t) noexcept
         {
             return current.explorer_ == nullptr;
         }
@@ -223,8 +220,7 @@ public:
     }
 
     [[nodiscard]]
-    EASYLOCAL_DETAIL_CURSOR_FORCE_INLINE
-    auto end() const noexcept -> std::default_sentinel_t
+    EASYLOCAL_DETAIL_CURSOR_FORCE_INLINE std::default_sentinel_t end() const noexcept
     {
         return {};
     }
@@ -242,10 +238,9 @@ private:
 template<class Explorer, class Solution>
     requires cursor_neighborhood_for<Explorer, Solution>
 [[nodiscard]]
-inline auto cursor_moves(
+inline detail::cursor_moves_view<Explorer, Solution> cursor_moves(
     const Explorer& explorer,
     const Solution& solution) noexcept
-    -> detail::cursor_moves_view<Explorer, Solution>
 {
     return detail::cursor_moves_view<Explorer, Solution>{explorer, solution};
 }
@@ -274,10 +269,10 @@ inline auto moves(
 template<class Explorer, class Solution, std::uniform_random_bit_generator RNG>
     requires random_neighborhood_for<Explorer, Solution, RNG>
 [[nodiscard]]
-inline auto random_move(
+inline std::optional<typename Explorer::move_type> random_move(
     const Explorer& explorer,
     const Solution& solution,
-    RNG& rng) -> std::optional<typename Explorer::move_type>
+    RNG& rng)
 {
     auto result = explorer.random_move(solution, rng);
     if (!result)
@@ -306,7 +301,7 @@ public:
     }
 
     [[nodiscard]]
-    auto input() const noexcept -> const input_type&
+    const input_type& input() const noexcept
     {
         return solution_manager_.input();
     }

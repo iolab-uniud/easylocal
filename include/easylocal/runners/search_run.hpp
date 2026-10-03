@@ -27,7 +27,7 @@ enum class termination_reason
 
 // A readable name of the reason, e.g. "evaluation budget exhausted".
 [[nodiscard]]
-constexpr auto to_string(const termination_reason reason) noexcept -> std::string_view
+constexpr std::string_view to_string(const termination_reason reason) noexcept
 {
     switch (reason)
     {
@@ -87,31 +87,29 @@ struct run_options
 
     template<class Cost>
     [[nodiscard]]
-    auto stop_at(Cost cost) const -> run_options<Tracer, Cost>
+    run_options<Tracer, Cost> stop_at(Cost cost) const
     {
         return {.control = control, .tracer = tracer, .target = std::move(cost)};
     }
 };
 
 [[nodiscard]]
-inline auto with(const run_control& control) noexcept
-    -> run_options<trace::null_tracer>
+inline run_options<trace::null_tracer> with(const run_control& control) noexcept
 {
     return {.control = &control, .tracer = nullptr};
 }
 
 template<class Tracer>
-    requires (!std::same_as<std::remove_cvref_t<Tracer>, run_control>)
+    requires(!std::same_as<std::remove_cvref_t<Tracer>, run_control>)
 [[nodiscard]]
-auto with(Tracer& tracer) noexcept -> run_options<Tracer>
+run_options<Tracer> with(Tracer& tracer) noexcept
 {
     return {.control = nullptr, .tracer = &tracer};
 }
 
 template<class Tracer>
 [[nodiscard]]
-auto with(const run_control& control, Tracer& tracer) noexcept
-    -> run_options<Tracer>
+run_options<Tracer> with(const run_control& control, Tracer& tracer) noexcept
 {
     return {.control = &control, .tracer = &tracer};
 }
@@ -119,7 +117,7 @@ auto with(const run_control& control, Tracer& tracer) noexcept
 // Run options with only a target cost: run(solution, easylocal::stop_at(0)).
 template<class Cost>
 [[nodiscard]]
-auto stop_at(Cost cost) -> run_options<trace::null_tracer, Cost>
+run_options<trace::null_tracer, Cost> stop_at(Cost cost)
 {
     return {.control = nullptr, .tracer = nullptr, .target = std::move(cost)};
 }
@@ -165,19 +163,18 @@ public:
     }
 
     search_run(const search_run&) = delete;
-    auto operator=(const search_run&) -> search_run& = delete;
+    search_run& operator=(const search_run&) = delete;
 
     // Context access.
 
     [[nodiscard]]
-    auto context() const noexcept -> const Context&
+    const Context& context() const noexcept
     {
         return context_;
     }
 
     [[nodiscard]]
-    auto neighborhood_explorer() const noexcept
-        -> const neighborhood_explorer_type&
+    const neighborhood_explorer_type& neighborhood_explorer() const noexcept
     {
         return context_.neighborhood_explorer();
     }
@@ -190,23 +187,21 @@ public:
     }
 
     [[nodiscard]]
-    auto input() const noexcept -> decltype(auto)
+    decltype(auto) input() const noexcept
         requires requires(const Context& context) { context.input(); }
     {
         return context_.input();
     }
 
     [[nodiscard]]
-    auto solution_manager() const noexcept -> decltype(auto)
+    decltype(auto) solution_manager() const noexcept
         requires requires(const Context& context) { context.solution_manager(); }
     {
         return context_.solution_manager();
     }
 
     [[nodiscard]]
-    constexpr auto better(
-        const cost_type& candidate,
-        const cost_type& reference) const -> bool
+    constexpr bool better(const cost_type& candidate, const cost_type& reference) const
         requires requires(const Context& context) {
             { context.better(candidate, reference) } -> std::convertible_to<bool>;
         }
@@ -215,9 +210,7 @@ public:
     }
 
     [[nodiscard]]
-    constexpr auto equivalent(
-        const cost_type& lhs,
-        const cost_type& rhs) const -> bool
+    constexpr bool equivalent(const cost_type& lhs, const cost_type& rhs) const
         requires requires(const Context& context) {
             { context.equivalent(lhs, rhs) } -> std::convertible_to<bool>;
         }
@@ -226,9 +219,9 @@ public:
     }
 
     [[nodiscard]]
-    constexpr auto better_or_equivalent(
+    constexpr bool better_or_equivalent(
         const cost_type& candidate,
-        const cost_type& reference) const -> bool
+        const cost_type& reference) const
         requires requires(const Context& context) {
             {
                 context.better_or_equivalent(candidate, reference)
@@ -241,25 +234,25 @@ public:
     // Run state.
 
     [[nodiscard]]
-    auto evaluations() const noexcept -> std::size_t
+    std::size_t evaluations() const noexcept
     {
         return evaluations_;
     }
 
     [[nodiscard]]
-    auto iterations() const noexcept -> std::size_t
+    std::size_t iterations() const noexcept
     {
         return iterations_;
     }
 
     [[nodiscard]]
-    auto tracer() noexcept -> Tracer&
+    Tracer& tracer() noexcept
     {
         return tracer_;
     }
 
     [[nodiscard]]
-    auto control() const noexcept -> const run_control&
+    const run_control& control() const noexcept
     {
         return control_;
     }
@@ -272,7 +265,7 @@ public:
 
     // The target cost given by the caller, or nullptr.
     [[nodiscard]]
-    auto target() const noexcept -> const cost_type*
+    const cost_type* target() const noexcept
     {
         return target_;
     }
@@ -286,7 +279,7 @@ public:
     // Search primitives.
 
     [[nodiscard]]
-    auto start(const solution_type& solution) -> evaluation_type
+    evaluation_type start(const solution_type& solution)
     {
         auto current = evaluation_.evaluate(solution);
         evaluations_ = 1;
@@ -304,7 +297,7 @@ public:
     // cost or an exhausted evaluation budget. The reason is recorded for
     // finish().
     [[nodiscard]]
-    auto should_stop() -> bool
+    bool should_stop()
     {
         if (control_.stop_requested())
         {
@@ -360,10 +353,10 @@ public:
     }
 
     [[nodiscard]]
-    auto evaluate_move(
+    candidate_type evaluate_move(
         const solution_type& solution,
         const evaluation_type& current,
-        const move_type& move) -> candidate_type
+        const move_type& move)
     {
         auto candidate = evaluation_.evaluate_move(solution, current, move);
         ++evaluations_;
@@ -418,7 +411,7 @@ public:
     // Ends the run. Without an explicit reason the termination is the one
     // recorded by should_stop(), or completed.
     [[nodiscard]]
-    auto finish(solution_type solution, cost_type cost) -> result_type
+    result_type finish(solution_type solution, cost_type cost)
     {
         return finish(
             std::move(solution),
@@ -427,10 +420,10 @@ public:
     }
 
     [[nodiscard]]
-    auto finish(
+    result_type finish(
         solution_type solution,
         cost_type cost,
-        const termination_reason reason) -> result_type
+        const termination_reason reason)
     {
         if (reason == termination_reason::local_optimum)
         {
@@ -468,7 +461,7 @@ public:
     // delegate to another algorithm.
     template<class OtherContext>
     [[nodiscard]]
-    auto with_context(const OtherContext& context) -> search_run<OtherContext, Tracer>
+    search_run<OtherContext, Tracer> with_context(const OtherContext& context)
     {
         const typename OtherContext::cost_type* target = nullptr;
         if constexpr (std::same_as<typename OtherContext::cost_type, cost_type>)
@@ -486,7 +479,7 @@ public:
 
 private:
     [[nodiscard]]
-    auto target_reached() const noexcept -> bool
+    bool target_reached() const noexcept
     {
         return target_reached_;
     }

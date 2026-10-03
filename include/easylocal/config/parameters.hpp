@@ -25,7 +25,7 @@ struct fixed_string
     }
 
     [[nodiscard]]
-    constexpr auto view() const noexcept -> std::string_view
+    constexpr std::string_view view() const noexcept
     {
         static_assert(Size >= 1);
         return {value, Size - 1};
@@ -47,14 +47,13 @@ struct validation_result
     }
 
     [[nodiscard]]
-    static constexpr auto success() noexcept -> validation_result
+    static constexpr validation_result success() noexcept
     {
         return {};
     }
 
     [[nodiscard]]
-    static constexpr auto failure(const std::string_view message) noexcept
-        -> validation_result
+    static constexpr validation_result failure(const std::string_view message) noexcept
     {
         return {.valid = false, .message = message};
     }
@@ -75,7 +74,7 @@ struct member_pointer_traits<Value Owner::*>
 
 template<class... Fields>
 [[nodiscard]]
-consteval auto unique_field_names() noexcept -> bool
+consteval bool unique_field_names() noexcept
 {
     if constexpr (sizeof...(Fields) <= 1)
     {
@@ -112,7 +111,7 @@ struct parameter_field
     std::string_view description{};
 
     [[nodiscard]]
-    static constexpr auto name() noexcept -> std::string_view
+    static constexpr std::string_view name() noexcept
     {
         return Name.view();
     }
@@ -121,16 +120,15 @@ struct parameter_field
 template<fixed_string Name, auto Member>
     requires std::is_member_object_pointer_v<decltype(Member)>
 [[nodiscard]]
-constexpr auto field(const std::string_view description = {}) noexcept
-    -> parameter_field<Name, Member>
+constexpr parameter_field<Name, Member> field(
+    const std::string_view description = {}) noexcept
 {
     return {.description = description};
 }
 
 template<class... Fields>
 [[nodiscard]]
-constexpr auto fields(Fields... parameter_fields) noexcept
-    -> std::tuple<Fields...>
+constexpr std::tuple<Fields...> fields(Fields... parameter_fields) noexcept
 {
     static_assert(
         detail::unique_field_names<Fields...>(),

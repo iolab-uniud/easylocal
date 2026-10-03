@@ -85,7 +85,7 @@ auto run_with_solver_rng(
 // True when the caller asked the solve to stop.
 template<class... Options>
 [[nodiscard]]
-auto stop_requested(const Options&... options) noexcept -> bool
+bool stop_requested(const Options&... options) noexcept
 {
     return ((options.control != nullptr && options.control->stop_requested()) || ...);
 }
@@ -150,7 +150,7 @@ void set_termination(Result& result, const termination_reason reason) noexcept
 
 template<class Result>
 [[nodiscard]]
-auto termination_of(const Result& result) noexcept -> std::optional<termination_reason>
+std::optional<termination_reason> termination_of(const Result& result) noexcept
 {
     if constexpr (requires { { result.termination } -> std::convertible_to<termination_reason>; })
     {

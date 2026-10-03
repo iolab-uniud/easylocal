@@ -38,7 +38,7 @@ struct record
 using sink = void (*)(const record&) noexcept;
 
 [[nodiscard]]
-constexpr auto level_name(const level severity) noexcept -> std::string_view
+constexpr std::string_view level_name(const level severity) noexcept
 {
     switch (severity)
     {
@@ -84,13 +84,13 @@ inline std::atomic<sink> active_sink{&stderr_sink};
 } // namespace detail
 
 [[nodiscard]]
-inline auto current_sink() noexcept -> sink
+inline sink current_sink() noexcept
 {
     return detail::active_sink.load(std::memory_order_acquire);
 }
 
 [[nodiscard]]
-inline auto set_sink(const sink target) noexcept -> sink
+inline sink set_sink(const sink target) noexcept
 {
     return detail::active_sink.exchange(target, std::memory_order_acq_rel);
 }

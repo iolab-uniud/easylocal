@@ -29,7 +29,7 @@ struct BestImprovementParameters
     }
 
     [[nodiscard]]
-    constexpr auto validate() const noexcept -> config::validation_result
+    constexpr config::validation_result validate() const noexcept
     {
         return config::validation_result::success();
     }
@@ -47,14 +47,13 @@ public:
     }
 
     [[nodiscard]]
-    auto parameters() const noexcept -> const BestImprovementParameters&
+    const BestImprovementParameters& parameters() const noexcept
     {
         return parameters_;
     }
 
     [[nodiscard]]
-    auto configure(BestImprovementParameters parameters) noexcept
-        -> config::validation_result
+    config::validation_result configure(BestImprovementParameters parameters) noexcept
     {
         const auto validation = parameters.validate();
         if (!validation)

@@ -52,8 +52,7 @@ public:
         easylocal::detail::bound_runner_with_random_solution<bound_runner_type, rng_type>;
 
     [[nodiscard]]
-    static constexpr auto supports(const initialization::Mode mode) noexcept
-        -> bool
+    static constexpr bool supports(const initialization::Mode mode) noexcept
     {
         switch (mode)
         {
@@ -121,7 +120,7 @@ public:
     }
 
     [[nodiscard]]
-    auto initialization_mode() const noexcept -> initialization::Mode
+    initialization::Mode initialization_mode() const noexcept
     {
         return initialization_mode_;
     }
@@ -133,10 +132,16 @@ public:
     }
 
     [[nodiscard]]
-    auto rng() noexcept -> RNG& { return rng_; }
+    RNG& rng() noexcept
+    {
+        return rng_;
+    }
 
     [[nodiscard]]
-    auto rng() const noexcept -> const RNG& { return rng_; }
+    const RNG& rng() const noexcept
+    {
+        return rng_;
+    }
 
     // Runs up to `starts` times from fresh solutions and returns the best
     // result, with the effort of every start. The optional trailing run
@@ -210,8 +215,7 @@ private:
     }
 
     [[nodiscard]]
-    auto make_initial_solution(const bound_runner_type& bound_runner)
-        -> solution_type
+    solution_type make_initial_solution(const bound_runner_type& bound_runner)
     {
         switch (initialization_mode_)
         {
@@ -241,7 +245,7 @@ private:
     // Why a start ends the whole solve, if it does.
     template<class Result>
     [[nodiscard]]
-    static auto ended_by(const Result& result) -> std::optional<termination_reason>
+    static std::optional<termination_reason> ended_by(const Result& result)
     {
         const auto termination = easylocal::detail::termination_of(result);
         if (termination == termination_reason::cancelled ||

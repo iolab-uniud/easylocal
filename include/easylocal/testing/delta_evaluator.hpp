@@ -15,10 +15,10 @@ namespace detail
 {
 
 template<class Test, class Instance, class Solution, class NHE>
-[[nodiscard]] auto sample_move(
+[[nodiscard]] std::optional<typename NHE::move_type> sample_move(
     const Instance& instance,
     const Solution& solution,
-    const NHE& neighborhood) -> std::optional<typename NHE::move_type>
+    const NHE& neighborhood)
 {
     using move_type = typename NHE::move_type;
 
@@ -67,11 +67,11 @@ template<class Test, class Instance, class Solution, class NHE>
 }
 
 template<class Test, class Component, class Value, class Solution, class Move>
-[[nodiscard]] auto colocated_updated_value(
+[[nodiscard]] Value colocated_updated_value(
     const Component& component,
     const Value& value,
     const Solution& solution,
-    const Move& move) -> Value
+    const Move& move)
 {
     static_assert(
         requires {
@@ -85,11 +85,11 @@ template<class Test, class Component, class Value, class Solution, class Move>
 }
 
 template<class Test, class Evaluator, class Value, class Solution, class Move>
-[[nodiscard]] auto separate_updated_value(
+[[nodiscard]] Value separate_updated_value(
     const Evaluator& evaluator,
     const Value& value,
     const Solution& solution,
-    const Move& move) -> Value
+    const Move& move)
 {
     static_assert(
         requires {
@@ -105,7 +105,7 @@ template<class Test, class Evaluator, class Value, class Solution, class Move>
 } // namespace detail
 
 template<class Test>
-[[nodiscard]] auto check_delta_evaluator() -> check_report
+[[nodiscard]] check_report check_delta_evaluator()
 {
     using neighborhood_type = typename Test::neighborhood;
     using solution_manager_type = detail::test_solution_manager_t<Test>;

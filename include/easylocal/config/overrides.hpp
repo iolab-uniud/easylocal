@@ -37,8 +37,8 @@ struct owned_text_override
 };
 
 [[nodiscard]]
-inline auto override_views(const std::span<const owned_text_override> overrides)
-    -> std::vector<text_override>
+inline std::vector<text_override> override_views(
+    const std::span<const owned_text_override> overrides)
 {
     std::vector<text_override> result;
     result.reserve(overrides.size());
@@ -55,10 +55,9 @@ inline auto override_views(const std::span<const owned_text_override> overrides)
 }
 
 [[nodiscard]]
-inline auto overlay_overrides(
+inline std::vector<owned_text_override> overlay_overrides(
     const std::span<const owned_text_override> lower_precedence,
     const std::span<const text_override> higher_precedence)
-    -> std::vector<owned_text_override>
 {
     std::vector<owned_text_override> result;
     result.reserve(lower_precedence.size() + higher_precedence.size());
@@ -134,8 +133,7 @@ template<class T>
 inline constexpr bool is_std_array_v = is_std_array<T>::value;
 
 [[nodiscard]]
-constexpr auto trim_ascii_space(std::string_view text) noexcept
-    -> std::string_view
+constexpr std::string_view trim_ascii_space(std::string_view text) noexcept
 {
     while (!text.empty() &&
            (text.front() == ' ' || text.front() == '\t' ||
@@ -156,8 +154,7 @@ constexpr auto trim_ascii_space(std::string_view text) noexcept
 
 template<class Value>
 [[nodiscard]]
-auto parse_text_value(const std::string_view text, Value& value)
-    -> std::string_view
+std::string_view parse_text_value(const std::string_view text, Value& value)
 {
     using value_type = std::remove_cvref_t<Value>;
 
@@ -296,7 +293,7 @@ auto parse_text_value(const std::string_view text, Value& value)
 
 template<class Path>
 [[nodiscard]]
-constexpr auto path_equals(const std::string_view text) noexcept -> bool
+constexpr bool path_equals(const std::string_view text) noexcept
 {
     constexpr auto segments = Path::segments();
     auto remaining = text;
@@ -327,7 +324,7 @@ constexpr auto path_equals(const std::string_view text) noexcept -> bool
 
 template<fixed_string... Segments>
 [[nodiscard]]
-auto joined_path() -> std::string
+std::string joined_path()
 {
     std::string result;
     bool first = true;
@@ -554,9 +551,9 @@ void process_overrides(
 
 template<class... Children>
 [[nodiscard]]
-auto apply_overrides(
+override_result apply_overrides(
     const detail::root_node<Children...>& tree,
-    const std::span<const text_override> overrides) -> override_result
+    const std::span<const text_override> overrides)
 {
     override_result result{};
     std::vector<std::size_t> match_counts(overrides.size(), 0);
@@ -611,9 +608,9 @@ auto apply_overrides(
 
 template<class... Children, std::size_t Size>
 [[nodiscard]]
-auto apply_overrides(
+override_result apply_overrides(
     const detail::root_node<Children...>& tree,
-    const std::array<text_override, Size>& overrides) -> override_result
+    const std::array<text_override, Size>& overrides)
 {
     return apply_overrides(
         tree,

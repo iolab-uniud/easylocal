@@ -96,10 +96,10 @@ concept has_better = detail::custom_better<SM> || detail::intrinsic_better<SM>;
 template<class SM>
     requires has_better<SM>
 [[nodiscard]]
-constexpr auto better(
+constexpr bool better(
     const SM& solution_manager,
     const typename SM::cost_type& candidate,
-    const typename SM::cost_type& reference) -> bool
+    const typename SM::cost_type& reference)
 {
     if constexpr (detail::custom_better<SM>)
     {
@@ -119,10 +119,10 @@ concept has_equivalent =
 template<class SM>
     requires has_equivalent<SM>
 [[nodiscard]]
-constexpr auto equivalent(
+constexpr bool equivalent(
     const SM& solution_manager,
     const typename SM::cost_type& lhs,
-    const typename SM::cost_type& rhs) -> bool
+    const typename SM::cost_type& rhs)
 {
     if constexpr (detail::custom_equivalent<SM>)
     {
@@ -143,10 +143,10 @@ concept has_better_or_equivalent =
 template<class SM>
     requires has_better_or_equivalent<SM>
 [[nodiscard]]
-constexpr auto better_or_equivalent(
+constexpr bool better_or_equivalent(
     const SM& solution_manager,
     const typename SM::cost_type& candidate,
-    const typename SM::cost_type& reference) -> bool
+    const typename SM::cost_type& reference)
 {
     if constexpr (detail::custom_better_or_equivalent<SM>)
     {

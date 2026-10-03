@@ -54,10 +54,10 @@ inline void validate_temperature_parameters(
 }
 
 [[nodiscard]]
-inline auto temperature_level_count(
+inline std::size_t temperature_level_count(
     const double initial_temperature,
     const double final_temperature,
-    const double cooling_rate) -> std::size_t
+    const double cooling_rate)
 {
     validate_temperature_parameters(
         initial_temperature,
@@ -74,18 +74,18 @@ inline auto temperature_level_count(
 }
 
 [[nodiscard]]
-constexpr auto positive_quotient(
+constexpr std::size_t positive_quotient(
     const std::size_t numerator,
-    const std::size_t denominator) noexcept -> std::size_t
+    const std::size_t denominator) noexcept
 {
     assert(denominator != 0);
     return std::max(std::size_t{1}, numerator / denominator);
 }
 
 [[nodiscard]]
-inline auto accepted_limit(
+inline std::size_t accepted_limit(
     const std::size_t sample_limit,
-    const double accepted_ratio) -> std::size_t
+    const double accepted_ratio)
 {
     assert(std::isfinite(accepted_ratio));
     assert(accepted_ratio > 0.0);
@@ -98,10 +98,10 @@ inline auto accepted_limit(
 }
 
 [[nodiscard]]
-inline auto validate_cooling_schedule(
+inline config::validation_result validate_cooling_schedule(
     const double initial_temperature,
     const double final_temperature,
-    const double cooling_rate) noexcept -> config::validation_result
+    const double cooling_rate) noexcept
 {
     if (!std::isfinite(initial_temperature) || initial_temperature <= 0.0)
     {
@@ -130,8 +130,9 @@ inline auto validate_cooling_schedule(
 // constructor: validate, then rebuild from the new parameters.
 template<class Policy, class Parameters>
 [[nodiscard]]
-auto reconfigure(Policy& policy, const Parameters& parameters) noexcept
-    -> config::validation_result
+config::validation_result reconfigure(
+    Policy& policy,
+    const Parameters& parameters) noexcept
 {
     const auto validation = parameters.validate();
     if (!validation)
@@ -169,7 +170,7 @@ struct ClassicParameters
     }
 
     [[nodiscard]]
-    auto validate() const noexcept -> config::validation_result
+    config::validation_result validate() const noexcept
     {
         const auto schedule = detail::validate_cooling_schedule(
             initial_temperature, final_temperature, cooling_rate);
@@ -204,13 +205,13 @@ public:
     }
 
     [[nodiscard]]
-    auto parameters() const noexcept -> const ClassicParameters&
+    const ClassicParameters& parameters() const noexcept
     {
         return parameters_;
     }
 
     [[nodiscard]]
-    auto configure(ClassicParameters parameters) noexcept -> config::validation_result
+    config::validation_result configure(ClassicParameters parameters) noexcept
     {
         return detail::reconfigure(*this, parameters);
     }
@@ -234,7 +235,7 @@ public:
     }
 
     [[nodiscard]]
-    auto temperature() const noexcept -> double
+    double temperature() const noexcept
     {
         return temperature_;
     }
@@ -250,7 +251,7 @@ public:
     }
 
     [[nodiscard]]
-    auto finished() const noexcept -> bool
+    bool finished() const noexcept
     {
         return temperature_ <= parameters_.final_temperature;
     }
@@ -291,7 +292,7 @@ struct FixedLengthParameters
     }
 
     [[nodiscard]]
-    auto validate() const noexcept -> config::validation_result
+    config::validation_result validate() const noexcept
     {
         if (!std::isfinite(initial_temperature) || initial_temperature <= 0.0)
         {
@@ -349,14 +350,13 @@ public:
     }
 
     [[nodiscard]]
-    auto parameters() const noexcept -> const FixedLengthParameters&
+    const FixedLengthParameters& parameters() const noexcept
     {
         return parameters_;
     }
 
     [[nodiscard]]
-    auto configure(FixedLengthParameters parameters) noexcept
-        -> config::validation_result
+    config::validation_result configure(FixedLengthParameters parameters) noexcept
     {
         const auto validation = parameters.validate();
         if (!validation)
@@ -400,7 +400,7 @@ public:
     }
 
     [[nodiscard]]
-    auto temperature() const noexcept -> double
+    double temperature() const noexcept
     {
         return temperature_;
     }
@@ -419,13 +419,13 @@ public:
     }
 
     [[nodiscard]]
-    auto finished() const noexcept -> bool
+    bool finished() const noexcept
     {
         return iterations_ >= parameters_.max_iterations;
     }
 
     [[nodiscard]]
-    auto samples_per_temperature() const noexcept -> std::size_t
+    std::size_t samples_per_temperature() const noexcept
     {
         return samples_per_temperature_;
     }
@@ -464,7 +464,7 @@ struct CutoffParameters
     }
 
     [[nodiscard]]
-    auto validate() const noexcept -> config::validation_result
+    config::validation_result validate() const noexcept
     {
         const auto schedule = detail::validate_cooling_schedule(
             initial_temperature, final_temperature, cooling_rate);
@@ -510,13 +510,13 @@ public:
     }
 
     [[nodiscard]]
-    auto parameters() const noexcept -> const CutoffParameters&
+    const CutoffParameters& parameters() const noexcept
     {
         return parameters_;
     }
 
     [[nodiscard]]
-    auto configure(CutoffParameters parameters) noexcept -> config::validation_result
+    config::validation_result configure(CutoffParameters parameters) noexcept
     {
         return detail::reconfigure(*this, parameters);
     }
@@ -541,7 +541,7 @@ public:
     }
 
     [[nodiscard]]
-    auto temperature() const noexcept -> double
+    double temperature() const noexcept
     {
         return temperature_;
     }
@@ -560,13 +560,13 @@ public:
     }
 
     [[nodiscard]]
-    auto finished() const noexcept -> bool
+    bool finished() const noexcept
     {
         return iterations_ >= parameters_.max_iterations;
     }
 
     [[nodiscard]]
-    auto accepted_limit() const noexcept -> std::size_t
+    std::size_t accepted_limit() const noexcept
     {
         return accepted_limit_;
     }
@@ -607,13 +607,13 @@ public:
     }
 
     [[nodiscard]]
-    auto parameters() const noexcept -> const HybridParameters&
+    const HybridParameters& parameters() const noexcept
     {
         return parameters_;
     }
 
     [[nodiscard]]
-    auto configure(HybridParameters parameters) noexcept -> config::validation_result
+    config::validation_result configure(HybridParameters parameters) noexcept
     {
         return detail::reconfigure(*this, parameters);
     }
@@ -641,7 +641,7 @@ public:
     }
 
     [[nodiscard]]
-    auto temperature() const noexcept -> double
+    double temperature() const noexcept
     {
         return temperature_;
     }
@@ -689,19 +689,19 @@ public:
     }
 
     [[nodiscard]]
-    auto finished() const noexcept -> bool
+    bool finished() const noexcept
     {
         return iterations_ >= parameters_.max_iterations;
     }
 
     [[nodiscard]]
-    auto sample_limit() const noexcept -> std::size_t
+    std::size_t sample_limit() const noexcept
     {
         return current_sample_limit_;
     }
 
     [[nodiscard]]
-    auto accepted_limit() const noexcept -> std::size_t
+    std::size_t accepted_limit() const noexcept
     {
         return accepted_limit_;
     }
@@ -741,11 +741,11 @@ class MetropolisAcceptance
 public:
     template<detail::metropolis_cost Cost, std::uniform_random_bit_generator RNG>
     [[nodiscard]]
-    auto accept(
+    bool accept(
         const Cost& candidate,
         const Cost& current,
         const double temperature,
-        RNG& rng) const -> bool
+        RNG& rng) const
     {
         assert(std::isfinite(temperature));
         assert(temperature > 0.0);
@@ -822,7 +822,7 @@ concept simulated_annealing_context =
     acceptance_policy_for<Acceptance, typename Context::cost_type, RNG>;
 
 template<class Context, class Acceptance, class RNG>
-consteval auto validate_simulated_annealing_acceptance() -> bool
+consteval bool validate_simulated_annealing_acceptance()
 {
     static_assert(
         acceptance_policy_for<Acceptance, typename Context::cost_type, RNG>,

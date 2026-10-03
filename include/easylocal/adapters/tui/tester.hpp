@@ -73,7 +73,7 @@ concept has_describe =
 
 template<class T>
     requires has_describe<T>
-[[nodiscard]] auto call_describe(const T& value) -> std::string
+[[nodiscard]] std::string call_describe(const T& value)
 {
     return describe(value);
 }
@@ -103,7 +103,7 @@ concept named_object =
     };
 
 template<class T>
-[[nodiscard]] auto object_name(const T& value) -> std::string
+[[nodiscard]] std::string object_name(const T& value)
 {
     if constexpr (named_object<T>)
     {
@@ -137,8 +137,7 @@ struct progress_snapshot
     std::string label{};
 };
 
-[[nodiscard]] inline auto progress_ratio(const progress_snapshot& progress) noexcept
-    -> float
+[[nodiscard]] inline float progress_ratio(const progress_snapshot& progress) noexcept
 {
     if (progress.mode != progress_mode::determinate ||
         !progress.total.has_value() || *progress.total == 0)
@@ -149,7 +148,7 @@ struct progress_snapshot
     return static_cast<float>(bounded) / static_cast<float>(*progress.total);
 }
 
-[[nodiscard]] inline auto path_basename(std::string_view path) -> std::string
+[[nodiscard]] inline std::string path_basename(std::string_view path)
 {
     if (path.empty())
     {
@@ -166,13 +165,13 @@ enum class solution_stage
     ready,
 };
 
-[[nodiscard]] constexpr auto page_index(const tester_page page) noexcept -> int
+[[nodiscard]] constexpr int page_index(const tester_page page) noexcept
 {
     return static_cast<int>(page);
 }
 
 template<class Tester>
-[[nodiscard]] auto solution_stage_of(const Tester& tester) -> solution_stage
+[[nodiscard]] solution_stage solution_stage_of(const Tester& tester)
 {
     if (!tester.has_input())
     {
@@ -193,22 +192,19 @@ template<class Tester>
 }
 
 template<class Tester>
-[[nodiscard]] auto context_pages_available(const Tester& tester) -> bool
+[[nodiscard]] bool context_pages_available(const Tester& tester)
 {
     return solution_stage_of(tester) == solution_stage::ready;
 }
 
 template<class Tester>
-[[nodiscard]] auto page_available(
-    const Tester& tester,
-    const tester_page page) -> bool
+[[nodiscard]] bool page_available(const Tester& tester, const tester_page page)
 {
     return page == tester_page::solution || context_pages_available(tester);
 }
 
 template<class Tester>
-[[nodiscard]] auto page_after_solution_change(const Tester& tester)
-    -> tester_page
+[[nodiscard]] tester_page page_after_solution_change(const Tester& tester)
 {
     return context_pages_available(tester)
                ? tester_page::move
@@ -216,7 +212,7 @@ template<class Tester>
 }
 
 template<class T>
-[[nodiscard]] auto value_text(const T& value) -> std::string
+[[nodiscard]] std::string value_text(const T& value)
 {
     if constexpr (member_describable<T>)
     {
@@ -276,9 +272,7 @@ template<class T>
     }
 }
 
-[[nodiscard]] inline auto truncate_text(
-    std::string value,
-    const std::size_t limit) -> std::string
+[[nodiscard]] inline std::string truncate_text(std::string value, const std::size_t limit)
 {
     if (limit == 0 || value.size() <= limit)
     {
@@ -289,7 +283,7 @@ template<class T>
     return value;
 }
 
-inline auto text_lines(const std::string& value) -> ftxui::Element
+inline ftxui::Element text_lines(const std::string& value)
 {
     ftxui::Elements lines;
     std::istringstream input{value};
@@ -305,8 +299,7 @@ inline auto text_lines(const std::string& value) -> ftxui::Element
     return ftxui::vbox(std::move(lines));
 }
 
-[[nodiscard]] inline auto split_text_lines(std::string_view value)
-    -> std::vector<std::string>
+[[nodiscard]] inline std::vector<std::string> split_text_lines(std::string_view value)
 {
     std::vector<std::string> lines;
     std::istringstream input{std::string{value}};
@@ -325,9 +318,9 @@ inline auto text_lines(const std::string& value) -> ftxui::Element
     return lines;
 }
 
-[[nodiscard]] inline auto wrap_text_lines(
+[[nodiscard]] inline std::vector<std::string> wrap_text_lines(
     std::string_view value,
-    const std::size_t width) -> std::vector<std::string>
+    const std::size_t width)
 {
     const auto effective_width = static_cast<int>(
         std::max<std::size_t>(1, width));
@@ -413,24 +406,22 @@ inline auto text_lines(const std::string& value) -> ftxui::Element
     return wrapped;
 }
 
-[[nodiscard]] inline auto terminal_available_width(const int margin = 4) noexcept
-    -> int
+[[nodiscard]] inline int terminal_available_width(const int margin = 4) noexcept
 {
     const auto dimensions = ftxui::Terminal::Size();
     return std::max(1, dimensions.dimx - margin);
 }
 
-[[nodiscard]] inline auto terminal_available_height(const int margin = 2) noexcept
-    -> int
+[[nodiscard]] inline int terminal_available_height(const int margin = 2) noexcept
 {
     const auto dimensions = ftxui::Terminal::Size();
     return std::max(1, dimensions.dimy - margin);
 }
 
-[[nodiscard]] constexpr auto page_scroll_selection(
+[[nodiscard]] constexpr int page_scroll_selection(
     const int selected,
     const std::size_t count,
-    const int delta) noexcept -> int
+    const int delta) noexcept
 {
     if (count == 0)
     {
@@ -446,9 +437,9 @@ struct file_entry
     bool directory{};
 };
 
-[[nodiscard]] inline auto absolute_path_from(
+[[nodiscard]] inline std::filesystem::path absolute_path_from(
     const std::filesystem::path& path,
-    const std::filesystem::path& base = {}) -> std::filesystem::path
+    const std::filesystem::path& base = {})
 {
     std::error_code error;
     auto effective_base = base;
@@ -476,9 +467,9 @@ struct file_entry
     return (effective_base / path).lexically_normal();
 }
 
-[[nodiscard]] inline auto relative_path_from(
+[[nodiscard]] inline std::filesystem::path relative_path_from(
     const std::filesystem::path& path,
-    const std::filesystem::path& base = {}) -> std::filesystem::path
+    const std::filesystem::path& base = {})
 {
     const auto absolute = absolute_path_from(path, base);
     const auto absolute_base = absolute_path_from({}, base);
@@ -486,10 +477,10 @@ struct file_entry
     return relative.empty() ? absolute : relative;
 }
 
-[[nodiscard]] inline auto display_path(
+[[nodiscard]] inline std::string display_path(
     const std::filesystem::path& path,
     const path_display_mode mode,
-    const std::filesystem::path& base = {}) -> std::string
+    const std::filesystem::path& base = {})
 {
     if (path.empty())
     {
@@ -510,10 +501,10 @@ struct file_entry
     }
 }
 
-[[nodiscard]] inline auto editable_path(
+[[nodiscard]] inline std::string editable_path(
     const std::filesystem::path& path,
     const path_display_mode mode,
-    const std::filesystem::path& base = {}) -> std::string
+    const std::filesystem::path& base = {})
 {
     if (mode == path_display_mode::absolute)
     {
@@ -522,8 +513,8 @@ struct file_entry
     return relative_path_from(path, base).string();
 }
 
-[[nodiscard]] inline auto directory_entries(const std::filesystem::path& directory)
-    -> std::vector<file_entry>
+[[nodiscard]] inline std::vector<file_entry> directory_entries(
+    const std::filesystem::path& directory)
 {
     std::error_code error;
     std::filesystem::directory_iterator iterator{directory, error};
@@ -1205,7 +1196,7 @@ private:
             solution_path_ = known_solution_paths_[static_cast<std::size_t>(known_solution_selected_)];
     }
 
-    [[nodiscard]] auto current_page() const noexcept -> tester_page
+    [[nodiscard]] tester_page current_page() const noexcept
     {
         switch (page_selected_)
         {
@@ -1219,7 +1210,7 @@ private:
         }
     }
 
-    [[nodiscard]] auto current_page_shortcuts() const -> std::string
+    [[nodiscard]] std::string current_page_shortcuts() const
     {
         std::string result;
         const auto append = [&result](std::string_view item) {
@@ -1278,7 +1269,7 @@ private:
         return result;
     }
 
-    [[nodiscard]] auto handle_page_shortcut(const ftxui::Event& event) -> bool
+    [[nodiscard]] bool handle_page_shortcut(const ftxui::Event& event)
     {
         switch (current_page())
         {
@@ -1292,7 +1283,7 @@ private:
         return false;
     }
 
-    [[nodiscard]] auto handle_solution_shortcut(const ftxui::Event& event) -> bool
+    [[nodiscard]] bool handle_solution_shortcut(const ftxui::Event& event)
     {
         if constexpr (tester_type::supports_input_loading)
         {
@@ -1342,7 +1333,7 @@ private:
         return false;
     }
 
-    [[nodiscard]] auto handle_move_shortcut(const ftxui::Event& event) -> bool
+    [[nodiscard]] bool handle_move_shortcut(const ftxui::Event& event)
     {
         if constexpr (tester_type::supports_improvement_selection)
         {
@@ -1429,7 +1420,7 @@ private:
         return false;
     }
 
-    [[nodiscard]] auto handle_run_shortcut(const ftxui::Event& event) -> bool
+    [[nodiscard]] bool handle_run_shortcut(const ftxui::Event& event)
     {
         if (event == ftxui::Event::g || event == ftxui::Event::G)
         {
@@ -1466,7 +1457,7 @@ private:
         status_ = std::move(text);
     }
 
-    [[nodiscard]] auto require_input(std::string_view action) -> bool
+    [[nodiscard]] bool require_input(std::string_view action)
     {
         if (tester_.has_input())
         {
@@ -1478,7 +1469,7 @@ private:
         return false;
     }
 
-    [[nodiscard]] auto context_pages_available() const noexcept -> bool
+    [[nodiscard]] bool context_pages_available() const noexcept
     {
         return detail::context_pages_available(tester_);
     }
@@ -1513,7 +1504,7 @@ private:
         page_selected_ = page_index(page);
     }
 
-    [[nodiscard]] auto require_solution(std::string_view action) -> bool
+    [[nodiscard]] bool require_solution(std::string_view action)
     {
         if (tester_.has_solution())
         {
@@ -1525,7 +1516,7 @@ private:
         return false;
     }
 
-    [[nodiscard]] auto require_move(std::string_view action) -> bool
+    [[nodiscard]] bool require_move(std::string_view action)
     {
         if (tester_.has_move())
         {
@@ -1627,14 +1618,12 @@ private:
         });
     }
 
-    [[nodiscard]] auto resolve_path(std::string_view value) const
-        -> std::filesystem::path
+    [[nodiscard]] std::filesystem::path resolve_path(std::string_view value) const
     {
         return absolute_path_from(std::filesystem::path{value}, options_.path_base);
     }
 
-    [[nodiscard]] auto format_path(const std::filesystem::path& path) const
-        -> std::string
+    [[nodiscard]] std::string format_path(const std::filesystem::path& path) const
     {
         return display_path(path, options_.path_display, options_.path_base);
     }
@@ -1667,7 +1656,7 @@ private:
         solution_visible_ = true;
     }
 
-    [[nodiscard]] auto viewer_wrap_width() const noexcept -> std::size_t
+    [[nodiscard]] std::size_t viewer_wrap_width() const noexcept
     {
         // Reserve room for the modal borders, menu selection marker, and the
         // vertical scroll indicator.  The value is recomputed on every redraw
@@ -2247,7 +2236,7 @@ private:
         set_status(status_kind::success, "Runner completed: " + run_name_);
     }
 
-    [[nodiscard]] auto solution_status(std::string prefix) const -> std::string
+    [[nodiscard]] std::string solution_status(std::string prefix) const
     {
         if (!tester_.has_solution())
         {
@@ -2260,7 +2249,7 @@ private:
         return prefix;
     }
 
-    [[nodiscard]] auto move_status(std::string prefix) const -> std::string
+    [[nodiscard]] std::string move_status(std::string prefix) const
     {
         if (tester_.has_move() && !tester_.move_is_valid())
         {
@@ -2269,7 +2258,7 @@ private:
         return prefix;
     }
 
-    [[nodiscard]] auto solution_text() const -> std::string
+    [[nodiscard]] std::string solution_text() const
     {
         if (!tester_.has_solution())
         {
@@ -2289,7 +2278,7 @@ private:
         return truncate_text(std::move(rendered), options_.max_render_chars);
     }
 
-    [[nodiscard]] auto input_text() const -> std::string
+    [[nodiscard]] std::string input_text() const
     {
         if (!tester_.has_input())
         {
@@ -2300,7 +2289,7 @@ private:
             options_.max_render_chars);
     }
 
-    [[nodiscard]] auto current_cost_text() const -> std::string
+    [[nodiscard]] std::string current_cost_text() const
     {
         if (!tester_.has_solution())
         {
@@ -2313,7 +2302,7 @@ private:
         return value_text(tester_.evaluate());
     }
 
-    [[nodiscard]] auto move_text() const -> std::string
+    [[nodiscard]] std::string move_text() const
     {
         if (!tester_.has_move())
         {
@@ -2322,7 +2311,7 @@ private:
         return truncate_text(value_text(tester_.move()), options_.max_render_chars);
     }
 
-    [[nodiscard]] auto render_solution_summary() const -> ftxui::Element
+    [[nodiscard]] ftxui::Element render_solution_summary() const
     {
         using namespace ftxui;
         Elements lines;
@@ -2349,8 +2338,7 @@ private:
         return vbox(std::move(lines));
     }
 
-    [[nodiscard]] auto render_progress(const progress_snapshot& progress) const
-        -> ftxui::Element
+    [[nodiscard]] ftxui::Element render_progress(const progress_snapshot& progress) const
     {
         using namespace ftxui;
 
@@ -2379,7 +2367,7 @@ private:
         }
     }
 
-    [[nodiscard]] auto render_move_summary() const -> ftxui::Element
+    [[nodiscard]] ftxui::Element render_move_summary() const
     {
         using namespace ftxui;
         Elements lines;
@@ -2421,7 +2409,7 @@ private:
         return vbox(std::move(lines));
     }
 
-    [[nodiscard]] auto status_prefix() const -> std::string_view
+    [[nodiscard]] std::string_view status_prefix() const
     {
         switch (status_kind_)
         {
@@ -2437,7 +2425,7 @@ private:
         }
     }
 
-    [[nodiscard]] auto render_status() const -> ftxui::Element
+    [[nodiscard]] ftxui::Element render_status() const
     {
         using namespace ftxui;
         return hbox({
@@ -2446,8 +2434,8 @@ private:
         });
     }
 
-    [[nodiscard]] auto render_solution_page(
-        const ftxui::Component& controls) const -> ftxui::Element
+    [[nodiscard]] ftxui::Element render_solution_page(
+        const ftxui::Component& controls) const
     {
         using namespace ftxui;
 
@@ -2473,9 +2461,9 @@ private:
         return window(text(" Input / Output "), vbox(std::move(summary))) | flex;
     }
 
-    [[nodiscard]] auto render_move_page(
+    [[nodiscard]] ftxui::Element render_move_page(
         const ftxui::Component& controls,
-        const ftxui::Component& diagnostics) const -> ftxui::Element
+        const ftxui::Component& diagnostics) const
     {
         using namespace ftxui;
         const auto neighborhood = detail::object_name(
@@ -2504,8 +2492,7 @@ private:
         }) | flex;
     }
 
-    [[nodiscard]] auto render_run_page(
-        const ftxui::Component& controls) const -> ftxui::Element
+    [[nodiscard]] ftxui::Element render_run_page(const ftxui::Component& controls) const
     {
         using namespace ftxui;
         Elements body{controls->Render()};
@@ -2518,9 +2505,9 @@ private:
         return window(text(" Runners "), vbox(std::move(body))) | flex;
     }
 
-    [[nodiscard]] auto render_main(
+    [[nodiscard]] ftxui::Element render_main(
         const ftxui::Component& page_menu,
-        const ftxui::Component& pages) const -> ftxui::Element
+        const ftxui::Component& pages) const
     {
         using namespace ftxui;
 
@@ -2548,7 +2535,7 @@ private:
                border;
     }
 
-    [[nodiscard]] auto current_instance_name() const -> std::string
+    [[nodiscard]] std::string current_instance_name() const
     {
         const auto basename = path_basename(input_path_);
         if (!basename.empty())
@@ -2575,9 +2562,9 @@ private:
         diagnostic_visible_ = true;
     }
 
-    [[nodiscard]] auto render_diagnostic_viewer(
+    [[nodiscard]] ftxui::Element render_diagnostic_viewer(
         const ftxui::Component& menu,
-        const ftxui::Component& close) const -> ftxui::Element
+        const ftxui::Component& close) const
     {
         using namespace ftxui;
         const auto width = std::min(76, detail::terminal_available_width());
@@ -2595,8 +2582,7 @@ private:
                size(HEIGHT, EQUAL, height) | border;
     }
 
-    [[nodiscard]] auto render_progress_modal(
-        const ftxui::Component& stop) const -> ftxui::Element
+    [[nodiscard]] ftxui::Element render_progress_modal(const ftxui::Component& stop) const
     {
         using namespace ftxui;
         const auto width = std::min(60, detail::terminal_available_width());
@@ -2613,9 +2599,9 @@ private:
                size(WIDTH, EQUAL, width) | border;
     }
 
-    [[nodiscard]] auto render_input_viewer(
+    [[nodiscard]] ftxui::Element render_input_viewer(
         const ftxui::Component& menu,
-        const ftxui::Component& close) const -> ftxui::Element
+        const ftxui::Component& close) const
     {
         using namespace ftxui;
         Elements body;
@@ -2636,9 +2622,9 @@ private:
                border;
     }
 
-    [[nodiscard]] auto render_solution_viewer(
+    [[nodiscard]] ftxui::Element render_solution_viewer(
         const ftxui::Component& menu,
-        const ftxui::Component& close) const -> ftxui::Element
+        const ftxui::Component& close) const
     {
         using namespace ftxui;
         Elements body;
@@ -2778,8 +2764,8 @@ private:
         set_status(status_kind::info, "Selected file: " + format_path(selected.path));
     }
 
-    [[nodiscard]] auto render_browser(const ftxui::Component& browser_menu) const
-        -> ftxui::Element
+    [[nodiscard]] ftxui::Element render_browser(
+        const ftxui::Component& browser_menu) const
     {
         using namespace ftxui;
         const auto title = browser_target_ == file_target::input
@@ -2803,8 +2789,7 @@ private:
                border;
     }
 
-    [[nodiscard]] auto render_help(const ftxui::Component& controls) const
-        -> ftxui::Element
+    [[nodiscard]] ftxui::Element render_help(const ftxui::Component& controls) const
     {
         using namespace ftxui;
         Elements lines{

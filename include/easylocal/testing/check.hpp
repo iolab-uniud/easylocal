@@ -33,23 +33,22 @@ public:
     {
     }
 
-    [[nodiscard]] auto subject() const noexcept -> std::string_view
+    [[nodiscard]] std::string_view subject() const noexcept
     {
         return subject_;
     }
 
-    [[nodiscard]] auto passed() const noexcept -> bool
+    [[nodiscard]] bool passed() const noexcept
     {
         return failures_.empty();
     }
 
-    [[nodiscard]] auto checks() const noexcept -> std::size_t
+    [[nodiscard]] std::size_t checks() const noexcept
     {
         return checks_;
     }
 
-    [[nodiscard]] auto failures() const noexcept
-        -> std::span<const check_failure>
+    [[nodiscard]] std::span<const check_failure> failures() const noexcept
     {
         return failures_;
     }
@@ -122,18 +121,18 @@ public:
     }
 
     [[nodiscard]]
-    static constexpr auto min() noexcept -> result_type
+    static constexpr result_type min() noexcept
     {
         return std::numeric_limits<result_type>::min();
     }
 
     [[nodiscard]]
-    static constexpr auto max() noexcept -> result_type
+    static constexpr result_type max() noexcept
     {
         return std::numeric_limits<result_type>::max();
     }
 
-    auto operator()() noexcept -> result_type
+    result_type operator()() noexcept
     {
         const auto value = values_[index_];
         index_ = (index_ + 1) % values_.size();
@@ -153,8 +152,8 @@ private:
 static_assert(std::uniform_random_bit_generator<deterministic_rng>);
 
 template<class... Reports>
-    requires (std::same_as<std::remove_cvref_t<Reports>, check_report> && ...)
-auto run_checks(std::ostream& out, Reports&&... reports) -> int
+    requires(std::same_as<std::remove_cvref_t<Reports>, check_report> && ...)
+int run_checks(std::ostream& out, Reports&&... reports)
 {
     bool passed = true;
     bool first = true;
@@ -173,10 +172,9 @@ auto run_checks(std::ostream& out, Reports&&... reports) -> int
     return passed ? EXIT_SUCCESS : EXIT_FAILURE;
 }
 
-
 template<class... Reports>
-    requires (std::same_as<std::remove_cvref_t<Reports>, check_report> && ...)
-auto run_checks(Reports&&... reports) -> int
+    requires(std::same_as<std::remove_cvref_t<Reports>, check_report> && ...)
+int run_checks(Reports&&... reports)
 {
     return run_checks(std::cerr, std::forward<Reports>(reports)...);
 }
@@ -320,7 +318,7 @@ template<class Test, class Instance, class DeltaEvaluator>
 }
 
 template<class Test, class Left, class Right>
-[[nodiscard]] auto equivalent(const Left& lhs, const Right& rhs) -> bool
+[[nodiscard]] bool equivalent(const Left& lhs, const Right& rhs)
 {
     if constexpr (requires { Test::equivalent(lhs, rhs); })
     {

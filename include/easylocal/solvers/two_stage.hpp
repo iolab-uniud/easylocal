@@ -68,8 +68,7 @@ public:
         easylocal::detail::bound_runner_with_random_solution<bound_first_runner_type, rng_type>;
 
     [[nodiscard]]
-    static constexpr auto supports(const initialization::Mode mode) noexcept
-        -> bool
+    static constexpr bool supports(const initialization::Mode mode) noexcept
     {
         switch (mode)
         {
@@ -129,7 +128,7 @@ public:
     }
 
     [[nodiscard]]
-    auto initialization_mode() const noexcept -> initialization::Mode
+    initialization::Mode initialization_mode() const noexcept
     {
         return initialization_mode_;
     }
@@ -141,10 +140,16 @@ public:
     }
 
     [[nodiscard]]
-    auto rng() noexcept -> RNG& { return rng_; }
+    RNG& rng() noexcept
+    {
+        return rng_;
+    }
 
     [[nodiscard]]
-    auto rng() const noexcept -> const RNG& { return rng_; }
+    const RNG& rng() const noexcept
+    {
+        return rng_;
+    }
 
     using hard_cost_type = typename bound_first_runner_type::cost_type;
 
@@ -204,20 +209,20 @@ public:
     }
 
 private:
-    static constexpr auto initialization_to_mode(const initialization::Initial)
-        -> initialization::Mode
+    static constexpr initialization::Mode initialization_to_mode(
+        const initialization::Initial)
     {
         return initialization::Mode::initial;
     }
 
-    static constexpr auto initialization_to_mode(const initialization::Random)
-        -> initialization::Mode
+    static constexpr initialization::Mode initialization_to_mode(
+        const initialization::Random)
     {
         return initialization::Mode::random;
     }
 
-    static constexpr auto initialization_to_mode(const initialization::Mode mode)
-        -> initialization::Mode
+    static constexpr initialization::Mode initialization_to_mode(
+        const initialization::Mode mode)
     {
         return mode;
     }
@@ -234,8 +239,7 @@ private:
     }
 
     [[nodiscard]]
-    auto make_initial_solution(const bound_first_runner_type& bound_first_runner)
-        -> solution_type
+    solution_type make_initial_solution(const bound_first_runner_type& bound_first_runner)
     {
         switch (initialization_mode_)
         {

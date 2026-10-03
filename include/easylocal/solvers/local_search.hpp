@@ -49,8 +49,7 @@ public:
         easylocal::detail::bound_runner_with_random_solution<bound_runner_type, rng_type>;
 
     [[nodiscard]]
-    static constexpr auto supports(const initialization::Mode mode) noexcept
-        -> bool
+    static constexpr bool supports(const initialization::Mode mode) noexcept
     {
         switch (mode)
         {
@@ -126,7 +125,7 @@ public:
     }
 
     [[nodiscard]]
-    auto initialization_mode() const noexcept -> initialization::Mode
+    initialization::Mode initialization_mode() const noexcept
     {
         return initialization_mode_;
     }
@@ -138,13 +137,13 @@ public:
     }
 
     [[nodiscard]]
-    auto rng() noexcept -> RNG&
+    RNG& rng() noexcept
     {
         return rng_;
     }
 
     [[nodiscard]]
-    auto rng() const noexcept -> const RNG&
+    const RNG& rng() const noexcept
     {
         return rng_;
     }
@@ -180,8 +179,7 @@ private:
     }
 
     [[nodiscard]]
-    auto make_initial_solution(const bound_runner_type& bound_runner)
-        -> solution_type
+    solution_type make_initial_solution(const bound_runner_type& bound_runner)
     {
         switch (initialization_mode_)
         {

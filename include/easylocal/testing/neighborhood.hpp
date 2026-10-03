@@ -60,7 +60,7 @@ void check_moves(
 } // namespace detail
 
 template<class Test>
-[[nodiscard]] auto check_neighborhood() -> check_report
+[[nodiscard]] check_report check_neighborhood()
 {
     using neighborhood_type = typename Test::neighborhood;
     using solution_manager_type = detail::test_solution_manager_t<Test>;

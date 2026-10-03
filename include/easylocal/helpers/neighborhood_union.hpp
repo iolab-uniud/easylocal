@@ -51,7 +51,7 @@ struct NeighborhoodUnionParameters
     }
 
     [[nodiscard]]
-    auto validate() const noexcept -> config::validation_result
+    config::validation_result validate() const noexcept
     {
         for (const auto bias : random_biases)
         {
@@ -137,7 +137,7 @@ public:
         iterator() = default;
 
         [[nodiscard]]
-        auto operator*() const -> value_type
+        value_type operator*() const
         {
             return std::visit(
                 []<class TaggedIterator>(const TaggedIterator& tagged) {
@@ -157,7 +157,7 @@ public:
                 *current_);
         }
 
-        auto operator++() -> iterator&
+        iterator& operator++()
         {
             const bool exhausted = std::visit(
                 [this]<class TaggedIterator>(TaggedIterator& tagged) {
@@ -182,16 +182,14 @@ public:
             ++*this;
         }
 
-        friend auto operator==(
-            const iterator& current,
-            std::default_sentinel_t) noexcept -> bool
+        friend bool operator==(const iterator& current, std::default_sentinel_t) noexcept
         {
             return !current.current_.has_value();
         }
 
-        friend auto operator==(
+        friend bool operator==(
             std::default_sentinel_t sentinel,
-            const iterator& current) noexcept -> bool
+            const iterator& current) noexcept
         {
             return current == sentinel;
         }
@@ -216,13 +214,13 @@ public:
     }
 
     [[nodiscard]]
-    auto begin() -> iterator
+    iterator begin()
     {
         return iterator{this};
     }
 
     [[nodiscard]]
-    static auto end() noexcept -> std::default_sentinel_t
+    static std::default_sentinel_t end() noexcept
     {
         return {};
     }
@@ -322,10 +320,7 @@ public:
 
     template<class Value, class Solution, class UnionMove>
     [[nodiscard]]
-    auto apply(
-        const Value& value,
-        const Solution& solution,
-        const UnionMove& move) const -> Value
+    Value apply(const Value& value, const Solution& solution, const UnionMove& move) const
     {
         return std::visit(
             [this, &value, &solution]<class TaggedMove>(
@@ -366,8 +361,7 @@ struct neighborhood_union_delta_bindings<
 
 template<std::size_t Count>
 [[nodiscard]]
-auto valid_random_biases(const std::array<double, Count>& biases) noexcept
-    -> bool
+bool valid_random_biases(const std::array<double, Count>& biases) noexcept
 {
     for (const auto bias : biases)
     {
@@ -441,9 +435,9 @@ private:
 
     template<std::uniform_random_bit_generator RNG>
     [[nodiscard]]
-    auto choose_random_child(
+    std::optional<std::size_t> choose_random_child(
         const std::array<bool, child_count>& active,
-        RNG& rng) const -> std::optional<std::size_t>
+        RNG& rng) const
     {
         double max_bias = 0.0;
 
@@ -494,8 +488,7 @@ private:
     }
 
     [[nodiscard]]
-    auto active_bias_total(
-        const std::array<bool, child_count>& active) const noexcept -> double
+    double active_bias_total(const std::array<bool, child_count>& active) const noexcept
     {
         double total = 0.0;
         for (std::size_t index = 0; index < active.size(); ++index)
@@ -510,11 +503,10 @@ private:
 
     template<std::size_t Index = 0, std::uniform_random_bit_generator RNG>
     [[nodiscard]]
-    auto random_move_from_child(
+    std::optional<union_move_type> random_move_from_child(
         const std::size_t selected,
         const typename first_explorer::solution_type& solution,
         RNG& rng) const
-        -> std::optional<union_move_type>
     {
         if constexpr (Index < child_count)
         {
@@ -549,18 +541,14 @@ private:
         }
     }
 
-    template<
-        std::size_t Index = 0,
-        std::uniform_random_bit_generator RNG,
-        class Observer>
+    template<std::size_t Index = 0, std::uniform_random_bit_generator RNG, class Observer>
     [[nodiscard]]
-    auto random_move_from_child_traced(
+    std::optional<union_move_type> random_move_from_child_traced(
         const std::size_t selected,
         const typename first_explorer::solution_type& solution,
         RNG& rng,
         Observer& observer,
         const trace::neighborhood_route_node* route) const
-        -> std::optional<union_move_type>
     {
         if constexpr (Index < child_count)
         {
@@ -656,23 +644,23 @@ public:
     }
 
     [[nodiscard]]
-    auto input() const noexcept -> const input_type&
+    const input_type& input() const noexcept
     {
         return std::get<0>(explorers_).input();
     }
 
     template<std::size_t Index>
-        requires (Index < child_count)
+        requires(Index < child_count)
     [[nodiscard]]
-    auto child() noexcept -> std::tuple_element_t<Index, explorer_tuple>&
+    std::tuple_element_t<Index, explorer_tuple>& child() noexcept
     {
         return std::get<Index>(explorers_);
     }
 
     template<std::size_t Index>
-        requires (Index < child_count)
+        requires(Index < child_count)
     [[nodiscard]]
-    auto child() const noexcept -> const std::tuple_element_t<Index, explorer_tuple>&
+    const std::tuple_element_t<Index, explorer_tuple>& child() const noexcept
     {
         return std::get<Index>(explorers_);
     }
@@ -682,7 +670,7 @@ public:
             Neighborhood,
             std::tuple<logical_neighborhood_type_t<Explorers>...>>
     [[nodiscard]]
-    auto child() noexcept -> decltype(auto)
+    decltype(auto) child() noexcept
     {
         constexpr auto index = tuple_type_index_v<
             Neighborhood,
@@ -695,7 +683,7 @@ public:
             Neighborhood,
             std::tuple<logical_neighborhood_type_t<Explorers>...>>
     [[nodiscard]]
-    auto child() const noexcept -> decltype(auto)
+    decltype(auto) child() const noexcept
     {
         constexpr auto index = tuple_type_index_v<
             Neighborhood,
@@ -704,9 +692,7 @@ public:
     }
 
     [[nodiscard]]
-    auto is_valid(
-        const solution_type& solution,
-        const move_type& move) const -> bool
+    bool is_valid(const solution_type& solution, const move_type& move) const
     {
         return std::visit(
             [this, &solution]<class TaggedMove>(const TaggedMove& tagged) {
@@ -728,21 +714,16 @@ public:
     }
 
     [[nodiscard]]
-    auto delta_bindings() const noexcept -> delta_bindings_type
+    delta_bindings_type delta_bindings() const noexcept
     {
         return make_delta_bindings(
             std::type_identity<common_delta_components>{});
     }
 
     template<std::uniform_random_bit_generator RNG>
-        requires (random_neighborhood_for<
-                      Explorers,
-                      solution_type,
-                      RNG> && ...)
+        requires(random_neighborhood_for<Explorers, solution_type, RNG> && ...)
     [[nodiscard]]
-    auto random_move(
-        const solution_type& solution,
-        RNG& rng) const -> std::optional<move_type>
+    std::optional<move_type> random_move(const solution_type& solution, RNG& rng) const
     {
         std::array<bool, child_count> active{};
         for (std::size_t index = 0; index < active.size(); ++index)
@@ -768,17 +749,13 @@ public:
     }
 
     template<std::uniform_random_bit_generator RNG, class Observer>
-        requires (random_neighborhood_for<
-                      Explorers,
-                      solution_type,
-                      RNG> && ...)
+        requires(random_neighborhood_for<Explorers, solution_type, RNG> && ...)
     [[nodiscard]]
-    auto random_move_traced(
+    std::optional<move_type> random_move_traced(
         const solution_type& solution,
         RNG& rng,
         Observer& observer,
         const trace::neighborhood_route_node* parent = nullptr) const
-        -> std::optional<move_type>
     {
         std::array<bool, child_count> active{};
         for (std::size_t index = 0; index < active.size(); ++index)
@@ -836,9 +813,8 @@ public:
 private:
     template<class... Components>
     [[nodiscard]]
-    auto make_delta_bindings(
+    delta_bindings_type make_delta_bindings(
         std::type_identity<std::tuple<Components...>>) const noexcept
-        -> delta_bindings_type
     {
         return delta_bindings_type{
             neighborhood_union_delta_binding<
@@ -870,9 +846,8 @@ public:
     }
 
     [[nodiscard]]
-    auto with_random_biases(
+    neighborhood_union_spec with_random_biases(
         std::array<double, sizeof...(Specs)> random_biases) &&
-        -> neighborhood_union_spec
     {
         NeighborhoodUnionParameters<sizeof...(Specs)> parameters{
             .random_biases = std::move(random_biases),
@@ -885,15 +860,14 @@ public:
     }
 
     [[nodiscard]]
-    auto parameters() const noexcept
-        -> const NeighborhoodUnionParameters<sizeof...(Specs)>&
+    const NeighborhoodUnionParameters<sizeof...(Specs)>& parameters() const noexcept
     {
         return parameters_;
     }
 
     [[nodiscard]]
-    auto configure(NeighborhoodUnionParameters<sizeof...(Specs)> parameters)
-        noexcept -> config::validation_result
+    config::validation_result configure(
+        NeighborhoodUnionParameters<sizeof...(Specs)> parameters) noexcept
     {
         const auto validation = parameters.validate();
         if (!validation)
@@ -924,7 +898,7 @@ public:
     template<class Dependency>
         requires constructible_from<Dependency>
     [[nodiscard]]
-    auto construct(Dependency& dependency) const -> service_type
+    service_type construct(Dependency& dependency) const
     {
         static_assert(
             (validate_delta_bindings<
@@ -940,9 +914,8 @@ public:
 private:
     template<class Dependency, std::size_t... Indices>
     [[nodiscard]]
-    auto construct_impl(
-        Dependency& dependency,
-        std::index_sequence<Indices...>) const -> service_type
+    service_type construct_impl(Dependency& dependency, std::index_sequence<Indices...>)
+        const
     {
         return service_type{
             parameters_.random_biases,

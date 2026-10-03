@@ -171,7 +171,7 @@ public:
 
     template<class Dependency>
     [[nodiscard]]
-    auto construct(Dependency& dependency) const -> service_type
+    service_type construct(Dependency& dependency) const
     {
         auto base = std::apply(
             [&](const auto&... args) {

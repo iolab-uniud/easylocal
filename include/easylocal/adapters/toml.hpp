@@ -59,8 +59,7 @@ inline void append_toml_path_segment(
 }
 
 [[nodiscard]]
-inline auto toml_scalar_text(const toml::node& node, std::string& output)
-    -> bool
+inline bool toml_scalar_text(const toml::node& node, std::string& output)
 {
     if (const auto value = node.value<std::string>())
     {
@@ -90,8 +89,7 @@ inline auto toml_scalar_text(const toml::node& node, std::string& output)
 }
 
 [[nodiscard]]
-inline auto toml_value_text(const toml::node& node, std::string& output)
-    -> bool
+inline bool toml_value_text(const toml::node& node, std::string& output)
 {
     if (toml_scalar_text(node, output))
     {
@@ -185,8 +183,9 @@ inline void append_toml_parse_error(
 // std::exception base still matches, and is reported as a parse error.
 template<class Parse>
 [[nodiscard]]
-auto parse_toml_table(toml_config_parse_result& result, Parse&& parse)
-    -> std::optional<toml::table>
+std::optional<toml::table> parse_toml_table(
+    toml_config_parse_result& result,
+    Parse&& parse)
 {
     try
     {
@@ -207,9 +206,9 @@ auto parse_toml_table(toml_config_parse_result& result, Parse&& parse)
 } // namespace detail
 
 [[nodiscard]]
-inline auto parse_toml_text(
+inline toml_config_parse_result parse_toml_text(
     const std::string_view text,
-    const std::string_view source_path = {}) -> toml_config_parse_result
+    const std::string_view source_path = {})
 {
     toml_config_parse_result result{};
 
@@ -234,8 +233,7 @@ inline auto parse_toml_text(
 }
 
 [[nodiscard]]
-inline auto load_toml_file(const std::filesystem::path& path)
-    -> toml_config_parse_result
+inline toml_config_parse_result load_toml_file(const std::filesystem::path& path)
 {
 #if TOML_EXCEPTIONS
     toml_config_parse_result result{};

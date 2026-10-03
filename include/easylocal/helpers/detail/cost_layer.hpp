@@ -71,14 +71,26 @@ public:
             "a SolutionManager needs at least one cost component");
     }
 
-    [[nodiscard]] auto base() noexcept -> BaseSM& { return base_; }
-    [[nodiscard]] auto base() const noexcept -> const BaseSM& { return base_; }
-    [[nodiscard]] auto input() const noexcept -> const input_type& { return base_.input(); }
-    [[nodiscard]] auto is_valid(const solution_type& solution) const noexcept(noexcept(base_.is_valid(solution))) -> bool { return base_.is_valid(solution); }
+    [[nodiscard]] BaseSM& base() noexcept
+    {
+        return base_;
+    }
+    [[nodiscard]] const BaseSM& base() const noexcept
+    {
+        return base_;
+    }
+    [[nodiscard]] const input_type& input() const noexcept
+    {
+        return base_.input();
+    }
+    [[nodiscard]] bool is_valid(const solution_type& solution) const
+        noexcept(noexcept(base_.is_valid(solution)))
+    {
+        return base_.is_valid(solution);
+    }
 
     [[nodiscard]]
-    auto initial_solution() const noexcept(noexcept(base_.initial_solution()))
-        -> solution_type
+    solution_type initial_solution() const noexcept(noexcept(base_.initial_solution()))
         requires has_initial_solution<BaseSM>
     {
         return base_.initial_solution();
@@ -86,16 +98,15 @@ public:
 
     template<class RNG>
     [[nodiscard]]
-    auto random_solution(RNG& rng) const noexcept(noexcept(base_.random_solution(rng)))
-        -> solution_type
+    solution_type random_solution(RNG& rng) const
+        noexcept(noexcept(base_.random_solution(rng)))
         requires has_random_solution<BaseSM, RNG>
     {
         return base_.random_solution(rng);
     }
 
     [[nodiscard]]
-    auto evaluate_components(const solution_type& solution) const
-        -> component_values_type
+    component_values_type evaluate_components(const solution_type& solution) const
     {
         return std::apply(
             [&](const auto&... component) {
@@ -106,15 +117,15 @@ public:
 
     template<std::size_t Index>
     [[nodiscard]]
-    auto evaluate_component(const solution_type& solution) const
-        -> std::tuple_element_t<Index, component_values_type>
+    std::tuple_element_t<Index, component_values_type> evaluate_component(
+        const solution_type& solution) const
     {
         return std::get<Index>(components_).evaluate(solution);
     }
 
     template<class Component>
     [[nodiscard]]
-    auto component() noexcept -> Component&
+    Component& component() noexcept
     {
         static_assert(
             tuple_contains_type_v<Component, component_types>,
@@ -124,7 +135,7 @@ public:
 
     template<class Component>
     [[nodiscard]]
-    auto component() const noexcept -> const Component&
+    const Component& component() const noexcept
     {
         static_assert(
             tuple_contains_type_v<Component, component_types>,
@@ -176,14 +187,26 @@ public:
     {
     }
 
-    [[nodiscard]] auto base() noexcept -> base_type& { return inner_.base(); }
-    [[nodiscard]] auto base() const noexcept -> const base_type& { return inner_.base(); }
-    [[nodiscard]] auto input() const noexcept -> const input_type& { return inner_.input(); }
-    [[nodiscard]] auto is_valid(const solution_type& solution) const noexcept(noexcept(inner_.is_valid(solution))) -> bool { return inner_.is_valid(solution); }
+    [[nodiscard]] base_type& base() noexcept
+    {
+        return inner_.base();
+    }
+    [[nodiscard]] const base_type& base() const noexcept
+    {
+        return inner_.base();
+    }
+    [[nodiscard]] const input_type& input() const noexcept
+    {
+        return inner_.input();
+    }
+    [[nodiscard]] bool is_valid(const solution_type& solution) const
+        noexcept(noexcept(inner_.is_valid(solution)))
+    {
+        return inner_.is_valid(solution);
+    }
 
     [[nodiscard]]
-    auto initial_solution() const noexcept(noexcept(inner_.initial_solution()))
-        -> solution_type
+    solution_type initial_solution() const noexcept(noexcept(inner_.initial_solution()))
         requires has_initial_solution<InnerSM>
     {
         return inner_.initial_solution();
@@ -191,23 +214,22 @@ public:
 
     template<class RNG>
     [[nodiscard]]
-    auto random_solution(RNG& rng) const noexcept(noexcept(inner_.random_solution(rng)))
-        -> solution_type
+    solution_type random_solution(RNG& rng) const
+        noexcept(noexcept(inner_.random_solution(rng)))
         requires has_random_solution<InnerSM, RNG>
     {
         return inner_.random_solution(rng);
     }
 
     [[nodiscard]]
-    auto evaluate_components(const solution_type& solution) const
-        -> component_values_type
+    component_values_type evaluate_components(const solution_type& solution) const
     {
         return inner_.evaluate_components(solution);
     }
 
     [[nodiscard]]
-    auto evaluate_hard_components(const solution_type& solution) const
-        -> hard_component_values_type
+    hard_component_values_type evaluate_hard_components(
+        const solution_type& solution) const
         requires has_hard_component_projection
     {
         return [&]<std::size_t... Indices>(std::index_sequence<Indices...>) {
@@ -219,23 +241,23 @@ public:
 
     template<std::size_t Index>
     [[nodiscard]]
-    auto evaluate_component(const solution_type& solution) const
-        -> std::tuple_element_t<Index, component_values_type>
+    std::tuple_element_t<Index, component_values_type> evaluate_component(
+        const solution_type& solution) const
     {
         return inner_.template evaluate_component<Index>(solution);
     }
 
     template<std::size_t Index>
     [[nodiscard]]
-    auto evaluate_hard_component(const solution_type& solution) const
-        -> std::tuple_element_t<Index, hard_component_values_type>
-        requires (has_hard_component_projection && Index < hard_component_count)
+    std::tuple_element_t<Index, hard_component_values_type> evaluate_hard_component(
+        const solution_type& solution) const
+        requires(has_hard_component_projection && Index < hard_component_count)
     {
         return inner_.template evaluate_component<Index>(solution);
     }
 
     [[nodiscard]]
-    auto cost_from_components(const component_values_type& values) const -> cost_type
+    cost_type cost_from_components(const component_values_type& values) const
     {
         return expression_.template evaluate<0>(values);
     }
@@ -248,27 +270,27 @@ public:
     }
 
     [[nodiscard]]
-    auto evaluate(const solution_type& solution) const -> cost_type
+    cost_type evaluate(const solution_type& solution) const
     {
         return cost_from_components(evaluate_components(solution));
     }
 
     template<class Component>
     [[nodiscard]]
-    auto component() noexcept -> Component&
+    Component& component() noexcept
     {
         return inner_.template component<Component>();
     }
 
     template<class Component>
     [[nodiscard]]
-    auto component() const noexcept -> const Component&
+    const Component& component() const noexcept
     {
         return inner_.template component<Component>();
     }
 
     [[nodiscard]]
-    auto cost_expression() const noexcept -> const Expression&
+    const Expression& cost_expression() const noexcept
     {
         return expression_;
     }
@@ -298,20 +320,20 @@ public:
     }
 
     [[nodiscard]]
-    auto input() const noexcept -> const input_type&
+    const input_type& input() const noexcept
     {
         return solution_manager_.input();
     }
 
     [[nodiscard]]
-    auto is_valid(const solution_type& solution) const
-        noexcept(noexcept(solution_manager_.is_valid(solution))) -> bool
+    bool is_valid(const solution_type& solution) const
+        noexcept(noexcept(solution_manager_.is_valid(solution)))
     {
         return solution_manager_.is_valid(solution);
     }
 
     [[nodiscard]]
-    auto initial_solution() const -> solution_type
+    solution_type initial_solution() const
         requires has_initial_solution<SM>
     {
         return solution_manager_.initial_solution();
@@ -319,20 +341,20 @@ public:
 
     template<class RNG>
     [[nodiscard]]
-    auto random_solution(RNG& rng) const -> solution_type
+    solution_type random_solution(RNG& rng) const
         requires has_random_solution<SM, RNG>
     {
         return solution_manager_.random_solution(rng);
     }
 
     [[nodiscard]]
-    auto evaluate(const solution_type& solution) const -> cost_type
+    cost_type evaluate(const solution_type& solution) const
     {
         return solution_manager_.evaluate(solution).hard();
     }
 
     [[nodiscard]]
-    auto base() noexcept -> decltype(auto)
+    decltype(auto) base() noexcept
     {
         if constexpr (requires { solution_manager_.base(); })
             return solution_manager_.base();
@@ -341,7 +363,7 @@ public:
     }
 
     [[nodiscard]]
-    auto base() const noexcept -> decltype(auto)
+    decltype(auto) base() const noexcept
     {
         if constexpr (requires { solution_manager_.base(); })
             return solution_manager_.base();
@@ -396,8 +418,7 @@ public:
     using base_type::base_type;
 
     [[nodiscard]]
-    auto evaluate_components(const solution_type& solution) const
-        -> component_values_type
+    component_values_type evaluate_components(const solution_type& solution) const
     {
         if constexpr (projected_components)
             return this->solution_manager_.evaluate_hard_components(solution);
@@ -407,8 +428,8 @@ public:
 
     template<std::size_t Index>
     [[nodiscard]]
-    auto evaluate_component(const solution_type& solution) const
-        -> std::tuple_element_t<Index, component_values_type>
+    std::tuple_element_t<Index, component_values_type> evaluate_component(
+        const solution_type& solution) const
     {
         if constexpr (projected_components)
             return this->solution_manager_.template evaluate_hard_component<Index>(
@@ -419,7 +440,7 @@ public:
     }
 
     [[nodiscard]]
-    auto cost_from_components(const component_values_type& values) const -> cost_type
+    cost_type cost_from_components(const component_values_type& values) const
     {
         if constexpr (projected_components)
             return this->solution_manager_.hard_cost_from_components(values);
@@ -428,7 +449,7 @@ public:
     }
 
     [[nodiscard]]
-    auto evaluate(const solution_type& solution) const -> cost_type
+    cost_type evaluate(const solution_type& solution) const
     {
         return cost_from_components(evaluate_components(solution));
     }
@@ -453,7 +474,7 @@ public:
     template<class Dependency>
         requires constructible_from<Dependency>
     [[nodiscard]]
-    auto construct(Dependency& dependency) const -> service_type
+    service_type construct(Dependency& dependency) const
     {
         return service_type{spec_.construct(dependency)};
     }

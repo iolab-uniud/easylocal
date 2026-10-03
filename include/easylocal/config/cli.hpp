@@ -54,7 +54,7 @@ namespace detail
 
 template<class Value>
 [[nodiscard]]
-auto format_cli_value(const Value& value) -> std::string
+std::string format_cli_value(const Value& value)
 {
     using value_type = std::remove_cvref_t<Value>;
 
@@ -117,8 +117,7 @@ void append_cli_path(std::string& output)
 } // namespace detail
 
 [[nodiscard]]
-inline auto parse_cli(const std::span<const std::string_view> arguments)
-    -> cli_parse_result
+inline cli_parse_result parse_cli(const std::span<const std::string_view> arguments)
 {
     cli_parse_result result{};
 
@@ -235,7 +234,7 @@ inline auto parse_cli(const std::span<const std::string_view> arguments)
 }
 
 [[nodiscard]]
-inline auto parse_cli(const int argc, char* const argv[]) -> cli_parse_result
+inline cli_parse_result parse_cli(const int argc, char* const argv[])
 {
     std::vector<std::string_view> arguments;
     if (argc > 1)
@@ -253,9 +252,9 @@ inline auto parse_cli(const int argc, char* const argv[]) -> cli_parse_result
 
 template<class... Children>
 [[nodiscard]]
-auto cli_help(
+std::string cli_help(
     const std::string_view program_name,
-    const detail::root_node<Children...>& tree) -> std::string
+    const detail::root_node<Children...>& tree)
 {
     std::string output;
     output += "Usage: ";
