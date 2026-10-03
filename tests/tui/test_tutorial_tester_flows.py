@@ -49,7 +49,11 @@ def test_actions_ask_for_what_they_need(tui):
 def test_viewers_show_the_input_and_the_solution(tui):
     tui.press(F2)
     tui.expect("<no solution selected>")
-    tui.press(ESCAPE, F1)
+    # Esc and F1 apart: sent together, they can be read as one escape
+    # sequence and the solution viewer stays open.
+    tui.press(ESCAPE)
+    tui.wait_until(lambda s: "<no solution selected>" not in s, what="viewer closed")
+    tui.press(F1)
     tui.expect(re.compile(r"File: .*five\.tsp"))
     tui.expect("<not printable")  # the tutorial's Tsp has no describe()
     tui.press(ESCAPE)
