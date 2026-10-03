@@ -30,7 +30,8 @@ Before committing, run:
 - `scripts/format.sh --check` and `scripts/tidy.sh build/dev`;
 - `uv run mkdocs build --strict` when `docs/` changes.
 
-Never run the exhaustive test mode (`--exhaustive`): it is a last resort. For
+Never run `scripts/build-and-test.sh --exhaustive` (every feature subset): it
+is a last resort. For
 a comprehensive check push and dispatch the GitHub workflows, which do not run
 on pushes to `main`:
 
