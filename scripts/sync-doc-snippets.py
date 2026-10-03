@@ -10,6 +10,9 @@ examples/tutorial/tsp.hpp (dedented, nested marker lines removed); without a
 ":section" suffix it is the whole file, marker lines removed. A section may
 leave out nested sections, "tutorial/tsp.hpp:solution-manager!random-solution",
 so that a chapter can show a class without a member a later chapter adds.
+A "~comments" suffix, "tutorial/tsp.hpp:two-opt~comments", leaves out the
+// comments, for a page that shows the code without the tutorial's
+explanations.
 The fence may carry attributes after the language, such as a caption:
 ```cpp title="EasyLocal 4"; they are kept.
 Running the script rewrites those blocks from the sources; with --check it only
@@ -31,7 +34,7 @@ MARKER = re.compile(r"\s*//\s*\[[\w-]+\]")
 # The block body runs up to the first line that starts with ``` (an empty block
 # included).
 SNIPPET = re.compile(
-    r"(<!-- snippet: (?P<ref>[\w/.-]+(?::[\w-]+(?:![\w-]+)*)?) -->\n```(?P<lang>\w*)[^\n]*\n)"
+    r"(<!-- snippet: (?P<ref>[\w/.-]+(?::[\w-]+(?:![\w-]+)*(?:~comments)?)?) -->\n```(?P<lang>\w*)[^\n]*\n)"
     r"(?P<body>(?:(?!```).*\n)*?)(?P<close>```)",
     re.M,
 )
@@ -42,6 +45,8 @@ def extract(ref: str) -> str:
     lines = (EXAMPLES / path).read_text(encoding="utf-8").split("\n")
     if not section:
         return "\n".join(line for line in lines if not MARKER.match(line)).rstrip("\n")
+    section, bare, _ = section.partition("~comments")
+    bare = bare == "~comments"
     section, *excluded = section.split("!")
     first, last = markers(lines, ref, section)
     body = lines[first + 1:last]
@@ -49,10 +54,23 @@ def extract(ref: str) -> str:
         start, end = markers(body, ref, name)
         body = body[:start] + body[end + 1:]
     body = [line for line in body if not MARKER.match(line)]
+    if bare:
+        body = without_comments(body)
     # Leaving out a section may leave two blank lines in a row.
     body = [line for i, line in enumerate(body)
             if line.strip() or i == 0 or body[i - 1].strip()]
     return textwrap.dedent("\n".join(body)).strip("\n")
+
+
+COMMENT_LINE = re.compile(r"\s*//")
+TRAILING_COMMENT = re.compile(r"\s*//[^\"]*$")
+
+
+def without_comments(lines: list[str]) -> list[str]:
+    """The lines without // comments: whole-line comments are dropped, trailing
+    ones cut (the examples put no // inside strings)."""
+    return [TRAILING_COMMENT.sub("", line) for line in lines
+            if not COMMENT_LINE.match(line)]
 
 
 def markers(lines: list[str], ref: str, section: str) -> tuple[int, int]:

@@ -563,35 +563,21 @@ public:
 };
 ```
 
-<!-- snippet: tutorial/tsp.hpp:two-opt -->
+<!-- snippet: tutorial/tsp.hpp:two-opt!two-opt-move~comments -->
 ```cpp title="EasyLocal 4"
-// Move: reverse the part of the tour between positions i + 1 and j.
-struct TwoOpt
-{
-    std::size_t i;
-    std::size_t j;
-};
-
 class TwoOptExplorer : public easylocal::neighborhood_explorer_base<TourManager, TwoOpt>
 {
 public:
     using neighborhood_explorer_base::neighborhood_explorer_base;
 
-    // The name of the neighborhood in the interactive tester (chapter 12).
     static std::string_view name()
     {
         return "2-opt";
     }
 
-    // The moves are the pairs i + 2 <= j < n, by i and then by j: with
-    // j = i + 1 the segment would be one city, and with i = 0, j = n - 1 the
-    // two removed edges would be the same one, so that pair is skipped.
-    // A cursor enumerates them in place: first_move writes the first move into
-    // `move`, next_move turns `move` into the following one, and both return
-    // false when there is none.
     bool first_move(const Tour& tour, TwoOpt& move) const
     {
-        move = TwoOpt{0, 1}; // just before the first move, TwoOpt{0, 2}
+        move = TwoOpt{0, 1};
         return next_move(tour, move);
     }
 
@@ -600,20 +586,18 @@ public:
         const auto n = tour.order.size();
         do
         {
-            if (++move.j == n) // the last j for this i: on to the next i
+            if (++move.j == n)
             {
                 ++move.i;
                 move.j = move.i + 2;
             }
-            if (move.j >= n) // no i left
+            if (move.j >= n)
                 return false;
         }
         while (move.i == 0 && move.j + 1 == n);
         return true;
     }
 
-    // Uniform by rejection: two positions drawn independently, ordered, and
-    // drawn again while they are not a 2-opt move.
     template<std::uniform_random_bit_generator RNG>
     std::optional<TwoOpt> random_move(const Tour& tour, RNG& rng) const
     {
@@ -637,8 +621,6 @@ public:
         return move.i + 2 <= move.j && move.j < tour.order.size();
     }
 
-    // The segment is the j - i cities from position i + 1: a span views it in
-    // place, and reversing the view reverses those cities in the tour.
     void make_move(Tour& tour, const TwoOpt& move) const
     {
         std::ranges::reverse(std::span{tour.order}.subspan(move.i + 1, move.j - move.i));
