@@ -2,6 +2,7 @@
 
 #include <easylocal/adapters/rest/execution.hpp>
 #include <easylocal/app/session.hpp>
+#include <easylocal/cost/concepts.hpp>
 #include <easylocal/runners/run_control.hpp>
 #include <easylocal/runners/search_run.hpp>
 
@@ -84,6 +85,36 @@ concept decodes_initial_solution =
             codec.decode_initial_solution(input, payload)
         } -> std::convertible_to<app_solution_t<App>>;
     };
+
+template<class Codec, class App>
+concept decodes_cost = requires(const Codec& codec, const crow::json::rvalue& payload) {
+    { codec.decode_cost(payload) } -> std::convertible_to<app_cost_t<App>>;
+};
+
+// The target of a run with an arithmetic cost: a JSON number, an integer for
+// integral costs.
+template<cost::arithmetic Cost>
+[[nodiscard]] Cost decode_arithmetic_cost(const crow::json::rvalue& payload)
+{
+    if (payload.t() != crow::json::type::Number)
+        throw std::invalid_argument{"'target' must be a number"};
+    if constexpr (std::integral<Cost>)
+    {
+        switch (payload.nt())
+        {
+        case crow::json::num_type::Signed_integer:
+            return static_cast<Cost>(payload.i());
+        case crow::json::num_type::Unsigned_integer:
+            return static_cast<Cost>(payload.u());
+        default:
+            throw std::invalid_argument{"'target' must be an integer"};
+        }
+    }
+    else
+    {
+        return static_cast<Cost>(payload.d());
+    }
+}
 
 [[nodiscard]] inline std::string normalize_prefix(std::string prefix)
 {
@@ -189,6 +220,7 @@ private:
         std::string runner;
         std::shared_ptr<const input_type> input;
         std::uint64_t seed{};
+        std::optional<cost_type> target;
         mutable std::mutex mutex;
         std::stop_source stop_source;
         run_state state{run_state::queued};
@@ -294,6 +326,27 @@ private:
         return codec_.decode_initial_solution(input, payload);
     }
 
+    // The target of a run: by the codec's decode_cost, or as a number for an
+    // arithmetic cost.
+    [[nodiscard]] cost_type decode_target(const crow::json::rvalue& payload) const
+    {
+        if constexpr (detail::decodes_cost<Codec, App>)
+        {
+            const std::lock_guard lock{codec_mutex_};
+            return codec_.decode_cost(payload);
+        }
+        else if constexpr (cost::arithmetic<cost_type>)
+        {
+            return detail::decode_arithmetic_cost<cost_type>(payload);
+        }
+        else
+        {
+            throw std::invalid_argument{
+                "'target' is not supported: the application codec does not decode "
+                "costs (decode_cost)"};
+        }
+    }
+
     [[nodiscard]] static bool is_terminal(const run_state state) noexcept
     {
         return state == run_state::succeeded ||
@@ -314,6 +367,8 @@ private:
         body["id"] = record->id;
         body["runner"] = record->runner;
         body["seed"] = record->seed;
+        if (record->target)
+            body["target"] = encode_cost(*record->target);
         body["status"] = std::string{state_name(record->state)};
         body["cancellation_requested"] = record->stop_source.stop_requested();
         body["progress"]["evaluations"] = static_cast<std::uint64_t>(
@@ -463,6 +518,10 @@ private:
                     "'seed' must be a non-negative integer");
             }
 
+            std::optional<cost_type> target;
+            if (payload.has("target"))
+                target.emplace(decode_target(payload["target"]));
+
             const auto run_number = next_run_id_.fetch_add(1);
             const auto id = std::to_string(run_number);
             auto record = std::make_shared<run_record>();
@@ -472,6 +531,7 @@ private:
                 : options_.seed + static_cast<std::uint64_t>(run_number);
             record->runner = runner;
             record->input = input;
+            record->target = target;
             session.set_seed(record->seed);
             {
                 const std::lock_guard lock{runs_mutex_};
@@ -519,7 +579,11 @@ private:
 
                     try
                     {
-                        const bool ran = session.run(runner, easylocal::with(control));
+                        const bool ran = record->target
+                            ? session.run(
+                                  runner,
+                                  easylocal::with(control).stop_at(*record->target))
+                            : session.run(runner, easylocal::with(control));
 
                         const std::lock_guard lock{record->mutex};
                         if (ran)
@@ -566,6 +630,8 @@ private:
             body["id"] = id;
             body["runner"] = runner;
             body["seed"] = record->seed;
+            if (record->target)
+                body["target"] = encode_cost(*record->target);
             body["status"] = "queued";
                 body["cancellation_requested"] = false;
             body["progress"]["evaluations"] = std::uint64_t{0};
@@ -643,6 +709,8 @@ private:
         body["id"] = record->id;
         body["runner"] = record->runner;
         body["seed"] = record->seed;
+        if (record->target)
+            body["target"] = encode_cost(*record->target);
         body["status"] = std::string{state_name(record->state)};
         body["cost"] = encode_cost(*record->cost);
         body["solution"] = encode_solution(

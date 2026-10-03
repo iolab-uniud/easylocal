@@ -62,6 +62,7 @@ struct TspCodec
 | `encode_solution(const Input&, const Solution&) -> crow::json::wvalue` | yes | the solution of a finished run |
 | `encode_cost(const Cost&) -> crow::json::wvalue` | yes | its cost |
 | `decode_initial_solution(const Input&, const crow::json::rvalue&) -> Solution` | no | accepts an `initial_solution` in the request; without it such requests are rejected, and runs start from the SolutionManager's `initial_solution()` |
+| `decode_cost(const crow::json::rvalue&) -> Cost` | no | accepts a `target` in the request; without it a target is a JSON number, for arithmetic costs only |
 
 ## The service
 
@@ -117,7 +118,9 @@ $ curl localhost:18080/tsp/runs/1/solution
 | `DELETE /tsp/runs/<id>` | forget a finished run |
 
 A run's `seed` makes stochastic runs reproducible; without one, a run uses
-`blueprint_options::seed` plus its id.
+`blueprint_options::seed` plus its id. A `target`, such as a known lower bound,
+stops the run as soon as its cost is at least as good: for the tutorial's
+`double` tour length, `"target": 23.0`.
 
 ## See also
 

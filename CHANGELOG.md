@@ -98,8 +98,9 @@ old concepts onto the new ones.
   create, check and inspect solutions, explore moves and run runners in the
   background with live progress, stop and a configurable seed.
 - `EasyLocal::REST` (Crow, standalone Asio): serves an app over HTTP, with
-  asynchronous runs, status and progress, cancellation, partial solutions and
-  a bounded execution pool.
+  asynchronous runs, status and progress, cancellation, partial solutions, a
+  target cost that stops a run (a lower bound, for example) and a bounded
+  execution pool.
 - `EasyLocal::ConfigTOML` (toml++).
 - Each component is opt-in at configure time, uses an installed dependency
   when available or fetches a pinned one on request, and is loaded by

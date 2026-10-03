@@ -73,6 +73,10 @@ struct Codec
 
     // Optional. Called only when the request contains initial_solution.
     Solution decode_initial_solution(const Input& input, const crow::json::rvalue& value) const;
+
+    // Optional. Called only when the request contains target; without it a
+    // target is a JSON number, for arithmetic costs only.
+    Cost decode_cost(const crow::json::rvalue& value) const;
 };
 ```
 
@@ -155,6 +159,20 @@ but stay reproducible. Status responses report the seed used.
 {
   "input": { "...": "..." },
   "seed": 12345
+}
+```
+
+A `target` cost stops the run as soon as its best cost is at least as good as
+the target, a lower bound for example (`stop_at` in C++; every runner honours
+it). For an arithmetic cost the target is a JSON number, an integer for
+integral costs; for other costs the codec decodes it with `decode_cost`, and
+without one a request with a target is rejected with `422`. Run resources
+repeat the target, encoded by `encode_cost`.
+
+```json
+{
+  "input": { "...": "..." },
+  "target": 426
 }
 ```
 
