@@ -230,3 +230,82 @@ jobs:
             build/system-optional/CMakeCache.txt
             build/system-optional/CMakeFiles/CMakeConfigureLog.yaml
             build/system-optional/Testing/Temporary/LastTest.log
+
+  windows-fetchcontent:
+    name: Windows / ${{ matrix.toolchain }} / all optional components / forced FetchContent
+    runs-on: windows-2025
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        toolchain:
+          - clang-cl
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Provision clang-cl and the MSVC environment
+        shell: pwsh
+        run: |
+          # As in ci.yml: the newest LLVM (clang-cl) and Ninja; the Microsoft
+          # STL, Windows SDK and linker from the Visual Studio environment.
+          choco upgrade llvm ninja -y --no-progress
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          $vs = & $vswhere -latest -products * `
+            -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 `
+            -property installationPath
+          $vcvars = Join-Path $vs 'VC\Auxiliary\Build\vcvars64.bat'
+          cmd /c "`"$vcvars`" >nul && set" | ForEach-Object {
+            if ($_ -match '^([^=]+)=(.*)$') {
+              "$($Matches[1])=$($Matches[2])" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
+            }
+          }
+          "CXX=C:/Program Files/LLVM/bin/clang-cl.exe" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
+          "CXXFLAGS=" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
+
+      - name: Configure with forced FetchContent
+        run: |
+          build_dir="build/optional-fetch"
+          mkdir -p build
+          cmake -S . -B "$build_dir" -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_CXX_COMPILER="$CXX" \
+            -DEASYLOCAL_BUILD_EXAMPLES=ON \
+            -DEASYLOCAL_BUILD_TESTS=ON \
+            -DEASYLOCAL_WARNINGS_AS_ERRORS=ON \
+            -DEASYLOCAL_ENABLE_CONFIG_TOML=ON \
+            -DEASYLOCAL_ENABLE_TUI=ON \
+            -DEASYLOCAL_ENABLE_REST=ON \
+            -DEASYLOCAL_FETCH_DEPENDENCIES=ON \
+            -DCMAKE_DISABLE_FIND_PACKAGE_tomlplusplus=TRUE \
+            -DCMAKE_DISABLE_FIND_PACKAGE_ftxui=TRUE \
+            -DCMAKE_DISABLE_FIND_PACKAGE_Crow=TRUE \
+            -DEASYLOCAL_ASIO_INCLUDE_DIR= \
+            2>&1 | tee "${build_dir}.configure.log"
+
+      - name: Build and test everything
+        run: |
+          build_dir="build/optional-fetch"
+          cmake --build "$build_dir" --parallel 4 --verbose \
+            2>&1 | tee "${build_dir}.build.log"
+
+          ctest --test-dir "$build_dir" --output-on-failure \
+            --output-junit "$PWD/${build_dir}.junit.xml" \
+            2>&1 | tee "${build_dir}.ctest.log"
+
+      - name: Upload diagnostics
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: optional-components-windows-${{ matrix.toolchain }}
+          retention-days: 7
+          if-no-files-found: warn
+          path: |
+            build/optional-fetch*.log
+            build/optional-fetch*.junit.xml
+            build/optional-fetch/CMakeCache.txt
+            build/optional-fetch/CMakeFiles/CMakeConfigureLog.yaml
+            build/optional-fetch/Testing/Temporary/LastTest.log
