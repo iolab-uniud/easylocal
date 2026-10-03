@@ -1078,6 +1078,18 @@ if(TARGET easylocal_tutorial)
         easylocal.example.tutorial
         PROPERTIES PASS_REGULAR_EXPRESSION "first improvement 26\n")
     add_test(NAME easylocal.example.tutorial-checks COMMAND easylocal_tutorial_checks)
+    add_test(
+        NAME easylocal.example.tutorial-migrated
+        COMMAND easylocal_tutorial_migrated --main.seed 1 --main.method fi)
+    set_tests_properties(
+        easylocal.example.tutorial-migrated
+        PROPERTIES PASS_REGULAR_EXPRESSION "cost [0-9]+\n")
+    add_test(
+        NAME easylocal.example.tutorial-staged
+        COMMAND easylocal_tutorial_staged --main.seed 1 --main.evaluations_per_city 20)
+    set_tests_properties(
+        easylocal.example.tutorial-staged
+        PROPERTIES PASS_REGULAR_EXPRESSION "violations 0, length [0-9]+\n")
 endif()
 
 if(TARGET easylocal_assignment_mwe)

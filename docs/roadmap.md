@@ -86,6 +86,65 @@ every runner that draws random moves could use it.
 
 **When.** Not scheduled.
 
+## A solver of several stages
+
+**Why.** `solvers::TwoStage` covers one pattern: the same kind of search on
+the hard cost and then on the whole cost. Real EasyLocal 3 solvers often chain
+more stages, each with its own runner, neighborhood and cost: a descent until
+the solution is feasible, repeated from new random solutions when it is not,
+then a second descent on the whole cost, then Simulated Annealing on a
+neighborhood that keeps the solution feasible, evaluated on the soft cost only.
+Today the stages after the solver's are written by hand, by binding each
+runner and running it from the previous result, and the time and the effort of
+the whole solve are added up by the caller.
+
+**What.** A `Pipeline` solver: a sequence of stages, each a runner with its own
+recipes over the same Input and Solution, with a stopping target per stage (a
+zero hard cost, for example), optional repetitions from new initial solutions,
+a share of a global budget, and the effort of every stage in the result. Its
+parameters would be those of each stage, under the stage's name, so that the
+command line, the TextUI and the REST service configure it as they configure
+an app. TwoStage would then be a pipeline of two stages.
+
+**When.** Not scheduled.
+
+## Parameter tuning
+
+**Why.** The parameters of a search are usually tuned with an automatic
+configurator: [irace](https://mlopez-ibanez.github.io/irace/) (iterated
+racing), [SMAC](https://github.com/automl/SMAC3) (Bayesian optimization with
+random forests) or [Optuna](https://optuna.org/) (Bayesian optimization in
+Python, define-by-run). Each runs the program on instances and seeds with
+candidate values and reads back one number. EasyLocal 3 programs supported
+them by hand, with a `--main::irace` flag that printed only the cost, a
+wrapper script and a parameter file written separately from the code, which
+drifted apart from the parameters the program accepts.
+
+**What.** The parameter sets already know every parameter's path, type and
+description. A common part, independent of the tool:
+
+- a domain for the parameters that have one (a range, possibly on a log
+  scale, or a set of values), declared in the schema, and conditions between
+  parameters where they matter (a tabu list's parameters only with that list);
+- a program mode that runs once and prints only the cost as one number, with a
+  stated conversion for structured costs (a hierarchical cost, for example, as
+  hard times a weight plus soft), and the running time when the tool asks for
+  it.
+
+On top of it, one exporter per tool, from an app's or a runner's parameter
+set, with the paths as command-line switches
+(`--runners.sa.temperature.cooling_rate`):
+
+- irace: the parameter file and a target-runner;
+- SMAC: the configuration space (ConfigSpace) and a target function that
+  calls the program;
+- Optuna: the search space as a Python function that suggests each parameter,
+  calling the program; with the Python bindings (above) the app could also run
+  in-process, without starting a program per evaluation.
+
+**When.** Not scheduled. irace first, as the tool used most with EasyLocal;
+the domains in the schema serve all three.
+
 ## Trace micro-benchmarks
 
 **Why.** The tracing overhead benchmark of
