@@ -133,6 +133,20 @@ struct is_std_array<std::array<Value, Size>> : std::true_type
 template<class T>
 inline constexpr bool is_std_array_v = is_std_array<T>::value;
 
+template<class T>
+struct is_std_vector : std::false_type
+{
+};
+
+template<class Value, class Allocator>
+struct is_std_vector<std::vector<Value, Allocator>> : std::true_type
+{
+    using value_type = Value;
+};
+
+template<class T>
+inline constexpr bool is_std_vector_v = is_std_vector<T>::value;
+
 [[nodiscard]]
 constexpr std::string_view trim_ascii_space(std::string_view text) noexcept
 {
@@ -284,6 +298,43 @@ std::string_view parse_text_value(const std::string_view text, Value& value)
         value = std::move(parsed);
         return {};
     }
+    else if constexpr (is_std_vector_v<value_type>)
+    {
+        using element_type = typename is_std_vector<value_type>::value_type;
+
+        auto body = trim_ascii_space(text);
+        if (body.size() >= 2 && body.front() == '[' && body.back() == ']')
+        {
+            body.remove_prefix(1);
+            body.remove_suffix(1);
+        }
+
+        value_type parsed;
+        if (trim_ascii_space(body).empty())
+        {
+            value = std::move(parsed);
+            return {};
+        }
+        while (true)
+        {
+            const auto comma = body.find(',');
+            const auto token =
+                comma == std::string_view::npos ? body : body.substr(0, comma);
+
+            element_type element{};
+            const auto error = parse_text_value(token, element);
+            if (!error.empty())
+                return error;
+            parsed.push_back(std::move(element));
+
+            if (comma == std::string_view::npos)
+                break;
+            body.remove_prefix(comma + 1);
+        }
+
+        value = std::move(parsed);
+        return {};
+    }
     else
     {
         static_assert(
@@ -295,7 +346,7 @@ std::string_view parse_text_value(const std::string_view text, Value& value)
 } // namespace detail
 
 // A parameter value as text, in the syntax parse_text_value reads back:
-// true/false, numbers, [a, b] for arrays.
+// true/false, numbers, [a, b] for arrays and vectors.
 template<class Value>
 [[nodiscard]]
 std::string format_value(const Value& value)
@@ -314,7 +365,8 @@ std::string format_value(const Value& value)
     {
         return value;
     }
-    else if constexpr (detail::is_std_array_v<value_type>)
+    else if constexpr (detail::is_std_array_v<value_type>
+        || detail::is_std_vector_v<value_type>)
     {
         std::string result{"["};
         for (std::size_t index = 0; index < value.size(); ++index)

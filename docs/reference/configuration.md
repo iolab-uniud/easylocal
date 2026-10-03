@@ -27,7 +27,8 @@ struct MyParameters
 ```
 
 Fields may be integral and floating-point types, `bool`, `std::string`,
-`std::filesystem::path`, and `std::array`s of those. A `group` nests another
+`std::filesystem::path`, and `std::array`s and `std::vector`s of those
+(written `[a, b, c]`; `[]` is an empty vector). A `group` nests another
 block: its fields are under `schedule.`, and its `validate()` runs with the
 enclosing block's.
 
