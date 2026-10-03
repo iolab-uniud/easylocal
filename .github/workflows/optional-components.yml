@@ -9,6 +9,7 @@ on:
 
 permissions:
   contents: read
+  actions: write  # a failed job cancels the rest of the run
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -90,6 +91,11 @@ jobs:
             build/optional-fetch/CMakeCache.txt
             build/optional-fetch/CMakeFiles/CMakeConfigureLog.yaml
             build/optional-fetch/Testing/Temporary/LastTest.log
+      - name: Cancel the other jobs
+        if: ${{ failure() && !env.ACT }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh run cancel ${{ github.run_id }} --repo ${{ github.repository }}
 
   linux-system-config-toml:
     name: Linux / ConfigTOML / system dependency
@@ -152,6 +158,11 @@ jobs:
             build/system-config-toml/CMakeCache.txt
             build/system-config-toml/CMakeFiles/CMakeConfigureLog.yaml
             build/system-config-toml/Testing/Temporary/LastTest.log
+      - name: Cancel the other jobs
+        if: ${{ failure() && !env.ACT }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh run cancel ${{ github.run_id }} --repo ${{ github.repository }}
 
   macos-system:
     name: macOS ARM64 / all optional components / system dependencies
@@ -230,3 +241,8 @@ jobs:
             build/system-optional/CMakeCache.txt
             build/system-optional/CMakeFiles/CMakeConfigureLog.yaml
             build/system-optional/Testing/Temporary/LastTest.log
+      - name: Cancel the other jobs
+        if: ${{ failure() && !env.ACT }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh run cancel ${{ github.run_id }} --repo ${{ github.repository }}

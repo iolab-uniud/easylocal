@@ -9,6 +9,7 @@ on:
 
 permissions:
   contents: read
+  actions: write  # a failed job cancels the rest of the run
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -161,6 +162,11 @@ jobs:
             build/ci23-release/compile_commands.json
             build/ci23-release/CMakeFiles/CMakeConfigureLog.yaml
             build/ci23-release/Testing/Temporary/LastTest.log
+      - name: Cancel the other jobs
+        if: ${{ failure() && !env.ACT }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh run cancel ${{ github.run_id }} --repo ${{ github.repository }}
 
   lint:
     name: Format and lint
@@ -198,6 +204,11 @@ jobs:
         run: |
           cmake --preset dev -DCMAKE_CXX_COMPILER=g++-15
           scripts/tidy.sh build/dev
+      - name: Cancel the other jobs
+        if: ${{ failure() && !env.ACT }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh run cancel ${{ github.run_id }} --repo ${{ github.repository }}
 
   macos:
     name: macOS ARM64 / ${{ matrix.toolchain }} / C++23
@@ -310,6 +321,11 @@ jobs:
             build/ci23-release/compile_commands.json
             build/ci23-release/CMakeFiles/CMakeConfigureLog.yaml
             build/ci23-release/Testing/Temporary/LastTest.log
+      - name: Cancel the other jobs
+        if: ${{ failure() && !env.ACT }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh run cancel ${{ github.run_id }} --repo ${{ github.repository }}
 
   windows:
     name: Windows / clang-cl / C++23
@@ -379,11 +395,17 @@ jobs:
             build/ci23-release/compile_commands.json
             build/ci23-release/CMakeFiles/CMakeConfigureLog.yaml
             build/ci23-release/Testing/Temporary/LastTest.log
+      - name: Cancel the other jobs
+        if: ${{ failure() && !env.ACT }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh run cancel ${{ github.run_id }} --repo ${{ github.repository }}
 
   coverage:
     name: Linux / GCC 16 / Debug coverage, all optional components
     permissions:
       contents: write  # the coverage badge on the badges branch
+      actions: write
     runs-on: ubuntu-26.04
     timeout-minutes: 45
     env:
@@ -459,3 +481,8 @@ jobs:
             build/coverage/coverage.xml
             build/coverage/summary.json
             build/coverage/html/
+      - name: Cancel the other jobs
+        if: ${{ failure() && !env.ACT }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh run cancel ${{ github.run_id }} --repo ${{ github.repository }}

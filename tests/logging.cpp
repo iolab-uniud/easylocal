@@ -87,9 +87,17 @@ int main()
     // rest; stderr goes to a file for the rest of the test.
     const auto stderr_path =
         std::filesystem::temp_directory_path() / "easylocal-logging-test.txt";
+#ifdef _MSC_VER
+    // The MSVC runtime deprecates std::freopen in favor of freopen_s.
+    std::FILE* redirected = nullptr;
+    ok &= expect(
+        freopen_s(&redirected, stderr_path.string().c_str(), "w", stderr) == 0,
+        "stderr can be redirected");
+#else
     ok &= expect(
         std::freopen(stderr_path.string().c_str(), "w", stderr) != nullptr,
         "stderr can be redirected");
+#endif
     (void)set_sink(original);
     emit(level::info, "application.search", "dropped");
     emit(level::warning, "application.search", "low on time");
