@@ -1004,12 +1004,6 @@ TourLength 26, MaxEdge 8
 0 4 2 3 1
 ```
 
-Solvers with more than two stages, each with its own runner, neighborhood and
-cost, are written by hand for now: bind each runner and run it from the
-previous result, `runner.bind(input).run(previous.solution, rng)`. A solver
-for them is in the [roadmap](roadmap.md), together with support for
-parameter tuning (irace, SMAC, Optuna).
-
 ### 12. Several neighborhoods
 
 A `MultimodalNeighborhoodExplorer` (set union with biases) becomes a
