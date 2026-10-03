@@ -17,6 +17,7 @@
 #include <deque>
 #include <optional>
 #include <random>
+#include <tuple>
 #include <type_traits>
 #include <unordered_map>
 #include <utility>
@@ -1472,8 +1473,36 @@ concept tabu_escape_supported =
         state.escape_moves();
     } || random_move_context<typename Run::context_type, RNG>;
 
-// The machinery common to the tabu searches; StopAt decides, for each
-// admissible candidate, whether the scan stops at it.
+// The state of one tabu search: the current solution and its evaluation, the
+// best solution and its cost, the list's state and the idle iterations.
+template<class Run, class ListState>
+struct tabu_run
+{
+    typename Run::solution_type solution;
+    typename Run::evaluation_type current;
+    typename Run::solution_type best_solution;
+    typename Run::cost_type best_cost;
+    ListState list;
+    std::size_t idle_iterations{};
+};
+
+// The outcome of a scan: the chosen admissible candidate and its move, with
+// its position among the scanned moves; the least tabu move; whether there
+// was no move at all, and whether the run had to stop during the scan.
+template<class Run>
+struct tabu_scan
+{
+    std::optional<typename Run::candidate_type> chosen;
+    std::optional<typename Run::move_type> chosen_move;
+    std::size_t chosen_position{};
+    std::optional<typename Run::move_type> least_tabu;
+    bool empty{true};
+    bool interrupted{false};
+};
+
+// The machinery common to the tabu searches: start, the limits, a scan of any
+// range of moves, the application of the chosen move, and the whole search
+// for the runners that scan the neighborhood.
 template<class TabuList, class Aspiration>
 class tabu_search_engine
 {
@@ -1488,8 +1517,202 @@ public:
     {
     }
 
-    // make_stop(run, best_cost) gives, for each scan, the callable that
-    // decides at each admissible candidate whether the scan stops there.
+    template<class Run>
+    [[nodiscard]]
+    auto start(Run& run, typename Run::solution_type solution) const
+    {
+        if (max_evaluations_ != 0)
+            run.limit_evaluations(max_evaluations_);
+        auto current = run.start(solution);
+        auto best_cost = current.cost();
+        auto best_solution = solution;
+        using list_type = decltype(tabu_list_.template make_state<Run>());
+        return tabu_run<Run, list_type>{
+            .solution = std::move(solution),
+            .current = std::move(current),
+            .best_solution = std::move(best_solution),
+            .best_cost = std::move(best_cost),
+            .list = tabu_list_.template make_state<Run>(),
+        };
+    }
+
+    // The idle and iteration limits, checked before each iteration.
+    template<class Run, class State>
+    [[nodiscard]]
+    std::optional<termination_reason> limit_reached(const Run& run, const State& state)
+        const
+    {
+        if (state.idle_iterations >= max_idle_iterations_)
+            return termination_reason::idle_limit_reached;
+        if (max_iterations_ != 0 && run.iterations() >= max_iterations_)
+            return termination_reason::completed;
+        return std::nullopt;
+    }
+
+    // Scans moves: the best admissible candidate, ties broken uniformly at
+    // random (each of k equivalent candidates replaces the choice with
+    // probability 1/k), until stop_at(run, candidate, current, best) holds;
+    // on_admissible(move, cost, position) sees every admissible candidate.
+    template<
+        class Run,
+        class State,
+        class Moves,
+        class StopAt,
+        class RNG,
+        class OnAdmissible>
+    [[nodiscard]]
+    tabu_scan<Run> scan(
+        Run& run,
+        State& state,
+        Moves&& moves,
+        StopAt&& stop_at,
+        RNG& rng,
+        OnAdmissible&& on_admissible) const
+    {
+        constexpr bool list_needs_cost = requires {
+            requires std::remove_cvref_t<decltype(state.list)>::needs_cost;
+        };
+
+        tabu_scan<Run> result;
+        std::size_t ties = 0;
+        std::size_t least_tenure = 0;
+        std::size_t least_ties = 0;
+        std::size_t position = 0;
+
+        for (const auto& move : moves)
+        {
+            if (run.should_stop())
+            {
+                result.interrupted = true;
+                return result;
+            }
+            result.empty = false;
+            const auto here = position++;
+
+            // A list on costs sees the candidate evaluated.
+            std::optional<typename Run::candidate_type> evaluated;
+            if constexpr (list_needs_cost)
+                evaluated = run.evaluate_move(state.solution, state.current, move);
+            const auto tenure = state.list.tabu_tenure(
+                tabu_candidate<Run>{
+                    run,
+                    state.solution,
+                    move,
+                    evaluated.has_value() ? &evaluated->cost() : nullptr});
+            if (tenure.has_value())
+            {
+                if (!result.least_tabu.has_value() || *tenure < least_tenure)
+                {
+                    result.least_tabu = move;
+                    least_tenure = *tenure;
+                    least_ties = 1;
+                }
+                else if (*tenure == least_tenure && draw(rng, ++least_ties) == 0)
+                {
+                    result.least_tabu = move;
+                }
+                if constexpr (!Aspiration::needs_cost)
+                    continue;
+            }
+
+            auto candidate = evaluated.has_value()
+                ? std::move(*evaluated)
+                : run.evaluate_move(state.solution, state.current, move);
+            if (tenure.has_value()
+                && !aspiration_.overrides(run, candidate.cost(), state.best_cost))
+            {
+                continue;
+            }
+
+            on_admissible(move, candidate.cost(), here);
+            const auto stop =
+                stop_at(run, candidate.cost(), state.current.cost(), state.best_cost);
+            if (!result.chosen.has_value()
+                || run.better(candidate.cost(), result.chosen->cost()))
+            {
+                result.chosen = std::move(candidate);
+                result.chosen_move = move;
+                result.chosen_position = here;
+                ties = 1;
+            }
+            else if (!run.better(result.chosen->cost(), candidate.cost())
+                && draw(rng, ++ties) == 0)
+            {
+                result.chosen = std::move(candidate);
+                result.chosen_move = move;
+                result.chosen_position = here;
+            }
+            if (stop)
+                break;
+        }
+        return result;
+    }
+
+    // Applies the scan's choice or, when every move was tabu, the least tabu
+    // move; updates the best solution, the idle count and the list, and makes
+    // the list's escape. False when the run had to stop first.
+    template<class Run, class State, class RNG>
+    bool apply(Run& run, State& state, tabu_scan<Run>&& scan, RNG& rng) const
+    {
+        if (!scan.chosen.has_value())
+        {
+            assert(scan.least_tabu.has_value());
+            if (run.should_stop())
+                return false;
+            scan.chosen =
+                run.evaluate_move(state.solution, state.current, *scan.least_tabu);
+            scan.chosen_move = std::move(scan.least_tabu);
+        }
+
+        commit(run, state, std::move(*scan.chosen), *scan.chosen_move);
+        state.list.update(
+            tabu_step<Run>{
+                run,
+                *scan.chosen_move,
+                state.solution,
+                state.current.cost(),
+                state.idle_iterations == 0},
+            rng);
+
+        // The reactive list's escape: random moves, applied whatever their
+        // cost and not recorded in the list.
+        if constexpr (requires { state.list.escape_moves(); })
+        {
+            for (auto escape = state.list.escape_moves(); escape > 0; --escape)
+            {
+                if (run.should_stop()
+                    || (max_iterations_ != 0 && run.iterations() >= max_iterations_))
+                {
+                    break;
+                }
+                auto move = run.random_move(state.solution, rng);
+                if (!move.has_value())
+                    break;
+                auto candidate = run.evaluate_move(state.solution, state.current, *move);
+                commit(run, state, std::move(candidate), *move);
+            }
+        }
+        return true;
+    }
+
+    template<class Run, class State>
+    [[nodiscard]]
+    auto finish(Run& run, State& state) const
+    {
+        return run.finish(std::move(state.best_solution), std::move(state.best_cost));
+    }
+
+    template<class Run, class State>
+    [[nodiscard]]
+    auto finish(Run& run, State& state, const termination_reason reason) const
+    {
+        return run
+            .finish(std::move(state.best_solution), std::move(state.best_cost), reason);
+    }
+
+    // The search of the runners that scan the whole neighborhood: make_stop(run,
+    // best_cost) gives, for each scan, the callable that decides at each
+    // admissible candidate whether the scan stops there.
     template<class Run, class RNG, class MakeStop>
     [[nodiscard]]
     auto search(
@@ -1498,177 +1721,55 @@ public:
         RNG& rng,
         MakeStop make_stop) const
     {
-        using move_type = typename Run::move_type;
-        using cost_type = typename Run::cost_type;
-
-        if (max_evaluations_ != 0)
-            run.limit_evaluations(max_evaluations_);
-        auto current = run.start(solution);
-        auto best_solution = solution;
-        auto best_cost = current.cost();
-        auto list = tabu_list_.template make_state<Run>();
-        constexpr bool list_needs_cost = requires {
-            requires std::remove_cvref_t<decltype(list)>::needs_cost;
-        };
-        std::size_t idle_iterations = 0;
-
+        auto state = start(run, std::move(solution));
         while (!run.should_stop())
         {
-            if (idle_iterations >= max_idle_iterations_)
-            {
-                return run.finish(
-                    std::move(best_solution),
-                    std::move(best_cost),
-                    termination_reason::idle_limit_reached);
-            }
-            if (max_iterations_ != 0 && run.iterations() >= max_iterations_)
-                return run.finish(std::move(best_solution), std::move(best_cost));
+            if (const auto reason = limit_reached(run, state))
+                return finish(run, state, *reason);
 
-            // The chosen admissible candidate; ties share the choice
-            // uniformly (each of k equivalent candidates replaces the choice
-            // with probability 1/k).
-            std::optional<typename Run::candidate_type> chosen;
-            std::optional<move_type> chosen_move;
-            std::size_t ties = 0;
-            // The least tabu move, applied when no move is admissible.
-            std::optional<move_type> least_tabu;
-            std::size_t least_tenure = 0;
-            std::size_t least_ties = 0;
-            bool neighborhood_empty = true;
-            auto stop_at = make_stop(run, best_cost);
-
-            for (const auto& move : run.moves(solution))
-            {
-                if (run.should_stop())
-                    return run.finish(std::move(best_solution), std::move(best_cost));
-                neighborhood_empty = false;
-
-                // A list on costs sees the candidate evaluated.
-                std::optional<typename Run::candidate_type> evaluated;
-                if constexpr (list_needs_cost)
-                    evaluated = run.evaluate_move(solution, current, move);
-                const auto tenure = list.tabu_tenure(
-                    tabu_candidate<Run>{
-                        run,
-                        solution,
-                        move,
-                        evaluated.has_value() ? &evaluated->cost() : nullptr});
-                if (tenure.has_value())
-                {
-                    if (!least_tabu.has_value() || *tenure < least_tenure)
-                    {
-                        least_tabu = move;
-                        least_tenure = *tenure;
-                        least_ties = 1;
-                    }
-                    else if (*tenure == least_tenure && draw(rng, ++least_ties) == 0)
-                    {
-                        least_tabu = move;
-                    }
-                    if constexpr (!Aspiration::needs_cost)
-                        continue;
-                }
-
-                auto candidate = evaluated.has_value()
-                    ? std::move(*evaluated)
-                    : run.evaluate_move(solution, current, move);
-                if (tenure.has_value()
-                    && !aspiration_.overrides(run, candidate.cost(), best_cost))
-                {
-                    continue;
-                }
-
-                const auto stop =
-                    stop_at(run, candidate.cost(), current.cost(), best_cost);
-                if (!chosen.has_value() || run.better(candidate.cost(), chosen->cost()))
-                {
-                    chosen = std::move(candidate);
-                    chosen_move = move;
-                    ties = 1;
-                }
-                else if (!run.better(chosen->cost(), candidate.cost())
-                    && draw(rng, ++ties) == 0)
-                {
-                    chosen = std::move(candidate);
-                    chosen_move = move;
-                }
-                if (stop)
-                    break;
-            }
-
-            if (neighborhood_empty)
-            {
-                return run.finish(
-                    std::move(best_solution),
-                    std::move(best_cost),
-                    termination_reason::local_optimum);
-            }
-            if (!chosen.has_value())
-            {
-                // Every move is tabu: the least tabu one is applied.
-                assert(least_tabu.has_value());
-                if (run.should_stop())
-                    break;
-                chosen = run.evaluate_move(solution, current, *least_tabu);
-                chosen_move = std::move(least_tabu);
-            }
-
-            run.next_iteration();
-            run.commit(solution, current, std::move(*chosen), *chosen_move);
-            const bool improved = run.better(current.cost(), best_cost);
-            if (improved)
-            {
-                const cost_type previous_best = best_cost;
-                best_solution = solution;
-                best_cost = current.cost();
-                run.incumbent_updated(previous_best, best_cost);
-                idle_iterations = 0;
-            }
-            else
-            {
-                ++idle_iterations;
-            }
-            list.update(
-                tabu_step<Run>{run, *chosen_move, solution, current.cost(), improved},
-                rng);
-
-            // The reactive list's escape: random moves, applied whatever their
-            // cost and not recorded in the list.
-            if constexpr (requires { list.escape_moves(); })
-            {
-                for (auto escape = list.escape_moves(); escape > 0; --escape)
-                {
-                    if (run.should_stop()
-                        || (max_iterations_ != 0 && run.iterations() >= max_iterations_))
-                    {
-                        break;
-                    }
-                    auto move = run.random_move(solution, rng);
-                    if (!move.has_value())
-                        break;
-                    run.next_iteration();
-                    auto candidate = run.evaluate_move(solution, current, *move);
-                    run.commit(solution, current, std::move(candidate), *move);
-                    if (run.better(current.cost(), best_cost))
-                    {
-                        const cost_type previous_best = best_cost;
-                        best_solution = solution;
-                        best_cost = current.cost();
-                        run.incumbent_updated(previous_best, best_cost);
-                        idle_iterations = 0;
-                    }
-                    else
-                    {
-                        ++idle_iterations;
-                    }
-                }
-            }
+            auto result = scan(
+                run,
+                state,
+                run.moves(state.solution),
+                make_stop(run, state.best_cost),
+                rng,
+                [](const auto&...) {});
+            if (result.interrupted)
+                break;
+            if (result.empty)
+                return finish(run, state, termination_reason::local_optimum);
+            if (!apply(run, state, std::move(result), rng))
+                break;
         }
-
-        return run.finish(std::move(best_solution), std::move(best_cost));
+        return finish(run, state);
     }
 
 private:
+    // Applies a move as an iteration and updates the best solution and the
+    // idle count.
+    template<class Run, class State>
+    static void commit(
+        Run& run,
+        State& state,
+        typename Run::candidate_type&& candidate,
+        const typename Run::move_type& move)
+    {
+        run.next_iteration();
+        run.commit(state.solution, state.current, std::move(candidate), move);
+        if (run.better(state.current.cost(), state.best_cost))
+        {
+            const auto previous_best = state.best_cost;
+            state.best_solution = state.solution;
+            state.best_cost = state.current.cost();
+            run.incumbent_updated(previous_best, state.best_cost);
+            state.idle_iterations = 0;
+        }
+        else
+        {
+            ++state.idle_iterations;
+        }
+    }
+
     // Uniform in [0, count).
     template<class RNG>
     [[nodiscard]]
@@ -1763,6 +1864,273 @@ public:
 private:
     detail::tabu_search_engine<TabuList, Aspiration> engine_;
     bool improve_on_best_;
+};
+
+template<class ListParameters>
+struct AspirationPlusTabuSearchParameters
+{
+    std::size_t max_idle_iterations{1000};
+    std::size_t max_iterations{0};
+    std::size_t max_evaluations{0};
+    // Admissible moves examined at least and at most in each scan.
+    std::size_t min_moves{10};
+    std::size_t max_moves{100};
+    // Admissible moves examined after the first one under the aspiration level.
+    std::size_t plus{5};
+    // The aspiration level, as a factor of the best cost.
+    double aspiration_level{1.0};
+    ListParameters tabu_list{};
+
+    [[nodiscard]]
+    static consteval auto parameter_schema()
+    {
+        using self = AspirationPlusTabuSearchParameters;
+        return config::fields(
+            config::field<"max_idle_iterations", &self::max_idle_iterations>(
+                "Maximum number of iterations without improving the best cost"),
+            config::field<"max_iterations", &self::max_iterations>(
+                "Maximum number of iterations (0: no limit)"),
+            config::field<"max_evaluations", &self::max_evaluations>(
+                "Maximum number of solution evaluations (0: no budget)"),
+            config::field<"min_moves", &self::min_moves>(
+                "Admissible moves examined at least in each scan"),
+            config::field<"max_moves", &self::max_moves>(
+                "Admissible moves examined at most in each scan"),
+            config::field<"plus", &self::plus>(
+                "Admissible moves examined after the first under the aspiration level"),
+            config::field<"aspiration_level", &self::aspiration_level>(
+                "The aspiration level, as a factor of the best cost"),
+            config::group<"tabu_list", &self::tabu_list>("The tabu list"));
+    }
+
+    [[nodiscard]]
+    config::validation_result validate() const noexcept
+    {
+        if (max_idle_iterations == 0)
+            return config::validation_result::failure(
+                "max_idle_iterations must be positive");
+        if (min_moves == 0 || max_moves < min_moves)
+            return config::validation_result::failure(
+                "min_moves must be positive and not above max_moves");
+        if (!std::isfinite(aspiration_level) || aspiration_level < 1.0)
+            return config::validation_result::failure(
+                "aspiration_level must be finite and at least 1");
+        return config::validation_result::success();
+    }
+};
+
+// Tabu Search with Glover's aspiration plus candidate strategy: each scan
+// examines admissible moves until plus more after the first one whose cost is
+// under the aspiration level (aspiration_level times the best cost), but at
+// least min_moves and at most max_moves of them, and applies the best of those
+// examined. The aspiration level is a value of the cost, so the cost is
+// arithmetic.
+template<class TabuList = tabu::FixedLength, class Aspiration = aspiration::ByObjective>
+class AspirationPlusTabuSearch
+{
+public:
+    using parameters_type =
+        AspirationPlusTabuSearchParameters<typename TabuList::parameters_type>;
+
+    explicit AspirationPlusTabuSearch(
+        const parameters_type& parameters,
+        Aspiration aspiration = {})
+        : engine_{parameters, std::move(aspiration)},
+          min_moves_{parameters.min_moves},
+          max_moves_{parameters.max_moves},
+          plus_{parameters.plus},
+          aspiration_level_{parameters.aspiration_level}
+    {
+        assert(parameters.validate());
+    }
+
+    template<class Run, std::uniform_random_bit_generator RNG>
+        requires detail::tabu_search_context<typename Run::context_type>
+        && cost::arithmetic<typename Run::cost_type> && tabu_list_for<TabuList, Run, RNG>
+        && detail::tabu_escape_supported<TabuList, Run, RNG>
+    [[nodiscard]]
+    auto run(Run& run, typename Run::solution_type solution, RNG& rng) const
+    {
+        return engine_.search(
+            run,
+            std::move(solution),
+            rng,
+            [this](const Run&, const typename Run::cost_type& best) {
+                const auto level = aspiration_level_ * static_cast<double>(best);
+                return
+                    [this, level, examined = std::size_t{0}, first = std::size_t{0}](
+                        const Run&,
+                        const typename Run::cost_type& candidate,
+                        const auto&,
+                        const auto&) mutable {
+                        ++examined;
+                        if (first == 0 && static_cast<double>(candidate) < level)
+                            first = examined;
+                        return examined >= max_moves_
+                            || (first != 0 && examined - first >= plus_
+                                && examined >= min_moves_);
+                    };
+            });
+    }
+
+private:
+    detail::tabu_search_engine<TabuList, Aspiration> engine_;
+    std::size_t min_moves_;
+    std::size_t max_moves_;
+    std::size_t plus_;
+    double aspiration_level_;
+};
+
+template<class ListParameters>
+struct EliteCandidateTabuSearchParameters
+{
+    std::size_t max_idle_iterations{1000};
+    std::size_t max_iterations{0};
+    std::size_t max_evaluations{0};
+    // The moves kept from a full scan.
+    std::size_t elite_size{10};
+    // A candidate of the list is applied while its cost is not above this
+    // factor of the best cost.
+    double quality{1.05};
+    ListParameters tabu_list{};
+
+    [[nodiscard]]
+    static consteval auto parameter_schema()
+    {
+        using self = EliteCandidateTabuSearchParameters;
+        return config::fields(
+            config::field<"max_idle_iterations", &self::max_idle_iterations>(
+                "Maximum number of iterations without improving the best cost"),
+            config::field<"max_iterations", &self::max_iterations>(
+                "Maximum number of iterations (0: no limit)"),
+            config::field<"max_evaluations", &self::max_evaluations>(
+                "Maximum number of solution evaluations (0: no budget)"),
+            config::field<"elite_size", &self::elite_size>(
+                "The moves kept from a full scan"),
+            config::field<"quality", &self::quality>(
+                "Cost, as a factor of the best, up to which a kept move is applied"),
+            config::group<"tabu_list", &self::tabu_list>("The tabu list"));
+    }
+
+    [[nodiscard]]
+    config::validation_result validate() const noexcept
+    {
+        if (max_idle_iterations == 0)
+            return config::validation_result::failure(
+                "max_idle_iterations must be positive");
+        if (elite_size == 0)
+            return config::validation_result::failure("elite_size must be positive");
+        if (!std::isfinite(quality) || quality < 1.0)
+            return config::validation_result::failure(
+                "quality must be finite and at least 1");
+        return config::validation_result::success();
+    }
+};
+
+// Tabu Search with Glover's elite candidate list: a full scan applies the best
+// admissible move and keeps the elite_size best other admissible moves; the
+// following iterations evaluate only the kept moves still valid, and apply the
+// best admissible one while its cost is not above quality times the best cost.
+// Otherwise a new full scan builds a new list. The quality level is a value of
+// the cost, so the cost is arithmetic.
+template<class TabuList = tabu::FixedLength, class Aspiration = aspiration::ByObjective>
+class EliteCandidateTabuSearch
+{
+public:
+    using parameters_type =
+        EliteCandidateTabuSearchParameters<typename TabuList::parameters_type>;
+
+    explicit EliteCandidateTabuSearch(
+        const parameters_type& parameters,
+        Aspiration aspiration = {})
+        : engine_{parameters, std::move(aspiration)},
+          elite_size_{parameters.elite_size},
+          quality_{parameters.quality}
+    {
+        assert(parameters.validate());
+    }
+
+    template<class Run, std::uniform_random_bit_generator RNG>
+        requires detail::tabu_search_context<typename Run::context_type>
+        && cost::arithmetic<typename Run::cost_type> && tabu_list_for<TabuList, Run, RNG>
+        && detail::tabu_escape_supported<TabuList, Run, RNG>
+    [[nodiscard]]
+    auto run(Run& run, typename Run::solution_type solution, RNG& rng) const
+    {
+        using move_type = typename Run::move_type;
+        using cost_type = typename Run::cost_type;
+        const auto never = [](const auto&...) { return false; };
+
+        auto state = engine_.start(run, std::move(solution));
+        std::vector<move_type> elite;
+        while (!run.should_stop())
+        {
+            if (const auto reason = engine_.limit_reached(run, state))
+                return engine_.finish(run, state, *reason);
+            const auto level = quality_ * static_cast<double>(state.best_cost);
+
+            // The kept moves still valid, while the best is good enough.
+            std::erase_if(elite, [&](const move_type& move) {
+                return !run.neighborhood_explorer().is_valid(state.solution, move);
+            });
+            if (!elite.empty())
+            {
+                auto kept = engine_.scan(run, state, elite, never, rng, never);
+                if (kept.interrupted)
+                    break;
+                if (kept.chosen.has_value()
+                    && static_cast<double>(kept.chosen->cost()) <= level)
+                {
+                    elite.erase(
+                        elite.begin()
+                        + static_cast<std::ptrdiff_t>(kept.chosen_position));
+                    if (!engine_.apply(run, state, std::move(kept), rng))
+                        break;
+                    continue;
+                }
+            }
+
+            // A full scan, keeping the best admissible moves.
+            std::vector<std::tuple<move_type, cost_type, std::size_t>> best_moves;
+            auto keep =
+                [&](const move_type& move,
+                    const cost_type& cost,
+                    const std::size_t position) {
+                    if (best_moves.size() < elite_size_ + 1)
+                    {
+                        best_moves.emplace_back(move, cost, position);
+                        return;
+                    }
+                    const auto worst = std::ranges::max_element(
+                        best_moves,
+                        [](const auto& lhs, const auto& rhs) {
+                            return std::get<1>(lhs) < std::get<1>(rhs);
+                        });
+                    if (cost < std::get<1>(*worst))
+                        *worst = std::tuple{move, cost, position};
+                };
+            auto full =
+                engine_.scan(run, state, run.moves(state.solution), never, rng, keep);
+            if (full.interrupted)
+                break;
+            if (full.empty)
+                return engine_.finish(run, state, termination_reason::local_optimum);
+            elite.clear();
+            for (const auto& [move, cost, position] : best_moves)
+                if (!full.chosen.has_value() || position != full.chosen_position)
+                    elite.push_back(move);
+            if (elite.size() > elite_size_)
+                elite.pop_back();
+            if (!engine_.apply(run, state, std::move(full), rng))
+                break;
+        }
+        return engine_.finish(run, state);
+    }
+
+private:
+    detail::tabu_search_engine<TabuList, Aspiration> engine_;
+    std::size_t elite_size_;
+    double quality_;
 };
 
 } // namespace easylocal::runners

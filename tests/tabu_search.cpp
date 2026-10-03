@@ -330,6 +330,41 @@ int main()
                 && first.evaluations == 2 && on_best.solution.value == 4,
             "first improvement stops the scan at the first improving move");
 
+        // Aspiration plus: from 5 the left step (2) is under the level (the
+        // best, 3); with plus 0 the scan stops there, with plus 1 it also
+        // examines the right step (0).
+        const auto stop_at_first =
+            line_runner<AspirationPlusTabuSearch<>, Uneven>(
+                {.max_iterations = 1,
+                    .min_moves = 1,
+                    .max_moves = 10,
+                    .plus = 0,
+                    .tabu_list = {.tenure = 2}})
+                .bind(instance)
+                .run(Position{5}, rng);
+        const auto one_more =
+            line_runner<AspirationPlusTabuSearch<>, Uneven>(
+                {.max_iterations = 1,
+                    .min_moves = 1,
+                    .max_moves = 10,
+                    .plus = 1,
+                    .tabu_list = {.tenure = 2}})
+                .bind(instance)
+                .run(Position{5}, rng);
+        const auto capped =
+            line_runner<AspirationPlusTabuSearch<>, Uneven>(
+                {.max_iterations = 1,
+                    .min_moves = 1,
+                    .max_moves = 1,
+                    .plus = 5,
+                    .tabu_list = {.tenure = 2}})
+                .bind(instance)
+                .run(Position{5}, rng);
+        ok &= expect(
+            stop_at_first.solution.value == 4 && one_more.solution.value == 6
+                && capped.solution.value == 4,
+            "aspiration plus examines plus moves after the first under the level, up to max_moves");
+
         // From 1 nothing improves: the best admissible move is applied.
         const auto worse =
             line_runner<FirstImprovementTabuSearch<>, Valley>(

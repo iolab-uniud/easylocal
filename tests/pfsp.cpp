@@ -119,5 +119,49 @@ int main()
             && improves.template operator()<SwapEitherJobNeighborhoodExplorer>(),
         "tabu search improves a random schedule with either inverse");
 
+    // The candidate strategies examine fewer moves than the full scan for the
+    // same iterations, and still improve the random schedule.
+    {
+        const MakespanComponent medium_makespan{medium};
+        const auto runs =
+            [&]<class Algorithm>(const typename Algorithm::parameters_type& parameters) {
+                auto runner =
+                    tabu_runner<Algorithm, SwapJobsNeighborhoodExplorer>(parameters);
+                auto search = runner.bind(medium);
+                std::mt19937_64 rng{2026U};
+                const auto initial = search.random_solution(rng);
+                auto result = search.run(initial, rng);
+                ok &= expect(
+                    result.iterations == 60
+                        && result.cost < medium_makespan.evaluate(initial)
+                        && result.cost == medium_makespan.evaluate(result.solution),
+                    "a tabu search candidate strategy improves a random schedule");
+                return result.evaluations;
+            };
+        const auto full = runs.template operator()<easylocal::runners::TabuSearch<>>(
+            {.max_idle_iterations = 1000,
+                .max_iterations = 60,
+                .tabu_list = {.tenure = 7}});
+        const auto aspiration_plus =
+            runs.template operator()<easylocal::runners::AspirationPlusTabuSearch<>>(
+                {.max_idle_iterations = 1000,
+                    .max_iterations = 60,
+                    .min_moves = 10,
+                    .max_moves = 40,
+                    .plus = 5,
+                    .aspiration_level = 1.02,
+                    .tabu_list = {.tenure = 7}});
+        const auto elite =
+            runs.template operator()<easylocal::runners::EliteCandidateTabuSearch<>>(
+                {.max_idle_iterations = 1000,
+                    .max_iterations = 60,
+                    .elite_size = 10,
+                    .quality = 1.2,
+                    .tabu_list = {.tenure = 7}});
+        ok &= expect(
+            aspiration_plus < full && elite < full,
+            "aspiration plus and the elite candidate list evaluate fewer moves");
+    }
+
     return ok ? 0 : 1;
 }

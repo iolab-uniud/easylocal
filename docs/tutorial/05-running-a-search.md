@@ -72,7 +72,7 @@ The algorithms live in `easylocal::runners`, one header each:
 | `HillClimbing` | `runners/hill_climbing.hpp` | `random_move` | `max_idle_iterations`, `max_evaluations` (0: no budget) |
 | `LateAcceptanceHillClimbing` | `runners/late_acceptance_hill_climbing.hpp` | `random_move` | `history_length`, `max_idle_iterations`, `max_evaluations` |
 | `GreatDeluge` | `runners/great_deluge.hpp` | `random_move`, an arithmetic cost | `initial_level`, `min_level`, `level_rate`, `neighbors_sampled`, `max_evaluations` |
-| `TabuSearch<List, Aspiration>`, `FirstImprovementTabuSearch<…>` | `runners/tabu_search.hpp` | `moves` or cursor, `inverse` | `max_idle_iterations`, `max_iterations`, `max_evaluations`, `tabu_list` |
+| `TabuSearch<List, Aspiration>`, `FirstImprovementTabuSearch<…>`, `AspirationPlusTabuSearch<…>`, `EliteCandidateTabuSearch<…>` | `runners/tabu_search.hpp` | `moves` or cursor, `inverse` | `max_idle_iterations`, `max_iterations`, `max_evaluations`, `tabu_list` |
 | `SimulatedAnnealing<Temperature, Acceptance>` | `runners/simulated_annealing.hpp` | `random_move`, `cost::delta` | `temperature`: the policy's |
 
 Simulated Annealing takes a temperature policy (`Classic`, `FixedLength`,

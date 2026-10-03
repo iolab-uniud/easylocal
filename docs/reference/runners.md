@@ -42,6 +42,8 @@ held as an object: `make_runner<Algorithm>(args...)` or `Runner{Algorithm{...}}`
 | `runners::GreatDeluge` | `random_move`, `better`, an arithmetic cost | `initial_level`, `min_level`, `level_rate`, `neighbors_sampled`, `max_evaluations` (0: no budget) | proposed moves |
 | `runners::TabuSearch<List, Aspiration>` | `moves` or cursor, `better`, `inverse` | `max_idle_iterations`, `max_iterations`, `max_evaluations`, `tabu_list`: the list's | committed moves |
 | `runners::FirstImprovementTabuSearch<List, Aspiration>` | as TabuSearch | as TabuSearch, plus `improve_on_best` | committed moves |
+| `runners::AspirationPlusTabuSearch<List, Aspiration>` | as TabuSearch, an arithmetic cost | as TabuSearch, plus `min_moves`, `max_moves`, `plus`, `aspiration_level` | committed moves |
+| `runners::EliteCandidateTabuSearch<List, Aspiration>` | as TabuSearch, an arithmetic cost | as TabuSearch, plus `elite_size`, `quality` | committed moves |
 | `runners::SimulatedAnnealing<Temperature, Acceptance>` | `random_move`, `better`, an acceptance-compatible cost | a temperature policy, an acceptance policy | proposed moves |
 
 The budget is checked only before evaluating a move, so an empty neighborhood
@@ -75,6 +77,19 @@ the best solution found. `FirstImprovementTabuSearch` stops the scan at the
 first admissible move that improves the current cost (with `improve_on_best`,
 the best cost); without one it applies the best admissible move. Both take the
 RNG as a `run` argument, for the ties.
+
+Two runners implement Glover's candidate list strategies, whose levels are
+values of the cost (an arithmetic cost):
+
+- `AspirationPlusTabuSearch` examines admissible moves until `plus` more after
+  the first one under the aspiration level (`aspiration_level` times the best
+  cost), but at least `min_moves` and at most `max_moves`, and applies the best
+  examined.
+- `EliteCandidateTabuSearch` keeps, from a full scan, the `elite_size` best
+  admissible moves besides the one applied; the next iterations evaluate only
+  the kept moves still valid and apply the best admissible one while its cost
+  is at most `quality` times the best cost, otherwise a full scan builds a new
+  list.
 
 Tabu lists in `runners::tabu`; their parameters are the group `tabu_list`:
 
