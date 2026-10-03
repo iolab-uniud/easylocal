@@ -4,9 +4,11 @@
 #include "solution.hpp"
 #include "solution_manager.hpp"
 
+#include <cmath>
 #include <concepts>
 #include <cstddef>
 #include <iostream>
+#include <map>
 #include <random>
 #include <ranges>
 #include <string_view>
@@ -111,6 +113,40 @@ int main()
     ok &= expect(
         random_move.has_value() && neighborhood.is_valid(solution, *random_move),
         "single random 2-opt proposal is available and valid");
+
+    // The random proposal is uniform over the valid moves: every move of the
+    // deterministic enumeration, and no other, within 5% of its share.
+    {
+        std::map<std::pair<std::size_t, std::size_t>, std::size_t> drawn;
+        std::size_t valid_count = 0;
+        for (const auto move : easylocal::moves(neighborhood, solution))
+        {
+            drawn[{move.first_edge, move.second_edge}] = 0;
+            ++valid_count;
+        }
+        constexpr std::size_t draws = 200'000;
+        std::mt19937 uniform_rng{2026U};
+        bool only_valid = true;
+        for (std::size_t draw = 0; draw < draws; ++draw)
+        {
+            const auto move = neighborhood.random_move(solution, uniform_rng);
+            const auto found = drawn.find({move->first_edge, move->second_edge});
+            if (found == drawn.end())
+            {
+                only_valid = false;
+                continue;
+            }
+            ++found->second;
+        }
+        const double expected = static_cast<double>(draws) / static_cast<double>(valid_count);
+        bool uniform = true;
+        for (const auto& [move, count] : drawn)
+        {
+            uniform &= std::abs(static_cast<double>(count) - expected) <= 0.05 * expected;
+        }
+        ok &= expect(only_valid, "random 2-opt proposals are moves of the neighborhood");
+        ok &= expect(uniform, "random 2-opt proposals are uniform over the neighborhood");
+    }
 
     auto first_edge_zero =
         easylocal::moves(neighborhood, solution)

@@ -12,6 +12,7 @@
 #include <optional>
 #include <random>
 #include <string_view>
+#include <utility>
 
 namespace easylocal::mwe::tsp
 {
@@ -32,8 +33,6 @@ private:
                !(first_edge == 0 && second_edge + 1 == city_count);
     }
 
-    // Rank decoding supports uniform single-move proposals; deterministic
-    // authoring uses first_move/next_move.
     [[nodiscard]]
     static constexpr auto move_count(const std::size_t city_count) noexcept
         -> std::size_t
@@ -42,49 +41,6 @@ private:
             ? city_count * (city_count - 3) / 2
             : std::size_t{0};
     }
-
-    [[nodiscard]]
-    static auto move_at_rank(
-        const std::size_t city_count,
-        const std::size_t rank) noexcept -> TwoOptMove
-    {
-        assert(rank < move_count(city_count));
-
-        std::size_t current_rank = 0;
-
-        for (std::size_t first_edge = 0;
-             first_edge < city_count;
-             ++first_edge)
-        {
-            for (std::size_t second_edge = first_edge + 1;
-                 second_edge < city_count;
-                 ++second_edge)
-            {
-                if (!valid_edge_pair(
-                        city_count,
-                        first_edge,
-                        second_edge))
-                {
-                    continue;
-                }
-
-                if (current_rank == rank)
-                {
-                    return TwoOptMove{
-                        .first_edge = first_edge,
-                        .second_edge = second_edge,
-                    };
-                }
-
-                ++current_rank;
-            }
-        }
-
-        assert(false && "2-opt move rank must decode to a valid move");
-        return {};
-    }
-
-
 
 public:
     using neighborhood_explorer_base::neighborhood_explorer_base;
@@ -126,22 +82,40 @@ public:
             move);
     }
 
+    // A uniform 2-opt move in expected O(1): two edges drawn independently,
+    // ordered, and drawn again while they do not form a valid move (the same
+    // edge, adjacent edges, or the first and the last edge). Every valid pair
+    // is equally likely; with n cities about 3 draws in n are rejected.
     template<std::uniform_random_bit_generator RNG>
     [[nodiscard]]
     auto random_move(
         const Tour& solution,
         RNG& rng) const -> std::optional<TwoOptMove>
     {
-        const auto count = move_count(solution.tour.size());
-        if (count == 0)
+        const auto city_count = solution.tour.size();
+        if (move_count(city_count) == 0)
         {
             return std::nullopt;
         }
 
-        std::uniform_int_distribution<std::size_t> draw{0, count - 1};
-        return move_at_rank(solution.tour.size(), draw(rng));
+        std::uniform_int_distribution<std::size_t> draw{0, city_count - 1};
+        while (true)
+        {
+            auto first_edge = draw(rng);
+            auto second_edge = draw(rng);
+            if (second_edge < first_edge)
+            {
+                std::swap(first_edge, second_edge);
+            }
+            if (valid_edge_pair(city_count, first_edge, second_edge))
+            {
+                return TwoOptMove{
+                    .first_edge = first_edge,
+                    .second_edge = second_edge,
+                };
+            }
+        }
     }
-
 
     void make_move(
         Tour& solution,

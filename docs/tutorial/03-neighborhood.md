@@ -27,17 +27,31 @@ public:
         return result;
     }
 
+    // Uniform by rejection: two positions drawn independently, ordered, and
+    // drawn again while they are not a 2-opt move.
     template<std::uniform_random_bit_generator RNG>
     [[nodiscard]] auto random_move(const Tour& tour, RNG& rng) const
         -> std::optional<TwoOpt>
     {
-        const auto all = moves(tour);
-        if (all.empty())
+        const auto n = tour.order.size();
+        if (n < 4)
         {
             return std::nullopt;
         }
-        std::uniform_int_distribution<std::size_t> pick{0, all.size() - 1};
-        return all[pick(rng)];
+        std::uniform_int_distribution<std::size_t> pick{0, n - 1};
+        while (true)
+        {
+            auto i = pick(rng);
+            auto j = pick(rng);
+            if (j < i)
+            {
+                std::swap(i, j);
+            }
+            if (i + 2 <= j && !(i == 0 && j + 1 == n))
+            {
+                return TwoOpt{i, j};
+            }
+        }
     }
 
     [[nodiscard]] auto is_valid(const Tour& tour, const TwoOpt& move) const -> bool
@@ -61,7 +75,11 @@ public:
   the move type: a container, a view, a generator.
 - `random_move(solution, rng)` samples one move for *stochastic* algorithms
   such as Simulated Annealing, returning `std::nullopt` when there is none. It
-  need not be uniform.
+  need not be uniform, but should be cheap: it runs once per proposal. Drawing
+  the move's components and drawing again while they are not a valid move, as
+  here, is uniform over the valid moves and takes constant expected time when
+  most draws are valid; listing all the moves to pick one would cost a whole
+  neighborhood per proposal.
 - `name()` is optional: it names the neighborhood in the interactive tester.
 
 `easylocal::neighborhood_explorer_base<SolutionManager, Move>` provides the

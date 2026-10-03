@@ -206,17 +206,31 @@ public:
     }
 
     // [random-move]
+    // Uniform by rejection: two positions drawn independently, ordered, and
+    // drawn again while they are not a 2-opt move.
     template<std::uniform_random_bit_generator RNG>
     [[nodiscard]] auto random_move(const Tour& tour, RNG& rng) const
         -> std::optional<TwoOpt>
     {
-        const auto all = moves(tour);
-        if (all.empty())
+        const auto n = tour.order.size();
+        if (n < 4)
         {
             return std::nullopt;
         }
-        std::uniform_int_distribution<std::size_t> pick{0, all.size() - 1};
-        return all[pick(rng)];
+        std::uniform_int_distribution<std::size_t> pick{0, n - 1};
+        while (true)
+        {
+            auto i = pick(rng);
+            auto j = pick(rng);
+            if (j < i)
+            {
+                std::swap(i, j);
+            }
+            if (i + 2 <= j && !(i == 0 && j + 1 == n))
+            {
+                return TwoOpt{i, j};
+            }
+        }
     }
     // [random-move]
 

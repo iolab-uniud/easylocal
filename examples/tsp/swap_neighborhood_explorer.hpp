@@ -30,36 +30,6 @@ private:
             : std::size_t{0};
     }
 
-    [[nodiscard]]
-    static auto move_at_rank(
-        const std::size_t city_count,
-        const std::size_t rank) noexcept -> SwapCitiesMove
-    {
-        assert(rank < move_count(city_count));
-
-        std::size_t current_rank = 0;
-
-        for (std::size_t first = 0; first < city_count; ++first)
-        {
-            for (std::size_t second = first + 1; second < city_count; ++second)
-            {
-                if (current_rank == rank)
-                {
-                    return SwapCitiesMove{
-                        .first_position = first,
-                        .second_position = second,
-                    };
-                }
-
-                ++current_rank;
-            }
-        }
-
-        assert(false && "swap move rank must decode to a valid move");
-        return {};
-    }
-
-
 public:
     using neighborhood_explorer_base::neighborhood_explorer_base;
 
@@ -99,20 +69,32 @@ public:
             move);
     }
 
+    // A uniform swap in O(1): two distinct positions, the second drawn among
+    // the others and ordered.
     template<std::uniform_random_bit_generator RNG>
     [[nodiscard]]
     auto random_move(
         const Tour& solution,
         RNG& rng) const -> std::optional<SwapCitiesMove>
     {
-        const auto count = move_count(solution.tour.size());
-        if (count == 0)
+        const auto city_count = solution.tour.size();
+        if (move_count(city_count) == 0)
         {
             return std::nullopt;
         }
 
-        std::uniform_int_distribution<std::size_t> draw{0, count - 1};
-        return move_at_rank(solution.tour.size(), draw(rng));
+        std::uniform_int_distribution<std::size_t> draw_first{0, city_count - 1};
+        std::uniform_int_distribution<std::size_t> draw_other{0, city_count - 2};
+        const auto first = draw_first(rng);
+        auto second = draw_other(rng);
+        if (second >= first)
+        {
+            ++second;
+        }
+        return SwapCitiesMove{
+            .first_position = std::min(first, second),
+            .second_position = std::max(first, second),
+        };
     }
 
     void make_move(

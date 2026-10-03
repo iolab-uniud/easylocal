@@ -11,9 +11,9 @@ and reverses the segment `[i+1, j]`.
 Deterministic 2-opt traversal is authored through `first_move`/`next_move` and
 exposed to consumers through the unified `easylocal::moves(...)` customization
 point, which adapts the cursor protocol to a lazy `input_range`.
-Rank decoding remains an implementation detail used to generate a uniform
-single random 2-opt proposal and is not part of deterministic neighborhood
-authoring.
+A random 2-opt proposal is drawn uniformly in expected constant time, by
+rejection: two edges drawn independently and drawn again while they do not
+form a valid move.
 
 `TourLengthComponent` returns the structured materialized value
 `TourLengthValue{total}`. Because it is a domain value, the recipes map it with
