@@ -113,14 +113,48 @@ auto component(Args&&... args)
         std::decay_t<Args>...>{std::forward<Args>(args)...};
 }
 
+// The recipe of a NeighborhoodExplorer constructed from the SolutionManager
+// and args. For an explorer with parameters (parameterized_neighborhood), a
+// first argument of its parameters_type gives its parameters, which otherwise
+// are the defaults.
 template<class NHE, class... Args>
 [[nodiscard]]
 auto neighborhood(Args&&... args)
 {
-    return detail::neighborhood_recipe<
-        NHE,
-        std::tuple<std::decay_t<Args>...>>{
-        std::tuple<std::decay_t<Args>...>{std::forward<Args>(args)...}};
+    if constexpr (parameterized_neighborhood<NHE> && sizeof...(Args) > 0)
+    {
+        return [](auto&& first, auto&&... rest) {
+            if constexpr (std::same_as<
+                              std::remove_cvref_t<decltype(first)>,
+                              typename NHE::parameters_type>)
+            {
+                return detail::neighborhood_recipe<
+                    NHE,
+                    std::tuple<std::decay_t<decltype(rest)>...>>{
+                    std::tuple<std::decay_t<decltype(rest)>...>{
+                        std::forward<decltype(rest)>(rest)...},
+                    std::forward<decltype(first)>(first)};
+            }
+            else
+            {
+                return detail::neighborhood_recipe<
+                    NHE,
+                    std::tuple<
+                        std::decay_t<decltype(first)>,
+                        std::decay_t<decltype(rest)>...>>{
+                    std::tuple<
+                        std::decay_t<decltype(first)>,
+                        std::decay_t<decltype(rest)>...>{
+                        std::forward<decltype(first)>(first),
+                        std::forward<decltype(rest)>(rest)...}};
+            }
+        }(std::forward<Args>(args)...);
+    }
+    else
+    {
+        return detail::neighborhood_recipe<NHE, std::tuple<std::decay_t<Args>...>>{
+            std::tuple<std::decay_t<Args>...>{std::forward<Args>(args)...}};
+    }
 }
 
 template<class Component>

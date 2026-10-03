@@ -41,6 +41,9 @@ old concepts onto the new ones.
   same pair of jobs or either job, belongs to the explorer) and
   `tabu_attribute` (the attribute frequency memory counts, by default the move
   itself); a neighborhood union dispatches both to its children.
+- **Neighborhood parameters**: an explorer that declares a `parameters_type`
+  gets its parameters from its recipe, which exposes them as configuration
+  (`neighborhood.*`, and `neighborhood.<position>.*` in a union).
 
 ### Cost
 

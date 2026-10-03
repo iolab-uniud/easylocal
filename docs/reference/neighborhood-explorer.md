@@ -37,6 +37,35 @@ solution, move, tabu_move)` and `easylocal::tabu_attribute(nhe, move)`.
 - The explorer is constructed from the SolutionManager:
   `NHE{const SM&, args...}`, `args` from `neighborhood<NHE>(args...)`.
 
+## Parameters
+
+An explorer may have parameters, such as the inverse definition of a tabu
+search, or a neighborhood size. It declares them as a parameter block
+(`using parameters_type = P;`, see [Configuration](configuration.md)) and is
+constructed from them after the SolutionManager:
+
+```cpp
+struct SwapParameters { std::string inverse{"both_jobs"}; /* schema, validate */ };
+
+class SwapExplorer
+{
+public:
+    using parameters_type = SwapParameters;
+    SwapExplorer(const SM&, const SwapParameters&, args...);
+    // ...
+};
+
+neighborhood<SwapExplorer>()                              // default parameters
+neighborhood<SwapExplorer>(SwapParameters{...}, args...)  // given ones
+```
+
+The recipe holds the parameters (`parameters()`, `configure(p)`,
+`configuration()`), keeps them when deltas are attached, and gives them to the
+explorer each time a runner or an app is bound. A runner and an app expose them
+under `neighborhood.*`; in a union, each child's under its position
+(`neighborhood.0.*`), next to `neighborhood.random_biases`. Concept:
+`parameterized_neighborhood<NHE>`.
+
 ## Convenience base
 
 ```cpp

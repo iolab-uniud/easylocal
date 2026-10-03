@@ -290,6 +290,20 @@ add_test(
 )
 
 add_executable(
+    easylocal_neighborhood_parameters_test
+    neighborhood_parameters.cpp
+)
+target_link_libraries(
+    easylocal_neighborhood_parameters_test
+    PRIVATE
+        EasyLocal::Core
+)
+add_test(
+    NAME easylocal.neighborhood-parameters
+    COMMAND easylocal_neighborhood_parameters_test
+)
+
+add_executable(
     easylocal_concept_contracts_test
     concept_contracts.cpp
 )

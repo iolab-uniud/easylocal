@@ -68,7 +68,8 @@ prefix.
 | --- | --- |
 | a parameterized algorithm (`FirstImprovement`, `BestImprovement`, `HillClimbing`, `GreatDeluge`, `LateAcceptanceHillClimbing`, `SimulatedAnnealing`), through its runner | the fields of its `parameters_type`; `temperature.*` for Simulated Annealing |
 | the cost expression of a SolutionManager recipe | `weights` of a `cost::sum`; children by position (`0.*`, `1.*`), `hard.*` and `soft.*` of a `cost::hard_soft`; a `cost::apply` function's own |
-| `neighborhood_union` with `random_biases` | `random_biases` |
+| `neighborhood_union` with `random_biases` | `random_biases`, and each child's parameters under its position (`0.*`, `1.*`) |
+| `neighborhood<NHE>(parameters, args...)` for an explorer with `parameters_type` | the explorer's parameters |
 | `runner.configuration()` | `search.*`, `cost.*`, `neighborhood.*` |
 | an app, `app.configuration()` (also a `Session`'s) | `cost.*`, `neighborhood.*`, `runners.<name>.*` |
 | `MultiStart`, `LocalSearch`, `TwoStage` solvers | `starts` and the runner's (MultiStart), the runner's (LocalSearch), `first.*` and `second.*` (TwoStage) |

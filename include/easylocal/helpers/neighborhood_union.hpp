@@ -18,6 +18,7 @@
 #include <optional>
 #include <random>
 #include <ranges>
+#include <string>
 #include <tuple>
 #include <type_traits>
 #include <utility>
@@ -921,12 +922,14 @@ public:
         return config::validation_result::success();
     }
 
-    // The biases, at the root: a runner puts them under "neighborhood".
+    // The biases, at the root, and the parameters of the children under their
+    // positions ("0", "1"): a runner puts them under "neighborhood".
     [[nodiscard]]
     config::parameter_set configuration()
     {
         config::parameter_set parameters;
         parameters.add(*this);
+        add_child_configurations(parameters, specs_);
         return parameters;
     }
 
@@ -935,6 +938,7 @@ public:
     {
         config::parameter_set parameters;
         parameters.add(*this);
+        add_child_configurations(parameters, specs_);
         return parameters;
     }
 
@@ -959,6 +963,20 @@ public:
     }
 
 private:
+    template<class Children>
+    static void add_child_configurations(
+        config::parameter_set& parameters,
+        Children& children)
+    {
+        [&]<std::size_t... Indices>(std::index_sequence<Indices...>) {
+            (config::add_configuration(
+                 parameters,
+                 std::to_string(Indices),
+                 std::get<Indices>(children)),
+                ...);
+        }(std::index_sequence_for<Specs...>{});
+    }
+
     template<class Dependency, std::size_t... Indices>
     [[nodiscard]]
     service_type construct_impl(Dependency& dependency, std::index_sequence<Indices...>)
