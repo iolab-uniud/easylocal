@@ -1,6 +1,8 @@
 #pragma once
 
 #include <easylocal/utils/detail/meta.hpp>
+#include <easylocal/utils/generator.hpp> // IWYU pragma: export
+
 #include <cassert>
 #include <concepts>
 #include <cstddef>

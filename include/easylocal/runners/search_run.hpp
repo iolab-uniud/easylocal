@@ -9,6 +9,7 @@
 #include <cstddef>
 #include <limits>
 #include <optional>
+#include <string_view>
 #include <type_traits>
 #include <utility>
 
@@ -23,6 +24,26 @@ enum class termination_reason
     cancelled,
     target_reached,
 };
+
+// A readable name of the reason, e.g. "evaluation budget exhausted".
+[[nodiscard]]
+constexpr auto to_string(const termination_reason reason) noexcept -> std::string_view
+{
+    switch (reason)
+    {
+    case termination_reason::completed:
+        return "completed";
+    case termination_reason::local_optimum:
+        return "local optimum";
+    case termination_reason::evaluation_budget_exhausted:
+        return "evaluation budget exhausted";
+    case termination_reason::cancelled:
+        return "cancelled";
+    case termination_reason::target_reached:
+        return "target reached";
+    }
+    return "unknown";
+}
 
 // The result contract consumed by solvers, the Tester and the adapters: the
 // final solution and its cost. search_result models it; custom runners may

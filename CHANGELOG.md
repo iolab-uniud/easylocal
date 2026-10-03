@@ -26,7 +26,9 @@ old concepts onto the new ones.
   solutions, solution semantics) and one or more **NeighborhoodExplorers**
   (moves, their application, enumeration and random proposal), checked by
   concepts at compile time.
-- Neighborhoods are enumerated lazily, as ranges or as EL3-style cursors
+- Neighborhoods are enumerated lazily, as ranges (typically an
+  `easylocal::generator<Move>`, which is `std::generator` where the standard
+  library ships it and a minimal equivalent elsewhere) or as EL3-style cursors
   (`first_move` / `next_move`), and random moves are proposed with
   `random_move(solution, rng)`. Several neighborhoods combine into a
   **neighborhood union**.
@@ -55,7 +57,7 @@ old concepts onto the new ones.
   evaluation budget, cancellation, progress and trace events.
 - Every runner is cancellable through a `std::stop_token`, reports progress,
   can stop at a target cost (`stop_at(cost)`) and returns a `search_result`
-  with its `termination_reason`.
+  with its `termination_reason` (`to_string` gives a readable name).
 - Solvers: **LocalSearch**, **MultiStart** and **TwoStage** (hard constraints
   first, until the hard cost is zero, then the full cost), with pluggable
   initialization. Solvers take the same run options as runners —
