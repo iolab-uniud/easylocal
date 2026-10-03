@@ -888,6 +888,13 @@ if(Python3_Interpreter_FOUND)
             ${PROJECT_SOURCE_DIR}/scripts/sync-doc-snippets.py --check)
 endif()
 
+if(TARGET easylocal_tutorial_toml)
+    add_test(NAME easylocal.example.tutorial-toml COMMAND easylocal_tutorial_toml)
+    set_tests_properties(
+        easylocal.example.tutorial-toml
+        PROPERTIES PASS_REGULAR_EXPRESSION "2 parameter blocks from the file\ncost ")
+endif()
+
 if(TARGET easylocal_tutorial)
     add_test(NAME easylocal.example.tutorial COMMAND easylocal_tutorial)
     set_tests_properties(

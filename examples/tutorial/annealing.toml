@@ -1,0 +1,13 @@
+# Simulated Annealing for the tutorial's TSP (chapter 9).
+# Each table is a node of the configuration tree, each key a parameter:
+# [solver.search.temperature] cooling_rate is solver.search.temperature.cooling_rate.
+
+[solver.search.temperature]
+initial_temperature = 20.0
+final_temperature = 0.05
+cooling_rate = 0.9
+samples_per_temperature = 100
+
+# The weights of cost::sum(TourLength, MaxEdge), in order.
+[solver.cost]
+weights = [1.0, 5.0]
