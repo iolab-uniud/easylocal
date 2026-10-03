@@ -106,4 +106,5 @@ nav:
       - Logging: logging.md
       - Dependencies: dependency-policy.md
       - API stability: stability.md
+      - Roadmap: roadmap.md
   - Benchmarks: benchmarks.md
