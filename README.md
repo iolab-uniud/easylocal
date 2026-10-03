@@ -248,10 +248,11 @@ derives its instance through that manager. They do not use virtual dispatch and
 are not required by the structural Runner concepts; fully custom duck-typed
 services remain supported.
 
-The current Assignment, TSP, and Exam Timetabling MWEs live under
-`examples/assignment/`, `examples/tsp/`, and `examples/exam_timetabling/` and are
-intentionally not part of the public include tree. Exam Timetabling is the
-reference MWE for multi-component weighted costs and Simulated Annealing.
+The current Assignment, TSP, Exam Timetabling and PFSP MWEs live under
+`examples/assignment/`, `examples/tsp/`, `examples/exam_timetabling/` and
+`examples/pfsp/` and are intentionally not part of the public include tree.
+Exam Timetabling is the reference MWE for multi-component weighted costs and
+Simulated Annealing, PFSP for Tabu Search.
 
 Runners and solvers are built with `make_runner<Algorithm>(parameters)` and
 `make_solver<Solver>(runner, config)`. Composition has two equivalent

@@ -556,6 +556,26 @@ add_test(
 )
 
 add_executable(
+    easylocal_pfsp_test
+    pfsp.cpp
+)
+target_link_libraries(
+    easylocal_pfsp_test
+    PRIVATE
+        easylocal_pfsp_model
+)
+target_compile_definitions(
+    easylocal_pfsp_test
+    PRIVATE
+        EASYLOCAL_PFSP_SMALL_INSTANCE="${PROJECT_SOURCE_DIR}/examples/pfsp/instances/small.pfsp"
+        EASYLOCAL_PFSP_MEDIUM_INSTANCE="${PROJECT_SOURCE_DIR}/examples/pfsp/instances/medium.pfsp"
+)
+add_test(
+    NAME easylocal.pfsp
+    COMMAND easylocal_pfsp_test
+)
+
+add_executable(
     easylocal_cost_semantics_test
     cost_semantics.cpp
 )

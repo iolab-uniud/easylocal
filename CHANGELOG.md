@@ -137,8 +137,8 @@ old concepts onto the new ones.
   [tutorial](docs/tutorial/README.md) built around a TSP, and
   [reference pages](docs/reference/README.md) per component (contract, API,
   design choices). Their code is compiled and run as tests.
-- Examples: TSP, Assignment and Exam Timetabling, each with its TUI or REST
-  front-end where useful.
+- Examples: TSP, Assignment, Exam Timetabling and PFSP (Tabu Search), each
+  with its TUI or REST front-end where useful.
 - [API stability](docs/stability.md): what is stable, extensible, experimental
   or internal in 4.x.
 - [Benchmarks](docs/benchmarks.md) against EasyLocal 3 (`easylocal-legacy`
