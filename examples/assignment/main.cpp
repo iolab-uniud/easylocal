@@ -1,4 +1,4 @@
-#include "instance_io.hpp"
+#include "instance_io.hpp" // IWYU pragma: keep (the read_input hook, found by ADL)
 #include "neighborhood_explorer.hpp"
 #include "solution_manager.hpp"
 

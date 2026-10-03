@@ -1,5 +1,5 @@
 #include "application.hpp"
-#include "instance_io.hpp"
+#include "instance_io.hpp" // IWYU pragma: keep (the read_input hook, found by ADL)
 
 #include <easylocal/adapters/rest.hpp>
 #include <easylocal/app/io.hpp>
