@@ -141,9 +141,16 @@ public:
 `Tour` above is the EasyLocal 4 Solution: a value that can be copied, moved
 and assigned.
 
-- Drop the reference to the Input, and the constructor that takes it when it
-  only sizes the containers: the SolutionManager builds solutions (step 3) and
-  receives the Input there.
+- The reference to the Input is no longer needed: the SolutionManager, the
+  explorers, the cost components and the deltas are all constructed from the
+  current Input, so every member that receives a solution can reach the Input
+  too (`input()` in the bases, or the member it was stored in), and the hooks
+  that read and write a solution take it as a parameter. Keeping it is
+  possible but not recommended: the runners copy and assign solutions, which a
+  reference member forbids and a pointer (`const Input*`) only allows with
+  care, since every copy must point to the same Input that outlives it.
+- A constructor that takes the Input only to size the containers can go as
+  well: the SolutionManager builds solutions (step 4), with the Input at hand.
 - Data derived from the solution for speed (redundant matrices, counters) may
   stay in the Solution. Keep them up to date in `make_move`, and leave them out
   of solution identity with the SolutionManager's `hash` and `equal` when a
