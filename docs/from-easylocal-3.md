@@ -17,7 +17,11 @@ the tutorial. Beyond the names:
   composed algorithms and tools call, not a whole interface: an explorer used
   only by Simulated Annealing has `random_move` and no enumeration.
 - **Services are bound to an immutable Input** instead of being reconfigured,
-  so concurrent runs only share the Input.
+  so concurrent runs only share the Input. The SolutionManager, the explorers,
+  the cost components and the deltas receive it in their constructor, the
+  place for data precomputed from the instance; values (Input, Solution, Move)
+  hold no Input, and hooks such as `read_solution` receive it as a parameter
+  (see the [problem model](reference/problem-model.md#design-choices)).
 - **The cost always comes from cost components**, and their composition (the
   cost layer and the delta cost layer) is described by recipes.
 - **Hard and soft are not flags on a component.** A cost expression in the

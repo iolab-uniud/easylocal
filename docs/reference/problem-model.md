@@ -55,5 +55,20 @@ what a hook throws); the file functions report errors as
 - **Immutable, borrowed Input.** Services borrow the Input by `const&` for their
   whole lifetime; binding a temporary Input is rejected. Concurrent runs share
   only the Input.
+- **Who receives the Input.** Three kinds of code, three rules:
+  - values (Input, Solution, Move) hold no Input;
+  - services (SolutionManager, NeighborhoodExplorers, cost components, delta
+    evaluators) receive it once, in their constructor, when a runner or an
+    app is bound, and keep it; their members take only the solution and the
+    move;
+  - hooks, free functions that are not services (`read_solution`,
+    `write_solution`, `read_cost`), receive it as a parameter.
+
+  A service is built once per Input, so its constructor is where data derived
+  from the instance is computed, such as the conflicts of each exam or a
+  neighbour list: once per bind, owned by the service that uses it, and kept
+  out of the Input, which stays the instance as read. Passing the Input to
+  every call instead would leave such data nowhere but in the Input itself or
+  in a mutable cache.
 - **Structural vs. feasible.** Validity (see [SolutionManager](solution-manager.md))
   is about the representation; constraint violations are part of the cost.

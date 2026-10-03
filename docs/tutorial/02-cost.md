@@ -37,7 +37,11 @@ private:
 - The component keeps a reference to the Input, `input_`, received in its
   constructor: the framework constructs the component when the runner is
   bound, as `Component{const Input&, args...}` (preferred) or
-  `Component{args...}` (accepted for stateless components).
+  `Component{args...}` (accepted for stateless components). The constructor
+  runs once per Input, so it is also the place to precompute data derived
+  from the instance; `evaluate` then takes only the solution. Every service
+  receives the Input in the same way (see the
+  [problem model](../reference/problem-model.md#design-choices)).
 - `(k + 1) % n` makes the last city connect back to the first one.
 
 Components are attached to the SolutionManager with a **recipe**
