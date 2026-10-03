@@ -15,18 +15,31 @@ in a test or to reproduce a situation step by step:
 el::Tester tester{application, /* seed */ 2026};
 tester.set_input(tsp);
 tester.use_initial_solution();
-(void)tester.use_first_improving_move();
-(void)tester.run_runner("sa"); // receives the Tester's RNG
-(void)tester.run_runner("fi");
+
+// Select the first improving move, if there is one, and apply it.
+if (tester.use_first_improving_move())
+    tester.apply_move();
+
+// Run registered runners by name; false means no runner has that name.
+if (!tester.run_runner("sa")) // receives the Tester's RNG
+    return 1;
+if (!tester.run_runner("fi"))
+    return 1;
 ```
 
 - Input and Solution come from `set_input` / `set_solution`, from
   `use_initial_solution()` / `use_random_solution(rng)`, or from files with
   `load_input` / `load_solution` when the problem provides the I/O hooks
   (below); `save_solution` writes the current one.
-- Moves: `use_first_move`, `use_next_move`, `use_first_improving_move`,
-  `use_best_move`, `use_random_move`; `evaluate()` gives the current cost.
-- `run_runner(name)` replaces the current solution with the runner's result.
+- Moves are handled in two steps: `use_first_move`, `use_next_move`,
+  `use_first_improving_move`, `use_best_move` and `use_random_move` *select* a
+  move, and `apply_move()` applies the selected one. The selection returns
+  `false` when there is no such move: `use_first_improving_move` on a local
+  optimum, for example. `evaluate()` gives the current cost.
+- `run_runner(name)` replaces the current solution with the runner's result,
+  and returns `false` when no runner has that name.
+- These results are marked `[[nodiscard]]`: the compiler warns when one is
+  ignored, since a misspelt runner name would otherwise run nothing, silently.
 
 ## The interactive tester
 

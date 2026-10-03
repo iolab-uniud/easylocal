@@ -217,9 +217,16 @@ int main(int argc, char* argv[])
     el::Tester tester{application, /* seed */ 2026};
     tester.set_input(tsp);
     tester.use_initial_solution();
-    (void)tester.use_first_improving_move();
-    (void)tester.run_runner("sa"); // receives the Tester's RNG
-    (void)tester.run_runner("fi");
+
+    // Select the first improving move, if there is one, and apply it.
+    if (tester.use_first_improving_move())
+        tester.apply_move();
+
+    // Run registered runners by name; false means no runner has that name.
+    if (!tester.run_runner("sa")) // receives the Tester's RNG
+        return 1;
+    if (!tester.run_runner("fi"))
+        return 1;
     // [tester] -------------------------------------------------------------
 
     // [tester-checks] ------------------------------------------------------
