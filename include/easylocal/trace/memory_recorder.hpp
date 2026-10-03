@@ -89,6 +89,14 @@ public:
         std::size_t moves{};
     };
 
+    struct tabu_tenure_changed_record
+    {
+        std::size_t evaluations{};
+        std::size_t iterations{};
+        std::size_t previous_tenure{};
+        std::size_t tenure{};
+    };
+
     struct run_finished_record
     {
         std::size_t evaluations{};
@@ -106,6 +114,7 @@ public:
         solution_visited_record,
         aspiration_applied_record,
         tabu_escape_record,
+        tabu_tenure_changed_record,
         run_finished_record>;
 
     template<class Event>
@@ -198,6 +207,17 @@ public:
                 .evaluations = value.evaluations,
                 .iterations = value.iterations,
                 .moves = value.moves,
+            });
+    }
+
+    void emit(const event::tabu_tenure_changed& value)
+    {
+        records_.emplace_back(
+            tabu_tenure_changed_record{
+                .evaluations = value.evaluations,
+                .iterations = value.iterations,
+                .previous_tenure = value.previous_tenure,
+                .tenure = value.tenure,
             });
     }
 

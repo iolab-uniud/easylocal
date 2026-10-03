@@ -1,6 +1,6 @@
 // The tabu lists, through their states: a candidate forbidden by the moves of
 // opposite sign, whose attribute is its absolute value, and steps that carry a
-// move, an iteration and a solution hash.
+// move, an iteration, a solution and its hash.
 #include <easylocal/runners/tabu_search.hpp>
 
 #include <cstddef>
@@ -9,6 +9,7 @@
 #include <iostream>
 #include <optional>
 #include <random>
+#include <stdexcept>
 #include <string_view>
 
 namespace
@@ -44,6 +45,7 @@ struct Step
     std::uint64_t hash{};
     int value{};
     bool improved{};
+    int reached{};
 
     [[nodiscard]] auto cost() const -> const int&
     {
@@ -74,13 +76,50 @@ struct Step
     {
         return hash;
     }
+
+    [[nodiscard]] auto solution() const -> const int&
+    {
+        return reached;
+    }
+
+    [[nodiscard]] auto same_solution(const int other) const -> bool
+    {
+        return other == reached;
+    }
 };
 
-// A run type with int moves and costs, for make_state<Run>().
+// A run type with int moves, costs and solutions, for make_state<Run>().
 struct IntRun
 {
+    struct manager
+    {
+        using solution_type = int;
+    };
+
     using move_type = int;
     using cost_type = int;
+    using solution_type = int;
+
+    [[nodiscard]] auto solution_manager() const -> manager;
+};
+
+// A run whose solutions cannot be compared.
+struct OpaqueRun
+{
+    struct solution
+    {
+    };
+
+    struct manager
+    {
+        using solution_type = solution;
+    };
+
+    using move_type = int;
+    using cost_type = int;
+    using solution_type = solution;
+
+    [[nodiscard]] auto solution_manager() const -> manager;
 };
 
 auto expect(const bool condition, const std::string_view description) -> bool
@@ -228,6 +267,42 @@ int main()
         ok &= expect(
             calm.current_tenure() == 1,
             "reactive: without cycles for longer than the average, the tenure decreases");
+
+        // Solutions 1, 2 and 3 share a hash: without verify_equality each
+        // visit after the first is a cycle, with it none is.
+        tabu::ReactiveParameters colliding{.increase = 2.0, .cycle_length = 10};
+        auto by_hash = tabu::Reactive{colliding}.make_state<IntRun>();
+        colliding.verify_equality = true;
+        auto by_solution = tabu::Reactive{colliding}.make_state<IntRun>();
+        for (int solution = 1; solution <= 3; ++solution)
+        {
+            const Step step{
+                .applied = solution,
+                .at = static_cast<std::size_t>(solution),
+                .hash = 99,
+                .reached = solution};
+            by_hash.update(step, rng);
+            by_solution.update(step, rng);
+        }
+        ok &= expect(
+            by_hash.current_tenure() == 4 && by_solution.current_tenure() == 1,
+            "reactive: verify_equality tells apart solutions with the same hash");
+        by_solution.update(Step{.applied = 4, .at = 4, .hash = 99, .reached = 2}, rng);
+        ok &= expect(
+            by_solution.current_tenure() == 2,
+            "reactive: verify_equality still sees a real revisit");
+        bool rejected = false;
+        try
+        {
+            (void)tabu::Reactive{colliding}.make_state<OpaqueRun>();
+        }
+        catch (const std::invalid_argument&)
+        {
+            rejected = true;
+        }
+        ok &= expect(rejected, "reactive: verify_equality needs solution equality");
+        (void)tabu::Reactive{{}}.make_state<OpaqueRun>();
+
         ok &= expect(
             !tabu::ReactiveParameters{.increase = 1.0}.validate()
                 && !tabu::ReactiveParameters{.decrease = 1.0}.validate(),

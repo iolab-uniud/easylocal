@@ -198,6 +198,13 @@ public:
              << "}\n";
     }
 
+    void emit(const event::tabu_tenure_changed& value)
+    {
+        out_ << "{\"event\":\"tabu_tenure_changed\",\"evaluations\":" << value.evaluations
+             << ",\"iterations\":" << value.iterations << ",\"previous_tenure\":"
+             << value.previous_tenure << ",\"tenure\":" << value.tenure << "}\n";
+    }
+
     void emit(const event::run_finished<Cost>& value)
     {
         out_ << "{\"event\":\"run_finished\",\"evaluations\":" << value.evaluations
@@ -323,6 +330,16 @@ void write_jsonl(
                     out << "{\"event\":\"tabu_escape\",\"evaluations\":"
                         << record.evaluations << ",\"iterations\":" << record.iterations
                         << ",\"moves\":" << record.moves << '}';
+                }
+                else if constexpr (
+                    std::same_as<
+                        record_type,
+                        typename recorder_type::tabu_tenure_changed_record>)
+                {
+                    out << "{\"event\":\"tabu_tenure_changed\",\"evaluations\":"
+                        << record.evaluations << ",\"iterations\":" << record.iterations
+                        << ",\"previous_tenure\":" << record.previous_tenure
+                        << ",\"tenure\":" << record.tenure << '}';
                 }
                 else if constexpr (std::same_as<record_type, typename recorder_type::run_finished_record>)
                 {

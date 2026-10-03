@@ -206,6 +206,7 @@ enum class core_binary_event_tag : std::uint8_t
     solution_visited = 8,
     aspiration_applied = 9,
     tabu_escape = 10,
+    tabu_tenure_changed = 11,
 };
 
 inline void append_u32_le(std::vector<char>& buffer, const std::uint32_t value)
@@ -336,6 +337,23 @@ void encode_core_event(
     out.u64(value.evaluations);
     out.u64(value.iterations);
     out.u64(value.moves);
+}
+
+constexpr std::uint8_t core_event_tag(const event::tabu_tenure_changed&) noexcept
+{
+    return static_cast<std::uint8_t>(core_binary_event_tag::tabu_tenure_changed);
+}
+
+template<class CostWriter>
+void encode_core_event(
+    binary_record_writer& out,
+    const event::tabu_tenure_changed& value,
+    CostWriter&)
+{
+    out.u64(value.evaluations);
+    out.u64(value.iterations);
+    out.u64(value.previous_tenure);
+    out.u64(value.tenure);
 }
 
 template<class Cost, class CostWriter>

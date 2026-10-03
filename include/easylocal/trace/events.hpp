@@ -112,6 +112,16 @@ struct tabu_escape
     std::size_t moves{};
 };
 
+// The tenure of a tabu list with one tenure for all its moves changed, from
+// previous_tenure (0 at the start of a run) to tenure.
+struct tabu_tenure_changed
+{
+    std::size_t evaluations{};
+    std::size_t iterations{};
+    std::size_t previous_tenure{};
+    std::size_t tenure{};
+};
+
 template<class Cost>
 struct run_finished
 {

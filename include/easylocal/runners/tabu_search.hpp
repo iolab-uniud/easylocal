@@ -18,6 +18,7 @@
 #include <deque>
 #include <optional>
 #include <random>
+#include <stdexcept>
 #include <tuple>
 #include <type_traits>
 #include <unordered_map>
@@ -167,6 +168,15 @@ public:
     std::uint64_t solution_hash() const
     {
         return easylocal::solution_hash(run_.solution_manager(), solution_);
+    }
+
+    template<class R = Run>
+        requires has_solution_equality<
+            std::remove_cvref_t<decltype(std::declval<const R&>().solution_manager())>>
+    [[nodiscard]]
+    bool same_solution(const solution_type& other) const
+    {
+        return easylocal::solutions_equal(run_.solution_manager(), solution_, other);
     }
 
 private:
@@ -369,6 +379,12 @@ public:
                 newest_ = (newest_ + 1) % tenure_;
                 moves_[newest_] = step.move();
             }
+        }
+
+        [[nodiscard]]
+        std::size_t current_tenure() const noexcept
+        {
+            return tenure_;
         }
 
     private:
@@ -581,6 +597,9 @@ struct ReactiveParameters
     std::size_t cycle_length{50};
     // The largest tenure.
     std::size_t max_tenure{1000};
+    // Confirms a revisit by comparing the solutions with the same hash, which
+    // keeps a copy of each visited solution; it needs solution equality.
+    bool verify_equality{false};
 
     [[nodiscard]]
     static consteval auto parameter_schema()
@@ -597,7 +616,9 @@ struct ReactiveParameters
             config::field<"cycle_length", &ReactiveParameters::cycle_length>(
                 "Revisits closer than this many iterations are cycles"),
             config::field<"max_tenure", &ReactiveParameters::max_tenure>(
-                "The largest tenure"));
+                "The largest tenure"),
+            config::field<"verify_equality", &ReactiveParameters::verify_equality>(
+                "Confirm revisits by comparing solutions with equal hashes"));
     }
 
     [[nodiscard]]
@@ -623,8 +644,10 @@ struct ReactiveParameters
 // than the average, the tenure is multiplied by decrease. A solution visited
 // more than repetitions times counts as chaos; after more than chaos counts the
 // memory is reset and the search escapes with 1 + (1 + r) * average / 2
-// random moves, r uniform in [0, 1). It needs the solution hash
-// (has_solution_hash); a collision is taken for a revisit.
+// random moves, r uniform in [0, 1), which are recorded like the others. It
+// needs the solution hash (has_solution_hash); a collision is taken for a
+// revisit unless verify_equality keeps the solutions to compare them, which
+// needs solution equality (has_solution_equality).
 class Reactive
 {
 public:
@@ -636,7 +659,7 @@ public:
         assert(parameters_.validate());
     }
 
-    template<class Move>
+    template<class Move, class Solution>
     class state
     {
     public:
@@ -673,13 +696,16 @@ public:
             moves_.emplace_front(step.move(), iteration_);
             ++since_change_;
 
-            const auto [visit, first] =
-                history_.try_emplace(step.solution_hash(), visit_record{iteration_, 1});
-            if (!first)
+            auto* visit = find_visit(step);
+            if (visit == nullptr)
             {
-                const auto cycle = iteration_ - visit->second.last;
-                visit->second.last = iteration_;
-                if (++visit->second.count > parameters_.repetitions
+                add_visit(step);
+            }
+            else
+            {
+                const auto cycle = iteration_ - visit->last;
+                visit->last = iteration_;
+                if (++visit->count > parameters_.repetitions
                     && ++chaos_ > parameters_.chaos)
                 {
                     std::uniform_real_distribution<double> draw{0.0, 1.0};
@@ -728,16 +754,52 @@ public:
         }
 
     private:
+        // The visits of a solution: the last one and their number. With
+        // verify_equality, the solution itself, among those with its hash.
         struct visit_record
         {
+            std::optional<Solution> solution;
             std::size_t last;
             std::size_t count;
         };
 
+        template<class Step>
+        visit_record* find_visit(const Step& step)
+        {
+            const auto found = history_.find(step.solution_hash());
+            if (found == history_.end())
+                return nullptr;
+            if (!parameters_.verify_equality)
+                return &found->second.front();
+            if constexpr (requires(const Solution& solution) {
+                              step.same_solution(solution);
+                          })
+            {
+                for (auto& visit : found->second)
+                    if (step.same_solution(*visit.solution))
+                        return &visit;
+            }
+            return nullptr;
+        }
+
+        template<class Step>
+        void add_visit(const Step& step)
+        {
+            auto& visits = history_[step.solution_hash()];
+            visits.push_back(
+                visit_record{
+                    .solution = parameters_.verify_equality
+                        ? std::optional<Solution>{step.solution()}
+                        : std::nullopt,
+                    .last = iteration_,
+                    .count = 1});
+        }
+
         ReactiveParameters parameters_;
         // Newest first.
         std::deque<std::pair<Move, std::size_t>> moves_;
-        std::unordered_map<std::uint64_t, visit_record> history_;
+        // The visits by solution hash; more than one only with verify_equality.
+        std::unordered_map<std::uint64_t, std::vector<visit_record>> history_;
         double tenure_{1.0};
         double average_cycle_;
         std::size_t since_change_{};
@@ -748,9 +810,17 @@ public:
 
     template<class Run>
     [[nodiscard]]
-    state<typename Run::move_type> make_state() const
+    auto make_state() const
     {
-        return state<typename Run::move_type>{parameters_};
+        using solution_manager_type =
+            std::remove_cvref_t<decltype(std::declval<const Run&>().solution_manager())>;
+        if constexpr (!has_solution_equality<solution_manager_type>)
+        {
+            if (parameters_.verify_equality)
+                throw std::invalid_argument{
+                    "verify_equality needs solution equality (has_solution_equality)"};
+        }
+        return state<typename Run::move_type, typename Run::solution_type>{parameters_};
     }
 
 private:
@@ -1530,13 +1600,16 @@ public:
         auto best_cost = current.cost();
         auto best_solution = solution;
         using list_type = decltype(tabu_list_.template make_state<Run>());
-        return tabu_run<Run, list_type>{
+        tabu_run<Run, list_type> state{
             .solution = std::move(solution),
             .current = std::move(current),
             .best_solution = std::move(best_solution),
             .best_cost = std::move(best_cost),
             .list = tabu_list_.template make_state<Run>(),
         };
+        if constexpr (requires { state.list.current_tenure(); })
+            tenure_changed(run, 0, state.list.current_tenure());
+        return state;
     }
 
     // The idle and iteration limits, checked before each iteration.
@@ -1679,17 +1752,10 @@ public:
                     .cost = state.current.cost(),
                 });
         }
-        state.list.update(
-            tabu_step<Run>{
-                run,
-                *scan.chosen_move,
-                state.solution,
-                state.current.cost(),
-                state.idle_iterations == 0},
-            rng);
+        update_list(run, state, *scan.chosen_move, rng);
 
         // The reactive list's escape: random moves, applied whatever their
-        // cost and not recorded in the list.
+        // cost and recorded in the list like the others.
         if constexpr (requires { state.list.escape_moves(); })
         {
             const auto escape_moves = state.list.escape_moves();
@@ -1714,6 +1780,7 @@ public:
                     break;
                 auto candidate = run.evaluate_move(state.solution, state.current, *move);
                 commit(run, state, std::move(candidate), *move);
+                update_list(run, state, *move, rng);
             }
         }
         return true;
@@ -1792,6 +1859,49 @@ private:
         {
             ++state.idle_iterations;
         }
+    }
+
+    // Records the move just applied in the list, and traces a change of its
+    // tenure when the list has one tenure for all moves.
+    template<class Run, class State, class RNG>
+    static void update_list(
+        Run& run,
+        State& state,
+        const typename Run::move_type& move,
+        RNG& rng)
+    {
+        const tabu_step<Run> step{
+            run,
+            move,
+            state.solution,
+            state.current.cost(),
+            state.idle_iterations == 0};
+        if constexpr (requires { state.list.current_tenure(); })
+        {
+            const auto previous = state.list.current_tenure();
+            state.list.update(step, rng);
+            if (const auto tenure = state.list.current_tenure(); tenure != previous)
+                tenure_changed(run, previous, tenure);
+        }
+        else
+        {
+            state.list.update(step, rng);
+        }
+    }
+
+    template<class Run>
+    static void tenure_changed(
+        Run& run,
+        const std::size_t previous_tenure,
+        const std::size_t tenure)
+    {
+        run.emit(
+            trace::event::tabu_tenure_changed{
+                .evaluations = run.evaluations(),
+                .iterations = run.iterations(),
+                .previous_tenure = previous_tenure,
+                .tenure = tenure,
+            });
     }
 
     // Uniform in [0, count).

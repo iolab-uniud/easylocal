@@ -504,11 +504,11 @@ int main()
         easylocal::trace::memory_recorder<int> trace;
         const auto result =
             runner.bind(instance).run(Position{5}, rng, easylocal::with(trace));
+        using recorder = easylocal::trace::memory_recorder<int>;
         std::size_t accepted = 0;
         std::size_t escapes = 0;
         for (const auto& record : trace.records())
         {
-            using recorder = easylocal::trace::memory_recorder<int>;
             accepted += std::holds_alternative<recorder::move_accepted_record>(record);
             escapes += std::holds_alternative<recorder::tabu_escape_record>(record);
         }
@@ -517,7 +517,23 @@ int main()
                 .max_iterations = 40,
                 .tabu_list = {.repetitions = 1000, .cycle_length = 100}});
         std::mt19937 calm_rng{7U};
-        const auto without_escape = calm.bind(instance).run(Position{5}, calm_rng);
+        easylocal::trace::memory_recorder<int> calm_trace;
+        const auto without_escape =
+            calm.bind(instance).run(Position{5}, calm_rng, easylocal::with(calm_trace));
+
+        // Without escapes the cycles make the tenure grow.
+        std::vector<recorder::tabu_tenure_changed_record> tenures;
+        for (const auto& record : calm_trace.records())
+            if (const auto* change =
+                    std::get_if<recorder::tabu_tenure_changed_record>(&record))
+                tenures.push_back(*change);
+        bool consistent = tenures.size() > 1 && tenures.front().previous_tenure == 0
+            && tenures.front().tenure == 1 && tenures.front().iterations == 0;
+        for (std::size_t index = 1; index < tenures.size(); ++index)
+            consistent = consistent
+                && tenures[index].previous_tenure == tenures[index - 1].tenure
+                && tenures[index].tenure != tenures[index].previous_tenure;
+        ok &= expect(consistent, "the tenure is traced at the start and at each change");
         ok &= expect(
             result.iterations == 40 && accepted == 40 && escapes > 0
                 && result.evaluations < without_escape.evaluations && result.cost == 0,

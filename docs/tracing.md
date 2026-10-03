@@ -29,8 +29,10 @@ solution reached (`solution_hash`, see
 Search Trajectory Networks and Local Optima Networks. It is emitted only when
 the problem has a solution hash, and the hash is computed only when the tracer
 observes the event. Tabu search adds `aspiration_applied`, when the move just
-applied was tabu and admitted by the aspiration criterion, and `tabu_escape`,
-before the random moves of a reactive list's escape.
+applied was tabu and admitted by the aspiration criterion, `tabu_escape`,
+before the random moves of a reactive list's escape, and `tabu_tenure_changed`,
+with the previous and the new tenure of a list with one tenure for all its
+moves, at the start of the run (previous tenure 0) and at each change.
 
 ## Composite-neighborhood provenance
 
@@ -130,6 +132,7 @@ an arithmetic cost as `i64`, `u64` or `f64`).
 | 8 | `solution_visited` | evaluations `u64`, iterations `u64`, hash `u64`, cost |
 | 9 | `aspiration_applied` | evaluations `u64`, iterations `u64`, cost |
 | 10 | `tabu_escape` | evaluations `u64`, iterations `u64`, moves `u64` |
+| 11 | `tabu_tenure_changed` | evaluations `u64`, iterations `u64`, previous tenure `u64`, tenure `u64` |
 | 128–255 | application events | as their encoder writes them |
 
 ### Decoding ELTR

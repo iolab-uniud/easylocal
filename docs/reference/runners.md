@@ -98,7 +98,7 @@ Tabu lists in `runners::tabu`; their parameters are the group `tabu_list`:
 | `FixedLength` (TS1) | `tenure` | for `tenure` iterations after the move it would undo |
 | `RandomTenure` (TS2) | `min_tenure`, `max_tenure` | for a tenure drawn uniformly in `[min_tenure, max_tenure]` |
 | `Cyclic` (TS3) | `period`, `tenures` | for the current tenure, which takes the `tenures` in turn every `period` iterations |
-| `Reactive` (TS4) | `increase`, `decrease`, `repetitions`, `chaos`, `cycle_length`, `max_tenure` | for a tenure that reacts to revisited solutions; needs the solution hash and `random_move` |
+| `Reactive` (TS4) | `increase`, `decrease`, `repetitions`, `chaos`, `cycle_length`, `max_tenure`, `verify_equality` | for a tenure that reacts to revisited solutions; needs the solution hash and `random_move` |
 | `Frequency` (TS5) | `threshold` | while its attribute was applied in more than `threshold` of the iterations; needs `tabu_attribute`, not `inverse` |
 | `ObjectiveBased` | `tenure` | while its cost equals one reached in the last `tenure` iterations; needs neither, but `==` on costs |
 | `LimDynamic` | `min_tenure`, `max_tenure`, `idle_threshold` | for a tenure that grows by one after `idle_threshold` idle iterations and falls back to `min_tenure` on an improvement or at `max_tenure` |
@@ -111,14 +111,17 @@ evaluating each move before the tabu check (see
 [NeighborhoodExplorer](neighborhood-explorer.md)); each requires only what it
 uses. `Reactive` (Battiti and Tecchiolli) starts with tenure 1 and recognizes
 solutions by `solution_hash` (see [SolutionManager](solution-manager.md)); a
-hash collision counts as a revisit. A solution revisited within `cycle_length`
+hash collision counts as a revisit, unless `verify_equality` keeps a copy of
+each visited solution and compares those with the same hash, which needs
+solution equality (`has_solution_equality`, otherwise the run throws
+`std::invalid_argument`). A solution revisited within `cycle_length`
 iterations multiplies the tenure by `increase` (up to `max_tenure`) and updates
 the average cycle length; without such cycles for longer than the average, the
 tenure is multiplied by `decrease`. A solution visited more than `repetitions`
 times counts as chaos; after more than `chaos` counts the memory is reset and
 the search escapes with `1 + (1 + r) * average / 2` random moves (`r` uniform
-in `[0, 1)`), applied whatever their cost, counted as iterations and not
-recorded in the list.
+in `[0, 1)`), applied whatever their cost, counted as iterations and
+recorded in the list like the others.
 
 A tabu list is a value with its parameters that makes, for each run, a state
 with `make_state<Run>()`. `tabu_tenure(candidate)` gives the iterations left
@@ -128,8 +131,10 @@ before a candidate move is admissible, nothing when it is (`tabu_candidate`:
 `update(step, rng)` records an applied move (`tabu_step`: `move()`,
 `solution()`, `cost()`, `iteration()`, `improved_best()`, `attribute()`,
 `solution_hash()`, the last two when the problem has them). A state with
-`escape_moves()` asks for that many random moves. `tabu_list_for` checks a
-custom list.
+`escape_moves()` asks for that many random moves, and one with
+`current_tenure()`, a tenure for all its moves, has it traced as
+`tabu_tenure_changed` at the start of the run and whenever it changes.
+`tabu_list_for` checks a custom list.
 
 Great Deluge accepts a move that improves the current cost or whose cost does
 not exceed the water level. The level starts at `initial_level` times the
