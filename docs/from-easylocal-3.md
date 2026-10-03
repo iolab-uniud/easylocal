@@ -366,7 +366,7 @@ public:
 | `CostFunctionComponents`, `AddCostComponent` | the recipe (step 5) |
 | `LowerBoundReached`, `OptimalStateReached` | a target cost for the run: `stop_at(cost)` |
 | `StateDistance` | no counterpart |
-| `PrintState`, `DumpState` | `describe(solution)`, `write_solution` (step 7) |
+| `PrintState`, `DumpState` | `describe(solution)`, `write_solution` (steps 2 and 8) |
 
 The function that creates a random state needs no other change than taking
 the generator as a parameter: replace `Random::GetGenerator()` and
@@ -793,9 +793,38 @@ that were not runner parameters, are given to `cli::run` as a parameter set,
 `el::cli::run(application, argc, argv, {.parameters = own})`, and parsed with
 the others ([chapter 11](tutorial/11-apps-and-tools.md)).
 
-The tester takes the same app, so the branch that opened `RunMainMenu` becomes
-a call to the TextUI, in a program linked with the optional `TUI` component
-([chapter 12](tutorial/12-tester.md)):
+The branch that opened the tester, `tester.RunMainMenu()`, is the subject of
+step 10.
+
+When a program needs a solver rather than a single run, `make_solver` wraps a
+runner ([chapter 8](tutorial/08-solvers.md)): `solvers::LocalSearch` is the counterpart of
+`SimpleLocalSearch`, `solvers::MultiStart` of `MultiStartSearch`.
+
+### 10. The tester
+
+The EasyLocal 3 tester was written by hand in the library, with no other
+dependency: a `Tester` on the SolutionManager, a `MoveTester` for each
+explorer, and text menus read from the standard input:
+
+```cpp title="EasyLocal 3"
+Tester<Input, Tour, CostStructure> tester(in, sm);
+MoveTester<Input, Tour, TwoOpt, CostStructure> two_opt_test(in, sm, nhe, "2-opt", tester);
+tester.RunMainMenu();
+```
+
+```text title="EasyLocal 3 — the tester's main menu"
+MAIN MENU:
+   (1) Move menu
+   (3) Run menu
+   (4) State menu
+   (0) Exit
+ Your choice:
+```
+
+In EasyLocal 4 the tester is the TextUI, an interactive terminal interface
+built on FTXUI in the optional `TUI` component ([chapter 12](tutorial/12-tester.md)).
+It takes the same app as `cli::run`: no tester object, no move tester to
+register, since the app already names the neighborhood and the runners:
 
 <!-- snippet: tutorial/tui_main.cpp:tui -->
 ```cpp title="EasyLocal 4"
@@ -815,11 +844,23 @@ el::tui::run(
     });
 ```
 
-When a program needs a solver rather than a single run, `make_solver` wraps a
-runner ([chapter 8](tutorial/08-solvers.md)): `solvers::LocalSearch` is the counterpart of
-`SimpleLocalSearch`, `solvers::MultiStart` of `MultiStartSearch`.
+Its pages take over the menus. The **Move** page selects moves (first, next,
+best, random) and compares the incremental evaluation of the selected one
+with the full evaluation, as the `MoveTester` did:
 
-### 10. A two-stage main
+![The Move page of the TextUI, with the best 2-opt move and its delta check](tutorial/images/tui-moves.svg)
+
+The **Run** page runs a registered runner from the current solution, after
+editing its parameters, with live progress and a stop key, and shows the
+result:
+
+![The Run page of the TextUI after a Simulated Annealing run](tutorial/images/tui-run.svg)
+
+The **Input/Output** page takes over the State menu: the initial or a random
+solution, reading and writing solutions with the hooks of step 2, and the
+checks of the composed problem.
+
+### 11. A two-stage main
 
 The `main` of a real EasyLocal 3 solver is usually longer than the one above.
 A common shape is a solve in two stages: first a search on the hard
@@ -966,7 +1007,7 @@ previous result, `runner.bind(input).run(previous.solution, rng)`. A solver
 for them is in the [roadmap](roadmap.md), together with support for
 parameter tuning (irace, SMAC, Optuna).
 
-### 11. Several neighborhoods
+### 12. Several neighborhoods
 
 A `MultimodalNeighborhoodExplorer` (set union with biases) becomes a
 `neighborhood_union` of the explorers' recipes, each with its own deltas:
