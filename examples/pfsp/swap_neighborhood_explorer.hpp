@@ -21,7 +21,7 @@ namespace pfsp
 // IN1, a swap of the same two jobs; IN2, any swap moving a or b. The two are
 // distinct neighborhoods, resolved at compile time: inverse is called for
 // every candidate move against every entry of the tabu list.
-enum class SwapInverse
+enum class SwapInverse : std::uint8_t
 {
     both_jobs,
     either_job,
