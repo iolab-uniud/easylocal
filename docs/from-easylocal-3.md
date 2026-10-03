@@ -236,25 +236,67 @@ operators unchanged.
 
 ### 3. The Move
 
+An EasyLocal 3 Move was a class with a constructor that set its attributes,
+with default arguments, since the runners declared a Move and then filled it,
+and the comparison and stream operators the framework required:
+
 ```cpp title="EasyLocal 3"
 class TwoOpt
 {
 public:
-    std::size_t first_edge = 0, second_edge = 0;
+    TwoOpt(std::size_t first_edge = 0, std::size_t second_edge = 0)
+        : first_edge(first_edge), second_edge(second_edge) {}
+    std::size_t first_edge, second_edge;
 };
 bool operator==(const TwoOpt& a, const TwoOpt& b);
 bool operator!=(const TwoOpt& a, const TwoOpt& b);
 bool operator<(const TwoOpt& a, const TwoOpt& b);
 std::ostream& operator<<(std::ostream& os, const TwoOpt& mv);
+
+// in the explorer
+mv = TwoOpt(first_edge, second_edge);
 ```
 
-The Move stays a plain struct, `TwoOpt{i, j}` in the tutorial (step 7), but
-none of these operators is required any more:
+In EasyLocal 4 the Move is a `struct` with public members and no constructor:
 
-- `operator==` is used by the neighborhood checks of a Session ([chapter 13](tutorial/13-checking.md));
-- `operator<<` or `describe(move)` gives the text the tester shows;
-- `operator<` and `operator!=` are not used: remove them if nothing else needs
-  them.
+<!-- snippet: tutorial/tsp.hpp:two-opt-move -->
+```cpp title="EasyLocal 4"
+// Move: reverse the part of the tour between positions i + 1 and j.
+struct TwoOpt
+{
+    std::size_t i;
+    std::size_t j;
+};
+```
+
+- **A struct, with public members**: the explorer, the deltas and the tester
+  read the attributes of a move directly, and the move has no invariant to
+  protect.
+- **No constructor**: the struct is an aggregate, so it is created with braces,
+  `TwoOpt{i, j}` or `TwoOpt{.i = i, .j = j}`, as the explorer of step 7 does.
+  It is also default-constructible, `TwoOpt{}` with zero members, which an
+  explorer with a cursor (`first_move`, `next_move`) needs; prefer these
+  implicit constructors to writing one.
+- **No operator is required**, but the ones you have can stay, and are used
+  when present:
+  - `operator==` by the neighborhood checks of a Session
+    ([chapter 13](tutorial/13-checking.md));
+  - `operator<<`, or `describe(move)`, for the text the tester shows;
+  - `operator<` and `operator!=` are not used: remove them if nothing else
+    needs them.
+
+  In C++20 a defaulted `operator==` is enough, and the struct stays an
+  aggregate:
+
+  ```cpp title="EasyLocal 4 — optional"
+  struct TwoOpt
+  {
+      std::size_t i;
+      std::size_t j;
+
+      bool operator==(const TwoOpt&) const = default;
+  };
+  ```
 
 ### 4. The SolutionManager
 

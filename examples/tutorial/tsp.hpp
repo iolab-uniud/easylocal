@@ -222,12 +222,14 @@ public:
 // [neighborhood] -----------------------------------------------------------
 
 // [two-opt] ----------------------------------------------------------------
+// [two-opt-move]
 // Move: reverse the part of the tour between positions i + 1 and j.
 struct TwoOpt
 {
     std::size_t i;
     std::size_t j;
 };
+// [two-opt-move]
 
 class TwoOptExplorer : public easylocal::neighborhood_explorer_base<TourManager, TwoOpt>
 {
