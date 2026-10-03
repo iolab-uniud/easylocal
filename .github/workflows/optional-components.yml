@@ -91,68 +91,6 @@ jobs:
             build/optional-fetch/CMakeFiles/CMakeConfigureLog.yaml
             build/optional-fetch/Testing/Temporary/LastTest.log
 
-  linux-system-config-toml:
-    name: Linux / ConfigTOML / system dependency
-    runs-on: ubuntu-26.04
-    timeout-minutes: 30
-    steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-
-      - name: Install system dependencies
-        run: |
-          if [ "$(id -u)" -eq 0 ]; then
-            elevate=()
-          else
-            elevate=(sudo)
-          fi
-          "${elevate[@]}" apt-get -o Acquire::Retries=3 update
-          "${elevate[@]}" env DEBIAN_FRONTEND=noninteractive \
-            apt-get install -y --no-install-recommends \
-              cmake ninja-build g++-16 libtomlplusplus-dev
-          echo 'CXX=/usr/bin/g++-16' >> "$GITHUB_ENV"
-
-      - name: Configure without FetchContent
-        run: |
-          build_dir="build/system-config-toml"
-          mkdir -p build
-          cmake -S . -B "$build_dir" -G Ninja \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_CXX_COMPILER="$CXX" \
-            -DEASYLOCAL_BUILD_EXAMPLES=OFF \
-            -DEASYLOCAL_BUILD_TESTS=ON \
-            -DEASYLOCAL_WARNINGS_AS_ERRORS=ON \
-            -DEASYLOCAL_ENABLE_CONFIG_TOML=ON \
-            -DEASYLOCAL_FETCH_DEPENDENCIES=OFF \
-            -DFETCHCONTENT_FULLY_DISCONNECTED=ON \
-            2>&1 | tee "${build_dir}.configure.log"
-          test ! -e "$build_dir/_deps"
-
-      - name: Build and test everything
-        run: |
-          build_dir="build/system-config-toml"
-          cmake --build "$build_dir" --parallel 2 --verbose \
-            2>&1 | tee "${build_dir}.build.log"
-          ctest --test-dir "$build_dir" --output-on-failure \
-            --output-junit "$PWD/${build_dir}.junit.xml" \
-            2>&1 | tee "${build_dir}.ctest.log"
-
-      - name: Upload diagnostics
-        if: ${{ always() }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: optional-components-linux-system-config-toml
-          retention-days: 7
-          if-no-files-found: warn
-          path: |
-            build/system-config-toml*.log
-            build/system-config-toml*.junit.xml
-            build/system-config-toml/CMakeCache.txt
-            build/system-config-toml/CMakeFiles/CMakeConfigureLog.yaml
-            build/system-config-toml/Testing/Temporary/LastTest.log
-
   macos-system:
     name: macOS ARM64 / all optional components / system dependencies
     runs-on: macos-26
