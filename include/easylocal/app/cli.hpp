@@ -83,7 +83,7 @@ struct options
 {
     // The values of the switches before the command line, such as an
     // instance or a runner to use when none is given.
-    parameters defaults{};
+    cli::parameters defaults{};
 
     // The program's own parameters, parsed with the others; they refer to
     // blocks that must outlive the call.
