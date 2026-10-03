@@ -1180,6 +1180,34 @@ add_test(
 )
 
 add_executable(
+    easylocal_session_configuration_test
+    session_configuration.cpp
+)
+target_link_libraries(
+    easylocal_session_configuration_test
+    PRIVATE
+        EasyLocal::Core
+)
+add_test(
+    NAME easylocal.session-configuration
+    COMMAND easylocal_session_configuration_test
+)
+
+add_executable(
+    easylocal_cost_text_test
+    cost_text.cpp
+)
+target_link_libraries(
+    easylocal_cost_text_test
+    PRIVATE
+        EasyLocal::Core
+)
+add_test(
+    NAME easylocal.cost-text
+    COMMAND easylocal_cost_text_test
+)
+
+add_executable(
     easylocal_union_moves_test
     union_moves.cpp
 )

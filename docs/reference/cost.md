@@ -81,6 +81,17 @@ specializing `cost::zero_cost<Cost>` with a static `value()`;
 `cost::has_zero<Cost>` tells whether it exists. TwoStage stops its first stage
 at the zero of the hard cost.
 
+### Costs as text
+
+`cost::from_text<Cost>(text)` (`<easylocal/cost/text.hpp>`) reads a cost
+written by a user, such as a target: a number for an arithmetic cost,
+`[hard, soft]` for a `cost::hierarchical`, `[v1, v2, ...]` for a
+`cost::lexicographic`, nested as the types are (`[0, [3, 1.5]]`). It throws
+`std::invalid_argument` with the reason. `cost::text_readable<Cost>` tells
+which costs it reads; a problem with another cost type, or its own notation,
+provides `read_cost(const Input&, std::string_view) -> Cost`, found by ADL
+through its Input, which the Session and the TextUI use instead.
+
 ## Cost semantics
 
 `cost::better(sm, a, b)`, `cost::equivalent(sm, a, b)` and

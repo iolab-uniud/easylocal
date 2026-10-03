@@ -1,7 +1,10 @@
 #pragma once
 
 #include <easylocal/app/check.hpp>
+#include <easylocal/config/parameter_set.hpp>
+#include <easylocal/config/parameters.hpp>
 #include <easylocal/cost/semantics.hpp>
+#include <easylocal/cost/text.hpp>
 #include <easylocal/helpers/detail/evaluation.hpp>
 #include <easylocal/helpers/neighborhood_explorer.hpp>
 #include <easylocal/helpers/solution_manager.hpp>
@@ -18,6 +21,7 @@
 #include <optional>
 #include <ostream>
 #include <random>
+#include <span>
 #include <stdexcept>
 #include <string>
 #include <string_view>
@@ -52,6 +56,7 @@ namespace adl
 void read_input() = delete;
 void read_solution() = delete;
 void write_solution() = delete;
+void read_cost() = delete;
 
 template<class Input>
 concept has_read_input = requires(std::istream& in) {
@@ -92,7 +97,37 @@ void call_write_solution(const Input& input, const Solution& solution, std::ostr
     write_solution(input, solution, out);
 }
 
+// A problem's own textual form of its costs, found through its Input.
+template<class Input, class Cost>
+concept has_read_cost = requires(const Input& input, std::string_view text) {
+    { read_cost(input, text) } -> std::convertible_to<Cost>;
+};
+
+template<class Cost, class Input>
+    requires has_read_cost<Input, Cost>
+[[nodiscard]]
+Cost call_read_cost(const Input& input, const std::string_view text)
+{
+    return read_cost(input, text);
+}
+
 } // namespace adl
+
+// A cost written as text: by the problem's read_cost, or else in the generic
+// syntax of cost::from_text.
+template<class Input, class Cost>
+concept readable_cost = adl::has_read_cost<Input, Cost> || cost::text_readable<Cost>;
+
+template<class Cost, class Input>
+    requires readable_cost<Input, Cost>
+[[nodiscard]]
+Cost read_cost(const Input& input, const std::string_view text)
+{
+    if constexpr (adl::has_read_cost<Input, Cost>)
+        return adl::call_read_cost<Cost>(input, text);
+    else
+        return cost::from_text<Cost>(text);
+}
 
 template<class Input>
 concept has_static_input_read = requires(std::istream& in) {
@@ -203,6 +238,30 @@ inline void require_write_success(const std::ostream& out, std::string_view what
 }
 
 } // namespace detail::session_io
+
+// The options of a run that a program reads with its configuration, for
+// example under "run": --run.target=0. The target stays text until the Input
+// is known, since a problem may read its costs with read_cost(input, text);
+// Session::read_cost turns it into a cost.
+struct RunParameters
+{
+    std::string target;
+
+    [[nodiscard]]
+    static consteval auto parameter_schema()
+    {
+        return config::fields(
+            config::field<"target", &RunParameters::target>(
+                "Stop a run when its solution reaches this cost, such as 0 or "
+                "[0, 120]; empty: no target"));
+    }
+
+    [[nodiscard]]
+    config::validation_result validate() const noexcept
+    {
+        return config::validation_result::success();
+    }
+};
 
 // The state of an interactive session on an app, and the commands that change
 // it: an owned Input, the app bound to it, a current solution, a selected move
@@ -510,12 +569,51 @@ public:
         return bound_->solution_manager().evaluate(*solution_);
     }
 
+    // A cost written as text, such as a target: by the problem's
+    // read_cost(input, text) when it has one, else as cost::from_text reads it.
+    // Throws std::invalid_argument when the text is not a cost.
+    [[nodiscard]]
+    cost_type read_cost(const std::string_view text) const
+        requires detail::session_io::readable_cost<input_type, cost_type>
+    {
+        assert(input_);
+        return detail::session_io::read_cost<cost_type>(*input_, text);
+    }
+
     [[nodiscard]]
     app_check_report check() const
     {
         assert(input_);
         assert(solution_);
         return easylocal::check(app_, *input_, *solution_);
+    }
+
+    // The parameters of the app, for reading: cost.*, neighborhood.* and
+    // runners.<name>.* (app.configuration()).
+    [[nodiscard]]
+    config::parameter_set configuration() const
+        requires requires(const App& application) { application.configuration(); }
+    {
+        return app_.configuration();
+    }
+
+    // Changes the parameters of the app, with the paths of configuration():
+    // all of them, validated, or none. The session's services are rebuilt
+    // with the new values, so the costs it reports follow them; the current
+    // solution stays and the selected move is cleared. The runners read their
+    // parameters at each run.
+    config::override_result configure(
+        const std::span<const config::text_override> overrides)
+        requires requires(App& application) { application.configuration(); }
+    {
+        auto result = app_.configuration().apply(overrides);
+        if (result && bound_)
+        {
+            bound_ =
+                std::unique_ptr<bound_app_type>{new bound_app_type(app_.bind(*input_))};
+            clear_move_state();
+        }
+        return result;
     }
 
     [[nodiscard]]

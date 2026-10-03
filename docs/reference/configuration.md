@@ -70,6 +70,7 @@ prefix.
 | the cost expression of a SolutionManager recipe | `weights` of a `cost::sum`; children by position (`0.*`, `1.*`), `hard.*` and `soft.*` of a `cost::hard_soft`; a `cost::apply` function's own |
 | `neighborhood_union` with `random_biases` | `random_biases` |
 | `runner.configuration()` | `search.*`, `cost.*`, `neighborhood.*` |
+| an app, `app.configuration()` (also a `Session`'s) | `cost.*`, `neighborhood.*`, `runners.<name>.*` |
 | `MultiStart`, `LocalSearch`, `TwoStage` solvers | `starts` and the runner's (MultiStart), the runner's (LocalSearch), `first.*` and `second.*` (TwoStage) |
 
 ## Frontends

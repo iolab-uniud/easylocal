@@ -28,6 +28,7 @@ Free functions found by ADL are accepted instead of the member hooks:
 Input read_input(std::type_identity<Input>, std::istream&);
 Solution read_solution(const Input&, std::istream&);
 void write_solution(const Input&, const Solution&, std::ostream&);
+Cost read_cost(const Input&, std::string_view); // a target cost, see Cost
 ```
 
 ## Design choices

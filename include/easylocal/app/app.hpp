@@ -563,6 +563,39 @@ public:
         return std::get<index>(registrations_).name;
     }
 
+    // The parameters of the app: its cost expression ("cost"), its
+    // neighborhood ("neighborhood") and each registered runner's
+    // ("runners.<name>", for parameters that are a parameter block). Every
+    // run reads them, so a change applies from the next run. The set refers
+    // to this app, which must stay in place while it is used.
+    [[nodiscard]]
+    config::parameter_set configuration()
+    {
+        config::parameter_set parameters;
+        config::add_configuration(parameters, "cost", solution_manager_spec_);
+        config::add_configuration(parameters, "neighborhood", neighborhood_spec_);
+        std::apply(
+            [&](auto&... registration) {
+                (add_runner_configuration(parameters, registration), ...);
+            },
+            registrations_);
+        return parameters;
+    }
+
+    [[nodiscard]]
+    config::parameter_set configuration() const
+    {
+        config::parameter_set parameters;
+        config::add_configuration(parameters, "cost", solution_manager_spec_);
+        config::add_configuration(parameters, "neighborhood", neighborhood_spec_);
+        std::apply(
+            [&](const auto&... registration) {
+                (add_runner_configuration(parameters, registration), ...);
+            },
+            registrations_);
+        return parameters;
+    }
+
     template<class Visitor>
     void for_each_runner_registration(Visitor&& visitor) const
     {
@@ -789,6 +822,16 @@ public:
     }
 
 private:
+    template<class Registration>
+    static void add_runner_configuration(
+        config::parameter_set& parameters,
+        Registration& registration)
+    {
+        using parameters_type = typename std::remove_const_t<Registration>::config_type;
+        if constexpr (config::parameter_block<parameters_type>)
+            parameters.add("runners." + registration.name, registration.config);
+    }
+
     std::string name_;
     EASYLOCAL_NO_UNIQUE_ADDRESS SMSpec solution_manager_spec_{};
     EASYLOCAL_NO_UNIQUE_ADDRESS NHESpec neighborhood_spec_{};

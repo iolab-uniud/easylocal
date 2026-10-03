@@ -27,6 +27,7 @@ several names.
 | `name()` | the app name |
 | `runner_config<A>()`, `runner_config<A>("name")` | the stored parameters |
 | `runner_name<A>()` | the registered name |
+| `configuration()` | the app's parameters as a `config::parameter_set`: `cost.*`, `neighborhood.*` and `runners.<name>.*` |
 | `bind(input)` | the *bound app*: services built once for `input`, which it borrows (a temporary Input is rejected) |
 | `run("name", input, solution, rng, options...)` | run the runner registered under a name; `std::optional<named_run_result>`, empty for an unknown name |
 | `run<A>(input, solution, args...)`, `run_at<I>(...)` | run by algorithm or by registration index |
@@ -56,6 +57,26 @@ TextUI `seed` option (also editable on its Run page) and REST's per-run `seed`
 (default `blueprint_options::seed + run id`). `run("name", ...)` passes the RNG
 to the algorithm only if it takes one, so deterministic runners ignore it.
 
+The TextUI edits the app's parameters in modal windows: `G` on the Run page
+opens the selected runner's (`runners.<name>.*`) before running it, `P` the
+problem's (`cost.*`, `neighborhood.*`). Values are checked before anything
+changes and stay for the rest of the session. Its *Target cost* field, when
+filled, stops each run at the first solution that reaches it.
+
+A program that reads its configuration from the command line adds
+`easylocal::RunParameters` for the target, under a prefix of its choice:
+
+```cpp
+easylocal::RunParameters run;
+configuration.add("run", run);                       // --run.target=0
+// ... once the Input is loaded:
+if (!run.target.empty())
+    session.run("sa", easylocal::stop_at(session.read_cost(run.target)));
+```
+
+The target stays text until the Input is known, because a problem may read
+its costs with its own `read_cost`.
+
 ## Sessions
 
 A `Session` (`<easylocal/app/session.hpp>`) is an app at work on one Input: an
@@ -77,6 +98,8 @@ it, and a GUI or a web frontend would be another.
 | Move | select with `use_first_move`, `use_next_move`, `use_first_improving_move`, `use_best_move`, `use_random_move(rng)` or `set_move`; then `move_is_valid`, `evaluate_move`, `evaluate_move_fully`, `move_evaluation_matches_full`, `apply_move` |
 | Neighborhood | `neighborhood_preview`, `neighborhood_statistics`, `check_neighborhood_costs`, `check_move_independence` (needs `Solution::operator==`), `check_random_move_distribution(rng)` (needs `Move::operator==`) |
 | Runners | `runner_names`, `run("name", options...)` (replaces the current solution; options are `with(control, tracer)`) |
+| Costs | `read_cost(text)`: a cost written as text, such as a target, by the problem's `read_cost` or `cost::from_text` |
+| Parameters | `configuration()`, the app's; `configure(text_overrides)` applies them all or none and, when the cost or the neighborhood changes, rebuilds the bound services |
 
 The selections and `run` return `false` when there is nothing to select or no
 runner with that name, and are `[[nodiscard]]`. `run` uses fresh services and

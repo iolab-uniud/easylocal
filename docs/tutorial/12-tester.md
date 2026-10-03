@@ -51,10 +51,34 @@ and full evaluation, and `A` would apply it:
 
 ![The Move page with the best 2-opt move and its delta check](images/tui-moves.svg)
 
-On the **Run** page, a runner runs in the background with live progress and can
-be stopped with `X`; here Simulated Annealing improves the tour from 29 to 26:
+On the **Run** page, `G` (or Enter on the runner list) first opens a window
+with the parameters of the selected runner, the same ones a configuration file
+sets (chapter 9): each with its description and its current value, which you
+can edit. Enter runs it; Esc cancels:
+
+![The parameters of Simulated Annealing, before running it](images/tui-parameters.svg)
+
+The values are checked before anything runs: an invalid one, such as a cooling
+rate of 2, keeps the window open with the error next to it, and nothing is
+changed. Accepted values stay for the rest of the session, so the next runs
+use them too, and the Run page lists every parameter that differs from its
+value at start. A runner without parameters runs directly.
+
+The runner runs in the background with live progress and can be stopped with
+`X`; here Simulated Annealing improves the tour from 29 to 26:
 
 ![The Run page after a Simulated Annealing run](images/tui-run.svg)
+
+The *Target cost* field stops a run as soon as its solution reaches a cost,
+for example a known optimum or a lower bound: 26 here would end Simulated
+Annealing at the first tour of that length. It is written as a number, or as
+`[hard, soft]` for a hierarchical cost; empty, runs have no target.
+
+When the problem itself has parameters, the weights of a `cost::sum`
+(chapter 2) or the biases of a neighborhood union (chapter 6), `P` on the Run
+page opens a window for them. They are shared by every runner and also by the
+Move page, so applying them updates at once the cost in the header and the
+evaluation of the moves.
 
 The screenshots are generated from the real program by
 `uv run scripts/tui-snapshots.py`, which drives it in a pseudo-terminal. The
@@ -120,6 +144,7 @@ inline std::string describe(const TwoOpt& move)
 | `read_solution(const Input&, std::istream&)` (or `static Solution::read`) | loading a Solution |
 | `write_solution(const Input&, const Solution&, std::ostream&)` (or `Solution::write`, or `operator<<`) | saving a Solution |
 | `describe(value)` (or a `describe()` member, or `operator<<`) | displaying Input, Solution and Move |
+| `read_cost(const Input&, std::string_view)` | reading a target cost written in the problem's own notation |
 | `name()` on a NeighborhoodExplorer | naming neighborhoods |
 
 The page title of the Move page, *Move - 2-opt*, comes from a static `name()`

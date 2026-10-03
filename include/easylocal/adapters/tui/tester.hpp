@@ -2,6 +2,9 @@
 
 #include <easylocal/app/check.hpp>
 #include <easylocal/app/session.hpp>
+#include <easylocal/config/cli.hpp>
+#include <easylocal/config/overrides.hpp>
+#include <easylocal/config/parameters.hpp>
 #include <easylocal/cost.hpp>
 #include <easylocal/runners/run_control.hpp>
 #include <easylocal/runners/search_run.hpp>
@@ -17,12 +20,16 @@
 #include <filesystem>
 #include <ftxui/ftxui.hpp>
 #include <ftxui/screen/string.hpp>
+#include <functional>
 #include <future>
+#include <map>
 #include <memory>
 #include <optional>
 #include <ostream>
 #include <random>
+#include <span>
 #include <sstream>
+#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <system_error>
@@ -582,6 +589,82 @@ struct async_progress_state
     std::atomic_bool has_evaluation_limit{};
 };
 
+// One editable parameter of the parameters window: its full configuration
+// path, the label shown (the path without its first segment), the value when
+// the tester started, the value when the window opened, and the edited text.
+struct parameter_field
+{
+    std::string path;
+    std::string label;
+    std::string description;
+    std::string original;
+    std::string current;
+    std::string text;
+    int cursor{}; // the input's cursor, at the end of the text when it opens
+};
+
+// The parameters of a set whose path starts with prefix, as editable fields;
+// the label is the path without the prefix when strip is set.
+[[nodiscard]] inline std::vector<parameter_field> parameter_fields(
+    const easylocal::config::parameter_set& parameters,
+    const std::string_view prefix,
+    const bool strip = true)
+{
+    std::vector<parameter_field> fields;
+    for (const auto& parameter : parameters.parameters())
+    {
+        if (!parameter.path.starts_with(prefix))
+            continue;
+        fields.push_back(
+            parameter_field{
+                .path = parameter.path,
+                .label = strip ? parameter.path.substr(prefix.size()) : parameter.path,
+                .description = std::string{parameter.description},
+                .original = parameter.value,
+                .current = parameter.value,
+                .text = parameter.value,
+                .cursor = static_cast<int>(parameter.value.size()),
+            });
+    }
+    return fields;
+}
+
+// The overrides of the fields whose text was edited; they refer to the
+// fields' strings.
+[[nodiscard]] inline std::vector<easylocal::config::text_override> changed_parameters(
+    const std::vector<parameter_field>& fields)
+{
+    std::vector<easylocal::config::text_override> overrides;
+    for (const auto& field : fields)
+        if (field.text != field.current)
+            overrides.push_back({.path = field.path, .value = field.text});
+    return overrides;
+}
+
+// The diagnostics of a rejected change, one per line, with the paths as the
+// window shows them (without prefix); a diagnostic about the whole block the
+// window shows has no path left, only its message.
+[[nodiscard]] inline std::string parameter_errors(
+    const easylocal::config::override_result& result,
+    const std::string_view prefix = {})
+{
+    std::string text;
+    for (const auto& diagnostic : result.diagnostics)
+    {
+        if (!text.empty())
+            text += '\n';
+        std::string_view path = diagnostic.path;
+        if (path.starts_with(prefix))
+            path.remove_prefix(prefix.size());
+        else if (!prefix.empty() && prefix.substr(0, prefix.size() - 1) == path)
+            path = {};
+        if (!path.empty())
+            text += std::string{path} + ": ";
+        text += diagnostic.message;
+    }
+    return text;
+}
+
 template<class App>
 class tester_frontend
 {
@@ -589,6 +672,13 @@ public:
     using tester_type = easylocal::Session<App>;
     static constexpr bool supports_neighborhood_diagnostics =
         std::equality_comparable<typename tester_type::solution_type>;
+    static constexpr bool supports_parameters = requires(const tester_type& session) {
+        session.configuration();
+    };
+    // A target cost needs the costs as text: generic, or the problem's read_cost.
+    static constexpr bool supports_target = requires(const tester_type& session) {
+        session.read_cost(std::string_view{});
+    };
 
     tester_frontend(tester_type& tester, tui::options options)
         : tester_{tester},
@@ -617,6 +707,7 @@ public:
         {
             runner_names_.emplace_back(name);
         }
+        remember_original_parameters();
         page_selected_ = page_index(detail::page_after_solution_change(tester_));
     }
 
@@ -629,6 +720,7 @@ public:
         Component input_path_component;
         Component solution_path_component;
         Component seed_input_component;
+        Component target_input_component;
 
         const auto section_label = [](std::string label) {
             return Renderer([label = std::move(label)] {
@@ -834,6 +926,14 @@ public:
                 return text("No runner registered");
             }));
         }
+        if constexpr (supports_parameters)
+        {
+            run_controls->Add(section_label("Problem"));
+            run_controls->Add(Button(
+                "P Problem parameters",
+                [this] { open_problem_parameters(); },
+                ButtonOption::Ascii()));
+        }
         // The seed restarts the RNG used for random solutions, random moves
         // and stochastic runners.
         run_controls->Add(section_label("Random seed"));
@@ -848,6 +948,16 @@ public:
                 [this] { apply_seed(); },
                 ButtonOption::Ascii()),
         }));
+
+        // A run stops when its solution reaches the target cost; empty: none.
+        if constexpr (supports_target)
+        {
+            run_controls->Add(section_label("Target cost"));
+            auto target_input_option = InputOption::Default();
+            target_input_option.multiline = false;
+            target_input_component = Input(&target_text_, "none", target_input_option);
+            run_controls->Add(target_input_component);
+        }
 
         auto solution_page = Renderer(solution_controls, [this, solution_controls] {
             return render_solution_page(solution_controls);
@@ -1067,15 +1177,46 @@ public:
             return false;
         });
 
+        parameter_inputs_ = Container::Vertical({});
+        auto parameter_submit = Button(
+            &parameter_action_,
+            [this] { submit_parameters(); },
+            ButtonOption::Ascii());
+        auto parameter_cancel = Button(
+            "Cancel",
+            [this] { parameters_visible_ = false; },
+            ButtonOption::Ascii());
+        auto parameter_buttons =
+            Container::Horizontal({parameter_submit, parameter_cancel});
+        auto parameter_controls =
+            Container::Vertical({parameter_inputs_, parameter_buttons});
+        auto parameter_renderer = Renderer(parameter_controls, [this, parameter_buttons] {
+            return render_parameters(parameter_buttons);
+        });
+        parameter_renderer = CatchEvent(parameter_renderer, [this](Event event) {
+            if (event == Event::Escape)
+            {
+                parameters_visible_ = false;
+                return true;
+            }
+            return false;
+        });
+
         Component root = Modal(main_renderer, browser_renderer, &browser_visible_);
         root = Modal(root, help_renderer, &help_visible_);
         root = Modal(root, diagnostic_renderer, &diagnostic_visible_);
         root = Modal(root, progress_renderer, &progress_visible_);
         root = Modal(root, input_viewer, &input_visible_);
         root = Modal(root, solution_viewer, &solution_visible_);
+        root = Modal(root, parameter_renderer, &parameters_visible_);
         root = CatchEvent(
             root,
-            [this, &app, input_path_component, solution_path_component, seed_input_component](Event event) {
+            [this,
+                &app,
+                input_path_component,
+                solution_path_component,
+                seed_input_component,
+                target_input_component](Event event) {
                 if (event == Event::Custom && run_future_.valid())
                 {
                     refresh_runner_progress();
@@ -1086,6 +1227,8 @@ public:
                     }
                     return true;
                 }
+                if (parameters_visible_)
+                    return false;
                 if (event == Event::Character('?') || event == Event::h || event == Event::H)
                 {
                     help_visible_ = !help_visible_;
@@ -1103,9 +1246,10 @@ public:
                 }
 
                 const bool editing_path =
-                    (input_path_component && input_path_component->Focused()) ||
-                    (solution_path_component && solution_path_component->Focused()) ||
-                    (seed_input_component && seed_input_component->Focused());
+                    (input_path_component && input_path_component->Focused())
+                    || (solution_path_component && solution_path_component->Focused())
+                    || (seed_input_component && seed_input_component->Focused())
+                    || (target_input_component && target_input_component->Focused());
 
                 if (event == Event::F1)
                 {
@@ -1269,6 +1413,8 @@ private:
         case tester_page::run:
             append("G Run selected");
             append("Enter Run");
+            if constexpr (supports_parameters)
+                append("P Problem parameters");
             break;
         }
         return result;
@@ -1431,6 +1577,14 @@ private:
         {
             run_runner();
             return true;
+        }
+        if constexpr (supports_parameters)
+        {
+            if (event == ftxui::Event::p || event == ftxui::Event::P)
+            {
+                open_problem_parameters();
+                return true;
+            }
         }
         return false;
     }
@@ -1960,6 +2114,8 @@ private:
         });
     }
 
+    // Run asks for the selected runner's parameters first, when it has any;
+    // the run starts when the window is confirmed.
     void run_runner()
     {
         if (!require_solution("Run runner"))
@@ -1977,10 +2133,69 @@ private:
             return;
         }
 
+        const auto name = runner_names_.at(static_cast<std::size_t>(runner_selected_));
+        std::vector<detail::parameter_field> fields;
+        if constexpr (supports_parameters)
+            fields = detail::parameter_fields(
+                tester_.configuration(),
+                "runners." + name + ".");
+        if (fields.empty())
+        {
+            start_runner();
+            return;
+        }
+
+        open_parameters(
+            "Parameters of " + name,
+            "Run",
+            "runners." + name + ".",
+            std::move(fields),
+            [this](const std::span<const easylocal::config::text_override> changes) {
+                return tester_.configure(changes);
+            },
+            [this] { start_runner(); });
+    }
+
+    void start_runner()
+    {
+        if (!require_solution("Run runner"))
+            return;
+        if (runner_names_.empty())
+        {
+            set_status(status_kind::warning, "Run runner: no runner registered");
+            return;
+        }
+        if (run_future_.valid())
+        {
+            set_status(status_kind::warning, "A runner is already executing");
+            return;
+        }
+
         try
         {
             const auto& selected_name = runner_names_.at(
                 static_cast<std::size_t>(runner_selected_));
+            std::optional<typename tester_type::cost_type> target;
+            if constexpr (supports_target)
+            {
+                if (target_text_.find_first_not_of(" \t") != std::string::npos)
+                {
+                    try
+                    {
+                        target.emplace(tester_.read_cost(target_text_));
+                    }
+                    // A problem's read_cost may throw any exception.
+                    catch (const std::exception& error)
+
+                    {
+                        set_status(
+                            status_kind::error,
+                            "Target cost: " + std::string{error.what()});
+                        return;
+                    }
+                }
+            }
+            run_target_ = target;
             auto application = tester_.app();
             auto input = tester_.input_handle();
             auto solution = tester_.solution();
@@ -2021,13 +2236,14 @@ private:
             typename tester_type::rng_type run_rng{rng_()};
             run_worker_ = std::jthread(
                 [application = std::move(application),
-                 input = std::move(input),
-                 solution = std::move(solution),
-                 run_rng,
-                 name,
-                 promise = std::move(promise),
-                 event_app,
-                 progress_state](std::stop_token stop_token) mutable {
+                    input = std::move(input),
+                    solution = std::move(solution),
+                    run_rng,
+                    name,
+                    target,
+                    promise = std::move(promise),
+                    event_app,
+                    progress_state](std::stop_token stop_token) mutable {
                     async_runner_result<typename tester_type::solution_type> completion;
                     std::size_t reports = 0;
                     auto observer = [&](const easylocal::run_progress& progress) {
@@ -2057,12 +2273,19 @@ private:
 
                     try
                     {
-                        auto result = application.run(
-                            name,
-                            *input,
-                            std::move(solution),
-                            run_rng,
-                            easylocal::with(control));
+                        auto result = target
+                            ? application.run(
+                                  name,
+                                  *input,
+                                  std::move(solution),
+                                  run_rng,
+                                  easylocal::with(control).stop_at(*target))
+                            : application.run(
+                                  name,
+                                  *input,
+                                  std::move(solution),
+                                  run_rng,
+                                  easylocal::with(control));
                         if (result)
                         {
                             completion.solution.emplace(std::move(result->solution));
@@ -2123,6 +2346,157 @@ private:
             status_kind::info,
             "Seed set to " + std::to_string(seed) +
                 "; random solutions, moves and runs restart from it");
+    }
+
+    // The problem's parameters: the cost's and the neighborhood's, shared by
+    // every runner and by the Move page.
+    void open_problem_parameters()
+    {
+        if constexpr (supports_parameters)
+        {
+            const auto parameters = tester_.configuration();
+            auto fields = detail::parameter_fields(parameters, "cost.", false);
+            auto neighborhood =
+                detail::parameter_fields(parameters, "neighborhood.", false);
+            fields.insert(fields.end(), neighborhood.begin(), neighborhood.end());
+            if (fields.empty())
+            {
+                set_status(status_kind::info, "The problem has no parameters");
+                return;
+            }
+            open_parameters(
+                "Problem parameters",
+                "Apply",
+                "",
+                std::move(fields),
+                [this](const std::span<const easylocal::config::text_override> changes) {
+                    return tester_.configure(changes);
+                },
+                [this] {
+                    last_move_result_.clear();
+                    set_status(
+                        status_kind::success,
+                        "Problem parameters applied: costs and moves follow them");
+                });
+        }
+    }
+
+    // Shows the parameters window: one field per parameter, the changes
+    // applied by apply when confirmed (all or none), then after.
+    void open_parameters(
+        std::string title,
+        std::string action,
+        std::string prefix,
+        std::vector<detail::parameter_field> fields,
+        std::function<easylocal::config::override_result(
+            std::span<const easylocal::config::text_override>)> apply,
+        std::function<void()> after)
+    {
+        parameter_inputs_->DetachAllChildren();
+        parameter_title_ = std::move(title);
+        parameter_action_ = std::move(action);
+        parameter_prefix_ = std::move(prefix);
+        parameter_fields_ = std::move(fields);
+        parameter_apply_ = std::move(apply);
+        parameter_after_ = std::move(after);
+        parameter_error_.clear();
+
+        for (auto& field : parameter_fields_)
+        {
+            const auto original = original_parameters_.find(field.path);
+            if (original != original_parameters_.end())
+                field.original = original->second;
+
+            auto option = ftxui::InputOption::Default();
+            option.multiline = false;
+            option.on_enter = [this] { submit_parameters(); };
+            option.cursor_position = &field.cursor;
+            auto input = ftxui::Input(&field.text, field.current, option);
+            parameter_inputs_->Add(ftxui::Renderer(input, [&field, input] {
+                using namespace ftxui;
+                const auto marker = field.text != field.original ? "  *" : "";
+                Elements rows{text(field.label + marker) | bold};
+                rows.push_back(hbox({text("  "), input->Render() | flex}));
+                if (!field.description.empty())
+                    rows.push_back(text("  " + field.description) | dim);
+                return vbox(std::move(rows));
+            }));
+        }
+        parameters_visible_ = true;
+        if (parameter_inputs_->ChildCount() > 0)
+            parameter_inputs_->ChildAt(0)->TakeFocus();
+    }
+
+    void submit_parameters()
+    {
+        const auto changes = detail::changed_parameters(parameter_fields_);
+        if (!changes.empty())
+        {
+            const auto result = parameter_apply_(changes);
+            if (!result)
+            {
+                parameter_error_ = detail::parameter_errors(result, parameter_prefix_);
+                return;
+            }
+        }
+        parameters_visible_ = false;
+        parameter_error_.clear();
+        refresh_changed_parameters();
+        if (parameter_after_)
+            parameter_after_();
+    }
+
+    void remember_original_parameters()
+    {
+        if constexpr (supports_parameters)
+            for (const auto& parameter : tester_.configuration().parameters())
+                original_parameters_[parameter.path] = parameter.value;
+    }
+
+    // The parameters that differ from their values when the tester started,
+    // shown on the Run page.
+    void refresh_changed_parameters()
+    {
+        changed_parameter_lines_.clear();
+        if constexpr (supports_parameters)
+        {
+            for (const auto& parameter : tester_.configuration().parameters())
+            {
+                const auto original = original_parameters_.find(parameter.path);
+                if (original != original_parameters_.end()
+                    && original->second != parameter.value)
+                {
+                    changed_parameter_lines_.push_back(
+                        parameter.path + " = " + parameter.value + " (was "
+                        + original->second + ")");
+                }
+            }
+        }
+    }
+
+    [[nodiscard]] ftxui::Element render_parameters(const ftxui::Component& buttons) const
+    {
+        using namespace ftxui;
+        Elements body{
+            paragraph(
+                "Enter " + parameter_action_
+                + "  |  Tab next field  |  Esc cancel  |  * changed since start")
+                | dim,
+            separator(),
+            parameter_inputs_->Render() | vscroll_indicator | frame | flex,
+        };
+        if (!parameter_error_.empty())
+        {
+            body.push_back(separator());
+            std::istringstream lines{parameter_error_};
+            for (std::string line; std::getline(lines, line);)
+                body.push_back(paragraph(line) | color(Color::Red));
+        }
+        body.push_back(separator());
+        body.push_back(buttons->Render() | center);
+        return window(text(" " + parameter_title_ + " "), vbox(std::move(body)))
+            | size(WIDTH, EQUAL, std::min(76, detail::terminal_available_width()))
+            | size(HEIGHT, LESS_THAN, detail::terminal_available_height()) | border;
     }
 
     void stop_runner()
@@ -2221,6 +2595,8 @@ private:
         const auto after = tester_.evaluate();
         last_run_result_ =
             run_name_ + ": " + run_before_ + " -> " + value_text(after);
+        if (run_target_ && !(*run_target_ < after))
+            last_run_result_ += " (target " + value_text(*run_target_) + " reached)";
         set_status(status_kind::success, "Runner completed: " + run_name_);
     }
 
@@ -2483,6 +2859,13 @@ private:
     {
         using namespace ftxui;
         Elements body{controls->Render()};
+        if (!changed_parameter_lines_.empty())
+        {
+            body.push_back(separator());
+            body.push_back(text("Changed parameters") | bold);
+            for (const auto& line : changed_parameter_lines_)
+                body.push_back(paragraph(line));
+        }
         if (!last_run_result_.empty())
         {
             body.push_back(separator());
@@ -2796,12 +3179,14 @@ private:
             text("S   show Solution"),
             separator(),
             text("Input / Output page") | bold,
-            text("L load input   I initial   R random   Shift-L load solution   W save   C check"),
+            text(
+                "L load input   I initial   R random   Shift-L load solution   W save   C check"),
             text("Move page") | bold,
             text("B best   I first improving   F first   N next   R random   A apply"),
             text("P list   T stats   C costs   D independence   U distribution"),
             text("Run page") | bold,
             text("G run selected   Enter run selected   X stop running"),
+            text("Running asks for the runner's parameters first; P problem parameters"),
             separator(),
             text("Q  " + options_.exit_label),
             text("? / H  help   Esc  close"),
@@ -2823,6 +3208,7 @@ private:
     tui::options options_;
     std::uint64_t seed_{};
     std::string seed_text_;
+    std::string target_text_;
     typename tester_type::rng_type rng_;
 
     std::string input_path_;
@@ -2853,6 +3239,20 @@ private:
     int browser_selected_{};
     std::string browser_error_;
 
+    bool parameters_visible_{};
+    ftxui::Component parameter_inputs_;
+    std::string parameter_title_;
+    std::string parameter_action_{"Apply"};
+    std::string parameter_prefix_;
+    std::vector<detail::parameter_field> parameter_fields_;
+    std::function<easylocal::config::override_result(
+        std::span<const easylocal::config::text_override>)>
+        parameter_apply_;
+    std::function<void()> parameter_after_;
+    std::string parameter_error_;
+    std::map<std::string, std::string> original_parameters_;
+    std::vector<std::string> changed_parameter_lines_;
+
     bool help_visible_{};
     bool diagnostic_visible_{};
     std::string diagnostic_title_;
@@ -2866,6 +3266,7 @@ private:
     std::shared_ptr<async_progress_state> run_progress_state_;
     std::string run_name_;
     std::string run_before_;
+    std::optional<typename tester_type::cost_type> run_target_;
     bool input_visible_{};
     std::string input_viewer_text_;
     std::vector<std::string> input_viewer_lines_{""};

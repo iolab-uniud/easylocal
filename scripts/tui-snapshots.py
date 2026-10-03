@@ -18,7 +18,7 @@ import sys
 
 import pyte
 
-from tui_driver import DOWN, F3, F4, F5, Tui
+from tui_driver import DOWN, ENTER, F3, F4, F5, Tui
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 OUTPUT = ROOT / "docs" / "tutorial" / "images"
@@ -29,7 +29,8 @@ COLUMNS, LINES = 100, 30
 SCENARIO = [
     ("tui-check", ["I", F3, "C"]),                      # initial solution, app check
     ("tui-moves", [F4, "B"]),                           # the best move from it
-    ("tui-run", [F5, ("until", DOWN, "> sa"), "G"]),    # Simulated Annealing
+    ("tui-parameters", [F5, ("until", DOWN, "> sa"), "G"]),  # its parameters
+    ("tui-run", [ENTER]),                               # Simulated Annealing
 ]
 
 PALETTE = {

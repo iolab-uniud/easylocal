@@ -1,6 +1,10 @@
 #include <easylocal/adapters/tui/tester.hpp>
+#include <easylocal/config/overrides.hpp>
+#include <easylocal/config/parameter_set.hpp>
 #include <easylocal/cost.hpp>
+#include <easylocal/runners/simulated_annealing.hpp>
 
+#include <algorithm>
 #include <cassert>
 #include <filesystem>
 #include <fstream>
@@ -220,5 +224,49 @@ int main()
            target.lexically_normal().string());
 
     std::filesystem::remove_all(fixture);
+
+    // The parameters window: fields from a parameter set, the changes of the
+    // edited ones, and the errors with the paths as the window shows them.
+    {
+        using easylocal::tui::detail::changed_parameters;
+        using easylocal::tui::detail::parameter_errors;
+        using easylocal::tui::detail::parameter_fields;
+
+        easylocal::runners::SimulatedAnnealingParameters<
+            easylocal::runners::temperature::ClassicParameters>
+            parameters{};
+        easylocal::config::parameter_set set;
+        set.add("runners.sa", parameters);
+
+        auto fields = parameter_fields(set, "runners.sa.");
+        const auto found = std::ranges::find(
+            fields,
+            std::string{"runners.sa.temperature.cooling_rate"},
+            &easylocal::tui::detail::parameter_field::path);
+        assert(found != fields.end());
+        auto& cooling = *found;
+        assert(cooling.label == "temperature.cooling_rate");
+        assert(cooling.text == "0.95");
+        assert(cooling.cursor == 4);
+        assert(!cooling.description.empty());
+        assert(changed_parameters(fields).empty());
+        assert(parameter_fields(set, "runners.fi.").empty());
+
+        cooling.text = "2";
+        const auto changes = changed_parameters(fields);
+        assert(changes.size() == 1);
+        assert(changes[0].path == "runners.sa.temperature.cooling_rate");
+
+        const auto rejected = set.apply(changes);
+        assert(!rejected);
+        assert(parameter_errors(rejected, "runners.sa.")
+                .starts_with("temperature: cooling_rate"));
+        assert(parameters.temperature.cooling_rate == 0.95);
+
+        cooling.text = "abc";
+        const auto malformed = set.apply(changed_parameters(fields));
+        assert(parameter_errors(malformed, "runners.sa.")
+                .starts_with("temperature.cooling_rate: "));
+    }
     return 0;
 }

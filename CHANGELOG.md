@@ -98,6 +98,11 @@ old concepts onto the new ones.
   program chooses the prefixes. A runner holds its algorithm's parameters and
   builds the algorithm when it is bound, so an algorithm whose parameters have
   a schema is configurable with no other member; solvers give theirs too.
+  An app gives the parameters of its cost, neighborhood and runners
+  (`cost.*`, `neighborhood.*`, `runners.<name>.*`), and a Session applies them.
+  Costs are read as text (`cost::from_text`, or a problem's `read_cost`) for
+  targets on the command line (`RunParameters`, `--run.target`) and in the
+  TextUI.
 - **Tracing**: core search events to JSONL, binary or in-memory recorders, with
   no overhead when unused; leveled logging.
 
@@ -105,7 +110,9 @@ old concepts onto the new ones.
 
 - `EasyLocal::TUI` (FTXUI): an interactive terminal tester to load inputs,
   create, check and inspect solutions, explore moves and run runners in the
-  background with live progress, stop and a configurable seed.
+  background with live progress, stop and a configurable seed; the parameters
+  of a runner, and of the problem, are edited and checked in a window, and a
+  target cost stops a run.
 - `EasyLocal::REST` (Crow, standalone Asio): serves an app over HTTP, with
   asynchronous runs, status and progress, cancellation, partial solutions, a
   target cost that stops a run (a lower bound, for example) and a bounded

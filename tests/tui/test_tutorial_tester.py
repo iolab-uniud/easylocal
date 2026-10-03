@@ -2,7 +2,7 @@
 
 import re
 
-from tui_driver import DELETE, DOWN, ENTER, F3, F4, F5, Tui
+from tui_driver import BACKSPACE, DELETE, DOWN, ENTER, ESCAPE, F3, F4, F5, TAB, UP, Tui
 
 INITIAL_COST = 29  # the initial tour 0-1-2-3-4 of five.tsp
 
@@ -11,7 +11,7 @@ def focus_seed(tui: Tui) -> None:
     """On the Run page, move the focus to the seed field and clear it."""
     tui.press(F5)
     for _ in range(10):
-        if "[X Stop running]" in tui.text():
+        if "[P Problem parameters]" in tui.text():
             break
         tui.press(DOWN)
     tui.press(DOWN)
@@ -58,10 +58,69 @@ def test_simulated_annealing_runs_to_completion(tui):
     tui.press("I", F5)
     tui.select("sa")
     tui.press("G")
+    tui.expect("Parameters of sa")  # confirmed as they are
+    tui.press(ENTER)
     tui.expect("Runner completed: sa", timeout=60)
     final = int(tui.expect(re.compile(rf"sa: {INITIAL_COST} -> (\d+)")).group(1))
     assert final <= INITIAL_COST
     assert tui.cost() == final
+
+
+def test_runner_parameters_are_checked_and_kept(tui):
+    tui.press("I", F5)
+    tui.select("sa")
+    tui.press("G")
+    tui.expect("Parameters of sa")
+
+    # The third field is temperature.cooling_rate, 0.95: an invalid value runs
+    # nothing.
+    tui.press(TAB, TAB, *[BACKSPACE] * 4)
+    tui.type("2")
+    tui.press(ENTER)
+    tui.expect("cooling_rate must be finite and in the open interval (0, 1)")
+    tui.expect_absent("Runner executing")
+
+    tui.press(BACKSPACE)
+    tui.type("0.9")
+    tui.press(ENTER)
+    tui.expect("Runner completed: sa", timeout=60)
+    tui.expect("runners.sa.temperature.cooling_rate = 0.9 (was 0.95)")
+
+    # The window opens again with the value set, and Esc leaves it unchanged.
+    tui.press("G")
+    tui.expect("Parameters of sa")
+    tui.expect("cooling_rate  *")
+    tui.press(ESCAPE)
+    tui.wait_until(lambda screen: "Parameters of sa" not in screen, what="the window closed")
+
+
+def set_target(tui: Tui, target: str) -> None:
+    """On the Run page, type the target cost and select fi again."""
+    tui.press(F5)
+    tui.focus("P Problem parameters")  # through the runner list
+    tui.press(*[DOWN] * 6)  # to the last field, past the seed
+    tui.type(target)
+    tui.select("fi", key=UP)
+
+
+def test_a_target_cost_stops_the_run(tui):
+    # First Improvement would reach 26; the initial tour already meets 29.
+    tui.press("I")
+    set_target(tui, str(INITIAL_COST))
+    tui.press("G")
+    tui.expect("Parameters of fi")
+    tui.press(ENTER)
+    tui.expect(f"fi: {INITIAL_COST} -> {INITIAL_COST} (target {INITIAL_COST} reached)")
+
+
+def test_an_invalid_target_runs_nothing(tui):
+    tui.press("I")
+    set_target(tui, "abc")
+    tui.press("G")
+    tui.expect("Parameters of fi")
+    tui.press(ENTER)
+    tui.expect("Target cost: expected a number, found 'abc'")
+    tui.expect_absent("Runner executing")
 
 
 def test_seed_from_the_interface_is_reproducible(binary):
