@@ -32,6 +32,10 @@ old concepts onto the new ones.
   (`first_move` / `next_move`), and random moves are proposed with
   `random_move(solution, rng)`. Several neighborhoods combine into a
   **neighborhood union**.
+- Optional **solution identity**: a hash and an equality of solutions, from
+  the SolutionManager (`hash`, `equal`) or from the solution type
+  (`std::hash`, `operator==`), with `hash_combine` and `hash_range` to write
+  one.
 
 ### Cost
 

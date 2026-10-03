@@ -262,6 +262,20 @@ add_test(
 )
 
 add_executable(
+    easylocal_solution_identity_test
+    solution_identity.cpp
+)
+target_link_libraries(
+    easylocal_solution_identity_test
+    PRIVATE
+        EasyLocal::Core
+)
+add_test(
+    NAME easylocal.solution-identity
+    COMMAND easylocal_solution_identity_test
+)
+
+add_executable(
     easylocal_concept_contracts_test
     concept_contracts.cpp
 )

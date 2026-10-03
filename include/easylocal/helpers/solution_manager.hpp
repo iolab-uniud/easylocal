@@ -1,6 +1,10 @@
 #pragma once
 
+#include <easylocal/utils/hash.hpp>
+
 #include <concepts>
+#include <cstdint>
+#include <functional>
 
 // SolutionManager: problem-side solution semantics (validity, evaluation,
 // optional construction capabilities).
@@ -52,6 +56,62 @@ concept has_random_solution =
             solution_manager.random_solution(rng)
         } -> std::same_as<typename SM::solution_type>;
     };
+
+// Optional solution identity, for algorithms and tools that recognize a
+// solution met before (reactive tabu search, search trajectories): a hash,
+// equal for equal solutions, and an equality. A SolutionManager member takes
+// precedence over the solution type's own std::hash or operator==, so that a
+// problem can leave out redundant data (caches, derived matrices) or identify
+// symmetric representations. Nothing in the framework requires them.
+template<class SM>
+concept has_solution_hash_member =
+    requires(const SM& solution_manager, const typename SM::solution_type& solution) {
+        { solution_manager.hash(solution) } -> std::convertible_to<std::uint64_t>;
+    };
+
+template<class SM>
+concept has_solution_hash =
+    has_solution_hash_member<SM> || std_hashable<typename SM::solution_type>;
+
+template<has_solution_hash SM>
+[[nodiscard]]
+constexpr std::uint64_t solution_hash(
+    const SM& solution_manager,
+    const typename SM::solution_type& solution)
+{
+    if constexpr (has_solution_hash_member<SM>)
+    {
+        return static_cast<std::uint64_t>(solution_manager.hash(solution));
+    }
+    else
+    {
+        return static_cast<std::uint64_t>(
+            std::hash<typename SM::solution_type>{}(solution));
+    }
+}
+
+template<class SM>
+concept has_solution_equality_member =
+    requires(const SM& solution_manager, const typename SM::solution_type& solution) {
+        { solution_manager.equal(solution, solution) } -> std::convertible_to<bool>;
+    };
+
+template<class SM>
+concept has_solution_equality = has_solution_equality_member<SM>
+    || std::equality_comparable<typename SM::solution_type>;
+
+template<has_solution_equality SM>
+[[nodiscard]]
+constexpr bool solutions_equal(
+    const SM& solution_manager,
+    const typename SM::solution_type& lhs,
+    const typename SM::solution_type& rhs)
+{
+    if constexpr (has_solution_equality_member<SM>)
+        return static_cast<bool>(solution_manager.equal(lhs, rhs));
+    else
+        return static_cast<bool>(lhs == rhs);
+}
 
 // Optional non-virtual convenience base: associated types and the bound
 // Input reference. Not required by the structural concepts above.

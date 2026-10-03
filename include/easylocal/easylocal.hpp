@@ -17,5 +17,6 @@
 #include <easylocal/runners.hpp>
 #include <easylocal/solvers.hpp>
 #include <easylocal/trace.hpp>
+#include <easylocal/utils/hash.hpp>
 #include <easylocal/utils/logging.hpp>
 // IWYU pragma: end_exports
