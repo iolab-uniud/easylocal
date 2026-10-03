@@ -169,16 +169,23 @@ Simulated Annealing returns the best solution found. Temperature policies in
 | `Hybrid` | as Cutoff | max iterations; cools on samples or acceptances |
 | `FixedTemperature` | temperature, max iterations, accepted ratio | max iterations, or enough acceptances; never cools |
 | `TimeBased` | initial/final temperature, cooling rate, running time, accepted per temperature | the running time is over or the final temperature is reached; levels share the time |
-| `Reheating` | as Hybrid, plus max reheats, reheat ratio, first-descent share | the last descent ends; each reheat restarts from `reheat_ratio` times T0 |
+| `Reheating<Descent>` | `descent`: the schedule's, plus max reheats, reheat ratio, first-descent share | the last descent ends; each reheat restarts from `reheat_ratio` times T0 |
 
 `TimeBased` reads the clock (`std::chrono::steady_clock`; `BasicTimeBased<Clock>`
 takes another one) once per proposal. Its trajectory depends on the speed of
 the machine, so equal seeds no longer give equal runs.
 
-`Reheating` runs a first Hybrid descent on `first_descent_share` of
-`max_iterations`, then up to `max_reheats` descents that restart from
-`reheat_ratio` times the initial temperature and divide the remaining
-iterations evenly, as EasyLocal 3's annealing with reheating.
+`Reheating<Descent>` reheats any schedule whose parameters have an
+`initial_temperature` (all but `FixedTemperature`): a first descent, then up to
+`max_reheats` descents that restart from `reheat_ratio` times the initial
+temperature. When the schedule has a budget, `max_iterations` or
+`allowed_running_time`, the first descent spends `first_descent_share` of it
+and the reheats divide the rest evenly; `Classic`, which has none, runs whole
+at every descent. The schedule's parameters are the group `descent`:
+`{.temperature = {.descent = {...}, .max_reheats = 2}}`,
+`search.temperature.descent.*` in a configuration. It calibrates when the
+schedule does, keeping the reheat temperature above the final one.
+`Reheating<Hybrid>` is EasyLocal 3's annealing with reheating.
 
 Every built-in policy can estimate its initial temperature (the constant one
 for `FixedTemperature`) with `calibration_samples` > 0: before the run, Simulated

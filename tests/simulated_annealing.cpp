@@ -500,12 +500,15 @@ int main()
     {
         // The first descent spends 6 of 12 iterations over three levels,
         // 8 -> 4 -> 2 -> 1; each of two reheats restarts from 4 and spends 3.
-        temperature::Reheating policy{temperature::ReheatingParameters{
-            .initial_temperature = 8.0,
-            .final_temperature = 1.0,
-            .cooling_rate = 0.5,
-            .max_iterations = 12,
-            .accepted_ratio = 1.0,
+        using HybridReheating =
+            temperature::ReheatingParameters<temperature::HybridParameters>;
+        temperature::Reheating<temperature::Hybrid> policy{{
+            .descent =
+                {.initial_temperature = 8.0,
+                    .final_temperature = 1.0,
+                    .cooling_rate = 0.5,
+                    .max_iterations = 12,
+                    .accepted_ratio = 1.0},
             .max_reheats = 2,
             .reheat_ratio = 0.5,
             .first_descent_share = 0.5,
@@ -535,18 +538,55 @@ int main()
             "reheating reset restarts the first descent");
 
         ok &= expect(
-            static_cast<bool>(temperature::ReheatingParameters{}.validate())
-                && static_cast<bool>(temperature::ReheatingParameters{
-                    .max_reheats = 0,
-                    .first_descent_share = 1.0}
+            static_cast<bool>(HybridReheating{}.validate())
+                && static_cast<bool>(
+                    HybridReheating{.max_reheats = 0, .first_descent_share = 1.0}
                         .validate())
-                && !temperature::ReheatingParameters{.reheat_ratio = 0.0}.validate()
-                && !temperature::ReheatingParameters{.first_descent_share = 1.0}
+                && !HybridReheating{.reheat_ratio = 0.0}.validate()
+                && !HybridReheating{.first_descent_share = 1.0}.validate()
+                && !HybridReheating{.descent = {.final_temperature = 6.0}, .reheat_ratio = 0.5}
                     .validate()
-                && !temperature::
-                    ReheatingParameters{.final_temperature = 6.0, .reheat_ratio = 0.5}
-                        .validate(),
-            "reheating validates its reheat ratio and first-descent share");
+                && !HybridReheating{.descent = {.cooling_rate = 1.0}}.validate(),
+            "reheating validates the descent, its reheat ratio and first-descent share");
+
+        // Without a budget, each descent runs the whole schedule: Classic
+        // cools 8 -> 4 -> 2 -> 1 after two samples per temperature.
+        temperature::Reheating<temperature::Classic> classic{
+            {.descent =
+                    {.initial_temperature = 8.0,
+                        .final_temperature = 1.0,
+                        .cooling_rate = 0.5,
+                        .samples_per_temperature = 2},
+                .max_reheats = 1,
+                .reheat_ratio = 0.5,
+                .first_descent_share = 1.0}};
+        std::size_t first_descent = 0;
+        while (classic.reheats() == 0)
+        {
+            classic.on_iteration(false);
+            ++first_descent;
+        }
+        ok &= expect(
+            classic.temperature() == 4.0 && !classic.finished(),
+            "a reheated schedule without a budget restarts it from the reheat temperature");
+        std::size_t reheat = 0;
+        while (!classic.finished())
+        {
+            classic.on_iteration(false);
+            ++reheat;
+        }
+        ok &= expect(
+            first_descent == 6 && reheat == 4,
+            "each descent of a schedule without a budget runs it whole");
+
+        // A time budget is divided like an iteration budget.
+        temperature::Reheating<temperature::TimeBased> timed{
+            {.descent = {.allowed_running_time = 8.0},
+                .max_reheats = 2,
+                .first_descent_share = 0.5}};
+        ok &= expect(
+            timed.descent().parameters().allowed_running_time == 4.0,
+            "the first descent spends its share of the running time");
     }
 
     {
@@ -603,11 +643,12 @@ int main()
             approximately_equal(fixed.temperature(), expected, tolerance),
             "fixed temperature calibrates its constant temperature");
 
-        temperature::Reheating reheating{temperature::ReheatingParameters{
-            .final_temperature = 1.0,
-            .cooling_rate = 0.5,
-            .reheat_ratio = 0.5,
-            .calibration_samples = 10}};
+        temperature::Reheating<temperature::Hybrid> reheating{
+            {.descent =
+                    {.final_temperature = 1.0,
+                        .cooling_rate = 0.5,
+                        .calibration_samples = 10},
+                .reheat_ratio = 0.5}};
         reheating.calibrate(tiny);
         ok &= expect(
             reheating.temperature() == 4.0,

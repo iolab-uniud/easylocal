@@ -69,7 +69,8 @@ old concepts onto the new ones.
   **Late Acceptance Hill Climbing**, **Great Deluge** and **Simulated
   Annealing**, with the temperature policies `Classic`, `FixedLength`,
   `Cutoff`, `Hybrid`, `FixedTemperature`, `TimeBased` (cooling spread over a
-  running time) and `Reheating`, each able to estimate its initial
+  running time) and `Reheating<Descent>`, reheating any of them, each able
+  to estimate its initial
   temperature from sampled moves, and Metropolis acceptance; **Tabu Search**
   and **First Improvement Tabu Search**, with Glover's aspiration plus and
   elite candidate list strategies, pluggable tabu lists (fixed

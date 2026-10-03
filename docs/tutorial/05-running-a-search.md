@@ -76,8 +76,8 @@ The algorithms live in `easylocal::runners`, one header each:
 | `SimulatedAnnealing<Temperature, Acceptance>` | `runners/simulated_annealing.hpp` | `random_move`, `cost::delta` | `temperature`: the policy's |
 
 Simulated Annealing takes a temperature policy (`Classic`, `FixedLength`,
-`Cutoff`, `Hybrid`, `FixedTemperature`, `TimeBased`, `Reheating` in
-`runners::temperature`); acceptance defaults to
+`Cutoff`, `Hybrid`, `FixedTemperature`, `TimeBased` in `runners::temperature`,
+and `Reheating<…>` over any of them but `FixedTemperature`); acceptance defaults to
 `runners::MetropolisAcceptance`. Its parameters are the policy's, under
 `temperature`: `{.temperature = {...}}`, and `search.temperature.*` in a
 configuration (chapter 9). With `calibration_samples` > 0 a policy

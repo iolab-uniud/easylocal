@@ -1018,7 +1018,6 @@ public:
         return parameters_;
     }
 
-    // Starts the clock.
     [[nodiscard]]
     std::size_t calibration_samples() const noexcept
     {
@@ -1034,6 +1033,7 @@ public:
             parameters_.final_temperature / parameters_.cooling_rate);
     }
 
+    // Starts the clock.
     void reset() noexcept
     {
         temperature_ = parameters_.initial_temperature;
@@ -1111,43 +1111,63 @@ private:
 
 using TimeBased = BasicTimeBased<>;
 
+} // namespace temperature
+
+namespace detail
+{
+
+// The budget of a schedule that Reheating divides among its descents: an
+// iteration budget or a running time.
+template<class Parameters>
+concept iteration_budget = requires(Parameters parameters) {
+    { parameters.max_iterations } -> std::convertible_to<std::size_t>;
+};
+
+template<class Parameters>
+concept time_budget = requires(Parameters parameters) {
+    { parameters.allowed_running_time } -> std::convertible_to<double>;
+};
+
+template<class Parameters>
+concept final_temperature_schedule = requires(Parameters parameters) {
+    { parameters.final_temperature } -> std::convertible_to<double>;
+};
+
+// A schedule Reheating can restart: its parameters have an initial temperature.
+template<class Policy>
+concept reheatable_policy = temperature_policy<Policy>
+    && std::constructible_from<Policy, typename Policy::parameters_type>
+    && requires(typename Policy::parameters_type parameters) {
+           { parameters.initial_temperature } -> std::convertible_to<double>;
+           { parameters.validate() } -> std::convertible_to<config::validation_result>;
+       };
+
+} // namespace detail
+
+namespace temperature
+{
+
+template<class DescentParameters>
 struct ReheatingParameters
 {
-    double initial_temperature{10.0};
-    double final_temperature{0.01};
-    double cooling_rate{0.95};
-    std::size_t max_iterations{100'000};
-    double accepted_ratio{0.1};
+    // The schedule of the descents; the reheats restart it from a lower
+    // initial temperature.
+    DescentParameters descent{};
     std::size_t max_reheats{3};
-    // The temperature a reheat restarts from, as a factor of
+    // The temperature a reheat restarts from, as a factor of the descent's
     // initial_temperature.
     double reheat_ratio{0.5};
-    // The share of max_iterations spent by the first descent; the reheats
-    // divide the rest evenly.
+    // The share of the descent's budget (max_iterations or
+    // allowed_running_time) spent by the first descent; the reheats divide
+    // the rest evenly. Ignored by a schedule without a budget.
     double first_descent_share{0.5};
 
-    // Moves sampled at the initial solution to estimate the initial
-    // temperature; 0 keeps initial_temperature.
-    std::size_t calibration_samples{0};
-    // Acceptance probability of an average worsening move at the estimated
-    // initial temperature.
-    double initial_acceptance{0.5};
     [[nodiscard]]
     static consteval auto parameter_schema()
     {
         return config::fields(
-            config::field<
-                "initial_temperature",
-                &ReheatingParameters::initial_temperature>(
-                "Initial annealing temperature"),
-            config::field<"final_temperature", &ReheatingParameters::final_temperature>(
-                "Final annealing temperature"),
-            config::field<"cooling_rate", &ReheatingParameters::cooling_rate>(
-                "Multiplicative cooling factor"),
-            config::field<"max_iterations", &ReheatingParameters::max_iterations>(
-                "Maximum number of annealing iterations, over all descents"),
-            config::field<"accepted_ratio", &ReheatingParameters::accepted_ratio>(
-                "Fraction of accepted proposals that triggers cooling"),
+            config::group<"descent", &ReheatingParameters::descent>(
+                "The schedule of each descent"),
             config::field<"max_reheats", &ReheatingParameters::max_reheats>(
                 "Number of reheats after the first descent"),
             config::field<"reheat_ratio", &ReheatingParameters::reheat_ratio>(
@@ -1155,94 +1175,93 @@ struct ReheatingParameters
             config::field<
                 "first_descent_share",
                 &ReheatingParameters::first_descent_share>(
-                "Share of the iterations spent by the first descent"),
-            config::field<
-                "calibration_samples",
-                &ReheatingParameters::calibration_samples>(
-                "Moves sampled to estimate the initial temperature (0: none)"),
-            config::field<"initial_acceptance", &ReheatingParameters::initial_acceptance>(
-                "Acceptance probability of an average worsening move at the "
-                "estimated initial temperature"));
+                "Share of the budget spent by the first descent"));
     }
 
     [[nodiscard]]
     config::validation_result validate() const noexcept
     {
-        const auto calibration = detail::validate_calibration(initial_acceptance);
-        if (!calibration)
-            return calibration;
-        const auto descent =
-            CutoffParameters{
-                .initial_temperature = initial_temperature,
-                .final_temperature = final_temperature,
-                .cooling_rate = cooling_rate,
-                .max_iterations = max_iterations,
-                .accepted_ratio = accepted_ratio,
-            }
-                .validate();
-        if (!descent)
-            return descent;
+        const auto schedule = descent.validate();
+        if (!schedule)
+            return schedule;
         if (max_reheats == 0)
             return config::validation_result::success();
-        if (!std::isfinite(reheat_ratio) || reheat_ratio <= 0.0
-            || initial_temperature * reheat_ratio <= final_temperature)
+        if (!std::isfinite(reheat_ratio) || reheat_ratio <= 0.0)
+            return config::validation_result::failure("reheat_ratio must be positive");
+        if constexpr (detail::final_temperature_schedule<DescentParameters>)
         {
-            return config::validation_result::failure(
-                "reheat_ratio must be positive and keep the reheat temperature "
-                "above final_temperature");
+            if (descent.initial_temperature * reheat_ratio <= descent.final_temperature)
+            {
+                return config::validation_result::failure(
+                    "reheat_ratio must keep the reheat temperature above "
+                    "final_temperature");
+            }
         }
-        if (!std::isfinite(first_descent_share) || first_descent_share <= 0.0
-            || first_descent_share >= 1.0)
+        if constexpr (detail::iteration_budget<DescentParameters>
+            || detail::time_budget<DescentParameters>)
         {
-            return config::validation_result::failure(
-                "first_descent_share must be in the open interval (0, 1) when "
-                "there are reheats");
+            if (!std::isfinite(first_descent_share) || first_descent_share <= 0.0
+                || first_descent_share >= 1.0)
+            {
+                return config::validation_result::failure(
+                    "first_descent_share must be in the open interval (0, 1) when "
+                    "there are reheats");
+            }
         }
         return config::validation_result::success();
     }
 };
 
-// Simulated Annealing with reheating, as in EasyLocal 3: a first descent with
-// the Hybrid schedule spends first_descent_share of max_iterations; then up
-// to max_reheats descents, each restarting from reheat_ratio times the
-// initial temperature, divide the remaining iterations evenly. Without
-// reheats it is Hybrid, and first_descent_share is ignored.
+// Reheats any schedule with an initial temperature: a first descent, then up
+// to max_reheats descents restarting from reheat_ratio times the initial
+// temperature. When the schedule has a budget, max_iterations or
+// allowed_running_time, the first descent spends first_descent_share of it
+// and the reheats divide the rest evenly; otherwise each descent runs the
+// whole schedule. It calibrates when the schedule does, and the reheat
+// temperature stays above the final one. Reheating<Hybrid> is EasyLocal 3's
+// annealing with reheating.
+template<detail::reheatable_policy Descent>
 class Reheating
 {
 public:
-    using parameters_type = ReheatingParameters;
+    using descent_parameters_type = typename Descent::parameters_type;
+    using parameters_type = ReheatingParameters<descent_parameters_type>;
 
-    explicit Reheating(const ReheatingParameters parameters) noexcept
+    explicit Reheating(const parameters_type parameters)
         : parameters_{parameters}, descent_{first_descent(parameters)}
     {
         assert(parameters_.validate());
-        reset();
     }
 
     [[nodiscard]]
-    const ReheatingParameters& parameters() const noexcept
+    const parameters_type& parameters() const noexcept
     {
         return parameters_;
     }
 
     [[nodiscard]]
     std::size_t calibration_samples() const noexcept
+        requires calibrating_temperature_policy<Descent>
     {
-        return parameters_.calibration_samples;
+        return descent_.calibration_samples();
     }
 
+    // The schedule's estimate of the initial temperature, kept high enough
+    // for the reheats.
     void calibrate(const std::span<const double> deltas)
+        requires calibrating_temperature_policy<Descent>
     {
-        detail::calibrate_initial_temperature(
-            *this,
-            parameters_,
-            deltas,
+        Descent probe{first_descent(parameters_)};
+        probe.calibrate(deltas);
+        parameters_.descent.initial_temperature = std::max(
+            probe.parameters().initial_temperature,
             lowest_initial_temperature());
+        reset();
     }
 
-    void reset() noexcept
+    void reset()
     {
-        descent_ = Hybrid{first_descent(parameters_)};
+        descent_ = Descent{first_descent(parameters_)};
         reheats_ = 0;
     }
 
@@ -1252,13 +1271,13 @@ public:
         return descent_.temperature();
     }
 
-    void on_iteration(const bool accepted) noexcept
+    void on_iteration(const bool accepted)
     {
         assert(!finished());
         descent_.on_iteration(accepted);
         if (descent_.finished() && reheats_ < parameters_.max_reheats)
         {
-            descent_ = Hybrid{reheat_descent(parameters_)};
+            descent_ = Descent{reheat_descent(parameters_)};
             ++reheats_;
         }
     }
@@ -1275,60 +1294,81 @@ public:
         return reheats_;
     }
 
+    // The descent under way.
+    [[nodiscard]]
+    const Descent& descent() const noexcept
+    {
+        return descent_;
+    }
+
 private:
-    // The lowest initial temperature that keeps the reheat temperature
-    // above the final one, with at least one cooling level.
+    // The lowest initial temperature that keeps the reheat temperature above
+    // the final one, with at least one cooling level.
     [[nodiscard]]
     double lowest_initial_temperature() const noexcept
     {
-        const auto reheat_factor =
-            parameters_.max_reheats == 0 ? 1.0 : std::min(1.0, parameters_.reheat_ratio);
-        return parameters_.final_temperature / (parameters_.cooling_rate * reheat_factor);
+        if constexpr (detail::final_temperature_schedule<descent_parameters_type>)
+        {
+            const auto& descent = parameters_.descent;
+            const auto reheat_factor = parameters_.max_reheats == 0
+                ? 1.0
+                : std::min(1.0, parameters_.reheat_ratio);
+            double cooling = 1.0;
+            if constexpr (requires { descent.cooling_rate; })
+                cooling = descent.cooling_rate;
+            return descent.final_temperature / (cooling * reheat_factor);
+        }
+        else
+        {
+            return 0.0;
+        }
     }
 
     [[nodiscard]]
-    static std::size_t first_descent_iterations(const ReheatingParameters& parameters)
+    static descent_parameters_type first_descent(const parameters_type& parameters)
     {
+        auto descent = parameters.descent;
         if (parameters.max_reheats == 0)
-            return parameters.max_iterations;
-        return std::max(
-            std::size_t{1},
-            static_cast<std::size_t>(std::ceil(
-                static_cast<double>(parameters.max_iterations)
-                * parameters.first_descent_share)));
+            return descent;
+        if constexpr (detail::iteration_budget<descent_parameters_type>)
+        {
+            descent.max_iterations = std::max(
+                std::size_t{1},
+                static_cast<std::size_t>(std::ceil(
+                    static_cast<double>(parameters.descent.max_iterations)
+                    * parameters.first_descent_share)));
+        }
+        else if constexpr (detail::time_budget<descent_parameters_type>)
+        {
+            descent.allowed_running_time *= parameters.first_descent_share;
+        }
+        return descent;
     }
 
     [[nodiscard]]
-    static HybridParameters first_descent(const ReheatingParameters& parameters)
+    static descent_parameters_type reheat_descent(const parameters_type& parameters)
     {
-        return {
-            .initial_temperature = parameters.initial_temperature,
-            .final_temperature = parameters.final_temperature,
-            .cooling_rate = parameters.cooling_rate,
-            .max_iterations = first_descent_iterations(parameters),
-            .accepted_ratio = parameters.accepted_ratio,
-        };
+        auto descent = parameters.descent;
+        descent.initial_temperature *= parameters.reheat_ratio;
+        if constexpr (detail::iteration_budget<descent_parameters_type>)
+        {
+            const auto first = first_descent(parameters).max_iterations;
+            const auto total = parameters.descent.max_iterations;
+            descent.max_iterations = detail::positive_quotient(
+                total > first ? total - first : 0,
+                parameters.max_reheats);
+        }
+        else if constexpr (detail::time_budget<descent_parameters_type>)
+        {
+            descent.allowed_running_time = parameters.descent.allowed_running_time
+                * (1.0 - parameters.first_descent_share)
+                / static_cast<double>(parameters.max_reheats);
+        }
+        return descent;
     }
 
-    [[nodiscard]]
-    static HybridParameters reheat_descent(const ReheatingParameters& parameters)
-    {
-        const auto first = first_descent_iterations(parameters);
-        const auto remaining =
-            parameters.max_iterations > first ? parameters.max_iterations - first : 0;
-        return {
-            .initial_temperature =
-                parameters.initial_temperature * parameters.reheat_ratio,
-            .final_temperature = parameters.final_temperature,
-            .cooling_rate = parameters.cooling_rate,
-            .max_iterations =
-                detail::positive_quotient(remaining, parameters.max_reheats),
-            .accepted_ratio = parameters.accepted_ratio,
-        };
-    }
-
-    ReheatingParameters parameters_;
-    Hybrid descent_;
+    parameters_type parameters_;
+    Descent descent_;
     std::size_t reheats_{};
 };
 
@@ -1340,14 +1380,20 @@ static_assert(temperature_policy<temperature::Cutoff>);
 static_assert(temperature_policy<temperature::Hybrid>);
 static_assert(temperature_policy<temperature::FixedTemperature>);
 static_assert(temperature_policy<temperature::TimeBased>);
-static_assert(temperature_policy<temperature::Reheating>);
+static_assert(temperature_policy<temperature::Reheating<temperature::Hybrid>>);
+static_assert(temperature_policy<temperature::Reheating<temperature::Classic>>);
+static_assert(temperature_policy<temperature::Reheating<temperature::TimeBased>>);
 static_assert(calibrating_temperature_policy<temperature::Classic>);
 static_assert(calibrating_temperature_policy<temperature::FixedLength>);
 static_assert(calibrating_temperature_policy<temperature::Cutoff>);
 static_assert(calibrating_temperature_policy<temperature::Hybrid>);
 static_assert(calibrating_temperature_policy<temperature::FixedTemperature>);
 static_assert(calibrating_temperature_policy<temperature::TimeBased>);
-static_assert(calibrating_temperature_policy<temperature::Reheating>);
+static_assert(
+    calibrating_temperature_policy<temperature::Reheating<temperature::Hybrid>>);
+static_assert(
+    calibrating_temperature_policy<temperature::Reheating<temperature::FixedLength>>);
+static_assert(!detail::reheatable_policy<temperature::FixedTemperature>);
 
 // Acceptance policies.
 
