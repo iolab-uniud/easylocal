@@ -49,3 +49,39 @@ a C interface for Julia.
 
 **When.** Not scheduled. Like the other adapters, it would live outside
 `EasyLocal::Core` and could become a separate project once the API is stable.
+
+## Shifting penalty
+
+**Why.** When the hard constraints are folded into the cost with a fixed
+weight, the right weight depends on the instance and on the phase of the
+search: too low and the search stays infeasible, too high and it cannot cross
+infeasible regions to reach better feasible ones. EasyLocal 3 had a
+`ShiftingPenaltyRunner` that wrapped any move runner and adapted the weights
+of the constraints while the search ran.
+
+**What.** Weights that change during a run, raised after a number of
+iterations in which a constraint stays violated and lowered after a number of
+iterations in which it is satisfied, within a range and with a random
+perturbation. In EasyLocal 4 the weights live in the cost expressions
+(`weighted`, `hard_soft`), so the design starts there: dynamic weights in the
+expression tree, which a runner, or a wrapper around any runner, adjusts,
+with the deltas staying consistent with the current weights.
+
+**When.** Not scheduled. It depends on how the cost expressions settle.
+
+## Adaptive neighborhood selection
+
+**Why.** In a multi-neighborhood search the share of moves drawn from each
+neighborhood is fixed by the user, while the neighborhoods that pay off change
+with the instance and along the run. EasyLocal 3 had a
+`SimulatedAnnealingWithLearning` runner that learned these shares during the
+search.
+
+**What.** A selection policy for the union of neighborhoods that updates the
+probability of each one from what its moves achieve (improving, sideways and
+accepted moves, the improvement obtained, the time spent evaluating), with a
+learning rate and a lower bound on each probability. It belongs to the
+multi-neighborhood composition rather than to Simulated Annealing, so that
+every runner that draws random moves could use it.
+
+**When.** Not scheduled.
