@@ -1,78 +1,60 @@
 #pragma once
 
-#include <easylocal/helpers/solution_manager.hpp>
 #include <easylocal/testing/check.hpp>
+#include <easylocal/testing/fixture.hpp>
 
 #include <concepts>
-#include <type_traits>
 
 namespace easylocal::testing
 {
 
-template<class Test>
-[[nodiscard]] check_report check_cost_component()
+// A cost component evaluates the fixture Solution, and evaluating it twice
+// gives equivalent values.
+template<check_fixture Fixture, class Component>
+[[nodiscard]] check_report check_cost_component(
+    const Fixture& fixture,
+    const Component& component)
 {
-    using solution_manager_type = detail::test_solution_manager_t<Test>;
-    using component_type = typename Test::component;
-    using input_type = typename solution_manager_type::input_type;
-    using solution_type = typename solution_manager_type::solution_type;
+    using solution_type = typename Fixture::solution_type;
 
     static_assert(
-        easylocal::base_solution_manager<solution_manager_type>,
-        "the check fixture does not name a valid SolutionManager");
-
-    static_assert(
-        requires(const component_type& component, const solution_type& solution) {
-            component.evaluate(solution);
+        requires(const Component& c, const solution_type& solution) {
+            c.evaluate(solution);
         },
-        "Test::component must provide evaluate(const Solution&) const");
-
-    auto instance = Test::instance();
-    static_assert(std::same_as<
-        std::remove_cvref_t<decltype(instance)>,
-        input_type>);
-
-    auto solution_manager = detail::make_solution_manager<
-        Test, input_type, solution_manager_type>(instance);
-    auto component = detail::make_component<
-        Test, input_type, component_type>(instance);
-    auto solution = Test::solution(instance);
-    static_assert(std::same_as<
-        std::remove_cvref_t<decltype(solution)>,
-        solution_type>);
+        "the cost component must provide evaluate(const Solution&) const");
 
     check_report report{"cost component"};
 
-    const auto valid_solution = static_cast<bool>(
-        solution_manager.is_valid(solution));
-    report.check(
-        valid_solution,
-        "fixture solution",
-        "Test::solution(instance) must return a valid Solution");
-
-    if (!valid_solution)
+    if (!detail::check_fixture_solution(report, fixture))
     {
         return report;
     }
 
-    const auto first = component.evaluate(solution);
+    const auto first = component.evaluate(fixture.solution());
     report.check(
         true,
         "evaluation",
         "evaluate(const Solution&) completed for the fixture Solution");
 
-    if constexpr (
-        requires { Test::equivalent(first, first); } ||
-        requires { { first == first } -> std::convertible_to<bool>; })
+    if constexpr (requires { fixture.equivalent(first, first); })
     {
-        const auto second = component.evaluate(solution);
+        const auto second = component.evaluate(fixture.solution());
         report.check(
-            detail::equivalent<Test>(first, second),
+            fixture.equivalent(first, second),
             "repeat evaluation",
             "evaluating the same Solution twice produced non-equivalent component values");
     }
 
     return report;
+}
+
+// The same, with the component built from the fixture Input.
+template<class Component, check_fixture Fixture>
+[[nodiscard]] check_report check_cost_component(const Fixture& fixture)
+{
+    return check_cost_component(
+        fixture,
+        detail::make_from_input<Component>(fixture.input()));
 }
 
 } // namespace easylocal::testing

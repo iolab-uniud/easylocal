@@ -635,9 +635,10 @@ The current tests cover:
 EasyLocal also provides framework-agnostic checks for user-defined services:
 
 ```cpp
-#include <easylocal/testing/neighborhood.hpp>
+#include <easylocal/testing.hpp>
 
-const auto report = easylocal::testing::check_neighborhood<MyNeighborhoodCheck>();
+const easylocal::testing::fixture<MySolutionManager> f{input, solution};
+const auto report = easylocal::testing::check_neighborhood<MyNeighborhood>(f);
 ```
 
 The same support is available for SolutionManagers, cost components, and delta
@@ -646,8 +647,8 @@ test framework or run directly from a small executable:
 
 ```cpp
 return easylocal::testing::run_checks(
-    easylocal::testing::check_solution_manager<MySMCheck>(),
-    easylocal::testing::check_neighborhood<MyNeighborhoodCheck>());
+    easylocal::testing::check_solution_manager(f),
+    easylocal::testing::check_neighborhood<MyNeighborhood>(f));
 ```
 
 CTest is the common test entry point locally and in CI:

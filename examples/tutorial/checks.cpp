@@ -3,69 +3,25 @@
 
 #include <easylocal/testing.hpp>
 
-namespace
-{
-
-// [fixtures] ---------------------------------------------------------------
-struct TspCheckData
-{
-    static tutorial::Tsp instance()
-    {
-        return tutorial::five_cities();
-    }
-    static tutorial::Tour solution(const tutorial::Tsp&)
-    {
-        return tutorial::Tour{{0, 1, 2, 3, 4}};
-    }
-};
-
-struct TourManagerCheck : TspCheckData
-{
-    using solution_manager = tutorial::TourManager;
-};
-
-struct TourLengthCheck : TspCheckData
-{
-    using solution_manager = tutorial::TourManager;
-    using component = tutorial::TourLength;
-};
-
-struct SwapCheck : TspCheckData
-{
-    using neighborhood = tutorial::SwapExplorer;
-};
-
-struct TwoOptCheck : TspCheckData
-{
-    using neighborhood = tutorial::TwoOptExplorer;
-};
-
-struct TwoOptDeltaCheck : TspCheckData
-{
-    using neighborhood = tutorial::TwoOptExplorer;
-    using component = tutorial::TourLength;
-    using delta_evaluator = tutorial::TwoOptLengthDelta;
-};
-
-// No delta_evaluator: the check uses the component's own delta_evaluate.
-struct TourLengthWithDeltaCheck : TspCheckData
-{
-    using neighborhood = tutorial::TwoOptExplorer;
-    using component = tutorial::TourLengthWithDelta;
-};
-// [fixtures] ---------------------------------------------------------------
-
-} // namespace
-
 int main()
 {
+    // [fixture]
+    namespace elt = easylocal::testing;
+    const elt::fixture<tutorial::TourManager> tsp{
+        tutorial::five_cities(),
+        tutorial::Tour{{0, 1, 2, 3, 4}},
+    };
+    // [fixture]
+
     // [run-checks]
-    return easylocal::testing::run_checks(
-        easylocal::testing::check_solution_manager<TourManagerCheck>(),
-        easylocal::testing::check_cost_component<TourLengthCheck>(),
-        easylocal::testing::check_neighborhood<SwapCheck>(),
-        easylocal::testing::check_neighborhood<TwoOptCheck>(),
-        easylocal::testing::check_delta_evaluator<TwoOptDeltaCheck>(),
-        easylocal::testing::check_delta_evaluator<TourLengthWithDeltaCheck>());
+    using namespace tutorial;
+    return elt::run_checks(
+        elt::check_solution_manager(tsp),
+        elt::check_cost_component<TourLength>(tsp),
+        elt::check_neighborhood<SwapExplorer>(tsp),
+        elt::check_neighborhood<TwoOptExplorer>(tsp),
+        elt::check_delta_evaluator<TwoOptExplorer, TourLength, TwoOptLengthDelta>(tsp),
+        // No delta evaluator: the check uses the component's own delta_evaluate.
+        elt::check_delta_evaluator<TwoOptExplorer, TourLengthWithDelta>(tsp));
     // [run-checks]
 }

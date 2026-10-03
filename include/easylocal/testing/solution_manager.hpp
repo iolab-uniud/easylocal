@@ -2,49 +2,30 @@
 
 #include <easylocal/helpers/solution_manager.hpp>
 #include <easylocal/testing/check.hpp>
+#include <easylocal/testing/fixture.hpp>
 
 #include <cstddef>
 #include <memory>
-#include <type_traits>
 
 namespace easylocal::testing
 {
 
-template<class Test>
-[[nodiscard]] check_report check_solution_manager()
+// The fixture's SolutionManager: bound to the fixture Input, and the fixture,
+// initial and random solutions are valid.
+template<check_fixture Fixture>
+[[nodiscard]] check_report check_solution_manager(const Fixture& fixture)
 {
-    using solution_manager_type = typename Test::solution_manager;
-    using input_type = typename solution_manager_type::input_type;
-    using solution_type = typename solution_manager_type::solution_type;
-
-    static_assert(
-        easylocal::base_solution_manager<solution_manager_type>,
-        "Test::solution_manager does not satisfy the EasyLocal SolutionManager core contract");
-
-    auto instance = Test::instance();
-    static_assert(std::same_as<
-        std::remove_cvref_t<decltype(instance)>,
-        input_type>);
-
-    auto solution_manager = detail::make_solution_manager<
-        Test, input_type, solution_manager_type>(instance);
-
-    auto solution = Test::solution(instance);
-    static_assert(std::same_as<
-        std::remove_cvref_t<decltype(solution)>,
-        solution_type>);
+    using solution_manager_type = typename Fixture::solution_manager_type;
+    const auto& solution_manager = fixture.solution_manager();
 
     check_report report{"SolutionManager"};
 
     report.check(
-        std::addressof(solution_manager.input()) == std::addressof(instance),
-        "instance binding",
-        "SolutionManager::instance() must refer to the Instance used to construct the manager");
+        std::addressof(solution_manager.input()) == std::addressof(fixture.input()),
+        "input binding",
+        "SolutionManager::input() must refer to the Input used to construct the manager");
 
-    report.check(
-        static_cast<bool>(solution_manager.is_valid(solution)),
-        "fixture solution",
-        "Test::solution(instance) must return a valid Solution");
+    detail::check_fixture_solution(report, fixture);
 
     if constexpr (easylocal::has_initial_solution<solution_manager_type>)
     {
@@ -60,9 +41,7 @@ template<class Test>
                       deterministic_rng>)
     {
         deterministic_rng rng;
-        for (std::size_t sample = 0;
-             sample < detail::random_samples_v<Test>;
-             ++sample)
+        for (std::size_t sample = 0; sample < fixture.options().random_samples; ++sample)
         {
             const auto random = solution_manager.random_solution(rng);
             report.check(

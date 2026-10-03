@@ -23,51 +23,13 @@ namespace
 {
 using namespace assignment;
 
-struct AssignmentCheckData
+// A tolerance-based comparison, for fixtures whose values accumulate rounding.
+struct WithinOne
 {
-    static auto instance() -> AssignmentInstance
+    auto operator()(std::int64_t a, std::int64_t b) const -> bool
     {
-        return {
-            .demand = {4, 3, 2},
-            .capacity = {5, 5},
-        };
+        return a - b <= 1 && b - a <= 1;
     }
-
-    static auto solution(const AssignmentInstance&) -> AssignmentSolution
-    {
-        return {.assignment = {0, 0, 1}};
-    }
-
-    static constexpr std::size_t random_samples = 16;
-};
-
-struct AssignmentSolutionManagerCheck : AssignmentCheckData
-{
-    using solution_manager = AssignmentSolutionManager;
-};
-
-struct CapacityComponentCheck : AssignmentCheckData
-{
-    using solution_manager = AssignmentSolutionManager;
-    using component = CapacityCostComponent;
-};
-
-struct LoadImbalanceComponentCheck : AssignmentCheckData
-{
-    using solution_manager = AssignmentSolutionManager;
-    using component = LoadImbalanceCostComponent;
-};
-
-struct CapacityDeltaCheck : AssignmentCheckData
-{
-    using neighborhood = ReassignJobNeighborhoodExplorer;
-    using component = CapacityCostComponent;
-    using delta_evaluator = ReassignCapacityDeltaEvaluator;
-};
-
-struct AssignmentNeighborhoodCheck : AssignmentCheckData
-{
-    using neighborhood = ReassignJobNeighborhoodExplorer;
 };
 
 struct ProxyMove
@@ -176,22 +138,6 @@ struct TinyColocatedComponent
     }
 };
 
-struct ColocatedDeltaCheck
-{
-    using neighborhood = TinyNeighborhood;
-    using component = TinyColocatedComponent;
-
-    static auto instance() -> TinyInstance
-    {
-        return {};
-    }
-
-    static auto solution(const TinyInstance&) -> TinySolution
-    {
-        return {.value = 7};
-    }
-};
-
 } // namespace
 
 int main()
@@ -226,18 +172,38 @@ int main()
         return 3;
     }
 
-    const auto sm_report = easylocal::testing::check_solution_manager<
-        AssignmentSolutionManagerCheck>();
-    const auto component_report = easylocal::testing::check_cost_component<
-        CapacityComponentCheck>();
-    const auto scalar_component_report = easylocal::testing::check_cost_component<
-        LoadImbalanceComponentCheck>();
-    const auto delta_report = easylocal::testing::check_delta_evaluator<
-        CapacityDeltaCheck>();
-    const auto colocated_delta_report = easylocal::testing::check_delta_evaluator<
-        ColocatedDeltaCheck>();
-    const auto neighborhood_report = easylocal::testing::check_neighborhood<
-        AssignmentNeighborhoodCheck>();
+    namespace elt = easylocal::testing;
+
+    const elt::fixture<AssignmentSolutionManager> assignment{
+        AssignmentInstance{.demand = {4, 3, 2}, .capacity = {5, 5}},
+        AssignmentSolution{.assignment = {0, 0, 1}},
+        {.random_samples = 16},
+    };
+    const elt::fixture<TinySolutionManager> tiny{
+        TinyInstance{},
+        TinySolution{.value = 7}};
+
+    const elt::fixture<AssignmentSolutionManager, WithinOne> tolerant{
+        AssignmentInstance{.demand = {4, 3, 2}, .capacity = {5, 5}},
+    };
+    if (!tolerant.equivalent(3, 4) || tolerant.equivalent(3, 5))
+        return 9;
+    if (!elt::check_cost_component<LoadImbalanceCostComponent>(tolerant).passed())
+        return 10;
+
+    const auto sm_report = elt::check_solution_manager(assignment);
+    const auto component_report =
+        elt::check_cost_component<CapacityCostComponent>(assignment);
+    const auto scalar_component_report =
+        elt::check_cost_component<LoadImbalanceCostComponent>(assignment);
+    const auto delta_report = elt::check_delta_evaluator<
+        ReassignJobNeighborhoodExplorer,
+        CapacityCostComponent,
+        ReassignCapacityDeltaEvaluator>(assignment);
+    const auto colocated_delta_report =
+        elt::check_delta_evaluator<TinyNeighborhood, TinyColocatedComponent>(tiny);
+    const auto neighborhood_report =
+        elt::check_neighborhood<ReassignJobNeighborhoodExplorer>(assignment);
 
     if (!sm_report.passed() || !component_report.passed() ||
         !scalar_component_report.passed() || !delta_report.passed() ||
@@ -262,12 +228,16 @@ int main()
     }
 
     std::ostringstream run_output;
+    const TinyNeighborhood tiny_neighborhood{tiny.solution_manager()};
     if (easylocal::testing::run_checks(
             run_output,
-            easylocal::testing::check_solution_manager<AssignmentSolutionManagerCheck>(),
-            easylocal::testing::check_cost_component<CapacityComponentCheck>(),
-            easylocal::testing::check_delta_evaluator<CapacityDeltaCheck>(),
-            easylocal::testing::check_neighborhood<AssignmentNeighborhoodCheck>()) != 0)
+            elt::check_solution_manager(assignment),
+            elt::check_cost_component(
+                assignment,
+                CapacityCostComponent{assignment.input()}),
+            elt::check_delta_evaluator(tiny, tiny_neighborhood, TinyColocatedComponent{}),
+            elt::check_neighborhood(tiny, tiny_neighborhood))
+        != 0)
     {
         return 7;
     }

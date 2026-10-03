@@ -2,11 +2,11 @@
 
 #include <easylocal/helpers/neighborhood_explorer.hpp>
 #include <easylocal/testing/check.hpp>
+#include <easylocal/testing/fixture.hpp>
 
 #include <concepts>
 #include <cstddef>
-#include <type_traits>
-#include <utility>
+#include <string_view>
 
 namespace easylocal::testing
 {
@@ -59,49 +59,34 @@ void check_moves(
 
 } // namespace detail
 
-template<class Test>
-[[nodiscard]] check_report check_neighborhood()
+// Enumerated and sampled moves of the fixture Solution are valid, and applying
+// them keeps the Solution valid.
+template<check_fixture Fixture, class NHE>
+[[nodiscard]] check_report check_neighborhood(
+    const Fixture& fixture,
+    const NHE& neighborhood)
 {
-    using neighborhood_type = typename Test::neighborhood;
-    using solution_manager_type = detail::test_solution_manager_t<Test>;
-    using input_type = typename solution_manager_type::input_type;
-    using solution_type = typename solution_manager_type::solution_type;
+    using solution_manager_type = typename Fixture::solution_manager_type;
+    using solution_type = typename Fixture::solution_type;
 
     static_assert(
-        neighborhood_explorer_for<neighborhood_type, solution_manager_type>,
-        "Test::neighborhood does not satisfy the EasyLocal NeighborhoodExplorer core contract");
+        neighborhood_explorer_for<NHE, solution_manager_type>,
+        "the NeighborhoodExplorer does not satisfy the EasyLocal NeighborhoodExplorer "
+        "core contract for the fixture's SolutionManager");
 
-    auto instance = Test::instance();
-    static_assert(std::same_as<
-        std::remove_cvref_t<decltype(instance)>,
-        input_type>);
-
-    auto solution_manager = detail::make_solution_manager<
-        Test, input_type, solution_manager_type>(instance);
-    auto neighborhood = detail::make_neighborhood<
-        Test, solution_manager_type, neighborhood_type>(solution_manager);
-    auto solution = Test::solution(instance);
-    static_assert(std::same_as<
-        std::remove_cvref_t<decltype(solution)>,
-        solution_type>);
+    const auto& solution_manager = fixture.solution_manager();
+    const auto& solution = fixture.solution();
 
     check_report report{"NeighborhoodExplorer"};
 
-    const auto valid_solution = static_cast<bool>(
-        solution_manager.is_valid(solution));
-    report.check(
-        valid_solution,
-        "fixture solution",
-        "Test::solution(instance) must return a valid Solution");
-
-    if (!valid_solution)
+    if (!detail::check_fixture_solution(report, fixture))
     {
         return report;
     }
 
-    constexpr auto max_moves = detail::max_enumerated_moves_v<Test>;
+    const auto max_moves = fixture.options().max_enumerated_moves;
 
-    if constexpr (cursor_neighborhood_for<neighborhood_type, solution_type>)
+    if constexpr (cursor_neighborhood_for<NHE, solution_type>)
     {
         detail::check_moves(
             report,
@@ -113,7 +98,7 @@ template<class Test>
             max_moves);
     }
 
-    if constexpr (native_moves_neighborhood_for<neighborhood_type, solution_type>)
+    if constexpr (native_moves_neighborhood_for<NHE, solution_type>)
     {
         detail::check_moves(
             report,
@@ -125,15 +110,10 @@ template<class Test>
             max_moves);
     }
 
-    if constexpr (random_neighborhood_for<
-                      neighborhood_type,
-                      solution_type,
-                      deterministic_rng>)
+    if constexpr (random_neighborhood_for<NHE, solution_type, deterministic_rng>)
     {
         deterministic_rng rng;
-        for (std::size_t sample = 0;
-             sample < detail::random_samples_v<Test>;
-             ++sample)
+        for (std::size_t sample = 0; sample < fixture.options().random_samples; ++sample)
         {
             auto move = easylocal::random_move(neighborhood, solution, rng);
             if (!move)
@@ -163,6 +143,15 @@ template<class Test>
     }
 
     return report;
+}
+
+// The same, with the NeighborhoodExplorer built on the fixture's SolutionManager.
+template<class NHE, check_fixture Fixture>
+[[nodiscard]] check_report check_neighborhood(const Fixture& fixture)
+{
+    return check_neighborhood(
+        fixture,
+        detail::make_neighborhood<NHE>(fixture.solution_manager()));
 }
 
 } // namespace easylocal::testing
