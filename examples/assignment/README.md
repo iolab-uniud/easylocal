@@ -369,7 +369,7 @@ The current MWE deliberately does not define:
 ## TextUI run-control demo
 
 When the optional TextUI component is enabled,
-`easylocal_assignment_tester_mwe` starts from
+`easylocal_assignment_tui_mwe` starts from
 `instances/large.assignment` (250 jobs, 16 machines) and registers two runners:
 
 - `fi`, the ordinary first-improvement runner;

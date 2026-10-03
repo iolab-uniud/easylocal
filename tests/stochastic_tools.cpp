@@ -2,11 +2,12 @@
 // receive it, deterministic ones ignore it, and a seed reproduces the run.
 #include "../examples/tutorial/tsp.hpp"
 
+#include <easylocal/app/session.hpp>
 #include <easylocal/easylocal.hpp>
 
 #include <cassert>
-#include <cstdlib>
 #include <cstdint>
+#include <cstdlib>
 #include <random>
 
 namespace
@@ -27,16 +28,16 @@ using Annealing = runners::SimulatedAnnealing<runners::temperature::Classic>;
         | el::runner<RandomDescent>("descent", {.max_evaluations = 50});
 }
 
-[[nodiscard]] auto run_in_tester(const std::uint64_t seed, const char* runner) -> Tour
+[[nodiscard]] auto run_in_session(const std::uint64_t seed, const char* runner) -> Tour
 {
-    el::Tester tester{make_application(), seed};
-    tester.set_input(five_cities());
-    tester.use_random_solution(tester.rng());
-    if (!tester.run_runner(runner))
+    el::Session session{make_application(), seed};
+    session.set_input(five_cities());
+    session.use_random_solution(session.rng());
+    if (!session.run(runner))
     {
         std::abort();
     }
-    return tester.solution();
+    return session.solution();
 }
 
 void simulated_annealing_is_registrable_with_its_policy_parameters()
@@ -53,7 +54,7 @@ void a_seed_reproduces_stochastic_runs()
 {
     for (const auto* runner : {"sa", "descent", "fi"})
     {
-        assert(run_in_tester(7, runner).order == run_in_tester(7, runner).order);
+        assert(run_in_session(7, runner).order == run_in_session(7, runner).order);
     }
 }
 

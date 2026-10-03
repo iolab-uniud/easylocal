@@ -189,22 +189,24 @@ int main(int argc, char* argv[])
         | el::runner<runners::SimulatedAnnealing<Classic>>(
             "sa",
             {.samples_per_temperature = 50});
-
-    const auto app_result =
-        application.run<runners::FirstImprovement>(tsp, Tour{{0, 1, 2, 3, 4}});
     // [app] ----------------------------------------------------------------
 
-    // [app-in-main] --------------------------------------------------------
-    // A runtime holds the services of the app for one Input.
-    auto runtime = application.for_input(tsp);
-    const auto initial = runtime.solution_manager().initial_solution();
+    // [session] ------------------------------------------------------------
+    // The app on one Input, which the session owns, with a seeded RNG.
+    el::Session session{application, tsp, /* seed */ 2026};
+    session.use_initial_solution();
 
-    // Run the registered runners by algorithm, each from the same tour.
-    const auto by_descent = runtime.run<runners::FirstImprovement>(initial);
-    std::mt19937_64 annealing_rng{2026};
-    const auto by_annealing =
-        runtime.run<runners::SimulatedAnnealing<Classic>>(initial, annealing_rng);
-    // [app-in-main] --------------------------------------------------------
+    // A step by hand: select the first improving move, if any, and apply it.
+    if (session.use_first_improving_move())
+        session.apply_move();
+
+    // A registered runner, by name, from the current solution; false means no
+    // runner has that name.
+    if (!session.run("sa")) // receives the session's RNG
+        return 1;
+    const double session_cost = session.evaluate();
+    const Tour& session_tour = session.solution();
+    // [session] ------------------------------------------------------------
 
     // [check] --------------------------------------------------------------
     const auto report = el::check(application, tsp); // also: check(app, input, solution)
@@ -213,29 +215,14 @@ int main(int argc, char* argv[])
         return 1;
     // [check] --------------------------------------------------------------
 
-    // [tester] -------------------------------------------------------------
-    el::Tester tester{application, /* seed */ 2026};
-    tester.set_input(tsp);
-    tester.use_initial_solution();
-
-    // Select the first improving move, if there is one, and apply it.
-    if (tester.use_first_improving_move())
-        tester.apply_move();
-
-    // Run registered runners by name; false means no runner has that name.
-    if (!tester.run_runner("sa")) // receives the Tester's RNG
-        return 1;
-    if (!tester.run_runner("fi"))
-        return 1;
-    // [tester] -------------------------------------------------------------
-
-    // [tester-checks] ------------------------------------------------------
-    const auto costs = tester.check_neighborhood_costs(); // delta vs full evaluation
-    const auto independence = tester.check_move_independence(); // null and repeated moves
-    const auto sampling = tester.check_random_move_distribution(tester.rng());
+    // [session-checks] -----------------------------------------------------
+    const auto costs = session.check_neighborhood_costs(); // delta vs full evaluation
+    const auto independence =
+        session.check_move_independence(); // null and repeated moves
+    const auto sampling = session.check_random_move_distribution(session.rng());
     if (costs.mismatches != 0 || costs.invalid != 0 || sampling.out_of_neighborhood != 0)
         return 1;
-    // [tester-checks] ------------------------------------------------------
+    // [session-checks] -----------------------------------------------------
 
     // [control] ------------------------------------------------------------
     std::stop_source stop;
@@ -285,11 +272,10 @@ int main(int argc, char* argv[])
         << "\nco-located " << colocated.run(colocated.initial_solution()).cost
         << "\nannealing " << annealed.cost << "\nunion "
         << union_search.run(union_search.initial_solution(), union_rng).cost
-        << "\nmulti-start " << best.cost << "\napp " << app_result.cost << " ("
-        << by_descent.cost << ", " << by_annealing.cost << ")" << "\ntester "
-        << tester.evaluate() << " (" << costs.moves << " moves checked, "
+        << "\nmulti-start " << best.cost << "\nsession " << session_cost << " ("
+        << describe(session_tour) << "), " << costs.moves << " moves checked, "
         << independence.null_moves << " null moves, " << sampling.unseen
-        << " moves never sampled)"
+        << " moves never sampled"
         << "\ndescent " << observed.cost << " with " << trace.records().size()
         << " trace events\n";
     (void)piped_application;

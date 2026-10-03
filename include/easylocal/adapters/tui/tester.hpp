@@ -1,33 +1,32 @@
 #pragma once
 
+#include <easylocal/app/check.hpp>
+#include <easylocal/app/session.hpp>
+#include <easylocal/cost.hpp>
 #include <easylocal/runners/run_control.hpp>
 #include <easylocal/runners/search_run.hpp>
-#include <easylocal/cost.hpp>
-#include <easylocal/app/check.hpp>
-#include <easylocal/app/tester.hpp>
-
-#include <ftxui/ftxui.hpp>
-#include <ftxui/screen/string.hpp>
 
 #include <algorithm>
 #include <atomic>
+#include <charconv>
 #include <chrono>
 #include <concepts>
 #include <cstddef>
 #include <cstdint>
 #include <exception>
 #include <filesystem>
+#include <ftxui/ftxui.hpp>
+#include <ftxui/screen/string.hpp>
 #include <future>
 #include <memory>
 #include <optional>
 #include <ostream>
 #include <random>
 #include <sstream>
-#include <charconv>
 #include <string>
 #include <string_view>
-#include <thread>
 #include <system_error>
+#include <thread>
 #include <tuple>
 #include <type_traits>
 #include <utility>
@@ -43,7 +42,9 @@ enum class path_display_mode
     both,
 };
 
-struct tester_options
+// The options of the interactive tester. input_path and solution_path are the
+// initial paths of the Input/Output page; run() loads the Input from input_path.
+struct options
 {
     std::string title{"EasyLocal Tester"};
     std::uint64_t seed{};
@@ -585,11 +586,11 @@ template<class App>
 class tester_frontend
 {
 public:
-    using tester_type = easylocal::Tester<App>;
+    using tester_type = easylocal::Session<App>;
     static constexpr bool supports_neighborhood_diagnostics =
         std::equality_comparable<typename tester_type::solution_type>;
 
-    tester_frontend(tester_type& tester, tester_options options)
+    tester_frontend(tester_type& tester, tui::options options)
         : tester_{tester},
           options_{std::move(options)},
           seed_{options_.seed},
@@ -2052,35 +2053,18 @@ private:
 
                     try
                     {
-                        application.for_each_runner_registration_indexed(
-                            [&]<class Algorithm, std::size_t Index>(
-                                const std::string_view registered_name,
-                                const typename Algorithm::parameters_type&) {
-                                if (completion.found || registered_name != name)
-                                {
-                                    return;
-                                }
-
-                                auto consume_result = [&](auto result) {
-                                    static_assert(
-                                        easylocal::search_result_for<
-                                            decltype(result),
-                                            typename tester_type::solution_type,
-                                            typename tester_type::cost_type>,
-                                        "TextUI requires runner results to provide the "
-                                        "solution and its cost (see easylocal::search_result_for)");
-                                    completion.solution.emplace(
-                                        std::move(result.solution));
-                                };
-
-                                consume_result(application.template run_at_with_rng<Index>(
-                                    *input,
-                                    std::move(solution),
-                                    run_rng,
-                                    easylocal::with(control)));
-                                completion.cancelled = stop_token.stop_requested();
-                                completion.found = true;
-                            });
+                        auto result = application.run(
+                            name,
+                            *input,
+                            std::move(solution),
+                            run_rng,
+                            easylocal::with(control));
+                        if (result)
+                        {
+                            completion.solution.emplace(std::move(result->solution));
+                            completion.cancelled = stop_token.stop_requested();
+                            completion.found = true;
+                        }
                     }
                     catch (const std::exception& error)
                     {
@@ -2466,8 +2450,7 @@ private:
         const ftxui::Component& diagnostics) const
     {
         using namespace ftxui;
-        const auto neighborhood = detail::object_name(
-            tester_.runtime().neighborhood());
+        const auto neighborhood = detail::object_name(tester_.bound_app().neighborhood());
         auto actions = window(text(" Actions "), controls->Render()) |
                        size(WIDTH, LESS_THAN, 30);
         auto details = window(
@@ -2827,7 +2810,7 @@ private:
     }
 
     tester_type& tester_;
-    tester_options options_;
+    tui::options options_;
     std::uint64_t seed_{};
     std::string seed_text_;
     typename tester_type::rng_type rng_;
@@ -2887,10 +2870,20 @@ private:
 
 } // namespace detail
 
+// Runs the interactive tester on an app: an interactive session on it, with
+// options.seed for its RNG, and the Input loaded from options.input_path when
+// it is set (through the read_input hook).
 template<class App>
-void run(easylocal::Tester<App>& tester, tester_options options = {})
+void run(App application, tui::options settings = {})
 {
-    detail::tester_frontend<App>{tester, std::move(options)}.run();
+    using session_type = easylocal::Session<App>;
+    session_type session{std::move(application), settings.seed};
+    if constexpr (session_type::supports_input_loading)
+    {
+        if (!settings.input_path.empty())
+            session.load_input(std::filesystem::path{settings.input_path});
+    }
+    detail::tester_frontend<App>{session, std::move(settings)}.run();
 }
 
 } // namespace easylocal::tui

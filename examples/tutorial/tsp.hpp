@@ -409,7 +409,8 @@ private:
 // [co-located] -------------------------------------------------------------
 
 // [equality] ---------------------------------------------------------------
-// Equality of solutions and moves, for the Tester checks of chapter 13.
+// Equality of solutions and moves, for the neighborhood checks of a Session
+// (chapter 13).
 inline bool operator==(const Tour& a, const Tour& b)
 {
     return a.order == b.order;

@@ -7,6 +7,7 @@
 #include <cassert>
 #include <concepts>
 #include <cstddef>
+#include <optional>
 #include <random>
 #include <stdexcept>
 #include <string>
@@ -17,6 +18,16 @@
 
 namespace easylocal
 {
+
+// The result of a runner chosen by name. Each algorithm has its own result
+// type; what every result provides (search_result_for) is the solution and its
+// cost.
+template<class Solution, class Cost>
+struct named_run_result
+{
+    Solution solution;
+    Cost cost;
+};
 
 namespace detail
 {
@@ -233,13 +244,10 @@ private:
 };
 
 template<class SMSpec, class NHESpec, class... Registrations>
-    requires is_solution_manager_spec_v<SMSpec> &&
-             is_neighborhood_spec_v<NHESpec> &&
-             detail::evaluable_solution_manager<service_t<SMSpec>> &&
-             easylocal::neighborhood_explorer_for<
-                 service_t<NHESpec>,
-                 service_t<SMSpec>>
-class app_runtime
+    requires is_solution_manager_spec_v<SMSpec> && is_neighborhood_spec_v<NHESpec>
+    && detail::evaluable_solution_manager<service_t<SMSpec>>
+    && easylocal::neighborhood_explorer_for<service_t<NHESpec>, service_t<SMSpec>>
+class bound_app
 {
 public:
     using solution_manager_type = service_t<SMSpec>;
@@ -248,7 +256,7 @@ public:
 
     static constexpr std::size_t runner_count = sizeof...(Registrations);
 
-    app_runtime(
+    bound_app(
         const input_type& input,
         const SMSpec& solution_manager_spec,
         const NHESpec& neighborhood_spec,
@@ -266,10 +274,10 @@ public:
                 std::addressof(input_));
     }
 
-    app_runtime(const app_runtime&) = delete;
-    app_runtime& operator=(const app_runtime&) = delete;
-    app_runtime(app_runtime&&) = delete;
-    app_runtime& operator=(app_runtime&&) = delete;
+    bound_app(const bound_app&) = delete;
+    bound_app& operator=(const bound_app&) = delete;
+    bound_app(bound_app&&) = delete;
+    bound_app& operator=(bound_app&&) = delete;
 
     [[nodiscard]]
     const input_type& input() const noexcept
@@ -649,16 +657,14 @@ public:
     }
 
     template<class Spec = SMSpec>
-        requires (!std::same_as<Spec, unconfigured_t>) &&
-                 (!std::same_as<NHESpec, unconfigured_t>) &&
-                 (sizeof...(Registrations) > 0) &&
-                 Spec::template constructible_from<
-                     const typename service_t<Spec>::input_type> &&
-                 NHESpec::template constructible_from<service_t<Spec>>
-    [[nodiscard]]
-    auto for_input(const typename service_t<Spec>::input_type& input) const
+        requires(!std::same_as<Spec, unconfigured_t>)
+        && (!std::same_as<NHESpec, unconfigured_t>) && (sizeof...(Registrations) > 0)
+        && Spec::template
+    constructible_from<const typename service_t<Spec>::input_type>&& NHESpec::
+        template constructible_from<service_t<Spec>> [[nodiscard]]
+        auto bind(const typename service_t<Spec>::input_type& input) const
     {
-        return app_runtime<SMSpec, NHESpec, Registrations...>{
+        return bound_app<SMSpec, NHESpec, Registrations...>{
             input,
             solution_manager_spec_,
             neighborhood_spec_,
@@ -666,25 +672,24 @@ public:
         };
     }
 
-    // A materialized app stores a reference to its Input. Reject temporaries at
-    // the boundary instead of permitting a runtime with a dangling reference.
+    // A bound app stores a reference to its Input. Reject temporaries at the
+    // boundary instead of permitting a bound app with a dangling reference.
     template<class Spec = SMSpec>
-        requires (!std::same_as<Spec, unconfigured_t>) &&
-                 (!std::same_as<NHESpec, unconfigured_t>) &&
-                 (sizeof...(Registrations) > 0)
-    auto for_input(typename service_t<Spec>::input_type&&) const = delete;
+        requires(!std::same_as<Spec, unconfigured_t>)
+        && (!std::same_as<NHESpec, unconfigured_t>) && (sizeof...(Registrations) > 0)
+    auto bind(typename service_t<Spec>::input_type&&) const = delete;
 
     template<class Spec = SMSpec>
-        requires (!std::same_as<Spec, unconfigured_t>) &&
-                 (!std::same_as<NHESpec, unconfigured_t>) &&
-                 (sizeof...(Registrations) > 0)
-    auto for_input(const typename service_t<Spec>::input_type&&) const = delete;
+        requires(!std::same_as<Spec, unconfigured_t>)
+        && (!std::same_as<NHESpec, unconfigured_t>) && (sizeof...(Registrations) > 0)
+    auto bind(const typename service_t<Spec>::input_type&&) const = delete;
 
-    // Execute one runner against a fresh materialized runtime.  The app graph
-    // and immutable Input may be shared across concurrent calls; mutable
+    // Execute one runner against a freshly bound app.  The app graph and
+    // immutable Input may be shared across concurrent calls; mutable
     // SolutionManager, Neighborhood and algorithm state are reconstructed for
-    // every invocation.  Adapters can therefore schedule independent runs
-    // without making app_runtime itself thread-safe.
+    // every invocation, from the current runner parameters.  Adapters can
+    // therefore schedule independent runs without making bound_app itself
+    // thread-safe.
     template<class Algorithm, class Spec = SMSpec, class... RunArgs>
         requires (!std::same_as<Spec, unconfigured_t>) &&
                  (!std::same_as<NHESpec, unconfigured_t>) &&
@@ -695,8 +700,8 @@ public:
         typename service_t<Spec>::solution_type solution,
         RunArgs&&... args) const
     {
-        auto runtime = for_input(input);
-        return runtime.template run<Algorithm>(
+        auto bound = bind(input);
+        return bound.template run<Algorithm>(
             std::move(solution),
             std::forward<RunArgs>(args)...);
     }
@@ -711,14 +716,14 @@ public:
         typename service_t<Spec>::solution_type solution,
         RunArgs&&... args) const
     {
-        auto runtime = for_input(input);
-        return runtime.template run_at<Index>(
+        auto bound = bind(input);
+        return bound.template run_at<Index>(
             std::move(solution),
             std::forward<RunArgs>(args)...);
     }
 
-    // Runs registration Index on a fresh runtime, giving rng to the algorithm
-    // if it takes one. This is how tools run every registered runner.
+    // Runs registration Index on a freshly bound app, giving rng to the
+    // algorithm if it takes one.
     template<
         std::size_t Index,
         std::uniform_random_bit_generator RNG,
@@ -734,11 +739,55 @@ public:
         RNG& rng,
         Options&&... options) const
     {
-        auto runtime = for_input(input);
-        return runtime.template run_at_with_rng<Index>(
+        auto bound = bind(input);
+        return bound.template run_at_with_rng<Index>(
             std::move(solution),
             rng,
             std::forward<Options>(options)...);
+    }
+
+    // Runs the runner registered under name on a freshly bound app, giving rng
+    // to the algorithm if it takes one; options are with(control, tracer).
+    // Empty when no runner has that name. This is how tools run the runner a
+    // user picks.
+    template<std::uniform_random_bit_generator RNG, class Spec = SMSpec, class... Options>
+        requires(!std::same_as<Spec, unconfigured_t>)
+        && (!std::same_as<NHESpec, unconfigured_t>) && (sizeof...(Registrations) > 0)
+    [[nodiscard]]
+    auto run(
+        const std::string_view name,
+        const typename service_t<Spec>::input_type& input,
+        typename service_t<Spec>::solution_type solution,
+        RNG& rng,
+        Options&&... options) const
+    {
+        using solution_type = typename service_t<Spec>::solution_type;
+        using cost_type = typename service_t<Spec>::cost_type;
+
+        std::optional<named_run_result<solution_type, cost_type>> outcome;
+        for_each_runner_registration_indexed(
+            [&]<class Algorithm, std::size_t Index>(
+                const std::string_view registered_name,
+                const typename Algorithm::parameters_type&) {
+                if (outcome || registered_name != name)
+                    return;
+
+                auto result = run_at_with_rng<Index>(
+                    input,
+                    std::move(solution),
+                    rng,
+                    std::forward<Options>(options)...);
+                static_assert(
+                    search_result_for<decltype(result), solution_type, cost_type>,
+                    "running a runner by name requires its result to provide the "
+                    "solution and its cost (see easylocal::search_result_for)");
+                outcome.emplace(
+                    named_run_result<solution_type, cost_type>{
+                        .solution = std::move(result.solution),
+                        .cost = result.cost,
+                    });
+            });
+        return outcome;
     }
 
 private:

@@ -1,8 +1,8 @@
 #include <easylocal/app/app.hpp>
-#include <easylocal/runners/first_improvement.hpp>
-#include <easylocal/helpers/solution_manager.hpp>
+#include <easylocal/app/session.hpp>
 #include <easylocal/helpers/neighborhood_explorer.hpp>
-#include <easylocal/app/tester.hpp>
+#include <easylocal/helpers/solution_manager.hpp>
+#include <easylocal/runners/first_improvement.hpp>
 
 #include <cassert>
 #include <filesystem>
@@ -19,8 +19,7 @@ struct Move
 };
 
 template<class Input, class Solution>
-class IoSolutionManager
-    : public easylocal::solution_manager_base<Input, Solution>
+class IoSolutionManager : public easylocal::solution_manager_base<Input, Solution>
 {
 public:
     using easylocal::solution_manager_base<Input, Solution>::solution_manager_base;
@@ -43,8 +42,7 @@ struct IoValue
 };
 
 template<class SolutionManager>
-class IoNeighborhood
-    : public easylocal::neighborhood_explorer_base<SolutionManager, Move>
+class IoNeighborhood : public easylocal::neighborhood_explorer_base<SolutionManager, Move>
 {
 public:
     using easylocal::neighborhood_explorer_base<
@@ -59,9 +57,7 @@ public:
         return true;
     }
 
-    static void make_move(
-        typename SolutionManager::solution_type&,
-        const Move&) noexcept
+    static void make_move(typename SolutionManager::solution_type&, const Move&) noexcept
     {
     }
 };
@@ -73,15 +69,15 @@ auto make_io_application(const char* name)
     using solution_manager_type = IoSolutionManager<Input, Solution>;
     using neighborhood_type = IoNeighborhood<solution_manager_type>;
 
-    auto application = easylocal::app(name)
-        .with_solution_manager(
-            easylocal::solution_manager<solution_manager_type>()
-            | easylocal::component<IoValue>())
-        .with_neighborhood(easylocal::neighborhood<neighborhood_type>())
-        .template with_runner<easylocal::runners::FirstImprovement>("fi");
+    auto application =
+        easylocal::app(name)
+            .with_solution_manager(
+                easylocal::solution_manager<solution_manager_type>()
+                | easylocal::component<IoValue>())
+            .with_neighborhood(easylocal::neighborhood<neighborhood_type>())
+            .template with_runner<easylocal::runners::FirstImprovement>("fi");
 
-    application
-        .template runner_config<easylocal::runners::FirstImprovement>()
+    application.template runner_config<easylocal::runners::FirstImprovement>()
         .max_evaluations = 1;
 
     return application;
@@ -117,15 +113,9 @@ struct Solution
     int value{};
     int source{};
 
-    explicit Solution(const Input& input)
-        : value{input.value}
-    {
-    }
+    explicit Solution(const Input& input) : value{input.value} {}
 
-    Solution(int value, int source)
-        : value{value}, source{source}
-    {
-    }
+    Solution(int value, int source) : value{value}, source{source} {}
 
     [[nodiscard]]
     static auto read(const Input& input, std::istream& in) -> Solution
@@ -141,14 +131,16 @@ struct Solution
     }
 };
 
-[[maybe_unused]] inline auto operator>>(std::istream& in, Solution& solution) -> std::istream&
+[[maybe_unused]] inline auto operator>>(std::istream& in, Solution& solution)
+    -> std::istream&
 {
     in >> solution.value;
     solution.source = 3;
     return in;
 }
 
-[[maybe_unused]] inline auto operator<<(std::ostream& out, const Solution& solution) -> std::ostream&
+[[maybe_unused]] inline auto operator<<(std::ostream& out, const Solution& solution)
+    -> std::ostream&
 {
     out << "stream:" << solution.value;
     return out;
@@ -186,10 +178,7 @@ struct Solution
     int value{};
     int source{};
 
-    explicit Solution(const Input& input)
-        : value{input.value}
-    {
-    }
+    explicit Solution(const Input& input) : value{input.value} {}
 };
 
 [[nodiscard]]
@@ -211,14 +200,16 @@ inline void write_solution(
     out << "adl:" << input.value << ':' << solution.value;
 }
 
-[[maybe_unused]] inline auto operator>>(std::istream& in, Solution& solution) -> std::istream&
+[[maybe_unused]] inline auto operator>>(std::istream& in, Solution& solution)
+    -> std::istream&
 {
     in >> solution.value;
     solution.source = 3;
     return in;
 }
 
-[[maybe_unused]] inline auto operator<<(std::ostream& out, const Solution& solution) -> std::ostream&
+[[maybe_unused]] inline auto operator<<(std::ostream& out, const Solution& solution)
+    -> std::ostream&
 {
     out << "stream:" << solution.value;
     return out;
@@ -247,10 +238,7 @@ struct Solution
     int value{};
     int source{};
 
-    explicit Solution(const Input& input)
-        : value{input.value}
-    {
-    }
+    explicit Solution(const Input& input) : value{input.value} {}
 };
 
 inline auto operator>>(std::istream& in, Solution& solution) -> std::istream&
@@ -274,87 +262,95 @@ template<class Input, class Solution>
 using io_app_type = decltype(make_io_application<Input, Solution>("io"));
 
 template<class Input, class Solution>
-using tester_type = easylocal::Tester<io_app_type<Input, Solution>>;
+using session_type = easylocal::Session<io_app_type<Input, Solution>>;
 
-static_assert(tester_type<static_io::Input, static_io::Solution>::supports_input_loading);
-static_assert(tester_type<static_io::Input, static_io::Solution>::supports_solution_loading);
-static_assert(tester_type<static_io::Input, static_io::Solution>::supports_solution_saving);
-static_assert(!tester_type<static_io::Input, static_io::Solution>::supports_initial_solution);
-static_assert(!tester_type<static_io::Input, static_io::Solution>::supports_random_solution);
+static_assert(
+    session_type<static_io::Input, static_io::Solution>::supports_input_loading);
+static_assert(
+    session_type<static_io::Input, static_io::Solution>::supports_solution_loading);
+static_assert(
+    session_type<static_io::Input, static_io::Solution>::supports_solution_saving);
+static_assert(
+    !session_type<static_io::Input, static_io::Solution>::supports_initial_solution);
+static_assert(
+    !session_type<static_io::Input, static_io::Solution>::supports_random_solution);
 
-static_assert(tester_type<adl_io::Input, adl_io::Solution>::supports_input_loading);
-static_assert(tester_type<adl_io::Input, adl_io::Solution>::supports_solution_loading);
-static_assert(tester_type<adl_io::Input, adl_io::Solution>::supports_solution_saving);
+static_assert(session_type<adl_io::Input, adl_io::Solution>::supports_input_loading);
+static_assert(session_type<adl_io::Input, adl_io::Solution>::supports_solution_loading);
+static_assert(session_type<adl_io::Input, adl_io::Solution>::supports_solution_saving);
 
-static_assert(tester_type<stream_io::Input, stream_io::Solution>::supports_input_loading);
-static_assert(tester_type<stream_io::Input, stream_io::Solution>::supports_solution_loading);
-static_assert(tester_type<stream_io::Input, stream_io::Solution>::supports_solution_saving);
+static_assert(
+    session_type<stream_io::Input, stream_io::Solution>::supports_input_loading);
+static_assert(
+    session_type<stream_io::Input, stream_io::Solution>::supports_solution_loading);
+static_assert(
+    session_type<stream_io::Input, stream_io::Solution>::supports_solution_saving);
 
 void static_member_io_has_priority()
 {
-    easylocal::Tester tester{
+    easylocal::Session session{
         make_io_application<static_io::Input, static_io::Solution>("static-io")};
 
     std::istringstream input_stream{"5"};
-    tester.load_input(input_stream);
-    assert(tester.input().value == 5);
-    assert(tester.input().source == 1);
+    session.load_input(input_stream);
+    assert(session.input().value == 5);
+    assert(session.input().source == 1);
 
     std::istringstream solution_stream{"7"};
-    tester.load_solution(solution_stream);
-    assert(tester.solution().value == 12);
-    assert(tester.solution().source == 1);
+    session.load_solution(solution_stream);
+    assert(session.solution().value == 12);
+    assert(session.solution().source == 1);
 
     std::ostringstream out;
-    tester.save_solution(out);
+    session.save_solution(out);
     assert(out.str() == "member:5:12");
 }
 
 void adl_io_has_priority_over_stream_operators()
 {
-    easylocal::Tester tester{
+    easylocal::Session session{
         make_io_application<adl_io::Input, adl_io::Solution>("adl-io")};
 
     std::istringstream input_stream{"11"};
-    tester.load_input(input_stream);
-    assert(tester.input().value == 11);
-    assert(tester.input().source == 2);
+    session.load_input(input_stream);
+    assert(session.input().value == 11);
+    assert(session.input().source == 2);
 
     std::istringstream solution_stream{"4"};
-    tester.load_solution(solution_stream);
-    assert(tester.solution().value == 15);
-    assert(tester.solution().source == 2);
+    session.load_solution(solution_stream);
+    assert(session.solution().value == 15);
+    assert(session.solution().source == 2);
 
     std::ostringstream out;
-    tester.save_solution(out);
+    session.save_solution(out);
     assert(out.str() == "adl:11:15");
 }
 
 void stream_operators_are_supported_as_fallbacks()
 {
-    easylocal::Tester tester{
+    easylocal::Session session{
         make_io_application<stream_io::Input, stream_io::Solution>("stream-io")};
 
     std::istringstream input_stream{"13"};
-    tester.load_input(input_stream);
-    assert(tester.input().value == 13);
-    assert(tester.input().source == 3);
+    session.load_input(input_stream);
+    assert(session.input().value == 13);
+    assert(session.input().source == 3);
 
     std::istringstream solution_stream{"6"};
-    tester.load_solution(solution_stream);
-    assert(tester.solution().value == 19);
-    assert(tester.solution().source == 3);
+    session.load_solution(solution_stream);
+    assert(session.solution().value == 19);
+    assert(session.solution().source == 3);
 
     std::ostringstream out;
-    tester.save_solution(out);
+    session.save_solution(out);
     assert(out.str() == "stream:19");
 }
 
 void file_overloads_delegate_to_the_same_protocol()
 {
-    const auto input_path = std::filesystem::path{"easylocal_tester_io_input.tmp"};
-    const auto solution_path = std::filesystem::path{"easylocal_tester_io_solution.tmp"};
-    const auto output_path = std::filesystem::path{"easylocal_tester_io_output.tmp"};
+    const auto input_path = std::filesystem::path{"easylocal_session_io_input.tmp"};
+    const auto solution_path = std::filesystem::path{"easylocal_session_io_solution.tmp"};
+    const auto output_path = std::filesystem::path{"easylocal_session_io_output.tmp"};
 
     {
         std::ofstream out{input_path};
@@ -365,11 +361,11 @@ void file_overloads_delegate_to_the_same_protocol()
         out << 8;
     }
 
-    easylocal::Tester tester{
+    easylocal::Session session{
         make_io_application<stream_io::Input, stream_io::Solution>("file-io")};
-    tester.load_input(input_path);
-    tester.load_solution(solution_path);
-    tester.save_solution(output_path);
+    session.load_input(input_path);
+    session.load_solution(solution_path);
+    session.save_solution(output_path);
 
     std::string contents;
     {
@@ -387,40 +383,40 @@ void file_overloads_delegate_to_the_same_protocol()
 
 void failed_reads_do_not_replace_current_state()
 {
-    easylocal::Tester tester{
+    easylocal::Session session{
         make_io_application<stream_io::Input, stream_io::Solution>("failure-io")};
 
     std::istringstream good_input{"21"};
-    tester.load_input(good_input);
+    session.load_input(good_input);
     std::istringstream good_solution{"2"};
-    tester.load_solution(good_solution);
+    session.load_solution(good_solution);
 
     bool input_failed = false;
     try
     {
         std::istringstream bad_input{"not-a-number"};
-        tester.load_input(bad_input);
+        session.load_input(bad_input);
     }
     catch (const std::runtime_error&)
     {
         input_failed = true;
     }
     assert(input_failed);
-    assert(tester.input().value == 21);
-    assert(tester.solution().value == 23);
+    assert(session.input().value == 21);
+    assert(session.solution().value == 23);
 
     bool solution_failed = false;
     try
     {
         std::istringstream bad_solution{"not-a-number"};
-        tester.load_solution(bad_solution);
+        session.load_solution(bad_solution);
     }
     catch (const std::runtime_error&)
     {
         solution_failed = true;
     }
     assert(solution_failed);
-    assert(tester.solution().value == 23);
+    assert(session.solution().value == 23);
 }
 
 } // namespace

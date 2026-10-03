@@ -1,12 +1,11 @@
 #pragma once
 
-#include <easylocal/app/tester.hpp>
 #include <easylocal/adapters/tui/tester.hpp>
-
-#include <ftxui/ftxui.hpp>
+#include <easylocal/app/session.hpp>
 
 #include <concepts>
 #include <cstddef>
+#include <ftxui/ftxui.hpp>
 #include <optional>
 #include <string>
 #include <tuple>
@@ -19,7 +18,7 @@ namespace easylocal::tui
 struct launcher_options
 {
     std::string title{"EasyLocal Tester"};
-    tester_options tester{};
+    options tester{};
 };
 
 namespace detail
@@ -78,16 +77,13 @@ public:
     {
         while (const auto selected = choose_application())
         {
-            const bool dispatched = visit_application_at(
-                applications_,
-                *selected,
-                [this](auto& application) {
-                    easylocal::Tester tester{application};
-                    auto options = options_.tester;
-                    options.title = options_.title + " - " +
-                                    std::string{application.name()};
-                    options.exit_label = "back to applications";
-                    easylocal::tui::run(tester, std::move(options));
+            const bool dispatched =
+                visit_application_at(applications_, *selected, [this](auto& application) {
+                    auto settings = options_.tester;
+                    settings.title =
+                        options_.title + " - " + std::string{application.name()};
+                    settings.exit_label = "back to applications";
+                    easylocal::tui::run(application, std::move(settings));
                 });
             (void)dispatched;
         }

@@ -42,12 +42,11 @@ namespace detail
 {
 
 template<class App>
-using app_runtime_t = decltype(
-    std::declval<const App&>().for_input(
-        std::declval<const typename App::input_type&>()));
+using bound_app_t = decltype(std::declval<const App&>().bind(
+    std::declval<const typename App::input_type&>()));
 
 template<class App>
-using app_solution_manager_t = typename app_runtime_t<App>::solution_manager_type;
+using app_solution_manager_t = typename bound_app_t<App>::solution_manager_type;
 
 template<class App>
 using app_solution_t = typename app_solution_manager_t<App>::solution_type;
@@ -132,8 +131,8 @@ public:
     using app_type = App;
     using codec_type = Codec;
     using input_type = typename App::input_type;
-    using runtime_type = detail::app_runtime_t<App>;
-    using solution_manager_type = typename runtime_type::solution_manager_type;
+    using bound_app_type = detail::bound_app_t<App>;
+    using solution_manager_type = typename bound_app_type::solution_manager_type;
     using solution_type = typename solution_manager_type::solution_type;
     using cost_type = typename solution_manager_type::cost_type;
 
@@ -372,12 +371,10 @@ private:
             }
         }
 
-        auto runtime = application.for_input(input);
-        if constexpr (requires {
-                          runtime.solution_manager().initial_solution();
-                      })
+        auto bound = application.bind(input);
+        if constexpr (requires { bound.solution_manager().initial_solution(); })
         {
-            return runtime.solution_manager().initial_solution();
+            return bound.solution_manager().initial_solution();
         }
         else
         {
@@ -525,44 +522,24 @@ private:
 
                     try
                     {
-                        bool found = false;
-                        application.for_each_runner_registration_indexed(
-                            [&]<class Algorithm, std::size_t Index>(
-                                const std::string_view registered_name,
-                                const typename Algorithm::parameters_type&) {
-                                if (found || registered_name != runner)
-                                {
-                                    return;
-                                }
+                        std::mt19937_64 rng{record->seed};
+                        auto result = application.run(
+                            runner,
+                            *record->input,
+                            std::move(initial),
+                            rng,
+                            easylocal::with(control));
 
-                                auto consume_result = [&](auto result) {
-                                    static_assert(
-                                        easylocal::search_result_for<
-                                            decltype(result), solution_type, cost_type>,
-                                        "REST requires runner results to provide the "
-                                        "solution and its cost (see easylocal::search_result_for)");
-
-                                    const std::lock_guard lock{record->mutex};
-                                    record->solution.emplace(
-                                        std::move(result.solution));
-                                    record->state =
-                                        record->stop_source.stop_requested()
-                                            ? run_state::cancelled
-                                            : run_state::succeeded;
-                                };
-
-                                std::mt19937_64 rng{record->seed};
-                                consume_result(application.template run_at_with_rng<Index>(
-                                    *record->input,
-                                    std::move(initial),
-                                    rng,
-                                    easylocal::with(control)));
-                                found = true;
-                            });
-
-                        if (!found)
+                        const std::lock_guard lock{record->mutex};
+                        if (result)
                         {
-                            const std::lock_guard lock{record->mutex};
+                            record->solution.emplace(std::move(result->solution));
+                            record->state = record->stop_source.stop_requested()
+                                ? run_state::cancelled
+                                : run_state::succeeded;
+                        }
+                        else
+                        {
                             record->state = run_state::failed;
                             record->error = "runner disappeared from application snapshot";
                         }
@@ -671,8 +648,8 @@ private:
                 "run has not produced a solution yet");
         }
 
-        auto runtime = application.for_input(*record->input);
-        const auto cost = runtime.solution_manager().evaluate(*record->solution);
+        auto bound = application.bind(*record->input);
+        const auto cost = bound.solution_manager().evaluate(*record->solution);
 
         crow::json::wvalue body;
         body["id"] = record->id;

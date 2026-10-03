@@ -7,7 +7,7 @@
 
 #include <easylocal/adapters/tui/tester.hpp>
 #include <easylocal/app/app.hpp>
-#include <easylocal/app/tester.hpp>
+#include <easylocal/app/session.hpp>
 #include <easylocal/runners/first_improvement.hpp>
 
 int main()
@@ -27,15 +27,15 @@ int main()
             .with_runner<easylocal::runners::FirstImprovement>("fi")
             .with_runner<demo::SlowFirstImprovement>("slow-fi");
 
-    easylocal::Tester tester{std::move(application)};
-    static_assert(decltype(tester)::supports_input_loading);
-    static_assert(decltype(tester)::supports_solution_loading);
-    static_assert(decltype(tester)::supports_solution_saving);
+    using session_type = easylocal::Session<decltype(application)>;
+    static_assert(session_type::supports_input_loading);
+    static_assert(session_type::supports_solution_loading);
+    static_assert(session_type::supports_solution_saving);
 
     // Instantiates the complete FTXUI frontend without entering a terminal loop.
     if (false)
     {
-        easylocal::tui::run(tester);
+        easylocal::tui::run(std::move(application));
     }
 
     return 0;

@@ -45,8 +45,8 @@ constexpr std::string_view to_string(const termination_reason reason) noexcept
     return "unknown";
 }
 
-// The result contract consumed by solvers, the Tester and the adapters: the
-// final solution and its cost. search_result models it; custom runners may
+// The result contract consumed by solvers, runs by name (app.run) and the
+// adapters: the final solution and its cost. search_result models it; custom runners may
 // return richer types.
 template<class Result, class Solution, class Cost>
 concept search_result_for =

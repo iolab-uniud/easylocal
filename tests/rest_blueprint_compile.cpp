@@ -42,9 +42,8 @@ using namespace assignment;
 }
 
 using app_type = decltype(make_application());
-using runtime_type = decltype(
-    std::declval<const app_type&>().for_input(
-        std::declval<const AssignmentInstance&>()));
+using runtime_type = decltype(std::declval<const app_type&>().bind(
+    std::declval<const AssignmentInstance&>()));
 using solution_type = typename runtime_type::solution_manager_type::solution_type;
 using cost_type = typename runtime_type::solution_manager_type::cost_type;
 

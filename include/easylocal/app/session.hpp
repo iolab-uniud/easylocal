@@ -1,5 +1,11 @@
 #pragma once
 
+#include <easylocal/app/check.hpp>
+#include <easylocal/cost/semantics.hpp>
+#include <easylocal/helpers/detail/evaluation.hpp>
+#include <easylocal/helpers/neighborhood_explorer.hpp>
+#include <easylocal/helpers/solution_manager.hpp>
+
 #include <algorithm>
 #include <cassert>
 #include <concepts>
@@ -19,16 +25,10 @@
 #include <utility>
 #include <vector>
 
-#include <easylocal/app/check.hpp>
-#include <easylocal/helpers/neighborhood_explorer.hpp>
-#include <easylocal/cost/semantics.hpp>
-#include <easylocal/helpers/detail/evaluation.hpp>
-#include <easylocal/helpers/solution_manager.hpp>
-
 namespace easylocal
 {
 
-namespace detail::tester_io
+namespace detail::session_io
 {
 
 namespace adl
@@ -39,12 +39,9 @@ void read_solution() = delete;
 void write_solution() = delete;
 
 template<class Input>
-concept has_read_input =
-    requires(std::istream& in) {
-        {
-            read_input(std::type_identity<Input>{}, in)
-        } -> std::convertible_to<Input>;
-    };
+concept has_read_input = requires(std::istream& in) {
+    { read_input(std::type_identity<Input>{}, in) } -> std::convertible_to<Input>;
+};
 
 template<class Input>
     requires has_read_input<Input>
@@ -55,12 +52,9 @@ Input call_read_input(std::istream& in)
 }
 
 template<class Input, class Solution>
-concept has_read_solution =
-    requires(const Input& input, std::istream& in) {
-        {
-            read_solution(input, in)
-        } -> std::convertible_to<Solution>;
-    };
+concept has_read_solution = requires(const Input& input, std::istream& in) {
+    { read_solution(input, in) } -> std::convertible_to<Solution>;
+};
 
 template<class Input, class Solution>
     requires has_read_solution<Input, Solution>
@@ -72,19 +66,13 @@ Solution call_read_solution(const Input& input, std::istream& in)
 
 template<class Input, class Solution>
 concept has_write_solution =
-    requires(
-        const Input& input,
-        const Solution& solution,
-        std::ostream& out) {
+    requires(const Input& input, const Solution& solution, std::ostream& out) {
         write_solution(input, solution, out);
     };
 
 template<class Input, class Solution>
     requires has_write_solution<Input, Solution>
-void call_write_solution(
-    const Input& input,
-    const Solution& solution,
-    std::ostream& out)
+void call_write_solution(const Input& input, const Solution& solution, std::ostream& out)
 {
     write_solution(input, solution, out);
 }
@@ -92,25 +80,17 @@ void call_write_solution(
 } // namespace adl
 
 template<class Input>
-concept has_static_input_read =
-    requires(std::istream& in) {
-        {
-            Input::read(in)
-        } -> std::convertible_to<Input>;
-    };
+concept has_static_input_read = requires(std::istream& in) {
+    { Input::read(in) } -> std::convertible_to<Input>;
+};
 
 template<class Input>
-concept has_input_stream_extraction =
-    std::default_initializable<Input> &&
-    requires(std::istream& in, Input& input) {
-        in >> input;
-    };
+concept has_input_stream_extraction = std::default_initializable<Input>
+    && requires(std::istream& in, Input& input) { in >> input; };
 
 template<class Input>
-concept readable_input =
-    has_static_input_read<Input> ||
-    adl::has_read_input<Input> ||
-    has_input_stream_extraction<Input>;
+concept readable_input = has_static_input_read<Input> || adl::has_read_input<Input>
+    || has_input_stream_extraction<Input>;
 
 template<class Input>
     requires readable_input<Input>
@@ -134,25 +114,18 @@ Input read_input(std::istream& in)
 }
 
 template<class Input, class Solution>
-concept has_static_solution_read =
-    requires(const Input& input, std::istream& in) {
-        {
-            Solution::read(input, in)
-        } -> std::convertible_to<Solution>;
-    };
+concept has_static_solution_read = requires(const Input& input, std::istream& in) {
+    { Solution::read(input, in) } -> std::convertible_to<Solution>;
+};
 
 template<class Input, class Solution>
-concept has_solution_stream_extraction =
-    std::constructible_from<Solution, const Input&> &&
-    requires(std::istream& in, Solution& solution) {
-        in >> solution;
-    };
+concept has_solution_stream_extraction = std::constructible_from<Solution, const Input&>
+    && requires(std::istream& in, Solution& solution) { in >> solution; };
 
 template<class Input, class Solution>
 concept readable_solution =
-    has_static_solution_read<Input, Solution> ||
-    adl::has_read_solution<Input, Solution> ||
-    has_solution_stream_extraction<Input, Solution>;
+    has_static_solution_read<Input, Solution> || adl::has_read_solution<Input, Solution>
+    || has_solution_stream_extraction<Input, Solution>;
 
 template<class Solution, class Input>
     requires readable_solution<Input, Solution>
@@ -177,77 +150,60 @@ Solution read_solution(const Input& input, std::istream& in)
 
 template<class Input, class Solution>
 concept has_member_solution_write =
-    requires(
-        const Input& input,
-        const Solution& solution,
-        std::ostream& out) {
+    requires(const Input& input, const Solution& solution, std::ostream& out) {
         solution.write(input, out);
     };
 
 template<class Solution>
 concept has_solution_stream_insertion =
-    requires(std::ostream& out, const Solution& solution) {
-        out << solution;
-    };
+    requires(std::ostream& out, const Solution& solution) { out << solution; };
 
 template<class Input, class Solution>
 concept writable_solution =
-    has_member_solution_write<Input, Solution> ||
-    adl::has_write_solution<Input, Solution> ||
-    has_solution_stream_insertion<Solution>;
+    has_member_solution_write<Input, Solution> || adl::has_write_solution<Input, Solution>
+    || has_solution_stream_insertion<Solution>;
 
 template<class Input, class Solution>
     requires writable_solution<Input, Solution>
-void write_solution(
-    const Input& input,
-    const Solution& solution,
-    std::ostream& out)
+void write_solution(const Input& input, const Solution& solution, std::ostream& out)
 {
     if constexpr (has_member_solution_write<Input, Solution>)
-    {
         solution.write(input, out);
-    }
     else if constexpr (adl::has_write_solution<Input, Solution>)
-    {
         adl::call_write_solution(input, solution, out);
-    }
     else
-    {
         out << solution;
-    }
 }
 
 inline void require_read_success(const std::istream& in, std::string_view what)
 {
     if (in.fail())
-    {
         throw std::runtime_error{"failed to read " + std::string{what}};
-    }
 }
 
 inline void require_write_success(const std::ostream& out, std::string_view what)
 {
     if (out.fail())
-    {
         throw std::runtime_error{"failed to write " + std::string{what}};
-    }
 }
 
-} // namespace detail::tester_io
+} // namespace detail::session_io
 
+// The state of an interactive session on an app, and the commands that change
+// it: an owned Input, the app bound to it, a current solution, a selected move
+// and an RNG. It has no user interface of its own: interactive frontends, such
+// as the TextUI, are views on it.
 template<class App>
-    requires std::move_constructible<App> &&
-             requires { typename App::input_type; }
-class Tester
+    requires std::move_constructible<App> && requires { typename App::input_type; }
+class Session
 {
 public:
     using app_type = App;
     using input_type = typename App::input_type;
-    using runtime_type = decltype(
-        std::declval<const App&>().for_input(
-            std::declval<const input_type&>()));
-    using solution_manager_type = typename runtime_type::solution_manager_type;
-    using neighborhood_type = typename runtime_type::neighborhood_explorer_type;
+    using bound_app_type =
+        decltype(std::declval<const App&>().bind(std::declval<const input_type&>()));
+    using solution_manager_type = typename bound_app_type::solution_manager_type;
+    using neighborhood_type = typename bound_app_type::neighborhood_explorer_type;
     using solution_type = typename solution_manager_type::solution_type;
     using cost_type = typename solution_manager_type::cost_type;
     using move_type = typename neighborhood_type::move_type;
@@ -268,8 +224,8 @@ public:
     static constexpr bool supports_move_independence_check =
         supports_deterministic_moves && std::equality_comparable<solution_type>;
     static constexpr bool supports_random_distribution_check =
-        supports_deterministic_moves && supports_random_moves &&
-        std::equality_comparable<move_type>;
+        supports_deterministic_moves && supports_random_moves
+        && std::equality_comparable<move_type>;
 
     struct neighborhood_statistics_result
     {
@@ -317,25 +273,33 @@ public:
         std::vector<inspected_move> entries;
     };
     static constexpr bool supports_input_loading =
-        detail::tester_io::readable_input<input_type>;
+        detail::session_io::readable_input<input_type>;
     static constexpr bool supports_solution_loading =
-        detail::tester_io::readable_solution<input_type, solution_type>;
+        detail::session_io::readable_solution<input_type, solution_type>;
     static constexpr bool supports_solution_saving =
-        detail::tester_io::writable_solution<input_type, solution_type>;
+        detail::session_io::writable_solution<input_type, solution_type>;
 
     static_assert(
-        supports_initial_solution ||
-            supports_random_solution ||
-            supports_solution_loading,
-        "Tester requires the SolutionManager to provide initial_solution() "
+        supports_initial_solution || supports_random_solution
+            || supports_solution_loading,
+        "the interactive tester requires the SolutionManager to provide initial_solution() "
         "or random_solution(std::mt19937_64&) or solution stream loading "
         "to be available");
 
-    // The seed initializes the RNG the Tester gives to stochastic runners.
-    explicit Tester(App application, const std::uint64_t seed = 0)
-        : app_{std::move(application)},
-          rng_{seed}
+    // A session without an Input yet: set_input or load_input provides it, as
+    // in an interactive frontend. The seed initializes the RNG the session
+    // gives to stochastic runners.
+    explicit Session(App application, const std::uint64_t seed = 0)
+        : app_{std::move(application)}, rng_{seed}
     {
+    }
+
+    // A session on an Input, which it owns: the app bound to it, and the RNG
+    // seeded with seed. Another Input is another session.
+    Session(App application, input_type input, const std::uint64_t seed)
+        : Session{std::move(application), seed}
+    {
+        set_input(std::move(input));
     }
 
     void set_seed(const std::uint64_t seed)
@@ -370,20 +334,20 @@ public:
     void set_input(input_type input)
     {
         auto new_input = std::make_shared<const input_type>(std::move(input));
-        auto new_runtime = std::unique_ptr<runtime_type>{
-            new runtime_type(app_.for_input(*new_input))};
+        auto new_bound =
+            std::unique_ptr<bound_app_type>{new bound_app_type(app_.bind(*new_input))};
 
         clear_solution_state();
-        runtime_.reset();
+        bound_.reset();
         input_ = std::move(new_input);
-        runtime_ = std::move(new_runtime);
+        bound_ = std::move(new_bound);
     }
 
     void load_input(std::istream& in)
         requires supports_input_loading
     {
-        auto input = detail::tester_io::read_input<input_type>(in);
-        detail::tester_io::require_read_success(in, "Input");
+        auto input = detail::session_io::read_input<input_type>(in);
+        detail::session_io::require_read_success(in, "Input");
         set_input(std::move(input));
     }
 
@@ -392,10 +356,7 @@ public:
     {
         std::ifstream in{path};
         if (!in)
-        {
-            throw std::runtime_error{
-                "failed to open Input file: " + path.string()};
-        }
+            throw std::runtime_error{"failed to open Input file: " + path.string()};
         load_input(in);
     }
 
@@ -413,17 +374,17 @@ public:
     }
 
     [[nodiscard]]
-    runtime_type& runtime() noexcept
+    bound_app_type& bound_app() noexcept
     {
-        assert(runtime_);
-        return *runtime_;
+        assert(bound_);
+        return *bound_;
     }
 
     [[nodiscard]]
-    const runtime_type& runtime() const noexcept
+    const bound_app_type& bound_app() const noexcept
     {
-        assert(runtime_);
-        return *runtime_;
+        assert(bound_);
+        return *bound_;
     }
 
     [[nodiscard]]
@@ -435,24 +396,24 @@ public:
     void use_initial_solution()
         requires supports_initial_solution
     {
-        assert(runtime_);
+        assert(bound_);
         solution_ = std::make_unique<solution_type>(
-            runtime_->solution_manager().initial_solution());
+            bound_->solution_manager().initial_solution());
         clear_move_state();
     }
 
     void use_random_solution(rng_type& rng)
         requires supports_random_solution
     {
-        assert(runtime_);
+        assert(bound_);
         solution_ = std::make_unique<solution_type>(
-            runtime_->solution_manager().random_solution(rng));
+            bound_->solution_manager().random_solution(rng));
         clear_move_state();
     }
 
     void set_solution(solution_type solution)
     {
-        assert(runtime_);
+        assert(bound_);
         solution_ = std::make_unique<solution_type>(std::move(solution));
         clear_move_state();
     }
@@ -461,10 +422,8 @@ public:
         requires supports_solution_loading
     {
         assert(input_);
-        auto solution = detail::tester_io::read_solution<solution_type>(
-            *input_,
-            in);
-        detail::tester_io::require_read_success(in, "Solution");
+        auto solution = detail::session_io::read_solution<solution_type>(*input_, in);
+        detail::session_io::require_read_success(in, "Solution");
         set_solution(std::move(solution));
     }
 
@@ -473,10 +432,7 @@ public:
     {
         std::ifstream in{path};
         if (!in)
-        {
-            throw std::runtime_error{
-                "failed to open Solution file: " + path.string()};
-        }
+            throw std::runtime_error{"failed to open Solution file: " + path.string()};
         load_solution(in);
     }
 
@@ -485,8 +441,8 @@ public:
     {
         assert(input_);
         assert(solution_);
-        detail::tester_io::write_solution(*input_, *solution_, out);
-        detail::tester_io::require_write_success(out, "Solution");
+        detail::session_io::write_solution(*input_, *solution_, out);
+        detail::session_io::require_write_success(out, "Solution");
     }
 
     void save_solution(const std::filesystem::path& path) const
@@ -494,10 +450,7 @@ public:
     {
         std::ofstream out{path};
         if (!out)
-        {
-            throw std::runtime_error{
-                "failed to open Solution file: " + path.string()};
-        }
+            throw std::runtime_error{"failed to open Solution file: " + path.string()};
         save_solution(out);
     }
 
@@ -511,19 +464,18 @@ public:
     [[nodiscard]]
     bool is_valid() const
     {
-        assert(runtime_);
+        assert(bound_);
         assert(solution_);
-        return static_cast<bool>(
-            runtime_->solution_manager().is_valid(*solution_));
+        return static_cast<bool>(bound_->solution_manager().is_valid(*solution_));
     }
 
     [[nodiscard]]
     cost_type evaluate() const
     {
-        assert(runtime_);
+        assert(bound_);
         assert(solution_);
         assert(is_valid());
-        return runtime_->solution_manager().evaluate(*solution_);
+        return bound_->solution_manager().evaluate(*solution_);
     }
 
     [[nodiscard]]
@@ -542,43 +494,28 @@ public:
         app_.for_each_runner_registration(
             [&]<class Algorithm>(
                 const std::string_view name,
-                const typename Algorithm::parameters_type&) {
-                names.push_back(name);
-            });
+                const typename Algorithm::parameters_type&) { names.push_back(name); });
         return names;
     }
 
+    // Runs the runner registered under name from the current solution, which
+    // it replaces with the runner's result; false when no runner has that name.
+    // Like every app run, it uses freshly bound services and the current runner
+    // parameters, not this session's bound app.
     [[nodiscard]]
-    bool run_runner(const std::string_view name)
+    bool run(const std::string_view name)
     {
-        assert(runtime_);
+        assert(bound_);
         assert(solution_);
         assert(is_valid());
 
-        bool found = false;
-        app_.for_each_runner_registration_indexed(
-            [&]<class Algorithm, std::size_t Index>(
-                const std::string_view registered_name,
-                const typename Algorithm::parameters_type&) {
-                if (found || registered_name != name)
-                {
-                    return;
-                }
+        auto result = app_.run(name, *input_, *solution_, rng_);
+        if (!result)
+            return false;
 
-                auto result =
-                    app_.template run_at_with_rng<Index>(*input_, *solution_, rng_);
-                static_assert(
-                    easylocal::search_result_for<
-                        decltype(result), solution_type, cost_type>,
-                    "Tester requires runner results to provide the solution "
-                    "and its cost (see easylocal::search_result_for)");
-
-                solution_ = std::make_unique<solution_type>(
-                    std::move(result.solution));
-                clear_move_state();
-                found = true;
-            });
-        return found;
+        solution_ = std::make_unique<solution_type>(std::move(result->solution));
+        clear_move_state();
+        return true;
     }
 
     [[nodiscard]]
@@ -605,7 +542,7 @@ public:
     bool use_first_move()
         requires supports_deterministic_moves
     {
-        assert(runtime_);
+        assert(bound_);
         assert(solution_);
         return select_deterministic_move(0);
     }
@@ -614,13 +551,11 @@ public:
     bool use_next_move()
         requires supports_deterministic_moves
     {
-        assert(runtime_);
+        assert(bound_);
         assert(solution_);
 
         if (!deterministic_move_index_)
-        {
             return false;
-        }
 
         return select_deterministic_move(*deterministic_move_index_ + 1);
     }
@@ -629,17 +564,17 @@ public:
     bool use_first_improving_move()
         requires supports_improvement_selection
     {
-        assert(runtime_);
+        assert(bound_);
         assert(solution_);
 
         const auto current = evaluate();
         std::size_t index = 0;
-        for (auto&& candidate : easylocal::moves(runtime_->neighborhood(), *solution_))
+        for (auto&& candidate : easylocal::moves(bound_->neighborhood(), *solution_))
         {
             move_.emplace(candidate);
             deterministic_move_index_ = index;
-            if (move_is_valid() &&
-                cost::better(runtime_->solution_manager(), evaluate_move(), current))
+            if (move_is_valid()
+                && cost::better(bound_->solution_manager(), evaluate_move(), current))
             {
                 return true;
             }
@@ -653,22 +588,25 @@ public:
     bool use_best_move()
         requires supports_improvement_selection
     {
-        assert(runtime_);
+        assert(bound_);
         assert(solution_);
 
         std::optional<move_type> best_move;
         std::optional<cost_type> best_cost;
         std::optional<std::size_t> best_index;
         std::size_t index = 0;
-        for (auto&& candidate : easylocal::moves(runtime_->neighborhood(), *solution_))
+        for (auto&& candidate : easylocal::moves(bound_->neighborhood(), *solution_))
         {
             move_.emplace(candidate);
             deterministic_move_index_ = index;
             if (move_is_valid())
             {
                 auto candidate_cost = evaluate_move();
-                if (!best_cost || cost::better(
-                        runtime_->solution_manager(), candidate_cost, *best_cost))
+                if (!best_cost
+                    || cost::better(
+                        bound_->solution_manager(),
+                        candidate_cost,
+                        *best_cost))
                 {
                     best_move = candidate;
                     best_cost = std::move(candidate_cost);
@@ -692,13 +630,10 @@ public:
     bool use_random_move(rng_type& rng)
         requires supports_random_moves
     {
-        assert(runtime_);
+        assert(bound_);
         assert(solution_);
 
-        auto selected = easylocal::random_move(
-            runtime_->neighborhood(),
-            *solution_,
-            rng);
+        auto selected = easylocal::random_move(bound_->neighborhood(), *solution_, rng);
 
         deterministic_move_index_.reset();
         if (!selected)
@@ -714,49 +649,44 @@ public:
     [[nodiscard]]
     bool move_is_valid() const
     {
-        assert(runtime_);
+        assert(bound_);
         assert(solution_);
         assert(move_);
-        return static_cast<bool>(
-            runtime_->neighborhood().is_valid(*solution_, *move_));
+        return static_cast<bool>(bound_->neighborhood().is_valid(*solution_, *move_));
     }
 
     [[nodiscard]]
     cost_type evaluate_move() const
     {
-        assert(runtime_);
+        assert(bound_);
         assert(solution_);
         assert(move_);
         assert(move_is_valid());
 
-        const auto& solution_manager = runtime_->solution_manager();
-        const auto& neighborhood = runtime_->neighborhood();
-        const detail::evaluation_facility<
-            solution_manager_type,
-            neighborhood_type> evaluation{
+        const auto& solution_manager = bound_->solution_manager();
+        const auto& neighborhood = bound_->neighborhood();
+        const detail::evaluation_facility<solution_manager_type, neighborhood_type>
+            evaluation{
                 solution_manager,
                 neighborhood,
-            };
+        };
         const auto current = evaluation.evaluate(*solution_);
-        const auto candidate = evaluation.evaluate_move(
-            *solution_,
-            current,
-            *move_);
+        const auto candidate = evaluation.evaluate_move(*solution_, current, *move_);
         return candidate.cost();
     }
 
     [[nodiscard]]
     cost_type evaluate_move_fully() const
     {
-        assert(runtime_);
+        assert(bound_);
         assert(solution_);
         assert(move_);
         assert(move_is_valid());
 
         auto candidate = *solution_;
-        runtime_->neighborhood().make_move(candidate, *move_);
-        assert(runtime_->solution_manager().is_valid(candidate));
-        return runtime_->solution_manager().evaluate(candidate);
+        bound_->neighborhood().make_move(candidate, *move_);
+        assert(bound_->solution_manager().is_valid(candidate));
+        return bound_->solution_manager().evaluate(candidate);
     }
 
     [[nodiscard]]
@@ -765,10 +695,7 @@ public:
     {
         const auto incremental = evaluate_move();
         const auto full = evaluate_move_fully();
-        return cost::equivalent(
-            runtime_->solution_manager(),
-            incremental,
-            full);
+        return cost::equivalent(bound_->solution_manager(), incremental, full);
     }
 
     [[nodiscard]]
@@ -776,31 +703,31 @@ public:
         const std::size_t max_entries = 8) const
         requires supports_deterministic_moves
     {
-        assert(runtime_);
+        assert(bound_);
         assert(solution_);
 
         neighborhood_preview_result result;
-        const auto& solution_manager = runtime_->solution_manager();
-        const auto& neighborhood = runtime_->neighborhood();
-        const detail::evaluation_facility<
-            solution_manager_type,
-            neighborhood_type> evaluation{solution_manager, neighborhood};
+        const auto& solution_manager = bound_->solution_manager();
+        const auto& neighborhood = bound_->neighborhood();
+        const detail::evaluation_facility<solution_manager_type, neighborhood_type>
+            evaluation{solution_manager, neighborhood};
         const auto current = evaluation.evaluate(*solution_);
 
         for (auto&& raw_move : easylocal::moves(neighborhood, *solution_))
         {
             move_type candidate{raw_move};
             ++result.moves;
-            if (result.entries.size() == max_entries ||
-                !static_cast<bool>(neighborhood.is_valid(*solution_, candidate)))
+            if (result.entries.size() == max_entries
+                || !static_cast<bool>(neighborhood.is_valid(*solution_, candidate)))
             {
                 continue;
             }
             auto evaluated = evaluation.evaluate_move(*solution_, current, candidate);
-            result.entries.push_back(inspected_move{
-                .move = std::move(candidate),
-                .cost = evaluated.cost(),
-            });
+            result.entries.push_back(
+                inspected_move{
+                    .move = std::move(candidate),
+                    .cost = evaluated.cost(),
+                });
         }
         return result;
     }
@@ -809,15 +736,14 @@ public:
     neighborhood_statistics_result neighborhood_statistics() const
         requires supports_improvement_selection
     {
-        assert(runtime_);
+        assert(bound_);
         assert(solution_);
 
         neighborhood_statistics_result result;
-        const auto& solution_manager = runtime_->solution_manager();
-        const auto& neighborhood = runtime_->neighborhood();
-        const detail::evaluation_facility<
-            solution_manager_type,
-            neighborhood_type> evaluation{solution_manager, neighborhood};
+        const auto& solution_manager = bound_->solution_manager();
+        const auto& neighborhood = bound_->neighborhood();
+        const detail::evaluation_facility<solution_manager_type, neighborhood_type>
+            evaluation{solution_manager, neighborhood};
         const auto current = evaluation.evaluate(*solution_);
 
         for (auto&& raw_move : easylocal::moves(neighborhood, *solution_))
@@ -832,17 +758,11 @@ public:
             const auto candidate_cost =
                 evaluation.evaluate_move(*solution_, current, candidate).cost();
             if (cost::better(solution_manager, candidate_cost, current.cost()))
-            {
                 ++result.improving;
-            }
             else if (cost::better(solution_manager, current.cost(), candidate_cost))
-            {
                 ++result.worsening;
-            }
             else
-            {
                 ++result.sideways;
-            }
         }
         return result;
     }
@@ -851,15 +771,14 @@ public:
     neighborhood_cost_check_result check_neighborhood_costs() const
         requires supports_cost_consistency_check
     {
-        assert(runtime_);
+        assert(bound_);
         assert(solution_);
 
         neighborhood_cost_check_result result;
-        const auto& solution_manager = runtime_->solution_manager();
-        const auto& neighborhood = runtime_->neighborhood();
-        const detail::evaluation_facility<
-            solution_manager_type,
-            neighborhood_type> evaluation{solution_manager, neighborhood};
+        const auto& solution_manager = bound_->solution_manager();
+        const auto& neighborhood = bound_->neighborhood();
+        const detail::evaluation_facility<solution_manager_type, neighborhood_type>
+            evaluation{solution_manager, neighborhood};
         const auto current = evaluation.evaluate(*solution_);
 
         for (auto&& raw_move : easylocal::moves(neighborhood, *solution_))
@@ -883,9 +802,7 @@ public:
             }
             const auto full = solution_manager.evaluate(candidate);
             if (!cost::equivalent(solution_manager, incremental, full))
-            {
                 ++result.mismatches;
-            }
         }
         return result;
     }
@@ -894,11 +811,11 @@ public:
     move_independence_result check_move_independence() const
         requires supports_move_independence_check
     {
-        assert(runtime_);
+        assert(bound_);
         assert(solution_);
 
         move_independence_result result;
-        const auto& neighborhood = runtime_->neighborhood();
+        const auto& neighborhood = bound_->neighborhood();
         std::vector<solution_type> reached;
 
         for (auto&& raw_move : easylocal::moves(neighborhood, *solution_))
@@ -929,13 +846,9 @@ public:
                 }
             }
             if (repeated)
-            {
                 ++result.repeated_states;
-            }
             else
-            {
                 reached.push_back(std::move(candidate));
-            }
         }
         return result;
     }
@@ -946,26 +859,22 @@ public:
         const std::size_t rounds_per_move = 20) const
         requires supports_random_distribution_check
     {
-        assert(runtime_);
+        assert(bound_);
         assert(solution_);
 
         random_distribution_result result;
-        const auto& neighborhood = runtime_->neighborhood();
+        const auto& neighborhood = bound_->neighborhood();
         std::vector<move_type> moves_list;
         for (auto&& raw_move : easylocal::moves(neighborhood, *solution_))
         {
             move_type move{raw_move};
             if (static_cast<bool>(neighborhood.is_valid(*solution_, move)))
-            {
                 moves_list.push_back(std::move(move));
-            }
         }
 
         result.neighborhood_size = moves_list.size();
         if (moves_list.empty() || rounds_per_move == 0)
-        {
             return result;
-        }
 
         std::vector<std::size_t> frequencies(moves_list.size());
         result.samples = moves_list.size() * rounds_per_move;
@@ -988,9 +897,7 @@ public:
                 }
             }
             if (!matched)
-            {
                 ++result.out_of_neighborhood;
-            }
         }
 
         result.min_frequency = frequencies.front();
@@ -998,9 +905,7 @@ public:
         for (const auto frequency : frequencies)
         {
             if (frequency == 0)
-            {
                 ++result.unseen;
-            }
             result.min_frequency = std::min(result.min_frequency, frequency);
             result.max_frequency = std::max(result.max_frequency, frequency);
         }
@@ -1009,13 +914,13 @@ public:
 
     void apply_move()
     {
-        assert(runtime_);
+        assert(bound_);
         assert(solution_);
         assert(move_);
         assert(move_is_valid());
 
-        runtime_->neighborhood().make_move(*solution_, *move_);
-        assert(runtime_->solution_manager().is_valid(*solution_));
+        bound_->neighborhood().make_move(*solution_, *move_);
+        assert(bound_->solution_manager().is_valid(*solution_));
         clear_move_state();
     }
 
@@ -1037,9 +942,7 @@ private:
         requires supports_deterministic_moves
     {
         std::size_t index = 0;
-        for (auto&& candidate : easylocal::moves(
-                 runtime_->neighborhood(),
-                 *solution_))
+        for (auto&& candidate : easylocal::moves(bound_->neighborhood(), *solution_))
         {
             if (index == target)
             {
@@ -1051,15 +954,13 @@ private:
         }
 
         if (target == 0)
-        {
             clear_move_state();
-        }
         return false;
     }
 
     App app_;
     std::shared_ptr<const input_type> input_;
-    std::unique_ptr<runtime_type> runtime_;
+    std::unique_ptr<bound_app_type> bound_;
     std::unique_ptr<solution_type> solution_;
     std::optional<move_type> move_;
     std::optional<std::size_t> deterministic_move_index_;

@@ -17,12 +17,12 @@ int main()
     const auto instance = tsp::load_instance(EASYLOCAL_TSP_MWE_INSTANCE_FILE);
 
     // The 2-opt local optimum is the starting point of the swap search.
-    auto two_opt_runtime = two_opt.for_input(instance);
-    const auto first = two_opt_runtime.run<FirstImprovement>(
-        two_opt_runtime.solution_manager().initial_solution());
+    auto two_opt_bound = two_opt.bind(instance);
+    const auto first = two_opt_bound.run<FirstImprovement>(
+        two_opt_bound.solution_manager().initial_solution());
 
-    auto swap_runtime = swap.for_input(instance);
-    const auto second = swap_runtime.run<FirstImprovement>(first.solution);
+    auto swap_bound = swap.bind(instance);
+    const auto second = swap_bound.run<FirstImprovement>(first.solution);
 
     std::cout << "two-opt cost: " << first.cost << '\n';
     std::cout << "swap cost:    " << second.cost << '\n';

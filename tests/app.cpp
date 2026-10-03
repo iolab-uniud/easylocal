@@ -13,7 +13,9 @@
 #include <concepts>
 #include <cstddef>
 #include <future>
+#include <random>
 #include <stdexcept>
+#include <stop_token>
 #include <string_view>
 #include <utility>
 
@@ -89,13 +91,13 @@ auto make_application()
 template<class App>
 concept can_materialize_from_lvalue_input =
     requires(const App& application, typename App::input_type& input) {
-        application.for_input(input);
+        application.bind(input);
     };
 
 template<class App>
 concept can_materialize_from_rvalue_input =
     requires(const App& application, typename App::input_type&& input) {
-        application.for_input(std::move(input));
+        application.bind(std::move(input));
     };
 
 template<class RunnerType>
@@ -121,13 +123,12 @@ concept has_legacy_instance_type = requires {
 };
 
 template<class Runtime>
-concept has_legacy_instance_accessor = requires(const Runtime& runtime) {
-    runtime.instance();
+concept has_legacy_instance_accessor = requires(const Runtime& bound_app) {
+    bound_app.instance();
 };
 
-using AssignmentRuntime = decltype(
-    std::declval<const AssignmentApp&>().for_input(
-        std::declval<const AssignmentApp::input_type&>()));
+using AssignmentRuntime = decltype(std::declval<const AssignmentApp&>().bind(
+    std::declval<const AssignmentApp::input_type&>()));
 
 static_assert(!has_legacy_instance_type<AssignmentRuntime>);
 static_assert(!has_legacy_instance_accessor<AssignmentRuntime>);
@@ -162,19 +163,19 @@ void one_input_materializes_one_shared_graph_for_all_runners()
     };
 
     auto application = make_application();
-    auto runtime = application.for_input(instance);
+    auto bound_app = application.bind(instance);
 
-    assert(&runtime.input() == &instance);
-    assert(&runtime.solution_manager().input() == &instance);
-    assert(&runtime.neighborhood().input() == &instance);
+    assert(&bound_app.input() == &instance);
+    assert(&bound_app.solution_manager().input() == &instance);
+    assert(&bound_app.neighborhood().input() == &instance);
 
-    auto fi = runtime.runner<easylocal::runners::FirstImprovement>();
-    auto bi = runtime.runner<easylocal::runners::BestImprovement>();
+    auto fi = bound_app.runner<easylocal::runners::FirstImprovement>();
+    auto bi = bound_app.runner<easylocal::runners::BestImprovement>();
 
-    assert(&fi.solution_manager() == &runtime.solution_manager());
-    assert(&bi.solution_manager() == &runtime.solution_manager());
-    assert(&fi.neighborhood_explorer() == &runtime.neighborhood());
-    assert(&bi.neighborhood_explorer() == &runtime.neighborhood());
+    assert(&fi.solution_manager() == &bound_app.solution_manager());
+    assert(&bi.solution_manager() == &bound_app.solution_manager());
+    assert(&fi.neighborhood_explorer() == &bound_app.neighborhood());
+    assert(&bi.neighborhood_explorer() == &bound_app.neighborhood());
 }
 
 void registered_runners_are_executable()
@@ -185,17 +186,17 @@ void registered_runners_are_executable()
     };
 
     auto application = make_application();
-    auto runtime = application.for_input(instance);
-    const auto initial = runtime.solution_manager().initial_solution();
+    auto bound_app = application.bind(instance);
+    const auto initial = bound_app.solution_manager().initial_solution();
 
-    const auto fi = runtime.run<easylocal::runners::FirstImprovement>(initial);
-    assert(runtime.solution_manager().is_valid(fi.solution));
+    const auto fi = bound_app.run<easylocal::runners::FirstImprovement>(initial);
+    assert(bound_app.solution_manager().is_valid(fi.solution));
 
-    const auto bi = runtime.run<easylocal::runners::BestImprovement>(initial);
-    assert(runtime.solution_manager().is_valid(bi.solution));
+    const auto bi = bound_app.run<easylocal::runners::BestImprovement>(initial);
+    assert(bound_app.solution_manager().is_valid(bi.solution));
 }
 
-void direct_app_runs_use_fresh_runtime_state()
+void direct_app_runs_use_fresh_bound_app_state()
 {
     const AssignmentInstance instance{
         .demand = {4, 4, 2},
@@ -217,8 +218,8 @@ void direct_app_runs_use_fresh_runtime_state()
             .with_neighborhood(std::move(nhe))
             .with_runner<StatefulRunner>("stateful");
 
-    auto seed_runtime = application.for_input(instance);
-    const auto initial = seed_runtime.solution_manager().initial_solution();
+    auto seed_bound_app = application.bind(instance);
+    const auto initial = seed_bound_app.solution_manager().initial_solution();
 
     const auto first = application.run<StatefulRunner>(instance, initial);
     const auto second = application.run<StatefulRunner>(instance, initial);
@@ -234,11 +235,43 @@ void direct_app_runs_use_fresh_runtime_state()
     assert(concurrent_first.get().invocation == 1);
     assert(concurrent_second.get().invocation == 1);
 
-    auto shared_runtime = application.for_input(instance);
-    const auto shared_first = shared_runtime.run<StatefulRunner>(initial);
-    const auto shared_second = shared_runtime.run<StatefulRunner>(initial);
+    auto shared_bound_app = application.bind(instance);
+    const auto shared_first = shared_bound_app.run<StatefulRunner>(initial);
+    const auto shared_second = shared_bound_app.run<StatefulRunner>(initial);
     assert(shared_first.invocation == 1);
     assert(shared_second.invocation == 2);
+}
+
+void registered_runners_can_be_run_by_name()
+{
+    const AssignmentInstance instance{
+        .demand = {4, 4, 2},
+        .capacity = {5, 5},
+    };
+
+    const auto application = make_application();
+    const auto initial = application.bind(instance).solution_manager().initial_solution();
+    std::mt19937_64 rng{1};
+
+    // The same runner, chosen by name or by algorithm, gives the same search.
+    const auto by_name = application.run("bi", instance, initial, rng);
+    assert(by_name);
+    const auto by_algorithm =
+        application.run<easylocal::runners::BestImprovement>(instance, initial);
+    assert(by_name->solution == by_algorithm.solution);
+
+    // No runner has that name: nothing runs.
+    assert(!application.run("missing", instance, initial, rng));
+
+    // Options reach the runner: a run stopped before it starts keeps the
+    // initial solution.
+    std::stop_source stop;
+    stop.request_stop();
+    const easylocal::run_control control{stop.get_token()};
+    const auto stopped =
+        application.run("fi", instance, initial, rng, easylocal::with(control));
+    assert(stopped);
+    assert(stopped->solution == initial);
 }
 
 void app_can_materialize_standard_runners()
@@ -255,8 +288,8 @@ void app_can_materialize_standard_runners()
     const auto initial = bound.initial_solution();
     const auto result = bound.run(initial);
 
-    auto runtime = application.for_input(instance);
-    assert(runtime.solution_manager().is_valid(result.solution));
+    auto bound_app = application.bind(instance);
+    assert(bound_app.solution_manager().is_valid(result.solution));
 }
 
 void app_can_make_and_equip_solvers()
@@ -276,8 +309,8 @@ void app_can_make_and_equip_solvers()
         });
 
     const auto result = solver.solve(instance);
-    auto runtime = application.for_input(instance);
-    assert(runtime.solution_manager().is_valid(result.solution));
+    auto bound_app = application.bind(instance);
+    assert(bound_app.solution_manager().is_valid(result.solution));
 }
 
 void named_runner_registrations_can_be_selected_for_solver_creation()
@@ -387,7 +420,8 @@ int main()
     app_owns_runner_configuration_and_names();
     one_input_materializes_one_shared_graph_for_all_runners();
     registered_runners_are_executable();
-    direct_app_runs_use_fresh_runtime_state();
+    direct_app_runs_use_fresh_bound_app_state();
+    registered_runners_can_be_run_by_name();
     app_can_materialize_standard_runners();
     app_can_make_and_equip_solvers();
     named_runner_registrations_can_be_selected_for_solver_creation();

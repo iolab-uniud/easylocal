@@ -53,7 +53,7 @@ int main()
 
     auto application = make_application();
 
-    auto runtime = application.for_input(input);
+    auto runtime = application.bind(input);
     auto initial = runtime.solution_manager().initial_solution();
 
     std::stop_source stop;

@@ -168,12 +168,12 @@ template<class App, class Instance, class Solution>
     const App& application,
     const Instance& instance,
     Solution solution)
-    requires requires { application.for_input(instance); }
+    requires requires { application.bind(instance); }
 {
-    auto runtime = application.for_input(instance);
-    using runtime_type = decltype(runtime);
-    using solution_manager_type = typename runtime_type::solution_manager_type;
-    using neighborhood_type = typename runtime_type::neighborhood_explorer_type;
+    auto bound = application.bind(instance);
+    using bound_type = decltype(bound);
+    using solution_manager_type = typename bound_type::solution_manager_type;
+    using neighborhood_type = typename bound_type::neighborhood_explorer_type;
 
     app_check_report report{application.name()};
     report.coverage().solution_managers = 1;
@@ -184,11 +184,11 @@ template<class App, class Instance, class Solution>
         detail::app_delta_binding_count_v<neighborhood_type>;
     report.coverage().runner_registrations = App::runner_count;
 
-    const auto& solution_manager = runtime.solution_manager();
-    const auto& neighborhood = runtime.neighborhood();
+    const auto& solution_manager = bound.solution_manager();
+    const auto& neighborhood = bound.neighborhood();
 
     report.check(
-        std::addressof(runtime.input()) == std::addressof(instance),
+        std::addressof(bound.input()) == std::addressof(instance),
         "app input binding",
         "the materialized app does not refer to the supplied Input");
     report.check(
@@ -299,14 +299,11 @@ template<class App, class Instance, class Solution>
 template<class App, class Instance>
 [[nodiscard]] auto check(const App& application, const Instance& instance)
     requires requires {
-        application.for_input(instance).solution_manager().initial_solution();
+        application.bind(instance).solution_manager().initial_solution();
     }
 {
-    auto runtime = application.for_input(instance);
-    return check(
-        application,
-        instance,
-        runtime.solution_manager().initial_solution());
+    auto bound = application.bind(instance);
+    return check(application, instance, bound.solution_manager().initial_solution());
 }
 
 } // namespace easylocal

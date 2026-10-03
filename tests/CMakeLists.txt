@@ -762,9 +762,9 @@ easylocal_add_compile_failure_test(
     "ComponentA"
 )
 easylocal_add_compile_failure_test(
-    tester-missing-solution-factory
-    tester_missing_solution_factory.cpp
-    "Tester requires the SolutionManager to provide initial_solution() or random_solution(std::mt19937_64&)"
+    session-missing-solution-factory
+    session_missing_solution_factory.cpp
+    "the interactive tester requires the SolutionManager to provide initial_solution() or random_solution(std::mt19937_64&)"
     "SolutionManager"
 )
 easylocal_add_compile_failure_test(
@@ -1116,31 +1116,31 @@ add_test(
 )
 
 add_executable(
-    easylocal_tester_test
-    tester.cpp
+    easylocal_session_test
+    session.cpp
 )
 target_link_libraries(
-    easylocal_tester_test
+    easylocal_session_test
     PRIVATE
         EasyLocal::Core
 )
 add_test(
-    NAME easylocal.tester
-    COMMAND easylocal_tester_test
+    NAME easylocal.session
+    COMMAND easylocal_session_test
 )
 
 add_executable(
-    easylocal_tester_io_test
-    tester_io.cpp
+    easylocal_session_io_test
+    session_io.cpp
 )
 target_link_libraries(
-    easylocal_tester_io_test
+    easylocal_session_io_test
     PRIVATE
         EasyLocal::Core
 )
 add_test(
-    NAME easylocal.tester-io
-    COMMAND easylocal_tester_io_test
+    NAME easylocal.session-io
+    COMMAND easylocal_session_io_test
 )
 
 if(TARGET EasyLocal::REST)
