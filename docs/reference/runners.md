@@ -32,6 +32,7 @@ auto result = search.run(solution, algorithm_args..., with(control, tracer));
 | `runners::BestImprovement` | `moves` or cursor, `better` | `max_evaluations` (0: until a local optimum) | committed moves |
 | `runners::HillClimbing` | `random_move`, `better`, `better_or_equivalent` | `max_idle_iterations`, `max_evaluations` (0: no budget) | proposed moves |
 | `runners::LateAcceptanceHillClimbing` | `random_move`, `better`, `better_or_equivalent` | `history_length`, `max_idle_iterations`, `max_evaluations` (0: no budget) | proposed moves |
+| `runners::GreatDeluge` | `random_move`, `better`, an arithmetic cost | `initial_level`, `min_level`, `level_rate`, `neighbors_sampled`, `max_evaluations` (0: no budget) | proposed moves |
 | `runners::SimulatedAnnealing<Temperature, Acceptance>` | `random_move`, `better`, an acceptance-compatible cost | a temperature policy, an acceptance policy | proposed moves |
 
 The budget is checked only before evaluating a move, so an empty neighborhood
@@ -50,6 +51,15 @@ cost, and with `history_length` 1 it accepts the moves Hill Climbing accepts.
 Its idle count runs from the last improvement of the best cost, and it returns
 the best solution found. EasyLocal 3 recorded the best cost in the history;
 EasyLocal 4 records the current cost, as in the original algorithm.
+
+Great Deluge accepts a move that improves the current cost or whose cost does
+not exceed the water level. The level starts at `initial_level` times the
+initial cost and is multiplied by `level_rate` every `neighbors_sampled`
+proposals; the search ends, `completed`, when the level falls below
+`min_level` times the best cost, and returns the best solution found. The level
+is a value of the cost, so Great Deluge requires an arithmetic cost
+(`cost::arithmetic`), and positive, since the levels are factors of it: a
+best cost of zero ends the search.
 
 Simulated Annealing returns the best solution found. Temperature policies in
 `runners::temperature`, all configurable:

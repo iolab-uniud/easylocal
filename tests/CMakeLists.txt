@@ -500,6 +500,20 @@ add_test(
 )
 
 add_executable(
+    easylocal_great_deluge_test
+    great_deluge.cpp
+)
+target_link_libraries(
+    easylocal_great_deluge_test
+    PRIVATE
+        EasyLocal::Core
+)
+add_test(
+    NAME easylocal.great-deluge
+    COMMAND easylocal_great_deluge_test
+)
+
+add_executable(
     easylocal_cost_semantics_test
     cost_semantics.cpp
 )
