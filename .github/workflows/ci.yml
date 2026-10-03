@@ -376,20 +376,16 @@ jobs:
           "${elevate[@]}" apt-get "${apt_options[@]}" update
           "${elevate[@]}" env DEBIAN_FRONTEND=noninteractive \
             apt-get "${apt_options[@]}" install -y --no-install-recommends \
-              cmake ninja-build g++-16 curl gcovr python3-pyte python3-pytest
+              cmake ninja-build g++-16 curl
 
+      # gcovr, pyte and pytest from uv.lock, as in local runs of the script.
+      - name: Install uv
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+
+      # The script measures GCC ($CXX) with every optional component.
       - name: Measure coverage
         run: |
-          ./scripts/coverage.sh \
-            -DCMAKE_CXX_COMPILER="$CXX" \
-            -DEASYLOCAL_ENABLE_CONFIG_TOML=ON \
-            -DEASYLOCAL_ENABLE_TUI=ON \
-            -DEASYLOCAL_ENABLE_REST=ON \
-            -DEASYLOCAL_FETCH_DEPENDENCIES=ON \
-            -DCMAKE_DISABLE_FIND_PACKAGE_tomlplusplus=TRUE \
-            -DCMAKE_DISABLE_FIND_PACKAGE_ftxui=TRUE \
-            -DCMAKE_DISABLE_FIND_PACKAGE_Crow=TRUE \
-            2>&1 | tee coverage.log
+          ./scripts/coverage.sh 2>&1 | tee coverage.log
           {
             echo '## Coverage of include/easylocal'
             echo '```'
