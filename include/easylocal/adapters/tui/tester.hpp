@@ -104,10 +104,9 @@ enum class tester_page : int
     run = 2,
 };
 
-// Where a tester is opened. A launcher's root owns the Input and the
-// solution and shows only the Input/Output page; its children, one per app,
-// share them and do not load files, but create solutions and run everything
-// else.
+// Where a tester is opened. A launcher's root shows only the Input/Output
+// page; its children, one per app, are complete testers. Both start from the
+// launcher's shared Input and solution, and what they leave is shared next.
 enum class frontend_role
 {
     standalone,
@@ -711,8 +710,7 @@ public:
         };
 
         auto solution_controls = Container::Vertical({});
-        // A launcher's child shares the Input of its root: it loads none.
-        if (tester_type::supports_input_loading && loads_files())
+        if constexpr (tester_type::supports_input_loading)
         {
             solution_controls->Add(section_label("Instances"));
             auto instance_menu_option = MenuOption::Vertical();
@@ -765,8 +763,7 @@ public:
             solution_menu_option.on_change = [this] { select_known_solution(); };
             if constexpr (tester_type::supports_solution_loading)
             {
-                if (loads_files())
-                    solution_menu_option.on_enter = [this] { load_solution(); };
+                solution_menu_option.on_enter = [this] { load_solution(); };
             }
             auto solution_menu = Menu(
                 &known_solution_labels_,
@@ -779,7 +776,7 @@ public:
                 "Browse...",
                 [this] { open_browser(file_target::solution); },
                 ButtonOption::Ascii()));
-            if (tester_type::supports_solution_loading && loads_files())
+            if constexpr (tester_type::supports_solution_loading)
             {
                 file_actions.push_back(Button(
                     "Shift-L Load",
@@ -1371,13 +1368,13 @@ private:
         switch (current_page())
         {
         case tester_page::solution:
-            if (tester_type::supports_input_loading && loads_files())
+            if constexpr (tester_type::supports_input_loading)
                 append("L Load input");
             if constexpr (tester_type::supports_initial_solution)
                 append("I Initial");
             if constexpr (tester_type::supports_random_solution)
                 append("R Random");
-            if (tester_type::supports_solution_loading && loads_files())
+            if constexpr (tester_type::supports_solution_loading)
                 append("Shift-L Load solution");
             if constexpr (tester_type::supports_solution_saving)
                 append("W Save");
@@ -1436,7 +1433,7 @@ private:
     {
         if constexpr (tester_type::supports_input_loading)
         {
-            if (event == ftxui::Event::l && loads_files())
+            if (event == ftxui::Event::l)
             {
                 load_input();
                 return true;
@@ -1460,7 +1457,7 @@ private:
         }
         if constexpr (tester_type::supports_solution_loading)
         {
-            if (event == ftxui::Event::L && loads_files())
+            if (event == ftxui::Event::L)
             {
                 load_solution();
                 return true;
@@ -1630,13 +1627,6 @@ private:
     {
         return role_ != frontend_role::launcher_root
             && detail::context_pages_available(tester_);
-    }
-
-    // Whether this tester loads Input and solution files: not a launcher's
-    // child, which shares them with its root.
-    [[nodiscard]] bool loads_files() const noexcept
-    {
-        return role_ != frontend_role::launcher_child;
     }
 
     [[nodiscard]] tester_page page_after_solution_change() const
@@ -2829,12 +2819,7 @@ private:
         switch (detail::solution_stage_of(tester_))
         {
         case solution_stage::needs_input:
-            summary.push_back(
-                text(
-                    loads_files()
-                        ? "Load an input to begin"
-                        : "No input: load one from the launcher's Input and solution")
-                | bold);
+            summary.push_back(text("Load an input to begin") | bold);
             break;
         case solution_stage::needs_solution:
             summary.push_back(text("Input ready - choose or load a solution") | bold);

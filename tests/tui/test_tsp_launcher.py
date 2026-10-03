@@ -76,14 +76,14 @@ def test_the_root_owns_the_input_and_the_solution(launcher):
         tui.expect("Move and Run are in the applications")
         tui.press("q")
 
-        # A child opens on the root's solution and loads no files.
+        # A child opens on the root's solution, and can load files too: what
+        # it loads becomes the shared state.
         open_app(tui, "tsp-two-opt", DOWN)
         tui.expect(re.compile(r"COST \d+"))
         tui.press(F3)
         tui.expect("Input and solution shared with the launcher's applications")
-        tui.expect("I Initial")
-        tui.expect_absent("L Load input")
-        tui.expect_absent("Shift-L Load")
+        tui.expect("L Load input")
+        tui.expect("Shift-L Load")
         tui.press("q")
 
         tui.wait_until(launcher_shown, what="the list of applications")

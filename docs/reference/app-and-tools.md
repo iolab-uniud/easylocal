@@ -58,8 +58,8 @@ or your own, each with its own result type.
 problem. The launcher owns the Input, read from `options.tester.input_path`
 when it is set, and the current solution: its first entry, *Input and
 solution*, is a tester with the Input/Output page only, which loads and saves
-them; each app opens on them as a tester without the commands that load
-files, and what a tester leaves becomes the shared state. The apps must have the same SolutionManager
+them; each app opens on them in the complete tester, and what a tester leaves,
+loaded or computed, becomes the shared state. The apps must have the same SolutionManager
 recipe, cost included, which a `static_assert` checks; they differ in the
 neighborhood and the runners.
 

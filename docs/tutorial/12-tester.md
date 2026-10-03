@@ -175,11 +175,11 @@ easylocal::tui::run_launcher(
   and the current solution. Its first entry, *Input and solution*, opens the
   Input/Output page alone: load another instance, load or save a solution,
   create the initial or a random one.
-- Each app opens in the tester on the shared Input and solution. It creates
-  solutions, selects and applies moves and runs its runners, but loads no
-  files: its Input/Output page has no loading commands. When you leave it
-  (`q`), what it left becomes the shared state: a solution created or
-  improved with the swaps is the current solution of the 2-opt app.
+- Each app opens in the complete tester on the shared Input and solution.
+  When you leave it (`q`), what it left becomes the shared state: a solution
+  created or improved with the swaps is the current solution of the 2-opt
+  app, and an instance or a solution loaded in one app is the one of the
+  others.
 - Since solutions pass from one app to the other, the apps must have the same
   SolutionManager recipe, cost included: they differ in the neighborhood and
   the runners. A launcher of apps with different recipes does not compile.
