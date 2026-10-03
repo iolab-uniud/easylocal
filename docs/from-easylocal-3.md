@@ -872,9 +872,25 @@ MoveTester<Input, Tour, TwoOpt, CostStructure> two_opt_test(in, sm, two_opt_nhe,
 MoveTester<Input, Tour, Swap, CostStructure> swap_test(in, sm, swap_nhe, "Swap", tester);
 ```
 
+<!-- snippet: tsp/tui_main.cpp:launcher -->
 ```cpp title="EasyLocal 4"
-el::tui::run_launcher({.tester = {.input_path = "five.tsp"}}, two_opt_app, swap_app);
+easylocal::tui::run_launcher(
+    {
+        .title = "EasyLocal TSP Tester",
+        .tester =
+            {
+                .seed = 0,
+                .input_path = EASYLOCAL_TSP_MWE_INSTANCE_FILE,
+                .solution_path = EASYLOCAL_TSP_MWE_SOLUTION_FILE,
+            },
+    },
+    tsp::two_opt_app(),
+    tsp::swap_app());
 ```
+
+There `two_opt_app()` and `swap_app()` are two apps of the TSP example
+(`examples/tsp/apps.hpp`) with the same SolutionManager recipe, one with the
+2-opt neighborhood and one with the swaps.
 
 The **Input/Output** page takes over the State menu: the initial or a random
 solution, reading and writing solutions with the hooks of step 2, and the
