@@ -83,8 +83,8 @@ nav:
       - tutorial/09-configuration.md
       - tutorial/10-testing.md
       - tutorial/11-apps-and-tools.md
-      - tutorial/12-checking.md
-      - tutorial/13-textui.md
+      - tutorial/12-tester.md
+      - tutorial/13-checking.md
       - tutorial/14-rest.md
       - tutorial/15-observing-and-controlling.md
       - tutorial/16-from-easylocal-3.md

@@ -14,7 +14,7 @@ if an algorithm or a tool you use needs it:
 | `is_valid`, `make_move` | every algorithm |
 | `moves(solution)`, or the cursor `first_move` / `next_move` | algorithms that scan the neighborhood: First Improvement, Best Improvement |
 | `random_move(solution, rng)` | algorithms that sample it: Simulated Annealing |
-| `name()` | the interactive tester (chapter 13) |
+| `name()` | the interactive tester (chapter 12) |
 
 So an explorer used only by Simulated Annealing needs `random_move` and no
 enumeration at all, and the quick start, which runs only First Improvement,

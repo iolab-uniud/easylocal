@@ -1,4 +1,4 @@
-# 12. Checking a composed problem
+# 13. Checking a composed problem
 
 Chapter 10 checked each component on its own. Once the components are composed
 into an app, two further levels of checking are available.
@@ -59,11 +59,11 @@ after each move with the solution before it and with the other neighbors,
 `check_random_move_distribution` compares sampled moves with enumerated ones.
 So far the tutorial's types had no equality: to use these two checks, add it.
 Without it, everything else works: calling one of the two checks does not
-compile, and the interactive tester of the next chapter hides them.
+compile, and the interactive tester of chapter 12 hides them.
 
 <!-- snippet: tutorial/tsp.hpp:equality -->
 ```cpp
-// Equality of solutions and moves, for the Tester checks of chapter 12.
+// Equality of solutions and moves, for the Tester checks of chapter 13.
 inline bool operator==(const Tour& a, const Tour& b)
 {
     return a.order == b.order;
@@ -86,7 +86,7 @@ also work for types you cannot change. C++20 derives `!=` from `==`.
 
 The last check compares sampling with enumeration: a sampled move outside the
 enumerated neighborhood is an error, never-sampled moves (`unseen`) hint at a
-biased `random_move`. The interactive tester (next chapter) runs the same checks
+biased `random_move`. The interactive tester (chapter 12) runs the same checks
 from its pages: `C` on the Input/Output page, and `C`, `D` and `U` on the Move
 page.
 
@@ -97,4 +97,4 @@ page.
 
 ## Next steps
 
-[Chapter 13](13-textui.md) explores the problem interactively.
+[Chapter 14](14-rest.md) offers the same searches over HTTP.

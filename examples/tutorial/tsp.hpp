@@ -235,7 +235,7 @@ public:
     using neighborhood_explorer_base::neighborhood_explorer_base;
 
     // [two-opt-name]
-    // The name of the neighborhood in the interactive tester (chapter 13).
+    // The name of the neighborhood in the interactive tester (chapter 12).
     static std::string_view name()
     {
         return "2-opt";
@@ -307,7 +307,7 @@ public:
 
 // [io] ---------------------------------------------------------------------
 // Optional hooks, found by ADL, that let the tools load, save and display
-// (chapter 13).
+// (chapter 12).
 inline Tsp read_input(std::type_identity<Tsp>, std::istream& in)
 {
     std::size_t cities = 0; // "n", then the n rows of the distance matrix
@@ -409,7 +409,7 @@ private:
 // [co-located] -------------------------------------------------------------
 
 // [equality] ---------------------------------------------------------------
-// Equality of solutions and moves, for the Tester checks of chapter 12.
+// Equality of solutions and moves, for the Tester checks of chapter 13.
 inline bool operator==(const Tour& a, const Tour& b)
 {
     return a.order == b.order;

@@ -1,8 +1,9 @@
 # 11. Applications
 
-An **app** names a problem and the runners available on it. The tools of the
-next chapters (checking, the interactive tester, the REST service) all work on
-apps.
+An **app** packages a problem: its SolutionManager, its neighborhood and the
+runners available on it, each under a name. You can use it directly in your
+program, and the tools of the next chapters (the Tester, the checks, the REST
+service) all work on apps.
 
 <!-- snippet: tutorial/main.cpp:app -->
 ```cpp
@@ -36,43 +37,39 @@ const auto app_result =
 - `app.make_runner<Algorithm>()` and `app.make_solver<Solver, Algorithm>(config)`
   build standalone runners and solvers from a registration.
 
-## The Tester
+## Using the app in your program
 
-The `Tester` drives an app without a user interface: it holds an Input and a
-current Solution, inspects moves and runs the registered runners on the
-current solution.
+An app is not only for tools: your own `main` can use it to run the registered
+runners. `for_input` builds the services once for an Input and returns a
+*runtime*:
 
-<!-- snippet: tutorial/main.cpp:tester -->
+<!-- snippet: tutorial/main.cpp:app-in-main -->
 ```cpp
-el::Tester tester{application, /* seed */ 2026};
-tester.set_input(tsp);
-tester.use_initial_solution();
-(void)tester.use_first_improving_move();
-(void)tester.run_runner("sa"); // receives the Tester's RNG
-(void)tester.run_runner("fi");
+// A runtime holds the services of the app for one Input.
+auto runtime = application.for_input(tsp);
+const auto initial = runtime.solution_manager().initial_solution();
+
+// Run the registered runners by algorithm, each from the same tour.
+const auto by_descent = runtime.run<runners::FirstImprovement>(initial);
+std::mt19937_64 annealing_rng{2026};
+const auto by_annealing =
+    runtime.run<runners::SimulatedAnnealing<Classic>>(initial, annealing_rng);
 ```
 
-- Input and Solution come from `set_input` / `set_solution`, from
-  `use_initial_solution()` / `use_random_solution(rng)`, or from files with
-  `load_input` / `load_solution` when the problem provides the I/O hooks
-  (chapter 13); `save_solution` writes the current one.
-- Moves: `use_first_move`, `use_next_move`, `use_first_improving_move`,
-  `use_best_move`, `use_random_move`; `evaluate()` gives the current cost.
-- `run_runner(name)` replaces the current solution with the runner's result.
+- `runtime.solution_manager()` is the SolutionManager bound to `tsp`; here it
+  builds the initial tour.
+- `runtime.run<Algorithm>(solution, ...)` runs the runner registered for that
+  algorithm, with its stored parameters. Stochastic runners take the RNG as an
+  argument, as in chapter 5: the program owns it, and its seed reproduces the
+  run.
+- `application.run<Algorithm>(input, solution)`, in the first snippet, is the
+  one-shot form: it builds a runtime, runs, and throws the runtime away.
+- When several runners of the same algorithm are registered, `run_at<Index>`
+  chooses by position, in registration order.
 
-## Randomness in tools
-
-Tools own an RNG and give it to stochastic runners; deterministic runners
-ignore it. The seed is configurable everywhere:
-
-| Tool | Seed |
-| --- | --- |
-| `Tester` | `Tester{app, seed}`, `set_seed(seed)`, `rng()` |
-| TextUI | the `seed` option, changeable on the Run page |
-| REST | the `seed` of a run request, or `blueprint_options::seed + run id` |
-
-Your own code does the same with
-`app.run_at_with_rng<Index>(input, solution, rng)`.
+The same app is what the tools of the next chapters take: the Tester and its
+interactive interface (chapter 12), the checks (chapter 13) and the REST
+service (chapter 14). They add no requirement to the app itself.
 
 ## See also
 
@@ -80,4 +77,4 @@ Your own code does the same with
 
 ## Next steps
 
-[Chapter 12](12-checking.md) checks the composed problem.
+[Chapter 12](12-tester.md) drives the app with the Tester.

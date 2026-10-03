@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Regenerate the TextUI screenshots of docs/tutorial/13-textui.md.
+"""Regenerate the TextUI screenshots of docs/tutorial/12-tester.md.
 
 Drives the tutorial's interactive tester (examples/tutorial/tui_main.cpp) in a
 pseudo-terminal with a fixed size and a fixed key sequence, reconstructs each

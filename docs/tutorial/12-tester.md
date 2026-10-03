@@ -1,9 +1,39 @@
-# 13. The interactive tester
+# 12. The Tester
+
+The **Tester** drives an app one step at a time: it holds an Input and a
+current Solution, inspects and applies moves, and runs the registered runners
+on the current solution. It has no user interface of its own; the **TextUI**
+puts an interactive one on top of it.
+
+## The headless Tester
+
+Without an interface, the Tester is a class you drive from code, for example
+in a test or to reproduce a situation step by step:
+
+<!-- snippet: tutorial/main.cpp:tester -->
+```cpp
+el::Tester tester{application, /* seed */ 2026};
+tester.set_input(tsp);
+tester.use_initial_solution();
+(void)tester.use_first_improving_move();
+(void)tester.run_runner("sa"); // receives the Tester's RNG
+(void)tester.run_runner("fi");
+```
+
+- Input and Solution come from `set_input` / `set_solution`, from
+  `use_initial_solution()` / `use_random_solution(rng)`, or from files with
+  `load_input` / `load_solution` when the problem provides the I/O hooks
+  (below); `save_solution` writes the current one.
+- Moves: `use_first_move`, `use_next_move`, `use_first_improving_move`,
+  `use_best_move`, `use_random_move`; `evaluate()` gives the current cost.
+- `run_runner(name)` replaces the current solution with the runner's result.
+
+## The interactive tester
 
 The **TextUI** is a terminal user interface around the `Tester`: load an Input
 and a Solution, browse and apply moves, run the registered runners in the
 background with live progress and cancellation, and run the checks of
-chapter 12. It is the optional `TUI` component (FTXUI):
+chapter 13. It is the optional `TUI` component (FTXUI):
 
 ```cmake
 find_package(EasyLocal CONFIG REQUIRED COMPONENTS Core TUI)
@@ -34,13 +64,13 @@ el::tui::run(
 The program is `examples/tutorial/tui_main.cpp`, built when the TUI component
 is enabled (`-DEASYLOCAL_ENABLE_TUI=ON`).
 
-## A session
+### A session
 
 The tester has three pages, switched with F3, F4 and F5; the header shows the
 instance, the current seed and the cost of the current solution.
 
 On the **Input/Output** page, `I` creates the initial solution and `C` runs the
-app check of chapter 12:
+app check of chapter 13:
 
 ![The Input/Output page after creating the initial solution and running the check](images/tui-check.svg)
 
@@ -59,7 +89,7 @@ The screenshots are generated from the real program by
 same driver (`scripts/tui_driver.py`) runs the end-to-end tests in `tests/tui`:
 keys are sent, and each step waits for what the screen should show.
 
-## Loading, saving and displaying
+### Loading, saving and displaying
 
 To load and save files and to display values, the TextUI uses optional hooks.
 The tutorial provides them as free functions, found by argument-dependent
@@ -68,7 +98,7 @@ lookup:
 <!-- snippet: tutorial/tsp.hpp:io -->
 ```cpp
 // Optional hooks, found by ADL, that let the tools load, save and display
-// (chapter 13).
+// (chapter 12).
 inline Tsp read_input(std::type_identity<Tsp>, std::istream& in)
 {
     std::size_t cities = 0; // "n", then the n rows of the distance matrix
@@ -128,14 +158,14 @@ member of `TwoOptExplorer`:
 
 <!-- snippet: tutorial/tsp.hpp:two-opt-name -->
 ```cpp
-// The name of the neighborhood in the interactive tester (chapter 13).
+// The name of the neighborhood in the interactive tester (chapter 12).
 static std::string_view name()
 {
     return "2-opt";
 }
 ```
 
-## Options
+### Options
 
 `tui::tester_options` sets the `title`, the initial `seed` of the RNG used for
 random solutions, random moves and stochastic runners, and the initial
@@ -144,10 +174,24 @@ random solutions, random moves and stochastic runners, and the initial
 header shows the current seed. `tui::run_launcher(options, apps...)` starts a launcher that
 lets the user choose among several apps.
 
+## Randomness in tools
+
+Tools own an RNG and give it to stochastic runners; deterministic runners
+ignore it. The seed is configurable everywhere:
+
+| Tool | Seed |
+| --- | --- |
+| `Tester` | `Tester{app, seed}`, `set_seed(seed)`, `rng()` |
+| TextUI | the `seed` option, changeable on the Run page |
+| REST | the `seed` of a run request, or `blueprint_options::seed + run id` |
+
+Your own code passes its RNG to the runners itself (chapter 11).
+
 ## See also
 
 - [Apps and tools](../reference/app-and-tools.md).
 
 ## Next steps
 
-[Chapter 14](14-rest.md) offers the same searches over HTTP.
+[Chapter 13](13-checking.md) checks the composed problem, also from the
+Tester.

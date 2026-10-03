@@ -117,9 +117,9 @@ Services borrow the Input by `const&` and never mutate it.
 9. [Configuration](09-configuration.md): parameters from the command line and
    files.
 10. [Testing your components](10-testing.md): contract checks.
-11. [Applications](11-apps-and-tools.md): the app and the headless Tester.
-12. [Checking a composed problem](12-checking.md): `check`, Tester checks.
-13. [The interactive tester](13-textui.md): the TextUI.
+11. [Applications](11-apps-and-tools.md): the app, used in your program.
+12. [The Tester](12-tester.md): the headless Tester and the interactive TextUI.
+13. [Checking a composed problem](13-checking.md): `check`, Tester checks.
 14. [A REST service](14-rest.md): searches over HTTP.
 15. [Observing and controlling a run](15-observing-and-controlling.md):
     progress, cancellation, tracing.

@@ -143,8 +143,8 @@ public:
 > components*, the tools of the later chapters, need a few more features, each
 > added in the chapter that introduces it: solvers that start from random
 > solutions need `random_solution` (chapter 8), the Tester checks compare
-> tours and moves with `==` (chapter 12), the interactive tester loads and
-> displays them (chapter 13). Until you use one of them, you need not write
+> tours and moves with `==` (chapter 13), the interactive tester loads and
+> displays them (chapter 12). Until you use one of them, you need not write
 > anything for it. When you do, a missing feature is a compile error that names
 > it, or, in the interactive tester, a command that is not offered.
 

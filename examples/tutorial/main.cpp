@@ -194,6 +194,18 @@ int main(int argc, char* argv[])
         application.run<runners::FirstImprovement>(tsp, Tour{{0, 1, 2, 3, 4}});
     // [app] ----------------------------------------------------------------
 
+    // [app-in-main] --------------------------------------------------------
+    // A runtime holds the services of the app for one Input.
+    auto runtime = application.for_input(tsp);
+    const auto initial = runtime.solution_manager().initial_solution();
+
+    // Run the registered runners by algorithm, each from the same tour.
+    const auto by_descent = runtime.run<runners::FirstImprovement>(initial);
+    std::mt19937_64 annealing_rng{2026};
+    const auto by_annealing =
+        runtime.run<runners::SimulatedAnnealing<Classic>>(initial, annealing_rng);
+    // [app-in-main] --------------------------------------------------------
+
     // [check] --------------------------------------------------------------
     const auto report = el::check(application, tsp); // also: check(app, input, solution)
     el::print_report(std::cout, report);
@@ -266,7 +278,8 @@ int main(int argc, char* argv[])
         << "\nco-located " << colocated.run(colocated.initial_solution()).cost
         << "\nannealing " << annealed.cost << "\nunion "
         << union_search.run(union_search.initial_solution(), union_rng).cost
-        << "\nmulti-start " << best.cost << "\napp " << app_result.cost << "\ntester "
+        << "\nmulti-start " << best.cost << "\napp " << app_result.cost << " ("
+        << by_descent.cost << ", " << by_annealing.cost << ")" << "\ntester "
         << tester.evaluate() << " (" << costs.moves << " moves checked, "
         << independence.null_moves << " null moves, " << sampling.unseen
         << " moves never sampled)"
