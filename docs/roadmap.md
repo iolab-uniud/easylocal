@@ -85,3 +85,26 @@ multi-neighborhood composition rather than to Simulated Annealing, so that
 every runner that draws random moves could use it.
 
 **When.** Not scheduled.
+
+## Parameters described by reflection (C++26)
+
+**Why.** A parameter block describes itself by hand: `parameter_schema()`
+lists each field with its name, a pointer to the member and a description,
+next to the field itself. Everything else is generic (the command line,
+configuration files and TOML, the interactive tester's parameter windows), but
+the list repeats the struct, and a field added without its schema line is
+silently not configurable.
+
+**What.** With C++26 static reflection, the schema would be derived from the
+struct: one parameter per data member, named after it, with the description
+given as an annotation on the member. A hand-written `parameter_schema()`
+would remain possible, and would take precedence, for names or groupings
+that differ from the members. Other repeated code could go the same way, such
+as the `parameters()` / `configure()` / `configuration()` members every
+configurable runner writes.
+
+**When.** When the compilers EasyLocal supports provide reflection. In
+October 2026, GCC 16 implements it behind `-freflection`; GCC 15, Clang 22
+and 23 (neither the `^^` operator nor libc++'s `<meta>`) and Apple Clang do
+not. Until all supported compilers have it, reflection could only be an
+optional path next to the hand-written schema.
