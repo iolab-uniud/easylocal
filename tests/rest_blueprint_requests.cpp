@@ -253,7 +253,7 @@ void unknown_runs_are_not_found(crow::SimpleApp& server)
             {crow::HTTPMethod::GET, "/assignment/runs/42"},
             {crow::HTTPMethod::GET, "/assignment/runs/42/solution"},
             {crow::HTTPMethod::POST, "/assignment/runs/42/cancel"},
-            {crow::HTTPMethod::DELETE, "/assignment/runs/42"},
+            {crow::HTTPMethod::Delete, "/assignment/runs/42"},
         })
     {
         const auto answer = send(server, method, url);
@@ -461,7 +461,7 @@ void a_full_queue_rejects_runs_and_a_queued_run_can_be_cancelled(crow::SimpleApp
     assert(text(solution.body["error"]["code"]) == "result_not_ready");
 
     assert(
-        send(server, crow::HTTPMethod::DELETE, "/assignment/runs/" + queued_id).code
+        send(server, crow::HTTPMethod::Delete, "/assignment/runs/" + queued_id).code
         == 204);
     assert(
         send(server, crow::HTTPMethod::GET, "/assignment/runs/" + queued_id).code == 404);

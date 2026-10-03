@@ -965,10 +965,8 @@ private:
         });
 
         CROW_BP_ROUTE(blueprint_, "/runs/<string>")
-        .methods(crow::HTTPMethod::DELETE)
-        ([this](std::string id) {
-            return delete_run(id);
-        });
+            .methods(crow::HTTPMethod::Delete) // DELETE is a Windows macro
+            ([this](std::string id) { return delete_run(id); });
     }
 
     App application_;

@@ -147,6 +147,7 @@ if(EASYLOCAL_ENABLE_CONFIG_TOML)
                 GIT_REPOSITORY https://github.com/marzer/tomlplusplus.git
                 GIT_TAG v3.4.0
                 GIT_SHALLOW TRUE
+                SYSTEM  # its warnings are not ours
             )
             FetchContent_MakeAvailable(tomlplusplus)
             set(EASYLOCAL_CONFIG_TOML_BUNDLED TRUE)
@@ -211,6 +212,7 @@ if(EASYLOCAL_ENABLE_TUI)
                 GIT_REPOSITORY https://github.com/ArthurSonzogni/FTXUI.git
                 GIT_TAG v7.0.3
                 GIT_SHALLOW TRUE
+                SYSTEM  # its warnings are not ours
             )
             FetchContent_MakeAvailable(ftxui)
             set(EASYLOCAL_TUI_BUNDLED TRUE)
@@ -314,6 +316,7 @@ if(EASYLOCAL_ENABLE_REST)
                 GIT_REPOSITORY https://github.com/CrowCpp/Crow.git
                 GIT_TAG v1.3.3
                 GIT_SHALLOW TRUE
+                SYSTEM  # its warnings are not ours
             )
             FetchContent_MakeAvailable(Crow)
             set(EASYLOCAL_REST_BUNDLED TRUE)
