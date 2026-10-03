@@ -51,6 +51,14 @@ fi
 
 "${configure[@]}" "$@"
 cmake --build --preset coverage --parallel
+# The objects of targets that no longer exist (a removed test, say) would be
+# reported as code never run: drop them, and the .gcno notes beside them.
+if command -v ninja >/dev/null 2>&1; then
+    ninja -C "$build_dir" -t cleandead >/dev/null
+fi
+find "$build_dir" -name '*.gcno' | while read -r notes; do
+    [ -e "${notes%.gcno}.o" ] || rm -f "$notes"
+done
 find "$build_dir" -name '*.gcda' -delete
 ctest --preset coverage
 
