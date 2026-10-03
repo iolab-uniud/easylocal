@@ -507,10 +507,27 @@ neighborhood costs" did, use the Session ([chapter 13](tutorial/13-checking.md))
 
 <!-- snippet: tutorial/main.cpp:session-checks -->
 ```cpp title="EasyLocal 4"
-const auto costs = session.check_neighborhood_costs(); // delta vs full evaluation
-const auto independence =
-    session.check_move_independence(); // null and repeated moves
+// Each check enumerates the neighborhood of the current solution and
+// returns a struct of counters (Session::..._result).
+
+// The delta evaluation of each move against the full evaluation of the
+// solution it leads to: moves (enumerated), mismatches (the two costs
+// differ), invalid (moves that are not valid or lead to an invalid
+// solution).
+const auto costs = session.check_neighborhood_costs();
+
+// What each move does to the solution: moves, null_moves (moves that leave
+// it unchanged), repeated_states (moves that lead to a solution an earlier
+// move reached), invalid.
+const auto independence = session.check_move_independence();
+
+// random_move against the enumeration: neighborhood_size (valid enumerated
+// moves), samples (draws, 20 per move by default), out_of_neighborhood
+// (draws that return no move or one the enumeration does not contain),
+// unseen (enumerated moves never drawn), min_frequency and max_frequency
+// (how often the least and the most drawn moves came up).
 const auto sampling = session.check_random_move_distribution(session.rng());
+
 if (costs.mismatches != 0 || costs.invalid != 0 || sampling.out_of_neighborhood != 0)
     return 1;
 ```
