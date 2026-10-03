@@ -2983,6 +2983,21 @@ private:
                 std::string{"Valid: "} + (tester_.is_valid() ? "yes" : "NO")) |
                            bold);
             body.push_back(text("Cost: " + current_cost_text()) | bold);
+            if constexpr (requires { tester_.cost_report(); })
+            {
+                // Each cost component's value, and its describe(solution)
+                // text when it has one.
+                if (tester_.is_valid())
+                {
+                    for (const auto& component : tester_.cost_report())
+                    {
+                        body.push_back(
+                            text("  " + component.name + ": " + component.value));
+                        if (!component.description.empty())
+                            body.push_back(text_lines(component.description) | dim);
+                    }
+                }
+            }
             body.push_back(separator());
         }
         body.push_back(paragraph("Up/Down/PgUp/PgDn scroll  |  Esc/F2/S close") | dim);

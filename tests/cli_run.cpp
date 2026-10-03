@@ -91,6 +91,13 @@ int main()
     assert(solved.out.starts_with("cost 26\ntime "));
     assert(solved.err.empty());
 
+    // The report: each component's value, then its describe(solution) text,
+    // indented; TourLength gives the edges it adds up.
+    const auto reported = run(
+        {"--instance", instance, "--seed", "1", "--runner", "fi", "--report", "true"});
+    assert(reported.status == 0);
+    assert(reported.out.find("\ncomponent TourLength 26\n  ") != std::string::npos);
+
     // The first registered runner when none is named.
     assert(run({"--instance", instance}).status == 0);
 

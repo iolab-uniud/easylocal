@@ -458,6 +458,24 @@ void session_evaluates_the_current_solution()
     assert(cost.soft() == 1);
 }
 
+// The assignment's components have neither name() nor describe(solution):
+// the report gives their position and their value only.
+void session_reports_each_cost_component()
+{
+    easylocal::Session session{make_application()};
+    session.set_input(make_input(3));
+    session.use_initial_solution();
+
+    const auto report = session.cost_report();
+
+    assert(report.size() == 2);
+    assert(report[0].name == "#1");
+    assert(report[1].name == "#2");
+    assert(report[1].value == "1"); // the load imbalance, the soft cost
+    assert(report[0].description.empty());
+    assert(report[1].description.empty());
+}
+
 void session_runs_app_check_on_the_current_solution()
 {
     easylocal::Session session{make_application()};
@@ -670,6 +688,7 @@ int main()
     session_reports_when_the_current_solution_has_no_moves();
     session_accepts_and_validates_an_explicit_solution();
     session_evaluates_the_current_solution();
+    session_reports_each_cost_component();
     session_runs_app_check_on_the_current_solution();
     session_check_reports_an_invalid_current_solution();
     replacing_input_clears_the_current_solution();

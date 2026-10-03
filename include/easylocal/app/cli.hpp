@@ -30,7 +30,7 @@ namespace easylocal::cli
 {
 
 // The command line of cli::run: --instance, --seed, --runner, --start,
-// --solution, --output and --target, next to the app's parameters
+// --solution, --output, --target and --report, next to the app's parameters
 // (--runners.<name>.*, --cost.*, --neighborhood.*).
 struct parameters
 {
@@ -41,6 +41,7 @@ struct parameters
     std::filesystem::path solution;
     std::filesystem::path output;
     std::string target;
+    bool report{false};
 
     [[nodiscard]]
     static consteval auto parameter_schema()
@@ -59,7 +60,9 @@ struct parameters
                 "Solution file (empty: standard output)"),
             config::field<"target", &parameters::target>(
                 "Stop when the solution reaches this cost, such as 0 or "
-                "[0, 120] (empty: no target)"));
+                "[0, 120] (empty: no target)"),
+            config::field<"report", &parameters::report>(
+                "Print the value of each cost component, and its description"));
     }
 
     [[nodiscard]]
@@ -97,6 +100,26 @@ void write_cost(std::ostream& out, const Cost& cost)
         out << "(not printable)";
 }
 
+// One line per cost component, "component <name> <value>", followed by its
+// description, indented, when it has one.
+template<class Session>
+void write_report(std::ostream& out, const Session& session)
+{
+    for (const auto& component : session.cost_report())
+    {
+        out << "component " << component.name << ' ' << component.value << '\n';
+        std::string_view description{component.description};
+        while (!description.empty())
+        {
+            const auto end = description.find('\n');
+            out << "  " << description.substr(0, end) << '\n';
+            if (end == std::string_view::npos)
+                break;
+            description.remove_prefix(end + 1);
+        }
+    }
+}
+
 template<class Session>
 void write_solution(std::ostream& out, const Session& session)
 {
@@ -110,9 +133,10 @@ void write_solution(std::ostream& out, const Session& session)
 
 // Runs application as a program: parses argc and argv (and a --config file),
 // loads the Input, starts from a random, initial or loaded solution, runs the
-// chosen runner and prints "cost", "time" (seconds) and the solution, or saves
-// it to --output. Returns the exit status: 0 on success, 1 when the run fails
-// (an unreadable file, for example), 2 for an invalid command line.
+// chosen runner and prints "cost", "time" (seconds), with --report the value
+// of each cost component, and the solution, or saves it to --output. Returns the exit
+// status: 0 on success, 1 when the run fails (an unreadable file, for example), 2 for an
+// invalid command line.
 template<class App>
 [[nodiscard]]
 int run(App application, const int argc, char* argv[], options settings = {})
@@ -204,6 +228,8 @@ int run(App application, const int argc, char* argv[], options settings = {})
         out << "cost ";
         detail::write_cost(out, session.evaluate());
         out << "\ntime " << elapsed.count() << '\n';
+        if (command_line.report)
+            detail::write_report(out, session);
         if (command_line.output.empty())
             detail::write_solution(out, session);
         else if constexpr (session_type::supports_solution_saving)

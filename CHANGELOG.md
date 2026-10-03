@@ -113,6 +113,10 @@ old concepts onto the new ones.
   the seed, the runner by name, the starting solution, the output file and a
   target cost, with the app's parameters and the program's own, then prints
   the cost, the running time and the solution.
+- **Cost reports**: a cost component may have a `name()` and a
+  `describe(solution)` that explains its value, as EasyLocal 3's
+  `PrintViolations` did; `Session::cost_report()`, `cli::run --report` and the
+  TextUI's solution window show each component's value with them.
 - **Reading and writing**: optional hooks on the problem's types read an
   Input, read and write a Solution and describe a value; `load_input`,
   `load_solution`, `save_solution` and `describe` (`<easylocal/app/io.hpp>`)

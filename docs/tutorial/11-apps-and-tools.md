@@ -193,6 +193,7 @@ time 0.00998033
 | `--output <file>` | where the solution goes, with `write_solution`; standard output by default |
 | `--target <cost>` | stop at the first solution that reaches this cost, as `session.read_cost` reads it |
 | `--runners.<name>.*`, `--cost.*`, `--neighborhood.*` | the app's parameters, as `configuration()` lists them |
+| `--report true` | also print the value of each cost component, see below |
 | `--config <file>` | the same settings from a file (chapter 9); `--help` lists them all |
 
 - It prints `cost`, `time` (the seconds of the run) and the solution. The exit
@@ -208,6 +209,53 @@ time 0.00998033
 
 The TextUI (chapter 12) and the REST service (chapter 14) take the same
 parameter paths and targets.
+
+### A report of the cost components
+
+With `--report true`, `cli::run` also prints the value of each cost component
+of the final solution. A component can take part in the report with two
+optional members, a name and a text that explains its value; `TourLength`
+lists the edges it adds up:
+
+<!-- snippet: tutorial/tsp.hpp:component-text -->
+```cpp
+// Optional, for people: the name of the component and a text that
+// explains its value on a tour, here the edges it adds up (chapter 11).
+static std::string_view name()
+{
+    return "TourLength";
+}
+
+std::string describe(const Tour& tour) const
+{
+    const auto n = tour.order.size();
+    std::string text;
+    for (std::size_t k = 0; k < n; ++k)
+    {
+        const auto edge = input_.distance[tour.order[k]][tour.order[(k + 1) % n]];
+        text += (k == 0 ? "" : " + ") + std::format("{}", edge);
+    }
+    return text;
+}
+```
+
+```text
+$ easylocal_tutorial_cli --instance five.tsp --runner fi --seed 1 --report true
+cost 26
+time 3.8708e-05
+component TourLength 26
+  2 + 4 + 6 + 5 + 9
+0 1 3 4 2
+```
+
+- Both members are optional. Without `name()`, a component is shown by its
+  position in the recipe, `#1`; without `describe`, only its value is shown.
+- The value is the component's own, before the weights of the cost
+  expression.
+- `describe` is the place for what EasyLocal 3's `PrintViolations` printed:
+  the violations a constraint counts, for example.
+- The same report is `session.cost_report()` in a program, and the
+  solution window of the TextUI (chapter 12) shows it.
 
 ## See also
 

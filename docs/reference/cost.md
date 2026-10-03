@@ -15,11 +15,16 @@ form the *delta cost layer*.
 | --- | --- |
 | `evaluate(const Solution&) const -> Value` | yes |
 | `delta_evaluate(const Solution&, const Move&) const -> Delta` | no: a co-located delta evaluator |
+| `name() -> std::string_view` (static or not) | no: its name in reports, otherwise its position, `#1` |
+| `describe(const Solution&) const -> std::string` | no: a text that explains its value on a solution, such as the violations it counts |
 
 - `Value` is deduced from `evaluate` and may be arithmetic or a domain type.
 - Construction: `Component{const Input&, args...}` is preferred,
   `Component{args...}` is accepted; `args` come from `component<C>(args...)`.
 - A component type may appear only once in a cost expression.
+- `name()` and `describe(solution)` are for people: `Session::cost_report()`,
+  `cli::run`'s `--report` and the TextUI's solution window show each
+  component's value with them. Without `describe`, only the value is shown.
 
 ## Cost expressions
 

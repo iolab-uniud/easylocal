@@ -4,7 +4,7 @@
 
 A **cost component** computes one term of the objective:
 
-<!-- snippet: tutorial/tsp.hpp:cost-component -->
+<!-- snippet: tutorial/tsp.hpp:cost-component!component-text -->
 ```cpp
 class TourLength
 {

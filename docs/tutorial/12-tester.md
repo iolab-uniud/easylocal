@@ -91,7 +91,9 @@ keys are sent, and each step waits for what the screen should show.
 The TextUI loads and saves files, and displays values, through the hooks of
 [chapter 5](05-running-a-search.md#reading-the-instance-printing-the-solution):
 `read_input` for the Input, `read_solution` and `write_solution` for the
-Solution, `describe` for the Input, the Solution and the Move. Commands whose
+Solution, `describe` for the Input, the Solution and the Move. The solution
+window (`S` or F2) also lists each cost component's value, with its
+`describe(solution)` text when it has one (chapter 11). Commands whose
 hook is missing are not offered. A Solution without a `describe` hook is shown
 as `write_solution` writes it; a value with neither is shown as *not
 printable*.

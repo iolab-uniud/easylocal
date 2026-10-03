@@ -399,7 +399,7 @@ public:
 };
 ```
 
-<!-- snippet: tutorial/tsp.hpp:cost-component -->
+<!-- snippet: tutorial/tsp.hpp:cost-component!component-text -->
 ```cpp title="EasyLocal 4"
 class TourLength
 {
@@ -441,8 +441,11 @@ private:
   `HARD_WEIGHT` is gone: the hard cost is compared first, so no soft gain can
   make up for a violation. When the weights of the hard components mattered
   only to guide the search, keep them inside the hard sum.
-- `PrintViolations` has no counterpart: write it as a free function of your
-  own if the program prints a report.
+- `PrintViolations` becomes an optional member,
+  `std::string describe(const Solution&) const`, which returns the text
+  instead of printing it; an optional `name()` replaces the name given to the
+  constructor. Without them, reports show the component's position and value
+  ([chapter 11](tutorial/11-apps-and-tools.md#a-report-of-the-cost-components)).
 - An `int` component stays `int`; `DefaultCostStructure<double>` and the
   `CFtype` parameters disappear, since the cost type follows from what
   `evaluate` returns.
@@ -861,7 +864,9 @@ result:
 
 The **Input/Output** page takes over the State menu: the initial or a random
 solution, reading and writing solutions with the hooks of step 2, and the
-checks of the composed problem.
+checks of the composed problem. Its "Show costs" and "Print violations" are
+the solution window (`S`), which lists each cost component's value and its
+`describe` text (step 5).
 
 ### 11. A two-stage main
 

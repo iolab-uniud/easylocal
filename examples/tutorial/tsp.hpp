@@ -9,6 +9,7 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <format>
 #include <istream>
 #include <numeric>
 #include <optional>
@@ -109,6 +110,27 @@ public:
         }
         return length;
     }
+
+    // [component-text]
+    // Optional, for people: the name of the component and a text that
+    // explains its value on a tour, here the edges it adds up (chapter 11).
+    static std::string_view name()
+    {
+        return "TourLength";
+    }
+
+    std::string describe(const Tour& tour) const
+    {
+        const auto n = tour.order.size();
+        std::string text;
+        for (std::size_t k = 0; k < n; ++k)
+        {
+            const auto edge = input_.distance[tour.order[k]][tour.order[(k + 1) % n]];
+            text += (k == 0 ? "" : " + ") + std::format("{}", edge);
+        }
+        return text;
+    }
+    // [component-text]
 
 private:
     const Tsp& input_;

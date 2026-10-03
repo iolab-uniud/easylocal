@@ -68,12 +68,15 @@ current cost is shown in the same syntax.
 
 `cli::run` parses the command line and a `--config` file with
 `config::load_and_apply`: its own block `cli::parameters` at the root
-(`instance`, `seed`, `runner`, `start`, `solution`, `output`, `target`), the
+(`instance`, `seed`, `runner`, `start`, `solution`, `output`, `target`,
+`report`), the
 app's `configuration()`, and `options.parameters`, the program's own set. It
 then builds a `Session` with the seed, loads the Input, takes the starting
 solution (`--solution`, else `--start`: `random` by default when the problem
 has `random_solution`, `initial` otherwise), runs the runner by name, with
-`stop_at` when `--target` is set, and writes `cost`, `time` and the solution
+`stop_at` when `--target` is set, and writes `cost`, `time`, with `--report`
+the session's `cost_report()` (a line `component <name> <value>` for each
+component, followed by its description, indented), and the solution
 (or saves it to `--output`) to `options.out`; errors go to `options.err`. It
 returns 0, 2 for an invalid command line or an unknown runner, 1 when the run
 throws. It requires the `read_input` hook, and the solution hooks only when the
@@ -157,7 +160,7 @@ flowchart TB
 | Move | select with `use_first_move`, `use_next_move`, `use_first_improving_move`, `use_best_move`, `use_random_move(rng)` or `set_move`; then `move_is_valid`, `evaluate_move`, `evaluate_move_fully`, `move_evaluation_matches_full`, `apply_move` |
 | Neighborhood | `neighborhood_preview`, `neighborhood_statistics`, `check_neighborhood_costs`, `check_move_independence` (needs `Solution::operator==`), `check_random_move_distribution(rng)` (needs `Move::operator==`) |
 | Runners | `runner_names`, `run("name", options...)` (replaces the current solution; options are `with(control, tracer)`) |
-| Costs | `read_cost(text)`: a cost written as text, such as a target, by the problem's `read_cost` or `cost::from_text` |
+| Costs | `read_cost(text)`: a cost written as text, such as a target, by the problem's `read_cost` or `cost::from_text`; `cost_report()`: each cost component on the current solution, in the order of the recipe, as `component_report{name, value, description}`: its `name()` or `#<position>`, its own value without weights, and its `describe(solution)` text, empty without it |
 | Parameters | `configuration()`, the app's; `configure(text_overrides)` applies them all or none and, when the cost or the neighborhood changes, rebuilds the bound services |
 
 The commands move the session through these states; a new Input drops the

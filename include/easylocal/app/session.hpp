@@ -9,6 +9,7 @@
 #include <easylocal/app/run_parameters.hpp>
 #include <easylocal/config/parameter_set.hpp>
 #include <easylocal/cost/semantics.hpp>
+#include <easylocal/cost/text.hpp>
 #include <easylocal/helpers/detail/evaluation.hpp>
 #include <easylocal/helpers/neighborhood_explorer.hpp>
 #include <easylocal/helpers/solution_manager.hpp>
@@ -29,6 +30,7 @@
 #include <stdexcept>
 #include <string>
 #include <string_view>
+#include <tuple>
 #include <type_traits>
 #include <utility>
 #include <variant>
@@ -48,6 +50,34 @@ inline constexpr bool comparable_moves_v = std::equality_comparable<Move>;
 template<class... Moves>
 inline constexpr bool comparable_moves_v<std::variant<Moves...>> =
     (comparable_moves_v<Moves> && ...);
+
+// The optional members of a cost component for people: its name, and a text
+// that explains its value on a solution, such as the violations it counts
+// (EasyLocal 3's PrintViolations).
+template<class Component>
+concept named_component = requires(const Component& component) {
+    { component.name() } -> std::convertible_to<std::string_view>;
+};
+
+template<class Component, class Solution>
+concept describing_component =
+    requires(const Component& component, const Solution& solution) {
+        { component.describe(solution) } -> std::convertible_to<std::string>;
+    };
+
+// A component's value as text: as a cost reads it back when it is one, else
+// by its describe hook or operator<<.
+template<class Value>
+[[nodiscard]]
+std::string component_value_text(const Value& value)
+{
+    if constexpr (cost::text_readable<Value>)
+        return cost::to_text(value);
+    else if constexpr (describable<Value>)
+        return easylocal::describe(value);
+    else
+        return "(not printable)";
+}
 
 } // namespace detail
 
@@ -121,6 +151,14 @@ public:
         std::size_t unseen{};
         std::size_t min_frequency{};
         std::size_t max_frequency{};
+    };
+
+    // One cost component on the current solution, for people.
+    struct component_report
+    {
+        std::string name;        // name(), or "#<position>", from 1
+        std::string value;       // the component's own value, without weights
+        std::string description; // describe(solution); empty without it
     };
 
     struct inspected_move
@@ -350,6 +388,24 @@ public:
         assert(solution_);
         assert(is_valid());
         return bound_->solution_manager().evaluate(*solution_);
+    }
+
+    // Each cost component of the current solution, in the order of the
+    // recipe: its name, its value and, when the component has
+    // describe(solution), the text that explains it.
+    [[nodiscard]]
+    std::vector<component_report> cost_report() const
+        requires requires { typename solution_manager_type::component_types; }
+    {
+        assert(bound_);
+        assert(solution_);
+        using component_types = typename solution_manager_type::component_types;
+        std::vector<component_report> report;
+        report.reserve(std::tuple_size_v<component_types>);
+        [&]<std::size_t... Index>(std::index_sequence<Index...>) {
+            (report.push_back(component_entry<Index>()), ...);
+        }(std::make_index_sequence<std::tuple_size_v<component_types>>{});
+        return report;
     }
 
     // A cost written as text, such as a target: by the problem's
@@ -841,6 +897,27 @@ public:
     }
 
 private:
+    template<std::size_t Index>
+    [[nodiscard]]
+    component_report component_entry() const
+    {
+        using component_type =
+            std::tuple_element_t<Index, typename solution_manager_type::component_types>;
+        const auto& solution_manager = bound_->solution_manager();
+        const auto& component = solution_manager.template component<component_type>();
+
+        component_report entry;
+        if constexpr (detail::named_component<component_type>)
+            entry.name = std::string{component.name()};
+        else
+            entry.name = "#" + std::to_string(Index + 1);
+        entry.value = detail::component_value_text(
+            solution_manager.template evaluate_component<Index>(*solution_));
+        if constexpr (detail::describing_component<component_type, solution_type>)
+            entry.description = component.describe(*solution_);
+        return entry;
+    }
+
     void clear_move_state() noexcept
     {
         move_.reset();

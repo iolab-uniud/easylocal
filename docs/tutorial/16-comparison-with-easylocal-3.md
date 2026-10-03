@@ -7,6 +7,7 @@ The concepts of EasyLocal 3 and their counterparts in this framework:
 | Input / State / Move | Input / Solution / Move, plain values |
 | `StateManager` | SolutionManager: validity and construction only |
 | `CostComponent` | cost component (`evaluate`), attached with `component<C>()` |
+| `PrintViolations` | an optional `describe(solution)` member of the cost component |
 | hard/soft components and weights | cost expressions: `cost::hard_soft`, `cost::sum`, `cost::weighted`, `cost::in_order`, `cost::apply` |
 | `DeltaCostComponent` | delta evaluator (`delta_evaluate`), attached with `delta<C, D>()` |
 | `NeighborhoodExplorer` (`FirstMove`, `NextMove`, `RandomMove`, `MakeMove`) | NeighborhoodExplorer: cursor or `moves`, `random_move`, `make_move` |
