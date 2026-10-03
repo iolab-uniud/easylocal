@@ -267,6 +267,61 @@ void diagnostics_have_a_uniform_rendering_surface()
     }
 }
 
+void every_diagnostic_source_is_rendered()
+{
+    const auto rendered = [](const int argc, char** argv, AppParameters app) {
+        SolverParameters solver{};
+        const auto tree = easylocal::config::root(
+            easylocal::config::named<"application">(app),
+            easylocal::config::named<"solver">(solver));
+        const auto result = easylocal::config::load_and_apply(argc, argv, tree);
+        assert(!result);
+        std::ostringstream output;
+        easylocal::config::print_diagnostics(output, result);
+        return output.str();
+    };
+
+    {
+        char program[] = "solver";
+        char cooling[] = "--solver.cooling_rate=0.8";
+        char* argv[]{program, cooling};
+        assert(
+            rendered(2, argv, AppParameters{.instance_file = {}, .seed = 17U})
+            == "error: application: instance_file must not be empty\n");
+    }
+
+    {
+        char program[] = "solver";
+        char positional[] = "positional";
+        char* argv[]{program, positional};
+        assert(
+            rendered(2, argv, AppParameters{})
+            == "error: positional: expected a long option of the form "
+               "--path value or --path=value\n");
+    }
+
+    {
+        temporary_file file{
+            "application.seed = 42\n"
+            "not an assignment\n"};
+        auto config_option = std::string{"--config="} + file.path.string();
+        char program[] = "solver";
+        char* argv[]{program, config_option.data()};
+        assert(
+            rendered(2, argv, AppParameters{})
+            == "error: config line 2: expected 'path = value' ('not an assignment')\n");
+    }
+
+    {
+        char program[] = "solver";
+        char missing_config[] = "--config=definitely-missing.cfg";
+        char* argv[]{program, missing_config};
+        assert(
+            rendered(2, argv, AppParameters{})
+            == "error: cannot open configuration file ('definitely-missing.cfg')\n");
+    }
+}
+
 } // namespace
 
 int main()
@@ -279,5 +334,6 @@ int main()
     invalid_untouched_baseline_preserves_transactionality();
     help_remains_frontend_policy();
     diagnostics_have_a_uniform_rendering_surface();
+    every_diagnostic_source_is_rendered();
     return 0;
 }

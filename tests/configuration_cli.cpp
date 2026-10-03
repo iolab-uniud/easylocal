@@ -85,6 +85,25 @@ void parser_accumulates_syntax_diagnostics()
     assert(parsed.overrides.size() == 1);
 }
 
+void empty_values_and_paths_are_reported()
+{
+    constexpr std::array arguments{
+        std::string_view{"--config"},
+        std::string_view{"--=0.8"},
+    };
+
+    const auto parsed =
+        parse_cli(std::span<const std::string_view>{arguments.data(), arguments.size()});
+
+    assert(!parsed);
+    assert(!parsed.config_file.has_value());
+    assert(parsed.diagnostics.size() == 2);
+    assert(parsed.diagnostics[0].error == cli_error::missing_value);
+    assert(parsed.diagnostics[0].message == "missing value for --config");
+    assert(parsed.diagnostics[1].error == cli_error::malformed_option);
+    assert(parsed.overrides.empty());
+}
+
 void help_is_a_frontend_action_not_an_override()
 {
     constexpr std::array arguments{
@@ -233,6 +252,7 @@ int main()
 {
     equals_and_separate_value_forms_are_supported();
     parser_accumulates_syntax_diagnostics();
+    empty_values_and_paths_are_reported();
     help_is_a_frontend_action_not_an_override();
     config_file_option_is_frontend_metadata();
     duplicate_config_file_is_reported();

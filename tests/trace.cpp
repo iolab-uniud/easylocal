@@ -133,6 +133,49 @@ int main()
             jsonl.find("\"neighborhood\":[2,1]") != std::string::npos,
         "JSONL serialization preserves semantic event and route");
 
+    easylocal::trace::memory_recorder<int> search;
+    easylocal::trace::emit(
+        search,
+        easylocal::trace::event::move_accepted<int>{
+            .evaluations = 3,
+            .iterations = 1,
+            .previous_cost = 10,
+            .cost = 7,
+            .neighborhood = &inner,
+        });
+    easylocal::trace::emit(
+        search,
+        easylocal::trace::event::incumbent_updated<int>{
+            .evaluations = 3,
+            .iterations = 1,
+            .previous_cost = 10,
+            .cost = 7,
+        });
+    easylocal::trace::emit(
+        search,
+        easylocal::trace::event::local_optimum<int>{
+            .evaluations = 9,
+            .iterations = 4,
+            .cost = 7});
+    easylocal::trace::emit(
+        search,
+        easylocal::trace::event::run_finished<int>{
+            .evaluations = 9,
+            .iterations = 4,
+            .cost = 7});
+
+    std::ostringstream search_output;
+    easylocal::trace::write_jsonl(search_output, search);
+    ok &= expect(
+        search_output.str()
+            == "{\"event\":\"move_accepted\",\"evaluations\":3,\"iterations\":1,"
+               "\"previous_cost\":10,\"cost\":7,\"neighborhood\":[2,1]}\n"
+               "{\"event\":\"incumbent_updated\",\"evaluations\":3,\"iterations\":1,"
+               "\"previous_cost\":10,\"cost\":7}\n"
+               "{\"event\":\"local_optimum\",\"evaluations\":9,\"iterations\":4,\"cost\":7}\n"
+               "{\"event\":\"run_finished\",\"evaluations\":9,\"iterations\":4,\"cost\":7}\n",
+        "JSONL serialization writes one line per search event");
+
     std::ostringstream streamed_output;
     easylocal::trace::jsonl_recorder<int> streamed{streamed_output};
     easylocal::trace::emit(
