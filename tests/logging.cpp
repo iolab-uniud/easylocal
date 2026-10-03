@@ -87,16 +87,22 @@ int main()
     // rest; stderr goes to a file for the rest of the test.
     const auto stderr_path =
         std::filesystem::temp_directory_path() / "easylocal-logging-test.txt";
-#ifdef _MSC_VER
-    // The MSVC runtime deprecates std::freopen in favor of freopen_s.
-    std::FILE* redirected = nullptr;
-    ok &= expect(
-        freopen_s(&redirected, stderr_path.string().c_str(), "w", stderr) == 0,
-        "stderr can be redirected");
-#else
+    // The MSVC runtime deprecates std::freopen, but freopen_s opens the file
+    // without sharing, and the test reads it back while stderr is redirected.
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+#elif defined(_MSC_VER)
+#pragma warning(push)
+#pragma warning(disable : 4996)
+#endif
     ok &= expect(
         std::freopen(stderr_path.string().c_str(), "w", stderr) != nullptr,
         "stderr can be redirected");
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#elif defined(_MSC_VER)
+#pragma warning(pop)
 #endif
     (void)set_sink(original);
     emit(level::info, "application.search", "dropped");
