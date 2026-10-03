@@ -11,8 +11,9 @@ object-oriented framework first described in 2003.
 
 A problem is described by a few components — a solution manager, cost
 components, neighborhood explorers and their delta costs — and generic runners
-(First and Best Improvement, Simulated Annealing) and solvers (LocalSearch,
-MultiStart, TwoStage) search it. Optional components add an interactive
+(First and Best Improvement, Hill Climbing, Late Acceptance, Great Deluge,
+Simulated Annealing, Tabu Search, and Pareto Late Acceptance for several
+objectives) and solvers (LocalSearch, MultiStart, TwoStage) search it. Optional components add an interactive
 terminal tester, a REST service and TOML configuration.
 
 ## Where to start
