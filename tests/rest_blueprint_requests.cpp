@@ -1,6 +1,7 @@
 // The REST blueprint answering requests in-process (no network): unknown runs,
 // runs that fail, a codec that fails, a run from a given initial solution, a
-// run with a target cost, a full queue and a run cancelled while still queued.
+// run with a target cost, runs with their own parameters, a full queue and a
+// run cancelled while still queued.
 #include "../examples/assignment/cost_components.hpp"
 #include "../examples/assignment/instance.hpp"
 #include "../examples/assignment/neighborhood_explorer.hpp"
@@ -337,6 +338,58 @@ void a_run_stops_at_its_target(crow::SimpleApp& server)
     assert(text(invalid.body["error"]["code"]) == "invalid_run_request");
 }
 
+void a_run_has_its_own_parameters(crow::SimpleApp& server)
+{
+    // The app's parameters, as text, with the values runs use by default.
+    const auto listed = send(server, crow::HTTPMethod::GET, "/assignment/parameters");
+    assert(listed.code == 200);
+    bool found = false;
+    for (const auto& parameter : listed.body["parameters"])
+        if (text(parameter["path"]) == "runners.fi.max_evaluations")
+            found = text(parameter["value"]) == "100";
+    assert(found);
+
+    // Nested objects and dotted paths alike: a budget of one evaluation.
+    for (const auto* const body :
+        {R"({"input": {}, "parameters": {"runners": {"fi": {"max_evaluations": 1}}}})",
+            R"({"input": {}, "parameters": {"runners.fi.max_evaluations": 1}})",
+            R"({"input": {}, "parameters": {"runners.fi": {"max_evaluations": "1"}}})"})
+    {
+        const auto submitted = submit(server, "fi", body);
+        assert(submitted.code == 202);
+        const auto done = wait_for(server, text(submitted.body["id"]), "succeeded");
+        assert(done["progress"]["evaluations"].u() == 1);
+    }
+
+    // Only that run: the next one has the app's budget again.
+    const auto later = submit(server, "fi", R"({"input": {}})");
+    const auto complete = wait_for(server, text(later.body["id"]), "succeeded");
+    assert(complete["progress"]["evaluations"].u() > 1);
+
+    const auto unknown = submit(
+        server,
+        "fi",
+        R"({"input": {}, "parameters": {"runners.fi.max_evalutions": 1}})");
+    assert(unknown.code == 422);
+    assert(text(unknown.body["error"]["code"]) == "invalid_parameters");
+    assert(text(unknown.body["error"]["message"])
+            .starts_with("runners.fi.max_evalutions: "));
+
+    const auto malformed = submit(server, "fi", R"({"input": {}, "parameters": [1, 2]})");
+    assert(malformed.code == 422);
+    assert(text(malformed.body["error"]["code"]) == "invalid_run_request");
+}
+
+void json_parameter_values_become_text()
+{
+    using easylocal::rest::detail::parameter_text;
+    assert(parameter_text(crow::json::load("0.1"), "p") == "0.1");
+    assert(parameter_text(crow::json::load("-3"), "p") == "-3");
+    assert(parameter_text(crow::json::load("true"), "p") == "true");
+    assert(parameter_text(crow::json::load(R"("eil51.tsp")"), "p") == "eil51.tsp");
+    assert(parameter_text(crow::json::load("[1, 2.5]"), "p") == "[1, 2.5]");
+}
+
 void an_arithmetic_target_is_a_number()
 {
     using easylocal::rest::detail::decode_arithmetic_cost;
@@ -441,6 +494,8 @@ int main()
     a_codec_failure_is_an_internal_error(server);
     a_run_starts_from_the_given_initial_solution(server);
     a_run_stops_at_its_target(server);
+    a_run_has_its_own_parameters(server);
+    json_parameter_values_become_text();
     an_arithmetic_target_is_a_number();
     a_full_queue_rejects_runs_and_a_queued_run_can_be_cancelled(server);
     an_empty_prefix_is_rejected();

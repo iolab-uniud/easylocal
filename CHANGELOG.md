@@ -122,8 +122,9 @@ old concepts onto the new ones.
   target cost stops a run.
 - `EasyLocal::REST` (Crow, standalone Asio): serves an app over HTTP, with
   asynchronous runs, status and progress, cancellation, partial solutions, a
-  target cost that stops a run (a lower bound, for example) and a bounded
-  execution pool.
+  target cost that stops a run (a lower bound, for example), per-run
+  parameters (nested JSON or dotted paths, listed by `GET /parameters`) and a
+  bounded execution pool.
 - `EasyLocal::ConfigTOML` (toml++).
 - Each component is opt-in at configure time, uses an installed dependency
   when available or fetches a pinned one on request, and is loaded by

@@ -176,6 +176,27 @@ repeat the target, encoded by `encode_cost`.
 }
 ```
 
+A run may change the app's `parameters`, for itself only: the same paths as
+the command line and the TextUI (`runners.<name>.*`, `cost.*`,
+`neighborhood.*`), listed by `GET /parameters`. Nested objects and dotted keys
+are equivalent, and may be mixed:
+
+```json
+{
+  "input": { "...": "..." },
+  "parameters": {
+    "runners": { "sa": { "temperature": { "cooling_rate": 0.9 } } },
+    "cost.weights": [1, 20]
+  }
+}
+```
+
+Values are JSON numbers, booleans, strings or arrays of them; a string is
+read as the parameter's text, so the values that `GET /parameters` lists can be
+sent back as they are. They are applied all or none before the run's initial
+solution is built: an unknown path or an invalid value rejects the request
+with `422` and the code `invalid_parameters`, whose message names each path.
+
 A successful submission returns `202 Accepted`, sets `Location` to the run
 resource, and uses `id` consistently:
 
@@ -201,6 +222,7 @@ The generic surface under a chosen prefix is:
 | --- | --- | --- |
 | `GET` | `/assignment/` | application/executor metadata |
 | `GET` | `/assignment/runners` | registered runner names |
+| `GET` | `/assignment/parameters` | the app's parameters: `path`, `description`, `value` (as text), `read_only` |
 | `POST` | `/assignment/runners/<runner>/runs` | enqueue a run |
 | `GET` | `/assignment/runs/<id>` | inspect status/progress |
 | `GET` | `/assignment/runs/<id>/solution` | retrieve terminal solution and cost |
@@ -280,7 +302,7 @@ The generic mapping is:
 | `400` | syntactically invalid JSON (`invalid_json`) |
 | `404` | unknown runner or run (`unknown_runner`, `run_not_found`) |
 | `409` | valid operation in the wrong run state/capability (`result_not_ready`, `run_not_terminal`, `run_not_active`) |
-| `422` | valid JSON but invalid run envelope/domain data (`invalid_run_request`) |
+| `422` | valid JSON but invalid run envelope/domain data (`invalid_run_request`), or parameters that do not apply (`invalid_parameters`) |
 | `503` | bounded solver queue full (`queue_full`) |
 | `500` | unexpected adapter/application failure (`internal_error`) |
 

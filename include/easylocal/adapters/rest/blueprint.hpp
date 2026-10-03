@@ -2,13 +2,16 @@
 
 #include <easylocal/adapters/rest/execution.hpp>
 #include <easylocal/app/session.hpp>
+#include <easylocal/config/overrides.hpp>
 #include <easylocal/cost/concepts.hpp>
 #include <easylocal/runners/run_control.hpp>
 #include <easylocal/runners/search_run.hpp>
 
 #include <crow.h>
 
+#include <array>
 #include <atomic>
+#include <charconv>
 #include <concepts>
 #include <cstddef>
 #include <cstdint>
@@ -149,6 +152,80 @@ template<cost::arithmetic Cost>
     body["error"]["code"] = std::move(code);
     body["error"]["message"] = std::move(message);
     return json_response(status, std::move(body));
+}
+
+// A JSON parameter value as the text a parameter_set parses: numbers in their
+// shortest exact form, true/false, strings verbatim, [a, b] for arrays.
+[[nodiscard]] inline std::string parameter_text(
+    const crow::json::rvalue& value,
+    const std::string& path)
+{
+    switch (value.t())
+    {
+    case crow::json::type::Number:
+        switch (value.nt())
+        {
+        case crow::json::num_type::Signed_integer:
+            return std::to_string(value.i());
+        case crow::json::num_type::Unsigned_integer:
+            return std::to_string(value.u());
+        default:
+        {
+            std::array<char, 32> buffer{};
+            const auto [end, error] =
+                std::to_chars(buffer.data(), buffer.data() + buffer.size(), value.d());
+            static_cast<void>(error); // 32 characters hold any double
+            return std::string{buffer.data(), end};
+        }
+        }
+    case crow::json::type::True:
+        return "true";
+    case crow::json::type::False:
+        return "false";
+    case crow::json::type::String:
+        return std::string{value.s()};
+    case crow::json::type::List:
+    {
+        std::string text{"["};
+        for (const auto& element : value)
+        {
+            if (element.t() == crow::json::type::List
+                || element.t() == crow::json::type::Object)
+                throw std::invalid_argument{
+                    "parameter '" + path + "': array elements must be values"};
+            if (text.size() > 1)
+                text += ", ";
+            text += parameter_text(element, path);
+        }
+        return text + "]";
+    }
+    default:
+        throw std::invalid_argument{
+            "parameter '" + path
+            + "': expected a number, a boolean, a string or an array"};
+    }
+}
+
+// The "parameters" of a run request as path = value overrides. Nested objects
+// and dotted keys compose, so {"runners": {"sa": {"temperature.cooling_rate":
+// 0.9}}} and {"runners.sa.temperature.cooling_rate": 0.9} are the same.
+inline void collect_parameters(
+    const crow::json::rvalue& value,
+    const std::string& path,
+    std::vector<config::owned_text_override>& overrides)
+{
+    if (value.t() != crow::json::type::Object)
+    {
+        if (path.empty())
+            throw std::invalid_argument{"'parameters' must be an object"};
+        overrides.push_back({path, parameter_text(value, path)});
+        return;
+    }
+    for (const auto& entry : value)
+    {
+        const std::string key{entry.key()};
+        collect_parameters(entry, path.empty() ? key : path + "." + key, overrides);
+    }
 }
 
 } // namespace detail
@@ -458,6 +535,25 @@ private:
         return detail::json_response(200, std::move(body));
     }
 
+    // The app's parameters, with the values a run uses unless its request
+    // changes them.
+    [[nodiscard]] crow::response parameters_response() const
+    {
+        crow::json::wvalue body;
+        body["parameters"] = crow::json::wvalue::list{};
+        std::size_t index = 0;
+        const std::lock_guard lock{application_mutex_};
+        for (const auto& parameter : application_.configuration().parameters())
+        {
+            auto& entry = body["parameters"][index++];
+            entry["path"] = parameter.path;
+            entry["description"] = std::string{parameter.description};
+            entry["value"] = parameter.value;
+            entry["read_only"] = parameter.read_only;
+        }
+        return detail::json_response(200, std::move(body));
+    }
+
     [[nodiscard]] crow::response runners_response() const
     {
         crow::json::wvalue body;
@@ -499,6 +595,24 @@ private:
                 decode_input(payload["input"]));
             // The run's own session; its seed is set once the run has an id.
             session_type session{copy_application(), input, 0};
+            // The run's parameters, before its initial solution is built.
+            if (payload.has("parameters"))
+            {
+                std::vector<config::owned_text_override> overrides;
+                detail::collect_parameters(payload["parameters"], {}, overrides);
+                const auto views = config::override_views(overrides);
+                if (const auto configured = session.configure(views); !configured)
+                {
+                    std::string message;
+                    for (const auto& diagnostic : configured.diagnostics)
+                    {
+                        if (!message.empty())
+                            message += "; ";
+                        message += diagnostic.path + ": " + diagnostic.message;
+                    }
+                    return detail::error_response(422, "invalid_parameters", message);
+                }
+            }
             const crow::json::rvalue* initial_payload =
                 payload.has("initial_solution")
                     ? &payload["initial_solution"]
@@ -793,6 +907,9 @@ private:
         ([this] {
             return runners_response();
         });
+
+        CROW_BP_ROUTE(blueprint_, "/parameters")
+        ([this] { return parameters_response(); });
 
         CROW_BP_ROUTE(blueprint_, "/runners/<string>/runs")
         .methods(crow::HTTPMethod::POST)
