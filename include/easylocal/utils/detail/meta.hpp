@@ -1,5 +1,7 @@
 #pragma once
 
+// Internal type-level utilities shared across EasyLocal modules.
+
 #include <concepts>
 #include <cstddef>
 #include <optional>
@@ -8,7 +10,6 @@
 #include <utility>
 #include <variant>
 
-// Internal type-level utilities shared across EasyLocal modules.
 namespace easylocal::detail
 {
 

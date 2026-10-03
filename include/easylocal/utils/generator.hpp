@@ -1,13 +1,14 @@
 #pragma once
 
-#include <version>
-
 // easylocal::generator<T>: a coroutine that yields values of type T, lazily,
 // as an input range. It is std::generator<T> where the standard library
 // provides it, and a minimal equivalent otherwise (libc++ does not ship
 // <generator> yet). Its intended use is NeighborhoodExplorer::moves(): the
 // moves are produced one at a time, while the runner consumes them, instead
 // of being materialized in a container.
+
+#include <version>
+
 #if defined(__cpp_lib_generator)
 
 #include <generator>

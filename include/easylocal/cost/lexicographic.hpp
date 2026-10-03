@@ -1,5 +1,8 @@
 #pragma once
 
+// Lexicographically ordered cost: values are compared in declaration order.
+// A lexicographic cost has no numeric delta.
+
 #include <easylocal/cost/concepts.hpp>
 
 #include <compare>
@@ -8,8 +11,6 @@
 #include <type_traits>
 #include <utility>
 
-// Lexicographically ordered cost: values are compared in declaration order.
-// A lexicographic cost has no numeric delta.
 namespace easylocal::cost
 {
 

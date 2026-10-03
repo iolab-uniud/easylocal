@@ -1,5 +1,8 @@
 #pragma once
 
+// NeighborhoodExplorer: move validity/application semantics, deterministic
+// and random neighborhood protocols and their framework customization points.
+
 #include <easylocal/utils/detail/meta.hpp>
 #include <easylocal/utils/generator.hpp> // IWYU pragma: export
 #include <easylocal/utils/hash.hpp>
@@ -15,8 +18,6 @@
 #include <type_traits>
 #include <utility>
 
-// NeighborhoodExplorer: move validity/application semantics, deterministic
-// and random neighborhood protocols and their framework customization points.
 namespace easylocal
 {
 

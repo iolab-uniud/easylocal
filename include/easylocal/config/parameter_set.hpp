@@ -1,5 +1,10 @@
 #pragma once
 
+// parameter_set: the parameters of one or more objects as paths and textual
+// values, the common ground of the command line, configuration files, TOML, the
+// TextUI and REST. It lists, validates and changes them transactionally (all
+// overrides or none) on the objects it refers to.
+
 #include <easylocal/config/overrides.hpp>
 #include <easylocal/config/parameters.hpp>
 

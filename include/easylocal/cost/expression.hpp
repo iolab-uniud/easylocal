@@ -1,12 +1,5 @@
 #pragma once
 
-#include <easylocal/cost/concepts.hpp>
-
-#include <cstddef>
-#include <tuple>
-#include <type_traits>
-#include <utility>
-
 // Cost expressions: the structure of a cost, written over the cost components
 // of a SolutionManager recipe.
 //
@@ -33,6 +26,14 @@
 //
 // The expression types below only record the structure; they are given meaning
 // by the SolutionManager recipe, which knows the components' value types.
+
+#include <easylocal/cost/concepts.hpp>
+
+#include <cstddef>
+#include <tuple>
+#include <type_traits>
+#include <utility>
+
 namespace easylocal::cost
 {
 

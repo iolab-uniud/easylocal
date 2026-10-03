@@ -1,5 +1,9 @@
 #pragma once
 
+// ParetoLateAcceptanceHillClimbing: late acceptance for multi-objective
+// cost::pareto costs, over a history of solutions compared by dominance; the
+// result is the Pareto front of the run.
+
 #include <easylocal/config/parameter_set.hpp>
 #include <easylocal/helpers/solution_manager.hpp>
 #include <easylocal/runners/detail/context_concepts.hpp>

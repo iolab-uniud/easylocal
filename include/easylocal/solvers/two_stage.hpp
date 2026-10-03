@@ -1,5 +1,8 @@
 #pragma once
 
+// solvers::TwoStage: for hierarchical costs, a first runner on the hard cost
+// until it reaches zero, then a second one on the whole cost.
+
 #include <easylocal/config/parameter_set.hpp>
 #include <easylocal/solvers/initialization.hpp>
 #include <easylocal/solvers/solver.hpp>

@@ -1,5 +1,8 @@
 #pragma once
 
+// run_launcher: a menu of several apps, each opened in the interactive tester
+// when selected.
+
 #include <easylocal/adapters/tui/tester.hpp>
 #include <easylocal/app/session.hpp>
 

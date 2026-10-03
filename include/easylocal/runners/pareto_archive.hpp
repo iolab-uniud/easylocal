@@ -1,5 +1,9 @@
 #pragma once
 
+// pareto_archive: the non-dominated solutions (Pareto front) reached by a
+// search with a cost::pareto cost, kept by search_run and returned in the
+// pareto_search_result.
+
 #include <easylocal/cost/pareto.hpp>
 
 #include <algorithm>

@@ -1,5 +1,9 @@
 #pragma once
 
+// load_and_apply: the usual setup of a program's parameters, from its defaults,
+// then an optional configuration file, then the command line, with all the
+// diagnostics collected and printed together.
+
 #include <easylocal/config/cli.hpp>
 #include <easylocal/config/file.hpp>
 #include <easylocal/config/overrides.hpp>

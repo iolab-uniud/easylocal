@@ -1,5 +1,9 @@
 #pragma once
 
+// check_delta_evaluator: for the moves of the fixture Solution, value + delta
+// equals the component's value after the move, for separate and co-located
+// delta evaluators.
+
 #include <easylocal/helpers/neighborhood_explorer.hpp>
 #include <easylocal/testing/check.hpp>
 #include <easylocal/testing/fixture.hpp>

@@ -1,5 +1,10 @@
 #pragma once
 
+// The reporting side of the contract checks: check_report collects the
+// failures of a component's checks, run_checks prints the reports and gives
+// the exit code of a test program. Also deterministic_rng for reproducible
+// checks.
+
 #include <concepts>
 #include <cstddef>
 #include <cstdint>

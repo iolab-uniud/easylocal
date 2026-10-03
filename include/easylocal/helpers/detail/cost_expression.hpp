@@ -1,5 +1,11 @@
 #pragma once
 
+// Cost expressions given meaning for a Solution type: each node knows its cost
+// type and the cost components (leaves) below it. The leaves are flattened in
+// depth-first order into the component tuple of the cost layer; a node
+// evaluates its cost from that flat tuple of component values, starting at its
+// own offset. Deltas therefore stay per component and never see the structure.
+
 #include <easylocal/config/parameter_set.hpp>
 #include <easylocal/cost.hpp>
 #include <easylocal/utils/detail/attributes.hpp>
@@ -14,11 +20,6 @@
 #include <type_traits>
 #include <utility>
 
-// Cost expressions given meaning for a Solution type: each node knows its cost
-// type and the cost components (leaves) below it. The leaves are flattened in
-// depth-first order into the component tuple of the cost layer; a node
-// evaluates its cost from that flat tuple of component values, starting at its
-// own offset. Deltas therefore stay per component and never see the structure.
 namespace easylocal::detail
 {
 

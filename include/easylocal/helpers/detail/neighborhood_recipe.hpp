@@ -1,5 +1,7 @@
 #pragma once
 
+// Builder behind neighborhood<NHE>() | delta<C, D>().
+
 #include <easylocal/config/parameter_set.hpp>
 #include <easylocal/helpers/detail/delta_cost_layer.hpp>
 #include <easylocal/utils/detail/attributes.hpp>
@@ -13,7 +15,6 @@
 #include <type_traits>
 #include <utility>
 
-// Builder behind neighborhood<NHE>() | delta<C, D>().
 namespace easylocal
 {
 

@@ -1,5 +1,7 @@
 #pragma once
 
+// JSONL serialization: streaming recorder and post-run memory_recorder output.
+
 #include <easylocal/trace/events.hpp>
 #include <easylocal/trace/memory_recorder.hpp>
 #include <easylocal/trace/tracer.hpp>
@@ -13,7 +15,6 @@
 #include <variant>
 #include <vector>
 
-// JSONL serialization: streaming recorder and post-run memory_recorder output.
 namespace easylocal::trace
 {
 

@@ -1,5 +1,8 @@
 #pragma once
 
+// Common Solver infrastructure. A Solver orchestrates one or more Runners from
+// an Input to a final solution; built-in solvers live in easylocal::solvers.
+
 #include <easylocal/runners/runner.hpp>
 
 #include <concepts>
@@ -8,8 +11,6 @@
 #include <type_traits>
 #include <utility>
 
-// Common Solver infrastructure. A Solver orchestrates one or more Runners from
-// an Input to a final solution; built-in solvers live in easylocal::solvers.
 namespace easylocal
 {
 

@@ -1,5 +1,8 @@
 #pragma once
 
+// check_neighborhood: the enumerated and random moves of the fixture Solution
+// are valid, and applying them keeps it valid.
+
 #include <easylocal/helpers/neighborhood_explorer.hpp>
 #include <easylocal/testing/check.hpp>
 #include <easylocal/testing/fixture.hpp>

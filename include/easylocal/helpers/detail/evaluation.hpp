@@ -1,5 +1,10 @@
 #pragma once
 
+// How a move or a solution is evaluated for the runners: the cost together
+// with its per-component values (materialized_evaluation, candidate_evaluation),
+// and the compile-time checks that the delta bindings of a neighborhood match
+// the cost components of the SolutionManager.
+
 #include <easylocal/helpers/detail/neighborhood_recipe.hpp>
 #include <easylocal/helpers/detail/solution_manager_recipe.hpp>
 

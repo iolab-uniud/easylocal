@@ -1,11 +1,12 @@
 #pragma once
 
+// Typed semantic search events and hierarchical neighborhood provenance.
+
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <vector>
 
-// Typed semantic search events and hierarchical neighborhood provenance.
 namespace easylocal::trace
 {
 

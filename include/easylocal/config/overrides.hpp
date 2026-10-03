@@ -1,5 +1,9 @@
 #pragma once
 
+// Textual overrides (path = value) and the text form of parameter values:
+// parse_text_value reads booleans, numbers, strings, arrays and vectors,
+// format_value writes them back in the same syntax.
+
 #include <easylocal/config/parameters.hpp>
 #include <easylocal/utils/detail/meta.hpp>
 

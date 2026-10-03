@@ -1,5 +1,11 @@
 #pragma once
 
+// app: a problem's components gathered under a name, written as a pipe
+// (app("tsp") | solution_manager | neighborhood | runner<...>("name", {...})).
+// An app is bound to an Input (bound_app) to get its services, runs any of its
+// runners by name, and exposes all its parameters as one parameter_set. Tools
+// (Session, TextUI, REST) work on apps.
+
 #include <easylocal/runners/runner.hpp>
 #include <easylocal/solvers.hpp>
 #include <easylocal/utils/detail/attributes.hpp>

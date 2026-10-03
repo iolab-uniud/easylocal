@@ -1,5 +1,9 @@
 #pragma once
 
+// The requirements runners place on a search context: a neighborhood, an
+// evaluation and cost relations, plus the variants needed by each algorithm
+// (enumerable moves, random moves, strict improvement).
+
 #include <easylocal/helpers/neighborhood_explorer.hpp>
 
 #include <concepts>

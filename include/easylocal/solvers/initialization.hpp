@@ -1,5 +1,8 @@
 #pragma once
 
+// How a solver builds the initial solution: initialization::initial or
+// initialization::random, as compile-time tags or as a runtime Mode.
+
 namespace easylocal
 {
 

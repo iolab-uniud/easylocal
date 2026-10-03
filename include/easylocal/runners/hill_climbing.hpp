@@ -1,5 +1,8 @@
 #pragma once
 
+// HillClimbing: random moves accepted when they do not worsen the cost, until
+// too many consecutive proposals bring no strict improvement.
+
 #include <easylocal/config/parameter_set.hpp>
 #include <easylocal/runners/detail/context_concepts.hpp>
 #include <easylocal/runners/search_run.hpp>

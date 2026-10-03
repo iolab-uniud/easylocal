@@ -1,5 +1,9 @@
 #pragma once
 
+// TOML configuration files (optional component, needs toml++): a TOML document
+// read as the path = value overrides of a config::parameter_set, nested tables
+// giving the dotted paths.
+
 #include <easylocal/config/overrides.hpp>
 
 #include <toml++/toml.hpp>

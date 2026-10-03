@@ -1,5 +1,11 @@
 #pragma once
 
+// app_blueprint: a Crow blueprint that exposes an app over HTTP (docs/rest.md).
+// It lists the runners and the parameters, submits runs (each on its own
+// Session, with optional parameter overrides, target and initial solution),
+// reports their state and solution, and cancels them. A codec of the problem
+// turns its Input, Solution and costs into JSON and back.
+
 #include <easylocal/adapters/rest/execution.hpp>
 #include <easylocal/app/session.hpp>
 #include <easylocal/config/overrides.hpp>

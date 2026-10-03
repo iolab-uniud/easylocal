@@ -1,5 +1,15 @@
 #pragma once
 
+// SolutionManager composition: the cost layer, symmetric to the
+// NeighborhoodExplorer delta cost layer (EL3 CostComponent / DeltaCostComponent).
+//
+// cost_layer adds the cost components to the user SolutionManager and
+// evaluates them into a tuple of component values; cost_layer_with_expression
+// computes the cost from those values through the cost expression of the
+// recipe. hard_cost_layer projects a hierarchical cost onto its hard branch for
+// TwoStage, evaluating only the hard components when the expression has a
+// hard_soft root.
+
 #include <easylocal/config/parameter_set.hpp>
 #include <easylocal/cost.hpp>
 #include <easylocal/helpers/detail/cost_expression.hpp>
@@ -15,15 +25,6 @@
 #include <type_traits>
 #include <utility>
 
-// SolutionManager composition: the cost layer, symmetric to the
-// NeighborhoodExplorer delta cost layer (EL3 CostComponent / DeltaCostComponent).
-//
-// cost_layer adds the cost components to the user SolutionManager and
-// evaluates them into a tuple of component values; cost_layer_with_expression
-// computes the cost from those values through the cost expression of the
-// recipe. hard_cost_layer projects a hierarchical cost onto its hard branch for
-// TwoStage, evaluating only the hard components when the expression has a
-// hard_soft root.
 namespace easylocal::detail
 {
 

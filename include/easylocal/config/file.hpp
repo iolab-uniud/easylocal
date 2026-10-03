@@ -1,5 +1,8 @@
 #pragma once
 
+// Plain-text configuration files: one path = value per line, # comments,
+// read as the overrides of a parameter_set.
+
 #include <easylocal/config/overrides.hpp>
 
 #include <cstddef>

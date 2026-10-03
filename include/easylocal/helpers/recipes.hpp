@@ -1,5 +1,11 @@
 #pragma once
 
+// Composition vocabulary for problem-side components: SolutionManager recipes
+// (solution_manager<SM>() | component<C>(), or a cost expression over several
+// components, see <easylocal/cost/expression.hpp>) and neighborhood recipes
+// (neighborhood<NHE>() | delta<C, D>()). Recipes are constructed lazily from the bound
+// Input by runners and apps.
+
 #include <easylocal/config/parameter_set.hpp>
 #include <easylocal/cost.hpp>
 #include <easylocal/helpers/detail/neighborhood_recipe.hpp>
@@ -11,10 +17,6 @@
 #include <type_traits>
 #include <utility>
 
-// Composition vocabulary for problem-side components: SolutionManager recipes
-// (solution_manager<SM>() | component<C>(), or a cost expression over several
-// components, see <easylocal/cost/expression.hpp>) and neighborhood recipes (neighborhood<NHE>() | delta<C, D>()). Recipes are constructed
-// lazily from the bound Input by runners and apps.
 namespace easylocal
 {
 

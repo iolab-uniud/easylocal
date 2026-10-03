@@ -1,5 +1,8 @@
 #pragma once
 
+// Simulated Annealing together with its policies: temperature schedules
+// (runners::temperature) and the Metropolis acceptance criterion.
+
 #include <easylocal/config/parameter_set.hpp>
 #include <easylocal/cost/concepts.hpp>
 #include <easylocal/runners/detail/context_concepts.hpp>
@@ -21,8 +24,6 @@
 #include <utility>
 #include <vector>
 
-// Simulated Annealing together with its policies: temperature schedules
-// (runners::temperature) and the Metropolis acceptance criterion.
 namespace easylocal::runners
 {
 

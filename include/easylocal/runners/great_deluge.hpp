@@ -1,5 +1,8 @@
 #pragma once
 
+// GreatDeluge (Dueck): random moves accepted while their cost stays below a
+// decreasing water level; arithmetic costs only.
+
 #include <easylocal/config/parameter_set.hpp>
 #include <easylocal/cost/concepts.hpp>
 #include <easylocal/runners/detail/context_concepts.hpp>

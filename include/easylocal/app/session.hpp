@@ -1,5 +1,9 @@
 #pragma once
 
+// Session: the state of an interactive session on an app (Input, current
+// solution, selected move, RNG) and the commands that change it. It replaces
+// EasyLocal 3's Tester; the TextUI and the REST adapter are views on it.
+
 #include <easylocal/app/check.hpp>
 #include <easylocal/app/io.hpp>
 #include <easylocal/app/run_parameters.hpp>

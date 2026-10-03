@@ -1,5 +1,8 @@
 #pragma once
 
+// check_cost_component: a cost component evaluates the fixture Solution, and
+// the same value every time.
+
 #include <easylocal/testing/check.hpp>
 #include <easylocal/testing/fixture.hpp>
 

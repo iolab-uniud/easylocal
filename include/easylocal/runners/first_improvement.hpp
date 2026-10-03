@@ -1,5 +1,8 @@
 #pragma once
 
+// FirstImprovement: at each step the first move of the neighborhood that
+// strictly improves the cost is applied, until a local optimum.
+
 #include <easylocal/config/parameter_set.hpp>
 #include <easylocal/runners/detail/context_concepts.hpp>
 #include <easylocal/runners/search_run.hpp>

@@ -1,5 +1,9 @@
 #pragma once
 
+// Builder behind solution_manager<SM>() | <cost expression>: the user
+// SolutionManager with its constructor arguments, and the one cost expression
+// whose leaves are the cost components.
+
 #include <easylocal/config/parameter_set.hpp>
 #include <easylocal/helpers/detail/cost_expression.hpp>
 #include <easylocal/helpers/detail/cost_layer.hpp>
@@ -11,9 +15,6 @@
 #include <type_traits>
 #include <utility>
 
-// Builder behind solution_manager<SM>() | <cost expression>: the user
-// SolutionManager with its constructor arguments, and the one cost expression
-// whose leaves are the cost components.
 namespace easylocal::detail
 {
 

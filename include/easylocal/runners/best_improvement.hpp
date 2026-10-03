@@ -1,5 +1,8 @@
 #pragma once
 
+// BestImprovement (steepest descent): at each step the best move of the whole
+// neighborhood is applied while it strictly improves the cost.
+
 #include <easylocal/config/parameter_set.hpp>
 #include <easylocal/runners/detail/context_concepts.hpp>
 #include <easylocal/runners/search_run.hpp>

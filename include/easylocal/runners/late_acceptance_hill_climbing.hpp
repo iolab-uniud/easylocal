@@ -1,5 +1,9 @@
 #pragma once
 
+// LateAcceptanceHillClimbing (Burke and Bykov): a random move is accepted when
+// it is no worse than the current cost or than the cost of history_length
+// iterations ago.
+
 #include <easylocal/config/parameter_set.hpp>
 #include <easylocal/runners/detail/context_concepts.hpp>
 #include <easylocal/runners/search_run.hpp>

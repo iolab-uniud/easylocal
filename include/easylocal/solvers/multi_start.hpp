@@ -1,5 +1,8 @@
 #pragma once
 
+// solvers::MultiStart: the same runner from several independent initial
+// solutions, keeping the best result.
+
 #include <easylocal/config/parameter_set.hpp>
 #include <easylocal/solvers/initialization.hpp>
 #include <easylocal/solvers/solver.hpp>

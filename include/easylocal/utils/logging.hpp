@@ -1,5 +1,9 @@
 #pragma once
 
+// Logging (easylocal::logging): records with a level and an origin
+// (framework or application) sent to one process-wide sink, stderr unless
+// set_sink replaces it (docs/logging.md).
+
 #include <atomic>
 #include <cstdint>
 #include <cstdio>

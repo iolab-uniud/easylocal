@@ -1,5 +1,10 @@
 #pragma once
 
+// neighborhood_union: several NeighborhoodExplorers on the same Solution
+// combined into one, whose move is a std::variant of theirs. Enumeration visits
+// every child in turn; random moves pick a child by its configurable bias. The
+// deltas, inverses and attributes of the children are forwarded per child.
+
 #include <easylocal/config/parameter_set.hpp>
 #include <easylocal/helpers/detail/evaluation.hpp>
 #include <easylocal/helpers/neighborhood_explorer.hpp>

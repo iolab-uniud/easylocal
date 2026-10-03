@@ -1,5 +1,7 @@
 #pragma once
 
+// Owning in-memory recorder for tests, short traces and in-process analysis.
+
 #include <easylocal/trace/events.hpp>
 #include <easylocal/trace/tracer.hpp>
 
@@ -10,7 +12,6 @@
 #include <variant>
 #include <vector>
 
-// Owning in-memory recorder for tests, short traces and in-process analysis.
 namespace easylocal::trace
 {
 

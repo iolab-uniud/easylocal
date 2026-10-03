@@ -1,13 +1,14 @@
 #pragma once
 
+// SolutionManager: problem-side solution semantics (validity, evaluation,
+// optional construction capabilities).
+
 #include <easylocal/utils/hash.hpp>
 
 #include <concepts>
 #include <cstdint>
 #include <functional>
 
-// SolutionManager: problem-side solution semantics (validity, evaluation,
-// optional construction capabilities).
 namespace easylocal
 {
 

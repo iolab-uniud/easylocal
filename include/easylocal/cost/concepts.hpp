@@ -1,11 +1,12 @@
 #pragma once
 
-#include <concepts>
-#include <type_traits>
-
 // The cost value contract. Algorithms that need a numeric difference between
 // two already-computed costs use cost::delta(candidate, current); operator- is
 // convenience syntax only and cost types may provide delta via ADL.
+
+#include <concepts>
+#include <type_traits>
+
 namespace easylocal::cost
 {
 

@@ -1,15 +1,16 @@
 #pragma once
 
+// Helpers to write the hash of a solution: hash_combine folds the hash of a
+// value into a running hash, hash_range folds every element of a range. The
+// result depends on the order of the values, and on std::hash, so it may
+// differ between standard libraries.
+
 #include <concepts>
 #include <cstddef>
 #include <cstdint>
 #include <functional>
 #include <ranges>
 
-// Helpers to write the hash of a solution: hash_combine folds the hash of a
-// value into a running hash, hash_range folds every element of a range. The
-// result depends on the order of the values, and on std::hash, so it may
-// differ between standard libraries.
 namespace easylocal
 {
 

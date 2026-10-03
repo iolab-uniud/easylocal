@@ -1,5 +1,11 @@
 #pragma once
 
+// Tabu Search: at each iteration the best admissible move of the neighborhood
+// is applied, even when it worsens the cost. A tabu list forbids the moves that
+// would undo recent ones (by the neighborhood's inverse), unless an aspiration
+// criterion lifts the prohibition. The tabu lists live in runners::tabu, the
+// aspiration criteria in runners::aspiration.
+
 #include <easylocal/config/parameter_set.hpp>
 #include <easylocal/cost/concepts.hpp>
 #include <easylocal/helpers/neighborhood_explorer.hpp>
@@ -25,11 +31,6 @@
 #include <utility>
 #include <vector>
 
-// Tabu Search: at each iteration the best admissible move of the neighborhood
-// is applied, even when it worsens the cost. A tabu list forbids the moves that
-// would undo recent ones (by the neighborhood's inverse), unless an aspiration
-// criterion lifts the prohibition. The tabu lists live in runners::tabu, the
-// aspiration criteria in runners::aspiration.
 namespace easylocal::runners
 {
 

@@ -1,5 +1,10 @@
 #pragma once
 
+// Runner: a search algorithm composed with a SolutionManager recipe and a
+// neighborhood recipe (make_runner). Binding it to an Input builds the services
+// (bound_runner) on which the algorithm runs; its parameters (search, cost,
+// neighborhood) are exposed as one parameter_set.
+
 #include <easylocal/config/parameter_set.hpp>
 #include <easylocal/cost.hpp>
 #include <easylocal/cost/semantics.hpp>

@@ -1,5 +1,13 @@
 #pragma once
 
+// Hierarchical hard/soft cost: the hard branch has strict priority, soft is
+// compared only when hard is equivalent. Each branch may itself be scalar or
+// structured (e.g. cost::lexicographic).
+//
+// delta() preserves the hard level: hard better -> -inf, hard worse -> +inf,
+// hard equivalent -> soft delta. This lets delta-based acceptance work on the
+// full cost without ever accepting a hard degradation.
+
 #include <easylocal/cost/concepts.hpp>
 
 #include <compare>
@@ -8,13 +16,6 @@
 #include <type_traits>
 #include <utility>
 
-// Hierarchical hard/soft cost: the hard branch has strict priority, soft is
-// compared only when hard is equivalent. Each branch may itself be scalar or
-// structured (e.g. cost::lexicographic).
-//
-// delta() preserves the hard level: hard better -> -inf, hard worse -> +inf,
-// hard equivalent -> soft delta. This lets delta-based acceptance work on the
-// full cost without ever accepting a hard degradation.
 namespace easylocal::cost
 {
 

@@ -1,5 +1,9 @@
 #pragma once
 
+// fixture: what every contract check runs on, an Input, a valid Solution and
+// the SolutionManager built on the Input, with the options (samples, move
+// limits) and the comparison of the values.
+
 #include <easylocal/helpers/solution_manager.hpp>
 #include <easylocal/testing/check.hpp>
 #include <easylocal/utils/detail/attributes.hpp>

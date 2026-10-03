@@ -1,5 +1,7 @@
 #pragma once
 
+// solvers::LocalSearch: one runner from an initial solution.
+
 #include <easylocal/config/parameter_set.hpp>
 #include <easylocal/solvers/initialization.hpp>
 #include <easylocal/solvers/solver.hpp>

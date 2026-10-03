@@ -1,5 +1,11 @@
 #pragma once
 
+// search_run: one execution of a search algorithm. Algorithms are written in
+// terms of its primitives (evaluate, commit, random_move, ...), while it keeps
+// the counters, the evaluation budget, cancellation, progress, the target cost
+// and the trace events. Also run_options/with() for the caller's options,
+// termination_reason and the result types.
+
 #include <easylocal/cost/pareto.hpp>
 #include <easylocal/helpers/neighborhood_explorer.hpp>
 #include <easylocal/helpers/solution_manager.hpp>
