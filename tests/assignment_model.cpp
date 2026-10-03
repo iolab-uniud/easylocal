@@ -1,9 +1,9 @@
-#include "capacity_delta.hpp"
 #include "neighborhood_explorer.hpp"
 #include "solution_manager.hpp"
+#include "support/assignment_capacity_delta.hpp"
 
-#include <easylocal/helpers/neighborhood_explorer.hpp>
 #include <easylocal/cost.hpp>
+#include <easylocal/helpers/neighborhood_explorer.hpp>
 #include <easylocal/runners/runner.hpp>
 
 #include <compare>
@@ -17,7 +17,7 @@
 namespace
 {
 
-using namespace easylocal::mwe::assignment;
+using namespace assignment;
 
 auto expect(const bool condition, const std::string_view description) -> bool
 {
@@ -34,7 +34,7 @@ auto expect(const bool condition, const std::string_view description) -> bool
 
 int main()
 {
-    using namespace easylocal::mwe::assignment;
+    using namespace assignment;
     using easylocal::component;
     using easylocal::solution_manager;
 
@@ -48,11 +48,10 @@ int main()
         .capacity = {5, 5},
     };
 
-    const auto manager_recipe =
-        solution_manager<AssignmentSolutionManager>()
+    const auto manager_recipe = solution_manager<AssignmentSolutionManager>()
         | easylocal::cost::apply(
-              easylocal::mwe::assignment::CapacityHardCost{},
-              easylocal::component<CapacityCostComponent>());
+            assignment::CapacityHardCost{},
+            easylocal::component<CapacityCostComponent>());
     const auto configured_solution_manager = manager_recipe.construct(instance);
 
     const AssignmentSolution initial{
@@ -90,8 +89,7 @@ int main()
     // Adding the real soft component upgrades the cost from the hard
     // lexicographic branch to the full hierarchical hard/soft model.
     const auto full_recipe =
-        solution_manager<AssignmentSolutionManager>()
-        | easylocal::mwe::assignment::assignment_cost();
+        solution_manager<AssignmentSolutionManager>() | assignment::assignment_cost();
 
     const auto full_manager = full_recipe.construct(instance);
     const auto full_cost = full_manager.evaluate(initial);

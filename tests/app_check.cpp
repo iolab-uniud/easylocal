@@ -1,8 +1,8 @@
-#include "../examples/assignment/capacity_delta.hpp"
 #include "../examples/assignment/cost_components.hpp"
 #include "../examples/assignment/instance.hpp"
 #include "../examples/assignment/neighborhood_explorer.hpp"
 #include "../examples/assignment/solution_manager.hpp"
+#include "support/assignment_capacity_delta.hpp"
 
 #include <easylocal/app/check.hpp>
 #include <easylocal/runners/best_improvement.hpp>
@@ -14,13 +14,12 @@
 namespace
 {
 
-using namespace easylocal::mwe::assignment;
+using namespace assignment;
 
 [[nodiscard]] auto make_application()
 {
-    auto sm =
-        easylocal::solution_manager<AssignmentSolutionManager>()
-        | easylocal::mwe::assignment::assignment_cost();
+    auto sm = easylocal::solution_manager<AssignmentSolutionManager>()
+        | assignment::assignment_cost();
 
     auto nhe =
         easylocal::neighborhood<ReassignJobNeighborhoodExplorer>()
@@ -190,11 +189,10 @@ void real_app_graph_is_checked_with_full_coverage()
 
 void check_fails_on_a_broken_realized_graph()
 {
-    auto sm =
-        easylocal::solution_manager<AssignmentSolutionManager>()
+    auto sm = easylocal::solution_manager<AssignmentSolutionManager>()
         | easylocal::cost::apply(
-              easylocal::mwe::assignment::CapacityHardCost{},
-              easylocal::component<CapacityCostComponent>());
+            assignment::CapacityHardCost{},
+            easylocal::component<CapacityCostComponent>());
 
     auto application =
         easylocal::app("broken-assignment")

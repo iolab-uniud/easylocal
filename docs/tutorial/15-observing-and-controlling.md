@@ -13,7 +13,9 @@ el::trace::memory_recorder<double> trace;
 
 auto descent_search = descent.bind(tsp);
 const auto observed = descent_search.run(
-    descent_search.initial_solution(), rng, el::with(control, trace));
+    descent_search.initial_solution(),
+    rng,
+    el::with(control, trace));
 ```
 
 - `stop.request_stop()`, from any thread, ends the run cooperatively; the result

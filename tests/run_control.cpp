@@ -1,14 +1,14 @@
-#include "../examples/assignment/capacity_delta.hpp"
 #include "../examples/assignment/cost_components.hpp"
 #include "../examples/assignment/instance.hpp"
 #include "../examples/assignment/neighborhood_explorer.hpp"
 #include "../examples/assignment/solution_manager.hpp"
+#include "support/assignment_capacity_delta.hpp"
 
 #include <easylocal/app/app.hpp>
-#include <easylocal/runners/run_control.hpp>
-#include <easylocal/runners/search_run.hpp>
 #include <easylocal/runners/best_improvement.hpp>
 #include <easylocal/runners/first_improvement.hpp>
+#include <easylocal/runners/run_control.hpp>
+#include <easylocal/runners/search_run.hpp>
 
 #include <cassert>
 #include <cstddef>
@@ -18,29 +18,27 @@
 namespace
 {
 
-using namespace easylocal::mwe::assignment;
-
+using namespace assignment;
 
 [[nodiscard]] auto make_application()
 {
-    auto application = easylocal::app("controlled")
-        .with_solution_manager(
-            easylocal::solution_manager<AssignmentSolutionManager>()
-            | easylocal::mwe::assignment::assignment_cost())
-        .with_neighborhood(
-            easylocal::neighborhood<ReassignJobNeighborhoodExplorer>()
-            | easylocal::delta<
-                  CapacityCostComponent,
-                  ReassignCapacityDeltaEvaluator>())
-        .with_runner<easylocal::runners::FirstImprovement>("fi")
-        .with_runner<easylocal::runners::BestImprovement>("bi");
+    auto application =
+        easylocal::app("controlled")
+            .with_solution_manager(
+                easylocal::solution_manager<AssignmentSolutionManager>()
+                | assignment::assignment_cost())
+            .with_neighborhood(
+                easylocal::neighborhood<ReassignJobNeighborhoodExplorer>()
+                | easylocal::delta<
+                    CapacityCostComponent,
+                    ReassignCapacityDeltaEvaluator>())
+            .with_runner<easylocal::runners::FirstImprovement>("fi")
+            .with_runner<easylocal::runners::BestImprovement>("bi");
 
-    application
-        .runner_config<easylocal::runners::FirstImprovement>()
-        .max_evaluations = 100;
-    application
-        .runner_config<easylocal::runners::BestImprovement>()
-        .max_evaluations = 100;
+    application.runner_config<easylocal::runners::FirstImprovement>().max_evaluations =
+        100;
+    application.runner_config<easylocal::runners::BestImprovement>().max_evaluations =
+        100;
     return application;
 }
 

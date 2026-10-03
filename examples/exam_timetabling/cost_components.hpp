@@ -6,31 +6,28 @@
 
 #include <cassert>
 #include <cstddef>
-#include <cstdlib>
 #include <vector>
 
-namespace easylocal::mwe::exam_timetabling
+namespace exam_timetabling
 {
 
 class StudentConflictComponent
 {
 public:
-    explicit StudentConflictComponent(
-        const ExamTimetablingInstance& instance) noexcept
+    explicit StudentConflictComponent(const ExamTimetablingInstance& instance)
         : instance_{instance}
     {
     }
 
-    [[nodiscard]]
-    auto evaluate(const ExamTimetable& solution) const -> penalty_type
+    penalty_type evaluate(const ExamTimetable& solution) const
     {
         assert(solution.timeslot_by_exam.size() == instance_.exam_count);
         penalty_type penalty = 0;
 
         for (const auto& conflict : instance_.conflicts)
         {
-            if (solution.timeslot_by_exam[conflict.first] ==
-                solution.timeslot_by_exam[conflict.second])
+            if (solution.timeslot_by_exam[conflict.first]
+                == solution.timeslot_by_exam[conflict.second])
             {
                 penalty += conflict.students;
             }
@@ -41,10 +38,7 @@ public:
 
     // A delta evaluator may be co-located with its component when that is the
     // clearest expression. Separate evaluator types remain the primary model.
-    [[nodiscard]]
-    auto delta_evaluate(
-        const ExamTimetable& solution,
-        const MoveExam& move) const noexcept -> penalty_type
+    penalty_type delta_evaluate(const ExamTimetable& solution, const MoveExam& move) const
     {
         assert(move.exam < solution.timeslot_by_exam.size());
         const auto source = solution.timeslot_by_exam[move.exam];
@@ -87,14 +81,12 @@ private:
 class ConsecutiveExamComponent
 {
 public:
-    explicit ConsecutiveExamComponent(
-        const ExamTimetablingInstance& instance) noexcept
+    explicit ConsecutiveExamComponent(const ExamTimetablingInstance& instance)
         : instance_{instance}
     {
     }
 
-    [[nodiscard]]
-    auto evaluate(const ExamTimetable& solution) const -> penalty_type
+    penalty_type evaluate(const ExamTimetable& solution) const
     {
         assert(solution.timeslot_by_exam.size() == instance_.exam_count);
         penalty_type penalty = 0;
@@ -121,14 +113,12 @@ private:
 class TimeslotLoadComponent
 {
 public:
-    explicit TimeslotLoadComponent(
-        const ExamTimetablingInstance& instance) noexcept
+    explicit TimeslotLoadComponent(const ExamTimetablingInstance& instance)
         : instance_{instance}
     {
     }
 
-    [[nodiscard]]
-    auto evaluate(const ExamTimetable& solution) const -> penalty_type
+    penalty_type evaluate(const ExamTimetable& solution) const
     {
         assert(solution.timeslot_by_exam.size() == instance_.exam_count);
         std::vector<penalty_type> load(instance_.timeslot_count, 0);
@@ -152,4 +142,4 @@ private:
     const ExamTimetablingInstance& instance_;
 };
 
-} // namespace easylocal::mwe::exam_timetabling
+} // namespace exam_timetabling

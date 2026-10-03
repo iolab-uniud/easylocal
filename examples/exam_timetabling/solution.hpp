@@ -4,14 +4,14 @@
 
 #include <vector>
 
-namespace easylocal::mwe::exam_timetabling
+namespace exam_timetabling
 {
 
 struct ExamTimetable
 {
     std::vector<timeslot_id> timeslot_by_exam;
 
-    auto operator==(const ExamTimetable&) const -> bool = default;
+    bool operator==(const ExamTimetable&) const = default;
 };
 
-} // namespace easylocal::mwe::exam_timetabling
+} // namespace exam_timetabling

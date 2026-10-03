@@ -61,7 +61,7 @@ struct AppParameters
             easylocal::config::field<"seed", &AppParameters::seed>("RNG seed"));
     }
 
-    auto validate() const -> easylocal::config::validation_result;
+    easylocal::config::validation_result validate() const;
 };
 
 // easylocal::config::root(easylocal::config::named<"application">(app_parameters),

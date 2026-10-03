@@ -4,10 +4,10 @@
 #include "neighborhood_explorer.hpp"
 #include "solution_manager.hpp"
 
-#include <easylocal/cost.hpp>
 #include <easylocal/config/cli.hpp>
 #include <easylocal/config/setup.hpp>
 #include <easylocal/config/tree.hpp>
+#include <easylocal/cost.hpp>
 #include <easylocal/runners/runner.hpp>
 #include <easylocal/runners/simulated_annealing.hpp>
 
@@ -16,7 +16,6 @@
 #include <filesystem>
 #include <iostream>
 #include <random>
-#include <type_traits>
 
 #ifndef EASYLOCAL_EXAM_MWE_INSTANCE_FILE
 #error "EASYLOCAL_EXAM_MWE_INSTANCE_FILE must name the example instance"
@@ -25,29 +24,23 @@
 namespace
 {
 
-using namespace easylocal::mwe::exam_timetabling;
+using namespace exam_timetabling;
 
 struct AppParameters
 {
     std::filesystem::path instance_file;
     std::uint64_t seed{2026U};
 
-    [[nodiscard]]
     static consteval auto parameter_schema()
     {
         return easylocal::config::fields(
-            easylocal::config::field<
-                "instance_file",
-                &AppParameters::instance_file>(
-                    "Exam-timetabling instance file"),
-            easylocal::config::field<
-                "seed",
-                &AppParameters::seed>(
-                    "Pseudo-random generator seed"));
+            easylocal::config::field<"instance_file", &AppParameters::instance_file>(
+                "Exam-timetabling instance file"),
+            easylocal::config::field<"seed", &AppParameters::seed>(
+                "Pseudo-random generator seed"));
     }
 
-    [[nodiscard]]
-    auto validate() const noexcept -> easylocal::config::validation_result
+    easylocal::config::validation_result validate() const
     {
         if (instance_file.empty())
         {
@@ -58,29 +51,6 @@ struct AppParameters
         return easylocal::config::validation_result::success();
     }
 };
-
-template<class Tree>
-void print_configuration(const Tree& tree)
-{
-    std::cout << "configuration:\n";
-    easylocal::config::for_each_config_parameter(
-        tree,
-        [](const auto path, const auto, const auto&) {
-            using path_type = std::remove_cvref_t<decltype(path)>;
-            bool first = true;
-            std::cout << "  ";
-            for (const auto segment : path_type::segments())
-            {
-                if (!first)
-                {
-                    std::cout << '.';
-                }
-                std::cout << segment;
-                first = false;
-            }
-            std::cout << '\n';
-        });
-}
 
 void print_timetable(const ExamTimetable& solution)
 {
@@ -100,7 +70,7 @@ void print_timetable(const ExamTimetable& solution)
 
 int main(int argc, char* argv[])
 {
-    using namespace easylocal::mwe::exam_timetabling;
+    using namespace exam_timetabling;
     using easylocal::component;
     using easylocal::runners::temperature::FixedLength;
     using easylocal::runners::temperature::FixedLengthParameters;
@@ -109,7 +79,6 @@ int main(int argc, char* argv[])
     {
         AppParameters app_parameters{
             .instance_file = EASYLOCAL_EXAM_MWE_INSTANCE_FILE,
-            .seed = 2026U,
         };
         FixedLengthParameters temperature_parameters{
             .initial_temperature = 100.0,
@@ -118,26 +87,21 @@ int main(int argc, char* argv[])
             .max_iterations = 30,
         };
 
-        auto sm =
-            easylocal::solution_manager<ExamTimetablingSolutionManager>()
-                .with_cost(easylocal::cost::sum(
-                    component<StudentConflictComponent>() * 1000,
-                    component<ConsecutiveExamComponent>() * 10,
-                    component<TimeslotLoadComponent>()));
+        auto sm = easylocal::solution_manager<ExamTimetablingSolutionManager>().with_cost(
+            easylocal::cost::sum(
+                component<StudentConflictComponent>() * 1000,
+                component<ConsecutiveExamComponent>() * 10,
+                component<TimeslotLoadComponent>()));
 
         auto nhe =
             easylocal::neighborhood<MoveExamNeighborhoodExplorer>()
                 .with_delta<StudentConflictComponent>()
-                .with_delta<
-                    ConsecutiveExamComponent,
-                    ConsecutiveExamDeltaEvaluator>()
-                .with_delta<
-                    TimeslotLoadComponent,
-                    TimeslotLoadDeltaEvaluator>();
+                .with_delta<ConsecutiveExamComponent, ConsecutiveExamDeltaEvaluator>();
+        // TimeslotLoadComponent has no delta (see cost_deltas.hpp): EasyLocal
+        // re-evaluates it on a candidate solution.
 
         auto runner =
-            easylocal::make_runner<
-                easylocal::runners::SimulatedAnnealing<FixedLength>>(
+            easylocal::make_runner<easylocal::runners::SimulatedAnnealing<FixedLength>>(
                 FixedLength{temperature_parameters})
                 .with_solution_manager(sm)
                 .with_neighborhood(nhe);
@@ -160,16 +124,12 @@ int main(int argc, char* argv[])
             return 2;
         }
 
-        print_configuration(configuration);
-
         const auto instance = load_instance(app_parameters.instance_file);
-        const ExamTimetable initial_solution{
-            .timeslot_by_exam = {0, 0, 1, 2},
-        };
+        auto search = runner.bind(instance);
+        const auto initial_solution = search.initial_solution();
 
-        std::mt19937 rng{static_cast<std::mt19937::result_type>(
-            app_parameters.seed)};
-        const auto result = runner.bind(instance).run(initial_solution, rng);
+        std::mt19937_64 rng{app_parameters.seed};
+        const auto result = search.run(initial_solution, rng);
 
         std::cout << "instance:          " << app_parameters.instance_file << '\n';
         std::cout << "initial timetable: ";

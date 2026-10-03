@@ -6,75 +6,54 @@
 #include <easylocal/helpers/neighborhood_explorer.hpp>
 
 #include <algorithm>
-#include <cassert>
 #include <cstddef>
-#include <iterator>
 #include <optional>
 #include <random>
 #include <string_view>
 #include <utility>
 
-namespace easylocal::mwe::tsp
+namespace tsp
 {
 
 class TwoOptNeighborhoodExplorer
     : public easylocal::neighborhood_explorer_base<TspSolutionManager, TwoOptMove>
 {
 private:
-    [[nodiscard]]
-    static constexpr auto valid_edge_pair(
-        const std::size_t city_count,
-        const std::size_t first_edge,
-        const std::size_t second_edge) noexcept -> bool
+    static constexpr bool valid_edge_pair(
+        std::size_t city_count,
+        std::size_t first_edge,
+        std::size_t second_edge)
     {
-        return first_edge < second_edge &&
-               second_edge < city_count &&
-               second_edge != first_edge + 1 &&
-               !(first_edge == 0 && second_edge + 1 == city_count);
+        return first_edge < second_edge && second_edge < city_count
+            && second_edge != first_edge + 1
+            && !(first_edge == 0 && second_edge + 1 == city_count);
     }
 
-    [[nodiscard]]
-    static constexpr auto move_count(const std::size_t city_count) noexcept
-        -> std::size_t
+    static constexpr std::size_t move_count(std::size_t city_count)
     {
-        return city_count >= 4
-            ? city_count * (city_count - 3) / 2
-            : std::size_t{0};
+        return city_count >= 4 ? city_count * (city_count - 3) / 2 : std::size_t{0};
     }
 
 public:
     using neighborhood_explorer_base::neighborhood_explorer_base;
 
-    [[nodiscard]]
-    static constexpr auto name() noexcept -> std::string_view
+    static constexpr std::string_view name()
     {
         return "2-opt";
     }
-    [[nodiscard]]
-    auto is_valid(
-        const Tour& solution,
-        const TwoOptMove& move) const noexcept -> bool
+
+    bool is_valid(const Tour& solution, const TwoOptMove& move) const
     {
-        return valid_edge_pair(
-            solution.tour.size(),
-            move.first_edge,
-            move.second_edge);
+        return valid_edge_pair(solution.tour.size(), move.first_edge, move.second_edge);
     }
 
-    [[nodiscard]]
-    auto first_move(
-        const Tour& solution,
-        TwoOptMove& move) const noexcept -> bool
+    bool first_move(const Tour& solution, TwoOptMove& move) const
     {
         return find_from(solution.tour.size(), 0, 1, move);
     }
 
-    [[nodiscard]]
-    auto next_move(
-        const Tour& solution,
-        TwoOptMove& move) const noexcept -> bool
+    bool next_move(const Tour& solution, TwoOptMove& move) const
     {
-
         return find_from(
             solution.tour.size(),
             move.first_edge,
@@ -87,10 +66,7 @@ public:
     // edge, adjacent edges, or the first and the last edge). Every valid pair
     // is equally likely; with n cities about 3 draws in n are rejected.
     template<std::uniform_random_bit_generator RNG>
-    [[nodiscard]]
-    auto random_move(
-        const Tour& solution,
-        RNG& rng) const -> std::optional<TwoOptMove>
+    std::optional<TwoOptMove> random_move(const Tour& solution, RNG& rng) const
     {
         const auto city_count = solution.tour.size();
         if (move_count(city_count) == 0)
@@ -117,42 +93,28 @@ public:
         }
     }
 
-    void make_move(
-        Tour& solution,
-        const TwoOptMove& move) const noexcept
+    void make_move(Tour& solution, const TwoOptMove& move) const
     {
-
         const auto first = static_cast<std::ptrdiff_t>(move.first_edge + 1);
         const auto last = static_cast<std::ptrdiff_t>(move.second_edge + 1);
-        std::reverse(
-            solution.tour.begin() + first,
-            solution.tour.begin() + last);
+        std::reverse(solution.tour.begin() + first, solution.tour.begin() + last);
     }
 
 private:
-    [[nodiscard]]
-    static auto find_from(
-        const std::size_t city_count,
-        const std::size_t initial_first_edge,
-        const std::size_t initial_second_edge,
-        TwoOptMove& move) noexcept -> bool
+    static bool find_from(
+        std::size_t city_count,
+        std::size_t initial_first_edge,
+        std::size_t initial_second_edge,
+        TwoOptMove& move)
     {
-        for (auto first_edge = initial_first_edge;
-             first_edge < city_count;
-             ++first_edge)
+        for (auto first_edge = initial_first_edge; first_edge < city_count; ++first_edge)
         {
-            const auto second_begin = first_edge == initial_first_edge
-                ? initial_second_edge
-                : first_edge + 1;
+            const auto second_begin =
+                first_edge == initial_first_edge ? initial_second_edge : first_edge + 1;
 
-            for (auto second_edge = second_begin;
-                 second_edge < city_count;
-                 ++second_edge)
+            for (auto second_edge = second_begin; second_edge < city_count; ++second_edge)
             {
-                if (valid_edge_pair(
-                        city_count,
-                        first_edge,
-                        second_edge))
+                if (valid_edge_pair(city_count, first_edge, second_edge))
                 {
                     move = TwoOptMove{
                         .first_edge = first_edge,
@@ -165,7 +127,6 @@ private:
 
         return false;
     }
-
 };
 
-} // namespace easylocal::mwe::tsp
+} // namespace tsp

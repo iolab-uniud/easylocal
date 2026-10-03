@@ -20,7 +20,8 @@ int main()
     // [tui] ----------------------------------------------------------------
     auto application = el::app("tsp")
         | (el::solution_manager<TourManager>() | el::component<TourLength>())
-        | (el::neighborhood<TwoOptExplorer>() | el::delta<TourLength, TwoOptLengthDelta>())
+        | (el::neighborhood<TwoOptExplorer>()
+            | el::delta<TourLength, TwoOptLengthDelta>())
         | el::runner<runners::FirstImprovement>("fi")
         | el::runner<runners::SimulatedAnnealing<Classic>>("sa");
 

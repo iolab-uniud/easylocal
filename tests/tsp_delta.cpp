@@ -26,7 +26,7 @@ auto expect(const bool condition, const std::string_view description) -> bool
 
 int main()
 {
-    using namespace easylocal::mwe::tsp;
+    using namespace tsp;
 
     bool ok = true;
 

@@ -8,7 +8,7 @@
 
 namespace
 {
-using namespace easylocal::mwe::assignment;
+using namespace assignment;
 
 template<class Builder>
 concept can_add_assignment_solution_manager = requires(Builder builder) {

@@ -16,17 +16,38 @@ instance has five cities:
 
 <!-- snippet: tutorial/tsp.hpp:instance -->
 ```cpp
-[[nodiscard]] inline auto five_cities() -> Tsp
+inline Tsp five_cities()
 {
     return Tsp{
         .cities = 5,
-        .distance = {
-            0, 2, 9, 10, 7,
-            2, 0, 6, 4, 3,
-            9, 6, 0, 8, 5,
-            10, 4, 8, 0, 6,
-            7, 3, 5, 6, 0,
-        },
+        .distance =
+            {
+                0,
+                2,
+                9,
+                10,
+                7,
+                2,
+                0,
+                6,
+                4,
+                3,
+                9,
+                6,
+                0,
+                8,
+                5,
+                10,
+                4,
+                8,
+                0,
+                6,
+                7,
+                3,
+                5,
+                6,
+                0,
+            },
     };
 }
 ```

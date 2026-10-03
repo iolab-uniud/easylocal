@@ -54,7 +54,7 @@ auto collect(Range&& range) -> std::vector<observed_move>
 
 int main()
 {
-    using namespace easylocal::mwe::tsp;
+    using namespace tsp;
 
     bool ok = true;
 

@@ -25,8 +25,8 @@ them; the hooks below are optional and used only by the tools.
 Free functions found by ADL are accepted instead of the member hooks:
 
 ```cpp
-auto read_input(std::type_identity<Input>, std::istream&) -> Input;
-auto read_solution(const Input&, std::istream&) -> Solution;
+Input read_input(std::type_identity<Input>, std::istream&);
+Solution read_solution(const Input&, std::istream&);
 void write_solution(const Input&, const Solution&, std::ostream&);
 ```
 

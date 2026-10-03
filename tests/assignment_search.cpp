@@ -1,10 +1,10 @@
-#include <easylocal/runners/runner.hpp>
-#include <easylocal/runners/best_improvement.hpp>
-#include <easylocal/runners/first_improvement.hpp>
-
-#include "capacity_delta.hpp"
 #include "neighborhood_explorer.hpp"
 #include "solution_manager.hpp"
+#include "support/assignment_capacity_delta.hpp"
+
+#include <easylocal/runners/best_improvement.hpp>
+#include <easylocal/runners/first_improvement.hpp>
+#include <easylocal/runners/runner.hpp>
 
 #include <cstdint>
 #include <functional>
@@ -18,7 +18,7 @@
 namespace
 {
 
-using namespace easylocal::mwe::assignment;
+using namespace assignment;
 using easylocal::runners::BestImprovement;
 using easylocal::runners::FirstImprovement;
 
@@ -26,9 +26,9 @@ using easylocal::runners::FirstImprovement;
 auto default_solution_manager_recipe()
 {
     return easylocal::solution_manager<AssignmentSolutionManager>()
-         | easylocal::cost::apply(
-              easylocal::mwe::assignment::CapacityHardCost{},
-              easylocal::component<CapacityCostComponent>());
+        | easylocal::cost::apply(
+            assignment::CapacityHardCost{},
+            easylocal::component<CapacityCostComponent>());
 }
 
 [[nodiscard]]
@@ -175,7 +175,7 @@ auto expect(const bool condition, const std::string_view description) -> bool
 
 int main()
 {
-    using namespace easylocal::mwe::assignment;
+    using namespace assignment;
     using easylocal::Runner;
     using easylocal::neighborhood;
     using easylocal::solution_manager;

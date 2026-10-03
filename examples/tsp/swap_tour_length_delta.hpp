@@ -10,21 +10,18 @@
 #include <cassert>
 #include <cstddef>
 
-namespace easylocal::mwe::tsp
+namespace tsp
 {
 
 class SwapTourLengthDeltaEvaluator
 {
 public:
-    explicit SwapTourLengthDeltaEvaluator(const TspInstance& instance) noexcept
+    explicit SwapTourLengthDeltaEvaluator(const TspInstance& instance)
         : instance_{instance}
     {
     }
 
-    [[nodiscard]]
-    auto delta_evaluate(
-        const Tour& solution,
-        const SwapCitiesMove& move) const noexcept -> TourLengthDelta
+    TourLengthDelta delta_evaluate(const Tour& solution, const SwapCitiesMove& move) const
     {
         assert(solution.tour.size() == instance_.city_count);
         assert(move.first_position < move.second_position);
@@ -62,9 +59,7 @@ public:
             }
 
             const auto next = (edge + 1) % size;
-            removed += instance_.distance(
-                solution.tour[edge],
-                solution.tour[next]);
+            removed += instance_.distance(solution.tour[edge], solution.tour[next]);
             added += instance_.distance(
                 city_after_swap(solution, move, edge),
                 city_after_swap(solution, move, next));
@@ -76,11 +71,10 @@ public:
     }
 
 private:
-    [[nodiscard]]
-    static auto city_after_swap(
+    static city_id city_after_swap(
         const Tour& solution,
         const SwapCitiesMove& move,
-        const std::size_t position) noexcept -> city_id
+        std::size_t position)
     {
         if (position == move.first_position)
         {
@@ -96,4 +90,4 @@ private:
     const TspInstance& instance_;
 };
 
-} // namespace easylocal::mwe::tsp
+} // namespace tsp

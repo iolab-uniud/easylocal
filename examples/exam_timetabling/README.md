@@ -10,11 +10,14 @@ expression
 - `ConsecutiveExamComponent`: students with exams in consecutive timeslots;
 - `TimeslotLoadComponent`: squared timeslot load, used as a simple balance term.
 
-All three components have matching delta evaluators for `MoveExam`. The MWE
-shows both supported spellings: `StudentConflictComponent` co-locates its
-`delta_evaluate(...)` and is attached with `delta<StudentConflictComponent>()`,
-while the other two components use the primary separate-evaluator form
-`delta<Component, DeltaEvaluator>()`. The final `penalty_type` is therefore
+Two components have delta evaluators for `MoveExam`, in both supported
+spellings: `StudentConflictComponent` co-locates its `delta_evaluate(...)` and
+is attached with `delta<StudentConflictComponent>()`, while
+`ConsecutiveExamComponent` uses the separate-evaluator form
+`delta<Component, DeltaEvaluator>()`. Both look only at the conflicts of the
+moved exam. `TimeslotLoadComponent` has none: its change needs the load of two
+timeslots, and counting loads visits every exam, which is what a full
+evaluation does; the framework evaluates it on a candidate solution instead. The final `penalty_type` is therefore
 already the SA energy: no Cost-to-Energy adapter or projection is required by
 the standard `MetropolisAcceptance` path.
 
@@ -30,9 +33,9 @@ Assignment demonstrates the equivalent pipe spelling.
 and RNG seed, while `FixedLengthParameters` remains beside the framework
 temperature policy that it configures. The example builds and traverses a
 `config::root(...)` with `application.*` and the runner-provided
-`solver.search.temperature.*` paths, loads `instances/small.exam`, then runs a
-fully delta-enabled Simulated Annealing search with an explicit deterministic
-RNG.
+`solver.search.temperature.*` paths, loads `instances/small.exam`, then runs
+Simulated Annealing from the SolutionManager's `initial_solution()` with an
+explicitly seeded RNG.
 
 With the default top-level build:
 

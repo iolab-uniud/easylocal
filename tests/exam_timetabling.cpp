@@ -1,16 +1,18 @@
-#include <easylocal/cost.hpp>
-#include <easylocal/helpers/neighborhood_explorer.hpp>
-#include <easylocal/helpers/recipes.hpp>
 #include "cost_components.hpp"
 #include "cost_deltas.hpp"
 #include "neighborhood_explorer.hpp"
 #include "solution_manager.hpp"
+#include "support/exam_timeslot_load_delta.hpp"
+
+#include <easylocal/cost.hpp>
+#include <easylocal/helpers/neighborhood_explorer.hpp>
+#include <easylocal/helpers/recipes.hpp>
 
 #include <cstddef>
 #include <iostream>
 #include <string_view>
 
-namespace exam = easylocal::mwe::exam_timetabling;
+namespace exam = exam_timetabling;
 
 namespace
 {

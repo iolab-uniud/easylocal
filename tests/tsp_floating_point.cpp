@@ -14,7 +14,7 @@
 namespace
 {
 
-using namespace easylocal::mwe::tsp;
+using namespace tsp;
 using easylocal::test_support::ApproximateTolerance;
 using easylocal::test_support::approximately_equal;
 using easylocal::test_support::definitely_less;
@@ -100,7 +100,7 @@ auto evaluate_move(
 
 int main()
 {
-    using namespace easylocal::mwe::tsp;
+    using namespace tsp;
 
     bool ok = true;
 

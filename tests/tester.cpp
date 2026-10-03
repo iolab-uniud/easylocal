@@ -1,11 +1,11 @@
-#include "../examples/assignment/capacity_delta.hpp"
 #include "../examples/assignment/cost_components.hpp"
 #include "../examples/assignment/neighborhood_explorer.hpp"
 #include "../examples/assignment/solution_manager.hpp"
+#include "support/assignment_capacity_delta.hpp"
 
 #include <easylocal/app/app.hpp>
-#include <easylocal/runners/first_improvement.hpp>
 #include <easylocal/app/tester.hpp>
+#include <easylocal/runners/first_improvement.hpp>
 
 #include <cassert>
 #include <concepts>
@@ -18,8 +18,7 @@
 namespace
 {
 
-using namespace easylocal::mwe::assignment;
-
+using namespace assignment;
 
 struct RandomOnlyInput
 {
@@ -104,9 +103,8 @@ auto make_random_only_application()
 [[nodiscard]]
 auto make_application()
 {
-    auto sm =
-        easylocal::solution_manager<AssignmentSolutionManager>()
-        | easylocal::mwe::assignment::assignment_cost();
+    auto sm = easylocal::solution_manager<AssignmentSolutionManager>()
+        | assignment::assignment_cost();
 
     auto nhe =
         easylocal::neighborhood<ReassignJobNeighborhoodExplorer>()
@@ -129,9 +127,8 @@ auto make_application()
 [[nodiscard]]
 auto make_multi_runner_application()
 {
-    auto sm =
-        easylocal::solution_manager<AssignmentSolutionManager>()
-        | easylocal::mwe::assignment::assignment_cost();
+    auto sm = easylocal::solution_manager<AssignmentSolutionManager>()
+        | assignment::assignment_cost();
 
     auto nhe =
         easylocal::neighborhood<ReassignJobNeighborhoodExplorer>()

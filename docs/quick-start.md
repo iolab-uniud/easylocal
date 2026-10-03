@@ -28,7 +28,6 @@ library.
 #include <cstddef>
 #include <iostream>
 #include <numeric>
-#include <utility>
 #include <vector>
 
 // 1. The problem: Input, Solution and Move are plain values.
@@ -39,9 +38,7 @@ struct Tsp
     std::size_t cities{};
     std::vector<double> distance{}; // cities x cities, row-major
 
-    // [[nodiscard]]: discarding the result of a query is a compiler warning,
-    // since calling it without using the value is certainly a mistake.
-    [[nodiscard]] auto d(std::size_t from, std::size_t to) const -> double
+    double d(std::size_t from, std::size_t to) const
     {
         return distance[from * cities + to];
     }
@@ -66,16 +63,16 @@ class TourManager : public easylocal::solution_manager_base<Tsp, Tour>
 public:
     using solution_manager_base::solution_manager_base;
 
-    [[nodiscard]] auto initial_solution() const -> Tour
+    Tour initial_solution() const
     {
-        Tour tour{std::vector<std::size_t>(input_.cities)};
-        std::iota(tour.order.begin(), tour.order.end(), std::size_t{0});
+        Tour tour{std::vector<std::size_t>(input().cities)};
+        std::ranges::iota(tour.order, std::size_t{0});
         return tour;
     }
 
-    [[nodiscard]] auto is_valid(const Tour& tour) const -> bool
+    bool is_valid(const Tour& tour) const
     {
-        return tour.order.size() == input_.cities;
+        return tour.order.size() == input().cities;
     }
 };
 
@@ -85,7 +82,7 @@ class TourLength
 public:
     explicit TourLength(const Tsp& tsp) : tsp_{tsp} {}
 
-    [[nodiscard]] auto evaluate(const Tour& tour) const -> double
+    double evaluate(const Tour& tour) const
     {
         double length = 0.0;
         for (std::size_t k = 0; k < tour.order.size(); ++k)
@@ -100,27 +97,26 @@ private:
 };
 
 // 4. NeighborhoodExplorer: which moves exist and how they change a solution.
-class TwoOptExplorer
-    : public easylocal::neighborhood_explorer_base<TourManager, TwoOpt>
+class TwoOptExplorer : public easylocal::neighborhood_explorer_base<TourManager, TwoOpt>
 {
 public:
     using neighborhood_explorer_base::neighborhood_explorer_base;
 
-    [[nodiscard]] auto moves(const Tour& tour) const -> std::vector<TwoOpt>
+    // The moves, one at a time: a generator yields each move when the runner
+    // asks for the next one, so the neighborhood is never stored in memory.
+    easylocal::generator<TwoOpt> moves(const Tour& tour) const
     {
-        std::vector<TwoOpt> result;
         const auto n = tour.order.size();
         for (std::size_t i = 0; i + 2 < n; ++i)
         {
             for (std::size_t j = i + 2; j < n && !(i == 0 && j + 1 == n); ++j)
             {
-                result.push_back({i, j});
+                co_yield TwoOpt{i, j};
             }
         }
-        return result;
     }
 
-    [[nodiscard]] auto is_valid(const Tour& tour, const TwoOpt& move) const -> bool
+    bool is_valid(const Tour& tour, const TwoOpt& move) const
     {
         return move.i + 2 <= move.j && move.j < tour.order.size();
     }
@@ -137,13 +133,34 @@ int main()
 {
     const Tsp tsp{
         .cities = 5,
-        .distance = {
-            0, 2, 9, 10, 7,
-            2, 0, 6, 4, 3,
-            9, 6, 0, 8, 5,
-            10, 4, 8, 0, 6,
-            7, 3, 5, 6, 0,
-        },
+        .distance =
+            {
+                0,
+                2,
+                9,
+                10,
+                7,
+                2,
+                0,
+                6,
+                4,
+                3,
+                9,
+                6,
+                0,
+                8,
+                5,
+                10,
+                4,
+                8,
+                0,
+                6,
+                7,
+                3,
+                5,
+                6,
+                0,
+            },
     };
 
     // 5. Compose a runner: algorithm | SolutionManager recipe | neighborhood.
@@ -151,7 +168,7 @@ int main()
         easylocal::make_runner<easylocal::runners::FirstImprovement>(
             easylocal::runners::FirstImprovementParameters{})
         | (easylocal::solution_manager<TourManager>()
-           | easylocal::component<TourLength>())
+            | easylocal::component<TourLength>())
         | easylocal::neighborhood<TwoOptExplorer>();
 
     // 6. Bind it to an Input and run it from a solution.
@@ -196,18 +213,18 @@ length 26 after 9 evaluations
    Move.
 2. `TourManager` says which tours are valid and builds an initial one.
 3. `TourLength` is a cost component; being the only one, its value is the cost.
-4. `TwoOptExplorer` lists the 2-opt moves of a tour and applies them.
+4. `TwoOptExplorer` enumerates the 2-opt moves of a tour and applies them.
 5. `make_runner<FirstImprovement>(...) | sm | nhe` composes the algorithm with
    the recipes of the services.
 6. `bind(tsp)` materializes the services for this Input and returns the bound
    runner, here `search`; `run` searches from the initial tour until a local
    optimum, since no evaluation budget was set.
 
-Every member that only computes a value is marked `[[nodiscard]]`: calling
-`tour_manager.is_valid(tour);` and ignoring the answer compiles, but is
-certainly a bug, and the attribute turns it into a compiler warning. The
-annotation is optional and changes nothing at run time; the examples use it
-because EasyLocal's own build treats warnings as errors.
+`moves` is a *generator*: a function whose `co_yield` hands one move to the
+runner and pauses until the runner asks for the next. A neighborhood is never
+stored in memory, and First Improvement, which stops at the first improving
+move, never generates the rest. `easylocal::generator<T>` is `std::generator<T>`
+where the standard library provides it.
 
 ## Next steps
 

@@ -6,26 +6,22 @@
 #include <cassert>
 #include <cstddef>
 
-namespace easylocal::mwe::tsp
+namespace tsp
 {
 
 struct TourLengthValue
 {
     distance_type total{};
 
-    auto operator==(const TourLengthValue&) const -> bool = default;
+    bool operator==(const TourLengthValue&) const = default;
 };
 
 class TourLengthComponent
 {
 public:
-    explicit TourLengthComponent(const TspInstance& instance) noexcept
-        : instance_{instance}
-    {
-    }
+    explicit TourLengthComponent(const TspInstance& instance) : instance_{instance} {}
 
-    [[nodiscard]]
-    auto evaluate(const Tour& solution) const -> TourLengthValue
+    TourLengthValue evaluate(const Tour& solution) const
     {
         assert(solution.tour.size() == instance_.city_count);
 
@@ -58,12 +54,10 @@ private:
 // length itself.
 struct TourLengthCost
 {
-    [[nodiscard]]
-    constexpr auto operator()(const TourLengthValue value) const noexcept
-        -> distance_type
+    constexpr distance_type operator()(TourLengthValue value) const
     {
         return value.total;
     }
 };
 
-} // namespace easylocal::mwe::tsp
+} // namespace tsp

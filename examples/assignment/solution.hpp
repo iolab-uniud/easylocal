@@ -10,7 +10,7 @@
 #include <string>
 #include <vector>
 
-namespace easylocal::mwe::assignment
+namespace assignment
 {
 
 using machine_id = std::size_t;
@@ -19,9 +19,7 @@ struct AssignmentSolution
 {
     std::vector<machine_id> assignment;
 
-    [[nodiscard]]
-    static auto read(const AssignmentInstance& instance, std::istream& in)
-        -> AssignmentSolution
+    static AssignmentSolution read(const AssignmentInstance& instance, std::istream& in)
     {
         AssignmentSolution solution{
             .assignment = std::vector<machine_id>(instance.demand.size()),
@@ -49,9 +47,9 @@ struct AssignmentSolution
         out << '\n';
     }
 
-    auto operator==(const AssignmentSolution&) const -> bool = default;
+    bool operator==(const AssignmentSolution&) const = default;
 
-    [[nodiscard]] auto describe() const -> std::string
+    std::string describe() const
     {
         std::ostringstream out;
         out << "jobs=" << assignment.size() << "  assignment=[";
@@ -68,4 +66,4 @@ struct AssignmentSolution
     }
 };
 
-} // namespace easylocal::mwe::assignment
+} // namespace assignment

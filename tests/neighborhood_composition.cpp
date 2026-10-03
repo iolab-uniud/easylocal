@@ -1,15 +1,15 @@
+#include "move.hpp"
+#include "neighborhood_explorer.hpp"
+#include "solution_manager.hpp"
+#include "support/assignment_capacity_delta.hpp"
+
 #include <easylocal/easylocal.hpp>
 #include <easylocal/runners/best_improvement.hpp>
 #include <easylocal/runners/first_improvement.hpp>
 
-#include "move.hpp"
-#include "neighborhood_explorer.hpp"
-#include "solution_manager.hpp"
-#include "capacity_delta.hpp"
-
+#include <array>
 #include <concepts>
 #include <cstddef>
-#include <array>
 #include <iostream>
 #include <limits>
 #include <optional>
@@ -24,7 +24,7 @@
 namespace
 {
 
-using namespace easylocal::mwe::assignment;
+using namespace assignment;
 using easylocal::runners::BestImprovement;
 using easylocal::runners::FirstImprovement;
 
@@ -32,9 +32,9 @@ using easylocal::runners::FirstImprovement;
 auto default_solution_manager_recipe()
 {
     return easylocal::solution_manager<AssignmentSolutionManager>()
-         | easylocal::cost::apply(
-              easylocal::mwe::assignment::CapacityHardCost{},
-              easylocal::component<CapacityCostComponent>());
+        | easylocal::cost::apply(
+            assignment::CapacityHardCost{},
+            easylocal::component<CapacityCostComponent>());
 }
 
 struct SwapMove
@@ -155,24 +155,17 @@ public:
             return {};
         }
 
-        const auto first_load =
-            detail::machine_load(instance_, solution, first_machine);
-        const auto second_load =
-            detail::machine_load(instance_, solution, second_machine);
-        const auto first_before = detail::overload(
-            first_load,
-            instance_.capacity[first_machine]);
-        const auto second_before = detail::overload(
-            second_load,
-            instance_.capacity[second_machine]);
+        const auto first_load = machine_load(instance_, solution, first_machine);
+        const auto second_load = machine_load(instance_, solution, second_machine);
+        const auto first_before = overload(first_load, instance_.capacity[first_machine]);
+        const auto second_before =
+            overload(second_load, instance_.capacity[second_machine]);
 
-        const auto first_after = detail::overload(
-            first_load - instance_.demand[move.first] +
-                instance_.demand[move.second],
+        const auto first_after = overload(
+            first_load - instance_.demand[move.first] + instance_.demand[move.second],
             instance_.capacity[first_machine]);
-        const auto second_after = detail::overload(
-            second_load - instance_.demand[move.second] +
-                instance_.demand[move.first],
+        const auto second_after = overload(
+            second_load - instance_.demand[move.second] + instance_.demand[move.first],
             instance_.capacity[second_machine]);
 
         return CapacityDelta{

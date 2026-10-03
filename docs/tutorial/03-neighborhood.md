@@ -5,33 +5,32 @@ move is valid and how it changes a solution.
 
 <!-- snippet: tutorial/tsp.hpp:neighborhood -->
 ```cpp
-class TwoOptExplorer
-    : public easylocal::neighborhood_explorer_base<TourManager, TwoOpt>
+class TwoOptExplorer : public easylocal::neighborhood_explorer_base<TourManager, TwoOpt>
 {
 public:
     using neighborhood_explorer_base::neighborhood_explorer_base;
 
-    [[nodiscard]] static auto name() -> std::string_view { return "2-opt"; }
-
-    [[nodiscard]] auto moves(const Tour& tour) const -> std::vector<TwoOpt>
+    static std::string_view name()
     {
-        std::vector<TwoOpt> result;
+        return "2-opt";
+    }
+
+    easylocal::generator<TwoOpt> moves(const Tour& tour) const
+    {
         const auto n = tour.order.size();
         for (std::size_t i = 0; i + 2 < n; ++i)
         {
             for (std::size_t j = i + 2; j < n && !(i == 0 && j + 1 == n); ++j)
             {
-                result.push_back({i, j});
+                co_yield TwoOpt{i, j};
             }
         }
-        return result;
     }
 
     // Uniform by rejection: two positions drawn independently, ordered, and
     // drawn again while they are not a 2-opt move.
     template<std::uniform_random_bit_generator RNG>
-    [[nodiscard]] auto random_move(const Tour& tour, RNG& rng) const
-        -> std::optional<TwoOpt>
+    std::optional<TwoOpt> random_move(const Tour& tour, RNG& rng) const
     {
         const auto n = tour.order.size();
         if (n < 4)
@@ -54,7 +53,7 @@ public:
         }
     }
 
-    [[nodiscard]] auto is_valid(const Tour& tour, const TwoOpt& move) const -> bool
+    bool is_valid(const Tour& tour, const TwoOpt& move) const
     {
         return move.i + 2 <= move.j && move.j < tour.order.size();
     }
@@ -70,9 +69,11 @@ public:
 
 - `is_valid(solution, move)` and `make_move(solution, move)` are required.
   `is_valid` checks the move against an already valid solution.
-- `moves(solution)` lists the moves for *deterministic* algorithms such as
-  First Improvement. It may return any input range whose elements convert to
-  the move type: a container, a view, a generator.
+- `moves(solution)` enumerates the moves for *deterministic* algorithms such
+  as First Improvement. Here it is a generator, which yields the moves one at a
+  time while the runner consumes them; any input range whose elements convert
+  to the move type works as well. Avoid filling a container: the whole
+  neighborhood would be built even when the runner stops at its first move.
 - `random_move(solution, rng)` samples one move for *stochastic* algorithms
   such as Simulated Annealing, returning `std::nullopt` when there is none. It
   need not be uniform, but should be cheap: it runs once per proposal. Drawing
@@ -88,8 +89,9 @@ optional and non-virtual.
 
 > **Choice: range or cursor.** Instead of `moves`, an explorer may provide the
 > EasyLocal 3 cursor `first_move(solution, move)` / `next_move(solution, move)`.
-> Use it when enumerating lazily is natural and you want to avoid materializing
-> all moves; when both exist, the cursor is used.
+> It enumerates lazily as a generator does, without a coroutine frame, at the
+> price of keeping the position in the move itself; when both exist, the cursor
+> is used.
 
 Attach the explorer with a recipe, `neighborhood<TwoOptExplorer>()`. In debug
 builds the framework asserts that the solution and the move are valid before

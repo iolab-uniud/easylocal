@@ -7,8 +7,11 @@ Each check takes a small fixture: an Input, a Solution and the types under test.
 ```cpp
 struct TspCheckData
 {
-    static auto instance() -> tutorial::Tsp { return tutorial::five_cities(); }
-    static auto solution(const tutorial::Tsp&) -> tutorial::Tour
+    static tutorial::Tsp instance()
+    {
+        return tutorial::five_cities();
+    }
+    static tutorial::Tour solution(const tutorial::Tsp&)
     {
         return tutorial::Tour{{0, 1, 2, 3, 4}};
     }

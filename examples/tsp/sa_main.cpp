@@ -17,8 +17,6 @@
 #include <filesystem>
 #include <iostream>
 #include <random>
-#include <string>
-#include <type_traits>
 
 #ifndef EASYLOCAL_TSP_MWE_INSTANCE_FILE
 #error "EASYLOCAL_TSP_MWE_INSTANCE_FILE must name the example instance"
@@ -27,29 +25,23 @@
 namespace
 {
 
-using namespace easylocal::mwe::tsp;
+using namespace tsp;
 
 struct AppParameters
 {
     std::filesystem::path instance_file;
     std::uint64_t seed{2026U};
 
-    [[nodiscard]]
     static consteval auto parameter_schema()
     {
         return easylocal::config::fields(
-            easylocal::config::field<
-                "instance_file",
-                &AppParameters::instance_file>(
-                    "TSP instance file"),
-            easylocal::config::field<
-                "seed",
-                &AppParameters::seed>(
-                    "Pseudo-random generator seed"));
+            easylocal::config::field<"instance_file", &AppParameters::instance_file>(
+                "TSP instance file"),
+            easylocal::config::field<"seed", &AppParameters::seed>(
+                "Pseudo-random generator seed"));
     }
 
-    [[nodiscard]]
-    auto validate() const noexcept -> easylocal::config::validation_result
+    easylocal::config::validation_result validate() const
     {
         if (instance_file.empty())
         {
@@ -60,29 +52,6 @@ struct AppParameters
         return easylocal::config::validation_result::success();
     }
 };
-
-template<class Tree>
-void print_configuration(const Tree& tree)
-{
-    std::cout << "configuration:\n";
-    easylocal::config::for_each_config_parameter(
-        tree,
-        [](const auto path, const auto, const auto&) {
-            using path_type = std::remove_cvref_t<decltype(path)>;
-            bool first = true;
-            std::cout << "  ";
-            for (const auto segment : path_type::segments())
-            {
-                if (!first)
-                {
-                    std::cout << '.';
-                }
-                std::cout << segment;
-                first = false;
-            }
-            std::cout << '\n';
-        });
-}
 
 void print_tour(const Tour& solution)
 {
@@ -105,8 +74,7 @@ void print_tour(const Tour& solution)
 
 int main(int argc, char* argv[])
 {
-    using namespace easylocal::mwe::tsp;
-    using easylocal::NeighborhoodUnionParameters;
+    using namespace tsp;
     using easylocal::component;
     using easylocal::delta;
     using easylocal::neighborhood;
@@ -121,7 +89,6 @@ int main(int argc, char* argv[])
     {
         AppParameters app_parameters{
             .instance_file = EASYLOCAL_TSP_MWE_INSTANCE_FILE,
-            .seed = 2026U,
         };
         FixedLengthParameters temperature_parameters{
             .initial_temperature = 8.0,
@@ -129,30 +96,21 @@ int main(int argc, char* argv[])
             .cooling_rate = 0.75,
             .max_iterations = 200,
         };
-        NeighborhoodUnionParameters<2> neighborhood_parameters{
-            .random_biases = {3.0, 1.0},
-        };
-
         // TourLengthValue is a domain value: TourLengthCost maps it to the
         // scalar cost explicitly.
         auto runner =
             easylocal::make_runner<SimulatedAnnealing<FixedLength>>(
                 FixedLength{temperature_parameters})
             | (solution_manager<TspSolutionManager>()
-               | easylocal::cost::apply(
-                     TourLengthCost{}, component<TourLengthComponent>()))
+                | easylocal::cost::apply(
+                    TourLengthCost{},
+                    component<TourLengthComponent>()))
             | (neighborhood_union(
                    neighborhood<TwoOptNeighborhoodExplorer>()
-                       | delta<
-                             TourLengthComponent,
-                             TwoOptTourLengthDeltaEvaluator>(),
+                       | delta<TourLengthComponent, TwoOptTourLengthDeltaEvaluator>(),
                    neighborhood<SwapCitiesNeighborhoodExplorer>()
-                       | delta<
-                             TourLengthComponent,
-                             SwapTourLengthDeltaEvaluator>())
-               | random_biases(
-                     neighborhood_parameters.random_biases[0],
-                     neighborhood_parameters.random_biases[1]));
+                       | delta<TourLengthComponent, SwapTourLengthDeltaEvaluator>())
+                | random_biases(3.0, 1.0));
 
         const auto configuration = easylocal::config::root(
             easylocal::config::named<"application">(app_parameters),
@@ -172,16 +130,12 @@ int main(int argc, char* argv[])
             return 2;
         }
 
-        print_configuration(configuration);
-
         const auto instance = load_instance(app_parameters.instance_file);
-        const Tour initial_solution{
-            .tour = {0, 2, 4, 1, 5, 3},
-        };
+        auto search = runner.bind(instance);
+        const auto initial_solution = search.initial_solution();
 
-        std::mt19937 rng{static_cast<std::mt19937::result_type>(
-            app_parameters.seed)};
-        const auto result = runner.bind(instance).run(initial_solution, rng);
+        std::mt19937_64 rng{app_parameters.seed};
+        const auto result = search.run(initial_solution, rng);
 
         std::cout << "instance:     " << app_parameters.instance_file << '\n';
         std::cout << "initial tour: ";

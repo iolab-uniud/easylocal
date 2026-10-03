@@ -9,7 +9,7 @@
 #include <cstdint>
 #include <vector>
 
-namespace easylocal::mwe::assignment
+namespace assignment
 {
 
 // Typed component values are useful when the type itself carries domain meaning.
@@ -18,59 +18,33 @@ struct CapacityValue
     std::int64_t overloaded_machines{};
     std::int64_t total_overload{};
 
-    auto operator==(const CapacityValue&) const -> bool = default;
+    bool operator==(const CapacityValue&) const = default;
 };
 
-namespace detail
-{
-
-[[nodiscard]]
-inline auto machine_load(
-    const AssignmentInstance& instance,
-    const AssignmentSolution& solution,
-    const machine_id machine) -> quantity_type
-{
-    assert(solution.assignment.size() == instance.demand.size());
-
-    quantity_type load = 0;
-
-    for (std::size_t job = 0; job < solution.assignment.size(); ++job)
-    {
-        if (solution.assignment[job] == machine)
-        {
-            load += instance.demand[job];
-        }
-    }
-
-    return load;
-}
-
-[[nodiscard]]
-inline auto overload(
-    const quantity_type load,
-    const quantity_type capacity) noexcept -> quantity_type
+// The part of a machine's load beyond its capacity.
+inline quantity_type overload(quantity_type load, quantity_type capacity)
 {
     return std::max(quantity_type{0}, load - capacity);
 }
 
-} // namespace detail
+// No delta evaluator is bound to these components: the change of a machine's
+// load needs the loads, and computing them means scanning every job, which is
+// what a full evaluation does. EasyLocal then evaluates each move on a
+// candidate solution, which costs the same and needs no code.
 
 class CapacityCostComponent
 {
 public:
-    explicit CapacityCostComponent(const AssignmentInstance& instance) noexcept
+    explicit CapacityCostComponent(const AssignmentInstance& instance)
         : instance_{instance}
     {
     }
 
-    [[nodiscard]]
-    auto evaluate(const AssignmentSolution& solution) const -> CapacityValue
+    CapacityValue evaluate(const AssignmentSolution& solution) const
     {
         assert(solution.assignment.size() == instance_.demand.size());
 
-        std::vector<quantity_type> load(
-            instance_.capacity.size(),
-            quantity_type{0});
+        std::vector<quantity_type> load(instance_.capacity.size(), quantity_type{0});
 
         for (std::size_t job = 0; job < solution.assignment.size(); ++job)
         {
@@ -83,7 +57,7 @@ public:
         for (std::size_t machine = 0; machine < load.size(); ++machine)
         {
             const auto machine_overload =
-                detail::overload(load[machine], instance_.capacity[machine]);
+                overload(load[machine], instance_.capacity[machine]);
 
             value.overloaded_machines += machine_overload > 0 ? 1 : 0;
             value.total_overload += machine_overload;
@@ -99,15 +73,14 @@ private:
 class LoadImbalanceCostComponent
 {
 public:
-    explicit LoadImbalanceCostComponent(const AssignmentInstance& instance) noexcept
+    explicit LoadImbalanceCostComponent(const AssignmentInstance& instance)
         : instance_{instance}
     {
     }
 
     // A component value does not need a wrapper: plain arithmetic types are
     // equally valid when a distinct semantic type would add no useful signal.
-    [[nodiscard]]
-    auto evaluate(const AssignmentSolution& solution) const -> std::int64_t
+    std::int64_t evaluate(const AssignmentSolution& solution) const
     {
         assert(solution.assignment.size() == instance_.demand.size());
 
@@ -116,9 +89,7 @@ public:
             return 0;
         }
 
-        std::vector<quantity_type> load(
-            instance_.capacity.size(),
-            quantity_type{0});
+        std::vector<quantity_type> load(instance_.capacity.size(), quantity_type{0});
 
         for (std::size_t job = 0; job < solution.assignment.size(); ++job)
         {
@@ -126,12 +97,12 @@ public:
             load[solution.assignment[job]] += instance_.demand[job];
         }
 
-        const auto [minimum, maximum] = std::minmax_element(load.begin(), load.end());
-        return static_cast<std::int64_t>(*maximum - *minimum);
+        const auto [minimum, maximum] = std::ranges::minmax_element(load);
+        return *maximum - *minimum;
     }
 
 private:
     const AssignmentInstance& instance_;
 };
 
-} // namespace easylocal::mwe::assignment
+} // namespace assignment

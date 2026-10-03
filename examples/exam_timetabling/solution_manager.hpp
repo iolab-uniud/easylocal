@@ -1,36 +1,45 @@
 #pragma once
 
-#include "cost_components.hpp"
 #include "instance.hpp"
 #include "solution.hpp"
 
 #include <easylocal/helpers/solution_manager.hpp>
 
 #include <algorithm>
-#include <cstdint>
+#include <cstddef>
+#include <vector>
 
-namespace easylocal::mwe::exam_timetabling
+namespace exam_timetabling
 {
 
 class ExamTimetablingSolutionManager
-    : public easylocal::solution_manager_base<
-          ExamTimetablingInstance,
-          ExamTimetable>
+    : public easylocal::solution_manager_base<ExamTimetablingInstance, ExamTimetable>
 {
 public:
     using solution_manager_base::solution_manager_base;
 
-    [[nodiscard]]
-    auto is_valid(const ExamTimetable& solution) const noexcept -> bool
+    // Exams spread over the timeslots in turn: exam e in timeslot e mod T.
+    ExamTimetable initial_solution() const
     {
-        return solution.timeslot_by_exam.size() == input_.exam_count &&
-               std::ranges::all_of(
-                   solution.timeslot_by_exam,
-                   [this](const timeslot_id timeslot) {
-                       return timeslot < input_.timeslot_count;
-                   });
+        ExamTimetable solution{
+            .timeslot_by_exam = std::vector<timeslot_id>(input().exam_count),
+        };
+        for (std::size_t exam = 0; exam < solution.timeslot_by_exam.size(); ++exam)
+        {
+            solution.timeslot_by_exam[exam] = exam % input().timeslot_count;
+        }
+        return solution;
     }
 
+    bool is_valid(const ExamTimetable& solution) const
+    {
+        return solution.timeslot_by_exam.size() == input().exam_count
+            && std::ranges::all_of(
+                solution.timeslot_by_exam,
+                [this](timeslot_id timeslot) {
+                    return timeslot < input().timeslot_count;
+                });
+    }
 };
 
-} // namespace easylocal::mwe::exam_timetabling
+} // namespace exam_timetabling

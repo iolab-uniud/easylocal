@@ -3,7 +3,7 @@
 #include <cstddef>
 #include <string>
 
-namespace easylocal::mwe::tsp
+namespace tsp
 {
 
 struct SwapCitiesMove
@@ -11,13 +11,13 @@ struct SwapCitiesMove
     std::size_t first_position;
     std::size_t second_position;
 
-    [[nodiscard]] auto describe() const -> std::string
+    std::string describe() const
     {
-        return "position " + std::to_string(first_position) +
-               " <-> position " + std::to_string(second_position);
+        return "position " + std::to_string(first_position) + " <-> position "
+            + std::to_string(second_position);
     }
 
-    auto operator==(const SwapCitiesMove&) const -> bool = default;
+    bool operator==(const SwapCitiesMove&) const = default;
 };
 
-} // namespace easylocal::mwe::tsp
+} // namespace tsp

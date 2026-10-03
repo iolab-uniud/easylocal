@@ -139,8 +139,8 @@ The framework cost models (`easylocal::cost`) provide:
 full `hierarchical` cost. Because the hard branch is written in the
 expression, TwoStage evaluates only the capacity component in its first stage.
 The two branches remain independently typed and may themselves be sums or
-lexicographic costs. `assignment_cost()` in `cost.hpp` returns this expression
-for the tests.
+lexicographic costs. `assignment_cost()` in `cost.hpp` returns this expression;
+the programs and the tests use it.
 
 The generic cost models are part of the public framework API in
 `<easylocal/cost.hpp>` under `easylocal::cost`. The Assignment
@@ -149,53 +149,26 @@ its hard cost.
 
 ## Delta evaluation
 
-The assignment MWE also prototypes a separate delta evaluator for the pair
-`CapacityCostComponent x ReassignJobMove`:
+The example binds no delta evaluator, on purpose. The change of the capacity
+component under a reassignment depends on the loads of two machines, and
+without stored loads computing them means scanning every job: a delta would
+cost as much as the full evaluation. The neighborhood is therefore attached
+without deltas,
 
 ```cpp
-ReassignCapacityDeltaEvaluator::delta_evaluate(solution, move)
-    -> CapacityDelta
+auto nhe = neighborhood<ReassignJobNeighborhoodExplorer>();
 ```
 
-`CapacityDelta` is a distinct structured, materialized value containing changes
-to both `overloaded_machines` and `total_overload`. Applying it follows the
-contract:
+and the framework evaluates each move on a candidate `AssignmentSolution`,
+built once per move and reused for every component. If the move is accepted,
+that candidate is promoted instead of applying the move again.
 
-```text
-component_value_after = component_value_before + delta
-```
-
-The tests check this property against full component evaluation for every move
-in the small deterministic assignment neighborhood.
-
-Delta evaluators are attached to a neighborhood recipe explicitly by component
-type rather than being intrinsic metadata of the neighborhood or move type:
-
-```cpp
-auto nhe =
-    neighborhood<ReassignJobNeighborhoodExplorer>()
-    | delta<CapacityCostComponent, ReassignCapacityDeltaEvaluator>();
-```
-
-The runner's internal evaluation facility matches active component types against
-the deltas attached to that particular neighborhood recipe. A delta attached to
-a component that is not active in the paired solution-manager recipe is a
-compile-time error at bind. If an active component has no matching delta, the
-framework materializes the candidate `AssignmentSolution` once and reuses it
-for every fallback full-component evaluation. If all components have deltas, a rejected
-candidate never requires `make_move`; an accepted candidate applies the move
-exactly once. If fallback materialization was already necessary, acceptance
-promotes that materialized candidate instead of applying the move again.
-
-The search algorithms see only eager materialized evaluations and `cost_type`
-values. They do not select deltas, distinguish fallback components, or manage
-candidate materialization. `evaluate_move` computes a candidate without changing
-the incumbent, while `commit` is the operation that promotes the accepted
-candidate. Candidate storage is specialized at compile time: an all-delta path
-keeps the `ReassignJobMove`, while any fallback path keeps the already
-materialized `AssignmentSolution`, so neither path pays for an unused
-`std::optional<AssignmentSolution>`.
-Laziness, caching and proxy lifetime/invalidation remain postponed.
+When a component does have a cheap delta, it is attached by component type to
+the neighborhood recipe, `| delta<Component, DeltaEvaluator>()`; the TSP and
+Exam Timetabling examples do so. A structured delta for this capacity
+component, with `operator+(CapacityValue, CapacityDelta)`, lives in the tests
+(`tests/support/assignment_capacity_delta.hpp`), where it exercises typed
+deltas against a lexicographic hard cost.
 
 ## Responsibilities
 
@@ -213,13 +186,6 @@ Laziness, caching and proxy lifetime/invalidation remain postponed.
 `CapacityCostComponent`
 : Full evaluator for one structured cost component, bound to an
   `AssignmentInstance`.
-
-`CapacityDelta`
-: Materialized structured change applicable to `CapacityValue` with `operator+`.
-
-`ReassignCapacityDeltaEvaluator`
-: Separate evaluator specialized for the capacity component and assignment
-  reassign move.
 
 `HardCost`
 : Lexicographic materialized hard branch `(total_overload, overloaded_machines)`.
@@ -348,16 +314,10 @@ auto manager =
             cost::apply(CapacityHardCost{}, component<CapacityCostComponent>()),
             component<LoadImbalanceCostComponent>()));
 
-auto nhe =
-    neighborhood<ReassignJobNeighborhoodExplorer>()
-        .with_delta<
-            CapacityCostComponent,
-            ReassignCapacityDeltaEvaluator>();
-
 auto runner =
     make_runner<runners::FirstImprovement>(params)
         .with_solution_manager(manager)
-        .with_neighborhood(nhe);
+        .with_neighborhood(neighborhood<ReassignJobNeighborhoodExplorer>());
 ```
 
 The equivalent pipeline syntax is also supported:
@@ -369,10 +329,7 @@ auto runner =
        | cost::hard_soft(
              cost::apply(CapacityHardCost{}, component<CapacityCostComponent>()),
              component<LoadImbalanceCostComponent>()))
-    | (neighborhood<ReassignJobNeighborhoodExplorer>()
-       | delta<
-             CapacityCostComponent,
-             ReassignCapacityDeltaEvaluator>());
+    | neighborhood<ReassignJobNeighborhoodExplorer>();
 
 auto solver = make_solver<solvers::TwoStage>(
     std::move(runner),

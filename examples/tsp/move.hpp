@@ -3,7 +3,7 @@
 #include <cstddef>
 #include <string>
 
-namespace easylocal::mwe::tsp
+namespace tsp
 {
 
 struct TwoOptMove
@@ -11,13 +11,13 @@ struct TwoOptMove
     std::size_t first_edge;
     std::size_t second_edge;
 
-    [[nodiscard]] auto describe() const -> std::string
+    std::string describe() const
     {
-        return "edge " + std::to_string(first_edge) +
-               " <-> edge " + std::to_string(second_edge);
+        return "edge " + std::to_string(first_edge) + " <-> edge "
+            + std::to_string(second_edge);
     }
 
-    auto operator==(const TwoOptMove&) const -> bool = default;
+    bool operator==(const TwoOptMove&) const = default;
 };
 
-} // namespace easylocal::mwe::tsp
+} // namespace tsp

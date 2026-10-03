@@ -11,7 +11,7 @@ class TourLength
 public:
     explicit TourLength(const Tsp& tsp) : tsp_{tsp} {}
 
-    [[nodiscard]] auto evaluate(const Tour& tour) const -> double
+    double evaluate(const Tour& tour) const
     {
         double length = 0.0;
         for (std::size_t k = 0; k < tour.order.size(); ++k)
@@ -37,11 +37,10 @@ Components are attached to the SolutionManager with a **recipe**:
 
 <!-- snippet: tutorial/main.cpp:recipes -->
 ```cpp
-auto sm = el::solution_manager<TourManager>()
-        | el::component<TourLength>();
+auto sm = el::solution_manager<TourManager>() | el::component<TourLength>();
 
-auto nhe = el::neighborhood<TwoOptExplorer>()
-         | el::delta<TourLength, TwoOptLengthDelta>();
+auto nhe =
+    el::neighborhood<TwoOptExplorer>() | el::delta<TourLength, TwoOptLengthDelta>();
 ```
 
 `solution_manager<TourManager>() | component<TourLength>()` describes a
@@ -57,8 +56,7 @@ cost. A weighted sum:
 <!-- snippet: tutorial/main.cpp:cost-expression -->
 ```cpp
 auto weighted_sm = el::solution_manager<TourManager>()
-                 | el::cost::sum(el::component<TourLength>(),
-                                 el::component<MaxEdge>() * 10.0);
+    | el::cost::sum(el::component<TourLength>(), el::component<MaxEdge>() * 10.0);
 ```
 
 `MaxEdge` is a second component, the longest edge of the tour:
@@ -70,7 +68,7 @@ class MaxEdge
 public:
     explicit MaxEdge(const Tsp& tsp) : tsp_{tsp} {}
 
-    [[nodiscard]] auto evaluate(const Tour& tour) const -> double
+    double evaluate(const Tour& tour) const
     {
         double longest = 0.0;
         for (std::size_t k = 0; k < tour.order.size(); ++k)

@@ -10,8 +10,7 @@ class TwoOptLengthDelta
 public:
     explicit TwoOptLengthDelta(const Tsp& tsp) : tsp_{tsp} {}
 
-    [[nodiscard]] auto delta_evaluate(const Tour& tour, const TwoOpt& move) const
-        -> double
+    double delta_evaluate(const Tour& tour, const TwoOpt& move) const
     {
         const auto n = tour.order.size();
         const auto a = tour.order[move.i];
@@ -42,6 +41,13 @@ auto nhe = el::neighborhood<TwoOptExplorer>()
 - Coverage can be partial: components without a delta for a neighborhood are
   re-evaluated on a candidate solution. When every component has one, no
   candidate solution is built.
+
+> **When not to write a delta.** A delta pays off when it looks at the part of
+> the solution the move touches. If computing it means looking at the whole
+> solution, for instance recounting the load of every machine to know the load
+> of two, it costs as much as a full evaluation: leave the component without a
+> delta and let EasyLocal evaluate it on the candidate solution, with no code
+> to write and check. The Assignment and Exam Timetabling examples do so.
 
 > **Choice: separate or co-located.** A delta evaluator can be a separate class,
 > as here, or a `delta_evaluate(solution, move)` member of the component itself,

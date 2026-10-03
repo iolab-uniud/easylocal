@@ -11,7 +11,7 @@ struct Tsp
     std::size_t cities{};
     std::vector<double> distance{}; // cities x cities, row-major
 
-    [[nodiscard]] auto d(std::size_t from, std::size_t to) const -> double
+    double d(std::size_t from, std::size_t to) const
     {
         return distance[from * cities + to];
     }
@@ -21,7 +21,7 @@ struct Tour
 {
     std::vector<std::size_t> order;
 
-    auto operator==(const Tour&) const -> bool = default; // used by Tester checks
+    bool operator==(const Tour&) const = default; // used by Tester checks
 };
 
 struct TwoOpt
@@ -29,7 +29,7 @@ struct TwoOpt
     std::size_t i; // reverse the segment order[i + 1 .. j]
     std::size_t j;
 
-    auto operator==(const TwoOpt&) const -> bool = default; // used by Tester checks
+    bool operator==(const TwoOpt&) const = default; // used by Tester checks
 };
 ```
 
@@ -53,31 +53,31 @@ class TourManager : public easylocal::solution_manager_base<Tsp, Tour>
 public:
     using solution_manager_base::solution_manager_base;
 
-    [[nodiscard]] auto initial_solution() const -> Tour
+    Tour initial_solution() const
     {
-        Tour tour{std::vector<std::size_t>(input_.cities)};
-        std::iota(tour.order.begin(), tour.order.end(), std::size_t{0});
+        Tour tour{std::vector<std::size_t>(input().cities)};
+        std::ranges::iota(tour.order, std::size_t{0});
         return tour;
     }
 
     template<std::uniform_random_bit_generator RNG>
-    [[nodiscard]] auto random_solution(RNG& rng) const -> Tour
+    Tour random_solution(RNG& rng) const
     {
         auto tour = initial_solution();
         std::shuffle(tour.order.begin(), tour.order.end(), rng);
         return tour;
     }
 
-    [[nodiscard]] auto is_valid(const Tour& tour) const -> bool
+    bool is_valid(const Tour& tour) const
     {
-        return tour.order.size() == input_.cities;
+        return tour.order.size() == input().cities;
     }
 };
 ```
 
 - `easylocal::solution_manager_base<Input, Solution>` provides the `input_type`
-  and `solution_type` aliases, the constructor, `input()` and the protected
-  `input_` reference. It is optional and non-virtual; a hand-written class with
+  and `solution_type` aliases, the constructor and `input()`, the bound
+  Input. It is optional and non-virtual; a hand-written class with
   the same members works as well.
 - `is_valid` is required and checks *structural* validity: the representation is
   well formed. A solution that violates problem constraints is still valid; such

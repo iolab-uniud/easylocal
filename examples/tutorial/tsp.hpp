@@ -30,7 +30,7 @@ struct Tsp
     std::size_t cities{};
     std::vector<double> distance{}; // cities x cities, row-major
 
-    [[nodiscard]] auto d(std::size_t from, std::size_t to) const -> double
+    double d(std::size_t from, std::size_t to) const
     {
         return distance[from * cities + to];
     }
@@ -40,7 +40,7 @@ struct Tour
 {
     std::vector<std::size_t> order;
 
-    auto operator==(const Tour&) const -> bool = default; // used by Tester checks
+    bool operator==(const Tour&) const = default; // used by Tester checks
 };
 
 struct TwoOpt
@@ -48,13 +48,13 @@ struct TwoOpt
     std::size_t i; // reverse the segment order[i + 1 .. j]
     std::size_t j;
 
-    auto operator==(const TwoOpt&) const -> bool = default; // used by Tester checks
+    bool operator==(const TwoOpt&) const = default; // used by Tester checks
 };
 // [model] ------------------------------------------------------------------
 
 // [io] ---------------------------------------------------------------------
 // Optional hooks, found by ADL, that let the tools load, save and display.
-[[nodiscard]] inline auto read_input(std::type_identity<Tsp>, std::istream& in) -> Tsp
+inline Tsp read_input(std::type_identity<Tsp>, std::istream& in)
 {
     Tsp tsp; // "n d00 d01 ... d(n-1)(n-1)"
     if (!(in >> tsp.cities))
@@ -72,7 +72,7 @@ struct TwoOpt
     return tsp;
 }
 
-[[nodiscard]] inline auto read_solution(const Tsp& tsp, std::istream& in) -> Tour
+inline Tour read_solution(const Tsp& tsp, std::istream& in)
 {
     Tour tour{std::vector<std::size_t>(tsp.cities)};
     for (auto& city : tour.order)
@@ -94,7 +94,7 @@ inline void write_solution(const Tsp&, const Tour& tour, std::ostream& out)
     out << '\n';
 }
 
-[[nodiscard]] inline auto describe(const Tour& tour) -> std::string
+inline std::string describe(const Tour& tour)
 {
     std::string text;
     for (const auto city : tour.order)
@@ -104,7 +104,7 @@ inline void write_solution(const Tsp&, const Tour& tour, std::ostream& out)
     return text;
 }
 
-[[nodiscard]] inline auto describe(const TwoOpt& move) -> std::string
+inline std::string describe(const TwoOpt& move)
 {
     return "2-opt(" + std::to_string(move.i) + ", " + std::to_string(move.j) + ")";
 }
@@ -116,24 +116,24 @@ class TourManager : public easylocal::solution_manager_base<Tsp, Tour>
 public:
     using solution_manager_base::solution_manager_base;
 
-    [[nodiscard]] auto initial_solution() const -> Tour
+    Tour initial_solution() const
     {
-        Tour tour{std::vector<std::size_t>(input_.cities)};
-        std::iota(tour.order.begin(), tour.order.end(), std::size_t{0});
+        Tour tour{std::vector<std::size_t>(input().cities)};
+        std::ranges::iota(tour.order, std::size_t{0});
         return tour;
     }
 
     template<std::uniform_random_bit_generator RNG>
-    [[nodiscard]] auto random_solution(RNG& rng) const -> Tour
+    Tour random_solution(RNG& rng) const
     {
         auto tour = initial_solution();
         std::shuffle(tour.order.begin(), tour.order.end(), rng);
         return tour;
     }
 
-    [[nodiscard]] auto is_valid(const Tour& tour) const -> bool
+    bool is_valid(const Tour& tour) const
     {
-        return tour.order.size() == input_.cities;
+        return tour.order.size() == input().cities;
     }
 };
 // [solution-manager] -------------------------------------------------------
@@ -144,7 +144,7 @@ class TourLength
 public:
     explicit TourLength(const Tsp& tsp) : tsp_{tsp} {}
 
-    [[nodiscard]] auto evaluate(const Tour& tour) const -> double
+    double evaluate(const Tour& tour) const
     {
         double length = 0.0;
         for (std::size_t k = 0; k < tour.order.size(); ++k)
@@ -165,7 +165,7 @@ class MaxEdge
 public:
     explicit MaxEdge(const Tsp& tsp) : tsp_{tsp} {}
 
-    [[nodiscard]] auto evaluate(const Tour& tour) const -> double
+    double evaluate(const Tour& tour) const
     {
         double longest = 0.0;
         for (std::size_t k = 0; k < tour.order.size(); ++k)
@@ -183,34 +183,33 @@ private:
 // [second-component] -------------------------------------------------------
 
 // [neighborhood] -----------------------------------------------------------
-class TwoOptExplorer
-    : public easylocal::neighborhood_explorer_base<TourManager, TwoOpt>
+class TwoOptExplorer : public easylocal::neighborhood_explorer_base<TourManager, TwoOpt>
 {
 public:
     using neighborhood_explorer_base::neighborhood_explorer_base;
 
-    [[nodiscard]] static auto name() -> std::string_view { return "2-opt"; }
-
-    [[nodiscard]] auto moves(const Tour& tour) const -> std::vector<TwoOpt>
+    static std::string_view name()
     {
-        std::vector<TwoOpt> result;
+        return "2-opt";
+    }
+
+    easylocal::generator<TwoOpt> moves(const Tour& tour) const
+    {
         const auto n = tour.order.size();
         for (std::size_t i = 0; i + 2 < n; ++i)
         {
             for (std::size_t j = i + 2; j < n && !(i == 0 && j + 1 == n); ++j)
             {
-                result.push_back({i, j});
+                co_yield TwoOpt{i, j};
             }
         }
-        return result;
     }
 
     // [random-move]
     // Uniform by rejection: two positions drawn independently, ordered, and
     // drawn again while they are not a 2-opt move.
     template<std::uniform_random_bit_generator RNG>
-    [[nodiscard]] auto random_move(const Tour& tour, RNG& rng) const
-        -> std::optional<TwoOpt>
+    std::optional<TwoOpt> random_move(const Tour& tour, RNG& rng) const
     {
         const auto n = tour.order.size();
         if (n < 4)
@@ -234,7 +233,7 @@ public:
     }
     // [random-move]
 
-    [[nodiscard]] auto is_valid(const Tour& tour, const TwoOpt& move) const -> bool
+    bool is_valid(const Tour& tour, const TwoOpt& move) const
     {
         return move.i + 2 <= move.j && move.j < tour.order.size();
     }
@@ -254,8 +253,7 @@ class TwoOptLengthDelta
 public:
     explicit TwoOptLengthDelta(const Tsp& tsp) : tsp_{tsp} {}
 
-    [[nodiscard]] auto delta_evaluate(const Tour& tour, const TwoOpt& move) const
-        -> double
+    double delta_evaluate(const Tour& tour, const TwoOpt& move) const
     {
         const auto n = tour.order.size();
         const auto a = tour.order[move.i];
@@ -284,22 +282,19 @@ class SwapExplorer : public easylocal::neighborhood_explorer_base<TourManager, S
 public:
     using neighborhood_explorer_base::neighborhood_explorer_base;
 
-    [[nodiscard]] auto moves(const Tour& tour) const -> std::vector<Swap>
+    easylocal::generator<Swap> moves(const Tour& tour) const
     {
-        std::vector<Swap> result;
         for (std::size_t first = 0; first < tour.order.size(); ++first)
         {
             for (std::size_t second = first + 1; second < tour.order.size(); ++second)
             {
-                result.push_back({first, second});
+                co_yield Swap{first, second};
             }
         }
-        return result;
     }
 
     template<std::uniform_random_bit_generator RNG>
-    [[nodiscard]] auto random_move(const Tour& tour, RNG& rng) const
-        -> std::optional<Swap>
+    std::optional<Swap> random_move(const Tour& tour, RNG& rng) const
     {
         if (tour.order.size() < 2)
         {
@@ -315,7 +310,7 @@ public:
         return Swap{std::min(first, second), std::max(first, second)};
     }
 
-    [[nodiscard]] auto is_valid(const Tour& tour, const Swap& move) const -> bool
+    bool is_valid(const Tour& tour, const Swap& move) const
     {
         return move.first < move.second && move.second < tour.order.size();
     }
@@ -338,13 +333,13 @@ class RandomDescent
 public:
     using parameters_type = RandomDescentParameters; // for app registration
 
-    explicit RandomDescent(RandomDescentParameters parameters)
-        : parameters_{parameters}
+    explicit RandomDescent(RandomDescentParameters parameters) : parameters_{parameters}
     {
     }
 
+    // The result type is the one run.finish() returns: auto deduces it.
     template<class Run, std::uniform_random_bit_generator RNG>
-    auto run(Run& run, typename Run::solution_type solution, RNG& rng) const
+    auto run(Run& run, Run::solution_type solution, RNG& rng) const
     {
         run.limit_evaluations(parameters_.max_evaluations);
         auto current = run.start(solution); // evaluates, emits run_started
@@ -373,17 +368,38 @@ private:
 // [custom-runner] ----------------------------------------------------------
 
 // [instance] ---------------------------------------------------------------
-[[nodiscard]] inline auto five_cities() -> Tsp
+inline Tsp five_cities()
 {
     return Tsp{
         .cities = 5,
-        .distance = {
-            0, 2, 9, 10, 7,
-            2, 0, 6, 4, 3,
-            9, 6, 0, 8, 5,
-            10, 4, 8, 0, 6,
-            7, 3, 5, 6, 0,
-        },
+        .distance =
+            {
+                0,
+                2,
+                9,
+                10,
+                7,
+                2,
+                0,
+                6,
+                4,
+                3,
+                9,
+                6,
+                0,
+                8,
+                5,
+                10,
+                4,
+                8,
+                0,
+                6,
+                7,
+                3,
+                5,
+                6,
+                0,
+            },
     };
 }
 // [instance] ---------------------------------------------------------------

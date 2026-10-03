@@ -12,7 +12,7 @@
 #include <string_view>
 #include <utility>
 
-namespace easylocal::mwe::assignment
+namespace assignment
 {
 
 class ReassignJobNeighborhoodExplorer
@@ -23,31 +23,21 @@ class ReassignJobNeighborhoodExplorer
 public:
     using neighborhood_explorer_base::neighborhood_explorer_base;
 
-    [[nodiscard]]
-    static constexpr auto name() noexcept -> std::string_view
+    static constexpr std::string_view name()
     {
         return "Reassign job";
     }
-    [[nodiscard]]
-    auto is_valid(
-        const AssignmentSolution& solution,
-        const ReassignJobMove& move) const noexcept -> bool
-    {
-        const auto& instance = solution_manager_.input();
 
-        return move.job < solution.assignment.size() &&
-               move.destination < instance.capacity.size() &&
-               solution.assignment[move.job] != move.destination;
+    bool is_valid(const AssignmentSolution& solution, const ReassignJobMove& move) const
+    {
+        return move.job < solution.assignment.size()
+            && move.destination < input().capacity.size()
+            && solution.assignment[move.job] != move.destination;
     }
 
-    [[nodiscard]]
-    auto first_move(
-        const AssignmentSolution& solution,
-        ReassignJobMove& move) const noexcept -> bool
+    bool first_move(const AssignmentSolution& solution, ReassignJobMove& move) const
     {
-
-        const auto machine_count =
-            solution_manager_.input().capacity.size();
+        const auto machine_count = input().capacity.size();
 
         if (solution.assignment.empty() || machine_count < 2)
         {
@@ -59,19 +49,13 @@ public:
         return true;
     }
 
-    [[nodiscard]]
-    auto next_move(
-        const AssignmentSolution& solution,
-        ReassignJobMove& move) const noexcept -> bool
+    bool next_move(const AssignmentSolution& solution, ReassignJobMove& move) const
     {
-
-        const auto machine_count =
-            solution_manager_.input().capacity.size();
+        const auto machine_count = input().capacity.size();
         const auto current_machine = solution.assignment[move.job];
 
-        for (auto destination = move.destination + 1;
-             destination < machine_count;
-             ++destination)
+        for (auto destination = move.destination + 1; destination < machine_count;
+            ++destination)
         {
             if (destination != current_machine)
             {
@@ -80,12 +64,10 @@ public:
             }
         }
 
-        for (auto job = move.job + 1;
-             job < solution.assignment.size();
-             ++job)
+        if (move.job + 1 < solution.assignment.size())
         {
-            move.job = job;
-            move.destination = first_destination(solution, job);
+            ++move.job;
+            move.destination = first_destination(solution, move.job);
             return true;
         }
 
@@ -93,10 +75,9 @@ public:
     }
 
     template<std::uniform_random_bit_generator RNG>
-    [[nodiscard]]
-    auto random_move(
+    std::optional<ReassignJobMove> random_move(
         const AssignmentSolution& solution,
-        RNG& rng) const -> std::optional<ReassignJobMove>
+        RNG& rng) const
     {
         const auto count = move_count(solution);
         if (count == 0)
@@ -108,47 +89,34 @@ public:
         return move_at(solution, draw(rng));
     }
 
-
-    void make_move(
-        AssignmentSolution& solution,
-        const ReassignJobMove& move) const noexcept
+    void make_move(AssignmentSolution& solution, const ReassignJobMove& move) const
     {
         solution.assignment[move.job] = move.destination;
     }
 
 private:
-    [[nodiscard]]
-    auto first_destination(
+    machine_id first_destination(
         const AssignmentSolution& solution,
-        const std::size_t job) const noexcept -> machine_id
+        std::size_t job) const
     {
-        assert(solution_manager_.input().capacity.size() >= 2);
+        assert(input().capacity.size() >= 2);
         assert(job < solution.assignment.size());
 
-        return solution.assignment[job] == 0
-            ? machine_id{1}
-            : machine_id{0};
+        return solution.assignment[job] == 0 ? machine_id{1} : machine_id{0};
     }
 
-    [[nodiscard]]
-    auto move_count(const AssignmentSolution& solution) const noexcept
-        -> std::size_t
+    std::size_t move_count(const AssignmentSolution& solution) const
     {
-        const auto machine_count =
-            solution_manager_.input().capacity.size();
+        const auto machine_count = input().capacity.size();
         const auto alternatives_per_job =
             machine_count > 0 ? machine_count - 1 : std::size_t{0};
 
         return solution.assignment.size() * alternatives_per_job;
     }
 
-    [[nodiscard]]
-    auto move_at(
-        const AssignmentSolution& solution,
-        const std::size_t ordinal) const noexcept -> ReassignJobMove
+    ReassignJobMove move_at(const AssignmentSolution& solution, std::size_t ordinal) const
     {
-        const auto machine_count =
-            solution_manager_.input().capacity.size();
+        const auto machine_count = input().capacity.size();
         const auto alternatives_per_job = machine_count - 1;
 
         assert(alternatives_per_job != 0);
@@ -164,8 +132,6 @@ private:
             .destination = destination,
         };
     }
-
-
 };
 
-} // namespace easylocal::mwe::assignment
+} // namespace assignment

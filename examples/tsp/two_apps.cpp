@@ -1,14 +1,5 @@
+#include "apps.hpp"
 #include "instance_io.hpp"
-#include "neighborhood_explorer.hpp"
-#include "solution_manager.hpp"
-#include "swap_neighborhood_explorer.hpp"
-#include "swap_tour_length_delta.hpp"
-#include "tour_length_component.hpp"
-#include "tour_length_delta.hpp"
-
-#include <easylocal/cost.hpp>
-#include <easylocal/app/app.hpp>
-#include <easylocal/runners/first_improvement.hpp>
 
 #include <iostream>
 
@@ -18,54 +9,22 @@
 
 int main()
 {
-    using namespace easylocal::mwe::tsp;
+    using easylocal::runners::FirstImprovement;
 
-    auto two_opt =
-        easylocal::app("tsp-two-opt")
-            .with_solution_manager(
-                easylocal::solution_manager<TspSolutionManager>()
-                | easylocal::cost::apply(
-                      TourLengthCost{},
-                      easylocal::component<TourLengthComponent>()))
-            .with_neighborhood(
-                easylocal::neighborhood<TwoOptNeighborhoodExplorer>()
-                | easylocal::delta<
-                      TourLengthComponent,
-                      TwoOptTourLengthDeltaEvaluator>())
-            .with_runner<easylocal::runners::FirstImprovement>("fi");
+    auto two_opt = tsp::two_opt_app();
+    auto swap = tsp::swap_app();
 
-    auto swap =
-        easylocal::app("tsp-swap")
-            .with_solution_manager(
-                easylocal::solution_manager<TspSolutionManager>()
-                | easylocal::cost::apply(
-                      TourLengthCost{},
-                      easylocal::component<TourLengthComponent>()))
-            .with_neighborhood(
-                easylocal::neighborhood<SwapCitiesNeighborhoodExplorer>()
-                | easylocal::delta<
-                      TourLengthComponent,
-                      SwapTourLengthDeltaEvaluator>())
-            .with_runner<easylocal::runners::FirstImprovement>("fi");
+    const auto instance = tsp::load_instance(EASYLOCAL_TSP_MWE_INSTANCE_FILE);
 
-    two_opt.runner_config<easylocal::runners::FirstImprovement>().max_evaluations = 100;
-    swap.runner_config<easylocal::runners::FirstImprovement>().max_evaluations = 100;
-
-    const auto instance = load_instance(EASYLOCAL_TSP_MWE_INSTANCE_FILE);
-    const Tour initial{
-        .tour = {0, 2, 4, 1, 5, 3},
-    };
-
+    // The 2-opt local optimum is the starting point of the swap search.
     auto two_opt_runtime = two_opt.for_input(instance);
-    const auto first =
-        two_opt_runtime.run<easylocal::runners::FirstImprovement>(initial);
+    const auto first = two_opt_runtime.run<FirstImprovement>(
+        two_opt_runtime.solution_manager().initial_solution());
 
     auto swap_runtime = swap.for_input(instance);
-    const auto second =
-        swap_runtime.run<easylocal::runners::FirstImprovement>(first.solution);
+    const auto second = swap_runtime.run<FirstImprovement>(first.solution);
 
     std::cout << "two-opt cost: " << first.cost << '\n';
     std::cout << "swap cost:    " << second.cost << '\n';
-
     return 0;
 }

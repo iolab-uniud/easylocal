@@ -6,17 +6,20 @@ apps.
 
 <!-- snippet: tutorial/main.cpp:app -->
 ```cpp
-auto application = el::app("tsp")
-    .with_solution_manager(sm)
-    .with_neighborhood(nhe)
-    .with_runner<runners::FirstImprovement>("fi")
-    .with_runner<runners::SimulatedAnnealing<Classic>>(
-        "sa", {.samples_per_temperature = 50});
+auto application =
+    el::app("tsp")
+        .with_solution_manager(sm)
+        .with_neighborhood(nhe)
+        .with_runner<runners::FirstImprovement>("fi")
+        .with_runner<runners::SimulatedAnnealing<Classic>>(
+            "sa",
+            {.samples_per_temperature = 50});
 
 auto piped_application = el::app("tsp") | sm | nhe
     | el::runner<runners::FirstImprovement>("fi")
     | el::runner<runners::SimulatedAnnealing<Classic>>(
-          "sa", {.samples_per_temperature = 50});
+        "sa",
+        {.samples_per_temperature = 50});
 
 const auto app_result =
     application.run<runners::FirstImprovement>(tsp, Tour{{0, 1, 2, 3, 4}});

@@ -19,7 +19,7 @@ struct MyParameters
         return config::fields(config::field<"size", &MyParameters::size>("Description"));
     }
 
-    auto validate() const -> config::validation_result; // success() or failure("reason")
+    config::validation_result validate() const; // success() or failure("reason")
 };
 ```
 

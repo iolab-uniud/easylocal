@@ -7,11 +7,10 @@
 #include <stdexcept>
 #include <string>
 
-namespace easylocal::mwe::tsp
+namespace tsp
 {
 
-[[nodiscard]]
-inline auto load_instance(const std::filesystem::path& path) -> TspInstance
+inline TspInstance load_instance(const std::filesystem::path& path)
 {
     std::ifstream input{path};
     if (!input)
@@ -30,4 +29,4 @@ inline auto load_instance(const std::filesystem::path& path) -> TspInstance
     }
 }
 
-} // namespace easylocal::mwe::tsp
+} // namespace tsp

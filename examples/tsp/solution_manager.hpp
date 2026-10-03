@@ -11,51 +11,45 @@
 #include <numeric>
 #include <random>
 
-namespace easylocal::mwe::tsp
+namespace tsp
 {
 
-class TspSolutionManager
-    : public easylocal::solution_manager_base<TspInstance, Tour>
+class TspSolutionManager : public easylocal::solution_manager_base<TspInstance, Tour>
 {
 public:
     using solution_manager_base::solution_manager_base;
 
-    [[nodiscard]]
-    auto initial_solution() const -> Tour
+    Tour initial_solution() const
     {
         Tour solution;
-        solution.tour.resize(input_.city_count);
-        std::iota(solution.tour.begin(), solution.tour.end(), city_id{0});
+        solution.tour.resize(input().city_count);
+        std::ranges::iota(solution.tour, city_id{0});
         return solution;
     }
 
     template<std::uniform_random_bit_generator RNG>
-    [[nodiscard]]
-    auto random_solution(RNG& rng) const -> Tour
+    Tour random_solution(RNG& rng) const
     {
         auto solution = initial_solution();
         std::shuffle(solution.tour.begin(), solution.tour.end(), rng);
         return solution;
     }
 
-    [[nodiscard]]
-    auto is_valid(const Tour& solution) const noexcept -> bool
+    bool is_valid(const Tour& solution) const
     {
-        if (solution.tour.size() != input_.city_count)
+        if (solution.tour.size() != input().city_count)
         {
             return false;
         }
 
         for (std::size_t first = 0; first < solution.tour.size(); ++first)
         {
-            if (solution.tour[first] >= input_.city_count)
+            if (solution.tour[first] >= input().city_count)
             {
                 return false;
             }
 
-            for (std::size_t second = first + 1;
-                 second < solution.tour.size();
-                 ++second)
+            for (std::size_t second = first + 1; second < solution.tour.size(); ++second)
             {
                 if (solution.tour[first] == solution.tour[second])
                 {
@@ -66,7 +60,6 @@ public:
 
         return true;
     }
-
 };
 
-} // namespace easylocal::mwe::tsp
+} // namespace tsp

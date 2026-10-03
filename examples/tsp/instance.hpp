@@ -4,11 +4,11 @@
 #include <cmath>
 #include <cstddef>
 #include <istream>
-#include <string>
 #include <stdexcept>
+#include <string>
 #include <vector>
 
-namespace easylocal::mwe::tsp
+namespace tsp
 {
 
 using city_id = std::size_t;
@@ -19,8 +19,7 @@ struct TspInstance
     std::size_t city_count{};
     std::vector<distance_type> distances;
 
-    [[nodiscard]]
-    static auto read(std::istream& input) -> TspInstance
+    static TspInstance read(std::istream& input)
     {
         std::size_t count{};
         if (!(input >> count) || count < 2)
@@ -42,9 +41,7 @@ struct TspInstance
         return instance;
     }
 
-    [[nodiscard]]
-    auto distance(const city_id from, const city_id to) const noexcept
-        -> distance_type
+    distance_type distance(city_id from, city_id to) const
     {
         assert(distances.size() == city_count * city_count);
         assert(from < city_count);
@@ -52,11 +49,11 @@ struct TspInstance
         return distances[from * city_count + to];
     }
 
-    [[nodiscard]] auto describe() const -> std::string
+    std::string describe() const
     {
-        return "cities=" + std::to_string(city_count) +
-               ", distance_entries=" + std::to_string(distances.size());
+        return "cities=" + std::to_string(city_count)
+            + ", distance_entries=" + std::to_string(distances.size());
     }
 };
 
-} // namespace easylocal::mwe::tsp
+} // namespace tsp

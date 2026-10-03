@@ -1,12 +1,13 @@
 #pragma once
 
+#include "cost_components.hpp"
+
 #include <easylocal/cost.hpp>
 #include <easylocal/helpers/recipes.hpp>
-#include "cost_components.hpp"
 
 #include <cstdint>
 
-namespace easylocal::mwe::assignment
+namespace assignment
 {
 
 using HardCost = easylocal::cost::lexicographic<std::int64_t, std::int64_t>;
@@ -18,8 +19,7 @@ using Cost = easylocal::cost::hierarchical<HardCost, SoftCost>;
 // cost::apply(CapacityHardCost{}, component<CapacityCostComponent>()).
 struct CapacityHardCost
 {
-    [[nodiscard]]
-    constexpr auto operator()(const CapacityValue& capacity) const -> HardCost
+    constexpr HardCost operator()(const CapacityValue& capacity) const
     {
         return easylocal::cost::lexicographic{
             capacity.total_overload,
@@ -28,8 +28,8 @@ struct CapacityHardCost
 };
 
 // The cost expression of the problem: the capacity violation has strict
-// priority over the load imbalance.
-[[nodiscard]]
+// priority over the load imbalance. Its type spells out the whole expression,
+// so auto deduces it.
 inline auto assignment_cost()
 {
     return easylocal::cost::hard_soft(
@@ -39,4 +39,4 @@ inline auto assignment_cost()
         easylocal::component<LoadImbalanceCostComponent>());
 }
 
-} // namespace easylocal::mwe::assignment
+} // namespace assignment

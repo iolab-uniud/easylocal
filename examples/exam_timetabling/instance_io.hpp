@@ -9,12 +9,10 @@
 #include <string>
 #include <vector>
 
-namespace easylocal::mwe::exam_timetabling
+namespace exam_timetabling
 {
 
-[[nodiscard]]
-inline auto load_instance(const std::filesystem::path& path)
-    -> ExamTimetablingInstance
+inline ExamTimetablingInstance load_instance(const std::filesystem::path& path)
 {
     std::ifstream input{path};
     if (!input)
@@ -52,11 +50,10 @@ inline auto load_instance(const std::filesystem::path& path)
 
     if (!instance.is_valid())
     {
-        throw std::runtime_error(
-            "invalid exam-timetabling instance: " + path.string());
+        throw std::runtime_error("invalid exam-timetabling instance: " + path.string());
     }
 
     return instance;
 }
 
-} // namespace easylocal::mwe::exam_timetabling
+} // namespace exam_timetabling

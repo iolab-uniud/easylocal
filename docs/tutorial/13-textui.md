@@ -14,7 +14,8 @@ target_link_libraries(tsp_tui PRIVATE EasyLocal::TUI)
 ```cpp
 auto application = el::app("tsp")
     | (el::solution_manager<TourManager>() | el::component<TourLength>())
-    | (el::neighborhood<TwoOptExplorer>() | el::delta<TourLength, TwoOptLengthDelta>())
+    | (el::neighborhood<TwoOptExplorer>()
+        | el::delta<TourLength, TwoOptLengthDelta>())
     | el::runner<runners::FirstImprovement>("fi")
     | el::runner<runners::SimulatedAnnealing<Classic>>("sa");
 
@@ -67,7 +68,7 @@ lookup:
 <!-- snippet: tutorial/tsp.hpp:io -->
 ```cpp
 // Optional hooks, found by ADL, that let the tools load, save and display.
-[[nodiscard]] inline auto read_input(std::type_identity<Tsp>, std::istream& in) -> Tsp
+inline Tsp read_input(std::type_identity<Tsp>, std::istream& in)
 {
     Tsp tsp; // "n d00 d01 ... d(n-1)(n-1)"
     if (!(in >> tsp.cities))
@@ -85,7 +86,7 @@ lookup:
     return tsp;
 }
 
-[[nodiscard]] inline auto read_solution(const Tsp& tsp, std::istream& in) -> Tour
+inline Tour read_solution(const Tsp& tsp, std::istream& in)
 {
     Tour tour{std::vector<std::size_t>(tsp.cities)};
     for (auto& city : tour.order)
@@ -107,7 +108,7 @@ inline void write_solution(const Tsp&, const Tour& tour, std::ostream& out)
     out << '\n';
 }
 
-[[nodiscard]] inline auto describe(const Tour& tour) -> std::string
+inline std::string describe(const Tour& tour)
 {
     std::string text;
     for (const auto city : tour.order)
@@ -117,7 +118,7 @@ inline void write_solution(const Tsp&, const Tour& tour, std::ostream& out)
     return text;
 }
 
-[[nodiscard]] inline auto describe(const TwoOpt& move) -> std::string
+inline std::string describe(const TwoOpt& move)
 {
     return "2-opt(" + std::to_string(move.i) + ", " + std::to_string(move.j) + ")";
 }

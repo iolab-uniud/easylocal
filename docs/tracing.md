@@ -138,7 +138,7 @@ struct temperature_changed
     double temperature;
 };
 
-constexpr auto binary_event_tag(const temperature_changed&) -> std::uint8_t
+constexpr std::uint8_t binary_event_tag(const temperature_changed&)
 {
     return easylocal::trace::user_binary_event_tag<0>();
 }

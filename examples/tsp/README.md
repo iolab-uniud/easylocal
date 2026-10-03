@@ -49,11 +49,12 @@ integration.
 `sa_main.cpp` owns its `AppParameters` block directly, because the instance-file
 path and RNG seed parameterize the application rather than the TSP model or an
 EasyLocal component. `FixedLengthParameters` remains beside the temperature
-policy and `NeighborhoodUnionParameters<2>` remains beside the union it
-configures. After constructing the runner, the main combines its automatic
+policy, and the union's biases are given to `random_biases(3.0, 1.0)`. After
+constructing the runner, the main combines its automatic
 `solver.search.temperature.*` and `solver.neighborhood.random_biases` subtree
-with `application.*` in a read-only `config::root(...)`, traverses the resulting
-paths, and loads `instances/small.tsp`.
+with `application.*` in a read-only `config::root(...)`, loads
+`instances/small.tsp`, and starts from the SolutionManager's
+`initial_solution()`.
 
 This layout is intentional: concrete parameter declarations live next to the
 thing they parameterize, while `easylocal::config` contains only generic schema,

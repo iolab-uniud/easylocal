@@ -6,9 +6,9 @@ A **runner** couples a search algorithm with the recipes:
 
 <!-- snippet: tutorial/main.cpp:first-improvement -->
 ```cpp
-auto fi = el::make_runner<runners::FirstImprovement>(
-              runners::FirstImprovementParameters{})
-          | sm | nhe;
+auto fi =
+    el::make_runner<runners::FirstImprovement>(runners::FirstImprovementParameters{})
+    | sm | nhe;
 
 auto search = fi.bind(tsp);
 const auto result = search.run(search.initial_solution());
@@ -24,9 +24,11 @@ be written with explicit `with_*` calls, which spell out each step:
 auto same_runner =
     el::make_runner<runners::FirstImprovement>(runners::FirstImprovementParameters{})
         .with_solution_manager(
-            el::solution_manager<TourManager>().with_cost(el::component<TourLength>()))
+            el::solution_manager<TourManager>().with_cost(
+                el::component<TourLength>()))
         .with_neighborhood(
-            el::neighborhood<TwoOptExplorer>().with_delta<TourLength, TwoOptLengthDelta>());
+            el::neighborhood<TwoOptExplorer>()
+                .with_delta<TourLength, TwoOptLengthDelta>());
 ```
 
 ## Built-in algorithms
@@ -48,13 +50,14 @@ Simulated Annealing takes a temperature policy (`Classic`, `FixedLength`,
 ```cpp
 using Classic = runners::temperature::Classic;
 
-auto sa = el::make_runner<runners::SimulatedAnnealing<Classic>>(
-              Classic{runners::temperature::ClassicParameters{
-                  .initial_temperature = 10.0,
-                  .final_temperature = 0.1,
-                  .cooling_rate = 0.95,
-                  .samples_per_temperature = 50}})
-          | sm | nhe;
+auto sa =
+    el::make_runner<runners::SimulatedAnnealing<Classic>>(
+        Classic{runners::temperature::ClassicParameters{
+            .initial_temperature = 10.0,
+            .final_temperature = 0.1,
+            .cooling_rate = 0.95,
+            .samples_per_temperature = 50}})
+    | sm | nhe;
 
 std::mt19937_64 rng{42};
 auto sa_search = sa.bind(tsp);

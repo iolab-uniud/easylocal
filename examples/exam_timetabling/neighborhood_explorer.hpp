@@ -10,7 +10,7 @@
 #include <optional>
 #include <random>
 
-namespace easylocal::mwe::exam_timetabling
+namespace exam_timetabling
 {
 
 class MoveExamNeighborhoodExplorer
@@ -21,20 +21,14 @@ class MoveExamNeighborhoodExplorer
 public:
     using neighborhood_explorer_base::neighborhood_explorer_base;
 
-    [[nodiscard]]
-    auto is_valid(
-        const ExamTimetable& solution,
-        const MoveExam& move) const noexcept -> bool
+    bool is_valid(const ExamTimetable& solution, const MoveExam& move) const
     {
-        return move.exam < solution.timeslot_by_exam.size() &&
-               move.destination < input().timeslot_count &&
-               solution.timeslot_by_exam[move.exam] != move.destination;
+        return move.exam < solution.timeslot_by_exam.size()
+            && move.destination < input().timeslot_count
+            && solution.timeslot_by_exam[move.exam] != move.destination;
     }
 
-    [[nodiscard]]
-    auto first_move(
-        const ExamTimetable& solution,
-        MoveExam& move) const noexcept -> bool
+    bool first_move(const ExamTimetable& solution, MoveExam& move) const
     {
         if (solution.timeslot_by_exam.empty() || input().timeslot_count < 2)
         {
@@ -46,16 +40,12 @@ public:
         return true;
     }
 
-    [[nodiscard]]
-    auto next_move(
-        const ExamTimetable& solution,
-        MoveExam& move) const noexcept -> bool
+    bool next_move(const ExamTimetable& solution, MoveExam& move) const
     {
-
         const auto current = solution.timeslot_by_exam[move.exam];
         for (auto destination = move.destination + 1;
-             destination < input().timeslot_count;
-             ++destination)
+            destination < input().timeslot_count;
+            ++destination)
         {
             if (destination != current)
             {
@@ -64,12 +54,10 @@ public:
             }
         }
 
-        for (auto exam = move.exam + 1;
-             exam < solution.timeslot_by_exam.size();
-             ++exam)
+        if (move.exam + 1 < solution.timeslot_by_exam.size())
         {
-            move.exam = exam;
-            move.destination = first_destination(solution, exam);
+            ++move.exam;
+            move.destination = first_destination(solution, move.exam);
             return true;
         }
 
@@ -77,14 +65,10 @@ public:
     }
 
     template<std::uniform_random_bit_generator RNG>
-    [[nodiscard]]
-    auto random_move(
-        const ExamTimetable& solution,
-        RNG& rng) const -> std::optional<MoveExam>
+    std::optional<MoveExam> random_move(const ExamTimetable& solution, RNG& rng) const
     {
-        const auto alternatives = input().timeslot_count > 0
-            ? input().timeslot_count - 1
-            : std::size_t{0};
+        const auto alternatives =
+            input().timeslot_count > 0 ? input().timeslot_count - 1 : std::size_t{0};
         const auto count = solution.timeslot_by_exam.size() * alternatives;
 
         if (count == 0)
@@ -105,23 +89,16 @@ public:
         };
     }
 
-    void make_move(
-        ExamTimetable& solution,
-        const MoveExam& move) const noexcept
+    void make_move(ExamTimetable& solution, const MoveExam& move) const
     {
         solution.timeslot_by_exam[move.exam] = move.destination;
     }
 
 private:
-    [[nodiscard]]
-    auto first_destination(
-        const ExamTimetable& solution,
-        const exam_id exam) const noexcept -> timeslot_id
+    timeslot_id first_destination(const ExamTimetable& solution, exam_id exam) const
     {
-        return solution.timeslot_by_exam[exam] == 0
-            ? timeslot_id{1}
-            : timeslot_id{0};
+        return solution.timeslot_by_exam[exam] == 0 ? timeslot_id{1} : timeslot_id{0};
     }
 };
 
-} // namespace easylocal::mwe::exam_timetabling
+} // namespace exam_timetabling

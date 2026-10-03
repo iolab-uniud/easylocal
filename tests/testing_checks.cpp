@@ -1,18 +1,17 @@
-#include <easylocal/testing/check.hpp>
-#include <easylocal/testing/cost_component.hpp>
-#include <easylocal/testing/delta_evaluator.hpp>
-#include <easylocal/testing/neighborhood.hpp>
-#include <easylocal/testing/solution_manager.hpp>
-
-#include "capacity_delta.hpp"
 #include "cost_components.hpp"
 #include "instance.hpp"
 #include "neighborhood_explorer.hpp"
 #include "solution.hpp"
 #include "solution_manager.hpp"
+#include "support/assignment_capacity_delta.hpp"
 
-#include <easylocal/helpers/solution_manager.hpp>
 #include <easylocal/helpers/neighborhood_explorer.hpp>
+#include <easylocal/helpers/solution_manager.hpp>
+#include <easylocal/testing/check.hpp>
+#include <easylocal/testing/cost_component.hpp>
+#include <easylocal/testing/delta_evaluator.hpp>
+#include <easylocal/testing/neighborhood.hpp>
+#include <easylocal/testing/solution_manager.hpp>
 
 #include <cstdint>
 #include <optional>
@@ -22,7 +21,7 @@
 
 namespace
 {
-using namespace easylocal::mwe::assignment;
+using namespace assignment;
 
 struct AssignmentCheckData
 {

@@ -9,15 +9,14 @@
 #include <string>
 #include <vector>
 
-namespace easylocal::mwe::tsp
+namespace tsp
 {
 
 struct Tour
 {
     std::vector<city_id> tour;
 
-    [[nodiscard]]
-    static auto read(const TspInstance& instance, std::istream& input) -> Tour
+    static Tour read(const TspInstance& instance, std::istream& input)
     {
         Tour solution;
         solution.tour.resize(instance.city_count);
@@ -44,9 +43,9 @@ struct Tour
         output << '\n';
     }
 
-    auto operator==(const Tour&) const -> bool = default;
+    bool operator==(const Tour&) const = default;
 
-    [[nodiscard]] auto describe() const -> std::string
+    std::string describe() const
     {
         std::ostringstream output;
         output << "tour: ";
@@ -62,4 +61,4 @@ struct Tour
     }
 };
 
-} // namespace easylocal::mwe::tsp
+} // namespace tsp

@@ -8,7 +8,7 @@
 #include <type_traits>
 #include <utility>
 
-namespace easylocal::mwe::assignment::demo
+namespace assignment::demo
 {
 
 struct SlowFirstImprovementParameters
@@ -24,31 +24,27 @@ template<class Evaluation>
 class DelayedEvaluation
 {
 public:
-    using solution_type = typename Evaluation::solution_type;
-    using cost_type = typename Evaluation::cost_type;
-    using evaluation_type = typename Evaluation::evaluation_type;
-    using move_type = typename Evaluation::move_type;
-    using candidate_type = typename Evaluation::candidate_type;
+    using solution_type = Evaluation::solution_type;
+    using cost_type = Evaluation::cost_type;
+    using evaluation_type = Evaluation::evaluation_type;
+    using move_type = Evaluation::move_type;
+    using candidate_type = Evaluation::candidate_type;
 
-    DelayedEvaluation(
-        Evaluation evaluation,
-        const std::chrono::milliseconds delay)
+    DelayedEvaluation(Evaluation evaluation, std::chrono::milliseconds delay)
         : evaluation_{std::move(evaluation)}, delay_{delay}
     {
     }
 
-    [[nodiscard]]
-    auto evaluate(const solution_type& solution) const -> evaluation_type
+    evaluation_type evaluate(const solution_type& solution) const
     {
         pause();
         return evaluation_.evaluate(solution);
     }
 
-    [[nodiscard]]
-    auto evaluate_move(
+    candidate_type evaluate_move(
         const solution_type& solution,
         const evaluation_type& current,
-        const move_type& move) const -> candidate_type
+        const move_type& move) const
     {
         pause();
         return evaluation_.evaluate_move(solution, current, move);
@@ -79,35 +75,27 @@ template<class Context>
 class DelayedContext
 {
 public:
-    using solution_type = typename Context::solution_type;
-    using cost_type = typename Context::cost_type;
-    using neighborhood_explorer_type = typename Context::neighborhood_explorer_type;
+    using solution_type = Context::solution_type;
+    using cost_type = Context::cost_type;
+    using neighborhood_explorer_type = Context::neighborhood_explorer_type;
 
-    DelayedContext(
-        const Context& context,
-        const std::chrono::milliseconds delay) noexcept
+    DelayedContext(const Context& context, std::chrono::milliseconds delay)
         : context_{context}, delay_{delay}
     {
     }
 
-    [[nodiscard]]
-    auto neighborhood_explorer() const noexcept
-        -> const neighborhood_explorer_type&
+    const neighborhood_explorer_type& neighborhood_explorer() const
     {
         return context_.neighborhood_explorer();
     }
 
-    [[nodiscard]]
     auto evaluation() const
     {
-        using evaluation_type =
-            std::remove_cvref_t<decltype(context_.evaluation())>;
+        using evaluation_type = std::remove_cvref_t<decltype(context_.evaluation())>;
         return DelayedEvaluation<evaluation_type>{context_.evaluation(), delay_};
     }
 
-    [[nodiscard]]
-    auto better(const cost_type& candidate, const cost_type& reference) const
-        -> bool
+    bool better(const cost_type& candidate, const cost_type& reference) const
     {
         return context_.better(candidate, reference);
     }
@@ -130,8 +118,7 @@ public:
     }
 
     template<class Run>
-    [[nodiscard]]
-    auto run(Run& run, typename Run::solution_type solution) const
+    auto run(Run& run, Run::solution_type solution) const
     {
         const auto context = delayed(run.context());
         auto delayed_run = run.with_context(context);
@@ -139,8 +126,7 @@ public:
     }
 
 private:
-    [[nodiscard]]
-    auto algorithm() const -> easylocal::runners::FirstImprovement
+    easylocal::runners::FirstImprovement algorithm() const
     {
         return easylocal::runners::FirstImprovement{
             easylocal::runners::FirstImprovementParameters{
@@ -149,18 +135,16 @@ private:
     }
 
     template<class Context>
-    [[nodiscard]]
     auto delayed(const Context& context) const
     {
         return detail::DelayedContext<Context>{
             context,
             std::chrono::milliseconds{
-                static_cast<std::chrono::milliseconds::rep>(
-                    parameters_.delay_ms)},
+                static_cast<std::chrono::milliseconds::rep>(parameters_.delay_ms)},
         };
     }
 
     SlowFirstImprovementParameters parameters_;
 };
 
-} // namespace easylocal::mwe::assignment::demo
+} // namespace assignment::demo

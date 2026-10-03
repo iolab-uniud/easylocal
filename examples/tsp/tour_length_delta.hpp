@@ -8,20 +8,17 @@
 #include <cassert>
 #include <cstddef>
 
-namespace easylocal::mwe::tsp
+namespace tsp
 {
 
 struct TourLengthDelta
 {
     distance_type change{};
 
-    auto operator==(const TourLengthDelta&) const -> bool = default;
+    bool operator==(const TourLengthDelta&) const = default;
 };
 
-[[nodiscard]]
-constexpr auto operator+(
-    const TourLengthValue value,
-    const TourLengthDelta delta) noexcept -> TourLengthValue
+constexpr TourLengthValue operator+(TourLengthValue value, TourLengthDelta delta)
 {
     return TourLengthValue{
         .total = value.total + delta.change,
@@ -31,22 +28,18 @@ constexpr auto operator+(
 class TwoOptTourLengthDeltaEvaluator
 {
 public:
-    explicit TwoOptTourLengthDeltaEvaluator(const TspInstance& instance) noexcept
+    explicit TwoOptTourLengthDeltaEvaluator(const TspInstance& instance)
         : instance_{instance}
     {
     }
 
-    [[nodiscard]]
-    auto delta_evaluate(
-        const Tour& solution,
-        const TwoOptMove& move) const noexcept -> TourLengthDelta
+    TourLengthDelta delta_evaluate(const Tour& solution, const TwoOptMove& move) const
     {
         assert(solution.tour.size() == instance_.city_count);
         assert(move.first_edge < move.second_edge);
         assert(move.second_edge < solution.tour.size());
         assert(move.second_edge != move.first_edge + 1);
-        assert(!(move.first_edge == 0 &&
-                 move.second_edge + 1 == solution.tour.size()));
+        assert(!(move.first_edge == 0 && move.second_edge + 1 == solution.tour.size()));
 
         const auto first = solution.tour[move.first_edge];
         const auto first_next =
@@ -55,12 +48,10 @@ public:
         const auto second_next =
             solution.tour[(move.second_edge + 1) % solution.tour.size()];
 
-        const auto removed =
-            instance_.distance(first, first_next) +
-            instance_.distance(second, second_next);
-        const auto added =
-            instance_.distance(first, second) +
-            instance_.distance(first_next, second_next);
+        const auto removed = instance_.distance(first, first_next)
+            + instance_.distance(second, second_next);
+        const auto added = instance_.distance(first, second)
+            + instance_.distance(first_next, second_next);
 
         return TourLengthDelta{
             .change = added - removed,
@@ -71,4 +62,4 @@ private:
     const TspInstance& instance_;
 };
 
-} // namespace easylocal::mwe::tsp
+} // namespace tsp

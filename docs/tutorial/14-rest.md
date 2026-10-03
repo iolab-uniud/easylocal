@@ -21,11 +21,10 @@ JSON:
 struct TspCodec
 {
     // {"cities": 5, "distance": [0, 2, 9, ...]}
-    [[nodiscard]] auto decode_input(const crow::json::rvalue& payload) const
-        -> tutorial::Tsp
+    tutorial::Tsp decode_input(const crow::json::rvalue& payload) const
     {
-        if (payload.t() != crow::json::type::Object ||
-            !payload.has("cities") || !payload.has("distance"))
+        if (payload.t() != crow::json::type::Object || !payload.has("cities")
+            || !payload.has("distance"))
         {
             throw std::invalid_argument{"input must have 'cities' and 'distance'"};
         }
@@ -41,16 +40,16 @@ struct TspCodec
         return tsp;
     }
 
-    [[nodiscard]] auto encode_solution(
+    crow::json::wvalue encode_solution(
         const tutorial::Tsp&,
-        const tutorial::Tour& tour) const -> crow::json::wvalue
+        const tutorial::Tour& tour) const
     {
         crow::json::wvalue json;
         json["order"] = tour.order;
         return json;
     }
 
-    [[nodiscard]] auto encode_cost(const double length) const -> crow::json::wvalue
+    crow::json::wvalue encode_cost(double length) const
     {
         crow::json::wvalue json;
         json["length"] = length;
@@ -72,7 +71,8 @@ struct TspCodec
 ```cpp
 auto application = el::app("tsp")
     | (el::solution_manager<TourManager>() | el::component<TourLength>())
-    | (el::neighborhood<TwoOptExplorer>() | el::delta<TourLength, TwoOptLengthDelta>())
+    | (el::neighborhood<TwoOptExplorer>()
+        | el::delta<TourLength, TwoOptLengthDelta>())
     | el::runner<runners::FirstImprovement>("fi")
     | el::runner<runners::SimulatedAnnealing<Classic>>("sa");
 

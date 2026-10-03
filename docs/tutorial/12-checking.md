@@ -43,7 +43,7 @@ The Tester adds checks of the neighborhood around its current solution:
 
 <!-- snippet: tutorial/main.cpp:tester-checks -->
 ```cpp
-const auto costs = tester.check_neighborhood_costs();     // delta vs full evaluation
+const auto costs = tester.check_neighborhood_costs(); // delta vs full evaluation
 const auto independence = tester.check_move_independence(); // null and repeated moves
 const auto sampling = tester.check_random_move_distribution(tester.rng());
 if (costs.mismatches != 0 || costs.invalid != 0 || sampling.out_of_neighborhood != 0)

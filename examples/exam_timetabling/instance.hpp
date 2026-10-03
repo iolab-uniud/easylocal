@@ -5,7 +5,7 @@
 #include <cstdint>
 #include <vector>
 
-namespace easylocal::mwe::exam_timetabling
+namespace exam_timetabling
 {
 
 using exam_id = std::size_t;
@@ -25,8 +25,7 @@ struct ExamTimetablingInstance
     std::size_t timeslot_count{};
     std::vector<ExamConflict> conflicts;
 
-    [[nodiscard]]
-    auto is_valid() const noexcept -> bool
+    bool is_valid() const
     {
         if (timeslot_count == 0)
         {
@@ -35,10 +34,8 @@ struct ExamTimetablingInstance
 
         for (const auto& conflict : conflicts)
         {
-            if (conflict.first >= exam_count ||
-                conflict.second >= exam_count ||
-                conflict.first == conflict.second ||
-                conflict.students < 0)
+            if (conflict.first >= exam_count || conflict.second >= exam_count
+                || conflict.first == conflict.second || conflict.students < 0)
             {
                 return false;
             }
@@ -48,4 +45,4 @@ struct ExamTimetablingInstance
     }
 };
 
-} // namespace easylocal::mwe::exam_timetabling
+} // namespace exam_timetabling

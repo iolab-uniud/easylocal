@@ -31,8 +31,7 @@ inline auto approximately_equal(
     const auto difference = std::abs(lhs - rhs);
     const auto scale = std::max(std::abs(lhs), std::abs(rhs));
 
-    return difference <=
-           std::max(tolerance.absolute, tolerance.relative * scale);
+    return difference <= std::max(tolerance.absolute, tolerance.relative * scale);
 }
 
 [[nodiscard]]

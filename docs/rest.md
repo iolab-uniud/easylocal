@@ -65,18 +65,14 @@ A codec supplies the problem-specific JSON boundary:
 ```cpp
 struct Codec
 {
-    auto decode_input(const crow::json::rvalue& value) const -> Input;
+    Input decode_input(const crow::json::rvalue& value) const;
 
-    auto encode_solution(
-        const Input& input,
-        const Solution& solution) const -> crow::json::wvalue;
+    crow::json::wvalue encode_solution(const Input& input, const Solution& solution) const;
 
-    auto encode_cost(const Cost& cost) const -> crow::json::wvalue;
+    crow::json::wvalue encode_cost(const Cost& cost) const;
 
     // Optional. Called only when the request contains initial_solution.
-    auto decode_initial_solution(
-        const Input& input,
-        const crow::json::rvalue& value) const -> Solution;
+    Solution decode_initial_solution(const Input& input, const crow::json::rvalue& value) const;
 };
 ```
 

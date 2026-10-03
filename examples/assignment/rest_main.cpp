@@ -1,72 +1,32 @@
-#include "capacity_delta.hpp"
-#include "cost_components.hpp"
-#include "demo_runner.hpp"
-#include "instance.hpp"
+#include "application.hpp"
 #include "instance_io.hpp"
-#include "neighborhood_explorer.hpp"
-#include "solution_manager.hpp"
 
-#include <easylocal/app/app.hpp>
 #include <easylocal/adapters/rest.hpp>
-#include <easylocal/runners/first_improvement.hpp>
 
 #include <crow.h>
 
 #include <cstddef>
 #include <cstdint>
+#include <exception>
+#include <iostream>
 #include <sstream>
 #include <stdexcept>
 #include <string>
 #include <string_view>
-#include <utility>
 #include <vector>
 
 namespace
 {
 
-using namespace easylocal::mwe::assignment;
+using namespace assignment;
 
-[[nodiscard]] auto make_application()
-{
-    auto sm =
-        easylocal::solution_manager<AssignmentSolutionManager>()
-        | easylocal::cost::hard_soft(
-              easylocal::cost::apply(
-                  CapacityHardCost{},
-                  easylocal::component<CapacityCostComponent>()),
-              easylocal::component<LoadImbalanceCostComponent>());
-
-    auto nhe =
-        easylocal::neighborhood<ReassignJobNeighborhoodExplorer>()
-        | easylocal::delta<
-              CapacityCostComponent,
-              ReassignCapacityDeltaEvaluator>();
-
-    auto application = easylocal::app("assignment")
-        .with_solution_manager(std::move(sm))
-        .with_neighborhood(std::move(nhe))
-        .with_runner<easylocal::runners::FirstImprovement>("fi")
-        .with_runner<demo::SlowFirstImprovement>("slow-fi");
-
-    application
-        .runner_config<easylocal::runners::FirstImprovement>()
-        .max_evaluations = 100;
-
-    auto& slow_config =
-        application.runner_config<demo::SlowFirstImprovement>();
-    slow_config.max_evaluations = 2000;
-    slow_config.delay_ms = 5;
-    return application;
-}
-
-[[nodiscard]] auto read_quantities(
+std::vector<quantity_type> read_quantities(
     const crow::json::rvalue& payload,
-    const char* key) -> std::vector<quantity_type>
+    const char* key)
 {
     if (!payload.has(key))
     {
-        throw std::invalid_argument{
-            std::string{"missing JSON field '"} + key + "'"};
+        throw std::invalid_argument{std::string{"missing JSON field '"} + key + "'"};
     }
 
     const auto& array = payload[key];
@@ -86,8 +46,7 @@ using namespace easylocal::mwe::assignment;
             if (decoded < 0)
             {
                 throw std::invalid_argument{
-                    std::string{"JSON field '"} + key +
-                    "' contains a negative value"};
+                    std::string{"JSON field '"} + key + "' contains a negative value"};
             }
             values.push_back(static_cast<quantity_type>(decoded));
         }
@@ -99,16 +58,14 @@ using namespace easylocal::mwe::assignment;
     catch (const std::exception&)
     {
         throw std::invalid_argument{
-            std::string{"JSON field '"} + key +
-            "' must contain integer values"};
+            std::string{"JSON field '"} + key + "' must contain integer values"};
     }
     return values;
 }
 
 struct AssignmentCodec
 {
-    [[nodiscard]] auto decode_input(const crow::json::rvalue& payload) const
-        -> AssignmentInstance
+    AssignmentInstance decode_input(const crow::json::rvalue& payload) const
     {
         if (payload.t() == crow::json::type::String)
         {
@@ -120,8 +77,7 @@ struct AssignmentCodec
             catch (const std::runtime_error& error)
             {
                 throw std::invalid_argument{
-                    "invalid textual assignment input: " +
-                    std::string{error.what()}};
+                    "invalid textual assignment input: " + std::string{error.what()}};
             }
         }
 
@@ -138,23 +94,21 @@ struct AssignmentCodec
 
         if (!input.demand.empty() && input.capacity.empty())
         {
-            throw std::invalid_argument{
-                "assignment input has jobs but no machines"};
+            throw std::invalid_argument{"assignment input has jobs but no machines"};
         }
         return input;
     }
 
-    [[nodiscard]] auto encode_solution(
+    crow::json::wvalue encode_solution(
         const AssignmentInstance&,
-        const AssignmentSolution& solution) const -> crow::json::wvalue
+        const AssignmentSolution& solution) const
     {
         crow::json::wvalue json;
         json["assignment"] = solution.assignment;
         return json;
     }
 
-    [[nodiscard]] auto encode_cost(const Cost& cost) const
-        -> crow::json::wvalue
+    crow::json::wvalue encode_cost(const Cost& cost) const
     {
         crow::json::wvalue json;
         json["hard"]["total_overload"] = cost.hard().get<0>();
@@ -164,23 +118,20 @@ struct AssignmentCodec
     }
 };
 
-} // namespace
-
-struct server_options
+struct ServerOptions
 {
     std::uint16_t port{18080};
     std::size_t completed_run_capacity{64};
 };
 
-[[nodiscard]] auto parse_positive_size(
+std::size_t parse_positive_size(
     const char* value,
-    const std::string_view label,
-    const std::size_t maximum = static_cast<std::size_t>(-1)) -> std::size_t
+    std::string_view label,
+    std::size_t maximum = static_cast<std::size_t>(-1))
 {
     std::size_t consumed = 0;
     const auto parsed = std::stoull(value, &consumed);
-    if (consumed != std::string_view{value}.size() || parsed == 0 ||
-        parsed > maximum)
+    if (consumed != std::string_view{value}.size() || parsed == 0 || parsed > maximum)
     {
         throw std::invalid_argument{
             std::string{label} + " must be a positive integer in range"};
@@ -188,8 +139,7 @@ struct server_options
     return static_cast<std::size_t>(parsed);
 }
 
-[[nodiscard]] auto parse_server_options(const int argc, char** argv)
-    -> server_options
+ServerOptions parse_server_options(int argc, char** argv)
 {
     if (argc < 1 || argc > 3)
     {
@@ -197,28 +147,38 @@ struct server_options
             "usage: easylocal_assignment_rest_mwe [port [completed-run-capacity]]"};
     }
 
-    server_options options;
+    ServerOptions options;
     if (argc >= 2)
     {
-        options.port = static_cast<std::uint16_t>(
-            parse_positive_size(argv[1], "REST port", 65535));
+        options.port =
+            static_cast<std::uint16_t>(parse_positive_size(argv[1], "REST port", 65535));
     }
     if (argc == 3)
     {
-        options.completed_run_capacity = parse_positive_size(
-            argv[2],
-            "completed-run-capacity");
+        options.completed_run_capacity =
+            parse_positive_size(argv[2], "completed-run-capacity");
     }
     return options;
 }
 
+} // namespace
+
 int main(int argc, char** argv)
 {
-    const auto options = parse_server_options(argc, argv);
+    ServerOptions options;
+    try
+    {
+        options = parse_server_options(argc, argv);
+    }
+    catch (const std::exception& error)
+    {
+        std::cerr << "error: " << error.what() << '\n';
+        return 2;
+    }
 
     auto api = easylocal::rest::blueprint(
         "/assignment",
-        make_application(),
+        make_application("assignment"),
         AssignmentCodec{},
         easylocal::rest::blueprint_options{
             .workers = 2,
@@ -229,7 +189,5 @@ int main(int argc, char** argv)
     crow::SimpleApp server;
     server.register_blueprint(api.crow_blueprint());
 
-    server.port(options.port)
-        .multithreaded()
-        .run();
+    server.port(options.port).multithreaded().run();
 }

@@ -3,17 +3,18 @@
 #include "neighborhood_explorer.hpp"
 #include "solution_manager.hpp"
 #include "support/approximate.hpp"
+#include "support/exam_timeslot_load_delta.hpp"
 
+#include <easylocal/config/tree.hpp>
 #include <easylocal/cost.hpp>
 #include <easylocal/runners/run_control.hpp>
 #include <easylocal/runners/runner.hpp>
-#include <easylocal/config/tree.hpp>
 #include <easylocal/runners/simulated_annealing.hpp>
 #include <easylocal/trace.hpp>
 
+#include <array>
 #include <cstddef>
 #include <cstdint>
-#include <array>
 #include <iostream>
 #include <optional>
 #include <random>
@@ -26,7 +27,7 @@ namespace
 
 using namespace easylocal;
 using namespace easylocal::runners;
-namespace exam = easylocal::mwe::exam_timetabling;
+namespace exam = exam_timetabling;
 
 struct CountingEngine
 {

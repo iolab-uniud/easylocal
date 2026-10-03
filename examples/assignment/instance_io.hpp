@@ -10,11 +10,10 @@
 #include <string>
 #include <type_traits>
 
-namespace easylocal::mwe::assignment
+namespace assignment
 {
 
-[[nodiscard]]
-inline auto read_assignment_instance(std::istream& input) -> AssignmentInstance
+inline AssignmentInstance read_assignment_instance(std::istream& input)
 {
     std::size_t job_count{};
     std::size_t machine_count{};
@@ -52,23 +51,19 @@ inline auto read_assignment_instance(std::istream& input) -> AssignmentInstance
     return instance;
 }
 
-[[nodiscard]]
-inline auto read_input(
+inline AssignmentInstance read_input(
     std::type_identity<AssignmentInstance>,
-    std::istream& input) -> AssignmentInstance
+    std::istream& input)
 {
     return read_assignment_instance(input);
 }
 
-[[nodiscard]]
-inline auto load_instance(const std::filesystem::path& path)
-    -> AssignmentInstance
+inline AssignmentInstance load_instance(const std::filesystem::path& path)
 {
     std::ifstream input{path};
     if (!input)
     {
-        throw std::runtime_error(
-            "cannot open assignment instance: " + path.string());
+        throw std::runtime_error("cannot open assignment instance: " + path.string());
     }
 
     try
@@ -77,9 +72,8 @@ inline auto load_instance(const std::filesystem::path& path)
     }
     catch (const std::runtime_error& error)
     {
-        throw std::runtime_error{
-            std::string{error.what()} + ": " + path.string()};
+        throw std::runtime_error{std::string{error.what()} + ": " + path.string()};
     }
 }
 
-} // namespace easylocal::mwe::assignment
+} // namespace assignment

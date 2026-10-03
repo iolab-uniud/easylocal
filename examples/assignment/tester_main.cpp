@@ -1,13 +1,8 @@
-#include "capacity_delta.hpp"
+#include "application.hpp"
 #include "instance_io.hpp"
-#include "neighborhood_explorer.hpp"
-#include "solution_manager.hpp"
-#include "demo_runner.hpp"
 
-#include <easylocal/app/app.hpp>
-#include <easylocal/runners/first_improvement.hpp>
-#include <easylocal/app/tester.hpp>
 #include <easylocal/adapters/tui/tester.hpp>
+#include <easylocal/app/tester.hpp>
 
 #ifndef EASYLOCAL_ASSIGNMENT_MWE_INSTANCE_FILE
 #error "EASYLOCAL_ASSIGNMENT_MWE_INSTANCE_FILE must name the example instance"
@@ -15,35 +10,8 @@
 
 int main()
 {
-    using namespace easylocal::mwe::assignment;
-
-    auto application = easylocal::app("assignment-tester")
-        .with_solution_manager(
-            easylocal::solution_manager<AssignmentSolutionManager>()
-            | easylocal::cost::hard_soft(
-                  easylocal::cost::apply(
-                      CapacityHardCost{},
-                      easylocal::component<CapacityCostComponent>()),
-                  easylocal::component<LoadImbalanceCostComponent>()))
-        .with_neighborhood(
-            easylocal::neighborhood<ReassignJobNeighborhoodExplorer>()
-            | easylocal::delta<
-                  CapacityCostComponent,
-                  ReassignCapacityDeltaEvaluator>())
-        .with_runner<easylocal::runners::FirstImprovement>("fi")
-        .with_runner<demo::SlowFirstImprovement>("slow-fi");
-
-    application
-        .runner_config<easylocal::runners::FirstImprovement>()
-        .max_evaluations = 100;
-
-    auto& slow_config =
-        application.runner_config<demo::SlowFirstImprovement>();
-    slow_config.max_evaluations = 2000;
-    slow_config.delay_ms = 5;
-
-    easylocal::Tester tester{std::move(application)};
-    tester.set_input(load_instance(EASYLOCAL_ASSIGNMENT_MWE_INSTANCE_FILE));
+    easylocal::Tester tester{assignment::make_application("assignment-tester")};
+    tester.set_input(assignment::load_instance(EASYLOCAL_ASSIGNMENT_MWE_INSTANCE_FILE));
 
     easylocal::tui::run(
         tester,

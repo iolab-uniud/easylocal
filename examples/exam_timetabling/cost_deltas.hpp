@@ -4,24 +4,19 @@
 #include "move.hpp"
 
 #include <cassert>
-#include <vector>
 
-namespace easylocal::mwe::exam_timetabling
+namespace exam_timetabling
 {
 
 class ConsecutiveExamDeltaEvaluator
 {
 public:
-    explicit ConsecutiveExamDeltaEvaluator(
-        const ExamTimetablingInstance& instance) noexcept
+    explicit ConsecutiveExamDeltaEvaluator(const ExamTimetablingInstance& instance)
         : instance_{instance}
     {
     }
 
-    [[nodiscard]]
-    auto delta_evaluate(
-        const ExamTimetable& solution,
-        const MoveExam& move) const noexcept -> penalty_type
+    penalty_type delta_evaluate(const ExamTimetable& solution, const MoveExam& move) const
     {
         assert(move.exam < solution.timeslot_by_exam.size());
         const auto source = solution.timeslot_by_exam[move.exam];
@@ -68,45 +63,9 @@ private:
     const ExamTimetablingInstance& instance_;
 };
 
-class TimeslotLoadDeltaEvaluator
-{
-public:
-    explicit TimeslotLoadDeltaEvaluator(
-        const ExamTimetablingInstance& instance) noexcept
-        : instance_{instance}
-    {
-    }
+// TimeslotLoadComponent has no delta evaluator: the change of a timeslot's
+// load needs all the loads, and counting them visits every exam, which is what
+// a full evaluation does. EasyLocal then evaluates each move on a candidate
+// solution, which costs the same and needs no code.
 
-    [[nodiscard]]
-    auto delta_evaluate(
-        const ExamTimetable& solution,
-        const MoveExam& move) const -> penalty_type
-    {
-        assert(move.exam < solution.timeslot_by_exam.size());
-        const auto source = solution.timeslot_by_exam[move.exam];
-        assert(source != move.destination);
-        assert(move.destination < instance_.timeslot_count);
-
-        std::vector<penalty_type> load(instance_.timeslot_count, 0);
-        for (const auto timeslot : solution.timeslot_by_exam)
-        {
-            ++load[timeslot];
-        }
-
-        const auto source_load = load[source];
-        const auto destination_load = load[move.destination];
-        const auto before =
-            source_load * source_load +
-            destination_load * destination_load;
-        const auto after =
-            (source_load - 1) * (source_load - 1) +
-            (destination_load + 1) * (destination_load + 1);
-
-        return after - before;
-    }
-
-private:
-    const ExamTimetablingInstance& instance_;
-};
-
-} // namespace easylocal::mwe::exam_timetabling
+} // namespace exam_timetabling

@@ -1,13 +1,13 @@
-#include "../examples/assignment/capacity_delta.hpp"
 #include "../examples/assignment/cost_components.hpp"
 #include "../examples/assignment/instance.hpp"
 #include "../examples/assignment/neighborhood_explorer.hpp"
 #include "../examples/assignment/solution_manager.hpp"
+#include "support/assignment_capacity_delta.hpp"
 
 #include <easylocal/app/app.hpp>
-#include <easylocal/runners/runner.hpp>
 #include <easylocal/runners/best_improvement.hpp>
 #include <easylocal/runners/first_improvement.hpp>
+#include <easylocal/runners/runner.hpp>
 
 #include <cassert>
 #include <concepts>
@@ -20,7 +20,7 @@
 namespace
 {
 
-using namespace easylocal::mwe::assignment;
+using namespace assignment;
 
 struct StatefulRunnerConfig
 {
@@ -60,9 +60,8 @@ private:
 [[nodiscard]]
 auto make_application()
 {
-    auto sm =
-        easylocal::solution_manager<AssignmentSolutionManager>()
-        | easylocal::mwe::assignment::assignment_cost();
+    auto sm = easylocal::solution_manager<AssignmentSolutionManager>()
+        | assignment::assignment_cost();
 
     auto nhe =
         easylocal::neighborhood<ReassignJobNeighborhoodExplorer>()
@@ -203,9 +202,8 @@ void direct_app_runs_use_fresh_runtime_state()
         .capacity = {5, 5},
     };
 
-    auto sm =
-        easylocal::solution_manager<AssignmentSolutionManager>()
-        | easylocal::mwe::assignment::assignment_cost();
+    auto sm = easylocal::solution_manager<AssignmentSolutionManager>()
+        | assignment::assignment_cost();
 
     auto nhe =
         easylocal::neighborhood<ReassignJobNeighborhoodExplorer>()
@@ -284,9 +282,8 @@ void app_can_make_and_equip_solvers()
 
 void named_runner_registrations_can_be_selected_for_solver_creation()
 {
-    auto sm =
-        easylocal::solution_manager<AssignmentSolutionManager>()
-        | easylocal::mwe::assignment::assignment_cost();
+    auto sm = easylocal::solution_manager<AssignmentSolutionManager>()
+        | assignment::assignment_cost();
 
     auto nhe =
         easylocal::neighborhood<ReassignJobNeighborhoodExplorer>()
@@ -355,9 +352,8 @@ void named_runner_registrations_can_be_selected_for_solver_creation()
 
 void app_builder_pipes_and_registration_parameters()
 {
-    auto sm =
-        easylocal::solution_manager<AssignmentSolutionManager>()
-        | easylocal::mwe::assignment::assignment_cost();
+    auto sm = easylocal::solution_manager<AssignmentSolutionManager>()
+        | assignment::assignment_cost();
     auto nhe =
         easylocal::neighborhood<ReassignJobNeighborhoodExplorer>()
         | easylocal::delta<

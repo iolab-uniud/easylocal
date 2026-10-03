@@ -15,13 +15,13 @@ class RandomDescent
 public:
     using parameters_type = RandomDescentParameters; // for app registration
 
-    explicit RandomDescent(RandomDescentParameters parameters)
-        : parameters_{parameters}
+    explicit RandomDescent(RandomDescentParameters parameters) : parameters_{parameters}
     {
     }
 
+    // The result type is the one run.finish() returns: auto deduces it.
     template<class Run, std::uniform_random_bit_generator RNG>
-    auto run(Run& run, typename Run::solution_type solution, RNG& rng) const
+    auto run(Run& run, Run::solution_type solution, RNG& rng) const
     {
         run.limit_evaluations(parameters_.max_evaluations);
         auto current = run.start(solution); // evaluates, emits run_started
@@ -74,8 +74,9 @@ The runner is used like a built-in one:
 
 <!-- snippet: tutorial/main.cpp:custom-runner-use -->
 ```cpp
-auto descent = el::make_runner<RandomDescent>(RandomDescentParameters{.max_evaluations = 200})
-             | sm | nhe;
+auto descent =
+    el::make_runner<RandomDescent>(RandomDescentParameters{.max_evaluations = 200})
+    | sm | nhe;
 ```
 
 `parameters_type` is only needed to register the runner in an app (chapter 11).
