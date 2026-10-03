@@ -9,7 +9,9 @@
 #include <algorithm>
 #include <array>
 #include <cstddef>
+#include <cstdint>
 #include <iostream>
+#include <optional>
 #include <random>
 #include <string_view>
 #include <variant>
@@ -51,6 +53,12 @@ public:
     [[nodiscard]] static auto is_valid(const Position& position) noexcept -> bool
     {
         return position.value >= 0 && position.value <= 10;
+    }
+
+    // For the reactive list.
+    [[nodiscard]] static auto hash(const Position& position) noexcept -> std::uint64_t
+    {
+        return static_cast<std::uint64_t>(position.value);
     }
 
 private:
@@ -97,10 +105,28 @@ public:
         return steps;
     }
 
+    // For the reactive list's escape.
+    template<std::uniform_random_bit_generator RNG>
+    [[nodiscard]] static auto random_move(const Position& position, RNG& rng)
+        -> std::optional<Step>
+    {
+        const auto steps = moves(position);
+        if (steps.empty())
+            return std::nullopt;
+        return steps[std::uniform_int_distribution<std::size_t>{0, steps.size() - 1}(
+            rng)];
+    }
+
     [[nodiscard]] auto inverse(const Position&, const Step& move, const Step& tabu_move)
         const -> bool
     {
         return every_move_tabu_ || move.delta == -tabu_move.delta;
+    }
+
+    // For the frequency list: the direction.
+    [[nodiscard]] static auto tabu_attribute(const Step& move) noexcept -> int
+    {
+        return move.delta;
     }
 
 private:
@@ -181,6 +207,35 @@ int main()
             static_cast<bool>(configuration.apply(valid))
                 && parameters.tabu_list.tenure == 3,
             "the tabu list's parameters can be changed");
+    }
+
+    {
+        // The cyclic list's tenures are a vector: [a, b, ...].
+        TabuSearch<tabu::Cyclic>::parameters_type parameters;
+        easylocal::config::parameter_set configuration;
+        configuration.add(parameters);
+        ok &= expect(
+            std::ranges::any_of(
+                configuration.parameters(),
+                [](const easylocal::config::parameter_info& parameter) {
+                    return parameter.path == "tabu_list.tenures"
+                        && parameter.value == "[11, 34, 20, 8, 98]";
+                }),
+            "a vector parameter is written as [a, b, ...]");
+        const std::array tenures{
+            easylocal::config::text_override{"tabu_list.tenures", "[3, 4]"}};
+        ok &= expect(
+            static_cast<bool>(configuration.apply(tenures))
+                && parameters.tabu_list.tenures == std::vector<std::size_t>{3, 4},
+            "a vector parameter is read with any number of elements");
+        const std::array empty{
+            easylocal::config::text_override{"tabu_list.tenures", "[]"}};
+        const std::array malformed{
+            easylocal::config::text_override{"tabu_list.tenures", "[3, x]"}};
+        ok &= expect(
+            !configuration.apply(empty) && !configuration.apply(malformed)
+                && parameters.tabu_list.tenures == std::vector<std::size_t>{3, 4},
+            "an empty or malformed vector is rejected, leaving the parameters");
     }
 
     {
@@ -312,6 +367,71 @@ int main()
             targeted.termination == termination_reason::target_reached
                 && targeted.cost == 2,
             "tabu search stops at a reached target");
+    }
+
+    {
+        // Every list leaves the local minimum at 1 for the valley at 5.
+        std::mt19937 rng{7U};
+        const auto random_tenure =
+            line_runner<TabuSearch<tabu::RandomTenure>, Valley>(
+                {.max_idle_iterations = 3,
+                    .tabu_list = {.min_tenure = 2, .max_tenure = 3}})
+                .bind(instance)
+                .run(Position{1}, rng);
+        const auto cyclic =
+            line_runner<TabuSearch<tabu::Cyclic>, Valley>(
+                {.max_idle_iterations = 3, .tabu_list = {.period = 2, .tenures = {2, 3}}})
+                .bind(instance)
+                .run(Position{1}, rng);
+        const auto reactive =
+            line_runner<TabuSearch<tabu::Reactive>, Valley>(
+                {.max_idle_iterations = 3, .tabu_list = {}})
+                .bind(instance)
+                .run(Position{1}, rng);
+        ok &= expect(
+            random_tenure.cost == 0 && cyclic.cost == 0 && reactive.cost == 0,
+            "random tenure, cyclic and reactive lists leave the local minimum");
+
+        const auto frequency =
+            line_runner<TabuSearch<tabu::Frequency>, Valley>(
+                {.max_idle_iterations = 5, .tabu_list = {.threshold = 0.6}})
+                .bind(instance)
+                .run(Position{1}, rng);
+        ok &= expect(
+            frequency.cost <= 3
+                && frequency.termination == termination_reason::idle_limit_reached,
+            "the frequency list runs on the moves' attributes");
+    }
+
+    {
+        // A bowl around 5: the search runs to a border and bounces, revisiting
+        // solutions; with no repetition allowed the first revisit escapes with
+        // random moves, which cost one evaluation each instead of a scan.
+        using Bowl = Profile<5, 4, 3, 2, 1, 0, 1, 2, 3, 4, 5>;
+        auto runner = line_runner<TabuSearch<tabu::Reactive>, Bowl>(
+            {.max_idle_iterations = 100,
+                .max_iterations = 40,
+                .tabu_list = {.repetitions = 0, .chaos = 0, .cycle_length = 100}});
+        std::mt19937 rng{7U};
+        easylocal::trace::memory_recorder<int> trace;
+        const auto result =
+            runner.bind(instance).run(Position{5}, rng, easylocal::with(trace));
+        std::size_t accepted = 0;
+        for (const auto& record : trace.records())
+        {
+            accepted += std::holds_alternative<
+                easylocal::trace::memory_recorder<int>::move_accepted_record>(record);
+        }
+        auto calm = line_runner<TabuSearch<tabu::Reactive>, Bowl>(
+            {.max_idle_iterations = 100,
+                .max_iterations = 40,
+                .tabu_list = {.repetitions = 1000, .cycle_length = 100}});
+        std::mt19937 calm_rng{7U};
+        const auto without_escape = calm.bind(instance).run(Position{5}, calm_rng);
+        ok &= expect(
+            result.iterations == 40 && accepted == 40
+                && result.evaluations < without_escape.evaluations && result.cost == 0,
+            "the reactive list escapes with random moves, counted as iterations");
     }
 
     return ok ? 0 : 1;

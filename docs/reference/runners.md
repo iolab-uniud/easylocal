@@ -80,13 +80,35 @@ Tabu lists in `runners::tabu`; their parameters are the group `tabu_list`:
 
 | List | Parameters | A move stays tabu |
 | --- | --- | --- |
-| `FixedLength` | `tenure` | for `tenure` iterations after the move it would undo |
+| `FixedLength` (TS1) | `tenure` | for `tenure` iterations after the move it would undo |
+| `RandomTenure` (TS2) | `min_tenure`, `max_tenure` | for a tenure drawn uniformly in `[min_tenure, max_tenure]` |
+| `Cyclic` (TS3) | `period`, `tenures` | for the current tenure, which takes the `tenures` in turn every `period` iterations |
+| `Reactive` (TS4) | `increase`, `decrease`, `repetitions`, `chaos`, `cycle_length`, `max_tenure` | for a tenure that reacts to revisited solutions; needs the solution hash and `random_move` |
+| `Frequency` (TS5) | `threshold` | while its attribute was applied in more than `threshold` of the iterations; needs `tabu_attribute`, not `inverse` |
+
+The first four forbid moves through the neighborhood's `inverse`, `Frequency`
+through its `tabu_attribute` (see
+[NeighborhoodExplorer](neighborhood-explorer.md)); each requires only what it
+uses. `Reactive` (Battiti and Tecchiolli) starts with tenure 1 and recognizes
+solutions by `solution_hash` (see [SolutionManager](solution-manager.md)); a
+hash collision counts as a revisit. A solution revisited within `cycle_length`
+iterations multiplies the tenure by `increase` (up to `max_tenure`) and updates
+the average cycle length; without such cycles for longer than the average, the
+tenure is multiplied by `decrease`. A solution visited more than `repetitions`
+times counts as chaos; after more than `chaos` counts the memory is reset and
+the search escapes with `1 + (1 + r) * average / 2` random moves (`r` uniform
+in `[0, 1)`), applied whatever their cost, counted as iterations and not
+recorded in the list.
 
 A tabu list is a value with its parameters that makes, for each run, a state
-for the move type: `tabu_tenure(is_inverse)` gives the iterations left before
-a move is admissible (nothing when it is), `update(step, rng)` records an
-applied move (`tabu_step`: the move, the solution, its cost, the iteration,
-whether the best improved). `tabu_list_for` checks a custom list.
+with `make_state<Run>()`. `tabu_tenure(candidate)` gives the iterations left
+before a candidate move is admissible, nothing when it is (`tabu_candidate`:
+`move()`, `forbidden_by(tabu_move)` through the inverse, `attribute()`);
+`update(step, rng)` records an applied move (`tabu_step`: `move()`,
+`solution()`, `cost()`, `iteration()`, `improved_best()`, `attribute()`,
+`solution_hash()`, the last two when the problem has them). A state with
+`escape_moves()` asks for that many random moves. `tabu_list_for` checks a
+custom list.
 
 Great Deluge accepts a move that improves the current cost or whose cost does
 not exceed the water level. The level starts at `initial_level` times the

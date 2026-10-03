@@ -570,6 +570,20 @@ add_test(
 )
 
 add_executable(
+    easylocal_tabu_lists_test
+    tabu_lists.cpp
+)
+target_link_libraries(
+    easylocal_tabu_lists_test
+    PRIVATE
+        EasyLocal::Core
+)
+add_test(
+    NAME easylocal.tabu-lists
+    COMMAND easylocal_tabu_lists_test
+)
+
+add_executable(
     easylocal_pfsp_test
     pfsp.cpp
 )
