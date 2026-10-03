@@ -89,17 +89,6 @@ struct options
 namespace detail
 {
 
-template<class Cost>
-void write_cost(std::ostream& out, const Cost& cost)
-{
-    if constexpr (easylocal::cost::text_readable<Cost>)
-        out << easylocal::cost::to_text(cost);
-    else if constexpr (requires { out << cost; })
-        out << cost;
-    else
-        out << "(not printable)";
-}
-
 // One line per cost component, "component <name> <value>", followed by its
 // description, indented, when it has one.
 template<class Session>
@@ -217,7 +206,8 @@ int run(App application, const int argc, char* argv[], options settings = {})
         }
 
         const auto begin = std::chrono::steady_clock::now();
-        const bool ran = command_line.target.empty()
+        // Blank text is no target, as RunParameters reads it.
+        const bool ran = command_line.target.find_first_not_of(" \t") == std::string::npos
             ? session.run(runner)
             : session.run(runner, stop_at(session.read_cost(command_line.target)));
         const std::chrono::duration<double> elapsed =
@@ -225,9 +215,8 @@ int run(App application, const int argc, char* argv[], options settings = {})
         if (!ran)
             return 1; // the name was checked above
 
-        out << "cost ";
-        detail::write_cost(out, session.evaluate());
-        out << "\ntime " << elapsed.count() << '\n';
+        out << "cost " << easylocal::detail::report_text(session.evaluate()) << "\ntime "
+            << elapsed.count() << '\n';
         if (command_line.report)
             detail::write_report(out, session);
         if (command_line.output.empty())

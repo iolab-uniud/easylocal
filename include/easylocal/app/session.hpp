@@ -65,11 +65,12 @@ concept describing_component =
         { component.describe(solution) } -> std::convertible_to<std::string>;
     };
 
-// A component's value as text: as a cost reads it back when it is one, else
-// by its describe hook or operator<<.
+// A cost or a component's value as text for reports (Session::cost_report,
+// cli::run): as a cost reads it back when it is one, else by its describe
+// hook or operator<<.
 template<class Value>
 [[nodiscard]]
-std::string component_value_text(const Value& value)
+std::string report_text(const Value& value)
 {
     if constexpr (cost::text_readable<Value>)
         return cost::to_text(value);
@@ -911,7 +912,7 @@ private:
             entry.name = std::string{component.name()};
         else
             entry.name = "#" + std::to_string(Index + 1);
-        entry.value = detail::component_value_text(
+        entry.value = detail::report_text(
             solution_manager.template evaluate_component<Index>(*solution_));
         if constexpr (detail::describing_component<component_type, solution_type>)
             entry.description = component.describe(*solution_);
