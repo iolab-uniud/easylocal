@@ -72,7 +72,8 @@ The algorithms live in `easylocal::runners`, one header each:
 | `SimulatedAnnealing<Temperature, Acceptance>` | `runners/simulated_annealing.hpp` | `random_move`, `cost::delta` | a temperature policy |
 
 Simulated Annealing takes a temperature policy (`Classic`, `FixedLength`,
-`Cutoff`, `Hybrid`, `FixedTemperature`, `TimeBased` in `runners::temperature`); acceptance defaults to
+`Cutoff`, `Hybrid`, `FixedTemperature`, `TimeBased`, `Reheating` in
+`runners::temperature`); acceptance defaults to
 `runners::MetropolisAcceptance`. Stochastic algorithms receive the RNG as a
 `run` argument:
 

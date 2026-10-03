@@ -54,8 +54,8 @@ old concepts onto the new ones.
   (random non-worsening moves, stopping after a number of idle iterations),
   **Late Acceptance Hill Climbing**, **Great Deluge** and **Simulated
   Annealing**, with the temperature policies `Classic`, `FixedLength`,
-  `Cutoff`, `Hybrid`, `FixedTemperature` and `TimeBased` (cooling spread over
-  a running time) and Metropolis acceptance. Writing a new runner means
+  `Cutoff`, `Hybrid`, `FixedTemperature`, `TimeBased` (cooling spread over a
+  running time) and `Reheating`, and Metropolis acceptance. Writing a new runner means
   writing one `run(...)` function against `easylocal::search_run`, which owns
   counters, evaluation budget, cancellation, progress and trace events.
 - Every runner is cancellable through a `std::stop_token`, reports progress,

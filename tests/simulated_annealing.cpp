@@ -469,6 +469,58 @@ int main()
     }
 
     {
+        // The first descent spends 6 of 12 iterations over three levels,
+        // 8 -> 4 -> 2 -> 1; each of two reheats restarts from 4 and spends 3.
+        temperature::Reheating policy{temperature::ReheatingParameters{
+            .initial_temperature = 8.0,
+            .final_temperature = 1.0,
+            .cooling_rate = 0.5,
+            .max_iterations = 12,
+            .accepted_ratio = 1.0,
+            .max_reheats = 2,
+            .reheat_ratio = 0.5,
+            .first_descent_share = 0.5,
+        }};
+        ok &= expect(policy.temperature() == 8.0, "reheating starts at T0");
+        for (int i = 0; i < 2; ++i)
+            policy.on_iteration(false);
+        ok &= expect(
+            policy.temperature() == 4.0,
+            "reheating cools within its first descent");
+        for (int i = 0; i < 4; ++i)
+            policy.on_iteration(false);
+        ok &= expect(
+            policy.reheats() == 1 && policy.temperature() == 4.0 && !policy.finished(),
+            "reheating restarts from the reheat temperature after the first descent");
+        for (int i = 0; i < 3; ++i)
+            policy.on_iteration(false);
+        ok &= expect(
+            policy.reheats() == 2 && policy.temperature() == 4.0,
+            "each reheat spends its share of the remaining iterations");
+        for (int i = 0; i < 3; ++i)
+            policy.on_iteration(false);
+        ok &= expect(policy.finished(), "reheating ends after its last descent");
+        policy.reset();
+        ok &= expect(
+            policy.reheats() == 0 && policy.temperature() == 8.0 && !policy.finished(),
+            "reheating reset restarts the first descent");
+
+        ok &= expect(
+            static_cast<bool>(temperature::ReheatingParameters{}.validate())
+                && static_cast<bool>(temperature::ReheatingParameters{
+                    .max_reheats = 0,
+                    .first_descent_share = 1.0}
+                        .validate())
+                && !temperature::ReheatingParameters{.reheat_ratio = 0.0}.validate()
+                && !temperature::ReheatingParameters{.first_descent_share = 1.0}
+                    .validate()
+                && !temperature::
+                    ReheatingParameters{.final_temperature = 6.0, .reheat_ratio = 0.5}
+                        .validate(),
+            "reheating validates its reheat ratio and first-descent share");
+    }
+
+    {
         MetropolisAcceptance metropolis;
         CountingEngine rng;
         ok &= expect(metropolis.accept(9, 10, 2.0, rng),
