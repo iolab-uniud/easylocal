@@ -46,31 +46,6 @@ struct config_file_parse_result
     }
 };
 
-namespace detail
-{
-
-[[nodiscard]]
-constexpr std::string_view trim_config_space(std::string_view text) noexcept
-{
-    while (!text.empty() &&
-           (text.front() == ' ' || text.front() == '\t' ||
-            text.front() == '\r'))
-    {
-        text.remove_prefix(1);
-    }
-
-    while (!text.empty() &&
-           (text.back() == ' ' || text.back() == '\t' ||
-            text.back() == '\r'))
-    {
-        text.remove_suffix(1);
-    }
-
-    return text;
-}
-
-} // namespace detail
-
 [[nodiscard]]
 inline config_file_parse_result parse_config_text(const std::string_view text)
 {
@@ -87,7 +62,7 @@ inline config_file_parse_result parse_config_text(const std::string_view text)
         const auto raw_line = newline == std::string_view::npos
             ? text.substr(cursor)
             : text.substr(cursor, newline - cursor);
-        const auto line = detail::trim_config_space(raw_line);
+        const auto line = detail::trim_ascii_space(raw_line);
 
         if (!line.empty() && !line.starts_with('#'))
         {
@@ -103,8 +78,8 @@ inline config_file_parse_result parse_config_text(const std::string_view text)
             }
             else
             {
-                const auto path = detail::trim_config_space(line.substr(0, equals));
-                const auto value = detail::trim_config_space(line.substr(equals + 1));
+                const auto path = detail::trim_ascii_space(line.substr(0, equals));
+                const auto value = detail::trim_ascii_space(line.substr(equals + 1));
 
                 if (path.empty())
                 {

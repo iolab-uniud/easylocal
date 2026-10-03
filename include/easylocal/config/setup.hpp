@@ -240,13 +240,6 @@ inline void print_diagnostics(
         switch (diagnostic.source)
         {
         case setup_diagnostic_source::validation:
-            if (!diagnostic.subject.empty())
-            {
-                output << diagnostic.subject << ": ";
-            }
-            output << diagnostic.message;
-            break;
-
         case setup_diagnostic_source::command_line:
             if (!diagnostic.subject.empty())
             {
