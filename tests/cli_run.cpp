@@ -58,7 +58,8 @@ auto tsp_app()
 
 Captured run(
     std::initializer_list<std::string> arguments,
-    easylocal::config::parameter_set own = {})
+    easylocal::config::parameter_set own = {},
+    easylocal::cli::parameters defaults = {})
 {
     std::vector<std::string> storage{"cli_run"};
     storage.insert(storage.end(), arguments);
@@ -73,7 +74,10 @@ Captured run(
         tsp_app(),
         static_cast<int>(argv.size()),
         argv.data(),
-        {.parameters = std::move(own), .out = &out, .err = &err});
+        {.defaults = std::move(defaults),
+            .parameters = std::move(own),
+            .out = &out,
+            .err = &err});
     captured.out = out.str();
     captured.err = err.str();
     return captured;
@@ -97,6 +101,15 @@ int main()
         {"--instance", instance, "--seed", "1", "--runner", "fi", "--report", "true"});
     assert(reported.status == 0);
     assert(reported.out.find("\ncomponent TourLength 26\n  ") != std::string::npos);
+
+    // The effort of the run, which First Improvement reports.
+    assert(solved.out.find("\ntermination local optimum\n") != std::string::npos);
+    assert(solved.out.find("\niterations ") != std::string::npos);
+
+    // Defaults stand for switches the command line does not give.
+    const auto defaulted = run({}, {}, {.instance = instance, .start = "initial"});
+    assert(defaulted.status == 0);
+    assert(defaulted.out.starts_with("cost 26\n")); // 0 1 2 3 4 (29) improved
 
     // The first registered runner when none is named.
     assert(run({"--instance", instance}).status == 0);

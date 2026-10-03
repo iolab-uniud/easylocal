@@ -41,9 +41,11 @@ current runner parameters. A bound app (`bind`) offers
 `solution_manager()`, `neighborhood()`, `input()`, `runner<A>()`,
 `run<A>(solution, args...)` and `run_at<I>(...)` on services built once.
 
-`named_run_result{solution, cost}` keeps what every runner result provides
-(`search_result_for`): a runner chosen by name may be any algorithm, built-in
-or your own, each with its own result type.
+`named_run_result{solution, cost, effort}` keeps what every runner result
+provides (`search_result_for`): a runner chosen by name may be any algorithm,
+built-in or your own, each with its own result type. `effort` is a
+`run_effort{evaluations, iterations, termination}` when the result has those
+members, as `search_result` does, and empty otherwise.
 
 ## Tools
 
@@ -79,11 +81,15 @@ current cost is shown in the same syntax.
 `config::load_and_apply`: its own block `cli::parameters` at the root
 (`instance`, `seed`, `runner`, `start`, `solution`, `output`, `target`,
 `report`), the
-app's `configuration()`, and `options.parameters`, the program's own set. It
+app's `configuration()`, and `options.parameters`, the program's own set;
+`options.defaults`, a `cli::parameters`, gives the values of its switches
+before the command line. It
 then builds a `Session` with the seed, loads the Input, takes the starting
 solution (`--solution`, else `--start`: `random` by default when the problem
 has `random_solution`, `initial` otherwise), runs the runner by name, with
-`stop_at` when `--target` is set, and writes `cost`, `time`, with `--report`
+`stop_at` when `--target` is set, and writes `cost`, `time`, the session's
+`last_run_effort()` when the runner reports it (`iterations`, `evaluations`,
+`termination`), with `--report`
 the session's `cost_report()` (a line `component <name> <value>` for each
 component, followed by its description, indented), and the solution
 (or saves it to `--output`) to `options.out`; errors go to `options.err`. It
@@ -168,7 +174,7 @@ flowchart TB
 | Solution | `use_initial_solution`, `use_random_solution(rng)`, `set_solution`, `load_solution`, `save_solution`, `solution`, `is_valid`, `evaluate`, `check()` |
 | Move | select with `use_first_move`, `use_next_move`, `use_first_improving_move`, `use_best_move`, `use_random_move(rng)` or `set_move`; then `move_is_valid`, `evaluate_move`, `evaluate_move_fully`, `move_evaluation_matches_full`, `apply_move` |
 | Neighborhood | `neighborhood_preview`, `neighborhood_statistics`, `check_neighborhood_costs`, `check_move_independence` (needs `Solution::operator==`), `check_random_move_distribution(rng)` (needs `Move::operator==`) |
-| Runners | `runner_names`, `run("name", options...)` (replaces the current solution; options are `with(control, tracer)`) |
+| Runners | `runner_names`, `run("name", options...)` (replaces the current solution; options are `with(control, tracer)`), `last_run_effort()`: the evaluations, iterations and termination of the last run, when its algorithm reports them |
 | Costs | `read_cost(text)`: a cost written as text, such as a target, by the problem's `read_cost` or `cost::from_text`; `cost_report()`: each cost component on the current solution, in the order of the recipe, as `component_report{name, value, description}`: its `name()` or `#<position>`, its own value without weights, and its `describe(solution)` text, empty without it |
 | Parameters | `configuration()`, the app's; `configure(text_overrides)` applies them all or none and, when the cost or the neighborhood changes, rebuilds the bound services |
 

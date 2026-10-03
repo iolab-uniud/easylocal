@@ -535,10 +535,18 @@ void session_runs_a_named_runner_on_the_current_solution()
 
     const auto before = session.evaluate();
     assert(before.soft() == 7);
+    assert(!session.last_run_effort()); // no run yet
 
     const auto ran = session.run("deep");
 
     assert(ran);
+    // First Improvement reports its effort: one committed move, then a
+    // local optimum.
+    const auto& effort = session.last_run_effort();
+    assert(effort);
+    assert(effort->iterations >= 1);
+    assert(effort->evaluations > effort->iterations);
+    assert(effort->termination == easylocal::termination_reason::local_optimum);
     assert(session.has_solution());
     assert(session.is_valid());
     assert(session.evaluate().soft() == 1);

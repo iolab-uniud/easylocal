@@ -487,8 +487,17 @@ public:
             return false;
 
         solution_ = std::make_unique<solution_type>(std::move(result->solution));
+        last_run_effort_ = result->effort;
         clear_move_state();
         return true;
+    }
+
+    // The effort of the last run (evaluations, iterations, termination), when
+    // its algorithm reports it; empty before the first run.
+    [[nodiscard]]
+    const std::optional<run_effort>& last_run_effort() const noexcept
+    {
+        return last_run_effort_;
     }
 
     [[nodiscard]]
@@ -956,6 +965,7 @@ private:
     std::shared_ptr<const input_type> input_;
     std::unique_ptr<bound_app_type> bound_;
     std::unique_ptr<solution_type> solution_;
+    std::optional<run_effort> last_run_effort_;
     std::optional<move_type> move_;
     std::optional<std::size_t> deterministic_move_index_;
     rng_type rng_;

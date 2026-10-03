@@ -782,7 +782,7 @@ return el::cli::run(application, argc, argv);
 | the runners' parameters, `--SA::cooling_rate` | `--runners.sa.temperature.cooling_rate`; `--help` lists them all |
 | `Random::SetSeed(seed)` | `--seed`, the seed of the run's random generator |
 | `--main::init_state` | `--solution <file>`, or `--start initial` / `random` |
-| `solver.Solve()`, printing `result.cost` and `result.output` | the run, then `cost`, `time` and the solution, or `--output <file>` |
+| `solver.Solve()`, printing `result.cost` and `result.output` | the run, then `cost`, `time`, the iterations, evaluations and termination, and the solution, or `--output <file>` |
 | `IsSet()` checks | the parameters' own validation, with an exit status of 2 |
 
 The program runs as before, with plain switches in place of `--main::`:
@@ -790,7 +790,10 @@ The program runs as before, with plain switches in place of `--main::`:
 ```text title="EasyLocal 4 — output"
 $ easylocal_tutorial_cli --instance five.tsp --runner fi --seed 1
 cost 26
-time 4.0375e-05
+time 1.9125e-05
+iterations 2
+evaluations 9
+termination local optimum
 0 1 3 4 2
 ```
 

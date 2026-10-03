@@ -34,13 +34,15 @@ namespace easylocal::cli
 // (--runners.<name>.*, --cost.*, --neighborhood.*).
 struct parameters
 {
-    std::filesystem::path instance;
+    // Every field has an initializer, so that designated initializers, as in
+    // options::defaults, may name only some of them.
+    std::filesystem::path instance{};
     std::uint64_t seed{0};
-    std::string runner;
-    std::string start;
-    std::filesystem::path solution;
-    std::filesystem::path output;
-    std::string target;
+    std::string runner{};
+    std::string start{};
+    std::filesystem::path solution{};
+    std::filesystem::path output{};
+    std::string target{};
     bool report{false};
 
     [[nodiscard]]
@@ -79,6 +81,10 @@ struct parameters
 // What cli::run adds to the command line and where it writes.
 struct options
 {
+    // The values of the switches before the command line, such as an
+    // instance or a runner to use when none is given.
+    parameters defaults{};
+
     // The program's own parameters, parsed with the others; they refer to
     // blocks that must outlive the call.
     config::parameter_set parameters{};
@@ -122,8 +128,10 @@ void write_solution(std::ostream& out, const Session& session)
 
 // Runs application as a program: parses argc and argv (and a --config file),
 // loads the Input, starts from a random, initial or loaded solution, runs the
-// chosen runner and prints "cost", "time" (seconds), with --report the value
-// of each cost component, and the solution, or saves it to --output. Returns the exit
+// chosen runner and prints "cost", "time" (seconds), the effort of the run
+// ("iterations", "evaluations", "termination") when the algorithm reports it,
+// with --report the value of each cost component, and the solution, or saves
+// it to --output. Returns the exit
 // status: 0 on success, 1 when the run fails (an unreadable file, for example), 2 for an
 // invalid command line.
 template<class App>
@@ -138,7 +146,7 @@ int run(App application, const int argc, char* argv[], options settings = {})
     auto& out = *settings.out;
     auto& err = *settings.err;
 
-    parameters command_line;
+    parameters command_line = settings.defaults;
     config::parameter_set configuration;
     configuration.add(command_line);
     configuration.add(application.configuration());
@@ -217,6 +225,12 @@ int run(App application, const int argc, char* argv[], options settings = {})
 
         out << "cost " << easylocal::detail::report_text(session.evaluate()) << "\ntime "
             << elapsed.count() << '\n';
+        if (const auto& effort = session.last_run_effort())
+        {
+            out << "iterations " << effort->iterations << "\nevaluations "
+                << effort->evaluations << "\ntermination "
+                << to_string(effort->termination) << '\n';
+        }
         if (command_line.report)
             detail::write_report(out, session);
         if (command_line.output.empty())

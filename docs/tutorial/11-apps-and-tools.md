@@ -179,7 +179,10 @@ return el::cli::run(application, argc, argv);
 ```text
 $ easylocal_tutorial_cli --instance five.tsp --runner sa --seed 7
 cost 26
-time 0.00998033
+time 0.0119483
+iterations 6750
+evaluations 6751
+termination completed
 2 3 1 0 4
 ```
 
@@ -196,13 +199,19 @@ time 0.00998033
 | `--report true` | also print the value of each cost component, see below |
 | `--config <file>` | the same settings from a file (chapter 9); `--help` lists them all |
 
-- It prints `cost`, `time` (the seconds of the run) and the solution. The exit
+- It prints `cost`, `time` (the seconds of the run), the effort of the run
+  when the algorithm reports it (the built-in ones do: `iterations`,
+  `evaluations` and `termination`, why it stopped) and the solution. The exit
   status is 0 after a run, 2 for an invalid command line (an unknown runner,
   a missing instance) and 1 when the run fails, for example on an unreadable
   file.
 - Parameters of the program's own take part as a parameter set, parsed with
   the others: `el::cli::run(application, argc, argv, {.parameters = own})`,
   where `own` holds blocks that outlive the call (chapter 9).
+- The values of the switches when the command line does not give them come
+  from `defaults`, a `cli::parameters`: the examples of `examples/` start
+  from their own instance with
+  `{.defaults = {.instance = "...", .seed = 2026, .start = "initial"}}`.
 - A program that needs more, such as several runs or a solver, builds the same
   steps from `el::config::load_and_apply` and a Session; see the
   [reference](../reference/app-and-tools.md).
@@ -242,7 +251,10 @@ std::string describe(const Tour& tour) const
 ```text
 $ easylocal_tutorial_cli --instance five.tsp --runner fi --seed 1 --report true
 cost 26
-time 3.8708e-05
+time 1.5e-05
+iterations 2
+evaluations 9
+termination local optimum
 component TourLength 26
   2 + 4 + 6 + 5 + 9
 0 1 3 4 2

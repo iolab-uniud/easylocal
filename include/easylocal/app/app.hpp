@@ -25,14 +25,24 @@
 namespace easylocal
 {
 
+// The effort of a run, when its algorithm reports it: the built-in runners
+// do, through search_result.
+struct run_effort
+{
+    std::size_t evaluations{};
+    std::size_t iterations{};
+    termination_reason termination{termination_reason::completed};
+};
+
 // The result of a runner chosen by name. Each algorithm has its own result
 // type; what every result provides (search_result_for) is the solution and its
-// cost.
+// cost, and the effort when the result has it.
 template<class Solution, class Cost>
 struct named_run_result
 {
     Solution solution;
     Cost cost;
+    std::optional<run_effort> effort;
 };
 
 namespace detail
@@ -818,10 +828,30 @@ public:
                     search_result_for<decltype(result), solution_type, cost_type>,
                     "running a runner by name requires its result to provide the "
                     "solution and its cost (see easylocal::search_result_for)");
+                std::optional<run_effort> effort;
+                if constexpr (requires {
+                                  {
+                                      result.evaluations
+                                  } -> std::convertible_to<std::size_t>;
+                                  {
+                                      result.iterations
+                                  } -> std::convertible_to<std::size_t>;
+                                  {
+                                      result.termination
+                                  } -> std::convertible_to<termination_reason>;
+                              })
+                {
+                    effort = run_effort{
+                        .evaluations = result.evaluations,
+                        .iterations = result.iterations,
+                        .termination = result.termination,
+                    };
+                }
                 outcome.emplace(
                     named_run_result<solution_type, cost_type>{
                         .solution = std::move(result.solution),
                         .cost = result.cost,
+                        .effort = effort,
                     });
             });
         return outcome;
