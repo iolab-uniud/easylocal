@@ -54,6 +54,13 @@ or your own, each with its own result type.
 | `tui::run(app, options)`, `tui::run_launcher(options, apps...)` | interactive terminal tester (TUI component, FTXUI); `tui::options` |
 | `rest::blueprint(prefix, app, codec, options)` | Crow blueprint: asynchronous runs, status, cancellation, solutions (REST component); see [REST](../rest.md) |
 
+`tui::run_launcher(options, apps...)` opens a list of apps over the same
+problem. They share the Input, read once from `options.tester.input_path`,
+and the current solution: the launcher gives both to the tester it opens and
+takes back what the tester leaves. The apps must have the same SolutionManager
+recipe, cost included, which a `static_assert` checks; they differ in the
+neighborhood and the runners.
+
 Tools give stochastic runners an RNG they own, from a configurable seed: the
 TextUI `seed` option (also editable on its Run page) and REST's per-run `seed`
 (default `blueprint_options::seed + run id`). `run("name", ...)` passes the RNG

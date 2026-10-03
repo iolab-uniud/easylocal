@@ -1,14 +1,19 @@
 #pragma once
 
-// run_launcher: a menu of several apps, each opened in the interactive tester
-// when selected.
+// run_launcher: a menu of several apps on the same problem, each opened in the
+// interactive tester when selected. The apps share the Input and the current
+// solution: the launcher keeps them, gives them to the tester it opens and
+// takes them back when it closes, so a solution built with one neighborhood
+// can be explored with another.
 
 #include <easylocal/adapters/tui/tester.hpp>
 #include <easylocal/app/session.hpp>
 
 #include <concepts>
 #include <cstddef>
+#include <filesystem>
 #include <ftxui/ftxui.hpp>
+#include <memory>
 #include <optional>
 #include <string>
 #include <tuple>
@@ -65,34 +70,90 @@ bool visit_application_at(
     }
 }
 
-template<class... Apps>
+template<class FirstApp, class... Apps>
 class launcher_frontend
 {
+    using first_session_type = easylocal::Session<FirstApp>;
+    using solution_manager_type = typename first_session_type::solution_manager_type;
+    using input_type = typename first_session_type::input_type;
+    using solution_type = typename first_session_type::solution_type;
+
+    // The Input and the solution pass from one app to the next, so every app
+    // must have the same SolutionManager, cost included: the same recipe.
+    static_assert(
+        (std::same_as<
+             typename easylocal::Session<Apps>::solution_manager_type,
+             solution_manager_type>
+            && ...),
+        "the apps of a launcher share the Input and the current solution: they "
+        "must have the same SolutionManager recipe (and differ, for example, in "
+        "the neighborhood or the runners)");
+
 public:
-    explicit launcher_frontend(launcher_options options, Apps... applications)
+    explicit launcher_frontend(
+        launcher_options options,
+        FirstApp application,
+        Apps... applications)
         : options_{std::move(options)},
-          applications_{std::move(applications)...},
+          applications_{std::move(application), std::move(applications)...},
           names_{application_names(applications_)}
     {
     }
 
     void run()
     {
+        if constexpr (first_session_type::supports_input_loading)
+        {
+            if (!options_.tester.input_path.empty())
+                input_ =
+                    std::make_shared<const input_type>(easylocal::load_input<input_type>(
+                        std::filesystem::path{options_.tester.input_path}));
+        }
+
         while (const auto selected = choose_application())
         {
             const bool dispatched =
                 visit_application_at(applications_, *selected, [this](auto& application) {
-                    auto settings = options_.tester;
-                    settings.title =
-                        options_.title + " - " + std::string{application.name()};
-                    settings.exit_label = "back to applications";
-                    easylocal::tui::run(application, std::move(settings));
+                    this->open_tester(application);
                 });
             (void)dispatched;
         }
     }
 
 private:
+    // A tester on application, from the shared Input and solution; what the
+    // tester leaves becomes the shared state for the next one.
+    template<class Selected>
+    void open_tester(const Selected& application)
+    {
+        auto settings = options_.tester;
+        settings.title = options_.title + " - " + std::string{application.name()};
+        settings.exit_label = "back to applications";
+
+        easylocal::Session<Selected> session{application, settings.seed};
+        if (input_)
+            session.set_input(input_);
+        if (input_ && solution_)
+            session.set_solution(*solution_);
+
+        detail::tester_frontend<Selected>{session, std::move(settings)}.run();
+
+        input_ = session.has_input() ? session.input_handle() : nullptr;
+        if (input_ && session.has_solution())
+            solution_ = session.solution();
+        else
+            solution_.reset();
+    }
+
+    [[nodiscard]] std::string shared_state() const
+    {
+        if (!input_)
+            return "No input loaded";
+        return solution_
+            ? "Input and solution shared by the applications"
+            : "Input shared by the applications; no solution yet";
+    }
+
     [[nodiscard]] std::optional<std::size_t> choose_application()
     {
         using namespace ftxui;
@@ -109,14 +170,18 @@ private:
         auto menu = Menu(&names_, &selected, menu_option);
 
         auto buttons = Container::Horizontal({
-            Button("Open", [&] {
-                open = true;
-                app.Exit();
-            }),
-            Button("Quit", [&] {
-                open = false;
-                app.Exit();
-            }),
+            Button(
+                "Open",
+                [&] {
+                    open = true;
+                    app.Exit();
+                }),
+            Button(
+                "Quit",
+                [&] {
+                    open = false;
+                    app.Exit();
+                }),
         });
         auto controls = Container::Vertical({menu, buttons});
 
@@ -124,13 +189,14 @@ private:
             return vbox({
                        text(options_.title) | bold | center,
                        text("Select an application") | center | dim,
+                       text(shared_state()) | center | dim,
                        separator(),
                        window(text(" Applications "), menu->Render()) | flex,
                        separator(),
                        buttons->Render() | center,
                        text("Enter: open  |  q/Esc: quit") | center | dim,
-                   }) |
-                   border;
+                   })
+                | border;
         });
 
         root = CatchEvent(root, [&](Event event) {
@@ -144,28 +210,29 @@ private:
         });
 
         app.Loop(root);
-        if (!open || selected < 0 ||
-            static_cast<std::size_t>(selected) >= names_.size())
-        {
+        if (!open || selected < 0 || static_cast<std::size_t>(selected) >= names_.size())
             return std::nullopt;
-        }
         return static_cast<std::size_t>(selected);
     }
 
     launcher_options options_;
-    std::tuple<Apps...> applications_;
+    std::tuple<FirstApp, Apps...> applications_;
     std::vector<std::string> names_;
+    std::shared_ptr<const input_type> input_;
+    std::optional<solution_type> solution_;
 };
 
 } // namespace detail
 
+// Opens a menu of the apps, which share the Input (loaded from
+// options.tester.input_path when it is set) and the current solution. The
+// apps must have the same SolutionManager recipe: this is checked when the
+// program is compiled.
 template<class... Apps>
-    requires (sizeof...(Apps) > 0) && (std::copy_constructible<Apps> && ...)
+    requires(sizeof...(Apps) > 0) && (std::copy_constructible<Apps> && ...)
 void run_launcher(launcher_options options, Apps... applications)
 {
-    detail::launcher_frontend<Apps...>{
-        std::move(options),
-        std::move(applications)...}
+    detail::launcher_frontend<Apps...>{std::move(options), std::move(applications)...}
         .run();
 }
 

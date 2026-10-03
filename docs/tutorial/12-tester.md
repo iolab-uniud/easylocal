@@ -110,6 +110,78 @@ static std::string_view name()
 }
 ```
 
+## Several apps on the same problem
+
+An app has one neighborhood. To explore several, one per app, open them from
+a **launcher**: a list of apps that share the Input and the current solution.
+The TSP example (`examples/tsp`) has one app for the 2-opt moves and one for
+the swaps, over the same SolutionManager recipe:
+
+<!-- snippet: tsp/apps.hpp:apps -->
+```cpp
+// The SolutionManager recipe of both apps: the launcher of tui_main.cpp
+// passes the Input and the solution from one app to the other, so they must
+// have the same one.
+inline auto tsp_solution_manager()
+{
+    return easylocal::solution_manager<TspSolutionManager>()
+        | easylocal::cost::apply(
+            TourLengthCost{},
+            easylocal::component<TourLengthComponent>());
+}
+
+// Two apps over the same SolutionManager, one per neighborhood. The type of an
+// app spells out all its recipes, so the functions let auto deduce it.
+inline auto two_opt_app()
+{
+    auto application = easylocal::app("tsp-two-opt") | tsp_solution_manager()
+        | (easylocal::neighborhood<TwoOptNeighborhoodExplorer>()
+            | easylocal::delta<TourLengthComponent, TwoOptTourLengthDeltaEvaluator>())
+        | easylocal::runner<easylocal::runners::FirstImprovement>("fi");
+    application.runner_config<easylocal::runners::FirstImprovement>().max_evaluations =
+        100;
+    return application;
+}
+
+inline auto swap_app()
+{
+    auto application = easylocal::app("tsp-swap") | tsp_solution_manager()
+        | (easylocal::neighborhood<SwapCitiesNeighborhoodExplorer>()
+            | easylocal::delta<TourLengthComponent, SwapTourLengthDeltaEvaluator>())
+        | easylocal::runner<easylocal::runners::FirstImprovement>("fi");
+    application.runner_config<easylocal::runners::FirstImprovement>().max_evaluations =
+        100;
+    return application;
+}
+```
+
+<!-- snippet: tsp/tui_main.cpp:launcher -->
+```cpp
+easylocal::tui::run_launcher(
+    {
+        .title = "EasyLocal TSP Tester",
+        .tester =
+            {
+                .seed = 0,
+                .input_path = EASYLOCAL_TSP_MWE_INSTANCE_FILE,
+                .solution_path = EASYLOCAL_TSP_MWE_SOLUTION_FILE,
+            },
+    },
+    tsp::two_opt_app(),
+    tsp::swap_app());
+```
+
+- The launcher reads the Input once, from `tester.input_path`, and keeps it
+  with the current solution. Each app opens in the tester on them; when you
+  leave it (`q`), what it left becomes the shared state: a solution created or
+  improved with the swaps is the current solution of the 2-opt app.
+- Since solutions pass from one app to the other, the apps must have the same
+  SolutionManager recipe, cost included: they differ in the neighborhood and
+  the runners. A launcher of apps with different recipes does not compile.
+- To search with both neighborhoods at once, compose them in one app with
+  `neighborhood_union` (chapter 6); the launcher is for examining them one at
+  a time.
+
 ## Options
 
 `tui::options` sets the `title`, the `seed` of the RNG used for random

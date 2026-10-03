@@ -1,5 +1,6 @@
 """The launcher of the TSP example: two apps on one instance, each opened in
-the tester and left with q, back to the list."""
+the tester and left with q, back to the list, sharing the Input and the
+current solution."""
 
 import re
 
@@ -32,6 +33,30 @@ def test_each_app_opens_in_the_tester_and_q_goes_back(launcher):
         tui.press("q")
 
         open_app(tui, "tsp-two-opt", UP)
+        tui.press("q")
+
+        tui.wait_until(launcher_shown, what="the list of applications")
+        tui.press("q")
+        assert tui.wait_exit() == 0
+
+
+def test_the_apps_share_the_input_and_the_solution(launcher):
+    with Tui(launcher) as tui:
+        tui.wait_until(launcher_shown, what="the list of applications")
+        tui.expect("Input shared by the applications; no solution yet")
+
+        # A solution made with the swap neighborhood...
+        open_app(tui, "tsp-swap", DOWN)
+        tui.press("I")
+        tui.expect("Initial solution selected")
+        tui.press("q")
+        tui.wait_until(launcher_shown, what="the list of applications")
+        tui.expect("Input and solution shared by the applications")
+
+        # ...is the current solution of the 2-opt app: its cost is in the
+        # header as soon as the tester opens.
+        open_app(tui, "tsp-two-opt", UP)
+        tui.expect(re.compile(r"COST \d+"))
         tui.press("q")
 
         tui.wait_until(launcher_shown, what="the list of applications")

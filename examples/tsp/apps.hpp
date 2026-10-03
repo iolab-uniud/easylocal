@@ -14,15 +14,23 @@
 namespace tsp
 {
 
+// [apps] -------------------------------------------------------------------
+// The SolutionManager recipe of both apps: the launcher of tui_main.cpp
+// passes the Input and the solution from one app to the other, so they must
+// have the same one.
+inline auto tsp_solution_manager()
+{
+    return easylocal::solution_manager<TspSolutionManager>()
+        | easylocal::cost::apply(
+            TourLengthCost{},
+            easylocal::component<TourLengthComponent>());
+}
+
 // Two apps over the same SolutionManager, one per neighborhood. The type of an
 // app spells out all its recipes, so the functions let auto deduce it.
 inline auto two_opt_app()
 {
-    auto application = easylocal::app("tsp-two-opt")
-        | (easylocal::solution_manager<TspSolutionManager>()
-            | easylocal::cost::apply(
-                TourLengthCost{},
-                easylocal::component<TourLengthComponent>()))
+    auto application = easylocal::app("tsp-two-opt") | tsp_solution_manager()
         | (easylocal::neighborhood<TwoOptNeighborhoodExplorer>()
             | easylocal::delta<TourLengthComponent, TwoOptTourLengthDeltaEvaluator>())
         | easylocal::runner<easylocal::runners::FirstImprovement>("fi");
@@ -33,11 +41,7 @@ inline auto two_opt_app()
 
 inline auto swap_app()
 {
-    auto application = easylocal::app("tsp-swap")
-        | (easylocal::solution_manager<TspSolutionManager>()
-            | easylocal::cost::apply(
-                TourLengthCost{},
-                easylocal::component<TourLengthComponent>()))
+    auto application = easylocal::app("tsp-swap") | tsp_solution_manager()
         | (easylocal::neighborhood<SwapCitiesNeighborhoodExplorer>()
             | easylocal::delta<TourLengthComponent, SwapTourLengthDeltaEvaluator>())
         | easylocal::runner<easylocal::runners::FirstImprovement>("fi");
@@ -45,5 +49,6 @@ inline auto swap_app()
         100;
     return application;
 }
+// [apps] -------------------------------------------------------------------
 
 } // namespace tsp

@@ -862,6 +862,20 @@ result:
 
 ![The Run page of the TextUI after a Simulated Annealing run](tutorial/images/tui-run.svg)
 
+An EasyLocal 3 tester could hold several move testers, one per explorer, on
+the same state. Each EasyLocal 4 app has one neighborhood, so the counterpart
+is a launcher of apps, one per neighborhood, which share the Input and the
+current solution ([chapter 12](tutorial/12-tester.md#several-apps-on-the-same-problem)):
+
+```cpp title="EasyLocal 3"
+MoveTester<Input, Tour, TwoOpt, CostStructure> two_opt_test(in, sm, two_opt_nhe, "2-opt", tester);
+MoveTester<Input, Tour, Swap, CostStructure> swap_test(in, sm, swap_nhe, "Swap", tester);
+```
+
+```cpp title="EasyLocal 4"
+el::tui::run_launcher({.tester = {.input_path = "five.tsp"}}, two_opt_app, swap_app);
+```
+
 The **Input/Output** page takes over the State menu: the initial or a random
 solution, reading and writing solutions with the hooks of step 2, and the
 checks of the composed problem. Its "Show costs" and "Print violations" are

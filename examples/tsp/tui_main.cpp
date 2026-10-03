@@ -12,6 +12,7 @@
 
 int main()
 {
+    // [launcher] -----------------------------------------------------------
     easylocal::tui::run_launcher(
         {
             .title = "EasyLocal TSP Tester",
@@ -24,4 +25,5 @@ int main()
         },
         tsp::two_opt_app(),
         tsp::swap_app());
+    // [launcher] -----------------------------------------------------------
 }
