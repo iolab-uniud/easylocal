@@ -1,4 +1,5 @@
 #include <easylocal/app/app.hpp>
+#include <easylocal/app/io.hpp>
 #include <easylocal/app/session.hpp>
 #include <easylocal/helpers/neighborhood_explorer.hpp>
 #include <easylocal/helpers/solution_manager.hpp>
@@ -258,6 +259,60 @@ inline auto operator<<(std::ostream& out, const Solution& solution) -> std::ostr
 
 } // namespace stream_io
 
+namespace describe_io
+{
+
+struct Member
+{
+    [[nodiscard]]
+    static auto describe() -> std::string
+    {
+        return "member";
+    }
+};
+
+[[maybe_unused]] inline auto operator<<(std::ostream& out, const Member&) -> std::ostream&
+{
+    return out << "stream";
+}
+
+struct Free
+{
+};
+
+[[nodiscard]]
+inline auto describe(const Free&) -> std::string
+{
+    return "free";
+}
+
+[[maybe_unused]] inline auto operator<<(std::ostream& out, const Free&) -> std::ostream&
+{
+    return out << "stream";
+}
+
+struct Streamed
+{
+};
+
+inline auto operator<<(std::ostream& out, const Streamed&) -> std::ostream&
+{
+    return out << "stream";
+}
+
+struct Silent
+{
+};
+
+} // namespace describe_io
+
+static_assert(easylocal::readable_input<stream_io::Input>);
+static_assert(easylocal::readable_solution<adl_io::Input, adl_io::Solution>);
+static_assert(easylocal::writable_solution<static_io::Input, static_io::Solution>);
+static_assert(easylocal::describable<int>);
+static_assert(!easylocal::describable<describe_io::Silent>);
+static_assert(!easylocal::readable_input<describe_io::Silent>);
+
 template<class Input, class Solution>
 using io_app_type = decltype(make_io_application<Input, Solution>("io"));
 
@@ -419,6 +474,107 @@ void failed_reads_do_not_replace_current_state()
     assert(session.solution().value == 23);
 }
 
+void free_functions_follow_the_same_protocol()
+{
+    std::istringstream input_stream{"5"};
+    const auto input = easylocal::read_input<static_io::Input>(input_stream);
+    assert(input.value == 5);
+    assert(input.source == 1);
+
+    std::istringstream solution_stream{"4"};
+    const auto solution = easylocal::read_solution<adl_io::Solution>(
+        adl_io::Input{.value = 11},
+        solution_stream);
+    assert(solution.value == 15);
+    assert(solution.source == 2);
+
+    std::ostringstream out;
+    easylocal::write_solution(adl_io::Input{.value = 11}, solution, out);
+    assert(out.str() == "adl:11:15");
+
+    bool failed = false;
+    try
+    {
+        std::istringstream bad_input{"not-a-number"};
+        [[maybe_unused]] const auto ignored =
+            easylocal::read_input<stream_io::Input>(bad_input);
+    }
+    catch (const std::runtime_error&)
+    {
+        failed = true;
+    }
+    assert(failed);
+}
+
+void free_file_functions_follow_the_same_protocol()
+{
+    const auto input_path = std::filesystem::path{"easylocal_io_input.tmp"};
+    const auto output_path = std::filesystem::path{"easylocal_io_output.tmp"};
+    {
+        std::ofstream out{input_path};
+        out << 17;
+    }
+
+    const auto input = easylocal::load_input<stream_io::Input>(input_path);
+    assert(input.value == 17);
+    // The Input file read again as a Solution: 17 + 17.
+    const auto solution =
+        easylocal::load_solution<stream_io::Solution>(input, input_path);
+    assert(solution.value == 34);
+    easylocal::save_solution(input, solution, output_path);
+
+    std::string contents;
+    {
+        std::ifstream saved{output_path};
+        std::getline(saved, contents);
+    }
+    assert(contents == "stream:34");
+
+    std::filesystem::remove(input_path);
+    std::filesystem::remove(output_path);
+}
+
+void free_file_errors_name_the_file()
+{
+    const auto bad_path = std::filesystem::path{"easylocal_io_bad.tmp"};
+    {
+        std::ofstream out{bad_path};
+        out << "not-a-number";
+    }
+    std::string message;
+    try
+    {
+        [[maybe_unused]] const auto ignored =
+            easylocal::load_input<stream_io::Input>(bad_path);
+    }
+    catch (const std::runtime_error& error)
+    {
+        message = error.what();
+    }
+    assert(message.find(bad_path.string()) != std::string::npos);
+    std::filesystem::remove(bad_path);
+
+    message.clear();
+    try
+    {
+        [[maybe_unused]] const auto ignored = easylocal::load_input<stream_io::Input>(
+            std::filesystem::path{"easylocal_io_missing.tmp"});
+    }
+    catch (const std::runtime_error& error)
+    {
+        message = error.what();
+    }
+    assert(message.find("easylocal_io_missing.tmp") != std::string::npos);
+}
+
+void describe_prefers_the_value_hooks()
+{
+    assert(easylocal::describe(describe_io::Member{}) == "member");
+    assert(easylocal::describe(describe_io::Free{}) == "free");
+    assert(easylocal::describe(describe_io::Streamed{}) == "stream");
+    assert(easylocal::describe(42) == "42");
+}
+
 } // namespace
 
 int main()
@@ -428,4 +584,8 @@ int main()
     stream_operators_are_supported_as_fallbacks();
     file_overloads_delegate_to_the_same_protocol();
     failed_reads_do_not_replace_current_state();
+    free_functions_follow_the_same_protocol();
+    free_file_functions_follow_the_same_protocol();
+    free_file_errors_name_the_file();
+    describe_prefers_the_value_hooks();
 }

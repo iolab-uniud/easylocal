@@ -1,10 +1,11 @@
-#include "instance_io.hpp"
+#include "instance.hpp"
 #include "neighborhood_explorer.hpp"
 #include "solution_manager.hpp"
 #include "swap_neighborhood_explorer.hpp"
 #include "swap_tour_length_delta.hpp"
 #include "tour_length_delta.hpp"
 
+#include <easylocal/app/io.hpp>
 #include <easylocal/app/run_parameters.hpp>
 #include <easylocal/config/cli.hpp>
 #include <easylocal/config/parameter_set.hpp>
@@ -13,7 +14,6 @@
 #include <easylocal/runners/runner.hpp>
 #include <easylocal/runners/simulated_annealing.hpp>
 
-#include <cstddef>
 #include <cstdint>
 #include <filesystem>
 #include <iostream>
@@ -53,21 +53,6 @@ struct AppParameters
         return easylocal::config::validation_result::success();
     }
 };
-
-void print_tour(const Tour& solution)
-{
-    std::cout << '[';
-
-    for (std::size_t position = 0; position < solution.tour.size(); ++position)
-    {
-        if (position != 0)
-            std::cout << ", ";
-
-        std::cout << solution.tour[position];
-    }
-
-    std::cout << ']';
-}
 
 } // namespace
 
@@ -134,7 +119,8 @@ int main(int argc, char* argv[])
             return 2;
         }
 
-        const auto instance = load_instance(app_parameters.instance_file);
+        const auto instance =
+            easylocal::load_input<TspInstance>(app_parameters.instance_file);
         auto search = runner.bind(instance);
         const auto initial_solution = search.initial_solution();
 
@@ -146,14 +132,10 @@ int main(int argc, char* argv[])
             ? search.run(initial_solution, rng, easylocal::stop_at(*target))
             : search.run(initial_solution, rng);
 
-        std::cout << "instance:     " << app_parameters.instance_file << '\n';
-        std::cout << "initial tour: ";
-        print_tour(initial_solution);
-        std::cout << '\n';
-
-        std::cout << "best tour:    ";
-        print_tour(result.solution);
-        std::cout << '\n';
+        // describe() gives the text of a value through its describe hook.
+        std::cout << "instance: " << app_parameters.instance_file << '\n';
+        std::cout << "initial " << easylocal::describe(initial_solution) << '\n';
+        std::cout << "best    " << easylocal::describe(result.solution) << '\n';
 
         std::cout << "best length: " << result.cost << '\n';
         std::cout << "iterations: " << result.iterations << '\n';

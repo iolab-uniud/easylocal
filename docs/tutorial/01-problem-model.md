@@ -142,8 +142,8 @@ public:
 > essential version: what a local search needs to run. Some *advanced
 > components*, the tools of the later chapters, need a few more features, each
 > added in the chapter that introduces it: solvers that start from random
-> solutions need `random_solution` (chapter 8), the interactive tester loads
-> and displays tours and moves (chapter 12), and the neighborhood checks
+> solutions need `random_solution` (chapter 8), reading tours from files and
+> printing them need I/O hooks (chapter 5), and the neighborhood checks
 > compare them with `==` (chapter 13). Until you use one of them, you need not write
 > anything for it. When you do, a missing feature is a compile error that names
 > it, or, in the interactive tester, a command that is not offered.

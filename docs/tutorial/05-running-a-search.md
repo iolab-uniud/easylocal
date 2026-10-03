@@ -124,6 +124,92 @@ Built-in algorithms return an `easylocal::search_result`:
 Solvers and tools only rely on `solution` and `cost`, the
 `easylocal::search_result_for` concept.
 
+## Reading the instance, printing the solution
+
+A program usually reads its Input from a file and prints the solution it
+finds. Both go through optional hooks on your types. The tutorial writes them
+as free functions next to the types, found by argument-dependent lookup:
+
+<!-- snippet: tutorial/tsp.hpp:io -->
+```cpp
+// Optional hooks, found by ADL, that read, write and describe the values
+// (chapter 5).
+inline Tsp read_input(std::type_identity<Tsp>, std::istream& in)
+{
+    std::size_t cities = 0; // "n", then the n rows of the distance matrix
+    if (!(in >> cities))
+        throw std::runtime_error{"invalid TSP header"};
+    Tsp tsp{.distance = std::vector(cities, std::vector<double>(cities))};
+    for (auto& row : tsp.distance)
+        for (auto& value : row)
+            if (!(in >> value))
+                throw std::runtime_error{"invalid TSP distances"};
+    return tsp;
+}
+
+inline Tour read_solution(const Tsp& tsp, std::istream& in)
+{
+    Tour tour{std::vector<std::size_t>(tsp.cities())};
+    for (auto& city : tour.order)
+        if (!(in >> city))
+            throw std::runtime_error{"invalid tour"};
+    return tour;
+}
+
+inline void write_solution(const Tsp&, const Tour& tour, std::ostream& out)
+{
+    for (const auto city : tour.order)
+        out << city << ' ';
+    out << '\n';
+}
+
+inline std::string describe(const Tour& tour)
+{
+    std::string text;
+    for (const auto city : tour.order)
+        text += std::to_string(city) + ' ';
+    return text;
+}
+
+inline std::string describe(const TwoOpt& move)
+{
+    return "2-opt(" + std::to_string(move.i) + ", " + std::to_string(move.j) + ")";
+}
+```
+
+| Hook | Enables |
+| --- | --- |
+| `read_input(std::type_identity<Input>, std::istream&)` (or `static Input::read`, or `operator>>`) | reading an Input |
+| `read_solution(const Input&, std::istream&)` (or `static Solution::read`, or `operator>>`) | reading a Solution |
+| `write_solution(const Input&, const Solution&, std::ostream&)` (or `Solution::write`, or `operator<<`) | writing a Solution |
+| `describe(value)` (or a `describe()` member, or `operator<<`) | the text of an Input, a Solution or a Move, for people |
+
+`<easylocal/app/io.hpp>` reads and writes values through them. Here the five
+cities come from `five.tsp`, next to the tutorial's sources, and the tour
+found is printed:
+
+<!-- snippet: tutorial/main.cpp:load-and-print -->
+```cpp
+// The same five cities, read from a file with the read_input hook.
+const auto from_file = el::load_input<Tsp>(EASYLOCAL_TUTORIAL_INSTANCE);
+auto file_search = fi.bind(from_file);
+const auto file_result = file_search.run(file_search.initial_solution());
+std::cout << "from file " << el::describe(file_result.solution) << '\n';
+```
+
+| Function | |
+| --- | --- |
+| `read_input<Input>(in)`, `load_input<Input>(path)` | an Input, from a stream or a file |
+| `read_solution<Solution>(input, in)`, `load_solution<Solution>(input, path)` | a Solution of `input` |
+| `write_solution(input, solution, out)`, `save_solution(input, solution, path)` | writes a Solution |
+| `describe(value)` | the text of a value |
+
+They throw `std::runtime_error` when a stream fails, and the file functions
+name the file. Each hook is needed only where it is used: a program that
+builds its Input in code, as the rest of this tutorial does, needs no
+`read_input`. The Session (chapter 11) and the interactive tester (chapter 12)
+use the same hooks.
+
 ## See also
 
 - [Runners](../reference/runners.md): `Runner`, the built-in algorithms and

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <easylocal/app/check.hpp>
+#include <easylocal/app/io.hpp>
 #include <easylocal/app/session.hpp>
 #include <easylocal/config/cli.hpp>
 #include <easylocal/config/overrides.hpp>
@@ -67,38 +68,6 @@ struct options
 
 namespace detail
 {
-
-namespace display_adl
-{
-
-void describe() = delete;
-
-template<class T>
-concept has_describe =
-    requires(const T& value) {
-        { describe(value) } -> std::convertible_to<std::string>;
-    };
-
-template<class T>
-    requires has_describe<T>
-[[nodiscard]] std::string call_describe(const T& value)
-{
-    return describe(value);
-}
-
-} // namespace display_adl
-
-template<class T>
-concept member_describable =
-    requires(const T& value) {
-        { value.describe() } -> std::convertible_to<std::string>;
-    };
-
-template<class T>
-concept ostream_insertable =
-    requires(std::ostream& out, const T& value) {
-        out << value;
-    };
 
 template<class T>
 concept tuple_like =
@@ -222,13 +191,9 @@ template<class Tester>
 template<class T>
 [[nodiscard]] std::string value_text(const T& value)
 {
-    if constexpr (member_describable<T>)
+    if constexpr (easylocal::detail::io::has_own_describe<T>)
     {
-        return value.describe();
-    }
-    else if constexpr (display_adl::has_describe<T>)
-    {
-        return display_adl::call_describe(value);
+        return easylocal::describe(value);
     }
     else if constexpr (easylocal::cost::hierarchical_type<T>)
     {
@@ -249,11 +214,9 @@ template<class T>
         result += ']';
         return result;
     }
-    else if constexpr (ostream_insertable<T>)
+    else if constexpr (easylocal::describable<T>)
     {
-        std::ostringstream out;
-        out << value;
-        return out.str();
+        return easylocal::describe(value);
     }
     else if constexpr (requires { value.hard(); value.soft(); })
     {

@@ -2,6 +2,7 @@
 #include "neighborhood_explorer.hpp"
 #include "solution_manager.hpp"
 
+#include <easylocal/app/io.hpp>
 #include <easylocal/app/run_parameters.hpp>
 #include <easylocal/config/cli.hpp>
 #include <easylocal/config/parameter_set.hpp>
@@ -10,7 +11,6 @@
 #include <easylocal/runners/runner.hpp>
 #include <easylocal/solvers.hpp>
 
-#include <cstddef>
 #include <filesystem>
 #include <iostream>
 #include <utility>
@@ -46,21 +46,6 @@ struct AppParameters
         return easylocal::config::validation_result::success();
     }
 };
-
-void print_solution(const AssignmentSolution& solution)
-{
-    std::cout << '[';
-
-    for (std::size_t job = 0; job < solution.assignment.size(); ++job)
-    {
-        if (job != 0)
-            std::cout << ", ";
-
-        std::cout << solution.assignment[job];
-    }
-
-    std::cout << ']';
-}
 
 } // namespace
 
@@ -112,7 +97,8 @@ int main(int argc, char* argv[])
             return 2;
         }
 
-        const auto instance = load_instance(app_parameters.instance_file);
+        const auto instance =
+            easylocal::load_input<AssignmentInstance>(app_parameters.instance_file);
         const auto bound = runner.bind(instance);
         const auto initial_solution = bound.initial_solution();
         using cost_type = decltype(bound)::cost_type;
@@ -131,13 +117,9 @@ int main(int argc, char* argv[])
             : solver.solve(instance);
 
         std::cout << "instance:         " << app_parameters.instance_file << '\n';
-        std::cout << "initial solution: ";
-        print_solution(initial_solution);
-        std::cout << '\n';
-
-        std::cout << "final solution:   ";
-        print_solution(result.solution);
-        std::cout << '\n';
+        std::cout << "initial solution: " << easylocal::describe(initial_solution)
+                  << '\n';
+        std::cout << "final solution:   " << easylocal::describe(result.solution) << '\n';
 
         std::cout << "final hard cost: overload=" << result.cost.hard().get<0>()
                   << ", overloaded_machines=" << result.cost.hard().get<1>() << '\n';

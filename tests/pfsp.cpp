@@ -1,11 +1,12 @@
 // The PFSP example: the makespan by hand on the small instance, the solution
 // identity, the two inverse definitions, and tabu search improving a random
 // schedule.
-#include "instance_io.hpp"
+#include "instance.hpp"
 #include "makespan_component.hpp"
 #include "solution_manager.hpp"
 #include "swap_neighborhood_explorer.hpp"
 
+#include <easylocal/app/io.hpp>
 #include <easylocal/cost.hpp>
 #include <easylocal/helpers/neighborhood_explorer.hpp>
 #include <easylocal/helpers/solution_manager.hpp>
@@ -59,7 +60,7 @@ int main()
 {
     bool ok = true;
 
-    const auto small = load_instance(EASYLOCAL_PFSP_SMALL_INSTANCE);
+    const auto small = easylocal::load_input<PfspInstance>(EASYLOCAL_PFSP_SMALL_INSTANCE);
     const PfspSolutionManager manager{small};
     const MakespanComponent makespan{small};
     const auto identity = manager.initial_solution();
@@ -98,7 +99,8 @@ int main()
                 != SwapJobsNeighborhoodExplorer::tabu_attribute(tabu),
         "the tabu attribute is the pair of jobs");
 
-    const auto medium = load_instance(EASYLOCAL_PFSP_MEDIUM_INSTANCE);
+    const auto medium =
+        easylocal::load_input<PfspInstance>(EASYLOCAL_PFSP_MEDIUM_INSTANCE);
     const auto improves = [&]<class Explorer>() {
         auto runner = tabu_runner<easylocal::runners::TabuSearch<>, Explorer>(
             {.max_idle_iterations = 50, .tabu_list = {.tenure = 7}});

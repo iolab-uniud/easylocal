@@ -1,8 +1,9 @@
-#include "instance_io.hpp"
+#include "instance.hpp"
 #include "makespan_component.hpp"
 #include "solution_manager.hpp"
 #include "swap_neighborhood_explorer.hpp"
 
+#include <easylocal/app/io.hpp>
 #include <easylocal/app/run_parameters.hpp>
 #include <easylocal/config/cli.hpp>
 #include <easylocal/config/parameter_set.hpp>
@@ -86,7 +87,8 @@ int main(int argc, char* argv[])
             return 2;
         }
 
-        const auto instance = load_instance(app_parameters.instance_file);
+        const auto instance =
+            easylocal::load_input<PfspInstance>(app_parameters.instance_file);
         auto search = runner.bind(instance);
         std::mt19937_64 rng{app_parameters.seed};
         // The search starts from a random schedule, as in the study.

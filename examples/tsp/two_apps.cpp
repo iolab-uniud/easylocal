@@ -1,5 +1,7 @@
 #include "apps.hpp"
-#include "instance_io.hpp"
+#include "instance.hpp"
+
+#include <easylocal/app/io.hpp>
 
 #include <iostream>
 
@@ -14,7 +16,8 @@ int main()
     auto two_opt = tsp::two_opt_app();
     auto swap = tsp::swap_app();
 
-    const auto instance = tsp::load_instance(EASYLOCAL_TSP_MWE_INSTANCE_FILE);
+    const auto instance =
+        easylocal::load_input<tsp::TspInstance>(EASYLOCAL_TSP_MWE_INSTANCE_FILE);
 
     // The 2-opt local optimum is the starting point of the swap search.
     auto two_opt_bound = two_opt.bind(instance);

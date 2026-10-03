@@ -14,22 +14,37 @@ them; the hooks below are optional and used only by the tools.
 
 ## Optional hooks
 
-| Hook | Used by |
+Each kind of hook may be written in three ways, tried in this order:
+
+| Hook | Forms, in order | Used by |
+| --- | --- | --- |
+| read an Input | `static Input::read(std::istream&)`; `read_input(std::type_identity<Input>, std::istream&)` by ADL; `operator>>` on a default-constructed Input | `read_input`, `load_input`, Session, TextUI |
+| read a Solution | `static Solution::read(const Input&, std::istream&)`; `read_solution(const Input&, std::istream&)` by ADL; `operator>>` on `Solution{input}` | `read_solution`, `load_solution`, Session, TextUI |
+| write a Solution | `Solution::write(const Input&, std::ostream&) const`; `write_solution(const Input&, const Solution&, std::ostream&)` by ADL; `operator<<` | `write_solution`, `save_solution`, Session, TextUI |
+| describe a value | `describe() const` member; `describe(const T&)` by ADL; `operator<<` | `describe`, TextUI |
+| read a cost | `read_cost(const Input&, std::string_view)` by ADL; else `cost::from_text` | `read_cost`, Session, TextUI, `RunParameters` (see Cost) |
+| compare moves | `operator==` on Move | tests, Session and TextUI |
+
+The TextUI shows a Solution without a describe hook as its write hook writes
+it.
+
+## Reading and writing
+
+`<easylocal/app/io.hpp>` reads and writes values through the hooks, in any
+program:
+
+| Function | |
 | --- | --- |
-| `static Input::read(std::istream&) -> Input`, or `operator>>` | Session, TextUI: load an Input |
-| `static Solution::read(const Input&, std::istream&) -> Solution` | Session, TextUI: load a Solution |
-| `Solution::write(const Input&, std::ostream&) const`, or `operator<<` | Session, TextUI: save a Solution |
-| `describe() const -> std::string` on Input, Solution or Move | TextUI: display |
-| `operator==` on Move | tests, Session and TextUI |
+| `read_input<Input>(std::istream&)`, `load_input<Input>(path)` | an Input |
+| `read_solution<Solution>(input, std::istream&)`, `load_solution<Solution>(input, path)` | a Solution of `input` |
+| `write_solution(input, solution, std::ostream&)`, `save_solution(input, solution, path)` | writes a Solution |
+| `describe(value) -> std::string` | the text of a value, for people |
 
-Free functions found by ADL are accepted instead of the member hooks:
-
-```cpp
-Input read_input(std::type_identity<Input>, std::istream&);
-Solution read_solution(const Input&, std::istream&);
-void write_solution(const Input&, const Solution&, std::ostream&);
-Cost read_cost(const Input&, std::string_view); // a target cost, see Cost
-```
+The concepts `readable_input<Input>`, `readable_solution<Input, Solution>`,
+`writable_solution<Input, Solution>` and `describable<T>` tell whether a
+hook exists. The functions throw `std::runtime_error` when a stream fails (or
+what a hook throws); the file functions report errors as
+`std::runtime_error` naming the file.
 
 ## Design choices
 

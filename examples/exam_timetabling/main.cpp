@@ -1,9 +1,9 @@
 #include "cost_components.hpp"
 #include "cost_deltas.hpp"
-#include "instance_io.hpp"
 #include "neighborhood_explorer.hpp"
 #include "solution_manager.hpp"
 
+#include <easylocal/app/io.hpp>
 #include <easylocal/app/run_parameters.hpp>
 #include <easylocal/config/cli.hpp>
 #include <easylocal/config/parameter_set.hpp>
@@ -12,7 +12,6 @@
 #include <easylocal/runners/runner.hpp>
 #include <easylocal/runners/simulated_annealing.hpp>
 
-#include <cstddef>
 #include <cstdint>
 #include <filesystem>
 #include <iostream>
@@ -52,18 +51,6 @@ struct AppParameters
         return easylocal::config::validation_result::success();
     }
 };
-
-void print_timetable(const ExamTimetable& solution)
-{
-    std::cout << '[';
-    for (std::size_t exam = 0; exam < solution.timeslot_by_exam.size(); ++exam)
-    {
-        if (exam != 0)
-            std::cout << ", ";
-        std::cout << solution.timeslot_by_exam[exam];
-    }
-    std::cout << ']';
-}
 
 } // namespace
 
@@ -128,7 +115,8 @@ int main(int argc, char* argv[])
             return 2;
         }
 
-        const auto instance = load_instance(app_parameters.instance_file);
+        const auto instance =
+            easylocal::load_input<ExamTimetablingInstance>(app_parameters.instance_file);
         auto search = runner.bind(instance);
         const auto initial_solution = search.initial_solution();
 
@@ -140,13 +128,9 @@ int main(int argc, char* argv[])
             ? search.run(initial_solution, rng, easylocal::stop_at(*target))
             : search.run(initial_solution, rng);
 
-        std::cout << "instance:          " << app_parameters.instance_file << '\n';
-        std::cout << "initial timetable: ";
-        print_timetable(initial_solution);
-        std::cout << '\n';
-        std::cout << "best timetable:    ";
-        print_timetable(result.solution);
-        std::cout << '\n';
+        std::cout << "instance: " << app_parameters.instance_file << '\n';
+        std::cout << "initial " << easylocal::describe(initial_solution) << '\n';
+        std::cout << "best    " << easylocal::describe(result.solution) << '\n';
         std::cout << "best penalty: " << result.cost << '\n';
         std::cout << "iterations: " << result.iterations << '\n';
         std::cout << "evaluations: " << result.evaluations << '\n';

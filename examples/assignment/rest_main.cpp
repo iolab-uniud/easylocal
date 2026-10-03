@@ -2,6 +2,7 @@
 #include "instance_io.hpp"
 
 #include <easylocal/adapters/rest.hpp>
+#include <easylocal/app/io.hpp>
 
 #include <crow.h>
 
@@ -70,7 +71,7 @@ struct AssignmentCodec
             std::istringstream input{std::string{payload.s()}};
             try
             {
-                return read_assignment_instance(input);
+                return easylocal::read_input<AssignmentInstance>(input);
             }
             catch (const std::runtime_error& error)
             {

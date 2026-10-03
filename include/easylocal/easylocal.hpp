@@ -5,6 +5,7 @@
 // IWYU pragma: begin_exports
 #include <easylocal/app/app.hpp>
 #include <easylocal/app/check.hpp>
+#include <easylocal/app/io.hpp>
 #include <easylocal/app/run_parameters.hpp>
 #include <easylocal/app/session.hpp>
 #include <easylocal/config/cli.hpp>

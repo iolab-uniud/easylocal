@@ -110,7 +110,7 @@ Services borrow the Input by `const&` and never mutate it.
 3. [Moves](03-neighborhood.md): the NeighborhoodExplorer.
 4. [Delta evaluation](04-delta-evaluation.md): evaluating moves incrementally.
 5. [Running a search](05-running-a-search.md): runners, built-in algorithms,
-   results.
+   results, reading the instance and printing the solution.
 6. [Combining neighborhoods](06-combining-neighborhoods.md): `neighborhood_union`.
 7. [Writing your own runner](07-custom-runner.md): `search_run`.
 8. [Solvers](08-solvers.md): from an Input to a final solution.

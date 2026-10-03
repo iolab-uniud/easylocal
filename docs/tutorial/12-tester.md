@@ -88,65 +88,13 @@ keys are sent, and each step waits for what the screen should show.
 
 ## Loading, saving and displaying
 
-To load and save files and to display values, the TextUI uses optional hooks.
-The tutorial provides them as free functions, found by argument-dependent
-lookup:
-
-<!-- snippet: tutorial/tsp.hpp:io -->
-```cpp
-// Optional hooks, found by ADL, that let the tools load, save and display
-// (chapter 12).
-inline Tsp read_input(std::type_identity<Tsp>, std::istream& in)
-{
-    std::size_t cities = 0; // "n", then the n rows of the distance matrix
-    if (!(in >> cities))
-        throw std::runtime_error{"invalid TSP header"};
-    Tsp tsp{.distance = std::vector(cities, std::vector<double>(cities))};
-    for (auto& row : tsp.distance)
-        for (auto& value : row)
-            if (!(in >> value))
-                throw std::runtime_error{"invalid TSP distances"};
-    return tsp;
-}
-
-inline Tour read_solution(const Tsp& tsp, std::istream& in)
-{
-    Tour tour{std::vector<std::size_t>(tsp.cities())};
-    for (auto& city : tour.order)
-        if (!(in >> city))
-            throw std::runtime_error{"invalid tour"};
-    return tour;
-}
-
-inline void write_solution(const Tsp&, const Tour& tour, std::ostream& out)
-{
-    for (const auto city : tour.order)
-        out << city << ' ';
-    out << '\n';
-}
-
-inline std::string describe(const Tour& tour)
-{
-    std::string text;
-    for (const auto city : tour.order)
-        text += std::to_string(city) + ' ';
-    return text;
-}
-
-inline std::string describe(const TwoOpt& move)
-{
-    return "2-opt(" + std::to_string(move.i) + ", " + std::to_string(move.j) + ")";
-}
-```
-
-| Hook | Enables |
-| --- | --- |
-| `read_input(std::type_identity<Input>, std::istream&)` (or `static Input::read`, or `operator>>`) | loading an Input |
-| `read_solution(const Input&, std::istream&)` (or `static Solution::read`) | loading a Solution |
-| `write_solution(const Input&, const Solution&, std::ostream&)` (or `Solution::write`, or `operator<<`) | saving a Solution |
-| `describe(value)` (or a `describe()` member, or `operator<<`) | displaying Input, Solution and Move |
-| `read_cost(const Input&, std::string_view)` | reading a target cost written in the problem's own notation |
-| `name()` on a NeighborhoodExplorer | naming neighborhoods |
+The TextUI loads and saves files, and displays values, through the hooks of
+[chapter 5](05-running-a-search.md#reading-the-instance-printing-the-solution):
+`read_input` for the Input, `read_solution` and `write_solution` for the
+Solution, `describe` for the Input, the Solution and the Move. Commands whose
+hook is missing are not offered. A Solution without a `describe` hook is shown
+as `write_solution` writes it; a value with neither is shown as *not
+printable*.
 
 The page title of the Move page, *Move - 2-opt*, comes from a static `name()`
 member of `TwoOptExplorer`:

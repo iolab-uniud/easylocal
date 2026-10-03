@@ -3,17 +3,18 @@
 #include "instance.hpp"
 
 #include <cstddef>
-#include <filesystem>
-#include <fstream>
 #include <istream>
 #include <stdexcept>
-#include <string>
 #include <type_traits>
 
 namespace assignment
 {
 
-inline AssignmentInstance read_assignment_instance(std::istream& input)
+// The read_input hook, found by ADL: easylocal::read_input and load_input, the
+// Session and the TextUI read an AssignmentInstance with it.
+inline AssignmentInstance read_input(
+    std::type_identity<AssignmentInstance>,
+    std::istream& input)
 {
     std::size_t job_count{};
     std::size_t machine_count{};
@@ -37,29 +38,6 @@ inline AssignmentInstance read_assignment_instance(std::istream& input)
         throw std::runtime_error{"assignment instance has jobs but no machines"};
 
     return instance;
-}
-
-inline AssignmentInstance read_input(
-    std::type_identity<AssignmentInstance>,
-    std::istream& input)
-{
-    return read_assignment_instance(input);
-}
-
-inline AssignmentInstance load_instance(const std::filesystem::path& path)
-{
-    std::ifstream input{path};
-    if (!input)
-        throw std::runtime_error("cannot open assignment instance: " + path.string());
-
-    try
-    {
-        return read_assignment_instance(input);
-    }
-    catch (const std::runtime_error& error)
-    {
-        throw std::runtime_error{std::string{error.what()} + ": " + path.string()};
-    }
 }
 
 } // namespace assignment

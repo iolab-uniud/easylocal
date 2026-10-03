@@ -1,6 +1,7 @@
 #pragma once
 
 #include <easylocal/app/check.hpp>
+#include <easylocal/app/io.hpp>
 #include <easylocal/app/run_parameters.hpp>
 #include <easylocal/config/parameter_set.hpp>
 #include <easylocal/cost/semantics.hpp>
@@ -45,167 +46,6 @@ inline constexpr bool comparable_moves_v<std::variant<Moves...>> =
     (comparable_moves_v<Moves> && ...);
 
 } // namespace detail
-
-namespace detail::session_io
-{
-
-namespace adl
-{
-
-void read_input() = delete;
-void read_solution() = delete;
-void write_solution() = delete;
-
-template<class Input>
-concept has_read_input = requires(std::istream& in) {
-    { read_input(std::type_identity<Input>{}, in) } -> std::convertible_to<Input>;
-};
-
-template<class Input>
-    requires has_read_input<Input>
-[[nodiscard]]
-Input call_read_input(std::istream& in)
-{
-    return read_input(std::type_identity<Input>{}, in);
-}
-
-template<class Input, class Solution>
-concept has_read_solution = requires(const Input& input, std::istream& in) {
-    { read_solution(input, in) } -> std::convertible_to<Solution>;
-};
-
-template<class Input, class Solution>
-    requires has_read_solution<Input, Solution>
-[[nodiscard]]
-Solution call_read_solution(const Input& input, std::istream& in)
-{
-    return read_solution(input, in);
-}
-
-template<class Input, class Solution>
-concept has_write_solution =
-    requires(const Input& input, const Solution& solution, std::ostream& out) {
-        write_solution(input, solution, out);
-    };
-
-template<class Input, class Solution>
-    requires has_write_solution<Input, Solution>
-void call_write_solution(const Input& input, const Solution& solution, std::ostream& out)
-{
-    write_solution(input, solution, out);
-}
-
-} // namespace adl
-
-template<class Input>
-concept has_static_input_read = requires(std::istream& in) {
-    { Input::read(in) } -> std::convertible_to<Input>;
-};
-
-template<class Input>
-concept has_input_stream_extraction = std::default_initializable<Input>
-    && requires(std::istream& in, Input& input) { in >> input; };
-
-template<class Input>
-concept readable_input = has_static_input_read<Input> || adl::has_read_input<Input>
-    || has_input_stream_extraction<Input>;
-
-template<class Input>
-    requires readable_input<Input>
-[[nodiscard]]
-Input read_input(std::istream& in)
-{
-    if constexpr (has_static_input_read<Input>)
-    {
-        return Input::read(in);
-    }
-    else if constexpr (adl::has_read_input<Input>)
-    {
-        return adl::call_read_input<Input>(in);
-    }
-    else
-    {
-        Input input{};
-        in >> input;
-        return input;
-    }
-}
-
-template<class Input, class Solution>
-concept has_static_solution_read = requires(const Input& input, std::istream& in) {
-    { Solution::read(input, in) } -> std::convertible_to<Solution>;
-};
-
-template<class Input, class Solution>
-concept has_solution_stream_extraction = std::constructible_from<Solution, const Input&>
-    && requires(std::istream& in, Solution& solution) { in >> solution; };
-
-template<class Input, class Solution>
-concept readable_solution =
-    has_static_solution_read<Input, Solution> || adl::has_read_solution<Input, Solution>
-    || has_solution_stream_extraction<Input, Solution>;
-
-template<class Solution, class Input>
-    requires readable_solution<Input, Solution>
-[[nodiscard]]
-Solution read_solution(const Input& input, std::istream& in)
-{
-    if constexpr (has_static_solution_read<Input, Solution>)
-    {
-        return Solution::read(input, in);
-    }
-    else if constexpr (adl::has_read_solution<Input, Solution>)
-    {
-        return adl::call_read_solution<Input, Solution>(input, in);
-    }
-    else
-    {
-        Solution solution{input};
-        in >> solution;
-        return solution;
-    }
-}
-
-template<class Input, class Solution>
-concept has_member_solution_write =
-    requires(const Input& input, const Solution& solution, std::ostream& out) {
-        solution.write(input, out);
-    };
-
-template<class Solution>
-concept has_solution_stream_insertion =
-    requires(std::ostream& out, const Solution& solution) { out << solution; };
-
-template<class Input, class Solution>
-concept writable_solution =
-    has_member_solution_write<Input, Solution> || adl::has_write_solution<Input, Solution>
-    || has_solution_stream_insertion<Solution>;
-
-template<class Input, class Solution>
-    requires writable_solution<Input, Solution>
-void write_solution(const Input& input, const Solution& solution, std::ostream& out)
-{
-    if constexpr (has_member_solution_write<Input, Solution>)
-        solution.write(input, out);
-    else if constexpr (adl::has_write_solution<Input, Solution>)
-        adl::call_write_solution(input, solution, out);
-    else
-        out << solution;
-}
-
-inline void require_read_success(const std::istream& in, std::string_view what)
-{
-    if (in.fail())
-        throw std::runtime_error{"failed to read " + std::string{what}};
-}
-
-inline void require_write_success(const std::ostream& out, std::string_view what)
-{
-    if (out.fail())
-        throw std::runtime_error{"failed to write " + std::string{what}};
-}
-
-} // namespace detail::session_io
 
 // The state of an interactive session on an app, and the commands that change
 // it: an owned Input, the app bound to it, a current solution, a selected move
@@ -290,12 +130,11 @@ public:
         std::size_t moves{};
         std::vector<inspected_move> entries;
     };
-    static constexpr bool supports_input_loading =
-        detail::session_io::readable_input<input_type>;
+    static constexpr bool supports_input_loading = readable_input<input_type>;
     static constexpr bool supports_solution_loading =
-        detail::session_io::readable_solution<input_type, solution_type>;
+        readable_solution<input_type, solution_type>;
     static constexpr bool supports_solution_saving =
-        detail::session_io::writable_solution<input_type, solution_type>;
+        writable_solution<input_type, solution_type>;
 
     static_assert(
         supports_initial_solution || supports_random_solution
@@ -381,11 +220,11 @@ public:
     void load_input(std::istream& in)
         requires supports_input_loading
     {
-        auto input = detail::session_io::read_input<input_type>(in);
-        detail::session_io::require_read_success(in, "Input");
-        set_input(std::move(input));
+        set_input(easylocal::read_input<input_type>(in));
     }
 
+    // Unlike easylocal::load_input, errors do not name the file, which an
+    // interactive frontend shows on its own.
     void load_input(const std::filesystem::path& path)
         requires supports_input_loading
     {
@@ -457,9 +296,7 @@ public:
         requires supports_solution_loading
     {
         assert(input_);
-        auto solution = detail::session_io::read_solution<solution_type>(*input_, in);
-        detail::session_io::require_read_success(in, "Solution");
-        set_solution(std::move(solution));
+        set_solution(easylocal::read_solution<solution_type>(*input_, in));
     }
 
     void load_solution(const std::filesystem::path& path)
@@ -476,17 +313,15 @@ public:
     {
         assert(input_);
         assert(solution_);
-        detail::session_io::write_solution(*input_, *solution_, out);
-        detail::session_io::require_write_success(out, "Solution");
+        easylocal::write_solution(*input_, *solution_, out);
     }
 
     void save_solution(const std::filesystem::path& path) const
         requires supports_solution_saving
     {
-        std::ofstream out{path};
-        if (!out)
-            throw std::runtime_error{"failed to open Solution file: " + path.string()};
-        save_solution(out);
+        assert(input_);
+        assert(solution_);
+        easylocal::save_solution(*input_, *solution_, path);
     }
 
     [[nodiscard]]

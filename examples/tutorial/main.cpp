@@ -42,6 +42,14 @@ int main(int argc, char* argv[])
     const auto result = search.run(search.initial_solution());
     // [first-improvement] --------------------------------------------------
 
+    // [load-and-print] -----------------------------------------------------
+    // The same five cities, read from a file with the read_input hook.
+    const auto from_file = el::load_input<Tsp>(EASYLOCAL_TUTORIAL_INSTANCE);
+    auto file_search = fi.bind(from_file);
+    const auto file_result = file_search.run(file_search.initial_solution());
+    std::cout << "from file " << el::describe(file_result.solution) << '\n';
+    // [load-and-print] -----------------------------------------------------
+
     // [with-spelling] ------------------------------------------------------
     auto same_runner =
         el::make_runner<runners::FirstImprovement>(runners::FirstImprovementParameters{})

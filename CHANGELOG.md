@@ -101,6 +101,10 @@ old concepts onto the new ones.
   `tui::run(app, options)`, is a view on a Session, and every REST run has a
   Session of its own.
   Tools give stochastic runners an RNG they own, seeded reproducibly.
+- **Reading and writing**: optional hooks on the problem's types read an
+  Input, read and write a Solution and describe a value; `load_input`,
+  `load_solution`, `save_solution` and `describe` (`<easylocal/app/io.hpp>`)
+  use them in any program, as the Session and the TextUI do.
 - **Configuration**: typed runner and solver parameters with validation,
   collected in parameter sets with dotted paths (blocks may nest groups),
   applied all or none from the command line, configuration files and TOML

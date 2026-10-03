@@ -306,8 +306,8 @@ public:
 // [two-opt] ----------------------------------------------------------------
 
 // [io] ---------------------------------------------------------------------
-// Optional hooks, found by ADL, that let the tools load, save and display
-// (chapter 12).
+// Optional hooks, found by ADL, that read, write and describe the values
+// (chapter 5).
 inline Tsp read_input(std::type_identity<Tsp>, std::istream& in)
 {
     std::size_t cities = 0; // "n", then the n rows of the distance matrix
