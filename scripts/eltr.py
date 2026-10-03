@@ -2,24 +2,23 @@
 """Decode ELTR binary traces (trace::binary_recorder, async_binary_recorder).
 
     scripts/eltr.py run.eltrace                      # JSON Lines on stdout
-    scripts/eltr.py run.eltrace --cost f64           # a floating-point cost
-    scripts/eltr.py run.eltrace --cost hard:i32,soft:i32
     scripts/eltr.py run.eltrace --events move_accepted,incumbent_updated
-    scripts/eltr.py run.eltrace --format summary     # event counts, final cost
+    scripts/eltr.py run.eltrace --format summary     # metadata, event counts, costs
     scripts/eltr.py run.eltrace --format stn         # search trajectory network
+    scripts/eltr.py run.eltrace --format schema      # what the trace records
 
-The JSON Lines output has the field names of trace::jsonl_recorder, so the
-tools that read a JSONL trace read a decoded ELTR trace too. An application
-event (tags 128-255) becomes {"event": "user", "tag": ..., "payload": hex}.
+A trace describes itself (docs/tracing.md): its header gives the metadata of
+the run, the layout of the costs and the fields of every core event, and an
+application event that has a schema is described before its first record. So
+the decoder needs no options to read any trace: a cost decodes to a number, or
+to an object nested as its fields are named ("hard.0" is ["hard"][0]; levels
+named 0, 1, ... become a list).
 
-A cost is written by the recorder's cost writer, so the decoder has to be told
-its layout: --cost takes the field types in the order the writer writes them
-(i8, u8, i16, u16, i32, u32, i64, u64, f32, f64, bool), optionally named. The
-default, i64, matches the default writer for a signed integral cost; u64 and
-f64 match unsigned and floating-point costs. One unnamed field decodes to a
-number, several to a list, named fields to an object. A record whose payload does not
-fit the layout fails the decoding, but a layout of the right size and the
-wrong types (i64 for two i32 fields) decodes to wrong values.
+The JSON Lines output starts with a "trace" line (format version, metadata,
+cost layout) and goes on with one line per record, with the field names of
+trace::jsonl_recorder, so the tools that read a JSONL trace read a decoded ELTR
+trace too. A record without a schema becomes {"event": "user" (or "unknown"
+for a core tag), "tag": ..., "payload": hex}.
 
 The STN output is the search trajectory network of the solution_visited
 events (recorded when the problem has a solution hash): one node per distinct
@@ -27,249 +26,269 @@ hash, with its cost and number of visits, and one edge per consecutive pair of
 visits within a run, with its count.
 
 Standard library only: `uv run scripts/eltr.py` or `python3`. As a module,
-`records(stream, cost)` yields the decoded records one at a time.
+`Trace(stream)` reads the header (`metadata`, `cost_fields`, `schemas`) and
+iterating over it yields the decoded records one at a time.
 """
 
 from __future__ import annotations
 
 import argparse
+import itertools
 import json
 import struct
 import sys
 from collections import Counter
-from dataclasses import dataclass
 from typing import IO, Any, Iterator
 
 MAGIC = b"ELTR"
 VERSION = 1
+SCHEMA_TAG = 0
+FIRST_USER_TAG = 128
 
-PRIMITIVES = {
-    "i8": "b",
-    "u8": "B",
-    "i16": "h",
-    "u16": "H",
-    "i32": "i",
-    "u32": "I",
-    "i64": "q",
-    "u64": "Q",
-    "f32": "f",
-    "f64": "d",
-    "bool": "?",
+U8 = struct.Struct("<B")
+U32 = struct.Struct("<I")
+RECORD_HEADER = struct.Struct("<BI")
+
+# binary_type: name and fixed layout (None for the sized types).
+TYPES = {
+    1: ("u8", struct.Struct("<B")),
+    2: ("i8", struct.Struct("<b")),
+    3: ("u16", struct.Struct("<H")),
+    4: ("i16", struct.Struct("<h")),
+    5: ("u32", struct.Struct("<I")),
+    6: ("i32", struct.Struct("<i")),
+    7: ("u64", struct.Struct("<Q")),
+    8: ("i64", struct.Struct("<q")),
+    9: ("f32", struct.Struct("<f")),
+    10: ("f64", struct.Struct("<d")),
+    11: ("bool", struct.Struct("<?")),
+    12: ("string", None),
+    13: ("bytes", None),
+    14: ("route", None),
+    15: ("cost", None),
 }
+COST = 15
 
 
 class FormatError(Exception):
-    """The stream is not a valid ELTR trace for the given cost layout."""
+    """The stream is not a valid ELTR trace."""
 
 
-@dataclass(frozen=True)
-class CostLayout:
-    names: tuple[str | None, ...]
-    format: struct.Struct
+class Reader:
+    """A cursor on a block of bytes: a header or a record's payload."""
 
-    @classmethod
-    def parse(cls, spec: str) -> CostLayout:
-        names: list[str | None] = []
-        codes = []
-        for field in spec.split(","):
-            name, _, kind = field.strip().rpartition(":")
-            if kind not in PRIMITIVES:
-                known = ", ".join(PRIMITIVES)
-                raise ValueError(f"unknown cost field type {kind!r} (known: {known})")
-            names.append(name or None)
-            codes.append(PRIMITIVES[kind])
-        if any(names) and not all(names):
-            raise ValueError("either every cost field has a name or none has")
-        return cls(tuple(names), struct.Struct("<" + "".join(codes)))
-
-    def decode(self, values: tuple[Any, ...]) -> Any:
-        if self.names[0] is not None:
-            return dict(zip(self.names, values))
-        return values[0] if len(values) == 1 else list(values)
-
-
-class Payload:
-    """A cursor on one record's payload."""
-
-    def __init__(self, data: bytes, cost: CostLayout):
+    def __init__(self, data: bytes, what: str):
         self.data = data
         self.offset = 0
-        self.cost_layout = cost
+        self.what = what
 
     def take(self, layout: struct.Struct) -> tuple[Any, ...]:
         if self.offset + layout.size > len(self.data):
-            raise FormatError("payload shorter than its event")
+            raise FormatError(f"{self.what} is shorter than its fields")
         values = layout.unpack_from(self.data, self.offset)
         self.offset += layout.size
         return values
 
-    def u64(self) -> int:
-        return self.take(U64)[0]
+    def raw(self, size: int) -> bytes:
+        if self.offset + size > len(self.data):
+            raise FormatError(f"{self.what} is shorter than its fields")
+        value = self.data[self.offset : self.offset + size]
+        self.offset += size
+        return value
 
-    def f64(self) -> float:
-        return self.take(F64)[0]
+    def u8(self) -> int:
+        return self.take(U8)[0]
 
-    def boolean(self) -> bool:
-        return self.take(U8)[0] != 0
+    def u32(self) -> int:
+        return self.take(U32)[0]
 
-    def cost(self) -> Any:
-        return self.cost_layout.decode(self.take(self.cost_layout.format))
+    def string(self) -> str:
+        return self.raw(self.u32()).decode("utf-8")
 
-    def route(self) -> list[int]:
-        (count,) = self.take(U32)
-        return list(self.take(struct.Struct(f"<{count}I")))
+    def fields(self) -> list[tuple[str, int]]:
+        result = []
+        for _ in range(self.u32()):
+            name = self.string()
+            kind = self.u8()
+            if kind not in TYPES:
+                raise FormatError(f"{self.what}: unknown field type {kind}")
+            result.append((name, kind))
+        return result
 
+    def schema(self) -> tuple[int, str, list[tuple[str, int]]]:
+        tag = self.u8()
+        return tag, self.string(), self.fields()
 
-U8 = struct.Struct("<B")
-U32 = struct.Struct("<I")
-U64 = struct.Struct("<Q")
-F64 = struct.Struct("<d")
-RECORD_HEADER = struct.Struct("<BI")
+    def value(self, kind: int, cost_fields: list[tuple[str, int]]) -> Any:
+        name, layout = TYPES[kind]
+        if layout is not None:
+            return self.take(layout)[0]
+        if name == "string":
+            return self.string()
+        if name == "bytes":
+            return self.raw(self.u32()).hex()
+        if name == "route":
+            return list(self.take(struct.Struct(f"<{self.u32()}I")))
+        return nest([(field, self.value(field_kind, [])) for field, field_kind in cost_fields])
 
-
-def counters(p: Payload) -> dict[str, Any]:
-    return {"evaluations": p.u64(), "iterations": p.u64()}
-
-
-# The core events by tag (docs/tracing.md), as builders of the JSONL fields.
-CORE_EVENTS = {
-    1: ("run_started", lambda p: {"cost": p.cost()}),
-    2: (
-        "move_evaluated",
-        lambda p: {
-            **counters(p),
-            "current_cost": p.cost(),
-            "candidate_cost": p.cost(),
-            "neighborhood": p.route(),
-        },
-    ),
-    3: (
-        "move_accepted",
-        lambda p: {
-            **counters(p),
-            "previous_cost": p.cost(),
-            "cost": p.cost(),
-            "neighborhood": p.route(),
-        },
-    ),
-    4: (
-        "incumbent_updated",
-        lambda p: {**counters(p), "previous_cost": p.cost(), "cost": p.cost()},
-    ),
-    5: ("local_optimum", lambda p: {**counters(p), "cost": p.cost()}),
-    6: (
-        "neighborhood_selection",
-        lambda p: {
-            "attempt": p.u64(),
-            "child": p.u64(),
-            "bias": p.f64(),
-            "active_bias_total": p.f64(),
-            "conditional_probability": p.f64(),
-            "produced_move": p.boolean(),
-            "neighborhood": p.route(),
-        },
-    ),
-    7: ("run_finished", lambda p: {**counters(p), "cost": p.cost()}),
-    8: (
-        "solution_visited",
-        lambda p: {**counters(p), "hash": p.u64(), "cost": p.cost()},
-    ),
-    9: ("aspiration_applied", lambda p: {**counters(p), "cost": p.cost()}),
-    10: ("tabu_escape", lambda p: {**counters(p), "moves": p.u64()}),
-}
-
-EVENT_NAMES = [name for name, _ in CORE_EVENTS.values()] + ["user", "unknown"]
+    def finished(self) -> bool:
+        return self.offset == len(self.data)
 
 
-def read_exactly(stream: IO[bytes], size: int) -> bytes:
-    data = stream.read(size)
-    return data if data is not None else b""
+def nest(values: list[tuple[str, Any]]) -> Any:
+    """A cost's fields as a value: a number, or objects and lists by name."""
+    if len(values) == 1 and values[0][0] == "":
+        return values[0][1]
+    root: dict[str, Any] = {}
+    for path, value in values:
+        node = root
+        *parents, leaf = path.split(".")
+        for part in parents:
+            node = node.setdefault(part, {})
+        node[leaf] = value
+    return listify(root)
 
 
-def records(
-    stream: IO[bytes],
-    cost: CostLayout | str = "i64",
-    allow_truncated: bool = False,
-) -> Iterator[dict[str, Any]]:
-    """Yields the records of an ELTR stream as JSONL-shaped dictionaries."""
-    layout = CostLayout.parse(cost) if isinstance(cost, str) else cost
-    header = read_exactly(stream, 8)
-    if len(header) < 8 or header[:4] != MAGIC:
-        raise FormatError("not an ELTR trace (no ELTR header)")
-    (version,) = U32.unpack_from(header, 4)
-    if version != VERSION:
-        raise FormatError(f"ELTR version {version}; this decoder reads version {VERSION}")
+def listify(node: Any) -> Any:
+    if not isinstance(node, dict):
+        return node
+    items = {key: listify(value) for key, value in node.items()}
+    if list(items) == [str(index) for index in range(len(items))]:
+        return list(items.values())
+    return items
 
-    offset = 8
-    while True:
-        record_header = read_exactly(stream, RECORD_HEADER.size)
-        if not record_header:
-            return
-        tag = record_header[0]
-        payload = b""
-        if len(record_header) == RECORD_HEADER.size:
-            (size,) = U32.unpack_from(record_header, 1)
-            payload = read_exactly(stream, size)
-        if len(record_header) < RECORD_HEADER.size or len(payload) < size:
-            message = f"truncated record at byte {offset}"
-            if allow_truncated:
-                print(f"eltr: {message}; stopping there", file=sys.stderr)
+
+def type_name(kind: int) -> str:
+    return TYPES[kind][0]
+
+
+class Trace:
+    """An ELTR stream: the header on construction, the records on iteration."""
+
+    def __init__(self, stream: IO[bytes], allow_truncated: bool = False):
+        self.stream = stream
+        self.allow_truncated = allow_truncated
+        start = stream.read(12) or b""
+        if len(start) < 8 or start[:4] != MAGIC:
+            raise FormatError("not an ELTR trace (no ELTR header)")
+        (self.version,) = U32.unpack_from(start, 4)
+        if self.version != VERSION:
+            raise FormatError(
+                f"ELTR version {self.version}; this decoder reads version {VERSION}"
+            )
+        if len(start) < 12:
+            raise FormatError("truncated header")
+        (size,) = U32.unpack_from(start, 8)
+        data = stream.read(size) or b""
+        if len(data) < size:
+            raise FormatError("truncated header")
+        header = Reader(data, "the header")
+        self.metadata = {}
+        for _ in range(header.u32()):
+            key = header.string()
+            self.metadata[key] = header.string()
+        self.cost_fields = header.fields()
+        self.schemas: dict[int, tuple[str, list[tuple[str, int]]]] = {}
+        for _ in range(header.u32()):
+            tag, name, fields = header.schema()
+            self.schemas[tag] = (name, fields)
+        self.offset = 12 + size
+
+    def describe(self) -> dict[str, Any]:
+        """The trace line of the JSONL output."""
+        return {
+            "event": "trace",
+            "version": self.version,
+            "metadata": self.metadata,
+            "cost": [{"name": name, "type": type_name(kind)} for name, kind in self.cost_fields],
+        }
+
+    def schema_listing(self) -> dict[str, Any]:
+        return {
+            **{key: value for key, value in self.describe().items() if key != "event"},
+            "events": [
+                {
+                    "tag": tag,
+                    "name": name,
+                    "fields": [
+                        {"name": field, "type": type_name(kind)} for field, kind in fields
+                    ],
+                }
+                for tag, (name, fields) in sorted(self.schemas.items())
+            ],
+        }
+
+    def __iter__(self) -> Iterator[dict[str, Any]]:
+        while True:
+            record_header = self.stream.read(RECORD_HEADER.size) or b""
+            if not record_header:
                 return
-            raise FormatError(message)
+            payload = b""
+            size = 0
+            if len(record_header) == RECORD_HEADER.size:
+                tag, size = RECORD_HEADER.unpack(record_header)
+                payload = self.stream.read(size) or b""
+            if len(record_header) < RECORD_HEADER.size or len(payload) < size:
+                message = f"truncated record at byte {self.offset}"
+                if self.allow_truncated:
+                    print(f"eltr: {message}; stopping there", file=sys.stderr)
+                    return
+                raise FormatError(message)
 
-        if tag in CORE_EVENTS:
-            name, build = CORE_EVENTS[tag]
-            cursor = Payload(payload, layout)
-            try:
-                fields = build(cursor)
-            except FormatError:
-                fields = None
-            if fields is None or cursor.offset != len(payload):
-                raise FormatError(
-                    f"{name} record at byte {offset} has {len(payload)} payload bytes, "
-                    f"which do not match a cost of {layout.format.size} bytes "
-                    "(see --cost)"
-                )
-            yield {"event": name, **fields}
-        elif tag >= 128:
-            yield {"event": "user", "tag": tag, "payload": payload.hex()}
-        else:
-            # A core event of a later format revision.
-            yield {"event": "unknown", "tag": tag, "payload": payload.hex()}
-        offset += RECORD_HEADER.size + len(payload)
+            what = f"the record at byte {self.offset}"
+            self.offset += RECORD_HEADER.size + size
+            reader = Reader(payload, what)
+            if tag == SCHEMA_TAG:
+                described, name, fields = reader.schema()
+                self.schemas[described] = (name, fields)
+                continue
+            if tag not in self.schemas:
+                kind = "user" if tag >= FIRST_USER_TAG else "unknown"
+                yield {"event": kind, "tag": tag, "payload": payload.hex()}
+                continue
+            name, fields = self.schemas[tag]
+            record = {"event": name}
+            for field, kind in fields:
+                record[field] = reader.value(kind, self.cost_fields)
+            if not reader.finished():
+                raise FormatError(f"{what} ({name}) is longer than its fields")
+            yield record
 
 
-def summary(events: Iterator[dict[str, Any]]) -> dict[str, Any]:
+def summary(trace: Trace) -> dict[str, Any]:
     counts: Counter[str] = Counter()
-    runs = []
+    runs: list[dict[str, Any]] = []
     solutions = set()
-    for record in events:
+    for record in trace:
         name = record["event"]
-        counts[name if name != "user" else f"user:{record['tag']}"] += 1
+        counts[name if name not in ("user", "unknown") else f"{name}:{record['tag']}"] += 1
         if name == "run_started":
             runs.append({"initial_cost": record["cost"]})
         elif name == "run_finished":
-            run = runs[-1] if runs and "final_cost" not in runs[-1] else {}
-            if not run:
-                runs.append(run)
-            run.update(
+            if not runs or "final_cost" in runs[-1]:
+                runs.append({})
+            runs[-1].update(
                 final_cost=record["cost"],
                 evaluations=record["evaluations"],
                 iterations=record["iterations"],
             )
         elif name == "solution_visited":
             solutions.add(record["hash"])
-    result: dict[str, Any] = {"events": dict(counts), "runs": runs}
+    result: dict[str, Any] = {
+        "metadata": trace.metadata,
+        "events": dict(counts),
+        "runs": runs,
+    }
     if solutions:
         result["distinct_solutions"] = len(solutions)
     return result
 
 
-def search_trajectory_network(events: Iterator[dict[str, Any]]) -> dict[str, Any]:
+def search_trajectory_network(trace: Trace) -> dict[str, Any]:
     nodes: dict[int, dict[str, Any]] = {}
     edges: Counter[tuple[int, int]] = Counter()
     previous = None
-    for record in events:
+    for record in trace:
         if record["event"] == "run_started":
             previous = None
         elif record["event"] == "solution_visited":
@@ -281,6 +300,7 @@ def search_trajectory_network(events: Iterator[dict[str, Any]]) -> dict[str, Any
                 edges[(previous, record["hash"])] += 1
             previous = record["hash"]
     return {
+        "metadata": trace.metadata,
         "nodes": list(nodes.values()),
         "edges": [
             {"source": source, "target": target, "count": count}
@@ -296,19 +316,16 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("trace", help="the ELTR file, or - for standard input")
     parser.add_argument(
-        "--cost",
-        default="i64",
-        help="the cost layout, e.g. i64 (default), f64 or hard:i32,soft:i32",
-    )
-    parser.add_argument(
         "--format",
-        choices=["jsonl", "summary", "stn"],
+        choices=["jsonl", "summary", "stn", "schema"],
         default="jsonl",
-        help="JSON Lines records (default), a summary or a search trajectory network",
+        help="JSON Lines records (default), a summary, a search trajectory network "
+        "or the trace's schema",
     )
     parser.add_argument(
         "--events",
-        help="comma-separated event names to keep in the JSONL output",
+        help="comma-separated event names to keep in the JSONL output "
+        "(trace for the first line, user for records without a schema)",
     )
     parser.add_argument(
         "--allow-truncated",
@@ -317,31 +334,23 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("-o", "--output", help="the output file (default: standard output)")
     args = parser.parse_args(argv)
-
-    try:
-        layout = CostLayout.parse(args.cost)
-    except ValueError as error:
-        parser.error(str(error))
-    keep = None
-    if args.events:
-        keep = {name.strip() for name in args.events.split(",")}
-        unknown = keep.difference(EVENT_NAMES)
-        if unknown:
-            parser.error(f"unknown events: {', '.join(sorted(unknown))}")
+    keep = {name.strip() for name in args.events.split(",")} if args.events else None
 
     stream = sys.stdin.buffer if args.trace == "-" else open(args.trace, "rb")
     output = open(args.output, "w", encoding="utf-8") if args.output else sys.stdout
     try:
-        events = records(stream, layout, allow_truncated=args.allow_truncated)
+        trace = Trace(stream, allow_truncated=args.allow_truncated)
         if args.format == "jsonl":
-            for record in events:
+            for record in itertools.chain([trace.describe()], trace):
                 if keep is None or record["event"] in keep:
                     output.write(json.dumps(record, separators=(",", ":")) + "\n")
-        elif args.format == "summary":
-            json.dump(summary(events), output, indent=2)
-            output.write("\n")
         else:
-            json.dump(search_trajectory_network(events), output, indent=2)
+            result = {
+                "summary": summary,
+                "stn": search_trajectory_network,
+                "schema": Trace.schema_listing,
+            }[args.format](trace)
+            json.dump(result, output, indent=2)
             output.write("\n")
     except FormatError as error:
         print(f"eltr: {args.trace}: {error}", file=sys.stderr)

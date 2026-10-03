@@ -17,6 +17,8 @@ template<class... Values>
 class lexicographic
 {
 public:
+    static constexpr std::size_t levels = sizeof...(Values);
+
     constexpr explicit lexicographic(Values... values)
         : values_{std::move(values)...}
     {

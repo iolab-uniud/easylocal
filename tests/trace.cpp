@@ -1,10 +1,15 @@
+#include <easylocal/cost.hpp>
 #include <easylocal/trace.hpp>
 
+#include <cstddef>
 #include <cstdint>
 #include <iostream>
 #include <sstream>
 #include <streambuf>
+#include <string>
 #include <string_view>
+#include <type_traits>
+#include <vector>
 
 namespace
 {
@@ -42,7 +47,24 @@ struct structured_binary_cost_writer
         out.i32(cost.hard);
         out.i32(cost.soft);
     }
+
+    [[nodiscard]] static auto fields() -> std::vector<easylocal::trace::binary_field>
+    {
+        using enum easylocal::trace::binary_type;
+        return {{"hard", i32}, {"soft", i32}};
+    }
 };
+
+// The size of an ELTR stream's magic, version and header: the records start
+// there.
+auto records_offset(const std::string& data) -> std::size_t
+{
+    std::uint32_t size = 0;
+    for (std::size_t index = 0; index < 4; ++index)
+        size |= static_cast<std::uint32_t>(static_cast<unsigned char>(data[8 + index]))
+            << (8 * index);
+    return 12 + size;
+}
 
 namespace polli_extension
 {
@@ -64,6 +86,13 @@ inline void encode_binary_event(
 {
     out.u64(value.iteration);
     out.f64(value.temperature);
+}
+
+inline auto describe_binary_event(std::type_identity<temperature_changed>)
+    -> easylocal::trace::binary_event_schema
+{
+    using enum easylocal::trace::binary_type;
+    return {"temperature_changed", {{"iteration", u64}, {"temperature", f64}}};
 }
 
 } // namespace polli_extension
@@ -258,16 +287,33 @@ int main()
         });
     binary.flush();
     const auto binary_data = binary_stream.str();
+    const auto binary_records = records_offset(binary_data);
     ok &= expect(
-        binary_data.size() == 8 + 5 + 44,
+        binary_data.size() == binary_records + 5 + 44,
         "binary recorder writes versioned header and compact event payload");
     ok &= expect(
         binary_data.size() >= 8 && binary_data.substr(0, 4) == "ELTR" &&
             static_cast<unsigned char>(binary_data[4]) == 1,
         "binary recorder writes ELTR format version 1");
     ok &= expect(
-        binary_data.size() > 8 && static_cast<unsigned char>(binary_data[8]) == 2,
+        static_cast<unsigned char>(binary_data[binary_records]) == 2,
         "binary recorder preserves the event type tag");
+    ok &= expect(
+        binary_data.find("move_evaluated") < binary_records
+            && binary_data.find("candidate_cost") < binary_records,
+        "the header names the events and their fields");
+
+    std::ostringstream described_stream;
+    easylocal::trace::binary_recorder<easylocal::cost::hierarchical<int, double>>
+        described{described_stream, {.metadata = {{"instance", "ta001"}}}};
+    described.flush();
+    const auto described_data = described_stream.str();
+    ok &= expect(
+        described_data.size() == records_offset(described_data)
+            && described_data.find("ta001") != std::string::npos
+            && described_data.find("hard") != std::string::npos
+            && described_data.find("soft") != std::string::npos,
+        "the header holds the metadata and the default layout of a hierarchical cost");
 
     sync_counting_streambuf binary_buffered_storage;
     std::ostream binary_buffered_output{&binary_buffered_storage};
@@ -295,7 +341,8 @@ int main()
         });
     structured_binary.flush();
     ok &= expect(
-        structured_binary_stream.str().size() == 8 + 5 + 24,
+        structured_binary_stream.str().size()
+            == records_offset(structured_binary_stream.str()) + 5 + 24,
         "binary recorder accepts a custom structured cost writer");
 
     std::ostringstream custom_event_stream;
@@ -305,11 +352,15 @@ int main()
         polli_extension::temperature_changed{.iteration = 42, .temperature = 0.75});
     custom_event_recorder.flush();
     const auto custom_event_data = custom_event_stream.str();
+    const auto custom_records = records_offset(custom_event_data);
     ok &= expect(
-        custom_event_data.size() == 8 + 5 + 16 &&
-            static_cast<unsigned char>(custom_event_data[8]) ==
-                easylocal::trace::user_binary_event_tag<0>(),
-        "application events extend ELTR via ADL without touching EasyLocal");
+        custom_event_data.size() > custom_records
+            && static_cast<unsigned char>(custom_event_data[custom_records]) == 0
+            && custom_event_data.find("temperature_changed") > custom_records
+            && static_cast<unsigned char>(
+                   custom_event_data[custom_event_data.size() - 21])
+                == easylocal::trace::user_binary_event_tag<0>(),
+        "application events extend ELTR via ADL, described before their first record");
 
     std::ostringstream sync_equivalent_stream;
     easylocal::trace::buffered_binary_recorder<int> sync_equivalent{
@@ -379,15 +430,16 @@ int main()
                 .moves = 3});
         recorder.flush();
         const auto data = stream.str();
-        const auto byte = [&data](const std::size_t index) {
-            return static_cast<unsigned char>(data[index]);
+        const auto records = records_offset(data);
+        const auto byte = [&data, records](const std::size_t index) {
+            return static_cast<unsigned char>(data[records + index]);
         };
         std::uint64_t hash = 0;
         for (std::size_t index = 0; index < 8; ++index)
-            hash |= static_cast<std::uint64_t>(byte(8 + 5 + 16 + index)) << (8 * index);
+            hash |= static_cast<std::uint64_t>(byte(5 + 16 + index)) << (8 * index);
         ok &= expect(
-            data.size() == 8 + (5 + 32) + (5 + 24) + (5 + 24) && byte(8) == 8
-                && byte(45) == 9 && byte(74) == 10 && hash == 0x0102030405060708ULL,
+            data.size() == records + (5 + 32) + (5 + 24) + (5 + 24) && byte(0) == 8
+                && byte(37) == 9 && byte(66) == 10 && hash == 0x0102030405060708ULL,
             "binary recorder encodes solution_visited, aspiration_applied and tabu_escape");
 
         std::ostringstream jsonl;

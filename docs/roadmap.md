@@ -86,6 +86,22 @@ every runner that draws random moves could use it.
 
 **When.** Not scheduled.
 
+## Trace micro-benchmarks
+
+**Why.** The tracing overhead benchmark of
+[easylocal-benchmarks](https://github.com/iolab-uniud/easylocal-benchmarks)
+measures a First Improvement workload, whose events are the core ones. The
+events added since (the visited solutions, with a hash computed per move, and
+tabu search's aspirations, escapes and tenure changes) and the self-describing
+ELTR header are not measured.
+
+**What.** Micro-benchmarks of the encoding of each event type, the solution
+hash included, and a Tabu Search workload with each tabu list, under the same
+recorders as the existing benchmark (null, in-memory, buffered and
+asynchronous ELTR), reporting the cost per event and per iteration.
+
+**When.** Not scheduled.
+
 ## Parameters described by reflection (C++26)
 
 **Why.** A parameter block describes itself by hand: `parameter_schema()`

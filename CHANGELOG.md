@@ -120,11 +120,13 @@ old concepts onto the new ones.
   Costs are read as text (`cost::from_text`, or a problem's `read_cost`) and
   written back (`cost::to_text`) for targets on the command line
   (`RunParameters`, `--run.target`), in the TextUI and in REST requests.
-- **Tracing**: core search events to JSONL, binary or in-memory recorders, with
-  no overhead when unused, including the solutions visited, by their hash,
-  for search trajectory and local optima networks, and tabu search's
-  aspirations, escapes and tenure changes; `scripts/eltr.py` decodes binary
-  traces to JSONL, a summary or a search trajectory network; leveled logging.
+- **Tracing**: core search events to JSONL, self-describing binary (ELTR: the
+  header gives the run's metadata, the cost layout and every event's fields)
+  or in-memory recorders, with no overhead when unused, including the
+  solutions visited, by their hash, for search trajectory and local optima
+  networks, and tabu search's aspirations, escapes and tenure changes;
+  `scripts/eltr.py` decodes binary traces to JSONL, a summary or a search
+  trajectory network; leveled logging.
 
 ### Optional components
 

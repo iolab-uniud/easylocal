@@ -67,9 +67,11 @@ directory layout and stream ownership to the application.
 
 For long runs, EasyLocal provides constant-memory streaming recorders.
 `trace::jsonl_recorder<Cost>` writes a human-readable JSONL representation.
-The canonical experimental format is the versioned `ELTR` binary stream.  Its
-records are tagged and length-prefixed, so readers can skip event types they do
-not understand.
+The canonical experimental format is the versioned `ELTR` binary stream.  It
+describes itself: a header gives the metadata of the run, the layout of the
+costs and the fields of every event, so a reader needs nothing but the file.
+Its records are tagged and length-prefixed, so readers can skip event types
+they do not understand.
 
 `trace::binary_recorder<Cost>` is an alias for the synchronous
 `trace::buffered_binary_recorder<Cost>`.  It encodes events directly into a
@@ -90,12 +92,14 @@ if (!trace.good()) { /* handle output failure */ }
 ```
 
 Block size and the number of queued blocks are explicit policy knobs, not global
-state:
+state, and the options carry the metadata written in the header: whatever tells
+the run apart, as text.
 
 ```cpp
 easylocal::trace::binary_buffer_options options{
     .block_size = 256 * 1024,
     .async_queue_blocks = 4,
+    .metadata = {{"instance", "ta001"}, {"runner", "ts"}, {"seed", "42"}},
 };
 easylocal::trace::async_binary_recorder<cost_type> trace{out, options};
 ```
@@ -112,50 +116,70 @@ when a run may emit millions of events and trace volume matters.  Core does not
 choose a trace path and does not depend on a JSON, binary-serialization or
 logging library.
 
-### ELTR records
+### ELTR layout
 
-A stream starts with `ELTR` and the format version as a little-endian `u32`
-(1). Each record is a tag (`u8`), the payload size (`u32`) and the payload; all
-integers are little-endian, a route is a `u32` count followed by one `u32` per
-level, and a cost is written by the recorder's cost writer (the default writes
-an arithmetic cost as `i64`, `u64` or `f64`).
+All integers are little-endian; a string is a `u32` size and UTF-8 bytes. A
+stream starts with `ELTR`, the format version as a `u32` (1) and the header: its
+size (`u32`), then
 
-| Tag | Event | Payload |
+- the metadata: a `u32` count, then a key and a value string each;
+- the cost layout: a field list;
+- the core event schemas: a `u32` count, then each event's tag (`u8`), name
+  (string) and field list.
+
+A field list is a `u32` count, then each field's name (string) and type
+(`u8`): 1 `u8`, 2 `i8`, 3 `u16`, 4 `i16`, 5 `u32`, 6 `i32`, 7 `u64`, 8 `i64`,
+9 `f32`, 10 `f64`, 11 `bool`, 12 string, 13 bytes (a `u32` size and the bytes),
+14 route (a `u32` count and a `u32` per level), 15 cost (the fields of the cost
+layout). A scalar cost is one field with an empty name; the fields of a
+structured cost are named by their path, `hard.0` for the first level of the
+hard part.
+
+The records follow, each a tag (`u8`), its payload size (`u32`) and the
+payload, the fields of its tag's schema in order. Tag 0 is a schema record (the
+described tag, name and field list), written before the first record of an
+application event that describes itself. The core events are:
+
+| Tag | Event | Fields |
 | --- | --- | --- |
 | 1 | `run_started` | cost |
-| 2 | `move_evaluated` | evaluations `u64`, iterations `u64`, current cost, candidate cost, route |
-| 3 | `move_accepted` | evaluations `u64`, iterations `u64`, previous cost, cost, route |
-| 4 | `incumbent_updated` | evaluations `u64`, iterations `u64`, previous cost, cost |
-| 5 | `local_optimum` | evaluations `u64`, iterations `u64`, cost |
-| 6 | `neighborhood_selection` | attempt `u64`, child `u64`, bias `f64`, active bias total `f64`, conditional probability `f64`, produced move `u8`, route |
-| 7 | `run_finished` | evaluations `u64`, iterations `u64`, cost |
-| 8 | `solution_visited` | evaluations `u64`, iterations `u64`, hash `u64`, cost |
-| 9 | `aspiration_applied` | evaluations `u64`, iterations `u64`, cost |
-| 10 | `tabu_escape` | evaluations `u64`, iterations `u64`, moves `u64` |
-| 11 | `tabu_tenure_changed` | evaluations `u64`, iterations `u64`, previous tenure `u64`, tenure `u64` |
-| 128–255 | application events | as their encoder writes them |
+| 2 | `move_evaluated` | evaluations, iterations, current_cost, candidate_cost, neighborhood |
+| 3 | `move_accepted` | evaluations, iterations, previous_cost, cost, neighborhood |
+| 4 | `incumbent_updated` | evaluations, iterations, previous_cost, cost |
+| 5 | `local_optimum` | evaluations, iterations, cost |
+| 6 | `neighborhood_selection` | attempt, child, bias, active_bias_total, conditional_probability, produced_move, neighborhood |
+| 7 | `run_finished` | evaluations, iterations, cost |
+| 8 | `solution_visited` | evaluations, iterations, hash, cost |
+| 9 | `aspiration_applied` | evaluations, iterations, cost |
+| 10 | `tabu_escape` | evaluations, iterations, moves |
+| 11 | `tabu_tenure_changed` | evaluations, iterations, previous_tenure, tenure |
+| 128–255 | application events | as their schema says, if they have one |
+
+The counters are `u64`, the biases and the probability `f64`, `produced_move` a
+`bool`, the neighborhoods routes; the header has the authoritative list.
 
 ### Decoding ELTR
 
 `scripts/eltr.py` decodes a trace (standard-library Python, `python3` or
-`uv run`). By default it writes JSON Lines with the field names of
-`jsonl_recorder`, so a decoded binary trace feeds the same tools as a JSONL one:
+`uv run`) from its own description, with no options. By default it writes JSON
+Lines: a first `trace` line with the format version, the metadata and the cost
+layout, then the records with the field names of `jsonl_recorder`, so a decoded
+binary trace feeds the same tools as a JSONL one:
 
 ```sh
 scripts/eltr.py run-0042.eltrace > run-0042.jsonl
 scripts/eltr.py run-0042.eltrace --events incumbent_updated,run_finished
-scripts/eltr.py run-0042.eltrace --format summary   # event counts, costs per run
+scripts/eltr.py run-0042.eltrace --format summary   # metadata, event counts, costs per run
 scripts/eltr.py run-0042.eltrace --format stn       # search trajectory network
+scripts/eltr.py run-0042.eltrace --format schema    # what the trace records
 ```
 
-The trace does not record how its costs are encoded. `--cost` gives the layout
-written by the recorder's cost writer: `i64` (the default, a signed integral
-cost), `u64`, `f64`, or the fields of a structured writer in order, for example
-`--cost hard:i32,soft:i32` for the writer below, which decodes each cost to an
-object. A record whose payload does not fit the layout is an error, but a
-layout of the right size with the wrong types is not detected. An application
-event is kept as its tag and the hexadecimal payload, and a run interrupted
-mid-record is read up to its last whole record with `--allow-truncated`.
+A cost decodes to a number, or to an object nested as its fields are named,
+with lists for numbered levels: `{"hard": [0, 2], "soft": 13.5}`. An application
+event without a schema is kept as its tag and the hexadecimal payload, and a run
+interrupted mid-record is read up to its last whole record with
+`--allow-truncated`. As a module, `eltr.Trace(stream)` reads the header
+(`metadata`, `cost_fields`, `schemas`) and iterates over the records.
 
 The `stn` format builds the network from the `solution_visited` events, which
 are recorded when the problem has a [solution hash](reference/solution-manager.md):
@@ -165,11 +189,14 @@ consecutive pair of visits within a run.
 ### Extending ELTR without touching EasyLocal
 
 The binary encoder is intentionally small enough to customize in application
-code.  A structured cost writer receives a `binary_record_writer`, whose
-primitive operations (`u8`, `u32`, `u64`, `i32`, `i64`, `f64`, `boolean`,
-`bytes`, `string`, and `route`) always use the ELTR representation.  The writer
-does not calculate payload sizes and does not know about block or thread
-management:
+code.  The default cost writer, `default_binary_cost_writer<Cost>`, encodes an
+arithmetic cost, a `cost::lexicographic` and a `cost::hierarchical`, nested as
+they are. Another cost needs a writer, which receives a `binary_record_writer`,
+whose primitive operations (`u8`, `i8`, `u16`, `i16`, `u32`, `i32`, `u64`,
+`i64`, `f32`, `f64`, `boolean`, `bytes`, `string` and `route`) always use the
+ELTR representation, and describes what it writes with `fields()`, for the
+header.  The writer does not calculate payload sizes and does not know about
+block or thread management:
 
 ```cpp
 struct cost_binary
@@ -180,6 +207,12 @@ struct cost_binary
     {
         out.i64(cost.hard_value());
         out.i64(cost.soft_value());
+    }
+
+    static auto fields() -> std::vector<easylocal::trace::binary_field>
+    {
+        using enum easylocal::trace::binary_type;
+        return {{"hard", i64}, {"soft", i64}};
     }
 };
 
@@ -210,6 +243,14 @@ void encode_binary_event(
 {
     out.u64(value.iteration);
     out.f64(value.temperature);
+}
+
+// Optional: the schema, written before the first record of the tag.
+auto describe_binary_event(std::type_identity<temperature_changed>)
+    -> easylocal::trace::binary_event_schema
+{
+    using enum easylocal::trace::binary_type;
+    return {"temperature_changed", {{"iteration", u64}, {"temperature", f64}}};
 }
 } // namespace my_problem
 ```

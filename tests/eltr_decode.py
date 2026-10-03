@@ -24,6 +24,20 @@ import eltr  # noqa: E402
 
 FIXTURE = None
 
+CORE_EVENTS = {
+    "run_started",
+    "move_evaluated",
+    "move_accepted",
+    "incumbent_updated",
+    "local_optimum",
+    "neighborhood_selection",
+    "run_finished",
+    "solution_visited",
+    "aspiration_applied",
+    "tabu_escape",
+    "tabu_tenure_changed",
+}
+
 
 def same(decoded, expected):
     """Equal, with JSONL's six significant digits for floating-point fields."""
@@ -38,15 +52,29 @@ def same(decoded, expected):
     return decoded == expected
 
 
-def decode(path, cost="i64", **options):
+def decode(path, **options):
     with open(path, "rb") as stream:
-        return list(eltr.records(stream, cost, **options))
+        return list(eltr.Trace(stream, **options))
 
 
-def trace(*records):
-    """An ELTR stream of (tag, payload) records."""
+def string(text):
+    data = text.encode()
+    return struct.pack("<I", len(data)) + data
+
+
+def trace(cost_fields=(("", 8),), schemas=(), records=()):
+    """An ELTR stream with the given cost layout, schemas and records."""
+
+    def fields(items):
+        return struct.pack("<I", len(items)) + b"".join(
+            string(name) + struct.pack("<B", kind) for name, kind in items
+        )
+
+    header = struct.pack("<I", 0) + fields(cost_fields) + struct.pack("<I", len(schemas))
+    for tag, name, items in schemas:
+        header += struct.pack("<B", tag) + string(name) + fields(items)
     body = b"".join(struct.pack("<BI", tag, len(payload)) + payload for tag, payload in records)
-    return io.BytesIO(b"ELTR" + struct.pack("<I", 1) + body)
+    return io.BytesIO(b"ELTR" + struct.pack("<II", 1, len(header)) + header + body)
 
 
 class FixtureTraces(unittest.TestCase):
@@ -64,34 +92,41 @@ class FixtureTraces(unittest.TestCase):
         lines = (self.path / name).read_text().splitlines()
         return [json.loads(line) for line in lines]
 
+    def test_the_header_describes_the_trace(self):
+        with open(self.path / "integral.eltr", "rb") as stream:
+            header = eltr.Trace(stream)
+            self.assertEqual(header.metadata, {"instance": "fixture", "runner": "none"})
+            self.assertEqual(header.cost_fields, [("", 8)])
+            self.assertEqual({name for name, _ in header.schemas.values()}, CORE_EVENTS)
+
     def test_every_core_event_decodes_like_the_jsonl_recorder(self):
         decoded = decode(self.path / "integral.eltr")
-        core = [record for record in decoded if record["event"] != "user"]
+        core = [record for record in decoded if record["event"] in CORE_EVENTS]
         expected = self.expected("integral.jsonl")
         self.assertEqual(len(core), len(expected))
         for got, want in zip(core, expected):
             self.assertTrue(same(got, want), f"{got} != {want}")
+        self.assertEqual({record["event"] for record in core}, CORE_EVENTS)
+
+    def test_application_events_by_their_schema_or_raw(self):
+        decoded = decode(self.path / "integral.eltr")
+        described = [r for r in decoded if r["event"] == "temperature_changed"]
         self.assertEqual(
-            {record["event"] for record in core},
-            set(eltr.EVENT_NAMES) - {"user", "unknown"},
+            described, 2 * [{"event": "temperature_changed", "iteration": 3, "temperature": 0.5}]
         )
+        raw = [r for r in decoded if r["event"] == "user"]
+        self.assertEqual(raw, 2 * [{"event": "user", "tag": 132, "payload": "0201"}])
 
-    def test_application_events_are_raw(self):
-        users = [r for r in decode(self.path / "integral.eltr") if r["event"] == "user"]
-        self.assertEqual(len(users), 2)
-        self.assertEqual(users[0]["tag"], 131)
-        self.assertEqual(
-            struct.unpack("<Qd", bytes.fromhex(users[0]["payload"])), (3, 0.5)
-        )
+    def test_a_structured_cost_decodes_by_its_field_names(self):
+        self.assertEqual(decode(self.path / "structured.eltr"), self.expected("structured.jsonl"))
 
-    def test_named_cost_fields_decode_to_an_object(self):
-        decoded = decode(self.path / "structured.eltr", "hard:i32,soft:i32")
-        self.assertEqual(decoded, self.expected("structured.jsonl"))
-
-    def test_a_cost_layout_of_the_wrong_size_is_reported(self):
-        # Only the size can be checked: hard:i32,soft:i32 fills an i64 too.
-        with self.assertRaisesRegex(eltr.FormatError, "see --cost"):
-            decode(self.path / "structured.eltr", "i32")
+    def test_the_default_layout_of_a_hierarchical_cost(self):
+        with open(self.path / "hierarchical.eltr", "rb") as stream:
+            decoded = eltr.Trace(stream)
+            self.assertEqual(decoded.cost_fields, [("hard.0", 8), ("hard.1", 8), ("soft", 10)])
+            self.assertEqual(
+                list(decoded), [{"event": "run_started", "cost": {"hard": [1, 2], "soft": 0.5}}]
+            )
 
     def test_a_truncated_trace_fails_unless_allowed(self):
         data = (self.path / "integral.eltr").read_bytes()
@@ -103,9 +138,11 @@ class FixtureTraces(unittest.TestCase):
         self.assertEqual(decode(truncated, allow_truncated=True), complete[:-1])
 
     def test_summary(self):
-        result = eltr.summary(iter(decode(self.path / "integral.eltr")))
+        with open(self.path / "integral.eltr", "rb") as stream:
+            result = eltr.summary(eltr.Trace(stream))
+        self.assertEqual(result["metadata"]["instance"], "fixture")
         self.assertEqual(result["events"]["solution_visited"], 6)
-        self.assertEqual(result["events"]["user:131"], 2)
+        self.assertEqual(result["events"]["user:132"], 2)
         self.assertEqual(
             result["runs"],
             [
@@ -116,7 +153,8 @@ class FixtureTraces(unittest.TestCase):
         self.assertEqual(result["distinct_solutions"], 2)
 
     def test_search_trajectory_network(self):
-        network = eltr.search_trajectory_network(iter(decode(self.path / "integral.eltr")))
+        with open(self.path / "integral.eltr", "rb") as stream:
+            network = eltr.search_trajectory_network(eltr.Trace(stream))
         start, local = 0xFEEDFACECAFEBEEF, 7
         self.assertEqual(
             network["nodes"],
@@ -134,64 +172,88 @@ class FixtureTraces(unittest.TestCase):
             ],
         )
 
+    def run_cli(self, *arguments):
+        return subprocess.run(
+            [sys.executable, eltr.__file__, *map(str, arguments)],
+            capture_output=True,
+            text=True,
+        )
+
     def test_command_line(self):
-        result = subprocess.run(
-            [
-                sys.executable,
-                eltr.__file__,
-                self.path / "integral.eltr",
-                "--events",
-                "run_finished",
-            ],
-            check=True,
-            capture_output=True,
-            text=True,
-        )
-        lines = result.stdout.splitlines()
-        self.assertEqual(len(lines), 2)
+        result = self.run_cli(self.path / "integral.eltr", "--events", "trace,run_finished")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        lines = [json.loads(line) for line in result.stdout.splitlines()]
         self.assertEqual(
-            json.loads(lines[0]),
-            {"event": "run_finished", "evaluations": 4, "iterations": 3, "cost": -7},
+            lines[0],
+            {
+                "event": "trace",
+                "version": 1,
+                "metadata": {"instance": "fixture", "runner": "none"},
+                "cost": [{"name": "", "type": "i64"}],
+            },
         )
-        failed = subprocess.run(
-            [sys.executable, eltr.__file__, self.path / "integral.eltr", "--cost", "f32"],
-            capture_output=True,
-            text=True,
+        self.assertEqual(
+            lines[1:],
+            2 * [{"event": "run_finished", "evaluations": 4, "iterations": 3, "cost": -7}],
         )
+
+        schema = json.loads(self.run_cli(self.path / "integral.eltr", "--format", "schema").stdout)
+        tenure = next(event for event in schema["events"] if event["tag"] == 11)
+        self.assertEqual(tenure["name"], "tabu_tenure_changed")
+        self.assertEqual(
+            [field["name"] for field in tenure["fields"]],
+            ["evaluations", "iterations", "previous_tenure", "tenure"],
+        )
+
+        (self.path / "garbage.eltr").write_bytes(b"not a trace")
+        failed = self.run_cli(self.path / "garbage.eltr")
         self.assertEqual(failed.returncode, 1)
-        self.assertIn("see --cost", failed.stderr)
+        self.assertIn("no ELTR header", failed.stderr)
 
 
 class HandcraftedTraces(unittest.TestCase):
     def test_header_and_version_are_checked(self):
         with self.assertRaisesRegex(eltr.FormatError, "no ELTR header"):
-            list(eltr.records(io.BytesIO(b"JSON\x01\x00\x00\x00")))
+            eltr.Trace(io.BytesIO(b"JSON\x01\x00\x00\x00"))
         with self.assertRaisesRegex(eltr.FormatError, "version 2"):
-            list(eltr.records(io.BytesIO(b"ELTR\x02\x00\x00\x00")))
+            eltr.Trace(io.BytesIO(b"ELTR\x02\x00\x00\x00"))
+        with self.assertRaisesRegex(eltr.FormatError, "truncated header"):
+            eltr.Trace(io.BytesIO(b"ELTR\x01\x00\x00\x00\x10\x00\x00\x00"))
 
-    def test_an_empty_trace_has_no_records(self):
-        self.assertEqual(list(eltr.records(trace())), [])
+    def test_a_trace_without_records(self):
+        self.assertEqual(list(eltr.Trace(trace())), [])
 
-    def test_cost_layouts(self):
-        payload = struct.pack("<d", 2.5)
+    def test_a_record_must_match_its_schema(self):
+        schemas = [(1, "run_started", [("cost", 15)])]
+        with self.assertRaisesRegex(eltr.FormatError, "shorter than its fields"):
+            list(eltr.Trace(trace(schemas=schemas, records=[(1, b"\x01")])))
+        with self.assertRaisesRegex(eltr.FormatError, "longer than its fields"):
+            list(eltr.Trace(trace(schemas=schemas, records=[(1, bytes(9))])))
+
+    def test_a_schema_record_describes_the_records_after_it(self):
+        schema = struct.pack("<B", 200) + string("ping") + struct.pack("<I", 1)
+        schema += string("label") + struct.pack("<B", 12)
+        records = [(200, b"\x00"), (0, schema), (200, string("hi"))]
         self.assertEqual(
-            list(eltr.records(trace((1, payload)), "f64")),
-            [{"event": "run_started", "cost": 2.5}],
+            list(eltr.Trace(trace(records=records))),
+            [
+                {"event": "user", "tag": 200, "payload": "00"},
+                {"event": "ping", "label": "hi"},
+            ],
         )
-        payload = struct.pack("<iI", -1, 3)
-        self.assertEqual(
-            list(eltr.records(trace((1, payload)), "i32,u32")),
-            [{"event": "run_started", "cost": [-1, 3]}],
-        )
-        with self.assertRaises(ValueError):
-            eltr.CostLayout.parse("i128")
-        with self.assertRaises(ValueError):
-            eltr.CostLayout.parse("hard:i32,i32")
 
     def test_unknown_core_tags_are_kept_raw(self):
         self.assertEqual(
-            list(eltr.records(trace((42, b"\x01\x02")))),
+            list(eltr.Trace(trace(records=[(42, b"\x01\x02")]))),
             [{"event": "unknown", "tag": 42, "payload": "0102"}],
+        )
+
+    def test_cost_values(self):
+        self.assertEqual(eltr.nest([("", 3)]), 3)
+        self.assertEqual(eltr.nest([("0", 1), ("1", 2)]), [1, 2])
+        self.assertEqual(
+            eltr.nest([("hard", 1), ("soft.0", 2), ("soft.1", 3)]),
+            {"hard": 1, "soft": [2, 3]},
         )
 
 

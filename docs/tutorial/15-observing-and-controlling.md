@@ -36,7 +36,9 @@ const auto observed = descent_search.run(
   pass them to every run they make.
 
 Recorders include `trace::memory_recorder`, `trace::jsonl_recorder` and the
-binary `buffered_binary_recorder` and `async_binary_recorder`.
+binary `buffered_binary_recorder` and `async_binary_recorder`, whose ELTR traces
+describe themselves and are decoded by `scripts/eltr.py` (see
+[Tracing](../tracing.md)).
 
 Diagnostic logging (`<easylocal/utils/logging.hpp>`) is separate from tracing.
 

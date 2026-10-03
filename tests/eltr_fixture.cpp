@@ -1,6 +1,8 @@
 // Writes the same events as ELTR and as JSON Lines, for the decoder test
 // (tests/eltr_decode.py): every core event with an integral cost, a run with
-// a structured cost, and an application event in the binary trace only.
+// a structured cost, application events in the binary trace only (one with a
+// schema, one without), and a trace of a hierarchical cost.
+#include <easylocal/cost.hpp>
 #include <easylocal/trace.hpp>
 
 #include <cstdint>
@@ -8,6 +10,8 @@
 #include <fstream>
 #include <iostream>
 #include <ostream>
+#include <type_traits>
+#include <vector>
 
 namespace
 {
@@ -35,6 +39,12 @@ struct structured_binary_writer
         out.i32(cost.hard);
         out.i32(cost.soft);
     }
+
+    [[nodiscard]] static auto fields() -> std::vector<easylocal::trace::binary_field>
+    {
+        using enum easylocal::trace::binary_type;
+        return {{"hard", i32}, {"soft", i32}};
+    }
 };
 
 struct temperature_changed
@@ -56,6 +66,31 @@ void encode_binary_event(
     out.f64(value.temperature);
 }
 
+auto describe_binary_event(std::type_identity<temperature_changed>)
+    -> easylocal::trace::binary_event_schema
+{
+    using enum easylocal::trace::binary_type;
+    return {"temperature_changed", {{"iteration", u64}, {"temperature", f64}}};
+}
+
+// An application event without a schema.
+struct opaque_event
+{
+    std::uint16_t code{};
+};
+
+constexpr auto binary_event_tag(const opaque_event&) noexcept -> std::uint8_t
+{
+    return easylocal::trace::user_binary_event_tag<4>();
+}
+
+void encode_binary_event(
+    easylocal::trace::binary_record_writer& out,
+    const opaque_event& value)
+{
+    out.u16(value.code);
+}
+
 template<class Event, class... Recorders>
 void emit_all(const Event& value, Recorders&... recorders)
 {
@@ -67,7 +102,9 @@ void write_integral(const std::filesystem::path& directory)
     namespace event = easylocal::trace::event;
     std::ofstream binary_file{directory / "integral.eltr", std::ios::binary};
     std::ofstream json_file{directory / "integral.jsonl"};
-    easylocal::trace::binary_recorder<long> binary{binary_file};
+    easylocal::trace::binary_recorder<long> binary{
+        binary_file,
+        {.metadata = {{"instance", "fixture"}, {"runner", "none"}}}};
     easylocal::trace::jsonl_recorder<long> json{json_file};
 
     const easylocal::trace::neighborhood_route_node outer{.child = 2};
@@ -101,12 +138,14 @@ void write_integral(const std::filesystem::path& directory)
         emit_all(event::incumbent_updated<long>{2, 2, 40 + run, -7}, binary, json);
         emit_all(event::aspiration_applied<long>{2, 2, -7}, binary, json);
         emit_all(event::tabu_escape{3, 3, 5}, binary, json);
+        emit_all(event::tabu_tenure_changed{3, 3, 1, 2}, binary, json);
         emit_all(event::local_optimum<long>{4, 3, -7}, binary, json);
         emit_all(
             event::solution_visited<long>{4, 3, 0xfeedfacecafebeefULL, 40},
             binary,
             json);
         easylocal::trace::emit(binary, temperature_changed{3, 0.5});
+        easylocal::trace::emit(binary, opaque_event{0x0102});
         emit_all(event::run_finished<long>{4, 3, -7}, binary, json);
     }
     binary.flush();
@@ -133,6 +172,19 @@ void write_structured(const std::filesystem::path& directory)
     binary.flush();
 }
 
+void write_hierarchical(const std::filesystem::path& directory)
+{
+    using cost_type =
+        easylocal::cost::hierarchical<easylocal::cost::lexicographic<int, int>, double>;
+    std::ofstream binary_file{directory / "hierarchical.eltr", std::ios::binary};
+    easylocal::trace::binary_recorder<cost_type> binary{binary_file};
+    easylocal::trace::emit(
+        binary,
+        easylocal::trace::event::run_started<cost_type>{
+            cost_type{easylocal::cost::lexicographic<int, int>{1, 2}, 0.5}});
+    binary.flush();
+}
+
 } // namespace
 
 int main(int argc, char** argv)
@@ -145,5 +197,6 @@ int main(int argc, char** argv)
     const std::filesystem::path directory{argv[1]};
     write_integral(directory);
     write_structured(directory);
+    write_hierarchical(directory);
     return 0;
 }
