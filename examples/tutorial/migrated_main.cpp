@@ -1,5 +1,5 @@
 // The tutorial's TSP behind the command line of a typical EasyLocal 3 program
-// (chapter 16): an instance, a seed and a method, which names the runner.
+// (docs/from-easylocal-3.md): an instance, a seed and a method, which names the runner.
 #include "tsp.hpp"
 
 #include <easylocal/easylocal.hpp>

@@ -1,29 +1,15 @@
-# 16. Coming from EasyLocal 3
+# Coming from EasyLocal 3
 
-This chapter is for readers with an EasyLocal 3 program to port. It first maps
-the concepts of the two versions, then migrates a complete EasyLocal 3
-program, the TSP with 2-opt moves, one piece at a time, up to the TSP of this
-tutorial.
+This page is for readers with an EasyLocal 3 program to port. It first lists
+the main differences between the two versions, then migrates a complete
+EasyLocal 3 program, the TSP with 2-opt moves, one piece at a time, up to the
+TSP of the [tutorial](tutorial/README.md).
 
-## At a glance
+## The main differences
 
-| EasyLocal 3 | EasyLocal |
-| --- | --- |
-| Input / State / Move | Input / Solution / Move, plain values |
-| `StateManager` | SolutionManager: validity and construction only |
-| `CostComponent` | cost component (`evaluate`), attached with `component<C>()` |
-| hard/soft components and weights | cost expressions: `cost::hard_soft`, `cost::sum`, `cost::weighted`, `cost::in_order`, `cost::apply` |
-| `DeltaCostComponent` | delta evaluator (`delta_evaluate`), attached with `delta<C, D>()` |
-| `NeighborhoodExplorer` (`FirstMove`, `NextMove`, `RandomMove`, `MakeMove`) | NeighborhoodExplorer: cursor or `moves`, `random_move`, `make_move` |
-| `MultimodalNeighborhoodExplorer` | `neighborhood_union` |
-| `Runner` subclasses (hill climbing, SA, ...) | algorithm classes in `easylocal::runners` with one `run` member |
-| `Solver` (`SimpleLocalSearch`, token ring, ...) | `easylocal::solvers`, or a Session that runs a runner by name |
-| `Tester`, `MoveTester` | the interactive tester: `tui::run(app, options)` (TextUI adapter); the checks of `check` and the Session |
-| observers | `easylocal::trace` |
-| `ParameterBox`, `Parameter<T>`, `CommandLineParameters` | parameter schemas and parameter sets |
-| `Random::Uniform`, `Random::SetSeed` | an RNG passed to the members that need one |
-
-The main differences:
+The concepts of the two versions are mapped one to one in the
+[comparison with EasyLocal 3](tutorial/16-comparison-with-easylocal-3.md) of
+the tutorial. Beyond the names:
 
 - **No virtual dispatch and no required base classes.** Capabilities are
   checked by concepts at compile time; the bases are optional conveniences.
@@ -46,13 +32,13 @@ The main differences:
 
 ## Before you start
 
-- EasyLocal needs a C++23 compiler (see the [quick start](../quick-start.md))
+- EasyLocal needs a C++23 compiler (see the [quick start](quick-start.md))
   and no longer depends on Boost: the command line is parsed by the library.
 - Headers and names have changed: `#include <easylocal/easylocal.hpp>` and the
   namespace `easylocal` replace `easylocal.hh` and `EasyLocal::Core`. The
   CMake target is `EasyLocal::Core`, from
   `find_package(EasyLocal CONFIG REQUIRED COMPONENTS Core)`.
-- Migrate in the order of this chapter, and run the program after each group
+- Migrate in the order of this page, and run the program after each group
   of steps. A first version needs only the SolutionManager, the cost
   components and one explorer: without delta evaluators, moves are evaluated
   on a copy of the solution with the move applied. Add the deltas afterwards,
@@ -62,7 +48,7 @@ The main differences:
 ## Migrating a program, step by step
 
 The EasyLocal 3 code of this section is the TSP of the
-[benchmarks](../benchmarks.md) that compare the two versions, abridged; the
+[benchmarks](benchmarks.md) that compare the two versions, abridged; the
 EasyLocal 4 code is the tutorial's, which is compiled and tested.
 
 ### 1. The Input
@@ -153,7 +139,7 @@ and assigned.
   stay in the Solution. Keep them up to date in `make_move`, and leave them out
   of solution identity with the SolutionManager's `hash` and `equal` when a
   tabu list or a trace compares solutions (see the
-  [SolutionManager reference](../reference/solution-manager.md)).
+  [SolutionManager reference](reference/solution-manager.md)).
 
 ### 3. The Move
 
@@ -173,7 +159,7 @@ std::ostream& operator<<(std::ostream& os, const TwoOpt& mv);
 The Move stays a plain struct, `TwoOpt{i, j}` in the tutorial (step 7), but
 none of these operators is required any more:
 
-- `operator==` is used by the neighborhood checks of a Session (chapter 13);
+- `operator==` is used by the neighborhood checks of a Session ([chapter 13](tutorial/13-checking.md));
 - `operator<<` or `describe(move)` gives the text the tester shows;
 - `operator<` and `operator!=` are not used: remove them if nothing else needs
   them.
@@ -376,13 +362,13 @@ private:
   change of the component's own value, without its weight.
 - The link to the component leaves the constructor: the recipe states it,
   `delta<TourLength, TwoOptLengthDelta>()`. A delta can also be a member of the
-  component itself (a *co-located* delta, chapter 4).
+  component itself (a *co-located* delta, [chapter 4](tutorial/04-delta-evaluation.md)).
 - A component without a delta for some neighborhood needs nothing, as in
   EasyLocal 3 when it was added with `AddCostComponent` to the explorer: its
   change is computed on a copy of the solution with the move applied.
 
 To check a delta against the full evaluation, as the `MoveTester`'s "check
-neighborhood costs" did, use the Session (chapter 13):
+neighborhood costs" did, use the Session ([chapter 13](tutorial/13-checking.md)):
 
 <!-- snippet: tutorial/main.cpp:session-checks -->
 ```cpp
@@ -513,7 +499,7 @@ public:
 | --- | --- |
 | base `NeighborhoodExplorer<Input, Solution, Move, CostStructure>`, constructor `(in, sm, name)` | `neighborhood_explorer_base<SolutionManager, Move>`, inherited constructor |
 | the name in the constructor | a static `name()`, used by the tester |
-| `FirstMove` (throws `EmptyNeighborhood`), `NextMove` | `first_move`, `next_move`, both returning `false` when there is no move; or a generator `moves(solution)` (chapter 3) |
+| `FirstMove` (throws `EmptyNeighborhood`), `NextMove` | `first_move`, `next_move`, both returning `false` when there is no move; or a generator `moves(solution)` ([chapter 3](tutorial/03-neighborhood.md)) |
 | `RandomMove(st, mv)` (throws `EmptyNeighborhood`) | `random_move(solution, rng)`, returning `std::nullopt` when there is no move |
 | `FeasibleMove` | `is_valid` |
 | `MakeMove` | `make_move` |
@@ -745,7 +731,7 @@ cost 26
 
 The tester takes the same app, so the branch that opened `RunMainMenu` becomes
 a call to the TextUI, in a program linked with the optional `TUI` component
-(chapter 12):
+([chapter 12](tutorial/12-tester.md)):
 
 <!-- snippet: tutorial/tui_main.cpp:tui -->
 ```cpp
@@ -766,7 +752,7 @@ el::tui::run(
 ```
 
 When a program needs a solver rather than a single run, `make_solver` wraps a
-runner (chapter 8): `solvers::LocalSearch` is the counterpart of
+runner ([chapter 8](tutorial/08-solvers.md)): `solvers::LocalSearch` is the counterpart of
 `SimpleLocalSearch`, `solvers::MultiStart` of `MultiStartSearch`.
 
 ### 10. A two-stage main
@@ -913,7 +899,7 @@ TourLength 26, MaxEdge 8
 Solvers with more than two stages, each with its own runner, neighborhood and
 cost, are written by hand for now: bind each runner and run it from the
 previous result, `runner.bind(input).run(previous.solution, rng)`. A solver
-for them is in the [roadmap](../roadmap.md), together with support for
+for them is in the [roadmap](roadmap.md), together with support for
 parameter tuning (irace, SMAC, Optuna).
 
 ### 11. Several neighborhoods
@@ -953,7 +939,7 @@ The moves of a union are a variant of the explorers' moves, so the
 | `FirstDescent` | `runners::FirstImprovement` (the scan restarts from the first move) |
 | `SteepestDescent` | `runners::BestImprovement` |
 | `HillClimbing` | `runners::HillClimbing` |
-| `LateAcceptanceHillClimbing` | `runners::LateAcceptanceHillClimbing` (the history records the current cost, see [Runners](../reference/runners.md)) |
+| `LateAcceptanceHillClimbing` | `runners::LateAcceptanceHillClimbing` (the history records the current cost, see [Runners](reference/runners.md)) |
 | `GreatDeluge` | `runners::GreatDeluge` |
 | `SimulatedAnnealing` | `runners::SimulatedAnnealing<temperature::Classic>`; `Hybrid` with an evaluation budget and the accepted-moves cutoff |
 | `SimulatedAnnealingOnlyCutoff`, `SimulatedAnnealingFixedTemperature`, `SimulatedAnnealingTimeBased` | `SimulatedAnnealing` with `temperature::Cutoff`, `FixedTemperature`, `TimeBased` |
@@ -964,9 +950,9 @@ The moves of a union are a variant of the explorers' moves, so the
 Not available yet: kickers, the `TokenRingSearch`, `GRASP` and
 `VariableNeighborhoodDescent` solvers, `SampleTabuSearch`, and the modelling
 layer (`AutoState`, expressions). The shifting penalty runner and Simulated
-Annealing with learning are in the [roadmap](../roadmap.md). A runner of your
-own is written once on `search_run` (chapter 7).
+Annealing with learning are in the [roadmap](roadmap.md). A runner of your
+own is written once on `search_run` ([chapter 7](tutorial/07-custom-runner.md)).
 
 ## Next steps
 
-The [reference](../reference/README.md) describes every component in full.
+The [reference](reference/README.md) describes every component in full.

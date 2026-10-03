@@ -1,5 +1,5 @@
 // The tutorial's TSP behind a main shaped like a real EasyLocal 3 solver
-// (chapter 16): a hierarchical cost, parameters adjusted to the instance, a
+// (docs/from-easylocal-3.md): a hierarchical cost, parameters adjusted to the instance, a
 // two-stage solve and a report per component.
 #include "tsp.hpp"
 
