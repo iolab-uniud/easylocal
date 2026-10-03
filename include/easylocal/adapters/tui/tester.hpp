@@ -200,7 +200,8 @@ template<class T>
         return "hard=" + value_text(value.hard()) +
                ", soft=" + value_text(value.soft());
     }
-    else if constexpr (easylocal::cost::lexicographic_type<T>)
+    else if constexpr (easylocal::cost::lexicographic_type<T>
+        || easylocal::cost::pareto_type<T>)
     {
         std::string result{"["};
         [&]<std::size_t... Index>(std::index_sequence<Index...>) {
@@ -208,9 +209,7 @@ template<class T>
             ((result += (emitted++ == 0 ? "" : ", ") +
                         value_text(value.template get<Index>())),
              ...);
-        }(std::make_index_sequence<
-            easylocal::cost::lexicographic_traits<
-                std::remove_cvref_t<T>>::size>{});
+        }(std::make_index_sequence<std::remove_cvref_t<T>::levels>{});
         result += ']';
         return result;
     }

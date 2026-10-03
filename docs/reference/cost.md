@@ -33,6 +33,7 @@ are cost components; its nodes combine the costs of their children.
 | `cost::sum(t1, ..., tn)` | `Σ wᵢ · costᵢ`, in the common type of the costs and the weights | `weights` |
 | `cost::weighted(child, w)`, or `child * w`, `w * child` | a term of `cost::sum` with weight `w` (default 1) | |
 | `cost::in_order(c1, ..., cn)` | `cost::lexicographic` of the children's costs | children's |
+| `cost::objectives(c1, ..., cn)` | `cost::pareto` of the children's costs (n ≥ 2) | children's |
 | `cost::hard_soft(hard, soft)` | `cost::hierarchical` of the two costs | `hard`, `soft` |
 | `cost::apply(f, c1, ..., cn)` | `f(cost₁, ..., costₙ)` | `f.configuration()`, if any, and children's |
 
@@ -52,7 +53,8 @@ solution_manager<SM>()
   `equivalent` and `better_or_equivalent` (see Cost semantics).
 - Configuration: the expression is exposed under `cost`. A `sum` has its
   `weights` (one per term), a `hard_soft` names its children `hard` and
-  `soft`, `in_order` and `apply` name them by position (`0`, `1`, ...); only
+  `soft`, `in_order`, `objectives` and `apply` name them by position (`0`,
+  `1`, ...); only
   configurable children appear. In the example above: `cost.hard.weights`.
 
 ## Cost models
@@ -61,13 +63,81 @@ solution_manager<SM>()
 | --- | --- | --- |
 | arithmetic (`cost::arithmetic`) | `<` | `candidate - current` |
 | `cost::lexicographic<Ts...>` | lexicographic over the values | none |
+| `cost::pareto<Ts...>` | Pareto dominance (a partial order) | none |
 | `cost::hierarchical<Hard, Soft>` | hard first, soft when hard is equivalent | hard better: `-∞`, hard worse: `+∞`, else the soft delta |
 
-Both structured types are constructed directly, with deduced types:
-`cost::hierarchical{hard, soft}`, `cost::lexicographic{a, b}`. Traits:
-`cost::lexicographic_traits`, `cost::is_lexicographic_v`,
-`cost::lexicographic_type`, `cost::is_hierarchical_v`,
-`cost::hierarchical_type`.
+The structured types are constructed directly, with deduced types:
+`cost::hierarchical{hard, soft}`, `cost::lexicographic{a, b}`,
+`cost::pareto{a, b}`. Traits: `cost::lexicographic_traits`,
+`cost::is_lexicographic_v`, `cost::lexicographic_type`,
+`cost::is_hierarchical_v`, `cost::hierarchical_type`, `cost::is_pareto_v`,
+`cost::pareto_type`.
+
+### Pareto costs
+
+A `cost::pareto` holds one value per objective, all minimized, and orders them
+by Pareto dominance, which leaves some costs unordered. With two objectives,
+makespan and tardiness of a schedule for example:
+
+```cpp
+solution_manager<ScheduleManager>()
+    | cost::objectives(component<Makespan>(), component<Tardiness>())
+```
+
+each solution is a point of the plane:
+
+<figure>
+<svg viewBox="0 0 360 320" width="360" role="img"
+     aria-label="Seven solutions in the plane of two objectives: four on the Pareto front, joined by a staircase, three dominated; the region dominated by B is shaded">
+  <g fill="none" stroke="currentColor" stroke-width="1.5">
+    <path d="M50 290 H340 M50 290 V30"/>
+    <path d="M335 286 L341 290 L335 294 M46 35 L50 29 L54 35"/>
+  </g>
+  <rect x="106" y="40" width="224" height="125" fill="currentColor" opacity="0.12"/>
+  <path d="M78 40 V90 H106 V165 H162 V215 H246 V240 H330" fill="none"
+        stroke="currentColor" stroke-width="1.5" stroke-dasharray="5 3"/>
+  <g fill="currentColor">
+    <circle cx="78" cy="90" r="5"/><circle cx="106" cy="165" r="5"/>
+    <circle cx="162" cy="215" r="5"/><circle cx="246" cy="240" r="5"/>
+  </g>
+  <g fill="none" stroke="currentColor" stroke-width="1.5">
+    <circle cx="190" cy="140" r="5"/><circle cx="134" cy="115" r="5"/>
+    <circle cx="274" cy="165" r="5"/>
+  </g>
+  <g fill="currentColor" font-family="sans-serif" font-size="13">
+    <text x="86" y="86">A</text><text x="114" y="161">B</text>
+    <text x="170" y="211">C</text><text x="254" y="236">D</text>
+    <text x="198" y="136">E</text><text x="142" y="111">F</text>
+    <text x="282" y="161">G</text>
+    <text x="250" y="70">dominated by B</text>
+    <text x="262" y="310">objective 1</text>
+    <text x="8" y="22">objective 2</text>
+  </g>
+</svg>
+<figcaption>A, B, C and D are the Pareto front (the staircase); E, F and G are
+dominated. The shaded region is what B dominates.</figcaption>
+</figure>
+
+The cost semantics read as follows, for costs `a` and `b`:
+
+- `better(a, b)`, `a < b`: `a` dominates `b`, no worse in every objective and
+  better in at least one. B is better than E and G, which lie in the region it
+  dominates; C is better than E.
+- `better_or_equivalent(a, b)`, `a <= b`: `a` weakly dominates `b`, no worse in
+  every objective, equal costs included.
+- `equivalent(a, b)`, `a == b`: equal in every objective.
+- Neither `better(a, b)` nor `better(b, a)`: the costs are unordered,
+  `a <=> b` is `std::partial_ordering::unordered`. A and B are, as are any
+  two points of the front: each is better in one objective.
+
+So a runner moves from E to B or C, never from B to A, and from a point of the
+front only to a point that dominates it. The Pareto front is the set of the
+points that no other dominates, and a search with a pareto cost keeps the
+non-dominated solutions it reaches in its archive and returns them as its
+front (see [Runners](runners.md#results)). Pareto Late Acceptance Hill
+Climbing explores from several solutions at once to spread over the front.
+The runners that need a numeric delta (Simulated Annealing, Great Deluge) or a
+total order do not accept a pareto cost.
 
 `cost::delta(candidate, current)` is the numeric difference used by
 delta-based acceptance; user cost types provide it as a free function found by
@@ -76,7 +146,7 @@ ADL (call it as `using cost::delta; delta(a, b)`). The concept
 
 `cost::zero<Cost>()` is the cost of no violation and no penalty: `Cost{}` for
 value-initializable types (0 for arithmetic costs) and the zero of every level
-for `lexicographic` and `hierarchical` costs. Other cost types provide it by
+for `lexicographic`, `hierarchical` and `pareto` costs. Other cost types provide it by
 specializing `cost::zero_cost<Cost>` with a static `value()`;
 `cost::has_zero<Cost>` tells whether it exists. TwoStage stops its first stage
 at the zero of the hard cost.
@@ -86,7 +156,7 @@ at the zero of the hard cost.
 `cost::from_text<Cost>(text)` (`<easylocal/cost/text.hpp>`) reads a cost
 written by a user, such as a target: a number for an arithmetic cost,
 `[hard, soft]` for a `cost::hierarchical`, `[v1, v2, ...]` for a
-`cost::lexicographic`, nested as the types are (`[0, [3, 1.5]]`). It throws
+`cost::lexicographic` or a `cost::pareto`, nested as the types are (`[0, [3, 1.5]]`). It throws
 `std::invalid_argument` with the reason; `cost::to_text(cost)` writes a cost
 back in the same form. `cost::text_readable<Cost>` tells
 which costs it reads; a problem with another cost type, or its own notation,

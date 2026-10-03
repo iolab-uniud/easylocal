@@ -542,6 +542,34 @@ add_test(
 )
 
 add_executable(
+    easylocal_pareto_cost_test
+    pareto_cost.cpp
+)
+target_link_libraries(
+    easylocal_pareto_cost_test
+    PRIVATE
+        EasyLocal::Core
+)
+add_test(
+    NAME easylocal.pareto-cost
+    COMMAND easylocal_pareto_cost_test
+)
+
+add_executable(
+    easylocal_pareto_late_acceptance_hill_climbing_test
+    pareto_late_acceptance_hill_climbing.cpp
+)
+target_link_libraries(
+    easylocal_pareto_late_acceptance_hill_climbing_test
+    PRIVATE
+        EasyLocal::Core
+)
+add_test(
+    NAME easylocal.pareto-late-acceptance-hill-climbing
+    COMMAND easylocal_pareto_late_acceptance_hill_climbing_test
+)
+
+add_executable(
     easylocal_great_deluge_test
     great_deluge.cpp
 )

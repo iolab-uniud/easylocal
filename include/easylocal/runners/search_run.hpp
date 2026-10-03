@@ -1,10 +1,13 @@
 #pragma once
 
+#include <easylocal/cost/pareto.hpp>
 #include <easylocal/helpers/neighborhood_explorer.hpp>
 #include <easylocal/helpers/solution_manager.hpp>
+#include <easylocal/runners/pareto_archive.hpp>
 #include <easylocal/runners/run_control.hpp>
 #include <easylocal/trace/events.hpp>
 #include <easylocal/trace/tracer.hpp>
+#include <easylocal/utils/detail/attributes.hpp>
 
 #include <concepts>
 #include <cstddef>
@@ -13,6 +16,7 @@
 #include <string_view>
 #include <type_traits>
 #include <utility>
+#include <vector>
 
 namespace easylocal
 {
@@ -68,6 +72,30 @@ struct search_result
     std::size_t iterations{};
     termination_reason termination{};
 };
+
+// The result of a search with a cost::pareto cost: a solution of the front
+// with its cost, and the whole front (the non-dominated solutions reached,
+// ordered by their objectives).
+template<class Solution, class Cost>
+struct pareto_search_result
+{
+    Solution solution;
+    Cost cost;
+    std::size_t evaluations{};
+    std::size_t iterations{};
+    termination_reason termination{};
+    std::vector<pareto_point<Solution, Cost>> front;
+};
+
+namespace detail
+{
+
+// The archive of a search whose cost is totally ordered: nothing.
+struct no_archive
+{
+};
+
+} // namespace detail
 
 // The target of run options without a target cost.
 struct no_target
@@ -130,7 +158,10 @@ run_options<trace::null_tracer, Cost> stop_at(Cost cost)
 // (neighborhood, evaluation, cost semantics) and owns everything that is common
 // to every search: evaluation/iteration counters, the evaluation budget,
 // cancellation, progress reporting and the core trace events. Algorithms
-// describe only their search logic in terms of these primitives.
+// describe only their search logic in terms of these primitives. With a
+// cost::pareto cost it also keeps the archive of the non-dominated solutions
+// reached (start, evaluate_solution and commit offer them), and the result
+// carries that front.
 template<class Context, class Tracer = trace::null_tracer>
 class search_run
 {
@@ -146,7 +177,11 @@ public:
     using move_type = typename neighborhood_explorer_type::move_type;
     using evaluation_type = typename evaluation_facility_type::evaluation_type;
     using candidate_type = typename evaluation_facility_type::candidate_type;
-    using result_type = search_result<solution_type, cost_type>;
+    static constexpr bool archives_front = cost::pareto_type<cost_type>;
+    using result_type = std::conditional_t<
+        archives_front,
+        pareto_search_result<solution_type, cost_type>,
+        search_result<solution_type, cost_type>>;
 
     static constexpr std::size_t no_evaluation_limit =
         std::numeric_limits<std::size_t>::max();
@@ -294,8 +329,37 @@ public:
 
         emit(trace::event::run_started<cost_type>{current.cost()});
         visited(solution, current.cost());
+        if constexpr (archives_front)
+        {
+            archive_.clear();
+            archive(solution, current.cost());
+        }
         report();
         return current;
+    }
+
+    // Evaluates another solution than the one the run started from, for
+    // algorithms that keep several (a population, a history of solutions):
+    // it counts as an evaluation, is traced as visited and enters the archive.
+    [[nodiscard]]
+    evaluation_type evaluate_solution(const solution_type& solution)
+    {
+        auto evaluation = evaluation_.evaluate(solution);
+        ++evaluations_;
+        observe_cost(evaluation.cost());
+        visited(solution, evaluation.cost());
+        if constexpr (archives_front)
+            archive(solution, evaluation.cost());
+        report();
+        return evaluation;
+    }
+
+    // The non-dominated solutions reached so far.
+    [[nodiscard]]
+    const pareto_archive<solution_type, cost_type>& front() const noexcept
+        requires archives_front
+    {
+        return archive_;
     }
 
     // True when the run must end: external cancellation, a reached target
@@ -399,6 +463,8 @@ public:
             });
         });
         visited(solution, current.cost());
+        if constexpr (archives_front)
+            archive(solution, current.cost());
     }
 
     void incumbent_updated(
@@ -453,13 +519,27 @@ public:
                 ? termination_reason::target_reached
                 : reason;
 
-        return result_type{
-            .solution = std::move(solution),
-            .cost = std::move(cost),
-            .evaluations = evaluations_,
-            .iterations = iterations_,
-            .termination = termination,
-        };
+        if constexpr (archives_front)
+        {
+            return result_type{
+                .solution = std::move(solution),
+                .cost = std::move(cost),
+                .evaluations = evaluations_,
+                .iterations = iterations_,
+                .termination = termination,
+                .front = archive_.sorted(),
+            };
+        }
+        else
+        {
+            return result_type{
+                .solution = std::move(solution),
+                .cost = std::move(cost),
+                .evaluations = evaluations_,
+                .iterations = iterations_,
+                .termination = termination,
+            };
+        }
     }
 
     // A run over a decorated context sharing this run's control, tracer,
@@ -484,6 +564,28 @@ public:
     }
 
 private:
+    // Offers a solution to the archive; solutions of equal cost are the same
+    // when the problem has solution equality and they are equal, or always
+    // without it.
+    void archive(const solution_type& solution, const cost_type& cost)
+    {
+        archive_.offer(
+            solution,
+            cost,
+            [this](const solution_type& lhs, const solution_type& rhs) {
+                if constexpr (requires(const Context& context) {
+                                  requires has_solution_equality<std::remove_cvref_t<
+                                      decltype(context.solution_manager())>>;
+                              })
+                    return easylocal::solutions_equal(
+                        context_.solution_manager(),
+                        lhs,
+                        rhs);
+                else
+                    return true;
+            });
+    }
+
     // The solution_visited event, when the tracer observes it and the problem
     // has a solution hash.
     void visited(const solution_type& solution, const cost_type& cost)
@@ -552,6 +654,11 @@ private:
     termination_reason stop_reason_{termination_reason::completed};
     const cost_type* target_{};
     bool target_reached_{};
+    EASYLOCAL_NO_UNIQUE_ADDRESS std::conditional_t<
+        archives_front,
+        pareto_archive<solution_type, cost_type>,
+        detail::no_archive>
+        archive_{};
 };
 
 } // namespace easylocal

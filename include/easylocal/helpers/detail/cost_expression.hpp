@@ -138,7 +138,8 @@ class cost_node
     static_assert(
         is_cost_expression_v<Expression>,
         "a cost expression is built from component<C>(...) leaves and "
-        "cost::sum, cost::in_order, cost::hard_soft and cost::apply nodes");
+        "cost::sum, cost::in_order, cost::objectives, cost::hard_soft and "
+        "cost::apply nodes");
 };
 
 template<class Child, class Weight, class Solution>
@@ -381,7 +382,7 @@ private:
     EASYLOCAL_NO_UNIQUE_ADDRESS children_type children_;
 };
 
-// Positional children of in_order and apply.
+// Positional children of in_order, objectives and apply.
 template<class Solution, class... Children>
 class cost_children
 {
@@ -459,6 +460,62 @@ public:
     static constexpr bool configurable = children_type::configurable;
 
     explicit cost_node(cost::in_order_expression<Children...> expression)
+        : children_{std::move(expression.children)}
+    {
+    }
+
+    [[nodiscard]]
+    leaf_specs leaves() const
+    {
+        return children_.leaves();
+    }
+
+    template<std::size_t Offset, class Values>
+    [[nodiscard]]
+    cost_type evaluate(const Values& values) const
+    {
+        return children_.template evaluate_with<Offset>(
+            [](auto... cost) { return cost_type{std::move(cost)...}; },
+            values);
+    }
+
+    // The parameters of the children, under their positions.
+    [[nodiscard]]
+    config::parameter_set configuration()
+        requires configurable
+    {
+        config::parameter_set parameters;
+        children_.add_configurations(parameters);
+        return parameters;
+    }
+
+    [[nodiscard]]
+    config::parameter_set configuration() const
+        requires configurable
+    {
+        config::parameter_set parameters;
+        children_.add_configurations(parameters);
+        return parameters;
+    }
+
+private:
+    EASYLOCAL_NO_UNIQUE_ADDRESS children_type children_;
+};
+
+// Pareto: the children's costs, compared by dominance.
+template<class... Children, class Solution>
+class cost_node<cost::objectives_expression<Children...>, Solution>
+{
+    using children_type = cost_children<Solution, Children...>;
+
+public:
+    using cost_type = cost::pareto<typename cost_node<Children, Solution>::cost_type...>;
+    using leaf_specs = typename children_type::leaf_specs;
+
+    static constexpr std::size_t leaf_count = children_type::leaf_count;
+    static constexpr bool configurable = children_type::configurable;
+
+    explicit cost_node(cost::objectives_expression<Children...> expression)
         : children_{std::move(expression.children)}
     {
     }

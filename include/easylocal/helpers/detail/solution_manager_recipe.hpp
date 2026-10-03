@@ -197,8 +197,8 @@ auto operator|(
     static_assert(
         !std::same_as<Expression, Expression>,
         "a SolutionManager recipe has one cost expression: combine several "
-        "components with cost::sum, cost::in_order, cost::hard_soft or "
-        "cost::apply");
+        "components with cost::sum, cost::in_order, cost::objectives, "
+        "cost::hard_soft or cost::apply");
 }
 
 } // namespace easylocal::detail

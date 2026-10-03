@@ -39,6 +39,7 @@ held as an object: `make_runner<Algorithm>(args...)` or `Runner{Algorithm{...}}`
 | `runners::BestImprovement` | `moves` or cursor, `better` | `max_evaluations` (0: until a local optimum) | committed moves |
 | `runners::HillClimbing` | `random_move`, `better`, `better_or_equivalent` | `max_idle_iterations`, `max_evaluations` (0: no budget) | proposed moves |
 | `runners::LateAcceptanceHillClimbing` | `random_move`, `better`, `better_or_equivalent` | `history_length`, `max_idle_iterations`, `max_evaluations` (0: no budget) | proposed moves |
+| `runners::ParetoLateAcceptanceHillClimbing` | `random_move`, `better`, a `cost::pareto` cost, `random_solution` | `history_length`, `max_iterations`, `idle_ratio`, `second_chance`, `max_evaluations` (0: no budget) | proposed moves |
 | `runners::GreatDeluge` | `random_move`, `better`, an arithmetic cost | `initial_level`, `min_level`, `level_rate`, `neighbors_sampled`, `max_evaluations` (0: no budget) | proposed moves |
 | `runners::TabuSearch<List, Aspiration>` | `moves` or cursor, `better`, `inverse` | `max_idle_iterations`, `max_iterations`, `max_evaluations`, `tabu_list`: the list's | committed moves |
 | `runners::FirstImprovementTabuSearch<List, Aspiration>` | as TabuSearch | as TabuSearch, plus `improve_on_best` | committed moves |
@@ -62,6 +63,18 @@ cost, and with `history_length` 1 it accepts the moves Hill Climbing accepts.
 Its idle count runs from the last improvement of the best cost, and it returns
 the best solution found. EasyLocal 3 recorded the best cost in the history;
 EasyLocal 4 records the current cost, as in the original algorithm.
+
+Pareto Late Acceptance Hill Climbing (Da Ros and Di Gaspero) is the
+multi-objective variant, for a `cost::pareto` cost: its history holds
+solutions, the initial one and `history_length - 1` drawn with the solution
+manager's `random_solution`, visited in a circle. A random move of the current
+solution replaces it in the history when the candidate dominates it; otherwise,
+with `second_chance`, it replaces the next solution of the history if it
+dominates that one, which is skipped. The search moves on to the next solution
+of the history either way and, past `max_iterations`, ends with
+`idle_limit_reached` as soon as more than `idle_ratio` of the iterations went
+without a replacement. Its result is the run's front, with the first solution
+by objectives as `solution`.
 
 Tabu Search applies at each iteration the best admissible move of the whole
 neighborhood, even a worsening one, ties broken uniformly at random. A move is
@@ -192,7 +205,14 @@ defaults that pass validation.
 Built-in algorithms return `search_result<Solution, Cost>`: `solution`, `cost`,
 `evaluations`, `iterations`, `termination` (`termination_reason::completed`,
 `local_optimum`, `evaluation_budget_exhausted`, `cancelled`, `target_reached`,
-`idle_limit_reached`).
+`idle_limit_reached`). With a `cost::pareto` cost they return
+`pareto_search_result<Solution, Cost>`, which adds `front`: the non-dominated
+solutions the run reached, as `pareto_point{solution, cost}`, ordered by their
+objectives. The `search_run` keeps them in a `pareto_archive` as the run starts,
+evaluates solutions and commits moves, so every algorithm has a front without
+doing anything; a solution enters unless an archived one dominates it or is the
+same (equal cost and, with solution equality, an equal solution), and removes
+those it dominates.
 A reached target is the termination reason also when it coincides with a local
 optimum or the end of the algorithm; a cancellation takes precedence. Solvers and tools
 require only `search_result_for<Result, Solution, Cost>`: `solution` and `cost`.
@@ -226,6 +246,8 @@ Extra `run` arguments (an RNG, for example) are passed through
 | --- | --- |
 | `limit_evaluations(n)` | evaluation budget, including the initial evaluation |
 | `start(solution) -> evaluation` | first evaluation, `run_started`, progress |
+| `evaluate_solution(solution) -> evaluation` | another solution (a population, a history): counts, traced as visited, offered to the archive |
+| `front()` | with a `cost::pareto` cost, the archive of the non-dominated solutions reached |
 | `should_stop() -> bool` | cancellation, reached target or exhausted budget; the reason is recorded |
 | `moves(solution)`, `random_move(solution, rng)` | neighborhood access; unions emit selection events |
 | `evaluate_move(solution, current, move) -> candidate` | counts, `move_evaluated`, progress |

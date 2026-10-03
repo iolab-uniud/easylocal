@@ -22,6 +22,8 @@
 //                                cost::weighted(child, w), or its shorthand
 //                                child * w, gives one);
 // - cost::in_order(children...)  cost::lexicographic of the children's costs;
+// - cost::objectives(children...) cost::pareto of the children's costs,
+//                                compared by Pareto dominance;
 // - cost::hard_soft(hard, soft)  cost::hierarchical; TwoStage evaluates only
 //                                the components under `hard` in its first stage;
 // - cost::apply(f, children...)  f(costs...), any user function; f may also
@@ -49,6 +51,12 @@ struct sum_expression
 
 template<class... Children>
 struct in_order_expression
+{
+    std::tuple<Children...> children;
+};
+
+template<class... Children>
+struct objectives_expression
 {
     std::tuple<Children...> children;
 };
@@ -90,6 +98,14 @@ constexpr in_order_expression<Children...> in_order(Children... children)
     return {std::tuple<Children...>{std::move(children)...}};
 }
 
+template<class... Children>
+    requires(sizeof...(Children) > 1)
+[[nodiscard]]
+constexpr objectives_expression<Children...> objectives(Children... children)
+{
+    return {std::tuple<Children...>{std::move(children)...}};
+}
+
 template<class Hard, class Soft>
 [[nodiscard]]
 constexpr hard_soft_expression<Hard, Soft> hard_soft(Hard hard, Soft soft)
@@ -122,6 +138,11 @@ struct is_expression<sum_expression<Terms...>> : std::true_type
 
 template<class... Children>
 struct is_expression<in_order_expression<Children...>> : std::true_type
+{
+};
+
+template<class... Children>
+struct is_expression<objectives_expression<Children...>> : std::true_type
 {
 };
 

@@ -51,12 +51,14 @@ old concepts onto the new ones.
   incrementally by **delta cost components**, mirroring EasyLocal++'s
   CostComponent / DeltaCostComponent.
 - Cost models in `easylocal::cost`: plain arithmetic costs,
-  `lexicographic<...>` and `hierarchical<Hard, Soft>`, with explicit
-  better/equivalent semantics.
+  `lexicographic<...>`, `hierarchical<Hard, Soft>` and `pareto<...>`
+  (Pareto dominance), with explicit better/equivalent semantics. A search
+  with a pareto cost keeps the non-dominated solutions it reaches and returns
+  them as its front.
 - Cost expressions written in the recipe over the components:
   `cost::sum` with weighted terms (`component<C>() * w`, or
   `cost::weighted(component<C>(), w)`), `cost::in_order`,
-  `cost::hard_soft` and `cost::apply`, nested freely; their weights are
+  `cost::objectives`, `cost::hard_soft` and `cost::apply`, nested freely; their weights are
   configuration parameters, and TwoStage reads the hard components from a
   `cost::hard_soft` expression.
 
@@ -73,7 +75,8 @@ old concepts onto the new ones.
   elite candidate list strategies, pluggable tabu lists (fixed
   length, random tenure, Taillard's cyclic tenures, reactive with escape,
   frequency-based, on cost values, idle-driven dynamic length, fluctuation of
-  the objective) and aspiration criteria (by objective, none). Writing a new
+  the objective) and aspiration criteria (by objective, none); **Pareto Late
+  Acceptance Hill Climbing** for multi-objective problems. Writing a new
   runner means writing one `run(...)` function against
   `easylocal::search_run`, which owns counters, evaluation budget,
   cancellation, progress and trace events.
