@@ -107,6 +107,13 @@ inline bool block_has_direct_override(
     for (const auto& candidate : overrides)
     {
         const std::string_view path{candidate.path};
+        // A block at the root of the set: its fields are the paths without a dot.
+        if (block_path.empty())
+        {
+            if (path.find('.') == std::string_view::npos)
+                return true;
+            continue;
+        }
         if (!path.starts_with(block_path) ||
             path.size() <= block_path.size() + 1 ||
             path[block_path.size()] != '.')
@@ -261,12 +268,15 @@ inline void print_diagnostics(
             break;
 
         case setup_diagnostic_source::override:
-            output << diagnostic.subject;
-            if (!diagnostic.value.empty())
+            // The subject is empty for a block at the root of the set.
+            if (!diagnostic.subject.empty())
             {
-                output << " = '" << diagnostic.value << '\'';
+                output << diagnostic.subject;
+                if (!diagnostic.value.empty())
+                    output << " = '" << diagnostic.value << '\'';
+                output << ": ";
             }
-            output << ": " << diagnostic.message;
+            output << diagnostic.message;
             break;
         }
 
