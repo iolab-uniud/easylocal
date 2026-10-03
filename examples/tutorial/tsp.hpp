@@ -308,6 +308,7 @@ public:
 // [io] ---------------------------------------------------------------------
 // Optional hooks, found by ADL, that read, write and describe the values
 // (chapter 5).
+// [read-input]
 inline Tsp read_input(std::type_identity<Tsp>, std::istream& in)
 {
     std::size_t cities = 0; // "n", then the n rows of the distance matrix
@@ -320,6 +321,7 @@ inline Tsp read_input(std::type_identity<Tsp>, std::istream& in)
                 throw std::runtime_error{"invalid TSP distances"};
     return tsp;
 }
+// [read-input]
 
 inline Tour read_solution(const Tsp& tsp, std::istream& in)
 {

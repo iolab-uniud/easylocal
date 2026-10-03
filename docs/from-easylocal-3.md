@@ -117,12 +117,48 @@ struct SwapCities
 };
 ```
 
-- Move the body of the file constructor into
-  `read_input(std::type_identity<Input>, std::istream&)`, next to the type (step
-  8 shows the hooks). A static `Input::read(std::istream&)` or an
-  `operator>>` is found too, so an existing `operator>>` keeps working.
-- Keep the accessors you like, such as `Distance(from, to)`: the library never
-  calls members of the Input.
+Move the body of the file constructor into a free function `read_input`, next
+to the type, which reads from a stream and returns the Input; the library
+finds it by argument-dependent lookup (step 8 shows all the hooks):
+
+<!-- snippet: tutorial/tsp.hpp:read-input -->
+```cpp title="EasyLocal 4"
+inline Tsp read_input(std::type_identity<Tsp>, std::istream& in)
+{
+    std::size_t cities = 0; // "n", then the n rows of the distance matrix
+    if (!(in >> cities))
+        throw std::runtime_error{"invalid TSP header"};
+    Tsp tsp{.distance = std::vector(cities, std::vector<double>(cities))};
+    for (auto& row : tsp.distance)
+        for (auto& value : row)
+            if (!(in >> value))
+                throw std::runtime_error{"invalid TSP distances"};
+    return tsp;
+}
+```
+
+`std::type_identity<Tsp>` only selects the function by the type it reads,
+since a function cannot be overloaded on its return type alone.
+
+Legacy code keeps working: the library also reads the Input with a static
+`Input::read(std::istream&)` or, as EasyLocal 3 programs often did, with an
+`operator>>`, used when there is neither `Input::read` nor `read_input`. For
+`operator>>` the Input needs a default constructor, since the library creates
+it and then reads into it:
+
+```cpp title="EasyLocal 4 — legacy alternative"
+struct Tsp
+{
+    std::vector<std::vector<double>> distance;
+};
+
+// Used when there is no Tsp::read and no read_input: Tsp{} is created, then
+// read.
+std::istream& operator>>(std::istream& in, Tsp& tsp);
+```
+
+The accessors of the Input, such as `Distance(from, to)`, can stay as they
+are: the library never calls members of the Input.
 
 ### 2. The Solution
 
