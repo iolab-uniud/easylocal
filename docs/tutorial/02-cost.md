@@ -9,36 +9,41 @@ A **cost component** computes one term of the objective:
 class TourLength
 {
 public:
-    explicit TourLength(const Tsp& tsp) : tsp_{tsp} {}
+    explicit TourLength(const Tsp& input) : input_{input} {}
 
     double evaluate(const Tour& tour) const
     {
+        const auto n = tour.order.size();
         double length = 0.0;
-        for (std::size_t k = 0; k < tour.order.size(); ++k)
-            length += tsp_.d(tour.order[k], tour.order[(k + 1) % tour.order.size()]);
+        for (std::size_t k = 0; k < n; ++k)
+        {
+            const auto from = tour.order[k];
+            const auto to =
+                tour.order[(k + 1) % n]; // the last city goes back to the first
+            length += input_.distance[from][to];
+        }
         return length;
     }
 
 private:
-    const Tsp& tsp_;
+    const Tsp& input_;
 };
 ```
 
 - The only requirement is `evaluate(const Solution&) const -> Value`.
 - `Value` may be an arithmetic type, as here, or a domain type (a struct with a
   total and a count, for instance).
-- The framework constructs the component when the runner is bound:
-  `Component{const Input&, args...}` is preferred, `Component{args...}` is
-  accepted for stateless components.
+- The component keeps a reference to the Input, `input_`, received in its
+  constructor: the framework constructs the component when the runner is
+  bound, as `Component{const Input&, args...}` (preferred) or
+  `Component{args...}` (accepted for stateless components).
+- `(k + 1) % n` makes the last city connect back to the first one.
 
 Components are attached to the SolutionManager with a **recipe**:
 
-<!-- snippet: tutorial/main.cpp:recipes -->
+<!-- snippet: tutorial/main.cpp:sm-recipe -->
 ```cpp
 auto sm = el::solution_manager<TourManager>() | el::component<TourLength>();
-
-auto nhe =
-    el::neighborhood<TwoOptExplorer>() | el::delta<TourLength, TwoOptLengthDelta>();
 ```
 
 `solution_manager<TourManager>() | component<TourLength>()` describes a
@@ -64,22 +69,23 @@ auto weighted_sm = el::solution_manager<TourManager>()
 class MaxEdge
 {
 public:
-    explicit MaxEdge(const Tsp& tsp) : tsp_{tsp} {}
+    explicit MaxEdge(const Tsp& input) : input_{input} {}
 
     double evaluate(const Tour& tour) const
     {
+        const auto n = tour.order.size();
         double longest = 0.0;
-        for (std::size_t k = 0; k < tour.order.size(); ++k)
+        for (std::size_t k = 0; k < n; ++k)
         {
-            longest = std::max(
-                longest,
-                tsp_.d(tour.order[k], tour.order[(k + 1) % tour.order.size()]));
+            const auto from = tour.order[k];
+            const auto to = tour.order[(k + 1) % n];
+            longest = std::max(longest, input_.distance[from][to]);
         }
         return longest;
     }
 
 private:
-    const Tsp& tsp_;
+    const Tsp& input_;
 };
 ```
 

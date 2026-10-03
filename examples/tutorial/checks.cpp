@@ -30,6 +30,11 @@ struct TourLengthCheck : TspCheckData
     using component = tutorial::TourLength;
 };
 
+struct SwapCheck : TspCheckData
+{
+    using neighborhood = tutorial::SwapExplorer;
+};
+
 struct TwoOptCheck : TspCheckData
 {
     using neighborhood = tutorial::TwoOptExplorer;
@@ -51,6 +56,7 @@ int main()
     return easylocal::testing::run_checks(
         easylocal::testing::check_solution_manager<TourManagerCheck>(),
         easylocal::testing::check_cost_component<TourLengthCheck>(),
+        easylocal::testing::check_neighborhood<SwapCheck>(),
         easylocal::testing::check_neighborhood<TwoOptCheck>(),
         easylocal::testing::check_delta_evaluator<TwoOptDeltaCheck>());
     // [run-checks]

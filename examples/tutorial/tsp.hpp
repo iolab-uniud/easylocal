@@ -14,6 +14,8 @@
 #include <optional>
 #include <ostream>
 #include <random>
+#include <ranges>
+#include <span>
 #include <stdexcept>
 #include <string>
 #include <string_view>
@@ -25,17 +27,20 @@ namespace tutorial
 {
 
 // [model] ------------------------------------------------------------------
+// Input: the instance, immutable during the search.
 struct Tsp
 {
-    std::size_t cities{};
-    std::vector<double> distance{}; // cities x cities, row-major
+    // distance[a][b] is the distance between cities a and b (symmetric).
+    std::vector<std::vector<double>> distance;
 
-    double d(std::size_t from, std::size_t to) const
+    std::size_t cities() const
     {
-        return distance[from * cities + to];
+        return distance.size();
     }
 };
 
+// Solution: order[k] is the k-th city visited; after the last city the tour
+// returns to order[0].
 struct Tour
 {
     std::vector<std::size_t> order;
@@ -43,12 +48,13 @@ struct Tour
     bool operator==(const Tour&) const = default; // used by Tester checks
 };
 
-struct TwoOpt
+// Move: exchange the cities visited at positions i and j, with i < j.
+struct SwapCities
 {
-    std::size_t i; // reverse the segment order[i + 1 .. j]
+    std::size_t i;
     std::size_t j;
 
-    bool operator==(const TwoOpt&) const = default; // used by Tester checks
+    bool operator==(const SwapCities&) const = default; // used by Tester checks
 };
 // [model] ------------------------------------------------------------------
 
@@ -56,19 +62,20 @@ struct TwoOpt
 // Optional hooks, found by ADL, that let the tools load, save and display.
 inline Tsp read_input(std::type_identity<Tsp>, std::istream& in)
 {
-    Tsp tsp; // "n d00 d01 ... d(n-1)(n-1)"
-    if (!(in >> tsp.cities))
+    std::size_t cities = 0; // "n", then the n rows of the distance matrix
+    if (!(in >> cities))
         throw std::runtime_error{"invalid TSP header"};
-    tsp.distance.resize(tsp.cities * tsp.cities);
-    for (auto& value : tsp.distance)
-        if (!(in >> value))
-            throw std::runtime_error{"invalid TSP distances"};
+    Tsp tsp{.distance = std::vector(cities, std::vector<double>(cities))};
+    for (auto& row : tsp.distance)
+        for (auto& value : row)
+            if (!(in >> value))
+                throw std::runtime_error{"invalid TSP distances"};
     return tsp;
 }
 
 inline Tour read_solution(const Tsp& tsp, std::istream& in)
 {
-    Tour tour{std::vector<std::size_t>(tsp.cities)};
+    Tour tour{std::vector<std::size_t>(tsp.cities())};
     for (auto& city : tour.order)
         if (!(in >> city))
             throw std::runtime_error{"invalid tour"};
@@ -90,9 +97,9 @@ inline std::string describe(const Tour& tour)
     return text;
 }
 
-inline std::string describe(const TwoOpt& move)
+inline std::string describe(const SwapCities& move)
 {
-    return "2-opt(" + std::to_string(move.i) + ", " + std::to_string(move.j) + ")";
+    return "swap(" + std::to_string(move.i) + ", " + std::to_string(move.j) + ")";
 }
 // [io] ---------------------------------------------------------------------
 
@@ -102,13 +109,15 @@ class TourManager : public easylocal::solution_manager_base<Tsp, Tour>
 public:
     using solution_manager_base::solution_manager_base;
 
+    // The cities in index order: 0, 1, ..., n - 1.
     Tour initial_solution() const
     {
-        Tour tour{std::vector<std::size_t>(input().cities)};
+        Tour tour{std::vector<std::size_t>(input().cities())};
         std::ranges::iota(tour.order, std::size_t{0});
         return tour;
     }
 
+    // The same cities in a random order.
     template<std::uniform_random_bit_generator RNG>
     Tour random_solution(RNG& rng) const
     {
@@ -117,9 +126,13 @@ public:
         return tour;
     }
 
+    // A tour is valid when it is a permutation of 0, 1, ..., n - 1: it has
+    // n positions and visits every city exactly once.
     bool is_valid(const Tour& tour) const
     {
-        return tour.order.size() == input().cities;
+        return std::ranges::is_permutation(
+            tour.order,
+            std::views::iota(std::size_t{0}, input().cities()));
     }
 };
 // [solution-manager] -------------------------------------------------------
@@ -128,18 +141,24 @@ public:
 class TourLength
 {
 public:
-    explicit TourLength(const Tsp& tsp) : tsp_{tsp} {}
+    explicit TourLength(const Tsp& input) : input_{input} {}
 
     double evaluate(const Tour& tour) const
     {
+        const auto n = tour.order.size();
         double length = 0.0;
-        for (std::size_t k = 0; k < tour.order.size(); ++k)
-            length += tsp_.d(tour.order[k], tour.order[(k + 1) % tour.order.size()]);
+        for (std::size_t k = 0; k < n; ++k)
+        {
+            const auto from = tour.order[k];
+            const auto to =
+                tour.order[(k + 1) % n]; // the last city goes back to the first
+            length += input_.distance[from][to];
+        }
         return length;
     }
 
 private:
-    const Tsp& tsp_;
+    const Tsp& input_;
 };
 // [cost-component] ---------------------------------------------------------
 
@@ -147,26 +166,85 @@ private:
 class MaxEdge
 {
 public:
-    explicit MaxEdge(const Tsp& tsp) : tsp_{tsp} {}
+    explicit MaxEdge(const Tsp& input) : input_{input} {}
 
     double evaluate(const Tour& tour) const
     {
+        const auto n = tour.order.size();
         double longest = 0.0;
-        for (std::size_t k = 0; k < tour.order.size(); ++k)
+        for (std::size_t k = 0; k < n; ++k)
         {
-            longest = std::max(
-                longest,
-                tsp_.d(tour.order[k], tour.order[(k + 1) % tour.order.size()]));
+            const auto from = tour.order[k];
+            const auto to = tour.order[(k + 1) % n];
+            longest = std::max(longest, input_.distance[from][to]);
         }
         return longest;
     }
 
 private:
-    const Tsp& tsp_;
+    const Tsp& input_;
 };
 // [second-component] -------------------------------------------------------
 
 // [neighborhood] -----------------------------------------------------------
+class SwapExplorer : public easylocal::neighborhood_explorer_base<TourManager, SwapCities>
+{
+public:
+    using neighborhood_explorer_base::neighborhood_explorer_base;
+
+    static std::string_view name()
+    {
+        return "swap";
+    }
+
+    // Every pair of positions i < j, one move at a time.
+    easylocal::generator<SwapCities> moves(const Tour& tour) const
+    {
+        const auto n = tour.order.size();
+        for (std::size_t i = 0; i < n; ++i)
+            for (std::size_t j = i + 1; j < n; ++j)
+                co_yield SwapCities{i, j};
+    }
+
+    // [random-move]
+    // Uniform: two distinct positions, each pair equally likely, put in order.
+    template<std::uniform_random_bit_generator RNG>
+    std::optional<SwapCities> random_move(const Tour& tour, RNG& rng) const
+    {
+        const auto n = tour.order.size();
+        if (n < 2)
+            return std::nullopt;
+        std::uniform_int_distribution<std::size_t> pick{0, n - 1};
+        const auto i = pick(rng);
+        auto j = pick(rng);
+        while (j == i)
+            j = pick(rng);
+        return SwapCities{std::min(i, j), std::max(i, j)};
+    }
+    // [random-move]
+
+    bool is_valid(const Tour& tour, const SwapCities& move) const
+    {
+        return move.i < move.j && move.j < tour.order.size();
+    }
+
+    void make_move(Tour& tour, const SwapCities& move) const
+    {
+        std::swap(tour.order[move.i], tour.order[move.j]);
+    }
+};
+// [neighborhood] -----------------------------------------------------------
+
+// [two-opt] ----------------------------------------------------------------
+// Move: reverse the part of the tour between positions i + 1 and j.
+struct TwoOpt
+{
+    std::size_t i;
+    std::size_t j;
+
+    bool operator==(const TwoOpt&) const = default; // used by Tester checks
+};
+
 class TwoOptExplorer : public easylocal::neighborhood_explorer_base<TourManager, TwoOpt>
 {
 public:
@@ -177,6 +255,8 @@ public:
         return "2-opt";
     }
 
+    // Pairs i + 2 <= j: shorter segments would change nothing. With i = 0 and
+    // j = n - 1 the two removed edges are the same one, so that pair is skipped.
     easylocal::generator<TwoOpt> moves(const Tour& tour) const
     {
         const auto n = tour.order.size();
@@ -185,7 +265,6 @@ public:
                 co_yield TwoOpt{i, j};
     }
 
-    // [random-move]
     // Uniform by rejection: two positions drawn independently, ordered, and
     // drawn again while they are not a 2-opt move.
     template<std::uniform_random_bit_generator RNG>
@@ -205,28 +284,34 @@ public:
                 return TwoOpt{i, j};
         }
     }
-    // [random-move]
 
     bool is_valid(const Tour& tour, const TwoOpt& move) const
     {
         return move.i + 2 <= move.j && move.j < tour.order.size();
     }
 
+    // The segment is the j - i cities from position i + 1: a span views it in
+    // place, and reversing the view reverses those cities in the tour.
     void make_move(Tour& tour, const TwoOpt& move) const
     {
-        std::reverse(
-            tour.order.begin() + static_cast<std::ptrdiff_t>(move.i + 1),
-            tour.order.begin() + static_cast<std::ptrdiff_t>(move.j + 1));
+        std::ranges::reverse(std::span{tour.order}.subspan(move.i + 1, move.j - move.i));
     }
 };
-// [neighborhood] -----------------------------------------------------------
+// [two-opt] ----------------------------------------------------------------
+
+// The display hook of the 2-opt moves, for the tools (chapter 13).
+inline std::string describe(const TwoOpt& move)
+{
+    return "2-opt(" + std::to_string(move.i) + ", " + std::to_string(move.j) + ")";
+}
 
 // [delta] ------------------------------------------------------------------
 class TwoOptLengthDelta
 {
 public:
-    explicit TwoOptLengthDelta(const Tsp& tsp) : tsp_{tsp} {}
+    explicit TwoOptLengthDelta(const Tsp& input) : input_{input} {}
 
+    // The tour goes a -> b ... c -> d; after the move it goes a -> c ... b -> d.
     double delta_evaluate(const Tour& tour, const TwoOpt& move) const
     {
         const auto n = tour.order.size();
@@ -234,59 +319,14 @@ public:
         const auto b = tour.order[move.i + 1];
         const auto c = tour.order[move.j];
         const auto d = tour.order[(move.j + 1) % n];
-        return tsp_.d(a, c) + tsp_.d(b, d) - tsp_.d(a, b) - tsp_.d(c, d);
+        const auto& distance = input_.distance;
+        return distance[a][c] + distance[b][d] - distance[a][b] - distance[c][d];
     }
 
 private:
-    const Tsp& tsp_;
+    const Tsp& input_;
 };
 // [delta] ------------------------------------------------------------------
-
-// [swap] -------------------------------------------------------------------
-struct Swap
-{
-    std::size_t first;
-    std::size_t second;
-};
-
-// A second neighborhood, without a delta evaluator: its moves are evaluated by
-// re-evaluating TourLength on a candidate solution.
-class SwapExplorer : public easylocal::neighborhood_explorer_base<TourManager, Swap>
-{
-public:
-    using neighborhood_explorer_base::neighborhood_explorer_base;
-
-    easylocal::generator<Swap> moves(const Tour& tour) const
-    {
-        for (std::size_t first = 0; first < tour.order.size(); ++first)
-            for (std::size_t second = first + 1; second < tour.order.size(); ++second)
-                co_yield Swap{first, second};
-    }
-
-    template<std::uniform_random_bit_generator RNG>
-    std::optional<Swap> random_move(const Tour& tour, RNG& rng) const
-    {
-        if (tour.order.size() < 2)
-            return std::nullopt;
-        std::uniform_int_distribution<std::size_t> pick{0, tour.order.size() - 1};
-        const auto first = pick(rng);
-        auto second = pick(rng);
-        while (second == first)
-            second = pick(rng);
-        return Swap{std::min(first, second), std::max(first, second)};
-    }
-
-    bool is_valid(const Tour& tour, const Swap& move) const
-    {
-        return move.first < move.second && move.second < tour.order.size();
-    }
-
-    void make_move(Tour& tour, const Swap& move) const
-    {
-        std::swap(tour.order[move.first], tour.order[move.second]);
-    }
-};
-// [swap] -------------------------------------------------------------------
 
 // [custom-runner] ----------------------------------------------------------
 struct RandomDescentParameters
@@ -333,34 +373,13 @@ private:
 inline Tsp five_cities()
 {
     return Tsp{
-        .cities = 5,
         .distance =
             {
-                0,
-                2,
-                9,
-                10,
-                7,
-                2,
-                0,
-                6,
-                4,
-                3,
-                9,
-                6,
-                0,
-                8,
-                5,
-                10,
-                4,
-                8,
-                0,
-                6,
-                7,
-                3,
-                5,
-                6,
-                0,
+                {0, 2, 9, 10, 7},
+                {2, 0, 6, 4, 3},
+                {9, 6, 0, 8, 5},
+                {10, 4, 8, 0, 6},
+                {7, 3, 5, 6, 0},
             },
     };
 }

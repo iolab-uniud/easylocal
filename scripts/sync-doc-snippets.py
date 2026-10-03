@@ -7,9 +7,9 @@ A fenced block preceded by
 
 is the code between the two "// [model]" marker lines of
 examples/tutorial/tsp.hpp (dedented, nested marker lines removed); without a
-":section" suffix it is the whole file. Running the script rewrites those blocks
-from the sources; with --check it only reports blocks that differ and exits
-with status 1, which is how the test suite uses it.
+":section" suffix it is the whole file, marker lines removed. Running the
+script rewrites those blocks from the sources; with --check it only reports
+blocks that differ and exits with status 1, which is how the test suite uses it.
 
 Standard library only: `uv run scripts/sync-doc-snippets.py` or `python3`.
 """
@@ -36,7 +36,7 @@ def extract(ref: str) -> str:
     path, _, section = ref.partition(":")
     lines = (EXAMPLES / path).read_text(encoding="utf-8").split("\n")
     if not section:
-        return "\n".join(lines).rstrip("\n")
+        return "\n".join(line for line in lines if not MARKER.match(line)).rstrip("\n")
     marks = [i for i, line in enumerate(lines)
              if re.search(r"//\s*\[" + re.escape(section) + r"\]", line)]
     if len(marks) != 2:

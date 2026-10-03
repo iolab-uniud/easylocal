@@ -1,54 +1,9 @@
 # 6. Combining neighborhoods
 
-A second neighborhood swaps two cities. It has no delta evaluator, so its moves
-are evaluated by re-evaluating `TourLength` on a candidate tour:
-
-<!-- snippet: tutorial/tsp.hpp:swap -->
-```cpp
-struct Swap
-{
-    std::size_t first;
-    std::size_t second;
-};
-
-// A second neighborhood, without a delta evaluator: its moves are evaluated by
-// re-evaluating TourLength on a candidate solution.
-class SwapExplorer : public easylocal::neighborhood_explorer_base<TourManager, Swap>
-{
-public:
-    using neighborhood_explorer_base::neighborhood_explorer_base;
-
-    easylocal::generator<Swap> moves(const Tour& tour) const
-    {
-        for (std::size_t first = 0; first < tour.order.size(); ++first)
-            for (std::size_t second = first + 1; second < tour.order.size(); ++second)
-                co_yield Swap{first, second};
-    }
-
-    template<std::uniform_random_bit_generator RNG>
-    std::optional<Swap> random_move(const Tour& tour, RNG& rng) const
-    {
-        if (tour.order.size() < 2)
-            return std::nullopt;
-        std::uniform_int_distribution<std::size_t> pick{0, tour.order.size() - 1};
-        const auto first = pick(rng);
-        auto second = pick(rng);
-        while (second == first)
-            second = pick(rng);
-        return Swap{std::min(first, second), std::max(first, second)};
-    }
-
-    bool is_valid(const Tour& tour, const Swap& move) const
-    {
-        return move.first < move.second && move.second < tour.order.size();
-    }
-
-    void make_move(Tour& tour, const Swap& move) const
-    {
-        std::swap(tour.order[move.first], tour.order[move.second]);
-    }
-};
-```
+The tour now has two neighborhoods: the swap moves of chapter 3, which have no
+delta evaluator, and the 2-opt moves of chapter 4, which have one. A search can
+use both. When it evaluates a swap, `TourLength` is re-evaluated on a candidate
+tour; when it evaluates a 2-opt move, `TwoOptLengthDelta` is used.
 
 `neighborhood_union` combines the two explorers into one; each child keeps its
 own move type and delta bindings:

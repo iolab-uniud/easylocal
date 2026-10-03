@@ -42,7 +42,7 @@ for ((attempt = 0; attempt < 100; ++attempt)); do
     sleep 0.05
 done
 
-input='{"input":{"cities":5,"distance":[0,2,9,10,7,2,0,6,4,3,9,6,0,8,5,10,4,8,0,6,7,3,5,6,0]},"seed":7}'
+input='{"input":{"distance":[[0,2,9,10,7],[2,0,6,4,3],[9,6,0,8,5],[10,4,8,0,6],[7,3,5,6,0]]},"seed":7}'
 submit="$("$curl_bin" --silent --show-error --request POST \
     --header 'Content-Type: application/json' --data "$input" \
     "${base_url}/runners/sa/runs")"

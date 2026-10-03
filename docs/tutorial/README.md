@@ -10,49 +10,56 @@ it is the complete program of the first chapters, in one file.
 
 ## The running example
 
-A TSP instance gives the distance between every pair of cities; a solution is
-a tour visiting every city once; the cost is the tour length. The example
-instance has five cities:
+A salesperson must visit a set of cities, each exactly once, and come back to
+the city they started from; the distance between two cities is the same in
+both directions. The symmetric TSP asks for the shortest such round trip. The
+example instance has five cities, with these distances:
+
+```mermaid
+graph LR
+    c0((0)) ---|2| c1((1))
+    c0 ---|9| c2((2))
+    c0 ---|10| c3((3))
+    c0 ---|7| c4((4))
+    c1 ---|6| c2
+    c1 ---|4| c3
+    c1 ---|3| c4
+    c2 ---|8| c3
+    c2 ---|5| c4
+    c3 ---|6| c4
+```
+
+In the code the instance is a distance matrix, one row per city:
 
 <!-- snippet: tutorial/tsp.hpp:instance -->
 ```cpp
 inline Tsp five_cities()
 {
     return Tsp{
-        .cities = 5,
         .distance =
             {
-                0,
-                2,
-                9,
-                10,
-                7,
-                2,
-                0,
-                6,
-                4,
-                3,
-                9,
-                6,
-                0,
-                8,
-                5,
-                10,
-                4,
-                8,
-                0,
-                6,
-                7,
-                3,
-                5,
-                6,
-                0,
+                {0, 2, 9, 10, 7},
+                {2, 0, 6, 4, 3},
+                {9, 6, 0, 8, 5},
+                {10, 4, 8, 0, 6},
+                {7, 3, 5, 6, 0},
             },
     };
 }
 ```
 
 Its optimal tour has length 26.
+
+The chapters build the solver in this order:
+
+- chapters 1–3 model a tour as a sequence of cities, give it a cost and change
+  it by swapping two cities, as in the quick start;
+- chapter 4 introduces a second move, 2-opt, which reverses a part of the tour
+  and whose effect on the length can be computed from four distances only;
+- chapter 5 runs both First Improvement and Simulated Annealing, and chapter 6
+  lets a search use both moves;
+- the remaining chapters build on these pieces: new algorithms, solvers,
+  configuration, testing and the interactive and HTTP tools.
 
 All the code of the tutorial lives in `examples/tutorial/`: `tsp.hpp` holds the
 problem components, `main.cpp` the searches and `checks.cpp` the component

@@ -876,7 +876,7 @@ if(TARGET easylocal_quickstart)
     add_test(NAME easylocal.example.quickstart COMMAND easylocal_quickstart)
     set_tests_properties(
         easylocal.example.quickstart
-        PROPERTIES PASS_REGULAR_EXPRESSION "length 26 after 9 evaluations")
+        PROPERTIES PASS_REGULAR_EXPRESSION "length 26 after 14 evaluations")
 endif()
 
 # The documentation's snippets must match the examples they are taken from.

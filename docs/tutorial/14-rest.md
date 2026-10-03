@@ -20,19 +20,21 @@ JSON:
 // Translates between JSON and the problem values.
 struct TspCodec
 {
-    // {"cities": 5, "distance": [0, 2, 9, ...]}
+    // {"distance": [[0, 2, 9, 10, 7], [2, 0, 6, 4, 3], ...]}, one array per row
     tutorial::Tsp decode_input(const crow::json::rvalue& payload) const
     {
-        if (payload.t() != crow::json::type::Object || !payload.has("cities")
-            || !payload.has("distance"))
+        if (payload.t() != crow::json::type::Object || !payload.has("distance"))
+            throw std::invalid_argument{"input must have 'distance'"};
+        tutorial::Tsp tsp;
+        for (const auto& row : payload["distance"])
         {
-            throw std::invalid_argument{"input must have 'cities' and 'distance'"};
+            auto& values = tsp.distance.emplace_back();
+            for (const auto& value : row)
+                values.push_back(value.d());
         }
-        tutorial::Tsp tsp{.cities = static_cast<std::size_t>(payload["cities"].u())};
-        for (const auto& value : payload["distance"])
-            tsp.distance.push_back(value.d());
-        if (tsp.distance.size() != tsp.cities * tsp.cities)
-            throw std::invalid_argument{"'distance' must have cities * cities entries"};
+        for (const auto& values : tsp.distance)
+            if (values.size() != tsp.cities())
+                throw std::invalid_argument{"'distance' must be a square matrix"};
         return tsp;
     }
 
@@ -94,7 +96,7 @@ session below.
 ```sh
 $ curl -X POST localhost:18080/tsp/runners/sa/runs \
        -H 'Content-Type: application/json' \
-       -d '{"input": {"cities": 5, "distance": [0,2,9,10,7, 2,0,6,4,3, 9,6,0,8,5, 10,4,8,0,6, 7,3,5,6,0]}, "seed": 7}'
+       -d '{"input": {"distance": [[0,2,9,10,7], [2,0,6,4,3], [9,6,0,8,5], [10,4,8,0,6], [7,3,5,6,0]]}, "seed": 7}'
 {"id":"1","runner":"sa","seed":7,"status":"queued",...}
 
 $ curl localhost:18080/tsp/runs/1

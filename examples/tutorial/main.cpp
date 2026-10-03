@@ -15,12 +15,14 @@ int main(int argc, char* argv[])
 
     const auto tsp = five_cities();
 
-    // [recipes] ------------------------------------------------------------
+    // [sm-recipe] ----------------------------------------------------------
     auto sm = el::solution_manager<TourManager>() | el::component<TourLength>();
+    // [sm-recipe] ----------------------------------------------------------
 
+    // [nhe-recipe] ---------------------------------------------------------
     auto nhe =
         el::neighborhood<TwoOptExplorer>() | el::delta<TourLength, TwoOptLengthDelta>();
-    // [recipes] ------------------------------------------------------------
+    // [nhe-recipe] ---------------------------------------------------------
 
     // [first-improvement] --------------------------------------------------
     auto fi =

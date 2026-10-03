@@ -70,19 +70,20 @@ lookup:
 // Optional hooks, found by ADL, that let the tools load, save and display.
 inline Tsp read_input(std::type_identity<Tsp>, std::istream& in)
 {
-    Tsp tsp; // "n d00 d01 ... d(n-1)(n-1)"
-    if (!(in >> tsp.cities))
+    std::size_t cities = 0; // "n", then the n rows of the distance matrix
+    if (!(in >> cities))
         throw std::runtime_error{"invalid TSP header"};
-    tsp.distance.resize(tsp.cities * tsp.cities);
-    for (auto& value : tsp.distance)
-        if (!(in >> value))
-            throw std::runtime_error{"invalid TSP distances"};
+    Tsp tsp{.distance = std::vector(cities, std::vector<double>(cities))};
+    for (auto& row : tsp.distance)
+        for (auto& value : row)
+            if (!(in >> value))
+                throw std::runtime_error{"invalid TSP distances"};
     return tsp;
 }
 
 inline Tour read_solution(const Tsp& tsp, std::istream& in)
 {
-    Tour tour{std::vector<std::size_t>(tsp.cities)};
+    Tour tour{std::vector<std::size_t>(tsp.cities())};
     for (auto& city : tour.order)
         if (!(in >> city))
             throw std::runtime_error{"invalid tour"};
@@ -104,9 +105,9 @@ inline std::string describe(const Tour& tour)
     return text;
 }
 
-inline std::string describe(const TwoOpt& move)
+inline std::string describe(const SwapCities& move)
 {
-    return "2-opt(" + std::to_string(move.i) + ", " + std::to_string(move.j) + ")";
+    return "swap(" + std::to_string(move.i) + ", " + std::to_string(move.j) + ")";
 }
 ```
 
