@@ -102,6 +102,27 @@ asynchronous ELTR), reporting the cost per event and per iteration.
 
 **When.** Not scheduled.
 
+## Delta ablation of a neighborhood explorer
+
+**Why.** A problem's delta cost components are where most of its speed comes
+from, but a delta is not always worth it: the EasyLocal 3 versus EasyLocal 4
+benchmarks measure each problem with every delta, with some and with none,
+and on the assignment problem the run without deltas (which applies each move
+to a copy and recomputes the cost) beats the one with all of them, whose
+deltas cost O(jobs) each. Which deltas pay off depends on the problem, the
+instance and the neighborhood, and today it is found by hand.
+
+**What.** A benchmarking tool for a problem's own neighborhood explorers: it
+evaluates the moves of sampled solutions with every subset of the delta cost
+components, from all of them to none, one component at a time (so each delta
+is measured against the full evaluation it replaces), checks that every
+subset gives the same costs, and reports the time per move of each
+configuration and of each delta against `none`. It would run on the
+problem's instances, next to the contract checks of `<easylocal/testing.hpp>`,
+and tell which deltas to keep.
+
+**When.** Not scheduled.
+
 ## Parameters described by reflection (C++26)
 
 **Why.** A parameter block describes itself by hand: `parameter_schema()`
