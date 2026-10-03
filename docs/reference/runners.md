@@ -31,6 +31,7 @@ auto result = search.run(solution, algorithm_args..., with(control, tracer));
 | `runners::FirstImprovement` | `moves` or cursor, `better` | `max_evaluations` (0: until a local optimum) | committed moves |
 | `runners::BestImprovement` | `moves` or cursor, `better` | `max_evaluations` (0: until a local optimum) | committed moves |
 | `runners::HillClimbing` | `random_move`, `better`, `better_or_equivalent` | `max_idle_iterations`, `max_evaluations` (0: no budget) | proposed moves |
+| `runners::LateAcceptanceHillClimbing` | `random_move`, `better`, `better_or_equivalent` | `history_length`, `max_idle_iterations`, `max_evaluations` (0: no budget) | proposed moves |
 | `runners::SimulatedAnnealing<Temperature, Acceptance>` | `random_move`, `better`, an acceptance-compatible cost | a temperature policy, an acceptance policy | proposed moves |
 
 The budget is checked only before evaluating a move, so an empty neighborhood
@@ -41,6 +42,14 @@ the current one, so it moves across plateaus where a descent stops. It ends
 with `idle_limit_reached` after `max_idle_iterations` consecutive proposals
 without a strict improvement, or with `local_optimum` when the neighborhood
 proposes no move. Its cost never worsens, so the final solution is the best.
+
+Late Acceptance Hill Climbing (Burke and Bykov) also accepts a move whose cost
+is better than or equivalent to the cost the current solution had
+`history_length` proposals earlier; the history starts filled with the initial
+cost, and with `history_length` 1 it accepts the moves Hill Climbing accepts.
+Its idle count runs from the last improvement of the best cost, and it returns
+the best solution found. EasyLocal 3 recorded the best cost in the history;
+EasyLocal 4 records the current cost, as in the original algorithm.
 
 Simulated Annealing returns the best solution found. Temperature policies in
 `runners::temperature`, all configurable:

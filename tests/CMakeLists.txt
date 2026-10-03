@@ -486,6 +486,20 @@ add_test(
 )
 
 add_executable(
+    easylocal_late_acceptance_hill_climbing_test
+    late_acceptance_hill_climbing.cpp
+)
+target_link_libraries(
+    easylocal_late_acceptance_hill_climbing_test
+    PRIVATE
+        EasyLocal::Core
+)
+add_test(
+    NAME easylocal.late-acceptance-hill-climbing
+    COMMAND easylocal_late_acceptance_hill_climbing_test
+)
+
+add_executable(
     easylocal_cost_semantics_test
     cost_semantics.cpp
 )
