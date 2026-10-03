@@ -23,10 +23,25 @@
 #include <string_view>
 #include <type_traits>
 #include <utility>
+#include <variant>
 #include <vector>
 
 namespace easylocal
 {
+
+namespace detail
+{
+
+// Whether moves can be compared. std::variant (the move of a neighborhood
+// union) declares == for any alternatives, so its alternatives are checked.
+template<class Move>
+inline constexpr bool comparable_moves_v = std::equality_comparable<Move>;
+
+template<class... Moves>
+inline constexpr bool comparable_moves_v<std::variant<Moves...>> =
+    (comparable_moves_v<Moves> && ...);
+
+} // namespace detail
 
 namespace detail::session_io
 {
@@ -225,7 +240,7 @@ public:
         supports_deterministic_moves && std::equality_comparable<solution_type>;
     static constexpr bool supports_random_distribution_check =
         supports_deterministic_moves && supports_random_moves
-        && std::equality_comparable<move_type>;
+        && detail::comparable_moves_v<move_type>;
 
     struct neighborhood_statistics_result
     {

@@ -76,6 +76,9 @@ struct tagged_neighborhood_move
     using value_type = Move;
 
     Move value;
+
+    // Equal when the underlying moves are; absent when Move has no ==.
+    bool operator==(const tagged_neighborhood_move&) const = default;
 };
 
 template<std::size_t Index, class Iterator>

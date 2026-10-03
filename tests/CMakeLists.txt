@@ -1172,6 +1172,20 @@ add_test(
 )
 
 add_executable(
+    easylocal_union_moves_test
+    union_moves.cpp
+)
+target_link_libraries(
+    easylocal_union_moves_test
+    PRIVATE
+        EasyLocal::Core
+)
+add_test(
+    NAME easylocal.union-moves
+    COMMAND easylocal_union_moves_test
+)
+
+add_executable(
     easylocal_session_io_test
     session_io.cpp
 )
