@@ -1,0 +1,53 @@
+# EasyLocal static analysis. CI runs it on the examples (scripts/tidy.sh); the
+# library keeps its current style for now and is not checked yet.
+---
+Checks: >
+  -*,
+  bugprone-*,
+  -bugprone-easily-swappable-parameters,
+  -bugprone-exception-escape,
+  -bugprone-random-generator-seed,
+  performance-*,
+  modernize-*,
+  -modernize-use-trailing-return-type,
+  -modernize-use-nodiscard,
+  -modernize-use-std-print,
+  -modernize-use-designated-initializers,
+  misc-include-cleaner,
+  misc-unused-using-decls,
+  misc-unused-alias-decls,
+  misc-redundant-expression,
+  readability-braces-around-statements,
+  readability-container-size-empty,
+  readability-else-after-return,
+  readability-make-member-function-const,
+  readability-redundant-*,
+  -readability-redundant-member-init,
+  readability-simplify-boolean-expr,
+  readability-static-definition-in-anonymous-namespace,
+  readability-identifier-naming
+WarningsAsErrors: '*'
+HeaderFilterRegex: '.*/examples/.*'
+FormatStyle: file
+CheckOptions:
+  # Report includes nothing uses; do not demand an include per symbol.
+  misc-include-cleaner.MissingIncludes: false
+  misc-include-cleaner.IgnoreHeaders: 'crow.*'
+  readability-simplify-boolean-expr.SimplifyDeMorgan: false
+  # Types are CamelCase (type aliases are free); functions, variables and
+  # namespaces snake_case; private and protected data members end with an underscore.
+  readability-identifier-naming.ClassCase: CamelCase
+  readability-identifier-naming.StructCase: CamelCase
+  readability-identifier-naming.EnumCase: CamelCase
+  readability-identifier-naming.TemplateParameterCase: CamelCase
+  readability-identifier-naming.FunctionCase: lower_case
+  readability-identifier-naming.MethodCase: lower_case
+  readability-identifier-naming.VariableCase: lower_case
+  readability-identifier-naming.ParameterCase: lower_case
+  readability-identifier-naming.NamespaceCase: lower_case
+  readability-identifier-naming.PrivateMemberSuffix: _
+  readability-identifier-naming.ProtectedMemberSuffix: _
+  readability-identifier-naming.PublicMemberCase: lower_case
+  readability-identifier-naming.ConstexprVariableCase: lower_case
+  readability-identifier-naming.EnumConstantCase: lower_case
+...

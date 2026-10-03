@@ -533,6 +533,26 @@ the runnable MWEs return a non-zero exit status after printing diagnostics. CLI
 therefore remains a final explicit override layer rather than a second mutation
 pass.
 
+## Code style
+
+`.clang-format` and `.clang-tidy` describe the style; `uv sync` installs the
+pinned clang-format and clang-tidy.
+
+```sh
+git config core.hooksPath .githooks       # once: check formatting on commit
+scripts/format.sh                         # format changed lines and examples/
+scripts/tidy.sh build/<preset>            # lint the examples
+```
+
+The examples are written for people learning the framework: return types come
+first (`double evaluate(const Tour& tour) const`), and `auto f()` without a
+written type is used only when the type cannot reasonably be spelled, such as a
+recipe or an app, with a comment saying so. They are fully formatted and pass
+clang-tidy, which CI checks. The library keeps its own style for now (trailing
+return types, `[[nodiscard]]`, `noexcept`); outside `examples/` only the lines a
+change touches are formatted, by the hook and in CI, so the code converges as it
+is edited rather than in one sweeping reformat.
+
 ## Continuous integration
 
 The full CI matrix is intentionally small and targets C++23 directly:

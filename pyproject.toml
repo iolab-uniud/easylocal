@@ -4,12 +4,13 @@
 #     uv run scripts/tui-snapshots.py <tui>    # run a script in that environment
 #     uv run pytest tests/tui                  # TUI end-to-end tests
 #     uv run mkdocs serve                      # documentation site preview
+#     scripts/format.sh, scripts/tidy.sh       # clang-format / clang-tidy
 #
 # The library itself is C++ and does not depend on any of this.
 [project]
 name = "easylocal-scripts"
 version = "0.0.0"
-description = "Development scripts of EasyLocal (docs snippets, TUI screenshots, coverage, benchmark summaries)"
+description = "Development scripts of EasyLocal (docs snippets, TUI screenshots, coverage, benchmark summaries, formatting and linting)"
 requires-python = ">=3.10"
 dependencies = [
     "gcovr>=8",  # coverage reports (scripts/coverage.sh)
@@ -17,6 +18,9 @@ dependencies = [
     "pytest>=8",  # TUI end-to-end tests (tests/tui)
     "mkdocs>=1.6,<2",  # documentation site (mkdocs.yml); 2.0 drops the plugin and theme systems
     "mkdocs-material>=9.5",
+    # Pinned: a new release may format or diagnose differently.
+    "clang-format==23.1.2",  # .clang-format (scripts/format.sh, .githooks/pre-commit)
+    "clang-tidy==22.1.8",  # .clang-tidy (scripts/tidy.sh)
 ]
 
 [tool.uv]

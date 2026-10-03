@@ -2,6 +2,7 @@
 
 // Dependency-free EasyLocal Core umbrella. Optional adapters under
 // easylocal/adapters/ deliberately remain opt-in headers/components.
+// IWYU pragma: begin_exports
 #include <easylocal/utils/logging.hpp>
 
 #include <easylocal/cost.hpp>
@@ -22,3 +23,4 @@
 #include <easylocal/app/app.hpp>
 #include <easylocal/app/check.hpp>
 #include <easylocal/app/tester.hpp>
+// IWYU pragma: end_exports

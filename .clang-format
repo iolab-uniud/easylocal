@@ -1,0 +1,107 @@
+# EasyLocal code style. Format a file with `clang-format -i <file>`; the
+# pre-commit hook in .githooks/ checks the staged files (scripts/format.sh).
+---
+Language: Cpp
+BasedOnStyle: LLVM
+Standard: c++20
+
+ColumnLimit: 90
+IndentWidth: 4
+ContinuationIndentWidth: 4
+TabWidth: 4
+UseTab: Never
+AccessModifierOffset: -4
+NamespaceIndentation: None
+FixNamespaceComments: true
+IndentCaseLabels: false
+IndentPPDirectives: None
+
+# Allman braces, except for lambdas, which open on the line of their header.
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterCaseLabel: true
+  AfterClass: true
+  AfterControlStatement: Always
+  AfterEnum: true
+  AfterFunction: true
+  AfterNamespace: true
+  AfterStruct: true
+  AfterUnion: true
+  AfterExternBlock: true
+  BeforeCatch: true
+  BeforeElse: true
+  BeforeLambdaBody: false
+  BeforeWhile: true
+  IndentBraces: false
+  SplitEmptyFunction: true
+  SplitEmptyRecord: true
+  SplitEmptyNamespace: false
+
+# A broken call or declaration puts its arguments one per line, after the
+# opening parenthesis.
+AlignAfterOpenBracket: false
+BreakAfterOpenBracketFunction: true
+BreakAfterOpenBracketBracedList: true
+BinPackArguments: false
+BinPackParameters: OnePerLine
+AllowAllArgumentsOnNextLine: false
+AllowAllParametersOfDeclarationOnNextLine: false
+AlignOperands: DontAlign
+AlignTrailingComments:
+  Kind: Always
+  OverEmptyLines: 0
+
+# Operators lead the continuation line: recipe pipelines read `| component<...>()`.
+BreakBeforeBinaryOperators: NonAssignment
+BreakBeforeTernaryOperators: true
+BreakBeforeConceptDeclarations: Always
+RequiresClausePosition: OwnLine
+IndentRequiresClause: true
+BreakConstructorInitializers: BeforeColon
+PackConstructorInitializers: NextLine
+BreakInheritanceList: BeforeColon
+AlwaysBreakTemplateDeclarations: Yes
+SpaceAfterTemplateKeyword: false
+BreakAfterAttributes: Leave
+BreakAfterReturnType: None
+BreakStringLiterals: false
+PenaltyReturnTypeOnItsOwnLine: 1000
+PenaltyBreakScopeResolution: 1000
+# Prefer breaking after `=` to aligning a builder chain far to the right.
+PenaltyIndentedWhitespace: 10
+
+AllowShortFunctionsOnASingleLine: Empty
+AllowShortLambdasOnASingleLine: All
+AllowShortBlocksOnASingleLine: Never
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+AllowShortCaseLabelsOnASingleLine: false
+AllowShortEnumsOnASingleLine: false
+
+Cpp11BracedListStyle: true
+InsertTrailingCommas: None
+PointerAlignment: Left
+ReferenceAlignment: Left
+QualifierAlignment: Leave
+SpaceBeforeParens: ControlStatements
+SpacesBeforeTrailingComments: 1
+KeepEmptyLines:
+  AtStartOfBlock: false
+  AtStartOfFile: false
+MaxEmptyLinesToKeep: 1
+SeparateDefinitionBlocks: Leave
+
+# Includes: "local" headers, then <easylocal/...>, then third party and the
+# standard library, each group sorted.
+SortIncludes: CaseSensitive
+IncludeBlocks: Regroup
+IncludeCategories:
+  - Regex: '^"'
+    Priority: 1
+  - Regex: '^<easylocal/'
+    Priority: 2
+  - Regex: '^<[a-z_]+\.h(pp)?>'
+    Priority: 3
+  - Regex: '^<'
+    Priority: 4
+...
