@@ -392,6 +392,38 @@ int main()
             random_tenure.cost == 0 && cyclic.cost == 0 && reactive.cost == 0,
             "random tenure, cyclic and reactive lists leave the local minimum");
 
+        const auto lim_dynamic =
+            line_runner<TabuSearch<tabu::LimDynamic>, Valley>(
+                {.max_idle_iterations = 3,
+                    .tabu_list = {.min_tenure = 2, .max_tenure = 4, .idle_threshold = 2}})
+                .bind(instance)
+                .run(Position{1}, rng);
+        const auto foo =
+            line_runner<TabuSearch<tabu::Foo>, Valley>(
+                {.max_idle_iterations = 3,
+                    .tabu_list = {.window = 3, .increment = 2, .fluctuation = 1.0}})
+                .bind(instance)
+                .run(Position{1}, rng);
+        const auto random_foo =
+            line_runner<TabuSearch<tabu::RandomFoo>, Valley>(
+                {.max_idle_iterations = 3,
+                    .tabu_list = {.min_window = 2, .max_window = 4, .min_increment = 2}})
+                .bind(instance)
+                .run(Position{1}, rng);
+        ok &= expect(
+            lim_dynamic.cost == 0 && foo.cost == 0 && random_foo.cost == 0,
+            "lim dynamic and fluctuation lists leave the local minimum");
+
+        const auto objective =
+            line_runner<TabuSearch<tabu::ObjectiveBased>, Valley>(
+                {.max_idle_iterations = 5, .tabu_list = {.tenure = 2}})
+                .bind(instance)
+                .run(Position{1}, rng);
+        ok &= expect(
+            objective.cost <= 3
+                && objective.termination == termination_reason::idle_limit_reached,
+            "the objective-based list runs on the candidates' costs");
+
         const auto frequency =
             line_runner<TabuSearch<tabu::Frequency>, Valley>(
                 {.max_idle_iterations = 5, .tabu_list = {.threshold = 0.6}})

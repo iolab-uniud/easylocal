@@ -1,6 +1,7 @@
 #pragma once
 
 #include <easylocal/config/parameter_set.hpp>
+#include <easylocal/cost/concepts.hpp>
 #include <easylocal/helpers/neighborhood_explorer.hpp>
 #include <easylocal/helpers/solution_manager.hpp>
 #include <easylocal/runners/detail/context_concepts.hpp>
@@ -30,22 +31,33 @@ namespace easylocal::runners
 {
 
 // A candidate move, as a tabu list sees it: forbidden_by(tabu_move), whether a
-// move the list holds forbids it (the neighborhood's inverse), and, when the
-// neighborhood has one, its attribute().
+// move the list holds forbids it (the neighborhood's inverse), its attribute()
+// when the neighborhood has one, and its cost() for the lists that need it
+// (their state declares needs_cost = true).
 template<class Run>
 class tabu_candidate
 {
 public:
     using move_type = typename Run::move_type;
     using solution_type = typename Run::solution_type;
+    using cost_type = typename Run::cost_type;
     using neighborhood_type = typename Run::neighborhood_explorer_type;
 
     tabu_candidate(
         const Run& run,
         const solution_type& solution,
-        const move_type& move) noexcept
-        : run_{run}, solution_{solution}, move_{move}
+        const move_type& move,
+        const cost_type* cost = nullptr) noexcept
+        : run_{run}, solution_{solution}, move_{move}, cost_{cost}
     {
+    }
+
+    // The cost after the move; only for lists with needs_cost.
+    [[nodiscard]]
+    const cost_type& cost() const noexcept
+    {
+        assert(cost_ != nullptr && "the list's state must declare needs_cost = true");
+        return *cost_;
     }
 
     [[nodiscard]]
@@ -79,6 +91,7 @@ private:
     const Run& run_;
     const solution_type& solution_;
     const move_type& move_;
+    const cost_type* cost_;
 };
 
 // What a tabu list learns after each iteration: the move applied, the solution
@@ -235,6 +248,47 @@ public:
 
 private:
     std::vector<std::pair<Move, std::size_t>> moves_;
+};
+
+// The last moves with the iteration they were applied at, newest first: the
+// memory of the lists whose length changes; a move is tabu while it is younger
+// than the current length.
+template<class Move>
+class aging_moves
+{
+public:
+    template<class Candidate>
+    [[nodiscard]]
+    std::optional<std::size_t> tabu_tenure(
+        const Candidate& candidate,
+        const std::size_t iteration,
+        const std::size_t length) const
+    {
+        for (const auto& [move, applied] : moves_)
+        {
+            const auto age = iteration - applied;
+            if (age >= length)
+                break;
+            if (candidate.forbidden_by(move))
+                return length - age;
+        }
+        return std::nullopt;
+    }
+
+    void add(const Move& move, const std::size_t iteration)
+    {
+        moves_.emplace_front(move, iteration);
+    }
+
+    // Forgets the moves no longer tabu with length.
+    void trim(const std::size_t iteration, const std::size_t length)
+    {
+        while (!moves_.empty() && iteration - moves_.back().second >= length)
+            moves_.pop_back();
+    }
+
+private:
+    std::deque<std::pair<Move, std::size_t>> moves_;
 };
 
 } // namespace detail
@@ -791,6 +845,500 @@ private:
     FrequencyParameters parameters_;
 };
 
+struct ObjectiveBasedParameters
+{
+    // Iterations a cost value stays tabu.
+    std::size_t tenure{10};
+
+    [[nodiscard]]
+    static consteval auto parameter_schema()
+    {
+        return config::fields(
+            config::field<"tenure", &ObjectiveBasedParameters::tenure>(
+                "Number of iterations a reached cost stays tabu"));
+    }
+
+    [[nodiscard]]
+    constexpr config::validation_result validate() const noexcept
+    {
+        if (tenure == 0)
+            return config::validation_result::failure("tenure must be positive");
+        return config::validation_result::success();
+    }
+};
+
+// Tabu on cost values (Gendreau and Potvin): a move is tabu when it would
+// reach a cost equal to one reached in the last tenure iterations. It needs
+// neither inverse nor attribute, but the candidate's cost: moves are evaluated
+// before the tabu check.
+class ObjectiveBased
+{
+public:
+    using parameters_type = ObjectiveBasedParameters;
+
+    explicit ObjectiveBased(const ObjectiveBasedParameters& parameters) noexcept
+        : parameters_{parameters}
+    {
+        assert(parameters_.validate());
+    }
+
+    template<class Cost>
+    class state
+    {
+    public:
+        static constexpr bool needs_cost = true;
+
+        explicit state(const std::size_t tenure) : tenure_{tenure} {}
+
+        template<class Candidate>
+            requires requires(const Candidate& candidate) { candidate.cost(); }
+        [[nodiscard]]
+        std::optional<std::size_t> tabu_tenure(const Candidate& candidate) const
+        {
+            for (std::size_t age = 0; age < costs_.size(); ++age)
+                if (costs_[age] == candidate.cost())
+                    return tenure_ - age;
+            return std::nullopt;
+        }
+
+        template<class Step, class RNG>
+        void update(const Step& step, RNG&)
+        {
+            costs_.push_front(step.cost());
+            if (costs_.size() > tenure_)
+                costs_.pop_back();
+        }
+
+    private:
+        // Newest first.
+        std::deque<Cost> costs_;
+        std::size_t tenure_;
+    };
+
+    template<class Run>
+        requires std::equality_comparable<typename Run::cost_type>
+    [[nodiscard]]
+    state<typename Run::cost_type> make_state() const
+    {
+        return state<typename Run::cost_type>{parameters_.tenure};
+    }
+
+private:
+    ObjectiveBasedParameters parameters_;
+};
+
+struct LimDynamicParameters
+{
+    std::size_t min_tenure{5};
+    std::size_t max_tenure{20};
+    // Iterations without improving the best cost after which the tenure grows.
+    std::size_t idle_threshold{10};
+
+    [[nodiscard]]
+    static consteval auto parameter_schema()
+    {
+        return config::fields(
+            config::field<"min_tenure", &LimDynamicParameters::min_tenure>(
+                "The tenure after an improvement of the best cost"),
+            config::field<"max_tenure", &LimDynamicParameters::max_tenure>(
+                "The tenure at which it falls back to min_tenure"),
+            config::field<"idle_threshold", &LimDynamicParameters::idle_threshold>(
+                "Iterations without improvement after which the tenure grows"));
+    }
+
+    [[nodiscard]]
+    constexpr config::validation_result validate() const noexcept
+    {
+        if (min_tenure == 0)
+            return config::validation_result::failure("min_tenure must be positive");
+        if (max_tenure <= min_tenure)
+            return config::validation_result::failure(
+                "max_tenure must exceed min_tenure");
+        return config::validation_result::success();
+    }
+};
+
+// A tenure that grows by one at each iteration after idle_threshold iterations
+// without improving the best cost, and falls back to min_tenure when the best
+// improves or the tenure reaches max_tenure.
+class LimDynamic
+{
+public:
+    using parameters_type = LimDynamicParameters;
+
+    explicit LimDynamic(const LimDynamicParameters& parameters) noexcept
+        : parameters_{parameters}
+    {
+        assert(parameters_.validate());
+    }
+
+    template<class Move>
+    class state
+    {
+    public:
+        explicit state(const LimDynamicParameters& parameters)
+            : parameters_{parameters}, tenure_{parameters.min_tenure}
+        {
+        }
+
+        template<class Candidate>
+            requires detail::inverse_candidate<Candidate, Move>
+        [[nodiscard]]
+        std::optional<std::size_t> tabu_tenure(const Candidate& candidate) const
+        {
+            return moves_.tabu_tenure(candidate, iteration_, tenure_);
+        }
+
+        template<class Step, class RNG>
+        void update(const Step& step, RNG&)
+        {
+            iteration_ = step.iteration();
+            moves_.add(step.move(), iteration_);
+            idle_ = step.improved_best() ? 0 : idle_ + 1;
+            if (step.improved_best() || tenure_ >= parameters_.max_tenure)
+                tenure_ = parameters_.min_tenure;
+            else if (idle_ >= parameters_.idle_threshold)
+                ++tenure_;
+            moves_.trim(iteration_, tenure_);
+        }
+
+        [[nodiscard]]
+        std::size_t current_tenure() const noexcept
+        {
+            return tenure_;
+        }
+
+    private:
+        LimDynamicParameters parameters_;
+        detail::aging_moves<Move> moves_;
+        std::size_t tenure_;
+        std::size_t idle_{};
+        std::size_t iteration_{};
+    };
+
+    template<class Run>
+    [[nodiscard]]
+    state<typename Run::move_type> make_state() const
+    {
+        return state<typename Run::move_type>{parameters_};
+    }
+
+private:
+    LimDynamicParameters parameters_;
+};
+
+namespace detail
+{
+
+// The Fluctuation Of the Objective of Blöchliger and Zufferey: at the end of
+// each window of iterations, the tenure grows by increment if the costs reached
+// in the window spread less than fluctuation, and shrinks by one (to 1 at
+// least) otherwise. The spread is cost::delta(highest, lowest).
+template<class Move, class Cost>
+class fluctuation_tenure
+{
+public:
+    template<class Candidate>
+    [[nodiscard]]
+    std::optional<std::size_t> tabu_tenure(const Candidate& candidate) const
+    {
+        return moves_.tabu_tenure(candidate, iteration_, tenure_);
+    }
+
+    // Records a move; true at the end of a window, after the tenure changed.
+    template<class Step>
+    bool update(
+        const Step& step,
+        const std::size_t window,
+        const std::size_t increment,
+        const double fluctuation)
+    {
+        using cost::delta;
+        iteration_ = step.iteration();
+        moves_.add(step.move(), iteration_);
+        const auto& cost = step.cost();
+        if (!lowest_.has_value())
+        {
+            lowest_ = cost;
+            highest_ = cost;
+        }
+        else
+        {
+            if (static_cast<double>(delta(cost, *lowest_)) < 0.0)
+                lowest_ = cost;
+            if (static_cast<double>(delta(cost, *highest_)) > 0.0)
+                highest_ = cost;
+        }
+
+        bool window_over = false;
+        if (++in_window_ >= window)
+        {
+            const auto spread = static_cast<double>(delta(*highest_, *lowest_));
+            tenure_ = spread < fluctuation
+                ? tenure_ + increment
+                : std::max<std::size_t>(1, tenure_ - 1);
+            lowest_.reset();
+            highest_.reset();
+            in_window_ = 0;
+            window_over = true;
+        }
+        moves_.trim(iteration_, tenure_);
+        return window_over;
+    }
+
+    void set_tenure(const std::size_t tenure) noexcept
+    {
+        tenure_ = tenure;
+    }
+
+    [[nodiscard]]
+    std::size_t current_tenure() const noexcept
+    {
+        return tenure_;
+    }
+
+private:
+    aging_moves<Move> moves_;
+    std::optional<Cost> lowest_;
+    std::optional<Cost> highest_;
+    std::size_t tenure_{1};
+    std::size_t in_window_{};
+    std::size_t iteration_{};
+};
+
+} // namespace detail
+
+struct FooParameters
+{
+    // Iterations between two tenure changes.
+    std::size_t window{100};
+    // Growth of the tenure when the costs fluctuate little; also the initial
+    // tenure.
+    std::size_t increment{5};
+    // The spread of the costs in a window below which the tenure grows.
+    double fluctuation{1.0};
+
+    [[nodiscard]]
+    static consteval auto parameter_schema()
+    {
+        return config::fields(
+            config::field<"window", &FooParameters::window>(
+                "Iterations between two tenure changes"),
+            config::field<"increment", &FooParameters::increment>(
+                "Growth of the tenure when the costs fluctuate little (the initial tenure)"),
+            config::field<"fluctuation", &FooParameters::fluctuation>(
+                "Spread of the costs in a window below which the tenure grows"));
+    }
+
+    [[nodiscard]]
+    config::validation_result validate() const noexcept
+    {
+        if (window == 0)
+            return config::validation_result::failure("window must be positive");
+        if (increment == 0)
+            return config::validation_result::failure("increment must be positive");
+        if (!std::isfinite(fluctuation) || fluctuation < 0.0)
+            return config::validation_result::failure(
+                "fluctuation must be finite and non-negative");
+        return config::validation_result::success();
+    }
+};
+
+// The Fluctuation Of the Objective scheme (Blöchliger and Zufferey): a tenure
+// that grows by increment when the costs reached in the last window spread
+// less than fluctuation (the search is stuck), and shrinks by one otherwise.
+// The fluctuation is in cost units, so it depends on the instance; the cost
+// needs cost::delta.
+class Foo
+{
+public:
+    using parameters_type = FooParameters;
+
+    explicit Foo(const FooParameters& parameters) noexcept : parameters_{parameters}
+    {
+        assert(parameters_.validate());
+    }
+
+    template<class Move, class Cost>
+    class state
+    {
+    public:
+        explicit state(const FooParameters& parameters) : parameters_{parameters}
+        {
+            tenure_.set_tenure(parameters.increment);
+        }
+
+        template<class Candidate>
+            requires detail::inverse_candidate<Candidate, Move>
+        [[nodiscard]]
+        std::optional<std::size_t> tabu_tenure(const Candidate& candidate) const
+        {
+            return tenure_.tabu_tenure(candidate);
+        }
+
+        template<class Step, class RNG>
+        void update(const Step& step, RNG&)
+        {
+            tenure_.update(
+                step,
+                parameters_.window,
+                parameters_.increment,
+                parameters_.fluctuation);
+        }
+
+        [[nodiscard]]
+        std::size_t current_tenure() const noexcept
+        {
+            return tenure_.current_tenure();
+        }
+
+    private:
+        FooParameters parameters_;
+        detail::fluctuation_tenure<Move, Cost> tenure_;
+    };
+
+    template<class Run>
+        requires cost::has_delta<typename Run::cost_type>
+    [[nodiscard]]
+    state<typename Run::move_type, typename Run::cost_type> make_state() const
+    {
+        return state<typename Run::move_type, typename Run::cost_type>{parameters_};
+    }
+
+private:
+    FooParameters parameters_;
+};
+
+struct RandomFooParameters
+{
+    std::size_t min_window{50};
+    std::size_t max_window{150};
+    std::size_t min_increment{2};
+    std::size_t max_increment{8};
+    double min_fluctuation{0.5};
+    double max_fluctuation{2.0};
+
+    [[nodiscard]]
+    static consteval auto parameter_schema()
+    {
+        return config::fields(
+            config::field<"min_window", &RandomFooParameters::min_window>(
+                "Smallest window"),
+            config::field<"max_window", &RandomFooParameters::max_window>(
+                "Largest window"),
+            config::field<"min_increment", &RandomFooParameters::min_increment>(
+                "Smallest increment"),
+            config::field<"max_increment", &RandomFooParameters::max_increment>(
+                "Largest increment"),
+            config::field<"min_fluctuation", &RandomFooParameters::min_fluctuation>(
+                "Smallest fluctuation threshold"),
+            config::field<"max_fluctuation", &RandomFooParameters::max_fluctuation>(
+                "Largest fluctuation threshold"));
+    }
+
+    [[nodiscard]]
+    config::validation_result validate() const noexcept
+    {
+        if (min_window == 0 || max_window < min_window)
+            return config::validation_result::failure(
+                "the windows must be positive, min_window not above max_window");
+        if (min_increment == 0 || max_increment < min_increment)
+            return config::validation_result::failure(
+                "the increments must be positive, min_increment not above max_increment");
+        if (!std::isfinite(min_fluctuation) || !std::isfinite(max_fluctuation)
+            || min_fluctuation < 0.0 || max_fluctuation < min_fluctuation)
+        {
+            return config::validation_result::failure(
+                "the fluctuations must be finite and non-negative, min_fluctuation not above "
+                "max_fluctuation");
+        }
+        return config::validation_result::success();
+    }
+};
+
+// Foo with its window, increment and fluctuation drawn uniformly in their
+// ranges at the start and again at the end of each window.
+class RandomFoo
+{
+public:
+    using parameters_type = RandomFooParameters;
+
+    explicit RandomFoo(const RandomFooParameters& parameters) noexcept
+        : parameters_{parameters}
+    {
+        assert(parameters_.validate());
+    }
+
+    template<class Move, class Cost>
+    class state
+    {
+    public:
+        explicit state(const RandomFooParameters& parameters) : parameters_{parameters} {}
+
+        template<class Candidate>
+            requires detail::inverse_candidate<Candidate, Move>
+        [[nodiscard]]
+        std::optional<std::size_t> tabu_tenure(const Candidate& candidate) const
+        {
+            return tenure_.tabu_tenure(candidate);
+        }
+
+        template<class Step, class RNG>
+        void update(const Step& step, RNG& rng)
+        {
+            if (!drawn_)
+            {
+                draw(rng);
+                tenure_.set_tenure(increment_);
+                drawn_ = true;
+            }
+            if (tenure_.update(step, window_, increment_, fluctuation_))
+                draw(rng);
+        }
+
+        [[nodiscard]]
+        std::size_t current_tenure() const noexcept
+        {
+            return tenure_.current_tenure();
+        }
+
+    private:
+        template<class RNG>
+        void draw(RNG& rng)
+        {
+            window_ = std::uniform_int_distribution<std::size_t>{
+                parameters_.min_window,
+                parameters_.max_window}(rng);
+            increment_ = std::uniform_int_distribution<std::size_t>{
+                parameters_.min_increment,
+                parameters_.max_increment}(rng);
+            fluctuation_ = parameters_.min_fluctuation == parameters_.max_fluctuation
+                ? parameters_.min_fluctuation
+                : std::uniform_real_distribution<double>{
+                      parameters_.min_fluctuation,
+                      parameters_.max_fluctuation}(rng);
+        }
+
+        RandomFooParameters parameters_;
+        detail::fluctuation_tenure<Move, Cost> tenure_;
+        std::size_t window_{};
+        std::size_t increment_{};
+        double fluctuation_{};
+        bool drawn_{false};
+    };
+
+    template<class Run>
+        requires cost::has_delta<typename Run::cost_type>
+    [[nodiscard]]
+    state<typename Run::move_type, typename Run::cost_type> make_state() const
+    {
+        return state<typename Run::move_type, typename Run::cost_type>{parameters_};
+    }
+
+private:
+    RandomFooParameters parameters_;
+};
+
 } // namespace tabu
 
 namespace aspiration
@@ -940,10 +1488,15 @@ public:
     {
     }
 
-    template<class Run, class RNG, class StopAt>
+    // make_stop(run, best_cost) gives, for each scan, the callable that
+    // decides at each admissible candidate whether the scan stops there.
+    template<class Run, class RNG, class MakeStop>
     [[nodiscard]]
-    auto search(Run& run, typename Run::solution_type solution, RNG& rng, StopAt stop_at)
-        const
+    auto search(
+        Run& run,
+        typename Run::solution_type solution,
+        RNG& rng,
+        MakeStop make_stop) const
     {
         using move_type = typename Run::move_type;
         using cost_type = typename Run::cost_type;
@@ -954,6 +1507,9 @@ public:
         auto best_solution = solution;
         auto best_cost = current.cost();
         auto list = tabu_list_.template make_state<Run>();
+        constexpr bool list_needs_cost = requires {
+            requires std::remove_cvref_t<decltype(list)>::needs_cost;
+        };
         std::size_t idle_iterations = 0;
 
         while (!run.should_stop())
@@ -979,6 +1535,7 @@ public:
             std::size_t least_tenure = 0;
             std::size_t least_ties = 0;
             bool neighborhood_empty = true;
+            auto stop_at = make_stop(run, best_cost);
 
             for (const auto& move : run.moves(solution))
             {
@@ -986,8 +1543,16 @@ public:
                     return run.finish(std::move(best_solution), std::move(best_cost));
                 neighborhood_empty = false;
 
-                const auto tenure =
-                    list.tabu_tenure(tabu_candidate<Run>{run, solution, move});
+                // A list on costs sees the candidate evaluated.
+                std::optional<typename Run::candidate_type> evaluated;
+                if constexpr (list_needs_cost)
+                    evaluated = run.evaluate_move(solution, current, move);
+                const auto tenure = list.tabu_tenure(
+                    tabu_candidate<Run>{
+                        run,
+                        solution,
+                        move,
+                        evaluated.has_value() ? &evaluated->cost() : nullptr});
                 if (tenure.has_value())
                 {
                     if (!least_tabu.has_value() || *tenure < least_tenure)
@@ -1004,7 +1569,9 @@ public:
                         continue;
                 }
 
-                auto candidate = run.evaluate_move(solution, current, move);
+                auto candidate = evaluated.has_value()
+                    ? std::move(*evaluated)
+                    : run.evaluate_move(solution, current, move);
                 if (tenure.has_value()
                     && !aspiration_.overrides(run, candidate.cost(), best_cost))
                 {
@@ -1143,7 +1710,7 @@ public:
     auto run(Run& run, typename Run::solution_type solution, RNG& rng) const
     {
         return engine_.search(run, std::move(solution), rng, [](const auto&...) {
-            return false;
+            return [](const auto&...) { return false; };
         });
     }
 
@@ -1181,12 +1748,15 @@ public:
             run,
             std::move(solution),
             rng,
-            [improve_on_best = improve_on_best_](
-                const Run& search,
-                const auto& candidate,
-                const auto& current,
-                const auto& best) {
-                return search.better(candidate, improve_on_best ? best : current);
+            [improve_on_best = improve_on_best_](const auto&, const auto&) {
+                return
+                    [improve_on_best](
+                        const Run& search,
+                        const auto& candidate,
+                        const auto& current,
+                        const auto& best) {
+                        return search.better(candidate, improve_on_best ? best : current);
+                    };
             });
     }
 

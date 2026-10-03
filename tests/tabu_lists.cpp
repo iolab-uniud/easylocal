@@ -19,6 +19,12 @@ using namespace easylocal::runners;
 struct Candidate
 {
     int move{};
+    int value{};
+
+    [[nodiscard]] auto cost() const -> const int&
+    {
+        return value;
+    }
 
     [[nodiscard]] auto forbidden_by(const int tabu_move) const -> bool
     {
@@ -36,6 +42,18 @@ struct Step
     int applied{};
     std::size_t at{};
     std::uint64_t hash{};
+    int value{};
+    bool improved{};
+
+    [[nodiscard]] auto cost() const -> const int&
+    {
+        return value;
+    }
+
+    [[nodiscard]] auto improved_best() const -> bool
+    {
+        return improved;
+    }
 
     [[nodiscard]] auto move() const -> int
     {
@@ -58,10 +76,11 @@ struct Step
     }
 };
 
-// A run type with the int move, for make_state<Run>().
+// A run type with int moves and costs, for make_state<Run>().
 struct IntRun
 {
     using move_type = int;
+    using cost_type = int;
 };
 
 auto expect(const bool condition, const std::string_view description) -> bool
@@ -213,6 +232,85 @@ int main()
             !tabu::ReactiveParameters{.increase = 1.0}.validate()
                 && !tabu::ReactiveParameters{.decrease = 1.0}.validate(),
             "reactive: the factors are validated");
+    }
+
+    {
+        // The costs 7 then 9 were reached; a candidate reaching 7 is tabu.
+        auto state = tabu::ObjectiveBased{{.tenure = 2}}.make_state<IntRun>();
+        static_assert(decltype(state)::needs_cost);
+        state.update(Step{.applied = 1, .at = 1, .value = 7}, rng);
+        state.update(Step{.applied = 2, .at = 2, .value = 9}, rng);
+        ok &= expect(
+            state.tabu_tenure(Candidate{.move = 5, .value = 7}) == 1
+                && state.tabu_tenure(Candidate{.move = 5, .value = 9}) == 2
+                && !state.tabu_tenure(Candidate{.move = 5, .value = 8}).has_value(),
+            "objective based: a reached cost is tabu for tenure iterations");
+        state.update(Step{.applied = 3, .at = 3, .value = 4}, rng);
+        ok &= expect(
+            !state.tabu_tenure(Candidate{.move = 5, .value = 7}).has_value(),
+            "objective based: the oldest cost leaves");
+    }
+
+    {
+        // Grows after 2 idle iterations, falls back at 4 or on improvement.
+        auto state =
+            tabu::LimDynamic{{.min_tenure = 2, .max_tenure = 4, .idle_threshold = 2}}
+                .make_state<IntRun>();
+        state.update(Step{.applied = 1, .at = 1}, rng);
+        ok &= expect(state.current_tenure() == 2, "lim dynamic: starts at min_tenure");
+        state.update(Step{.applied = 2, .at = 2}, rng);
+        ok &= expect(
+            state.current_tenure() == 3 && tenure(state, -1) == 2,
+            "lim dynamic: grows after idle_threshold idle iterations");
+        state.update(Step{.applied = 3, .at = 3}, rng);
+        ok &=
+            expect(state.current_tenure() == 4, "lim dynamic: keeps growing while idle");
+        state.update(Step{.applied = 4, .at = 4}, rng);
+        ok &= expect(
+            state.current_tenure() == 2 && !tenure(state, -1).has_value(),
+            "lim dynamic: falls back to min_tenure at max_tenure");
+        state.update(Step{.applied = 5, .at = 5}, rng);
+        state.update(Step{.applied = 6, .at = 6, .improved = true}, rng);
+        ok &=
+            expect(state.current_tenure() == 2, "lim dynamic: an improvement resets it");
+    }
+
+    {
+        // Windows of 2: costs 5, 5 spread 0 < 1 (grow by 3), then 5, 9 spread
+        // 4 (shrink by 1).
+        auto state =
+            tabu::Foo{{.window = 2, .increment = 3, .fluctuation = 1.0}}
+                .make_state<IntRun>();
+        ok &= expect(
+            state.current_tenure() == 3,
+            "foo: the initial tenure is the increment");
+        state.update(Step{.applied = 1, .at = 1, .value = 5}, rng);
+        state.update(Step{.applied = 2, .at = 2, .value = 5}, rng);
+        ok &= expect(
+            state.current_tenure() == 6 && tenure(state, -1) == 5,
+            "foo: a stuck search grows the tenure");
+        state.update(Step{.applied = 3, .at = 3, .value = 5}, rng);
+        state.update(Step{.applied = 4, .at = 4, .value = 9}, rng);
+        ok &= expect(state.current_tenure() == 5, "foo: a fluctuating search shrinks it");
+
+        auto random = tabu::RandomFoo{
+            {
+                .min_window = 2,
+                .max_window = 2,
+                .min_increment = 3,
+                .max_increment = 3,
+                .min_fluctuation = 1.0,
+                .max_fluctuation = 1.0,
+            }}.make_state<IntRun>();
+        random.update(Step{.applied = 1, .at = 1, .value = 5}, rng);
+        random.update(Step{.applied = 2, .at = 2, .value = 5}, rng);
+        ok &= expect(
+            random.current_tenure() == 6,
+            "random foo: with degenerate ranges it is foo");
+        ok &= expect(
+            !tabu::RandomFooParameters{.min_window = 5, .max_window = 4}.validate()
+                && !tabu::FooParameters{.window = 0}.validate(),
+            "foo: the parameters are validated");
     }
 
     return ok ? 0 : 1;

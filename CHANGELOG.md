@@ -71,7 +71,8 @@ old concepts onto the new ones.
   temperature from sampled moves, and Metropolis acceptance; **Tabu Search**
   and **First Improvement Tabu Search**, with pluggable tabu lists (fixed
   length, random tenure, Taillard's cyclic tenures, reactive with escape,
-  frequency-based) and aspiration criteria (by objective, none). Writing a new
+  frequency-based, on cost values, idle-driven dynamic length, fluctuation of
+  the objective) and aspiration criteria (by objective, none). Writing a new
   runner means writing one `run(...)` function against
   `easylocal::search_run`, which owns counters, evaluation budget,
   cancellation, progress and trace events.
