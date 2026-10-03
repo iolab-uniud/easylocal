@@ -2994,7 +2994,12 @@ private:
                         body.push_back(
                             text("  " + component.name + ": " + component.value));
                         if (!component.description.empty())
-                            body.push_back(text_lines(component.description) | dim);
+                        {
+                            // The description under its component, indented.
+                            for (const auto& line :
+                                detail::split_text_lines(component.description))
+                                body.push_back(text("    " + line) | dim);
+                        }
                     }
                 }
             }

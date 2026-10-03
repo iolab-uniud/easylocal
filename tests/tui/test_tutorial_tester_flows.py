@@ -56,6 +56,10 @@ def test_viewers_show_the_input_and_the_solution(tui):
 
     tui.press("I", "S")
     tui.expect("0 1 2 3 4")
+    # The cost components: TourLength's value and its describe text, the
+    # edges of the tour 0 1 2 3 4 that it adds up.
+    tui.expect("TourLength: 29")
+    tui.expect("    2 + 6 + 8 + 6 + 7")
     tui.press(ESCAPE)
     tui.wait_until(lambda s: "0 1 2 3 4" not in s, what="viewer closed")
 
