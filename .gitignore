@@ -11,7 +11,7 @@
 **/CTestTestfile.cmake
 **/compile_commands.json
 **/install_manifest.txt
-**/Testing/
+/Testing/
 CMakeUserPresets.json
 
 # Compiler and linker outputs.
