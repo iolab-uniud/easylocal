@@ -6,11 +6,14 @@
 #include <easylocal/app/app.hpp>
 #include <easylocal/app/session.hpp>
 #include <easylocal/runners/first_improvement.hpp>
+#include <easylocal/runners/run_control.hpp>
 
 #include <cassert>
 #include <concepts>
 #include <cstdint>
+#include <memory>
 #include <random>
+#include <stop_token>
 #include <string_view>
 #include <type_traits>
 #include <utility>
@@ -174,6 +177,30 @@ void session_takes_its_input_and_seed_at_construction()
     // The seed is the RNG's: the same seed draws the same numbers.
     std::mt19937_64 expected{7};
     assert(session.rng()() == expected());
+}
+
+void session_shares_an_input_it_does_not_copy()
+{
+    const auto input = std::make_shared<const AssignmentInstance>(make_input(5));
+    easylocal::Session session{make_application(), input, 1};
+
+    assert(std::addressof(session.input()) == input.get());
+    assert(session.input_handle() == input);
+}
+
+void session_runs_pass_options_to_the_runner()
+{
+    easylocal::Session session{make_multi_runner_application(), make_input(3), 1};
+    session.use_initial_solution();
+    const auto initial = session.solution();
+
+    // A run stopped before it starts keeps the current solution.
+    std::stop_source stop;
+    stop.request_stop();
+    const easylocal::run_control control{stop.get_token()};
+    const auto ran = session.run("deep", easylocal::with(control));
+    assert(ran);
+    assert(session.solution() == initial);
 }
 
 void session_owns_input_and_builds_instance_from_it()
@@ -625,6 +652,8 @@ int main()
     session_can_copy_an_lvalue_app();
     session_can_take_ownership_of_an_rvalue_app();
     session_takes_its_input_and_seed_at_construction();
+    session_shares_an_input_it_does_not_copy();
+    session_runs_pass_options_to_the_runner();
     session_owns_input_and_builds_instance_from_it();
     replacing_input_rebuilds_the_bound_app();
     session_exposes_initial_solution_as_an_explicit_choice();

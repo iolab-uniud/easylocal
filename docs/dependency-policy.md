@@ -97,7 +97,7 @@ between its external library and stable public EasyLocal APIs. In particular:
 - TextUI consumes `app`/`Session`/`check` facilities rather than becoming part
   of Runner or search algorithms;
 - REST owns all Crow/HTTP/JSON/server concerns outside Core and translates
-  requests into public app operations (`bind`, `run`); no Crow, HTTP, or JSON type may
+  requests into public app and Session operations; no Crow, HTTP, or JSON type may
   enter a Core signature;
 - a logging integration must not make Core depend on the selected logging or
   formatting library.

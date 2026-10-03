@@ -67,6 +67,7 @@ it, and a GUI or a web frontend would be another.
 | Constructor | |
 | --- | --- |
 | `Session{app, input, seed}` | a session on `input`, which it owns; another Input is another session |
+| `Session{app, std::shared_ptr<const Input>, seed}` | a session on an Input it shares with other owners, without copying it |
 | `Session{app[, seed]}` | a session without an Input yet, for frontends that load one (`set_input`, `load_input`) |
 
 | Commands | |
@@ -75,14 +76,15 @@ it, and a GUI or a web frontend would be another.
 | Solution | `use_initial_solution`, `use_random_solution(rng)`, `set_solution`, `load_solution`, `save_solution`, `solution`, `is_valid`, `evaluate`, `check()` |
 | Move | select with `use_first_move`, `use_next_move`, `use_first_improving_move`, `use_best_move`, `use_random_move(rng)` or `set_move`; then `move_is_valid`, `evaluate_move`, `evaluate_move_fully`, `move_evaluation_matches_full`, `apply_move` |
 | Neighborhood | `neighborhood_preview`, `neighborhood_statistics`, `check_neighborhood_costs`, `check_move_independence` (needs `Solution::operator==`), `check_random_move_distribution(rng)` (needs `Move::operator==`) |
-| Runners | `runner_names`, `run("name")` (replaces the current solution) |
+| Runners | `runner_names`, `run("name", options...)` (replaces the current solution; options are `with(control, tracer)`) |
 
 The selections and `run` return `false` when there is nothing to select or no
 runner with that name, and are `[[nodiscard]]`. `run` uses fresh services and
 the current runner parameters, like `app.run`, and executes on the calling
-thread; the TextUI runs runners on a worker thread instead, with
-`app.run("name", ...)` on a copy of the app and `with(control)` for progress
-and cancellation.
+thread. The REST service gives every run a Session of its own and calls `run`
+on a worker thread, with `with(control)` for progress and cancellation. The
+TextUI, which keeps reading its Session while a runner works, runs it with
+`app.run("name", ...)` on copies of the app, Input and solution instead.
 
 ## Design choices
 

@@ -305,9 +305,10 @@ Crow request threads do not execute a CPU-bound local search to completion.
 They decode the request, materialize the immutable Input and initial Solution,
 enqueue work, and return the run identifier.
 
-Each accepted job obtains a snapshot of the configured `app` and runs the
-requested runner with `app.run("name", input, solution, rng, with(control))`,
-which binds fresh services for that run. Mutable SolutionManager, neighborhood,
+Each accepted job owns a `Session` on the run's Input, created when the run is
+submitted, with the initial solution and the run's seed. The worker calls
+`session.run("name", with(control))`, which binds fresh services for that run,
+and stores the resulting solution and its cost. Mutable SolutionManager, neighborhood,
 algorithm, Runner, RNG, and Solution state therefore belongs to that run only.
 No mutex is added to those Core objects and no `Clone()` protocol is required.
 
@@ -336,7 +337,7 @@ TextUI and REST therefore share the same architectural contract without sharing
 a threading subsystem:
 
 ```text
-Core:     fresh services per run, app.run("name", ...)
+Core:     fresh services per run: Session::run, app.run("name", ...)
 TextUI:   one background run owned by the frontend
 REST:     bounded pool of background runs owned by the adapter
 ```

@@ -764,7 +764,7 @@ easylocal_add_compile_failure_test(
 easylocal_add_compile_failure_test(
     session-missing-solution-factory
     session_missing_solution_factory.cpp
-    "the interactive tester requires the SolutionManager to provide initial_solution() or random_solution(std::mt19937_64&)"
+    "Session requires the SolutionManager to provide initial_solution() or random_solution(std::mt19937_64&)"
     "SolutionManager"
 )
 easylocal_add_compile_failure_test(
@@ -1232,6 +1232,10 @@ if(UNIX AND TARGET easylocal_tutorial_tui)
         if(TARGET easylocal_tsp_tui_mwe)  # the launcher of two apps
             list(APPEND easylocal_tui_e2e_environment
                 "EASYLOCAL_TSP_TUI=$<TARGET_FILE:easylocal_tsp_tui_mwe>")
+        endif()
+        if(TARGET easylocal_assignment_tui_mwe)  # its slow-fi runner can be stopped
+            list(APPEND easylocal_tui_e2e_environment
+                "EASYLOCAL_ASSIGNMENT_TUI=$<TARGET_FILE:easylocal_assignment_tui_mwe>")
         endif()
         add_test(
             NAME easylocal.tui-e2e

@@ -1,8 +1,9 @@
 #pragma once
 
+#include <easylocal/adapters/rest/execution.hpp>
+#include <easylocal/app/session.hpp>
 #include <easylocal/runners/run_control.hpp>
 #include <easylocal/runners/search_run.hpp>
-#include <easylocal/adapters/rest/execution.hpp>
 
 #include <crow.h>
 
@@ -14,9 +15,9 @@
 #include <memory>
 #include <mutex>
 #include <optional>
+#include <random>
 #include <stdexcept>
 #include <stop_token>
-#include <random>
 #include <string>
 #include <string_view>
 #include <type_traits>
@@ -135,6 +136,7 @@ public:
     using solution_manager_type = typename bound_app_type::solution_manager_type;
     using solution_type = typename solution_manager_type::solution_type;
     using cost_type = typename solution_manager_type::cost_type;
+    using session_type = easylocal::Session<App>;
 
     app_blueprint(
         std::string prefix,
@@ -191,6 +193,7 @@ private:
         std::stop_source stop_source;
         run_state state{run_state::queued};
         std::optional<solution_type> solution;
+        std::optional<cost_type> cost;
         std::string error;
         std::atomic<std::size_t> evaluations{};
         std::atomic<std::size_t> iterations{};
@@ -353,16 +356,17 @@ private:
         }
     }
 
-    [[nodiscard]] solution_type make_initial_solution(
-        const App& application,
-        const input_type& input,
+    // The session's first current solution: the one in the request, decoded,
+    // or the initial solution of the SolutionManager.
+    void set_initial_solution(
+        session_type& session,
         const crow::json::rvalue* payload) const
     {
         if (payload != nullptr)
         {
             if constexpr (detail::decodes_initial_solution<Codec, App>)
             {
-                return decode_initial_solution(input, *payload);
+                session.set_solution(decode_initial_solution(session.input(), *payload));
             }
             else
             {
@@ -370,11 +374,9 @@ private:
                     "initial_solution is not supported by this application codec"};
             }
         }
-
-        auto bound = application.bind(input);
-        if constexpr (requires { bound.solution_manager().initial_solution(); })
+        else if constexpr (session_type::supports_initial_solution)
         {
-            return bound.solution_manager().initial_solution();
+            session.use_initial_solution();
         }
         else
         {
@@ -438,17 +440,15 @@ private:
 
         try
         {
-            auto application = copy_application();
             auto input = std::make_shared<const input_type>(
                 decode_input(payload["input"]));
+            // The run's own session; its seed is set once the run has an id.
+            session_type session{copy_application(), input, 0};
             const crow::json::rvalue* initial_payload =
                 payload.has("initial_solution")
                     ? &payload["initial_solution"]
                     : nullptr;
-            auto initial = make_initial_solution(
-                application,
-                *input,
-                initial_payload);
+            set_initial_solution(session, initial_payload);
 
             if (payload.has("seed") &&
                 (payload["seed"].t() != crow::json::type::Number ||
@@ -472,17 +472,14 @@ private:
                 : options_.seed + static_cast<std::uint64_t>(run_number);
             record->runner = runner;
             record->input = input;
+            session.set_seed(record->seed);
             {
                 const std::lock_guard lock{runs_mutex_};
                 runs_.emplace(id, record);
             }
 
             const bool accepted = execution_.try_submit(
-                [this,
-                 application = std::move(application),
-                 record,
-                 initial = std::move(initial),
-                 runner]() mutable {
+                [this, session = std::move(session), record, runner]() mutable {
                     bool cancelled_before_start = false;
                     {
                         const std::lock_guard lock{record->mutex};
@@ -522,18 +519,13 @@ private:
 
                     try
                     {
-                        std::mt19937_64 rng{record->seed};
-                        auto result = application.run(
-                            runner,
-                            *record->input,
-                            std::move(initial),
-                            rng,
-                            easylocal::with(control));
+                        const bool ran = session.run(runner, easylocal::with(control));
 
                         const std::lock_guard lock{record->mutex};
-                        if (result)
+                        if (ran)
                         {
-                            record->solution.emplace(std::move(result->solution));
+                            record->solution.emplace(session.solution());
+                            record->cost.emplace(session.evaluate());
                             record->state = record->stop_source.stop_requested()
                                 ? run_state::cancelled
                                 : run_state::succeeded;
@@ -629,7 +621,6 @@ private:
                 "run '" + id + "' does not exist");
         }
 
-        const auto application = copy_application();
         const std::lock_guard lock{record->mutex};
         if (record->state == run_state::failed)
         {
@@ -648,15 +639,12 @@ private:
                 "run has not produced a solution yet");
         }
 
-        auto bound = application.bind(*record->input);
-        const auto cost = bound.solution_manager().evaluate(*record->solution);
-
         crow::json::wvalue body;
         body["id"] = record->id;
         body["runner"] = record->runner;
         body["seed"] = record->seed;
         body["status"] = std::string{state_name(record->state)};
-        body["cost"] = encode_cost(cost);
+        body["cost"] = encode_cost(*record->cost);
         body["solution"] = encode_solution(
             *record->input,
             *record->solution);

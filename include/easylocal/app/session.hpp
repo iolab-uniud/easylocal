@@ -282,7 +282,7 @@ public:
     static_assert(
         supports_initial_solution || supports_random_solution
             || supports_solution_loading,
-        "the interactive tester requires the SolutionManager to provide initial_solution() "
+        "Session requires the SolutionManager to provide initial_solution() "
         "or random_solution(std::mt19937_64&) or solution stream loading "
         "to be available");
 
@@ -297,6 +297,17 @@ public:
     // A session on an Input, which it owns: the app bound to it, and the RNG
     // seeded with seed. Another Input is another session.
     Session(App application, input_type input, const std::uint64_t seed)
+        : Session{std::move(application), seed}
+    {
+        set_input(std::move(input));
+    }
+
+    // A session on an Input it shares with its other owners, for example an
+    // adapter that keeps the Input to encode the results.
+    Session(
+        App application,
+        std::shared_ptr<const input_type> input,
+        const std::uint64_t seed)
         : Session{std::move(application), seed}
     {
         set_input(std::move(input));
@@ -333,7 +344,13 @@ public:
 
     void set_input(input_type input)
     {
-        auto new_input = std::make_shared<const input_type>(std::move(input));
+        set_input(std::make_shared<const input_type>(std::move(input)));
+    }
+
+    void set_input(std::shared_ptr<const input_type> new_input)
+    {
+        if (!new_input)
+            throw std::invalid_argument{"Session::set_input: no Input"};
         auto new_bound =
             std::unique_ptr<bound_app_type>{new bound_app_type(app_.bind(*new_input))};
 
@@ -500,16 +517,19 @@ public:
 
     // Runs the runner registered under name from the current solution, which
     // it replaces with the runner's result; false when no runner has that name.
-    // Like every app run, it uses freshly bound services and the current runner
-    // parameters, not this session's bound app.
+    // Options are with(control, tracer). Like every app run, it uses freshly
+    // bound services and the current runner parameters, not this session's
+    // bound app.
+    template<class... Options>
     [[nodiscard]]
-    bool run(const std::string_view name)
+    bool run(const std::string_view name, Options&&... options)
     {
         assert(bound_);
         assert(solution_);
         assert(is_valid());
 
-        auto result = app_.run(name, *input_, *solution_, rng_);
+        auto result =
+            app_.run(name, *input_, *solution_, rng_, std::forward<Options>(options)...);
         if (!result)
             return false;
 

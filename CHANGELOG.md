@@ -79,7 +79,8 @@ old concepts onto the new ones.
 - A **Session**, `Session{app, input, seed}`, runs an app on one Input: a
   current solution changed by hand, move by move, or by a runner chosen by
   name, and checks of its neighborhood. The interactive tester,
-  `tui::run(app, options)`, is a view on a Session.
+  `tui::run(app, options)`, is a view on a Session, and every REST run has a
+  Session of its own.
   Tools give stochastic runners an RNG they own, seeded reproducibly.
 - **Configuration**: typed runner and solver parameters with validation,
   command-line overrides, and TOML files (optional `ConfigTOML` component).
