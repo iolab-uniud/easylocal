@@ -237,10 +237,18 @@ The generic surface under a chosen prefix is:
 
 Runs move through:
 
-```text
-queued -> running -> succeeded
-   |         |      -> failed
-   +---------+------> cancelled
+```mermaid
+stateDiagram-v2
+    direction LR
+    [*] --> queued
+    queued --> running
+    running --> succeeded
+    running --> failed
+    queued --> cancelled
+    running --> cancelled
+    succeeded --> [*]
+    failed --> [*]
+    cancelled --> [*]
 ```
 
 Cancellation and deletion deliberately have different semantics. `POST
@@ -332,19 +340,15 @@ surrounding web/infrastructure layer.
 
 Crow concurrency and solver concurrency are intentionally separate:
 
-```text
-             Crow HTTP workers
-                    |
-       parse / route / enqueue / reply
-                    |
-                    v
-         bounded REST execution pool
-           |         |         |
-         run A     run B     run C
-           |         |         |
-       services  services  services   (fresh, one set per run)
-           \         |         /
-             immutable Input
+```mermaid
+flowchart TB
+    crow["Crow HTTP workers<br/>parse / route / enqueue / reply"]
+    pool["bounded REST execution pool"]
+    crow --> pool
+    pool --> runA["run A"] --> svcA["services<br/>(fresh, one set per run)"]
+    pool --> runB["run B"] --> svcB["services<br/>(fresh, one set per run)"]
+    pool --> runC["run C"] --> svcC["services<br/>(fresh, one set per run)"]
+    svcA & svcB & svcC --> input[("immutable Input")]
 ```
 
 Crow request threads do not execute a CPU-bound local search to completion.

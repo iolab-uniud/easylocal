@@ -95,6 +95,41 @@ RNG, with the commands that change them. It is how a program runs an app
 headless, and the model of an interactive frontend: the TextUI is a view on
 it, and a GUI or a web frontend would be another.
 
+```mermaid
+flowchart TB
+    subgraph app["app: a description"]
+        direction LR
+        recipes["recipes:<br/>SolutionManager, neighborhood"]
+        regs["runner registrations:<br/>algorithm, name, parameters"]
+    end
+    subgraph session["Session"]
+        copy["app (its own copy)"]
+        subgraph bound["bound app"]
+            direction LR
+            sm["SolutionManager"]
+            nhe["NeighborhoodExplorer"]
+        end
+        input[("Input")]
+        subgraph state[" "]
+            direction LR
+            sol["current solution"]
+            move["selected move (optional)"]
+            rng["RNG (seed)"]
+        end
+    end
+    subgraph fresh["each run(&quot;name&quot;)"]
+        direction LR
+        fbound["fresh bound app"]
+        runner["runner"]
+    end
+    app -- copied --> copy
+    copy -- "bind, again on configure" --> bound
+    copy -- "app.run" --> fresh
+    bound -. borrows .-> input
+    fresh -. borrows .-> input
+    fresh -- "result replaces" --> sol
+```
+
 | Constructor | |
 | --- | --- |
 | `Session{app, input, seed}` | a session on `input`, which it owns; another Input is another session |
@@ -110,6 +145,26 @@ it, and a GUI or a web frontend would be another.
 | Runners | `runner_names`, `run("name", options...)` (replaces the current solution; options are `with(control, tracer)`) |
 | Costs | `read_cost(text)`: a cost written as text, such as a target, by the problem's `read_cost` or `cost::from_text` |
 | Parameters | `configuration()`, the app's; `configure(text_overrides)` applies them all or none and, when the cost or the neighborhood changes, rebuilds the bound services |
+
+The commands move the session through these states; a new Input drops the
+solution and the move, a new solution or a run drops the move:
+
+```mermaid
+stateDiagram-v2
+    state "no Input" as empty
+    state "Input, no solution" as input
+    state "current solution" as solution
+    state "solution and selected move" as move
+    [*] --> empty: Session{app, seed}
+    [*] --> input: Session{app, input, seed}
+    empty --> input: set_input, load_input
+    input --> solution: use_initial_solution, use_random_solution,<br/>set_solution, load_solution
+    solution --> move: use_..._move finds one, set_move
+    move --> solution: apply_move, run, configure,<br/>use_..._move finds none
+    solution --> solution: run, configure
+    solution --> input: set_input
+    move --> input: set_input
+```
 
 The selections and `run` return `false` when there is nothing to select or no
 runner with that name, and are `[[nodiscard]]`. `run` uses fresh services and

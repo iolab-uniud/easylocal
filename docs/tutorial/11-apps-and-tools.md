@@ -86,6 +86,43 @@ silently.
 Each `run` builds fresh services from the app, with the runner's current
 parameters, so runs share nothing but the immutable Input.
 
+What the app and the Session hold, and what each run builds:
+
+```mermaid
+flowchart TB
+    subgraph app["app: a description"]
+        direction LR
+        recipes["recipes:<br/>SolutionManager, neighborhood"]
+        regs["runner registrations:<br/>algorithm, name, parameters"]
+    end
+    subgraph session["Session"]
+        copy["app (its own copy)"]
+        subgraph bound["bound app"]
+            direction LR
+            sm["SolutionManager"]
+            nhe["NeighborhoodExplorer"]
+        end
+        input[("Input")]
+        subgraph state[" "]
+            direction LR
+            sol["current solution"]
+            move["selected move (optional)"]
+            rng["RNG (seed)"]
+        end
+    end
+    subgraph fresh["each run(&quot;name&quot;)"]
+        direction LR
+        fbound["fresh bound app"]
+        runner["runner"]
+    end
+    app -- copied --> copy
+    copy -- "bind, again on configure" --> bound
+    copy -- "app.run" --> fresh
+    bound -. borrows .-> input
+    fresh -. borrows .-> input
+    fresh -- "result replaces" --> sol
+```
+
 ### Parameters and targets
 
 The parameters of an app are those of its parts, by path:
