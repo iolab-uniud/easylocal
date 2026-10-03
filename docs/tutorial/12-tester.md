@@ -171,9 +171,14 @@ easylocal::tui::run_launcher(
     tsp::swap_app());
 ```
 
-- The launcher reads the Input once, from `tester.input_path`, and keeps it
-  with the current solution. Each app opens in the tester on them; when you
-  leave it (`q`), what it left becomes the shared state: a solution created or
+- The launcher owns the Input, read from `tester.input_path` when it is set,
+  and the current solution. Its first entry, *Input and solution*, opens the
+  Input/Output page alone: load another instance, load or save a solution,
+  create the initial or a random one.
+- Each app opens in the tester on the shared Input and solution. It creates
+  solutions, selects and applies moves and runs its runners, but loads no
+  files: its Input/Output page has no loading commands. When you leave it
+  (`q`), what it left becomes the shared state: a solution created or
   improved with the swaps is the current solution of the 2-opt app.
 - Since solutions pass from one app to the other, the apps must have the same
   SolutionManager recipe, cost included: they differ in the neighborhood and

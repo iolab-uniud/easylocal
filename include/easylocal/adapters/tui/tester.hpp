@@ -104,6 +104,17 @@ enum class tester_page : int
     run = 2,
 };
 
+// Where a tester is opened. A launcher's root owns the Input and the
+// solution and shows only the Input/Output page; its children, one per app,
+// share them and do not load files, but create solutions and run everything
+// else.
+enum class frontend_role
+{
+    standalone,
+    launcher_root,
+    launcher_child,
+};
+
 enum class progress_mode
 {
     unavailable,
@@ -647,9 +658,13 @@ public:
         session.read_cost(std::string_view{});
     };
 
-    tester_frontend(tester_type& tester, tui::options options)
+    tester_frontend(
+        tester_type& tester,
+        tui::options options,
+        const frontend_role role = frontend_role::standalone)
         : tester_{tester},
           options_{std::move(options)},
+          role_{role},
           seed_{options_.seed},
           seed_text_{std::to_string(options_.seed)},
           rng_{options_.seed}
@@ -675,7 +690,7 @@ public:
             runner_names_.emplace_back(name);
         }
         remember_original_parameters();
-        page_selected_ = page_index(detail::page_after_solution_change(tester_));
+        page_selected_ = page_index(page_after_solution_change());
     }
 
     void run()
@@ -696,7 +711,8 @@ public:
         };
 
         auto solution_controls = Container::Vertical({});
-        if constexpr (tester_type::supports_input_loading)
+        // A launcher's child shares the Input of its root: it loads none.
+        if (tester_type::supports_input_loading && loads_files())
         {
             solution_controls->Add(section_label("Instances"));
             auto instance_menu_option = MenuOption::Vertical();
@@ -749,7 +765,8 @@ public:
             solution_menu_option.on_change = [this] { select_known_solution(); };
             if constexpr (tester_type::supports_solution_loading)
             {
-                solution_menu_option.on_enter = [this] { load_solution(); };
+                if (loads_files())
+                    solution_menu_option.on_enter = [this] { load_solution(); };
             }
             auto solution_menu = Menu(
                 &known_solution_labels_,
@@ -762,7 +779,7 @@ public:
                 "Browse...",
                 [this] { open_browser(file_target::solution); },
                 ButtonOption::Ascii()));
-            if constexpr (tester_type::supports_solution_loading)
+            if (tester_type::supports_solution_loading && loads_files())
             {
                 file_actions.push_back(Button(
                     "Shift-L Load",
@@ -962,7 +979,9 @@ public:
                 page_selected_ = 0;
                 set_status(
                     status_kind::warning,
-                    "Move and Run require a loaded instance and a valid solution");
+                    role_ == frontend_role::launcher_root
+                        ? "Move and Run are in the applications: go back and open one"
+                        : "Move and Run require a loaded instance and a valid solution");
             }
         };
         auto page_menu = Menu(&page_labels_, &page_selected_, page_menu_option);
@@ -1352,13 +1371,13 @@ private:
         switch (current_page())
         {
         case tester_page::solution:
-            if constexpr (tester_type::supports_input_loading)
+            if (tester_type::supports_input_loading && loads_files())
                 append("L Load input");
             if constexpr (tester_type::supports_initial_solution)
                 append("I Initial");
             if constexpr (tester_type::supports_random_solution)
                 append("R Random");
-            if constexpr (tester_type::supports_solution_loading)
+            if (tester_type::supports_solution_loading && loads_files())
                 append("Shift-L Load solution");
             if constexpr (tester_type::supports_solution_saving)
                 append("W Save");
@@ -1417,7 +1436,7 @@ private:
     {
         if constexpr (tester_type::supports_input_loading)
         {
-            if (event == ftxui::Event::l)
+            if (event == ftxui::Event::l && loads_files())
             {
                 load_input();
                 return true;
@@ -1441,7 +1460,7 @@ private:
         }
         if constexpr (tester_type::supports_solution_loading)
         {
-            if (event == ftxui::Event::L)
+            if (event == ftxui::Event::L && loads_files())
             {
                 load_solution();
                 return true;
@@ -1609,12 +1628,27 @@ private:
 
     [[nodiscard]] bool context_pages_available() const noexcept
     {
-        return detail::context_pages_available(tester_);
+        return role_ != frontend_role::launcher_root
+            && detail::context_pages_available(tester_);
+    }
+
+    // Whether this tester loads Input and solution files: not a launcher's
+    // child, which shares them with its root.
+    [[nodiscard]] bool loads_files() const noexcept
+    {
+        return role_ != frontend_role::launcher_child;
+    }
+
+    [[nodiscard]] tester_page page_after_solution_change() const
+    {
+        return role_ == frontend_role::launcher_root
+            ? tester_page::solution
+            : detail::page_after_solution_change(tester_);
     }
 
     void refresh_page_labels()
     {
-        const bool enabled = detail::page_available(tester_, tester_page::move);
+        const bool enabled = context_pages_available();
         page_labels_[0] = "Input/Output";
         page_labels_[1] = enabled ? "Move" : "Move [disabled]";
         page_labels_[2] = enabled ? "Run" : "Run [disabled]";
@@ -1631,12 +1665,14 @@ private:
             page_selected_ = page_index(page);
             return;
         }
-        if (!detail::page_available(tester_, page))
+        if (!context_pages_available())
         {
             page_selected_ = page_index(tester_page::solution);
             set_status(
                 status_kind::warning,
-                "Move and Run require a loaded instance and a valid solution");
+                role_ == frontend_role::launcher_root
+                    ? "Move and Run are in the applications: go back and open one"
+                    : "Move and Run require a loaded instance and a valid solution");
             return;
         }
         page_selected_ = page_index(page);
@@ -1771,7 +1807,7 @@ private:
         last_move_result_.clear();
         last_run_result_.clear();
         refresh_page_labels();
-        page_selected_ = page_index(detail::page_after_solution_change(tester_));
+        page_selected_ = page_index(page_after_solution_change());
     }
 
     void show_input()
@@ -2783,10 +2819,22 @@ private:
         using namespace ftxui;
 
         Elements summary;
+        if (role_ == frontend_role::launcher_child)
+            summary.push_back(
+                text("Input and solution shared with the launcher's applications") | dim);
+        else if (role_ == frontend_role::launcher_root)
+            summary.push_back(
+                text("Input and solution for all the applications of the launcher")
+                | dim);
         switch (detail::solution_stage_of(tester_))
         {
         case solution_stage::needs_input:
-            summary.push_back(text("Load an input to begin") | bold);
+            summary.push_back(
+                text(
+                    loads_files()
+                        ? "Load an input to begin"
+                        : "No input: load one from the launcher's Input and solution")
+                | bold);
             break;
         case solution_stage::needs_solution:
             summary.push_back(text("Input ready - choose or load a solution") | bold);
@@ -2795,7 +2843,12 @@ private:
             summary.push_back(text("Solution INVALID - replace it or run diagnostics") | bold);
             break;
         case solution_stage::ready:
-            summary.push_back(text("Setup complete - use F4 Move or F5 Run") | dim);
+            summary.push_back(
+                text(
+                    role_ == frontend_role::launcher_root
+                        ? "Setup complete - open an application for Move and Run"
+                        : "Setup complete - use F4 Move or F5 Run")
+                | dim);
             break;
         }
 
@@ -3205,6 +3258,7 @@ private:
 
     tester_type& tester_;
     tui::options options_;
+    frontend_role role_{frontend_role::standalone};
     std::uint64_t seed_{};
     std::string seed_text_;
     std::string target_text_;

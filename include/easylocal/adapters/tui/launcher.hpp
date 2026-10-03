@@ -2,9 +2,10 @@
 
 // run_launcher: a menu of several apps on the same problem, each opened in the
 // interactive tester when selected. The apps share the Input and the current
-// solution: the launcher keeps them, gives them to the tester it opens and
-// takes them back when it closes, so a solution built with one neighborhood
-// can be explored with another.
+// solution, which the launcher owns: its first entry, "Input and solution",
+// loads and saves them, and each app opens on them, creates solutions, moves
+// and runs, but loads no files; what it leaves becomes the shared state, so a
+// solution built with one neighborhood can be explored with another.
 
 #include <easylocal/adapters/tui/tester.hpp>
 #include <easylocal/app/session.hpp>
@@ -16,6 +17,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <tuple>
 #include <utility>
 #include <vector>
@@ -98,6 +100,7 @@ public:
           applications_{std::move(application), std::move(applications)...},
           names_{application_names(applications_)}
     {
+        names_.insert(names_.begin(), std::string{root_entry});
     }
 
     void run()
@@ -112,22 +115,41 @@ public:
 
         while (const auto selected = choose_application())
         {
-            const bool dispatched =
-                visit_application_at(applications_, *selected, [this](auto& application) {
-                    this->open_tester(application);
+            if (*selected == 0)
+            {
+                open_tester(
+                    std::get<0>(applications_),
+                    std::string{root_entry},
+                    detail::frontend_role::launcher_root);
+                continue;
+            }
+            const bool dispatched = visit_application_at(
+                applications_,
+                *selected - 1,
+                [this](auto& application) {
+                    this->open_tester(
+                        application,
+                        std::string{application.name()},
+                        detail::frontend_role::launcher_child);
                 });
             (void)dispatched;
         }
     }
 
 private:
-    // A tester on application, from the shared Input and solution; what the
+    static constexpr std::string_view root_entry{"Input and solution"};
+
+    // A tester on application, from the shared Input and solution, as the
+    // root (Input/Output only) or as a child (no file loading); what the
     // tester leaves becomes the shared state for the next one.
     template<class Selected>
-    void open_tester(const Selected& application)
+    void open_tester(
+        const Selected& application,
+        const std::string& name,
+        const detail::frontend_role role)
     {
         auto settings = options_.tester;
-        settings.title = options_.title + " - " + std::string{application.name()};
+        settings.title = options_.title + " - " + name;
         settings.exit_label = "back to applications";
 
         easylocal::Session<Selected> session{application, settings.seed};
@@ -136,7 +158,7 @@ private:
         if (input_ && solution_)
             session.set_solution(*solution_);
 
-        detail::tester_frontend<Selected>{session, std::move(settings)}.run();
+        detail::tester_frontend<Selected>{session, std::move(settings), role}.run();
 
         input_ = session.has_input() ? session.input_handle() : nullptr;
         if (input_ && session.has_solution())
@@ -159,7 +181,8 @@ private:
         using namespace ftxui;
 
         auto app = App::TerminalOutput();
-        int selected = 0;
+        // The entry selected last, so that coming back to the list keeps it.
+        int& selected = selected_;
         bool open = false;
 
         auto menu_option = MenuOption::Vertical();
@@ -188,7 +211,8 @@ private:
         auto root = Renderer(controls, [&] {
             return vbox({
                        text(options_.title) | bold | center,
-                       text("Select an application") | center | dim,
+                       text("Load the input and the solution, or open an application")
+                           | center | dim,
                        text(shared_state()) | center | dim,
                        separator(),
                        window(text(" Applications "), menu->Render()) | flex,
@@ -218,6 +242,7 @@ private:
     launcher_options options_;
     std::tuple<FirstApp, Apps...> applications_;
     std::vector<std::string> names_;
+    int selected_{0};
     std::shared_ptr<const input_type> input_;
     std::optional<solution_type> solution_;
 };

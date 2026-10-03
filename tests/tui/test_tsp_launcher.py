@@ -4,7 +4,7 @@ current solution."""
 
 import re
 
-from tui_driver import DOWN, ENTER, ESCAPE, F3, UP, Tui
+from tui_driver import DOWN, ENTER, ESCAPE, F3, F4, UP, Tui
 
 
 def launcher_shown(screen: str) -> bool:
@@ -57,6 +57,33 @@ def test_the_apps_share_the_input_and_the_solution(launcher):
         # header as soon as the tester opens.
         open_app(tui, "tsp-two-opt", UP)
         tui.expect(re.compile(r"COST \d+"))
+        tui.press("q")
+
+        tui.wait_until(launcher_shown, what="the list of applications")
+        tui.press("q")
+        assert tui.wait_exit() == 0
+
+
+def test_the_root_owns_the_input_and_the_solution(launcher):
+    with Tui(launcher) as tui:
+        # The root: the Input/Output page only, with the loading commands.
+        open_app(tui, "Input and solution", UP)
+        tui.expect("Input and solution for all the applications")
+        tui.expect("L Load input")
+        tui.press("I")
+        tui.expect("Initial solution selected")
+        tui.press(F4)
+        tui.expect("Move and Run are in the applications")
+        tui.press("q")
+
+        # A child opens on the root's solution and loads no files.
+        open_app(tui, "tsp-two-opt", DOWN)
+        tui.expect(re.compile(r"COST \d+"))
+        tui.press(F3)
+        tui.expect("Input and solution shared with the launcher's applications")
+        tui.expect("I Initial")
+        tui.expect_absent("L Load input")
+        tui.expect_absent("Shift-L Load")
         tui.press("q")
 
         tui.wait_until(launcher_shown, what="the list of applications")

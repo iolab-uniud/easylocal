@@ -55,9 +55,11 @@ or your own, each with its own result type.
 | `rest::blueprint(prefix, app, codec, options)` | Crow blueprint: asynchronous runs, status, cancellation, solutions (REST component); see [REST](../rest.md) |
 
 `tui::run_launcher(options, apps...)` opens a list of apps over the same
-problem. They share the Input, read once from `options.tester.input_path`,
-and the current solution: the launcher gives both to the tester it opens and
-takes back what the tester leaves. The apps must have the same SolutionManager
+problem. The launcher owns the Input, read from `options.tester.input_path`
+when it is set, and the current solution: its first entry, *Input and
+solution*, is a tester with the Input/Output page only, which loads and saves
+them; each app opens on them as a tester without the commands that load
+files, and what a tester leaves becomes the shared state. The apps must have the same SolutionManager
 recipe, cost included, which a `static_assert` checks; they differ in the
 neighborhood and the runners.
 

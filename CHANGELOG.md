@@ -114,9 +114,10 @@ old concepts onto the new ones.
   target cost, with the app's parameters and the program's own, then prints
   the cost, the running time and the solution.
 - **Launcher**: `tui::run_launcher(options, apps...)` opens several apps of
-  the same problem, for example one per neighborhood, which share the Input
-  and the current solution; apps with different SolutionManager recipes are
-  rejected at compile time.
+  the same problem, for example one per neighborhood. The launcher owns the
+  Input and the current solution, loaded and saved from its *Input and
+  solution* entry; the apps open on them without loading files. Apps with
+  different SolutionManager recipes are rejected at compile time.
 - **Cost reports**: a cost component may have a `name()` and a
   `describe(solution)` that explains its value, as EasyLocal 3's
   `PrintViolations` did; `Session::cost_report()`, `cli::run --report` and the
