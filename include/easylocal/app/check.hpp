@@ -4,10 +4,11 @@
 // run on every component an app composes (SolutionManager, cost components,
 // neighborhood, delta evaluators, runners), with a report of what they cover.
 
-#include <easylocal/utils/detail/meta.hpp>
 #include <easylocal/app/app.hpp>
+#include <easylocal/cost/semantics.hpp>
 #include <easylocal/helpers/neighborhood_explorer.hpp>
 #include <easylocal/testing/check.hpp>
+#include <easylocal/utils/detail/meta.hpp>
 
 #include <concepts>
 #include <cstddef>
@@ -64,9 +65,6 @@ public:
     }
 
 private:
-    template<class App, class Instance, class Solution>
-    friend app_check_report check(const App&, const Instance&, Solution);
-
     friend void print_report(std::ostream&, const app_check_report&);
 
     testing::check_report report_;
@@ -152,13 +150,12 @@ void check_app_moves(
             std::move(candidate));
         const auto full = evaluation.evaluate(committed_solution);
 
-        if constexpr (requires {
-                          { incremental_state.cost() == full.cost() }
-                              -> std::convertible_to<bool>;
-                      })
+        // The costs are compared as the search compares them, with the cost
+        // expression's equivalence when it defines one (as the Session does).
+        if constexpr (cost::has_equivalent<SM>)
         {
             report.check(
-                static_cast<bool>(incremental_state.cost() == full.cost()),
+                cost::equivalent(solution_manager, incremental_state.cost(), full.cost()),
                 "incremental evaluation",
                 "incremental move evaluation does not match full recomputation");
         }
@@ -198,11 +195,11 @@ template<class App, class Instance, class Solution>
     report.check(
         std::addressof(solution_manager.input()) == std::addressof(instance),
         "solution manager input binding",
-        "SolutionManager::instance() does not refer to the app Input");
+        "SolutionManager::input() does not refer to the app Input");
     report.check(
         std::addressof(neighborhood.input()) == std::addressof(instance),
         "neighborhood input binding",
-        "NeighborhoodExplorer::instance() does not refer to the app Input");
+        "NeighborhoodExplorer::input() does not refer to the app Input");
 
     const auto valid_solution = static_cast<bool>(solution_manager.is_valid(solution));
     report.check(
