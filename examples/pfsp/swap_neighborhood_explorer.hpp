@@ -18,27 +18,25 @@ namespace pfsp
 
 // Which later moves a swap of jobs a and b forbids while it is tabu (Da Ros,
 // Di Gaspero and Schaerf, "A performance analysis of tabu list strategies"):
-// IN1, a swap of the same two jobs; IN2, any swap moving a or b.
+// IN1, a swap of the same two jobs; IN2, any swap moving a or b. The two are
+// distinct neighborhoods, resolved at compile time: inverse is called for
+// every candidate move against every entry of the tabu list.
 enum class SwapInverse
 {
     both_jobs,
     either_job,
 };
 
-class SwapJobsNeighborhoodExplorer
+template<SwapInverse Inverse>
+class BasicSwapJobsNeighborhoodExplorer
     : public easylocal::neighborhood_explorer_base<PfspSolutionManager, SwapJobsMove>
 {
 public:
-    explicit SwapJobsNeighborhoodExplorer(
-        const PfspSolutionManager& solution_manager,
-        const SwapInverse inverse = SwapInverse::both_jobs)
-        : neighborhood_explorer_base{solution_manager}, inverse_{inverse}
-    {
-    }
+    using neighborhood_explorer_base::neighborhood_explorer_base;
 
     static constexpr std::string_view name()
     {
-        return "Swap jobs";
+        return Inverse == SwapInverse::both_jobs ? "Swap jobs (IN1)" : "Swap jobs (IN2)";
     }
 
     bool is_valid(const Schedule& solution, const SwapJobsMove& move) const
@@ -84,16 +82,17 @@ public:
             solution.order[move.second_position]);
     }
 
-    // Whether move is forbidden by tabu_move, by the configured definition.
+    // Whether move is forbidden by tabu_move, by the neighborhood's definition.
     bool inverse(const Schedule&, const SwapJobsMove& move, const SwapJobsMove& tabu_move)
         const
     {
         const auto moves = [&move](const job_id job) {
             return move.first_job == job || move.second_job == job;
         };
-        if (inverse_ == SwapInverse::both_jobs)
+        if constexpr (Inverse == SwapInverse::both_jobs)
             return moves(tabu_move.first_job) && moves(tabu_move.second_job);
-        return moves(tabu_move.first_job) || moves(tabu_move.second_job);
+        else
+            return moves(tabu_move.first_job) || moves(tabu_move.second_job);
     }
 
     // The pair of jobs, whatever their positions, for frequency-based memory.
@@ -137,8 +136,12 @@ private:
         }
         return false;
     }
-
-    SwapInverse inverse_;
 };
+
+// IN1, the default of the study's best configurations, and IN2.
+using SwapJobsNeighborhoodExplorer =
+    BasicSwapJobsNeighborhoodExplorer<SwapInverse::both_jobs>;
+using SwapEitherJobNeighborhoodExplorer =
+    BasicSwapJobsNeighborhoodExplorer<SwapInverse::either_job>;
 
 } // namespace pfsp

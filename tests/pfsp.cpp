@@ -43,16 +43,14 @@ auto expect(const bool condition, const std::string_view description) -> bool
     return true;
 }
 
-template<class Algorithm>
+template<class Algorithm, class Explorer>
 [[nodiscard]]
-auto tabu_runner(
-    const typename Algorithm::parameters_type& parameters,
-    const SwapInverse inverse)
+auto tabu_runner(const typename Algorithm::parameters_type& parameters)
 {
     return easylocal::make_runner<Algorithm>(parameters)
         | (easylocal::solution_manager<PfspSolutionManager>()
             | easylocal::component<MakespanComponent>())
-        | easylocal::neighborhood<SwapJobsNeighborhoodExplorer>(inverse);
+        | easylocal::neighborhood<Explorer>();
 }
 
 } // namespace
@@ -83,8 +81,8 @@ int main()
 
     // The tabu move swapped jobs 1 and 0; a swap of 0 and 1 again, and one of
     // 0 and 2.
-    const SwapJobsNeighborhoodExplorer in1{manager, SwapInverse::both_jobs};
-    const SwapJobsNeighborhoodExplorer in2{manager, SwapInverse::either_job};
+    const SwapJobsNeighborhoodExplorer in1{manager};
+    const SwapEitherJobNeighborhoodExplorer in2{manager};
     const SwapJobsMove tabu{0, 2, 1, 0};
     const SwapJobsMove same_jobs{1, 3, 0, 1};
     const SwapJobsMove one_job{0, 3, 0, 2};
@@ -101,24 +99,23 @@ int main()
         "the tabu attribute is the pair of jobs");
 
     const auto medium = load_instance(EASYLOCAL_PFSP_MEDIUM_INSTANCE);
-    for (const auto inverse : {SwapInverse::both_jobs, SwapInverse::either_job})
-    {
-        auto runner = tabu_runner<easylocal::runners::TabuSearch<>>(
-            {.max_idle_iterations = 50, .tabu_list = {.tenure = 7}},
-            inverse);
+    const auto improves = [&]<class Explorer>() {
+        auto runner = tabu_runner<easylocal::runners::TabuSearch<>, Explorer>(
+            {.max_idle_iterations = 50, .tabu_list = {.tenure = 7}});
         auto search = runner.bind(medium);
         std::mt19937_64 rng{2026U};
         const auto initial = search.random_solution(rng);
         const MakespanComponent medium_makespan{medium};
         const auto result = search.run(initial, rng);
-        ok &= expect(
-            PfspSolutionManager{medium}.is_valid(result.solution)
-                && result.cost == medium_makespan.evaluate(result.solution)
-                && result.cost < medium_makespan.evaluate(initial)
-                && result.termination
-                    == easylocal::termination_reason::idle_limit_reached,
-            "tabu search improves a random schedule with either inverse");
-    }
+        return PfspSolutionManager{medium}.is_valid(result.solution)
+            && result.cost == medium_makespan.evaluate(result.solution)
+            && result.cost < medium_makespan.evaluate(initial)
+            && result.termination == easylocal::termination_reason::idle_limit_reached;
+    };
+    ok &= expect(
+        improves.template operator()<SwapJobsNeighborhoodExplorer>()
+            && improves.template operator()<SwapEitherJobNeighborhoodExplorer>(),
+        "tabu search improves a random schedule with either inverse");
 
     return ok ? 0 : 1;
 }

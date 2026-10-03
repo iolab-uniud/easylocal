@@ -22,10 +22,12 @@ outside `include/easylocal/` and adds no framework API.
 - `SwapJobsNeighborhoodExplorer`: the swap of the jobs at two positions,
   enumerated with the cursor protocol and drawn uniformly at random. A move
   records the jobs it swaps, because the tabu definitions are on jobs:
-  - `inverse`: with `SwapInverse::both_jobs` (IN1, the default) a swap of jobs
-    a and b forbids swapping a and b again; with `SwapInverse::either_job`
-    (IN2) it forbids any swap moving a or b. The definition is a constructor
-    argument, `neighborhood<SwapJobsNeighborhoodExplorer>(SwapInverse::either_job)`;
+  - `inverse`: with `SwapJobsNeighborhoodExplorer` (IN1) a swap of jobs a and
+    b forbids swapping a and b again; with `SwapEitherJobNeighborhoodExplorer`
+    (IN2) it forbids any swap moving a or b. The two are instances of
+    `BasicSwapJobsNeighborhoodExplorer<SwapInverse>`, resolved at compile time
+    because the inverse is called for every candidate move against every entry
+    of the tabu list; `main.cpp` uses IN1;
   - `tabu_attribute`: the pair of jobs, whatever their positions, for
     frequency-based tabu memory.
 
