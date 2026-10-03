@@ -889,30 +889,34 @@ public:
             &browser_labels_,
             &browser_selected_,
             browser_menu_option);
-        auto browser_controls = Container::Vertical({
-            browser_menu,
-            Container::Horizontal({
-                Button(
-                    "Open",
-                    [this] { accept_browser_selection(); },
-                    ButtonOption::Ascii()),
-                Button(
-                    "Up",
-                    [this] { browser_up(); },
-                    ButtonOption::Ascii()),
-                Button(
-                    "Cancel",
-                    [this] { browser_visible_ = false; },
-                    ButtonOption::Ascii()),
-            }),
+        auto browser_buttons = Container::Horizontal({
+            Button(
+                "Open",
+                [this] { accept_browser_selection(); },
+                ButtonOption::Ascii()),
+            Button(
+                "Up",
+                [this] { browser_up(); },
+                ButtonOption::Ascii()),
+            Button(
+                "Cancel",
+                [this] { browser_visible_ = false; },
+                ButtonOption::Ascii()),
         });
-        auto browser_renderer = Renderer(browser_controls, [this, browser_menu] {
-            return render_browser(browser_menu);
-        });
+        auto browser_controls = Container::Vertical({browser_menu, browser_buttons});
+        auto browser_renderer =
+            Renderer(browser_controls, [this, browser_menu, browser_buttons] {
+                return render_browser(browser_menu, browser_buttons);
+            });
         browser_renderer = CatchEvent(browser_renderer, [this](Event event) {
             if (event == Event::Escape)
             {
                 browser_visible_ = false;
+                return true;
+            }
+            if (event == Event::Backspace)
+            {
+                browser_up();
                 return true;
             }
             return false;
@@ -2748,7 +2752,8 @@ private:
     }
 
     [[nodiscard]] ftxui::Element render_browser(
-        const ftxui::Component& browser_menu) const
+        const ftxui::Component& browser_menu,
+        const ftxui::Component& browser_buttons) const
     {
         using namespace ftxui;
         const auto title = browser_target_ == file_target::input
@@ -2765,7 +2770,12 @@ private:
             body.push_back(text("ERROR: " + browser_error_) | bold);
         }
         body.push_back(separator());
-        body.push_back(text("Enter/Open: open file or directory  |  Esc: cancel") | dim);
+        body.push_back(browser_buttons->Render());
+        body.push_back(
+            text(
+                "Enter/Open: open file or directory  |  Backspace/Up: parent directory  |  "
+                "Esc: cancel")
+            | dim);
         return window(text(title), vbox(std::move(body))) |
                size(WIDTH, EQUAL, detail::terminal_available_width()) |
                size(HEIGHT, EQUAL, detail::terminal_available_height()) |

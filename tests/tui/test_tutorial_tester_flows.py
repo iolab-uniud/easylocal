@@ -5,7 +5,7 @@ import re
 
 import pytest
 
-from tui_driver import ENTER, ESCAPE, F1, F2, F3, F4, RIGHT, Tui
+from tui_driver import BACKSPACE, ENTER, ESCAPE, F1, F2, F3, F4, RIGHT, UP, Tui
 
 # five.tsp, the tutorial instance
 DISTANCE = [
@@ -135,11 +135,31 @@ def test_a_solution_is_saved_and_loaded_back_through_the_browser(started, tmp_pa
     assert tour_length(saved) == random_cost
 
 
+def browsing(tui: Tui, directory: str) -> None:
+    """Wait for the file browser to show `directory` (as displayed)."""
+    tui.expect(re.compile(rf"│{re.escape(directory)} +│"))
+
+
 def test_an_input_is_browsed_and_loaded(tui):
     tui.focus("L Load selected")
     tui.focus("Browse...", RIGHT)
     tui.press(ENTER)
-    tui.expect(re.compile(r"examples/tutorial\s"))  # the instance's directory
+    browsing(tui, "examples/tutorial")  # the instance's directory
+
+    tui.press(BACKSPACE)  # to the parent
+    browsing(tui, "examples")
+    tui.select("[dir] tutorial/")
+    tui.press(ENTER)
+    browsing(tui, "examples/tutorial")
+
+    tui.focus("Open")  # below the list, then the Up button beside it
+    tui.focus("Up", RIGHT)
+    tui.press(ENTER)
+    browsing(tui, "examples")
+    tui.press(UP)  # back to the list
+    tui.select("[dir] tutorial/")
+    tui.press(ENTER)
+
     tui.select("      five.tsp")
     tui.press(ENTER)
     tui.expect(re.compile(r"Selected file: .*five\.tsp"))
