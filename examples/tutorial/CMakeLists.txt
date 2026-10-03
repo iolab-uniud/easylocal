@@ -5,11 +5,8 @@ if(EASYLOCAL_BUILD_EXAMPLES)
         easylocal_tutorial
         PRIVATE EASYLOCAL_TUTORIAL_INSTANCE="${CMAKE_CURRENT_SOURCE_DIR}/five.tsp")
 
-    add_executable(easylocal_tutorial_migrated migrated_main.cpp)
-    target_link_libraries(easylocal_tutorial_migrated PRIVATE EasyLocal::Core)
-    target_compile_definitions(
-        easylocal_tutorial_migrated
-        PRIVATE EASYLOCAL_TUTORIAL_INSTANCE="${CMAKE_CURRENT_SOURCE_DIR}/five.tsp")
+    add_executable(easylocal_tutorial_cli cli_main.cpp)
+    target_link_libraries(easylocal_tutorial_cli PRIVATE EasyLocal::Core)
 
     add_executable(easylocal_tutorial_staged staged_main.cpp)
     target_link_libraries(easylocal_tutorial_staged PRIVATE EasyLocal::Core)

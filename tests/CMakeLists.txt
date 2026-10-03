@@ -1079,11 +1079,12 @@ if(TARGET easylocal_tutorial)
         PROPERTIES PASS_REGULAR_EXPRESSION "first improvement 26\n")
     add_test(NAME easylocal.example.tutorial-checks COMMAND easylocal_tutorial_checks)
     add_test(
-        NAME easylocal.example.tutorial-migrated
-        COMMAND easylocal_tutorial_migrated --main.seed 1 --main.method fi)
+        NAME easylocal.example.tutorial-cli
+        COMMAND easylocal_tutorial_cli
+            --instance ${PROJECT_SOURCE_DIR}/examples/tutorial/five.tsp --seed 1 --runner fi)
     set_tests_properties(
-        easylocal.example.tutorial-migrated
-        PROPERTIES PASS_REGULAR_EXPRESSION "cost [0-9]+\n")
+        easylocal.example.tutorial-cli
+        PROPERTIES PASS_REGULAR_EXPRESSION "cost [0-9]+\ntime ")
     add_test(
         NAME easylocal.example.tutorial-staged
         COMMAND easylocal_tutorial_staged --main.seed 1 --main.evaluations_per_city 20)
@@ -1232,6 +1233,13 @@ add_test(NAME easylocal.solver COMMAND easylocal_solver_test)
 add_executable(easylocal_multi_start_solver_test multi_start_solver.cpp)
 target_link_libraries(easylocal_multi_start_solver_test PRIVATE EasyLocal::Core)
 add_test(NAME easylocal.multi-start-solver COMMAND easylocal_multi_start_solver_test)
+
+add_executable(easylocal_cli_run_test cli_run.cpp)
+target_link_libraries(easylocal_cli_run_test PRIVATE EasyLocal::Core)
+target_compile_definitions(
+    easylocal_cli_run_test
+    PRIVATE EASYLOCAL_TUTORIAL_INSTANCE="${PROJECT_SOURCE_DIR}/examples/tutorial/five.tsp")
+add_test(NAME easylocal.cli-run COMMAND easylocal_cli_run_test)
 
 add_executable(easylocal_two_stage_solver_test two_stage_solver.cpp)
 target_link_libraries(easylocal_two_stage_solver_test PRIVATE EasyLocal::Core)
