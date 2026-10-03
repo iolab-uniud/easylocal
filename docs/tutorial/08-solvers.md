@@ -16,6 +16,24 @@ auto solver = el::make_solver<el::solvers::MultiStart>(
 const auto best = solver.solve(tsp);
 ```
 
+`initialization::random` starts every run from a random tour, so
+`TourManager` needs a member it did not have yet, `random_solution`:
+
+<!-- snippet: tutorial/tsp.hpp:random-solution -->
+```cpp
+// The same cities in a random order.
+template<std::uniform_random_bit_generator RNG>
+Tour random_solution(RNG& rng) const
+{
+    auto tour = initial_solution();
+    std::shuffle(tour.order.begin(), tour.order.end(), rng);
+    return tour;
+}
+```
+
+The RNG is passed in, never created inside: the solver owns it, so its `seed`
+reproduces every start.
+
 The built-in solvers live in `easylocal::solvers`:
 
 | Solver | Does | Needs |

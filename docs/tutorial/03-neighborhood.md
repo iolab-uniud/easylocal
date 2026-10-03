@@ -14,11 +14,6 @@ class SwapExplorer : public easylocal::neighborhood_explorer_base<TourManager, S
 public:
     using neighborhood_explorer_base::neighborhood_explorer_base;
 
-    static std::string_view name()
-    {
-        return "swap";
-    }
-
     // Every pair of positions i < j, one move at a time.
     easylocal::generator<SwapCities> moves(const Tour& tour) const
     {
@@ -71,7 +66,6 @@ public:
   positions are drawn, the second again until it differs from the first, and
   put in order; every pair has the same probability. Listing all the moves to
   pick one would cost a whole neighborhood per proposal.
-- `name()` is optional: it names the neighborhood in the interactive tester.
 
 `easylocal::neighborhood_explorer_base<SolutionManager, Move>` provides the
 aliases and the SolutionManager reference; like the SolutionManager base, it is

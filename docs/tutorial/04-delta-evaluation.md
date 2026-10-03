@@ -38,26 +38,19 @@ The edges a → b and c → d (dashed) leave the tour, a → c and b → d (red)
 it. The edges in between stay; in a symmetric TSP, traversing them backwards
 does not change their length.
 
-<!-- snippet: tutorial/tsp.hpp:two-opt -->
+<!-- snippet: tutorial/tsp.hpp:two-opt!two-opt-name -->
 ```cpp
 // Move: reverse the part of the tour between positions i + 1 and j.
 struct TwoOpt
 {
     std::size_t i;
     std::size_t j;
-
-    bool operator==(const TwoOpt&) const = default; // used by Tester checks
 };
 
 class TwoOptExplorer : public easylocal::neighborhood_explorer_base<TourManager, TwoOpt>
 {
 public:
     using neighborhood_explorer_base::neighborhood_explorer_base;
-
-    static std::string_view name()
-    {
-        return "2-opt";
-    }
 
     // Pairs i + 2 <= j: shorter segments would change nothing. With i = 0 and
     // j = n - 1 the two removed edges are the same one, so that pair is skipped.

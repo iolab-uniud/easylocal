@@ -7,9 +7,12 @@ A fenced block preceded by
 
 is the code between the two "// [model]" marker lines of
 examples/tutorial/tsp.hpp (dedented, nested marker lines removed); without a
-":section" suffix it is the whole file, marker lines removed. Running the
-script rewrites those blocks from the sources; with --check it only reports
-blocks that differ and exits with status 1, which is how the test suite uses it.
+":section" suffix it is the whole file, marker lines removed. A section may
+leave out nested sections, "tutorial/tsp.hpp:solution-manager!random-solution",
+so that a chapter can show a class without a member a later chapter adds.
+Running the script rewrites those blocks from the sources; with --check it only
+reports blocks that differ and exits with status 1, which is how the test suite
+uses it.
 
 Standard library only: `uv run scripts/sync-doc-snippets.py` or `python3`.
 """
@@ -26,7 +29,7 @@ MARKER = re.compile(r"\s*//\s*\[[\w-]+\]")
 # The block body runs up to the first line that starts with ``` (an empty block
 # included).
 SNIPPET = re.compile(
-    r"(<!-- snippet: (?P<ref>[\w/.-]+(?::[\w-]+)?) -->\n```(?P<lang>\w*)\n)"
+    r"(<!-- snippet: (?P<ref>[\w/.-]+(?::[\w-]+(?:![\w-]+)*)?) -->\n```(?P<lang>\w*)\n)"
     r"(?P<body>(?:(?!```).*\n)*?)(?P<close>```)",
     re.M,
 )
@@ -37,12 +40,25 @@ def extract(ref: str) -> str:
     lines = (EXAMPLES / path).read_text(encoding="utf-8").split("\n")
     if not section:
         return "\n".join(line for line in lines if not MARKER.match(line)).rstrip("\n")
+    section, *excluded = section.split("!")
+    first, last = markers(lines, ref, section)
+    body = lines[first + 1:last]
+    for name in excluded:
+        start, end = markers(body, ref, name)
+        body = body[:start] + body[end + 1:]
+    body = [line for line in body if not MARKER.match(line)]
+    # Leaving out a section may leave two blank lines in a row.
+    body = [line for i, line in enumerate(body)
+            if line.strip() or i == 0 or body[i - 1].strip()]
+    return textwrap.dedent("\n".join(body)).strip("\n")
+
+
+def markers(lines: list[str], ref: str, section: str) -> tuple[int, int]:
     marks = [i for i, line in enumerate(lines)
              if re.search(r"//\s*\[" + re.escape(section) + r"\]", line)]
     if len(marks) != 2:
         raise SystemExit(f"{ref}: expected two '// [{section}]' markers, found {len(marks)}")
-    body = [line for line in lines[marks[0] + 1:marks[1]] if not MARKER.match(line)]
-    return textwrap.dedent("\n".join(body)).strip("\n")
+    return marks[0], marks[1]
 
 
 def main() -> int:

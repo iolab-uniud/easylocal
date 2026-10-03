@@ -67,7 +67,8 @@ lookup:
 
 <!-- snippet: tutorial/tsp.hpp:io -->
 ```cpp
-// Optional hooks, found by ADL, that let the tools load, save and display.
+// Optional hooks, found by ADL, that let the tools load, save and display
+// (chapter 13).
 inline Tsp read_input(std::type_identity<Tsp>, std::istream& in)
 {
     std::size_t cities = 0; // "n", then the n rows of the distance matrix
@@ -105,9 +106,9 @@ inline std::string describe(const Tour& tour)
     return text;
 }
 
-inline std::string describe(const SwapCities& move)
+inline std::string describe(const TwoOpt& move)
 {
-    return "swap(" + std::to_string(move.i) + ", " + std::to_string(move.j) + ")";
+    return "2-opt(" + std::to_string(move.i) + ", " + std::to_string(move.j) + ")";
 }
 ```
 
@@ -121,6 +122,18 @@ inline std::string describe(const SwapCities& move)
 
 The same hooks serve the headless `Tester` (`load_input`, `load_solution`,
 `save_solution`).
+
+The page title of the Move page, *Move - 2-opt*, comes from a static `name()`
+member of `TwoOptExplorer`:
+
+<!-- snippet: tutorial/tsp.hpp:two-opt-name -->
+```cpp
+// The name of the neighborhood in the interactive tester (chapter 13).
+static std::string_view name()
+{
+    return "2-opt";
+}
+```
 
 ## Options
 

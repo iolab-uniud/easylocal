@@ -44,8 +44,6 @@ struct Tsp
 struct Tour
 {
     std::vector<std::size_t> order;
-
-    bool operator==(const Tour&) const = default; // used by Tester checks
 };
 
 // Move: exchange the cities visited at positions i and j, with i < j.
@@ -53,55 +51,8 @@ struct SwapCities
 {
     std::size_t i;
     std::size_t j;
-
-    bool operator==(const SwapCities&) const = default; // used by Tester checks
 };
 // [model] ------------------------------------------------------------------
-
-// [io] ---------------------------------------------------------------------
-// Optional hooks, found by ADL, that let the tools load, save and display.
-inline Tsp read_input(std::type_identity<Tsp>, std::istream& in)
-{
-    std::size_t cities = 0; // "n", then the n rows of the distance matrix
-    if (!(in >> cities))
-        throw std::runtime_error{"invalid TSP header"};
-    Tsp tsp{.distance = std::vector(cities, std::vector<double>(cities))};
-    for (auto& row : tsp.distance)
-        for (auto& value : row)
-            if (!(in >> value))
-                throw std::runtime_error{"invalid TSP distances"};
-    return tsp;
-}
-
-inline Tour read_solution(const Tsp& tsp, std::istream& in)
-{
-    Tour tour{std::vector<std::size_t>(tsp.cities())};
-    for (auto& city : tour.order)
-        if (!(in >> city))
-            throw std::runtime_error{"invalid tour"};
-    return tour;
-}
-
-inline void write_solution(const Tsp&, const Tour& tour, std::ostream& out)
-{
-    for (const auto city : tour.order)
-        out << city << ' ';
-    out << '\n';
-}
-
-inline std::string describe(const Tour& tour)
-{
-    std::string text;
-    for (const auto city : tour.order)
-        text += std::to_string(city) + ' ';
-    return text;
-}
-
-inline std::string describe(const SwapCities& move)
-{
-    return "swap(" + std::to_string(move.i) + ", " + std::to_string(move.j) + ")";
-}
-// [io] ---------------------------------------------------------------------
 
 // [solution-manager] -------------------------------------------------------
 class TourManager : public easylocal::solution_manager_base<Tsp, Tour>
@@ -117,6 +68,7 @@ public:
         return tour;
     }
 
+    // [random-solution]
     // The same cities in a random order.
     template<std::uniform_random_bit_generator RNG>
     Tour random_solution(RNG& rng) const
@@ -125,6 +77,7 @@ public:
         std::shuffle(tour.order.begin(), tour.order.end(), rng);
         return tour;
     }
+    // [random-solution]
 
     // A tour is valid when it is a permutation of 0, 1, ..., n - 1: it has
     // n positions and visits every city exactly once.
@@ -192,11 +145,6 @@ class SwapExplorer : public easylocal::neighborhood_explorer_base<TourManager, S
 public:
     using neighborhood_explorer_base::neighborhood_explorer_base;
 
-    static std::string_view name()
-    {
-        return "swap";
-    }
-
     // Every pair of positions i < j, one move at a time.
     easylocal::generator<SwapCities> moves(const Tour& tour) const
     {
@@ -241,8 +189,6 @@ struct TwoOpt
 {
     std::size_t i;
     std::size_t j;
-
-    bool operator==(const TwoOpt&) const = default; // used by Tester checks
 };
 
 class TwoOptExplorer : public easylocal::neighborhood_explorer_base<TourManager, TwoOpt>
@@ -250,10 +196,13 @@ class TwoOptExplorer : public easylocal::neighborhood_explorer_base<TourManager,
 public:
     using neighborhood_explorer_base::neighborhood_explorer_base;
 
+    // [two-opt-name]
+    // The name of the neighborhood in the interactive tester (chapter 13).
     static std::string_view name()
     {
         return "2-opt";
     }
+    // [two-opt-name]
 
     // Pairs i + 2 <= j: shorter segments would change nothing. With i = 0 and
     // j = n - 1 the two removed edges are the same one, so that pair is skipped.
@@ -299,11 +248,51 @@ public:
 };
 // [two-opt] ----------------------------------------------------------------
 
-// The display hook of the 2-opt moves, for the tools (chapter 13).
+// [io] ---------------------------------------------------------------------
+// Optional hooks, found by ADL, that let the tools load, save and display
+// (chapter 13).
+inline Tsp read_input(std::type_identity<Tsp>, std::istream& in)
+{
+    std::size_t cities = 0; // "n", then the n rows of the distance matrix
+    if (!(in >> cities))
+        throw std::runtime_error{"invalid TSP header"};
+    Tsp tsp{.distance = std::vector(cities, std::vector<double>(cities))};
+    for (auto& row : tsp.distance)
+        for (auto& value : row)
+            if (!(in >> value))
+                throw std::runtime_error{"invalid TSP distances"};
+    return tsp;
+}
+
+inline Tour read_solution(const Tsp& tsp, std::istream& in)
+{
+    Tour tour{std::vector<std::size_t>(tsp.cities())};
+    for (auto& city : tour.order)
+        if (!(in >> city))
+            throw std::runtime_error{"invalid tour"};
+    return tour;
+}
+
+inline void write_solution(const Tsp&, const Tour& tour, std::ostream& out)
+{
+    for (const auto city : tour.order)
+        out << city << ' ';
+    out << '\n';
+}
+
+inline std::string describe(const Tour& tour)
+{
+    std::string text;
+    for (const auto city : tour.order)
+        text += std::to_string(city) + ' ';
+    return text;
+}
+
 inline std::string describe(const TwoOpt& move)
 {
     return "2-opt(" + std::to_string(move.i) + ", " + std::to_string(move.j) + ")";
 }
+// [io] ---------------------------------------------------------------------
 
 // [delta] ------------------------------------------------------------------
 class TwoOptLengthDelta
@@ -327,6 +316,24 @@ private:
     const Tsp& input_;
 };
 // [delta] ------------------------------------------------------------------
+
+// [equality] ---------------------------------------------------------------
+// Equality of solutions and moves, for the Tester checks of chapter 12.
+inline bool operator==(const Tour& a, const Tour& b)
+{
+    return a.order == b.order;
+}
+
+inline bool operator==(const SwapCities& a, const SwapCities& b)
+{
+    return a.i == b.i && a.j == b.j;
+}
+
+inline bool operator==(const TwoOpt& a, const TwoOpt& b)
+{
+    return a.i == b.i && a.j == b.j;
+}
+// [equality] ---------------------------------------------------------------
 
 // [custom-runner] ----------------------------------------------------------
 struct RandomDescentParameters

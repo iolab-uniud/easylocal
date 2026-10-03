@@ -69,8 +69,6 @@ struct Tsp
 struct Tour
 {
     std::vector<std::size_t> order;
-
-    bool operator==(const Tour&) const = default; // used by Tester checks
 };
 
 // Move: exchange the cities visited at positions i and j, with i < j.
@@ -78,8 +76,6 @@ struct SwapCities
 {
     std::size_t i;
     std::size_t j;
-
-    bool operator==(const SwapCities&) const = default; // used by Tester checks
 };
 ```
 
@@ -90,15 +86,16 @@ struct SwapCities
 - A **Move** does not own or reference a Solution: the NeighborhoodExplorer
   applies it to one (chapter 3).
 
-None of them derives from a framework class. The `operator==` are needed only
-by the checks of chapter 12.
+None of them derives from a framework class or needs any operator: plain
+structs are enough. Some tools need more, for instance equality to compare
+tours; chapter 12 adds it when it is needed.
 
 ## The SolutionManager
 
 The SolutionManager owns *solution semantics*: which solutions are valid and how
 to build one.
 
-<!-- snippet: tutorial/tsp.hpp:solution-manager -->
+<!-- snippet: tutorial/tsp.hpp:solution-manager!random-solution -->
 ```cpp
 class TourManager : public easylocal::solution_manager_base<Tsp, Tour>
 {
@@ -110,15 +107,6 @@ public:
     {
         Tour tour{std::vector<std::size_t>(input().cities())};
         std::ranges::iota(tour.order, std::size_t{0});
-        return tour;
-    }
-
-    // The same cities in a random order.
-    template<std::uniform_random_bit_generator RNG>
-    Tour random_solution(RNG& rng) const
-    {
-        auto tour = initial_solution();
-        std::shuffle(tour.order.begin(), tour.order.end(), rng);
         return tour;
     }
 
@@ -146,10 +134,10 @@ public:
   the cities already seen does the same check in linear time.
 - A solution that violates problem constraints is still valid: such
   violations are expressed as cost (chapter 2).
-- `initial_solution()` and `random_solution(rng)` are optional. Write them when
-  something needs to build solutions: a solver, the Tester, or you through the
-  bound runner's `initial_solution()`. The RNG is always passed in, so whoever
-  runs the search controls seeding.
+- `initial_solution()` is optional. Write it when something needs to build
+  solutions: here you, through the bound runner's `initial_solution()`
+  (chapter 5); later a solver or the Tester. Chapter 8 adds a second way to
+  build one, at random.
 
 The SolutionManager never computes the cost: the cost always comes from cost
 components, the subject of the next chapter.
