@@ -112,7 +112,10 @@ old concepts onto the new ones.
   (`<easylocal/app/cli.hpp>`) runs an app from the command line: the instance,
   the seed, the runner by name, the starting solution, the output file and a
   target cost, with the app's parameters and the program's own, then prints
-  the cost, the running time and the solution.
+  the cost, the running time, the iterations, evaluations and termination
+  when the runner reports them, and the solution; `options.defaults` gives
+  the switches' values when the command line does not. The example programs
+  of `examples/` are written with it.
 - **Launcher**: `tui::run_launcher(options, apps...)` opens several apps of
   the same problem, for example one per neighborhood. The launcher owns the
   Input and the current solution: its *Input and solution* entry loads and

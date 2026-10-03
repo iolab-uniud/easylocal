@@ -33,18 +33,20 @@ outside `include/easylocal/` and adds no framework API.
 
 ## Running
 
-`main.cpp` runs `runners::TabuSearch<>` (a fixed-length tabu list, aspiration
-by objective, the whole neighborhood explored) from a random schedule:
+`main.cpp` registers `runners::TabuSearch<>` (a fixed-length tabu list,
+aspiration by objective, the whole neighborhood explored) as the runner `tabu`
+of an app, and runs it with `easylocal::cli::run` from a random schedule:
 
 ```text
-$ ./easylocal_pfsp_tabu --solver.search.tabu_list.tenure=20
-$ ./easylocal_pfsp_tabu --run.target=1250     # stop at a makespan of 1250
-$ ./easylocal_pfsp_tabu --help                # every parameter
+$ ./easylocal_pfsp_tabu --runners.tabu.tabu_list.tenure=20
+$ ./easylocal_pfsp_tabu --target=1250         # stop at a makespan of 1250
+$ ./easylocal_pfsp_tabu --help                # every switch
 ```
 
-The parameters are the program's (`application.instance_file`,
-`application.seed`), the search's (`solver.search.max_idle_iterations`,
-`solver.search.tabu_list.tenure`, ...) and the run's (`run.target`).
+The switches are `cli::run`'s (`--instance`, by default
+`instances/medium.pfsp`, `--seed`, 2026 by default, `--target`, ...) and the
+search's (`--runners.tabu.max_idle_iterations`,
+`--runners.tabu.tabu_list.tenure`, ...).
 
 `tests/pfsp.cpp` checks the makespan against a hand computation, the solution
 identity, both inverse definitions, and that tabu search improves a random

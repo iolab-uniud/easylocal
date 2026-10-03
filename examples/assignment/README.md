@@ -1,35 +1,28 @@
 # Assignment MWE
 
-## Runnable TwoStage example
+## Runnable example
 
-`main.cpp` is the end-to-end user-facing example for the current public API. It
-defines the application-owned `AppParameters` block next to `main`, uses
-`FirstImprovementParameters` from the search-method header, constructs the
-runner, and combines `application.*` with the runner's parameters under
-`solver` (`solver.search.max_evaluations`) in a `config::parameter_set`.
-The same values are then used to load the versioned instance from
-`instances/small.assignment`, construct a `FirstImprovement` runner, and solve
-the immutable instance through the hierarchical `solvers::TwoStage`. The first
-stage optimizes only hard feasibility; the second sees the full hard/soft cost.
-
-With examples enabled (the default for a top-level build), run it with:
+`main.cpp` runs the app of `application.hpp` (the runners `fi` and
+`slow-fi`) with `easylocal::cli::run`, from the initial solution of
+`instances/small.assignment`:
 
 ```sh
 ./build/<preset>/examples/assignment/easylocal_assignment_mwe
 ```
 
-The MWE is also a minimal CLI-configured application. `--help` is generated
-from the parameter set, and values can be overridden before binding, for
-example:
+It prints the cost, the running time, the effort of the run (iterations,
+evaluations, termination) and the solution. `--help` lists the switches:
+`--instance`, `--seed`, `--runner`, `--start`, `--solution`, `--output`,
+`--target`, `--report` and the runners' parameters, for example:
 
 ```sh
 ./build/<preset>/examples/assignment/easylocal_assignment_mwe \
-  --solver.search.max_evaluations=25
+  --runners.fi.max_evaluations=25
 ```
 
-`--run.target` stops the second stage at the first solution that reaches a
-cost, written as the cost type nests: `[[overload, overloaded_machines],
-load_imbalance]`, for example `--run.target='[[0, 0], 1]'`.
+`--target` stops the run at the first solution that reaches a cost, written
+as the cost type nests: `[[overload, overloaded_machines], load_imbalance]`,
+for example `--target='[[0, 0], 1]'`.
 
 The same configuration can be supplied from a compact file. File values are
 applied before CLI values, so explicit CLI options win:
@@ -37,8 +30,11 @@ applied before CLI values, so explicit CLI options win:
 ```sh
 ./build/<preset>/examples/assignment/easylocal_assignment_mwe \
   --config examples/assignment/configs/small.cfg \
-  --solver.search.max_evaluations=25
+  --runners.fi.max_evaluations=25
 ```
+
+The two-stage search on the hard cost and then on the whole cost, with
+`solvers::TwoStage`, is shown by the tutorial's `staged_main.cpp`.
 
 The example deliberately uses the recipe/pipeline API rather than constructing
 framework services manually, so it is suitable as a minimal starting point for

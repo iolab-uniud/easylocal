@@ -1,145 +1,60 @@
+// The exam timetabling problem as a command-line program: an app with
+// Simulated Annealing, run by cli::run (--instance, --runners.sa.*, ...).
 #include "cost_components.hpp"
 #include "cost_deltas.hpp"
 #include "neighborhood_explorer.hpp"
 #include "solution_manager.hpp"
 
-#include <easylocal/app/io.hpp>
-#include <easylocal/app/run_parameters.hpp>
-#include <easylocal/config/cli.hpp>
-#include <easylocal/config/parameter_set.hpp>
-#include <easylocal/config/setup.hpp>
+#include <easylocal/app/app.hpp>
+#include <easylocal/app/cli.hpp>
 #include <easylocal/cost.hpp>
-#include <easylocal/runners/runner.hpp>
 #include <easylocal/runners/simulated_annealing.hpp>
-
-#include <cstdint>
-#include <filesystem>
-#include <iostream>
-#include <random>
 
 #ifndef EASYLOCAL_EXAM_MWE_INSTANCE_FILE
 #error "EASYLOCAL_EXAM_MWE_INSTANCE_FILE must name the example instance"
 #endif
 
-namespace
-{
-
-using namespace exam_timetabling;
-
-struct AppParameters
-{
-    std::filesystem::path instance_file;
-    std::uint64_t seed{2026U};
-
-    static consteval auto parameter_schema()
-    {
-        return easylocal::config::fields(
-            easylocal::config::field<"instance_file", &AppParameters::instance_file>(
-                "Exam-timetabling instance file"),
-            easylocal::config::field<"seed", &AppParameters::seed>(
-                "Pseudo-random generator seed"));
-    }
-
-    easylocal::config::validation_result validate() const
-    {
-        if (instance_file.empty())
-        {
-            return easylocal::config::validation_result::failure(
-                "instance_file must not be empty");
-        }
-
-        return easylocal::config::validation_result::success();
-    }
-};
-
-} // namespace
-
 int main(int argc, char* argv[])
 {
     using namespace exam_timetabling;
     using easylocal::component;
+    using easylocal::runners::SimulatedAnnealing;
     using easylocal::runners::temperature::FixedLength;
-    using easylocal::runners::temperature::FixedLengthParameters;
 
-    try
-    {
-        AppParameters app_parameters{
-            .instance_file = EASYLOCAL_EXAM_MWE_INSTANCE_FILE,
-        };
-        FixedLengthParameters temperature_parameters{
-            .initial_temperature = 100.0,
-            .final_temperature = 1.0,
-            .cooling_rate = 0.5,
-            .max_iterations = 30,
-        };
+    // This example spells the recipes with with_* calls; the others use pipes.
+    auto sm = easylocal::solution_manager<ExamTimetablingSolutionManager>().with_cost(
+        easylocal::cost::sum(
+            component<StudentConflictComponent>() * 1000,
+            component<ConsecutiveExamComponent>() * 10,
+            component<TimeslotLoadComponent>()));
 
-        auto sm = easylocal::solution_manager<ExamTimetablingSolutionManager>().with_cost(
-            easylocal::cost::sum(
-                component<StudentConflictComponent>() * 1000,
-                component<ConsecutiveExamComponent>() * 10,
-                component<TimeslotLoadComponent>()));
+    auto nhe =
+        easylocal::neighborhood<MoveExamNeighborhoodExplorer>()
+            .with_delta<StudentConflictComponent>()
+            .with_delta<ConsecutiveExamComponent, ConsecutiveExamDeltaEvaluator>();
+    // TimeslotLoadComponent has no delta (see cost_deltas.hpp): EasyLocal
+    // re-evaluates it on a candidate solution.
 
-        auto nhe =
-            easylocal::neighborhood<MoveExamNeighborhoodExplorer>()
-                .with_delta<StudentConflictComponent>()
-                .with_delta<ConsecutiveExamComponent, ConsecutiveExamDeltaEvaluator>();
-        // TimeslotLoadComponent has no delta (see cost_deltas.hpp): EasyLocal
-        // re-evaluates it on a candidate solution.
+    auto application =
+        easylocal::app("exam-timetabling")
+            .with_solution_manager(sm)
+            .with_neighborhood(nhe)
+            .with_runner<SimulatedAnnealing<FixedLength>>(
+                "sa",
+                {.temperature = {
+                     .initial_temperature = 100.0,
+                     .final_temperature = 1.0,
+                     .cooling_rate = 0.5,
+                     .max_iterations = 30,
+                 }});
 
-        auto runner =
-            easylocal::make_runner<easylocal::runners::SimulatedAnnealing<FixedLength>>(
-                {.temperature = temperature_parameters})
-                .with_solution_manager(sm)
-                .with_neighborhood(nhe);
-
-        // The program's parameters under "application", the runner's under
-        // "solver", the run's under "run": --application.instance_file,
-        // --solver.search.*, --run.target.
-        easylocal::RunParameters run_parameters;
-        easylocal::config::parameter_set configuration;
-        configuration.add("application", app_parameters);
-        configuration.add("solver", runner.configuration());
-        configuration.add("run", run_parameters);
-
-        const auto configured =
-            easylocal::config::load_and_apply(argc, argv, configuration);
-        if (configured.help_requested)
-        {
-            std::cout << easylocal::config::cli_help(argv[0], configuration);
-            return 0;
-        }
-
-        if (!configured)
-        {
-            easylocal::config::print_diagnostics(std::cerr, configured);
-            return 2;
-        }
-
-        const auto instance =
-            easylocal::load_input<ExamTimetablingInstance>(app_parameters.instance_file);
-        auto search = runner.bind(instance);
-        const auto initial_solution = search.initial_solution();
-
-        std::mt19937_64 rng{app_parameters.seed};
-        // With a target, the search stops at the first solution that reaches it.
-        using cost_type = decltype(search)::cost_type;
-        const auto target = run_parameters.target_cost<cost_type>(instance);
-        const auto result = target
-            ? search.run(initial_solution, rng, easylocal::stop_at(*target))
-            : search.run(initial_solution, rng);
-
-        std::cout << "instance: " << app_parameters.instance_file << '\n';
-        std::cout << "initial " << easylocal::describe(initial_solution) << '\n';
-        std::cout << "best    " << easylocal::describe(result.solution) << '\n';
-        std::cout << "best penalty: " << result.cost << '\n';
-        std::cout << "iterations: " << result.iterations << '\n';
-        std::cout << "evaluations: " << result.evaluations << '\n';
-    }
-    catch (const std::exception& error)
-    {
-        std::cerr << "error: " << error.what() << '\n';
-        return 1;
-    }
-
-    return 0;
+    return easylocal::cli::run(
+        application,
+        argc,
+        argv,
+        {.defaults = {
+             .instance = EASYLOCAL_EXAM_MWE_INSTANCE_FILE,
+             .seed = 2026,
+             .start = "initial",
+         }});
 }

@@ -1096,10 +1096,10 @@ endif()
 if(TARGET easylocal_pfsp_tabu)
     add_test(
         NAME easylocal.example.pfsp-tabu
-        COMMAND easylocal_pfsp_tabu --solver.search.max_iterations=50)
+        COMMAND easylocal_pfsp_tabu --runners.tabu.max_iterations=50)
     set_tests_properties(
         easylocal.example.pfsp-tabu
-        PROPERTIES PASS_REGULAR_EXPRESSION "makespan: +[0-9]+\n")
+        PROPERTIES PASS_REGULAR_EXPRESSION "\niterations 50\n")
 endif()
 
 if(TARGET easylocal_assignment_mwe)
@@ -1110,17 +1110,17 @@ if(TARGET easylocal_assignment_mwe)
     set_tests_properties(
         easylocal.example.assignment-cli-help
         PROPERTIES
-            PASS_REGULAR_EXPRESSION "--solver.search.max_evaluations <value>"
+            PASS_REGULAR_EXPRESSION "--runners.fi.max_evaluations <value>"
     )
 
     add_test(
         NAME easylocal.example.assignment-cli-override
-        COMMAND easylocal_assignment_mwe --solver.search.max_evaluations=1
+        COMMAND easylocal_assignment_mwe --runners.fi.max_evaluations=1
     )
     set_tests_properties(
         easylocal.example.assignment-cli-override
         PROPERTIES
-            PASS_REGULAR_EXPRESSION "evaluation budget exhausted"
+            PASS_REGULAR_EXPRESSION "termination evaluation budget exhausted"
     )
 
     add_test(
@@ -1131,7 +1131,7 @@ if(TARGET easylocal_assignment_mwe)
     set_tests_properties(
         easylocal.example.assignment-config-file
         PROPERTIES
-            PASS_REGULAR_EXPRESSION "evaluation budget exhausted"
+            PASS_REGULAR_EXPRESSION "termination evaluation budget exhausted"
     )
 endif()
 
@@ -1143,17 +1143,17 @@ if(TARGET easylocal_exam_timetabling_mwe)
     set_tests_properties(
         easylocal.example.exam-cli-help
         PROPERTIES
-            PASS_REGULAR_EXPRESSION "--solver.search.temperature.cooling_rate <value>"
+            PASS_REGULAR_EXPRESSION "--runners.sa.temperature.cooling_rate <value>"
     )
 
     add_test(
         NAME easylocal.example.exam-cli-override
-        COMMAND easylocal_exam_timetabling_mwe --solver.search.temperature.max_iterations=1
+        COMMAND easylocal_exam_timetabling_mwe --runners.sa.temperature.max_iterations=1
     )
     set_tests_properties(
         easylocal.example.exam-cli-override
         PROPERTIES
-            PASS_REGULAR_EXPRESSION "iterations: 1"
+            PASS_REGULAR_EXPRESSION "\niterations 1\n"
     )
 
     add_test(
@@ -1164,7 +1164,7 @@ if(TARGET easylocal_exam_timetabling_mwe)
     set_tests_properties(
         easylocal.example.exam-config-file
         PROPERTIES
-            PASS_REGULAR_EXPRESSION "iterations: 1"
+            PASS_REGULAR_EXPRESSION "\niterations 1\n"
     )
 endif()
 
@@ -1176,17 +1176,17 @@ if(TARGET easylocal_tsp_sa_mwe)
     set_tests_properties(
         easylocal.example.tsp-cli-help
         PROPERTIES
-            PASS_REGULAR_EXPRESSION "--solver.neighborhood.random_biases <value>"
+            PASS_REGULAR_EXPRESSION "--neighborhood.random_biases <value>"
     )
 
     add_test(
         NAME easylocal.example.tsp-cli-override
-        COMMAND easylocal_tsp_sa_mwe --solver.search.temperature.max_iterations=1
+        COMMAND easylocal_tsp_sa_mwe --runners.sa.temperature.max_iterations=1
     )
     set_tests_properties(
         easylocal.example.tsp-cli-override
         PROPERTIES
-            PASS_REGULAR_EXPRESSION "iterations: 1"
+            PASS_REGULAR_EXPRESSION "\niterations 1\n"
     )
 
     add_test(
@@ -1197,19 +1197,19 @@ if(TARGET easylocal_tsp_sa_mwe)
     set_tests_properties(
         easylocal.example.tsp-config-file
         PROPERTIES
-            PASS_REGULAR_EXPRESSION "iterations: 1"
+            PASS_REGULAR_EXPRESSION "\niterations 1\n"
     )
 
     add_test(
         NAME easylocal.example.tsp-config-precedence
         COMMAND easylocal_tsp_sa_mwe
             --config ${PROJECT_SOURCE_DIR}/examples/tsp/configs/small.cfg
-            --solver.search.temperature.max_iterations=2
+            --runners.sa.temperature.max_iterations=2
     )
     set_tests_properties(
         easylocal.example.tsp-config-precedence
         PROPERTIES
-            PASS_REGULAR_EXPRESSION "iterations: 2"
+            PASS_REGULAR_EXPRESSION "\niterations 2\n"
     )
 
     add_test(
@@ -1226,7 +1226,7 @@ if(TARGET easylocal_tsp_sa_mwe)
     add_test(
         NAME easylocal.example.tsp-cli-error
         COMMAND easylocal_tsp_sa_mwe
-            --solver.search.temperature.cooling_rate=1.5
+            --runners.sa.temperature.cooling_rate=1.5
     )
     set_tests_properties(
         easylocal.example.tsp-cli-error

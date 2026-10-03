@@ -44,22 +44,15 @@ approximate comparisons remain deliberately reserved for a following iteration,
 so floating-point comparison policy can be examined independently from delta
 integration.
 
-## Application configuration and external instance
+## Command line and external instance
 
-`sa_main.cpp` owns its `AppParameters` block directly, because the instance-file
-path and RNG seed parameterize the application rather than the TSP model or an
-EasyLocal component. `FixedLengthParameters` remains beside the temperature
-policy, and the union's biases are given to `random_biases(3.0, 1.0)`. After
-constructing the runner, the main puts its parameters
-(`search.temperature.*`, `neighborhood.random_biases`) under `solver` in a
-`config::parameter_set`, next to `application.*`, loads
-`instances/small.tsp`, and starts from the SolutionManager's
+`sa_main.cpp` registers its Simulated Annealing as the runner `sa` of an app
+and runs it with `easylocal::cli::run`, which reads the instance, the seed and
+the parameters from the command line: `--instance` (by default
+`instances/small.tsp`), `--seed` (2026), the temperature schedule under
+`--runners.sa.temperature.*` and the union's biases under
+`--neighborhood.random_biases`. The run starts from the SolutionManager's
 `initial_solution()`.
-
-This layout is intentional: concrete parameter declarations live next to the
-thing they parameterize, while `easylocal::config` contains only generic schema,
-parameter-set, textual-override, and frontend machinery. The CLI is derived from
-that same set; configuration-file loading remains a separate frontend.
 
 ## Runnable composite-neighborhood SA example
 
@@ -94,18 +87,17 @@ biases without changing the MWE source:
 
 ```sh
 ./build/<preset>/examples/tsp/easylocal_tsp_sa_mwe \
-  --solver.search.temperature.max_iterations=50 \
-  --solver.neighborhood.random_biases='[1, 4]'
+  --runners.sa.temperature.max_iterations=50 \
+  --neighborhood.random_biases='[1, 4]'
 ```
 
-`--help` lists all application and runner parameters with descriptions and
-current values.
+`--help` lists all the switches with descriptions and current values.
 
-`--run.target` stops the search at the first tour that reaches a length, a
+`--target` stops the search at the first tour that reaches a length, a
 known optimum for example:
 
 ```sh
-./build/<preset>/examples/tsp/easylocal_tsp_sa_mwe --run.target=26
+./build/<preset>/examples/tsp/easylocal_tsp_sa_mwe --target=26
 ```
 
 The example also accepts a compact configuration file:
@@ -113,11 +105,11 @@ The example also accepts a compact configuration file:
 ```sh
 ./build/<preset>/examples/tsp/easylocal_tsp_sa_mwe \
   --config examples/tsp/configs/small.cfg \
-  --solver.search.temperature.max_iterations=50
+  --runners.sa.temperature.max_iterations=50
 ```
 
 The precedence is C++ defaults, then file overrides, then CLI overrides. Any
-file/CLI diagnostic causes a non-zero exit before the runner is bound.
+file/CLI diagnostic causes a non-zero exit (2) before the instance is read.
 
 ## Floating-point pressure test
 

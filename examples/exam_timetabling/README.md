@@ -21,38 +21,33 @@ evaluation does; the framework evaluates it on a candidate solution instead. The
 already the SA energy: no Cost-to-Energy adapter or projection is required by
 the standard `MetropolisAcceptance` path.
 
-## Runnable configured SA example
+## Runnable SA example
 
 The executable intentionally uses the explicit `with_*` spelling of the
 composition API: `solution_manager<SM>().with_cost(...)`,
 `neighborhood<NHE>().with_delta<C, D>()...` and
-`make_runner<SimulatedAnnealing<...>>(...).with_solution_manager(...).with_neighborhood(...)`.
+`app(...).with_solution_manager(...).with_neighborhood(...).with_runner<...>(...)`.
 Assignment demonstrates the equivalent pipe spelling.
 
-`main.cpp` defines application-owned parameters for the external instance path
-and RNG seed, while `FixedLengthParameters` remains beside the framework
-temperature policy that it configures. The example builds a
-`config::parameter_set` with `application.*` and the runner's parameters under
-`solver` (`solver.search.temperature.*`), loads `instances/small.exam`, then runs
-Simulated Annealing from the SolutionManager's `initial_solution()` with an
-explicitly seeded RNG.
-
-With the default top-level build:
+`main.cpp` registers Simulated Annealing as the runner `sa` of an app and runs
+it with `easylocal::cli::run`, on `instances/small.exam` from the
+SolutionManager's `initial_solution()`, with the seed 2026 by default:
 
 ```sh
 ./build/<preset>/examples/exam_timetabling/easylocal_exam_timetabling_mwe
 ```
 
-The same set drives the generated CLI help and pre-bind overrides:
+`--help` lists the switches; the runner's parameters are
+`--runners.sa.temperature.*` and the cost's weights `--cost.weights`:
 
 ```sh
 ./build/<preset>/examples/exam_timetabling/easylocal_exam_timetabling_mwe \
-  --solver.search.temperature.max_iterations=10 \
-  --application.seed=42
+  --runners.sa.temperature.max_iterations=10 \
+  --seed=42
 ```
 
-`--run.target` stops the search at the first timetable whose penalty reaches
-a value, `--run.target=0` at the first one with no penalty.
+`--target` stops the search at the first timetable whose penalty reaches a
+value, `--target=0` at the first one with no penalty.
 
 A compact configuration file can provide the same dotted paths:
 
