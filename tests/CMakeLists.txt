@@ -1187,6 +1187,26 @@ if(TARGET EasyLocal::REST)
         COMMAND easylocal_rest_blueprint_compile_test
     )
 
+    add_executable(
+        easylocal_rest_blueprint_requests_test
+        rest_blueprint_requests.cpp
+    )
+    target_link_libraries(
+        easylocal_rest_blueprint_requests_test
+        PRIVATE
+            EasyLocal::REST
+            easylocal_assignment_mwe_model
+    )
+    add_test(
+        NAME easylocal.rest-blueprint-requests
+        COMMAND easylocal_rest_blueprint_requests_test
+    )
+    set_tests_properties(
+        easylocal.rest-blueprint-requests
+        PROPERTIES
+            TIMEOUT 60
+    )
+
     find_program(EASYLOCAL_CURL_EXECUTABLE NAMES curl)
     if(UNIX AND EASYLOCAL_CURL_EXECUTABLE AND TARGET easylocal_assignment_rest_mwe)
         add_test(
