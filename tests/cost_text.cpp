@@ -55,6 +55,14 @@ void numbers_and_brackets_are_read()
     assert(
         el::cost::from_text<nested>("[1, [2, 3]]")
         == nested(1, el::cost::hierarchical<int, int>(2, 3)));
+
+    // Written back in the same form.
+    assert(el::cost::to_text(2.5) == "2.5");
+    assert(el::cost::to_text(0.1) == "0.1");
+    assert(el::cost::to_text(hard_soft(0, 120.5)) == "[0, 120.5]");
+    assert(
+        el::cost::to_text(nested(1, el::cost::hierarchical<int, int>(2, 3)))
+        == "[1, [2, 3]]");
 }
 
 } // namespace

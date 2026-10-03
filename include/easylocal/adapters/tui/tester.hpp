@@ -957,6 +957,18 @@ public:
             target_input_option.multiline = false;
             target_input_component = Input(&target_text_, "none", target_input_option);
             run_controls->Add(target_input_component);
+            // The current cost as the field reads it, as an example of the syntax.
+            if constexpr (easylocal::cost::text_readable<typename tester_type::cost_type>)
+            {
+                run_controls->Add(Renderer([this] {
+                    if (!tester_.has_solution() || !tester_.is_valid())
+                        return text("");
+                    return text(
+                               "current cost: "
+                               + easylocal::cost::to_text(tester_.evaluate()))
+                        | dim;
+                }));
+            }
         }
 
         auto solution_page = Renderer(solution_controls, [this, solution_controls] {

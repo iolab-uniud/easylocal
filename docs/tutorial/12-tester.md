@@ -72,7 +72,8 @@ The runner runs in the background with live progress and can be stopped with
 The *Target cost* field stops a run as soon as its solution reaches a cost,
 for example a known optimum or a lower bound: 26 here would end Simulated
 Annealing at the first tour of that length. It is written as a number, or as
-`[hard, soft]` for a hierarchical cost; empty, runs have no target.
+`[hard, soft]` for a hierarchical cost, as the line below the field shows the
+current cost; empty, runs have no target.
 
 When the problem itself has parameters, the weights of a `cost::sum`
 (chapter 2) or the biases of a neighborhood union (chapter 6), `P` on the Run

@@ -87,7 +87,8 @@ at the zero of the hard cost.
 written by a user, such as a target: a number for an arithmetic cost,
 `[hard, soft]` for a `cost::hierarchical`, `[v1, v2, ...]` for a
 `cost::lexicographic`, nested as the types are (`[0, [3, 1.5]]`). It throws
-`std::invalid_argument` with the reason. `cost::text_readable<Cost>` tells
+`std::invalid_argument` with the reason; `cost::to_text(cost)` writes a cost
+back in the same form. `cost::text_readable<Cost>` tells
 which costs it reads; a problem with another cost type, or its own notation,
 provides `read_cost(const Input&, std::string_view) -> Cost`, found by ADL
 through its Input, which the Session and the TextUI use instead.

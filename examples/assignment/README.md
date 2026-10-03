@@ -27,6 +27,9 @@ example:
   --solver.search.max_evaluations=25
 ```
 
+`--run.target` stops the second stage at the first solution that reaches a
+cost, written as the cost type nests: `[[overload, overloaded_machines],
+load_imbalance]`, for example `--run.target='[[0, 0], 1]'`.
 
 The same configuration can be supplied from a compact file. File values are
 applied before CLI values, so explicit CLI options win:

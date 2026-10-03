@@ -8,6 +8,8 @@
 #include <easylocal/cost/text.hpp>
 
 #include <concepts>
+#include <optional>
+#include <stdexcept>
 #include <string>
 #include <string_view>
 
@@ -76,6 +78,26 @@ struct RunParameters
     config::validation_result validate() const noexcept
     {
         return config::validation_result::success();
+    }
+
+    // The target as a cost of the problem, read with read_cost; empty when no
+    // target is set. Throws std::invalid_argument, naming the field, when the
+    // text is not a cost.
+    template<class Cost, class Input>
+        requires readable_cost<Input, Cost>
+    [[nodiscard]]
+    std::optional<Cost> target_cost(const Input& input) const
+    {
+        if (target.find_first_not_of(" \t") == std::string::npos)
+            return std::nullopt;
+        try
+        {
+            return read_cost<Cost>(input, target);
+        }
+        catch (const std::invalid_argument& error)
+        {
+            throw std::invalid_argument{"target: " + std::string{error.what()}};
+        }
     }
 };
 

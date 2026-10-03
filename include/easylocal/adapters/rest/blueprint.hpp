@@ -298,6 +298,7 @@ private:
         std::shared_ptr<const input_type> input;
         std::uint64_t seed{};
         std::optional<cost_type> target;
+        std::vector<config::owned_text_override> parameters; // as requested
         mutable std::mutex mutex;
         std::stop_source stop_source;
         run_state state{run_state::queued};
@@ -403,10 +404,29 @@ private:
         return codec_.decode_initial_solution(input, payload);
     }
 
-    // The target of a run: by the codec's decode_cost, or as a number for an
-    // arithmetic cost.
-    [[nodiscard]] cost_type decode_target(const crow::json::rvalue& payload) const
+    // The target of a run: a string in the textual syntax of costs, read by
+    // the problem's read_cost or cost::from_text; otherwise by the codec's
+    // decode_cost, or as a number for an arithmetic cost.
+    [[nodiscard]] cost_type decode_target(
+        const crow::json::rvalue& payload,
+        const input_type& input) const
     {
+        if constexpr (readable_cost<input_type, cost_type>)
+        {
+            if (payload.t() == crow::json::type::String)
+            {
+                try
+                {
+                    return easylocal::read_cost<cost_type>(
+                        input,
+                        std::string{payload.s()});
+                }
+                catch (const std::invalid_argument& error)
+                {
+                    throw std::invalid_argument{"'target': " + std::string{error.what()}};
+                }
+            }
+        }
         if constexpr (detail::decodes_cost<Codec, App>)
         {
             const std::lock_guard lock{codec_mutex_};
@@ -422,6 +442,13 @@ private:
                 "'target' is not supported: the application codec does not decode "
                 "costs (decode_cost)"};
         }
+    }
+
+    // The parameters a run was submitted with, by path, as text.
+    static void add_parameters(crow::json::wvalue& body, const run_record& record)
+    {
+        for (const auto& parameter : record.parameters)
+            body["parameters"][parameter.path] = parameter.value;
     }
 
     [[nodiscard]] static bool is_terminal(const run_state state) noexcept
@@ -446,6 +473,7 @@ private:
         body["seed"] = record->seed;
         if (record->target)
             body["target"] = encode_cost(*record->target);
+        add_parameters(body, *record);
         body["status"] = std::string{state_name(record->state)};
         body["cancellation_requested"] = record->stop_source.stop_requested();
         body["progress"]["evaluations"] = static_cast<std::uint64_t>(
@@ -596,11 +624,11 @@ private:
             // The run's own session; its seed is set once the run has an id.
             session_type session{copy_application(), input, 0};
             // The run's parameters, before its initial solution is built.
+            std::vector<config::owned_text_override> parameters;
             if (payload.has("parameters"))
             {
-                std::vector<config::owned_text_override> overrides;
-                detail::collect_parameters(payload["parameters"], {}, overrides);
-                const auto views = config::override_views(overrides);
+                detail::collect_parameters(payload["parameters"], {}, parameters);
+                const auto views = config::override_views(parameters);
                 if (const auto configured = session.configure(views); !configured)
                 {
                     std::string message;
@@ -634,7 +662,7 @@ private:
 
             std::optional<cost_type> target;
             if (payload.has("target"))
-                target.emplace(decode_target(payload["target"]));
+                target.emplace(decode_target(payload["target"], *input));
 
             const auto run_number = next_run_id_.fetch_add(1);
             const auto id = std::to_string(run_number);
@@ -646,6 +674,7 @@ private:
             record->runner = runner;
             record->input = input;
             record->target = target;
+            record->parameters = std::move(parameters);
             session.set_seed(record->seed);
             {
                 const std::lock_guard lock{runs_mutex_};
@@ -746,6 +775,7 @@ private:
             body["seed"] = record->seed;
             if (record->target)
                 body["target"] = encode_cost(*record->target);
+            add_parameters(body, *record);
             body["status"] = "queued";
                 body["cancellation_requested"] = false;
             body["progress"]["evaluations"] = std::uint64_t{0};
@@ -825,6 +855,7 @@ private:
         body["seed"] = record->seed;
         if (record->target)
             body["target"] = encode_cost(*record->target);
+        add_parameters(body, *record);
         body["status"] = std::string{state_name(record->state)};
         body["cost"] = encode_cost(*record->cost);
         body["solution"] = encode_solution(

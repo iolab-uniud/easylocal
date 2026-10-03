@@ -164,10 +164,13 @@ but stay reproducible. Status responses report the seed used.
 
 A `target` cost stops the run as soon as its best cost is at least as good as
 the target, a lower bound for example (`stop_at` in C++; every runner honours
-it). For an arithmetic cost the target is a JSON number, an integer for
-integral costs; for other costs the codec decodes it with `decode_cost`, and
-without one a request with a target is rejected with `422`. Run resources
-repeat the target, encoded by `encode_cost`.
+it). A JSON string is a cost in the syntax of the command line and the
+TextUI: a number, `"[hard, soft]"`, or the problem's own notation when it
+provides `read_cost` ([Costs as text](reference/cost.md#costs-as-text)). Otherwise, for
+an arithmetic cost the target is a JSON number, an integer for integral costs;
+for other costs the codec decodes it with `decode_cost`, and without one a
+request with a target is rejected with `422`. Run resources repeat the target,
+encoded by `encode_cost`.
 
 ```json
 {
@@ -196,6 +199,9 @@ read as the parameter's text, so the values that `GET /parameters` lists can be
 sent back as they are. They are applied all or none before the run's initial
 solution is built: an unknown path or an invalid value rejects the request
 with `422` and the code `invalid_parameters`, whose message names each path.
+Run resources repeat the parameters they were submitted with, by path and as
+text (`"parameters": {"runners.sa.temperature.cooling_rate": "0.9"}`), so that
+a run can be repeated together with its `seed`.
 
 A successful submission returns `202 Accepted`, sets `Location` to the run
 resource, and uses `id` consistently:

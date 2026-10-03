@@ -62,7 +62,8 @@ The TextUI edits the app's parameters in modal windows: `G` on the Run page
 opens the selected runner's (`runners.<name>.*`) before running it, `P` the
 problem's (`cost.*`, `neighborhood.*`). Values are checked before anything
 changes and stay for the rest of the session. Its *Target cost* field, when
-filled, stops each run at the first solution that reaches it.
+filled, stops each run at the first solution that reaches it; below it, the
+current cost is shown in the same syntax.
 
 A program that reads its configuration from the command line adds
 `easylocal::RunParameters` for the target, under a prefix of its choice:
@@ -74,6 +75,10 @@ configuration.add("run", run);                       // --run.target=0
 if (!run.target.empty())
     session.run("sa", easylocal::stop_at(session.read_cost(run.target)));
 ```
+
+`run.target_cost<Cost>(input)` gives the target as a `std::optional<Cost>`,
+empty when none is set, for programs that run a runner or a solver directly;
+its errors name the field.
 
 The target stays text until the Input is known, because a problem may read
 its costs with its own `read_cost`. A program that runs a runner without a

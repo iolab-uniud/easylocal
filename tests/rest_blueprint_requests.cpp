@@ -336,6 +336,18 @@ void a_run_stops_at_its_target(crow::SimpleApp& server)
     const auto invalid = submit(server, "fi", R"({"input": {}, "target": 3})");
     assert(invalid.code == 422);
     assert(text(invalid.body["error"]["code"]) == "invalid_run_request");
+
+    // A string is the textual syntax of costs, the command line's and the
+    // TextUI's: [hard, soft], here with a lexicographic hard cost.
+    const auto written =
+        submit(server, "fi", R"({"input": {}, "target": "[[100, 100], 1000]"})");
+    assert(written.code == 202);
+    const auto written_done = wait_for(server, text(written.body["id"]), "succeeded");
+    assert(written_done["progress"]["evaluations"].u() == 1);
+
+    const auto misspelt = submit(server, "fi", R"({"input": {}, "target": "[1]"})");
+    assert(misspelt.code == 422);
+    assert(text(misspelt.body["error"]["message"]).starts_with("'target': "));
 }
 
 void a_run_has_its_own_parameters(crow::SimpleApp& server)
@@ -359,10 +371,13 @@ void a_run_has_its_own_parameters(crow::SimpleApp& server)
         assert(submitted.code == 202);
         const auto done = wait_for(server, text(submitted.body["id"]), "succeeded");
         assert(done["progress"]["evaluations"].u() == 1);
+        // Reported by path, as text, for the run to be repeated.
+        assert(text(done["parameters"]["runners.fi.max_evaluations"]) == "1");
     }
 
     // Only that run: the next one has the app's budget again.
     const auto later = submit(server, "fi", R"({"input": {}})");
+    assert(!later.body.has("parameters"));
     const auto complete = wait_for(server, text(later.body["id"]), "succeeded");
     assert(complete["progress"]["evaluations"].u() > 1);
 

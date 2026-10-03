@@ -1,14 +1,15 @@
 #pragma once
 
 // Costs written as text, for targets given on the command line, in files or in
-// the TextUI: a number for an arithmetic cost, [hard, soft] for a
-// cost::hierarchical, [v1, v2, ...] for a cost::lexicographic, nested as the
-// types are (for example [0, [3, 1.5]]).
+// the TextUI, and written back in the same form (to_text): a number for an arithmetic
+// cost, [hard, soft] for a cost::hierarchical, [v1, v2, ...] for a cost::lexicographic,
+// nested as the types are (for example [0, [3, 1.5]]).
 
 #include <easylocal/cost/concepts.hpp>
 #include <easylocal/cost/hierarchical.hpp>
 #include <easylocal/cost/lexicographic.hpp>
 
+#include <array>
 #include <charconv>
 #include <cstddef>
 #include <stdexcept>
@@ -148,6 +149,36 @@ Cost from_text(std::string_view text)
                        text,
                        lexicographic_traits<cost_type>::size,
                        "a lexicographic cost"));
+    }
+}
+
+// A cost in the text from_text reads back: numbers in their shortest exact
+// form, [hard, soft] and [v1, v2, ...] for structured costs.
+template<text_readable Cost>
+[[nodiscard]]
+std::string to_text(const Cost& value)
+{
+    using cost_type = std::remove_cv_t<Cost>;
+    if constexpr (arithmetic<cost_type>)
+    {
+        std::array<char, 64> buffer{};
+        const auto [end, error] =
+            std::to_chars(buffer.data(), buffer.data() + buffer.size(), value);
+        static_cast<void>(error); // 64 characters hold any arithmetic value
+        return std::string{buffer.data(), end};
+    }
+    else if constexpr (hierarchical_type<cost_type>)
+    {
+        return "[" + to_text(value.hard()) + ", " + to_text(value.soft()) + "]";
+    }
+    else
+    {
+        std::string text{"["};
+        [&]<std::size_t... Index>(std::index_sequence<Index...>) {
+            ((text += (Index == 0 ? "" : ", ") + to_text(value.template get<Index>())),
+                ...);
+        }(std::make_index_sequence<lexicographic_traits<cost_type>::size>{});
+        return text + "]";
     }
 }
 

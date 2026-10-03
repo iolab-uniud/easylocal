@@ -135,13 +135,10 @@ int main(int argc, char* argv[])
         std::mt19937_64 rng{app_parameters.seed};
         // With a target, the search stops at the first solution that reaches it.
         using cost_type = decltype(search)::cost_type;
-        const auto result = run_parameters.target.empty()
-            ? search.run(initial_solution, rng)
-            : search.run(
-                  initial_solution,
-                  rng,
-                  easylocal::stop_at(
-                      easylocal::read_cost<cost_type>(instance, run_parameters.target)));
+        const auto target = run_parameters.target_cost<cost_type>(instance);
+        const auto result = target
+            ? search.run(initial_solution, rng, easylocal::stop_at(*target))
+            : search.run(initial_solution, rng);
 
         std::cout << "instance:          " << app_parameters.instance_file << '\n';
         std::cout << "initial timetable: ";

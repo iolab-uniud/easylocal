@@ -107,6 +107,7 @@ def test_a_target_cost_stops_the_run(tui):
     # First Improvement would reach 26; the initial tour already meets 29.
     tui.press("I")
     set_target(tui, str(INITIAL_COST))
+    tui.expect(f"current cost: {INITIAL_COST}")  # the syntax, by example
     tui.press("G")
     tui.expect("Parameters of fi")
     tui.press(ENTER)

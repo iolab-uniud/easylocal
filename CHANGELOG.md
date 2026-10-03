@@ -107,9 +107,9 @@ old concepts onto the new ones.
   a schema is configurable with no other member; solvers give theirs too.
   An app gives the parameters of its cost, neighborhood and runners
   (`cost.*`, `neighborhood.*`, `runners.<name>.*`), and a Session applies them.
-  Costs are read as text (`cost::from_text`, or a problem's `read_cost`) for
-  targets on the command line (`RunParameters`, `--run.target`) and in the
-  TextUI.
+  Costs are read as text (`cost::from_text`, or a problem's `read_cost`) and
+  written back (`cost::to_text`) for targets on the command line
+  (`RunParameters`, `--run.target`), in the TextUI and in REST requests.
 - **Tracing**: core search events to JSONL, binary or in-memory recorders, with
   no overhead when unused; leveled logging.
 
@@ -123,8 +123,8 @@ old concepts onto the new ones.
 - `EasyLocal::REST` (Crow, standalone Asio): serves an app over HTTP, with
   asynchronous runs, status and progress, cancellation, partial solutions, a
   target cost that stops a run (a lower bound, for example), per-run
-  parameters (nested JSON or dotted paths, listed by `GET /parameters`) and a
-  bounded execution pool.
+  parameters (nested JSON or dotted paths, listed by `GET /parameters` and
+  repeated in the run's status) and a bounded execution pool.
 - `EasyLocal::ConfigTOML` (toml++).
 - Each component is opt-in at configure time, uses an installed dependency
   when available or fetches a pinned one on request, and is loaded by
