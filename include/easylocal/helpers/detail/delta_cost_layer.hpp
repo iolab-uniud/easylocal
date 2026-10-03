@@ -1,6 +1,6 @@
 #pragma once
 
-#include <easylocal/config/tree.hpp>
+#include <easylocal/config/parameter_set.hpp>
 #include <easylocal/helpers/neighborhood_explorer.hpp>
 #include <easylocal/utils/detail/attributes.hpp>
 #include <easylocal/utils/detail/meta.hpp>

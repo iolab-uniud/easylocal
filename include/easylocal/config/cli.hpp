@@ -1,16 +1,16 @@
 #pragma once
 
-#include <easylocal/utils/detail/meta.hpp>
 #include <easylocal/config/overrides.hpp>
-#include <easylocal/config/tree.hpp>
+#include <easylocal/config/parameter_set.hpp>
+#include <easylocal/utils/detail/meta.hpp>
 
 #include <array>
 #include <concepts>
 #include <cstddef>
 #include <filesystem>
 #include <optional>
-#include <sstream>
 #include <span>
+#include <sstream>
 #include <string>
 #include <string_view>
 #include <type_traits>
@@ -51,68 +51,6 @@ struct cli_parse_result
 
 namespace detail
 {
-
-template<class Value>
-[[nodiscard]]
-std::string format_cli_value(const Value& value)
-{
-    using value_type = std::remove_cvref_t<Value>;
-
-    if constexpr (std::same_as<value_type, bool>)
-    {
-        return value ? "true" : "false";
-    }
-    else if constexpr (std::same_as<value_type, std::filesystem::path>)
-    {
-        return value.string();
-    }
-    else if constexpr (std::same_as<value_type, std::string>)
-    {
-        return value;
-    }
-    else if constexpr (is_std_array_v<value_type>)
-    {
-        std::string result{"["};
-        for (std::size_t index = 0; index < value.size(); ++index)
-        {
-            if (index != 0)
-            {
-                result += ", ";
-            }
-            result += format_cli_value(value[index]);
-        }
-        result += ']';
-        return result;
-    }
-    else if constexpr (
-        std::integral<value_type> || std::floating_point<value_type>)
-    {
-        std::ostringstream stream;
-        stream << value;
-        return stream.str();
-    }
-    else
-    {
-        static_assert(
-            easylocal::detail::always_false_v<value_type>,
-            "parameter type has no built-in CLI formatter");
-    }
-}
-
-template<class Path>
-void append_cli_path(std::string& output)
-{
-    bool first = true;
-    for (const auto segment : Path::segments())
-    {
-        if (!first)
-        {
-            output += '.';
-        }
-        output.append(segment);
-        first = false;
-    }
-}
 
 } // namespace detail
 
@@ -250,11 +188,10 @@ inline cli_parse_result parse_cli(const int argc, char* const argv[])
     return parse_cli(std::span<const std::string_view>{arguments});
 }
 
-template<class... Children>
 [[nodiscard]]
-std::string cli_help(
+inline std::string cli_help(
     const std::string_view program_name,
-    const detail::root_node<Children...>& tree)
+    const parameter_set& parameters)
 {
     std::string output;
     output += "Usage: ";
@@ -263,26 +200,17 @@ std::string cli_help(
     output += "  -h, --help\n      Show this help message\n";
     output += "  --config <file>\n      Read configuration overrides from a file\n";
 
-    for_each_config_parameter(
-        tree,
-        [&output](const auto path, const auto descriptor, const auto& value) {
-            using path_type = std::remove_cvref_t<decltype(path)>;
-
-            output += "  --";
-            detail::append_cli_path<path_type>(output);
-            output += " <value>\n";
-
-            if (!descriptor.description.empty())
-            {
-                output += "      ";
-                output.append(descriptor.description);
-                output += '\n';
-            }
-
-            output += "      current: ";
-            output += detail::format_cli_value(value);
+    for (const auto& parameter : parameters.parameters())
+    {
+        output += "  --" + parameter.path + " <value>\n";
+        if (!parameter.description.empty())
+        {
+            output += "      ";
+            output.append(parameter.description);
             output += '\n';
-        });
+        }
+        output += "      current: " + parameter.value + '\n';
+    }
 
     return output;
 }

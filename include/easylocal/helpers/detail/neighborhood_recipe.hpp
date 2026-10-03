@@ -1,6 +1,6 @@
 #pragma once
 
-#include <easylocal/config/tree.hpp>
+#include <easylocal/config/parameter_set.hpp>
 #include <easylocal/helpers/detail/delta_cost_layer.hpp>
 #include <easylocal/utils/detail/meta.hpp>
 

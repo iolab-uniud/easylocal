@@ -161,9 +161,9 @@ void cli_batch_reuses_transactional_textual_overrides()
         .max_iterations = 200,
     }};
 
-    const auto tree = easylocal::config::root(
-        easylocal::config::named<"application">(app),
-        easylocal::config::named<"solver">(temperature.configuration()));
+    easylocal::config::parameter_set tree;
+    tree.add("application", app);
+    tree.add("solver.temperature", temperature.configuration());
 
     constexpr std::array arguments{
         std::string_view{"--application.instance_file"},
@@ -197,9 +197,9 @@ void cli_validation_errors_leave_configuration_unchanged()
         .max_iterations = 200,
     }};
 
-    const auto tree = easylocal::config::root(
-        easylocal::config::named<"application">(app),
-        easylocal::config::named<"solver">(temperature.configuration()));
+    easylocal::config::parameter_set tree;
+    tree.add("application", app);
+    tree.add("solver.temperature", temperature.configuration());
 
     constexpr std::array arguments{
         std::string_view{"--application.seed=2026"},
@@ -229,9 +229,9 @@ void help_is_generated_from_the_configuration_tree()
         .max_iterations = 200,
     }};
 
-    const auto tree = easylocal::config::root(
-        easylocal::config::named<"application">(app),
-        easylocal::config::named<"solver">(temperature.configuration()));
+    easylocal::config::parameter_set tree;
+    tree.add("application", app);
+    tree.add("solver.temperature", temperature.configuration());
 
     const auto help = cli_help("solver", tree);
 

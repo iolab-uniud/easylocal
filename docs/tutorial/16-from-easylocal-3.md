@@ -13,7 +13,7 @@
 | `Solver` (`SimpleLocalSearch`, token ring, ...) | `easylocal::solvers` |
 | `Tester` | the interactive tester: `tui::run(app, options)` (TextUI adapter) |
 | observers | `easylocal::trace` |
-| `ParameterBox` | parameter schemas and the configuration tree |
+| `ParameterBox` | parameter schemas and parameter sets |
 
 The main differences:
 

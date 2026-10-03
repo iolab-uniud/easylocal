@@ -1,6 +1,6 @@
 #pragma once
 
-#include <easylocal/config/tree.hpp>
+#include <easylocal/config/parameter_set.hpp>
 #include <easylocal/runners/detail/context_concepts.hpp>
 #include <easylocal/runners/search_run.hpp>
 
@@ -94,16 +94,21 @@ public:
         return config::validation_result::success();
     }
 
+    // The parameters, at the root: the runner puts them under "search".
     [[nodiscard]]
-    auto configuration() noexcept
+    config::parameter_set configuration()
     {
-        return config::endpoint<"search">(*this);
+        config::parameter_set parameters;
+        parameters.add(*this);
+        return parameters;
     }
 
     [[nodiscard]]
-    auto configuration() const noexcept
+    config::parameter_set configuration() const
     {
-        return config::endpoint<"search">(*this);
+        config::parameter_set parameters;
+        parameters.add(*this);
+        return parameters;
     }
 
     template<class Run, std::uniform_random_bit_generator RNG>

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <easylocal/config/tree.hpp>
+#include <easylocal/config/parameter_set.hpp>
 #include <easylocal/cost/concepts.hpp>
 #include <easylocal/runners/detail/context_concepts.hpp>
 #include <easylocal/runners/search_run.hpp>
@@ -303,16 +303,22 @@ public:
         return detail::reconfigure(*this, parameters);
     }
 
+    // The parameters, at the root: Simulated Annealing puts them under
+    // "temperature".
     [[nodiscard]]
-    auto configuration() noexcept
+    config::parameter_set configuration()
     {
-        return config::endpoint<"temperature">(*this);
+        config::parameter_set parameters;
+        parameters.add(*this);
+        return parameters;
     }
 
     [[nodiscard]]
-    auto configuration() const noexcept
+    config::parameter_set configuration() const
     {
-        return config::endpoint<"temperature">(*this);
+        config::parameter_set parameters;
+        parameters.add(*this);
+        return parameters;
     }
 
     [[nodiscard]]
@@ -494,16 +500,22 @@ public:
         return config::validation_result::success();
     }
 
+    // The parameters, at the root: Simulated Annealing puts them under
+    // "temperature".
     [[nodiscard]]
-    auto configuration() noexcept
+    config::parameter_set configuration()
     {
-        return config::endpoint<"temperature">(*this);
+        config::parameter_set parameters;
+        parameters.add(*this);
+        return parameters;
     }
 
     [[nodiscard]]
-    auto configuration() const noexcept
+    config::parameter_set configuration() const
     {
-        return config::endpoint<"temperature">(*this);
+        config::parameter_set parameters;
+        parameters.add(*this);
+        return parameters;
     }
 
     [[nodiscard]]
@@ -664,16 +676,22 @@ public:
         return detail::reconfigure(*this, parameters);
     }
 
+    // The parameters, at the root: Simulated Annealing puts them under
+    // "temperature".
     [[nodiscard]]
-    auto configuration() noexcept
+    config::parameter_set configuration()
     {
-        return config::endpoint<"temperature">(*this);
+        config::parameter_set parameters;
+        parameters.add(*this);
+        return parameters;
     }
 
     [[nodiscard]]
-    auto configuration() const noexcept
+    config::parameter_set configuration() const
     {
-        return config::endpoint<"temperature">(*this);
+        config::parameter_set parameters;
+        parameters.add(*this);
+        return parameters;
     }
 
     [[nodiscard]]
@@ -776,16 +794,22 @@ public:
         return detail::reconfigure(*this, parameters);
     }
 
+    // The parameters, at the root: Simulated Annealing puts them under
+    // "temperature".
     [[nodiscard]]
-    auto configuration() noexcept
+    config::parameter_set configuration()
     {
-        return config::endpoint<"temperature">(*this);
+        config::parameter_set parameters;
+        parameters.add(*this);
+        return parameters;
     }
 
     [[nodiscard]]
-    auto configuration() const noexcept
+    config::parameter_set configuration() const
     {
-        return config::endpoint<"temperature">(*this);
+        config::parameter_set parameters;
+        parameters.add(*this);
+        return parameters;
     }
 
     [[nodiscard]]
@@ -977,16 +1001,22 @@ public:
         return detail::reconfigure(*this, parameters);
     }
 
+    // The parameters, at the root: Simulated Annealing puts them under
+    // "temperature".
     [[nodiscard]]
-    auto configuration() noexcept
+    config::parameter_set configuration()
     {
-        return config::endpoint<"temperature">(*this);
+        config::parameter_set parameters;
+        parameters.add(*this);
+        return parameters;
     }
 
     [[nodiscard]]
-    auto configuration() const noexcept
+    config::parameter_set configuration() const
     {
-        return config::endpoint<"temperature">(*this);
+        config::parameter_set parameters;
+        parameters.add(*this);
+        return parameters;
     }
 
     [[nodiscard]]
@@ -1150,16 +1180,22 @@ public:
         return detail::reconfigure(*this, parameters);
     }
 
+    // The parameters, at the root: Simulated Annealing puts them under
+    // "temperature".
     [[nodiscard]]
-    auto configuration() noexcept
+    config::parameter_set configuration()
     {
-        return config::endpoint<"temperature">(*this);
+        config::parameter_set parameters;
+        parameters.add(*this);
+        return parameters;
     }
 
     [[nodiscard]]
-    auto configuration() const noexcept
+    config::parameter_set configuration() const
     {
-        return config::endpoint<"temperature">(*this);
+        config::parameter_set parameters;
+        parameters.add(*this);
+        return parameters;
     }
 
     // Starts the clock.
@@ -1375,16 +1411,22 @@ public:
         return detail::reconfigure(*this, parameters);
     }
 
+    // The parameters, at the root: Simulated Annealing puts them under
+    // "temperature".
     [[nodiscard]]
-    auto configuration() noexcept
+    config::parameter_set configuration()
     {
-        return config::endpoint<"temperature">(*this);
+        config::parameter_set parameters;
+        parameters.add(*this);
+        return parameters;
     }
 
     [[nodiscard]]
-    auto configuration() const noexcept
+    config::parameter_set configuration() const
     {
-        return config::endpoint<"temperature">(*this);
+        config::parameter_set parameters;
+        parameters.add(*this);
+        return parameters;
     }
 
     [[nodiscard]]
@@ -1637,38 +1679,24 @@ public:
     {
     }
 
+    // The temperature policy's parameters under "temperature", the acceptance
+    // criterion's under "acceptance"; the runner puts them under "search".
     [[nodiscard]]
-    auto configuration()
-        requires (
-            config::configuration_provider<TemperaturePolicy> ||
-            config::configuration_provider<Acceptance>)
+    config::parameter_set configuration()
     {
-        auto children = std::tuple_cat(
-            config::configuration_nodes(temperature_policy_),
-            config::configuration_nodes(acceptance_));
-
-        return std::apply(
-            [](auto... nodes) {
-                return config::named<"search">(std::move(nodes)...);
-            },
-            std::move(children));
+        config::parameter_set parameters;
+        config::add_configuration(parameters, "temperature", temperature_policy_);
+        config::add_configuration(parameters, "acceptance", acceptance_);
+        return parameters;
     }
 
     [[nodiscard]]
-    auto configuration() const
-        requires (
-            config::configuration_provider<const TemperaturePolicy> ||
-            config::configuration_provider<const Acceptance>)
+    config::parameter_set configuration() const
     {
-        auto children = std::tuple_cat(
-            config::configuration_nodes(temperature_policy_),
-            config::configuration_nodes(acceptance_));
-
-        return std::apply(
-            [](auto... nodes) {
-                return config::named<"search">(std::move(nodes)...);
-            },
-            std::move(children));
+        config::parameter_set parameters;
+        config::add_configuration(parameters, "temperature", temperature_policy_);
+        config::add_configuration(parameters, "acceptance", acceptance_);
+        return parameters;
     }
 
     template<class Run, std::uniform_random_bit_generator RNG>

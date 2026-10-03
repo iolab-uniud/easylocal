@@ -135,7 +135,7 @@ component specialization:
 easylocal/
   easylocal.hpp   Core umbrella (everything except adapters/)
   utils/          logging; internal type-level utilities
-  config/         typed parameters, configuration tree, CLI/file frontends
+  config/         typed parameters, parameter sets, CLI/file frontends
   trace/          semantic search events, tracer protocol, recorders
   cost/           cost models (easylocal::cost): value contract and delta,
                   semantic relations, lexicographic and hierarchical costs,
@@ -334,11 +334,11 @@ All three MWEs now contain runnable `main` programs and load their small problem
 instances from versioned files under the corresponding `instances/` directory.
 Each `main` owns an application-level `AppParameters` block containing at least
 the instance-file path (and an RNG seed for stochastic examples). The runner
-then exposes its own read-only configuration subtree, so the application root
-combines `application.*` with a caller-named runner node such as `solver.*`
-without manually rebuilding the search/neighborhood hierarchy. This keeps
-application identity outside the framework types while making the effective
-runner configuration introspectable.
+then gives its own parameters as a set with relative paths, which the program
+adds under a prefix of its choice: `application.*` next to `solver.*`, without
+rebuilding the search/neighborhood hierarchy by hand. This keeps application
+identity outside the framework types while making the effective runner
+configuration introspectable.
 
 The Assignment executable is
 `./build/<preset>/examples/assignment/easylocal_assignment_mwe`; Exam
@@ -363,10 +363,9 @@ adapter.
 The first configuration layer is intentionally limited to typed parameter
 blocks. A parameter block owns its ordinary C++ values, declares an internal
 `parameter_schema()` next to those values, and validates its own invariants with
-`validate()`. Generic code can inspect the declared fields through
-`easylocal::config::for_each_parameter` without type erasure or a dynamic
-registry. Defaults remain ordinary member initializers or constructor values;
-they are not duplicated in the schema.
+`validate()`. A block may nest another one with
+`config::group<"name", &Block::member>`. Defaults remain ordinary member
+initializers or constructor values; they are not duplicated in the schema.
 
 `temperature::FixedLengthParameters`, `FirstImprovementParameters`, and
 `NeighborhoodUnionParameters<N>` are current framework-side examples. Concrete
@@ -378,78 +377,51 @@ path and seed belong to the application rather than to EasyLocal. Concrete CLI
 and compact configuration-file frontends are layered separately on top of the
 source-neutral textual override mapper.
 
-### Named configuration tree
+### Parameter sets
 
-Typed leaves can be assembled into a non-owning configuration tree
-without flattening instance identity into the parameter type. For example, two
-`FixedLengthParameters` blocks of the same C++ type can occupy distinct paths:
-
-```cpp
-auto tree = easylocal::config::root(
-    easylocal::config::named<"input">(app),
-    easylocal::config::named<"fast">(
-        easylocal::config::named<"temperature">(fast_temperature)),
-    easylocal::config::named<"slow">(
-        easylocal::config::named<"temperature">(slow_temperature)));
-```
-
-`config::for_each_config_parameter` traverses the tree read-only and exposes a compile-time
-segmented `parameter_path`, the original field descriptor, and a typed const
-reference to the value. The tree stores references to existing parameter blocks;
-it does not own or copy configuration values. Sibling node names and field names
-within a parameter block must be unique at compile time. A named node may expose
-both local parameters and child nodes, which is required for compositional
-objects such as a neighborhood union that owns selection parameters and may also
-contain configurable children.
-
-Framework objects can expose this structure directly. A fully configured
-`Runner` offers a caller-named subtree:
+Typed blocks are collected in a `config::parameter_set`, which gives each field
+a dotted path. Two blocks of the same C++ type occupy distinct paths:
 
 ```cpp
-auto configuration = easylocal::config::root(
-    easylocal::config::named<"application">(app),
-    runner.configuration<"solver">());
+easylocal::config::parameter_set parameters;
+parameters.add("input", app);
+parameters.add("fast.temperature", fast_temperature);
+parameters.add("slow.temperature", slow_temperature);
 ```
 
-`FirstImprovement` contributes `solver.search.*`; Simulated Annealing exposes
-its configurable policy hierarchy such as `solver.search.temperature.*`; and a
-`neighborhood_union(...)` contributes `solver.neighborhood.random_biases`.
-The caller-supplied runner name is what distinguishes multiple otherwise
-identical runner instances (`fast.*`, `slow.*`, and so on).
+`parameters.parameters()` lists every field with its path, description and
+value as text. The set stores references to existing blocks; it does not own
+or copy configuration values. Field names must be unique within a block at
+compile time; a path added twice to a set is rejected with
+`std::invalid_argument`.
 
-Mutable framework/application objects additionally expose validated endpoints.
-`config::at<...>(tree)` resolves one node by compile-time path; callers take a
-typed snapshot, modify it, and commit the whole block through `configure()`:
+Framework objects give their parameters as sets with relative paths, and the
+caller chooses the prefix:
 
 ```cpp
-const auto configuration = easylocal::config::root(
-    easylocal::config::named<"application">(app),
-    runner.configuration<"solver">());
-
-const auto& temperature =
-    easylocal::config::at<"solver", "search", "temperature">(
-        configuration);
-
-auto parameters = temperature.parameters();
-parameters.max_iterations = 500;
-
-const auto validation = temperature.configure(parameters);
+easylocal::config::parameter_set configuration;
+configuration.add("application", app);
+configuration.add("solver", runner.configuration());
 ```
 
-Validation occurs before the owned block is replaced. Policy endpoints can also
-rebuild derived configuration state before committing; for example,
-`FixedLength` recomputes its temperature-level schedule. A failed update leaves
-the previous configuration unchanged. Exposure through a const object remains
-read-only. Configuration currently applies to application values and unbound
-runner recipes/policies; reconfiguration of an already bound/running search is
-deliberately deferred. Concrete external frontends are layered on top of the
-same transactional textual-override adapter rather than changing runtime search
-objects directly.
+`FirstImprovement` contributes `solver.search.*`; Simulated Annealing its policy
+as `solver.search.temperature.*`; and a `neighborhood_union(...)`
+`solver.neighborhood.random_biases`. The prefix is what distinguishes several
+otherwise identical runners (`fast.*`, `slow.*`, and so on).
+
+Objects that rebuild something from their parameters, such as temperature
+policies, take part through `parameters()` and `configure()`: a valid block is
+committed through `configure()`, so `FixedLength` recomputes its
+temperature-level schedule. Exposure through a const object is read-only.
+Configuration applies to application values and unbound runner
+recipes/policies; reconfiguration of an already bound/running search is
+deliberately deferred.
 
 ### Textual override batches
 
-`easylocal::config::apply_overrides` is the shared adapter layer between
-external text sources and the typed configuration tree. A frontend supplies a
+`parameter_set::apply` (also spelled `easylocal::config::apply_overrides`) is
+the shared adapter layer between external text sources and the typed
+parameters. A frontend supplies a
 batch of dotted paths plus textual values; the mapper resolves the paths,
 parses each value using the field's C++ type, stages all affected parameter
 blocks, validates them, and commits only when the complete batch is valid.
@@ -464,8 +436,7 @@ constexpr std::array overrides{
         "solver.neighborhood.random_biases", "[3, 1]"},
 };
 
-const auto result = easylocal::config::apply_overrides(
-    configuration, overrides);
+const auto result = configuration.apply(overrides);
 ```
 
 The initial built-in textual types are `bool`, integral and floating-point
@@ -499,10 +470,10 @@ projection onto `text_override`.
   --solver.neighborhood.random_biases='[3, 1]'
 ```
 
-`config::cli_help(program, tree)` derives help directly from the same tree and
-parameter schemas, including descriptions and current values. CLI syntax errors
-are accumulated by the frontend; typed parsing, unknown-path checks, validation,
-and transactional commit remain responsibilities of `apply_overrides`.
+`config::cli_help(program, parameters)` derives help directly from the same set
+and parameter schemas, including descriptions and current values. CLI syntax
+errors are accumulated by the frontend; typed parsing, unknown-path checks,
+validation, and transactional commit remain responsibilities of `apply`.
 
 ### Compact configuration-file frontend
 
@@ -529,7 +500,7 @@ C++ construction/defaults < configuration file < CLI
 ```
 
 `overlay_overrides` resolves file-vs-CLI precedence first, then one single
-`apply_overrides` call validates and commits the effective batch. Source syntax
+`apply` call validates and commits the effective batch. Source syntax
 errors and effective typed/validation errors all cause failure with zero commits;
 the runnable MWEs return a non-zero exit status after printing diagnostics. CLI
 therefore remains a final explicit override layer rather than a second mutation

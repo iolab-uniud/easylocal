@@ -6,8 +6,8 @@
 #include "tour_length_delta.hpp"
 
 #include <easylocal/config/cli.hpp>
+#include <easylocal/config/parameter_set.hpp>
 #include <easylocal/config/setup.hpp>
-#include <easylocal/config/tree.hpp>
 #include <easylocal/helpers/neighborhood_union.hpp>
 #include <easylocal/runners/runner.hpp>
 #include <easylocal/runners/simulated_annealing.hpp>
@@ -110,9 +110,11 @@ int main(int argc, char* argv[])
                        | delta<TourLengthComponent, SwapTourLengthDeltaEvaluator>())
                 | random_biases(3.0, 1.0));
 
-        const auto configuration = easylocal::config::root(
-            easylocal::config::named<"application">(app_parameters),
-            runner.configuration<"solver">());
+        // The program's parameters under "application", the runner's under
+        // "solver": --application.instance_file, --solver.search.*.
+        easylocal::config::parameter_set configuration;
+        configuration.add("application", app_parameters);
+        configuration.add("solver", runner.configuration());
 
         const auto configured =
             easylocal::config::load_and_apply(argc, argv, configuration);

@@ -1,12 +1,17 @@
 # 9. Configuration
 
-Runners, temperature policies, cost expressions and neighborhood unions expose their
-parameters as a **configuration tree**. Combine it with your own parameters and
-apply the command line and configuration files to it:
+Runners, temperature policies, cost expressions and neighborhood unions expose
+their parameters as a **parameter set**: each parameter has a path, such as
+`search.temperature.cooling_rate`, a description and a value. A runner's
+`configuration()` gives the parameters of its algorithm (`search`), of its cost
+(`cost`) and of its neighborhood (`neighborhood`), with paths relative to the
+runner. The program puts them in its own set, under a prefix of its choice, and
+applies the command line and configuration files to it:
 
 <!-- snippet: tutorial/main.cpp:configuration -->
 ```cpp
-const auto configuration = el::config::root(sa.configuration<"solver">());
+el::config::parameter_set configuration;
+configuration.add("solver", sa.configuration()); // --solver.search.*
 
 const auto configured = el::config::load_and_apply(argc, argv, configuration);
 if (configured.help_requested)
@@ -32,7 +37,9 @@ error: solver.search.temperature: cooling_rate must be finite and in the open in
 ```
 
 Values are applied in place and validated, so the runner sees them when it is
-bound.
+bound. They are applied all or none: when one value is invalid, nothing changes.
+The set refers to the runner, so the runner must stay where it is while the set
+is used.
 
 The weights of the cost expression are parameters too, under `cost`. For the
 weighted sum of [chapter 2](02-cost.md#cost-expressions) in a runner configured
@@ -45,6 +52,12 @@ $ ./program '--solver.cost.weights=[1, 20]'
 A `cost::hard_soft` names its branches, so its sums are
 `solver.cost.hard.weights` and `solver.cost.soft.weights`; children of
 `cost::in_order` and `cost::apply` are named by position (`0`, `1`, ...).
+
+The prefix is the program's choice: `"solver"` here gives `--solver.search.*`.
+A program that configures a single runner could add its parameters without a
+prefix, `configuration.add(sa.configuration())`, for `--search.*`; one that
+combines several things gives each its own prefix, so that their parameters do
+not collide.
 
 Your own parameters take part by describing themselves with a schema:
 
@@ -64,9 +77,15 @@ struct AppParameters
     easylocal::config::validation_result validate() const;
 };
 
-// easylocal::config::root(easylocal::config::named<"application">(app_parameters),
-//                         runner.configuration<"solver">())
+easylocal::config::parameter_set configuration;
+configuration.add("application", app_parameters); // --application.instance_file
+configuration.add("solver", runner.configuration()); // --solver.search.*
 ```
+
+A block may nest another one, as a group of the schema:
+`config::group<"temperature", &Parameters::temperature>("...")` puts the nested
+block's fields under `temperature.`, and validates it together with the
+enclosing one.
 
 ## Configuration files
 
@@ -84,13 +103,13 @@ Values on the command line win over the file.
 ## TOML files
 
 For files with sections, types and comments, the optional `ConfigTOML`
-component reads TOML. Each table is a node of the configuration tree and each
-key a parameter, so the file mirrors the tree:
+component reads TOML. Each table is a prefix and each key a parameter, so the
+file mirrors the paths:
 
 <!-- snippet: tutorial/annealing.toml -->
 ```toml
 # Simulated Annealing for the tutorial's TSP (chapter 9).
-# Each table is a node of the configuration tree, each key a parameter:
+# Each table is a prefix of the paths, each key a parameter:
 # [solver.search.temperature] cooling_rate is solver.search.temperature.cooling_rate.
 
 [solver.search.temperature]
@@ -110,7 +129,8 @@ the same `path = value` override as the command line, and applies them with
 
 <!-- snippet: tutorial/toml_main.cpp:toml -->
 ```cpp
-const auto configuration = el::config::root(sa.configuration<"solver">());
+el::config::parameter_set configuration;
+configuration.add("solver", sa.configuration()); // --solver.search.*
 
 // Read the file: every key becomes a "path = value" override.
 const auto file =
@@ -122,7 +142,7 @@ if (!file)
     return 2;
 }
 
-// Apply the overrides to the tree: all of them, validated, or none.
+// Apply the overrides: all of them, validated, or none.
 const auto applied = el::config::apply_overrides(
     configuration,
     el::config::override_views(file.overrides));

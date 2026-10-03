@@ -1,5 +1,5 @@
+#include <easylocal/config/parameter_set.hpp>
 #include <easylocal/config/setup.hpp>
-#include <easylocal/config/tree.hpp>
 
 #include <cassert>
 #include <cstdint>
@@ -82,9 +82,9 @@ void tree_validation_reports_invalid_untouched_blocks()
 {
     AppParameters app{.instance_file = {}, .seed = 17U};
     SolverParameters solver{};
-    const auto tree = easylocal::config::root(
-        easylocal::config::named<"application">(app),
-        easylocal::config::named<"solver">(solver));
+    easylocal::config::parameter_set tree;
+    tree.add("application", app);
+    tree.add("solver", solver);
 
     const auto validation = easylocal::config::validate(tree);
 
@@ -99,9 +99,9 @@ void cli_overrides_are_applied()
 {
     AppParameters app{};
     SolverParameters solver{};
-    const auto tree = easylocal::config::root(
-        easylocal::config::named<"application">(app),
-        easylocal::config::named<"solver">(solver));
+    easylocal::config::parameter_set tree;
+    tree.add("application", app);
+    tree.add("solver", solver);
 
     char program[] = "solver";
     char seed[] = "--application.seed=2026";
@@ -124,9 +124,9 @@ void cli_has_precedence_over_file()
 
     AppParameters app{};
     SolverParameters solver{};
-    const auto tree = easylocal::config::root(
-        easylocal::config::named<"application">(app),
-        easylocal::config::named<"solver">(solver));
+    easylocal::config::parameter_set tree;
+    tree.add("application", app);
+    tree.add("solver", solver);
 
     auto config_option = std::string{"--config="} + file.path.string();
     char program[] = "solver";
@@ -144,9 +144,9 @@ void invalid_batch_is_transactional()
 {
     AppParameters app{};
     SolverParameters solver{};
-    const auto tree = easylocal::config::root(
-        easylocal::config::named<"application">(app),
-        easylocal::config::named<"solver">(solver));
+    easylocal::config::parameter_set tree;
+    tree.add("application", app);
+    tree.add("solver", solver);
 
     char program[] = "solver";
     char seed[] = "--application.seed=2026";
@@ -164,9 +164,9 @@ void invalid_baseline_can_be_repaired_by_overrides()
 {
     AppParameters app{.instance_file = {}, .seed = 17U};
     SolverParameters solver{};
-    const auto tree = easylocal::config::root(
-        easylocal::config::named<"application">(app),
-        easylocal::config::named<"solver">(solver));
+    easylocal::config::parameter_set tree;
+    tree.add("application", app);
+    tree.add("solver", solver);
 
     char program[] = "solver";
     char repair[] = "--application.instance_file=repaired.dat";
@@ -182,9 +182,9 @@ void invalid_untouched_baseline_preserves_transactionality()
 {
     AppParameters app{.instance_file = {}, .seed = 17U};
     SolverParameters solver{};
-    const auto tree = easylocal::config::root(
-        easylocal::config::named<"application">(app),
-        easylocal::config::named<"solver">(solver));
+    easylocal::config::parameter_set tree;
+    tree.add("application", app);
+    tree.add("solver", solver);
 
     char program[] = "solver";
     char cooling[] = "--solver.cooling_rate=0.8";
@@ -204,9 +204,9 @@ void help_remains_frontend_policy()
 {
     AppParameters app{.instance_file = {}, .seed = 17U};
     SolverParameters solver{};
-    const auto tree = easylocal::config::root(
-        easylocal::config::named<"application">(app),
-        easylocal::config::named<"solver">(solver));
+    easylocal::config::parameter_set tree;
+    tree.add("application", app);
+    tree.add("solver", solver);
 
     char program[] = "solver";
     char help[] = "--help";
@@ -225,9 +225,9 @@ void diagnostics_have_a_uniform_rendering_surface()
     {
         AppParameters app{};
         SolverParameters solver{};
-        const auto tree = easylocal::config::root(
-            easylocal::config::named<"application">(app),
-            easylocal::config::named<"solver">(solver));
+        easylocal::config::parameter_set tree;
+        tree.add("application", app);
+        tree.add("solver", solver);
 
         char program[] = "solver";
         char invalid[] = "--solver.cooling_rate=2.0";
@@ -246,9 +246,9 @@ void diagnostics_have_a_uniform_rendering_surface()
     {
         AppParameters app{};
         SolverParameters solver{};
-        const auto tree = easylocal::config::root(
-            easylocal::config::named<"application">(app),
-            easylocal::config::named<"solver">(solver));
+        easylocal::config::parameter_set tree;
+        tree.add("application", app);
+        tree.add("solver", solver);
 
         char program[] = "solver";
         char invalid[] = "--solver.cooling_rate=not-a-number";
@@ -271,9 +271,9 @@ void every_diagnostic_source_is_rendered()
 {
     const auto rendered = [](const int argc, char** argv, AppParameters app) {
         SolverParameters solver{};
-        const auto tree = easylocal::config::root(
-            easylocal::config::named<"application">(app),
-            easylocal::config::named<"solver">(solver));
+        easylocal::config::parameter_set tree;
+        tree.add("application", app);
+        tree.add("solver", solver);
         const auto result = easylocal::config::load_and_apply(argc, argv, tree);
         assert(!result);
         std::ostringstream output;

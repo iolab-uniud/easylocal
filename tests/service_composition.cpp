@@ -3,7 +3,7 @@
 #include "support/assignment_capacity_delta.hpp"
 
 #include <easylocal/config/overrides.hpp>
-#include <easylocal/config/tree.hpp>
+#include <easylocal/config/parameter_set.hpp>
 #include <easylocal/cost.hpp>
 #include <easylocal/helpers/detail/evaluation.hpp>
 #include <easylocal/helpers/detail/neighborhood_recipe.hpp>
@@ -459,8 +459,8 @@ int main()
               component<AssignmentCardinalityComponent>(),
               component<ColocatedCardinalityComponent>());
 
-    const auto sum_configuration = easylocal::config::root(
-        easylocal::config::named<"solver">(sum_recipe.configuration()));
+    easylocal::config::parameter_set sum_configuration;
+    sum_configuration.add("solver.cost", sum_recipe.configuration());
     constexpr std::array sum_override{
         easylocal::config::text_override{
             "solver.cost.weights",
@@ -481,9 +481,8 @@ int main()
         solution_manager<NoAggregateSolutionManager>()
         | easylocal::cost::sum(easylocal::cost::weighted(
               component<AssignmentCardinalityComponent>(), 3));
-    const auto aggregation_configuration = easylocal::config::root(
-        easylocal::config::named<"solver">(
-            no_aggregate_recipe.configuration()));
+    easylocal::config::parameter_set aggregation_configuration;
+    aggregation_configuration.add("solver.cost", no_aggregate_recipe.configuration());
     constexpr std::array aggregation_override{
         easylocal::config::text_override{
             "solver.cost.weights",

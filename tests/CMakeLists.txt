@@ -570,17 +570,17 @@ add_test(
 )
 
 add_executable(
-    easylocal_configuration_tree_test
-    configuration_tree.cpp
+    easylocal_parameter_set_test
+    parameter_set.cpp
 )
 target_link_libraries(
-    easylocal_configuration_tree_test
+    easylocal_parameter_set_test
     PRIVATE
-        easylocal_tsp_mwe_model
+        EasyLocal::Core
 )
 add_test(
-    NAME easylocal.configuration-tree
-    COMMAND easylocal_configuration_tree_test
+    NAME easylocal.parameter-set
+    COMMAND easylocal_parameter_set_test
 )
 
 
@@ -898,12 +898,6 @@ easylocal_add_compile_failure_test(
     simulated_annealing_non_numeric_cost.cpp
     "MetropolisAcceptance requires candidate_cost - current_cost"
     "MetropolisAcceptance"
-)
-easylocal_add_compile_failure_test(
-    duplicate-configuration-node-name
-    duplicate_configuration_node_name.cpp
-    "configuration siblings must have unique names"
-    "duplicate"
 )
 easylocal_add_compile_failure_test(
     duplicate-parameter-field-name

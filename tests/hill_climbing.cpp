@@ -1,10 +1,11 @@
-#include <easylocal/config/tree.hpp>
+#include <easylocal/config/parameter_set.hpp>
 #include <easylocal/cost.hpp>
 #include <easylocal/runners/hill_climbing.hpp>
 #include <easylocal/runners/run_control.hpp>
 #include <easylocal/runners/runner.hpp>
 #include <easylocal/trace.hpp>
 
+#include <algorithm>
 #include <array>
 #include <cstddef>
 #include <iostream>
@@ -152,17 +153,6 @@ auto expect(const bool condition, const std::string_view description) -> bool
     return true;
 }
 
-template<class Path, std::size_t Size>
-[[nodiscard]]
-consteval auto path_is(const std::array<std::string_view, Size>& expected) -> bool
-{
-    constexpr auto actual = Path::segments();
-    if constexpr (actual.size() != Size)
-        return false;
-    else
-        return actual == expected;
-}
-
 } // namespace
 
 int main()
@@ -179,31 +169,25 @@ int main()
             "hill climbing defaults pass validation");
 
         HillClimbing climbing{HillClimbingParameters{}};
-        const auto configuration = easylocal::config::root(climbing.configuration());
-
-        bool saw_idle_limit = false;
-        easylocal::config::for_each_config_parameter(
-            configuration,
-            [&](const auto path, const auto, const auto& value) {
-                using path_type = std::remove_cvref_t<decltype(path)>;
-                if constexpr (path_is<path_type>(std::array<std::string_view, 2>{
-                                  "search",
-                                  "max_idle_iterations"}))
-                {
-                    saw_idle_limit = value == 1000;
-                }
-            });
+        const auto configuration = climbing.configuration();
         ok &= expect(
-            saw_idle_limit,
-            "hill climbing exposes its idle limit in the configuration");
+            std::ranges::any_of(
+                configuration.parameters(),
+                [](const easylocal::config::parameter_info& parameter) {
+                    return parameter.path == "max_idle_iterations"
+                        && parameter.value == "1000";
+                }),
+            "hill climbing exposes max_idle_iterations in its configuration");
 
-        const auto& endpoint = easylocal::config::at<"search">(configuration);
+        const std::array invalid{
+            easylocal::config::text_override{"max_idle_iterations", "0"}};
         ok &= expect(
-            !endpoint.configure(HillClimbingParameters{.max_idle_iterations = 0}),
+            !configuration.apply(invalid),
             "hill climbing configuration rejects invalid parameters");
+        const std::array valid{
+            easylocal::config::text_override{"max_idle_iterations", "5"}};
         ok &= expect(
-            static_cast<bool>(
-                endpoint.configure(HillClimbingParameters{.max_idle_iterations = 5}))
+            static_cast<bool>(configuration.apply(valid))
                 && climbing.parameters().max_idle_iterations == 5,
             "hill climbing configuration updates its parameters");
     }

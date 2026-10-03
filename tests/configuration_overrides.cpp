@@ -59,11 +59,10 @@ void text_overrides_apply_to_multiple_typed_blocks()
         .random_biases = {1.0, 1.0},
     };
 
-    const auto tree = easylocal::config::root(
-        easylocal::config::named<"application">(app),
-        easylocal::config::named<"solver">(
-            temperature.configuration(),
-            easylocal::config::named<"neighborhood">(neighborhood)));
+    easylocal::config::parameter_set tree;
+    tree.add("application", app);
+    tree.add("solver.temperature", temperature.configuration());
+    tree.add("solver.neighborhood", neighborhood);
 
     constexpr std::array overrides{
         text_override{"application.instance_file", "sample.tsp"},
@@ -96,8 +95,8 @@ void cross_field_overrides_are_validated_as_one_block()
         .max_iterations = 200,
     }};
 
-    const auto tree = easylocal::config::root(
-        easylocal::config::named<"solver">(temperature.configuration()));
+    easylocal::config::parameter_set tree;
+    tree.add("solver.temperature", temperature.configuration());
 
     constexpr std::array overrides{
         text_override{"solver.temperature.initial_temperature", "0.10"},
@@ -121,9 +120,9 @@ void invalid_batch_is_globally_atomic()
         .max_iterations = 200,
     }};
 
-    const auto tree = easylocal::config::root(
-        easylocal::config::named<"application">(app),
-        easylocal::config::named<"solver">(temperature.configuration()));
+    easylocal::config::parameter_set tree;
+    tree.add("application", app);
+    tree.add("solver.temperature", temperature.configuration());
 
     constexpr std::array overrides{
         text_override{"application.seed", "99"},
@@ -150,9 +149,9 @@ void parse_unknown_and_duplicate_errors_are_reported_without_commit()
         .max_iterations = 200,
     }};
 
-    const auto tree = easylocal::config::root(
-        easylocal::config::named<"application">(app),
-        easylocal::config::named<"solver">(temperature.configuration()));
+    easylocal::config::parameter_set tree;
+    tree.add("application", app);
+    tree.add("solver.temperature", temperature.configuration());
 
     constexpr std::array overrides{
         text_override{"application.seed", "not-an-integer"},
@@ -183,8 +182,8 @@ void parse_unknown_and_duplicate_errors_are_reported_without_commit()
 void unbracketed_fixed_arrays_are_supported()
 {
     NeighborhoodUnionParameters<2> neighborhood{};
-    const auto tree = easylocal::config::root(
-        easylocal::config::named<"neighborhood">(neighborhood));
+    easylocal::config::parameter_set tree;
+    tree.add("neighborhood", neighborhood);
 
     constexpr std::array overrides{
         text_override{"neighborhood.random_biases", "2.5, 0"},
@@ -209,10 +208,9 @@ void parameter_group_local_values_can_be_overridden()
         .max_iterations = 200,
     };
 
-    const auto tree = easylocal::config::root(
-        easylocal::config::named<"solver">(
-            neighborhood,
-            easylocal::config::named<"temperature">(temperature)));
+    easylocal::config::parameter_set tree;
+    tree.add("solver", neighborhood);
+    tree.add("solver.temperature", temperature);
 
     constexpr std::array overrides{
         text_override{"solver.random_biases", "[4, 1]"},
@@ -238,11 +236,10 @@ void diagnostics_accumulate_across_independent_failures()
         .random_biases = {1.0, 1.0},
     };
 
-    const auto tree = easylocal::config::root(
-        easylocal::config::named<"application">(app),
-        easylocal::config::named<"solver">(
-            temperature.configuration(),
-            easylocal::config::named<"neighborhood">(neighborhood)));
+    easylocal::config::parameter_set tree;
+    tree.add("application", app);
+    tree.add("solver.temperature", temperature.configuration());
+    tree.add("solver.neighborhood", neighborhood);
 
     constexpr std::array overrides{
         text_override{"application.seed", "not-an-integer"},
@@ -341,7 +338,8 @@ void cost_expression_weights_are_runtime_configurable()
               easylocal::cost::in_order(
                   easylocal::component<ScaledValue<3>>(),
                   easylocal::cost::sum(easylocal::component<ScaledValue<4>>())));
-    const auto tree = easylocal::config::root(recipe.configuration());
+    easylocal::config::parameter_set tree;
+    tree.add("cost", recipe.configuration());
 
     constexpr std::array overrides{
         text_override{"cost.hard.weights", "[2, 20]"},
@@ -362,8 +360,8 @@ void cost_expression_weights_are_runtime_configurable()
 void const_parameter_nodes_are_reported_as_read_only()
 {
     const AppParameters app{};
-    const auto tree = easylocal::config::root(
-        easylocal::config::named<"application">(app));
+    easylocal::config::parameter_set tree;
+    tree.add("application", app);
 
     constexpr std::array overrides{
         text_override{"application.seed", "99"},

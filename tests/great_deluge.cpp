@@ -1,10 +1,11 @@
-#include <easylocal/config/tree.hpp>
+#include <easylocal/config/parameter_set.hpp>
 #include <easylocal/cost.hpp>
 #include <easylocal/runners/great_deluge.hpp>
 #include <easylocal/runners/run_control.hpp>
 #include <easylocal/runners/runner.hpp>
 #include <easylocal/trace.hpp>
 
+#include <algorithm>
 #include <array>
 #include <cstddef>
 #include <iostream>
@@ -148,17 +149,6 @@ auto expect(const bool condition, const std::string_view description) -> bool
     return true;
 }
 
-template<class Path, std::size_t Size>
-[[nodiscard]]
-consteval auto path_is(const std::array<std::string_view, Size>& expected) -> bool
-{
-    constexpr auto actual = Path::segments();
-    if constexpr (actual.size() != Size)
-        return false;
-    else
-        return actual == expected;
-}
-
 } // namespace
 
 int main()
@@ -178,31 +168,23 @@ int main()
             "great deluge rejects invalid levels, rates and samples");
 
         GreatDeluge deluge{GreatDelugeParameters{}};
-        const auto configuration = easylocal::config::root(deluge.configuration());
-
-        bool saw_level_rate = false;
-        easylocal::config::for_each_config_parameter(
-            configuration,
-            [&](const auto path, const auto, const auto& value) {
-                using path_type = std::remove_cvref_t<decltype(path)>;
-                if constexpr (path_is<path_type>(std::array<std::string_view, 2>{
-                                  "search",
-                                  "level_rate"}))
-                {
-                    saw_level_rate = value == 0.99;
-                }
-            });
+        const auto configuration = deluge.configuration();
         ok &= expect(
-            saw_level_rate,
-            "great deluge exposes its level rate in the configuration");
+            std::ranges::any_of(
+                configuration.parameters(),
+                [](const easylocal::config::parameter_info& parameter) {
+                    return parameter.path == "level_rate" && parameter.value == "0.99";
+                }),
+            "great deluge exposes level_rate in its configuration");
 
-        const auto& endpoint = easylocal::config::at<"search">(configuration);
+        const std::array invalid{easylocal::config::text_override{"level_rate", "0"}};
         ok &= expect(
-            !endpoint.configure(GreatDelugeParameters{.level_rate = 0.0}),
+            !configuration.apply(invalid),
             "great deluge configuration rejects invalid parameters");
+        const std::array valid{
+            easylocal::config::text_override{"neighbors_sampled", "7"}};
         ok &= expect(
-            static_cast<bool>(
-                endpoint.configure(GreatDelugeParameters{.neighbors_sampled = 7}))
+            static_cast<bool>(configuration.apply(valid))
                 && deluge.parameters().neighbors_sampled == 7,
             "great deluge configuration updates its parameters");
     }

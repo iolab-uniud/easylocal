@@ -1,4 +1,4 @@
-#include <easylocal/config/tree.hpp>
+#include <easylocal/config/parameter_set.hpp>
 #include <easylocal/cost.hpp>
 #include <easylocal/runners/hill_climbing.hpp>
 #include <easylocal/runners/late_acceptance_hill_climbing.hpp>
@@ -6,6 +6,7 @@
 #include <easylocal/runners/runner.hpp>
 #include <easylocal/trace.hpp>
 
+#include <algorithm>
 #include <array>
 #include <cstddef>
 #include <iostream>
@@ -161,17 +162,6 @@ auto expect(const bool condition, const std::string_view description) -> bool
     return true;
 }
 
-template<class Path, std::size_t Size>
-[[nodiscard]]
-consteval auto path_is(const std::array<std::string_view, Size>& expected) -> bool
-{
-    constexpr auto actual = Path::segments();
-    if constexpr (actual.size() != Size)
-        return false;
-    else
-        return actual == expected;
-}
-
 } // namespace
 
 int main()
@@ -191,32 +181,22 @@ int main()
             "late acceptance defaults pass validation");
 
         LateAcceptanceHillClimbing climbing{LateAcceptanceHillClimbingParameters{}};
-        const auto configuration = easylocal::config::root(climbing.configuration());
-
-        bool saw_history_length = false;
-        easylocal::config::for_each_config_parameter(
-            configuration,
-            [&](const auto path, const auto, const auto& value) {
-                using path_type = std::remove_cvref_t<decltype(path)>;
-                if constexpr (path_is<path_type>(std::array<std::string_view, 2>{
-                                  "search",
-                                  "history_length"}))
-                {
-                    saw_history_length = value == 10;
-                }
-            });
+        const auto configuration = climbing.configuration();
         ok &= expect(
-            saw_history_length,
-            "late acceptance exposes its history length in the configuration");
+            std::ranges::any_of(
+                configuration.parameters(),
+                [](const easylocal::config::parameter_info& parameter) {
+                    return parameter.path == "history_length" && parameter.value == "10";
+                }),
+            "late acceptance exposes history_length in its configuration");
 
-        const auto& endpoint = easylocal::config::at<"search">(configuration);
+        const std::array invalid{easylocal::config::text_override{"history_length", "0"}};
         ok &= expect(
-            !endpoint.configure(
-                LateAcceptanceHillClimbingParameters{.history_length = 0}),
+            !configuration.apply(invalid),
             "late acceptance configuration rejects invalid parameters");
+        const std::array valid{easylocal::config::text_override{"history_length", "3"}};
         ok &= expect(
-            static_cast<bool>(endpoint.configure(
-                LateAcceptanceHillClimbingParameters{.history_length = 3}))
+            static_cast<bool>(configuration.apply(valid))
                 && climbing.parameters().history_length == 3,
             "late acceptance configuration updates its parameters");
     }

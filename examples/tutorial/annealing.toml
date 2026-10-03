@@ -1,5 +1,5 @@
 # Simulated Annealing for the tutorial's TSP (chapter 9).
-# Each table is a node of the configuration tree, each key a parameter:
+# Each table is a prefix of the paths, each key a parameter:
 # [solver.search.temperature] cooling_rate is solver.search.temperature.cooling_rate.
 
 [solver.search.temperature]

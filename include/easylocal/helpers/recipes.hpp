@@ -1,6 +1,6 @@
 #pragma once
 
-#include <easylocal/config/tree.hpp>
+#include <easylocal/config/parameter_set.hpp>
 #include <easylocal/cost.hpp>
 #include <easylocal/helpers/detail/neighborhood_recipe.hpp>
 #include <easylocal/helpers/detail/solution_manager_recipe.hpp>

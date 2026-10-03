@@ -40,11 +40,11 @@ convenient in a notebook or a script.
 
 **What.** An optional adapter, like the TextUI and the REST service, that
 exposes a compiled app to Python or Julia: list its runners, set their
-parameters through the configuration tree, create a Session on an Input, run
+parameters through their parameter set, create a Session on an Input, run
 runners by name, and read solutions, costs and traces. The C++ problem is
 written once; the scripting side never reimplements it. It would build on the
 same public surface the other adapters use (`app`, `Session`, `app.run`, the
-configuration tree), with a binding library for Python, such as nanobind, and
+parameter sets), with a binding library for Python, such as nanobind, and
 a C interface for Julia.
 
 **When.** Not scheduled. Like the other adapters, it would live outside

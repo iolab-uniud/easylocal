@@ -9,10 +9,9 @@
 #include <easylocal/config/cli.hpp>
 #include <easylocal/config/file.hpp>
 #include <easylocal/config/overrides.hpp>
+#include <easylocal/config/parameter_set.hpp>
 #include <easylocal/config/parameters.hpp>
 #include <easylocal/config/setup.hpp>
-#include <easylocal/config/tree.hpp>
-#include <easylocal/config/validation.hpp>
 #include <easylocal/cost.hpp>
 #include <easylocal/helpers.hpp>
 #include <easylocal/runners.hpp>

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <easylocal/config/tree.hpp>
+#include <easylocal/config/parameter_set.hpp>
 #include <easylocal/helpers/detail/cost_expression.hpp>
 #include <easylocal/helpers/detail/cost_layer.hpp>
 #include <easylocal/utils/detail/meta.hpp>
@@ -103,19 +103,19 @@ public:
     }
 
     // The configurable parameters of the expression (the weights of its
-    // sums, the parameters of its functions), under "cost".
+    // sums, the parameters of its functions); a runner puts them under "cost".
     [[nodiscard]]
-    auto configuration()
+    config::parameter_set configuration()
         requires expression_type::configurable
     {
-        return expression_.template configuration<"cost">();
+        return expression_.configuration();
     }
 
     [[nodiscard]]
-    auto configuration() const
+    config::parameter_set configuration() const
         requires expression_type::configurable
     {
-        return expression_.template configuration<"cost">();
+        return expression_.configuration();
     }
 
 private:

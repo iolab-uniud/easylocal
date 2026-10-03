@@ -126,6 +126,47 @@ constexpr parameter_field<Name, Member> field(
     return {.description = description};
 }
 
+// A member that is itself a parameter block, nested in the schema: its fields
+// are under "Name.", and its validate() runs with the enclosing block's, e.g.
+// group<"temperature", &AnnealingParameters::temperature>("Temperature schedule").
+template<fixed_string Name, auto Member>
+    requires std::is_member_object_pointer_v<decltype(Member)>
+struct parameter_group
+{
+    static_assert(!Name.view().empty(), "parameter group name must not be empty");
+
+    using member_pointer_type = decltype(Member);
+    using owner_type =
+        typename detail::member_pointer_traits<member_pointer_type>::owner_type;
+    using value_type =
+        typename detail::member_pointer_traits<member_pointer_type>::value_type;
+
+    static constexpr auto member = Member;
+
+    std::string_view description{};
+
+    [[nodiscard]]
+    static constexpr std::string_view name() noexcept
+    {
+        return Name.view();
+    }
+};
+
+template<fixed_string Name, auto Member>
+    requires std::is_member_object_pointer_v<decltype(Member)>
+[[nodiscard]]
+constexpr parameter_group<Name, Member> group(
+    const std::string_view description = {}) noexcept
+{
+    return {.description = description};
+}
+
+template<class Descriptor>
+inline constexpr bool is_parameter_group_v = false;
+
+template<fixed_string Name, auto Member>
+inline constexpr bool is_parameter_group_v<parameter_group<Name, Member>> = true;
+
 template<class... Fields>
 [[nodiscard]]
 constexpr std::tuple<Fields...> fields(Fields... parameter_fields) noexcept
@@ -164,6 +205,7 @@ concept configurable_endpoint =
         } -> std::same_as<validation_result>;
     };
 
+// The fields of a block, without its nested groups: function(descriptor, value).
 template<parameter_block Parameters, class Function>
 constexpr void for_each_parameter(
     Parameters& parameters,
@@ -179,10 +221,11 @@ constexpr void for_each_parameter(
                     static_assert(std::same_as<
                         std::remove_cv_t<typename descriptor_type::owner_type>,
                         std::remove_cv_t<Parameters>>);
-                    std::invoke(
-                        function,
-                        descriptors,
-                        parameters.*descriptor_type::member);
+                    if constexpr (!is_parameter_group_v<descriptor_type>)
+                        std::invoke(
+                            function,
+                            descriptors,
+                            parameters.*descriptor_type::member);
                 }(),
                 ...);
         },
@@ -204,10 +247,11 @@ constexpr void for_each_parameter(
                     static_assert(std::same_as<
                         std::remove_cv_t<typename descriptor_type::owner_type>,
                         std::remove_cv_t<Parameters>>);
-                    std::invoke(
-                        function,
-                        descriptors,
-                        parameters.*descriptor_type::member);
+                    if constexpr (!is_parameter_group_v<descriptor_type>)
+                        std::invoke(
+                            function,
+                            descriptors,
+                            parameters.*descriptor_type::member);
                 }(),
                 ...);
         },

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <easylocal/config/tree.hpp>
+#include <easylocal/config/parameter_set.hpp>
 #include <easylocal/cost.hpp>
 #include <easylocal/utils/detail/attributes.hpp>
 
@@ -8,6 +8,8 @@
 #include <concepts>
 #include <cstddef>
 #include <functional>
+#include <string>
+#include <string_view>
 #include <tuple>
 #include <type_traits>
 #include <utility>
@@ -104,68 +106,30 @@ using component_value_t = std::remove_cvref_t<decltype(
 template<class... Tuples>
 using tuple_cat_t = decltype(std::tuple_cat(std::declval<Tuples>()...));
 
-// Configuration names of positional children: "0", "1", ...
-[[nodiscard]]
-consteval std::size_t decimal_digits(std::size_t value)
-{
-    return value < 10 ? 1 : 1 + decimal_digits(value / 10);
-}
-
-template<std::size_t Index>
-struct index_text
-{
-    char value[decimal_digits(Index) + 1]{};
-
-    consteval index_text()
-    {
-        auto rest = Index;
-        for (auto position = decimal_digits(Index); position > 0; --position)
-        {
-            value[position - 1] = static_cast<char>('0' + rest % 10);
-            rest /= 10;
-        }
-    }
-};
-
-template<std::size_t Index>
-inline constexpr index_text<Index> index_text_v{};
-
-template<std::size_t Index>
-inline constexpr config::fixed_string index_name{index_text_v<Index>.value};
-
-template<config::fixed_string Name, class Node>
-[[nodiscard]]
-constexpr auto node_configuration(Node& node)
+// The parameters of a child node, under prefix, when it has any.
+template<class Node>
+void add_node_configuration(
+    config::parameter_set& parameters,
+    const std::string_view prefix,
+    Node& node)
 {
     if constexpr (std::remove_const_t<Node>::configurable)
     {
-        return std::tuple{node.template configuration<Name>()};
-    }
-    else
-    {
-        return std::tuple{};
+        parameters.add(prefix, node.configuration());
     }
 }
 
+// The parameters of positional children, under their positions ("0", "1").
 template<class Children>
-[[nodiscard]]
-constexpr auto indexed_configurations(Children& children)
+void add_indexed_configurations(config::parameter_set& parameters, Children& children)
 {
-    return [&]<std::size_t... Indices>(std::index_sequence<Indices...>) {
-        return std::tuple_cat(
-            node_configuration<index_name<Indices>>(
-                std::get<Indices>(children))...);
-    }(std::make_index_sequence<
-        std::tuple_size_v<std::remove_const_t<Children>>>{});
-}
-
-template<config::fixed_string Name, class Nodes>
-[[nodiscard]]
-constexpr auto configuration_group(Nodes nodes)
-{
-    return std::apply(
-        [](auto... node) { return config::named<Name>(std::move(node)...); },
-        std::move(nodes));
+    [&]<std::size_t... Indices>(std::index_sequence<Indices...>) {
+        (add_node_configuration(
+             parameters,
+             std::to_string(Indices),
+             std::get<Indices>(children)),
+            ...);
+    }(std::make_index_sequence<std::tuple_size_v<std::remove_const_t<Children>>>{});
 }
 
 template<class Expression, class Solution>
@@ -382,18 +346,23 @@ public:
         }(std::index_sequence_for<Terms...>{});
     }
 
-    template<config::fixed_string Name>
+    // The weights, and the parameters of the terms under their positions.
     [[nodiscard]]
-    auto configuration()
+    config::parameter_set configuration()
     {
-        return configuration_of<Name>(*this);
+        config::parameter_set parameters;
+        parameters.add(parameters_);
+        add_indexed_configurations(parameters, children_);
+        return parameters;
     }
 
-    template<config::fixed_string Name>
     [[nodiscard]]
-    auto configuration() const
+    config::parameter_set configuration() const
     {
-        return configuration_of<Name>(*this);
+        config::parameter_set parameters;
+        parameters.add(parameters_);
+        add_indexed_configurations(parameters, children_);
+        return parameters;
     }
 
 private:
@@ -406,17 +375,6 @@ private:
     {
         return cost_node<typename sum_term<Term>::child_type, Solution>{
             sum_term<Term>::child(std::move(term))};
-    }
-
-    template<config::fixed_string Name, class Self>
-    [[nodiscard]]
-    static auto configuration_of(Self& self)
-    {
-        return std::apply(
-            [&](auto... child) {
-                return config::named<Name>(self.parameters_, std::move(child)...);
-            },
-            indexed_configurations(self.children_));
     }
 
     parameters_type parameters_;
@@ -469,16 +427,14 @@ public:
         }(std::index_sequence_for<Children...>{});
     }
 
-    [[nodiscard]]
-    auto configurations()
+    void add_configurations(config::parameter_set& parameters)
     {
-        return indexed_configurations(children_);
+        add_indexed_configurations(parameters, children_);
     }
 
-    [[nodiscard]]
-    auto configurations() const
+    void add_configurations(config::parameter_set& parameters) const
     {
-        return indexed_configurations(children_);
+        add_indexed_configurations(parameters, children_);
     }
 
 private:
@@ -522,20 +478,23 @@ public:
             values);
     }
 
-    template<config::fixed_string Name>
+    // The parameters of the children, under their positions.
     [[nodiscard]]
-    auto configuration()
+    config::parameter_set configuration()
         requires configurable
     {
-        return configuration_group<Name>(children_.configurations());
+        config::parameter_set parameters;
+        children_.add_configurations(parameters);
+        return parameters;
     }
 
-    template<config::fixed_string Name>
     [[nodiscard]]
-    auto configuration() const
+    config::parameter_set configuration() const
         requires configurable
     {
-        return configuration_group<Name>(children_.configurations());
+        config::parameter_set parameters;
+        children_.add_configurations(parameters);
+        return parameters;
     }
 
 private:
@@ -595,32 +554,28 @@ public:
         return hard_.template evaluate<0>(values);
     }
 
-    template<config::fixed_string Name>
+    // The parameters of the branches, under "hard" and "soft".
     [[nodiscard]]
-    auto configuration()
+    config::parameter_set configuration()
         requires configurable
     {
-        return configuration_of<Name>(*this);
+        config::parameter_set parameters;
+        add_node_configuration(parameters, "hard", hard_);
+        add_node_configuration(parameters, "soft", soft_);
+        return parameters;
     }
 
-    template<config::fixed_string Name>
     [[nodiscard]]
-    auto configuration() const
+    config::parameter_set configuration() const
         requires configurable
     {
-        return configuration_of<Name>(*this);
+        config::parameter_set parameters;
+        add_node_configuration(parameters, "hard", hard_);
+        add_node_configuration(parameters, "soft", soft_);
+        return parameters;
     }
 
 private:
-    template<config::fixed_string Name, class Self>
-    [[nodiscard]]
-    static auto configuration_of(Self& self)
-    {
-        return configuration_group<Name>(std::tuple_cat(
-            node_configuration<"hard">(self.hard_),
-            node_configuration<"soft">(self.soft_)));
-    }
-
     EASYLOCAL_NO_UNIQUE_ADDRESS hard_node hard_;
     EASYLOCAL_NO_UNIQUE_ADDRESS soft_node soft_;
 };
@@ -710,32 +665,29 @@ public:
             function_.better_or_equivalent(candidate, reference));
     }
 
-    template<config::fixed_string Name>
+    // The function's parameters, at the root, and the children's, under their
+    // positions.
     [[nodiscard]]
-    auto configuration()
+    config::parameter_set configuration()
         requires configurable
     {
-        return configuration_of<Name>(*this);
+        config::parameter_set parameters;
+        config::add_configuration(parameters, {}, function_);
+        children_.add_configurations(parameters);
+        return parameters;
     }
 
-    template<config::fixed_string Name>
     [[nodiscard]]
-    auto configuration() const
+    config::parameter_set configuration() const
         requires configurable
     {
-        return configuration_of<Name>(*this);
+        config::parameter_set parameters;
+        config::add_configuration(parameters, {}, function_);
+        children_.add_configurations(parameters);
+        return parameters;
     }
 
 private:
-    template<config::fixed_string Name, class Self>
-    [[nodiscard]]
-    static auto configuration_of(Self& self)
-    {
-        return configuration_group<Name>(std::tuple_cat(
-            config::configuration_nodes(self.function_),
-            self.children_.configurations()));
-    }
-
     EASYLOCAL_NO_UNIQUE_ADDRESS Function function_;
     EASYLOCAL_NO_UNIQUE_ADDRESS children_type children_;
 };

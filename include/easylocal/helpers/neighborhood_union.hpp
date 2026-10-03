@@ -1,9 +1,8 @@
 #pragma once
 
-#include <easylocal/helpers/neighborhood_explorer.hpp>
-
-#include <easylocal/config/tree.hpp>
+#include <easylocal/config/parameter_set.hpp>
 #include <easylocal/helpers/detail/evaluation.hpp>
+#include <easylocal/helpers/neighborhood_explorer.hpp>
 #include <easylocal/helpers/recipes.hpp>
 #include <easylocal/trace/events.hpp>
 #include <easylocal/trace/tracer.hpp>
@@ -16,8 +15,8 @@
 #include <cstddef>
 #include <iterator>
 #include <memory>
-#include <random>
 #include <optional>
+#include <random>
 #include <ranges>
 #include <tuple>
 #include <type_traits>
@@ -882,16 +881,21 @@ public:
         return config::validation_result::success();
     }
 
+    // The biases, at the root: a runner puts them under "neighborhood".
     [[nodiscard]]
-    auto configuration() noexcept
+    config::parameter_set configuration()
     {
-        return config::endpoint<"neighborhood">(*this);
+        config::parameter_set parameters;
+        parameters.add(*this);
+        return parameters;
     }
 
     [[nodiscard]]
-    auto configuration() const noexcept
+    config::parameter_set configuration() const
     {
-        return config::endpoint<"neighborhood">(*this);
+        config::parameter_set parameters;
+        parameters.add(*this);
+        return parameters;
     }
 
     template<class Dependency>

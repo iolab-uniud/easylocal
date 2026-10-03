@@ -88,7 +88,10 @@ old concepts onto the new ones.
   Session of its own.
   Tools give stochastic runners an RNG they own, seeded reproducibly.
 - **Configuration**: typed runner and solver parameters with validation,
-  command-line overrides, and TOML files (optional `ConfigTOML` component).
+  collected in parameter sets with dotted paths (blocks may nest groups),
+  applied all or none from the command line, configuration files and TOML
+  (optional `ConfigTOML` component). Components give relative paths; the
+  program chooses the prefixes.
 - **Tracing**: core search events to JSONL, binary or in-memory recorders, with
   no overhead when unused; leveled logging.
 

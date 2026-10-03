@@ -1,7 +1,7 @@
-#include <easylocal/config/overrides.hpp>
-#include <easylocal/config/parameters.hpp>
 #include <easylocal/adapters/toml.hpp>
-#include <easylocal/config/tree.hpp>
+#include <easylocal/config/overrides.hpp>
+#include <easylocal/config/parameter_set.hpp>
+#include <easylocal/config/parameters.hpp>
 
 #include <array>
 #include <cassert>
@@ -76,10 +76,9 @@ biases = [3.0, 1.0]
 
     AppParameters app{};
     SearchParameters search{};
-    const auto tree = easylocal::config::root(
-        easylocal::config::named<"application">(app),
-        easylocal::config::named<"solver">(
-            easylocal::config::named<"search">(search)));
+    easylocal::config::parameter_set tree;
+    tree.add("application", app);
+    tree.add("solver.search", search);
 
     const auto views = easylocal::config::override_views(parsed.overrides);
     const auto applied = easylocal::config::apply_overrides(tree, views);

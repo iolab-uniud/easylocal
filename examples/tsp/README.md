@@ -50,16 +50,16 @@ integration.
 path and RNG seed parameterize the application rather than the TSP model or an
 EasyLocal component. `FixedLengthParameters` remains beside the temperature
 policy, and the union's biases are given to `random_biases(3.0, 1.0)`. After
-constructing the runner, the main combines its automatic
-`solver.search.temperature.*` and `solver.neighborhood.random_biases` subtree
-with `application.*` in a read-only `config::root(...)`, loads
+constructing the runner, the main puts its parameters
+(`search.temperature.*`, `neighborhood.random_biases`) under `solver` in a
+`config::parameter_set`, next to `application.*`, loads
 `instances/small.tsp`, and starts from the SolutionManager's
 `initial_solution()`.
 
 This layout is intentional: concrete parameter declarations live next to the
 thing they parameterize, while `easylocal::config` contains only generic schema,
-tree, textual-override, and frontend machinery. The CLI is derived from that
-same tree; configuration-file loading remains a separate frontend.
+parameter-set, textual-override, and frontend machinery. The CLI is derived from
+that same set; configuration-file loading remains a separate frontend.
 
 ## Runnable composite-neighborhood SA example
 

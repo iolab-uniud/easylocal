@@ -1,10 +1,10 @@
 #pragma once
 
+#include <easylocal/config/parameter_set.hpp>
 #include <easylocal/cost.hpp>
-#include <easylocal/config/tree.hpp>
-#include <easylocal/helpers/neighborhood_explorer.hpp>
 #include <easylocal/cost/semantics.hpp>
 #include <easylocal/helpers/detail/evaluation.hpp>
+#include <easylocal/helpers/neighborhood_explorer.hpp>
 #include <easylocal/helpers/recipes.hpp>
 #include <easylocal/helpers/solution_manager.hpp>
 #include <easylocal/runners/run_control.hpp>
@@ -500,44 +500,28 @@ public:
     {
     }
 
-    template<config::fixed_string Name>
-        requires (
-            config::configuration_provider<Algorithm> ||
-            config::configuration_provider<SMSpec> ||
-            config::configuration_provider<NHESpec>)
+    // The parameters of the algorithm ("search"), of the cost expression
+    // ("cost") and of the neighborhood ("neighborhood"), with paths relative
+    // to the runner: whoever composes it adds a prefix, if any. The set refers
+    // to this runner, which must stay in place while it is used.
     [[nodiscard]]
-    auto configuration()
+    config::parameter_set configuration()
     {
-        auto children = std::tuple_cat(
-            config::configuration_nodes(algorithm_),
-            config::configuration_nodes(solution_manager_spec_),
-            config::configuration_nodes(neighborhood_spec_));
-
-        return std::apply(
-            [](auto... nodes) {
-                return config::named<Name>(std::move(nodes)...);
-            },
-            std::move(children));
+        config::parameter_set parameters;
+        config::add_configuration(parameters, "search", algorithm_);
+        config::add_configuration(parameters, "cost", solution_manager_spec_);
+        config::add_configuration(parameters, "neighborhood", neighborhood_spec_);
+        return parameters;
     }
 
-    template<config::fixed_string Name>
-        requires (
-            config::configuration_provider<const Algorithm> ||
-            config::configuration_provider<const SMSpec> ||
-            config::configuration_provider<const NHESpec>)
     [[nodiscard]]
-    auto configuration() const
+    config::parameter_set configuration() const
     {
-        auto children = std::tuple_cat(
-            config::configuration_nodes(algorithm_),
-            config::configuration_nodes(solution_manager_spec_),
-            config::configuration_nodes(neighborhood_spec_));
-
-        return std::apply(
-            [](auto... nodes) {
-                return config::named<Name>(std::move(nodes)...);
-            },
-            std::move(children));
+        config::parameter_set parameters;
+        config::add_configuration(parameters, "search", algorithm_);
+        config::add_configuration(parameters, "cost", solution_manager_spec_);
+        config::add_configuration(parameters, "neighborhood", neighborhood_spec_);
+        return parameters;
     }
 
     [[nodiscard]]

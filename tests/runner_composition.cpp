@@ -2,7 +2,7 @@
 #include "solution_manager.hpp"
 #include "support/assignment_capacity_delta.hpp"
 
-#include <easylocal/config/tree.hpp>
+#include <easylocal/config/parameter_set.hpp>
 #include <easylocal/runners/best_improvement.hpp>
 #include <easylocal/runners/first_improvement.hpp>
 #include <easylocal/runners/runner.hpp>
@@ -67,21 +67,6 @@ concept CanRunWithRng = requires(T& runner, AssignmentSolution solution, RNG& rn
     runner.run(std::move(solution), rng);
 };
 
-template<class Path, std::size_t Size>
-[[nodiscard]]
-consteval auto path_is(const std::array<std::string_view, Size>& expected)
-    -> bool
-{
-    constexpr auto actual = Path::segments();
-    if constexpr (actual.size() != Size)
-    {
-        return false;
-    }
-    else
-    {
-        return actual == expected;
-    }
-}
 
 } // namespace
 
@@ -161,31 +146,18 @@ int main()
         | default_solution_manager_recipe()
         | default_neighborhood_recipe();
 
-    const auto configuration = easylocal::config::root(
-        configured.template configuration<"solver">());
-
+    const auto configuration = configured.configuration();
     bool saw_search_budget = false;
-    easylocal::config::for_each_config_parameter(
-        configuration,
-        [&](const auto path, const auto, const auto& value) {
-            using path_type = std::remove_cvref_t<decltype(path)>;
-            if constexpr (path_is<path_type>(
-                              std::array<std::string_view, 3>{
-                                  "solver",
-                                  "search",
-                                  "max_evaluations"}))
-            {
-                saw_search_budget = value == 17;
-            }
-        });
-
+    for (const auto& parameter : configuration.parameters())
+    {
+        saw_search_budget |=
+            parameter.path == "search.max_evaluations" && parameter.value == "17";
+    }
     assert(saw_search_budget);
 
-    const auto& search_endpoint =
-        easylocal::config::at<"solver", "search">(configuration);
-    auto updated_search = search_endpoint.parameters();
-    updated_search.max_evaluations = 2;
-    assert(search_endpoint.configure(updated_search));
+    const std::array budget{
+        easylocal::config::text_override{"search.max_evaluations", "2"}};
+    assert(configuration.apply(budget));
 
     const AssignmentInstance instance{
         .demand = {4, 3, 2},

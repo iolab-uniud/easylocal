@@ -5,8 +5,8 @@
 `main.cpp` is the end-to-end user-facing example for the current public API. It
 defines the application-owned `AppParameters` block next to `main`, uses
 `FirstImprovementParameters` from the search-method header, constructs the
-runner, and combines `application.*` with the runner-provided
-`solver.search.max_evaluations` subtree in a read-only `config::root(...)`.
+runner, and combines `application.*` with the runner's parameters under
+`solver` (`solver.search.max_evaluations`) in a `config::parameter_set`.
 The same values are then used to load the versioned instance from
 `instances/small.assignment`, construct a `FirstImprovement` runner, and solve
 the immutable instance through the hierarchical `solvers::TwoStage`. The first
@@ -19,7 +19,7 @@ With examples enabled (the default for a top-level build), run it with:
 ```
 
 The MWE is also a minimal CLI-configured application. `--help` is generated
-from the configuration tree, and values can be overridden before binding, for
+from the parameter set, and values can be overridden before binding, for
 example:
 
 ```sh

@@ -136,9 +136,9 @@ solver.temperature.cooling_rate = 0.7
         .cooling_rate = 0.75,
         .max_iterations = 200,
     }};
-    const auto tree = easylocal::config::root(
-        easylocal::config::named<"application">(app),
-        easylocal::config::named<"solver">(temperature.configuration()));
+    easylocal::config::parameter_set tree;
+    tree.add("application", app);
+    tree.add("solver.temperature", temperature.configuration());
 
     const auto applied = apply_overrides(
         tree,
@@ -171,9 +171,9 @@ solver.temperature.cooling_rate = 1.5
         .cooling_rate = 0.75,
         .max_iterations = 200,
     }};
-    const auto tree = easylocal::config::root(
-        easylocal::config::named<"application">(app),
-        easylocal::config::named<"solver">(temperature.configuration()));
+    easylocal::config::parameter_set tree;
+    tree.add("application", app);
+    tree.add("solver.temperature", temperature.configuration());
 
     const auto applied = apply_overrides(
         tree,

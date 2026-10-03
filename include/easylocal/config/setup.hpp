@@ -3,7 +3,7 @@
 #include <easylocal/config/cli.hpp>
 #include <easylocal/config/file.hpp>
 #include <easylocal/config/overrides.hpp>
-#include <easylocal/config/validation.hpp>
+#include <easylocal/config/parameter_set.hpp>
 
 #include <cstddef>
 #include <ostream>
@@ -138,12 +138,11 @@ inline void append_diagnostics(
 
 } // namespace detail
 
-template<class... Children>
 [[nodiscard]]
-setup_result load_and_apply(
+inline setup_result load_and_apply(
     const int argc,
     char* const argv[],
-    const detail::root_node<Children...>& tree)
+    const parameter_set& parameters)
 {
     setup_result result{};
 
@@ -178,7 +177,7 @@ setup_result load_and_apply(
     // parameter block: apply_overrides() will validate the staged candidate
     // before committing anything. Invalid untouched blocks, however, make the
     // whole transaction fail before any mutation can occur.
-    const auto baseline_validation = validate(tree);
+    const auto baseline_validation = parameters.validate();
     for (const auto& diagnostic : baseline_validation.diagnostics)
     {
         if (!detail::block_has_direct_override(
@@ -202,9 +201,8 @@ setup_result load_and_apply(
 
     const auto effective_views = override_views(
         std::span<const owned_text_override>{effective_overrides});
-    const auto overrides = apply_overrides(
-        tree,
-        std::span<const text_override>{effective_views});
+    const auto overrides =
+        parameters.apply(std::span<const text_override>{effective_views});
     detail::append_diagnostics(result, overrides);
 
     if (!result)
@@ -215,7 +213,7 @@ setup_result load_and_apply(
     // At this point every untouched block was valid at baseline and every
     // touched block was validated transactionally by apply_overrides().
     // Keep this as a defensive check of that invariant.
-    const auto final_validation = validate(tree);
+    const auto final_validation = parameters.validate();
     detail::append_diagnostics(result, final_validation);
     return result;
 }

@@ -31,9 +31,9 @@ Assignment demonstrates the equivalent pipe spelling.
 
 `main.cpp` defines application-owned parameters for the external instance path
 and RNG seed, while `FixedLengthParameters` remains beside the framework
-temperature policy that it configures. The example builds and traverses a
-`config::root(...)` with `application.*` and the runner-provided
-`solver.search.temperature.*` paths, loads `instances/small.exam`, then runs
+temperature policy that it configures. The example builds a
+`config::parameter_set` with `application.*` and the runner's parameters under
+`solver` (`solver.search.temperature.*`), loads `instances/small.exam`, then runs
 Simulated Annealing from the SolutionManager's `initial_solution()` with an
 explicitly seeded RNG.
 
@@ -43,7 +43,7 @@ With the default top-level build:
 ./build/<preset>/examples/exam_timetabling/easylocal_exam_timetabling_mwe
 ```
 
-The same tree drives the generated CLI help and pre-bind overrides:
+The same set drives the generated CLI help and pre-bind overrides:
 
 ```sh
 ./build/<preset>/examples/exam_timetabling/easylocal_exam_timetabling_mwe \

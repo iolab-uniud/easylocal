@@ -15,6 +15,7 @@
 #include <optional>
 #include <random>
 #include <ranges>
+#include <string>
 #include <string_view>
 #include <type_traits>
 #include <utility>
@@ -417,49 +418,37 @@ int main()
             neighborhood<DestinationZeroNeighborhoodExplorer>())
             | random_biases(3.0, 1.0, 0.5);
 
-        const auto configuration = easylocal::config::root(
-            configured_union.configuration());
+        easylocal::config::parameter_set configuration;
+        configuration.add("neighborhood", configured_union.configuration());
 
-        bool saw_biases = false;
-        easylocal::config::for_each_config_parameter(
-            configuration,
-            [&](const auto path, const auto, const auto& value) {
-                using path_type = std::remove_cvref_t<decltype(path)>;
-                constexpr auto segments = path_type::segments();
-                if constexpr (
-                    segments.size() == 2 &&
-                    segments[0] == "neighborhood" &&
-                    segments[1] == "random_biases")
-                {
-                    saw_biases =
-                        value == std::array<double, 3>{3.0, 1.0, 0.5};
-                }
-            });
-
+        const auto biases = [&] {
+            for (const auto& parameter : configuration.parameters())
+                if (parameter.path == "neighborhood.random_biases")
+                    return parameter.value;
+            return std::string{};
+        };
         ok &= expect(
-            saw_biases,
+            biases() == "[3, 1, 0.5]",
             "neighborhood union configuration exposes effective random biases");
 
-        const auto& endpoint =
-            easylocal::config::at<"neighborhood">(configuration);
-        auto updated = endpoint.parameters();
-        updated.random_biases = {0.0, 2.0, 0.0};
+        const std::array valid{
+            easylocal::config::text_override{"neighborhood.random_biases", "[0, 2, 0]"}};
         ok &= expect(
-            static_cast<bool>(endpoint.configure(updated)),
+            static_cast<bool>(configuration.apply(valid)),
             "neighborhood union accepts valid runtime recipe parameters");
         ok &= expect(
-            endpoint.parameters().random_biases ==
-                std::array<double, 3>{0.0, 2.0, 0.0},
+            configured_union.parameters().random_biases
+                == std::array<double, 3>{0.0, 2.0, 0.0},
             "neighborhood union configuration update changes the recipe state");
 
-        auto invalid = endpoint.parameters();
-        invalid.random_biases[0] = -1.0;
+        const std::array invalid{
+            easylocal::config::text_override{"neighborhood.random_biases", "[-1, 2, 0]"}};
         ok &= expect(
-            !endpoint.configure(invalid),
+            !configuration.apply(invalid),
             "neighborhood union rejects invalid runtime recipe parameters");
         ok &= expect(
-            endpoint.parameters().random_biases ==
-                std::array<double, 3>{0.0, 2.0, 0.0},
+            configured_union.parameters().random_biases
+                == std::array<double, 3>{0.0, 2.0, 0.0},
             "invalid neighborhood union update leaves the recipe unchanged");
     }
 

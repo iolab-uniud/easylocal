@@ -5,7 +5,7 @@
 #include "support/approximate.hpp"
 #include "support/exam_timeslot_load_delta.hpp"
 
-#include <easylocal/config/tree.hpp>
+#include <easylocal/config/parameter_set.hpp>
 #include <easylocal/cost.hpp>
 #include <easylocal/runners/run_control.hpp>
 #include <easylocal/runners/runner.hpp>
@@ -23,6 +23,7 @@
 #include <random>
 #include <span>
 #include <stop_token>
+#include <string>
 #include <string_view>
 #include <type_traits>
 #include <vector>
@@ -259,21 +260,6 @@ auto expect(const bool condition, const std::string_view description) -> bool
     return true;
 }
 
-template<class Path, std::size_t Size>
-[[nodiscard]]
-consteval auto path_is(const std::array<std::string_view, Size>& expected)
-    -> bool
-{
-    constexpr auto actual = Path::segments();
-    if constexpr (actual.size() != Size)
-    {
-        return false;
-    }
-    else
-    {
-        return actual == expected;
-    }
-}
 
 [[nodiscard]]
 auto exam_instance() -> exam::ExamTimetablingInstance
@@ -306,37 +292,24 @@ int main()
                 .max_iterations = 200,
             }}};
 
-        const auto configuration = easylocal::config::root(
-            annealing.configuration());
-
-        bool saw_max_iterations = false;
-        easylocal::config::for_each_config_parameter(
-            configuration,
-            [&](const auto path, const auto, const auto& value) {
-                using path_type = std::remove_cvref_t<decltype(path)>;
-                if constexpr (path_is<path_type>(
-                                  std::array<std::string_view, 3>{
-                                      "search",
-                                      "temperature",
-                                      "max_iterations"}))
-                {
-                    saw_max_iterations = value == 200;
-                }
-            });
-
+        const auto configuration = annealing.configuration();
+        const auto max_iterations = [&] {
+            for (const auto& parameter : configuration.parameters())
+                if (parameter.path == "temperature.max_iterations")
+                    return parameter.value;
+            return std::string{};
+        };
         ok &= expect(
-            saw_max_iterations,
+            max_iterations() == "200",
             "SA configuration exposes the nested temperature policy parameters");
 
-        const auto& temperature_endpoint =
-            easylocal::config::at<"search", "temperature">(configuration);
-        auto updated = temperature_endpoint.parameters();
-        updated.max_iterations = 20;
+        const std::array update{
+            easylocal::config::text_override{"temperature.max_iterations", "20"}};
         ok &= expect(
-            static_cast<bool>(temperature_endpoint.configure(updated)),
+            static_cast<bool>(configuration.apply(update)),
             "SA configuration can update its nested temperature policy");
         ok &= expect(
-            temperature_endpoint.parameters().max_iterations == 20,
+            max_iterations() == "20",
             "SA nested configuration update changes the owned policy");
     }
 

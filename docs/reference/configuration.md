@@ -4,8 +4,8 @@
 `<easylocal/adapters/toml.hpp>`
 
 Parameters are plain structs that describe themselves; configurable objects
-expose them through a **configuration tree**, which frontends (command line,
-files, TextUI) read and update.
+expose them as a **parameter set**: paths, descriptions and textual values,
+which frontends (command line, files, TOML, the TextUI) read and change.
 
 ## Parameter blocks
 
@@ -13,53 +13,85 @@ files, TextUI) read and update.
 struct MyParameters
 {
     std::size_t size{10};
+    Schedule schedule{};          // itself a parameter block
 
     static consteval auto parameter_schema()
     {
-        return config::fields(config::field<"size", &MyParameters::size>("Description"));
+        return config::fields(
+            config::field<"size", &MyParameters::size>("Description"),
+            config::group<"schedule", &MyParameters::schedule>("Description"));
     }
 
     config::validation_result validate() const; // success() or failure("reason")
 };
 ```
 
-Leaves may be integral and floating-point types, `bool`, `std::string`,
-`std::filesystem::path`, and `std::array`s of those.
+Fields may be integral and floating-point types, `bool`, `std::string`,
+`std::filesystem::path`, and `std::array`s of those. A `group` nests another
+block: its fields are under `schedule.`, and its `validate()` runs with the
+enclosing block's.
+
+## Parameter sets
+
+```cpp
+config::parameter_set parameters;
+parameters.add("application", app_parameters);    // a block
+parameters.add("solver", runner.configuration());  // another set, under a prefix
+```
+
+| Member | Purpose |
+| --- | --- |
+| `add([prefix,] block)` | the fields of a parameter block; read-only when the block is `const` |
+| `add([prefix,] object)` | an object with `parameters()` and `configure(block) -> validation_result`, for objects that rebuild something from their parameters |
+| `add([prefix,] set)` | the parameters of another set |
+| `parameters()` | every parameter: `path`, `description`, `value` (as text), `read_only` |
+| `validate()` | the diagnostics of every block's `validate()`, by path |
+| `apply(text_overrides)` | apply `path = value` overrides, all or none |
+
+A set refers to the objects it was built from: they must outlive it and stay
+in place. Adding a path that is already in the set throws
+`std::invalid_argument`.
+
+`apply` parses each override into a copy of its block and validates the copy;
+only when every override names a parameter and every touched block is valid
+are the copies committed. Errors: `unknown_parameter`, `duplicate_path`,
+`parse_error`, `validation_error` (with the path of the invalid block),
+`read_only_parameter`.
 
 ## Configurable objects
 
-An object is a configuration provider when it exposes `configuration()`; most
-use `config::endpoint<"name">(*this)` together with `parameters()` and
-`configure(parameters) -> validation_result`.
+An object provides parameters when `configuration()` returns a
+`parameter_set`, with paths relative to it; whoever composes it chooses the
+prefix.
 
-| Provider | Node |
+| Provider | Paths |
 | --- | --- |
-| `FirstImprovement`, `BestImprovement`, `SimulatedAnnealing` | `search` |
-| temperature policies | `search.temperature` |
-| the cost expression of a SolutionManager recipe (`cost::sum` weights, `cost::apply` functions) | `cost` |
-| `neighborhood_union` with `random_biases` | the union's biases |
-| `runner.configuration<"name">()` | a named node over the algorithm and recipes |
+| `FirstImprovement`, `BestImprovement`, `HillClimbing`, `GreatDeluge`, `LateAcceptanceHillClimbing` | their fields |
+| `SimulatedAnnealing` | `temperature.*` (the policy), `acceptance.*` (when it has parameters) |
+| the cost expression of a SolutionManager recipe | `weights` of a `cost::sum`; children by position (`0.*`, `1.*`), `hard.*` and `soft.*` of a `cost::hard_soft`; a `cost::apply` function's own |
+| `neighborhood_union` with `random_biases` | `random_biases` |
+| `runner.configuration()` | `search.*`, `cost.*`, `neighborhood.*` |
 
-## Trees and frontends
+## Frontends
 
 | Function | Purpose |
 | --- | --- |
-| `config::root(nodes...)`, `config::named<"name">(nodes...)` | build a tree |
-| `config::load_and_apply(argc, argv, tree)` | apply `--config <file>` and `--path.to.leaf=value` |
-| `config::cli_help(program, tree)` | help text with current values |
+| `config::load_and_apply(argc, argv, parameters)` | apply `--config <file>` and `--path.to.field=value` |
+| `config::cli_help(program, parameters)` | help text with current values |
 | `config::print_diagnostics(out, result)` | report errors |
-| `config::apply_overrides(tree, text_overrides)` | apply `path = value` overrides |
-| `config::for_each_config_parameter(tree, visitor)` | iterate the leaves |
-
-Values are parsed, applied in place and validated per block; a failed block
-keeps its previous values.
+| `config::apply_overrides(parameters, text_overrides)` | the same as `parameters.apply(...)` |
+| `config::format_value(value)` | a value as text, in the syntax overrides use |
+| `config::load_toml_file(path)` (TOML adapter) | the overrides of a TOML file |
 
 ## Design choices
 
-- **Configuration is independent of construction.** The tree references live
+- **Configuration is independent of construction.** A set refers to live
   objects; nothing is rebuilt from a parameter box, and binding a runner later
   sees the applied values.
-- **Typed leaves, no reflection macros.** Schemas are `consteval` descriptions
-  of member pointers.
+- **Typed fields, no reflection macros.** Schemas are `consteval` descriptions
+  of member pointers, checked at compile time; only the paths are matched at
+  run time, as the command line and files already require.
+- **Relative paths.** Components do not choose their own top-level names, so
+  one program can combine several of them under prefixes of its choice.
 - **Validation lives with the parameters**, so every frontend reports the same
   errors.

@@ -29,7 +29,8 @@ int main(int argc, char* argv[])
             | el::delta<TourLength, TwoOptLengthDelta>());
 
     // [toml] ---------------------------------------------------------------
-    const auto configuration = el::config::root(sa.configuration<"solver">());
+    el::config::parameter_set configuration;
+    configuration.add("solver", sa.configuration()); // --solver.search.*
 
     // Read the file: every key becomes a "path = value" override.
     const auto file =
@@ -41,7 +42,7 @@ int main(int argc, char* argv[])
         return 2;
     }
 
-    // Apply the overrides to the tree: all of them, validated, or none.
+    // Apply the overrides: all of them, validated, or none.
     const auto applied = el::config::apply_overrides(
         configuration,
         el::config::override_views(file.overrides));

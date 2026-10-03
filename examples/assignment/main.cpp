@@ -3,8 +3,8 @@
 #include "solution_manager.hpp"
 
 #include <easylocal/config/cli.hpp>
+#include <easylocal/config/parameter_set.hpp>
 #include <easylocal/config/setup.hpp>
-#include <easylocal/config/tree.hpp>
 #include <easylocal/runners/first_improvement.hpp>
 #include <easylocal/runners/runner.hpp>
 #include <easylocal/solvers.hpp>
@@ -88,9 +88,11 @@ int main(int argc, char* argv[])
             | (solution_manager<AssignmentSolutionManager>() | assignment_cost())
             | neighborhood<ReassignJobNeighborhoodExplorer>();
 
-        const auto configuration = easylocal::config::root(
-            easylocal::config::named<"application">(app_parameters),
-            runner.configuration<"solver">());
+        // The program's parameters under "application", the runner's under
+        // "solver": --application.instance_file, --solver.search.*.
+        easylocal::config::parameter_set configuration;
+        configuration.add("application", app_parameters);
+        configuration.add("solver", runner.configuration());
 
         const auto configured =
             easylocal::config::load_and_apply(argc, argv, configuration);

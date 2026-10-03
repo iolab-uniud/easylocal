@@ -159,7 +159,8 @@ int main(int argc, char* argv[])
     // [solvers] ------------------------------------------------------------
 
     // [configuration] ------------------------------------------------------
-    const auto configuration = el::config::root(sa.configuration<"solver">());
+    el::config::parameter_set configuration;
+    configuration.add("solver", sa.configuration()); // --solver.search.*
 
     const auto configured = el::config::load_and_apply(argc, argv, configuration);
     if (configured.help_requested)

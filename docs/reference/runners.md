@@ -19,7 +19,7 @@ auto result = search.run(solution, algorithm_args..., with(control, tracer));
 | Member | Purpose |
 | --- | --- |
 | `bind(const Input&)` | build the services for an Input (temporaries are rejected) |
-| `configuration<"name">()` | configuration tree of the algorithm and recipes |
+| `configuration()` | the parameters of the algorithm (`search`), the cost (`cost`) and the neighborhood (`neighborhood`), as a `config::parameter_set` |
 | `with_hard_cost()` | the same runner on the hard branch of a hierarchical cost |
 | bound runner: `run(solution, args..., [with(...)])` | run the algorithm |
 | bound runner: `initial_solution()`, `random_solution(rng)`, `input()`, `better(a, b)` | helpers |

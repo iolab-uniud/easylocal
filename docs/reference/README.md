@@ -27,7 +27,7 @@ Topic guides: [tracing](../tracing.md), [logging](../logging.md),
 easylocal/
   easylocal.hpp   Core umbrella (everything except adapters/ and testing.hpp)
   utils/          logging; internal type-level utilities
-  config/         typed parameters, configuration tree, CLI/file frontends
+  config/         typed parameters, parameter sets, CLI/file frontends
   trace/          semantic search events, tracer protocol, recorders
   cost/           cost models
   helpers/        SolutionManager, NeighborhoodExplorer, neighborhood_union, recipes
