@@ -8,7 +8,6 @@
 #include <easylocal/app/check.hpp>
 #include <easylocal/app/io.hpp>
 #include <easylocal/app/session.hpp>
-#include <easylocal/config/cli.hpp>
 #include <easylocal/config/overrides.hpp>
 #include <easylocal/config/parameters.hpp>
 #include <easylocal/cost.hpp>
@@ -552,7 +551,6 @@ enum class file_target
 template<class Solution>
 struct async_runner_result
 {
-    bool found{};
     bool cancelled{};
     std::optional<Solution> solution;
     std::string error;
@@ -647,8 +645,6 @@ class tester_frontend
 {
 public:
     using tester_type = easylocal::Session<App>;
-    static constexpr bool supports_neighborhood_diagnostics =
-        std::equality_comparable<typename tester_type::solution_type>;
     static constexpr bool supports_parameters = requires(const tester_type& session) {
         session.configuration();
     };
@@ -698,8 +694,6 @@ public:
 
         auto app = ftxui::App::Fullscreen();
 
-        Component input_path_component;
-        Component solution_path_component;
         Component seed_input_component;
         Component target_input_component;
 
@@ -837,49 +831,38 @@ public:
             ButtonOption::Ascii()));
 
         auto move_diagnostics = Container::Horizontal({});
-        if constexpr (supports_neighborhood_diagnostics)
+        if constexpr (tester_type::supports_deterministic_moves)
         {
-            if constexpr (tester_type::supports_deterministic_moves)
-            {
-                move_diagnostics->Add(Button(
-                    "P List",
-                    [this] { preview_neighbors(); },
-                    ButtonOption::Ascii()));
-            }
-            if constexpr (tester_type::supports_improvement_selection)
-            {
-                move_diagnostics->Add(Button(
-                    "T Stats",
-                    [this] { neighborhood_statistics(); },
-                    ButtonOption::Ascii()));
-            }
-            if constexpr (tester_type::supports_cost_consistency_check)
-            {
-                move_diagnostics->Add(Button(
-                    "C Costs",
-                    [this] { check_neighborhood_costs(); },
-                    ButtonOption::Ascii()));
-            }
-            if constexpr (tester_type::supports_move_independence_check)
-            {
-                move_diagnostics->Add(Button(
-                    "D Indep",
-                    [this] { check_move_independence(); },
-                    ButtonOption::Ascii()));
-            }
-            if constexpr (tester_type::supports_random_distribution_check)
-            {
-                move_diagnostics->Add(Button(
-                    "U Distribution",
-                    [this] { check_random_distribution(); },
-                    ButtonOption::Ascii()));
-            }
+            move_diagnostics->Add(
+                Button("P List", [this] { preview_neighbors(); }, ButtonOption::Ascii()));
         }
-        else
+        if constexpr (tester_type::supports_improvement_selection)
         {
-            move_diagnostics->Add(Renderer([] {
-                return text("Unavailable: Solution has no operator==") | dim;
-            }));
+            move_diagnostics->Add(Button(
+                "T Stats",
+                [this] { neighborhood_statistics(); },
+                ButtonOption::Ascii()));
+        }
+        if constexpr (tester_type::supports_cost_consistency_check)
+        {
+            move_diagnostics->Add(Button(
+                "C Costs",
+                [this] { check_neighborhood_costs(); },
+                ButtonOption::Ascii()));
+        }
+        if constexpr (tester_type::supports_move_independence_check)
+        {
+            move_diagnostics->Add(Button(
+                "D Indep",
+                [this] { check_move_independence(); },
+                ButtonOption::Ascii()));
+        }
+        if constexpr (tester_type::supports_random_distribution_check)
+        {
+            move_diagnostics->Add(Button(
+                "U Distribution",
+                [this] { check_random_distribution(); },
+                ButtonOption::Ascii()));
         }
 
         auto run_controls = Container::Vertical({});
@@ -1208,8 +1191,6 @@ public:
             root,
             [this,
                 &app,
-                input_path_component,
-                solution_path_component,
                 seed_input_component,
                 target_input_component](Event event) {
                 if (event == Event::Custom && run_future_.valid())
@@ -1241,9 +1222,7 @@ public:
                 }
 
                 const bool editing_path =
-                    (input_path_component && input_path_component->Focused())
-                    || (solution_path_component && solution_path_component->Focused())
-                    || (seed_input_component && seed_input_component->Focused())
+                    (seed_input_component && seed_input_component->Focused())
                     || (target_input_component && target_input_component->Focused());
 
                 if (event == Event::F1)
@@ -1515,47 +1494,44 @@ private:
                 return true;
             }
         }
-        if constexpr (supports_neighborhood_diagnostics)
+        if constexpr (tester_type::supports_deterministic_moves)
         {
-            if constexpr (tester_type::supports_deterministic_moves)
+            if (event == ftxui::Event::p || event == ftxui::Event::P)
             {
-                if (event == ftxui::Event::p || event == ftxui::Event::P)
-                {
-                    preview_neighbors();
-                    return true;
-                }
+                preview_neighbors();
+                return true;
             }
-            if constexpr (tester_type::supports_improvement_selection)
+        }
+        if constexpr (tester_type::supports_improvement_selection)
+        {
+            if (event == ftxui::Event::t || event == ftxui::Event::T)
             {
-                if (event == ftxui::Event::t || event == ftxui::Event::T)
-                {
-                    neighborhood_statistics();
-                    return true;
-                }
+                neighborhood_statistics();
+                return true;
             }
-            if constexpr (tester_type::supports_cost_consistency_check)
+        }
+        if constexpr (tester_type::supports_cost_consistency_check)
+        {
+            if (event == ftxui::Event::c || event == ftxui::Event::C)
             {
-                if (event == ftxui::Event::c || event == ftxui::Event::C)
-                {
-                    check_neighborhood_costs();
-                    return true;
-                }
+                check_neighborhood_costs();
+                return true;
             }
-            if constexpr (tester_type::supports_move_independence_check)
+        }
+        if constexpr (tester_type::supports_move_independence_check)
+        {
+            if (event == ftxui::Event::d || event == ftxui::Event::D)
             {
-                if (event == ftxui::Event::d || event == ftxui::Event::D)
-                {
-                    check_move_independence();
-                    return true;
-                }
+                check_move_independence();
+                return true;
             }
-            if constexpr (tester_type::supports_random_distribution_check)
+        }
+        if constexpr (tester_type::supports_random_distribution_check)
+        {
+            if (event == ftxui::Event::u || event == ftxui::Event::U)
             {
-                if (event == ftxui::Event::u || event == ftxui::Event::U)
-                {
-                    check_random_distribution();
-                    return true;
-                }
+                check_random_distribution();
+                return true;
             }
         }
         if (event == ftxui::Event::a || event == ftxui::Event::A)
@@ -2295,7 +2271,6 @@ private:
                         {
                             completion.solution.emplace(std::move(result->solution));
                             completion.cancelled = stop_token.stop_requested();
-                            completion.found = true;
                         }
                     }
                     catch (const std::exception& error)
@@ -2569,7 +2544,7 @@ private:
                 "Runner failed: " + run_name_ + ": " + completion.error);
             return;
         }
-        if (!completion.found || !completion.solution)
+        if (!completion.solution)
         {
             set_status(
                 status_kind::error,
@@ -3231,7 +3206,7 @@ private:
             text("Page shortcuts apply only to the active page.") | dim,
             text("Move and Run unlock after a valid solution is available.") | dim,
             text("Paths are shown relative to the configured base by default.") | dim,
-            text("Shortcuts are disabled while a path field is focused.") | dim,
+            text("Shortcuts are disabled while a text field is focused.") | dim,
             separator(),
             controls->Render(),
         };

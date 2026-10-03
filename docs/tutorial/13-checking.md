@@ -82,7 +82,7 @@ after each move with the others, `check_random_move_distribution` compares
 sampled moves with enumerated ones. So far the tutorial's types had no
 equality: to use these two checks, add it. Without it, everything else works:
 calling one of the two does not compile, and the interactive tester does not
-offer its neighborhood checks.
+offer them (`D` and `U`), while its other neighborhood diagnostics stay.
 
 <!-- snippet: tutorial/tsp.hpp:equality -->
 ```cpp
