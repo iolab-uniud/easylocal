@@ -128,7 +128,8 @@ old concepts onto the new ones.
   header gives the run's metadata, the cost layout and every event's fields)
   or in-memory recorders, with no overhead when unused, including the
   solutions visited, by their hash, for search trajectory and local optima
-  networks, and tabu search's aspirations, escapes and tenure changes;
+  networks (left out at compile time with `trace::without`), and tabu
+  search's aspirations, escapes and tenure changes;
   `scripts/eltr.py` decodes binary traces to JSONL, a summary or a search
   trajectory network; leveled logging.
 

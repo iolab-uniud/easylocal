@@ -55,11 +55,14 @@ public:
         return position.value >= 0 && position.value <= 10;
     }
 
-    // For the reactive list.
+    // For the reactive list and the visited solutions; calls counts them.
     [[nodiscard]] static auto hash(const Position& position) noexcept -> std::uint64_t
     {
+        ++calls;
         return static_cast<std::uint64_t>(position.value);
     }
+
+    static inline std::size_t calls = 0;
 
 private:
     const LineInstance& instance_;
@@ -308,6 +311,27 @@ int main()
         ok &= expect(
             aspired_moves == 3 && visited == traced.iterations + 1,
             "the trace records aspirated moves and every solution visited");
+
+        // Without solution_visited the search computes no hash at all.
+        std::mt19937 filtered_rng{7U};
+        easylocal::trace::memory_recorder<int> filtered_trace;
+        auto without_visits =
+            easylocal::trace::without<easylocal::trace::event::solution_visited>(
+                filtered_trace);
+        LineManager::calls = 0;
+        const auto filtered = aspired.bind(instance).run(
+            Position{2},
+            filtered_rng,
+            easylocal::with(without_visits));
+        const auto filtered_visits =
+            std::ranges::count_if(filtered_trace.records(), [](const auto& record) {
+                using recorder = easylocal::trace::memory_recorder<int>;
+                return std::holds_alternative<recorder::solution_visited_record>(record);
+            });
+        ok &= expect(
+            filtered.iterations == traced.iterations && filtered_visits == 0
+                && LineManager::calls == 0 && filtered_trace.records().size() > 0,
+            "a tracer without solution_visited costs no solution hash");
     }
 
     {

@@ -5,6 +5,7 @@
 // IWYU pragma: begin_exports
 #include <easylocal/trace/binary.hpp>
 #include <easylocal/trace/events.hpp>
+#include <easylocal/trace/filter.hpp>
 #include <easylocal/trace/jsonl.hpp>
 #include <easylocal/trace/memory_recorder.hpp>
 #include <easylocal/trace/tracer.hpp>

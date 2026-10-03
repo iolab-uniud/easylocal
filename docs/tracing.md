@@ -28,7 +28,19 @@ solution reached (`solution_hash`, see
 [SolutionManager](reference/solution-manager.md)) and its cost: the nodes of
 Search Trajectory Networks and Local Optima Networks. It is emitted only when
 the problem has a solution hash, and the hash is computed only when the tracer
-observes the event. Tabu search adds `aspiration_applied`, when the move just
+observes the event, so the hash costs nothing to a run that does not record
+it. Every recorder observes every core event; a run that builds no trajectory
+or local optima network leaves the visited solutions out at compile time with
+`trace::without`, which wraps any tracer and hides the given event templates
+from the search:
+
+```cpp
+easylocal::trace::binary_recorder<cost_type> recorder{out};
+auto trace = easylocal::trace::without<easylocal::trace::event::solution_visited>(recorder);
+runner.run(solution, rng, easylocal::with(trace));
+```
+
+Tabu search adds `aspiration_applied`, when the move just
 applied was tabu and admitted by the aspiration criterion, `tabu_escape`,
 before the random moves of a reactive list's escape, and `tabu_tenure_changed`,
 with the previous and the new tenure of a list with one tenure for all its
