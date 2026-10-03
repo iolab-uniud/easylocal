@@ -8,4 +8,5 @@
 #include <easylocal/cost/hierarchical.hpp>
 #include <easylocal/cost/lexicographic.hpp>
 #include <easylocal/cost/semantics.hpp>
+#include <easylocal/cost/text.hpp>
 // IWYU pragma: end_exports

@@ -4,6 +4,7 @@
 #include <easylocal/easylocal.hpp>
 
 #include <algorithm>
+#include <array>
 #include <iostream>
 #include <random>
 #include <stop_token>
@@ -212,7 +213,7 @@ int main(int argc, char* argv[])
     if (!session.run("sa")) // receives the session's RNG
         return 1;
     const double session_cost = session.evaluate();
-    const Tour& session_tour = session.solution();
+    const Tour session_tour = session.solution(); // a copy: the session goes on
     // [session] ------------------------------------------------------------
 
     // [check] --------------------------------------------------------------
@@ -230,6 +231,19 @@ int main(int argc, char* argv[])
     if (costs.mismatches != 0 || costs.invalid != 0 || sampling.out_of_neighborhood != 0)
         return 1;
     // [session-checks] -----------------------------------------------------
+
+    // [session-parameters] -------------------------------------------------
+    // The app's parameters by path; they change this session's app only.
+    const std::array changes{
+        el::config::text_override{"runners.sa.temperature.cooling_rate", "0.9"}};
+    if (!session.configure(changes)) // all or none, checked
+        return 1;
+
+    // A run that stops at the first tour of length 26 or less.
+    session.use_initial_solution();
+    if (!session.run("sa", el::stop_at(session.read_cost("26"))))
+        return 1;
+    // [session-parameters] -------------------------------------------------
 
     // [control] ------------------------------------------------------------
     std::stop_source stop;

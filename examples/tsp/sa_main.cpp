@@ -5,6 +5,7 @@
 #include "swap_tour_length_delta.hpp"
 #include "tour_length_delta.hpp"
 
+#include <easylocal/app/run_parameters.hpp>
 #include <easylocal/config/cli.hpp>
 #include <easylocal/config/parameter_set.hpp>
 #include <easylocal/config/setup.hpp>
@@ -111,10 +112,13 @@ int main(int argc, char* argv[])
                 | random_biases(3.0, 1.0));
 
         // The program's parameters under "application", the runner's under
-        // "solver": --application.instance_file, --solver.search.*.
+        // "solver", the run's under "run": --application.instance_file,
+        // --solver.search.*, --run.target.
+        easylocal::RunParameters run_parameters;
         easylocal::config::parameter_set configuration;
         configuration.add("application", app_parameters);
         configuration.add("solver", runner.configuration());
+        configuration.add("run", run_parameters);
 
         const auto configured =
             easylocal::config::load_and_apply(argc, argv, configuration);
@@ -135,7 +139,15 @@ int main(int argc, char* argv[])
         const auto initial_solution = search.initial_solution();
 
         std::mt19937_64 rng{app_parameters.seed};
-        const auto result = search.run(initial_solution, rng);
+        // With a target, the search stops at the first solution that reaches it.
+        using cost_type = decltype(search)::cost_type;
+        const auto result = run_parameters.target.empty()
+            ? search.run(initial_solution, rng)
+            : search.run(
+                  initial_solution,
+                  rng,
+                  easylocal::stop_at(
+                      easylocal::read_cost<cost_type>(instance, run_parameters.target)));
 
         std::cout << "instance:     " << app_parameters.instance_file << '\n';
         std::cout << "initial tour: ";

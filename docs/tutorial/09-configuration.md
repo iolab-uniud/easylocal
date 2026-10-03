@@ -59,6 +59,11 @@ prefix, `configuration.add(sa.configuration())`, for `--search.*`; one that
 combines several things gives each its own prefix, so that their parameters do
 not collide.
 
+An app (chapter 11) gathers the parameters of all its runners, under
+`runners.<name>`, with those of its cost and neighborhood; the same paths serve
+the command line, the TextUI and the REST service, together with a target cost
+that stops a run.
+
 Your own parameters take part by describing themselves with a schema:
 
 ```cpp

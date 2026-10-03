@@ -51,6 +51,9 @@ The same set drives the generated CLI help and pre-bind overrides:
   --application.seed=42
 ```
 
+`--run.target` stops the search at the first timetable whose penalty reaches
+a value, `--run.target=0` at the first one with no penalty.
+
 A compact configuration file can provide the same dotted paths:
 
 ```sh

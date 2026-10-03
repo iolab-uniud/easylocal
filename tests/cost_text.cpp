@@ -3,6 +3,7 @@
 #include "../examples/tutorial/tsp.hpp"
 
 #include <easylocal/app/app.hpp>
+#include <easylocal/app/run_parameters.hpp>
 #include <easylocal/app/session.hpp>
 #include <easylocal/config/parameter_set.hpp>
 #include <easylocal/cost/hierarchical.hpp>
@@ -78,7 +79,7 @@ namespace
 
 void a_problem_reads_its_own_costs()
 {
-    using el::detail::session_io::read_cost;
+    using el::read_cost;
     assert(read_cost<double>(problem::Instance{}, "250") == 2.5);
     assert(read_cost<double>(tutorial::Tsp{}, "250") == 250.0);
 }

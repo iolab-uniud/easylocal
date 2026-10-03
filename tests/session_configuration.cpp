@@ -111,6 +111,29 @@ void an_invalid_configuration_changes_nothing()
 
 } // namespace
 
+// As a command-line program does: the app's parameters in the program's set,
+// applied before the Session copies the app.
+void a_program_configures_the_app_before_the_session()
+{
+    auto application = make_application();
+    el::RunParameters run;
+    el::config::parameter_set configuration;
+    configuration.add(application.configuration());
+    configuration.add("run", run);
+    const std::array overrides{
+        el::config::text_override{"cost.weights", "[1, 0]"},
+        el::config::text_override{"run.target", "29"},
+    };
+    assert(configuration.apply(overrides));
+
+    el::Session session{application, five_cities(), 1};
+    assert(value_at(session.configuration(), "cost.weights") == "[1, 0]");
+    session.use_initial_solution();
+    assert(session.evaluate() == 29.0);
+    assert(session.run("fi", el::stop_at(session.read_cost(run.target))));
+    assert(session.evaluate() == 29.0);
+}
+
 int main()
 {
     a_union_s_biases_are_app_parameters();
@@ -118,5 +141,6 @@ int main()
     runner_parameters_apply_from_the_next_run();
     configuring_the_cost_rebuilds_the_session_services();
     an_invalid_configuration_changes_nothing();
+    a_program_configures_the_app_before_the_session();
     return 0;
 }

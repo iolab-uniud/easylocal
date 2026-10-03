@@ -101,6 +101,13 @@ biases without changing the MWE source:
 `--help` lists all application and runner parameters with descriptions and
 current values.
 
+`--run.target` stops the search at the first tour that reaches a length, a
+known optimum for example:
+
+```sh
+./build/<preset>/examples/tsp/easylocal_tsp_sa_mwe --run.target=26
+```
+
 The example also accepts a compact configuration file:
 
 ```sh

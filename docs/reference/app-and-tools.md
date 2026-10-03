@@ -1,6 +1,7 @@
 # Apps and tools
 
-`<easylocal/app/app.hpp>`, `app/check.hpp`, `app/session.hpp`; adapters
+`<easylocal/app/app.hpp>`, `app/check.hpp`, `app/session.hpp`,
+`app/run_parameters.hpp`; adapters
 `<easylocal/adapters/tui.hpp>`, `<easylocal/adapters/rest.hpp>`
 
 An **app** names a problem graph (SolutionManager and neighborhood recipes) and
@@ -75,7 +76,11 @@ if (!run.target.empty())
 ```
 
 The target stays text until the Input is known, because a problem may read
-its costs with its own `read_cost`.
+its costs with its own `read_cost`. A program that runs a runner without a
+Session reads it with `easylocal::read_cost<Cost>(input, text)`, which the
+Session also uses: the problem's `read_cost` when it has one, else
+`cost::from_text`; `easylocal::readable_cost<Input, Cost>` tells whether
+either applies.
 
 ## Sessions
 
