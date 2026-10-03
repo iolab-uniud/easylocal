@@ -35,13 +35,15 @@ theme:
   palette:
     - media: "(prefers-color-scheme: light)"
       scheme: default
-      primary: indigo
+      primary: deep purple
+      accent: deep purple
       toggle:
         icon: material/weather-night
         name: Dark mode
     - media: "(prefers-color-scheme: dark)"
       scheme: slate
-      primary: indigo
+      primary: deep purple
+      accent: deep purple
       toggle:
         icon: material/weather-sunny
         name: Light mode
