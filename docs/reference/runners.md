@@ -30,10 +30,17 @@ auto result = search.run(solution, algorithm_args..., with(control, tracer));
 | --- | --- | --- | --- |
 | `runners::FirstImprovement` | `moves` or cursor, `better` | `max_evaluations` (0: until a local optimum) | committed moves |
 | `runners::BestImprovement` | `moves` or cursor, `better` | `max_evaluations` (0: until a local optimum) | committed moves |
+| `runners::HillClimbing` | `random_move`, `better`, `better_or_equivalent` | `max_idle_iterations`, `max_evaluations` (0: no budget) | proposed moves |
 | `runners::SimulatedAnnealing<Temperature, Acceptance>` | `random_move`, `better`, an acceptance-compatible cost | a temperature policy, an acceptance policy | proposed moves |
 
 The budget is checked only before evaluating a move, so an empty neighborhood
 is a local optimum even when the budget is exhausted.
+
+Hill Climbing accepts a random move when its cost is better or equivalent to
+the current one, so it moves across plateaus where a descent stops. It ends
+with `idle_limit_reached` after `max_idle_iterations` consecutive proposals
+without a strict improvement, or with `local_optimum` when the neighborhood
+proposes no move. Its cost never worsens, so the final solution is the best.
 
 Simulated Annealing returns the best solution found. Temperature policies in
 `runners::temperature`, all configurable:
@@ -54,7 +61,8 @@ apps; the parameter blocks have defaults that pass validation.
 
 Built-in algorithms return `search_result<Solution, Cost>`: `solution`, `cost`,
 `evaluations`, `iterations`, `termination` (`termination_reason::completed`,
-`local_optimum`, `evaluation_budget_exhausted`, `cancelled`, `target_reached`).
+`local_optimum`, `evaluation_budget_exhausted`, `cancelled`, `target_reached`,
+`idle_limit_reached`).
 A reached target is the termination reason also when it coincides with a local
 optimum or the end of the algorithm; a cancellation takes precedence. Solvers and tools
 require only `search_result_for<Result, Solution, Cost>`: `solution` and `cost`.

@@ -50,8 +50,9 @@ old concepts onto the new ones.
 
 ### Runners and solvers
 
-- Runners: **First Improvement**, **Best Improvement** and **Simulated
-  Annealing**, with the temperature policies `Classic`, `FixedLength`, `Cutoff`
+- Runners: **First Improvement**, **Best Improvement**, **Hill Climbing**
+  (random non-worsening moves, stopping after a number of idle iterations)
+  and **Simulated Annealing**, with the temperature policies `Classic`, `FixedLength`, `Cutoff`
   and `Hybrid` and Metropolis acceptance. Writing a new runner means writing one
   `run(...)` function against `easylocal::search_run`, which owns counters,
   evaluation budget, cancellation, progress and trace events.

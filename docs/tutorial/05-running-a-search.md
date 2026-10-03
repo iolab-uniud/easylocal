@@ -66,6 +66,7 @@ The algorithms live in `easylocal::runners`, one header each:
 | --- | --- | --- | --- |
 | `FirstImprovement` | `runners/first_improvement.hpp` | `moves` or cursor | `max_evaluations` (0: until a local optimum) |
 | `BestImprovement` | `runners/best_improvement.hpp` | `moves` or cursor | `max_evaluations` (0: until a local optimum) |
+| `HillClimbing` | `runners/hill_climbing.hpp` | `random_move` | `max_idle_iterations`, `max_evaluations` (0: no budget) |
 | `SimulatedAnnealing<Temperature, Acceptance>` | `runners/simulated_annealing.hpp` | `random_move`, `cost::delta` | a temperature policy |
 
 Simulated Annealing takes a temperature policy (`Classic`, `FixedLength`,
@@ -104,8 +105,8 @@ Built-in algorithms return an `easylocal::search_result`:
 | `solution` | the final solution (for Simulated Annealing, the best found) |
 | `cost` | its cost |
 | `evaluations` | evaluations performed, including the initial one |
-| `iterations` | committed moves (First/Best Improvement), proposed moves (Simulated Annealing) |
-| `termination` | `local_optimum`, `evaluation_budget_exhausted`, `cancelled`, `target_reached` or `completed` |
+| `iterations` | committed moves (First/Best Improvement), proposed moves (Hill Climbing, Simulated Annealing) |
+| `termination` | `local_optimum`, `evaluation_budget_exhausted`, `cancelled`, `target_reached`, `idle_limit_reached` or `completed` |
 
 Solvers and tools only rely on `solution` and `cost`, the
 `easylocal::search_result_for` concept.

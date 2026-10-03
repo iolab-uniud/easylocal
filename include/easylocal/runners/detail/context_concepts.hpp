@@ -2,8 +2,8 @@
 
 #include <easylocal/helpers/neighborhood_explorer.hpp>
 
-
 #include <concepts>
+#include <random>
 #include <type_traits>
 #include <utility>
 
@@ -101,5 +101,24 @@ template<class Context>
 concept enumerating_strict_improvement_context =
     strict_improvement_context<Context> &&
     neighborhood_moves_context<Context>;
+
+template<class Context>
+concept non_worsening_context = strict_improvement_context<Context>
+    && requires(
+        const Context& context,
+        const typename Context::cost_type& candidate,
+        const typename Context::cost_type& reference) {
+           {
+               context.better_or_equivalent(candidate, reference)
+           } -> std::convertible_to<bool>;
+       };
+
+template<class Context, class RNG>
+concept random_move_context =
+    search_context<Context> && std::uniform_random_bit_generator<RNG>
+    && easylocal::random_neighborhood_for<
+        typename Context::neighborhood_explorer_type,
+        typename Context::solution_type,
+        RNG>;
 
 } // namespace easylocal::runners::detail

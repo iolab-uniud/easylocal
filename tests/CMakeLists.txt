@@ -472,6 +472,20 @@ add_test(
 )
 
 add_executable(
+    easylocal_hill_climbing_test
+    hill_climbing.cpp
+)
+target_link_libraries(
+    easylocal_hill_climbing_test
+    PRIVATE
+        EasyLocal::Core
+)
+add_test(
+    NAME easylocal.hill-climbing
+    COMMAND easylocal_hill_climbing_test
+)
+
+add_executable(
     easylocal_cost_semantics_test
     cost_semantics.cpp
 )

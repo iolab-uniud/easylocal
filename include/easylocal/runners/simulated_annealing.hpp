@@ -791,15 +791,6 @@ struct policy_parameters<Policy>
     using parameters_type = typename Policy::parameters_type;
 };
 
-template<class Context, class RNG>
-concept random_move_context =
-    search_context<Context> &&
-    std::uniform_random_bit_generator<RNG> &&
-    easylocal::random_neighborhood_for<
-        typename Context::neighborhood_explorer_type,
-        typename Context::solution_type,
-        RNG>;
-
 template<class Acceptance, class Cost, class RNG>
 concept acceptance_policy_for =
     std::uniform_random_bit_generator<RNG> &&

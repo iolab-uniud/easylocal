@@ -4,6 +4,7 @@
 // IWYU pragma: begin_exports
 #include <easylocal/runners/best_improvement.hpp>
 #include <easylocal/runners/first_improvement.hpp>
+#include <easylocal/runners/hill_climbing.hpp>
 #include <easylocal/runners/run_control.hpp>
 #include <easylocal/runners/runner.hpp>
 #include <easylocal/runners/search_run.hpp>

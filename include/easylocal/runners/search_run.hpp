@@ -23,6 +23,7 @@ enum class termination_reason
     evaluation_budget_exhausted,
     cancelled,
     target_reached,
+    idle_limit_reached,
 };
 
 // A readable name of the reason, e.g. "evaluation budget exhausted".
@@ -41,6 +42,8 @@ constexpr std::string_view to_string(const termination_reason reason) noexcept
         return "cancelled";
     case termination_reason::target_reached:
         return "target reached";
+    case termination_reason::idle_limit_reached:
+        return "idle limit reached";
     }
     return "unknown";
 }
