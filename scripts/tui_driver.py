@@ -41,8 +41,8 @@ class TuiError(AssertionError):
 
 class Tui:
     def __init__(self, binary: str, columns: int = 100, lines: int = 30,
-                 args: tuple[str, ...] = ()) -> None:
-        self.binary, self.args = binary, args
+                 args: tuple[str, ...] = (), cwd: str | os.PathLike[str] | None = None) -> None:
+        self.binary, self.args, self.cwd = binary, args, cwd
         self.columns, self.lines = columns, lines
         self.screen_buffer = pyte.Screen(columns, lines)
         self.stream = pyte.ByteStream(self.screen_buffer)
@@ -57,6 +57,8 @@ class Tui:
         if pid == 0:
             os.environ["TERM"] = "xterm-256color"
             try:
+                if self.cwd is not None:
+                    os.chdir(self.cwd)
                 os.execv(self.binary, [self.binary, *self.args])
             finally:
                 os._exit(127)
@@ -197,6 +199,15 @@ class Tui:
                 return self
             self.press(key)
         raise TuiError(f"{marker!r} never appeared\n{self.text()}")
+
+    def focus(self, label: str, key: str = DOWN, attempts: int = 20) -> "Tui":
+        """Press `key` until the button `label` has the focus (`[label]`)."""
+        marker = f"[{label}]"
+        for _ in range(attempts):
+            if marker in self.text():
+                return self
+            self.press(key)
+        raise TuiError(f"{marker!r} never got the focus\n{self.text()}")
 
     def cost(self) -> int | float:
         """The current cost shown in the header (`COST n`)."""

@@ -1,9 +1,12 @@
-"""End-to-end tests of the tutorial's TextUI tester (examples/tutorial/tui_main.cpp).
+"""End-to-end tests of the TextUI: the tutorial's tester
+(examples/tutorial/tui_main.cpp) and the launcher of the TSP example
+(examples/tsp/tui_main.cpp).
 
 CTest runs them as `easylocal.tui-e2e` when the TUI component and uv are
 available; by hand:
 
     EASYLOCAL_TUTORIAL_TUI=build/<preset>/examples/tutorial/easylocal_tutorial_tui \
+    EASYLOCAL_TSP_TUI=build/<preset>/examples/tsp/easylocal_tsp_tui_mwe \
         uv run pytest tests/tui
 """
 
@@ -32,3 +35,11 @@ def tui(binary):
         yield driver
     # A killed tester writes no coverage data: each flow must end quittable.
     assert driver.exit_status == 0, "the tester did not quit with q"
+
+
+@pytest.fixture
+def launcher() -> str:
+    path = os.environ.get("EASYLOCAL_TSP_TUI")
+    if not path:
+        pytest.skip("EASYLOCAL_TSP_TUI is not set")
+    return path

@@ -1227,6 +1227,12 @@ if(UNIX AND TARGET easylocal_tutorial_tui)
     endif()
 
     if(easylocal_tui_e2e_python)
+        set(easylocal_tui_e2e_environment
+            "EASYLOCAL_TUTORIAL_TUI=$<TARGET_FILE:easylocal_tutorial_tui>")
+        if(TARGET easylocal_tsp_tui_mwe)  # the launcher of two apps
+            list(APPEND easylocal_tui_e2e_environment
+                "EASYLOCAL_TSP_TUI=$<TARGET_FILE:easylocal_tsp_tui_mwe>")
+        endif()
         add_test(
             NAME easylocal.tui-e2e
             COMMAND ${easylocal_tui_e2e_python} -m pytest -q -p no:cacheprovider
@@ -1236,8 +1242,8 @@ if(UNIX AND TARGET easylocal_tutorial_tui)
             easylocal.tui-e2e
             PROPERTIES
                 LABELS "integration;tui-e2e"
-                ENVIRONMENT "EASYLOCAL_TUTORIAL_TUI=$<TARGET_FILE:easylocal_tutorial_tui>"
-                TIMEOUT 300
+                ENVIRONMENT "${easylocal_tui_e2e_environment}"
+                TIMEOUT 600
         )
     else()
         message(STATUS "neither uv nor Python with pyte and pytest: TUI end-to-end tests disabled")
