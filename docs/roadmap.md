@@ -69,6 +69,25 @@ with the deltas staying consistent with the current weights.
 
 **When.** Not scheduled. It depends on how the cost expressions settle.
 
+## A launcher across SolutionManagers
+
+**Why.** The TextUI's launcher opens several apps on the same problem and
+passes the Input and the current solution from one to the next, so the apps
+must have the same SolutionManager. Some problems are explored with different
+ones: two representations of a solution (a permutation and an assignment, for
+example), or a relaxed model next to the full one. Moving a solution between
+them today means saving it from one app and loading it in the other, when the
+two formats agree.
+
+**What.** A launcher whose apps may have different SolutionManagers, with
+conversions between their solutions declared by the problem, for example a
+hook `convert(const Input&, const SolutionA&) -> SolutionB` found by ADL. The
+launcher converts the current solution when another app opens, and checks at
+compile time that every app it may switch to can be reached by a conversion;
+apps with the same SolutionManager keep passing it unchanged.
+
+**When.** Not scheduled.
+
 ## Adaptive neighborhood selection
 
 **Why.** In a multi-neighborhood search the share of moves drawn from each
