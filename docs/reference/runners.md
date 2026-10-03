@@ -70,6 +70,12 @@ Simulated Annealing returns the best solution found. Temperature policies in
 | `FixedLength` | initial/final temperature, cooling rate, max iterations | max iterations are spent, spread over the levels |
 | `Cutoff` | as FixedLength, plus accepted ratio | max iterations; cools early after enough acceptances |
 | `Hybrid` | as Cutoff | max iterations; cools on samples or acceptances |
+| `FixedTemperature` | temperature, max iterations, accepted ratio | max iterations, or enough acceptances; never cools |
+| `TimeBased` | initial/final temperature, cooling rate, running time, accepted per temperature | the running time is over or the final temperature is reached; levels share the time |
+
+`TimeBased` reads the clock (`std::chrono::steady_clock`; `BasicTimeBased<Clock>`
+takes another one) once per proposal. Its trajectory depends on the speed of
+the machine, so equal seeds no longer give equal runs.
 
 `runners::MetropolisAcceptance` (the default) requires `cost::delta` (see
 [Cost](cost.md)). `SimulatedAnnealing<Policy>` exposes the policy's

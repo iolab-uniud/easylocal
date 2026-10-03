@@ -13,6 +13,7 @@
 #include <easylocal/trace.hpp>
 
 #include <array>
+#include <chrono>
 #include <cstddef>
 #include <cstdint>
 #include <iostream>
@@ -65,6 +66,27 @@ struct AlwaysAccept
         RNG&) const noexcept -> bool
     {
         return true;
+    }
+};
+
+// A clock that moves only when the test advances it.
+struct ManualClock
+{
+    using rep = long long;
+    using period = std::milli;
+    using duration = std::chrono::duration<rep, period>;
+    using time_point = std::chrono::time_point<ManualClock>;
+
+    static inline time_point current{};
+
+    [[nodiscard]] static auto now() noexcept -> time_point
+    {
+        return current;
+    }
+
+    static void advance(const duration elapsed) noexcept
+    {
+        current += elapsed;
     }
 };
 
@@ -360,6 +382,93 @@ int main()
     }
 
     {
+        temperature::FixedTemperature policy{temperature::FixedTemperatureParameters{
+            .temperature = 2.0,
+            .max_iterations = 4,
+            .accepted_ratio = 0.5,
+        }};
+        ok &= expect(
+            policy.temperature() == 2.0 && policy.accepted_limit() == 2,
+            "fixed temperature derives its accepted limit from the ratio");
+        policy.on_iteration(true);
+        policy.on_iteration(false);
+        ok &= expect(
+            !policy.finished() && policy.temperature() == 2.0,
+            "fixed temperature keeps its temperature");
+        policy.on_iteration(true);
+        ok &= expect(policy.finished(), "fixed temperature ends on enough acceptances");
+        policy.reset();
+        for (int i = 0; i < 4; ++i)
+            policy.on_iteration(false);
+        ok &= expect(policy.finished(), "fixed temperature ends on its iteration budget");
+        ok &= expect(
+            !temperature::FixedTemperatureParameters{.temperature = 0.0}.validate()
+                && !temperature::FixedTemperatureParameters{.accepted_ratio = 1.5}
+                    .validate(),
+            "fixed temperature rejects invalid parameters");
+    }
+
+    {
+        // Three levels, 8 -> 4 -> 2 -> 1, over three seconds.
+        const temperature::TimeBasedParameters parameters{
+            .initial_temperature = 8.0,
+            .final_temperature = 1.0,
+            .cooling_rate = 0.5,
+            .allowed_running_time = 3.0,
+        };
+        using std::chrono::milliseconds;
+
+        temperature::BasicTimeBased<ManualClock> policy{parameters};
+        ok &= expect(
+            policy.level_time() == milliseconds{1000},
+            "time-based policy divides the running time among the levels");
+        ManualClock::advance(milliseconds{500});
+        policy.on_iteration(true);
+        ok &= expect(
+            policy.temperature() == 8.0,
+            "time-based policy waits for its level time");
+        ManualClock::advance(milliseconds{500});
+        policy.on_iteration(false);
+        ok &= expect(
+            policy.temperature() == 4.0,
+            "time-based policy cools when the level time is over");
+        ManualClock::advance(milliseconds{1000});
+        policy.on_iteration(false);
+        ManualClock::advance(milliseconds{1000});
+        policy.on_iteration(false);
+        ok &= expect(policy.finished(), "time-based policy ends when the time is over");
+
+        policy.reset();
+        ok &= expect(
+            !policy.finished() && policy.temperature() == 8.0,
+            "time-based policy reset restarts the clock");
+        auto cutoff_parameters = parameters;
+        cutoff_parameters.accepted_per_temperature = 1;
+        temperature::BasicTimeBased<ManualClock> quick{cutoff_parameters};
+        for (int level = 0; level < 3; ++level)
+        {
+            ManualClock::advance(milliseconds{1});
+            quick.on_iteration(true);
+        }
+        ok &= expect(
+            quick.finished() && quick.temperature() == 1.0,
+            "time-based policy ends at the final temperature");
+
+        cutoff_parameters.accepted_per_temperature = 2;
+        temperature::BasicTimeBased<ManualClock> cutoff{cutoff_parameters};
+        ManualClock::advance(milliseconds{100});
+        cutoff.on_iteration(true);
+        ManualClock::advance(milliseconds{100});
+        cutoff.on_iteration(true);
+        ok &= expect(
+            cutoff.temperature() == 4.0 && cutoff.level_time() == milliseconds{1400},
+            "time-based cutoff cools early and redistributes the time it saves");
+        ok &= expect(
+            !temperature::TimeBasedParameters{.allowed_running_time = 0.0}.validate(),
+            "time-based policy rejects a non-positive running time");
+    }
+
+    {
         MetropolisAcceptance metropolis;
         CountingEngine rng;
         ok &= expect(metropolis.accept(9, 10, 2.0, rng),
@@ -517,6 +626,46 @@ int main()
 
         ok &= expect(result_a.cost == full_cost,
             "three-component weighted SA cost agrees with full evaluation");
+    }
+
+    {
+        const auto instance = exam_instance();
+        const exam::ExamTimetable initial{
+            .timeslot_by_exam = {0, 0, 1, 1, 2},
+        };
+        const auto solution_manager_recipe =
+            solution_manager<exam::ExamTimetablingSolutionManager>()
+            | easylocal::cost::sum(
+                easylocal::cost::weighted(
+                    component<exam::StudentConflictComponent>(),
+                    1000),
+                easylocal::cost::weighted(
+                    component<exam::ConsecutiveExamComponent>(),
+                    10),
+                component<exam::TimeslotLoadComponent>());
+        const auto neighborhood_recipe =
+            neighborhood<exam::MoveExamNeighborhoodExplorer>();
+
+        auto timed =
+            Runner{SimulatedAnnealing{temperature::TimeBased{
+                temperature::TimeBasedParameters{.allowed_running_time = 0.02}}}}
+            | solution_manager_recipe | neighborhood_recipe;
+        std::mt19937 rng{2026U};
+        const auto start = std::chrono::steady_clock::now();
+        const auto timed_result = timed.bind(instance).run(initial, rng);
+        ok &= expect(
+            timed_result.iterations > 0
+                && std::chrono::steady_clock::now() - start < std::chrono::seconds{5},
+            "time-based SA runs for its allowed time");
+
+        auto fixed =
+            Runner{SimulatedAnnealing{temperature::FixedTemperature{
+                temperature::FixedTemperatureParameters{.max_iterations = 50}}}}
+            | solution_manager_recipe | neighborhood_recipe;
+        const auto fixed_result = fixed.bind(instance).run(initial, rng);
+        ok &= expect(
+            fixed_result.iterations == 50,
+            "fixed-temperature SA spends its iteration budget");
     }
 
     return ok ? 0 : 1;

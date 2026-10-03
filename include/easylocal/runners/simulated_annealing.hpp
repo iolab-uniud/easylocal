@@ -8,6 +8,7 @@
 
 #include <algorithm>
 #include <cassert>
+#include <chrono>
 #include <cmath>
 #include <concepts>
 #include <cstddef>
@@ -719,12 +720,310 @@ private:
     std::size_t current_sample_limit_{};
 };
 
+struct FixedTemperatureParameters
+{
+    double temperature{1.0};
+    std::size_t max_iterations{100'000};
+    double accepted_ratio{1.0};
+
+    [[nodiscard]]
+    static consteval auto parameter_schema()
+    {
+        return config::fields(
+            config::field<"temperature", &FixedTemperatureParameters::temperature>(
+                "Constant annealing temperature"),
+            config::field<"max_iterations", &FixedTemperatureParameters::max_iterations>(
+                "Maximum number of annealing iterations"),
+            config::field<"accepted_ratio", &FixedTemperatureParameters::accepted_ratio>(
+                "Fraction of max_iterations accepted proposals that ends the search"));
+    }
+
+    [[nodiscard]]
+    config::validation_result validate() const noexcept
+    {
+        if (!std::isfinite(temperature) || temperature <= 0.0)
+        {
+            return config::validation_result::failure(
+                "temperature must be finite and positive");
+        }
+        if (max_iterations == 0)
+            return config::validation_result::failure("max_iterations must be positive");
+        if (!std::isfinite(accepted_ratio) || accepted_ratio <= 0.0
+            || accepted_ratio > 1.0)
+        {
+            return config::validation_result::failure(
+                "accepted_ratio must be finite and in the interval (0, 1]");
+        }
+        return config::validation_result::success();
+    }
+};
+
+// A constant temperature: the search ends after max_iterations proposals, or
+// earlier once accepted_ratio * max_iterations of them have been accepted.
+class FixedTemperature
+{
+public:
+    using parameters_type = FixedTemperatureParameters;
+
+    explicit FixedTemperature(const FixedTemperatureParameters parameters) noexcept
+        : parameters_{parameters},
+          accepted_limit_{detail::accepted_limit(
+              parameters.max_iterations,
+              parameters.accepted_ratio)}
+    {
+        assert(parameters_.validate());
+        reset();
+    }
+
+    [[nodiscard]]
+    const FixedTemperatureParameters& parameters() const noexcept
+    {
+        return parameters_;
+    }
+
+    [[nodiscard]]
+    config::validation_result configure(FixedTemperatureParameters parameters) noexcept
+    {
+        return detail::reconfigure(*this, parameters);
+    }
+
+    [[nodiscard]]
+    auto configuration() noexcept
+    {
+        return config::endpoint<"temperature">(*this);
+    }
+
+    [[nodiscard]]
+    auto configuration() const noexcept
+    {
+        return config::endpoint<"temperature">(*this);
+    }
+
+    void reset() noexcept
+    {
+        iterations_ = 0;
+        accepted_ = 0;
+    }
+
+    [[nodiscard]]
+    double temperature() const noexcept
+    {
+        return parameters_.temperature;
+    }
+
+    void on_iteration(const bool accepted) noexcept
+    {
+        assert(!finished());
+        ++iterations_;
+        accepted_ += accepted ? 1U : 0U;
+    }
+
+    [[nodiscard]]
+    bool finished() const noexcept
+    {
+        return iterations_ >= parameters_.max_iterations || accepted_ >= accepted_limit_;
+    }
+
+    [[nodiscard]]
+    std::size_t accepted_limit() const noexcept
+    {
+        return accepted_limit_;
+    }
+
+private:
+    FixedTemperatureParameters parameters_;
+    std::size_t accepted_limit_{};
+    std::size_t iterations_{};
+    std::size_t accepted_{};
+};
+
+struct TimeBasedParameters
+{
+    double initial_temperature{10.0};
+    double final_temperature{0.01};
+    double cooling_rate{0.95};
+    // Seconds.
+    double allowed_running_time{10.0};
+    // Accepted proposals that cool early; 0 cools only on time.
+    std::size_t accepted_per_temperature{0};
+
+    [[nodiscard]]
+    static consteval auto parameter_schema()
+    {
+        return config::fields(
+            config::field<
+                "initial_temperature",
+                &TimeBasedParameters::initial_temperature>(
+                "Initial annealing temperature"),
+            config::field<"final_temperature", &TimeBasedParameters::final_temperature>(
+                "Final annealing temperature"),
+            config::field<"cooling_rate", &TimeBasedParameters::cooling_rate>(
+                "Multiplicative cooling factor"),
+            config::field<
+                "allowed_running_time",
+                &TimeBasedParameters::allowed_running_time>(
+                "Running time of the annealing, in seconds"),
+            config::field<
+                "accepted_per_temperature",
+                &TimeBasedParameters::accepted_per_temperature>(
+                "Accepted proposals that trigger cooling (0: cool only on time)"));
+    }
+
+    [[nodiscard]]
+    config::validation_result validate() const noexcept
+    {
+        const auto schedule = detail::validate_cooling_schedule(
+            initial_temperature,
+            final_temperature,
+            cooling_rate);
+        if (!schedule)
+            return schedule;
+        if (!std::isfinite(allowed_running_time) || allowed_running_time <= 0.0)
+        {
+            return config::validation_result::failure(
+                "allowed_running_time must be finite and positive");
+        }
+        return config::validation_result::success();
+    }
+};
+
+// The cooling schedule spread over a running time instead of an iteration
+// budget: the allowed time is divided evenly among the temperature levels,
+// and the temperature cools when the time of its level is over or, with
+// accepted_per_temperature, after that many acceptances; the time an early
+// cooling saves is redistributed over the remaining levels. The annealing
+// ends when the time is over or the final temperature is reached. The
+// trajectory depends on the speed of the machine, so equal seeds no longer
+// give equal runs. The clock is read once per proposal.
+template<class Clock = std::chrono::steady_clock>
+class BasicTimeBased
+{
+public:
+    using parameters_type = TimeBasedParameters;
+
+    explicit BasicTimeBased(const TimeBasedParameters parameters) noexcept
+        : parameters_{parameters},
+          temperature_levels_{detail::temperature_level_count(
+              parameters.initial_temperature,
+              parameters.final_temperature,
+              parameters.cooling_rate)},
+          running_time_{std::chrono::duration_cast<duration>(
+              std::chrono::duration<double>{parameters.allowed_running_time})}
+    {
+        assert(parameters_.validate());
+        reset();
+    }
+
+    [[nodiscard]]
+    const TimeBasedParameters& parameters() const noexcept
+    {
+        return parameters_;
+    }
+
+    [[nodiscard]]
+    config::validation_result configure(TimeBasedParameters parameters) noexcept
+    {
+        return detail::reconfigure(*this, parameters);
+    }
+
+    [[nodiscard]]
+    auto configuration() noexcept
+    {
+        return config::endpoint<"temperature">(*this);
+    }
+
+    [[nodiscard]]
+    auto configuration() const noexcept
+    {
+        return config::endpoint<"temperature">(*this);
+    }
+
+    // Starts the clock.
+    void reset() noexcept
+    {
+        temperature_ = parameters_.initial_temperature;
+        start_ = Clock::now();
+        level_start_ = start_;
+        level_time_ =
+            running_time_ / static_cast<typename duration::rep>(temperature_levels_);
+        completed_levels_ = 0;
+        accepted_ = 0;
+        timed_out_ = false;
+    }
+
+    [[nodiscard]]
+    double temperature() const noexcept
+    {
+        return temperature_;
+    }
+
+    void on_iteration(const bool accepted) noexcept
+    {
+        assert(!finished());
+        const auto now = Clock::now();
+        if (now - start_ >= running_time_)
+        {
+            timed_out_ = true;
+            return;
+        }
+
+        accepted_ += accepted ? 1U : 0U;
+        const auto level_elapsed = now - level_start_;
+        const auto time_over = level_elapsed >= level_time_;
+        const auto accepted_cutoff = parameters_.accepted_per_temperature != 0
+            && accepted_ >= parameters_.accepted_per_temperature;
+        if (!time_over && !accepted_cutoff)
+            return;
+
+        temperature_ *= parameters_.cooling_rate;
+        ++completed_levels_;
+        if (!time_over && completed_levels_ < temperature_levels_)
+        {
+            const auto remaining_levels = temperature_levels_ - completed_levels_;
+            level_time_ = (running_time_ - (now - start_))
+                / static_cast<typename duration::rep>(remaining_levels);
+        }
+        level_start_ = now;
+        accepted_ = 0;
+    }
+
+    [[nodiscard]]
+    bool finished() const noexcept
+    {
+        return timed_out_ || temperature_ <= parameters_.final_temperature;
+    }
+
+    [[nodiscard]]
+    typename Clock::duration level_time() const noexcept
+    {
+        return level_time_;
+    }
+
+private:
+    using duration = typename Clock::duration;
+
+    TimeBasedParameters parameters_;
+    std::size_t temperature_levels_{};
+    duration running_time_{};
+    double temperature_{};
+    typename Clock::time_point start_{};
+    typename Clock::time_point level_start_{};
+    duration level_time_{};
+    std::size_t completed_levels_{};
+    std::size_t accepted_{};
+    bool timed_out_{};
+};
+
+using TimeBased = BasicTimeBased<>;
+
 } // namespace temperature
 
 static_assert(temperature_policy<temperature::Classic>);
 static_assert(temperature_policy<temperature::FixedLength>);
 static_assert(temperature_policy<temperature::Cutoff>);
 static_assert(temperature_policy<temperature::Hybrid>);
+static_assert(temperature_policy<temperature::FixedTemperature>);
+static_assert(temperature_policy<temperature::TimeBased>);
 
 // Acceptance policies.
 
