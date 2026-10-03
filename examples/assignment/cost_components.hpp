@@ -85,9 +85,7 @@ public:
         assert(solution.assignment.size() == instance_.demand.size());
 
         if (instance_.capacity.empty())
-        {
             return 0;
-        }
 
         std::vector<quantity_type> load(instance_.capacity.size(), quantity_type{0});
 

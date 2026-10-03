@@ -58,17 +58,11 @@ inline Tsp read_input(std::type_identity<Tsp>, std::istream& in)
 {
     Tsp tsp; // "n d00 d01 ... d(n-1)(n-1)"
     if (!(in >> tsp.cities))
-    {
         throw std::runtime_error{"invalid TSP header"};
-    }
     tsp.distance.resize(tsp.cities * tsp.cities);
     for (auto& value : tsp.distance)
-    {
         if (!(in >> value))
-        {
             throw std::runtime_error{"invalid TSP distances"};
-        }
-    }
     return tsp;
 }
 
@@ -76,21 +70,15 @@ inline Tour read_solution(const Tsp& tsp, std::istream& in)
 {
     Tour tour{std::vector<std::size_t>(tsp.cities)};
     for (auto& city : tour.order)
-    {
         if (!(in >> city))
-        {
             throw std::runtime_error{"invalid tour"};
-        }
-    }
     return tour;
 }
 
 inline void write_solution(const Tsp&, const Tour& tour, std::ostream& out)
 {
     for (const auto city : tour.order)
-    {
         out << city << ' ';
-    }
     out << '\n';
 }
 
@@ -98,9 +86,7 @@ inline std::string describe(const Tour& tour)
 {
     std::string text;
     for (const auto city : tour.order)
-    {
         text += std::to_string(city) + ' ';
-    }
     return text;
 }
 
@@ -148,9 +134,7 @@ public:
     {
         double length = 0.0;
         for (std::size_t k = 0; k < tour.order.size(); ++k)
-        {
             length += tsp_.d(tour.order[k], tour.order[(k + 1) % tour.order.size()]);
-        }
         return length;
     }
 
@@ -197,12 +181,8 @@ public:
     {
         const auto n = tour.order.size();
         for (std::size_t i = 0; i + 2 < n; ++i)
-        {
             for (std::size_t j = i + 2; j < n && !(i == 0 && j + 1 == n); ++j)
-            {
                 co_yield TwoOpt{i, j};
-            }
-        }
     }
 
     // [random-move]
@@ -213,22 +193,16 @@ public:
     {
         const auto n = tour.order.size();
         if (n < 4)
-        {
             return std::nullopt;
-        }
         std::uniform_int_distribution<std::size_t> pick{0, n - 1};
         while (true)
         {
             auto i = pick(rng);
             auto j = pick(rng);
             if (j < i)
-            {
                 std::swap(i, j);
-            }
             if (i + 2 <= j && !(i == 0 && j + 1 == n))
-            {
                 return TwoOpt{i, j};
-            }
         }
     }
     // [random-move]
@@ -285,28 +259,20 @@ public:
     easylocal::generator<Swap> moves(const Tour& tour) const
     {
         for (std::size_t first = 0; first < tour.order.size(); ++first)
-        {
             for (std::size_t second = first + 1; second < tour.order.size(); ++second)
-            {
                 co_yield Swap{first, second};
-            }
-        }
     }
 
     template<std::uniform_random_bit_generator RNG>
     std::optional<Swap> random_move(const Tour& tour, RNG& rng) const
     {
         if (tour.order.size() < 2)
-        {
             return std::nullopt;
-        }
         std::uniform_int_distribution<std::size_t> pick{0, tour.order.size() - 1};
         const auto first = pick(rng);
         auto second = pick(rng);
         while (second == first)
-        {
             second = pick(rng);
-        }
         return Swap{std::min(first, second), std::max(first, second)};
     }
 
@@ -348,16 +314,12 @@ public:
         {
             auto move = run.random_move(solution, rng);
             if (!move)
-            {
                 break;
-            }
 
             run.next_iteration();
             auto candidate = run.evaluate_move(solution, current, *move);
             if (run.better(candidate.cost(), current.cost()))
-            {
                 run.commit(solution, current, std::move(candidate), *move);
-            }
         }
         return run.finish(std::move(solution), current.cost()); // run_finished
     }

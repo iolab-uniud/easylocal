@@ -31,9 +31,7 @@ public:
     bool first_move(const ExamTimetable& solution, MoveExam& move) const
     {
         if (solution.timeslot_by_exam.empty() || input().timeslot_count < 2)
-        {
             return false;
-        }
 
         move.exam = 0;
         move.destination = first_destination(solution, 0);
@@ -72,9 +70,7 @@ public:
         const auto count = solution.timeslot_by_exam.size() * alternatives;
 
         if (count == 0)
-        {
             return std::nullopt;
-        }
 
         std::uniform_int_distribution<std::size_t> draw{0, count - 1};
         const auto ordinal = draw(rng);

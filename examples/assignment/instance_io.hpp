@@ -18,9 +18,7 @@ inline AssignmentInstance read_assignment_instance(std::istream& input)
     std::size_t job_count{};
     std::size_t machine_count{};
     if (!(input >> job_count >> machine_count))
-    {
         throw std::runtime_error{"invalid assignment instance header"};
-    }
 
     AssignmentInstance instance{
         .demand = std::vector<quantity_type>(job_count),
@@ -28,25 +26,15 @@ inline AssignmentInstance read_assignment_instance(std::istream& input)
     };
 
     for (auto& demand : instance.demand)
-    {
         if (!(input >> demand) || demand < 0)
-        {
             throw std::runtime_error{"invalid assignment demand data"};
-        }
-    }
 
     for (auto& capacity : instance.capacity)
-    {
         if (!(input >> capacity) || capacity < 0)
-        {
             throw std::runtime_error{"invalid assignment capacity data"};
-        }
-    }
 
     if (job_count != 0 && machine_count == 0)
-    {
         throw std::runtime_error{"assignment instance has jobs but no machines"};
-    }
 
     return instance;
 }
@@ -62,9 +50,7 @@ inline AssignmentInstance load_instance(const std::filesystem::path& path)
 {
     std::ifstream input{path};
     if (!input)
-    {
         throw std::runtime_error("cannot open assignment instance: " + path.string());
-    }
 
     try
     {

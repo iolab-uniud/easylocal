@@ -139,9 +139,7 @@ int main(int argc, char* argv[])
     const auto report = el::check(application, tsp); // also: check(app, input, solution)
     el::print_report(std::cout, report);
     if (!report)
-    {
         return 1;
-    }
     // [check] --------------------------------------------------------------
 
     // [tester] -------------------------------------------------------------
@@ -158,9 +156,7 @@ int main(int argc, char* argv[])
     const auto independence = tester.check_move_independence(); // null and repeated moves
     const auto sampling = tester.check_random_move_distribution(tester.rng());
     if (costs.mismatches != 0 || costs.invalid != 0 || sampling.out_of_neighborhood != 0)
-    {
         return 1;
-    }
     // [tester-checks] ------------------------------------------------------
 
     // [control] ------------------------------------------------------------

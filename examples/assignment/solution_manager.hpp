@@ -22,9 +22,7 @@ public:
     bool is_valid(const AssignmentSolution& solution) const
     {
         if (solution.assignment.size() != input().demand.size())
-        {
             return false;
-        }
 
         return std::ranges::all_of(solution.assignment, [this](machine_id machine) {
             return machine < input().capacity.size();
@@ -40,14 +38,10 @@ public:
         };
 
         if (input().capacity.empty())
-        {
             return solution;
-        }
 
         for (std::size_t job = 0; job < solution.assignment.size(); ++job)
-        {
             solution.assignment[job] = job % input().capacity.size();
-        }
 
         return solution;
     }

@@ -14,9 +14,7 @@ inline TspInstance load_instance(const std::filesystem::path& path)
 {
     std::ifstream input{path};
     if (!input)
-    {
         throw std::runtime_error("cannot open TSP instance: " + path.string());
-    }
 
     try
     {

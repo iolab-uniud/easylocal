@@ -49,9 +49,7 @@ inline ExamTimetablingInstance load_instance(const std::filesystem::path& path)
     }
 
     if (!instance.is_valid())
-    {
         throw std::runtime_error("invalid exam-timetabling instance: " + path.string());
-    }
 
     return instance;
 }

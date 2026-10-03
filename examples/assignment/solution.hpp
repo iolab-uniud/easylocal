@@ -25,12 +25,8 @@ struct AssignmentSolution
             .assignment = std::vector<machine_id>(instance.demand.size()),
         };
         for (auto& machine : solution.assignment)
-        {
             if (!(in >> machine))
-            {
                 throw std::runtime_error{"invalid assignment solution"};
-            }
-        }
         return solution;
     }
 
@@ -39,9 +35,7 @@ struct AssignmentSolution
         for (std::size_t job = 0; job < assignment.size(); ++job)
         {
             if (job != 0)
-            {
                 out << ' ';
-            }
             out << assignment[job];
         }
         out << '\n';
@@ -56,9 +50,7 @@ struct AssignmentSolution
         for (std::size_t job = 0; job < assignment.size(); ++job)
         {
             if (job != 0)
-            {
                 out << ", ";
-            }
             out << job << "->" << assignment[job];
         }
         out << ']';

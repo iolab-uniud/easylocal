@@ -38,24 +38,16 @@ public:
     bool is_valid(const Tour& solution) const
     {
         if (solution.tour.size() != input().city_count)
-        {
             return false;
-        }
 
         for (std::size_t first = 0; first < solution.tour.size(); ++first)
         {
             if (solution.tour[first] >= input().city_count)
-            {
                 return false;
-            }
 
             for (std::size_t second = first + 1; second < solution.tour.size(); ++second)
-            {
                 if (solution.tour[first] == solution.tour[second])
-                {
                     return false;
-                }
-            }
         }
 
         return true;

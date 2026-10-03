@@ -26,9 +26,7 @@ public:
         assert(solution.tour.size() == instance_.city_count);
 
         if (solution.tour.empty())
-        {
             return {};
-        }
 
         distance_type total = 0.0;
 

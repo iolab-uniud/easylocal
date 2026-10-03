@@ -17,7 +17,6 @@ Checks: >
   misc-unused-using-decls,
   misc-unused-alias-decls,
   misc-redundant-expression,
-  readability-braces-around-statements,
   readability-container-size-empty,
   readability-else-after-return,
   readability-make-member-function-const,

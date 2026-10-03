@@ -72,17 +72,11 @@ inline Tsp read_input(std::type_identity<Tsp>, std::istream& in)
 {
     Tsp tsp; // "n d00 d01 ... d(n-1)(n-1)"
     if (!(in >> tsp.cities))
-    {
         throw std::runtime_error{"invalid TSP header"};
-    }
     tsp.distance.resize(tsp.cities * tsp.cities);
     for (auto& value : tsp.distance)
-    {
         if (!(in >> value))
-        {
             throw std::runtime_error{"invalid TSP distances"};
-        }
-    }
     return tsp;
 }
 
@@ -90,21 +84,15 @@ inline Tour read_solution(const Tsp& tsp, std::istream& in)
 {
     Tour tour{std::vector<std::size_t>(tsp.cities)};
     for (auto& city : tour.order)
-    {
         if (!(in >> city))
-        {
             throw std::runtime_error{"invalid tour"};
-        }
-    }
     return tour;
 }
 
 inline void write_solution(const Tsp&, const Tour& tour, std::ostream& out)
 {
     for (const auto city : tour.order)
-    {
         out << city << ' ';
-    }
     out << '\n';
 }
 
@@ -112,9 +100,7 @@ inline std::string describe(const Tour& tour)
 {
     std::string text;
     for (const auto city : tour.order)
-    {
         text += std::to_string(city) + ' ';
-    }
     return text;
 }
 

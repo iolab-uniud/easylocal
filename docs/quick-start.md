@@ -86,9 +86,7 @@ public:
     {
         double length = 0.0;
         for (std::size_t k = 0; k < tour.order.size(); ++k)
-        {
             length += tsp_.d(tour.order[k], tour.order[(k + 1) % tour.order.size()]);
-        }
         return length;
     }
 
@@ -108,12 +106,8 @@ public:
     {
         const auto n = tour.order.size();
         for (std::size_t i = 0; i + 2 < n; ++i)
-        {
             for (std::size_t j = i + 2; j < n && !(i == 0 && j + 1 == n); ++j)
-            {
                 co_yield TwoOpt{i, j};
-            }
-        }
     }
 
     bool is_valid(const Tour& tour, const TwoOpt& move) const

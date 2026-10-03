@@ -53,9 +53,7 @@ void print_solution(const AssignmentSolution& solution)
     for (std::size_t job = 0; job < solution.assignment.size(); ++job)
     {
         if (job != 0)
-        {
             std::cout << ", ";
-        }
 
         std::cout << solution.assignment[job];
     }

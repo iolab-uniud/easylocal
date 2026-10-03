@@ -26,17 +26,11 @@ public:
         {
             exam_id other{};
             if (conflict.first == move.exam)
-            {
                 other = conflict.second;
-            }
             else if (conflict.second == move.exam)
-            {
                 other = conflict.first;
-            }
             else
-            {
                 continue;
-            }
 
             const auto other_timeslot = solution.timeslot_by_exam[other];
             const auto old_distance = source > other_timeslot
@@ -47,13 +41,9 @@ public:
                 : other_timeslot - move.destination;
 
             if (old_distance == 1)
-            {
                 change -= conflict.students;
-            }
             if (new_distance == 1)
-            {
                 change += conflict.students;
-            }
         }
 
         return change;

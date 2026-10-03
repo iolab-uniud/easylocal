@@ -547,7 +547,8 @@ scripts/tidy.sh build/<preset>            # lint the examples
 The examples are written for people learning the framework: return types come
 first (`double evaluate(const Tour& tour) const`), and `auto f()` without a
 written type is used only when the type cannot reasonably be spelled, such as a
-recipe or an app, with a comment saying so. They are fully formatted and pass
+recipe or an app, with a comment saying so. A control statement whose body is a single
+one-line statement takes no braces. They are fully formatted and pass
 clang-tidy, which CI checks. The library keeps its own style for now (trailing
 return types, `[[nodiscard]]`, `noexcept`); outside `examples/` only the lines a
 change touches are formatted, by the hook and in CI, so the code converges as it

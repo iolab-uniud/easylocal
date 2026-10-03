@@ -70,6 +70,10 @@ PenaltyBreakScopeResolution: 1000
 # Prefer breaking after `=` to aligning a builder chain far to the right.
 PenaltyIndentedWhitespace: 10
 
+# A control statement whose body is one single-line statement takes no braces;
+# braces stay when the statement wraps or a sibling branch needs them.
+RemoveBracesLLVM: true
+
 AllowShortFunctionsOnASingleLine: Empty
 AllowShortLambdasOnASingleLine: All
 AllowShortBlocksOnASingleLine: Never

@@ -59,18 +59,14 @@ public:
     {
         const auto city_count = solution.tour.size();
         if (move_count(city_count) == 0)
-        {
             return std::nullopt;
-        }
 
         std::uniform_int_distribution<std::size_t> draw_first{0, city_count - 1};
         std::uniform_int_distribution<std::size_t> draw_other{0, city_count - 2};
         const auto first = draw_first(rng);
         auto second = draw_other(rng);
         if (second >= first)
-        {
             ++second;
-        }
         return SwapCitiesMove{
             .first_position = std::min(first, second),
             .second_position = std::max(first, second),

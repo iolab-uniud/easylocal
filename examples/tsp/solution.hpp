@@ -21,12 +21,8 @@ struct Tour
         Tour solution;
         solution.tour.resize(instance.city_count);
         for (auto& city : solution.tour)
-        {
             if (!(input >> city))
-            {
                 throw std::runtime_error("invalid TSP solution");
-            }
-        }
         return solution;
     }
 
@@ -35,9 +31,7 @@ struct Tour
         for (std::size_t index = 0; index < tour.size(); ++index)
         {
             if (index != 0)
-            {
                 output << ' ';
-            }
             output << tour[index];
         }
         output << '\n';
@@ -52,9 +46,7 @@ struct Tour
         for (std::size_t index = 0; index < tour.size(); ++index)
         {
             if (index != 0)
-            {
                 output << " -> ";
-            }
             output << tour[index];
         }
         return output.str();

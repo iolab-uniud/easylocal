@@ -27,13 +27,9 @@ struct TspCodec
         }
         tutorial::Tsp tsp{.cities = static_cast<std::size_t>(payload["cities"].u())};
         for (const auto& value : payload["distance"])
-        {
             tsp.distance.push_back(value.d());
-        }
         if (tsp.distance.size() != tsp.cities * tsp.cities)
-        {
             throw std::invalid_argument{"'distance' must have cities * cities entries"};
-        }
         return tsp;
     }
 

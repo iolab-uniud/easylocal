@@ -70,9 +70,7 @@ public:
     {
         const auto city_count = solution.tour.size();
         if (move_count(city_count) == 0)
-        {
             return std::nullopt;
-        }
 
         std::uniform_int_distribution<std::size_t> draw{0, city_count - 1};
         while (true)
@@ -80,9 +78,7 @@ public:
             auto first_edge = draw(rng);
             auto second_edge = draw(rng);
             if (second_edge < first_edge)
-            {
                 std::swap(first_edge, second_edge);
-            }
             if (valid_edge_pair(city_count, first_edge, second_edge))
             {
                 return TwoOptMove{

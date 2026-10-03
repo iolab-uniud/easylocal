@@ -25,9 +25,7 @@ std::vector<quantity_type> read_quantities(
     const char* key)
 {
     if (!payload.has(key))
-    {
         throw std::invalid_argument{std::string{"missing JSON field '"} + key + "'"};
-    }
 
     const auto& array = payload[key];
     if (array.t() != crow::json::type::List)
@@ -93,9 +91,7 @@ struct AssignmentCodec
         };
 
         if (!input.demand.empty() && input.capacity.empty())
-        {
             throw std::invalid_argument{"assignment input has jobs but no machines"};
-        }
         return input;
     }
 

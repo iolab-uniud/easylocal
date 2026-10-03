@@ -19,12 +19,8 @@ public:
     {
         const auto n = tour.order.size();
         for (std::size_t i = 0; i + 2 < n; ++i)
-        {
             for (std::size_t j = i + 2; j < n && !(i == 0 && j + 1 == n); ++j)
-            {
                 co_yield TwoOpt{i, j};
-            }
-        }
     }
 
     // Uniform by rejection: two positions drawn independently, ordered, and
@@ -34,22 +30,16 @@ public:
     {
         const auto n = tour.order.size();
         if (n < 4)
-        {
             return std::nullopt;
-        }
         std::uniform_int_distribution<std::size_t> pick{0, n - 1};
         while (true)
         {
             auto i = pick(rng);
             auto j = pick(rng);
             if (j < i)
-            {
                 std::swap(i, j);
-            }
             if (i + 2 <= j && !(i == 0 && j + 1 == n))
-            {
                 return TwoOpt{i, j};
-            }
         }
     }
 

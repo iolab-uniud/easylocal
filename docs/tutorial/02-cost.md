@@ -15,9 +15,7 @@ public:
     {
         double length = 0.0;
         for (std::size_t k = 0; k < tour.order.size(); ++k)
-        {
             length += tsp_.d(tour.order[k], tour.order[(k + 1) % tour.order.size()]);
-        }
         return length;
     }
 

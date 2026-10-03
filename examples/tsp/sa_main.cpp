@@ -60,9 +60,7 @@ void print_tour(const Tour& solution)
     for (std::size_t position = 0; position < solution.tour.size(); ++position)
     {
         if (position != 0)
-        {
             std::cout << ", ";
-        }
 
         std::cout << solution.tour[position];
     }

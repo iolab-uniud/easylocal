@@ -62,9 +62,7 @@ private:
     void pause() const
     {
         if (delay_.count() != 0)
-        {
             std::this_thread::sleep_for(delay_);
-        }
     }
 
     Evaluation evaluation_;

@@ -28,9 +28,7 @@ struct ExamTimetablingInstance
     bool is_valid() const
     {
         if (timeslot_count == 0)
-        {
             return exam_count == 0 && conflicts.empty();
-        }
 
         for (const auto& conflict : conflicts)
         {

@@ -30,16 +30,12 @@ public:
         {
             auto move = run.random_move(solution, rng);
             if (!move)
-            {
                 break;
-            }
 
             run.next_iteration();
             auto candidate = run.evaluate_move(solution, current, *move);
             if (run.better(candidate.cost(), current.cost()))
-            {
                 run.commit(solution, current, std::move(candidate), *move);
-            }
         }
         return run.finish(std::move(solution), current.cost()); // run_finished
     }

@@ -40,9 +40,7 @@ public:
         const auto machine_count = input().capacity.size();
 
         if (solution.assignment.empty() || machine_count < 2)
-        {
             return false;
-        }
 
         move.job = 0;
         move.destination = first_destination(solution, move.job);
@@ -81,9 +79,7 @@ public:
     {
         const auto count = move_count(solution);
         if (count == 0)
-        {
             return std::nullopt;
-        }
 
         std::uniform_int_distribution<std::size_t> draw{0, count - 1};
         return move_at(solution, draw(rng));

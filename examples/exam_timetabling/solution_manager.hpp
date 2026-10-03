@@ -25,9 +25,7 @@ public:
             .timeslot_by_exam = std::vector<timeslot_id>(input().exam_count),
         };
         for (std::size_t exam = 0; exam < solution.timeslot_by_exam.size(); ++exam)
-        {
             solution.timeslot_by_exam[exam] = exam % input().timeslot_count;
-        }
         return solution;
     }
 

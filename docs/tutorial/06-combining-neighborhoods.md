@@ -21,28 +21,20 @@ public:
     easylocal::generator<Swap> moves(const Tour& tour) const
     {
         for (std::size_t first = 0; first < tour.order.size(); ++first)
-        {
             for (std::size_t second = first + 1; second < tour.order.size(); ++second)
-            {
                 co_yield Swap{first, second};
-            }
-        }
     }
 
     template<std::uniform_random_bit_generator RNG>
     std::optional<Swap> random_move(const Tour& tour, RNG& rng) const
     {
         if (tour.order.size() < 2)
-        {
             return std::nullopt;
-        }
         std::uniform_int_distribution<std::size_t> pick{0, tour.order.size() - 1};
         const auto first = pick(rng);
         auto second = pick(rng);
         while (second == first)
-        {
             second = pick(rng);
-        }
         return Swap{std::min(first, second), std::max(first, second)};
     }
 

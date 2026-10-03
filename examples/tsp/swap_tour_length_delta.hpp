@@ -29,9 +29,7 @@ public:
 
         const auto size = solution.tour.size();
         if (size < 2)
-        {
             return {};
-        }
 
         const std::array<std::size_t, 4> affected_edges{
             (move.first_position + size - 1) % size,
@@ -49,14 +47,10 @@ public:
             bool duplicate = false;
 
             for (std::size_t previous = 0; previous < index; ++previous)
-            {
                 duplicate |= affected_edges[previous] == edge;
-            }
 
             if (duplicate)
-            {
                 continue;
-            }
 
             const auto next = (edge + 1) % size;
             removed += instance_.distance(solution.tour[edge], solution.tour[next]);
@@ -77,13 +71,9 @@ private:
         std::size_t position)
     {
         if (position == move.first_position)
-        {
             return solution.tour[move.second_position];
-        }
         if (position == move.second_position)
-        {
             return solution.tour[move.first_position];
-        }
         return solution.tour[position];
     }
 

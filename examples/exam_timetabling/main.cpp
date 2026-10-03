@@ -58,9 +58,7 @@ void print_timetable(const ExamTimetable& solution)
     for (std::size_t exam = 0; exam < solution.timeslot_by_exam.size(); ++exam)
     {
         if (exam != 0)
-        {
             std::cout << ", ";
-        }
         std::cout << solution.timeslot_by_exam[exam];
     }
     std::cout << ']';

@@ -23,21 +23,15 @@ struct TspInstance
     {
         std::size_t count{};
         if (!(input >> count) || count < 2)
-        {
             throw std::runtime_error("invalid TSP instance header");
-        }
 
         TspInstance instance{
             .city_count = count,
             .distances = std::vector<distance_type>(count * count),
         };
         for (auto& distance : instance.distances)
-        {
             if (!(input >> distance) || !std::isfinite(distance) || distance < 0.0)
-            {
                 throw std::runtime_error("invalid TSP distance data");
-            }
-        }
         return instance;
     }
 

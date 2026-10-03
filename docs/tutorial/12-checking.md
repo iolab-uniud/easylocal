@@ -10,9 +10,7 @@ into an app, two further levels of checking are available.
 const auto report = el::check(application, tsp); // also: check(app, input, solution)
 el::print_report(std::cout, report);
 if (!report)
-{
     return 1;
-}
 ```
 
 ```text
@@ -47,9 +45,7 @@ const auto costs = tester.check_neighborhood_costs(); // delta vs full evaluatio
 const auto independence = tester.check_move_independence(); // null and repeated moves
 const auto sampling = tester.check_random_move_distribution(tester.rng());
 if (costs.mismatches != 0 || costs.invalid != 0 || sampling.out_of_neighborhood != 0)
-{
     return 1;
-}
 ```
 
 | Check | Result | Needs |

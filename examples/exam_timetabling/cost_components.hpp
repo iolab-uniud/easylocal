@@ -48,27 +48,17 @@ public:
         {
             exam_id other{};
             if (conflict.first == move.exam)
-            {
                 other = conflict.second;
-            }
             else if (conflict.second == move.exam)
-            {
                 other = conflict.first;
-            }
             else
-            {
                 continue;
-            }
 
             const auto other_timeslot = solution.timeslot_by_exam[other];
             if (source == other_timeslot)
-            {
                 change -= conflict.students;
-            }
             if (move.destination == other_timeslot)
-            {
                 change += conflict.students;
-            }
         }
 
         return change;
@@ -98,9 +88,7 @@ public:
             const auto distance = first > second ? first - second : second - first;
 
             if (distance == 1)
-            {
                 penalty += conflict.students;
-            }
         }
 
         return penalty;
@@ -131,9 +119,7 @@ public:
 
         penalty_type penalty = 0;
         for (const auto count : load)
-        {
             penalty += count * count;
-        }
 
         return penalty;
     }
