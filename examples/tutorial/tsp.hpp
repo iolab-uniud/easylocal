@@ -323,6 +323,7 @@ inline Tsp read_input(std::type_identity<Tsp>, std::istream& in)
 }
 // [read-input]
 
+// [solution-io]
 inline Tour read_solution(const Tsp& tsp, std::istream& in)
 {
     Tour tour{std::vector<std::size_t>(tsp.cities())};
@@ -338,6 +339,7 @@ inline void write_solution(const Tsp&, const Tour& tour, std::ostream& out)
         out << city << ' ';
     out << '\n';
 }
+// [solution-io]
 
 inline std::string describe(const Tour& tour)
 {

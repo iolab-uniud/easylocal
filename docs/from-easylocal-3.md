@@ -193,6 +193,47 @@ and assigned.
   tabu list or a trace compares solutions (see the
   [SolutionManager reference](reference/solution-manager.md)).
 
+An EasyLocal 3 State was read and written with stream operators, used by the
+tester and by `main` to load an initial state and print the result:
+
+```cpp title="EasyLocal 3"
+std::ostream& operator<<(std::ostream& os, const Tour& st);
+std::istream& operator>>(std::istream& is, Tour& st);
+```
+
+They become two free functions next to the type, `write_solution` and
+`read_solution`, which also receive the Input: reading a solution may need
+the instance (here, the number of cities), and the Solution no longer holds
+it:
+
+<!-- snippet: tutorial/tsp.hpp:solution-io -->
+```cpp title="EasyLocal 4"
+inline Tour read_solution(const Tsp& tsp, std::istream& in)
+{
+    Tour tour{std::vector<std::size_t>(tsp.cities())};
+    for (auto& city : tour.order)
+        if (!(in >> city))
+            throw std::runtime_error{"invalid tour"};
+    return tour;
+}
+
+inline void write_solution(const Tsp&, const Tour& tour, std::ostream& out)
+{
+    for (const auto city : tour.order)
+        out << city << ' ';
+    out << '\n';
+}
+```
+
+Legacy code keeps working here too. Without `write_solution` (or a member
+`solution.write(input, out)`), the library writes the solution with its
+`operator<<`, which also gives its text in the tester when there is no
+`describe`. Without `read_solution` (or a static
+`Solution::read(input, in)`), it reads with `operator>>` into
+`Solution{input}`: that path needs a constructor from the Input, so an
+EasyLocal 3 State that keeps the one sizing its containers can keep its
+operators unchanged.
+
 ### 3. The Move
 
 ```cpp title="EasyLocal 3"
