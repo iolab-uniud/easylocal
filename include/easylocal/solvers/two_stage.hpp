@@ -1,5 +1,6 @@
 #pragma once
 
+#include <easylocal/config/parameter_set.hpp>
 #include <easylocal/solvers/initialization.hpp>
 #include <easylocal/solvers/solver.hpp>
 
@@ -206,6 +207,16 @@ public:
         effort.add(result);
         effort.assign_to(result);
         return result;
+    }
+
+    // The parameters of the two runners, under "first" and "second".
+    [[nodiscard]]
+    config::parameter_set configuration()
+    {
+        config::parameter_set parameters;
+        config::add_configuration(parameters, "first", hard_runner_);
+        config::add_configuration(parameters, "second", second_runner_);
+        return parameters;
     }
 
 private:

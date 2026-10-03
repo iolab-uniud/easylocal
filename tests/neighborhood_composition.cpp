@@ -509,21 +509,16 @@ int main()
     static_assert(!StoresMove<PartialDeltaCandidate>);
     static_assert(StoresSolution<PartialDeltaCandidate>);
 
-    using FluentRunner = decltype(
-        Runner{FirstImprovement{{.max_evaluations = 32}}}
+    using FluentRunner = decltype(easylocal::make_runner<FirstImprovement>(
+        {.max_evaluations = 32})
             .with_solution_manager(default_solution_manager_recipe())
             .with_neighborhood(neighborhood_union(
                 neighborhood<ReassignJobNeighborhoodExplorer>(),
                 neighborhood<SwapNeighborhoodExplorer>(),
                 neighborhood<DestinationZeroNeighborhoodExplorer>())));
 
-    using PipelineRunner = decltype(
-        Runner{FirstImprovement{{.max_evaluations = 32}}}
-        | default_solution_manager_recipe()
-        | neighborhood_union(
-              neighborhood<ReassignJobNeighborhoodExplorer>(),
-              neighborhood<SwapNeighborhoodExplorer>(),
-              neighborhood<DestinationZeroNeighborhoodExplorer>()));
+    using PipelineRunner =
+        decltype(easylocal::make_runner<FirstImprovement>({.max_evaluations = 32}) | default_solution_manager_recipe() | neighborhood_union(neighborhood<ReassignJobNeighborhoodExplorer>(), neighborhood<SwapNeighborhoodExplorer>(), neighborhood<DestinationZeroNeighborhoodExplorer>()));
 
     static_assert(std::same_as<FluentRunner, PipelineRunner>);
 
@@ -549,13 +544,12 @@ int main()
         effects == expected_effects,
         "n-ary union lazily concatenates child neighborhoods in declaration order and dispatches moves to the originating child");
 
-    auto first_runner =
-        Runner{FirstImprovement{{.max_evaluations = 32}}}
+    auto first_runner = easylocal::make_runner<FirstImprovement>({.max_evaluations = 32})
         | default_solution_manager_recipe()
         | neighborhood_union(
-              neighborhood<ReassignJobNeighborhoodExplorer>(),
-              neighborhood<SwapNeighborhoodExplorer>(),
-              neighborhood<DestinationZeroNeighborhoodExplorer>());
+            neighborhood<ReassignJobNeighborhoodExplorer>(),
+            neighborhood<SwapNeighborhoodExplorer>(),
+            neighborhood<DestinationZeroNeighborhoodExplorer>());
 
     auto bound_first = first_runner.bind(instance);
     const auto first_result = bound_first.run(initial);
@@ -579,13 +573,12 @@ int main()
         traced_first_result.cost == first_result.cost && saw_first_route,
         "first-improvement tracing records union provenance");
 
-    auto best_runner =
-        Runner{BestImprovement{{.max_evaluations = 64}}}
+    auto best_runner = easylocal::make_runner<BestImprovement>({.max_evaluations = 64})
         | default_solution_manager_recipe()
         | neighborhood_union(
-              neighborhood<ReassignJobNeighborhoodExplorer>(),
-              neighborhood<SwapNeighborhoodExplorer>(),
-              neighborhood<DestinationZeroNeighborhoodExplorer>());
+            neighborhood<ReassignJobNeighborhoodExplorer>(),
+            neighborhood<SwapNeighborhoodExplorer>(),
+            neighborhood<DestinationZeroNeighborhoodExplorer>());
 
     auto bound_best = best_runner.bind(instance);
     const auto best_result = bound_best.run(initial);
@@ -595,21 +588,15 @@ int main()
         "best improvement consumes a neighborhood union without algorithm changes");
 
     auto all_delta_runner =
-        Runner{BestImprovement{{.max_evaluations = 64}}}
+        easylocal::make_runner<BestImprovement>({.max_evaluations = 64})
         | default_solution_manager_recipe()
         | neighborhood_union(
-              neighborhood<ReassignJobNeighborhoodExplorer>()
-                  | delta<
-                        CapacityCostComponent,
-                        ReassignCapacityDeltaEvaluator>(),
-              neighborhood<SwapNeighborhoodExplorer>()
-                  | delta<
-                        CapacityCostComponent,
-                        SwapCapacityDeltaEvaluator>(),
-              neighborhood<DestinationZeroNeighborhoodExplorer>()
-                  | delta<
-                        CapacityCostComponent,
-                        ReassignCapacityDeltaEvaluator>());
+            neighborhood<ReassignJobNeighborhoodExplorer>()
+                | delta<CapacityCostComponent, ReassignCapacityDeltaEvaluator>(),
+            neighborhood<SwapNeighborhoodExplorer>()
+                | delta<CapacityCostComponent, SwapCapacityDeltaEvaluator>(),
+            neighborhood<DestinationZeroNeighborhoodExplorer>()
+                | delta<CapacityCostComponent, ReassignCapacityDeltaEvaluator>());
 
     auto bound_all_delta = all_delta_runner.bind(instance);
     const auto all_delta_result = bound_all_delta.run(initial);
@@ -620,22 +607,16 @@ int main()
         "composite delta dispatch agrees with full evaluation across heterogeneous child moves");
 
     auto nested_all_delta_runner =
-        Runner{BestImprovement{{.max_evaluations = 64}}}
+        easylocal::make_runner<BestImprovement>({.max_evaluations = 64})
         | default_solution_manager_recipe()
         | neighborhood_union(
-              neighborhood_union(
-                  neighborhood<ReassignJobNeighborhoodExplorer>()
-                      | delta<
-                            CapacityCostComponent,
-                            ReassignCapacityDeltaEvaluator>(),
-                  neighborhood<SwapNeighborhoodExplorer>()
-                      | delta<
-                            CapacityCostComponent,
-                            SwapCapacityDeltaEvaluator>()),
-              neighborhood<DestinationZeroNeighborhoodExplorer>()
-                  | delta<
-                        CapacityCostComponent,
-                        ReassignCapacityDeltaEvaluator>());
+            neighborhood_union(
+                neighborhood<ReassignJobNeighborhoodExplorer>()
+                    | delta<CapacityCostComponent, ReassignCapacityDeltaEvaluator>(),
+                neighborhood<SwapNeighborhoodExplorer>()
+                    | delta<CapacityCostComponent, SwapCapacityDeltaEvaluator>()),
+            neighborhood<DestinationZeroNeighborhoodExplorer>()
+                | delta<CapacityCostComponent, ReassignCapacityDeltaEvaluator>());
 
     auto bound_nested_all_delta = nested_all_delta_runner.bind(instance);
     const auto nested_all_delta_result = bound_nested_all_delta.run(initial);

@@ -284,15 +284,18 @@ int main()
     bool ok = true;
 
     {
-        SimulatedAnnealing annealing{
-            temperature::FixedLength{temperature::FixedLengthParameters{
-                .initial_temperature = 8.0,
-                .final_temperature = 0.25,
-                .cooling_rate = 0.75,
-                .max_iterations = 200,
-            }}};
+        easylocal::runners::SimulatedAnnealingParameters<
+            temperature::FixedLengthParameters>
+            annealing{
+                .temperature = {
+                    .initial_temperature = 8.0,
+                    .final_temperature = 0.25,
+                    .cooling_rate = 0.75,
+                    .max_iterations = 200,
+                }};
 
-        const auto configuration = annealing.configuration();
+        easylocal::config::parameter_set configuration;
+        configuration.add(annealing);
         const auto max_iterations = [&] {
             for (const auto& parameter : configuration.parameters())
                 if (parameter.path == "temperature.max_iterations")
@@ -664,14 +667,16 @@ int main()
     {
         const ChainInstance instance;
         auto runner =
-            Runner{SimulatedAnnealing{
-                temperature::FixedLength{temperature::FixedLengthParameters{
-                    .initial_temperature = 4.0,
-                    .final_temperature = 1.0,
-                    .cooling_rate = 0.5,
-                    .max_iterations = 2,
-                }},
-                AlwaysAccept{}}}
+            easylocal::make_runner<
+                SimulatedAnnealing<temperature::FixedLength, AlwaysAccept>>({
+                .temperature =
+                    temperature::FixedLengthParameters{
+                        .initial_temperature = 4.0,
+                        .final_temperature = 1.0,
+                        .cooling_rate = 0.5,
+                        .max_iterations = 2,
+                    },
+            })
             | (solution_manager<ChainSolutionManager>() | component<ChainValue>())
             | neighborhood<RandomOnlyChainNeighborhood>();
 
@@ -735,22 +740,21 @@ int main()
                   component<exam::TimeslotLoadComponent>());
 
         auto runner =
-            Runner{SimulatedAnnealing{
-                temperature::FixedLength{temperature::FixedLengthParameters{
-                    .initial_temperature = 100.0,
-                    .final_temperature = 1.0,
-                    .cooling_rate = 0.5,
-                    .max_iterations = 30,
-                }}}}
+            easylocal::make_runner<SimulatedAnnealing<temperature::FixedLength>>(
+                {.temperature =
+                        temperature::FixedLengthParameters{
+                            .initial_temperature = 100.0,
+                            .final_temperature = 1.0,
+                            .cooling_rate = 0.5,
+                            .max_iterations = 30,
+                        }})
             | solution_manager_recipe
             | (neighborhood<exam::MoveExamNeighborhoodExplorer>()
-               | delta<exam::StudentConflictComponent>()
-               | delta<
-                     exam::ConsecutiveExamComponent,
-                     exam::ConsecutiveExamDeltaEvaluator>()
-               | delta<
-                     exam::TimeslotLoadComponent,
-                     exam::TimeslotLoadDeltaEvaluator>());
+                | delta<exam::StudentConflictComponent>()
+                | delta<
+                    exam::ConsecutiveExamComponent,
+                    exam::ConsecutiveExamDeltaEvaluator>()
+                | delta<exam::TimeslotLoadComponent, exam::TimeslotLoadDeltaEvaluator>());
 
         auto bound_runner = runner.bind(instance);
         std::mt19937 rng_a{2026U};
@@ -796,8 +800,9 @@ int main()
             neighborhood<exam::MoveExamNeighborhoodExplorer>();
 
         auto timed =
-            Runner{SimulatedAnnealing{temperature::TimeBased{
-                temperature::TimeBasedParameters{.allowed_running_time = 0.02}}}}
+            easylocal::make_runner<SimulatedAnnealing<temperature::TimeBased>>(
+                {.temperature =
+                        temperature::TimeBasedParameters{.allowed_running_time = 0.02}})
             | solution_manager_recipe | neighborhood_recipe;
         std::mt19937 rng{2026U};
         const auto start = std::chrono::steady_clock::now();
@@ -817,10 +822,11 @@ int main()
             "SA calibrates on sampled moves, counted as evaluations but not iterations");
 
         auto calibrated =
-            Runner{SimulatedAnnealing{
-                temperature::FixedLength{temperature::FixedLengthParameters{
-                    .max_iterations = 40,
-                    .calibration_samples = 30}}}}
+            easylocal::make_runner<SimulatedAnnealing<temperature::FixedLength>>(
+                {.temperature =
+                        temperature::FixedLengthParameters{
+                            .max_iterations = 40,
+                            .calibration_samples = 30}})
             | solution_manager_recipe | neighborhood_recipe;
         std::mt19937 rng_a{11U};
         std::mt19937 rng_b{11U};
@@ -833,8 +839,9 @@ int main()
             "calibrated SA is deterministic for the same RNG state");
 
         auto fixed =
-            Runner{SimulatedAnnealing{temperature::FixedTemperature{
-                temperature::FixedTemperatureParameters{.max_iterations = 50}}}}
+            easylocal::make_runner<SimulatedAnnealing<temperature::FixedTemperature>>(
+                {.temperature =
+                        temperature::FixedTemperatureParameters{.max_iterations = 50}})
             | solution_manager_recipe | neighborhood_recipe;
         const auto fixed_result = fixed.bind(instance).run(initial, rng);
         ok &= expect(

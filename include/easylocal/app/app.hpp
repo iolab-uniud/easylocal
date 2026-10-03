@@ -601,9 +601,8 @@ public:
     {
         constexpr auto index = app_runner_index<Algorithm, Registrations...>();
         const auto& registration = std::get<index>(registrations_);
-        return Runner{Algorithm{registration.config}}
-            | solution_manager_spec_
-            | neighborhood_spec_;
+        return easylocal::make_runner<Algorithm>(registration.config)
+            | solution_manager_spec_ | neighborhood_spec_;
     }
 
     template<class Algorithm>
@@ -615,9 +614,8 @@ public:
     {
         const auto& registration =
             app_runner_registration_by_name<Algorithm>(registrations_, name);
-        return Runner{Algorithm{registration.config}}
-            | solution_manager_spec_
-            | neighborhood_spec_;
+        return easylocal::make_runner<Algorithm>(registration.config)
+            | solution_manager_spec_ | neighborhood_spec_;
     }
 
     template<template<class...> class Solver, class RunnerAlgorithm, class SolverConfig>

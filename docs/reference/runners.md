@@ -9,16 +9,23 @@ algorithm describes the search; the framework owns its execution.
 ## Composing a runner
 
 ```cpp
-auto runner = make_runner<Algorithm>(parameters...)   // the documented construction
+auto runner = make_runner<Algorithm>({...})            // the algorithm's parameters
             | sm_recipe | nhe_recipe;                  // or .with_solution_manager(sm).with_neighborhood(nhe)
 
 auto search = runner.bind(input);                      // materializes the services
 auto result = search.run(solution, algorithm_args..., with(control, tracer));
 ```
 
+When the algorithm's `parameters_type` is a parameter block (a schema and
+`validate()`), the runner holds the parameters and builds the algorithm when it
+is bound: `make_runner<Algorithm>(parameters)` creates it, and
+`Runner{Algorithm{...}}` is rejected at compile time. Any other algorithm is
+held as an object: `make_runner<Algorithm>(args...)` or `Runner{Algorithm{...}}`.
+
 | Member | Purpose |
 | --- | --- |
-| `bind(const Input&)` | build the services for an Input (temporaries are rejected) |
+| `parameters()` | the algorithm's parameters, to read or change (parameterized algorithms) |
+| `bind(const Input&)` | build the services and the algorithm for an Input (temporaries are rejected) |
 | `configuration()` | the parameters of the algorithm (`search`), the cost (`cost`) and the neighborhood (`neighborhood`), as a `config::parameter_set` |
 | `with_hard_cost()` | the same runner on the hard branch of a hierarchical cost |
 | bound runner: `run(solution, args..., [with(...)])` | run the algorithm |
@@ -97,9 +104,11 @@ iterations. A custom policy opts in by modelling
 `calibrate(std::span<const double> deltas)`.
 
 `runners::MetropolisAcceptance` (the default) requires `cost::delta` (see
-[Cost](cost.md)). `SimulatedAnnealing<Policy>` exposes the policy's
-`parameters_type` and is constructible from it, so it can be registered in
-apps; the parameter blocks have defaults that pass validation.
+[Cost](cost.md)). The parameters of `SimulatedAnnealing<Policy>` are
+`SimulatedAnnealingParameters<Policy::parameters_type>`, the policy's under the
+group `temperature`: `make_runner<SimulatedAnnealing<Classic>>({.temperature =
+{...}})`, `search.temperature.*` in a configuration. The parameter blocks have
+defaults that pass validation.
 
 ## Results
 
@@ -119,13 +128,17 @@ An algorithm is a class with a `run` member taking the `search_run` first:
 class MySearch
 {
 public:
-    using parameters_type = MyParameters;      // only for app registration
-    explicit MySearch(MyParameters);
+    using parameters_type = MyParameters;      // with a schema: configurable
+    explicit MySearch(const MyParameters&);
 
     template<class Run>
     auto run(Run& run, typename Run::solution_type solution /*, extra args */) const;
 };
 ```
+
+With a schema and `validate()` on `MyParameters`, the runner holds them and
+builds `MySearch` at bind; they are configurable as `search.*` with no other
+member. Without one, `parameters_type` serves only app registration.
 
 Extra `run` arguments (an RNG, for example) are passed through
 `search.run(solution, extra...)`.

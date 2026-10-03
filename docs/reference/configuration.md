@@ -66,11 +66,11 @@ prefix.
 
 | Provider | Paths |
 | --- | --- |
-| `FirstImprovement`, `BestImprovement`, `HillClimbing`, `GreatDeluge`, `LateAcceptanceHillClimbing` | their fields |
-| `SimulatedAnnealing` | `temperature.*` (the policy), `acceptance.*` (when it has parameters) |
+| a parameterized algorithm (`FirstImprovement`, `BestImprovement`, `HillClimbing`, `GreatDeluge`, `LateAcceptanceHillClimbing`, `SimulatedAnnealing`), through its runner | the fields of its `parameters_type`; `temperature.*` for Simulated Annealing |
 | the cost expression of a SolutionManager recipe | `weights` of a `cost::sum`; children by position (`0.*`, `1.*`), `hard.*` and `soft.*` of a `cost::hard_soft`; a `cost::apply` function's own |
 | `neighborhood_union` with `random_biases` | `random_biases` |
 | `runner.configuration()` | `search.*`, `cost.*`, `neighborhood.*` |
+| `MultiStart`, `LocalSearch`, `TwoStage` solvers | `starts` and the runner's (MultiStart), the runner's (LocalSearch), `first.*` and `second.*` (TwoStage) |
 
 ## Frontends
 

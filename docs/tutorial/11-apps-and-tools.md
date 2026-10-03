@@ -17,13 +17,13 @@ auto application =
         .with_runner<runners::FirstImprovement>("fi")
         .with_runner<runners::SimulatedAnnealing<Classic>>(
             "sa",
-            {.samples_per_temperature = 50});
+            {.temperature = {.samples_per_temperature = 50}});
 
 auto piped_application = el::app("tsp") | sm | nhe
     | el::runner<runners::FirstImprovement>("fi")
     | el::runner<runners::SimulatedAnnealing<Classic>>(
         "sa",
-        {.samples_per_temperature = 50});
+        {.temperature = {.samples_per_temperature = 50}});
 ```
 
 - An app is a description, like the recipes it holds: it builds nothing and

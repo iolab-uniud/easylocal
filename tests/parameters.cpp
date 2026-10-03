@@ -170,50 +170,37 @@ void first_improvement_parameters_live_with_the_search_method()
     assert(FirstImprovementParameters{}.max_evaluations == 0);
 }
 
-void every_temperature_policy_is_configurable()
+void every_temperature_policy_has_a_parameter_block()
 {
     namespace temperature = easylocal::runners::temperature;
-    static_assert(easylocal::config::configuration_provider<temperature::Classic>);
-    static_assert(easylocal::config::configuration_provider<temperature::FixedLength>);
-    static_assert(easylocal::config::configuration_provider<temperature::Cutoff>);
-    static_assert(easylocal::config::configuration_provider<temperature::Hybrid>);
+    static_assert(easylocal::config::parameter_block<temperature::ClassicParameters>);
+    static_assert(easylocal::config::parameter_block<temperature::FixedLengthParameters>);
+    static_assert(easylocal::config::parameter_block<temperature::CutoffParameters>);
+    static_assert(easylocal::config::parameter_block<temperature::HybridParameters>);
 
-    temperature::Classic classic{{
-        .initial_temperature = 10.0,
-        .final_temperature = 1.0,
-        .cooling_rate = 0.5,
-        .samples_per_temperature = 2,
-    }};
-    assert(classic.configure({
+    // A policy is rebuilt from new parameters: its derived state follows them.
+    temperature::ClassicParameters parameters{
         .initial_temperature = 20.0,
         .final_temperature = 1.0,
         .cooling_rate = 0.5,
         .samples_per_temperature = 3,
-    }));
+    };
+    assert(parameters.validate());
+    const temperature::Classic classic{parameters};
     assert(classic.parameters().samples_per_temperature == 3);
     assert(classic.temperature() == 20.0);
-    assert(!classic.configure({
-        .initial_temperature = 20.0,
-        .final_temperature = 1.0,
-        .cooling_rate = 0.5,
-        .samples_per_temperature = 0,
-    }));
-    assert(classic.parameters().samples_per_temperature == 3);
 
-    temperature::Cutoff cutoff{{
-        .initial_temperature = 10.0,
-        .final_temperature = 1.0,
-        .cooling_rate = 0.5,
-        .max_iterations = 100,
-        .accepted_ratio = 0.5,
-    }};
-    assert(!cutoff.configure({
+    parameters.samples_per_temperature = 0;
+    assert(!parameters.validate());
+
+    const temperature::CutoffParameters cutoff{
         .initial_temperature = 10.0,
         .final_temperature = 1.0,
         .cooling_rate = 0.5,
         .max_iterations = 100,
         .accepted_ratio = 1.5,
-    }));
+    };
+    assert(!cutoff.validate());
 }
 
 void neighborhood_union_parameter_block_describes_bias_array()
@@ -248,7 +235,7 @@ void neighborhood_union_parameter_block_describes_bias_array()
 
 int main()
 {
-    every_temperature_policy_is_configurable();
+    every_temperature_policy_has_a_parameter_block();
     app_parameter_schema_is_internal_and_typed();
     iteration_exposes_names_descriptions_and_typed_references();
     fixed_length_validation_checks_cross_field_invariants();

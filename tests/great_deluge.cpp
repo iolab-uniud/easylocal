@@ -134,8 +134,8 @@ template<class Cost>
 [[nodiscard]]
 auto chain_runner(const GreatDelugeParameters parameters)
 {
-    return Runner{GreatDeluge{parameters}}
-    | (solution_manager<ChainSolutionManager>() | component<Cost>())
+    return easylocal::make_runner<GreatDeluge>(parameters)
+        | (solution_manager<ChainSolutionManager>() | component<Cost>())
         | neighborhood<ChainNeighborhood>();
 }
 
@@ -167,8 +167,9 @@ int main()
                 && !GreatDelugeParameters{.neighbors_sampled = 0}.validate(),
             "great deluge rejects invalid levels, rates and samples");
 
-        GreatDeluge deluge{GreatDelugeParameters{}};
-        const auto configuration = deluge.configuration();
+        GreatDelugeParameters deluge_parameters;
+        easylocal::config::parameter_set configuration;
+        configuration.add(deluge_parameters);
         ok &= expect(
             std::ranges::any_of(
                 configuration.parameters(),
@@ -185,7 +186,7 @@ int main()
             easylocal::config::text_override{"neighbors_sampled", "7"}};
         ok &= expect(
             static_cast<bool>(configuration.apply(valid))
-                && deluge.parameters().neighbors_sampled == 7,
+                && deluge_parameters.neighbors_sampled == 7,
             "great deluge configuration updates its parameters");
     }
 

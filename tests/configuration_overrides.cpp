@@ -18,7 +18,6 @@ using easylocal::config::apply_overrides;
 using easylocal::config::override_error;
 using easylocal::config::text_override;
 using easylocal::runners::SimulatedAnnealing;
-using easylocal::runners::temperature::FixedLength;
 using easylocal::runners::temperature::FixedLengthParameters;
 
 struct AppParameters
@@ -49,19 +48,19 @@ struct AppParameters
 void text_overrides_apply_to_multiple_typed_blocks()
 {
     AppParameters app{};
-    FixedLength temperature{FixedLengthParameters{
+    FixedLengthParameters temperature{
         .initial_temperature = 8.0,
         .final_temperature = 0.25,
         .cooling_rate = 0.75,
         .max_iterations = 200,
-    }};
+    };
     NeighborhoodUnionParameters<2> neighborhood{
         .random_biases = {1.0, 1.0},
     };
 
     easylocal::config::parameter_set tree;
     tree.add("application", app);
-    tree.add("solver.temperature", temperature.configuration());
+    tree.add("solver.temperature", temperature);
     tree.add("solver.neighborhood", neighborhood);
 
     constexpr std::array overrides{
@@ -79,24 +78,24 @@ void text_overrides_apply_to_multiple_typed_blocks()
     assert(result.applied_parameter_blocks == 3);
     assert(app.instance_file == std::filesystem::path{"sample.tsp"});
     assert(app.seed == 2026U);
-    assert(temperature.parameters().initial_temperature == 4.0);
-    assert(temperature.parameters().final_temperature == 0.05);
-    assert(temperature.parameters().cooling_rate == 0.8);
-    assert(temperature.parameters().max_iterations == 500);
+    assert(temperature.initial_temperature == 4.0);
+    assert(temperature.final_temperature == 0.05);
+    assert(temperature.cooling_rate == 0.8);
+    assert(temperature.max_iterations == 500);
     assert((neighborhood.random_biases == std::array{3.0, 1.0}));
 }
 
 void cross_field_overrides_are_validated_as_one_block()
 {
-    FixedLength temperature{FixedLengthParameters{
+    FixedLengthParameters temperature{
         .initial_temperature = 8.0,
         .final_temperature = 0.25,
         .cooling_rate = 0.75,
         .max_iterations = 200,
-    }};
+    };
 
     easylocal::config::parameter_set tree;
-    tree.add("solver.temperature", temperature.configuration());
+    tree.add("solver.temperature", temperature);
 
     constexpr std::array overrides{
         text_override{"solver.temperature.initial_temperature", "0.10"},
@@ -106,23 +105,23 @@ void cross_field_overrides_are_validated_as_one_block()
     const auto result = apply_overrides(tree, overrides);
     assert(result);
     assert(result.applied_parameter_blocks == 1);
-    assert(temperature.parameters().initial_temperature == 0.10);
-    assert(temperature.parameters().final_temperature == 0.05);
+    assert(temperature.initial_temperature == 0.10);
+    assert(temperature.final_temperature == 0.05);
 }
 
 void invalid_batch_is_globally_atomic()
 {
     AppParameters app{};
-    FixedLength temperature{FixedLengthParameters{
+    FixedLengthParameters temperature{
         .initial_temperature = 8.0,
         .final_temperature = 0.25,
         .cooling_rate = 0.75,
         .max_iterations = 200,
-    }};
+    };
 
     easylocal::config::parameter_set tree;
     tree.add("application", app);
-    tree.add("solver.temperature", temperature.configuration());
+    tree.add("solver.temperature", temperature);
 
     constexpr std::array overrides{
         text_override{"application.seed", "99"},
@@ -136,22 +135,22 @@ void invalid_batch_is_globally_atomic()
     assert(result.diagnostics.front().error == override_error::validation_error);
     assert(result.diagnostics.front().path == "solver.temperature");
     assert(app.seed == 17U);
-    assert(temperature.parameters().cooling_rate == 0.75);
+    assert(temperature.cooling_rate == 0.75);
 }
 
 void parse_unknown_and_duplicate_errors_are_reported_without_commit()
 {
     AppParameters app{};
-    FixedLength temperature{FixedLengthParameters{
+    FixedLengthParameters temperature{
         .initial_temperature = 8.0,
         .final_temperature = 0.25,
         .cooling_rate = 0.75,
         .max_iterations = 200,
-    }};
+    };
 
     easylocal::config::parameter_set tree;
     tree.add("application", app);
-    tree.add("solver.temperature", temperature.configuration());
+    tree.add("solver.temperature", temperature);
 
     constexpr std::array overrides{
         text_override{"application.seed", "not-an-integer"},
@@ -226,19 +225,19 @@ void parameter_group_local_values_can_be_overridden()
 void diagnostics_accumulate_across_independent_failures()
 {
     AppParameters app{};
-    FixedLength temperature{FixedLengthParameters{
+    FixedLengthParameters temperature{
         .initial_temperature = 8.0,
         .final_temperature = 0.25,
         .cooling_rate = 0.75,
         .max_iterations = 200,
-    }};
+    };
     NeighborhoodUnionParameters<2> neighborhood{
         .random_biases = {1.0, 1.0},
     };
 
     easylocal::config::parameter_set tree;
     tree.add("application", app);
-    tree.add("solver.temperature", temperature.configuration());
+    tree.add("solver.temperature", temperature);
     tree.add("solver.neighborhood", neighborhood);
 
     constexpr std::array overrides{
@@ -289,7 +288,7 @@ void diagnostics_accumulate_across_independent_failures()
     assert(saw_unknown);
 
     assert(app.seed == 17U);
-    assert(temperature.parameters().cooling_rate == 0.75);
+    assert(temperature.cooling_rate == 0.75);
     assert((neighborhood.random_biases == std::array{1.0, 1.0}));
 }
 

@@ -15,7 +15,6 @@ using easylocal::config::apply_overrides;
 using easylocal::config::cli_error;
 using easylocal::config::cli_help;
 using easylocal::config::parse_cli;
-using easylocal::runners::temperature::FixedLength;
 using easylocal::runners::temperature::FixedLengthParameters;
 
 struct AppParameters
@@ -154,16 +153,16 @@ void duplicate_config_file_is_reported()
 void cli_batch_reuses_transactional_textual_overrides()
 {
     AppParameters app{};
-    FixedLength temperature{FixedLengthParameters{
+    FixedLengthParameters temperature{
         .initial_temperature = 8.0,
         .final_temperature = 0.25,
         .cooling_rate = 0.75,
         .max_iterations = 200,
-    }};
+    };
 
     easylocal::config::parameter_set tree;
     tree.add("application", app);
-    tree.add("solver.temperature", temperature.configuration());
+    tree.add("solver.temperature", temperature);
 
     constexpr std::array arguments{
         std::string_view{"--application.instance_file"},
@@ -183,23 +182,23 @@ void cli_batch_reuses_transactional_textual_overrides()
 
     assert(applied);
     assert(app.instance_file == std::filesystem::path{"sample.tsp"});
-    assert(temperature.parameters().cooling_rate == 0.8);
-    assert(temperature.parameters().max_iterations == 500);
+    assert(temperature.cooling_rate == 0.8);
+    assert(temperature.max_iterations == 500);
 }
 
 void cli_validation_errors_leave_configuration_unchanged()
 {
     AppParameters app{};
-    FixedLength temperature{FixedLengthParameters{
+    FixedLengthParameters temperature{
         .initial_temperature = 8.0,
         .final_temperature = 0.25,
         .cooling_rate = 0.75,
         .max_iterations = 200,
-    }};
+    };
 
     easylocal::config::parameter_set tree;
     tree.add("application", app);
-    tree.add("solver.temperature", temperature.configuration());
+    tree.add("solver.temperature", temperature);
 
     constexpr std::array arguments{
         std::string_view{"--application.seed=2026"},
@@ -216,22 +215,22 @@ void cli_validation_errors_leave_configuration_unchanged()
 
     assert(!applied);
     assert(app.seed == 17U);
-    assert(temperature.parameters().cooling_rate == 0.75);
+    assert(temperature.cooling_rate == 0.75);
 }
 
 void help_is_generated_from_the_configuration_tree()
 {
     AppParameters app{};
-    FixedLength temperature{FixedLengthParameters{
+    FixedLengthParameters temperature{
         .initial_temperature = 8.0,
         .final_temperature = 0.25,
         .cooling_rate = 0.75,
         .max_iterations = 200,
-    }};
+    };
 
     easylocal::config::parameter_set tree;
     tree.add("application", app);
-    tree.add("solver.temperature", temperature.configuration());
+    tree.add("solver.temperature", temperature);
 
     const auto help = cli_help("solver", tree);
 

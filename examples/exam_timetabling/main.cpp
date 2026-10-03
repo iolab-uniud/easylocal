@@ -100,7 +100,7 @@ int main(int argc, char* argv[])
 
         auto runner =
             easylocal::make_runner<easylocal::runners::SimulatedAnnealing<FixedLength>>(
-                FixedLength{temperature_parameters})
+                {.temperature = temperature_parameters})
                 .with_solution_manager(sm)
                 .with_neighborhood(nhe);
 

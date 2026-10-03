@@ -19,9 +19,11 @@ const auto result = search.run(search.initial_solution());
 
 Step by step:
 
-1. `make_runner<runners::FirstImprovement>(parameters)` creates the algorithm
-   object. `FirstImprovementParameters{}` keeps the defaults: no budget on the
-   evaluations, so the search runs until a local optimum.
+1. `make_runner<runners::FirstImprovement>(parameters)` chooses the algorithm
+   and holds its parameters. `FirstImprovementParameters{}` keeps the
+   defaults: no budget on the evaluations, so the search runs until a local
+   optimum. Written inline, `make_runner<runners::FirstImprovement>({.max_evaluations = 1000})`
+   sets a budget; `fi.parameters()` reads and changes them later.
 2. `| sm` gives the runner its SolutionManager, and with it the cost: the
    runner will build tours with `TourManager` and evaluate them with
    `TourLength`.
@@ -32,8 +34,9 @@ Step by step:
    an Input. Nothing has been evaluated.
 5. `fi.bind(tsp)` builds the services for this Input: a `TourManager`, a
    `TourLength` and a `TwoOptLengthDelta` that refer to `tsp`, and a
-   `TwoOptExplorer` that refers to the `TourManager`. It returns them, with the
-   algorithm, as the *bound runner* `search`. `tsp` must outlive `search`,
+   `TwoOptExplorer` that refers to the `TourManager`. It also builds First
+   Improvement from the parameters the runner holds. It returns them as the
+   *bound runner* `search`. `tsp` must outlive `search`,
    which only refers to it; `bind` does not accept a temporary Input for this
    reason. The same `fi` can be bound to other Inputs.
 6. `search.initial_solution()` asks the bound `TourManager` for the initial
@@ -69,12 +72,14 @@ The algorithms live in `easylocal::runners`, one header each:
 | `HillClimbing` | `runners/hill_climbing.hpp` | `random_move` | `max_idle_iterations`, `max_evaluations` (0: no budget) |
 | `LateAcceptanceHillClimbing` | `runners/late_acceptance_hill_climbing.hpp` | `random_move` | `history_length`, `max_idle_iterations`, `max_evaluations` |
 | `GreatDeluge` | `runners/great_deluge.hpp` | `random_move`, an arithmetic cost | `initial_level`, `min_level`, `level_rate`, `neighbors_sampled`, `max_evaluations` |
-| `SimulatedAnnealing<Temperature, Acceptance>` | `runners/simulated_annealing.hpp` | `random_move`, `cost::delta` | a temperature policy |
+| `SimulatedAnnealing<Temperature, Acceptance>` | `runners/simulated_annealing.hpp` | `random_move`, `cost::delta` | `temperature`: the policy's |
 
 Simulated Annealing takes a temperature policy (`Classic`, `FixedLength`,
 `Cutoff`, `Hybrid`, `FixedTemperature`, `TimeBased`, `Reheating` in
 `runners::temperature`); acceptance defaults to
-`runners::MetropolisAcceptance`. With `calibration_samples` > 0 a policy
+`runners::MetropolisAcceptance`. Its parameters are the policy's, under
+`temperature`: `{.temperature = {...}}`, and `search.temperature.*` in a
+configuration (chapter 9). With `calibration_samples` > 0 a policy
 estimates its initial temperature from moves sampled at the initial solution.
 Stochastic algorithms receive the RNG as a `run` argument:
 
@@ -83,12 +88,15 @@ Stochastic algorithms receive the RNG as a `run` argument:
 using Classic = runners::temperature::Classic;
 
 auto sa =
-    el::make_runner<runners::SimulatedAnnealing<Classic>>(
-        Classic{runners::temperature::ClassicParameters{
-            .initial_temperature = 10.0,
-            .final_temperature = 0.1,
-            .cooling_rate = 0.95,
-            .samples_per_temperature = 50}})
+    el::make_runner<runners::SimulatedAnnealing<Classic>>({
+        .temperature =
+            {
+                .initial_temperature = 10.0,
+                .final_temperature = 0.1,
+                .cooling_rate = 0.95,
+                .samples_per_temperature = 50,
+            },
+    })
     | sm | nhe;
 
 std::mt19937_64 rng{42};

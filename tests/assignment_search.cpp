@@ -6,6 +6,7 @@
 #include <easylocal/runners/first_improvement.hpp>
 #include <easylocal/runners/runner.hpp>
 
+#include <array>
 #include <cstdint>
 #include <functional>
 #include <iostream>
@@ -205,14 +206,12 @@ int main()
 
     int delta_accept_make_moves = 0;
     auto delta_accept_runner =
-        Runner{FirstImprovement{{.max_evaluations = 2}}}
+        easylocal::make_runner<FirstImprovement>({.max_evaluations = 2})
         | default_solution_manager_recipe()
         | (neighborhood<SingleMoveNeighborhoodExplorer>(
                relieving_move,
                std::ref(delta_accept_make_moves))
-           | delta<
-                 CapacityCostComponent,
-                 ReassignCapacityDeltaEvaluator>());
+            | delta<CapacityCostComponent, ReassignCapacityDeltaEvaluator>());
 
     const auto delta_accept_result =
         delta_accept_runner.bind(instance).run(initial);
@@ -226,14 +225,12 @@ int main()
 
     int delta_reject_make_moves = 0;
     auto delta_reject_runner =
-        Runner{FirstImprovement{{.max_evaluations = 2}}}
+        easylocal::make_runner<FirstImprovement>({.max_evaluations = 2})
         | default_solution_manager_recipe()
         | (neighborhood<SingleMoveNeighborhoodExplorer>(
                worsening_move,
                std::ref(delta_reject_make_moves))
-           | delta<
-                 CapacityCostComponent,
-                 ReassignCapacityDeltaEvaluator>());
+            | delta<CapacityCostComponent, ReassignCapacityDeltaEvaluator>());
 
     const auto delta_reject_result =
         delta_reject_runner.bind(instance).run(initial);
@@ -247,18 +244,16 @@ int main()
 
     int fallback_make_moves = 0;
     auto fallback_runner =
-        Runner{FirstImprovement{{.max_evaluations = 2}}}
+        easylocal::make_runner<FirstImprovement>({.max_evaluations = 2})
         | (solution_manager<FallbackSolutionManager>()
-           | easylocal::cost::apply(
-                 FallbackAggregator{},
-                 component<CapacityCostComponent>(),
-                 component<AssignmentCardinalityComponent>()))
+            | easylocal::cost::apply(
+                FallbackAggregator{},
+                component<CapacityCostComponent>(),
+                component<AssignmentCardinalityComponent>()))
         | (neighborhood<SingleMoveNeighborhoodExplorer>(
                relieving_move,
                std::ref(fallback_make_moves))
-           | delta<
-                 CapacityCostComponent,
-                 ReassignCapacityDeltaEvaluator>());
+            | delta<CapacityCostComponent, ReassignCapacityDeltaEvaluator>());
 
     const auto fallback_result =
         fallback_runner.bind(instance).run(initial);
@@ -272,18 +267,16 @@ int main()
 
     int fallback_reject_make_moves = 0;
     auto fallback_reject_runner =
-        Runner{FirstImprovement{{.max_evaluations = 2}}}
+        easylocal::make_runner<FirstImprovement>({.max_evaluations = 2})
         | (solution_manager<FallbackSolutionManager>()
-           | easylocal::cost::apply(
-                 FallbackAggregator{},
-                 component<CapacityCostComponent>(),
-                 component<AssignmentCardinalityComponent>()))
+            | easylocal::cost::apply(
+                FallbackAggregator{},
+                component<CapacityCostComponent>(),
+                component<AssignmentCardinalityComponent>()))
         | (neighborhood<SingleMoveNeighborhoodExplorer>(
                worsening_move,
                std::ref(fallback_reject_make_moves))
-           | delta<
-                 CapacityCostComponent,
-                 ReassignCapacityDeltaEvaluator>());
+            | delta<CapacityCostComponent, ReassignCapacityDeltaEvaluator>());
 
     const auto fallback_reject_result =
         fallback_reject_runner.bind(instance).run(initial);
@@ -297,11 +290,11 @@ int main()
 
     int no_delta_accept_make_moves = 0;
     auto no_delta_accept_runner =
-        Runner{FirstImprovement{{.max_evaluations = 2}}}
+        easylocal::make_runner<FirstImprovement>({.max_evaluations = 2})
         | default_solution_manager_recipe()
         | neighborhood<SingleMoveNeighborhoodExplorer>(
-              relieving_move,
-              std::ref(no_delta_accept_make_moves));
+            relieving_move,
+            std::ref(no_delta_accept_make_moves));
 
     const auto no_delta_accept_result =
         no_delta_accept_runner.bind(instance).run(initial);
@@ -315,11 +308,11 @@ int main()
 
     int no_delta_reject_make_moves = 0;
     auto no_delta_reject_runner =
-        Runner{FirstImprovement{{.max_evaluations = 2}}}
+        easylocal::make_runner<FirstImprovement>({.max_evaluations = 2})
         | default_solution_manager_recipe()
         | neighborhood<SingleMoveNeighborhoodExplorer>(
-              worsening_move,
-              std::ref(no_delta_reject_make_moves));
+            worsening_move,
+            std::ref(no_delta_reject_make_moves));
 
     const auto no_delta_reject_result =
         no_delta_reject_runner.bind(instance).run(initial);
@@ -333,13 +326,11 @@ int main()
 
     int construction_marker = 0;
     auto construction_tracked_runner =
-        Runner{FirstImprovement{{.max_evaluations = 8}}}
+        easylocal::make_runner<FirstImprovement>({.max_evaluations = 8})
         | default_solution_manager_recipe()
         | (neighborhood<ConstructionTrackingNeighborhoodExplorer>(
                std::ref(construction_marker))
-           | delta<
-                 CapacityCostComponent,
-                 ReassignCapacityDeltaEvaluator>());
+            | delta<CapacityCostComponent, ReassignCapacityDeltaEvaluator>());
 
     ok &= expect(
         construction_marker == 0,
@@ -362,11 +353,10 @@ int main()
     const auto run_with_budget =
         [&](const std::size_t max_evaluations, AssignmentSolution solution) {
             auto runner =
-                Runner{FirstImprovement{{
+                easylocal::make_runner<FirstImprovement>({
                     .max_evaluations = max_evaluations,
-                }}}
-                | default_solution_manager_recipe()
-                | default_neighborhood_recipe();
+                })
+                | default_solution_manager_recipe() | default_neighborhood_recipe();
 
             return runner.bind(instance).run(std::move(solution));
         };
@@ -443,9 +433,8 @@ int main()
     };
 
     const auto empty_neighborhood =
-        (Runner{FirstImprovement{{.max_evaluations = 1}}}
-         | default_solution_manager_recipe()
-         | default_neighborhood_recipe())
+        (easylocal::make_runner<FirstImprovement>({.max_evaluations = 1})
+            | default_solution_manager_recipe() | default_neighborhood_recipe())
             .bind(single_machine_instance)
             .run(single_machine_solution);
 
@@ -460,11 +449,10 @@ int main()
     const auto run_best_with_budget =
         [&](const std::size_t max_evaluations, AssignmentSolution solution) {
             auto runner =
-                Runner{BestImprovement{{
+                easylocal::make_runner<BestImprovement>({
                     .max_evaluations = max_evaluations,
-                }}}
-                | default_solution_manager_recipe()
-                | default_neighborhood_recipe();
+                })
+                | default_solution_manager_recipe() | default_neighborhood_recipe();
 
             return runner.bind(instance).run(std::move(solution));
         };
@@ -532,9 +520,8 @@ int main()
         "accepted best move at the budget limit does not certify the next neighborhood");
 
     const auto best_empty_neighborhood =
-        (Runner{BestImprovement{{.max_evaluations = 1}}}
-         | default_solution_manager_recipe()
-         | default_neighborhood_recipe())
+        (easylocal::make_runner<BestImprovement>({.max_evaluations = 1})
+            | default_solution_manager_recipe() | default_neighborhood_recipe())
             .bind(single_machine_instance)
             .run(single_machine_solution);
 
@@ -560,10 +547,13 @@ int main()
             best_unbounded.cost == best_complete.cost,
         "best improvement without a budget runs to a local optimum");
 
-    BestImprovement configurable{{}};
+    easylocal::runners::BestImprovementParameters configurable;
+    easylocal::config::parameter_set configuration;
+    configuration.add(configurable);
+    const std::array budget{easylocal::config::text_override{"max_evaluations", "5"}};
     ok &= expect(
-        configurable.configure({.max_evaluations = 5}) &&
-            configurable.parameters().max_evaluations == 5,
+        static_cast<bool>(configuration.apply(budget))
+            && configurable.max_evaluations == 5,
         "best improvement parameters are configurable like first improvement");
 
     return ok ? 0 : 1;

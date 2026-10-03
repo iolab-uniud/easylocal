@@ -169,13 +169,16 @@ int main()
     ok &= expect(combined.cost == 5 && counter.runs == 1,
                  "with(control, tracer).stop_at(target) keeps control and tracer");
 
-    auto sa = make_runner<runners::SimulatedAnnealing<runners::temperature::Classic>>(
-                  runners::temperature::ClassicParameters{
-                      .initial_temperature = 1.0,
-                      .final_temperature = 0.001,
-                      .cooling_rate = 0.999,
-                      .samples_per_temperature = 1000,
-                  })
+    auto sa =
+        make_runner<runners::SimulatedAnnealing<runners::temperature::Classic>>({
+            .temperature =
+                {
+                    .initial_temperature = 1.0,
+                    .final_temperature = 0.001,
+                    .cooling_rate = 0.999,
+                    .samples_per_temperature = 1000,
+                },
+        })
         | sm | nhe;
     auto bound_sa = sa.bind(ten);
     std::mt19937_64 rng{1};

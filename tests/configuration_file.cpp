@@ -18,7 +18,6 @@ using easylocal::config::overlay_overrides;
 using easylocal::config::override_views;
 using easylocal::config::parse_config_text;
 using easylocal::config::text_override;
-using easylocal::runners::temperature::FixedLength;
 using easylocal::runners::temperature::FixedLengthParameters;
 
 struct AppParameters
@@ -130,15 +129,15 @@ solver.temperature.cooling_rate = 0.7
     assert(effective.size() == 3);
 
     AppParameters app{};
-    FixedLength temperature{FixedLengthParameters{
+    FixedLengthParameters temperature{
         .initial_temperature = 8.0,
         .final_temperature = 0.25,
         .cooling_rate = 0.75,
         .max_iterations = 200,
-    }};
+    };
     easylocal::config::parameter_set tree;
     tree.add("application", app);
-    tree.add("solver.temperature", temperature.configuration());
+    tree.add("solver.temperature", temperature);
 
     const auto applied = apply_overrides(
         tree,
@@ -146,8 +145,8 @@ solver.temperature.cooling_rate = 0.7
 
     assert(applied);
     assert(app.seed == 42U);
-    assert(temperature.parameters().max_iterations == 20);
-    assert(temperature.parameters().cooling_rate == 0.7);
+    assert(temperature.max_iterations == 20);
+    assert(temperature.cooling_rate == 0.7);
 }
 
 void invalid_effective_batch_is_atomic()
@@ -165,15 +164,15 @@ solver.temperature.cooling_rate = 1.5
         std::span<const easylocal::config::owned_text_override>{effective});
 
     AppParameters app{};
-    FixedLength temperature{FixedLengthParameters{
+    FixedLengthParameters temperature{
         .initial_temperature = 8.0,
         .final_temperature = 0.25,
         .cooling_rate = 0.75,
         .max_iterations = 200,
-    }};
+    };
     easylocal::config::parameter_set tree;
     tree.add("application", app);
-    tree.add("solver.temperature", temperature.configuration());
+    tree.add("solver.temperature", temperature);
 
     const auto applied = apply_overrides(
         tree,
@@ -181,7 +180,7 @@ solver.temperature.cooling_rate = 1.5
 
     assert(!applied);
     assert(app.seed == 17U);
-    assert(temperature.parameters().cooling_rate == 0.75);
+    assert(temperature.cooling_rate == 0.75);
 }
 
 } // namespace

@@ -280,28 +280,28 @@ int main()
     ok &= expect(result.cost.soft() == 1, "final result keeps hierarchical soft cost");
 
     auto hard_sa_runner =
-        Runner{runners::SimulatedAnnealing{
-            runners::temperature::FixedLength{
-                runners::temperature::FixedLengthParameters{
-                    .initial_temperature = 2.0,
-                    .final_temperature = 0.5,
-                    .cooling_rate = 0.5,
-                    .max_iterations = 32,
-                }}}}
-        | sm
-        | neighborhood<HardNeighborhood>();
+        easylocal::make_runner<
+            runners::SimulatedAnnealing<runners::temperature::FixedLength>>(
+            {.temperature =
+                    runners::temperature::FixedLengthParameters{
+                        .initial_temperature = 2.0,
+                        .final_temperature = 0.5,
+                        .cooling_rate = 0.5,
+                        .max_iterations = 32,
+                    }})
+        | sm | neighborhood<HardNeighborhood>();
 
     auto full_sa_runner =
-        Runner{runners::SimulatedAnnealing{
-            runners::temperature::FixedLength{
-                runners::temperature::FixedLengthParameters{
-                    .initial_temperature = 2.0,
-                    .final_temperature = 0.5,
-                    .cooling_rate = 0.5,
-                    .max_iterations = 32,
-                }}}}
-        | sm
-        | neighborhood<SoftNeighborhood>();
+        easylocal::make_runner<
+            runners::SimulatedAnnealing<runners::temperature::FixedLength>>(
+            {.temperature =
+                    runners::temperature::FixedLengthParameters{
+                        .initial_temperature = 2.0,
+                        .final_temperature = 0.5,
+                        .cooling_rate = 0.5,
+                        .max_iterations = 32,
+                    }})
+        | sm | neighborhood<SoftNeighborhood>();
 
     auto sa_solver = make_solver<solvers::TwoStage>(
         std::move(hard_sa_runner),
@@ -328,13 +328,15 @@ int main()
         .max_iterations = 100000,
     };
     auto endless_hard_runner =
-        Runner{runners::SimulatedAnnealing{runners::temperature::FixedLength{long_schedule}}}
-        | sm
-        | neighborhood<EndlessHardNeighborhood>();
+        easylocal::make_runner<
+            runners::SimulatedAnnealing<runners::temperature::FixedLength>>(
+            {.temperature = long_schedule})
+        | sm | neighborhood<EndlessHardNeighborhood>();
     auto soft_runner =
-        Runner{runners::SimulatedAnnealing{runners::temperature::FixedLength{long_schedule}}}
-        | sm
-        | neighborhood<SoftNeighborhood>();
+        easylocal::make_runner<
+            runners::SimulatedAnnealing<runners::temperature::FixedLength>>(
+            {.temperature = long_schedule})
+        | sm | neighborhood<SoftNeighborhood>();
     auto stopping_solver = make_solver<solvers::TwoStage>(
         std::move(endless_hard_runner),
         std::move(soft_runner),

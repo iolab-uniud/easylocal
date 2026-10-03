@@ -22,9 +22,10 @@ using Annealing = runners::SimulatedAnnealing<runners::temperature::Classic>;
 {
     return el::app("tsp")
         | (el::solution_manager<TourManager>() | el::component<TourLength>())
-        | (el::neighborhood<TwoOptExplorer>() | el::delta<TourLength, TwoOptLengthDelta>())
+        | (el::neighborhood<TwoOptExplorer>()
+            | el::delta<TourLength, TwoOptLengthDelta>())
         | el::runner<runners::FirstImprovement>("fi")
-        | el::runner<Annealing>("sa", {.samples_per_temperature = 20})
+        | el::runner<Annealing>("sa", {.temperature = {.samples_per_temperature = 20}})
         | el::runner<RandomDescent>("descent", {.max_evaluations = 50});
 }
 
@@ -43,10 +44,11 @@ using Annealing = runners::SimulatedAnnealing<runners::temperature::Classic>;
 void simulated_annealing_is_registrable_with_its_policy_parameters()
 {
     static_assert(std::same_as<
-                  Annealing::parameters_type,
-                  runners::temperature::ClassicParameters>);
+        Annealing::parameters_type,
+        runners::SimulatedAnnealingParameters<runners::temperature::ClassicParameters>>);
     const auto application = make_application();
-    assert(application.runner_config<Annealing>().samples_per_temperature == 20);
+    assert(
+        application.runner_config<Annealing>().temperature.samples_per_temperature == 20);
     assert(application.runner_config<Annealing>().validate());
 }
 

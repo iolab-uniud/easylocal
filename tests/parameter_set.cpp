@@ -185,36 +185,54 @@ void changes_to_several_blocks_are_all_or_none()
     assert(app.seed == 2026U);
 }
 
+// An object that derives something from its parameters, rebuilt by configure().
+class Scheduler
+{
+public:
+    [[nodiscard]]
+    const Schedule& parameters() const noexcept
+    {
+        return schedule_;
+    }
+
+    [[nodiscard]]
+    config::validation_result configure(Schedule schedule)
+    {
+        if (const auto validation = schedule.validate(); !validation)
+            return validation;
+        schedule_ = schedule;
+        doubled_ = 2.0 * schedule_.rate;
+        return config::validation_result::success();
+    }
+
+    [[nodiscard]]
+    double doubled() const noexcept
+    {
+        return doubled_;
+    }
+
+private:
+    Schedule schedule_{};
+    double doubled_{1.0};
+};
+
 void configurable_objects_rebuild_through_configure()
 {
-    FixedLength fast{FixedLengthParameters{
-        .initial_temperature = 8.0,
-        .final_temperature = 0.25,
-        .cooling_rate = 0.75,
-        .max_iterations = 200,
-    }};
-    FixedLength slow{FixedLengthParameters{
-        .initial_temperature = 80.0,
-        .final_temperature = 0.25,
-        .cooling_rate = 0.95,
-        .max_iterations = 2000,
-    }};
-
+    Scheduler fast;
+    Scheduler slow;
     config::parameter_set set;
-    set.add("fast", fast.configuration());
-    set.add("slow", slow.configuration());
-    const auto samples_before = fast.samples_per_temperature();
+    set.add("fast", fast);
+    set.add("slow", slow);
 
-    // final_temperature must stay below initial_temperature.
-    const std::array invalid{config::text_override{"fast.final_temperature", "8"}};
+    const std::array invalid{config::text_override{"fast.rate", "2"}};
     assert(!set.apply(invalid));
-    assert(fast.parameters().max_iterations == 200);
+    assert(fast.parameters().rate == 0.5);
 
-    const std::array updated{config::text_override{"fast.max_iterations", "20"}};
+    const std::array updated{config::text_override{"fast.rate", "0.25"}};
     assert(set.apply(updated));
-    assert(fast.parameters().max_iterations == 20);
-    assert(fast.samples_per_temperature() != samples_before); // rebuilt
-    assert(slow.parameters().max_iterations == 2000);
+    assert(fast.parameters().rate == 0.25);
+    assert(fast.doubled() == 0.5); // rebuilt
+    assert(slow.parameters().rate == 0.5);
 }
 
 void const_objects_are_read_only()

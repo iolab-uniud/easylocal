@@ -19,12 +19,15 @@ auto both =
     | el::random_biases(3.0, 1.0);
 
 auto union_sa =
-    el::make_runner<runners::SimulatedAnnealing<Classic>>(
-        Classic{runners::temperature::ClassicParameters{
-            .initial_temperature = 10.0,
-            .final_temperature = 0.1,
-            .cooling_rate = 0.95,
-            .samples_per_temperature = 50}})
+    el::make_runner<runners::SimulatedAnnealing<Classic>>({
+        .temperature =
+            {
+                .initial_temperature = 10.0,
+                .final_temperature = 0.1,
+                .cooling_rate = 0.95,
+                .samples_per_temperature = 50,
+            },
+    })
     | sm | both;
 ```
 

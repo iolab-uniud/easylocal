@@ -1,5 +1,6 @@
 #pragma once
 
+#include <easylocal/config/parameter_set.hpp>
 #include <easylocal/solvers/initialization.hpp>
 #include <easylocal/solvers/solver.hpp>
 
@@ -164,6 +165,15 @@ public:
             std::move(solution),
             rng_,
             options...);
+    }
+
+    // Its runner's parameters (search.*, cost.*, neighborhood.*).
+    [[nodiscard]]
+    config::parameter_set configuration()
+    {
+        config::parameter_set parameters;
+        config::add_configuration(parameters, {}, runner_);
+        return parameters;
     }
 
 private:

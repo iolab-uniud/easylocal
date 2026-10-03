@@ -138,8 +138,8 @@ template<class Cost>
 [[nodiscard]]
 auto chain_runner(const HillClimbingParameters parameters)
 {
-    return Runner{HillClimbing{parameters}}
-    | (solution_manager<ChainSolutionManager>() | component<Cost>())
+    return easylocal::make_runner<HillClimbing>(parameters)
+        | (solution_manager<ChainSolutionManager>() | component<Cost>())
         | neighborhood<ChainNeighborhood>();
 }
 
@@ -168,8 +168,9 @@ int main()
             static_cast<bool>(HillClimbingParameters{}.validate()),
             "hill climbing defaults pass validation");
 
-        HillClimbing climbing{HillClimbingParameters{}};
-        const auto configuration = climbing.configuration();
+        HillClimbingParameters climbing_parameters;
+        easylocal::config::parameter_set configuration;
+        configuration.add(climbing_parameters);
         ok &= expect(
             std::ranges::any_of(
                 configuration.parameters(),
@@ -188,7 +189,7 @@ int main()
             easylocal::config::text_override{"max_idle_iterations", "5"}};
         ok &= expect(
             static_cast<bool>(configuration.apply(valid))
-                && climbing.parameters().max_idle_iterations == 5,
+                && climbing_parameters.max_idle_iterations == 5,
             "hill climbing configuration updates its parameters");
     }
 

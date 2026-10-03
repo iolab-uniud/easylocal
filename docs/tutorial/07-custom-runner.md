@@ -76,6 +76,11 @@ auto descent =
 ```
 
 `parameters_type` is only needed to register the runner in an app (chapter 11).
+When the parameters also describe themselves, with a `parameter_schema()` and
+a `validate()` as in chapter 9, nothing else is needed to make them
+configurable: the runner holds them, builds the algorithm from them when it is
+bound, and gives them as `search.*` to the command line, configuration files
+and the interactive tester.
 
 ## See also
 

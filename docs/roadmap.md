@@ -99,9 +99,9 @@ silently not configurable.
 struct: one parameter per data member, named after it, with the description
 given as an annotation on the member. A hand-written `parameter_schema()`
 would remain possible, and would take precedence, for names or groupings
-that differ from the members. Other repeated code could go the same way, such
-as the `parameters()` / `configure()` / `configuration()` members every
-configurable runner writes.
+that differ from the members. The schema is then the only part of a runner's
+configuration still written by hand: a runner already holds its algorithm's
+parameters and builds the algorithm from them.
 
 **When.** When the compilers EasyLocal supports provide reflection. In
 October 2026, GCC 16 implements it behind `-freflection`; GCC 15, Clang 22

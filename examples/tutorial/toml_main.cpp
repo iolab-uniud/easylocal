@@ -22,7 +22,7 @@ int main(int argc, char* argv[])
     const auto tsp = five_cities();
 
     // A runner with the default parameters, whose cost has two weights.
-    auto sa = el::make_runner<runners::SimulatedAnnealing<Classic>>(Classic{{}})
+    auto sa = el::make_runner<runners::SimulatedAnnealing<Classic>>()
         | (el::solution_manager<TourManager>()
             | el::cost::sum(el::component<TourLength>(), el::component<MaxEdge>()))
         | (el::neighborhood<TwoOptExplorer>()

@@ -533,14 +533,13 @@ int main()
         "a delta evaluator may be stateless and constructed without an Instance");
 
     int variant_make_moves = 0;
-    auto variant_runner =
-        Runner{FirstImprovement{{.max_evaluations = 2}}}
+    auto variant_runner = easylocal::make_runner<FirstImprovement>({.max_evaluations = 2})
         | two_capacity_recipe
         | (neighborhood<CountingSingleMoveNeighborhood>(
                relieving_move,
                std::ref(variant_make_moves))
-           | delta<CapacityVariantA, ReassignCapacityDeltaEvaluator>()
-           | delta<CapacityVariantB, ReassignCapacityDeltaEvaluator>());
+            | delta<CapacityVariantA, ReassignCapacityDeltaEvaluator>()
+            | delta<CapacityVariantB, ReassignCapacityDeltaEvaluator>());
 
     const auto variant_result = variant_runner.bind(instance).run(initial);
 
@@ -559,10 +558,8 @@ int main()
             std::ref(hard_make_moves))
         | delta<CapacityCostComponent, ReassignCapacityDeltaEvaluator>();
 
-    auto hard_runner =
-        Runner{FirstImprovement{{.max_evaluations = 2}}}
-        | hard_manager_recipe
-        | hard_nhe;
+    auto hard_runner = easylocal::make_runner<FirstImprovement>({.max_evaluations = 2})
+        | hard_manager_recipe | hard_nhe;
 
     const auto hard_result = hard_runner.bind(instance).run(initial);
 
@@ -583,10 +580,8 @@ int main()
               AssignmentCardinalityComponent,
               AssignmentCardinalityDeltaEvaluator>();
 
-    auto full_runner =
-        Runner{FirstImprovement{{.max_evaluations = 2}}}
-        | full_manager_recipe
-        | full_nhe;
+    auto full_runner = easylocal::make_runner<FirstImprovement>({.max_evaluations = 2})
+        | full_manager_recipe | full_nhe;
 
     const auto full_result = full_runner.bind(instance).run(initial);
 

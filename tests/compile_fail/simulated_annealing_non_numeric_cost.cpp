@@ -75,13 +75,14 @@ int main()
 
     const Instance instance;
     auto runner =
-        Runner{SimulatedAnnealing{
-            temperature::FixedLength{temperature::FixedLengthParameters{
-                .initial_temperature = 2.0,
-                .final_temperature = 1.0,
-                .cooling_rate = 0.5,
-                .max_iterations = 1,
-            }}}}
+        easylocal::make_runner<SimulatedAnnealing<temperature::FixedLength>>(
+            {.temperature =
+                    temperature::FixedLengthParameters{
+                        .initial_temperature = 2.0,
+                        .final_temperature = 1.0,
+                        .cooling_rate = 0.5,
+                        .max_iterations = 1,
+                    }})
         | (solution_manager<SolutionManager>() | component<StructuredValue>())
         | neighborhood<Neighborhood>();
 

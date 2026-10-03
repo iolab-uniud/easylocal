@@ -147,8 +147,8 @@ template<class Cost>
 [[nodiscard]]
 auto chain_runner(const LateAcceptanceHillClimbingParameters parameters)
 {
-    return Runner{LateAcceptanceHillClimbing{parameters}}
-    | (solution_manager<ChainSolutionManager>() | component<Cost>())
+    return easylocal::make_runner<LateAcceptanceHillClimbing>(parameters)
+        | (solution_manager<ChainSolutionManager>() | component<Cost>())
         | neighborhood<ChainNeighborhood>();
 }
 
@@ -180,8 +180,9 @@ int main()
             static_cast<bool>(LateAcceptanceHillClimbingParameters{}.validate()),
             "late acceptance defaults pass validation");
 
-        LateAcceptanceHillClimbing climbing{LateAcceptanceHillClimbingParameters{}};
-        const auto configuration = climbing.configuration();
+        LateAcceptanceHillClimbingParameters climbing_parameters;
+        easylocal::config::parameter_set configuration;
+        configuration.add(climbing_parameters);
         ok &= expect(
             std::ranges::any_of(
                 configuration.parameters(),
@@ -197,7 +198,7 @@ int main()
         const std::array valid{easylocal::config::text_override{"history_length", "3"}};
         ok &= expect(
             static_cast<bool>(configuration.apply(valid))
-                && climbing.parameters().history_length == 3,
+                && climbing_parameters.history_length == 3,
             "late acceptance configuration updates its parameters");
     }
 
@@ -257,7 +258,7 @@ int main()
                 .bind(instance)
                 .run(ChainSolution{}, rng_late);
         const auto climbing =
-            (Runner{HillClimbing{{.max_idle_iterations = 4}}}
+            (easylocal::make_runner<HillClimbing>({.max_idle_iterations = 4})
                 | (solution_manager<ChainSolutionManager>() | component<PlateauCost>())
                 | neighborhood<ChainNeighborhood>())
                 .bind(instance)

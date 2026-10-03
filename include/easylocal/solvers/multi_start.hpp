@@ -1,5 +1,6 @@
 #pragma once
 
+#include <easylocal/config/parameter_set.hpp>
 #include <easylocal/solvers/initialization.hpp>
 #include <easylocal/solvers/solver.hpp>
 
@@ -9,6 +10,7 @@
 #include <optional>
 #include <random>
 #include <stdexcept>
+#include <string>
 #include <type_traits>
 #include <utility>
 
@@ -18,6 +20,22 @@ namespace easylocal::solvers
 struct MultiStartParameters
 {
     std::size_t starts{1};
+
+    [[nodiscard]]
+    static consteval auto parameter_schema()
+    {
+        return config::fields(
+            config::field<"starts", &MultiStartParameters::starts>(
+                "Independent runs; the best result is kept"));
+    }
+
+    [[nodiscard]]
+    config::validation_result validate() const noexcept
+    {
+        return starts == 0
+            ? config::validation_result::failure("MultiStart requires at least one start")
+            : config::validation_result::success();
+    }
 };
 
 template<class Initialization = initialization::Random>
@@ -194,6 +212,17 @@ public:
         return best;
     }
 
+    // Its own parameters (starts) and its runner's (search.*, cost.*,
+    // neighborhood.*), with paths relative to the solver.
+    [[nodiscard]]
+    config::parameter_set configuration()
+    {
+        config::parameter_set parameters;
+        parameters.add(parameters_);
+        config::add_configuration(parameters, {}, runner_);
+        return parameters;
+    }
+
 private:
     static void validate_initialization_mode(const initialization::Mode mode)
     {
@@ -208,9 +237,9 @@ private:
 
     void validate_parameters() const
     {
-        if (parameters_.starts == 0)
+        if (const auto validation = parameters_.validate(); !validation)
         {
-            throw std::invalid_argument{"MultiStart requires at least one start"};
+            throw std::invalid_argument{std::string{validation.message}};
         }
     }
 

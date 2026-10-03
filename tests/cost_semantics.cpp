@@ -362,11 +362,10 @@ int main()
         "custom better_or_equivalent rejects a worse value");
 
     auto first_improvement =
-        Runner{FirstImprovement{FirstImprovementParameters{
+        easylocal::make_runner<FirstImprovement>(FirstImprovementParameters{
             .max_evaluations = 2,
-        }}}
-        | maximizing_manager
-        | neighborhood<NeighborhoodExplorer>();
+        })
+        | maximizing_manager | neighborhood<NeighborhoodExplorer>();
 
     const auto first_result =
         first_improvement.bind(instance).run(Solution{.score = 0});
@@ -377,11 +376,10 @@ int main()
         "First Improvement returns the maximizing opaque cost");
 
     auto best_improvement =
-        Runner{BestImprovement{BestImprovementParameters{
+        easylocal::make_runner<BestImprovement>(BestImprovementParameters{
             .max_evaluations = 4,
-        }}}
-        | maximizing_manager
-        | neighborhood<NeighborhoodExplorer>();
+        })
+        | maximizing_manager | neighborhood<NeighborhoodExplorer>();
 
     const auto best_result =
         best_improvement.bind(instance).run(Solution{.score = 0});

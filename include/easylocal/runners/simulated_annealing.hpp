@@ -143,23 +143,6 @@ inline config::validation_result validate_cooling_schedule(
     return config::validation_result::success();
 }
 
-// configure() for policies whose derived state is computed by the
-// constructor: validate, then rebuild from the new parameters.
-template<class Policy, class Parameters>
-[[nodiscard]]
-config::validation_result reconfigure(
-    Policy& policy,
-    const Parameters& parameters) noexcept
-{
-    const auto validation = parameters.validate();
-    if (!validation)
-    {
-        return validation;
-    }
-    policy = Policy{parameters};
-    return config::validation_result::success();
-}
-
 [[nodiscard]]
 inline config::validation_result validate_calibration(
     const double initial_acceptance) noexcept
@@ -295,30 +278,6 @@ public:
     const ClassicParameters& parameters() const noexcept
     {
         return parameters_;
-    }
-
-    [[nodiscard]]
-    config::validation_result configure(ClassicParameters parameters) noexcept
-    {
-        return detail::reconfigure(*this, parameters);
-    }
-
-    // The parameters, at the root: Simulated Annealing puts them under
-    // "temperature".
-    [[nodiscard]]
-    config::parameter_set configuration()
-    {
-        config::parameter_set parameters;
-        parameters.add(*this);
-        return parameters;
-    }
-
-    [[nodiscard]]
-    config::parameter_set configuration() const
-    {
-        config::parameter_set parameters;
-        parameters.add(*this);
-        return parameters;
     }
 
     [[nodiscard]]
@@ -476,49 +435,6 @@ public:
     }
 
     [[nodiscard]]
-    config::validation_result configure(FixedLengthParameters parameters) noexcept
-    {
-        const auto validation = parameters.validate();
-        if (!validation)
-        {
-            return validation;
-        }
-
-        const auto temperature_levels = detail::temperature_level_count(
-            parameters.initial_temperature,
-            parameters.final_temperature,
-            parameters.cooling_rate);
-        const auto samples_per_temperature = detail::positive_quotient(
-            parameters.max_iterations,
-            temperature_levels);
-
-        parameters_ = parameters;
-        temperature_levels_ = temperature_levels;
-        samples_per_temperature_ = samples_per_temperature;
-        reset();
-
-        return config::validation_result::success();
-    }
-
-    // The parameters, at the root: Simulated Annealing puts them under
-    // "temperature".
-    [[nodiscard]]
-    config::parameter_set configuration()
-    {
-        config::parameter_set parameters;
-        parameters.add(*this);
-        return parameters;
-    }
-
-    [[nodiscard]]
-    config::parameter_set configuration() const
-    {
-        config::parameter_set parameters;
-        parameters.add(*this);
-        return parameters;
-    }
-
-    [[nodiscard]]
     std::size_t calibration_samples() const noexcept
     {
         return parameters_.calibration_samples;
@@ -671,30 +587,6 @@ public:
     }
 
     [[nodiscard]]
-    config::validation_result configure(CutoffParameters parameters) noexcept
-    {
-        return detail::reconfigure(*this, parameters);
-    }
-
-    // The parameters, at the root: Simulated Annealing puts them under
-    // "temperature".
-    [[nodiscard]]
-    config::parameter_set configuration()
-    {
-        config::parameter_set parameters;
-        parameters.add(*this);
-        return parameters;
-    }
-
-    [[nodiscard]]
-    config::parameter_set configuration() const
-    {
-        config::parameter_set parameters;
-        parameters.add(*this);
-        return parameters;
-    }
-
-    [[nodiscard]]
     std::size_t calibration_samples() const noexcept
     {
         return parameters_.calibration_samples;
@@ -786,30 +678,6 @@ public:
     const HybridParameters& parameters() const noexcept
     {
         return parameters_;
-    }
-
-    [[nodiscard]]
-    config::validation_result configure(HybridParameters parameters) noexcept
-    {
-        return detail::reconfigure(*this, parameters);
-    }
-
-    // The parameters, at the root: Simulated Annealing puts them under
-    // "temperature".
-    [[nodiscard]]
-    config::parameter_set configuration()
-    {
-        config::parameter_set parameters;
-        parameters.add(*this);
-        return parameters;
-    }
-
-    [[nodiscard]]
-    config::parameter_set configuration() const
-    {
-        config::parameter_set parameters;
-        parameters.add(*this);
-        return parameters;
     }
 
     [[nodiscard]]
@@ -996,30 +864,6 @@ public:
     }
 
     [[nodiscard]]
-    config::validation_result configure(FixedTemperatureParameters parameters) noexcept
-    {
-        return detail::reconfigure(*this, parameters);
-    }
-
-    // The parameters, at the root: Simulated Annealing puts them under
-    // "temperature".
-    [[nodiscard]]
-    config::parameter_set configuration()
-    {
-        config::parameter_set parameters;
-        parameters.add(*this);
-        return parameters;
-    }
-
-    [[nodiscard]]
-    config::parameter_set configuration() const
-    {
-        config::parameter_set parameters;
-        parameters.add(*this);
-        return parameters;
-    }
-
-    [[nodiscard]]
     std::size_t calibration_samples() const noexcept
     {
         return parameters_.calibration_samples;
@@ -1172,30 +1016,6 @@ public:
     const TimeBasedParameters& parameters() const noexcept
     {
         return parameters_;
-    }
-
-    [[nodiscard]]
-    config::validation_result configure(TimeBasedParameters parameters) noexcept
-    {
-        return detail::reconfigure(*this, parameters);
-    }
-
-    // The parameters, at the root: Simulated Annealing puts them under
-    // "temperature".
-    [[nodiscard]]
-    config::parameter_set configuration()
-    {
-        config::parameter_set parameters;
-        parameters.add(*this);
-        return parameters;
-    }
-
-    [[nodiscard]]
-    config::parameter_set configuration() const
-    {
-        config::parameter_set parameters;
-        parameters.add(*this);
-        return parameters;
     }
 
     // Starts the clock.
@@ -1406,30 +1226,6 @@ public:
     }
 
     [[nodiscard]]
-    config::validation_result configure(ReheatingParameters parameters) noexcept
-    {
-        return detail::reconfigure(*this, parameters);
-    }
-
-    // The parameters, at the root: Simulated Annealing puts them under
-    // "temperature".
-    [[nodiscard]]
-    config::parameter_set configuration()
-    {
-        config::parameter_set parameters;
-        parameters.add(*this);
-        return parameters;
-    }
-
-    [[nodiscard]]
-    config::parameter_set configuration() const
-    {
-        config::parameter_set parameters;
-        parameters.add(*this);
-        return parameters;
-    }
-
-    [[nodiscard]]
     std::size_t calibration_samples() const noexcept
     {
         return parameters_.calibration_samples;
@@ -1602,6 +1398,29 @@ public:
 
 // Algorithm.
 
+// The parameters of Simulated Annealing: its temperature policy's, as the
+// group "temperature" (paths temperature.*).
+template<class TemperatureParameters>
+struct SimulatedAnnealingParameters
+{
+    TemperatureParameters temperature{};
+
+    [[nodiscard]]
+    static consteval auto parameter_schema()
+    {
+        return config::fields(
+            config::group<"temperature", &SimulatedAnnealingParameters::temperature>(
+                "The temperature schedule"));
+    }
+
+    // The schedule is validated as a group.
+    [[nodiscard]]
+    config::validation_result validate() const noexcept
+    {
+        return config::validation_result::success();
+    }
+};
+
 namespace detail
 {
 
@@ -1615,9 +1434,9 @@ template<class Policy>
     requires requires { typename Policy::parameters_type; }
 struct policy_parameters<Policy>
 {
-    using parameters_type = typename Policy::parameters_type;
+    using parameters_type =
+        runners::SimulatedAnnealingParameters<typename Policy::parameters_type>;
 };
-
 template<class Acceptance, class Cost, class RNG>
 concept acceptance_policy_for =
     std::uniform_random_bit_generator<RNG> &&
@@ -1667,36 +1486,15 @@ public:
     {
     }
 
-    // From the temperature policy's parameters: this makes Simulated
-    // Annealing registrable in apps (parameters_type is the policy's).
+    // From its parameters, {.temperature = {...}}: the form a Runner and an
+    // app hold, and build it from.
     template<class Policy = TemperaturePolicy>
         requires requires { typename Policy::parameters_type; }
     explicit SimulatedAnnealing(
-        const typename Policy::parameters_type& parameters,
+        const SimulatedAnnealingParameters<typename Policy::parameters_type>& parameters,
         Acceptance acceptance = {})
-        : temperature_policy_{parameters},
-          acceptance_{std::move(acceptance)}
+        : temperature_policy_{parameters.temperature}, acceptance_{std::move(acceptance)}
     {
-    }
-
-    // The temperature policy's parameters under "temperature", the acceptance
-    // criterion's under "acceptance"; the runner puts them under "search".
-    [[nodiscard]]
-    config::parameter_set configuration()
-    {
-        config::parameter_set parameters;
-        config::add_configuration(parameters, "temperature", temperature_policy_);
-        config::add_configuration(parameters, "acceptance", acceptance_);
-        return parameters;
-    }
-
-    [[nodiscard]]
-    config::parameter_set configuration() const
-    {
-        config::parameter_set parameters;
-        config::add_configuration(parameters, "temperature", temperature_policy_);
-        config::add_configuration(parameters, "acceptance", acceptance_);
-        return parameters;
     }
 
     template<class Run, std::uniform_random_bit_generator RNG>

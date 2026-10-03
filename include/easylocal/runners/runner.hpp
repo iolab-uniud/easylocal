@@ -363,6 +363,92 @@ private:
     neighborhood_explorer_type neighborhood_;
 };
 
+// An algorithm whose parameters are a parameter block it is built from: a
+// Runner holds the parameters and builds the algorithm when it is bound.
+template<class Algorithm>
+concept parameterized_algorithm = requires { typename Algorithm::parameters_type; }
+    && config::parameter_block<typename Algorithm::parameters_type>
+    && std::constructible_from<Algorithm, const typename Algorithm::parameters_type&>;
+
+// What a Runner holds of its algorithm: the algorithm itself, or, for a
+// parameterized algorithm, its parameters, from which it is built at bind.
+template<class Algorithm>
+class algorithm_source
+{
+public:
+    explicit algorithm_source(Algorithm algorithm) : algorithm_{std::move(algorithm)} {}
+
+    [[nodiscard]]
+    Algorithm make() const&
+        requires std::copy_constructible<Algorithm>
+    {
+        return algorithm_;
+    }
+
+    [[nodiscard]]
+    Algorithm make() &&
+    {
+        return std::move(algorithm_);
+    }
+
+    void add_configuration(config::parameter_set& parameters)
+    {
+        config::add_configuration(parameters, "search", algorithm_);
+    }
+
+    void add_configuration(config::parameter_set& parameters) const
+    {
+        config::add_configuration(parameters, "search", algorithm_);
+    }
+
+private:
+    Algorithm algorithm_;
+};
+
+template<parameterized_algorithm Algorithm>
+class algorithm_source<Algorithm>
+{
+public:
+    using parameters_type = typename Algorithm::parameters_type;
+
+    explicit algorithm_source(parameters_type parameters)
+        : parameters_{std::move(parameters)}
+    {
+        assert(parameters_.validate() && "the runner's parameters must be valid");
+    }
+
+    [[nodiscard]]
+    Algorithm make() const
+    {
+        return Algorithm{parameters_};
+    }
+
+    [[nodiscard]]
+    parameters_type& parameters() noexcept
+    {
+        return parameters_;
+    }
+
+    [[nodiscard]]
+    const parameters_type& parameters() const noexcept
+    {
+        return parameters_;
+    }
+
+    void add_configuration(config::parameter_set& parameters)
+    {
+        parameters.add("search", parameters_);
+    }
+
+    void add_configuration(config::parameter_set& parameters) const
+    {
+        parameters.add("search", parameters_);
+    }
+
+private:
+    parameters_type parameters_;
+};
+
 } // namespace detail
 
 template<
@@ -375,7 +461,26 @@ template<class Algorithm>
 class Runner<Algorithm, detail::unconfigured_t, detail::unconfigured_t>
 {
 public:
+    // An algorithm without a parameter block, held as it is.
     explicit Runner(Algorithm algorithm)
+        requires(!detail::parameterized_algorithm<Algorithm>)
+        : algorithm_{std::move(algorithm)}
+    {
+    }
+
+    // A parameterized algorithm is built from its parameters when the runner is
+    // bound: make_runner<Algorithm>(parameters) creates the runner.
+    template<class Self = Algorithm>
+        requires detail::parameterized_algorithm<Self>
+    explicit Runner(Algorithm)
+    {
+        static_assert(
+            !detail::parameterized_algorithm<Self>,
+            "a Runner holds the parameters of this algorithm: create it with "
+            "make_runner<Algorithm>(parameters)");
+    }
+
+    explicit Runner(detail::algorithm_source<Algorithm> algorithm)
         : algorithm_{std::move(algorithm)}
     {
     }
@@ -414,7 +519,7 @@ public:
     }
 
 private:
-    Algorithm algorithm_;
+    detail::algorithm_source<Algorithm> algorithm_;
 };
 
 template<class Algorithm, class SMSpec>
@@ -424,7 +529,7 @@ class Runner<Algorithm, SMSpec, detail::unconfigured_t>
 public:
     using solution_manager_type = detail::service_t<SMSpec>;
 
-    Runner(Algorithm algorithm, SMSpec solution_manager_spec)
+    Runner(detail::algorithm_source<Algorithm> algorithm, SMSpec solution_manager_spec)
         : algorithm_{std::move(algorithm)},
           solution_manager_spec_{std::move(solution_manager_spec)}
     {
@@ -473,7 +578,7 @@ public:
     }
 
 private:
-    Algorithm algorithm_;
+    detail::algorithm_source<Algorithm> algorithm_;
     SMSpec solution_manager_spec_;
 };
 
@@ -491,13 +596,29 @@ public:
     using input_type = typename solution_manager_type::input_type;
 
     Runner(
-        Algorithm algorithm,
+        detail::algorithm_source<Algorithm> algorithm,
         SMSpec solution_manager_spec,
         NHESpec neighborhood_spec)
         : algorithm_{std::move(algorithm)},
           solution_manager_spec_{std::move(solution_manager_spec)},
           neighborhood_spec_{std::move(neighborhood_spec)}
     {
+    }
+
+    // The algorithm's parameters, to read or change from code; the algorithm
+    // is built from them when the runner is bound.
+    [[nodiscard]]
+    auto& parameters() noexcept
+        requires detail::parameterized_algorithm<Algorithm>
+    {
+        return algorithm_.parameters();
+    }
+
+    [[nodiscard]]
+    const auto& parameters() const noexcept
+        requires detail::parameterized_algorithm<Algorithm>
+    {
+        return algorithm_.parameters();
     }
 
     // The parameters of the algorithm ("search"), of the cost expression
@@ -508,7 +629,7 @@ public:
     config::parameter_set configuration()
     {
         config::parameter_set parameters;
-        config::add_configuration(parameters, "search", algorithm_);
+        algorithm_.add_configuration(parameters);
         config::add_configuration(parameters, "cost", solution_manager_spec_);
         config::add_configuration(parameters, "neighborhood", neighborhood_spec_);
         return parameters;
@@ -518,7 +639,7 @@ public:
     config::parameter_set configuration() const
     {
         config::parameter_set parameters;
-        config::add_configuration(parameters, "search", algorithm_);
+        algorithm_.add_configuration(parameters);
         config::add_configuration(parameters, "cost", solution_manager_spec_);
         config::add_configuration(parameters, "neighborhood", neighborhood_spec_);
         return parameters;
@@ -562,7 +683,7 @@ public:
                  (NHESpec::template constructible_from<solution_manager_type>)
     {
         return detail::bound_runner<Algorithm, SMSpec, NHESpec>{
-            algorithm_,
+            algorithm_.make(),
             input,
             solution_manager_spec_,
             neighborhood_spec_,
@@ -575,7 +696,7 @@ public:
                  (NHESpec::template constructible_from<solution_manager_type>)
     {
         return detail::bound_runner<Algorithm, SMSpec, NHESpec>{
-            std::move(algorithm_),
+            std::move(algorithm_).make(),
             input,
             solution_manager_spec_,
             neighborhood_spec_,
@@ -588,7 +709,7 @@ public:
     auto bind(const input_type&&) && = delete;
 
 private:
-    Algorithm algorithm_;
+    detail::algorithm_source<Algorithm> algorithm_;
     SMSpec solution_manager_spec_;
     NHESpec neighborhood_spec_;
 };
@@ -620,13 +741,25 @@ auto operator|(
 template<class Algorithm>
 Runner(Algorithm) -> Runner<std::remove_cvref_t<Algorithm>>;
 
-// Constructs a search algorithm from its arguments and wraps it in a Runner.
+// A runner for a parameterized algorithm, from its parameters:
+// make_runner<FirstImprovement>({.max_evaluations = 1000}).
+template<class Algorithm>
+    requires detail::parameterized_algorithm<Algorithm>
+[[nodiscard]]
+auto make_runner(typename Algorithm::parameters_type parameters = {})
+{
+    return Runner<Algorithm>{detail::algorithm_source<Algorithm>{std::move(parameters)}};
+}
+
+// A runner for any other algorithm, built from its arguments.
 template<class Algorithm, class... Args>
-    requires std::constructible_from<Algorithm, Args&&...>
+    requires(!detail::parameterized_algorithm<Algorithm>)
+    && std::constructible_from<Algorithm, Args&&...>
 [[nodiscard]]
 auto make_runner(Args&&... args)
 {
-    return Runner<Algorithm>{Algorithm{std::forward<Args>(args)...}};
+    return Runner<Algorithm>{
+        detail::algorithm_source<Algorithm>{Algorithm{std::forward<Args>(args)...}}};
 }
 
 } // namespace easylocal

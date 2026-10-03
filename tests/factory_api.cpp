@@ -151,12 +151,13 @@ int main()
         decltype(configured),
         Runner<ConfiguredAlgorithm>>);
 
-    auto sa = Runner{runners::SimulatedAnnealing{runners::temperature::Classic{
-        runners::temperature::ClassicParameters{
-            .initial_temperature = 10.0,
-            .final_temperature = 1.0,
-            .cooling_rate = 0.9,
-            .samples_per_temperature = 4}}}};
+    auto sa = easylocal::make_runner<
+        runners::SimulatedAnnealing<runners::temperature::Classic>>(
+        {.temperature = runners::temperature::ClassicParameters{
+             .initial_temperature = 10.0,
+             .final_temperature = 1.0,
+             .cooling_rate = 0.9,
+             .samples_per_temperature = 4}});
     static_assert(std::same_as<
         decltype(sa),
         Runner<runners::SimulatedAnnealing<runners::temperature::Classic>>>);

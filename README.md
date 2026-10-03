@@ -276,9 +276,9 @@ search logic:
 class MySearch
 {
 public:
-    using parameters_type = MyParameters; // needed only for app registration
+    using parameters_type = MyParameters; // with a schema: configurable
 
-    explicit MySearch(MyParameters parameters);
+    explicit MySearch(const MyParameters& parameters);
 
     template<class Run>
     auto run(Run& run, typename Run::solution_type solution) const
@@ -307,6 +307,9 @@ public:
 counters and `termination_reason`. The algorithm class is also its own
 registration key: `make_runner<MySearch>(MyParameters{...})`,
 `app(...).with_runner<MySearch>("name")` and `runner_config<MySearch>()`.
+When `MyParameters` has a `parameter_schema()` and `validate()`, the runner
+holds the parameters and builds `MySearch` from them when it is bound, so they
+are configurable (`search.*`) without any other member.
 
 Callers pass the optional control and tracer as a trailing argument:
 `search.run(initial, rng, easylocal::with(control, tracer))`.
@@ -409,10 +412,11 @@ as `solver.search.temperature.*`; and a `neighborhood_union(...)`
 `solver.neighborhood.random_biases`. The prefix is what distinguishes several
 otherwise identical runners (`fast.*`, `slow.*`, and so on).
 
-Objects that rebuild something from their parameters, such as temperature
-policies, take part through `parameters()` and `configure()`: a valid block is
-committed through `configure()`, so `FixedLength` recomputes its
-temperature-level schedule. Exposure through a const object is read-only.
+A runner holds its algorithm's parameters and builds the algorithm, with any
+state derived from them (such as a temperature schedule), when it is bound.
+Objects that keep derived state themselves, such as a neighborhood union, take
+part through `parameters()` and `configure()`: a valid block is committed
+through `configure()`. Exposure through a const object is read-only.
 Configuration applies to application values and unbound runner
 recipes/policies; reconfiguration of an already bound/running search is
 deliberately deferred.

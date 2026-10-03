@@ -94,10 +94,8 @@ int main()
         std::declval<FullyConfiguredFirstRunner&&>().bind(
             std::declval<const AssignmentInstance&>()));
 
-    using PipelineConfiguredFirstRunner = decltype(
-        Runner{FirstImprovement{{.max_evaluations = 1}}}
-        | default_solution_manager_recipe()
-        | default_neighborhood_recipe());
+    using PipelineConfiguredFirstRunner =
+        decltype(easylocal::make_runner<FirstImprovement>({.max_evaluations = 1}) | default_solution_manager_recipe() | default_neighborhood_recipe());
 
     static_assert(std::same_as<
         FullyConfiguredFirstRunner,
@@ -132,19 +130,16 @@ int main()
     static_assert(CanRun<BoundFirstRunner>);
     static_assert(!CanRunWithRng<BoundFirstRunner, std::mt19937>);
 
-    using BoundBestRunner = decltype(
-        (Runner{BestImprovement{{.max_evaluations = 1}}}
-         | default_solution_manager_recipe()
-         | default_neighborhood_recipe())
+    using BoundBestRunner = decltype((
+        easylocal::make_runner<BestImprovement>({.max_evaluations = 1})
+        | default_solution_manager_recipe() | default_neighborhood_recipe())
             .bind(std::declval<const AssignmentInstance&>()));
 
     static_assert(CanRun<BoundBestRunner>);
     static_assert(!CanRunWithRng<BoundBestRunner, std::mt19937>);
 
-    auto configured =
-        Runner{FirstImprovement{{.max_evaluations = 17}}}
-        | default_solution_manager_recipe()
-        | default_neighborhood_recipe();
+    auto configured = easylocal::make_runner<FirstImprovement>({.max_evaluations = 17})
+        | default_solution_manager_recipe() | default_neighborhood_recipe();
 
     const auto configuration = configured.configuration();
     bool saw_search_budget = false;

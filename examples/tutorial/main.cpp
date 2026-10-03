@@ -110,12 +110,15 @@ int main(int argc, char* argv[])
     using Classic = runners::temperature::Classic;
 
     auto sa =
-        el::make_runner<runners::SimulatedAnnealing<Classic>>(
-            Classic{runners::temperature::ClassicParameters{
-                .initial_temperature = 10.0,
-                .final_temperature = 0.1,
-                .cooling_rate = 0.95,
-                .samples_per_temperature = 50}})
+        el::make_runner<runners::SimulatedAnnealing<Classic>>({
+            .temperature =
+                {
+                    .initial_temperature = 10.0,
+                    .final_temperature = 0.1,
+                    .cooling_rate = 0.95,
+                    .samples_per_temperature = 50,
+                },
+        })
         | sm | nhe;
 
     std::mt19937_64 rng{42};
@@ -132,12 +135,15 @@ int main(int argc, char* argv[])
         | el::random_biases(3.0, 1.0);
 
     auto union_sa =
-        el::make_runner<runners::SimulatedAnnealing<Classic>>(
-            Classic{runners::temperature::ClassicParameters{
-                .initial_temperature = 10.0,
-                .final_temperature = 0.1,
-                .cooling_rate = 0.95,
-                .samples_per_temperature = 50}})
+        el::make_runner<runners::SimulatedAnnealing<Classic>>({
+            .temperature =
+                {
+                    .initial_temperature = 10.0,
+                    .final_temperature = 0.1,
+                    .cooling_rate = 0.95,
+                    .samples_per_temperature = 50,
+                },
+        })
         | sm | both;
     // [union] --------------------------------------------------------------
 
@@ -183,13 +189,13 @@ int main(int argc, char* argv[])
             .with_runner<runners::FirstImprovement>("fi")
             .with_runner<runners::SimulatedAnnealing<Classic>>(
                 "sa",
-                {.samples_per_temperature = 50});
+                {.temperature = {.samples_per_temperature = 50}});
 
     auto piped_application = el::app("tsp") | sm | nhe
         | el::runner<runners::FirstImprovement>("fi")
         | el::runner<runners::SimulatedAnnealing<Classic>>(
             "sa",
-            {.samples_per_temperature = 50});
+            {.temperature = {.samples_per_temperature = 50}});
     // [app] ----------------------------------------------------------------
 
     // [session] ------------------------------------------------------------

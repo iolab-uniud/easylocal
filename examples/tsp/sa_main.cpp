@@ -98,7 +98,7 @@ int main(int argc, char* argv[])
         // scalar cost explicitly.
         auto runner =
             easylocal::make_runner<SimulatedAnnealing<FixedLength>>(
-                FixedLength{temperature_parameters})
+                {.temperature = temperature_parameters})
             | (solution_manager<TspSolutionManager>()
                 | easylocal::cost::apply(
                     TourLengthCost{},

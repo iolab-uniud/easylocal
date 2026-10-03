@@ -95,7 +95,9 @@ old concepts onto the new ones.
   collected in parameter sets with dotted paths (blocks may nest groups),
   applied all or none from the command line, configuration files and TOML
   (optional `ConfigTOML` component). Components give relative paths; the
-  program chooses the prefixes.
+  program chooses the prefixes. A runner holds its algorithm's parameters and
+  builds the algorithm when it is bound, so an algorithm whose parameters have
+  a schema is configurable with no other member; solvers give theirs too.
 - **Tracing**: core search events to JSONL, binary or in-memory recorders, with
   no overhead when unused; leveled logging.
 
