@@ -102,6 +102,29 @@ The early chapters write the essential version of each component; the
 interactive tester, need a few more features, added in the chapters that introduce them.
 Services borrow the Input by `const&` and never mutate it.
 
+## Conventions of the code
+
+The library lives in the namespace `easylocal`. The snippets of the tutorial
+write it `el::`, and its runners `runners::`, through two namespace aliases
+declared at the start of each program, before the code the snippets show:
+
+<!-- snippet: tutorial/main.cpp:aliases -->
+```cpp
+using namespace tutorial;               // the tutorial's types: Tsp, Tour, ...
+namespace el = easylocal;               // el::app, el::component, ...
+namespace runners = easylocal::runners; // runners::FirstImprovement, ...
+```
+
+A namespace alias is a shorter name for the same namespace, local to the
+scope that declares it: `el::app` is `easylocal::app`. Declare the aliases
+in each function, or once in a source file, but not in a header, where they
+would reach every file that includes it. The tutorial prefers aliases to
+`using namespace easylocal;`, which would bring all the library's names into
+scope and hide which ones are the library's.
+
+The first line brings in the tutorial's own types, from `tsp.hpp`, so the
+snippets write `Tour` for `tutorial::Tour`.
+
 ## Chapters
 
 1. [Modelling the problem](01-problem-model.md): Input, Solution, Move and the

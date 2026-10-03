@@ -38,6 +38,17 @@ the tutorial. Beyond the names:
   namespace `easylocal` replace `easylocal.hh` and `EasyLocal::Core`. The
   CMake target is `EasyLocal::Core`, from
   `find_package(EasyLocal CONFIG REQUIRED COMPONENTS Core)`.
+- In place of `using namespace EasyLocal::Core;`, give the namespace a short
+  alias, as the code of this page does:
+
+  ```cpp
+  namespace el = easylocal;               // el::app, el::component, ...
+  namespace runners = easylocal::runners; // runners::FirstImprovement, ...
+  ```
+
+  `el::app` is then `easylocal::app`. The aliases go in a function or a source
+  file, not in a header, where they would reach every file that includes it
+  (see the [conventions of the tutorial](tutorial/README.md#conventions-of-the-code)).
 - Migrate in the order of this page, and run the program after each group
   of steps. A first version needs only the SolutionManager, the cost
   components and one explorer: without delta evaluators, moves are evaluated

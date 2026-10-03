@@ -40,7 +40,9 @@ private:
   `Component{args...}` (accepted for stateless components).
 - `(k + 1) % n` makes the last city connect back to the first one.
 
-Components are attached to the SolutionManager with a **recipe**:
+Components are attached to the SolutionManager with a **recipe**
+(`el` is the alias of the namespace `easylocal`, see the
+[conventions](README.md#conventions-of-the-code)):
 
 <!-- snippet: tutorial/main.cpp:sm-recipe -->
 ```cpp

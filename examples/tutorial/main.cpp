@@ -11,9 +11,11 @@
 
 int main(int argc, char* argv[])
 {
-    using namespace tutorial;
-    namespace el = easylocal;
-    namespace runners = easylocal::runners;
+    // [aliases] ------------------------------------------------------------
+    using namespace tutorial;               // the tutorial's types: Tsp, Tour, ...
+    namespace el = easylocal;               // el::app, el::component, ...
+    namespace runners = easylocal::runners; // runners::FirstImprovement, ...
+    // [aliases] ------------------------------------------------------------
 
     const auto tsp = five_cities();
 
