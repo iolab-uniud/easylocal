@@ -1,12 +1,14 @@
 """End-to-end tests of the TextUI: the tutorial's tester
-(examples/tutorial/tui_main.cpp) and the launcher of the TSP example
-(examples/tsp/tui_main.cpp).
+(examples/tutorial/tui_main.cpp), the launcher of the TSP example
+(examples/tsp/tui_main.cpp) and the assignment example's slow runner
+(examples/assignment/tui_main.cpp).
 
 CTest runs them as `easylocal.tui-e2e` when the TUI component and uv are
 available; by hand:
 
     EASYLOCAL_TUTORIAL_TUI=build/<preset>/examples/tutorial/easylocal_tutorial_tui \
     EASYLOCAL_TSP_TUI=build/<preset>/examples/tsp/easylocal_tsp_tui_mwe \
+    EASYLOCAL_ASSIGNMENT_TUI=build/<preset>/examples/assignment/easylocal_assignment_tui_mwe \
         uv run pytest tests/tui
 """
 
@@ -42,4 +44,12 @@ def launcher() -> str:
     path = os.environ.get("EASYLOCAL_TSP_TUI")
     if not path:
         pytest.skip("EASYLOCAL_TSP_TUI is not set")
+    return path
+
+
+@pytest.fixture
+def slow_runner() -> str:
+    path = os.environ.get("EASYLOCAL_ASSIGNMENT_TUI")
+    if not path:
+        pytest.skip("EASYLOCAL_ASSIGNMENT_TUI is not set")
     return path
