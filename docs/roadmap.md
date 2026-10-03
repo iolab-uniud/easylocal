@@ -149,10 +149,10 @@ the domains in the schema serve all three.
 
 **Why.** The tracing overhead benchmark of
 [easylocal-benchmarks](https://github.com/iolab-uniud/easylocal-benchmarks)
-measures a First Improvement workload, whose events are the core ones. The
-events added since (the visited solutions, with a hash computed per move, and
-tabu search's aspirations, escapes and tenure changes) and the self-describing
-ELTR header are not measured.
+measures a First Improvement workload, whose events are the core ones; it also
+records the visited solutions, with a hash per committed move, and leaves them
+out at compile time (`trace::without`). Tabu search's aspirations, escapes and
+tenure changes, and the cost of each event type on its own, are not measured.
 
 **What.** Micro-benchmarks of the encoding of each event type, the solution
 hash included, and a Tabu Search workload with each tabu list, under the same
