@@ -548,14 +548,14 @@ The full CI matrix is intentionally small and targets C++23 directly:
 | Ubuntu 26.04 | Clang 23 + libc++ (apt.llvm.org) |
 | macOS ARM64 | AppleClang |
 | macOS ARM64 | GCC 16 |
+| Windows | clang-cl (Microsoft STL) |
 
 GitHub Actions runs automatically for pull requests and release tags of the form
 `vX.Y.Z`, and can also be started manually with `workflow_dispatch`. In addition
-to the compiler matrix, a dedicated **System Dependencies** workflow verifies
-that optional adapters can be configured and compiled with
-`EASYLOCAL_FETCH_DEPENDENCIES=OFF` and CMake FetchContent forced fully
-disconnected. ConfigTOML is checked against packaged toml++ on Linux and macOS;
-the TUI is checked against packaged FTXUI on macOS.
+to the compiler matrix, the **Optional Components** workflow builds and tests
+every optional component (ConfigTOML, TUI, REST) with their dependencies
+fetched by CMake FetchContent, on Linux (GCC 16), macOS ARM64 (AppleClang) and
+Windows (clang-cl).
 
 Normal development pushes do not trigger the remote CI automatically.
 

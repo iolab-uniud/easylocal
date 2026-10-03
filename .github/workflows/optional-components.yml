@@ -91,8 +91,8 @@ jobs:
             build/optional-fetch/CMakeFiles/CMakeConfigureLog.yaml
             build/optional-fetch/Testing/Temporary/LastTest.log
 
-  macos-system:
-    name: macOS ARM64 / all optional components / system dependencies
+  macos-fetchcontent:
+    name: macOS ARM64 / all optional components / forced FetchContent
     runs-on: macos-26
     timeout-minutes: 45
     env:
@@ -104,7 +104,7 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Install system dependencies
+      - name: Install build tools
         run: |
           if [ "$(uname -m)" != arm64 ]; then
             echo 'This job requires a native ARM64 macOS runner.' >&2
@@ -112,10 +112,6 @@ jobs:
           fi
           command -v cmake >/dev/null || brew install cmake
           command -v ninja >/dev/null || brew install ninja
-          brew list --versions tomlplusplus >/dev/null 2>&1 || brew install tomlplusplus
-          brew list --versions ftxui >/dev/null 2>&1 || brew install ftxui
-          brew list --versions crow >/dev/null 2>&1 || brew install crow
-          brew list --versions asio >/dev/null 2>&1 || brew install asio
           command -v uv >/dev/null || brew install uv  # TUI end-to-end tests
           # The newest installed Xcode: EasyLocal needs a libc++ with
           # std::stop_token and floating-point std::from_chars.
@@ -125,31 +121,31 @@ jobs:
           echo "SDKROOT=$(xcrun --sdk macosx --show-sdk-path)" >> "$GITHUB_ENV"
           echo "CXX=$(xcrun --find clang++)" >> "$GITHUB_ENV"
 
-      - name: Configure without FetchContent
+      - name: Configure with forced FetchContent
         run: |
-          build_dir="build/system-optional"
+          build_dir="build/optional-fetch"
           mkdir -p build
-          prefix_path="$(brew --prefix tomlplusplus);$(brew --prefix ftxui);$(brew --prefix crow);$(brew --prefix asio)"
           cmake -S . -B "$build_dir" -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_CXX_COMPILER="$CXX" \
             -DCMAKE_OSX_SYSROOT="$SDKROOT" \
-            -DCMAKE_PREFIX_PATH="$prefix_path" \
             -DEASYLOCAL_BUILD_EXAMPLES=ON \
             -DEASYLOCAL_BUILD_TESTS=ON \
             -DEASYLOCAL_WARNINGS_AS_ERRORS=ON \
             -DEASYLOCAL_ENABLE_CONFIG_TOML=ON \
             -DEASYLOCAL_ENABLE_TUI=ON \
             -DEASYLOCAL_ENABLE_REST=ON \
-            -DEASYLOCAL_FETCH_DEPENDENCIES=OFF \
-            -DFETCHCONTENT_FULLY_DISCONNECTED=ON \
+            -DEASYLOCAL_FETCH_DEPENDENCIES=ON \
+            -DCMAKE_DISABLE_FIND_PACKAGE_tomlplusplus=TRUE \
+            -DCMAKE_DISABLE_FIND_PACKAGE_ftxui=TRUE \
+            -DCMAKE_DISABLE_FIND_PACKAGE_Crow=TRUE \
+            -DEASYLOCAL_ASIO_INCLUDE_DIR= \
             2>&1 | tee "${build_dir}.configure.log"
-          test ! -e "$build_dir/_deps"
 
       - name: Build and test everything
         run: |
-          build_dir="build/system-optional"
-          cmake --build "$build_dir" --parallel 2 --verbose \
+          build_dir="build/optional-fetch"
+          cmake --build "$build_dir" --parallel 3 --verbose \
             2>&1 | tee "${build_dir}.build.log"
           ctest --test-dir "$build_dir" --output-on-failure \
             --output-junit "$PWD/${build_dir}.junit.xml" \
@@ -159,15 +155,15 @@ jobs:
         if: ${{ always() }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: optional-components-macos-system
+          name: optional-components-macos-fetchcontent
           retention-days: 7
           if-no-files-found: warn
           path: |
-            build/system-optional*.log
-            build/system-optional*.junit.xml
-            build/system-optional/CMakeCache.txt
-            build/system-optional/CMakeFiles/CMakeConfigureLog.yaml
-            build/system-optional/Testing/Temporary/LastTest.log
+            build/optional-fetch*.log
+            build/optional-fetch*.junit.xml
+            build/optional-fetch/CMakeCache.txt
+            build/optional-fetch/CMakeFiles/CMakeConfigureLog.yaml
+            build/optional-fetch/Testing/Temporary/LastTest.log
 
   windows-fetchcontent:
     name: Windows / ${{ matrix.toolchain }} / all optional components / forced FetchContent
