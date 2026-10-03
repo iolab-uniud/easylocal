@@ -764,10 +764,12 @@ public:
             return false;
         }
 
-        const auto probability = std::exp(
-            -difference / static_cast<long double>(temperature));
+        // The probability is compared with a double, so exp in double: the
+        // long double exp costs several times more and dominated cheap moves.
+        const auto probability = std::exp(static_cast<double>(
+            -difference / static_cast<long double>(temperature)));
         std::uniform_real_distribution<double> draw{0.0, 1.0};
-        return draw(rng) < static_cast<double>(probability);
+        return draw(rng) < probability;
     }
 };
 
