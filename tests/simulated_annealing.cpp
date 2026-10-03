@@ -14,14 +14,18 @@
 
 #include <array>
 #include <chrono>
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <iostream>
+#include <limits>
 #include <optional>
 #include <random>
+#include <span>
 #include <stop_token>
 #include <string_view>
 #include <type_traits>
+#include <vector>
 
 namespace
 {
@@ -89,6 +93,55 @@ struct ManualClock
         current += elapsed;
     }
 };
+
+// A fixed temperature that records the deltas it is calibrated with.
+class RecordingPolicy
+{
+public:
+    explicit RecordingPolicy(
+        std::vector<double>& deltas,
+        const std::size_t samples) noexcept
+        : deltas_{&deltas}, samples_{samples}
+    {
+    }
+
+    void reset() noexcept
+    {
+        iterations_ = 0;
+    }
+
+    [[nodiscard]] static auto temperature() noexcept -> double
+    {
+        return 1.0;
+    }
+
+    void on_iteration(const bool) noexcept
+    {
+        ++iterations_;
+    }
+
+    [[nodiscard]] auto finished() const noexcept -> bool
+    {
+        return iterations_ >= 5;
+    }
+
+    [[nodiscard]] auto calibration_samples() const noexcept -> std::size_t
+    {
+        return samples_;
+    }
+
+    void calibrate(const std::span<const double> deltas)
+    {
+        deltas_->assign(deltas.begin(), deltas.end());
+    }
+
+private:
+    std::vector<double>* deltas_;
+    std::size_t samples_{};
+    std::size_t iterations_{};
+};
+
+static_assert(calibrating_temperature_policy<RecordingPolicy>);
 
 struct ChainInstance
 {
@@ -521,6 +574,77 @@ int main()
     }
 
     {
+        using easylocal::test_support::approximately_equal;
+        constexpr auto tolerance = easylocal::test_support::ApproximateTolerance{
+            .relative = 1e-12,
+            .absolute = 0.0};
+        const auto expected = 3.0 / std::log(2.0);
+
+        const std::array<double, 4>
+            deltas{-1.0, 2.0, 4.0, std::numeric_limits<double>::infinity()};
+        const auto estimate =
+            easylocal::runners::detail::estimate_temperature(deltas, 0.5);
+        ok &= expect(
+            estimate.has_value() && approximately_equal(*estimate, expected, tolerance),
+            "the estimate averages the finite worsening deltas (Johnson et al.)");
+        const std::array<double, 2> improving{-1.0, 0.0};
+        ok &= expect(
+            !easylocal::runners::detail::estimate_temperature(improving, 0.5).has_value(),
+            "no estimate without worsening moves");
+
+        temperature::Classic classic{
+            temperature::ClassicParameters{.calibration_samples = 10}};
+        classic.calibrate(deltas);
+        ok &= expect(
+            approximately_equal(classic.temperature(), expected, tolerance)
+                && approximately_equal(
+                    classic.parameters().initial_temperature,
+                    expected,
+                    tolerance),
+            "a calibrated policy starts from the estimated temperature");
+
+        temperature::Classic clamped{temperature::ClassicParameters{
+            .final_temperature = 1.0,
+            .cooling_rate = 0.5,
+            .calibration_samples = 10}};
+        const std::array<double, 1> tiny{0.001};
+        clamped.calibrate(tiny);
+        ok &= expect(
+            clamped.temperature() == 2.0,
+            "a calibrated temperature keeps at least one cooling level");
+
+        temperature::Classic unchanged{
+            temperature::ClassicParameters{.calibration_samples = 10}};
+        unchanged.calibrate(improving);
+        ok &= expect(
+            unchanged.temperature() == 10.0,
+            "without worsening moves the configured temperature stays");
+
+        temperature::FixedTemperature fixed{
+            temperature::FixedTemperatureParameters{.calibration_samples = 10}};
+        fixed.calibrate(deltas);
+        ok &= expect(
+            approximately_equal(fixed.temperature(), expected, tolerance),
+            "fixed temperature calibrates its constant temperature");
+
+        temperature::Reheating reheating{temperature::ReheatingParameters{
+            .final_temperature = 1.0,
+            .cooling_rate = 0.5,
+            .reheat_ratio = 0.5,
+            .calibration_samples = 10}};
+        reheating.calibrate(tiny);
+        ok &= expect(
+            reheating.temperature() == 4.0,
+            "a calibrated reheating keeps its reheat temperature above the final one");
+
+        ok &= expect(
+            !temperature::ClassicParameters{.initial_acceptance = 1.0}.validate()
+                && !temperature::TimeBasedParameters{.initial_acceptance = 0.0}
+                    .validate(),
+            "policies reject an initial acceptance outside (0, 1)");
+    }
+
+    {
         MetropolisAcceptance metropolis;
         CountingEngine rng;
         ok &= expect(metropolis.accept(9, 10, 2.0, rng),
@@ -709,6 +833,31 @@ int main()
             timed_result.iterations > 0
                 && std::chrono::steady_clock::now() - start < std::chrono::seconds{5},
             "time-based SA runs for its allowed time");
+
+        std::vector<double> recorded;
+        auto recording = Runner{SimulatedAnnealing{RecordingPolicy{recorded, 20}}}
+            | solution_manager_recipe | neighborhood_recipe;
+        const auto recorded_result = recording.bind(instance).run(initial, rng);
+        ok &= expect(
+            recorded.size() == 20 && recorded_result.iterations == 5
+                && recorded_result.evaluations == 1 + 20 + 5,
+            "SA calibrates on sampled moves, counted as evaluations but not iterations");
+
+        auto calibrated =
+            Runner{SimulatedAnnealing{
+                temperature::FixedLength{temperature::FixedLengthParameters{
+                    .max_iterations = 40,
+                    .calibration_samples = 30}}}}
+            | solution_manager_recipe | neighborhood_recipe;
+        std::mt19937 rng_a{11U};
+        std::mt19937 rng_b{11U};
+        const auto calibrated_a = calibrated.bind(instance).run(initial, rng_a);
+        const auto calibrated_b = calibrated.bind(instance).run(initial, rng_b);
+        ok &= expect(
+            calibrated_a.solution == calibrated_b.solution
+                && calibrated_a.iterations == 40
+                && calibrated_a.evaluations == 1 + 30 + 40,
+            "calibrated SA is deterministic for the same RNG state");
 
         auto fixed =
             Runner{SimulatedAnnealing{temperature::FixedTemperature{

@@ -74,8 +74,9 @@ The algorithms live in `easylocal::runners`, one header each:
 Simulated Annealing takes a temperature policy (`Classic`, `FixedLength`,
 `Cutoff`, `Hybrid`, `FixedTemperature`, `TimeBased`, `Reheating` in
 `runners::temperature`); acceptance defaults to
-`runners::MetropolisAcceptance`. Stochastic algorithms receive the RNG as a
-`run` argument:
+`runners::MetropolisAcceptance`. With `calibration_samples` > 0 a policy
+estimates its initial temperature from moves sampled at the initial solution.
+Stochastic algorithms receive the RNG as a `run` argument:
 
 <!-- snippet: tutorial/main.cpp:annealing -->
 ```cpp

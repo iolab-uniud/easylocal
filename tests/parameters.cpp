@@ -88,7 +88,7 @@ void iteration_exposes_names_descriptions_and_typed_references()
         .max_iterations = 200,
     };
 
-    std::array<std::string_view, 4> names{};
+    std::array<std::string_view, 6> names{};
     std::size_t index = 0;
 
     for_each_parameter(
@@ -107,11 +107,15 @@ void iteration_exposes_names_descriptions_and_typed_references()
             }
         });
 
-    assert((names == std::array<std::string_view, 4>{
-                         "initial_temperature",
-                         "final_temperature",
-                         "cooling_rate",
-                         "max_iterations"}));
+    assert((
+        names
+        == std::array<std::string_view, 6>{
+            "initial_temperature",
+            "final_temperature",
+            "cooling_rate",
+            "max_iterations",
+            "calibration_samples",
+            "initial_acceptance"}));
     assert(parameters.max_iterations == 250);
 
     const auto& const_parameters = parameters;

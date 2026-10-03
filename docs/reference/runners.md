@@ -83,6 +83,19 @@ the machine, so equal seeds no longer give equal runs.
 `reheat_ratio` times the initial temperature and divide the remaining
 iterations evenly, as EasyLocal 3's annealing with reheating.
 
+Every built-in policy can estimate its initial temperature (the constant one
+for `FixedTemperature`) with `calibration_samples` > 0: before the run, Simulated
+Annealing evaluates that many random moves at the initial solution, without
+applying them, and the policy starts from the temperature at which a worsening
+move of average size is accepted with probability `initial_acceptance` (0.5 by
+default; 0.2 suits a good initial solution), as in Johnson et al. (1989).
+Improving moves and infinite deltas (a hierarchical hard level) are ignored;
+without worsening moves `initial_temperature` stays, and the estimate is kept
+above the final temperature. The sampled moves count as evaluations, not as
+iterations. A custom policy opts in by modelling
+`calibrating_temperature_policy`: `calibration_samples()` and
+`calibrate(std::span<const double> deltas)`.
+
 `runners::MetropolisAcceptance` (the default) requires `cost::delta` (see
 [Cost](cost.md)). `SimulatedAnnealing<Policy>` exposes the policy's
 `parameters_type` and is constructible from it, so it can be registered in

@@ -15,9 +15,11 @@
 #include <limits>
 #include <optional>
 #include <random>
+#include <span>
 #include <tuple>
 #include <type_traits>
 #include <utility>
+#include <vector>
 
 // Simulated Annealing together with its policies: temperature schedules
 // (runners::temperature) and the Metropolis acceptance criterion.
@@ -35,6 +37,20 @@ concept temperature_policy =
         { policy.on_iteration(accepted) } -> std::same_as<void>;
         { const_policy.finished() } -> std::convertible_to<bool>;
     };
+
+// A temperature policy that can estimate its initial temperature: before the
+// run Simulated Annealing evaluates calibration_samples() random moves at the
+// initial solution, without applying them, and passes their deltas to
+// calibrate(), then calls reset(). The built-in policies are calibrating.
+template<class Policy>
+concept calibrating_temperature_policy = temperature_policy<Policy>
+    && requires(
+        Policy& policy,
+        const Policy& const_policy,
+        std::span<const double> deltas) {
+           { const_policy.calibration_samples() } -> std::convertible_to<std::size_t>;
+           { policy.calibrate(deltas) } -> std::same_as<void>;
+       };
 
 namespace detail
 {
@@ -144,6 +160,60 @@ config::validation_result reconfigure(
     return config::validation_result::success();
 }
 
+[[nodiscard]]
+inline config::validation_result validate_calibration(
+    const double initial_acceptance) noexcept
+{
+    if (!std::isfinite(initial_acceptance) || initial_acceptance <= 0.0
+        || initial_acceptance >= 1.0)
+    {
+        return config::validation_result::failure(
+            "initial_acceptance must be finite and in the open interval (0, 1)");
+    }
+    return config::validation_result::success();
+}
+
+// The initial temperature at which a worsening move of average size is
+// accepted with probability initial_acceptance (Johnson et al., 1989), from
+// the deltas of moves sampled at the initial solution; improving moves and
+// infinite deltas (a hierarchical hard level) are ignored. Empty when no
+// sampled move worsens the cost.
+[[nodiscard]]
+inline std::optional<double> estimate_temperature(
+    const std::span<const double> deltas,
+    const double initial_acceptance)
+{
+    double sum = 0.0;
+    std::size_t count = 0;
+    for (const auto delta : deltas)
+    {
+        if (delta > 0.0 && std::isfinite(delta))
+        {
+            sum += delta;
+            ++count;
+        }
+    }
+    if (count == 0)
+        return std::nullopt;
+    return -(sum / static_cast<double>(count)) / std::log(initial_acceptance);
+}
+
+// calibrate() for policies with an initial temperature: rebuild with the
+// estimated one, kept above lowest so that the schedule stays valid.
+template<class Policy, class Parameters>
+void calibrate_initial_temperature(
+    Policy& policy,
+    Parameters parameters,
+    const std::span<const double> deltas,
+    const double lowest)
+{
+    const auto estimate = estimate_temperature(deltas, parameters.initial_acceptance);
+    if (!estimate.has_value())
+        return;
+    parameters.initial_temperature = std::max(*estimate, lowest);
+    policy = Policy{parameters};
+}
+
 } // namespace detail
 
 namespace temperature
@@ -156,6 +226,12 @@ struct ClassicParameters
     double cooling_rate{0.95};
     std::size_t samples_per_temperature{100};
 
+    // Moves sampled at the initial solution to estimate the initial
+    // temperature; 0 keeps initial_temperature.
+    std::size_t calibration_samples{0};
+    // Acceptance probability of an average worsening move at the estimated
+    // initial temperature.
+    double initial_acceptance{0.5};
     [[nodiscard]]
     static consteval auto parameter_schema()
     {
@@ -166,13 +242,23 @@ struct ClassicParameters
                 "Final annealing temperature"),
             config::field<"cooling_rate", &ClassicParameters::cooling_rate>(
                 "Multiplicative cooling factor"),
-            config::field<"samples_per_temperature", &ClassicParameters::samples_per_temperature>(
-                "Proposals evaluated at each temperature"));
+            config::field<
+                "samples_per_temperature",
+                &ClassicParameters::samples_per_temperature>(
+                "Proposals evaluated at each temperature"),
+            config::field<"calibration_samples", &ClassicParameters::calibration_samples>(
+                "Moves sampled to estimate the initial temperature (0: none)"),
+            config::field<"initial_acceptance", &ClassicParameters::initial_acceptance>(
+                "Acceptance probability of an average worsening move at the "
+                "estimated initial temperature"));
     }
 
     [[nodiscard]]
     config::validation_result validate() const noexcept
     {
+        const auto calibration = detail::validate_calibration(initial_acceptance);
+        if (!calibration)
+            return calibration;
         const auto schedule = detail::validate_cooling_schedule(
             initial_temperature, final_temperature, cooling_rate);
         if (!schedule)
@@ -229,6 +315,21 @@ public:
         return config::endpoint<"temperature">(*this);
     }
 
+    [[nodiscard]]
+    std::size_t calibration_samples() const noexcept
+    {
+        return parameters_.calibration_samples;
+    }
+
+    void calibrate(const std::span<const double> deltas)
+    {
+        detail::calibrate_initial_temperature(
+            *this,
+            parameters_,
+            deltas,
+            parameters_.final_temperature / parameters_.cooling_rate);
+    }
+
     void reset() noexcept
     {
         temperature_ = parameters_.initial_temperature;
@@ -270,6 +371,12 @@ struct FixedLengthParameters
     double cooling_rate{0.95};
     std::size_t max_iterations{100'000};
 
+    // Moves sampled at the initial solution to estimate the initial
+    // temperature; 0 keeps initial_temperature.
+    std::size_t calibration_samples{0};
+    // Acceptance probability of an average worsening move at the estimated
+    // initial temperature.
+    double initial_acceptance{0.5};
     [[nodiscard]]
     static consteval auto parameter_schema()
     {
@@ -277,24 +384,30 @@ struct FixedLengthParameters
             config::field<
                 "initial_temperature",
                 &FixedLengthParameters::initial_temperature>(
-                    "Initial annealing temperature"),
+                "Initial annealing temperature"),
+            config::field<"final_temperature", &FixedLengthParameters::final_temperature>(
+                "Final annealing temperature"),
+            config::field<"cooling_rate", &FixedLengthParameters::cooling_rate>(
+                "Multiplicative cooling factor"),
+            config::field<"max_iterations", &FixedLengthParameters::max_iterations>(
+                "Maximum number of annealing iterations"),
             config::field<
-                "final_temperature",
-                &FixedLengthParameters::final_temperature>(
-                    "Final annealing temperature"),
+                "calibration_samples",
+                &FixedLengthParameters::calibration_samples>(
+                "Moves sampled to estimate the initial temperature (0: none)"),
             config::field<
-                "cooling_rate",
-                &FixedLengthParameters::cooling_rate>(
-                    "Multiplicative cooling factor"),
-            config::field<
-                "max_iterations",
-                &FixedLengthParameters::max_iterations>(
-                    "Maximum number of annealing iterations"));
+                "initial_acceptance",
+                &FixedLengthParameters::initial_acceptance>(
+                "Acceptance probability of an average worsening move at the "
+                "estimated initial temperature"));
     }
 
     [[nodiscard]]
     config::validation_result validate() const noexcept
     {
+        const auto calibration = detail::validate_calibration(initial_acceptance);
+        if (!calibration)
+            return calibration;
         if (!std::isfinite(initial_temperature) || initial_temperature <= 0.0)
         {
             return config::validation_result::failure(
@@ -393,6 +506,21 @@ public:
         return config::endpoint<"temperature">(*this);
     }
 
+    [[nodiscard]]
+    std::size_t calibration_samples() const noexcept
+    {
+        return parameters_.calibration_samples;
+    }
+
+    void calibrate(const std::span<const double> deltas)
+    {
+        detail::calibrate_initial_temperature(
+            *this,
+            parameters_,
+            deltas,
+            parameters_.final_temperature / parameters_.cooling_rate);
+    }
+
     void reset() noexcept
     {
         temperature_ = parameters_.initial_temperature;
@@ -448,6 +576,12 @@ struct CutoffParameters
     std::size_t max_iterations{100'000};
     double accepted_ratio{0.1};
 
+    // Moves sampled at the initial solution to estimate the initial
+    // temperature; 0 keeps initial_temperature.
+    std::size_t calibration_samples{0};
+    // Acceptance probability of an average worsening move at the estimated
+    // initial temperature.
+    double initial_acceptance{0.5};
     [[nodiscard]]
     static consteval auto parameter_schema()
     {
@@ -461,12 +595,20 @@ struct CutoffParameters
             config::field<"max_iterations", &CutoffParameters::max_iterations>(
                 "Maximum number of annealing iterations"),
             config::field<"accepted_ratio", &CutoffParameters::accepted_ratio>(
-                "Fraction of accepted proposals that triggers cooling"));
+                "Fraction of accepted proposals that triggers cooling"),
+            config::field<"calibration_samples", &CutoffParameters::calibration_samples>(
+                "Moves sampled to estimate the initial temperature (0: none)"),
+            config::field<"initial_acceptance", &CutoffParameters::initial_acceptance>(
+                "Acceptance probability of an average worsening move at the "
+                "estimated initial temperature"));
     }
 
     [[nodiscard]]
     config::validation_result validate() const noexcept
     {
+        const auto calibration = detail::validate_calibration(initial_acceptance);
+        if (!calibration)
+            return calibration;
         const auto schedule = detail::validate_cooling_schedule(
             initial_temperature, final_temperature, cooling_rate);
         if (!schedule)
@@ -532,6 +674,21 @@ public:
     auto configuration() const noexcept
     {
         return config::endpoint<"temperature">(*this);
+    }
+
+    [[nodiscard]]
+    std::size_t calibration_samples() const noexcept
+    {
+        return parameters_.calibration_samples;
+    }
+
+    void calibrate(const std::span<const double> deltas)
+    {
+        detail::calibrate_initial_temperature(
+            *this,
+            parameters_,
+            deltas,
+            parameters_.final_temperature / parameters_.cooling_rate);
     }
 
     void reset() noexcept
@@ -631,6 +788,21 @@ public:
         return config::endpoint<"temperature">(*this);
     }
 
+    [[nodiscard]]
+    std::size_t calibration_samples() const noexcept
+    {
+        return parameters_.calibration_samples;
+    }
+
+    void calibrate(const std::span<const double> deltas)
+    {
+        detail::calibrate_initial_temperature(
+            *this,
+            parameters_,
+            deltas,
+            parameters_.final_temperature / parameters_.cooling_rate);
+    }
+
     void reset() noexcept
     {
         temperature_ = parameters_.initial_temperature;
@@ -726,6 +898,12 @@ struct FixedTemperatureParameters
     std::size_t max_iterations{100'000};
     double accepted_ratio{1.0};
 
+    // Moves sampled at the initial solution to estimate the temperature; 0
+    // keeps temperature.
+    std::size_t calibration_samples{0};
+    // Acceptance probability of an average worsening move at the estimated
+    // initial temperature.
+    double initial_acceptance{0.5};
     [[nodiscard]]
     static consteval auto parameter_schema()
     {
@@ -735,12 +913,24 @@ struct FixedTemperatureParameters
             config::field<"max_iterations", &FixedTemperatureParameters::max_iterations>(
                 "Maximum number of annealing iterations"),
             config::field<"accepted_ratio", &FixedTemperatureParameters::accepted_ratio>(
-                "Fraction of max_iterations accepted proposals that ends the search"));
+                "Fraction of max_iterations accepted proposals that ends the search"),
+            config::field<
+                "calibration_samples",
+                &FixedTemperatureParameters::calibration_samples>(
+                "Moves sampled to estimate the initial temperature (0: none)"),
+            config::field<
+                "initial_acceptance",
+                &FixedTemperatureParameters::initial_acceptance>(
+                "Acceptance probability of an average worsening move at the "
+                "estimated initial temperature"));
     }
 
     [[nodiscard]]
     config::validation_result validate() const noexcept
     {
+        const auto calibration = detail::validate_calibration(initial_acceptance);
+        if (!calibration)
+            return calibration;
         if (!std::isfinite(temperature) || temperature <= 0.0)
         {
             return config::validation_result::failure(
@@ -799,6 +989,24 @@ public:
         return config::endpoint<"temperature">(*this);
     }
 
+    [[nodiscard]]
+    std::size_t calibration_samples() const noexcept
+    {
+        return parameters_.calibration_samples;
+    }
+
+    void calibrate(const std::span<const double> deltas)
+    {
+        const auto estimate =
+            detail::estimate_temperature(deltas, parameters_.initial_acceptance);
+        if (estimate.has_value())
+        {
+            auto parameters = parameters_;
+            parameters.temperature = *estimate;
+            *this = FixedTemperature{parameters};
+        }
+    }
+
     void reset() noexcept
     {
         iterations_ = 0;
@@ -847,6 +1055,12 @@ struct TimeBasedParameters
     // Accepted proposals that cool early; 0 cools only on time.
     std::size_t accepted_per_temperature{0};
 
+    // Moves sampled at the initial solution to estimate the initial
+    // temperature; 0 keeps initial_temperature.
+    std::size_t calibration_samples{0};
+    // Acceptance probability of an average worsening move at the estimated
+    // initial temperature.
+    double initial_acceptance{0.5};
     [[nodiscard]]
     static consteval auto parameter_schema()
     {
@@ -866,12 +1080,22 @@ struct TimeBasedParameters
             config::field<
                 "accepted_per_temperature",
                 &TimeBasedParameters::accepted_per_temperature>(
-                "Accepted proposals that trigger cooling (0: cool only on time)"));
+                "Accepted proposals that trigger cooling (0: cool only on time)"),
+            config::field<
+                "calibration_samples",
+                &TimeBasedParameters::calibration_samples>(
+                "Moves sampled to estimate the initial temperature (0: none)"),
+            config::field<"initial_acceptance", &TimeBasedParameters::initial_acceptance>(
+                "Acceptance probability of an average worsening move at the "
+                "estimated initial temperature"));
     }
 
     [[nodiscard]]
     config::validation_result validate() const noexcept
     {
+        const auto calibration = detail::validate_calibration(initial_acceptance);
+        if (!calibration)
+            return calibration;
         const auto schedule = detail::validate_cooling_schedule(
             initial_temperature,
             final_temperature,
@@ -939,6 +1163,21 @@ public:
     }
 
     // Starts the clock.
+    [[nodiscard]]
+    std::size_t calibration_samples() const noexcept
+    {
+        return parameters_.calibration_samples;
+    }
+
+    void calibrate(const std::span<const double> deltas)
+    {
+        detail::calibrate_initial_temperature(
+            *this,
+            parameters_,
+            deltas,
+            parameters_.final_temperature / parameters_.cooling_rate);
+    }
+
     void reset() noexcept
     {
         temperature_ = parameters_.initial_temperature;
@@ -1031,6 +1270,12 @@ struct ReheatingParameters
     // divide the rest evenly.
     double first_descent_share{0.5};
 
+    // Moves sampled at the initial solution to estimate the initial
+    // temperature; 0 keeps initial_temperature.
+    std::size_t calibration_samples{0};
+    // Acceptance probability of an average worsening move at the estimated
+    // initial temperature.
+    double initial_acceptance{0.5};
     [[nodiscard]]
     static consteval auto parameter_schema()
     {
@@ -1054,12 +1299,22 @@ struct ReheatingParameters
             config::field<
                 "first_descent_share",
                 &ReheatingParameters::first_descent_share>(
-                "Share of the iterations spent by the first descent"));
+                "Share of the iterations spent by the first descent"),
+            config::field<
+                "calibration_samples",
+                &ReheatingParameters::calibration_samples>(
+                "Moves sampled to estimate the initial temperature (0: none)"),
+            config::field<"initial_acceptance", &ReheatingParameters::initial_acceptance>(
+                "Acceptance probability of an average worsening move at the "
+                "estimated initial temperature"));
     }
 
     [[nodiscard]]
     config::validation_result validate() const noexcept
     {
+        const auto calibration = detail::validate_calibration(initial_acceptance);
+        if (!calibration)
+            return calibration;
         const auto descent =
             CutoffParameters{
                 .initial_temperature = initial_temperature,
@@ -1132,6 +1387,21 @@ public:
         return config::endpoint<"temperature">(*this);
     }
 
+    [[nodiscard]]
+    std::size_t calibration_samples() const noexcept
+    {
+        return parameters_.calibration_samples;
+    }
+
+    void calibrate(const std::span<const double> deltas)
+    {
+        detail::calibrate_initial_temperature(
+            *this,
+            parameters_,
+            deltas,
+            lowest_initial_temperature());
+    }
+
     void reset() noexcept
     {
         descent_ = Hybrid{first_descent(parameters_)};
@@ -1168,6 +1438,16 @@ public:
     }
 
 private:
+    // The lowest initial temperature that keeps the reheat temperature
+    // above the final one, with at least one cooling level.
+    [[nodiscard]]
+    double lowest_initial_temperature() const noexcept
+    {
+        const auto reheat_factor =
+            parameters_.max_reheats == 0 ? 1.0 : std::min(1.0, parameters_.reheat_ratio);
+        return parameters_.final_temperature / (parameters_.cooling_rate * reheat_factor);
+    }
+
     [[nodiscard]]
     static std::size_t first_descent_iterations(const ReheatingParameters& parameters)
     {
@@ -1223,6 +1503,13 @@ static_assert(temperature_policy<temperature::Hybrid>);
 static_assert(temperature_policy<temperature::FixedTemperature>);
 static_assert(temperature_policy<temperature::TimeBased>);
 static_assert(temperature_policy<temperature::Reheating>);
+static_assert(calibrating_temperature_policy<temperature::Classic>);
+static_assert(calibrating_temperature_policy<temperature::FixedLength>);
+static_assert(calibrating_temperature_policy<temperature::Cutoff>);
+static_assert(calibrating_temperature_policy<temperature::Hybrid>);
+static_assert(calibrating_temperature_policy<temperature::FixedTemperature>);
+static_assert(calibrating_temperature_policy<temperature::TimeBased>);
+static_assert(calibrating_temperature_policy<temperature::Reheating>);
 
 // Acceptance policies.
 
@@ -1404,9 +1691,11 @@ public:
     auto run(Run& run, typename Run::solution_type solution, RNG& rng) const
     {
         auto temperature = temperature_policy_;
+        auto current = run.start(solution);
+        if constexpr (calibrating_temperature_policy<TemperaturePolicy>)
+            calibrate(run, temperature, solution, current, rng);
         temperature.reset();
 
-        auto current = run.start(solution);
         auto best_solution = solution;
         auto best_cost = current.cost();
 
@@ -1447,6 +1736,40 @@ public:
     }
 
 private:
+    // The sampled moves count as evaluations, not as iterations.
+    template<class Run, class Policy, class RNG>
+    static void calibrate(
+        Run& run,
+        Policy& temperature,
+        const typename Run::solution_type& solution,
+        const typename Run::evaluation_type& current,
+        RNG& rng)
+    {
+        const auto samples = static_cast<std::size_t>(temperature.calibration_samples());
+        if (samples == 0)
+            return;
+        if constexpr (cost::has_delta<typename Run::cost_type>)
+        {
+            std::vector<double> deltas;
+            deltas.reserve(samples);
+            for (std::size_t sample = 0; sample < samples && !run.should_stop(); ++sample)
+            {
+                const auto move = run.random_move(solution, rng);
+                if (!move.has_value())
+                    break;
+                const auto candidate = run.evaluate_move(solution, current, *move);
+                using cost::delta;
+                deltas.push_back(
+                    static_cast<double>(delta(candidate.cost(), current.cost())));
+            }
+            temperature.calibrate(deltas);
+        }
+        else
+        {
+            assert(false && "temperature calibration requires cost::delta");
+        }
+    }
+
     EASYLOCAL_NO_UNIQUE_ADDRESS TemperaturePolicy temperature_policy_;
     EASYLOCAL_NO_UNIQUE_ADDRESS Acceptance acceptance_;
 };

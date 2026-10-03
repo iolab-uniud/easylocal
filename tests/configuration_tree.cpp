@@ -167,7 +167,7 @@ void tree_distinguishes_same_typed_blocks_by_path()
             }
         });
 
-    assert(visited == 11);
+    assert(visited == 15);
     assert(saw_input_file);
     assert(saw_fast_temperature);
     assert(saw_slow_temperature);
