@@ -136,8 +136,9 @@ def test_a_solution_is_saved_and_loaded_back_through_the_browser(started, tmp_pa
 
 
 def browsing(tui: Tui, directory: str) -> None:
-    """Wait for the file browser to show `directory` (as displayed)."""
-    tui.expect(re.compile(rf"│{re.escape(directory)} +│"))
+    """Wait for the file browser to show `directory`, displayed relative to
+    the working directory (the repository, or a build directory under CTest)."""
+    tui.expect(re.compile(rf"│(?:\.\./)*{re.escape(directory)} +│"))
 
 
 def test_an_input_is_browsed_and_loaded(tui):
