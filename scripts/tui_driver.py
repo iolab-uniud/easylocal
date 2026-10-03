@@ -70,6 +70,23 @@ class Tui:
         return self.start()
 
     def __exit__(self, *exc) -> None:
+        self.close()
+
+    def close(self, timeout: float = 5.0) -> None:
+        """Quit as a user would, so that the program ends normally (and a
+        coverage build writes its data); kill it if it does not quit."""
+        # Escape closes any modal (and stops a run); `q` quits unless a text
+        # field has the focus, which Tab moves along.
+        attempts = [(ESCAPE, ESCAPE, "q"), *[(TAB, "q")] * 8]
+        deadline = time.time() + timeout
+        for keys in attempts:
+            if self.exit_status is not None or time.time() > deadline:
+                break
+            try:
+                self.press(*keys)
+            except OSError:
+                pass
+            self.poll_exit(min(1.0, max(0.0, deadline - time.time())))
         self.kill()
 
     def kill(self) -> None:
@@ -85,14 +102,22 @@ class Tui:
 
     def wait_exit(self, timeout: float = 5.0) -> int:
         """Wait for the program to end and return its exit status."""
+        status = self.poll_exit(timeout)
+        if status is None:
+            raise TuiError(f"the program did not exit within {timeout}s\n{self.text()}")
+        return status
+
+    def poll_exit(self, timeout: float) -> int | None:
+        """The exit status if the program ends within `timeout` seconds."""
         deadline = time.time() + timeout
-        while time.time() < deadline:
+        while self.exit_status is None:
             self.pump(0.05)
             pid, status = os.waitpid(self.pid, os.WNOHANG)
             if pid == self.pid:
                 self.exit_status = os.waitstatus_to_exitcode(status)
-                return self.exit_status
-        raise TuiError(f"the program did not exit within {timeout}s\n{self.text()}")
+            elif time.time() >= deadline:
+                break
+        return self.exit_status
 
     # -- output ---------------------------------------------------------------
 

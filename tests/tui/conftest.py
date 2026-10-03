@@ -30,3 +30,5 @@ def binary() -> str:
 def tui(binary):
     with Tui(binary) as driver:
         yield driver
+    # A killed tester writes no coverage data: each flow must end quittable.
+    assert driver.exit_status == 0, "the tester did not quit with q"
