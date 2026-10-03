@@ -96,13 +96,14 @@ public:
         position.value += step.delta;
     }
 
-    [[nodiscard]] static auto moves(const Position& position) -> std::vector<Step>
+    // A generator, not a std::vector: GCC 15 at -O3 reports a spurious
+    // free-nonheap-object on the vector's deallocation here.
+    [[nodiscard]] static auto moves(const Position& position)
+        -> easylocal::generator<Step>
     {
-        std::vector<Step> steps;
         for (const auto delta : {-1, +1})
             if (is_valid(position, Step{delta}))
-                steps.push_back(Step{delta});
-        return steps;
+                co_yield Step{delta};
     }
 
     // For the reactive list's escape.
@@ -110,11 +111,13 @@ public:
     [[nodiscard]] static auto random_move(const Position& position, RNG& rng)
         -> std::optional<Step>
     {
-        const auto steps = moves(position);
-        if (steps.empty())
+        std::array<Step, 2> steps{};
+        std::size_t count = 0;
+        for (const auto step : moves(position))
+            steps[count++] = step;
+        if (count == 0)
             return std::nullopt;
-        return steps[std::uniform_int_distribution<std::size_t>{0, steps.size() - 1}(
-            rng)];
+        return steps[std::uniform_int_distribution<std::size_t>{0, count - 1}(rng)];
     }
 
     [[nodiscard]] auto inverse(const Position&, const Step& move, const Step& tabu_move)

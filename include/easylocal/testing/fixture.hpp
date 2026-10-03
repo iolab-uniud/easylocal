@@ -2,6 +2,7 @@
 
 #include <easylocal/helpers/solution_manager.hpp>
 #include <easylocal/testing/check.hpp>
+#include <easylocal/utils/detail/attributes.hpp>
 
 #include <concepts>
 #include <cstddef>
@@ -86,7 +87,7 @@ private:
     SM solution_manager_;
     solution_type solution_;
     check_options options_;
-    [[no_unique_address]] Equivalent equivalent_{};
+    EASYLOCAL_NO_UNIQUE_ADDRESS Equivalent equivalent_{};
 };
 
 namespace detail
