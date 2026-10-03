@@ -115,6 +115,29 @@ add_test(
         -P "${CMAKE_CURRENT_SOURCE_DIR}/verify_architecture_boundary.cmake"
 )
 
+# No raw [[no_unique_address]], which MSVC and clang-cl ignore; the check is
+# shown to catch one on a generated file.
+add_test(
+    NAME easylocal.portable-attributes
+    COMMAND
+        "${CMAKE_COMMAND}"
+        "-DEASYLOCAL_SOURCE_DIR=${PROJECT_SOURCE_DIR}"
+        -P "${CMAKE_CURRENT_SOURCE_DIR}/verify_portable_attributes.cmake"
+)
+set(easylocal_raw_attribute_dir "${CMAKE_CURRENT_BINARY_DIR}/raw_attribute")
+file(WRITE "${easylocal_raw_attribute_dir}/raw.hpp"
+    "struct empty {};\nstruct holder { [[ no_unique_address ]] empty member; };\n")
+add_test(
+    NAME easylocal.portable-attributes-catches-raw
+    COMMAND
+        "${CMAKE_COMMAND}"
+        "-DEASYLOCAL_SCAN_DIRS=${easylocal_raw_attribute_dir}"
+        -P "${CMAKE_CURRENT_SOURCE_DIR}/verify_portable_attributes.cmake"
+)
+set_tests_properties(
+    easylocal.portable-attributes-catches-raw
+    PROPERTIES PASS_REGULAR_EXPRESSION "raw\\.hpp:2")
+
 add_executable(
     easylocal_toolchain_smoke
     toolchain_smoke.cpp
