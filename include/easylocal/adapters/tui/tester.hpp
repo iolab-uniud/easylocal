@@ -48,10 +48,14 @@
 namespace easylocal::tui
 {
 
+/// How the tester shows a path.
 enum class path_display_mode
 {
+    /// Relative to the base of the paths.
     relative,
+    /// Absolute.
     absolute,
+    /// Relative, followed by the absolute path in brackets.
     both,
 };
 
@@ -62,15 +66,26 @@ enum class path_display_mode
 /// path_base, or to the working directory when path_base is empty.
 struct options
 {
+    /// The title of the window.
     std::string title{"EasyLocal Tester"};
+    /// The seed of the session's random generator.
     std::uint64_t seed{};
+    /// The Input file, loaded at the start when it is set.
     std::string input_path{};
+    /// The initial path of the solution file on the Input/Output page.
     std::string solution_path{};
+    /// How paths are shown.
     path_display_mode path_display{path_display_mode::relative};
+    /// The directory relative paths start from; empty: the working directory.
     std::filesystem::path path_base{};
+    /// The longest text of a solution or a move shown, in characters; longer
+    /// ones are truncated.
     std::size_t max_render_chars{4096};
+    /// The random moves drawn per valid move by the random distribution check.
     std::size_t random_distribution_rounds{20};
+    /// The most entries a diagnostic, such as the list of neighbors, shows.
     std::size_t max_diagnostic_entries{256};
+    /// The label of the q key, which leaves the tester.
     std::string exit_label{"quit"};
 };
 

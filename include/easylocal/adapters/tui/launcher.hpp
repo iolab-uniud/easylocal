@@ -27,9 +27,15 @@
 namespace easylocal::tui
 {
 
+/// The options of the launcher, the TextUI that lists several apps and opens
+/// the tester of the one selected.
 struct launcher_options
 {
+    /// The title of the application list, and the first part of each tester's
+    /// title.
     std::string title{"EasyLocal Tester"};
+    /// The options of the testers it opens; their titles add the app's name, and
+    /// their exit leads back to the list.
     options tester{};
 };
 
