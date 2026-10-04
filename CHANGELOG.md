@@ -137,6 +137,18 @@ old concepts onto the new ones.
   saves them, each app opens on them, and what an app leaves is shared with
   the others. Apps with different SolutionManager recipes are rejected at
   compile time.
+- **Tuning with irace**: `cli::run --tuning.irace=DIR` writes an irace
+  scenario from the program's parameters (`<easylocal/app/tuning.hpp>`): the
+  parameters with a domain, or a range given in `cli::options::tuning`, with a
+  categorical runner and conditions when there are several; the others
+  commented out with a range to start from; the values given on the command
+  line as the starting point of every run; a target runner, the instances and
+  the scenario. The files are a stub that is never overwritten, but
+  `configurations.txt`, which follows `parameters.txt` as edited.
+  `--tuning.print=cost` prints only the cost as one number: a problem's
+  `scalar_cost(input, cost)`, else `cost::scalar` (`hard * W + soft` for a
+  hierarchical cost, with `--tuning.hard_weight`). A smoke test runs irace on
+  the TSP example when R and irace are installed.
 - **Cost reports**: a cost component may have a `name()` and a
   `describe(solution)` that explains its value, as EasyLocal 3's
   `PrintViolations` did; `Session::cost_report()`, `cli::run --report` and the

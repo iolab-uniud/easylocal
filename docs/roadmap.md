@@ -142,36 +142,51 @@ part of the design.
 configurator: [irace](https://mlopez-ibanez.github.io/irace/) (iterated
 racing), [SMAC](https://github.com/automl/SMAC3) (Bayesian optimization with
 random forests) or [Optuna](https://optuna.org/) (Bayesian optimization in
-Python, define-by-run). Each runs the program on instances and seeds with
-candidate values and reads back one number. EasyLocal 3 programs supported
-them by hand, with a `--main::irace` flag that printed only the cost, a
-wrapper script and a parameter file written separately from the code, which
-drifted apart from the parameters the program accepts.
+Python, define-by-run). irace is supported: domains in the schemas, a cost
+printed as one number and an exporter of the scenario
+(`cli::run --tuning.irace`). What is left:
 
-**What.** The parameter sets already know every parameter's path, type and
-description. A common part, independent of the tool:
+**What.**
 
-- a domain for the parameters that have one (a range, possibly on a log
-  scale, or a set of values), declared in the schema, and conditions between
-  parameters where they matter (a tabu list's parameters only with that list);
-- a program mode that runs once and prints only the cost as one number, with a
-  stated conversion for structured costs (a hierarchical cost, for example, as
-  hard times a weight plus soft), and the running time when the tool asks for
-  it.
+- **Conditions between parameters**, declared next to the domains, where a
+  parameter matters only with a value of another (Simulated Annealing's
+  `initial_acceptance` only with `calibration_samples` above 0, a tabu list's
+  parameters only with that list), and relations that make a combination
+  invalid (a final temperature below the initial one). The exporter would write
+  them as irace conditions and `[forbidden]` expressions, and a block's
+  `validate()` could check the same declarations instead of repeating them;
+  today irace tunes a parameter that has no effect, and the user writes the
+  forbidden combinations by hand.
+- **Unbounded parameters**: a check, with warnings rather than errors, of the
+  parameters that leave a run without a bound (every stopping limit
+  `unlimited`), which tuning and benchmarking make easy to miss.
+- **SMAC and Optuna** exporters from the same domains: the configuration space
+  (ConfigSpace) and a target function for SMAC; the search space as a Python
+  function for Optuna, which with the Python bindings (above) could also run
+  the app in-process.
 
-On top of it, one exporter per tool, from an app's or a runner's parameter
-set, with the paths as command-line switches
-(`--runners.sa.temperature.cooling_rate`):
+**When.** Conditions and the unbounded check next; SMAC and Optuna not
+scheduled.
 
-- irace: the parameter file and a target-runner;
-- SMAC: the configuration space (ConfigSpace) and a target function that
-  calls the program;
-- Optuna: the search space as a Python function that suggests each parameter,
-  calling the program; with the Python bindings (above) the app could also run
-  in-process, without starting a program per evaluation.
+## Experiment configurations
 
-**When.** Not scheduled. irace first, as the tool used most with EasyLocal;
-the domains in the schema serve all three.
+**Why.** Tuning and benchmarking produce configurations (the tuned values, the
+fixed ones, the instances and seeds) that must be kept with the version of the
+code that produced them, and found again for a paper or a later comparison.
+The tool that versions them is outside EasyLocal, but EasyLocal programs must
+make it easy, with little boilerplate.
+
+**What.** What a program could give to such a workflow:
+
+- its effective configuration, every parameter with its value, in the
+  `path = value` format that `--config` reads back;
+- its identity in its output: the EasyLocal version and the commit of the
+  program's code, recorded at build time;
+- a machine-readable result of a run: instance, seed, configuration (or its
+  hash), cost, effort and time;
+- irace's elite configurations as configuration files.
+
+**When.** Not scheduled: to be designed with the workflow it serves.
 
 ## Trace micro-benchmarks
 

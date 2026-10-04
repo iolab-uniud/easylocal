@@ -6,11 +6,13 @@
 /// It reads the Input, the seed, the runner and the app's parameters from the
 /// command line and a configuration file, runs the runner by name on a Session,
 /// and prints the cost and the solution: the batch counterpart of the TextUI
-/// and the REST service.
+/// and the REST service. With `--tuning.*` it writes an irace scenario, or
+/// prints only the cost, for automatic configurators.
 
 #include <easylocal/app/io.hpp>
 #include <easylocal/app/run_parameters.hpp>
 #include <easylocal/app/session.hpp>
+#include <easylocal/app/tuning.hpp>
 #include <easylocal/config/cli.hpp>
 #include <easylocal/config/parameter_set.hpp>
 #include <easylocal/config/parameters.hpp>
@@ -26,7 +28,9 @@
 #include <ostream>
 #include <string>
 #include <string_view>
+#include <system_error>
 #include <utility>
+#include <vector>
 
 namespace easylocal::cli
 {
@@ -39,7 +43,7 @@ namespace easylocal::cli
 /// initializers, as in options::defaults, may name only some of them.
 struct parameters
 {
-    /// The Input file; it must be set.
+    /// The Input file; it must be set to run, not to write a tuning scenario.
     std::filesystem::path instance{};
     /// The seed of the random generator.
     std::uint64_t seed{0};
@@ -85,8 +89,6 @@ struct parameters
     [[nodiscard]]
     config::validation_result validate() const
     {
-        if (instance.empty())
-            return config::validation_result::failure("instance must be set");
         if (!start.empty() && start != "random" && start != "initial")
             return config::validation_result::failure("start must be random or initial");
         return config::validation_result::success();
@@ -103,6 +105,9 @@ struct options
     /// The program's own parameters, parsed with the others; they refer to
     /// blocks that must outlive the call.
     config::parameter_set parameters{};
+    /// The values to try for parameters when tuning, by path, instead of the
+    /// domains of their schemas: what --tuning.irace writes as their ranges.
+    std::vector<tuning_range> tuning{};
     /// Where the help and the results go: the cost, the effort, the report and
     /// the solution, when no output file is given.
     std::ostream* out{&std::cout};
@@ -142,6 +147,65 @@ void write_solution(std::ostream& out, const Session& session)
         out << easylocal::describe(session.solution()) << '\n';
 }
 
+// --tuning.irace: writes the irace scenario of the program, with the values
+// changed on the command line as the values every run starts from.
+inline int write_irace(
+    std::ostream& out,
+    std::ostream& err,
+    const std::string_view program,
+    const parameters& command_line,
+    const TuningParameters& tuning,
+    const options& settings,
+    const std::vector<config::parameter_info>& defaults,
+    const std::vector<config::parameter_info>& values,
+    std::vector<config::parameter_info> tunable,
+    const std::vector<std::string_view>& names)
+{
+    irace_stub stub{
+        .directory = tuning.irace,
+        .program = std::filesystem::path{program},
+        .parameters = std::move(tunable),
+        .ranges = settings.tuning,
+        .runners = {},
+        .fixed = {},
+        .instance = command_line.instance,
+    };
+    std::error_code error;
+    if (stub.program.has_parent_path())
+        stub.program = std::filesystem::weakly_canonical(stub.program, error);
+    // A runner chosen on the command line is the only one tuned.
+    if (!command_line.runner.empty())
+        stub.runners.push_back(command_line.runner);
+    else
+        stub.runners.assign(names.begin(), names.end());
+    for (std::size_t index = 0; index < values.size(); ++index)
+    {
+        const auto& path = values[index].path;
+        const bool per_run = path == "instance" || path == "seed" || path == "output"
+            || path == "report" || path.starts_with("tuning.");
+        if (!per_run && values[index].value != defaults[index].value)
+            stub.fixed.push_back({path, values[index].value});
+    }
+
+    const auto result = write_irace_stub(stub);
+    for (const auto& message : result.errors)
+        err << "tuning.irace: " << message << '\n';
+    if (!result)
+        return 2;
+    for (const auto& path : result.written)
+        out << "wrote " << path.string() << '\n';
+    for (const auto& path : result.kept)
+        out << "kept " << path.string() << " (it exists)\n";
+    out << "updated " << result.configurations.string() << '\n';
+    for (const auto& moved : result.moved)
+        out << "  first configuration moved into its range: " << moved << '\n';
+    out << result.tuned << " parameters to tune";
+    if (result.to_complete != 0)
+        out << ", " << result.to_complete << " more to complete in parameters.txt";
+    out << "; then run irace in " << tuning.irace.string() << '\n';
+    return 0;
+}
+
 } // namespace detail
 
 /// Runs application as a program: parses argc and argv (and a --config file),
@@ -150,6 +214,11 @@ void write_solution(std::ostream& out, const Session& session)
 /// ("iterations", "evaluations", "termination") when the algorithm reports it,
 /// with --report the value of each cost component, and the solution, or saves
 /// it to --output.
+///
+/// With --tuning.print=cost it prints only the cost as one number
+/// (scalar_cost), and the running time after it with cost_time; with
+/// --tuning.irace=DIR it writes an irace scenario to DIR (write_irace_stub),
+/// with the ranges of settings.tuning, and exits without loading the Input.
 ///
 /// Returns the exit status: 0 on success, 1 when the run fails (an unreadable
 /// file, for example), 2 for an invalid command line.
@@ -166,10 +235,13 @@ int run(App application, const int argc, char* argv[], options settings = {})
     auto& err = *settings.err;
 
     parameters command_line = settings.defaults;
+    TuningParameters tuning;
     config::parameter_set configuration;
     configuration.add(command_line);
     configuration.add(application.configuration());
     configuration.add(settings.parameters);
+    configuration.add("tuning", tuning);
+    const auto defaults = configuration.parameters();
 
     const auto configured = config::load_and_apply(argc, argv, configuration);
     if (configured.help_requested)
@@ -183,6 +255,19 @@ int run(App application, const int argc, char* argv[], options settings = {})
         return 2;
     }
 
+    // The parameters irace may tune: the app's, but those of the cost, and
+    // the program's own.
+    std::vector<config::parameter_info> tunable;
+    if (!tuning.irace.empty())
+    {
+        for (auto& info : application.configuration().parameters())
+            if (!info.read_only && !info.path.starts_with("cost."))
+                tunable.push_back(std::move(info));
+        for (auto& info : settings.parameters.parameters())
+            if (!info.read_only)
+                tunable.push_back(std::move(info));
+    }
+
     session_type session{std::move(application), command_line.seed};
     const auto names = session.runner_names();
     const std::string runner =
@@ -194,6 +279,37 @@ int run(App application, const int argc, char* argv[], options settings = {})
             err << ' ' << name;
         err << '\n';
         return 2;
+    }
+
+    if (!tuning.irace.empty())
+        return detail::write_irace(
+            out,
+            err,
+            argc > 0 ? argv[0] : "program",
+            command_line,
+            tuning,
+            settings,
+            defaults,
+            configuration.parameters(),
+            std::move(tunable),
+            names);
+
+    if (command_line.instance.empty())
+    {
+        err << "error: instance must be set\n";
+        return 2;
+    }
+
+    if constexpr (!scalar_cost_available<
+                      typename session_type::input_type,
+                      typename session_type::cost_type>)
+    {
+        if (!tuning.print.empty())
+        {
+            err << "tuning.print: this cost is not one number; give the problem a "
+                   "scalar_cost(input, cost)\n";
+            return 2;
+        }
     }
 
     try
@@ -241,6 +357,21 @@ int run(App application, const int argc, char* argv[], options settings = {})
             std::chrono::steady_clock::now() - begin;
         if (!ran)
             return 1; // the name was checked above
+
+        if constexpr (scalar_cost_available<
+                          typename session_type::input_type,
+                          typename session_type::cost_type>)
+        {
+            if (!tuning.print.empty())
+            {
+                out << easylocal::detail::number_text(
+                    scalar_cost(session.input(), session.evaluate(), tuning.hard_weight));
+                if (tuning.print == "cost_time")
+                    out << ' ' << elapsed.count();
+                out << '\n';
+                return 0;
+            }
+        }
 
         out << "cost " << easylocal::detail::report_text(session.evaluate()) << "\ntime "
             << elapsed.count() << '\n';

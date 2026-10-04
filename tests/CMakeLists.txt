@@ -1046,6 +1046,31 @@ target_compile_definitions(
     PRIVATE EASYLOCAL_TUTORIAL_INSTANCE="${PROJECT_SOURCE_DIR}/examples/tutorial/five.tsp")
 add_test(NAME easylocal.cli-run COMMAND easylocal_cli_run_test)
 
+add_executable(easylocal_tuning_test tuning.cpp)
+target_link_libraries(easylocal_tuning_test PRIVATE EasyLocal::Core)
+target_compile_definitions(
+    easylocal_tuning_test
+    PRIVATE EASYLOCAL_TUTORIAL_INSTANCE="${PROJECT_SOURCE_DIR}/examples/tutorial/five.tsp")
+add_test(NAME easylocal.tuning COMMAND easylocal_tuning_test)
+
+# irace on the TSP example: the scenario it writes, checked and run briefly.
+# Skipped without R and its irace package, and on Windows, where the target
+# runner (a shell script) does not run.
+if(TARGET easylocal_tsp_sa AND NOT WIN32)
+    add_test(
+        NAME easylocal.irace-smoke
+        COMMAND
+            "${CMAKE_COMMAND}"
+            "-DEASYLOCAL_PROGRAM=$<TARGET_FILE:easylocal_tsp_sa>"
+            "-DEASYLOCAL_WORK_DIR=${CMAKE_CURRENT_BINARY_DIR}/irace-smoke"
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/irace_smoke.cmake")
+    set_tests_properties(
+        easylocal.irace-smoke
+        PROPERTIES
+            LABELS "integration;irace"
+            SKIP_REGULAR_EXPRESSION "SKIPPED: irace is not available")
+endif()
+
 easylocal_add_test(
     pipeline
     SOURCES

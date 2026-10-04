@@ -121,6 +121,61 @@ returns 0, 2 for an invalid command line or an unknown runner, 1 when the run
 throws. It requires the `read_input` hook, and the solution hooks only when the
 corresponding switches are used.
 
+### Tuning with irace
+
+`<easylocal/app/tuning.hpp>`; tutorial: [chapter 11](../tutorial/11-apps-and-tools.md#tuning-the-parameters-with-irace).
+
+`cli::run` also reads the block `easylocal::TuningParameters` under `tuning`:
+
+| Switch | |
+| --- | --- |
+| `--tuning.irace=DIR` | write an irace scenario to `DIR`, which it creates, and exit without loading the Input |
+| `--tuning.print=cost`, `cost_time` | print only the cost as one number (`scalar_cost`), and the running time in seconds after it with `cost_time` |
+| `--tuning.hard_weight=W` | the weight of a hard cost over a soft one in that number; 10^9 by default |
+
+`options.tuning`, a vector of `tuning_range{path, domain}`, gives the values
+to try for parameters instead of the domains of their schemas; a range must
+lie within the declared domain and name a parameter of the app or of
+`options.parameters`, or the export fails with status 2.
+
+`write_irace_stub(irace_stub) -> irace_stub_result` writes the scenario:
+
+- `parameters.txt`: the parameters with a domain, as `path "--path=" type
+  (values)`, with `r`, `i` (`,log` on a logarithmic range), `o` for a set of
+  numbers and `c` for text and the runner; an open bound moves inward by one
+  step of irace's 4 digits. With several runners a categorical `runner` is
+  added and each `runners.<name>.*` gets the condition `| runner == "<name>"`;
+  a runner chosen with `--runner` is the only one written. The other
+  parameters are commented out, with a range of a factor of ten around a
+  positive value to start from, or `(LOW, HIGH)`; lists, paths, text and
+  `unlimited` limits are noted, not written. `cost.*` is never written: it
+  defines the cost that irace compares.
+- `fixed.conf`: the parameters the command line changed when the stub was
+  written (but `instance`, `seed`, `output`, `report` and `tuning.*`), read by
+  each run with `--config`; the tuned values override them.
+- `target-runner`: a shell script that runs the program, by its absolute path,
+  with `--config fixed.conf --tuning.print=cost --instance=... --seed=...` and
+  the candidate's switches; a bound passed by irace is ignored. It does not run
+  on Windows.
+- `instances.txt`, `scenario.txt`: stubs, with the program's instance and a
+  budget of 1000 runs.
+- `configurations.txt`: the current values as a first configuration, `NA` for
+  the parameters of the runners that are not the first.
+
+The files that exist are kept, so that the user edits them; only
+`configurations.txt` is rewritten, each time from `parameters.txt` as it is on
+disk (up to a `[global]` or `[forbidden]` section), with each value moved into
+its range when it lies outside (`moved` lists them). A parameter of
+`parameters.txt` that the program does not have is an error.
+
+`scalar_cost(input, cost, hard_weight) -> double` is the number irace compares:
+the problem's `scalar_cost(const Input&, const Cost&)` when one is found by
+argument-dependent lookup, else `cost::scalar(cost, hard_weight)`
+(`<easylocal/cost/scalar.hpp>`): a number as it is, a `hierarchical` cost as
+`hard * weight + soft`, a `lexicographic` one as the sum of each value times
+`weight` to the number of values after it. `scalar_cost_available<Input, Cost>`
+tells whether either applies; without it, `--tuning.print` fails with status 2.
+
 A program that reads its configuration from the command line itself adds
 `easylocal::RunParameters` for the target, under a prefix of its choice:
 

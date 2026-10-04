@@ -1,6 +1,6 @@
 // The TSP as a command-line program: Simulated Annealing on the union of the
 // 2-opt and swap neighborhoods, run by cli::run (--instance, --runners.sa.*,
-// --neighborhood.random_biases, ...).
+// --neighborhood.random_biases, ...), with a range for tuning it with irace.
 #include "apps.hpp"
 
 #include <easylocal/app/app.hpp>
@@ -38,13 +38,22 @@ int main(int argc, char* argv[])
                  .max_iterations = 200,
              }});
 
+    // [tuning]
+    // --tuning.irace=DIR writes an irace scenario: the parameters with a domain
+    // are tuned, here also the initial temperature, on a logarithmic scale.
     return easylocal::cli::run(
         application,
         argc,
         argv,
-        {.defaults = {
-             .instance = EASYLOCAL_TSP_INSTANCE_FILE,
-             .seed = 2026,
-             .start = "initial",
-         }});
+        {.defaults =
+                {
+                    .instance = EASYLOCAL_TSP_INSTANCE_FILE,
+                    .seed = 2026,
+                    .start = "initial",
+                },
+            .tuning = {
+                {"runners.sa.temperature.initial_temperature",
+                    easylocal::config::range(1.0, 100.0).log()},
+            }});
+    // [tuning]
 }
