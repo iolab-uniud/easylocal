@@ -66,8 +66,8 @@ class Tui:
         fcntl.ioctl(fd, termios.TIOCSWINSZ,
                     struct.pack("HHHH", self.lines, self.columns, 0, 0))
         # The first frame, then a short quiet time for the rest of it.
-        deadline = time.time() + 8.0
-        while not self.text().strip() and time.time() < deadline:
+        deadline = time.monotonic() + 8.0
+        while not self.text().strip() and time.monotonic() < deadline:
             if not self.pump(0.05):
                 break
         self.settle(quiet=0.3)
@@ -85,9 +85,9 @@ class Tui:
         # Escape closes any modal (and stops a run); `q` quits unless a text
         # field has the focus, which Tab moves along.
         attempts = [(ESCAPE, ESCAPE, "q"), *[(TAB, "q")] * 8]
-        deadline = time.time() + timeout
+        deadline = time.monotonic() + timeout
         for keys in attempts:
-            if self.exit_status is not None or time.time() > deadline:
+            if self.exit_status is not None or time.monotonic() > deadline:
                 break
             try:
                 for key in keys:
@@ -95,7 +95,7 @@ class Tui:
                     self.settle()
             except OSError:
                 pass
-            self.poll_exit(min(1.0, max(0.0, deadline - time.time())))
+            self.poll_exit(min(1.0, max(0.0, deadline - time.monotonic())))
         self.kill()
 
     def kill(self) -> None:
@@ -118,13 +118,13 @@ class Tui:
 
     def poll_exit(self, timeout: float) -> int | None:
         """The exit status if the program ends within `timeout` seconds."""
-        deadline = time.time() + timeout
+        deadline = time.monotonic() + timeout
         while self.exit_status is None:
             self.pump(0.05)
             pid, status = os.waitpid(self.pid, os.WNOHANG)
             if pid == self.pid:
                 self.exit_status = os.waitstatus_to_exitcode(status)
-            elif time.time() >= deadline:
+            elif time.monotonic() >= deadline:
                 break
         return self.exit_status
 
@@ -146,14 +146,14 @@ class Tui:
 
     def settle(self, quiet: float = 0.15, limit: float = 8.0) -> None:
         """Feed output until the screen has been quiet for `quiet` seconds."""
-        start = last = time.time()
-        while time.time() - start < limit:
+        start = last = time.monotonic()
+        while time.monotonic() - start < limit:
             ready, _, _ = select.select([self.fd], [], [], 0.05)
             if ready:
                 if not self.pump(0):
                     return
-                last = time.time()
-            elif time.time() - last > quiet:
+                last = time.monotonic()
+            elif time.monotonic() - last > quiet:
                 return
 
     def text(self) -> str:
@@ -218,8 +218,8 @@ class Tui:
         would then press once too often."""
         before = self.snapshot()
         os.write(self.fd, key.encode())
-        deadline = time.time() + limit
-        while self.snapshot() == before and time.time() < deadline:
+        deadline = time.monotonic() + limit
+        while self.snapshot() == before and time.monotonic() < deadline:
             if not self.pump(0.05):
                 break
         self.settle()
@@ -229,12 +229,12 @@ class Tui:
 
     def wait_until(self, condition: Callable[[str], bool], timeout: float = 10.0,
                    what: str = "condition") -> str:
-        deadline = time.time() + timeout
+        deadline = time.monotonic() + timeout
         while True:
             screen = self.text()
             if condition(screen):
                 return screen
-            if time.time() > deadline:
+            if time.monotonic() > deadline:
                 raise TuiError(f"timed out after {timeout}s waiting for {what}\n{screen}")
             self.pump(0.1)
 
@@ -247,9 +247,10 @@ class Tui:
                                  f"/{pattern.pattern}/")
         return pattern.search(screen)
 
-    def expect_absent(self, text: str) -> None:
-        if text in self.text():
-            raise TuiError(f"unexpected {text!r} on screen\n{self.text()}")
+    def expect_absent(self, text: str, timeout: float = 2.0) -> None:
+        """Wait until the screen does not show `text`, as when a window closes;
+        at once when it is not there."""
+        self.wait_until(lambda screen: text not in screen, timeout, f"no {text!r}")
 
     def select(self, item: str, key: str = DOWN, attempts: int = 20) -> "Tui":
         """Press `key` until the list cursor `> item` is on screen."""

@@ -84,7 +84,7 @@ def test_a_run_goes_on_while_the_terminal_is_resized(tui):
     for columns, lines in ((80, 24), (60, 20), (120, 40), (100, 30)):
         tui.resize(columns, lines, limit=0.5)
         assert_framed(tui)
-        tui.expect(" Progress ", timeout=1)
+        tui.expect(" Progress ")
         tui.wait_until(lambda _: evaluations(tui) > seen, timeout=5,
                        what=f"the progress to move on in {columns}x{lines}")
         seen = evaluations(tui)

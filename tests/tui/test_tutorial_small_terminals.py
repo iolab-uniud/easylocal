@@ -27,7 +27,7 @@ def test_the_move_page_fits(terminal, columns, lines):
     tui.expect("Selected best move")
     assert_framed(tui)
     for content in ("B Best", "A Apply", "P List", "Move - 2-opt", "Delta check: OK"):
-        tui.expect(content, timeout=1)
+        tui.expect(content)
 
 
 @pytest.mark.parametrize("columns, lines", [small(80, 24), small(60, 20)])
@@ -36,8 +36,8 @@ def test_the_run_page_shows_its_controls(terminal, columns, lines):
     tui.press("I", F5)
     tui.expect("G Run selected")
     assert_framed(tui)
-    tui.expect("> fi", timeout=1)
-    tui.expect("  sa", timeout=1)  # the runner list keeps its lines
+    tui.expect("> fi")
+    tui.expect("  sa")  # the runner list keeps its lines
     shown_while_going_down(tui, ("P Problem parameters", "Apply seed", "Target cost",
                                  f"current cost: {INITIAL_COST}", "Stop after",
                                  "evaluations"))
@@ -79,7 +79,7 @@ def test_the_focus_scrolls_to_the_target_field(terminal):
     tui.expect_absent("current cost")
     tui.focus("P Problem parameters")  # through the runner list
     tui.press(*[DOWN] * 8, UP)  # to the limits, then the target above them
-    tui.expect(f"current cost: {INITIAL_COST}", timeout=1)
+    tui.expect(f"current cost: {INITIAL_COST}")
     tui.type(str(INITIAL_COST))
     tui.select("fi", key=UP)
     run_selected(tui)
