@@ -293,7 +293,17 @@ int run(App application, const int argc, char* argv[], options settings = {})
     TuningParameters tuning;
     config::parameter_set configuration;
     configuration.add(command_line);
-    configuration.add(application.configuration());
+    try
+    {
+        // A pipeline with two stages of the same name, or one without a name,
+        // has no parameters to give.
+        configuration.add(application.configuration());
+    }
+    catch (const std::invalid_argument& error)
+    {
+        err << "error: " << error.what() << '\n';
+        return 2;
+    }
     configuration.add(settings.parameters);
     configuration.add("tuning", tuning);
     const auto defaults = configuration.parameters();
@@ -328,6 +338,8 @@ int run(App application, const int argc, char* argv[], options settings = {})
         for (auto& requirement : settings.parameters.requirements())
             requirements.push_back(std::move(requirement));
     }
+    // The set refers to the app, which moves into the session below.
+    auto values = configuration.parameters();
 
     session_type session{std::move(application), command_line.seed};
     const auto names = session.runner_names();
@@ -351,7 +363,7 @@ int run(App application, const int argc, char* argv[], options settings = {})
             tuning,
             settings,
             defaults,
-            configuration.parameters(),
+            std::move(values),
             std::move(tunable),
             std::move(requirements),
             names);
@@ -377,6 +389,20 @@ int run(App application, const int argc, char* argv[], options settings = {})
     try
     {
         session.load_input(command_line.instance);
+
+        std::optional<typename session_type::cost_type> target;
+        try
+        {
+            target =
+                RunParameters{command_line.target}
+                    .template target_cost<typename session_type::cost_type>(
+                        session.input());
+        }
+        catch (const std::invalid_argument& error)
+        {
+            err << "error: " << error.what() << '\n';
+            return 2;
+        }
 
         if (!command_line.solution.empty())
         {
@@ -411,16 +437,15 @@ int run(App application, const int argc, char* argv[], options settings = {})
         }
 
         const auto begin = std::chrono::steady_clock::now();
-        // The run's limits; blank text is no target, as RunParameters reads it,
-        // and no time limit.
+        // The run's limits; blank text is no time limit.
         run_options<trace::null_tracer> limits{};
         if (const auto seconds = *command_line.timeout_seconds())
             limits = limits.timeout(*seconds);
         if (!command_line.max_evaluations.is_unlimited())
             limits = limits.max_evaluations(command_line.max_evaluations);
-        const bool ran = command_line.target.find_first_not_of(" \t") == std::string::npos
-            ? session.run(runner, limits)
-            : session.run(runner, limits.stop_at(session.read_cost(command_line.target)));
+        const bool ran = target
+            ? session.run(runner, limits.stop_at(std::move(*target)))
+            : session.run(runner, limits);
         const std::chrono::duration<double> elapsed =
             std::chrono::steady_clock::now() - begin;
         if (!ran)
