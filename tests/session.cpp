@@ -7,9 +7,11 @@
 #include <easylocal/app/session.hpp>
 #include <easylocal/runners/first_improvement.hpp>
 #include <easylocal/runners/run_control.hpp>
+#include <easylocal/utils/generator.hpp>
 
 #include <cassert>
 #include <concepts>
+#include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <random>
@@ -82,6 +84,90 @@ public:
 
     static void make_move(RandomOnlySolution&, const RandomOnlyMove&) noexcept {}
 };
+
+// A value lowered by steps, whose cost counts its full evaluations.
+struct CountedInput
+{
+};
+
+struct CountedSolution
+{
+    std::uint64_t value{};
+};
+
+struct CountedStep
+{
+    std::uint64_t step{};
+};
+
+struct CountedValue
+{
+    static inline std::size_t evaluations = 0;
+
+    [[nodiscard]]
+    static std::uint64_t evaluate(const CountedSolution& solution) noexcept
+    {
+        ++evaluations;
+        return solution.value;
+    }
+};
+
+class CountedSolutionManager
+    : public easylocal::solution_manager_base<CountedInput, CountedSolution>
+{
+public:
+    using solution_manager_base::solution_manager_base;
+
+    [[nodiscard]]
+    static bool is_valid(const CountedSolution&) noexcept
+    {
+        return true;
+    }
+
+    [[nodiscard]]
+    static CountedSolution initial_solution() noexcept
+    {
+        return {.value = 10};
+    }
+};
+
+class CountedNeighborhood
+    : public easylocal::neighborhood_explorer_base<CountedSolutionManager, CountedStep>
+{
+public:
+    using neighborhood_explorer_base::neighborhood_explorer_base;
+
+    [[nodiscard]]
+    static easylocal::generator<CountedStep> moves(const CountedSolution&)
+    {
+        for (std::uint64_t step = 1; step <= 3; ++step)
+            co_yield CountedStep{.step = step};
+    }
+
+    [[nodiscard]]
+    static bool is_valid(
+        const CountedSolution& solution,
+        const CountedStep& move) noexcept
+    {
+        return move.step <= solution.value;
+    }
+
+    static void make_move(CountedSolution& solution, const CountedStep& move) noexcept
+    {
+        solution.value -= move.step;
+    }
+};
+
+[[nodiscard]]
+auto make_counted_application()
+{
+    return easylocal::app("counted")
+        .with_solution_manager(
+            easylocal::solution_manager<CountedSolutionManager>()
+            | easylocal::component<CountedValue>())
+        .with_neighborhood(easylocal::neighborhood<CountedNeighborhood>())
+        .with_runner<easylocal::runners::FirstImprovement>("fi");
+}
 
 [[nodiscard]]
 auto make_random_only_application()
@@ -323,6 +409,26 @@ void session_selects_first_improving_and_best_moves()
     assert(best);
     assert(session.has_move());
     assert(session.evaluate_move().soft() == 1);
+}
+
+void session_evaluates_the_current_solution_once_per_scan()
+{
+    easylocal::Session session{make_counted_application()};
+    session.set_input(CountedInput{});
+    session.use_initial_solution();
+
+    CountedValue::evaluations = 0;
+    const auto best = session.use_best_move();
+    assert(best);
+    assert(session.move().step == 3);
+    // The current solution once, then each of the three candidates.
+    assert(CountedValue::evaluations == 4);
+
+    CountedValue::evaluations = 0;
+    const auto improving = session.use_first_improving_move();
+    assert(improving);
+    assert(session.move().step == 1);
+    assert(CountedValue::evaluations == 2);
 }
 
 void session_selects_random_moves_with_an_explicit_rng()
@@ -687,6 +793,7 @@ int main()
     session_exposes_deterministic_and_random_move_capabilities();
     session_selects_first_and_next_moves_deterministically();
     session_selects_first_improving_and_best_moves();
+    session_evaluates_the_current_solution_once_per_scan();
     session_selects_random_moves_with_an_explicit_rng();
     session_compares_move_evaluation_with_full_recomputation();
     session_reports_neighborhood_diagnostics();

@@ -562,14 +562,18 @@ public:
         assert(bound_);
         assert(solution_);
 
-        const auto current = evaluate();
+        const auto evaluation = this->evaluation();
+        const auto current = evaluation.evaluate(*solution_);
         std::size_t index = 0;
         for (auto&& candidate : easylocal::moves(bound_->neighborhood(), *solution_))
         {
             move_.emplace(candidate);
             deterministic_move_index_ = index;
             if (move_is_valid()
-                && cost::better(bound_->solution_manager(), evaluate_move(), current))
+                && cost::better(
+                    bound_->solution_manager(),
+                    evaluation.evaluate_move(*solution_, current, *move_).cost(),
+                    current.cost()))
             {
                 return true;
             }
@@ -586,6 +590,8 @@ public:
         assert(bound_);
         assert(solution_);
 
+        const auto evaluation = this->evaluation();
+        const auto current = evaluation.evaluate(*solution_);
         std::optional<move_type> best_move;
         std::optional<cost_type> best_cost;
         std::optional<std::size_t> best_index;
@@ -596,7 +602,8 @@ public:
             deterministic_move_index_ = index;
             if (move_is_valid())
             {
-                auto candidate_cost = evaluate_move();
+                auto candidate_cost =
+                    evaluation.evaluate_move(*solution_, current, *move_).cost();
                 if (!best_cost
                     || cost::better(
                         bound_->solution_manager(),
@@ -658,16 +665,10 @@ public:
         assert(move_);
         assert(move_is_valid());
 
-        const auto& solution_manager = bound_->solution_manager();
-        const auto& neighborhood = bound_->neighborhood();
-        const detail::evaluation_facility<solution_manager_type, neighborhood_type>
-            evaluation{
-                solution_manager,
-                neighborhood,
-        };
-        const auto current = evaluation.evaluate(*solution_);
-        const auto candidate = evaluation.evaluate_move(*solution_, current, *move_);
-        return candidate.cost();
+        const auto evaluation = this->evaluation();
+        return evaluation
+            .evaluate_move(*solution_, evaluation.evaluate(*solution_), *move_)
+            .cost();
     }
 
     [[nodiscard]]
@@ -702,10 +703,8 @@ public:
         assert(solution_);
 
         neighborhood_preview_result result;
-        const auto& solution_manager = bound_->solution_manager();
         const auto& neighborhood = bound_->neighborhood();
-        const detail::evaluation_facility<solution_manager_type, neighborhood_type>
-            evaluation{solution_manager, neighborhood};
+        const auto evaluation = this->evaluation();
         const auto current = evaluation.evaluate(*solution_);
 
         for (auto&& raw_move : easylocal::moves(neighborhood, *solution_))
@@ -737,8 +736,7 @@ public:
         neighborhood_statistics_result result;
         const auto& solution_manager = bound_->solution_manager();
         const auto& neighborhood = bound_->neighborhood();
-        const detail::evaluation_facility<solution_manager_type, neighborhood_type>
-            evaluation{solution_manager, neighborhood};
+        const auto evaluation = this->evaluation();
         const auto current = evaluation.evaluate(*solution_);
 
         for (auto&& raw_move : easylocal::moves(neighborhood, *solution_))
@@ -772,8 +770,7 @@ public:
         neighborhood_cost_check_result result;
         const auto& solution_manager = bound_->solution_manager();
         const auto& neighborhood = bound_->neighborhood();
-        const detail::evaluation_facility<solution_manager_type, neighborhood_type>
-            evaluation{solution_manager, neighborhood};
+        const auto evaluation = this->evaluation();
         const auto current = evaluation.evaluate(*solution_);
 
         for (auto&& raw_move : easylocal::moves(neighborhood, *solution_))
@@ -939,6 +936,15 @@ private:
         if constexpr (detail::describing_component<component_type, solution_type>)
             entry.description = component.describe(*solution_);
         return entry;
+    }
+
+    // The incremental evaluation of the bound app: the current solution is
+    // evaluated once per scan, then each move against it.
+    [[nodiscard]]
+    detail::evaluation_facility<solution_manager_type, neighborhood_type> evaluation()
+        const
+    {
+        return {bound_->solution_manager(), bound_->neighborhood()};
     }
 
     void clear_move_state() noexcept
