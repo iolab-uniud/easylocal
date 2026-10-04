@@ -293,8 +293,11 @@ Every runner is cancellable: the control is carried by the framework-owned
 }
 ```
 
-`evaluation_limit` is omitted when the Runner does not report one. The `solution`
-and `cost` values remain problem-specific and are produced by the codec:
+`evaluation_limit` is omitted when the Runner does not report one. Once the run
+has succeeded, or was cancelled with a partial solution, the status also gives
+`"solution_url"`, the address of `GET /runs/<id>/solution`; a failed run gives
+`"error": {"code": "run_failed", "message": ...}` instead. The `solution` and
+`cost` values remain problem-specific and are produced by the codec:
 
 ```json
 {
@@ -329,7 +332,7 @@ The generic mapping is:
 | --- | --- |
 | `400` | syntactically invalid JSON (`invalid_json`) |
 | `404` | unknown runner or run (`unknown_runner`, `run_not_found`) |
-| `409` | valid operation in the wrong run state/capability (`result_not_ready`, `run_not_terminal`, `run_not_active`) |
+| `409` | valid operation in the wrong run state/capability (`result_not_ready`, `run_not_terminal`, `run_not_active`), or the solution of a run that failed (`run_failed`) |
 | `422` | valid JSON but invalid run envelope/domain data (`invalid_run_request`), or parameters that do not apply (`invalid_parameters`) |
 | `503` | bounded solver queue full (`queue_full`) |
 | `500` | unexpected adapter/application failure (`internal_error`) |

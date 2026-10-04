@@ -249,7 +249,7 @@ old concepts onto the new ones.
 
 ### Platforms
 
-- C++23 with GCC 15 and 16, Clang 22 (libstdc++ and libc++) on Linux, and
+- C++23 with GCC 15 and 16, Clang 22 and 23 (libstdc++ and libc++) on Linux, and
   AppleClang (tested with Xcode 26.6 and 27) and GCC 16 on macOS ARM64,
   clang-cl with the Microsoft STL on Windows; CMake 3.25+ and Ninja. CI
   covers the matrix, every optional component with

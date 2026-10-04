@@ -101,7 +101,7 @@ tracing is lossless.
 ```cpp
 std::ofstream out{"run-0042.eltrace", std::ios::binary};
 easylocal::trace::async_binary_recorder<cost_type> trace{out};
-auto result = search.run(initial_solution, trace);
+auto result = search.run(initial_solution, easylocal::with(trace));
 trace.flush();              // drain the writer and expose I/O failures
 if (!trace.good()) { /* handle output failure */ }
 ```
@@ -224,7 +224,7 @@ struct cost_binary
         out.i64(cost.soft_value());
     }
 
-    static auto fields() -> std::vector<easylocal::trace::binary_field>
+    static std::vector<easylocal::trace::binary_field> fields()
     {
         using enum easylocal::trace::binary_type;
         return {{"hard", i64}, {"soft", i64}};
@@ -261,8 +261,8 @@ void encode_binary_event(
 }
 
 // Optional: the schema, written before the first record of the tag.
-auto describe_binary_event(std::type_identity<temperature_changed>)
-    -> easylocal::trace::binary_event_schema
+easylocal::trace::binary_event_schema describe_binary_event(
+    std::type_identity<temperature_changed>)
 {
     using enum easylocal::trace::binary_type;
     return {"temperature_changed", {{"iteration", u64}, {"temperature", f64}}};
@@ -337,10 +337,3 @@ reports nanoseconds and serialized bytes per event.
 
 These numbers are regression diagnostics, not cross-machine performance
 promises.
-
-## Deferred extensions
-
-A future optional sized-neighborhood concept may expose the number of available
-moves for a solution. That could support union sampling proportional to child
-cardinality (and therefore uniform sampling across all component moves when the
-children themselves sample uniformly). It is intentionally outside S42.

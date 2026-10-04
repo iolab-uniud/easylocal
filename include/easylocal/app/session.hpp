@@ -596,13 +596,14 @@ public:
         return names;
     }
 
-    /// Runs the runner registered under name from the current solution, which
-    /// it replaces with the runner's result; false when no runner has that
-    /// name.
+    /// Runs the runner or pipeline registered under name from the current
+    /// solution, which it replaces with the result; false when nothing has
+    /// that name.
     ///
-    /// Options are with(control, tracer). Like every app run, it uses freshly
-    /// bound services and the current runner parameters, not this session's
-    /// bound app.
+    /// The options are run options, such as with(control, tracer), stop_at,
+    /// timeout and max_evaluations. Like every app run, it uses freshly bound
+    /// services and the current runner parameters, not this session's bound
+    /// app.
     template<class... Options>
     [[nodiscard]]
     bool run(const std::string_view name, Options&&... options)

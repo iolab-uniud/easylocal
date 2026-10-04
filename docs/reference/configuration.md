@@ -18,7 +18,8 @@ struct MyParameters
     static consteval auto parameter_schema()
     {
         return config::fields(
-            config::field<"size", &MyParameters::size>("Description"),
+            config::field<"size", &MyParameters::size>(
+                "Description", config::range(1, easylocal::unlimited)),
             config::group<"schedule", &MyParameters::schedule>("Description"));
     }
 
@@ -143,13 +144,13 @@ prefix.
 
 | Provider | Paths |
 | --- | --- |
-| a parameterized algorithm (`FirstImprovement`, `BestImprovement`, `HillClimbing`, `GreatDeluge`, `LateAcceptanceHillClimbing`, `SimulatedAnnealing`), through its runner | the fields of its `parameters_type`; `temperature.*` for Simulated Annealing |
+| a parameterized algorithm (`FirstImprovement`, `BestImprovement`, `HillClimbing`, `GreatDeluge`, `LateAcceptanceHillClimbing`, `ParetoLateAcceptanceHillClimbing`, `SimulatedAnnealing`, the Tabu Search family), through its runner | the fields of its `parameters_type`; `temperature.*` for Simulated Annealing, `tabu_list.*` for Tabu Search |
 | the cost expression of a SolutionManager recipe | `weights` of a `cost::sum`; children by position (`0.*`, `1.*`), `hard.*` and `soft.*` of a `cost::hard_soft`; a `cost::apply` function's own |
 | `neighborhood_union` with `random_biases` | `random_biases`, and each child's parameters under its position (`0.*`, `1.*`) |
 | `neighborhood<NHE>(parameters, args...)` for an explorer with `parameters_type` | the explorer's parameters |
 | `runner.configuration()` | `search.*`, `cost.*`, `neighborhood.*` |
 | an app, `app.configuration()` (also a `Session`'s) | `cost.*`, `neighborhood.*`, `runners.<name>.*` |
-| `MultiStart`, `LocalSearch`, `Pipeline` solvers | `starts` and the runner's (MultiStart), the runner's (LocalSearch), each stage's runner and `attempts` under its name (Pipeline; `first.*` and `second.*` for `two_stage()`) |
+| `MultiStart`, `LocalSearch`, `Pipeline` solvers | `starts` and the runner's (MultiStart), the runner's (LocalSearch), each stage's runner and its own `attempts`, `timeout` and `max_evaluations` under its name (Pipeline; `first.*` and `second.*` for `two_stage()`) |
 
 ## Frontends
 

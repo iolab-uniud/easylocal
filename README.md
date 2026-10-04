@@ -42,9 +42,10 @@ also published at <https://iolab-uniud.github.io/easylocal/>.
 
 The current CI exercises:
 
-- Linux: GCC 15, GCC 16, Clang 22 and Clang 23, each with libstdc++ and with
+- Linux: GCC 15 and GCC 16; Clang 22 and Clang 23, each with libstdc++ and with
   libc++ (Clang 23 from apt.llvm.org)
 - macOS ARM64: AppleClang and Homebrew GCC 16
+- Windows: clang-cl with the Microsoft STL
 
 macOS Intel is intentionally not part of the supported CI matrix.
 
@@ -137,7 +138,8 @@ component specialization:
 
 ```text
 easylocal/
-  easylocal.hpp   Core umbrella (everything except adapters/)
+  easylocal.hpp   Core umbrella (all but adapters/, testing.hpp, app/cli.hpp,
+                  app/tuning.hpp)
   utils/          logging; internal type-level utilities
   config/         typed parameters, parameter sets, CLI/file frontends
   trace/          semantic search events, tracer protocol, recorders
@@ -197,8 +199,8 @@ package dependency. CI exercises both providers explicitly. TextUI is a second o
 `EasyLocal::REST` is a third optional component: it exposes an `app` as a generic
 Crow Blueprint and is enabled with `EASYLOCAL_ENABLE_REST=ON`. Core-only
 consumers load none of these optional targets or third-party dependencies, even
-when the adapters are present in the installation. `ConfigYAML` and `Logging`
-remain reserved future integrations. See
+when the adapters are present in the installation; the component names
+`ConfigYAML` and `Logging` are reserved. See
 [`docs/dependency-policy.md`](docs/dependency-policy.md) for the complete policy
 and [`docs/rest.md`](docs/rest.md) for the REST/concurrency model.
 

@@ -26,7 +26,8 @@ Topic guides: [tracing](../tracing.md), [logging](../logging.md),
 
 ```text
 easylocal/
-  easylocal.hpp   Core umbrella (everything except adapters/ and testing.hpp)
+  easylocal.hpp   Core umbrella (all but adapters/, testing.hpp, app/cli.hpp,
+                  app/tuning.hpp)
   utils/          logging; internal type-level utilities
   config/         typed parameters, parameter sets, CLI/file frontends
   trace/          semantic search events, tracer protocol, recorders

@@ -75,8 +75,8 @@ auto solver = el::solvers::two_stage(
   from the expression, and stops as soon as the hard cost is zero.
 - The second stage starts from that solution with the full hierarchical cost,
   where a hard degradation is never accepted.
-- The Assignment example (`examples/assignment/main.cpp`) is a complete
-  program.
+- The tutorial's `examples/tutorial/staged_main.cpp` is a complete program
+  with `two_stage`.
 
 ## Several stages
 

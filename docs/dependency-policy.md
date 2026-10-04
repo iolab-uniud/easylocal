@@ -23,10 +23,8 @@ reverse. Current and reserved names are:
 | `REST` | `EasyLocal::REST` | Crow-based HTTP/JSON application adapter |
 
 `ConfigTOML` is implemented with `toml++` 3.4.x, `TUI` with FTXUI 7.x, and
-`REST` with Crow 1.3.x plus standalone Asio. `ConfigYAML` and `Logging` remain
-reserved future integrations. A future repository split may move ConfigTOML,
-TextUI, and REST into companion projects without changing the direction of these
-dependencies.
+`REST` with Crow 1.3.x plus standalone Asio. The component names `ConfigYAML`
+and `Logging` are reserved.
 
 ## Dependency resolution
 
@@ -134,7 +132,7 @@ does not exist. The adapter header is installed only when the feature is built:
 auto source = easylocal::config::load_toml_file("solver.toml");
 ```
 
-TOML tables are flattened to the same dotted paths consumed by S27a. Native
+TOML tables are flattened to the same dotted paths as the command line. Native
 strings, integers, floating-point values, booleans, and numeric/bool arrays are
 converted to owned textual overrides. TOML date/time values, arrays of tables,
 and string arrays are rejected with adapter diagnostics rather than silently

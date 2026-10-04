@@ -77,8 +77,10 @@ struct AppParameters
     static consteval auto parameter_schema()
     {
         return easylocal::config::fields(
-            easylocal::config::field<"instance_file", &AppParameters::instance_file>("TSP instance"),
-            easylocal::config::field<"seed", &AppParameters::seed>("RNG seed"));
+            easylocal::config::field<"instance_file", &AppParameters::instance_file>(
+                "TSP instance", easylocal::unlimited),
+            easylocal::config::field<"seed", &AppParameters::seed>(
+                "RNG seed", easylocal::unlimited));
     }
 
     easylocal::config::validation_result validate() const;
@@ -105,9 +107,11 @@ static consteval auto parameter_schema()
 {
     return config::fields(
         config::field<"initial_temperature", &ClassicParameters::initial_temperature>(
-            "Initial annealing temperature"),
+            "Initial annealing temperature",
+            config::range(0.0, easylocal::unlimited).open_low()),
         config::field<"final_temperature", &ClassicParameters::final_temperature>(
-            "Final annealing temperature"),
+            "Final annealing temperature",
+            config::range(0.0, easylocal::unlimited).open_low()),
         config::field<"cooling_rate", &ClassicParameters::cooling_rate>(
             "Multiplicative cooling factor", config::range(0.0, 1.0).open()),
         // ... samples_per_temperature, calibration_samples

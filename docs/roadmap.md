@@ -101,7 +101,10 @@ probability of each one from what its moves achieve (improving, sideways and
 accepted moves, the improvement obtained, the time spent evaluating), with a
 learning rate and a lower bound on each probability. It belongs to the
 multi-neighborhood composition rather than to Simulated Annealing, so that
-every runner that draws random moves could use it.
+every runner that draws random moves could use it. A simpler fixed policy
+fits the same place: an optional size of each child's neighborhood for a
+solution would let the union draw a child in proportion to it, and so draw
+uniformly among all the moves when the children do.
 
 **When.** Not scheduled.
 
