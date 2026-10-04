@@ -55,6 +55,51 @@ target_link_libraries(
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
 
+# The optional components (ConfigTOML, TUI, REST): each finds its dependency,
+# or fetches it with EASYLOCAL_FETCH_DEPENDENCIES, then adds an adapter target
+# on top of the core.
+
+# Stops the configuration: the component's dependency is neither installed nor
+# allowed to be fetched.
+function(easylocal_missing_dependency component requirement package)
+    message(FATAL_ERROR
+        "EasyLocal ${component} requires ${requirement}. "
+        "Install ${package} or reconfigure with "
+        "EASYLOCAL_FETCH_DEPENDENCIES=ON to allow FetchContent.")
+endfunction()
+
+# The INTERFACE target of a component, on top of the core, exported as
+# EasyLocal::<component>.
+function(easylocal_add_adapter target component)
+    add_library(${target} INTERFACE)
+    add_library(EasyLocal::${component} ALIAS ${target})
+    set_target_properties(${target} PROPERTIES EXPORT_NAME ${component})
+    target_link_libraries(${target} INTERFACE easylocal_core)
+endfunction()
+
+# Installs a component: its target, its export file and its headers under
+# easylocal/adapters (FILES, and the DIRECTORIES of adapters/).
+function(easylocal_install_adapter target component)
+    cmake_parse_arguments(PARSE_ARGV 2 arg "" "" "FILES;DIRECTORIES")
+    install(TARGETS ${target} EXPORT EasyLocal${component}Targets)
+    install(
+        EXPORT EasyLocal${component}Targets
+        FILE EasyLocal${component}Targets.cmake
+        NAMESPACE EasyLocal::
+        DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/EasyLocal"
+    )
+    install(
+        FILES ${arg_FILES}
+        DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/easylocal/adapters"
+    )
+    foreach(directory IN LISTS arg_DIRECTORIES)
+        install(
+            DIRECTORY include/easylocal/adapters/${directory}/
+            DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/easylocal/adapters/${directory}"
+        )
+    endforeach()
+endfunction()
+
 option(
     EASYLOCAL_BUILD_EXAMPLES
     "Build EasyLocal examples"
@@ -152,25 +197,12 @@ if(EASYLOCAL_ENABLE_CONFIG_TOML)
             FetchContent_MakeAvailable(tomlplusplus)
             set(EASYLOCAL_CONFIG_TOML_BUNDLED TRUE)
         else()
-            message(FATAL_ERROR
-                "EasyLocal ConfigTOML requires tomlplusplus >= 3.4. "
-                "Install tomlplusplus or reconfigure with "
-                "EASYLOCAL_FETCH_DEPENDENCIES=ON to allow FetchContent.")
+            easylocal_missing_dependency(
+                ConfigTOML "tomlplusplus >= 3.4" tomlplusplus)
         endif()
     endif()
 
-    add_library(easylocal_config_toml INTERFACE)
-    add_library(EasyLocal::ConfigTOML ALIAS easylocal_config_toml)
-    set_target_properties(
-        easylocal_config_toml
-        PROPERTIES
-            EXPORT_NAME ConfigTOML
-    )
-    target_link_libraries(
-        easylocal_config_toml
-        INTERFACE
-            easylocal_core
-    )
+    easylocal_add_adapter(easylocal_config_toml ConfigTOML)
 
     if(EASYLOCAL_CONFIG_TOML_BUNDLED)
         # Keep the FetchContent target a build-tree implementation detail.
@@ -217,25 +249,11 @@ if(EASYLOCAL_ENABLE_TUI)
             FetchContent_MakeAvailable(ftxui)
             set(EASYLOCAL_TUI_BUNDLED TRUE)
         else()
-            message(FATAL_ERROR
-                "EasyLocal TUI requires FTXUI >= 7.0. "
-                "Install FTXUI or reconfigure with "
-                "EASYLOCAL_FETCH_DEPENDENCIES=ON to allow FetchContent.")
+            easylocal_missing_dependency(TUI "FTXUI >= 7.0" FTXUI)
         endif()
     endif()
 
-    add_library(easylocal_tui INTERFACE)
-    add_library(EasyLocal::TUI ALIAS easylocal_tui)
-    set_target_properties(
-        easylocal_tui
-        PROPERTIES
-            EXPORT_NAME TUI
-    )
-    target_link_libraries(
-        easylocal_tui
-        INTERFACE
-            easylocal_core
-    )
+    easylocal_add_adapter(easylocal_tui TUI)
 
     if(EASYLOCAL_TUI_BUNDLED)
         # The fetched FTXUI target belongs to the build tree. Its own install
@@ -321,26 +339,12 @@ if(EASYLOCAL_ENABLE_REST)
             FetchContent_MakeAvailable(Crow)
             set(EASYLOCAL_REST_BUNDLED TRUE)
         else()
-            message(FATAL_ERROR
-                "EasyLocal REST requires Crow >= 1.3. "
-                "Install Crow or reconfigure with "
-                "EASYLOCAL_FETCH_DEPENDENCIES=ON to allow FetchContent.")
+            easylocal_missing_dependency(REST "Crow >= 1.3" Crow)
         endif()
     endif()
 
-    add_library(easylocal_rest INTERFACE)
-    add_library(EasyLocal::REST ALIAS easylocal_rest)
-    set_target_properties(
-        easylocal_rest
-        PROPERTIES
-            EXPORT_NAME REST
-    )
-    target_link_libraries(
-        easylocal_rest
-        INTERFACE
-            easylocal_core
-            Crow::Crow
-    )
+    easylocal_add_adapter(easylocal_rest REST)
+    target_link_libraries(easylocal_rest INTERFACE Crow::Crow)
 endif()
 
 # The examples are deliberately outside the public EasyLocal API.
@@ -376,19 +380,9 @@ install(
 )
 
 if(EASYLOCAL_ENABLE_CONFIG_TOML)
-    install(
-        TARGETS easylocal_config_toml
-        EXPORT EasyLocalConfigTOMLTargets
-    )
-    install(
-        EXPORT EasyLocalConfigTOMLTargets
-        FILE EasyLocalConfigTOMLTargets.cmake
-        NAMESPACE EasyLocal::
-        DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/EasyLocal"
-    )
-    install(
+    easylocal_install_adapter(
+        easylocal_config_toml ConfigTOML
         FILES include/easylocal/adapters/toml.hpp
-        DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/easylocal/adapters"
     )
 
     if(EASYLOCAL_CONFIG_TOML_BUNDLED)
@@ -404,44 +398,18 @@ if(EASYLOCAL_ENABLE_CONFIG_TOML)
 endif()
 
 if(EASYLOCAL_ENABLE_TUI)
-    install(
-        TARGETS easylocal_tui
-        EXPORT EasyLocalTUITargets
-    )
-    install(
-        EXPORT EasyLocalTUITargets
-        FILE EasyLocalTUITargets.cmake
-        NAMESPACE EasyLocal::
-        DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/EasyLocal"
-    )
-    install(
+    easylocal_install_adapter(
+        easylocal_tui TUI
         FILES include/easylocal/adapters/tui.hpp
-        DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/easylocal/adapters"
-    )
-    install(
-        DIRECTORY include/easylocal/adapters/tui/
-        DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/easylocal/adapters/tui"
+        DIRECTORIES tui
     )
 endif()
 
 if(EASYLOCAL_ENABLE_REST)
-    install(
-        TARGETS easylocal_rest
-        EXPORT EasyLocalRESTTargets
-    )
-    install(
-        EXPORT EasyLocalRESTTargets
-        FILE EasyLocalRESTTargets.cmake
-        NAMESPACE EasyLocal::
-        DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/EasyLocal"
-    )
-    install(
+    easylocal_install_adapter(
+        easylocal_rest REST
         FILES include/easylocal/adapters/rest.hpp
-        DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/easylocal/adapters"
-    )
-    install(
-        DIRECTORY include/easylocal/adapters/rest/
-        DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/easylocal/adapters/rest"
+        DIRECTORIES rest
     )
 
     if(EASYLOCAL_REST_ASIO_BUNDLED)
