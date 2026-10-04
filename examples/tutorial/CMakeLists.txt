@@ -14,6 +14,12 @@ if(EASYLOCAL_BUILD_EXAMPLES)
         easylocal_tutorial_staged
         PRIVATE EASYLOCAL_TUTORIAL_INSTANCE="${CMAKE_CURRENT_SOURCE_DIR}/five.tsp")
 
+    add_executable(easylocal_tutorial_pipeline pipeline_main.cpp)
+    target_link_libraries(easylocal_tutorial_pipeline PRIVATE EasyLocal::Core)
+    target_compile_definitions(
+        easylocal_tutorial_pipeline
+        PRIVATE EASYLOCAL_TUTORIAL_INSTANCE="${CMAKE_CURRENT_SOURCE_DIR}/five.tsp")
+
     add_executable(easylocal_tutorial_checks checks.cpp)
     target_link_libraries(easylocal_tutorial_checks PRIVATE EasyLocal::Core)
 endif()

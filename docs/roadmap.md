@@ -105,25 +105,38 @@ every runner that draws random moves could use it.
 
 **When.** Not scheduled.
 
-## A solver of several stages
+## Pipelines in apps, and a budget for the whole solve
 
-**Why.** `solvers::TwoStage` covers one pattern: the same kind of search on
-the hard cost and then on the whole cost. Real EasyLocal 3 solvers often chain
-more stages, each with its own runner, neighborhood and cost: a descent until
-the solution is feasible, repeated from new random solutions when it is not,
-then a second descent on the whole cost, then Simulated Annealing on a
-neighborhood that keeps the solution feasible, evaluated on the soft cost only.
-Today the stages after the solver's are written by hand, by binding each
-runner and running it from the previous result, and the time and the effort of
-the whole solve are added up by the caller.
+**Why.** `solvers::Pipeline` chains stages, each a runner with its own recipes,
+but it is used from a program: an app registers runners, built on its one
+SolutionManager and neighborhood, so `cli::run`, the TextUI and the REST
+service cannot run a pipeline by name. And each stage has its own budget
+(evaluations, iterations): there is no time or effort budget for the whole
+solve, shared among the stages.
 
-**What.** A `Pipeline` solver: a sequence of stages, each a runner with its own
-recipes over the same Input and Solution, with a stopping target per stage (a
-zero hard cost, for example), optional repetitions from new initial solutions,
-a share of a global budget, and the effort of every stage in the result. Its
-parameters would be those of each stage, under the stage's name, so that the
-command line, the TextUI and the REST service configure it as they configure
-an app. TwoStage would then be a pipeline of two stages.
+**What.** An app that registers pipelines beside its runners, with their stages'
+recipes, so that the command line (`--runner`), the TextUI and the REST service
+run them and configure them (`<pipeline>.<stage>.*`) as they do a runner; and a
+budget of the solve (a time limit, or a number of evaluations), with a share
+per stage, which a stage that ends early leaves to the following ones.
+
+**When.** Not scheduled.
+
+## Cooperative runners
+
+**Why.** A pipeline runs its stages one after the other, each from the solution
+of the previous one. Some searches combine runners differently: several
+runners at the same time, on different neighborhoods or with different
+parameters, that exchange their best solutions (a portfolio, an island model),
+or that alternate on the same solution under a common control, without a
+fixed order.
+
+**What.** A solver of cooperative runners: the runners, a policy that says when
+they run (in parallel threads, or interleaved) and what they share (the best
+solution found so far, at given intervals or when one improves it), a common
+stopping criterion and budget, and the effort and best result of each runner
+in the result. Its determinism with a seed when the runners run in parallel is
+part of the design.
 
 **When.** Not scheduled.
 

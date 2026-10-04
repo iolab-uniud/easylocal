@@ -861,6 +861,15 @@ if(TARGET easylocal_tutorial)
         PROPERTIES PASS_REGULAR_EXPRESSION "violations 0, length [0-9]+\n")
 endif()
 
+if(TARGET easylocal_tutorial_pipeline)
+    add_test(
+        NAME easylocal.example.tutorial-pipeline
+        COMMAND easylocal_tutorial_pipeline)
+    set_tests_properties(
+        easylocal.example.tutorial-pipeline
+        PROPERTIES PASS_REGULAR_EXPRESSION "stage feasible: [0-9]+ attempt.*\nstage climb: .*\nviolations 0, length [0-9]+")
+endif()
+
 if(TARGET easylocal_pfsp_tabu)
     add_test(
         NAME easylocal.example.pfsp-tabu

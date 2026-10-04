@@ -84,12 +84,16 @@ auto solver = el::solvers::two_stage(
 runners, each with its own name, cost and neighborhood, over the same
 solution:
 
+<!-- snippet: tutorial/pipeline_main.cpp:pipeline -->
 ```cpp
+// | chains the stages, & gives a stage its options, in parentheses: the
+// first one works on the hard cost until it is zero, in up to five
+// descents from new random tours; the others continue from its tour on the
+// whole cost.
 using namespace el::solvers;
-auto solver = (stage("feasible", descent) & until_feasible() & attempts(10))
-    | stage("descent", descent)
-    | stage("anneal", annealing);
-auto result = solver.seed(7).solve(input);
+auto solver = (stage("feasible", descent) & until_feasible() & attempts(5))
+    | stage("descent", descent) | stage("climb", climbing);
+const auto result = solver.seed(7).solve(tsp);
 ```
 
 - `|` chains the stages, `&` gives a stage its options, in parentheses (GCC
@@ -98,11 +102,12 @@ auto result = solver.seed(7).solve(input);
   pipeline's `.then(stage)` spell the same pipeline out.
 - `until_feasible()` runs the stage on the hard cost until it is zero;
   `target(cost)` stops a stage at another target, in its own cost.
-- `attempts(10)` repeats the stage, here from a new random solution, while it
-  has not reached its target, and keeps the best run.
+- `attempts(5)` repeats the stage, here from a new random tour, while it has
+  not reached its target, and keeps the best run.
 - `result.stages` reports each stage (attempts, effort, termination, cost),
-  and the parameters of a stage are under its name (`anneal.search.*`,
-  `feasible.attempts`).
+  and the parameters of a stage are under its name (`climb.search.*`,
+  `feasible.attempts`). `examples/tutorial/pipeline_main.cpp` is the complete
+  program.
 
 ## See also
 
