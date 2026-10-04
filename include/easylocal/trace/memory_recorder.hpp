@@ -238,7 +238,187 @@ public:
         return records_;
     }
 
+    /// Emits the recorded events again, in order, to another tracer: a
+    /// jsonl_recorder or a binary_recorder writes them after the run.
+    template<class Tracer>
+    void replay(Tracer& tracer) const
+    {
+        for (const auto& entry : records_)
+            std::visit(
+                [&tracer](const auto& value) { replay_record(tracer, value); },
+                entry);
+    }
+
 private:
+    // A route as the chain of nodes the events point to, from the root down.
+    class route_nodes
+    {
+    public:
+        explicit route_nodes(const std::vector<std::size_t>& route) : nodes_(route.size())
+        {
+            for (std::size_t index = 0; index < route.size(); ++index)
+            {
+                nodes_[index].child = route[index];
+                nodes_[index].parent = index == 0 ? nullptr : &nodes_[index - 1];
+            }
+        }
+
+        route_nodes(const route_nodes&) = delete;
+        route_nodes& operator=(const route_nodes&) = delete;
+        route_nodes(route_nodes&&) = delete;
+        route_nodes& operator=(route_nodes&&) = delete;
+        ~route_nodes() = default;
+
+        [[nodiscard]]
+        const neighborhood_route_node* leaf() const noexcept
+        {
+            return nodes_.empty() ? nullptr : &nodes_.back();
+        }
+
+    private:
+        std::vector<neighborhood_route_node> nodes_;
+    };
+
+    template<class Tracer>
+    static void replay_record(Tracer& tracer, const run_started_record& value)
+    {
+        trace::emit(tracer, event::run_started<Cost>{.cost = value.cost});
+    }
+
+    template<class Tracer>
+    static void replay_record(Tracer& tracer, const move_evaluated_record& value)
+    {
+        const route_nodes route{value.neighborhood};
+        trace::emit(
+            tracer,
+            event::move_evaluated<Cost>{
+                .evaluations = value.evaluations,
+                .iterations = value.iterations,
+                .current_cost = value.current_cost,
+                .candidate_cost = value.candidate_cost,
+                .neighborhood = route.leaf(),
+            });
+    }
+
+    template<class Tracer>
+    static void replay_record(Tracer& tracer, const move_accepted_record& value)
+    {
+        const route_nodes route{value.neighborhood};
+        trace::emit(
+            tracer,
+            event::move_accepted<Cost>{
+                .evaluations = value.evaluations,
+                .iterations = value.iterations,
+                .previous_cost = value.previous_cost,
+                .cost = value.cost,
+                .neighborhood = route.leaf(),
+            });
+    }
+
+    template<class Tracer>
+    static void replay_record(Tracer& tracer, const incumbent_updated_record& value)
+    {
+        trace::emit(
+            tracer,
+            event::incumbent_updated<Cost>{
+                .evaluations = value.evaluations,
+                .iterations = value.iterations,
+                .previous_cost = value.previous_cost,
+                .cost = value.cost,
+            });
+    }
+
+    template<class Tracer>
+    static void replay_record(Tracer& tracer, const local_optimum_record& value)
+    {
+        trace::emit(
+            tracer,
+            event::local_optimum<Cost>{
+                .evaluations = value.evaluations,
+                .iterations = value.iterations,
+                .cost = value.cost,
+            });
+    }
+
+    template<class Tracer>
+    static void replay_record(Tracer& tracer, const neighborhood_selection_record& value)
+    {
+        const route_nodes route{value.neighborhood};
+        trace::emit(
+            tracer,
+            event::neighborhood_selection{
+                .attempt = value.attempt,
+                .child = value.child,
+                .bias = value.bias,
+                .active_bias_total = value.active_bias_total,
+                .conditional_probability = value.conditional_probability,
+                .produced_move = value.produced_move,
+                .neighborhood = route.leaf(),
+            });
+    }
+
+    template<class Tracer>
+    static void replay_record(Tracer& tracer, const solution_visited_record& value)
+    {
+        trace::emit(
+            tracer,
+            event::solution_visited<Cost>{
+                .evaluations = value.evaluations,
+                .iterations = value.iterations,
+                .hash = value.hash,
+                .cost = value.cost,
+            });
+    }
+
+    template<class Tracer>
+    static void replay_record(Tracer& tracer, const aspiration_applied_record& value)
+    {
+        trace::emit(
+            tracer,
+            event::aspiration_applied<Cost>{
+                .evaluations = value.evaluations,
+                .iterations = value.iterations,
+                .cost = value.cost,
+            });
+    }
+
+    template<class Tracer>
+    static void replay_record(Tracer& tracer, const tabu_escape_record& value)
+    {
+        trace::emit(
+            tracer,
+            event::tabu_escape{
+                .evaluations = value.evaluations,
+                .iterations = value.iterations,
+                .moves = value.moves,
+            });
+    }
+
+    template<class Tracer>
+    static void replay_record(Tracer& tracer, const tabu_tenure_changed_record& value)
+    {
+        trace::emit(
+            tracer,
+            event::tabu_tenure_changed{
+                .evaluations = value.evaluations,
+                .iterations = value.iterations,
+                .previous_tenure = value.previous_tenure,
+                .tenure = value.tenure,
+            });
+    }
+
+    template<class Tracer>
+    static void replay_record(Tracer& tracer, const run_finished_record& value)
+    {
+        trace::emit(
+            tracer,
+            event::run_finished<Cost>{
+                .evaluations = value.evaluations,
+                .iterations = value.iterations,
+                .cost = value.cost,
+            });
+    }
+
     std::vector<record> records_;
 };
 

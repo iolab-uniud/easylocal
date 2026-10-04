@@ -110,6 +110,82 @@ protected:
     }
 };
 
+// Emits one event of every kind, with routes, to a tracer.
+template<class Tracer>
+void emit_every_event(Tracer& tracer)
+{
+    namespace event = easylocal::trace::event;
+    const easylocal::trace::neighborhood_route_node outer{.child = 2};
+    const easylocal::trace::neighborhood_route_node inner{.child = 1, .parent = &outer};
+
+    easylocal::trace::emit(tracer, event::run_started<int>{.cost = 10});
+    easylocal::trace::emit(
+        tracer,
+        event::neighborhood_selection{
+            .attempt = 1,
+            .child = 1,
+            .bias = 3.0,
+            .active_bias_total = 4.0,
+            .conditional_probability = 0.75,
+            .produced_move = true,
+            .neighborhood = &inner,
+        });
+    easylocal::trace::emit(
+        tracer,
+        event::move_evaluated<int>{
+            .evaluations = 1,
+            .iterations = 0,
+            .current_cost = 10,
+            .candidate_cost = 7,
+            .neighborhood = &outer,
+        });
+    easylocal::trace::emit(
+        tracer,
+        event::move_accepted<int>{
+            .evaluations = 1,
+            .iterations = 1,
+            .previous_cost = 10,
+            .cost = 7,
+            .neighborhood = nullptr,
+        });
+    easylocal::trace::emit(
+        tracer,
+        event::incumbent_updated<int>{
+            .evaluations = 1,
+            .iterations = 1,
+            .previous_cost = 10,
+            .cost = 7,
+        });
+    easylocal::trace::emit(
+        tracer,
+        event::solution_visited<int>{
+            .evaluations = 1,
+            .iterations = 1,
+            .hash = 42,
+            .cost = 7,
+        });
+    easylocal::trace::emit(
+        tracer,
+        event::aspiration_applied<int>{.evaluations = 2, .iterations = 2, .cost = 6});
+    easylocal::trace::emit(
+        tracer,
+        event::tabu_escape{.evaluations = 3, .iterations = 3, .moves = 5});
+    easylocal::trace::emit(
+        tracer,
+        event::tabu_tenure_changed{
+            .evaluations = 3,
+            .iterations = 3,
+            .previous_tenure = 4,
+            .tenure = 6,
+        });
+    easylocal::trace::emit(
+        tracer,
+        event::local_optimum<int>{.evaluations = 4, .iterations = 4, .cost = 6});
+    easylocal::trace::emit(
+        tracer,
+        event::run_finished<int>{.evaluations = 4, .iterations = 4, .cost = 6});
+}
+
 } // namespace
 
 int main()
@@ -258,6 +334,18 @@ int main()
         structured_post_run.str().find(
             "\"cost\":{\"hard\":3,\"soft\":7}") != std::string::npos,
         "post-run JSONL accepts a custom structured cost writer");
+
+    std::ostringstream live_output;
+    easylocal::trace::jsonl_recorder<int> live{live_output};
+    emit_every_event(live);
+    easylocal::trace::memory_recorder<int> stored;
+    emit_every_event(stored);
+    std::ostringstream post_run_output;
+    easylocal::trace::write_jsonl(post_run_output, stored);
+    ok &= expect(
+        post_run_output.str() == live_output.str()
+            && post_run_output.str().find("\"neighborhood\":[2,1]") != std::string::npos,
+        "post-run JSONL writes every event as the streaming recorder does");
 
     std::ostringstream structured_stream;
     easylocal::trace::jsonl_recorder<structured_cost, structured_cost_writer>

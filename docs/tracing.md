@@ -73,9 +73,12 @@ tracing machinery.
 ## Persistence
 
 `trace::memory_recorder<Cost>` owns copies of recorded events. Its neighborhood
-routes are copied only when tracing is active. `trace::write_jsonl(out, recorder)`
-serializes the completed trace as one JSON object per line, leaving file naming,
-directory layout and stream ownership to the application.
+routes are copied only when tracing is active. `recorder.replay(tracer)` emits
+the recorded events again, in order, to another tracer: to a streaming recorder
+below, it writes the completed trace in that recorder's format.
+`trace::write_jsonl(out, recorder)` is the replay to a `jsonl_recorder`: one JSON
+object per line, as during the run. File naming, directory layout and stream
+ownership are left to the application.
 
 For long runs, EasyLocal provides constant-memory streaming recorders.
 `trace::jsonl_recorder<Cost>` writes a human-readable JSONL representation.

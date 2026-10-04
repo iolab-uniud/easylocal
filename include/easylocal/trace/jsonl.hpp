@@ -13,7 +13,6 @@
 #include <ostream>
 #include <type_traits>
 #include <utility>
-#include <variant>
 #include <vector>
 
 namespace easylocal::trace
@@ -232,6 +231,8 @@ private:
     EASYLOCAL_NO_UNIQUE_ADDRESS CostWriter cost_writer_{};
 };
 
+/// Writes the events of a memory_recorder as JSONL, one line per event as
+/// jsonl_recorder writes them during a run.
 template<class Cost, class CostWriter>
     requires json_cost_writer_for<CostWriter, Cost>
 void write_jsonl(
@@ -239,122 +240,8 @@ void write_jsonl(
     const memory_recorder<Cost>& recorder,
     CostWriter cost_writer)
 {
-    using recorder_type = memory_recorder<Cost>;
-
-    for (const auto& entry : recorder.records())
-    {
-        std::visit(
-            [&](const auto& record) {
-                using record_type = std::remove_cvref_t<decltype(record)>;
-                if constexpr (std::same_as<record_type, typename recorder_type::run_started_record>)
-                {
-                    out << "{\"event\":\"run_started\",\"cost\":";
-                    cost_writer(out, record.cost);
-                    out << '}';
-                }
-                else if constexpr (std::same_as<record_type, typename recorder_type::move_evaluated_record>)
-                {
-                    out << "{\"event\":\"move_evaluated\",\"evaluations\":" << record.evaluations
-                        << ",\"iterations\":" << record.iterations
-                        << ",\"current_cost\":";
-                    cost_writer(out, record.current_cost);
-                    out << ",\"candidate_cost\":";
-                    cost_writer(out, record.candidate_cost);
-                    out << ",\"neighborhood\":";
-                    detail::write_route_json(out, record.neighborhood);
-                    out << '}';
-                }
-                else if constexpr (std::same_as<record_type, typename recorder_type::move_accepted_record>)
-                {
-                    out << "{\"event\":\"move_accepted\",\"evaluations\":" << record.evaluations
-                        << ",\"iterations\":" << record.iterations
-                        << ",\"previous_cost\":";
-                    cost_writer(out, record.previous_cost);
-                    out << ",\"cost\":";
-                    cost_writer(out, record.cost);
-                    out << ",\"neighborhood\":";
-                    detail::write_route_json(out, record.neighborhood);
-                    out << '}';
-                }
-                else if constexpr (std::same_as<record_type, typename recorder_type::incumbent_updated_record>)
-                {
-                    out << "{\"event\":\"incumbent_updated\",\"evaluations\":" << record.evaluations
-                        << ",\"iterations\":" << record.iterations
-                        << ",\"previous_cost\":";
-                    cost_writer(out, record.previous_cost);
-                    out << ",\"cost\":";
-                    cost_writer(out, record.cost);
-                    out << '}';
-                }
-                else if constexpr (std::same_as<record_type, typename recorder_type::local_optimum_record>)
-                {
-                    out << "{\"event\":\"local_optimum\",\"evaluations\":" << record.evaluations
-                        << ",\"iterations\":" << record.iterations
-                        << ",\"cost\":";
-                    cost_writer(out, record.cost);
-                    out << '}';
-                }
-                else if constexpr (std::same_as<record_type, typename recorder_type::neighborhood_selection_record>)
-                {
-                    out << "{\"event\":\"neighborhood_selection\",\"attempt\":" << record.attempt
-                        << ",\"child\":" << record.child
-                        << ",\"bias\":" << record.bias
-                        << ",\"active_bias_total\":" << record.active_bias_total
-                        << ",\"conditional_probability\":" << record.conditional_probability
-                        << ",\"produced_move\":" << (record.produced_move ? "true" : "false")
-                        << ",\"neighborhood\":";
-                    detail::write_route_json(out, record.neighborhood);
-                    out << '}';
-                }
-                else if constexpr (std::same_as<
-                                       record_type,
-                                       typename recorder_type::solution_visited_record>)
-                {
-                    out << "{\"event\":\"solution_visited\",\"evaluations\":"
-                        << record.evaluations << ",\"iterations\":" << record.iterations
-                        << ",\"hash\":" << record.hash << ",\"cost\":";
-                    cost_writer(out, record.cost);
-                    out << '}';
-                }
-                else if constexpr (std::same_as<
-                                       record_type,
-                                       typename recorder_type::aspiration_applied_record>)
-                {
-                    out << "{\"event\":\"aspiration_applied\",\"evaluations\":"
-                        << record.evaluations << ",\"iterations\":" << record.iterations
-                        << ",\"cost\":";
-                    cost_writer(out, record.cost);
-                    out << '}';
-                }
-                else if constexpr (
-                    std::same_as<record_type, typename recorder_type::tabu_escape_record>)
-                {
-                    out << "{\"event\":\"tabu_escape\",\"evaluations\":"
-                        << record.evaluations << ",\"iterations\":" << record.iterations
-                        << ",\"moves\":" << record.moves << '}';
-                }
-                else if constexpr (
-                    std::same_as<
-                        record_type,
-                        typename recorder_type::tabu_tenure_changed_record>)
-                {
-                    out << "{\"event\":\"tabu_tenure_changed\",\"evaluations\":"
-                        << record.evaluations << ",\"iterations\":" << record.iterations
-                        << ",\"previous_tenure\":" << record.previous_tenure
-                        << ",\"tenure\":" << record.tenure << '}';
-                }
-                else if constexpr (std::same_as<record_type, typename recorder_type::run_finished_record>)
-                {
-                    out << "{\"event\":\"run_finished\",\"evaluations\":" << record.evaluations
-                        << ",\"iterations\":" << record.iterations
-                        << ",\"cost\":";
-                    cost_writer(out, record.cost);
-                    out << '}';
-                }
-                out << '\n';
-            },
-            entry);
-    }
+    jsonl_recorder<Cost, CostWriter> json{out, std::move(cost_writer)};
+    recorder.replay(json);
 }
 
 template<class Cost>
