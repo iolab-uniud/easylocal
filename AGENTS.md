@@ -65,6 +65,10 @@ the uv environment: `uv sync`, then `uv run ...`.
 - Write `EASYLOCAL_NO_UNIQUE_ADDRESS` (`easylocal/utils/detail/attributes.hpp`),
   never the raw `[[no_unique_address]]`, which MSVC and clang-cl ignore; the
   test `easylocal.portable-attributes` rejects it.
+- The library spells the types of a `std::tuple`, `std::tuple<T>{x}`, never
+  `std::tuple{x}`: with one argument, or a pack that may hold one, some
+  compilers find the deduction ambiguous. The test `easylocal.tuple-types`
+  rejects it.
 - Variants on a hot path (an inverse, a move evaluation) are chosen at compile
   time, with templates, rather than by runtime parameters.
 - Comments match the surrounding code: a short description of each class or

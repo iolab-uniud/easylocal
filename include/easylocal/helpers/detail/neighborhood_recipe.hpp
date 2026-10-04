@@ -192,7 +192,7 @@ public:
             base_args_,
             std::tuple_cat(
                 delta_specs_,
-                std::tuple{spec_type{std::forward<Args>(args)...}}),
+                std::tuple<spec_type>{spec_type{std::forward<Args>(args)...}}),
             parameters_,
         };
     }
@@ -221,7 +221,7 @@ public:
             std::move(base_args_),
             std::tuple_cat(
                 std::move(delta_specs_),
-                std::tuple{spec_type{std::forward<Args>(args)...}}),
+                std::tuple<spec_type>{spec_type{std::forward<Args>(args)...}}),
             std::move(parameters_),
         };
     }
@@ -245,7 +245,7 @@ public:
 
         return result_type{
             base_args_,
-            std::tuple_cat(delta_specs_, std::tuple{spec_type{}}),
+            std::tuple_cat(delta_specs_, std::tuple<spec_type>{spec_type{}}),
             parameters_,
         };
     }
@@ -269,7 +269,7 @@ public:
 
         return result_type{
             std::move(base_args_),
-            std::tuple_cat(std::move(delta_specs_), std::tuple{spec_type{}}),
+            std::tuple_cat(std::move(delta_specs_), std::tuple<spec_type>{spec_type{}}),
             std::move(parameters_),
         };
     }

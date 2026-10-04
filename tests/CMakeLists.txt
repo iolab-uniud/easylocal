@@ -138,6 +138,29 @@ set_tests_properties(
     easylocal.portable-attributes-catches-raw
     PROPERTIES PASS_REGULAR_EXPRESSION "raw\\.hpp:2")
 
+# No deduced std::tuple in the library, which some compilers find ambiguous
+# with one argument; the check is shown to catch one on a generated file.
+add_test(
+    NAME easylocal.tuple-types
+    COMMAND
+        "${CMAKE_COMMAND}"
+        "-DEASYLOCAL_SOURCE_DIR=${PROJECT_SOURCE_DIR}"
+        -P "${CMAKE_CURRENT_SOURCE_DIR}/verify_tuple_types.cmake"
+)
+set(easylocal_deduced_tuple_dir "${CMAKE_CURRENT_BINARY_DIR}/deduced_tuple")
+file(WRITE "${easylocal_deduced_tuple_dir}/deduced.hpp"
+    "#include <tuple>\ninline auto one = std::tuple{1};\n")
+add_test(
+    NAME easylocal.tuple-types-catches-deduced
+    COMMAND
+        "${CMAKE_COMMAND}"
+        "-DEASYLOCAL_SCAN_DIRS=${easylocal_deduced_tuple_dir}"
+        -P "${CMAKE_CURRENT_SOURCE_DIR}/verify_tuple_types.cmake"
+)
+set_tests_properties(
+    easylocal.tuple-types-catches-deduced
+    PROPERTIES PASS_REGULAR_EXPRESSION "deduced\\.hpp:2")
+
 add_executable(
     easylocal_toolchain_smoke
     toolchain_smoke.cpp

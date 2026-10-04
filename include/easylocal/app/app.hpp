@@ -404,7 +404,7 @@ private:
     {
         return std::apply(
             [](const auto&... registration) {
-                return std::tuple{
+                return std::tuple<typename Registrations::algorithm_type...>{
                     typename Registrations::algorithm_type{registration.config}...};
             },
             registrations);
@@ -522,7 +522,7 @@ public:
         using registration_type = app_runner_registration<Algorithm>;
         auto registrations = std::tuple_cat(
             std::move(registrations_),
-            std::tuple{std::move(registration)});
+            std::tuple<registration_type>{std::move(registration)});
 
         return app_builder<
             SMSpec,

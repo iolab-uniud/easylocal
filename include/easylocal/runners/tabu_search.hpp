@@ -2223,7 +2223,10 @@ public:
                             return std::get<1>(lhs) < std::get<1>(rhs);
                         });
                     if (cost < std::get<1>(*worst))
-                        *worst = std::tuple{move, cost, position};
+                        *worst = std::tuple<move_type, cost_type, std::size_t>{
+                            move,
+                            cost,
+                            position};
                 };
             auto full =
                 engine_.scan(run, state, run.moves(state.solution), never, rng, keep);
