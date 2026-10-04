@@ -512,98 +512,44 @@ private:
         return total;
     }
 
-    template<std::size_t Index = 0, std::uniform_random_bit_generator RNG>
+    // The children that random_move() may choose: those with a positive bias.
     [[nodiscard]]
-    std::optional<union_move_type> random_move_from_child(
-        const std::size_t selected,
-        const typename first_explorer::solution_type& solution,
-        RNG& rng) const
+    std::array<bool, child_count> children_with_bias() const noexcept
     {
-        if constexpr (Index < child_count)
+        std::array<bool, child_count> active{};
+        for (std::size_t index = 0; index < active.size(); ++index)
         {
-            if (selected == Index)
-            {
-                auto child_move = easylocal::random_move(
-                    std::get<Index>(explorers_), solution, rng);
-
-                if (!child_move)
-                {
-                    return std::nullopt;
-                }
-
-                using tagged_move_type =
-                    std::variant_alternative_t<Index, union_move_type>;
-
-                return union_move_type{
-                    std::in_place_index<Index>,
-                    tagged_move_type{std::move(*child_move)},
-                };
-            }
-
-            return random_move_from_child<Index + 1>(
-                selected,
-                solution,
-                rng);
+            active[index] = random_biases_[index] > 0.0;
         }
-        else
-        {
-            assert(false && "selected neighborhood index must be valid");
-            return std::nullopt;
-        }
+        return active;
     }
 
-    template<std::size_t Index = 0, std::uniform_random_bit_generator RNG, class Observer>
+    // The move that propose(child) gives for the selected child, tagged with
+    // the child's index.
+    template<std::size_t Index = 0, class Propose>
     [[nodiscard]]
-    std::optional<union_move_type> random_move_from_child_traced(
+    std::optional<union_move_type> move_from_child(
         const std::size_t selected,
-        const typename first_explorer::solution_type& solution,
-        RNG& rng,
-        Observer& observer,
-        const trace::neighborhood_route_node* route) const
+        Propose&& propose) const
     {
         if constexpr (Index < child_count)
         {
-            if (selected == Index)
+            if (selected != Index)
             {
-                const auto& child = std::get<Index>(explorers_);
-                if constexpr (requires {
-                    child.random_move_traced(solution, rng, observer, route);
-                })
-                {
-                    auto child_move = child.random_move_traced(
-                        solution, rng, observer, route);
-                    if (!child_move)
-                    {
-                        return std::nullopt;
-                    }
-
-                    using tagged_move_type =
-                        std::variant_alternative_t<Index, union_move_type>;
-                    return union_move_type{
-                        std::in_place_index<Index>,
-                        tagged_move_type{std::move(*child_move)},
-                    };
-                }
-                else
-                {
-                    auto child_move = easylocal::random_move(
-                        child, solution, rng);
-                    if (!child_move)
-                    {
-                        return std::nullopt;
-                    }
-
-                    using tagged_move_type =
-                        std::variant_alternative_t<Index, union_move_type>;
-                    return union_move_type{
-                        std::in_place_index<Index>,
-                        tagged_move_type{std::move(*child_move)},
-                    };
-                }
+                return move_from_child<Index + 1>(
+                    selected,
+                    std::forward<Propose>(propose));
             }
 
-            return random_move_from_child_traced<Index + 1>(
-                selected, solution, rng, observer, route);
+            auto child_move = propose(std::get<Index>(explorers_));
+            if (!child_move)
+                return std::nullopt;
+
+            using tagged_move_type = std::variant_alternative_t<Index, union_move_type>;
+            return union_move_type{
+                std::in_place_index<Index>,
+                tagged_move_type{std::move(*child_move)},
+            };
         }
         else
         {
@@ -776,11 +722,7 @@ public:
     [[nodiscard]]
     std::optional<move_type> random_move(const solution_type& solution, RNG& rng) const
     {
-        std::array<bool, child_count> active{};
-        for (std::size_t index = 0; index < active.size(); ++index)
-        {
-            active[index] = random_biases_[index] > 0.0;
-        }
+        auto active = children_with_bias();
 
         while (true)
         {
@@ -790,7 +732,10 @@ public:
                 return std::nullopt;
             }
 
-            if (auto move = random_move_from_child(*selected, solution, rng))
+            auto move = move_from_child(*selected, [&](const auto& child) {
+                return easylocal::random_move(child, solution, rng);
+            });
+            if (move)
             {
                 return move;
             }
@@ -808,11 +753,7 @@ public:
         Observer& observer,
         const trace::neighborhood_route_node* parent = nullptr) const
     {
-        std::array<bool, child_count> active{};
-        for (std::size_t index = 0; index < active.size(); ++index)
-        {
-            active[index] = random_biases_[index] > 0.0;
-        }
+        auto active = children_with_bias();
 
         std::size_t attempt = 0;
         while (true)
@@ -828,8 +769,22 @@ public:
                 .child = *selected,
                 .parent = parent,
             };
-            auto move = random_move_from_child_traced(
-                *selected, solution, rng, observer, &route);
+            auto move = move_from_child(*selected, [&](const auto& child) {
+                if constexpr (requires {
+                                  child.random_move_traced(
+                                      solution,
+                                      rng,
+                                      observer,
+                                      &route);
+                              })
+                {
+                    return child.random_move_traced(solution, rng, observer, &route);
+                }
+                else
+                {
+                    return easylocal::random_move(child, solution, rng);
+                }
+            });
 
             observer(trace::event::neighborhood_selection{
                 .attempt = attempt++,
