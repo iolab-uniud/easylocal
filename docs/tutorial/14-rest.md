@@ -25,12 +25,21 @@ struct TspCodec
     {
         if (payload.t() != crow::json::type::Object || !payload.has("distance"))
             throw std::invalid_argument{"input must have 'distance'"};
+        const auto& rows = payload["distance"];
+        if (rows.t() != crow::json::type::List)
+            throw std::invalid_argument{"'distance' must be a list of rows"};
         tutorial::Tsp tsp;
-        for (const auto& row : payload["distance"])
+        for (const auto& row : rows)
         {
+            if (row.t() != crow::json::type::List)
+                throw std::invalid_argument{"'distance' must be a list of rows"};
             auto& values = tsp.distance.emplace_back();
             for (const auto& value : row)
+            {
+                if (value.t() != crow::json::type::Number)
+                    throw std::invalid_argument{"'distance' must hold numbers"};
                 values.push_back(value.d());
+            }
         }
         for (const auto& values : tsp.distance)
             if (values.size() != tsp.cities())
