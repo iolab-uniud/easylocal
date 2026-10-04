@@ -45,7 +45,7 @@ held as an object: `make_runner<Algorithm>(args...)` or `Runner{Algorithm{...}}`
 | `runners::FirstImprovementTabuSearch<List, Aspiration>` | as TabuSearch | as TabuSearch, plus `improve_on_best` | committed moves |
 | `runners::AspirationPlusTabuSearch<List, Aspiration>` | as TabuSearch, an arithmetic cost | as TabuSearch, plus `min_moves`, `max_moves`, `plus`, `aspiration_level` | committed moves |
 | `runners::EliteCandidateTabuSearch<List, Aspiration>` | as TabuSearch, an arithmetic cost | as TabuSearch, plus `elite_size`, `quality` | committed moves |
-| `runners::SimulatedAnnealing<Temperature, Acceptance>` | `random_move`, `better`, an acceptance-compatible cost | a temperature policy, an acceptance policy | proposed moves |
+| `runners::SimulatedAnnealing<Temperature, Acceptance>` | `random_move`, `better`, an acceptance-compatible cost | a temperature policy (`temperature`), an acceptance policy, `max_evaluations` | proposed moves |
 
 The limits on a count, `max_evaluations` and `max_iterations`, are of type
 `easylocal::limit`: a number, or `easylocal::unlimited`, written `unlimited` in
@@ -211,9 +211,12 @@ iterations. A custom policy opts in by modelling
 `runners::MetropolisAcceptance` (the default) requires `cost::delta` (see
 [Cost](cost.md)). The parameters of `SimulatedAnnealing<Policy>` are
 `SimulatedAnnealingParameters<Policy::parameters_type>`, the policy's under the
-group `temperature`: `make_runner<SimulatedAnnealing<Classic>>({.temperature =
-{...}})`, `search.temperature.*` in a configuration. The parameter blocks have
-defaults that pass validation.
+group `temperature` and the evaluation budget `max_evaluations`:
+`make_runner<SimulatedAnnealing<Classic>>({.temperature = {...}})`,
+`search.temperature.*` in a configuration. The parameter blocks have defaults
+that pass validation. A calibrating schedule with `calibration_samples` above 0
+needs a cost with `cost::delta`; with any other cost the run throws
+`std::invalid_argument`.
 
 ## Results
 

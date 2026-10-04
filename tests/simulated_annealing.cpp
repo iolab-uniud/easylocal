@@ -728,6 +728,29 @@ int main()
         ok &= expect(result.iterations == 2 && result.evaluations == 3,
             "SA reports proposal iterations separately from evaluations including the initial state");
 
+        // Its own evaluation budget, as every runner has.
+        auto budgeted =
+            easylocal::make_runner<
+                SimulatedAnnealing<temperature::FixedLength, AlwaysAccept>>({
+                .temperature =
+                    temperature::FixedLengthParameters{
+                        .initial_temperature = 4.0,
+                        .final_temperature = 1.0,
+                        .cooling_rate = 0.5,
+                        .max_iterations = 2,
+                    },
+                .max_evaluations = 2,
+            })
+            | (solution_manager<ChainSolutionManager>() | component<ChainValue>())
+            | neighborhood<RandomOnlyChainNeighborhood>();
+        std::mt19937 budget_rng{7U};
+        const auto spent = budgeted.bind(instance).run(ChainSolution{}, budget_rng);
+        ok &= expect(
+            spent.evaluations == 2
+                && spent.termination
+                    == easylocal::termination_reason::evaluation_budget_exhausted,
+            "SA stops at its max_evaluations");
+
         std::mt19937 trace_rng{7U};
         easylocal::trace::memory_recorder<int> trace;
         const auto traced = runner.bind(instance).run(ChainSolution{}, trace_rng, easylocal::with(trace));

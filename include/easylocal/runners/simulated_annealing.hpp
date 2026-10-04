@@ -21,6 +21,7 @@
 #include <optional>
 #include <random>
 #include <span>
+#include <stdexcept>
 #include <tuple>
 #include <type_traits>
 #include <utility>
@@ -1642,12 +1643,14 @@ public:
 // Algorithm.
 
 /// The parameters of Simulated Annealing: its temperature policy's, as the
-/// group "temperature" (paths temperature.*).
+/// group "temperature" (paths temperature.*), and its evaluation budget.
 template<class TemperatureParameters>
 struct SimulatedAnnealingParameters
 {
     /// The parameters of the temperature schedule.
     TemperatureParameters temperature{};
+    /// Evaluation budget, including the initial evaluation; unlimited by default.
+    limit max_evaluations{unlimited};
 
     /// The names, members and descriptions of the parameters.
     [[nodiscard]]
@@ -1655,10 +1658,15 @@ struct SimulatedAnnealingParameters
     {
         return config::fields(
             config::group<"temperature", &SimulatedAnnealingParameters::temperature>(
-                "The temperature schedule"));
+                "The temperature schedule"),
+            config::field<
+                "max_evaluations",
+                &SimulatedAnnealingParameters::max_evaluations>(
+                "Maximum number of solution evaluations, or unlimited",
+                config::range(0, easylocal::unlimited)));
     }
 
-    /// The schedule is validated as a group.
+    /// Whether the parameters are valid, and why not.
     [[nodiscard]]
     config::validation_result validate() const noexcept
     {
@@ -1750,7 +1758,9 @@ public:
     explicit SimulatedAnnealing(
         const SimulatedAnnealingParameters<typename Policy::parameters_type>& parameters,
         Acceptance acceptance = {})
-        : temperature_policy_{parameters.temperature}, acceptance_{std::move(acceptance)}
+        : temperature_policy_{parameters.temperature},
+          acceptance_{std::move(acceptance)},
+          max_evaluations_{parameters.max_evaluations}
     {
     }
 
@@ -1780,6 +1790,7 @@ public:
     [[nodiscard]]
     auto run(Run& run, typename Run::solution_type solution, RNG& rng) const
     {
+        run.limit_evaluations(max_evaluations_);
         auto temperature = temperature_policy_;
         auto current = run.start(solution);
         if constexpr (calibrating_temperature_policy<TemperaturePolicy>)
@@ -1853,12 +1864,15 @@ private:
         }
         else
         {
-            assert(false && "temperature calibration requires cost::delta");
+            throw std::invalid_argument{
+                "temperature calibration (calibration_samples above 0) requires a cost "
+                "with cost::delta"};
         }
     }
 
     EASYLOCAL_NO_UNIQUE_ADDRESS TemperaturePolicy temperature_policy_;
     EASYLOCAL_NO_UNIQUE_ADDRESS Acceptance acceptance_;
+    limit max_evaluations_{unlimited};
 };
 
 /// Deduces the algorithm from its temperature policy, with the Metropolis
