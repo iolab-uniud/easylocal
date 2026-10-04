@@ -351,10 +351,11 @@ The Assignment executable is
 Timetabling adds `easylocal_exam_timetabling`; and the TSP executable is
 `easylocal_tsp_sa`. The TSP example composes 2-opt and swap neighborhoods
 through `neighborhood_union(...)`, applies the bias values held by its
-`NeighborhoodUnionParameters<2>` block, attaches child-local tour-length deltas,
-and passes an explicit RNG to `run()`. A neighborhood union propagates a
-component delta only when every child provides that component; tagged moves are
-then dispatched to the originating child's binding without virtual dispatch.
+`NeighborhoodUnionParameters<2>` block, attaches a tour-length delta cost
+component to each child, and passes an explicit RNG to `run()`. A neighborhood
+union uses a delta cost component only when every child provides one for that
+component; tagged moves then go to the originating child's binding without
+virtual dispatch.
 
 Simulated Annealing is public under `easylocal::runners`. Its hot loop is fully
 policy based and uses no virtual dispatch: the concrete temperature and
