@@ -33,16 +33,13 @@ concept base_solution_manager =
         } -> std::convertible_to<bool>;
     };
 
-/// Optional SolutionManager construction capabilities.
+/// A SolutionManager with `initial_solution()`, which builds a solution
+/// without randomness.
 ///
-/// They deliberately do not participate in the minimal base_solution_manager
-/// contract: a Runner starts from an existing solution, while a Solver may
-/// choose to require one of these capabilities when it owns solution
-/// initialization.
-///
-/// Both operations are observed through a const SolutionManager. Randomness is
-/// supplied explicitly by the caller so that the future Solver layer can own
-/// seeding and RNG state without hidden per-service engines.
+/// It is not part of the minimal contract: a runner starts from a given
+/// solution, and the solvers and tools that build one require this or
+/// has_random_solution, whose generator the caller owns, so that a seed
+/// reproduces the solve.
 template<class SM>
 concept has_initial_solution =
     requires(const SM& solution_manager) {
@@ -65,14 +62,14 @@ concept has_random_solution =
         } -> std::same_as<typename SM::solution_type>;
     };
 
-/// Optional solution identity, for algorithms and tools that recognize a
-/// solution met before (reactive tabu search, search trajectories): a hash,
-/// equal for equal solutions, and an equality.
+/// A SolutionManager with a `hash(solution)` member, the solution identity
+/// that algorithms and tools use to recognize a solution met before (reactive
+/// tabu search, search trajectories).
 ///
-/// A SolutionManager member takes precedence over the solution type's own
-/// std::hash or operator==, so that a problem can leave out redundant data
-/// (caches, derived matrices) or identify symmetric representations. Nothing in
-/// the framework requires them.
+/// It takes precedence over the solution type's own std::hash, so that a
+/// problem can leave out redundant data (caches, derived matrices) or identify
+/// symmetric representations; an `equal(lhs, rhs)` member does the same for
+/// operator==. Nothing in the framework requires them.
 template<class SM>
 concept has_solution_hash_member =
     requires(const SM& solution_manager, const typename SM::solution_type& solution) {

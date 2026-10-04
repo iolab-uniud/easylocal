@@ -226,9 +226,8 @@ public:
     };
 
     [[nodiscard]]
-    EASYLOCAL_DETAIL_CURSOR_FORCE_INLINE
-    auto begin() const
-        noexcept(noexcept(iterator{*explorer_, *solution_})) -> iterator
+    EASYLOCAL_DETAIL_CURSOR_FORCE_INLINE iterator begin() const
+        noexcept(noexcept(iterator{*explorer_, *solution_}))
     {
         assert(explorer_ != nullptr);
         assert(solution_ != nullptr);

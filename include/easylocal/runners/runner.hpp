@@ -102,13 +102,12 @@ public:
     }
 
     // Semantic cost queries used by search algorithms. A cost::apply at the
-    // root of the cost expression may override the meaning of these relations; otherwise the ordinary cost
-    // operators provide the exact/default semantics.
+    // root of the cost expression may override the meaning of these
+    // relations; otherwise the ordinary cost operators provide them.
     //
-    // These are deliberately distinct queries. In particular,
-    // better_or_equivalent() is not defined as better() || equivalent(), so a
-    // future lazy cost model can answer <= in one pass without forcing two
-    // potentially expensive semantic comparisons.
+    // These are deliberately distinct queries: better_or_equivalent() is not
+    // better() || equivalent(), so a cost model may answer <= in one pass
+    // rather than with two potentially expensive comparisons.
     [[nodiscard]]
     constexpr bool better(const cost_type& candidate, const cost_type& reference) const
         requires easylocal::cost::has_better<SM>
@@ -492,8 +491,8 @@ public:
     {
     }
 
-    /// A parameterized algorithm is built from its parameters when the runner is
-    /// bound: make_runner<Algorithm>(parameters) creates the runner.
+    /// A parameterized algorithm is built from its parameters when the runner
+    /// is bound: make_runner<Algorithm>(parameters) creates the runner.
     template<class Self = Algorithm>
         requires detail::parameterized_algorithm<Self>
     explicit Runner(Algorithm)

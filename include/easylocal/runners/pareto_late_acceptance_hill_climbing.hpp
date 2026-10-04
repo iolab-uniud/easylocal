@@ -37,7 +37,8 @@ struct ParetoLateAcceptanceHillClimbingParameters
     /// A candidate that does not dominate the current solution may still
     /// replace the next solution of the history if it dominates it.
     bool second_chance{true};
-    /// Evaluation budget, including the initial evaluations; unlimited by default.
+    /// Evaluation budget, including the initial evaluations; unlimited by
+    /// default.
     limit max_evaluations{unlimited};
 
     /// The names, members and descriptions of the parameters.

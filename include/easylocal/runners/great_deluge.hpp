@@ -32,7 +32,8 @@ struct GreatDelugeParameters
     double level_rate{0.99};
     /// Proposals at each level.
     std::size_t neighbors_sampled{100};
-    /// Evaluation budget, including the initial evaluation; unlimited by default.
+    /// Evaluation budget, including the initial evaluation; unlimited by
+    /// default.
     limit max_evaluations{unlimited};
 
     /// The names, members and descriptions of the parameters.

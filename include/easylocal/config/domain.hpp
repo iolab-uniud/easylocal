@@ -81,7 +81,8 @@ struct range_domain
 
     /// The same range on a logarithmic scale; its lower bound must be positive.
     ///
-    /// Throws std::invalid_argument otherwise (a compilation error in a schema).
+    /// Throws std::invalid_argument otherwise (a compilation error in a
+    /// schema).
     [[nodiscard]]
     constexpr range_domain log() const
     {
@@ -125,9 +126,10 @@ constexpr range_domain<Number> range(const Number low, const easylocal::limit hi
     return {.low = low, .high = Number{}, .unbounded = true};
 }
 
-/// Any value: the domain of a field whose values are all valid, such as a
-/// seed, free text or a number that may be negative. It is declared as
-/// easylocal::unlimited: `field<"seed", &P::seed>("...", easylocal::unlimited)`.
+/// Any value: the domain of a field whose values are all valid, such as a seed,
+/// free text or a number that may be negative. It is declared as
+/// easylocal::unlimited: `field<"seed", &P::seed>("...",
+/// easylocal::unlimited)`.
 struct unbounded_domain
 {
 };

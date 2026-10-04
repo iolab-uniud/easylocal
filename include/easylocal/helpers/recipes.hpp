@@ -169,8 +169,8 @@ auto neighborhood(Args&&... args)
     }
 }
 
-/// The delta cost component co-located in `Component`, its `delta_evaluate`, bound
-/// to a neighborhood recipe with `neighborhood<NHE>() | delta<C>()`.
+/// The delta cost component co-located in `Component`, its `delta_evaluate`,
+/// bound to a neighborhood recipe with `neighborhood<NHE>() | delta<C>()`.
 template<class Component>
 [[nodiscard]]
 auto delta()
@@ -178,9 +178,9 @@ auto delta()
     return detail::colocated_delta_spec<Component>{};
 }
 
-/// The delta cost component `DeltaEvaluator` of `Component`, constructed from the
-/// Input and `args` (or from `args` alone), bound to a neighborhood recipe with
-/// `neighborhood<NHE>() | delta<C, D>(args...)`.
+/// The delta cost component `DeltaEvaluator` of `Component`, constructed from
+/// the Input and `args` (or from `args` alone), bound to a neighborhood recipe
+/// with `neighborhood<NHE>() | delta<C, D>(args...)`.
 template<class Component, class DeltaEvaluator, class... Args>
 [[nodiscard]]
 auto delta(Args&&... args)

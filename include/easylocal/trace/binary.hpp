@@ -398,8 +398,8 @@ struct default_binary_cost<Cost> : std::true_type
 } // namespace detail
 
 /// The cost writer of the recorders by default: an arithmetic cost as i64, u64
-/// or f64; a cost::lexicographic as its levels ("0", "1", ...) and a
-/// cost::hierarchical as "hard" and "soft", nested as the types are.
+/// or f64; a cost::lexicographic or a cost::pareto as its levels ("0", "1",
+/// ...) and a cost::hierarchical as "hard" and "soft", nested as the types are.
 template<class Cost>
 struct default_binary_cost_writer
 {

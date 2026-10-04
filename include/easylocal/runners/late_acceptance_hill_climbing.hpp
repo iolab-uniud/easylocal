@@ -28,7 +28,8 @@ struct LateAcceptanceHillClimbingParameters
     /// Consecutive proposals without improving the best cost after which the
     /// search stops.
     std::size_t max_idle_iterations{1000};
-    /// Evaluation budget, including the initial evaluation; unlimited by default.
+    /// Evaluation budget, including the initial evaluation; unlimited by
+    /// default.
     limit max_evaluations{unlimited};
 
     /// The names, members and descriptions of the parameters.

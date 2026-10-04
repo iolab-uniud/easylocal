@@ -1441,15 +1441,15 @@ private:
 /// The parameters of the RandomFoo tabu list.
 struct RandomFooParameters
 {
-    /// The range of Foo's window.
+    /// The smallest window drawn.
     std::size_t min_window{50};
     /// The largest window drawn.
     std::size_t max_window{150};
-    /// The range of Foo's increment.
+    /// The smallest increment drawn.
     std::size_t min_increment{2};
     /// The largest increment drawn.
     std::size_t max_increment{8};
-    /// The range of Foo's fluctuation threshold.
+    /// The smallest fluctuation threshold drawn.
     double min_fluctuation{0.5};
     /// The largest fluctuation threshold drawn.
     double max_fluctuation{2.0};
@@ -1640,7 +1640,8 @@ struct TabuSearchParameters
     std::size_t max_idle_iterations{1000};
     /// Iterations in all; unlimited by default.
     limit max_iterations{unlimited};
-    /// Evaluation budget, including the initial evaluation; unlimited by default.
+    /// Evaluation budget, including the initial evaluation; unlimited by
+    /// default.
     limit max_evaluations{unlimited};
     /// The parameters of the tabu list.
     ListParameters tabu_list{};
@@ -1680,7 +1681,8 @@ struct FirstImprovementTabuSearchParameters
     std::size_t max_idle_iterations{1000};
     /// Iterations in all; unlimited by default.
     limit max_iterations{unlimited};
-    /// Evaluation budget, including the initial evaluation; unlimited by default.
+    /// Evaluation budget, including the initial evaluation; unlimited by
+    /// default.
     limit max_evaluations{unlimited};
     /// The scan stops at the first admissible move that improves the best cost
     /// rather than the current one.
@@ -2206,13 +2208,15 @@ struct AspirationPlusTabuSearchParameters
     std::size_t max_idle_iterations{1000};
     /// Iterations in all; unlimited by default.
     limit max_iterations{unlimited};
-    /// Evaluation budget, including the initial evaluation; unlimited by default.
+    /// Evaluation budget, including the initial evaluation; unlimited by
+    /// default.
     limit max_evaluations{unlimited};
     /// Admissible moves examined at least in each scan.
     std::size_t min_moves{10};
     /// Admissible moves examined at most in each scan.
     std::size_t max_moves{100};
-    /// Admissible moves examined after the first one under the aspiration level.
+    /// Admissible moves examined after the first one under the aspiration
+    /// level.
     std::size_t plus{5};
     /// The aspiration level, as a factor of the best cost.
     double aspiration_level{1.0};
@@ -2345,7 +2349,8 @@ struct EliteCandidateTabuSearchParameters
     std::size_t max_idle_iterations{1000};
     /// Iterations in all; unlimited by default.
     limit max_iterations{unlimited};
-    /// Evaluation budget, including the initial evaluation; unlimited by default.
+    /// Evaluation budget, including the initial evaluation; unlimited by
+    /// default.
     limit max_evaluations{unlimited};
     /// The moves kept from a full scan.
     std::size_t elite_size{10};

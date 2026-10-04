@@ -149,7 +149,8 @@ template<check_fixture Fixture, class NHE>
     return report;
 }
 
-/// The same, with the NeighborhoodExplorer built on the fixture's SolutionManager.
+/// The same, with the NeighborhoodExplorer built on the fixture's
+/// SolutionManager.
 template<class NHE, check_fixture Fixture>
 [[nodiscard]] check_report check_neighborhood(const Fixture& fixture)
 {

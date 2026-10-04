@@ -160,16 +160,16 @@ auto read_file(const std::filesystem::path& path, const std::string_view what, R
 } // namespace detail::io
 
 /// An Input that can be read from a stream: by a static Input::read(in), by a
-/// free read_input(std::type_identity<Input>, in) found by ADL, or by operator>>
-/// on a default-constructed Input, in this order.
+/// free read_input(std::type_identity<Input>, in) found by ADL, or by
+/// operator>> on a default-constructed Input, in this order.
 template<class Input>
 concept readable_input =
     detail::io::has_static_input_read<Input> || detail::io::adl::has_read_input<Input>
     || detail::io::has_input_stream_extraction<Input>;
 
 /// A Solution that can be read from a stream, given its Input: by a static
-/// Solution::read(input, in), by a free read_solution(input, in) found by ADL, or
-/// by operator>> on Solution{input}, in this order.
+/// Solution::read(input, in), by a free read_solution(input, in) found by ADL,
+/// or by operator>> on Solution{input}, in this order.
 template<class Input, class Solution>
 concept readable_solution = detail::io::has_static_solution_read<Input, Solution>
     || detail::io::adl::has_read_solution<Input, Solution>

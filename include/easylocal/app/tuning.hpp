@@ -42,8 +42,8 @@ struct TuningParameters
     /// The directory where the files of an irace scenario are written; empty:
     /// none.
     std::filesystem::path irace{};
-    /// What a run prints: empty for the usual report, "cost" for the cost as one
-    /// number, "cost_time" for the cost and the running time in seconds.
+    /// What a run prints: empty for the usual report, "cost" for the cost as
+    /// one number, "cost_time" for the cost and the running time in seconds.
     std::string print{};
     /// The weight of a hard cost over a soft one, and of each lexicographic
     /// value over the next, when a cost is turned into one number; it must
@@ -82,7 +82,8 @@ struct TuningParameters
 
 /// The values worth trying for a parameter: a domain, narrower than the one its
 /// schema declares, given by a program for tuning, e.g.
-/// `{"runners.sa.temperature.initial_temperature", config::range(1.0, 1000.0).log()}`.
+/// `{"runners.sa.temperature.initial_temperature", config::range(1.0,
+/// 1000.0).log()}`.
 struct tuning_range
 {
     /// The full path of the parameter.
@@ -90,7 +91,8 @@ struct tuning_range
     /// The values to try.
     config::domain_info domain;
 
-    /// From the path of a parameter and a domain (config::range, config::one_of).
+    /// From the path of a parameter and a domain (config::range,
+    /// config::one_of).
     template<class Domain>
         requires config::is_domain_v<Domain>
     tuning_range(std::string parameter_path, const Domain& values)
@@ -736,7 +738,8 @@ inline std::string shell_quote(const std::string_view text)
     return result + '\'';
 }
 
-// Writes a file unless it exists; false when it cannot be written.
+// Writes a file unless it exists, and records in result whether it was
+// written, kept, or could not be written.
 template<class Write>
 void write_new_file(
     const std::filesystem::path& path,

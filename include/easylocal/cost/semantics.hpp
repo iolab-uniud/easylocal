@@ -23,8 +23,8 @@ namespace detail
 //
 // Keep better, equivalent, and better_or_equivalent as independent queries.
 // In particular, do not implement better_or_equivalent as better || equivalent:
-// a future lazy cost model must be free to answer the <= semantic relation in a
-// single pass over only the components needed to decide it.
+// a cost model may answer the <= relation in a single pass over only the
+// components needed to decide it.
 
 template<class SM>
 concept custom_better =

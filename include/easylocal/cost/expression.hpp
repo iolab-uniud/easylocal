@@ -205,7 +205,7 @@ template<class T>
 inline constexpr bool is_expression_v =
     is_expression<std::remove_cvref_t<T>>::value;
 
-/// child * w and w * child are cost::weighted(child, w).
+/// `child * weight` is `cost::weighted(child, weight)`.
 template<class Child, arithmetic Weight>
     requires is_expression_v<Child>
 [[nodiscard]]

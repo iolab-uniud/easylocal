@@ -5,15 +5,15 @@
 /// each stage starting from the solution of the previous one.
 ///
 ///     using namespace easylocal::solvers;
-///     auto solver = (stage("feasible", descent) & until_feasible() & attempts(10))
-///         | stage("descent", descent)
+///     auto feasible = stage("feasible", descent) & until_feasible();
+///     auto solver = (feasible & attempts(10)) | stage("descent", descent)
 ///         | stage("anneal", annealing);
 ///     auto result = solver.seed(7).solve(input);
 ///
 /// The same pipeline, spelled out:
 ///
-///     auto solver = pipeline(stage("feasible",
-///     descent).until_feasible().with_attempts(10))
+///     auto feasible = stage("feasible", descent).until_feasible();
+///     auto solver = pipeline(feasible.with_attempts(10))
 ///                       .then(stage("descent", descent))
 ///                       .then(stage("anneal", annealing));
 
@@ -86,12 +86,14 @@ struct StageParameters
 template<class Runner>
 class pipeline_stage;
 
-/// A stage of a pipeline: a named runner, with an optional target cost and a
-/// number of attempts.
+/// A stage of a pipeline: a named runner, with an optional target cost, a
+/// number of attempts, and an optional time limit and evaluation budget.
 ///
 /// A stage is built by stage(name, runner) and refined by with_target(),
-/// with_attempts() and until_feasible(), each returning the refined stage, or
-/// with `&` and the modifiers target(), attempts() and until_feasible().
+/// with_attempts(), until_feasible(), with_timeout() and
+/// with_max_evaluations(), each returning the refined stage, or with `&` and
+/// the modifiers target(), attempts(), until_feasible(), timeout() and
+/// max_evaluations().
 template<class Runner>
 class pipeline_stage
 {
@@ -151,8 +153,8 @@ public:
         return pipeline_stage{*this}.with_attempts(count);
     }
 
-    /// The same stage, stopped once `limit` has passed since it started, all its
-    /// attempts together.
+    /// The same stage, stopped once `limit` has passed since it started, all
+    /// its attempts together.
     ///
     /// Throws `std::invalid_argument` when the limit is negative.
     template<class Rep, class Period>
@@ -166,8 +168,8 @@ public:
         return std::move(*this);
     }
 
-    /// The same stage, stopped once `limit` has passed since it started, all its
-    /// attempts together.
+    /// The same stage, stopped once `limit` has passed since it started, all
+    /// its attempts together.
     ///
     /// Throws `std::invalid_argument` when the limit is negative.
     template<class Rep, class Period>
@@ -179,7 +181,8 @@ public:
 
     /// The same stage, stopped once `seconds` have passed since it started.
     ///
-    /// Throws `std::invalid_argument` when the number is negative or not finite.
+    /// Throws `std::invalid_argument` when the number is negative or not
+    /// finite.
     [[nodiscard]]
     pipeline_stage with_timeout(const double seconds) &&
     {
@@ -189,7 +192,8 @@ public:
 
     /// The same stage, stopped once `seconds` have passed since it started.
     ///
-    /// Throws `std::invalid_argument` when the number is negative or not finite.
+    /// Throws `std::invalid_argument` when the number is negative or not
+    /// finite.
     [[nodiscard]]
     pipeline_stage with_timeout(const double seconds) const&
     {
@@ -287,7 +291,7 @@ public:
         return target_;
     }
 
-    /// The stage's own parameters (attempts).
+    /// The stage's own parameters (attempts, timeout, max_evaluations).
     template<class Self>
     [[nodiscard]]
     auto& parameters(this Self&& self) noexcept
@@ -556,8 +560,8 @@ public:
     }
 
     /// The same pipeline, building its initial solutions as `initialization`
-    /// says: initialization::initial or random, rejected at compile time when the
-    /// first stage does not support it, or a Mode, checked here.
+    /// says: initialization::initial or random, rejected at compile time when
+    /// the first stage does not support it, or a Mode, checked here.
     template<class Initialization>
         requires easylocal::detail::accepted_initialization<
             Initialization,
@@ -570,8 +574,8 @@ public:
     }
 
     /// The same pipeline, building its initial solutions as `initialization`
-    /// says: initialization::initial or random, rejected at compile time when the
-    /// first stage does not support it, or a Mode, checked here.
+    /// says: initialization::initial or random, rejected at compile time when
+    /// the first stage does not support it, or a Mode, checked here.
     template<class Initialization>
         requires easylocal::detail::accepted_initialization<
             Initialization,
@@ -672,7 +676,8 @@ public:
     }
 
     /// The parameters of every stage under its name: its runner's and its own
-    /// (`<name>.attempts`), read-only when the pipeline is const.
+    /// (`<name>.attempts`, `<name>.timeout`, `<name>.max_evaluations`),
+    /// read-only when the pipeline is const.
     ///
     /// Throws `std::invalid_argument` when two stages have the same name, or
     /// one has none.

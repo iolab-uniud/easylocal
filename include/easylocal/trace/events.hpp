@@ -165,7 +165,7 @@ struct aspiration_applied
     Cost cost;
 };
 
-/// A reactive tabu list's escape: moves random moves follow.
+/// A reactive tabu list's escape: `moves` random moves follow.
 struct tabu_escape
 {
     /// Evaluations so far.

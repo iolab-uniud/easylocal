@@ -144,11 +144,9 @@ template<class Fixture, class NHE, class Component, class Delta>
 
 } // namespace detail
 
-/// For the valid moves of the fixture Solution (enumerated, or sampled when the
-/// neighborhood cannot enumerate), value + delta equals the component's value
-/// after the move.
-///
-/// The delta comes from a separate delta cost component...
+/// Checks a separate delta cost component: for the valid moves of the fixture
+/// Solution (enumerated, or sampled when the neighborhood cannot enumerate),
+/// value + delta equals the component's value after the move.
 template<check_fixture Fixture, class NHE, class Component, class DeltaEvaluator>
 [[nodiscard]] check_report check_delta_evaluator(
     const Fixture& fixture,
@@ -159,7 +157,9 @@ template<check_fixture Fixture, class NHE, class Component, class DeltaEvaluator
     return detail::check_delta_law(fixture, neighborhood, component, delta_evaluator);
 }
 
-/// ...or from the component's own delta_evaluate (co-located).
+/// Checks the component's own delta_evaluate (co-located): for the valid moves
+/// of the fixture Solution, value + delta equals the component's value after
+/// the move.
 template<check_fixture Fixture, class NHE, class Component>
 [[nodiscard]] check_report check_delta_evaluator(
     const Fixture& fixture,

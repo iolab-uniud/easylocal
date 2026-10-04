@@ -1595,7 +1595,8 @@ struct SimulatedAnnealingParameters
 {
     /// The parameters of the temperature schedule.
     TemperatureParameters temperature{};
-    /// Evaluation budget, including the initial evaluation; unlimited by default.
+    /// Evaluation budget, including the initial evaluation; unlimited by
+    /// default.
     limit max_evaluations{unlimited};
 
     /// The names, members and descriptions of the parameters.

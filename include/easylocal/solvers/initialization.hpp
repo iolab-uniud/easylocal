@@ -1,9 +1,9 @@
 #pragma once
 
-/// \file
-/// How a solver builds the initial solution: initialization::initial or
+/// \file How a solver builds the initial solution: initialization::initial or
 /// initialization::random, as compile-time tags or as a runtime Mode, and
-/// detail::InitializationSupport, the part of the solvers that keeps the choice.
+/// detail::InitializationSupport, the part of the solvers that keeps the
+/// choice.
 
 #include <easylocal/solvers/solver.hpp>
 

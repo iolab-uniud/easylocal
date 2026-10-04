@@ -18,8 +18,8 @@ namespace easylocal::runners
 /// The parameters of FirstImprovement.
 struct FirstImprovementParameters
 {
-    /// Evaluation budget, including the initial evaluation; unlimited by default:
-    /// the search runs until a local optimum.
+    /// Evaluation budget, including the initial evaluation; unlimited by
+    /// default: the search runs until a local optimum.
     limit max_evaluations{unlimited};
 
     /// The names, members and descriptions of the parameters.

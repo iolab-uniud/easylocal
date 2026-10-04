@@ -36,10 +36,10 @@
 namespace easylocal
 {
 
-
-/// The result contract consumed by solvers, runs by name (app.run) and the
-/// adapters: the final solution and its cost. search_result models it; custom runners may
-/// return richer types.
+/// What solvers, runs by name (app.run) and the adapters read of a result: the
+/// final solution and its cost.
+///
+/// search_result models it; a custom runner may return a richer type.
 template<class Result, class Solution, class Cost>
 concept search_result_for =
     requires(Result& result, const Result& const_result) {
@@ -225,9 +225,11 @@ struct run_options
         return options;
     }
 
-    /// The same options with a time limit in seconds: with(control).timeout(2.5).
+    /// The same options with a time limit in seconds:
+    /// with(control).timeout(2.5).
     ///
-    /// Throws `std::invalid_argument` when the number is negative or not finite.
+    /// Throws `std::invalid_argument` when the number is negative or not
+    /// finite.
     [[nodiscard]]
     run_options timeout(const double seconds) const
     {
@@ -281,7 +283,8 @@ run_options<trace::null_tracer> timeout(const std::chrono::duration<Rep, Period>
     return run_options<trace::null_tracer>{}.timeout(limit);
 }
 
-/// Run options with only an evaluation budget: easylocal::max_evaluations(10000).
+/// Run options with only an evaluation budget:
+/// easylocal::max_evaluations(10000).
 ///
 /// The run stops, with termination_reason::evaluation_budget_exhausted, once it
 /// has made `count` evaluations, the initial one included; a runner's own

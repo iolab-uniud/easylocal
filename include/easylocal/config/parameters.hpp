@@ -192,8 +192,8 @@ constexpr parameter_field<Name, Member, unbounded_domain> field(
 }
 
 /// A member that is itself a parameter block, nested in the schema: its fields
-/// are under "Name.", and its validate() runs with the enclosing block's, e.g.
-/// group<"temperature", &AnnealingParameters::temperature>("Temperature schedule").
+/// are under "Name.", and its validate() runs with the enclosing block's, as in
+/// `group<"temperature", &Parameters::temperature>("Temperature schedule")`.
 template<fixed_string Name, auto Member>
     requires std::is_member_object_pointer_v<decltype(Member)>
 struct parameter_group
@@ -340,7 +340,8 @@ concept configurable_endpoint =
         } -> std::same_as<validation_result>;
     };
 
-/// The fields of a block, without its nested groups: function(descriptor, value).
+/// Calls `function(descriptor, value)` on each field of a block, without its
+/// nested groups.
 template<parameter_block Parameters, class Function>
 constexpr void for_each_parameter(
     Parameters& parameters,
