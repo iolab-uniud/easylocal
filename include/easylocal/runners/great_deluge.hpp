@@ -66,31 +66,9 @@ struct GreatDelugeParameters
     {
         if (const auto schema = config::check_schema(*this); !schema)
             return schema;
-        if (!std::isfinite(initial_level) || initial_level <= 0.0)
-        {
-            return config::validation_result::failure(
-                "initial_level must be finite and positive");
-        }
-        if (!std::isfinite(min_level) || min_level <= 0.0)
-        {
-            return config::validation_result::failure(
-                "min_level must be finite and positive");
-        }
-        if (min_level >= initial_level)
-        {
-            return config::validation_result::failure(
-                "min_level must be smaller than initial_level");
-        }
-        if (!std::isfinite(level_rate) || level_rate <= 0.0 || level_rate >= 1.0)
-        {
-            return config::validation_result::failure(
-                "level_rate must be finite and in the open interval (0, 1)");
-        }
-        if (neighbors_sampled == 0)
-        {
-            return config::validation_result::failure(
-                "neighbors_sampled must be positive");
-        }
+        // The domains have no upper bound: they let an infinite level through.
+        if (!std::isfinite(initial_level) || !std::isfinite(min_level))
+            return config::validation_result::failure("the levels must be finite");
         return config::validation_result::success();
     }
 };

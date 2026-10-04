@@ -252,6 +252,8 @@ void built_in_validate_checks_the_declared_domains()
     assert(classic.validate().message == "cooling_rate is out of its range");
     classic = {};
     classic.initial_acceptance = 0.0;
+    assert(classic.validate()); // without calibration it does not matter
+    classic.calibration_samples = 10;
     assert(!classic.validate());
 
     CutoffParameters cutoff;

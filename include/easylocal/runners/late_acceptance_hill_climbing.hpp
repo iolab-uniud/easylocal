@@ -58,16 +58,7 @@ struct LateAcceptanceHillClimbingParameters
     [[nodiscard]]
     constexpr config::validation_result validate() const noexcept
     {
-        if (const auto schema = config::check_schema(*this); !schema)
-            return schema;
-        if (history_length == 0)
-            return config::validation_result::failure("history_length must be positive");
-        if (max_idle_iterations == 0)
-        {
-            return config::validation_result::failure(
-                "max_idle_iterations must be positive");
-        }
-        return config::validation_result::success();
+        return config::check_schema(*this);
     }
 };
 

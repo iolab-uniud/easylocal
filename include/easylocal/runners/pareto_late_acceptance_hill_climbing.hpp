@@ -12,7 +12,6 @@
 #include <easylocal/utils/limit.hpp>
 
 #include <cassert>
-#include <cmath>
 #include <concepts>
 #include <cstddef>
 #include <memory>
@@ -76,14 +75,7 @@ struct ParetoLateAcceptanceHillClimbingParameters
     [[nodiscard]]
     config::validation_result validate() const noexcept
     {
-        if (const auto schema = config::check_schema(*this); !schema)
-            return schema;
-        if (history_length == 0)
-            return config::validation_result::failure("history_length must be positive");
-        if (!std::isfinite(idle_ratio) || idle_ratio < 0.0 || idle_ratio > 1.0)
-            return config::validation_result::failure(
-                "idle_ratio must be in the interval [0, 1]");
-        return config::validation_result::success();
+        return config::check_schema(*this);
     }
 };
 

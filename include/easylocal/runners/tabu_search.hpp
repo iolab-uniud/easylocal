@@ -368,11 +368,7 @@ struct FixedLengthParameters
     [[nodiscard]]
     constexpr config::validation_result validate() const noexcept
     {
-        if (const auto schema = config::check_schema(*this); !schema)
-            return schema;
-        if (tenure == 0)
-            return config::validation_result::failure("tenure must be positive");
-        return config::validation_result::success();
+        return config::check_schema(*this);
     }
 };
 
@@ -489,8 +485,6 @@ struct RandomTenureParameters
     {
         if (const auto schema = config::check_schema(*this); !schema)
             return schema;
-        if (min_tenure == 0)
-            return config::validation_result::failure("min_tenure must be positive");
         if (max_tenure < min_tenure)
             return config::validation_result::failure(
                 "max_tenure must not be below min_tenure");
@@ -591,8 +585,6 @@ struct CyclicParameters
     {
         if (const auto schema = config::check_schema(*this); !schema)
             return schema;
-        if (period == 0)
-            return config::validation_result::failure("period must be positive");
         if (tenures.empty())
             return config::validation_result::failure("tenures must not be empty");
         if (std::ranges::find(tenures, std::size_t{0}) != tenures.end())
@@ -729,15 +721,9 @@ struct ReactiveParameters
     {
         if (const auto schema = config::check_schema(*this); !schema)
             return schema;
-        if (!std::isfinite(increase) || increase <= 1.0)
-            return config::validation_result::failure("increase must be greater than 1");
-        if (!std::isfinite(decrease) || decrease <= 0.0 || decrease >= 1.0)
-            return config::validation_result::failure(
-                "decrease must be in the open interval (0, 1)");
-        if (cycle_length == 0)
-            return config::validation_result::failure("cycle_length must be positive");
-        if (max_tenure == 0)
-            return config::validation_result::failure("max_tenure must be positive");
+        // Its domain has no upper bound: it lets infinity through.
+        if (!std::isfinite(increase))
+            return config::validation_result::failure("increase must be finite");
         return config::validation_result::success();
     }
 };
@@ -958,12 +944,7 @@ struct FrequencyParameters
     [[nodiscard]]
     config::validation_result validate() const noexcept
     {
-        if (const auto schema = config::check_schema(*this); !schema)
-            return schema;
-        if (!std::isfinite(threshold) || threshold <= 0.0 || threshold > 1.0)
-            return config::validation_result::failure(
-                "threshold must be in the interval (0, 1]");
-        return config::validation_result::success();
+        return config::check_schema(*this);
     }
 };
 
@@ -1064,11 +1045,7 @@ struct ObjectiveBasedParameters
     [[nodiscard]]
     constexpr config::validation_result validate() const noexcept
     {
-        if (const auto schema = config::check_schema(*this); !schema)
-            return schema;
-        if (tenure == 0)
-            return config::validation_result::failure("tenure must be positive");
-        return config::validation_result::success();
+        return config::check_schema(*this);
     }
 };
 
@@ -1175,8 +1152,6 @@ struct LimDynamicParameters
     {
         if (const auto schema = config::check_schema(*this); !schema)
             return schema;
-        if (min_tenure == 0)
-            return config::validation_result::failure("min_tenure must be positive");
         if (max_tenure <= min_tenure)
             return config::validation_result::failure(
                 "max_tenure must exceed min_tenure");
@@ -1379,13 +1354,9 @@ struct FooParameters
     {
         if (const auto schema = config::check_schema(*this); !schema)
             return schema;
-        if (window == 0)
-            return config::validation_result::failure("window must be positive");
-        if (increment == 0)
-            return config::validation_result::failure("increment must be positive");
-        if (!std::isfinite(fluctuation) || fluctuation < 0.0)
-            return config::validation_result::failure(
-                "fluctuation must be finite and non-negative");
+        // Its domain has no upper bound: it lets infinity through.
+        if (!std::isfinite(fluctuation))
+            return config::validation_result::failure("fluctuation must be finite");
         return config::validation_result::success();
     }
 };
@@ -1515,19 +1486,17 @@ struct RandomFooParameters
     {
         if (const auto schema = config::check_schema(*this); !schema)
             return schema;
-        if (min_window == 0 || max_window < min_window)
+        if (max_window < min_window)
             return config::validation_result::failure(
-                "the windows must be positive, min_window not above max_window");
-        if (min_increment == 0 || max_increment < min_increment)
+                "min_window must not be above max_window");
+        if (max_increment < min_increment)
             return config::validation_result::failure(
-                "the increments must be positive, min_increment not above max_increment");
-        if (!std::isfinite(min_fluctuation) || !std::isfinite(max_fluctuation)
-            || min_fluctuation < 0.0 || max_fluctuation < min_fluctuation)
-        {
+                "min_increment must not be above max_increment");
+        if (!std::isfinite(min_fluctuation) || !std::isfinite(max_fluctuation))
+            return config::validation_result::failure("the fluctuations must be finite");
+        if (max_fluctuation < min_fluctuation)
             return config::validation_result::failure(
-                "the fluctuations must be finite and non-negative, min_fluctuation not above "
-                "max_fluctuation");
-        }
+                "min_fluctuation must not be above max_fluctuation");
         return config::validation_result::success();
     }
 };
@@ -1698,14 +1667,7 @@ struct TabuSearchParameters
     [[nodiscard]]
     constexpr config::validation_result validate() const noexcept
     {
-        if (const auto schema = config::check_schema(*this); !schema)
-            return schema;
-        if (max_idle_iterations == 0)
-        {
-            return config::validation_result::failure(
-                "max_idle_iterations must be positive");
-        }
-        return config::validation_result::success();
+        return config::check_schema(*this);
     }
 };
 
@@ -1750,14 +1712,7 @@ struct FirstImprovementTabuSearchParameters
     [[nodiscard]]
     constexpr config::validation_result validate() const noexcept
     {
-        if (const auto schema = config::check_schema(*this); !schema)
-            return schema;
-        if (max_idle_iterations == 0)
-        {
-            return config::validation_result::failure(
-                "max_idle_iterations must be positive");
-        }
-        return config::validation_result::success();
+        return config::check_schema(*this);
     }
 };
 
@@ -2300,15 +2255,12 @@ struct AspirationPlusTabuSearchParameters
     {
         if (const auto schema = config::check_schema(*this); !schema)
             return schema;
-        if (max_idle_iterations == 0)
+        if (max_moves < min_moves)
             return config::validation_result::failure(
-                "max_idle_iterations must be positive");
-        if (min_moves == 0 || max_moves < min_moves)
-            return config::validation_result::failure(
-                "min_moves must be positive and not above max_moves");
-        if (!std::isfinite(aspiration_level) || aspiration_level < 1.0)
-            return config::validation_result::failure(
-                "aspiration_level must be finite and at least 1");
+                "min_moves must not be above max_moves");
+        // Its domain has no upper bound: it lets infinity through.
+        if (!std::isfinite(aspiration_level))
+            return config::validation_result::failure("aspiration_level must be finite");
         return config::validation_result::success();
     }
 };
@@ -2433,14 +2385,9 @@ struct EliteCandidateTabuSearchParameters
     {
         if (const auto schema = config::check_schema(*this); !schema)
             return schema;
-        if (max_idle_iterations == 0)
-            return config::validation_result::failure(
-                "max_idle_iterations must be positive");
-        if (elite_size == 0)
-            return config::validation_result::failure("elite_size must be positive");
-        if (!std::isfinite(quality) || quality < 1.0)
-            return config::validation_result::failure(
-                "quality must be finite and at least 1");
+        // Its domain has no upper bound: it lets infinity through.
+        if (!std::isfinite(quality))
+            return config::validation_result::failure("quality must be finite");
         return config::validation_result::success();
     }
 };

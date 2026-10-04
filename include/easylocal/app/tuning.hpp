@@ -73,10 +73,9 @@ struct TuningParameters
     {
         if (const auto schema = config::check_schema(*this); !schema)
             return schema;
-        if (!print.empty() && print != "cost" && print != "cost_time")
-            return config::validation_result::failure("print must be cost or cost_time");
-        if (!std::isfinite(hard_weight) || hard_weight <= 0.0)
-            return config::validation_result::failure("hard_weight must be positive");
+        // Its domain has no upper bound: it lets infinity through.
+        if (!std::isfinite(hard_weight))
+            return config::validation_result::failure("hard_weight must be finite");
         return config::validation_result::success();
     }
 };

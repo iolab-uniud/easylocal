@@ -116,8 +116,6 @@ struct parameters
     {
         if (const auto schema = config::check_schema(*this); !schema)
             return schema;
-        if (!start.empty() && start != "random" && start != "initial")
-            return config::validation_result::failure("start must be random or initial");
         if (!timeout_seconds())
         {
             return config::validation_result::failure(

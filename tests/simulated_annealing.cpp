@@ -662,10 +662,14 @@ int main()
             "a calibrated reheating keeps its reheat temperature above the final one");
 
         ok &= expect(
-            !temperature::ClassicParameters{.initial_acceptance = 1.0}.validate()
-                && !temperature::TimeBasedParameters{.initial_acceptance = 0.0}
-                    .validate(),
-            "policies reject an initial acceptance outside (0, 1)");
+            !temperature::ClassicParameters{
+                .calibration_samples = 10,
+                .initial_acceptance = 1.0}
+                    .validate()
+                && !temperature::
+                    TimeBasedParameters{.calibration_samples = 10, .initial_acceptance = 0.0}
+                        .validate(),
+            "calibrating policies reject an initial acceptance outside (0, 1)");
     }
 
     {

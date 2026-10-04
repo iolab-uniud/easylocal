@@ -40,11 +40,7 @@ struct MultiStartParameters
     [[nodiscard]]
     config::validation_result validate() const noexcept
     {
-        if (const auto schema = config::check_schema(*this); !schema)
-            return schema;
-        return starts == 0
-            ? config::validation_result::failure("MultiStart requires at least one start")
-            : config::validation_result::success();
+        return config::check_schema(*this);
     }
 };
 

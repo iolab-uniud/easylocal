@@ -79,17 +79,7 @@ struct StageParameters
     [[nodiscard]]
     config::validation_result validate() const noexcept
     {
-        if (const auto schema = config::check_schema(*this); !schema)
-            return schema;
-        if (attempts == 0)
-            return config::validation_result::failure(
-                "a stage needs at least one attempt");
-        if (!(timeout >= 0.0))
-        {
-            return config::validation_result::failure(
-                "a stage's timeout must be a non-negative number of seconds");
-        }
-        return config::validation_result::success();
+        return config::check_schema(*this);
     }
 };
 

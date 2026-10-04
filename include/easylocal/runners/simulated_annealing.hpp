@@ -136,16 +136,16 @@ inline std::size_t temperature_level_count(
     return std::max(std::size_t{1}, static_cast<std::size_t>(std::ceil(raw_levels)));
 }
 
+// What the schemas cannot say: their domains have no upper bound, and let an
+// infinite value through. The message is a literal, which a validation result
+// refers to.
 [[nodiscard]]
-inline config::validation_result validate_calibration(
-    const double initial_acceptance) noexcept
+constexpr config::validation_result validate_finite(
+    const double value,
+    const std::string_view message) noexcept
 {
-    if (!std::isfinite(initial_acceptance) || initial_acceptance <= 0.0
-        || initial_acceptance >= 1.0)
-    {
-        return config::validation_result::failure(
-            "initial_acceptance must be finite and in the open interval (0, 1)");
-    }
+    if (!std::isfinite(value))
+        return config::validation_result::failure(message);
     return config::validation_result::success();
 }
 
@@ -252,20 +252,11 @@ struct ClassicParameters
     {
         if (const auto schema = config::check_schema(*this); !schema)
             return schema;
-        const auto calibration = detail::validate_calibration(initial_acceptance);
-        if (!calibration)
-            return calibration;
-        const auto schedule = detail::validate_cooling_schedule(
-            initial_temperature, final_temperature, cooling_rate);
-        if (!schedule)
-        {
-            return schedule;
-        }
-        if (samples_per_temperature == 0)
-        {
-            return config::validation_result::failure(
-                "samples_per_temperature must be positive");
-        }
+        if (const auto finite = detail::validate_finite(
+                initial_temperature,
+                "initial_temperature must be finite");
+            !finite)
+            return finite;
         return config::validation_result::success();
     }
 };
@@ -412,23 +403,9 @@ struct FixedLengthParameters
     {
         if (const auto schema = config::check_schema(*this); !schema)
             return schema;
-        const auto calibration = detail::validate_calibration(initial_acceptance);
-        if (!calibration)
-            return calibration;
-        const auto schedule = detail::validate_cooling_schedule(
+        return detail::validate_finite(
             initial_temperature,
-            final_temperature,
-            cooling_rate);
-        if (!schedule)
-            return schedule;
-
-        if (max_iterations == 0)
-        {
-            return config::validation_result::failure(
-                "max_iterations must be positive");
-        }
-
-        return config::validation_result::success();
+            "initial_temperature must be finite");
     }
 };
 
@@ -594,26 +571,9 @@ struct CutoffParameters
     {
         if (const auto schema = config::check_schema(*this); !schema)
             return schema;
-        const auto calibration = detail::validate_calibration(initial_acceptance);
-        if (!calibration)
-            return calibration;
-        const auto schedule = detail::validate_cooling_schedule(
-            initial_temperature, final_temperature, cooling_rate);
-        if (!schedule)
-        {
-            return schedule;
-        }
-        if (max_iterations == 0)
-        {
-            return config::validation_result::failure(
-                "max_iterations must be positive");
-        }
-        if (!std::isfinite(accepted_ratio) || accepted_ratio <= 0.0 || accepted_ratio > 1.0)
-        {
-            return config::validation_result::failure(
-                "accepted_ratio must be finite and in the interval (0, 1]");
-        }
-        return config::validation_result::success();
+        return detail::validate_finite(
+            initial_temperature,
+            "initial_temperature must be finite");
     }
 };
 
@@ -932,23 +892,7 @@ struct FixedTemperatureParameters
     {
         if (const auto schema = config::check_schema(*this); !schema)
             return schema;
-        const auto calibration = detail::validate_calibration(initial_acceptance);
-        if (!calibration)
-            return calibration;
-        if (!std::isfinite(temperature) || temperature <= 0.0)
-        {
-            return config::validation_result::failure(
-                "temperature must be finite and positive");
-        }
-        if (max_iterations == 0)
-            return config::validation_result::failure("max_iterations must be positive");
-        if (!std::isfinite(accepted_ratio) || accepted_ratio <= 0.0
-            || accepted_ratio > 1.0)
-        {
-            return config::validation_result::failure(
-                "accepted_ratio must be finite and in the interval (0, 1]");
-        }
-        return config::validation_result::success();
+        return detail::validate_finite(temperature, "temperature must be finite");
     }
 };
 
@@ -1113,21 +1057,14 @@ struct TimeBasedParameters
     {
         if (const auto schema = config::check_schema(*this); !schema)
             return schema;
-        const auto calibration = detail::validate_calibration(initial_acceptance);
-        if (!calibration)
-            return calibration;
-        const auto schedule = detail::validate_cooling_schedule(
-            initial_temperature,
-            final_temperature,
-            cooling_rate);
-        if (!schedule)
-            return schedule;
-        if (!std::isfinite(allowed_running_time) || allowed_running_time <= 0.0)
-        {
-            return config::validation_result::failure(
-                "allowed_running_time must be finite and positive");
-        }
-        return config::validation_result::success();
+        if (const auto finite = detail::validate_finite(
+                initial_temperature,
+                "initial_temperature must be finite");
+            !finite)
+            return finite;
+        return detail::validate_finite(
+            allowed_running_time,
+            "allowed_running_time must be finite");
     }
 };
 
