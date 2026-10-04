@@ -718,6 +718,10 @@ function(easylocal_add_compile_failure_test name source expected_diagnostic)
             "-DCXX=${CMAKE_CXX_COMPILER}"
             "-DCXX_ID=${CMAKE_CXX_COMPILER_ID}"
             "-DFRONTEND=${CMAKE_CXX_COMPILER_FRONTEND_VARIANT}"
+            # The build's own flags (-stdlib=..., --gcc-install-dir=...) and
+            # SDK, so that the test sees the same standard library.
+            "-DCXX_FLAGS=${CMAKE_CXX_FLAGS}"
+            "-DSYSROOT=${CMAKE_OSX_SYSROOT}"
             "-DSOURCE=${CMAKE_CURRENT_SOURCE_DIR}/compile_fail/${source}"
             "-DINCLUDE_DIR=${PROJECT_SOURCE_DIR}/include"
             "-DEXPECTED_DIAGNOSTIC=${expected_diagnostic}"

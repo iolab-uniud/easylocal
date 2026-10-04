@@ -19,11 +19,21 @@ elseif(FRONTEND STREQUAL "MSVC")
     set(flags /std:c++latest /permissive- /Zs /EHsc "/I${INCLUDE_DIR}")
 else()
     set(flags -std=c++23 -fsyntax-only "-I${INCLUDE_DIR}")
+    if(DEFINED SYSROOT AND NOT SYSROOT STREQUAL "")
+        list(APPEND flags -isysroot "${SYSROOT}")
+    endif()
+endif()
+
+# The build's own flags, such as -stdlib=libc++ or --gcc-install-dir=...
+set(build_flags "")
+if(DEFINED CXX_FLAGS AND NOT CXX_FLAGS STREQUAL "")
+    separate_arguments(build_flags NATIVE_COMMAND "${CXX_FLAGS}")
 endif()
 
 execute_process(
     COMMAND
         "${CXX}"
+        ${build_flags}
         ${flags}
         "${SOURCE}"
     RESULT_VARIABLE result
