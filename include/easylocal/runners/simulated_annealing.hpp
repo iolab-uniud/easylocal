@@ -56,41 +56,6 @@ concept calibrating_temperature_policy = temperature_policy<Policy>
 namespace detail
 {
 
-inline void validate_temperature_parameters(
-    [[maybe_unused]] const double initial_temperature,
-    [[maybe_unused]] const double final_temperature,
-    [[maybe_unused]] const double cooling_rate)
-{
-    assert(std::isfinite(initial_temperature));
-    assert(std::isfinite(final_temperature));
-    assert(std::isfinite(cooling_rate));
-    assert(initial_temperature > 0.0);
-    assert(final_temperature > 0.0);
-    assert(final_temperature < initial_temperature);
-    assert(cooling_rate > 0.0);
-    assert(cooling_rate < 1.0);
-}
-
-[[nodiscard]]
-inline std::size_t temperature_level_count(
-    const double initial_temperature,
-    const double final_temperature,
-    const double cooling_rate)
-{
-    validate_temperature_parameters(
-        initial_temperature,
-        final_temperature,
-        cooling_rate);
-
-    const auto raw_levels =
-        std::log(final_temperature / initial_temperature) /
-        std::log(cooling_rate);
-
-    return std::max(
-        std::size_t{1},
-        static_cast<std::size_t>(std::ceil(raw_levels)));
-}
-
 [[nodiscard]]
 constexpr std::size_t positive_quotient(
     const std::size_t numerator,
@@ -142,6 +107,22 @@ inline config::validation_result validate_cooling_schedule(
             "cooling_rate must be finite and in the open interval (0, 1)");
     }
     return config::validation_result::success();
+}
+
+// The number of temperature levels of a cooling schedule.
+[[nodiscard]]
+inline std::size_t temperature_level_count(
+    const double initial_temperature,
+    const double final_temperature,
+    const double cooling_rate)
+{
+    assert(
+        validate_cooling_schedule(initial_temperature, final_temperature, cooling_rate));
+
+    const auto raw_levels =
+        std::log(final_temperature / initial_temperature) / std::log(cooling_rate);
+
+    return std::max(std::size_t{1}, static_cast<std::size_t>(std::ceil(raw_levels)));
 }
 
 [[nodiscard]]
@@ -267,11 +248,7 @@ public:
         const ClassicParameters parameters) noexcept
         : parameters_{parameters}
     {
-        detail::validate_temperature_parameters(
-            parameters_.initial_temperature,
-            parameters_.final_temperature,
-            parameters_.cooling_rate);
-        assert(parameters_.samples_per_temperature >= 1);
+        assert(parameters_.validate());
         reset();
     }
 
@@ -396,18 +373,16 @@ class FixedLength
 public:
     using parameters_type = FixedLengthParameters;
 
-    explicit FixedLength(
-        const FixedLengthParameters parameters) noexcept
+    explicit FixedLength(const FixedLengthParameters parameters) noexcept
         : parameters_{parameters},
-          temperature_levels_{detail::temperature_level_count(
-              parameters.initial_temperature,
-              parameters.final_temperature,
-              parameters.cooling_rate)},
           samples_per_temperature_{detail::positive_quotient(
               parameters.max_iterations,
-              temperature_levels_)}
+              detail::temperature_level_count(
+                  parameters.initial_temperature,
+                  parameters.final_temperature,
+                  parameters.cooling_rate))}
     {
-        assert(parameters_.max_iterations >= 1);
+        assert(parameters_.validate());
         reset();
     }
 
@@ -472,7 +447,6 @@ public:
 
 private:
     FixedLengthParameters parameters_;
-    std::size_t temperature_levels_{};
     std::size_t samples_per_temperature_{};
     double temperature_{};
     std::size_t iterations_{};
@@ -545,21 +519,18 @@ class Cutoff
 public:
     using parameters_type = CutoffParameters;
 
-    explicit Cutoff(
-        const CutoffParameters parameters) noexcept
+    explicit Cutoff(const CutoffParameters parameters) noexcept
         : parameters_{parameters},
-          temperature_levels_{detail::temperature_level_count(
-              parameters.initial_temperature,
-              parameters.final_temperature,
-              parameters.cooling_rate)},
           reference_sample_limit_{detail::positive_quotient(
               parameters.max_iterations,
-              temperature_levels_)},
-          accepted_limit_{detail::accepted_limit(
-              reference_sample_limit_,
-              parameters.accepted_ratio)}
+              detail::temperature_level_count(
+                  parameters.initial_temperature,
+                  parameters.final_temperature,
+                  parameters.cooling_rate))},
+          accepted_limit_{
+              detail::accepted_limit(reference_sample_limit_, parameters.accepted_ratio)}
     {
-        assert(parameters_.max_iterations >= 1);
+        assert(parameters_.validate());
         reset();
     }
 
@@ -624,7 +595,6 @@ public:
 
 private:
     CutoffParameters parameters_;
-    std::size_t temperature_levels_{};
     std::size_t reference_sample_limit_{};
     std::size_t accepted_limit_{};
     double temperature_{};
@@ -653,7 +623,7 @@ public:
               initial_sample_limit_,
               parameters.accepted_ratio)}
     {
-        assert(parameters_.max_iterations >= 1);
+        assert(parameters_.validate());
         reset();
     }
 
