@@ -22,15 +22,23 @@ repository is maintained.
 cmake --preset dev && cmake --build build/dev && ctest --test-dir build/dev -j8
 ```
 
-Before committing, run:
+The local check before a commit is meant to find problems quickly; CI is the
+comprehensive one. Run, the fastest first:
 
-- `ctest -j8` on `build/dev` and on a build with every optional component
-  (configure with `-DEASYLOCAL_ENABLE_CONFIG_TOML=ON -DEASYLOCAL_ENABLE_TUI=ON
-  -DEASYLOCAL_ENABLE_REST=ON -DEASYLOCAL_FETCH_DEPENDENCIES=ON`);
-- `scripts/format.sh --check` and `scripts/tidy.sh build/dev`;
-- `uv run mkdocs build --strict` when `docs/` changes, and
-  `uv run scripts/api-docs.py build/<preset>` (MrDocs, warnings as errors) when
-  the `///` comments change.
+- `scripts/format.sh --check`;
+- `ctest -j8` on `build/dev` (the platform's compiler, AppleClang with libc++
+  on macOS);
+- when `include/` or `tests/` change, a GCC 16 build with its tests and a
+  GCC 15 Release build (`-O3` warnings): GCC covers libstdc++, so a local Clang
+  with libstdc++ build is not needed;
+- `scripts/tidy.sh build/dev` when `examples/` change, or the library they use;
+- `uv run mkdocs build --strict` when `docs/` changes.
+
+An optional component (TOML, TextUI, REST, irace) is checked locally only when
+the change touches it: build that component's targets in a build that enables
+it and run its tests (`ctest -L tui-e2e`, `-L rest-http`, `-L irace`, or
+`-R <name>`). The build with every optional component and the API reference
+(MrDocs) are left to CI, as are the other compilers.
 
 Never run `scripts/build-and-test.sh --exhaustive` (every feature subset): it
 is a last resort. For
