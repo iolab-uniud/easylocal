@@ -4,7 +4,11 @@
 #include <easylocal/cost.hpp>
 #include <easylocal/runners/hill_climbing.hpp>
 #include <easylocal/runners/runner.hpp>
+#include <easylocal/solvers/local_search.hpp>
+#include <easylocal/solvers/multi_start.hpp>
+#include <easylocal/solvers/pipeline.hpp>
 
+#include <algorithm>
 #include <chrono>
 #include <cstdint>
 #include <iostream>
@@ -13,7 +17,10 @@
 #include <random>
 #include <stdexcept>
 #include <stop_token>
+#include <string>
 #include <string_view>
+#include <type_traits>
+#include <vector>
 
 namespace
 {
@@ -204,6 +211,86 @@ int main()
         rejected = true;
     }
     ok &= expect(rejected, "a time limit that is not a number is rejected");
+
+    // A LocalSearch gives its time limit to its one run.
+    namespace solvers = el::solvers;
+    auto single = el::make_solver<solvers::LocalSearch>(
+        runner,
+        solvers::LocalSearchConfig<el::initialization::Initial>{
+            .initialization = el::initialization::initial,
+            .seed = 4,
+        });
+    const auto searched = single.solve(instance, el::timeout(20ms));
+    ok &= expect(
+        searched.termination == el::termination_reason::time_limit_reached,
+        "a LocalSearch stops at its time limit");
+
+    // A solve's time limit bounds all its runs: a MultiStart of endless starts
+    // stops at it.
+    auto restarts = el::make_solver<solvers::MultiStart>(
+        runner,
+        solvers::MultiStartConfig<el::initialization::Initial>{
+            .parameters = {.starts = 1000},
+            .initialization = el::initialization::initial,
+            .seed = 3,
+        });
+    const auto multi_started = clock::now();
+    const auto restarted = restarts.solve(instance, el::timeout(60ms));
+    const auto multi_elapsed = clock::now() - multi_started;
+    ok &= expect(
+        restarted.termination == el::termination_reason::time_limit_reached
+            && multi_elapsed >= 60ms && multi_elapsed < 5s,
+        "a MultiStart stops at the solve's time limit");
+
+    // A stage's own limit ends that stage; the next one has what is left of
+    // the solve's limit.
+    auto timed = solvers::pipeline(
+        solvers::stage("first", runner) & solvers::timeout(30ms),
+        solvers::stage("second", runner));
+    const auto pipeline_started = clock::now();
+    const auto staged =
+        timed.initialization(el::initialization::initial)
+            .solve(instance, el::timeout(120ms));
+    const auto pipeline_elapsed = clock::now() - pipeline_started;
+    ok &= expect(
+        staged.stages.size() == 2
+            && staged.stages[0].termination == el::termination_reason::time_limit_reached
+            && staged.stages[1].termination == el::termination_reason::time_limit_reached
+            && staged.termination == el::termination_reason::time_limit_reached,
+        "both stages stop at a time limit");
+    ok &= expect(
+        pipeline_elapsed >= 120ms && pipeline_elapsed < 5s,
+        "a pipeline lasts about the solve's time limit");
+    ok &= expect(
+        staged.stages[0].evaluations < staged.evaluations,
+        "the first stage stops before the solve's limit");
+
+    // The spellings of a stage's limit, and the parameter that holds it.
+    static_assert(std::is_same_v<
+        decltype(solvers::stage("s", runner).with_timeout(0.03)),
+        decltype(solvers::stage("s", runner) & solvers::timeout(30ms))>);
+    ok &= expect(
+        (solvers::stage("s", runner) & el::timeout(1.5)).parameters().timeout == 1.5
+            && solvers::stage("s", runner).with_timeout(250ms).parameters().timeout
+                == 0.25,
+        "a stage's time limit in seconds");
+    auto parameters = timed.configuration();
+    std::vector<std::string> paths;
+    for (const auto& parameter : parameters.parameters())
+        paths.push_back(parameter.path);
+    ok &= expect(
+        std::ranges::find(paths, std::string{"second.timeout"}) != paths.end(),
+        "a stage's time limit is a parameter");
+    const auto set = el::config::apply_overrides(
+        parameters,
+        std::vector<el::config::text_override>{{"second.timeout", "0.5"}});
+    ok &= expect(
+        set && timed.stage<1>().parameters().timeout == 0.5,
+        "a stage's time limit is set through the parameters");
+    const auto invalid = el::config::apply_overrides(
+        parameters,
+        std::vector<el::config::text_override>{{"second.timeout", "-1"}});
+    ok &= expect(!invalid, "a negative stage time limit is rejected");
 
     return ok ? 0 : 1;
 }

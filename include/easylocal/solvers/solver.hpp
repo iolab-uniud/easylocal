@@ -8,6 +8,8 @@
 
 #include <easylocal/runners/runner.hpp>
 
+#include <algorithm>
+#include <chrono>
 #include <concepts>
 #include <cstddef>
 #include <optional>
@@ -112,6 +114,65 @@ auto with_target(Target target, const Options&... options)
     {
         return (options.stop_at(std::move(target)), ...);
     }
+}
+
+// The deadline of a solve: its start plus the time limit of its options; none
+// without a limit.
+template<class... Options>
+[[nodiscard]]
+std::optional<std::chrono::steady_clock::time_point> solve_deadline(
+    const Options&... options)
+{
+    std::optional<std::chrono::steady_clock::time_point> deadline;
+    ((options.time_limit
+             ? static_cast<void>(deadline = deadline_after(*options.time_limit))
+             : static_cast<void>(0)),
+        ...);
+    return deadline;
+}
+
+// The earlier of two deadlines; none when neither is set.
+[[nodiscard]]
+inline std::optional<std::chrono::steady_clock::time_point> earliest(
+    const std::optional<std::chrono::steady_clock::time_point> first,
+    const std::optional<std::chrono::steady_clock::time_point> second)
+{
+    if (!first)
+        return second;
+    if (!second)
+        return first;
+    return std::min(*first, *second);
+}
+
+// Whether a deadline has passed.
+[[nodiscard]]
+inline bool time_is_up(
+    const std::optional<std::chrono::steady_clock::time_point> deadline)
+{
+    return deadline.has_value() && std::chrono::steady_clock::now() >= *deadline;
+}
+
+// The run options of a run within a solve: the solve's own (or none), with the
+// time left until `deadline` as their time limit.
+template<class... Options>
+[[nodiscard]]
+auto within_deadline(
+    const std::optional<std::chrono::steady_clock::time_point> deadline,
+    const Options&... options)
+{
+    auto timed = [&] {
+        if constexpr (sizeof...(Options) == 0)
+            return run_options<trace::null_tracer>{};
+        else
+            return (options, ...);
+    }();
+    if (deadline)
+    {
+        timed.time_limit = std::max(
+            std::chrono::steady_clock::duration::zero(),
+            *deadline - std::chrono::steady_clock::now());
+    }
+    return timed;
 }
 
 // The effort of several runs, for results that report it (search_result
