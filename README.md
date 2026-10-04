@@ -673,26 +673,26 @@ they verify is deliberately abandoned.
 
 ## Versioning and releases
 
-`VERSION` is the single source of truth for the EasyLocal version.
-
-Releases use semantic versioning and annotated tags of the form:
+`VERSION` is the single source of truth for the EasyLocal version: the
+version in preparation, such as `4.0.0-alpha.1`, whose section in
+`CHANGELOG.md` reads "not yet released". Releases use semantic versioning,
+pre-releases included, and annotated tags of the form:
 
 ```text
-vMAJOR.MINOR.PATCH
+vMAJOR.MINOR.PATCH[-PRERELEASE]
 ```
 
-The release helper updates `VERSION`, prepares a `CHANGELOG.md` entry from the
-Git history, optionally asks `claude -p` to draft it, opens it for manual
-review, runs the local Release build and CTest suite, and finally creates and
-pushes the release tag:
+The release helper releases the version in `VERSION`: it dates its
+`CHANGELOG.md` section, opens the file for review, runs the local Release
+build and CTest suite, then commits, creates and pushes the tag:
 
 ```sh
-./scripts/release.sh patch
-./scripts/release.sh minor
-./scripts/release.sh major
+./scripts/release.sh
 ```
 
-The pushed tag triggers the full GitHub Actions CI matrix.
+The pushed tag triggers the full GitHub Actions CI matrix. Afterwards,
+`VERSION` gets the next version in preparation, with its section in
+`CHANGELOG.md`.
 
 ## Citing EasyLocal
 
