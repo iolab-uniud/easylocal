@@ -77,9 +77,11 @@ bool contains(const std::string& text, const std::string& part)
     return text.find(part) != std::string::npos;
 }
 
+// A directory of the build's, which another build running this test does not
+// share.
 std::filesystem::path fresh_directory(const std::string& name)
 {
-    const auto directory = std::filesystem::temp_directory_path() / name;
+    const auto directory = std::filesystem::current_path() / name;
     std::filesystem::remove_all(directory);
     return directory;
 }

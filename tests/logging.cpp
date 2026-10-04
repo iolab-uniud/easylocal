@@ -84,9 +84,10 @@ int main()
         "an out-of-range level is unknown");
 
     // The default sink writes warnings and errors to stderr and drops the
-    // rest; stderr goes to a file for the rest of the test.
+    // rest; stderr goes to a file for the rest of the test, in the build's
+    // directory, which another build running the same test does not share.
     const auto stderr_path =
-        std::filesystem::temp_directory_path() / "easylocal-logging-test.txt";
+        std::filesystem::current_path() / "easylocal-logging-test.txt";
     // The MSVC runtime deprecates std::freopen, but freopen_s opens the file
     // without sharing, and the test reads it back while stderr is redirected.
 #if defined(__clang__)

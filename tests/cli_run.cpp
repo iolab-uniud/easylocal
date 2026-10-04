@@ -130,8 +130,10 @@ int main()
     assert(stopped.out.starts_with("cost 29\n"));
     assert(stopped.out.ends_with("0 1 2 3 4 \n"));
 
-    // A starting solution from a file, and the solution saved to a file.
-    const auto directory = std::filesystem::temp_directory_path();
+    // A starting solution from a file, and the solution saved to a file, in
+    // the build's directory, which another build running this test does not
+    // share.
+    const auto directory = std::filesystem::current_path();
     const auto start_file = directory / "easylocal_cli_run_start.txt";
     const auto output_file = directory / "easylocal_cli_run_output.txt";
     std::ofstream{start_file} << "0 1 3 4 2\n";

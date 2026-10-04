@@ -64,8 +64,7 @@ struct temporary_file
     std::filesystem::path path;
 
     explicit temporary_file(const std::string& contents)
-        : path{std::filesystem::temp_directory_path() /
-               "easylocal-configuration-setup-test.cfg"}
+        : path{std::filesystem::current_path() / "easylocal-configuration-setup-test.cfg"}
     {
         std::ofstream output{path};
         output << contents;
